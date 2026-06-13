@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#GRID // Elysium Nights Smartdeck OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/theme.css">
+</head>
+<body>
+
+<!-- boot sequence -->
+<div id="boot">
+  <div class="blogo">#GRID</div>
+  <div class="blines" id="boot-lines"></div>
+</div>
+
+<div class="os" id="os" style="display:none">
+  <!-- top bar -->
+  <header class="os-topbar">
+    <div class="os-logo">#GRID<b>OS</b> <span class="v">v1.0</span></div>
+    <div class="os-status">
+      <span><span class="led"></span>LINK STABLE</span>
+      <span id="save-state">SYNC OK</span>
+    </div>
+    <div class="os-spacer"></div>
+    <div class="os-status" id="active-name">NO FREELANCER LOADED</div>
+    <div class="os-clock" id="os-clock">--:--:--</div>
+  </header>
+
+  <!-- tab rail -->
+  <nav class="os-tabs" id="os-tabs"></nav>
+
+  <!-- main mount -->
+  <main class="os-main" id="view"></main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ===== data layer ===== -->
+<script src="data/rules.js"></script>
+<script src="data/species.js"></script>
+<script src="data/backgrounds.js"></script>
+<script src="data/class_codebreaker_fury.js"></script>
+<script src="data/class_hustler_operator.js"></script>
+<script src="data/class_scoundrel_shaper.js"></script>
+<script src="data/class_stitcher_resources.js"></script>
+<script src="data/talents.js"></script>
+<script src="data/combat.js"></script>
+<script src="data/conditions.js"></script>
+<script src="data/gear_melee.js"></script>
+<script src="data/gear_ranged.js"></script>
+<script src="data/gear_signature.js"></script>
+<script src="data/versatile.js"></script>
+
+<!-- ===== engine + state ===== -->
+<script src="js/engine.js"></script>
+<script src="js/store.js"></script>
+<script src="js/ui.js"></script>
+
+<!-- ===== views ===== -->
+<script src="js/builder.js"></script>
+<script src="js/combat.js"></script>
+<script src="js/inventory.js"></script>
+<script src="js/codex.js"></script>
+
+<!-- ===== bootstrap ===== -->
+<script src="js/app.js"></script>
+</body>
+</html>

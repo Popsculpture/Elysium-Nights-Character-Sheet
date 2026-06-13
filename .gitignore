@@ -1,0 +1,13 @@
+# Claude Code session data — internal, never published
+.claude/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+*.swp
+
+# Legacy single-file prototype, superseded by app/.
+# Delete this line if you'd rather archive it in the repo.
+Elysium_Nights_Character_Sheet*.html
