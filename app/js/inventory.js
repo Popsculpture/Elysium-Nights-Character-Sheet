@@ -143,7 +143,8 @@ EN.inventoryView = (function () {
           _mode === "fivefinger" ? it.name + " taken. You were never here." :
           it.name + " acquired for " + fmtG(sp) + ". No receipt. It never happened.");
   }
-  function installCyber(it) {
+  // buying chrome drops it in the Chrome Stash (uninstalled) — you install it at a clinic from the Chrome tab
+  function buyCyber(it) {
     var sp = streetPrice(it);
     var ch = store.active();
     if (_mode !== "fivefinger" && (ch.glimmer || 0) < sp) {
@@ -154,11 +155,31 @@ EN.inventoryView = (function () {
     }
     store.update(function (c) {
       c.glimmer = (c.glimmer || 0) - sp;
-      c.cyberware = c.cyberware || [];
-      c.cyberware.push({ key: it.cyberKey, base: it.base, name: it.name, tier: it.tier, zone: it.zone,
-        sp: it.sp, slots: it.slots || 0, sided: !!it.sided, side: it.sided ? "R" : null, mystech: !!it.mystech, enhancement: it.enhancement });
+      c.cyberStash = c.cyberStash || [];
+      c.cyberStash.push({ key: it.cyberKey, base: it.base, name: it.name, tier: it.tier, zone: it.zone,
+        sp: it.sp, slots: it.slots || 0, sided: !!it.sided, side: it.sided ? "R" : null, mystech: !!it.mystech, enhancement: it.enhancement,
+        desc: it.desc, effect: it.effect });
     });
-    toast(it.name + " installed. The chrome's in — it's on the Chrome tab now.");
+    toast(it.name + " acquired — it's in your Chrome Stash. Hit a clinic (Chrome tab) to install it.");
+  }
+  function installFromStash(idx) {
+    store.update(function (c) {
+      var cw = (c.cyberStash || [])[idx]; if (!cw) return;
+      c.cyberStash.splice(idx, 1);
+      c.cyberware = c.cyberware || []; c.cyberware.push(cw);
+    });
+    toast("Chrome installed. Static updated on the Cybernetic Frame.");
+  }
+  function uninstallToStash(idx) {
+    store.update(function (c) {
+      var cw = (c.cyberware || [])[idx]; if (!cw) return;
+      c.cyberware.splice(idx, 1);
+      c.cyberStash = c.cyberStash || []; c.cyberStash.push(cw);
+    });
+    toast("Chrome uninstalled — back in your Chrome Stash.");
+  }
+  function dropStash(idx) {
+    store.update(function (c) { if ((c.cyberStash || [])[idx]) c.cyberStash.splice(idx, 1); });
   }
   function sell(name) {
     if (_mode === "fivefinger") { toast("No provenance, no payout. The fence won't touch it."); return; }
@@ -221,8 +242,8 @@ EN.inventoryView = (function () {
         .concat((it.traits || []).map(traitChip))
         .concat([el("span", { style: { flex: 1 } }),
           mode === "mkt"
-            ? el("button.btn.sm" + (afford ? ".primary" : ""), { disabled: !afford, title: priceTitle(it), onclick: function () { it.cyber ? installCyber(it) : buy(it); } },
-                _mode === "fivefinger" ? (it.cyber ? "⧉ INSTALL" : "TAKE") : (afford ? (it.cyber ? "⧉ INSTALL · " + fmtG(sp) : "BUY · " + fmtG(sp)) : "CAN'T AFFORD"))
+            ? el("button.btn.sm" + (afford ? ".primary" : ""), { disabled: !afford, title: it.cyber ? "Buy to your Chrome Stash — install it later at a clinic (Chrome tab)" : priceTitle(it), onclick: function () { it.cyber ? buyCyber(it) : buy(it); } },
+                _mode === "fivefinger" ? "TAKE" : (afford ? "BUY · " + fmtG(sp) : "CAN'T AFFORD"))
             : el("div.row", { style: { gap: "6px" } },
                 (isWeapon(it) ? [
                   isEquipped(ch, it.name)
@@ -360,48 +381,60 @@ EN.inventoryView = (function () {
       el("p.help", { style: { margin: "10px 0 0", color: "var(--text4)" }, text: "The gauge is your whole-body Chrome Tax (Total Static → Threshold). Silhouette dots mark where each implant sits; species / gender / lineage variants come later." })
     ], { corners: true });
 
-    /* --- installed list, grouped by zone --- */
-    var nameIn = el("input", { type: "text", placeholder: "homebrew chrome…", style: { maxWidth: "200px" } });
-    var manualAdd = [nameIn, el("button.btn.sm.primary", { title: "Add a freeform implant (0 SP)", onclick: function () {
-      var v = nameIn.value.trim(); if (!v) return;
-      store.update(function (c) { c.cyberware = c.cyberware || []; c.cyberware.push({ base: v, name: v, tier: null, zone: "Hardware", sp: 0, side: null, custom: true }); });
-    } }, "+ ADD")];
-    var rows = [];
-    ["Neural", "Core", "Integument", "Arms", "Legs", "Hardware"].forEach(function (zk) {
-      var inZone = installed.map(function (cw, i) { return { cw: cw, idx: i }; }).filter(function (o) { return o.cw.zone === zk; });
-      if (!inZone.length) return;
-      var z = CW.zones[zk] || {};
-      rows.push(el("div", { style: { margin: "10px 0 4px", fontFamily: "var(--disp)", fontSize: "11px", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--text2)" }, text: (z.label || zk) + " · " + inZone.reduce(function (n, o) { return n + (o.cw.sp || 0); }, 0) + " SP" }));
-      inZone.forEach(function (o) {
-        var cw = o.cw, idx = o.idx, sided = !!cw.sided, oid = "cw-" + idx, open = !!_open[oid];
+    /* --- Chrome panel: Chrome Stash (owned, uninstalled) | Installed Chrome --- */
+    var tierChipColor = function (t) { return t === "Blackware" ? "var(--danger)" : t === "Brandware" ? "var(--accent)" : t === "Prototype" ? "var(--flow)" : "var(--text3)"; };
+    function cyberRow(cw, idx, where) {
+      var sided = !!cw.sided, oid = where + "-cw-" + idx, open = !!_open[oid];
+      var chips = [
+        cw.tier ? tagChip(cw.tier, tierChipColor(cw.tier)) : null,
+        tagChip((cw.sp || 0) + " SP", heatColor(cw.sp || 0)),
+        tagChip("◆ " + cw.zone, "var(--accent)", "Interface Zone"),
+        (cw.enhancement && cw.enhancement !== "None") ? tagChip("✦ " + cw.enhancement, "var(--gold)", "Enhancement Bonus (display only for now)") : null
+      ];
+      var actions;
+      if (where === "stash") {
+        actions = el("div.row", { style: { gap: "6px" } }, [
+          el("button.btn.sm.primary", { title: "Install at a clinic — moves it to Installed Chrome and adds its SP to your Static", onclick: function (e) { e.stopPropagation(); installFromStash(idx); } }, "⧉ INSTALL"),
+          el("button.btn.sm", { title: "Discard this implant", style: { color: "var(--danger)", borderColor: "var(--danger)" }, onclick: function (e) { e.stopPropagation(); dropStash(idx); } }, "DROP")
+        ]);
+      } else {
         var sideToggle = sided ? el("div.row", { style: { gap: "3px" } }, ["L", "R"].map(function (s) {
-          return el("button.btn.sm" + (cw.side === s ? ".primary" : ""), { title: "Install side", style: { padding: "1px 8px", minWidth: "26px" },
-            onclick: function () { store.update(function (c) { if (c.cyberware[idx]) c.cyberware[idx].side = s; }); } }, s);
+          return el("button.btn.sm" + (cw.side === s ? ".primary" : ""), { title: "Install side", style: { padding: "1px 8px", minWidth: "24px" },
+            onclick: function (e) { e.stopPropagation(); store.update(function (c) { if (c.cyberware[idx]) c.cyberware[idx].side = s; }); } }, s);
         })) : null;
-        rows.push(el("div.feature", { style: { borderLeftColor: heatColor(cw.sp || 0) } }, [
-          el("h4", { style: { cursor: "pointer", flexWrap: "wrap", gap: "6px" }, onclick: function () { _open[oid] = !open; EN.app.render(); } }, [
-            el("span", null, [el("span.collapse-caret", { text: open ? "▾" : "▸" }), document.createTextNode(" " + cw.name),
-              cw.tier ? tagChip(cw.tier, cw.tier === "Blackware" ? "var(--danger)" : cw.tier === "Brandware" ? "var(--accent)" : cw.tier === "Prototype" ? "var(--flow)" : "var(--text3)") : null,
-              tagChip((cw.sp || 0) + " SP", heatColor(cw.sp || 0)),
-              (cw.enhancement && cw.enhancement !== "None") ? tagChip("✦ " + cw.enhancement, "var(--gold)", "Enhancement Bonus (display only for now)") : null]),
-            el("div.row", { style: { gap: "8px", alignItems: "center" } }, [
-              sideToggle,
-              el("button.btn.sm", { title: "Uninstall (surgery not included)", style: { color: "var(--danger)", borderColor: "var(--danger)" },
-                onclick: function (e) { e.stopPropagation(); store.update(function (c) { c.cyberware.splice(idx, 1); }); toast(cw.name + " uninstalled."); } }, "✕")
-            ])
-          ]),
-          open && cw.effect ? el("p.help", { style: { margin: "4px 0 0", color: "var(--accent)" }, text: cw.effect }) : null,
-          open && cw.desc ? el("p", { style: { margin: "6px 0 0" }, text: cw.desc }) : null
-        ]));
-      });
-    });
-    if (!installed.length) rows.push(el("p.help", { style: { margin: 0 }, text: "No augments on record. Clean body, short résumé. Install chrome from the gray-market Cybernetics panel." }));
-    var listPanel = EN.ui.panel("Installed Chrome", installed.length + " PIECE" + (installed.length === 1 ? "" : "S") + " · " + tax.total + " SP", rows, { corners: true, headerRight: manualAdd });
+        actions = el("div.row", { style: { gap: "8px", alignItems: "center" } }, [
+          sideToggle,
+          el("button.btn.sm", { title: "Uninstall — returns to your Chrome Stash", style: { color: "var(--danger)", borderColor: "var(--danger)" }, onclick: function (e) { e.stopPropagation(); uninstallToStash(idx); } }, "✕")
+        ]);
+      }
+      return el("div.feature", { style: { borderLeftColor: heatColor(cw.sp || 0) } }, [
+        el("h4", { style: { cursor: "pointer", flexWrap: "wrap", gap: "6px" }, onclick: function () { _open[oid] = !open; EN.app.render(); } }, [
+          el("span", null, [el("span.collapse-caret", { text: open ? "▾" : "▸" }), document.createTextNode(" " + cw.name)].concat(chips)),
+          actions
+        ]),
+        open && cw.effect ? el("p.help", { style: { margin: "4px 0 0", color: "var(--accent)" }, text: cw.effect }) : null,
+        open && cw.desc ? el("p", { style: { margin: "6px 0 0" }, text: cw.desc }) : null
+      ]);
+    }
+    var stash = ch.cyberStash || [];
+    var stashCol = el("div", null, [
+      el("div.section-title", { style: { margin: "0 0 8px" } }, [document.createTextNode("Chrome Stash"), el("span.line")]),
+      stash.length
+        ? el("div", null, stash.map(function (cw, i) { return cyberRow(cw, i, "stash"); }))
+        : el("p.help", { style: { margin: 0 }, text: "Empty. Buy chrome from the gray-market Cybernetics panel — it lands here until you install it at a clinic." })
+    ]);
+    var installedCol = el("div", null, [
+      el("div.section-title", { style: { margin: "0 0 8px" } }, [document.createTextNode("Installed Chrome"), el("span.line")]),
+      installed.length
+        ? el("div", null, installed.map(function (cw, i) { return cyberRow(cw, i, "installed"); }))
+        : el("p.help", { style: { margin: 0 }, text: "Nothing installed yet. Install pieces from the Chrome Stash at left." })
+    ]);
+    var stashPanel = EN.ui.panel("Chrome", stash.length + " STASHED · " + installed.length + " INSTALLED · " + tax.total + " SP",
+      [el("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "16px 20px", alignItems: "start" } }, [stashCol, installedCol])], { corners: true });
 
-    /* --- Open Architecture --- */
-    var blocks = [framePanel, listPanel];
-    var oaPanel = chromeOAPanel(ch);
-    if (oaPanel) blocks.push(oaPanel);
+    /* --- Open Architecture — only for NextGen-lineage characters --- */
+    var blocks = [framePanel, stashPanel];
+    if (ch.lineage === "nextgen") { var oaPanel = chromeOAPanel(ch); if (oaPanel) blocks.push(oaPanel); }
     return blocks;
   }
 

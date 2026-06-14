@@ -59,7 +59,8 @@ EN.store = (function () {
       talents: [],                       // talent keys
       universalUpgrades: {},             // {level: {type:'attr'|'talent'|'evolution', ...}}
       awakeningEvolution: null,          // Level 4 Awakening Milestone free Lineage Evolution
-      cyberware: [],                     // installed chrome names (feeds Open Architecture integration)
+      cyberware: [],                     // INSTALLED chrome (feeds Static / Chrome Tax + Open Architecture)
+      cyberStash: [],                    // purchased-but-uninstalled chrome (install at a clinic to move it to cyberware)
       trainingPoints: { spent: 0, allocations: [] },
       resources: { current: {} },
       vitality: { current: null, temp: 0 },   // current null = full; temp = Vigor
@@ -110,6 +111,7 @@ EN.store = (function () {
         return { base: cw, name: cw, tier: null, zone: (def && def.zone) || "Hardware", sp: 0, side: null, custom: true };
       });
     }
+    if (!ch.cyberStash) ch.cyberStash = [];   // purchased-but-uninstalled chrome
     // drop a stored subclass that no longer exists (e.g. after a class rework) so it re-surfaces as a pick
     if (ch.class && ch.subclass && EN.classes && EN.classes[ch.class]) {
       var subs = EN.classes[ch.class].subclasses || [];
