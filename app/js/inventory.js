@@ -21,6 +21,13 @@ EN.inventoryView = (function () {
   //   'fivefinger' — Five-Finger Supply: free; fencing disabled (Drop/Donate only)
   var _mode = "undercut";
   var _settingsOpen = false;
+  // market filtering + per-panel collapse (panels collapsed by default; a filter/search auto-expands matches)
+  var _mktQuery = "";
+  var _mktType = "all";    // 'all' or a major-type key (melee/ranged/signature/ammo/kits/devices/consumables/flow)
+  var _mktLegal = "all";   // 'all' | Legal | Licensed | Restricted | Contraband
+  var _mktAvail = "all";   // 'all' | Common | Uncommon | Rare
+  var _mktFiltersOpen = false;   // filter rows nested behind the funnel button
+  var _panelOpen = {};     // { catKey: bool }
   document.addEventListener("click", function (ev) {
     if (!_settingsOpen) return;
     if (ev.target.closest && ev.target.closest(".inv-pop-anchor")) return;
@@ -300,70 +307,139 @@ EN.inventoryView = (function () {
       return el("p.help", { style: { margin: (i === 0 ? "8px" : "4px") + " 0 0" }, text: p });
     }))));
 
-    /* collapsible stock sections */
-    function section(id, title, intro, items) {
-      if (!items.length) return [];
-      var open = !!_open[id];
-      var head = el("div.section-title", { style: { margin: "8px 0 4px", cursor: "pointer" },
-        onclick: function () { _open[id] = !open; EN.app.render(); } }, [
-        document.createTextNode((open ? "▾ " : "▸ ") + title + " (" + items.length + ")"), el("span.line")
-      ]);
-      if (!open) return [head];
-      var kids = [head];
-      if (intro) kids.push(el("p.help", { style: { margin: "0 0 6px" }, text: intro }));
-      items.forEach(function (it) { kids.push(itemCard(it, ch, "mkt")); });
-      return kids;
-    }
+    /* ---- major-type categories → one collapsible panel each ---- */
     var ri = (g.ranged && g.ranged.groupIntros) || {};
     var si = (g.signature && g.signature.groupIntros) || {};
     var byGroup = function (list, grp) { return list.filter(function (i) { return i.group === grp; }); };
     var byKind = function (list, k) { return list.filter(function (i) { return i.kind === k; }); };
-    var kids = [];
-    kids = kids.concat(
-      section("mkt-melee-s", "Melee — Simple", g.melee && g.melee.simpleIntro, byGroup(melee, "Simple")),
-      section("mkt-melee-m", "Melee — Martial", g.melee && g.melee.martialIntro, byGroup(melee, "Martial")),
-      section("mkt-side", "Sidearms", ri["Sidearm"], byGroup(ranged, "Sidearm")),
-      section("mkt-long", "Longarms", ri["Longarm"], byGroup(ranged, "Longarm")),
-      section("mkt-heavy", "Heavy Weapons", ri["Heavy"], byGroup(ranged, "Heavy")),
-      section("mkt-launch", "Explosive Launchers", ri["Launcher"], byGroup(ranged, "Launcher")),
-      section("mkt-thrown", "Thrown Weapons", ri["Thrown"], byGroup(ranged, "Thrown")),
-      section("mkt-bow", "Bowfire", ri["Bowfire"], byGroup(ranged, "Bowfire")),
-      section("mkt-sig-m", "Signature — Melee", (g.signature && g.signature.intro ? g.signature.intro + " " : "") + (si.melee || ""), byKind(sig, "melee")),
-      section("mkt-sig-r", "Signature — Ranged", si.ranged, byKind(sig, "ranged")),
-      section("mkt-sig-mun", "Signature Munitions", g.signature && g.signature.munitionsIntro, sigMun),
-      section("mkt-ammo-p", "Ammo — Standard, Plentiful", "Track only the loaded magazine; restock to full between contracts. Prices buy one reload.", byGroup(ammo, "Plentiful")),
-      section("mkt-ammo-c", "Ammo — Standard, Counted", "Heavy, expensive, watched, and scarce. Track each unit from purchase to spend. A missile is a decision, not a refill.", byGroup(ammo, "Counted")),
-      section("mkt-ammo-s", "Ammo — Specialty", "All Counted: Load it, Declare it before the attack, Apply it on resolution. The difference between a legal magazine and a felony is sometimes just which three rounds you loaded on top.", byGroup(ammo, "Specialty")),
-      section("mkt-ammo-l", "Launcher Shells", "Fired from a Grenade Launcher: same arc, same range, entirely different problem on the other end. Targets save Agility vs your Weapon Save DC.", byGroup(ammo, "Launcher Shell"))
-    );
-    if (g.ranged) kids.push(el("p.help", { style: { margin: "10px 0 0", color: "var(--text4)" }, text: (g.ranged.saveDcNote || "") + " Kits, devices, and consumables stocked below; armor arrives when the next shipment clears the checkpoint." }));
-    var total = melee.length + ranged.length + sig.length + sigMun.length + ammo.length;
-    blocks.push(EN.ui.panel("Stock", "WEAPONS & AMMO · " + total + " LISTINGS", kids, { corners: true }));
-
-    /* Field Supply — Tools, Kits, Devices & Consumables, grouped by bucket → subsection */
+    var cats = [
+      { key: "melee", title: "Melee Weapons", short: "MELEE", subs: [
+        { label: "Simple", intro: g.melee && g.melee.simpleIntro, items: byGroup(melee, "Simple") },
+        { label: "Martial", intro: g.melee && g.melee.martialIntro, items: byGroup(melee, "Martial") }
+      ] },
+      { key: "ranged", title: "Ranged Weapons", short: "RANGED", subs: [
+        { label: "Sidearms", intro: ri["Sidearm"], items: byGroup(ranged, "Sidearm") },
+        { label: "Longarms", intro: ri["Longarm"], items: byGroup(ranged, "Longarm") },
+        { label: "Heavy Weapons", intro: ri["Heavy"], items: byGroup(ranged, "Heavy") },
+        { label: "Explosive Launchers", intro: ri["Launcher"], items: byGroup(ranged, "Launcher") },
+        { label: "Thrown Weapons", intro: ri["Thrown"], items: byGroup(ranged, "Thrown") },
+        { label: "Bowfire", intro: ri["Bowfire"], items: byGroup(ranged, "Bowfire") }
+      ] },
+      { key: "signature", title: "Signature Weapons", short: "SIGNATURE", intro: g.signature && g.signature.intro, subs: [
+        { label: "Signature — Melee", intro: si.melee, items: byKind(sig, "melee") },
+        { label: "Signature — Ranged", intro: si.ranged, items: byKind(sig, "ranged") },
+        { label: "Signature Munitions", intro: g.signature && g.signature.munitionsIntro, items: sigMun }
+      ] },
+      { key: "ammo", title: "Ammunition", short: "AMMO", intro: g.ranged && g.ranged.saveDcNote, subs: [
+        { label: "Standard — Plentiful", intro: "Track only the loaded magazine; restock to full between contracts. Prices buy one reload.", items: byGroup(ammo, "Plentiful") },
+        { label: "Standard — Counted", intro: "Heavy, expensive, watched, and scarce. Track each unit from purchase to spend.", items: byGroup(ammo, "Counted") },
+        { label: "Specialty", intro: "All Counted: Load it, Declare it before the attack, Apply it on resolution.", items: byGroup(ammo, "Specialty") },
+        { label: "Launcher Shells", intro: "Fired from a Grenade Launcher. Targets save Agility vs your Weapon Save DC.", items: byGroup(ammo, "Launcher Shell") }
+      ] }
+    ];
     var T = g.tools;
-    if (T && T.items && T.items.length) {
-      var tkids = [];
-      (T.buckets || []).forEach(function (bucket) {
-        var bItems = T.items.filter(function (i) { return i.bucket === bucket.key; });
-        if (!bItems.length) return;
-        var bid = "mkt-tool-" + bucket.key, bopen = !!_open[bid];
-        tkids.push(el("div.section-title", { style: { margin: "10px 0 4px", cursor: "pointer" },
-          onclick: function () { _open[bid] = !bopen; EN.app.render(); } }, [
-          document.createTextNode((bopen ? "▾ " : "▸ ") + bucket.title + " (" + bItems.length + ")"), el("span.line")
-        ]));
-        if (!bopen) return;
-        if (bucket.intro) tkids.push(el("p.help", { style: { margin: "0 0 6px", color: "var(--text3)" }, text: bucket.intro }));
-        (bucket.groups || []).forEach(function (grp) {
-          var gItems = bItems.filter(function (i) { return i.group === grp.name; });
-          if (!gItems.length) return;
-          tkids.push(el("div", { style: { margin: "10px 0 4px", fontFamily: "var(--disp)", fontSize: "11px", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--text2)" }, text: grp.name }));
-          if (grp.intro) tkids.push(el("p.help", { style: { margin: "0 0 6px", fontSize: "11.5px" }, text: grp.intro }));
-          gItems.forEach(function (it) { tkids.push(itemCard(it, ch, "mkt")); });
-        });
+    if (T && T.buckets) {
+      var SHORT = { kits: "KITS", devices: "DEVICES", consumables: "CONSUMABLES", flow: "FLOW" };
+      T.buckets.forEach(function (bucket) {
+        cats.push({ key: bucket.key, title: bucket.title, short: SHORT[bucket.key] || bucket.key.toUpperCase(), intro: bucket.intro,
+          subs: (bucket.groups || []).map(function (grp) {
+            return { label: grp.name, intro: grp.intro, items: (T.items || []).filter(function (i) { return i.bucket === bucket.key && i.group === grp.name; }) };
+          }) });
       });
-      blocks.push(EN.ui.panel("Field Supply", "KITS · DEVICES · CONSUMABLES · " + T.items.length + " LISTINGS", tkids, { corners: true }));
     }
+
+    /* ---- filter predicate ---- */
+    var q = (_mktQuery || "").trim().toLowerCase();
+    var anyFilter = !!q || _mktType !== "all" || _mktLegal !== "all" || _mktAvail !== "all";
+    function itemPass(it) {
+      if (_mktLegal !== "all" && it.legality !== _mktLegal) return false;
+      if (_mktAvail !== "all" && it.availability !== _mktAvail) return false;
+      if (q) {
+        var hay = (it.name + " " + (it.desc || "") + " " + (it.effect || "") + " " + (it.group || "") + " " + (it.category || "") + " " + (it.skill || "")).toLowerCase();
+        if (hay.indexOf(q) === -1) return false;
+      }
+      return true;
+    }
+
+    /* ---- filter / search control bar (below the storefront banner) ---- */
+    function fbtn(active, label, on, color) {
+      return el("button.btn.sm" + (active ? ".primary" : ""), { style: (active && color) ? { color: color, borderColor: color } : null, onclick: on }, label);
+    }
+    function setF(key, val) { return function () { if (key === "type") _mktType = val; else if (key === "legal") _mktLegal = val; else _mktAvail = val; EN.app.render(); }; }
+    var typeBtns = [fbtn(_mktType === "all", "ALL", setF("type", "all"))].concat(cats.map(function (c) { return fbtn(_mktType === c.key, c.short, setF("type", c.key)); }));
+    var legalBtns = [fbtn(_mktLegal === "all", "ALL", setF("legal", "all"))].concat(["Legal", "Licensed", "Restricted", "Contraband"].map(function (l) { return fbtn(_mktLegal === l, l.toUpperCase(), setF("legal", l), LEGAL_COLOR[l]); }));
+    var availBtns = [fbtn(_mktAvail === "all", "ALL", setF("avail", "all"))].concat(["Common", "Uncommon", "Rare"].map(function (a) { return fbtn(_mktAvail === a, a.toUpperCase(), setF("avail", a), AVAIL_COLOR[a]); }));
+    var searchIn = el("input", { id: "mkt-search", type: "text", value: _mktQuery, placeholder: "search name, effect, category…",
+      style: { maxWidth: "300px", flex: "1 1 200px" },
+      oninput: function () { _mktQuery = this.value; var pos = this.selectionStart; EN.app.render(); var n = document.getElementById("mkt-search"); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (e) {} } } });
+    function frow(label, btns) { return el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "8px" } }, [el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".1em", minWidth: "64px" }, text: label })].concat(btns)); }
+    var totalCount = 0, matchCount = 0;
+    cats.forEach(function (c) {
+      var typeOk = _mktType === "all" || _mktType === c.key;
+      c.subs.forEach(function (s) { (s.items || []).forEach(function (it) { totalCount++; if (typeOk && itemPass(it)) matchCount++; }); });
+    });
+    var activeFilters = (_mktType !== "all" ? 1 : 0) + (_mktLegal !== "all" ? 1 : 0) + (_mktAvail !== "all" ? 1 : 0);
+    var filterOn = _mktFiltersOpen || activeFilters > 0;
+    var filterBtn = el("button.btn.sm", { title: "Show or hide filters" + (activeFilters ? " (" + activeFilters + " active)" : ""),
+      style: filterOn ? { color: "var(--accent)", borderColor: "var(--accent)" } : null,
+      onclick: function () { _mktFiltersOpen = !_mktFiltersOpen; EN.app.render(); } },
+      (_mktFiltersOpen ? "△" : "▽") + " FILTER" + (activeFilters ? " · " + activeFilters : ""));
+    var ctrlKids = [
+      el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
+        el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".1em", minWidth: "64px" }, text: "SEARCH" }),
+        searchIn,
+        el("span.mono", { style: { fontSize: "11px", color: anyFilter ? "var(--accent)" : "var(--text3)" }, text: anyFilter ? matchCount + " / " + totalCount + " match" : totalCount + " listings" }),
+        el("span", { style: { flex: 1 } }),
+        anyFilter ? el("button.btn.sm", { title: "Clear search and all filters", style: { color: "var(--danger)", borderColor: "var(--danger)" },
+          onclick: function () { _mktQuery = ""; _mktType = "all"; _mktLegal = "all"; _mktAvail = "all"; EN.app.render(); } }, "✕ CLEAR") : null,
+        filterBtn,
+        el("button.btn.sm", { title: "Expand or collapse every panel",
+          onclick: function () { var allOpen = cats.every(function (c) { return _panelOpen[c.key]; }); cats.forEach(function (c) { _panelOpen[c.key] = !allOpen; }); EN.app.render(); } }, "⊟ ALL")
+      ])
+    ];
+    if (_mktFiltersOpen) {
+      ctrlKids.push(el("div", { style: { marginTop: "8px", paddingTop: "8px", borderTop: "1px solid var(--border)" } }, [
+        frow("TYPE", typeBtns), frow("LEGALITY", legalBtns), frow("AVAIL", availBtns)
+      ]));
+    }
+    blocks.push(el("div", { style: { marginBottom: "14px", padding: "10px 12px", border: "1px solid var(--border)", borderRadius: "4px", background: "var(--bg2)" } }, ctrlKids));
+
+    /* ---- one collapsible panel per major type ---- */
+    var subLabel = function (t) { return el("div", { style: { margin: "10px 0 4px", fontFamily: "var(--disp)", fontSize: "11px", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--text2)" }, text: t }); };
+    var introP = function (t) { return el("p.help", { style: { margin: "0 0 6px", fontSize: "11.5px" }, text: t }); };
+    cats.forEach(function (c) {
+      if (_mktType !== "all" && _mktType !== c.key) return;
+      var open = anyFilter ? true : !!_panelOpen[c.key];
+      var subBlocks = [], cMatch = 0, cTotal = 0;
+      c.subs.forEach(function (sub) {
+        var all = sub.items || [];
+        cTotal += all.length;
+        var items = anyFilter ? all.filter(itemPass) : all;
+        if (!items.length) return;
+        cMatch += items.length;
+        if (open) {
+          subBlocks.push(subLabel(sub.label));
+          if (sub.intro) subBlocks.push(introP(sub.intro));
+          items.forEach(function (it) { subBlocks.push(itemCard(it, ch, "mkt")); });
+        }
+      });
+      if (!cTotal) return;                       // category has no stock
+      if (anyFilter && cMatch === 0) return;     // nothing matches the active filter
+      var shown = anyFilter ? cMatch : cTotal;
+      var body = [];
+      if (open && c.intro) body.push(introP(c.intro));
+      body = body.concat(subBlocks);
+      var p = EN.ui.panel(c.title, shown + (shown === 1 ? " LISTING" : " LISTINGS"), body, { corners: true });
+      var head = p.querySelector(".panel-h");
+      if (head) {
+        head.classList.add("clickable");
+        if (!anyFilter) head.onclick = function () { _panelOpen[c.key] = !_panelOpen[c.key]; EN.app.render(); };
+        var h3 = head.querySelector("h3");
+        if (h3) h3.textContent = (open ? "▾ " : "▸ ") + c.title;
+      }
+      if (!open && p.bodyEl) p.bodyEl.style.display = "none";   // tight collapsed panel (no empty body padding)
+      blocks.push(p);
+    });
     return blocks;
   }
 
