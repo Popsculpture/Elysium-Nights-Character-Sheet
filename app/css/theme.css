@@ -22,6 +22,7 @@
   --warn:      #ffb340;
   --danger:    #ff4d5e;
   --wound:     #d62232;   /* blood red — Wounds track (critical flares to --danger) */
+  --shield:    #c084fc;   /* energy-shield violet — Vigor overlay (ultracode purple family) */
 
   --text:  #e9f1fb;
   --text2: #93a8c0;
@@ -302,3 +303,25 @@ select{ appearance:none; background-image:linear-gradient(45deg,transparent 50%,
 #boot.hide{ opacity:0; pointer-events:none; }
 .cursor::after{ content:"_"; animation:blink 1s steps(1) infinite; color:var(--accent); }
 @keyframes blink{ 50%{ opacity:0; } }
+
+/* Vigor energy-shield overlay — amethyst hexagon lattice with an ultracode-style
+   violet sheen sweep + breathing glow (drifts so it reads as live energy) */
+.vigor-shield{
+  background-color: rgba(168,85,247,.20);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='49'%3E%3Cpath d='M13.99 9.25l13 7.5v15l-13 7.5L1 31.75v-15l12.99-7.5zM3 17.9v12.7l10.99 6.34 11-6.35V17.9l-11-6.34L3 17.9zM0 15l12.98-7.5V0h-2v6.35L0 12.69v2.3zm0 18.5L12.98 41v8h-2v-6.85L0 35.81v-2.3zM15 0v7.5L27.99 15H28v-2.31h-.01L17 6.35V0h-2zm0 49v-8l12.99-7.5H28v2.31h-.01L17 42.15V49h-2z' fill='%23c084fc' fill-opacity='0.95' fill-rule='evenodd'/%3E%3C/svg%3E");
+  background-size: 12px 21px;
+  animation: vigorDrift 7s linear infinite, vigorPulse 2.6s ease-in-out infinite;
+}
+.vigor-shield::after{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background: linear-gradient(105deg, transparent 40%, rgba(221,189,255,.6) 49%, rgba(245,238,255,.85) 50%, rgba(221,189,255,.6) 51%, transparent 60%);
+  background-size: 220% 100%; background-repeat:no-repeat;
+  mix-blend-mode: screen;
+  animation: vigorSheen 2.8s linear infinite;
+}
+@keyframes vigorDrift{ to{ background-position: 24px 42px; } }
+@keyframes vigorPulse{
+  0%,100%{ box-shadow:0 0 5px rgba(168,85,247,.55), 0 0 11px rgba(168,85,247,.35); opacity:.86; }
+  50%{ box-shadow:0 0 10px rgba(192,132,252,.85), 0 0 20px rgba(168,85,247,.6); opacity:1; }
+}
+@keyframes vigorSheen{ 0%{ background-position:140% 0; } 100%{ background-position:-40% 0; } }

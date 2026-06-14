@@ -203,11 +203,10 @@ EN.combatView = (function () {
     var gPct = vitMax > 0 ? Math.min(100, vigor / vitMax * 100) : (vigor > 0 ? 100 : 0);
     return el("div", { style: { position: "relative", height: "12px", background: "var(--bg1)", border: "1px solid var(--border)", borderRadius: "6px", overflow: "hidden", margin: "5px 0 10px" } }, [
       el("div", { style: { width: vPct + "%", height: "100%", background: "var(--success)", boxShadow: "0 0 8px var(--success)", transition: "width .25s" } }),
-      vigor > 0 ? el("div", {
+      vigor > 0 ? el("div.vigor-shield", {
         title: "Vigor " + vigor + " — absorbed before Vitality",
         style: { position: "absolute", left: 0, top: 0, width: gPct + "%", height: "100%",
-                 background: "repeating-linear-gradient(45deg, var(--gold) 0 6px, rgba(8,10,14,.35) 6px 10px)",
-                 opacity: ".9", boxShadow: "0 0 8px var(--gold)", transition: "width .25s" }
+                 overflow: "hidden", transition: "width .25s" }
       }) : null
     ]);
   }
@@ -820,15 +819,11 @@ EN.combatView = (function () {
       attrBody = [el("div.attr-grid", null, R.attributes.map(function (a) {
         var sc = d.attributes[a.key].score, mod = d.attributes[a.key].mod;
         var t = attrTier(sc);
-        var pct = Math.max(4, Math.min(100, sc / 20 * 100));
         return el("div.attr-cell", { title: a.blurb + " " + (t.icon || "") + t.label + " — score " + sc + " · modifier " + eng.fmtMod(mod) + "." }, [
           el("div.abbr", { text: a.name.toUpperCase() }),
           el("div.mod", { text: eng.fmtMod(mod) }),
           el("div", { style: { display: "flex", justifyContent: "center", marginTop: "3px" } }, [
             el("span.mono", { style: { fontSize: "11.5px", padding: "1px 12px", borderRadius: "9px", border: "1px solid " + t.color, color: t.color, boxShadow: "0 0 6px " + t.color + "33" }, text: String(sc) })
-          ]),
-          el("div", { style: { height: "3px", margin: "8px 6px 0", borderRadius: "2px", background: "var(--bg1)", overflow: "hidden" } }, [
-            el("div", { style: { width: pct + "%", height: "100%", background: ATTR_GRAD } })
           ])
         ]);
       }))];
@@ -997,12 +992,12 @@ EN.combatView = (function () {
       el("div", { style: { display: "flex", flexDirection: "column", justifyContent: "center" } }, [
         el("div.row.between.wrap", { style: { alignItems: "baseline" } }, [
           el("div.mono", { style: { fontSize: "19px", fontWeight: 700 } }, [
-            s.vigor ? el("span", { title: "Vigor " + s.vigor + " — absorbed before Vitality. Click to clear.", style: { color: "var(--gold)", cursor: "pointer" }, onclick: function () { store.update(function (c) { c.vitality.temp = 0; }); }, text: "(" + s.vigor + ") " }) : null,
+            s.vigor ? el("span", { title: "Vigor " + s.vigor + " — absorbed before Vitality. Click to clear.", style: { color: "var(--shield)", cursor: "pointer" }, onclick: function () { store.update(function (c) { c.vitality.temp = 0; }); }, text: "(" + s.vigor + ") " }) : null,
             el("span", { style: { color: "var(--text1)" }, text: s.vit + "/" + s.vitMax })
           ]),
           popAnchor("vit", "var(--success)", "Vigor, healing & damage",
             [
-              s.vigor ? el("span", { style: { color: "var(--gold)" }, text: "(VIGOR)" }) : null,
+              s.vigor ? el("span", { style: { color: "var(--shield)" }, text: "(VIGOR)" }) : null,
               document.createTextNode("VITALITY")
             ].filter(Boolean),
             [
