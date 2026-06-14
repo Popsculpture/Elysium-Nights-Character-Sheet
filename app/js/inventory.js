@@ -483,7 +483,10 @@ EN.inventoryView = (function () {
           ]);
         }))) : null
     ]);
-    blocks.push(el("div.row.between.wrap", { style: { gap: "10px", marginBottom: "14px", alignItems: "center" } }, [
+    blocks.push(el("div.row.between.wrap", { style: { gap: "10px", marginBottom: "12px", alignItems: "center",
+        position: "sticky", top: "92px", zIndex: 60, padding: "10px 0",
+        background: "linear-gradient(180deg, rgba(10,14,20,.97), rgba(10,14,20,.92))",
+        backdropFilter: "blur(6px)", borderBottom: "1px solid var(--border)" } }, [
       el("div.row.wrap", { style: { gap: "6px" } }, [
         subTab("stash", "▣ STASH"),
         subTab("chrome", "⌖ CHROME"),
