@@ -568,7 +568,7 @@ EN.inventoryView = (function () {
               tierNote: t.tier === "Streetware" && it.street ? "Streetware: " + it.street : t.tier === "Blackware" && it.black ? "Blackware: " + it.black : "" });
           });
         });
-        return { label: z.label, intro: z.blurb, items: listings };
+        return { label: z.label, intro: z.blurb, items: listings, byTier: true };
       });
       cats.push({ key: "cybernetics", title: "Cybernetics", short: "CHROME", intro: CW.intro, subs: cyberSubs });
     }
@@ -631,7 +631,17 @@ EN.inventoryView = (function () {
 
     /* ---- one collapsible panel per major type ---- */
     var subLabel = function (t) { return el("div", { style: { margin: "10px 0 4px", fontFamily: "var(--disp)", fontSize: "11px", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--text2)" }, text: t }); };
+    var collapsibleSubLabel = function (text, key, isOpen, clickable) {
+      return el("div", { style: { margin: "10px 0 4px", fontFamily: "var(--disp)", fontSize: "11px", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--text2)", display: "flex", alignItems: "center", gap: "7px", cursor: clickable ? "pointer" : "default" },
+        onclick: clickable ? function () { _open[key] = !isOpen; EN.app.render(); } : null }, [
+        el("span.collapse-caret", { text: isOpen ? "▾" : "▸" }),
+        el("span", { text: text }),
+        el("span", { style: { flex: 1, height: "1px", background: "linear-gradient(90deg,var(--border),transparent)" } })
+      ]);
+    };
+    var tierLabel = function (t) { var col = { Streetware: "var(--text3)", Brandware: "var(--accent)", Blackware: "var(--danger)", Prototype: "var(--flow)" }[t] || "var(--text3)"; return el("div", { style: { margin: "6px 0 3px 12px", fontFamily: "var(--mono)", fontSize: "10px", letterSpacing: ".14em", textTransform: "uppercase", color: col } }, "› " + t); };
     var introP = function (t) { return el("p.help", { style: { margin: "0 0 6px", fontSize: "11.5px" }, text: t }); };
+    var TIER_ORDER = ["Streetware", "Brandware", "Blackware", "Prototype"];
     cats.forEach(function (c) {
       if (_mktType !== "all" && _mktType !== c.key) return;
       var open = anyFilter ? true : !!_panelOpen[c.key];
@@ -642,9 +652,21 @@ EN.inventoryView = (function () {
         var items = anyFilter ? all.filter(itemPass) : all;
         if (!items.length) return;
         cMatch += items.length;
-        if (open) {
-          subBlocks.push(subLabel(sub.label));
-          if (sub.intro) subBlocks.push(introP(sub.intro));
+        if (!open) return;
+        // every subsection is collapsible (default collapsed); a filter/search forces them open
+        var subKey = "mktz-" + c.key + "-" + sub.label;
+        var subOpen = anyFilter ? true : !!_open[subKey];
+        subBlocks.push(collapsibleSubLabel(sub.label + " · " + items.length, subKey, subOpen, !anyFilter));
+        if (!subOpen) return;
+        if (sub.intro) subBlocks.push(introP(sub.intro));
+        if (sub.byTier) {
+          TIER_ORDER.forEach(function (tr) {
+            var inTier = items.filter(function (it) { return it.tier === tr; });
+            if (!inTier.length) return;
+            subBlocks.push(tierLabel(tr));
+            inTier.forEach(function (it) { subBlocks.push(itemCard(it, ch, "mkt")); });
+          });
+        } else {
           items.forEach(function (it) { subBlocks.push(itemCard(it, ch, "mkt")); });
         }
       });
