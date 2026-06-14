@@ -436,6 +436,24 @@ EN.combatView = (function () {
     function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase(); }
   }
   var COST_COLOR = { Action: "var(--accent)", Swift: "var(--gold)", Impulse: "var(--flow)", Free: "var(--success)", Active: "var(--accent)", Passive: "var(--text3)" };
+  /* class-resource identity colors — the resource bar + count tint to match its fuel */
+  var RESOURCE_COLOR = {
+    Bandwidth: "#00AEEF",   // electric blue — data / signal / system capacity
+    Overdrive: "#FF7A00",   // hazard orange — heat / adrenaline / past safe limits
+    Leverage:  "#D6A21E",   // gold — influence / favors / social capital
+    Execution: "#B11226",   // crimson — sharp / decisive / final
+    Moxie:     "#FF2DAA",   // neon magenta — stylish / defiant / reckless
+    Flow:      "#7B2CFF",   // arc-violet — mystical / unstable / Elysium-coded
+    Triage:    "#2FE6A6"    // medical mint — clinical / restorative / urgent
+  };
+  function resourceColor(name) { return RESOURCE_COLOR[name] || "var(--accent)"; }
+  /* a resource chip like "1 MOXIE" tints to the resource named within it */
+  function chipResourceColor(chip) {
+    var up = String(chip || "").toUpperCase();
+    var keys = Object.keys(RESOURCE_COLOR);
+    for (var i = 0; i < keys.length; i++) { if (up.indexOf(keys[i].toUpperCase()) > -1) return RESOURCE_COLOR[keys[i]]; }
+    return "var(--gold)";
+  }
   function actionEntry(id, name, cost, src, text, limited, chip, uses) {
     var open = !!_open[id];
     var usesRow = null;
@@ -462,7 +480,7 @@ EN.combatView = (function () {
       el("h4", { style: { cursor: "pointer" }, onclick: function () { _open[id] = !open; EN.app.render(); } }, [
         el("span", null, [el("span.collapse-caret", { text: open ? "▾" : "▸" }), document.createTextNode(" " + name),
           el("span.chip", { style: { marginLeft: "8px", fontSize: "9.5px", color: COST_COLOR[cost], borderColor: COST_COLOR[cost] }, text: cost.toUpperCase() }),
-          chip ? el("span.chip", { title: "Spends the class resource", style: { marginLeft: "4px", fontSize: "9.5px", color: "var(--gold)", borderColor: "var(--gold)" }, text: chip }) : null]),
+          chip ? el("span.chip", { title: "Spends the class resource", style: { marginLeft: "4px", fontSize: "9.5px", color: chipResourceColor(chip), borderColor: chipResourceColor(chip) }, text: chip }) : null]),
         el("span.src", { text: src || "" })
       ]),
       open ? el("p", { text: text || "" }) : null,
@@ -1044,14 +1062,14 @@ EN.combatView = (function () {
       var strain = ch.flow.strain || 0;
       trackers.push(EN.ui.panel("Flow Reservoir", "DC " + d.flow.dc + " · " + d.flow.attributeName.toUpperCase(), [
         el("div.row.between.wrap", null, [
-          el("div.mono", { style: { fontSize: "26px", color: "var(--flow)" }, html: fCur + " <span style='font-size:14px;color:var(--text3)'>/ " + d.flow.max + " FP</span>" }),
+          el("div.mono", { style: { fontSize: "26px", color: resourceColor("Flow") }, html: fCur + " <span style='font-size:14px;color:var(--text3)'>/ " + d.flow.max + " FP</span>" }),
           plusMinus(function () { store.update(function (c) { c.flow.current = Math.max(0, fCur - 1); }); },
                     function () { store.update(function (c) { c.flow.current = Math.min(d.flow.max, fCur + 1); }); })
         ]),
-        bar(fCur, d.flow.max, "var(--flow)"),
+        bar(fCur, d.flow.max, resourceColor("Flow")),
         el("div.row.wrap", { style: { gap: "10px", marginTop: "8px", alignItems: "center" } }, [
           el("span.help", { style: { margin: 0 }, text: "Strain:" }),
-          pips(strain, 5, "var(--flow)", function (n) { store.update(function (c) { c.flow.strain = n; }); }),
+          pips(strain, 5, resourceColor("Flow"), function (n) { store.update(function (c) { c.flow.strain = n; }); }),
           strain >= 5 ? el("span", { style: { color: "var(--danger)", fontFamily: "var(--mono)", fontSize: "12px" }, text: "⚡ BREAKFLOW" }) : el("span.help", { style: { margin: 0 }, text: "5 stages → Breakflow" })
         ])
       ]));
@@ -1348,11 +1366,11 @@ EN.combatView = (function () {
       rCur = eng.clamp(rCur, 0, d.resource.max);
       actionKids.push(el("div.section-title", { style: { margin: "12px 0 2px" } }, [document.createTextNode(d.resource.name), el("span.line")]));
       actionKids.push(el("div.row.between.wrap", { style: { alignItems: "center" } }, [
-        el("div.mono", { style: { fontSize: "22px", color: "var(--accent)" }, html: rCur + " <span style='font-size:13px;color:var(--text3)'>/ " + d.resource.max + " · " + d.resource.attributeName + " · refresh on rest</span>" }),
+        el("div.mono", { style: { fontSize: "22px", color: resourceColor(d.resource.name) }, html: rCur + " <span style='font-size:13px;color:var(--text3)'>/ " + d.resource.max + " · " + d.resource.attributeName + " · refresh on rest</span>" }),
         plusMinus(function () { store.update(function (c) { c.resources.current[d.resource.name] = Math.max(0, rCur - 1); }); },
                   function () { store.update(function (c) { c.resources.current[d.resource.name] = Math.min(d.resource.max, rCur + 1); }); })
       ]));
-      actionKids.push(bar(rCur, d.resource.max, "var(--accent)"));
+      actionKids.push(bar(rCur, d.resource.max, resourceColor(d.resource.name)));
     }
     // feature actions, filtered by tab
     var shown = feats.filter(function (f) {
