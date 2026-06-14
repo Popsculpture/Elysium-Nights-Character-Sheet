@@ -13,13 +13,14 @@ EN.cyberware = {
   intro: "Cybernetics are mass-produced inorganic hardware: cut living tissue out, bolt something colder in. You get tactical advantages a flesh body cannot match — and Static, low-grade electromagnetic noise that grows with every piece of chrome.",
 
   /* Interface Zones + approximate silhouette anchor points */
+  // anchors live in the background silhouette's coordinate space (viewBox 825 x 1970)
   zones: {
-    Neural:     { label: "Neural",     blurb: "Brain, eyes, ears, spinal cord",   at: { x: 110, y: 44 } },
-    Core:       { label: "Core",       blurb: "Heart, lungs, organs, torso",       at: { x: 110, y: 168 } },
-    Integument: { label: "Integument", blurb: "Skin & skeletal structure",         at: { x: 110, y: 224 } },
-    Arms:       { label: "Arms",       blurb: "Shoulders, hands, forearms", sided: true, at: { x: 110, y: 188 }, left: { x: 56, y: 196 }, right: { x: 164, y: 196 } },
-    Legs:       { label: "Legs",       blurb: "Hips, thighs, feet",         sided: true, at: { x: 110, y: 360 }, left: { x: 92, y: 372 }, right: { x: 128, y: 372 } },
-    Hardware:   { label: "Hardware",   blurb: "External ports, concealed bays",    at: { x: 146, y: 252 } }
+    Neural:     { label: "Neural",     blurb: "Brain, eyes, ears, spinal cord",   at: { x: 420, y: 135 } },
+    Core:       { label: "Core",       blurb: "Heart, lungs, organs, torso",       at: { x: 420, y: 450 } },
+    Integument: { label: "Integument", blurb: "Skin & skeletal structure",         at: { x: 420, y: 630 } },
+    Arms:       { label: "Arms",       blurb: "Shoulders, hands, forearms", sided: true, at: { x: 420, y: 880 }, left: { x: 232, y: 880 }, right: { x: 608, y: 880 } },
+    Legs:       { label: "Legs",       blurb: "Hips, thighs, feet",         sided: true, at: { x: 420, y: 1240 }, left: { x: 362, y: 1240 }, right: { x: 478, y: 1240 } },
+    Hardware:   { label: "Hardware",   blurb: "External ports, concealed bays",    at: { x: 525, y: 720 } }
   },
 
   /* The Chrome Tax — Static Thresholds. index 0 = safe. Penalty value = index. */

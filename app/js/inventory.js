@@ -271,11 +271,14 @@ EN.inventoryView = (function () {
   function heatColor(spv) { return spv <= 0 ? "#2a3446" : spv <= 2 ? "#00e5ff" : spv <= 4 ? "#ffcf5c" : spv <= 6 ? "#ff6b35" : "#ff4d5e"; }
   var THRESH_COLOR = ["#34465f", "#ffcf5c", "#ff6b35", "#ff6b35", "#ff4d5e", "#ff4d5e"];
 
-  function silhouetteSVG(installed, tax) {
+  // The silhouette SVG sits in the BACKGROUND; the heat markers ride on a
+  // transparent SVG overlay in the FOREGROUND, aligned to the same 854x1972 space.
+  var SIL_W = 825, SIL_H = 1970;
+  function silhouetteBody(installed, tax) {
     var CW = EN.cyberware || { zones: {} };
     var points = {};
     installed.forEach(function (cw) {
-      var z = CW.zones[cw.zone] || CW.zones.Hardware || { at: { x: 146, y: 252 } };
+      var z = CW.zones[cw.zone] || CW.zones.Hardware || { at: { x: SIL_W / 2, y: SIL_H / 2 } };
       var p = (z.sided && cw.side === "L") ? z.left : (z.sided && cw.side === "R") ? z.right : z.at;
       var key = cw.zone + (z.sided && cw.side ? cw.side : "");
       if (!points[key]) points[key] = { x: p.x, y: p.y, sp: 0, zone: cw.zone, side: (z.sided ? cw.side : null), n: 0 };
@@ -283,28 +286,18 @@ EN.inventoryView = (function () {
     });
     var blobs = "", labels = "";
     Object.keys(points).forEach(function (k) {
-      var pt = points[k], r = 14 + Math.min(22, pt.sp * 3), col = heatColor(pt.sp);
-      blobs += '<circle cx="' + pt.x + '" cy="' + pt.y + '" r="' + r + '" fill="' + col + '" opacity="0.4" filter="url(#chsoft)"/>' +
-               '<circle cx="' + pt.x + '" cy="' + pt.y + '" r="3.5" fill="' + col + '"/>';
-      var leftSide = pt.x < 110, lx = leftSide ? 6 : 214, anchor = leftSide ? "start" : "end", tx = leftSide ? 44 : 176;
-      labels += '<line x1="' + pt.x + '" y1="' + pt.y + '" x2="' + tx + '" y2="' + pt.y + '" stroke="' + col + '" stroke-width="1" opacity="0.45"/>' +
-        '<text x="' + lx + '" y="' + (pt.y - 2) + '" fill="' + col + '" font-size="9" font-family="monospace" text-anchor="' + anchor + '">' + pt.zone.toUpperCase() + (pt.side ? " " + pt.side : "") + '</text>' +
-        '<text x="' + lx + '" y="' + (pt.y + 9) + '" fill="#5b7188" font-size="8" font-family="monospace" text-anchor="' + anchor + '">' + pt.sp + ' SP · ' + pt.n + (pt.n === 1 ? " pc" : " pcs") + '</text>';
+      var pt = points[k], r = 50 + Math.min(80, pt.sp * 14), col = heatColor(pt.sp);
+      blobs += '<circle cx="' + pt.x + '" cy="' + pt.y + '" r="' + r + '" fill="' + col + '" opacity="0.38" filter="url(#chsoft)"/>' +
+               '<circle cx="' + pt.x + '" cy="' + pt.y + '" r="11" fill="' + col + '"/>';
+      var leftSide = pt.x < SIL_W / 2, lx = leftSide ? pt.x - 22 : pt.x + 22, anchor = leftSide ? "end" : "start";
+      labels += '<text x="' + lx + '" y="' + (pt.y - 6) + '" fill="' + col + '" font-size="30" font-weight="bold" font-family="monospace" text-anchor="' + anchor + '">' + pt.zone.toUpperCase() + (pt.side ? " " + pt.side : "") + '</text>' +
+        '<text x="' + lx + '" y="' + (pt.y + 28) + '" fill="#9fb3c8" font-size="26" font-family="monospace" text-anchor="' + anchor + '">' + pt.sp + ' SP · ' + pt.n + (pt.n === 1 ? " pc" : " pcs") + '</text>';
     });
     var aura = THRESH_COLOR[Math.min(5, tax.index)] || "#34465f";
-    var bodyShapes =
-      '<path d="M70 90 Q110 76 150 90 L142 210 Q110 224 78 210 Z"/>' +
-      '<path d="M70 94 L50 100 L46 206 L62 207 L77 120 Z"/>' +
-      '<path d="M150 94 L170 100 L174 206 L158 207 L143 120 Z"/>' +
-      '<path d="M80 206 L140 206 L138 236 L82 236 Z"/>' +
-      '<path d="M84 236 L103 236 L99 430 L83 430 Z"/>' +
-      '<path d="M117 236 L136 236 L137 430 L121 430 Z"/>' +
-      '<circle cx="110" cy="40" r="23"/>' +
-      '<rect x="101" y="60" width="18" height="16" rx="6"/>';
-    return '<svg viewBox="0 0 220 470" width="100%" style="max-height:540px;display:block;margin:0 auto" xmlns="http://www.w3.org/2000/svg">' +
-      '<defs><filter id="chsoft" x="-70%" y="-70%" width="240%" height="240%"><feGaussianBlur stdDeviation="6"/></filter></defs>' +
-      '<g fill="#141d2b" stroke="' + aura + '" stroke-width="1.5" style="filter:drop-shadow(0 0 5px ' + aura + ')">' + bodyShapes + '</g>' +
-      blobs + labels + '</svg>';
+    var overlay = '<svg viewBox="0 0 ' + SIL_W + ' ' + SIL_H + '" preserveAspectRatio="xMidYMid meet" style="position:absolute;inset:0;width:100%;height:100%;overflow:visible" xmlns="http://www.w3.org/2000/svg">' +
+      '<defs><filter id="chsoft" x="-70%" y="-70%" width="240%" height="240%"><feGaussianBlur stdDeviation="22"/></filter></defs>' + blobs + labels + '</svg>';
+    var bg = '<img src="img/silhouette.svg" alt="body silhouette" style="width:100%;display:block;filter:drop-shadow(0 0 8px ' + aura + ')" onerror="this.style.visibility=\'hidden\'"/>';
+    return '<div style="position:relative;width:100%;max-width:300px;margin:0 auto">' + bg + overlay + '</div>';
   }
 
   function chromeView(ch) {
@@ -341,7 +334,7 @@ EN.inventoryView = (function () {
       ])
     ]);
     var frameGrid = el("div", { style: { display: "grid", gridTemplateColumns: "minmax(180px, 1fr) minmax(160px, 1fr)", gap: "16px", alignItems: "center" } }, [
-      el("div", { html: silhouetteSVG(installed, tax) }),
+      el("div", { html: silhouetteBody(installed, tax) }),
       taxReadout
     ]);
     var framePanel = EN.ui.panel("Cybernetic Frame", "BIOMETRIC OVERLAY · CHROME TAX", [
