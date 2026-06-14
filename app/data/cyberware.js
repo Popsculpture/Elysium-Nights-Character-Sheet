@@ -18,9 +18,10 @@ EN.cyberware = {
     Neural:     { label: "Neural",     blurb: "Brain, eyes, ears, spinal cord",   at: { x: 420, y: 135 } },
     Core:       { label: "Core",       blurb: "Heart, lungs, organs, torso",       at: { x: 420, y: 450 } },
     Integument: { label: "Integument", blurb: "Skin & skeletal structure",         at: { x: 420, y: 630 } },
-    Arms:       { label: "Arms",       blurb: "Shoulders, hands, forearms", sided: true, at: { x: 420, y: 880 }, left: { x: 232, y: 880 }, right: { x: 608, y: 880 } },
-    Legs:       { label: "Legs",       blurb: "Hips, thighs, feet",         sided: true, at: { x: 420, y: 1240 }, left: { x: 362, y: 1240 }, right: { x: 478, y: 1240 } },
-    Hardware:   { label: "Hardware",   blurb: "External ports, concealed bays",    at: { x: 525, y: 720 } }
+    // front-facing body: the character's LEFT ("L") is on the VIEWER's right, and "R" on the viewer's left
+    Arms:       { label: "Arms",       blurb: "Shoulders, hands, forearms", sided: true, at: { x: 416, y: 708 }, left: { x: 671, y: 709 }, right: { x: 160, y: 708 } },
+    Legs:       { label: "Legs",       blurb: "Hips, thighs, feet",         sided: true, at: { x: 412, y: 1143 }, left: { x: 516, y: 1143 }, right: { x: 309, y: 1143 } },
+    Hardware:   { label: "Hardware",   blurb: "External ports, concealed bays",    at: { x: 418, y: 301 } }
   },
 
   /* The Chrome Tax — Static Thresholds. index 0 = safe. Penalty value = index. */
@@ -179,7 +180,7 @@ EN.cyberware = {
       ] },
 
     /* ---------------- Legs ---------------- */
-    { key: "cyberlegs", short: "Cyberlegs", name: "Cyberlegs", zone: "Legs", enhancement: "+1 Agility", platform: true,
+    { key: "cyberlegs", short: "Cyberlegs", name: "Cyberlegs", zone: "Legs", enhancement: "+1 Agility", platform: true, sided: true,
       desc: "Full prosthetic legs. Most people got them involuntarily and upgraded after. A platform with mod slots, like Cyberarms.",
       effect: "+2 Speed and Edge on Athletics for jumping, climbing, balance. Install compatible mods in its slots without adding their SP.",
       street: "+1 Speed only, 2 slots, no Enhancement; audible servos → Snag on Stealth while moving >half Speed.",

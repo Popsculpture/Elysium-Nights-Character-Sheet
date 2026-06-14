@@ -310,9 +310,17 @@ EN.inventoryView = (function () {
       var pt = points[k], r = 50 + Math.min(80, pt.sp * 14), col = heatColor(pt.sp);
       blobs += '<circle cx="' + pt.x + '" cy="' + pt.y + '" r="' + r + '" fill="' + col + '" opacity="0.38" filter="url(#chsoft)"/>' +
                '<circle cx="' + pt.x + '" cy="' + pt.y + '" r="11" fill="' + col + '"/>';
-      var leftSide = pt.x < SIL_W / 2, lx = leftSide ? pt.x - 22 : pt.x + 22, anchor = leftSide ? "end" : "start";
-      labels += '<text x="' + lx + '" y="' + (pt.y - 6) + '" fill="' + col + '" font-size="30" font-weight="bold" font-family="monospace" text-anchor="' + anchor + '">' + pt.zone.toUpperCase() + (pt.side ? " " + pt.side : "") + '</text>' +
-        '<text x="' + lx + '" y="' + (pt.y + 28) + '" fill="#9fb3c8" font-size="26" font-family="monospace" text-anchor="' + anchor + '">' + pt.sp + ' SP · ' + pt.n + (pt.n === 1 ? " pc" : " pcs") + '</text>';
+      // readable chip: rounded panel behind a zone line + an SP/count line, offset to the nearer side
+      var zoneTxt = pt.zone.toUpperCase() + (pt.side ? " " + pt.side : "");
+      var spTxt = pt.sp + " SP · " + pt.n + (pt.n === 1 ? " pc" : " pcs");
+      var pad = 16, w = Math.max(zoneTxt.length * 18, spTxt.length * 15.5) + pad * 2, h = 66, gap = 22;
+      var leftSide = pt.x < SIL_W / 2;
+      var cx = leftSide ? (pt.x - gap - w) : (pt.x + gap), cy = pt.y - h / 2, tx = cx + pad;
+      var nearX = leftSide ? (cx + w) : cx;
+      labels += '<line x1="' + pt.x + '" y1="' + pt.y + '" x2="' + nearX + '" y2="' + pt.y + '" stroke="' + col + '" stroke-width="2" opacity="0.5"/>' +
+        '<rect x="' + cx + '" y="' + cy + '" width="' + w + '" height="' + h + '" rx="11" fill="rgba(8,12,18,0.84)" stroke="' + col + '" stroke-width="1.5"/>' +
+        '<text x="' + tx + '" y="' + (cy + 28) + '" fill="' + col + '" font-size="30" font-weight="bold" font-family="monospace">' + zoneTxt + '</text>' +
+        '<text x="' + tx + '" y="' + (cy + 55) + '" fill="#9fb3c8" font-size="26" font-family="monospace">' + spTxt + '</text>';
     });
     var aura = THRESH_COLOR[Math.min(5, tax.index)] || "#34465f";
     var overlay = '<svg viewBox="0 0 ' + SIL_W + ' ' + SIL_H + '" preserveAspectRatio="xMidYMid meet" style="position:absolute;inset:0;width:100%;height:100%;overflow:visible" xmlns="http://www.w3.org/2000/svg">' +
@@ -376,8 +384,56 @@ EN.inventoryView = (function () {
       el("div", { html: silhouetteBody(installed, tax) }),
       taxReadout
     ]);
+    /* --- small Attribute Matrix (bar view) + Resilience / Flow impact boxes --- */
+    var ATTR_GRAD = "linear-gradient(90deg, #ff2e88 0%, #8b3dff 55%, #00b3ff 100%)";
+    function attrTier(score) {
+      if (score >= 20) return { label: "Peak", color: "var(--accent)", icon: "○ " };
+      if (score >= 16) return { label: "Exceptional", color: "#7b5cff" };
+      if (score >= 12) return { label: "Capable", color: "#4f9dff" };
+      if (score >= 10) return { label: "Baseline", color: "var(--flow)" };
+      if (score >= 8) return { label: "Weak", color: "#ff4f8a" };
+      return { label: "Impaired", color: "var(--danger)" };
+    }
+    var attrRows = (R.attributes || []).map(function (a) {
+      var sc = d.attributes[a.key].score, mod = d.attributes[a.key].mod, t = attrTier(sc), pct = Math.max(4, Math.min(100, sc / 20 * 100));
+      return el("div", { title: a.name + " " + sc + " · " + eng.fmtMod(mod), style: { display: "grid", gridTemplateColumns: "50px 1fr 30px", columnGap: "8px", alignItems: "center", padding: "2px 0" } }, [
+        el("span", { style: { fontWeight: 600, fontSize: "11px" }, text: a.name }),
+        el("div", null, [
+          el("div", { style: { height: "8px", background: "var(--bg1)", border: "1px solid var(--border)", borderRadius: "4px", overflow: "hidden" } },
+            [el("div", { style: { width: pct + "%", height: "100%", background: ATTR_GRAD } })]),
+          el("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "baseline" } }, [
+            el("span", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".1em", color: t.color }, text: (t.icon || "") + t.label }),
+            el("span.mono", { style: { fontSize: "9px", color: "var(--text3)" }, text: String(sc) })
+          ])
+        ]),
+        el("span.mono", { style: { fontSize: "13px", color: "var(--accent)", textAlign: "right" }, text: eng.fmtMod(mod) })
+      ]);
+    });
+    var attrMatrix = el("div", null, [
+      el("div.mono", { style: { fontSize: "9.5px", letterSpacing: ".12em", color: "var(--text3)", marginBottom: "5px" }, text: "ATTRIBUTE MATRIX" }),
+      el("div", null, attrRows)
+    ]);
+    function impactBox(label, current, total, penalty, col) {
+      return el("div", { style: { padding: "9px 12px", border: "1px solid var(--border)", borderRadius: "4px", background: "var(--bg1)" } }, [
+        el("div.mono", { style: { fontSize: "9.5px", letterSpacing: ".1em", color: "var(--text3)" }, text: label }),
+        el("div", { style: { display: "flex", alignItems: "baseline", gap: "5px", marginTop: "3px" } }, [
+          el("div.mono", { style: { fontSize: "26px", lineHeight: 1, color: penalty > 0 ? col : "var(--text)" }, text: String(current) }),
+          el("div.mono", { style: { fontSize: "13px", color: "var(--text3)" }, text: "/ " + total })
+        ]),
+        el("div.mono", { style: { fontSize: "10px", marginTop: "3px", color: penalty > 0 ? "var(--danger)" : "var(--success)" }, text: penalty > 0 ? "−" + penalty + " · Chrome Tax (T" + tax.index + ")" : "no reduction" })
+      ]);
+    }
+    var resBase = d.resilienceMax + tax.resDiePenalty;
+    var boxes = [impactBox("RESILIENCE DICE", d.resilienceMax, resBase, tax.resDiePenalty, taxColor)];
+    if (d.flow) boxes.push(impactBox("FLOW RESERVOIR (FP)", d.flow.max, d.flow.max + tax.fpPenalty, tax.fpPenalty, taxColor));
+    var statsRow = el("div", { style: { display: "grid", gridTemplateColumns: "minmax(220px, 1.25fr) minmax(170px, 1fr)", gap: "16px", alignItems: "start", marginTop: "12px", paddingTop: "12px", borderTop: "1px solid var(--border)" } }, [
+      attrMatrix,
+      el("div", { style: { display: "flex", flexDirection: "column", gap: "10px" } }, boxes)
+    ]);
+
     var framePanel = EN.ui.panel("Cybernetic Frame", "BIOMETRIC OVERLAY · CHROME TAX", [
       frameGrid,
+      statsRow,
       el("p.help", { style: { margin: "10px 0 0", color: "var(--text4)" }, text: "The gauge is your whole-body Chrome Tax (Total Static → Threshold). Silhouette dots mark where each implant sits; species / gender / lineage variants come later." })
     ], { corners: true });
 
@@ -386,6 +442,7 @@ EN.inventoryView = (function () {
     function cyberRow(cw, idx, where) {
       var sided = !!cw.sided, oid = where + "-cw-" + idx, open = !!_open[oid];
       var chips = [
+        where === "installed" ? tagChip("● INSTALLED", "var(--success)", "Installed — counts toward your Static") : tagChip("STASHED", "var(--text3)", "In your stash — not yet installed"),
         cw.tier ? tagChip(cw.tier, tierChipColor(cw.tier)) : null,
         tagChip((cw.sp || 0) + " SP", heatColor(cw.sp || 0)),
         tagChip("◆ " + cw.zone, "var(--accent)", "Interface Zone"),
@@ -407,7 +464,7 @@ EN.inventoryView = (function () {
           el("button.btn.sm", { title: "Uninstall — returns to your Chrome Stash", style: { color: "var(--danger)", borderColor: "var(--danger)" }, onclick: function (e) { e.stopPropagation(); uninstallToStash(idx); } }, "✕")
         ]);
       }
-      return el("div.feature", { style: { borderLeftColor: heatColor(cw.sp || 0) } }, [
+      return el("div.feature", { style: { borderLeftColor: where === "installed" ? heatColor(cw.sp || 0) : "var(--border2)" } }, [
         el("h4", { style: { cursor: "pointer", flexWrap: "wrap", gap: "6px" }, onclick: function () { _open[oid] = !open; EN.app.render(); } }, [
           el("span", null, [el("span.collapse-caret", { text: open ? "▾" : "▸" }), document.createTextNode(" " + cw.name)].concat(chips)),
           actions
@@ -416,21 +473,20 @@ EN.inventoryView = (function () {
         open && cw.desc ? el("p", { style: { margin: "6px 0 0" }, text: cw.desc }) : null
       ]);
     }
+    // one list: INSTALLED pieces float to the top, auto-sorted by Zone → Tier; STASHED pieces follow
+    var ZONE_ORD = { Neural: 0, Core: 1, Integument: 2, Arms: 3, Legs: 4, Hardware: 5 };
+    var TIER_ORD = { Streetware: 0, Brandware: 1, Blackware: 2, Prototype: 3 };
+    function ord(map, key, fallback) { var v = map[key]; return v === undefined ? fallback : v; }
     var stash = ch.cyberStash || [];
-    var stashCol = el("div", null, [
-      el("div.section-title", { style: { margin: "0 0 8px" } }, [document.createTextNode("Chrome Stash"), el("span.line")]),
-      stash.length
-        ? el("div", null, stash.map(function (cw, i) { return cyberRow(cw, i, "stash"); }))
-        : el("p.help", { style: { margin: 0 }, text: "Empty. Buy chrome from the gray-market Cybernetics panel — it lands here until you install it at a clinic." })
-    ]);
-    var installedCol = el("div", null, [
-      el("div.section-title", { style: { margin: "0 0 8px" } }, [document.createTextNode("Installed Chrome"), el("span.line")]),
-      installed.length
-        ? el("div", null, installed.map(function (cw, i) { return cyberRow(cw, i, "installed"); }))
-        : el("p.help", { style: { margin: 0 }, text: "Nothing installed yet. Install pieces from the Chrome Stash at left." })
-    ]);
-    var stashPanel = EN.ui.panel("Chrome", stash.length + " STASHED · " + installed.length + " INSTALLED · " + tax.total + " SP",
-      [el("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "16px 20px", alignItems: "start" } }, [stashCol, installedCol])], { corners: true });
+    var installedSorted = installed.map(function (cw, i) { return { cw: cw, idx: i }; }).sort(function (a, b) {
+      var dz = ord(ZONE_ORD, a.cw.zone, 9) - ord(ZONE_ORD, b.cw.zone, 9);
+      return dz !== 0 ? dz : (ord(TIER_ORD, a.cw.tier, 8) - ord(TIER_ORD, b.cw.tier, 8));
+    });
+    var chromeRows = installedSorted.map(function (o) { return cyberRow(o.cw, o.idx, "installed"); })
+      .concat(stash.map(function (cw, i) { return cyberRow(cw, i, "stash"); }));
+    if (!chromeRows.length) chromeRows = [el("p.help", { style: { margin: 0 }, text: "Empty. Buy chrome from the gray-market Cybernetics panel — it lands here, then hit INSTALL to bring it online." })];
+    var stashPanel = EN.ui.panel("Chrome", installed.length + " INSTALLED · " + stash.length + " STASHED · " + tax.total + " SP",
+      chromeRows, { corners: true });
 
     /* --- Open Architecture — only for NextGen-lineage characters --- */
     var blocks = [framePanel, stashPanel];
