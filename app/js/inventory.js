@@ -297,7 +297,7 @@ EN.inventoryView = (function () {
     var overlay = '<svg viewBox="0 0 ' + SIL_W + ' ' + SIL_H + '" preserveAspectRatio="xMidYMid meet" style="position:absolute;inset:0;width:100%;height:100%;overflow:visible" xmlns="http://www.w3.org/2000/svg">' +
       '<defs><filter id="chsoft" x="-70%" y="-70%" width="240%" height="240%"><feGaussianBlur stdDeviation="22"/></filter></defs>' + blobs + labels + '</svg>';
     var bg = '<img src="img/silhouette.svg" alt="body silhouette" style="width:100%;display:block;filter:drop-shadow(0 0 8px ' + aura + ')" onerror="this.style.visibility=\'hidden\'"/>';
-    return '<div style="position:relative;width:100%;max-width:300px;margin:0 auto">' + bg + overlay + '</div>';
+    return '<div style="position:relative;width:100%;max-width:225px;margin:0 auto">' + bg + overlay + '</div>';
   }
 
   function chromeView(ch) {
@@ -307,18 +307,35 @@ EN.inventoryView = (function () {
     var tax = d.chromeTax || { total: 0, index: 0, name: "Safe Capacity", resDiePenalty: 0, fpPenalty: 0, effects: [] };
     var taxColor = THRESH_COLOR[Math.min(5, tax.index)] || "var(--text2)";
 
-    /* --- frame panel: silhouette + Static / Chrome-Tax readout --- */
-    var legend = ["1–2", "3–4", "5–6", "7+"].map(function (lbl, i) {
+    /* --- frame panel: silhouette + whole-body Chrome-Tax gauge --- */
+    // vertical gauge: one segment per Static Point, colored across the threshold bands,
+    // with Tn ticks at each threshold boundary. Chrome Tax is a single whole-body total.
+    var GAUGE_MAX = 12;
+    function bandTick(i) { return (i === 3) ? "T1" : (i === 5) ? "T2" : (i === 7) ? "T3" : (i === 9) ? "T4" : (i === 11) ? "T5" : ""; }
+    var gaugeRows = [];
+    for (var gi = GAUGE_MAX; gi >= 1; gi--) {
+      (function (i) {
+        var lit = i <= tax.total, col = heatColor(i), tick = bandTick(i);
+        gaugeRows.push(el("div.row", { style: { gap: "5px", alignItems: "center", height: "11px" } }, [
+          el("div", { title: i + " SP", style: { width: "38px", height: "100%", borderRadius: "2px",
+            background: lit ? col : "rgba(120,140,170,.10)", boxShadow: lit ? "0 0 5px " + col : "none",
+            border: (lit && i === tax.total) ? "1px solid var(--text)" : "none" } }),
+          el("span.mono", { style: { fontSize: "8.5px", width: "16px", color: tick ? (i <= tax.total ? heatColor(i) : "var(--text4)") : "transparent" }, text: tick || "·" })
+        ]));
+      })(gi);
+    }
+    var gauge = el("div", { title: "Chrome Tax — total Static across the whole body, not per zone", style: { display: "flex", flexDirection: "column", gap: "2px" } }, gaugeRows);
+    var scaleLegend = ["1–2", "3–4", "5–6", "7+"].map(function (lbl, i) {
       var col = [heatColor(1), heatColor(3), heatColor(5), heatColor(7)][i];
       return el("span.row", { style: { gap: "4px", alignItems: "center" } }, [
         el("span", { style: { width: "10px", height: "10px", borderRadius: "50%", background: col, display: "inline-block" } }),
         el("span.mono", { style: { fontSize: "9.5px", color: "var(--text3)" }, text: lbl })
       ]);
     });
-    var taxReadout = el("div", { style: { display: "flex", flexDirection: "column", gap: "8px" } }, [
+    var taxText = el("div", { style: { display: "flex", flexDirection: "column", gap: "8px", flex: 1, minWidth: 0 } }, [
       el("div", null, [
-        el("div.mono", { style: { fontSize: "34px", color: taxColor, lineHeight: 1 }, text: String(tax.total) }),
-        el("div.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".12em" }, text: "TOTAL STATIC" })
+        el("div.mono", { style: { fontSize: "40px", color: taxColor, lineHeight: 1 }, text: String(tax.total) }),
+        el("div.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".1em" }, text: "TOTAL STATIC · FULL BODY" })
       ]),
       el("div", null, [
         el("div", { style: { fontFamily: "var(--disp)", fontSize: "14px", letterSpacing: ".06em", color: taxColor }, text: "T" + tax.index + " · " + tax.name }),
@@ -328,18 +345,19 @@ EN.inventoryView = (function () {
       ]),
       (tax.effects && tax.effects.length) ? el("ul", { style: { margin: "2px 0 0", paddingLeft: "16px", color: "var(--text3)", fontSize: "11.5px", lineHeight: 1.5 } },
         tax.effects.map(function (e) { return el("li", { text: e }); })) : null,
-      el("div", { style: { marginTop: "4px" } }, [
-        el("div.mono", { style: { fontSize: "9.5px", color: "var(--text3)", letterSpacing: ".1em", marginBottom: "3px" }, text: "ZONE HEAT (SP)" }),
-        el("div.row.wrap", { style: { gap: "10px" } }, legend)
+      el("div", { style: { marginTop: "2px" } }, [
+        el("div.mono", { style: { fontSize: "9.5px", color: "var(--text3)", letterSpacing: ".1em", marginBottom: "3px" }, text: "STATIC SCALE (SP)" }),
+        el("div.row.wrap", { style: { gap: "10px" } }, scaleLegend)
       ])
     ]);
-    var frameGrid = el("div", { style: { display: "grid", gridTemplateColumns: "minmax(180px, 1fr) minmax(160px, 1fr)", gap: "16px", alignItems: "center" } }, [
+    var taxReadout = el("div", { style: { display: "flex", gap: "16px", alignItems: "flex-start" } }, [gauge, taxText]);
+    var frameGrid = el("div", { style: { display: "grid", gridTemplateColumns: "minmax(150px, 0.85fr) minmax(240px, 1.15fr)", gap: "16px", alignItems: "center" } }, [
       el("div", { html: silhouetteBody(installed, tax) }),
       taxReadout
     ]);
     var framePanel = EN.ui.panel("Cybernetic Frame", "BIOMETRIC OVERLAY · CHROME TAX", [
       frameGrid,
-      el("p.help", { style: { margin: "10px 0 0", color: "var(--text4)" }, text: "Placeholder unisex silhouette — species / gender / lineage variants come later. Markers approximate install location; the heat shows Static concentration per zone." })
+      el("p.help", { style: { margin: "10px 0 0", color: "var(--text4)" }, text: "The gauge is your whole-body Chrome Tax (Total Static → Threshold). Silhouette dots mark where each implant sits; species / gender / lineage variants come later." })
     ], { corners: true });
 
     /* --- installed list, grouped by zone --- */
