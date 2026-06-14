@@ -143,6 +143,23 @@ EN.inventoryView = (function () {
           _mode === "fivefinger" ? it.name + " taken. You were never here." :
           it.name + " acquired for " + fmtG(sp) + ". No receipt. It never happened.");
   }
+  function installCyber(it) {
+    var sp = streetPrice(it);
+    var ch = store.active();
+    if (_mode !== "fivefinger" && (ch.glimmer || 0) < sp) {
+      toast(_mode === "register" ? "Payment not approved. Verify your account standing." :
+            _mode === "surplus" ? "Dues not current. The Guild remembers." :
+            "Account declined — not enough Glimmer for the chrome.");
+      return;
+    }
+    store.update(function (c) {
+      c.glimmer = (c.glimmer || 0) - sp;
+      c.cyberware = c.cyberware || [];
+      c.cyberware.push({ key: it.cyberKey, base: it.base, name: it.name, tier: it.tier, zone: it.zone,
+        sp: it.sp, slots: it.slots || 0, sided: !!it.sided, side: it.sided ? "R" : null, mystech: !!it.mystech, enhancement: it.enhancement });
+    });
+    toast(it.name + " installed. The chrome's in — it's on the Chrome tab now.");
+  }
   function sell(name) {
     if (_mode === "fivefinger") { toast("No provenance, no payout. The fence won't touch it."); return; }
     var it = findItem(name);
@@ -185,6 +202,9 @@ EN.inventoryView = (function () {
         tagChip(it.availability, AVAIL_COLOR[it.availability], "Availability: " + it.availability),
         (it.slot && it.slot !== "None") ? tagChip("◧ " + it.slot, "var(--flow)", "Body Slot: " + it.slot) : null,
         it.counted ? tagChip("Counted", "var(--ember)", "Counted — track every unit from purchase to spend") : null,
+        it.cyber ? tagChip("◆ " + it.zone, "var(--accent)", "Interface Zone: " + it.zone) : null,
+        it.cyber ? tagChip(it.sp + " SP", it.sp >= 3 ? "var(--ember)" : "var(--gold)", "Static Points — adds to your Total Static / Chrome Tax") : null,
+        (it.cyber && it.slots) ? tagChip(it.slots + " slots", "var(--flow)", "Mod slots — compatible mods don't add SP") : null,
         (mode === "mkt" && owned) ? tagChip("Owned ×" + owned.qty, "var(--success)") : null,
         (mode === "stash" && isEquipped(ch, it.name)) ? tagChip("⚔ Equipped", "var(--accent)", "Live in the Attacks list on the Freelancer tab") : null
       ]),
@@ -201,8 +221,8 @@ EN.inventoryView = (function () {
         .concat((it.traits || []).map(traitChip))
         .concat([el("span", { style: { flex: 1 } }),
           mode === "mkt"
-            ? el("button.btn.sm" + (afford ? ".primary" : ""), { disabled: !afford, title: priceTitle(it), onclick: function () { buy(it); } },
-                _mode === "fivefinger" ? "TAKE" : (afford ? "BUY · " + fmtG(sp) : "CAN'T AFFORD"))
+            ? el("button.btn.sm" + (afford ? ".primary" : ""), { disabled: !afford, title: priceTitle(it), onclick: function () { it.cyber ? installCyber(it) : buy(it); } },
+                _mode === "fivefinger" ? (it.cyber ? "⧉ INSTALL" : "TAKE") : (afford ? (it.cyber ? "⧉ INSTALL · " + fmtG(sp) : "BUY · " + fmtG(sp)) : "CAN'T AFFORD"))
             : el("div.row", { style: { gap: "6px" } },
                 (isWeapon(it) ? [
                   isEquipped(ch, it.name)
@@ -223,6 +243,8 @@ EN.inventoryView = (function () {
       open && (it.category || it.skill) ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: (it.category ? "Tool Category: " + it.category : "") + (it.category && it.skill ? " · " : "") + (it.skill ? "Governing Skill: " + it.skill : "") }) : null,
       open && it.feeds ? el("p.help", { style: { margin: "4px 0 0", color: "var(--gold)" }, text: "Feeds: " + it.feeds }) : null,
       open && it.effect ? el("p.help", { style: { margin: "4px 0 0", color: "var(--accent)" }, text: (it.signature ? "" : "Effect: ") + it.effect }) : null,
+      open && it.cyber ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: "Install: " + it.zone + " zone · " + it.sp + " SP" + (it.slots ? " · " + it.slots + " mod slots" : "") + " · Enhancement: " + it.enhancement }) : null,
+      open && it.cyber && it.tierNote ? el("p.help", { style: { margin: "4px 0 0" }, text: it.tierNote }) : null,
       open && it.basic ? el("p.help", { style: { margin: "4px 0 0" }, html: "<b style='color:var(--text2)'>Basic Use:</b> " + it.basic }) : null,
       open && it.proficient ? el("p.help", { style: { margin: "4px 0 0" }, html: "<b style='color:var(--gold)'>Proficient Use:</b> " + it.proficient }) : null,
       open && it.range ? el("p.help", { style: { margin: "4px 0 0" }, text: "Range: " + it.range + (it.ammoUnit ? " · Ammo: " + it.ammo + " " + it.ammoUnit : "") }) : null
@@ -245,23 +267,159 @@ EN.inventoryView = (function () {
       [el("p.help", { style: { margin: 0 }, text: "Empty. The Undercut is open — it's always open." })], { corners: true })];
   }
 
+  /* ---- Chrome tab: body silhouette + Chrome-Tax heat map, installed list, Open Architecture ---- */
+  function heatColor(spv) { return spv <= 0 ? "#2a3446" : spv <= 2 ? "#00e5ff" : spv <= 4 ? "#ffcf5c" : spv <= 6 ? "#ff6b35" : "#ff4d5e"; }
+  var THRESH_COLOR = ["#34465f", "#ffcf5c", "#ff6b35", "#ff6b35", "#ff4d5e", "#ff4d5e"];
+
+  function silhouetteSVG(installed, tax) {
+    var CW = EN.cyberware || { zones: {} };
+    var points = {};
+    installed.forEach(function (cw) {
+      var z = CW.zones[cw.zone] || CW.zones.Hardware || { at: { x: 146, y: 252 } };
+      var p = (z.sided && cw.side === "L") ? z.left : (z.sided && cw.side === "R") ? z.right : z.at;
+      var key = cw.zone + (z.sided && cw.side ? cw.side : "");
+      if (!points[key]) points[key] = { x: p.x, y: p.y, sp: 0, zone: cw.zone, side: (z.sided ? cw.side : null), n: 0 };
+      points[key].sp += (cw.sp || 0); points[key].n += 1;
+    });
+    var blobs = "", labels = "";
+    Object.keys(points).forEach(function (k) {
+      var pt = points[k], r = 14 + Math.min(22, pt.sp * 3), col = heatColor(pt.sp);
+      blobs += '<circle cx="' + pt.x + '" cy="' + pt.y + '" r="' + r + '" fill="' + col + '" opacity="0.4" filter="url(#chsoft)"/>' +
+               '<circle cx="' + pt.x + '" cy="' + pt.y + '" r="3.5" fill="' + col + '"/>';
+      var leftSide = pt.x < 110, lx = leftSide ? 6 : 214, anchor = leftSide ? "start" : "end", tx = leftSide ? 44 : 176;
+      labels += '<line x1="' + pt.x + '" y1="' + pt.y + '" x2="' + tx + '" y2="' + pt.y + '" stroke="' + col + '" stroke-width="1" opacity="0.45"/>' +
+        '<text x="' + lx + '" y="' + (pt.y - 2) + '" fill="' + col + '" font-size="9" font-family="monospace" text-anchor="' + anchor + '">' + pt.zone.toUpperCase() + (pt.side ? " " + pt.side : "") + '</text>' +
+        '<text x="' + lx + '" y="' + (pt.y + 9) + '" fill="#5b7188" font-size="8" font-family="monospace" text-anchor="' + anchor + '">' + pt.sp + ' SP · ' + pt.n + (pt.n === 1 ? " pc" : " pcs") + '</text>';
+    });
+    var aura = THRESH_COLOR[Math.min(5, tax.index)] || "#34465f";
+    var bodyShapes =
+      '<path d="M70 90 Q110 76 150 90 L142 210 Q110 224 78 210 Z"/>' +
+      '<path d="M70 94 L50 100 L46 206 L62 207 L77 120 Z"/>' +
+      '<path d="M150 94 L170 100 L174 206 L158 207 L143 120 Z"/>' +
+      '<path d="M80 206 L140 206 L138 236 L82 236 Z"/>' +
+      '<path d="M84 236 L103 236 L99 430 L83 430 Z"/>' +
+      '<path d="M117 236 L136 236 L137 430 L121 430 Z"/>' +
+      '<circle cx="110" cy="40" r="23"/>' +
+      '<rect x="101" y="60" width="18" height="16" rx="6"/>';
+    return '<svg viewBox="0 0 220 470" width="100%" style="max-height:540px;display:block;margin:0 auto" xmlns="http://www.w3.org/2000/svg">' +
+      '<defs><filter id="chsoft" x="-70%" y="-70%" width="240%" height="240%"><feGaussianBlur stdDeviation="6"/></filter></defs>' +
+      '<g fill="#141d2b" stroke="' + aura + '" stroke-width="1.5" style="filter:drop-shadow(0 0 5px ' + aura + ')">' + bodyShapes + '</g>' +
+      blobs + labels + '</svg>';
+  }
+
   function chromeView(ch) {
-    var nameIn = el("input", { type: "text", placeholder: "chrome designation…", style: { maxWidth: "240px" } });
-    var cards = (ch.cyberware || []).map(function (name) {
-      return el("div.feature", { style: { borderLeftColor: "var(--accent)" } }, [
-        el("h4", null, [
-          el("span", { text: name }),
-          el("button.btn.sm", { title: "Uninstall (surgery not included)", onclick: function () { store.update(function (c) { c.cyberware = (c.cyberware || []).filter(function (n) { return n !== name; }); }); } }, "✕ UNINSTALL")
-        ])
+    var eng = EN.engine, R = EN.rules, CW = EN.cyberware || { zones: {}, items: [] };
+    var d = eng.derive(ch);
+    var installed = eng.installedCyberware(ch);
+    var tax = d.chromeTax || { total: 0, index: 0, name: "Safe Capacity", resDiePenalty: 0, fpPenalty: 0, effects: [] };
+    var taxColor = THRESH_COLOR[Math.min(5, tax.index)] || "var(--text2)";
+
+    /* --- frame panel: silhouette + Static / Chrome-Tax readout --- */
+    var legend = ["1–2", "3–4", "5–6", "7+"].map(function (lbl, i) {
+      var col = [heatColor(1), heatColor(3), heatColor(5), heatColor(7)][i];
+      return el("span.row", { style: { gap: "4px", alignItems: "center" } }, [
+        el("span", { style: { width: "10px", height: "10px", borderRadius: "50%", background: col, display: "inline-block" } }),
+        el("span.mono", { style: { fontSize: "9.5px", color: "var(--text3)" }, text: lbl })
       ]);
     });
-    return [EN.ui.panel("Chrome", (ch.cyberware || []).length + " INSTALLED", (cards.length ? cards :
-      [el("p.help", { style: { margin: 0 }, text: "No augments on record. Clean body, short résumé." })]).concat([
-      el("p.help", { style: { margin: "10px 0 0" }, text: "Open Architecture combos are detected automatically on the #PRINT tab. The chrome catalog and ripperdoc services come to the Undercut later." })
-    ]), { corners: true, headerRight: [nameIn, el("button.btn.sm.primary", { onclick: function () {
-        var v = nameIn.value.trim(); if (!v) return;
-        store.update(function (c) { c.cyberware = c.cyberware || []; if (c.cyberware.indexOf(v) === -1) c.cyberware.push(v); });
-      } }, "+ INSTALL")] })];
+    var taxReadout = el("div", { style: { display: "flex", flexDirection: "column", gap: "8px" } }, [
+      el("div", null, [
+        el("div.mono", { style: { fontSize: "34px", color: taxColor, lineHeight: 1 }, text: String(tax.total) }),
+        el("div.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".12em" }, text: "TOTAL STATIC" })
+      ]),
+      el("div", null, [
+        el("div", { style: { fontFamily: "var(--disp)", fontSize: "14px", letterSpacing: ".06em", color: taxColor }, text: "T" + tax.index + " · " + tax.name }),
+        tax.index > 0
+          ? el("div.mono", { style: { fontSize: "11px", color: "var(--text2)", marginTop: "2px" }, text: "−" + tax.resDiePenalty + (tax.resDiePenalty === 1 ? " Resilience Die" : " Resilience Dice") + " · −" + tax.fpPenalty + " max FP" })
+          : el("div.mono", { style: { fontSize: "11px", color: "var(--success)", marginTop: "2px" }, text: "Safe capacity — no penalty" })
+      ]),
+      (tax.effects && tax.effects.length) ? el("ul", { style: { margin: "2px 0 0", paddingLeft: "16px", color: "var(--text3)", fontSize: "11.5px", lineHeight: 1.5 } },
+        tax.effects.map(function (e) { return el("li", { text: e }); })) : null,
+      el("div", { style: { marginTop: "4px" } }, [
+        el("div.mono", { style: { fontSize: "9.5px", color: "var(--text3)", letterSpacing: ".1em", marginBottom: "3px" }, text: "ZONE HEAT (SP)" }),
+        el("div.row.wrap", { style: { gap: "10px" } }, legend)
+      ])
+    ]);
+    var frameGrid = el("div", { style: { display: "grid", gridTemplateColumns: "minmax(180px, 1fr) minmax(160px, 1fr)", gap: "16px", alignItems: "center" } }, [
+      el("div", { html: silhouetteSVG(installed, tax) }),
+      taxReadout
+    ]);
+    var framePanel = EN.ui.panel("Cybernetic Frame", "BIOMETRIC OVERLAY · CHROME TAX", [
+      frameGrid,
+      el("p.help", { style: { margin: "10px 0 0", color: "var(--text4)" }, text: "Placeholder unisex silhouette — species / gender / lineage variants come later. Markers approximate install location; the heat shows Static concentration per zone." })
+    ], { corners: true });
+
+    /* --- installed list, grouped by zone --- */
+    var nameIn = el("input", { type: "text", placeholder: "homebrew chrome…", style: { maxWidth: "200px" } });
+    var manualAdd = [nameIn, el("button.btn.sm.primary", { title: "Add a freeform implant (0 SP)", onclick: function () {
+      var v = nameIn.value.trim(); if (!v) return;
+      store.update(function (c) { c.cyberware = c.cyberware || []; c.cyberware.push({ base: v, name: v, tier: null, zone: "Hardware", sp: 0, side: null, custom: true }); });
+    } }, "+ ADD")];
+    var rows = [];
+    ["Neural", "Core", "Integument", "Arms", "Legs", "Hardware"].forEach(function (zk) {
+      var inZone = installed.map(function (cw, i) { return { cw: cw, idx: i }; }).filter(function (o) { return o.cw.zone === zk; });
+      if (!inZone.length) return;
+      var z = CW.zones[zk] || {};
+      rows.push(el("div", { style: { margin: "10px 0 4px", fontFamily: "var(--disp)", fontSize: "11px", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--text2)" }, text: (z.label || zk) + " · " + inZone.reduce(function (n, o) { return n + (o.cw.sp || 0); }, 0) + " SP" }));
+      inZone.forEach(function (o) {
+        var cw = o.cw, idx = o.idx, sided = !!cw.sided, oid = "cw-" + idx, open = !!_open[oid];
+        var sideToggle = sided ? el("div.row", { style: { gap: "3px" } }, ["L", "R"].map(function (s) {
+          return el("button.btn.sm" + (cw.side === s ? ".primary" : ""), { title: "Install side", style: { padding: "1px 8px", minWidth: "26px" },
+            onclick: function () { store.update(function (c) { if (c.cyberware[idx]) c.cyberware[idx].side = s; }); } }, s);
+        })) : null;
+        rows.push(el("div.feature", { style: { borderLeftColor: heatColor(cw.sp || 0) } }, [
+          el("h4", { style: { cursor: "pointer", flexWrap: "wrap", gap: "6px" }, onclick: function () { _open[oid] = !open; EN.app.render(); } }, [
+            el("span", null, [el("span.collapse-caret", { text: open ? "▾" : "▸" }), document.createTextNode(" " + cw.name),
+              cw.tier ? tagChip(cw.tier, cw.tier === "Blackware" ? "var(--danger)" : cw.tier === "Brandware" ? "var(--accent)" : cw.tier === "Prototype" ? "var(--flow)" : "var(--text3)") : null,
+              tagChip((cw.sp || 0) + " SP", heatColor(cw.sp || 0)),
+              (cw.enhancement && cw.enhancement !== "None") ? tagChip("✦ " + cw.enhancement, "var(--gold)", "Enhancement Bonus (display only for now)") : null]),
+            el("div.row", { style: { gap: "8px", alignItems: "center" } }, [
+              sideToggle,
+              el("button.btn.sm", { title: "Uninstall (surgery not included)", style: { color: "var(--danger)", borderColor: "var(--danger)" },
+                onclick: function (e) { e.stopPropagation(); store.update(function (c) { c.cyberware.splice(idx, 1); }); toast(cw.name + " uninstalled."); } }, "✕")
+            ])
+          ]),
+          open && cw.effect ? el("p.help", { style: { margin: "4px 0 0", color: "var(--accent)" }, text: cw.effect }) : null,
+          open && cw.desc ? el("p", { style: { margin: "6px 0 0" }, text: cw.desc }) : null
+        ]));
+      });
+    });
+    if (!installed.length) rows.push(el("p.help", { style: { margin: 0 }, text: "No augments on record. Clean body, short résumé. Install chrome from the gray-market Cybernetics panel." }));
+    var listPanel = EN.ui.panel("Installed Chrome", installed.length + " PIECE" + (installed.length === 1 ? "" : "S") + " · " + tax.total + " SP", rows, { corners: true, headerRight: manualAdd });
+
+    /* --- Open Architecture --- */
+    var blocks = [framePanel, listPanel];
+    var oaPanel = chromeOAPanel(ch);
+    if (oaPanel) blocks.push(oaPanel);
+    return blocks;
+  }
+
+  function chromeOAPanel(ch) {
+    var eng = EN.engine, R = EN.rules, oa = R && R.openArchitecture;
+    if (!oa) return null;
+    var owned = eng.activeLineageFeatures(ch);
+    var hasOA = owned.indexOf("Open Architecture") !== -1;
+    var bases = eng.installedCyberBases(ch);
+    function comboHasChrome(cyberStr) { var opts = cyberStr.split(/\s+or\s+/); return bases.some(function (b) { return b === cyberStr || opts.indexOf(b) !== -1; }); }
+    var rows = oa.combos.map(function (combo) {
+      var hasFeat = owned.indexOf(combo.feature) !== -1, hasChrome = comboHasChrome(combo.cyberware), integrated = hasOA && hasFeat && hasChrome;
+      var oid = "coa-" + combo.key, open = !!_open[oid];
+      return el("div", { style: { borderBottom: "1px solid rgba(35,48,68,.5)", borderLeft: integrated ? "2px solid var(--gold)" : "2px solid transparent" } }, [
+        el("div.row.wrap", { style: { gap: "8px", alignItems: "center", cursor: "pointer", padding: "7px 4px" }, onclick: function () { _open[oid] = !open; EN.app.render(); } }, [
+          el("span.collapse-caret", { text: open ? "▾" : "▸" }),
+          el("span", { style: { flex: 1, minWidth: "150px", fontWeight: 600, color: integrated ? "var(--gold)" : "var(--text)" }, text: combo.feature + " + " + combo.cyberware }),
+          tagChip(hasFeat ? "FEATURE ✓" : "NO FEATURE", hasFeat ? "var(--success)" : "var(--text3)"),
+          tagChip(hasChrome ? "CHROME ✓" : "NO CHROME", hasChrome ? "var(--accent)" : "var(--text3)"),
+          integrated ? tagChip("● INTEGRATED", "var(--gold)") : null
+        ]),
+        open ? el("p", { style: { padding: "0 4px 9px 23px", margin: 0, color: "var(--text2)", fontSize: "13px", lineHeight: 1.45 }, text: combo.text }) : null
+      ]);
+    });
+    return EN.ui.panel("Open Architecture", hasOA ? "NEXTGEN INTEGRATION · ACTIVE" : "REQUIRES THE OPEN ARCHITECTURE EVOLUTION", [
+      el("p.help", { style: { margin: "0 0 6px" }, text: oa.rule || oa.intro }),
+      !hasOA ? el("p.help", { style: { margin: "0 0 8px", color: "var(--warn)" }, text: "You don't have the Open Architecture lineage evolution yet — pairings stay inert until you do." }) : null,
+      el("div", null, rows)
+    ], { corners: true });
   }
 
   function marketView(ch) {
@@ -346,6 +504,29 @@ EN.inventoryView = (function () {
             return { label: grp.name, intro: grp.intro, items: (T.items || []).filter(function (i) { return i.bucket === bucket.key && i.group === grp.name; }) };
           }) });
       });
+    }
+    /* Cybernetics — tier variants per piece, grouped by Interface Zone. Installed
+       chrome is hidden here (it moves to the Chrome tab). Buying installs it. */
+    var CW = EN.cyberware;
+    if (CW && CW.items) {
+      var TIER_AVAIL = { Streetware: "Common", Brandware: "Uncommon", Blackware: "Rare", Prototype: "Rare" };
+      var installedNames = (ch.cyberware || []).map(function (c) { return c.name || c; });
+      var cyberSubs = ["Neural", "Core", "Integument", "Arms", "Legs", "Hardware"].map(function (zk) {
+        var z = CW.zones[zk], listings = [];
+        CW.items.filter(function (it) { return it.zone === zk; }).forEach(function (it) {
+          (it.tiers || []).forEach(function (t) {
+            var nm = t.tier === "Prototype" ? it.short + " (Prototype)" : t.tier + " " + it.short;
+            if (installedNames.indexOf(nm) !== -1) return;   // already installed → lives in Chrome tab
+            listings.push({ name: nm, cyber: true, cyberKey: it.key, base: it.name, tier: t.tier,
+              zone: it.zone, sp: t.sp, slots: t.slots || 0, sided: !!it.sided, mystech: !!it.mystech,
+              enhancement: it.enhancement, price: t.price, legality: t.legality, availability: TIER_AVAIL[t.tier] || "Uncommon",
+              desc: it.desc, effect: it.effect,
+              tierNote: t.tier === "Streetware" && it.street ? "Streetware: " + it.street : t.tier === "Blackware" && it.black ? "Blackware: " + it.black : "" });
+          });
+        });
+        return { label: z.label, intro: z.blurb, items: listings };
+      });
+      cats.push({ key: "cybernetics", title: "Cybernetics", short: "CHROME", intro: CW.intro, subs: cyberSubs });
     }
 
     /* ---- filter predicate ---- */

@@ -101,6 +101,15 @@ EN.store = (function () {
     if (!ch.featureUses) ch.featureUses = {};
     if (!ch.equippedWeapons) ch.equippedWeapons = [];
     if (!ch.weaponAmmo) ch.weaponAmmo = {};
+    // cyberware: legacy string entries → objects. sp:0 so old manual marks don't
+    // retroactively spike Static; chrome bought from the market carries real SP.
+    if (Array.isArray(ch.cyberware)) {
+      ch.cyberware = ch.cyberware.map(function (cw) {
+        if (typeof cw !== "string") return cw;
+        var def = (EN.cyberware && EN.cyberware.items || []).find(function (i) { return i.name === cw || i.short === cw; });
+        return { base: cw, name: cw, tier: null, zone: (def && def.zone) || "Hardware", sp: 0, side: null, custom: true };
+      });
+    }
     // drop a stored subclass that no longer exists (e.g. after a class rework) so it re-surfaces as a pick
     if (ch.class && ch.subclass && EN.classes && EN.classes[ch.class]) {
       var subs = EN.classes[ch.class].subclasses || [];

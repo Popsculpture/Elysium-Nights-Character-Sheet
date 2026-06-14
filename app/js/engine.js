@@ -385,6 +385,23 @@ EN.engine = (function () {
     var critThreshold = Math.floor(woundsMax / 2);
     var resilienceMax = level;   // Resilience Dice count = character level
 
+    /* Chrome Tax — Total Static from installed cyberware drives a Static Threshold,
+       cutting max Resilience Dice and (for Shapers) max Reservoir by the threshold index. */
+    var staticTotal = 0;
+    (ch.cyberware || []).forEach(function (cw) { if (cw && typeof cw === "object" && typeof cw.sp === "number") staticTotal += cw.sp; });
+    var CT = (EN.cyberware && EN.cyberware.thresholds) || [];
+    var ctTier = null;
+    for (var ci = 0; ci < CT.length; ci++) { if (staticTotal >= CT[ci].min && staticTotal <= CT[ci].max) { ctTier = CT[ci]; break; } }
+    var ctIndex = ctTier ? ctTier.index : 0;
+    var chromeTax = {
+      total: staticTotal, index: ctIndex,
+      name: ctTier ? ctTier.name : "Safe Capacity",
+      resDiePenalty: ctIndex, fpPenalty: ctIndex,
+      effects: ctTier ? ctTier.effects : [],
+      hardwired: ctIndex >= 2, noWoundRecovery: ctIndex >= 4, deadBattery: ctIndex >= 5
+    };
+    resilienceMax = Math.max(0, resilienceMax - chromeTax.resDiePenalty);
+
     /* saving throws — each class has a Saving Throw Focus (two attributes).
        A focused save adds Caliber on top of the attribute modifier
        (d20 + mod + Caliber). Unlike Skill Focus, no proficiency is required. */
@@ -442,7 +459,7 @@ EN.engine = (function () {
       var fMod = attributes[fAttr].mod;
       flow = {
         isShaper: true, attribute: fAttr, attributeName: flowAttrName,
-        max: Math.max(0, cal * 3 + fMod), dc: 8 + fMod + cal,
+        max: Math.max(0, cal * 3 + fMod - chromeTax.fpPenalty), dc: 8 + fMod + cal,
         attack: fMod, note: "Overdraw builds Strain when FP hits 0."
       };
     }
@@ -491,6 +508,7 @@ EN.engine = (function () {
       attributes: attributes,
       defense: defense, defenseAttr: defenseAttr, speed: speed,
       vitalityMax: vitalityMax, resilienceDie: resilienceDie, resilienceMax: resilienceMax,
+      chromeTax: chromeTax,
       woundsMax: woundsMax, critThreshold: critThreshold,
       saves: saves, skills: skills,
       resource: resource, flow: flow,
@@ -504,8 +522,19 @@ EN.engine = (function () {
     };
   }
 
+  // installed cyberware, normalized to objects {base, name, tier, zone, sp, side, ...};
+  // tolerates legacy string entries from older saves.
+  function installedCyberware(ch) {
+    return ((ch && ch.cyberware) || []).map(function (cw) {
+      if (typeof cw === "string") return { base: cw, name: cw, tier: null, zone: "Hardware", sp: 0, side: null, custom: true };
+      return cw;
+    });
+  }
+  function installedCyberBases(ch) { return installedCyberware(ch).map(function (cw) { return cw.base || cw.name; }); }
+
   return {
     derive: derive, mod: mod, caliber: caliber, fmtMod: fmtMod, clamp: clamp,
+    installedCyberware: installedCyberware, installedCyberBases: installedCyberBases,
     getClass: getClass, getSpecies: getSpecies, getLineage: getLineage,
     getBackground: getBackground, getSubclass: getSubclass,
     pointBuySpent: pointBuySpent, trainingPointsTotal: trainingPointsTotal,

@@ -1283,20 +1283,26 @@ EN.builder = (function () {
   function toggleChrome(ch, cyberName) {
     store.update(function (c) {
       c.cyberware = c.cyberware || [];
-      var i = c.cyberware.indexOf(cyberName);
-      if (i === -1) c.cyberware.push(cyberName); else c.cyberware.splice(i, 1);
+      var i = c.cyberware.findIndex(function (cw) { return (cw && (cw.base || cw.name)) === cyberName || cw === cyberName; });
+      if (i === -1) c.cyberware.push({ base: cyberName, name: cyberName, tier: null, zone: "Hardware", sp: 0, side: null, custom: true });
+      else c.cyberware.splice(i, 1);
     });
+  }
+  // a combo's cyberware string may be "X or Y"; match any installed base against the options
+  function comboHasChrome(bases, cyberStr) {
+    var opts = cyberStr.split(/\s+or\s+/);
+    return bases.some(function (b) { return b === cyberStr || opts.indexOf(b) !== -1; });
   }
   function openArchitectureCard(ch, lin) {
     var oa = R.openArchitecture;
     var owned = eng.activeLineageFeatures(ch);
     var hasOA = owned.indexOf("Open Architecture") !== -1;
-    var chrome = ch.cyberware || [];
+    var bases = eng.installedCyberBases(ch);
     var rows = oa.combos.map(function (combo) {
       var id = "oa-" + combo.key;
       var collapsed = isCollapsed(id);
       var hasFeat = owned.indexOf(combo.feature) !== -1;
-      var hasChrome = chrome.indexOf(combo.cyberware) !== -1;
+      var hasChrome = comboHasChrome(bases, combo.cyberware);
       var integrated = hasOA && hasFeat && hasChrome;
       var head = el("div.row.wrap", { style: { gap: "8px", alignItems: "center", cursor: "pointer", padding: "7px 4px" },
         onclick: function () { toggleCollapse(id); } }, [
