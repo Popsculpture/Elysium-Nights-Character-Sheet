@@ -33,9 +33,10 @@ EN.app = (function () {
   function render() {
     // re-renders empty the view, which momentarily collapses the page and lets
     // the browser clamp scroll to the top — capture and restore the position.
-    // Inner scrollable wells (.feature-scroll) are rebuilt too, so save theirs as well.
+    // Inner scrollable wells (.feature-scroll, .actions-scroll) are rebuilt too, so save theirs as well.
     var sy = window.scrollY, sx = window.scrollX;
-    var wells = Array.prototype.map.call(document.querySelectorAll("#view .feature-scroll"), function (w) { return w.scrollTop; });
+    var WELLS = "#view .feature-scroll, #view .actions-scroll";
+    var wells = Array.prototype.map.call(document.querySelectorAll(WELLS), function (w) { return w.scrollTop; });
     renderTabs();
     var view = document.getElementById("view");
     EN.ui.clear(view);
@@ -49,7 +50,7 @@ EN.app = (function () {
     }
     if (_lastTab === activeTab) {                          // same view → stay put
       window.scrollTo(sx, sy);
-      Array.prototype.forEach.call(document.querySelectorAll("#view .feature-scroll"), function (w, i) {
+      Array.prototype.forEach.call(document.querySelectorAll(WELLS), function (w, i) {
         if (wells[i]) w.scrollTop = wells[i];
       });
     } else window.scrollTo(0, 0);                          // tab switch → start at top

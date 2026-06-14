@@ -886,9 +886,18 @@ EN.combatView = (function () {
       if (!V) return null;
       var profSkills = d.skills.filter(function (s) { return s.tier !== "untrained"; });
       var attrName = function (k) { var a = R.attributes.find(function (x) { return x.key === k; }); return a ? a.name : k; };
+      var infoOpen = !!_open["versatile-info"];
       var kids = [
-        el("div.section-title", { style: { margin: "12px 0 2px" } }, [document.createTextNode("Versatile Skills"), el("span.line")]),
-        el("p.help", { style: { margin: "0 0 2px" }, html: "<b>Insight · Performance · Intimidation</b> — " + V.note })
+        el("div.section-title.clickable", {
+          style: { margin: "12px 0 2px" },
+          title: infoOpen ? "Hide explanation" : "Tap for an explanation of Versatile Skills",
+          onclick: function () { _open["versatile-info"] = !infoOpen; EN.app.render(); }
+        }, [
+          document.createTextNode("Versatile Skills"),
+          el("span.line"),
+          el("span.collapse-caret", { style: { marginLeft: "4px" }, text: infoOpen ? "▾" : "▸" })
+        ]),
+        infoOpen ? el("p.help", { style: { margin: "0 0 4px" }, html: "<b>Insight · Performance · Intimidation</b> — " + V.note }) : null
       ];
       V.types.forEach(function (type) {
         var slot = (ch.versatile && ch.versatile[type]) || { attr: "", skill: "" };
@@ -1393,8 +1402,8 @@ EN.combatView = (function () {
           title: "Passive abilities — always-on benefits",
           onclick: function () { _featTab = "abilities"; EN.app.render(); } }, "ABILITIES (" + passiveFeats.length + ")")
       ]));
-      // both lists grow with every level — keep them in the scrollable well
-      actionKids.push(el("div.feature-scroll", null, featList.length
+      // both lists grow with every level — the whole panel body below the filter row is the scroll well
+      actionKids.push(el("div", null, featList.length
         ? featList.map(function (f) {
             var uses = f.uses ? {
               max: f.uses.max, recharge: f.uses.recharge,
@@ -1413,7 +1422,14 @@ EN.combatView = (function () {
     } else if (_tab !== "ALL" && _tab !== "ACTION") {
       actionKids.push(el("p.help", { text: "Nothing in this category." }));
     }
-    sectionEls.actions = EN.ui.panel("Actions", _tab, actionKids, { corners: true });
+    // pin the filter row; everything below it scrolls together as one well that fills the panel
+    // (the scroller is absolutely positioned inside .actions-frame, so a long list scrolls
+    //  instead of stretching the panel — yet the frame still fills down to the bottom border)
+    sectionEls.actions = EN.ui.panel("Actions", _tab,
+      [actionKids[0], el("div.actions-frame", null, [el("div.actions-scroll", null, actionKids.slice(1))])],
+      { corners: true });
+    sectionEls.actions.classList.add("fill-col");
+    if (sectionEls.actions.bodyEl) sectionEls.actions.bodyEl.classList.add("fill-body");
 
     /* gear proficiencies — mirrors the #PRINT "Skills & Proficiencies" combined pane
        (minus Skills, which have their own panel here, and Saves) */
