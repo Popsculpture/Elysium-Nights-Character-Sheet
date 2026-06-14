@@ -91,7 +91,8 @@ EN.inventoryView = (function () {
       (g.ranged && g.ranged.items) || [],
       (g.signature && g.signature.items) || [],
       (g.signature && g.signature.munitions) || [],
-      (g.ammo && g.ammo.items) || []
+      (g.ammo && g.ammo.items) || [],
+      (g.tools && g.tools.items) || []
     );
   }
   function findItem(name) { return catalog().find(function (i) { return i.name === name; }); }
@@ -175,6 +176,8 @@ EN.inventoryView = (function () {
         document.createTextNode(" " + it.name),
         tagChip(it.legality, LEGAL_COLOR[it.legality], "Legality: " + it.legality),
         tagChip(it.availability, AVAIL_COLOR[it.availability], "Availability: " + it.availability),
+        (it.slot && it.slot !== "None") ? tagChip("◧ " + it.slot, "var(--flow)", "Body Slot: " + it.slot) : null,
+        it.counted ? tagChip("Counted", "var(--ember)", "Counted — track every unit from purchase to spend") : null,
         (mode === "mkt" && owned) ? tagChip("Owned ×" + owned.qty, "var(--success)") : null,
         (mode === "stash" && isEquipped(ch, it.name)) ? tagChip("⚔ Equipped", "var(--accent)", "Live in the Attacks list on the Freelancer tab") : null
       ]),
@@ -210,8 +213,11 @@ EN.inventoryView = (function () {
       head, info,
       open && it.desc ? el("p", { style: { marginTop: "8px" }, text: it.desc }) : null,
       open && it.proficiency ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: "Proficiency: " + it.proficiency + (it.signature ? " · Signature weapon (0 customization slots)" : "") }) : null,
+      open && (it.category || it.skill) ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: (it.category ? "Tool Category: " + it.category : "") + (it.category && it.skill ? " · " : "") + (it.skill ? "Governing Skill: " + it.skill : "") }) : null,
       open && it.feeds ? el("p.help", { style: { margin: "4px 0 0", color: "var(--gold)" }, text: "Feeds: " + it.feeds }) : null,
       open && it.effect ? el("p.help", { style: { margin: "4px 0 0", color: "var(--accent)" }, text: (it.signature ? "" : "Effect: ") + it.effect }) : null,
+      open && it.basic ? el("p.help", { style: { margin: "4px 0 0" }, html: "<b style='color:var(--text2)'>Basic Use:</b> " + it.basic }) : null,
+      open && it.proficient ? el("p.help", { style: { margin: "4px 0 0" }, html: "<b style='color:var(--gold)'>Proficient Use:</b> " + it.proficient }) : null,
       open && it.range ? el("p.help", { style: { margin: "4px 0 0" }, text: "Range: " + it.range + (it.ammoUnit ? " · Ammo: " + it.ammo + " " + it.ammoUnit : "") }) : null
     ]);
   }
@@ -330,9 +336,34 @@ EN.inventoryView = (function () {
       section("mkt-ammo-s", "Ammo — Specialty", "All Counted: Load it, Declare it before the attack, Apply it on resolution. The difference between a legal magazine and a felony is sometimes just which three rounds you loaded on top.", byGroup(ammo, "Specialty")),
       section("mkt-ammo-l", "Launcher Shells", "Fired from a Grenade Launcher: same arc, same range, entirely different problem on the other end. Targets save Agility vs your Weapon Save DC.", byGroup(ammo, "Launcher Shell"))
     );
-    if (g.ranged) kids.push(el("p.help", { style: { margin: "10px 0 0", color: "var(--text4)" }, text: (g.ranged.saveDcNote || "") + " Armor, tools and worse arrive when the next shipment clears the checkpoint." }));
+    if (g.ranged) kids.push(el("p.help", { style: { margin: "10px 0 0", color: "var(--text4)" }, text: (g.ranged.saveDcNote || "") + " Kits, devices, and consumables stocked below; armor arrives when the next shipment clears the checkpoint." }));
     var total = melee.length + ranged.length + sig.length + sigMun.length + ammo.length;
     blocks.push(EN.ui.panel("Stock", "WEAPONS & AMMO · " + total + " LISTINGS", kids, { corners: true }));
+
+    /* Field Supply — Tools, Kits, Devices & Consumables, grouped by bucket → subsection */
+    var T = g.tools;
+    if (T && T.items && T.items.length) {
+      var tkids = [];
+      (T.buckets || []).forEach(function (bucket) {
+        var bItems = T.items.filter(function (i) { return i.bucket === bucket.key; });
+        if (!bItems.length) return;
+        var bid = "mkt-tool-" + bucket.key, bopen = !!_open[bid];
+        tkids.push(el("div.section-title", { style: { margin: "10px 0 4px", cursor: "pointer" },
+          onclick: function () { _open[bid] = !bopen; EN.app.render(); } }, [
+          document.createTextNode((bopen ? "▾ " : "▸ ") + bucket.title + " (" + bItems.length + ")"), el("span.line")
+        ]));
+        if (!bopen) return;
+        if (bucket.intro) tkids.push(el("p.help", { style: { margin: "0 0 6px", color: "var(--text3)" }, text: bucket.intro }));
+        (bucket.groups || []).forEach(function (grp) {
+          var gItems = bItems.filter(function (i) { return i.group === grp.name; });
+          if (!gItems.length) return;
+          tkids.push(el("div", { style: { margin: "10px 0 4px", fontFamily: "var(--disp)", fontSize: "11px", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--text2)" }, text: grp.name }));
+          if (grp.intro) tkids.push(el("p.help", { style: { margin: "0 0 6px", fontSize: "11.5px" }, text: grp.intro }));
+          gItems.forEach(function (it) { tkids.push(itemCard(it, ch, "mkt")); });
+        });
+      });
+      blocks.push(EN.ui.panel("Field Supply", "KITS · DEVICES · CONSUMABLES · " + T.items.length + " LISTINGS", tkids, { corners: true }));
+    }
     return blocks;
   }
 
