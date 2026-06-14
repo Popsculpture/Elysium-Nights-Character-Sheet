@@ -386,12 +386,22 @@ EN.combatView = (function () {
     "Moxie": {
       chip: "1 MOXIE",
       subs: [
-        { name: "Duck and Weave", cost: "Swift",
-          text: "As a Swift Action, you can take the Dash or Disengage action, allowing you to rapidly reposition without provoking opportunity attacks." },
-        { name: "Pocket Sand", cost: "Impulse",
-          text: "As an Impulse Action when an enemy within 2 spaces attacks you, you kick up dirt, throw a distraction, or flash a light in their eyes. You impose Snag on their attack roll." },
         { name: "Lucky Break", cost: "Free",
-          text: "When you fail an Agility or Wits saving throw, you can spend 1 Moxie to immediately reroll the die. You must use the new result." }
+          text: "When you make an attack roll, ability check, or saving throw, spend 1 Moxie to roll an additional d20 and choose which die to use — even if already rolling with Edge. Breaks the 2d20 cap (Edge + Lucky Break = 3d20, keep whichever you like)." },
+        { name: "Jinx", cost: "Impulse",
+          text: "When an enemy you can see makes an attack roll or saving throw, spend 1 Moxie to force them to roll an additional d20 and use the lowest — even if already rolling with Snag (3d20, worst result)." },
+        { name: "Slip the Blow", cost: "Impulse",
+          text: "When hit by an attack you can see, spend 1 Moxie to gain Resistance to that attack's damage and immediately move 1 space without provoking opportunity attacks." },
+        { name: "Smash and Grab", cost: "Action",
+          text: "Spend 1 Moxie; your Speed doubles this turn and your movement does not provoke opportunity attacks (you cannot end in an enemy's space). Make one weapon attack during the move; on a hit, shove the target 1 space or snatch one small, unsecured item they carry (contested Sleight to lift anything secured)." },
+        { name: "Bad Feeling", cost: "Impulse",
+          text: "When an enemy moves within your reach, or you are targeted by an attack you can see, spend 1 Moxie to move up to half your Speed without provoking — break away before it lands. Reflexes, not teleportation." },
+        { name: "Shake It Off", cost: "Swift",
+          text: "Spend 1 Moxie to end one condition clouding your senses or footing, such as Staggered, Shaken, or Dazed." },
+        { name: "Ace Up the Sleeve", cost: "Free",
+          text: "Spend 1 Moxie to reveal you saw this coming: produce a plausible mundane item you could have stashed, call in a minor favor, or point out a small environmental out (GM approval). Never conjures gear you could not carry; never rewrites the scene." },
+        { name: "Kick Them While They're Down", cost: "Impulse",
+          text: "When an enemy within reach misses you with a melee attack, or an ally scores a Critical Hit on an enemy within your reach, spend 1 Moxie to make a single weapon attack against that enemy that automatically qualifies for your Cheap Shot damage." }
       ]
     }
   };
@@ -1007,7 +1017,7 @@ EN.combatView = (function () {
         vitalityBar(s.vit, s.vitMax, s.vigor),
         el("div.row.between.wrap", { style: { alignItems: "baseline" } }, [
           el("div.mono", { style: { fontSize: "19px", fontWeight: 700, color: s.critical ? "var(--danger)" : "var(--text1)" }, text: s.wounds + " / " + s.woundsMax }),
-          popAnchor("wound", "var(--ember)", "Add or remove Wounds",
+          popAnchor("wound", "var(--wound)", "Add or remove Wounds",
             [document.createTextNode("WOUNDS")],
             [
               railBtn("HEAL", "var(--success)", "Heal Wounds (restores max Vitality)", function () { healWounds(ch, d, _amts.wound); }),
@@ -1016,7 +1026,7 @@ EN.combatView = (function () {
             ])
         ]),
         el("div", { title: "Countdown from Body (" + s.woundsMax + "). Wound damage also lowers current & max Vitality. Critical Condition at " + d.critThreshold + " or less. 0 = Unconscious & Dying.", style: { margin: "5px 0 0" } }, [
-          bar(s.wounds, s.woundsMax, s.critical ? "var(--danger)" : "var(--ember)")
+          bar(s.wounds, s.woundsMax, s.critical ? "var(--danger)" : "var(--wound)")
         ])
       ]),
       (s.dying || s.stable) ? el("div", { style: { marginTop: "8px" } }, [

@@ -4,7 +4,7 @@ EN.classes = EN.classes || {};
 EN.classes.scoundrel = {
   key: "scoundrel",
   name: "Scoundrel",
-  tagline: "By exploiting every blind spot, distraction, and weakness your enemies expose, you ensure you are always slipping out the back with the prize before the alarms even ring. You are training to become an untouchable phantom, a lethal opportunist who thrives in the chaos of the shadows.",
+  tagline: "The odds were never in your favor, so you stopped playing fair and started playing to win. You have nerve, footwork, and a kind of luck that should have run out years ago and somehow keeps holding. When the shooting starts you are already moving, already gone, already standing behind the one person who thought they had you — you slip the killing shot, palm the prize, and stroll out the back. You are training to become the one thing a rigged city can never quite get its hands on: untouchable.",
 
   vitality: {
     text: "Resilience Die: d8\nStarting Vitality: 8 + Body Modifier\nVitality Per Level: 1d8 + Body Modifier"
@@ -13,12 +13,12 @@ EN.classes.scoundrel = {
     text: "Resilience Die: d8\nStarting Vitality: 8 + Body Modifier\nVitality Per Level: 1d8 + Body Modifier"
   },
 
-  saveFocus: "Agility and Tech",
+  saveFocus: "Agility and Wits",
 
   attributePriorities: [
-    "1. Agility (Primary): Powers your Stealth, Sleight, Finesse melee attacks, ranged attacks, and your overall Speed and Defense.",
-    "2. Wits or Charm (Secondary): Wits helps you spot marks and traps (Perception), while Charm lets you lie your way out of blown cover (Deception).",
-    "3. Tech (Tertiary): Essential for physically bypassing electronic locks or overriding security systems during an infiltration."
+    "1. Agility (Primary): Powers your Stealth, Sleight, finesse melee and ranged attacks, your Speed and Defense, and the size of your Moxie pool.",
+    "2. Wits (Secondary): Drives your Perception and instinct for trouble, your Initiative, and your Wits saves.",
+    "3. Tech or Charm (Tertiary): Tech bypasses locks and security systems on a job; Charm talks you clear when footwork alone will not cut it."
   ],
 
   resource: {
@@ -26,7 +26,7 @@ EN.classes.scoundrel = {
     attribute: "Agility",
     maxFormula: "Caliber + Agility Modifier (minimum 1)",
     refresh: "You regain all spent Moxie at the end of a Short or Long Rest.",
-    fuels: "Spend 1 Moxie to execute tricks: Duck and Weave (Swift Action; take the Dash or Disengage action, repositioning without provoking opportunity attacks), Pocket Sand (Impulse Action when an enemy within 2 spaces attacks you; impose Snag on their attack roll), and Lucky Break (when you fail an Agility or Wits saving throw, reroll the die and use the new result)."
+    fuels: "Spend Moxie on Gambits (learn 3 at Level 1, +2 at Level 5): Lucky Break, Jinx, Slip the Blow, Smash and Grab, Bad Feeling, Shake It Off, Ace Up the Sleeve, and Kick Them While They're Down. Unless a Gambit says otherwise, it costs 1 Moxie."
   },
 
   startingProficiencies: {
@@ -34,33 +34,33 @@ EN.classes.scoundrel = {
     armor: ["Light Armor"],
     shields: [],
     skills: ["Stealth", "Sleight", "choose one (Acrobatics, Deception, or Perception)"],
-    saves: ["Agility", "Tech"],
+    saves: ["Agility", "Wits"],
     tools: ["Infiltration Tools", "choose one (Systems Tools, Security Tools, Glamour Tools, or Fieldcraft Tools)"]
   },
 
   featuresByLevel: {
     "1": [
       {
-        name: "Cheap Shot",
-        text: "You know exactly how to hit where it hurts the most. Once per turn, you can deal an extra 1d6 damage to one Target you hit with an attack if you have Edge on the attack roll. The attack must use a Sidearm, a Simple Weapon, or a Melee Weapon with the Light trait.\n\nYou do not need Edge on the attack roll if another conscious enemy of the Target (like your Ally) is engaged in melee with them, and you do not have Snag on the roll.\n\nThis extra damage increases to 2d6 at 3rd Level, 3d6 at 5th Level, 4d6 at 7th Level, and 5d6 at 9th Level."
+        name: "Moxie",
+        text: "You survive on instinct, audacity, and luck that has no business holding. You have a pool of Moxie equal to your Caliber + your Agility Modifier (minimum 1). You regain all spent Moxie at the end of a Short or Long Rest.\n\nAt 1st Level you learn three Gambits of your choice from the list below, and you learn two more at 5th Level through Expanded Moxie. Unless a Gambit says otherwise, activating it costs 1 Moxie.\n     Lucky Break: When you make an attack roll, ability check, or saving throw, spend 1 Moxie to roll an additional d20 and choose which die to use — even if already rolling with Edge. This breaks the 2d20 cap (Edge + Lucky Break = 3d20, keep whichever you like).\n     Jinx (Impulse Action): When an enemy you can see makes an attack roll or saving throw, spend 1 Moxie to force them to roll an additional d20 and use the lowest — even if already rolling with Snag (breaks the cap the other way; 3d20, worst result).\n     Slip the Blow (Impulse Action): When hit by an attack you can see, spend 1 Moxie to gain Resistance to that attack's damage and move 1 space without provoking opportunity attacks.\n     Smash and Grab (Action): Spend 1 Moxie; your Speed doubles this turn and your movement does not provoke opportunity attacks (you cannot end in an enemy's space). Make one weapon attack during the move; on a hit, shove the target 1 space or snatch a small unsecured item (contested Sleight to lift anything secured).\n     Bad Feeling (Impulse Action): When an enemy moves within your reach, or you are targeted by an attack you can see, spend 1 Moxie to move up to half your Speed without provoking — break away before it lands.\n     Shake It Off (Swift Action): Spend 1 Moxie to end one condition clouding your senses or footing, such as Staggered, Shaken, or Dazed.\n     Ace Up the Sleeve (Free Action): Spend 1 Moxie to produce a plausible mundane item you could have stashed, call a minor favor, or point out a small environmental out (GM approval; never conjures gear you could not carry).\n     Kick Them While They're Down (Impulse Action): When an enemy within reach misses you with a melee attack, or an ally crits an enemy within your reach, spend 1 Moxie to make a weapon attack against that enemy that automatically qualifies for Cheap Shot."
       },
       {
-        name: "Street Smarts",
-        text: "You know how to operate in the shadows. You gain Edge on in-combat Streetwise d20 checks (or add +1 Edge Die to related out-of-combat Dice Pools) made to find black markets, secure illicit goods, or gather rumors about local gangs and corporate security."
+        name: "Cheap Shot",
+        text: "You hit where it hurts the instant an opening appears, and you are very good at making your own openings. Once per turn, you can deal an extra 1d6 damage to one target you hit with an attack, as long as the attack uses a Sidearm, a Simple Weapon, or a Melee Weapon with the Light trait and at least one of the following is true:\n     You have Edge on the attack roll.\n     Another conscious enemy of the target is within 1 space of it, and you do not have Snag on the roll.\n     You have spent at least 1 Moxie this round.\n\nThis extra damage increases to 2d6 at 3rd Level, 3d6 at 5th Level, 4d6 at 7th Level, and 5d6 at 9th Level."
       },
       {
         name: "Scoundrel Subclass",
-        text: "You choose a specialization that dictates your specific brand of illegality. Are you a Smuggler running blockades, a Ghost slipping through the shadows, or a Cutthroat fighting dirty in the alleys? You gain subclass features at levels 1, 3, 7, and 10."
+        text: "You choose the specialization that suits your particular brand of getting away with it. Whether you run blockades and bad neighborhoods as a Smuggler, beat a rigged game as a Wildcard, or carve people up in close as a Shiv, your subclass grants features at Levels 1, 3, 7, and 10."
       }
     ],
     "2": [
       {
-        name: "Moxie",
-        text: "You survive on instinct, adrenaline, and pure luck. You have a pool of Moxie equal to your Caliber + your Agility Modifier (minimum 1). You regain all spent Moxie at the end of a Short or Long Rest. You may spend 1 Moxie to execute any of the following tricks:\n     Duck and Weave: As a Swift Action, you can take the Dash or Disengage action, allowing you to rapidly reposition without provoking opportunity attacks.\n     Pocket Sand: As an Impulse Action when an enemy within 2 spaces attacks you, you kick up dirt, throw a distraction, or flash a light in their eyes. You impose Snag on their attack roll.\n     Lucky Break: When you fail an Agility or Wits saving throw, you can spend 1 Moxie to immediately reroll the die. You must use the new result."
+        name: "Watch How I Soar",
+        text: "You are never quite where the trouble is. You can take the Dash or the Disengage action as a Swift Action at no Moxie cost. In addition, opportunity attacks against you are made with Snag, and Difficult Terrain costs you no extra movement."
       },
       {
         name: "Universal Upgrade",
-        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute score by 1 (to a maximum of 20), or select one Talent for which you meet the requirements."
+        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, increase two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
       }
     ],
     "3": [
@@ -76,7 +76,7 @@ EN.classes.scoundrel = {
     "4": [
       {
         name: "Universal Upgrade",
-        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute score by 1 (to a maximum of 20), or select one Talent for which you meet the requirements."
+        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, increase two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
       }
     ],
     "5": [
@@ -85,18 +85,22 @@ EN.classes.scoundrel = {
         text: "Your Cheap Shot extra damage increases to 3d6 at 5th Level. (See Level 1: Cheap Shot.)"
       },
       {
-        name: "Uncanny Evasion",
-        text: "Your reflexes are honed to a razor's edge, allowing you to dodge out of the way of catastrophic area effects. When you are subjected to an effect that allows you to make an Agility Save to take only half damage (such as an explosive charge or a burst fire weapon), you instead take no damage if you succeed on the saving throw, and only half damage if you fail."
+        name: "Untouchable",
+        text: "Blast charges, grenades, sweeping autofire — somehow none of it ever quite lands on you. When you are subjected to an effect that allows an Agility save to take half damage, you instead take no damage on a success and only half damage on a failure."
+      },
+      {
+        name: "Expanded Moxie",
+        text: "Your bag of tricks deepens. You learn two additional Gambits from the Moxie list."
       }
     ],
     "6": [
       {
-        name: "Opportunist",
-        text: "You ruthlessly exploit the openings created by your crew. When an enemy within your weapon's range is successfully hit by an ally's attack that scores a Critical Hit, or when an enemy completely misses you with a melee attack, you can use your Impulse Action to immediately make a single weapon attack against them. If this attack hits, it automatically qualifies for your Cheap Shot damage."
+        name: "Cheat the Clock",
+        text: "You move while other people are still deciding to. You can take two Impulse Actions each round instead of one. You still cannot take more than one Impulse Action in response to the same trigger."
       },
       {
         name: "Universal Upgrade",
-        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute score by 1 (to a maximum of 20), or select one Talent for which you meet the requirements."
+        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, increase two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
       }
     ],
     "7": [
@@ -112,7 +116,7 @@ EN.classes.scoundrel = {
     "8": [
       {
         name: "Universal Upgrade",
-        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute score by 1 (to a maximum of 20), or select one Talent for which you meet the requirements."
+        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, increase two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
       }
     ],
     "9": [
@@ -121,8 +125,8 @@ EN.classes.scoundrel = {
         text: "Your Cheap Shot extra damage increases to 5d6 at 9th Level. (See Level 1: Cheap Shot.)"
       },
       {
-        name: "Slippery Mind",
-        text: "You have talked your way out of too many bad situations to let your mind be easily broken. You gain Proficiency in Wits Saving Throws. Furthermore, if you start your turn suffering from the Charmed, Frightened, or Confused condition, you can spend 1 Moxie to instantly clear the condition, shaking off the mental influence through sheer stubbornness."
+        name: "Devil's Own Luck",
+        text: "Your luck has stopped looking like luck and started looking like cheating. Once per round, when you score a Critical Success (a Natural 20) on a d20 roll, or when an enemy misses you with an attack, you regain 1 spent Moxie (cannot exceed your maximum). In addition, attacks against you cannot score Critical Hits — the blow that should have killed you always finds a way to merely graze."
       }
     ],
     "10": [
@@ -134,15 +138,15 @@ EN.classes.scoundrel = {
   },
 
   progressionTable: [
-    { level: 1, caliber: 1, features: ["Cheap Shot (1d6)", "Street Smarts", "Scoundrel Subclass"], resource: "" },
-    { level: 2, caliber: 1, features: ["Moxie", "Universal Upgrade"], resource: "0" },
-    { level: 3, caliber: 2, features: ["Cheap Shot (2d6)", "Subclass Feature"], resource: "0" },
-    { level: 4, caliber: 2, features: ["Universal Upgrade"], resource: "+5 Points" },
-    { level: 5, caliber: 3, features: ["Cheap Shot (3d6)", "Uncanny Evasion"], resource: "0" },
-    { level: 6, caliber: 3, features: ["Opportunist", "Universal Upgrade"], resource: "0" },
-    { level: 7, caliber: 4, features: ["Cheap Shot (4d6)", "Subclass Feature"], resource: "+5 Points" },
+    { level: 1, caliber: 1, features: ["Moxie", "Cheap Shot (1d6)", "Scoundrel Subclass"], resource: "" },
+    { level: 2, caliber: 1, features: ["Watch How I Soar", "Universal Upgrade"], resource: "0" },
+    { level: 3, caliber: 2, features: ["Cheap Shot (2d6)", "Subclass Feature"], resource: "+5 Points" },
+    { level: 4, caliber: 2, features: ["Universal Upgrade"], resource: "0" },
+    { level: 5, caliber: 3, features: ["Cheap Shot (3d6)", "Untouchable", "Expanded Moxie"], resource: "0" },
+    { level: 6, caliber: 3, features: ["Cheat the Clock", "Universal Upgrade"], resource: "+5 Points" },
+    { level: 7, caliber: 4, features: ["Cheap Shot (4d6)", "Subclass Feature"], resource: "0" },
     { level: 8, caliber: 4, features: ["Universal Upgrade"], resource: "0" },
-    { level: 9, caliber: 5, features: ["Cheap Shot (5d6)", "Slippery Mind"], resource: "0" },
+    { level: 9, caliber: 5, features: ["Cheap Shot (5d6)", "Devil's Own Luck"], resource: "0" },
     { level: 10, caliber: 5, features: ["Subclass Capstone"], resource: "+5 Points" }
   ],
 
@@ -150,81 +154,81 @@ EN.classes.scoundrel = {
     {
       key: "smuggler",
       name: "The Smuggler",
-      description: "You get things, and people, where they are not supposed to be. You are an absolute master of evasion, logistics, and slipping through checkpoints completely undetected. To you, a locked border or a corporate blockade is just a puzzle waiting to be solved. You always get things done, even if you have a bad feeling about it. You win by outsmarting the system, ensuring your crew always has a flawless exit strategy when the job goes sideways.",
+      description: "You get things, and people, where they are not supposed to be. You are a master of evasion, logistics, and slipping through checkpoints undetected. To you, a locked border or a corporate blockade is just a puzzle waiting to be solved. You always get the job done, even when you have a bad feeling about it, and you win by outsmarting the system, making sure the crew always has a clean way out when things go sideways.",
       features: [
         {
           level: 1,
           name: "Deep Pockets",
-          text: "You are an expert at concealing contraband. You gain Edge on Sleight of Hand or Stealth checks made to hide items on your person, in a vehicle, or in an environment. You can perfectly conceal a Sidearm or a Light melee weapon even from a thorough physical pat down.\n\nFurthermore, you possess the Quick Draw. Whenever you draw a concealed weapon and attack with it on the same turn, you automatically gain Edge on that first attack roll, allowing you to instantly trigger your Cheap Shot from a seemingly unarmed position."
+          text: "You are an expert at concealing contraband. You gain Edge on Sleight or Stealth checks made to hide items on your person, in a vehicle, or in an environment. You can perfectly conceal a Sidearm or a Light melee weapon even from a thorough physical pat down.\n\nFurthermore, you possess the Quick Draw. Whenever you draw a concealed weapon and attack with it on the same turn, you automatically gain Edge on that first attack roll, allowing you to instantly trigger your Cheap Shot from a seemingly unarmed position."
         },
         {
           level: 3,
           name: "The Getaway",
-          text: "You never leave your crew behind when things go loud. Whenever you spend 1 Moxie to use your Duck and Weave feature (allowing you to Dash or Disengage as a Swift Action), you can immediately call out an exit path to one ally within 6 spaces who can hear you. That ally can use a free action to instantly move up to half their Speed toward you without provoking opportunity attacks."
+          text: "You never bug out alone. When you take the Dash or the Disengage action, you can spend 1 Moxie to call the route. Each ally within 6 spaces who can see or hear you may immediately move up to half their Speed toward you or toward a point of cover you point out, without provoking opportunity attacks. Until the start of your next turn, the first attack made against each ally who moved this way is rolled with Snag."
         },
         {
           level: 7,
-          name: "Smuggler's Run",
-          text: "You know how to navigate the absolute worst situations with blinding speed, leading your squad through the chaos. As an Action, you can spend 2 Moxie to initiate a tactical withdrawal or a sudden flank.\n\nYou and up to three Allies of your choice within 6 spaces can immediately move up to your full Speed. During this movement, you and your chosen Allies are completely immune to opportunity attacks, ignore penalties from Difficult Terrain, and can pass directly through enemy-occupied spaces as long as you do not end your turn inside one."
+          name: "Never Saw It Coming",
+          text: "You spend a fight looking like the least dangerous person in the room, right up until you are not. You have Edge on attack rolls against any enemy that has not yet been damaged by you this combat, because it is not watching the person it already wrote off. And the first time you hit each enemy, you catch it so completely flat-footed that it is Staggered until the end of its next turn."
         },
         {
           level: 10,
-          name: "Never Tell Me The Odds",
-          text: "Your sheer dumb luck borders on the supernatural. Once per Long Rest, when a situation goes completely sideways (such as failing a critical Save that would result in death, or taking damage that would reduce you to 0 Vitality), you miraculously escape the consequence.\n\nYou take absolutely zero damage, automatically succeed on the Save, and instantly reposition yourself up to 6 spaces away to a safe, unoccupied location you can see. You leave behind a decoy, a puff of smoke, a collapsing piece of cover, or just the infuriating realization that you slipped away at the exact perfect microsecond."
+          name: "Leaf on the Wind",
+          text: "Everything slows down and goes quiet, and you slip through the chaos like it cannot quite touch you, weightless and effortless, always exactly where the danger is not. Once per Long Rest, as a Swift Action, you drop into total focus for 1 minute. While it lasts, you gain Resistance to all damage, attacks against you cannot score Critical Hits, you gain an additional Impulse Action each round, and you regain 1 Moxie at the start of each of your turns."
         }
       ]
     },
     {
-      key: "cutthroat",
-      name: "The Cutthroat",
-      description: "You are a dirty fighter, an alleyway duelist, and an unapologetic killer. While others might run from a direct confrontation, you wade right into the blood and grit with a knife in each hand. You have mastered the art of rapid strikes and crippling injuries, specializing in bleeding a target completely dry before they even realize how badly they have been cut.",
+      key: "wildcard",
+      name: "The Wildcard",
+      description: "The deck is always stacked against you, so you learned to cheat fate itself. You do not hope for a lucky break, you bet on it, push the odds, and dare the universe to call your bluff. Where other Scoundrels play it careful, you go all in, because the only way to beat a rigged game is to wager more than anyone sane ever would.",
       features: [
         {
           level: 1,
-          name: "Blade Dancer",
-          text: "You are a master of lethal, close-quarters knife work. When you wield a Melee Weapon with the Light trait in each hand, you gain a +1 bonus to your Defense.\n\nFurthermore, you are ruthless when an enemy turns their back. Whenever you hit an enemy with an opportunity attack, you can automatically apply your Cheap Shot damage to the strike, even if you do not normally meet the requirements."
+          name: "Press Your Luck",
+          text: "You do not wait for fortune, you bet on it. Before you make any d20 roll, you can spend 1 Moxie to place a bet, rolling a d6 alongside your d20:\n     On a 6, you hit the jackpot: your d20 roll counts as a Critical Success.\n     On a 2 to 5, the bet rides: add the d6 result to your d20 roll as a bonus.\n     On a 1, the house wins: your d20 roll counts as a Critical Failure, and nothing can recover that Moxie this turn.\nYou can place a bet on attack rolls, saving throws, and ability checks alike."
         },
         {
           level: 3,
-          name: "Bleed Them Out",
-          text: "You know exactly where to insert the blade to hit a major vein. Whenever you hit an enemy with a melee attack and apply your Cheap Shot damage, you can spend 1 Moxie to twist the blade.\n\nThe target is instantly inflicted with 1 stack of Bleeding. (As per the Bleeding rules: they take 1d4 Vitality damage at the start of their turn and every time they willingly move 1 space, compounding the tactical pressure)."
+          name: "Counting Cards",
+          text: "You have learned to read the table and shave down the house edge.\n     When you bust a Press Your Luck bet (a 1 on the d6), your roll no longer counts as a Critical Failure. You simply lose the wagered Moxie and keep your natural d20 result.\n     Once per round, instead of rolling the Press Your Luck d6, you can take the safe count and treat the result as a 4."
         },
         {
           level: 7,
-          name: "Hamstring Slice",
-          text: "You systematically destroy an enemy's ability to stand their ground. As an Action, you can spend 2 Moxie to make a highly calculated melee attack against a target's lower extremities.\n\nOn a hit, the attack deals its normal damage plus your Cheap Shot damage, and the target must make an Agility Save (DC = 8 + your Agility Modifier + your Caliber). On a failure, their tendons are slashed; they are violently knocked Prone and their Speed is reduced to 0 until they receive medical treatment or magical healing. On a success, their Speed is halved until the end of their next turn."
+          name: "Lucky Charm",
+          text: "Your fortune rubs off on whoever is standing next to you. As an Impulse Action, when an ally within 12 spaces makes a d20 roll, you can spend 1 Moxie to lend them your luck: they roll one additional d20 and use whichever result they prefer. You can also place a Press Your Luck bet on an ally's roll exactly as you would on your own, gambling your Moxie on their success."
         },
         {
           level: 10,
-          name: "Flurry of Steel",
-          text: "You become a terrifying blur of lethal precision, capable of gutting a room in seconds. Once per Long Rest, as an Action, you can unleash a devastating sequence of melee strikes.\n\nYou can immediately move up to your Speed. During this movement, you can make a single melee weapon attack against every single enemy that comes within your reach. Every attack made during this flurry automatically benefits from your Cheap Shot damage, and you do not provoke opportunity attacks for the duration of this movement."
+          name: "All In",
+          text: "Once per Long Rest, as a Free Action, you bet everything on a streak that has no business holding. For the next minute:\n     Your Press Your Luck bets cannot bust. Treat any d6 result of 1 as a safe 4, and a 6 still pays the jackpot.\n     You can place a Press Your Luck bet, on yourself or an ally, without spending Moxie.\n     Once on each of your turns, you can hand one ally within 12 spaces a free Lucky Break.\nWhen the minute ends, the streak collapses and the house comes to collect: you cannot use Press Your Luck again until you finish a Short or Long Rest."
         }
       ]
     },
     {
-      key: "ghost",
-      name: "The Ghost",
-      description: "You are the unseen blade, the phantom in the corporate facility, the absolute master of stealth. You do not just hide in the shadows; you weaponize them. You specialize in flawless infiltration, silent assassinations, and disappearing without a single trace. To your enemies, you are a terrifying myth that only materializes at the exact moment the killing blow lands.",
+      key: "shiv",
+      name: "The Shiv",
+      description: "Everyone else is fighting a duel. You are fighting in a gutter, with a broken bottle in one hand and a fistful of grit in the other. You do not need to be stronger or faster, you need them blind, off balance, bleeding, and unable to run, which is exactly where you put them. By the time anyone realizes you never fight fair, they are already on the ground.",
       features: [
         {
           level: 1,
-          name: "Unseen Assailant",
-          text: "You are devastating when you strike from total concealment. When you make a weapon attack against a target while you are Hidden or Invisible, your attack scores a Critical Hit on a natural roll of 19 or 20.\n\nAdditionally, your movement is perfectly silent. Moving at your full Speed no longer imposes any penalties on your Stealth checks, allowing you to sprint through the shadows without making a sound."
+          name: "Fight Dirty",
+          text: "You turn every brawl into a filthy one. When you hit a creature with a melee attack, you can spend 1 Moxie to add a dirty trick. Whenever you deal Cheap Shot damage with a melee attack, you can apply one of these tricks for free. Choose one:\n     Dirt in the Eyes: The target rolls with Snag on its attacks until the end of its next turn.\n     Sweep the Leg: The target must succeed on an Agility save (DC 8 + your Agility modifier + your Caliber) or be knocked Prone.\n     Squirrel Tap: The target cannot take Impulse Actions until the start of your next turn."
         },
         {
           level: 3,
-          name: "Vanish",
-          text: "You know how to disappear in plain sight, exploiting momentary distractions. As a Swift Action, you can spend 1 Moxie to attempt a Stealth check to become Hidden, even if you are currently being observed by enemies or are standing in an area without total cover. As long as there is a shadow, a crowd, or a momentary chaotic distraction, you simply fade from their perception until you attack, cast an Invocation, or the end of your next turn."
+          name: "Pressure",
+          text: "You are impossible to shake once you are in someone's face. When a creature within your reach moves, you can spend 1 Moxie and use your Impulse Action to make a melee attack against it. On a hit, the attack qualifies for your Cheap Shot damage and the creature's Speed drops to 0 until the end of its turn, because you have it by the collar."
         },
         {
           level: 7,
-          name: "Silent Takedown",
-          text: "You are an expert at neutralizing guards before they can sound the alarm. As an Action, you can spend 2 Moxie to make a devastating strike against a target while you are Hidden or Invisible to them.\n\nIf the attack hits, it automatically counts as a Critical Hit, and the target must make a Body Save (DC = 8 + your Agility Modifier + your Caliber). On a failure, they take normal critical damage, and are instantly Stunned and Silenced (rendering them completely unable to cry out for help or trigger an alarm) until the end of their next turn."
+          name: "Cripple",
+          text: "As an Action, you spend 2 Moxie to make a single vicious melee attack. On a hit, it deals its damage plus your Cheap Shot damage, and the target must make a Body save (DC 8 + your Agility modifier + your Caliber). On a failure, choose one: its Speed becomes 0 until it receives healing or first aid, or until 1 minute (10 rounds) passes, whichever comes first (you put out a knee); or it drops what it is holding and rolls with Snag on attacks until the end of its next turn (you wreck its grip). On a success, its Speed is halved until the end of its next turn."
         },
         {
           level: 10,
-          name: "Phantom Walk",
-          text: "You can perfectly align your physical movement with the blind spots of the world. Once per Long Rest, as a Swift Action, you enter a state of absolute imperceptibility for 1 minute.\n\nDuring this time, you become completely Invisible, and you cannot be tracked by thermal optics, auditory sensors, or Tremor Sense. This invisibility does not break when you attack or cast an Invocation; you remain a terrifying, unseen phantom for the full duration of the effect."
+          name: "No Way Out",
+          text: "Once per Long Rest, as a Swift Action, you turn the space around you into a no-go zone for 1 minute. While it lasts, any enemy that ends its turn within your reach or tries to leave your reach must make an Agility save (DC 8 + your Agility modifier + your Caliber) or be knocked Prone with its Speed reduced to 0 for that turn. You can make a melee attack against any enemy that fails this save, and you can do so even if you have already used your Impulse Action this round. Every such attack qualifies for your Cheap Shot damage."
         }
       ]
     }
@@ -232,9 +236,9 @@ EN.classes.scoundrel = {
 
   extra: {
     playbook: {
-      turnToTurn: "You dictate positioning and the action economy. You dart in and out of the fray, striking Targets that are distracted by your heavy-hitting Allies. You use your Moxie to bend the rules of combat, slipping away from danger or turning a near miss into a devastating blow.",
-      winningEncounters: "You win through asymmetric warfare. You are not built to stand in the open and trade shots with a heavy gunner. You win by flanking, utilizing cover, striking from the shadows, and systematically eliminating high-priority Targets with lethal precision before vanishing again.",
-      whatToAvoid: "Getting pinned down. With a d8 Resilience Die and reliance on Light Armor, you cannot survive a prolonged, static firefight. If you run out of Moxie and find yourself surrounded without an escape route, your luck will run out very quickly."
+      turnToTurn: "You bet on yourself. You spend Moxie to bend your own dice, sour the enemy's at the worst possible moment, and reposition through openings no one else can use, then cash a single clean hit with Cheap Shot. You are rarely where the enemy wants you, and never pinned.",
+      winningEncounters: "You win by being untouchable and improbably lucky. You do not stand in the open trading shots with a heavy gunner — you slip the killing blows, twist the enemy's luck against them, and capitalize on every opening your crew tears open.",
+      whatToAvoid: "Running your Moxie dry while surrounded. With a d8 Resilience Die and Light Armor, your survival is your luck and your footwork, not your hit points. An empty pool with no exits is the moment the odds finally catch up with you."
     }
   }
 };

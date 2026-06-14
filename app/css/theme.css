@@ -21,6 +21,7 @@
   --success:   #2ee6a0;
   --warn:      #ffb340;
   --danger:    #ff4d5e;
+  --wound:     #d62232;   /* blood red — Wounds track (critical flares to --danger) */
 
   --text:  #e9f1fb;
   --text2: #93a8c0;

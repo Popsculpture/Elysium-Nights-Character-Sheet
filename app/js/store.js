@@ -101,6 +101,11 @@ EN.store = (function () {
     if (!ch.featureUses) ch.featureUses = {};
     if (!ch.equippedWeapons) ch.equippedWeapons = [];
     if (!ch.weaponAmmo) ch.weaponAmmo = {};
+    // drop a stored subclass that no longer exists (e.g. after a class rework) so it re-surfaces as a pick
+    if (ch.class && ch.subclass && EN.classes && EN.classes[ch.class]) {
+      var subs = EN.classes[ch.class].subclasses || [];
+      if (!subs.some(function (s) { return s.key === ch.subclass; })) ch.subclass = null;
+    }
   }
 
   /* ---- persistence ------------------------------------------------------ */
