@@ -70,9 +70,9 @@ EN.cyberware = {
       street: "No Enhancement; jittery — first time you take combat damage each session, Body Save DC 12 or take 1d4 Vitality as it misfires.",
       black: "+4 Initiative, +2 Speed, and once per combat (Impulse) fully evade one ranged hit.",
       tiers: [
-        { tier: "Streetware", sp: 2, price: 2500,  legality: "Restricted" },
-        { tier: "Brandware",  sp: 2, price: 11000, legality: "Restricted" },
-        { tier: "Blackware",  sp: 3, price: 28000, legality: "Restricted" }
+        { tier: "Streetware", sp: 2, price: 2500,  legality: "Restricted", bonus: { speed: 1 } },
+        { tier: "Brandware",  sp: 2, price: 11000, legality: "Restricted", bonus: { speed: 1 } },
+        { tier: "Blackware",  sp: 3, price: 28000, legality: "Restricted", bonus: { speed: 2 } }
       ] },
     { key: "disruption", short: "Disruption Lattice", name: "Disruption Lattice", zone: "Neural", enhancement: "None", mystech: true,
       desc: "Resonance-dampening circuitry through the upper spine and skull. Built to counter Shapers; it does not discriminate — it dampens the Flow for everyone near the wearer, including the wearer.",
@@ -152,9 +152,9 @@ EN.cyberware = {
       street: "No Enhancement; 25% heavier — matters for vehicles, climbing, and weight sensors.",
       black: "+2 Wound max, 1d8 unarmed (one as a Swift Action 1/round), resist fall damage up to 12 spaces.",
       tiers: [
-        { tier: "Streetware", sp: 2, price: 3000,  legality: "Licensed" },
-        { tier: "Brandware",  sp: 2, price: 9000,  legality: "Licensed" },
-        { tier: "Blackware",  sp: 3, price: 23000, legality: "Restricted" }
+        { tier: "Streetware", sp: 2, price: 3000,  legality: "Licensed", bonus: { wounds: 1 } },
+        { tier: "Brandware",  sp: 2, price: 9000,  legality: "Licensed", bonus: { wounds: 1 } },
+        { tier: "Blackware",  sp: 3, price: 23000, legality: "Restricted", bonus: { wounds: 2 } }
       ] },
 
     /* ---------------- Arms ---------------- */
@@ -186,9 +186,9 @@ EN.cyberware = {
       street: "+1 Speed only, 2 slots, no Enhancement; audible servos → Snag on Stealth while moving >half Speed.",
       black: "+3 Speed, 4 slots, plus Burst Sprint (Impulse, 1/combat): triple Speed for one Move, ignoring opportunity attacks.",
       tiers: [
-        { tier: "Streetware", sp: 2, slots: 2, price: 4500,  legality: "Licensed" },
-        { tier: "Brandware",  sp: 3, slots: 3, price: 14000, legality: "Licensed" },
-        { tier: "Blackware",  sp: 4, slots: 4, price: 36000, legality: "Restricted" }
+        { tier: "Streetware", sp: 2, slots: 2, price: 4500,  legality: "Licensed", bonus: { speed: 1 } },
+        { tier: "Brandware",  sp: 3, slots: 3, price: 14000, legality: "Licensed", bonus: { speed: 2 } },
+        { tier: "Blackware",  sp: 4, slots: 4, price: 36000, legality: "Restricted", bonus: { speed: 3 } }
       ] },
     { key: "springJoints", short: "Spring Joints", name: "Spring Joints", zone: "Legs", enhancement: "None",
       desc: "Leg modifications that store and release kinetic energy explosively. Couriers, parkour operators, and roof-runners consider this essential. Can slot into a Cyberleg without adding SP.",

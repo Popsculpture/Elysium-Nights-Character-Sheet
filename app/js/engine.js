@@ -337,6 +337,39 @@ EN.engine = (function () {
     return names.filter(function (n, i) { return names.indexOf(n) === i; });
   }
 
+  /* ---- installed cyberware: Enhancement Bonuses (attribute) + flat sheet bonuses ----
+     Enhancement scales by tier: Streetware 0, Brandware/Prototype = listed, Blackware ×2.
+     'arm only' (Cyberarm) is a focused bonus and does NOT touch the general attribute. */
+  function cyberEnhancements(ch) {
+    var out = {}, NAME2KEY = {};
+    (R.attributes || []).forEach(function (a) { NAME2KEY[a.name] = a.key; });
+    ((ch && ch.cyberware) || []).forEach(function (cw) {
+      if (!cw || typeof cw !== "object" || !cw.enhancement || cw.enhancement === "None") return;
+      if (/\(arm/i.test(cw.enhancement)) return;
+      var m = cw.enhancement.match(/\+(\d+)\s+([A-Za-z]+)/);
+      if (!m) return;
+      var base = parseInt(m[1], 10), key = NAME2KEY[m[2]];
+      var amt = cw.tier === "Streetware" ? 0 : cw.tier === "Blackware" ? base * 2 : base;
+      if (key && amt) out[key] = (out[key] || 0) + amt;
+    });
+    return out;
+  }
+  // flat sheet bonuses (speed / wounds) summed from installed pieces' tier `bonus` data
+  function cyberFlatBonuses(ch) {
+    var out = { speed: 0, wounds: 0 };
+    var items = (EN.cyberware && EN.cyberware.items) || [];
+    ((ch && ch.cyberware) || []).forEach(function (cw) {
+      if (!cw || typeof cw !== "object") return;
+      var def = items.find(function (i) { return i.key === cw.key; });
+      var tier = def && (def.tiers || []).find(function (t) { return t.tier === cw.tier; });
+      var b = tier && tier.bonus;
+      if (!b) return;
+      if (b.speed) out.speed += b.speed;
+      if (b.wounds) out.wounds += b.wounds;
+    });
+    return out;
+  }
+
   /* ======================================================================
      MAIN: derive a full computed snapshot for a character
      ====================================================================== */
@@ -355,11 +388,15 @@ EN.engine = (function () {
     var sizeOpts = (ch.lineage && R.lineageSize) ? R.lineageSize[ch.lineage] : null;
     var size = sizeOpts ? ((ch.size && sizeOpts.indexOf(ch.size) !== -1) ? ch.size : sizeOpts[0]) : (ch.size || null);
 
-    /* attributes + modifiers */
+    /* attributes + modifiers (installed cyberware Enhancement Bonuses fold into the score, capped at 20) */
     var scores = effectiveAttributes(ch);
+    var cyberEnh = cyberEnhancements(ch);
+    var cyberFlat = cyberFlatBonuses(ch);
     var attributes = {};
     R.attributes.forEach(function (a) {
-      attributes[a.key] = { key: a.key, name: a.name, score: scores[a.key], mod: mod(scores[a.key]) };
+      var bonus = cyberEnh[a.key] || 0;
+      var sc = Math.min(20, scores[a.key] + bonus);
+      attributes[a.key] = { key: a.key, name: a.name, score: sc, mod: mod(sc), baseScore: scores[a.key], cyberBonus: bonus };
     });
     var agiMod = attributes.AGI.mod, bodMod = attributes.BOD.mod;
 
@@ -369,7 +406,7 @@ EN.engine = (function () {
     var linFeats = activeLineageFeatures(ch);
     if (linFeats.indexOf("Dermal Plating") !== -1 || linFeats.indexOf("Engineered Frame") !== -1) defenseAttr = "BOD";
     var defense = defenseBase + attributes[defenseAttr].mod;
-    var speed = Math.max(3, 6 + agiMod);
+    var speed = Math.max(3, 6 + agiMod) + (cyberFlat.speed || 0);
 
     /* vitality / wounds / resilience */
     var vit = R.classVitality[ch.class];
@@ -380,7 +417,7 @@ EN.engine = (function () {
       vitalityMax = Math.max(1, vitalityMax);
       resilienceDie = vit.resilience;
     }
-    var woundsMax = attributes.BOD.score;
+    var woundsMax = attributes.BOD.score + (cyberFlat.wounds || 0);
     // Critical Condition triggers at 50% or less of total WOUNDS (countdown pool)
     var critThreshold = Math.floor(woundsMax / 2);
     var resilienceMax = level;   // Resilience Dice count = character level
@@ -508,7 +545,7 @@ EN.engine = (function () {
       attributes: attributes,
       defense: defense, defenseAttr: defenseAttr, speed: speed,
       vitalityMax: vitalityMax, resilienceDie: resilienceDie, resilienceMax: resilienceMax,
-      chromeTax: chromeTax,
+      chromeTax: chromeTax, cyberEnh: cyberEnh, cyberFlat: cyberFlat,
       woundsMax: woundsMax, critThreshold: critThreshold,
       saves: saves, skills: skills,
       resource: resource, flow: flow,

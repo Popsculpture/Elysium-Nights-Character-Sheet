@@ -264,7 +264,7 @@ EN.inventoryView = (function () {
       open && (it.category || it.skill) ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: (it.category ? "Tool Category: " + it.category : "") + (it.category && it.skill ? " · " : "") + (it.skill ? "Governing Skill: " + it.skill : "") }) : null,
       open && it.feeds ? el("p.help", { style: { margin: "4px 0 0", color: "var(--gold)" }, text: "Feeds: " + it.feeds }) : null,
       open && it.effect ? el("p.help", { style: { margin: "4px 0 0", color: "var(--accent)" }, text: (it.signature ? "" : "Effect: ") + it.effect }) : null,
-      open && it.cyber ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: "Install: " + it.zone + " zone · " + it.sp + " SP" + (it.slots ? " · " + it.slots + " mod slots" : "") + " · Enhancement: " + it.enhancement }) : null,
+      open && it.cyber ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: "Install: " + it.zone + " zone · " + it.sp + " SP" + (it.slots ? " · " + it.slots + " mod slots" : "") + " · Enhancement: " + (enhScaled(it) || "None") }) : null,
       open && it.cyber && it.tierNote ? el("p.help", { style: { margin: "4px 0 0" }, text: it.tierNote }) : null,
       open && it.basic ? el("p.help", { style: { margin: "4px 0 0" }, html: "<b style='color:var(--text2)'>Basic Use:</b> " + it.basic }) : null,
       open && it.proficient ? el("p.help", { style: { margin: "4px 0 0" }, html: "<b style='color:var(--gold)'>Proficient Use:</b> " + it.proficient }) : null,
@@ -291,6 +291,15 @@ EN.inventoryView = (function () {
   /* ---- Chrome tab: body silhouette + Chrome-Tax heat map, installed list, Open Architecture ---- */
   function heatColor(spv) { return spv <= 0 ? "#2a3446" : spv <= 2 ? "#00e5ff" : spv <= 4 ? "#ffcf5c" : spv <= 6 ? "#ff6b35" : "#ff4d5e"; }
   var THRESH_COLOR = ["#34465f", "#ffcf5c", "#ff6b35", "#ff6b35", "#ff4d5e", "#ff4d5e"];
+  // Enhancement Bonus scaled by tier (Streetware grants none; Blackware doubles); null = no bonus shown
+  function enhScaled(cw) {
+    if (!cw || !cw.enhancement || cw.enhancement === "None") return null;
+    var m = cw.enhancement.match(/\+(\d+)\s+(.+)/);
+    if (!m) return cw.enhancement;
+    var base = parseInt(m[1], 10), rest = m[2];
+    var amt = cw.tier === "Streetware" ? 0 : cw.tier === "Blackware" ? base * 2 : base;
+    return amt === 0 ? null : "+" + amt + " " + rest;
+  }
 
   // The silhouette SVG sits in the BACKGROUND; the heat markers ride on a
   // transparent SVG overlay in the FOREGROUND, aligned to the same 854x1972 space.
@@ -395,18 +404,21 @@ EN.inventoryView = (function () {
       return { label: "Impaired", color: "var(--danger)" };
     }
     var attrRows = (R.attributes || []).map(function (a) {
-      var sc = d.attributes[a.key].score, mod = d.attributes[a.key].mod, t = attrTier(sc), pct = Math.max(4, Math.min(100, sc / 20 * 100));
-      return el("div", { title: a.name + " " + sc + " · " + eng.fmtMod(mod), style: { display: "grid", gridTemplateColumns: "50px 1fr 30px", columnGap: "8px", alignItems: "center", padding: "2px 0" } }, [
+      var A = d.attributes[a.key], sc = A.score, mod = A.mod, cb = A.cyberBonus || 0, t = attrTier(sc), pct = Math.max(4, Math.min(100, sc / 20 * 100));
+      return el("div", { title: a.name + " " + sc + " · " + eng.fmtMod(mod) + (cb ? " (includes +" + cb + " from chrome)" : ""), style: { display: "grid", gridTemplateColumns: "50px 1fr 30px", columnGap: "8px", alignItems: "center", padding: "2px 0" } }, [
         el("span", { style: { fontWeight: 600, fontSize: "11px" }, text: a.name }),
         el("div", null, [
           el("div", { style: { height: "8px", background: "var(--bg1)", border: "1px solid var(--border)", borderRadius: "4px", overflow: "hidden" } },
             [el("div", { style: { width: pct + "%", height: "100%", background: ATTR_GRAD } })]),
           el("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "baseline" } }, [
             el("span", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".1em", color: t.color }, text: (t.icon || "") + t.label }),
-            el("span.mono", { style: { fontSize: "9px", color: "var(--text3)" }, text: String(sc) })
+            el("span", null, [
+              cb ? el("span.mono", { style: { fontSize: "8.5px", color: "var(--accent)", marginRight: "3px" }, title: "+" + cb + " from installed chrome", text: "◆+" + cb }) : null,
+              el("span.mono", { style: { fontSize: "9px", color: "var(--text3)" }, text: String(sc) })
+            ])
           ])
         ]),
-        el("span.mono", { style: { fontSize: "13px", color: "var(--accent)", textAlign: "right" }, text: eng.fmtMod(mod) })
+        el("span.mono", { style: { fontSize: "13px", color: cb ? "var(--accent)" : "var(--accent)", textAlign: "right" }, text: eng.fmtMod(mod) })
       ]);
     });
     var attrMatrix = el("div", null, [
@@ -446,7 +458,7 @@ EN.inventoryView = (function () {
         cw.tier ? tagChip(cw.tier, tierChipColor(cw.tier)) : null,
         tagChip((cw.sp || 0) + " SP", heatColor(cw.sp || 0)),
         tagChip("◆ " + cw.zone, "var(--accent)", "Interface Zone"),
-        (cw.enhancement && cw.enhancement !== "None") ? tagChip("✦ " + cw.enhancement, "var(--gold)", "Enhancement Bonus (display only for now)") : null
+        (function () { var e = enhScaled(cw); return e ? tagChip("✦ " + e, "var(--gold)", where === "installed" ? "Enhancement Bonus — applied to your attributes" : "Enhancement Bonus — applies once installed") : null; })()
       ];
       var actions;
       if (where === "stash") {
