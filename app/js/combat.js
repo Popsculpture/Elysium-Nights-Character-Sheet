@@ -790,27 +790,109 @@ EN.combatView = (function () {
       ])
     ]));
 
-    /* status strip */
+    /* status strip — each stat is clickable (toggles a breakdown panel) and
+       hoverable (native tooltip) so you can see exactly what feeds the number:
+       base, attribute mods, gear, chrome, lineage features, and conditions. */
     var dg = d.defenseGear || {};
-    blocks.push(el("div.stat-row", { style: { marginBottom: "16px" } }, [
-      EN.ui.stat("DEF", d.defense, (d.defenseAttr === "BOD" ? "Body" : "Agility") + (dg.shield ? " " + (dg.shieldDef >= 0 ? "+" : "") + dg.shieldDef + " shield" : "")),
-      (function () { var n = EN.ui.stat("DR", d.armorDR || 0, dg.armor ? dg.armor.name : "no armor");
-        if (!(d.armorDR > 0)) n.querySelector(".v").style.color = "var(--text3)";
-        return n; })(),
-      (function () { var fx0 = condEffects(ch); var sp = adjSpeed(d.speed, fx0);
-        var n = EN.ui.stat("SPD", sp, sp < d.speed ? "of " + d.speed + " — conditions" : "spaces");
-        if (sp < d.speed) n.querySelector(".v").style.color = "var(--danger)";
-        return n; })(),
-      (function () { var iv = d.attributes.AGI.mod + fx.init;
-        var n = EN.ui.stat("INIT", eng.fmtMod(iv), fx.init ? "Agility " + eng.fmtMod(fx.init) + " cond." : "Agility");
-        if (fx.init < 0) n.querySelector(".v").style.color = "var(--danger)";
-        return n; })(),
+    var agiMod = d.attributes.AGI.mod;
+    var initVal = agiMod + fx.init;
+    var spDisplay = adjSpeed(d.speed, fx);
+    var lineFeats = (eng.activeLineageFeatures ? eng.activeLineageFeatures(ch) : []) || [];
+    var defAttrName = d.defenseAttr === "BOD" ? "Body" : "Agility";
+    var defAttrReason = d.defenseAttr === "BOD"
+      ? (lineFeats.indexOf("Dermal Plating") !== -1 ? "Dermal Plating" : lineFeats.indexOf("Engineered Frame") !== -1 ? "Engineered Frame" : "lineage")
+      : null;
+    // chrome that moves Speed, attributed to the specific installed piece
+    var cyberSpeedRows = [];
+    var _cwItems = (EN.cyberware && EN.cyberware.items) || [];
+    (ch.cyberware || []).forEach(function (cw) {
+      if (!cw || typeof cw !== "object") return;
+      var cdef = _cwItems.find(function (i) { return i.key === cw.key; });
+      var ctier = cdef && (cdef.tiers || []).find(function (t) { return t.tier === cw.tier; });
+      if (ctier && ctier.bonus && ctier.bonus.speed) cyberSpeedRows.push({ label: cw.name || cw.base || "chrome", val: ctier.bonus.speed });
+    });
+    var baseMove = Math.max(3, 6 + agiMod), spdFloored = (6 + agiMod) < 3, spCond = spDisplay - d.speed;
+    function bdRow(label, val, note, raw) { return { label: label, val: val, note: note || null, raw: !!raw }; }
+    function chromeNote(k) { var cb = d.attributes[k].cyberBonus; return cb ? "score includes +" + cb + " from chrome" : null; }
+    var BD = {
+      DEF: { title: "Defense", total: d.defense, sign: false,
+        formula: "10 + " + defAttrName + " modifier" + (dg.shield ? " + shield" : "") + " + cover & active defenses (situational)",
+        rows: [bdRow("Base", 10, null, true),
+               bdRow(defAttrName + " modifier" + (defAttrReason ? " (" + defAttrReason + ")" : ""), d.attributes[d.defenseAttr].mod, chromeNote(d.defenseAttr))]
+          .concat(dg.shield ? [bdRow("Shield — " + dg.shield.name, dg.shieldDef)] : []),
+        foot: "Cover (+2 Half / +5 ¾) and a declared Active Defense add more against a specific attack — see Defend." },
+      DR: { title: "Damage Reduction", total: d.armorDR || 0, sign: false,
+        formula: "Worn armor's DR vs physical damage",
+        rows: dg.armor ? [bdRow("Armor — " + dg.armor.name, dg.armor.dr, null, true)] : [],
+        empty: dg.armor ? null : "No armor equipped — WEAR armor in Inventory → Stash.",
+        foot: dg.armor && (dg.armor.traits || []).indexOf("Plated") !== -1 ? "Plated: when you Block, add half this DR (rounded down) on top." : null },
+      SPD: { title: "Speed", total: spDisplay, sign: false,
+        formula: "max(3, 6 + Agility modifier) + chrome − Bulky − conditions",
+        rows: (spdFloored ? [bdRow("Base move (Agility floored to min 3)", baseMove, null, true)]
+                          : [bdRow("Base move", 6, null, true), bdRow("Agility modifier", agiMod, chromeNote("AGI"))])
+          .concat(cyberSpeedRows.map(function (r) { return bdRow("Chrome — " + r.label, r.val); }))
+          .concat(dg.speedPenalty ? [bdRow("Bulky — " + dg.armor.name, dg.speedPenalty)] : [])
+          .concat(spCond ? [bdRow("Conditions", spCond)] : []) },
+      INIT: { title: "Initiative", total: initVal, sign: true,
+        formula: "Agility modifier" + (fx.init ? " + conditions" : ""),
+        rows: [bdRow("Agility modifier", agiMod, chromeNote("AGI"))].concat(fx.init ? [bdRow("Conditions", fx.init)] : []),
+        foot: "Initiative roll = d20 + Caliber (" + d.caliber + ") + this." }
+    };
+    function fmtVal(r) { return r.raw ? String(r.val) : (r.val >= 0 ? "+" : "") + r.val; }
+    function titleFor(bd) {
+      var lines = [bd.title + " = " + (bd.sign ? eng.fmtMod(bd.total) : bd.total)];
+      if (bd.empty) lines.push(bd.empty);
+      bd.rows.forEach(function (r) { lines.push("• " + r.label + ": " + fmtVal(r) + (r.note ? " (" + r.note + ")" : "")); });
+      if (bd.foot) lines.push(bd.foot);
+      lines.push("(click for details)");
+      return lines.join("\n");
+    }
+    function statEl(key, label, value, sub, colorFn) {
+      var bd = BD[key], n = EN.ui.stat(label, value, sub);
+      n.style.cursor = "pointer";
+      n.title = titleFor(bd);
+      n.onclick = function () { _open.statbd = (_open.statbd === key ? null : key); EN.app.render(); };
+      if (_open.statbd === key) { n.style.borderColor = "var(--accent)"; n.style.boxShadow = "inset 0 0 0 1px var(--accent)"; }
+      if (colorFn) colorFn(n);
+      return n;
+    }
+    blocks.push(el("div.stat-row", { style: { marginBottom: _open.statbd ? "8px" : "16px" } }, [
+      statEl("DEF", "DEF", d.defense, defAttrName + (dg.shield ? " " + (dg.shieldDef >= 0 ? "+" : "") + dg.shieldDef + " shield" : "")),
+      statEl("DR", "DR", d.armorDR || 0, dg.armor ? dg.armor.name : "no armor", function (n) { if (!(d.armorDR > 0)) n.querySelector(".v").style.color = "var(--text3)"; }),
+      statEl("SPD", "SPD", spDisplay, spDisplay < d.speed ? "of " + d.speed + " — conditions" : "spaces", function (n) { if (spDisplay < d.speed) n.querySelector(".v").style.color = "var(--danger)"; }),
+      statEl("INIT", "INIT", eng.fmtMod(initVal), fx.init ? "Agility " + eng.fmtMod(fx.init) + " cond." : "Agility", function (n) { if (fx.init < 0) n.querySelector(".v").style.color = "var(--danger)"; })
     ]));
+    // breakdown panel (shows when a stat above is selected)
+    if (_open.statbd && BD[_open.statbd]) {
+      var sbd = BD[_open.statbd];
+      var bdRows = sbd.rows.map(function (r) {
+        return el("div", { style: { padding: "4px 0", borderBottom: "1px solid rgba(35,48,68,.4)" } }, [
+          el("div.row.between", { style: { alignItems: "baseline" } }, [
+            el("span", { style: { fontSize: "12px", color: "var(--text2)" }, text: r.label }),
+            el("span.mono", { style: { fontSize: "13px", color: "var(--text)" }, text: fmtVal(r) })
+          ]),
+          r.note ? el("div", { style: { fontSize: "10px", color: "var(--text3)" }, text: r.note }) : null
+        ]);
+      });
+      blocks.push(el("div", { style: { margin: "0 0 16px", padding: "10px 13px", border: "1px solid var(--accent)", borderRadius: "4px", background: "var(--bg2)" } }, [
+        el("div.row.between", { style: { alignItems: "center", marginBottom: "2px" } }, [
+          el("span", { style: { fontFamily: "var(--disp)", fontSize: "12px", letterSpacing: ".14em", textTransform: "uppercase", color: "var(--accent)" }, text: sbd.title }),
+          el("div.row", { style: { gap: "10px", alignItems: "center" } }, [
+            el("span.mono", { style: { fontSize: "16px", color: "var(--text)" }, text: sbd.sign ? eng.fmtMod(sbd.total) : String(sbd.total) }),
+            el("button", { title: "Close", style: { background: "transparent", border: "none", color: "var(--text3)", cursor: "pointer", fontSize: "14px", lineHeight: 1 }, onclick: function () { _open.statbd = null; EN.app.render(); } }, "✕")
+          ])
+        ]),
+        el("p.help", { style: { margin: "0 0 6px", fontSize: "11px" }, text: sbd.formula }),
+        sbd.empty ? el("p.help", { style: { margin: 0, color: "var(--text3)" }, text: sbd.empty }) : el("div", null, bdRows),
+        sbd.foot ? el("p.help", { style: { margin: "6px 0 0", color: "var(--text3)" }, text: sbd.foot }) : null
+      ]));
+    }
 
     /* defensive loadout — worn armor / wielded shield / attuned focus and the
-       numbers each one contributes (DR, Block, Defense, Ward). Equip them in
-       Inventory → Stash; one armor, one shield, one focus at a time. */
-    (function () {
+       numbers each one contributes (DR, Block, Defense, Ward). Built here but
+       rendered inside the Defend section (Actions panel), above the maneuvers.
+       Equip them in Inventory → Stash; one armor, one shield, one focus at a time. */
+    function defenseLoadoutEls() {
       function gchip(label, name, parts, color) {
         return el("div", { style: { display: "flex", alignItems: "center", gap: "8px", padding: "5px 9px", border: "1px solid " + color, borderLeft: "3px solid " + color, borderRadius: "4px", background: "rgba(0,0,0,.18)" } }, [
           el("span.mono", { style: { fontSize: "8.5px", letterSpacing: ".14em", color: color, minWidth: "42px" }, text: label }),
@@ -822,12 +904,10 @@ EN.combatView = (function () {
       if (dg.armor) { var ap = [dg.armorDR + " DR"]; if (dg.blockBonus) ap.push("+" + dg.blockBonus + " Block"); if (dg.armor.wardDie && !dg.focus) ap.push(dg.armor.wardDie + " Ward"); if (dg.speedPenalty) ap.push(dg.speedPenalty + " SPD"); if (dg.armor.slots) ap.push(dg.armor.slots + " slots"); chips.push(gchip("ARMOR", dg.armor.name, ap.join(" · "), "var(--success)")); }
       if (dg.shield) { var spv = [(dg.shieldDef >= 0 ? "+" : "") + dg.shieldDef + " DEF"]; if (dg.shieldBlockDie) spv.push(dg.shieldBlockDie + " Block"); chips.push(gchip("SHIELD", dg.shield.name, spv.join(" · "), "var(--accent)")); }
       if (dg.focus) { chips.push(gchip("FOCUS", dg.focus.name, (dg.focus.wardDie || "") + " Ward", "var(--flow)")); }
-      if (!chips.length) {
-        blocks.push(el("p.help", { style: { margin: "-6px 0 16px", fontSize: "11px", color: "var(--text3)" }, text: "No armor, shield, or Warding Focus equipped — buy defensive gear in Inventory → The Undercut, then WEAR / RAISE / ATTUNE it from your Stash." }));
-      } else {
-        blocks.push(el("div.row.wrap", { style: { gap: "8px", margin: "-6px 0 16px" } }, chips));
-      }
-    })();
+      if (!chips.length) return [el("p.help", { style: { margin: "2px 0 8px", fontSize: "11px", color: "var(--text3)" }, text: "No armor, shield, or Warding Focus equipped — buy defensive gear in Inventory → The Undercut, then WEAR / RAISE / ATTUNE it from your Stash." })];
+      // stacked full-width, in order: ARMOR → SHIELD → FOCUS (only the slots you've equipped)
+      return [el("div", { style: { display: "flex", flexDirection: "column", gap: "6px", margin: "2px 0 8px" } }, chips)];
+    }
 
     /* attribute matrix — single biometric-profile panel with gradient bars */
     function attrTier(score) {
@@ -1404,6 +1484,70 @@ EN.combatView = (function () {
         el("span.collapse-caret", { style: { marginLeft: "4px" }, text: acOpen ? "▾" : "▸" })
       ]));
       if (acOpen) actionKids.push(el("p.help", { style: { marginBottom: "6px" }, text: (C.commonActions || []).map(function (a) { return a.name; }).join(", ") + " — full rules in the Codex tab." }));
+    }
+    // Defend (ALL + IMPULSE) — Active Defenses are Impulse maneuvers. Each row shows
+    // the live value for THIS character (equipped shield/weapon/focus, Resilience Die,
+    // Flow Mod, Acrobatics) and dims when the equipment/attunement requirement is unmet.
+    if ((_tab === "ALL" || _tab === "IMPULSE") && (C.activeDefenses || []).length) {
+      var resDie = d.resilienceDie ? "d" + d.resilienceDie : "Resilience Die";
+      var acro = d.skills.find(function (s) { return s.name === "Acrobatics"; });
+      var attuned = !!d.flow, flowMod = d.flow ? eng.fmtMod(d.flow.attack) : null;
+      var focusDie = dg.wardDie || null, focusName = dg.focus ? dg.focus.name : (dg.armor && dg.armor.wardDie ? dg.armor.name : null);
+      var meleeDie = null, meleeName = null;
+      (ch.equippedWeapons || []).forEach(function (n) {
+        if (meleeDie) return;
+        var w = findWeapon(n);
+        if (w && (w.group === "Simple" || w.group === "Martial")) { var m = (w.damage || "").match(/\d*d\d+/); if (m) { meleeDie = m[0]; meleeName = w.name; } }
+      });
+      var DEF_LIVE = {
+        Block:   { avail: !!dg.shield, req: "a Physical Shield",
+                   summary: dg.shield ? "Adds " + dg.shieldBlockDie + " to your Armor DR (" + (d.armorDR || 0) + ") against this hit — no roll to enable" : "Reinforce your Armor DR with the shield's Block die" },
+        Dodge:   { avail: true, req: "",
+                   summary: (acro ? "+" + acro.total + " Defense" : "+Agility + Acrobatics to Defense") + " vs this hit; on a miss, shift 1 space" + (dg.speedPenalty ? " · GM may forbid in heavy armor" : "") },
+        Parry:   { avail: !!meleeDie || !!dg.shield, req: "a melee weapon or shield",
+                   summary: meleeDie ? "Roll " + meleeDie + " (" + meleeName + "), subtract from incoming damage" : "Roll your melee weapon's damage die, subtract from damage" },
+        Resurge: { avail: attuned, req: "Flow attunement",
+                   summary: "Roll " + resDie + " vs Flow attacks; reduce to 0 → rebound " + (flowMod || "your Flow Mod") + " Resonant" },
+        Siphon:  { avail: attuned, req: "Flow attunement",
+                   summary: "Roll " + resDie + " vs elemental/Flow damage; restore that much Vigor" },
+        Ward:    { avail: !!focusDie || attuned, req: "a Warding Focus or class feature",
+                   summary: "Roll " + resDie + (focusDie ? " + " + focusDie + " (" + focusName + ")" : "") + ", subtract from incoming damage" }
+      };
+      var defOpen = !!_open["defend-rules"];
+      actionKids.push(el("div.section-title.clickable", {
+        style: { margin: "12px 0 2px" },
+        title: defOpen ? "Hide the Active Defense rules" : "Tap for how Active Defenses work",
+        onclick: function () { _open["defend-rules"] = !defOpen; EN.app.render(); }
+      }, [document.createTextNode("Defend"), el("span.line"), el("span.collapse-caret", { style: { marginLeft: "4px" }, text: defOpen ? "▾" : "▸" })]));
+      if (defOpen) {
+        if (C.defense) actionKids.push(el("p.help", { style: { margin: "0 0 4px", color: "var(--text2)", whiteSpace: "pre-wrap" }, text: C.defense }));
+        if (C.activeDefenseRules) actionKids.push(el("p.help", { style: { margin: "0 0 4px", whiteSpace: "pre-wrap" }, text: C.activeDefenseRules }));
+        if (C.defenseNotes) actionKids.push(el("p.help", { style: { margin: "0 0 6px", color: "var(--warn)" }, text: "Conditions: " + C.defenseNotes }));
+      }
+      // the equipped armor / shield / focus chips sit just above the maneuvers
+      defenseLoadoutEls().forEach(function (elm) { actionKids.push(elm); });
+      // Resurge & Siphon are Flow-counter maneuvers — only surface them for Shapers
+      var SHAPER_ONLY = { Resurge: true, Siphon: true };
+      (C.activeDefenses || []).forEach(function (def) {
+        if (SHAPER_ONLY[def.name] && ch.class !== "shaper") return;
+        var L = DEF_LIVE[def.name] || { avail: true, req: "", summary: "" };
+        var id = "def-" + def.name, open = !!_open[id];
+        var fp = /FP/.test(def.cost || "");
+        var head = el("div.row.wrap", {
+          style: { gap: "9px", alignItems: "center", cursor: "pointer", padding: "7px 4px", borderBottom: "1px solid rgba(35,48,68,.5)", opacity: L.avail ? 1 : 0.55 },
+          onclick: function () { _open[id] = !open; EN.app.render(); }
+        }, [
+          el("span.collapse-caret", { text: open ? "▾" : "▸" }),
+          el("span", { style: { fontWeight: 600, minWidth: "62px" }, text: def.name }),
+          el("span.chip", { title: def.cost, style: { fontSize: "9px", color: fp ? "var(--flow)" : "var(--accent)", borderColor: fp ? "var(--flow)" : "var(--accent)" } }, fp ? "IMPULSE · 1 FP" : "IMPULSE"),
+          el("span", { style: { flex: 1, minWidth: "150px", fontSize: "11.5px", color: L.avail ? "var(--text2)" : "var(--text3)" }, text: L.summary }),
+          L.avail ? el("span.chip", { title: "Requirements met", style: { fontSize: "9px", color: "var(--success)", borderColor: "var(--success)" } }, "READY")
+                  : el("span.chip", { title: def.requirement || L.req, style: { fontSize: "9px", color: "var(--text4)", borderColor: "var(--border2)" } }, "needs " + L.req)
+        ]);
+        var kids = [head];
+        if (open) kids.push(el("p.help", { style: { margin: "4px 0 8px 18px", whiteSpace: "pre-wrap" }, text: def.text }));
+        actionKids.push(el("div", null, kids));
+      });
     }
     // class resource tracker — the fuel for the features below
     if (d.resource) {
