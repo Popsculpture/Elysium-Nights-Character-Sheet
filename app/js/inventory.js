@@ -11,7 +11,8 @@ window.EN = window.EN || {};
 EN.inventoryView = (function () {
   var el = EN.ui.el, clear = EN.ui.clear, toast = EN.ui.toast;
   var store = EN.store;
-  var _sub = "stash";      // 'stash' | 'chrome' | 'market'
+  var _sub = "stash";      // 'stash' | 'chrome' | 'market' | 'workbench'
+  var _bench = "ballistics"; // Workbench sub-tab: 'ballistics' | 'armor' | 'tech' | 'garage'
   var _open = {};          // collapse state for item cards
   var _ledgerAmt = 100;    // remembered credit/debit amount
   // Storefront (picked via the ⚙ settings popover; same stock, different pricing):
@@ -831,6 +832,42 @@ EN.inventoryView = (function () {
   }
 
   /* ---- main render ---- */
+  /* ---- Workbench: crafting & modding benches (rules plug in per bench) ---- */
+  var BENCHES = [
+    { key: "ballistics", label: "Ballistics Bench", icon: "⊚", color: "var(--ember)", tag: "WEAPON CRAFTING & MODDING",
+      blurb: "Build, tune, and customize weapons — firearms, blades, bows, and the attachments that ride them.",
+      handles: "Ranged Weapons · Melee Weapons · Signature Weapons · Ammunition · weapon mods & attachments" },
+    { key: "armor", label: "Impact Table", icon: "⛨", color: "var(--success)", tag: "ARMOR BENCH · CRAFTING & MODDING",
+      blurb: "The Armor Bench. Fit plates, slot Armor Mods, reinforce shells, and keep defensive gear in the fight.",
+      handles: "Light / Medium / Heavy Armor · Powered Exoframes · Mystech shells · Shields & Foci · Armor Mods" },
+    { key: "tech", label: "Tech Bay", icon: "⌬", color: "var(--accent)", tag: "TECH CRAFTING & MODDING",
+      blurb: "Assemble devices and gadgets, service chrome, and wire Smartdeck hardware mods and ciphers.",
+      handles: "Field Devices & Gadgets · Cyberware · Smartdeck Mods · Ciphers · Skill Kits" },
+    { key: "garage", label: "Garage", icon: "⛭", color: "var(--gold)", tag: "VEHICLE CRAFTING & MODDING",
+      blurb: "Wrench on rides — engines, plating, and weapon mounts for everything from a courier bike to a mech.",
+      handles: "Ground / Aerial / Marine Vehicles · Industrial / Mechs · vehicle upgrades & mounts" }
+  ];
+  function workbenchView(ch) {
+    var out = [];
+    out.push(el("div.row.wrap", { style: { gap: "6px", marginBottom: "12px" } }, BENCHES.map(function (b) {
+      var on = _bench === b.key;
+      return el("button.btn.sm" + (on ? ".primary" : ""), { style: on ? { color: b.color, borderColor: b.color } : null,
+        onclick: function () { _bench = b.key; EN.app.render(); } }, b.icon + " " + b.label);
+    })));
+    var b = BENCHES.find(function (x) { return x.key === _bench; }) || BENCHES[0];
+    var body = [
+      el("p.help", { style: { margin: "0 0 10px", maxWidth: "720px" }, text: b.blurb }),
+      el("div.row.wrap", { style: { gap: "6px", marginBottom: "4px", alignItems: "center" } },
+        [el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".1em", marginRight: "4px" }, text: "HANDLES" })]
+          .concat(b.handles.split(" · ").map(function (h) { return el("span.chip", { style: { fontSize: "9.5px", color: "var(--text2)", borderColor: "var(--border2)" } }, h); }))),
+      el("div.muted-box", { style: { marginTop: "14px", padding: "34px 20px", textAlign: "center", borderColor: b.color },
+        html: "<div style='font-family:var(--disp);font-size:14px;letter-spacing:.22em;color:" + b.color + "'>" + b.icon + " &nbsp;MODULE PENDING</div>"
+            + "<div style='font-size:12px;color:var(--text3);margin-top:10px;max-width:500px;margin-left:auto;margin-right:auto'>Crafting &amp; modding lives here. Drop the " + b.label + " rules and this bench comes online — recipes, mod slots, material costs, and Engineering/Systems checks.</div>" })
+    ];
+    out.push(EN.ui.panel(b.label, b.tag, body, { corners: true }));
+    return out;
+  }
+
   function render(mount) {
     var ch = store.active();
     clear(mount);
@@ -877,7 +914,8 @@ EN.inventoryView = (function () {
       el("div.row.wrap", { style: { gap: "6px" } }, [
         subTab("stash", "▣ STASH"),
         subTab("chrome", "⌖ CHROME"),
-        subTab("market", "◉ " + storefront().name.toUpperCase())
+        subTab("market", "◉ " + storefront().name.toUpperCase()),
+        subTab("workbench", "⚒ WORKBENCH")
       ]),
       el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
         el("span.mono", { title: "Glimmer — issued by the Luster Interchange Treasury. What ordinary life costs.",
@@ -891,7 +929,7 @@ EN.inventoryView = (function () {
       ])
     ]));
 
-    var body = _sub === "market" ? marketView(ch) : _sub === "chrome" ? chromeView(ch) : stashView(ch);
+    var body = _sub === "market" ? marketView(ch) : _sub === "chrome" ? chromeView(ch) : _sub === "workbench" ? workbenchView(ch) : stashView(ch);
     body.forEach(function (b) { blocks.push(b); });
     mount.appendChild(el("div", null, blocks));
   }
