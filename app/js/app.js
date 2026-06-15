@@ -12,7 +12,7 @@ EN.app = (function () {
   var TABS = [
     { key: "print",   label: "#PRINT",    glyph: "▤", view: function (m) { EN.builder.render(m); } },
     { key: "combat",  label: "Freelancer", glyph: "✦", view: function (m) { EN.combatView.render(m); } },
-    { key: "grid",    label: "#GRID",     glyph: "⌬", stub: "Smartdeck, Ciphers, Links, Bandwidth — for Codebreakers & Sourcerers." },
+    { key: "grid",    label: "#GRID",     glyph: "⌬", view: function (m) { EN.gridView.render(m); } },
     { key: "flow",    label: "Flow",      glyph: "❋", stub: "Reservoir, Invocations, Resonances, Strain — for Shapers." },
     { key: "gear",    label: "Inventory", glyph: "▣", view: function (m) { EN.inventoryView.render(m); } },
     { key: "codex",   label: "Codex",     glyph: "❒", view: function (m) { EN.codexView.render(m); } }

@@ -402,6 +402,68 @@ EN.engine = (function () {
     };
   }
 
+  /* ---- #GRID hacking stats: Cipher Attack / Save DC, Links, Bandwidth, and the
+     equipped rig (Smartdeck for Power Users / B&E Buddy for Standard Users).
+     Cipher Attack = d20 + Tech mod + Systems Proficiency Bonus; the deck's Device
+     Bonus rides on the attack roll (Quick Hack). Save DC = 8 + Tech mod + Systems prof. */
+  function gridStats(ch, attributes, skills, level, cal, resource) {
+    var G = EN.grid || {};
+    var sys = (skills || []).find(function (s) { return s.key === "systems"; });
+    var sysProf = sys ? sys.profBonus : 0, sysTier = sys ? sys.tier : "untrained";
+    var techMod = attributes.TEC.mod;
+    var cipherAttackBonus = techMod + sysProf;
+    var cipherSaveDC = 8 + techMod + sysProf;
+    var isCodebreaker = ch.class === "codebreaker";
+    // SysAdmin (Root Access) at L9 removes the Link cap for Codebreakers
+    var unlimitedLinks = isCodebreaker && level >= 9;
+    var g = (ch && ch.grid) || {};
+    var deck = null, deviceBonus = 0, deckBaseHp = 0, modSlots = 0, deckTraits = [], maxComplexity = null;
+    if (g.deckType === "smartdeck") {
+      deck = (G.smartdecks || []).find(function (t) { return t.tier === g.deckTier; });
+      if (deck) {
+        deviceBonus = deck.deviceBonus; deckBaseHp = deck.hp; modSlots = deck.modSlots; maxComplexity = Math.min(5, deck.t + 1);
+        deckTraits = (G.smartdecks || []).filter(function (x) { return x.t <= deck.t; }).map(function (x) { return x.trait; });
+      }
+    } else if (g.deckType === "buddy") {
+      deck = (G.buddies || []).find(function (t) { return t.tier === g.deckTier; });
+      if (deck) { deckBaseHp = deck.hp; }   // buddies have no mod slots → mods never apply
+    }
+    // mods apply only up to the deck's mod-slot capacity (0 for buddies / no rig).
+    // This also drops mods left stranded after a deck downgrade, and is safe against stale/imported data.
+    var modKeys = g.deckMods || [], modHp = 0, modLinks = 0, hasRedline = false, usedSlots = 0;
+    modKeys.forEach(function (k) {
+      var m = (G.mods || []).find(function (x) { return x.key === k; });
+      if (!m || usedSlots + m.slots > modSlots) return;
+      usedSlots += m.slots;
+      if (m.bonus && m.bonus.hp) modHp += m.bonus.hp;
+      if (m.bonus && m.bonus.links) modLinks += m.bonus.links;
+      if (k === "redline") hasRedline = true;
+    });
+    var deckMaxHp = deck ? deckBaseHp + modHp : 0;
+    var isSmart = g.deckType === "smartdeck" && !!deck;
+    var isBuddy = g.deckType === "buddy" && !!deck;
+    // effective attack/save with the current rig (Buddy uses its baked-in numbers)
+    var effectiveAttack = isBuddy ? deck.attack : cipherAttackBonus + deviceBonus;
+    var effectiveSaveDC = isBuddy ? deck.saveDc : cipherSaveDC;
+    var hasAdaptiveBuffer = isSmart && deck.t >= 4;   // Elite+ trait (Elite t=4, Apex t=5)
+    var stabilityDcMod = (hasAdaptiveBuffer ? -2 : 0) + (hasRedline ? 2 : 0);
+    var baseMaxLinks = isCodebreaker ? (2 * cal) : 1;
+    var maxLinks = unlimitedLinks ? null : baseMaxLinks + (isCodebreaker ? modLinks : 0);
+    return {
+      isCodebreaker: isCodebreaker, userType: isCodebreaker ? "Power User" : "Standard User",
+      techMod: techMod, systemsProf: sysProf, systemsTier: sysTier,
+      cipherAttackBonus: cipherAttackBonus, cipherSaveDC: cipherSaveDC,
+      effectiveAttack: effectiveAttack, effectiveSaveDC: effectiveSaveDC,
+      quickHackBonus: isSmart ? cipherAttackBonus + deviceBonus : null,
+      maxLinks: maxLinks, unlimitedLinks: unlimitedLinks, modLinks: isCodebreaker ? modLinks : 0,
+      bandwidthMax: (isCodebreaker && resource && resource.name === "Bandwidth") ? resource.max : null,
+      stabilityDcBase: 10 + stabilityDcMod, stabilityDcMod: stabilityDcMod,
+      deck: deck ? { type: g.deckType, tier: deck.tier, t: deck.t, deviceBonus: deviceBonus, maxHp: deckMaxHp,
+                     modSlots: modSlots, traits: deckTraits, maxComplexity: maxComplexity,
+                     attack: deck.attack, saveDc: deck.saveDc, maxNode: deck.maxNode } : null
+    };
+  }
+
   /* ======================================================================
      MAIN: derive a full computed snapshot for a character
      ====================================================================== */
@@ -534,6 +596,9 @@ EN.engine = (function () {
       };
     }
 
+    /* #GRID hacking stats + equipped rig */
+    var grid = gridStats(ch, attributes, skills, level, cal, resource);
+
     /* features unlocked up to current level (class + subclass + identity) */
     var features = [];
     if (cls && cls.featuresByLevel) {
@@ -582,6 +647,7 @@ EN.engine = (function () {
       shieldDef: defLoadout.shieldDef, shieldBlockDie: defLoadout.shieldBlockDie,
       wardDie: defLoadout.wardDie, defenseGear: defLoadout,
       chromeTax: chromeTax, cyberEnh: cyberEnh, cyberFlat: cyberFlat,
+      grid: grid,
       woundsMax: woundsMax, critThreshold: critThreshold,
       saves: saves, skills: skills,
       resource: resource, flow: flow,

@@ -61,6 +61,13 @@ EN.store = (function () {
       awakeningEvolution: null,          // Level 4 Awakening Milestone free Lineage Evolution
       cyberware: [],                     // INSTALLED chrome (feeds Static / Chrome Tax + Open Architecture)
       cyberStash: [],                    // purchased-but-uninstalled chrome (install at a clinic to move it to cyberware)
+      grid: {                            // #GRID rig + live hacking state (Bandwidth tracks via resources.current)
+        deckType: null,                  // 'smartdeck' (Power User) | 'buddy' (Standard User) | null
+        deckTier: null,                  // tier name from EN.grid.smartdecks / .buddies
+        deckHpSpent: 0,                  // durability HP lost (deck Bricked at deckHpSpent >= maxHp)
+        deckMods: [],                    // installed Smartdeck mod keys (Codebreaker only)
+        links: []                        // active Links: [{name, tier}]
+      },
       trainingPoints: { spent: 0, allocations: [] },
       resources: { current: {} },
       vitality: { current: null, temp: 0 },   // current null = full; temp = Vigor
@@ -118,6 +125,14 @@ EN.store = (function () {
       });
     }
     if (!ch.cyberStash) ch.cyberStash = [];   // purchased-but-uninstalled chrome
+    if (!ch.grid || typeof ch.grid !== "object") ch.grid = { deckType: null, deckTier: null, deckHpSpent: 0, deckMods: [], links: [] };
+    else {
+      if (ch.grid.deckType === undefined) ch.grid.deckType = null;
+      if (ch.grid.deckTier === undefined) ch.grid.deckTier = null;
+      if (typeof ch.grid.deckHpSpent !== "number") ch.grid.deckHpSpent = 0;
+      if (!Array.isArray(ch.grid.deckMods)) ch.grid.deckMods = [];
+      if (!Array.isArray(ch.grid.links)) ch.grid.links = [];
+    }
     // drop a stored subclass that no longer exists (e.g. after a class rework) so it re-surfaces as a pick
     if (ch.class && ch.subclass && EN.classes && EN.classes[ch.class]) {
       var subs = EN.classes[ch.class].subclasses || [];
