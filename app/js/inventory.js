@@ -37,9 +37,11 @@ EN.inventoryView = (function () {
   /* ---- pricing (Economy & Rewards: prices assume a major district;
           scarcity, faction control & legality shift them — sometimes a lot) */
   var LEGAL_COLOR = { "Legal": "var(--text3)", "Licensed": "var(--gold)", "Restricted": "var(--ember)", "Contraband": "var(--danger)", "As weapon": "var(--text3)" };
-  var AVAIL_COLOR = { "Common": "var(--text3)", "Uncommon": "var(--accent)", "Rare": "var(--flow)" };
+  // Common/Uncommon/Rare is the standard scale; Mystech gear runs its own (Iconic → Legendary → Mythical → Artifact).
+  var AVAIL_COLOR = { "Common": "var(--text3)", "Uncommon": "var(--accent)", "Rare": "var(--flow)",
+    "Iconic": "var(--accent)", "Legendary": "var(--flow)", "Mythical": "#c084fc", "Artifact": "var(--gold)" };
   var LEGAL_MULT = { "Legal": 1, "Licensed": 1.15, "Restricted": 1.4, "Contraband": 1.75 };
-  var AVAIL_MULT = { "Common": 1, "Uncommon": 1.2, "Rare": 1.5 };
+  var AVAIL_MULT = { "Common": 1, "Uncommon": 1.2, "Rare": 1.5, "Iconic": 1.5, "Legendary": 1.8, "Mythical": 2.2, "Artifact": 3 };
   var FENCE_RATE = 0.35;   // common contraband fences at 30–50% of market
 
   var STOREFRONTS = [
@@ -52,6 +54,7 @@ EN.inventoryView = (function () {
 
   function fmtG(n) { return "𝒢" + (n || 0).toLocaleString(); }
   function streetPrice(it) {
+    if (it.upkeep) return 0;   // leased gear always has a 𝒢0 buy-in — the cost is the recurring Upkeep, not a sale price
     if (_mode === "register") return Math.ceil(it.price * (LEGAL_MULT[it.legality] || 1) * (AVAIL_MULT[it.availability] || 1));
     if (_mode === "surplus") return Math.max(1, Math.floor(it.price * FENCE_RATE));
     if (_mode === "fivefinger") return 0;
@@ -60,6 +63,7 @@ EN.inventoryView = (function () {
   function fencePrice(it) { return Math.max(1, Math.floor(it.price * FENCE_RATE)); }
   function priceTitle(it) {
     var sp = streetPrice(it);
+    if (it.upkeep) return "Leased — 𝒢0 buy-in, " + fmtG(it.upkeep) + "/wk Upkeep. Lapse, get flagged, or cross the issuer and it drops to its zero state.";
     if (_mode === "register") {
       if (sp === it.price) return "List price " + fmtG(it.price) + (it.unit ? " " + it.unit : "") + ". Standard compliance handling included. All sales final.";
       return "List " + fmtG(it.price) + " · compliance surcharge ×" + (LEGAL_MULT[it.legality] || 1) + " (" + it.legality + ") · scarcity index ×" +
@@ -83,11 +87,27 @@ EN.inventoryView = (function () {
     });
     toast(on ? name + " equipped — it's live in the Attacks list on the Freelancer tab." : name + " unequipped.");
   }
+  // Defensive gear is single-slot per kind: one worn armor, one wielded shield,
+  // one attuned Warding Focus. Equipping another in the same slot replaces it.
+  var DEF_SLOT = { armor: "equippedArmor", shield: "equippedShield", focus: "equippedFocus" };
+  var DEF_VERB = { armor: { on: "WEAR", off: "✓ WORN", act: "worn" }, shield: { on: "RAISE", off: "✓ WIELDING", act: "wielded" }, focus: { on: "ATTUNE", off: "✓ ATTUNED", act: "attuned" } };
+  function isDefEquipped(ch, it) { return !!(it && DEF_SLOT[it.kind] && ch[DEF_SLOT[it.kind]] === it.name); }
+  function toggleDefEquip(it) {
+    var slot = DEF_SLOT[it.kind]; if (!slot) return;
+    var ch = store.active();
+    var was = ch[slot] === it.name;
+    store.update(function (c) { c[slot] = was ? null : it.name; });
+    var v = DEF_VERB[it.kind] || DEF_VERB.armor;
+    toast(was ? it.name + " stowed." : it.name + " " + v.act + " — its DR, Block, Defense, and Ward now read on the Freelancer tab.");
+  }
   function unequipIfGone(c, name) {
     var still = (c.equipment || []).some(function (x) { return x.name === name && x.qty > 0; });
     if (!still) {
       if (c.equippedWeapons) c.equippedWeapons = c.equippedWeapons.filter(function (n) { return n !== name; });
       if (c.weaponAmmo) delete c.weaponAmmo[name];   // drop the tracked magazine when the weapon leaves the stash
+      if (c.equippedArmor === name) c.equippedArmor = null;     // a sold/dropped piece can't stay worn
+      if (c.equippedShield === name) c.equippedShield = null;
+      if (c.equippedFocus === name) c.equippedFocus = null;
     }
   }
 
@@ -99,6 +119,7 @@ EN.inventoryView = (function () {
       (g.signature && g.signature.items) || [],
       (g.signature && g.signature.munitions) || [],
       (g.ammo && g.ammo.items) || [],
+      (g.armor && g.armor.items) || [],
       (g.tools && g.tools.items) || []
     );
   }
@@ -111,11 +132,16 @@ EN.inventoryView = (function () {
     });
     return out;
   }
+  // Armor/defensive traits live in their own table — several keys (Heavy, Light,
+  // Loud, Concealable) mean different things on armor than on weapons, so a
+  // defensive item resolves its chips against this set first.
+  function armorTraitDefs() { return (EN.gearCatalog && EN.gearCatalog.armor && EN.gearCatalog.armor.traits) || {}; }
+  function isDefensive(it) { return !!(it && (it.kind === "armor" || it.kind === "shield" || it.kind === "focus")); }
 
-  function traitChip(t) {
-    var defs = traitDefs();
+  function traitChip(t, defsOverride) {
+    var defs = defsOverride || traitDefs();
     var base = t.replace(/\s*\(.*\)$/, "").trim();
-    var def = defs[base] || defs[base.replace(/\s+\d+$/, " X")] || (/^Area /.test(base) ? defs["Area X"] : "") || "";
+    var def = defs[base] || defs[base.replace(/\s+\d+$/, " X")] || (/^Area /.test(base) ? defs["Area X"] : "") || (defsOverride ? traitDefs()[base] : "") || "";
     return el("span.chip", { title: def, style: { fontSize: "9.5px", color: "var(--text2)", borderColor: "var(--border2)" } }, t);
   }
   function tagChip(text, color, title) {
@@ -124,6 +150,7 @@ EN.inventoryView = (function () {
 
   /* ---- mutations ---- */
   function buy(it) {
+    if (it.vendor === false && _mode !== "fivefinger") { toast(it.name + " isn't vendor stock — it's found, not bought. (" + (it.nexus || "rarely sold") + ")"); return; }
     var sp = streetPrice(it);
     var ch = store.active();
     if ((ch.glimmer || 0) < sp) {
@@ -226,29 +253,59 @@ EN.inventoryView = (function () {
         it.cyber ? tagChip("◆ " + it.zone, "var(--accent)", "Interface Zone: " + it.zone) : null,
         it.cyber ? tagChip(it.sp + " SP", it.sp >= 3 ? "var(--ember)" : "var(--gold)", "Static Points — adds to your Total Static / Chrome Tax") : null,
         (it.cyber && it.slots) ? tagChip(it.slots + " slots", "var(--flow)", "Mod slots — compatible mods don't add SP") : null,
+        (it.nexus && it.vendor !== false) ? tagChip("◎ " + it.nexus.replace(/^◎/, ""), "var(--flow)", "Nexus alternative: " + it.nexus) : null,
+        it.upkeep ? tagChip("LEASED", "var(--ember)", "Leased — 𝒢0 buy-in, " + fmtG(it.upkeep) + "/wk Upkeep. Lapse and it drops to its zero state.") : null,
         (mode === "mkt" && owned) ? tagChip("Owned ×" + owned.qty, "var(--success)") : null,
-        (mode === "stash" && isEquipped(ch, it.name)) ? tagChip("⚔ Equipped", "var(--accent)", "Live in the Attacks list on the Freelancer tab") : null
+        (mode === "stash" && isEquipped(ch, it.name)) ? tagChip("⚔ Equipped", "var(--accent)", "Live in the Attacks list on the Freelancer tab") : null,
+        (mode === "stash" && isDefEquipped(ch, it)) ? tagChip((DEF_VERB[it.kind] || {}).off || "✓ Equipped", "var(--accent)", "Active — its stats read on the Freelancer tab") : null
       ]),
       el("span.mono", { title: mode === "mkt" ? priceTitle(it) : (_mode === "fivefinger" ? "No provenance, no payout — the fence won't touch it." : "Fence pays " + fmtG(fencePrice(it)) + " (street rate, ~35% of list)"),
-        style: { color: mode === "mkt" ? (_mode === "fivefinger" ? "var(--success)" : (afford ? "var(--gold)" : "var(--danger)")) : "var(--text3)", fontSize: "13px" } },
-        mode === "mkt" ? (_mode === "fivefinger" ? "FREE" : fmtG(sp) + (it.unit ? " " + it.unit : "")) : "×" + ((owned && owned.qty) || 0))
+        style: { color: mode === "mkt" ? (_mode === "fivefinger" ? "var(--success)" : (it.vendor === false ? "var(--flow)" : (it.upkeep ? "var(--ember)" : (afford ? "var(--gold)" : "var(--danger)")))) : "var(--text3)", fontSize: "13px" } },
+        mode === "mkt"
+          ? (_mode === "fivefinger" ? "FREE" : it.vendor === false ? (it.nexus || "—") : it.upkeep ? fmtG(it.upkeep) + "/wk" : fmtG(sp) + (it.unit ? " " + it.unit : ""))
+          : "×" + ((owned && owned.qty) || 0))
     ]);
     var statChips = [];
     if (it.damage && it.damage !== "0") statChips.push(el("span.mono", { style: { fontSize: "11.5px", color: "var(--accent)", marginRight: "4px" }, text: it.damage }));
     if (it.range && !/^Melee/.test(it.range)) statChips.push(el("span.chip", { title: "Range (normal / long — long range rolls with Snag)", style: { fontSize: "9.5px", color: "var(--gold)", borderColor: "var(--gold)" } }, "RNG " + it.range.replace(/\s/g, "")));
     if (typeof it.ammo === "number" && it.ammo > 1) statChips.push(el("span.chip", { title: "Magazine / capacity", style: { fontSize: "9.5px", color: "var(--gold)", borderColor: "var(--gold)" } }, "MAG " + it.ammo));
+    /* defensive-gear stat chips: DR / Block / Defense / Ward / mod slots */
+    function statChip(text, color, title) { return el("span.chip", { title: title || "", style: { fontSize: "9.5px", color: color, borderColor: color, fontWeight: 600 } }, text); }
+    if (typeof it.dr === "number") statChips.push(statChip("⛨ " + it.dr + " DR", "var(--success)", "Damage Reduction against physical damage (passive mitigation)"));
+    if (it.blockBonus) statChips.push(statChip("⛊ +" + it.blockBonus + " Block", "var(--gold)", "Flat Block Bonus — improves the Block Defensive Impulse"));
+    if (typeof it.defense === "number") statChips.push(statChip((it.defense >= 0 ? "+" : "") + it.defense + " DEF", it.defense ? "var(--accent)" : "var(--text3)", "Defense bonus while this shield is wielded"));
+    if (it.blockDie) statChips.push(statChip("⛊ " + it.blockDie + " Block", "var(--gold)", "Block die — added when you Block with this shield"));
+    if (it.wardDie) statChips.push(statChip("✦ " + it.wardDie + " Ward", "var(--flow)", "Ward die — once per round, added to your Ward reduction"));
+    if (isDefensive(it) && it.slots) statChips.push(statChip(it.slots + " mod slots", "var(--text2)", "Armor Mod slots (Modular trait)"));
+    var defDefs = isDefensive(it) ? armorTraitDefs() : null;
+    var mktBtn;
+    if (_mode === "fivefinger") {
+      // Five-Finger is the looted / recovered / pulled-from-a-body channel — the
+      // only way a found-only artifact (vendor:false) legitimately reaches a player.
+      mktBtn = el("button.btn.sm.primary", { title: it.cyber ? "Take to your Chrome Stash" : (it.vendor === false ? "The story handed it to you — take it." : priceTitle(it)), onclick: function () { it.cyber ? buyCyber(it) : buy(it); } }, "TAKE");
+    } else if (it.vendor === false) {
+      mktBtn = el("button.btn.sm", { disabled: true, title: "Not vendor stock — found, recovered, or campaign-granted, not bought. It can still turn up in Five-Finger Supply.", style: { color: "var(--flow)", borderColor: "var(--flow)" } }, "FOUND, NOT SOLD");
+    } else if (it.upkeep) {
+      mktBtn = el("button.btn.sm.primary", { title: "Sign the lease — 𝒢0 buy-in, " + fmtG(it.upkeep) + "/wk Upkeep. It works until the autopay lapses.", onclick: function () { buy(it); } }, "LEASE · " + fmtG(it.upkeep) + "/wk");
+    } else {
+      mktBtn = el("button.btn.sm" + (afford ? ".primary" : ""), { disabled: !afford, title: it.cyber ? "Buy to your Chrome Stash — install it later at a clinic (Chrome tab)" : priceTitle(it), onclick: function () { it.cyber ? buyCyber(it) : buy(it); } },
+        afford ? "BUY · " + fmtG(sp) : "CAN'T AFFORD");
+    }
     var info = el("div.row.wrap", { style: { gap: "6px", alignItems: "center", margin: "4px 0 0" } },
       statChips
-        .concat((it.traits || []).map(traitChip))
+        .concat((it.traits || []).map(function (t) { return traitChip(t, defDefs); }))
         .concat([el("span", { style: { flex: 1 } }),
           mode === "mkt"
-            ? el("button.btn.sm" + (afford ? ".primary" : ""), { disabled: !afford, title: it.cyber ? "Buy to your Chrome Stash — install it later at a clinic (Chrome tab)" : priceTitle(it), onclick: function () { it.cyber ? buyCyber(it) : buy(it); } },
-                _mode === "fivefinger" ? "TAKE" : (afford ? "BUY · " + fmtG(sp) : "CAN'T AFFORD"))
+            ? mktBtn
             : el("div.row", { style: { gap: "6px" } },
                 (isWeapon(it) ? [
                   isEquipped(ch, it.name)
                     ? el("button.btn.sm.primary", { title: "Unequip — remove from the Attacks list on the Freelancer tab", onclick: function () { toggleEquip(it.name); } }, "✓ EQUIPPED")
                     : el("button.btn.sm", { title: "Equip — add to the Attacks list on the Freelancer tab", style: { color: "var(--accent)", borderColor: "var(--accent)" }, onclick: function () { toggleEquip(it.name); } }, "⚔ EQUIP")
+                ] : []).concat(isDefensive(it) ? [
+                  isDefEquipped(ch, it)
+                    ? el("button.btn.sm.primary", { title: "Stow — it stops applying on the Freelancer tab", onclick: function () { toggleDefEquip(it); } }, (DEF_VERB[it.kind] || {}).off || "✓ EQUIPPED")
+                    : el("button.btn.sm", { title: "Equip — its DR / Block / Defense / Ward read on the Freelancer tab (one " + it.kind + " at a time)", style: { color: "var(--accent)", borderColor: "var(--accent)" }, onclick: function () { toggleDefEquip(it); } }, ((DEF_VERB[it.kind] || {}).on || "EQUIP"))
                 ] : []).concat(_mode === "fivefinger" ? [
                 el("button.btn.sm", { title: "Give one away", style: { color: "var(--success)", borderColor: "var(--success)" }, onclick: function () { donate(it.name); } }, "DONATE"),
                 el("button.btn.sm", { title: "Discard one", onclick: function () { drop(it.name); } }, "DROP")
@@ -260,10 +317,12 @@ EN.inventoryView = (function () {
     return el("div.feature", { style: { borderLeftColor: LEGAL_COLOR[it.legality] || "var(--border2)" } }, [
       head, info,
       open && it.desc ? el("p", { style: { marginTop: "8px" }, text: it.desc }) : null,
+      open && it.type ? el("p.help", { style: { margin: "4px 0 0", color: "var(--text2)" }, text: "Type: " + it.type + (it.upkeep ? " · Leased: 𝒢0 buy-in, " + fmtG(it.upkeep) + "/wk Upkeep" : "") + (it.nexus ? " · Nexus: " + it.nexus : "") }) : null,
       open && it.proficiency ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: "Proficiency: " + it.proficiency + (it.signature ? " · Signature weapon (0 customization slots)" : "") }) : null,
       open && (it.category || it.skill) ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: (it.category ? "Tool Category: " + it.category : "") + (it.category && it.skill ? " · " : "") + (it.skill ? "Governing Skill: " + it.skill : "") }) : null,
       open && it.feeds ? el("p.help", { style: { margin: "4px 0 0", color: "var(--gold)" }, text: "Feeds: " + it.feeds }) : null,
       open && it.effect ? el("p.help", { style: { margin: "4px 0 0", color: "var(--accent)" }, text: (it.signature ? "" : "Effect: ") + it.effect }) : null,
+      open && it.poweredBenefits ? el("p.help", { style: { margin: "4px 0 0", color: "var(--gold)" }, html: "<b style='color:var(--gold)'>Powered Benefits:</b> " + it.poweredBenefits }) : null,
       open && it.cyber ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: "Install: " + it.zone + " zone · " + it.sp + " SP" + (it.slots ? " · " + it.slots + " mod slots" : "") + " · Enhancement: " + (enhScaled(it) || "None") }) : null,
       open && it.cyber && it.tierNote ? el("p.help", { style: { margin: "4px 0 0" }, text: it.tierNote }) : null,
       open && it.basic ? el("p.help", { style: { margin: "4px 0 0" }, html: "<b style='color:var(--text2)'>Basic Use:</b> " + it.basic }) : null,
@@ -541,6 +600,7 @@ EN.inventoryView = (function () {
     var sig = (g.signature && g.signature.items) || [];
     var sigMun = (g.signature && g.signature.munitions) || [];
     var ammo = (g.ammo && g.ammo.items) || [];
+    var armorItems = (g.armor && g.armor.items) || [];
     var blocks = [];
     var BANNERS = {
       undercut: {
@@ -607,6 +667,18 @@ EN.inventoryView = (function () {
         { label: "Launcher Shells", intro: "Fired from a Grenade Launcher. Targets save Agility vs your Weapon Save DC.", items: byGroup(ammo, "Launcher Shell") }
       ] }
     ];
+    if (g.armor && armorItems.length) {
+      var ai = g.armor.groupIntros || {};
+      cats.push({ key: "armor", title: "Armor & Defensive Gear", short: "ARMOR", intro: g.armor.intro, subs: [
+        { label: "Light Armor", intro: ai["Light Armor"], items: byGroup(armorItems, "Light Armor") },
+        { label: "Medium Armor", intro: ai["Medium Armor"], items: byGroup(armorItems, "Medium Armor") },
+        { label: "Heavy Armor", intro: ai["Heavy Armor"], items: byGroup(armorItems, "Heavy Armor") },
+        { label: "Powered Exoframes", intro: ai["Powered Exoframe"], items: byGroup(armorItems, "Powered Exoframe") },
+        { label: "Mystech Armor", intro: ai["Mystech Armor"], items: byGroup(armorItems, "Mystech Armor") },
+        { label: "Physical Shields", intro: ai["Physical Shield"], items: byGroup(armorItems, "Physical Shield") },
+        { label: "Warding Foci", intro: ai["Warding Focus"], items: byGroup(armorItems, "Warding Focus") }
+      ] });
+    }
     var T = g.tools;
     if (T && T.buckets) {
       var SHORT = { kits: "KITS", devices: "DEVICES", consumables: "CONSUMABLES", flow: "FLOW" };
@@ -661,7 +733,7 @@ EN.inventoryView = (function () {
     function setF(key, val) { return function () { if (key === "type") _mktType = val; else if (key === "legal") _mktLegal = val; else _mktAvail = val; EN.app.render(); }; }
     var typeBtns = [fbtn(_mktType === "all", "ALL", setF("type", "all"))].concat(cats.map(function (c) { return fbtn(_mktType === c.key, c.short, setF("type", c.key)); }));
     var legalBtns = [fbtn(_mktLegal === "all", "ALL", setF("legal", "all"))].concat(["Legal", "Licensed", "Restricted", "Contraband"].map(function (l) { return fbtn(_mktLegal === l, l.toUpperCase(), setF("legal", l), LEGAL_COLOR[l]); }));
-    var availBtns = [fbtn(_mktAvail === "all", "ALL", setF("avail", "all"))].concat(["Common", "Uncommon", "Rare"].map(function (a) { return fbtn(_mktAvail === a, a.toUpperCase(), setF("avail", a), AVAIL_COLOR[a]); }));
+    var availBtns = [fbtn(_mktAvail === "all", "ALL", setF("avail", "all"))].concat(["Common", "Uncommon", "Rare", "Iconic", "Legendary", "Mythical", "Artifact"].map(function (a) { return fbtn(_mktAvail === a, a.toUpperCase(), setF("avail", a), AVAIL_COLOR[a]); }));
     var searchIn = el("input", { id: "mkt-search", type: "text", value: _mktQuery, placeholder: "search name, effect, category…",
       style: { maxWidth: "300px", flex: "1 1 200px" },
       oninput: function () { _mktQuery = this.value; var pos = this.selectionStart; EN.app.render(); var n = document.getElementById("mkt-search"); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (e) {} } } });

@@ -75,6 +75,9 @@ EN.store = (function () {
       conditionLevels: {},               // {name: level} for stackable/leveled conditions
       equipment: [],
       equippedWeapons: [],               // ordered weapon names — drives the Attacks list on the Freelancer tab
+      equippedArmor: null,               // worn body armor (one at a time) — name from EN.gearCatalog.armor
+      equippedShield: null,              // wielded physical shield (one at a time)
+      equippedFocus: null,               // attuned Warding Focus (one at a time)
       weaponAmmo: {},                    // {weaponName: {cur, mode, ammoType}} — magazine/fire-mode tracking
       glimmer: 0,
       log: []
@@ -101,6 +104,9 @@ EN.store = (function () {
     });
     if (!ch.featureUses) ch.featureUses = {};
     if (!ch.equippedWeapons) ch.equippedWeapons = [];
+    if (ch.equippedArmor === undefined) ch.equippedArmor = null;
+    if (ch.equippedShield === undefined) ch.equippedShield = null;
+    if (ch.equippedFocus === undefined) ch.equippedFocus = null;
     if (!ch.weaponAmmo) ch.weaponAmmo = {};
     // cyberware: legacy string entries → objects. sp:0 so old manual marks don't
     // retroactively spike Static; chrome bought from the market carries real SP.

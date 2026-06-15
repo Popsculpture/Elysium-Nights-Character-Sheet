@@ -370,6 +370,38 @@ EN.engine = (function () {
     return out;
   }
 
+  /* ---- equipped defensive gear: worn armor (DR + flat Block Bonus), a wielded
+     shield (Defense bonus + Block die), and an attuned Warding Focus (Ward die).
+     A Focus-trait mystech armor can also feed a Ward die. There's no automatic
+     damage pipeline on the sheet, so these resolve to displayed derived values;
+     conditional bits (lease zero-state, resistance picks, Plated half-DR-on-Block)
+     stay as the item's Effect text. */
+  function armorItem(name) {
+    if (!name) return null;
+    var items = (EN.gearCatalog && EN.gearCatalog.armor && EN.gearCatalog.armor.items) || [];
+    return items.find(function (i) { return i.name === name; }) || null;
+  }
+  function hasTrait(item, t) { return !!(item && item.traits && item.traits.indexOf(t) !== -1); }
+  function defensiveLoadout(ch) {
+    var armor = armorItem(ch && ch.equippedArmor);
+    var shield = armorItem(ch && ch.equippedShield);
+    var focus = armorItem(ch && ch.equippedFocus);
+    var wardDie = (focus && focus.wardDie) || (armor && armor.wardDie) || null;
+    // Bulky armor slows you by 1. Powered frames are the exception (trained + powered
+    // ignores it), but training isn't modeled, so we leave Powered Speed to the player.
+    var speedPenalty = (hasTrait(armor, "Bulky") && !hasTrait(armor, "Powered")) ? -1 : 0;
+    return {
+      armor: armor, shield: shield, focus: focus,
+      armorDR: (armor && armor.dr) || 0,
+      blockBonus: (armor && armor.blockBonus) || 0,   // flat Block Bonus from medium/heavy plate
+      shieldDef: (shield && typeof shield.defense === "number") ? shield.defense : 0,
+      shieldBlockDie: (shield && shield.blockDie) || null,
+      wardDie: wardDie,                               // from the Focus item, or a Focus-trait armor
+      wardFromArmor: !focus && !!(armor && armor.wardDie),   // the Ward die comes from the armor, not a separate focus
+      speedPenalty: speedPenalty
+    };
+  }
+
   /* ======================================================================
      MAIN: derive a full computed snapshot for a character
      ====================================================================== */
@@ -405,8 +437,9 @@ EN.engine = (function () {
     var defenseBase = 10;
     var linFeats = activeLineageFeatures(ch);
     if (linFeats.indexOf("Dermal Plating") !== -1 || linFeats.indexOf("Engineered Frame") !== -1) defenseAttr = "BOD";
-    var defense = defenseBase + attributes[defenseAttr].mod;
-    var speed = Math.max(3, 6 + agiMod) + (cyberFlat.speed || 0);
+    var defLoadout = defensiveLoadout(ch);
+    var defense = defenseBase + attributes[defenseAttr].mod + (defLoadout.shieldDef || 0);
+    var speed = Math.max(3, 6 + agiMod) + (cyberFlat.speed || 0) + (defLoadout.speedPenalty || 0);
 
     /* vitality / wounds / resilience */
     var vit = R.classVitality[ch.class];
@@ -545,6 +578,9 @@ EN.engine = (function () {
       attributes: attributes,
       defense: defense, defenseAttr: defenseAttr, speed: speed,
       vitalityMax: vitalityMax, resilienceDie: resilienceDie, resilienceMax: resilienceMax,
+      armorDR: defLoadout.armorDR, blockBonus: defLoadout.blockBonus,
+      shieldDef: defLoadout.shieldDef, shieldBlockDie: defLoadout.shieldBlockDie,
+      wardDie: defLoadout.wardDie, defenseGear: defLoadout,
       chromeTax: chromeTax, cyberEnh: cyberEnh, cyberFlat: cyberFlat,
       woundsMax: woundsMax, critThreshold: critThreshold,
       saves: saves, skills: skills,

@@ -791,8 +791,12 @@ EN.combatView = (function () {
     ]));
 
     /* status strip */
+    var dg = d.defenseGear || {};
     blocks.push(el("div.stat-row", { style: { marginBottom: "16px" } }, [
-      EN.ui.stat("DEF", d.defense, d.defenseAttr === "BOD" ? "Body" : "Agility"),
+      EN.ui.stat("DEF", d.defense, (d.defenseAttr === "BOD" ? "Body" : "Agility") + (dg.shield ? " " + (dg.shieldDef >= 0 ? "+" : "") + dg.shieldDef + " shield" : "")),
+      (function () { var n = EN.ui.stat("DR", d.armorDR || 0, dg.armor ? dg.armor.name : "no armor");
+        if (!(d.armorDR > 0)) n.querySelector(".v").style.color = "var(--text3)";
+        return n; })(),
       (function () { var fx0 = condEffects(ch); var sp = adjSpeed(d.speed, fx0);
         var n = EN.ui.stat("SPD", sp, sp < d.speed ? "of " + d.speed + " — conditions" : "spaces");
         if (sp < d.speed) n.querySelector(".v").style.color = "var(--danger)";
@@ -802,6 +806,28 @@ EN.combatView = (function () {
         if (fx.init < 0) n.querySelector(".v").style.color = "var(--danger)";
         return n; })(),
     ]));
+
+    /* defensive loadout — worn armor / wielded shield / attuned focus and the
+       numbers each one contributes (DR, Block, Defense, Ward). Equip them in
+       Inventory → Stash; one armor, one shield, one focus at a time. */
+    (function () {
+      function gchip(label, name, parts, color) {
+        return el("div", { style: { display: "flex", alignItems: "center", gap: "8px", padding: "5px 9px", border: "1px solid " + color, borderLeft: "3px solid " + color, borderRadius: "4px", background: "rgba(0,0,0,.18)" } }, [
+          el("span.mono", { style: { fontSize: "8.5px", letterSpacing: ".14em", color: color, minWidth: "42px" }, text: label }),
+          el("span", { style: { fontSize: "12px", fontWeight: 600, color: "var(--text)" }, text: name }),
+          el("span", { style: { fontFamily: "var(--mono)", fontSize: "10.5px", color: "var(--text3)" }, text: parts })
+        ]);
+      }
+      var chips = [];
+      if (dg.armor) { var ap = [dg.armorDR + " DR"]; if (dg.blockBonus) ap.push("+" + dg.blockBonus + " Block"); if (dg.armor.wardDie && !dg.focus) ap.push(dg.armor.wardDie + " Ward"); if (dg.speedPenalty) ap.push(dg.speedPenalty + " SPD"); if (dg.armor.slots) ap.push(dg.armor.slots + " slots"); chips.push(gchip("ARMOR", dg.armor.name, ap.join(" · "), "var(--success)")); }
+      if (dg.shield) { var spv = [(dg.shieldDef >= 0 ? "+" : "") + dg.shieldDef + " DEF"]; if (dg.shieldBlockDie) spv.push(dg.shieldBlockDie + " Block"); chips.push(gchip("SHIELD", dg.shield.name, spv.join(" · "), "var(--accent)")); }
+      if (dg.focus) { chips.push(gchip("FOCUS", dg.focus.name, (dg.focus.wardDie || "") + " Ward", "var(--flow)")); }
+      if (!chips.length) {
+        blocks.push(el("p.help", { style: { margin: "-6px 0 16px", fontSize: "11px", color: "var(--text3)" }, text: "No armor, shield, or Warding Focus equipped — buy defensive gear in Inventory → The Undercut, then WEAR / RAISE / ATTUNE it from your Stash." }));
+      } else {
+        blocks.push(el("div.row.wrap", { style: { gap: "8px", margin: "-6px 0 16px" } }, chips));
+      }
+    })();
 
     /* attribute matrix — single biometric-profile panel with gradient bars */
     function attrTier(score) {
@@ -1364,10 +1390,20 @@ EN.combatView = (function () {
       if (ch.class === "codebreaker") actionKids.push(attackRow("Cipher Attack", eng.fmtMod(d.attributes.TEC.mod), "d20 + Tech + proficiency vs Node · Quick Hacks under fire", "var(--accent)"));
       if (d.flow) actionKids.push(attackRow("Flow Attack", eng.fmtMod(d.flow.attack), "d20 + " + d.flow.attributeName + " · Invocation Save DC " + d.flow.dc, "var(--flow)"));
     }
-    // common actions chips (ALL + ACTION)
+    // common actions chips (ALL + ACTION) — the list of actions nests under the
+    // clickable header so it can be tucked away when not needed
     if ((_tab === "ALL" || _tab === "ACTION") && (C.commonActions || []).length) {
-      actionKids.push(el("div.section-title", { style: { margin: "12px 0 2px" } }, [document.createTextNode("Actions in Combat"), el("span.line")]));
-      actionKids.push(el("p.help", { style: { marginBottom: "6px" }, text: (C.commonActions || []).map(function (a) { return a.name; }).join(", ") + " — full rules in the Codex tab." }));
+      var acOpen = !!_open["actions-in-combat"];
+      actionKids.push(el("div.section-title.clickable", {
+        style: { margin: "12px 0 2px" },
+        title: acOpen ? "Hide the action list" : "Tap for the list of combat actions",
+        onclick: function () { _open["actions-in-combat"] = !acOpen; EN.app.render(); }
+      }, [
+        document.createTextNode("Actions in Combat"),
+        el("span.line"),
+        el("span.collapse-caret", { style: { marginLeft: "4px" }, text: acOpen ? "▾" : "▸" })
+      ]));
+      if (acOpen) actionKids.push(el("p.help", { style: { marginBottom: "6px" }, text: (C.commonActions || []).map(function (a) { return a.name; }).join(", ") + " — full rules in the Codex tab." }));
     }
     // class resource tracker — the fuel for the features below
     if (d.resource) {
