@@ -19,6 +19,7 @@ EN.builder = (function () {
     { key: "dossier",   n: "07", t: "#PRINT" }
   ];
   var _step = 0;
+  var _intake = false;   // show the register-or-import gate even when records already exist
   var _collapsed = {};   // {sectionId: true}  — UI-only collapse state (persists across re-renders)
   var _dismissed = {};   // {sectionId: dismissKey} — attention markers the player has dismissed
 
@@ -1404,7 +1405,7 @@ EN.builder = (function () {
     blocks.push(el("div", { style: { height: "16px" } }));
     blocks.push(el("div.row.wrap", null, [
       el("button.btn.primary", { onclick: function () { exportChar(ch); } }, "⤓ EXPORT RECORD (.JSON)"),
-      el("button.btn", { onclick: function () { window.print(); } }, "⎙ PRINT HARDCOPY"),
+      el("button.btn", { onclick: function () { EN.printSheet.open(); } }, "⎙ PRINT HARDCOPY"),
       el("button.btn.danger", { onclick: function () { if (confirm("Revoke and permanently delete this #PRINT record? This cannot be undone.")) { store.remove(ch.meta.id); EN.app.render(); } } }, "✕ REVOKE #PRINT")
     ]));
     return el("div", null, blocks);
@@ -1447,7 +1448,7 @@ EN.builder = (function () {
   function render(mount) {
     var ch = store.active();
     clear(mount);
-    if (!ch) { mount.appendChild(rosterGate()); return; }
+    if (!ch || _intake) { mount.appendChild(rosterGate()); return; }
     var d = eng.derive(ch);
 
     // wizard rail
@@ -1525,24 +1526,27 @@ EN.builder = (function () {
     var roster = store.roster();
     var ids = Object.keys(roster);
     var sel = el("select", { style: { width: "auto", minWidth: "160px" }, onchange: function (e) {
-      if (e.target.value === "__new") { store.createAndActivate(""); _step = 0; EN.app.render(); return; }
+      if (e.target.value === "__new") { _intake = true; EN.app.render(); return; }
       store.setActive(e.target.value); _step = 0; EN.app.render();
     } }, ids.map(function (id) { return el("option", { value: id, selected: id === ch.meta.id, text: (roster[id].name || "Unnamed") + " · L" + roster[id].level }); }).concat([el("option", { value: "__new", text: "+ Register New #PRINT" })]));
     return el("div.row", null, [el("label.fl", { style: { margin: 0 }, text: "On File" }), sel]);
   }
   function rosterGate() {
+    var hasExisting = !!store.active();   // reached via "+ Register" while records already exist
     return el("div", { style: { textAlign: "center", paddingTop: "60px" } }, [
-      el("h1", { style: { fontSize: "26px", marginBottom: "8px" }, text: "NO #PRINT ON FILE" }),
-      el("p.help", { style: { marginBottom: "20px" }, text: "Register a new Freelancer to issue their verified #PRINT identity." }),
-      el("button.btn.primary", { onclick: function () { store.createAndActivate(""); _step = 0; EN.app.render(); } }, "+ REGISTER NEW #PRINT"),
+      el("h1", { style: { fontSize: "26px", marginBottom: "8px" }, text: hasExisting ? "NEW #PRINT" : "NO #PRINT ON FILE" }),
+      el("p.help", { style: { marginBottom: "20px" }, text: "Register a new Freelancer to issue a verified #PRINT identity, or import an exported record (.JSON)." }),
+      el("button.btn.primary", { onclick: function () { _intake = false; store.createAndActivate(""); _step = 0; EN.app.render(); } }, "+ REGISTER NEW #PRINT"),
       el("div", { style: { height: "12px" } }),
-      el("button.btn.ghost", { onclick: function () { importPrompt(); } }, "⤒ IMPORT RECORD (.JSON)")
+      el("button.btn.ghost", { onclick: function () { importPrompt(); } }, "⤒ IMPORT RECORD (.JSON)"),
+      hasExisting ? el("div", { style: { height: "20px" } }) : null,
+      hasExisting ? el("button.btn.ghost", { style: { color: "var(--text3)", borderColor: "var(--border2)" }, onclick: function () { _intake = false; EN.app.render(); } }, "← BACK TO CURRENT #PRINT") : null
     ]);
   }
   function importPrompt() {
     var inp = el("input", { type: "file", accept: ".json", style: { display: "none" }, onchange: function (e) {
       var f = e.target.files[0]; if (!f) return; var r = new FileReader();
-      r.onload = function () { try { store.importCharacter(JSON.parse(r.result)); _step = 0; EN.app.render(); toast("Imported."); } catch (err) { toast("Invalid file."); } };
+      r.onload = function () { try { store.importCharacter(JSON.parse(r.result)); _intake = false; _step = 0; EN.app.render(); toast("Imported."); } catch (err) { toast("Invalid file."); } };
       r.readAsText(f);
     } });
     document.body.appendChild(inp); inp.click(); setTimeout(function () { inp.remove(); }, 1000);

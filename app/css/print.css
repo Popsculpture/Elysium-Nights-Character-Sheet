@@ -1,0 +1,118 @@
+/* ===========================================================================
+   ELYSIUM NIGHTS — Printable Hardcopy ("Freelancer Field Dossier")
+   On-screen preview overlay (dark scrim) + light ink-on-paper pages that print
+   clean via @media print. Paper palette is hardcoded (independent of the theme).
+   =========================================================================== */
+#print-overlay{ position:fixed; inset:0; z-index:9999; background:rgba(4,7,11,.93); display:flex; flex-direction:column; }
+.print-bar{ display:flex; align-items:center; gap:12px; padding:10px 16px; background:var(--bg2); border-bottom:1px solid var(--border2); flex:0 0 auto; }
+.print-bar-t{ font-family:var(--disp); letter-spacing:.18em; color:var(--accent); font-size:14px; }
+.print-bar-s{ font-family:var(--mono); font-size:11px; color:var(--text3); }
+.print-scroll{ flex:1 1 auto; overflow:auto; padding:24px; display:flex; flex-direction:column; align-items:center; gap:22px; }
+
+.sheet-page{ width:8.5in; min-height:11in; box-sizing:border-box; padding:.5in; position:relative;
+  background:#f1ede1; color:#18222c; font-family:var(--mono); box-shadow:0 12px 44px rgba(0,0,0,.55); }
+.sheet-page *{ box-sizing:border-box; }
+.ps-frame{ position:absolute; inset:.3in; border:.5px solid #cfc8b7; pointer-events:none; }
+.ps-corner{ position:absolute; width:13px; height:13px; border:1.4px solid #0c6f81; }
+.ps-tl{ left:.26in; top:.26in; border-right:0; border-bottom:0; }
+.ps-tr{ right:.26in; top:.26in; border-left:0; border-bottom:0; }
+.ps-bl{ left:.26in; bottom:.26in; border-right:0; border-top:0; }
+.ps-br{ right:.26in; bottom:.26in; border-left:0; border-top:0; }
+
+.ps-head{ display:flex; justify-content:space-between; align-items:flex-start; }
+.ps-kicker{ font-family:var(--mono); font-size:9px; letter-spacing:.22em; color:#6a747b; }
+.ps-title{ font-family:var(--disp); font-weight:700; font-size:23px; letter-spacing:.14em; color:#18222c; line-height:1.1; }
+.ps-head-r{ text-align:right; }
+.ps-barcode{ height:20px; width:150px; margin-left:auto;
+  background:repeating-linear-gradient(90deg,#18222c 0 1px,transparent 1px 3px,#18222c 3px 4px,transparent 4px 7px,#18222c 7px 9px,transparent 9px 11px); }
+.ps-tagrow{ display:flex; align-items:center; gap:8px; justify-content:flex-end; margin-top:5px; }
+.ps-tag{ font-family:var(--mono); font-size:10px; letter-spacing:.1em; color:#0c6f81; border:.8px solid #0c6f81; border-radius:2px; padding:1px 6px; }
+.ps-serial{ font-family:var(--mono); font-size:10px; color:#6a747b; letter-spacing:.06em; }
+.ps-rule{ height:1px; background:#0c6f81; margin:8px 0 12px; }
+.ps-rule.ps-faint{ background:#cfc8b7; height:.5px; margin:14px 0 12px; }
+.ps-foot{ position:absolute; left:.5in; right:.5in; bottom:.36in; text-align:center; font-family:var(--mono); font-size:9px; letter-spacing:.08em; color:#8a9097; }
+
+.ps-sect{ display:flex; align-items:center; gap:8px; margin:12px 0 6px; border-left:3px solid #0c6f81; padding-left:7px;
+  font-family:var(--mono); font-size:11px; letter-spacing:.14em; color:#0c6f81; text-transform:uppercase; }
+.ps-sect-r{ margin-left:auto; font-size:9px; color:#8a9097; letter-spacing:.06em; text-transform:none; }
+
+.ps-cols{ display:flex; gap:16px; align-items:flex-start; }
+.ps-col{ flex:1 1 0; min-width:0; }
+.ps-col-sil{ flex:0 0 1.9in; }
+.ps-grid2{ display:flex; gap:12px; }
+.ps-grid2>*{ flex:1 1 0; }
+.ps-row{ display:flex; gap:8px; margin-top:8px; }
+
+.ps-fl{ font-family:var(--mono); font-size:9px; letter-spacing:.08em; color:#6a747b; }
+.ps-fl.ps-emb{ color:#b1481f; } .ps-fl.ps-acc{ color:#0c6f81; }
+.ps-fv{ font-family:var(--mono); font-size:12px; color:#18222c; min-height:15px; padding-top:1px; }
+.ps-field{ background:#fbfaf5; border:.5px solid #cfc8b7; border-radius:2px; padding:3px 7px 4px; }
+.ps-box{ display:inline-block; min-width:34px; height:18px; line-height:18px; text-align:center; font-size:12px;
+  background:#fbfaf5; border:.5px solid #cfc8b7; border-radius:2px; padding:0 5px; }
+.ps-box.ps-write{ min-width:40px; }
+.ps-box.ps-tall{ display:block; width:100%; height:42px; }
+
+.ps-attr-grid{ display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+.ps-attr{ background:#e9e4d5; border:.5px solid #cfc8b7; border-radius:3px; padding:5px 8px; }
+.ps-attr-n{ font-family:var(--mono); font-size:10px; font-weight:500; letter-spacing:.08em; }
+.ps-attr-row{ display:flex; align-items:center; gap:8px; margin-top:3px; }
+.ps-attr-score{ width:46px; height:24px; line-height:24px; text-align:center; font-size:15px; background:#fbfaf5; border:.5px solid #cfc8b7; border-radius:2px; }
+.ps-attr-mod{ display:flex; flex-direction:column; }
+.ps-attr-modv{ width:34px; height:18px; line-height:18px; text-align:center; font-size:12px; background:#fbfaf5; border:.5px solid #cfc8b7; border-radius:2px; }
+
+.ps-skrow{ display:flex; align-items:center; gap:6px; padding:2px 0; border-bottom:.5px solid #e2dccb; font-size:11px; }
+.ps-sk-n{ flex:1 1 0; } .ps-sk-a{ width:30px; font-size:9px; color:#6a747b; } .ps-sk-t{ width:38px; font-size:9px; color:#0c6f81; } .ps-sk-b{ width:34px; text-align:right; }
+
+.ps-surv{ display:flex; flex-direction:column; gap:5px; }
+.ps-surv-row{ display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
+.ps-pips{ display:inline-flex; gap:3px; flex-wrap:wrap; }
+.ps-pip{ width:12px; height:12px; border:.6px solid #b6af9c; background:#fbfaf5; display:inline-block; }
+.ps-pip.on{ background:#18222c; }
+.ps-pip.dot{ border-radius:50%; }
+.ps-pip.hex{ clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%); }
+.ps-pip.dia{ transform:rotate(45deg); }
+
+.ps-statrow{ display:flex; gap:8px; margin:8px 0; }
+.ps-stat{ flex:1 1 0; background:#e9e4d5; border:.5px solid #cfc8b7; border-radius:3px; padding:5px 6px; text-align:center; }
+.ps-statv{ font-size:18px; line-height:1.1; color:#18222c; }
+.ps-statn{ font-size:8.5px; color:#8a9097; }
+
+.ps-chiprow{ display:flex; flex-wrap:wrap; gap:5px; margin:5px 0; }
+.ps-chip{ font-family:var(--mono); font-size:9.5px; color:#3a4650; border:.5px solid #cfc8b7; border-radius:2px; padding:2px 6px; }
+.ps-chip-box{ color:#0c6f81; border-color:#0c6f81; }
+
+.ps-tbl{ width:100%; border-collapse:collapse; margin-top:4px; }
+.ps-tbl th{ font-family:var(--mono); font-size:8.5px; letter-spacing:.08em; color:#6a747b; text-align:left; border-bottom:.5px solid #cfc8b7; padding:3px 4px; font-weight:400; }
+.ps-tbl td{ font-size:11px; padding:3px 4px; border-bottom:.5px solid #e2dccb; }
+.ps-tbl.ps-tbl-sk td{ font-size:10.5px; padding:2px 4px; }
+.ps-dim td{ color:#9aa29f; }
+
+.ps-wl{ display:flex; align-items:center; gap:8px; padding:5px 0; }
+.ps-wl-line{ flex:1 1 0; border-bottom:.5px solid #cfc8b7; height:14px; }
+
+.ps-sil{ position:relative; width:100%; aspect-ratio:825 / 1970; background:#e9e4d5; border:.5px solid #cfc8b7; border-radius:3px; overflow:hidden; }
+.ps-sil-img{ position:absolute; inset:0; width:100%; height:100%; object-fit:contain; opacity:.5; }
+.ps-sil-mark{ position:absolute; width:11px; height:11px; margin:-5.5px 0 0 -5.5px; border-radius:50%; background:#0c6f81; border:1px solid #f1ede1; }
+
+.ps-note{ font-size:10px; color:#6a747b; margin:4px 0; line-height:1.4; }
+.ps-rep{ display:grid; grid-template-columns:1fr 1fr; gap:0 14px; }
+
+.ps-snip-gh{ font-family:var(--mono); font-size:9px; letter-spacing:1.4px; color:#0c6f81; margin:9px 0 2px; border-bottom:.5px solid #e2dccb; padding-bottom:2px; }
+.ps-snip{ display:flex; align-items:baseline; gap:7px; padding:2.5px 0; border-bottom:.5px solid #efe9da; }
+.ps-snip-n{ flex:0 0 150px; font-size:10.5px; font-weight:500; color:#18222c; }
+.ps-snip-cost{ flex:0 0 auto; font-family:var(--mono); font-size:8px; color:#0c6f81; border:.5px solid #0c6f81; border-radius:2px; padding:0 4px; line-height:13px; }
+.ps-snip-b{ flex:1 1 auto; min-width:0; font-size:10px; color:#3a4650; line-height:1.35; }
+.ps-snip-src{ flex:0 0 auto; font-size:8px; color:#9aa29f; white-space:nowrap; }
+.ps-snip-uses{ flex:0 0 auto; display:inline-flex; gap:2px; }
+.ps-snip-uses .ps-pip{ width:9px; height:9px; }
+
+@media print{
+  @page{ size:Letter portrait; margin:0; }
+  #boot,#os,#toast{ display:none !important; }
+  #print-overlay{ position:static; inset:auto; background:#fff; display:block; }
+  .print-bar{ display:none; }
+  .print-scroll{ display:block; padding:0; gap:0; overflow:visible; }
+  .sheet-page{ box-shadow:none; margin:0; width:100%; min-height:100vh; background:#fff;
+    break-after:page; page-break-after:always; }
+  .sheet-page:last-child{ break-after:auto; page-break-after:auto; }
+}
