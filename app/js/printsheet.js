@@ -164,21 +164,12 @@ EN.printSheet = (function () {
     var rname = res.name, abbr = resAbbr(rname), seen = {}, rows = [];
     function add(name, cost, act) { var k = name.toLowerCase(); if (seen[k]) return; seen[k] = 1; rows.push([name, cost, act || ""]); }
     var resFeat = (d.features || []).find(function (f) { return f.name === rname; });
-    var blurb = (resFeat && resFeat.text) || "";
-    var fuels = res.fuels || blurb;
-    var defCost = ((blurb || fuels).match(/costs?\s+(\d+)\s/i) || [])[1] || "1";
-    // (1) named options (Gambits) - list lives after the ":" in the fuels blurb
-    var ci = fuels.indexOf(":");
-    if (ci >= 0) {
-      fuels.slice(ci + 1).split(/\.\s/)[0].split(/,\s*/).forEach(function (s) {
-        var nm = s.replace(/^and\s+/i, "").trim();
-        if (!nm || !/^[A-Z]/.test(nm) || nm.length >= 38) return;
-        var esc = nm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        // explicit "(Impulse Action):" tag wins; otherwise a "When ..." trigger is a reaction (Impulse)
-        var m = blurb.match(new RegExp(esc + "\\s*(?:\\(([^)]*)\\))?\\s*:\\s*(\\w+)", "i"));
-        var act = m && m[1] ? actLabel(m[1]) : (m && /^When$/i.test(m[2] || "") ? "Impulse" : "");
-        add(nm, defCost + " " + abbr, act);
-      });
+    var defCost = (((resFeat && resFeat.text) || res.fuels || "").match(/costs?\s+(\d+)\s/i) || [])[1] || "1";
+    // (1) the Gambits this character has learned (fall back to the full list until any chosen)
+    var gl = eng.gambitList ? eng.gambitList(ch) : [];
+    if (gl.length) {
+      var pick = (ch.gambits && ch.gambits.length) ? gl.filter(function (g) { return ch.gambits.indexOf(g.name) !== -1; }) : gl;
+      pick.forEach(function (g) { add(g.name, defCost + " " + abbr, actLabel(g.action)); });
     }
     // (2) named features that actively spend the resource. Classify by the clause that
     // actually spends it - not stray action-type mentions elsewhere in the effect text
@@ -207,6 +198,24 @@ EN.printSheet = (function () {
     return [].concat((g.melee && g.melee.items) || [], (g.ranged && g.ranged.items) || [], (g.signature && g.signature.items) || []).find(function (w) { return w.name === name; });
   }
   function catItem(name) { return allGear().find(function (i) { return i.name === name; }); }
+  // detail lines for one catalog item, driven by whichever fields it carries
+  // (weapon: damage/range/traits; armor: DR; tool/kit: effect/basic/proficient; tonic: desc/effect)
+  function gearDetailLines(it) {
+    var lines = [], stat = [];
+    if (it.damage) stat.push("Damage " + it.damage);
+    if (it.range) stat.push("Range " + it.range);
+    if (it.ammo != null) stat.push("Ammo " + it.ammo);
+    if (it.dr != null) stat.push("DR " + it.dr);
+    if (it.feeds) stat.push("Feeds " + it.feeds);
+    if (it.traits && it.traits.length) stat.push(it.traits.join(", "));
+    if (it.skill) stat.push("Skill: " + it.skill);
+    if (stat.length) lines.push(el("div.ps-invstat", { text: stat.join("  ·  ") }));
+    if (it.desc) lines.push(el("div.ps-invdesc", { text: it.desc }));
+    [["effect", "Effect"], ["basic", "Basic"], ["proficient", "Proficient"]].forEach(function (k) {
+      if (it[k[0]]) lines.push(el("div.ps-invkv", null, [el("span.ps-fl", { text: k[1] }), el("span.ps-invkv-v", { text: it[k[0]] })]));
+    });
+    return lines;
+  }
   function weaponHit(ch, d, w) {
     var melee = w._melee || w.group === "Simple" || w.group === "Martial";
     var thrown = (w.traits || []).some(function (t) { return /^Thrown/.test(t); });
@@ -333,7 +342,7 @@ EN.printSheet = (function () {
     L.push(sv);
     L.push(sect("Conditions & Fatigue"));
     var active = (ch.conditions || []);
-    L.push(el("div.ps-block.ps-block-tall", null, [active.length ? el("div.ps-block-v", { text: active.join(", ") }) : null]));
+    L.push(el("div.ps-block", null, [active.length ? el("div.ps-block-v", { text: active.join(", ") }) : null]));
     L.push(el("div.ps-surv-row", { style: { marginTop: "6px" } }, [el("span.ps-fl", { text: "FATIGUE" }), pips(ch.fatigue || 0, 6, "")]));
     L.push(sect("Senses", "10 + MOD + PROF (+/- 5 Edge/Snag)"));
     ["perception", "investigation", "intuition", "systems"].forEach(function (k) {
@@ -461,22 +470,23 @@ EN.printSheet = (function () {
     body.push(sect("Equipped / Worn"));
     body.push(loadout.length ? el("div.ps-chiprow", null, loadout) : note("Nothing equipped."));
 
-    // inventory table
-    body.push(sect("Inventory", "qty · state · tags"));
+    // inventory - one detailed block per item (description + mechanical stats)
+    body.push(sect("Inventory", "item detail"));
     var entries = (ch.equipment || []).filter(function (e) { return e.qty > 0; });
     if (!entries.length) body.push(note("Stash empty."));
     else {
-      var tbl = el("table.ps-tbl.ps-tbl-inv");
-      tbl.appendChild(el("tr", null, ["ITEM", "QTY", "STATE", "TAGS"].map(function (h) { return el("th", { text: h }); })));
       entries.forEach(function (e) {
         var it = catItem(e.name);
         var worn = (ch.equippedWeapons || []).indexOf(e.name) !== -1 || ch.equippedArmor === e.name || ch.equippedShield === e.name || ch.equippedFocus === e.name;
         var tags = it ? [it.group || it.kind || it.bucket, it.legality, it.availability].filter(Boolean).join(" · ") : "";
-        tbl.appendChild(el("tr", null, [
-          el("td", { text: e.name }), el("td", { text: "x" + e.qty }), el("td", { text: worn ? "equipped" : "stash" }), el("td", { text: tags })
-        ]));
+        var meta = ["x" + e.qty, worn ? "equipped" : "stash"].concat(tags ? [tags] : []).join(" · ");
+        var block = el("div.ps-invitem", null, [
+          el("div.ps-invhead", null, [el("span.ps-invname", { text: e.name }), el("span.ps-invmeta", { text: meta })])
+        ]);
+        if (it) gearDetailLines(it).forEach(function (l) { block.appendChild(l); });
+        else block.appendChild(el("div.ps-invdesc.ps-dim", { text: "No catalog entry - note details by hand." }));
+        body.push(block);
       });
-      body.push(tbl);
     }
 
     // chrome stash (uninstalled)
@@ -524,49 +534,34 @@ EN.printSheet = (function () {
   function chromeBlock(ch, d) {
     var installed = (eng.installedCyberware ? eng.installedCyberware(ch) : (ch.cyberware || []));
     var tax = d.chromeTax || { total: 0, index: 0, resDiePenalty: 0, fpPenalty: 0 };
-    var zones = (EN.cyberware && EN.cyberware.zones) || {};
-    var SIL_W = 825, SIL_H = 1970;
-    var markers = installed.map(function (cw) {
-      var z = zones[cw.zone] || zones.Hardware || { at: { x: SIL_W / 2, y: SIL_H / 2 } };
-      var p = (z.sided && cw.side === "L") ? z.left : (z.sided && cw.side === "R") ? z.right : z.at;
-      if (!p) p = z.at || { x: SIL_W / 2, y: SIL_H / 2 };
-      return el("span.ps-sil-mark", { style: { left: (p.x / SIL_W * 100) + "%", top: (p.y / SIL_H * 100) + "%" } });
-    });
-    var OUTLINE = '<svg viewBox="0 0 825 1970" preserveAspectRatio="xMidYMid meet" style="position:absolute;inset:0;width:100%;height:100%">' +
-      '<g fill="none" stroke="#b6af9c" stroke-width="62" stroke-linecap="round">' +
-      '<line x1="362" y1="330" x2="185" y2="720"/><line x1="463" y1="330" x2="645" y2="720"/>' +
-      '<line x1="372" y1="640" x2="332" y2="1880"/><line x1="453" y1="640" x2="495" y2="1880"/></g>' +
-      '<circle cx="412" cy="150" r="82" fill="#e3ddcc" stroke="#b6af9c" stroke-width="6"/>' +
-      '<rect x="320" y="250" width="184" height="432" rx="46" fill="#e3ddcc" stroke="#b6af9c" stroke-width="6"/></svg>';
-    var sil = el("div.ps-sil", { html: OUTLINE });
-    markers.forEach(function (m) { sil.appendChild(m); });
-
-    // group installed by Interface Zone
-    var ZONES = ["Neural", "Core", "Integument", "Arms", "Legs", "Hardware"];
-    var listRows = [];
-    ZONES.forEach(function (z) {
-      var inZone = installed.filter(function (cw) { return cw.zone === z; });
-      if (!inZone.length) return;
-      listRows.push(el("div.ps-snip-gh", { text: z.toUpperCase() + " · " + inZone.length }));
-      inZone.forEach(function (cw) {
-        listRows.push(el("div.ps-skrow", null, [
-          el("span.ps-sk-n", { text: cw.name || cw.base || "Chrome" }),
-          el("span.ps-sk-a", { text: (cw.tier || "") + (cw.side ? " " + cw.side : "") }),
-          el("span.ps-sk-b2", { text: (cw.sp || 0) + " SP" })
-        ]));
-      });
-    });
-    if (!installed.length) listRows = [note("No chrome installed.")];
-
-    var rightKids = [
+    var out = [
       sect("Cybernetic Frame", "Static " + tax.total + " SP"),
       el("div.ps-statrow", null, [
         stat("STATIC", tax.total, "total SP"),
         stat("CHROME TAX", "T" + (tax.index || 0), tax.index ? "-" + tax.resDiePenalty + " RD / FP" : "safe"),
         stat("INSTALLED", installed.length, "pieces")
       ])
-    ].concat(listRows);
-    return el("div.ps-cols", null, [col([sect("Body Map"), sil], ".ps-col-sil"), col(rightKids)]);
+    ];
+    if (!installed.length) { out.push(note("No chrome installed.")); return el("div", null, out); }
+    // installed chrome grouped by Interface Zone, each with its full description
+    var ZONES = ["Neural", "Core", "Integument", "Arms", "Legs", "Hardware"];
+    ZONES.forEach(function (z) {
+      var inZone = installed.filter(function (cw) { return cw.zone === z; });
+      if (!inZone.length) return;
+      out.push(el("div.ps-snip-gh", { text: z.toUpperCase() + " · " + inZone.length }));
+      inZone.forEach(function (cw) {
+        var meta = [cw.tier, cw.side ? "Side " + cw.side : null, (cw.sp || 0) + " SP"].filter(Boolean).join(" · ");
+        var block = el("div.ps-invitem", null, [
+          el("div.ps-invhead", null, [el("span.ps-invname", { text: cw.name || cw.base || "Chrome" }), el("span.ps-invmeta", { text: meta })])
+        ]);
+        if (cw.base && cw.base !== cw.name) block.appendChild(el("div.ps-invstat", { text: cw.base }));
+        if (cw.desc) block.appendChild(el("div.ps-invdesc", { text: cw.desc }));
+        if (cw.effect) block.appendChild(el("div.ps-invkv", null, [el("span.ps-fl", { text: "Effect" }), el("span.ps-invkv-v", { text: cw.effect })]));
+        if (cw.enhancement && cw.enhancement !== "None") block.appendChild(el("div.ps-invkv", null, [el("span.ps-fl", { text: "Enhance" }), el("span.ps-invkv-v", { text: cw.enhancement })]));
+        out.push(block);
+      });
+    });
+    return el("div", null, out);
   }
   function flowSystem(ch, d) {
     var f = d.flow; if (!f) return null;

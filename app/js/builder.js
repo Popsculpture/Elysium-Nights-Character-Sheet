@@ -713,6 +713,7 @@ EN.builder = (function () {
       }
       if (cls.resource && ch.class !== "shaper") {
         corePb.push(feature(cls.resource.name + " (Resource)", (cls.resource.maxFormula ? "Max Pool = " + cls.resource.maxFormula + "\n\n" : "") + (cls.resource.fuels || ""), "class", "Pool " + (d.resource ? d.resource.max : "")));
+        var gp = gambitPicker(ch); if (gp) corePb.push(gp);
       }
       if (ch.class === "shaper" && d.flow) {
         corePb.push(feature("Flow Points (Reservoir)", "Max Flow = (Caliber × 3) + " + d.flow.attributeName + " Modifier = " + d.flow.max + "\nFlow Save DC = 8 + " + d.flow.attributeName + " Mod + Caliber = " + d.flow.dc, "flow", "Flow " + d.flow.max));
@@ -828,6 +829,43 @@ EN.builder = (function () {
       }
     });
     return el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginBottom: "6px" } }, kids);
+  }
+
+  // Gambit picker (Scoundrel Moxie): toggle chips to choose known gambits, capped to the
+  // count unlocked by level (3 at L1, +2 at L5). Each chip shows its action type.
+  function gambitPicker(ch) {
+    var gl = eng.gambitList(ch);
+    if (!gl.length) return null;
+    var allowed = eng.gambitsAllowed(ch);
+    var chosen = ch.gambits || [];
+    var head = el("div.row.wrap", { style: { gap: "8px", alignItems: "baseline", margin: "10px 0 6px" } }, [
+      el("label.fl", { text: "Gambits Known" }),
+      el("span.chip" + (chosen.length >= allowed ? ".on" : ""), { style: { fontSize: "10px" }, text: chosen.length + " / " + allowed + " chosen" }),
+      el("span", { style: { fontFamily: "var(--mono)", fontSize: "10px", color: "var(--text3)" }, text: "3 at L1, +2 at L5 — click to learn" })
+    ]);
+    var chipRow = el("div.row.wrap", { style: { gap: "6px" } });
+    gl.forEach(function (g) {
+      var on = chosen.indexOf(g.name) !== -1;
+      var full = !on && chosen.length >= allowed;
+      chipRow.appendChild(el("span.chip", {
+        title: (g.action ? g.action + " — " : "") + g.text,
+        style: { fontSize: "10.5px", color: "var(--accent)", borderColor: "var(--accent)",
+                 cursor: full ? "not-allowed" : "pointer", borderStyle: on ? "solid" : "dashed",
+                 opacity: on ? 1 : (full ? .3 : .6), boxShadow: on ? "0 0 9px var(--accent)" : "none" },
+        onclick: function () {
+          if (full) { toast("You know " + allowed + " Gambits at Level " + (ch.level || 1) + "."); return; }
+          store.update(function (c) {
+            c.gambits = c.gambits || [];
+            var i = c.gambits.indexOf(g.name);
+            if (i >= 0) c.gambits.splice(i, 1); else c.gambits.push(g.name);
+          });
+        }
+      }, [
+        el("span", { text: (on ? "✓ " : "") + g.name }),
+        g.action ? el("span", { style: { color: "var(--text3)", marginLeft: "5px", fontSize: "9px" }, text: g.action.replace(/ Action$/, "") }) : null
+      ]));
+    });
+    return el("div", null, [head, chipRow]);
   }
 
   /* ---------- STEP 6: SKILLS (Training Point economy) ---------- */

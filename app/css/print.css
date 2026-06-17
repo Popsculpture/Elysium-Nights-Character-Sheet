@@ -9,7 +9,7 @@
 .print-bar-s{ font-family:var(--mono); font-size:11px; color:var(--text3); }
 .print-scroll{ flex:1 1 auto; overflow:auto; padding:24px; display:flex; flex-direction:column; align-items:center; gap:22px; }
 
-.sheet-page{ width:8.5in; min-height:11in; box-sizing:border-box; padding:.5in; position:relative;
+.sheet-page{ width:8.5in; min-height:11in; box-sizing:border-box; padding:.5in; position:relative; flex-shrink:0;
   background:#f1ede1; color:#18222c; font-family:var(--mono); box-shadow:0 12px 44px rgba(0,0,0,.55); }
 .sheet-page *{ box-sizing:border-box; }
 .ps-frame{ position:absolute; inset:.3in; border:.5px solid #cfc8b7; pointer-events:none; }
@@ -60,7 +60,7 @@
 .ps-attr-mod{ display:flex; flex-direction:column; }
 .ps-attr-modv{ width:34px; height:18px; line-height:18px; text-align:center; font-size:12px; background:#fbfaf5; border:.5px solid #cfc8b7; border-radius:2px; }
 
-.ps-skrow{ display:flex; align-items:center; gap:6px; padding:2px 0; border-bottom:.5px solid #e2dccb; font-size:11px; }
+.ps-skrow{ display:flex; align-items:center; gap:6px; padding:1px 0; border-bottom:.5px solid #e2dccb; font-size:11px; }
 .ps-sk-n{ flex:1 1 0; } .ps-sk-a{ width:30px; font-size:9px; color:#6a747b; } .ps-sk-t{ width:38px; font-size:9px; color:#0c6f81; } .ps-sk-b{ width:34px; text-align:right; }
 
 .ps-surv{ display:flex; flex-direction:column; gap:5px; }
@@ -146,6 +146,17 @@
 
 .ps-tbl-inv td:nth-child(2){ width:38px; text-align:center; }
 .ps-tbl-inv td:nth-child(3){ width:64px; }
+
+/* detailed inventory entries */
+.ps-invitem{ padding:6px 0 7px; border-bottom:.5px solid #e2dccb; }
+.ps-invhead{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
+.ps-invname{ font-size:12px; font-weight:600; color:#18222c; }
+.ps-invmeta{ font-family:var(--mono); font-size:8.5px; letter-spacing:.04em; color:#8a9097; white-space:nowrap; }
+.ps-invstat{ font-family:var(--mono); font-size:9px; color:#0c6f81; margin-top:2px; }
+.ps-invdesc{ font-size:10px; color:#3a4650; line-height:1.4; margin-top:2px; }
+.ps-invkv{ display:flex; gap:7px; margin-top:2px; }
+.ps-invkv .ps-fl{ flex:0 0 56px; }
+.ps-invkv-v{ flex:1 1 0; font-size:9.5px; color:#3a4650; line-height:1.4; }
 
 /* Vitality & Wounds: aligned 2-column grid (left = Vigor/Vitality/Death, right = Resilience/Wounds) */
 .ps-vw{ display:grid; grid-template-columns:1fr 1fr; column-gap:18px; row-gap:8px; margin-top:6px; align-items:center; }

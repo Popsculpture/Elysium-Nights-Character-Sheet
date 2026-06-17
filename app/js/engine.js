@@ -671,9 +671,35 @@ EN.engine = (function () {
   }
   function installedCyberBases(ch) { return installedCyberware(ch).map(function (cw) { return cw.base || cw.name; }); }
 
+  // Gambit-style resource options (e.g. Scoundrel Moxie Gambits): parsed from the resource
+  // feature's text, where each option reads "Name (Action): description".
+  function gambitList(ch) {
+    var cls = getClass(ch && ch.class);
+    var res = cls && cls.resource;
+    if (!cls || !res || !res.gambitPicks) return [];
+    var feats = (cls.featuresByLevel && cls.featuresByLevel["1"]) || [];
+    var rf = feats.filter(function (f) { return f.name === res.name; })[0];
+    if (!rf || !rf.text) return [];
+    var out = [];
+    rf.text.split(/\n/).forEach(function (ln) {
+      var m = ln.match(/^\s*([A-Z][A-Za-z'’ ]+?)\s*(?:\(([^)]*)\))?\s*:\s*(.+\S)\s*$/);
+      if (m && m[1].length < 40 && /\bMoxie\b|\bspend\b/i.test(m[3])) out.push({ name: m[1].trim(), action: (m[2] || "").trim(), text: m[3].trim() });
+    });
+    return out;
+  }
+  // how many gambits the character knows at its current level (3 at L1, +2 at L5, ...)
+  function gambitsAllowed(ch) {
+    var cls = getClass(ch && ch.class);
+    var picks = cls && cls.resource && cls.resource.gambitPicks;
+    if (!picks) return 0;
+    var lvl = (ch && ch.level) || 1;
+    return picks.reduce(function (n, p) { return n + (lvl >= p.level ? p.count : 0); }, 0);
+  }
+
   return {
     derive: derive, mod: mod, caliber: caliber, fmtMod: fmtMod, clamp: clamp,
     installedCyberware: installedCyberware, installedCyberBases: installedCyberBases,
+    gambitList: gambitList, gambitsAllowed: gambitsAllowed,
     getClass: getClass, getSpecies: getSpecies, getLineage: getLineage,
     getBackground: getBackground, getSubclass: getSubclass,
     pointBuySpent: pointBuySpent, trainingPointsTotal: trainingPointsTotal,
