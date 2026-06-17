@@ -190,124 +190,117 @@ EN.printSheet = (function () {
       stat("INIT", sgn(d.attributes.AGI.mod), "Agility")
     ]));
 
-    // attribute matrix + survival
-    var attrGrid = el("div.ps-attr-grid");
+    // attribute matrix - compact horizontal strip directly under the stat strip
+    body.push(sect("Attribute Matrix"));
+    var attrStrip = el("div.ps-attr-strip");
     (EN.rules.attributes || []).forEach(function (a) {
       var A = d.attributes[a.key];
-      attrGrid.appendChild(el("div.ps-attr", null, [
-        el("div.ps-attr-n", { text: a.name }),
-        el("div.ps-attr-row", null, [
-          el("div.ps-attr-score", { text: A.score + (A.cyberBonus ? " +" + A.cyberBonus : "") }),
-          el("div.ps-attr-mod", null, [el("div.ps-fl", { text: "MOD" }), el("div.ps-attr-modv", { text: sgn(A.mod) })])
-        ])
+      attrStrip.appendChild(el("div.ps-attrc", { title: A.cyberBonus ? "includes +" + A.cyberBonus + " from chrome" : "" }, [
+        el("div.ps-attrc-n", { text: a.name }),
+        el("div.ps-attrc-v", { text: A.score + (A.cyberBonus ? "*" : "") }),
+        el("div.ps-attrc-m", { text: sgn(A.mod) })
       ]));
     });
-    var surv = [
-      el("div.ps-surv-row", null, [el("span.ps-fl", { text: "VITALITY" }), el("span.ps-box", { text: d.vitalityMax }), el("span.ps-fl", { text: "MAX · NOW" }), el("span.ps-box.ps-write")]),
-      el("div.ps-surv-row", null, [el("span.ps-fl", { text: "VIGOR" }), el("span.ps-fl", { text: "TEMP" }), pips(0, 6, "hex")]),
-      el("div.ps-surv-row", null, [el("span.ps-fl.ps-emb", { text: "WOUNDS" }), el("span.ps-box", { text: d.woundsMax }), el("span.ps-fl", { text: "MAX · CRIT at " + d.critThreshold }), el("span.ps-box.ps-write")]),
-      el("div.ps-surv-row", null, [el("span.ps-fl", { text: "RESILIENCE" }), el("span.ps-fl", { text: "d" + (d.resilienceDie || "?") }), pips(d.resilienceMax, d.resilienceMax, "dot")])
-    ];
-    // resource / flow tracker
-    if (d.resource) {
-      surv.push(el("div.ps-surv-row", { style: { marginTop: "4px" } }, [el("span.ps-fl", { text: d.resource.name.toUpperCase() }), el("span.ps-fl", { text: "MAX " + d.resource.max }), pips(d.resource.max, Math.min(d.resource.max, 12), "dot")]));
-    } else if (d.flow) {
-      surv.push(el("div.ps-surv-row", { style: { marginTop: "4px" } }, [el("span.ps-fl", { text: "FLOW FP" }), el("span.ps-box", { text: d.flow.max }), el("span.ps-fl", { text: "MAX · NOW" }), el("span.ps-box.ps-write")]));
+    body.push(attrStrip);
+    // blank/write-in table: header row + prefilled rows + blank rows up to minRows
+    function wtable(headers, rows, minRows, clsName) {
+      var t = el("table.ps-tbl.ps-tbl-w" + (clsName || ""));
+      t.appendChild(el("tr", null, headers.map(function (h) { return el("th", { text: h }); })));
+      var n = 0;
+      (rows || []).forEach(function (r) { t.appendChild(el("tr", null, r.map(function (c) { return el("td", { text: c == null ? "" : String(c) }); }))); n++; });
+      for (; n < (minRows || 0); n++) t.appendChild(el("tr", null, headers.map(function () { return el("td", { html: "&nbsp;" }); })));
+      return t;
     }
-    body.push(cols([sect("Attribute Matrix"), attrGrid], [sect("Vitality & Wounds", "Vigor to Vitality to Wounds"), el("div.ps-surv", null, surv)]));
 
-    // skills (full, two columns) + versatile  |  attacks + defend
-    var skillCol = [sect("Skills", "d20 bonus · Snag = untrained")];
+    /* ===== LEFT column: Skills, Versatile, Saves, Conditions, Senses ===== */
+    var L = [sect("Skills", "d20 bonus · Snag = untrained")];
     var sk2 = el("div.ps-sk2");
     (d.skills || []).forEach(function (s) {
-      sk2.appendChild(el("div.ps-skrow" + (s.untrained ? ".ps-dim" : ""), null, [
+      sk2.appendChild(el("div.ps-skrow", null, [
         el("span.ps-sk-a", { text: s.attr }),
-        el("span.ps-sk-n", { text: s.name + (s.focus ? " +" : "") }),
-        s.untrained ? chip("Snag", ".ps-chip-snag") : null,
+        el("span.ps-sk-n", { text: s.name }),
+        s.untrained ? chip("Snag", ".ps-chip-snag") : (s.focus ? chip("Focus", ".ps-chip-box") : null),
         el("span.ps-sk-b", { text: sgn(s.total) })
       ]));
     });
-    skillCol.push(sk2);
+    L.push(sk2);
     var V = ch.versatile || {};
-    skillCol.push(sect("Versatile Skills"));
+    L.push(sect("Versatile Skills"));
     ["insight", "performance", "intimidation"].forEach(function (k) {
       var s = V[k] || {};
-      skillCol.push(el("div.ps-skrow", null, [
+      L.push(el("div.ps-skrow", null, [
         el("span.ps-sk-n", { text: k.charAt(0).toUpperCase() + k.slice(1) }),
         el("span.ps-sk-a", { text: s.attr || "__" }),
         el("span.ps-sk-b2", { text: s.skill || "__________" })
       ]));
     });
-
-    var atkCol = [sect("Attacks", "hit · dmg · range")];
-    var equipped = (ch.equippedWeapons || []).map(findWeapon).filter(Boolean);
-    if (!equipped.length) equipped = [{ name: "Unarmed Strike", damage: "1 + Body mod", range: "Melee", _melee: true, traits: [] }];
-    equipped.forEach(function (w) {
-      var hit = sgn(weaponHit(ch, d, w)) + (w.group === "Simple" || w.group === "Martial" || w._melee ? "" : "");
-      var fire = (w.traits || []).filter(function (t) { return /Single Shot|Semi-Automatic|Burst|Full-Auto/.test(t); });
-      var rng = w.range || "Melee";
-      atkCol.push(el("div.ps-atk", null, [
-        el("div.ps-atk-h", null, [el("span.ps-atk-n", { text: w.name }), el("span.ps-atk-m", { text: hit + " · " + (w.damage || "-") }), el("span.ps-atk-r", { text: rng + (typeof w.ammo === "number" ? " · mag " + w.ammo : "") })]),
-        (w.traits && w.traits.length) ? el("div.ps-atk-t", { text: w.traits.join(", ") }) : null,
-        fire.length ? el("div.ps-atk-t", { text: "Fire modes: " + fire.join(", ") }) : null
-      ]));
-    });
-    // defend
-    var DEFEND = [
-      { n: "Block", e: "Add shield Block die to your Armor DR vs the hit", req: dg.shield ? null : "needs a shield" },
-      { n: "Dodge", e: "+Agility +Acrobatics to Defense; on a miss, shift 1", req: null },
-      { n: "Parry", e: "Roll your weapon's damage die, subtract from damage", req: null },
-      { n: "Ward", e: "Roll Resilience die" + (dg.wardDie ? " + " + dg.wardDie : "") + ", subtract from damage", req: (dg.wardDie || ch.class === "shaper") ? null : "needs a Warding Focus or feature" }
-    ];
-    if (ch.class === "shaper") DEFEND.push({ n: "Resurge", e: "Roll Resilience die vs Flow; reduce to 0 rebounds Flow mod", req: "1 FP" }, { n: "Siphon", e: "Roll Resilience die vs elemental/Flow; restore that Vigor", req: "1 FP" });
-    atkCol.push(sect("Defend", "1 Impulse"));
-    DEFEND.forEach(function (x) {
-      atkCol.push(el("div.ps-snip", null, [
-        el("span.ps-snip-n", { text: x.n }),
-        el("span.ps-snip-b", { text: x.e }),
-        x.req ? chip(x.req, ".ps-chip-snag") : null
-      ]));
-    });
-    body.push(cols(skillCol, atkCol));
-
-    // saves | senses
-    var saveCol = [sect("Saves", "d20 + MOD + Caliber (Focus)")];
+    L.push(sect("Saves", "d20 + MOD + Caliber (Focus)"));
     var sv = el("table.ps-tbl");
     sv.appendChild(el("tr", null, ["SAVE", "FOCUS", "BONUS"].map(function (h) { return el("th", { text: h }); })));
     (EN.rules.attributes || []).forEach(function (a) {
       var S = d.saves[a.key] || {};
       sv.appendChild(el("tr", null, [el("td", { text: a.name }), el("td", { text: S.focus ? "FOCUS" : "" }), el("td", { text: sgn(S.bonus != null ? S.bonus : d.attributes[a.key].mod) })]));
     });
-    saveCol.push(sv);
-
-    var senseCol = [sect("Senses", "10 + MOD + PROF (+/- 5 Edge/Snag)")];
+    L.push(sv);
+    L.push(sect("Conditions & Fatigue"));
+    var active = (ch.conditions || []);
+    L.push(el("div.ps-block.ps-block-tall", null, [active.length ? el("div.ps-block-v", { text: active.join(", ") }) : null]));
+    L.push(el("div.ps-surv-row", { style: { marginTop: "6px" } }, [el("span.ps-fl", { text: "FATIGUE" }), pips(ch.fatigue || 0, 6, "")]));
+    L.push(sect("Senses", "10 + MOD + PROF (+/- 5 Edge/Snag)"));
     ["perception", "investigation", "intuition", "systems"].forEach(function (k) {
       var s = (d.skills || []).find(function (x) { return x.key === k; });
-      if (s) senseCol.push(el("div.ps-skrow", null, [el("span.ps-sk-n", { text: "Passive " + s.name }), el("span.ps-sk-b", { text: s.passive })]));
+      if (s) L.push(el("div.ps-skrow", null, [el("span.ps-sk-n", { text: "Passive " + s.name }), el("span.ps-sk-b", { text: s.passive })]));
     });
     var special = (d.features || []).map(function (f) { var g = SENSE_GRANTS[f.name]; return g ? el("div.ps-skrow", null, [el("span.ps-sk-n", { text: g.sense }), el("span.ps-sk-a", { text: f.name }), el("span.ps-sk-b2", { text: g.range })]) : null; }).filter(Boolean);
-    if (special.length) { senseCol.push(sect("Special Senses")); special.forEach(function (r) { senseCol.push(r); }); }
-    body.push(cols(saveCol, senseCol));
+    if (special.length) { L.push(sect("Special Senses")); special.forEach(function (r) { L.push(r); }); }
 
-    // conditions / fatigue / death  |  proficiencies & training
-    var condCol = [sect("Conditions & Fatigue")];
-    var active = (ch.conditions || []);
-    condCol.push(el("div.ps-block.ps-block-tall", null, [active.length ? el("div.ps-block-v", { text: active.join(", ") }) : null]));
-    condCol.push(el("div.ps-surv-row", null, [el("span.ps-fl", { text: "FATIGUE" }), pips(ch.fatigue || 0, 6, "")]));
-    condCol.push(el("div.ps-surv-row", null, [el("span.ps-fl", { text: "DEATH SAVES" }), el("span.ps-fl.ps-acc", { text: "S" }), pips((ch.deathSaves && ch.deathSaves.s) || 0, 3, "dot"), el("span.ps-fl.ps-emb", { text: "F" }), pips((ch.deathSaves && ch.deathSaves.f) || 0, 3, "dot")]));
-
-    var profCol = [sect("Proficiencies & Training")];
+    /* ===== RIGHT column: Vitality & Wounds, Attacks, Abilities, Proficiencies ===== */
+    var R = [sect("Vitality & Wounds", "Vigor to Vitality to Wounds")];
+    // 2-column grid: left = Vigor / Vitality / Death Saves, right = Resilience / Wounds.
+    // boxes read "current / max"; the write box is current, the printed box is max.
+    var vw = el("div.ps-vw");
+    vw.appendChild(el("div.ps-vw-cell", null, [
+      el("span.ps-fl", { text: "VIGOR" }), el("span.ps-box.ps-write")
+    ]));
+    vw.appendChild(el("div.ps-vw-cell", null, [
+      el("span.ps-fl", { text: "RESILIENCE d" + (d.resilienceDie || "?") }), pips(d.resilienceMax, d.resilienceMax, "dot")
+    ]));
+    vw.appendChild(el("div.ps-vw-cell", null, [
+      el("span.ps-fl", { text: "VITALITY" }), el("span.ps-box.ps-write"), el("span.ps-vw-sl", { text: "/" }), el("span.ps-box", { text: d.vitalityMax })
+    ]));
+    vw.appendChild(el("div.ps-vw-cell", null, [
+      el("span.ps-fl.ps-emb", { text: "WOUNDS" }), el("span.ps-box.ps-write"), el("span.ps-vw-sl", { text: "/" }), el("span.ps-box", { text: d.woundsMax })
+    ]));
+    vw.appendChild(el("div.ps-vw-cell.ps-vw-span", null, [
+      el("span.ps-fl", { text: "DEATH SAVES" }), el("span.ps-fl.ps-acc", { text: "S" }), pips((ch.deathSaves && ch.deathSaves.s) || 0, 3, "dot"), el("span.ps-fl.ps-emb", { text: "F" }), pips((ch.deathSaves && ch.deathSaves.f) || 0, 3, "dot")
+    ]));
+    R.push(vw);
+    // Attacks table (equipped weapons auto-filled, blank rows for the rest)
+    R.push(sect("Attacks"));
+    var atkRows = (ch.equippedWeapons || []).map(findWeapon).filter(Boolean).map(function (w) {
+      return [w.name, sgn(weaponHit(ch, d, w)), w.damage || "", (w.traits || []).join(", ")];
+    });
+    R.push(wtable(["Name", "Atk Bonus / DC", "Damage & Type", "Notes"], atkRows, Math.max(6, atkRows.length + 2), ".ps-tbl-atk"));
+    // Abilities table (blank write-in; resource tracker in the header)
+    var resLabel = d.resource ? (d.resource.name.toUpperCase() + " MAX " + d.resource.max) : (d.flow ? "FLOW FP MAX " + d.flow.max : "");
+    var trackPips = d.resource ? pips(d.resource.max, Math.min(d.resource.max, 12), "dot") : null;
+    R.push(el("div.ps-sect", null, [
+      el("span", { text: "Abilities" }),
+      el("span.ps-sect-track", null, [resLabel ? el("span.ps-fl", { text: resLabel }) : null, trackPips].filter(Boolean))
+    ]));
+    R.push(wtable(["Name", "Cost", "Action Type"], [], 14, ".ps-tbl-abl"));
+    // Proficiencies & Training
+    R.push(sect("Proficiencies & Training"));
     [["Weapons", "weapons"], ["Armor", "armor"], ["Tools", "tools"], ["Vehicles", "vehicles"]].forEach(function (p) {
       var cats = proficientCats(ch, p[1]);
-      if (cats.length) profCol.push(el("div.ps-proc", null, [el("span.ps-fl", { text: p[0] }), el("span.ps-proc-v", { text: cats.join(", ") })]));
+      if (cats.length) R.push(el("div.ps-proc", null, [el("span.ps-fl", { text: p[0] }), el("span.ps-proc-v", { text: cats.join(", ") })]));
     });
     var foci = (ch.skillFocuses || []).map(function (f) { var sk = EN.rules.skillByKey[f.skill]; return (sk ? sk.name : f.skill) + (f.aspect ? " (" + f.aspect + ")" : ""); });
-    if (foci.length) profCol.push(el("div.ps-proc", null, [el("span.ps-fl", { text: "Focus" }), el("span.ps-proc-v", { text: foci.join(", ") })]));
+    if (foci.length) R.push(el("div.ps-proc", null, [el("span.ps-fl", { text: "Focus" }), el("span.ps-proc-v", { text: foci.join(", ") })]));
     var specs = (ch.specializations || []).map(function (f) { var sk = EN.rules.skillByKey[f.skill]; return (sk ? sk.name : f.skill) + (f.aspect ? " (" + f.aspect + ")" : ""); });
-    if (specs.length) profCol.push(el("div.ps-proc", null, [el("span.ps-fl", { text: "Spec" }), el("span.ps-proc-v", { text: specs.join(", ") })]));
-    if (profCol.length === 1) profCol.push(note("No gear proficiencies yet."));
-    body.push(cols(condCol, profCol));
+    if (specs.length) R.push(el("div.ps-proc", null, [el("span.ps-fl", { text: "Spec" }), el("span.ps-proc-v", { text: specs.join(", ") })]));
 
+    body.push(cols(L, R));
     return page("FREELANCER FIELD DOSSIER", "01 · FRONT", ch, body);
   }
 
