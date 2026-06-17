@@ -491,11 +491,11 @@ EN.species = [
       size: "Small to Large, varying drastically by Lineage.",
       languages: "Common Trade and one native, otherworldly dialect that relies on impossible frequencies, shifting colors, or non-vocal resonance that baseline humans cannot accurately replicate.",
       coreTrait: {
-        name: "Cosmic Disconnect (Passive)",
+        name: "Cosmic Disconnect",
         text: "Your mind and body operate on alien frequencies. You are entirely immune to telepathic mind-reading, and any standard biometric or corporate security scanners return corrupted, unreadable data when attempting to log your identity."
       },
       secondaryTrait: {
-        name: "Reality Fracture (Active)",
+        name: "Reality Fracture",
         text: "Your physical form rejects local physics. You can step through a micro-tear in the Flow, instantly teleporting up to 6 spaces to an unoccupied space you can see. This leaves a temporary scar in reality that deals 1d4 Entropy damage to anyone standing adjacent to your departure point. You can use this feature a number of times equal to your Caliber per Long Rest."
       }
     },

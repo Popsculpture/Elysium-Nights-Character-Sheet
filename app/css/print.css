@@ -155,7 +155,7 @@
 .ps-vw-sl{ color:#8a9097; font-size:11px; }
 
 /* write-in tables: blank rows kept tall enough to hand-fill */
-.ps-tbl-w td{ height:17px; padding:4px 4px; font-size:10px; vertical-align:bottom; }
+.ps-tbl-w td{ height:17px; padding:4px 4px; font-size:10px; vertical-align:middle; }
 .ps-tbl-w th{ white-space:nowrap; }
 .ps-tbl-atk td:nth-child(2){ width:90px; text-align:center; font-family:var(--mono); font-size:9.5px; color:#0c6f81; }
 .ps-tbl-atk td:nth-child(3){ width:120px; }
