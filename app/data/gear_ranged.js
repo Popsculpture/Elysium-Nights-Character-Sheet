@@ -1,5 +1,5 @@
 /* ===========================================================================
-   ELYSIUM NIGHTS — Gear catalog: Ranged Weapons + Ammo
+   ELYSIUM NIGHTS · Gear catalog: Ranged Weapons + Ammo
    Extracted verbatim from "Gear and Equipment" (Part 3). Prices in Glimmer (𝒢)
    and assume purchase in a major district. Standard ammo carries the legality
    of the weapon it feeds. Mystech ammunition is not vendor stock.
@@ -138,19 +138,19 @@ EN.gearCatalog.ranged = {
       desc: "A simple frame and band that can shatter glass or crack bones in trained hands. Costs less than a meal. Sometimes solves the same problem." }
   ],
 
-  /* Firing modes + ranged trait glossary — verbatim effects (condensed where long) */
+  /* Firing modes + ranged trait glossary, verbatim effects (condensed where long) */
   traits: {
     "Single Shot": "Make a single attack against one Target. Ammo: 1 round. Precision Frame: if the weapon's only firing mode is Single Shot, the attack scores a critical hit on a roll of 19 or 20.",
-    "Semi-Automatic": "Action: make one attack (1 round). Swift Action: make a second attack with the same weapon against the same or a different Target, rolling with Snag (1 more round). Each shot spends 1 round — fire once or twice per turn.",
-    "Burst": "Choose a primary Target and attack (3 rounds). Hit or miss, every other Target within 1 space of the primary makes an Agility Save vs your Weapon Save DC — on a failure they take the weapon's damage die without your Attribute modifier.",
-    "Full-Auto": "Once per round: project an Area 3 cone or Area 6x1 line (8 rounds). Saturate: Agility Save — full damage on a failure, half on a success. Suppress: failed save means no damage but Snag on the next attack and Speed halved. Movement inside the area costs double; treats Half Cover as no cover and Three-Quarter as Half.",
+    "Semi-Automatic": "Action: make one attack (1 round). Swift Action: make a second attack with the same weapon against the same or a different Target, rolling with Snag (1 more round). Each shot spends 1 round; fire once or twice per turn.",
+    "Burst": "Choose a primary Target and attack (3 rounds). Hit or miss, every other Target within 1 space of the primary makes an Agility Save vs your Weapon Save DC; on a failure they take the weapon's damage die without your Attribute modifier.",
+    "Full-Auto": "Once per round: project an Area 3 cone or Area 6x1 line (8 rounds). Saturate: Agility Save, full damage on a failure, half on a success. Suppress: failed save means no damage but Snag on the next attack and Speed halved. Movement inside the area costs double; treats Half Cover as no cover and Three-Quarter as Half.",
     "Arc": "May target spaces behind low barriers or around corners if there is open space above the path. Cannot be used where there is no vertical room for the projectile to arc.",
     "Armor Piercing X": "On a hit, ignore X points of flat damage reduction from armor or similar gear for that attack.",
     "Close Quarters": "You do not suffer Snag for attacking while engaged in melee or in cramped environments where similar weapons would be awkward.",
     "Compact": "Easier to handle in vehicles, narrow corridors, and cluttered spaces. Penalties that apply only to long or oversized weapons in very tight spaces do not apply.",
     "Concealable": "Attacks and operation work as normal. Checks to detect the weapon on a casual search are made with Snag.",
     "Cover": "Creates temporary barriers or dense fields that grant half or three-quarter cover, as listed in the entry.",
-    "Crew Served": "Solo: fire with Snag and no Sprint while carrying. An Ally within 1 space can spend a Swift Action as Loader/Spotter — the gunner loses the Snag, gains Edge on their next attack, and any Jam from a Natural 1 is cleared.",
+    "Crew Served": "Solo: fire with Snag and no Sprint while carrying. An Ally within 1 space can spend a Swift Action as Loader/Spotter; the gunner loses the Snag, gains Edge on their next attack, and any Jam from a Natural 1 is cleared.",
     "Delivery": "On a hit, apply a listed condition or payload effect (sedative, toxin, nanite package). Base damage is modest compared to what it delivers.",
     "Disposable": "After a successful use, the weapon is spent and cannot be reloaded or reused without special rules.",
     "Explosive": "Damage comes from an explosion. Usually combines with Area and a save for half or no damage. Can damage objects, structures, and vehicles. Indoors, see Wall-to-Wall.",
@@ -186,7 +186,7 @@ EN.gearCatalog.ammo = {
   trackingNote: "Plentiful ammo (sidearms, longarms, bowfire): track only the loaded magazine and restock between contracts. Counted ammo (heavy weapons, launchers, all Specialty): track every unit. A missile is a decision, not a refill.",
 
   items: [
-    /* ---- Standard — Plentiful ---- */
+    /* ---- Standard · Plentiful ---- */
     { name: "Pistol Ammo", group: "Plentiful", price: 15, unit: "per 12", availability: "Common", legality: "As weapon",
       feeds: "Pistols, machine pistols, SMGs, and revolvers (by speedloader). A reload runs anywhere from 6 to 30 rounds, depending on the weapon." },
     { name: "Rifle Ammo", group: "Plentiful", price: 25, unit: "per 30", availability: "Common", legality: "As weapon",
@@ -200,7 +200,7 @@ EN.gearCatalog.ammo = {
     { name: "Darts", group: "Plentiful", price: 20, unit: "per 6", availability: "Common", legality: "As weapon",
       feeds: "Dart guns and rifles. Six toxin-tipped darts per tube." },
 
-    /* ---- Standard — Counted ---- */
+    /* ---- Standard · Counted ---- */
     { name: "Machinegun Belt", group: "Counted", price: 60, unit: "per 100", availability: "Uncommon", legality: "As weapon",
       feeds: "Light, medium, and heavy machineguns, and rotary cannons. A linked belt of 100 rounds; track per box." },
     { name: "Cannon Rounds", group: "Counted", price: 200, unit: "per 20", availability: "Uncommon", legality: "As weapon",
@@ -252,7 +252,7 @@ EN.gearCatalog.ammo = {
     { name: "Spike Rounds", group: "Specialty", price: 250, unit: "per 5", availability: "Rare", legality: "Contraband",
       feeds: "Ballistic Sidearms, Longarms", traits: ["Intrusion"],
       desc: "Rounds with a data-fang in the tip: a single-use intrusion package that rides the impact into a target's cyberware or a machine's housing. The bullet is almost an afterthought. The payload is the point.",
-      effect: "Against significant cyberware, drones, or smart devices: normal Ballistic damage plus a digital payload — Systems or Body save DC 14 or gain Breached until the end of their next turn, and any ally jacked into the #GRID may immediately attempt a follow-up intrusion as if Linked. Purely organic targets take normal damage and nothing else." },
+      effect: "Against significant cyberware, drones, or smart devices: normal Ballistic damage plus a digital payload; Systems or Body save DC 14 or gain Breached until the end of their next turn, and any ally jacked into the #GRID may immediately attempt a follow-up intrusion as if Linked. Purely organic targets take normal damage and nothing else." },
     { name: "Toxin Rounds", group: "Specialty", price: 120, unit: "per 10", availability: "Uncommon", legality: "Contraband",
       feeds: "Bows, Crossbows, Dart weapons, payload firearms", traits: ["Delivery"],
       desc: "Hollow rounds and bolt-tips filled with whatever the chemist owed you. Slower than a bullet to the heart, and a great deal more frightening to watch arrive.",
@@ -270,15 +270,15 @@ EN.gearCatalog.ammo = {
     { name: "Concussion Shell", group: "Launcher Shell", price: 50, unit: "each", availability: "Uncommon", legality: "Restricted",
       feeds: "Grenade Launcher", traits: ["Explosive (Area 3 Sphere)", "Nonlethal", "Concussive"],
       desc: "A pressure charge that hammers the air instead of filling it with shrapnel. Built to drop a room full of people without painting the walls.",
-      effect: "1d8 Force (Nonlethal). Agility save vs your Weapon Save DC — on a failure: full damage, knocked Prone, and Staggered until the end of their next turn. On a success: half damage, no conditions." },
+      effect: "1d8 Force (Nonlethal). Agility save vs your Weapon Save DC; on a failure: full damage, knocked Prone, and Staggered until the end of their next turn. On a success: half damage, no conditions." },
     { name: "Incendiary Shell", group: "Launcher Shell", price: 70, unit: "each", availability: "Uncommon", legality: "Restricted",
       feeds: "Grenade Launcher", traits: ["Explosive (Area 3 Sphere)", "Incendiary", "Persistent"],
       desc: "A thermal charge that turns the impact zone into a problem that lasts.",
-      effect: "2d6 Fire; Agility save for half. The area becomes a burning zone until the end of the encounter or extinguished — anyone entering or starting its turn there takes 1d6 Fire." },
+      effect: "2d6 Fire; Agility save for half. The area becomes a burning zone until the end of the encounter or extinguished; anyone entering or starting its turn there takes 1d6 Fire." },
     { name: "Gas Shell", group: "Launcher Shell", price: 70, unit: "each", availability: "Uncommon", legality: "Restricted",
       feeds: "Grenade Launcher", traits: ["Explosive (Area 3 Sphere)", "Persistent", "Obscuring"],
       desc: "A canister payload that bursts into a cloud nobody wants to breathe.",
-      effect: "1d4 Toxic. The area fills with a lingering, lightly Obscuring cloud until the end of the encounter or dispersed — anyone entering or starting its turn there makes a Body save vs your Weapon Save DC or gains Poisoned until it leaves and saves at the start of its next turn." },
+      effect: "1d4 Toxic. The area fills with a lingering, lightly Obscuring cloud until the end of the encounter or dispersed; anyone entering or starting its turn there makes a Body save vs your Weapon Save DC or gains Poisoned until it leaves and saves at the start of its next turn." },
     { name: "Smoke Shell", group: "Launcher Shell", price: 40, unit: "each", availability: "Common", legality: "Licensed",
       feeds: "Grenade Launcher", traits: ["Explosive (Area 4 Sphere)", "Obscuring", "Cover"],
       desc: "The cleanest tool in the bandolier. Puts a wall of grey exactly where you need it, two blocks further than you could throw it.",
@@ -290,6 +290,6 @@ EN.gearCatalog.ammo = {
     { name: "Thermobaric Shell", group: "Launcher Shell", price: 100, unit: "each", availability: "Rare", legality: "Contraband",
       feeds: "Grenade Launcher", traits: ["Explosive (Area 3 Sphere)", "Pressure"],
       desc: "A fuel-air charge that breathes in the room before it breathes out fire. In open ground it is brutal. Behind a closed door it is a war crime with a serial number.",
-      effect: "3d6 Fire and Force; Agility save for half. In an enclosed space the Pressure trait triggers Wall-to-Wall as if the room were one space narrower — the blast gains extra dice and partial cover gives no help." }
+      effect: "3d6 Fire and Force; Agility save for half. In an enclosed space the Pressure trait triggers Wall-to-Wall as if the room were one space narrower; the blast gains extra dice and partial cover gives no help." }
   ]
 };

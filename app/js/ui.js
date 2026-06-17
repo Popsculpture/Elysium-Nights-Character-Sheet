@@ -1,5 +1,5 @@
 /* ===========================================================================
-   ELYSIUM NIGHTS — UI helpers (tiny DOM toolkit, no framework)
+   ELYSIUM NIGHTS - UI helpers (tiny DOM toolkit, no framework)
    =========================================================================== */
 window.EN = window.EN || {};
 

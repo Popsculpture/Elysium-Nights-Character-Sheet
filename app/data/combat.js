@@ -1,4 +1,4 @@
-// Combat rules data — extracted verbatim from the Elysium Nights rulebook (part2.txt).
+// Combat rules data, extracted verbatim from the Elysium Nights rulebook (part2.txt).
 window.EN = window.EN || {};
 EN.combat = {
 
@@ -11,7 +11,7 @@ EN.combat = {
     {
       name: "Move",
       summary: "Movement or repositioning, often traded for other options.",
-      text: "Movement uses your Speed, equal to 6 + Agility Modifier (minimum 3). Each point of Speed moves you 1 space.\n\nMovement Type — Speed Cost\n- Normal movement: 1 per space\n- Difficult terrain: 2 per space\n- Climb, vault, or leap: 2-3 per space depending on difficulty\n- Dash: Spend your Action to gain a new movement pool equal to your Speed\n\nAttribute Influence: Your Agility modifier adds directly to your Speed each turn. Even with a negative modifier, total Speed cannot drop below 3 due to Agility alone. Environmental effects, injuries, or abilities can still reduce Speed to 0."
+      text: "Movement uses your Speed, equal to 6 + Agility Modifier (minimum 3). Each point of Speed moves you 1 space.\n\nMovement Type · Speed Cost\n- Normal movement: 1 per space\n- Difficult terrain: 2 per space\n- Climb, vault, or leap: 2-3 per space depending on difficulty\n- Dash: Spend your Action to gain a new movement pool equal to your Speed\n\nAttribute Influence: Your Agility modifier adds directly to your Speed each turn. Even with a negative modifier, total Speed cannot drop below 3 due to Agility alone. Environmental effects, injuries, or abilities can still reduce Speed to 0."
     },
     {
       name: "Swift Action",
@@ -40,17 +40,17 @@ EN.combat = {
   combatSequence: "1. Initiative: Roll d20 + Caliber + Agility Modifier or Wits Modifier. Highest acts first.\n2. Declare Intent: Choose your main Action and any Flow or tactical choices.\n3. Resolve Actions: Roll using the d20 Method.\n4. Apply Damage and Effects: Vigor → Vitality → Wounds.\n5. End of Round: Apply conditions and ongoing effects.",
 
   commonActions: [
-    { name: "Melee Attack", cost: "Action", text: "d20 + Body Modifier + Weapon Proficiency Bonus — Close-range weapon or unarmed attack." },
-    { name: "Ranged Attack", cost: "Action", text: "d20 + Agility Modifier + Weapon Proficiency Bonus — Apply Snag if firing while engaged in melee." },
-    { name: "Weapon Save DC", cost: "Action", text: "8 + Body or Agility modifier (whichever is higher) + Caliber — Sets the DC for enemies to resist your weapon effects." },
-    { name: "Flow Attack", cost: "Action", text: "d20 + Flow Modifier + Caliber — Consumes FP as defined by the Invocation; effect varies." },
-    { name: "Flow Save DC", cost: "Action", text: "8 + Flow Modifier + Caliber — Sets the DC for enemies to resist your Flow Invocations and effects." },
-    { name: "Quick Hack", cost: "Action", text: "d20 + Tech Modifier + Systems Proficiency Bonus — Disrupt, override, or support allied systems in combat." },
-    { name: "Use Device / Item", cost: "Action", text: "d20 (see description) — Activate or manipulate gear, doors, or terminals." },
-    { name: "Charge / Rush", cost: "Action", text: "Double Speed; gain Edge on your next melee attack — Must move at least 2 spaces in a straight line toward the target." },
-    { name: "Suppressive Fire", cost: "-", text: "See Full-Auto firing mode — Use Full-Auto in Suppress mode (see Firing Modes)." },
-    { name: "Full Defense", cost: "Complex", text: "Auto +2 Defense; gain Edge on all Saves until next turn — No other actions this turn." },
-    { name: "Help Action", cost: "Action / Impulse", text: "Add +1d4 to an ally's d20 result — Must have plausible positioning and relevant skill or tool. If used as an Impulse, it forfeits your upcoming Action." }
+    { name: "Melee Attack", cost: "Action", text: "d20 + Body Modifier + Weapon Proficiency Bonus, Close-range weapon or unarmed attack." },
+    { name: "Ranged Attack", cost: "Action", text: "d20 + Agility Modifier + Weapon Proficiency Bonus, Apply Snag if firing while engaged in melee." },
+    { name: "Weapon Save DC", cost: "Action", text: "8 + Body or Agility modifier (whichever is higher) + Caliber, Sets the DC for enemies to resist your weapon effects." },
+    { name: "Flow Attack", cost: "Action", text: "d20 + Flow Modifier + Caliber, Consumes FP as defined by the Invocation; effect varies." },
+    { name: "Flow Save DC", cost: "Action", text: "8 + Flow Modifier + Caliber, Sets the DC for enemies to resist your Flow Invocations and effects." },
+    { name: "Quick Hack", cost: "Action", text: "d20 + Tech Modifier + Systems Proficiency Bonus, Disrupt, override, or support allied systems in combat." },
+    { name: "Use Device / Item", cost: "Action", text: "d20 (see description), Activate or manipulate gear, doors, or terminals." },
+    { name: "Charge / Rush", cost: "Action", text: "Double Speed; gain Edge on your next melee attack. Must move at least 2 spaces in a straight line toward the target." },
+    { name: "Suppressive Fire", cost: "-", text: "See Full-Auto firing mode. Use Full-Auto in Suppress mode (see Firing Modes)." },
+    { name: "Full Defense", cost: "Complex", text: "Auto +2 Defense; gain Edge on all Saves until next turn. No other actions this turn." },
+    { name: "Help Action", cost: "Action / Impulse", text: "Add +1d4 to an ally's d20 result. Must have plausible positioning and relevant skill or tool. If used as an Impulse, it forfeits your upcoming Action." }
   ],
 
   flowModifierNote: "Each Flow-using class is tied to one Attribute: Mystique, Tech, Body, or Charm. That Attribute is your Flow Attribute, and its modifier is your Flow Modifier. You use your Flow Modifier for all Flow Attacks and to set your Flow Save DC.",
@@ -65,42 +65,42 @@ EN.combat = {
       cost: "1 Impulse Action",
       requirement: "Physical Shield",
       trigger: "Any attack you can brace against",
-      text: "You brace your stance and put solid mass between yourself and the incoming threat, letting the barrier eat the kinetic shock.\n- Requirement: Must have a physical Shield equipped.\n- The Effect: You reinforce your passive mitigation. Add the Shield's listed Block Value directly to your Armor DR against this specific attack.\n\nPlayer Advice: Tactical Note — Blocking is highly reliable because, offering a guaranteed spike in damage reduction without a die roll."
+      text: "You brace your stance and put solid mass between yourself and the incoming threat, letting the barrier eat the kinetic shock.\n- Requirement: Must have a physical Shield equipped.\n- The Effect: You reinforce your passive mitigation. Add the Shield's listed Block Value directly to your Armor DR against this specific attack.\n\nPlayer Advice: Tactical Note: Blocking is highly reliable because, offering a guaranteed spike in damage reduction without a die roll."
     },
     {
       name: "Dodge",
       cost: "1 Impulse Action",
       requirement: "-",
       trigger: "Melee or non-ballistic physical",
-      text: "You push your reflexes to the absolute limit, slipping out of the way at the last instant and letting the attack cut through empty space.\n- Trigger Limit: Can only be used against Melee or non-ballistic physical attacks (unless explicitly enhanced by a Flow feature or specific gear).\n- The Effect: Add your Agility Modifier + your Acrobatics Proficiency Bonus to your Defense score against this specific attack. If this retroactive bonus raises your Defense higher than the incoming attack roll, the attack misses, and you may immediately shift 1 space into an adjacent unoccupied space.\n\nPlayer Advice: Tactical Note — You cannot Dodge what you cannot physically evade. Heavy armor often imposes Snag on mobility; the GM may rule a Freelancer cannot Dodge while wearing Siege Plate or if they are Grappled/Restrained."
+      text: "You push your reflexes to the absolute limit, slipping out of the way at the last instant and letting the attack cut through empty space.\n- Trigger Limit: Can only be used against Melee or non-ballistic physical attacks (unless explicitly enhanced by a Flow feature or specific gear).\n- The Effect: Add your Agility Modifier + your Acrobatics Proficiency Bonus to your Defense score against this specific attack. If this retroactive bonus raises your Defense higher than the incoming attack roll, the attack misses, and you may immediately shift 1 space into an adjacent unoccupied space.\n\nPlayer Advice: Tactical Note: You cannot Dodge what you cannot physically evade. Heavy armor often imposes Snag on mobility; the GM may rule a Freelancer cannot Dodge while wearing Siege Plate or if they are Grappled/Restrained."
     },
     {
       name: "Parry",
       cost: "1 Impulse Action",
       requirement: "Melee Weapon or Shield",
       trigger: "Melee attacks only",
-      text: "You meet force with force, stepping into the strike to aggressively knock the Enemy's weapon offline before it lands clean.\n- Requirement: Must have a Simple Weapon, Martial Weapon, or physical Shield equipped.\n- Trigger Limit: Can only be used against Melee attacks.\n- The Effect: Roll your equipped weapon's base damage die (e.g., a d8 for a standard longsword). Subtract the result directly from the raw incoming damage.\n\nPlayer Advice: Tactical Note — If you are dual-wielding, you must choose which weapon you parry with and roll its specific damage die."
+      text: "You meet force with force, stepping into the strike to aggressively knock the Enemy's weapon offline before it lands clean.\n- Requirement: Must have a Simple Weapon, Martial Weapon, or physical Shield equipped.\n- Trigger Limit: Can only be used against Melee attacks.\n- The Effect: Roll your equipped weapon's base damage die (e.g., a d8 for a standard longsword). Subtract the result directly from the raw incoming damage.\n\nPlayer Advice: Tactical Note: If you are dual-wielding, you must choose which weapon you parry with and roll its specific damage die."
     },
     {
       name: "Resurge",
       cost: "1 Impulse Action + 1 FP",
       requirement: "Attuned",
       trigger: "Flow-based attacks or Invocations",
-      text: "You answer hostile Flow with your own, forcing the clashing patterns to violently cancel or rebound before they strike you.\n- Requirement: Must be attuned to the Flow.\n- The Cost: 1 FP (in addition to the Impulse Action). Using Resurge while at 0 FP counts as Overdraw.\n- Trigger Limit: Can only be used against Flow-based attacks or Invocations.\n- The Effect: Roll your Resilience Die and subtract the result from the raw incoming damage. If this reduces the incoming damage to 0, the Flow effect rebounds; the attacker immediately takes Resonant damage equal to your Flow Modifier.\n\nPlayer Advice: Tactical Note — Unlike Ward, Resurge actively weaponizes the incoming current. It is your primary defense in Shaper-on-Shaper duels."
+      text: "You answer hostile Flow with your own, forcing the clashing patterns to violently cancel or rebound before they strike you.\n- Requirement: Must be attuned to the Flow.\n- The Cost: 1 FP (in addition to the Impulse Action). Using Resurge while at 0 FP counts as Overdraw.\n- Trigger Limit: Can only be used against Flow-based attacks or Invocations.\n- The Effect: Roll your Resilience Die and subtract the result from the raw incoming damage. If this reduces the incoming damage to 0, the Flow effect rebounds; the attacker immediately takes Resonant damage equal to your Flow Modifier.\n\nPlayer Advice: Tactical Note: Unlike Ward, Resurge actively weaponizes the incoming current. It is your primary defense in Shaper-on-Shaper duels."
     },
     {
       name: "Siphon",
       cost: "1 Impulse Action + 1 FP",
       requirement: "Attuned",
       trigger: "Elemental or Flow-based damage",
-      text: "You drink in hostile energy, turning what should have burned or shattered you into fuel for your own body.\n- Requirement: Must be attuned to the Flow.\n- The Cost: 1 FP (in addition to the Impulse Action). Using Siphon while at 0 FP counts as Overdraw.\n- Trigger Limit: Can only be used against Elemental (Fire, Cold, Electric) or Flow-based damage.\n- The Effect: Roll your Resilience Die and subtract the result from the raw incoming damage. You immediately restore Vigor equal to the exact amount of damage negated by this roll.\n\nPlayer Advice: Tactical Note — Siphon is a high-risk, high-reward maneuver that turns enemy casters into a resource pool, but it cannot absorb standard physical damage like bullets or blades."
+      text: "You drink in hostile energy, turning what should have burned or shattered you into fuel for your own body.\n- Requirement: Must be attuned to the Flow.\n- The Cost: 1 FP (in addition to the Impulse Action). Using Siphon while at 0 FP counts as Overdraw.\n- Trigger Limit: Can only be used against Elemental (Fire, Cold, Electric) or Flow-based damage.\n- The Effect: Roll your Resilience Die and subtract the result from the raw incoming damage. You immediately restore Vigor equal to the exact amount of damage negated by this roll.\n\nPlayer Advice: Tactical Note: Siphon is a high-risk, high-reward maneuver that turns enemy casters into a resource pool, but it cannot absorb standard physical damage like bullets or blades."
     },
     {
       name: "Ward",
       cost: "1 Impulse Action",
       requirement: "Warding Focus or Class Feature",
       trigger: "Any standard damage",
-      text: "You flare your internal resonance, weaving a transient barrier of hard light, localized gravity, or psychic static to catch the blow.\n- Requirement: Must have an equipped Warding Focus or possess an active Shaper class feature.\n- The Effect: Roll your class's Resilience Die and subtract the result directly from the raw incoming damage.\n\nPlayer Advice: Tactical Note — Because Ward requires a physical Warding Focus or a dedicated class feature, it does not cost FP to activate, making it a highly reliable, always-on mystic shield."
+      text: "You flare your internal resonance, weaving a transient barrier of hard light, localized gravity, or psychic static to catch the blow.\n- Requirement: Must have an equipped Warding Focus or possess an active Shaper class feature.\n- The Effect: Roll your class's Resilience Die and subtract the result directly from the raw incoming damage.\n\nPlayer Advice: Tactical Note: Because Ward requires a physical Warding Focus or a dedicated class feature, it does not cost FP to activate, making it a highly reliable, always-on mystic shield."
     }
   ],
 

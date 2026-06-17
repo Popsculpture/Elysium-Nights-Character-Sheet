@@ -1,5 +1,5 @@
 /* ===========================================================================
-   ELYSIUM NIGHTS — Ability briefs
+   ELYSIUM NIGHTS · Ability briefs
    A name → one-line snippet map for the printable "Abilities at a glance" sheet
    (and compact in-app views). Each brief is a faithful ≤~16-word compression of
    the feature's mechanical core. Anything not listed here auto-compresses from
@@ -166,7 +166,7 @@ EN.briefs = {
   "Biological Meltdown": "Once/Long Rest: target within 12 Body Save or 8d10 Toxic, no healing, 2d10/turn 1-min; death bursts 4d6 Acid",
   "Black Market Butcher": "Engineering proficiency; 10-min harvest Cyber-Scrap (max Wits mod); break one as Action for 1 Triage, or sell",
   "Hot-Wired Implants": "On rest, apply one Aftermarket Hot-Wire to cyber/Machine allies up to Wits mod; lasts until next rest",
-  "Hard Flatline": "2 Triage: ally within 6 about to take Wound/Critical—prone, drop, lose Swift, zero Wound damage, +Caliber Vigor",
+  "Hard Flatline": "2 Triage: ally within 6 about to take Wound/Critical, prone, drop, lose Swift, zero Wound damage, +Caliber Vigor",
   "Cyber-Rejection": "Once/Long Rest: enemy within 12 Body Save or Speed halved, Snag, 4d10 Toxic/turn 1-min; repeats save, success half",
   "Adrenaline Spike": "Ally within 6 gains 1d8+Wits Vigor; until end of next turn Speed +2 and ignores Difficult Terrain",
   "Chemical Purge": "Ally within 6 ends one of Poisoned, Bleeding, Paralyzed, or Blinded",

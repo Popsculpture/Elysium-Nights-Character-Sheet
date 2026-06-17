@@ -1,5 +1,5 @@
 /* ===========================================================================
-   ELYSIUM NIGHTS — Combat tab
+   ELYSIUM NIGHTS - Combat tab
    Play-time dashboard: Vitality / Vigor / Wounds, Dying & Death Saves,
    class resource + Flow/Strain, Fatigue, conditions, attacks, rests, and
    collapsible rules references. Reads the same #PRINT record as everything.
@@ -10,7 +10,7 @@ EN.combatView = (function () {
   var el = EN.ui.el, clear = EN.ui.clear, toast = EN.ui.toast;
   var R = EN.rules, eng = EN.engine, store = EN.store;
   var _open = {};   // collapse state for reference panels (collapsed by default)
-  /* ---------- modular layout (drag to rearrange; widths in sixths, 1/6–6/6) -- */
+  /* ---------- modular layout (drag to rearrange; widths in sixths, 1/6-6/6) -- */
   var LAYOUT_KEY = "en_freelancer_layout_v2";
   var LAYOUT_KEY_V1 = "en_freelancer_layout_v1";
   var DEFAULT_LAYOUT = [
@@ -145,7 +145,7 @@ EN.combatView = (function () {
         if ((c.featureUses[k] || {}).r !== "Long Rest") delete c.featureUses[k];
       });
     });
-    toast("Short Rest taken — resource refreshed. Spend Resilience Dice to heal.");
+    toast("Short Rest taken; resource refreshed. Spend Resilience Dice to heal.");
   }
   function longRest(ch, d) {
     store.update(function (c) {
@@ -168,12 +168,12 @@ EN.combatView = (function () {
         else c.conditionLevels["Fatigue"] = fl;
       }
     });
-    toast("Long Rest complete — restored and refreshed.");
+    toast("Long Rest complete, restored and refreshed.");
   }
   function spendResilience(ch, d, count) {
     var s = state(ch, d);
     var n = Math.min(count || 1, s.rd);
-    if (n <= 0) { toast("No Resilience Dice left — they refresh on a Long Rest."); return; }
+    if (n <= 0) { toast("No Resilience Dice left; they refresh on a Long Rest."); return; }
     var rolls = [], heal = 0;
     for (var i = 0; i < n; i++) {
       var roll = 1 + Math.floor(Math.random() * d.resilienceDie);
@@ -195,7 +195,7 @@ EN.combatView = (function () {
       el("div", { style: { width: pct + "%", height: "100%", background: color, boxShadow: "0 0 10px " + color, transition: "width .25s" } })
     ]);
   }
-  /* Shared Vitality bar — Vigor renders as a gold hazard-striped overlay on top
+  /* Shared Vitality bar; Vigor renders as a gold hazard-striped overlay on top
      of the green Vitality fill (left-anchored, same vitMax scale). Vigor is its
      own layer, so burning it never moves the Vitality fill underneath. */
   function vitalityBar(vit, vitMax, vigor) {
@@ -204,7 +204,7 @@ EN.combatView = (function () {
     return el("div", { style: { position: "relative", height: "12px", background: "var(--bg1)", border: "1px solid var(--border)", borderRadius: "6px", overflow: "hidden", margin: "5px 0 10px" } }, [
       el("div", { style: { width: vPct + "%", height: "100%", background: "var(--success)", boxShadow: "0 0 8px var(--success)", transition: "width .25s" } }),
       vigor > 0 ? el("div.vigor-shield", {
-        title: "Vigor " + vigor + " — absorbed before Vitality",
+        title: "Vigor " + vigor + ", absorbed before Vitality",
         style: { position: "absolute", left: 0, top: 0, width: gPct + "%", height: "100%",
                  overflow: "hidden", transition: "width .25s" }
       }) : null
@@ -279,7 +279,7 @@ EN.combatView = (function () {
       if (l >= 3) { e.speedHalved = true; e.snagSave.BOD = e.snagSave.AGI = true; }
       if (l >= 4) e.derived.push({ name: "Drowsy", from: "Fatigue " + l });
       if (l >= 5) e.derived.push({ name: "Hallucinating", from: "Fatigue " + l });
-      if (l >= 6) e.derived.push({ name: "Unconscious", from: "Fatigue 6 — Helpless" });
+      if (l >= 6) e.derived.push({ name: "Unconscious", from: "Fatigue 6 · Helpless" });
     },
     "Frightened": function (e) { e.snagAtk = true; e.snagChk.ALL = true; e.notes.push("Frightened: can't approach the source; must retreat to cover within 10m"); },
     "Grappled": function (e) { e.speedZero = true; e.notes.push("Grappled: Speed 0; Action + contested Brawl/Acrobatics to escape"); },
@@ -290,7 +290,7 @@ EN.combatView = (function () {
     "Lagged": function (e) { e.notes.push("Lagged: your actions resolve at the END of the round"); },
     "LinkDeath": function (e) { e.notes.push("LinkDeath: 2d6+ Psychic on failed save and Unconscious; Wits Save at end of turn to wake"); },
     "Mutating": function (e, l) { e.notes.push("Mutating " + l + " stack(s): Body Save DC " + (10 + l) + " at start of turn or suffer growth effects"); },
-    "Panic": function (e) { e.notes.push("Panic: Wits Save DC 12 at start of turn or roll 1d6 — Flight / Fight / Freeze"); },
+    "Panic": function (e) { e.notes.push("Panic: Wits Save DC 12 at start of turn or roll 1d6: Flight / Fight / Freeze"); },
     "Paralyzed": function (e) { e.cannotAct = true; e.speedZero = true; e.edgeToAttackers = true; e.autoFailBodAgiSaves = true; e.notes.push("Paralyzed: auto-fail Body & Agility saves; melee vs you may crit"); },
     "Poisoned": function (e) { e.snagAtk = true; e.snagChk.ALL = true; e.snagSave.BOD = true; },
     "Prone": function (e) { e.edgeToAttackers = true; e.notes.push("Prone: melee vs you has Edge, ranged vs you has Snag; stand for half movement or a Swift"); },
@@ -299,11 +299,11 @@ EN.combatView = (function () {
     "Signal Jammed": function (e) { e.notes.push("Signal Jammed: no remote devices, drones, or wireless cyberware; wired still works"); },
     "Staggered": function (e) { e.speedHalved = true; e.noSwift = true; e.noImpulse = true; e.notes.push("Staggered: Staggered again → Stunned"); },
     "Strain": function (e, l) {
-      if (l >= 1) e.notes.push("Strain — Ripple: Snag on Invocation rolls");
-      if (l >= 2) e.notes.push("Strain — Wave: all Invocations cost +1 FP");
-      if (l >= 3) e.notes.push("Strain — Surge: Breakflow Check whenever you Overdraw");
-      if (l >= 4) e.notes.push("Strain — Rend: Breakflow Check whenever you spend FP");
-      if (l >= 5) { e.derived.push({ name: "Breakflow", from: "Strain 5 — Collapse" }); e.derived.push({ name: "Unconscious", from: "Strain 5 — Collapse" }); }
+      if (l >= 1) e.notes.push("Strain · Ripple: Snag on Invocation rolls");
+      if (l >= 2) e.notes.push("Strain · Wave: all Invocations cost +1 FP");
+      if (l >= 3) e.notes.push("Strain · Surge: Breakflow Check whenever you Overdraw");
+      if (l >= 4) e.notes.push("Strain · Rend: Breakflow Check whenever you spend FP");
+      if (l >= 5) { e.derived.push({ name: "Breakflow", from: "Strain 5 · Collapse" }); e.derived.push({ name: "Unconscious", from: "Strain 5 · Collapse" }); }
     },
     "Stunned": function (e) { e.speedZero = true; e.noImpulse = true; e.snagSave.BOD = e.snagSave.AGI = true; e.edgeToAttackers = true; e.notes.push("Stunned: no Move; only one Action OR Swift this turn"); },
     "Soul Shock": function (e) { e.snagChk.MYS = e.snagChk.WIT = true; e.notes.push("Soul Shock: +1d6 damage per repeat instance before resting"); },
@@ -360,9 +360,9 @@ EN.combatView = (function () {
     "Lagged": ["Persistent", "Exit Zone / Purge"], "LinkDeath": ["Until Save", "End of turn Wits Save"],
     "Panic": ["Special", "End of turn Wits DC 12"], "Paralyzed": ["Until Save", "Body Save (varies)"],
     "Poisoned": ["Varies", "Antitoxin / Medtech Check"], "Prone": ["Until Stand", "Half Move or Swift Action"],
-    "Restrained": ["Until Freed", "Strength / Brawl Check"], "Shaken": ["1–3 Rounds", "End of turn Wits DC 12"],
+    "Restrained": ["Until Freed", "Strength / Brawl Check"], "Shaken": ["1-3 Rounds", "End of turn Wits DC 12"],
     "Signal Jammed": ["Until Jam Ends", "Move / Disable Jammer"], "Soul Shock": ["Until Short Rest", "Short Rest"],
-    "Staggered": ["1–2 Rounds", "End of turn Wits DC 10"], "Strain": ["Until Restored", "Long Rest / Ritual"],
+    "Staggered": ["1-2 Rounds", "End of turn Wits DC 10"], "Strain": ["Until Restored", "Long Rest / Ritual"],
     "Stunned": ["1 Round", "End of turn Body DC 15"], "Unconscious": ["Until Revived", "Healing / Allied Action"]
   };
   function condLevel(ch, name) { return (ch.conditionLevels || {})[name] || 1; }
@@ -379,22 +379,22 @@ EN.combatView = (function () {
   var _tab = "ALL";
   var _featTab = "features";   // Features (active attacks & interactions) | Abilities (passives)
 
-  /* resource features that bundle several tricks — break them out into their own
+  /* resource features that bundle several tricks; break them out into their own
      entries, each tagged with the resource cost chip, instead of one wall of text */
   var FEATURE_EXPANSIONS = {
     "Moxie": {
       chip: "1 MOXIE",
       subs: [
         { name: "Lucky Break", cost: "Free",
-          text: "When you make an attack roll, ability check, or saving throw, spend 1 Moxie to roll an additional d20 and choose which die to use — even if already rolling with Edge. Breaks the 2d20 cap (Edge + Lucky Break = 3d20, keep whichever you like)." },
+          text: "When you make an attack roll, ability check, or saving throw, spend 1 Moxie to roll an additional d20 and choose which die to use, even if already rolling with Edge. Breaks the 2d20 cap (Edge + Lucky Break = 3d20, keep whichever you like)." },
         { name: "Jinx", cost: "Impulse",
-          text: "When an enemy you can see makes an attack roll or saving throw, spend 1 Moxie to force them to roll an additional d20 and use the lowest — even if already rolling with Snag (3d20, worst result)." },
+          text: "When an enemy you can see makes an attack roll or saving throw, spend 1 Moxie to force them to roll an additional d20 and use the lowest, even if already rolling with Snag (3d20, worst result)." },
         { name: "Slip the Blow", cost: "Impulse",
           text: "When hit by an attack you can see, spend 1 Moxie to gain Resistance to that attack's damage and immediately move 1 space without provoking opportunity attacks." },
         { name: "Smash and Grab", cost: "Action",
           text: "Spend 1 Moxie; your Speed doubles this turn and your movement does not provoke opportunity attacks (you cannot end in an enemy's space). Make one weapon attack during the move; on a hit, shove the target 1 space or snatch one small, unsecured item they carry (contested Sleight to lift anything secured)." },
         { name: "Bad Feeling", cost: "Impulse",
-          text: "When an enemy moves within your reach, or you are targeted by an attack you can see, spend 1 Moxie to move up to half your Speed without provoking — break away before it lands. Reflexes, not teleportation." },
+          text: "When an enemy moves within your reach, or you are targeted by an attack you can see, spend 1 Moxie to move up to half your Speed without provoking; break away before it lands. Reflexes, not teleportation." },
         { name: "Shake It Off", cost: "Swift",
           text: "Spend 1 Moxie to end one condition clouding your senses or footing, such as Staggered, Shaken, or Dazed." },
         { name: "Ace Up the Sleeve", cost: "Free",
@@ -414,7 +414,7 @@ EN.combatView = (function () {
   function isLimited(text) {
     return /once per|per Long Rest|per Short Rest|per Encounter|number of times equal|per scene|per turn/i.test(text || "");
   }
-  /* parse "uses per rest" specs out of feature text — covers every phrasing in the data:
+  /* parse "uses per rest" specs out of feature text; covers every phrasing in the data:
      "a number of times/uses equal to your Caliber per Long/Short Rest", "a number of times
      per X equal to your Caliber", "once/twice/N times per Long Rest/Short Rest/Encounter/scene" */
   function parseUses(text, d) {
@@ -436,15 +436,15 @@ EN.combatView = (function () {
     function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase(); }
   }
   var COST_COLOR = { Action: "var(--accent)", Swift: "var(--gold)", Impulse: "var(--flow)", Free: "var(--success)", Active: "var(--accent)", Passive: "var(--text3)" };
-  /* class-resource identity colors — the resource bar + count tint to match its fuel */
+  /* class-resource identity colors; the resource bar + count tint to match its fuel */
   var RESOURCE_COLOR = {
-    Bandwidth: "#00AEEF",   // electric blue — data / signal / system capacity
-    Overdrive: "#FF7A00",   // hazard orange — heat / adrenaline / past safe limits
-    Leverage:  "#D6A21E",   // gold — influence / favors / social capital
-    Execution: "#B11226",   // crimson — sharp / decisive / final
-    Moxie:     "#FF2DAA",   // neon magenta — stylish / defiant / reckless
-    Flow:      "#7B2CFF",   // arc-violet — mystical / unstable / Elysium-coded
-    Triage:    "#2FE6A6"    // medical mint — clinical / restorative / urgent
+    Bandwidth: "#00AEEF",   // electric blue, data / signal / system capacity
+    Overdrive: "#FF7A00",   // hazard orange, heat / adrenaline / past safe limits
+    Leverage:  "#D6A21E",   // gold, influence / favors / social capital
+    Execution: "#B11226",   // crimson, sharp / decisive / final
+    Moxie:     "#FF2DAA",   // neon magenta, stylish / defiant / reckless
+    Flow:      "#7B2CFF",   // arc-violet, mystical / unstable / Elysium-coded
+    Triage:    "#2FE6A6"    // medical mint, clinical / restorative / urgent
   };
   function resourceColor(name) { return RESOURCE_COLOR[name] || "var(--accent)"; }
   /* a resource chip like "1 MOXIE" tints to the resource named within it */
@@ -463,7 +463,7 @@ EN.combatView = (function () {
         (function (i) {
           var used = i <= uses.spent;
           boxes.push(el("span", {
-            title: used ? "Used — click to undo" : "Click to spend a use",
+            title: used ? "Used, click to undo" : "Click to spend a use",
             onclick: function () { uses.onSet(i === uses.spent ? i - 1 : i); },
             style: { width: "14px", height: "14px", borderRadius: "3px", cursor: "pointer", flex: "0 0 auto",
                      border: "1px solid " + (used ? "var(--danger)" : "var(--text3)"),
@@ -556,7 +556,7 @@ EN.combatView = (function () {
   function costFor(it, mode) { var m = weaponModes(it); if (!m.length) return implicitCost(it); return MODE_COST[mode] || 1; }
   function minFireCost(it) { var m = weaponModes(it); if (!m.length) return implicitCost(it); return Math.min.apply(null, m.map(function (x) { return MODE_COST[x]; })); }
 
-  /* the weapon's base feed — what a plain reload consumes. "Standard" for Plentiful
+  /* the weapon's base feed, what a plain reload consumes. "Standard" for Plentiful
      ballistic/bow/dart/shotgun ammo (free top-off); a signature munition or a Counted
      ammo item name for everything that's "track every unit". */
   function countedFeedsWeapon(a, it) {
@@ -572,7 +572,7 @@ EN.combatView = (function () {
     }
     var counted = ammoCatalog().find(function (a) { return a.group === "Counted" && countedFeedsWeapon(a, it); });
     if (counted) return counted.name;
-    return "Standard";                                                   // Plentiful — free top-off
+    return "Standard";                                                   // Plentiful, free top-off
   }
 
   /* non-mutating read of a weapon's magazine state (defaults: full, cheapest mode, base feed) */
@@ -601,19 +601,19 @@ EN.combatView = (function () {
   function fireWeapon(wname) {
     var it = findWeapon(wname); if (!it) return;
     var st = readAmmo(store.active(), it), cost = costFor(it, st.mode);
-    if (st.cur < cost) { toast(it.name + " — needs " + cost + " for " + (st.mode || "Fire") + ", magazine has " + st.cur + ". Switch mode or reload."); return; }
+    if (st.cur < cost) { toast(it.name + ", needs " + cost + " for " + (st.mode || "Fire") + ", magazine has " + st.cur + ". Switch mode or reload."); return; }
     writeAmmo(wname, { cur: Math.max(0, st.cur - cost) });
   }
   function reloadWeapon(wname) {
     var it = findWeapon(wname); if (!it) return;
-    if ((it.traits || []).indexOf("Disposable") !== -1) { toast(it.name + " is Disposable — spent once fired, it cannot be reloaded."); return; }
+    if ((it.traits || []).indexOf("Disposable") !== -1) { toast(it.name + " is Disposable; spent once fired, it cannot be reloaded."); return; }
     var ch = store.active(), st = readAmmo(ch, it), base = st.base;
     var type = st.ammoType;
     if (type === "Standard" && base !== "Standard") type = base;        // coerce to the weapon's only (counted) feed
     var msg;
     if (type !== "Standard" && ownedQty(ch, type) <= 0) {              // the chosen special round is depleted
-      if (base === "Standard") { msg = "Out of " + type + " — reloaded with Standard."; type = "Standard"; }  // fall back to plentiful
-      else { toast("Out of ammo — no " + type + " in stash. Acquire it in Inventory."); return; }            // no plentiful variant: keep RELOAD
+      if (base === "Standard") { msg = "Out of " + type + "; reloaded with Standard."; type = "Standard"; }  // fall back to plentiful
+      else { toast("Out of ammo; no " + type + " in stash. Acquire it in Inventory."); return; }            // no plentiful variant: keep RELOAD
     }
     var needsStash = type !== "Standard";                               // counted munition / specialty round → spend from stash
     store.update(function (c) {
@@ -624,7 +624,7 @@ EN.combatView = (function () {
       }
       c.weaponAmmo[wname] = { cur: capacityOf(it), mode: st.mode, ammoType: type };
     });
-    toast(msg || (it.name + " reloaded — " + capacityOf(it) + " " + (it.ammoUnit || "rounds") + (type !== "Standard" ? " · " + type : "") + "."));
+    toast(msg || (it.name + " reloaded, " + capacityOf(it) + " " + (it.ammoUnit || "rounds") + (type !== "Standard" ? " · " + type : "") + "."));
   }
 
   /* specialty-ammo compatibility (feeds is free text; match by weapon group + damage) */
@@ -686,7 +686,7 @@ EN.combatView = (function () {
     var ch = store.active();
     clear(mount);
     if (!ch || !ch.class) {
-      mount.appendChild(el("div.muted-box", { style: { marginTop: "40px", padding: "40px" }, text: ch ? "Finish your #PRINT first — pick a class to power the combat dashboard." : "No Freelancer on file — register one on the #PRINT tab." }));
+      mount.appendChild(el("div.muted-box", { style: { marginTop: "40px", padding: "40px" }, text: ch ? "Finish your #PRINT first; pick a class to power the combat dashboard." : "No Freelancer on file; register one on the #PRINT tab." }));
       return;
     }
     var d = eng.derive(ch);
@@ -694,7 +694,7 @@ EN.combatView = (function () {
     var fx = condEffects(ch);
     var blocks = [];
 
-    /* sticky Active Condition Effects readout — pinned just under the tab rail */
+    /* sticky Active Condition Effects readout, pinned just under the tab rail */
     if (fx.notes.length) {
       var fxKey = fx.notes.join("|");
       if (_fxBox.closedKey !== fxKey) {
@@ -710,8 +710,8 @@ EN.combatView = (function () {
             el("div.row.between", { style: { alignItems: "center", gap: "8px" } }, [
               el("label.fl", { style: { color: "var(--warn)", margin: 0 }, text: "Active Condition Effects" + (fxMin ? " (" + fx.notes.length + ")" : "") }),
               el("div.row", { style: { gap: "6px" } }, [
-                fxBtn(fxMin ? "▾" : "—", fxMin ? "Expand" : "Minimize", function () { _fxBox.mode = fxMin ? "open" : "min"; EN.app.render(); }),
-                fxBtn("✕", "Close — reappears when active effects change", function () { _fxBox.closedKey = fxKey; EN.app.render(); })
+                fxBtn(fxMin ? "▾" : "-", fxMin ? "Expand" : "Minimize", function () { _fxBox.mode = fxMin ? "open" : "min"; EN.app.render(); }),
+                fxBtn("✕", "Close, reappears when active effects change", function () { _fxBox.closedKey = fxKey; EN.app.render(); })
               ])
             ])
           ].concat(fxMin ? [] : fx.notes.map(function (n) { return el("p.help", { style: { margin: "2px 0" }, text: "• " + n }); })))
@@ -776,21 +776,21 @@ EN.combatView = (function () {
                                                 boxShadow: "0 8px 24px rgba(0,0,0,.55)", textAlign: "left" } }, [
             el("label.fl", { style: { margin: 0 }, text: "Sheet Settings" }),
             el("button.btn.sm" + (_editMode ? ".primary" : ""), {
-              title: "Show the layout controls on every panel — drag to rearrange, − / + width, attribute view toggle",
+              title: "Show the layout controls on every panel, drag to rearrange, − / + width, attribute view toggle",
               style: { justifyContent: "center" },
               onclick: function () { setEditMode(!_editMode); EN.app.render(); } },
               _editMode ? "🔧 CUSTOMIZE LAYOUT: ON" : "🔧 CUSTOMIZE LAYOUT: OFF"),
             _editMode ? el("button.btn.sm", { title: "Restore the default panel arrangement and widths", style: { justifyContent: "center" },
               onclick: function () { try { localStorage.removeItem(LAYOUT_KEY); localStorage.removeItem(LAYOUT_KEY_V1); } catch (e) {} _pops.settings = false; EN.app.render(); } }, "⊞ RESET LAYOUT") : null,
             el("p.help", { style: { margin: 0 }, text: _editMode
-              ? "Drag ⠿ on a panel to rearrange; − / + sets its width (1–6 columns)."
-              : "Customization is off — panels are locked and headers slimmed for play." })
+              ? "Drag ⠿ on a panel to rearrange; − / + sets its width (1-6 columns)."
+              : "Customization is off; panels are locked and headers slimmed for play." })
           ]) : null
         ])
       ])
     ]));
 
-    /* status strip — each stat is clickable (toggles a breakdown panel) and
+    /* status strip; each stat is clickable (toggles a breakdown panel) and
        hoverable (native tooltip) so you can see exactly what feeds the number:
        base, attribute mods, gear, chrome, lineage features, and conditions. */
     var dg = d.defenseGear || {};
@@ -819,19 +819,19 @@ EN.combatView = (function () {
         formula: "10 + " + defAttrName + " modifier" + (dg.shield ? " + shield" : "") + " + cover & active defenses (situational)",
         rows: [bdRow("Base", 10, null, true),
                bdRow(defAttrName + " modifier" + (defAttrReason ? " (" + defAttrReason + ")" : ""), d.attributes[d.defenseAttr].mod, chromeNote(d.defenseAttr))]
-          .concat(dg.shield ? [bdRow("Shield — " + dg.shield.name, dg.shieldDef)] : []),
-        foot: "Cover (+2 Half / +5 ¾) and a declared Active Defense add more against a specific attack — see Defend." },
+          .concat(dg.shield ? [bdRow("Shield · " + dg.shield.name, dg.shieldDef)] : []),
+        foot: "Cover (+2 Half / +5 ¾) and a declared Active Defense add more against a specific attack, see Defend." },
       DR: { title: "Damage Reduction", total: d.armorDR || 0, sign: false,
         formula: "Worn armor's DR vs physical damage",
-        rows: dg.armor ? [bdRow("Armor — " + dg.armor.name, dg.armor.dr, null, true)] : [],
-        empty: dg.armor ? null : "No armor equipped — WEAR armor in Inventory → Stash.",
+        rows: dg.armor ? [bdRow("Armor · " + dg.armor.name, dg.armor.dr, null, true)] : [],
+        empty: dg.armor ? null : "No armor equipped; WEAR armor in Inventory → Stash.",
         foot: dg.armor && (dg.armor.traits || []).indexOf("Plated") !== -1 ? "Plated: when you Block, add half this DR (rounded down) on top." : null },
       SPD: { title: "Speed", total: spDisplay, sign: false,
         formula: "max(3, 6 + Agility modifier) + chrome − Bulky − conditions",
         rows: (spdFloored ? [bdRow("Base move (Agility floored to min 3)", baseMove, null, true)]
                           : [bdRow("Base move", 6, null, true), bdRow("Agility modifier", agiMod, chromeNote("AGI"))])
-          .concat(cyberSpeedRows.map(function (r) { return bdRow("Chrome — " + r.label, r.val); }))
-          .concat(dg.speedPenalty ? [bdRow("Bulky — " + dg.armor.name, dg.speedPenalty)] : [])
+          .concat(cyberSpeedRows.map(function (r) { return bdRow("Chrome · " + r.label, r.val); }))
+          .concat(dg.speedPenalty ? [bdRow("Bulky · " + dg.armor.name, dg.speedPenalty)] : [])
           .concat(spCond ? [bdRow("Conditions", spCond)] : []) },
       INIT: { title: "Initiative", total: initVal, sign: true,
         formula: "Agility modifier" + (fx.init ? " + conditions" : ""),
@@ -859,7 +859,7 @@ EN.combatView = (function () {
     blocks.push(el("div.stat-row", { style: { marginBottom: _open.statbd ? "8px" : "16px" } }, [
       statEl("DEF", "DEF", d.defense, defAttrName + (dg.shield ? " " + (dg.shieldDef >= 0 ? "+" : "") + dg.shieldDef + " shield" : "")),
       statEl("DR", "DR", d.armorDR || 0, dg.armor ? dg.armor.name : "no armor", function (n) { if (!(d.armorDR > 0)) n.querySelector(".v").style.color = "var(--text3)"; }),
-      statEl("SPD", "SPD", spDisplay, spDisplay < d.speed ? "of " + d.speed + " — conditions" : "spaces", function (n) { if (spDisplay < d.speed) n.querySelector(".v").style.color = "var(--danger)"; }),
+      statEl("SPD", "SPD", spDisplay, spDisplay < d.speed ? "of " + d.speed + ", conditions" : "spaces", function (n) { if (spDisplay < d.speed) n.querySelector(".v").style.color = "var(--danger)"; }),
       statEl("INIT", "INIT", eng.fmtMod(initVal), fx.init ? "Agility " + eng.fmtMod(fx.init) + " cond." : "Agility", function (n) { if (fx.init < 0) n.querySelector(".v").style.color = "var(--danger)"; })
     ]));
     // breakdown panel (shows when a stat above is selected)
@@ -888,7 +888,7 @@ EN.combatView = (function () {
       ]));
     }
 
-    /* defensive loadout — worn armor / wielded shield / attuned focus and the
+    /* defensive loadout, worn armor / wielded shield / attuned focus and the
        numbers each one contributes (DR, Block, Defense, Ward). Built here but
        rendered inside the Defend section (Actions panel), above the maneuvers.
        Equip them in Inventory → Stash; one armor, one shield, one focus at a time. */
@@ -904,12 +904,12 @@ EN.combatView = (function () {
       if (dg.armor) { var ap = [dg.armorDR + " DR"]; if (dg.blockBonus) ap.push("+" + dg.blockBonus + " Block"); if (dg.armor.wardDie && !dg.focus) ap.push(dg.armor.wardDie + " Ward"); if (dg.speedPenalty) ap.push(dg.speedPenalty + " SPD"); if (dg.armor.slots) ap.push(dg.armor.slots + " slots"); chips.push(gchip("ARMOR", dg.armor.name, ap.join(" · "), "var(--success)")); }
       if (dg.shield) { var spv = [(dg.shieldDef >= 0 ? "+" : "") + dg.shieldDef + " DEF"]; if (dg.shieldBlockDie) spv.push(dg.shieldBlockDie + " Block"); chips.push(gchip("SHIELD", dg.shield.name, spv.join(" · "), "var(--accent)")); }
       if (dg.focus) { chips.push(gchip("FOCUS", dg.focus.name, (dg.focus.wardDie || "") + " Ward", "var(--flow)")); }
-      if (!chips.length) return [el("p.help", { style: { margin: "2px 0 8px", fontSize: "11px", color: "var(--text3)" }, text: "No armor, shield, or Warding Focus equipped — buy defensive gear in Inventory → The Undercut, then WEAR / RAISE / ATTUNE it from your Stash." })];
+      if (!chips.length) return [el("p.help", { style: { margin: "2px 0 8px", fontSize: "11px", color: "var(--text3)" }, text: "No armor, shield, or Warding Focus equipped; buy defensive gear in Inventory → The Undercut, then WEAR / RAISE / ATTUNE it from your Stash." })];
       // stacked full-width, in order: ARMOR → SHIELD → FOCUS (only the slots you've equipped)
       return [el("div", { style: { display: "flex", flexDirection: "column", gap: "6px", margin: "2px 0 8px" } }, chips)];
     }
 
-    /* attribute matrix — single biometric-profile panel with gradient bars */
+    /* attribute matrix, single biometric-profile panel with gradient bars */
     function attrTier(score) {
       if (score >= 20) return { label: "Peak", color: "var(--accent)", icon: "○ " };
       if (score >= 16) return { label: "Exceptional", color: "#7b5cff" };
@@ -926,16 +926,16 @@ EN.combatView = (function () {
         el("span.att", { text: s.attr }),
         el("span", { style: { flex: 1 }, text: s.name }),
         (function () {
-          var why = s.untrained ? "Untrained — roll with Snag (or +2 Snag Dice in pools)" :
-            fx.snagChk.ALL ? "Condition — Snag on all checks" :
-            fx.snagChk[s.attr] ? "Condition — Snag on " + s.attrName + " checks" :
-            (s.key === "perception" && fx.perceptionSnag) ? "Condition — Snag on Perception checks" : null;
+          var why = s.untrained ? "Untrained; roll with Snag (or +2 Snag Dice in pools)" :
+            fx.snagChk.ALL ? "Condition · Snag on all checks" :
+            fx.snagChk[s.attr] ? "Condition · Snag on " + s.attrName + " checks" :
+            (s.key === "perception" && fx.perceptionSnag) ? "Condition · Snag on Perception checks" : null;
           return why ? snagChip(why) : null;
         })(),
         el("span.mono", { style: { color: "var(--accent)" }, text: eng.fmtMod(s.total) })
       ]);
     });
-    var sectionEls = {};   // modular sections — placed by the saved layout at the end of render
+    var sectionEls = {};   // modular sections, placed by the saved layout at the end of render
     var ATTR_GRAD = "linear-gradient(90deg, #ff2e88 0%, #8b3dff 55%, #00b3ff 100%)";
     var attrBody;
     if (_attrCompact) {
@@ -943,7 +943,7 @@ EN.combatView = (function () {
       attrBody = [el("div.attr-grid", null, R.attributes.map(function (a) {
         var sc = d.attributes[a.key].score, mod = d.attributes[a.key].mod;
         var t = attrTier(sc);
-        return el("div.attr-cell", { title: a.blurb + " " + (t.icon || "") + t.label + " — score " + sc + " · modifier " + eng.fmtMod(mod) + "." }, [
+        return el("div.attr-cell", { title: a.blurb + " " + (t.icon || "") + t.label + ", score " + sc + " · modifier " + eng.fmtMod(mod) + "." }, [
           el("div.abbr", { text: a.name.toUpperCase() }),
           el("div.mod", { text: eng.fmtMod(mod) }),
           el("div", { style: { display: "flex", justifyContent: "center", marginTop: "3px" } }, [
@@ -984,9 +984,9 @@ EN.combatView = (function () {
                width: "18px", height: "18px", lineHeight: "1", fontSize: "10px", cursor: "pointer", padding: 0, flex: "0 0 auto" }
     }, _attrCompact ? "▤" : "▦") : null;
     sectionEls.matrix = EN.ui.panel("Attribute Matrix", "BIOMETRIC PROFILE", attrBody, { corners: true, headerRight: attrToggle ? [attrToggle] : null });
-    /* versatile skills — Insight · Performance · Intimidation (ported from the original sheet):
+    /* versatile skills, Insight · Performance · Intimidation (ported from the original sheet):
        pick an Attribute + a Proficient parent skill; the combo resolves to a named technique
-       (or refuses — some pairings Do Not Work). Roll = attr mod + parent tier bonus. */
+       (or refuses; some pairings Do Not Work). Roll = attr mod + parent tier bonus. */
     function versatileBlock() {
       var V = EN.versatile;
       if (!V) return null;
@@ -1003,7 +1003,7 @@ EN.combatView = (function () {
           el("span.line"),
           el("span.collapse-caret", { style: { marginLeft: "4px" }, text: infoOpen ? "▾" : "▸" })
         ]),
-        infoOpen ? el("p.help", { style: { margin: "0 0 4px" }, html: "<b>Insight · Performance · Intimidation</b> — " + V.note }) : null
+        infoOpen ? el("p.help", { style: { margin: "0 0 4px" }, html: "<b>Insight · Performance · Intimidation</b>, " + V.note }) : null
       ];
       V.types.forEach(function (type) {
         var slot = (ch.versatile && ch.versatile[type]) || { attr: "", skill: "" };
@@ -1016,11 +1016,11 @@ EN.combatView = (function () {
           });
         }
         var attrSel = el("select", { style: { width: "100%", fontSize: "12px" }, onchange: function () { setSlot("attr", this.value); } },
-          [el("option", { value: "", text: "— Choose Attr —" })].concat(R.attributes.map(function (a) {
+          [el("option", { value: "", text: "- Choose Attr -" })].concat(R.attributes.map(function (a) {
             return el("option", { value: a.key, selected: a.key === slot.attr, text: a.name });
           })));
         var skillSel = el("select", { style: { width: "100%", fontSize: "12px" }, onchange: function () { setSlot("skill", this.value); } },
-          [el("option", { value: "", text: "— Choose Skill —" })].concat(profSkills.length ? profSkills.map(function (s) {
+          [el("option", { value: "", text: "- Choose Skill -" })].concat(profSkills.length ? profSkills.map(function (s) {
             var works = !slot.attr || !!V.db[slot.attr + "|" + s.name + "|" + type];
             return el("option", { value: s.name, selected: s.name === slot.skill, text: s.name + (works ? "" : " ✗") });
           }) : [el("option", { disabled: true, text: "No proficient skills yet" })]));
@@ -1030,9 +1030,9 @@ EN.combatView = (function () {
           var sk = profSkills.find(function (s) { return s.name === slot.skill; });
           if (!entry) {
             resultBlock = el("div", { style: { padding: "6px 10px", background: "rgba(239,68,68,.08)", border: "1px solid var(--danger)", borderRadius: "4px", fontSize: "11px", color: "var(--danger)", marginTop: "6px" } },
-              "This combination does not work — " + attrName(slot.attr) + " cannot apply to " + slot.skill + " for " + label + ".");
+              "This combination does not work; " + attrName(slot.attr) + " cannot apply to " + slot.skill + " for " + label + ".");
           } else if (!sk) {
-            resultBlock = el("p.help", { style: { margin: "6px 0 0", color: "var(--warn)" }, text: "Requires Proficiency in " + slot.skill + " — train it on the #PRINT tab." });
+            resultBlock = el("p.help", { style: { margin: "6px 0 0", color: "var(--warn)" }, text: "Requires Proficiency in " + slot.skill + "; train it on the #PRINT tab." });
           } else {
             var tierBonus = R.profTiers[sk.tier].d20;
             var mod = d.attributes[slot.attr].mod;
@@ -1052,7 +1052,7 @@ EN.combatView = (function () {
               el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "4px" } }, [
                 el("span.help", { style: { margin: 0, fontSize: "10px" }, html: "Roll: <b>" + attrName(slot.attr) + " " + eng.fmtMod(mod) + " + " + sk.name + " " + eng.fmtMod(tierBonus) + "</b>" }),
                 focus ? el("span.chip", { title: "Skill Focus on " + sk.name + " carries over", style: { fontSize: "9px", color: "var(--accent)", borderColor: "var(--accent)" }, text: "EDGE" + (focus.aspect ? " (" + focus.aspect + ")" : "") }) : null,
-                spec ? el("span.chip", { title: "Specialization on " + sk.name + " carries over", style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" }, text: "CRIT 19–20" + (spec.aspect ? " (" + spec.aspect + ")" : "") }) : null
+                spec ? el("span.chip", { title: "Specialization on " + sk.name + " carries over", style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" }, text: "CRIT 19-20" + (spec.aspect ? " (" + spec.aspect + ")" : "") }) : null
               ])
             ]);
           }
@@ -1075,28 +1075,28 @@ EN.combatView = (function () {
     /* state banners */
     if (s.dying) {
       blocks.push(el("div.muted-box", { style: { borderColor: "var(--danger)", color: "var(--danger)", marginBottom: "12px", textAlign: "left" },
-        html: "☠ <b>DYING</b> — Unconscious at 0 Wounds. Each turn: Death Save (Body, DC 10). Three successes = Stable, three failures = dead. Any damage = one failure." }));
+        html: "☠ <b>DYING</b> · Unconscious at 0 Wounds. Each turn: Death Save (Body, DC 10). Three successes = Stable, three failures = dead. Any damage = one failure." }));
     } else if (s.stable) {
       blocks.push(el("div.muted-box", { style: { borderColor: "var(--warn)", color: "var(--warn)", marginBottom: "12px", textAlign: "left" },
-        html: "◌ <b>STABLE</b> — Unconscious at 0 Wounds, no longer Dying. Restoring even 1 Wound wakes you with that many Wounds." }));
+        html: "◌ <b>STABLE</b> · Unconscious at 0 Wounds, no longer Dying. Restoring even 1 Wound wakes you with that many Wounds." }));
     } else if (s.critical) {
       blocks.push(el("div.muted-box", { style: { borderColor: "var(--warn)", color: "var(--warn)", marginBottom: "12px", textAlign: "left" },
-        html: "⚠ <b>CRITICAL CONDITION</b> — at 50% or less of total Wounds." }));
+        html: "⚠ <b>CRITICAL CONDITION</b> · at 50% or less of total Wounds." }));
     }
     if (s.bloodied) {
       blocks.push(el("div.muted-box", { style: { borderColor: "var(--ember)", color: "var(--ember)", marginBottom: "12px", textAlign: "left" },
-        html: "🩸 <b>BLOODIED</b> — Vitality is 0. You stay conscious; further damage becomes Wound damage." }));
+        html: "🩸 <b>BLOODIED</b> · Vitality is 0. You stay conscious; further damage becomes Wound damage." }));
     }
     if (fx.cannotAct) {
       blocks.push(el("div.muted-box", { style: { borderColor: "var(--danger)", color: "var(--danger)", marginBottom: "12px", textAlign: "left" },
-        html: "⛔ <b>CANNOT ACT</b> — an active condition prevents you from taking actions." }));
+        html: "⛔ <b>CANNOT ACT</b> · an active condition prevents you from taking actions." }));
     }
     if (fx.edgeToAttackers) {
       blocks.push(el("div.muted-box", { style: { borderColor: "var(--danger)", color: "var(--danger)", marginBottom: "12px", textAlign: "left" },
-        html: "🎯 <b>EDGE TO ATTACKERS</b> — attacks against you gain Edge from an active condition." }));
+        html: "🎯 <b>EDGE TO ATTACKERS</b> · attacks against you gain Edge from an active condition." }));
     }
 
-    /* vitality + vigor + wounds — compact console; controls live in popovers on the bar labels */
+    /* vitality + vigor + wounds, compact console; controls live in popovers on the bar labels */
     function railBtn(label, color, title, onclick) {
       return el("button.btn.sm", { title: title, onclick: onclick, style: { color: color, borderColor: color, width: "100%", textAlign: "center", justifyContent: "center" } }, label);
     }
@@ -1125,7 +1125,7 @@ EN.combatView = (function () {
       el("div", { style: { display: "flex", flexDirection: "column", justifyContent: "center" } }, [
         el("div.row.between.wrap", { style: { alignItems: "baseline" } }, [
           el("div.mono", { style: { fontSize: "19px", fontWeight: 700 } }, [
-            s.vigor ? el("span", { title: "Vigor " + s.vigor + " — absorbed before Vitality. Click to clear.", style: { color: "var(--shield)", cursor: "pointer" }, onclick: function () { store.update(function (c) { c.vitality.temp = 0; }); }, text: "(" + s.vigor + ") " }) : null,
+            s.vigor ? el("span", { title: "Vigor " + s.vigor + ", absorbed before Vitality. Click to clear.", style: { color: "var(--shield)", cursor: "pointer" }, onclick: function () { store.update(function (c) { c.vitality.temp = 0; }); }, text: "(" + s.vigor + ") " }) : null,
             el("span", { style: { color: "var(--text1)" }, text: s.vit + "/" + s.vitMax })
           ]),
           popAnchor("vit", "var(--success)", "Vigor, healing & damage",
@@ -1134,7 +1134,7 @@ EN.combatView = (function () {
               document.createTextNode("VITALITY")
             ].filter(Boolean),
             [
-              railBtn("VIGOR", "var(--accent)", "Gain Vigor equal to the amount below (non-stacking — keeps the higher value; expires end of encounter)", function () {
+              railBtn("VIGOR", "var(--accent)", "Gain Vigor equal to the amount below (non-stacking, keeps the higher value; expires end of encounter)", function () {
                 store.update(function (c) { c.vitality.temp = Math.max(c.vitality.temp || 0, _amts.vit); });
               }),
               railBtn("HEAL", "var(--success)", "Restore Vitality", function () { applyHeal(ch, d, _amts.vit); }),
@@ -1159,13 +1159,13 @@ EN.combatView = (function () {
       ]),
       (s.dying || s.stable) ? el("div", { style: { marginTop: "8px" } }, [
         el("div.row.wrap", { style: { gap: "12px", alignItems: "center" } }, [
-          el("span.help", { style: { margin: 0 }, text: "Death Saves — ✓" }),
+          el("span.help", { style: { margin: 0 }, text: "Death Saves · ✓" }),
           pips(ch.deathSaves.s || 0, 3, "var(--success)", function (n) { store.update(function (c) { c.deathSaves.s = n; if (n >= 3) { c.stable = true; c.deathSaves = { s: 0, f: 0 }; } }); }),
           el("span.help", { style: { margin: 0 }, text: "✗" }),
           pips(ch.deathSaves.f || 0, 3, "var(--danger)", function (n) { store.update(function (c) { c.deathSaves.f = n; }); }),
-          s.dying ? el("button.btn.sm", { title: "Stabilize: Medtech/Tech/Flow check DC 10", onclick: function () { store.update(function (c) { c.stable = true; c.deathSaves = { s: 0, f: 0 }; }); toast("Stabilized — unconscious at 0 Wounds."); } }, "STABILIZE") : null
+          s.dying ? el("button.btn.sm", { title: "Stabilize: Medtech/Tech/Flow check DC 10", onclick: function () { store.update(function (c) { c.stable = true; c.deathSaves = { s: 0, f: 0 }; }); toast("Stabilized, unconscious at 0 Wounds."); } }, "STABILIZE") : null
         ]),
-        (ch.deathSaves.f || 0) >= 3 ? el("p", { style: { color: "var(--danger)", fontFamily: "var(--mono)", marginTop: "6px" }, text: "✝ THREE FAILURES — the body stops keeping score." }) : null
+        (ch.deathSaves.f || 0) >= 3 ? el("p", { style: { color: "var(--danger)", fontFamily: "var(--mono)", marginTop: "6px" }, text: "✝ THREE FAILURES; the body stops keeping score." }) : null
       ]) : null
     ], { corners: true });
 
@@ -1193,7 +1193,7 @@ EN.combatView = (function () {
 
     /* conditions */
     var condSel = el("select", { style: { width: "auto", minWidth: "200px" } },
-      [el("option", { value: "", text: "— add a condition —" })].concat((EN.conditions || []).map(function (c) {
+      [el("option", { value: "", text: "- add a condition -" })].concat((EN.conditions || []).map(function (c) {
         return el("option", { value: c.name, disabled: (ch.conditions || []).indexOf(c.name) !== -1, text: c.name });
       })));
     var active = (ch.conditions || []).map(function (name) {
@@ -1203,7 +1203,7 @@ EN.combatView = (function () {
       var stage = lv && lv.names ? lv.names[lvl - 1] : null;
       var severe = lv && lv.severeAt && lvl >= lv.severeAt;
       var open = !!_open["cond-" + name];
-      var title = name + (lv ? " " + lvl + (stage ? " — " + stage : "") : "");
+      var title = name + (lv ? " " + lvl + (stage ? " · " + stage : "") : "");
       var rightKids = [];
       if (lv) {
         rightKids.push(el("span.help", { style: { margin: 0 }, text: lv.label + ":" }));
@@ -1221,7 +1221,7 @@ EN.combatView = (function () {
         ]),
         !open ? el("p.help", { style: { margin: 0, color: "var(--text2)" }, text: (lv && lv.effects ? lv.effects[lvl - 1] : (info && info.summary) || "") }) : null,
         !open && COND_META[name] ? el("p.help", { style: { margin: "4px 0 0" }, html: "⏱ " + COND_META[name][0] + " &nbsp;·&nbsp; <span style='color:var(--success)'>✓ End:</span> " + COND_META[name][1] }) : null,
-        severe ? el("p.help", { style: { margin: "4px 0 0", color: "var(--danger)" }, text: "Severe — level 4+ needs professional care or ritual support to recover." }) : null,
+        severe ? el("p.help", { style: { margin: "4px 0 0", color: "var(--danger)" }, text: "Severe; level 4+ needs professional care or ritual support to recover." }) : null,
         info && open ? el("p", { text: info.text || info.summary || "" }) : null
       ]);
     });
@@ -1240,7 +1240,7 @@ EN.combatView = (function () {
         return el("div.feature", { style: { borderLeftColor: "var(--danger)" } }, [
           el("h4", null, [
             el("span", null, [document.createTextNode(dc.name + " "),
-              el("span.chip", { style: { fontSize: "9px", color: "var(--danger)", borderColor: "var(--danger)" }, text: "AUTO — " + dc.from })]),
+              el("span.chip", { style: { fontSize: "9px", color: "var(--danger)", borderColor: "var(--danger)" }, text: "AUTO · " + dc.from })]),
             el("span.src", { text: "clears when the source drops" })
           ]),
           info ? el("p.help", { style: { margin: 0 }, text: info.summary || "" }) : null
@@ -1265,7 +1265,7 @@ EN.combatView = (function () {
       "Blood-Scent Tracker": { sense: "Blood Scent", range: "6 sp.", note: "Know the direction of any Bleeding or below-half-Vitality creature, even hidden or behind cover." },
       "Disturbance Compass": { sense: "Flow Sense", range: "12 sp.", note: "Presence and direction of Flow disturbances and active Invocations, through walls. Always on." },
       "Scent Marker":        { sense: "Scent Tracking", range: "1 mile", note: "Tagged targets only, for 48 hours." },
-      "The Machine Medium":  { sense: "Sprite Sight", range: "—", note: "Passively see and communicate with Nixies and Gremlins, the Flow sprites in complex machinery." }
+      "The Machine Medium":  { sense: "Sprite Sight", range: "-", note: "Passively see and communicate with Nixies and Gremlins, the Flow sprites in complex machinery." }
     };
     var senseRows = [];
     (d.features || []).forEach(function (f) {
@@ -1292,14 +1292,14 @@ EN.combatView = (function () {
         return el("tr", null, [el("td", { text: a.name }), el("td", null, [
           sv.focus ? el("span.badge", { style: { color: "var(--flow)" }, text: "FOCUS" }) : null,
           autoFail ? el("span.chip", { style: { fontSize: "9px", color: "var(--danger)", borderColor: "var(--danger)" }, text: "AUTO-FAIL" }) :
-            (svSnag ? snagChip("Condition — Snag on " + a.name + " saves") : null)
+            (svSnag ? snagChip("Condition · Snag on " + a.name + " saves") : null)
         ]), el("td.tot", { style: fx.saveDelta ? { color: "var(--warn)" } : null, title: fx.saveDelta ? "includes " + eng.fmtMod(fx.saveDelta) + " from conditions" : null, text: eng.fmtMod(bonus) })]);
       }))])], { corners: true });
     sectionEls.senses = EN.ui.panel("Senses", "10 + MOD + PROF (±5 EDGE/SNAG)", passives, { corners: true });
 
-    /* ACTIONS — tabbed, like a play-sheet */
+    /* ACTIONS, tabbed, like a play-sheet */
     var C = EN.combat || {};
-    // only features with usable mechanics belong on the play-sheet — drop progression
+    // only features with usable mechanics belong on the play-sheet; drop progression
     // scaffolding ("choose a subclass / Universal Upgrade" prompts) and scaling
     // reminders like "Cheap Shot (3d6)" whose base feature is already listed
     var SCAFFOLD_FEATURE = /^(Universal Upgrade|Subclass Feature|Subclass Capstone|Awakening Milestone)$|\bSubclass$/;
@@ -1334,10 +1334,10 @@ EN.combatView = (function () {
       return el("button.btn.sm" + (_tab === t ? ".primary" : ""), { onclick: function () { _tab = t; EN.app.render(); } }, t);
     }));
     var actionKids = [tabRow];
-    // attacks (shown on ALL + ATTACK) — built from the weapons equipped in the Inventory stash
+    // attacks (shown on ALL + ATTACK), built from the weapons equipped in the Inventory stash
     if (_tab === "ALL" || _tab === "ATTACK") {
       actionKids.push(el("div.section-title", { style: { margin: "6px 0 2px" } }, [document.createTextNode("Attacks"), el("span.line")]));
-      var atkSnag = fx.snagAtk ? "Active condition — Snag on all attack rolls" : null;
+      var atkSnag = fx.snagAtk ? "Active condition · Snag on all attack rolls" : null;
       var GROUP_CAT = { Simple: "Simple Weapons", Martial: "Martial Weapons", Sidearm: "Sidearms", Longarm: "Longarms",
                         Heavy: "Heavy Weapons", Launcher: "Explosive Launchers", Thrown: "Thrown Weapons", Bowfire: "Bowfire Weapons" };
       var equippedNames = (ch.equippedWeapons || []).filter(function (n) {
@@ -1375,9 +1375,9 @@ EN.combatView = (function () {
         var it = findWeapon(wname);
         if (!it) return;
         var h = weaponHit(it), norm = normalizeWeapon(it);
-        var snagWhy = atkSnag || (h.tier === "untrained" ? "Untrained with " + h.cat + " — attacks roll with Snag" : null);
+        var snagWhy = atkSnag || (h.tier === "untrained" ? "Untrained with " + h.cat + "; attacks roll with Snag" : null);
         var dmgTip = norm.damageDisplay + (h.melee || h.thrownItem ? " " + eng.fmtMod(h.mod) + " (" + h.attrName + ") on hit" : "");
-        var hitTip = "d20 " + eng.fmtMod(h.mod) + " " + h.attrName + (h.prof ? " " + eng.fmtMod(h.prof) + " " + R.profTiers[h.tier].name : " (untrained — Snag)");
+        var hitTip = "d20 " + eng.fmtMod(h.mod) + " " + h.attrName + (h.prof ? " " + eng.fmtMod(h.prof) + " " + R.profTiers[h.tier].name : " (untrained, Snag)");
         var subtype = (h.melee ? "Melee" : h.thrownItem ? "Thrown" : "Ranged") + " Weapon · " + h.cat;
         var isRanged = !h.melee && !h.thrownItem && it.ammo != null;
 
@@ -1402,7 +1402,7 @@ EN.combatView = (function () {
               el("button.btn.sm", { style: { color: "var(--warn)", borderColor: "var(--warn)", padding: "1px 7px" }, onclick: function () { reloadWeapon(wname); } }, "⟳ RELOAD")
             ]);
           } else {   // can fire something; grey the number when the SELECTED mode is unaffordable
-            hitCell = el("div", { title: canSel ? "Tap to fire (" + st.mode + " · −" + selCost + ")" : "Needs " + selCost + " for " + st.mode + " — switch to a cheaper mode or reload",
+            hitCell = el("div", { title: canSel ? "Tap to fire (" + st.mode + " · −" + selCost + ")" : "Needs " + selCost + " for " + st.mode + "; switch to a cheaper mode or reload",
               style: { textAlign: "center", flex: "0 0 auto", minWidth: "44px", cursor: "pointer", opacity: canSel ? 1 : 0.5 }, onclick: function () { fireWeapon(wname); } }, [
               el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text4)" }, text: "HIT" }),
               el("span.mono", { title: hitTip, style: { fontSize: "16px", color: canSel ? "var(--ember)" : "var(--danger)" }, text: eng.fmtMod(h.total) })
@@ -1465,12 +1465,12 @@ EN.combatView = (function () {
       });
       if (!equippedNames.length) {
         actionKids.push(attackRow("Unarmed Strike", eng.fmtMod(d.attributes.BOD.mod), "d20 + Body + proficiency · unarmed damage + Body mod", "var(--ember)", atkSnag));
-        actionKids.push(el("p.help", { style: { margin: "4px 0 6px" }, text: "No weapons equipped — hit ⚔ EQUIP on a weapon in Inventory → Stash to list it here." }));
+        actionKids.push(el("p.help", { style: { margin: "4px 0 6px" }, text: "No weapons equipped; hit ⚔ EQUIP on a weapon in Inventory → Stash to list it here." }));
       }
       if (ch.class === "codebreaker") actionKids.push(attackRow("Cipher Attack", eng.fmtMod(d.attributes.TEC.mod), "d20 + Tech + proficiency vs Node · Quick Hacks under fire", "var(--accent)"));
       if (d.flow) actionKids.push(attackRow("Flow Attack", eng.fmtMod(d.flow.attack), "d20 + " + d.flow.attributeName + " · Invocation Save DC " + d.flow.dc, "var(--flow)"));
     }
-    // common actions chips (ALL + ACTION) — the list of actions nests under the
+    // common actions chips (ALL + ACTION), the list of actions nests under the
     // clickable header so it can be tucked away when not needed
     if ((_tab === "ALL" || _tab === "ACTION") && (C.commonActions || []).length) {
       var acOpen = !!_open["actions-in-combat"];
@@ -1483,9 +1483,9 @@ EN.combatView = (function () {
         el("span.line"),
         el("span.collapse-caret", { style: { marginLeft: "4px" }, text: acOpen ? "▾" : "▸" })
       ]));
-      if (acOpen) actionKids.push(el("p.help", { style: { marginBottom: "6px" }, text: (C.commonActions || []).map(function (a) { return a.name; }).join(", ") + " — full rules in the Codex tab." }));
+      if (acOpen) actionKids.push(el("p.help", { style: { marginBottom: "6px" }, text: (C.commonActions || []).map(function (a) { return a.name; }).join(", ") + ", full rules in the Codex tab." }));
     }
-    // Defend (ALL + IMPULSE) — Active Defenses are Impulse maneuvers. Each row shows
+    // Defend (ALL + IMPULSE); Active Defenses are Impulse maneuvers. Each row shows
     // the live value for THIS character (equipped shield/weapon/focus, Resilience Die,
     // Flow Mod, Acrobatics) and dims when the equipment/attunement requirement is unmet.
     if ((_tab === "ALL" || _tab === "IMPULSE") && (C.activeDefenses || []).length) {
@@ -1501,7 +1501,7 @@ EN.combatView = (function () {
       });
       var DEF_LIVE = {
         Block:   { avail: !!dg.shield, req: "a Physical Shield",
-                   summary: dg.shield ? "Adds " + dg.shieldBlockDie + " to your Armor DR (" + (d.armorDR || 0) + ") against this hit — no roll to enable" : "Reinforce your Armor DR with the shield's Block die" },
+                   summary: dg.shield ? "Adds " + dg.shieldBlockDie + " to your Armor DR (" + (d.armorDR || 0) + ") against this hit, no roll to enable" : "Reinforce your Armor DR with the shield's Block die" },
         Dodge:   { avail: true, req: "",
                    summary: (acro ? "+" + acro.total + " Defense" : "+Agility + Acrobatics to Defense") + " vs this hit; on a miss, shift 1 space" + (dg.speedPenalty ? " · GM may forbid in heavy armor" : "") },
         Parry:   { avail: !!meleeDie || !!dg.shield, req: "a melee weapon or shield",
@@ -1526,7 +1526,7 @@ EN.combatView = (function () {
       }
       // the equipped armor / shield / focus chips sit just above the maneuvers
       defenseLoadoutEls().forEach(function (elm) { actionKids.push(elm); });
-      // Resurge & Siphon are Flow-counter maneuvers — only surface them for Shapers
+      // Resurge & Siphon are Flow-counter maneuvers, only surface them for Shapers
       var SHAPER_ONLY = { Resurge: true, Siphon: true };
       (C.activeDefenses || []).forEach(function (def) {
         if (SHAPER_ONLY[def.name] && ch.class !== "shaper") return;
@@ -1549,7 +1549,7 @@ EN.combatView = (function () {
         actionKids.push(el("div", null, kids));
       });
     }
-    // class resource tracker — the fuel for the features below
+    // class resource tracker, the fuel for the features below
     if (d.resource) {
       var rCur = (ch.resources.current[d.resource.name] != null) ? ch.resources.current[d.resource.name] : d.resource.max;
       rCur = eng.clamp(rCur, 0, d.resource.max);
@@ -1576,13 +1576,13 @@ EN.combatView = (function () {
       var featList = _featTab === "abilities" ? passiveFeats : activeFeats;
       actionKids.push(el("div.row.wrap", { style: { gap: "6px", margin: "12px 0 8px" } }, [
         el("button.btn.sm" + (_featTab !== "abilities" ? ".primary" : ""), {
-          title: "Active features — attacks, actions, and interactions you trigger",
+          title: "Active features, attacks, actions, and interactions you trigger",
           onclick: function () { _featTab = "features"; EN.app.render(); } }, "FEATURES (" + activeFeats.length + ")"),
         el("button.btn.sm" + (_featTab === "abilities" ? ".primary" : ""), {
-          title: "Passive abilities — always-on benefits",
+          title: "Passive abilities, always-on benefits",
           onclick: function () { _featTab = "abilities"; EN.app.render(); } }, "ABILITIES (" + passiveFeats.length + ")")
       ]));
-      // both lists grow with every level — the whole panel body below the filter row is the scroll well
+      // both lists grow with every level; the whole panel body below the filter row is the scroll well
       actionKids.push(el("div", null, featList.length
         ? featList.map(function (f) {
             var uses = f.uses ? {
@@ -1604,14 +1604,14 @@ EN.combatView = (function () {
     }
     // pin the filter row; everything below it scrolls together as one well that fills the panel
     // (the scroller is absolutely positioned inside .actions-frame, so a long list scrolls
-    //  instead of stretching the panel — yet the frame still fills down to the bottom border)
+    //  instead of stretching the panel; yet the frame still fills down to the bottom border)
     sectionEls.actions = EN.ui.panel("Actions", _tab,
       [actionKids[0], el("div.actions-frame", null, [el("div.actions-scroll", null, actionKids.slice(1))])],
       { corners: true });
     sectionEls.actions.classList.add("fill-col");
     if (sectionEls.actions.bodyEl) sectionEls.actions.bodyEl.classList.add("fill-body");
 
-    /* gear proficiencies — mirrors the #PRINT "Skills & Proficiencies" combined pane
+    /* gear proficiencies; mirrors the #PRINT "Skills & Proficiencies" combined pane
        (minus Skills, which have their own panel here, and Saves) */
     var TIER_LABEL = { untrained: "Untrained", proficient: "Proficient", expertise: "Expert", mastery: "Mastery" };
     var profSrc = eng.grantSourceMap(ch);
@@ -1654,11 +1654,11 @@ EN.combatView = (function () {
       profRowIf("Spec", specChips)
     ].filter(Boolean);
     sectionEls.profs = EN.ui.panel("Proficiencies & Training", "GEAR YOU RUN CLEAN",
-      profRows.length ? profRows : [el("p.help", { style: { margin: 0 }, text: "No gear proficiencies yet — grant them via Class/Background or Training Points." })],
+      profRows.length ? profRows : [el("p.help", { style: { margin: 0 }, text: "No gear proficiencies yet; grant them via Class/Background or Training Points." })],
       { corners: true });
 
     /* ---- assemble the modular layout from the saved order ----
-       6-column grid; each section spans 1–6 columns (−/+ in its header).
+       6-column grid; each section spans 1-6 columns (−/+ in its header).
        Dense auto-flow lets later sections backfill row holes, and rows
        stretch to equal height so nothing leaves ragged gaps. */
     var layout = loadLayout();
@@ -1669,7 +1669,7 @@ EN.combatView = (function () {
       var wrap = el("div", { style: { gridColumn: "span " + slot.w, minWidth: 0 } }, [p]);
       var head = p.querySelector(".panel-h");
       if (head) {
-        // at 2/6 or narrower there's no room for the header sub-label — fold it into the title tooltip
+        // at 2/6 or narrower there's no room for the header sub-label; fold it into the title tooltip
         if (slot.w <= 2) {
           var tag = head.querySelector(".tag");
           if (tag) {
@@ -1700,7 +1700,7 @@ EN.combatView = (function () {
           };
           var widthCtrls = [
             sizeBtn("−", -1, "Narrower (current: " + slot.w + "/6)"),
-            el("span.mono", { title: "Panel width — " + slot.w + " of 6 columns", style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".05em" }, text: slot.w + "/6" }),
+            el("span.mono", { title: "Panel width · " + slot.w + " of 6 columns", style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".05em" }, text: slot.w + "/6" }),
             sizeBtn("+", 1, "Wider (current: " + slot.w + "/6)")
           ];
           // if the header already has right-aligned content (its own auto margin), sit flush beside it

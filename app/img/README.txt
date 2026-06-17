@@ -8,7 +8,7 @@ Active background art:
 The Chrome tab (Inventory -> Chrome -> Cybernetic Frame) renders this SVG as the
 body in the BACKGROUND, with the Static heat-map markers on a transparent SVG
 overlay in the FOREGROUND. Marker anchor coordinates live in
-app/data/cyberware.js (EN.cyberware.zones) in this same 854 x 1972 space — if you
+app/data/cyberware.js (EN.cyberware.zones) in this same 854 x 1972 space; if you
 swap the art for a differently-proportioned silhouette, re-tune those anchors.
 
 If silhouette.svg is missing the <img> hides itself (markers still render).

@@ -1,5 +1,5 @@
 /* ===========================================================================
-   ELYSIUM NIGHTS — Store
+   ELYSIUM NIGHTS · Store
    Character record factory, localStorage persistence, and a tiny event bus.
    The whole app reads/writes the single "active character" here.
    =========================================================================== */
@@ -81,11 +81,11 @@ EN.store = (function () {
       conditions: [],
       conditionLevels: {},               // {name: level} for stackable/leveled conditions
       equipment: [],
-      equippedWeapons: [],               // ordered weapon names — drives the Attacks list on the Freelancer tab
-      equippedArmor: null,               // worn body armor (one at a time) — name from EN.gearCatalog.armor
+      equippedWeapons: [],               // ordered weapon names, drives the Attacks list on the Freelancer tab
+      equippedArmor: null,               // worn body armor (one at a time), name from EN.gearCatalog.armor
       equippedShield: null,              // wielded physical shield (one at a time)
       equippedFocus: null,               // attuned Warding Focus (one at a time)
-      weaponAmmo: {},                    // {weaponName: {cur, mode, ammoType}} — magazine/fire-mode tracking
+      weaponAmmo: {},                    // {weaponName: {cur, mode, ammoType}}, magazine/fire-mode tracking
       glimmer: 0,
       log: []
     };

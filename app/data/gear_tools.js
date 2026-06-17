@@ -1,6 +1,6 @@
 /* ===========================================================================
-   ELYSIUM NIGHTS — Gear catalog: Tools, Kits, Devices, and Consumables
-   Transcribed from "Part 3 — Equipment → Tools, Kits, Devices, and Consumables".
+   ELYSIUM NIGHTS · Gear catalog: Tools, Kits, Devices, and Consumables
+   Transcribed from "Part 3 · Equipment → Tools, Kits, Devices, and Consumables".
    Prices in Glimmer (𝒢), legal purchase in a major district. Each item carries
    its Availability (Common/Uncommon/Rare) and Legality (Legal/Licensed/
    Restricted/Contraband); the strictest tag on anything you carry is what a
@@ -50,7 +50,7 @@ EN.gearCatalog.tools = {
         { name: "Survival, Logistics & Identity", intro: "" }
       ] },
     { key: "flow", title: "Flow Tonics & Resonant Devices",
-      intro: "Drinkable and injectable Flow infusions plus the mystech gear tuned to carry resonance — restoring Flow Points or sharpening Invocations at the usual cost: Strain, Fatigue, and the spike of pushing the current too far.",
+      intro: "Drinkable and injectable Flow infusions plus the mystech gear tuned to carry resonance, restoring Flow Points or sharpening Invocations at the usual cost: Strain, Fatigue, and the spike of pushing the current too far.",
       groups: [
         { name: "Resonance Tonics", intro: "" },
         { name: "Worn Resonant Gear", intro: "Each calls out a Body Slot." },
@@ -396,7 +396,7 @@ EN.gearCatalog.tools = {
       desc: "A palm-sized puck that vents a focused cleaning mist. After 1 minute of use on a small space, it scrubs away signs of struggle, splatter, and prints; subsequent Investigation or Forensics checks for that area suffer Snag without advanced tools or Flow. It will not fool expert forensics, but stops most casual scrutiny." },
     { name: "Tempest Core", bucket: "devices", group: "Mystech & Tactical Utility", price: 400, availability: "Rare", legality: "Restricted",
       effect: "Deployable storm generator. Powers a site, overcharges a weapon, or emits an EMP.",
-      desc: "A briefcase generator built around a bound micro-storm. Holds up to 8 hours of active output per day in 1-hour charge blocks, routed three ways: #GRID Anchor (power a small site, 1 hr/hr, ignore power-lack Snag); Weapon Overcharge (link one energy weapon, 1 hr/attack, +1 damage-die step, non-stacking); or Surge Pulse (1 Action, 3 hrs charge — every unattended electronic in an Area 4 Sphere shuts down, and up to three Tech-carrying Targets make a Body or Systems Save DC 13 or take 1d6 Energy and lose a device for 1 round). After a day of use, an Engineering or Esoterica check (DC 13) safely re-cages the storm, or it lashes out." },
+      desc: "A briefcase generator built around a bound micro-storm. Holds up to 8 hours of active output per day in 1-hour charge blocks, routed three ways: #GRID Anchor (power a small site, 1 hr/hr, ignore power-lack Snag); Weapon Overcharge (link one energy weapon, 1 hr/attack, +1 damage-die step, non-stacking); or Surge Pulse (1 Action, 3 hrs charge; every unattended electronic in an Area 4 Sphere shuts down, and up to three Tech-carrying Targets make a Body or Systems Save DC 13 or take 1d6 Energy and lose a device for 1 round). After a day of use, an Engineering or Esoterica check (DC 13) safely re-cages the storm, or it lashes out." },
 
     /* ============================= CONSUMABLES ============================= */
     /* ---- Medical Consumables ---- */
@@ -451,7 +451,7 @@ EN.gearCatalog.tools = {
       desc: "A shielded sack the street calls a dead bag. Anything sealed inside goes completely dark while the pouch is closed: it cannot be tracked, pinged, traced, or accessed remotely. Open the pouch and the signal comes right back." },
     { name: "#PRINT", bucket: "consumables", group: "Survival, Logistics & Identity", price: 80, availability: "Uncommon", legality: "Licensed",
       effect: "Official network identity and license tag.",
-      desc: "Personal Record & Identity Network Tag — a person's verified machine-readable identity. Holds official ID, licenses, medical flags, institutional records, exchange access, and #GRID persona keys. A clean #PRINT moves through legitimate society with minimal friction; a flagged, spoofed, or corrupted one makes them a suspect, a ghost, or a liability." },
+      desc: "Personal Record & Identity Network Tag, a person's verified machine-readable identity. Holds official ID, licenses, medical flags, institutional records, exchange access, and #GRID persona keys. A clean #PRINT moves through legitimate society with minimal friction; a flagged, spoofed, or corrupted one makes them a suspect, a ghost, or a liability." },
     { name: "Fake License Portfolio", bucket: "consumables", group: "Survival, Logistics & Identity", price: 120, availability: "Rare", legality: "Restricted",
       effect: "Forged papers for narrative cover.",
       desc: "A bundle of forged or bent licenses tied to your #PRINT or visible ID: weapon permits, Flow-practice approvals, cyberware clearances. Solid narrative cover within the claimed license; under deep scrutiny, the GM may call for Deception or Systems checks to avoid exposure." },
@@ -492,7 +492,7 @@ EN.gearCatalog.tools = {
       desc: "A talisman tuned to local Flow currents. While worn, gain Edge on saves to resist forced movement from Resonant, Force, or Tech effects. Once per scene, when such an effect would move you 2 spaces or more, use your Impulse Action to halve that distance." },
     { name: "Channel Stabilizer Band", bucket: "flow", group: "Worn Resonant Gear", price: 220, availability: "Rare", legality: "Restricted", slot: "Arms",
       effect: "Reduce Strain gain by 1, taking 2d6 unpreventable Vitality instead.",
-      desc: "A bracer that grounds and dampens runaway resonance. Once per scene, when you would gain Strain from Overdraw, reduce it by 1 (minimum 0). If you do, you take 2d6 Vitality as the band grounds the excess — this damage cannot be reduced, resisted, or prevented." },
+      desc: "A bracer that grounds and dampens runaway resonance. Once per scene, when you would gain Strain from Overdraw, reduce it by 1 (minimum 0). If you do, you take 2d6 Vitality as the band grounds the excess; this damage cannot be reduced, resisted, or prevented." },
     { name: "Flow Ward Projector", bucket: "flow", group: "Worn Resonant Gear", price: 260, availability: "Rare", legality: "Restricted", slot: "Arms",
       effect: "Your Ward applies half its reduction to an adjacent Ally for 1 round.",
       desc: "A wrist emitter that reinforces your Ward. Once per encounter, when you activate Ward, trigger the projector: until the start of your next turn, your Ward also applies half its total reduction (round down) to one adjacent Ally." },
@@ -509,6 +509,6 @@ EN.gearCatalog.tools = {
       desc: "A palm-sized crystal and frame that reacts to nearby Flow. As a Swift Action, activate before an Awareness or Esoterica check to sense Flow and gain Edge. Once per scene, spend 1 FP to have the GM reveal the strongest anomaly within 12 spaces, even through thin walls or floors, if one exists." },
     { name: "Scripted Invocation Tab", bucket: "flow", group: "Handheld Resonant Tools", price: 60, unit: "+", availability: "Rare", legality: "Restricted",
       effect: "One-use locked Invocation. Deploys without spending FP.",
-      desc: "A disposable mystech strip carrying one locked Invocation. Snap the tab along its seam and wet the etch to release it: you do not spend FP — resolve the Invocation using the crafter's Attack Modifier and Save DC recorded on the tab, plus any noted range and limits. The tab crumbles after use. Carrying more than 3 to 5 tabs is unstable and attention-grabbing." }
+      desc: "A disposable mystech strip carrying one locked Invocation. Snap the tab along its seam and wet the etch to release it: you do not spend FP; resolve the Invocation using the crafter's Attack Modifier and Save DC recorded on the tab, plus any noted range and limits. The tab crumbles after use. Carrying more than 3 to 5 tabs is unstable and attention-grabbing." }
   ]
 };

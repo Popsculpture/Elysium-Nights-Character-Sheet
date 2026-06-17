@@ -1,5 +1,5 @@
 /* ===========================================================================
-   ELYSIUM NIGHTS — Versatile Skills (Insight · Performance · Intimidation)
+   ELYSIUM NIGHTS · Versatile Skills (Insight · Performance · Intimidation)
    Ported from the original character sheet. Each versatile skill is rolled as
    Attribute modifier + parent-skill tier bonus; requires Proficiency in the
    parent skill, and the parent's Focus/Specialization carry over.

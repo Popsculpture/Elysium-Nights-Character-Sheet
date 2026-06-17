@@ -1,5 +1,5 @@
 /* ===========================================================================
-   ELYSIUM NIGHTS — Codex tab
+   ELYSIUM NIGHTS · Codex tab
    Rules reference library: combat rules + the full conditions catalog.
    =========================================================================== */
 window.EN = window.EN || {};
@@ -49,7 +49,7 @@ EN.codexView = (function () {
         .concat(C.overflowDamage ? [ruleBlock("Overflow Damage", C.overflowDamage)] : [])));
     blocks.push(refPanel("ref-attack", "Attack Resolution", "MARGINS & CRITS",
       (C.attackResolution ? [ruleBlock("Resolution", C.attackResolution)] : [])
-        .concat((C.attackMargins || []).map(function (m) { return ruleBlock(m.margin + " — " + (m.result || ""), m.outcome); }))));
+        .concat((C.attackMargins || []).map(function (m) { return ruleBlock(m.margin + " · " + (m.result || ""), m.outcome); }))));
     blocks.push(refPanel("ref-dmg", "Damage Types", (C.damageTypes || []).length + " TYPES",
       (C.damageTypes || []).map(function (t) { return ruleBlock(t.name, t.text); })));
 

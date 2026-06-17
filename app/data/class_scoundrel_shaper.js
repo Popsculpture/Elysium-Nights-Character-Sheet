@@ -1,10 +1,28 @@
 window.EN = window.EN || {};
 EN.classes = EN.classes || {};
 
+// Moxie Gambits as structured sub-entries, the single source for the engine, the Class-tab
+// picker, and the print sheet. The Moxie feature's prose (below) is composed from this list,
+// so the displayed text and the machine-readable data can never drift apart.
+var SCOUNDREL_MOXIE_INTRO = "You survive on instinct, audacity, and luck that has no business holding. You have a pool of Moxie equal to your Caliber + your Agility Modifier (minimum 1). You regain all spent Moxie at the end of a Short or Long Rest.\n\nAt 1st Level you learn three Gambits of your choice from the list below, and you learn two more at 5th Level through Expanded Moxie. Unless a Gambit says otherwise, activating it costs 1 Moxie.";
+var SCOUNDREL_MOXIE_GAMBITS = [
+  { name: "Lucky Break", action: "Free Action", cost: 1, text: "When you make an attack roll, ability check, or saving throw, spend 1 Moxie to roll an additional d20 and choose which die to use, even if already rolling with Edge. This breaks the 2d20 cap (Edge + Lucky Break = 3d20, keep whichever you like)." },
+  { name: "Jinx", action: "Impulse Action", cost: 1, text: "When an enemy you can see makes an attack roll or saving throw, spend 1 Moxie to force them to roll an additional d20 and use the lowest, even if already rolling with Snag (breaks the cap the other way; 3d20, worst result)." },
+  { name: "Slip the Blow", action: "Impulse Action", cost: 1, text: "When hit by an attack you can see, spend 1 Moxie to gain Resistance to that attack's damage and move 1 space without provoking opportunity attacks." },
+  { name: "Smash and Grab", action: "Action", cost: 1, text: "Spend 1 Moxie; your Speed doubles this turn and your movement does not provoke opportunity attacks (you cannot end in an enemy's space). Make one weapon attack during the move; on a hit, shove the target 1 space or snatch a small unsecured item (contested Sleight to lift anything secured)." },
+  { name: "Bad Feeling", action: "Impulse Action", cost: 1, text: "When an enemy moves within your reach, or you are targeted by an attack you can see, spend 1 Moxie to move up to half your Speed without provoking, breaking away before it lands." },
+  { name: "Shake It Off", action: "Swift Action", cost: 1, text: "Spend 1 Moxie to end one condition clouding your senses or footing, such as Staggered, Shaken, or Dazed." },
+  { name: "Ace Up the Sleeve", action: "Free Action", cost: 1, text: "Spend 1 Moxie to produce a plausible mundane item you could have stashed, call a minor favor, or point out a small environmental out (GM approval; never conjures gear you could not carry)." },
+  { name: "Kick Them While They're Down", action: "Impulse Action", cost: 1, text: "When an enemy within reach misses you with a melee attack, or an ally crits an enemy within your reach, spend 1 Moxie to make a weapon attack against that enemy that automatically qualifies for Cheap Shot." }
+];
+var SCOUNDREL_MOXIE_TEXT = SCOUNDREL_MOXIE_INTRO + "\n" + SCOUNDREL_MOXIE_GAMBITS.map(function (g) {
+  return "     " + g.name + (g.action ? " (" + g.action + ")" : "") + ": " + g.text;
+}).join("\n");
+
 EN.classes.scoundrel = {
   key: "scoundrel",
   name: "Scoundrel",
-  tagline: "The odds were never in your favor, so you stopped playing fair and started playing to win. You have nerve, footwork, and a kind of luck that should have run out years ago and somehow keeps holding. When the shooting starts you are already moving, already gone, already standing behind the one person who thought they had you — you slip the killing shot, palm the prize, and stroll out the back. You are training to become the one thing a rigged city can never quite get its hands on: untouchable.",
+  tagline: "The odds were never in your favor, so you stopped playing fair and started playing to win. You have nerve, footwork, and a kind of luck that should have run out years ago and somehow keeps holding. When the shooting starts you are already moving, already gone, already standing behind the one person who thought they had you; you slip the killing shot, palm the prize, and stroll out the back. You are training to become the one thing a rigged city can never quite get its hands on: untouchable.",
 
   vitality: {
     text: "Resilience Die: d8\nStarting Vitality: 8 + Body Modifier\nVitality Per Level: 1d8 + Body Modifier"
@@ -27,8 +45,10 @@ EN.classes.scoundrel = {
     maxFormula: "Caliber + Agility Modifier (minimum 1)",
     refresh: "You regain all spent Moxie at the end of a Short or Long Rest.",
     fuels: "Spend Moxie on Gambits (learn 3 at Level 1, +2 at Level 5): Lucky Break, Jinx, Slip the Blow, Smash and Grab, Bad Feeling, Shake It Off, Ace Up the Sleeve, and Kick Them While They're Down. Unless a Gambit says otherwise, it costs 1 Moxie.",
-    // Gambits are chosen from the list in the Moxie feature: 3 known at L1, +2 more at L5.
-    gambitPicks: [{ level: 1, count: 3 }, { level: 5, count: 2 }]
+    // Gambits: choose 3 at L1, +2 more at L5. The options live in the structured list above.
+    gambitPicks: [{ level: 1, count: 3 }, { level: 5, count: 2 }],
+    gambitsIntro: SCOUNDREL_MOXIE_INTRO,
+    gambits: SCOUNDREL_MOXIE_GAMBITS
   },
 
   startingProficiencies: {
@@ -44,7 +64,7 @@ EN.classes.scoundrel = {
     "1": [
       {
         name: "Moxie",
-        text: "You survive on instinct, audacity, and luck that has no business holding. You have a pool of Moxie equal to your Caliber + your Agility Modifier (minimum 1). You regain all spent Moxie at the end of a Short or Long Rest.\n\nAt 1st Level you learn three Gambits of your choice from the list below, and you learn two more at 5th Level through Expanded Moxie. Unless a Gambit says otherwise, activating it costs 1 Moxie.\n     Lucky Break (Free Action): When you make an attack roll, ability check, or saving throw, spend 1 Moxie to roll an additional d20 and choose which die to use — even if already rolling with Edge. This breaks the 2d20 cap (Edge + Lucky Break = 3d20, keep whichever you like).\n     Jinx (Impulse Action): When an enemy you can see makes an attack roll or saving throw, spend 1 Moxie to force them to roll an additional d20 and use the lowest — even if already rolling with Snag (breaks the cap the other way; 3d20, worst result).\n     Slip the Blow (Impulse Action): When hit by an attack you can see, spend 1 Moxie to gain Resistance to that attack's damage and move 1 space without provoking opportunity attacks.\n     Smash and Grab (Action): Spend 1 Moxie; your Speed doubles this turn and your movement does not provoke opportunity attacks (you cannot end in an enemy's space). Make one weapon attack during the move; on a hit, shove the target 1 space or snatch a small unsecured item (contested Sleight to lift anything secured).\n     Bad Feeling (Impulse Action): When an enemy moves within your reach, or you are targeted by an attack you can see, spend 1 Moxie to move up to half your Speed without provoking — break away before it lands.\n     Shake It Off (Swift Action): Spend 1 Moxie to end one condition clouding your senses or footing, such as Staggered, Shaken, or Dazed.\n     Ace Up the Sleeve (Free Action): Spend 1 Moxie to produce a plausible mundane item you could have stashed, call a minor favor, or point out a small environmental out (GM approval; never conjures gear you could not carry).\n     Kick Them While They're Down (Impulse Action): When an enemy within reach misses you with a melee attack, or an ally crits an enemy within your reach, spend 1 Moxie to make a weapon attack against that enemy that automatically qualifies for Cheap Shot."
+        text: SCOUNDREL_MOXIE_TEXT
       },
       {
         name: "Cheap Shot",
@@ -88,7 +108,7 @@ EN.classes.scoundrel = {
       },
       {
         name: "Untouchable",
-        text: "Blast charges, grenades, sweeping autofire — somehow none of it ever quite lands on you. When you are subjected to an effect that allows an Agility save to take half damage, you instead take no damage on a success and only half damage on a failure."
+        text: "Blast charges, grenades, sweeping autofire, somehow none of it ever quite lands on you. When you are subjected to an effect that allows an Agility save to take half damage, you instead take no damage on a success and only half damage on a failure."
       },
       {
         name: "Expanded Moxie",
@@ -128,7 +148,7 @@ EN.classes.scoundrel = {
       },
       {
         name: "Devil's Own Luck",
-        text: "Your luck has stopped looking like luck and started looking like cheating. Once per round, when you score a Critical Success (a Natural 20) on a d20 roll, or when an enemy misses you with an attack, you regain 1 spent Moxie (cannot exceed your maximum). In addition, attacks against you cannot score Critical Hits — the blow that should have killed you always finds a way to merely graze."
+        text: "Your luck has stopped looking like luck and started looking like cheating. Once per round, when you score a Critical Success (a Natural 20) on a d20 roll, or when an enemy misses you with an attack, you regain 1 spent Moxie (cannot exceed your maximum). In addition, attacks against you cannot score Critical Hits; the blow that should have killed you always finds a way to merely graze."
       }
     ],
     "10": [
@@ -239,7 +259,7 @@ EN.classes.scoundrel = {
   extra: {
     playbook: {
       turnToTurn: "You bet on yourself. You spend Moxie to bend your own dice, sour the enemy's at the worst possible moment, and reposition through openings no one else can use, then cash a single clean hit with Cheap Shot. You are rarely where the enemy wants you, and never pinned.",
-      winningEncounters: "You win by being untouchable and improbably lucky. You do not stand in the open trading shots with a heavy gunner — you slip the killing blows, twist the enemy's luck against them, and capitalize on every opening your crew tears open.",
+      winningEncounters: "You win by being untouchable and improbably lucky. You do not stand in the open trading shots with a heavy gunner; you slip the killing blows, twist the enemy's luck against them, and capitalize on every opening your crew tears open.",
       whatToAvoid: "Running your Moxie dry while surrounded. With a d8 Resilience Die and Light Armor, your survival is your luck and your footwork, not your hit points. An empty pool with no exits is the moment the odds finally catch up with you."
     }
   }

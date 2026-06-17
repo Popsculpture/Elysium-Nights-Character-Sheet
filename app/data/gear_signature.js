@@ -1,5 +1,5 @@
 /* ===========================================================================
-   ELYSIUM NIGHTS — Gear catalog: Signature Weapons + Munitions
+   ELYSIUM NIGHTS - Gear catalog: Signature Weapons + Munitions
    Extracted verbatim from "Gear and Equipment → Signature Weapons" (Part 3).
    Prices in Glimmer (𝒢). Each Signature weapon is handled under a conventional
    weapon category (its Proficiency); untrained in that category you attack with
@@ -11,9 +11,9 @@ EN.gearCatalog = EN.gearCatalog || {};
 
 EN.gearCatalog.signature = {
   intro: "Some weapons do a job and vanish back into the work. These do not. A Signature weapon is loud, strange, or unconventional enough that it becomes the thing people remember you by. You trade anonymity for presence. Some nights, presence is the most useful thing in your hands. Other nights it is a description on every screen in the district.",
-  usingNote: "Each Signature Weapon is handled under a conventional weapon category (its Proficiency) and used exactly like any other weapon in that family. Untrained in that category, you attack with Snag and cannot use the weapon's On Hit effects or area projections. Proficient or better, you add your Weapon Proficiency Bonus. A Signature weapon has 0 customization slots — it arrives complete; its power lives in the wielder.",
+  usingNote: "Each Signature Weapon is handled under a conventional weapon category (its Proficiency) and used exactly like any other weapon in that family. Untrained in that category, you attack with Snag and cannot use the weapon's On Hit effects or area projections. Proficient or better, you add your Weapon Proficiency Bonus. A Signature weapon has 0 customization slots; it arrives complete; its power lives in the wielder.",
   groupIntros: {
-    melee: "Howling edges, kinetic mauls, and worn talons. Loud, strange, and unforgettable — the detail a witness leads with.",
+    melee: "Howling edges, kinetic mauls, and worn talons. Loud, strange, and unforgettable, the detail a witness leads with.",
     ranged: "Arc casters, chem spewers, coil drivers. Presence you can point down a hallway. The collateral is the receipt."
   },
 
@@ -100,9 +100,9 @@ EN.gearCatalog.signature = {
       effect: "On Hit: the beam ignores the Defense bonus granted by Half Cover." }
   ],
 
-  /* Munitions — bespoke consumables; all Counted (track each unit). The melee
+  /* Munitions: bespoke consumables; all Counted (track each unit). The melee
      signatures carry no munitions; their cells and edges recharge between contracts. */
-  munitionsIntro: "Most signatures run on bespoke consumables: tanks, cells, slugs, and nets no off-the-shelf vendor carries. All of it is Counted — track each unit from the moment you buy it to the moment you spend it.",
+  munitionsIntro: "Most signatures run on bespoke consumables: tanks, cells, slugs, and nets no off-the-shelf vendor carries. All of it is Counted; track each unit from the moment you buy it to the moment you spend it.",
   munitions: [
     { name: "Harpoons", group: "Signature Munition", price: 40, unit: "per 4", availability: "Uncommon", legality: "Restricted",
       feeds: "Harpoon Gun", desc: "Barbed spears on a respooled line. Reusable if recovered." },
@@ -118,16 +118,16 @@ EN.gearCatalog.signature = {
       feeds: "Coil Driver", desc: "Dense tungsten slugs for the accelerator." }
   ],
 
-  /* Trait glossary — verbatim from the Signature section so it runs on its own */
+  /* Trait glossary: verbatim from the Signature section so it runs on its own */
   traits: {
-    "Area X": "Some effects fill a space and catch whatever is standing in it. The number is the size in spaces; the word after gives the shape — Sphere (burst), Cone (spreads from you), Line (X long, 1 wide), Cube, or Aura. Targets caught usually save for half or no damage; roll the effect's damage once and apply it to everyone the area touches.",
+    "Area X": "Some effects fill a space and catch whatever is standing in it. The number is the size in spaces; the word after gives the shape, Sphere (burst), Cone (spreads from you), Line (X long, 1 wide), Cube, or Aura. Targets caught usually save for half or no damage; roll the effect's damage once and apply it to everyone the area touches.",
     "Armor Piercing X": "On a hit, ignore X points of flat damage reduction from armor or similar gear for that attack. Does not affect Resistances or Immunities unless a rule says so.",
     "Concealable": "Attacks and operation work as normal. Checks to detect the weapon on a casual search are made with Snag.",
-    "Continuous": "Once you begin the attack, you can repeat it on later rounds by spending the required ammo and Action — no need to fully re-ready or reprime the weapon between those rounds.",
+    "Continuous": "Once you begin the attack, you can repeat it on later rounds by spending the required ammo and Action, no need to fully re-ready or reprime the weapon between those rounds.",
     "Finesse": "When attacking with a Finesse weapon, you may use Body or Agility for the attack and damage. You choose which each time you attack.",
     "Heavy": "Dense, reinforced, and awkward to swing or fire. Adds to encumbrance, interacts with rules penalizing low Body, usually unsuitable for off-hand or dual-wield use, and a poor fit for nimble, stealth-focused Freelancers.",
     "High Recoil": "Multiple attacks with the same weapon in one round apply Snag to later attacks unless braced or supported.",
-    "Incendiary": "Deals Fire and leaves fire behind — a struck target may catch Burning, or it may leave a burning zone. Readily ignites fuel, flammable cover, and environmental hazards.",
+    "Incendiary": "Deals Fire and leaves fire behind; a struck target may catch Burning, or it may leave a burning zone. Readily ignites fuel, flammable cover, and environmental hazards.",
     "Light": "Compact and easy to handle in one hand. Interacts with dual-wield and off-hand rules and contributes minimally to encumbrance; can be carried discreetly without counting as Concealable.",
     "Nonlethal": "If damage from this weapon reduces a Target to 0 Wounds, that Target is immediately rendered Unconscious and stable, rather than dying or bleeding out.",
     "Obscuring": "Areas affected count as heavily obscured for sight-based targeting. Targets inside are harder to hit with attacks that need clear visual contact.",
@@ -137,7 +137,7 @@ EN.gearCatalog.signature = {
     "Siege": "Deals double damage to Vehicle armor and to Cover Integrity. If an attack destroys a piece of cover, overflow damage applied to the Target behind it ignores their personal armor Damage Reduction.",
     "Single Shot": "Make a single attack against one Target for 1 round of ammo. If Single Shot is a weapon's only firing mode, its attacks score a critical hit on a roll of 19 or 20.",
     "Slow": "You can make only one attack per round with this weapon, regardless of extra-attack features, unless something explicitly overrides it.",
-    "Two-Handed": "Requires both hands for effective use. Using it one-handed applies heavy penalties — typically Snag on attacks and a downgraded damage die — unless you have a specific feature or powered assistance.",
+    "Two-Handed": "Requires both hands for effective use. Using it one-handed applies heavy penalties (typically Snag on attacks and a downgraded damage die) unless you have a specific feature or powered assistance.",
     "Worn": "Built to attach to the body, clothing, or armor rather than be held. Cannot be easily dropped or disarmed; may take time, tools, or a specific action to equip or remove. Counts as equipped gear for any effect that checks what you are wearing or bearing."
   }
 };

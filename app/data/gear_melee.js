@@ -1,5 +1,5 @@
 /* ===========================================================================
-   ELYSIUM NIGHTS — Gear catalog: Melee Weapons
+   ELYSIUM NIGHTS · Gear catalog: Melee Weapons
    Extracted verbatim from "Gear and Equipment" (Part 3). Prices in Glimmer (𝒢)
    and assume purchase in a major district. Availability: Common / Uncommon /
    Rare. Legality: Legal / Licensed / Restricted / Contraband.
@@ -86,7 +86,7 @@ EN.gearCatalog.melee = {
       desc: "A long lash of braided polymer, weighted for cutting arcs and distance control. Doesn't kill quickly. Sometimes that's the point." }
   ],
 
-  /* Weapon trait glossary (melee) — verbatim effects */
+  /* Weapon trait glossary (melee), verbatim effects */
   traits: {
     "Armor Piercing X": "On a hit, ignore X points of flat damage reduction from armor or similar gear for that attack. Does not affect Resistances or Immunities unless a rule explicitly says otherwise.",
     "Concealable": "Attacks and use work normally. Checks to detect the weapon on a casual search are made with Snag.",

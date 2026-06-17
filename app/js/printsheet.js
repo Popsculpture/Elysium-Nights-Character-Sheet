@@ -169,7 +169,7 @@ EN.printSheet = (function () {
     var gl = eng.gambitList ? eng.gambitList(ch) : [];
     if (gl.length) {
       var pick = (ch.gambits && ch.gambits.length) ? gl.filter(function (g) { return ch.gambits.indexOf(g.name) !== -1; }) : gl;
-      pick.forEach(function (g) { add(g.name, defCost + " " + abbr, actLabel(g.action)); });
+      pick.forEach(function (g) { add(g.name, (g.cost || defCost) + " " + abbr, actLabel(g.action)); });
     }
     // (2) named features that actively spend the resource. Classify by the clause that
     // actually spends it - not stray action-type mentions elsewhere in the effect text

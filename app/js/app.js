@@ -1,5 +1,5 @@
 /* ===========================================================================
-   ELYSIUM NIGHTS — #GRID Smartdeck OS bootstrap
+   ELYSIUM NIGHTS · #GRID Smartdeck OS bootstrap
    Boot sequence, tab routing, OS chrome, autosave indicator.
    =========================================================================== */
 window.EN = window.EN || {};
@@ -13,7 +13,7 @@ EN.app = (function () {
     { key: "print",   label: "#PRINT",    glyph: "▤", view: function (m) { EN.builder.render(m); } },
     { key: "combat",  label: "Freelancer", glyph: "✦", view: function (m) { EN.combatView.render(m); } },
     { key: "grid",    label: "#GRID",     glyph: "⌬", view: function (m) { EN.gridView.render(m); } },
-    { key: "flow",    label: "Flow",      glyph: "❋", stub: "Reservoir, Invocations, Resonances, Strain — for Shapers." },
+    { key: "flow",    label: "Flow",      glyph: "❋", stub: "Reservoir, Invocations, Resonances, Strain, for Shapers." },
     { key: "gear",    label: "Inventory", glyph: "▣", view: function (m) { EN.inventoryView.render(m); } },
     { key: "codex",   label: "Codex",     glyph: "❒", view: function (m) { EN.codexView.render(m); } }
   ];
@@ -32,7 +32,7 @@ EN.app = (function () {
   var _lastTab = null;
   function render() {
     // re-renders empty the view, which momentarily collapses the page and lets
-    // the browser clamp scroll to the top — capture and restore the position.
+    // the browser clamp scroll to the top, capture and restore the position.
     // Inner scrollable wells (.feature-scroll, .actions-scroll) are rebuilt too, so save theirs as well.
     var sy = window.scrollY, sx = window.scrollX;
     var WELLS = "#view .feature-scroll, #view .actions-scroll";

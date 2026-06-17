@@ -1,5 +1,5 @@
 /* ===========================================================================
-   ELYSIUM NIGHTS — The #GRID tab
+   ELYSIUM NIGHTS · The #GRID tab
    Play-time hacking console: your rig (Smartdeck / B&E Buddy) with durability +
    Bandwidth, live Cipher Attack / Save DC / Link math, an active-Link tracker, a
    target-node calculator, and the full #GRID rules reference. Reads the same
@@ -34,7 +34,7 @@ EN.gridView = (function () {
       var hot = highlightFn && highlightFn(r);
       return el("tr", { style: hot ? { background: "rgba(0,229,255,.07)" } : null }, cols.map(function (c) {
         var v = typeof c.get === "function" ? c.get(r) : r[c.key];
-        return el("td", { style: { textAlign: c.align || "left", padding: "4px 8px", fontSize: "11.5px", color: c.mono ? "var(--text)" : "var(--text2)", fontFamily: c.mono ? "var(--mono)" : "inherit", borderBottom: "1px solid rgba(35,48,68,.4)" } }, String(v == null ? "—" : v));
+        return el("td", { style: { textAlign: c.align || "left", padding: "4px 8px", fontSize: "11.5px", color: c.mono ? "var(--text)" : "var(--text2)", fontFamily: c.mono ? "var(--mono)" : "inherit", borderBottom: "1px solid rgba(35,48,68,.4)" } }, String(v == null ? "-" : v));
       }));
     });
     return el("table", { style: { width: "100%", borderCollapse: "collapse" } }, [el("thead", null, [head]), el("tbody", null, body)]);
@@ -52,7 +52,7 @@ EN.gridView = (function () {
     var grid = ch.grid || {}, gd = d.grid, deck = gd.deck;
     var rows = [];
 
-    // rig selector — one dropdown grouped by Smartdecks / Buddies / None
+    // rig selector, one dropdown grouped by Smartdecks / Buddies / None
     var sel = el("select", { style: { fontSize: "12px", width: "auto", minWidth: "220px" },
       onchange: function () {
         var v = this.value;
@@ -66,7 +66,7 @@ EN.gridView = (function () {
           g.deckMods = kept;
         });
       } }, [
-      el("option", { value: "none", selected: !grid.deckType, text: "— No rig —" }),
+      el("option", { value: "none", selected: !grid.deckType, text: "- No rig -" }),
       el("optgroup", { label: "Smartdecks (Power User)" }, (G.smartdecks || []).map(function (s) {
         return el("option", { value: "smartdeck:" + s.tier, selected: grid.deckType === "smartdeck" && grid.deckTier === s.tier, text: s.tier + " · 𝒢" + s.price.toLocaleString() + " · +" + s.deviceBonus + " dev · " + s.hp + " HP" });
       })),
@@ -93,7 +93,7 @@ EN.gridView = (function () {
       el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "4px" } }, [
         stepper(function () { gset(function (g) { g.deckHpSpent = Math.min(maxHp, (g.deckHpSpent || 0) + 1); }); },
                 function () { gset(function (g) { g.deckHpSpent = Math.max(0, (g.deckHpSpent || 0) - 1); }); }, cur <= 0, spent <= 0),
-        el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: bricked ? "Bricked — all Links sever (LinkDeath). Downtime repair only." : "−1 per hit (any successful hit deals 1 HP)." }),
+        el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: bricked ? "Bricked; all Links sever (LinkDeath). Downtime repair only." : "−1 per hit (any successful hit deals 1 HP)." }),
         spent > 0 ? el("button.btn.sm", { style: { color: "var(--text2)" }, onclick: function () { gset(function (g) { g.deckHpSpent = 0; }); toast("Rig repaired to full."); } }, "⟳ REPAIR FULL") : null
       ])
     ]));
@@ -110,7 +110,7 @@ EN.gridView = (function () {
         el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "4px" } }, [
           stepper(function () { store.update(function (c) { c.resources = c.resources || { current: {} }; c.resources.current.Bandwidth = Math.max(0, bwCur - 1); }); },
                   function () { store.update(function (c) { c.resources = c.resources || { current: {} }; c.resources.current.Bandwidth = Math.min(bwMax, bwCur + 1); }); }, bwCur <= 0, bwCur >= bwMax),
-          el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "CX 0 free · CX 1–3 = 1 · CX 4–5 = 2 · Signature = 1. Refreshes on a rest." }),
+          el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "CX 0 free · CX 1-3 = 1 · CX 4-5 = 2 · Signature = 1. Refreshes on a rest." }),
           bwCur < bwMax ? el("button.btn.sm", { style: { color: "var(--text2)" }, onclick: function () { store.update(function (c) { c.resources = c.resources || { current: {} }; c.resources.current.Bandwidth = bwMax; }); } }, "⟳ REST") : null
         ])
       ]));
@@ -185,7 +185,7 @@ EN.gridView = (function () {
           oninput: function () { var v = this.value; gset(function (g) { if (g.links[i]) g.links[i].name = v; }, true); } }),
         el("select", { style: { fontSize: "11px", width: "auto" }, onchange: function () { var v = this.value; gset(function (g) { if (g.links[i]) g.links[i].tier = v; }); } },
           tiers.map(function (t) { return el("option", { value: t, selected: lk.tier === t, text: t }); })),
-        el("button.btn.sm", { title: "Close this Link (clean — no backlash)", style: { color: "var(--text3)" }, onclick: function () { gset(function (g) { g.links.splice(i, 1); }); } }, "✕")
+        el("button.btn.sm", { title: "Close this Link (clean, no backlash)", style: { color: "var(--text3)" }, onclick: function () { gset(function (g) { g.links.splice(i, 1); }); } }, "✕")
       ]));
     });
     // LinkDeath risk
@@ -236,12 +236,12 @@ EN.gridView = (function () {
     var grids = el("div.row.wrap", { style: { gap: "8px" } }, [
       box("SECURITY RATING", security, "var(--accent)", "beat with d20 " + eng.fmtMod(gd.effectiveAttack)),
       box("CIPHER SAVE", "+" + saveBonus, "var(--gold)", "node rolls d20 vs your DC " + gd.effectiveSaveDC),
-      box("INTEGRITY", integrity == null ? "—" : integrity, integrity == null ? "var(--text3)" : "var(--flow)", integrity == null ? "Minion (1 hit bricks)" : "hits to brick"),
-      box("FIREWALL THR", fw ? fw.threshold : "—", fw ? "var(--danger)" : "var(--text3)", fw ? "dmg must exceed" : "no firewall")
+      box("INTEGRITY", integrity == null ? "-" : integrity, integrity == null ? "var(--text3)" : "var(--flow)", integrity == null ? "Minion (1 hit bricks)" : "hits to brick"),
+      box("FIREWALL THR", fw ? fw.threshold : "-", fw ? "var(--danger)" : "var(--text3)", fw ? "dmg must exceed" : "no firewall")
     ]);
     var verdict = noteP(
-      (node.t <= 1 ? "Rudimentary/Standard node — Minion Rule: any successful cipher bricks it outright (Firewall threshold ignored). " : "") +
-      "You hit on a roll of " + Math.max(2, security - gd.effectiveAttack) + "+ on the d20" + (gd.deck && gd.deck.type === "buddy" && node.t >= 4 ? " — but a B&E Buddy LOCKS OUT of Premium+ nodes (sparks, takes 1 HP, fails)." : "") + ".",
+      (node.t <= 1 ? "Rudimentary/Standard node, Minion Rule: any successful cipher bricks it outright (Firewall threshold ignored). " : "") +
+      "You hit on a roll of " + Math.max(2, security - gd.effectiveAttack) + "+ on the d20" + (gd.deck && gd.deck.type === "buddy" && node.t >= 4 ? ", but a B&E Buddy LOCKS OUT of Premium+ nodes (sparks, takes 1 HP, fails)." : "") + ".",
       (gd.deck && gd.deck.type === "buddy" && node.t >= 4) ? "var(--danger)" : "var(--text2)");
     return EN.ui.panel("Target Node", "WHAT YOU'RE UP AGAINST", [controls, grids, verdict], { corners: true });
   }
@@ -271,7 +271,7 @@ EN.gridView = (function () {
 
     kids = kids.concat(collapsible("ref-nodes", "Node Tiers", function () {
       return el("div", null, [
-        tableEl([{ label: "Tier", key: "tier" }, { label: "Security", key: "security", align: "center", mono: true }, { label: "Save Bonus", get: function (r) { return "+" + r.saveBonus; }, align: "center", mono: true }, { label: "Integrity", get: function (r) { return r.integrity == null ? "—" : r.integrity; }, align: "center", mono: true }], G.nodeTiers || []),
+        tableEl([{ label: "Tier", key: "tier" }, { label: "Security", key: "security", align: "center", mono: true }, { label: "Save Bonus", get: function (r) { return "+" + r.saveBonus; }, align: "center", mono: true }, { label: "Integrity", get: function (r) { return r.integrity == null ? "-" : r.integrity; }, align: "center", mono: true }], G.nodeTiers || []),
         noteP(G.hardenedNote), noteP(G.lowSecurityNote), noteP(G.quickHackNote)
       ]);
     }));
@@ -292,7 +292,7 @@ EN.gridView = (function () {
 
     kids = kids.concat(collapsible("ref-ic", "Intrusion Countermeasures", function () {
       var counter = {}; (G.icCounter || []).forEach(function (c) { counter[c.tier] = c.dmg; });
-      var t = tableEl([{ label: "IC Tier", key: "tier" }, { label: "Price", get: function (r) { return "𝒢" + r.price.toLocaleString(); }, align: "right", mono: true }, { label: "Detect", get: function (r) { return "+" + r.detection; }, align: "center", mono: true }, { label: "Counter", get: function (r) { return counter[r.tier] || "—"; }, align: "center", mono: true }, { label: "Responses", get: function (r) { return r.responses.join(", "); } }], G.ic || []);
+      var t = tableEl([{ label: "IC Tier", key: "tier" }, { label: "Price", get: function (r) { return "𝒢" + r.price.toLocaleString(); }, align: "right", mono: true }, { label: "Detect", get: function (r) { return "+" + r.detection; }, align: "center", mono: true }, { label: "Counter", get: function (r) { return counter[r.tier] || "-"; }, align: "center", mono: true }, { label: "Responses", get: function (r) { return r.responses.join(", "); } }], G.ic || []);
       var resp = (G.icResponses || []).map(function (r) { return el("p.help", { style: { margin: "2px 0" }, html: "<b style='color:var(--accent)'>" + r.name + ".</b> " + r.text }); });
       return el("div", null, [t, noteP(G.icIntro)].concat(resp).concat([noteP(G.interceptionNote, "var(--gold)"), noteP(G.icDetectionNote)]));
     }));
@@ -337,7 +337,7 @@ EN.gridView = (function () {
       return el("div", null, list);
     }));
 
-    return EN.ui.panel("Reference", "THE #GRID — RULES & GEAR", kids, { corners: true });
+    return EN.ui.panel("Reference", "THE #GRID · RULES & GEAR", kids, { corners: true });
   }
 
   /* ============================ RENDER ============================ */

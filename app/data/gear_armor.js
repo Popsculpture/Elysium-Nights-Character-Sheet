@@ -1,6 +1,6 @@
 /* ===========================================================================
-   ELYSIUM NIGHTS — Gear catalog: Armor and Defensive Gear
-   Transcribed from "Part 3 — Armor and Defensive Gear" (the three Drive docs).
+   ELYSIUM NIGHTS - Gear catalog: Armor and Defensive Gear
+   Transcribed from "Part 3 - Armor and Defensive Gear" (the three Drive docs).
    Body armor, powered exoframes, and mystech shells provide Damage Reduction
    (DR) against the physical damage types; medium/heavy plate adds a flat Block
    Bonus. Physical Shields add Defense and a Block die; Warding Foci feed the
@@ -19,23 +19,23 @@ window.EN = window.EN || {};
 EN.gearCatalog = EN.gearCatalog || {};
 
 EN.gearCatalog.armor = {
-  intro: "Armor is the difference between a bad night and a body bag. It does not make you invincible — it makes you survivable, which in Elysium is worth more. Most armor provides Damage Reduction (DR) against the physical types (Ballistic, Piercing, Slashing, Bludgeoning), applied as the passive mitigation step before damage reaches your Vigor, Vitality, and Wounds.",
+  intro: "Armor is the difference between a bad night and a body bag. It does not make you invincible; it makes you survivable, which in Elysium is worth more. Most armor provides Damage Reduction (DR) against the physical types (Ballistic, Piercing, Slashing, Bludgeoning), applied as the passive mitigation step before damage reaches your Vigor, Vitality, and Wounds.",
 
   groupIntros: {
     "Light Armor": "Light armor hides. It passes as a jacket, a work shirt, a fashion choice that happened to stop a knife. It will not hold against a rifle, but it turns a lucky shank or a thrown punch into a bruise instead of a hole.",
     "Medium Armor": "Medium armor stops pretending. Real protection with real mobility and zero interest in hiding what it is. The gear that tells a room you came expecting a fight while still letting you walk through it.",
     "Heavy Armor": "Heavy armor is a commitment. You trade subtlety and the easy step for the right to stand somewhere and refuse to move. For the Freelancer who intends to hold ground rather than slip away from it.",
-    "Powered Exoframe": "An exoframe is not armor you wear — it is armor you climb into. Servos carry the weight, the plating, and increasingly the person. Wearing one requires Heavy Armor proficiency; running it at full effect requires dedicated training. Untrained, the Powered trait imposes its drawbacks: reduced Speed and Snag on Agility checks.",
-    "Mystech Armor": "Some armor does not stop the hit — it convinces the hit to stop. Mystech shells are woven through with Flow-conductive thread and tuned plate. Rarer than anything in the standard catalog, almost always Contraband, and they read as Flow-touched to anyone watching for it. Mystech armor interacts with the Ward defense and the Focus trait.",
+    "Powered Exoframe": "An exoframe is not armor you wear; it is armor you climb into. Servos carry the weight, the plating, and increasingly the person. Wearing one requires Heavy Armor proficiency; running it at full effect requires dedicated training. Untrained, the Powered trait imposes its drawbacks: reduced Speed and Snag on Agility checks.",
+    "Mystech Armor": "Some armor does not stop the hit; it convinces the hit to stop. Mystech shells are woven through with Flow-conductive thread and tuned plate. Rarer than anything in the standard catalog, almost always Contraband, and they read as Flow-touched to anyone watching for it. Mystech armor interacts with the Ward defense and the Focus trait.",
     "Physical Shield": "A shield costs you a hand. In return you get a wall you can move. While wielded, a shield adds a flat Defense bonus and a Block die that sharpens your Block. Uses the Block, Full Defense, Stacking, and Shield Durability rules.",
-    "Warding Focus": "A Warding Focus channels Flow into a shaped barrier, reinforcing the Ward defense instead of your armor — for the people who refuse to wear armor at all. Foci are Worn, carry the Focus and Mystech traits, and read as Flow-touched. You benefit from only one Warding Focus at a time, and foci do not use Shield Durability."
+    "Warding Focus": "A Warding Focus channels Flow into a shaped barrier, reinforcing the Ward defense instead of your armor, for the people who refuse to wear armor at all. Foci are Worn, carry the Focus and Mystech traits, and read as Flow-touched. You benefit from only one Warding Focus at a time, and foci do not use Shield Durability."
   },
 
   /* ---- Armor and Defensive Traits ---- */
   traits: {
-    "Concealable": "It does not look like armor — worn under a shirt, or cut to pass as an ordinary jacket. Checks to notice you are armored roll with Snag. A pat-down or scanner still finds it.",
+    "Concealable": "It does not look like armor, worn under a shirt, or cut to pass as an ordinary jacket. Checks to notice you are armored roll with Snag. A pat-down or scanner still finds it.",
     "Streetwear": "Openly armored, but it reads as fashion. Does not count as obvious combat gear; Snag on social checks in high-corporate or formal spaces where street kit is out of place.",
-    "Hostile Appearance": "Unmistakably combat gear — the room knows what you are the moment you walk in. Snag on social checks to blend in or de-escalate; Edge when you are openly threatening or intimidating.",
+    "Hostile Appearance": "Unmistakably combat gear; the room knows what you are the moment you walk in. Snag on social checks to blend in or de-escalate; Edge when you are openly threatening or intimidating.",
     "Bulky": "Rigid, layered, overbuilt. Reduces your Speed by 1 and imposes Snag on Mobility. Cannot be Concealable.",
     "Loud": "Plates clack, servos whine, respirators hiss. Snag on Stealth checks that rely on silence. It changes only how easily you are heard, not how you fight.",
     "Plated": "Rigid plates over soft layers, built to eat a serious hit. When you choose Block, add half the armor's DR (rounded down) to the damage prevented. Stacks with the suit's listed Block Bonus and with shield dice; applies only when you Block.",
@@ -47,11 +47,11 @@ EN.gearCatalog.armor = {
     "Mystech": "A fusion of synthetic engineering and the Flow. Counts as both technological and metaphysical gear for anything that targets either, and can be detected, disrupted, or overloaded as Flow gear. Needs specialist tools or contacts to repair and recharge.",
     "Focus": "Built to channel, shape, and anchor the Flow. Can empower Ward, as the item describes. You benefit from only one Focus item for Ward at a time.",
     "Resonant Plating": "Plate tuned to catch Flow as well as force. The armor's DR also applies against Resonant damage and is not ignored by Resonant Armor Bypass.",
-    "Off-Hand": "Wielded in the off hand — the shield fully occupies that hand while raised. Uses the Block, Full Defense, Stacking, and Shield Durability rules.",
+    "Off-Hand": "Wielded in the off hand; the shield fully occupies that hand while raised. Uses the Block, Full Defense, Stacking, and Shield Durability rules.",
     "Worn": "Worn on the body rather than held in a hand (uses a Body Slot). Leaves both hands free. A Warding Focus is Worn.",
-    "Light": "A light shield — minimal bulk. Leaves the braced hand free for one-handed weapon use and Invocations.",
-    "Heavy": "A heavy shield — planted and braced. Slow to move with, but it carries the largest Defense bonus and Block die.",
-    "Leased": "The armor is not yours — it runs on a corporate service plan, and the issuer keeps a finger on the off switch. You pay an Upkeep cost each period. Miss a payment, get flagged, or cross the issuer and the gear drops remotely to its zero state (armor to DR 0, a shield to no Defense bonus and no Block die) until you pay up or crack the lock. The holder can also repossess it outright. Cracked gear keeps working but scans as stolen corporate property."
+    "Light": "A light shield, minimal bulk. Leaves the braced hand free for one-handed weapon use and Invocations.",
+    "Heavy": "A heavy shield, planted and braced. Slow to move with, but it carries the largest Defense bonus and Block die.",
+    "Leased": "The armor is not yours; it runs on a corporate service plan, and the issuer keeps a finger on the off switch. You pay an Upkeep cost each period. Miss a payment, get flagged, or cross the issuer and the gear drops remotely to its zero state (armor to DR 0, a shield to no Defense bonus and no Block die) until you pay up or crack the lock. The holder can also repossess it outright. Cracked gear keeps working but scans as stolen corporate property."
   },
 
   items: [
@@ -108,7 +108,7 @@ EN.gearCatalog.armor = {
       effect: "Grants 4 DR and a +1 Block Bonus." },
     { name: "Sentinel Issue", kind: "armor", group: "Medium Armor", type: "Medium Armor", price: 0, upkeep: 120,
       dr: 3, blockBonus: 1, traits: ["Plated", "Hostile Appearance", "Leased"], availability: "Common", legality: "Licensed",
-      desc: "Corporate security armor, leased to contractors by the shift. Full protection while your credential is live, and a quiet little brick in the spine for the moment you stop being theirs. Plenty of Freelancers wear it anyway — the plan is cheaper than the funeral.",
+      desc: "Corporate security armor, leased to contractors by the shift. Full protection while your credential is live, and a quiet little brick in the spine for the moment you stop being theirs. Plenty of Freelancers wear it anyway; the plan is cheaper than the funeral.",
       effect: "Grants 3 DR and a +1 Block Bonus. Lapsed or Locked: DR drops to 1 and you lose the Block Bonus until you settle the account or crack the lock (lapsed payment, flagged Persona, or revoked credentials)." },
 
     /* ============================== HEAVY ARMOR ============================== */
@@ -146,19 +146,19 @@ EN.gearCatalog.armor = {
     { name: "Bailiff Rig", kind: "armor", group: "Powered Exoframe", type: "Powered Heavy Armor (3 Mod Slots)", price: 0, upkeep: 400, nexus: "◎0.3 buyout",
       dr: 5, blockBonus: 2, slots: 3, traits: ["Powered", "Plated", "Bulky", "Loud", "Leased"], availability: "Uncommon", legality: "Restricted",
       desc: "The repo man's frame. Corporations lease these to enforcement contractors and keep one finger on the off switch the entire time. It carries you through a firefight right up until the morning the lease lapses and the legs simply stop agreeing with you.",
-      effect: "Grants 5 DR and a +2 Block Bonus. Lapsed or Locked: the frame seizes — you lose all Powered Benefits, the Powered drawbacks apply in full, and DR drops to 3 until the lease is restored or the lock is cracked.",
+      effect: "Grants 5 DR and a +2 Block Bonus. Lapsed or Locked: the frame seizes; you lose all Powered Benefits, the Powered drawbacks apply in full, and DR drops to 3 until the lease is restored or the lock is cracked.",
       poweredBenefits: "While trained, powered, and on an active lease, you ignore the Speed reduction from Bulky, treat your Encumbrance threshold as two steps higher, and gain Edge on in-combat d20 checks (or +1 Edge Die out-of-combat) to lift, shove, or force movement." },
     { name: "Warframe Shell", kind: "armor", group: "Powered Exoframe", type: "Powered Heavy Armor (3 Mod Slots)", price: 2400, nexus: "◎0.25",
       dr: 5, blockBonus: 2, slots: 3, traits: ["Powered", "Plated", "Bulky", "Sealed", "Loud"], availability: "Rare", legality: "Restricted",
       desc: "A sealed military combat frame, the kind a corporation deploys when it has decided a problem is worth the optics. Air recycled, joints armored, every system tuned to keep one operator standing through a crossfire.",
-      effect: "Grants 5 DR and a +2 Block Bonus. Its seals also hold against vacuum. When you acquire the frame, choose one physical damage type (Ballistic, Piercing, Slashing, or Bludgeoning) — you gain Resistance to that type.",
+      effect: "Grants 5 DR and a +2 Block Bonus. Its seals also hold against vacuum. When you acquire the frame, choose one physical damage type (Ballistic, Piercing, Slashing, or Bludgeoning); you gain Resistance to that type.",
       poweredBenefits: "While trained and powered, you ignore the Speed reduction from Bulky, treat your Encumbrance threshold as two steps higher, and gain Edge on in-combat d20 checks (or +1 Edge Die out-of-combat) to lift, shove, or force movement." },
 
     /* ============================== MYSTECH ARMOR ============================== */
     { name: "Veilskin", kind: "armor", group: "Mystech Armor", type: "Light Mystech Armor (1 Mod Slot)", price: 700,
       dr: 2, slots: 1, traits: ["Concealable", "Mystech"], availability: "Iconic", legality: "Contraband",
       desc: "A second skin of light-reactive weave that drinks ambient Flow and bends light around the wearer's outline. To a scanner it is a faint shimmer. To a guard it is the reason they swear the corridor was empty a second ago.",
-      effect: "Grants 2 DR. You gain Edge on in-combat Stealth d20 checks (or +1 Edge Die out-of-combat) in dim light or darkness. When you acquire it, choose one of Fire, Electric, or Cold — you gain Resistance to that type." },
+      effect: "Grants 2 DR. You gain Edge on in-combat Stealth d20 checks (or +1 Edge Die out-of-combat) in dim light or darkness. When you acquire it, choose one of Fire, Electric, or Cold; you gain Resistance to that type." },
     { name: "Resonant Carapace", kind: "armor", group: "Mystech Armor", type: "Medium Mystech Armor (2 Mod Slots)", price: 1600, nexus: "◎0.5",
       dr: 3, blockBonus: 1, slots: 2, wardDie: "1d6", traits: ["Plated", "Focus", "Resonant Plating", "Mystech"], availability: "Legendary", legality: "Contraband",
       desc: "Tuned mystech plate that hums against incoming force and feeds a fraction of every hit back into the wearer's Ward. The plating catches Flow as readily as it catches a round. Favored by Shapers who fight on the line instead of behind it.",
@@ -166,11 +166,11 @@ EN.gearCatalog.armor = {
     { name: "Aegis Shroud", kind: "armor", group: "Mystech Armor", type: "Heavy Mystech Armor (2 Mod Slots)", price: 2800, nexus: "◎1",
       dr: 4, blockBonus: 1, slots: 2, wardDie: "1d6", traits: ["Focus", "Sealed", "Mystech"], availability: "Legendary", legality: "Contraband",
       desc: "A flowing sealed shell of woven mystech filament that surrounds the wearer in a layered current. It barely looks like armor. It behaves like a moving shrine that does not want you harmed.",
-      effect: "Grants 4 DR and a +1 Block Bonus. When you acquire it, choose one of Fire, Electric, Cold, or Resonant — you gain Resistance to that type. As a Focus, once per round when you use Ward, add +1d6 to the Ward reduction. You can only benefit from one Focus item for Ward at a time." },
+      effect: "Grants 4 DR and a +1 Block Bonus. When you acquire it, choose one of Fire, Electric, Cold, or Resonant; you gain Resistance to that type. As a Focus, once per round when you use Ward, add +1d6 to the Ward reduction. You can only benefit from one Focus item for Ward at a time." },
     { name: "Reliquary Shell", kind: "armor", group: "Mystech Armor", type: "Heavy Mystech Armor (2 Mod Slots)", price: 0, nexus: "◎2+", vendor: false,
       dr: 4, blockBonus: 2, slots: 2, wardDie: "1d6", traits: ["Focus", "Resonant Plating", "Sealed", "Mystech"], availability: "Artifact", legality: "Contraband",
       desc: "Nobody manufactures one of these. They are found: pulled from a sealed vault, recovered off a dead Shaper, traded for in a currency the broker would not name out loud. The kind of armor a campaign is built around, not bought.",
-      effect: "Grants 4 DR and a +2 Block Bonus. When you acquire it, choose two of Fire, Electric, Cold, or Resonant — you gain Resistance to both. As a Focus, once per round when you use Ward, add +1d6 to the Ward reduction. Rarely offered for sale (◎2+)." },
+      effect: "Grants 4 DR and a +2 Block Bonus. When you acquire it, choose two of Fire, Electric, Cold, or Resonant; you gain Resistance to both. As a Focus, once per round when you use Ward, add +1d6 to the Ward reduction. Rarely offered for sale (◎2+)." },
 
     /* ============================== PHYSICAL SHIELDS ============================== */
     { name: "Scrap Shield", kind: "shield", group: "Physical Shield", type: "Physical Shield (+1 Defense, +1d4 Block)", price: 30,
@@ -188,14 +188,14 @@ EN.gearCatalog.armor = {
     { name: "Sentinel Barrier", kind: "shield", group: "Physical Shield", type: "Physical Shield (+1 Defense, +1d6 Block)", price: 0, upkeep: 60,
       defense: 1, blockDie: "1d6", traits: ["Off-Hand", "Leased"], availability: "Common", legality: "Licensed",
       desc: "The leased, budget cousin of the Hardlight Barrier. A corporate emitter that throws the same plane of hardened light, billed by the week and stamped with whose it is. The morning the invoice bounces, you are gripping a dead handle.",
-      effect: "Adds +1 to your Defense while wielded. Durability boxes represent emitter overload. Lapsed or Locked: the emitter goes dark — no Defense bonus and no Block die until you settle up or crack the lock." },
+      effect: "Adds +1 to your Defense while wielded. Durability boxes represent emitter overload. Lapsed or Locked: the emitter goes dark, no Defense bonus and no Block die until you settle up or crack the lock." },
     { name: "Ballistic Bulwark", kind: "shield", group: "Physical Shield", type: "Physical Shield (+2 Defense, +1d8 Block)", price: 300,
       defense: 2, blockDie: "1d8", traits: ["Heavy", "Off-Hand"], availability: "Uncommon", legality: "Restricted",
       desc: "A planted ballistic wall you set down and fight from behind. It does not move fast. It does not need to. Hold a corridor with one and the corridor is yours until somebody brings a vehicle.",
       effect: "Adds +2 to your Defense while wielded. When you initiate Full Defense, you also gain three-quarter cover until the start of your next turn." },
     { name: "Hardlight Barrier", kind: "shield", group: "Physical Shield", type: "Physical Shield (+1 Defense, +1d6 Block)", price: 450,
       defense: 1, blockDie: "1d6", traits: ["Concealable", "Off-Hand"], availability: "Uncommon", legality: "Restricted",
-      desc: "A wrist projector that throws a plane of hardened light on command. Stowed, it is a bracelet nobody clocks. Raised, it is a shield that was not there a second ago — exactly long enough to ruin someone's aim. Prototype corporate tech.",
+      desc: "A wrist projector that throws a plane of hardened light on command. Stowed, it is a bracelet nobody clocks. Raised, it is a shield that was not there a second ago, exactly long enough to ruin someone's aim. Prototype corporate tech.",
       effect: "Adds +1 to your Defense while wielded. Projects when you raise it to Block or enter Full Defense, at no extra cost; fully occupies the hand while active. Stowed, it reads as a wrist unit or bracelet. Durability boxes represent projector overload." },
 
     /* ============================== WARDING FOCI ============================== */

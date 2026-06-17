@@ -1,5 +1,5 @@
 /* ===========================================================================
-   ELYSIUM NIGHTS — Character Engine
+   ELYSIUM NIGHTS · Character Engine
    Pure derivation layer. Given a character record, computes every number the
    sheet needs. No DOM, no storage. This is what every tab reads from.
    =========================================================================== */
@@ -478,7 +478,7 @@ EN.engine = (function () {
     var bg = getBackground(ch.background);
     var warnings = [];
 
-    /* creature size — player pick if valid for the lineage, else lineage default */
+    /* creature size, player pick if valid for the lineage, else lineage default */
     var sizeOpts = (ch.lineage && R.lineageSize) ? R.lineageSize[ch.lineage] : null;
     var size = sizeOpts ? ((ch.size && sizeOpts.indexOf(ch.size) !== -1) ? ch.size : sizeOpts[0]) : (ch.size || null);
 
@@ -494,7 +494,7 @@ EN.engine = (function () {
     });
     var agiMod = attributes.AGI.mod, bodMod = attributes.BOD.mod;
 
-    /* defense — NextGen Dermal Plating uses Body instead of Agility */
+    /* defense, NextGen Dermal Plating uses Body instead of Agility */
     var defenseAttr = "AGI";
     var defenseBase = 10;
     var linFeats = activeLineageFeatures(ch);
@@ -517,7 +517,7 @@ EN.engine = (function () {
     var critThreshold = Math.floor(woundsMax / 2);
     var resilienceMax = level;   // Resilience Dice count = character level
 
-    /* Chrome Tax — Total Static from installed cyberware drives a Static Threshold,
+    /* Chrome Tax, Total Static from installed cyberware drives a Static Threshold,
        cutting max Resilience Dice and (for Shapers) max Reservoir by the threshold index. */
     var staticTotal = 0;
     (ch.cyberware || []).forEach(function (cw) { if (cw && typeof cw === "object" && typeof cw.sp === "number") staticTotal += cw.sp; });
@@ -534,7 +534,7 @@ EN.engine = (function () {
     };
     resilienceMax = Math.max(0, resilienceMax - chromeTax.resDiePenalty);
 
-    /* saving throws — each class has a Saving Throw Focus (two attributes).
+    /* saving throws, each class has a Saving Throw Focus (two attributes).
        A focused save adds Caliber on top of the attribute modifier
        (d20 + mod + Caliber). Unlike Skill Focus, no proficiency is required. */
     var saveProfKeys = cls ? parseAttrKeys(cls.saveFocus || (cls.startingProficiencies && cls.startingProficiencies.saves || []).join(" ")) : [];
@@ -545,7 +545,7 @@ EN.engine = (function () {
       saves[a.key] = { key: a.key, name: a.name, proficient: proficient, focus: proficient, bonus: bonus };
     });
 
-    /* skills — background/class grants form a 'proficient' floor; stored
+    /* skills, background/class grants form a 'proficient' floor; stored
        proficiencies.skills are user upgrades layered on top. */
     var skillProf = (ch.proficiencies && ch.proficiencies.skills) || {};
     var granted = grantedSkills(ch);
@@ -626,7 +626,7 @@ EN.engine = (function () {
       });
     }
 
-    /* training points — spent is computed from actual purchases */
+    /* training points, spent is computed from actual purchases */
     var tpTotal = trainingPointsTotal(level);
     var tpSpent = trainingSpent(ch);
 
@@ -671,21 +671,13 @@ EN.engine = (function () {
   }
   function installedCyberBases(ch) { return installedCyberware(ch).map(function (cw) { return cw.base || cw.name; }); }
 
-  // Gambit-style resource options (e.g. Scoundrel Moxie Gambits): parsed from the resource
-  // feature's text, where each option reads "Name (Action): description".
+  // Gambit-style resource options (e.g. Scoundrel Moxie Gambits): a structured list on the
+  // class resource, each {name, action, cost, text}.
   function gambitList(ch) {
     var cls = getClass(ch && ch.class);
     var res = cls && cls.resource;
     if (!cls || !res || !res.gambitPicks) return [];
-    var feats = (cls.featuresByLevel && cls.featuresByLevel["1"]) || [];
-    var rf = feats.filter(function (f) { return f.name === res.name; })[0];
-    if (!rf || !rf.text) return [];
-    var out = [];
-    rf.text.split(/\n/).forEach(function (ln) {
-      var m = ln.match(/^\s*([A-Z][A-Za-z'’ ]+?)\s*(?:\(([^)]*)\))?\s*:\s*(.+\S)\s*$/);
-      if (m && m[1].length < 40 && /\bMoxie\b|\bspend\b/i.test(m[3])) out.push({ name: m[1].trim(), action: (m[2] || "").trim(), text: m[3].trim() });
-    });
-    return out;
+    return res.gambits || [];
   }
   // how many gambits the character knows at its current level (3 at L1, +2 at L5, ...)
   function gambitsAllowed(ch) {

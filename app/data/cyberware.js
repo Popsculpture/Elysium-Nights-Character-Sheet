@@ -1,6 +1,6 @@
 /* ===========================================================================
-   ELYSIUM NIGHTS — Cybernetics catalog
-   Transcribed from "Part 3 — Equipment → Cybernetics". Each piece lists an
+   ELYSIUM NIGHTS · Cybernetics catalog
+   Transcribed from "Part 3 · Equipment → Cybernetics". Each piece lists an
    Interface Zone, an optional Enhancement bonus, a core Effect, and one row per
    manufacturing Tier (Streetware / Brandware / Blackware, or Prototype) carrying
    its own SP, price (Glimmer), and legality. SP feeds Total Static and the
@@ -10,7 +10,7 @@
 window.EN = window.EN || {};
 
 EN.cyberware = {
-  intro: "Cybernetics are mass-produced inorganic hardware: cut living tissue out, bolt something colder in. You get tactical advantages a flesh body cannot match — and Static, low-grade electromagnetic noise that grows with every piece of chrome.",
+  intro: "Cybernetics are mass-produced inorganic hardware: cut living tissue out, bolt something colder in. You get tactical advantages a flesh body cannot match, and Static, low-grade electromagnetic noise that grows with every piece of chrome.",
 
   /* Interface Zones + approximate silhouette anchor points */
   // anchors live in the background silhouette's coordinate space (viewBox 825 x 1970)
@@ -24,7 +24,7 @@ EN.cyberware = {
     Hardware:   { label: "Hardware",   blurb: "External ports, concealed bays",    at: { x: 418, y: 301 } }
   },
 
-  /* The Chrome Tax — Static Thresholds. index 0 = safe. Penalty value = index. */
+  /* The Chrome Tax · Static Thresholds. index 0 = safe. Penalty value = index. */
   thresholds: [
     { index: 0, min: 0,  max: 2,        name: "Safe Capacity",        effects: [] },
     { index: 1, min: 3,  max: 4,        name: "Minor Friction",       effects: ["−1 max Resilience Die", "−1 max Reservoir (FP)"] },
@@ -41,13 +41,13 @@ EN.cyberware = {
     Prototype:  "One-off mystech builds. Singular tier; rarely for sale."
   },
 
-  /* base pieces — `short` drives the market listing name "<Tier> <short>" */
+  /* base pieces, `short` drives the market listing name "<Tier> <short>" */
   items: [
     /* ---------------- Neural ---------------- */
     { key: "datajack", short: "Datajack", name: "Neural Interface (Datajack)", zone: "Neural", enhancement: "None",
-      desc: "A direct neural-to-machine port at the base of the skull. The backbone of half the chrome in a head — Smartlinks, Cybereye recording, vehicle rigging all route through it. A door that opens both ways.",
+      desc: "A direct neural-to-machine port at the base of the skull. The backbone of half the chrome in a head; Smartlinks, Cybereye recording, vehicle rigging all route through it. A door that opens both ways.",
       effect: "A neural port for #GRID hardware, Smartdecks, drones, and compatible cyberware; lets you run Quick Hacks. Operates as Surface Link (conscious, silent comms within 20 spaces) or Full Immersion (body helpless, Prone, attacks vs you at Edge).",
-      street: "No encryption — intercept/trace your traffic at Edge against you; visible scarring, Snag on passing as un-chromed.",
+      street: "No encryption, intercept/trace your traffic at Edge against you; visible scarring, Snag on passing as un-chromed.",
       black: "Encrypted & dark (intercept at Snag against you), no registered identity/log, and installed Quick Hacks deal +1d4 on System Failure / Network Spread.",
       tiers: [
         { tier: "Streetware", sp: 1, price: 600,   legality: "Common" },
@@ -55,7 +55,7 @@ EN.cyberware = {
         { tier: "Blackware",  sp: 2, price: 14000, legality: "Restricted" }
       ] },
     { key: "cybereyes", short: "Cybereyes", name: "Cybereyes", zone: "Neural", enhancement: "+1 Wits",
-      desc: "Replacement optical units that transcend organic vision. The most visible piece of common chrome — a statement of identity as much as a tactical investment.",
+      desc: "Replacement optical units that transcend organic vision. The most visible piece of common chrome, a statement of identity as much as a tactical investment.",
       effect: "Choose two modes (swap as a Free Action): Low-Light, Thermal, Telescopic Zoom (Edge vs distant), Threat Targeting (Edge on first attack/round), Visual Recording (1 hr, retrieved via datajack).",
       street: "One mode only, no Enhancement, swaps need a clinic; visibly mechanical → Snag on blending-in social checks.",
       black: "Three modes, and perceive Anomaly auras within 6 spaces (type + approximate Severity, no check).",
@@ -67,7 +67,7 @@ EN.cyberware = {
     { key: "reflex", short: "Reflex Booster", name: "Reflex Booster", zone: "Neural", enhancement: "+1 Agility",
       desc: "A neural co-processor woven through the brainstem that accelerates the speed of thought between perception and action. Combat freelancers consider this the essential investment.",
       effect: "+2 Initiative and +1 Speed. Once per combat, spend a Swift Action to gain an additional Move or Swift Action this turn.",
-      street: "No Enhancement; jittery — first time you take combat damage each session, Body Save DC 12 or take 1d4 Vitality as it misfires.",
+      street: "No Enhancement; jittery, first time you take combat damage each session, Body Save DC 12 or take 1d4 Vitality as it misfires.",
       black: "+4 Initiative, +2 Speed, and once per combat (Impulse) fully evade one ranged hit.",
       tiers: [
         { tier: "Streetware", sp: 2, price: 2500,  legality: "Restricted", bonus: { speed: 1 } },
@@ -75,7 +75,7 @@ EN.cyberware = {
         { tier: "Blackware",  sp: 3, price: 28000, legality: "Restricted", bonus: { speed: 2 } }
       ] },
     { key: "disruption", short: "Disruption Lattice", name: "Disruption Lattice", zone: "Neural", enhancement: "None", mystech: true,
-      desc: "Resonance-dampening circuitry through the upper spine and skull. Built to counter Shapers; it does not discriminate — it dampens the Flow for everyone near the wearer, including the wearer.",
+      desc: "Resonance-dampening circuitry through the upper spine and skull. Built to counter Shapers; it does not discriminate; it dampens the Flow for everyone near the wearer, including the wearer.",
       effect: "Passive Area 2 disruption field: all Invocations cost +1 FP, friend or foe, always on. Pulse (Impulse, 1/Short Rest): sustained Invocations within 3 spaces make a Focus Disruption check DC 14 or end.",
       street: "Field shrinks to Area 1, no Pulse; audible static → Snag on Stealth within 2 spaces of anyone.",
       black: "Area 3 field, Pulse up to 2/Short Rest, plus targeted suppression (3 charges/Long Rest): one Flow-user within 6 spaces casts at +2 FP with Snag.",
@@ -85,7 +85,7 @@ EN.cyberware = {
         { tier: "Blackware",  sp: 3, price: 32000, legality: "Restricted" }
       ] },
     { key: "resonanceCrown", short: "Resonance Crown", name: "Resonance Crown", zone: "Neural", enhancement: "+1 Mystique", mystech: true,
-      desc: "A circlet of hand-tuned mystech filaments in the skull's outer surface, visible as silver tracery along the brow. One of the few implants the Flow does not reject — it harmonizes chrome to the wearer's natural frequency.",
+      desc: "A circlet of hand-tuned mystech filaments in the skull's outer surface, visible as silver tracery along the brow. One of the few implants the Flow does not reject; it harmonizes chrome to the wearer's natural frequency.",
       effect: "Reduces the SP cost of up to 4 SP of your other cyberware by 1 each (min 1) for Threshold purposes. +1 FP at the end of a Short Rest. One Crown only; cannot harmonize itself, the Disruption Lattice, or the Convergence Engine.",
       tiers: [
         { tier: "Prototype", sp: 1, price: 28000, legality: "Restricted" }
@@ -95,7 +95,7 @@ EN.cyberware = {
     { key: "synthHeart", short: "Synthetic Heart", name: "Synthetic Heart", zone: "Core", enhancement: "None",
       desc: "A fully replaced cardiac unit. It doesn't get tired, doesn't panic, and can be revved during combat. Wearers describe feeling calm in firefights.",
       effect: "1/Long Rest, when you'd drop to 0 Vitality, drop to 1 instead (not Bloodied) and gain +2 Speed next turn. Immune to Panic; Edge on Wits Saves vs Frightened and Shaken.",
-      street: "Irregular rhythm — medical ID is automatic; Snag on Stealth vs heartbeat detection.",
+      street: "Irregular rhythm, medical ID is automatic; Snag on Stealth vs heartbeat detection.",
       black: "Death-prevention twice/Long Rest, plus Stillness Mode (Action): appear dead to scans for up to 1 minute.",
       tiers: [
         { tier: "Streetware", sp: 2, price: 3500,  legality: "Restricted" },
@@ -105,7 +105,7 @@ EN.cyberware = {
     { key: "biomonitor", short: "Biomonitor", name: "Biomonitor", zone: "Core", enhancement: "None",
       desc: "An internal pharmacy and diagnostic suite in your torso, releasing precise doses of stims, painkillers, or stabilizers on trauma or command. The exec's daily chrome and the operator's emergency reserve.",
       effect: "1/Short Rest (Free Action): regain 1d6 Vitality; OR remove one stack of Bleeding/Burning/Poisoned; OR Edge on your next Body Save this round.",
-      street: "Imprecise — each use roll 1d6; on a 1 the effect fails (use still spent).",
+      street: "Imprecise, each use roll 1d6; on a 1 the effect fails (use still spent).",
       black: "Twice/Short Rest, any combination of effects, and +2 Speed automatically on round 1 of any combat.",
       tiers: [
         { tier: "Streetware", sp: 1, price: 1800,  legality: "Restricted" },
@@ -115,7 +115,7 @@ EN.cyberware = {
     { key: "toxinFilter", short: "Toxin Filter", name: "Toxin Filter", zone: "Core", enhancement: "+1 Body",
       desc: "A synthetic liver-and-kidney system that scrubs poisons, drugs, biohazards, and Flow-tainted compounds. Far more common than people assume.",
       effect: "Resistance to Toxic damage; auto-succeed Body Saves vs mundane environmental contaminants; choose to resist or accept any voluntarily consumed drug.",
-      street: "No Enhancement; cycles loudly — heard from 2 spaces in silence, Snag on Stealth there.",
+      street: "No Enhancement; cycles loudly, heard from 2 spaces in silence, Snag on Stealth there.",
       black: "Immunity to mundane toxins, Resistance to Radiation, and scrubs minor Resonant contamination within 1 hour.",
       tiers: [
         { tier: "Streetware", sp: 1, price: 2000,  legality: "Common" },
@@ -137,9 +137,9 @@ EN.cyberware = {
 
     /* ---------------- Integument ---------------- */
     { key: "subdermal", short: "Subdermal Armor", name: "Subdermal Armor", zone: "Integument", enhancement: "+1 Body",
-      desc: "Plates of ballistic-grade composite under the skin. The signature chrome of street samurai and corp guards. It doesn't make you bulletproof — it turns lethal hits into survivable ones.",
+      desc: "Plates of ballistic-grade composite under the skin. The signature chrome of street samurai and corp guards. It doesn't make you bulletproof; it turns lethal hits into survivable ones.",
       effect: "+1 DR against Ballistic, Piercing, Bludgeoning, and Slashing. Stacks with worn armor.",
-      street: "No Enhancement; rough alignment — close inspection (DC 12) spots the bulges and scar lines through clothing.",
+      street: "No Enhancement; rough alignment, close inspection (DC 12) spots the bulges and scar lines through clothing.",
       black: "+2 DR vs all physical, plus a reactive surface: first melee hit each combat reflects 1d4 of the same type back.",
       tiers: [
         { tier: "Streetware", sp: 2, price: 2800,  legality: "Licensed" },
@@ -149,7 +149,7 @@ EN.cyberware = {
     { key: "skeleton", short: "Reinforced Skeleton", name: "Reinforced Skeleton", zone: "Integument", enhancement: "+1 Body",
       desc: "Composite woven through your bones. It doesn't make you stronger by itself, but it makes you durable enough to use strength you couldn't otherwise survive.",
       effect: "+1 Wound max; half damage from falls; Edge on Body Saves vs prone/grapple/forced movement; unarmed strikes deal 1d6 Bludgeoning.",
-      street: "No Enhancement; 25% heavier — matters for vehicles, climbing, and weight sensors.",
+      street: "No Enhancement; 25% heavier, matters for vehicles, climbing, and weight sensors.",
       black: "+2 Wound max, 1d8 unarmed (one as a Swift Action 1/round), resist fall damage up to 12 spaces.",
       tiers: [
         { tier: "Streetware", sp: 2, price: 3000,  legality: "Licensed", bonus: { wounds: 1 } },
@@ -159,7 +159,7 @@ EN.cyberware = {
 
     /* ---------------- Arms ---------------- */
     { key: "cyberarm", short: "Cyberarm", name: "Cyberarm", zone: "Arms", enhancement: "+1 Body (arm only)", sided: true, platform: true,
-      desc: "A full prosthetic arm — the most \"this is a different person now\" piece of common chrome. A platform: compatible mods slot in without adding SP to your Total Static.",
+      desc: "A full prosthetic arm, the most \"this is a different person now\" piece of common chrome. A platform: compatible mods slot in without adding SP to your Total Static.",
       effect: "Unarmed strikes with the arm deal 1d6 Bludgeoning. Install compatible mods in its slots without adding their SP.",
       street: "2 mod slots, no Enhancement; lacks fine calibration → Snag on delicate handwork with that arm.",
       black: "4 mod slots, +2 Body for arm actions, 1d8 unarmed, cannot be disarmed, Edge on grapples with it.",
@@ -205,7 +205,7 @@ EN.cyberware = {
     { key: "smartlink", short: "Smartlink", name: "Smartlink", zone: "Hardware", enhancement: "+1 Tech",
       desc: "A neural-to-weapon interface, usually paired with a Datajack. Your firearms aim with your eyes and fire with your thoughts. The gunslinger's signature chrome. Requires a neural port.",
       effect: "+1 to attack rolls with a connected smart-weapon, and ignore Snag from cover/prone/partial visibility on your first attack each round.",
-      street: "No Enhancement; firmware quirks — 1d6 on first connect, on a 1 it can't interface until a clinic patch.",
+      street: "No Enhancement; firmware quirks, 1d6 on first connect, on a 1 it can't interface until a clinic patch.",
       black: "+2 to attacks, Snag-ignoring on every attack, plus tag a target (Swift, 1/combat) for Edge on all attacks vs it until end of next turn.",
       tiers: [
         { tier: "Streetware", sp: 1, price: 2200,  legality: "Licensed" },
@@ -213,7 +213,7 @@ EN.cyberware = {
         { tier: "Blackware",  sp: 2, price: 19000, legality: "Restricted" }
       ] },
     { key: "subdermalComm", short: "Subdermal Comm", name: "Subdermal Comm", zone: "Hardware", enhancement: "None",
-      desc: "A hidden comm implant in the jaw, throat, or behind the ear. Speak silently with your crew without anyone seeing your mouth move. No Streetware version — the nerve calibration is beyond unlicensed clinics.",
+      desc: "A hidden comm implant in the jaw, throat, or behind the ear. Speak silently with your crew without anyone seeing your mouth move. No Streetware version, the nerve calibration is beyond unlicensed clinics.",
       effect: "Silent subvocal comms with paired units within 1 mile (less in dense urban), invisible to casual observers; standard encryption.",
       black: "Military-grade encryption (decrypt at two Snag dice), 5-mile range, and passive threat-tone keyword detection.",
       tiers: [

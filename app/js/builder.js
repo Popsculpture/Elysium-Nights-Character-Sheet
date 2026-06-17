@@ -1,5 +1,5 @@
 /* ===========================================================================
-   ELYSIUM NIGHTS — Character Builder
+   ELYSIUM NIGHTS · Character Builder
    The foundation tab: create a Freelancer and level them 1 -> 10.
    Reads/writes EN.store; derives via EN.engine.
    =========================================================================== */
@@ -20,8 +20,8 @@ EN.builder = (function () {
   ];
   var _step = 0;
   var _intake = false;   // show the register-or-import gate even when records already exist
-  var _collapsed = {};   // {sectionId: true}  — UI-only collapse state (persists across re-renders)
-  var _dismissed = {};   // {sectionId: dismissKey} — attention markers the player has dismissed
+  var _collapsed = {};   // {sectionId: true}, UI-only collapse state (persists across re-renders)
+  var _dismissed = {};   // {sectionId: dismissKey}, attention markers the player has dismissed
 
   // Advance-tab sections default to COLLAPSED: a section is collapsed unless the
   // player has explicitly expanded it (_collapsed[id] === false).
@@ -29,7 +29,7 @@ EN.builder = (function () {
   function toggleCollapse(id) { _collapsed[id] = isCollapsed(id) ? false : true; EN.app.render(); }
   // a dismissible "attention" dot; dismissKey ties dismissal to a state (e.g. level)
   function attnDot(id, dismissKey, title) {
-    return el("span.attn-dot", { title: title || "New options or unspent points — click to dismiss",
+    return el("span.attn-dot", { title: title || "New options or unspent points, click to dismiss",
       onclick: function (e) { e.stopPropagation(); _dismissed[id] = dismissKey; EN.app.render(); } });
   }
   function attnShown(id, need, dismissKey) { return !!need && _dismissed[id] !== dismissKey; }
@@ -92,9 +92,9 @@ EN.builder = (function () {
       EN.ui.stat("LVL", d.level, "CAL " + d.caliber),
       EN.ui.stat("DEF", d.defense, d.defenseAttr === "BOD" ? "BODY" : "AGI"),
       EN.ui.stat("SPD", d.speed, "spaces"),
-      EN.ui.stat("VIT", d.vitalityMax != null ? d.vitalityMax : "—", d.classInfo ? "max" : "pick class"),
+      EN.ui.stat("VIT", d.vitalityMax != null ? d.vitalityMax : "-", d.classInfo ? "max" : "pick class"),
       EN.ui.stat("WND", d.woundsMax, "= Body"),
-      EN.ui.stat("RES", d.resilienceDie ? "d" + d.resilienceDie : "—", "dice")
+      EN.ui.stat("RES", d.resilienceDie ? "d" + d.resilienceDie : "-", "dice")
     ];
     if (d.resource) items.push(EN.ui.stat(d.resource.name.toUpperCase(), d.resource.max, d.resource.attributeName));
     if (d.flow) items.push(EN.ui.stat("FLOW", d.flow.max, "DC " + d.flow.dc, true));
@@ -120,18 +120,18 @@ EN.builder = (function () {
           el("div.field", null, [el("label.fl", { text: "Name" }), nameNode]),
           txt("handle", "Handle", "Street handle / alias…")
         ]),
-        txt("concept", "Concept — the one-line pitch", "An ex-corporate Stitcher with a stolen triage rig…", true),
+        txt("concept", "Concept, the one-line pitch", "An ex-corporate Stitcher with a stolen triage rig…", true),
         txt("whereFrom", "Where You Came From", "Burbclave, Warrens, void station, corporate creche…", true)
       ], { corners: true }),
       el("div", { style: { height: "16px" } }),
       EN.ui.panel("Inner Profile", "PURE STORY · NO MECHANICS", [
-        el("p.help", { text: "Keeps your Freelancer from collapsing into a meme with a gun. No bonuses — just truth." }),
+        el("p.help", { text: "Keeps your Freelancer from collapsing into a meme with a gun. No bonuses, just truth." }),
         el("div", { style: { height: "10px" } }),
         el("div.grid2", null, [
-          txt("facets", "Facets — habits & tells", R.innerProfile.facets, true),
-          txt("coreSparks", "Core Sparks — what drives you", R.innerProfile.coreSparks, true),
-          txt("tethers", "Tethers — who you won't abandon", R.innerProfile.tethers, true),
-          txt("faultLines", "Fault Lines — fears & hard limits", R.innerProfile.faultLines, true)
+          txt("facets", "Facets, habits & tells", R.innerProfile.facets, true),
+          txt("coreSparks", "Core Sparks, what drives you", R.innerProfile.coreSparks, true),
+          txt("tethers", "Tethers, who you won't abandon", R.innerProfile.tethers, true),
+          txt("faultLines", "Fault Lines, fears & hard limits", R.innerProfile.faultLines, true)
         ]),
         txt("appearance", "Appearance & style", "Neon rain, scavenged chrome, biometric tattoos…", true),
         txt("notes", "Notes", "", true)
@@ -160,7 +160,7 @@ EN.builder = (function () {
       var pb = eng.pointBuySpent(ch.attributes);
       info = el("div.row.wrap", { style: { gap: "16px", marginBottom: "12px" } }, [
         el("span.chip" + (pb.remaining < 0 ? "" : ".on"), { text: "POINTS: " + pb.remaining + " / " + R.pointBuy.pool }),
-        el("span.help", { text: "Costs: 11–13 = 1 ea · 14–15 = 2 ea · 16 = 3 · drop to 8 refunds 2 · cap 16." })
+        el("span.help", { text: "Costs: 11-13 = 1 ea · 14-15 = 2 ea · 16 = 3 · drop to 8 refunds 2 · cap 16." })
       ]);
     } else if (method === "array") {
       info = el("div.row.wrap", { style: { gap: "8px", marginBottom: "12px" } },
@@ -168,7 +168,7 @@ EN.builder = (function () {
           arrayRemaining(ch).map(function (v) { return el("span.chip", { text: String(v) }); })
         ));
     } else {
-      info = el("p.help", { text: "Type scores directly (range 1–20), or roll 4d6-drop-lowest groups below and apply one. Rolling is an optional, GM-approved rule — it creates outliers the bounded math isn't tuned for." });
+      info = el("p.help", { text: "Type scores directly (range 1-20), or roll 4d6-drop-lowest groups below and apply one. Rolling is an optional, GM-approved rule; it creates outliers the bounded math isn't tuned for." });
     }
 
     var cells = R.attributes.map(function (a) {
@@ -178,7 +178,7 @@ EN.builder = (function () {
       if (method === "array") {
         ctrl = el("select", {
           onchange: function (e) { assignArray(ch, a.key, e.target.value === "" ? null : Number(e.target.value)); }
-        }, [el("option", { value: "", text: "—" })].concat(arrayOptions(ch, a.key).map(function (o) {
+        }, [el("option", { value: "", text: "-" })].concat(arrayOptions(ch, a.key).map(function (o) {
           return el("option", { value: o.v, text: String(o.v), selected: o.sel, disabled: o.disabled });
         })));
       } else {
@@ -278,7 +278,7 @@ EN.builder = (function () {
     var style = DICE_STYLES[_diceStyle] || DICE_STYLES.neon;
     var groups = ch.rollGroups || [];
     var head = el("div.row.wrap", { style: { gap: "10px", alignItems: "center", margin: "16px 0 4px" } }, [
-      el("div.section-title", { style: { margin: 0, flex: 1, minWidth: "200px" } }, [document.createTextNode("Dice Roll Groups — 4d6, drop the lowest"), el("span.line")]),
+      el("div.section-title", { style: { margin: 0, flex: 1, minWidth: "200px" } }, [document.createTextNode("Dice Roll Groups (4d6, drop the lowest)"), el("span.line")]),
       el("select", { title: "Dice style", style: { width: "auto", padding: "4px 28px 4px 8px", fontSize: "12px" },
         onchange: function (e) { _diceStyle = e.target.value; try { localStorage.setItem("en_dice_style", _diceStyle); } catch (err) {} EN.app.render(); } },
         Object.keys(DICE_STYLES).map(function (k) { return el("option", { value: k, selected: _diceStyle === k, text: "◇ " + DICE_STYLES[k].label }); })),
@@ -292,7 +292,7 @@ EN.builder = (function () {
     ]);
     var body = [head,
       el("p.help", { style: { marginBottom: "8px" }, text: "Bank as many roll groups as your GM allows, assign each value to an Attribute, then apply one group to your scores." })];
-    if (!groups.length) body.push(el("div.muted-box", { text: "No banked rolls yet — hit ROLL GROUP to throw 6 × 4d6." }));
+    if (!groups.length) body.push(el("div.muted-box", { text: "No banked rolls yet; hit ROLL GROUP to throw 6 × 4d6." }));
     groups.forEach(function (g) { body.push(rollGroupBox(ch, g, style)); });
     return el("div", null, body);
   }
@@ -313,7 +313,7 @@ EN.builder = (function () {
       });
       var sel = el("select", { style: { marginTop: "6px", padding: "3px 24px 3px 6px", fontSize: "12px" },
         onchange: function (e) { store.update(function (c) { var gg = (c.rollGroups || []).find(function (x) { return x.id === g.id; }); if (gg) gg.assign[i] = e.target.value || null; }); } },
-        [el("option", { value: "", text: "—" })].concat(R.attributes.map(function (a) {
+        [el("option", { value: "", text: "-" })].concat(R.attributes.map(function (a) {
           var used = g.assign.indexOf(a.key) !== -1 && g.assign[i] !== a.key;
           return el("option", { value: a.key, selected: g.assign[i] === a.key, disabled: used, text: a.abbr });
         })));
@@ -393,7 +393,7 @@ EN.builder = (function () {
 
     if (sp) {
       blocks.push(el("div", { style: { height: "18px" } }));
-      blocks.push(EN.ui.sectionTitle(sp.name + " — Species Traits"));
+      blocks.push(EN.ui.sectionTitle(sp.name + " · Species Traits"));
       var t = sp.traits || {};
       blocks.push(el("div", null, [
         sizeRow(ch, lin, t.size), traitLine("Languages", t.languages),
@@ -412,7 +412,7 @@ EN.builder = (function () {
 
     if (lin) {
       blocks.push(el("div", { style: { height: "18px" } }));
-      blocks.push(EN.ui.sectionTitle("Lineage Feature — choose one"));
+      blocks.push(EN.ui.sectionTitle("Lineage Feature, choose one"));
       if (lin.featuresNote) blocks.push(el("p.help", { style: { marginBottom: "8px" }, text: lin.featuresNote }));
       var chosen = ch.lineageFeatures || [];
       blocks.push(el("div", null, creationFeatures(lin).map(function (f) {
@@ -460,7 +460,7 @@ EN.builder = (function () {
       return el("div.opt-card" + (ch.background === b.key ? ".sel" : ""), {
         onclick: function () {
           store.update(function (c) { if (c.background !== b.key) { c.background = b.key; c.backgroundSkillChoice = null; c.backgroundProfChoices = []; } });
-          if (eng.duplicateGrants(store.active()).any) toast("⚠ Duplicate Background/Class grant — second source discarded.");
+          if (eng.duplicateGrants(store.active()).any) toast("⚠ Duplicate Background/Class grant; second source discarded.");
         }
       }, [
         el("span.check", { text: "◉" }), el("h4", { text: b.name }),
@@ -473,7 +473,7 @@ EN.builder = (function () {
       blocks.push(el("div", { style: { height: "18px" } }));
       blocks.push(EN.ui.panel(bg.name, "BACKGROUND DOSSIER", [
         el("label.fl", { text: "Skills & Proficiencies" }),
-        el("p.help", { style: { margin: "0 0 6px" }, text: "Dashed chips are background options — click one to lock in your pick." }),
+        el("p.help", { style: { margin: "0 0 6px" }, text: "Dashed chips are background options; click one to lock in your pick." }),
         bgSkillChipRow(ch, bg),
         (bg.proficiencies || []).length ? el("div", null, bg.proficiencies.map(function (p, idx) { return bgProfChipRow(ch, p, idx); })) : null,
         bg.contacts ? infoBlock("Contacts", bg.contacts) : null,
@@ -552,14 +552,14 @@ EN.builder = (function () {
   }
 
   // Warning box when Background and Class grant the same skill/proficiency.
-  // Proficiency never stacks — the second source is simply discarded.
+  // Proficiency never stacks; the second source is simply discarded.
   function duplicateWarningBox(ch) {
     var dups = eng.duplicateGrants(ch);
     if (!dups.any) return null;
     var names = dups.skills.map(function (k) { return R.skillByKey[k] ? R.skillByKey[k].name : k; }).concat(dups.gear);
     return el("div.muted-box", { style: { borderColor: "var(--warn)", color: "var(--warn)", textAlign: "left", margin: "14px 0 0" },
       html: "⚠ <b>DUPLICATE GRANTS:</b> your Background and Class both grant <b>" + names.join(", ") +
-        "</b>. You can keep this combination, but you only benefit once from a Proficiency — two sources don't stack or advance it to Expertise; the second source is simply discarded." });
+        "</b>. You can keep this combination, but you only benefit once from a Proficiency; two sources don't stack or advance it to Expertise; the second source is simply discarded." });
   }
 
   // Dismissible warning box (Dossier): ACKNOWLEDGE hides it until its content
@@ -589,7 +589,7 @@ EN.builder = (function () {
     var skillChips = d.skills.filter(function (s) { return s.tier !== "untrained"; }).map(function (s) {
       var dup = dups.skills.indexOf(s.key) !== -1;
       var viaTP = R.profOrder.indexOf(s.storedTier || "untrained") > R.profOrder.indexOf(eng.skillFloorTier(ch, s.key));
-      var c = el("span.chip", { title: srcTitle(src.skills[s.key], viaTP) + (dup ? " — duplicate grant, second source discarded" : ""),
+      var c = el("span.chip", { title: srcTitle(src.skills[s.key], viaTP) + (dup ? ", duplicate grant, second source discarded" : ""),
         style: { fontSize: "10.5px", color: "var(--accent)", borderColor: "var(--accent)" } },
         (dup ? "⚠ " : "") + s.name + " · " + TIER_LABEL[s.tier]);
       return c;
@@ -601,7 +601,7 @@ EN.builder = (function () {
         if (tier === "untrained") return null;
         var dup = dups.gear.indexOf(cat) !== -1;
         var viaTP = R.profOrder.indexOf(eng.gearFloorTier(ch, bucket, cat)) < R.profOrder.indexOf(tier) || !src.gear[bucket + "|" + cat];
-        return el("span.chip", { title: srcTitle(src.gear[bucket + "|" + cat], viaTP) + (dup ? " — duplicate grant, second source discarded" : ""),
+        return el("span.chip", { title: srcTitle(src.gear[bucket + "|" + cat], viaTP) + (dup ? ", duplicate grant, second source discarded" : ""),
           style: { fontSize: "10.5px", color: color, borderColor: color } },
           (dup ? "⚠ " : "") + cat + " · " + TIER_LABEL[tier]);
       }).filter(Boolean);
@@ -612,7 +612,7 @@ EN.builder = (function () {
     }
     // saves (class Save Focus)
     var saveChips = R.attributes.filter(function (a) { return d.saves[a.key].focus; }).map(function (a) {
-      return el("span.chip", { title: "Saving Throw Focus — d20 + mod + Caliber", style: { fontSize: "10.5px", color: "var(--gold)", borderColor: "var(--gold)" } }, a.name);
+      return el("span.chip", { title: "Saving Throw Focus · d20 + mod + Caliber", style: { fontSize: "10.5px", color: "var(--gold)", borderColor: "var(--gold)" } }, a.name);
     });
     // focuses & specializations from the Advance tab
     var focusChips = (ch.skillFocuses || []).map(function (f) {
@@ -633,7 +633,7 @@ EN.builder = (function () {
       rowIf("Focus", focusChips),
       rowIf("Spec", specChips)
     ].filter(Boolean);
-    if (!rows.length) rows = [el("p.help", { style: { margin: 0 }, text: "No skills or proficiencies yet — pick a Background and Class, then spend Training Points on the Advance tab." })];
+    if (!rows.length) rows = [el("p.help", { style: { margin: 0 }, text: "No skills or proficiencies yet; pick a Background and Class, then spend Training Points on the Advance tab." })];
     // unselected "choose one" options still waiting on the Background / Class tabs
     var pending = eng.pendingChoices(ch);
     var pendingBox = null;
@@ -643,7 +643,7 @@ EN.builder = (function () {
       var parts = Object.keys(bySource).map(function (s) { return "<b>" + s + " tab</b>: " + bySource[s].join(", "); });
       var pendKey = pending.map(function (p) { return p.source + ":" + p.what; }).join("|");
       pendingBox = dismissibleWarn("dossier-pending", pendKey,
-        "⚠ <b>UNSELECTED OPTIONS</b> — you still have picks waiting. " + parts.join(" &nbsp;·&nbsp; ") + ". Head back to those tabs and click the dashed chips to lock them in.");
+        "⚠ <b>UNSELECTED OPTIONS</b>; you still have picks waiting. " + parts.join(" &nbsp;·&nbsp; ") + ". Head back to those tabs and click the dashed chips to lock them in.");
     }
     // duplicate-grant warning (acknowledgeable; the ⚠ chips above always remain)
     var dupBox = null;
@@ -651,10 +651,10 @@ EN.builder = (function () {
       var dupNames = dups.skills.map(function (k) { return R.skillByKey[k] ? R.skillByKey[k].name : k; }).concat(dups.gear);
       dupBox = dismissibleWarn("dossier-dups", dupNames.join("|"),
         "⚠ <b>DUPLICATE GRANTS:</b> your Background and Class both grant <b>" + dupNames.join(", ") +
-        "</b>. You can keep this combination, but you only benefit once from a Proficiency — two sources don't stack or advance it to Expertise; the second source is simply discarded.");
+        "</b>. You can keep this combination, but you only benefit once from a Proficiency; two sources don't stack or advance it to Expertise; the second source is simply discarded.");
     }
     return EN.ui.panel("Skills & Proficiencies", "COMBINED · BACKGROUND + CLASS + ADVANCE", [
-      el("p.help", { style: { margin: "0 0 8px" }, text: "Everything granted or purchased, at its effective tier. Hover a chip for its source. ⚠ marks duplicate Background/Class grants — the second source is discarded." })
+      el("p.help", { style: { margin: "0 0 8px" }, text: "Everything granted or purchased, at its effective tier. Hover a chip for its source. ⚠ marks duplicate Background/Class grants; the second source is discarded." })
     ].concat(rows).concat([pendingBox, dupBox]), { corners: true });
   }
 
@@ -684,7 +684,7 @@ EN.builder = (function () {
       return el("div.opt-card" + (ch.class === k ? ".sel" : ""), {
         onclick: function () {
           store.update(function (cc) { if (cc.class !== k) { cc.class = k; cc.subclass = null; cc.classSkillChoices = []; cc.classGearChoices = { weapons: [], armor: [], tools: [], vehicles: [] }; } });
-          if (eng.duplicateGrants(store.active()).any) toast("⚠ Duplicate Background/Class grant — second source discarded.");
+          if (eng.duplicateGrants(store.active()).any) toast("⚠ Duplicate Background/Class grant; second source discarded.");
         }
       }, [
         el("span.check", { text: "◉" }),
@@ -718,18 +718,18 @@ EN.builder = (function () {
       if (ch.class === "shaper" && d.flow) {
         corePb.push(feature("Flow Points (Reservoir)", "Max Flow = (Caliber × 3) + " + d.flow.attributeName + " Modifier = " + d.flow.max + "\nFlow Save DC = 8 + " + d.flow.attributeName + " Mod + Caliber = " + d.flow.dc, "flow", "Flow " + d.flow.max));
       }
-      // starting proficiencies — color-coded chip rows
+      // starting proficiencies, color-coded chip rows
       var sp = cls.startingProficiencies || {};
       corePb.push(el("div", { style: { marginTop: "6px" } }, [
         el("label.fl", { text: "Starting Proficiencies" }),
-        el("p.help", { style: { margin: "0 0 6px" }, text: "Dashed chips are class options — click one to lock in your pick." }),
+        el("p.help", { style: { margin: "0 0 6px" }, text: "Dashed chips are class options; click one to lock in your pick." }),
         profChipRow("Skills", sp.skills, "var(--accent)", { ch: ch, bucket: "skills" }),
         profChipRow("Weapons", sp.weapons, "var(--ember)", { ch: ch, bucket: "weapons" }),
         profChipRow("Armor", (sp.armor || []).concat(sp.shields || []), "var(--text2)", { ch: ch, bucket: "armor" }),
         profChipRow("Tools", sp.tools, "var(--flow)", { ch: ch, bucket: "tools" }),
         profChipRow("Saves", sp.saves, "var(--gold)")
       ]));
-      blocks.push(EN.ui.panel(cls.name + " — Core Traits", "CLASS.SYS", corePb, { corners: true }));
+      blocks.push(EN.ui.panel(cls.name + " · Core Traits", "CLASS.SYS", corePb, { corners: true }));
       blocks.push(duplicateWarningBox(ch));
 
       // subclass
@@ -746,9 +746,9 @@ EN.builder = (function () {
       // class skill choices
       // (class skill/tool choices are picked directly on the Starting Proficiencies chips above)
 
-      // full class progression — all 10 levels as collapsible boxes (collapsed by default)
+      // full class progression, all 10 levels as collapsible boxes (collapsed by default)
       blocks.push(el("div", { style: { height: "16px" } }));
-      blocks.push(EN.ui.sectionTitle("Class Progression — Level " + ch.level + " / 10"));
+      blocks.push(EN.ui.sectionTitle("Class Progression · Level " + ch.level + " / 10"));
       blocks.push(el("p.help", { style: { marginBottom: "10px" }, text: "Click a level to expand its features. Base class features are cyan; subclass features are purple. Set your level on the Advance tab." }));
       for (var L = 1; L <= R.maxLevel; L++) {
         (function (L) {
@@ -772,7 +772,10 @@ EN.builder = (function () {
           ]));
           var bodyKids = [];
           if (!clsFeats.length && !subFeats.length) bodyKids.push(el("p.help", { style: { margin: 0 }, text: "No new features at this level." }));
-          clsFeats.forEach(function (f) { bodyKids.push(progFeature(f, false, null, !active)); });
+          clsFeats.forEach(function (f) {
+            if (cls.resource && f.name === cls.resource.name && cls.resource.gambits) bodyKids.push(gambitFeatureView(f, cls.resource, !active));
+            else bodyKids.push(progFeature(f, false, null, !active));
+          });
           subFeats.forEach(function (f) { bodyKids.push(progFeature(f, true, sub.name, !active)); });
           blocks.push(el("div.panel", { style: { marginBottom: "10px", opacity: active ? 1 : .72 } }, [
             head,
@@ -841,14 +844,14 @@ EN.builder = (function () {
     var head = el("div.row.wrap", { style: { gap: "8px", alignItems: "baseline", margin: "10px 0 6px" } }, [
       el("label.fl", { text: "Gambits Known" }),
       el("span.chip" + (chosen.length >= allowed ? ".on" : ""), { style: { fontSize: "10px" }, text: chosen.length + " / " + allowed + " chosen" }),
-      el("span", { style: { fontFamily: "var(--mono)", fontSize: "10px", color: "var(--text3)" }, text: "3 at L1, +2 at L5 — click to learn" })
+      el("span", { style: { fontFamily: "var(--mono)", fontSize: "10px", color: "var(--text3)" }, text: "3 at L1, +2 at L5; click to learn" })
     ]);
     var chipRow = el("div.row.wrap", { style: { gap: "6px" } });
     gl.forEach(function (g) {
       var on = chosen.indexOf(g.name) !== -1;
       var full = !on && chosen.length >= allowed;
       chipRow.appendChild(el("span.chip", {
-        title: (g.action ? g.action + " — " : "") + g.text,
+        title: (g.action ? g.action + " · " : "") + g.text,
         style: { fontSize: "10.5px", color: "var(--accent)", borderColor: "var(--accent)",
                  cursor: full ? "not-allowed" : "pointer", borderStyle: on ? "solid" : "dashed",
                  opacity: on ? 1 : (full ? .3 : .6), boxShadow: on ? "0 0 9px var(--accent)" : "none" },
@@ -881,14 +884,14 @@ EN.builder = (function () {
     var next = R.profOrder[idx + 1];
     if (ch.level < tierLevelReq(next)) { toast(R.profTiers[next].name + " requires level " + tierLevelReq(next) + "+."); return; }
     var cost = stepInto(next);
-    if (b.remaining < cost) { toast("Need " + cost + " Training Points — " + b.remaining + " left."); return; }
+    if (b.remaining < cost) { toast("Need " + cost + " Training Points, " + b.remaining + " left."); return; }
     store.update(function (c) { c.proficiencies.skills = c.proficiencies.skills || {}; c.proficiencies.skills[key] = next; });
   }
   function lowerSkill(ch, key) {
     var floor = eng.skillFloorTier(ch, key);
     var eff = eng.effectiveSkillTier(ch, key);
     if (R.profOrder.indexOf(eff) <= R.profOrder.indexOf(floor)) {
-      toast(floor === "proficient" ? "Proficiency is granted by your background/class — can't refund." : "Already Untrained."); return;
+      toast(floor === "proficient" ? "Proficiency is granted by your background/class; can't refund." : "Already Untrained."); return;
     }
     var prev = R.profOrder[R.profOrder.indexOf(eff) - 1];
     store.update(function (c) {
@@ -963,7 +966,7 @@ EN.builder = (function () {
   }
   function refundGear(ch, bucket, cat) {
     var floor = eng.gearFloorTier(ch, bucket, cat), eff = eng.effectiveGearTier(ch, bucket, cat);
-    if (R.profOrder.indexOf(eff) <= R.profOrder.indexOf(floor)) { toast(floor === "proficient" ? "Granted by class/background — can't refund." : "Untrained."); return; }
+    if (R.profOrder.indexOf(eff) <= R.profOrder.indexOf(floor)) { toast(floor === "proficient" ? "Granted by class/background; can't refund." : "Untrained."); return; }
     refundGearTo(ch, bucket, cat, R.profOrder[R.profOrder.indexOf(eff) - 1]);
   }
 
@@ -981,7 +984,7 @@ EN.builder = (function () {
       var ok = budget.remaining >= 1;
       right.push(el("button.btn.sm" + (ok ? ".primary" : ""), { disabled: !ok, style: { minWidth: "138px" }, title: ok ? "Spend 1 TP" : "Need 1 TP", onclick: function () { acquireGear(ch, bucket, cat); } }, "ACQUIRE (1 TP)"));
     } else if (!gearUpgradable(bucket)) {
-      right.push(el("span.help", { style: { margin: 0, minWidth: "138px", textAlign: "right" }, text: "— acquired —" }));
+      right.push(el("span.help", { style: { margin: 0, minWidth: "138px", textAlign: "right" }, text: "- acquired -" }));
     } else {
       var next = R.profOrder[idx + 1];
       if (next) {
@@ -1014,11 +1017,11 @@ EN.builder = (function () {
     });
     (ch.skillFocuses || []).forEach(function (f) {
       var sk = R.skillByKey[f.skill];
-      out.push({ label: (sk ? sk.name : f.skill) + " — Focus" + (f.aspect ? " (" + f.aspect + ")" : ""), cost: TP.FOCUS_COST, refund: function () { store.update(function (c) { c.skillFocuses = (c.skillFocuses || []).filter(function (x) { return x !== f; }); }); } });
+      out.push({ label: (sk ? sk.name : f.skill) + " · Focus" + (f.aspect ? " (" + f.aspect + ")" : ""), cost: TP.FOCUS_COST, refund: function () { store.update(function (c) { c.skillFocuses = (c.skillFocuses || []).filter(function (x) { return x !== f; }); }); } });
     });
     (ch.specializations || []).forEach(function (sp) {
       var sk = R.skillByKey[sp.skill];
-      out.push({ label: (sk ? sk.name : sp.skill) + " — Specialization" + (sp.aspect ? " (" + sp.aspect + ")" : ""), cost: TP.SPEC_COST, refund: function () { store.update(function (c) { c.specializations = (c.specializations || []).filter(function (x) { return x !== sp; }); }); } });
+      out.push({ label: (sk ? sk.name : sp.skill) + " · Specialization" + (sp.aspect ? " (" + sp.aspect + ")" : ""), cost: TP.SPEC_COST, refund: function () { store.update(function (c) { c.specializations = (c.specializations || []).filter(function (x) { return x !== sp; }); }); } });
     });
     ["weapons", "armor", "tools", "vehicles"].forEach(function (bucket) {
       R.gear[bucket].forEach(function (cat) {
@@ -1078,11 +1081,11 @@ EN.builder = (function () {
     // Focus / Specialization appear only once requirements are met
     var sub = [];
     if (effIdx >= R.profOrder.indexOf("proficient")) {
-      sub.push(el("button.btn.sm" + (s.focus ? ".primary" : ""), { title: "Skill Focus — 1 TP · L3+ · grants Edge on focused checks", onclick: function () { toggleFocus(ch, s.key); } }, s.focus ? "✓ Focus" : "+ Focus · 1TP"));
+      sub.push(el("button.btn.sm" + (s.focus ? ".primary" : ""), { title: "Skill Focus · 1 TP · L3+ · grants Edge on focused checks", onclick: function () { toggleFocus(ch, s.key); } }, s.focus ? "✓ Focus" : "+ Focus · 1TP"));
       if (s.focus) sub.push(aspectInput(ch, "skillFocuses", s.key));
     }
     if (effIdx >= R.profOrder.indexOf("expertise")) {
-      sub.push(el("button.btn.sm" + (s.specialization ? ".flow" : ""), { title: "Specialization — 1 TP · L6+ · expands crit range", onclick: function () { toggleSpec(ch, s.key); } }, s.specialization ? "✓ Spec" : "+ Spec · 1TP"));
+      sub.push(el("button.btn.sm" + (s.specialization ? ".flow" : ""), { title: "Specialization · 1 TP · L6+ · expands crit range", onclick: function () { toggleSpec(ch, s.key); } }, s.specialization ? "✓ Spec" : "+ Spec · 1TP"));
       if (s.specialization) sub.push(aspectInput(ch, "specializations", s.key));
     }
     var subRow = sub.length ? el("div.row.wrap", { style: { gap: "8px", marginTop: "6px" } }, sub) : null;
@@ -1102,27 +1105,27 @@ EN.builder = (function () {
           el("div", { style: { flex: 1, minWidth: "220px" } }, [
             el("p.help", { style: { margin: 0, color: overspent ? "var(--danger)" : "var(--text3)" }, html:
               "<b>Acquire</b> 1TP · any &nbsp;|&nbsp; <b>Expert</b> 2TP · L6+ &nbsp;|&nbsp; <b>Mastery</b> 2TP · L10+ &nbsp;|&nbsp; <b>Focus</b> 1TP · L3+ &nbsp;|&nbsp; <b>Spec</b> 1TP · L6+" }),
-            b.total === 0 ? el("p.help", { style: { color: "var(--warn)", margin: "4px 0 0" }, text: "No Training Points yet — your first 5 arrive at level 3." }) : null,
-            overspent ? el("p.help", { style: { color: "var(--danger)", margin: "4px 0 0" }, text: "Over budget — refund some upgrades (↩)." }) : null
+            b.total === 0 ? el("p.help", { style: { color: "var(--warn)", margin: "4px 0 0" }, text: "No Training Points yet; your first 5 arrive at level 3." }) : null,
+            overspent ? el("p.help", { style: { color: "var(--danger)", margin: "4px 0 0" }, text: "Over budget; refund some upgrades (↩)." }) : null
           ])
         ]),
         el("div.section-title", { style: { margin: "16px 0 2px" } }, [document.createTextNode("Skill Tiers"), el("span.line")]),
         el("p.help", { style: { marginBottom: "6px" }, text: "Background & class grants give a free Proficient floor (GRANTED). Focus & Specialization buttons appear once a skill qualifies." }),
         el("div", null, d.skills.map(function (s) { return skillRow(ch, s); }))
-      ], { corners: true, attention: b.remaining > 0, dismissKey: tpKey, attentionTitle: "Unspent Training Points — click to dismiss" }),
+      ], { corners: true, attention: b.remaining > 0, dismissKey: tpKey, attentionTitle: "Unspent Training Points; click to dismiss" }),
       el("div", { style: { height: "14px" } }),
       collapsiblePanel("gearProficiencies", "Gear Proficiencies", "WEAPONS · ARMOR · TOOLS · VEHICLES", [].concat(
         [el("p.help", { text: "Acquire a category for 1 TP. Weapons, Tools, and Vehicles upgrade to Expert (L6+) and Mastery (L10+) for 2 TP each; Armor can be acquired but not upgraded." })],
         gearSection(ch, "weapons", "Weapon Proficiencies", null),
-        gearSection(ch, "armor", "Armor Proficiencies", "Acquire only — cannot be raised to higher tiers."),
+        gearSection(ch, "armor", "Armor Proficiencies", "Acquire only; cannot be raised to higher tiers."),
         gearSection(ch, "tools", "Tool Proficiencies", null),
         gearSection(ch, "vehicles", "Vehicle Proficiencies", null)
-      ), { corners: true, attention: b.remaining > 0, dismissKey: tpKey, attentionTitle: "Unspent Training Points — click to dismiss" }),
+      ), { corners: true, attention: b.remaining > 0, dismissKey: tpKey, attentionTitle: "Unspent Training Points; click to dismiss" }),
       el("div", { style: { height: "14px" } }),
       purchaseLogPanel(ch),
       el("div", { style: { height: "14px" } }),
       collapsiblePanel("versatileSkills", "Versatile Skills", "DERIVED · NOT TRAINED DIRECTLY", [
-        el("p.help", { text: "Insight, Performance, and Intimidation borrow the tier of whatever parent skill you lean on in the moment — you can't buy them with Training Points." }),
+        el("p.help", { text: "Insight, Performance, and Intimidation borrow the tier of whatever parent skill you lean on in the moment; you can't buy them with Training Points." }),
         el("div.row.wrap", { style: { marginTop: "8px" } }, R.versatileSkills.map(function (v) { return el("span.chip", { title: v.desc, text: v.name }); }))
       ], { corners: true })
     ];
@@ -1185,10 +1188,10 @@ EN.builder = (function () {
           el("span.chip" + (d.flow ? ".flow" : ".on"), { text: d.resource ? d.resource.name + " " + d.resource.max : (d.flow ? "FLOW " + d.flow.max : "") })
         ])
       ]),
-      el("p.help", { style: { marginTop: "10px" }, text: "Milestone default: level after ~2 Major Milestones (or 1 Major + 2 Minor). +5 Training Points arrive at L3, L6, and L10. Update during downtime — never mid-firefight." })
+      el("p.help", { style: { marginTop: "10px" }, text: "Milestone default: level after ~2 Major Milestones (or 1 Major + 2 Minor). +5 Training Points arrive at L3, L6, and L10. Update during downtime, never mid-firefight." })
     ], { corners: true }));
 
-    // Advancement Type — mode toggle lives in the header (XP MODE / MILESTONE)
+    // Advancement Type, mode toggle lives in the header (XP MODE / MILESTONE)
     blocks.push(el("div", { style: { height: "14px" } }));
     var advCollapsed = isCollapsed("advType");
     var modeToggle = el("div.row", { style: { gap: "4px" } }, [
@@ -1215,7 +1218,7 @@ EN.builder = (function () {
     blocks.push(el("div", { style: { height: "14px" } }));
     skillsBlocks(ch, d).forEach(function (n) { blocks.push(n); });
 
-    // Talents — awarded as Universal Upgrades at levels 2, 4, 6, and 8
+    // Talents, awarded as Universal Upgrades at levels 2, 4, 6, and 8
     blocks.push(el("div", { style: { height: "14px" } }));
     blocks.push(EN.ui.sectionTitle("Universal Upgrade"));
     blocks.push(el("p.help", { html: "At <b>levels 2, 4, 6, and 8</b> you gain a <b>Universal Upgrade</b>. Choose <b>+2 Attributes</b> (one by 2, or two by 1, max 20), <b>Gain Talent</b>, or <b>Gain Evolution</b> (unlock an Additive Feature from your Lineage). At <b>Level 4</b>, the <b>Awakening Milestone</b> grants one Lineage Evolution for free, on top of your Universal Upgrade. At Level 6+ a slot may instead upgrade a Talent you already have. You may retrain one choice whenever you level." }));
@@ -1227,23 +1230,23 @@ EN.builder = (function () {
       var cur = (ch.universalUpgrades || {})[L];
       var summary = cur ? (
         cur.type === "attr" ? attrUpgradeSummary(cur) :
-        cur.type === "evolution" ? (cur.evolution || "Evolution — choose") :
-        (cur.talent ? talentName(cur.talent) : "Talent — choose")
+        cur.type === "evolution" ? (cur.evolution || "Evolution, choose") :
+        (cur.talent ? talentName(cur.talent) : "Talent, choose")
       ) : "Unspent";
       blocks.push(collapsibleEntry("uu-" + L, {
         title: "Level " + L + " · Universal Upgrade", summary: summary,
-        attention: !cur, dismissKey: "L" + d.level, attentionTitle: "Unspent Universal Upgrade — click to dismiss",
+        attention: !cur, dismissKey: "L" + d.level, attentionTitle: "Unspent Universal Upgrade; click to dismiss",
         filled: !!cur, body: universalUpgradePicker(ch, L)
       }));
-      // Level 4 Awakening Milestone — a free, evolution-only bonus slot
+      // Level 4 Awakening Milestone, a free, evolution-only bonus slot
       if (L === 4) {
         var awk = ch.awakeningEvolution;
         blocks.push(collapsibleEntry("uu-awakening", {
-          title: "Level 4 · Awakening Milestone", summary: awk || "Free Evolution — choose",
-          attention: !awk, dismissKey: "L" + d.level, attentionTitle: "Free Lineage Evolution unclaimed — click to dismiss",
+          title: "Level 4 · Awakening Milestone", summary: awk || "Free Evolution, choose",
+          attention: !awk, dismissKey: "L" + d.level, attentionTitle: "Free Lineage Evolution unclaimed; click to dismiss",
           filled: !!awk, gold: true,
           body: el("div", null, [
-            el("p.help", { style: { margin: "2px 0 8px" }, text: "Total mastery of your nature — gain one Lineage Evolution for free, in addition to your Level 4 Universal Upgrade." }),
+            el("p.help", { style: { margin: "2px 0 8px" }, text: "Total mastery of your nature; gain one Lineage Evolution for free, in addition to your Level 4 Universal Upgrade." }),
             evolutionSelect(ch, awk, function (name) { store.update(function (c) { c.awakeningEvolution = name; }); })
           ])
         }));
@@ -1278,7 +1281,7 @@ EN.builder = (function () {
       function attrSelect(idx) {
         return el("select", { style: { maxWidth: "210px" }, onchange: function (e) {
           store.update(function (c) { var u = c.universalUpgrades[L]; var arr = (u.attrs || [a[0], a[1]]).slice(); arr[idx] = e.target.value; c.universalUpgrades[L] = { type: "attr", attrs: arr }; });
-        } }, [el("option", { value: "", selected: !a[idx], text: "— choose an Attribute —" })].concat(
+        } }, [el("option", { value: "", selected: !a[idx], text: "- choose an Attribute -" })].concat(
           R.attributes.map(function (at) { return el("option", { value: at.key, selected: a[idx] === at.key, text: at.name + " +1" }); })));
       }
       wrap.appendChild(el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [attrSelect(0), el("span.dim3", { text: "+" }), attrSelect(1)]));
@@ -1290,7 +1293,7 @@ EN.builder = (function () {
   }
   function talentName(key) { var t = (EN.talents || []).find(function (x) { return x.key === key; }); return t ? t.name : "Talent"; }
 
-  // Lineage Evolution picker — works like the Talent picker, gated to your Lineage's
+  // Lineage Evolution picker; works like the Talent picker, gated to your Lineage's
   // pool minus features you already have (the current slot's own pick stays selectable).
   function availableEvolutions(ch, currentName) {
     var lin = eng.getLineage(ch.species, ch.lineage);
@@ -1302,7 +1305,7 @@ EN.builder = (function () {
     var lin = eng.getLineage(ch.species, ch.lineage);
     var opts = availableEvolutions(ch, currentName);
     var sel = el("select", { onchange: function (e) { onChoose(e.target.value || null); } },
-      [el("option", { value: "", text: lin ? "— choose a " + lin.name + " Evolution —" : "— select a Lineage first —" })].concat(
+      [el("option", { value: "", text: lin ? "- choose a " + lin.name + " Evolution -" : "- select a Lineage first -" })].concat(
         opts.map(function (f) { return el("option", { value: f.name, selected: currentName === f.name, text: f.name }); })));
     var info = null;
     var f = lin && (lin.features || []).find(function (x) { return x.name === currentName; });
@@ -1316,7 +1319,7 @@ EN.builder = (function () {
     return el("div", null, [sel, info]);
   }
 
-  // Open Architecture — readable per-combo accordion with integration detection.
+  // Open Architecture, readable per-combo accordion with integration detection.
   // The lineage-feature half is auto-detected; the cyberware half is a manual
   // toggle until the Inventory tab tracks installed chrome.
   function toggleChrome(ch, cyberName) {
@@ -1359,14 +1362,14 @@ EN.builder = (function () {
       el("h4", null, [document.createTextNode("Open Architecture"), el("span.src", { text: (lin ? lin.name : "NextGen") + " Evolution" })]),
       el("p", { text: oa.intro }),
       el("p.help", { style: { margin: "6px 0 4px" }, text: oa.rule }),
-      el("p.help", { style: { margin: "0 0 8px", color: "var(--warn)" }, text: "Your Lineage Features are detected automatically. Mark installed chrome with the + CHROME toggle — a pairing lights up INTEGRATED when both halves are present." }),
+      el("p.help", { style: { margin: "0 0 8px", color: "var(--warn)" }, text: "Your Lineage Features are detected automatically. Mark installed chrome with the + CHROME toggle; a pairing lights up INTEGRATED when both halves are present." }),
       el("div", null, rows)
     ]);
   }
   function attrUpgradeSummary(cur) {
     var a = (cur.attrs && cur.attrs.slice()) || (cur.attr ? [cur.attr, cur.amount > 1 ? cur.attr : null] : []);
     a = a.filter(Boolean);
-    if (!a.length) return "+2 Attributes — choose";
+    if (!a.length) return "+2 Attributes, choose";
     var counts = {}; a.forEach(function (k) { counts[k] = (counts[k] || 0) + 1; });
     return Object.keys(counts).map(function (k) { return "+" + counts[k] + " " + (R.attrByKey[k] ? R.attrByKey[k].name : k); }).join(" / ");
   }
@@ -1375,7 +1378,7 @@ EN.builder = (function () {
     var cats = {};
     (EN.talents || []).forEach(function (t) { (cats[t.category || "Other"] = cats[t.category || "Other"] || []).push(t); });
     var sel = el("select", { onchange: function (e) { store.update(function (c) { c.universalUpgrades[L] = { type: "talent", talent: e.target.value || null }; }); } },
-      [el("option", { value: "", text: "— choose a Talent —" })]);
+      [el("option", { value: "", text: "- choose a Talent -" })]);
     Object.keys(cats).forEach(function (cat) {
       var grp = el("optgroup", { label: cat });
       cats[cat].forEach(function (t) { grp.appendChild(el("option", { value: t.key, selected: current === t.key, text: t.name })); });
@@ -1467,19 +1470,36 @@ EN.builder = (function () {
     ]);
   }
 
-  // Class Progression feature block — cyan for base class, purple for subclass
-  // (with an inline "— Subclass Name" suffix, per the reference layout).
+  // Class Progression feature block, cyan for base class, purple for subclass
+  // (with an inline "· Subclass Name" suffix, per the reference layout).
   function progFeature(f, isSub, subName, locked) {
     var color = isSub ? "var(--flow)" : "var(--accent)";
     return el("div.feature" + (locked ? ".locked" : ""), { style: { borderLeftColor: color } }, [
       el("h4", null, [
         el("span", null, [
           el("span", { style: { color: locked ? "var(--text2)" : color }, text: f.name }),
-          isSub && subName ? el("span", { style: { color: "var(--text3)", fontWeight: 400, fontSize: "11.5px", marginLeft: "8px", letterSpacing: ".04em" }, text: "— " + subName }) : null
+          isSub && subName ? el("span", { style: { color: "var(--text3)", fontWeight: 400, fontSize: "11.5px", marginLeft: "8px", letterSpacing: ".04em" }, text: "· " + subName }) : null
         ])
       ]),
       el("p", { text: f.text || "" })
     ]);
+  }
+
+  // Resource feature with a structured option list (e.g. Scoundrel Moxie Gambits): the intro
+  // paragraph, then one spaced line per option with its name (and action type) in bold.
+  function gambitFeatureView(f, res, locked) {
+    var color = locked ? "var(--text2)" : "var(--accent)";
+    var node = el("div.feature" + (locked ? ".locked" : ""), { style: { borderLeftColor: color } }, [
+      el("h4", null, [el("span", { style: { color: color }, text: f.name })]),
+      el("p", { style: { margin: "0 0 8px" }, text: res.gambitsIntro || "" })
+    ]);
+    (res.gambits || []).forEach(function (g) {
+      node.appendChild(el("p", { style: { margin: "0 0 8px", lineHeight: "1.5" } }, [
+        el("strong", { style: { color: locked ? "var(--text2)" : "var(--text)" }, text: g.name + (g.action ? " (" + g.action + ")" : "") + ": " }),
+        document.createTextNode(g.text)
+      ]));
+    });
+    return node;
   }
 
   /* ---------- main render ---------- */

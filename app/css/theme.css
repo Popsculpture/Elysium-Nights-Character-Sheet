@@ -1,5 +1,5 @@
 /* ===========================================================================
-   ELYSIUM NIGHTS // #GRID SMARTDECK OS  — theme
+   ELYSIUM NIGHTS // #GRID SMARTDECK OS  - theme
    =========================================================================== */
 :root{
   --bg:        #07090d;
@@ -21,8 +21,8 @@
   --success:   #2ee6a0;
   --warn:      #ffb340;
   --danger:    #ff4d5e;
-  --wound:     #d62232;   /* blood red — Wounds track (critical flares to --danger) */
-  --shield:    #c084fc;   /* energy-shield violet — Vigor overlay (ultracode purple family) */
+  --wound:     #d62232;   /* blood red, Wounds track (critical flares to --danger) */
+  --shield:    #c084fc;   /* energy-shield violet, Vigor overlay (ultracode purple family) */
 
   --text:  #e9f1fb;
   --text2: #93a8c0;
@@ -199,7 +199,7 @@ select{ appearance:none; background-image:linear-gradient(45deg,transparent 50%,
 .stat .v.flow{ color:var(--flow); text-shadow:var(--glow-flow); }
 .stat .s{ font-family:var(--mono); font-size:10px; color:var(--text3); }
 
-/* attribute dial — minmax(0,1fr) lets tracks shrink so cells never overflow */
+/* attribute dial, minmax(0,1fr) lets tracks shrink so cells never overflow */
 .attr-grid{ display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:10px; }
 @media(max-width:880px){ .attr-grid{ grid-template-columns:repeat(3,minmax(0,1fr));} }
 @media(max-width:480px){ .attr-grid{ grid-template-columns:repeat(2,minmax(0,1fr));} }
@@ -219,7 +219,7 @@ select{ appearance:none; background-image:linear-gradient(45deg,transparent 50%,
 .pop-btn{ transition:all .15s; }
 .pop-btn:hover{ box-shadow:0 0 10px currentColor; background:rgba(255,255,255,.06) !important; }
 
-/* scrollable feature well (Actions panel — the list grows with every level) */
+/* scrollable feature well (Actions panel, the list grows with every level) */
 .feature-scroll{ max-height:420px; overflow-y:auto; padding-right:6px; scrollbar-width:thin; scrollbar-color:var(--border2) transparent; }
 .feature-scroll::-webkit-scrollbar{ width:8px; }
 .feature-scroll::-webkit-scrollbar-track{ background:var(--bg1); border-radius:4px; }
@@ -238,7 +238,7 @@ select{ appearance:none; background-image:linear-gradient(45deg,transparent 50%,
 .actions-scroll::-webkit-scrollbar-thumb{ background:var(--border2); border-radius:4px; }
 .actions-scroll::-webkit-scrollbar-thumb:hover{ background:var(--accent); }
 
-/* modular Freelancer layout: 6-column grid, sections span 1–6, dense flow backfills holes */
+/* modular Freelancer layout: 6-column grid, sections span 1-6, dense flow backfills holes */
 .modgrid6{ display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:14px; grid-auto-flow:row dense; align-items:stretch; }
 .modgrid6 > div > .panel{ height:100%; }
 @media (max-width:880px){ .modgrid6{ grid-template-columns:1fr; } .modgrid6 > div{ grid-column:1 / -1 !important; } }
@@ -322,7 +322,7 @@ select{ appearance:none; background-image:linear-gradient(45deg,transparent 50%,
 .cursor::after{ content:"_"; animation:blink 1s steps(1) infinite; color:var(--accent); }
 @keyframes blink{ 50%{ opacity:0; } }
 
-/* Vigor energy-shield overlay — amethyst hexagon lattice with an ultracode-style
+/* Vigor energy-shield overlay, amethyst hexagon lattice with an ultracode-style
    violet sheen sweep + breathing glow (drifts so it reads as live energy) */
 .vigor-shield{
   background-color: rgba(168,85,247,.20);

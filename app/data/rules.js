@@ -1,7 +1,7 @@
 /* ===========================================================================
-   ELYSIUM NIGHTS — Core Rules Constants  (#GRID Smartdeck OS)
+   ELYSIUM NIGHTS · Core Rules Constants  (#GRID Smartdeck OS)
    The single source of truth for the engine. Extracted from the rulebook
-   (Part 1 — Building a Character; Part 2 — Core Rules).
+   (Part 1 · Building a Character; Part 2 · Core Rules).
    =========================================================================== */
 window.EN = window.EN || {};
 
@@ -43,7 +43,7 @@ EN.rules = {
 
   /* Proficiency tiers ----------------------------------------------------- */
   profTiers: {
-    untrained:  { key:"untrained",  name:"Untrained",  d20:0,  pool:0,  snag:true,  short:"—" },
+    untrained:  { key:"untrained",  name:"Untrained",  d20:0,  pool:0,  snag:true,  short:"-" },
     proficient: { key:"proficient", name:"Proficient", d20:2,  pool:2,  short:"P" },
     expertise:  { key:"expertise",  name:"Expertise",  d20:4,  pool:4,  short:"E" },
     mastery:    { key:"mastery",    name:"Mastery",    d20:6,  pool:6,  short:"M" }
@@ -105,7 +105,7 @@ EN.rules = {
     grinling: ["Hyper-Kinetic Metabolism", "Scavenger's Maw", "Disjointed Anatomy", "Predator's Glare"]
   },
 
-  // NextGen "Open Architecture" — structured Integration pairings for the UI.
+  // NextGen "Open Architecture", structured Integration pairings for the UI.
   // Each combo pairs a NextGen Lineage Feature with its matching cyberware.
   openArchitecture: {
     intro: "You were not built finished. You were built ready. Your body was engineered to documented interface standards: pre-threaded neural shunts, reserved anatomical space, tolerances no baseline human was ever given. Taking this feature opens the Integration clause of every NextGen Lineage Feature you possess, now or in the future.",
@@ -128,7 +128,7 @@ EN.rules = {
     ]
   },
 
-  // Creature Size — per lineage. Most are fixed; some lineages are variable
+  // Creature Size, per lineage. Most are fixed; some lineages are variable
   // (the player chooses one), which matters for grappling, encumbrance, etc.
   sizes: ["Small", "Medium", "Large"],
   lineageSize: {
@@ -181,7 +181,7 @@ EN.rules = {
     defense:  "10 + Agility Modifier (+ armor & cover)",
     wounds:   "Maximum Wounds = Body score; Critical Condition at 50% or less Vitality",
     passive:  "10 + Attribute Modifier + Proficiency (+5 Edge / -5 Snag)",
-    save:     "d20 + Attribute Modifier + Caliber (if Saving Throw Focus — no proficiency required)",
+    save:     "d20 + Attribute Modifier + Caliber (if Saving Throw Focus, no proficiency required)",
     melee:    "d20 + Body Modifier + Proficiency",
     ranged:   "d20 + Agility Modifier + Proficiency",
     check:    "d20 + Attribute Modifier + Proficiency + Situational",
