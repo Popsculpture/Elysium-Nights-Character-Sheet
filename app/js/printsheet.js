@@ -110,13 +110,89 @@ EN.printSheet = (function () {
     if (pick.length > 116) pick = pick.slice(0, 114).replace(/\s+\S*$/, "") + "...";
     return pick;
   }
-  function briefFor(f) { var b = EN.briefs && EN.briefs[f.name]; return b || autoBrief(f.text); }
+  function briefFor(f) { var b = EN.briefs && EN.briefs[f._base || f.name]; return b || autoBrief(f.text); }
   function talentFeatures(ch) {
     var TAL = Array.isArray(EN.talents) ? EN.talents : [];
     return (ch.talents || []).map(function (tk) {
       var t = TAL.find(function (x) { return x.key === tk || x.name === tk; });
       return t ? { name: t.name, text: t.text || t.desc || "", source: "Talent", level: 0 } : null;
     }).filter(Boolean);
+  }
+  // merged, deduped feature list shared by the front sheet and page 2. Tiered upgrade
+  // chains - a base ability ("Cheap Shot") plus "Base (variant)" rows ("Cheap Shot (2d6)"
+  // ... "(5d6)") - collapse to one entry: the base text, relabeled to the highest tier.
+  function gatherFeatures(ch, d) {
+    var feats = (d.features || []).concat(talentFeatures(ch));
+    if (ch.class === "codebreaker") {
+      var EX = (EN.classes && EN.classes.codebreaker && EN.classes.codebreaker.extra && EN.classes.codebreaker.extra.gridExploits) || [];
+      feats = feats.concat(EX.map(function (x) { return { name: x.name, text: (x.action ? x.action + ". " : "") + (x.text || ""), source: "Signature Exploit", level: 0 }; }));
+    }
+    feats = feats.filter(function (f) { return !/^(Universal Upgrade|Subclass Feature)$/.test(f.name) && !/Subclass( Capstone)?$/.test(f.name); });
+    function base(n) { return n.replace(/\s*\([^)]*\)\s*$/, "").trim(); }
+    var present = {}; feats.forEach(function (f) { present[f.name] = true; });
+    var top = {}; // base name -> highest-level variant reached
+    feats.forEach(function (f) {
+      var b = base(f.name);
+      if (b !== f.name && present[b]) { var c = top[b]; if (!c || (f.level || 0) >= (c.level || 0)) top[b] = { name: f.name, level: f.level || 0 }; }
+    });
+    return feats.filter(function (f) { var b = base(f.name); return !(b !== f.name && present[b]); }) // drop intermediate variant rows
+      .map(function (f) { return top[f.name] ? { name: top[f.name].name, _base: f.name, text: f.text, source: f.source, level: f.level } : f; }); // show top tier, keep base brief
+  }
+  // currency abbreviation matching costTag()'s output (Moxie->MOX, Flow->FP, Bandwidth->BW)
+  function resAbbr(name) {
+    var r = (name || "").toLowerCase();
+    if (r.indexOf("bandwidth") === 0) return "BW";
+    if (r.indexOf("flow") === 0 || r === "fp") return "FP";
+    return (name || "RES").slice(0, 3).toUpperCase();
+  }
+  // active abilities that spend the class resource, for the front-sheet quick reference:
+  //   (1) the named options the resource is spent on - e.g. Scoundrel Gambits - parsed
+  //       from the resource feature, picking up each one's action type ("(Impulse Action)");
+  //   (2) named features that actively spend it ("As an Action, you spend 2 Moxie": Cripple,
+  //       Pressure), but NOT passive riders (Fight Dirty) or triggers ("have spent ... Moxie").
+  // Returns [name, cost, actionType] rows.
+  function actLabel(s) {
+    if (/Impulse/i.test(s)) return "Impulse";
+    if (/Swift/i.test(s)) return "Swift";
+    if (/Free/i.test(s)) return "Free";
+    if (/Action/i.test(s)) return "Action";
+    return "";
+  }
+  function resourceSpenders(ch, d, feats) {
+    var res = d.resource || d.flow;
+    if (!res || !res.name) return [];
+    var rname = res.name, abbr = resAbbr(rname), seen = {}, rows = [];
+    function add(name, cost, act) { var k = name.toLowerCase(); if (seen[k]) return; seen[k] = 1; rows.push([name, cost, act || ""]); }
+    var resFeat = (d.features || []).find(function (f) { return f.name === rname; });
+    var blurb = (resFeat && resFeat.text) || "";
+    var fuels = res.fuels || blurb;
+    var defCost = ((blurb || fuels).match(/costs?\s+(\d+)\s/i) || [])[1] || "1";
+    // (1) named options (Gambits) - list lives after the ":" in the fuels blurb
+    var ci = fuels.indexOf(":");
+    if (ci >= 0) {
+      fuels.slice(ci + 1).split(/\.\s/)[0].split(/,\s*/).forEach(function (s) {
+        var nm = s.replace(/^and\s+/i, "").trim();
+        if (!nm || !/^[A-Z]/.test(nm) || nm.length >= 38) return;
+        var esc = nm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        // explicit "(Impulse Action):" tag wins; otherwise a "When ..." trigger is a reaction (Impulse)
+        var m = blurb.match(new RegExp(esc + "\\s*(?:\\(([^)]*)\\))?\\s*:\\s*(\\w+)", "i"));
+        var act = m && m[1] ? actLabel(m[1]) : (m && /^When$/i.test(m[2] || "") ? "Impulse" : "");
+        add(nm, defCost + " " + abbr, act);
+      });
+    }
+    // (2) named features that actively spend the resource. Classify by the clause that
+    // actually spends it - not stray action-type mentions elsewhere in the effect text
+    // (e.g. Fight Dirty's "cannot take Impulse Actions") - so passive riders drop out.
+    var spend = new RegExp("spend(?:s|ing)?\\s+\\d+\\s+" + rname, "i");
+    (feats || []).forEach(function (f) {
+      var t = f.text || "";
+      if (f.name === rname || !spend.test(t)) return;
+      var clause = t.split(/\.\s+/).find(function (s) { return spend.test(s); }) || t;
+      var act = actionCost(clause);
+      if (act === "Passive") return;
+      add(f.name, costTag(t) || (defCost + " " + abbr), act);
+    });
+    return rows;
   }
 
   /* ---- weapon / item lookup ---- */
@@ -158,6 +234,19 @@ EN.printSheet = (function () {
   };
   function proficientCats(ch, bucket) {
     return ((EN.rules.gear || {})[bucket] || []).filter(function (cat) { return eng.effectiveGearTier(ch, bucket, cat) !== "untrained"; });
+  }
+  // Proficiencies & Training rows (weapons/armor/tools/vehicles + skill foci/specializations)
+  function proficiencyRows(ch) {
+    var rows = [];
+    [["Weapons", "weapons"], ["Armor", "armor"], ["Tools", "tools"], ["Vehicles", "vehicles"]].forEach(function (p) {
+      var cats = proficientCats(ch, p[1]);
+      if (cats.length) rows.push(el("div.ps-proc", null, [el("span.ps-fl", { text: p[0] }), el("span.ps-proc-v", { text: cats.join(", ") })]));
+    });
+    var foci = (ch.skillFocuses || []).map(function (f) { var sk = EN.rules.skillByKey[f.skill]; return (sk ? sk.name : f.skill) + (f.aspect ? " (" + f.aspect + ")" : ""); });
+    if (foci.length) rows.push(el("div.ps-proc", null, [el("span.ps-fl", { text: "Focus" }), el("span.ps-proc-v", { text: foci.join(", ") })]));
+    var specs = (ch.specializations || []).map(function (f) { var sk = EN.rules.skillByKey[f.skill]; return (sk ? sk.name : f.skill) + (f.aspect ? " (" + f.aspect + ")" : ""); });
+    if (specs.length) rows.push(el("div.ps-proc", null, [el("span.ps-fl", { text: "Spec" }), el("span.ps-proc-v", { text: specs.join(", ") })]));
+    return rows;
   }
 
   /* =======================================================================
@@ -288,17 +377,11 @@ EN.printSheet = (function () {
       el("span", { text: "Abilities" }),
       el("span.ps-sect-track", null, [resLabel ? el("span.ps-fl", { text: resLabel }) : null, trackPips].filter(Boolean))
     ]));
-    R.push(wtable(["Name", "Cost", "Action Type"], [], 14, ".ps-tbl-abl"));
-    // Proficiencies & Training
-    R.push(sect("Proficiencies & Training"));
-    [["Weapons", "weapons"], ["Armor", "armor"], ["Tools", "tools"], ["Vehicles", "vehicles"]].forEach(function (p) {
-      var cats = proficientCats(ch, p[1]);
-      if (cats.length) R.push(el("div.ps-proc", null, [el("span.ps-fl", { text: p[0] }), el("span.ps-proc-v", { text: cats.join(", ") })]));
-    });
-    var foci = (ch.skillFocuses || []).map(function (f) { var sk = EN.rules.skillByKey[f.skill]; return (sk ? sk.name : f.skill) + (f.aspect ? " (" + f.aspect + ")" : ""); });
-    if (foci.length) R.push(el("div.ps-proc", null, [el("span.ps-fl", { text: "Focus" }), el("span.ps-proc-v", { text: foci.join(", ") })]));
-    var specs = (ch.specializations || []).map(function (f) { var sk = EN.rules.skillByKey[f.skill]; return (sk ? sk.name : f.skill) + (f.aspect ? " (" + f.aspect + ")" : ""); });
-    if (specs.length) R.push(el("div.ps-proc", null, [el("span.ps-fl", { text: "Spec" }), el("span.ps-proc-v", { text: specs.join(", ") })]));
+    // auto-fill with the active abilities that spend the class resource (e.g. Moxie),
+    // capped to keep the section on one page; pad with blank rows for write-ins.
+    var spenders = resourceSpenders(ch, d, gatherFeatures(ch, d)).slice(0, 10);
+    R.push(wtable(["Name", "Cost", "Action Type"], spenders, 10, ".ps-tbl-abl"));
+    // (Proficiencies & Training now lives on page 2, under Universal Upgrades.)
 
     body.push(cols(L, R));
     return page("FREELANCER FIELD DOSSIER", "01 · FRONT", ch, body);
@@ -309,12 +392,7 @@ EN.printSheet = (function () {
      ======================================================================= */
   function abilitiesBlocks(ch, d) {
     var out = [];
-    var feats = (d.features || []).concat(talentFeatures(ch));
-    if (ch.class === "codebreaker") {
-      var EX = (EN.classes && EN.classes.codebreaker && EN.classes.codebreaker.extra && EN.classes.codebreaker.extra.gridExploits) || [];
-      feats = feats.concat(EX.map(function (x) { return { name: x.name, text: (x.action ? x.action + ". " : "") + (x.text || ""), source: "Signature Exploit", level: 0 }; }));
-    }
-    feats = feats.filter(function (f) { return !/^(Universal Upgrade|Subclass Feature)$/.test(f.name) && !/Subclass( Capstone)?$/.test(f.name); });
+    var feats = gatherFeatures(ch, d);
     if (!feats.length) { out.push(note("No features yet.")); return out; }
     var ACT_OVERRIDE = { Bandwidth: "Passive", Overdrive: "Passive", Leverage: "Passive", Moxie: "Passive", "Battlefield Command": "Passive", Triage: "Passive", Reservoir: "Passive", "Core Channeling": "Passive" };
     var groups = { Passive: [], Action: [], Swift: [], Impulse: [], Free: [] };
@@ -351,6 +429,13 @@ EN.printSheet = (function () {
         var what = u.type === "attr" ? ("+1 " + (u.attr || "Attribute")) : u.type === "talent" ? ("Talent: " + (u.talent || u.name || "")) : u.type === "evolution" ? ("Lineage Evolution: " + (u.feature || u.name || "")) : (u.name || u.type || "choice");
         body.push(el("div.ps-skrow", null, [el("span.ps-sk-a", { text: "L" + lv }), el("span.ps-sk-n", { text: what })]));
       });
+    }
+    // proficiencies & training (relocated from the front sheet)
+    var prof = proficiencyRows(ch);
+    if (prof.length) {
+      body.push(el("div.ps-rule.ps-faint"));
+      body.push(sect("Proficiencies & Training"));
+      prof.forEach(function (r) { body.push(r); });
     }
     return page("TALENTS & LINEAGE", "02 · PROGRESSION", ch, body);
   }

@@ -135,7 +135,7 @@
 .ps-atk-r{ font-size:9px; color:#8a9097; white-space:nowrap; }
 .ps-atk-t{ font-size:8.5px; color:#8a9097; margin-top:1px; }
 
-.ps-proc{ display:flex; gap:8px; align-items:baseline; padding:2px 0; }
+.ps-proc{ display:flex; gap:8px; align-items:center; padding:2px 0; }
 .ps-proc .ps-fl{ flex:0 0 58px; }
 .ps-proc-v{ flex:1 1 0; font-size:10.5px; color:#3a4650; }
 
