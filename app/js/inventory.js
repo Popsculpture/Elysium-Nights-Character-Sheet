@@ -292,29 +292,31 @@ EN.inventoryView = (function () {
       mktBtn = el("button.btn.sm" + (afford ? ".primary" : ""), { disabled: !afford, title: it.cyber ? "Buy to your Chrome Stash; install it later at a clinic (Chrome tab)" : priceTitle(it), onclick: function () { it.cyber ? buyCyber(it) : buy(it); } },
         afford ? "BUY · " + fmtG(sp) : "CAN'T AFFORD");
     }
-    var info = el("div.row.wrap", { style: { gap: "6px", alignItems: "center", margin: "4px 0 0" } },
-      statChips
-        .concat((it.traits || []).map(function (t) { return traitChip(t, defDefs); }))
-        .concat([el("span", { style: { flex: 1 } }),
-          mode === "mkt"
-            ? mktBtn
-            : el("div.row", { style: { gap: "6px" } },
-                (isWeapon(it) ? [
-                  isEquipped(ch, it.name)
-                    ? el("button.btn.sm.primary", { title: "Unequip, remove from the Attacks list on the Freelancer tab", onclick: function () { toggleEquip(it.name); } }, "✓ EQUIPPED")
-                    : el("button.btn.sm", { title: "Equip, add to the Attacks list on the Freelancer tab", style: { color: "var(--accent)", borderColor: "var(--accent)" }, onclick: function () { toggleEquip(it.name); } }, "⚔ EQUIP")
-                ] : []).concat(isDefensive(it) ? [
-                  isDefEquipped(ch, it)
-                    ? el("button.btn.sm.primary", { title: "Stow, it stops applying on the Freelancer tab", onclick: function () { toggleDefEquip(it); } }, (DEF_VERB[it.kind] || {}).off || "✓ EQUIPPED")
-                    : el("button.btn.sm", { title: "Equip, its DR / Block / Defense / Ward read on the Freelancer tab (one " + it.kind + " at a time)", style: { color: "var(--accent)", borderColor: "var(--accent)" }, onclick: function () { toggleDefEquip(it); } }, ((DEF_VERB[it.kind] || {}).on || "EQUIP"))
-                ] : []).concat(_mode === "fivefinger" ? [
-                el("button.btn.sm", { title: "Give one away", style: { color: "var(--success)", borderColor: "var(--success)" }, onclick: function () { donate(it.name); } }, "DONATE"),
-                el("button.btn.sm", { title: "Discard one", onclick: function () { drop(it.name); } }, "DROP")
-              ] : [
-                el("button.btn.sm", { title: "Sell to the fence at street rate", style: { color: "var(--gold)", borderColor: "var(--gold)" }, onclick: function () { sell(it.name); } }, "FENCE · " + fmtG(fencePrice(it))),
-                el("button.btn.sm", { title: "Discard one", onclick: function () { drop(it.name); } }, "DROP")
-              ]))
-        ]));
+    // action button(s): a single market button, or the stash equip/fence/drop group
+    var actionEl = mode === "mkt"
+      ? mktBtn
+      : el("div.row.wrap", { style: { gap: "6px", justifyContent: "flex-end" } },
+          (isWeapon(it) ? [
+            isEquipped(ch, it.name)
+              ? el("button.btn.sm.primary", { title: "Unequip, remove from the Attacks list on the Freelancer tab", onclick: function () { toggleEquip(it.name); } }, "✓ EQUIPPED")
+              : el("button.btn.sm", { title: "Equip, add to the Attacks list on the Freelancer tab", style: { color: "var(--accent)", borderColor: "var(--accent)" }, onclick: function () { toggleEquip(it.name); } }, "⚔ EQUIP")
+          ] : []).concat(isDefensive(it) ? [
+            isDefEquipped(ch, it)
+              ? el("button.btn.sm.primary", { title: "Stow, it stops applying on the Freelancer tab", onclick: function () { toggleDefEquip(it); } }, (DEF_VERB[it.kind] || {}).off || "✓ EQUIPPED")
+              : el("button.btn.sm", { title: "Equip, its DR / Block / Defense / Ward read on the Freelancer tab (one " + it.kind + " at a time)", style: { color: "var(--accent)", borderColor: "var(--accent)" }, onclick: function () { toggleDefEquip(it); } }, ((DEF_VERB[it.kind] || {}).on || "EQUIP"))
+          ] : []).concat(_mode === "fivefinger" ? [
+            el("button.btn.sm", { title: "Give one away", style: { color: "var(--success)", borderColor: "var(--success)" }, onclick: function () { donate(it.name); } }, "DONATE"),
+            el("button.btn.sm", { title: "Discard one", onclick: function () { drop(it.name); } }, "DROP")
+          ] : [
+            el("button.btn.sm", { title: "Sell to the fence at street rate", style: { color: "var(--gold)", borderColor: "var(--gold)" }, onclick: function () { sell(it.name); } }, "FENCE · " + fmtG(fencePrice(it))),
+            el("button.btn.sm", { title: "Discard one", onclick: function () { drop(it.name); } }, "DROP")
+          ]));
+    // chips wrap freely on the left; the action group is always pinned to the right
+    var info = el("div.row", { style: { gap: "10px", alignItems: "flex-start", margin: "4px 0 0", flexWrap: "nowrap" } }, [
+      el("div.row.wrap", { style: { gap: "6px", alignItems: "center", flex: "1 1 auto", minWidth: 0 } },
+        statChips.concat((it.traits || []).map(function (t) { return traitChip(t, defDefs); }))),
+      el("div.row.wrap", { style: { gap: "6px", flex: "0 0 auto", marginLeft: "auto", justifyContent: "flex-end", alignItems: "center" } }, [actionEl])
+    ]);
     return el("div.feature", { style: { borderLeftColor: LEGAL_COLOR[it.legality] || "var(--border2)" } }, [
       head, info,
       open && it.desc ? el("p", { style: { marginTop: "8px" }, text: it.desc }) : null,
@@ -341,7 +343,7 @@ EN.inventoryView = (function () {
       // unknown / custom item, minimal row
       return el("div.feature", null, [
         el("h4", null, [el("span", { text: e.name }), el("span.mono", { style: { color: "var(--text3)", fontSize: "13px" }, text: "×" + e.qty })]),
-        el("div.row", { style: { gap: "6px", marginTop: "4px" } }, [el("button.btn.sm", { onclick: function () { drop(e.name); } }, "DROP")])
+        el("div.row", { style: { gap: "6px", marginTop: "4px", justifyContent: "flex-end" } }, [el("button.btn.sm", { onclick: function () { drop(e.name); } }, "DROP")])
       ]);
     });
     return [EN.ui.panel("Stash", entries.length + " ITEM TYPES", cards.length ? cards :
