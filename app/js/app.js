@@ -97,10 +97,14 @@ EN.app = (function () {
       }
     }
     function finish() {
-      var b = document.getElementById("boot");
-      b.classList.add("hide");
-      document.getElementById("os").style.display = "flex";
-      setTimeout(function () { b.style.display = "none"; }, 520);
+      var reveal = function () {
+        var b = document.getElementById("boot");
+        b.classList.add("hide");
+        document.getElementById("os").style.display = "flex";
+        setTimeout(function () { b.style.display = "none"; }, 520);
+      };
+      // optional access gate (js/gate.js); falls back to opening directly if removed
+      if (EN.gate && EN.gate.require) EN.gate.require(reveal); else reveal();
     }
     step();
   }
