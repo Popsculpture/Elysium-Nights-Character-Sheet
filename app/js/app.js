@@ -22,11 +22,16 @@ EN.app = (function () {
   function renderTabs() {
     var nav = document.getElementById("os-tabs");
     EN.ui.clear(nav);
+    // tabs live in their own scroller; the gear is a sibling outside it so it never scrolls or drifts
+    var scroll = el("div.os-tabs-scroll");
     TABS.forEach(function (t) {
-      nav.appendChild(el("div.os-tab" + (t.key === activeTab ? ".active" : ""), {
+      scroll.appendChild(el("div.os-tab" + (t.key === activeTab ? ".active" : ""), {
         onclick: function () { activeTab = t.key; render(); }
       }, [el("span", { text: t.glyph }), document.createTextNode(t.label)]));
     });
+    nav.appendChild(scroll);
+    // settings gear, pinned to the right end of the rail
+    if (EN.settings && EN.settings.gearTab) nav.appendChild(EN.settings.gearTab());
   }
 
   var _lastTab = null;

@@ -94,8 +94,10 @@ a{ color:var(--accent); text-decoration:none; }
 .os-clock{ font-family:var(--mono); font-size:12px; color:var(--text2); letter-spacing:.08em; }
 
 /* tab rail */
-.os-tabs{ display:flex; gap:2px; padding:0 12px; background:var(--bg1); border-bottom:1px solid var(--border);
-  position:sticky; top:50px; z-index:99; overflow-x:auto; }
+.os-tabs{ display:flex; align-items:stretch; padding:0 12px; background:var(--bg1); border-bottom:1px solid var(--border);
+  position:sticky; top:50px; z-index:99; }
+/* tabs scroll inside this; the settings gear sits outside it, pinned to the right */
+.os-tabs-scroll{ display:flex; gap:2px; overflow-x:auto; flex:1 1 auto; min-width:0; }
 .os-tab{ font-family:var(--disp); font-weight:600; font-size:13px; letter-spacing:.14em; text-transform:uppercase;
   color:var(--text3); padding:11px 16px 9px; border-bottom:2px solid transparent; cursor:pointer; white-space:nowrap;
   transition:color .15s, border-color .15s, background .15s; display:flex; align-items:center; gap:7px; }
