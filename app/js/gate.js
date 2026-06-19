@@ -41,7 +41,7 @@ EN.gate = (function () {
     "@keyframes gate-in{ from{opacity:0} to{opacity:1} }",
     "@keyframes gate-out{ to{opacity:0; visibility:hidden} }",
     ".gate-card{ width:min(92vw,430px); background:linear-gradient(180deg, var(--bg2), var(--bg1));",
-    "  border:1px solid var(--accent-dim); border-radius:6px; padding:26px 26px 20px; position:relative;",
+    "  border:1px solid var(--accent-dim); border-radius:6px; padding:26px 26px 20px; position:relative; z-index:1;",
     "  box-shadow:0 0 0 1px rgba(0,229,255,0.08), 0 18px 60px rgba(0,0,0,.6), var(--glow-cyan); }",
     "#gate.deny .gate-card{ animation:gate-shake .42s cubic-bezier(.36,.07,.19,.97) both; border-color:var(--danger); }",
     "@keyframes gate-shake{ 10%,90%{transform:translateX(-2px)} 20%,80%{transform:translateX(4px)} 30%,50%,70%{transform:translateX(-7px)} 40%,60%{transform:translateX(7px)} }",
@@ -64,6 +64,8 @@ EN.gate = (function () {
     "/* ----- 3-strikes Codebreaker hijack easter egg ----- */",
     ".gate-card.hijacked{ animation:gate-glitch .5s steps(2) 2; border-color:var(--accent); box-shadow:0 0 0 1px var(--accent), 0 0 44px rgba(0,229,255,.4); }",
     "@keyframes gate-glitch{ 0%,100%{transform:translate(0,0); filter:none} 20%{transform:translate(-3px,1px)} 40%{transform:translate(3px,-2px); filter:hue-rotate(45deg)} 60%{transform:translate(-2px,1px)} 80%{transform:translate(2px,-1px); filter:hue-rotate(-35deg)} }",
+    "#gate.hijacking::before{ content:''; position:absolute; inset:0; z-index:0; pointer-events:none; mix-blend-mode:screen; background:repeating-linear-gradient(0deg, rgba(255,70,200,0.06) 0 1px, transparent 1px 4px), repeating-linear-gradient(0deg, rgba(0,229,255,0.05) 0 2px, transparent 2px 6px); animation:gate-bgglitch .85s steps(10) infinite; }",
+    "@keyframes gate-bgglitch{ 0%{transform:translateY(0); opacity:.4} 18%{transform:translate(2px,-2px); opacity:.85} 36%{transform:translateY(2px); opacity:.3} 54%{transform:translate(-3px,1px); opacity:.7} 72%{transform:translateY(-1px); opacity:.5} 90%{transform:translate(1px,2px); opacity:.8} 100%{transform:translateY(0); opacity:.4} }",
     ".gate-hijack{ font-family:var(--mono); }",
     ".gate-term{ background:var(--bg); border:1px solid var(--accent-dim); border-radius:4px; padding:12px; height:208px; overflow:hidden; font-size:12px; line-height:1.5; }",
     ".gate-line{ white-space:pre-wrap; word-break:break-word; opacity:0; animation:gate-linein .16s ease forwards; }",
@@ -97,7 +99,7 @@ EN.gate = (function () {
     var steps = [
       { t: 0,   cls: "gate-sys",     text: "// INTRUSION DETECTED on NODE 763" },
       { t: 520, cls: "gate-sys",     text: "// foreign process has attached to this terminal" },
-      { t: 720, cls: "gate-cb",      text: "three misses. that lock was never going to open for you, choom." },
+      { t: 720, cls: "gate-cb",      text: "three misses. that was never your door." },
       { t: 950, cls: "gate-cb",      text: "relax. i have been camped inside this node the whole time. i will walk you in." },
       { t: 820, cls: "gate-sys",     text: "injecting cipher  ::  ACCESS_SPIKE", prog: 20 },
       { t: 620, cls: "gate-sys",     text: "spoofing credential handshake .........", prog: 48 },
@@ -109,7 +111,17 @@ EN.gate = (function () {
     ];
     var i = 0;
     (function next() {
-      if (i >= steps.length) { setTimeout(done, 760); return; }
+      if (i >= steps.length) {
+        // a deliberately slow "opening the channel" bar, purely to give time to read the terminal
+        gateLine(term, "gate-sys", "// opening secure channel, stand by ...");
+        if (fill) {
+          fill.style.transition = "none"; fill.style.width = "0%";
+          void fill.offsetWidth;
+          fill.style.transition = "width 3.4s linear"; fill.style.width = "100%";
+        }
+        setTimeout(done, 3600);
+        return;
+      }
       var s = steps[i++];
       setTimeout(function () {
         gateLine(term, s.cls, s.text);
@@ -149,6 +161,7 @@ EN.gate = (function () {
       var card = ov.querySelector(".gate-card");
       if (!card) { persist(); onUnlock(); return; }
       card.classList.add("hijacked");
+      ov.classList.add("hijacking");   // glitch the whole node background while the break is live
       setTimeout(function () {
         card.innerHTML =
           '<div class="gate-hijack">' +
