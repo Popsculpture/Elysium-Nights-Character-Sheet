@@ -17,11 +17,11 @@ EN.species = [
       size: "Medium: Stand anywhere from 5 feet to well over 6 feet tall.",
       languages: "Common Trade and one additional language of your choice, usually reflecting your home district or corporate affiliation.",
       coreTrait: {
-        name: "Relentless Will (Passive)",
+        name: "Relentless Will",
         text: "Humans rely on pure spite and stubbornness to push past physical limits. When you make a Saving Throw specifically to end an ongoing condition that is already affecting you, such as Stunned, Poisoned, or Frightened, you roll that Save with Edge. You can use this feature a number of times equal to your Caliber per Long Rest."
       },
       secondaryTrait: {
-        name: "Human Ingenuity (Active)",
+        name: "Human Ingenuity",
         text: "Humans adapt quickly to whatever the situation demands. When you make a d20 Skill check using a Skill in which you are Untrained, you may ignore the usual Snag penalty. You simply roll the d20 and add the relevant Attribute modifier. You can use this feature a number of times equal to your Caliber per Short Rest."
       }
     },
@@ -135,11 +135,11 @@ EN.species = [
       size: "Small to Large: Height varies drastically by lineage. Mycelial stand around 3 to 4 feet tall, Florals range from 5 to 6 feet, and Arboreals can tower up to 8 feet.",
       languages: "Common Trade and Root-code, a chemical and tactile language shared among Verdine and ancient flora.",
       coreTrait: {
-        name: "Ecological Filter (Passive)",
+        name: "Ecological Filter",
         text: "Your body aggressively scrubs toxins from your system. You are entirely immune to ambient environmental smog, and you treat all Toxic damage as if you have Resistance against it."
       },
       secondaryTrait: {
-        name: "Rooted Stance (Active)",
+        name: "Rooted Stance",
         text: "As an Impulse Action when forced to move by an enemy or an environmental hazard, you can rapidly drive micro-roots into the floor. You immediately cancel the forced movement and cannot be knocked Prone until the end of your next turn."
       }
     },
@@ -255,11 +255,11 @@ EN.species = [
       size: "Varies by chassis. Laborframes are broad and tall; Durabodies are boxy; Lifelikes feature near-human silhouettes.",
       languages: "Common Trade and Machine Cant, a rapid, compressed burst-code used for silent data exchange between synthetics over short distances.",
       coreTrait: {
-        name: "Machine Physiology (Passive)",
+        name: "Machine Physiology",
         text: "You are fully inorganic. You are immune to biological diseases, organic poisons, and toxic gases. You do not need to eat, breathe, or sleep in the traditional sense, requiring only to enter a low-power mode to recharge."
       },
       secondaryTrait: {
-        name: "Resonant Circuitry (Active)",
+        name: "Resonant Circuitry",
         text: "Standard factory hardware cannot safely process metaphysical loads. Your resilience is the direct result of your awakening: a Gremlin haphazardly rewired your internal surge protectors, while a Nixie smoothed the chaotic current to keep your core from melting. When subjected to an EMP, digital virus, or Tech damage, you can use a Swift Action to forcefully ground the feedback through this supernatural bypass, granting yourself Edge on the resulting Saving Throw."
       }
     },
@@ -373,11 +373,11 @@ EN.species = [
       size: "Small to Large, ranging from 3.5 feet to well over 6 feet tall depending on Lineage.",
       languages: "Common Trade and one pack-specific dialect that relies heavily on physical gestures, scent markers, and micro-expressions.",
       coreTrait: {
-        name: "Feral Metabolism (Passive)",
+        name: "Feral Metabolism",
         text: "Your spliced DNA ensures aggressive cellular recovery and processing. You can safely consume raw or spoiled meat without gaining the Poisoned condition, and whenever you spend a Resilience Die to heal Vitality during a Short Rest, you automatically regain an additional amount of Vitality equal to your Body modifier."
       },
       secondaryTrait: {
-        name: "Spliced Instinct (Active)",
+        name: "Spliced Instinct",
         text: "Your body reacts to danger before your conscious mind processes it. When you roll Initiative, you can immediately move up to half your Speed as a Free Action to seek cover or close the distance to a threat."
       }
     },

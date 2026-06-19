@@ -377,33 +377,30 @@ EN.combatView = (function () {
 
   /* ---------- action classification (for the tabbed Actions panel) ---------- */
   var _tab = "ALL";
-  var _featTab = "features";   // Features (active attacks & interactions) | Abilities (passives)
+  var _featTab = "abilities";  // Abilities (active attacks & interactions, shown first) | Features (passives)
 
-  /* resource features that bundle several tricks; break them out into their own
-     entries, each tagged with the resource cost chip, instead of one wall of text */
-  var FEATURE_EXPANSIONS = {
-    "Moxie": {
-      chip: "1 MOXIE",
-      subs: [
-        { name: "Lucky Break", cost: "Free",
-          text: "When you make an attack roll, ability check, or saving throw, spend 1 Moxie to roll an additional d20 and choose which die to use, even if already rolling with Edge. Breaks the 2d20 cap (Edge + Lucky Break = 3d20, keep whichever you like)." },
-        { name: "Jinx", cost: "Impulse",
-          text: "When an enemy you can see makes an attack roll or saving throw, spend 1 Moxie to force them to roll an additional d20 and use the lowest, even if already rolling with Snag (3d20, worst result)." },
-        { name: "Slip the Blow", cost: "Impulse",
-          text: "When hit by an attack you can see, spend 1 Moxie to gain Resistance to that attack's damage and immediately move 1 space without provoking opportunity attacks." },
-        { name: "Smash and Grab", cost: "Action",
-          text: "Spend 1 Moxie; your Speed doubles this turn and your movement does not provoke opportunity attacks (you cannot end in an enemy's space). Make one weapon attack during the move; on a hit, shove the target 1 space or snatch one small, unsecured item they carry (contested Sleight to lift anything secured)." },
-        { name: "Bad Feeling", cost: "Impulse",
-          text: "When an enemy moves within your reach, or you are targeted by an attack you can see, spend 1 Moxie to move up to half your Speed without provoking; break away before it lands. Reflexes, not teleportation." },
-        { name: "Shake It Off", cost: "Swift",
-          text: "Spend 1 Moxie to end one condition clouding your senses or footing, such as Staggered, Shaken, or Dazed." },
-        { name: "Ace Up the Sleeve", cost: "Free",
-          text: "Spend 1 Moxie to reveal you saw this coming: produce a plausible mundane item you could have stashed, call in a minor favor, or point out a small environmental out (GM approval). Never conjures gear you could not carry; never rewrites the scene." },
-        { name: "Kick Them While They're Down", cost: "Impulse",
-          text: "When an enemy within reach misses you with a melee attack, or an ally scores a Critical Hit on an enemy within your reach, spend 1 Moxie to make a single weapon attack against that enemy that automatically qualifies for your Cheap Shot damage." }
-      ]
-    }
-  };
+  /* resource features that bundle several abilities (Moxie Gambits, Overdrive Maneuvers, Triage
+     Protocols, ...) are broken out into their own rows, each tagged with its resource cost chip,
+     instead of one wall of text. The list is the class's own resource.abilities. */
+  function shortAction(a) {
+    if (!a) return "";
+    if (/^Action$/i.test(a)) return "Action";
+    return a.replace(/\s*Action$/i, "").trim() || a;
+  }
+  // build { <resourceName>: { subs:[{name, action, cost, text}] } } for the active character
+  function resourceExpansion(ch, d) {
+    var out = {};
+    if (!d || !d.resource || !d.resource.name) return out;
+    // only classes whose resource carries a structured ability list get expanded (not Shaper).
+    // Always expand when the list exists, even to zero rows, so the foundational feature's wall
+    // of text is replaced by the chosen abilities (none until the player picks any).
+    if (!eng.resourceAbilities || !eng.resourceAbilities(ch).length) return out;
+    var abil = eng.chosenResourceAbilities ? eng.chosenResourceAbilities(ch) : [];
+    out[d.resource.name] = { subs: abil.map(function (a) {
+      return { name: a.name, action: shortAction(a.action), cost: a.cost, text: a.text };
+    }) };
+    return out;
+  }
   function actionCost(text) {
     if (/Impulse Action/i.test(text || "")) return "Impulse";
     if (/Swift Action/i.test(text || "")) return "Swift";
@@ -435,7 +432,7 @@ EN.combatView = (function () {
     return null;
     function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase(); }
   }
-  var COST_COLOR = { Action: "var(--accent)", Swift: "var(--gold)", Impulse: "var(--flow)", Free: "var(--success)", Active: "var(--accent)", Passive: "var(--text3)" };
+  var COST_COLOR = { Action: "var(--accent)", Swift: "var(--gold)", Impulse: "var(--flow)", Free: "var(--success)", Active: "var(--accent)", Passive: "var(--text3)", Complex: "var(--ember)", Special: "var(--gold)" };
   /* class-resource identity colors; the resource bar + count tint to match its fuel */
   var RESOURCE_COLOR = {
     Bandwidth: "#00AEEF",   // electric blue, data / signal / system capacity
@@ -1309,13 +1306,17 @@ EN.combatView = (function () {
       if (base !== f.name && d.features.some(function (o) { return o !== f && o.name === base; })) return false;
       return true;
     });
-    // break bundled resource features (e.g. Moxie's tricks) into their own entries
+    // break the bundled resource feature (Moxie/Overdrive/Triage/... ability list) into its own
+    // rows, each tagged with the ability's action type and per-ability resource cost chip
+    var FEATURE_EXPANSIONS = resourceExpansion(ch, d);
+    var resUp = (d.resource && d.resource.name) ? d.resource.name.toUpperCase() : "";
     var expanded = [];
     kept.forEach(function (f) {
       var exp = FEATURE_EXPANSIONS[f.name];
       if (exp) {
         exp.subs.forEach(function (s) {
-          expanded.push({ name: s.name, source: f.source, level: f.level, text: s.text, _cost: s.cost, chip: exp.chip });
+          expanded.push({ name: s.name, source: f.source, level: f.level, text: s.text,
+                          _cost: s.action || actionCost(s.text), chip: s.cost ? s.cost + " " + resUp : null });
         });
       } else expanded.push(f);
     });
@@ -1531,18 +1532,17 @@ EN.combatView = (function () {
       (C.activeDefenses || []).forEach(function (def) {
         if (SHAPER_ONLY[def.name] && ch.class !== "shaper") return;
         var L = DEF_LIVE[def.name] || { avail: true, req: "", summary: "" };
+        if (!L.avail) return;   // only list defenses the character can actually use right now
         var id = "def-" + def.name, open = !!_open[id];
         var fp = /FP/.test(def.cost || "");
         var head = el("div.row.wrap", {
-          style: { gap: "9px", alignItems: "center", cursor: "pointer", padding: "7px 4px", borderBottom: "1px solid rgba(35,48,68,.5)", opacity: L.avail ? 1 : 0.55 },
+          style: { gap: "9px", alignItems: "center", cursor: "pointer", padding: "7px 4px", borderBottom: "1px solid rgba(35,48,68,.5)" },
           onclick: function () { _open[id] = !open; EN.app.render(); }
         }, [
           el("span.collapse-caret", { text: open ? "▾" : "▸" }),
           el("span", { style: { fontWeight: 600, minWidth: "62px" }, text: def.name }),
           el("span.chip", { title: def.cost, style: { fontSize: "9px", color: fp ? "var(--flow)" : "var(--accent)", borderColor: fp ? "var(--flow)" : "var(--accent)" } }, fp ? "IMPULSE · 1 FP" : "IMPULSE"),
-          el("span", { style: { flex: 1, minWidth: "150px", fontSize: "11.5px", color: L.avail ? "var(--text2)" : "var(--text3)" }, text: L.summary }),
-          L.avail ? el("span.chip", { title: "Requirements met", style: { fontSize: "9px", color: "var(--success)", borderColor: "var(--success)" } }, "READY")
-                  : el("span.chip", { title: def.requirement || L.req, style: { fontSize: "9px", color: "var(--text4)", borderColor: "var(--border2)" } }, "needs " + L.req)
+          el("span", { style: { flex: 1, minWidth: "150px", fontSize: "11.5px", color: "var(--text2)" }, text: L.summary })
         ]);
         var kids = [head];
         if (open) kids.push(el("p.help", { style: { margin: "4px 0 8px 18px", whiteSpace: "pre-wrap" }, text: def.text }));
@@ -1569,18 +1569,18 @@ EN.combatView = (function () {
       return f.cost.toUpperCase() === _tab;
     });
     if (shown.length) {
-      // Features = active attacks & interactions; Abilities = the passives
+      // Abilities = active attacks & interactions you trigger (shown first); Features = the passives
       // (name markers were already resolved into the cost when feats were built)
       var activeFeats = shown.filter(function (f) { return f.cost !== "Passive"; });
       var passiveFeats = shown.filter(function (f) { return f.cost === "Passive"; });
-      var featList = _featTab === "abilities" ? passiveFeats : activeFeats;
+      var featList = _featTab === "features" ? passiveFeats : activeFeats;
       actionKids.push(el("div.row.wrap", { style: { gap: "6px", margin: "12px 0 8px" } }, [
-        el("button.btn.sm" + (_featTab !== "abilities" ? ".primary" : ""), {
-          title: "Active features, attacks, actions, and interactions you trigger",
-          onclick: function () { _featTab = "features"; EN.app.render(); } }, "FEATURES (" + activeFeats.length + ")"),
-        el("button.btn.sm" + (_featTab === "abilities" ? ".primary" : ""), {
-          title: "Passive abilities, always-on benefits",
-          onclick: function () { _featTab = "abilities"; EN.app.render(); } }, "ABILITIES (" + passiveFeats.length + ")")
+        el("button.btn.sm" + (_featTab !== "features" ? ".primary" : ""), {
+          title: "Active attacks, actions, and interactions you trigger",
+          onclick: function () { _featTab = "abilities"; EN.app.render(); } }, "ABILITIES (" + activeFeats.length + ")"),
+        el("button.btn.sm" + (_featTab === "features" ? ".primary" : ""), {
+          title: "Passive, always-on benefits",
+          onclick: function () { _featTab = "features"; EN.app.render(); } }, "FEATURES (" + passiveFeats.length + ")")
       ]));
       // both lists grow with every level; the whole panel body below the filter row is the scroll well
       actionKids.push(el("div", null, featList.length
@@ -1598,7 +1598,7 @@ EN.combatView = (function () {
             } : null;
             return actionEntry(f.id, f.name, f.cost, f.src, f.text, f.limited, f.chip, uses);
           })
-        : [el("p.help", { style: { margin: 0 }, text: _featTab === "abilities" ? "No passive abilities in this category." : "No active features in this category." })]));
+        : [el("p.help", { style: { margin: 0 }, text: _featTab === "features" ? "No passive features in this category." : "No active abilities in this category." })]));
     } else if (_tab !== "ALL" && _tab !== "ACTION") {
       actionKids.push(el("p.help", { text: "Nothing in this category." }));
     }

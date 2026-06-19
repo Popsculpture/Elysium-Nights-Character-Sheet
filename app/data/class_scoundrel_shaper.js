@@ -13,7 +13,9 @@ var SCOUNDREL_MOXIE_GAMBITS = [
   { name: "Bad Feeling", action: "Impulse Action", cost: 1, text: "When an enemy moves within your reach, or you are targeted by an attack you can see, spend 1 Moxie to move up to half your Speed without provoking, breaking away before it lands." },
   { name: "Shake It Off", action: "Swift Action", cost: 1, text: "Spend 1 Moxie to end one condition clouding your senses or footing, such as Staggered, Shaken, or Dazed." },
   { name: "Ace Up the Sleeve", action: "Free Action", cost: 1, text: "Spend 1 Moxie to produce a plausible mundane item you could have stashed, call a minor favor, or point out a small environmental out (GM approval; never conjures gear you could not carry)." },
-  { name: "Kick Them While They're Down", action: "Impulse Action", cost: 1, text: "When an enemy within reach misses you with a melee attack, or an ally crits an enemy within your reach, spend 1 Moxie to make a weapon attack against that enemy that automatically qualifies for Cheap Shot." }
+  { name: "Kick Them While They're Down", action: "Impulse Action", cost: 1, text: "When an enemy within reach misses you with a melee attack, or an ally crits an enemy within your reach, spend 1 Moxie to make a weapon attack against that enemy that automatically qualifies for Cheap Shot." },
+  { name: "Quick Hands", action: "Impulse Action", cost: 1, text: "Trigger: An enemy within your reach misses you with an attack, or you move out of an enemy's reach. Spend 1 Moxie to make the moment pay, a clipped strap, a lifted clip, a pocket gone suddenly light. Choose one: take one small unsecured item the enemy is carrying (a keycard, a grenade, a spare clip, a data shard), or foul one piece of their gear so the next attack roll they make with it is rolled with Snag." },
+  { name: "Pure Luck", action: "Impulse Action", cost: 1, text: "Trigger: You fail an attack roll, an ability check, or a saving throw. Spend 1 Moxie to insist, against all reason, that it went your way. Treat the d20 as if it had rolled a 10, then apply your modifiers as normal. Where Lucky Break buys you another die before you know how it lands, this one rescues a roll that already came up short." }
 ];
 var SCOUNDREL_MOXIE_TEXT = SCOUNDREL_MOXIE_INTRO + "\n" + SCOUNDREL_MOXIE_GAMBITS.map(function (g) {
   return "     " + g.name + (g.action ? " (" + g.action + ")" : "") + ": " + g.text;
@@ -44,11 +46,15 @@ EN.classes.scoundrel = {
     attribute: "Agility",
     maxFormula: "Caliber + Agility Modifier (minimum 1)",
     refresh: "You regain all spent Moxie at the end of a Short or Long Rest.",
-    fuels: "Spend Moxie on Gambits (learn 3 at Level 1, +2 at Level 5): Lucky Break, Jinx, Slip the Blow, Smash and Grab, Bad Feeling, Shake It Off, Ace Up the Sleeve, and Kick Them While They're Down. Unless a Gambit says otherwise, it costs 1 Moxie.",
+    fuels: "Spend Moxie on Gambits (learn 3 at Level 1, +2 at Level 5): Lucky Break, Jinx, Slip the Blow, Smash and Grab, Bad Feeling, Shake It Off, Ace Up the Sleeve, Kick Them While They're Down, Quick Hands, and Pure Luck. Unless a Gambit says otherwise, it costs 1 Moxie.",
     // Gambits: choose 3 at L1, +2 more at L5. The options live in the structured list above.
     gambitPicks: [{ level: 1, count: 3 }, { level: 5, count: 2 }],
     gambitsIntro: SCOUNDREL_MOXIE_INTRO,
-    gambits: SCOUNDREL_MOXIE_GAMBITS
+    gambits: SCOUNDREL_MOXIE_GAMBITS,
+    abilityNoun: "Gambit",
+    abilityNounPlural: "Gambits",
+    learn: { knowsAll: false, picks: [{ level: 1, count: 3 }, { level: 5, count: 2 }] },
+    abilities: SCOUNDREL_MOXIE_GAMBITS
   },
 
   startingProficiencies: {

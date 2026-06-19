@@ -713,7 +713,7 @@ EN.builder = (function () {
       }
       if (cls.resource && ch.class !== "shaper") {
         corePb.push(feature(cls.resource.name + " (Resource)", (cls.resource.maxFormula ? "Max Pool = " + cls.resource.maxFormula + "\n\n" : "") + (cls.resource.fuels || ""), "class", "Pool " + (d.resource ? d.resource.max : "")));
-        var gp = gambitPicker(ch); if (gp) corePb.push(gp);
+        var gp = resourcePicker(ch); if (gp) corePb.push(gp);
       }
       if (ch.class === "shaper" && d.flow) {
         corePb.push(feature("Flow Points (Reservoir)", "Max Flow = (Caliber × 3) + " + d.flow.attributeName + " Modifier = " + d.flow.max + "\nFlow Save DC = 8 + " + d.flow.attributeName + " Mod + Caliber = " + d.flow.dc, "flow", "Flow " + d.flow.max));
@@ -773,7 +773,7 @@ EN.builder = (function () {
           var bodyKids = [];
           if (!clsFeats.length && !subFeats.length) bodyKids.push(el("p.help", { style: { margin: 0 }, text: "No new features at this level." }));
           clsFeats.forEach(function (f) {
-            if (cls.resource && f.name === cls.resource.name && cls.resource.gambits) bodyKids.push(gambitFeatureView(f, cls.resource, !active));
+            if (cls.resource && f.name === cls.resource.name && (cls.resource.abilities || []).length) bodyKids.push(resourceFeatureView(f, cls.resource, !active));
             else bodyKids.push(progFeature(f, false, null, !active));
           });
           subFeats.forEach(function (f) { bodyKids.push(progFeature(f, true, sub.name, !active)); });
@@ -834,39 +834,51 @@ EN.builder = (function () {
     return el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginBottom: "6px" } }, kids);
   }
 
-  // Gambit picker (Scoundrel Moxie): toggle chips to choose known gambits, capped to the
-  // count unlocked by level (3 at L1, +2 at L5). Each chip shows its action type.
-  function gambitPicker(ch) {
-    var gl = eng.gambitList(ch);
-    if (!gl.length) return null;
-    var allowed = eng.gambitsAllowed(ch);
-    var chosen = ch.gambits || [];
-    var head = el("div.row.wrap", { style: { gap: "8px", alignItems: "baseline", margin: "10px 0 6px" } }, [
-      el("label.fl", { text: "Gambits Known" }),
-      el("span.chip" + (chosen.length >= allowed ? ".on" : ""), { style: { fontSize: "10px" }, text: chosen.length + " / " + allowed + " chosen" }),
-      el("span", { style: { fontFamily: "var(--mono)", fontSize: "10px", color: "var(--text3)" }, text: "3 at L1, +2 at L5; click to learn" })
-    ]);
-    var chipRow = el("div.row.wrap", { style: { gap: "6px" } });
-    gl.forEach(function (g) {
-      var on = chosen.indexOf(g.name) !== -1;
-      var full = !on && chosen.length >= allowed;
-      chipRow.appendChild(el("span.chip", {
+  // Resource ability picker (Scoundrel Gambits, Fury Overdrive Maneuvers, Hustler Leverage,
+  // Stitcher Triage Protocols): toggle chips to choose the abilities you know, capped to the
+  // count unlocked by level. Classes that know their whole list (Codebreaker, Operator) show
+  // every ability as a locked-on chip instead of a capped picker. Each chip shows its action type.
+  function resourcePicker(ch) {
+    var all = eng.resourceAbilities(ch);
+    if (!all.length) return null;
+    var res = eng.getClass(ch.class).resource;
+    var noun = res.abilityNoun || "Ability", nounPl = res.abilityNounPlural || (noun + "s");
+    function chip(g, on, dim, onclick) {
+      return el("span.chip", {
         title: (g.action ? g.action + " · " : "") + g.text,
         style: { fontSize: "10.5px", color: "var(--accent)", borderColor: "var(--accent)",
-                 cursor: full ? "not-allowed" : "pointer", borderStyle: on ? "solid" : "dashed",
-                 opacity: on ? 1 : (full ? .3 : .6), boxShadow: on ? "0 0 9px var(--accent)" : "none" },
-        onclick: function () {
-          if (full) { toast("You know " + allowed + " Gambits at Level " + (ch.level || 1) + "."); return; }
-          store.update(function (c) {
-            c.gambits = c.gambits || [];
-            var i = c.gambits.indexOf(g.name);
-            if (i >= 0) c.gambits.splice(i, 1); else c.gambits.push(g.name);
-          });
-        }
+                 cursor: onclick ? (dim ? "not-allowed" : "pointer") : "default", borderStyle: on ? "solid" : "dashed",
+                 opacity: on ? 1 : (dim ? .3 : .6), boxShadow: on ? "0 0 9px var(--accent)" : "none" },
+        onclick: onclick
       }, [
         el("span", { text: (on ? "✓ " : "") + g.name }),
         g.action ? el("span", { style: { color: "var(--text3)", marginLeft: "5px", fontSize: "9px" }, text: g.action.replace(/ Action$/, "") }) : null
-      ]));
+      ]);
+    }
+    // knows-all classes (Codebreaker, Operator) have no choice to make, so they get no picker
+    // here; their full ability list already appears in the resource feature and Class Progression.
+    if (res.learn && res.learn.knowsAll) return null;
+    // pick classes: capped toggle chips
+    var allowed = eng.resourcePicksAllowed(ch);
+    var chosen = ch.gambits || [];
+    var hint = ((res.learn && res.learn.picks) || []).map(function (p, i) { return (i ? "+" : "") + p.count + " at L" + p.level; }).join(", ");
+    var head = el("div.row.wrap", { style: { gap: "8px", alignItems: "baseline", margin: "10px 0 6px" } }, [
+      el("label.fl", { text: nounPl + " Known" }),
+      el("span.chip" + (chosen.length >= allowed ? ".on" : ""), { style: { fontSize: "10px" }, text: chosen.length + " / " + allowed + " chosen" }),
+      el("span", { style: { fontFamily: "var(--mono)", fontSize: "10px", color: "var(--text3)" }, text: hint + "; click to learn" })
+    ]);
+    var chipRow = el("div.row.wrap", { style: { gap: "6px" } });
+    all.forEach(function (g) {
+      var on = chosen.indexOf(g.name) !== -1;
+      var full = !on && chosen.length >= allowed;
+      chipRow.appendChild(chip(g, on, full, function () {
+        if (full) { toast("You know " + allowed + " " + nounPl + " at Level " + (ch.level || 1) + "."); return; }
+        store.update(function (c) {
+          c.gambits = c.gambits || [];
+          var i = c.gambits.indexOf(g.name);
+          if (i >= 0) c.gambits.splice(i, 1); else c.gambits.push(g.name);
+        });
+      }));
     });
     return el("div", null, [head, chipRow]);
   }
@@ -1485,21 +1497,38 @@ EN.builder = (function () {
     ]);
   }
 
-  // Resource feature with a structured option list (e.g. Scoundrel Moxie Gambits): the intro
-  // paragraph, then one spaced line per option with its name (and action type) in bold.
-  function gambitFeatureView(f, res, locked) {
+  // Resource feature with a structured ability list (Moxie Gambits, Overdrive Maneuvers, Triage
+  // Protocols, ...): an intro line, then one spaced line per ability with its name (and action
+  // type) in bold. Scoundrel supplies its own intro prose; other classes get a generated one.
+  function resourceFeatureView(f, res, locked) {
     var color = locked ? "var(--text2)" : "var(--accent)";
     var node = el("div.feature" + (locked ? ".locked" : ""), { style: { borderLeftColor: color } }, [
       el("h4", null, [el("span", { style: { color: color }, text: f.name })]),
-      el("p", { style: { margin: "0 0 8px" }, text: res.gambitsIntro || "" })
+      el("p", { style: { margin: "0 0 8px" }, text: res.gambitsIntro || resourceIntro(res) })
     ]);
-    (res.gambits || []).forEach(function (g) {
+    (res.abilities || []).forEach(function (g) {
       node.appendChild(el("p", { style: { margin: "0 0 8px", lineHeight: "1.5" } }, [
         el("strong", { style: { color: locked ? "var(--text2)" : "var(--text)" }, text: g.name + (g.action ? " (" + g.action + ")" : "") + ": " }),
         document.createTextNode(g.text)
       ]));
     });
     return node;
+  }
+  // one-line intro for a resource ability list, built from its pool formula + learn rule
+  function resourceIntro(res) {
+    var noun = res.abilityNoun || "ability", nounPl = res.abilityNounPlural || (noun + "s");
+    var parts = [];
+    if (res.maxFormula) parts.push("Max " + res.name + " = " + res.maxFormula + ".");
+    if (res.learn && res.learn.knowsAll) parts.push("You know every " + noun + " below.");
+    else {
+      var picks = (res.learn && res.learn.picks) || [];
+      if (picks.length) {
+        var s = "At Level " + picks[0].level + " you learn " + picks[0].count + " " + (picks[0].count === 1 ? noun : nounPl);
+        picks.slice(1).forEach(function (p) { s += ", and " + p.count + " more at Level " + p.level; });
+        parts.push(s + ". Unless an entry says otherwise, each costs 1 " + res.name + ".");
+      }
+    }
+    return parts.join(" ");
   }
 
   /* ---------- main render ---------- */

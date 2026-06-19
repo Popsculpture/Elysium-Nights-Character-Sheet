@@ -671,27 +671,47 @@ EN.engine = (function () {
   }
   function installedCyberBases(ch) { return installedCyberware(ch).map(function (cw) { return cw.base || cw.name; }); }
 
-  // Gambit-style resource options (e.g. Scoundrel Moxie Gambits): a structured list on the
-  // class resource, each {name, action, cost, text}.
-  function gambitList(ch) {
+  // Resource abilities (Scoundrel Gambits, Fury Overdrive Maneuvers, Hustler Leverage
+  // Abilities, Operator Tactical Maneuvers, Codebreaker Signature Exploits, Stitcher Triage
+  // Protocols): a structured list on the class resource, each {name, action, cost, text}.
+  function resourceAbilities(ch) {
     var cls = getClass(ch && ch.class);
     var res = cls && cls.resource;
-    if (!cls || !res || !res.gambitPicks) return [];
-    return res.gambits || [];
+    return (res && res.abilities) || [];
   }
-  // how many gambits the character knows at its current level (3 at L1, +2 at L5, ...)
-  function gambitsAllowed(ch) {
+  // true for classes that know their whole list (Codebreaker Bandwidth, Operator Execution)
+  function resourceKnowsAll(ch) {
     var cls = getClass(ch && ch.class);
-    var picks = cls && cls.resource && cls.resource.gambitPicks;
+    var res = cls && cls.resource;
+    return !!(res && res.learn && res.learn.knowsAll);
+  }
+  // how many abilities the character may choose at its current level (e.g. 3 at L1, +2 at L5)
+  function resourcePicksAllowed(ch) {
+    var cls = getClass(ch && ch.class);
+    var res = cls && cls.resource;
+    var picks = res && res.learn && res.learn.picks;
     if (!picks) return 0;
     var lvl = (ch && ch.level) || 1;
     return picks.reduce(function (n, p) { return n + (lvl >= p.level ? p.count : 0); }, 0);
   }
+  // abilities the character actually has on the play sheet: all of them for a knows-all class,
+  // otherwise exactly the subset chosen in the Core Traits picker (empty until any are picked)
+  function chosenResourceAbilities(ch) {
+    var all = resourceAbilities(ch);
+    if (!all.length || resourceKnowsAll(ch)) return all;
+    var chosen = (ch && ch.gambits) || [];
+    return all.filter(function (a) { return chosen.indexOf(a.name) !== -1; });
+  }
+  // back-compat aliases: older call sites (printsheet) use the gambit-specific names
+  function gambitList(ch) { return resourceAbilities(ch); }
+  function gambitsAllowed(ch) { return resourcePicksAllowed(ch); }
 
   return {
     derive: derive, mod: mod, caliber: caliber, fmtMod: fmtMod, clamp: clamp,
     installedCyberware: installedCyberware, installedCyberBases: installedCyberBases,
     gambitList: gambitList, gambitsAllowed: gambitsAllowed,
+    resourceAbilities: resourceAbilities, resourceKnowsAll: resourceKnowsAll,
+    resourcePicksAllowed: resourcePicksAllowed, chosenResourceAbilities: chosenResourceAbilities,
     getClass: getClass, getSpecies: getSpecies, getLineage: getLineage,
     getBackground: getBackground, getSubclass: getSubclass,
     pointBuySpent: pointBuySpent, trainingPointsTotal: trainingPointsTotal,

@@ -1,5 +1,28 @@
 window.EN = window.EN || {};
 EN.classes = EN.classes || {};
+
+// Triage Protocols as structured sub-entries, the single source for the engine, the Class-tab
+// picker, and the print sheet. The Triage feature's prose (below) is composed from this list,
+// so the displayed text and the machine-readable data can never drift apart.
+var STITCHER_TRIAGE_PROTOCOLS = [
+  { name: "Adrenaline Spike", action: "Swift Action", cost: 1, text: "Target one ally within 6 spaces. The target immediately gains Vigor equal to 1d8 + your Tech Modifier. Until the end of their next turn, their Speed increases by 2 and they ignore Difficult Terrain." },
+  { name: "Chemical Purge", action: "Swift Action", cost: 1, text: "Target one ally within 6 spaces. The target may immediately end one of the following conditions: Poisoned, Bleeding, Paralyzed, or Blinded." },
+  { name: "Trauma Patch", action: "Action", cost: 1, text: "Target one Character within your melee reach. The target regains lost Vitality equal to 2d8 + your Tech Modifier. If the target is currently Unconscious due to a Critical Condition or Fatigue, they immediately regain consciousness." },
+  { name: "Toxic Overdose", action: "Action", cost: 1, text: "Target one enemy within 6 spaces. The target must make a Body Save (DC = 8 + your Tech Modifier + your Medical Tools Proficiency Bonus). On a failure, they take Toxic damage equal to 2d6 + your Tech Modifier and are Poisoned until the end of their next turn." },
+  { name: "Sedative", action: "Action", cost: 1, text: "Target one enemy within 6 spaces. You tag them with a fast-acting tranquilizer compound. The target must make a Body Save (DC = 8 + your Tech Modifier + your Medical Tools Proficiency Bonus). On a failure, the compound floods their system and they become Drowsy. Dosing a target who is already Drowsy stacks toward unconsciousness, as described under the Drowsy condition. Outside of combat, a single dose is usually enough to drop a lone, unaware mark into true sleep, at the GM's discretion." },
+  { name: "Coagulant Burst", action: "Impulse Action", cost: 1, text: "Trigger: An ally within 6 spaces takes damage or gains the Bleeding condition. You immediately reduce the incoming damage by an amount equal to your Tech Modifier + Caliber, and completely prevent the Bleeding condition from applying." },
+  { name: "Failsafe", action: "Impulse Action", cost: 1, text: "Trigger: An ally within 6 spaces is reduced to 0 Vitality by damage, or takes damage while already at 0 Vitality. You flood their system with everything the Rig has the instant they start to go. They immediately gain Vigor equal to 2d8 + your Tech Modifier, and until the end of their next turn they ignore the Speed reduction from being Bloodied. As long as that Vigor holds, the hits that should be putting them down are landing on borrowed time instead." },
+  { name: "Nerve Block", action: "Action", cost: 1, text: "Target one ally within 6 spaces. For the next minute, that ally gains Resistance to Bludgeoning, Piercing, and Slashing damage, but they cannot benefit from any effects that restore Vitality or Wounds. You or the affected ally can disable this Nerve Block early at any time (no action required)." },
+  { name: "Triage Sweep", action: "Action", cost: 1, text: "Target up to three allies within 6 spaces. Your Rig vents a fast-dispersing cloud of aerosolized stabilizers and clotting foam across the cluster. Each target regains Vitality equal to 1d6 + your Tech Modifier." },
+  { name: "Casualty Extraction", action: "Swift Action", cost: 1, text: "Target one ally within 12 spaces. A fired grapnel, a hauling winch, a barked order and a fistful of collar, you get them out of the line of fire. The ally is pulled up to 6 spaces toward you without provoking opportunity attacks, and they regain Vitality equal to your Tech Modifier + your Caliber." },
+  { name: "Booster Shot", action: "Swift Action", cost: 1, text: "Target one ally within 6 spaces. You hit them with a prophylactic cocktail tuned to whatever is about to go wrong. Until the start of your next turn, the target rolls all Saving Throws with Edge." },
+  { name: "Muscle Relaxant", action: "Action", cost: 1, text: "Target one enemy within 6 spaces. You tag them with a fast-acting myo-relaxant that turns coordinated movement into a fight against their own body. The target must make a Body Save (DC = 8 + your Tech Modifier + your Medical Tools Proficiency Bonus). On a failure, until the end of their next turn their Speed is halved and they roll with Snag on attack rolls." }
+];
+var STITCHER_TRIAGE_INTRO = "The Stitcher relies on a highly specialized piece of equipment known as a Triage Rig. This might be a cybernetic auto-injector gauntlet, an alchemical synthesizer harness, or a smart-medic backpack. The Rig rapidly mixes base reagents or standard medical supplies into potent, fast-acting chemical assets.\n\nYou must have your Triage Rig equipped to use Triage Protocols. If your Rig is lost or destroyed, you can assemble a new one during a Long Rest using standard medical and chemistry tools.\n\nYour Triage Pool: Your maximum Triage is equal to your Caliber + your Tech Modifier (minimum of 1). You regain all spent Triage at the end of a Short or Long Rest.\n\nTriage Protocols: At 1st Level you learn four Triage Protocols of your choice from the list below; you learn two more at 5th Level through Expanded Triage. Unless otherwise noted, all Triage Protocols cost 1 Triage to activate. Ranged protocols are delivered via your Rig's hardware, such as smart-darts or wireless auto-injector patches.";
+var STITCHER_TRIAGE_TEXT = STITCHER_TRIAGE_INTRO + "\n" + STITCHER_TRIAGE_PROTOCOLS.map(function (p) {
+  return "     " + p.name + (p.action ? " (" + p.action + ")" : "") + ": " + p.text;
+}).join("\n");
+
 EN.classes.stitcher = {
   key: "stitcher",
   name: "Stitcher",
@@ -26,7 +49,12 @@ EN.classes.stitcher = {
     maxFormula: "Your maximum Triage is equal to your Caliber + your Tech Modifier (minimum of 1).",
     refresh: "You regain all spent Triage at the end of a Short or Long Rest.",
     fuels: "Triage fuels Triage Protocols and subclass medical or toxic burst effects. Examples already present in the draft include: Adrenaline Spike, Chemical Purge, Trauma Patch, Toxic Overdose, Neuro-Corrosive Cloud, Biological Meltdown.",
-    hardware: "The Stitcher relies on a highly specialized piece of equipment known as a Triage Rig. This might be a cybernetic auto-injector gauntlet, an alchemical synthesizer harness, or a smart-medic backpack. The Rig rapidly mixes base reagents or standard medical supplies into potent, fast-acting chemical assets.\n\nYou must have your Triage Rig equipped to use Triage Protocols. If your Rig is lost or destroyed, you can assemble a new one during a Long Rest using standard medical and chemistry tools.\n\nHardware Dependency (Optional Rule)\n\nYour Triage Rig is a highly complex piece of proprietary hardware, relying on micro-synthesizers and chemical calibrators. It cannot simply be snapped together from spare bandages. If your Triage Rig is lost or destroyed, you face the following logistics to recover your abilities:\n\nThe Scrap Rig (Emergency Stopgap): During a Long Rest, you can use Medical and Engineering tools to cobble together a \"Scrap Rig\" out of standard supplies. While using a Scrap Rig, you can activate your Triage Protocols, but the unstable mixtures cause you to suffer Snag on all Triage healing rolls and attack rolls. Furthermore, any Triage Protocol that normally costs a Swift Action now costs a standard Action due to the clunky manual injection process.\n\nPurchasing a Replacement: You can purchase a factory-standard replacement Rig from corporate medical suppliers or high-end black market fixers. A replacement Rig costs 500.\n\nCrafting a Replacement: If you have access to a proper laboratory or workshop during downtime, you can build a new Rig from scratch. This requires 250 in raw chemical precursors and a successful Science or Engineering Dice Pool check. On a failure, the materials are wasted, and you must acquire more to try again."
+    hardware: "The Stitcher relies on a highly specialized piece of equipment known as a Triage Rig. This might be a cybernetic auto-injector gauntlet, an alchemical synthesizer harness, or a smart-medic backpack. The Rig rapidly mixes base reagents or standard medical supplies into potent, fast-acting chemical assets.\n\nYou must have your Triage Rig equipped to use Triage Protocols. If your Rig is lost or destroyed, you can assemble a new one during a Long Rest using standard medical and chemistry tools.\n\nHardware Dependency (Optional Rule)\n\nYour Triage Rig is a highly complex piece of proprietary hardware, relying on micro-synthesizers and chemical calibrators. It cannot simply be snapped together from spare bandages. If your Triage Rig is lost or destroyed, you face the following logistics to recover your abilities:\n\nThe Scrap Rig (Emergency Stopgap): During a Long Rest, you can use Medical and Engineering tools to cobble together a \"Scrap Rig\" out of standard supplies. While using a Scrap Rig, you can activate your Triage Protocols, but the unstable mixtures cause you to suffer Snag on all Triage healing rolls and attack rolls. Furthermore, any Triage Protocol that normally costs a Swift Action now costs a standard Action due to the clunky manual injection process.\n\nPurchasing a Replacement: You can purchase a factory-standard replacement Rig from corporate medical suppliers or high-end black market fixers. A replacement Rig costs 500.\n\nCrafting a Replacement: If you have access to a proper laboratory or workshop during downtime, you can build a new Rig from scratch. This requires 250 in raw chemical precursors and a successful Science or Engineering Dice Pool check. On a failure, the materials are wasted, and you must acquire more to try again.",
+
+    abilityNoun: "Triage Protocol",
+    abilityNounPlural: "Triage Protocols",
+    learn: { knowsAll: false, picks: [{ level: 1, count: 4 }, { level: 5, count: 2 }] },
+    abilities: STITCHER_TRIAGE_PROTOCOLS
   },
 
   startingProficiencies: {
@@ -42,11 +70,11 @@ EN.classes.stitcher = {
     "1": [
       {
         name: "Triage",
-        text: "The Stitcher relies on a highly specialized piece of equipment known as a Triage Rig. This might be a cybernetic auto-injector gauntlet, an alchemical synthesizer harness, or a smart-medic backpack. The Rig rapidly mixes base reagents or standard medical supplies into potent, fast-acting chemical assets.\n\nYou must have your Triage Rig equipped to use Triage Protocols. If your Rig is lost or destroyed, you can assemble a new one during a Long Rest using standard medical and chemistry tools.\n\nHardware Dependency (Optional Rule)\n\nYour Triage Rig is a highly complex piece of proprietary hardware, relying on micro-synthesizers and chemical calibrators. It cannot simply be snapped together from spare bandages. If your Triage Rig is lost or destroyed, you face the following logistics to recover your abilities:\n\nThe Scrap Rig (Emergency Stopgap): During a Long Rest, you can use Medical and Engineering tools to cobble together a \"Scrap Rig\" out of standard supplies. While using a Scrap Rig, you can activate your Triage Protocols, but the unstable mixtures cause you to suffer Snag on all Triage healing rolls and attack rolls. Furthermore, any Triage Protocol that normally costs a Swift Action now costs a standard Action due to the clunky manual injection process.\n\nPurchasing a Replacement: You can purchase a factory-standard replacement Rig from corporate medical suppliers or high-end black market fixers. A replacement Rig costs 500.\n\nCrafting a Replacement: If you have access to a proper laboratory or workshop during downtime, you can build a new Rig from scratch. This requires 250 in raw chemical precursors and a successful Science or Engineering Dice Pool check. On a failure, the materials are wasted, and you must acquire more to try again.\n\nYour Triage Pool: Your maximum Triage is equal to your Caliber + your Tech Modifier (minimum of 1). You regain all spent Triage at the end of a Short or Long Rest.\n\nTriage Protocols: At 1st Level, you learn two Triage Protocols. You learn two additional Protocols at 5th Level.\n\nUnless otherwise noted, all Triage Protocols cost 1 Triage to activate. Ranged protocols are delivered via your Rig's hardware, such as smart-darts or wireless auto-injector patches."
+        text: STITCHER_TRIAGE_TEXT
       },
       {
         name: "First Do No Harm",
-        text: "Whenever you make an attack roll with a weapon that possesses the Light trait or a Dart Gun against an organic Target, you may use your Wits modifier instead of Agility or Body for the attack and damage rolls. Additionally, standard medical rules do not apply to you. Any time you successfully use the Stabilize medical treatment on an Unconscious Target, they awaken immediately and you may reduce their Fatigue by 1 level."
+        text: "Whenever you make an attack roll with a weapon that possesses the Light trait or a Dart Gun against an organic Target, you may use your Tech modifier instead of Agility or Body for the attack and damage rolls. Additionally, standard medical rules do not apply to you. Any time you successfully use the Stabilize medical treatment on an Unconscious Target, they awaken immediately and you may reduce their Fatigue by 1 level."
       },
       {
         name: "Stitcher Subclass",
@@ -81,7 +109,7 @@ EN.classes.stitcher = {
         text: "Your chemical compounds become vastly more efficient. Whenever you roll dice to restore Vitality or Vigor to an ally, you may roll the healing dice twice and use either total."
       },
       {
-        name: "Expanded Triage Protocols",
+        name: "Expanded Triage",
         text: "You learn two additional Triage Protocols from the core list."
       }
     ],
@@ -219,32 +247,12 @@ EN.classes.stitcher = {
   ],
 
   extra: {
-    triageProtocols: [
-      {
-        name: "Adrenaline Spike (Swift Action)",
-        text: "Target one ally within 6 spaces. The target immediately gains Vigor equal to 1d8 + your Wits Modifier. Until the end of their next turn, their Speed increases by 2 and they ignore Difficult Terrain."
-      },
-      {
-        name: "Chemical Purge (Swift Action)",
-        text: "Target one ally within 6 spaces. The target may immediately end one of the following conditions: Poisoned, Bleeding, Paralyzed, or Blinded."
-      },
-      {
-        name: "Trauma Patch (Action)",
-        text: "Target one Character within your melee reach. The target regains lost Vitality equal to 2d8 + your Wits Modifier. If the target is currently Unconscious due to a Critical Condition or Fatigue, they immediately regain consciousness."
-      },
-      {
-        name: "Toxic Overdose (Action)",
-        text: "Target one enemy within 6 spaces. The target must make a Body Save (DC = 8 + your Wits Modifier + your Medical Tools Proficiency Bonus). On a failure, they take Toxic damage equal to 2d6 + your Wits Modifier and are Poisoned until the end of their next turn."
-      },
-      {
-        name: "Coagulant Burst (Impulse Action)",
-        text: "Trigger: An ally within 6 spaces takes damage or gains the Bleeding condition. You immediately reduce the incoming damage by an amount equal to your Wits Modifier + Caliber, and completely prevent the Bleeding condition from applying."
-      },
-      {
-        name: "Nerve Block (Action)",
-        text: "Target one ally within 6 spaces. For the next minute, that ally gains Resistance to Bludgeoning, Piercing, and Slashing damage, but they cannot benefit from any effects that restore Vitality or Wounds. You or the affected ally can disable this Nerve Block early at any time (no action required)."
-      }
-    ],
+    triageProtocols: STITCHER_TRIAGE_PROTOCOLS.map(function (p) {
+      return {
+        name: p.name + (p.action ? " (" + p.action + ")" : ""),
+        text: p.text
+      };
+    }),
     aftermarketTunings: [
       {
         name: "Optical Overclock",
@@ -293,9 +301,9 @@ EN.resourceRules = {
   byClass: {
     leverage: "Hustler: Leverage\n\nThe Hustler's resource is Leverage. It represents tactical callouts, psychological pressure, social manipulation under fire, black-market timing, and split-second exploitation of weakness. The Hustler section already defines Leverage this way and ties it directly to Charm and Caliber.\n\nLeverage Pool\nMaximum Leverage = Caliber + Charm Modifier (minimum 1)\n\nRefresh\nYou regain all spent Leverage at the end of a Short Rest or Long Rest.\n\nWhat Leverage Fuels\nLeverage fuels Leverage Abilities and subclass features that weaponize timing, pressure, or team coordination.\n\nExamples already present in the draft include:\nPressure Play, Asset Reallocation, Mandatory Overtime, The Fix Is In, Off-the-Books Asset\n\nExample\nA Level 5 Hustler has Caliber 3 and Charm 18 for a +4 Charm Modifier. Their maximum Leverage is 7.\n\nLeverage Recovery Features\nSome Hustler features restore Leverage during play. For example, Return on Investment (ROI) restores 1 spent Leverage when you or an Ally within 6 spaces rolls a Critical Success on a d20 roll, and Corner the Market can grant temporary Leverage at the start of an Encounter.",
 
-    overdrive: "Fury: Overdrive\n\nThe Fury's resource is Overdrive. It represents bursts of adrenaline, cybernetic overextension, pain-fueled aggression, and physical force pushed beyond ordinary limits. The Fury entry already defines Overdrive as its core power resource.\n\nOverdrive Pool\nMaximum Overdrive = Caliber + Body Modifier (minimum 1)\n\nRefresh\nYou regain all spent Overdrive at the end of a Short Rest or Long Rest.\n\nWhat Overdrive Fuels\nOverdrive fuels Overdrive Maneuvers and subclass states that let a Fury dominate physical space.\n\nExamples already present in the draft include:\nShatterstrike, Clear the Path, Linebreaker, Seismic Stomp, Cross-Block, Thresher Stance\n\nExample\nA Level 7 Fury has Caliber 4 and Body 18 for a +4 Body Modifier. Their maximum Overdrive is 8.\n\nOverdrive Recovery Features\nSome Fury features restore Overdrive during combat. Adrenaline Engine restores 1 spent Overdrive on a Critical Success with an attack roll, or once per round when you suffer Wound damage from a hostile attack.",
+    overdrive: "Fury: Overdrive\n\nThe Fury's resource is Overdrive. It represents bursts of adrenaline, cybernetic overextension, pain-fueled aggression, and physical force pushed beyond ordinary limits. The Fury entry already defines Overdrive as its core power resource.\n\nOverdrive Pool\nMaximum Overdrive = Caliber + Body Modifier (minimum 1)\n\nRefresh\nYou regain all spent Overdrive at the end of a Short Rest or Long Rest.\n\nWhat Overdrive Fuels\nOverdrive fuels Overdrive Maneuvers and subclass states that let a Fury dominate physical space.\n\nExamples already present in the draft include:\nWrecking Ball, Clear the Path, Linebreaker, Seismic Stomp, Cross-Block, Thresher Stance\n\nExample\nA Level 7 Fury has Caliber 4 and Body 18 for a +4 Body Modifier. Their maximum Overdrive is 8.\n\nOverdrive Recovery Features\nSome Fury features restore Overdrive during combat. Adrenaline Engine restores 1 spent Overdrive on a Critical Success with an attack roll, or once per round when you suffer Wound damage from a hostile attack.",
 
-    execution: "Operator: Execution\n\nThe Operator's resource is Execution, often abbreviated EX. They represent battlefield discipline, command timing, squad coordination, and the tactical precision required to control the pace of a firefight. The Operator entry already defines this pool under Battlefield Command.\n\nExecution Pool\nMaximum Execution = Caliber + Wits Modifier (minimum 1)\n\nRefresh\nYou regain all spent Execution at the end of a Short Rest or Long Rest.\n\nWhat Execution Fuels\nExecution fuel Tactical Maneuvers and subclass precision attacks.\n\nExamples already present in the draft include:\nReposition, Focus Fire, Brace for Impact, Intercepting Guard, CQC Takedown\n\nExample\nA Level 3 Operator has Caliber 2 and Wits 16 for a +3 Wits Modifier. Their maximum Execution is 5.\n\nExecution Recovery Features\nSome Operator features restore Execution during play. Breacher's Momentum restores 1 Execution when you reduce an Enemy to 0 Vitality or score a critical hit, and Rallying Cry restores 2 Execution when you roll Initiative while empty.",
+    execution: "Operator: Execution\n\nThe Operator's resource is Execution, often abbreviated EX. They represent battlefield discipline, command timing, squad coordination, and the tactical precision required to control the pace of a firefight. The Operator entry already defines this pool under Execution.\n\nExecution Pool\nMaximum Execution = Caliber + Wits Modifier (minimum 1)\n\nRefresh\nYou regain all spent Execution at the end of a Short Rest or Long Rest.\n\nWhat Execution Fuels\nExecution fuel Tactical Maneuvers and subclass precision attacks.\n\nExamples already present in the draft include:\nSuppressing Fire, Reposition, Focus Fire, Pin Down, Covering Fire\n\nExample\nA Level 3 Operator has Caliber 2 and Wits 16 for a +3 Wits Modifier. Their maximum Execution is 5.\n\nExecution Recovery Features\nSome Operator features restore Execution during play. Breacher's Momentum restores 1 Execution when you reduce an Enemy to 0 Vitality or score a critical hit, and Rallying Cry restores 2 Execution when you roll Initiative while empty.",
 
     triage: "Stitcher: Triage\n\nThe Stitcher's resource is Triage. It represents the calibrated chemical output, medical synthesis capacity, and emergency support bandwidth of the Stitcher's Triage Rig. The Stitcher section already defines both the rig dependency and the Triage pool formula.\n\nTriage Pool\nMaximum Triage = Caliber + Tech Modifier (minimum 1)\n\nRefresh\nYou regain all spent Triage at the end of a Short Rest or Long Rest.\n\nHardware Requirement\nYou must have your Triage Rig equipped to use Triage Protocols. If the rig is lost or destroyed, you must replace or rebuild it before regaining full function. The draft already outlines normal replacement, scrap-rig fallback, and crafting options.\n\nWhat Triage Fuels\nTriage fuels Triage Protocols and subclass medical or toxic burst effects.\n\nExamples already present in the draft include:\nAdrenaline Spike, Chemical Purge, Trauma Patch, Toxic Overdose, Neuro-Corrosive Cloud, Biological Meltdown\n\nExample\nA Level 1 Stitcher has Caliber 1 and Tech 17 for a +3 Tech Modifier. Their maximum Triage is 4.\n\nTriage Recovery Features\nSome Stitcher features restore Triage mid-Encounter or between scenes. The Golden Hour restores 1 spent Triage when an Ally within 12 spaces falls Unconscious or suffers a Critical Condition from a hostile source, and the Ripper subclass can convert harvested Cyber-Scrap into Triage through Rig Fuel.",
 
