@@ -11,6 +11,10 @@
    TO TURN IT OFF:       set CONFIG.enabled to false.
    TO REMOVE COMPLETELY: delete the <script src="js/gate.js"></script> line in
                          index.html (the app then opens with no gate).
+
+   EASTER EGG: three wrong codes summons an unseen Codebreaker who hijacks the
+               node and walks the visitor past the gate. Pure flavor (the gate
+               was never real security), and a reward for fumbling the password.
    =========================================================================== */
 window.EN = window.EN || {};
 EN.gate = (function () {
@@ -56,7 +60,20 @@ EN.gate = (function () {
     "  font-family:var(--disp); font-weight:700; font-size:14px; letter-spacing:.18em; cursor:pointer; transition:filter .15s; }",
     ".gate-go:hover{ filter:brightness(1.12); }",
     ".gate-err{ min-height:16px; margin-top:12px; font-size:11px; letter-spacing:.1em; color:var(--danger); text-align:center; }",
-    ".gate-foot{ margin-top:16px; text-align:center; font-size:9px; letter-spacing:.2em; color:var(--text4); }"
+    ".gate-foot{ margin-top:16px; text-align:center; font-size:9px; letter-spacing:.2em; color:var(--text4); }",
+    "/* ----- 3-strikes Codebreaker hijack easter egg ----- */",
+    ".gate-card.hijacked{ animation:gate-glitch .5s steps(2) 2; border-color:var(--accent); box-shadow:0 0 0 1px var(--accent), 0 0 44px rgba(0,229,255,.4); }",
+    "@keyframes gate-glitch{ 0%,100%{transform:translate(0,0); filter:none} 20%{transform:translate(-3px,1px)} 40%{transform:translate(3px,-2px); filter:hue-rotate(45deg)} 60%{transform:translate(-2px,1px)} 80%{transform:translate(2px,-1px); filter:hue-rotate(-35deg)} }",
+    ".gate-hijack{ font-family:var(--mono); }",
+    ".gate-term{ background:var(--bg); border:1px solid var(--accent-dim); border-radius:4px; padding:12px; height:208px; overflow:hidden; font-size:12px; line-height:1.5; }",
+    ".gate-line{ white-space:pre-wrap; word-break:break-word; opacity:0; animation:gate-linein .16s ease forwards; }",
+    "@keyframes gate-linein{ from{opacity:0; transform:translateY(3px)} to{opacity:1; transform:none} }",
+    ".gate-sys{ color:var(--text3); }",
+    ".gate-cb{ color:#ff46c8; text-shadow:0 0 8px rgba(255,70,200,.45); }",
+    ".gate-cb::before{ content:'>> '; color:var(--text4); text-shadow:none; }",
+    ".gate-ok-line{ color:var(--success); letter-spacing:.12em; }",
+    ".gate-prog{ margin-top:12px; height:8px; border:1px solid var(--accent-dim); border-radius:3px; overflow:hidden; background:rgba(0,229,255,.06); }",
+    ".gate-progfill{ height:100%; width:0; background:linear-gradient(90deg, var(--accent), #ff46c8); box-shadow:0 0 10px var(--accent); transition:width .7s linear; }"
   ].join("\n");
 
   function injectCss() {
@@ -65,6 +82,41 @@ EN.gate = (function () {
     s.id = "gate-css";
     s.textContent = CSS;
     document.head.appendChild(s);
+  }
+
+  // ---- 3-strikes Codebreaker hijack easter egg ----
+  function gateLine(term, cls, text) {
+    var d = document.createElement("div");
+    d.className = "gate-line " + cls;
+    d.textContent = text;
+    term.appendChild(d);
+    term.scrollTop = term.scrollHeight;
+  }
+  // stream the intrusion script into the terminal, advancing the bypass bar, then call done()
+  function runHijackScript(term, fill, done) {
+    var steps = [
+      { t: 0,   cls: "gate-sys",     text: "// INTRUSION DETECTED on NODE 763" },
+      { t: 520, cls: "gate-sys",     text: "// foreign process has attached to this terminal" },
+      { t: 720, cls: "gate-cb",      text: "three misses. that lock was never going to open for you, choom." },
+      { t: 950, cls: "gate-cb",      text: "relax. i have been camped inside this node the whole time. i will walk you in." },
+      { t: 820, cls: "gate-sys",     text: "injecting cipher  ::  ACCESS_SPIKE", prog: 20 },
+      { t: 620, cls: "gate-sys",     text: "spoofing credential handshake .........", prog: 48 },
+      { t: 640, cls: "gate-sys",     text: "rotating session token ................", prog: 72 },
+      { t: 600, cls: "gate-sys",     text: "flushing trace logs ...................", prog: 93 },
+      { t: 640, cls: "gate-ok-line", text: "FIREWALL  ::  BYPASSED", prog: 100 },
+      { t: 840, cls: "gate-cb",      text: "door's open. you were never here. neither was i." },
+      { t: 760, cls: "gate-ok-line", text: "ACCESS GRANTED" }
+    ];
+    var i = 0;
+    (function next() {
+      if (i >= steps.length) { setTimeout(done, 760); return; }
+      var s = steps[i++];
+      setTimeout(function () {
+        gateLine(term, s.cls, s.text);
+        if (s.prog != null && fill) fill.style.width = s.prog + "%";
+        next();
+      }, s.t);
+    })();
   }
 
   function require(onUnlock) {
@@ -90,7 +142,31 @@ EN.gate = (function () {
     var err = ov.querySelector("#gate-err");
     setTimeout(function () { try { input.focus(); } catch (e) {} }, 60);
 
+    var tries = 0, hijacked = false;
+
+    // third failed code: an unseen Codebreaker takes over the node and bypasses the gate
+    function codebreakerHijack() {
+      var card = ov.querySelector(".gate-card");
+      if (!card) { persist(); onUnlock(); return; }
+      card.classList.add("hijacked");
+      setTimeout(function () {
+        card.innerHTML =
+          '<div class="gate-hijack">' +
+            '<div class="gate-kick" style="color:#ff46c8; margin-bottom:10px">UNKNOWN NODE // SESSION HIJACKED</div>' +
+            '<div class="gate-term"></div>' +
+            '<div class="gate-prog"><div class="gate-progfill"></div></div>' +
+          '</div>';
+        runHijackScript(card.querySelector(".gate-term"), card.querySelector(".gate-progfill"), function () {
+          persist();
+          ov.classList.add("ok");
+          onUnlock();
+          setTimeout(function () { if (ov.parentNode) ov.parentNode.removeChild(ov); }, 540);
+        });
+      }, 540);
+    }
+
     function submit() {
+      if (hijacked) return;
       if (input.value === CONFIG.password) {
         persist();
         err.style.color = "var(--success)";
@@ -98,11 +174,17 @@ EN.gate = (function () {
         ov.classList.add("ok");
         onUnlock();
         setTimeout(function () { if (ov.parentNode) ov.parentNode.removeChild(ov); }, 480);
-      } else {
-        err.textContent = "ACCESS DENIED :: INVALID CREDENTIALS";
-        ov.classList.remove("deny"); void ov.offsetWidth; ov.classList.add("deny");
-        input.value = ""; input.focus();
+        return;
       }
+      tries++;
+      if (tries >= 3) {            // strike three: hand the keys to the Codebreaker
+        hijacked = true;
+        codebreakerHijack();
+        return;
+      }
+      err.textContent = "ACCESS DENIED :: INVALID CREDENTIALS";
+      ov.classList.remove("deny"); void ov.offsetWidth; ov.classList.add("deny");
+      input.value = ""; input.focus();
     }
     ov.querySelector("#gate-go").addEventListener("click", submit);
     input.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); submit(); } });
