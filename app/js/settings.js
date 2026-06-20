@@ -21,16 +21,15 @@ EN.theme = (function () {
   // original values for its swatch but is applied by clearing overrides (see apply()).
   var THEMES = [
     { key: "grid",       name: "#GRID",        accent: "#00e5ff", dim: "#0a8aa0", bg: "#07090d", bg2: "#0f141d", border: "#233044", border2: "#34465f" },
-    { key: "slimegirl",  name: "Slime Girl",   accent: "#4fe6a8", dim: "#1f8f68", bg: "#061611", bg2: "#0c2419", border: "#1f5d44", border2: "#2f8060" },
-    { key: "pbandj",     name: "PB and J",     accent: "#eb9a3e", dim: "#9c5e1e", bg: "#150a1c", bg2: "#221033", border: "#4a2660", border2: "#6b3a86" },
-    { key: "chaos",      name: "Chaos",        accent: "#d2d046", dim: "#7d7a22", bg: "#141021", bg2: "#1f1a30", border: "#463a55", border2: "#63573f" },
-    { key: "urbanhaze",  name: "Urban Haze",   accent: "#aeb952", dim: "#5f6b27", bg: "#0f1209", bg2: "#181b0e", border: "#3b4220", border2: "#585f33" },
+    // light mode: flips text dark and panels light, with a soft pink/cyan hex backdrop (see theme.css html.light)
+    { key: "daybreak",   name: "Daybreak",     light: true, accent: "#d23f8c", dim: "#9c2e66", bg: "#eef1f7", bg2: "#ffffff", border: "#c7cfdc", border2: "#a6b4c6", text: "#1e2733", text2: "#4a5a6e", text3: "#74859a", text4: "#a3b2c4" },
+    { key: "slimegirl",  name: "Slime Time",   accent: "#4fe6a8", dim: "#1f8f68", bg: "#061611", bg2: "#0c2419", border: "#1f5d44", border2: "#2f8060" },
+    { key: "pbandj",     name: "Flavor Wizard",     accent: "#eb9a3e", dim: "#9c5e1e", bg: "#150a1c", bg2: "#221033", border: "#4a2660", border2: "#6b3a86" },
+    { key: "chaos",      name: "Elysium Nights", accent: "#d2d046", dim: "#7d7a22", bg: "#141021", bg2: "#1f1a30", border: "#463a55", border2: "#63573f" },
     { key: "manarift",   name: "Mana Rift",    accent: "#6f8cff", dim: "#2f3f99", bg: "#080c1c", bg2: "#0e1533", border: "#283a72", border2: "#3a4f96" },
     { key: "merlot",     name: "Merlot",       accent: "#e2506e", dim: "#8a2238", bg: "#16040a", bg2: "#270b13", border: "#5a1f2e", border2: "#7e3042" },
-    { key: "evilcurse",  name: "Evil Curse",   accent: "#a96ce2", dim: "#5e3a99", bg: "#100a1a", bg2: "#1b1232", border: "#3f2a62", border2: "#573a82" },
-    { key: "blazeit",    name: "420 Blaze It", accent: "#f0913c", dim: "#9c5a1e", bg: "#08130b", bg2: "#0e2113", border: "#244e2b", border2: "#357040" },
-    { key: "highheavens",name: "High Heavens", accent: "#ead6a0", dim: "#9c8a55", bg: "#100e1a", bg2: "#1c1930", border: "#403a5c", border2: "#5b5480" },
-    { key: "rosegold",   name: "Rose Gold",    accent: "#e89a86", dim: "#9c5a4a", bg: "#160c0b", bg2: "#251513", border: "#563733", border2: "#7e504a" }
+    { key: "evilcurse",  name: "Flowstate",    accent: "#a96ce2", dim: "#5e3a99", bg: "#100a1a", bg2: "#1b1232", border: "#3f2a62", border2: "#573a82" },
+    { key: "highheavens",name: "Elysium Heights", accent: "#ead6a0", dim: "#9c8a55", bg: "#100e1a", bg2: "#1c1930", border: "#403a5c", border2: "#5b5480" }
   ];
 
   // managed variables: cleared on "#GRID" to fall back to the original :root values
@@ -50,7 +49,18 @@ EN.theme = (function () {
   function find(k) { for (var i = 0; i < THEMES.length; i++) { if (THEMES[i].key === k) return THEMES[i]; } return null; }
   function get() { try { return localStorage.getItem(KEY) || "grid"; } catch (e) { return "grid"; } }
   function apply(k) {
-    var t = find(k) || THEMES[0], s = document.documentElement.style;
+    var t = find(k) || THEMES[0], s = document.documentElement.style, root = document.documentElement;
+    // light themes flip the text dark and toggle a class so the dark-only chrome rules invert
+    if (t.light) {
+      root.classList.add("light");
+      s.setProperty("--text", t.text || "#1e2733");
+      s.setProperty("--text2", t.text2 || "#4a5a6e");
+      s.setProperty("--text3", t.text3 || "#74859a");
+      s.setProperty("--text4", t.text4 || "#a3b2c4");
+    } else {
+      root.classList.remove("light");
+      ["--text", "--text2", "--text3", "--text4"].forEach(function (v) { s.removeProperty(v); });
+    }
     if (t.key === "grid") { MANAGED.forEach(function (v) { s.removeProperty(v); }); return; }
     s.setProperty("--accent", t.accent);
     s.setProperty("--accent-dim", t.dim);
@@ -87,7 +97,7 @@ EN.settings = (function () {
     "  border:1px solid var(--accent-dim); border-radius:6px;",
     "  box-shadow:0 0 0 1px rgba(255,255,255,.03), 0 24px 70px rgba(0,0,0,.65), var(--glow-cyan); }",
     ".set-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:18px 20px 12px;",
-    "  border-bottom:1px solid var(--border); position:sticky; top:0; background:linear-gradient(180deg,var(--bg2),rgba(15,20,29,.97)); }",
+    "  border-bottom:1px solid var(--border); position:sticky; top:0; background:linear-gradient(180deg,var(--bg2),var(--bg1)); }",
     ".set-kick{ font-family:var(--mono); font-size:10px; letter-spacing:.2em; color:var(--text3); }",
     ".set-title{ font-size:22px; letter-spacing:.06em; color:var(--text); margin-top:2px; }",
     ".set-close{ flex:0 0 auto; background:transparent; border:1px solid var(--border2); color:var(--text2);",

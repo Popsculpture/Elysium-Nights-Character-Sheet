@@ -345,3 +345,26 @@ select{ appearance:none; background-image:linear-gradient(45deg,transparent 50%,
   50%{ box-shadow:0 0 10px rgba(192,132,252,.85), 0 0 20px rgba(168,85,247,.6); opacity:1; }
 }
 @keyframes vigorSheen{ 0%{ background-position:140% 0; } 100%{ background-position:-40% 0; } }
+
+/* ===== light mode (Daybreak) =============================================
+   The theme engine sets light --bg/--panel/--border/--text variables and adds
+   .light to <html>. These rules handle the spots that hardcode dark: the page
+   backdrop (soft pink/cyan hex-tech vibe), the scanline veil, the topbar, the
+   wizard rail, and the white-on-dark hover overlays. Drop a real image at
+   url(../img/light-bg.png) into the body rule to use the exact artwork.
+   ========================================================================= */
+html.light body{
+  background:
+    radial-gradient(560px 430px at 0% 0%,    rgba(236,150,200,0.50), transparent 62%),
+    radial-gradient(560px 430px at 100% 0%,   rgba(150,205,235,0.46), transparent 62%),
+    radial-gradient(560px 430px at 100% 100%, rgba(236,150,200,0.46), transparent 62%),
+    radial-gradient(560px 430px at 0% 100%,   rgba(150,205,235,0.46), transparent 62%),
+    linear-gradient(180deg, #f4f6fb, #eaeef6);
+  background-attachment:fixed;
+}
+html.light body::after{ display:none; }                 /* drop the dark scanline veil */
+html.light .os-topbar{ background:linear-gradient(180deg, rgba(255,255,255,.92), rgba(240,243,249,.82)); }
+html.light .wizard-rail{ background:linear-gradient(180deg, rgba(255,255,255,.92), rgba(240,243,249,.85)); }
+html.light .os-tab:hover{ background:rgba(0,0,0,.045); }
+html.light .sktable tr:hover td{ background:rgba(0,0,0,.03); }
+html.light .pop-btn:hover{ background:rgba(0,0,0,.05) !important; }
