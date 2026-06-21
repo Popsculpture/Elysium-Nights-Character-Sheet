@@ -1402,7 +1402,7 @@ EN.builder = (function () {
     if (t) info = el("div.feature", { style: { marginTop: "8px" } }, [
       el("h4", null, [document.createTextNode(t.name), el("span.src", { text: t.category || "" })]),
       t.requirements ? el("p.help", { style: { color: "var(--warn)" }, text: "Requires: " + t.requirements }) : null,
-      el("p", { text: t.text })]);
+      renderText(t.text)]);
     return el("div", null, [sel, info]);
   }
 
@@ -1474,12 +1474,67 @@ EN.builder = (function () {
   }
 
   /* ---------- shared feature renderer ---------- */
+
+  // Converts **bold** markers in a text string into mixed text/strong child nodes.
+  function applyInline(parent, text) {
+    var parts = text.split(/(\*\*[^*]+\*\*)/);
+    parts.forEach(function (part) {
+      if (part.slice(0, 2) === "**" && part.slice(-2) === "**") {
+        parent.appendChild(el("strong", { text: part.slice(2, -2) }));
+      } else if (part) {
+        parent.appendChild(document.createTextNode(part));
+      }
+    });
+  }
+
+  // Renders feature text with support for paragraph breaks (\n\n), bullet
+  // lists (lines starting with "• "), inline **bold**, and mixed blocks where
+  // a prose sentence leads directly into a bullet list within the same block.
+  function renderText(text) {
+    if (!text) return el("p", { text: "" });
+    var blocks = text.split("\n\n");
+    var nodes = [];
+    blocks.forEach(function (block) {
+      var lines = block.split("\n").map(function (l) { return l.trim(); }).filter(Boolean);
+      if (!lines.length) return;
+      var bulletStart = -1;
+      for (var i = 0; i < lines.length; i++) {
+        if (lines[i].charAt(0) === "•") { bulletStart = i; break; }
+      }
+      if (bulletStart === -1) {
+        var p = el("p", { style: { margin: nodes.length ? "6px 0 0" : "0" } });
+        applyInline(p, block.trim());
+        nodes.push(p);
+      } else {
+        if (bulletStart > 0) {
+          var p2 = el("p", { style: { margin: nodes.length ? "6px 0 0" : "0" } });
+          applyInline(p2, lines.slice(0, bulletStart).join(" "));
+          nodes.push(p2);
+        }
+        var ul = el("ul", { style: { margin: "4px 0 0", paddingLeft: "16px", fontSize: "13.5px", color: "rgb(147, 168, 192)", lineHeight: "1.45" } });
+        lines.slice(bulletStart).forEach(function (line) {
+          if (line.charAt(0) === "•") {
+            var li = el("li", { style: { marginBottom: "3px" } });
+            applyInline(li, line.slice(1).trim());
+            ul.appendChild(li);
+          }
+        });
+        nodes.push(ul);
+      }
+    });
+    if (!nodes.length) return el("p", { text: "" });
+    if (nodes.length === 1) return nodes[0];
+    var wrap = el("div");
+    nodes.forEach(function (n) { wrap.appendChild(n); });
+    return wrap;
+  }
+
   function feature(name, text, kind, src, locked) {
     var extra = (kind === "flow" || kind === "species" || kind === "lineage") ? kind : "";
     if (locked) extra += " locked";
     return el("div.feature", { class: extra.trim() }, [
       el("h4", null, [document.createTextNode(name), src ? el("span.src", { text: src }) : null]),
-      el("p", { text: text || "" })
+      renderText(text)
     ]);
   }
 
@@ -1494,7 +1549,7 @@ EN.builder = (function () {
           isSub && subName ? el("span", { style: { color: "var(--text3)", fontWeight: 400, fontSize: "11.5px", marginLeft: "8px", letterSpacing: ".04em" }, text: "· " + subName }) : null
         ])
       ]),
-      el("p", { text: f.text || "" })
+      renderText(f.text)
     ]);
   }
 
