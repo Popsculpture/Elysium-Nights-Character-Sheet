@@ -1540,9 +1540,10 @@ EN.builder = (function () {
 
   // Class Progression feature block, cyan for base class, purple for subclass
   // (with an inline "· Subclass Name" suffix, per the reference layout).
+  // Features can include a `nested` array for embedded sub-panels (e.g., stat blocks).
   function progFeature(f, isSub, subName, locked) {
     var color = isSub ? "var(--flow)" : "var(--accent)";
-    return el("div.feature" + (locked ? ".locked" : ""), { style: { borderLeftColor: color } }, [
+    var node = el("div.feature" + (locked ? ".locked" : ""), { style: { borderLeftColor: color } }, [
       el("h4", null, [
         el("span", null, [
           el("span", { style: { color: locked ? "var(--text2)" : color }, text: f.name }),
@@ -1551,6 +1552,14 @@ EN.builder = (function () {
       ]),
       renderText(f.text)
     ]);
+    if (f.nested && f.nested.length) {
+      f.nested.forEach(function (sub) {
+        var n = feature(sub.name, sub.text, "", "", locked);
+        n.style.marginTop = "10px";
+        node.appendChild(n);
+      });
+    }
+    return node;
   }
 
   // Resource feature with a structured ability list (Moxie Gambits, Overdrive Maneuvers, Triage
