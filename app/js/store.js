@@ -57,6 +57,8 @@ EN.store = (function () {
       skillFocuses: [],                  // [{skill, aspect}]
       specializations: [],               // [{skill, aspect}]
       talents: [],                       // talent keys
+      customFeatures: [],                // player/GM manual Features on the Freelancer tab: [{id,name,source,effect,note,category,action,cost,uses,range,duration}]
+      featureAnnotations: {},            // per computed-feature notes/flags: {featureName: {note, pinned, important, hidden}}
       universalUpgrades: {},             // {level: {type:'attr'|'talent'|'evolution', ...}}
       awakeningEvolution: null,          // Level 4 Awakening Milestone free Lineage Evolution
       cyberware: [],                     // INSTALLED chrome (feeds Static / Chrome Tax + Open Architecture)
@@ -86,6 +88,7 @@ EN.store = (function () {
       equippedShield: null,              // wielded physical shield (one at a time)
       equippedFocus: null,               // attuned Warding Focus (one at a time)
       weaponAmmo: {},                    // {weaponName: {cur, mode, ammoType}}, magazine/fire-mode tracking
+      carry: {},                         // Loadout carry status per item name: "carried" | "mission" (absent = stashed)
       glimmer: 0,
       log: []
     };
@@ -110,6 +113,10 @@ EN.store = (function () {
       if (!ch.versatile[t]) ch.versatile[t] = { attr: "", skill: "" };
     });
     if (!ch.featureUses) ch.featureUses = {};
+    if (!Array.isArray(ch.customFeatures)) ch.customFeatures = [];           // manual Features on the Freelancer tab
+    if (!ch.featureAnnotations || typeof ch.featureAnnotations !== "object") ch.featureAnnotations = {};  // notes/flags on computed features
+    if (!ch.carry || typeof ch.carry !== "object") ch.carry = {};            // Loadout carry status per item
+    if (ch.identity && ch.identity.notes === undefined) ch.identity.notes = "";  // freeform notes, shared with the #PRINT Identity step
     if (!ch.equippedWeapons) ch.equippedWeapons = [];
     if (ch.equippedArmor === undefined) ch.equippedArmor = null;
     if (ch.equippedShield === undefined) ch.equippedShield = null;
@@ -200,6 +207,7 @@ EN.store = (function () {
   function importCharacter(obj) {
     if (!obj || !obj.meta) throw new Error("Invalid character file.");
     if (!obj.meta.id || state.roster[obj.meta.id]) obj.meta.id = uid();
+    migrate(obj);   // normalize an imported (possibly older) file now, not just on next load()
     state.roster[obj.meta.id] = obj;
     state.activeId = obj.meta.id;
     persist(true); emit();

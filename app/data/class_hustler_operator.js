@@ -63,7 +63,7 @@ EN.classes.hustler = {
       },
       {
         name: "Read the Room",
-        text: "You instinctively map the social and tactical layout of a space. Once per scene, as a Free Action, you can observe your surroundings to definitively identify who holds the most authority in the room, and who is currently suffering the most Fatigue (or has the lowest Vitality).\n\nBecause you know exactly who to flatter and who to pressure, you gain Edge on your first in-combat social d20 check against that authority figure (or add +1 Edge Die to your first out-of-combat social Dice Pool check). Alternatively, you gain Edge on your first attack roll against the Target with the most Fatigue or lowest Vitality, or the first Leverage ability you direct at them costs 0 Leverage."
+        text: "You instinctively map the social and tactical layout of a space. You always know who holds the most authority in the room, and who is currently suffering the most Fatigue (or has the lowest Vitality).\n\nOnce per encounter, as a Special Action, you can spend that read on a single opening: Edge on your first in-combat social d20 check against that authority figure (or add +1 Edge Die to your first out-of-combat social Dice Pool check), Edge on your first attack roll against the Target with the most Fatigue or lowest Vitality, or the first Leverage ability you direct at them costs 0 Leverage."
       },
       {
         name: "Hustler Subclass",

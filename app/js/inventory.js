@@ -109,6 +109,7 @@ EN.inventoryView = (function () {
       if (c.equippedArmor === name) c.equippedArmor = null;     // a sold/dropped piece can't stay worn
       if (c.equippedShield === name) c.equippedShield = null;
       if (c.equippedFocus === name) c.equippedFocus = null;
+      if (c.carry) delete c.carry[name];                        // drop its Loadout carry status too (no orphaned key)
     }
   }
 

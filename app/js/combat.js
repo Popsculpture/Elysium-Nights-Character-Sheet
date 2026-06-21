@@ -15,7 +15,7 @@ EN.combatView = (function () {
   var LAYOUT_KEY_V1 = "en_freelancer_layout_v1";
   var DEFAULT_LAYOUT = [
     { key: "matrix", w: 4 }, { key: "vitality", w: 2 },
-    { key: "skills", w: 2 }, { key: "flow", w: 6 }, { key: "actions", w: 4 },
+    { key: "skills", w: 2 }, { key: "flow", w: 6 }, { key: "actions", w: 4 }, { key: "defend", w: 2 },
     { key: "saves", w: 3 }, { key: "conditions", w: 6 }, { key: "senses", w: 3 },
     { key: "profs", w: 6 }
   ];
@@ -375,9 +375,16 @@ EN.combatView = (function () {
     });
   }
 
-  /* ---------- action classification (for the tabbed Actions panel) ---------- */
-  var _tab = "ALL";
-  var _featTab = "abilities";  // Abilities (active attacks & interactions, shown first) | Features (passives)
+  /* ---------- the tabbed Freelancer Actions panel ----------
+     One play-facing record with five tabs:
+       Abilities  active, spendable, triggerable things (resource abilities + active features)
+       Features   "what does my character have": passive computed features + manual GM/player entries
+       Weapons    equipped-weapon attacks (unchanged behavior; pulled from the Inventory stash)
+       Loadout    a filtered view of Inventory: what's carried / on a mission / equipped for the scene
+       Notes      a freeform field (shared with the #PRINT Identity notes)
+     DEFEND is intentionally NOT a tab; it lives in its own always-visible section. */
+  var _panelTab = "abilities";
+  var _featShowHidden = false;    // reveal computed features the player has hidden
 
   /* resource features that bundle several abilities (Moxie Gambits, Overdrive Maneuvers, Triage
      Protocols, ...) are broken out into their own rows, each tagged with its resource cost chip,
@@ -405,7 +412,9 @@ EN.combatView = (function () {
     if (/Impulse Action/i.test(text || "")) return "Impulse";
     if (/Swift Action/i.test(text || "")) return "Swift";
     if (/Free Action/i.test(text || "")) return "Free";
+    if (/Complex Action/i.test(text || "")) return "Complex";
     if (/as an Action|use your Action|spend (an|your) Action|standard Action|as a single Action|take the Attack Action/i.test(text || "")) return "Action";
+    if (/Special Action/i.test(text || "")) return "Special";
     return "Passive";
   }
   function isLimited(text) {
@@ -512,6 +521,40 @@ EN.combatView = (function () {
   function ammoCatalog() { return (EN.gearCatalog.ammo && EN.gearCatalog.ammo.items) || []; }
   function munitions() { return (EN.gearCatalog.signature && EN.gearCatalog.signature.munitions) || []; }
   function ownedQty(ch, name) { var e = (ch.equipment || []).find(function (x) { return x.name === name; }); return e ? (e.qty || 0) : 0; }
+
+  /* ---------- Loadout helpers (the Freelancer-tab filtered view of Inventory) ----------
+     The full gear catalog (every bucket), item lookup, the per-item carry status the
+     player sets, and the derived flags (heavy / restricted / limited-use) read off the
+     item data so the Loadout view stays in sync with what's actually owned. */
+  function fullCatalog() {
+    var g = EN.gearCatalog || {};
+    return [].concat(
+      (g.melee && g.melee.items) || [], (g.ranged && g.ranged.items) || [],
+      (g.signature && g.signature.items) || [], (g.signature && g.signature.munitions) || [],
+      (g.ammo && g.ammo.items) || [], (g.armor && g.armor.items) || [], (g.tools && g.tools.items) || []);
+  }
+  function invItem(name) { return fullCatalog().find(function (x) { return x.name === name; }); }
+  function carryStatus(ch, name) { return (ch.carry && ch.carry[name]) || "stashed"; }
+  function setCarry(name, status) {
+    store.update(function (c) {
+      c.carry = c.carry || {};
+      if (!status || status === "stashed") delete c.carry[name]; else c.carry[name] = status;
+    });
+  }
+  // a weapon (equippedWeapons) or the worn armor / wielded shield / attuned focus is on-person by definition
+  function isEquippedAny(ch, name) {
+    return (ch.equippedWeapons || []).indexOf(name) !== -1 || ch.equippedArmor === name || ch.equippedShield === name || ch.equippedFocus === name;
+  }
+  function equipLabel(ch, name) {
+    if ((ch.equippedWeapons || []).indexOf(name) !== -1) return "Equipped";
+    if (ch.equippedArmor === name) return "Worn";
+    if (ch.equippedShield === name) return "Wielding";
+    if (ch.equippedFocus === name) return "Attuned";
+    return null;
+  }
+  function isHeavy(it) { return it.group === "Heavy" || it.heavy === true || (it.traits || []).some(function (t) { return /^Heavy\b/.test(t); }); }
+  function isRestricted(it) { return it.legality === "Restricted" || it.legality === "Contraband"; }
+  function isLimitedUse(it) { return !!it.counted || typeof it.uses === "number" || (it.traits || []).some(function (t) { return /^Disposable\b/.test(t); }); }
 
   /* damage parse: "1d8 Ballistic" / "2d6 Ballistic and Force" / "Unarmed + 1d4 Electric" / "0" */
   function parseDamage(raw) {
@@ -1330,20 +1373,200 @@ EN.combatView = (function () {
       return { id: "act-" + i, name: f.name.replace(/\s*\((Active|Passive)\)\s*$/i, ""), src: f.source + " · L" + f.level,
                text: f.text, cost: cost, limited: isLimited(f.text), chip: f.chip, uses: parseUses(f.text, d) };
     });
-    var TABS = ["ALL", "ATTACK", "ACTION", "SWIFT", "IMPULSE", "PASSIVE", "LIMITED"];
-    var tabRow = el("div.row.wrap", { style: { gap: "6px", marginBottom: "10px" } }, TABS.map(function (t) {
-      return el("button.btn.sm" + (_tab === t ? ".primary" : ""), { onclick: function () { _tab = t; EN.app.render(); } }, t);
-    }));
-    var actionKids = [tabRow];
-    // attacks (shown on ALL + ATTACK), built from the weapons equipped in the Inventory stash
-    if (_tab === "ALL" || _tab === "ATTACK") {
-      actionKids.push(el("div.section-title", { style: { margin: "6px 0 2px" } }, [document.createTextNode("Attacks"), el("span.line")]));
-      var atkSnag = fx.snagAtk ? "Active condition · Snag on all attack rolls" : null;
-      var GROUP_CAT = { Simple: "Simple Weapons", Martial: "Martial Weapons", Sidearm: "Sidearms", Longarm: "Longarms",
-                        Heavy: "Heavy Weapons", Launcher: "Explosive Launchers", Thrown: "Thrown Weapons", Bowfire: "Bowfire Weapons" };
-      var equippedNames = (ch.equippedWeapons || []).filter(function (n) {
-        return (ch.equipment || []).some(function (e) { return e.name === n && e.qty > 0; });
+    // active vs passive split of the computed features (markers already folded into cost)
+    var activeFeats = feats.filter(function (f) { return f.cost !== "Passive"; });
+    var passiveFeats = feats.filter(function (f) { return f.cost === "Passive"; });
+
+    /* shared across the Weapons tab, Defend section, and Loadout count */
+    var GROUP_CAT = { Simple: "Simple Weapons", Martial: "Martial Weapons", Sidearm: "Sidearms", Longarm: "Longarms",
+                      Heavy: "Heavy Weapons", Launcher: "Explosive Launchers", Thrown: "Thrown Weapons", Bowfire: "Bowfire Weapons" };
+    var equippedNames = (ch.equippedWeapons || []).filter(function (n) {
+      return (ch.equipment || []).some(function (e) { return e.name === n && e.qty > 0; });
+    });
+
+    /* ---- ABILITIES tab: the class resource fuel + active, triggerable abilities ---- */
+    function abilitiesKids() {
+      var kids = [];
+      if (d.resource) {
+        var rCur = (ch.resources.current[d.resource.name] != null) ? ch.resources.current[d.resource.name] : d.resource.max;
+        rCur = eng.clamp(rCur, 0, d.resource.max);
+        kids.push(el("div.section-title", { style: { margin: "2px 0 2px" } }, [document.createTextNode(d.resource.name), el("span.line")]));
+        kids.push(el("div.row.between.wrap", { style: { alignItems: "center" } }, [
+          el("div.mono", { style: { fontSize: "22px", color: resourceColor(d.resource.name) }, html: rCur + " <span style='font-size:13px;color:var(--text3)'>/ " + d.resource.max + " · " + d.resource.attributeName + " · refresh on rest</span>" }),
+          plusMinus(function () { store.update(function (c) { c.resources.current[d.resource.name] = Math.max(0, rCur - 1); }); },
+                    function () { store.update(function (c) { c.resources.current[d.resource.name] = Math.min(d.resource.max, rCur + 1); }); })
+        ]));
+        kids.push(bar(rCur, d.resource.max, resourceColor(d.resource.name)));
+      }
+      kids.push(el("div.section-title", { style: { margin: d.resource ? "12px 0 2px" : "2px 0 2px" } }, [document.createTextNode("Abilities"), el("span.line")]));
+      if (activeFeats.length) {
+        activeFeats.forEach(function (f) {
+          var uses = f.uses ? {
+            max: f.uses.max, recharge: f.uses.recharge,
+            spent: Math.min((((ch.featureUses || {})[f.name] || {}).n) || 0, f.uses.max),
+            onSet: function (n) {
+              store.update(function (c) {
+                c.featureUses = c.featureUses || {};
+                if (n <= 0) delete c.featureUses[f.name];
+                else c.featureUses[f.name] = { n: n, r: f.uses.recharge };
+              });
+            }
+          } : null;
+          kids.push(actionEntry(f.id, f.name, f.cost, f.src, f.text, f.limited, f.chip, uses));
+        });
+      } else {
+        kids.push(el("p.help", { style: { margin: 0 }, text: "No active abilities yet. Resource abilities you pick on #PRINT show up here, ready to fire." }));
+      }
+      // combat actions reference, tucked behind a collapsible header
+      if ((C.commonActions || []).length) {
+        var acOpen = !!_open["actions-in-combat"];
+        kids.push(el("div.section-title.clickable", {
+          style: { margin: "12px 0 2px" },
+          title: acOpen ? "Hide the action list" : "Tap for the list of combat actions",
+          onclick: function () { _open["actions-in-combat"] = !acOpen; EN.app.render(); }
+        }, [document.createTextNode("Actions in Combat"), el("span.line"), el("span.collapse-caret", { style: { marginLeft: "4px" }, text: acOpen ? "▾" : "▸" })]));
+        if (acOpen) kids.push(el("p.help", { style: { marginBottom: "6px" }, text: (C.commonActions || []).map(function (a) { return a.name; }).join(", ") + ", full rules in the Codex tab." }));
+      }
+      return kids;
+    }
+
+    /* ---- FEATURES tab: "what does my character have" ----
+       Auto-built passive features (read-only rules text, player-annotatable) plus
+       manual GM/player entries. Computed and custom features live in one place. */
+    function annot(name) { return (ch.featureAnnotations || {})[name] || {}; }
+    function setAnnot(name, patch, silent) {
+      store.update(function (c) {
+        c.featureAnnotations = c.featureAnnotations || {};
+        var a = c.featureAnnotations[name] || {};
+        Object.keys(patch).forEach(function (k) { a[k] = patch[k]; });
+        if (!a.note && !a.pinned && !a.important && !a.hidden) delete c.featureAnnotations[name];
+        else c.featureAnnotations[name] = a;
+      }, silent ? { silent: true } : undefined);
+    }
+    function flagBtn(glyph, on, title, onclick) {
+      return el("button", { title: title, onclick: function (e) { e.stopPropagation(); onclick(); },
+        style: { background: on ? "var(--accent)" : "transparent", color: on ? "var(--bg)" : "var(--text3)",
+                 border: "1px solid " + (on ? "var(--accent)" : "var(--border2)"), borderRadius: "3px",
+                 minWidth: "22px", height: "20px", lineHeight: "1", fontSize: "11px", cursor: "pointer", padding: "0 3px", flex: "0 0 auto" } }, glyph);
+    }
+    function featureRefEntry(f) {
+      // collapse + note-open state keyed by the stable feature name (not the positional id),
+      // so open cards don't carry over to a different feature when the list order/length changes
+      var a = annot(f.name), id = "feat-" + f.name, open = !!_open[id], noteOpen = !!_open["note-" + f.name];
+      var controls = el("div.row", { style: { gap: "4px", flex: "0 0 auto" }, onclick: function (e) { e.stopPropagation(); } }, [
+        flagBtn("☆", !!a.important, a.important ? "Unmark important" : "Mark important", function () { setAnnot(f.name, { important: !a.important }); }),
+        flagBtn("⇧", !!a.pinned, a.pinned ? "Unpin" : "Pin to top", function () { setAnnot(f.name, { pinned: !a.pinned }); }),
+        flagBtn("✎", noteOpen || !!a.note, "Personal note", function () { _open["note-" + f.name] = !noteOpen; EN.app.render(); }),
+        flagBtn("⊘", false, "Hide from the list", function () { setAnnot(f.name, { hidden: true }); })
+      ]);
+      return el("div.feature", { style: { borderLeftColor: a.important ? "var(--gold)" : "var(--border2)" } }, [
+        el("h4", { style: { cursor: "pointer", flexWrap: "wrap", gap: "6px" }, onclick: function () { _open[id] = !open; EN.app.render(); } }, [
+          el("span", null, [el("span.collapse-caret", { text: open ? "▾" : "▸" }), document.createTextNode(" " + f.name),
+            a.pinned ? el("span.chip", { style: { marginLeft: "8px", fontSize: "9px", color: "var(--accent)", borderColor: "var(--accent)" }, text: "PINNED" }) : null,
+            el("span.chip", { style: { marginLeft: "6px", fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" }, text: "PASSIVE" })]),
+          el("span", { style: { display: "flex", alignItems: "center", gap: "8px", marginLeft: "auto" } }, [el("span.src", { text: f.src }), controls])
+        ]),
+        open ? el("p", { text: f.text || "" }) : null,
+        (!noteOpen && a.note) ? el("p.help", { style: { margin: "4px 0 0", color: "var(--accent)" }, text: "✎ " + a.note }) : null,
+        noteOpen ? el("div", { style: { margin: "6px 0 2px" } }, [
+          el("textarea", { value: a.note || "", placeholder: "Your note on this feature…",
+            oninput: function () { var v = this.value; setAnnot(f.name, { note: v }, true); },
+            style: { width: "100%", minHeight: "52px", fontSize: "12px" } })
+        ]) : null
+      ]);
+    }
+    function customFeatureEditor(cf, i) {
+      var key = cf.id || i;
+      function fld(k, label, ph, area) {
+        return el("div.field", { style: { marginBottom: "6px" } }, [
+          el("label.fl", { style: { margin: "0 0 2px" }, text: label }),
+          el(area ? "textarea" : "input", { value: cf[k] || "", placeholder: ph || "",
+            oninput: function () { var v = this.value; store.update(function (c) { if (c.customFeatures[i]) c.customFeatures[i][k] = v; }, { silent: true }); },
+            style: area ? { width: "100%", minHeight: "54px", fontSize: "12px" } : { width: "100%", fontSize: "12px" } })
+        ]);
+      }
+      var adv = !!_open["cfadv-" + key];
+      return el("div.feature", { style: { borderLeftColor: "var(--accent)" } }, [
+        fld("name", "Name", "Street Saint"),
+        fld("source", "Source", "Faction Perk"),
+        fld("effect", "Effect", "What it does…", true),
+        fld("note", "Player note", "Only works in Warrens districts.", true),
+        el("div.section-title.clickable", { style: { margin: "4px 0 2px" }, onclick: function () { _open["cfadv-" + key] = !adv; EN.app.render(); } },
+          [document.createTextNode("Ability-like fields (optional)"), el("span.line"), el("span.collapse-caret", { style: { marginLeft: "4px" }, text: adv ? "▾" : "▸" })]),
+        adv ? el("div.grid2", null, [
+          fld("category", "Category", "Maneuver / Protocol / Boon"),
+          fld("action", "Activation", "Swift Action / Impulse Action"),
+          fld("cost", "Resource cost", "1 Moxie / 2 FP"),
+          fld("uses", "Uses / recharge", "2 per Long Rest"),
+          fld("range", "Range", "6 spaces"),
+          fld("duration", "Duration", "1 minute")
+        ]) : null,
+        el("div.row", { style: { gap: "6px", marginTop: "8px", justifyContent: "flex-end" } }, [
+          el("button.btn.sm.primary", { onclick: function () { _open["cfedit-" + key] = false; EN.app.render(); } }, "✓ DONE")
+        ])
+      ]);
+    }
+    function customFeatureCard(cf, i) {
+      var key = cf.id || i;
+      if (_open["cfedit-" + key]) return customFeatureEditor(cf, i);
+      var id = "cf-" + key, open = !!_open[id];
+      var chips = [];
+      function ch_(text, color) { if (text) chips.push(el("span.chip", { style: { fontSize: "9px", color: color, borderColor: color }, text: text })); }
+      ch_(cf.category, "var(--flow)"); ch_(cf.action, "var(--accent)"); ch_(cf.cost, "var(--gold)");
+      ch_(cf.uses, "var(--text2)"); ch_(cf.range && "Range " + cf.range, "var(--text2)"); ch_(cf.duration, "var(--text2)");
+      return el("div.feature", { style: { borderLeftColor: "var(--gold)" } }, [
+        el("h4", { style: { cursor: "pointer", flexWrap: "wrap", gap: "6px" }, onclick: function () { _open[id] = !open; EN.app.render(); } }, [
+          el("span", null, [el("span.collapse-caret", { text: open ? "▾" : "▸" }), document.createTextNode(" " + (cf.name || "Untitled Feature")),
+            el("span.chip", { style: { marginLeft: "6px", fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" }, text: "CUSTOM" })]),
+          el("span.src", { text: cf.source || "" })
+        ]),
+        open && chips.length ? el("div.row.wrap", { style: { gap: "5px", margin: "2px 0 6px" } }, chips) : null,
+        open && cf.effect ? el("p", { text: cf.effect }) : null,
+        open && cf.note ? el("p.help", { style: { margin: "4px 0 0", color: "var(--accent)" }, text: "✎ " + cf.note }) : null,
+        open ? el("div.row", { style: { gap: "6px", marginTop: "8px", justifyContent: "flex-end" } }, [
+          el("button.btn.sm", { onclick: function () { _open["cfedit-" + key] = true; EN.app.render(); } }, "✎ EDIT"),
+          el("button.btn.sm.danger", { onclick: function () { store.update(function (c) { c.customFeatures.splice(i, 1); }); } }, "✕ DELETE")
+        ]) : null
+      ]);
+    }
+    function featuresKids() {
+      var kids = [];
+      var visible = [], hidden = [];
+      passiveFeats.forEach(function (f) { (annot(f.name).hidden ? hidden : visible).push(f); });
+      visible.sort(function (a, b) {
+        var aa = annot(a.name), bb = annot(b.name);
+        return ((bb.pinned ? 2 : 0) + (bb.important ? 1 : 0)) - ((aa.pinned ? 2 : 0) + (aa.important ? 1 : 0));
       });
+      kids.push(el("div.section-title", { style: { margin: "2px 0 2px" } }, [document.createTextNode("Class & Build Features"), el("span.line")]));
+      kids.push(el("p.help", { style: { margin: "0 0 6px" }, text: "Auto-built from your class, subclass, species, lineage, and background. Star, pin, annotate, or hide any of them; the rules text stays as written." }));
+      if (visible.length) visible.forEach(function (f) { kids.push(featureRefEntry(f)); });
+      else kids.push(el("p.help", { style: { margin: 0 }, text: "No passive features yet." }));
+      if (hidden.length) {
+        kids.push(el("div.section-title.clickable", { style: { margin: "10px 0 2px" },
+          onclick: function () { _featShowHidden = !_featShowHidden; EN.app.render(); } },
+          [document.createTextNode("Hidden (" + hidden.length + ")"), el("span.line"), el("span.collapse-caret", { style: { marginLeft: "4px" }, text: _featShowHidden ? "▾" : "▸" })]));
+        if (_featShowHidden) hidden.forEach(function (f) { kids.push(featureRefEntry(f)); });
+      }
+      kids.push(el("div.section-title", { style: { margin: "14px 0 2px" } }, [document.createTextNode("Custom Features"), el("span.line")]));
+      var customs = ch.customFeatures || [];
+      if (customs.length) customs.forEach(function (cf, i) { kids.push(customFeatureCard(cf, i)); });
+      else kids.push(el("p.help", { style: { margin: 0 }, text: "Track GM boons, faction perks, story rewards, homebrew traits, and one-off rulings here." }));
+      kids.push(el("button.btn.sm", { style: { marginTop: "8px", borderStyle: "dashed", color: "var(--accent)", borderColor: "var(--accent)" },
+        onclick: function () {
+          store.update(function (c) {
+            c.customFeatures = c.customFeatures || [];
+            var nid = "cf_" + Date.now().toString(36);
+            c.customFeatures.push({ id: nid, name: "", source: "", effect: "", note: "", category: "", action: "", cost: "", uses: "", range: "", duration: "" });
+            _open["cfedit-" + nid] = true;
+          });
+        } }, "＋ Add a Feature"));
+      return kids;
+    }
+
+    /* ---- WEAPONS tab: equipped-weapon attacks (behavior unchanged) ---- */
+    function weaponsKids() {
+      var kids = [];
+      var atkSnag = fx.snagAtk ? "Active condition · Snag on all attack rolls" : null;
       // to-hit: governing attribute + weapon-category proficiency bonus
       function weaponHit(it) {
         var melee = it.group === "Simple" || it.group === "Martial";
@@ -1371,7 +1594,6 @@ EN.combatView = (function () {
           el("span.mono", { style: { fontSize: "15px", color: color || "var(--text)" }, text: value })
         ]);
       }
-
       equippedNames.forEach(function (wname, wi) {
         var it = findWeapon(wname);
         if (!it) return;
@@ -1462,34 +1684,130 @@ EN.combatView = (function () {
         // traits line
         rowKids.push(el("div.row.wrap", { style: { gap: "5px", marginTop: "6px" } }, norm.traits.map(wTraitChip)));
 
-        actionKids.push(el("div", { style: { padding: "8px 4px", borderBottom: "1px solid rgba(35,48,68,.5)" } }, rowKids));
+        kids.push(el("div", { style: { padding: "8px 4px", borderBottom: "1px solid rgba(35,48,68,.5)" } }, rowKids));
       });
       if (!equippedNames.length) {
-        actionKids.push(attackRow("Unarmed Strike", eng.fmtMod(d.attributes.BOD.mod), "d20 + Body + proficiency · unarmed damage + Body mod", "var(--ember)", atkSnag));
-        actionKids.push(el("p.help", { style: { margin: "4px 0 6px" }, text: "No weapons equipped; hit ⚔ EQUIP on a weapon in Inventory → Stash to list it here." }));
+        kids.push(attackRow("Unarmed Strike", eng.fmtMod(d.attributes.BOD.mod), "d20 + Body + proficiency · unarmed damage + Body mod", "var(--ember)", atkSnag));
+        kids.push(el("p.help", { style: { margin: "4px 0 6px" }, text: "No weapons equipped; hit ⚔ EQUIP on a weapon in Inventory → Stash to list it here." }));
       }
-      if (ch.class === "codebreaker") actionKids.push(attackRow("Cipher Attack", eng.fmtMod(d.attributes.TEC.mod), "d20 + Tech + proficiency vs Node · Quick Hacks under fire", "var(--accent)"));
-      if (d.flow) actionKids.push(attackRow("Flow Attack", eng.fmtMod(d.flow.attack), "d20 + " + d.flow.attributeName + " · Invocation Save DC " + d.flow.dc, "var(--flow)"));
+      if (ch.class === "codebreaker") kids.push(attackRow("Cipher Attack", eng.fmtMod(d.attributes.TEC.mod), "d20 + Tech + proficiency vs Node · Quick Hacks under fire", "var(--accent)"));
+      if (d.flow) kids.push(attackRow("Flow Attack", eng.fmtMod(d.flow.attack), "d20 + " + d.flow.attributeName + " · Invocation Save DC " + d.flow.dc, "var(--flow)"));
+      return kids;
     }
-    // common actions chips (ALL + ACTION), the list of actions nests under the
-    // clickable header so it can be tucked away when not needed
-    if ((_tab === "ALL" || _tab === "ACTION") && (C.commonActions || []).length) {
-      var acOpen = !!_open["actions-in-combat"];
-      actionKids.push(el("div.section-title.clickable", {
-        style: { margin: "12px 0 2px" },
-        title: acOpen ? "Hide the action list" : "Tap for the list of combat actions",
-        onclick: function () { _open["actions-in-combat"] = !acOpen; EN.app.render(); }
-      }, [
-        document.createTextNode("Actions in Combat"),
-        el("span.line"),
-        el("span.collapse-caret", { style: { marginLeft: "4px" }, text: acOpen ? "▾" : "▸" })
-      ]));
-      if (acOpen) actionKids.push(el("p.help", { style: { marginBottom: "6px" }, text: (C.commonActions || []).map(function (a) { return a.name; }).join(", ") + ", full rules in the Codex tab." }));
+
+    /* ---- LOADOUT tab: a filtered view of Inventory (what's on you for the scene) ---- */
+    function loadoutKids() {
+      var kids = [];
+      var owned = (ch.equipment || []).filter(function (e) { return e.qty > 0; });
+      var inScene = owned.filter(function (e) { return isEquippedAny(ch, e.name) || carryStatus(ch, e.name) !== "stashed"; });
+      var nCarried = 0, nMission = 0, nEquipped = 0, nHeavy = 0;
+      inScene.forEach(function (e) {
+        var it = invItem(e.name), cs = carryStatus(ch, e.name);
+        // equipped wins; an equipped item is never also tallied as carried/mission
+        if (isEquippedAny(ch, e.name)) nEquipped++;
+        else if (cs === "carried") nCarried++;
+        else if (cs === "mission") nMission++;
+        if (it && isHeavy(it)) nHeavy++;
+      });
+      kids.push(el("p.help", { style: { margin: "2px 0 8px" }, text: "What you brought to the scene. Inventory is the warehouse; this is the kit on your person. "
+        + nEquipped + " equipped · " + nCarried + " carried · " + nMission + " mission" + (nHeavy ? " · " + nHeavy + " heavy" : "") + "." }));
+      if (!inScene.length) {
+        kids.push(el("p.help", { style: { margin: "0 0 6px", color: "var(--text3)" }, text: "Nothing in your loadout yet. Equip gear in Inventory, or add carried items below." }));
+      } else {
+        function rank(e) { return isEquippedAny(ch, e.name) ? 0 : carryStatus(ch, e.name) === "mission" ? 1 : 2; }
+        inScene.sort(function (a, b) { return rank(a) - rank(b); });
+        inScene.forEach(function (e) { kids.push(loadoutRow(e)); });
+      }
+      // add-to-loadout picker (stash items not yet carried or equipped)
+      var stashOnly = owned.filter(function (e) { return !isEquippedAny(ch, e.name) && carryStatus(ch, e.name) === "stashed"; });
+      if (stashOnly.length) {
+        var addSel = el("select", { style: { fontSize: "12px", width: "auto" } },
+          [el("option", { value: "", text: "＋ add a carried item…" })].concat(stashOnly.map(function (e) {
+            return el("option", { value: e.name, text: e.name + (e.qty > 1 ? " ×" + e.qty : "") });
+          })));
+        addSel.addEventListener("change", function () { if (addSel.value) setCarry(addSel.value, "carried"); });
+        kids.push(el("div.row", { style: { gap: "8px", marginTop: "10px", alignItems: "center" } }, [addSel]));
+      } else if (owned.length) {
+        kids.push(el("p.help", { style: { margin: "10px 0 0", color: "var(--text4)" }, text: "Everything you own is already in your loadout." }));
+      }
+      return kids;
     }
-    // Defend (ALL + IMPULSE); Active Defenses are Impulse maneuvers. Each row shows
-    // the live value for THIS character (equipped shield/weapon/focus, Resilience Die,
-    // Flow Mod, Acrobatics) and dims when the equipment/attunement requirement is unmet.
-    if ((_tab === "ALL" || _tab === "IMPULSE") && (C.activeDefenses || []).length) {
+    function loadoutRow(e) {
+      var it = invItem(e.name);
+      var equipped = isEquippedAny(ch, e.name), eqLabel = equipLabel(ch, e.name);
+      var cs = carryStatus(ch, e.name);
+      var chips = [];
+      if (eqLabel) chips.push(el("span.chip", { style: { fontSize: "9px", color: "var(--accent)", borderColor: "var(--accent)" }, text: eqLabel.toUpperCase() }));
+      if (it) {
+        if (isHeavy(it)) chips.push(el("span.chip", { title: "Heavy Item; bulky, slot-limited, or cumbersome", style: { fontSize: "9px", color: "var(--ember)", borderColor: "var(--ember)" }, text: "HEAVY" }));
+        if (isRestricted(it)) chips.push(el("span.chip", { title: "Legality: " + it.legality, style: { fontSize: "9px", color: it.legality === "Contraband" ? "var(--danger)" : "var(--ember)", borderColor: it.legality === "Contraband" ? "var(--danger)" : "var(--ember)" }, text: it.legality.toUpperCase() }));
+        if (isLimitedUse(it)) chips.push(el("span.chip", { title: "Counted / limited-use; track every unit", style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" }, text: "LIMITED" }));
+        if (it.slot && it.slot !== "None") chips.push(el("span.chip", { title: "Body slot: " + it.slot, style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" }, text: "◧ " + it.slot }));
+      }
+      // equipped gear is on-person by definition; its slot is managed in Inventory, so it
+      // shows a static tag rather than the carry selector (no "Stashed but Equipped" contradiction)
+      var statusCtrl = equipped
+        ? el("span.mono", { title: "Equipped gear is managed in Inventory", style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".06em" }, text: "ON-PERSON" })
+        : el("select", { title: "Carry status", style: { fontSize: "11px", width: "auto" }, onchange: function () { setCarry(e.name, this.value); } },
+            [["stashed", "Stashed"], ["carried", "Carried"], ["mission", "Mission"]].map(function (o) {
+              return el("option", { value: o[0], selected: cs === o[0], text: o[1] });
+            }));
+      return el("div.feature", { style: { borderLeftColor: equipped ? "var(--accent)" : cs === "mission" ? "var(--gold)" : "var(--border2)" } }, [
+        el("div.row", { style: { gap: "8px", alignItems: "center", flexWrap: "wrap" } }, [
+          el("span", { style: { fontWeight: 600, fontSize: "13px" }, text: e.name }),
+          e.qty > 1 ? el("span.mono", { style: { fontSize: "11px", color: "var(--text3)" }, text: "×" + e.qty }) : null,
+          el("span", { style: { flex: "1 1 auto" } }),
+          statusCtrl
+        ]),
+        chips.length ? el("div.row.wrap", { style: { gap: "5px", marginTop: "6px" } }, chips) : null
+      ]);
+    }
+
+    /* ---- NOTES tab: freeform, shared with the #PRINT Identity notes ---- */
+    function notesKids() {
+      return [
+        el("p.help", { style: { margin: "2px 0 8px" }, text: "Freeform space tied to this Freelancer. Shared with the Notes field on the #PRINT Identity step." }),
+        el("textarea", {
+          value: (ch.identity && ch.identity.notes) || "",
+          placeholder: "Origin details, Facets, Core Sparks, Tethers, Fault Lines, contacts, debts, critical injuries, reputation, faction standing, mission leads, custom rulings, unresolved complications…",
+          oninput: function () { var v = this.value; store.update(function (c) { c.identity = c.identity || {}; c.identity.notes = v; }, { silent: true }); },
+          style: { width: "100%", minHeight: "320px", fontSize: "13px", lineHeight: "1.6", resize: "vertical" }
+        })
+      ];
+    }
+
+    /* ---- the five-tab nav + active tab body ---- */
+    function loadoutCount() {
+      return (ch.equipment || []).filter(function (e) { return e.qty > 0 && (isEquippedAny(ch, e.name) || carryStatus(ch, e.name) !== "stashed"); }).length;
+    }
+    var TAB_DEFS = [
+      { key: "abilities", label: "Abilities", count: activeFeats.length },
+      { key: "features", label: "Features", count: passiveFeats.length + (ch.customFeatures || []).length },
+      { key: "weapons", label: "Weapons", count: equippedNames.length },
+      { key: "loadout", label: "Loadout", count: loadoutCount() },
+      { key: "notes", label: "Notes", count: null }
+    ];
+    var navRow = el("div.row.wrap", { style: { gap: "6px", marginBottom: "10px" } }, TAB_DEFS.map(function (t) {
+      return el("button.btn.sm" + (_panelTab === t.key ? ".primary" : ""), { onclick: function () { _panelTab = t.key; EN.app.render(); } },
+        t.label + (t.count != null ? " (" + t.count + ")" : ""));
+    }));
+    var bodyKids = _panelTab === "features" ? featuresKids()
+      : _panelTab === "weapons" ? weaponsKids()
+      : _panelTab === "loadout" ? loadoutKids()
+      : _panelTab === "notes" ? notesKids()
+      : abilitiesKids();
+    // pin the nav row; everything below scrolls together as one well that fills the panel
+    sectionEls.actions = EN.ui.panel("Actions", _panelTab.toUpperCase(),
+      [navRow, el("div.actions-frame", null, [el("div.actions-scroll", null, bodyKids)])],
+      { corners: true });
+    sectionEls.actions.classList.add("fill-col");
+    if (sectionEls.actions.bodyEl) sectionEls.actions.bodyEl.classList.add("fill-body");
+
+    /* ---- DEFEND, its own always-visible section (kept out of the tabs per the play spec).
+       Active Defenses are Impulse maneuvers; each row shows the live value for THIS
+       character and only lists defenses the character can actually use right now. ---- */
+    function defendPanel() {
+      var kids = [];
       var resDie = d.resilienceDie ? "d" + d.resilienceDie : "Resilience Die";
       var acro = d.skills.find(function (s) { return s.name === "Acrobatics"; });
       var attuned = !!d.flow, flowMod = d.flow ? eng.fmtMod(d.flow.attack) : null;
@@ -1515,18 +1833,18 @@ EN.combatView = (function () {
                    summary: "Roll " + resDie + (focusDie ? " + " + focusDie + " (" + focusName + ")" : "") + ", subtract from incoming damage" }
       };
       var defOpen = !!_open["defend-rules"];
-      actionKids.push(el("div.section-title.clickable", {
-        style: { margin: "12px 0 2px" },
+      kids.push(el("div.section-title.clickable", {
+        style: { margin: "2px 0 2px" },
         title: defOpen ? "Hide the Active Defense rules" : "Tap for how Active Defenses work",
         onclick: function () { _open["defend-rules"] = !defOpen; EN.app.render(); }
-      }, [document.createTextNode("Defend"), el("span.line"), el("span.collapse-caret", { style: { marginLeft: "4px" }, text: defOpen ? "▾" : "▸" })]));
+      }, [document.createTextNode("How Active Defenses work"), el("span.line"), el("span.collapse-caret", { style: { marginLeft: "4px" }, text: defOpen ? "▾" : "▸" })]));
       if (defOpen) {
-        if (C.defense) actionKids.push(el("p.help", { style: { margin: "0 0 4px", color: "var(--text2)", whiteSpace: "pre-wrap" }, text: C.defense }));
-        if (C.activeDefenseRules) actionKids.push(el("p.help", { style: { margin: "0 0 4px", whiteSpace: "pre-wrap" }, text: C.activeDefenseRules }));
-        if (C.defenseNotes) actionKids.push(el("p.help", { style: { margin: "0 0 6px", color: "var(--warn)" }, text: "Conditions: " + C.defenseNotes }));
+        if (C.defense) kids.push(el("p.help", { style: { margin: "0 0 4px", color: "var(--text2)", whiteSpace: "pre-wrap" }, text: C.defense }));
+        if (C.activeDefenseRules) kids.push(el("p.help", { style: { margin: "0 0 4px", whiteSpace: "pre-wrap" }, text: C.activeDefenseRules }));
+        if (C.defenseNotes) kids.push(el("p.help", { style: { margin: "0 0 6px", color: "var(--warn)" }, text: "Conditions: " + C.defenseNotes }));
       }
       // the equipped armor / shield / focus chips sit just above the maneuvers
-      defenseLoadoutEls().forEach(function (elm) { actionKids.push(elm); });
+      defenseLoadoutEls().forEach(function (elm) { kids.push(elm); });
       // Resurge & Siphon are Flow-counter maneuvers, only surface them for Shapers
       var SHAPER_ONLY = { Resurge: true, Siphon: true };
       (C.activeDefenses || []).forEach(function (def) {
@@ -1544,72 +1862,13 @@ EN.combatView = (function () {
           el("span.chip", { title: def.cost, style: { fontSize: "9px", color: fp ? "var(--flow)" : "var(--accent)", borderColor: fp ? "var(--flow)" : "var(--accent)" } }, fp ? "IMPULSE · 1 FP" : "IMPULSE"),
           el("span", { style: { flex: 1, minWidth: "150px", fontSize: "11.5px", color: "var(--text2)" }, text: L.summary })
         ]);
-        var kids = [head];
-        if (open) kids.push(el("p.help", { style: { margin: "4px 0 8px 18px", whiteSpace: "pre-wrap" }, text: def.text }));
-        actionKids.push(el("div", null, kids));
+        var dkids = [head];
+        if (open) dkids.push(el("p.help", { style: { margin: "4px 0 8px 18px", whiteSpace: "pre-wrap" }, text: def.text }));
+        kids.push(el("div", null, dkids));
       });
+      return EN.ui.panel("Defend", "ACTIVE DEFENSES · IMPULSE", kids, { corners: true });
     }
-    // class resource tracker, the fuel for the features below
-    if (d.resource) {
-      var rCur = (ch.resources.current[d.resource.name] != null) ? ch.resources.current[d.resource.name] : d.resource.max;
-      rCur = eng.clamp(rCur, 0, d.resource.max);
-      actionKids.push(el("div.section-title", { style: { margin: "12px 0 2px" } }, [document.createTextNode(d.resource.name), el("span.line")]));
-      actionKids.push(el("div.row.between.wrap", { style: { alignItems: "center" } }, [
-        el("div.mono", { style: { fontSize: "22px", color: resourceColor(d.resource.name) }, html: rCur + " <span style='font-size:13px;color:var(--text3)'>/ " + d.resource.max + " · " + d.resource.attributeName + " · refresh on rest</span>" }),
-        plusMinus(function () { store.update(function (c) { c.resources.current[d.resource.name] = Math.max(0, rCur - 1); }); },
-                  function () { store.update(function (c) { c.resources.current[d.resource.name] = Math.min(d.resource.max, rCur + 1); }); })
-      ]));
-      actionKids.push(bar(rCur, d.resource.max, resourceColor(d.resource.name)));
-    }
-    // feature actions, filtered by tab
-    var shown = feats.filter(function (f) {
-      if (_tab === "ALL") return true;
-      if (_tab === "LIMITED") return f.limited;
-      if (_tab === "ATTACK") return /attack/i.test(f.text) && f.cost !== "Passive";
-      return f.cost.toUpperCase() === _tab;
-    });
-    if (shown.length) {
-      // Abilities = active attacks & interactions you trigger (shown first); Features = the passives
-      // (name markers were already resolved into the cost when feats were built)
-      var activeFeats = shown.filter(function (f) { return f.cost !== "Passive"; });
-      var passiveFeats = shown.filter(function (f) { return f.cost === "Passive"; });
-      var featList = _featTab === "features" ? passiveFeats : activeFeats;
-      actionKids.push(el("div.row.wrap", { style: { gap: "6px", margin: "12px 0 8px" } }, [
-        el("button.btn.sm" + (_featTab !== "features" ? ".primary" : ""), {
-          title: "Active attacks, actions, and interactions you trigger",
-          onclick: function () { _featTab = "abilities"; EN.app.render(); } }, "ABILITIES (" + activeFeats.length + ")"),
-        el("button.btn.sm" + (_featTab === "features" ? ".primary" : ""), {
-          title: "Passive, always-on benefits",
-          onclick: function () { _featTab = "features"; EN.app.render(); } }, "FEATURES (" + passiveFeats.length + ")")
-      ]));
-      // both lists grow with every level; the whole panel body below the filter row is the scroll well
-      actionKids.push(el("div", null, featList.length
-        ? featList.map(function (f) {
-            var uses = f.uses ? {
-              max: f.uses.max, recharge: f.uses.recharge,
-              spent: Math.min((((ch.featureUses || {})[f.name] || {}).n) || 0, f.uses.max),
-              onSet: function (n) {
-                store.update(function (c) {
-                  c.featureUses = c.featureUses || {};
-                  if (n <= 0) delete c.featureUses[f.name];
-                  else c.featureUses[f.name] = { n: n, r: f.uses.recharge };
-                });
-              }
-            } : null;
-            return actionEntry(f.id, f.name, f.cost, f.src, f.text, f.limited, f.chip, uses);
-          })
-        : [el("p.help", { style: { margin: 0 }, text: _featTab === "features" ? "No passive features in this category." : "No active abilities in this category." })]));
-    } else if (_tab !== "ALL" && _tab !== "ACTION") {
-      actionKids.push(el("p.help", { text: "Nothing in this category." }));
-    }
-    // pin the filter row; everything below it scrolls together as one well that fills the panel
-    // (the scroller is absolutely positioned inside .actions-frame, so a long list scrolls
-    //  instead of stretching the panel; yet the frame still fills down to the bottom border)
-    sectionEls.actions = EN.ui.panel("Actions", _tab,
-      [actionKids[0], el("div.actions-frame", null, [el("div.actions-scroll", null, actionKids.slice(1))])],
-      { corners: true });
-    sectionEls.actions.classList.add("fill-col");
-    if (sectionEls.actions.bodyEl) sectionEls.actions.bodyEl.classList.add("fill-body");
+    sectionEls.defend = defendPanel();
 
     /* gear proficiencies; mirrors the #PRINT "Skills & Proficiencies" combined pane
        (minus Skills, which have their own panel here, and Saves) */

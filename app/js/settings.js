@@ -118,7 +118,7 @@ EN.settings = (function () {
     ".set-swatch.on .set-sw-name{ color:var(--accent); }",
     ".set-strip{ display:flex; height:16px; border-radius:3px; overflow:hidden; border:1px solid rgba(0,0,0,.45); }",
     ".set-seg{ flex:1 1 0; }",
-    ".os-gear{ flex:0 0 auto; border-left:1px solid var(--border); background:var(--bg1); }",
+    ".os-gear{ flex:0 0 auto; background:var(--bg1); }",
     ".os-gear span{ display:inline-block; font-size:15px; transition:transform .25s; }",
     ".os-gear:hover{ color:var(--accent); }",
     ".os-gear:hover span{ transform:rotate(60deg); }"
