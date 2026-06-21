@@ -22,12 +22,14 @@ EN.builder = (function () {
   var _intake = false;   // show the register-or-import gate even when records already exist
   var _collapsed = {};   // {sectionId: true}, UI-only collapse state (persists across re-renders)
   var _dismissed = {};   // {sectionId: dismissKey}, attention markers the player has dismissed
+  var _progFilter = "both"; // "both" | "class" | "subclass" — progression feature filter
 
   // Advance-tab sections default to COLLAPSED: a section is collapsed unless the
   // player has explicitly expanded it (_collapsed[id] === false).
   function isCollapsed(id) { return _collapsed[id] !== false; }
   function toggleCollapse(id) { _collapsed[id] = isCollapsed(id) ? false : true; EN.app.render(); }
   function setCollapsed(ids, state) { ids.forEach(function(id) { _collapsed[id] = state; }); EN.app.render(); }
+  function cycleProgFilter() { _progFilter = _progFilter === "both" ? "class" : _progFilter === "class" ? "subclass" : "both"; EN.app.render(); }
   // a dismissible "attention" dot; dismissKey ties dismissal to a state (e.g. level)
   function attnDot(id, dismissKey, title) {
     return el("span.attn-dot", { title: title || "New options or unspent points, click to dismiss",
@@ -755,8 +757,12 @@ EN.builder = (function () {
         var progIds = [];
         for (var k = 1; k <= R.maxLevel; k++) progIds.push("clsprog-" + k);
         var anyExpanded = progIds.some(function(id) { return !isCollapsed(id); });
+        var filterColor = _progFilter === "class" ? "var(--accent)" : _progFilter === "subclass" ? "var(--flow)" : null;
+        var filterStyle = { cursor: "pointer", whiteSpace: "nowrap", fontSize: "10px", flexShrink: "0" };
+        if (filterColor) { filterStyle.color = filterColor; filterStyle.borderColor = filterColor; }
         blocks.push(el("div", { style: { display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" } }, [
           el("p.help", { style: { margin: 0, flex: "1" }, text: "Click a level to expand its features. Base class features are cyan; subclass features are purple. Set your level on the Advance tab." }),
+          el("span.chip", { style: filterStyle, onclick: function() { cycleProgFilter(); } }, [document.createTextNode(_progFilter === "class" ? "CLASS" : _progFilter === "subclass" ? "SUBCLASS" : "BOTH")]),
           el("span.chip", { style: { cursor: "pointer", whiteSpace: "nowrap", fontSize: "10px", flexShrink: "0" }, onclick: function() { setCollapsed(progIds, anyExpanded); } }, [document.createTextNode(anyExpanded ? "COLLAPSE ALL" : "EXPAND ALL")])
         ]));
       })();
@@ -767,9 +773,11 @@ EN.builder = (function () {
           var active = L <= ch.level;
           var clsFeats = (cls.featuresByLevel && cls.featuresByLevel[String(L)]) || [];
           var subFeats = sub ? (sub.features || []).filter(function (x) { return (x.level || 1) === L; }) : [];
-          var featChips = clsFeats.map(function (f) {
+          var visCls = _progFilter === "subclass" ? [] : clsFeats;
+          var visSub = _progFilter === "class" ? [] : subFeats;
+          var featChips = visCls.map(function (f) {
             return el("span.chip", { style: { fontSize: "10px", color: "var(--accent)", borderColor: "var(--accent-dim)", opacity: active ? 1 : .7 }, text: f.name });
-          }).concat(subFeats.map(function (f) {
+          }).concat(visSub.map(function (f) {
             return el("span.chip", { style: { fontSize: "10px", color: "var(--flow)", borderColor: "var(--flow)", opacity: active ? 1 : .7 }, text: f.name });
           }));
           var head = el("div.panel-h.clickable", { style: { flexWrap: "wrap", rowGap: "4px" }, onclick: function () { toggleCollapse(id); } }, [
@@ -781,12 +789,15 @@ EN.builder = (function () {
             L === ch.level ? el("span.chip.on", { text: "● CURRENT" }) : (active ? null : el("span.chip", { text: "LOCKED" }))
           ]));
           var bodyKids = [];
-          if (!clsFeats.length && !subFeats.length) bodyKids.push(el("p.help", { style: { margin: 0 }, text: "No new features at this level." }));
-          clsFeats.forEach(function (f) {
+          if (!visCls.length && !visSub.length) {
+            var noMsg = (clsFeats.length || subFeats.length) ? "No " + (_progFilter === "class" ? "class" : "subclass") + " features at this level." : "No new features at this level.";
+            bodyKids.push(el("p.help", { style: { margin: 0 }, text: noMsg }));
+          }
+          visCls.forEach(function (f) {
             if (cls.resource && f.name === cls.resource.name && (cls.resource.abilities || []).length) bodyKids.push(resourceFeatureView(f, cls.resource, !active));
             else bodyKids.push(progFeature(f, false, null, !active));
           });
-          subFeats.forEach(function (f) { bodyKids.push(progFeature(f, true, sub.name, !active)); });
+          visSub.forEach(function (f) { bodyKids.push(progFeature(f, true, sub.name, !active)); });
           blocks.push(el("div.panel", { style: { marginBottom: "10px", opacity: active ? 1 : .72 } }, [
             head,
             el("div.panel-b", collapsed ? { style: { display: "none" } } : null, bodyKids)
