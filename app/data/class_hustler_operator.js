@@ -77,7 +77,7 @@ EN.classes.hustler = {
       },
       {
         name: "Universal Upgrade",
-        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute score by 1 (to a maximum of 20), or select one Talent for which you meet the requirements."
+        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
       }
     ],
     "3": [
@@ -89,7 +89,7 @@ EN.classes.hustler = {
     "4": [
       {
         name: "Universal Upgrade",
-        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute score by 1 (to a maximum of 20), or select one Talent for which you meet the requirements."
+        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
       }
     ],
     "5": [
@@ -109,7 +109,7 @@ EN.classes.hustler = {
       },
       {
         name: "Universal Upgrade",
-        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute score by 1 (to a maximum of 20), or select one Talent for which you meet the requirements."
+        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
       }
     ],
     "7": [
@@ -121,7 +121,7 @@ EN.classes.hustler = {
     "8": [
       {
         name: "Universal Upgrade",
-        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute score by 1 (to a maximum of 20), or select one Talent for which you meet the requirements."
+        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
       }
     ],
     "9": [
@@ -314,7 +314,7 @@ EN.classes.operator = {
       },
       {
         name: "Universal Upgrade",
-        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute score by 1 (to a maximum of 20), or select one Talent for which you meet the requirements."
+        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
       }
     ],
     "3": [
@@ -326,7 +326,7 @@ EN.classes.operator = {
     "4": [
       {
         name: "Universal Upgrade",
-        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute score by 1 (to a maximum of 20), or select one Talent for which you meet the requirements."
+        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
       }
     ],
     "5": [
@@ -342,7 +342,7 @@ EN.classes.operator = {
       },
       {
         name: "Universal Upgrade",
-        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute score by 1 (to a maximum of 20), or select one Talent for which you meet the requirements."
+        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
       }
     ],
     "7": [
@@ -354,7 +354,7 @@ EN.classes.operator = {
     "8": [
       {
         name: "Universal Upgrade",
-        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute score by 1 (to a maximum of 20), or select one Talent for which you meet the requirements."
+        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
       }
     ],
     "9": [
@@ -460,7 +460,7 @@ EN.classes.operator = {
         {
           level: 10,
           name: "Dead or Alive",
-          text: "You systematically dismantle your target's physical ability to fight, ensuring they go down exactly how and when you decide. Once per Long Rest, as an Action, you declare an execution order on a target within 12 spaces. For 1 minute, your weapon attacks against the target bypass superficial endurance to inflict severe physical trauma.\n\nThe Takedown Protocol While this execution order is active, you gain the following benefits against your marked Target:\n\nSystemic Trauma: Half of all damage you deal to the Target (rounded up) is dealt as direct Wound damage, immediately reducing their maximum Vitality and forcing the standard Body Save against Fatigue and crippling conditions.\n\nPrecision Targeting: Whenever you successfully hit the Target with a weapon attack, you can spend 2 Execution to apply one of the following precision effects:\n\nDead (Arterial Strike): You perfectly sever a major artery or critical fluid line, instantly inflicting 2 stacks of Bleeding on the Target.\n\nAlive (Tendon Shot): You shatter a kneecap or leg actuator. The Target must make a Body Save (DC = 8 + your Agility or Body Modifier + your Caliber). On a failure, they are violently knocked Prone and their Speed is reduced to 0. They cannot stand up or walk until they receive medical attention or magical healing.\n\nIf this relentless assault reduces the Target to 50 percent or less of their total Wounds, their nervous system completely gives out from the systemic shock. They are instantly knocked Unconscious and stabilized, allowing you to effortlessly collect the bounty dead or alive."
+          text: "You systematically dismantle your target's physical ability to fight, ensuring they go down exactly how and when you decide. Once per Long Rest, as an Action, you declare an execution order on a target within 12 spaces. For 1 minute, your weapon attacks against the target bypass superficial endurance to inflict severe physical trauma.\n\nThe Takedown Protocol While this execution order is active, you gain the following benefits against your marked Target:\n\nSystemic Trauma: Half of all damage you deal to the Target (rounded up) is dealt as direct Wound damage, immediately reducing their maximum Vitality and forcing the standard Body Save against Fatigue and crippling conditions.\n\nPrecision Targeting: Whenever you successfully hit the Target with a weapon attack, you can spend 2 Execution to apply one of the following precision effects:\n\nDead (Arterial Strike): You perfectly sever a major artery or critical fluid line, instantly inflicting 2 stacks of Bleeding on the Target.\n\nAlive (Tendon Shot): You shatter a kneecap or leg actuator. The Target must make a Body Save (DC = 8 + your Agility or Body Modifier + your Caliber). On a failure, they are violently knocked Prone and their Speed is reduced to 0. They cannot stand up or walk until they receive medical attention or Flow healing.\n\nIf this relentless assault reduces the Target to 50 percent or less of their total Wounds, their nervous system completely gives out from the systemic shock. They are instantly knocked Unconscious and stabilized, allowing you to effortlessly collect the bounty dead or alive."
         }
       ]
     }

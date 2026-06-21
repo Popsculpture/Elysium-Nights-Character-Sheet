@@ -12,6 +12,7 @@ EN.backgrounds = [
       "Tools: Choose one (Security Tools, Investigation Tools)",
       "Weapon/Vehicle: Choose one (Sidearms, Ground Vehicles)"
     ],
+    feature: { name: "Flashing the Tin", text: "You know the patrol routes, radio codes, and shift changes of corporate and municipal security. You can usually access low level restricted areas or get a minor infraction overlooked by acting like you still belong to the force, provided you do not push your luck or draw a weapon. Current officers might give you the benefit of the doubt over a civilian." },
     contacts: "Choose two contacts tied to your past, such as a former partner, an internal affairs analyst, or a retired dispatcher.",
     hooks: [
       "The call you answered by the book, and the one you handled off the record.",
@@ -32,6 +33,7 @@ EN.backgrounds = [
       "Tools: Choose one (Bureaucracy Tools, Systems Tools)",
       "Weapon/Vehicle: Choose one (Sidearms, Ground Vehicles)"
     ],
+    feature: { name: "Boardroom Etiquette", text: "You know how to walk, talk, and dress like you own the building. You can freely walk into the lobbies, cafeterias, and low security floors of most corporate offices without being questioned by security or receptionists, as long as you look the part and act like you have a meeting to attend." },
     contacts: "Choose two corporate contacts, such as a mid level manager, an assistant who actually runs the place, or legal counsel who owes you.",
     hooks: [
       "The approval you pushed through that changed everything, and who it hurt.",
@@ -52,6 +54,7 @@ EN.backgrounds = [
       "Tools: Choose one (Systems Tools, Investigation Tools)",
       "Weapon/Vehicle: Choose one (Simple Weapons, Ground Vehicles)"
     ],
+    feature: { name: "Ghost in the Logs", text: "You know the default passwords and common lazy backdoors left by tired system administrators. When accessing public or low security terminals, you can often find hidden directories, developer notes, or bypass basic digital locks without needing to roll. The local digital underground treats you as a known and respected entity." },
     contacts: "Choose two tech contacts, such as an old collective member, a code archivist, or a lightly crooked sysadmin.",
     hooks: [
       "The system you cracked because you could, and what you found inside it.",
@@ -72,6 +75,7 @@ EN.backgrounds = [
       "Tools: Choose one (Media Tools, Fieldcraft Tools)",
       "Weapon/Vehicle: Choose one (Ground Vehicles, Simple Weapons)"
     ],
+    feature: { name: "Press Pass", text: "You know how to bypass gatekeepers. Bouncers, receptionists, and low level security are more likely to let you into press areas, crime scenes, or corporate lobbies if you confidently claim you are following a lead. Whistleblowers and nervous sources inherently trust you to protect their anonymity." },
     contacts: "Choose two media contacts, such as a stringer on your beat, a whistleblower inside a corp, or a bored editor who still answers your calls.",
     hooks: [
       "The story you published that made you famous, or made you a target.",
@@ -92,6 +96,7 @@ EN.backgrounds = [
       "Tools: Choose one (Fieldcraft Tools, Systems Tools)",
       "Weapon/Vehicle: Choose one (Ground Vehicles, Aerial Vehicles)"
     ],
+    feature: { name: "Ghost Routes", text: "You instinctively memorize the blind spots in the city's surveillance and border checkpoints. You can almost always find a path for yourself and a small group to move between adjacent districts without being recorded by standard traffic cameras, automated sensors, or routine patrols." },
     contacts: "Choose two route contacts, such as a port clerk, a neighborhood guide, or a rival courier.",
     hooks: [
       "The run that went wrong at the last checkpoint, and how you escaped.",
@@ -112,6 +117,7 @@ EN.backgrounds = [
       "Tools: Choose one (Medical Tools, Bureaucracy Tools)",
       "Weapon/Vehicle: Choose one (Sidearms, Simple Weapons)"
     ],
+    feature: { name: "Street Pharmacist", text: "You can instantly identify the chemical makeup, purity, and street value of almost any illicit substance or common pharmaceutical by sight, smell, or taste without needing to make a check. Local black market chemists and street level users will generally grant you a neutral audience." },
     contacts: "Choose two trade contacts, such as a cautious supplier, a clinic tech who buys off the books, or a rival dealer you sometimes partner with.",
     hooks: [
       "The batch you will not touch anymore, and what it did to someone you knew.",
@@ -132,6 +138,7 @@ EN.backgrounds = [
       "Tools: Choose one (Infiltration Tools, Security Tools)",
       "Weapon/Vehicle: Choose one (Sidearms, Simple Weapons)"
     ],
+    feature: { name: "Colors and Codes", text: "You understand the unwritten rules of the street. You can automatically identify gang territories, active turf wars, and the meaning behind specific graffiti tags or tattoos. Lower ranking gang members and unaffiliated street kids will typically treat you with cautious respect rather than immediate hostility." },
     contacts: "Choose two gang related contacts, such as a lieutenant, a neutral go between, or a community elder.",
     hooks: [
       "The colors you used to wear, and the rule you broke that made you stop.",
@@ -152,6 +159,7 @@ EN.backgrounds = [
       "Tools: Choose one (Engineering Tools, Systems Tools)",
       "Weapon/Vehicle: Choose one (Industrial / Mechs, Ground Vehicles)"
     ],
+    feature: { name: "Junkyard Dog", text: "You know exactly where to find cheap, discarded, or overlooked hardware. You can usually scrounge up basic replacement parts, scrap metal, or functional low tier tools from alleyways, abandoned vehicles, or local chop shops without spending any money, provided you have a few hours to search." },
     contacts: "Choose two hardware contacts, such as a scrapyard owner, a parts runner, or an old foreman.",
     hooks: [
       "The patch job that saved a crew, and the next failure that haunts you.",
@@ -172,6 +180,7 @@ EN.backgrounds = [
       "Tools: Choose one (Glamour Tools, Infiltration Tools)",
       "Weapon/Vehicle: Choose one (Sidearms, Ground Vehicles)"
     ],
+    feature: { name: "Velvet Rope", text: "You are a known face in the city's nightlife. You and your crew can bypass lines, cover charges, and low level scrutiny at most standard clubs, bars, and lounges. Bouncers, bartenders, and venue staff will usually share minor local gossip with you if you ask nicely." },
     contacts: "Choose two contacts from your prior venues, such as a corporate client, a mid tier fixer, or a club manager who trusts your instincts.",
     hooks: [
       "The regular who thought they owned you, and how you proved they did not.",
@@ -192,6 +201,7 @@ EN.backgrounds = [
       "Tools: Choose one (Fieldcraft Tools, Engineering Tools)",
       "Weapon/Vehicle: Choose one (Simple Weapons, Industrial / Mechs)"
     ],
+    feature: { name: "Concrete Oasis", text: "You know the hidden architecture of the city. You can always find a safe, dry, and hidden place for your crew to rest in urban ruins, abandoned zones, or fringe blocks. Local squatters and fringe communities will usually share a meal or basic local news with you rather than driving you out." },
     contacts: "Choose two community contacts, such as a neighbor organizer, a supply broker, or a local utility insider.",
     hooks: [
       "The rooftop, lot, or fringe block you turned into home, and who wants it back.",
@@ -212,6 +222,7 @@ EN.backgrounds = [
       "Tools: Choose one (Security Tools, Medical Tools)",
       "Weapon/Vehicle: Choose one (Longarms, Heavy Weapons)"
     ],
+    feature: { name: "Professional Courtesy", text: "You know the unspoken etiquette of the mercenary underworld. You can easily find the local safe bars, weapon fences, or neutral ground fixers in a new district. Other professional muscle will generally treat you with mutual respect and avoid starting unnecessary fights with you in neutral territory." },
     contacts: "Choose two professional contacts, such as a fixer, a dispatcher, or a former client.",
     hooks: [
       "The contract that paid too well, and the clause you did not see coming.",
@@ -232,6 +243,7 @@ EN.backgrounds = [
       "Tools: Choose one (Ritual Implements, Bureaucracy Tools)",
       "Weapon/Vehicle: Choose one (Simple Weapons, Ground Vehicles)"
     ],
+    feature: { name: "Shift Worker's Solidarity", text: "You blend perfectly into the background of the working class. Service workers, janitors, and retail clerks will often ignore you if you are somewhere you should not be, assuming you are just another tired employee on a bad shift. You can also easily listen in on unfiltered workplace gossip without raising suspicion." },
     contacts: "Choose two people from your working life, such as a coworker, a shift manager, or a regular who knows too much.",
     hooks: [
       "The incident that Flow touched you, and the co worker who saw too much.",
@@ -252,6 +264,7 @@ EN.backgrounds = [
       "Tools: Choose one (Fieldcraft Tools, Medical Tools)",
       "Weapon/Vehicle: Choose one (Ground Vehicles, Industrial / Mechs)"
     ],
+    feature: { name: "Nomad's Network", text: "You know the smuggling routes and hidden rest stops outside the city limits. You can secure safe passage or a temporary hideout with outlaw crews, drifters, and smugglers, provided you do not bring corporate security or the law down on their heads." },
     contacts: "Choose two outlaw contacts, such as a driver, a fence, or a tunnel runner.",
     hooks: [
       "The rule you refused to follow, and the warrant, contract, or bounty that followed.",
@@ -272,6 +285,7 @@ EN.backgrounds = [
       "Tools: Choose one (Media Tools, Glamour Tools)",
       "Weapon/Vehicle: Choose one (Simple Weapons, Sidearms)"
     ],
+    feature: { name: "Backstage Pass", text: "You know the local underground music scene inside and out. You can secure entry to underground shows, raves, or private venue backrooms. Independent artists and their hardcore fans view you favorably and might hide you if you are running from authorities or corporate security." },
     contacts: "Choose two scene contacts, such as a venue owner, a protest organizer, or a street photographer.",
     hooks: [
       "The song that started a riot, and the person who got blamed for it.",
@@ -292,6 +306,7 @@ EN.backgrounds = [
       "Tools: Choose one (Engineering Tools, Fieldcraft Tools)",
       "Weapon/Vehicle: Choose one (Starcraft, Aerial Vehicles)"
     ],
+    feature: { name: "Dockside Fraternity", text: "You are part of the tight knit community that keeps orbit running. Dockworkers, shuttle pilots, and orbital mechanics will generally offer you a drink and a place to lay low. You can freely access standard commercial launch pads and hangar bays without raising suspicion." },
     contacts: "Choose two spacer contacts, such as a dockmaster, a tug pilot, or a salvage operator.",
     hooks: [
       "The vacuum scare that rewired your instincts, and the sound you still remember.",
@@ -312,6 +327,7 @@ EN.backgrounds = [
       "Tools: Choose one (Media Tools, Medical Tools)",
       "Weapon/Vehicle: Choose one (Simple Weapons, Sidearms)"
     ],
+    feature: { name: "Faded Star", text: "You still have a few loyal fans who remember your peak. Once per session, you can rely on a fan, paparazzi, or former admirer you run into on the street to grant you a minor favor, such as creating a distraction, offering a free ride, or letting you borrow a burner comm, just for the thrill of being near you." },
     contacts: "Choose two fame related contacts, such as a former agent, a devoted fan, or a gossip blogger.",
     hooks: [
       "The moment you went viral, and the part of the story nobody saw.",
@@ -332,6 +348,7 @@ EN.backgrounds = [
       "Tools: Choose one (Ritual Implements, Fieldcraft Tools)",
       "Weapon/Vehicle: Choose one (Simple Weapons, Starcraft)"
     ],
+    feature: { name: "Thin Places", text: "You have an innate sense of the city's spiritual architecture. You can easily locate the nearest rooftop shrine, dead zone, or quiet place where the Flow is calmest. Seekers, street mystics, and urban monks will offer you cryptic advice and safe harbor in these places." },
     contacts: "Choose two contemplative or occult contacts, such as a mentor, a fellow student, or a shrine caretaker.",
     hooks: [
       "The rooftop, shrine, or dead rail spot that feels like yours, and who keeps showing up there.",
@@ -352,6 +369,7 @@ EN.backgrounds = [
       "Tools: Choose one (Medical Tools, Investigation Tools)",
       "Weapon/Vehicle: Choose one (Simple Weapons, Sidearms)"
     ],
+    feature: { name: "The Hippocratic Underground", text: "The street respects the people who stitch it back together. You are generally considered neutral territory by local gangs and syndicates. Unless you are actively causing harm, most criminals will let you pass unharmed, and you can easily access underground black market clinics and ripperdoc lounges to ask questions." },
     contacts: "Choose two medical ties, such as a street clinic operator, a morgue tech, or a ripperdoc.",
     hooks: [
       "The patient you could not save, and the person who blames you for it.",
@@ -372,6 +390,7 @@ EN.backgrounds = [
       "Tools: Choose one (Bureaucracy Tools, Investigation Tools)",
       "Weapon/Vehicle: Choose one (Simple Weapons, Ground Vehicles)"
     ],
+    feature: { name: "Red Tape Navigator", text: "You know exactly how municipal and corporate bureaucracy works. You know the exact forms to file, lines to stand in, and clerks to bribe to get public records, zoning permits, or architectural blueprints without drawing attention to yourself or leaving a digital footprint." },
     contacts: "Choose two office contacts, such as a coworker, a supervisor, or an IT tech who knows shortcuts.",
     hooks: [
       "The policy you enforced that still makes you cringe, and the person who remembers.",
@@ -392,6 +411,7 @@ EN.backgrounds = [
       "Tools: Choose one (Engineering Tools, Investigation Tools)",
       "Weapon/Vehicle: Choose one (Simple Weapons, Ground Vehicles)"
     ],
+    feature: { name: "Academic Privilege", text: "You speak the language of corporate labs and university research. You can gain free access to public university archives, corporate libraries, and academic databases. Other scientists, technicians, and researchers will often talk shop with you, occasionally revealing non classified project details they wouldn't share with the press." },
     contacts: "Choose two research contacts, such as a former supervisor, a colleague who left for black market work, or a scientist who quietly doubts their employer.",
     hooks: [
       "The prototype you helped build, and the first time you realized it was not safe.",

@@ -104,7 +104,7 @@ EN.cyberware = {
       ] },
     { key: "biomonitor", short: "Biomonitor", name: "Biomonitor", zone: "Core", enhancement: "None",
       desc: "An internal pharmacy and diagnostic suite in your torso, releasing precise doses of stims, painkillers, or stabilizers on trauma or command. The exec's daily chrome and the operator's emergency reserve.",
-      effect: "1/Short Rest (Free Action): regain 1d6 Vitality; OR remove one stack of Bleeding/Burning/Poisoned; OR Edge on your next Body Save this round.",
+      effect: "1/Short Rest (Special Action): regain 1d6 Vitality; OR remove one stack of Bleeding/Burning/Poisoned; OR Edge on your next Body Save this round.",
       street: "Imprecise, each use roll 1d6; on a 1 the effect fails (use still spent).",
       black: "Twice/Short Rest, any combination of effects, and +2 Speed automatically on round 1 of any combat.",
       tiers: [

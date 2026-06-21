@@ -65,26 +65,26 @@ EN.classes.codebreaker = {
     ],
     "2": [
       { name: "Wireless Root Access", text: "Your operational reach expands. You no longer require line of sight to interact with the #GRID. You can Scan, Breach, and establish Links with any Node within 24 spaces, even through solid walls, provided the target is not encased in a Faraday cage or shielded by Elite or Apex tier countermeasures." },
-      { name: "Universal Upgrade", text: "Your Freelancer grows in a way that defines them. Choose one: increase one Attribute score by 1 (to a maximum of 20), or select one Talent for which you meet the requirements." }
+      { name: "Universal Upgrade", text: "Your Freelancer grows in a way that defines them. Choose one: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements." }
     ],
     "3": [
       { name: "Subclass Feature", text: "You gain a feature granted by your chosen Codebreaker subclass at this level." }
     ],
     "4": [
-      { name: "Universal Upgrade", text: "Your Freelancer grows in a way that defines them. Choose one: increase one Attribute score by 1 (to a maximum of 20), or select one Talent for which you meet the requirements." }
+      { name: "Universal Upgrade", text: "Your Freelancer grows in a way that defines them. Choose one: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements." }
     ],
     "5": [
       { name: "Multi-Thread Processing", text: "You can partition your consciousness to execute simultaneous attacks across multiple Nodes. Once per combat encounter, as a single Action, you may inject two different Ciphers into two different Nodes you are currently Linked to. You resolve both Cipher Attacks or Saves simultaneously. Each Cipher pays its full Bandwidth cost independently." }
     ],
     "6": [
       { name: "Tactical Execution", text: "You know how to capitalize on the digital chaos you create. Once per round, when you use your Action to establish a Link or inject a Cipher, you may immediately use your Swift Action to make a single standard attack with a Sidearm or SMG. If you are attacking a physical target whose Node you are currently Linked to, this weapon attack is made with Edge." },
-      { name: "Universal Upgrade", text: "Your Freelancer grows in a way that defines them. Choose one: increase one Attribute score by 1 (to a maximum of 20), or select one Talent for which you meet the requirements." }
+      { name: "Universal Upgrade", text: "Your Freelancer grows in a way that defines them. Choose one: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements." }
     ],
     "7": [
       { name: "Subclass Feature", text: "You gain a feature granted by your chosen Codebreaker subclass at this level." }
     ],
     "8": [
-      { name: "Universal Upgrade", text: "Your Freelancer grows in a way that defines them. Choose one: increase one Attribute score by 1 (to a maximum of 20), or select one Talent for which you meet the requirements." }
+      { name: "Universal Upgrade", text: "Your Freelancer grows in a way that defines them. Choose one: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements." }
     ],
     "9": [
       { name: "SysAdmin (Root Access)", text: "You are the absolute authority in the architecture. You gain the following benefits:\n\nUnlimited Threading. You no longer have a maximum cap on your concurrent Links. The only limit is how many you can maintain through Stability Checks under fire.\n\n#GRID Initiative. When you roll Initiative with 0 Bandwidth remaining, immediately regain 3 Bandwidth. You never start a fight empty.\n\nHardware Mastery. Your familiarity with Smartdeck repair is unmatched. Your Downtime Repair cost drops from 10 per HP to 5 per HP. Bricked deck part costs (100 x Tier) are unchanged." }
@@ -219,13 +219,13 @@ EN.classes.fury = {
     ],
     "2": [
       { name: "Juggernaut Momentum", text: "Relentless Advance. You are terrifying once you commit to the attack. Whenever you spend an Action to Dash, or whenever you spend Overdrive to activate a Maneuver that alters physical positioning (such as moving yourself with Linebreaker or violently pushing an enemy with Clear the Path), you gain Vigor equal to your Caliber + your Body Modifier. Furthermore, you ignore the movement penalties of Difficult Terrain for the duration of that turn." },
-      { name: "Universal Upgrade", text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute score by 1 (to a maximum of 20), or select one Talent for which you meet the requirements." }
+      { name: "Universal Upgrade", text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements." }
     ],
     "3": [
       { name: "Subclass Feature", text: "You gain a feature granted by your chosen Fury subclass at this level." }
     ],
     "4": [
-      { name: "Universal Upgrade", text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute score by 1 (to a maximum of 20), or select one Talent for which you meet the requirements." }
+      { name: "Universal Upgrade", text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements." }
     ],
     "5": [
       { name: "Extra Attack", text: "Your brutality becomes a rhythm. Whenever you take the Attack Action on your turn, you can make two standard weapon attacks instead of one." },
@@ -233,13 +233,13 @@ EN.classes.fury = {
     ],
     "6": [
       { name: "Shrug It Off", text: "Pain is just another form of information, and you've learned to ignore it. Once per encounter, when you fail a Save against an effect that would inflict you with the Stunned, Paralyzed, or Confused condition, you can use your Impulse Action to violently force your body to ignore the stimulus. You succeed on the Save instead, taking Vitality damage equal to your Caliber as your body protests the exertion. This damage cannot be resisted or reduced." },
-      { name: "Universal Upgrade", text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute score by 1 (to a maximum of 20), or select one Talent for which you meet the requirements." }
+      { name: "Universal Upgrade", text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements." }
     ],
     "7": [
       { name: "Subclass Feature", text: "You gain a feature granted by your chosen Fury subclass at this level." }
     ],
     "8": [
-      { name: "Universal Upgrade", text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute score by 1 (to a maximum of 20), or select one Talent for which you meet the requirements." }
+      { name: "Universal Upgrade", text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements." }
     ],
     "9": [
       { name: "Adrenaline Engine", text: "The violence sustains you. Whenever you score a Critical Success (Natural 20) on an attack roll, or once per round when you suffer Wound damage from an Enemy's attack, your adrenaline violently spikes, instantly refueling your momentum. You immediately regain 1 spent Overdrive (this cannot exceed your maximum)." }
@@ -250,15 +250,15 @@ EN.classes.fury = {
   },
   progressionTable: [
     { level: 1, caliber: 1, features: ["Overdrive", "Collateral Damage", "Fury Subclass"], resource: "-" },
-    { level: 2, caliber: 2, features: ["Juggernaut Momentum", "Universal Upgrade"], resource: "+5 Points" },
-    { level: 3, caliber: 3, features: ["Subclass Feature"], resource: "-" },
-    { level: 4, caliber: 4, features: ["Universal Upgrade"], resource: "+5 Points" },
-    { level: 5, caliber: 5, features: ["Extra Attack", "Expanded Overdrive"], resource: "-" },
-    { level: 6, caliber: null, features: ["Shrug It Off", "Universal Upgrade"], resource: "+5 Points" },
-    { level: 7, caliber: null, features: ["Subclass Feature"], resource: "-" },
-    { level: 8, caliber: null, features: ["Universal Upgrade"], resource: "-" },
-    { level: 9, caliber: null, features: ["Adrenaline Engine"], resource: "-" },
-    { level: 10, caliber: null, features: ["Subclass Capstone"], resource: "-" }
+    { level: 2, caliber: 1, features: ["Juggernaut Momentum", "Universal Upgrade"], resource: "-" },
+    { level: 3, caliber: 2, features: ["Subclass Feature"], resource: "+5 Points" },
+    { level: 4, caliber: 2, features: ["Universal Upgrade"], resource: "-" },
+    { level: 5, caliber: 3, features: ["Extra Attack", "Expanded Overdrive"], resource: "-" },
+    { level: 6, caliber: 3, features: ["Shrug It Off", "Universal Upgrade"], resource: "+5 Points" },
+    { level: 7, caliber: 4, features: ["Subclass Feature"], resource: "-" },
+    { level: 8, caliber: 4, features: ["Universal Upgrade"], resource: "-" },
+    { level: 9, caliber: 5, features: ["Adrenaline Engine"], resource: "-" },
+    { level: 10, caliber: 5, features: ["Subclass Capstone"], resource: "+5 Points" }
   ],
   subclasses: [
     {

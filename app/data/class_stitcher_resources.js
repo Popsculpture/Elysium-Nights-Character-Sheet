@@ -84,7 +84,7 @@ EN.classes.stitcher = {
     "2": [
       {
         name: "Universal Upgrade",
-        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute score by 1 (to a maximum of 20), or select one Talent for which you meet the requirements"
+        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements"
       },
       {
         name: "First Responder",
@@ -100,7 +100,7 @@ EN.classes.stitcher = {
     "4": [
       {
         name: "Universal Upgrade",
-        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute score by 1 (to a maximum of 20), or select one Talent for which you meet the requirements"
+        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements"
       }
     ],
     "5": [
@@ -120,7 +120,7 @@ EN.classes.stitcher = {
       },
       {
         name: "Universal Upgrade",
-        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute score by 1 (to a maximum of 20), or select one Talent for which you meet the requirements"
+        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements"
       }
     ],
     "7": [
@@ -132,7 +132,7 @@ EN.classes.stitcher = {
     "8": [
       {
         name: "Universal Upgrade",
-        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute score by 1 (to a maximum of 20), or select one Talent for which you meet the requirements"
+        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements"
       }
     ],
     "9": [
@@ -151,15 +151,15 @@ EN.classes.stitcher = {
 
   progressionTable: [
     { level: 1, caliber: 1, features: ["Triage", "First Do No Harm", "Stitcher Subclass"], resource: 0 },
-    { level: 2, caliber: 2, features: ["First Responder", "Universal Upgrade"], resource: "+5 Points" },
-    { level: 3, caliber: 3, features: ["Subclass Feature"], resource: 0 },
-    { level: 4, caliber: 4, features: ["Universal Upgrade"], resource: "+5 Points" },
-    { level: 5, caliber: 5, features: ["The Good Stuff", "Expanded Triage"], resource: 0 },
-    { level: 6, caliber: null, features: ["Preventative Care", "Universal Upgrade"], resource: "+5 Points" },
-    { level: 7, caliber: null, features: ["Subclass Feature"], resource: 0 },
-    { level: 8, caliber: null, features: ["Universal Upgrade"], resource: 0 },
-    { level: 9, caliber: null, features: ["The Golden Hour"], resource: 0 },
-    { level: 10, caliber: null, features: ["Subclass Capstone"], resource: 0 }
+    { level: 2, caliber: 1, features: ["First Responder", "Universal Upgrade"], resource: 0 },
+    { level: 3, caliber: 2, features: ["Subclass Feature"], resource: "+5 Points" },
+    { level: 4, caliber: 2, features: ["Universal Upgrade"], resource: 0 },
+    { level: 5, caliber: 3, features: ["The Good Stuff", "Expanded Triage"], resource: 0 },
+    { level: 6, caliber: 3, features: ["Preventative Care", "Universal Upgrade"], resource: "+5 Points" },
+    { level: 7, caliber: 4, features: ["Subclass Feature"], resource: 0 },
+    { level: 8, caliber: 4, features: ["Universal Upgrade"], resource: 0 },
+    { level: 9, caliber: 5, features: ["The Golden Hour"], resource: 0 },
+    { level: 10, caliber: 5, features: ["Subclass Capstone"], resource: "+5 Points" }
   ],
 
   subclasses: [
@@ -176,12 +176,12 @@ EN.classes.stitcher = {
         {
           level: 3,
           name: "Clear!",
-          text: "You can weaponize your resuscitation gear to punish anyone trying to finish off your team. When an enemy within 6 spaces makes a melee attack against an ally, you can use your Impulse Action and spend 1 Triage to violently discharge a shock remote. The attacker must make a Body Save (DC = 8 + your Wits Modifier + your Medical Tools Proficiency Bonus). On a failure, they take 2d8 Electric damage and are violently pushed 2 spaces away from your ally, automatically causing the attack to miss if they are pushed out of melee reach."
+          text: "You can weaponize your resuscitation gear to punish anyone trying to finish off your team. When an enemy within 3 spaces makes an attack against an ally, you can use your Impulse Action and spend 1 Triage to fire a pair of electrode probes, trailing conductive leads, into them and discharge a violent shock down the wires. The attacker must make a Body Save (DC = 8 + your Tech Modifier + your Medical Tools Proficiency Bonus). On a failure, they take 2d8 Electric damage and are violently pushed 2 spaces away from your ally, automatically causing the attack to miss if they are pushed out of melee reach."
         },
         {
           level: 7,
           name: "Resuscitation Field",
-          text: "As a Swift Action, you can spend 2 Triage to deploy a localized, aerosolized healing field in an Area 3 centered on a point you can see within 12 spaces. The field lasts for 1 minute. When any ally ends their turn inside the field, they immediately gain Vigor equal to 1d6 + your Wits Modifier. The field also neutralizes airborne toxins, granting allies inside it immunity to the Poisoned condition."
+          text: "As a Swift Action, you can spend 2 Triage to deploy a localized, aerosolized healing field in an Area 3 centered on a point you can see within 12 spaces. The field lasts for 1 minute. When any ally ends their turn inside the field, they immediately gain Vigor equal to 1d6 + your Tech Modifier. The field also neutralizes airborne toxins, granting allies inside it immunity to the Poisoned condition."
         },
         {
           level: 10,
@@ -203,17 +203,17 @@ EN.classes.stitcher = {
         {
           level: 3,
           name: "Contagion Catalyst",
-          text: "You ensure your plagues spread with ruthless efficiency. When an enemy within 6 spaces fails a Save against one of your Triage Protocols or a weapon attack that deals Toxic damage, you can use your Impulse Action to trigger a violent rupture. The primary target takes an additional 1d8 Toxic damage. You then choose one of the following spread effects:\n\nDirected Spread (Cost: 1 Triage):\nChoose one other enemy within 2 spaces of the primary target. That enemy must make the same Save (type and DC) as the primary target. On a failure, they take 1d8 Toxic damage and are Poisoned until the end of their next turn.\n\nVolatile Spread (Cost: 2 Triage):\nEach enemy within 1 space of the primary target must make the same Save (type and DC) as the primary target. On a failure, they take 1d8 Toxic damage and are Poisoned until the end of their next turn."
+          text: "You ensure your plagues spread with ruthless efficiency. Once per turn, when an enemy within 6 spaces fails a Save against one of your Triage Protocols or a weapon attack that deals Toxic damage, you can trigger a violent rupture, dealing an additional 1d8 Toxic damage to that enemy. You may then spend Triage to spread the contagion, choosing one of the following:\n\nDirected Spread (Cost: 1 Triage):\nChoose one other enemy within 2 spaces of the primary target. That enemy must make the same Save (type and DC) as the primary target. On a failure, they take 1d8 Toxic damage and are Poisoned until the end of their next turn.\n\nVolatile Spread (Cost: 2 Triage):\nEach enemy within 1 space of the primary target must make the same Save (type and DC) as the primary target. On a failure, they take 1d8 Toxic damage and are Poisoned until the end of their next turn."
         },
         {
           level: 7,
           name: "Neuro-Corrosive Cloud",
-          text: "You can flood the zone with debilitating agents. As an Action, you can spend 2 Triage to unleash a thick, caustic cloud in an Area 4 centered on a point you can see within 12 spaces. The cloud heavily obscures the area and lasts for 1 minute. When an enemy enters the cloud for the first time on a turn or starts their turn there, they must make a Body Save (DC = 8 + your Wits Modifier + your Medical or Chemistry Tools Proficiency Bonus). On a failure, they take 3d6 Acid damage and gain the Blinded condition until the end of their next turn. Allies who enter the cloud are unaffected, as you have already inoculated them against the specific strain."
+          text: "You can flood the zone with debilitating agents. As an Action, you can spend 2 Triage to unleash a thick, caustic cloud in an Area 4 centered on a point you can see within 12 spaces. The cloud heavily obscures the area and lasts for 1 minute. When an enemy enters the cloud for the first time on a turn or starts their turn there, they must make a Body Save (DC = 8 + your Tech Modifier + your Medical Tools Proficiency Bonus). On a failure, they take 3d6 Acid damage and gain the Blinded condition until the end of their next turn. Allies who enter the cloud are unaffected, as you have already inoculated them against the specific strain."
         },
         {
           level: 10,
           name: "Biological Meltdown",
-          text: "You can inject a target with a hyper-accelerated necrosis agent that violently breaks down their cellular structure. Once per Long Rest, as an Action, you force one Target within 12 spaces to make a Body Save (DC = 8 + your Wits Modifier + your Medical or Chemistry Tools Proficiency Bonus).\n\nOn a failure: The Target takes 8d10 Toxic damage and is inflicted with severe necrosis. For the next minute, the Target cannot regain Vitality or Wounds, and they take an additional 2d10 Toxic damage at the start of each of their turns.\n\nOn a success: They take half of the initial damage and suffer no ongoing effects.\n\nIf a Target dies while under the effect of this necrosis, their body violently bursts in a shower of acid, dealing 4d6 Acid damage to all other enemies within 2 spaces of them."
+          text: "You can inject a target with a hyper-accelerated necrosis agent that violently breaks down their cellular structure. Once per Long Rest, as an Action, you force one Target within 12 spaces to make a Body Save (DC = 8 + your Tech Modifier + your Medical Tools Proficiency Bonus).\n\nOn a failure: The Target takes 8d10 Toxic damage and is inflicted with severe necrosis. For the next minute, the Target cannot regain Vitality or Wounds, and they take an additional 2d10 Toxic damage at the start of each of their turns.\n\nOn a success: They take half of the initial damage and suffer no ongoing effects.\n\nIf a Target dies while under the effect of this necrosis, their body violently bursts in a shower of acid, dealing 4d6 Acid damage to all other enemies within 2 spaces of them."
         }
       ]
     },
@@ -225,22 +225,22 @@ EN.classes.stitcher = {
         {
           level: 1,
           name: "Black Market Butcher",
-          text: "You seamlessly bridge the gap between organic medicine and cybernetic maintenance. You gain Proficiency with Engineering Tools.\n\nYou have a gruesome eye for aftermarket value. If you spend 10 minutes extracting tech from a defeated enemy who possesses cybernetics or the Machine Physiology trait, you successfully harvest Cyber-Scrap. You can hold a maximum amount of Cyber-Scrap equal to your Wits Modifier. You can utilize this scrap in two ways:\n\nRig Fuel: As an Action, you can break down a piece of Cyber-Scrap and feed the raw battery acid, coolants, and bio-gels into your Triage Rig, immediately regaining 1 spent Triage.\n\nPawn It: Cyber-Scrap retains black-market value. You can sell it to fixers, merchants, or underground clinics for a modest payout (the exact value is determined by the GM based on the tier of the enemy it was harvested from)."
+          text: "You seamlessly bridge the gap between organic medicine and cybernetic maintenance. You gain Proficiency with Engineering Tools.\n\nYou have a gruesome eye for aftermarket value. If you spend 10 minutes extracting tech from a defeated enemy who possesses cybernetics or the Machine Physiology trait, you successfully harvest Cyber-Scrap.\n\nYou also harvest organic salvage from defeated biological enemies, such as adrenal tissue and bio-gel. This biological material is stored and utilized identically to Cyber-Scrap (including for Rig Fuel and Pawn It) ensuring you always have raw resources regardless of your opponent.\n\nYou can hold a maximum amount of Cyber-Scrap equal to your Tech Modifier. You can utilize this scrap in two ways:\n\nRig Fuel: As an Action, you can break down a piece of Cyber-Scrap and feed the raw battery acid, coolants, and bio-gels into your Triage Rig, immediately regaining 1 spent Triage.\n\nPawn It: Cyber-Scrap retains black-market value. You can sell it to fixers, merchants, or underground clinics for a modest payout (the exact value is determined by the GM based on the tier of the enemy it was harvested from)."
         },
         {
           level: 3,
           name: "Hot-Wired Implants",
-          text: "You specialize in the volatile connectivity between man and machine, treating your crew's hardware like a tuner treats a street-racing engine.\n\nWhenever you finish a Short or Long Rest, you can spend time tinkering with the prosthetics, neural links, or synthetic physiology of your allies. You can apply an Aftermarket Hot-Wire to a number of willing allies up to your Wits Modifier (minimum of 1).\n\nHardware Requirement: An ally must possess cybernetics or the Machine Physiology trait to receive a Hot-Wire. Furthermore, the specific tuning must correspond to their installed hardware (e.g., you cannot perform an Optical Overclock on organic eyes).\n\nAn ally can only possess one Hot-Wire at a time. Because these modifications bypass standard safety protocols, they require constant maintenance; the upgrades remain active until you finish your next Short or Long Rest, at which point you must recalibrate them or they safely power down.\n\nChoose from the following aftermarket tunings:\n\nOptical Overclock (Requires Cyber-Optics or Synthetic Vision): You recalibrate their visual sensors, stripping the safety filters. They ignore the defensive penalties of partial Cover when making ranged attacks, and they gain Darkvision up to 12 spaces.\n\nDermal Reinforcement (Requires Subdermal Plating or Machine Chassis): You overcharge the impact-absorption of their plating. They gain a +1 bonus to their Defense rating. Additionally, the first time they take Wound damage during an encounter, the plating hardens, reducing the incoming damage by an amount equal to your Caliber.\n\nPneumatic Bypass (Requires Cyber-Limbs or Joint Servos): You remove the limiters on their synthetic muscles. Their unarmed strikes deal 1d6 Bludgeoning damage, and they gain Edge on in-combat Athletics d20 checks (or add +1 Edge Die to related out-of-combat Dice Pools) made to grapple, shove, or break physical objects.\n\nSynaptic Accelerator (Requires a Neural Processor or Synthetic Nervous System): You splice a direct override into their reflex pathways. Their base Speed increases by 1, and they gain a +2 bonus to Initiative rolls as their hardware twitches with preemptive adrenaline.\n\nRecoil Compensator (Requires Skeletal Bracing or Cyber-Arms): You tune their internal shock absorbers to handle massive kinetic kickback. They ignore the mechanical penalties of wielding weapons with the Heavy or Cumbersome traits, and they gain Edge on Body Saves against being knocked Prone."
+          text: "You specialize in the volatile connectivity between man and machine, treating your crew's hardware like a tuner treats a street-racing engine.\n\nWhenever you finish a Short or Long Rest, you can spend time tinkering with the prosthetics, neural links, or synthetic physiology of your allies. You can apply an Aftermarket Hot-Wire to a number of willing allies up to your Tech Modifier (minimum of 1).\n\nHardware Requirement: An ally must possess cybernetics or the Machine Physiology trait to receive a Hot-Wire. Furthermore, the specific tuning must correspond to their installed hardware (e.g., you cannot perform an Optical Overclock on organic eyes).\n\nAn ally can only possess one Hot-Wire at a time. Because these modifications bypass standard safety protocols, they require constant maintenance; the upgrades remain active until you finish your next Short or Long Rest, at which point you must recalibrate them or they safely power down.\n\nChoose from the following aftermarket tunings:\n\nOptical Overclock (Requires Cyber-Optics or Synthetic Vision): You recalibrate their visual sensors, stripping the safety filters. They ignore the defensive penalties of partial Cover when making ranged attacks, and they gain Darkvision up to 12 spaces.\n\nDermal Reinforcement (Requires Subdermal Plating or Machine Chassis): You overcharge the impact-absorption of their plating. They gain a +1 bonus to their Defense rating. Additionally, the first time they take Wound damage during an encounter, the plating hardens, reducing the incoming damage by an amount equal to your Caliber.\n\nPneumatic Bypass (Requires Cyber-Limbs or Joint Servos): You remove the limiters on their synthetic muscles. Their unarmed strikes deal 1d6 Bludgeoning damage, and they gain Edge on in-combat Athletics d20 checks (or add +1 Edge Die to related out-of-combat Dice Pools) made to grapple, shove, or break physical objects.\n\nSynaptic Accelerator (Requires a Neural Processor or Synthetic Nervous System): You splice a direct override into their reflex pathways. Their base Speed increases by 1, and they gain a +2 bonus to Initiative rolls as their hardware twitches with preemptive adrenaline.\n\nRecoil Compensator (Requires Skeletal Bracing or Cyber-Arms): You tune their internal shock absorbers to handle massive kinetic kickback. They ignore the mechanical penalties of wielding weapons with the Heavy or Cumbersome traits, and they gain Edge on Body Saves against being knocked Prone.\n\nAdrenal Tuning (Requires a living, organic ally; cannot be applied to a fully synthetic body such as a Clanker): With no hardware to tune, you go to work on the body itself, priming their endocrine and adrenal systems to run hot. Their base Speed increases by 1, they gain a +1 bonus to Body Saves, and the first time each encounter they drop below half their maximum Vitality, they immediately gain Vigor equal to your Caliber as their body floods with combat hormones."
         },
         {
           level: 7,
-          name: "Hard Flatline",
-          text: "You can protect a patient from massive systemic shock by temporarily shutting down their biological and mechanical core. When an ally within 6 spaces is about to take Wound damage or suffer a Critical Condition, you can use your Impulse Action and spend 2 Triage to trigger a catastrophic, split-second system crash.\n\nThe ally immediately falls Prone, drops whatever they are holding, and loses their next Swift Action as their body reboots. However, because their vitals were completely halted at the moment of impact, they take zero Wound damage from the triggering attack, and they instantly gain Vigor equal to your Caliber as the reboot kicks in."
+          name: "Combat Overclock",
+          text: "You can rip every safety limiter off a body and run it far past the red line. As a Swift Action, you can spend 2 Triage to jam an overclocking cocktail into yourself or a willing ally within your melee reach. Until the start of your next turn, the target's Speed is doubled, and whenever they take the Attack action they may make one additional attack as part of it. No body holds together under that for long. When the effect ends, the crash catches up: the target gains the Drowsy condition, and cannot be affected by Combat Overclock again until they finish a Short or Long Rest."
         },
         {
           level: 10,
           name: "Cyber-Rejection",
-          text: "You transmit a catastrophic virus that tells an enemy's nervous system to violently reject its own body and cybernetics. Once per Long Rest, as an Action, you force an enemy within 12 spaces to make a Body Save (DC = 8 + your Wits Modifier + your Medical or Engineering Tools Proficiency Bonus).\n\nOn a failure: Their body turns against them. For the next minute, their Speed is halved, they suffer Snag on all attack rolls and physical saving throws as their cybernetics violently glitch, and they take 4d10 Toxic damage at the start of each of their turns as their implants or nervous system burn them from the inside out. They may repeat the Save at the end of each of their turns to end the effect.\n\nOn a success: They take half of the initial 4d10 damage and suffer no ongoing effects."
+          text: "You transmit a catastrophic virus that tells an enemy's nervous system to violently reject its own body and cybernetics. Once per Long Rest, as an Action, you force an enemy within 12 spaces to make a Body Save (DC = 8 + your Tech Modifier + your Medical or Engineering Tools Proficiency Bonus).\n\nOn a failure: Their body turns against them. For the next minute, their Speed is halved, they suffer Snag on all attack rolls and physical saving throws as their cybernetics violently glitch, and they take 4d10 Toxic damage at the start of each of their turns as their implants or nervous system burn them from the inside out. They may repeat the Save at the end of each of their turns to end the effect.\n\nOn a success: They take half of the initial 4d10 damage and suffer no ongoing effects."
         }
       ]
     }
@@ -278,6 +278,11 @@ EN.classes.stitcher = {
         name: "Recoil Compensator",
         requires: "Skeletal Bracing or Cyber-Arms",
         text: "You tune their internal shock absorbers to handle massive kinetic kickback. They ignore the mechanical penalties of wielding weapons with the Heavy or Cumbersome traits, and they gain Edge on Body Saves against being knocked Prone."
+      },
+      {
+        name: "Adrenal Tuning",
+        requires: "a living, organic ally; cannot be applied to a fully synthetic body such as a Clanker",
+        text: "With no hardware to tune, you go to work on the body itself, priming their endocrine and adrenal systems to run hot. Their base Speed increases by 1, they gain a +1 bonus to Body Saves, and the first time each encounter they drop below half their maximum Vitality, they immediately gain Vigor equal to your Caliber as their body floods with combat hormones."
       }
     ]
   }

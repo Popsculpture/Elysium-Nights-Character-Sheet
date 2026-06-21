@@ -13,28 +13,28 @@ EN.talents = [
     name: "Akimbo Specialist",
     category: "Combat & Weapon Mastery",
     requirements: "",
-    text: "You master fighting with two weapons simultaneously, gaining the following benefits:\n\n     You gain a +1 bonus to your Defense while you are wielding a separate melee or ranged weapon in each hand.\n\n     You can use two-weapon fighting (making a follow-up attack as a Swift Action) even when the one-handed weapons you are wielding are not classified as Light.\n\n     You can draw or stow two one-handed weapons as a Free Action when you would normally be able to draw or stow only one.\n\nUpgrade (Level 6+): When you score a critical hit with one of your two weapons, you may immediately make one additional attack as a Free Action with the opposite weapon against the same Target."
+    text: "You master fighting with two weapons simultaneously, gaining the following benefits:\n\n     You gain a +1 bonus to your Defense while you are wielding a separate melee or ranged weapon in each hand.\n\n     You can use two-weapon fighting (making a follow-up attack as a Swift Action) even when the one-handed weapons you are wielding are not classified as Light.\n\n     You can draw or stow two one-handed weapons as a Free Action when you would normally be able to draw or stow only one.\n\nUpgrade (Level 6+): When you score a critical hit with one of your two weapons, you may immediately make one additional attack with the opposite weapon as part of the same Action against the same Target."
   },
   {
     key: "armor-piercing-specialist",
     name: "Armor Piercing Specialist",
     category: "Combat & Weapon Mastery",
     requirements: "",
-    text: "You have achieved a penetrating precision in combat, granting you the following benefits:\n\n     Increase your Body or Agility score by 1, to a maximum of 20.\n     Once per turn, when you hit a Target with an attack that deals Piercing or Ballistic damage, you can re-roll one of the attack's damage dice, and you must use the new roll.\n     When you score a critical hit that deals Piercing or Ballistic damage to a Target, you can roll one additional damage die when determining the extra damage the Target takes.\n\nUpgrade (Level 6+): Your Piercing and Ballistic attacks ignore the first 3 points of any non-magical Damage Reduction (DR) provided by armor or natural toughness."
+    text: "You have achieved a penetrating precision in combat, granting you the following benefits:\n\n     Increase your Body or Agility score by 1, to a maximum of 20.\n     Once per turn, when you hit a Target with an attack that deals Piercing or Ballistic damage, you can re-roll one of the attack's damage dice, and you must use the new roll.\n     When you score a critical hit that deals Piercing or Ballistic damage to a Target, you can roll one additional damage die when determining the extra damage the Target takes.\n\nUpgrade (Level 6+): Your Piercing and Ballistic attacks ignore the first 3 points of Armor DR. This does not apply against Resonant Plating or flow-imbued defenses."
   },
   {
     key: "arsenal-adept",
     name: "Arsenal Adept",
     category: "Combat & Weapon Mastery",
     requirements: "",
-    text: "You have practiced extensively with a variety of weaponry, gaining the following benefits:\n\n     Increase your Body or Agility score by 1, to a maximum of 20.\n     You gain Proficiency with four weapon categories or specific martial weapons of your choice, allowing you to add your Weapon Proficiency Bonus to your attack rolls with them.\n\nUpgrade (Level 6+): Once per Short Rest, when you make an attack with a weapon you became Proficient in via this Talent, you may add your Weapon Proficiency Bonus a second time to the damage roll."
+    text: "You have practiced extensively with a variety of weaponry, gaining the following benefits:\n\n     Increase your Body or Agility score by 1, to a maximum of 20.\n     You gain Proficiency with four weapon categories or specific martial weapons of your choice, allowing you to add your Weapon Proficiency Bonus to your attack rolls with them.\n     You can pick up and fight with anything. You do not roll with Snag for making an attack with a weapon you are not Proficient with (you still do not add a Weapon Proficiency Bonus to those attacks).\n\nUpgrade (Level 6+): Once per turn, when you hit a Target with a weapon you gained Proficiency in through this Talent, you add your Caliber to that attack's damage."
   },
   {
     key: "close-quarters-brawler",
     name: "Close-Quarters Brawler",
     category: "Combat & Weapon Mastery",
     requirements: "Body 13 or higher.",
-    text: "You have developed the skills necessary to hold your own in brutal grappling exchanges. You gain the following benefits:\n\n     Increase your Body score by 1, to a maximum of 20.\n     You gain Edge on attack rolls against a Target you are Grappling.\n     You can use your Action to try to pin a Target you have Grappled. To do so, make another contested Brawl (Body) check. If you succeed, you and the Target both suffer the Restrained condition until the grapple ends.\n\nUpgrade (Level 6+): While you have a Target Grappled, your melee attacks against that Target score critical hits on a roll of 19 or 20."
+    text: "You have developed the skills necessary to hold your own in brutal grappling exchanges. You gain the following benefits:\n\n     Increase your Body score by 1, to a maximum of 20.\n     You gain Edge on attack rolls against a Target you are Grappling.\n     You can use your Action to try to pin a Target you have Grappled. To do so, make another contested Athletics check. If you succeed, the Target suffers the Restrained condition until the grapple ends.\n\nUpgrade (Level 6+): While you have a Target Grappled, your melee attacks against that Target score critical hits on a roll of 19 or 20."
   },
   {
     key: "concussive-striker",
@@ -48,7 +48,7 @@ EN.talents = [
     name: "Dead-Eye Sniper",
     category: "Combat & Weapon Mastery",
     requirements: "",
-    text: "You have mastered ranged weapons and can make shots that others find impossible. You gain the following benefits:\n\n     Attacking at long range does not impose Snag on your ranged weapon attack rolls.\n     Your ranged weapon attacks ignore the Defense bonuses provided by Half Cover.\n     Before you make an attack with a ranged weapon that you are Proficient with, you can choose to take a -5 penalty to the attack roll. If that attack hits, you add +10 to the attack's damage.\n\nUpgrade (Level 6+): Your ranged weapon attacks now also ignore the Defense bonuses provided by Three-Quarter Cover, and you no longer have Snag on ranged attacks when an Enemy is within 1 space of you."
+    text: "You have mastered ranged weapons and can make shots that others find impossible. You gain the following benefits:\n\n     Attacking at long range does not impose Snag on your ranged weapon attack rolls.\n     Your ranged weapon attacks ignore the Defense bonuses provided by Half Cover.\n     Before you make an attack with a ranged weapon that you are Proficient with, you can choose to take a -5 penalty to the attack roll. If that attack hits, you add +10 to the attack's damage.\n     You can use this option once per turn.\n\nUpgrade (Level 6+): Your ranged weapon attacks now also ignore the Defense bonuses provided by Three-Quarter Cover, and you no longer have Snag on ranged attacks when an Enemy is within 1 space of you."
   },
   {
     key: "heavy-handed",
@@ -62,14 +62,14 @@ EN.talents = [
     name: "Heavy Weapon Specialist",
     category: "Combat & Weapon Mastery",
     requirements: "",
-    text: "You have learned to put the weight of heavy kinetic and ballistic weaponry to your advantage. You gain the following benefits:\n\n     On your turn, when you score a critical hit with a melee weapon or reduce a Target to 0 Vitality with one, you can make one additional melee weapon attack as a Swift Action.\n\n     Before you make a melee attack with a Heavy weapon that you are Proficient with, you can choose to take a -5 penalty to the attack roll. If the attack hits, you add +10 to the attack's damage.\n\nUpgrade (Level 6+): When you take the Attack Action on your turn while wielding a Heavy weapon, you may make one additional melee attack with that weapon as part of the same Action."
+    text: "You have learned to put the weight of heavy kinetic and ballistic weaponry to your advantage. You gain the following benefits:\n\n     On your turn, when you score a critical hit with a melee weapon or reduce a Target to 0 Vitality with one, you can make one additional melee weapon attack as a Swift Action.\n\n     Before you make a melee attack with a Heavy weapon that you are Proficient with, you can choose to take a -5 penalty to the attack roll. If the attack hits, you add +10 to the attack's damage.\n\nUpgrade (Level 6+): When you take the Attack Action on your turn while wielding a Heavy weapon, you may make one additional melee attack with that weapon as part of the same Action. You cannot apply this Talent's minus 5 to hit for plus 10 damage option to that additional attack."
   },
   {
     key: "laceration-expert",
     name: "Laceration Expert",
     category: "Combat & Weapon Mastery",
     requirements: "",
-    text: "You have learned exactly where to cut to yield the greatest results, granting you the following benefits:\n\n     Increase your Body or Agility score by 1, to a maximum of 20.\n     Once per turn when you hit a Target with an attack that deals Slashing damage, you can reduce the Speed of the Target by 2 until the start of your next turn.\n     When you score a critical hit that deals Slashing damage to a Target, you grievously wound it. Until the start of your next turn, the Target rolls all attack rolls with Snag.\n\nUpgrade (Level 6+): Your Slashing attacks now also cause bleeding wounds. A Target damaged by your Slashing attacks takes additional Slashing damage equal to your Caliber at the start of its next turn. This effect does not stack with itself."
+    text: "You have learned exactly where to cut to yield the greatest results, granting you the following benefits:\n\n     Increase your Body or Agility score by 1, to a maximum of 20.\n     Once per turn when you hit a Target with an attack that deals Slashing damage, you can reduce the Speed of the Target by 2 until the start of your next turn.\n     When you score a critical hit that deals Slashing damage to a Target, you grievously wound it. Until the start of your next turn, the Target rolls all attack rolls with Snag.\n\nUpgrade (Level 6+): Your Slashing attacks now also cause bleeding wounds. A Target damaged by your Slashing attacks gains 1 stack of the Bleeding condition."
   },
   {
     key: "melee-mastery",
@@ -90,7 +90,7 @@ EN.talents = [
     name: "Sidearm Gunslinger",
     category: "Combat & Weapon Mastery",
     requirements: "",
-    text: "You have a quick hand and keen eye when employing firearms, granting you the following benefits:\n\n     You ignore the reload or pump-action delay on Sidearms with which you are Proficient, allowing you to fire them repeatedly without spending extra Actions.\n\n     Being within 1 space of a hostile Target does not impose Snag on your ranged attack rolls with Sidearms.\n\n     When you use your Action to attack with a one-handed weapon, you can use a Swift Action to attack with a Sidearm you are holding.\n\nUpgrade (Level 6+): Once per turn when you score a critical hit with a Sidearm, you may immediately fire it at one additional Target within 6 spaces as a Free Action."
+    text: "You have a quick hand and keen eye when employing firearms, granting you the following benefits:\n\n     You ignore the High Recoil trait on Sidearms you are Proficient with, so making multiple Sidearm attacks in a round never imposes Snag from recoil. In addition, you never need to spend a Swift Action to reload a Sidearm during combat.\n\n     Being within 1 space of a hostile Target does not impose Snag on your ranged attack rolls with Sidearms.\n\n     When you use your Action to attack with a one-handed weapon, you can use a Swift Action to attack with a Sidearm you are holding.\n\nUpgrade (Level 6+): Once per turn when you score a critical hit with a Sidearm, you may immediately fire it at one additional Target within 6 spaces as part of the same Action."
   },
   {
     key: "staff-spear-master",
@@ -104,7 +104,7 @@ EN.talents = [
     name: "Street Scrapper",
     category: "Combat & Weapon Mastery",
     requirements: "",
-    text: "Accustomed to the rough-and-tumble fighting using whatever weapons happen to be at hand, you gain the following benefits:\n\n     Increase your Body score by 1, to a maximum of 20.\n     You are Proficient with improvised weapons.\n     Your unarmed strikes deal 1d4 Bludgeoning damage.\n     When you hit a Target with an unarmed strike or an improvised weapon on your turn, you can use a Swift Action to attempt to Grapple the Target.\n\nUpgrade (Level 6+): Your unarmed strike damage increases to 1d8, and improvised weapons you wield are treated as Proficient martial weapons that deal an additional 1d4 damage of their normal type. You also gain Resistance to damage from improvised weapons used against you."
+    text: "Accustomed to the rough-and-tumble fighting using whatever weapons happen to be at hand, you gain the following benefits:\n\n     Increase your Body score by 1, to a maximum of 20.\n     You add your Simple Weapons Proficiency Bonus to attack rolls with improvised weapons, and you do not roll with Snag when wielding them.\n     Your unarmed strikes deal 1d4 Bludgeoning damage.\n     When you hit a Target with an unarmed strike or an improvised weapon on your turn, you can use a Swift Action to attempt to Grapple the Target.\n\nUpgrade (Level 6+): Your unarmed strike damage increases to 1d8, and improvised weapons you wield are treated as Proficient martial weapons that deal an additional 1d4 damage of their normal type. You also gain Resistance to damage from improvised weapons used against you."
   },
 
   // ===== Tactics & Hybrid Fighting =====
@@ -127,7 +127,7 @@ EN.talents = [
     name: "Cross-Discipline Tactic",
     category: "Tactics & Hybrid Fighting",
     requirements: "",
-    text: "You have studied the combat methodologies of other specialists to learn their tricks. You gain the following benefits:\n\n     You learn one of the following class abilities of your choice, with all of its associated mechanics: a single Operator Tactical Maneuver, a single Hustler Scheme, or a single Scoundrel Trick. You meet any internal prerequisites for the chosen ability, but you cannot select abilities flagged as \"Capstone\" or \"Level 7+\" features.\n\n     You gain a number of resource points equal to your Caliber to fuel this ability, regained on a Short or Long Rest. If the ability uses a different resource (e.g., uses-per-rest), you instead gain one use per Short Rest.\n\n     Whenever you gain a level, you can replace the chosen ability with another that fits the same restrictions.\n\nUpgrade (Level 6+): You learn a second class ability under the same rules, and your resource pool for this Talent increases by 2 points."
+    text: "You have studied the combat methodologies of other specialists to learn their tricks. You gain the following benefits:\n\n     You learn one of the following class abilities of your choice, with all of its associated mechanics: a single Operator Tactical Maneuver, a single Hustler Leverage Ability, or a single Scoundrel Gambit. You meet any internal prerequisites for the chosen ability, but you cannot select abilities flagged as \"Capstone\" or \"Level 7+\" features.\n\n     You gain a number of resource points equal to your Caliber to fuel this ability, regained on a Short or Long Rest. If the ability uses a different resource (e.g., uses-per-rest), you instead gain one use per Short Rest.\n\n     Whenever you gain a level, you can replace the chosen ability with another that fits the same restrictions.\n\nUpgrade (Level 6+): You learn a second class ability under the same rules, and your resource pool for this Talent increases by 2 points."
   },
   {
     key: "glitch-breaker",
@@ -141,7 +141,7 @@ EN.talents = [
     name: "Lockdown Specialist",
     category: "Tactics & Hybrid Fighting",
     requirements: "",
-    text: "You have mastered techniques to take advantage of every drop in any Enemy's guard, gaining the following benefits:\n\n     When you hit a Target with an opportunity attack, the Target's Speed becomes 0 for the rest of the turn.\n     Enemies provoke opportunity attacks from you even if they use the Disengage action before leaving your reach.\n     When an Enemy within 1 space of you makes an attack against a Target other than you (and that Target does not have this Talent), you can use your Impulse Action to make a melee weapon attack against the attacking Enemy.\n\nUpgrade (Level 6+): You may make a number of opportunity attacks per round equal to your Caliber (instead of one). When you hit a Target with an opportunity attack, that Target also has Snag on its next attack roll before the start of your next turn."
+    text: "You have mastered techniques to take advantage of every drop in any Enemy's guard, gaining the following benefits:\n\n     When you hit a Target with an opportunity attack, the Target's Speed becomes 0 for the rest of the turn.\n     Enemies provoke opportunity attacks from you even if they use the Disengage action before leaving your reach.\n     When an Enemy within 1 space of you makes an attack against a Target other than you (and that Target does not have this Talent), you can use your Impulse Action to make a melee weapon attack against the attacking Enemy.\n\nUpgrade (Level 6+): You may make a number of opportunity attacks per round equal to your Caliber, to a maximum of 3 (instead of one). When you hit a Target with an opportunity attack, that Target also has Snag on its next attack roll before the start of your next turn."
   },
   {
     key: "phalanx-operator",
@@ -171,7 +171,7 @@ EN.talents = [
     name: "Augment Specialist",
     category: "Tech & #GRID Operations",
     requirements: "Tech 13 or higher.",
-    text: "You have an intuitive command of cybernetic installation and tuning, granting you the following benefits:\n\n     Increase your Tech score by 1, to a maximum of 20.\n     Your cybernetic Strain Threshold (or equivalent install capacity) increases by 2. If your system uses install slots rather than a threshold, you gain 1 additional install slot of any tier you can normally access.\n     The credit cost of installing, removing, or tuning your own cybernetics is reduced by 25%, and the downtime required for installation is halved.\n\nUpgrade (Level 6+): Once per Long Rest, when one of your installed cybernetics is disabled, suppressed, or hacked by an Enemy effect, you can use your Impulse Action to override the disruption and restore the cybernetic to full function."
+    text: "You have an intuitive command of cybernetic installation and tuning, granting you the following benefits:\n\n     Increase your Tech score by 1, to a maximum of 20.\n     Your body tolerates chrome better than most. Reduce your Total Static by 2 for the purpose of determining your Static Threshold, to a minimum of 0. This lets you install more cyberware before the Chrome Tax penalties escalate.\n     The credit cost of installing, removing, or tuning your own cybernetics is reduced by 25%, and the downtime required for installation is halved.\n\nUpgrade (Level 6+): Once per Long Rest, when one of your installed cybernetics is disabled, suppressed, or hacked by an Enemy effect, you can use your Impulse Action to override the disruption and restore the cybernetic to full function."
   },
   {
     key: "gridrunners-reflexes",
@@ -185,7 +185,7 @@ EN.talents = [
     name: "Hardware Harmonizer",
     category: "Tech & #GRID Operations",
     requirements: "Character Level 8, Tech 16+.",
-    text: "You have a preternatural understanding of how mechanical and digital systems want to function. You gain the following benefits:\n\n     When you utilize a Tool Kit in which you have Proficiency, any Dice Pool margin of 0 (Mixed Result) is treated as a Strong Success instead.\n\n     The time required for you to repair broken hardware, patch corrupted code, or build localized devices is halved."
+    text: "You have a preternatural understanding of how mechanical and digital systems want to function. You gain the following benefits:\n\n     When you utilize a Tool Kit in which you have Proficiency, any Dice Pool margin of 0 (Mixed Result) is treated as a Strong Success instead.\n\n     The time required for you to repair broken hardware, patch corrupted code, or build localized devices is halved.\n\n     You gain Edge on Engineering and Systems d20 checks made to repair, build, or harmonize hardware.\n\nUpgrade (Level 6+): Your Mixed Result to Strong Success conversion now applies to all your Tech-based Dice Pool checks, not only those made with a Tool Kit."
   },
   {
     key: "junk-tinkerer",
@@ -250,7 +250,7 @@ EN.talents = [
     name: "Resonance Optimizer",
     category: "The Flow & Resonance",
     requirements: "The ability to shape Flow Invocations.",
-    text: "When you gain this Talent, choose one of the following damage types: Fire, Cold, Electric, Toxic, or Spatial Force.\n\n     Invocations you shape ignore Resistance to damage of the chosen type.\n     When you roll damage for an Invocation you shape that deals damage of the chosen type, you can treat any 1 on a damage die as a 2.\n     You can select this Talent multiple times. Each time you do so, you must choose a different damage type.\n\nUpgrade (Level 6+): Your Invocations of the chosen damage type now treat Immunity to that damage type as Resistance instead, and once per Short Rest you may maximize the damage of one Invocation that deals damage of the chosen type."
+    text: "When you gain this Talent, choose one of the following damage types: Fire, Cold, Electric, Toxic, or Force.\n\n     Invocations you shape ignore Resistance to damage of the chosen type.\n     When you roll damage for an Invocation you shape that deals damage of the chosen type, you can treat any 1 on a damage die as a 2.\n     You can select this Talent multiple times. Each time you do so, you must choose a different damage type.\n\nUpgrade (Level 6+): Your Invocations of the chosen damage type now treat Immunity to that damage type as Resistance instead, and once per Short Rest you may maximize the damage of one Invocation that deals damage of the chosen type."
   },
   {
     key: "resonance-weaver",
@@ -264,7 +264,7 @@ EN.talents = [
     name: "Resonant Recovery",
     category: "The Flow & Resonance",
     requirements: "Character Level 8, Shaper.",
-    text: "You are deeply synchronized with the ambient frequencies of the world. You gain the following benefits:\n\n     When you perform a Ritual Recovery, you regain 1 additional Flow Point beyond your normal amount.\n     If you perform a Ritual Recovery in a Flow-rich area (Anomaly Severity 0), you can roll 3d20 and keep the highest result for the Flow Dice Pool check."
+    text: "You are deeply synchronized with the ambient frequencies of the world. You gain the following benefits:\n\n     When you perform a Ritual Recovery, you regain 1 additional Flow Point beyond your normal amount.\n     If you perform a Ritual Recovery in a Flow-rich area (Anomaly Severity 0), you can roll 3d20 and keep the highest result for the Flow Dice Pool check.\n\nUpgrade (Level 6+): Once per Long Rest, when your Flow Points reach 0, you can use an Impulse Action to regain Flow Points equal to your Caliber + your Flow modifier."
   },
   {
     key: "static-grounding",
@@ -294,14 +294,14 @@ EN.talents = [
     name: "Hardened Survivor",
     category: "Armor & Resilience",
     requirements: "",
-    text: "Choose one Attribute score. You gain the following benefits:\n\n     Increase the chosen Attribute score by 1, to a maximum of 20.\n     You gain Proficiency in Saving Throws using the chosen Attribute.\n\nUpgrade (Level 6+): When you succeed on a Saving Throw using your chosen Attribute by 5 or more, you suffer no effect from the source, even if it would normally cause an effect on a successful save (such as half damage)."
+    text: "Choose one Attribute score. You gain the following benefits:\n\n     Increase the chosen Attribute score by 1, to a maximum of 20.\n     You add your Caliber to all Saving Throws you make using the chosen Attribute, as though it were one of your class Saving Throw Focuses. If the chosen Attribute is already one of your Saving Throw Focuses, choose a different Attribute for this benefit.\n\nUpgrade (Level 6+): When you succeed on a Saving Throw using your chosen Attribute by 5 or more, you suffer no effect from the source, even if it would normally cause an effect on a successful save (such as half damage)."
   },
   {
     key: "siege-plating-expert",
     name: "Siege Plating Expert",
     category: "Armor & Resilience",
     requirements: "Proficiency with Heavy Armor.",
-    text: "You can use your armor to deflect strikes that would kill others. You gain the following benefits:\n\n     Increase your Body score by 1, to a maximum of 20.\n     While you are wearing Heavy Armor, Ballistic and Physical damage that you take from standard weapons is reduced by 3. This reduction is applied in addition to your normal Armor DR.\n\nUpgrade (Level 6+): The damage reduction increases to 5, and once per Short Rest when you would be reduced to 0 Vitality by a Ballistic or Physical attack while wearing Heavy Armor, you are instead reduced to 1 Vitality."
+    text: "You can use your armor to deflect strikes that would kill others. You gain the following benefits:\n\n     Increase your Body score by 1, to a maximum of 20.\n     While you are wearing Heavy Armor, Ballistic, Piercing, Bludgeoning, and Slashing damage that you take from standard weapons is reduced by 3. This reduction is applied in addition to your normal Armor DR.\n\nUpgrade (Level 6+): The damage reduction increases to 5, and once per Short Rest when you would be reduced to 0 Vitality by a Ballistic or Physical attack while wearing Heavy Armor, you are instead reduced to 1 Vitality."
   },
   {
     key: "tactical-harness-expert",
@@ -445,7 +445,7 @@ EN.talents = [
     name: "Toxicologist",
     category: "Skills, Social & Utility",
     requirements: "",
-    text: "For reasons that are definitely not malicious, you learn to prepare and deliver deadly chemical payloads, gaining the following benefits:\n\n     When you make a damage roll, you ignore Resistance to Toxic damage.\n     You can coat a weapon in toxin as a Swift Action, instead of an Action.\n     You gain Proficiency with medical and chemistry tools. With one hour of work using these tools and expending 𝒢50 worth of materials, you can create a number of doses of potent toxin equal to your Caliber.\n     Once applied to a weapon or ammunition, the toxin retains its potency for 1 minute or until you hit. When a Target takes damage from the coated weapon, they must succeed on a DC 14 Body Saving Throw or take 2d8 Toxic damage and gain the Poisoned condition until the end of your next turn.\n\nUpgrade (Level 6+): The toxin damage increases to 3d8 and the Poisoned condition lasts for 1 minute (with a save at the end of each of the Target's turns). You can also produce twice as many doses per crafting session."
+    text: "For reasons that are definitely not malicious, you learn to prepare and deliver deadly chemical payloads, gaining the following benefits:\n\n     When you make a damage roll, you ignore Resistance to Toxic damage.\n     You can coat a weapon in toxin as a Swift Action, instead of an Action.\n     You gain Proficiency with medical and chemistry tools. With one hour of work using these tools and expending 𝒢50 worth of materials, you can create a number of doses of potent toxin equal to your Caliber.\n     Once applied to a weapon or ammunition, the toxin retains its potency for 1 minute or until you hit. When a Target takes damage from the coated weapon, they must succeed on a Body Saving Throw (DC 8 + your Tech modifier + your Caliber) or take 2d8 Toxic damage and gain the Poisoned condition until the end of your next turn.\n\nUpgrade (Level 6+): The toxin damage increases to 3d8 and the Poisoned condition lasts for 1 minute (with a save at the end of each of the Target's turns). You can also produce twice as many doses per crafting session."
   },
   {
     key: "trauma-medic",

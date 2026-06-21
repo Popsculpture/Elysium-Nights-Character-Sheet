@@ -476,6 +476,7 @@ EN.builder = (function () {
         el("p.help", { style: { margin: "0 0 6px" }, text: "Dashed chips are background options; click one to lock in your pick." }),
         bgSkillChipRow(ch, bg),
         (bg.proficiencies || []).length ? el("div", null, bg.proficiencies.map(function (p, idx) { return bgProfChipRow(ch, p, idx); })) : null,
+        bg.feature ? feature(bg.feature.name, bg.feature.text, "", "Background Feature") : null,
         bg.contacts ? infoBlock("Contacts", bg.contacts) : null,
         bg.personalItem ? infoBlock("Personal Item", bg.personalItem) : null,
         (bg.hooks || []).length ? el("div", { style: { marginTop: "10px" } }, [el("label.fl", { text: "Backstory Hooks" })].concat(
