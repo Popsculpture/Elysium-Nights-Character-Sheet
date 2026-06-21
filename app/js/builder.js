@@ -27,6 +27,7 @@ EN.builder = (function () {
   // player has explicitly expanded it (_collapsed[id] === false).
   function isCollapsed(id) { return _collapsed[id] !== false; }
   function toggleCollapse(id) { _collapsed[id] = isCollapsed(id) ? false : true; EN.app.render(); }
+  function setCollapsed(ids, state) { ids.forEach(function(id) { _collapsed[id] = state; }); EN.app.render(); }
   // a dismissible "attention" dot; dismissKey ties dismissal to a state (e.g. level)
   function attnDot(id, dismissKey, title) {
     return el("span.attn-dot", { title: title || "New options or unspent points, click to dismiss",
@@ -750,7 +751,15 @@ EN.builder = (function () {
       // full class progression, all 10 levels as collapsible boxes (collapsed by default)
       blocks.push(el("div", { style: { height: "16px" } }));
       blocks.push(EN.ui.sectionTitle("Class Progression · Level " + ch.level + " / 10"));
-      blocks.push(el("p.help", { style: { marginBottom: "10px" }, text: "Click a level to expand its features. Base class features are cyan; subclass features are purple. Set your level on the Advance tab." }));
+      (function() {
+        var progIds = [];
+        for (var k = 1; k <= R.maxLevel; k++) progIds.push("clsprog-" + k);
+        var anyExpanded = progIds.some(function(id) { return !isCollapsed(id); });
+        blocks.push(el("div", { style: { display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" } }, [
+          el("p.help", { style: { margin: 0, flex: "1" }, text: "Click a level to expand its features. Base class features are cyan; subclass features are purple. Set your level on the Advance tab." }),
+          el("span.chip", { style: { cursor: "pointer", whiteSpace: "nowrap", fontSize: "10px", flexShrink: "0" }, onclick: function() { setCollapsed(progIds, anyExpanded); } }, [document.createTextNode(anyExpanded ? "COLLAPSE ALL" : "EXPAND ALL")])
+        ]));
+      })();
       for (var L = 1; L <= R.maxLevel; L++) {
         (function (L) {
           var id = "clsprog-" + L;
