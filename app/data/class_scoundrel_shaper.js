@@ -224,7 +224,7 @@ EN.classes.scoundrel = {
         {
           level: 7,
           name: "Lucky Charm",
-          text: "Your fortune rubs off on whoever is standing next to you. As an Impulse Action, when an ally within 12 spaces makes a d20 roll, you can spend 1 Moxie to lend them your luck: they roll one additional d20 and use whichever result they prefer. You can also place a Press Your Luck bet on an ally's roll exactly as you would on your own, gambling your Moxie on their success."
+          text: "Your fortune rubs off on whoever is standing next to you. As an **Impulse Action**, when an ally within 12 spaces makes a d20 roll, you can spend 1 Moxie to lend them your luck:\n\n• They roll one additional d20 and use whichever result they prefer.\n• You can also place a Press Your Luck bet on an ally's roll exactly as you would on your own, gambling your Moxie on their success."
         },
         {
           level: 10,
