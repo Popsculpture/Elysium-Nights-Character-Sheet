@@ -687,7 +687,7 @@ EN.builder = (function () {
       var c = eng.getClass(k); if (!c) return null;
       return el("div.opt-card" + (ch.class === k ? ".sel" : ""), {
         onclick: function () {
-          store.update(function (cc) { if (cc.class !== k) { cc.class = k; cc.subclass = null; cc.classSkillChoices = []; cc.classGearChoices = { weapons: [], armor: [], tools: [], vehicles: [] }; } });
+          store.update(function (cc) { if (cc.class !== k) { cc.class = k; cc.subclass = null; cc.classSkillChoices = []; cc.classGearChoices = { weapons: [], armor: [], tools: [], vehicles: [] }; cc.gambits = []; } });
           if (eng.duplicateGrants(store.active()).any) toast("⚠ Duplicate Background/Class grant; second source discarded.");
         }
       }, [
