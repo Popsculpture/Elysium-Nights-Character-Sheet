@@ -15,9 +15,9 @@ EN.combatView = (function () {
   var LAYOUT_KEY_V1 = "en_freelancer_layout_v1";
   var DEFAULT_LAYOUT = [
     { key: "matrix", w: 4 }, { key: "vitality", w: 2 },
-    { key: "skills", w: 2 }, { key: "flow", w: 6 }, { key: "actions", w: 4 }, { key: "defend", w: 2 },
-    { key: "saves", w: 3 }, { key: "conditions", w: 6 }, { key: "senses", w: 3 },
-    { key: "profs", w: 6 }
+    { key: "skills", w: 2 }, { key: "flow", w: 6 }, { key: "actions", w: 4 }, { key: "defend", w: 3 },
+    { key: "saves", w: 3 }, { key: "conditions", w: 6 }, { key: "senses", w: 2 },
+    { key: "profs", w: 4 }
   ];
   var _dragIdx = null;
   function loadLayout() {
