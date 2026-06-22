@@ -1466,7 +1466,7 @@ EN.combatView = (function () {
             el("span.chip", { style: { marginLeft: "6px", fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" }, text: "PASSIVE" })]),
           el("span", { style: { display: "flex", alignItems: "center", gap: "8px", marginLeft: "auto" } }, [el("span.src", { text: f.src }), controls])
         ]),
-        open ? el("p", { text: f.text || "" }) : null,
+        open ? EN.ui.renderText(f.text || "") : null,
         (!noteOpen && a.note) ? el("p.help", { style: { margin: "4px 0 0", color: "var(--accent)" }, text: "✎ " + a.note }) : null,
         noteOpen ? el("div", { style: { margin: "6px 0 2px" } }, [
           el("textarea", { value: a.note || "", placeholder: "Your note on this feature…",
@@ -1692,6 +1692,20 @@ EN.combatView = (function () {
       }
       if (ch.class === "codebreaker") kids.push(attackRow("Cipher Attack", eng.fmtMod(d.attributes.TEC.mod), "d20 + Tech + proficiency vs Node · Quick Hacks under fire", "var(--accent)"));
       if (d.flow) kids.push(attackRow("Flow Attack", eng.fmtMod(d.flow.attack), "d20 + " + d.flow.attributeName + " · Invocation Save DC " + d.flow.dc, "var(--flow)"));
+      if (ch.class === "scoundrel") {
+        var csdie = d.caliber + "d6";
+        kids.push(el("div", { style: { padding: "8px 4px", borderBottom: "1px solid rgba(35,48,68,.5)" } }, [
+          el("div.row", { style: { gap: "8px", alignItems: "center", flexWrap: "wrap" } }, [
+            el("span", { style: { fontWeight: 600, fontSize: "14px" }, text: "Cheap Shot" }),
+            el("span.chip", { style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" }, text: "SCOUNDREL" }),
+            el("span", { style: { fontSize: "10px", color: "var(--text3)", flex: "1 1 auto" }, text: "Bonus Damage · Once per Turn" })
+          ]),
+          el("div.row.wrap", { style: { gap: "14px", alignItems: "center", marginTop: "6px" } }, [
+            statBox("BONUS DMG", csdie, "var(--accent)", "Extra damage on qualifying attack; scales with Caliber"),
+            el("span.help", { style: { margin: 0, flex: 2 }, text: "Requires Edge on the roll, a flanking conscious ally, or Moxie spent this round. Sidearm, Simple, or Light Melee only." })
+          ])
+        ]));
+      }
       return kids;
     }
 
