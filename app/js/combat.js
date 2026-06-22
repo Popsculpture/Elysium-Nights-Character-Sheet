@@ -11,12 +11,12 @@ EN.combatView = (function () {
   var R = EN.rules, eng = EN.engine, store = EN.store;
   var _open = {};   // collapse state for reference panels (collapsed by default)
   /* ---------- modular layout (drag to rearrange; widths in sixths, 1/6-6/6) -- */
-  var LAYOUT_KEY = "en_freelancer_layout_v2";
+  var LAYOUT_KEY = "en_freelancer_layout_v3";
   var LAYOUT_KEY_V1 = "en_freelancer_layout_v1";
   var DEFAULT_LAYOUT = [
     { key: "matrix", w: 4 }, { key: "vitality", w: 2 },
-    { key: "skills", w: 2 }, { key: "flow", w: 6 }, { key: "actions", w: 4 }, { key: "defend", w: 3 },
-    { key: "saves", w: 3 }, { key: "conditions", w: 6 }, { key: "senses", w: 2 },
+    { key: "skills", w: 2 }, { key: "flow", w: 6 }, { key: "actions", w: 4 }, { key: "defend", w: 6 },
+    { key: "conditions", w: 6 }, { key: "senses", w: 2 },
     { key: "profs", w: 4 }
   ];
   var _dragIdx = null;
@@ -1324,17 +1324,6 @@ EN.combatView = (function () {
       passives.push(el("div.section-title", { style: { margin: "10px 0 2px" } }, [document.createTextNode("Special Senses"), el("span.line")]));
       passives = passives.concat(senseRows);
     }
-    sectionEls.saves = EN.ui.panel("Saving Throws", "d20 + MOD + CALIBER (focus)", [el("table.sktable", null, [el("tbody", null, R.attributes.map(function (a) {
-        var sv = d.saves[a.key];
-        var svSnag = fx.snagSave[a.key];
-        var autoFail = fx.autoFailBodAgiSaves && (a.key === "BOD" || a.key === "AGI");
-        var bonus = sv.bonus + fx.saveDelta;
-        return el("tr", null, [el("td", { text: a.name }), el("td", null, [
-          sv.focus ? el("span.badge", { style: { color: "var(--flow)" }, text: "FOCUS" }) : null,
-          autoFail ? el("span.chip", { style: { fontSize: "9px", color: "var(--danger)", borderColor: "var(--danger)" }, text: "AUTO-FAIL" }) :
-            (svSnag ? snagChip("Condition · Snag on " + a.name + " saves") : null)
-        ]), el("td.tot", { style: fx.saveDelta ? { color: "var(--warn)" } : null, title: fx.saveDelta ? "includes " + eng.fmtMod(fx.saveDelta) + " from conditions" : null, text: eng.fmtMod(bonus) })]);
-      }))])], { corners: true });
     sectionEls.senses = EN.ui.panel("Senses", "10 + MOD + PROF (±5 EDGE/SNAG)", passives, { corners: true });
 
     /* ACTIONS, tabbed, like a play-sheet */
@@ -1857,9 +1846,11 @@ EN.combatView = (function () {
         Ward:    { avail: !!focusDie || attuned, req: "a Warding Focus or class feature",
                    summary: "Roll " + resDie + (focusDie ? " + " + focusDie + " (" + focusName + ")" : "") + ", subtract from incoming damage" }
       };
+
+      // "How Active Defenses work" collapsible spans full width above the columns
       var defOpen = !!_open["defend-rules"];
       kids.push(el("div.section-title.clickable", {
-        style: { margin: "2px 0 2px" },
+        style: { margin: "2px 0 4px" },
         title: defOpen ? "Hide the Active Defense rules" : "Tap for how Active Defenses work",
         onclick: function () { _open["defend-rules"] = !defOpen; EN.app.render(); }
       }, [document.createTextNode("How Active Defenses work"), el("span.line"), el("span.collapse-caret", { style: { marginLeft: "4px" }, text: defOpen ? "▾" : "▸" })]));
@@ -1868,14 +1859,35 @@ EN.combatView = (function () {
         if (C.activeDefenseRules) kids.push(el("p.help", { style: { margin: "0 0 4px", whiteSpace: "pre-wrap" }, text: C.activeDefenseRules }));
         if (C.defenseNotes) kids.push(el("p.help", { style: { margin: "0 0 6px", color: "var(--warn)" }, text: "Conditions: " + C.defenseNotes }));
       }
-      // the equipped armor / shield / focus chips sit just above the maneuvers
-      defenseLoadoutEls().forEach(function (elm) { kids.push(elm); });
-      // Resurge & Siphon are Flow-counter maneuvers, only surface them for Shapers
+
+      // LEFT column: saving throws
+      var savesCol = el("div", { style: { flex: "0 0 auto", borderRight: "1px solid rgba(35,48,68,.6)", paddingRight: "12px", marginRight: "4px" } }, [
+        el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".14em", color: "var(--text4)", marginBottom: "3px" } }, "SAVES"),
+        el("table.sktable", { style: { fontSize: "12px" } }, [el("tbody", null, R.attributes.map(function (a) {
+          var sv = d.saves[a.key];
+          var svSnag = fx.snagSave[a.key];
+          var autoFail = fx.autoFailBodAgiSaves && (a.key === "BOD" || a.key === "AGI");
+          var bonus = sv.bonus + fx.saveDelta;
+          return el("tr", null, [
+            el("td", { text: a.key }),
+            el("td", null, [
+              sv.focus ? el("span.badge", { style: { color: "var(--flow)", fontSize: "8px" }, text: "FOCUS" }) : null,
+              autoFail ? el("span.chip", { style: { fontSize: "8px", color: "var(--danger)", borderColor: "var(--danger)" }, text: "AUTO-FAIL" }) :
+                (svSnag ? snagChip("Condition · Snag on " + a.name + " saves") : null)
+            ]),
+            el("td.tot", { style: fx.saveDelta ? { color: "var(--warn)" } : null, title: fx.saveDelta ? "includes " + eng.fmtMod(fx.saveDelta) + " from conditions" : null, text: eng.fmtMod(bonus) })
+          ]);
+        }))])
+      ]);
+
+      // RIGHT column: loadout chips + active defense maneuvers
+      var defKids = [];
+      defenseLoadoutEls().forEach(function (elm) { defKids.push(elm); });
       var SHAPER_ONLY = { Resurge: true, Siphon: true };
       (C.activeDefenses || []).forEach(function (def) {
         if (SHAPER_ONLY[def.name] && ch.class !== "shaper") return;
         var L = DEF_LIVE[def.name] || { avail: true, req: "", summary: "" };
-        if (!L.avail) return;   // only list defenses the character can actually use right now
+        if (!L.avail) return;
         var id = "def-" + def.name, open = !!_open[id];
         var fp = /FP/.test(def.cost || "");
         var head = el("div.row.wrap", {
@@ -1883,15 +1895,18 @@ EN.combatView = (function () {
           onclick: function () { _open[id] = !open; EN.app.render(); }
         }, [
           el("span.collapse-caret", { text: open ? "▾" : "▸" }),
-          el("span", { style: { fontWeight: 600, minWidth: "62px" }, text: def.name }),
+          el("span", { style: { fontWeight: 600, minWidth: "52px" }, text: def.name }),
           el("span.chip", { title: def.cost, style: { fontSize: "9px", color: fp ? "var(--flow)" : "var(--accent)", borderColor: fp ? "var(--flow)" : "var(--accent)" } }, fp ? "IMPULSE · 1 FP" : "IMPULSE"),
-          el("span", { style: { flex: 1, minWidth: "150px", fontSize: "11.5px", color: "var(--text2)" }, text: L.summary })
+          el("span", { style: { flex: 1, minWidth: "100px", fontSize: "11.5px", color: "var(--text2)" }, text: L.summary })
         ]);
         var dkids = [head];
         if (open) dkids.push(el("p.help", { style: { margin: "4px 0 8px 18px", whiteSpace: "pre-wrap" }, text: def.text }));
-        kids.push(el("div", null, dkids));
+        defKids.push(el("div", null, dkids));
       });
-      return EN.ui.panel("Defend", "ACTIVE DEFENSES · IMPULSE", kids, { corners: true });
+      var defensesCol = el("div", { style: { flex: 1, minWidth: 0 } }, defKids);
+
+      kids.push(el("div", { style: { display: "flex", gap: "0", alignItems: "flex-start" } }, [savesCol, defensesCol]));
+      return EN.ui.panel("Defense", "SAVES · ACTIVE DEFENSES · IMPULSE", kids, { corners: true });
     }
     sectionEls.defend = defendPanel();
 
