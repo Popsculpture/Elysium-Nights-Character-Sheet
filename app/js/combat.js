@@ -1375,7 +1375,7 @@ EN.combatView = (function () {
       var cost = f._cost || actionCost(f.text);
       if (forced === "active" && cost === "Passive") cost = "Active";
       if (forced === "passive") cost = "Passive";
-      return { id: "act-" + i, name: f.name.replace(/\s*\((Active|Passive)\)\s*$/i, ""), src: f.source + " · L" + f.level,
+      return { id: "act-" + i, name: f.name.replace(/\s*\((Active|Passive)\)\s*$/i, ""), src: "L" + f.level,
                text: f.text, cost: cost, limited: isLimited(f.text), chip: f.chip, uses: parseUses(f.text, d) };
     });
     // active vs passive split of the computed features (markers already folded into cost)
