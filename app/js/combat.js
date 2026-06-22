@@ -497,10 +497,12 @@ EN.combatView = (function () {
         el("span", null, [el("span.collapse-caret", { text: open ? "▾" : "▸" }), document.createTextNode(" " + name),
           el("span.chip", { style: { marginLeft: "8px", fontSize: "9.5px", color: COST_COLOR[cost], borderColor: COST_COLOR[cost] }, text: cost.toUpperCase() }),
           chip ? el("span.chip", { title: "Spends the class resource", style: { marginLeft: "4px", fontSize: "9.5px", color: chipResourceColor(chip), borderColor: chipResourceColor(chip) }, text: chip }) : null]),
-        useBtn,
-        el("span.src", { text: src || "" })
+        useBtn
       ]),
-      open ? el("p", { text: text || "" }) : null,
+      open ? el("div", null, [
+        el("p", { style: { margin: "0 0 4px" }, text: text || "" }),
+        src ? el("div", { style: { textAlign: "right", fontSize: "10px", color: "var(--text3)", fontFamily: "var(--mono)", letterSpacing: ".08em", marginTop: "6px" } }, src) : null
+      ]) : null,
       usesRow
     ]);
   }
@@ -1375,7 +1377,7 @@ EN.combatView = (function () {
       var cost = f._cost || actionCost(f.text);
       if (forced === "active" && cost === "Passive") cost = "Active";
       if (forced === "passive") cost = "Passive";
-      return { id: "act-" + i, name: f.name.replace(/\s*\((Active|Passive)\)\s*$/i, ""), src: "L" + f.level,
+      return { id: "act-" + i, name: f.name.replace(/\s*\((Active|Passive)\)\s*$/i, ""), src: f.source + " · L" + f.level,
                text: f.text, cost: cost, limited: isLimited(f.text), chip: f.chip, uses: parseUses(f.text, d) };
     });
     // active vs passive split of the computed features (markers already folded into cost)
