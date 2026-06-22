@@ -1860,7 +1860,7 @@ EN.combatView = (function () {
 
       // LEFT column: saving throws
       var savesCol = el("div", { style: { flex: "0 0 auto", borderRight: "1px solid rgba(35,48,68,.6)", paddingRight: "12px", marginRight: "4px" } }, [
-        el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".14em", color: "var(--text3)", marginBottom: "3px" } }, "SAVES"),
+        el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".14em", color: "var(--text3)", fontWeight: 700, marginBottom: "3px" } }, "SAVES"),
         el("table.sktable", { style: { fontSize: "12px" } }, [el("tbody", null, R.attributes.map(function (a) {
           var sv = d.saves[a.key];
           var svSnag = fx.snagSave[a.key];
