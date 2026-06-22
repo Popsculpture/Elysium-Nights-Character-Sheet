@@ -1384,6 +1384,25 @@ EN.combatView = (function () {
         }, [document.createTextNode("Actions in Combat"), el("span.line"), el("span.collapse-caret", { style: { marginLeft: "4px" }, text: acOpen ? "▾" : "▸" })]));
         if (acOpen) kids.push(el("p.help", { style: { marginBottom: "6px" }, text: (C.commonActions || []).map(function (a) { return a.name; }).join(", ") + ", full rules in the Codex tab." }));
       }
+      var rName = d.resource ? d.resource.name.toUpperCase() : null;
+      var resourceFeats = rName ? activeFeats.filter(function (f) { return f.chip && f.chip.toUpperCase().indexOf(rName) !== -1; }) : [];
+      var otherFeats = rName ? activeFeats.filter(function (f) { return !f.chip || f.chip.toUpperCase().indexOf(rName) === -1; }) : activeFeats;
+
+      function pushFeat(f) {
+        var uses = f.uses ? {
+          max: f.uses.max, recharge: f.uses.recharge,
+          spent: Math.min((((ch.featureUses || {})[f.name] || {}).n) || 0, f.uses.max),
+          onSet: function (n) {
+            store.update(function (c) {
+              c.featureUses = c.featureUses || {};
+              if (n <= 0) delete c.featureUses[f.name];
+              else c.featureUses[f.name] = { n: n, r: f.uses.recharge };
+            });
+          }
+        } : null;
+        kids.push(actionEntry(f.id, f.name, f.cost, f.src, f.text, f.limited, f.chip, uses));
+      }
+
       if (d.resource) {
         var rCur = (ch.resources.current[d.resource.name] != null) ? ch.resources.current[d.resource.name] : d.resource.max;
         rCur = eng.clamp(rCur, 0, d.resource.max);
@@ -1394,24 +1413,13 @@ EN.combatView = (function () {
                     function () { store.update(function (c) { c.resources.current[d.resource.name] = Math.min(d.resource.max, rCur + 1); }); })
         ]));
         kids.push(bar(rCur, d.resource.max, resourceColor(d.resource.name)));
+        resourceFeats.forEach(pushFeat);
       }
-      kids.push(el("div.section-title", { style: { margin: d.resource ? "12px 0 2px" : "2px 0 2px" } }, [document.createTextNode("Abilities"), el("span.line")]));
-      if (activeFeats.length) {
-        activeFeats.forEach(function (f) {
-          var uses = f.uses ? {
-            max: f.uses.max, recharge: f.uses.recharge,
-            spent: Math.min((((ch.featureUses || {})[f.name] || {}).n) || 0, f.uses.max),
-            onSet: function (n) {
-              store.update(function (c) {
-                c.featureUses = c.featureUses || {};
-                if (n <= 0) delete c.featureUses[f.name];
-                else c.featureUses[f.name] = { n: n, r: f.uses.recharge };
-              });
-            }
-          } : null;
-          kids.push(actionEntry(f.id, f.name, f.cost, f.src, f.text, f.limited, f.chip, uses));
-        });
-      } else {
+      if (otherFeats.length) {
+        kids.push(el("div.section-title", { style: { margin: d.resource ? "12px 0 2px" : "2px 0 2px" } }, [document.createTextNode("Abilities"), el("span.line")]));
+        otherFeats.forEach(pushFeat);
+      } else if (!resourceFeats.length) {
+        kids.push(el("div.section-title", { style: { margin: d.resource ? "12px 0 2px" : "2px 0 2px" } }, [document.createTextNode("Abilities"), el("span.line")]));
         kids.push(el("p.help", { style: { margin: 0 }, text: "No active abilities yet. Resource abilities you pick on #PRINT show up here, ready to fire." }));
       }
       return kids;
