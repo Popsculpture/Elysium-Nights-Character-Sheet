@@ -1374,6 +1374,16 @@ EN.combatView = (function () {
     /* ---- ABILITIES tab: the class resource fuel + active, triggerable abilities ---- */
     function abilitiesKids() {
       var kids = [];
+      // combat actions reference sits at the top, above the resource tracker
+      if ((C.commonActions || []).length) {
+        var acOpen = !!_open["actions-in-combat"];
+        kids.push(el("div.section-title.clickable", {
+          style: { margin: "2px 0 2px" },
+          title: acOpen ? "Hide the action list" : "Tap for the list of combat actions",
+          onclick: function () { _open["actions-in-combat"] = !acOpen; EN.app.render(); }
+        }, [document.createTextNode("Actions in Combat"), el("span.line"), el("span.collapse-caret", { style: { marginLeft: "4px" }, text: acOpen ? "▾" : "▸" })]));
+        if (acOpen) kids.push(el("p.help", { style: { marginBottom: "6px" }, text: (C.commonActions || []).map(function (a) { return a.name; }).join(", ") + ", full rules in the Codex tab." }));
+      }
       if (d.resource) {
         var rCur = (ch.resources.current[d.resource.name] != null) ? ch.resources.current[d.resource.name] : d.resource.max;
         rCur = eng.clamp(rCur, 0, d.resource.max);
@@ -1403,16 +1413,6 @@ EN.combatView = (function () {
         });
       } else {
         kids.push(el("p.help", { style: { margin: 0 }, text: "No active abilities yet. Resource abilities you pick on #PRINT show up here, ready to fire." }));
-      }
-      // combat actions reference, tucked behind a collapsible header
-      if ((C.commonActions || []).length) {
-        var acOpen = !!_open["actions-in-combat"];
-        kids.push(el("div.section-title.clickable", {
-          style: { margin: "12px 0 2px" },
-          title: acOpen ? "Hide the action list" : "Tap for the list of combat actions",
-          onclick: function () { _open["actions-in-combat"] = !acOpen; EN.app.render(); }
-        }, [document.createTextNode("Actions in Combat"), el("span.line"), el("span.collapse-caret", { style: { marginLeft: "4px" }, text: acOpen ? "▾" : "▸" })]));
-        if (acOpen) kids.push(el("p.help", { style: { marginBottom: "6px" }, text: (C.commonActions || []).map(function (a) { return a.name; }).join(", ") + ", full rules in the Codex tab." }));
       }
       return kids;
     }
