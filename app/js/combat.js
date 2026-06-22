@@ -934,10 +934,9 @@ EN.combatView = (function () {
        Equip them in Inventory → Stash; one armor, one shield, one focus at a time. */
     function defenseLoadoutEls() {
       function gchip(label, name, parts, color) {
-        return el("div", { style: { display: "flex", alignItems: "center", gap: "8px", padding: "5px 9px", border: "1px solid " + color, borderLeft: "3px solid " + color, borderRadius: "4px", background: "rgba(0,0,0,.18)" } }, [
-          el("span.mono", { style: { fontSize: "8.5px", letterSpacing: ".14em", color: color, minWidth: "42px" }, text: label }),
-          el("span", { style: { fontSize: "12px", fontWeight: 600, color: "var(--text)" }, text: name }),
-          el("span", { style: { fontFamily: "var(--mono)", fontSize: "10.5px", color: "var(--text3)" }, text: parts })
+        return el("div", { title: parts, style: { display: "inline-flex", alignItems: "center", gap: "6px", padding: "4px 9px", border: "1px solid " + color, borderLeft: "3px solid " + color, borderRadius: "4px", background: "rgba(0,0,0,.18)", cursor: "default" } }, [
+          el("span.mono", { style: { fontSize: "8.5px", letterSpacing: ".14em", color: color } }, label),
+          el("span", { style: { fontSize: "12px", fontWeight: 600, color: "var(--text)" }, text: name })
         ]);
       }
       var chips = [];
@@ -945,8 +944,7 @@ EN.combatView = (function () {
       if (dg.shield) { var spv = [(dg.shieldDef >= 0 ? "+" : "") + dg.shieldDef + " DEF"]; if (dg.shieldBlockDie) spv.push(dg.shieldBlockDie + " Block"); chips.push(gchip("SHIELD", dg.shield.name, spv.join(" · "), "var(--accent)")); }
       if (dg.focus) { chips.push(gchip("FOCUS", dg.focus.name, (dg.focus.wardDie || "") + " Ward", "var(--flow)")); }
       if (!chips.length) return [el("p.help", { style: { margin: "2px 0 8px", fontSize: "11px", color: "var(--text3)" }, text: "No armor, shield, or Warding Focus equipped; buy defensive gear in Inventory → The Undercut, then WEAR / RAISE / ATTUNE it from your Stash." })];
-      // stacked full-width, in order: ARMOR → SHIELD → FOCUS (only the slots you've equipped)
-      return [el("div", { style: { display: "flex", flexDirection: "column", gap: "6px", margin: "2px 0 8px" } }, chips)];
+      return [el("div", { style: { display: "flex", flexWrap: "wrap", gap: "6px", margin: "2px 0 8px" } }, chips)];
     }
 
     /* attribute matrix, single biometric-profile panel with gradient bars */
