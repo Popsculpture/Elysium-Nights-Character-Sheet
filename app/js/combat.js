@@ -776,7 +776,9 @@ EN.combatView = (function () {
         var cls = (d.classInfo && d.classInfo.name) || "";
         var sub = (d.subclassInfo && d.subclassInfo.name) || "";
         var classStr = cls ? (" · " + cls + (sub ? " / " + sub : "")) : "";
-        return 'FREELANCER <span class="dim3" style="font-size:13px">// live status · ' + handle + classStr + "</span>";
+        var calRoman = ["I","II","III","IV","V"][(d.caliber || 1) - 1] || String(d.caliber || 1);
+        var levelStr = " · L" + (d.level || 1) + " · CAL " + calRoman;
+        return 'FREELANCER <span class="dim3" style="font-size:13px">// live status · ' + handle + classStr + levelStr + "</span>";
       })() }),
       el("div.row.wrap", { style: { gap: "8px" } }, [
         el("div.pop-anchor", { style: { position: "relative" } }, [
