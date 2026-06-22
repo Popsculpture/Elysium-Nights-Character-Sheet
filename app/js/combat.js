@@ -460,7 +460,7 @@ EN.combatView = (function () {
     for (var i = 0; i < keys.length; i++) { if (up.indexOf(keys[i].toUpperCase()) > -1) return RESOURCE_COLOR[keys[i]]; }
     return "var(--gold)";
   }
-  function actionEntry(id, name, cost, src, text, limited, chip, uses) {
+  function actionEntry(id, name, cost, src, text, limited, chip, uses, onUse, canUse) {
     var open = !!_open[id];
     var usesRow = null;
     if (uses && uses.max > 0) {
@@ -482,11 +482,22 @@ EN.combatView = (function () {
         boxes.concat([el("span.help", { style: { margin: "0 0 0 3px", fontSize: "10.5px" }, text: "/ " + uses.recharge }),
           uses.spent >= uses.max ? el("span", { style: { fontFamily: "var(--mono)", fontSize: "10px", color: "var(--danger)", letterSpacing: ".08em" }, text: "EXPENDED" }) : null]));
     }
+    var useBtn = onUse ? el("button", {
+      title: canUse ? ("Spend " + chip + " to activate") : "Not enough " + chip,
+      onclick: function (e) { e.stopPropagation(); if (canUse) onUse(); },
+      style: { marginLeft: "auto", marginRight: "8px", padding: "2px 10px", fontSize: "10px",
+               fontFamily: "var(--mono)", letterSpacing: ".1em",
+               background: canUse ? "rgba(255,45,170,.15)" : "transparent",
+               color: canUse ? "var(--flow)" : "var(--text4)",
+               border: "1px solid " + (canUse ? "var(--flow)" : "var(--border2)"),
+               borderRadius: "3px", cursor: canUse ? "pointer" : "default" }
+    }, "USE") : null;
     return el("div.feature", { style: { borderLeftColor: COST_COLOR[cost] || "var(--border2)" } }, [
       el("h4", { style: { cursor: "pointer" }, onclick: function () { _open[id] = !open; EN.app.render(); } }, [
         el("span", null, [el("span.collapse-caret", { text: open ? "▾" : "▸" }), document.createTextNode(" " + name),
           el("span.chip", { style: { marginLeft: "8px", fontSize: "9.5px", color: COST_COLOR[cost], borderColor: COST_COLOR[cost] }, text: cost.toUpperCase() }),
           chip ? el("span.chip", { title: "Spends the class resource", style: { marginLeft: "4px", fontSize: "9.5px", color: chipResourceColor(chip), borderColor: chipResourceColor(chip) }, text: chip }) : null]),
+        useBtn,
         el("span.src", { text: src || "" })
       ]),
       open ? el("p", { text: text || "" }) : null,
@@ -1400,7 +1411,19 @@ EN.combatView = (function () {
             });
           }
         } : null;
-        kids.push(actionEntry(f.id, f.name, f.cost, f.src, f.text, f.limited, f.chip, uses));
+        var onUse = null, canUse = false;
+        if (d.resource && f.chip && f.chip.toUpperCase().indexOf(rName) !== -1) {
+          var moxieCost = parseInt(f.chip, 10) || 1;
+          canUse = rCur >= moxieCost;
+          onUse = (function (cost) {
+            return function () {
+              store.update(function (c) {
+                c.resources.current[d.resource.name] = Math.max(0, rCur - cost);
+              });
+            };
+          })(moxieCost);
+        }
+        kids.push(actionEntry(f.id, f.name, f.cost, f.src, f.text, f.limited, f.chip, uses, onUse, canUse));
       }
 
       if (d.resource) {
