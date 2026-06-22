@@ -5,23 +5,23 @@ EN.classes = EN.classes || {};
 // picker, and the print sheet. The Triage feature's prose (below) is composed from this list,
 // so the displayed text and the machine-readable data can never drift apart.
 var STITCHER_TRIAGE_PROTOCOLS = [
-  { name: "Adrenaline Spike", action: "Swift Action", cost: 1, text: "Target one ally within 6 spaces. The target immediately gains Vigor equal to 1d8 + your Tech Modifier. Until the end of their next turn, their Speed increases by 2 and they ignore Difficult Terrain." },
-  { name: "Chemical Purge", action: "Swift Action", cost: 1, text: "Target one ally within 6 spaces. The target may immediately end one of the following conditions: Poisoned, Bleeding, Paralyzed, or Blinded." },
-  { name: "Trauma Patch", action: "Action", cost: 1, text: "Target one Character within your melee reach. The target regains lost Vitality equal to 2d8 + your Tech Modifier. If the target is currently Unconscious due to a Critical Condition or Fatigue, they immediately regain consciousness." },
-  { name: "Toxic Overdose", action: "Action", cost: 1, text: "Target one enemy within 6 spaces. The target must make a Body Save (DC = 8 + your Tech Modifier + your Medical Tools Proficiency Bonus). On a failure, they take Toxic damage equal to 2d6 + your Tech Modifier and are Poisoned until the end of their next turn." },
-  { name: "Sedative", action: "Action", cost: 1, text: "Target one enemy within 6 spaces. You tag them with a fast-acting tranquilizer compound. The target must make a Body Save (DC = 8 + your Tech Modifier + your Medical Tools Proficiency Bonus). On a failure, the compound floods their system and they become Drowsy. Dosing a target who is already Drowsy stacks toward unconsciousness, as described under the Drowsy condition. Outside of combat, a single dose is usually enough to drop a lone, unaware mark into true sleep, at the GM's discretion." },
-  { name: "Coagulant Burst", action: "Impulse Action", cost: 1, text: "Trigger: An ally within 6 spaces takes damage or gains the Bleeding condition. You immediately reduce the incoming damage by an amount equal to your Tech Modifier + Caliber, and completely prevent the Bleeding condition from applying." },
-  { name: "Failsafe", action: "Impulse Action", cost: 1, text: "Trigger: An ally within 6 spaces is reduced to 0 Vitality by damage, or takes damage while already at 0 Vitality. You flood their system with everything the Rig has the instant they start to go. They immediately gain Vigor equal to 2d8 + your Tech Modifier, and until the end of their next turn they ignore the Speed reduction from being Bloodied. As long as that Vigor holds, the hits that should be putting them down are landing on borrowed time instead." },
-  { name: "Nerve Block", action: "Action", cost: 1, text: "Target one ally within 6 spaces. For the next minute, that ally gains Resistance to Bludgeoning, Piercing, and Slashing damage, but they cannot benefit from any effects that restore Vitality or Wounds. You or the affected ally can disable this Nerve Block early at any time (no action required)." },
-  { name: "Triage Sweep", action: "Action", cost: 1, text: "Target up to three allies within 6 spaces. Your Rig vents a fast-dispersing cloud of aerosolized stabilizers and clotting foam across the cluster. Each target regains Vitality equal to 1d6 + your Tech Modifier." },
-  { name: "Casualty Extraction", action: "Swift Action", cost: 1, text: "Target one ally within 12 spaces. A fired grapnel, a hauling winch, a barked order and a fistful of collar, you get them out of the line of fire. The ally is pulled up to 6 spaces toward you without provoking opportunity attacks, and they regain Vitality equal to your Tech Modifier + your Caliber." },
-  { name: "Booster Shot", action: "Swift Action", cost: 1, text: "Target one ally within 6 spaces. You hit them with a prophylactic cocktail tuned to whatever is about to go wrong. Until the start of your next turn, the target rolls all Saving Throws with Edge." },
-  { name: "Muscle Relaxant", action: "Action", cost: 1, text: "Target one enemy within 6 spaces. You tag them with a fast-acting myo-relaxant that turns coordinated movement into a fight against their own body. The target must make a Body Save (DC = 8 + your Tech Modifier + your Medical Tools Proficiency Bonus). On a failure, until the end of their next turn their Speed is halved and they roll with Snag on attack rolls." }
+  { name: "Adrenaline Spike", action: "Swift Action", cost: 1, text: "Target one ally within 6 spaces. The target immediately gains **Vigor** equal to 1d8 + your Tech Modifier. Until the end of their next turn, their Speed increases by 2 and they ignore Difficult Terrain." },
+  { name: "Chemical Purge", action: "Swift Action", cost: 1, text: "Target one ally within 6 spaces. The target may immediately end one of the following conditions: *Poisoned*, *Bleeding*, *Paralyzed*, or *Blinded*." },
+  { name: "Trauma Patch", action: "Action", cost: 1, text: "Target one Character within your melee reach. The target regains Vitality equal to 2d8 + your Tech Modifier. If the target is Unconscious due to a Critical Condition or Fatigue, they immediately regain consciousness." },
+  { name: "Toxic Overdose", action: "Action", cost: 1, text: "Target one enemy within 6 spaces. The target must make a Body Save (DC = 8 + your Tech Modifier + your Medical Tools Proficiency Bonus). On a failure, they take Toxic damage equal to 2d6 + your Tech Modifier and are *Poisoned* until the end of their next turn." },
+  { name: "Sedative", action: "Action", cost: 1, text: "Target one enemy within 6 spaces. The target must make a Body Save (DC = 8 + your Tech Modifier + your Medical Tools Proficiency Bonus). On a failure, they become *Drowsy*. Dosing a target who is already Drowsy stacks toward unconsciousness, as described under the Drowsy condition. Outside of combat, a single dose is usually enough to drop a lone, unaware mark into true sleep, at the GM's discretion." },
+  { name: "Coagulant Burst", action: "Impulse Action", cost: 1, text: "Trigger: An ally within 6 spaces takes damage or gains the Bleeding condition. You immediately reduce the incoming damage by an amount equal to your Tech Modifier + Caliber and completely prevent the *Bleeding* condition from applying." },
+  { name: "Failsafe", action: "Impulse Action", cost: 1, text: "Trigger: An ally within 6 spaces is reduced to 0 Vitality by damage, or takes damage while already at 0 Vitality. They immediately gain **Vigor** equal to 2d8 + your Tech Modifier. Until the end of their next turn, they ignore the Speed reduction from being Bloodied." },
+  { name: "Nerve Block", action: "Action", cost: 1, text: "Target one ally within 6 spaces. For the next minute, that ally gains **Resistance** to Bludgeoning, Piercing, and Slashing damage, but cannot benefit from any effects that restore Vitality or Wounds. You or the affected ally can disable this Nerve Block early at any time (no action required)." },
+  { name: "Triage Sweep", action: "Action", cost: 1, text: "Target up to three allies within 6 spaces. Each target regains Vitality equal to 1d6 + your Tech Modifier." },
+  { name: "Casualty Extraction", action: "Swift Action", cost: 1, text: "Target one ally within 12 spaces. The ally is pulled up to 6 spaces toward you without provoking opportunity attacks and regains Vitality equal to your Tech Modifier + your Caliber." },
+  { name: "Booster Shot", action: "Swift Action", cost: 1, text: "Target one ally within 6 spaces. Until the start of your next turn, the target rolls all Saving Throws with Edge." },
+  { name: "Muscle Relaxant", action: "Action", cost: 1, text: "Target one enemy within 6 spaces. The target must make a Body Save (DC = 8 + your Tech Modifier + your Medical Tools Proficiency Bonus). On a failure, until the end of their next turn their Speed is halved and they roll with Snag on attack rolls." }
 ];
-var STITCHER_TRIAGE_INTRO = "The Stitcher relies on a highly specialized piece of equipment known as a Triage Rig. This might be a cybernetic auto-injector gauntlet, an alchemical synthesizer harness, or a smart-medic backpack. The Rig rapidly mixes base reagents or standard medical supplies into potent, fast-acting chemical assets.\n\nYou must have your Triage Rig equipped to use Triage Protocols. If your Rig is lost or destroyed, you can assemble a new one during a Long Rest using standard medical and chemistry tools.\n\nYour Triage Pool: Your maximum Triage is equal to your Caliber + your Tech Modifier (minimum of 1). You regain all spent Triage at the end of a Short or Long Rest.\n\nTriage Protocols: At 1st Level you learn four Triage Protocols of your choice from the list below; you learn two more at 5th Level through Expanded Triage. Unless otherwise noted, all Triage Protocols cost 1 Triage to activate. Ranged protocols are delivered via your Rig's hardware, such as smart-darts or wireless auto-injector patches.";
-var STITCHER_TRIAGE_TEXT = STITCHER_TRIAGE_INTRO + "\n" + STITCHER_TRIAGE_PROTOCOLS.map(function (p) {
-  return "     " + p.name + (p.action ? " (" + p.action + ")" : "") + ": " + p.text;
-}).join("\n");
+var STITCHER_TRIAGE_INTRO = "The Stitcher's core tool is a **Triage Rig**: a cybernetic auto-injector gauntlet, an alchemical synthesizer harness, a smart-medic backpack, or something functionally equivalent. The Rig rapidly mixes base reagents or standard medical supplies into fast-acting chemical assets.\n\n*You must have your Triage Rig equipped to use Triage Protocols. If your Rig is lost or destroyed, you can assemble a new one during a Long Rest using standard medical and chemistry tools.*\n\n**Your Triage Pool.** Your maximum Triage equals your **Caliber + your Tech Modifier** (minimum 1). You regain all spent Triage at the end of a Short or Long Rest.\n\n**Triage Protocols.** At 1st Level, you learn four Triage Protocols. You learn two additional Triage Protocols at 5th Level through Expanded Triage.\n\n*Unless otherwise noted, all Triage Protocols cost 1 Triage to activate. Ranged protocols are delivered via your Rig's hardware, such as smart-darts or wireless auto-injector patches.*";
+var STITCHER_TRIAGE_TEXT = STITCHER_TRIAGE_INTRO + "\n\n" + STITCHER_TRIAGE_PROTOCOLS.map(function (p) {
+  return "**" + p.name + " (" + p.action + "):** " + p.text;
+}).join("\n\n");
 
 EN.classes.stitcher = {
   key: "stitcher",
@@ -74,7 +74,7 @@ EN.classes.stitcher = {
       },
       {
         name: "First Do No Harm",
-        text: "Whenever you make an attack roll with a weapon that possesses the Light trait or a Dart Gun against an organic Target, you may use your Tech modifier instead of Agility or Body for the attack and damage rolls. Additionally, standard medical rules do not apply to you. Any time you successfully use the Stabilize medical treatment on an Unconscious Target, they awaken immediately and you may reduce their Fatigue by 1 level."
+        text: "Whenever you make an attack roll with a weapon that has the *Light* trait or a Dart Gun against an organic target, you may use your **Tech** modifier instead of Agility or Body for the attack and damage rolls. Additionally, standard medical rules do not apply to you: any time you successfully use the *Stabilize* medical treatment on an Unconscious target, they awaken immediately and you may reduce their Fatigue by 1 level."
       },
       {
         name: "Stitcher Subclass",
@@ -84,11 +84,11 @@ EN.classes.stitcher = {
     "2": [
       {
         name: "Universal Upgrade",
-        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements"
+        text: "Your Freelancer grows in a way that defines them. Choose one: increase one Attribute by 2, increase two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
       },
       {
         name: "First Responder",
-        text: "In a crisis, hesitation is lethal, and you have trained yourself to react the second a situation goes bad. You gain Edge on all Initiative rolls. Additionally, your base movement Speed increases by 2, allowing you to rapidly navigate the battlefield and reach bleeding allies before the enemy can follow up."
+        text: "You gain **Edge** on all Initiative rolls. Your base movement Speed also increases by 2."
       }
     ],
     "3": [
@@ -100,27 +100,27 @@ EN.classes.stitcher = {
     "4": [
       {
         name: "Universal Upgrade",
-        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements"
+        text: "Your Freelancer grows in a way that defines them. Choose one: increase one Attribute by 2, increase two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
       }
     ],
     "5": [
       {
         name: "The Good Stuff",
-        text: "Your chemical compounds become vastly more efficient. Whenever you roll dice to restore Vitality or Vigor to an ally, you may roll the healing dice twice and use either total."
+        text: "Whenever you roll dice to restore Vitality or Vigor to an ally, you may roll the healing dice twice and use either total."
       },
       {
         name: "Expanded Triage",
-        text: "You learn two additional Triage Protocols from the core list."
+        text: "You learn **two additional** Triage Protocols from the core list."
       }
     ],
     "6": [
       {
         name: "Preventative Care",
-        text: "Sometimes the best medicine is preemptive violence. Once per round, when you use your Action to activate a Triage Protocol that restores Vitality or grants Vigor to an ally, you may immediately use your Swift Action to make a single standard attack with a Sidearm or Dart Gun. If this attack hits, the target suffers Snag on the next attack roll they make against the ally you just healed."
+        text: "Once per round, when you use your Action to activate a Triage Protocol that restores Vitality or grants Vigor to an ally, you may immediately use your Swift Action to make a single standard attack with a Sidearm or Dart Gun. If this attack hits, the target suffers **Snag** on the next attack roll they make against the ally you just healed."
       },
       {
         name: "Universal Upgrade",
-        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements"
+        text: "Your Freelancer grows in a way that defines them. Choose one: increase one Attribute by 2, increase two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
       }
     ],
     "7": [
@@ -132,13 +132,13 @@ EN.classes.stitcher = {
     "8": [
       {
         name: "Universal Upgrade",
-        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements"
+        text: "Your Freelancer grows in a way that defines them. Choose one: increase one Attribute by 2, increase two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
       }
     ],
     "9": [
       {
         name: "The Golden Hour",
-        text: "You refuse to let anyone die on your watch, operating with flawless clarity when the timer is running out. Whenever an ally within 12 spaces falls Unconscious or suffers a Critical Condition from a hostile source, your adrenaline spikes. You immediately regain 1 spent Triage (this cannot exceed your maximum). Furthermore, any Triage Protocols you use on an Unconscious ally or an ally with a Critical Condition automatically roll the maximum possible result on their healing dice."
+        text: "Whenever an ally within 12 spaces falls Unconscious or suffers a Critical Condition from a hostile source, you immediately regain 1 spent Triage (this cannot exceed your maximum). Any Triage Protocols you use on an Unconscious ally or an ally with a Critical Condition automatically roll the maximum possible result on their healing dice."
       }
     ],
     "10": [

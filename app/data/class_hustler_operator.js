@@ -5,20 +5,20 @@ EN.classes = EN.classes || {};
 // picker, and the print sheet. The Leverage feature's prose (below) is composed from this list,
 // so the displayed text and the machine-readable data can never drift apart. The Hustler learns
 // two at Level 1 and two more at Level 5 via Expanded Leverage; unless noted each costs 1 Leverage.
-var HUSTLER_LEVERAGE_INTRO = "The Hustler does not rely on the Flow or brute strength; they rely on Leverage. Leverage represents tactical callouts, psychological pressure, and exploiting split-second openings.\n\nYour Leverage Pool\nYour maximum Leverage is equal to your Caliber + your Charm Modifier (minimum of 1). You regain all spent Leverage at the end of a Short or Long Rest.\n\nLeverage Abilities\nAt 1st Level you learn two Leverage Abilities of your choice from the list below; you learn two more at 5th Level through Expanded Leverage. Unless otherwise noted, all Leverage abilities cost 1 Leverage to activate.";
+var HUSTLER_LEVERAGE_INTRO = "The Hustler does not rely on the Flow or brute strength. They rely on **Leverage**: tactical callouts, psychological pressure, and split-second openings.\n\n**Your Leverage Pool**\n\nYour maximum Leverage equals your **Caliber + your Charm Modifier** (minimum 1). You regain all spent Leverage at the end of a Short or Long Rest.\n\n**Leverage Abilities**\n\nAt 1st Level, you learn two Leverage Abilities. You learn two additional Leverage Abilities at 5th Level through Expanded Leverage. Unless otherwise noted, all Leverage abilities cost 1 Leverage to activate.";
 var HUSTLER_LEVERAGE_ABILITIES = [
-  { name: "Pressure Play", action: "Action", cost: 1, text: "Target one enemy you can see within 12 spaces. You exploit a psychological crack or feed your crew the perfect angle on a target. The next attack made against that enemy before the start of your next turn gains Edge. If the attack hits, it deals additional damage equal to your Caliber." },
-  { name: "Backchannel", action: "Impulse Action", cost: 1, text: "Trigger: An ally within 6 spaces fails a d20 check. You drop a sudden distraction; a flicked coin, a flashed light, or a perfectly timed whisper over encrypted comms. They may immediately reroll the d20 but must keep the new result." },
-  { name: "Exit Strategy", action: "Swift Action", cost: 1, text: "Target yourself or one ally within 12 spaces who can hear or see you. A good Hustler always knows where the back door is. You call out a blind spot in the enemy's formation, and the target immediately moves up to their Speed as a free action without provoking Opportunity Attacks." },
-  { name: "The Shell Game", action: "Impulse Action", cost: 1, text: "Trigger: An enemy targets you with an attack. The classic misdirection. You use the chaotic environment, a holographic glitch, or a very unlucky bystander to take the heat. You force the attacking enemy to target another Target of your choice (friend or foe) within the attack's range or reach. The attacker rolls that attack with Snag." },
-  { name: "Eye on the Prize", action: "Swift Action", cost: 1, text: "Target yourself or one ally within 12 spaces. You snap them back to reality with a harsh truth or a reminder of the payout. The target may immediately roll a Save to end one negative condition currently affecting them (such as Dazed, Staggered, or Bleeding)." },
-  { name: "Dirty Laundry", action: "Action", cost: 1, text: "Target one enemy within 12 spaces. You know where they bought their chrome, and you know the manufacturer's defect. You broadcast the exact structural flaw to your team. Until the start of your next turn, that enemy's Defense is reduced by your Charm Modifier (minimum of 1), and they cannot benefit from Cover." },
-  { name: "Cause a Scene", action: "Action", cost: 1, text: "Choose a point you can see within 12 spaces. You crank the chaos: a thrown chair, a kicked-over rack, a triggered alarm, a bystander shoved into the open. Every enemy within 2 spaces of that point must make a Wits Save (DC = 8 + your Charm Modifier + your Caliber). On a failure, the distraction throws off their aim and they roll with Snag on attack rolls until the start of your next turn." },
-  { name: "Vanishing Act", action: "Swift Action", cost: 1, text: "You disappear into the noise of the firefight: a palmed smoke tab, a ducked angle, a borrowed silhouette. You immediately move up to half your Speed without provoking Opportunity Attacks, and until the start of your next turn, attacks against you roll with Snag." }
+  { name: "Pressure Play", action: "Action", cost: 1, text: "Target one enemy you can see within 12 spaces. The next attack made against that enemy before the start of your next turn gains **Edge**. If the attack hits, it deals additional damage equal to your Caliber." },
+  { name: "Backchannel", action: "Impulse Action", cost: 1, text: "Trigger: An ally within 6 spaces fails a d20 check. That ally may immediately reroll the d20 but must keep the new result." },
+  { name: "Exit Strategy", action: "Swift Action", cost: 1, text: "Target yourself or one ally within 12 spaces who can hear or see you. The target immediately moves up to their Speed as a free action without provoking Opportunity Attacks." },
+  { name: "The Shell Game", action: "Impulse Action", cost: 1, text: "Trigger: An enemy targets you with an attack. Force the attacking enemy to target another Target of your choice (friend or foe) within the attack's range or reach. The attacker rolls that attack with **Snag**." },
+  { name: "Eye on the Prize", action: "Swift Action", cost: 1, text: "Target yourself or one ally within 12 spaces. The target may immediately roll a Save to end one negative condition currently affecting them (such as Dazed, Staggered, or Bleeding)." },
+  { name: "Dirty Laundry", action: "Action", cost: 1, text: "Target one enemy within 12 spaces. Until the start of your next turn, that enemy's Defense is reduced by your Charm Modifier (minimum 1) and they cannot benefit from Cover." },
+  { name: "Cause a Scene", action: "Action", cost: 1, text: "Choose a point you can see within 12 spaces. Every enemy within 2 spaces of that point must make a Wits Save (DC = 8 + your Charm Modifier + your Caliber). On a failure, they roll with Snag on attack rolls until the start of your next turn." },
+  { name: "Vanishing Act", action: "Swift Action", cost: 1, text: "You immediately move up to half your Speed without provoking Opportunity Attacks. Until the start of your next turn, attacks against you roll with Snag." }
 ];
-var HUSTLER_LEVERAGE_TEXT = HUSTLER_LEVERAGE_INTRO + "\n" + HUSTLER_LEVERAGE_ABILITIES.map(function (a) {
-  return "     " + a.name + (a.action ? " (" + a.action + ")" : "") + ": " + a.text;
-}).join("\n");
+var HUSTLER_LEVERAGE_TEXT = HUSTLER_LEVERAGE_INTRO + "\n\n" + HUSTLER_LEVERAGE_ABILITIES.map(function (a) {
+  return "**" + a.name + " (" + a.action + "):** " + a.text;
+}).join("\n\n");
 
 EN.classes.hustler = {
   key: "hustler",
@@ -63,7 +63,7 @@ EN.classes.hustler = {
       },
       {
         name: "Read the Room",
-        text: "You instinctively map the social and tactical layout of a space. You always know who holds the most authority in the room, and who is currently suffering the most Fatigue (or has the lowest Vitality).\n\nOnce per encounter, as a Special Action, you can spend that read on a single opening: Edge on your first in-combat social d20 check against that authority figure (or add +1 Edge Die to your first out-of-combat social Dice Pool check), Edge on your first attack roll against the Target with the most Fatigue or lowest Vitality, or the first Leverage ability you direct at them costs 0 Leverage."
+        text: "You always know who holds the most authority in the room, and who is currently suffering the most Fatigue (or has the lowest Vitality).\n\nOnce per encounter, you can spend that read on a single opening **(Special)**: **Edge** on your first in-combat social d20 check against that authority figure (or +1 Edge Die to your first out-of-combat social Dice Pool check against them), **Edge** on your first attack roll against the target with the most Fatigue or lowest Vitality, or the first Leverage ability you direct at them costs 0 Leverage."
       },
       {
         name: "Hustler Subclass",
@@ -73,7 +73,7 @@ EN.classes.hustler = {
     "2": [
       {
         name: "Slippery",
-        text: "You know better than to stand still when a deal goes bad, and you turn your evasive maneuvers into lasting momentum. Whenever you spend an Action to Dash, a Swift Action to Disengage, or an Impulse Action to Dodge, your erratic movement makes you exceptionally hard to pin down. You gain a bonus to your Defense equal to your Caliber until the start of your next turn."
+        text: "Whenever you spend an Action to **Dash**, a Swift Action to **Disengage**, or an Impulse Action to **Dodge**, you gain a bonus to your Defense equal to your Caliber until the start of your next turn."
       },
       {
         name: "Universal Upgrade",
@@ -95,17 +95,17 @@ EN.classes.hustler = {
     "5": [
       {
         name: "Compound Interest",
-        text: "Your tactical processing speed reaches its peak, allowing you to manipulate multiple pieces on the board at once.\n\nWhen you activate a Leverage ability that targets a single target, you may spend 1 additional Leverage to extend that exact ability to a second valid target within range. If the original ability targeted an ally, the second target must also be an ally; if it targeted an enemy, the second target must also be an enemy. This feature only duplicates the specific Leverage ability you just activated; you cannot use this feature to activate two different Leverage abilities at the same time."
+        text: "When you activate a Leverage ability that targets a single target, you may spend **1 additional Leverage** to extend that exact ability to a second valid target within range. If the original ability targeted an ally, the second target must also be an ally; if it targeted an enemy, the second target must also be an enemy. This feature only duplicates the specific Leverage ability you just activated. You cannot use it to activate two different abilities simultaneously."
       },
       {
         name: "Expanded Leverage",
-        text: "You learn two additional Leverage Abilities from the core list."
+        text: "You learn **two additional** Leverage Abilities from the core list."
       }
     ],
     "6": [
       {
         name: "Two Steps Ahead",
-        text: "You have learned to recognize the exact moment an enemy overcommits. Because of that, you have an uncanny ability to make them feel like you know exactly what they are going to do before they even do it. Once per encounter, when an enemy declares an Action, you can use your Impulse Action to casually reveal that their maneuver is exactly what you wanted them to do.\n\nThis sudden psychological pressure causes them to second-guess their strike, imposing Snag on their d20 roll. If their attack roll misses or their contested check fails, the sheer panic of realizing they've been played completely shatters their focus; they are immediately inflicted with the Staggered condition (Speed halved, lose Swift/Impulse actions) until the end of their next turn as they stumble blindly into your trap."
+        text: "Once per encounter, when an enemy declares an Action, you can use your Impulse Action to get ahead of it. This imposes **Snag** on their d20 roll. If their attack roll misses or their contested check fails, they are immediately inflicted with the *Staggered* condition (Speed halved, lose Swift and Impulse Actions) until the end of their next turn."
       },
       {
         name: "Universal Upgrade",
@@ -127,7 +127,7 @@ EN.classes.hustler = {
     "9": [
       {
         name: "Return on Investment (ROI)",
-        text: "You view your crew not just as teammates, but as high-yield assets, and you never let a sudden surge in the market go to waste. Whenever you or an ally within 6 spaces rolls a Critical Success (Natural 20) on a d20 roll, the sheer perfection of the maneuver pays immediate dividends, instantly refunding your tactical capital. You immediately regain 1 spent Leverage (this cannot exceed your maximum)."
+        text: "Whenever you or an ally within 6 spaces rolls a Critical Success (Natural 20) on a d20 roll, you immediately regain 1 spent Leverage (this cannot exceed your maximum)."
       }
     ],
     "10": [
@@ -246,20 +246,20 @@ EN.classes.hustler = {
 // engine, the Class-tab picker, and the print sheet. The Execution feature's prose (below) is
 // composed from this list, so the displayed text and the machine-readable data can never drift
 // apart. The Operator knows every Call; each costs 1 EX to make.
-var OPERATOR_TACTICAL_INTRO = "You thrive in the chaos of a firefight, directing traffic and creating openings for your crew. You have a pool of Execution (EX) equal to your Caliber + your Wits Modifier.\n\nYou regain all spent Execution at the end of a Short or Long Rest. You know every Call below, and may spend 1 EX to make any of them.\n\nSuppression. Several of your Calls leave a target Suppressed. A Suppressed Target rolls with Snag on attack rolls and cannot take Impulse Actions until the suppression ends. Suppression is your signature. You do not merely hurt the enemy, you strip away their ability to fight back cleanly, pin them in place, and hand your crew a target that cannot punish them for moving in.";
+var OPERATOR_TACTICAL_INTRO = "You thrive in the chaos of a firefight: directing traffic, creating openings, keeping your crew alive. You have a pool of **Execution (EX)** equal to your **Caliber + your Wits Modifier**. You regain all spent Execution at the end of a Short or Long Rest. You know every Call below and may spend 1 EX to make any of them.\n\n**Suppression.** Several of your Calls leave a target *Suppressed*. A Suppressed target rolls with **Snag** on attack rolls and cannot take **Impulse Actions** until the suppression ends. You do not merely hurt the enemy. You strip away their ability to fight back cleanly, pin them in place, and hand your crew a target that cannot punish them for moving in.";
 var OPERATOR_TACTICAL_MANEUVERS = [
-  { name: "Suppressing Fire", action: "Action", cost: 1, text: "Choose a point within your weapon's range, then an Area 3 around that point. You rake the area with disciplined fire, forcing every head down. Each Enemy in the area must succeed on an Agility Save (DC = 8 + your Wits Modifier + your Caliber) or become Suppressed until the start of your next turn. This Call deals no damage. The point is not to kill the room. The point is to own it." },
-  { name: "Take the Angle", action: "Swift Action", cost: 1, text: "You break to a firing position your enemy did not account for. You move up to your Speed without provoking opportunity attacks. If you end this movement with Line of Sight to an Enemy you did not have Line of Sight to at the start of your turn, your next weapon attack this turn ignores the Defense bonus of their Cover. You spent the movement finding the gap; now you shoot through it." },
-  { name: "Call the Angle", action: "Swift Action", cost: 1, text: "Designate an Enemy you can see. You read the geometry of their cover and call the exact firing solution to your crew. Until the start of your next turn, attacks against that Enemy made by you or your allies ignore the Defense bonus of Half and Three-Quarter Cover. You cannot make them stand in the open, so you teach everyone how to shoot around the wall." },
-  { name: "Reposition", action: "Swift Action", cost: 1, text: "Target one Ally within 12 spaces who can hear you. You call the better position before they know they need it. That Ally may immediately move up to half their Speed as a Free Action without provoking opportunity attacks." },
-  { name: "Focus Fire", action: "Special", cost: 1, text: "When you hit an Enemy with a weapon attack, you may spend 1 EX to mark them. The next attack made against that specific Enemy by you or an Ally before the start of your next turn gains Edge." },
-  { name: "Pin Down", action: "Impulse Action", cost: 1, text: "Trigger: An Enemy you can see within your weapon's range uses its movement. You snap off a controlled shot to keep them where you want them. Make a weapon attack against that Enemy. On a hit, deal normal damage and they are Suppressed until the start of your next turn. Alternatively, you may choose to deal no damage and instead drive them back under cover: their Speed becomes 0 for the rest of their turn." },
-  { name: "Covering Fire", action: "Impulse Action", cost: 1, text: "Trigger: An Enemy you can see makes a weapon attack against an ally within 12 spaces, and you have Line of Sight to that Enemy. You answer with suppressing fire before their shot lands clean. The attacker rolls that attack with Snag and is Suppressed until the start of your next turn. This is what protecting your crew looks like when you have a longarm instead of a shield." },
-  { name: "Fire on My Mark", action: "Impulse Action", cost: 1, text: "Trigger: You leave an Enemy Suppressed, or hit an Enemy with a weapon attack. You call the opening the instant it exists. One Ally within 12 spaces who can see or hear you may immediately use their Impulse Action to make a single weapon attack against that Enemy." }
+  { name: "Suppressing Fire", action: "Action", cost: 1, text: "Choose a point within your weapon's range, then an Area 3 around that point. Each Enemy in the area must succeed on an Agility Save (DC = 8 + your Wits Modifier + your Caliber) or become *Suppressed* until the start of your next turn. This Call deals no damage." },
+  { name: "Take the Angle", action: "Swift Action", cost: 1, text: "You move up to your Speed without provoking opportunity attacks. If you end this movement with Line of Sight to an Enemy you did not have Line of Sight to at the start of your turn, your next weapon attack this turn ignores the Defense bonus of their Cover." },
+  { name: "Call the Angle", action: "Swift Action", cost: 1, text: "Designate an Enemy you can see. Until the start of your next turn, attacks against that Enemy made by you or your allies ignore the Defense bonus of Half and Three-Quarter Cover." },
+  { name: "Reposition", action: "Swift Action", cost: 1, text: "Target one Ally within 12 spaces who can hear you. That Ally may immediately move up to half their Speed as a Free Action without provoking opportunity attacks." },
+  { name: "Focus Fire", action: "Special", cost: 1, text: "When you hit an Enemy with a weapon attack, you may spend 1 EX to mark them. The next attack made against that Enemy by you or an Ally before the start of your next turn gains **Edge**." },
+  { name: "Pin Down", action: "Impulse Action", cost: 1, text: "Trigger: An Enemy you can see within your weapon's range uses its movement. Make a weapon attack against that Enemy. On a hit, deal normal damage and they are *Suppressed* until the start of your next turn. Alternatively, you may choose to deal no damage and instead reduce their Speed to 0 for the rest of their turn." },
+  { name: "Covering Fire", action: "Impulse Action", cost: 1, text: "Trigger: An Enemy you can see makes a weapon attack against an ally within 12 spaces, and you have Line of Sight to that Enemy. The attacker rolls that attack with **Snag** and is *Suppressed* until the start of your next turn." },
+  { name: "Fire on My Mark", action: "Impulse Action", cost: 1, text: "Trigger: You leave an Enemy Suppressed, or hit an Enemy with a weapon attack. One Ally within 12 spaces who can see or hear you may immediately use their Impulse Action to make a single weapon attack against that Enemy." }
 ];
-var OPERATOR_TACTICAL_TEXT = OPERATOR_TACTICAL_INTRO + "\n\nTactical Maneuvers\n" + OPERATOR_TACTICAL_MANEUVERS.map(function (m) {
-  return "     " + m.name + (m.action ? " (" + m.action + ")" : "") + ": " + m.text;
-}).join("\n");
+var OPERATOR_TACTICAL_TEXT = OPERATOR_TACTICAL_INTRO + "\n\n" + OPERATOR_TACTICAL_MANEUVERS.map(function (m) {
+  return "**" + m.name + " (" + m.action + "):** " + m.text;
+}).join("\n\n");
 
 EN.classes.operator = {
   key: "operator",
@@ -310,7 +310,7 @@ EN.classes.operator = {
     "2": [
       {
         name: "Overwatch",
-        text: "You know how to lock down a firing lane. As an Action, you can establish an Overwatch zone covering an Area 6 Cone or Area 12 Line.\n\nUntil the start of your next turn, the first Enemy to move, attack, or cast an Invocation within that zone triggers your trap, provided you have Line of Sight to the Target. You may immediately make a weapon attack against them as an Impulse Action. If your attack hits, their Speed is reduced to 0 for the remainder of their turn as they are pinned down by suppressing fire.\n\nTo maintain this active threat, you must expose yourself to track the zone. You cannot use this feature while benefiting from Full Cover, though you may still benefit from Half or Three Quarter Cover."
+        text: "As an Action, you establish an Overwatch zone covering an Area 6 Cone or Area 12 Line. Until the start of your next turn, the first Enemy to move, attack, or cast an Invocation within that zone triggers your trap, provided you have Line of Sight to the target. You may immediately make a weapon attack against them as an Impulse Action. On a hit, their Speed is reduced to 0 for the remainder of their turn.\n\nYou must expose yourself to track the zone. You cannot use this feature while benefiting from Full Cover, though Half or Three-Quarter Cover still applies."
       },
       {
         name: "Universal Upgrade",
@@ -332,13 +332,13 @@ EN.classes.operator = {
     "5": [
       {
         name: "Fluid Engagement",
-        text: "Your muscle memory and combat discipline allow you to strike with lethal efficiency. When you take the Attack action on your turn, you can attack twice instead of once."
+        text: "When you take the Attack Action on your turn, you can make two attacks instead of one."
       }
     ],
     "6": [
       {
         name: "Breacher's Momentum",
-        text: "You feed on the shifting momentum of a successful assault. Whenever you drop an enemy to 0 Vitality or score a critical hit, you immediately regain 1 Execution and may move up to 3 spaces as a free action. This movement does not provoke opportunity attacks."
+        text: "Whenever you drop an enemy to 0 Vitality or score a critical hit, you immediately regain **1 Execution** and may move up to 3 spaces as a free action. This movement does not provoke opportunity attacks."
       },
       {
         name: "Universal Upgrade",
@@ -360,7 +360,7 @@ EN.classes.operator = {
     "9": [
       {
         name: "Absolute Discipline",
-        text: "Your situational awareness borders on precognition. You gain the following benefits:\n\nVeteran Instincts: You cannot be Surprised, and you gain Edge on all Initiative rolls.\n\nRallying Cry: When you roll Initiative, if you have 0 Execution remaining, you immediately regain 2 Execution."
+        text: "You gain the following benefits:\n\n• **Veteran Instincts:** You cannot be Surprised, and you gain **Edge** on all Initiative rolls.\n• **Rallying Cry:** When you roll Initiative with 0 Execution remaining, you immediately regain 2 Execution."
       }
     ],
     "10": [

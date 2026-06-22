@@ -4,22 +4,22 @@ EN.classes = EN.classes || {};
 // Moxie Gambits as structured sub-entries, the single source for the engine, the Class-tab
 // picker, and the print sheet. The Moxie feature's prose (below) is composed from this list,
 // so the displayed text and the machine-readable data can never drift apart.
-var SCOUNDREL_MOXIE_INTRO = "You survive on instinct, audacity, and luck that has no business holding. You have a pool of Moxie equal to your Caliber + your Agility Modifier (minimum 1). You regain all spent Moxie at the end of a Short or Long Rest.\n\nAt 1st Level you learn three Gambits of your choice from the list below, and you learn two more at 5th Level through Expanded Moxie. Unless a Gambit says otherwise, activating it costs 1 Moxie.";
+var SCOUNDREL_MOXIE_INTRO = "You survive on instinct, audacity, and luck that has no business holding. You have a pool of **Moxie** equal to your **Caliber + your Agility Modifier** (minimum 1). You regain all spent Moxie at the end of a Short or Long Rest.\n\nAt 1st Level you learn three Gambits of your choice from the list below, and you learn two more at 5th Level through Expanded Moxie. Unless a Gambit says otherwise, activating it costs 1 Moxie.";
 var SCOUNDREL_MOXIE_GAMBITS = [
-  { name: "Lucky Break", action: "Special Action", cost: 1, text: "When you make an attack roll, ability check, or saving throw, spend 1 Moxie to roll an additional d20 and choose which die to use, even if already rolling with Edge. This breaks the 2d20 cap (Edge + Lucky Break = 3d20, keep whichever you like)." },
-  { name: "Jinx", action: "Impulse Action", cost: 1, text: "When an enemy you can see makes an attack roll or saving throw, spend 1 Moxie to force them to roll an additional d20 and use the lowest, even if already rolling with Snag (breaks the cap the other way; 3d20, worst result)." },
-  { name: "Slip the Blow", action: "Impulse Action", cost: 1, text: "When hit by an attack you can see, spend 1 Moxie to gain Resistance to that attack's damage and move 1 space without provoking opportunity attacks." },
-  { name: "Smash and Grab", action: "Action", cost: 1, text: "Spend 1 Moxie; your Speed doubles this turn and your movement does not provoke opportunity attacks (you cannot end in an enemy's space). Make one weapon attack during the move; on a hit, shove the target 1 space or snatch a small unsecured item (contested Sleight to lift anything secured)." },
-  { name: "Bad Feeling", action: "Impulse Action", cost: 1, text: "When an enemy moves within your reach, or you are targeted by an attack you can see, spend 1 Moxie to move up to half your Speed without provoking, breaking away before it lands." },
-  { name: "Shake It Off", action: "Swift Action", cost: 1, text: "Spend 1 Moxie to end one condition clouding your senses or footing, such as Staggered, Shaken, or Dazed." },
-  { name: "Ace Up the Sleeve", action: "Special Action", cost: 1, text: "Spend 1 Moxie to produce a plausible mundane item you could have stashed, call a minor favor, or point out a small environmental out (GM approval; never conjures gear you could not carry)." },
-  { name: "Kick Them While They're Down", action: "Impulse Action", cost: 1, text: "When an enemy within reach misses you with a melee attack, or an ally crits an enemy within your reach, spend 1 Moxie to make a weapon attack against that enemy that automatically qualifies for Cheap Shot." },
-  { name: "Quick Hands", action: "Impulse Action", cost: 1, text: "Trigger: An enemy within your reach misses you with an attack, or you move out of an enemy's reach. Spend 1 Moxie to make the moment pay, a clipped strap, a lifted clip, a pocket gone suddenly light. Choose one: take one small unsecured item the enemy is carrying (a keycard, a grenade, a spare clip, a data shard), or foul one piece of their gear so the next attack roll they make with it is rolled with Snag." },
-  { name: "Pure Luck", action: "Special Action", cost: 1, text: "Trigger: You fail an attack roll, an ability check, or a saving throw. Spend 1 Moxie to insist, against all reason, that it went your way. Treat the d20 as if it had rolled a 10, then apply your modifiers as normal. Where Lucky Break buys you another die before you know how it lands, this one rescues a roll that already came up short." }
+  { name: "Lucky Break", action: "Special Action", cost: 1, text: "When you make an attack roll, an ability check, or a saving throw, spend 1 Moxie to roll one additional d20 and choose which die to use, even if you are already rolling with Edge. This deliberately breaks the normal rule that you can never roll more than 2d20. A Lucky Break stacks on top of Edge: Edge plus a Lucky Break is 3d20, and you keep whichever result you like." },
+  { name: "Jinx", action: "Impulse Action", cost: 1, text: "When an enemy you can see makes an attack roll or a saving throw, spend 1 Moxie to force them to roll one additional d20 and use the lowest result, even if they are already rolling with Snag. Jinxing a target who already has Snag forces a third d20, and they are stuck with the worst of the three." },
+  { name: "Slip the Blow", action: "Impulse Action", cost: 1, text: "When you are hit by an attack you can see, spend 1 Moxie to roll with it at the last instant. You gain Resistance to that attack's damage and may immediately move 1 space without provoking opportunity attacks." },
+  { name: "Smash and Grab", action: "Action", cost: 1, text: "Spend 1 Moxie. Your Speed is doubled this turn and your movement does not provoke opportunity attacks for the rest of your turn (you cannot end your turn in an enemy's space). Make a single weapon attack at any point during the move. On a hit, choose one: shove the target 1 space, or snatch one small unsecured item they are carrying (a keycard, a grenade, a spare clip, a data shard). The GM may call for a contested Sleight check to lift anything secured or actively guarded." },
+  { name: "Bad Feeling", action: "Impulse Action", cost: 1, text: "When an enemy you can see moves within your reach, or when you become the target of an attack you can see, spend 1 Moxie to move up to half your Speed without provoking opportunity attacks. Because you move as the trigger happens, you can break away before it lands. If that move puts you out of the attacker's reach or behind total cover, the attack finds empty space." },
+  { name: "Shake It Off", action: "Swift Action", cost: 1, text: "Spend 1 Moxie to end one condition affecting you that is clouding your senses or your footing, such as Staggered, Shaken, or Dazed." },
+  { name: "Ace Up the Sleeve", action: "Special Action", cost: 1, text: "Spend 1 Moxie to reveal you saw this coming. Subject to GM approval, you produce a useful but mundane item you could plausibly have stashed, call in a minor favor from a local contact, or point out a small environmental out: a loose grate, an unlatched window, a maintenance ladder. It never conjures gear you could not have carried and it never rewrites the scene." },
+  { name: "Kick Them While They're Down", action: "Impulse Action", cost: 1, text: "When an enemy within your reach misses you with a melee attack, or an ally scores a Critical Hit on an enemy within your reach, spend 1 Moxie to make a single weapon attack against that enemy. On a hit, it automatically qualifies for your Cheap Shot damage with no other condition required." },
+  { name: "Quick Hands", action: "Impulse Action", cost: 1, text: "Trigger: An enemy within your reach misses you with an attack, or you move out of an enemy's reach. Spend 1 Moxie. Choose one: take one small unsecured item the enemy is carrying (a keycard, a grenade, a spare clip, a data shard), or foul one piece of their gear so the next attack roll they make with it is rolled with Snag." },
+  { name: "Pure Luck", action: "Special Action", cost: 1, text: "Trigger: You fail an attack roll, an ability check, or a saving throw. Spend 1 Moxie to insist, against all reason, that it went your way. Treat the d20 as if it had rolled a 10, then apply your modifiers normally. Where Lucky Break buys you another die before you know how it lands, Pure Luck rescues a roll that already came up short." }
 ];
-var SCOUNDREL_MOXIE_TEXT = SCOUNDREL_MOXIE_INTRO + "\n" + SCOUNDREL_MOXIE_GAMBITS.map(function (g) {
-  return "     " + g.name + (g.action ? " (" + g.action + ")" : "") + ": " + g.text;
-}).join("\n");
+var SCOUNDREL_MOXIE_TEXT = SCOUNDREL_MOXIE_INTRO + "\n\n" + SCOUNDREL_MOXIE_GAMBITS.map(function (g) {
+  return "**" + g.name + " (" + g.action + "):** " + g.text;
+}).join("\n\n");
 
 EN.classes.scoundrel = {
   key: "scoundrel",
@@ -74,7 +74,7 @@ EN.classes.scoundrel = {
       },
       {
         name: "Cheap Shot",
-        text: "You hit where it hurts the instant an opening appears, and you are very good at making your own openings. Once per turn, you can deal an extra 1d6 damage to one target you hit with an attack, as long as the attack uses a Sidearm, a Simple Weapon, or a Melee Weapon with the Light trait and at least one of the following is true:\n• You have Edge on the attack roll.\n• Another conscious enemy of the target is within 1 space of it, and you do not have Snag on the roll.\n• You have spent at least 1 Moxie this round.\n\nThis extra damage increases to 2d6 at 3rd Level, 3d6 at 5th Level, 4d6 at 7th Level, and 5d6 at 9th Level."
+        text: "Once per turn, you can deal an extra **1d6 damage** to one target you hit with an attack, as long as the attack uses a Sidearm, a Simple Weapon, or a Melee Weapon with the *Light* trait, and at least one of the following is true:\n\n• You have **Edge** on the attack roll.\n• Another conscious enemy of the target is within 1 space of it, and you do not have **Snag** on the roll.\n• You have spent at least 1 Moxie this round.\n\nThis extra damage increases to **2d6 at 3rd Level, 3d6 at 5th Level, 4d6 at 7th Level, and 5d6 at 9th Level**."
       },
       {
         name: "Scoundrel Subclass",
@@ -84,7 +84,7 @@ EN.classes.scoundrel = {
     "2": [
       {
         name: "Watch How I Soar",
-        text: "You are never quite where the trouble is. You can take the Dash or the Disengage action as a Swift Action at no Moxie cost. In addition, opportunity attacks against you are made with Snag, and Difficult Terrain costs you no extra movement."
+        text: "You can take the **Dash** or **Disengage** action as a **Swift Action** at no Moxie cost. In addition, opportunity attacks against you are made with **Snag**, and Difficult Terrain costs you no extra movement."
       },
       {
         name: "Universal Upgrade",
@@ -114,17 +114,17 @@ EN.classes.scoundrel = {
       },
       {
         name: "Untouchable",
-        text: "Blast charges, grenades, sweeping autofire, somehow none of it ever quite lands on you. When you are subjected to an effect that allows an Agility save to take half damage, you instead take no damage on a success and only half damage on a failure."
+        text: "When you are subjected to an effect that allows an **Agility Save** to take half damage, you instead take no damage on a success and only half damage on a failure."
       },
       {
         name: "Expanded Moxie",
-        text: "Your bag of tricks deepens. You learn two additional Gambits from the Moxie list."
+        text: "You learn **two additional Gambits** from the list."
       }
     ],
     "6": [
       {
         name: "Cheat the Clock",
-        text: "You move while other people are still deciding to. You can take two Impulse Actions each round instead of one. You still cannot take more than one Impulse Action in response to the same trigger."
+        text: "You can take **two Impulse Actions** each round instead of one. You still cannot take more than one Impulse Action in response to the same trigger."
       },
       {
         name: "Universal Upgrade",
@@ -154,7 +154,7 @@ EN.classes.scoundrel = {
       },
       {
         name: "Devil's Own Luck",
-        text: "Your luck has stopped looking like luck and started looking like cheating. Once per round, when you score a Critical Success (a Natural 20) on a d20 roll, or when an enemy misses you with an attack, you regain 1 spent Moxie (cannot exceed your maximum). In addition, attacks against you cannot score Critical Hits; the blow that should have killed you always finds a way to merely graze."
+        text: "Once per round, when you score a **Critical Success (Natural 20)** on a d20 roll, or when an enemy misses you with an attack, you regain 1 spent Moxie (this cannot exceed your maximum). In addition, attacks against you cannot score **Critical Hits**."
       }
     ],
     "10": [
@@ -312,11 +312,11 @@ EN.classes.shaper = {
     "1": [
       {
         name: "Reservoir",
-        text: "You have awakened a deep connection to the metaphysical current. Your capacity to hold and shape this energy safely is represented by your Reservoir of Flow Points (FP).\nYour maximum FP is equal to (Caliber x 3) + your Flow Modifier.\nYou regain all spent FP at the end of a Long Rest, and an amount equal to your Flow Modifier at the end of a Short Rest.\n\nIf your FP drops to 0, you may continue to shape by entering Overdraw, losing 1d4 Vitality per FP spent and risking Strain."
+        text: "You have awakened a deep connection to the metaphysical current. Your capacity to hold and channel this energy safely is represented by your Reservoir of **Flow Points (FP)**.\n\nYour maximum FP equals **(Caliber x 3) + your Flow Modifier**.\n\nYou regain all spent FP at the end of a Long Rest, and an amount equal to your Flow Modifier at the end of a Short Rest.\n\n*If your FP drops to 0, you may continue to shape by entering **Overdraw**, losing 1d4 Vitality per FP spent and risking Strain.*"
       },
       {
         name: "Core Channeling",
-        text: "You do not memorize static spells; you shape the current on the fly. You begin play knowing three Base Resonances chosen from the standard list: Kinetic, Thermal, Electromagnetic, Visceral, or Spatial. When you channel the Flow, you spend FP to build an Invocation using your known Resonances combined with the Intent, Delivery, Force, and Duration rules."
+        text: "You do not memorize static spells. You shape the current on the fly. You begin play knowing **three Base Resonances** chosen from the standard list: *Kinetic, Thermal, Electromagnetic, Visceral, or Spatial.* When you channel the Flow, you spend FP to build an Invocation using your known Resonances combined with the Intent, Delivery, Force, and Duration rules."
       },
       {
         name: "Flow Subclass",
@@ -326,7 +326,7 @@ EN.classes.shaper = {
     "2": [
       {
         name: "Controlled Overdraw",
-        text: "You have learned how to briefly turn your body into a pressure valve to bleed off dangerous resonance without fracturing your nervous system.\n\nOnce per Short Rest, when your FP is at 0 and you declare an Overdraw, you may ignore the Vitality loss and Strain accumulation for up to 2 FP worth of Overdraw. If the Invocation costs more than 2 FP, you take the Vitality damage and Strain for the remainder as normal."
+        text: "Once per Short Rest, when your FP is at 0 and you declare an Overdraw, you may ignore the Vitality loss and Strain accumulation for up to **2 FP** worth of Overdraw. If the Invocation costs more than 2 FP, you take the Vitality damage and Strain for the remainder as normal."
       },
       {
         name: "Universal Upgrade",
@@ -340,7 +340,7 @@ EN.classes.shaper = {
       },
       {
         name: "Resonance Synthesis",
-        text: "Your connection to the Flow expands beyond yourself. You officially unlock the Resonance Synthesis Advanced Techniques, granting you the ability to use Flow Linking and Resonance Amplification.\n\nAdditionally, your internal frequency has developed enough stability to manipulate one of the abstract resonances. You may now learn the Cognitive Base Resonance. Upon reaching this level, you learn one new Base Resonance of your choice (bringing your total to four)."
+        text: "You unlock the **Resonance Synthesis** Advanced Techniques, gaining the ability to use **Flow Linking** and **Resonance Amplification**. You may now learn the **Cognitive** Base Resonance. Upon reaching this level, you learn **one new Base Resonance** of your choice, bringing your total to four."
       }
     ],
     "4": [
@@ -352,17 +352,17 @@ EN.classes.shaper = {
     "5": [
       {
         name: "Expanded Frequency",
-        text: "Your spirit can now bear the chronological friction of the most volatile resonance. You may now learn the Temporal Base Resonance.\n\nUpon reaching this level, you learn one new Base Resonance of your choice (bringing your total to five)."
+        text: "You may now learn the **Temporal** Base Resonance. Upon reaching this level, you learn **one new Base Resonance** of your choice, bringing your total to five."
       },
       {
         name: "Layered Force",
-        text: "Your shaping has matured to the point where you can stack the modular components of an Invocation. You may now pay both the Hybrid (1 FP) and Empowered Force (1 FP) costs on a single Invocation, dealing the Invocation's full Empowered damage and applying the Resonance's Empowered Effect."
+        text: "You may now pay both the Hybrid (1 FP) and Empowered Force (1 FP) costs on a single Invocation, dealing the Invocation's full Empowered damage and applying the Resonance's Empowered Effect."
       }
     ],
     "6": [
       {
         name: "Rhythmic Shaping",
-        text: "You have learned to weave shaping and physical momentum into a single, unbroken rhythm. Once per round, when you use an Action to shape an Invocation, you may use a Swift Action to Disengage, Dash, or make a single attack with a Simple Weapon or Sidearm."
+        text: "Once per round, when you use an Action to shape an Invocation, you may use a Swift Action to Disengage, Dash, or make a single attack with a Simple Weapon or Sidearm."
       },
       {
         name: "Universal Upgrade",
@@ -376,7 +376,7 @@ EN.classes.shaper = {
       },
       {
         name: "Master Forging",
-        text: "You have achieved an elite level of harmonic control, allowing you to manipulate the scale of shaping from personal defense to environmental strategy. You officially unlock the Master Forging Advanced Techniques, granting you the ability to use Cooperative Channeling and create Sustained Fields."
+        text: "You unlock the **Master Forging** Advanced Techniques, gaining the ability to use **Cooperative Channeling** and create **Sustained Fields**."
       }
     ],
     "8": [
@@ -388,7 +388,7 @@ EN.classes.shaper = {
     "9": [
       {
         name: "Absolute Conduit",
-        text: "Your spirit is completely calloused against the friction of the Flow. You gain the following benefits:\n\nStrain Resistance: You completely ignore the mechanical penalties of Stage 1 Strain (Ripple) and Stage 2 Strain (Wave). You only begin suffering penalties if you reach Stage 3 (Surge).\n\nRapid Alignment: When you roll Initiative, if your FP is currently 0, you immediately regain 2d4 FP as your body reflexively pulls ambient resonance from the environment."
+        text: "You gain the following benefits:\n\n• **Strain Resistance:** You completely ignore the mechanical penalties of **Stage 1 Strain (Ripple)** and **Stage 2 Strain (Wave)**. Penalties only begin at Stage 3 (Surge).\n• **Rapid Alignment:** When you roll Initiative with your FP at 0, you immediately regain **2d4 FP** as your body pulls ambient resonance from the environment."
       }
     ],
     "10": [
