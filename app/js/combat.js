@@ -1701,7 +1701,10 @@ EN.combatView = (function () {
             el("span", { style: { fontSize: "10px", color: "var(--text3)", flex: "1 1 auto" }, text: "Bonus Damage · Once per Turn" })
           ]),
           el("div.row.wrap", { style: { gap: "14px", alignItems: "center", marginTop: "6px" } }, [
-            statBox("BONUS DMG", csdie, "var(--accent)", "Extra damage on qualifying attack; scales with Caliber"),
+            el("div", { title: "Extra damage on qualifying attack; scales with Caliber", style: { textAlign: "center", flex: "0 0 auto", minWidth: "44px" } }, [
+              el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text2)" }, text: "BONUS DMG" }),
+              el("span.mono", { style: { fontSize: "15px", color: "var(--accent)" }, text: csdie })
+            ]),
             el("span.help", { style: { margin: 0, flex: 2 }, text: "Requires Edge on the roll, a flanking conscious ally, or Moxie spent this round. Sidearm, Simple, or Light Melee only." })
           ])
         ]));
