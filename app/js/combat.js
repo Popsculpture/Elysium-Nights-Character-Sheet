@@ -771,8 +771,13 @@ EN.combatView = (function () {
     }
 
     blocks.push(el("div.row.between.wrap", { style: { marginBottom: "14px" } }, [
-      el("h1", { style: { fontSize: "22px", letterSpacing: ".06em" }, html: 'FREELANCER <span class="dim3" style="font-size:13px">// live status · ' +
-        ((ch.identity && ch.identity.handle) || (ch.name || "Unnamed").split(" ")[0]) + "</span>" }),
+      el("h1", { style: { fontSize: "22px", letterSpacing: ".06em" }, html: (function () {
+        var handle = (ch.identity && ch.identity.handle) || (ch.name || "Unnamed").split(" ")[0];
+        var cls = (d.classInfo && d.classInfo.name) || "";
+        var sub = (d.subclassInfo && d.subclassInfo.name) || "";
+        var classStr = cls ? (" · " + cls + (sub ? " / " + sub : "")) : "";
+        return 'FREELANCER <span class="dim3" style="font-size:13px">// live status · ' + handle + classStr + "</span>";
+      })() }),
       el("div.row.wrap", { style: { gap: "8px" } }, [
         el("div.pop-anchor", { style: { position: "relative" } }, [
           el("button.btn.sm", { onclick: function () { var was = _pops.short; closePops(); _pops.short = !was; EN.app.render(); } }, "⏾ SHORT REST"),
