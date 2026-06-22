@@ -1577,7 +1577,7 @@ EN.combatView = (function () {
       }
       function statBox(label, value, color, title) {
         return el("div", { title: title || "", style: { textAlign: "center", flex: "0 0 auto", minWidth: "44px" } }, [
-          el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text4)" }, text: label }),
+          el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: label }),
           el("span.mono", { style: { fontSize: "15px", color: color || "var(--text)" }, text: value })
         ]);
       }
@@ -1608,20 +1608,20 @@ EN.combatView = (function () {
           var hitCell;
           if (!canAny) {   // magazine can't pay even the cheapest mode → Reload affordance
             hitCell = el("div", { style: { textAlign: "center", flex: "0 0 auto", minWidth: "56px" } }, [
-              el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text4)" }, text: "HIT" }),
+              el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "HIT" }),
               el("button.btn.sm", { style: { color: "var(--warn)", borderColor: "var(--warn)", padding: "1px 7px" }, onclick: function () { reloadWeapon(wname); } }, "⟳ RELOAD")
             ]);
           } else {   // can fire something; grey the number when the SELECTED mode is unaffordable
             hitCell = el("div", { title: canSel ? "Tap to fire (" + st.mode + " · −" + selCost + ")" : "Needs " + selCost + " for " + st.mode + "; switch to a cheaper mode or reload",
               style: { textAlign: "center", flex: "0 0 auto", minWidth: "44px", cursor: "pointer", opacity: canSel ? 1 : 0.5 }, onclick: function () { fireWeapon(wname); } }, [
-              el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text4)" }, text: "HIT" }),
+              el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "HIT" }),
               el("span.mono", { title: hitTip, style: { fontSize: "16px", color: canSel ? "var(--ember)" : "var(--danger)" }, text: eng.fmtMod(h.total) })
             ]);
           }
           var pct = st.cap > 0 ? Math.round(st.cur / st.cap * 100) : 0;
           var ammoCell = el("div", { style: { flex: "1 1 120px", minWidth: "110px" } }, [
             el("div.row.between", { style: { alignItems: "baseline" } }, [
-              el("span", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text4)" }, text: "AMMO" }),
+              el("span", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "AMMO" }),
               el("span.mono", { style: { fontSize: "12px", color: st.cur === 0 ? "var(--danger)" : "var(--text2)" }, text: st.cur + " / " + st.cap + (it.ammoUnit ? " " + it.ammoUnit : "") })
             ]),
             bar(st.cur, st.cap, st.cur === 0 ? "var(--danger)" : "var(--accent)")
@@ -1860,7 +1860,7 @@ EN.combatView = (function () {
 
       // LEFT column: saving throws
       var savesCol = el("div", { style: { flex: "0 0 auto", borderRight: "1px solid rgba(35,48,68,.6)", paddingRight: "12px", marginRight: "4px" } }, [
-        el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".14em", color: "var(--text4)", marginBottom: "3px" } }, "SAVES"),
+        el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".14em", color: "var(--text3)", marginBottom: "3px" } }, "SAVES"),
         el("table.sktable", { style: { fontSize: "12px" } }, [el("tbody", null, R.attributes.map(function (a) {
           var sv = d.saves[a.key];
           var svSnag = fx.snagSave[a.key];
