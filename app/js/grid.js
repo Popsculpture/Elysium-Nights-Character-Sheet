@@ -52,7 +52,26 @@ EN.gridView = (function () {
     var grid = ch.grid || {}, gd = d.grid, deck = gd.deck;
     var rows = [];
 
-    // rig selector, one dropdown grouped by Smartdecks / Buddies / None
+    // rig selector: only show owned smartdecks/buddies from the character's inventory
+    var ownedDecks = (ch.equipment || []).filter(function (e) { return e.qty > 0 && (e.name.endsWith(" Smartdeck") || e.name.endsWith(" B&E Buddy")); });
+    var ownedSmartdecks = ownedDecks.filter(function (e) { return e.name.endsWith(" Smartdeck"); }).map(function (e) {
+      var tier = e.name.replace(" Smartdeck", "");
+      return (G.smartdecks || []).find(function (s) { return s.tier === tier; });
+    }).filter(Boolean);
+    var ownedBuddies = ownedDecks.filter(function (e) { return e.name.endsWith(" B&E Buddy"); }).map(function (e) {
+      var tier = e.name.replace(" B&E Buddy", "");
+      return (G.buddies || []).find(function (b) { return b.tier === tier; });
+    }).filter(Boolean);
+
+    var selChildren = [el("option", { value: "none", selected: !grid.deckType, text: "- No rig -" })];
+    if (ownedSmartdecks.length) selChildren.push(el("optgroup", { label: "Smartdecks (Power User)" }, ownedSmartdecks.map(function (s) {
+      return el("option", { value: "smartdeck:" + s.tier, selected: grid.deckType === "smartdeck" && grid.deckTier === s.tier, text: s.tier + " · +" + s.deviceBonus + " dev · " + s.hp + " HP" });
+    })));
+    if (ownedBuddies.length) selChildren.push(el("optgroup", { label: "B&E Buddies (Standard User)" }, ownedBuddies.map(function (b) {
+      return el("option", { value: "buddy:" + b.tier, selected: grid.deckType === "buddy" && grid.deckTier === b.tier, text: b.tier + " · +" + b.attack + " atk · " + b.hp + " HP" });
+    })));
+    if (!ownedSmartdecks.length && !ownedBuddies.length) selChildren.push(el("option", { disabled: true, text: "No rigs in stash — buy one in Inventory" }));
+
     var sel = el("select", { style: { fontSize: "12px", width: "auto", minWidth: "220px" },
       onchange: function () {
         var v = this.value;
@@ -65,15 +84,7 @@ EN.gridView = (function () {
           (g.deckMods || []).forEach(function (k) { var m = (G.mods || []).find(function (x) { return x.key === k; }); if (m && u + m.slots <= cap) { u += m.slots; kept.push(k); } });
           g.deckMods = kept;
         });
-      } }, [
-      el("option", { value: "none", selected: !grid.deckType, text: "- No rig -" }),
-      el("optgroup", { label: "Smartdecks (Power User)" }, (G.smartdecks || []).map(function (s) {
-        return el("option", { value: "smartdeck:" + s.tier, selected: grid.deckType === "smartdeck" && grid.deckTier === s.tier, text: s.tier + " · 𝒢" + s.price.toLocaleString() + " · +" + s.deviceBonus + " dev · " + s.hp + " HP" });
-      })),
-      el("optgroup", { label: "B&E Buddies (Standard User)" }, (G.buddies || []).map(function (b) {
-        return el("option", { value: "buddy:" + b.tier, selected: grid.deckType === "buddy" && grid.deckTier === b.tier, text: b.tier + " · 𝒢" + b.price.toLocaleString() + " · +" + b.attack + " atk · " + b.hp + " HP" });
-      }))
-    ]);
+      } }, selChildren);
     rows.push(el("div.row.wrap", { style: { gap: "10px", alignItems: "center" } }, [
       el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".1em", minWidth: "44px" }, text: "RIG" }), sel,
       deck ? el("span.chip", { style: { fontSize: "9.5px", color: "var(--accent)", borderColor: "var(--accent)" }, title: "User Type on the #GRID" }, gd.userType.toUpperCase()) : null,

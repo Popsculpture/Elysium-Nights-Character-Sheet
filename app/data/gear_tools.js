@@ -55,6 +55,12 @@ EN.gearCatalog.tools = {
         { name: "Resonance Tonics", intro: "" },
         { name: "Worn Resonant Gear", intro: "Each calls out a Body Slot." },
         { name: "Handheld Resonant Tools", intro: "Drawn and activated when needed. None use a Body Slot." }
+      ] },
+    { key: "rigs", title: "Smartdecks & B&E Buddies",
+      intro: "Hacking hardware. Smartdecks are Power User rigs for Codebreakers and serious grid runners; B&E Buddies are handheld, civilian-grade cracker boxes that anyone can operate. Equip one from your stash to activate it on the #GRID tab.",
+      groups: [
+        { name: "Smartdecks", intro: "Power User hardware. Governs Cipher complexity ceiling, Device Bonus, and mod slots. Restricted citywide; Contraband in corporate sectors." },
+        { name: "B&E Buddies", intro: "Standard User rigs. No Bandwidth, no multi-Link, and locked out of Premium+ nodes. Restricted." }
       ] }
   ],
 
@@ -509,6 +515,47 @@ EN.gearCatalog.tools = {
       desc: "A palm-sized crystal and frame that reacts to nearby Flow. As a Swift Action, activate before an Awareness or Esoterica check to sense Flow and gain Edge. Once per scene, spend 1 FP to have the GM reveal the strongest anomaly within 12 spaces, even through thin walls or floors, if one exists." },
     { name: "Scripted Invocation Tab", bucket: "flow", group: "Handheld Resonant Tools", price: 60, unit: "+", availability: "Rare", legality: "Restricted",
       effect: "One-use locked Invocation. Deploys without spending FP.",
-      desc: "A disposable mystech strip carrying one locked Invocation. Snap the tab along its seam and wet the etch to release it: you do not spend FP; resolve the Invocation using the crafter's Attack Modifier and Save DC recorded on the tab, plus any noted range and limits. The tab crumbles after use. Carrying more than 3 to 5 tabs is unstable and attention-grabbing." }
+      desc: "A disposable mystech strip carrying one locked Invocation. Snap the tab along its seam and wet the etch to release it: you do not spend FP; resolve the Invocation using the crafter's Attack Modifier and Save DC recorded on the tab, plus any noted range and limits. The tab crumbles after use. Carrying more than 3 to 5 tabs is unstable and attention-grabbing." },
+
+    /* ============================== RIGS ============================== */
+    /* ---- Smartdecks (Power User) ---- */
+    { name: "Standard Smartdeck", bucket: "rigs", group: "Smartdecks", deckType: "smartdeck", deckTier: "Standard",
+      price: 450, availability: "Common", legality: "Restricted",
+      effect: "+0 Device Bonus · 3 HP · 0 mod slots · runs Complexity 0-1.",
+      desc: "A bare-bones grid console. No frills, no slots, but it gets you on the network as a Power User." },
+    { name: "Improved Smartdeck", bucket: "rigs", group: "Smartdecks", deckType: "smartdeck", deckTier: "Improved",
+      price: 1200, availability: "Uncommon", legality: "Restricted",
+      effect: "+1 Device Bonus · 4 HP · 1 mod slot · runs Complexity 0-2. Trait: Encrypted Comms.",
+      desc: "The standard Codebreaker starting deck. Solid encryption and one hardware slot for a mod." },
+    { name: "Advanced Smartdeck", bucket: "rigs", group: "Smartdecks", deckType: "smartdeck", deckTier: "Advanced",
+      price: 3000, availability: "Uncommon", legality: "Restricted",
+      effect: "+1 Device Bonus · 5 HP · 2 mod slots · runs Complexity 0-3. Trait: Trace-Resistant Signature.",
+      desc: "Mid-tier hardware with a fuzzy emission profile. Alerts take longer to trace back to you." },
+    { name: "Premium Smartdeck", bucket: "rigs", group: "Smartdecks", deckType: "smartdeck", deckTier: "Premium",
+      price: 6500, availability: "Rare", legality: "Contraband",
+      effect: "+2 Device Bonus · 6 HP · 3 mod slots · runs Complexity 0-4. Trait: Encrypted Channel.",
+      desc: "Immune to passive corporate dragnets. This is serious gear and the corps know it." },
+    { name: "Elite Smartdeck", bucket: "rigs", group: "Smartdecks", deckType: "smartdeck", deckTier: "Elite",
+      price: 11000, availability: "Rare", legality: "Contraband",
+      effect: "+2 Device Bonus · 7 HP · 4 mod slots · runs Complexity 0-5. Trait: Adaptive Buffer.",
+      desc: "Stability Check DCs against you drop by 2. ICE has to work harder to rattle this deck." },
+    { name: "Apex Smartdeck", bucket: "rigs", group: "Smartdecks", deckType: "smartdeck", deckTier: "Apex",
+      price: 18000, availability: "Rare", legality: "Contraband",
+      effect: "+3 Device Bonus · 8 HP · 5 mod slots · runs Complexity 0-6. Trait: Quantum Core.",
+      desc: "Once per scene, reroll a failed Cipher Attack. The full library, no ceiling, no limits." },
+
+    /* ---- B&E Buddies (Standard User) ---- */
+    { name: "Standard B&E Buddy", bucket: "rigs", group: "B&E Buddies", deckType: "buddy", deckTier: "Standard",
+      price: 250, availability: "Common", legality: "Restricted",
+      effect: "+3 atk · DC 11 · 2 HP · max Tier 1 nodes.",
+      desc: "Ugly, handheld, dependable. Locks out of Premium+ nodes with an audible spark." },
+    { name: "Improved B&E Buddy", bucket: "rigs", group: "B&E Buddies", deckType: "buddy", deckTier: "Improved",
+      price: 500, availability: "Uncommon", legality: "Restricted",
+      effect: "+5 atk · DC 13 · 3 HP · max Tier 2 nodes.",
+      desc: "Better antenna, tighter code. Still a Standard User tool, still hates Premium nodes." },
+    { name: "Advanced B&E Buddy", bucket: "rigs", group: "B&E Buddies", deckType: "buddy", deckTier: "Advanced",
+      price: 900, availability: "Rare", legality: "Restricted",
+      effect: "+7 atk · DC 15 · 4 HP · max Tier 3 nodes.",
+      desc: "As good as a B&E Buddy gets. Hits hard, holds up, still locks out of the top tier nodes." }
   ]
 };
