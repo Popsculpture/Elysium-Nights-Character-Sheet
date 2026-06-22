@@ -1728,9 +1728,17 @@ EN.combatView = (function () {
       if (!inScene.length) {
         kids.push(el("p.help", { style: { margin: "0 0 6px", color: "var(--text3)" }, text: "Nothing in your loadout yet. Equip gear in Inventory, or add carried items below." }));
       } else {
-        function rank(e) { return isEquippedAny(ch, e.name) ? 0 : carryStatus(ch, e.name) === "mission" ? 1 : 2; }
-        inScene.sort(function (a, b) { return rank(a) - rank(b); });
-        inScene.forEach(function (e) { kids.push(loadoutRow(e)); });
+        var carried = inScene.filter(function (e) { return !isEquippedAny(ch, e.name) && carryStatus(ch, e.name) === "carried"; });
+        var mission = inScene.filter(function (e) { return !isEquippedAny(ch, e.name) && carryStatus(ch, e.name) === "mission"; });
+        var equipped = inScene.filter(function (e) { return isEquippedAny(ch, e.name); });
+        function section(label, items) {
+          if (!items.length) return;
+          kids.push(el("div.section-title", { style: { margin: "8px 0 4px" } }, [document.createTextNode(label), el("span.line")]));
+          items.forEach(function (e) { kids.push(loadoutRow(e)); });
+        }
+        section("Carried", carried);
+        section("Mission", mission);
+        section("On-Person", equipped);
       }
       // add-to-loadout picker (stash items not yet carried or equipped)
       var stashOnly = owned.filter(function (e) { return !isEquippedAny(ch, e.name) && carryStatus(ch, e.name) === "stashed"; });
