@@ -60,7 +60,8 @@ EN.gearCatalog.tools = {
       intro: "Hacking hardware. Smartdecks are Power User rigs for Codebreakers and serious grid runners; B&E Buddies are handheld, civilian-grade cracker boxes that anyone can operate. Equip one from your stash to activate it on the #GRID tab.",
       groups: [
         { name: "Smartdecks", intro: "Power User hardware. Governs Cipher complexity ceiling, Device Bonus, and mod slots. Restricted citywide; Contraband in corporate sectors." },
-        { name: "B&E Buddies", intro: "Standard User rigs. No Bandwidth, no multi-Link, and locked out of Premium+ nodes. Restricted." }
+        { name: "B&E Buddies", intro: "Standard User rigs. No Bandwidth, no multi-Link, and locked out of Premium+ nodes. Restricted." },
+        { name: "Hardware Mods", intro: "Smartdeck plug-ins. Buy them here, then slot them into a Smartdeck's mod slots on the #GRID tab. B&E Buddies cannot take mods." }
       ] }
   ],
 

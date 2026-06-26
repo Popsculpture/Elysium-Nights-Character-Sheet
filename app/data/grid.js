@@ -184,25 +184,42 @@ EN.grid = {
   ],
   relayNote: "Disposable, overclocked, single-shot; anyone can fire one, then both Relay and cipher are slag. If the cipher's Tier exceeds what the user can handle, roll Systems (Tech) DC 10 + cipher Tier (or Snag Dice = cipher Tier out of combat): success = full power; failure (margin -1 to -4) = Save DC & Attack reduced by 2; critical failure (Nat 1 / margin -5+) = the Relay sparks and dies, cipher lost. Codebreaker Special: extract an unused Relay's cipher into your Repertoire during Downtime.",
 
-  /* Smartdeck hardware modifications. */
+  /* Smartdeck hardware modifications. avail/legal drive the gray-market listing. */
   mods: [
-    { key: "heatsinks",   name: "Reinforced Heatsinks", price: 600,  slots: 1, type: "Durability",
+    { key: "heatsinks",   name: "Reinforced Heatsinks", price: 600,  slots: 1, type: "Durability", avail: "Uncommon", legal: "Restricted",
       text: "Repurposed gaming-rig cooling. Increases the deck's Durability HP by +2. Once per deck.", bonus: { hp: 2 } },
-    { key: "sweep",       name: "Sweep Suite Plug-In", price: 800,  slots: 1, type: "Scanning",
+    { key: "sweep",       name: "Sweep Suite Plug-In", price: 800,  slots: 1, type: "Scanning", avail: "Uncommon", legal: "Restricted",
       text: "Military-grade detection libraries. +1 Edge Die on all Scanning Dice Pools (or Edge on d20 Systems checks) to detect hidden, camouflaged, or hardened nodes. Does not interact with the Modifier Stack Cap." },
-    { key: "burnnotice",  name: "Burn Notice Module", price: 900,  slots: 1, type: "Trace Evasion",
+    { key: "burnnotice",  name: "Burn Notice Module", price: 900,  slots: 1, type: "Trace Evasion", avail: "Rare", legal: "Contraband",
       text: "If the deck is Bricked by a LinkDeath failure (including Cascade), it wipes its memory and routes a false ping; the enemy node rolls with Snag to trace your physical location." },
-    { key: "icebreaker",  name: "ICE-Breaker Algorithm", price: 1200, slots: 1, type: "Failure Mitigation",
+    { key: "icebreaker",  name: "ICE-Breaker Algorithm", price: 1200, slots: 1, type: "Failure Mitigation", avail: "Rare", legal: "Contraband",
       text: "On a critical failure (margin -5 or worse on d20, or -3 or worse on a Dice Pool) of a Systems check to breach a node, spend 1 deck HP to downgrade it to a standard Failure, preventing immediate lockout." },
-    { key: "coprocessor", name: "Overclocked Coprocessor", price: 1500, slots: 1, type: "Action Economy",
+    { key: "coprocessor", name: "Overclocked Coprocessor", price: 1500, slots: 1, type: "Action Economy", avail: "Rare", legal: "Contraband",
       text: "As an Impulse Action, spend 1 Bandwidth to accelerate one Cipher by one step (Action→Swift, Swift→Impulse). No per-encounter limit." },
-    { key: "trigger",     name: "Trigger Cache", price: 1800, slots: 1, type: "Bandwidth",
+    { key: "trigger",     name: "Trigger Cache", price: 1800, slots: 1, type: "Bandwidth", avail: "Rare", legal: "Contraband",
       text: "At the start of each combat, gain 2 Temporary Bandwidth (expire at end of encounter, stack on top of your max). Lost immediately if your deck is Bricked." },
-    { key: "redline",     name: "Redline Lattice", price: 2800, slots: 2, type: "Multi-Link (Speed)",
+    { key: "redline",     name: "Redline Lattice", price: 2800, slots: 2, type: "Multi-Link (Speed)", avail: "Rare", legal: "Contraband",
       text: "Maintain one additional active Link beyond your normal maximum. Downside: Stability Check DCs against you +2, and any Alert response upgrades to also include Analyze, even from Basic IC.", bonus: { links: 1 } },
-    { key: "crown",       name: "Crown Spike Array", price: 3500, slots: 2, type: "Offensive Multi-Target",
+    { key: "crown",       name: "Crown Spike Array", price: 3500, slots: 2, type: "Offensive Multi-Target", avail: "Rare", legal: "Contraband",
       text: "As an Action, cast one cipher and apply it to two Linked nodes simultaneously, paying its Bandwidth cost once (both save independently). Downside: IC Counterattacks against you roll with Edge, and you land in corporate threat databases fast." },
-    { key: "predator",    name: "Predator Stack", price: 4000, slots: 2, type: "Offensive Bonus",
+    { key: "predator",    name: "Predator Stack", price: 4000, slots: 2, type: "Offensive Bonus", avail: "Rare", legal: "Contraband",
       text: "+2 to Cipher Attack rolls against Advanced or higher nodes, and +1 to your Cipher Save DC against the same. Downside: each successful breach of an Advanced+ node leaves a forensic hash; gain 1 Heat with that node's owning faction." }
   ]
 };
+
+/* Surface the hardware mods in the gray market (gear catalog), single source of
+   truth: the mechanics live in EN.grid.mods, the storefront listing is derived
+   from them. grid.js (data) loads after gear_tools.js, so the catalog exists. */
+(function () {
+  if (!EN.gearCatalog || !EN.gearCatalog.tools || !EN.grid) return;
+  var items = EN.gearCatalog.tools.items;
+  (EN.grid.mods || []).forEach(function (m) {
+    if (items.some(function (i) { return i.name === m.name; })) return;   // idempotent
+    items.push({
+      name: m.name, bucket: "rigs", group: "Hardware Mods", modKey: m.key,
+      price: m.price, availability: m.avail || "Rare", legality: m.legal || "Restricted",
+      effect: "Smartdeck mod · " + m.type + " · " + m.slots + (m.slots === 1 ? " slot" : " slots") + ". Install on the #GRID tab.",
+      desc: m.text
+    });
+  });
+})();
