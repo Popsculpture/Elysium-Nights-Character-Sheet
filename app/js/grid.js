@@ -46,6 +46,10 @@ EN.gridView = (function () {
     return open ? [head, buildBody()] : [head];
   }
   function noteP(t, color) { return el("p.help", { style: { margin: "2px 0 6px", color: color || "var(--text3)", fontSize: "11.5px" }, text: t }); }
+  // Bandwidth lives on resources.current (not ch.grid), like every other class resource.
+  function setBandwidth(n) { store.update(function (c) { c.resources = c.resources || {}; c.resources.current = c.resources.current || {}; c.resources.current.Bandwidth = n; }); }
+  // Codebreaker cipher casting cost by Complexity: 0 free, 1-3 = 1 BW, 4-5 = 2 BW.
+  function castCost(cx) { return cx <= 0 ? 0 : (cx <= 3 ? 1 : 2); }
 
   /* ============================ RIG ============================ */
   function rigPanel(ch, d, G) {
@@ -163,6 +167,113 @@ EN.gridView = (function () {
       });
     }
     return EN.ui.panel("Rig", (deck.type === "smartdeck" ? "SMARTDECK" : "B&E BUDDY") + " · " + deck.tier.toUpperCase(), rows, { corners: true });
+  }
+
+  /* ===================== CIPHERS & BANDWIDTH ======================
+     Power Users (Codebreakers) get a Bandwidth tracker, usable Signature #GRID
+     Exploits, and a player-managed Repertoire (the full cipher library lives in
+     the rulebook, not the app, so the player hand-tracks what they know). Everyone
+     else is a Standard User and gets the universal B&E Buddy cipher list. */
+  function repertoireAdder() {
+    var nameIn = el("input", { type: "text", placeholder: "cipher name…", style: { flex: "1 1 140px", fontSize: "12px", minWidth: "120px" } });
+    var cxSel = el("select", { style: { fontSize: "12px", width: "auto" } }, [0, 1, 2, 3, 4, 5].map(function (n) { return el("option", { value: String(n), text: "CX " + n }); }));
+    var addBtn = el("button.btn.sm", { style: { color: "var(--accent)", borderColor: "var(--accent)" }, onclick: function () {
+      var nm = (nameIn.value || "").trim();
+      if (!nm) { toast("Name the cipher first."); nameIn.focus(); return; }
+      var cx = parseInt(cxSel.value, 10) || 0;
+      gset(function (g) { g.repertoire = g.repertoire || []; g.repertoire.push({ name: nm, cx: cx }); });
+    } }, "+ ADD");
+    return el("div.row.wrap", { style: { gap: "6px", alignItems: "center", margin: "6px 0 2px" } }, [nameIn, cxSel, addBtn]);
+  }
+
+  function ciphersPanel(ch, d, G) {
+    var gd = d.grid, rows = [];
+
+    if (gd.isCodebreaker) {
+      var res = d.resource;
+      var bwMax = (res && res.name === "Bandwidth") ? res.max : 0;
+      var bwCur = (ch.resources && ch.resources.current && ch.resources.current.Bandwidth != null) ? ch.resources.current.Bandwidth : bwMax;
+      bwCur = eng.clamp(bwCur, 0, bwMax);
+
+      // ---- Bandwidth pool ----
+      rows.push(el("div.section-title", { style: { margin: "2px 0 2px" } }, [document.createTextNode("Bandwidth"), el("span.line")]));
+      rows.push(el("div.row.between.wrap", { style: { alignItems: "center" } }, [
+        el("div.mono", { style: { fontSize: "20px", color: "var(--accent)" }, html: bwCur + " <span style='font-size:12px;color:var(--text3)'>/ " + bwMax + " · " + ((res && res.attributeName) || "Tech") + " · refresh on rest</span>" }),
+        stepper(function () { setBandwidth(Math.max(0, bwCur - 1)); }, function () { setBandwidth(Math.min(bwMax, bwCur + 1)); }, bwCur <= 0, bwCur >= bwMax)
+      ]));
+      rows.push(bar(bwCur, bwMax, "var(--accent)"));
+
+      // ---- Signature #GRID Exploits ----
+      var exploits = eng.resourceAbilities(ch) || [];
+      if (exploits.length) {
+        rows.push(el("div.section-title", { style: { margin: "14px 0 4px" } }, [document.createTextNode("Signature #GRID Exploits"), el("span.line")]));
+        rows.push(noteP("Each costs 1 Bandwidth; meet its recharge trigger to refund it (use + to restore). USE spends the Bandwidth now."));
+        exploits.forEach(function (ab) {
+          var k = "exploit-" + ab.name, open = !!_open[k];
+          var cost = ab.cost || 1, can = bwCur >= cost;
+          rows.push(el("div.feature", { style: { borderLeftColor: "var(--accent)" } }, [
+            el("div.row.between", { style: { alignItems: "center", gap: "8px" } }, [
+              el("span", { style: { fontWeight: 600, fontSize: "13px", cursor: "pointer" }, onclick: function () { _open[k] = !open; EN.app.render(); } },
+                [el("span.collapse-caret", { text: open ? "▾ " : "▸ " }), document.createTextNode(ab.name)]),
+              el("div.row", { style: { gap: "6px", alignItems: "center" } }, [
+                ab.action ? el("span.chip", { style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" } }, ab.action.replace(/ Action$/, "")) : null,
+                el("span.chip", { style: { fontSize: "9px", color: "var(--accent)", borderColor: "var(--accent)" } }, cost + " BW"),
+                el("button.btn.sm", { disabled: !can, title: can ? "Spend " + cost + " Bandwidth" : "Not enough Bandwidth", style: can ? { color: "var(--accent)", borderColor: "var(--accent)" } : null,
+                  onclick: function () { if (can) { setBandwidth(Math.max(0, bwCur - cost)); toast(ab.name + " · −" + cost + " Bandwidth"); } } }, "USE")
+              ])
+            ]),
+            open ? el("p.help", { style: { margin: "4px 0 0" }, text: ab.text }) : null,
+            open && ab.recharge ? el("p.help", { style: { margin: "4px 0 0", color: "var(--success)" }, text: "Recharge: " + ab.recharge }) : null
+          ]));
+        });
+      }
+
+      // ---- Repertoire (player-managed: the cipher library isn't in the app) ----
+      var rep = (ch.grid && ch.grid.repertoire) || [];
+      var maxCx = (gd.deck && gd.deck.type === "smartdeck") ? gd.deck.maxComplexity : null;
+      rows.push(el("div.section-title", { style: { margin: "14px 0 4px" } }, [document.createTextNode("Repertoire"), el("span.line"),
+        el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", marginLeft: "6px" }, text: rep.length + " known" })]));
+      rows.push(noteP(maxCx != null
+        ? ("Your " + gd.deck.tier + " deck runs ciphers up to Complexity " + maxCx + ". Higher ones are known but won't cast until you upgrade.")
+        : "No Smartdeck equipped: ciphers can be tracked but not cast. Equip one in the Rig panel."));
+      rep.forEach(function (cy, i) {
+        var cx = cy.cx || 0, cc = castCost(cx);
+        var castable = maxCx != null && cx <= maxCx, can = castable && bwCur >= cc;
+        rows.push(el("div.feature", { style: { borderLeftColor: castable ? "var(--flow)" : "var(--border2)", opacity: castable ? 1 : .6 } }, [
+          el("div.row.between", { style: { alignItems: "center", gap: "8px" } }, [
+            el("span", { style: { fontWeight: 600, fontSize: "13px" }, text: cy.name }),
+            el("div.row", { style: { gap: "6px", alignItems: "center" } }, [
+              el("span.chip", { style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" } }, "CX " + cx),
+              el("span.chip", { style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" } }, cc === 0 ? "FREE" : cc + " BW"),
+              el("button.btn.sm", { disabled: !can, title: !castable ? "Your deck can't run Complexity " + cx : (bwCur < cc ? "Not enough Bandwidth" : "Cast: spend " + (cc === 0 ? "no" : cc) + " Bandwidth"),
+                style: can ? { color: "var(--accent)", borderColor: "var(--accent)" } : null,
+                onclick: function () { if (can) { setBandwidth(Math.max(0, bwCur - cc)); toast(cy.name + (cc ? " · −" + cc + " Bandwidth" : " · cast")); } } }, "CAST"),
+              el("button.btn.sm", { title: "Remove from Repertoire", style: { color: "var(--text3)" }, onclick: function () { gset(function (g) { (g.repertoire || []).splice(i, 1); }); } }, "×")
+            ])
+          ]),
+          cy.note ? el("p.help", { style: { margin: "4px 0 0" }, text: cy.note }) : null
+        ]));
+      });
+      rows.push(repertoireAdder());
+      rows.push(noteP("Casting costs: Complexity 0 free · 1-3 = 1 BW · 4-5 = 2 BW · Signature Ciphers a flat 1 BW.", "var(--text2)"));
+      return EN.ui.panel("Ciphers", "REPERTOIRE · BANDWIDTH", rows, { corners: true });
+    }
+
+    // ---- Standard User: the universal B&E Buddy / Burner Relay cipher set ----
+    rows.push(noteP("Standard Users run this universal cipher set off any B&E Buddy or Burner Relay (Complexity 0 only). Bandwidth, higher-Complexity ciphers, and a custom Repertoire are the Codebreaker's domain."));
+    (G.buddyCiphers || []).forEach(function (cy) {
+      rows.push(el("div.feature", { style: { borderLeftColor: "var(--border2)" } }, [
+        el("div.row.between", { style: { alignItems: "center", gap: "8px" } }, [
+          el("span", { style: { fontWeight: 600, fontSize: "13px" }, text: cy.name }),
+          el("div.row", { style: { gap: "6px", alignItems: "center" } }, [
+            cy.type ? el("span.chip", { style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" } }, cy.type) : null,
+            cy.exec ? el("span.chip", { style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" } }, cy.exec) : null
+          ])
+        ]),
+        el("p.help", { style: { margin: "4px 0 0" }, html: (cy.range ? "<b>" + cy.range + "</b> · " : "") + cy.text })
+      ]));
+    });
+    return EN.ui.panel("Ciphers", "STANDARD USER CIPHER LIST", rows, { corners: true });
   }
 
   /* ============================ HACKING STATS ============================ */
@@ -372,6 +483,7 @@ EN.gridView = (function () {
       el("div", { style: { gridColumn: "span 3", minWidth: 0 } }, [rigPanel(ch, d, G)]),
       el("div", { style: { gridColumn: "span 3", minWidth: 0, display: "flex", flexDirection: "column", gap: "14px" } }, [statsPanel(ch, d), linksPanel(ch, d, G)])
     ]));
+    blocks.push(el("div", { style: { marginTop: "14px" } }, [ciphersPanel(ch, d, G)]));
     blocks.push(el("div", { style: { marginTop: "14px" } }, [targetPanel(ch, d, G)]));
     blocks.push(el("div", { style: { marginTop: "14px" } }, [referencePanel(ch, d, G)]));
 
