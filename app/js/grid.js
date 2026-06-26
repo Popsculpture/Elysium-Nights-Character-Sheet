@@ -12,6 +12,7 @@ EN.gridView = (function () {
   var eng = EN.engine;
   var _open = {};                                   // collapse state for reference sections
   var _calc = { tier: "Standard", fw: "none", hardened: false };   // target-node scratch calculator
+  var _cipherView = "power";                         // Codebreaker Ciphers panel: "power" | "buddy"
 
   /* ---- small shared bits ---- */
   function bar(cur, max, color) {
@@ -186,8 +187,33 @@ EN.gridView = (function () {
     return el("div.row.wrap", { style: { gap: "6px", alignItems: "center", margin: "6px 0 2px" } }, [nameIn, cxSel, addBtn]);
   }
 
+  function buddyCipherCard(cy) {
+    return el("div.feature", { style: { borderLeftColor: "var(--border2)" } }, [
+      el("div.row.between", { style: { alignItems: "center", gap: "8px" } }, [
+        el("span", { style: { fontWeight: 600, fontSize: "13px" }, text: cy.name }),
+        el("div.row", { style: { gap: "6px", alignItems: "center" } }, [
+          cy.type ? el("span.chip", { style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" } }, cy.type) : null,
+          cy.exec ? el("span.chip", { style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" } }, cy.exec) : null
+        ])
+      ]),
+      el("p.help", { style: { margin: "4px 0 0" }, html: (cy.range ? "<b>" + cy.range + "</b> · " : "") + cy.text })
+    ]);
+  }
+  function cipherViewToggle(label, to) {
+    return el("button.btn.sm", { style: { fontSize: "10px", color: "var(--accent)", borderColor: "var(--accent)" },
+      onclick: function () { _cipherView = to; EN.app.render(); } }, label);
+  }
+
   function ciphersPanel(ch, d, G) {
     var gd = d.grid, rows = [];
+    // A Codebreaker normally runs a Smartdeck, but if they swap to a B&E Buddy they can
+    // flip the panel to the Standard-User cipher suite that rig actually runs.
+    var buddyEquipped = gd.isCodebreaker && gd.deck && gd.deck.type === "buddy";
+    if (buddyEquipped && _cipherView === "buddy") {
+      rows.push(noteP("You're running a B&E Buddy: this rig executes the Standard-User cipher suite only (Complexity 0). Switch back to a Smartdeck in the Rig panel to use your Repertoire and Bandwidth."));
+      (G.buddyCiphers || []).forEach(function (cy) { rows.push(buddyCipherCard(cy)); });
+      return EN.ui.panel("Ciphers", "B&E BUDDY CIPHER SUITE", rows, { corners: true, headerRight: cipherViewToggle("Repertoire · Bandwidth", "power") });
+    }
 
     if (gd.isCodebreaker) {
       var res = d.resource;
@@ -256,23 +282,13 @@ EN.gridView = (function () {
       });
       rows.push(repertoireAdder());
       rows.push(noteP("Casting costs: Complexity 0 free · 1-3 = 1 BW · 4-5 = 2 BW · Signature Ciphers a flat 1 BW.", "var(--text2)"));
-      return EN.ui.panel("Ciphers", "REPERTOIRE · BANDWIDTH", rows, { corners: true });
+      return EN.ui.panel("Ciphers", "REPERTOIRE · BANDWIDTH", rows,
+        { corners: true, headerRight: buddyEquipped ? cipherViewToggle("B&E Buddy Cipher Suite", "buddy") : null });
     }
 
     // ---- Standard User: the universal B&E Buddy / Burner Relay cipher set ----
     rows.push(noteP("Standard Users run this universal cipher set off any B&E Buddy or Burner Relay (Complexity 0 only). Bandwidth, higher-Complexity ciphers, and a custom Repertoire are the Codebreaker's domain."));
-    (G.buddyCiphers || []).forEach(function (cy) {
-      rows.push(el("div.feature", { style: { borderLeftColor: "var(--border2)" } }, [
-        el("div.row.between", { style: { alignItems: "center", gap: "8px" } }, [
-          el("span", { style: { fontWeight: 600, fontSize: "13px" }, text: cy.name }),
-          el("div.row", { style: { gap: "6px", alignItems: "center" } }, [
-            cy.type ? el("span.chip", { style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" } }, cy.type) : null,
-            cy.exec ? el("span.chip", { style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" } }, cy.exec) : null
-          ])
-        ]),
-        el("p.help", { style: { margin: "4px 0 0" }, html: (cy.range ? "<b>" + cy.range + "</b> · " : "") + cy.text })
-      ]));
-    });
+    (G.buddyCiphers || []).forEach(function (cy) { rows.push(buddyCipherCard(cy)); });
     return EN.ui.panel("Ciphers", "STANDARD USER CIPHER LIST", rows, { corners: true });
   }
 
