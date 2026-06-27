@@ -190,9 +190,9 @@ EN.gridView = (function () {
           el("span.chip", { style: { fontSize: "9px", color: color, borderColor: color }, title: cy.cat + " · " + cy.sub }, "CX " + cx),
           cy.signature ? el("span.chip", { style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" }, title: "Signature cipher: flat 1 Bandwidth" }, "SIG") : null,
           el("span.chip", { style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" } }, cost === 0 ? "FREE" : cost + " BW"),
-          el("button.btn.sm", { disabled: !can, title: !castable ? "Your rig can't run Complexity " + cx : (bwCur < cost ? "Not enough Bandwidth" : "Cast: spend " + (cost === 0 ? "no" : cost) + " Bandwidth"),
+          el("button.btn.sm", { disabled: !can, title: !castable ? "Your rig can't run Complexity " + cx : (bwCur < cost ? "Not enough Bandwidth" : "Run: spend " + (cost === 0 ? "no" : cost) + " Bandwidth"),
             style: can ? { color: "var(--accent)", borderColor: "var(--accent)" } : null,
-            onclick: function () { if (can) { if (cost) setBandwidth(Math.max(0, bwCur - cost)); toast(cy.name + (cost ? " · −" + cost + " Bandwidth" : " · cast")); } } }, "CAST")
+            onclick: function () { if (can) { if (cost) setBandwidth(Math.max(0, bwCur - cost)); toast(cy.name + (cost ? " · −" + cost + " Bandwidth" : " · run")); } } }, "RUN")
         ])
       ]),
       open ? el("p.help", { style: { margin: "4px 0 1px", color: "var(--text2)", fontFamily: "var(--mono)", fontSize: "10px" },
