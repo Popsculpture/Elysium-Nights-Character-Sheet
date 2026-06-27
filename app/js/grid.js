@@ -49,8 +49,10 @@ EN.gridView = (function () {
   function noteP(t, color) { return el("p.help", { style: { margin: "2px 0 6px", color: color || "var(--text3)", fontSize: "11.5px" }, text: t }); }
   // Bandwidth lives on resources.current (not ch.grid), like every other class resource.
   function setBandwidth(n) { store.update(function (c) { c.resources = c.resources || {}; c.resources.current = c.resources.current || {}; c.resources.current.Bandwidth = n; }); }
-  // Codebreaker cipher casting cost by Complexity: 0 free, 1-3 = 1 BW, 4-5 = 2 BW.
-  function castCost(cx) { return cx <= 0 ? 0 : (cx <= 3 ? 1 : 2); }
+  // Cipher casting cost: Complexity 0 free, 1-3 = 1 BW, 4-5 = 2 BW, Signature flat 1 BW.
+  function cipherCost(cy) { var cx = cy.cx || 0; if (cx <= 0) return 0; if (cy.signature) return 1; return cx <= 3 ? 1 : 2; }
+  // Category accent: Offense red, Protection green, Manipulation purple.
+  function catColor(cat) { return cat === "Offense" ? "var(--danger)" : cat === "Protection" ? "var(--success)" : "var(--flow)"; }
 
   /* ============================ RIG ============================ */
   function rigPanel(ch, d, G) {
@@ -175,16 +177,28 @@ EN.gridView = (function () {
      Exploits, and a player-managed Repertoire (the full cipher library lives in
      the rulebook, not the app, so the player hand-tracks what they know). Everyone
      else is a Standard User and gets the universal B&E Buddy cipher list. */
-  function repertoireAdder() {
-    var nameIn = el("input", { type: "text", placeholder: "cipher name…", style: { flex: "1 1 140px", fontSize: "12px", minWidth: "120px" } });
-    var cxSel = el("select", { style: { fontSize: "12px", width: "auto" } }, [0, 1, 2, 3, 4, 5].map(function (n) { return el("option", { value: String(n), text: "CX " + n }); }));
-    var addBtn = el("button.btn.sm", { style: { color: "var(--accent)", borderColor: "var(--accent)" }, onclick: function () {
-      var nm = (nameIn.value || "").trim();
-      if (!nm) { toast("Name the cipher first."); nameIn.focus(); return; }
-      var cx = parseInt(cxSel.value, 10) || 0;
-      gset(function (g) { g.repertoire = g.repertoire || []; g.repertoire.push({ name: nm, cx: cx }); });
-    } }, "+ ADD");
-    return el("div.row.wrap", { style: { gap: "6px", alignItems: "center", margin: "6px 0 2px" } }, [nameIn, cxSel, addBtn]);
+  // One acquired-cipher card in the Repertoire: collapsible detail, complexity-gated CAST.
+  function cipherCard(cy, runCx, bwCur) {
+    var cx = cy.cx || 0, cost = cipherCost(cy);
+    var castable = runCx >= cx, can = castable && bwCur >= cost;
+    var key = "cipher-" + cy.name, open = !!_open[key], color = catColor(cy.cat);
+    return el("div.feature", { style: { borderLeftColor: castable ? color : "var(--border2)", opacity: castable ? 1 : .6 } }, [
+      el("div.row.between", { style: { alignItems: "center", gap: "8px" } }, [
+        el("span", { style: { fontWeight: 600, fontSize: "13px", cursor: "pointer" }, onclick: function () { _open[key] = !open; EN.app.render(); } },
+          [el("span.collapse-caret", { text: open ? "▾ " : "▸ " }), document.createTextNode(cy.name)]),
+        el("div.row.wrap", { style: { gap: "6px", alignItems: "center", justifyContent: "flex-end" } }, [
+          el("span.chip", { style: { fontSize: "9px", color: color, borderColor: color }, title: cy.cat + " · " + cy.sub }, "CX " + cx),
+          cy.signature ? el("span.chip", { style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" }, title: "Signature cipher: flat 1 Bandwidth" }, "SIG") : null,
+          el("span.chip", { style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" } }, cost === 0 ? "FREE" : cost + " BW"),
+          el("button.btn.sm", { disabled: !can, title: !castable ? "Your rig can't run Complexity " + cx : (bwCur < cost ? "Not enough Bandwidth" : "Cast: spend " + (cost === 0 ? "no" : cost) + " Bandwidth"),
+            style: can ? { color: "var(--accent)", borderColor: "var(--accent)" } : null,
+            onclick: function () { if (can) { if (cost) setBandwidth(Math.max(0, bwCur - cost)); toast(cy.name + (cost ? " · −" + cost + " Bandwidth" : " · cast")); } } }, "CAST")
+        ])
+      ]),
+      open ? el("p.help", { style: { margin: "4px 0 1px", color: "var(--text2)", fontFamily: "var(--mono)", fontSize: "10px" },
+        text: cy.cat + " (" + cy.sub + ") · " + cy.exec + " · " + cy.range + " · " + cy.runtime + (cy.link ? " · needs Link" : "") }) : null,
+      open ? el("p.help", { style: { margin: "2px 0 0" }, text: cy.text }) : null
+    ]);
   }
 
   function buddyCipherCard(cy) {
@@ -254,33 +268,24 @@ EN.gridView = (function () {
         });
       }
 
-      // ---- Repertoire (player-managed: the cipher library isn't in the app) ----
-      var rep = (ch.grid && ch.grid.repertoire) || [];
-      var maxCx = (gd.deck && gd.deck.type === "smartdeck") ? gd.deck.maxComplexity : null;
+      // ---- Repertoire (drawn from ciphers acquired in the gray market) ----
+      var deck = gd.deck;
+      var runCx = deck ? (deck.type === "smartdeck" ? deck.maxComplexity : 0) : -1;  // highest Complexity this rig casts; -1 = no rig
+      var cipherByName = {}; (G.ciphers || []).forEach(function (c) { cipherByName[c.name] = c; });
+      var owned = (ch.equipment || []).map(function (e) { return (e.qty > 0) ? cipherByName[e.name] : null; })
+        .filter(Boolean).sort(function (a, b) { return (a.cx - b.cx) || a.name.localeCompare(b.name); });
       rows.push(el("div.section-title", { style: { margin: "14px 0 4px" } }, [document.createTextNode("Repertoire"), el("span.line"),
-        el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", marginLeft: "6px" }, text: rep.length + " known" })]));
-      rows.push(noteP(maxCx != null
-        ? ("Your " + gd.deck.tier + " deck runs ciphers up to Complexity " + maxCx + ". Higher ones are known but won't cast until you upgrade.")
-        : "No Smartdeck equipped: ciphers can be tracked but not cast. Equip one in the Rig panel."));
-      rep.forEach(function (cy, i) {
-        var cx = cy.cx || 0, cc = castCost(cx);
-        var castable = maxCx != null && cx <= maxCx, can = castable && bwCur >= cc;
-        rows.push(el("div.feature", { style: { borderLeftColor: castable ? "var(--flow)" : "var(--border2)", opacity: castable ? 1 : .6 } }, [
-          el("div.row.between", { style: { alignItems: "center", gap: "8px" } }, [
-            el("span", { style: { fontWeight: 600, fontSize: "13px" }, text: cy.name }),
-            el("div.row", { style: { gap: "6px", alignItems: "center" } }, [
-              el("span.chip", { style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" } }, "CX " + cx),
-              el("span.chip", { style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" } }, cc === 0 ? "FREE" : cc + " BW"),
-              el("button.btn.sm", { disabled: !can, title: !castable ? "Your deck can't run Complexity " + cx : (bwCur < cc ? "Not enough Bandwidth" : "Cast: spend " + (cc === 0 ? "no" : cc) + " Bandwidth"),
-                style: can ? { color: "var(--accent)", borderColor: "var(--accent)" } : null,
-                onclick: function () { if (can) { setBandwidth(Math.max(0, bwCur - cc)); toast(cy.name + (cc ? " · −" + cc + " Bandwidth" : " · cast")); } } }, "CAST"),
-              el("button.btn.sm", { title: "Remove from Repertoire", style: { color: "var(--text3)" }, onclick: function () { gset(function (g) { (g.repertoire || []).splice(i, 1); }); } }, "×")
-            ])
-          ]),
-          cy.note ? el("p.help", { style: { margin: "4px 0 0" }, text: cy.note }) : null
-        ]));
-      });
-      rows.push(repertoireAdder());
+        el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", marginLeft: "6px" }, text: owned.length + " acquired" })]));
+      rows.push(noteP(deck
+        ? (deck.type === "smartdeck"
+            ? ("Your " + deck.tier + " Smartdeck runs ciphers up to Complexity " + runCx + ". Higher ones stay in your Repertoire but won't cast until you upgrade. Plus the 6 free Complexity 0 ciphers (see B&E Buddy Cipher Suite).")
+            : "You're on a B&E Buddy: only the free Complexity 0 suite runs (see B&E Buddy Cipher Suite). Acquired ciphers won't cast until you equip a Smartdeck.")
+        : "No rig equipped. Equip a Smartdeck in the Rig panel to cast ciphers."));
+      if (!owned.length) {
+        rows.push(noteP("No ciphers acquired yet. Buy them in the Inventory tab's gray market (Cipher Library), then cast them here.", "var(--text2)"));
+      } else {
+        owned.forEach(function (cy) { rows.push(cipherCard(cy, runCx, bwCur)); });
+      }
       rows.push(noteP("Casting costs: Complexity 0 free · 1-3 = 1 BW · 4-5 = 2 BW · Signature Ciphers a flat 1 BW.", "var(--text2)"));
       return EN.ui.panel("Ciphers", "REPERTOIRE · BANDWIDTH", rows,
         { corners: true, headerRight: buddyEquipped ? cipherViewToggle("B&E Buddy Cipher Suite", "buddy") : null });

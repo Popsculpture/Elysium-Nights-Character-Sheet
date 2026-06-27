@@ -685,7 +685,7 @@ EN.inventoryView = (function () {
     }
     var T = g.tools;
     if (T && T.buckets) {
-      var SHORT = { kits: "KITS", devices: "DEVICES", consumables: "CONSUMABLES", flow: "FLOW", rigs: "RIGS" };
+      var SHORT = { kits: "KITS", devices: "DEVICES", consumables: "CONSUMABLES", flow: "FLOW", rigs: "RIGS", ciphers: "CIPHERS" };
       T.buckets.forEach(function (bucket) {
         cats.push({ key: bucket.key, title: bucket.title, short: SHORT[bucket.key] || bucket.key.toUpperCase(), intro: bucket.intro,
           subs: (bucket.groups || []).map(function (grp) {

@@ -62,6 +62,15 @@ EN.gearCatalog.tools = {
         { name: "Smartdecks", intro: "Power User hardware. Governs Cipher complexity ceiling, Device Bonus, and mod slots. Restricted citywide; Contraband in corporate sectors." },
         { name: "B&E Buddies", intro: "Standard User rigs. No Bandwidth, no multi-Link, and locked out of Premium+ nodes. Restricted." },
         { name: "Hardware Mods", intro: "Smartdeck plug-ins. Buy them here, then slot them into a Smartdeck's mod slots on the #GRID tab. B&E Buddies cannot take mods." }
+      ] },
+    { key: "ciphers", title: "Cipher Library",
+      intro: "Power-User ciphers, the exploits a Smartdeck runs against a node that would rather it didn't. Buy them here at the Acquire-Clean price (no roll, one Downtime period), then cast them from your Repertoire on the #GRID tab. A deck runs ciphers up to (Tier + 1) in Complexity. Complexity 0 ships free with every rig as the B&E Buddy Cipher Suite, so it is not sold here.",
+      groups: [
+        { name: "Improved (Complexity 1)", intro: "The first rung that means anything. Signature: Logic Bomb." },
+        { name: "Advanced (Complexity 2)", intro: "The working tier of the professional intruder. Signature: Daisy Chain." },
+        { name: "Premium (Complexity 3)", intro: "Where the network starts answering for you. Signature: Puppet String." },
+        { name: "Elite (Complexity 4)", intro: "No small ciphers; every one bends a scene. Signature: System Cascade." },
+        { name: "Apex (Complexity 5)", intro: "The legendary tier, the short list. Signature: Black Sun." }
       ] }
   ],
 

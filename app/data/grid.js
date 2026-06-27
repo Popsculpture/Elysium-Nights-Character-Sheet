@@ -223,3 +223,115 @@ EN.grid = {
     });
   });
 })();
+
+/* ============================ CIPHER LIBRARY ============================
+   The acquirable ciphers (Complexity 1-5). Complexity 0 (the universal suite
+   that ships with every rig) lives in EN.grid.buddyCiphers. cat = Offense /
+   Manipulation / Protection; link = the ⇋ "requires an active Link" flag;
+   signature = the tier's flat-1-Bandwidth signature cipher. */
+EN.grid.cipherTierNames = ["Standard", "Improved", "Advanced", "Premium", "Elite", "Apex"];
+EN.grid.ciphers = [
+  /* ---- Complexity 1 · Improved ---- */
+  { name: "Logic Bomb", cx: 1, cat: "Offense", sub: "Combat", exec: "1 Action", range: "12 spaces", runtime: "Instant", signature: true,
+    text: "Inject malicious code into a target node. Cipher Attack vs. Security Rating. On hit, roll 2d6 damage vs. the node's Firewall threshold. If damage exceeds threshold, deal 1 HP to System Integrity." },
+  { name: "Shrapnel Code", cx: 1, cat: "Offense", sub: "Combat", exec: "1 Action", range: "Area 6 cone", runtime: "Instant",
+    text: "Spray corrupted code in a cone. Each node in the cone rolls Cipher Save vs. your DC. Each that fails takes 1d6 damage vs. its Firewall threshold." },
+  { name: "Hardline Tap", cx: 1, cat: "Offense", sub: "Breach", exec: "1 Action", range: "Touch", runtime: "Link lasts 8 hours", link: true,
+    text: "Establish a Link to a node by physically interfacing with a wired access port. Cipher Attack vs. Security Rating, made with Edge. Wired Links cannot be detected by passive scans and are immune to Alert traces while you remain physically connected." },
+  { name: "Spoof Persona", cx: 1, cat: "Manipulation", sub: "Utility", exec: "1 Action", range: "Self (via Link)", runtime: "10 minutes", link: true,
+    text: "Forge your digital signature inside a Linked node, appearing as a legitimate user. Node rolls Cipher Save vs. your DC. On failure, IC and Guardians treat you as authorized for the duration. On success, your signature is flagged and Alert triggers automatically." },
+  { name: "Cold Boot", cx: 1, cat: "Manipulation", sub: "Control", exec: "1 Action", range: "Touch (Linked)", runtime: "Instant", link: true,
+    text: "Force a hard restart on a Linked node. Node rolls Cipher Save vs. your DC. On failure, the node reboots for 1d4 rounds, during which all IC is offline and all elements within are disabled. The Link breaks cleanly when reboot completes." },
+  { name: "Tracker Scrub", cx: 1, cat: "Manipulation", sub: "Utility", exec: "1 Action", range: "Self (via Link)", runtime: "Instant", link: true,
+    text: "Erase your access logs from a Linked node. Node rolls Cipher Save vs. your DC. On failure, all evidence of your presence in the node's logs is wiped. On success, the logs harden against tampering and any future Alert traces against you in this node gain Edge." },
+  { name: "Hotwire", cx: 1, cat: "Manipulation", sub: "Control", exec: "1 Action", range: "Touch (Linked)", runtime: "Instant", link: true,
+    text: "Force a Linked device to perform a single basic action you dictate, right now. Node rolls Cipher Save vs. your DC. On failure, the device does one thing it is built to do and you have the authority to command: a turret takes one shot at a target you pick, a door cycles, a parked car lurches forward a few spaces, a drone moves its Speed. One command, then your grip slips and the device belongs to its owner again. On success, the command is refused and IC retaliates." },
+  { name: "Live Tap", cx: 1, cat: "Manipulation", sub: "Utility", exec: "1 Action", range: "Self (via Link)", runtime: "1 scene", link: true,
+    text: "Open a quiet channel into a Linked node carrying audio or video and ride it live for the rest of the scene. Node rolls Cipher Save vs. your DC. On failure, you see and hear everything the node does, in real time, hands free, while you get on with other work. On success, the feed catches you in it and Alert triggers. The tap rides one node; move it and you cast again." },
+  { name: "Firewall Patch", cx: 1, cat: "Protection", sub: "Defensive", exec: "1 Swift Action", range: "Touch (Linked friendly node)", runtime: "1 scene", link: true,
+    text: "Bolster a Linked allied node's defenses. Increase the node's Firewall threshold by 1 for the remainder of the scene. Useful for protecting your own gear or temporarily fortifying compromised infrastructure." },
+  { name: "Bounce Routing", cx: 1, cat: "Protection", sub: "Defensive", exec: "1 Impulse Action", range: "Self", runtime: "Instant",
+    text: "When you would be detected by an Alert response, you may invoke Bounce Routing. The Alert is rerouted through dummy nodes; the trace continues, but it logs an incorrect signature. The GM does not advance whatever clock or response the Alert would have triggered." },
+
+  /* ---- Complexity 2 · Advanced ---- */
+  { name: "Daisy Chain", cx: 2, cat: "Offense", sub: "Breach", exec: "1 Action", range: "Self (via existing Link)", runtime: "Persistent", link: true, signature: true,
+    text: "From a Linked node, automatically establish a new Link to any node directly networked to it. The new Link costs no additional Cipher Attack roll, but counts against your maximum Links. Cannot chain into a Hardened Node." },
+  { name: "Brute Force", cx: 2, cat: "Offense", sub: "Combat", exec: "1 Action", range: "12 spaces", runtime: "Instant",
+    text: "Hammer a node with raw processing pressure. Cipher Attack vs. Security Rating. On hit, roll 3d6 damage. This damage ignores Firewall threshold entirely but cannot exceed 1 HP of System Integrity per hit (still subject to standard durability rules)." },
+  { name: "Smartgun Hijack", cx: 2, cat: "Offense", sub: "Combat", exec: "1 Action", range: "12 spaces", runtime: "1 round", link: true,
+    text: "Target a Linked smartgun, smartweapon, or networked turret. Node rolls Cipher Save vs. your DC. On failure, the weapon is slaved to you until the start of your next turn: it fires at targets you choose, using its own attack bonus, and it will not turn on your crew no matter who has hands on it. Its owner can try to wrest it back on their turn with a contested Systems check, and until they win that contest the gun answers to you. On success, the weapon shakes off the intrusion and IC retaliates." },
+  { name: "Feedback Loop", cx: 2, cat: "Manipulation", sub: "Control", exec: "1 Action", range: "Touch (Linked)", runtime: "1 scene", link: true,
+    text: "Seize a Linked surveillance node and feed it its own past. Node rolls Cipher Save vs. your DC. On failure, for the rest of the scene anyone watching sees a recorded loop instead of live activity, and you and your crew do not register on that feed. On success, the picture stutters in a way a watching guard will notice, and Alert triggers automatically." },
+  { name: "Puppet Vehicle", cx: 2, cat: "Manipulation", sub: "Control", exec: "1 Action", range: "Touch (Linked vehicle)", runtime: "1 minute", link: true,
+    text: "Seize control of a Linked vehicle's primary systems. Vehicle rolls Cipher Save vs. your DC. On failure, you can steer, accelerate, brake, or open doors as if you were the driver. The vehicle's actual driver can attempt to wrest control back on their turn with a contested Drive or Systems check." },
+  { name: "Echo Capture", cx: 2, cat: "Manipulation", sub: "Utility", exec: "1 Swift Action", range: "Self (via Link)", runtime: "Instant", link: true,
+    text: "Capture a snapshot of a Linked node's recent activity. You receive a complete log of every cipher cast, command issued, and connection made through the node in the last 10 minutes. Useful for piecing together what happened before you arrived." },
+  { name: "Blackout", cx: 2, cat: "Manipulation", sub: "Control", exec: "1 Action", range: "Touch (Linked grid node)", runtime: "1 scene", link: true,
+    text: "Find the node that feeds power and networked light to a block, and tell it to stop. Node rolls Cipher Save vs. your DC. On failure, an Area 4 zone around the node goes dark for the scene: lights die, and anything leaning on cyber-optics or a networked sight loses its reference and rolls attacks with Snag. The dark falls on everyone, your crew included, so bring your own way to see. On success, the lights gutter and hold, and Alert triggers." },
+  { name: "Static Cling", cx: 2, cat: "Protection", sub: "Defensive", exec: "1 Action", range: "12 spaces", runtime: "1 scene", link: true,
+    text: "Lash a node you want kept alive to a second Linked node that can afford to bleed. Choose one Linked node to protect and one to serve as the buffer. While the bond holds, any damage the protected node takes is split evenly between the two (rounded down, minimum 1 to each). When the buffer is Bricked, the bond ends and the protected node stands on its own again. A buffer you do not control rolls a Cipher Save vs. your DC to refuse the bond; nodes you or your crew control come quietly." },
+  { name: "Trace Cutter", cx: 2, cat: "Protection", sub: "Defensive", exec: "1 Impulse Action", range: "Self", runtime: "Instant",
+    text: "When you would suffer the effects of an Alert response, you may invoke Trace Cutter. The Alert is wiped from the node's logs entirely. Usable once per scene." },
+  { name: "Decoy Persona", cx: 2, cat: "Protection", sub: "Defensive", exec: "1 Action", range: "Self (via Link)", runtime: "1 hour", link: true,
+    text: "Spawn a false Persona inside a Linked node that mimics your own digital signature. Any IC retaliation directed at you in this node targets the Decoy instead, until the Decoy is destroyed (treat as a Tier 1 node with no Firewall and 1 HP)." },
+
+  /* ---- Complexity 3 · Premium ---- */
+  { name: "Glitchstorm", cx: 3, cat: "Offense", sub: "Combat", exec: "1 Action", range: "12 spaces, Area 4 sphere", runtime: "Instant",
+    text: "Flood an area with corrupted code. All nodes in the radius roll Cipher Save vs. your DC. Each that fails takes 4d6 damage vs. its Firewall threshold (1 HP per success). Excellent for clearing camera clusters or networked turret nests." },
+  { name: "Cascade Worm", cx: 3, cat: "Offense", sub: "Breach", exec: "1 Action", range: "Self (via Link)", runtime: "Persistent", link: true,
+    text: "Deploy a self-replicating worm through your Linked node and into every node directly networked to it. The primary node and one networked node per Caliber you possess receive a Link to you automatically (no Cipher Attack roll). These chained Links count toward your maximum Links." },
+  { name: "Puppet String", cx: 3, cat: "Manipulation", sub: "Control", exec: "1 Action", range: "Touch (Linked)", runtime: "1 minute", link: true, signature: true,
+    text: "Seize direct control of any Linked node's primary function: a weapon, a vehicle, a lock, a drone, a fabricator, or the strange one-off device the lower ciphers never had a name for. Node rolls Cipher Save vs. your DC. On failure, you operate the device as its authorized operator for the full minute, issuing whatever commands it can take, not a single action but the run of it. Because you are rooted this deep, the owner wrests back with Snag on the contested Systems check, and must spend their Action to make the attempt. On success, the node throws you out and IC retaliates." },
+  { name: "Identity Mirror", cx: 3, cat: "Manipulation", sub: "Utility", exec: "1 Action", range: "Touch (Linked)", runtime: "1 scene", link: true,
+    text: "Copy a target Persona's full digital signature from a Linked node. For the remainder of the scene, you can adopt that Persona's appearance to any system that authenticates via the node's network. Authorized doors open, badges register, and security feeds confirm you are the copied target." },
+  { name: "Dead Zone", cx: 3, cat: "Manipulation", sub: "Control", exec: "1 Action", range: "Touch (Linked node)", runtime: "1 scene", link: true,
+    text: "Turn a Linked node into a wall of noise across every wireless band. For the rest of the scene, an Area 4 zone around the node is dead air. No new wireless Link forms inside it, and any hostile wireless Link already reaching in must succeed on a Cipher Save vs. your DC at the start of each of its owner's turns or drop. Networked weapons and remote drones caught inside go inert until they leave. You and allies you name are cut a clean channel through the noise; your own signatures pass. Wired Links (Hardline Tap) ignore the zone on both sides." },
+  { name: "Phantom Shell", cx: 3, cat: "Protection", sub: "Defensive", exec: "1 Swift Action", range: "Self", runtime: "1 round", link: true,
+    text: "Wrap your digital presence in a decoy shell. Until the start of your next turn, IC Counterattacks targeting you must first roll vs. your Cipher Save DC. On failure, the Counterattack hits the shell instead and is wasted entirely." },
+  { name: "Hotpatch", cx: 3, cat: "Protection", sub: "Defensive", exec: "1 Action", range: "Touch (Linked friendly node or device)", runtime: "Instant", link: true,
+    text: "Restore System Integrity equal to your Tech Modifier (minimum 1) to a Linked allied node, or durability HP equal to your Tech Modifier (minimum 1) to a Linked allied device (a Smartdeck, B&E Buddy, or drone). This cannot bring back something already at zero: Bricked nodes and devices still require standard repair. Usable once per scene per target." },
+
+  /* ---- Complexity 4 · Elite ---- */
+  { name: "System Cascade", cx: 4, cat: "Offense", sub: "Combat", exec: "1 Action", range: "Self (via Link)", runtime: "Instant", link: true, signature: true,
+    text: "Detonate corrupted code through a Linked node and into every node it is networked to. The primary node takes 5d6 damage vs. its Firewall threshold. Every node directly networked to it takes 3d6 damage vs. its own Firewall threshold. Damage resolves normally (1 HP per success against System Integrity)." },
+  { name: "Backtrace", cx: 4, cat: "Offense", sub: "Breach", exec: "1 Action", range: "Self (via Link)", runtime: "Instant", link: true,
+    text: "When a hostile operator is reaching into a node you are Linked to, choose one: pin their physical location and hand it to your crew for the scene; or force that operator to make a Cipher Save vs. your DC and, on a failure, sever one of their active Links and deal them the standard LinkDeath feedback for the dropped connection." },
+  { name: "Ghost in the Machine", cx: 4, cat: "Manipulation", sub: "Utility", exec: "1 Action", range: "Self (via Link)", runtime: "1 hour", link: true,
+    text: "Embed a persistent backdoor in a Linked node. Even if your Link is severed, you can re-establish it as a Swift Action with no Cipher Attack roll for the duration. The backdoor is hidden from passive scans but can be detected by an active Systems check (DC equal to your Cipher Save DC)." },
+  { name: "IC Inversion", cx: 4, cat: "Manipulation", sub: "Control", exec: "1 Action", range: "Touch (Linked)", runtime: "1 scene", link: true,
+    text: "Subvert a Linked node's Intrusion Countermeasures. Node rolls Cipher Save vs. your DC at Disadvantage. On failure, the node's IC treats other users (including its owner) as hostile intruders for the duration." },
+  { name: "Deep Sync", cx: 4, cat: "Protection", sub: "Defensive", exec: "1 Swift Action", range: "Self", runtime: "1 scene",
+    text: "You sink into a hardened sync state. While Deep Sync holds, you roll every Stability Check with Edge. If you intercept an IC Counterattack, the psychic damage is reduced by your Firewall threshold a second time (in addition to the standard interception reduction)." },
+
+  /* ---- Complexity 5 · Apex ---- */
+  { name: "Black Sun", cx: 5, cat: "Offense", sub: "Combat", exec: "1 Action", range: "Self (via Link)", runtime: "Instant", link: true, signature: true,
+    text: "Roll 6d6 damage vs. the Linked node's Firewall threshold. If damage exceeds threshold, the node loses System Integrity equal to its current System Integrity divided by 2 (rounded down) instead of 1 HP. A successful Black Sun against a damaged Apex node can brick it in a single strike. Using Black Sun automatically triggers Alert on the node regardless of save outcome." },
+  { name: "Soul Transcription", cx: 5, cat: "Manipulation", sub: "Utility", exec: "1 Action (sustained 1 minute)", range: "Touch (Linked)", runtime: "Permanent", link: true,
+    text: "Make a complete digital copy of a Linked node, including every element inside it (Personas, Scripts, Caches). The copy exists as a static snapshot in your Repertoire and can be analyzed at leisure during Downtime. If used on a node containing an AI Persona, the GM determines whether the copy 'wakes up.' This rarely ends well." },
+  { name: "Override Reality", cx: 5, cat: "Manipulation", sub: "Control", exec: "1 Action", range: "Self (via Link)", runtime: "1 round", link: true,
+    text: "For one round, you rewrite the rules of a Linked node. Within that node, you may declare one fundamental change to its function (e.g., 'this turret targets its own faction,' 'this door is open to me but locked to everyone else'). Node rolls Cipher Save vs. your DC. On failure, the change holds for one round. On success, IC triggers Lockdown automatically regardless of IC tier." },
+  { name: "Severance", cx: 5, cat: "Protection", sub: "Defensive", exec: "1 Impulse Action", range: "Self", runtime: "Instant",
+    text: "When you would suffer LinkDeath, when your deck would be Bricked, or when Lockdown catches you, you cut your consciousness clear of the stream a half-second before the feedback lands. The triggering effect is negated outright: no psychic damage, no durability loss, your Links hold (or, against Lockdown, you disconnect freely and the Lockdown ends). Usable once per scene." }
+];
+
+/* Surface the cipher library in the gray market, derived from EN.grid.ciphers
+   (single source of truth). Complexity 0 ships free with every rig, so only the
+   acquirable Complexity 1-5 ciphers are sold here, priced at the Acquire-Clean
+   Material Cost by tier. */
+(function () {
+  if (!EN.gearCatalog || !EN.gearCatalog.tools || !EN.grid) return;
+  var items = EN.gearCatalog.tools.items;
+  var PRICE = { 1: 100, 2: 150, 3: 200, 4: 300, 5: 500 };
+  var AVAIL = { 1: "Uncommon", 2: "Uncommon", 3: "Rare", 4: "Rare", 5: "Rare" };
+  var LEGAL = { 1: "Restricted", 2: "Contraband", 3: "Contraband", 4: "Contraband", 5: "Contraband" };
+  (EN.grid.ciphers || []).forEach(function (cy) {
+    if (items.some(function (i) { return i.name === cy.name && i.bucket === "ciphers"; })) return;   // idempotent
+    var tier = EN.grid.cipherTierNames[cy.cx] || ("CX " + cy.cx);
+    items.push({
+      name: cy.name, bucket: "ciphers", group: tier + " (Complexity " + cy.cx + ")", cipher: true, cx: cy.cx,
+      price: PRICE[cy.cx] || 100, availability: AVAIL[cy.cx] || "Rare", legality: LEGAL[cy.cx] || "Contraband",
+      effect: cy.cat + " (" + cy.sub + ") · " + cy.exec + " · " + cy.range + (cy.signature ? " · Signature (flat 1 BW)" : "") + (cy.link ? " · needs Link" : ""),
+      desc: cy.text
+    });
+  });
+})();
