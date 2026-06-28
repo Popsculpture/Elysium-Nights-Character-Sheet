@@ -447,6 +447,12 @@ EN.engine = (function () {
     var effectiveSaveDC = isBuddy ? deck.saveDc : cipherSaveDC;
     var hasAdaptiveBuffer = isSmart && deck.t >= 4;   // Elite+ trait (Elite t=4, Apex t=5)
     var stabilityDcMod = (hasAdaptiveBuffer ? -2 : 0) + (hasRedline ? 2 : 0);
+    // Live Stability DC: the disconnection save is the HIGHER of the rig-adjusted
+    // DC 10 floor or half (rounded down) of the damage taken this turn while linked.
+    var stabilityDcBase = 10 + stabilityDcMod;
+    var stabilityLastDamage = Math.max(0, (g.lastDamage | 0));
+    var stabilityDcFromDamage = Math.floor(stabilityLastDamage / 2);
+    var stabilityDcLive = Math.max(stabilityDcBase, stabilityDcFromDamage);
     var baseMaxLinks = isCodebreaker ? (2 * cal) : 1;
     var maxLinks = unlimitedLinks ? null : baseMaxLinks + (isCodebreaker ? modLinks : 0);
     return {
@@ -457,7 +463,8 @@ EN.engine = (function () {
       quickHackBonus: isSmart ? cipherAttackBonus + deviceBonus : null,
       maxLinks: maxLinks, unlimitedLinks: unlimitedLinks, modLinks: isCodebreaker ? modLinks : 0,
       bandwidthMax: (isCodebreaker && resource && resource.name === "Bandwidth") ? resource.max : null,
-      stabilityDcBase: 10 + stabilityDcMod, stabilityDcMod: stabilityDcMod,
+      stabilityDcBase: stabilityDcBase, stabilityDcMod: stabilityDcMod,
+      stabilityLastDamage: stabilityLastDamage, stabilityDcFromDamage: stabilityDcFromDamage, stabilityDcLive: stabilityDcLive,
       deck: deck ? { type: g.deckType, tier: deck.tier, t: deck.t, deviceBonus: deviceBonus, maxHp: deckMaxHp,
                      modSlots: modSlots, traits: deckTraits, maxComplexity: maxComplexity,
                      attack: deck.attack, saveDc: deck.saveDc, maxNode: deck.maxNode } : null
@@ -592,7 +599,10 @@ EN.engine = (function () {
       flow = {
         isShaper: true, attribute: fAttr, attributeName: flowAttrName,
         max: Math.max(0, cal * 3 + fMod - chromeTax.fpPenalty), dc: 8 + fMod + cal,
-        attack: fMod, note: "Overdraw builds Strain when FP hits 0."
+        // `attack` is the bare Flow Modifier (used for FP recovery on a Short Rest
+        // and Resurge rebound damage). `attackBonus` is the d20 Flow Attack roll
+        // bonus, which per the core rules is Flow Modifier + Caliber.
+        attack: fMod, attackBonus: fMod + cal, note: "Overdraw builds Strain when FP hits 0."
       };
     }
 

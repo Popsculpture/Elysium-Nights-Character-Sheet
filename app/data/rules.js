@@ -41,6 +41,12 @@ EN.rules = {
   /* Caliber: the class growth dial. ceil(level / 2). 1-2→1 … 9-10→5 */
   caliberByLevel: { 1:1,2:1,3:2,4:2,5:3,6:3,7:4,8:4,9:5,10:5 },
 
+  /* Static modifiers on a d20 check cap at +15. Caliber from a Skill Focus,
+     advantage states like Edge, and an expanded critical threat range sit
+     outside this cap. (No engine value stacks high enough to hit it; kept here
+     as the canonical number for the rules reference.) */
+  staticModCap: 15,
+
   /* Proficiency tiers ----------------------------------------------------- */
   profTiers: {
     untrained:  { key:"untrained",  name:"Untrained",  d20:0,  pool:0,  snag:true,  short:"-" },
@@ -184,9 +190,11 @@ EN.rules = {
     save:     "d20 + Attribute Modifier + Caliber (if Saving Throw Focus, no proficiency required)",
     melee:    "d20 + Body Modifier + Proficiency",
     ranged:   "d20 + Agility Modifier + Proficiency",
-    check:    "d20 + Attribute Modifier + Proficiency + Situational",
+    check:    "d20 + Attribute Modifier + Proficiency + Situational (static modifiers cap at +15)",
     resource: "Maximum Pool = Caliber + key Attribute Modifier (minimum 1)",
-    flow:     "Max Flow = (Caliber × 3) + Flow Modifier; Flow DC = 8 + Flow Modifier + Caliber"
+    flow:     "Max Flow = (Caliber × 3) + Flow Modifier; Flow DC = 8 + Flow Modifier + Caliber",
+    flowAttack: "d20 + Flow Modifier + Caliber",
+    help:     "Assist check d20 + modifier vs DC 15; on a hit +2/+3/+4 by Proficient/Expertise/Mastery (d20), or +1/+2/+3 Edge Dice up to +4 total (Dice Pool)"
   },
 
   /* Origin / Inner Profile prompts (pure-story, no mechanics) -------------- */

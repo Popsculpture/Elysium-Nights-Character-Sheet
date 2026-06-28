@@ -19,7 +19,7 @@ EN.combatView = (function () {
     { key: "conditions", w: 6 }, { key: "senses", w: 2 },
     { key: "profs", w: 4 }
   ];
-  var _dragIdx = null;
+  var _drag = null;
   function loadLayout() {
     var def = DEFAULT_LAYOUT.map(function (x) { return { key: x.key, w: x.w }; });
     try {
@@ -59,6 +59,64 @@ EN.combatView = (function () {
     if (ev.target.closest && ev.target.closest(".pop-anchor")) return;
     closePops(); EN.app.render();
   });
+
+  /* ---------- pointer-drag helpers for Freelancer panel reorder ---------- */
+  function _onDragMove(e) {
+    if (!_drag) return;
+    _drag.ghost.style.left = (e.clientX - _drag.offX) + "px";
+    _drag.ghost.style.top = (e.clientY - _drag.offY) + "px";
+    var cx = e.clientX, cy = e.clientY, targetIdx = _drag.currentIdx;
+    _drag.wrapEls.forEach(function (w, i) {
+      if (w === _drag.ph) return;
+      var r = w.getBoundingClientRect();
+      if (cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom) targetIdx = i;
+    });
+    if (targetIdx === _drag.currentIdx) return;
+    _drag.wrapEls.forEach(function (w) { w.style.transition = "none"; w.style.transform = ""; });
+    _drag.container.getBoundingClientRect();
+    var snapshots = new Map();
+    _drag.wrapEls.forEach(function (w) { snapshots.set(w, w.getBoundingClientRect()); });
+    var fromIdx = _drag.currentIdx;
+    _drag.wrapEls.splice(fromIdx, 1);
+    _drag.wrapEls.splice(targetIdx, 0, _drag.ph);
+    _drag.container.insertBefore(_drag.ph, _drag.wrapEls[targetIdx + 1] || null);
+    _drag.currentIdx = targetIdx;
+    _drag.wrapEls.forEach(function (w) {
+      var before = snapshots.get(w), after = w.getBoundingClientRect();
+      var dx = before.left - after.left, dy = before.top - after.top;
+      if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return;
+      w.style.transition = "none";
+      w.style.transform = "translate(" + dx + "px," + dy + "px)";
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          w.style.transition = "transform 0.18s cubic-bezier(0.25,0.46,0.45,0.94)";
+          w.style.transform = "";
+        });
+      });
+    });
+  }
+  function _onDragUp() { _finishDrag(true); }
+  function _onDragCancel() { _finishDrag(false); }
+  function _finishDrag(commit) {
+    if (!_drag) return;
+    document.removeEventListener("pointermove", _onDragMove);
+    document.removeEventListener("pointerup", _onDragUp);
+    document.removeEventListener("pointercancel", _onDragCancel);
+    document.body.removeChild(_drag.ghost);
+    _drag.handle.style.cursor = "grab";
+    _drag.wrapEls.forEach(function (w) { w.style.transition = ""; w.style.transform = ""; });
+    var phIdx = _drag.wrapEls.indexOf(_drag.ph);
+    _drag.container.insertBefore(_drag.sourceWrap, _drag.ph);
+    _drag.sourceWrap.style.display = "";
+    _drag.container.removeChild(_drag.ph);
+    _drag.wrapEls[phIdx] = _drag.sourceWrap;
+    if (commit) {
+      var newLayout = _drag.wrapEls.map(function (w) { return { key: w._slot.key, w: w._slot.w }; });
+      saveLayout(newLayout);
+    }
+    _drag = null;
+    EN.app.render();
+  }
 
   /* ---------- current-state helpers (wound-adjusted vitality) ---------- */
   function state(ch, d) {
@@ -1718,7 +1776,7 @@ EN.combatView = (function () {
         kids.push(el("p.help", { style: { margin: "4px 0 6px" }, text: "No weapons equipped; hit ⚔ EQUIP on a weapon in Inventory → Stash to list it here." }));
       }
       if (ch.class === "codebreaker") kids.push(attackRow("Cipher Attack", eng.fmtMod(d.attributes.TEC.mod), "d20 + Tech + proficiency vs Node · Quick Hacks under fire", "var(--accent)"));
-      if (d.flow) kids.push(attackRow("Flow Attack", eng.fmtMod(d.flow.attack), "d20 + " + d.flow.attributeName + " · Invocation Save DC " + d.flow.dc, "var(--flow)"));
+      if (d.flow) kids.push(attackRow("Flow Attack", eng.fmtMod(d.flow.attackBonus), "d20 + " + d.flow.attributeName + " + Caliber · Invocation Save DC " + d.flow.dc, "var(--flow)"));
       if (ch.class === "scoundrel") {
         var csdie = d.caliber + "d6";
         kids.push(el("div", { style: { padding: "8px 4px", borderBottom: "1px solid rgba(35,48,68,.5)" } }, [
@@ -2000,7 +2058,9 @@ EN.combatView = (function () {
        stretch to equal height so nothing leaves ragged gaps. */
     var layout = loadLayout();
     var container = el("div.modgrid6" + (_editMode ? "" : ".compact-heads"));
-    layout.forEach(function (slot, idx) {
+    var wrapEls = [];
+
+    layout.forEach(function (slot) {
       var p = sectionEls[slot.key];
       if (!p) return;
       var wrap = el("div", { style: { gridColumn: "span " + slot.w, minWidth: 0 } }, [p]);
@@ -2016,14 +2076,7 @@ EN.combatView = (function () {
           }
         }
         if (_editMode) {
-          var handle = el("span.drag-handle", { title: "Drag to rearrange", style: { color: "var(--accent)", fontSize: "14px" }, text: "⠿" });
-          handle.draggable = true;
-          handle.addEventListener("dragstart", function (e) {
-            _dragIdx = idx;
-            e.dataTransfer.setData("text/plain", String(idx));
-            e.dataTransfer.effectAllowed = "move";
-          });
-          handle.addEventListener("dragend", function () { _dragIdx = null; });
+          var handle = el("span.drag-handle", { title: "Drag to rearrange", style: { color: "var(--accent)", fontSize: "14px", cursor: "grab" }, text: "⠿" });
           var sizeBtn = function (glyph, delta, title) {
             var next = slot.w + delta;
             var enabled = next >= 1 && next <= 6;
@@ -2040,25 +2093,66 @@ EN.combatView = (function () {
             el("span.mono", { title: "Panel width · " + slot.w + " of 6 columns", style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".05em" }, text: slot.w + "/6" }),
             sizeBtn("+", 1, "Wider (current: " + slot.w + "/6)")
           ];
-          // if the header already has right-aligned content (its own auto margin), sit flush beside it
           var hasRight = Array.prototype.some.call(head.children, function (c) { return c.style && c.style.marginLeft === "auto"; });
           head.appendChild(el("div", { style: { marginLeft: hasRight ? "0" : "auto", display: "flex", gap: "4px", alignItems: "center", flex: "0 0 auto", paddingLeft: "8px" } }, widthCtrls.concat([handle])));
+          wrap._dragHandle = handle;
         }
       }
-      if (_editMode) {
-        wrap.addEventListener("dragover", function (e) { if (_dragIdx == null) return; e.preventDefault(); wrap.style.outline = "1px dashed var(--accent)"; wrap.style.outlineOffset = "3px"; });
-        wrap.addEventListener("dragleave", function () { wrap.style.outline = ""; });
-        wrap.addEventListener("drop", function (e) {
-          e.preventDefault(); wrap.style.outline = "";
-          var from = _dragIdx; _dragIdx = null;
-          if (from == null || from === idx) return;
-          var moved = layout.splice(from, 1)[0];
-          layout.splice(idx, 0, moved);
-          saveLayout(layout); EN.app.render();
-        });
-      }
+      wrap._slot = slot;
+      wrapEls.push(wrap);
       container.appendChild(wrap);
     });
+
+    if (_editMode) {
+      wrapEls.forEach(function (wrap) {
+        var handle = wrap._dragHandle;
+        if (!handle) return;
+        handle.addEventListener("pointerdown", function (e) {
+          if (e.button !== 0 || _drag) return;
+          e.preventDefault();
+          handle.style.cursor = "grabbing";
+          var rect = wrap.getBoundingClientRect();
+          var titleText = (wrap.querySelector(".panel-h h3") || {}).textContent || wrap._slot.key;
+          var ghost = document.createElement("div");
+          ghost.style.cssText = [
+            "position:fixed",
+            "top:" + rect.top + "px", "left:" + rect.left + "px",
+            "width:" + rect.width + "px", "height:44px",
+            "display:flex", "align-items:center", "padding:0 12px",
+            "background:var(--bg2,#0e0e1a)", "border:1px solid var(--accent)",
+            "box-shadow:0 8px 32px rgba(0,220,180,0.25)",
+            "border-radius:4px", "pointer-events:none", "z-index:9999",
+            "font-family:var(--mono)", "font-size:11px", "letter-spacing:.1em",
+            "color:var(--accent)", "user-select:none", "transition:none"
+          ].join(";");
+          ghost.textContent = titleText.toUpperCase();
+          document.body.appendChild(ghost);
+          var ph = document.createElement("div");
+          ph.style.cssText = [
+            "grid-column:span " + wrap._slot.w,
+            "min-width:0", "min-height:60px",
+            "border:1px dashed var(--accent)",
+            "border-radius:4px",
+            "background:rgba(0,220,180,0.04)",
+            "box-sizing:border-box"
+          ].join(";");
+          var srcIdx = wrapEls.indexOf(wrap);
+          container.insertBefore(ph, wrap);
+          wrap.style.display = "none";
+          wrapEls.splice(srcIdx, 1, ph);
+          _drag = {
+            sourceWrap: wrap, handle: handle, ph: ph, ghost: ghost,
+            wrapEls: wrapEls, container: container, layout: layout,
+            currentIdx: srcIdx,
+            offX: e.clientX - rect.left, offY: e.clientY - rect.top
+          };
+          document.addEventListener("pointermove", _onDragMove);
+          document.addEventListener("pointerup", _onDragUp);
+          document.addEventListener("pointercancel", _onDragCancel);
+        });
+      });
+    }
+
     blocks.push(container);
 
     mount.appendChild(el("div", null, blocks));

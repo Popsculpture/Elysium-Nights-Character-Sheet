@@ -298,16 +298,49 @@ EN.gridView = (function () {
   }
 
   /* ============================ HACKING STATS ============================ */
+  // Live Stability DC control: record the damage taken this turn while linked and
+  // the disconnection DC updates to the higher of the rig floor or half that damage.
+  function stabilityDamageControl(gd) {
+    var driven = gd.stabilityDcFromDamage > gd.stabilityDcBase;
+    var dcSpan = el("span.mono", { style: { fontSize: "17px", color: driven ? "var(--danger)" : "var(--accent)" }, text: "DC " + gd.stabilityDcLive });
+    var explSpan = el("span", { style: { fontSize: "10.5px", color: "var(--text3)", flex: "1 1 120px", minWidth: "120px" } });
+    function expl(dmg, live, isDriven) {
+      return isDriven ? "½ of " + dmg + " beats the DC " + gd.stabilityDcBase + " floor"
+        : (dmg > 0 ? "DC " + gd.stabilityDcBase + " floor holds (½ of " + dmg + " is " + Math.floor(dmg / 2) + ")" : "DC " + gd.stabilityDcBase + " floor, no damage logged");
+    }
+    explSpan.textContent = expl(gd.stabilityLastDamage, gd.stabilityDcLive, driven);
+    var input = el("input", { type: "number", min: "0", value: gd.stabilityLastDamage || "", placeholder: "0",
+      title: "Damage taken this turn while linked", style: { width: "62px", textAlign: "center", fontFamily: "var(--mono)" },
+      oninput: function () {
+        var v = Math.max(0, parseInt(this.value, 10) || 0);
+        gset(function (g) { g.lastDamage = v; }, true);   // silent: keep focus while typing
+        var live = Math.max(gd.stabilityDcBase, Math.floor(v / 2)), d2 = Math.floor(v / 2) > gd.stabilityDcBase;
+        dcSpan.textContent = "DC " + live; dcSpan.style.color = d2 ? "var(--danger)" : "var(--accent)";
+        explSpan.textContent = expl(v, live, d2);
+      },
+      onchange: function () { EN.app.render(); } });   // commit: sync the STABILITY box + LinkDeath panel
+    return el("div.row.wrap", { style: { gap: "9px", alignItems: "center", margin: "8px 0 4px", padding: "8px 10px", border: "1px solid var(--border2)", borderRadius: "4px", background: "rgba(0,0,0,.18)" } }, [
+      el("span", { style: { fontFamily: "var(--disp)", fontSize: "9.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "DAMAGE TAKEN THIS TURN" }),
+      input,
+      el("span.mono", { style: { fontSize: "12px", color: "var(--text3)" }, text: "→ STABILITY" }),
+      dcSpan, explSpan,
+      el("button.btn.sm", { title: "Clear for a new turn", style: { color: "var(--text3)" }, onclick: function () { gset(function (g) { g.lastDamage = 0; }); } }, "NEW TURN")
+    ]);
+  }
+
   function statsPanel(ch, d) {
     var gd = d.grid, fmt = eng.fmtMod;
+    var stbDriven = gd.stabilityDcFromDamage > gd.stabilityDcBase;
+    var stbSub = stbDriven ? "½ of " + gd.stabilityLastDamage + " dmg"
+      : (gd.stabilityDcMod ? (gd.stabilityDcMod > 0 ? "+" : "") + gd.stabilityDcMod + " from rig" : "or ½ dmg taken");
     var stats = [
       EN.ui.stat("CIPHER ATK", fmt(gd.effectiveAttack), gd.deck ? (gd.deck.type === "buddy" ? "Buddy bonus" : "Tech+Systems+dev") : "Tech+Systems"),
       EN.ui.stat("SAVE DC", gd.effectiveSaveDC, gd.deck && gd.deck.type === "buddy" ? "Buddy DC" : "8+Tech+Systems"),
       EN.ui.stat("LINKS", gd.unlimitedLinks ? "∞" : gd.maxLinks, gd.isCodebreaker ? (gd.unlimitedLinks ? "SysAdmin" : "2 × Caliber" + (gd.modLinks ? " +" + gd.modLinks : "")) : "Standard User"),
-      EN.ui.stat("STABILITY", "DC " + gd.stabilityDcBase, gd.stabilityDcMod ? (gd.stabilityDcMod > 0 ? "+" : "") + gd.stabilityDcMod + " from rig" : "or ½ dmg taken")
+      EN.ui.stat("STABILITY", "DC " + gd.stabilityDcLive, stbSub)
     ];
     if (gd.quickHackBonus != null) stats.splice(1, 0, EN.ui.stat("QUICK HACK", fmt(gd.quickHackBonus), "+ Device Bonus"));
-    var body = [el("div.stat-row", null, stats),
+    var body = [el("div.stat-row", null, stats), stabilityDamageControl(gd),
       noteP("Cipher Attack: d20 " + fmt(gd.cipherAttackBonus) + " vs node Security Rating" + (gd.deck && gd.deck.type === "smartdeck" && gd.deck.deviceBonus ? " (+" + gd.deck.deviceBonus + " Device Bonus = " + fmt(gd.effectiveAttack) + " on a Quick Hack)" : "") + ". Node resists save-ciphers with d20 + its Cipher Save Bonus vs your Save DC " + gd.effectiveSaveDC + ".", "var(--text2)")];
     if (!gd.isCodebreaker) body.push(noteP("You're a Standard User: 1 Link at a time, no Bandwidth, and a B&E Buddy locks out of Premium+ nodes. Deep #GRID play is the Codebreaker's domain.", "var(--warn)"));
     return EN.ui.panel("Hacking", "CIPHER MATH", body, { corners: true });
@@ -340,8 +373,8 @@ EN.gridView = (function () {
     rows.push(el("div", { style: { marginTop: "8px", padding: "8px 10px", border: "1px solid " + (links.length >= 2 ? "var(--danger)" : "var(--border2)"), borderRadius: "4px", background: "rgba(0,0,0,.18)" } }, [
       el("div.row.between", { style: { alignItems: "baseline" } }, [
         el("span", { style: { fontFamily: "var(--disp)", fontSize: "10px", letterSpacing: ".12em", color: "var(--danger)" }, text: "LINKDEATH RISK" }),
-        el("span.mono", { style: { fontSize: "12px", color: "var(--text2)" }, text: "Stability DC " + gd.stabilityDcBase }) ]),
-      noteP("Fail a Stability Check (Body or Wits, DC " + gd.stabilityDcBase + " or ½ damage taken this turn) → all Links sever and you take " + dmg + " Psychic, Unconscious." + (links.length >= 2 ? " Fail by 5+ with 2+ Links = Cascade Failure (deck auto-Bricked)." : " Succeed → ride it: half damage, Dazed."), links.length >= 2 ? "var(--danger)" : "var(--text3)")
+        el("span.mono", { style: { fontSize: "12px", color: gd.stabilityDcFromDamage > gd.stabilityDcBase ? "var(--danger)" : "var(--text2)" }, text: "Stability DC " + gd.stabilityDcLive }) ]),
+      noteP("Fail a Stability Check (Body or Wits, vs the higher of DC " + gd.stabilityDcBase + " or ½ the damage you took this turn" + (gd.stabilityLastDamage ? ", currently DC " + gd.stabilityDcLive + " off " + gd.stabilityLastDamage + " damage logged in Hacking" : "") + ") → all Links sever and you take " + dmg + " Psychic, Unconscious." + (links.length >= 2 ? " Fail by 5+ with 2+ Links = Cascade Failure (deck auto-Bricked)." : " Succeed → ride it: half damage, Dazed."), links.length >= 2 ? "var(--danger)" : "var(--text3)")
     ]));
     return EN.ui.panel("Links", gd.unlimitedLinks ? "UNLIMITED THREADING" : "MULTI-LINK", rows, { corners: true });
   }

@@ -21,7 +21,6 @@ EN.inventoryView = (function () {
   //   'surplus'    · Guild Surplus: Deep Discount, ~35% of list
   //   'fivefinger' · Five-Finger Supply: free; fencing disabled (Drop/Donate only)
   var _mode = "undercut";
-  var _settingsOpen = false;
   // market filtering + per-panel collapse (panels collapsed by default; a filter/search auto-expands matches)
   var _mktQuery = "";
   var _mktType = "all";    // 'all' or a major-type key (melee/ranged/signature/ammo/kits/devices/consumables/flow)
@@ -29,11 +28,6 @@ EN.inventoryView = (function () {
   var _mktAvail = "all";   // 'all' | Common | Uncommon | Rare
   var _mktFiltersOpen = false;   // filter rows nested behind the funnel button
   var _panelOpen = {};     // { catKey: bool }
-  document.addEventListener("click", function (ev) {
-    if (!_settingsOpen) return;
-    if (ev.target.closest && ev.target.closest(".inv-pop-anchor")) return;
-    _settingsOpen = false; EN.app.render();
-  });
 
   /* ---- pricing (Economy & Rewards: prices assume a major district;
           scarcity, faction control & legality shift them, sometimes a lot) */
@@ -632,6 +626,15 @@ EN.inventoryView = (function () {
                "No receipts. No refunds. No snitching."]
       }
     };
+    blocks.push(el("div.row.wrap", { style: { gap: "6px", marginBottom: "14px" } },
+      STOREFRONTS.map(function (m) {
+        var on = _mode === m.key;
+        return el("button.btn.sm" + (on ? ".primary" : ""), {
+          title: m.desc,
+          onclick: function () { _mode = m.key; EN.app.render(); }
+        }, m.name.toUpperCase());
+      })
+    ));
     var B = BANNERS[_mode] || BANNERS.undercut;
     blocks.push(el("div", { style: { marginBottom: "14px", padding: "12px 14px", border: "1px solid var(--border2)", borderRadius: "4px",
                                      background: "linear-gradient(180deg, " + B.glow + ", transparent)" } }, [
@@ -889,35 +892,18 @@ EN.inventoryView = (function () {
     function subTab(key, label) {
       return el("button.btn.sm" + (_sub === key ? ".primary" : ""), { onclick: function () { _sub = key; EN.app.render(); } }, label);
     }
-    var settingsAnchor = el("div.inv-pop-anchor", { style: { position: "relative" } }, [
-      el("button.btn.sm", { title: "Storefront settings, pick how the market prices its stock",
-        style: _settingsOpen ? { color: "var(--accent)", borderColor: "var(--accent)" } : null,
-        onclick: function () { _settingsOpen = !_settingsOpen; EN.app.render(); } }, "⚙"),
-      _settingsOpen ? el("div", { style: { position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 40, width: "280px",
-                                           display: "flex", flexDirection: "column", gap: "6px", padding: "10px",
-                                           background: "var(--bg2)", border: "1px solid var(--border2)", borderRadius: "4px",
-                                           boxShadow: "0 8px 24px rgba(0,0,0,.55)", textAlign: "left" } },
-        [el("label.fl", { style: { margin: "0 0 2px" }, text: "Storefront" })].concat(STOREFRONTS.map(function (m) {
-          var on = _mode === m.key;
-          return el("button", {
-            onclick: function () { _mode = m.key; _settingsOpen = false; EN.app.render(); },
-            style: { textAlign: "left", padding: "8px 10px", cursor: "pointer", borderRadius: "4px", color: "var(--text)",
-                     background: on ? "rgba(0,229,255,.07)" : "transparent",
-                     border: "1px solid " + (on ? "var(--accent)" : "var(--border2)") }
-          }, [
-            el("div", { style: { fontFamily: "var(--disp)", fontSize: "12px", letterSpacing: ".12em", color: on ? "var(--accent)" : "var(--text2)" }, text: m.name.toUpperCase() + (on ? " ✓" : "") }),
-            el("div", { style: { fontSize: "11px", color: "var(--text3)", marginTop: "2px", fontFamily: "var(--body)" }, text: m.desc })
-          ]);
-        }))) : null
-    ]);
     blocks.push(el("div.row.between.wrap", { style: { gap: "10px", marginBottom: "12px", alignItems: "center",
-        position: "sticky", top: "92px", zIndex: 60, padding: "10px 0",
-        background: "linear-gradient(180deg, var(--bg2), var(--bg1))",
-        backdropFilter: "blur(6px)", borderBottom: "1px solid var(--border)" } }, [
+        position: "sticky", top: "92px", zIndex: 60,
+        padding: "10px clamp(14px,3vw,40px)",
+        marginLeft: "calc(-1 * clamp(14px,3vw,40px))",
+        marginRight: "calc(-1 * clamp(14px,3vw,40px))",
+        background: "var(--bg1)",
+        backdropFilter: "blur(6px)",
+        borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" } }, [
       el("div.row.wrap", { style: { gap: "6px" } }, [
         subTab("stash", "▣ STASH"),
         subTab("chrome", "⌖ CHROME"),
-        subTab("market", "◉ " + storefront().name.toUpperCase()),
+        subTab("market", "◉ GRAY MARKET"),
         subTab("workbench", "⚒ WORKBENCH")
       ]),
       el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
@@ -927,8 +913,7 @@ EN.inventoryView = (function () {
         el("button.btn.sm", { title: "Credit the ledger (payouts, fenced goods, day-job pay)", style: { color: "var(--success)", borderColor: "var(--success)" },
           onclick: function () { store.update(function (c) { c.glimmer = (c.glimmer || 0) + _ledgerAmt; }); } }, "+ CREDIT"),
         el("button.btn.sm", { title: "Debit the ledger (lifestyle, upkeep, bribes, bad nights)", style: { color: "var(--danger)", borderColor: "var(--danger)" },
-          onclick: function () { store.update(function (c) { c.glimmer = Math.max(0, (c.glimmer || 0) - _ledgerAmt); }); } }, "− DEBIT"),
-        settingsAnchor
+          onclick: function () { store.update(function (c) { c.glimmer = Math.max(0, (c.glimmer || 0) - _ledgerAmt); }); } }, "− DEBIT")
       ])
     ]));
 

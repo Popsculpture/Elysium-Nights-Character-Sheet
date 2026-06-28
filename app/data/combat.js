@@ -55,7 +55,7 @@ EN.combat = {
     { name: "Charge / Rush", cost: "Action", text: "Double Speed; gain Edge on your next melee attack. Must move at least 2 spaces in a straight line toward the target." },
     { name: "Suppressive Fire", cost: "-", text: "See Full-Auto firing mode. Use Full-Auto in Suppress mode (see Firing Modes)." },
     { name: "Full Defense", cost: "Complex", text: "Auto +2 Defense; gain Edge on all Saves until next turn. No other actions this turn." },
-    { name: "Help Action", cost: "Action / Impulse", text: "Add +1d4 to an ally's d20 result. Must have plausible positioning and relevant skill or tool. If used as an Impulse, it forfeits your upcoming Action." }
+    { name: "Help Action", cost: "Action / Impulse", text: "Make an assist check: d20 + your modifier for the relevant skill or tool vs DC 15. On a success the ally gains a flat bonus: +2 if you are Proficient, +3 with Expertise, +4 with Mastery. The bonus applies on top of the static modifier cap and stacks with Edge. On a Natural 1 your help backfires and the ally rolls with Snag. Only the single highest assist bonus applies; they do not stack. You must be at least Proficient to grant any bonus. As an Impulse it forfeits your upcoming Action." }
   ],
 
   flowModifierNote: "Each Flow-using class is tied to one Attribute: Mystique, Tech, Body, or Charm. That Attribute is your Flow Attribute, and its modifier is your Flow Modifier. You use your Flow Modifier for all Flow Attacks and to set your Flow Save DC.",
