@@ -74,7 +74,10 @@ EN.store = (function () {
       resources: { current: {} },
       vitality: { current: null, temp: 0 },   // current null = full; temp = Vigor
       wounds: { current: null },               // countdown pool; null = full (Body score)
-      flow: { current: null, strain: 0 },
+      // Flow: current FP (null = full), Strain stage (0-5), strainPoints (Overdraw
+      // accumulator, 3 = +1 stage), the one sustained effect, Breakflow state, and
+      // saved Resonant Patterns (formulations recomputed from live Caliber/Flow Mod).
+      flow: { current: null, strain: 0, strainPoints: 0, sustained: null, breakflow: false, patterns: [] },
       resilience: { spent: 0 },                // Resilience Dice spent (max = level)
       featureUses: {},                         // {featureName: {n: spent, r: recharge}} for limited-use features
       fatigue: 0,

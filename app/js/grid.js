@@ -13,6 +13,7 @@ EN.gridView = (function () {
   var _open = {};                                   // collapse state for reference sections
   var _calc = { tier: "Standard", fw: "none", hardened: false };   // target-node scratch calculator
   var _cipherView = "power";                         // Codebreaker Ciphers panel: "power" | "buddy"
+  var _stabilityOpen = false;                         // STABILITY stat: tap to expand the damage tracker
 
   /* ---- small shared bits ---- */
   function bar(cur, max, color) {
@@ -122,9 +123,9 @@ EN.gridView = (function () {
       rows.push(el("div", { style: { marginTop: "12px" } }, [
         el("div.row.between", { style: { alignItems: "baseline" } }, [
           el("span", { style: { fontFamily: "var(--disp)", fontSize: "10px", letterSpacing: ".12em", color: "var(--text3)" }, text: "BANDWIDTH" }),
-          el("span.mono", { style: { fontSize: "13px", color: "var(--accent)" }, text: bwCur + " / " + bwMax + "  ·  Caliber + Tech" })
+          el("span.mono", { style: { fontSize: "13px", color: "var(--bw)" }, text: bwCur + " / " + bwMax + "  ·  Caliber + Tech" })
         ]),
-        bar(bwCur, bwMax, "var(--accent)"),
+        bar(bwCur, bwMax, "var(--bw)"),
         el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "4px" } }, [
           stepper(function () { store.update(function (c) { c.resources = c.resources || { current: {} }; c.resources.current.Bandwidth = Math.max(0, bwCur - 1); }); },
                   function () { store.update(function (c) { c.resources = c.resources || { current: {} }; c.resources.current.Bandwidth = Math.min(bwMax, bwCur + 1); }); }, bwCur <= 0, bwCur >= bwMax),
@@ -226,7 +227,7 @@ EN.gridView = (function () {
     if (buddyEquipped && _cipherView === "buddy") {
       rows.push(noteP("You're running a B&E Buddy: this rig executes the Standard-User cipher suite only (Complexity 0). Switch back to a Smartdeck in the Rig panel to use your Repertoire and Bandwidth."));
       (G.buddyCiphers || []).forEach(function (cy) { rows.push(buddyCipherCard(cy)); });
-      return EN.ui.panel("Ciphers", "B&E BUDDY CIPHER SUITE", rows, { corners: true, headerRight: cipherViewToggle("Repertoire · Bandwidth", "power") });
+      return EN.ui.panel("Ciphers", "B&E BUDDY CIPHER SUITE", rows, { corners: true, headerRight: cipherViewToggle("Repertoire", "power") });
     }
 
     if (gd.isCodebreaker) {
@@ -234,19 +235,14 @@ EN.gridView = (function () {
       var bwMax = (res && res.name === "Bandwidth") ? res.max : 0;
       var bwCur = (ch.resources && ch.resources.current && ch.resources.current.Bandwidth != null) ? ch.resources.current.Bandwidth : bwMax;
       bwCur = eng.clamp(bwCur, 0, bwMax);
-
-      // ---- Bandwidth pool ----
-      rows.push(el("div.section-title", { style: { margin: "2px 0 2px" } }, [document.createTextNode("Bandwidth"), el("span.line")]));
-      rows.push(el("div.row.between.wrap", { style: { alignItems: "center" } }, [
-        el("div.mono", { style: { fontSize: "20px", color: "var(--accent)" }, html: bwCur + " <span style='font-size:12px;color:var(--text3)'>/ " + bwMax + " · " + ((res && res.attributeName) || "Tech") + " · refresh on rest</span>" }),
-        stepper(function () { setBandwidth(Math.max(0, bwCur - 1)); }, function () { setBandwidth(Math.min(bwMax, bwCur + 1)); }, bwCur <= 0, bwCur >= bwMax)
-      ]));
-      rows.push(bar(bwCur, bwMax, "var(--accent)"));
+      // Bandwidth pool lives in the Rig panel; cipher/exploit costs below still read bwCur.
+      var firstSection = true;   // the first section hugs the panel top (no extra margin)
 
       // ---- Signature #GRID Exploits ----
       var exploits = eng.resourceAbilities(ch) || [];
       if (exploits.length) {
-        rows.push(el("div.section-title", { style: { margin: "14px 0 4px" } }, [document.createTextNode("Signature #GRID Exploits"), el("span.line")]));
+        rows.push(el("div.section-title", { style: { margin: (firstSection ? "2px" : "14px") + " 0 4px" } }, [document.createTextNode("Signature #GRID Exploits"), el("span.line")]));
+        firstSection = false;
         rows.push(noteP("Each costs 1 Bandwidth; meet its recharge trigger to refund it (use + to restore). USE spends the Bandwidth now."));
         exploits.forEach(function (ab) {
           var k = "exploit-" + ab.name, open = !!_open[k];
@@ -274,7 +270,7 @@ EN.gridView = (function () {
       var cipherByName = {}; (G.ciphers || []).forEach(function (c) { cipherByName[c.name] = c; });
       var owned = (ch.equipment || []).map(function (e) { return (e.qty > 0) ? cipherByName[e.name] : null; })
         .filter(Boolean).sort(function (a, b) { return (a.cx - b.cx) || a.name.localeCompare(b.name); });
-      rows.push(el("div.section-title", { style: { margin: "14px 0 4px" } }, [document.createTextNode("Repertoire"), el("span.line"),
+      rows.push(el("div.section-title", { style: { margin: (firstSection ? "2px" : "14px") + " 0 4px" } }, [document.createTextNode("Repertoire"), el("span.line"),
         el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", marginLeft: "6px" }, text: owned.length + " acquired" })]));
       rows.push(noteP(deck
         ? (deck.type === "smartdeck"
@@ -287,7 +283,7 @@ EN.gridView = (function () {
         owned.forEach(function (cy) { rows.push(cipherCard(cy, runCx, bwCur)); });
       }
       rows.push(noteP("Casting costs: Complexity 0 free · 1-3 = 1 BW · 4-5 = 2 BW · Signature Ciphers a flat 1 BW.", "var(--text2)"));
-      return EN.ui.panel("Ciphers", "REPERTOIRE · BANDWIDTH", rows,
+      return EN.ui.panel("Ciphers", "EXPLOITS · REPERTOIRE", rows,
         { corners: true, headerRight: buddyEquipped ? cipherViewToggle("B&E Buddy Cipher Suite", "buddy") : null });
     }
 
@@ -306,42 +302,56 @@ EN.gridView = (function () {
     var explSpan = el("span", { style: { fontSize: "10.5px", color: "var(--text3)", flex: "1 1 120px", minWidth: "120px" } });
     function expl(dmg, live, isDriven) {
       return isDriven ? "½ of " + dmg + " beats the DC " + gd.stabilityDcBase + " floor"
-        : (dmg > 0 ? "DC " + gd.stabilityDcBase + " floor holds (½ of " + dmg + " is " + Math.floor(dmg / 2) + ")" : "DC " + gd.stabilityDcBase + " floor, no damage logged");
+        : (dmg > 0 ? "DC " + gd.stabilityDcBase + " floor holds (½ of " + dmg + " is " + Math.floor(dmg / 2) + ")" : "DC " + gd.stabilityDcBase + " floor, auto-fills from your last hit on the Freelancer tab");
     }
     explSpan.textContent = expl(gd.stabilityLastDamage, gd.stabilityDcLive, driven);
     var input = el("input", { type: "number", min: "0", value: gd.stabilityLastDamage || "", placeholder: "0",
-      title: "Damage taken this turn while linked", style: { width: "62px", textAlign: "center", fontFamily: "var(--mono)" },
+      title: "Damage taken this turn while linked; auto-pulls the last damage you applied on the Freelancer tab",
+      style: { width: "62px", textAlign: "center", fontFamily: "var(--mono)" },
       oninput: function () {
         var v = Math.max(0, parseInt(this.value, 10) || 0);
-        gset(function (g) { g.lastDamage = v; }, true);   // silent: keep focus while typing
+        gset(function (g, c) { c.lastDamage = v; }, true);   // silent: keep focus while typing
         var live = Math.max(gd.stabilityDcBase, Math.floor(v / 2)), d2 = Math.floor(v / 2) > gd.stabilityDcBase;
         dcSpan.textContent = "DC " + live; dcSpan.style.color = d2 ? "var(--danger)" : "var(--accent)";
         explSpan.textContent = expl(v, live, d2);
       },
-      onchange: function () { EN.app.render(); } });   // commit: sync the STABILITY box + LinkDeath panel
-    return el("div.row.wrap", { style: { gap: "9px", alignItems: "center", margin: "8px 0 4px", padding: "8px 10px", border: "1px solid var(--border2)", borderRadius: "4px", background: "rgba(0,0,0,.18)" } }, [
+      onchange: function () { EN.app.render(); } });   // commit: sync the LinkDeath panel
+    return el("div.row.wrap", { style: { gap: "9px", alignItems: "center", margin: "2px 0 4px", padding: "8px 10px", border: "1px solid var(--border2)", borderRadius: "4px", background: "rgba(0,0,0,.18)" } }, [
       el("span", { style: { fontFamily: "var(--disp)", fontSize: "9.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "DAMAGE TAKEN THIS TURN" }),
       input,
       el("span.mono", { style: { fontSize: "12px", color: "var(--text3)" }, text: "→ STABILITY" }),
       dcSpan, explSpan,
-      el("button.btn.sm", { title: "Clear for a new turn", style: { color: "var(--text3)" }, onclick: function () { gset(function (g) { g.lastDamage = 0; }); } }, "NEW TURN")
+      el("button.btn.sm", { title: "Clear for a new turn", style: { color: "var(--text3)" }, onclick: function () { gset(function (g, c) { c.lastDamage = 0; }); } }, "NEW TURN")
     ]);
+  }
+
+  // Compact STABILITY stat that taps open into the full damage tracker. Stays
+  // live even while collapsed (the DC reflects the last Freelancer-tab hit).
+  function stabilityStat(gd) {
+    var driven = gd.stabilityDcFromDamage > gd.stabilityDcBase;
+    var caret = _stabilityOpen ? " ▾" : " ▸";
+    var sub = (driven ? "½ of " + gd.stabilityLastDamage + " dmg"
+      : (gd.stabilityDcMod ? (gd.stabilityDcMod > 0 ? "+" : "") + gd.stabilityDcMod + " from rig" : "or ½ dmg taken")) + caret;
+    var node = EN.ui.stat("STABILITY", "DC " + gd.stabilityDcLive, sub);
+    if (driven) { var v = node.querySelector(".v"); if (v) v.style.color = "var(--danger)"; }
+    node.style.cursor = "pointer";
+    node.title = _stabilityOpen ? "Tap to collapse the damage tracker" : "Tap to log damage taken this turn while linked";
+    node.onclick = function () { _stabilityOpen = !_stabilityOpen; EN.app.render(); };
+    return node;
   }
 
   function statsPanel(ch, d) {
     var gd = d.grid, fmt = eng.fmtMod;
-    var stbDriven = gd.stabilityDcFromDamage > gd.stabilityDcBase;
-    var stbSub = stbDriven ? "½ of " + gd.stabilityLastDamage + " dmg"
-      : (gd.stabilityDcMod ? (gd.stabilityDcMod > 0 ? "+" : "") + gd.stabilityDcMod + " from rig" : "or ½ dmg taken");
     var stats = [
       EN.ui.stat("CIPHER ATK", fmt(gd.effectiveAttack), gd.deck ? (gd.deck.type === "buddy" ? "Buddy bonus" : "Tech+Systems+dev") : "Tech+Systems"),
       EN.ui.stat("SAVE DC", gd.effectiveSaveDC, gd.deck && gd.deck.type === "buddy" ? "Buddy DC" : "8+Tech+Systems"),
       EN.ui.stat("LINKS", gd.unlimitedLinks ? "∞" : gd.maxLinks, gd.isCodebreaker ? (gd.unlimitedLinks ? "SysAdmin" : "2 × Caliber" + (gd.modLinks ? " +" + gd.modLinks : "")) : "Standard User"),
-      EN.ui.stat("STABILITY", "DC " + gd.stabilityDcLive, stbSub)
+      stabilityStat(gd)
     ];
     if (gd.quickHackBonus != null) stats.splice(1, 0, EN.ui.stat("QUICK HACK", fmt(gd.quickHackBonus), "+ Device Bonus"));
-    var body = [el("div.stat-row", null, stats), stabilityDamageControl(gd),
-      noteP("Cipher Attack: d20 " + fmt(gd.cipherAttackBonus) + " vs node Security Rating" + (gd.deck && gd.deck.type === "smartdeck" && gd.deck.deviceBonus ? " (+" + gd.deck.deviceBonus + " Device Bonus = " + fmt(gd.effectiveAttack) + " on a Quick Hack)" : "") + ". Node resists save-ciphers with d20 + its Cipher Save Bonus vs your Save DC " + gd.effectiveSaveDC + ".", "var(--text2)")];
+    var body = [el("div.stat-row", null, stats)];
+    if (_stabilityOpen) body.push(stabilityDamageControl(gd));
+    body.push(noteP("Cipher Attack: d20 " + fmt(gd.cipherAttackBonus) + " vs node Security Rating" + (gd.deck && gd.deck.type === "smartdeck" && gd.deck.deviceBonus ? " (+" + gd.deck.deviceBonus + " Device Bonus = " + fmt(gd.effectiveAttack) + " on a Quick Hack)" : "") + ". Node resists save-ciphers with d20 + its Cipher Save Bonus vs your Save DC " + gd.effectiveSaveDC + ".", "var(--text2)"));
     if (!gd.isCodebreaker) body.push(noteP("You're a Standard User: 1 Link at a time, no Bandwidth, and a B&E Buddy locks out of Premium+ nodes. Deep #GRID play is the Codebreaker's domain.", "var(--warn)"));
     return EN.ui.panel("Hacking", "CIPHER MATH", body, { corners: true });
   }
@@ -372,9 +382,8 @@ EN.gridView = (function () {
     var dmg = "2d6" + (extra ? " + " + extra + "d6" : "");
     rows.push(el("div", { style: { marginTop: "8px", padding: "8px 10px", border: "1px solid " + (links.length >= 2 ? "var(--danger)" : "var(--border2)"), borderRadius: "4px", background: "rgba(0,0,0,.18)" } }, [
       el("div.row.between", { style: { alignItems: "baseline" } }, [
-        el("span", { style: { fontFamily: "var(--disp)", fontSize: "10px", letterSpacing: ".12em", color: "var(--danger)" }, text: "LINKDEATH RISK" }),
-        el("span.mono", { style: { fontSize: "12px", color: gd.stabilityDcFromDamage > gd.stabilityDcBase ? "var(--danger)" : "var(--text2)" }, text: "Stability DC " + gd.stabilityDcLive }) ]),
-      noteP("Fail a Stability Check (Body or Wits, vs the higher of DC " + gd.stabilityDcBase + " or ½ the damage you took this turn" + (gd.stabilityLastDamage ? ", currently DC " + gd.stabilityDcLive + " off " + gd.stabilityLastDamage + " damage logged in Hacking" : "") + ") → all Links sever and you take " + dmg + " Psychic, Unconscious." + (links.length >= 2 ? " Fail by 5+ with 2+ Links = Cascade Failure (deck auto-Bricked)." : " Succeed → ride it: half damage, Dazed."), links.length >= 2 ? "var(--danger)" : "var(--text3)")
+        el("span", { style: { fontFamily: "var(--disp)", fontSize: "10px", letterSpacing: ".12em", color: "var(--danger)" }, text: "LINKDEATH RISK" }) ]),
+      noteP("Fail a Stability Check (Body or Wits, vs the higher of DC " + gd.stabilityDcBase + " or ½ the damage taken this turn, set in the Hacking panel) → all Links sever and you take " + dmg + " Psychic, Unconscious." + (links.length >= 2 ? " Fail by 5+ with 2+ Links = Cascade Failure (deck auto-Bricked)." : " Succeed → ride it: half damage, Dazed."), links.length >= 2 ? "var(--danger)" : "var(--text3)")
     ]));
     return EN.ui.panel("Links", gd.unlimitedLinks ? "UNLIMITED THREADING" : "MULTI-LINK", rows, { corners: true });
   }

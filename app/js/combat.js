@@ -146,6 +146,7 @@ EN.combatView = (function () {
     if (!amount || amount <= 0) return;
     store.update(function (c) {
       var s = state(c, d);
+      c.lastDamage = amount;   // record the hit so the #GRID Stability DC auto-pulls it
       var left = amount;
       // Vigor absorbs first
       var vig = Math.min(s.vigor, left);
@@ -502,12 +503,12 @@ EN.combatView = (function () {
   var COST_COLOR = { Action: "var(--accent)", Swift: "var(--gold)", Impulse: "var(--flow)", Free: "var(--success)", Active: "var(--accent)", Passive: "var(--text3)", Complex: "var(--ember)", Special: "var(--gold)" };
   /* class-resource identity colors; the resource bar + count tint to match its fuel */
   var RESOURCE_COLOR = {
-    Bandwidth: "#00AEEF",   // electric blue, data / signal / system capacity
+    Bandwidth: "var(--bw)",   // electric blue, data / signal / system capacity (shared with #GRID)
     Overdrive: "#FF7A00",   // hazard orange, heat / adrenaline / past safe limits
     Leverage:  "#D6A21E",   // gold, influence / favors / social capital
     Execution: "#B11226",   // crimson, sharp / decisive / final
     Moxie:     "#FF2DAA",   // neon magenta, stylish / defiant / reckless
-    Flow:      "#7B2CFF",   // arc-violet, mystical / unstable / Elysium-coded
+    Flow:      "var(--fp)",   // arc-violet, mystical / unstable (shared with the Flow tab)
     Triage:    "#2FE6A6"    // medical mint, clinical / restorative / urgent
   };
   function resourceColor(name) { return RESOURCE_COLOR[name] || "var(--accent)"; }

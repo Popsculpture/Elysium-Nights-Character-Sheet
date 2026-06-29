@@ -450,7 +450,7 @@ EN.engine = (function () {
     // Live Stability DC: the disconnection save is the HIGHER of the rig-adjusted
     // DC 10 floor or half (rounded down) of the damage taken this turn while linked.
     var stabilityDcBase = 10 + stabilityDcMod;
-    var stabilityLastDamage = Math.max(0, (g.lastDamage | 0));
+    var stabilityLastDamage = Math.max(0, ((ch && ch.lastDamage) | 0));
     var stabilityDcFromDamage = Math.floor(stabilityLastDamage / 2);
     var stabilityDcLive = Math.max(stabilityDcBase, stabilityDcFromDamage);
     var baseMaxLinks = isCodebreaker ? (2 * cal) : 1;
@@ -596,13 +596,28 @@ EN.engine = (function () {
                           R.shaperFlowAttrBySubclass[ch.subclass] || "Mystique";
       var fAttr = R.attrNameToKey[flowAttrName] || "MYS";
       var fMod = attributes[fAttr].mod;
+      var strainStage = clamp((ch.flow && ch.flow.strain) || 0, 0, 5);
+      var stInfo = (EN.flow && EN.flow.strainTrack) ? EN.flow.strainTrack[strainStage - 1] : null;
       flow = {
         isShaper: true, attribute: fAttr, attributeName: flowAttrName,
         max: Math.max(0, cal * 3 + fMod - chromeTax.fpPenalty), dc: 8 + fMod + cal,
         // `attack` is the bare Flow Modifier (used for FP recovery on a Short Rest
         // and Resurge rebound damage). `attackBonus` is the d20 Flow Attack roll
         // bonus, which per the core rules is Flow Modifier + Caliber.
-        attack: fMod, attackBonus: fMod + cal, note: "Overdraw builds Strain when FP hits 0."
+        attack: fMod, attackBonus: fMod + cal,
+        // Strain track and the consequences it gates (see EN.flow.strainTrack).
+        strainStage: strainStage,
+        strainName: stInfo ? stInfo.name : "Stable",
+        strainPenalty: stInfo ? stInfo.penalty : null,
+        breakflowDC: 12 + strainStage,
+        overdrawDie: strainStage >= 3 ? 6 : 4,     // Surge: 1d6 per FP instead of 1d4
+        fpSurcharge: strainStage >= 2 ? 1 : 0,     // Wave: every Invocation costs +1 FP
+        precisionFp: strainStage >= 3 ? 2 : 1,     // Surge: Precision Shaping costs 2 FP
+        vitalityPerFp: strainStage >= 4 ? 1 : 0,   // Rend: spending FP costs 1 flat Vitality/FP
+        breakflowOnOverdraw: strainStage >= 4,     // Rend: Overdraw forces a Breakflow Check
+        snagInvoke: strainStage >= 1,              // Ripple: Snag on all Invocation rolls
+        inBreakflow: !!(ch.flow && ch.flow.breakflow),
+        note: "Overdraw builds Strain when FP hits 0."
       };
     }
 
@@ -716,12 +731,97 @@ EN.engine = (function () {
   function gambitList(ch) { return resourceAbilities(ch); }
   function gambitsAllowed(ch) { return resourcePicksAllowed(ch); }
 
+  /* ---- Flow: cost + output of a free-shaped Invocation -------------------
+     Pure calculator over a formulation (the Order of Shaping component choices)
+     and a derived snapshot. Returns the live FP cost (with Strain surcharges),
+     the base formulation cost, the damage formula, the resolution line, and any
+     rule warnings (level gates, sustain incompatibility). The Flow tab uses this
+     for both the free-shaping builder and every saved Resonant Pattern. */
+  var FLOW_INTENT_FP = { damage: 0, effect: 0, hybrid: 1 };
+  var FLOW_DELIVERY_FP = { directed: 0, focused: 1, wide: 2 };
+  var FLOW_FORCE_FP = { base: 0, empowered: 1 };
+  function flowInvocation(form, d) {
+    form = form || {};
+    var F = EN.flow || {};
+    var R = (F.resonanceByKey && F.resonanceByKey[form.resonance]) || null;
+    var flow = d.flow || {};
+    var cal = d.caliber || 1;
+    var fMod = (flow.attribute && d.attributes[flow.attribute]) ? d.attributes[flow.attribute].mod : 0;
+    var stage = flow.strainStage || 0;
+    var hasEffect = form.intent === "effect" || form.intent === "hybrid";
+    var hasDamage = form.intent === "damage" || form.intent === "hybrid";
+    var empowered = form.force === "empowered";
+    var areaBand = form.deliveryBand === "focused" || form.deliveryBand === "wide";
+
+    /* base (formulation) cost, ignoring current Strain */
+    var breakdown = [];
+    function add(label, fp) { if (fp) breakdown.push({ label: label, fp: fp }); }
+    var intentFp = FLOW_INTENT_FP[form.intent] || 0; add(form.intent === "hybrid" ? "Hybrid Intent" : "Intent", intentFp);
+    var delFp = FLOW_DELIVERY_FP[form.deliveryBand] || 0; add("Delivery", delFp);
+    var forceFp = FLOW_FORCE_FP[form.force] || 0; add("Empowered Force", forceFp);
+    var et = Math.max(0, form.extraTargets | 0); add(et + " extra target" + (et === 1 ? "" : "s"), et);
+    var es = Math.max(0, form.extraSpaces | 0); add(es + " extra space" + (es === 1 ? "" : "s"), es);
+    var precOn = !!form.precision && areaBand;
+    if (precOn) add("Precision Shaping", 1);
+    var baseFp = intentFp + delFp + forceFp + et + es + (precOn ? 1 : 0);
+
+    /* live cost: Wave (+1 FP to everything) and Surge (Precision costs 2 FP) */
+    var waveFp = stage >= 2 ? 1 : 0;
+    var precSurge = (precOn && stage >= 3) ? 1 : 0;
+    if (waveFp) add("Strain: Wave (+1 FP)", waveFp);
+    if (precSurge) add("Strain: Surge (Precision +1 FP)", precSurge);
+    var fp = baseFp + waveFp + precSurge;
+
+    /* damage: 1d6 base, +Caliber d6 when Empowered Force feeds damage */
+    var damageText = null, damageDice = 0;
+    if (hasDamage) {
+      damageDice = 1 + (empowered ? cal : 0);
+      damageText = damageDice + "d6 " + fmtMod(fMod) + (R ? " " + R.damage : "");
+    }
+
+    /* resolution line (for an unwilling target) */
+    var resolution = R && R.resolution === "save" ? "save" : "attack";
+    var resolutionText;
+    if (resolution === "save") {
+      resolutionText = "Targets save vs Flow Save DC " + flow.dc +
+        (R && R.saveAttr && R.saveAttr !== "varies" ? " (" + R.saveAttr + ")" : "") +
+        (R && R.armorNote ? " · " + R.armorNote : "");
+    } else {
+      resolutionText = "Flow Attack " + fmtMod(flow.attackBonus) + " vs Defense";
+    }
+
+    /* the Empowered Effect carried (when Empowered Force feeds an effect) */
+    var effectObj = null;
+    if (empowered && hasEffect && R && form.empoweredEffect) {
+      effectObj = (R.empowered || []).find(function (e) { return e.name === form.empoweredEffect; }) || null;
+    }
+
+    /* sustain compatibility + warnings */
+    var warnings = [];
+    if (R && R.unlock > (d.level || 1)) warnings.push(R.name + " Resonance unlocks at Level " + R.unlock + ".");
+    if (form.intent === "hybrid" && empowered && (d.level || 1) < 5) warnings.push("Layered Force (Hybrid + Empowered) requires Level 5.");
+    var sustainable = true;
+    if (form.duration === "sustain") {
+      if (R && R.noSustain) { sustainable = false; warnings.push(R.name + " effects are always Instant and cannot be Sustained."); }
+      else if (effectObj && effectObj.sustain === false) { sustainable = false; warnings.push("\"" + effectObj.name + "\" cannot be Sustained."); }
+    }
+
+    return {
+      resonance: R, baseFp: baseFp, fp: fp, breakdown: breakdown,
+      damageDice: damageDice, damageText: damageText,
+      resolution: resolution, resolutionText: resolutionText,
+      empoweredEffect: effectObj, hasEffect: hasEffect, hasDamage: hasDamage,
+      sustainable: sustainable, warnings: warnings
+    };
+  }
+
   return {
     derive: derive, mod: mod, caliber: caliber, fmtMod: fmtMod, clamp: clamp,
     installedCyberware: installedCyberware, installedCyberBases: installedCyberBases,
     gambitList: gambitList, gambitsAllowed: gambitsAllowed,
     resourceAbilities: resourceAbilities, resourceKnowsAll: resourceKnowsAll,
     resourcePicksAllowed: resourcePicksAllowed, chosenResourceAbilities: chosenResourceAbilities,
+    flowInvocation: flowInvocation,
     getClass: getClass, getSpecies: getSpecies, getLineage: getLineage,
     getBackground: getBackground, getSubclass: getSubclass,
     pointBuySpent: pointBuySpent, trainingPointsTotal: trainingPointsTotal,
