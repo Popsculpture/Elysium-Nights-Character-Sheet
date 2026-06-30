@@ -60,13 +60,22 @@ EN.flowView = (function () {
     if (fl.strain >= 5) { fl.breakflow = true; fl.sustained = null; }
   }
 
-  /* normalize the transient form against current data + level (called each render) */
-  function normForm(d) {
+  // Resonances this Shaper actually knows. If the character recorded picks in
+  // #PRINT, use those; otherwise (legacy build) fall back to everything unlocked
+  // by level so older Shapers keep working.
+  function knownResKeys(ch, d) {
+    var rec = (ch && ch.resonances) || [];
+    if (rec.length) return rec.slice();
+    return EN.flow.resonances.filter(function (r) { return r.unlock <= d.level; }).map(function (r) { return r.key; });
+  }
+  /* normalize the transient form against the known resonance set (called each render) */
+  function normForm(ch, d) {
     var F = EN.flow;
+    var known = knownResKeys(ch, d);
     var R = F.resonanceByKey[_form.resonance] || F.resonances[0];
-    if (R.unlock > d.level) { // selected a now-locked resonance: fall back to first unlocked
-      var first = F.resonances.filter(function (r) { return r.unlock <= d.level; })[0];
-      if (first) { _form.resonance = first.key; R = first; }
+    if (known.indexOf(_form.resonance) === -1) { // selected a resonance you do not know: fall back
+      var firstKey = known[0] || F.resonances[0].key;
+      _form.resonance = firstKey; R = F.resonanceByKey[firstKey] || F.resonances[0];
     }
     var band = F.delivery.find(function (b) { return b.key === _form.deliveryBand; }) || F.delivery[0];
     if (band.options.indexOf(_form.deliveryOption) === -1) _form.deliveryOption = band.options[0];
@@ -170,14 +179,18 @@ EN.flowView = (function () {
 
   /* ========================= FREE-SHAPING BUILDER ======================== */
   function builderPanel(ch, d) {
-    var F = EN.flow, R = normForm(d);
+    var F = EN.flow, R = normForm(ch, d);
     var inv = eng.flowInvocation(_form, d);
+    var known = knownResKeys(ch, d);
     var rows = [];
 
-    // Resonance
+    // Resonance (only the ones this Shaper knows are selectable)
     rows.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginBottom: "6px" } }, [fieldLabel("RESONANCE"),
-      seg(F.resonances.map(function (r) { return { key: r.key, label: r.name, disabled: r.unlock > d.level, title: r.unlock > d.level ? "Unlocks at Level " + r.unlock : r.focus + " · " + r.damage }; }),
-        function (k) { return _form.resonance === k; }, function (k) { setForm({ resonance: k }); })]));
+      seg(F.resonances.map(function (r) {
+        var isKnown = known.indexOf(r.key) !== -1;
+        return { key: r.key, label: r.name, disabled: !isKnown,
+                 title: isKnown ? r.focus + " · " + r.damage : (r.unlock > d.level ? "Eligible at Level " + r.unlock : "Not known; learn it in #PRINT") };
+      }), function (k) { return _form.resonance === k; }, function (k) { setForm({ resonance: k }); })]));
     rows.push(noteP(R.focus + " · " + R.damage + (R.resolution === "save" ? " · resolves with a Flow Save DC" : " · Flow Attack vs Defense") + ". " + (R.base || ""), "var(--text2)"));
 
     // Intent
@@ -315,12 +328,19 @@ EN.flowView = (function () {
   // set the form fields silently (no render) so a list RUN channels that pattern's cost
   function loadFormSilent(p) { Object.keys(_form).forEach(function (k) { if (p[k] !== undefined) _form[k] = p[k]; }); if (p.unwilling === undefined) _form.unwilling = true; }
 
+  // Saved Resonant Patterns as embeddable rows (no panel chrome, no premade list).
+  // Shared by the Flow tab and the Freelancer dashboard so INVOKE works in both.
+  function myPatternsInline(ch, d) {
+    var saved = (ch.flow && ch.flow.patterns) || [];
+    if (!saved.length) return noteP("No saved patterns yet. Build one in the Flow tab's Free-Shaping and hit SAVE.");
+    return el("div", null, saved.map(function (p, i) { return patternRow(ch, d, p, i, false); }));
+  }
+
   function patternsPanel(ch, d) {
     var saved = (ch.flow && ch.flow.patterns) || [], rows = [];
     rows.push(el("div.section-title", { style: { margin: "2px 0 4px" } }, [document.createTextNode("My Patterns"), el("span.line"),
       el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", marginLeft: "6px" }, text: saved.length + " saved" })]));
-    if (!saved.length) rows.push(noteP("No saved patterns yet. Build one in Free-Shaping and hit SAVE, or copy a premade below."));
-    saved.forEach(function (p, i) { rows.push(patternRow(ch, d, p, i, false)); });
+    rows.push(myPatternsInline(ch, d));
     collapsible("flow-premade", "Premade Templates", function () {
       return el("div", null, [noteP(EN.flow.premadeNote, "var(--text2)")].concat((EN.flow.premadePatterns || []).map(function (p) { return patternRow(ch, d, p, -1, true); })));
     }).forEach(function (n) { rows.push(n); });
@@ -407,5 +427,5 @@ EN.flowView = (function () {
     mount.appendChild(el("div", null, blocks));
   }
 
-  return { render: render };
+  return { render: render, myPatternsInline: myPatternsInline };
 })();

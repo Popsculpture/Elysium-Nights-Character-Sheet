@@ -337,6 +337,49 @@ EN.engine = (function () {
     return names.filter(function (n, i) { return names.indexOf(n) === i; });
   }
 
+  // Lineage features that change a derived number (DR, Speed, Initiative) or the
+  // unarmed strike, keyed by feature name. derive() folds these into the sheet so
+  // the player does not have to hand-track them. Source values per app/data/species.js.
+  var LINEAGE_MECH = {
+    "Ironbark Carapace":     { dr: 2 },
+    "Ironhide Tusks":        { dr: 1 },
+    "Slipstream Runner":     { speed: 2 },
+    "Calibrated Gait":       { speed: 1 },
+    "Static Premonition":    { initCaliber: true },
+    "Tuned Synapses":        { initEdge: true },
+    "Synthetic Musculature": { unarmed: { die: "1d6", type: "Bludgeoning" } },
+    "Briar Strike":          { unarmed: { die: "1d6", type: "Piercing/Slashing", traits: "Light, Finesse" } },
+    "Brutal Frame":          { unarmed: { die: "1d6", type: "Bludgeoning", note: "+1d4 on hit" } },
+    "Butcher Spurs":         { unarmed: { die: "1d6", type: "Slashing", note: "−2 target Speed on hit" } },
+    "Scavenger's Maw":       { unarmed: { die: "1d6", type: "Piercing", note: "bite; +1 Vitality on hit" } }
+  };
+  function lineageMechanics(ch) {
+    var out = { dr: 0, speed: 0, initCaliber: false, initEdge: false, unarmed: null };
+    activeLineageFeatures(ch).forEach(function (fn) {
+      var m = LINEAGE_MECH[fn]; if (!m) return;
+      if (m.dr) out.dr += m.dr;
+      if (m.speed) out.speed += m.speed;
+      if (m.initCaliber) out.initCaliber = true;
+      if (m.initEdge) out.initEdge = true;
+      if (m.unarmed) out.unarmed = { source: fn, die: m.unarmed.die, type: m.unarmed.type, traits: m.unarmed.traits || null, note: m.unarmed.note || null };
+    });
+    return out;
+  }
+  // Talents the character has taken via Universal Upgrades (type "talent"), resolved
+  // against EN.talents. Folded into d.features so the play sheet and print sheet
+  // surface them with their action type and rules text.
+  function activeTalents(ch) {
+    var ups = (ch && ch.universalUpgrades) || {}, out = [];
+    Object.keys(ups).forEach(function (lvl) {
+      var u = ups[lvl];
+      if (u && u.type === "talent" && u.talent) {
+        var t = (EN.talents || []).find(function (x) { return x.key === u.talent || x.name === u.talent; });
+        if (t) out.push({ level: Number(lvl) || 1, talent: t });
+      }
+    });
+    return out;
+  }
+
   /* ---- installed cyberware: Enhancement Bonuses (attribute) + flat sheet bonuses ----
      Enhancement scales by tier: Streetware 0, Brandware/Prototype = listed, Blackware ×2.
      'arm only' (Cyberarm) is a focused bonus and does NOT touch the general attribute. */
@@ -505,10 +548,11 @@ EN.engine = (function () {
     var defenseAttr = "AGI";
     var defenseBase = 10;
     var linFeats = activeLineageFeatures(ch);
-    if (linFeats.indexOf("Dermal Plating") !== -1 || linFeats.indexOf("Engineered Frame") !== -1) defenseAttr = "BOD";
+    if (linFeats.indexOf("Dermal Plating") !== -1) defenseAttr = "BOD";
+    var linMech = lineageMechanics(ch);
     var defLoadout = defensiveLoadout(ch);
     var defense = defenseBase + attributes[defenseAttr].mod + (defLoadout.shieldDef || 0);
-    var speed = Math.max(3, 6 + agiMod) + (cyberFlat.speed || 0) + (defLoadout.speedPenalty || 0);
+    var speed = Math.max(3, 6 + agiMod) + (cyberFlat.speed || 0) + (defLoadout.speedPenalty || 0) + linMech.speed;
 
     /* vitality / wounds / resilience */
     var vit = R.classVitality[ch.class];
@@ -650,6 +694,11 @@ EN.engine = (function () {
         if (match) features.push({ level: 1, name: match.name, text: match.text, source: lin.name + " (Lineage)", kind: "lineage" });
       });
     }
+    // Talents taken via Universal Upgrades, so the play sheet renders them with
+    // their action type and uses (many are active/limited-use combat abilities).
+    activeTalents(ch).forEach(function (t) {
+      features.push({ level: t.level, name: t.talent.name, text: t.talent.text, source: "Talent", kind: "talent" });
+    });
 
     /* training points, spent is computed from actual purchases */
     var tpTotal = trainingPointsTotal(level);
@@ -669,6 +718,10 @@ EN.engine = (function () {
       defense: defense, defenseAttr: defenseAttr, speed: speed,
       vitalityMax: vitalityMax, resilienceDie: resilienceDie, resilienceMax: resilienceMax,
       armorDR: defLoadout.armorDR, blockBonus: defLoadout.blockBonus,
+      naturalDR: linMech.dr, totalDR: (defLoadout.armorDR || 0) + linMech.dr,
+      lineageSpeed: linMech.speed,
+      lineageInit: { caliber: linMech.initCaliber ? cal : 0, edge: linMech.initEdge },
+      lineageUnarmed: linMech.unarmed,
       shieldDef: defLoadout.shieldDef, shieldBlockDie: defLoadout.shieldBlockDie,
       wardDie: defLoadout.wardDie, defenseGear: defLoadout,
       chromeTax: chromeTax, cyberEnh: cyberEnh, cyberFlat: cyberFlat,

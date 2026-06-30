@@ -914,12 +914,12 @@ EN.combatView = (function () {
        base, attribute mods, gear, chrome, lineage features, and conditions. */
     var dg = d.defenseGear || {};
     var agiMod = d.attributes.AGI.mod;
-    var initVal = agiMod + fx.init;
+    var initVal = agiMod + fx.init + ((d.lineageInit && d.lineageInit.caliber) || 0);
     var spDisplay = adjSpeed(d.speed, fx);
     var lineFeats = (eng.activeLineageFeatures ? eng.activeLineageFeatures(ch) : []) || [];
     var defAttrName = d.defenseAttr === "BOD" ? "Body" : "Agility";
     var defAttrReason = d.defenseAttr === "BOD"
-      ? (lineFeats.indexOf("Dermal Plating") !== -1 ? "Dermal Plating" : lineFeats.indexOf("Engineered Frame") !== -1 ? "Engineered Frame" : "lineage")
+      ? (lineFeats.indexOf("Dermal Plating") !== -1 ? "Dermal Plating" : "lineage")
       : null;
     // chrome that moves Speed, attributed to the specific installed piece
     var cyberSpeedRows = [];
@@ -940,22 +940,26 @@ EN.combatView = (function () {
                bdRow(defAttrName + " modifier" + (defAttrReason ? " (" + defAttrReason + ")" : ""), d.attributes[d.defenseAttr].mod, chromeNote(d.defenseAttr))]
           .concat(dg.shield ? [bdRow("Shield · " + dg.shield.name, dg.shieldDef)] : []),
         foot: "Cover (+2 Half / +5 ¾) and a declared Active Defense add more against a specific attack, see Defend." },
-      DR: { title: "Damage Reduction", total: d.armorDR || 0, sign: false,
-        formula: "Worn armor's DR vs physical damage",
-        rows: dg.armor ? [bdRow("Armor · " + dg.armor.name, dg.armor.dr, null, true)] : [],
-        empty: dg.armor ? null : "No armor equipped; WEAR armor in Inventory → Stash.",
+      DR: { title: "Damage Reduction", total: d.totalDR || 0, sign: false,
+        formula: "Worn armor + natural lineage DR vs physical damage",
+        rows: (dg.armor ? [bdRow("Armor · " + dg.armor.name, dg.armor.dr, null, true)] : [])
+          .concat(d.naturalDR ? [bdRow("Natural (lineage)", d.naturalDR)] : []),
+        empty: (dg.armor || d.naturalDR) ? null : "No armor equipped; WEAR armor in Inventory → Stash.",
         foot: dg.armor && (dg.armor.traits || []).indexOf("Plated") !== -1 ? "Plated: when you Block, add half this DR (rounded down) on top." : null },
       SPD: { title: "Speed", total: spDisplay, sign: false,
-        formula: "max(3, 6 + Agility modifier) + chrome − Bulky − conditions",
+        formula: "max(3, 6 + Agility modifier) + chrome + lineage − Bulky − conditions",
         rows: (spdFloored ? [bdRow("Base move (Agility floored to min 3)", baseMove, null, true)]
                           : [bdRow("Base move", 6, null, true), bdRow("Agility modifier", agiMod, chromeNote("AGI"))])
           .concat(cyberSpeedRows.map(function (r) { return bdRow("Chrome · " + r.label, r.val); }))
+          .concat(d.lineageSpeed ? [bdRow("Lineage", d.lineageSpeed)] : [])
           .concat(dg.speedPenalty ? [bdRow("Bulky · " + dg.armor.name, dg.speedPenalty)] : [])
           .concat(spCond ? [bdRow("Conditions", spCond)] : []) },
       INIT: { title: "Initiative", total: initVal, sign: true,
-        formula: "Agility modifier" + (fx.init ? " + conditions" : ""),
-        rows: [bdRow("Agility modifier", agiMod, chromeNote("AGI"))].concat(fx.init ? [bdRow("Conditions", fx.init)] : []),
-        foot: "Initiative roll = d20 + Caliber (" + d.caliber + ") + this." }
+        formula: "Agility modifier" + (d.lineageInit && d.lineageInit.caliber ? " + lineage" : "") + (fx.init ? " + conditions" : ""),
+        rows: [bdRow("Agility modifier", agiMod, chromeNote("AGI"))]
+          .concat(d.lineageInit && d.lineageInit.caliber ? [bdRow("Lineage · Static Premonition", d.lineageInit.caliber)] : [])
+          .concat(fx.init ? [bdRow("Conditions", fx.init)] : []),
+        foot: "Initiative roll = d20 + Caliber (" + d.caliber + ") + this." + (d.lineageInit && d.lineageInit.edge ? " Roll with Edge (Tuned Synapses)." : "") }
     };
     function fmtVal(r) { return r.raw ? String(r.val) : (r.val >= 0 ? "+" : "") + r.val; }
     function titleFor(bd) {
@@ -977,7 +981,7 @@ EN.combatView = (function () {
     }
     blocks.push(el("div.stat-row", { style: { marginBottom: _open.statbd ? "8px" : "16px" } }, [
       statEl("DEF", "DEF", d.defense, defAttrName + (dg.shield ? " " + (dg.shieldDef >= 0 ? "+" : "") + dg.shieldDef + " shield" : "")),
-      statEl("DR", "DR", d.armorDR || 0, dg.armor ? dg.armor.name : "no armor", function (n) { if (!(d.armorDR > 0)) n.querySelector(".v").style.color = "var(--text3)"; }),
+      statEl("DR", "DR", d.totalDR || 0, dg.armor ? dg.armor.name : (d.naturalDR ? "natural · lineage" : "no armor"), function (n) { if (!(d.totalDR > 0)) n.querySelector(".v").style.color = "var(--text3)"; }),
       statEl("SPD", "SPD", spDisplay, spDisplay < d.speed ? "of " + d.speed + ", conditions" : "spaces", function (n) { if (spDisplay < d.speed) n.querySelector(".v").style.color = "var(--danger)"; }),
       statEl("INIT", "INIT", eng.fmtMod(initVal), fx.init ? "Agility " + eng.fmtMod(fx.init) + " cond." : "Agility", function (n) { if (fx.init < 0) n.querySelector(".v").style.color = "var(--danger)"; })
     ]));
@@ -1286,27 +1290,10 @@ EN.combatView = (function () {
       ]) : null
     ], { corners: true });
 
-    /* flow / strain (class resource lives in the Actions panel) */
-    var trackers = [];
-    if (d.flow) {
-      var fCur = (ch.flow.current != null) ? ch.flow.current : d.flow.max;
-      fCur = eng.clamp(fCur, 0, d.flow.max);
-      var strain = ch.flow.strain || 0;
-      trackers.push(EN.ui.panel("Flow Reservoir", "DC " + d.flow.dc + " · " + d.flow.attributeName.toUpperCase(), [
-        el("div.row.between.wrap", null, [
-          el("div.mono", { style: { fontSize: "26px", color: resourceColor("Flow") }, html: fCur + " <span style='font-size:14px;color:var(--text3)'>/ " + d.flow.max + " FP</span>" }),
-          plusMinus(function () { store.update(function (c) { c.flow.current = Math.max(0, fCur - 1); }); },
-                    function () { store.update(function (c) { c.flow.current = Math.min(d.flow.max, fCur + 1); }); })
-        ]),
-        bar(fCur, d.flow.max, resourceColor("Flow")),
-        el("div.row.wrap", { style: { gap: "10px", marginTop: "8px", alignItems: "center" } }, [
-          el("span.help", { style: { margin: 0 }, text: "Strain:" }),
-          pips(strain, 5, resourceColor("Flow"), function (n) { store.update(function (c) { c.flow.strain = n; }); }),
-          strain >= 5 ? el("span", { style: { color: "var(--danger)", fontFamily: "var(--mono)", fontSize: "12px" }, text: "⚡ BREAKFLOW" }) : el("span.help", { style: { margin: 0 }, text: "5 stages → Breakflow" })
-        ])
-      ]));
-    }
-    sectionEls.flow = trackers.length ? trackers[0] : null;
+    /* Flow Reservoir + saved Patterns live inside the Actions panel (Abilities
+       tab) for Shapers, mirroring how every other class shows its resource there.
+       The standalone layout panel is therefore retired. */
+    sectionEls.flow = null;
 
     /* conditions */
     var condSel = el("select", { style: { width: "auto", minWidth: "200px" } },
@@ -1453,6 +1440,28 @@ EN.combatView = (function () {
     /* ---- ABILITIES tab: the class resource fuel + active, triggerable abilities ---- */
     function abilitiesKids() {
       var kids = [];
+      // Shaper: the Flow Reservoir + saved Resonant Patterns sit at the very top,
+      // so a Shaper can track FP/Strain and invoke patterns without leaving Play.
+      if (d.flow) {
+        var fCur = (ch.flow.current != null) ? eng.clamp(ch.flow.current, 0, d.flow.max) : d.flow.max;
+        var fStrain = ch.flow.strain || 0;
+        kids.push(el("div.section-title", { style: { margin: "2px 0 2px" } }, [document.createTextNode("Flow Reservoir"), el("span.line"),
+          el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", marginLeft: "6px" }, text: "DC " + d.flow.dc + " · " + d.flow.attributeName }) ]));
+        kids.push(el("div.row.between.wrap", { style: { alignItems: "center" } }, [
+          el("div.mono", { style: { fontSize: "22px", color: resourceColor("Flow") }, html: fCur + " <span style='font-size:13px;color:var(--text3)'>/ " + d.flow.max + " FP · Attack " + eng.fmtMod(d.flow.attackBonus) + "</span>" }),
+          plusMinus(function () { store.update(function (c) { c.flow.current = Math.max(0, fCur - 1); }); },
+                    function () { store.update(function (c) { c.flow.current = Math.min(d.flow.max, fCur + 1); }); })
+        ]));
+        kids.push(bar(fCur, d.flow.max, resourceColor("Flow")));
+        kids.push(el("div.row.wrap", { style: { gap: "10px", marginTop: "8px", alignItems: "center" } }, [
+          el("span.help", { style: { margin: 0 }, text: "Strain:" }),
+          pips(fStrain, 5, resourceColor("Flow"), function (n) { store.update(function (c) { c.flow.strain = n; }); }),
+          fStrain >= 5 ? el("span", { style: { color: "var(--danger)", fontFamily: "var(--mono)", fontSize: "12px" }, text: "⚡ BREAKFLOW" })
+                       : el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "5 → Breakflow · Overdraw & Free-Shaping in the Flow tab" })
+        ]));
+        kids.push(el("div.section-title", { style: { margin: "12px 0 2px" } }, [document.createTextNode("My Patterns"), el("span.line")]));
+        kids.push((EN.flowView && EN.flowView.myPatternsInline) ? EN.flowView.myPatternsInline(ch, d) : el("p.help", { style: { margin: 0 }, text: "Saved patterns appear here." }));
+      }
       // combat actions reference sits at the top, above the resource tracker
       if ((C.commonActions || []).length) {
         var acOpen = !!_open["actions-in-combat"];
@@ -1772,8 +1781,13 @@ EN.combatView = (function () {
 
         kids.push(el("div", { style: { padding: "8px 4px", borderBottom: "1px solid rgba(35,48,68,.5)" } }, rowKids));
       });
+      if (d.lineageUnarmed) {
+        var lu = d.lineageUnarmed, luFin = lu.traits && /Finesse/.test(lu.traits);
+        var luMod = luFin ? Math.max(d.attributes.BOD.mod, d.attributes.AGI.mod) : d.attributes.BOD.mod;
+        kids.push(attackRow("Natural Weapon · " + lu.source, eng.fmtMod(luMod), "d20 + " + (luFin ? "Body/Agility" : "Body") + " + proficiency · " + lu.die + " " + lu.type + (lu.traits ? " (" + lu.traits + ")" : "") + " + mod" + (lu.note ? " · " + lu.note : ""), "var(--ember)", atkSnag));
+      }
       if (!equippedNames.length) {
-        kids.push(attackRow("Unarmed Strike", eng.fmtMod(d.attributes.BOD.mod), "d20 + Body + proficiency · unarmed damage + Body mod", "var(--ember)", atkSnag));
+        if (!d.lineageUnarmed) kids.push(attackRow("Unarmed Strike", eng.fmtMod(d.attributes.BOD.mod), "d20 + Body + proficiency · unarmed damage + Body mod", "var(--ember)", atkSnag));
         kids.push(el("p.help", { style: { margin: "4px 0 6px" }, text: "No weapons equipped; hit ⚔ EQUIP on a weapon in Inventory → Stash to list it here." }));
       }
       if (ch.class === "codebreaker") kids.push(attackRow("Cipher Attack", eng.fmtMod(d.attributes.TEC.mod), "d20 + Tech + proficiency vs Node · Quick Hacks under fire", "var(--accent)"));

@@ -721,6 +721,7 @@ EN.builder = (function () {
       }
       if (ch.class === "shaper" && d.flow) {
         corePb.push(feature("Flow Points (Reservoir)", "Max Flow = (Caliber × 3) + " + d.flow.attributeName + " Modifier = " + d.flow.max + "\nFlow Save DC = 8 + " + d.flow.attributeName + " Mod + Caliber = " + d.flow.dc, "flow", "Flow " + d.flow.max));
+        var rp = resonancePicker(ch); if (rp) corePb.push(rp);
       }
       // starting proficiencies, color-coded chip rows
       var sp = cls.startingProficiencies || {};
@@ -902,6 +903,37 @@ EN.builder = (function () {
       }));
     });
     return el("div", null, [head, chipRow]);
+  }
+
+  // Shaper: elect known Base Resonances. Core Channeling grants 3 at L1; Resonance
+  // Synthesis (L3) and Expanded Frequency (L5) each add one chosen Resonance, and
+  // unlock Cognitive / Temporal as eligible picks. Stored on ch.resonances.
+  function resonancePicker(ch) {
+    var F = EN.flow; if (!F) return null;
+    var level = ch.level || 1;
+    var cap = 3 + (level >= 3 ? 1 : 0) + (level >= 5 ? 1 : 0);
+    var known = ch.resonances || [];
+    var pool = F.resonances.filter(function (r) { return r.unlock <= level; });
+    var head = el("div.row.wrap", { style: { gap: "8px", alignItems: "baseline", margin: "10px 0 6px" } }, [
+      el("label.fl", { text: "Base Resonances Known" }),
+      el("span.chip" + (known.length >= cap ? ".on" : ""), { style: { fontSize: "10px" }, text: known.length + " / " + cap + " known" }),
+      el("span", { style: { fontFamily: "var(--mono)", fontSize: "10px", color: "var(--text3)" }, text: "3 at L1, +1 at L3, +1 at L5; click to learn" })
+    ]);
+    var chipRow = el("div.row.wrap", { style: { gap: "6px" } });
+    pool.forEach(function (r) {
+      var on = known.indexOf(r.key) !== -1, full = !on && known.length >= cap;
+      chipRow.appendChild(el("span.chip", {
+        title: r.focus + " · " + r.damage + (r.unlock > 1 ? " · eligible at L" + r.unlock : ""),
+        style: { fontSize: "10.5px", color: "var(--flow)", borderColor: "var(--flow)",
+                 cursor: full ? "not-allowed" : "pointer", borderStyle: on ? "solid" : "dashed",
+                 opacity: on ? 1 : (full ? .3 : .65), boxShadow: on ? "0 0 9px var(--flow)" : "none" },
+        onclick: function () {
+          if (full) { toast("You know " + cap + " Resonances at Level " + level + "."); return; }
+          store.update(function (c) { c.resonances = c.resonances || []; var i = c.resonances.indexOf(r.key); if (i >= 0) c.resonances.splice(i, 1); else c.resonances.push(r.key); });
+        }
+      }, [el("span", { text: (on ? "✓ " : "") + r.name })]));
+    });
+    return el("div", { style: { marginTop: "4px" } }, [head, chipRow]);
   }
 
   /* ---------- STEP 6: SKILLS (Training Point economy) ---------- */
