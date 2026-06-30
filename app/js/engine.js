@@ -379,6 +379,18 @@ EN.engine = (function () {
     });
     return out;
   }
+  // Talent keys whose Level 6+ Upgrade has been unlocked via a Universal Upgrade slot.
+  function talentUpgradeKeys(ch) {
+    var ups = (ch && ch.universalUpgrades) || {}, out = [];
+    Object.keys(ups).forEach(function (k) { var u = ups[k]; if (u && u.type === "talentUpgrade" && u.talent) out.push(u.talent); });
+    return out;
+  }
+  // Split a Talent's text into its base body and its "Upgrade (Level 6+)" rider.
+  function splitTalentText(text) {
+    var idx = (text || "").indexOf("**Upgrade");
+    if (idx === -1) return { base: text || "", upgrade: null };
+    return { base: text.slice(0, idx).trim(), upgrade: text.slice(idx).replace(/^\*\*Upgrade[^*]*\*\*\s*/, "").trim() };
+  }
 
   /* ---- installed cyberware: Enhancement Bonuses (attribute) + flat sheet bonuses ----
      Enhancement scales by tier: Streetware 0, Brandware/Prototype = listed, Blackware ×2.
@@ -696,8 +708,17 @@ EN.engine = (function () {
     }
     // Talents taken via Universal Upgrades, so the play sheet renders them with
     // their action type and uses (many are active/limited-use combat abilities).
+    // The Level 6+ Upgrade rider only shows as active once it has been unlocked.
+    var upKeys = talentUpgradeKeys(ch);
     activeTalents(ch).forEach(function (t) {
-      features.push({ level: t.level, name: t.talent.name, text: t.talent.text, source: "Talent", kind: "talent" });
+      var parts = splitTalentText(t.talent.text);
+      var upgraded = upKeys.indexOf(t.talent.key) !== -1;
+      var text = parts.base;
+      if (parts.upgrade) {
+        text += upgraded ? "\n\n**Upgrade (unlocked):** " + parts.upgrade
+                         : "\n\n*Upgrade available at Level 6 (spend a Talent slot to unlock).*";
+      }
+      features.push({ level: t.level, name: t.talent.name, text: text, source: "Talent" + (upgraded ? " · Upgraded" : ""), kind: "talent" });
     });
 
     /* training points, spent is computed from actual purchases */

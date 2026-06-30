@@ -1779,6 +1779,18 @@ EN.combatView = (function () {
         // traits line
         rowKids.push(el("div.row.wrap", { style: { gap: "5px", marginTop: "6px" } }, norm.traits.map(wTraitChip)));
 
+        // installed Workbench Parts (Mods + Accessories) for this weapon
+        var wpLo = (ch.weaponParts || {})[it.name];
+        if (wpLo && EN.weaponParts) {
+          var wpKeys = ["targeting", "output", "core", "handling"].map(function (s) { return wpLo[s]; }).filter(Boolean).concat(wpLo.utility || []);
+          var wpChips = wpKeys.map(function (k) {
+            var p = EN.weaponParts.byKey[k]; if (!p) return null;
+            return el("span.chip", { title: p.name + ": " + p.effect, style: { fontSize: "8.5px", color: "var(--ember)", borderColor: "var(--ember)" } }, p.grants || p.name);
+          }).filter(Boolean);
+          if (wpChips.length) rowKids.push(el("div.row.wrap", { style: { gap: "5px", marginTop: "4px", alignItems: "center" } },
+            [el("span", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "MODS" })].concat(wpChips)));
+        }
+
         kids.push(el("div", { style: { padding: "8px 4px", borderBottom: "1px solid rgba(35,48,68,.5)" } }, rowKids));
       });
       if (d.lineageUnarmed) {

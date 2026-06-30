@@ -435,7 +435,12 @@ EN.printSheet = (function () {
       body.push(sect("Universal Upgrades"));
       uuKeys.sort(function (a, b) { return Number(a) - Number(b); }).forEach(function (lv) {
         var u = uu[lv] || {};
-        var what = u.type === "attr" ? ("+1 " + (u.attr || "Attribute")) : u.type === "talent" ? ("Talent: " + (u.talent || u.name || "")) : u.type === "evolution" ? ("Lineage Evolution: " + (u.feature || u.name || "")) : (u.name || u.type || "choice");
+        var talName = function (k) { var t = (EN.talents || []).find(function (x) { return x.key === k || x.name === k; }); return t ? t.name : (k || ""); };
+        var what = u.type === "attr" ? ("+1 " + (u.attr || "Attribute"))
+          : u.type === "talent" ? ("Talent: " + talName(u.talent))
+          : u.type === "talentUpgrade" ? ("Talent Upgrade: " + talName(u.talent))
+          : u.type === "evolution" ? ("Lineage Evolution: " + (u.feature || u.name || ""))
+          : (u.name || u.type || "choice");
         body.push(el("div.ps-skrow", null, [el("span.ps-sk-a", { text: "L" + lv }), el("span.ps-sk-n", { text: what })]));
       });
     }

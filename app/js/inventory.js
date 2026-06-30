@@ -13,6 +13,7 @@ EN.inventoryView = (function () {
   var store = EN.store;
   var _sub = "stash";      // 'stash' | 'chrome' | 'market' | 'workbench'
   var _bench = "ballistics"; // Workbench sub-tab: 'ballistics' | 'armor' | 'tech' | 'garage'
+  var _benchWeapon = null;   // Ballistics Bench: the weapon currently being customized
   var _open = {};          // collapse state for item cards
   var _ledgerAmt = 100;    // remembered credit/debit amount
   // Storefront (picked via the ⚙ settings popover; same stock, different pricing):
@@ -116,7 +117,8 @@ EN.inventoryView = (function () {
       (g.signature && g.signature.munitions) || [],
       (g.ammo && g.ammo.items) || [],
       (g.armor && g.armor.items) || [],
-      (g.tools && g.tools.items) || []
+      (g.tools && g.tools.items) || [],
+      partItems()
     );
   }
   function findItem(name) { return catalog().find(function (i) { return i.name === name; }); }
@@ -233,6 +235,33 @@ EN.inventoryView = (function () {
   }
 
   /* ---- shared item card (market + stash render through this) ---- */
+  // MODS chip line for a customized weapon, mirroring the Freelancer weapon row.
+  function installedPartsLine(ch, it) {
+    if (!isWeapon(it) || !EN.weaponParts) return null;
+    var lo = (ch.weaponParts || {})[it.name];
+    if (!lo) return null;
+    var keys = ["targeting", "output", "core", "handling"].map(function (s) { return lo[s]; }).filter(Boolean).concat(lo.utility || []);
+    var chips = keys.map(function (k) {
+      var p = EN.weaponParts.byKey[k]; if (!p) return null;
+      return el("span.chip", { title: p.name + ": " + p.effect, style: { fontSize: "8.5px", color: "var(--ember)", borderColor: "var(--ember)" } }, p.grants || p.name);
+    }).filter(Boolean);
+    if (!chips.length) return null;
+    return el("div.row.wrap", { style: { gap: "5px", marginTop: "6px", alignItems: "center" } },
+      [el("span", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "MODS" })].concat(chips));
+  }
+  // info line for a weapon Part item (slot, type, what it grants, install count)
+  function partInfoLine(ch, it) {
+    if (!it.benchPart || !EN.weaponParts) return null;
+    var p = EN.weaponParts.byKey[it.partKey];
+    var slotName = p ? ((EN.weaponParts.slots.find(function (s) { return s.key === p.slot; }) || {}).name || p.slot) : "";
+    var installedN = installedPartCount(ch, it.partKey);
+    return el("div.row.wrap", { style: { gap: "6px", marginTop: "5px", alignItems: "center" } }, [
+      el("span.chip", { title: "Installs in the " + slotName + " slot", style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" } }, slotName + " slot"),
+      el("span.chip", { title: it.partType === "Mod" ? "Bench work: a rest with a kit" : "Snap-on, no tools, no roll", style: { fontSize: "9px", color: it.partType === "Mod" ? "var(--ember)" : "var(--text2)", borderColor: it.partType === "Mod" ? "var(--ember)" : "var(--text2)" } }, it.partType),
+      el("span.help", { style: { margin: 0, fontSize: "11px", color: "var(--text2)" }, text: it.grants }),
+      installedN ? el("span.chip", { style: { fontSize: "9px", color: "var(--success)", borderColor: "var(--success)" } }, "installed ×" + installedN) : null
+    ]);
+  }
   function itemCard(it, ch, mode) {
     var id = mode + "-" + it.name, open = !!_open[id];
     var owned = (ch.equipment || []).find(function (e) { return e.name === it.name; });
@@ -314,6 +343,7 @@ EN.inventoryView = (function () {
     ]);
     return el("div.feature", { style: { borderLeftColor: LEGAL_COLOR[it.legality] || "var(--border2)" } }, [
       head, info,
+      it.benchPart ? partInfoLine(ch, it) : (mode !== "mkt" ? installedPartsLine(ch, it) : null),
       open && it.desc ? el("p", { style: { marginTop: "8px" }, text: it.desc }) : null,
       open && it.type ? el("p.help", { style: { margin: "4px 0 0", color: "var(--text2)" }, text: "Type: " + it.type + (it.upkeep ? " · Leased: 𝒢0 buy-in, " + fmtG(it.upkeep) + "/wk Upkeep" : "") + (it.nexus ? " · Nexus: " + it.nexus : "") }) : null,
       open && it.proficiency ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: "Proficiency: " + it.proficiency + (it.signature ? " · Signature weapon (0 customization slots)" : "") }) : null,
@@ -686,6 +716,22 @@ EN.inventoryView = (function () {
         { label: "Warding Foci", intro: ai["Warding Focus"], items: byGroup(armorItems, "Warding Focus") }
       ] });
     }
+    // Weapon Parts: Mods + Accessories for the Ballistics Bench
+    if (WP().parts && WP().parts.length) {
+      var allParts = partItems();
+      var slotOrder = (WP().slots || []).map(function (s) { return s.key; });
+      var partsByCat = function (catKey) {
+        return allParts.filter(function (p) { return p.partCategory === catKey; })
+          .sort(function (a, b) { return (slotOrder.indexOf(a.partSlot) - slotOrder.indexOf(b.partSlot)) || a.name.localeCompare(b.name); });
+      };
+      cats.push({ key: "parts", title: "Mods & Accessories", short: "PARTS",
+        intro: (WP().rules ? WP().rules.install + " " + WP().rules.legality : "") + " Buy a Part here, then install it from the Workbench (Ballistics Bench).",
+        subs: [
+          { label: "Melee Parts", intro: "Edges, heads, cores, hilts, and locks worked into a melee weapon.", items: partsByCat("melee") },
+          { label: "Firearm Parts", intro: "Optics, barrels, receivers, stocks, and muzzle gear. Bows also draw Targeting, Handling, and Utility from here.", items: partsByCat("ranged") },
+          { label: "Bowfire Parts", intro: "Limbs and cams for bows and crossbows.", items: partsByCat("bowfire") }
+        ] });
+    }
     var T = g.tools;
     if (T && T.buckets) {
       var SHORT = { kits: "KITS", devices: "DEVICES", consumables: "CONSUMABLES", flow: "FLOW", rigs: "RIGS", ciphers: "CIPHERS" };
@@ -853,6 +899,201 @@ EN.inventoryView = (function () {
       blurb: "Wrench on rides: engines, plating, and weapon mounts for everything from a courier bike to a mech.",
       handles: "Ground / Aerial / Marine Vehicles · Industrial / Mechs · vehicle upgrades & mounts" }
   ];
+  /* ============================ BALLISTICS BENCH ============================
+     Weapon Customization: install Parts (Mods + Accessories) into a weapon's
+     five slots, capped by Slot Count, gated by Fits, with legality aggregated to
+     the strictest tag. Loadout persists on ch.weaponParts[weaponName]. */
+  var WP = function () { return EN.weaponParts || {}; };
+  function isBowGroup(g) { return g === "Bowfire"; }
+  function isMeleeGroup(g) { return g === "Simple" || g === "Martial"; }
+  function isFirearmGroup(g) { return ["Sidearm", "Longarm", "Heavy", "Launcher", "Thrown"].indexOf(g) !== -1; }
+  function weaponCategory(it) { return it.signature ? "signature" : isBowGroup(it.group) ? "bowfire" : isMeleeGroup(it.group) ? "melee" : "ranged"; }
+  function ownedWeapons(ch) {
+    var seen = {};
+    return (ch.equipment || []).filter(function (e) { return e.qty > 0; })
+      .map(function (e) { return findItem(e.name); })
+      .filter(function (it) { return it && isWeapon(it) && !seen[it.name] && (seen[it.name] = 1); });
+  }
+  function weaponLoadout(ch, name) {
+    var wp = (ch.weaponParts || {})[name] || {};
+    return { _profile: wp._profile || "auto", targeting: wp.targeting || null, output: wp.output || null,
+             core: wp.core || null, handling: wp.handling || null, utility: (wp.utility || []).slice() };
+  }
+  function setLoadout(name, mut) {
+    store.update(function (c) {
+      c.weaponParts = c.weaponParts || {};
+      var wp = c.weaponParts[name] || { _profile: "auto", targeting: null, output: null, core: null, handling: null, utility: [] };
+      mut(wp);
+      c.weaponParts[name] = wp;
+    });
+  }
+  function slotCountFor(it, lo) {
+    if (it.signature) return 0;
+    var prof = (WP().profiles || []).find(function (p) { return p.key === lo._profile; });
+    if (prof && prof.count != null) return prof.count;
+    var byG = WP().slotCountByGroup || {};
+    return byG[it.group] != null ? byG[it.group] : 4;
+  }
+  function partFits(part, it) {
+    var g = it.group, traits = it.traits || [], name = (it.name || "").toLowerCase(), dmg = (it.damage || "").toLowerCase();
+    function hasTrait(t) { return traits.some(function (x) { return x.toLowerCase().indexOf(t.toLowerCase()) !== -1; }); }
+    switch (part.fits) {
+      case "Any": return true;
+      case "Any Melee": return isMeleeGroup(g);
+      case "Any Ranged": return isFirearmGroup(g) || isBowGroup(g);
+      case "Any Firearm": return isFirearmGroup(g);
+      case "Any bow": return isBowGroup(g);
+      case "Blades": return isMeleeGroup(g) && (/slashing|piercing/.test(dmg) || hasTrait("Blade"));
+      case "Shotgun": return /shotgun/.test(name) || hasTrait("Spread");
+      case "Longarm": return g === "Longarm" || g === "Heavy";
+      case "Sidearm": return g === "Sidearm";
+      case "Semi-Auto Firearm": return isFirearmGroup(g) && hasTrait("Semi-Auto");
+      case "Compound": return isBowGroup(g) && /compound/.test(name);
+      case "Crossbow": return isBowGroup(g) && /crossbow/.test(name);
+      default: return false;
+    }
+  }
+  function allInstalledKeys(lo) {
+    return ["targeting", "output", "core", "handling"].map(function (s) { return lo[s]; }).filter(Boolean).concat(lo.utility || []);
+  }
+  function installedCount(lo) { return allInstalledKeys(lo).length; }
+  function aggregateLegality(it, lo) {
+    var order = WP().legalityOrder || ["Legal", "Licensed", "Restricted", "Contraband"];
+    var worst = it.legality || "Legal";
+    allInstalledKeys(lo).forEach(function (k) { var p = WP().byKey[k]; if (p && order.indexOf(p.legality) > order.indexOf(worst)) worst = p.legality; });
+    return worst;
+  }
+  // (legality chip colors reuse the module-level LEGAL_COLOR defined near the top)
+  var RARITY_COLOR = { Common: "var(--text3)", Uncommon: "var(--accent)", Rare: "var(--flow)" };
+  function tagChip(text, color) { return el("span.chip", { style: { fontSize: "9px", color: color, borderColor: color } }, text); }
+  function fittingParts(it, slotKey) { return (WP().parts || []).filter(function (p) { return p.slot === slotKey && partFits(p, it); }); }
+  // Parts as buyable / ownable inventory items so they sell in the gray market and
+  // live in the stash. `partSlot` (not `slot`) so the card does not draw a body-slot chip.
+  function partAsItem(p) {
+    return { name: p.name, price: p.price, legality: p.legality, availability: p.rarity, desc: p.effect,
+             benchPart: true, partKey: p.key, partType: p.partType, partSlot: p.slot, fits: p.fits, grants: p.grants, partCategory: p.category };
+  }
+  function partItems() { return (WP().parts || []).map(partAsItem); }
+  function ownedQtyOf(ch, name) { var e = (ch.equipment || []).find(function (x) { return x.name === name; }); return e ? (e.qty || 0) : 0; }
+  function installedPartCount(ch, partKey) {
+    var n = 0, wp = ch.weaponParts || {};
+    Object.keys(wp).forEach(function (wn) {
+      var lo = wp[wn];
+      ["targeting", "output", "core", "handling"].forEach(function (s) { if (lo[s] === partKey) n++; });
+      (lo.utility || []).forEach(function (k) { if (k === partKey) n++; });
+    });
+    return n;
+  }
+  function availablePartQty(ch, p) { return ownedQtyOf(ch, p.name) - installedPartCount(ch, p.key); }
+  function tryInstall(it, lo, slotKey, key) {
+    var part = WP().byKey[key]; if (!part) return;
+    if (availablePartQty(store.active(), part) <= 0) { toast("You do not own a free " + part.name + ". Buy it in the gray market first."); return; }
+    if (installedCount(lo) >= slotCountFor(it, lo)) { toast("Slot Count is full. Over-Engineering past it makes this a Prototype-tier Project with a Mandatory Flaw; track it as a Project."); return; }
+    var installed = allInstalledKeys(lo);
+    var conflictKey = installed.find(function (k) { var ip = WP().byKey[k]; return (part.excludes || []).indexOf(k) !== -1 || (ip && (ip.excludes || []).indexOf(key) !== -1); });
+    if (conflictKey) { toast(part.name + " cannot share a build with " + (WP().byKey[conflictKey] || {}).name + "."); return; }
+    setLoadout(it.name, function (wp) {
+      if (slotKey === "utility") { wp.utility = wp.utility || []; if (wp.utility.length < 2) wp.utility.push(key); }
+      else wp[slotKey] = key;
+    });
+    toast(part.name + (part.partType === "Mod" ? " worked in (Mod: needs a rest + kit)" : " snapped on") + " · " + it.name);
+  }
+  function removePart(name, slotKey, key) {
+    setLoadout(name, function (wp) {
+      if (slotKey === "utility") wp.utility = (wp.utility || []).filter(function (k) { return k !== key; });
+      else wp[slotKey] = null;
+    });
+  }
+  function slotCard(ch, it, lo, sd) {
+    var slotKey = sd.key;
+    var installed = slotKey === "utility" ? (lo.utility || []) : (lo[slotKey] ? [lo[slotKey]] : []);
+    var cat = weaponCategory(it);
+    var subLabel = cat === "melee" ? sd.melee : cat === "bowfire" ? sd.bow : sd.firearm;
+    var kids = [el("div.row.between.wrap", { style: { alignItems: "baseline", marginBottom: "4px" } }, [
+      el("span", { style: { fontFamily: "var(--disp)", fontSize: "10px", letterSpacing: ".12em", color: "var(--text3)" }, text: sd.name.toUpperCase() + (sd.capacity ? " · holds " + sd.capacity : "") }),
+      el("span.help", { style: { margin: 0, fontSize: "10px" }, text: subLabel })
+    ])];
+    if (subLabel === "N/A") { kids.push(el("p.help", { style: { margin: 0, fontSize: "11px" }, text: "Not applicable to this weapon." })); return el("div", { style: { padding: "8px 10px", border: "1px solid var(--border2)", borderRadius: "4px", background: "rgba(0,0,0,.12)", opacity: .55 } }, kids); }
+    installed.forEach(function (key) {
+      var p = WP().byKey[key]; if (!p) return;
+      kids.push(el("div.row.between.wrap", { style: { gap: "8px", alignItems: "center", padding: "5px 0", borderTop: "1px solid rgba(35,48,68,.4)" } }, [
+        el("div", { style: { flex: "1 1 160px", minWidth: 0 } }, [
+          el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } }, [
+            el("span", { style: { fontWeight: 600, fontSize: "12.5px" }, text: p.name }),
+            tagChip(p.partType, p.partType === "Mod" ? "var(--ember)" : "var(--text2)"),
+            tagChip(p.legality, LEGAL_COLOR[p.legality]), tagChip(p.rarity, RARITY_COLOR[p.rarity])
+          ]),
+          el("p.help", { style: { margin: "2px 0 0", fontSize: "11px" }, text: p.grants })
+        ]),
+        el("button.btn.sm", { title: "Remove " + p.name, style: { color: "var(--text3)" }, onclick: function () { removePart(it.name, slotKey, key); } }, "✕")
+      ]));
+    });
+    var full = slotKey === "utility" ? installed.length >= 2 : installed.length >= 1;
+    var capReached = installedCount(lo) >= slotCountFor(it, lo);
+    var fitting = fittingParts(it, slotKey).filter(function (p) { return installed.indexOf(p.key) === -1; });
+    var ownedOpts = fitting.filter(function (p) { return availablePartQty(ch, p) > 0; });
+    if (full) {
+      kids.push(el("p.help", { style: { margin: "5px 0 0", fontSize: "10.5px", color: "var(--text4)" }, text: slotKey === "utility" ? "Both Utility Parts fitted." : "Slot filled." }));
+    } else if (capReached) {
+      kids.push(el("p.help", { style: { margin: "5px 0 0", fontSize: "10.5px", color: "var(--warn)" }, text: "Slot Count full; remove a Part or Over-Engineer (Prototype Project)." }));
+    } else if (ownedOpts.length) {
+      kids.push(el("select", { style: { marginTop: "5px", fontSize: "11px", width: "auto", maxWidth: "100%" }, onchange: function (e) { var k = e.target.value; e.target.value = ""; if (k) tryInstall(it, lo, slotKey, k); } },
+        [el("option", { value: "", text: "+ install from stash" })].concat(ownedOpts.map(function (p) {
+          var av = availablePartQty(ch, p);
+          return el("option", { value: p.key, text: p.name + " · " + p.partType + (av > 1 ? " ×" + av : "") });
+        }))));
+    } else if (fitting.length) {
+      kids.push(el("p.help", { style: { margin: "5px 0 0", fontSize: "10.5px", color: "var(--text3)" }, text: "You own no Parts for this slot. Buy Mods & Accessories in the gray market." }));
+    } else {
+      kids.push(el("p.help", { style: { margin: "5px 0 0", fontSize: "10.5px", color: "var(--text4)" }, text: "No Parts fit this weapon's " + sd.name + " slot." }));
+    }
+    return el("div", { style: { padding: "8px 10px", border: "1px solid var(--border2)", borderRadius: "4px", background: "rgba(0,0,0,.12)" } }, kids);
+  }
+  function ballisticsBench(ch) {
+    var out = [];
+    var weapons = ownedWeapons(ch);
+    if (!weapons.length) {
+      out.push(el("div.muted-box", { style: { padding: "28px 20px", textAlign: "center", borderColor: "var(--ember)" },
+        html: "<div style='font-family:var(--disp);font-size:13px;letter-spacing:.18em;color:var(--ember)'>⊚ NO WEAPONS ON THE BENCH</div><div style='font-size:12px;color:var(--text3);margin-top:8px'>Acquire a weapon in the gray market or your stash, then bring it here to customize.</div>" }));
+      return out;
+    }
+    if (!_benchWeapon || !weapons.some(function (w) { return w.name === _benchWeapon; })) _benchWeapon = weapons[0].name;
+    out.push(el("div.row.wrap", { style: { gap: "6px", marginBottom: "10px", alignItems: "center" } },
+      [el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".1em", marginRight: "4px" }, text: "ON THE BENCH" })].concat(
+        weapons.map(function (w) {
+          var on = _benchWeapon === w.name;
+          return el("button.btn.sm" + (on ? ".primary" : ""), { onclick: function () { _benchWeapon = w.name; EN.app.render(); } }, w.name);
+        }))));
+    var it = weapons.find(function (w) { return w.name === _benchWeapon; }) || weapons[0];
+    var lo = weaponLoadout(ch, it.name);
+
+    if (it.signature) {
+      out.push(EN.ui.panel(it.name, it.group.toUpperCase() + " · SIGNATURE", [
+        el("p.help", { style: { margin: 0 }, text: "Signature weapon: 0 customization slots. It arrives complete, with fixed Parts and a built-in property you cannot replicate with bolt-ons. Its power lives in the wielder, not the rails." })
+      ], { corners: true }));
+      return out;
+    }
+
+    var count = installedCount(lo), max = slotCountFor(it, lo), legal = aggregateLegality(it, lo);
+    var profSel = el("select", { style: { fontSize: "11px", width: "auto" }, onchange: function (e) { var v = e.target.value; setLoadout(it.name, function (wp) { wp._profile = v; }); } },
+      (WP().profiles || []).map(function (p) { return el("option", { value: p.key, selected: lo._profile === p.key, text: p.name + (p.count != null ? " (" + p.count + ")" : "") }); }));
+    var header = el("div.row.between.wrap", { style: { gap: "10px", alignItems: "center", marginBottom: "10px" } }, [
+      el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
+        el("span.mono", { style: { fontSize: "18px", color: count > max ? "var(--danger)" : "var(--ember)" }, html: count + " <span style='font-size:12px;color:var(--text3)'>/ " + max + " slots</span>" }),
+        tagChip(legal, LEGAL_COLOR[legal]),
+        el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: legal === (it.legality || "Legal") ? "as a scanner reads it" : "scanner reads it as " + legal + " (was " + (it.legality || "Legal") + ")" })
+      ]),
+      el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } }, [el("span.help", { style: { margin: 0, fontSize: "10px" }, text: "PROFILE" }), profSel])
+    ]);
+    var grid = el("div.grid2", { style: { gap: "10px" } }, (WP().slots || []).map(function (sd) { return slotCard(ch, it, lo, sd); }));
+    out.push(EN.ui.panel(it.name, it.group.toUpperCase() + " · " + (it.damage || ""), [
+      el("p.help", { style: { margin: "0 0 8px", fontSize: "11.5px" }, text: "One Part per slot (Utility holds two). Accessories snap on anytime; Mods are bench work on a rest with a kit. The strictest legality on the build is what a scanner reports." }),
+      header, grid,
+      el("p.help", { style: { margin: "10px 0 0", fontSize: "10.5px", color: "var(--text3)" }, text: WP().rules ? WP().rules.dieStep + " " + WP().rules.stabilized : "" })
+    ], { corners: true }));
+    return out;
+  }
+
   function workbenchView(ch) {
     var out = [];
     out.push(el("div.row.wrap", { style: { gap: "6px", marginBottom: "12px" } }, BENCHES.map(function (b) {
@@ -861,6 +1102,11 @@ EN.inventoryView = (function () {
         onclick: function () { _bench = b.key; EN.app.render(); } }, b.icon + " " + b.label);
     })));
     var b = BENCHES.find(function (x) { return x.key === _bench; }) || BENCHES[0];
+    if (_bench === "ballistics") {
+      out.push(el("p.help", { style: { margin: "0 0 10px", maxWidth: "720px" }, text: b.blurb }));
+      ballisticsBench(ch).forEach(function (n) { out.push(n); });
+      return out;
+    }
     var body = [
       el("p.help", { style: { margin: "0 0 10px", maxWidth: "720px" }, text: b.blurb }),
       el("div.row.wrap", { style: { gap: "6px", marginBottom: "4px", alignItems: "center" } },

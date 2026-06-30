@@ -1296,6 +1296,7 @@ EN.builder = (function () {
       var summary = cur ? (
         cur.type === "attr" ? attrUpgradeSummary(cur) :
         cur.type === "evolution" ? (cur.evolution || "Evolution, choose") :
+        cur.type === "talentUpgrade" ? (cur.talent ? "Upgrade: " + talentName(cur.talent) : "Talent Upgrade, choose") :
         (cur.talent ? talentName(cur.talent) : "Talent, choose")
       ) : "Unspent";
       blocks.push(collapsibleEntry("uu-" + L, {
@@ -1337,10 +1338,13 @@ EN.builder = (function () {
     wrap.appendChild(el("div.row.wrap", { style: { gap: "8px", marginBottom: "8px" } }, [
       el("button.btn.sm" + (cur && cur.type === "attr" ? ".primary" : ""), { onclick: function () { store.update(function (c) { var p = c.universalUpgrades[L]; var a = (p && p.attrs) || ["", ""]; c.universalUpgrades[L] = { type: "attr", attrs: [a[0] || "", a[1] || ""] }; }); } }, "+2 ATTRIBUTES"),
       el("button.btn.sm" + (cur && cur.type === "talent" ? ".primary" : ""), { onclick: function () { store.update(function (c) { var p = c.universalUpgrades[L]; c.universalUpgrades[L] = { type: "talent", talent: (p && p.talent) || null }; }); } }, "GAIN TALENT"),
-      el("button.btn.sm" + (cur && cur.type === "evolution" ? ".primary" : ""), { onclick: function () { store.update(function (c) { var p = c.universalUpgrades[L]; c.universalUpgrades[L] = { type: "evolution", evolution: (p && p.evolution) || null }; }); } }, "GAIN EVOLUTION")
+      el("button.btn.sm" + (cur && cur.type === "evolution" ? ".primary" : ""), { onclick: function () { store.update(function (c) { var p = c.universalUpgrades[L]; c.universalUpgrades[L] = { type: "evolution", evolution: (p && p.evolution) || null }; }); } }, "GAIN EVOLUTION"),
+      Number(L) >= 6 ? el("button.btn.sm" + (cur && cur.type === "talentUpgrade" ? ".primary" : ""), { title: "Spend this slot to unlock the Upgrade of a Talent you already have", onclick: function () { store.update(function (c) { var p = c.universalUpgrades[L]; c.universalUpgrades[L] = { type: "talentUpgrade", talent: (p && p.talent) || null }; }); } }, "UPGRADE TALENT") : null
     ]));
     if (cur && cur.type === "evolution") {
       wrap.appendChild(evolutionSelect(ch, cur.evolution, function (name) { store.update(function (c) { c.universalUpgrades[L] = { type: "evolution", evolution: name }; }); }));
+    } else if (cur && cur.type === "talentUpgrade") {
+      wrap.appendChild(talentUpgradePicker(ch, L, cur.talent));
     } else if (cur && cur.type === "attr") {
       var a = cur.attrs || ["", ""];
       function attrSelect(idx) {
@@ -1455,6 +1459,37 @@ EN.builder = (function () {
       el("h4", null, [document.createTextNode(t.name), el("span.src", { text: t.category || "" })]),
       t.requirements ? el("p.help", { style: { color: "var(--warn)" }, text: "Requires: " + t.requirements }) : null,
       renderText(t.text)]);
+    return el("div", null, [sel, info]);
+  }
+  // Level 6+ slot: spend it to unlock the Upgrade of a Talent you already possess.
+  function uuTalentsOwned(ch) {
+    var u = ch.universalUpgrades || {}, o = [];
+    Object.keys(u).forEach(function (k) { var x = u[k]; if (x && x.type === "talent" && x.talent) o.push(x.talent); });
+    return o;
+  }
+  function uuUpgradesTaken(ch, exceptL) {
+    var u = ch.universalUpgrades || {}, o = [];
+    Object.keys(u).forEach(function (k) { if (String(k) === String(exceptL)) return; var x = u[k]; if (x && x.type === "talentUpgrade" && x.talent) o.push(x.talent); });
+    return o;
+  }
+  function talentUpgradePicker(ch, L, current) {
+    var owned = uuTalentsOwned(ch), taken = uuUpgradesTaken(ch, L);
+    var eligible = (EN.talents || []).filter(function (t) {
+      return owned.indexOf(t.key) !== -1 && /\*\*Upgrade/.test(t.text || "") && (taken.indexOf(t.key) === -1 || t.key === current);
+    });
+    var sel = el("select", { onchange: function (e) { store.update(function (c) { c.universalUpgrades[L] = { type: "talentUpgrade", talent: e.target.value || null }; }); } },
+      [el("option", { value: "", text: "- upgrade a Talent you have -" })].concat(
+        eligible.map(function (t) { return el("option", { value: t.key, selected: current === t.key, text: t.name }); })));
+    var info;
+    if (!owned.length) info = el("p.help", { style: { color: "var(--warn)" }, text: "Take a Talent in an earlier slot first; an Upgrade deepens a Talent you already possess." });
+    else if (!eligible.length) info = el("p.help", { style: { color: "var(--warn)" }, text: "No upgradeable Talents available; you need one you have not already upgraded that lists an Upgrade." });
+    else {
+      var t = (EN.talents || []).find(function (x) { return x.key === current; });
+      info = t ? el("div.feature", { style: { marginTop: "8px" } }, [
+        el("h4", null, [document.createTextNode(t.name + " · Upgrade"), el("span.src", { text: t.category || "" })]),
+        renderText(t.text)
+      ]) : null;
+    }
     return el("div", null, [sel, info]);
   }
 
@@ -1651,6 +1686,7 @@ EN.builder = (function () {
         if (u.attrs) { if (!(u.attrs[0] && u.attrs[1])) return false; }
         else if (!u.attr) return false;   // legacy single-attr shape
       } else if (u.type === "talent") { if (!u.talent) return false; }
+      else if (u.type === "talentUpgrade") { if (!u.talent) return false; }
       else if (u.type === "evolution") { if (!u.evolution) return false; }
       else return false;
     }
