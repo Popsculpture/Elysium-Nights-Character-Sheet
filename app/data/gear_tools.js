@@ -75,7 +75,16 @@ EN.gearCatalog.tools = {
   ],
 
   items: [
-    /* ============================== SKILL KITS ============================== */
+    /* ============================== SKILL KITS ==============================
+       Numeric pool fields (read by the Fabrication bench's Dice Pool math):
+         edgeDice           +N Edge Dice on out-of-combat Dice Pools, per the
+                            kit's own text; edgeNote carries the printed scope
+         requiresProficient the Edge comes from the kit's Proficient Use and
+                            needs the matching Tool Proficiency
+         requiredToAttempt  a hard gate; the work is usually impossible without
+                            the kit (no Edge bonus of its own)
+       Kits whose text only prevents Snag or enables an attempt carry no
+       edgeDice; that friction is handled by the Snag side of the pool. */
     /* ---- Medical & Care (Medical Tools · Medtech) ---- */
     { name: "Basic Medkit", bucket: "kits", group: "Medical & Care", price: 50, availability: "Common", legality: "Legal",
       category: "Medical Tools", skill: "Medtech", effect: "Treats Wounds and Fatigue at full effect.",
@@ -84,6 +93,7 @@ EN.gearCatalog.tools = {
       proficient: "Once per scene, ignore Snag (or a Snag Die) on one Medtech check when the penalty comes only from poor conditions: rain, darkness, cramped quarters, a shaking vehicle. Using this kit also lets you reach a critical success result." },
     { name: "Advanced Medkit", bucket: "kits", group: "Medical & Care", price: 250, availability: "Uncommon", legality: "Licensed",
       category: "Medical Tools", skill: "Medtech", effect: "+2 (or +1 Edge Die) on Medtech. Enables downtime field surgery.",
+      edgeDice: 1, edgeNote: "Treat Wounds / Treat Fatigue and related Medtech work",
       desc: "A full trauma package: vitals tracker, autoinjectors, and a portable surgical field.",
       basic: "Grants +2 on in-combat Medtech d20 checks (or +1 Edge Die on out-of-combat Dice Pools) to Treat Wounds or Treat Fatigue. Treat Wounds with this kit can reach a critical success result.",
       proficient: "You can attempt field surgery and implant maintenance in downtime. With at least 10 minutes and a reasonably stable workspace, gain Edge on one related in-combat Medtech d20 check (or +1 Edge Die on an out-of-combat Dice Pool)." },
@@ -94,6 +104,9 @@ EN.gearCatalog.tools = {
       proficient: "Once per scene when you Stabilize a Target, you can also clear Bleeding or a similar minor ongoing wound effect." },
     { name: "Surgical Instruments", bucket: "kits", group: "Medical & Care", price: 500, availability: "Rare", legality: "Restricted",
       category: "Medical Tools", skill: "Medtech", effect: "+2 on Medtech. Enables major cybernetic and invasive procedures.",
+      // "+2 on the primary out-of-combat Medtech Dice Pool" read as +2 Edge Dice:
+      // pools have no flat modifiers, and the Edge build table prices Tools or Gear in dice (+1 to 3)
+      edgeDice: 2, requiresProficient: true, edgeNote: "invasive or surgical procedures in a clean workspace",
       desc: "Precision tools for invasive work and delicate cybernetic extraction.",
       basic: "Enables planned invasive work in downtime: surgery, deep extraction, major cybernetic servicing. Without them, these procedures are usually impossible.",
       proficient: "Requires Proficiency and Medtech (Expertise). In a clean workspace, gain +2 on the primary out-of-combat Medtech Dice Pool (or in-combat d20 check) for the procedure, and attempt outcomes that would otherwise demand a hospital-grade facility." },
@@ -106,16 +119,19 @@ EN.gearCatalog.tools = {
       proficient: "Once per scene, complete a quick patch that would normally take minutes, resolving it as a single focused in-combat d20 check instead of an out-of-combat Dice Pool, with no added Snag from time pressure." },
     { name: "Field Repair Case", bucket: "kits", group: "Technical & Hardware", price: 180, availability: "Uncommon", legality: "Licensed",
       category: "Engineering Tools", skill: "Engineering", effect: "+1 Edge Die on heavy repairs. Safe hot-fixes on powered systems.",
+      edgeDice: 1, edgeNote: "repairs to vehicles, exoframes, or heavy weapons",
       desc: "Heavy tools for heavy maintenance: torque drivers, a coolant rig, and a stack of patch plates.",
       basic: "Grants +1 Edge Die on Engineering Dice Pools to repair vehicles, exoframes, or heavy weapons outside combat. Repairs with this case can reach a critical success result.",
       proficient: "You can safely run hot-fixes on powered systems. On a success, you avoid the usual rushed-work complication (no extra noise, no safety incident) unless the GM calls the situation truly unstable." },
     { name: "Portable Fabrication Rig", bucket: "kits", group: "Technical & Hardware", price: 350, availability: "Uncommon", legality: "Licensed",
       category: "Engineering Tools", skill: "Engineering", effect: "Crafts simple parts, or purpose-built components granting +1 Edge Die.",
+      edgeDice: 1, requiresProficient: true, edgeNote: "with a purpose-built fabricated component (needs Engineering Expertise)",
       desc: "A compact mobile workshop that prints parts and brackets on demand.",
       basic: "Lets you make simple parts, brackets, plates, and replacements in downtime when materials are available.",
       proficient: "With Proficiency and Engineering (Expertise), fabricate a purpose-built component that gives a narrow advantage, usually +1 Edge Die on the next related noncombat Dice Pool involving that repaired or modified system." },
     { name: "Demolition Kit", bucket: "kits", group: "Technical & Hardware", price: 320, availability: "Rare", legality: "Restricted",
       category: "Engineering Tools", skill: "Engineering", effect: "Safe explosives handling. Edge (or +1 Edge Die) on clean placement and disarm.",
+      edgeDice: 1, requiresProficient: true, edgeNote: "placing or disarming explosives",
       desc: "Initiators, adhesive charges, and the steady hands to place them where they count.",
       basic: "Enables safe handling of breaching charges, adhesive explosives, and initiators. Without kit support, the GM may apply Snag (or +1 Snag Die) or refuse the attempt for safety.",
       proficient: "Run advanced functions like shaped placement, low-signature initiation, and controlled disarm. With at least 1 minute to work, gain Edge on one in-combat Engineering d20 check (or +1 Edge Die on an out-of-combat Dice Pool) to place or disable explosives cleanly." },
@@ -126,11 +142,13 @@ EN.gearCatalog.tools = {
       proficient: "Once per scene, create a temporary physical access point on an adjacent device, conduit, or sealed panel with no usable port. This always leaves visible cosmetic damage and obvious tamper marks, success or failure." },
     { name: "Codebreaker Suite", bucket: "kits", group: "Technical & Hardware", price: 320, availability: "Rare", legality: "Restricted",
       category: "Systems Tools", skill: "Systems", effect: "Core hacking software. Downgrades a hack failure once per scene.",
+      requiredToAttempt: true,
       desc: "The installed software stack that roots a Smartdeck and gives it the executables intrusion work demands.",
       basic: "Required for most Hacks and Quick Hacks. Without it, hacking procedures and executables are usually impossible, at GM discretion. Also enables decrypt, deleted-data recovery, and hostile-code analysis at full effect.",
       proficient: "Run deeper modules: counter-intrusion hygiene, trace minimization, hardened recovery. Once per scene, when you fail an in-combat Systems d20 check (or out-of-combat Dice Pool) made with the suite, downgrade one consequence the GM would apply, such as reducing Noise, Trace, or log severity." },
     { name: "Signal Trace Scanner", bucket: "kits", group: "Technical & Hardware", price: 200, availability: "Uncommon", legality: "Licensed",
       category: "Systems Tools", skill: "Systems, Awareness", effect: "Sweeps for pings. Edge (or +1 Edge Die) to map, track, or triangulate signals.",
+      edgeDice: 1, requiresProficient: true, edgeNote: "locating, tracking, or triangulating signals",
       desc: "A handheld sweep for pings, hidden repeaters, spoof beacons, and ghost devices.",
       basic: "A handheld sweep for active and dormant signals in the area you scan.",
       proficient: "Map a signal's direction and hop pattern. When you track a stationary, moving, or relayed signal, gain Edge on the in-combat d20 check (or +1 Edge Die on an out-of-combat Dice Pool) to locate it, and Edge (or +1 Edge Die) again on a follow-up check to pursue it, triangulate it, or identify the source node." },
@@ -155,11 +173,13 @@ EN.gearCatalog.tools = {
     /* ---- Investigation & Forensics (Investigation Tools) ---- */
     { name: "Forensics Kit", bucket: "kits", group: "Investigation & Forensics", price: 180, availability: "Uncommon", legality: "Licensed",
       category: "Investigation Tools", skill: "Investigation, Medtech", effect: "+1 Edge Die to reconstruct events or match evidence. Resists tampering.",
+      edgeDice: 1, edgeNote: "reconstruction, residue, or ballistics with 10+ minutes",
       desc: "Reagents, lifting film, a spectro pad, and the patience to read a room after the fact.",
       basic: "Grants +1 Edge Die on out-of-combat Investigation Dice Pools to reconstruct events, identify residue, or match ballistics when you can spend at least 10 minutes.",
       proficient: "Preserve and process evidence to a higher standard. Your evidence is harder to dispute or spoof, and opposing attempts to contaminate or misread it usually roll with Snag (or +1 Snag Die)." },
     { name: "Survey Scanner", bucket: "kits", group: "Investigation & Forensics", price: 200, availability: "Uncommon", legality: "Licensed",
       category: "Investigation Tools", skill: "Investigation, Engineering", effect: "Edge (or +1 Edge Die) to find hidden layout and compartments within 6 spaces.",
+      edgeDice: 1, edgeNote: "layout, hidden compartments, or structural weakness nearby",
       desc: "A handheld unit that maps hidden compartments, structural flaws, and the cabling behind the wall.",
       basic: "Grants Edge on in-combat Investigation d20 checks (or +1 Edge Die on out-of-combat Dice Pools) tied to mechanical layout, hidden compartments, or structural weakness within about 6 spaces.",
       proficient: "Run a reconstruction pass. With at least 10 minutes, ask the GM for one additional concrete detail the scan would reasonably reveal: an entry point, a hidden void, a routed cable." },
@@ -215,21 +235,25 @@ EN.gearCatalog.tools = {
     /* ---- Ritual Implements ---- */
     { name: "Rite Calibration Kit", bucket: "kits", group: "Ritual Implements", price: 150, availability: "Uncommon", legality: "Licensed",
       category: "Ritual Implements", skill: "Esoterica", effect: "Controlled ritual setup. Edge (or +1 Edge Die) to stabilize rites for a scene.",
+      edgeDice: 1, requiresProficient: true, edgeNote: "stabilized rites after 10 minutes of prep",
       desc: "Candles, inks, threads, resonance weights, and measuring plates for a ritual that holds its shape.",
       basic: "Required for controlled ritual setups. Without it, attempts roll with Snag on in-combat d20 checks (or +1 Snag Die on out-of-combat Dice Pools), or have reduced effect at GM discretion.",
       proficient: "Stabilize and calibrate rites. With at least 10 minutes to prep, gain Edge on in-combat Esoterica d20 checks (or +1 Edge Die on out-of-combat Dice Pools) for the next scene to reduce interference, prevent contamination, and keep the ritual under control." },
     { name: "Flow Survey Pack", bucket: "kits", group: "Ritual Implements", price: 220, availability: "Rare", legality: "Restricted",
       category: "Ritual Implements", skill: "Awareness, Esoterica", effect: "Edge (or +1 Edge Die) to detect Flow anomalies within 12 spaces.",
+      edgeDice: 1, edgeNote: "detecting Flow anomalies, wards, or resonance",
       desc: "Sensitive measurement gear that maps and classifies local Flow anomalies before you walk into one.",
       basic: "Grants Edge on in-combat Awareness d20 checks (or +1 Edge Die on out-of-combat Dice Pools) to detect Flow anomalies, wards, or lingering resonance within 12 spaces when you have time to sweep.",
       proficient: "Classify what you find. After a successful sweep, ask the GM for one additional practical detail: directionality, age, intensity, or likely trigger conditions." },
     { name: "Flow Artificer Kit", bucket: "kits", group: "Ritual Implements", price: 200, availability: "Rare", legality: "Restricted",
       category: "Ritual Implements", skill: "Engineering, Esoterica", effect: "Tunes and repairs mystech. Edge (or +1 Edge Die), and avoids messy side effects.",
+      edgeDice: 1, requiresProficient: true, edgeNote: "tuning or repairing a mystech device",
       desc: "The instruments required to tune and maintain mystech without making the resonance angry.",
       basic: "Required to repair or meaningfully modify mystech devices in the field. Without it, those in-combat d20 checks (or out-of-combat Dice Pools) roll with Snag (or +1 Snag Die), and some tasks are impossible.",
       proficient: "With Proficiency in Ritual Implements, run true tuning work. After at least 10 minutes, gain Edge on one in-combat Engineering or Esoterica d20 check (or +1 Edge Die on an out-of-combat Dice Pool) tied to that device, and on a success avoid the usual messy-resonance complication unless the GM flags the device as unstable." },
     { name: "Elemental Harness Rig", bucket: "kits", group: "Ritual Implements", price: 260, availability: "Rare", legality: "Restricted",
       category: "Ritual Implements", skill: "Esoterica, Engineering", effect: "Contains Flow entities. Edge (or +1 Edge Die) to secure Targets safely.",
+      edgeDice: 1, requiresProficient: true, edgeNote: "containing or binding a Flow entity",
       desc: "Heavy arcane restraints and anchors for binding a volatile Flow entity instead of destroying it.",
       basic: "Usually required to contain, bind, or stabilize a Flow entity or anomaly rather than break it.",
       proficient: "Run controlled containment. With at least 1 minute of prep, gain Edge on one in-combat d20 check (or +1 Edge Die on an out-of-combat Dice Pool) to secure the Target, and a simple failure does not automatically escalate into a breakout unless the GM calls it volatile." },

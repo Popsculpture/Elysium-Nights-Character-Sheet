@@ -892,8 +892,50 @@ EN.engine = (function () {
     };
   }
 
+  /* ---- Dice Pool mechanics ("Dicey Situations"), generic and reusable -----
+     Edge: up to 10 d10s; points past 10 sharpen d10s into d12s 1 for 1, to a
+     ceiling of ten d12 at 20+. Snag: up to 5 d10s; points 6-7 add d12s to a
+     7-die cap; further points sharpen the d10s, to seven d12 at 12+ (13+ same).
+     A die reads 6-9 as 1 success/failure and 10 or higher as 2. ---- */
+  function poolShape(color, points, d10, d12) {
+    var parts = [];
+    if (d10) parts.push(d10 + "d10");
+    if (d12) parts.push(d12 + "d12");
+    return { color: color, points: points, d10: d10, d12: d12, label: parts.join(" + ") || "no dice" };
+  }
+  function buildEdgePool(points) {
+    points = Math.max(0, Math.floor(points || 0));
+    var d10, d12;
+    if (points <= 10) { d10 = points; d12 = 0; }
+    else if (points >= 20) { d10 = 0; d12 = 10; }
+    else { d12 = points - 10; d10 = 10 - d12; }
+    return poolShape("edge", points, d10, d12);
+  }
+  function buildSnagPool(points) {
+    points = Math.max(0, Math.floor(points || 0));
+    var d10, d12;
+    if (points <= 5) { d10 = points; d12 = 0; }
+    else if (points <= 7) { d10 = 5; d12 = points - 5; }
+    else if (points >= 12) { d10 = 0; d12 = 7; }
+    else { d12 = points - 5; d10 = 7 - d12; }
+    return poolShape("snag", points, d10, d12);
+  }
+  function rollDicePool(pool) {
+    var rolls = [], total = 0;
+    function throwDie(sides) {
+      var v = 1 + Math.floor(Math.random() * sides);
+      var hits = v >= 10 ? 2 : v >= 6 ? 1 : 0;
+      total += hits;
+      rolls.push({ sides: sides, value: v, hits: hits });
+    }
+    for (var i = 0; i < (pool.d10 || 0); i++) throwDie(10);
+    for (var j = 0; j < (pool.d12 || 0); j++) throwDie(12);
+    return { pool: pool, rolls: rolls, total: total };
+  }
+
   return {
     derive: derive, mod: mod, caliber: caliber, fmtMod: fmtMod, clamp: clamp,
+    buildEdgePool: buildEdgePool, buildSnagPool: buildSnagPool, rollDicePool: rollDicePool,
     installedCyberware: installedCyberware, installedCyberBases: installedCyberBases,
     gambitList: gambitList, gambitsAllowed: gambitsAllowed,
     resourceAbilities: resourceAbilities, resourceKnowsAll: resourceKnowsAll,

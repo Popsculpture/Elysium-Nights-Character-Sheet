@@ -1278,8 +1278,41 @@ EN.inventoryView = (function () {
       if (!it || it.bucket !== "kits") return null;
       var cat = it.category || "";
       if (!cats[cat]) return null;
-      return { name: it.name, category: cat, skill: cats[cat], proficient: !!profs[cat], effect: it.effect || it.desc || "" };
+      return { name: it.name, category: cat, skill: cats[cat], proficient: !!profs[cat], effect: it.effect || it.desc || "",
+               edgeDice: it.edgeDice || 0, edgeNote: it.edgeNote || null, requiresProficient: !!it.requiresProficient, requiredToAttempt: !!it.requiredToAttempt };
     }).filter(Boolean);
+  }
+
+  /* ---- Dice Pool assembly for the bench: Edge from the character, kits, and
+     per-roll toggles; Snag from the Project's difficulty. Roll state (toggles,
+     last roll result) is transient, keyed by project id. ---- */
+  var _tbRoll = {};
+  function tbRollState(id) { return (_tbRoll[id] = _tbRoll[id] || { kitsOff: {}, prep: false, narrative: false, result: null }); }
+  // kits that can feed this skill's pool: matching skill, a real Edge grant, and
+  // the proficiency their text demands; rollState can toggle one off for a roll
+  function tbActiveKits(ch, skillName, rollState) {
+    return tbKits(ch).filter(function (k) {
+      return k.skill === skillName && k.edgeDice > 0 && (!k.requiresProficient || k.proficient) &&
+             !(rollState && rollState.kitsOff[k.name]);
+    });
+  }
+  function tbEdgeFor(ch, d, skillName, rollState) {
+    var s = tbSkill(d, skillName);
+    var ep = CRAFT().edgePointsFor(s, d.caliber, tbActiveKits(ch, skillName, rollState), rollState || {});
+    return { skill: s, points: ep.points, parts: ep.parts, pool: EN.engine.buildEdgePool(ep.points) };
+  }
+  function tbEdgeTip(e) {
+    return e.parts.length ? e.parts.map(function (p) { return "+" + p.value + "  " + p.label; }).join("\n") : "No Edge sources yet; train the skill or buy a kit.";
+  }
+  function tbSnagPts(p, skillEntry) {
+    var base = (p.snag != null) ? p.snag : (CRAFT().snagForTier[p.overEngineered ? "prototype" : p.tier] || 2);
+    return { base: base, untrained: (skillEntry && skillEntry.untrained) ? 1 : 0, total: base + ((skillEntry && skillEntry.untrained) ? 1 : 0) };
+  }
+  function tbSetSnag(id, n) {
+    tbSetProjects(function (list) {
+      var pp = list.find(function (x) { return x.id === id; });
+      if (pp) pp.snag = Math.max(0, Math.min(13, n));
+    });
   }
 
   function tbRecipeClass(it) {
@@ -1309,6 +1342,7 @@ EN.inventoryView = (function () {
       skill: spec.skill || "Engineering",
       tier: spec.tier || "standard",
       target: over ? Math.max(baseTarget, CRAFT().tier("prototype").target) : baseTarget,
+      snag: CRAFT().snagForTier[over ? "prototype" : (spec.tier || "standard")] || 2,
       progress: 0,
       materialCost: spec.materialCost || 0,
       materialsSecured: false,
@@ -1383,25 +1417,34 @@ EN.inventoryView = (function () {
     function skillRow(nm, big) {
       var s = tbSkill(d, nm);
       if (!s) return null;
+      var e = tbEdgeFor(ch, d, nm, null);
       var chips = [tbChip((s.tierShort || (s.tier || "untrained")).toUpperCase(), s.untrained ? "var(--text3)" : "var(--accent)", "Skill tier")];
-      if (s.focus) chips.push(tbChip("FOCUS +" + (d.caliber || 1) + " Edge", "var(--gold)", "Skill Focus: adds Caliber Edge Dice to Work Intervals, and your Caliber to emergency d20 fixes"));
-      if (s.specialization) chips.push(tbChip("SPEC +2 Edge", "var(--flow)", "Specialization: adds +2 Edge Dice, and widens your emergency crit range by 1"));
+      if (s.focus) chips.push(tbChip("FOCUS +" + (d.caliber || 1), "var(--gold)", "Skill Focus: +Caliber Edge Dice, folded into the pool below (and +Caliber on emergency d20 fixes)"));
+      if (s.specialization) chips.push(tbChip("SPEC +2", "var(--flow)", "Specialization: +2 Edge Dice, folded into the pool below (and a wider crit range on emergency d20 fixes)"));
+      if (s.untrained) chips.push(tbChip("UNTRAINED +1 SNAG", "var(--warn)", "Untrained: Work Intervals with this skill add +1 Snag Die"));
       return el("div.row.between.wrap", { style: { gap: "8px", alignItems: "center", padding: big ? "7px 0" : "4px 0", borderTop: "1px solid rgba(35,48,68,.4)" } }, [
         el("div.row.wrap", { style: { gap: "8px", alignItems: "center", flex: "1 1 auto", minWidth: 0 } },
           [el("span", { style: { fontWeight: 600, fontSize: big ? "13.5px" : "12px", minWidth: "92px", color: TB_SKILL_COLOR[nm] || "var(--text)" }, text: nm }),
-           el("span.mono", { style: { fontSize: big ? "15px" : "12px", color: "var(--text)" }, title: nm + " check: d20 " + tbMod(s.total) + " (" + (s.attrName || "Tech") + " + proficiency)", text: "d20 " + tbMod(s.total || 0) })
+           el("span.mono", { style: { fontSize: big ? "15px" : "12px", color: "var(--text)" }, title: "Edge Dice for a Work Interval:\n" + tbEdgeTip(e), text: "Edge " + e.points }),
+           el("span.mono", { style: { fontSize: big ? "12px" : "11px", color: "var(--text3)" }, title: "Pool composition (Edge past 10 sharpens d10s into d12s)", text: "→ " + e.pool.label })
           ].concat(chips))
       ]);
     }
     var kids = [
-      el("p.help", { style: { margin: "0 0 6px", fontSize: "11.5px" }, text: "Your crafting is a Dice Pool built from a Skill and its Attribute, plus Edge from kits, Focus, and Specialization. Engineering and Systems drive most of the bench." }),
+      el("p.help", { style: { margin: "0 0 6px", fontSize: "11.5px" }, text: "Work Intervals roll the Dice Pool Method: Edge Dice from a Skill and its Attribute, proficiency, kits, Focus, and Specialization, against the GM's Snag Dice. Engineering and Systems drive most of the bench." }),
       skillRow("Engineering", true),
       skillRow("Systems", true)
     ];
+    // emergency fixes stay d20; keep that distinct rule visible but separate
+    var engS = tbSkill(d, "Engineering"), sysS = tbSkill(d, "Systems");
+    kids.push(el("p.help", { style: { margin: "6px 0 0", fontSize: "10.5px", color: "var(--text3)" },
+      text: "Emergency fixes under pressure stay d20: Engineering " + tbMod(engS ? engS.total : 0) + " · Systems " + tbMod(sysS ? sysS.total : 0) + " (+ Caliber inside a Focus). Everything below rolls the pool." }));
     // secondary craft skills, compact
     var secondary = ["Medtech", "Esoterica", "Investigation", "Awareness"].map(function (nm) {
       var s = tbSkill(d, nm); if (!s) return null;
-      return tbChip(nm + " d20 " + tbMod(s.total || 0) + (s.focus ? " ·F" : "") + (s.specialization ? " ·S" : ""), TB_SKILL_COLOR[nm] || "var(--text2)", nm + " (" + (s.attrName || "") + ")");
+      var e = tbEdgeFor(ch, d, nm, null);
+      return tbChip(nm + " · Edge " + e.points + (s.focus ? " ·F" : "") + (s.specialization ? " ·S" : ""), TB_SKILL_COLOR[nm] || "var(--text2)",
+        nm + " (" + (s.attrName || "") + ")\nPool: " + e.pool.label + "\nEmergency d20 " + tbMod(s.total || 0) + "\n" + tbEdgeTip(e));
     }).filter(Boolean);
     if (secondary.length) kids.push(el("div.row.wrap", { style: { gap: "6px", marginTop: "8px", alignItems: "center" } },
       [el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em", marginRight: "2px" }, text: "ALSO" })].concat(secondary)));
@@ -1459,11 +1502,86 @@ EN.inventoryView = (function () {
       ]),
       el("button.btn.sm", { title: "Abandon this Project", style: { color: "var(--text3)" }, onclick: function () { tbAbandon(p.id); } }, "✕")
     ]);
-    // live check line
-    var checkLine = el("p.help", { style: { margin: "6px 0 6px", fontSize: "11.5px" } },
-      s ? [document.createTextNode(p.skill + " check: "), el("span.mono", { style: { color: "var(--text)" }, text: "d20 " + tbMod(s.total || 0) }),
-           document.createTextNode(" · pool builds from " + (s.attrName || "attribute") + (s.focus ? ", +" + (d.caliber || 1) + " Edge (Focus)" : "") + (s.specialization ? ", +2 Edge (Spec)" : ""))]
-        : [document.createTextNode(p.skill + " is not on this Freelancer's sheet; the GM sets the roll.")]);
+    // Work Interval roll box: Edge (character + kits + toggles) vs Snag (GM-set difficulty)
+    var rs = tbRollState(p.id);
+    var edge = tbEdgeFor(ch, d, p.skill, rs);
+    var snag = tbSnagPts(p, s);
+    var snagPool = EN.engine.buildSnagPool(snag.total);
+    var rollBox;
+    if (!s) {
+      rollBox = el("p.help", { style: { margin: "6px 0 6px", fontSize: "11.5px" }, text: p.skill + " is not on this Freelancer's sheet; the GM sets the roll." });
+    } else {
+      var rollKids = [];
+      // EDGE row: total + composition, with kit and situational toggles feeding the pool
+      var kitToggles = tbKits(ch).filter(function (k) { return k.skill === p.skill && k.edgeDice > 0 && (!k.requiresProficient || k.proficient); }).map(function (k) {
+        var on = !rs.kitsOff[k.name];
+        return el("button.btn.sm", {
+          title: (k.edgeNote ? k.edgeNote + ". " : "") + (on ? "Counted in the pool; click to leave it out of this roll." : "Not counted; click to include it."),
+          style: { fontSize: "9px", color: on ? "var(--success)" : "var(--text4)", borderColor: on ? "var(--success)" : "var(--border)" },
+          onclick: function () { rs.kitsOff[k.name] = on; rs.result = null; EN.app.render(); }
+        }, (on ? "✓ " : "") + k.name + " +" + k.edgeDice);
+      });
+      function sitToggle(key, label, title) {
+        var on = !!rs[key];
+        return el("button.btn.sm", { title: title, style: { fontSize: "9px", color: on ? "var(--gold)" : "var(--text4)", borderColor: on ? "var(--gold)" : "var(--border)" },
+          onclick: function () { rs[key] = !on; rs.result = null; EN.app.render(); } }, (on ? "✓ " : "") + label);
+      }
+      rollKids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } },
+        [el("span.mono", { style: { fontSize: "9px", color: "var(--success)", letterSpacing: ".1em", minWidth: "38px" }, text: "EDGE" }),
+         el("span.mono", { style: { fontSize: "13px", color: "var(--text)" }, title: tbEdgeTip(edge), text: edge.points + " → " + edge.pool.label })
+        ].concat(kitToggles, [
+          sitToggle("prep", "PREP +1", "Special Preparation: +1 Edge Die"),
+          sitToggle("narrative", "ADV +1", "Narrative Advantage (GM discretion): +1 Edge Die")
+        ])));
+      // SNAG row: risk-level quick picker (Dicey Situations table) + fine adjust
+      var riskBtns = ((EN.resolution && EN.resolution.pool && EN.resolution.pool.snagAssign) || []).map(function (r) {
+        var n = Number(r.dice), on = snag.base === n;
+        return el("button.btn.sm" + (on ? ".primary" : ""), { title: r.risk + ": " + r.desc, style: { fontSize: "10px" },
+          onclick: function () { rs.result = null; tbSetSnag(p.id, n); } }, String(n));
+      });
+      rollKids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "6px" } },
+        [el("span.mono", { style: { fontSize: "9px", color: "var(--danger)", letterSpacing: ".1em", minWidth: "38px" }, text: "SNAG" })]
+        .concat(riskBtns)
+        .concat([
+          el("button.btn.sm", { title: "One less Snag Die", disabled: snag.base <= 0, onclick: function () { rs.result = null; tbSetSnag(p.id, snag.base - 1); } }, "−"),
+          el("button.btn.sm", { title: "One more Snag Die: bad conditions, missing kits, rushed work", disabled: snag.base >= 13, onclick: function () { rs.result = null; tbSetSnag(p.id, snag.base + 1); } }, "+"),
+          el("span.mono", { style: { fontSize: "13px", color: "var(--text)" }, title: "GM-set difficulty per Work Interval (Snag past 5 sharpens into d12s)", text: snag.total + " → " + snagPool.label }),
+          snag.untrained ? tbChip("+1 UNTRAINED", "var(--warn)", "Untrained in " + p.skill + ": +1 Snag Die") : null
+        ])));
+      // ROLL + result
+      rollKids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "8px" } }, [
+        el("button.btn.sm.primary", {
+          title: "Roll the Work Interval: Edge vs Snag, each die reads 6-9 as 1 and 10+ as 2, Margin = successes - failures",
+          onclick: function () {
+            var eRes = EN.engine.rollDicePool(EN.engine.buildEdgePool(edge.points));
+            var sRes = EN.engine.rollDicePool(snagPool);
+            var margin = eRes.total - sRes.total;
+            rs.result = { edge: eRes, snag: sRes, margin: margin, outcome: CRAFT().marginToOutcomeKey(margin) };
+            EN.app.render();
+          }
+        }, "⚄ ROLL WORK INTERVAL"),
+        !rs.result ? el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "or roll at the table and log the outcome below" }) : null
+      ]));
+      if (rs.result) {
+        var res = rs.result, oc = CRAFT().outcome(res.outcome);
+        var diceRow = function (label, color, r, word) {
+          return el("div.row.wrap", { style: { gap: "4px", alignItems: "center", marginTop: "4px" } },
+            [el("span.mono", { style: { fontSize: "9px", color: color, letterSpacing: ".1em", minWidth: "38px" }, text: label })]
+            .concat(r.rolls.length ? r.rolls.map(function (die) {
+              return el("span.mono", { title: "d" + die.sides + (die.hits ? ", counts " + die.hits : ", no effect"),
+                style: { fontSize: "11px", padding: "0 5px", borderRadius: "3px", border: "1px solid " + (die.sides === 12 ? "var(--gold)" : "var(--border2)"), color: die.hits === 2 ? color : (die.hits === 1 ? "var(--text)" : "var(--text4)") } }, String(die.value));
+            }) : [el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "no dice" })])
+            .concat([el("span.mono", { style: { fontSize: "11px", color: "var(--text2)" }, text: "= " + r.total + " " + word })]));
+        };
+        rollKids.push(diceRow("EDGE", "var(--success)", res.edge, "successes"));
+        rollKids.push(diceRow("SNAG", "var(--danger)", res.snag, "failures"));
+        rollKids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "6px" } }, [
+          el("span.mono", { style: { fontSize: "13px", color: oc ? oc.color : "var(--text)" }, text: "MARGIN " + (res.margin >= 0 ? "+" : "") + res.margin + " · " + (oc ? oc.name : res.outcome) }),
+          el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: (oc ? oc.note + ". " : "") + "Log it below." })
+        ]));
+      }
+      rollBox = el("div", { style: { padding: "8px 10px", border: "1px solid var(--border)", borderRadius: "4px", background: "rgba(0,0,0,.15)", margin: "6px 0 8px" } }, rollKids);
+    }
     // progress bar
     var bar = el("div", { style: { margin: "2px 0 8px" } }, [
       el("div.row.between", { style: { marginBottom: "3px" } }, [
@@ -1488,12 +1606,16 @@ EN.inventoryView = (function () {
       matKids = [el("span.help", { style: { fontSize: "11px", color: "var(--text3)", margin: 0 }, text: "No material cost." })];
     }
     var materials = el("div.row.wrap", { style: { gap: "8px", alignItems: "center", margin: "0 0 8px" } }, matKids);
-    // work interval logger
+    // work interval logger; a rolled result pre-highlights its matching outcome
+    var rolledKey = rs.result ? rs.result.outcome : null;
     var logRow = el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } },
       [el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em", marginRight: "2px" }, text: "LOG INTERVAL" })].concat(
         CRAFT().outcomes.map(function (o) {
-          return el("button.btn.sm", { title: o.note, style: { color: o.color, borderColor: o.color, fontSize: "10px" }, onclick: function () { tbLog(p.id, o.key); } },
-            o.name + (o.progress ? " +" + o.progress : " +0"));
+          var isRolled = rolledKey === o.key;
+          return el("button.btn.sm", { title: o.note + (isRolled ? " (matches your roll)" : ""),
+            style: { color: o.color, borderColor: o.color, fontSize: "10px", boxShadow: isRolled ? "0 0 8px " + o.color : null, background: isRolled ? "rgba(255,255,255,.06)" : null },
+            onclick: function () { rs.result = null; tbLog(p.id, o.key); } },
+            (isRolled ? "● " : "") + o.name + (o.progress ? " +" + o.progress : " +0"));
         })).concat([
           (p.log || []).length ? el("button.btn.sm", { title: "Undo the last interval", style: { color: "var(--text3)" }, onclick: function () { tbUndo(p.id); } }, "↶ UNDO") : null
         ]));
@@ -1506,7 +1628,7 @@ EN.inventoryView = (function () {
       done ? el("button.btn.sm.primary", { onclick: function () { tbComplete(p); } }, p.addOnComplete ? "✓ COMPLETE · ADD TO STASH" : "✓ COMPLETE") : null
     ]);
     return el("div.feature", { style: { borderLeftColor: done ? "var(--success)" : (TB_TIER_COLOR[p.overEngineered ? "prototype" : p.tier] || "var(--border2)") } },
-      [head, checkLine, bar, materials, logRow, foot]);
+      [head, rollBox, bar, materials, logRow, foot]);
   }
 
   function tbProjects(ch, d) {

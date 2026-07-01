@@ -63,6 +63,49 @@ EN.crafting = {
     focusSpec: "Inside a Skill Focus you add Edge Dice equal to your Caliber to Work Intervals, and your Caliber to emergency d20 fixes. Inside a Specialization you add plus 2 Edge Dice, and widen your emergency crit range by 1."
   },
 
+  /* ---- Dice Pool assembly (Dicey Situations, Dice Pool Method) -------------
+     Edge points for a Work Interval: attribute modifier (floored at 0, a
+     negative mod grants no dice) + proficiency pool bonus (0/2/4/6) + kit Edge
+     Dice + Skill Focus (Caliber) + Specialization (+2) + situational toggles
+     (Special Preparation +1, Narrative Advantage +1). The d10/d12 composition
+     tables live in EN.engine.buildEdgePool / buildSnagPool. ---- */
+  edgePointsFor: function (skillEntry, caliber, kits, opts) {
+    opts = opts || {};
+    var parts = [];
+    if (!skillEntry) return { points: 0, parts: parts };
+    var tiers = (EN.rules && EN.rules.profTiers) || {};
+    // house ruling: the source table says "+1 Edge Die per point" of attribute
+    // modifier and never addresses negatives, so a negative mod grants 0 dice
+    // rather than subtracting from the pool
+    var attr = Math.max(0, skillEntry.attrMod || 0);
+    if (attr) parts.push({ label: (skillEntry.attrName || "Attribute") + " modifier", value: attr });
+    var prof = ((tiers[skillEntry.tier] || {}).pool) || 0;
+    if (prof) parts.push({ label: "Proficiency (" + ((tiers[skillEntry.tier] || {}).name || skillEntry.tier) + ")", value: prof });
+    (kits || []).forEach(function (k) {
+      if (!k.edgeDice) return;
+      parts.push({ label: k.name + (k.edgeNote ? ", " + k.edgeNote : ""), value: k.edgeDice });
+    });
+    if (skillEntry.focus) parts.push({ label: "Skill Focus (Caliber)", value: caliber || 1 });
+    if (skillEntry.specialization) parts.push({ label: "Specialization", value: 2 });
+    if (opts.prep) parts.push({ label: "Special Preparation", value: 1 });
+    if (opts.narrative) parts.push({ label: "Narrative Advantage", value: 1 });
+    var points = 0;
+    parts.forEach(function (p) { points += p.value; });
+    return { points: points, parts: parts };
+  },
+
+  /* Dice Pool margin to a Work Interval outcome key (Dice Pool Success Margin table) */
+  marginToOutcomeKey: function (margin) {
+    if (margin >= 3) return "flawless";
+    if (margin >= 1) return "strong";
+    if (margin === 0) return "mixed";
+    if (margin >= -2) return "failure";
+    return "crit";
+  },
+
+  /* suggested base Snag Dice by Project tier; the table adjusts from there */
+  snagForTier: { simple: 1, standard: 2, advanced: 3, prototype: 4, relic: 5 },
+
   /* ---- derivation: map a catalog item to a craft Skill, a Project tier, a cost ---- */
   _weaponGroups: { Simple: 1, Martial: 1, Sidearm: 1, Longarm: 1, Heavy: 1, Launcher: 1, Thrown: 1, Bowfire: 1 },
   _availTier:   { Common: "standard", Uncommon: "standard", Rare: "advanced", Iconic: "prototype", Legendary: "prototype", Mythical: "prototype", Artifact: "relic" },
