@@ -25,7 +25,8 @@ EN.theme = (function () {
     { key: "daybreak",   name: "Daybreak",     light: true, accent: "#d23f8c", dim: "#9c2e66", bg: "#eef1f7", bg2: "#ffffff", border: "#c7cfdc", border2: "#a6b4c6", text: "#1e2733", text2: "#4a5a6e", text3: "#74859a", text4: "#a3b2c4" },
     { key: "slimegirl",  name: "Slime Time",   accent: "#4fe6a8", dim: "#1f8f68", bg: "#061611", bg2: "#0c2419", border: "#1f5d44", border2: "#2f8060" },
     { key: "pbandj",     name: "Flavor Wizard",     accent: "#eb9a3e", dim: "#9c5e1e", bg: "#150a1c", bg2: "#221033", border: "#4a2660", border2: "#6b3a86" },
-    { key: "chaos",      name: "Elysium Nights", accent: "#d2d046", dim: "#7d7a22", bg: "#141021", bg2: "#1f1a30", border: "#463a55", border2: "#63573f" },
+    // Bubblegum Flapjack: hot bubblegum pink on gunmetal charcoal, blood-red dim, plum/magenta chrome
+    { key: "bubblegum",  name: "Bubblegum Flapjack", accent: "#ff4fa3", dim: "#8a0303", bg: "#18181d", bg2: "#241822", border: "#4a2740", border2: "#6e3a58" },
     { key: "manarift",   name: "Mana Rift",    accent: "#6f8cff", dim: "#2f3f99", bg: "#080c1c", bg2: "#0e1533", border: "#283a72", border2: "#3a4f96" },
     { key: "merlot",     name: "Merlot",       accent: "#e2506e", dim: "#8a2238", bg: "#16040a", bg2: "#270b13", border: "#5a1f2e", border2: "#7e3042" },
     { key: "evilcurse",  name: "Flowstate",    accent: "#a96ce2", dim: "#5e3a99", bg: "#100a1a", bg2: "#1b1232", border: "#3f2a62", border2: "#573a82" },
