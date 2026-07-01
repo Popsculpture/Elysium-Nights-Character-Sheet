@@ -145,7 +145,7 @@ EN.inventoryView = (function () {
     return el("span.chip", { title: def, style: { fontSize: "9.5px", color: "var(--text2)", borderColor: "var(--border2)" } }, t);
   }
   function tagChip(text, color, title) {
-    return el("span.chip", { title: title || "", style: { fontSize: "9px", color: color, borderColor: color, marginLeft: "6px" } }, text.toUpperCase());
+    return el("span.chip", { title: title || "", style: { fontSize: "9px", color: color, borderColor: color, marginLeft: "8px" } }, text.toUpperCase());
   }
 
   /* ---- mutations ---- */
@@ -987,7 +987,9 @@ EN.inventoryView = (function () {
   }
   // (legality chip colors reuse the module-level LEGAL_COLOR defined near the top)
   var RARITY_COLOR = { Common: "var(--text3)", Uncommon: "var(--accent)", Rare: "var(--flow)" };
-  function tagChip(text, color) { return el("span.chip", { style: { fontSize: "9px", color: color, borderColor: color } }, text); }
+  // local chip for the bench slot cards: mixed-case, no extra margin (parent rows own the gap).
+  // named distinctly so it does NOT hoist over the header/Chrome tagChip() at the top of the module.
+  function partChip(text, color) { return el("span.chip", { style: { fontSize: "9px", color: color, borderColor: color } }, text); }
   function fittingParts(it, slotKey) { return (WP().parts || []).filter(function (p) { return p.slot === slotKey && partFits(p, it); }); }
   // Parts as buyable / ownable inventory items so they sell in the gray market and
   // live in the stash. `partSlot` (not `slot`) so the card does not draw a body-slot chip.
@@ -1100,8 +1102,8 @@ EN.inventoryView = (function () {
         el("div", { style: { flex: "1 1 160px", minWidth: 0 } }, [
           el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } }, [
             el("span", { style: { fontWeight: 600, fontSize: "12.5px" }, text: p.name }),
-            tagChip(p.partType, p.partType === "Mod" ? "var(--ember)" : "var(--text2)"),
-            tagChip(p.legality, LEGAL_COLOR[p.legality]), tagChip(p.rarity, RARITY_COLOR[p.rarity])
+            partChip(p.partType, p.partType === "Mod" ? "var(--ember)" : "var(--text2)"),
+            partChip(p.legality, LEGAL_COLOR[p.legality]), partChip(p.rarity, RARITY_COLOR[p.rarity])
           ]),
           el("p.help", { style: { margin: "2px 0 0", fontSize: "11px" }, text: p.grants })
         ]),
@@ -1160,7 +1162,7 @@ EN.inventoryView = (function () {
     var header = el("div.row.between.wrap", { style: { gap: "10px", alignItems: "center", marginBottom: "10px" } }, [
       el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
         el("span.mono", { style: { fontSize: "18px", color: count > max ? "var(--danger)" : "var(--ember)" }, html: count + " <span style='font-size:12px;color:var(--text3)'>/ " + max + " slots</span>" }),
-        tagChip(legal, LEGAL_COLOR[legal]),
+        partChip(legal, LEGAL_COLOR[legal]),
         el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: legal === (it.legality || "Legal") ? "as a scanner reads it" : "scanner reads it as " + legal + " (was " + (it.legality || "Legal") + ")" })
       ]),
       el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } }, [el("span.help", { style: { margin: 0, fontSize: "10px" }, text: "PROFILE" }), profSel])
@@ -1213,7 +1215,7 @@ EN.inventoryView = (function () {
         el("div", { style: { flex: "1 1 200px", minWidth: 0 } }, [
           el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } }, [
             el("span", { style: { fontWeight: 600, fontSize: "13px" }, text: m.name }),
-            tagChip(m.legality, LEGAL_COLOR[m.legality]), tagChip(m.rarity, AVAIL_COLOR[m.rarity] || "var(--text3)")
+            partChip(m.legality, LEGAL_COLOR[m.legality]), partChip(m.rarity, AVAIL_COLOR[m.rarity] || "var(--text3)")
           ]),
           el("p.help", { style: { margin: "2px 0 0", fontSize: "11px" }, title: m.effect, text: m.grants })
         ]),
