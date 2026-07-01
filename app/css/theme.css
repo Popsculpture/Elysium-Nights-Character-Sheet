@@ -256,7 +256,7 @@ select{ appearance:none; background-image:linear-gradient(45deg,transparent 50%,
 /* ===== stepper wizard nav =============================================== */
 .wizard-rail{ display:flex; gap:4px; flex-wrap:wrap; margin-bottom:14px;
   position:sticky; top:92px; z-index:60; padding:10px 0;
-  background:linear-gradient(180deg, rgba(10,14,20,.97), rgba(10,14,20,.92));
+  background:transparent;
   backdrop-filter:blur(6px); border-bottom:1px solid var(--border); }
 .wstep{ flex:1; min-width:84px; padding:8px 6px; border:1px solid var(--border); border-bottom:2px solid var(--border);
   background:var(--bg1); cursor:pointer; text-align:center; transition:all .15s; border-radius:3px 3px 0 0; }
@@ -366,7 +366,7 @@ html.light body{
 }
 html.light body::after{ display:none; }                 /* drop the dark scanline veil */
 html.light .os-topbar{ background:linear-gradient(180deg, rgba(255,255,255,.92), rgba(240,243,249,.82)); }
-html.light .wizard-rail{ background:linear-gradient(180deg, rgba(255,255,255,.92), rgba(240,243,249,.85)); }
+html.light .wizard-rail{ background:transparent; }
 html.light .os-tab:hover{ background:rgba(0,0,0,.045); }
 html.light .sktable tr:hover td{ background:rgba(0,0,0,.03); }
 html.light .pop-btn:hover{ background:rgba(0,0,0,.05) !important; }
