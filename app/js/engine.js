@@ -346,7 +346,7 @@ EN.engine = (function () {
     "Slipstream Runner":     { speed: 2 },
     "Calibrated Gait":       { speed: 1 },
     "Static Premonition":    { initCaliber: true },
-    "Tuned Synapses":        { initEdge: true },
+    "Tuned Synapses":        { initEdge: true, speedFirstRound: 2 },
     "Synthetic Musculature": { unarmed: { die: "1d6", type: "Bludgeoning" } },
     "Briar Strike":          { unarmed: { die: "1d6", type: "Piercing/Slashing", traits: "Light, Finesse" } },
     "Brutal Frame":          { unarmed: { die: "1d6", type: "Bludgeoning", note: "+1d4 on hit" } },
@@ -354,11 +354,12 @@ EN.engine = (function () {
     "Scavenger's Maw":       { unarmed: { die: "1d6", type: "Piercing", note: "bite; +1 Vitality on hit" } }
   };
   function lineageMechanics(ch) {
-    var out = { dr: 0, speed: 0, initCaliber: false, initEdge: false, unarmed: null };
+    var out = { dr: 0, speed: 0, speedFirstRound: 0, initCaliber: false, initEdge: false, unarmed: null };
     activeLineageFeatures(ch).forEach(function (fn) {
       var m = LINEAGE_MECH[fn]; if (!m) return;
       if (m.dr) out.dr += m.dr;
       if (m.speed) out.speed += m.speed;
+      if (m.speedFirstRound) out.speedFirstRound += m.speedFirstRound;   // conditional: first round of combat only
       if (m.initCaliber) out.initCaliber = true;
       if (m.initEdge) out.initEdge = true;
       if (m.unarmed) out.unarmed = { source: fn, die: m.unarmed.die, type: m.unarmed.type, traits: m.unarmed.traits || null, note: m.unarmed.note || null };
@@ -624,7 +625,8 @@ EN.engine = (function () {
       var hasFocus = focuses.some(function (f) { return f.skill === s.key; });
       var hasSpec = specs.some(function (f) { return f.skill === s.key; });
       var total = attrMod + tier.d20;
-      var passive = 10 + total + (hasFocus ? 5 : 0) + (tierKey === "untrained" ? -5 : 0);
+      // Focus adds Caliber (like Saving Throw Focus above), not a flat +5
+      var passive = 10 + total + (hasFocus ? cal : 0) + (tierKey === "untrained" ? -5 : 0);
       return {
         key: s.key, name: s.name, attr: s.attr, attrName: attributes[s.attr].name,
         tier: tierKey, tierShort: tier.short, attrMod: attrMod, profBonus: tier.d20,
@@ -741,6 +743,7 @@ EN.engine = (function () {
       armorDR: defLoadout.armorDR, blockBonus: defLoadout.blockBonus,
       naturalDR: linMech.dr, totalDR: (defLoadout.armorDR || 0) + linMech.dr,
       lineageSpeed: linMech.speed,
+      lineageSpeedFirstRound: linMech.speedFirstRound,
       lineageInit: { caliber: linMech.initCaliber ? cal : 0, edge: linMech.initEdge },
       lineageUnarmed: linMech.unarmed,
       shieldDef: defLoadout.shieldDef, shieldBlockDie: defLoadout.shieldBlockDie,
@@ -904,7 +907,7 @@ EN.engine = (function () {
     skillFloorTier: skillFloorTier, effectiveSkillTier: effectiveSkillTier,
     skillTierCost: skillTierCost, trainingSpent: trainingSpent, trainingBudget: trainingBudget,
     grantedGear: grantedGear, gearFloorTier: gearFloorTier, effectiveGearTier: effectiveGearTier, gearTierCost: gearTierCost,
-    activeLineageFeatures: activeLineageFeatures,
+    activeLineageFeatures: activeLineageFeatures, splitTalentText: splitTalentText,
     grantSourceMap: grantSourceMap, duplicateGrants: duplicateGrants, pendingChoices: pendingChoices,
     tp: { STEP_COST: STEP_COST, TIER_LEVEL_REQ: TIER_LEVEL_REQ, FOCUS_COST: FOCUS_COST, FOCUS_LEVEL_REQ: FOCUS_LEVEL_REQ, SPEC_COST: SPEC_COST, SPEC_LEVEL_REQ: SPEC_LEVEL_REQ }
   };

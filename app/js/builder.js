@@ -1485,9 +1485,11 @@ EN.builder = (function () {
     else if (!eligible.length) info = el("p.help", { style: { color: "var(--warn)" }, text: "No upgradeable Talents available; you need one you have not already upgraded that lists an Upgrade." });
     else {
       var t = (EN.talents || []).find(function (x) { return x.key === current; });
+      // show only the Level 6+ Upgrade rider; the player already owns the base talent
+      var upText = t ? (eng.splitTalentText(t.text).upgrade || t.text) : "";
       info = t ? el("div.feature", { style: { marginTop: "8px" } }, [
         el("h4", null, [document.createTextNode(t.name + " · Upgrade"), el("span.src", { text: t.category || "" })]),
-        renderText(t.text)
+        renderText(upText)
       ]) : null;
     }
     return el("div", null, [sel, info]);

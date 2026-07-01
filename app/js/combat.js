@@ -953,7 +953,8 @@ EN.combatView = (function () {
           .concat(cyberSpeedRows.map(function (r) { return bdRow("Chrome · " + r.label, r.val); }))
           .concat(d.lineageSpeed ? [bdRow("Lineage", d.lineageSpeed)] : [])
           .concat(dg.speedPenalty ? [bdRow("Bulky · " + dg.armor.name, dg.speedPenalty)] : [])
-          .concat(spCond ? [bdRow("Conditions", spCond)] : []) },
+          .concat(spCond ? [bdRow("Conditions", spCond)] : []),
+        foot: d.lineageSpeedFirstRound ? "+" + d.lineageSpeedFirstRound + " Speed during the first round of any combat (Tuned Synapses)." : null },
       INIT: { title: "Initiative", total: initVal, sign: true,
         formula: "Agility modifier" + (d.lineageInit && d.lineageInit.caliber ? " + lineage" : "") + (fx.init ? " + conditions" : ""),
         rows: [bdRow("Agility modifier", agiMod, chromeNote("AGI"))]
