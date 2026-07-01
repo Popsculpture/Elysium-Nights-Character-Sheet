@@ -25,8 +25,9 @@ EN.theme = (function () {
     { key: "daybreak",   name: "Daybreak",     light: true, accent: "#d23f8c", dim: "#9c2e66", bg: "#eef1f7", bg2: "#ffffff", border: "#c7cfdc", border2: "#a6b4c6", text: "#1e2733", text2: "#4a5a6e", text3: "#74859a", text4: "#a3b2c4" },
     { key: "slimegirl",  name: "Slime Time",   accent: "#4fe6a8", dim: "#1f8f68", bg: "#061611", bg2: "#0c2419", border: "#1f5d44", border2: "#2f8060" },
     { key: "pbandj",     name: "Flavor Wizard",     accent: "#eb9a3e", dim: "#9c5e1e", bg: "#150a1c", bg2: "#221033", border: "#4a2660", border2: "#6b3a86" },
-    // Bubblegum Flapjack: hot bubblegum pink on gunmetal charcoal, blood-red dim, plum/magenta chrome
-    { key: "bubblegum",  name: "Bubblegum Flapjack", accent: "#ff4fa3", dim: "#8a0303", bg: "#18181d", bg2: "#241822", border: "#4a2740", border2: "#6e3a58" },
+    // Bubblegum Flapjack: gunmetal base (40%), toxic-mint accent (25%), bubblegum-pink
+    // chrome/frames (18%), bone-white text (12%), blood-red dim punctuation (5%)
+    { key: "bubblegum",  name: "Bubblegum Flapjack", accent: "#7cffb2", dim: "#8a0303", bg: "#18181d", bg2: "#221820", border: "#4e2640", border2: "#85406a", text: "#f2e9e1", text2: "#aea8a2", text3: "#7e7975", text4: "#524f4c" },
     { key: "manarift",   name: "Mana Rift",    accent: "#6f8cff", dim: "#2f3f99", bg: "#080c1c", bg2: "#0e1533", border: "#283a72", border2: "#3a4f96" },
     { key: "merlot",     name: "Merlot",       accent: "#e2506e", dim: "#8a2238", bg: "#16040a", bg2: "#270b13", border: "#5a1f2e", border2: "#7e3042" },
     { key: "evilcurse",  name: "Flowstate",    accent: "#a96ce2", dim: "#5e3a99", bg: "#100a1a", bg2: "#1b1232", border: "#3f2a62", border2: "#573a82" },
@@ -52,14 +53,21 @@ EN.theme = (function () {
   function apply(k) {
     var t = find(k) || THEMES[0], s = document.documentElement.style, root = document.documentElement;
     // light themes flip the text dark and toggle a class so the dark-only chrome rules invert
-    if (t.light) {
-      root.classList.add("light");
-      s.setProperty("--text", t.text || "#1e2733");
-      s.setProperty("--text2", t.text2 || "#4a5a6e");
-      s.setProperty("--text3", t.text3 || "#74859a");
-      s.setProperty("--text4", t.text4 || "#a3b2c4");
+    if (t.light) root.classList.add("light");
+    else root.classList.remove("light");
+    // a theme may carry its own text ramp (dark OR light). Light themes that omit it
+    // fall back to dark-on-light defaults; dark themes fall back to the stylesheet.
+    if (t.text) {
+      s.setProperty("--text", t.text);
+      s.setProperty("--text2", t.text2 || t.text);
+      s.setProperty("--text3", t.text3 || t.text2 || t.text);
+      s.setProperty("--text4", t.text4 || t.text3 || t.text2 || t.text);
+    } else if (t.light) {
+      s.setProperty("--text", "#1e2733");
+      s.setProperty("--text2", "#4a5a6e");
+      s.setProperty("--text3", "#74859a");
+      s.setProperty("--text4", "#a3b2c4");
     } else {
-      root.classList.remove("light");
       ["--text", "--text2", "--text3", "--text4"].forEach(function (v) { s.removeProperty(v); });
     }
     if (t.key === "grid") { MANAGED.forEach(function (v) { s.removeProperty(v); }); return; }
