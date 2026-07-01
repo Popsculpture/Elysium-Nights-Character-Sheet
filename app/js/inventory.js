@@ -1277,10 +1277,13 @@ EN.inventoryView = (function () {
     var shown = animating ? "?" : die.value;
     var svg;
     if (die.sides === 12) {
+      // d12 face-on (per the reference icon): decagon silhouette, a central
+      // pentagon face, and five spokes out to alternating silhouette vertices
       svg = '<svg viewBox="0 0 100 100" width="24" height="25" aria-hidden="true">'
-        + '<polygon points="50,2 98,37 80,95 20,95 2,37" fill="rgba(0,0,0,.35)" style="stroke:' + edge + '" stroke-width="4" stroke-linejoin="round"/>'
-        + '<polygon points="50,26.6 75,44.8 65.6,74.9 34.4,74.9 25,44.8" fill="none" style="stroke:' + edge + '" stroke-width="2.5" opacity=".38"/>'
-        + '<text x="50" y="55" text-anchor="middle" dominant-baseline="central" style="fill:' + num + ';font-family:var(--mono);font-weight:700" font-size="' + fs + '">' + shown + '</text>'
+        + '<polygon points="50,2 78.2,11.2 95.6,35.2 95.6,64.8 78.2,88.8 50,98 21.8,88.8 4.4,64.8 4.4,35.2 21.8,11.2" fill="rgba(0,0,0,.35)" style="stroke:' + edge + '" stroke-width="4" stroke-linejoin="round"/>'
+        + '<polygon points="50,24 74.7,42 65.3,71 34.7,71 25.3,42" fill="none" style="stroke:' + edge + '" stroke-width="3" stroke-linejoin="round" opacity=".7"/>'
+        + '<path d="M50,24 L50,2 M74.7,42 L95.6,35.2 M65.3,71 L78.2,88.8 M34.7,71 L21.8,88.8 M25.3,42 L4.4,35.2" fill="none" style="stroke:' + edge + '" stroke-width="3" opacity=".7"/>'
+        + '<text x="50" y="50" text-anchor="middle" dominant-baseline="central" style="fill:' + num + ';font-family:var(--mono);font-weight:700" font-size="' + fs + '">' + shown + '</text>'
         + '</svg>';
     } else {
       // d10 seen from above-front (per the reference icon): top apex, front kite
