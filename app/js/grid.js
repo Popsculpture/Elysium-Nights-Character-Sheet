@@ -78,7 +78,7 @@ EN.gridView = (function () {
     if (ownedBuddies.length) selChildren.push(el("optgroup", { label: "B&E Buddies (Standard User)" }, ownedBuddies.map(function (b) {
       return el("option", { value: "buddy:" + b.tier, selected: grid.deckType === "buddy" && grid.deckTier === b.tier, text: b.tier + " · +" + b.attack + " atk · " + b.hp + " HP" });
     })));
-    if (!ownedSmartdecks.length && !ownedBuddies.length) selChildren.push(el("option", { disabled: true, text: "No rigs in stash — buy one in Inventory" }));
+    if (!ownedSmartdecks.length && !ownedBuddies.length) selChildren.push(el("option", { disabled: true, text: "No rigs in stash; buy one in Inventory" }));
 
     var sel = el("select", { style: { fontSize: "12px", width: "auto", minWidth: "220px" },
       onchange: function () {
@@ -142,33 +142,22 @@ EN.gridView = (function () {
         deck.traits.map(function (t) { return el("span.chip", { title: traitDefs[t] || "", style: { fontSize: "9.5px", color: "var(--gold)", borderColor: "var(--gold)" } }, t); }))));
     }
 
-    // Smartdeck mods: install/slot only mods bought from the gray market (owned in stash)
+    // Smartdeck mods: read-only on the #GRID. Install and remove live at the Tech Bay (Inventory > Workbench).
     if (deck.type === "smartdeck") {
       var installed = grid.deckMods || [], used = 0;
       (G.mods || []).forEach(function (m) { if (installed.indexOf(m.key) !== -1) used += m.slots; });
       var slots = deck.modSlots;
-      function ownsMod(m) { return (ch.equipment || []).some(function (e) { return e.name === m.name && e.qty > 0; }); }
-      // a mod is listed here if owned, or already slotted (so a previously-slotted mod can still be removed)
-      var listMods = (G.mods || []).filter(function (m) { return ownsMod(m) || installed.indexOf(m.key) !== -1; });
+      var installedMods = (G.mods || []).filter(function (m) { return installed.indexOf(m.key) !== -1; });
       rows.push(el("div.section-title", { style: { margin: "14px 0 4px" } }, [document.createTextNode("Hardware Mods"), el("span.line"),
         el("span.mono", { style: { fontSize: "10px", color: used > slots ? "var(--danger)" : "var(--text3)", marginLeft: "6px" }, text: used + " / " + slots + " slots" })]));
       if (slots === 0) rows.push(noteP("A Standard Smartdeck has no mod slots. Upgrade the deck to install hardware mods."));
-      else if (!listMods.length) rows.push(noteP("No hardware mods in your stash. Buy them in the Inventory tab's gray market (Rigs → Hardware Mods), then slot them here."));
-      listMods.forEach(function (m) {
-        var on = installed.indexOf(m.key) !== -1, fits = used + m.slots <= slots;
-        rows.push(el("div.feature", { style: { borderLeftColor: on ? "var(--accent)" : "var(--border2)" } }, [
-          el("div.row.between", { style: { alignItems: "center", gap: "8px" } }, [
-            el("span", { style: { fontWeight: 600, fontSize: "13px" }, text: m.name }),
-            el("div.row", { style: { gap: "6px", alignItems: "center" } }, [
-              el("span.chip", { style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" } }, m.slots + (m.slots === 1 ? " slot" : " slots")),
-              on ? el("button.btn.sm.primary", { onclick: function () { gset(function (g) { g.deckMods = (g.deckMods || []).filter(function (k) { return k !== m.key; }); }); } }, "✓ INSTALLED")
-                 : el("button.btn.sm", { disabled: !fits, title: fits ? "" : "Not enough mod slots", style: fits ? { color: "var(--accent)", borderColor: "var(--accent)" } : null, onclick: function () { gset(function (g) { g.deckMods = (g.deckMods || []).concat([m.key]); }); } }, fits ? "INSTALL" : "NO SLOTS")
-            ])
-          ]),
-          el("div.row.wrap", { style: { gap: "6px", margin: "3px 0 0" } }, [el("span.chip", { style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" } }, m.type)]),
-          el("p.help", { style: { margin: "4px 0 0" }, text: m.text })
-        ]));
-      });
+      else if (!installedMods.length) rows.push(noteP("No hardware mods installed. Fit them at the Tech Bay (Inventory > Workbench > Tech Bay)."));
+      else {
+        rows.push(el("div.row.wrap", { style: { gap: "6px" } }, installedMods.map(function (m) {
+          return el("span.chip", { title: m.type + ": " + m.text, style: { fontSize: "9.5px", color: "var(--accent)", borderColor: "var(--accent)" } }, m.name + " · " + m.slots + (m.slots === 1 ? " slot" : " slots"));
+        })));
+        rows.push(noteP("Add or remove hardware mods at the Tech Bay (Inventory > Workbench > Tech Bay)."));
+      }
     }
     return EN.ui.panel("Rig", (deck.type === "smartdeck" ? "SMARTDECK" : "B&E BUDDY") + " · " + deck.tier.toUpperCase(), rows, { corners: true });
   }

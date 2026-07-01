@@ -914,9 +914,12 @@ EN.inventoryView = (function () {
     { key: "armor", label: "Impact Table", icon: "⛨", color: "var(--success)", tag: "ARMOR BENCH · CRAFTING & MODDING",
       blurb: "The Armor Bench. Fit plates, slot Armor Mods, reinforce shells, and keep defensive gear in the fight.",
       handles: "Light / Medium / Heavy Armor · Powered Exoframes · Mystech shells · Shields & Foci · Armor Mods" },
-    { key: "tech", label: "Tech Bay", icon: "⌬", color: "var(--accent)", tag: "TECH CRAFTING & MODDING",
-      blurb: "Assemble devices and gadgets, service chrome, and wire Smartdeck hardware mods and ciphers.",
-      handles: "Field Devices & Gadgets · Cyberware · Smartdeck Mods · Ciphers · Skill Kits" },
+    { key: "tech", label: "Tech Bay", icon: "⌬", color: "var(--flow)", tag: "SMARTDECK & CYBERWARE MODS",
+      blurb: "Integrate hardware: slot mods into Smartdecks and platform chrome. This is the only bench that installs Smartdeck mods.",
+      handles: "Smartdeck Hardware Mods · Cyberware Platform Mods" },
+    { key: "fab", label: "Fabrication", icon: "⚒", color: "var(--accent)", tag: "FABRICATION · CRAFTING & PROJECTS",
+      blurb: "Build, repair, and modify gear as downtime Projects. Recipes, material costs, and live Engineering and Systems checks.",
+      handles: "Build from scratch · Repairs · Custom mods · Material costs · Engineering / Systems Projects" },
     { key: "garage", label: "Garage", icon: "⛭", color: "var(--gold)", tag: "VEHICLE CRAFTING & MODDING",
       blurb: "Wrench on rides: engines, plating, and weapon mounts for everything from a courier bike to a mech.",
       handles: "Ground / Aerial / Marine Vehicles · Industrial / Mechs · vehicle upgrades & mounts" }
@@ -1577,9 +1580,77 @@ EN.inventoryView = (function () {
     return EN.ui.panel("Modding & Mounts", "ONE MOD PER MOUNT · MAX MODS · OVER-ENGINEERING", kids, { corners: true });
   }
 
-  function techBay(ch) {
+  function fabricationBench(ch) {
     var d = EN.engine.derive(ch);
     return [tbFabProfile(ch, d), tbProjects(ch, d), tbBlueprints(ch), tbModding()];
+  }
+
+  /* ============================================================================
+     TECH BAY (Smartdeck & Cyberware mod integration). The only bench that
+     installs Smartdeck hardware mods (the #GRID tab shows them read-only).
+     Reads the active rig from ch.grid (selected on #GRID) and slots mods from
+     EN.grid.mods into ch.grid.deckMods, capped by the deck's modSlots. Cyberware
+     mods have no catalog yet, so that half is a work-in-progress placeholder.
+     ============================================================================ */
+  function tbSetDeckMods(fn) {
+    store.update(function (c) { c.grid = c.grid || {}; c.grid.deckMods = fn((c.grid.deckMods || []).slice()); });
+  }
+  function tbSmartdeckMods(ch, d) {
+    var G = EN.grid || {}, grid = ch.grid || {}, deck = d.grid && d.grid.deck;
+    var kids = [];
+    if (!deck || deck.type !== "smartdeck") {
+      kids.push(el("div.muted-box", { style: { padding: "22px 18px", textAlign: "center", borderColor: "var(--flow)" },
+        html: "<div style='font-family:var(--disp);font-size:13px;letter-spacing:.18em;color:var(--flow)'>⌬ NO SMARTDECK ON THE BENCH</div><div style='font-size:12px;color:var(--text3);margin-top:8px;max-width:460px;margin-left:auto;margin-right:auto'>Set a Smartdeck as your active rig on the #GRID tab, then bring it here to slot hardware mods. B&amp;E Buddies have no mod slots.</div>" }));
+      kids.push(el("div.row", { style: { justifyContent: "center", marginTop: "10px" } }, [
+        el("button.btn.sm", { style: { color: "var(--flow)", borderColor: "var(--flow)" }, onclick: function () { EN.app.gotoTab("grid"); } }, "→ OPEN #GRID")
+      ]));
+      return EN.ui.panel("Smartdeck Mods", "HARDWARE MOD SLOTS", kids, { corners: true });
+    }
+    var installed = grid.deckMods || [], used = 0;
+    (G.mods || []).forEach(function (m) { if (installed.indexOf(m.key) !== -1) used += m.slots; });
+    var slots = deck.modSlots;
+    function ownsMod(m) { return (ch.equipment || []).some(function (e) { return e.name === m.name && e.qty > 0; }); }
+    var listMods = (G.mods || []).filter(function (m) { return ownsMod(m) || installed.indexOf(m.key) !== -1; });
+    kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginBottom: "8px" } }, [
+      el("span.mono", { style: { fontSize: "18px", color: used > slots ? "var(--danger)" : "var(--accent)" }, html: used + " <span style='font-size:12px;color:var(--text3)'>/ " + slots + " mod slots</span>" }),
+      el("span.chip", { style: { fontSize: "9.5px", color: "var(--flow)", borderColor: "var(--flow)" }, title: "Your active rig, chosen on the #GRID tab" }, deck.tier + " Smartdeck")
+    ]));
+    if (slots === 0) { kids.push(el("p.help", { style: { margin: "0" }, text: "A Standard Smartdeck has no mod slots. Upgrade to an Improved deck or higher to install hardware mods." })); return EN.ui.panel("Smartdeck Mods", deck.tier.toUpperCase() + " SMARTDECK", kids, { corners: true }); }
+    if (!listMods.length) kids.push(el("p.help", { style: { margin: "0 0 6px" }, text: "No hardware mods in your Stash. Buy them in the gray market (Rigs), then slot them here." }));
+    listMods.forEach(function (m) {
+      var on = installed.indexOf(m.key) !== -1, fits = used + m.slots <= slots;
+      kids.push(el("div.feature", { style: { borderLeftColor: on ? "var(--accent)" : "var(--border2)" } }, [
+        el("div.row.between", { style: { alignItems: "center", gap: "8px" } }, [
+          el("div.row.wrap", { style: { gap: "7px", alignItems: "center", flex: "1 1 auto", minWidth: 0 } }, [
+            el("span", { style: { fontWeight: 600, fontSize: "13px" }, text: m.name }),
+            el("span.chip", { style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" } }, m.type),
+            el("span.chip", { style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" } }, m.slots + (m.slots === 1 ? " slot" : " slots"))
+          ]),
+          on ? el("button.btn.sm.primary", { title: "Remove this mod, freeing its slots", onclick: function () { tbSetDeckMods(function (l) { return l.filter(function (k) { return k !== m.key; }); }); } }, "✓ INSTALLED")
+             : el("button.btn.sm", { disabled: !fits, title: fits ? "Slot this mod (bench work)" : "Not enough mod slots", style: fits ? { color: "var(--accent)", borderColor: "var(--accent)" } : null, onclick: function () { tbSetDeckMods(function (l) { return l.concat([m.key]); }); } }, fits ? "INSTALL" : "NO SLOTS")
+        ]),
+        el("p.help", { style: { margin: "4px 0 0" }, text: m.text })
+      ]));
+    });
+    return EN.ui.panel("Smartdeck Mods", deck.tier.toUpperCase() + " SMARTDECK · " + used + " / " + slots + " SLOTS", kids, { corners: true });
+  }
+  function tbCyberwareMods(ch, d) {
+    // platforms the character has installed (Cyberarms / Cyberlegs carry mod slots)
+    var platforms = (ch.cyberware || []).filter(function (cw) { return cw && (cw.platform || (cw.slots || 0) > 0); });
+    var kids = [
+      el("div.muted-box", { style: { padding: "22px 18px", textAlign: "center", borderColor: "var(--accent)" },
+        html: "<div style='font-family:var(--disp);font-size:13px;letter-spacing:.18em;color:var(--accent)'>⚒ CYBERWARE MODS · WORK IN PROGRESS</div><div style='font-size:12px;color:var(--text3);margin-top:8px;max-width:480px;margin-left:auto;margin-right:auto'>Platform chrome like Cyberarms and Cyberlegs carries mod slots, but the cyberware mod catalog is not wired up yet. This bench will slot those mods once they land.</div>" })
+    ];
+    if (platforms.length) {
+      kids.push(el("div.row.wrap", { style: { gap: "6px", marginTop: "10px", alignItems: "center" } },
+        [el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em", marginRight: "2px" }, text: "YOUR PLATFORMS" })].concat(
+          platforms.map(function (cw) { return el("span.chip", { title: "Mod slots reserved for cyberware mods", style: { fontSize: "9.5px", color: "var(--flow)", borderColor: "var(--flow)" } }, cw.name + " · " + (cw.slots || 0) + " slots"); }))));
+    }
+    return EN.ui.panel("Cyberware Mods", "PLATFORM SLOTS · COMING SOON", kids, { corners: true });
+  }
+  function techBay(ch) {
+    var d = EN.engine.derive(ch);
+    return [tbSmartdeckMods(ch, d), tbCyberwareMods(ch, d)];
   }
 
   function workbenchView(ch) {
@@ -1603,6 +1674,11 @@ EN.inventoryView = (function () {
     if (_bench === "tech") {
       out.push(el("p.help", { style: { margin: "0 0 10px", maxWidth: "720px" }, text: b.blurb }));
       techBay(ch).forEach(function (n) { out.push(n); });
+      return out;
+    }
+    if (_bench === "fab") {
+      out.push(el("p.help", { style: { margin: "0 0 10px", maxWidth: "720px" }, text: b.blurb }));
+      fabricationBench(ch).forEach(function (n) { out.push(n); });
       return out;
     }
     var body = [
