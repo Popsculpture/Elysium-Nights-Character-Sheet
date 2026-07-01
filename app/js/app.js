@@ -36,6 +36,8 @@ EN.app = (function () {
 
   var _lastTab = null;
   function render() {
+    // per-character theme: repaint to whatever the active Freelancer selected (no-op if unchanged)
+    if (EN.theme && EN.theme.syncToActive) EN.theme.syncToActive();
     // re-renders empty the view, which momentarily collapses the page and lets
     // the browser clamp scroll to the top, capture and restore the position.
     // Inner scrollable wells (.feature-scroll, .actions-scroll) are rebuilt too, so save theirs as well.

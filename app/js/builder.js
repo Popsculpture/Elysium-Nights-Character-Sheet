@@ -22,7 +22,7 @@ EN.builder = (function () {
   var _intake = false;   // show the register-or-import gate even when records already exist
   var _collapsed = {};   // {sectionId: true}, UI-only collapse state (persists across re-renders)
   var _dismissed = {};   // {sectionId: dismissKey}, attention markers the player has dismissed
-  var _progFilter = "both"; // "both" | "class" | "subclass" — progression feature filter
+  var _progFilter = "both"; // "both" | "class" | "subclass": progression feature filter
 
   // Advance-tab sections default to COLLAPSED: a section is collapsed unless the
   // player has explicitly expanded it (_collapsed[id] === false).
@@ -1552,7 +1552,13 @@ EN.builder = (function () {
     return el("div", null, blocks);
   }
   function exportChar(ch) {
-    var blob = new Blob([JSON.stringify(ch, null, 2)], { type: "application/json" });
+    // bundle any custom palette this Freelancer wears so the file renders on a fresh device
+    var payload = ch;
+    if (EN.theme && EN.theme.bundleFor) {
+      var defs = EN.theme.bundleFor(ch);
+      if (defs.length) payload = Object.assign({}, ch, { customThemes: defs });
+    }
+    var blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
     var a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = (ch.name || "freelancer").replace(/[^\w]+/g, "_") + ".json";

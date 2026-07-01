@@ -211,6 +211,9 @@ EN.store = (function () {
   function importCharacter(obj) {
     if (!obj || !obj.meta) throw new Error("Invalid character file.");
     if (!obj.meta.id || state.roster[obj.meta.id]) obj.meta.id = uid();
+    // fold any custom palette bundled with the file into the device library, then drop the carrier field
+    if (obj.customThemes && EN.theme && EN.theme.mergeCustom) { EN.theme.mergeCustom(obj.customThemes); }
+    delete obj.customThemes;
     migrate(obj);   // normalize an imported (possibly older) file now, not just on next load()
     state.roster[obj.meta.id] = obj;
     state.activeId = obj.meta.id;
