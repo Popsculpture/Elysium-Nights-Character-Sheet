@@ -1266,6 +1266,30 @@ EN.inventoryView = (function () {
   function tbTierChip(tierKey) { var t = CRAFT().tier(tierKey); return tbChip(t.name.toUpperCase() + (t.target ? " · " + t.target : ""), TB_TIER_COLOR[tierKey] || "var(--text2)", t.difficulty + " · " + t.time); }
   function tbSkillChip(skill) { return tbChip(skill, TB_SKILL_COLOR[skill] || "var(--text2)", "Primary Skill"); }
 
+  // a rolled die drawn as its physical shape: d10 = kite face, d12 = pentagon
+  // with facet lines. The value colors by what it counts (2 / 1 / nothing).
+  function tbDieFace(die, poolColor) {
+    var num = die.hits === 2 ? poolColor : (die.hits === 1 ? "var(--text)" : "var(--text4)");
+    var edge = die.sides === 12 ? "var(--gold)" : "var(--border2)";
+    var fs = die.value >= 10 ? 30 : 36;
+    var svg;
+    if (die.sides === 12) {
+      svg = '<svg viewBox="0 0 100 100" width="24" height="25" aria-hidden="true">'
+        + '<polygon points="50,2 98,37 80,95 20,95 2,37" fill="rgba(0,0,0,.35)" style="stroke:' + edge + '" stroke-width="4" stroke-linejoin="round"/>'
+        + '<polygon points="50,26.6 75,44.8 65.6,74.9 34.4,74.9 25,44.8" fill="none" style="stroke:' + edge + '" stroke-width="2.5" opacity=".38"/>'
+        + '<text x="50" y="55" text-anchor="middle" dominant-baseline="central" style="fill:' + num + ';font-family:var(--mono);font-weight:700" font-size="' + fs + '">' + die.value + '</text>'
+        + '</svg>';
+    } else {
+      svg = '<svg viewBox="0 0 100 100" width="22" height="25" aria-hidden="true">'
+        + '<polygon points="50,3 95,40 50,97 5,40" fill="rgba(0,0,0,.35)" style="stroke:' + edge + '" stroke-width="4" stroke-linejoin="round"/>'
+        + '<path d="M5,40 L50,58 L95,40 M50,58 L50,97" fill="none" style="stroke:' + edge + '" stroke-width="2.5" opacity=".38"/>'
+        + '<text x="50" y="38" text-anchor="middle" dominant-baseline="central" style="fill:' + num + ';font-family:var(--mono);font-weight:700" font-size="' + fs + '">' + die.value + '</text>'
+        + '</svg>';
+    }
+    return el("span", { title: "d" + die.sides + (die.hits ? ", counts " + die.hits : ", no effect"), html: svg,
+      style: { display: "inline-flex", alignItems: "center" } });
+  }
+
   function tbSkill(d, name) { return (d.skills || []).find(function (s) { return (s.name || "").toLowerCase() === name.toLowerCase(); }); }
 
   // owned crafting kits, flagged Basic vs Proficient by the character's tool proficiencies
@@ -1565,13 +1589,11 @@ EN.inventoryView = (function () {
       if (rs.result) {
         var res = rs.result, oc = CRAFT().outcome(res.outcome);
         var diceRow = function (label, color, r, word) {
-          return el("div.row.wrap", { style: { gap: "4px", alignItems: "center", marginTop: "4px" } },
+          return el("div.row.wrap", { style: { gap: "3px", alignItems: "center", marginTop: "4px" } },
             [el("span.mono", { style: { fontSize: "9px", color: color, letterSpacing: ".1em", minWidth: "38px" }, text: label })]
-            .concat(r.rolls.length ? r.rolls.map(function (die) {
-              return el("span.mono", { title: "d" + die.sides + (die.hits ? ", counts " + die.hits : ", no effect"),
-                style: { fontSize: "11px", padding: "0 5px", borderRadius: "3px", border: "1px solid " + (die.sides === 12 ? "var(--gold)" : "var(--border2)"), color: die.hits === 2 ? color : (die.hits === 1 ? "var(--text)" : "var(--text4)") } }, String(die.value));
-            }) : [el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "no dice" })])
-            .concat([el("span.mono", { style: { fontSize: "11px", color: "var(--text2)" }, text: "= " + r.total + " " + word })]));
+            .concat(r.rolls.length ? r.rolls.map(function (die) { return tbDieFace(die, color); })
+                                   : [el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "no dice" })])
+            .concat([el("span.mono", { style: { fontSize: "11px", color: "var(--text2)", marginLeft: "5px" }, text: "= " + r.total + " " + word })]));
         };
         rollKids.push(diceRow("EDGE", "var(--success)", res.edge, "successes"));
         rollKids.push(diceRow("SNAG", "var(--danger)", res.snag, "failures"));
