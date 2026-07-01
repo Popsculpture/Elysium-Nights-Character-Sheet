@@ -1024,6 +1024,12 @@ EN.combatView = (function () {
       }
       var chips = [];
       if (dg.armor) { var ap = [dg.armorDR + " DR"]; if (dg.blockBonus) ap.push("+" + dg.blockBonus + " Block"); if (dg.armor.wardDie && !dg.focus) ap.push(dg.armor.wardDie + " Ward"); if (dg.speedPenalty) ap.push(dg.speedPenalty + " SPD"); if (dg.armor.slots) ap.push(dg.armor.slots + " slots"); chips.push(gchip("ARMOR", dg.armor.name, ap.join(" · "), "var(--success)")); }
+      // installed Armor Mods (Impact Table) on the worn suit
+      if (dg.armor && EN.armorMods) {
+        ((ch.armorMods || {})[dg.armor.name] || []).forEach(function (k) {
+          var m = EN.armorMods.byKey[k]; if (m) chips.push(gchip("MOD", m.name, m.grants + ". " + m.effect, "var(--ember)"));
+        });
+      }
       if (dg.shield) { var spv = [(dg.shieldDef >= 0 ? "+" : "") + dg.shieldDef + " DEF"]; if (dg.shieldBlockDie) spv.push(dg.shieldBlockDie + " Block"); chips.push(gchip("SHIELD", dg.shield.name, spv.join(" · "), "var(--accent)")); }
       if (dg.focus) { chips.push(gchip("FOCUS", dg.focus.name, (dg.focus.wardDie || "") + " Ward", "var(--flow)")); }
       if (!chips.length) return [el("p.help", { style: { margin: "2px 0 8px", fontSize: "11px", color: "var(--text3)" }, text: "No armor, shield, or Warding Focus equipped; buy defensive gear in Inventory → The Undercut, then WEAR / RAISE / ATTUNE it from your Stash." })];

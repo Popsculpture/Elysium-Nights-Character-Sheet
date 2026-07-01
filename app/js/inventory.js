@@ -13,7 +13,8 @@ EN.inventoryView = (function () {
   var store = EN.store;
   var _sub = "stash";      // 'stash' | 'chrome' | 'market' | 'workbench'
   var _bench = "ballistics"; // Workbench sub-tab: 'ballistics' | 'armor' | 'tech' | 'garage'
-  var _benchWeapon = null;   // Ballistics Bench: the weapon currently being customized
+  var _benchWeapon = null;   // Arms Table: the weapon currently being customized
+  var _benchArmor = null;    // Impact Table: the armor currently being customized
   var _open = {};          // collapse state for item cards
   var _ledgerAmt = 100;    // remembered credit/debit amount
   // Storefront (picked via the ⚙ settings popover; same stock, different pricing):
@@ -118,7 +119,8 @@ EN.inventoryView = (function () {
       (g.ammo && g.ammo.items) || [],
       (g.armor && g.armor.items) || [],
       (g.tools && g.tools.items) || [],
-      partItems()
+      partItems(),
+      armorModItems()
     );
   }
   function findItem(name) { return catalog().find(function (i) { return i.name === name; }); }
@@ -262,6 +264,17 @@ EN.inventoryView = (function () {
       installedN ? el("span.chip", { style: { fontSize: "9px", color: "var(--success)", borderColor: "var(--success)" } }, "installed ×" + installedN) : null
     ]);
   }
+  // info line for an Armor Mod item (fits gate, what it grants, install count)
+  function armorModInfoLine(ch, it) {
+    if (!it.armorMod || !EN.armorMods) return null;
+    var installedN = installedArmorModCount(ch, it.modKey);
+    return el("div.row.wrap", { style: { gap: "6px", marginTop: "5px", alignItems: "center" } }, [
+      el("span.chip", { title: "Bench work: a rest with a kit, on Modular armor", style: { fontSize: "9px", color: "var(--ember)", borderColor: "var(--ember)" } }, "Armor Mod"),
+      (it.fits && it.fits !== "Any") ? el("span.chip", { title: "Only fits " + it.fits + " armor", style: { fontSize: "9px", color: "var(--warn)", borderColor: "var(--warn)" } }, "fits " + it.fits) : null,
+      el("span.help", { style: { margin: 0, fontSize: "11px", color: "var(--text2)" }, text: it.grants }),
+      installedN ? el("span.chip", { style: { fontSize: "9px", color: "var(--success)", borderColor: "var(--success)" } }, "installed ×" + installedN) : null
+    ]);
+  }
   function itemCard(it, ch, mode) {
     var id = mode + "-" + it.name, open = !!_open[id];
     var owned = (ch.equipment || []).find(function (e) { return e.name === it.name; });
@@ -343,7 +356,7 @@ EN.inventoryView = (function () {
     ]);
     return el("div.feature", { style: { borderLeftColor: LEGAL_COLOR[it.legality] || "var(--border2)" } }, [
       head, info,
-      it.benchPart ? partInfoLine(ch, it) : (mode !== "mkt" ? installedPartsLine(ch, it) : null),
+      it.benchPart ? partInfoLine(ch, it) : it.armorMod ? armorModInfoLine(ch, it) : (mode !== "mkt" ? installedPartsLine(ch, it) : null),
       open && it.desc ? el("p", { style: { marginTop: "8px" }, text: it.desc }) : null,
       open && it.type ? el("p.help", { style: { margin: "4px 0 0", color: "var(--text2)" }, text: "Type: " + it.type + (it.upkeep ? " · Leased: 𝒢0 buy-in, " + fmtG(it.upkeep) + "/wk Upkeep" : "") + (it.nexus ? " · Nexus: " + it.nexus : "") }) : null,
       open && it.proficiency ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: "Proficiency: " + it.proficiency + (it.signature ? " · Signature weapon (0 customization slots)" : "") }) : null,
@@ -716,7 +729,7 @@ EN.inventoryView = (function () {
         { label: "Warding Foci", intro: ai["Warding Focus"], items: byGroup(armorItems, "Warding Focus") }
       ] });
     }
-    // Weapon Parts: Mods + Accessories for the Ballistics Bench
+    // Weapon Parts: Mods + Accessories for the Arms Table
     if (WP().parts && WP().parts.length) {
       var allParts = partItems();
       var slotOrder = (WP().slots || []).map(function (s) { return s.key; });
@@ -725,12 +738,21 @@ EN.inventoryView = (function () {
           .sort(function (a, b) { return (slotOrder.indexOf(a.partSlot) - slotOrder.indexOf(b.partSlot)) || a.name.localeCompare(b.name); });
       };
       cats.push({ key: "parts", title: "Mods & Accessories", short: "PARTS",
-        intro: (WP().rules ? WP().rules.install + " " + WP().rules.legality : "") + " Buy a Part here, then install it from the Workbench (Ballistics Bench).",
+        intro: (WP().rules ? WP().rules.install + " " + WP().rules.legality : "") + " Buy a Part here, then install it from the Workbench (Arms Table).",
         subs: [
           { label: "Melee Parts", intro: "Edges, heads, cores, hilts, and locks worked into a melee weapon.", items: partsByCat("melee") },
           { label: "Firearm Parts", intro: "Optics, barrels, receivers, stocks, and muzzle gear. Bows also draw Targeting, Handling, and Utility from here.", items: partsByCat("ranged") },
           { label: "Bowfire Parts", intro: "Limbs and cams for bows and crossbows.", items: partsByCat("bowfire") }
         ] });
+    }
+    // Armor Mods for the Impact Table
+    if (AM().mods && AM().mods.length) {
+      var allMods = armorModItems();
+      var modsByCat = function (catKey) { return allMods.filter(function (m) { return m.modCategory === catKey; }); };
+      cats.push({ key: "armormods", title: "Armor Mods", short: "ARMOR MODS",
+        intro: (AM().rules ? AM().rules.host + " " + AM().rules.legality : "") + " Buy a mod here, then fit it from the Workbench (Impact Table).",
+        subs: (AM().categories || []).map(function (cg) { return { label: cg.name, intro: cg.blurb, items: modsByCat(cg.key) }; })
+      });
     }
     var T = g.tools;
     if (T && T.buckets) {
@@ -886,7 +908,7 @@ EN.inventoryView = (function () {
   /* ---- main render ---- */
   /* ---- Workbench: crafting & modding benches (rules plug in per bench) ---- */
   var BENCHES = [
-    { key: "ballistics", label: "Ballistics Bench", icon: "⊚", color: "var(--ember)", tag: "WEAPON CRAFTING & MODDING",
+    { key: "ballistics", label: "Arms Table", icon: "⊚", color: "var(--ember)", tag: "WEAPON CRAFTING & MODDING",
       blurb: "Build, tune, and customize weapons: firearms, blades, bows, and the attachments that ride them.",
       handles: "Ranged Weapons · Melee Weapons · Signature Weapons · Ammunition · weapon mods & attachments" },
     { key: "armor", label: "Impact Table", icon: "⛨", color: "var(--success)", tag: "ARMOR BENCH · CRAFTING & MODDING",
@@ -985,6 +1007,64 @@ EN.inventoryView = (function () {
     return n;
   }
   function availablePartQty(ch, p) { return ownedQtyOf(ch, p.name) - installedPartCount(ch, p.key); }
+
+  /* ============================ IMPACT TABLE (armor) ========================
+     Armor Mods for Modular armor. Generic slots (no slot type); every mod is
+     bench work. Loadout persists on ch.armorMods[armorName] as a flat key list. */
+  var AM = function () { return EN.armorMods || {}; };
+  function armorModFits(mod, armor) {
+    var traits = armor.traits || [], g = armor.group || "";
+    function has(t) { return traits.indexOf(t) !== -1; }
+    switch (mod.fits) {
+      case "Any": return true;
+      case "Plated": return has("Plated");
+      case "Sealed": return has("Sealed");
+      case "Powered": return has("Powered") || g === "Powered Exoframe";
+      case "Mystech": return has("Mystech") || g === "Mystech Armor";
+      case "Loud or Powered": return has("Loud") || has("Powered") || g === "Powered Exoframe";
+      case "Bulky non-Powered": return has("Bulky") && !(has("Powered") || g === "Powered Exoframe");
+      default: return true;
+    }
+  }
+  function isModularArmor(armor) { return (armor.traits || []).indexOf("Modular") !== -1 || (armor.slots || 0) > 0; }
+  function armorSlotCount(armor) { return armor.slots || 0; }
+  function ownedArmor(ch) {
+    var seen = {};
+    return (ch.equipment || []).filter(function (e) { return e.qty > 0; })
+      .map(function (e) { return findItem(e.name); })
+      .filter(function (it) { return it && isDefensive(it) && !seen[it.name] && (seen[it.name] = 1); });
+  }
+  function armorLoadout(ch, name) { return ((ch.armorMods || {})[name] || []).slice(); }
+  function setArmorMods(name, fn) {
+    store.update(function (c) { c.armorMods = c.armorMods || {}; c.armorMods[name] = fn((c.armorMods[name] || []).slice()); });
+  }
+  function installedArmorModCount(ch, modKey) {
+    var n = 0, am = ch.armorMods || {};
+    Object.keys(am).forEach(function (an) { (am[an] || []).forEach(function (k) { if (k === modKey) n++; }); });
+    return n;
+  }
+  function availableArmorModQty(ch, m) { return ownedQtyOf(ch, m.name) - installedArmorModCount(ch, m.key); }
+  function armorModAsItem(m) {
+    return { name: m.name, price: m.price, legality: m.legality, availability: m.rarity, desc: m.effect,
+             armorMod: true, modKey: m.key, fits: m.fits, grants: m.grants, modCategory: m.category,
+             nexus: m.nexus, upkeep: m.upkeep, vendor: m.vendor };
+  }
+  function armorModItems() { return (AM().mods || []).map(armorModAsItem); }
+  function aggregateArmorLegality(armor, lo) {
+    var order = ["Legal", "Licensed", "Restricted", "Contraband"];
+    var worst = armor.legality || "Legal";
+    (lo || []).forEach(function (k) { var m = AM().byKey[k]; if (m && order.indexOf(m.legality) > order.indexOf(worst)) worst = m.legality; });
+    return worst;
+  }
+  function tryInstallArmorMod(armor, lo, key) {
+    var mod = AM().byKey[key]; if (!mod) return;
+    if (availableArmorModQty(store.active(), mod) <= 0) { toast("You do not own a free " + mod.name + ". Buy it in the gray market first."); return; }
+    if (lo.indexOf(key) !== -1) { toast(mod.name + " is already fitted to this suit."); return; }
+    if (lo.length >= armorSlotCount(armor)) { toast("No open Mod Slots. Only Modular armor carries slots, up to its listed count."); return; }
+    setArmorMods(armor.name, function (l) { l.push(key); return l; });
+    toast(mod.name + " worked into " + armor.name + " (bench work: a rest with a kit).");
+  }
+  function removeArmorMod(armorName, key) { setArmorMods(armorName, function (l) { return l.filter(function (k) { return k !== key; }); }); }
   function tryInstall(it, lo, slotKey, key) {
     var part = WP().byKey[key]; if (!part) return;
     if (availablePartQty(store.active(), part) <= 0) { toast("You do not own a free " + part.name + ". Buy it in the gray market first."); return; }
@@ -1094,6 +1174,75 @@ EN.inventoryView = (function () {
     return out;
   }
 
+  function impactTable(ch) {
+    var out = [];
+    var armors = ownedArmor(ch);
+    if (!armors.length) {
+      out.push(el("div.muted-box", { style: { padding: "28px 20px", textAlign: "center", borderColor: "var(--success)" },
+        html: "<div style='font-family:var(--disp);font-size:13px;letter-spacing:.18em;color:var(--success)'>⛨ NO ARMOR ON THE BENCH</div><div style='font-size:12px;color:var(--text3);margin-top:8px'>Acquire armor in the gray market or your stash, then bring it here to fit Armor Mods.</div>" }));
+      return out;
+    }
+    if (!_benchArmor || !armors.some(function (a) { return a.name === _benchArmor; })) _benchArmor = armors[0].name;
+    out.push(el("div.row.wrap", { style: { gap: "6px", marginBottom: "10px", alignItems: "center" } },
+      [el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".1em", marginRight: "4px" }, text: "ON THE BENCH" })].concat(
+        armors.map(function (a) {
+          var on = _benchArmor === a.name;
+          return el("button.btn.sm" + (on ? ".primary" : ""), { onclick: function () { _benchArmor = a.name; EN.app.render(); } }, a.name);
+        }))));
+    var it = armors.find(function (a) { return a.name === _benchArmor; }) || armors[0];
+    var lo = armorLoadout(ch, it.name);
+    var tag = (it.group || "").toUpperCase() + (typeof it.dr === "number" ? " · " + it.dr + " DR" : "");
+    var kids = [el("p.help", { style: { margin: "0 0 8px", fontSize: "11.5px" }, text: "One mod per slot; only Modular armor carries slots (Integrated adds one). Every Armor Mod is bench work. The strictest legality on the suit is what a scanner reports." })];
+
+    if (!isModularArmor(it) || armorSlotCount(it) === 0) {
+      kids.push(el("div.muted-box", { style: { padding: "18px", textAlign: "center", borderColor: "var(--border2)" },
+        html: "<div style='font-size:12px;color:var(--text3)'>" + it.name + " is not <b>Modular</b>; it has no Mod Slots. Only Modular armor takes Armor Mods.</div>" }));
+      out.push(EN.ui.panel(it.name, tag, kids, { corners: true }));
+      return out;
+    }
+
+    var slots = armorSlotCount(it), legal = aggregateArmorLegality(it, lo);
+    kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginBottom: "10px" } }, [
+      el("span.mono", { style: { fontSize: "18px", color: lo.length > slots ? "var(--danger)" : "var(--success)" }, html: lo.length + " <span style='font-size:12px;color:var(--text3)'>/ " + slots + " mod slots</span>" }),
+      tagChip(legal, LEGAL_COLOR[legal]),
+      el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: legal === (it.legality || "Legal") ? "as a scanner reads it" : "scanner reads it as " + legal + " (was " + (it.legality || "Legal") + ")" })
+    ]));
+    lo.forEach(function (key) {
+      var m = AM().byKey[key]; if (!m) return;
+      kids.push(el("div.row.between.wrap", { style: { gap: "8px", alignItems: "center", padding: "6px 0", borderTop: "1px solid rgba(35,48,68,.4)" } }, [
+        el("div", { style: { flex: "1 1 200px", minWidth: 0 } }, [
+          el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } }, [
+            el("span", { style: { fontWeight: 600, fontSize: "13px" }, text: m.name }),
+            tagChip(m.legality, LEGAL_COLOR[m.legality]), tagChip(m.rarity, AVAIL_COLOR[m.rarity] || "var(--text3)")
+          ]),
+          el("p.help", { style: { margin: "2px 0 0", fontSize: "11px" }, title: m.effect, text: m.grants })
+        ]),
+        el("button.btn.sm", { title: "Pull " + m.name, style: { color: "var(--text3)" }, onclick: function () { removeArmorMod(it.name, key); } }, "✕")
+      ]));
+    });
+    var fitting = (AM().mods || []).filter(function (m) { return armorModFits(m, it) && lo.indexOf(m.key) === -1; });
+    var ownedOpts = fitting.filter(function (m) { return availableArmorModQty(ch, m) > 0; });
+    if (lo.length >= slots) {
+      kids.push(el("p.help", { style: { margin: "8px 0 0", fontSize: "10.5px", color: "var(--warn)" }, text: "Mod Slots full; pull a mod to fit another." }));
+    } else if (ownedOpts.length) {
+      kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "8px" } }, [
+        el("span", { style: { fontFamily: "var(--disp)", fontSize: "9.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "FIT A MOD" }),
+        el("select", { style: { fontSize: "11px", width: "auto", maxWidth: "100%" }, onchange: function (e) { var k = e.target.value; e.target.value = ""; if (k) tryInstallArmorMod(it, lo, k); } },
+          [el("option", { value: "", text: "+ fit from stash" })].concat(ownedOpts.map(function (m) {
+            var av = availableArmorModQty(ch, m);
+            return el("option", { value: m.key, text: m.name + (av > 1 ? " ×" + av : "") });
+          })))
+      ]));
+    } else if (fitting.length) {
+      kids.push(el("p.help", { style: { margin: "8px 0 0", fontSize: "10.5px", color: "var(--text3)" }, text: "You own no mods that fit this suit. Buy Armor Mods in the gray market." }));
+    } else {
+      kids.push(el("p.help", { style: { margin: "8px 0 0", fontSize: "10.5px", color: "var(--text4)" }, text: "No Armor Mods fit this suit." }));
+    }
+    kids.push(el("p.help", { style: { margin: "10px 0 0", fontSize: "10.5px", color: "var(--text3)" }, text: AM().rules ? AM().rules.flatDR + " " + AM().rules.resistance : "" }));
+    out.push(EN.ui.panel(it.name, tag, kids, { corners: true }));
+    return out;
+  }
+
   function workbenchView(ch) {
     var out = [];
     out.push(el("div.row.wrap", { style: { gap: "6px", marginBottom: "12px" } }, BENCHES.map(function (b) {
@@ -1105,6 +1254,11 @@ EN.inventoryView = (function () {
     if (_bench === "ballistics") {
       out.push(el("p.help", { style: { margin: "0 0 10px", maxWidth: "720px" }, text: b.blurb }));
       ballisticsBench(ch).forEach(function (n) { out.push(n); });
+      return out;
+    }
+    if (_bench === "armor") {
+      out.push(el("p.help", { style: { margin: "0 0 10px", maxWidth: "720px" }, text: b.blurb }));
+      impactTable(ch).forEach(function (n) { out.push(n); });
       return out;
     }
     var body = [
