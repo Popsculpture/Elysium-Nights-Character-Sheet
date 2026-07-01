@@ -1245,6 +1245,343 @@ EN.inventoryView = (function () {
     return out;
   }
 
+  /* ============================================================================
+     TECH BAY (Crafting & Projects). Runs the Projects system: a tier sets a
+     Target Progress, a craft Skill drives the roll, kits feed the pool, and each
+     logged Work Interval moves Progress until the Target is met. Blueprints are
+     derived from the gear catalog (materials = half list price). State lives on
+     ch.projects, mutated through tbSetProjects (lazy-init like weaponParts).
+     ============================================================================ */
+  function CRAFT() { return EN.crafting || {}; }
+  var _tbQuery = "";     // blueprint search
+  var _tbForm = null;    // in-progress custom-project draft, or null
+
+  var TB_TIER_COLOR = { simple: "var(--text3)", standard: "var(--accent)", advanced: "var(--gold)", prototype: "var(--ember)", relic: "var(--danger)" };
+  var TB_SKILL_COLOR = { Engineering: "var(--ember)", Systems: "var(--accent)", Medtech: "var(--success)", Esoterica: "var(--flow)", Investigation: "var(--gold)", Awareness: "var(--gold)" };
+  function tbMod(n) { n = n || 0; return (n >= 0 ? "+" : "") + n; }
+  function tbChip(text, color, title) { return el("span.chip", { title: title || "", style: { fontSize: "9px", color: color, borderColor: color } }, text); }
+  function tbTierChip(tierKey) { var t = CRAFT().tier(tierKey); return tbChip(t.name.toUpperCase() + (t.target ? " · " + t.target : ""), TB_TIER_COLOR[tierKey] || "var(--text2)", t.difficulty + " · " + t.time); }
+  function tbSkillChip(skill) { return tbChip(skill, TB_SKILL_COLOR[skill] || "var(--text2)", "Primary Skill"); }
+
+  function tbSkill(d, name) { return (d.skills || []).find(function (s) { return (s.name || "").toLowerCase() === name.toLowerCase(); }); }
+
+  // owned crafting kits, flagged Basic vs Proficient by the character's tool proficiencies
+  function tbKits(ch) {
+    var cats = CRAFT().kitCategories || {};
+    var profs = (ch.proficiencies && ch.proficiencies.tools) || {};
+    return (ch.equipment || []).map(function (e) {
+      if (!(e.qty > 0)) return null;
+      var it = findItem(e.name);
+      if (!it || it.bucket !== "kits") return null;
+      var cat = it.category || "";
+      if (!cats[cat]) return null;
+      return { name: it.name, category: cat, skill: cats[cat], proficient: !!profs[cat], effect: it.effect || it.desc || "" };
+    }).filter(Boolean);
+  }
+
+  function tbRecipeClass(it) {
+    if (isWeapon(it)) return "Weapons";
+    if (it.kind === "armor") return "Armor";
+    if (it.kind === "shield" || it.kind === "focus") return "Shields & Foci";
+    if (CRAFT()._isAmmo && CRAFT()._isAmmo(it)) return "Ammo & Munitions";
+    if (it.benchPart) return "Weapon Mods";
+    if (it.armorMod) return "Armor Mods";
+    if (it.bucket === "kits" || /Tools|Implements/i.test(it.category || "")) return "Tools & Kits";
+    return "Field Gear";
+  }
+
+  /* ---- project state mutators (ch.projects) ---- */
+  function tbSetProjects(fn) { store.update(function (c) { c.projects = c.projects || []; fn(c.projects, c); }); }
+  function tbNewId() { return "prj_" + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36); }
+  function tbFind(ch, id) { return (ch.projects || []).find(function (p) { return p.id === id; }); }
+
+  function tbStart(spec) {
+    var baseTarget = CRAFT().tier(spec.tier).target || 10;
+    var over = !!spec.overEngineered;
+    var p = {
+      id: tbNewId(),
+      name: (spec.name || "Untitled Project").trim() || "Untitled Project",
+      kind: spec.kind || "build",
+      itemName: spec.itemName || null,
+      skill: spec.skill || "Engineering",
+      tier: spec.tier || "standard",
+      target: over ? Math.max(baseTarget, CRAFT().tier("prototype").target) : baseTarget,
+      progress: 0,
+      materialCost: spec.materialCost || 0,
+      materialsSecured: false,
+      salvaged: false,
+      overEngineered: over,
+      addOnComplete: spec.addOnComplete !== false && !!spec.itemName,
+      log: [],
+      createdAt: Date.now()
+    };
+    tbSetProjects(function (list) { list.push(p); });
+    toast("Project started: " + p.name + " (" + CRAFT().tier(p.tier).name + ", Target " + p.target + ").");
+  }
+  function tbLog(id, outcomeKey) {
+    var oc = CRAFT().outcome(outcomeKey); if (!oc) return;
+    tbSetProjects(function (list) {
+      var p = list.find(function (x) { return x.id === id; }); if (!p) return;
+      p.log = p.log || [];
+      p.log.push({ o: outcomeKey, d: oc.progress });
+      p.progress = Math.min(p.target, (p.progress || 0) + oc.progress);
+    });
+  }
+  function tbUndo(id) {
+    tbSetProjects(function (list) {
+      var p = list.find(function (x) { return x.id === id; }); if (!p || !(p.log || []).length) return;
+      var last = p.log.pop();
+      p.progress = Math.max(0, (p.progress || 0) - (last.d || 0));
+    });
+  }
+  function tbToggleOverEng(id) {
+    tbSetProjects(function (list) {
+      var p = list.find(function (x) { return x.id === id; }); if (!p) return;
+      p.overEngineered = !p.overEngineered;
+      var base = CRAFT().tier(p.tier).target || 10;
+      p.target = p.overEngineered ? Math.max(base, CRAFT().tier("prototype").target) : base;
+      p.progress = Math.min(p.progress, p.target);
+    });
+  }
+  function tbToggleSalvage(id) {
+    tbSetProjects(function (list) { var p = list.find(function (x) { return x.id === id; }); if (p && !p.materialsSecured) p.salvaged = !p.salvaged; });
+  }
+  function tbSecure(id) {
+    var ch = store.active(), p = tbFind(ch, id); if (!p) return;
+    var cost = p.salvaged ? 0 : (p.materialCost || 0);
+    if (cost > (ch.glimmer || 0)) { toast("Not enough Glimmer for materials (" + fmtG(cost) + ")."); return; }
+    tbSetProjects(function (list, c) {
+      var pp = list.find(function (x) { return x.id === id; }); if (!pp) return;
+      c.glimmer = (c.glimmer || 0) - cost;
+      pp.materialsSecured = true;
+    });
+    toast(cost ? "Materials secured for " + fmtG(cost) + "." : "Salvaged; no Glimmer spent.");
+  }
+  function tbComplete(p) {
+    var addName = p.addOnComplete ? p.itemName : null;
+    tbSetProjects(function (list, c) {
+      var i = list.map(function (x) { return x.id; }).indexOf(p.id);
+      if (i >= 0) list.splice(i, 1);
+      if (addName) {
+        c.equipment = c.equipment || [];
+        var e = c.equipment.find(function (x) { return x.name === addName; });
+        if (e) e.qty = (e.qty || 1) + 1; else c.equipment.push({ name: addName, qty: 1 });
+      }
+    });
+    toast(addName ? p.name + " complete; " + addName + " added to your Stash." : p.name + " complete.");
+  }
+  function tbAbandon(id) {
+    if (!confirm("Abandon this Project? Its Progress is lost.")) return;
+    tbSetProjects(function (list) { var i = list.map(function (x) { return x.id; }).indexOf(id); if (i >= 0) list.splice(i, 1); });
+  }
+
+  /* ---- Panel 1: Fabrication Profile (live Engineering / Systems checks + kits) ---- */
+  function tbFabProfile(ch, d) {
+    function skillRow(nm, big) {
+      var s = tbSkill(d, nm);
+      if (!s) return null;
+      var chips = [tbChip((s.tierShort || (s.tier || "untrained")).toUpperCase(), s.untrained ? "var(--text3)" : "var(--accent)", "Skill tier")];
+      if (s.focus) chips.push(tbChip("FOCUS +" + (d.caliber || 1) + " Edge", "var(--gold)", "Skill Focus: adds Caliber Edge Dice to Work Intervals, and your Caliber to emergency d20 fixes"));
+      if (s.specialization) chips.push(tbChip("SPEC +2 Edge", "var(--flow)", "Specialization: adds +2 Edge Dice, and widens your emergency crit range by 1"));
+      return el("div.row.between.wrap", { style: { gap: "8px", alignItems: "center", padding: big ? "7px 0" : "4px 0", borderTop: "1px solid rgba(35,48,68,.4)" } }, [
+        el("div.row.wrap", { style: { gap: "8px", alignItems: "center", flex: "1 1 auto", minWidth: 0 } },
+          [el("span", { style: { fontWeight: 600, fontSize: big ? "13.5px" : "12px", minWidth: "92px", color: TB_SKILL_COLOR[nm] || "var(--text)" }, text: nm }),
+           el("span.mono", { style: { fontSize: big ? "15px" : "12px", color: "var(--text)" }, title: nm + " check: d20 " + tbMod(s.total) + " (" + (s.attrName || "Tech") + " + proficiency)", text: "d20 " + tbMod(s.total || 0) })
+          ].concat(chips))
+      ]);
+    }
+    var kids = [
+      el("p.help", { style: { margin: "0 0 6px", fontSize: "11.5px" }, text: "Your crafting is a Dice Pool built from a Skill and its Attribute, plus Edge from kits, Focus, and Specialization. Engineering and Systems drive most of the bench." }),
+      skillRow("Engineering", true),
+      skillRow("Systems", true)
+    ];
+    // secondary craft skills, compact
+    var secondary = ["Medtech", "Esoterica", "Investigation", "Awareness"].map(function (nm) {
+      var s = tbSkill(d, nm); if (!s) return null;
+      return tbChip(nm + " d20 " + tbMod(s.total || 0) + (s.focus ? " ·F" : "") + (s.specialization ? " ·S" : ""), TB_SKILL_COLOR[nm] || "var(--text2)", nm + " (" + (s.attrName || "") + ")");
+    }).filter(Boolean);
+    if (secondary.length) kids.push(el("div.row.wrap", { style: { gap: "6px", marginTop: "8px", alignItems: "center" } },
+      [el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em", marginRight: "2px" }, text: "ALSO" })].concat(secondary)));
+    // kits
+    var kits = tbKits(ch);
+    kids.push(el("div", { style: { marginTop: "10px", paddingTop: "8px", borderTop: "1px solid var(--border)" } }, [
+      el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em" }, text: "CRAFTING KITS" }),
+      kits.length
+        ? el("div.row.wrap", { style: { gap: "6px", marginTop: "6px", alignItems: "center" } }, kits.map(function (k) {
+            return el("span.chip", { title: k.effect, style: { fontSize: "9.5px", color: k.proficient ? "var(--success)" : "var(--text2)", borderColor: k.proficient ? "var(--success)" : "var(--border2)" } },
+              k.name + " · " + (k.proficient ? "PROFICIENT" : "BASIC"));
+          }))
+        : el("p.help", { style: { margin: "4px 0 0", fontSize: "11px", color: "var(--text3)" }, text: "No crafting kits in your Stash. Buy an Engineering Toolkit, Fabrication Rig, or Smartdeck kit in the gray market; demanding Projects without the right kit run with Snag or a higher Target." })
+    ]));
+    return EN.ui.panel("Fabrication Profile", "ENGINEERING · SYSTEMS · KITS", kids, { corners: true });
+  }
+
+  /* ---- Panel 2: Projects tracker ---- */
+  function tbCustomForm(ch) {
+    _tbForm = _tbForm || { name: "", kind: "custom", skill: "Engineering", tier: "standard" };
+    var f = _tbForm;
+    function sel(val, opts, onCh) {
+      return el("select", { style: { fontSize: "11px", width: "auto" }, onchange: onCh },
+        opts.map(function (o) { return el("option", { value: o.v, selected: val === o.v, text: o.t }); }));
+    }
+    return el("div", { style: { padding: "12px", border: "1px solid var(--accent-dim)", borderRadius: "6px", background: "var(--bg1)", marginBottom: "12px" } }, [
+      el("div.set-editor-h", { style: { fontFamily: "var(--mono)", fontSize: "10px", letterSpacing: ".2em", color: "var(--accent)", marginBottom: "10px" }, text: "NEW CUSTOM PROJECT" }),
+      el("input", { type: "text", value: f.name, placeholder: "What are you building or fixing?", style: { width: "100%", marginBottom: "10px" }, oninput: function (e) { f.name = e.target.value; } }),
+      el("div.row.wrap", { style: { gap: "12px", alignItems: "center", marginBottom: "10px" } }, [
+        el("label.row.wrap", { style: { gap: "5px", alignItems: "center", fontSize: "11px", color: "var(--text3)" } }, ["KIND", sel(f.kind, CRAFT().kinds.map(function (k) { return { v: k.key, t: k.name }; }), function (e) { f.kind = e.target.value; EN.app.render(); })]),
+        el("label.row.wrap", { style: { gap: "5px", alignItems: "center", fontSize: "11px", color: "var(--text3)" } }, ["SKILL", sel(f.skill, CRAFT().craftSkills.map(function (s) { return { v: s, t: s }; }), function (e) { f.skill = e.target.value; })]),
+        el("label.row.wrap", { style: { gap: "5px", alignItems: "center", fontSize: "11px", color: "var(--text3)" } }, ["TIER", sel(f.tier, CRAFT().tiers.filter(function (t) { return t.target; }).map(function (t) { return { v: t.key, t: t.name + " (" + t.target + ")" }; }), function (e) { f.tier = e.target.value; })])
+      ]),
+      CRAFT().kinds.find(function (k) { return k.key === f.kind; }) ? el("p.help", { style: { margin: "0 0 10px", fontSize: "11px" }, text: CRAFT().kinds.find(function (k) { return k.key === f.kind; }).desc }) : null,
+      el("div.row.wrap", { style: { gap: "8px" } }, [
+        el("button.btn.sm.primary", { onclick: function () { tbStart(f); _tbForm = null; EN.app.render(); } }, "✓ START PROJECT"),
+        el("button.btn.sm", { onclick: function () { _tbForm = null; EN.app.render(); } }, "CANCEL")
+      ])
+    ]);
+  }
+
+  function tbProjectCard(ch, d, p) {
+    var tier = CRAFT().tier(p.tier);
+    var s = tbSkill(d, p.skill);
+    var pct = p.target ? Math.min(100, Math.round((p.progress / p.target) * 100)) : 0;
+    var done = p.target && p.progress >= p.target;
+    var kindName = (CRAFT().kinds.find(function (k) { return k.key === p.kind; }) || {}).name || p.kind;
+    var head = el("div.row.between.wrap", { style: { gap: "8px", alignItems: "center" } }, [
+      el("div.row.wrap", { style: { gap: "7px", alignItems: "center", flex: "1 1 auto", minWidth: 0 } }, [
+        el("span", { style: { fontWeight: 600, fontSize: "13.5px" }, text: p.name }),
+        tbChip(kindName.toUpperCase(), "var(--text2)", "Project kind"),
+        tbTierChip(p.overEngineered ? "prototype" : p.tier),
+        tbSkillChip(p.skill),
+        p.overEngineered ? tbChip("OVER-ENGINEERED", "var(--danger)", "Pushed past safe capacity: Prototype tier, and the result carries a Mandatory Flaw") : null
+      ]),
+      el("button.btn.sm", { title: "Abandon this Project", style: { color: "var(--text3)" }, onclick: function () { tbAbandon(p.id); } }, "✕")
+    ]);
+    // live check line
+    var checkLine = el("p.help", { style: { margin: "6px 0 6px", fontSize: "11.5px" } },
+      s ? [document.createTextNode(p.skill + " check: "), el("span.mono", { style: { color: "var(--text)" }, text: "d20 " + tbMod(s.total || 0) }),
+           document.createTextNode(" · pool builds from " + (s.attrName || "attribute") + (s.focus ? ", +" + (d.caliber || 1) + " Edge (Focus)" : "") + (s.specialization ? ", +2 Edge (Spec)" : ""))]
+        : [document.createTextNode(p.skill + " is not on this Freelancer's sheet; the GM sets the roll.")]);
+    // progress bar
+    var bar = el("div", { style: { margin: "2px 0 8px" } }, [
+      el("div.row.between", { style: { marginBottom: "3px" } }, [
+        el("span.mono", { style: { fontSize: "11px", color: done ? "var(--success)" : "var(--accent)" }, text: "PROGRESS " + p.progress + " / " + (p.target || "?") }),
+        el("span.mono", { style: { fontSize: "10px", color: "var(--text3)" }, text: tier.time })
+      ]),
+      el("div", { style: { height: "8px", borderRadius: "4px", background: "var(--bg)", border: "1px solid var(--border)", overflow: "hidden" } },
+        [el("div", { style: { height: "100%", width: pct + "%", background: done ? "var(--success)" : "var(--accent)", transition: "width .2s" } })])
+    ]);
+    // materials
+    var cost = p.salvaged ? 0 : (p.materialCost || 0);
+    var matKids;
+    if (p.materialsSecured) {
+      matKids = [el("span.chip", { style: { fontSize: "9.5px", color: "var(--success)", borderColor: "var(--success)" }, text: p.salvaged ? "✓ SALVAGED" : "✓ MATERIALS SECURED" })];
+    } else if ((p.materialCost || 0) > 0) {
+      matKids = [
+        el("span.mono", { style: { fontSize: "11px", color: "var(--text2)" }, text: "Materials " + fmtG(cost) + (p.salvaged ? " (salvaged)" : " (half list)") }),
+        el("button.btn.sm", { style: { color: "var(--flow)", borderColor: "var(--flow)" }, title: "Salvage parts from broken gear to cut the material cost", onclick: function () { tbToggleSalvage(p.id); } }, p.salvaged ? "UNSALVAGE" : "SALVAGE"),
+        el("button.btn.sm.primary", { title: "Pay the material cost from your Glimmer", onclick: function () { tbSecure(p.id); } }, cost ? "SECURE · " + fmtG(cost) : "SECURE (FREE)")
+      ];
+    } else {
+      matKids = [el("span.help", { style: { fontSize: "11px", color: "var(--text3)", margin: 0 }, text: "No material cost." })];
+    }
+    var materials = el("div.row.wrap", { style: { gap: "8px", alignItems: "center", margin: "0 0 8px" } }, matKids);
+    // work interval logger
+    var logRow = el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } },
+      [el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em", marginRight: "2px" }, text: "LOG INTERVAL" })].concat(
+        CRAFT().outcomes.map(function (o) {
+          return el("button.btn.sm", { title: o.note, style: { color: o.color, borderColor: o.color, fontSize: "10px" }, onclick: function () { tbLog(p.id, o.key); } },
+            o.name + (o.progress ? " +" + o.progress : " +0"));
+        })).concat([
+          (p.log || []).length ? el("button.btn.sm", { title: "Undo the last interval", style: { color: "var(--text3)" }, onclick: function () { tbUndo(p.id); } }, "↶ UNDO") : null
+        ]));
+    // footer: over-engineer toggle + complete
+    var foot = el("div.row.between.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "8px" } }, [
+      el("label.row.wrap", { style: { gap: "6px", alignItems: "center", fontSize: "11px", color: "var(--text3)", cursor: "pointer" } }, [
+        el("input", { type: "checkbox", checked: !!p.overEngineered, onchange: function () { tbToggleOverEng(p.id); } }),
+        document.createTextNode("Over-engineer (past Max Mods → Prototype + flaw)")
+      ]),
+      done ? el("button.btn.sm.primary", { onclick: function () { tbComplete(p); } }, p.addOnComplete ? "✓ COMPLETE · ADD TO STASH" : "✓ COMPLETE") : null
+    ]);
+    return el("div.feature", { style: { borderLeftColor: done ? "var(--success)" : (TB_TIER_COLOR[p.overEngineered ? "prototype" : p.tier] || "var(--border2)") } },
+      [head, checkLine, bar, materials, logRow, foot]);
+  }
+
+  function tbProjects(ch, d) {
+    var projects = ch.projects || [];
+    var kids = [];
+    if (_tbForm) kids.push(tbCustomForm(ch));
+    else kids.push(el("button.btn.sm", { style: { marginBottom: "12px" }, onclick: function () { _tbForm = { name: "", kind: "custom", skill: "Engineering", tier: "standard" }; EN.app.render(); } }, "+ NEW CUSTOM PROJECT"));
+    if (!projects.length) {
+      kids.push(el("div.muted-box", { style: { padding: "22px 18px", textAlign: "center", borderColor: "var(--border2)" },
+        html: "<div style='font-size:12px;color:var(--text3)'>No active Projects. Start one from a Blueprint below, or open a custom Project above.</div>" }));
+    } else {
+      projects.forEach(function (p) { kids.push(tbProjectCard(ch, d, p)); });
+    }
+    return EN.ui.panel("Projects", projects.length + " ACTIVE · DICE POOL METHOD", kids, { corners: true });
+  }
+
+  /* ---- Panel 3: Blueprints (recipes derived from the gear catalog) ---- */
+  function tbRecipeRow(ch, it) {
+    var skill = CRAFT().skillForItem(it), tierKey = CRAFT().tierForItem(it), cost = CRAFT().materialCost(it);
+    return el("div.row.between.wrap", { style: { gap: "8px", alignItems: "center", padding: "5px 0", borderTop: "1px solid rgba(35,48,68,.4)" } }, [
+      el("div.row.wrap", { style: { gap: "7px", alignItems: "center", flex: "1 1 auto", minWidth: 0 } }, [
+        el("span", { style: { fontWeight: 600, fontSize: "12.5px" }, text: it.name }),
+        tbTierChip(tierKey),
+        tbSkillChip(skill),
+        el("span.mono", { style: { fontSize: "10.5px", color: "var(--gold)" }, title: "Materials cost half the list price of " + fmtG(it.price || 0), text: "mat " + fmtG(cost) })
+      ]),
+      el("button.btn.sm.primary", { title: "Open a Build Project for this item", onclick: function () {
+        tbStart({ kind: "build", name: "Build " + it.name, itemName: it.name, skill: skill, tier: tierKey, materialCost: cost });
+      } }, "+ PROJECT")
+    ]);
+  }
+  function tbBlueprints(ch) {
+    var q = (_tbQuery || "").trim().toLowerCase();
+    var items = catalog().filter(function (it) { return it && it.name && !it.upkeep; });
+    var groups = {};
+    items.forEach(function (it) { var c = tbRecipeClass(it); (groups[c] = groups[c] || []).push(it); });
+    var ORDER = ["Weapons", "Armor", "Shields & Foci", "Ammo & Munitions", "Weapon Mods", "Armor Mods", "Tools & Kits", "Field Gear"];
+    var kids = [
+      el("p.help", { style: { margin: "0 0 8px", fontSize: "11.5px" }, text: "Anything you can name, you can build. Each shows its Project tier, primary Skill, and material cost (half list price). Open one as a Build Project." }),
+      el("input", { type: "text", value: _tbQuery, placeholder: "Search blueprints…", style: { width: "100%", marginBottom: "10px" }, oninput: function (e) { _tbQuery = e.target.value; EN.app.render(); } })
+    ];
+    var shown = 0;
+    ORDER.forEach(function (cls) {
+      var list = (groups[cls] || []).filter(function (it) { return !q || it.name.toLowerCase().indexOf(q) !== -1; });
+      if (!list.length) return;
+      list.sort(function (a, b) { return a.name.localeCompare(b.name); });
+      shown += list.length;
+      var key = "tb-recipe-" + cls, open = !!_open[key] || !!q;
+      kids.push(el("div.section-title.clickable", { style: { margin: "8px 0 2px", cursor: "pointer" }, onclick: function () { _open[key] = !open; EN.app.render(); } },
+        [document.createTextNode(cls + "  (" + list.length + ")"), el("span.line"), el("span.collapse-caret", { style: { marginLeft: "4px" }, text: open ? "▾" : "▸" })]));
+      if (open) list.forEach(function (it) { kids.push(tbRecipeRow(ch, it)); });
+    });
+    if (!shown) kids.push(el("p.help", { style: { margin: "6px 0 0", color: "var(--text3)" }, text: "No blueprints match that search." }));
+    return EN.ui.panel("Blueprints", "RECIPES · TIER · SKILL · MATERIALS", kids, { corners: true });
+  }
+
+  /* ---- Panel 4: Modding & Mounts reference ---- */
+  function tbModding() {
+    var R = CRAFT().rules || {};
+    var kids = [
+      el("p.help", { style: { margin: "0 0 6px" }, html: "<b style='color:var(--text2)'>One Project per Mod.</b> " + (R.oneProjectPerMod || "") }),
+      el("p.help", { style: { margin: "0 0 6px" }, html: "<b style='color:var(--ember)'>Over-Engineering.</b> " + (R.overEngineering || "") }),
+      el("p.help", { style: { margin: "0 0 6px" }, html: "<b style='color:var(--gold)'>Materials.</b> " + (R.materials || "") }),
+      el("p.help", { style: { margin: "0 0 10px" }, html: "<b style='color:var(--accent)'>Kits.</b> " + (R.kits || "") }),
+      el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
+        el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em", marginRight: "2px" }, text: "SLOTTED MODS LIVE AT" }),
+        el("button.btn.sm", { style: { color: "var(--ember)", borderColor: "var(--ember)" }, onclick: function () { _bench = "ballistics"; EN.app.render(); } }, "⊚ ARMS TABLE"),
+        el("button.btn.sm", { style: { color: "var(--success)", borderColor: "var(--success)" }, onclick: function () { _bench = "armor"; EN.app.render(); } }, "⛨ IMPACT TABLE")
+      ])
+    ];
+    return EN.ui.panel("Modding & Mounts", "ONE MOD PER MOUNT · MAX MODS · OVER-ENGINEERING", kids, { corners: true });
+  }
+
+  function techBay(ch) {
+    var d = EN.engine.derive(ch);
+    return [tbFabProfile(ch, d), tbProjects(ch, d), tbBlueprints(ch), tbModding()];
+  }
+
   function workbenchView(ch) {
     var out = [];
     out.push(el("div.row.wrap", { style: { gap: "6px", marginBottom: "12px" } }, BENCHES.map(function (b) {
@@ -1261,6 +1598,11 @@ EN.inventoryView = (function () {
     if (_bench === "armor") {
       out.push(el("p.help", { style: { margin: "0 0 10px", maxWidth: "720px" }, text: b.blurb }));
       impactTable(ch).forEach(function (n) { out.push(n); });
+      return out;
+    }
+    if (_bench === "tech") {
+      out.push(el("p.help", { style: { margin: "0 0 10px", maxWidth: "720px" }, text: b.blurb }));
+      techBay(ch).forEach(function (n) { out.push(n); });
       return out;
     }
     var body = [
