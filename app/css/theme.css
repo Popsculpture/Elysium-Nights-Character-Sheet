@@ -304,6 +304,7 @@ select{ appearance:none; background-image:linear-gradient(45deg,transparent 50%,
   border:1px solid; border-radius:3px; font-family:var(--mono); font-size:11px; background:var(--bg1); }
 .die.dropped{ opacity:.3; text-decoration:line-through; }
 .die.rolling{ animation:die-shake .12s infinite; }
+.tb-die.rolling{ animation:die-shake .12s infinite; }
 @keyframes die-shake{ 0%{transform:translateY(0) rotate(0);} 25%{transform:translateY(-1px) rotate(-6deg);} 75%{transform:translateY(1px) rotate(6deg);} }
 .roll-group{ background:var(--bg1); border:1px solid var(--border); border-radius:var(--r); padding:12px; margin-bottom:10px; }
 

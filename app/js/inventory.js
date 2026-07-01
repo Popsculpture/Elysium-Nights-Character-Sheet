@@ -1268,26 +1268,60 @@ EN.inventoryView = (function () {
 
   // a rolled die drawn as its physical shape: d10 = kite face, d12 = pentagon
   // with facet lines. The value colors by what it counts (2 / 1 / nothing).
-  function tbDieFace(die, poolColor) {
-    var num = die.hits === 2 ? poolColor : (die.hits === 1 ? "var(--text)" : "var(--text4)");
+  // While animating, the face shows "?" in a neutral color (no spoilers), shakes
+  // via .tb-die.rolling, and carries data attrs for tbAnimateRoll to scramble.
+  function tbDieFace(die, poolColor, animating) {
+    var num = animating ? "var(--text)" : (die.hits === 2 ? poolColor : (die.hits === 1 ? "var(--text)" : "var(--text4)"));
     var edge = die.sides === 12 ? "var(--gold)" : "var(--border2)";
-    var fs = die.value >= 10 ? 30 : 36;
+    var fs = animating ? 32 : (die.value >= 10 ? 30 : 36);
+    var shown = animating ? "?" : die.value;
     var svg;
     if (die.sides === 12) {
       svg = '<svg viewBox="0 0 100 100" width="24" height="25" aria-hidden="true">'
         + '<polygon points="50,2 98,37 80,95 20,95 2,37" fill="rgba(0,0,0,.35)" style="stroke:' + edge + '" stroke-width="4" stroke-linejoin="round"/>'
         + '<polygon points="50,26.6 75,44.8 65.6,74.9 34.4,74.9 25,44.8" fill="none" style="stroke:' + edge + '" stroke-width="2.5" opacity=".38"/>'
-        + '<text x="50" y="55" text-anchor="middle" dominant-baseline="central" style="fill:' + num + ';font-family:var(--mono);font-weight:700" font-size="' + fs + '">' + die.value + '</text>'
+        + '<text x="50" y="55" text-anchor="middle" dominant-baseline="central" style="fill:' + num + ';font-family:var(--mono);font-weight:700" font-size="' + fs + '">' + shown + '</text>'
         + '</svg>';
     } else {
       svg = '<svg viewBox="0 0 100 100" width="22" height="25" aria-hidden="true">'
         + '<polygon points="50,3 95,40 50,97 5,40" fill="rgba(0,0,0,.35)" style="stroke:' + edge + '" stroke-width="4" stroke-linejoin="round"/>'
         + '<path d="M5,40 L50,58 L95,40 M50,58 L50,97" fill="none" style="stroke:' + edge + '" stroke-width="2.5" opacity=".38"/>'
-        + '<text x="50" y="38" text-anchor="middle" dominant-baseline="central" style="fill:' + num + ';font-family:var(--mono);font-weight:700" font-size="' + fs + '">' + die.value + '</text>'
+        + '<text x="50" y="38" text-anchor="middle" dominant-baseline="central" style="fill:' + num + ';font-family:var(--mono);font-weight:700" font-size="' + fs + '">' + shown + '</text>'
         + '</svg>';
     }
-    return el("span", { title: "d" + die.sides + (die.hits ? ", counts " + die.hits : ", no effect"), html: svg,
+    return el("span.tb-die" + (animating ? ".rolling" : ""), {
+      title: "d" + die.sides + (animating ? "" : (die.hits ? ", counts " + die.hits : ", no effect")), html: svg,
+      dataset: animating ? { die: "1", final: String(die.value), sides: String(die.sides) } : null,
       style: { display: "inline-flex", alignItems: "center" } });
+  }
+
+  // the Attribute Matrix roll choreography, pointed at a Project's roll box:
+  // scramble every die for ~700ms with a staggered settle, then a final render
+  // reveals the counted colors, totals, Margin, and the matching outcome.
+  function tbAnimateRoll(id) {
+    var rs = _tbRoll[id];
+    var root = document.querySelector('[data-roll="' + id + '"]');
+    if (!rs || !root) { if (rs) rs.animating = false; return; }
+    var token = rs.animToken;
+    var dice = [].slice.call(root.querySelectorAll("[data-die]"));
+    var tots = [].slice.call(root.querySelectorAll("[data-tot]"));
+    var t = 0, dur = 700;
+    var timer = setInterval(function () {
+      t += 50;
+      dice.forEach(function (w, i) {
+        var txt = w.querySelector("text");
+        if (!txt || !w.isConnected) return;
+        var sides = Number(w.dataset.sides) || 10;
+        if (t < dur - (dice.length - i) * 4) { txt.textContent = String(1 + Math.floor(Math.random() * sides)); return; }
+        txt.textContent = w.dataset.final;
+        w.classList.remove("rolling");
+      });
+      tots.forEach(function (n) { if (n.isConnected && t < dur) n.textContent = "= " + Math.floor(Math.random() * 8) + " " + n.dataset.word; });
+      if (t >= dur) {
+        clearInterval(timer);
+        if (rs.animToken === token) { rs.animating = false; EN.app.render(); }
+      }
+    }, 50);
   }
 
   function tbSkill(d, name) { return (d.skills || []).find(function (s) { return (s.name || "").toLowerCase() === name.toLowerCase(); }); }
@@ -1581,7 +1615,10 @@ EN.inventoryView = (function () {
             var sRes = EN.engine.rollDicePool(snagPool);
             var margin = eRes.total - sRes.total;
             rs.result = { edge: eRes, snag: sRes, margin: margin, outcome: CRAFT().marginToOutcomeKey(margin) };
+            rs.animating = true;
+            rs.animToken = (rs.animToken || 0) + 1;
             EN.app.render();
+            tbAnimateRoll(p.id);
           }
         }, "⚄ ROLL WORK INTERVAL"),
         !rs.result ? el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "or roll at the table and log the outcome below" }) : null
@@ -1591,18 +1628,22 @@ EN.inventoryView = (function () {
         var diceRow = function (label, color, r, word) {
           return el("div.row.wrap", { style: { gap: "3px", alignItems: "center", marginTop: "4px" } },
             [el("span.mono", { style: { fontSize: "9px", color: color, letterSpacing: ".1em", minWidth: "38px" }, text: label })]
-            .concat(r.rolls.length ? r.rolls.map(function (die) { return tbDieFace(die, color); })
+            .concat(r.rolls.length ? r.rolls.map(function (die) { return tbDieFace(die, color, rs.animating); })
                                    : [el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "no dice" })])
-            .concat([el("span.mono", { style: { fontSize: "11px", color: "var(--text2)", marginLeft: "5px" }, text: "= " + r.total + " " + word })]));
+            .concat([rs.animating
+              ? el("span.mono", { dataset: { tot: "1", word: word }, style: { fontSize: "11px", color: "var(--text3)", marginLeft: "5px" }, text: "= · " + word })
+              : el("span.mono", { style: { fontSize: "11px", color: "var(--text2)", marginLeft: "5px" }, text: "= " + r.total + " " + word })]));
         };
         rollKids.push(diceRow("EDGE", "var(--success)", res.edge, "successes"));
         rollKids.push(diceRow("SNAG", "var(--danger)", res.snag, "failures"));
-        rollKids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "6px" } }, [
-          el("span.mono", { style: { fontSize: "13px", color: oc ? oc.color : "var(--text)" }, text: "MARGIN " + (res.margin >= 0 ? "+" : "") + res.margin + " · " + (oc ? oc.name : res.outcome) }),
-          el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: (oc ? oc.note + ". " : "") + "Log it below." })
-        ]));
+        if (!rs.animating) {
+          rollKids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "6px" } }, [
+            el("span.mono", { style: { fontSize: "13px", color: oc ? oc.color : "var(--text)" }, text: "MARGIN " + (res.margin >= 0 ? "+" : "") + res.margin + " · " + (oc ? oc.name : res.outcome) }),
+            el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: (oc ? oc.note + ". " : "") + "Log it below." })
+          ]));
+        }
       }
-      rollBox = el("div", { style: { padding: "8px 10px", border: "1px solid var(--border)", borderRadius: "4px", background: "rgba(0,0,0,.15)", margin: "6px 0 8px" } }, rollKids);
+      rollBox = el("div", { dataset: { roll: p.id }, style: { padding: "8px 10px", border: "1px solid var(--border)", borderRadius: "4px", background: "rgba(0,0,0,.15)", margin: "6px 0 8px" } }, rollKids);
     }
     // progress bar
     var bar = el("div", { style: { margin: "2px 0 8px" } }, [
@@ -1629,7 +1670,8 @@ EN.inventoryView = (function () {
     }
     var materials = el("div.row.wrap", { style: { gap: "8px", alignItems: "center", margin: "0 0 8px" } }, matKids);
     // work interval logger; a rolled result pre-highlights its matching outcome
-    var rolledKey = rs.result ? rs.result.outcome : null;
+    // (withheld while the dice are still tumbling, no spoilers)
+    var rolledKey = (rs.result && !rs.animating) ? rs.result.outcome : null;
     var logRow = el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } },
       [el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em", marginRight: "2px" }, text: "LOG INTERVAL" })].concat(
         CRAFT().outcomes.map(function (o) {
