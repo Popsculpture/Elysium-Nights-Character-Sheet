@@ -1961,9 +1961,20 @@ EN.combatView = (function () {
         var w = findWeapon(n);
         if (w && (w.group === "Simple" || w.group === "Martial")) { var m = (w.damage || "").match(/\d*d\d+/); if (m) { meleeDie = m[0]; meleeName = w.name; } }
       });
+      // Block works with a shield, a flat Block Bonus, or the Plated trait; a shield's die stacks on top.
+      var plated = !!(dg.armor && (dg.armor.traits || []).indexOf("Plated") !== -1);
+      var blockBonus = dg.blockBonus || 0;
+      var platedHalf = plated ? Math.floor(((dg.armor && dg.armor.dr) || 0) / 2) : 0;
+      var canBlock = !!dg.shield || blockBonus > 0 || plated;
+      var blockAdds = [];
+      if (blockBonus) blockAdds.push("+" + blockBonus + " Block Bonus");
+      if (platedHalf) blockAdds.push("+" + platedHalf + " half-DR (Plated)");
+      if (dg.shield) blockAdds.push("+" + dg.shieldBlockDie + " (" + dg.shield.name + ")");
       var DEF_LIVE = {
-        Block:   { avail: !!dg.shield, req: "a Physical Shield",
-                   summary: dg.shield ? "Adds " + dg.shieldBlockDie + " to your Armor DR (" + (d.armorDR || 0) + ") against this hit, no roll to enable" : "Reinforce your Armor DR with the shield's Block die" },
+        Block:   { avail: canBlock, req: "a shield, a Block Bonus, or Plated armor",
+                   summary: blockAdds.length
+                     ? "Adds " + blockAdds.join(", ") + " to your Armor DR (" + (d.armorDR || 0) + ") against this hit, no roll"
+                     : "Reinforce your Armor DR against this hit" },
         Dodge:   { avail: true, req: "",
                    summary: (acro ? "+" + acro.total + " Defense" : "+Agility + Acrobatics to Defense") + " vs this hit; on a miss, shift 1 space" + (dg.speedPenalty ? " · GM may forbid in heavy armor" : "") },
         Parry:   { avail: !!meleeDie || !!dg.shield, req: "a melee weapon or shield",

@@ -68,9 +68,9 @@ EN.combat = {
     {
       name: "Block",
       cost: "1 Impulse Action",
-      requirement: "Physical Shield",
+      requirement: "Shield, Block Bonus, or Plated armor",
       trigger: "Any attack you can brace against",
-      text: "You brace your stance and put solid mass between yourself and the incoming threat, letting the barrier eat the kinetic shock.\n- Requirement: Must have a physical Shield equipped.\n- The Effect: You reinforce your passive mitigation. Add the Shield's listed Block Value directly to your Armor DR against this specific attack.\n\nPlayer Advice: Tactical Note: Blocking is highly reliable because, offering a guaranteed spike in damage reduction without a die roll."
+      text: "You brace your stance and put solid mass between yourself and the incoming threat, letting the barrier eat the kinetic shock.\n- Requirement: A physical Shield equipped, armor with a listed Block Bonus, or the Plated trait.\n- The Effect: You reinforce your passive mitigation for this attack. On top of your Armor DR, add your armor's flat Block Bonus, half the armor's DR (rounded down) if it is Plated, and a Shield's Block die if you carry one. These sources stack.\n\nPlayer Advice: Tactical Note: Blocking is highly reliable; the flat Block Bonus and Plated half-DR apply with no roll, and a Shield adds its Block die on top."
     },
     {
       name: "Dodge",
