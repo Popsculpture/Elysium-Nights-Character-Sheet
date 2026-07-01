@@ -1283,10 +1283,12 @@ EN.inventoryView = (function () {
         + '<text x="50" y="55" text-anchor="middle" dominant-baseline="central" style="fill:' + num + ';font-family:var(--mono);font-weight:700" font-size="' + fs + '">' + shown + '</text>'
         + '</svg>';
     } else {
+      // true d10 silhouette: apex, shoulders, knees, bottom apex; the front kite
+      // face meets a center vertex that drops a vertical edge to the bottom
       svg = '<svg viewBox="0 0 100 100" width="22" height="25" aria-hidden="true">'
-        + '<polygon points="50,3 95,40 50,97 5,40" fill="rgba(0,0,0,.35)" style="stroke:' + edge + '" stroke-width="4" stroke-linejoin="round"/>'
-        + '<path d="M5,40 L50,58 L95,40 M50,58 L50,97" fill="none" style="stroke:' + edge + '" stroke-width="2.5" opacity=".38"/>'
-        + '<text x="50" y="38" text-anchor="middle" dominant-baseline="central" style="fill:' + num + ';font-family:var(--mono);font-weight:700" font-size="' + fs + '">' + shown + '</text>'
+        + '<polygon points="50,3 95,40 74,82 50,97 26,82 5,40" fill="rgba(0,0,0,.35)" style="stroke:' + edge + '" stroke-width="4" stroke-linejoin="round"/>'
+        + '<path d="M5,40 L50,64 L95,40 M50,64 L50,97" fill="none" style="stroke:' + edge + '" stroke-width="3.5" stroke-linejoin="round" opacity=".75"/>'
+        + '<text x="50" y="37" text-anchor="middle" dominant-baseline="central" style="fill:' + num + ';font-family:var(--mono);font-weight:700" font-size="' + fs + '">' + shown + '</text>'
         + '</svg>';
     }
     return el("span.tb-die" + (animating ? ".rolling" : ""), {
