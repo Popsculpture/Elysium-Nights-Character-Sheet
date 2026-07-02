@@ -16,7 +16,8 @@ EN.inventoryView = (function () {
   var _benchWeapon = null;   // Arms Table: the weapon currently being customized
   var _benchArmor = null;    // Impact Table: the armor currently being customized
   var _open = {};          // collapse state for item cards
-  var _ledgerAmt = 100;    // remembered credit/debit amount
+  var _ledgerAmt = 100;    // remembered credit/debit amount (Glimmer)
+  var _ledgerNx = 0.25;    // remembered credit/debit amount (Nexus, fractional)
   // Storefront (picked via the ⚙ settings popover; same stock, different pricing):
   //   'undercut'   · The Undercut: book list prices, no markups
   //   'register'   · The Register: predatory corporate markups (legality × scarcity)
@@ -50,6 +51,9 @@ EN.inventoryView = (function () {
   function storefront() { return STOREFRONTS.find(function (s) { return s.key === _mode; }) || STOREFRONTS[0]; }
 
   function fmtG(n) { return "𝒢" + (n || 0).toLocaleString(); }
+  function fmtNx(n) { return "◎" + (Math.round((n || 0) * 100) / 100); }
+  // the ◎ number inside an item's nexus tag ("◎0.3 buyout" -> 0.3); null when absent
+  function nexusPrice(it) { var m = String((it && it.nexus) || "").match(/[\d.]+/); return m ? parseFloat(m[0]) : null; }
   function streetPrice(it) {
     if (it.upkeep) return 0;   // leased gear always has a 𝒢0 buy-in; the cost is the recurring Upkeep, not a sale price
     if (_mode === "register") return Math.ceil(it.price * (LEGAL_MULT[it.legality] || 1) * (AVAIL_MULT[it.availability] || 1));
@@ -163,12 +167,65 @@ EN.inventoryView = (function () {
       c.glimmer = (c.glimmer || 0) - sp;
       c.equipment = c.equipment || [];
       var e = c.equipment.find(function (x) { return x.name === it.name; });
-      if (e) e.qty = (e.qty || 1) + 1; else c.equipment.push({ name: it.name, qty: 1 });
+      if (e) e.qty = (e.qty || 1) + 1;
+      else {
+        e = { name: it.name, qty: 1 };
+        // signing a lease starts the 7-day installment clock (one day per Long Rest).
+        // Only on a fresh entry: re-leasing an item already in arrears does not clear the debt.
+        if (it.upkeep) { e.leaseDays = 7; e.leaseDue = false; e.leaseOwned = false; }
+        c.equipment.push(e);
+      }
     });
     toast(_mode === "register" ? it.name + " purchased for " + fmtG(sp) + ". Compliance fees included. All sales final." :
           _mode === "surplus" ? it.name + " claimed from the Guild lot for " + fmtG(sp) + ". Mostly works." :
           _mode === "fivefinger" ? it.name + " taken. You were never here." :
+          it.upkeep ? it.name + " lease signed: 𝒢0 buy-in, " + fmtG(it.upkeep) + " due in 7 days (Long Rests)." :
           it.name + " acquired for " + fmtG(sp) + ". No receipt. It never happened.");
+  }
+
+  /* ---- lease lifecycle: countdown, installment, buyout -------------------
+     Lease state rides on the equipment entry: leaseDays (days to the next
+     installment), leaseDue (payment due; the item grants NOTHING until paid),
+     leaseOwned (bought out; owned outright, upkeep over). A Long Rest ticks
+     every active lease one day via leaseTick (called from the Freelancer tab). */
+  function leaseDaysOf(e) { return e.leaseDays == null ? 7 : e.leaseDays; }
+  function leaseTick(c) {
+    var due = [];
+    (c.equipment || []).forEach(function (e) {
+      if (!(e.qty > 0) || e.leaseOwned || e.leaseDue) return;
+      var it = findItem(e.name);
+      if (!it || !it.upkeep) return;
+      var days = leaseDaysOf(e) - 1;
+      if (days <= 0) { e.leaseDays = 0; e.leaseDue = true; due.push(e.name); }
+      else e.leaseDays = days;
+    });
+    return due;
+  }
+  function payLease(name) {
+    var ch = store.active(), it = findItem(name);
+    var e0 = (ch.equipment || []).find(function (x) { return x.name === name; });
+    if (!it || !it.upkeep || !e0 || !e0.leaseDue || e0.leaseOwned) return;   // nothing due, nothing to pay
+    if ((ch.glimmer || 0) < it.upkeep) { toast("Not enough Glimmer for the installment (" + fmtG(it.upkeep) + ")."); return; }
+    store.update(function (c) {
+      var e = (c.equipment || []).find(function (x) { return x.name === name; });
+      if (!e || !e.leaseDue || e.leaseOwned) return;   // re-check live: a double-fire cannot double-charge
+      c.glimmer = (c.glimmer || 0) - it.upkeep;
+      e.leaseDue = false; e.leaseDays = 7;
+    });
+    toast(name + " installment paid (" + fmtG(it.upkeep) + "); next payment in 7 days. Benefits restored.");
+  }
+  function buyoutLease(name) {
+    var ch = store.active(), it = findItem(name), px = nexusPrice(it);
+    var e0 = (ch.equipment || []).find(function (x) { return x.name === name; });
+    if (!it || !it.upkeep || px == null || !e0 || e0.leaseOwned) return;   // only leased, not-yet-owned gear
+    if ((ch.nexus || 0) < px) { toast("Not enough Nexus for the buyout (" + fmtNx(px) + ")."); return; }
+    store.update(function (c) {
+      var e = (c.equipment || []).find(function (x) { return x.name === name; });
+      if (!e || e.leaseOwned) return;   // re-check live: a double-fire cannot double-charge
+      c.nexus = Math.round(((c.nexus || 0) - px) * 100) / 100;
+      e.leaseOwned = true; e.leaseDue = false; delete e.leaseDays;
+    });
+    toast(name + " bought out for " + fmtNx(px) + ". It's yours outright; no more Upkeep, no off switch.");
   }
   // buying chrome drops it in the Chrome Stash (uninstalled); you install it at a clinic from the Chrome tab
   function buyCyber(it) {
@@ -292,7 +349,11 @@ EN.inventoryView = (function () {
         it.cyber ? tagChip(it.sp + " SP", it.sp >= 3 ? "var(--ember)" : "var(--gold)", "Static Points, adds to your Total Static / Chrome Tax") : null,
         (it.cyber && it.slots) ? tagChip(it.slots + " slots", "var(--flow)", "Mod slots, compatible mods don't add SP") : null,
         (it.nexus && it.vendor !== false) ? tagChip("◎ " + it.nexus.replace(/^◎/, ""), "var(--flow)", "Nexus alternative: " + it.nexus) : null,
-        it.upkeep ? tagChip("LEASED", "var(--ember)", "Leased, 𝒢0 buy-in, " + fmtG(it.upkeep) + "/wk Upkeep. Lapse and it drops to its zero state.") : null,
+        it.upkeep ? (mode === "stash" && owned
+          ? (owned.leaseOwned ? tagChip("OWNED OUTRIGHT", "var(--success)", "Lease bought out; it is yours, no more Upkeep.")
+             : owned.leaseDue ? tagChip("⚠ PAYMENT DUE", "var(--danger)", "Installment due: " + fmtG(it.upkeep) + ". It grants none of its benefits until you pay.")
+             : tagChip("LEASE · " + leaseDaysOf(owned) + (leaseDaysOf(owned) === 1 ? " DAY" : " DAYS"), "var(--gold)", "Next installment " + fmtG(it.upkeep) + " in " + leaseDaysOf(owned) + " day(s); each Long Rest marks one day."))
+          : tagChip("LEASED", "var(--ember)", "Leased, 𝒢0 buy-in, " + fmtG(it.upkeep) + "/wk Upkeep. Lapse and it drops to its zero state.")) : null,
         (mode === "mkt" && owned) ? tagChip("Owned ×" + owned.qty, "var(--success)") : null,
         (mode === "stash" && isEquipped(ch, it.name)) ? tagChip("⚔ Equipped", "var(--accent)", "Live in the Attacks list on the Freelancer tab") : null,
         (mode === "stash" && isDefEquipped(ch, it)) ? tagChip((DEF_VERB[it.kind] || {}).off || "✓ Equipped", "var(--accent)", "Active, its stats read on the Freelancer tab") : null
@@ -329,11 +390,22 @@ EN.inventoryView = (function () {
       mktBtn = el("button.btn.sm" + (afford ? ".primary" : ""), { disabled: !afford, title: it.cyber ? "Buy to your Chrome Stash; install it later at a clinic (Chrome tab)" : priceTitle(it), onclick: function () { it.cyber ? buyCyber(it) : buy(it); } },
         afford ? "BUY · " + fmtG(sp) : "CAN'T AFFORD");
     }
+    // lease servicing (stash): PAY when the installment is due, BUYOUT while leased
+    var leaseBtns = [];
+    if (it.upkeep && owned && !owned.leaseOwned) {
+      if (owned.leaseDue) leaseBtns.push(el("button.btn.sm", {
+        title: "Pay the installment (" + fmtG(it.upkeep) + "). Until paid, " + it.name + " grants none of its benefits.",
+        style: { color: "var(--danger)", borderColor: "var(--danger)" }, onclick: function () { payLease(it.name); } }, "⚠ PAY · " + fmtG(it.upkeep)));
+      var bpx = nexusPrice(it);
+      if (bpx != null) leaseBtns.push(el("button.btn.sm", {
+        title: "Buy out the lease for " + fmtNx(bpx) + " Nexus. The item becomes yours outright and Upkeep ends.",
+        style: { color: "var(--flow)", borderColor: "var(--flow)" }, onclick: function () { buyoutLease(it.name); } }, "BUYOUT · " + fmtNx(bpx)));
+    }
     // action button(s): a single market button, or the stash equip/fence/drop group
     var actionEl = mode === "mkt"
       ? mktBtn
       : el("div.row.wrap", { style: { gap: "6px", justifyContent: "flex-end" } },
-          (isWeapon(it) ? [
+          leaseBtns.concat(isWeapon(it) ? [
             isEquipped(ch, it.name)
               ? el("button.btn.sm.primary", { title: "Unequip, remove from the Attacks list on the Freelancer tab", onclick: function () { toggleEquip(it.name); } }, "✓ EQUIPPED")
               : el("button.btn.sm", { title: "Equip, add to the Attacks list on the Freelancer tab", style: { color: "var(--accent)", borderColor: "var(--accent)" }, onclick: function () { toggleEquip(it.name); } }, "⚔ EQUIP")
@@ -1901,6 +1973,8 @@ EN.inventoryView = (function () {
     /* sub-tab rail + glimmer ledger */
     var amtIn = el("input", { type: "number", min: 1, value: _ledgerAmt, style: { width: "80px", textAlign: "center" },
       oninput: function () { _ledgerAmt = Math.max(1, Number(this.value) || 1); } });
+    var nxIn = el("input", { type: "number", min: 0.05, step: 0.05, value: _ledgerNx, style: { width: "64px", textAlign: "center" },
+      oninput: function () { _ledgerNx = Math.max(0.05, Number(this.value) || 0.05); } });
     function subTab(key, label) {
       return el("button.btn.sm" + (_sub === key ? ".primary" : ""), { onclick: function () { _sub = key; EN.app.render(); } }, label);
     }
@@ -1925,7 +1999,15 @@ EN.inventoryView = (function () {
         el("button.btn.sm", { title: "Credit the ledger (payouts, fenced goods, day-job pay)", style: { color: "var(--success)", borderColor: "var(--success)" },
           onclick: function () { store.update(function (c) { c.glimmer = (c.glimmer || 0) + _ledgerAmt; }); } }, "+ CREDIT"),
         el("button.btn.sm", { title: "Debit the ledger (lifestyle, upkeep, bribes, bad nights)", style: { color: "var(--danger)", borderColor: "var(--danger)" },
-          onclick: function () { store.update(function (c) { c.glimmer = Math.max(0, (c.glimmer || 0) - _ledgerAmt); }); } }, "− DEBIT")
+          onclick: function () { store.update(function (c) { c.glimmer = Math.max(0, (c.glimmer || 0) - _ledgerAmt); }); } }, "− DEBIT"),
+        // Nexus wallet: the high-scrutiny currency (lease buyouts, brokered commissions)
+        el("span.mono", { title: "Nexus tokens, the high-scrutiny currency. Brokered commissions, lease buyouts, favors with a paper trail.",
+          style: { fontSize: "20px", color: "var(--flow)", marginLeft: "6px" }, text: fmtNx(ch.nexus || 0) }),
+        nxIn,
+        el("button.btn.sm", { title: "Credit Nexus (brokered payouts, favors called in)", style: { color: "var(--success)", borderColor: "var(--success)" },
+          onclick: function () { store.update(function (c) { c.nexus = Math.round(((c.nexus || 0) + _ledgerNx) * 100) / 100; }); } }, "+ ◎"),
+        el("button.btn.sm", { title: "Debit Nexus (buyouts, high-scrutiny purchases)", style: { color: "var(--danger)", borderColor: "var(--danger)" },
+          onclick: function () { store.update(function (c) { c.nexus = Math.max(0, Math.round(((c.nexus || 0) - _ledgerNx) * 100) / 100); }); } }, "− ◎")
       ])
     ]));
 
@@ -1934,5 +2016,7 @@ EN.inventoryView = (function () {
     mount.appendChild(el("div", null, blocks));
   }
 
-  return { render: render };
+  // leaseTick: mutator for store.update, marks one day on every active lease
+  // (called by the Freelancer tab's Long Rest); returns names that came due
+  return { render: render, leaseTick: leaseTick };
 })();

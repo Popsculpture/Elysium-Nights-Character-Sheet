@@ -438,22 +438,36 @@ EN.engine = (function () {
     return items.find(function (i) { return i.name === name; }) || null;
   }
   function hasTrait(item, t) { return !!(item && item.traits && item.traits.indexOf(t) !== -1); }
+  // A leased item whose installment is due grants NOTHING until it is paid.
+  // Lease state lives on the equipment entry (leaseDue / leaseOwned), maintained
+  // by the Inventory ledger and ticked one day per Long Rest.
+  function leaseLapsed(ch, name) {
+    if (!name) return false;
+    var e = ((ch && ch.equipment) || []).find(function (x) { return x.name === name; });
+    return !!(e && e.leaseDue && !e.leaseOwned);
+  }
   function defensiveLoadout(ch) {
     var armor = armorItem(ch && ch.equippedArmor);
     var shield = armorItem(ch && ch.equippedShield);
     var focus = armorItem(ch && ch.equippedFocus);
-    var wardDie = (focus && focus.wardDie) || (armor && armor.wardDie) || null;
+    // lapsed leases keep their drawbacks (weight is weight) but grant no benefits
+    var armorLapsed = !!armor && leaseLapsed(ch, armor.name);
+    var shieldLapsed = !!shield && leaseLapsed(ch, shield.name);
+    var focusLapsed = !!focus && leaseLapsed(ch, focus.name);
+    var wardDie = (focus && !focusLapsed && focus.wardDie) || (armor && !armorLapsed && armor.wardDie) || null;
     // Bulky armor slows you by 1. Powered frames are the exception (trained + powered
     // ignores it), but training isn't modeled, so we leave Powered Speed to the player.
-    var speedPenalty = (hasTrait(armor, "Bulky") && !hasTrait(armor, "Powered")) ? -1 : 0;
+    // A lapsed Powered frame seizes, so Bulky bites it too.
+    var speedPenalty = (hasTrait(armor, "Bulky") && (!hasTrait(armor, "Powered") || armorLapsed)) ? -1 : 0;
     return {
       armor: armor, shield: shield, focus: focus,
-      armorDR: (armor && armor.dr) || 0,
-      blockBonus: (armor && armor.blockBonus) || 0,   // flat Block Bonus from medium/heavy plate
-      shieldDef: (shield && typeof shield.defense === "number") ? shield.defense : 0,
-      shieldBlockDie: (shield && shield.blockDie) || null,
+      armorLapsed: armorLapsed, shieldLapsed: shieldLapsed, focusLapsed: focusLapsed,
+      armorDR: (armor && !armorLapsed && armor.dr) || 0,
+      blockBonus: (armor && !armorLapsed && armor.blockBonus) || 0,   // flat Block Bonus from medium/heavy plate
+      shieldDef: (shield && !shieldLapsed && typeof shield.defense === "number") ? shield.defense : 0,
+      shieldBlockDie: (shield && !shieldLapsed && shield.blockDie) || null,
       wardDie: wardDie,                               // from the Focus item, or a Focus-trait armor
-      wardFromArmor: !focus && !!(armor && armor.wardDie),   // the Ward die comes from the armor, not a separate focus
+      wardFromArmor: !(focus && !focusLapsed) && !!(armor && !armorLapsed && armor.wardDie),
       speedPenalty: speedPenalty
     };
   }
@@ -949,7 +963,7 @@ EN.engine = (function () {
     skillFloorTier: skillFloorTier, effectiveSkillTier: effectiveSkillTier,
     skillTierCost: skillTierCost, trainingSpent: trainingSpent, trainingBudget: trainingBudget,
     grantedGear: grantedGear, gearFloorTier: gearFloorTier, effectiveGearTier: effectiveGearTier, gearTierCost: gearTierCost,
-    activeLineageFeatures: activeLineageFeatures, splitTalentText: splitTalentText,
+    activeLineageFeatures: activeLineageFeatures, splitTalentText: splitTalentText, leaseLapsed: leaseLapsed,
     grantSourceMap: grantSourceMap, duplicateGrants: duplicateGrants, pendingChoices: pendingChoices,
     tp: { STEP_COST: STEP_COST, TIER_LEVEL_REQ: TIER_LEVEL_REQ, FOCUS_COST: FOCUS_COST, FOCUS_LEVEL_REQ: FOCUS_LEVEL_REQ, SPEC_COST: SPEC_COST, SPEC_LEVEL_REQ: SPEC_LEVEL_REQ }
   };

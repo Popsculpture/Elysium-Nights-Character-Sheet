@@ -94,6 +94,7 @@ EN.store = (function () {
       weaponAmmo: {},                    // {weaponName: {cur, mode, ammoType}}, magazine/fire-mode tracking
       carry: {},                         // Loadout carry status per item name: "carried" | "mission" (absent = stashed)
       glimmer: 0,
+      nexus: 0,                          // Nexus tokens (◎), the high-scrutiny currency; fractional
       log: []
     };
   }
@@ -120,6 +121,7 @@ EN.store = (function () {
     if (!Array.isArray(ch.customFeatures)) ch.customFeatures = [];           // manual Features on the Freelancer tab
     if (!ch.featureAnnotations || typeof ch.featureAnnotations !== "object") ch.featureAnnotations = {};  // notes/flags on computed features
     if (!ch.carry || typeof ch.carry !== "object") ch.carry = {};            // Loadout carry status per item
+    if (typeof ch.nexus !== "number") ch.nexus = 0;                          // Nexus wallet (◎)
     if (ch.identity && ch.identity.notes === undefined) ch.identity.notes = "";  // freeform notes, shared with the #PRINT Identity step
     if (!ch.equippedWeapons) ch.equippedWeapons = [];
     if (ch.equippedArmor === undefined) ch.equippedArmor = null;

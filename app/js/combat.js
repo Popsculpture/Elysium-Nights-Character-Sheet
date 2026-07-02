@@ -207,6 +207,7 @@ EN.combatView = (function () {
     toast("Short Rest taken; resource refreshed. Spend Resilience Dice to heal.");
   }
   function longRest(ch, d) {
+    var leaseDue = [];
     store.update(function (c) {
       var s = state(c, d);
       var bodMod = d.attributes.BOD.mod;
@@ -226,8 +227,11 @@ EN.combatView = (function () {
         if (fl <= 0) { c.conditions = c.conditions.filter(function (n) { return n !== "Fatigue"; }); delete c.conditionLevels["Fatigue"]; }
         else c.conditionLevels["Fatigue"] = fl;
       }
+      // leased gear: a Long Rest marks one day toward the next installment
+      if (EN.inventoryView && EN.inventoryView.leaseTick) leaseDue = EN.inventoryView.leaseTick(c);
     });
-    toast("Long Rest complete, restored and refreshed.");
+    if (leaseDue.length) toast("Long Rest complete. LEASE PAYMENT DUE: " + leaseDue.join(", ") + ". It grants nothing until you pay (Inventory > Stash).");
+    else toast("Long Rest complete, restored and refreshed.");
   }
   function spendResilience(ch, d, count) {
     var s = state(ch, d);
@@ -942,7 +946,7 @@ EN.combatView = (function () {
         foot: "Cover (+2 Half / +5 ¾) and a declared Active Defense add more against a specific attack, see Defend." },
       DR: { title: "Damage Reduction", total: d.totalDR || 0, sign: false,
         formula: "Worn armor + natural lineage DR vs physical damage",
-        rows: (dg.armor ? [bdRow("Armor · " + dg.armor.name, dg.armor.dr, null, true)] : [])
+        rows: (dg.armor ? [bdRow("Armor · " + dg.armor.name + (dg.armorLapsed ? " (LEASE DUE)" : ""), dg.armorDR, null, true)] : [])
           .concat(d.naturalDR ? [bdRow("Natural (lineage)", d.naturalDR)] : []),
         empty: (dg.armor || d.naturalDR) ? null : "No armor equipped; WEAR armor in Inventory → Stash.",
         foot: dg.armor && (dg.armor.traits || []).indexOf("Plated") !== -1 ? "Plated: when you Block, add half this DR (rounded down) on top." : null },
@@ -1024,15 +1028,28 @@ EN.combatView = (function () {
         ]);
       }
       var chips = [];
-      if (dg.armor) { var ap = [dg.armorDR + " DR"]; if (dg.blockBonus) ap.push("+" + dg.blockBonus + " Block"); if (dg.armor.wardDie && !dg.focus) ap.push(dg.armor.wardDie + " Ward"); if (dg.speedPenalty) ap.push(dg.speedPenalty + " SPD"); if (dg.armor.slots) ap.push(dg.armor.slots + " slots"); chips.push(gchip("ARMOR", dg.armor.name, ap.join(" · "), "var(--success)")); }
-      // installed Armor Mods (Impact Table) on the worn suit
+      var DUE_TIP = "Lease installment due; it grants none of its benefits until you pay (Inventory > Stash).";
+      if (dg.armor) {
+        if (dg.armorLapsed) chips.push(gchip("ARMOR · LEASE DUE", dg.armor.name, DUE_TIP, "var(--danger)"));
+        else { var ap = [dg.armorDR + " DR"]; if (dg.blockBonus) ap.push("+" + dg.blockBonus + " Block"); if (dg.armor.wardDie && !dg.focus) ap.push(dg.armor.wardDie + " Ward"); if (dg.speedPenalty) ap.push(dg.speedPenalty + " SPD"); if (dg.armor.slots) ap.push(dg.armor.slots + " slots"); chips.push(gchip("ARMOR", dg.armor.name, ap.join(" · "), "var(--success)")); }
+      }
+      // installed Armor Mods (Impact Table) on the worn suit; a leased mod in arrears is dark
       if (dg.armor && EN.armorMods) {
         ((ch.armorMods || {})[dg.armor.name] || []).forEach(function (k) {
-          var m = EN.armorMods.byKey[k]; if (m) chips.push(gchip("MOD", m.name, m.grants + ". " + m.effect, "var(--ember)"));
+          var m = EN.armorMods.byKey[k]; if (!m) return;
+          var mLapsed = eng.leaseLapsed && eng.leaseLapsed(ch, m.name);
+          chips.push(mLapsed ? gchip("MOD · LEASE DUE", m.name, DUE_TIP, "var(--danger)")
+                             : gchip("MOD", m.name, m.grants + ". " + m.effect, "var(--ember)"));
         });
       }
-      if (dg.shield) { var spv = [(dg.shieldDef >= 0 ? "+" : "") + dg.shieldDef + " DEF"]; if (dg.shieldBlockDie) spv.push(dg.shieldBlockDie + " Block"); chips.push(gchip("SHIELD", dg.shield.name, spv.join(" · "), "var(--accent)")); }
-      if (dg.focus) { chips.push(gchip("FOCUS", dg.focus.name, (dg.focus.wardDie || "") + " Ward", "var(--flow)")); }
+      if (dg.shield) {
+        if (dg.shieldLapsed) chips.push(gchip("SHIELD · LEASE DUE", dg.shield.name, DUE_TIP, "var(--danger)"));
+        else { var spv = [(dg.shieldDef >= 0 ? "+" : "") + dg.shieldDef + " DEF"]; if (dg.shieldBlockDie) spv.push(dg.shieldBlockDie + " Block"); chips.push(gchip("SHIELD", dg.shield.name, spv.join(" · "), "var(--accent)")); }
+      }
+      if (dg.focus) {
+        if (dg.focusLapsed) chips.push(gchip("FOCUS · LEASE DUE", dg.focus.name, DUE_TIP, "var(--danger)"));
+        else chips.push(gchip("FOCUS", dg.focus.name, (dg.focus.wardDie || "") + " Ward", "var(--flow)"));
+      }
       if (!chips.length) return [el("p.help", { style: { margin: "2px 0 8px", fontSize: "11px", color: "var(--text3)" }, text: "No armor, shield, or Warding Focus equipped; buy defensive gear in Inventory → The Undercut, then WEAR / RAISE / ATTUNE it from your Stash." })];
       return [el("div", { style: { display: "flex", flexWrap: "wrap", gap: "6px", margin: "2px 0 8px" } }, chips)];
     }
@@ -1962,15 +1979,17 @@ EN.combatView = (function () {
         var w = findWeapon(n);
         if (w && (w.group === "Simple" || w.group === "Martial")) { var m = (w.damage || "").match(/\d*d\d+/); if (m) { meleeDie = m[0]; meleeName = w.name; } }
       });
-      // Block works with a shield, a flat Block Bonus, or the Plated trait; a shield's die stacks on top.
-      var plated = !!(dg.armor && (dg.armor.traits || []).indexOf("Plated") !== -1);
+      // Block works with a shield, a flat Block Bonus, or the Plated trait; a shield's
+      // die stacks on top. Gear whose lease is in arrears grants none of this.
+      var liveShield = dg.shield && !dg.shieldLapsed ? dg.shield : null;
+      var plated = !!(dg.armor && !dg.armorLapsed && (dg.armor.traits || []).indexOf("Plated") !== -1);
       var blockBonus = dg.blockBonus || 0;
-      var platedHalf = plated ? Math.floor(((dg.armor && dg.armor.dr) || 0) / 2) : 0;
-      var canBlock = !!dg.shield || blockBonus > 0 || plated;
+      var platedHalf = plated ? Math.floor((dg.armorDR || 0) / 2) : 0;
+      var canBlock = !!liveShield || blockBonus > 0 || plated;
       var blockAdds = [];
       if (blockBonus) blockAdds.push("+" + blockBonus + " Block Bonus");
       if (platedHalf) blockAdds.push("+" + platedHalf + " half-DR (Plated)");
-      if (dg.shield) blockAdds.push("+" + dg.shieldBlockDie + " (" + dg.shield.name + ")");
+      if (liveShield && dg.shieldBlockDie) blockAdds.push("+" + dg.shieldBlockDie + " (" + liveShield.name + ")");
       var DEF_LIVE = {
         Block:   { avail: canBlock, req: "a shield, a Block Bonus, or Plated armor",
                    summary: blockAdds.length
@@ -1978,7 +1997,7 @@ EN.combatView = (function () {
                      : "Reinforce your Armor DR against this hit" },
         Dodge:   { avail: true, req: "",
                    summary: (acro ? "+" + acro.total + " Defense" : "+Agility + Acrobatics to Defense") + " vs this hit; on a miss, shift 1 space" + (dg.speedPenalty ? " · GM may forbid in heavy armor" : "") },
-        Parry:   { avail: !!meleeDie || !!dg.shield, req: "a melee weapon or shield",
+        Parry:   { avail: !!meleeDie || !!liveShield, req: "a melee weapon or shield",
                    summary: meleeDie ? "Roll " + meleeDie + " (" + meleeName + "), subtract from incoming damage" : "Roll your melee weapon's damage die, subtract from damage" },
         Resurge: { avail: attuned, req: "Flow attunement",
                    summary: "Roll " + resDie + " vs Flow attacks; reduce to 0 → rebound " + (flowMod || "your Flow Mod") + " Resonant" },
