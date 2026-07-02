@@ -614,7 +614,10 @@ EN.gridView = (function () {
     kids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } },
       [el("span.mono", { style: { fontSize: "9px", color: "var(--success)", letterSpacing: ".1em", minWidth: "38px" }, text: "EDGE" }),
        el("span.mono", { style: { fontSize: "13px", color: "var(--text)" }, title: "Edge Dice for the intrusion:\n" + tip, text: edge.points + " → " + edge.pool.label })
-      ].concat(kitToggles, sitToggle(DEEP_EDGES, _deep.edges, "var(--gold)"))));
+      ].concat(kitToggles)));
+    // situational Edge sources sit on their own line, aligned under the value
+    kids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center", margin: "4px 0 0 44px" } },
+      sitToggle(DEEP_EDGES, _deep.edges, "var(--gold)")));
     // SNAG row: GM risk picker + hacking friction toggles
     var riskBtns = ((EN.resolution && EN.resolution.pool && EN.resolution.pool.snagAssign) || []).map(function (r) {
       var n = Number(r.dice), on = _deep.risk === n;
