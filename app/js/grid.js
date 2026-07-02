@@ -627,8 +627,10 @@ EN.gridView = (function () {
     kids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "6px" } },
       [el("span.mono", { style: { fontSize: "9px", color: "var(--danger)", letterSpacing: ".1em", minWidth: "38px" }, text: "SNAG" })]
       .concat(riskBtns)
-      .concat([el("span.mono", { style: { fontSize: "13px", color: "var(--text)" }, title: "GM-set difficulty plus hacking friction" + (snag.untrained ? "; includes +2 untrained" : ""), text: snag.total + " → " + snagPool.label })])
-      .concat(sitToggle(DEEP_SNAGS, _deep.snags, "var(--danger)"))));
+      .concat([el("span.mono", { style: { fontSize: "13px", color: "var(--text)" }, title: "GM-set difficulty plus hacking friction" + (snag.untrained ? "; includes +2 untrained" : ""), text: snag.total + " → " + snagPool.label })])));
+    // hacking friction sources sit on their own line, aligned under the value
+    kids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center", margin: "4px 0 0 44px" } },
+      sitToggle(DEEP_SNAGS, _deep.snags, "var(--danger)")));
     // ROLL + result
     kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "8px" } }, [
       el("button.btn.sm.primary", {
