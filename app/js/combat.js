@@ -918,7 +918,10 @@ EN.combatView = (function () {
        base, attribute mods, gear, chrome, lineage features, and conditions. */
     var dg = d.defenseGear || {};
     var agiMod = d.attributes.AGI.mod;
-    var initVal = agiMod + fx.init + ((d.lineageInit && d.lineageInit.caliber) || 0);
+    // Initiative rolls d20 + Caliber + Agility OR Wits; use the better of the two
+    var initAttr = d.attributes.WIT.mod > agiMod ? "WIT" : "AGI";
+    var initMod = Math.max(agiMod, d.attributes.WIT.mod);
+    var initVal = initMod + fx.init + ((d.lineageInit && d.lineageInit.caliber) || 0);
     var spDisplay = adjSpeed(d.speed, fx);
     var lineFeats = (eng.activeLineageFeatures ? eng.activeLineageFeatures(ch) : []) || [];
     var defAttrName = d.defenseAttr === "BOD" ? "Body" : "Agility";
@@ -960,8 +963,8 @@ EN.combatView = (function () {
           .concat(spCond ? [bdRow("Conditions", spCond)] : []),
         foot: d.lineageSpeedFirstRound ? "+" + d.lineageSpeedFirstRound + " Speed during the first round of any combat (Tuned Synapses)." : null },
       INIT: { title: "Initiative", total: initVal, sign: true,
-        formula: "Agility modifier" + (d.lineageInit && d.lineageInit.caliber ? " + lineage" : "") + (fx.init ? " + conditions" : ""),
-        rows: [bdRow("Agility modifier", agiMod, chromeNote("AGI"))]
+        formula: "Agility or Wits modifier (best)" + (d.lineageInit && d.lineageInit.caliber ? " + lineage" : "") + (fx.init ? " + conditions" : ""),
+        rows: [bdRow((initAttr === "WIT" ? "Wits" : "Agility") + " modifier (best of Agility/Wits)", initMod, chromeNote(initAttr))]
           .concat(d.lineageInit && d.lineageInit.caliber ? [bdRow("Lineage · Static Premonition", d.lineageInit.caliber)] : [])
           .concat(fx.init ? [bdRow("Conditions", fx.init)] : []),
         foot: "Initiative roll = d20 + Caliber (" + d.caliber + ") + this." + (d.lineageInit && d.lineageInit.edge ? " Roll with Edge (Tuned Synapses)." : "") }
@@ -988,7 +991,7 @@ EN.combatView = (function () {
       statEl("DEF", "DEF", d.defense, defAttrName + (dg.shield ? " " + (dg.shieldDef >= 0 ? "+" : "") + dg.shieldDef + " shield" : "")),
       statEl("DR", "DR", d.totalDR || 0, dg.armor ? dg.armor.name : (d.naturalDR ? "natural · lineage" : "no armor"), function (n) { if (!(d.totalDR > 0)) n.querySelector(".v").style.color = "var(--text3)"; }),
       statEl("SPD", "SPD", spDisplay, spDisplay < d.speed ? "of " + d.speed + ", conditions" : "spaces", function (n) { if (spDisplay < d.speed) n.querySelector(".v").style.color = "var(--danger)"; }),
-      statEl("INIT", "INIT", eng.fmtMod(initVal), fx.init ? "Agility " + eng.fmtMod(fx.init) + " cond." : "Agility", function (n) { if (fx.init < 0) n.querySelector(".v").style.color = "var(--danger)"; })
+      statEl("INIT", "INIT", eng.fmtMod(initVal), (initAttr === "WIT" ? "Wits" : "Agility") + (fx.init ? " " + eng.fmtMod(fx.init) + " cond." : ""), function (n) { if (fx.init < 0) n.querySelector(".v").style.color = "var(--danger)"; })
     ]));
     // breakdown panel (shows when a stat above is selected)
     if (_open.statbd && BD[_open.statbd]) {

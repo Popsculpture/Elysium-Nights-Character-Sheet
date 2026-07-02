@@ -1440,7 +1440,8 @@ EN.inventoryView = (function () {
   }
   function tbSnagPts(p, skillEntry) {
     var base = (p.snag != null) ? p.snag : (CRAFT().snagForTier[p.overEngineered ? "prototype" : p.tier] || 2);
-    return { base: base, untrained: (skillEntry && skillEntry.untrained) ? 1 : 0, total: base + ((skillEntry && skillEntry.untrained) ? 1 : 0) };
+    // untrained adds +2 Snag Dice to a Dice Pool per the core rules
+    return { base: base, untrained: (skillEntry && skillEntry.untrained) ? 2 : 0, total: base + ((skillEntry && skillEntry.untrained) ? 2 : 0) };
   }
   function tbSetSnag(id, n) {
     tbSetProjects(function (list) {
@@ -1555,7 +1556,7 @@ EN.inventoryView = (function () {
       var chips = [tbChip((s.tierShort || (s.tier || "untrained")).toUpperCase(), s.untrained ? "var(--text3)" : "var(--accent)", "Skill tier")];
       if (s.focus) chips.push(tbChip("FOCUS +" + (d.caliber || 1), "var(--gold)", "Skill Focus: +Caliber Edge Dice, folded into the pool below (and +Caliber on emergency d20 fixes)"));
       if (s.specialization) chips.push(tbChip("SPEC +2", "var(--flow)", "Specialization: +2 Edge Dice, folded into the pool below (and a wider crit range on emergency d20 fixes)"));
-      if (s.untrained) chips.push(tbChip("UNTRAINED +1 SNAG", "var(--warn)", "Untrained: Work Intervals with this skill add +1 Snag Die"));
+      if (s.untrained) chips.push(tbChip("UNTRAINED +2 SNAG", "var(--warn)", "Untrained: Work Intervals with this skill add +2 Snag Dice"));
       return el("div.row.between.wrap", { style: { gap: "8px", alignItems: "center", padding: big ? "7px 0" : "4px 0", borderTop: "1px solid rgba(35,48,68,.4)" } }, [
         el("div.row.wrap", { style: { gap: "8px", alignItems: "center", flex: "1 1 auto", minWidth: 0 } },
           [el("span", { style: { fontWeight: 600, fontSize: big ? "13.5px" : "12px", minWidth: "92px", color: TB_SKILL_COLOR[nm] || "var(--text)" }, text: nm }),
@@ -1680,7 +1681,7 @@ EN.inventoryView = (function () {
           el("button.btn.sm", { title: "One less Snag Die", disabled: snag.base <= 0, onclick: function () { rs.result = null; tbSetSnag(p.id, snag.base - 1); } }, "−"),
           el("button.btn.sm", { title: "One more Snag Die: bad conditions, missing kits, rushed work", disabled: snag.base >= 13, onclick: function () { rs.result = null; tbSetSnag(p.id, snag.base + 1); } }, "+"),
           el("span.mono", { style: { fontSize: "13px", color: "var(--text)" }, title: "GM-set difficulty per Work Interval (Snag past 5 sharpens into d12s)", text: snag.total + " → " + snagPool.label }),
-          snag.untrained ? tbChip("+1 UNTRAINED", "var(--warn)", "Untrained in " + p.skill + ": +1 Snag Die") : null
+          snag.untrained ? tbChip("+2 UNTRAINED", "var(--warn)", "Untrained in " + p.skill + ": +2 Snag Dice") : null
         ])));
       // ROLL + result
       rollKids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "8px" } }, [

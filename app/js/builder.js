@@ -162,8 +162,8 @@ EN.builder = (function () {
     if (method === "pointbuy") {
       var pb = eng.pointBuySpent(ch.attributes);
       info = el("div.row.wrap", { style: { gap: "16px", marginBottom: "12px" } }, [
-        el("span.chip" + (pb.remaining < 0 ? "" : ".on"), { text: "POINTS: " + pb.remaining + " / " + R.pointBuy.pool }),
-        el("span.help", { text: "Costs: 11-13 = 1 ea · 14-15 = 2 ea · 16 = 3 · drop to 8 refunds 2 · cap 16." })
+        el("span.chip" + (pb.remaining < 0 || !pb.valid ? "" : ".on"), { text: "POINTS: " + pb.remaining + " / " + R.pointBuy.pool }),
+        el("span.help", { text: "Costs: 11-13 = 1 ea · 14-15 = 2 ea · 16 = 3 · the Flaw: drop ONE attribute to 8 for +2 points · cap 16." })
       ]);
     } else if (method === "array") {
       info = el("div.row.wrap", { style: { gap: "8px", marginBottom: "12px" } },
@@ -210,24 +210,34 @@ EN.builder = (function () {
       ], { corners: true })
     ]);
   }
+  // 9 is not a legal point-buy score (the Flaw drops straight from 10 to 8)
+  function pbSkip9(val, dir) { return val === 9 ? val + (dir < 0 ? -1 : 1) : val; }
   function canStep(ch, key, dir, method) {
     var s = ch.attributes[key] + dir;
     if (method === "pointbuy") {
+      s = pbSkip9(s, dir);
       if (s < R.pointBuy.minStart || s > R.pointBuy.maxStart) return false;
       var test = Object.assign({}, ch.attributes); test[key] = s;
       var pb = eng.pointBuySpent(test);
-      return pb.remaining >= 0;
+      return pb.remaining >= 0 && pb.valid;
     }
     return s >= 1 && s <= R.hardCapMax;
   }
-  function stepAttr(ch, key, dir, method) { setAttr(ch, key, ch.attributes[key] + dir, method); }
+  function stepAttr(ch, key, dir, method) {
+    var next = ch.attributes[key] + dir;
+    if (method === "pointbuy") next = pbSkip9(next, dir);
+    setAttr(ch, key, next, method);
+  }
   function setAttr(ch, key, val, method) {
     var lo = method === "pointbuy" ? R.pointBuy.minStart : 1;
     var hi = method === "pointbuy" ? R.pointBuy.maxStart : R.hardCapMax;
     val = eng.clamp(val || lo, lo, hi);
     if (method === "pointbuy") {
+      val = pbSkip9(val, 1);
       var test = Object.assign({}, ch.attributes); test[key] = val;
-      if (eng.pointBuySpent(test).remaining < 0) { toast("Not enough points."); return; }
+      var pb = eng.pointBuySpent(test);
+      if (pb.remaining < 0) { toast("Not enough points."); return; }
+      if (!pb.valid) { toast("Only one attribute can take the Flaw (a score of 8)."); return; }
     }
     store.update(function (c) { c.attributes[key] = val; });
   }

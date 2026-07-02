@@ -27,8 +27,10 @@ EN.rules = {
     maxStart: 16,
     minStart: 8,
     // cumulative point cost to REACH a given score from base 10
-    // 11/12/13 = 1 each, 14/15 = 2 each, 16 = 3.  Lowering to 8 refunds 2.
-    costToReach: { 8:-2, 9:-1, 10:0, 11:1, 12:2, 13:3, 14:5, 15:7, 16:10 }
+    // 11/12/13 = 1 each, 14/15 = 2 each, 16 = 3. The Flaw: lowering exactly ONE
+    // attribute to 8 refunds 2; 9 is not a valid point-buy score.
+    costToReach: { 8:-2, 10:0, 11:1, 12:2, 13:3, 14:5, 15:7, 16:10 },
+    maxFlaws: 1
   },
   standardArray: [16, 14, 12, 10, 10, 8],
   hardCapStart: 16,
@@ -167,7 +169,7 @@ EN.rules = {
   classVitality: {
     codebreaker: { start:6,  die:6,  resilience:6 },
     fury:        { start:12, die:12, resilience:12 },
-    hustler:     { start:8,  die:8,  resilience:8 },
+    hustler:     { start:6,  die:6,  resilience:6 },
     operator:    { start:10, die:10, resilience:10 },
     scoundrel:   { start:8,  die:8,  resilience:8 },
     shaper:      { start:6,  die:6,  resilience:6 },

@@ -221,15 +221,19 @@ EN.engine = (function () {
     return out;
   }
 
-  /* ---- Point-buy spend accounting --------------------------------------- */
+  /* ---- Point-buy spend accounting ----------------------------------------
+     The Flaw: at most ONE attribute may sit at 8 (refunding 2 points); 9 has no
+     cost entry and is not a legal point-buy score. */
   function pointBuySpent(scores) {
-    var spent = 0, ok = true;
+    var spent = 0, ok = true, flaws = 0;
     R.attributes.forEach(function (a) {
       var s = scores[a.key];
       var c = R.pointBuy.costToReach[s];
       if (c == null) { ok = false; } else { spent += c; }
+      if (s === 8) flaws++;
     });
-    return { spent: spent, remaining: R.pointBuy.pool - spent, valid: ok };
+    if (flaws > (R.pointBuy.maxFlaws || 1)) ok = false;
+    return { spent: spent, remaining: R.pointBuy.pool - spent, valid: ok, flaws: flaws };
   }
 
   /* ---- Grant source tracking (Background vs Class duplicates) -----------
@@ -668,11 +672,15 @@ EN.engine = (function () {
                           R.shaperFlowAttrBySubclass[ch.subclass] || "Mystique";
       var fAttr = R.attrNameToKey[flowAttrName] || "MYS";
       var fMod = attributes[fAttr].mod;
+      // The Icon's Parasocial Pact: add half the Mystique modifier (rounded up,
+      // minimum 0) to maximum FP, on top of the Charm-based Flow Modifier.
+      var pactBonus = ch.subclass === "icon" ? Math.max(0, Math.ceil(attributes.MYS.mod / 2)) : 0;
       var strainStage = clamp((ch.flow && ch.flow.strain) || 0, 0, 5);
       var stInfo = (EN.flow && EN.flow.strainTrack) ? EN.flow.strainTrack[strainStage - 1] : null;
       flow = {
         isShaper: true, attribute: fAttr, attributeName: flowAttrName,
-        max: Math.max(0, cal * 3 + fMod - chromeTax.fpPenalty), dc: 8 + fMod + cal,
+        max: Math.max(0, cal * 3 + fMod + pactBonus - chromeTax.fpPenalty), dc: 8 + fMod + cal,
+        pactBonus: pactBonus,
         // `attack` is the bare Flow Modifier (used for FP recovery on a Short Rest
         // and Resurge rebound damage). `attackBonus` is the d20 Flow Attack roll
         // bonus, which per the core rules is Flow Modifier + Caliber.

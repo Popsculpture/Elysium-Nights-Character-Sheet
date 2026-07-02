@@ -285,7 +285,7 @@ EN.printSheet = (function () {
       stat("DEF", d.defense, (d.defenseAttr === "BOD" ? "Body" : "Agility") + (dg.shield ? " +shield" : "")),
       stat("DR", d.armorDR || 0, dg.armor ? dg.armor.name : "no armor"),
       stat("SPD", d.speed, "spaces"),
-      stat("INIT", sgn(d.attributes.AGI.mod), "Agility")
+      stat("INIT", sgn(Math.max(d.attributes.AGI.mod, d.attributes.WIT.mod)), d.attributes.WIT.mod > d.attributes.AGI.mod ? "Wits" : "Agility")
     ]));
 
     // attribute matrix - compact horizontal strip directly under the stat strip
