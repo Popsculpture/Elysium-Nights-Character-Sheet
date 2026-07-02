@@ -16,8 +16,6 @@ EN.inventoryView = (function () {
   var _benchWeapon = null;   // Arms Table: the weapon currently being customized
   var _benchArmor = null;    // Impact Table: the armor currently being customized
   var _open = {};          // collapse state for item cards
-  var _ledgerAmt = 100;    // remembered credit/debit amount (Glimmer)
-  var _ledgerNx = 0.25;    // remembered credit/debit amount (Nexus, fractional)
   // Storefront (picked via the ⚙ settings popover; same stock, different pricing):
   //   'undercut'   · The Undercut: book list prices, no markups
   //   'register'   · The Register: predatory corporate markups (legality × scarcity)
@@ -1971,10 +1969,19 @@ EN.inventoryView = (function () {
     ]));
 
     /* sub-tab rail + glimmer ledger */
-    var amtIn = el("input", { type: "number", min: 1, value: _ledgerAmt, style: { width: "80px", textAlign: "center" },
-      oninput: function () { _ledgerAmt = Math.max(1, Number(this.value) || 1); } });
-    var nxIn = el("input", { type: "number", min: 0.05, step: 0.05, value: _ledgerNx, style: { width: "64px", textAlign: "center" },
-      oninput: function () { _ledgerNx = Math.max(0.05, Number(this.value) || 0.05); } });
+    // ledger inputs start empty; whichever field you fill is the currency CREDIT/DEBIT
+    // acts on, and both are cleared after (re-render rebuilds them empty).
+    var amtIn = el("input", { type: "number", min: 0, placeholder: "𝒢 amt", style: { width: "80px", textAlign: "center" } });
+    var nxIn = el("input", { type: "number", min: 0, step: 0.05, placeholder: "◎ amt", style: { width: "68px", textAlign: "center" } });
+    function ledgerApply(sign) {
+      var g = parseFloat(amtIn.value), n = parseFloat(nxIn.value);
+      var hasG = !isNaN(g) && g > 0, hasN = !isNaN(n) && n > 0;
+      if (!hasG && !hasN) { toast("Enter an amount in the Glimmer or Nexus field first."); return; }
+      store.update(function (c) {
+        if (hasG) c.glimmer = Math.max(0, (c.glimmer || 0) + sign * g);
+        if (hasN) c.nexus = Math.max(0, Math.round(((c.nexus || 0) + sign * n) * 100) / 100);
+      });
+    }
     function subTab(key, label) {
       return el("button.btn.sm" + (_sub === key ? ".primary" : ""), { onclick: function () { _sub = key; EN.app.render(); } }, label);
     }
@@ -1996,18 +2003,15 @@ EN.inventoryView = (function () {
         el("span.mono", { title: "Glimmer, issued by the Luster Interchange Treasury. What ordinary life costs.",
           style: { fontSize: "20px", color: "var(--gold)" }, text: fmtG(ch.glimmer || 0) }),
         amtIn,
-        el("button.btn.sm", { title: "Credit the ledger (payouts, fenced goods, day-job pay)", style: { color: "var(--success)", borderColor: "var(--success)" },
-          onclick: function () { store.update(function (c) { c.glimmer = (c.glimmer || 0) + _ledgerAmt; }); } }, "+ CREDIT"),
-        el("button.btn.sm", { title: "Debit the ledger (lifestyle, upkeep, bribes, bad nights)", style: { color: "var(--danger)", borderColor: "var(--danger)" },
-          onclick: function () { store.update(function (c) { c.glimmer = Math.max(0, (c.glimmer || 0) - _ledgerAmt); }); } }, "− DEBIT"),
         // Nexus wallet: the high-scrutiny currency (lease buyouts, brokered commissions)
         el("span.mono", { title: "Nexus tokens, the high-scrutiny currency. Brokered commissions, lease buyouts, favors with a paper trail.",
           style: { fontSize: "20px", color: "var(--flow)", marginLeft: "6px" }, text: fmtNx(ch.nexus || 0) }),
         nxIn,
-        el("button.btn.sm", { title: "Credit Nexus (brokered payouts, favors called in)", style: { color: "var(--success)", borderColor: "var(--success)" },
-          onclick: function () { store.update(function (c) { c.nexus = Math.round(((c.nexus || 0) + _ledgerNx) * 100) / 100; }); } }, "+ ◎"),
-        el("button.btn.sm", { title: "Debit Nexus (buyouts, high-scrutiny purchases)", style: { color: "var(--danger)", borderColor: "var(--danger)" },
-          onclick: function () { store.update(function (c) { c.nexus = Math.max(0, Math.round(((c.nexus || 0) - _ledgerNx) * 100) / 100); }); } }, "− ◎")
+        // CREDIT / DEBIT act on whichever field you filled (Glimmer or Nexus), then clear
+        el("button.btn.sm", { title: "Credit whichever field you filled: Glimmer (payouts, fenced goods) or Nexus (brokered payouts, favors called in).", style: { color: "var(--success)", borderColor: "var(--success)", marginLeft: "4px" },
+          onclick: function () { ledgerApply(1); } }, "+ CREDIT"),
+        el("button.btn.sm", { title: "Debit whichever field you filled: Glimmer (lifestyle, bribes) or Nexus (buyouts, high-scrutiny buys).", style: { color: "var(--danger)", borderColor: "var(--danger)" },
+          onclick: function () { ledgerApply(-1); } }, "− DEBIT")
       ])
     ]));
 
