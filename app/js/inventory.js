@@ -1336,68 +1336,20 @@ EN.inventoryView = (function () {
   function tbTierChip(tierKey) { var t = CRAFT().tier(tierKey); return tbChip(t.name.toUpperCase() + (t.target ? " · " + t.target : ""), TB_TIER_COLOR[tierKey] || "var(--text2)", t.difficulty + " · " + t.time); }
   function tbSkillChip(skill) { return tbChip(skill, TB_SKILL_COLOR[skill] || "var(--text2)", "Primary Skill"); }
 
-  // a rolled die drawn as its physical shape: d10 = kite face, d12 = pentagon
-  // with facet lines. The value colors by what it counts (2 / 1 / nothing).
-  // While animating, the face shows "?" in a neutral color (no spoilers), shakes
-  // via .tb-die.rolling, and carries data attrs for tbAnimateRoll to scramble.
-  function tbDieFace(die, poolColor, animating) {
-    var num = animating ? "var(--text)" : (die.hits === 2 ? poolColor : (die.hits === 1 ? "var(--text)" : "var(--text4)"));
-    var edge = die.sides === 12 ? "var(--gold)" : "var(--border2)";
-    var fs = animating ? 32 : (die.value >= 10 ? 30 : 36);
-    var shown = animating ? "?" : die.value;
-    var svg;
-    if (die.sides === 12) {
-      // d12 face-on (per the reference icon): decagon silhouette, a central
-      // pentagon face, and five spokes out to alternating silhouette vertices
-      svg = '<svg viewBox="0 0 100 100" width="24" height="25" aria-hidden="true">'
-        + '<polygon points="50,2 78.2,11.2 95.6,35.2 95.6,64.8 78.2,88.8 50,98 21.8,88.8 4.4,64.8 4.4,35.2 21.8,11.2" fill="rgba(0,0,0,.35)" style="stroke:' + edge + '" stroke-width="4" stroke-linejoin="round"/>'
-        + '<polygon points="50,24 74.7,42 65.3,71 34.7,71 25.3,42" fill="none" style="stroke:' + edge + '" stroke-width="3" stroke-linejoin="round" opacity=".7"/>'
-        + '<path d="M50,24 L50,2 M74.7,42 L95.6,35.2 M65.3,71 L78.2,88.8 M34.7,71 L21.8,88.8 M25.3,42 L4.4,35.2" fill="none" style="stroke:' + edge + '" stroke-width="3" opacity=".7"/>'
-        + '<text x="50" y="50" text-anchor="middle" dominant-baseline="central" style="fill:' + num + ';font-family:var(--mono);font-weight:700" font-size="' + fs + '">' + shown + '</text>'
-        + '</svg>';
-    } else {
-      // d10 seen from above-front (per the reference icon): top apex, front kite
-      // face down to a center vertex, side kites out to the silhouette points,
-      // and the thin bottom-cap sliver between the lower V and the bottom apex
-      svg = '<svg viewBox="0 0 100 100" width="23" height="25" aria-hidden="true">'
-        + '<polygon points="50,2 97,52 50,96 3,52" fill="rgba(0,0,0,.35)" style="stroke:' + edge + '" stroke-width="4" stroke-linejoin="round"/>'
-        + '<path d="M50,2 L28,62 L50,84 L72,62 Z M28,62 L3,52 M72,62 L97,52 M3,52 L50,84 L97,52" fill="none" style="stroke:' + edge + '" stroke-width="3" stroke-linejoin="round" opacity=".7"/>'
-        + '<text x="50" y="49" text-anchor="middle" dominant-baseline="central" style="fill:' + num + ';font-family:var(--mono);font-weight:700" font-size="' + fs + '">' + shown + '</text>'
-        + '</svg>';
-    }
-    return el("span.tb-die" + (animating ? ".rolling" : ""), {
-      title: "d" + die.sides + (animating ? "" : (die.hits ? ", counts " + die.hits : ", no effect")), html: svg,
-      dataset: animating ? { die: "1", final: String(die.value), sides: String(die.sides) } : null,
-      style: { display: "inline-flex", alignItems: "center" } });
-  }
+  // shared Dice Pool visuals live in EN.ui (also used by the #GRID Deep Run console)
+  function tbDieFace(die, poolColor, animating) { return EN.ui.dieFace(die, poolColor, animating); }
 
   // the Attribute Matrix roll choreography, pointed at a Project's roll box:
-  // scramble every die for ~700ms with a staggered settle, then a final render
-  // reveals the counted colors, totals, Margin, and the matching outcome.
+  // EN.ui.animatePoolRoll scrambles the dice, then a final render reveals the
+  // counted colors, totals, Margin, and the matching outcome.
   function tbAnimateRoll(id) {
     var rs = _tbRoll[id];
     var root = document.querySelector('[data-roll="' + id + '"]');
     if (!rs || !root) { if (rs) rs.animating = false; return; }
     var token = rs.animToken;
-    var dice = [].slice.call(root.querySelectorAll("[data-die]"));
-    var tots = [].slice.call(root.querySelectorAll("[data-tot]"));
-    var t = 0, dur = 700;
-    var timer = setInterval(function () {
-      t += 50;
-      dice.forEach(function (w, i) {
-        var txt = w.querySelector("text");
-        if (!txt || !w.isConnected) return;
-        var sides = Number(w.dataset.sides) || 10;
-        if (t < dur - (dice.length - i) * 4) { txt.textContent = String(1 + Math.floor(Math.random() * sides)); return; }
-        txt.textContent = w.dataset.final;
-        w.classList.remove("rolling");
-      });
-      tots.forEach(function (n) { if (n.isConnected && t < dur) n.textContent = "= " + Math.floor(Math.random() * 8) + " " + n.dataset.word; });
-      if (t >= dur) {
-        clearInterval(timer);
-        if (rs.animToken === token) { rs.animating = false; EN.app.render(); }
-      }
-    }, 50);
+    EN.ui.animatePoolRoll(root, function () {
+      if (rs.animToken === token) { rs.animating = false; EN.app.render(); }
+    });
   }
 
   function tbSkill(d, name) { return (d.skills || []).find(function (s) { return (s.name || "").toLowerCase() === name.toLowerCase(); }); }

@@ -14,6 +14,9 @@ EN.gridView = (function () {
   var _calc = { tier: "Standard", fw: "none", hardened: false };   // target-node scratch calculator
   var _cipherView = "power";                         // Codebreaker Ciphers panel: "power" | "buddy"
   var _stabilityOpen = false;                         // STABILITY stat: tap to expand the damage tracker
+  // Run Mode: HOT RUN = in-combat d20 math; DEEP RUN = out-of-combat Dice Pool intrusion
+  var _runMode = "hot";
+  var _deep = { edges: {}, snags: {}, kitsOff: {}, risk: 2, result: null, animating: false, animToken: 0 };
 
   /* ---- small shared bits ---- */
   function bar(cur, max, color) {
@@ -517,6 +520,176 @@ EN.gridView = (function () {
     return EN.ui.panel("Reference", "THE #GRID · RULES & GEAR", kids, { corners: true });
   }
 
+  /* ============================ DEEP RUN (Dice Pool) ============================
+     Hacking resolves by pace: a combat round is d20 (Hot Run), but extended
+     out-of-combat intrusion runs the Dice Pool Method. This console builds the
+     pool live: Tech + Systems proficiency + the deck's Device Bonus as gear
+     dice, Focus/Specialization, owned Systems kits, and the rulebook's hacking
+     Edge/Snag sources, then rolls it with the shared animated dice. */
+  var DEEP_EDGES = [
+    { key: "code",   name: "Superior code",      hint: "Custom intrusion software beyond your stock suite" },
+    { key: "creds",  name: "Stolen credentials", hint: "A legitimate login the node trusts" },
+    { key: "back",   name: "Hidden backdoor",    hint: "A way in someone left open" },
+    { key: "local",  name: "Local access",       hint: "You are on-site, jacked into the hardware" }
+  ];
+  var DEEP_SNAGS = [
+    { key: "ice",    name: "ICE resistance",     hint: "Active countermeasures fighting back" },
+    { key: "unst",   name: "Unstable access",    hint: "A flaky connection or borrowed uplink" },
+    { key: "trace",  name: "Trace lock",         hint: "Something already has your scent" },
+    { key: "degr",   name: "Degraded hardware",  hint: "Damaged deck, bad lines, salvage parts" }
+  ];
+  function deepOwned(ch, name) { return (ch.equipment || []).some(function (e) { return e.name === name && e.qty > 0; }); }
+  // owned Systems-Tools kits with a printed pool Edge, honoring Proficient Use
+  function deepKits(ch) {
+    var items = (EN.gearCatalog && EN.gearCatalog.tools && EN.gearCatalog.tools.items) || [];
+    var prof = !!((ch.proficiencies && ch.proficiencies.tools) || {})["Systems Tools"];
+    return items.filter(function (it) {
+      return it.category === "Systems Tools" && it.edgeDice > 0 && deepOwned(ch, it.name) && (!it.requiresProficient || prof);
+    });
+  }
+  function deepEdge(ch, d, gd) {
+    var s = (d.skills || []).find(function (x) { return x.key === "systems"; });
+    var parts = [];
+    var attr = Math.max(0, d.attributes.TEC.mod);
+    if (attr) parts.push({ label: "Tech modifier", value: attr });
+    var prof = s ? (((EN.rules.profTiers[s.tier] || {}).pool) || 0) : 0;
+    if (prof) parts.push({ label: "Systems proficiency (" + s.tier + ")", value: prof });
+    if (gd.deck && gd.deck.type === "smartdeck" && gd.deck.deviceBonus) parts.push({ label: gd.deck.tier + " Smartdeck Device Bonus (gear)", value: gd.deck.deviceBonus });
+    if (s && s.focus) parts.push({ label: "Skill Focus (Caliber)", value: d.caliber || 1 });
+    if (s && s.specialization) parts.push({ label: "Specialization", value: 2 });
+    deepKits(ch).forEach(function (k) {
+      if (_deep.kitsOff[k.name]) return;
+      parts.push({ label: k.name + (k.edgeNote ? ", " + k.edgeNote : ""), value: k.edgeDice });
+    });
+    // situational sources cap at +3 combined (base-pool rule)
+    var sit = DEEP_EDGES.filter(function (e) { return _deep.edges[e.key]; });
+    if (sit.length) parts.push({ label: "Situational: " + sit.map(function (e) { return e.name; }).join(", ") + (sit.length > 3 ? " (capped at +3)" : ""), value: Math.min(3, sit.length) });
+    var points = 0; parts.forEach(function (p) { points += p.value; });
+    return { skill: s, points: points, parts: parts, pool: eng.buildEdgePool(points) };
+  }
+  function deepSnagTotal(s) {
+    var togs = DEEP_SNAGS.filter(function (x) { return _deep.snags[x.key]; }).length;
+    var untrained = (s && s.untrained) ? 2 : 0;
+    return { risk: _deep.risk, togs: togs, untrained: untrained, total: _deep.risk + togs + untrained };
+  }
+  // Dice Pool Success Margin row + color for a rolled margin
+  function deepMarginRow(margin) {
+    var rows = (EN.resolution && EN.resolution.margins && EN.resolution.margins.pool) || [];
+    var i = margin >= 3 ? 0 : margin >= 1 ? 1 : margin === 0 ? 2 : margin >= -2 ? 3 : 4;
+    return { row: rows[i] || null, color: ["var(--success)", "var(--success)", "var(--gold)", "var(--warn)", "var(--danger)"][i], costly: i >= 2 };
+  }
+  function deepRunPanel(ch, d, G) {
+    var gd = d.grid;
+    var edge = deepEdge(ch, d, gd);
+    var snag = deepSnagTotal(edge.skill);
+    var snagPool = eng.buildSnagPool(snag.total);
+    var tip = edge.parts.length ? edge.parts.map(function (p) { return "+" + p.value + "  " + p.label; }).join("\n") : "No Edge sources yet";
+    var kids = [];
+    kids.push(noteP("Extended, out-of-combat intrusion runs the Dice Pool Method: your pool against the GM's Snag. The moment a combat round starts, flip back to Hot Run and the d20.", "var(--text2)"));
+    // Codebreaker Suite gate
+    var hasSuite = deepOwned(ch, "Codebreaker Suite");
+    kids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center", margin: "0 0 6px" } }, [
+      el("span.chip", { title: hasSuite ? "Core hacking software installed; hacks and executables run at full effect." : "Required for most hacks; without it, hacking procedures are usually impossible at GM discretion. Buy it in the gray market.",
+        style: { fontSize: "9px", color: hasSuite ? "var(--success)" : "var(--danger)", borderColor: hasSuite ? "var(--success)" : "var(--danger)" } },
+        hasSuite ? "✓ CODEBREAKER SUITE" : "⚠ NO CODEBREAKER SUITE"),
+      edge.skill && edge.skill.untrained ? el("span.chip", { title: "Untrained in Systems: +2 Snag Dice on the pool", style: { fontSize: "9px", color: "var(--warn)", borderColor: "var(--warn)" } }, "UNTRAINED +2 SNAG") : null,
+      (snag.total > 0 && edge.points >= snag.total * 2) ? el("span.chip", { title: "Automatic success occurs if your total Edge Dice pool is at least double the GM's Snag Dice, unless extraordinary risk or opposition is present.",
+        style: { fontSize: "9px", color: "var(--success)", borderColor: "var(--success)" } }, "◎ AUTO-SUCCESS RANGE") : null
+    ]));
+    // EDGE row: total + composition + situational toggles
+    function sitToggle(list, state, color) {
+      return list.map(function (e) {
+        var on = !!state[e.key];
+        return el("button.btn.sm", { title: e.hint + (on ? " (counted; click to remove)" : " (click to add)"),
+          style: { fontSize: "9px", color: on ? color : "var(--text4)", borderColor: on ? color : "var(--border)" },
+          onclick: function () { state[e.key] = !on; _deep.result = null; EN.app.render(); } }, (on ? "✓ " : "") + e.name);
+      });
+    }
+    var kitToggles = deepKits(ch).map(function (k) {
+      var on = !_deep.kitsOff[k.name];
+      return el("button.btn.sm", { title: (k.edgeNote ? k.edgeNote + ". " : "") + (on ? "Counted; click to leave it out." : "Not counted; click to include."),
+        style: { fontSize: "9px", color: on ? "var(--success)" : "var(--text4)", borderColor: on ? "var(--success)" : "var(--border)" },
+        onclick: function () { _deep.kitsOff[k.name] = on; _deep.result = null; EN.app.render(); } }, (on ? "✓ " : "") + k.name + " +" + k.edgeDice);
+    });
+    kids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } },
+      [el("span.mono", { style: { fontSize: "9px", color: "var(--success)", letterSpacing: ".1em", minWidth: "38px" }, text: "EDGE" }),
+       el("span.mono", { style: { fontSize: "13px", color: "var(--text)" }, title: "Edge Dice for the intrusion:\n" + tip, text: edge.points + " → " + edge.pool.label })
+      ].concat(kitToggles, sitToggle(DEEP_EDGES, _deep.edges, "var(--gold)"))));
+    // SNAG row: GM risk picker + hacking friction toggles
+    var riskBtns = ((EN.resolution && EN.resolution.pool && EN.resolution.pool.snagAssign) || []).map(function (r) {
+      var n = Number(r.dice), on = _deep.risk === n;
+      return el("button.btn.sm" + (on ? ".primary" : ""), { title: r.risk + ": " + r.desc, style: { fontSize: "10px" },
+        onclick: function () { _deep.risk = n; _deep.result = null; EN.app.render(); } }, String(n));
+    });
+    kids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "6px" } },
+      [el("span.mono", { style: { fontSize: "9px", color: "var(--danger)", letterSpacing: ".1em", minWidth: "38px" }, text: "SNAG" })]
+      .concat(riskBtns)
+      .concat([el("span.mono", { style: { fontSize: "13px", color: "var(--text)" }, title: "GM-set difficulty plus hacking friction" + (snag.untrained ? "; includes +2 untrained" : ""), text: snag.total + " → " + snagPool.label })])
+      .concat(sitToggle(DEEP_SNAGS, _deep.snags, "var(--danger)"))));
+    // ROLL + result
+    kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "8px" } }, [
+      el("button.btn.sm.primary", {
+        title: "Roll the intrusion: Edge vs Snag, each die reads 6-9 as 1 and 10+ as 2, Margin = successes - failures",
+        onclick: function () {
+          var eRes = eng.rollDicePool(eng.buildEdgePool(edge.points));
+          var sRes = eng.rollDicePool(snagPool);
+          _deep.result = { edge: eRes, snag: sRes, margin: eRes.total - sRes.total };
+          _deep.animating = true;
+          _deep.animToken = (_deep.animToken || 0) + 1;
+          EN.app.render();
+          var token = _deep.animToken;
+          EN.ui.animatePoolRoll(document.querySelector('[data-roll="deep-run"]'), function () {
+            if (_deep.animToken === token) { _deep.animating = false; EN.app.render(); }
+          });
+        }
+      }, "⇋ ROLL DEEP RUN"),
+      !_deep.result ? el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "or roll at the table and read the Margin below" }) : null
+    ]));
+    if (_deep.result) {
+      var res = _deep.result;
+      var diceRow = function (label, color, r, word) {
+        return el("div.row.wrap", { style: { gap: "3px", alignItems: "center", marginTop: "4px" } },
+          [el("span.mono", { style: { fontSize: "9px", color: color, letterSpacing: ".1em", minWidth: "38px" }, text: label })]
+          .concat(r.rolls.length ? r.rolls.map(function (die) { return EN.ui.dieFace(die, color, _deep.animating); })
+                                 : [el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "no dice" })])
+          .concat([_deep.animating
+            ? el("span.mono", { dataset: { tot: "1", word: word }, style: { fontSize: "11px", color: "var(--text3)", marginLeft: "5px" }, text: "= · " + word })
+            : el("span.mono", { style: { fontSize: "11px", color: "var(--text2)", marginLeft: "5px" }, text: "= " + r.total + " " + word })]));
+      };
+      kids.push(diceRow("EDGE", "var(--success)", res.edge, "successes"));
+      kids.push(diceRow("SNAG", "var(--danger)", res.snag, "failures"));
+      if (!_deep.animating) {
+        var mr = deepMarginRow(res.margin);
+        var scene = ((EN.resolution && EN.resolution.consequenceByScene) || []).find(function (r) { return /Hacking/.test(r.scene); });
+        kids.push(el("div", { style: { marginTop: "6px" } }, [
+          el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
+            el("span.mono", { style: { fontSize: "13px", color: mr.color }, text: "MARGIN " + (res.margin >= 0 ? "+" : "") + res.margin + " · " + (mr.row ? mr.row.result : "") }),
+            el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: mr.row ? mr.row.desc : "" })
+          ]),
+          mr.costly && scene ? noteP("Hacking-scene costs: " + scene.consequences + ".", "var(--warn)") : null
+        ]));
+      }
+    }
+    var body = el("div", { dataset: { roll: "deep-run" } }, kids);
+    return EN.ui.panel("Deep Run", "OUT-OF-COMBAT INTRUSION · DICE POOL METHOD", [body], { corners: true });
+  }
+
+  // the console switch: which resolution model is this run using?
+  function runModeBar() {
+    function modeBtn(key, label, color, title) {
+      var on = _runMode === key;
+      return el("button.btn.sm" + (on ? ".primary" : ""), { title: title,
+        style: on ? null : { color: color, borderColor: color },
+        onclick: function () { _runMode = key; EN.app.render(); } }, label);
+    }
+    return el("div.row.wrap", { style: { gap: "8px", alignItems: "center", margin: "0 0 12px" } }, [
+      el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".14em" }, text: "RUN MODE" }),
+      modeBtn("hot", "⚡ HOT RUN · d20", "var(--accent)", "In a combat round or under fire: Quick Hacks, cipher attacks, Saves. One die, right now."),
+      modeBtn("deep", "❄ DEEP RUN · DICE POOL", "var(--bw)", "Out of combat: extended intrusion, research, tailing a signal. Build the pool, read the Margin."),
+      el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "In a combat round? It's d20. Otherwise, build the pool." })
+    ]);
+  }
+
   /* ============================ RENDER ============================ */
   function render(mount) {
     var ch = store.active();
@@ -530,13 +703,18 @@ EN.gridView = (function () {
       el("p.help", { style: { margin: 0, maxWidth: "780px" }, text: G.intro || "" })
     ]));
 
-    // two-column-ish: rig + (stats over links), then target, then reference
+    // resolution-model switch: the d20 console vs the Dice Pool console
+    blocks.push(runModeBar());
+    var deep = _runMode === "deep";
+
+    // two-column-ish: rig + (console over links), then ciphers, then target (d20 only), then reference
     blocks.push(el("div.modgrid6", { style: { marginBottom: "0" } }, [
       el("div", { style: { gridColumn: "span 3", minWidth: 0 } }, [rigPanel(ch, d, G)]),
-      el("div", { style: { gridColumn: "span 3", minWidth: 0, display: "flex", flexDirection: "column", gap: "14px" } }, [statsPanel(ch, d), linksPanel(ch, d, G)])
+      el("div", { style: { gridColumn: "span 3", minWidth: 0, display: "flex", flexDirection: "column", gap: "14px" } },
+        [deep ? deepRunPanel(ch, d, G) : statsPanel(ch, d), linksPanel(ch, d, G)])
     ]));
     blocks.push(el("div", { style: { marginTop: "14px" } }, [ciphersPanel(ch, d, G)]));
-    blocks.push(el("div", { style: { marginTop: "14px" } }, [targetPanel(ch, d, G)]));
+    if (!deep) blocks.push(el("div", { style: { marginTop: "14px" } }, [targetPanel(ch, d, G)]));
     blocks.push(el("div", { style: { marginTop: "14px" } }, [referencePanel(ch, d, G)]));
 
     mount.appendChild(el("div", null, blocks));
