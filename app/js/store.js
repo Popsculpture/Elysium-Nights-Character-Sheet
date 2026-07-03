@@ -26,7 +26,7 @@ EN.store = (function () {
     EN.rules.attributes.forEach(function (a) { attrs[a.key] = 10; });
     return {
       meta: { id: uid(), schemaVersion: EN.rules.schemaVersion, createdAt: Date.now(), updatedAt: Date.now() },
-      name: name || "",
+      name: typeof name === "string" ? name : "",
       identity: {
         concept: "", handle: "", whereFrom: "",
         facets: "", coreSparks: "", tethers: "", faultLines: "",
@@ -102,7 +102,12 @@ EN.store = (function () {
 
   /* ---- schema migration (normalize older saved characters) -------------- */
   function migrate(ch) {
-    if (!ch || !ch.proficiencies) return;
+    if (!ch) return;
+    // name must always be a string, even for an ancient/malformed roster entry
+    // that predates the current schema and fails the check below (a corrupt
+    // record should still be safely displayable, e.g. in the #PRINT switcher).
+    if (typeof ch.name !== "string") ch.name = "";
+    if (!ch.proficiencies) return;
     var p = ch.proficiencies;
     // gear buckets used to be arrays; convert to { category: tier } maps
     ["weapons", "armor", "tools", "vehicles"].forEach(function (b) {

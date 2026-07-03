@@ -1729,10 +1729,18 @@ EN.builder = (function () {
   function rosterSwitcher(ch) {
     var roster = store.roster();
     var ids = Object.keys(roster);
+    // roster[id].name should always be a string post-migrate, but the switcher
+    // renders straight from localStorage-backed state, so guard here too rather
+    // than let a corrupt/pre-schema record print "[object Object]" in the list.
+    function labelFor(r) {
+      var name = typeof r.name === "string" && r.name ? r.name : "Unnamed";
+      var level = typeof r.level === "number" ? r.level : 1;
+      return name + " · L" + level;
+    }
     var sel = el("select", { style: { width: "auto", minWidth: "160px" }, onchange: function (e) {
       if (e.target.value === "__new") { _intake = true; EN.app.render(); return; }
       store.setActive(e.target.value); _step = 0; EN.app.render();
-    } }, ids.map(function (id) { return el("option", { value: id, selected: id === ch.meta.id, text: (roster[id].name || "Unnamed") + " · L" + roster[id].level }); }).concat([el("option", { value: "__new", text: "+ Register New #PRINT" })]));
+    } }, ids.map(function (id) { return el("option", { value: id, selected: id === ch.meta.id, text: labelFor(roster[id]) }); }).concat([el("option", { value: "__new", text: "+ Register New #PRINT" })]));
     return el("div.row", null, [el("label.fl", { style: { margin: 0 }, text: "On File" }), sel]);
   }
   function rosterGate() {
