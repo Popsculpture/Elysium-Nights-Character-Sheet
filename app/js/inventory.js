@@ -75,39 +75,66 @@ EN.inventoryView = (function () {
   }
   var WEAPON_GROUPS = { Simple: 1, Martial: 1, Sidearm: 1, Longarm: 1, Heavy: 1, Launcher: 1, Thrown: 1, Bowfire: 1 };
   function isWeapon(it) { return !!(it && WEAPON_GROUPS[it.group]); }
-  function isEquipped(ch, name) { return (ch.equippedWeapons || []).indexOf(name) !== -1; }
-  function toggleEquip(name) {
+  // entryKey: the stable identity a specific equipment entry equips/carries
+  // under (its own id for an individually-tracked instance, else its shared
+  // catalog name for a pooled consumable/ammo stack).
+  function entryKey(e) { return EN.engine.entryKey ? EN.engine.entryKey(e) : (e && e.name); }
+  function findEntry(ch, key) { return EN.engine.findEntry ? EN.engine.findEntry(ch, key) : (ch.equipment || []).find(function (x) { return x.name === key; }); }
+  function isStackable(it) { return EN.engine.isStackableItem ? EN.engine.isStackableItem(it) : true; }
+  function newEquipId() { return "eq_" + Math.random().toString(36).slice(2, 9); }
+  // push a purchased/crafted item into the stash: pooled items merge into the
+  // shared qty stack, everything else becomes its own individually equippable
+  // instance so two daggers never have to share one equipped/carried state.
+  function addToStash(c, name, extra) {
+    c.equipment = c.equipment || [];
+    if (isStackable(findItem(name))) {
+      var e = c.equipment.find(function (x) { return x.name === name && !x.id; });
+      if (e) { e.qty = (e.qty || 1) + 1; return e; }
+      e = { name: name, qty: 1 };
+    } else {
+      var e = { id: newEquipId(), name: name, qty: 1 };
+    }
+    if (extra) Object.keys(extra).forEach(function (k) { e[k] = extra[k]; });
+    c.equipment.push(e);
+    return e;
+  }
+  function isEquipped(ch, key) { return (ch.equippedWeapons || []).indexOf(key) !== -1; }
+  function toggleEquip(entry) {
     var ch = store.active();
-    var on = !isEquipped(ch, name);
+    var key = entryKey(entry);
+    var on = !isEquipped(ch, key);
     store.update(function (c) {
       c.equippedWeapons = c.equippedWeapons || [];
-      var i = c.equippedWeapons.indexOf(name);
-      if (i === -1) c.equippedWeapons.push(name); else c.equippedWeapons.splice(i, 1);
+      var i = c.equippedWeapons.indexOf(key);
+      if (i === -1) c.equippedWeapons.push(key); else c.equippedWeapons.splice(i, 1);
     });
-    toast(on ? name + " equipped; it's live in the Attacks list on the Freelancer tab." : name + " unequipped.");
+    toast(on ? entry.name + " equipped; it's live in the Attacks list on the Freelancer tab." : entry.name + " unequipped.");
   }
   // Defensive gear is single-slot per kind: one worn armor, one wielded shield,
   // one attuned Warding Focus. Equipping another in the same slot replaces it.
   var DEF_SLOT = { armor: "equippedArmor", shield: "equippedShield", focus: "equippedFocus" };
   var DEF_VERB = { armor: { on: "WEAR", off: "✓ WORN", act: "worn" }, shield: { on: "RAISE", off: "✓ WIELDING", act: "wielded" }, focus: { on: "ATTUNE", off: "✓ ATTUNED", act: "attuned" } };
-  function isDefEquipped(ch, it) { return !!(it && DEF_SLOT[it.kind] && ch[DEF_SLOT[it.kind]] === it.name); }
-  function toggleDefEquip(it) {
-    var slot = DEF_SLOT[it.kind]; if (!slot) return;
+  function isDefEquipped(ch, it, entry) { return !!(it && entry && DEF_SLOT[it.kind] && ch[DEF_SLOT[it.kind]] === entryKey(entry)); }
+  function toggleDefEquip(it, entry) {
+    var slot = DEF_SLOT[it.kind]; if (!slot || !entry) return;
     var ch = store.active();
-    var was = ch[slot] === it.name;
-    store.update(function (c) { c[slot] = was ? null : it.name; });
+    var key = entryKey(entry);
+    var was = ch[slot] === key;
+    store.update(function (c) { c[slot] = was ? null : key; });
     var v = DEF_VERB[it.kind] || DEF_VERB.armor;
     toast(was ? it.name + " stowed." : it.name + " " + v.act + "; its DR, Block, Defense, and Ward now read on the Freelancer tab.");
   }
-  function unequipIfGone(c, name) {
-    var still = (c.equipment || []).some(function (x) { return x.name === name && x.qty > 0; });
+  // called after an entry's qty drops to <=0 (sell/drop); key is the specific
+  // entry's identity (id for a tracked instance, name for a pooled stack)
+  function unequipIfGone(c, key) {
+    var still = (c.equipment || []).some(function (x) { return (x.id || x.name) === key && x.qty > 0; });
     if (!still) {
-      if (c.equippedWeapons) c.equippedWeapons = c.equippedWeapons.filter(function (n) { return n !== name; });
-      if (c.weaponAmmo) delete c.weaponAmmo[name];   // drop the tracked magazine when the weapon leaves the stash
-      if (c.equippedArmor === name) c.equippedArmor = null;     // a sold/dropped piece can't stay worn
-      if (c.equippedShield === name) c.equippedShield = null;
-      if (c.equippedFocus === name) c.equippedFocus = null;
-      if (c.carry) delete c.carry[name];                        // drop its Loadout carry status too (no orphaned key)
+      if (c.equippedWeapons) c.equippedWeapons = c.equippedWeapons.filter(function (n) { return n !== key; });
+      if (c.weaponAmmo) delete c.weaponAmmo[key];   // drop the tracked magazine when the weapon leaves the stash
+      if (c.equippedArmor === key) c.equippedArmor = null;     // a sold/dropped piece can't stay worn
+      if (c.equippedShield === key) c.equippedShield = null;
+      if (c.equippedFocus === key) c.equippedFocus = null;
+      if (c.carry) delete c.carry[key];                        // drop its Loadout carry status too (no orphaned key)
     }
   }
 
@@ -163,16 +190,11 @@ EN.inventoryView = (function () {
     }
     store.update(function (c) {
       c.glimmer = (c.glimmer || 0) - sp;
-      c.equipment = c.equipment || [];
-      var e = c.equipment.find(function (x) { return x.name === it.name; });
-      if (e) e.qty = (e.qty || 1) + 1;
-      else {
-        e = { name: it.name, qty: 1 };
-        // signing a lease starts the 7-day installment clock (one day per Long Rest).
-        // Only on a fresh entry: re-leasing an item already in arrears does not clear the debt.
-        if (it.upkeep) { e.leaseDays = 7; e.leaseDue = false; e.leaseOwned = false; }
-        c.equipment.push(e);
-      }
+      // signing a lease starts the 7-day installment clock (one day per Long Rest);
+      // leased gear is never pooled, so each contract is its own instance and
+      // re-leasing an item already in arrears never clears another one's debt.
+      var extra = it.upkeep ? { leaseDays: 7, leaseDue: false, leaseOwned: false } : null;
+      addToStash(c, it.name, extra);
     });
     toast(_mode === "register" ? it.name + " purchased for " + fmtG(sp) + ". Compliance fees included. All sales final." :
           _mode === "surplus" ? it.name + " claimed from the Guild lot for " + fmtG(sp) + ". Mostly works." :
@@ -199,31 +221,29 @@ EN.inventoryView = (function () {
     });
     return due;
   }
-  function payLease(name) {
-    var ch = store.active(), it = findItem(name);
-    var e0 = (ch.equipment || []).find(function (x) { return x.name === name; });
+  function payLease(key) {
+    var ch = store.active(), e0 = findEntry(ch, key), it = e0 && findItem(e0.name);
     if (!it || !it.upkeep || !e0 || !e0.leaseDue || e0.leaseOwned) return;   // nothing due, nothing to pay
     if ((ch.glimmer || 0) < it.upkeep) { toast("Not enough Glimmer for the installment (" + fmtG(it.upkeep) + ")."); return; }
     store.update(function (c) {
-      var e = (c.equipment || []).find(function (x) { return x.name === name; });
+      var e = findEntry(c, key);
       if (!e || !e.leaseDue || e.leaseOwned) return;   // re-check live: a double-fire cannot double-charge
       c.glimmer = (c.glimmer || 0) - it.upkeep;
       e.leaseDue = false; e.leaseDays = 7;
     });
-    toast(name + " installment paid (" + fmtG(it.upkeep) + "); next payment in 7 days. Benefits restored.");
+    toast(it.name + " installment paid (" + fmtG(it.upkeep) + "); next payment in 7 days. Benefits restored.");
   }
-  function buyoutLease(name) {
-    var ch = store.active(), it = findItem(name), px = nexusPrice(it);
-    var e0 = (ch.equipment || []).find(function (x) { return x.name === name; });
+  function buyoutLease(key) {
+    var ch = store.active(), e0 = findEntry(ch, key), it = e0 && findItem(e0.name), px = it && nexusPrice(it);
     if (!it || !it.upkeep || px == null || !e0 || e0.leaseOwned) return;   // only leased, not-yet-owned gear
     if ((ch.nexus || 0) < px) { toast("Not enough Nexus for the buyout (" + fmtNx(px) + ")."); return; }
     store.update(function (c) {
-      var e = (c.equipment || []).find(function (x) { return x.name === name; });
+      var e = findEntry(c, key);
       if (!e || e.leaseOwned) return;   // re-check live: a double-fire cannot double-charge
       c.nexus = Math.round(((c.nexus || 0) - px) * 100) / 100;
       e.leaseOwned = true; e.leaseDue = false; delete e.leaseDays;
     });
-    toast(name + " bought out for " + fmtNx(px) + ". It's yours outright; no more Upkeep, no off switch.");
+    toast(it.name + " bought out for " + fmtNx(px) + ". It's yours outright; no more Upkeep, no off switch.");
   }
   // buying chrome drops it in the Chrome Stash (uninstalled); you install it at a clinic from the Chrome tab
   function buyCyber(it) {
@@ -263,31 +283,35 @@ EN.inventoryView = (function () {
   function dropStash(idx) {
     store.update(function (c) { if ((c.cyberStash || [])[idx]) c.cyberStash.splice(idx, 1); });
   }
-  function sell(name) {
+  function sell(key) {
     if (_mode === "fivefinger") { toast("No provenance, no payout. The fence won't touch it."); return; }
+    var e0 = findEntry(store.active(), key);
+    var name = e0 ? e0.name : key;
     var it = findItem(name);
     var pay = it ? fencePrice(it) : 1;
     store.update(function (c) {
-      var e = (c.equipment || []).find(function (x) { return x.name === name; });
+      var e = findEntry(c, key);
       if (!e) return;
       e.qty = (e.qty || 1) - 1;
       if (e.qty <= 0) c.equipment = c.equipment.filter(function (x) { return x !== e; });
       c.glimmer = (c.glimmer || 0) + pay;
-      unequipIfGone(c, name);
+      unequipIfGone(c, key);
     });
     toast("Fence takes the " + name + " at street rate. " + fmtG(pay) + " credited. No questions asked.");
   }
-  function drop(name) {
+  function drop(key) {
     store.update(function (c) {
-      var e = (c.equipment || []).find(function (x) { return x.name === name; });
+      var e = findEntry(c, key);
       if (!e) return;
       e.qty = (e.qty || 1) - 1;
       if (e.qty <= 0) c.equipment = c.equipment.filter(function (x) { return x !== e; });
-      unequipIfGone(c, name);
+      unequipIfGone(c, key);
     });
   }
-  function donate(name) {
-    drop(name);
+  function donate(key) {
+    var e0 = findEntry(store.active(), key);
+    var name = e0 ? e0.name : key;
+    drop(key);
     toast(name + " donated. Somebody eats tonight.");
   }
 
@@ -330,9 +354,15 @@ EN.inventoryView = (function () {
       installedN ? el("span.chip", { style: { fontSize: "9px", color: "var(--success)", borderColor: "var(--success)" } }, "installed ×" + installedN) : null
     ]);
   }
-  function itemCard(it, ch, mode) {
-    var id = mode + "-" + it.name, open = !!_open[id];
-    var owned = (ch.equipment || []).find(function (e) { return e.name === it.name; });
+  // `entry` is the specific equipment-entry instance this card renders in
+  // stash mode (each individually-tracked item, e.g. one of two owned daggers,
+  // gets its own card); unused in market mode, which just shows the catalog
+  // item and a combined owned count across every matching entry.
+  function itemCard(it, ch, mode, entry) {
+    var ownedKey = entry ? entryKey(entry) : it.name;
+    var id = mode + "-" + ownedKey, open = !!_open[id];
+    var owned = mode === "stash" ? entry : (ch.equipment || []).find(function (e) { return e.name === it.name; });
+    var ownedTotal = (ch.equipment || []).filter(function (e) { return e.name === it.name; }).reduce(function (n, e) { return n + (e.qty || 0); }, 0);
     var sp = streetPrice(it);
     var afford = (ch.glimmer || 0) >= sp;
     var head = el("h4", { style: { cursor: "pointer" }, onclick: function () { _open[id] = !open; EN.app.render(); } }, [
@@ -354,9 +384,9 @@ EN.inventoryView = (function () {
              : owned.leaseDue ? tagChip("⚠ PAYMENT DUE", "var(--danger)", "Installment due: " + fmtG(it.upkeep) + ". It grants none of its benefits until you pay.")
              : tagChip("LEASE · " + leaseDaysOf(owned) + (leaseDaysOf(owned) === 1 ? " DAY" : " DAYS"), "var(--gold)", "Next installment " + fmtG(it.upkeep) + " in " + leaseDaysOf(owned) + " day(s); each Long Rest marks one day."))
           : tagChip("LEASED", "var(--ember)", "Leased, 𝒢0 buy-in, " + fmtG(it.upkeep) + "/wk Upkeep. Lapse and it drops to its zero state.")) : null,
-        (mode === "mkt" && owned) ? tagChip("Owned ×" + owned.qty, "var(--success)") : null,
-        (mode === "stash" && isEquipped(ch, it.name)) ? tagChip("⚔ Equipped", "var(--accent)", "Live in the Attacks list on the Freelancer tab") : null,
-        (mode === "stash" && isDefEquipped(ch, it)) ? tagChip((DEF_VERB[it.kind] || {}).off || "✓ Equipped", "var(--accent)", "Active, its stats read on the Freelancer tab") : null
+        (mode === "mkt" && ownedTotal > 0) ? tagChip("Owned ×" + ownedTotal, "var(--success)") : null,
+        (mode === "stash" && isEquipped(ch, ownedKey)) ? tagChip("⚔ Equipped", "var(--accent)", "Live in the Attacks list on the Freelancer tab") : null,
+        (mode === "stash" && isDefEquipped(ch, it, entry)) ? tagChip((DEF_VERB[it.kind] || {}).off || "✓ Equipped", "var(--accent)", "Active, its stats read on the Freelancer tab") : null
       ]),
       el("span.mono", { title: mode === "mkt" ? priceTitle(it) : (_mode === "fivefinger" ? "No provenance, no payout, the fence won't touch it." : "Fence pays " + fmtG(fencePrice(it)) + " (street rate, ~35% of list)"),
         style: { color: mode === "mkt" ? (_mode === "fivefinger" ? "var(--success)" : (it.vendor === false ? "var(--flow)" : (it.upkeep ? "var(--ember)" : (afford ? "var(--gold)" : "var(--danger)")))) : "var(--text3)", fontSize: "13px" } },
@@ -395,30 +425,30 @@ EN.inventoryView = (function () {
     if (it.upkeep && owned && !owned.leaseOwned) {
       if (owned.leaseDue) leaseBtns.push(el("button.btn.sm", {
         title: "Pay the installment (" + fmtG(it.upkeep) + "). Until paid, " + it.name + " grants none of its benefits.",
-        style: { color: "var(--danger)", borderColor: "var(--danger)" }, onclick: function () { payLease(it.name); } }, "⚠ PAY · " + fmtG(it.upkeep)));
+        style: { color: "var(--danger)", borderColor: "var(--danger)" }, onclick: function () { payLease(ownedKey); } }, "⚠ PAY · " + fmtG(it.upkeep)));
       var bpx = nexusPrice(it);
       if (bpx != null) leaseBtns.push(el("button.btn.sm", {
         title: "Buy out the lease for " + fmtNx(bpx) + " Nexus. The item becomes yours outright and Upkeep ends.",
-        style: { color: "var(--flow)", borderColor: "var(--flow)" }, onclick: function () { buyoutLease(it.name); } }, "BUYOUT · " + fmtNx(bpx)));
+        style: { color: "var(--flow)", borderColor: "var(--flow)" }, onclick: function () { buyoutLease(ownedKey); } }, "BUYOUT · " + fmtNx(bpx)));
     }
     // action button(s): a single market button, or the stash equip/fence/drop group
     var actionEl = mode === "mkt"
       ? mktBtn
       : el("div.row.wrap", { style: { gap: "6px", justifyContent: "flex-end" } },
           leaseBtns.concat(isWeapon(it) ? [
-            isEquipped(ch, it.name)
-              ? el("button.btn.sm.primary", { title: "Unequip, remove from the Attacks list on the Freelancer tab", onclick: function () { toggleEquip(it.name); } }, "✓ EQUIPPED")
-              : el("button.btn.sm", { title: "Equip, add to the Attacks list on the Freelancer tab", style: { color: "var(--accent)", borderColor: "var(--accent)" }, onclick: function () { toggleEquip(it.name); } }, "⚔ EQUIP")
+            isEquipped(ch, ownedKey)
+              ? el("button.btn.sm.primary", { title: "Unequip, remove from the Attacks list on the Freelancer tab", onclick: function () { toggleEquip(entry); } }, "✓ EQUIPPED")
+              : el("button.btn.sm", { title: "Equip, add to the Attacks list on the Freelancer tab", style: { color: "var(--accent)", borderColor: "var(--accent)" }, onclick: function () { toggleEquip(entry); } }, "⚔ EQUIP")
           ] : []).concat(isDefensive(it) ? [
-            isDefEquipped(ch, it)
-              ? el("button.btn.sm.primary", { title: "Stow, it stops applying on the Freelancer tab", onclick: function () { toggleDefEquip(it); } }, (DEF_VERB[it.kind] || {}).off || "✓ EQUIPPED")
-              : el("button.btn.sm", { title: "Equip, its DR / Block / Defense / Ward read on the Freelancer tab (one " + it.kind + " at a time)", style: { color: "var(--accent)", borderColor: "var(--accent)" }, onclick: function () { toggleDefEquip(it); } }, ((DEF_VERB[it.kind] || {}).on || "EQUIP"))
+            isDefEquipped(ch, it, entry)
+              ? el("button.btn.sm.primary", { title: "Stow, it stops applying on the Freelancer tab", onclick: function () { toggleDefEquip(it, entry); } }, (DEF_VERB[it.kind] || {}).off || "✓ EQUIPPED")
+              : el("button.btn.sm", { title: "Equip, its DR / Block / Defense / Ward read on the Freelancer tab (one " + it.kind + " at a time)", style: { color: "var(--accent)", borderColor: "var(--accent)" }, onclick: function () { toggleDefEquip(it, entry); } }, ((DEF_VERB[it.kind] || {}).on || "EQUIP"))
           ] : []).concat(_mode === "fivefinger" ? [
-            el("button.btn.sm", { title: "Give one away", style: { color: "var(--success)", borderColor: "var(--success)" }, onclick: function () { donate(it.name); } }, "DONATE"),
-            el("button.btn.sm", { title: "Discard one", onclick: function () { drop(it.name); } }, "DROP")
+            el("button.btn.sm", { title: "Give one away", style: { color: "var(--success)", borderColor: "var(--success)" }, onclick: function () { donate(ownedKey); } }, "DONATE"),
+            el("button.btn.sm", { title: "Discard one", onclick: function () { drop(ownedKey); } }, "DROP")
           ] : [
-            el("button.btn.sm", { title: "Sell to the fence at street rate", style: { color: "var(--gold)", borderColor: "var(--gold)" }, onclick: function () { sell(it.name); } }, "FENCE · " + fmtG(fencePrice(it))),
-            el("button.btn.sm", { title: "Discard one", onclick: function () { drop(it.name); } }, "DROP")
+            el("button.btn.sm", { title: "Sell to the fence at street rate", style: { color: "var(--gold)", borderColor: "var(--gold)" }, onclick: function () { sell(ownedKey); } }, "FENCE · " + fmtG(fencePrice(it))),
+            el("button.btn.sm", { title: "Discard one", onclick: function () { drop(ownedKey); } }, "DROP")
           ]));
     // chips wrap freely on the left; the action group is always pinned to the right
     var info = el("div.row", { style: { gap: "10px", alignItems: "flex-start", margin: "4px 0 0", flexWrap: "nowrap" } }, [
@@ -465,7 +495,7 @@ EN.inventoryView = (function () {
     ]);
     var cards = entries.map(function (e) {
       var it = findItem(e.name);
-      if (it) return itemCard(it, ch, "stash");
+      if (it) return itemCard(it, ch, "stash", e);
       // unknown / custom item (incl. #GRID rigs), minimal row with its Load
       var ld = EN.engine.itemLoad ? EN.engine.itemLoad(e.name) : 0;
       return el("div.feature", null, [
@@ -475,7 +505,7 @@ EN.inventoryView = (function () {
         el("div.row", { style: { gap: "6px", marginTop: "4px", justifyContent: "flex-end" } }, [el("button.btn.sm", { onclick: function () { drop(e.name); } }, "DROP")])
       ]);
     });
-    return [EN.ui.panel("Stash", entries.length + " ITEM TYPES", cards.length ? [loadBar].concat(cards) :
+    return [EN.ui.panel("Stash", entries.length + " ENTRIES", cards.length ? [loadBar].concat(cards) :
       [el("p.help", { style: { margin: 0 }, text: "Empty. The Undercut is open; it's always open." })], { corners: true })];
   }
 
@@ -1507,11 +1537,7 @@ EN.inventoryView = (function () {
     tbSetProjects(function (list, c) {
       var i = list.map(function (x) { return x.id; }).indexOf(p.id);
       if (i >= 0) list.splice(i, 1);
-      if (addName) {
-        c.equipment = c.equipment || [];
-        var e = c.equipment.find(function (x) { return x.name === addName; });
-        if (e) e.qty = (e.qty || 1) + 1; else c.equipment.push({ name: addName, qty: 1 });
-      }
+      if (addName) addToStash(c, addName);
     });
     toast(addName ? p.name + " complete; " + addName + " added to your Stash." : p.name + " complete.");
   }

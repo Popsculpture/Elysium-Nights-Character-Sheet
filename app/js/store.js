@@ -131,6 +131,45 @@ EN.store = (function () {
     if (ch.equippedShield === undefined) ch.equippedShield = null;
     if (ch.equippedFocus === undefined) ch.equippedFocus = null;
     if (!ch.weaponAmmo) ch.weaponAmmo = {};
+    // Split non-stackable equipment (weapons, armor/shield/focus, kits, devices,
+    // rigs, ciphers) into individually tracked instances, each its own entry
+    // with a unique id. Only consumables/ammo/Flow tonics keep pooling into a
+    // shared qty stack. Owning two daggers no longer forces them to share one
+    // equipped/carried state; equip/carry re-key from the old catalog name to
+    // the specific instance id, keeping the first split instance's state and
+    // leaving any extras as unequipped, uncarried spares.
+    if (Array.isArray(ch.equipment)) {
+      var nameToIds = {}, splitEquipment = [];
+      ch.equipment.forEach(function (e) {
+        if (e.id || !(e.qty > 0) || (EN.engine && EN.engine.isStackableName ? EN.engine.isStackableName(e.name) : true)) {
+          splitEquipment.push(e);
+          return;
+        }
+        var n = e.qty, ids = [];
+        for (var i = 0; i < n; i++) {
+          var ne = {};
+          Object.keys(e).forEach(function (k) { if (k !== "qty") ne[k] = e[k]; });
+          ne.id = "eq_" + Math.random().toString(36).slice(2, 9);
+          ne.qty = 1;
+          splitEquipment.push(ne);
+          ids.push(ne.id);
+        }
+        nameToIds[e.name] = ids;
+      });
+      ch.equipment = splitEquipment;
+      function firstId(name) { return (nameToIds[name] || [])[0] || null; }
+      if (Array.isArray(ch.equippedWeapons)) {
+        ch.equippedWeapons = ch.equippedWeapons.map(function (n) { return nameToIds[n] ? firstId(n) : n; }).filter(Boolean);
+      }
+      ["equippedArmor", "equippedShield", "equippedFocus"].forEach(function (slot) {
+        if (ch[slot] && nameToIds[ch[slot]]) ch[slot] = firstId(ch[slot]);
+      });
+      if (ch.carry && typeof ch.carry === "object") {
+        var newCarry = {};
+        Object.keys(ch.carry).forEach(function (name) { newCarry[nameToIds[name] ? firstId(name) : name] = ch.carry[name]; });
+        ch.carry = newCarry;
+      }
+    }
     // cyberware: legacy string entries → objects. sp:0 so old manual marks don't
     // retroactively spike Static; chrome bought from the market carries real SP.
     if (Array.isArray(ch.cyberware)) {

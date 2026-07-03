@@ -197,6 +197,17 @@ EN.printSheet = (function () {
     var g = EN.gearCatalog || {};
     return [].concat((g.melee && g.melee.items) || [], (g.ranged && g.ranged.items) || [], (g.signature && g.signature.items) || []).find(function (w) { return w.name === name; });
   }
+  // ch.equippedWeapons holds equipment-entry ids (each a specific owned
+  // instance); the Attacks list is per weapon TYPE, so resolve to deduped
+  // catalog names once here.
+  function equippedWeaponNames(ch) {
+    var out = [];
+    (ch.equippedWeapons || []).forEach(function (key) {
+      var e = (ch.equipment || []).find(function (x) { return (x.id || x.name) === key; });
+      if (e && e.qty > 0 && out.indexOf(e.name) === -1) out.push(e.name);
+    });
+    return out;
+  }
   function catItem(name) { return allGear().find(function (i) { return i.name === name; }); }
   // detail lines for one catalog item, driven by whichever fields it carries
   // (weapon: damage/range/traits; armor: DR; tool/kit: effect/basic/proficient; tonic: desc/effect)
@@ -375,7 +386,7 @@ EN.printSheet = (function () {
     R.push(vw);
     // Attacks table (equipped weapons auto-filled, blank rows for the rest)
     R.push(sect("Attacks"));
-    var atkRows = (ch.equippedWeapons || []).map(findWeapon).filter(Boolean).map(function (w) {
+    var atkRows = equippedWeaponNames(ch).map(findWeapon).filter(Boolean).map(function (w) {
       return [w.name, sgn(weaponHit(ch, d, w)), w.damage || "", (w.traits || []).join(", ")];
     });
     R.push(wtable(["Name", "Atk Bonus / DC", "Damage & Type", "Notes"], atkRows, Math.max(6, atkRows.length + 2), ".ps-tbl-atk"));
@@ -468,7 +479,7 @@ EN.printSheet = (function () {
     // equipped loadout summary
     var dg = d.defenseGear || {};
     var loadout = [];
-    (ch.equippedWeapons || []).forEach(function (n) { loadout.push(chip(n, ".ps-chip-box")); });
+    equippedWeaponNames(ch).forEach(function (n) { loadout.push(chip(n, ".ps-chip-box")); });
     if (dg.armor) loadout.push(chip("Armor: " + dg.armor.name, ".ps-chip-box"));
     if (dg.shield) loadout.push(chip("Shield: " + dg.shield.name, ".ps-chip-box"));
     if (dg.focus) loadout.push(chip("Focus: " + dg.focus.name, ".ps-chip-box"));
@@ -482,7 +493,8 @@ EN.printSheet = (function () {
     else {
       entries.forEach(function (e) {
         var it = catItem(e.name);
-        var worn = (ch.equippedWeapons || []).indexOf(e.name) !== -1 || ch.equippedArmor === e.name || ch.equippedShield === e.name || ch.equippedFocus === e.name;
+        var key = e.id || e.name;
+        var worn = (ch.equippedWeapons || []).indexOf(key) !== -1 || ch.equippedArmor === key || ch.equippedShield === key || ch.equippedFocus === key;
         var tags = it ? [it.group || it.kind || it.bucket, it.legality, it.availability].filter(Boolean).join(" · ") : "";
         var meta = ["x" + e.qty, worn ? "equipped" : "stash"].concat(tags ? [tags] : []).join(" · ");
         var block = el("div.ps-invitem", null, [

@@ -442,22 +442,43 @@ EN.engine = (function () {
     return items.find(function (i) { return i.name === name; }) || null;
   }
   function hasTrait(item, t) { return !!(item && item.traits && item.traits.indexOf(t) !== -1); }
+  // Only consumables, ammo/munitions, and single-use Flow tonics pool into a
+  // shared qty stack. Everything else (weapons, armor/shield/focus, kits,
+  // devices, rigs, ciphers) is tracked as an individually equippable/carriable
+  // instance, each with its own equipment-entry id, so owning two daggers
+  // doesn't force them to share one equipped/carried state.
+  function isStackableItem(it) {
+    if (!it) return true;                                  // unknown/custom items: legacy pooled behavior
+    if (it.legality === "As weapon") return true;           // ammo & munitions, fungible by the box
+    if (it.bucket === "consumables") return true;
+    if (it.group === "Resonance Tonics") return true;       // bucket "flow", but drunk once and gone
+    return false;
+  }
+  function isStackableName(name) { return isStackableItem(loadCatalogItem(name)); }
+  // Stable identity for equip/carry state: the entry's id if it has one
+  // (a tracked individual instance), else its catalog name (a pooled stack).
+  function entryKey(e) { return (e && (e.id || e.name)) || null; }
+  function findEntry(ch, key) { return ((ch && ch.equipment) || []).find(function (x) { return (x.id || x.name) === key; }); }
+  function keyToName(ch, key) { var e = findEntry(ch, key); return e ? e.name : key; }
   // A leased item whose installment is due grants NOTHING until it is paid.
   // Lease state lives on the equipment entry (leaseDue / leaseOwned), maintained
-  // by the Inventory ledger and ticked one day per Long Rest.
-  function leaseLapsed(ch, name) {
-    if (!name) return false;
-    var e = ((ch && ch.equipment) || []).find(function (x) { return x.name === name; });
+  // by the Inventory ledger and ticked one day per Long Rest. `key` is the
+  // specific equipped entry's id (or a bare name for pooled/legacy entries),
+  // so two identical leased items each keep their own contract.
+  function leaseLapsed(ch, key) {
+    if (!key) return false;
+    var e = findEntry(ch, key);
     return !!(e && e.leaseDue && !e.leaseOwned);
   }
   function defensiveLoadout(ch) {
-    var armor = armorItem(ch && ch.equippedArmor);
-    var shield = armorItem(ch && ch.equippedShield);
-    var focus = armorItem(ch && ch.equippedFocus);
+    var armorKey = ch && ch.equippedArmor, shieldKey = ch && ch.equippedShield, focusKey = ch && ch.equippedFocus;
+    var armor = armorItem(keyToName(ch, armorKey));
+    var shield = armorItem(keyToName(ch, shieldKey));
+    var focus = armorItem(keyToName(ch, focusKey));
     // lapsed leases keep their drawbacks (weight is weight) but grant no benefits
-    var armorLapsed = !!armor && leaseLapsed(ch, armor.name);
-    var shieldLapsed = !!shield && leaseLapsed(ch, shield.name);
-    var focusLapsed = !!focus && leaseLapsed(ch, focus.name);
+    var armorLapsed = !!armor && leaseLapsed(ch, armorKey);
+    var shieldLapsed = !!shield && leaseLapsed(ch, shieldKey);
+    var focusLapsed = !!focus && leaseLapsed(ch, focusKey);
     var wardDie = (focus && !focusLapsed && focus.wardDie) || (armor && !armorLapsed && armor.wardDie) || null;
     // Bulky armor slows you by 1. Powered frames are the exception (trained + powered
     // ignores it), but training isn't modeled, so we leave Powered Speed to the player.
@@ -536,11 +557,15 @@ EN.engine = (function () {
     }
     return 1;
   }
-  // on-person = equipped, or carry status "carried" / "mission" (the Loadout tab)
-  function onPerson(ch, name) {
-    if ((ch.equippedWeapons || []).indexOf(name) !== -1) return true;
-    if (ch.equippedArmor === name || ch.equippedShield === name || ch.equippedFocus === name) return true;
-    var cs = ch.carry && ch.carry[name];
+  // on-person = equipped, or carry status "carried" / "mission" (the Loadout tab).
+  // Takes the actual equipment entry (not just its name) since carry/equip state
+  // is keyed by entryKey (an id for individually-tracked gear, else the name).
+  function onPerson(ch, e) {
+    var key = entryKey(e);
+    if (!key) return false;
+    if ((ch.equippedWeapons || []).indexOf(key) !== -1) return true;
+    if (ch.equippedArmor === key || ch.equippedShield === key || ch.equippedFocus === key) return true;
+    var cs = ch.carry && ch.carry[key];
     return cs === "carried" || cs === "mission";
   }
   function encumbranceInfo(ch, attributes, dl, linFeats) {
@@ -560,7 +585,7 @@ EN.engine = (function () {
     var bands = { light: threshold - 3, standard: threshold, heavy: threshold + 3 };
     var current = 0, items = [];
     (ch.equipment || []).forEach(function (e) {
-      if (!(e.qty > 0) || !onPerson(ch, e.name)) return;
+      if (!(e.qty > 0) || !onPerson(ch, e)) return;
       var l = itemLoad(e.name);
       if (l > 0) { current += l * e.qty; items.push({ name: e.name, load: l, qty: e.qty }); }
     });
@@ -1080,6 +1105,7 @@ EN.engine = (function () {
     skillTierCost: skillTierCost, trainingSpent: trainingSpent, trainingBudget: trainingBudget,
     grantedGear: grantedGear, gearFloorTier: gearFloorTier, effectiveGearTier: effectiveGearTier, gearTierCost: gearTierCost,
     activeLineageFeatures: activeLineageFeatures, splitTalentText: splitTalentText, leaseLapsed: leaseLapsed, itemLoad: itemLoad,
+    isStackableItem: isStackableItem, isStackableName: isStackableName, entryKey: entryKey, findEntry: findEntry, keyToName: keyToName,
     grantSourceMap: grantSourceMap, duplicateGrants: duplicateGrants, pendingChoices: pendingChoices,
     tp: { STEP_COST: STEP_COST, TIER_LEVEL_REQ: TIER_LEVEL_REQ, FOCUS_COST: FOCUS_COST, FOCUS_LEVEL_REQ: FOCUS_LEVEL_REQ, SPEC_COST: SPEC_COST, SPEC_LEVEL_REQ: SPEC_LEVEL_REQ }
   };

@@ -610,22 +610,26 @@ EN.combatView = (function () {
       (g.ammo && g.ammo.items) || [], (g.armor && g.armor.items) || [], (g.tools && g.tools.items) || []);
   }
   function invItem(name) { return fullCatalog().find(function (x) { return x.name === name; }); }
-  function carryStatus(ch, name) { return (ch.carry && ch.carry[name]) || "stashed"; }
-  function setCarry(name, status) {
+  // entryKey: the stable identity a specific equipment entry equips/carries
+  // under (its own id for an individually-tracked instance, else its shared
+  // catalog name for a pooled consumable/ammo stack).
+  function entryKey(e) { return EN.engine.entryKey ? EN.engine.entryKey(e) : (e && e.name); }
+  function carryStatus(ch, key) { return (ch.carry && ch.carry[key]) || "stashed"; }
+  function setCarry(key, status) {
     store.update(function (c) {
       c.carry = c.carry || {};
-      if (!status || status === "stashed") delete c.carry[name]; else c.carry[name] = status;
+      if (!status || status === "stashed") delete c.carry[key]; else c.carry[key] = status;
     });
   }
   // a weapon (equippedWeapons) or the worn armor / wielded shield / attuned focus is on-person by definition
-  function isEquippedAny(ch, name) {
-    return (ch.equippedWeapons || []).indexOf(name) !== -1 || ch.equippedArmor === name || ch.equippedShield === name || ch.equippedFocus === name;
+  function isEquippedAny(ch, key) {
+    return (ch.equippedWeapons || []).indexOf(key) !== -1 || ch.equippedArmor === key || ch.equippedShield === key || ch.equippedFocus === key;
   }
-  function equipLabel(ch, name) {
-    if ((ch.equippedWeapons || []).indexOf(name) !== -1) return "Equipped";
-    if (ch.equippedArmor === name) return "Worn";
-    if (ch.equippedShield === name) return "Wielding";
-    if (ch.equippedFocus === name) return "Attuned";
+  function equipLabel(ch, key) {
+    if ((ch.equippedWeapons || []).indexOf(key) !== -1) return "Equipped";
+    if (ch.equippedArmor === key) return "Worn";
+    if (ch.equippedShield === key) return "Wielding";
+    if (ch.equippedFocus === key) return "Attuned";
     return null;
   }
   function isHeavy(it) { return it.group === "Heavy" || it.heavy === true || (it.traits || []).some(function (t) { return /^Heavy\b/.test(t); }); }
@@ -1461,8 +1465,14 @@ EN.combatView = (function () {
     /* shared across the Weapons tab, Defend section, and Loadout count */
     var GROUP_CAT = { Simple: "Simple Weapons", Martial: "Martial Weapons", Sidearm: "Sidearms", Longarm: "Longarms",
                       Heavy: "Heavy Weapons", Launcher: "Explosive Launchers", Thrown: "Thrown Weapons", Bowfire: "Bowfire Weapons" };
-    var equippedNames = (ch.equippedWeapons || []).filter(function (n) {
-      return (ch.equipment || []).some(function (e) { return e.name === n && e.qty > 0; });
+    // ch.equippedWeapons holds entry ids (each a specific owned instance); the
+    // Attacks list, ammo, and hit math are all per weapon TYPE, so resolve to
+    // deduped catalog names here once and let everything downstream work with
+    // plain names as before.
+    var equippedNames = [];
+    (ch.equippedWeapons || []).forEach(function (key) {
+      var e = (ch.equipment || []).find(function (x) { return (x.id || x.name) === key && x.qty > 0; });
+      if (e && equippedNames.indexOf(e.name) === -1) equippedNames.push(e.name);
     });
 
     /* ---- ABILITIES tab: the class resource fuel + active, triggerable abilities ---- */
@@ -1701,13 +1711,28 @@ EN.combatView = (function () {
         var cat = GROUP_CAT[it.group], tier = eng.effectiveGearTier(ch, "weapons", cat), prof = R.profTiers[tier].d20;
         return { mod: mod, attrName: attrName, cat: cat, tier: tier, prof: prof, total: mod + prof, melee: melee, thrownItem: thrownItem };
       }
+      // ch.equippedWeapons holds ids, not names; move the first id that
+      // resolves to wname past its neighboring array slot (the same
+      // one-slot-per-equipped-weapon assumption the display order relies on).
+      function moveWeaponName(wname, dir) {
+        store.update(function (c) {
+          var a = c.equippedWeapons || [], j = -1;
+          for (var k = 0; k < a.length; k++) {
+            var e = (c.equipment || []).find(function (x) { return (x.id || x.name) === a[k]; });
+            if (e && e.name === wname) { j = k; break; }
+          }
+          var t = j + dir;
+          if (j === -1 || t < 0 || t >= a.length) return;
+          var tmp = a[j]; a[j] = a[t]; a[t] = tmp;
+        });
+      }
       function reorderArrows(wname, wi) {
         return el("div", { style: { display: "flex", flexDirection: "column", gap: "1px", flex: "0 0 auto" } }, [
           el("button", { title: "Move up", disabled: wi === 0,
-            onclick: function () { store.update(function (c) { var a = c.equippedWeapons, j = a.indexOf(wname); if (j > 0) { a.splice(j, 1); a.splice(j - 1, 0, wname); } }); },
+            onclick: function () { moveWeaponName(wname, -1); },
             style: { background: "transparent", border: "none", color: wi === 0 ? "var(--text4)" : "var(--text3)", cursor: wi === 0 ? "default" : "pointer", fontSize: "9px", lineHeight: "1", padding: "1px 3px" } }, "▲"),
           el("button", { title: "Move down", disabled: wi === equippedNames.length - 1,
-            onclick: function () { store.update(function (c) { var a = c.equippedWeapons, j = a.indexOf(wname); if (j !== -1 && j < a.length - 1) { a.splice(j, 1); a.splice(j + 1, 0, wname); } }); },
+            onclick: function () { moveWeaponName(wname, 1); },
             style: { background: "transparent", border: "none", color: wi === equippedNames.length - 1 ? "var(--text4)" : "var(--text3)", cursor: wi === equippedNames.length - 1 ? "default" : "pointer", fontSize: "9px", lineHeight: "1", padding: "1px 3px" } }, "▼")
         ]);
       }
@@ -1903,12 +1928,12 @@ EN.combatView = (function () {
         loadOpen && enc.state !== "unencumbered" ? el("p.help", { style: { margin: "7px 0 0", fontSize: "10.5px", color: stateColor }, text: stateDef.effect || "" }) : null
       ]));
       var owned = (ch.equipment || []).filter(function (e) { return e.qty > 0; });
-      var inScene = owned.filter(function (e) { return isEquippedAny(ch, e.name) || carryStatus(ch, e.name) !== "stashed"; });
+      var inScene = owned.filter(function (e) { return isEquippedAny(ch, entryKey(e)) || carryStatus(ch, entryKey(e)) !== "stashed"; });
       var nCarried = 0, nMission = 0, nEquipped = 0, nHeavy = 0;
       inScene.forEach(function (e) {
-        var it = invItem(e.name), cs = carryStatus(ch, e.name);
+        var it = invItem(e.name), cs = carryStatus(ch, entryKey(e));
         // equipped wins; an equipped item is never also tallied as carried/mission
-        if (isEquippedAny(ch, e.name)) nEquipped++;
+        if (isEquippedAny(ch, entryKey(e))) nEquipped++;
         else if (cs === "carried") nCarried++;
         else if (cs === "mission") nMission++;
         if (it && isHeavy(it)) nHeavy++;
@@ -1918,9 +1943,9 @@ EN.combatView = (function () {
       if (!inScene.length) {
         kids.push(el("p.help", { style: { margin: "0 0 6px", color: "var(--text3)" }, text: "Nothing in your loadout yet. Equip gear in Inventory, or add carried items below." }));
       } else {
-        var carried = inScene.filter(function (e) { return !isEquippedAny(ch, e.name) && carryStatus(ch, e.name) === "carried"; });
-        var mission = inScene.filter(function (e) { return !isEquippedAny(ch, e.name) && carryStatus(ch, e.name) === "mission"; });
-        var equipped = inScene.filter(function (e) { return isEquippedAny(ch, e.name); });
+        var carried = inScene.filter(function (e) { return !isEquippedAny(ch, entryKey(e)) && carryStatus(ch, entryKey(e)) === "carried"; });
+        var mission = inScene.filter(function (e) { return !isEquippedAny(ch, entryKey(e)) && carryStatus(ch, entryKey(e)) === "mission"; });
+        var equipped = inScene.filter(function (e) { return isEquippedAny(ch, entryKey(e)); });
         function section(label, items) {
           if (!items.length) return;
           kids.push(el("div.section-title", { style: { margin: "8px 0 4px" } }, [document.createTextNode(label), el("span.line")]));
@@ -1931,11 +1956,11 @@ EN.combatView = (function () {
         section("On-Person", equipped);
       }
       // add-to-loadout picker (stash items not yet carried or equipped)
-      var stashOnly = owned.filter(function (e) { return !isEquippedAny(ch, e.name) && carryStatus(ch, e.name) === "stashed"; });
+      var stashOnly = owned.filter(function (e) { return !isEquippedAny(ch, entryKey(e)) && carryStatus(ch, entryKey(e)) === "stashed"; });
       if (stashOnly.length) {
         var addSel = el("select", { style: { fontSize: "12px", width: "auto" } },
           [el("option", { value: "", text: "＋ add a carried item…" })].concat(stashOnly.map(function (e) {
-            return el("option", { value: e.name, text: e.name + (e.qty > 1 ? " ×" + e.qty : "") });
+            return el("option", { value: entryKey(e), text: e.name + (e.qty > 1 ? " ×" + e.qty : "") });
           })));
         addSel.addEventListener("change", function () { if (addSel.value) setCarry(addSel.value, "carried"); });
         kids.push(el("div.row", { style: { gap: "8px", marginTop: "10px", alignItems: "center" } }, [addSel]));
@@ -1945,9 +1970,9 @@ EN.combatView = (function () {
       return kids;
     }
     function loadoutRow(e) {
-      var it = invItem(e.name);
-      var equipped = isEquippedAny(ch, e.name), eqLabel = equipLabel(ch, e.name);
-      var cs = carryStatus(ch, e.name);
+      var it = invItem(e.name), key = entryKey(e);
+      var equipped = isEquippedAny(ch, key), eqLabel = equipLabel(ch, key);
+      var cs = carryStatus(ch, key);
       var chips = [];
       if (eqLabel) chips.push(el("span.chip", { style: { fontSize: "9px", color: "var(--accent)", borderColor: "var(--accent)" }, text: eqLabel.toUpperCase() }));
       var ld = eng.itemLoad ? eng.itemLoad(e.name) : 0;
@@ -1962,7 +1987,7 @@ EN.combatView = (function () {
       // shows a static tag rather than the carry selector (no "Stashed but Equipped" contradiction)
       var statusCtrl = equipped
         ? el("span.mono", { title: "Equipped gear is managed in Inventory", style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".06em" }, text: "ON-PERSON" })
-        : el("select", { title: "Carry status", style: { fontSize: "11px", width: "auto" }, onchange: function () { setCarry(e.name, this.value); } },
+        : el("select", { title: "Carry status", style: { fontSize: "11px", width: "auto" }, onchange: function () { setCarry(key, this.value); } },
             [["stashed", "Stashed"], ["carried", "Carried"], ["mission", "Mission"]].map(function (o) {
               return el("option", { value: o[0], selected: cs === o[0], text: o[1] });
             }));
@@ -1992,7 +2017,7 @@ EN.combatView = (function () {
 
     /* ---- the five-tab nav + active tab body ---- */
     function loadoutCount() {
-      return (ch.equipment || []).filter(function (e) { return e.qty > 0 && (isEquippedAny(ch, e.name) || carryStatus(ch, e.name) !== "stashed"); }).length;
+      return (ch.equipment || []).filter(function (e) { return e.qty > 0 && (isEquippedAny(ch, entryKey(e)) || carryStatus(ch, entryKey(e)) !== "stashed"); }).length;
     }
     var TAB_DEFS = [
       { key: "abilities", label: "Abilities", count: activeFeats.length },
@@ -2027,7 +2052,7 @@ EN.combatView = (function () {
       var attuned = !!d.flow, flowMod = d.flow ? eng.fmtMod(d.flow.attack) : null;
       var focusDie = dg.wardDie || null, focusName = dg.focus ? dg.focus.name : (dg.armor && dg.armor.wardDie ? dg.armor.name : null);
       var meleeDie = null, meleeName = null;
-      (ch.equippedWeapons || []).forEach(function (n) {
+      equippedNames.forEach(function (n) {
         if (meleeDie) return;
         var w = findWeapon(n);
         if (w && (w.group === "Simple" || w.group === "Martial")) { var m = (w.damage || "").match(/\d*d\d+/); if (m) { meleeDie = m[0]; meleeName = w.name; } }
