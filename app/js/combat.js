@@ -1868,17 +1868,22 @@ EN.combatView = (function () {
         + "\nThreshold " + enc.threshold + " → Light ≤ " + bands.light + " · Standard ≤ " + bands.standard + " · Heavy ≤ " + bands.heavy + " · beyond = Overloaded"
         + "\n\nLoad guide:\n" + ((EE.loadTable || []).map(function (r) { return r.load + "  " + r.items; }).join("\n"))
         + "\n\n" + (EE.notes || "");
+      var loadOpen = !!_open["load-console"];
       kids.push(el("div", { style: { padding: "9px 11px", border: "1px solid " + (enc.state === "unencumbered" ? "var(--border)" : stateColor), borderRadius: "4px", background: "rgba(0,0,0,.15)", margin: "2px 0 10px" } }, [
-        el("div.row.wrap", { style: { gap: "10px", alignItems: "center" } }, [
+        el("div.row.wrap", { style: { gap: "10px", alignItems: "center", cursor: "pointer" },
+          title: loadOpen ? "Tap to collapse" : "Tap for the band scale and hauls",
+          onclick: function () { _open["load-console"] = !loadOpen; EN.app.render(); } }, [
+          el("span.collapse-caret", { text: loadOpen ? "▾" : "▸" }),
           el("span.mono", { title: thTip, style: { fontSize: "18px", color: "var(--text)" },
             html: "LOAD " + enc.current + " <span style='font-size:12px;color:var(--text3)'>/ " + bands.standard + "</span>" }),
           el("span.chip", { title: tierDef ? tierDef.effect : "Past any plausible loadout; this belongs on a cart, dolly, vehicle, or exoframe.",
             style: { fontSize: "9px", color: tierColor, borderColor: tierColor } }, enc.tier === "over" ? "OVER HEAVY" : (tierDef ? tierDef.name : enc.tier).toUpperCase() + " LOADOUT"),
           el("span.chip", { title: stateDef.effect || "", style: { fontSize: "9px", color: stateColor, borderColor: stateColor } }, (stateDef.name || enc.state || "").toUpperCase()),
-          enc.speedDelta ? el("span.mono", { style: { fontSize: "11px", color: stateColor }, text: "SPD " + enc.speedDelta }) : null
+          enc.speedDelta ? el("span.mono", { style: { fontSize: "11px", color: stateColor }, text: "SPD " + enc.speedDelta }) : null,
+          enc.haul !== "none" ? el("span.chip", { title: "Active Haul; expand to change it", style: { fontSize: "9px", color: "var(--warn)", borderColor: "var(--warn)" } }, "HAULING") : null
         ]),
         // the band scale your carried Load moves through (calculated, not chosen)
-        el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "7px" } },
+        loadOpen ? el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "7px" } },
           [el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em", minWidth: "58px" }, text: "LOADOUT" })].concat(
             (EE.loadouts || []).map(function (t) {
               var on = enc.tier === t.key;
@@ -1887,15 +1892,15 @@ EN.combatView = (function () {
                 style: { fontSize: "9px", color: on ? tierColor : "var(--text4)", borderColor: on ? tierColor : "var(--border)" } },
                 (on ? "● " : "") + t.name.toUpperCase() + " ≤ " + cap);
             }),
-            [el("span.help", { style: { margin: 0, fontSize: "10px", color: "var(--text4)" }, text: "calculated from what you carry" })])),
-        el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "6px" } }, [
+            [el("span.help", { style: { margin: 0, fontSize: "10px", color: "var(--text4)" }, text: "calculated from what you carry" })])) : null,
+        loadOpen ? el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "6px" } }, [
           el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em", minWidth: "58px" }, text: "HAUL" }),
           el("select", { style: { fontSize: "11px", width: "auto" }, title: "A Haul (body, crate, machine) does not count as carried Load; it sets your state directly.",
             onchange: function () { var v = this.value; store.update(function (c) { c.haul = v; }); } },
             (EE.hauls || []).map(function (h) { return el("option", { value: h.key, selected: enc.haul === h.key, text: h.name, title: h.hint }); }))
-        ]),
-        enc.tier === "light" && enc.state === "unencumbered" ? el("p.help", { style: { margin: "7px 0 0", fontSize: "10.5px", color: "var(--success)" }, text: (tierDef && tierDef.effect) || "" }) : null,
-        enc.state !== "unencumbered" ? el("p.help", { style: { margin: "7px 0 0", fontSize: "10.5px", color: stateColor }, text: stateDef.effect || "" }) : null
+        ]) : null,
+        loadOpen && enc.tier === "light" && enc.state === "unencumbered" ? el("p.help", { style: { margin: "7px 0 0", fontSize: "10.5px", color: "var(--success)" }, text: (tierDef && tierDef.effect) || "" }) : null,
+        loadOpen && enc.state !== "unencumbered" ? el("p.help", { style: { margin: "7px 0 0", fontSize: "10.5px", color: stateColor }, text: stateDef.effect || "" }) : null
       ]));
       var owned = (ch.equipment || []).filter(function (e) { return e.qty > 0; });
       var inScene = owned.filter(function (e) { return isEquippedAny(ch, e.name) || carryStatus(ch, e.name) !== "stashed"; });
