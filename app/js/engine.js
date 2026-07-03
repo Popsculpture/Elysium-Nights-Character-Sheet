@@ -480,7 +480,7 @@ EN.engine = (function () {
      Load is abstract weight/bulk. Threshold = 6 + Body modifier (min 3), plus
      +2 per "step" from gear (Load-Bearing OR Load Distributor, non-stacking;
      Powered frames two steps) and Size-larger effects. The declared Loadout
-     tier (ch.loadout) sets the Load Budget; on-person gear spends it. Hauls
+     tier is DERIVED from carried Load against the threshold bands. Hauls
      (ch.haul) bypass the budget and set the state directly. */
   function loadCatalogItem(name) {
     var g = EN.gearCatalog || {};
@@ -557,21 +557,23 @@ EN.engine = (function () {
     if ((linFeats || []).indexOf("Synthetic Musculature") !== -1) steps.push({ label: "Synthetic Musculature (one Size larger)", value: 2 });
     if (activeTalents(ch).some(function (t) { return t.talent.name === "Heavy Payload"; })) steps.push({ label: "Heavy Payload (one Size larger)", value: 2 });
     var threshold = base; steps.forEach(function (s) { threshold += s.value; });
-    var tier = (ch.loadout === "light" || ch.loadout === "heavy") ? ch.loadout : "standard";
-    var budget = threshold + (tier === "light" ? -3 : tier === "heavy" ? 3 : 0);
+    var bands = { light: threshold - 3, standard: threshold, heavy: threshold + 3 };
     var current = 0, items = [];
     (ch.equipment || []).forEach(function (e) {
       if (!(e.qty > 0) || !onPerson(ch, e.name)) return;
       var l = itemLoad(e.name);
       if (l > 0) { current += l * e.qty; items.push({ name: e.name, load: l, qty: e.qty }); }
     });
+    // the Loadout tier is not declared; it is whatever your carried Load says it is
+    var tier = current <= bands.light ? "light" : current <= bands.standard ? "standard" : current <= bands.heavy ? "heavy" : "over";
     var haul = (ch.haul === "lift" || ch.haul === "drag") ? ch.haul : "none";
     var state = "unencumbered";
-    if (tier === "heavy" || current > budget) state = "encumbered";
+    if (tier === "heavy") state = "encumbered";           // a Heavy loadout is Encumbered for the run
+    if (tier === "over") state = "overloaded";            // past any plausible loadout
     if (haul === "lift") state = (state === "unencumbered") ? "encumbered" : "overloaded";
     if (haul === "drag") state = "overloaded";
-    return { base: base, steps: steps, threshold: threshold, tier: tier, budget: budget,
-             current: current, items: items, overBudget: current > budget, haul: haul, state: state };
+    return { base: base, steps: steps, threshold: threshold, bands: bands, tier: tier,
+             current: current, items: items, haul: haul, state: state };
   }
 
   /* ---- #GRID hacking stats: Cipher Attack / Save DC, Links, Bandwidth, and the

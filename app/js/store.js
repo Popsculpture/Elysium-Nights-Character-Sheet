@@ -93,7 +93,6 @@ EN.store = (function () {
       equippedFocus: null,               // attuned Warding Focus (one at a time)
       weaponAmmo: {},                    // {weaponName: {cur, mode, ammoType}}, magazine/fire-mode tracking
       carry: {},                         // Loadout carry status per item name: "carried" | "mission" (absent = stashed)
-      loadout: "standard",               // declared Loadout tier: "light" | "standard" | "heavy" (sets the Load Budget)
       haul: "none",                      // active Haul: "none" | "lift" (body-sized) | "drag" (oversized/double)
       glimmer: 0,
       nexus: 0,                          // Nexus tokens (◎), the high-scrutiny currency; fractional
@@ -124,8 +123,8 @@ EN.store = (function () {
     if (!ch.featureAnnotations || typeof ch.featureAnnotations !== "object") ch.featureAnnotations = {};  // notes/flags on computed features
     if (!ch.carry || typeof ch.carry !== "object") ch.carry = {};            // Loadout carry status per item
     if (typeof ch.nexus !== "number") ch.nexus = 0;                          // Nexus wallet (◎)
-    if (["light", "standard", "heavy"].indexOf(ch.loadout) === -1) ch.loadout = "standard";  // declared Loadout tier
-    if (["none", "lift", "drag"].indexOf(ch.haul) === -1) ch.haul = "none";                  // active Haul
+    delete ch.loadout;                                                       // the Loadout tier is derived from carried Load, never declared
+    if (["none", "lift", "drag"].indexOf(ch.haul) === -1) ch.haul = "none";  // active Haul
     if (ch.identity && ch.identity.notes === undefined) ch.identity.notes = "";  // freeform notes, shared with the #PRINT Identity step
     if (!ch.equippedWeapons) ch.equippedWeapons = [];
     if (ch.equippedArmor === undefined) ch.equippedArmor = null;

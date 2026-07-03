@@ -1855,36 +1855,46 @@ EN.combatView = (function () {
     /* ---- LOADOUT tab: a filtered view of Inventory (what's on you for the scene) ---- */
     function loadoutKids() {
       var kids = [];
-      // Load console: declared Loadout tier, Load vs budget, state, and hauls
+      // Load console: the Loadout tier is DERIVED from carried Load (never picked)
       var enc = d.encumbrance || {};
       var EE = R.encumbrance || {};
+      var bands = enc.bands || {};
       var stateDef = (EE.states || {})[enc.state] || {};
       var stateColor = enc.state === "overloaded" ? "var(--danger)" : enc.state === "encumbered" ? "var(--warn)" : "var(--success)";
+      var tierDef = (EE.loadouts || []).find(function (t) { return t.key === enc.tier; });
+      var tierColor = enc.tier === "light" ? "var(--success)" : enc.tier === "standard" ? "var(--accent)" : enc.tier === "heavy" ? "var(--warn)" : "var(--danger)";
       var thTip = "Encumbrance Threshold = 6 + Body modifier (min 3) = " + enc.base
         + ((enc.steps || []).map(function (s) { return "\n+" + s.value + "  " + s.label; }).join(""))
-        + "\nThreshold " + enc.threshold + " · " + enc.tier + " Loadout → budget " + enc.budget
+        + "\nThreshold " + enc.threshold + " → Light ≤ " + bands.light + " · Standard ≤ " + bands.standard + " · Heavy ≤ " + bands.heavy + " · beyond = Overloaded"
         + "\n\nLoad guide:\n" + ((EE.loadTable || []).map(function (r) { return r.load + "  " + r.items; }).join("\n"))
         + "\n\n" + (EE.notes || "");
       kids.push(el("div", { style: { padding: "9px 11px", border: "1px solid " + (enc.state === "unencumbered" ? "var(--border)" : stateColor), borderRadius: "4px", background: "rgba(0,0,0,.15)", margin: "2px 0 10px" } }, [
         el("div.row.wrap", { style: { gap: "10px", alignItems: "center" } }, [
-          el("span.mono", { title: thTip, style: { fontSize: "18px", color: enc.overBudget ? "var(--warn)" : "var(--text)" },
-            html: "LOAD " + enc.current + " <span style='font-size:12px;color:var(--text3)'>/ " + enc.budget + "</span>" }),
+          el("span.mono", { title: thTip, style: { fontSize: "18px", color: "var(--text)" },
+            html: "LOAD " + enc.current + " <span style='font-size:12px;color:var(--text3)'>/ " + bands.standard + "</span>" }),
+          el("span.chip", { title: tierDef ? tierDef.effect : "Past any plausible loadout; this belongs on a cart, dolly, vehicle, or exoframe.",
+            style: { fontSize: "9px", color: tierColor, borderColor: tierColor } }, enc.tier === "over" ? "OVER HEAVY" : (tierDef ? tierDef.name : enc.tier).toUpperCase() + " LOADOUT"),
           el("span.chip", { title: stateDef.effect || "", style: { fontSize: "9px", color: stateColor, borderColor: stateColor } }, (stateDef.name || enc.state || "").toUpperCase()),
           enc.speedDelta ? el("span.mono", { style: { fontSize: "11px", color: stateColor }, text: "SPD " + enc.speedDelta }) : null
         ]),
+        // the band scale your carried Load moves through (calculated, not chosen)
         el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "7px" } },
           [el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em", minWidth: "58px" }, text: "LOADOUT" })].concat(
             (EE.loadouts || []).map(function (t) {
               var on = enc.tier === t.key;
-              return el("button.btn.sm" + (on ? ".primary" : ""), { title: t.effect + " Budget: " + (enc.threshold + t.delta) + ".",
-                onclick: function () { store.update(function (c) { c.loadout = t.key; }); } }, t.name.toUpperCase() + " · " + (enc.threshold + t.delta));
-            }))),
+              var cap = enc.threshold + t.delta;
+              return el("span.chip", { title: t.effect,
+                style: { fontSize: "9px", color: on ? tierColor : "var(--text4)", borderColor: on ? tierColor : "var(--border)" } },
+                (on ? "● " : "") + t.name.toUpperCase() + " ≤ " + cap);
+            }),
+            [el("span.help", { style: { margin: 0, fontSize: "10px", color: "var(--text4)" }, text: "calculated from what you carry" })])),
         el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "6px" } }, [
           el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em", minWidth: "58px" }, text: "HAUL" }),
-          el("select", { style: { fontSize: "11px", width: "auto" }, title: "A Haul (body, crate, machine) does not spend Load Budget; it sets your state directly.",
+          el("select", { style: { fontSize: "11px", width: "auto" }, title: "A Haul (body, crate, machine) does not count as carried Load; it sets your state directly.",
             onchange: function () { var v = this.value; store.update(function (c) { c.haul = v; }); } },
             (EE.hauls || []).map(function (h) { return el("option", { value: h.key, selected: enc.haul === h.key, text: h.name, title: h.hint }); }))
         ]),
+        enc.tier === "light" && enc.state === "unencumbered" ? el("p.help", { style: { margin: "7px 0 0", fontSize: "10.5px", color: "var(--success)" }, text: (tierDef && tierDef.effect) || "" }) : null,
         enc.state !== "unencumbered" ? el("p.help", { style: { margin: "7px 0 0", fontSize: "10.5px", color: stateColor }, text: stateDef.effect || "" }) : null
       ]));
       var owned = (ch.equipment || []).filter(function (e) { return e.qty > 0; });

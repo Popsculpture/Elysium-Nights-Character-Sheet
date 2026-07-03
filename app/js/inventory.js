@@ -449,15 +449,19 @@ EN.inventoryView = (function () {
     var entries = (ch.equipment || []).filter(function (e) { return e.qty > 0; });
     // Load readout: what your on-person gear spends against the declared Loadout's budget
     var enc = (EN.engine.derive(ch) || {}).encumbrance || {};
+    var encBands = enc.bands || {};
     var encStates = (EN.rules.encumbrance || {}).states || {};
     var stateColor = enc.state === "overloaded" ? "var(--danger)" : enc.state === "encumbered" ? "var(--warn)" : "var(--success)";
+    var tierColor = enc.tier === "light" ? "var(--success)" : enc.tier === "standard" ? "var(--accent)" : enc.tier === "heavy" ? "var(--warn)" : "var(--danger)";
     var loadBar = el("div.row.wrap", { style: { gap: "10px", alignItems: "center", padding: "7px 10px", border: "1px solid var(--border)", borderRadius: "4px", background: "rgba(0,0,0,.15)", marginBottom: "10px" } }, [
-      el("span.mono", { title: "On-person Load (equipped + carried + mission gear) vs your " + enc.tier + " Loadout's budget. Each item's ⚖ chip is its Load; 0-Load gear rides free.",
-        style: { fontSize: "16px", color: enc.overBudget ? "var(--warn)" : "var(--text)" },
-        html: "LOAD " + enc.current + " <span style='font-size:11px;color:var(--text3)'>/ " + enc.budget + "</span>" }),
+      el("span.mono", { title: "On-person Load (equipped + carried + mission gear). Each item's ⚖ chip is its Load; 0-Load gear rides free.\nLight ≤ " + encBands.light + " · Standard ≤ " + encBands.standard + " · Heavy ≤ " + encBands.heavy + " · beyond = Overloaded",
+        style: { fontSize: "16px", color: "var(--text)" },
+        html: "LOAD " + enc.current + " <span style='font-size:11px;color:var(--text3)'>/ " + encBands.standard + "</span>" }),
+      el("span.chip", { title: "Your Loadout tier, calculated from what you carry", style: { fontSize: "9px", color: tierColor, borderColor: tierColor } },
+        enc.tier === "over" ? "OVER HEAVY" : String(enc.tier || "").toUpperCase() + " LOADOUT"),
       el("span.chip", { title: (encStates[enc.state] || {}).effect || "", style: { fontSize: "9px", color: stateColor, borderColor: stateColor } },
         String((encStates[enc.state] || {}).name || enc.state || "").toUpperCase()),
-      el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "Loadout: " + enc.tier + " · declare the tier and hauls on the Freelancer tab's Loadout sub-tab." })
+      el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "Calculated from on-person gear; hauls live on the Freelancer tab's Loadout sub-tab." })
     ]);
     var cards = entries.map(function (e) {
       var it = findItem(e.name);
