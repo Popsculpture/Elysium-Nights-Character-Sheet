@@ -36,6 +36,37 @@ EN.rules = {
   hardCapStart: 16,
   hardCapMax: 20,
 
+  /* Encumbrance and Load ---------------------------------------------------
+     Load is abstract weight and bulk. Threshold = 6 + Body modifier (min 3);
+     gear that raises it "one step" adds 2. The declared Loadout tier sets the
+     Load Budget; on-person gear spends it. */
+  encumbrance: {
+    stepValue: 2,
+    loadouts: [
+      { key: "light",    name: "Light",    delta: -3, effect: "You read as foot traffic. Edge on in-combat d20 checks to blend into a crowd, conceal your gear, or pass checkpoint scrutiny; +1 Edge Die on related out-of-combat Dice Pools." },
+      { key: "standard", name: "Standard", delta: 0,  effect: "You look like a Freelancer on a job. No perk, no penalty." },
+      { key: "heavy",    name: "Heavy",    delta: 3,  effect: "You are Encumbered for the run. Nobody asks the walking armory for a lunch order." }
+    ],
+    states: {
+      unencumbered: { name: "Unencumbered", effect: "Move and act normally; no penalties from carried weight." },
+      encumbered:   { name: "Encumbered",   effect: "Speed -2. Snag on in-combat Agility or Body d20 checks that rely on nimble movement, balance, climbing, swimming, squeezing, or sudden repositioning; +1 Snag Die on related out-of-combat Dice Pools." },
+      overloaded:   { name: "Overloaded",   effect: "Speed halved (round down) and no Dash. Snag on all Agility d20 checks and most Body checks (pure bracing or holding excepted); +1 Snag Die on related out-of-combat Dice Pools. No Complex Actions that need careful movement until you drop part of the load. Staying Overloaded through an extended physical scene can cost 1 Fatigue." }
+    },
+    hauls: [
+      { key: "none", name: "No haul",                    hint: "Nothing in your arms. Hauls do not spend Load Budget; they set your state directly." },
+      { key: "lift", name: "Hauling: body-sized",        hint: "Short lift and carry of something roughly your Size: treated as Encumbered (Overloaded if you already were). Smaller loads may stay free at GM call." },
+      { key: "drag", name: "Hauling: oversized / double", hint: "Something larger than you, or two body-sized loads at once: treated as Overloaded. Wheels, sleds, carts, or help can step it down, at GM call." }
+    ],
+    loadTable: [
+      { load: "0",  items: "Clothes, credsticks, comms, loose ammo, small personal items" },
+      { load: "1",  items: "Sidearm, light melee weapon, compact medkit, smartdeck, reagent pouch, small tool" },
+      { load: "2",  items: "Longarm, medium melee weapon, shield, full toolkit, drone, packed armor, bulky pack" },
+      { load: "3",  items: "Heavy weapon, heavy shield, breaching kit, heavy tool rig, heavy armor, dense duffel" },
+      { load: "4+", items: "Unconscious adult, cargo crate, generator, server rack, turret, industrial case (stowed as cargo; carried in the arms it is a Haul instead)" }
+    ],
+    notes: "Load 0 items ride free within reason. Armor counts whether worn or packed: 1 Light, 2 Medium, 3 Heavy. Reveal packed gear any time (\"I packed that\") if it fits the budget and the silhouette; once revealed it stays revealed. Loot picked up mid-run adds its Load the same way."
+  },
+
   /* Modifier scale: mod = floor((score - 10) / 2).
      Verified against prose: 10-11→+0, 8-9→-1, 16-17→+3, 18-19→+4, 20→+5, 1→-5 */
   modifier: function (score) { return Math.floor((score - 10) / 2); },

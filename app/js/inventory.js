@@ -341,6 +341,8 @@ EN.inventoryView = (function () {
         document.createTextNode(" " + it.name),
         tagChip(it.legality, LEGAL_COLOR[it.legality], "Legality: " + it.legality),
         tagChip(it.availability, AVAIL_COLOR[it.availability], "Availability: " + it.availability),
+        (mode === "stash" && EN.engine.itemLoad && EN.engine.itemLoad(it.name) > 0)
+          ? tagChip("⚖ " + EN.engine.itemLoad(it.name), "var(--text2)", "Load " + EN.engine.itemLoad(it.name) + "; spends your Load Budget while on-person (equipped, carried, or mission)") : null,
         (it.slot && it.slot !== "None") ? tagChip("◧ " + it.slot, "var(--flow)", "Body Slot: " + it.slot) : null,
         it.counted ? tagChip("Counted", "var(--ember)", "Counted, track every unit from purchase to spend") : null,
         it.cyber ? tagChip("◆ " + it.zone, "var(--accent)", "Interface Zone: " + it.zone) : null,
@@ -445,16 +447,31 @@ EN.inventoryView = (function () {
   /* ---- sub-views ---- */
   function stashView(ch) {
     var entries = (ch.equipment || []).filter(function (e) { return e.qty > 0; });
+    // Load readout: what your on-person gear spends against the declared Loadout's budget
+    var enc = (EN.engine.derive(ch) || {}).encumbrance || {};
+    var encStates = (EN.rules.encumbrance || {}).states || {};
+    var stateColor = enc.state === "overloaded" ? "var(--danger)" : enc.state === "encumbered" ? "var(--warn)" : "var(--success)";
+    var loadBar = el("div.row.wrap", { style: { gap: "10px", alignItems: "center", padding: "7px 10px", border: "1px solid var(--border)", borderRadius: "4px", background: "rgba(0,0,0,.15)", marginBottom: "10px" } }, [
+      el("span.mono", { title: "On-person Load (equipped + carried + mission gear) vs your " + enc.tier + " Loadout's budget. Each item's ⚖ chip is its Load; 0-Load gear rides free.",
+        style: { fontSize: "16px", color: enc.overBudget ? "var(--warn)" : "var(--text)" },
+        html: "LOAD " + enc.current + " <span style='font-size:11px;color:var(--text3)'>/ " + enc.budget + "</span>" }),
+      el("span.chip", { title: (encStates[enc.state] || {}).effect || "", style: { fontSize: "9px", color: stateColor, borderColor: stateColor } },
+        String((encStates[enc.state] || {}).name || enc.state || "").toUpperCase()),
+      el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "Loadout: " + enc.tier + " · declare the tier and hauls on the Freelancer tab's Loadout sub-tab." })
+    ]);
     var cards = entries.map(function (e) {
       var it = findItem(e.name);
       if (it) return itemCard(it, ch, "stash");
-      // unknown / custom item, minimal row
+      // unknown / custom item (incl. #GRID rigs), minimal row with its Load
+      var ld = EN.engine.itemLoad ? EN.engine.itemLoad(e.name) : 0;
       return el("div.feature", null, [
-        el("h4", null, [el("span", { text: e.name }), el("span.mono", { style: { color: "var(--text3)", fontSize: "13px" }, text: "×" + e.qty })]),
+        el("h4", null, [el("span", null, [document.createTextNode(e.name),
+          ld > 0 ? tagChip("⚖ " + ld, "var(--text2)", "Load " + ld + "; spends your Load Budget while on-person") : null]),
+          el("span.mono", { style: { color: "var(--text3)", fontSize: "13px" }, text: "×" + e.qty })]),
         el("div.row", { style: { gap: "6px", marginTop: "4px", justifyContent: "flex-end" } }, [el("button.btn.sm", { onclick: function () { drop(e.name); } }, "DROP")])
       ]);
     });
-    return [EN.ui.panel("Stash", entries.length + " ITEM TYPES", cards.length ? cards :
+    return [EN.ui.panel("Stash", entries.length + " ITEM TYPES", cards.length ? [loadBar].concat(cards) :
       [el("p.help", { style: { margin: 0 }, text: "Empty. The Undercut is open; it's always open." })], { corners: true })];
   }
 

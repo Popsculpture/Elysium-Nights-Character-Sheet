@@ -476,6 +476,104 @@ EN.engine = (function () {
     };
   }
 
+  /* ---- Encumbrance and Load ----------------------------------------------
+     Load is abstract weight/bulk. Threshold = 6 + Body modifier (min 3), plus
+     +2 per "step" from gear (Load-Bearing OR Load Distributor, non-stacking;
+     Powered frames two steps) and Size-larger effects. The declared Loadout
+     tier (ch.loadout) sets the Load Budget; on-person gear spends it. Hauls
+     (ch.haul) bypass the budget and set the state directly. */
+  function loadCatalogItem(name) {
+    var g = EN.gearCatalog || {};
+    var pools = [g.melee && g.melee.items, g.ranged && g.ranged.items,
+                 g.signature && g.signature.items, g.signature && g.signature.munitions,
+                 g.ammo && g.ammo.items, g.armor && g.armor.items, g.tools && g.tools.items];
+    for (var i = 0; i < pools.length; i++) {
+      var p = pools[i]; if (!p) continue;
+      var f = p.find(function (x) { return x.name === name; });
+      if (f) return f;
+    }
+    return null;
+  }
+  function itemLoad(name) {
+    // installable components weigh nothing on the budget
+    if (EN.weaponParts && (EN.weaponParts.parts || []).some(function (p) { return p.name === name; })) return 0;
+    if (EN.armorMods && (EN.armorMods.mods || []).some(function (m) { return m.name === name; })) return 0;
+    var G = EN.grid || {};
+    if ((G.mods || []).some(function (m) { return m.name === name; })) return 0;      // deck chips
+    if ((G.ciphers || []).some(function (c) { return c.name === name; })) return 0;   // software
+    if ((G.smartdecks || []).some(function (s) { return s.tier + " Smartdeck" === name; })) return 1;
+    if ((G.buddies || []).some(function (b) { return b.tier + " B&E Buddy" === name; })) return 1;
+    if ((G.relays || []).some(function (r) { return (r.name || (r.tier + " Burner Relay")) === name; })) return 1;
+    var it = loadCatalogItem(name);
+    if (!it) return 1;                                        // unknown custom item: hand-sized
+    if (typeof it.load === "number") return it.load;          // explicit data override
+    if (it.legality === "As weapon") return 0;                // loose ammo and munitions
+    var traits = it.traits || [];
+    function has(t) { return traits.indexOf(t) !== -1; }
+    if (it.kind === "armor") {
+      var ag = it.group || "";
+      if (/Light/i.test(ag)) return 1;
+      if (/Heavy|Exoframe/i.test(ag)) return 3;
+      return 2;                                               // medium plate and mystech shells
+    }
+    if (it.kind === "shield") return has("Heavy") ? 3 : 2;
+    if (it.kind === "focus") return 1;
+    switch (it.group) {
+      case "Sidearm": return 1;
+      case "Longarm": return 2;
+      case "Heavy": case "Launcher": return 3;
+      case "Thrown": return 1;
+      case "Bowfire": return /hand crossbow/i.test(it.name) ? 1 : 2;
+      case "Simple": case "Martial": return (has("Heavy") || has("Two-Handed")) ? 3 : (has("Light") ? 1 : 2);
+    }
+    if (it.signature || /Signature/i.test(it.group || "")) return (has("Heavy") || has("Two-Handed")) ? 3 : (has("Light") ? 1 : 2);
+    switch (it.bucket) {
+      case "kits": return 2;
+      case "consumables": return 0;
+      case "flow": return /tonic|draught|philter|salve|vial|dose/i.test(it.name) ? 0 : 1;
+      case "rigs": return 2;
+      case "devices": return /drone|mule|case|rack/i.test(it.name) ? 2 : 1;
+    }
+    return 1;
+  }
+  // on-person = equipped, or carry status "carried" / "mission" (the Loadout tab)
+  function onPerson(ch, name) {
+    if ((ch.equippedWeapons || []).indexOf(name) !== -1) return true;
+    if (ch.equippedArmor === name || ch.equippedShield === name || ch.equippedFocus === name) return true;
+    var cs = ch.carry && ch.carry[name];
+    return cs === "carried" || cs === "mission";
+  }
+  function encumbranceInfo(ch, attributes, dl, linFeats) {
+    var base = Math.max(3, 6 + attributes.BOD.mod);
+    var steps = [];
+    var armor = dl.armor, lapsed = dl.armorLapsed;
+    // Load-Bearing and the Load Distributor mod grant a single, non-stacking step
+    var hasLB = !!armor && !lapsed && hasTrait(armor, "Load-Bearing");
+    var hasLD = !!armor && !lapsed && (((ch.armorMods || {})[armor.name]) || []).indexOf("load-distributor") !== -1;
+    if (hasLB || hasLD) steps.push({ label: (hasLB ? "Load-Bearing" : "Load Distributor") + " (" + armor.name + ")", value: 2 });
+    // Powered frames: two steps while powered (training left to the table; a lapsed lease grants nothing)
+    if (armor && !lapsed && hasTrait(armor, "Powered")) steps.push({ label: "Powered frame (" + armor.name + ")", value: 4 });
+    // Size-larger effects read as one step
+    if ((linFeats || []).indexOf("Synthetic Musculature") !== -1) steps.push({ label: "Synthetic Musculature (one Size larger)", value: 2 });
+    if (activeTalents(ch).some(function (t) { return t.talent.name === "Heavy Payload"; })) steps.push({ label: "Heavy Payload (one Size larger)", value: 2 });
+    var threshold = base; steps.forEach(function (s) { threshold += s.value; });
+    var tier = (ch.loadout === "light" || ch.loadout === "heavy") ? ch.loadout : "standard";
+    var budget = threshold + (tier === "light" ? -3 : tier === "heavy" ? 3 : 0);
+    var current = 0, items = [];
+    (ch.equipment || []).forEach(function (e) {
+      if (!(e.qty > 0) || !onPerson(ch, e.name)) return;
+      var l = itemLoad(e.name);
+      if (l > 0) { current += l * e.qty; items.push({ name: e.name, load: l, qty: e.qty }); }
+    });
+    var haul = (ch.haul === "lift" || ch.haul === "drag") ? ch.haul : "none";
+    var state = "unencumbered";
+    if (tier === "heavy" || current > budget) state = "encumbered";
+    if (haul === "lift") state = (state === "unencumbered") ? "encumbered" : "overloaded";
+    if (haul === "drag") state = "overloaded";
+    return { base: base, steps: steps, threshold: threshold, tier: tier, budget: budget,
+             current: current, items: items, overBudget: current > budget, haul: haul, state: state };
+  }
+
   /* ---- #GRID hacking stats: Cipher Attack / Save DC, Links, Bandwidth, and the
      equipped rig (Smartdeck for Power Users / B&E Buddy for Standard Users).
      Cipher Attack = d20 + Tech mod + Systems Proficiency Bonus; the deck's Device
@@ -584,6 +682,13 @@ EN.engine = (function () {
     var defLoadout = defensiveLoadout(ch);
     var defense = defenseBase + attributes[defenseAttr].mod + (defLoadout.shieldDef || 0);
     var speed = Math.max(3, 6 + agiMod) + (cyberFlat.speed || 0) + (defLoadout.speedPenalty || 0) + linMech.speed;
+
+    /* encumbrance: state from the declared Loadout, on-person Load, and hauls;
+       Encumbered = Speed -2, Overloaded = Speed halved (round down, min 1) */
+    var enc = encumbranceInfo(ch, attributes, defLoadout, linFeats);
+    enc.speedDelta = enc.state === "encumbered" ? -2
+                   : enc.state === "overloaded" ? (Math.floor(speed / 2) - speed) : 0;
+    if (enc.speedDelta) speed = Math.max(1, speed + enc.speedDelta);
 
     /* vitality / wounds / resilience */
     var vit = R.classVitality[ch.class];
@@ -767,6 +872,7 @@ EN.engine = (function () {
       lineageSpeed: linMech.speed,
       lineageSpeedFirstRound: linMech.speedFirstRound,
       lineageInit: { caliber: linMech.initCaliber ? cal : 0, edge: linMech.initEdge },
+      encumbrance: enc,
       lineageUnarmed: linMech.unarmed,
       shieldDef: defLoadout.shieldDef, shieldBlockDie: defLoadout.shieldBlockDie,
       wardDie: defLoadout.wardDie, defenseGear: defLoadout,
@@ -971,7 +1077,7 @@ EN.engine = (function () {
     skillFloorTier: skillFloorTier, effectiveSkillTier: effectiveSkillTier,
     skillTierCost: skillTierCost, trainingSpent: trainingSpent, trainingBudget: trainingBudget,
     grantedGear: grantedGear, gearFloorTier: gearFloorTier, effectiveGearTier: effectiveGearTier, gearTierCost: gearTierCost,
-    activeLineageFeatures: activeLineageFeatures, splitTalentText: splitTalentText, leaseLapsed: leaseLapsed,
+    activeLineageFeatures: activeLineageFeatures, splitTalentText: splitTalentText, leaseLapsed: leaseLapsed, itemLoad: itemLoad,
     grantSourceMap: grantSourceMap, duplicateGrants: duplicateGrants, pendingChoices: pendingChoices,
     tp: { STEP_COST: STEP_COST, TIER_LEVEL_REQ: TIER_LEVEL_REQ, FOCUS_COST: FOCUS_COST, FOCUS_LEVEL_REQ: FOCUS_LEVEL_REQ, SPEC_COST: SPEC_COST, SPEC_LEVEL_REQ: SPEC_LEVEL_REQ }
   };

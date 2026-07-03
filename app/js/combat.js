@@ -954,12 +954,13 @@ EN.combatView = (function () {
         empty: (dg.armor || d.naturalDR) ? null : "No armor equipped; WEAR armor in Inventory → Stash.",
         foot: dg.armor && (dg.armor.traits || []).indexOf("Plated") !== -1 ? "Plated: when you Block, add half this DR (rounded down) on top." : null },
       SPD: { title: "Speed", total: spDisplay, sign: false,
-        formula: "max(3, 6 + Agility modifier) + chrome + lineage − Bulky − conditions",
+        formula: "max(3, 6 + Agility modifier) + chrome + lineage − Bulky − load − conditions",
         rows: (spdFloored ? [bdRow("Base move (Agility floored to min 3)", baseMove, null, true)]
                           : [bdRow("Base move", 6, null, true), bdRow("Agility modifier", agiMod, chromeNote("AGI"))])
           .concat(cyberSpeedRows.map(function (r) { return bdRow("Chrome · " + r.label, r.val); }))
           .concat(d.lineageSpeed ? [bdRow("Lineage", d.lineageSpeed)] : [])
           .concat(dg.speedPenalty ? [bdRow("Bulky · " + dg.armor.name, dg.speedPenalty)] : [])
+          .concat(d.encumbrance && d.encumbrance.speedDelta ? [bdRow(d.encumbrance.state === "overloaded" ? "Overloaded (Speed halved)" : "Encumbered", d.encumbrance.speedDelta)] : [])
           .concat(spCond ? [bdRow("Conditions", spCond)] : []),
         foot: d.lineageSpeedFirstRound ? "+" + d.lineageSpeedFirstRound + " Speed during the first round of any combat (Tuned Synapses)." : null },
       INIT: { title: "Initiative", total: initVal, sign: true,
@@ -1854,6 +1855,38 @@ EN.combatView = (function () {
     /* ---- LOADOUT tab: a filtered view of Inventory (what's on you for the scene) ---- */
     function loadoutKids() {
       var kids = [];
+      // Load console: declared Loadout tier, Load vs budget, state, and hauls
+      var enc = d.encumbrance || {};
+      var EE = R.encumbrance || {};
+      var stateDef = (EE.states || {})[enc.state] || {};
+      var stateColor = enc.state === "overloaded" ? "var(--danger)" : enc.state === "encumbered" ? "var(--warn)" : "var(--success)";
+      var thTip = "Encumbrance Threshold = 6 + Body modifier (min 3) = " + enc.base
+        + ((enc.steps || []).map(function (s) { return "\n+" + s.value + "  " + s.label; }).join(""))
+        + "\nThreshold " + enc.threshold + " · " + enc.tier + " Loadout → budget " + enc.budget
+        + "\n\nLoad guide:\n" + ((EE.loadTable || []).map(function (r) { return r.load + "  " + r.items; }).join("\n"))
+        + "\n\n" + (EE.notes || "");
+      kids.push(el("div", { style: { padding: "9px 11px", border: "1px solid " + (enc.state === "unencumbered" ? "var(--border)" : stateColor), borderRadius: "4px", background: "rgba(0,0,0,.15)", margin: "2px 0 10px" } }, [
+        el("div.row.wrap", { style: { gap: "10px", alignItems: "center" } }, [
+          el("span.mono", { title: thTip, style: { fontSize: "18px", color: enc.overBudget ? "var(--warn)" : "var(--text)" },
+            html: "LOAD " + enc.current + " <span style='font-size:12px;color:var(--text3)'>/ " + enc.budget + "</span>" }),
+          el("span.chip", { title: stateDef.effect || "", style: { fontSize: "9px", color: stateColor, borderColor: stateColor } }, (stateDef.name || enc.state || "").toUpperCase()),
+          enc.speedDelta ? el("span.mono", { style: { fontSize: "11px", color: stateColor }, text: "SPD " + enc.speedDelta }) : null
+        ]),
+        el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "7px" } },
+          [el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em", minWidth: "58px" }, text: "LOADOUT" })].concat(
+            (EE.loadouts || []).map(function (t) {
+              var on = enc.tier === t.key;
+              return el("button.btn.sm" + (on ? ".primary" : ""), { title: t.effect + " Budget: " + (enc.threshold + t.delta) + ".",
+                onclick: function () { store.update(function (c) { c.loadout = t.key; }); } }, t.name.toUpperCase() + " · " + (enc.threshold + t.delta));
+            }))),
+        el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "6px" } }, [
+          el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em", minWidth: "58px" }, text: "HAUL" }),
+          el("select", { style: { fontSize: "11px", width: "auto" }, title: "A Haul (body, crate, machine) does not spend Load Budget; it sets your state directly.",
+            onchange: function () { var v = this.value; store.update(function (c) { c.haul = v; }); } },
+            (EE.hauls || []).map(function (h) { return el("option", { value: h.key, selected: enc.haul === h.key, text: h.name, title: h.hint }); }))
+        ]),
+        enc.state !== "unencumbered" ? el("p.help", { style: { margin: "7px 0 0", fontSize: "10.5px", color: stateColor }, text: stateDef.effect || "" }) : null
+      ]));
       var owned = (ch.equipment || []).filter(function (e) { return e.qty > 0; });
       var inScene = owned.filter(function (e) { return isEquippedAny(ch, e.name) || carryStatus(ch, e.name) !== "stashed"; });
       var nCarried = 0, nMission = 0, nEquipped = 0, nHeavy = 0;
@@ -1902,6 +1935,8 @@ EN.combatView = (function () {
       var cs = carryStatus(ch, e.name);
       var chips = [];
       if (eqLabel) chips.push(el("span.chip", { style: { fontSize: "9px", color: "var(--accent)", borderColor: "var(--accent)" }, text: eqLabel.toUpperCase() }));
+      var ld = eng.itemLoad ? eng.itemLoad(e.name) : 0;
+      if (ld > 0) chips.push(el("span.chip", { title: "Load " + ld + (e.qty > 1 ? " each, " + (ld * e.qty) + " total" : "") + "; spends your Load Budget while on-person", style: { fontSize: "9px", color: "var(--text2)", borderColor: "var(--border2)" }, text: "⚖ " + (e.qty > 1 ? ld + "×" + e.qty : ld) }));
       if (it) {
         if (isHeavy(it)) chips.push(el("span.chip", { title: "Heavy Item; bulky, slot-limited, or cumbersome", style: { fontSize: "9px", color: "var(--ember)", borderColor: "var(--ember)" }, text: "HEAVY" }));
         if (isRestricted(it)) chips.push(el("span.chip", { title: "Legality: " + it.legality, style: { fontSize: "9px", color: it.legality === "Contraband" ? "var(--danger)" : "var(--ember)", borderColor: it.legality === "Contraband" ? "var(--danger)" : "var(--ember)" }, text: it.legality.toUpperCase() }));
