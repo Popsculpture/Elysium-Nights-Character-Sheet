@@ -310,9 +310,6 @@ EN.builder = (function () {
     var groups = ch.rollGroups || [];
     var head = el("div.row.wrap", { style: { gap: "10px", alignItems: "center", margin: "16px 0 4px" } }, [
       el("div.section-title", { style: { margin: 0, flex: 1, minWidth: "200px" } }, [document.createTextNode("Dice Roll Groups (4d6, drop the lowest)"), el("span.line")]),
-      el("select", { title: "Dice style", style: { width: "auto", padding: "4px 28px 4px 8px", fontSize: "12px" },
-        onchange: function (e) { _diceStyle = e.target.value; try { localStorage.setItem("en_dice_style", _diceStyle); } catch (err) {} EN.app.render(); } },
-        Object.keys(DICE_STYLES).map(function (k) { return el("option", { value: k, selected: _diceStyle === k, text: "◇ " + DICE_STYLES[k].label }); })),
       el("button.btn.sm.primary", { onclick: function () {
         var g = newRollGroup();
         _animGroup = g.id;
@@ -462,9 +459,6 @@ EN.builder = (function () {
     }
     var head = el("div.row.wrap", { style: { gap: "10px", alignItems: "center", margin: "16px 0 4px" } }, [
       el("div.section-title", { style: { margin: 0, flex: 1, minWidth: "220px" } }, [document.createTextNode("Overclocked Array (6 × 6 matrix · 4d6, drop the lowest)"), el("span.line")]),
-      el("select", { title: "Dice style", style: { width: "auto", padding: "4px 28px 4px 8px", fontSize: "12px" },
-        onchange: function (e) { _diceStyle = e.target.value; try { localStorage.setItem("en_dice_style", _diceStyle); } catch (err) {} EN.app.render(); } },
-        Object.keys(DICE_STYLES).map(function (k) { return el("option", { value: k, selected: _diceStyle === k, text: "◇ " + DICE_STYLES[k].label }); })),
       el("button.btn.sm", { title: "Table rule: the two main diagonals become valid picks. Rows and columns are always valid.",
         style: { color: oc.allowDiagonals ? "var(--gold)" : "var(--text4)", borderColor: oc.allowDiagonals ? "var(--gold)" : "var(--border)" },
         onclick: function () {
@@ -1916,7 +1910,6 @@ EN.builder = (function () {
         ]),
         rosterSwitcher(ch)
       ]),
-      key !== "dossier" ? vitalsStrip(d) : null,
       rail, body, foot
     ]));
   }
