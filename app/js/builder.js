@@ -149,11 +149,11 @@ EN.builder = (function () {
       store.update(function (c) {
         c.attributeMethod = m;
         if (m === "pointbuy") { R.attributes.forEach(function (a) { c.attributes[a.key] = 10; }); }
-        if (m === "array") { R.attributes.forEach(function (a) { c.attributes[a.key] = 10; }); c.arrayAssign = {}; }
+        if (m === "array" || m === "overclocked") { R.attributes.forEach(function (a) { c.attributes[a.key] = 10; }); c.arrayAssign = {}; }
       });
     }
     var methodRow = el("div.row.wrap", { style: { marginBottom: "14px" } }, [
-      ["pointbuy", "Point Buy"], ["array", "Standard Array"], ["manual", "Manual/Roll"]
+      ["pointbuy", "Point Buy"], ["array", "Standard Array"], ["manual", "Manual/Roll"], ["overclocked", "Overclocked Array"]
     ].map(function (m) {
       return el("button.btn.sm" + (method === m[0] ? ".primary" : ""), { onclick: function () { setMethod(m[0]); } }, m[1]);
     }));
@@ -170,6 +170,13 @@ EN.builder = (function () {
         [el("span.help", { text: "Assign each value once:" })].concat(
           arrayRemaining(ch).map(function (v) { return el("span.chip", { text: String(v) }); })
         ));
+    } else if (method === "overclocked") {
+      info = ocPickTotals(ch)
+        ? el("div.row.wrap", { style: { gap: "8px", marginBottom: "12px" } },
+            [el("span.help", { text: "Line locked in. Assign each value once:" })].concat(
+              arrayRemaining(ch).map(function (v) { return el("span.chip", { text: String(v) }); })
+            ))
+        : el("p.help", { text: "Roll 36 scores into a 6x6 matrix below, then choose one complete row, column, or diagonal as your final attribute array. A high-powered generation method for heroic characters; GM approval applies." });
     } else {
       info = el("p.help", { text: "Type scores directly (range 1-20), or roll 4d6-drop-lowest groups below and apply one. Rolling is an optional, GM-approved rule; it creates outliers the bounded math isn't tuned for." });
     }
@@ -178,7 +185,11 @@ EN.builder = (function () {
       var score = ch.attributes[a.key];
       var m = R.modifier(score);
       var ctrl;
-      if (method === "array") {
+      if (method === "overclocked" && !ocPickTotals(ch)) {
+        // no line chosen yet; assignment opens once a row/column/diagonal is locked in
+        ctrl = el("div.mono", { title: "Pick a full row, column, or diagonal from the matrix below first",
+          style: { fontSize: "10px", color: "var(--text4)", letterSpacing: ".06em", padding: "6px 0" }, text: "AWAITING LINE" });
+      } else if (method === "array" || method === "overclocked") {
         ctrl = el("select", {
           onchange: function (e) { assignArray(ch, a.key, e.target.value === "" ? null : Number(e.target.value)); }
         }, [el("option", { value: "", text: "-" })].concat(arrayOptions(ch, a.key).map(function (o) {
@@ -206,7 +217,7 @@ EN.builder = (function () {
       EN.ui.panel("Attribute Matrix", "BIOMETRIC PROFILE", [
         methodRow, info, el("div.attr-grid", null, cells),
         el("p.help", { style: { marginTop: "12px" }, text: "Modifier = ⌊(score − 10) / 2⌋. Level-up attribute increases (▲) are applied on top in the Advance step." }),
-        method === "manual" ? rollGroupsSection(ch) : null
+        method === "manual" ? rollGroupsSection(ch) : method === "overclocked" ? overclockedSection(ch) : null
       ], { corners: true })
     ]);
   }
@@ -241,20 +252,27 @@ EN.builder = (function () {
     }
     store.update(function (c) { c.attributes[key] = val; });
   }
+  // the six values being assigned: the Standard Array, or the Overclocked
+  // Array's picked line (empty until a row/column/diagonal is locked in)
+  function attrValuePool(ch) {
+    if ((ch.attributeMethod || "pointbuy") === "overclocked") return ocPickTotals(ch) || [];
+    return R.standardArray.slice();
+  }
   function arrayRemaining(ch) {
-    var pool = R.standardArray.slice();
+    var pool = attrValuePool(ch);
     Object.keys(ch.arrayAssign || {}).forEach(function (k) {
       var v = ch.arrayAssign[k]; var i = pool.indexOf(v); if (i !== -1) pool.splice(i, 1);
     });
     return pool;
   }
   function arrayOptions(ch, key) {
+    var pool = attrValuePool(ch);
     var current = (ch.arrayAssign || {})[key];
-    var counts = {}; R.standardArray.forEach(function (v) { counts[v] = (counts[v] || 0) + 1; });
+    var counts = {}; pool.forEach(function (v) { counts[v] = (counts[v] || 0) + 1; });
     var used = {}; Object.keys(ch.arrayAssign || {}).forEach(function (k) { var v = ch.arrayAssign[k]; used[v] = (used[v] || 0) + 1; });
-    var uniq = Array.from(new Set(R.standardArray)).sort(function (a, b) { return b - a; });
+    var uniq = Array.from(new Set(pool)).sort(function (a, b) { return b - a; });
     return uniq.map(function (v) {
-      var avail = counts[v] - (used[v] || 0) + (current === v ? 1 : 0);
+      var avail = (counts[v] || 0) - (used[v] || 0) + (current === v ? 1 : 0);
       return { v: v, sel: current === v, disabled: avail <= 0 };
     });
   }
@@ -374,6 +392,139 @@ EN.builder = (function () {
         totals.forEach(function (n) { if (n.isConnected) n.textContent = n.dataset.final; });
       }
     }, 50);
+  }
+
+  /* ---- Overclocked Array: 36 scores in a 6x6 matrix; the player takes one
+     full row, column, or (table rule) main diagonal as their final array.
+     Each cell is its own 4d6-drop-lowest roll, reusing the Manual/Roll dice,
+     colors, and scramble animation. Individual cells are never selectable;
+     the row/column/diagonal header buttons pick whole lines only. ---- */
+  function ocLineIndices(kind, index) {
+    var out = [], i;
+    if (kind === "row") { for (i = 0; i < 6; i++) out.push(index * 6 + i); }
+    else if (kind === "col") { for (i = 0; i < 6; i++) out.push(i * 6 + index); }
+    else if (kind === "d1") { for (i = 0; i < 6; i++) out.push(i * 6 + i); }             // ↘ top-left to bottom-right
+    else if (kind === "d2") { for (i = 0; i < 6; i++) out.push(i * 6 + (5 - i)); }       // ↙ top-right to bottom-left
+    return out;
+  }
+  function ocPickTotals(ch) {
+    var oc = ch.overclocked || {};
+    if (!oc.pick || (oc.grid || []).length !== 36) return null;
+    if ((oc.pick.kind === "d1" || oc.pick.kind === "d2") && !oc.allowDiagonals) return null;
+    // a hand-edited/imported pick or grid must never crash the render or
+    // yield a truthy-but-empty pool: unknown kinds and malformed slots read
+    // as "no line picked" (migrate() also nulls out-of-range picks)
+    var idx = ocLineIndices(oc.pick.kind, oc.pick.index);
+    if (idx.length !== 6) return null;
+    var totals = [];
+    for (var i = 0; i < 6; i++) {
+      var slot = oc.grid[idx[i]];
+      if (!slot || !Array.isArray(slot.dice) || slot.dice.length !== 4) return null;
+      totals.push(slotTotal(slot));
+    }
+    return totals;
+  }
+  // picking a different line (or clearing one) resets any values already
+  // assigned to attributes, since the pool of six changes underneath them
+  function ocClearAssignments(c) {
+    Object.keys(c.arrayAssign || {}).forEach(function (k) { c.attributes[k] = 10; });
+    c.arrayAssign = {};
+  }
+  function ocSetPick(ch, kind, index) {
+    store.update(function (c) {
+      var oc = c.overclocked;
+      var same = oc.pick && oc.pick.kind === kind && oc.pick.index === index;
+      oc.pick = same ? null : { kind: kind, index: index };
+      ocClearAssignments(c);
+    });
+  }
+  function ocRoll() {
+    var slots = []; for (var i = 0; i < 36; i++) slots.push({ dice: roll4d6() });
+    var id = "oc_" + Math.random().toString(36).slice(2, 9);
+    _animGroup = id;
+    store.update(function (c) {
+      c.overclocked.grid = slots;
+      c.overclocked.rollId = id;
+      c.overclocked.pick = null;
+      ocClearAssignments(c);
+    });
+    animateDiceRoll({ id: id });
+    _animGroup = null;
+  }
+  function overclockedSection(ch) {
+    var style = DICE_STYLES[_diceStyle] || DICE_STYLES.neon;
+    var oc = ch.overclocked || { grid: [], pick: null, allowDiagonals: false };
+    var hasGrid = (oc.grid || []).length === 36;
+    var animating = hasGrid && oc.rollId && oc.rollId === _animGroup;
+    var pickedIdx = {};
+    if (oc.pick && hasGrid && !((oc.pick.kind === "d1" || oc.pick.kind === "d2") && !oc.allowDiagonals)) {
+      ocLineIndices(oc.pick.kind, oc.pick.index).forEach(function (i) { pickedIdx[i] = true; });
+    }
+    var head = el("div.row.wrap", { style: { gap: "10px", alignItems: "center", margin: "16px 0 4px" } }, [
+      el("div.section-title", { style: { margin: 0, flex: 1, minWidth: "220px" } }, [document.createTextNode("Overclocked Array (6 × 6 matrix · 4d6, drop the lowest)"), el("span.line")]),
+      el("select", { title: "Dice style", style: { width: "auto", padding: "4px 28px 4px 8px", fontSize: "12px" },
+        onchange: function (e) { _diceStyle = e.target.value; try { localStorage.setItem("en_dice_style", _diceStyle); } catch (err) {} EN.app.render(); } },
+        Object.keys(DICE_STYLES).map(function (k) { return el("option", { value: k, selected: _diceStyle === k, text: "◇ " + DICE_STYLES[k].label }); })),
+      el("button.btn.sm", { title: "Table rule: the two main diagonals become valid picks. Rows and columns are always valid.",
+        style: { color: oc.allowDiagonals ? "var(--gold)" : "var(--text4)", borderColor: oc.allowDiagonals ? "var(--gold)" : "var(--border)" },
+        onclick: function () {
+          store.update(function (c) {
+            var o = c.overclocked;
+            o.allowDiagonals = !o.allowDiagonals;
+            if (!o.allowDiagonals && o.pick && (o.pick.kind === "d1" || o.pick.kind === "d2")) { o.pick = null; ocClearAssignments(c); }
+          });
+        } }, (oc.allowDiagonals ? "✓ " : "") + "DIAGONALS: TABLE RULE"),
+      el("button.btn.sm.primary", { title: hasGrid ? "Clear this matrix and roll a fresh 36" : "Roll 36 scores (6 × 6, each 4d6 drop the lowest)",
+        onclick: ocRoll }, hasGrid ? "⟳ REROLL MATRIX" : "⚄ ROLL 36")
+    ]);
+    var body = [head,
+      el("p.help", { style: { marginBottom: "8px" }, text: "Choose one COMPLETE line as your final six-score array: click a row (R) or column (C) header" + (oc.allowDiagonals ? ", or a diagonal (⤡ ⤢)" : "") + ". Individual scores can't be cherry-picked. Rows and columns are always valid; diagonals may be enabled by table preference." })];
+    if (!hasGrid) {
+      body.push(el("div.muted-box", { text: "No matrix yet; hit ROLL 36 to throw 36 × 4d6 into the grid." }));
+      return el("div", null, body);
+    }
+    function lineBtn(kind, index, label, title) {
+      var on = oc.pick && oc.pick.kind === kind && oc.pick.index === index;
+      return el("button.btn.sm" + (on ? ".primary" : ""), { title: title + (on ? " (selected; click to clear)" : ""),
+        style: { minWidth: "34px", padding: "3px 6px", fontSize: "10px" },
+        onclick: function () { ocSetPick(ch, kind, index); } }, (on ? "● " : "") + label);
+    }
+    function spacer() { return el("div"); }
+    var cells = [];
+    // header row: D1 corner, C1..C6, D2 corner
+    cells.push(oc.allowDiagonals ? lineBtn("d1", 0, "⤡", "Main diagonal, top-left to bottom-right") : spacer());
+    for (var cI = 0; cI < 6; cI++) cells.push(lineBtn("col", cI, "C" + (cI + 1), "Take column " + (cI + 1) + " as your array"));
+    cells.push(oc.allowDiagonals ? lineBtn("d2", 0, "⤢", "Main diagonal, top-right to bottom-left") : spacer());
+    // data rows: R label + 6 cells + trailing spacer
+    oc.grid.forEach(function (slot, i) {
+      var r = Math.floor(i / 6);
+      if (i % 6 === 0) cells.push(lineBtn("row", r, "R" + (r + 1), "Take row " + (r + 1) + " as your array"));
+      var total = slotTotal(slot), drop = droppedIndex(slot.dice);
+      var inPick = !!pickedIdx[i];
+      var dice = slot.dice.map(function (v, di) {
+        return el("span.die" + (animating ? ".rolling" : (di === drop ? ".dropped" : "")), {
+          dataset: animating ? { die: "1", final: String(v), dropped: di === drop ? "1" : "" } : null,
+          style: { color: style.color, borderColor: style.color, width: "13px", height: "13px", fontSize: "8.5px", margin: "0 .5px" },
+          text: animating ? "?" : String(v)
+        });
+      });
+      cells.push(el("div.roll-slot", { style: { padding: "6px 4px 5px", borderColor: inPick ? "var(--accent)" : "var(--border)", boxShadow: inPick ? "0 0 9px var(--accent)" : "none", opacity: oc.pick && !inPick ? .45 : 1 } }, [
+        el("div.roll-total", { dataset: animating ? { tot: "1", final: String(total) } : null,
+          style: { color: inPick ? "var(--accent)" : style.color, fontSize: "19px" }, text: animating ? "··" : String(total) }),
+        el("div", { style: { margin: "3px 0 0" } }, dice)
+      ]));
+      if (i % 6 === 5) cells.push(spacer());
+    });
+    body.push(el("div", { dataset: { rg: oc.rollId || "oc" }, style: { display: "grid", gridTemplateColumns: "auto repeat(6, 1fr) auto", gap: "6px", alignItems: "center", justifyItems: "stretch" } }, cells));
+    var picked = ocPickTotals(ch);
+    if (picked) {
+      var pickName = oc.pick.kind === "row" ? "Row " + (oc.pick.index + 1) : oc.pick.kind === "col" ? "Column " + (oc.pick.index + 1) : oc.pick.kind === "d1" ? "Diagonal ⤡" : "Diagonal ⤢";
+      body.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "10px" } },
+        [el("span.mono", { style: { fontSize: "10px", color: "var(--accent)", letterSpacing: ".1em" }, text: "FINAL ARRAY · " + pickName.toUpperCase() })]
+        .concat(picked.map(function (v) { return el("span.chip.on", { text: String(v) }); }))
+        .concat([el("span.help", { style: { margin: 0 }, text: "Assign each value to an Attribute with the dropdowns above." })])));
+    }
+    return el("div", null, body);
   }
 
   // Features selectable AT CREATION (Species tab) vs unlockable via Evolution (Advance tab)

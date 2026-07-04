@@ -36,10 +36,15 @@ EN.store = (function () {
       xp: 0,
       useXp: false,
       milestones: { major: 0, minor: 0, notes: "" },
-      attributeMethod: "pointbuy",       // 'pointbuy' | 'array' | 'manual'
+      attributeMethod: "pointbuy",       // 'pointbuy' | 'array' | 'manual' | 'overclocked'
       attributes: attrs,
       rollGroups: [],                    // banked 4d6-drop-lowest roll groups (Manual/Roll)
-      arrayAssign: {},                   // for standard array bookkeeping
+      arrayAssign: {},                   // value-to-attribute bookkeeping (Standard Array & Overclocked Array)
+      // Overclocked Array: a 6x6 matrix of 36 rolled scores (each {dice:[4]},
+      // 4d6 drop lowest); the player picks one full row/column/diagonal as
+      // their final array. pick = {kind:'row'|'col'|'d1'|'d2', index} or null;
+      // allowDiagonals is the table rule that legalizes the two diagonals.
+      overclocked: { grid: [], pick: null, allowDiagonals: false },
       species: null,
       lineage: null,
       size: null,                        // creature Size (auto from lineage; player-picked when variable)
@@ -136,6 +141,28 @@ EN.store = (function () {
     if (ch.equippedShield === undefined) ch.equippedShield = null;
     if (ch.equippedFocus === undefined) ch.equippedFocus = null;
     if (!ch.weaponAmmo) ch.weaponAmmo = {};
+    // Overclocked Array state (6x6 rolled matrix + picked line + table rule).
+    // A hand-edited/imported file can carry anything here, and the matrix
+    // render reads every slot, so anything short of exactly 36 well-formed
+    // {dice:[4 numbers]} slots resets to "no matrix rolled yet".
+    if (!ch.overclocked || typeof ch.overclocked !== "object" || !Array.isArray(ch.overclocked.grid)) {
+      ch.overclocked = { grid: [], pick: null, allowDiagonals: false };
+    }
+    if (typeof ch.overclocked.allowDiagonals !== "boolean") ch.overclocked.allowDiagonals = false;
+    if (ch.overclocked.grid.length && (ch.overclocked.grid.length !== 36 ||
+        ch.overclocked.grid.some(function (s) {
+          return !s || !Array.isArray(s.dice) || s.dice.length !== 4 ||
+                 s.dice.some(function (v) { return typeof v !== "number"; });
+        }))) {
+      ch.overclocked.grid = [];
+      ch.overclocked.pick = null;
+    }
+    // pick must name a real line or the render would index off the grid
+    var ocp = ch.overclocked.pick;
+    if (!ocp || ["row", "col", "d1", "d2"].indexOf(ocp.kind) === -1 ||
+        ocp.index !== Math.floor(ocp.index) || ocp.index < 0 || ocp.index > 5) {
+      ch.overclocked.pick = null;
+    }
     // Focus/Specialization records: legacy {skill, aspect} entries become the
     // typed four-parent shape {type, parent, aspect, granted}. type "skill"
     // keeps the old skill key as its parent; weapons/vehicles/tools parents
