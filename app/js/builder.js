@@ -113,16 +113,39 @@ EN.builder = (function () {
       });
       return el("div.field", null, [el("label.fl", { text: label }), node]);
     }
-    var nameNode = el("input", {
-      type: "text", value: ch.name || "", placeholder: "Freelancer's name…",
-      oninput: function (e) { store.update(function (c) { c.name = e.target.value; }, { silent: true }); document.getElementById("active-name").textContent = (e.target.value || "NO FREELANCER").toUpperCase(); }
+    // First Name, Handle, and Last Name all feed the composed full-display
+    // name (First "Handle" Last), so each one recomputes ch.name and pokes
+    // the banner directly (store.update runs silent to keep the caret alive).
+    function bannerSync() {
+      var c = store.active();
+      document.getElementById("active-name").textContent = (c.name || "NO FREELANCER").toUpperCase();
+    }
+    function nameFieldNode(field, ph) {
+      return el("input", {
+        type: "text", value: ch[field] || "", placeholder: ph,
+        oninput: function (e) {
+          var v = e.target.value;
+          store.update(function (c) { c[field] = v; c.name = EN.store.composeFullName(c.firstName, (c.identity && c.identity.handle) || "", c.lastName); }, { silent: true });
+          bannerSync();
+        }
+      });
+    }
+    var handleNode = el("input", {
+      type: "text", value: ch.identity.handle || "", placeholder: "Street handle / alias…",
+      oninput: function (e) {
+        var v = e.target.value;
+        store.update(function (c) { c.identity.handle = v; c.name = EN.store.composeFullName(c.firstName, v, c.lastName); }, { silent: true });
+        bannerSync();
+      }
     });
     return el("div", null, [
       EN.ui.panel("Freelancer Profile", "IDENTITY.SYS", [
-        el("div.grid2", null, [
-          el("div.field", null, [el("label.fl", { text: "Name" }), nameNode]),
-          txt("handle", "Handle", "Street handle / alias…")
+        el("div.grid3", null, [
+          el("div.field", null, [el("label.fl", { text: "First Name" }), nameFieldNode("firstName", "First name…")]),
+          el("div.field", null, [el("label.fl", { text: "Handle" }), handleNode]),
+          el("div.field", null, [el("label.fl", { text: "Last Name" }), nameFieldNode("lastName", "Last name…")])
         ]),
+        el("p.help", { style: { margin: "6px 0 0" }, text: 'Full name displays as First "Handle" Last.' }),
         txt("concept", "Concept, the one-line pitch", "An ex-corporate Stitcher with a stolen triage rig…", true),
         txt("whereFrom", "Where You Came From", "Burbclave, Warrens, void station, corporate creche…", true)
       ], { corners: true }),

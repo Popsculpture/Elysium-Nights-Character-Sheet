@@ -20,13 +20,26 @@ EN.store = (function () {
     return "ch_" + Math.random().toString(36).slice(2, 9) + Date.now().toString(36);
   }
 
+  // The character's full display name is always derived: First "Handle" Last,
+  // gracefully collapsing when any piece is blank (never a stray quote or a
+  // double space). ch.name itself is just this composed string, kept in sync
+  // by every write site (Identity step inputs, migrate()) so every existing
+  // consumer of ch.name shows the composed form with no changes of its own.
+  function composeFullName(first, handle, last) {
+    first = String(first || "").trim(); handle = String(handle || "").trim(); last = String(last || "").trim();
+    return [first, handle ? '"' + handle + '"' : "", last].filter(Boolean).join(" ");
+  }
+
   /* ---- blank character factory ----------------------------------------- */
   function newCharacter(name) {
     var attrs = {};
     EN.rules.attributes.forEach(function (a) { attrs[a.key] = 10; });
+    var parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+    var firstName = parts[0] || "", lastName = parts.slice(1).join(" ") || "";
     return {
       meta: { id: uid(), schemaVersion: EN.rules.schemaVersion, createdAt: Date.now(), updatedAt: Date.now() },
-      name: typeof name === "string" ? name : "",
+      name: composeFullName(firstName, "", lastName),
+      firstName: firstName, lastName: lastName,
       identity: {
         concept: "", handle: "", whereFrom: "",
         facets: "", coreSparks: "", tethers: "", faultLines: "",
@@ -136,6 +149,16 @@ EN.store = (function () {
     delete ch.loadout;                                                       // the Loadout tier is derived from carried Load, never declared
     if (["none", "lift", "drag"].indexOf(ch.haul) === -1) ch.haul = "none";  // active Haul
     if (ch.identity && ch.identity.notes === undefined) ch.identity.notes = "";  // freeform notes, shared with the #PRINT Identity step
+    // First/Last Name split: a legacy single ch.name seeds them once (best
+    // effort, split on the first space), then ch.name is recomputed as the
+    // derived First "Handle" Last display string every load, so a changed
+    // Handle or a hand-edited import never falls out of sync on its own.
+    if (typeof ch.firstName !== "string" || typeof ch.lastName !== "string") {
+      var nameParts = String(ch.name || "").trim().split(/\s+/).filter(Boolean);
+      ch.firstName = nameParts[0] || "";
+      ch.lastName = nameParts.slice(1).join(" ") || "";
+    }
+    ch.name = composeFullName(ch.firstName, (ch.identity && ch.identity.handle) || "", ch.lastName);
     if (!ch.equippedWeapons) ch.equippedWeapons = [];
     if (ch.equippedArmor === undefined) ch.equippedArmor = null;
     if (ch.equippedShield === undefined) ch.equippedShield = null;
@@ -314,6 +337,6 @@ EN.store = (function () {
     active: active, roster: roster, state: function () { return state; },
     newCharacter: newCharacter, createAndActivate: createAndActivate,
     setActive: setActive, remove: remove, update: update,
-    importCharacter: importCharacter, persist: persist
+    importCharacter: importCharacter, persist: persist, composeFullName: composeFullName
   };
 })();
