@@ -24,6 +24,13 @@ EN.ui = (function () {
         else if (k.slice(0, 2) === "on" && typeof v === "function") { node.addEventListener(k.slice(2).toLowerCase(), v); }
         else if (k === "dataset" && typeof v === "object") { Object.keys(v).forEach(function (d) { node.dataset[d] = v[d]; }); }
         else if (typeof v === "boolean") { if (v) node.setAttribute(k, ""); }
+        // "value" must be set as a DOM property, not an attribute: a <textarea>'s
+        // displayed text is driven entirely by its .value property (there is no
+        // HTML "value" attribute for textareas), so setAttribute("value", ...)
+        // silently does nothing on a freshly created node. Works for <input>,
+        // <textarea>, and <option> alike; no <select> in this codebase sets
+        // "value" directly (they select via each <option>'s "selected" flag).
+        else if (k === "value") { node.value = v; }
         else { node.setAttribute(k, v); }
       });
     }
