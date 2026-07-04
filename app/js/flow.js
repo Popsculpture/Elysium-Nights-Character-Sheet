@@ -248,7 +248,7 @@ EN.flowView = (function () {
       ]) : null
     ]));
     summary.push(noteP(_form.unwilling ? inv.resolutionText : "Automatic (willing target or object); no roll.", _form.unwilling ? "var(--text2)" : "var(--success)"));
-    if (inv.empoweredEffect) summary.push(noteP("Empowered: " + inv.empoweredEffect.name + " — " + inv.empoweredEffect.text, VIO));
+    if (inv.empoweredEffect) summary.push(noteP("Empowered: " + inv.empoweredEffect.name + " · " + inv.empoweredEffect.text, VIO));
     if (_form.duration === "sustain") summary.push(noteP(inv.sustainable ? "Sustain: 1 FP at the start of each turn; replaces any current sustain." : "This effect cannot be Sustained.", inv.sustainable ? "var(--text2)" : "var(--warn)"));
     if (d.flow.snagInvoke) summary.push(noteP("Strain (Ripple+): roll this Invocation with Snag.", "var(--warn)"));
     (inv.warnings || []).forEach(function (w) { summary.push(noteP("⚠ " + w, "var(--warn)")); });

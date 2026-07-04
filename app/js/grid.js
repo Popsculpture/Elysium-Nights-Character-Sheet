@@ -16,7 +16,7 @@ EN.gridView = (function () {
   var _stabilityOpen = false;                         // STABILITY stat: tap to expand the damage tracker
   // Run Mode: HOT RUN = in-combat d20 math; DEEP RUN = out-of-combat Dice Pool intrusion
   var _runMode = "hot";
-  var _deep = { edges: {}, snags: {}, kitsOff: {}, risk: 2, result: null, animating: false, animToken: 0 };
+  var _deep = { edges: {}, snags: {}, kitsOff: {}, risk: 2, result: null, animating: false, animToken: 0, focusSrc: "skill" };
 
   /* ---- small shared bits ---- */
   function bar(cur, max, color) {
@@ -551,21 +551,40 @@ EN.gridView = (function () {
     var s = (d.skills || []).find(function (x) { return x.key === "systems"; });
     var parts = [];
     var attr = Math.max(0, d.attributes.TEC.mod);
-    if (attr) parts.push({ label: "Tech modifier", value: attr });
+    if (attr) parts.push({ label: "Tech Modifier", value: attr });
     var prof = s ? (((EN.rules.profTiers[s.tier] || {}).pool) || 0) : 0;
-    if (prof) parts.push({ label: "Systems proficiency (" + s.tier + ")", value: prof });
+    if (prof) parts.push({ label: "Systems Proficiency Bonus (" + (EN.rules.profTiers[s.tier] || {}).name + ")", value: prof });
     if (gd.deck && gd.deck.type === "smartdeck" && gd.deck.deviceBonus) parts.push({ label: gd.deck.tier + " Smartdeck Device Bonus (gear)", value: gd.deck.deviceBonus });
-    if (s && s.focus) parts.push({ label: "Skill Focus (Caliber)", value: d.caliber || 1 });
-    if (s && s.specialization) parts.push({ label: "Specialization", value: 2 });
-    deepKits(ch).forEach(function (k) {
-      if (_deep.kitsOff[k.name]) return;
+    var activeKits = deepKits(ch).filter(function (k) { return !_deep.kitsOff[k.name]; });
+    // Only one Focus Caliber can apply to a single roll. A Systems Skill Focus
+    // and a Systems Tools Focus (via an active kit) can both cover an
+    // intrusion; exactly one fires, picked on the FOCUS toggle row.
+    var focusCands = [];
+    if (s && s.focus) {
+      var sf = eng.focusesFor(ch, "skill", "systems")[0];
+      focusCands.push({ key: "skill", label: "Caliber from Systems" + (sf && sf.aspect ? " (" + sf.aspect + ")" : "") + " Focus", value: d.caliber || 1 });
+    }
+    if (activeKits.length) {
+      eng.focusesFor(ch, "tools", "Systems Tools").forEach(function (f) {
+        focusCands.push({ key: "tool|" + (f.aspect || ""), label: "Caliber from Systems Tools" + (f.aspect ? " (" + f.aspect + ")" : "") + " Focus", value: d.caliber || 1 });
+      });
+    }
+    var focusPick = null;
+    if (focusCands.length) {
+      focusPick = focusCands.find(function (c) { return c.key === _deep.focusSrc; }) || focusCands[0];
+      parts.push({ label: focusPick.label + (focusCands.length > 1 ? " (one Focus per roll)" : ""), value: focusPick.value });
+    }
+    if (s && s.specialization) parts.push({ label: "Specialization: Systems", value: 2 });
+    var toolSpec = activeKits.length ? eng.specFor(ch, "tools", "Systems Tools") : null;
+    if (toolSpec) parts.push({ label: "Specialization: Systems Tools" + (toolSpec.aspect ? " (" + toolSpec.aspect + ")" : ""), value: 2 });
+    activeKits.forEach(function (k) {
       parts.push({ label: k.name + (k.edgeNote ? ", " + k.edgeNote : ""), value: k.edgeDice });
     });
     // situational sources cap at +3 combined (base-pool rule)
     var sit = DEEP_EDGES.filter(function (e) { return _deep.edges[e.key]; });
     if (sit.length) parts.push({ label: "Situational: " + sit.map(function (e) { return e.name; }).join(", ") + (sit.length > 3 ? " (capped at +3)" : ""), value: Math.min(3, sit.length) });
     var points = 0; parts.forEach(function (p) { points += p.value; });
-    return { skill: s, points: points, parts: parts, pool: eng.buildEdgePool(points) };
+    return { skill: s, points: points, parts: parts, pool: eng.buildEdgePool(points), focusCands: focusCands, focusPick: focusPick };
   }
   function deepSnagTotal(s) {
     var togs = DEEP_SNAGS.filter(function (x) { return _deep.snags[x.key]; }).length;
@@ -618,6 +637,18 @@ EN.gridView = (function () {
     // situational Edge sources sit on their own line, aligned under the value
     kids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center", margin: "4px 0 0 44px" } },
       sitToggle(DEEP_EDGES, _deep.edges, "var(--gold)")));
+    // one Focus per roll: when both a Systems Skill Focus and a Systems Tools
+    // Focus cover this intrusion, pick which one fires (never both)
+    if (edge.focusCands.length > 1) {
+      kids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center", margin: "4px 0 0 44px" } },
+        [el("span.mono", { title: "Only one Focus Caliber can apply to a single roll", style: { fontSize: "9px", color: "var(--gold)", letterSpacing: ".1em" }, text: "FOCUS" })]
+        .concat(edge.focusCands.map(function (cand) {
+          var on = edge.focusPick && edge.focusPick.key === cand.key;
+          return el("button.btn.sm", { title: cand.label + ". Only one Focus Caliber can apply per roll; click to make this the one that fires.",
+            style: { fontSize: "9px", color: on ? "var(--gold)" : "var(--text4)", borderColor: on ? "var(--gold)" : "var(--border)" },
+            onclick: function () { _deep.focusSrc = cand.key; _deep.result = null; EN.app.render(); } }, (on ? "● " : "") + cand.label.replace(/^Caliber from /, ""));
+        }))));
+    }
     // SNAG row: GM risk picker + hacking friction toggles
     var riskBtns = ((EN.resolution && EN.resolution.pool && EN.resolution.pool.snagAssign) || []).map(function (r) {
       var n = Number(r.dice), on = _deep.risk === n;

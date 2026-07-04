@@ -80,13 +80,19 @@ EN.crafting = {
     var attr = Math.max(0, skillEntry.attrMod || 0);
     if (attr) parts.push({ label: (skillEntry.attrName || "Attribute") + " modifier", value: attr });
     var prof = ((tiers[skillEntry.tier] || {}).pool) || 0;
-    if (prof) parts.push({ label: "Proficiency (" + ((tiers[skillEntry.tier] || {}).name || skillEntry.tier) + ")", value: prof });
+    if (prof) parts.push({ label: "Skill Proficiency Bonus (" + ((tiers[skillEntry.tier] || {}).name || skillEntry.tier) + ")", value: prof });
     (kits || []).forEach(function (k) {
       if (!k.edgeDice) return;
       parts.push({ label: k.name + (k.edgeNote ? ", " + k.edgeNote : ""), value: k.edgeDice });
     });
-    if (skillEntry.focus) parts.push({ label: "Skill Focus (Caliber)", value: caliber || 1 });
-    if (skillEntry.specialization) parts.push({ label: "Specialization", value: 2 });
+    // Only one Focus Caliber can apply to a single roll. When the caller has
+    // resolved which Focus fires (Skill Focus vs a Tool Focus on an active
+    // kit's category), it passes the chosen part via opts; otherwise fall back
+    // to the plain Skill Focus read.
+    if (opts.focusResolved) { if (opts.focusPart) parts.push(opts.focusPart); }
+    else if (skillEntry.focus) parts.push({ label: "Skill Focus (Caliber)", value: caliber || 1 });
+    if (skillEntry.specialization) parts.push({ label: "Specialization: " + (skillEntry.name || "Skill"), value: 2 });
+    (opts.extraSpecParts || []).forEach(function (p) { parts.push(p); });
     if (opts.prep) parts.push({ label: "Special Preparation", value: 1 });
     if (opts.narrative) parts.push({ label: "Narrative Advantage", value: 1 });
     var points = 0;

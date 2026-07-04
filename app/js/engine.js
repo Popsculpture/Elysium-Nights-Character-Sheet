@@ -96,8 +96,12 @@ EN.engine = (function () {
        Gain Proficiency  : 1 TP, any level   (untrained -> proficient)
        Upgrade Expertise : 2 TP, level 6+    (proficient -> expertise)
        Upgrade Mastery   : 2 TP, level 10+   (expertise  -> mastery)
-       Skill Focus       : 1 TP, level 3+,  requires Proficient+ in skill
-       Specialization    : 1 TP, level 6+,  requires Expertise+ in skill (1/skill)
+       Skill Focus       : 1 TP, level 3+,  requires Proficient+ in the parent
+       Specialization    : 1 TP, level 6+,  requires Expertise+ in the parent (one per parent)
+     Focus and Specialization attach to any of four parents: a Skill, a Weapon
+     category, a Vehicle category, or a Tool Category (never Armor). A Free
+     Skill Focus granted by an Overlapping Starting Proficiency costs 0 TP and
+     ignores the level 3+ gate.
      Background/class grants form a free 'proficient' floor (not paid with TP). */
   var STEP_COST = { proficient: 1, expertise: 2, mastery: 2 };  // cost to step INTO a tier
   var TIER_LEVEL_REQ = { proficient: 1, expertise: 6, mastery: 10 };
@@ -187,11 +191,12 @@ EN.engine = (function () {
   }
 
   // total TP spent across skills + focuses + specializations + gear
+  // (a granted Free Skill Focus from an overlap costs nothing)
   function trainingSpent(ch) {
     var total = 0;
     R.skills.forEach(function (s) { total += skillTierCost(ch, s.key); });
-    total += ((ch.skillFocuses || []).length) * FOCUS_COST;
-    total += ((ch.specializations || []).length) * SPEC_COST;
+    focusList(ch).forEach(function (f) { if (!f.granted) total += FOCUS_COST; });
+    total += specList(ch).length * SPEC_COST;
     ["weapons", "armor", "tools", "vehicles"].forEach(function (bucket) {
       ((R.gear && R.gear[bucket]) || []).forEach(function (cat) { total += gearTierCost(ch, bucket, cat); });
     });
@@ -202,6 +207,90 @@ EN.engine = (function () {
     var total = trainingPointsTotal(level);
     var spent = trainingSpent(ch);
     return { total: total, spent: spent, remaining: total - spent };
+  }
+
+  /* ---- Focus & Specialization (four parent types) ------------------------
+     Records live on ch.skillFocuses / ch.specializations as
+       { type: "skill"|"weapons"|"vehicles"|"tools", parent, aspect, granted }
+     where parent is a skill key or an R.gear category name and aspect is the
+     narrow slice the Focus covers ("Machine Pistol", "Motorcycle", "Surgical
+     Support"). Armor is never a valid parent. `granted` marks a Free Skill
+     Focus from an Overlapping Starting Proficiency (0 TP, no level gate).
+     Legacy records were {skill, aspect}; store.migrate rewrites them, and
+     normFocus tolerates any that slip through an old import. */
+  function normFocus(f) {
+    if (!f) return null;
+    if (f.type) return f;
+    return { type: "skill", parent: f.skill, aspect: f.aspect || "", granted: !!f.granted };
+  }
+  function focusList(ch) { return ((ch && ch.skillFocuses) || []).map(normFocus).filter(Boolean); }
+  function specList(ch) { return ((ch && ch.specializations) || []).map(normFocus).filter(Boolean); }
+  // A granted Focus whose Background/Class overlap no longer exists is inert
+  // (the builder prunes it on the next Background/Class edit).
+  function activeFocusList(ch) {
+    var list = focusList(ch);
+    if (!list.some(function (f) { return f.granted; })) return list;
+    var ov = overlapGrants(ch);
+    return list.filter(function (f) {
+      if (!f.granted) return true;
+      return ov.some(function (o) { return o.type === f.type && o.parent === f.parent; });
+    });
+  }
+  function focusesFor(ch, type, parent) {
+    return activeFocusList(ch).filter(function (f) { return f.type === type && f.parent === parent; });
+  }
+  function specFor(ch, type, parent) {
+    return specList(ch).find(function (f) { return f.type === type && f.parent === parent; }) || null;
+  }
+  function aspectMatches(aspect, name) {
+    return !!aspect && !!name && String(aspect).trim().toLowerCase() === String(name).trim().toLowerCase();
+  }
+  // Weapon Focus/Specialization apply per aspect: the aspect names a specific
+  // weapon type ("Machine Pistol") or a named Signature Weapon, matched
+  // against the item's catalog name.
+  function weaponFocus(ch, cat, itemName) {
+    return focusesFor(ch, "weapons", cat).find(function (f) { return aspectMatches(f.aspect, itemName); }) || null;
+  }
+  function weaponSpec(ch, cat, itemName) {
+    var sp = specFor(ch, "weapons", cat);
+    return sp && aspectMatches(sp.aspect, itemName) ? sp : null;
+  }
+  // Signature Weapons: On Hit effects and area projections stay locked at any
+  // proficiency tier until a Skill Focus names the specific weapon.
+  function signatureUnlocked(ch, it) {
+    if (!it || !it.signature) return true;
+    return activeFocusList(ch).some(function (f) { return f.type === "weapons" && aspectMatches(f.aspect, it.name); });
+  }
+
+  /* ---- Overlapping Starting Proficiencies --------------------------------
+     If Background and Class both grant the same Skill or gear category, the
+     proficiency applies once (Proficient + Proficient = Proficient, never a
+     tier raise) and the character gains one Free Skill Focus scoped to that
+     parent. Armor never overlaps into a Focus. */
+  function overlapGrants(ch) {
+    var m = grantSourceMap(ch);
+    var out = [];
+    Object.keys(m.skills).forEach(function (k) {
+      var s = m.skills[k];
+      if (s.indexOf("Class") === -1 || s.indexOf("Background") === -1) return;
+      var sk = R.skillByKey[k];
+      out.push({ type: "skill", parent: k, label: sk ? sk.name : k });
+    });
+    Object.keys(m.gear).forEach(function (key) {
+      var s = m.gear[key];
+      if (s.indexOf("Class") === -1 || s.indexOf("Background") === -1) return;
+      var bucket = key.split("|")[0], cat = key.split("|")[1];
+      if (bucket === "armor") return;   // Armor is never a Focus parent
+      out.push({ type: bucket, parent: cat, label: cat });
+    });
+    return out;
+  }
+  function grantedFocusFor(ch, type, parent) {
+    return focusList(ch).find(function (f) { return f.granted && f.type === type && f.parent === parent; }) || null;
+  }
+  // overlaps whose Free Skill Focus has not been claimed yet
+  function unresolvedOverlaps(ch) {
+    return overlapGrants(ch).filter(function (o) { return !grantedFocusFor(ch, o.type, o.parent); });
   }
 
   /* ---- effective attribute scores (base + Universal Upgrade bumps) ------- */
@@ -763,8 +852,8 @@ EN.engine = (function () {
        proficiencies.skills are user upgrades layered on top. */
     var skillProf = (ch.proficiencies && ch.proficiencies.skills) || {};
     var granted = grantedSkills(ch);
-    var focuses = ch.skillFocuses || [];
-    var specs = ch.specializations || [];
+    var focuses = activeFocusList(ch);
+    var specs = specList(ch);
     var skills = R.skills.map(function (s) {
       var storedTier = skillProf[s.key] || "untrained";
       var isGranted = !!granted[s.key];
@@ -772,8 +861,8 @@ EN.engine = (function () {
       if (isGranted && R.profOrder.indexOf("proficient") > R.profOrder.indexOf(storedTier)) tierKey = "proficient";
       var tier = R.profTiers[tierKey] || R.profTiers.untrained;
       var attrMod = attributes[s.attr].mod;
-      var hasFocus = focuses.some(function (f) { return f.skill === s.key; });
-      var hasSpec = specs.some(function (f) { return f.skill === s.key; });
+      var hasFocus = focuses.some(function (f) { return f.type === "skill" && f.parent === s.key; });
+      var hasSpec = specs.some(function (f) { return f.type === "skill" && f.parent === s.key; });
       var total = attrMod + tier.d20;
       // Focus adds Caliber (like Saving Throw Focus above), not a flat +5
       var passive = 10 + total + (hasFocus ? cal : 0) + (tierKey === "untrained" ? -5 : 0);
@@ -1106,6 +1195,9 @@ EN.engine = (function () {
     grantedGear: grantedGear, gearFloorTier: gearFloorTier, effectiveGearTier: effectiveGearTier, gearTierCost: gearTierCost,
     activeLineageFeatures: activeLineageFeatures, splitTalentText: splitTalentText, leaseLapsed: leaseLapsed, itemLoad: itemLoad,
     isStackableItem: isStackableItem, isStackableName: isStackableName, entryKey: entryKey, findEntry: findEntry, keyToName: keyToName,
+    focusList: focusList, specList: specList, activeFocusList: activeFocusList, focusesFor: focusesFor, specFor: specFor,
+    aspectMatches: aspectMatches, weaponFocus: weaponFocus, weaponSpec: weaponSpec, signatureUnlocked: signatureUnlocked,
+    overlapGrants: overlapGrants, grantedFocusFor: grantedFocusFor, unresolvedOverlaps: unresolvedOverlaps,
     grantSourceMap: grantSourceMap, duplicateGrants: duplicateGrants, pendingChoices: pendingChoices,
     tp: { STEP_COST: STEP_COST, TIER_LEVEL_REQ: TIER_LEVEL_REQ, FOCUS_COST: FOCUS_COST, FOCUS_LEVEL_REQ: FOCUS_LEVEL_REQ, SPEC_COST: SPEC_COST, SPEC_LEVEL_REQ: SPEC_LEVEL_REQ }
   };

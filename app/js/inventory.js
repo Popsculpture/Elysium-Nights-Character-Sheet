@@ -464,7 +464,16 @@ EN.inventoryView = (function () {
       open && it.proficiency ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: "Proficiency: " + it.proficiency + (it.signature ? " · Signature weapon (0 customization slots)" : "") }) : null,
       open && (it.category || it.skill) ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: (it.category ? "Tool Category: " + it.category : "") + (it.category && it.skill ? " · " : "") + (it.skill ? "Governing Skill: " + it.skill : "") }) : null,
       open && it.feeds ? el("p.help", { style: { margin: "4px 0 0", color: "var(--gold)" }, text: "Feeds: " + it.feeds }) : null,
-      open && it.effect ? el("p.help", { style: { margin: "4px 0 0", color: "var(--accent)" }, text: (it.signature ? "" : "Effect: ") + it.effect }) : null,
+      // Signature Weapons: On Hit effects and area projections stay locked at
+      // any proficiency tier until a Skill Focus names this specific weapon
+      open && it.effect ? (it.signature && !EN.engine.signatureUnlocked(ch, it)
+        ? el("div", { style: { marginTop: "6px", padding: "6px 9px", border: "1px dashed var(--border2)", borderRadius: "4px", opacity: .6 },
+            title: "Weapon Proficiency alone keeps a Signature Weapon's On Hit effects and area projections locked." }, [
+            el("span.mono", { style: { fontSize: "10px", color: "var(--warn)", letterSpacing: ".08em" }, text: "🔒 ON HIT LOCKED · " }),
+            el("span", { style: { fontSize: "11px", color: "var(--text3)" },
+              text: "Requires a Skill Focus naming this weapon: " + (it.proficiency || "its weapon category") + " (" + it.name + "). Buy it on the #PRINT Advance tab (L3+), or claim it as a Free overlap Focus at level 1." })
+          ])
+        : el("p.help", { style: { margin: "4px 0 0", color: "var(--accent)" }, text: (it.signature ? "" : "Effect: ") + it.effect })) : null,
       open && it.poweredBenefits ? el("p.help", { style: { margin: "4px 0 0", color: "var(--gold)" }, html: "<b style='color:var(--gold)'>Powered Benefits:</b> " + it.poweredBenefits }) : null,
       open && it.cyber ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: "Install: " + it.zone + " zone · " + it.sp + " SP" + (it.slots ? " · " + it.slots + " mod slots" : "") + " · Enhancement: " + (enhScaled(it) || "None") }) : null,
       open && it.cyber && it.tierNote ? el("p.help", { style: { margin: "4px 0 0" }, text: it.tierNote }) : null,
@@ -1433,10 +1442,46 @@ EN.inventoryView = (function () {
              !(rollState && rollState.kitsOff[k.name]);
     });
   }
+  // Only one Focus Caliber can apply to a single roll: gather every Focus that
+  // could cover this Work Interval (the skill's own Focus plus a Tool Focus on
+  // any active kit's category), then the roll applies exactly one, picked on
+  // the project card's FOCUS toggle row (default: the skill's).
+  function tbFocusCandidates(ch, d, s, kits) {
+    var out = [];
+    if (s && s.focus) {
+      var sf = EN.engine.focusesFor(ch, "skill", s.key)[0];
+      out.push({ key: "skill", label: "Caliber from " + s.name + (sf && sf.aspect ? " (" + sf.aspect + ")" : "") + " Focus", value: d.caliber || 1 });
+    }
+    var seen = {};
+    (kits || []).forEach(function (k) {
+      if (!k.category || seen[k.category]) return;
+      seen[k.category] = 1;
+      EN.engine.focusesFor(ch, "tools", k.category).forEach(function (f) {
+        out.push({ key: "tool|" + k.category + "|" + (f.aspect || ""), label: "Caliber from " + k.category + (f.aspect ? " (" + f.aspect + ")" : "") + " Focus", value: d.caliber || 1 });
+      });
+    });
+    return out;
+  }
   function tbEdgeFor(ch, d, skillName, rollState) {
     var s = tbSkill(d, skillName);
-    var ep = CRAFT().edgePointsFor(s, d.caliber, tbActiveKits(ch, skillName, rollState), rollState || {});
-    return { skill: s, points: ep.points, parts: ep.parts, pool: EN.engine.buildEdgePool(ep.points) };
+    var kits = tbActiveKits(ch, skillName, rollState);
+    var rs = rollState || {};
+    var cands = tbFocusCandidates(ch, d, s, kits);
+    var pick = cands.length ? (cands.find(function (c) { return c.key === rs.focusKey; }) || cands[0]) : null;
+    rs.focusResolved = true;
+    rs.focusPart = pick ? { label: pick.label + (cands.length > 1 ? " (one Focus per roll)" : ""), value: pick.value } : null;
+    // a Specialization on an active kit's Tool Category stacks with its own
+    // parent's Focus and with the skill's Specialization (different parents)
+    rs.extraSpecParts = [];
+    var seenSpec = {};
+    kits.forEach(function (k) {
+      if (!k.category || seenSpec[k.category]) return;
+      seenSpec[k.category] = 1;
+      var sp = EN.engine.specFor(ch, "tools", k.category);
+      if (sp) rs.extraSpecParts.push({ label: "Specialization: " + k.category + (sp.aspect ? " (" + sp.aspect + ")" : ""), value: 2 });
+    });
+    var ep = CRAFT().edgePointsFor(s, d.caliber, kits, rs);
+    return { skill: s, points: ep.points, parts: ep.parts, pool: EN.engine.buildEdgePool(ep.points), focusCands: cands, focusPick: pick };
   }
   function tbEdgeTip(e) {
     return e.parts.length ? e.parts.map(function (p) { return "+" + p.value + "  " + p.label; }).join("\n") : "No Edge sources yet; train the skill or buy a kit.";
@@ -1565,7 +1610,7 @@ EN.inventoryView = (function () {
       ]);
     }
     var kids = [
-      el("p.help", { style: { margin: "0 0 6px", fontSize: "11.5px" }, text: "Work Intervals roll the Dice Pool Method: Edge Dice from a Skill and its Attribute, proficiency, kits, Focus, and Specialization, against the GM's Snag Dice. Engineering and Systems drive most of the bench." }),
+      el("p.help", { style: { margin: "0 0 6px", fontSize: "11.5px" }, text: "Work Intervals roll the Dice Pool Method: Edge Dice from a Skill and its Attribute, its Skill Proficiency Bonus, kits, Focus, and Specialization, against the GM's Snag Dice. Engineering and Systems drive most of the bench." }),
       skillRow("Engineering", true),
       skillRow("Systems", true)
     ];
@@ -1667,6 +1712,18 @@ EN.inventoryView = (function () {
           sitToggle("prep", "PREP +1", "Special Preparation: +1 Edge Die"),
           sitToggle("narrative", "ADV +1", "Narrative Advantage (GM discretion): +1 Edge Die")
         ])));
+      // one Focus per roll: when both a Skill Focus and a Tool Focus cover
+      // this Work Interval, pick which one fires (never both)
+      if (edge.focusCands.length > 1) {
+        rollKids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center", margin: "4px 0 0 44px" } },
+          [el("span.mono", { title: "Only one Focus Caliber can apply to a single roll", style: { fontSize: "9px", color: "var(--gold)", letterSpacing: ".1em" }, text: "FOCUS" })]
+          .concat(edge.focusCands.map(function (cand) {
+            var on = edge.focusPick && edge.focusPick.key === cand.key;
+            return el("button.btn.sm", { title: cand.label + ". Only one Focus Caliber can apply per roll; click to make this the one that fires.",
+              style: { fontSize: "9px", color: on ? "var(--gold)" : "var(--text4)", borderColor: on ? "var(--gold)" : "var(--border)" },
+              onclick: function () { rs.focusKey = cand.key; rs.result = null; EN.app.render(); } }, (on ? "● " : "") + cand.label.replace(/^Caliber from /, ""));
+          }))));
+      }
       // SNAG row: risk-level quick picker (Dicey Situations table) + fine adjust
       var riskBtns = ((EN.resolution && EN.resolution.pool && EN.resolution.pool.snagAssign) || []).map(function (r) {
         var n = Number(r.dice), on = snag.base === n;
@@ -1915,6 +1972,115 @@ EN.inventoryView = (function () {
     return [tbSmartdeckMods(ch, d), tbCyberwareMods(ch, d)];
   }
 
+  /* ============================ GARAGE (Vehicle Ops) ========================
+     No vehicle catalog exists yet, so the Garage runs Vehicle Ops: live math
+     for operating whatever ride the story provides. Category proficiency
+     reads off the sheet; the vehicle's type and Handling are table facts the
+     GM supplies. Chase Check, d20 Method: Agility or Tech Modifier
+     + Vehicle Proficiency Bonus (if proficient) + Handling. Dice Pool Method:
+     Edge Dice from the same sources. A Vehicle Focus naming the specific
+     type adds Caliber to attack rolls, vehicle checks, AND damage rolls;
+     a matching Specialization adds crit 19-20 (d20) and +2 Edge Dice (pools).
+     Untrained: the check is allowed but rolls with Snag, and the GM can bar
+     operation entirely for complex, restricted, or specialized vehicles. */
+  var _garage = { cat: "Ground Vehicles", type: "", handling: 0, attr: "AGI", bar: false };
+  function garageBench(ch) {
+    var d = EN.engine.derive(ch);
+    var eng = EN.engine, R = EN.rules;
+    var cat = _garage.cat;
+    var tier = eng.effectiveGearTier(ch, "vehicles", cat);
+    var tierInfo = R.profTiers[tier] || R.profTiers.untrained;
+    var untrained = tier === "untrained";
+    var typeName = (_garage.type || "").trim();
+    var focus = typeName ? eng.focusesFor(ch, "vehicles", cat).filter(function (f) { return eng.aspectMatches(f.aspect, typeName); })[0] : null;
+    var specRec = eng.specFor(ch, "vehicles", cat);
+    var spec = typeName && specRec && eng.aspectMatches(specRec.aspect, typeName) ? specRec : null;
+    var cal = focus ? (d.caliber || 1) : 0;
+    var mod = d.attributes[_garage.attr].mod;
+    var attrName = d.attributes[_garage.attr].name;
+    var handling = Number(_garage.handling) || 0;
+    var barred = _garage.bar && untrained;
+    function reRender() { EN.app.render(); }
+    // controls: category, vehicle type, Handling, governing attribute, GM bar
+    var controls = el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginBottom: "10px" } }, [
+      el("select", { style: { fontSize: "12px", width: "auto" }, title: "Vehicle category (proficiency reads off your sheet)",
+        onchange: function () { _garage.cat = this.value; reRender(); } },
+        (R.gear.vehicles || []).map(function (c) { return el("option", { value: c, selected: c === cat, text: c }); })),
+      el("input", { type: "text", value: _garage.type, placeholder: "vehicle type: Motorcycle, VTOL…",
+        title: "The specific vehicle type you are operating; a Vehicle Focus naming it adds Caliber",
+        style: { width: "200px", padding: "4px 9px", fontSize: "12.5px" },
+        oninput: function () { _garage.type = this.value; reRender(); } }),
+      el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em" }, text: "HANDLING" }),
+      el("input", { type: "number", value: String(handling), min: "-3", max: "5",
+        title: "The vehicle's Handling stat (GM-supplied); adds to Chase Checks",
+        style: { width: "58px", padding: "4px 6px", fontSize: "12.5px" },
+        oninput: function () { _garage.handling = this.value; reRender(); } }),
+      el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em" }, text: "VIA" }),
+      el("button.btn.sm" + (_garage.attr === "AGI" ? ".primary" : ""), { title: "Drive it by reflex", onclick: function () { _garage.attr = "AGI"; reRender(); } }, "AGILITY"),
+      el("button.btn.sm" + (_garage.attr === "TEC" ? ".primary" : ""), { title: "Drive it by interface", onclick: function () { _garage.attr = "TEC"; reRender(); } }, "TECH")
+    ]);
+    var chips = el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginBottom: "8px" } }, [
+      el("span.chip", { title: "Vehicle Proficiency in " + cat + (untrained ? "" : "; adds your Vehicle Proficiency Bonus to vehicle checks"),
+        style: { fontSize: "9px", color: untrained ? "var(--warn)" : "var(--success)", borderColor: untrained ? "var(--warn)" : "var(--success)" } },
+        cat.toUpperCase() + " · " + tierInfo.name.toUpperCase()),
+      untrained ? el("span.chip", { title: "Untrained: the check is allowed but rolls with Snag", style: { fontSize: "9px", color: "var(--warn)", borderColor: "var(--warn)" } }, "UNTRAINED · SNAG") : null,
+      focus ? el("span.chip", { title: "Skill Focus: " + cat + " (" + focus.aspect + ")" + (focus.granted ? " · Free overlap Focus" : "") + ". Caliber applies to attack rolls, vehicle checks, and damage rolls with this vehicle type, outside the +15 static cap.",
+        style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" } }, "FOCUS +" + cal) : null,
+      spec ? el("span.chip", { title: "Specialization: " + cat + " (" + spec.aspect + "). Crit 19-20 on d20 vehicle rolls, +2 Edge Dice on pools.",
+        style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" } }, "CRIT 19-20 · +2 EDGE") : null,
+      untrained ? el("button.btn.sm", { title: "GM option: bar untrained operation entirely for complex, restricted, or specialized vehicles",
+        style: { fontSize: "9px", color: _garage.bar ? "var(--danger)" : "var(--text4)", borderColor: _garage.bar ? "var(--danger)" : "var(--border)" },
+        onclick: function () { _garage.bar = !_garage.bar; reRender(); } }, (_garage.bar ? "✓ " : "") + "GM: BAR UNTRAINED OPERATION") : null
+    ]);
+    var body = [controls, chips];
+    if (barred) {
+      body.push(el("div.muted-box", { style: { borderColor: "var(--danger)", color: "var(--danger)", textAlign: "left" },
+        html: "⛔ <b>OPERATION BARRED.</b> The GM has barred untrained operation of this vehicle (complex, restricted, or specialized). Train " + cat + " on the #PRINT Advance tab to take the controls." }));
+    } else {
+      var d20Total = mod + tierInfo.d20 + handling + cal;
+      var d20Tip = "d20 + " + attrName + " Modifier (" + eng.fmtMod(mod) + ")"
+        + (tierInfo.d20 ? " + Vehicle Proficiency Bonus (" + eng.fmtMod(tierInfo.d20) + ")" : " (untrained, Snag)")
+        + (handling ? " + Handling (" + eng.fmtMod(handling) + ")" : "")
+        + (focus ? " + Caliber from " + cat + " (" + focus.aspect + ") Focus (" + eng.fmtMod(cal) + ", outside the +15 static cap)" : "")
+        + (spec ? " · Specialization: crit 19-20" : "");
+      var edgeParts = [];
+      if (mod > 0) edgeParts.push({ label: attrName + " Modifier", value: mod });
+      if (tierInfo.pool) edgeParts.push({ label: "Vehicle Proficiency Bonus (" + tierInfo.name + ")", value: tierInfo.pool });
+      if (handling > 0) edgeParts.push({ label: "Handling", value: handling });
+      if (focus) edgeParts.push({ label: "Caliber from " + cat + " (" + focus.aspect + ") Focus", value: cal });
+      if (spec) edgeParts.push({ label: "Specialization: " + cat + " (" + spec.aspect + ")", value: 2 });
+      var edgePts = edgeParts.reduce(function (a, p) { return a + p.value; }, 0);
+      var edgePool = eng.buildEdgePool(edgePts);
+      var edgeTip = edgeParts.length ? edgeParts.map(function (p) { return "+" + p.value + "  " + p.label; }).join("\n") : "No Edge sources yet";
+      if (handling < 0) edgeTip += "\nNegative Handling (" + handling + ") reads as Snag Dice at the table.";
+      body.push(el("div.row.wrap", { style: { gap: "16px", alignItems: "center", margin: "2px 0 8px" } }, [
+        el("div", { title: d20Tip, style: { textAlign: "center", minWidth: "110px" } }, [
+          el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "CHASE CHECK · D20" }),
+          el("span.mono", { style: { fontSize: "22px", color: untrained ? "var(--warn)" : "var(--accent)" }, text: eng.fmtMod(d20Total) }),
+          untrained ? el("div.mono", { style: { fontSize: "9px", color: "var(--warn)" }, text: "with Snag" }) : null
+        ]),
+        el("div", { title: edgeTip, style: { textAlign: "center", minWidth: "130px" } }, [
+          el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "CHASE CHECK · DICE POOL" }),
+          el("span.mono", { style: { fontSize: "22px", color: "var(--success)" }, text: edgePts + " → " + edgePool.label }),
+          untrained ? el("div.mono", { style: { fontSize: "9px", color: "var(--warn)" }, text: "+2 Snag Dice untrained" }) : null
+        ]),
+        el("div", { title: "Vehicle attack rolls: d20 + " + attrName + " Modifier" + (tierInfo.d20 ? " + Vehicle Proficiency Bonus" : "") + (focus ? " + Caliber from the Focus" : ""), style: { textAlign: "center", minWidth: "90px" } }, [
+          el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "VEHICLE ATTACK" }),
+          el("span.mono", { style: { fontSize: "22px", color: "var(--ember)" }, text: eng.fmtMod(mod + tierInfo.d20 + cal) })
+        ]),
+        focus ? el("div", { title: "A Vehicle Focus adds Caliber to damage rolls with this vehicle type as well", style: { textAlign: "center", minWidth: "90px" } }, [
+          el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "DAMAGE RIDER" }),
+          el("span.mono", { style: { fontSize: "22px", color: "var(--gold)" }, text: eng.fmtMod(cal) })
+        ]) : null
+      ]));
+      body.push(el("p.help", { style: { margin: "0", fontSize: "11px" },
+        text: untrained
+          ? "Untrained operation is allowed but rolls with Snag. The GM may bar operation entirely for complex, restricted, or specialized vehicles (toggle above)."
+          : "Vehicle checks add your Vehicle Proficiency Bonus. A Vehicle Focus naming this type adds Caliber to attack rolls, vehicle checks, and damage rolls; a Specialization adds crit 19-20 and +2 Edge Dice." }));
+    }
+    return [EN.ui.panel("Garage · Vehicle Ops", cat.toUpperCase() + (typeName ? " · " + typeName.toUpperCase() : ""), body, { corners: true })];
+  }
+
   function workbenchView(ch) {
     var out = [];
     out.push(el("div.row.wrap", { style: { gap: "6px", marginBottom: "12px" } }, BENCHES.map(function (b) {
@@ -1941,6 +2107,11 @@ EN.inventoryView = (function () {
     if (_bench === "fab") {
       out.push(el("p.help", { style: { margin: "0 0 10px", maxWidth: "720px" }, text: b.blurb }));
       fabricationBench(ch).forEach(function (n) { out.push(n); });
+      return out;
+    }
+    if (_bench === "garage") {
+      out.push(el("p.help", { style: { margin: "0 0 10px", maxWidth: "720px" }, text: "Vehicle crafting and modding lands with the Garage rules; until then this bench runs Vehicle Ops: the live operating math for whatever ride the story hands you." }));
+      garageBench(ch).forEach(function (n) { out.push(n); });
       return out;
     }
     var body = [

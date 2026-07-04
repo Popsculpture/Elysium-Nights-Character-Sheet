@@ -1189,8 +1189,8 @@ EN.combatView = (function () {
           } else {
             var tierBonus = R.profTiers[sk.tier].d20;
             var mod = d.attributes[slot.attr].mod;
-            var focus = (ch.skillFocuses || []).find(function (f) { return f.skill === sk.key; });
-            var spec = (ch.specializations || []).find(function (f) { return f.skill === sk.key; });
+            var focus = eng.focusesFor(ch, "skill", sk.key)[0] || null;
+            var spec = eng.specFor(ch, "skill", sk.key);
             resultBlock = el("div", { style: { padding: "8px 10px", background: "rgba(0,0,0,.2)", border: "1px solid " + color, borderLeft: "3px solid " + color, borderRadius: "4px", marginTop: "6px" } }, [
               el("div.row.wrap", { style: { alignItems: "center", gap: "8px", marginBottom: "3px" } }, [
                 el("span", { style: { fontSize: "13px", fontWeight: 700, color: color }, text: entry.name }),
@@ -1204,8 +1204,8 @@ EN.combatView = (function () {
               el("p.help", { style: { margin: 0, color: "var(--text2)" }, text: entry.desc }),
               el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "4px" } }, [
                 el("span.help", { style: { margin: 0, fontSize: "10px" }, html: "Roll: <b>" + attrName(slot.attr) + " " + eng.fmtMod(mod) + " + " + sk.name + " " + eng.fmtMod(tierBonus) + "</b>" }),
-                focus ? el("span.chip", { title: "Skill Focus on " + sk.name + " carries over", style: { fontSize: "9px", color: "var(--accent)", borderColor: "var(--accent)" }, text: "EDGE" + (focus.aspect ? " (" + focus.aspect + ")" : "") }) : null,
-                spec ? el("span.chip", { title: "Specialization on " + sk.name + " carries over", style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" }, text: "CRIT 19-20" + (spec.aspect ? " (" + spec.aspect + ")" : "") }) : null
+                focus ? el("span.chip", { title: "Skill Focus on " + sk.name + " carries over: +Caliber inside the aspect", style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" }, text: "FOCUS +" + (d.caliber || 1) + (focus.aspect ? " (" + focus.aspect + ")" : "") }) : null,
+                spec ? el("span.chip", { title: "Specialization on " + sk.name + " carries over: crit 19-20 inside the aspect", style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" }, text: "CRIT 19-20" + (spec.aspect ? " (" + spec.aspect + ")" : "") }) : null
               ])
             ]);
           }
@@ -1420,7 +1420,7 @@ EN.combatView = (function () {
       passives.push(el("div.section-title", { style: { margin: "10px 0 2px" } }, [document.createTextNode("Special Senses"), el("span.line")]));
       passives = passives.concat(senseRows);
     }
-    sectionEls.senses = EN.ui.panel("Senses", "10 + MOD + PROF (±5 EDGE/SNAG)", passives, { corners: true });
+    sectionEls.senses = EN.ui.panel("Senses", "10 + MOD + PROF + CALIBER IN A FOCUS (±5 EDGE/SNAG)", passives, { corners: true });
 
     /* ACTIONS, tabbed, like a play-sheet */
     var C = EN.combat || {};
@@ -1709,7 +1709,15 @@ EN.combatView = (function () {
         var useAgi = melee ? (finesse && agi > bod) : (thrownItem ? agi >= bod : true);
         var mod = useAgi ? agi : bod, attrName = useAgi ? "Agility" : "Body";
         var cat = GROUP_CAT[it.group], tier = eng.effectiveGearTier(ch, "weapons", cat), prof = R.profTiers[tier].d20;
-        return { mod: mod, attrName: attrName, cat: cat, tier: tier, prof: prof, total: mod + prof, melee: melee, thrownItem: thrownItem };
+        // A Weapon Focus naming this weapon type adds Caliber to attack rolls;
+        // Focus Caliber rides outside the +15 static modifier cap. A matching
+        // Specialization widens the crit threat range by 1 (19-20).
+        var focus = eng.weaponFocus(ch, cat, it.name);
+        var focusCal = focus ? (d.caliber || 1) : 0;
+        var spec = eng.weaponSpec(ch, cat, it.name);
+        return { mod: mod, attrName: attrName, cat: cat, tier: tier, prof: prof,
+                 focus: focus, focusCal: focusCal, spec: spec,
+                 total: mod + prof + focusCal, melee: melee, thrownItem: thrownItem };
       }
       // ch.equippedWeapons holds ids, not names; move the first id that
       // resolves to wname past its neighboring array slot (the same
@@ -1748,7 +1756,9 @@ EN.combatView = (function () {
         var h = weaponHit(it), norm = normalizeWeapon(it);
         var snagWhy = atkSnag || (h.tier === "untrained" ? "Untrained with " + h.cat + "; attacks roll with Snag" : null);
         var dmgTip = norm.damageDisplay + (h.melee || h.thrownItem ? " " + eng.fmtMod(h.mod) + " (" + h.attrName + ") on hit" : "");
-        var hitTip = "d20 " + eng.fmtMod(h.mod) + " " + h.attrName + (h.prof ? " " + eng.fmtMod(h.prof) + " " + R.profTiers[h.tier].name : " (untrained, Snag)");
+        var hitTip = "d20 + " + h.attrName + " Modifier (" + eng.fmtMod(h.mod) + ")"
+          + (h.prof ? " + Weapon Proficiency Bonus (" + eng.fmtMod(h.prof) + ")" : " (untrained, Snag)")
+          + (h.focus ? " + Caliber from " + h.cat + " (" + h.focus.aspect + ") Focus (" + eng.fmtMod(h.focusCal) + ", outside the +15 static cap)" : "");
         var subtype = (h.melee ? "Melee" : h.thrownItem ? "Thrown" : "Ranged") + " Weapon · " + h.cat;
         var isRanged = !h.melee && !h.thrownItem && it.ammo != null;
 
@@ -1756,6 +1766,10 @@ EN.combatView = (function () {
           equippedNames.length > 1 ? reorderArrows(wname, wi) : null,
           el("span", { title: it.desc || "", style: { fontWeight: 600, fontSize: "14px" }, text: it.name }),
           snagWhy ? snagChip(snagWhy) : null,
+          h.focus ? el("span.chip", { title: "Skill Focus: " + h.cat + " (" + h.focus.aspect + ")" + (h.focus.granted ? " · Free overlap Focus" : "") + ". Adds Caliber (" + eng.fmtMod(h.focusCal) + ") to attack rolls with this weapon type, outside the +15 static cap.",
+            style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" } }, "FOCUS +" + h.focusCal) : null,
+          h.spec ? el("span.chip", { title: "Specialization: " + h.cat + " (" + h.spec.aspect + "). Crit threat range widens by 1 (19-20), stacking with other crit range sources.",
+            style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" } }, "CRIT 19-20") : null,
           el("span", { style: { fontSize: "10px", color: "var(--text3)", flex: "1 1 auto" }, text: subtype })
         ]);
 
@@ -1832,6 +1846,21 @@ EN.combatView = (function () {
         // traits line
         rowKids.push(el("div.row.wrap", { style: { gap: "5px", marginTop: "6px" } }, norm.traits.map(wTraitChip)));
 
+        // Signature Weapons: On Hit effects and area projections stay locked at
+        // any proficiency tier until a Skill Focus names this specific weapon.
+        if (it.signature && it.effect) {
+          var sigOpen = eng.signatureUnlocked(ch, it);
+          rowKids.push(sigOpen
+            ? el("p.help", { style: { margin: "6px 0 0", fontSize: "11px", color: "var(--accent)" },
+                text: it.effect })
+            : el("div", { style: { marginTop: "6px", padding: "6px 9px", border: "1px dashed var(--border2)", borderRadius: "4px", opacity: .6 },
+                title: "Weapon Proficiency alone keeps a Signature Weapon's On Hit effects and area projections locked." }, [
+                el("span.mono", { style: { fontSize: "10px", color: "var(--warn)", letterSpacing: ".08em" }, text: "🔒 ON HIT LOCKED · " }),
+                el("span", { style: { fontSize: "11px", color: "var(--text3)" },
+                  text: "Requires a Skill Focus naming this weapon: " + h.cat + " (" + it.name + "). Base attacks still work" + (h.prof ? " with your Weapon Proficiency Bonus." : ", untrained, with Snag." ) })
+              ]));
+        }
+
         // installed Workbench Parts (Mods + Accessories) for this weapon
         var wpLo = (ch.weaponParts || {})[it.name];
         if (wpLo && EN.weaponParts) {
@@ -1849,13 +1878,13 @@ EN.combatView = (function () {
       if (d.lineageUnarmed) {
         var lu = d.lineageUnarmed, luFin = lu.traits && /Finesse/.test(lu.traits);
         var luMod = luFin ? Math.max(d.attributes.BOD.mod, d.attributes.AGI.mod) : d.attributes.BOD.mod;
-        kids.push(attackRow("Natural Weapon · " + lu.source, eng.fmtMod(luMod), "d20 + " + (luFin ? "Body/Agility" : "Body") + " + proficiency · " + lu.die + " " + lu.type + (lu.traits ? " (" + lu.traits + ")" : "") + " + mod" + (lu.note ? " · " + lu.note : ""), "var(--ember)", atkSnag));
+        kids.push(attackRow("Natural Weapon · " + lu.source, eng.fmtMod(luMod), "d20 + " + (luFin ? "Body/Agility" : "Body") + " Modifier · " + lu.die + " " + lu.type + (lu.traits ? " (" + lu.traits + ")" : "") + " + mod" + (lu.note ? " · " + lu.note : ""), "var(--ember)", atkSnag));
       }
       if (!equippedNames.length) {
-        if (!d.lineageUnarmed) kids.push(attackRow("Unarmed Strike", eng.fmtMod(d.attributes.BOD.mod), "d20 + Body + proficiency · unarmed damage + Body mod", "var(--ember)", atkSnag));
+        if (!d.lineageUnarmed) kids.push(attackRow("Unarmed Strike", eng.fmtMod(d.attributes.BOD.mod), "d20 + Body Modifier · unarmed damage + Body mod", "var(--ember)", atkSnag));
         kids.push(el("p.help", { style: { margin: "4px 0 6px" }, text: "No weapons equipped; hit ⚔ EQUIP on a weapon in Inventory → Stash to list it here." }));
       }
-      if (ch.class === "codebreaker") kids.push(attackRow("Cipher Attack", eng.fmtMod(d.attributes.TEC.mod), "d20 + Tech + proficiency vs Node · Quick Hacks under fire", "var(--accent)"));
+      if (ch.class === "codebreaker") kids.push(attackRow("Cipher Attack", eng.fmtMod((d.grid && d.grid.cipherAttackBonus) != null ? d.grid.cipherAttackBonus : d.attributes.TEC.mod), "d20 + Tech Modifier + Systems Proficiency Bonus vs Node · Quick Hacks under fire", "var(--accent)"));
       if (d.flow) kids.push(attackRow("Flow Attack", eng.fmtMod(d.flow.attackBonus), "d20 + " + d.flow.attributeName + " + Caliber · Invocation Save DC " + d.flow.dc, "var(--flow)"));
       if (ch.class === "scoundrel") {
         var csdie = d.caliber + "d6";
@@ -2174,13 +2203,19 @@ EN.combatView = (function () {
         el("div.row.wrap", { style: { gap: "6px" } }, chips)
       ]);
     }
+    function fsParentLabel(f) {
+      if (f.type && f.type !== "skill") return f.parent;
+      var sk = R.skillByKey[f.parent || f.skill];
+      return sk ? sk.name : (f.parent || f.skill);
+    }
     var focusChips = (ch.skillFocuses || []).map(function (f) {
-      var sk = R.skillByKey[f.skill];
-      return el("span.chip", { title: "Skill Focus (Training Points)", style: { fontSize: "10.5px", color: "var(--accent)", borderColor: "var(--accent)", borderStyle: "dashed" } }, (sk ? sk.name : f.skill) + (f.aspect ? " (" + f.aspect + ")" : ""));
+      return el("span.chip", { title: f.granted ? "Free Skill Focus from an overlapping Background/Class grant" : "Skill Focus (Training Points)",
+        style: { fontSize: "10.5px", color: f.granted ? "var(--gold)" : "var(--accent)", borderColor: f.granted ? "var(--gold)" : "var(--accent)", borderStyle: "dashed" } },
+        fsParentLabel(f) + (f.aspect ? " (" + f.aspect + ")" : "") + (f.granted ? " · FREE" : ""));
     });
     var specChips = (ch.specializations || []).map(function (f) {
-      var sk = R.skillByKey[f.skill];
-      return el("span.chip", { title: "Specialization (Training Points)", style: { fontSize: "10.5px", color: "var(--flow)", borderColor: "var(--flow)", borderStyle: "dashed" } }, (sk ? sk.name : f.skill) + (f.aspect ? " (" + f.aspect + ")" : ""));
+      return el("span.chip", { title: "Specialization (Training Points)", style: { fontSize: "10.5px", color: "var(--flow)", borderColor: "var(--flow)", borderStyle: "dashed" } },
+        fsParentLabel(f) + (f.aspect ? " (" + f.aspect + ")" : ""));
     });
     var profRows = [
       profRowIf("Weapons", gearChips("weapons", "var(--ember)")),

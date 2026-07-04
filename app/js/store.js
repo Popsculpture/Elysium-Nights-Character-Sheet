@@ -136,6 +136,18 @@ EN.store = (function () {
     if (ch.equippedShield === undefined) ch.equippedShield = null;
     if (ch.equippedFocus === undefined) ch.equippedFocus = null;
     if (!ch.weaponAmmo) ch.weaponAmmo = {};
+    // Focus/Specialization records: legacy {skill, aspect} entries become the
+    // typed four-parent shape {type, parent, aspect, granted}. type "skill"
+    // keeps the old skill key as its parent; weapons/vehicles/tools parents
+    // are R.gear category names. Armor is never a valid parent.
+    ["skillFocuses", "specializations"].forEach(function (listName) {
+      if (!Array.isArray(ch[listName])) { ch[listName] = []; return; }
+      ch[listName] = ch[listName].map(function (f) {
+        if (!f) return null;
+        if (f.type) return f;
+        return { type: "skill", parent: f.skill, aspect: f.aspect || "", granted: !!f.granted };
+      }).filter(function (f) { return f && f.parent; });
+    });
     // Split non-stackable equipment (weapons, armor/shield/focus, kits, devices,
     // rigs, ciphers) into individually tracked instances, each its own entry
     // with a unique id. Only consumables/ammo/Flow tonics keep pooling into a

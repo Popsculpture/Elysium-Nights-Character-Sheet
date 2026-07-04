@@ -55,7 +55,7 @@ EN.resolution = {
 
   /* ---- the d20 Method --------------------------------------------------- */
   d20: {
-    process: "1. Roll a d20.\n2. Add the relevant modifiers: Attribute modifier; Proficiency Bonus, if applicable; situational modifiers from tools, conditions, or Edge and Snag.\n3. Compare the total to the DC. Equal or higher is a success; lower is a failure.",
+    process: "1. Roll a d20.\n2. Add the relevant modifiers: Attribute modifier; your Skill, Weapon, Systems, or Vehicle Proficiency Bonus, if one applies; situational modifiers from tools, conditions, or Edge and Snag.\n3. Compare the total to the DC. Equal or higher is a success; lower is a failure.",
     modCap: "Static modifiers are capped at +15. If external buffs, advanced gear, or Flow effects would raise this total above +15, any excess is ignored. The Caliber bonus from a Skill Focus, advantage states like Edge, or an expanded critical threat range (such as from a Specialization) operate completely outside of this static cap.",
     dcTable: [
       { task: "Very Easy", dc: "5", example: "Spot an obvious clue" },
@@ -71,7 +71,7 @@ EN.resolution = {
       { type: "Flow Attack", formula: "d20 + Flow Modifier + Caliber", target: "vs Defense" },
       { type: "Flow Save DC", formula: "8 + Flow Modifier + Caliber", target: "vs DC set by attacker or effect" },
       { type: "Quick Hack", formula: "d20 + Tech Modifier + Systems Proficiency Bonus", target: "vs system DC" },
-      { type: "Contested Action", formula: "Both roll d20 + modifiers + the relevant Proficiency Bonus", target: "Higher total wins" }
+      { type: "Contested Action", formula: "Both roll d20 + modifiers + their Skill, Weapon, Systems, or Vehicle Proficiency Bonus", target: "Higher total wins" }
     ],
     crits: [
       { roll: "Natural 20", effect: "Attacks deal extra damage or trigger a special effect. Skill checks can only achieve critical success results if you have appropriate tools, gear, or situational advantages. Otherwise, treat the roll as a normal success." },
@@ -91,13 +91,13 @@ EN.resolution = {
     edgeIntro: "Edge is everything bending the job your way: raw talent, training, the right tool, a setup that went to plan.",
     edgeBuild: [
       { source: "Relevant Attribute Modifier", dice: "+1 per point" },
-      { source: "Proficiency Bonus", dice: "+2 Proficient, +4 Expertise, +6 Mastery" },
+      { source: "Skill Proficiency Bonus (or Weapon / Vehicle for those pools)", dice: "+2 Proficient, +4 Expertise, +6 Mastery" },
       { source: "Tools or Gear", dice: "+1 to 3 (varies; see tool or gear description)" },
       { source: "Allied Help Action", dice: "+1 to 3 by helper's tier, +4 max total (see Help Action)" },
       { source: "Special Preparation", dice: "+1" },
       { source: "Narrative Advantage", dice: "+1 (GM discretion)" }
     ],
-    baseNote: "Your Base Pool is your Attribute Modifier, Proficiency Bonus, and any bonuses from Tools or Gear. Allies, Special Preparation, and Narrative Advantage count as situational bonus dice, capped at +3 added to the base pool.",
+    baseNote: "Your Base Pool is your Attribute Modifier, your Skill Proficiency Bonus (or the Weapon / Vehicle Proficiency Bonus for those pools), and any bonuses from Tools or Gear. Allies, Special Preparation, and Narrative Advantage count as situational bonus dice, capped at +3 added to the base pool.",
     edgePast10Intro: "An Edge pool holds 10 dice. When your build would push past 10, do not add more dice. Convert one d10 to a d12 for every point of Edge past 10, 1 for 1, until you reach a ceiling of ten d12 dice.",
     edgePast10: [
       { built: "10 or fewer", pool: "that many d10s" },
@@ -192,10 +192,10 @@ EN.resolution = {
   autoResolve: [
     { name: "Natural 20", text: "Always succeeds in stress checks using the d20 Method." },
     { name: "Natural 1", text: "Always fails in stress checks using the d20 Method." },
-    { name: "Margin Mastery", text: "If your Attribute modifier + Proficiency Bonus is 10 or more above the DC, you succeed automatically without rolling." },
+    { name: "Margin Mastery", text: "If your Attribute modifier + the relevant Skill, Weapon, Systems, or Vehicle Proficiency Bonus is 10 or more above the DC, you succeed automatically without rolling." },
     { name: "Margin Failure", text: "If the DC is 10 or more above your maximum possible total, the attempt automatically fails." },
     { name: "Dice Pool Method", text: "Automatic success occurs if your total Edge Dice pool is at least double the GM's Snag Dice, unless extraordinary risk or opposition is present." },
-    { name: "Flow Mastery", text: "If your Flow Attribute modifier + Proficiency + relevant bonuses is 10 or more above the DC for a Flow-related check, you succeed automatically without rolling, unless the scene's tension or a special rule says otherwise." }
+    { name: "Flow Mastery", text: "If your Flow Attribute modifier + Caliber + relevant bonuses is 10 or more above the DC for a Flow-related check, you succeed automatically without rolling, unless the scene's tension or a special rule says otherwise." }
   ],
 
   /* ---- Edge and Snag ---------------------------------------------------- */

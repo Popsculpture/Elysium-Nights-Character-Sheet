@@ -236,7 +236,9 @@ EN.printSheet = (function () {
     var mod = useAgi ? agi : bod;
     var cat = GROUP_CAT[w.group], tier = cat ? eng.effectiveGearTier(ch, "weapons", cat) : "untrained";
     var prof = ((EN.rules.profTiers || {})[tier] || {}).d20 || 0;
-    return mod + prof;
+    // Caliber from a Weapon Focus naming this weapon type (outside the +15 cap)
+    var focusCal = cat && eng.weaponFocus && eng.weaponFocus(ch, cat, w.name) ? (d.caliber || 1) : 0;
+    return mod + prof + focusCal;
   }
 
   /* ---- special senses granted by features ---- */
@@ -262,9 +264,14 @@ EN.printSheet = (function () {
       var cats = proficientCats(ch, p[1]);
       if (cats.length) rows.push(el("div.ps-proc", null, [el("span.ps-fl", { text: p[0] }), el("span.ps-proc-v", { text: cats.join(", ") })]));
     });
-    var foci = (ch.skillFocuses || []).map(function (f) { var sk = EN.rules.skillByKey[f.skill]; return (sk ? sk.name : f.skill) + (f.aspect ? " (" + f.aspect + ")" : ""); });
+    function fsLabel(f) {
+      var parent = f.parent || f.skill;
+      var name = (f.type && f.type !== "skill") ? parent : ((EN.rules.skillByKey[parent] || {}).name || parent);
+      return name + (f.aspect ? " (" + f.aspect + ")" : "") + (f.granted ? " [free]" : "");
+    }
+    var foci = (ch.skillFocuses || []).map(fsLabel);
     if (foci.length) rows.push(el("div.ps-proc", null, [el("span.ps-fl", { text: "Focus" }), el("span.ps-proc-v", { text: foci.join(", ") })]));
-    var specs = (ch.specializations || []).map(function (f) { var sk = EN.rules.skillByKey[f.skill]; return (sk ? sk.name : f.skill) + (f.aspect ? " (" + f.aspect + ")" : ""); });
+    var specs = (ch.specializations || []).map(fsLabel);
     if (specs.length) rows.push(el("div.ps-proc", null, [el("span.ps-fl", { text: "Spec" }), el("span.ps-proc-v", { text: specs.join(", ") })]));
     return rows;
   }

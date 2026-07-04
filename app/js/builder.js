@@ -472,8 +472,8 @@ EN.builder = (function () {
     blocks.push(el("div.card-grid", null, (EN.backgrounds || []).map(function (b) {
       return el("div.opt-card" + (ch.background === b.key ? ".sel" : ""), {
         onclick: function () {
-          store.update(function (c) { if (c.background !== b.key) { c.background = b.key; c.backgroundSkillChoice = null; c.backgroundProfChoices = []; } });
-          if (eng.duplicateGrants(store.active()).any) toast("⚠ Duplicate Background/Class grant; second source discarded.");
+          store.update(function (c) { if (c.background !== b.key) { c.background = b.key; c.backgroundSkillChoice = null; c.backgroundProfChoices = []; pruneGrantedFocuses(c); } });
+          if (eng.unresolvedOverlaps(store.active()).length) toast("⚠ Overlapping training with your Class; claim your Free Skill Focus below.");
         }
       }, [
         el("span.check", { text: "◉" }), el("h4", { text: b.name }),
@@ -495,7 +495,7 @@ EN.builder = (function () {
         (bg.hooks || []).length ? el("div", { style: { marginTop: "10px" } }, [el("label.fl", { text: "Backstory Hooks" })].concat(
           bg.hooks.map(function (h) { return el("p.help", { text: h }); }))) : null
       ]));
-      blocks.push(duplicateWarningBox(ch));
+      blocks.push(overlapBox(ch));
     }
     return el("div", null, blocks);
   }
@@ -537,7 +537,7 @@ EN.builder = (function () {
       bg.skills.choose.options.forEach(function (opt) {
         var k = skillKey(opt) || opt;
         kids.push(pickChip(opt, "var(--accent)", ch.backgroundSkillChoice === k,
-          function () { store.update(function (c) { c.backgroundSkillChoice = k; }); }));
+          function () { store.update(function (c) { c.backgroundSkillChoice = k; pruneGrantedFocuses(c); }); }));
       });
     }
     return el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginBottom: "6px" } }, kids);
@@ -554,7 +554,7 @@ EN.builder = (function () {
       opts.forEach(function (o) {
         var color = GEAR_CHIP_COLORS[gearBucketOf(o)] || "var(--text2)";
         kids.push(pickChip(o, color, ((ch.backgroundProfChoices || [])[idx]) === o,
-          function () { store.update(function (c) { c.backgroundProfChoices = c.backgroundProfChoices || []; c.backgroundProfChoices[idx] = o; }); }));
+          function () { store.update(function (c) { c.backgroundProfChoices = c.backgroundProfChoices || []; c.backgroundProfChoices[idx] = o; pruneGrantedFocuses(c); }); }));
       });
     } else {
       var content = /:/.test(line) ? line.split(":").slice(1).join(":").trim() : line;
@@ -565,15 +565,51 @@ EN.builder = (function () {
     return el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginBottom: "6px" } }, kids);
   }
 
-  // Warning box when Background and Class grant the same skill/proficiency.
-  // Proficiency never stacks; the second source is simply discarded.
-  function duplicateWarningBox(ch) {
-    var dups = eng.duplicateGrants(ch);
-    if (!dups.any) return null;
-    var names = dups.skills.map(function (k) { return R.skillByKey[k] ? R.skillByKey[k].name : k; }).concat(dups.gear);
-    return el("div.muted-box", { style: { borderColor: "var(--warn)", color: "var(--warn)", textAlign: "left", margin: "14px 0 0" },
-      html: "⚠ <b>DUPLICATE GRANTS:</b> your Background and Class both grant <b>" + names.join(", ") +
-        "</b>. You can keep this combination, but you only benefit once from a Proficiency; two sources don't stack or advance it to Expertise; the second source is simply discarded." });
+  /* ---- Overlapping Starting Proficiencies --------------------------------
+     Background and Class granting the same Skill or gear category yields the
+     proficiency once (Proficient + Proficient = Proficient, never a tier
+     raise) plus one Free Skill Focus per overlap, claimed right here. A
+     granted Focus whose overlap disappears (the player re-picks a Background
+     or Class choice slot) is pruned so detection re-runs cleanly. */
+  function pruneGrantedFocuses(c) {
+    if (!(c.skillFocuses || []).some(function (f) { return f.granted; })) return;
+    var ov = eng.overlapGrants(c);
+    c.skillFocuses = c.skillFocuses.filter(function (f) {
+      if (!f.granted) return true;
+      return ov.some(function (o) { return o.type === f.type && o.parent === f.parent; });
+    });
+  }
+  var _overlapAspect = {};   // "type|parent" -> live draft text in the claim input
+  function overlapBox(ch) {
+    var overlaps = eng.overlapGrants(ch);
+    if (!overlaps.length) return null;
+    var open = eng.unresolvedOverlaps(ch);
+    var kids = [el("div", { html: "⚠ <b>OVERLAPPING TRAINING:</b> your Background and Class both trained you in <b>" +
+      overlaps.map(function (o) { return o.label; }).join(", ") +
+      "</b>. The proficiency applies once (Proficient + Proficient = Proficient, never Expertise), and each overlap grants a <b>Free Skill Focus</b>: 0 Training Points, valid from level 1." })];
+    open.forEach(function (o) {
+      var k = o.type + "|" + o.parent;
+      var input = el("input", { type: "text", value: _overlapAspect[k] || "", placeholder: "narrow aspect: " + focusAspectHint(o.type, o.parent),
+        style: { flex: "1 1 220px", padding: "4px 9px", fontSize: "13px" },
+        oninput: function (e) { _overlapAspect[k] = e.target.value; } });
+      kids.push(el("div", { style: { marginTop: "10px", padding: "9px 11px", border: "1px dashed var(--gold)", borderRadius: "4px" } }, [
+        el("p", { style: { margin: "0 0 7px", color: "var(--text2)", fontSize: "13px" },
+          text: "Your Background and Class both trained you in " + o.label + ". Choose a narrow focus inside " + o.label + " to gain as a Free Skill Focus." }),
+        el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
+          input,
+          el("button.btn.sm.primary", { onclick: function () {
+            var aspect = (_overlapAspect[k] || "").trim();
+            if (!aspect) { toast("Name the Focus's narrow aspect first, e.g. " + focusAspectHint(o.type, o.parent) + "."); return; }
+            delete _overlapAspect[k];
+            store.update(function (c) { c.skillFocuses = c.skillFocuses || []; c.skillFocuses.push({ type: o.type, parent: o.parent, aspect: aspect, granted: true }); });
+            toast("Free Skill Focus claimed: " + o.label + " (" + aspect + ").");
+          } }, "CLAIM FREE FOCUS")
+        ])
+      ]));
+    });
+    if (!open.length) kids.push(el("p.help", { style: { margin: "8px 0 0", color: "var(--success)" },
+      text: "All overlap Focuses claimed. Edit their aspects on the Advance tab's Skill Loadout." }));
+    return el("div.muted-box", { style: { borderColor: "var(--warn)", color: "var(--warn)", textAlign: "left", margin: "14px 0 0" } }, kids);
   }
 
   // Dismissible warning box (Dossier): ACKNOWLEDGE hides it until its content
@@ -603,9 +639,9 @@ EN.builder = (function () {
     var skillChips = d.skills.filter(function (s) { return s.tier !== "untrained"; }).map(function (s) {
       var dup = dups.skills.indexOf(s.key) !== -1;
       var viaTP = R.profOrder.indexOf(s.storedTier || "untrained") > R.profOrder.indexOf(eng.skillFloorTier(ch, s.key));
-      var c = el("span.chip", { title: srcTitle(src.skills[s.key], viaTP) + (dup ? ", duplicate grant, second source discarded" : ""),
+      var c = el("span.chip", { title: srcTitle(src.skills[s.key], viaTP) + (dup ? ", overlap grant: the proficiency applies once and grants a Free Skill Focus" : ""),
         style: { fontSize: "10.5px", color: "var(--accent)", borderColor: "var(--accent)" } },
-        (dup ? "⚠ " : "") + s.name + " · " + TIER_LABEL[s.tier]);
+        (dup ? "⊕ " : "") + s.name + " · " + TIER_LABEL[s.tier]);
       return c;
     });
     // gear buckets
@@ -615,9 +651,9 @@ EN.builder = (function () {
         if (tier === "untrained") return null;
         var dup = dups.gear.indexOf(cat) !== -1;
         var viaTP = R.profOrder.indexOf(eng.gearFloorTier(ch, bucket, cat)) < R.profOrder.indexOf(tier) || !src.gear[bucket + "|" + cat];
-        return el("span.chip", { title: srcTitle(src.gear[bucket + "|" + cat], viaTP) + (dup ? ", duplicate grant, second source discarded" : ""),
+        return el("span.chip", { title: srcTitle(src.gear[bucket + "|" + cat], viaTP) + (dup ? ", overlap grant: the proficiency applies once and grants a Free Skill Focus" : ""),
           style: { fontSize: "10.5px", color: color, borderColor: color } },
-          (dup ? "⚠ " : "") + cat + " · " + TIER_LABEL[tier]);
+          (dup ? "⊕ " : "") + cat + " · " + TIER_LABEL[tier]);
       }).filter(Boolean);
     }
     function rowIf(label, chips) {
@@ -628,14 +664,15 @@ EN.builder = (function () {
     var saveChips = R.attributes.filter(function (a) { return d.saves[a.key].focus; }).map(function (a) {
       return el("span.chip", { title: "Saving Throw Focus · d20 + mod + Caliber", style: { fontSize: "10.5px", color: "var(--gold)", borderColor: "var(--gold)" } }, a.name);
     });
-    // focuses & specializations from the Advance tab
+    // focuses & specializations from the Advance tab (and overlap grants)
     var focusChips = (ch.skillFocuses || []).map(function (f) {
-      var sk = R.skillByKey[f.skill];
-      return el("span.chip", { title: "Skill Focus (Training Points)", style: { fontSize: "10.5px", color: "var(--accent)", borderColor: "var(--accent)", borderStyle: "dashed" } }, (sk ? sk.name : f.skill) + (f.aspect ? " (" + f.aspect + ")" : ""));
+      return el("span.chip", { title: f.granted ? "Free Skill Focus from an overlapping Background/Class grant (0 TP)" : "Skill Focus (Training Points)",
+        style: { fontSize: "10.5px", color: f.granted ? "var(--gold)" : "var(--accent)", borderColor: f.granted ? "var(--gold)" : "var(--accent)", borderStyle: "dashed" } },
+        parentLabel(f.type, f.parent) + (f.aspect ? " (" + f.aspect + ")" : "") + (f.granted ? " · FREE" : ""));
     });
     var specChips = (ch.specializations || []).map(function (f) {
-      var sk = R.skillByKey[f.skill];
-      return el("span.chip", { title: "Specialization (Training Points)", style: { fontSize: "10.5px", color: "var(--flow)", borderColor: "var(--flow)", borderStyle: "dashed" } }, (sk ? sk.name : f.skill) + (f.aspect ? " (" + f.aspect + ")" : ""));
+      return el("span.chip", { title: "Specialization (Training Points)", style: { fontSize: "10.5px", color: "var(--flow)", borderColor: "var(--flow)", borderStyle: "dashed" } },
+        parentLabel(f.type, f.parent) + (f.aspect ? " (" + f.aspect + ")" : ""));
     });
     var rows = [
       rowIf("Skills", skillChips),
@@ -659,16 +696,10 @@ EN.builder = (function () {
       pendingBox = dismissibleWarn("dossier-pending", pendKey,
         "⚠ <b>UNSELECTED OPTIONS</b>; you still have picks waiting. " + parts.join(" &nbsp;·&nbsp; ") + ". Head back to those tabs and click the dashed chips to lock them in.");
     }
-    // duplicate-grant warning (acknowledgeable; the ⚠ chips above always remain)
-    var dupBox = null;
-    if (dups.any) {
-      var dupNames = dups.skills.map(function (k) { return R.skillByKey[k] ? R.skillByKey[k].name : k; }).concat(dups.gear);
-      dupBox = dismissibleWarn("dossier-dups", dupNames.join("|"),
-        "⚠ <b>DUPLICATE GRANTS:</b> your Background and Class both grant <b>" + dupNames.join(", ") +
-        "</b>. You can keep this combination, but you only benefit once from a Proficiency; two sources don't stack or advance it to Expertise; the second source is simply discarded.");
-    }
+    // overlap prompts: unresolved Free Skill Focus claims block sheet finalize
+    var dupBox = eng.unresolvedOverlaps(ch).length ? overlapBox(ch) : null;
     return EN.ui.panel("Skills & Proficiencies", "COMBINED · BACKGROUND + CLASS + ADVANCE", [
-      el("p.help", { style: { margin: "0 0 8px" }, text: "Everything granted or purchased, at its effective tier. Hover a chip for its source. ⚠ marks duplicate Background/Class grants; the second source is discarded." })
+      el("p.help", { style: { margin: "0 0 8px" }, text: "Everything granted or purchased, at its effective tier. Hover a chip for its source. ⊕ marks an overlapping Background/Class grant; the proficiency applies once and the overlap grants a Free Skill Focus." })
     ].concat(rows).concat([pendingBox, dupBox]), { corners: true });
   }
 
@@ -697,8 +728,8 @@ EN.builder = (function () {
       var c = eng.getClass(k); if (!c) return null;
       return el("div.opt-card" + (ch.class === k ? ".sel" : ""), {
         onclick: function () {
-          store.update(function (cc) { if (cc.class !== k) { cc.class = k; cc.subclass = null; cc.classSkillChoices = []; cc.classGearChoices = { weapons: [], armor: [], tools: [], vehicles: [] }; cc.gambits = []; } });
-          if (eng.duplicateGrants(store.active()).any) toast("⚠ Duplicate Background/Class grant; second source discarded.");
+          store.update(function (cc) { if (cc.class !== k) { cc.class = k; cc.subclass = null; cc.classSkillChoices = []; cc.classGearChoices = { weapons: [], armor: [], tools: [], vehicles: [] }; cc.gambits = []; pruneGrantedFocuses(cc); } });
+          if (eng.unresolvedOverlaps(store.active()).length) toast("⚠ Overlapping training with your Background; claim your Free Skill Focus below.");
         }
       }, [
         el("span.check", { text: "◉" }),
@@ -745,7 +776,7 @@ EN.builder = (function () {
         profChipRow("Saves", sp.saves, "var(--gold)")
       ]));
       blocks.push(EN.ui.panel(cls.name + " · Core Traits", "CLASS.SYS", corePb, { corners: true }));
-      blocks.push(duplicateWarningBox(ch));
+      blocks.push(overlapBox(ch));
 
       // subclass
       if ((cls.subclasses || []).length) {
@@ -840,6 +871,7 @@ EN.builder = (function () {
           var a = c.classGearChoices[bucket] = c.classGearChoices[bucket] || [];
           a[idx] = option;
         }
+        pruneGrantedFocuses(c);   // a re-pick can create or dissolve an overlap
       });
     }
     arr.forEach(function (entry) {
@@ -974,31 +1006,78 @@ EN.builder = (function () {
       if (prev === "untrained" && eng.skillFloorTier(c, key) !== "proficient") delete c.proficiencies.skills[key];
       else c.proficiencies.skills[key] = prev;
       var newIdx = Math.max(R.profOrder.indexOf(prev), R.profOrder.indexOf(floor));
-      if (newIdx < R.profOrder.indexOf("expertise")) c.specializations = (c.specializations || []).filter(function (x) { return x.skill !== key; });
-      if (newIdx < R.profOrder.indexOf("proficient")) c.skillFocuses = (c.skillFocuses || []).filter(function (x) { return x.skill !== key; });
+      if (newIdx < R.profOrder.indexOf("expertise")) c.specializations = (c.specializations || []).filter(function (x) { return !(x.type === "skill" && x.parent === key); });
+      if (newIdx < R.profOrder.indexOf("proficient")) c.skillFocuses = (c.skillFocuses || []).filter(function (x) { return !(x.type === "skill" && x.parent === key); });
     });
   }
-  function toggleFocus(ch, key) {
-    var has = (ch.skillFocuses || []).some(function (x) { return x.skill === key; });
-    if (has) { store.update(function (c) { c.skillFocuses = (c.skillFocuses || []).filter(function (x) { return x.skill !== key; }); }); return; }
-    if (ch.level < TP.FOCUS_LEVEL_REQ) { toast("Skill Focus requires level " + TP.FOCUS_LEVEL_REQ + "+."); return; }
-    if (R.profOrder.indexOf(eng.effectiveSkillTier(ch, key)) < R.profOrder.indexOf("proficient")) { toast("Be Proficient in the skill first."); return; }
+
+  /* ---- Focus & Specialization purchases (four parent types) -------------
+     type: "skill" | "weapons" | "vehicles" | "tools" (Armor is never a valid
+     parent, so no armor row ever offers these). parent: a skill key or an
+     R.gear category name. Multiple Focuses may sit on one parent as long as
+     each names a clearly distinct aspect; exactly one Specialization per
+     parent. A `granted` Focus is the Free Skill Focus from an Overlapping
+     Starting Proficiency: 0 TP and valid from level 1. */
+  function parentTier(ch, type, parent) {
+    return type === "skill" ? eng.effectiveSkillTier(ch, parent) : eng.effectiveGearTier(ch, type, parent);
+  }
+  function parentLabel(type, parent) {
+    if (type !== "skill") return parent;
+    var sk = R.skillByKey[parent]; return sk ? sk.name : parent;
+  }
+  function focusAspectHint(type, parent) {
+    if (type === "weapons") return "a weapon type: Machine Pistol, or a named Signature Weapon";
+    if (type === "vehicles") return "a vehicle type: Motorcycle, VTOL";
+    if (type === "tools") return "a kind of work: Surgical Support, Demolitions";
+    return R.focusExamples[parent] || "…";
+  }
+  function addFocus(ch, type, parent) {
+    var existing = (ch.skillFocuses || []).filter(function (x) { return x.type === type && x.parent === parent; });
+    if (existing.some(function (x) { return !(x.aspect || "").trim(); })) { toast("Name the existing Focus's aspect first; each Focus on a parent needs a clearly distinct aspect."); return; }
+    if (ch.level < TP.FOCUS_LEVEL_REQ) { toast("Skill Focus requires level " + TP.FOCUS_LEVEL_REQ + "+ (Free overlap Focuses are the exception)."); return; }
+    if (R.profOrder.indexOf(parentTier(ch, type, parent)) < R.profOrder.indexOf("proficient")) { toast("Be Proficient in " + parentLabel(type, parent) + " first."); return; }
     if (eng.trainingBudget(ch).remaining < TP.FOCUS_COST) { toast("Need " + TP.FOCUS_COST + " Training Point."); return; }
-    store.update(function (c) { c.skillFocuses = c.skillFocuses || []; c.skillFocuses.push({ skill: key, aspect: "" }); });
+    store.update(function (c) { c.skillFocuses = c.skillFocuses || []; c.skillFocuses.push({ type: type, parent: parent, aspect: "", granted: false }); });
   }
-  function toggleSpec(ch, key) {
-    var has = (ch.specializations || []).some(function (x) { return x.skill === key; });
-    if (has) { store.update(function (c) { c.specializations = (c.specializations || []).filter(function (x) { return x.skill !== key; }); }); return; }
+  function removeFocus(ch, f) {
+    store.update(function (c) { c.skillFocuses = (c.skillFocuses || []).filter(function (x) { return x !== f; }); });
+  }
+  function toggleSpec(ch, type, parent) {
+    var has = (ch.specializations || []).some(function (x) { return x.type === type && x.parent === parent; });
+    if (has) { store.update(function (c) { c.specializations = (c.specializations || []).filter(function (x) { return !(x.type === type && x.parent === parent); }); }); return; }
     if (ch.level < TP.SPEC_LEVEL_REQ) { toast("Specialization requires level " + TP.SPEC_LEVEL_REQ + "+."); return; }
-    if (R.profOrder.indexOf(eng.effectiveSkillTier(ch, key)) < R.profOrder.indexOf("expertise")) { toast("Need Expertise in the skill first."); return; }
+    if (R.profOrder.indexOf(parentTier(ch, type, parent)) < R.profOrder.indexOf("expertise")) { toast("Need Expertise in " + parentLabel(type, parent) + " first."); return; }
     if (eng.trainingBudget(ch).remaining < TP.SPEC_COST) { toast("Need " + TP.SPEC_COST + " Training Point."); return; }
-    store.update(function (c) { c.specializations = c.specializations || []; c.specializations.push({ skill: key, aspect: "" }); });
+    store.update(function (c) { c.specializations = c.specializations || []; c.specializations.push({ type: type, parent: parent, aspect: "" }); });
   }
-  function aspectInput(ch, listName, key) {
-    var obj = (ch[listName] || []).find(function (x) { return x.skill === key; });
-    return el("input", { type: "text", value: (obj && obj.aspect) || "", placeholder: "aspect: " + (R.focusExamples[key] || "…"),
-      style: { width: "200px", padding: "3px 8px", fontSize: "13px" },
-      oninput: function (e) { store.update(function (c) { var o = (c[listName] || []).find(function (x) { return x.skill === key; }); if (o) o.aspect = e.target.value; }, { silent: true }); } });
+  function focusAspectInput(ch, listName, rec) {
+    return el("input", { type: "text", value: rec.aspect || "", placeholder: "aspect: " + focusAspectHint(rec.type, rec.parent),
+      style: { width: "220px", padding: "3px 8px", fontSize: "13px" },
+      oninput: function (e) { var v = e.target.value; store.update(function (c) { var o = (c[listName] || []).find(function (x) { return x === rec; }); if (o) o.aspect = v; }, { silent: true }); } });
+  }
+  // the Focus/Spec purchase sub-row shared by skill rows and gear rows
+  function focusSpecSub(ch, type, parent) {
+    var tIdx = R.profOrder.indexOf(parentTier(ch, type, parent));
+    var sub = [];
+    var focuses = (ch.skillFocuses || []).filter(function (x) { return x.type === type && x.parent === parent; });
+    var spec = (ch.specializations || []).find(function (x) { return x.type === type && x.parent === parent; });
+    if (tIdx >= R.profOrder.indexOf("proficient")) {
+      focuses.forEach(function (f) {
+        sub.push(el("span.chip", { title: f.granted ? "Free Skill Focus from an overlapping Background/Class grant (0 TP, valid from level 1)" : "Skill Focus (1 TP): +Caliber on rolls inside the aspect",
+          style: { color: "var(--gold)", borderColor: "var(--gold)", fontSize: "10px" } }, f.granted ? "FREE FOCUS" : "FOCUS"));
+        sub.push(focusAspectInput(ch, "skillFocuses", f));
+        sub.push(el("button.btn.sm.ghost", { title: f.granted ? "Drop this Free Focus (the overlap prompt reopens)" : "Refund this Focus",
+          style: { padding: "2px 8px", color: "var(--text3)" }, onclick: function () { removeFocus(ch, f); } }, "✕"));
+      });
+      sub.push(el("button.btn.sm", { title: "Skill Focus · 1 TP · L3+ · adds Caliber to rolls inside a narrow aspect of " + parentLabel(type, parent),
+        style: { color: "var(--gold)", borderColor: "var(--gold)" }, onclick: function () { addFocus(ch, type, parent); } }, "+ Focus · 1TP"));
+    }
+    if (tIdx >= R.profOrder.indexOf("expertise")) {
+      sub.push(el("button.btn.sm" + (spec ? ".flow" : ""), { title: "Specialization · 1 TP · L6+ · one per parent · crit 19-20 and +2 Edge Dice inside the aspect",
+        onclick: function () { toggleSpec(ch, type, parent); } }, spec ? "✓ Spec" : "+ Spec · 1TP"));
+      if (spec) sub.push(focusAspectInput(ch, "specializations", spec));
+    }
+    return sub.length ? el("div.row.wrap", { style: { gap: "8px", marginTop: "6px", alignItems: "center" } }, sub) : null;
   }
 
   // refund a skill down to a specific tier (used by the purchase log)
@@ -1009,8 +1088,8 @@ EN.builder = (function () {
       if (toTier === "untrained" && floor !== "proficient") delete c.proficiencies.skills[key];
       else c.proficiencies.skills[key] = toTier;
       var newIdx = Math.max(R.profOrder.indexOf(toTier), R.profOrder.indexOf(floor));
-      if (newIdx < R.profOrder.indexOf("expertise")) c.specializations = (c.specializations || []).filter(function (x) { return x.skill !== key; });
-      if (newIdx < R.profOrder.indexOf("proficient")) c.skillFocuses = (c.skillFocuses || []).filter(function (x) { return x.skill !== key; });
+      if (newIdx < R.profOrder.indexOf("expertise")) c.specializations = (c.specializations || []).filter(function (x) { return !(x.type === "skill" && x.parent === key); });
+      if (newIdx < R.profOrder.indexOf("proficient")) c.skillFocuses = (c.skillFocuses || []).filter(function (x) { return !(x.type === "skill" && x.parent === key); });
     });
   }
 
@@ -1035,8 +1114,13 @@ EN.builder = (function () {
   function refundGearTo(ch, bucket, cat, toTier) {
     store.update(function (c) {
       ensureGear(c, bucket);
-      if (toTier === "untrained" && eng.gearFloorTier(c, bucket, cat) !== "proficient") delete c.proficiencies[bucket][cat];
+      var floor = eng.gearFloorTier(c, bucket, cat);
+      if (toTier === "untrained" && floor !== "proficient") delete c.proficiencies[bucket][cat];
       else c.proficiencies[bucket][cat] = toTier;
+      // dropping the category strips its Focuses/Specialization, same as skills
+      var newIdx = Math.max(R.profOrder.indexOf(toTier), R.profOrder.indexOf(floor));
+      if (newIdx < R.profOrder.indexOf("expertise")) c.specializations = (c.specializations || []).filter(function (x) { return !(x.type === bucket && x.parent === cat); });
+      if (newIdx < R.profOrder.indexOf("proficient")) c.skillFocuses = (c.skillFocuses || []).filter(function (x) { return !(x.type === bucket && x.parent === cat); });
     });
   }
   function refundGear(ch, bucket, cat) {
@@ -1069,10 +1153,14 @@ EN.builder = (function () {
         right.push(el("button.btn.sm" + (blocked ? "" : ".primary"), { disabled: blocked, title: why, style: { minWidth: "138px" }, onclick: function () { upgradeGear(ch, bucket, cat); } }, UP_VERB[next] + " (" + cost + " TP)"));
       } else right.push(el("span.help", { style: { margin: 0, minWidth: "138px", textAlign: "right" }, text: "Max tier reached" }));
     }
-    return el("div.row", { style: { gap: "10px", alignItems: "center", padding: "7px 2px", borderBottom: "1px solid rgba(35,48,68,.5)" } }, [
+    var head = el("div.row", { style: { gap: "10px", alignItems: "center" } }, [
       el("div", { style: { flex: 1, minWidth: "120px" } }, [el("span", { text: cat }), granted ? el("span.badge", { style: { marginLeft: "8px" }, title: "Granted free by class/background", text: "GRANTED" }) : null]),
       el("div.row", { style: { gap: "8px", alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" } }, right)
     ]);
+    // Weapon, Tool, and Vehicle categories take Focus/Specialization like
+    // skills do. Armor is never a valid parent, so armor rows never offer them.
+    var subRow = bucket === "armor" ? null : focusSpecSub(ch, bucket, cat);
+    return el("div", { style: { padding: "7px 2px", borderBottom: "1px solid rgba(35,48,68,.5)" } }, [head, subRow]);
   }
   function gearSection(ch, bucket, title, note) {
     return [el("div.section-title", { style: { margin: "16px 0 2px" } }, [document.createTextNode(title), el("span.line")]),
@@ -1091,12 +1179,12 @@ EN.builder = (function () {
       }
     });
     (ch.skillFocuses || []).forEach(function (f) {
-      var sk = R.skillByKey[f.skill];
-      out.push({ label: (sk ? sk.name : f.skill) + " · Focus" + (f.aspect ? " (" + f.aspect + ")" : ""), cost: TP.FOCUS_COST, refund: function () { store.update(function (c) { c.skillFocuses = (c.skillFocuses || []).filter(function (x) { return x !== f; }); }); } });
+      out.push({ label: parentLabel(f.type, f.parent) + " · Focus" + (f.aspect ? " (" + f.aspect + ")" : "") + (f.granted ? " · FREE, overlap grant" : ""),
+        cost: f.granted ? 0 : TP.FOCUS_COST, refund: function () { removeFocus(ch, f); } });
     });
     (ch.specializations || []).forEach(function (sp) {
-      var sk = R.skillByKey[sp.skill];
-      out.push({ label: (sk ? sk.name : sp.skill) + " · Specialization" + (sp.aspect ? " (" + sp.aspect + ")" : ""), cost: TP.SPEC_COST, refund: function () { store.update(function (c) { c.specializations = (c.specializations || []).filter(function (x) { return x !== sp; }); }); } });
+      out.push({ label: parentLabel(sp.type, sp.parent) + " · Specialization" + (sp.aspect ? " (" + sp.aspect + ")" : ""),
+        cost: TP.SPEC_COST, refund: function () { store.update(function (c) { c.specializations = (c.specializations || []).filter(function (x) { return x !== sp; }); }); } });
     });
     ["weapons", "armor", "tools", "vehicles"].forEach(function (bucket) {
       R.gear[bucket].forEach(function (cat) {
@@ -1154,16 +1242,7 @@ EN.builder = (function () {
     ]);
 
     // Focus / Specialization appear only once requirements are met
-    var sub = [];
-    if (effIdx >= R.profOrder.indexOf("proficient")) {
-      sub.push(el("button.btn.sm" + (s.focus ? ".primary" : ""), { title: "Skill Focus · 1 TP · L3+ · grants Edge on focused checks", onclick: function () { toggleFocus(ch, s.key); } }, s.focus ? "✓ Focus" : "+ Focus · 1TP"));
-      if (s.focus) sub.push(aspectInput(ch, "skillFocuses", s.key));
-    }
-    if (effIdx >= R.profOrder.indexOf("expertise")) {
-      sub.push(el("button.btn.sm" + (s.specialization ? ".flow" : ""), { title: "Specialization · 1 TP · L6+ · expands crit range", onclick: function () { toggleSpec(ch, s.key); } }, s.specialization ? "✓ Spec" : "+ Spec · 1TP"));
-      if (s.specialization) sub.push(aspectInput(ch, "specializations", s.key));
-    }
-    var subRow = sub.length ? el("div.row.wrap", { style: { gap: "8px", marginTop: "6px" } }, sub) : null;
+    var subRow = focusSpecSub(ch, "skill", s.key);
     return el("div", { style: { padding: "8px 2px", borderBottom: "1px solid rgba(35,48,68,.5)" } }, [head, subRow]);
   }
 
@@ -1190,7 +1269,7 @@ EN.builder = (function () {
       ], { corners: true, attention: b.remaining > 0, dismissKey: tpKey, attentionTitle: "Unspent Training Points; click to dismiss" }),
       el("div", { style: { height: "14px" } }),
       collapsiblePanel("gearProficiencies", "Gear Proficiencies", "WEAPONS · ARMOR · TOOLS · VEHICLES", [].concat(
-        [el("p.help", { text: "Acquire a category for 1 TP. Weapons, Tools, and Vehicles upgrade to Expert (L6+) and Mastery (L10+) for 2 TP each; Armor can be acquired but not upgraded." })],
+        [el("p.help", { text: "Acquire a category for 1 TP. Weapons, Tools, and Vehicles upgrade to Expert (L6+) and Mastery (L10+) for 2 TP each, and can carry a Focus (1 TP, L3+) or Specialization (1 TP, L6+) on a narrow aspect. Armor can be acquired but never upgraded, and never takes a Focus or Specialization." })],
         gearSection(ch, "weapons", "Weapon Proficiencies", null),
         gearSection(ch, "armor", "Armor Proficiencies", "Acquire only; cannot be raised to higher tiers."),
         gearSection(ch, "tools", "Tool Proficiencies", null),
@@ -1716,9 +1795,11 @@ EN.builder = (function () {
       case "identity": return !!(ch.name || ch.identity.concept);
       case "attributes": return ch.attributeMethod === "manual" || (ch.attributeMethod === "pointbuy" ? true : Object.keys(ch.arrayAssign || {}).length === 6);
       case "species": return !!(ch.species && ch.lineage && (ch.lineageFeatures || []).length);
-      case "background": return !!ch.background && !eng.pendingChoices(ch).some(function (p) { return p.source === "Background"; });
+      case "background": return !!ch.background && !eng.pendingChoices(ch).some(function (p) { return p.source === "Background"; }) &&
+        !eng.unresolvedOverlaps(ch).length;
       case "class": return !!(ch.class && (!(eng.getClass(ch.class) || {}).subclasses || !((eng.getClass(ch.class) || {}).subclasses || []).length || ch.subclass)) &&
-        !eng.pendingChoices(ch).some(function (p) { return p.source === "Class"; });
+        !eng.pendingChoices(ch).some(function (p) { return p.source === "Class"; }) &&
+        !eng.unresolvedOverlaps(ch).length;
       case "advance": return advanceElectionsComplete(ch);
       case "dossier": return ["identity", "attributes", "species", "background", "class", "advance"].every(function (k) { return stepComplete(ch, k); });
       default: return false;
