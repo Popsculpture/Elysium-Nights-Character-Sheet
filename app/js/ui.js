@@ -185,6 +185,29 @@ EN.ui = (function () {
     }, 50);
   }
 
+  /* A single d20 for the roll tray, drawn as a hexagon token with a faint
+     inner triangle so it reads as a twenty-sider next to the pool dice.
+     opts: { animating, kept, dropped, crit, fumble }. When animating it
+     carries data attrs so animatePoolRoll (sides 20) scrambles it. */
+  function d20Face(value, opts) {
+    opts = opts || {};
+    var edge = opts.crit ? "var(--gold)" : opts.fumble ? "var(--danger)" : opts.kept ? "var(--accent)" : "var(--border2)";
+    var num = opts.animating ? "var(--text)" : opts.dropped ? "var(--text4)" : opts.crit ? "var(--gold)" : opts.fumble ? "var(--danger)" : "var(--text)";
+    var shown = opts.animating ? "?" : String(value);
+    var glow = (opts.kept && !opts.animating) ? "filter:drop-shadow(0 0 5px " + edge + ");" : "";
+    var svg = '<svg viewBox="0 0 100 100" width="34" height="35" aria-hidden="true" style="' + glow + '">'
+      + '<polygon points="50,3 92,27 92,73 50,97 8,73 8,27" fill="rgba(0,0,0,.35)" style="stroke:' + edge + '" stroke-width="4" stroke-linejoin="round"/>'
+      + '<polygon points="27,34 73,34 50,74" fill="none" style="stroke:' + edge + '" stroke-width="2.5" stroke-linejoin="round" opacity=".4"/>'
+      + '<text x="50" y="47" text-anchor="middle" dominant-baseline="central" style="fill:' + num + ';font-family:var(--mono);font-weight:700" font-size="33">' + shown + '</text>'
+      + '</svg>';
+    return el("span.tb-die" + (opts.animating ? ".rolling" : ""), {
+      title: "d20" + (opts.animating ? "" : ": " + value + (opts.dropped ? " (dropped)" : opts.kept ? " (kept)" : "")),
+      html: svg,
+      dataset: opts.animating ? { die: "1", final: String(value), sides: "20" } : null,
+      style: { display: "inline-flex", alignItems: "center", opacity: (opts.dropped && !opts.animating) ? 0.4 : 1 }
+    });
+  }
+
   return { el: el, append: append, clear: clear, frag: frag, panel: panel, sectionTitle: sectionTitle, stat: stat, toast: toast, renderText: renderText, applyInline: applyInline,
-           dieFace: dieFace, animatePoolRoll: animatePoolRoll };
+           dieFace: dieFace, d20Face: d20Face, animatePoolRoll: animatePoolRoll };
 })();

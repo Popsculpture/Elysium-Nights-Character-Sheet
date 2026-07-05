@@ -60,6 +60,178 @@ EN.combatView = (function () {
     closePops(); EN.app.render();
   });
 
+  /* ---------- Roll tray: the interactive d20 roll modal ------------------
+     Transient, rebuilt from _rollTray on every render (the same state->render
+     pattern the Deep Run and Tech Bench pool rollers use). ctx is a plain data
+     snapshot captured when a HIT number is clicked, so the modal never reaches
+     back into the weapon render scope. */
+  var _rollTray = { open: false, ctx: null, sel: {}, help: 0, manual: 0, result: null, animating: false };
+  function openRollTray(ctx) {
+    _rollTray = { open: true, ctx: ctx, sel: {}, help: 0, manual: 0, result: null, animating: false };
+    EN.app.render();
+  }
+  function closeRollTray() {
+    _rollTray.open = false; _rollTray.result = null; _rollTray.animating = false;
+    EN.app.render();
+  }
+  function rollTrayToggle(id) {
+    _rollTray.sel[id] = !_rollTray.sel[id];
+    _rollTray.result = null;   // a changed pick invalidates a shown result
+    EN.app.render();
+  }
+  function rollTraySpec() {
+    var ctx = _rollTray.ctx || {};
+    var selIds = Object.keys(_rollTray.sel).filter(function (id) { return _rollTray.sel[id]; });
+    return eng.composeRollSpec({
+      baseMods: ctx.baseMods || [], baseEdge: ctx.baseEdge || 0, baseSnag: ctx.baseSnag || 0,
+      selected: selIds, helpValue: _rollTray.help, manual: _rollTray.manual,
+      shaken: ctx.shaken, critMin: ctx.critMin || 20
+    });
+  }
+  function rollTrayCommit() {
+    _rollTray.result = eng.rollD20(rollTraySpec());
+    _rollTray.animating = true;
+    EN.app.render();
+    // the freshly rendered dice carry data attrs; scramble then settle
+    EN.ui.animatePoolRoll(document.querySelector('[data-roll="d20tray"]'), function () {
+      _rollTray.animating = false; EN.app.render();
+    });
+  }
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && _rollTray.open) closeRollTray();
+  });
+  function trayStepBtn(txt, fn) {
+    return el("button", { onclick: fn, style: { width: "24px", height: "24px", lineHeight: "1", background: "var(--bg3)", color: "var(--text2)", border: "1px solid var(--border2)", borderRadius: "4px", cursor: "pointer", fontFamily: "var(--mono)", fontSize: "14px" } }, txt);
+  }
+  function trayToggleChip(t) {
+    var on = !!_rollTray.sel[t.id];
+    var blocked = t.kind === "edge" && _rollTray.ctx && _rollTray.ctx.shaken;   // Shaken: no benefit from Edge
+    var col = t.kind === "edge" ? "var(--accent)" : t.kind === "snag" ? "var(--danger)" : "var(--gold)";
+    return el("span.chip", {
+      title: (blocked ? "Shaken: you cannot benefit from Edge right now. " : "") + t.note,
+      style: { fontSize: "11px", cursor: blocked ? "not-allowed" : "pointer", userSelect: "none", opacity: blocked ? 0.4 : 1,
+        color: on ? "var(--bg1)" : col, borderColor: col, background: on ? col : "transparent", fontWeight: on ? 700 : 400 },
+      onclick: blocked ? null : function () { rollTrayToggle(t.id); }
+    }, (t.kind === "snag" ? "− " : "+ ") + t.label);
+  }
+  function rollTrayModal() {
+    if (!_rollTray.open || !_rollTray.ctx) return null;
+    var ctx = _rollTray.ctx, spec = rollTraySpec();
+    var net = spec.edge - spec.snag, netState = net > 0 ? "edge" : net < 0 ? "snag" : "flat";
+    var flatSum = spec.mods.reduce(function (s, m) { return s + m.value; }, 0);
+
+    // AUTO row: the sheet's locked modifiers + any baseline Snag/Edge
+    var autoChips = (ctx.baseMods || []).map(function (m) {
+      return el("span.chip", { style: { fontSize: "10px", color: "var(--text2)", borderColor: "var(--border2)" }, text: m.label + " " + eng.fmtMod(m.value) });
+    });
+    (ctx.autoSnag || []).forEach(function (why) {
+      autoChips.push(el("span.chip", { title: why, style: { fontSize: "10px", color: "var(--danger)", borderColor: "var(--danger)" }, text: "SNAG · " + why }));
+    });
+    (ctx.autoEdge || []).forEach(function (why) {
+      autoChips.push(el("span.chip", { title: why, style: { fontSize: "10px", color: "var(--accent)", borderColor: "var(--accent)" }, text: "EDGE · " + why }));
+    });
+
+    var toggles = eng.attackTogglesFor({ melee: ctx.melee, ranged: ctx.ranged || ctx.thrownItem, traits: ctx.traits });
+    var edgeToggles = toggles.filter(function (t) { return t.kind === "edge"; });
+    var snagToggles = toggles.filter(function (t) { return t.kind === "snag"; });
+
+    function sec(label, kids) {
+      return el("div", { style: { padding: "10px 14px", borderTop: "1px solid var(--border)" } },
+        [el("div", { style: { fontFamily: "var(--disp)", fontSize: "9.5px", letterSpacing: ".18em", color: "var(--text3)", marginBottom: "7px" }, text: label })].concat(kids));
+    }
+
+    var netLabel = netState === "edge" ? "EDGE · roll 2d20, keep the higher"
+      : netState === "snag" ? "SNAG · roll 2d20, keep the lower" : "STRAIGHT · roll one d20";
+    var netColor = netState === "edge" ? "var(--accent)" : netState === "snag" ? "var(--danger)" : "var(--text2)";
+    var netMath = (spec.edge || spec.snag) ? (spec.edge + " Edge − " + spec.snag + " Snag") : "no Edge or Snag";
+
+    // result / animation
+    var res = _rollTray.result, resultBlock = null;
+    if (res) {
+      var diceEls = res.dice.map(function (v, i) {
+        var kept = i === res.keptIndex;
+        return EN.ui.d20Face(v, {
+          animating: _rollTray.animating,
+          kept: kept && !_rollTray.animating,
+          dropped: !kept && res.dice.length > 1 && !_rollTray.animating,
+          crit: kept && res.crit && !_rollTray.animating,
+          fumble: kept && res.fumble && !_rollTray.animating
+        });
+      });
+      var diceRow = el("div", { dataset: { roll: "d20tray" }, style: { display: "flex", gap: "12px", alignItems: "center", justifyContent: "center", margin: "4px 0 8px" } }, diceEls);
+      if (_rollTray.animating) {
+        resultBlock = el("div", { style: { textAlign: "center" } }, [diceRow,
+          el("div.mono", { style: { fontSize: "13px", color: "var(--text3)" }, text: "rolling…" })]);
+      } else {
+        var lines = [{ label: "d20 (natural)", value: res.nat, raw: true }].concat(res.mods.map(function (m) { return { label: m.label, value: m.value }; }));
+        var breakdown = el("div", { style: { fontFamily: "var(--mono)", fontSize: "11.5px", color: "var(--text2)", lineHeight: "1.7", margin: "0 auto", maxWidth: "260px" } },
+          lines.map(function (ln) {
+            return el("div.row.between", null, [el("span", { text: ln.label }), el("span", { style: { color: "var(--text)" }, text: ln.raw ? String(ln.value) : eng.fmtMod(ln.value) })]);
+          }));
+        var flag = res.crit ? el("div", { style: { color: "var(--gold)", fontFamily: "var(--disp)", fontWeight: 700, letterSpacing: ".1em", fontSize: "13px" }, text: "◆ CRITICAL HIT" })
+          : res.fumble ? el("div", { style: { color: "var(--danger)", fontFamily: "var(--disp)", fontWeight: 700, letterSpacing: ".1em", fontSize: "13px" }, text: "✖ FUMBLE (Nat 1)" }) : null;
+        resultBlock = el("div", { style: { textAlign: "center" } }, [
+          diceRow, breakdown,
+          el("div", { style: { margin: "8px 0 2px" } }, [
+            el("span.mono", { style: { fontSize: "34px", color: res.crit ? "var(--gold)" : res.fumble ? "var(--danger)" : "var(--accent)", textShadow: "0 0 14px currentColor" }, text: String(res.total) })
+          ]),
+          el("div.mono", { style: { fontSize: "9.5px", letterSpacing: ".14em", color: "var(--text3)" }, text: "TOTAL" }),
+          flag
+        ]);
+      }
+    }
+
+    var body = el("div", null, [
+      // AUTO
+      sec("AUTO · ALREADY COUNTED", [el("div.row.wrap", { style: { gap: "5px" } }, autoChips.length ? autoChips : [el("span", { style: { fontSize: "11px", color: "var(--text3)" }, text: "No baseline modifiers." })])]),
+      // TOGGLES
+      sec("SITUATIONAL · TAP TO APPLY", [
+        edgeToggles.length ? el("div.row.wrap", { style: { gap: "5px", marginBottom: snagToggles.length ? "6px" : "0" } }, edgeToggles.map(trayToggleChip)) : null,
+        snagToggles.length ? el("div.row.wrap", { style: { gap: "5px" } }, snagToggles.map(trayToggleChip)) : null,
+        ctx.shaken ? el("p.help", { style: { margin: "6px 0 0", color: "var(--warn)", fontSize: "10px" }, text: "Shaken: you cannot benefit from Edge from any source." }) : null,
+        el("div", { style: { marginTop: "9px", display: "flex", gap: "16px", flexWrap: "wrap" } }, [
+          el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } }, [el("span", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".1em" }, text: "HELP" })].concat([0, 2, 3, 4].map(function (v) {
+            var on = _rollTray.help === v;
+            return el("span.chip", { style: { fontSize: "11px", cursor: "pointer", color: on ? "var(--bg1)" : "var(--gold)", borderColor: "var(--gold)", background: on ? "var(--gold)" : "transparent", fontWeight: on ? 700 : 400 },
+              title: v === 0 ? "No ally assist" : "Ally assist " + eng.fmtMod(v) + " (Proficient / Expertise / Mastery). Stacks with Edge.",
+              onclick: function () { _rollTray.help = v; _rollTray.result = null; EN.app.render(); } }, v === 0 ? "none" : eng.fmtMod(v));
+          }))),
+          el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } }, [
+            el("span", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".1em" }, text: "OTHER" }),
+            trayStepBtn("−", function () { _rollTray.manual -= 1; _rollTray.result = null; EN.app.render(); }),
+            el("span.mono", { style: { fontSize: "13px", minWidth: "32px", textAlign: "center", color: _rollTray.manual ? "var(--text)" : "var(--text3)" }, text: eng.fmtMod(_rollTray.manual) }),
+            trayStepBtn("+", function () { _rollTray.manual += 1; _rollTray.result = null; EN.app.render(); })
+          ])
+        ])
+      ]),
+      // NET + ROLL
+      el("div", { style: { padding: "11px 14px", borderTop: "1px solid var(--border)" } }, [
+        el("div.row.between", { style: { alignItems: "baseline", marginBottom: "9px" } }, [
+          el("span.mono", { style: { fontSize: "11px", color: netColor }, text: netLabel }),
+          el("span.mono", { style: { fontSize: "13px", color: "var(--text)" }, title: netMath, text: "MOD " + eng.fmtMod(flatSum) + (ctx.critMin < 20 ? " · crit " + ctx.critMin + "-20" : "") })
+        ]),
+        el("button.btn.primary", { style: { width: "100%", justifyContent: "center", fontSize: "14px", padding: "10px" },
+          onclick: function () { if (!_rollTray.animating) rollTrayCommit(); } }, res ? "⟳ ROLL AGAIN" : "⚄ ROLL"),
+        resultBlock ? el("div", { style: { marginTop: "12px" } }, [resultBlock]) : null
+      ])
+    ]);
+
+    var header = el("div.row.between", { style: { alignItems: "center", padding: "11px 14px", borderBottom: "1px solid var(--border)" } }, [
+      el("div", null, [
+        el("div", { style: { fontFamily: "var(--disp)", fontWeight: 700, fontSize: "15px", letterSpacing: ".04em", color: "var(--text)" }, text: ctx.weaponName }),
+        el("div.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".06em" }, text: ctx.subtype })
+      ]),
+      el("button", { title: "Close (Esc)", onclick: closeRollTray, style: { background: "transparent", border: "none", color: "var(--text3)", fontSize: "20px", cursor: "pointer", lineHeight: "1", padding: "2px 6px" } }, "✕")
+    ]);
+
+    return el("div", {
+      style: { position: "fixed", inset: "0", zIndex: "4000", background: "rgba(4,7,11,.72)", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" },
+      onclick: function (e) { if (e.target === e.currentTarget) closeRollTray(); }
+    }, [
+      el("div", { style: { width: "min(460px, 96vw)", maxHeight: "92vh", overflowY: "auto", background: "var(--bg1)", border: "1px solid var(--accent)", borderRadius: "8px", boxShadow: "0 12px 48px rgba(0,0,0,.6), var(--glow-cyan)" } }, [header, body])
+    ]);
+  }
+
   /* ---------- pointer-drag helpers for Freelancer panel reorder ---------- */
   function _onDragMove(e) {
     if (!_drag) return;
@@ -1746,6 +1918,23 @@ EN.combatView = (function () {
                  focus: focus, focusCal: focusCal, spec: spec,
                  total: mod + prof + focusCal, melee: melee, thrownItem: thrownItem };
       }
+      // a plain snapshot the roll tray opens against (no live-scope closures)
+      function attackCtx(it, h) {
+        var baseMods = [{ label: h.attrName + " Modifier", value: h.mod }];
+        if (h.prof) baseMods.push({ label: "Weapon Proficiency", value: h.prof });
+        if (h.focusCal) baseMods.push({ label: h.cat + " Focus (Caliber)", value: h.focusCal });
+        var autoSnag = [];
+        if (fx.snagAtk) autoSnag.push("Active condition");
+        if (h.tier === "untrained") autoSnag.push("Untrained (" + h.cat + ")");
+        return {
+          weaponName: it.name,
+          subtype: (h.melee ? "Melee" : h.thrownItem ? "Thrown" : "Ranged") + " Weapon · " + h.cat,
+          melee: h.melee, thrownItem: h.thrownItem, ranged: !h.melee && !h.thrownItem,
+          traits: it.traits || [], baseMods: baseMods, critMin: h.spec ? 19 : 20,
+          autoSnag: autoSnag, autoEdge: [], baseSnag: autoSnag.length, baseEdge: 0,
+          shaken: (ch.conditions || []).indexOf("Shaken") !== -1
+        };
+      }
       // ch.equippedWeapons holds ids, not names; move the first id that
       // resolves to wname past its neighboring array slot (the same
       // one-slot-per-equipped-weapon assumption the display order relies on).
@@ -1814,10 +2003,10 @@ EN.combatView = (function () {
               el("button.btn.sm", { style: { color: "var(--warn)", borderColor: "var(--warn)", padding: "1px 7px" }, onclick: function () { reloadWeapon(wname); } }, "⟳ RELOAD")
             ]);
           } else {   // can fire something; grey the number when the SELECTED mode is unaffordable
-            hitCell = el("div", { title: canSel ? "Tap to fire (" + st.mode + " · −" + selCost + ")" : "Needs " + selCost + " for " + st.mode + "; switch to a cheaper mode or reload",
-              style: { textAlign: "center", flex: "0 0 auto", minWidth: "44px", cursor: "pointer", opacity: canSel ? 1 : 0.5 }, onclick: function () { fireWeapon(wname); } }, [
+            hitCell = el("div", { title: "Tap to roll to hit (" + st.mode + " · −" + selCost + ")",
+              style: { textAlign: "center", flex: "0 0 auto", minWidth: "44px", cursor: "pointer", opacity: canSel ? 1 : 0.5 }, onclick: function () { openRollTray(attackCtx(it, h)); } }, [
               el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "HIT" }),
-              el("span.mono", { title: hitTip, style: { fontSize: "16px", color: canSel ? "var(--ember)" : "var(--danger)" }, text: eng.fmtMod(h.total) })
+              el("span.mono", { title: hitTip, style: { fontSize: "16px", color: canSel ? "var(--ember)" : "var(--danger)", borderBottom: "1px dotted currentColor" }, text: eng.fmtMod(h.total) })
             ]);
           }
           var pct = st.cap > 0 ? Math.round(st.cur / st.cap * 100) : 0;
@@ -1862,10 +2051,13 @@ EN.combatView = (function () {
           }
           if (statusChips.length) rowKids.push(el("div.row.wrap", { style: { gap: "6px", marginTop: "6px" } }, statusChips));
         } else {
-          // melee / thrown: Range · Hit · Damage (no ammo)
+          // melee / thrown: Range · Hit · Damage (no ammo). HIT opens the roll tray.
           rowKids.push(el("div.row.wrap", { style: { gap: "14px", alignItems: "center", marginTop: "6px" } }, [
             statBox(h.melee ? "REACH" : "RANGE", norm.rangeDisplay, "var(--gold)", it.range || ""),
-            statBox("HIT", eng.fmtMod(h.total), "var(--ember)", hitTip),
+            el("div", { title: "Tap to roll to hit · " + hitTip, style: { textAlign: "center", flex: "0 0 auto", minWidth: "44px", cursor: "pointer" }, onclick: function () { openRollTray(attackCtx(it, h)); } }, [
+              el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "HIT" }),
+              el("span.mono", { style: { fontSize: "15px", color: "var(--ember)", borderBottom: "1px dotted var(--ember)" }, text: eng.fmtMod(h.total) })
+            ]),
             statBox("DMG", norm.damageDisplay, "var(--accent)", dmgTip)
           ]));
         }
@@ -2471,6 +2663,8 @@ EN.combatView = (function () {
     blocks.push(container);
 
     mount.appendChild(el("div", null, blocks));
+    var tray = rollTrayModal();
+    if (tray) mount.appendChild(tray);
   }
 
   return { render: render };
