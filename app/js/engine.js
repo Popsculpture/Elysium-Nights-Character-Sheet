@@ -1345,9 +1345,76 @@ EN.engine = (function () {
     };
   }
 
+  /* ---- roll-tray: the situational toggle catalog for attacks --------------
+     Modifiers the sheet can't auto-apply because they depend on live table
+     state; the roll tray offers them as opt-in toggles. Each is an Edge die,
+     a Snag die, or a flat modifier. `when` filters which show for a given
+     weapon: "always", "melee", "ranged", or "trait:<Name>". Kept as data so
+     the UI just renders them; composeRollSpec() turns the player's picks into
+     a rollD20 spec. Class dice-gambits (Lucky Break/Jinx/Press Your Luck) and
+     cover (a flat bonus to the target's Defense, not a Snag on your roll) are
+     deliberately absent here. */
+  var ATTACK_TOGGLES = [
+    { id: "highground",   label: "High ground",              kind: "edge", when: "always",           note: "Elevated over your target." },
+    { id: "flanking",     label: "Flanking",                 kind: "edge", when: "always",           note: "An ally threatens the target's far side." },
+    { id: "aim",          label: "Take Aim",                 kind: "edge", when: "always",           note: "Swift Action: Edge on your next attack." },
+    { id: "allysuppress", label: "Ally suppressing target",  kind: "edge", when: "always",           note: "The target is pinned by covering fire." },
+    { id: "distracted",   label: "Enemy distracted",         kind: "edge", when: "always",           note: "The target's attention is elsewhere." },
+    { id: "prone-melee",  label: "Target is Prone",          kind: "edge", when: "melee",            note: "Melee attacks against a prone target roll with Edge." },
+    { id: "restrained",   label: "Target Restrained",        kind: "edge", when: "always",           note: "Attacks against a restrained target roll with Edge." },
+    { id: "helpless",     label: "Target Stunned/Paralyzed", kind: "edge", when: "always",           note: "Attacks against a stunned or paralyzed target roll with Edge." },
+    { id: "quickdraw",    label: "Quick Draw (first attack)",kind: "edge", when: "trait:Quick Draw", note: "First attack of the encounter with a Quick-Drawn weapon." },
+    { id: "scoped",       label: "Scoped (took time to aim)",kind: "edge", when: "trait:Scoped",     note: "An aimed long-range shot with a Scoped weapon." },
+    { id: "spread",       label: "Spread (short range)",     kind: "edge", when: "trait:Spread",     note: "A Spread weapon at short range." },
+    { id: "crewserved",   label: "Crew-served (loader)",     kind: "edge", when: "trait:Crew Served",note: "An ally feeds or spots for the weapon." },
+    { id: "dimlight",     label: "Dim light / obscured",     kind: "snag", when: "always",           note: "Sight-dependent attack through smoke, fog, or darkness." },
+    { id: "longrange",    label: "Long range",               kind: "snag", when: "ranged",           note: "Beyond the weapon's short-range band." },
+    { id: "inmelee",      label: "Firing while in melee",    kind: "snag", when: "ranged",           note: "A ranged attack with an enemy in your face." }
+  ];
+  function attackToggles() { return ATTACK_TOGGLES.slice(); }
+  // the subset of toggles that apply to a given weapon shape
+  // ({ melee, ranged, traits:[...] }).
+  function attackTogglesFor(w) {
+    w = w || {};
+    var traits = w.traits || [];
+    return ATTACK_TOGGLES.filter(function (t) {
+      if (t.when === "always") return true;
+      if (t.when === "melee") return !!w.melee;
+      if (t.when === "ranged") return !!w.ranged;
+      if (t.when.indexOf("trait:") === 0) return traits.indexOf(t.when.slice(6)) !== -1;
+      return false;
+    });
+  }
+  // Turn the player's picks into a rollD20 spec. baseMods are the sheet's
+  // auto-applied modifiers; baseEdge/baseSnag are baseline dice it already
+  // knows (untrained Snag, a condition's Snag). selected is a set of toggle
+  // ids; helpValue is 0 or the chosen Help bonus (2/3/4); manual is a free
+  // +/-. A Shaken character cannot benefit from Edge from ANY source, so
+  // every Edge die (toggled or baseline) is dropped.
+  function composeRollSpec(o) {
+    o = o || {};
+    var byId = {}; ATTACK_TOGGLES.forEach(function (t) { byId[t.id] = t; });
+    var mods = (o.baseMods || []).slice();
+    var edge = Math.max(0, Math.floor(o.baseEdge || 0));
+    var snag = Math.max(0, Math.floor(o.baseSnag || 0));
+    (o.selected || []).forEach(function (id) {
+      var t = byId[id]; if (!t) return;
+      if (t.kind === "edge") edge += 1;
+      else if (t.kind === "snag") snag += 1;
+      else if (t.kind === "flat" && typeof t.value === "number") mods.push({ label: t.label, value: t.value });
+    });
+    var help = Math.max(0, Math.floor(o.helpValue || 0));
+    if (help) mods.push({ label: "Help", value: help });
+    var manual = Math.floor(o.manual || 0);
+    if (manual) mods.push({ label: "Other", value: manual });
+    if (o.shaken) edge = 0;   // Shaken: no benefit from Edge, from any source
+    return { mods: mods, edge: edge, snag: snag, critMin: o.critMin || 20 };
+  }
+
   return {
     derive: derive, mod: mod, caliber: caliber, fmtMod: fmtMod, clamp: clamp,
     buildEdgePool: buildEdgePool, buildSnagPool: buildSnagPool, rollDicePool: rollDicePool, rollD20: rollD20,
+    attackToggles: attackToggles, attackTogglesFor: attackTogglesFor, composeRollSpec: composeRollSpec,
     installedCyberware: installedCyberware, installedCyberBases: installedCyberBases,
     gambitList: gambitList, gambitsAllowed: gambitsAllowed,
     resourceAbilities: resourceAbilities, resourceKnowsAll: resourceKnowsAll,
