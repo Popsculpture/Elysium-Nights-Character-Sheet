@@ -133,7 +133,7 @@ EN.gearCatalog.ranged = {
     { name: "Recurve Bow", group: "Bowfire", price: 200, damage: "1d8 Piercing", ammo: 1, range: "12 / 36",
       traits: ["Two-Handed", "Quick Nock", "Silent"], availability: "Common", legality: "Licensed",
       desc: "A classic bow design with smooth draw and clean release. In trained hands the cycle is faster than any mechanical bow: nock, draw, loose, nock again before the first arrow has landed. Older than any city law about owning one." },
-    { name: "Slingshot", group: "Bowfire", price: 15, damage: "1d4 Bludgeoning", ammo: 1, range: "6 / 18",
+    { name: "Slingshot", group: "Bowfire", load: 1, price: 15, damage: "1d4 Bludgeoning", ammo: 1, range: "6 / 18",
       traits: ["Single Shot", "Light", "Silent"], availability: "Common", legality: "Legal",
       desc: "A simple frame and band that can shatter glass or crack bones in trained hands. Costs less than a meal. Sometimes solves the same problem." }
   ],

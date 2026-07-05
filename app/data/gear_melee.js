@@ -33,7 +33,7 @@ EN.gearCatalog.melee = {
       traits: ["Light", "Concealable"], availability: "Common", legality: "Restricted",
       desc: "Composite or alloy bands that turn a punch into a hospital visit. Easy to hide. Harder to explain when a patrol officer flips your jacket open.",
       effect: "Augments unarmed strikes. While wearing Knuckles, your unarmed attacks deal 1d4 Bludgeoning damage instead of their base unarmed damage." },
-    { name: "Quarterstaff", group: "Simple", price: 60, damage: "1d6 Bludgeoning", range: "Melee (Reach 1)",
+    { name: "Quarterstaff", group: "Simple", load: 2, price: 60, damage: "1d6 Bludgeoning", range: "Melee (Reach 1)",
       traits: ["Reach 1", "Two-Handed", "Versatile (1d8)"], availability: "Common", legality: "Legal",
       desc: "A length of tough wood or composite pole, hip-high to head-high depending on the wielder. Street monks, crowd-control drills, and old-school brawlers all swear by it for reach and discipline." },
     { name: "Shock Gloves", group: "Simple", price: 100, damage: "Unarmed + 1d4 Electric", range: "Melee",

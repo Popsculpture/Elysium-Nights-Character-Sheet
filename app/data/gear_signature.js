@@ -37,7 +37,7 @@ EN.gearCatalog.signature = {
       traits: ["Finesse", "Armor Piercing 2"], availability: "Rare", legality: "Restricted",
       desc: "A blade wrapped in sonic emitters that howl at a frequency just past hearing. It does not so much cut as shake a body apart at the seams. You feel the hum in your fillings from across the room.",
       effect: "On Hit: the target makes a Body save vs your Weapon Save DC or is Staggered until the end of its next turn." },
-    { name: "Nanowire", signature: true, kind: "melee", group: "Martial", proficiency: "Martial Weapons",
+    { name: "Nanowire", signature: true, kind: "melee", group: "Martial", proficiency: "Martial Weapons", load: 1,
       price: 700, damage: "1d8 Slashing", range: "Melee (Reach 2)",
       traits: ["Finesse", "Reach 2", "Concealable", "Armor Piercing 2"], availability: "Rare", legality: "Contraband",
       desc: "A spool of nanofilament thinner than sight, weighted at the tip and slung from a wrist housing. It cuts what it touches and most of what it passes near. Reads as jewelry right up until it does not." },
