@@ -1313,9 +1313,41 @@ EN.engine = (function () {
     return { pool: pool, rolls: rolls, total: total };
   }
 
+  /* ---- d20 resolution (the in-combat roll) --------------------------------
+     One d20 plus flat modifiers. Edge and Snag each want a second d20 and
+     cancel 1 for 1 before rolling, so a roll is at most 2d20: net Edge keeps
+     the higher die, net Snag keeps the lower, an even split rolls a single
+     straight d20. The natural kept die drives crit/fumble: a Nat 20 always
+     crits and a Nat 1 always fumbles, and a Specialization can widen the crit
+     floor (critMin) below 20. spec = { mods:[{label,value}], edge, snag,
+     critMin }; edge/snag are source COUNTS (a Shaken character zeroes edge
+     upstream). Exotic effects that break the 2d20 ceiling (Lucky Break / Jinx
+     third die, Press Your Luck's bonus die) layer on top of this later. */
+  function rollD20(spec) {
+    spec = spec || {};
+    var mods = spec.mods || [];
+    var flat = mods.reduce(function (s, m) { return s + (Number(m && m.value) || 0); }, 0);
+    var net = Math.max(0, Math.floor(spec.edge || 0)) - Math.max(0, Math.floor(spec.snag || 0));
+    var state = net > 0 ? "edge" : net < 0 ? "snag" : "flat";
+    function d20() { return 1 + Math.floor(Math.random() * 20); }
+    var dice = state === "flat" ? [d20()] : [d20(), d20()];
+    var keptIndex = 0;
+    if (state === "edge") keptIndex = dice[0] >= dice[1] ? 0 : 1;
+    else if (state === "snag") keptIndex = dice[0] <= dice[1] ? 0 : 1;
+    var nat = dice[keptIndex];
+    // critMin can widen the crit floor (e.g. 19) but never reaches the Nat 1
+    // fumble; anything malformed falls back to a Nat-20-only crit.
+    var critMin = (typeof spec.critMin === "number" && spec.critMin >= 2 && spec.critMin <= 20) ? Math.floor(spec.critMin) : 20;
+    return {
+      dice: dice, keptIndex: keptIndex, nat: nat, state: state, net: net,
+      mods: mods, flat: flat, total: nat + flat,
+      crit: nat >= critMin, fumble: nat === 1, critMin: critMin
+    };
+  }
+
   return {
     derive: derive, mod: mod, caliber: caliber, fmtMod: fmtMod, clamp: clamp,
-    buildEdgePool: buildEdgePool, buildSnagPool: buildSnagPool, rollDicePool: rollDicePool,
+    buildEdgePool: buildEdgePool, buildSnagPool: buildSnagPool, rollDicePool: rollDicePool, rollD20: rollD20,
     installedCyberware: installedCyberware, installedCyberBases: installedCyberBases,
     gambitList: gambitList, gambitsAllowed: gambitsAllowed,
     resourceAbilities: resourceAbilities, resourceKnowsAll: resourceKnowsAll,
