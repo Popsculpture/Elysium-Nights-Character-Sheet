@@ -69,6 +69,12 @@ EN.store = (function () {
       subclass: null,
       classSkillChoices: [],
       classGearChoices: { weapons: [], armor: [], tools: [], vehicles: [] },  // "choose one" gear picks
+      // Starting Gear Kit (Core Pack + Class Kit + Subclass Extra, 700 budget):
+      // picks = {slotKey: 0|1}, alt = use the subclass Alternate Pick, granted
+      // = [{key, qty}] equipment entries added at claim (for UNDO), and the
+      // Glimmer that landed on the stick. claimedClass/Subclass pin what was
+      // claimed so a later respec can warn before re-claiming.
+      startingKit: { claimed: false, picks: {}, alt: false, granted: [], glimmerGranted: 0, claimedClass: null, claimedSubclass: null },
       // gear buckets are { category: tierKey } maps (weapons/tools/vehicles upgrade; armor acquire-only)
       proficiencies: { skills: {}, saves: [], weapons: {}, armor: {}, tools: {}, vehicles: {} },
       versatile: { insight: { attr: "", skill: "" }, performance: { attr: "", skill: "" }, intimidation: { attr: "", skill: "" } },
@@ -247,6 +253,22 @@ EN.store = (function () {
       });
     }
     if (!ch.cyberStash) ch.cyberStash = [];   // purchased-but-uninstalled chrome
+    // Starting Gear Kit claim state. A hand-edited/imported save can carry
+    // garbage here, and UNDO mutates equipment and Glimmer off these fields,
+    // so every granted element must be a {key, qty} shape and glimmerGranted
+    // a real non-negative number (NaN or a negative would poison the ledger).
+    if (!ch.startingKit || typeof ch.startingKit !== "object") {
+      ch.startingKit = { claimed: false, picks: {}, alt: false, granted: [], glimmerGranted: 0, claimedClass: null, claimedSubclass: null };
+    }
+    if (!ch.startingKit.picks || typeof ch.startingKit.picks !== "object") ch.startingKit.picks = {};
+    if (!Array.isArray(ch.startingKit.granted)) ch.startingKit.granted = [];
+    ch.startingKit.granted = ch.startingKit.granted.filter(function (g) {
+      return g && typeof g === "object" && typeof g.key === "string" &&
+             typeof g.qty === "number" && isFinite(g.qty) && g.qty > 0;
+    });
+    if (typeof ch.startingKit.glimmerGranted !== "number" || !isFinite(ch.startingKit.glimmerGranted) || ch.startingKit.glimmerGranted < 0) {
+      ch.startingKit.glimmerGranted = 0;
+    }
     if (!ch.grid || typeof ch.grid !== "object") ch.grid = { deckType: null, deckTier: null, deckHpSpent: 0, deckMods: [], links: [] };
     else {
       if (ch.grid.deckType === undefined) ch.grid.deckType = null;

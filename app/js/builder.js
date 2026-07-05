@@ -887,6 +887,208 @@ EN.builder = (function () {
     return { short: short, notes: notes };
   }
 
+  /* ---------- Starting Gear Kit (Core Pack + Class Kit + Subclass Extra) ----
+     Data in EN.kits; items price off the main gear catalogs by exact name and
+     the 700 budget's leftover loads onto the Glimmer Stick as starting cash.
+     Claiming writes real equipment entries (per-instance ids for non-stackable
+     gear, pooled qty for consumables/ammo) and records exactly what it granted
+     so UNDO can take every line and the Glimmer back. */
+  function kitCatalogItem(name) {
+    var g = EN.gearCatalog || {};
+    var pools = [g.melee && g.melee.items, g.ranged && g.ranged.items,
+                 g.signature && g.signature.items, g.signature && g.signature.munitions,
+                 g.ammo && g.ammo.items, g.armor && g.armor.items, g.tools && g.tools.items];
+    for (var i = 0; i < pools.length; i++) {
+      var p = pools[i]; if (!p) continue;
+      var f = p.find(function (x) { return x.name === name; });
+      if (f) return f;
+    }
+    return null;
+  }
+  function kitPrice(entry) {
+    var it = kitCatalogItem(entry.name);
+    return (it && typeof it.price === "number" ? it.price : 0) * (entry.qty || 1);
+  }
+  // resolve the current class/subclass/picks into the full claimable kit
+  function kitSelection(ch) {
+    var K = EN.kits || {};
+    var kit = (K.classKits || {})[ch.class];
+    if (!kit) return null;
+    var sk = ch.startingKit || { picks: {}, alt: false };
+    var extraDef = ch.subclass ? (K.subclassExtras || {})[ch.subclass] : null;
+    var altDef = ch.subclass ? (K.altPicks || {})[ch.subclass] : null;
+    var useAlt = !!(sk.alt && altDef);
+    var effExtra = useAlt ? altDef : extraDef;
+    var replacedSlot = effExtra && effExtra.replacesSlot ? effExtra.replacesSlot : null;
+    var items = [];
+    (K.corePack && K.corePack.items || []).forEach(function (e) { items.push(e); });
+    (kit.fixed || []).forEach(function (e) { items.push(e); });
+    var allPicked = true;
+    var slots = (kit.slots || []).map(function (slot) {
+      var replaced = replacedSlot === slot.key;
+      var pick = sk.picks[slot.key];
+      pick = (pick === 0 || pick === 1) ? pick : null;
+      if (!replaced) {
+        if (pick == null) allPicked = false;
+        else slot.options[pick].items.forEach(function (e) { items.push(e); });
+      }
+      return { def: slot, replaced: replaced, pick: pick };
+    });
+    var extraGlimmer = 0;
+    if (effExtra) {
+      if (effExtra.glimmer) extraGlimmer = effExtra.glimmer;
+      (effExtra.items || []).forEach(function (e) { items.push(e); });
+    }
+    var cost = 0; items.forEach(function (e) { cost += kitPrice(e); });
+    var leftover = (K.budget || 700) - cost + extraGlimmer;
+    return { kit: kit, items: items, slots: slots, extraDef: extraDef, altDef: altDef, useAlt: useAlt,
+             effExtra: effExtra, cost: cost, extraGlimmer: extraGlimmer, leftover: leftover,
+             allPicked: allPicked, ready: allPicked && !!ch.subclass };
+  }
+  function kitNewEquipId() { return "eq_" + Math.random().toString(36).slice(2, 9); }
+  function claimKit(ch) {
+    var sel = kitSelection(ch);
+    if (!sel || !sel.ready) { toast("Lock in your Subclass and pick every kit slot first."); return; }
+    if (ch.startingKit.claimed) { toast("Kit already claimed; UNDO it first."); return; }
+    if (sel.leftover < 0) { toast("This kit runs past the 𝒢700 budget; check your picks."); return; }
+    store.update(function (c) {
+      var granted = [];
+      c.equipment = c.equipment || [];
+      sel.items.forEach(function (entry) {
+        var qty = entry.qty || 1;
+        if (EN.engine.isStackableName(entry.name)) {
+          var e = c.equipment.find(function (x) { return x.name === entry.name && !x.id; });
+          if (e) e.qty = (e.qty || 1) + qty;
+          else c.equipment.push({ name: entry.name, qty: qty });
+          granted.push({ key: entry.name, qty: qty });
+        } else {
+          for (var i = 0; i < qty; i++) {
+            var inst = { id: kitNewEquipId(), name: entry.name, qty: 1 };
+            c.equipment.push(inst);
+            granted.push({ key: inst.id, qty: 1 });
+          }
+        }
+      });
+      c.glimmer = (c.glimmer || 0) + sel.leftover;
+      c.startingKit.claimed = true;
+      c.startingKit.granted = granted;
+      c.startingKit.glimmerGranted = sel.leftover;
+      c.startingKit.claimedClass = c.class;
+      c.startingKit.claimedSubclass = c.subclass;
+    });
+    toast("Starting kit claimed. Gear is in your Stash and 𝒢" + sel.leftover + " loaded onto the Glimmer Stick.");
+  }
+  function undoKit(ch) {
+    if (!ch.startingKit || !ch.startingKit.claimed) return;
+    store.update(function (c) {
+      (c.startingKit.granted || []).forEach(function (g) {
+        if (!g || typeof g.key !== "string") return;   // tolerate a hand-edited save
+        var e = (c.equipment || []).find(function (x) { return (x.id || x.name) === g.key; });
+        if (!e) return;
+        e.qty = (e.qty || 1) - (g.qty || 1);
+        if (e.qty <= 0) {
+          c.equipment = c.equipment.filter(function (x) { return x !== e; });
+          // clear any equip/carry state pointing at the removed entry
+          if (c.equippedWeapons) c.equippedWeapons = c.equippedWeapons.filter(function (n) { return n !== g.key; });
+          if (c.equippedArmor === g.key) c.equippedArmor = null;
+          if (c.equippedShield === g.key) c.equippedShield = null;
+          if (c.equippedFocus === g.key) c.equippedFocus = null;
+          if (c.carry) delete c.carry[g.key];
+          // magazine tracking is keyed by weapon NAME and shared across copies;
+          // drop it only when no other copy of this weapon remains
+          if (c.weaponAmmo && !(c.equipment || []).some(function (x) { return x.name === e.name && x.qty > 0; })) delete c.weaponAmmo[e.name];
+        }
+      });
+      c.glimmer = Math.max(0, (c.glimmer || 0) - (c.startingKit.glimmerGranted || 0));
+      c.startingKit.claimed = false;
+      c.startingKit.granted = [];
+      c.startingKit.glimmerGranted = 0;
+      c.startingKit.claimedClass = null;
+      c.startingKit.claimedSubclass = null;
+    });
+    toast("Starting kit returned: the gear and its Glimmer came back off the sheet.");
+  }
+  function startingKitPanel(ch, cls) {
+    var K = EN.kits;
+    if (!K || !K.classKits || !K.classKits[ch.class]) return null;
+    var sel = kitSelection(ch);
+    if (!sel) return null;
+    var sk = ch.startingKit || { claimed: false, picks: {}, alt: false };
+    var G = "𝒢";
+    function itemChip(entry) {
+      var it = kitCatalogItem(entry.name);
+      var label = entry.label || (entry.name + (entry.qty > 1 ? " ×" + entry.qty : ""));
+      return el("span.chip", { title: it ? (G + kitPrice(entry) + (it.desc ? " · " + it.desc : "")) : "Not in the gear catalog",
+        style: { fontSize: "10.5px", color: it ? "var(--text2)" : "var(--danger)", borderColor: it ? "var(--border2)" : "var(--danger)" } }, label);
+    }
+    function kitRow(label, kids2) {
+      return el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginBottom: "6px" } }, [rowLabel(label)].concat(kids2));
+    }
+    var kids = [];
+    kids.push(el("p.help", { style: { margin: "0 0 8px" }, text: K.intro + " " + K.budgetNote }));
+    kids.push(kitRow("Core Pack", K.corePack.items.map(itemChip)));
+    kids.push(el("p.help", { style: { margin: "0 0 8px", fontSize: "10.5px" }, text: K.corePack.blurb }));
+    if (sel.kit.note) kids.push(el("p.help", { style: { margin: "0 0 6px", color: "var(--text2)" }, text: sel.kit.note }));
+    if ((sel.kit.fixed || []).length) kids.push(kitRow("Class Kit", sel.kit.fixed.map(itemChip)));
+    sel.slots.forEach(function (s) {
+      if (s.replaced) {
+        kids.push(kitRow(s.def.label, [el("span.help", { style: { margin: 0, fontSize: "10.5px", color: "var(--flow)" }, text: "replaced by your Subclass Extra" })]));
+        return;
+      }
+      var chips = [el("span", { style: { fontFamily: "var(--mono)", fontSize: "10px", color: "var(--text3)" }, text: "choose one:" })]
+        .concat(s.def.options.map(function (opt, oi) {
+          var price = opt.items.reduce(function (a, e) { return a + kitPrice(e); }, 0);
+          return pickChip(opt.label + " · " + G + price, "var(--gold)", s.pick === oi, function () {
+            if (sk.claimed) { toast("Kit already claimed; UNDO it to change picks."); return; }
+            store.update(function (c) { c.startingKit.picks[s.def.key] = oi; });
+          });
+        }));
+      kids.push(kitRow(s.def.label, chips));
+    });
+    if (!ch.subclass) {
+      kids.push(kitRow("Extra", [el("span.help", { style: { margin: 0, fontSize: "10.5px", color: "var(--warn)" }, text: "Pick a Subclass above to unlock its Extra." })]));
+    } else {
+      var ex = sel.effExtra;
+      var exKids = !ex ? [el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "No Extra listed for this subclass yet." })]
+        : ex.glimmer ? [el("span.chip.on", { title: "Straight onto the Glimmer Stick", style: { fontSize: "10.5px" } }, "+" + G + ex.glimmer + " to the Glimmer Stick")]
+        : ex.items.map(itemChip);
+      kids.push(kitRow("Extra", exKids));
+      var exNote = (sel.useAlt && sel.altDef && sel.altDef.note) || (sel.extraDef && sel.extraDef.note);
+      if (exNote) kids.push(el("p.help", { style: { margin: "0 0 6px", fontSize: "10.5px", color: "var(--text3)" }, text: exNote }));
+      if (sel.altDef) {
+        kids.push(kitRow("Alt Pick", [pickChip(sel.altDef.label, "var(--flow)", sel.useAlt, function () {
+          if (sk.claimed) { toast("Kit already claimed; UNDO it to change picks."); return; }
+          store.update(function (c) { c.startingKit.alt = !sel.useAlt; });
+        })]));
+      }
+    }
+    var budgetColor = sel.leftover < 0 ? "var(--danger)" : "var(--success)";
+    kids.push(el("div.row.wrap", { style: { gap: "14px", alignItems: "center", margin: "8px 0 6px" } }, [
+      el("span.mono", { title: K.gmGuidance, style: { fontSize: "14px", color: "var(--text)" } }, "KIT TOTAL " + G + sel.cost),
+      el("span.mono", { style: { fontSize: "14px", color: budgetColor } },
+        sel.leftover >= 0 ? "LEFTOVER TO GLIMMER STICK " + G + sel.leftover : "OVER BUDGET " + G + (-sel.leftover))
+    ]));
+    if (sk.claimed) {
+      var mismatch = sk.claimedClass !== ch.class || sk.claimedSubclass !== ch.subclass;
+      var claimedClsName = (eng.getClass(sk.claimedClass) || {}).name || sk.claimedClass || "?";
+      kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
+        el("span.chip.on", { style: { fontSize: "10.5px" } }, "✓ KIT CLAIMED"),
+        el("button.btn.sm.danger", { title: "Take back every granted line and the Glimmer that landed on the stick",
+          onclick: function () { undoKit(ch); } }, "↩ UNDO CLAIM")
+      ]));
+      if (mismatch) kids.push(el("p.help", { style: { margin: "6px 0 0", color: "var(--warn)" },
+        text: "⚠ Claimed as " + claimedClsName.replace(/^The\s+/, "") + "; UNDO the claim to take that gear back before claiming this kit." }));
+    } else {
+      kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
+        el("button.btn.primary", { disabled: !sel.ready,
+          title: sel.ready ? "Add every line to your Stash and load the leftover onto the Glimmer Stick" : "Pick a Subclass and every kit slot first",
+          onclick: function () { claimKit(ch); } }, "⛭ CLAIM STARTING KIT"),
+        !sel.ready ? el("span.help", { style: { margin: 0, color: "var(--warn)" }, text: "Pick a Subclass and every slot first." }) : null
+      ]));
+    }
+    return EN.ui.panel("Starting Gear Kit", G + "700 BUDGET · CORE PACK + CLASS KIT + SUBCLASS EXTRA", kids, { corners: true });
+  }
+
   /* ---------- STEP 5: CLASS ---------- */
   function stepClass(ch, d) {
     var clsKeys = ["codebreaker", "fury", "hustler", "operator", "scoundrel", "shaper", "stitcher"];
@@ -896,7 +1098,7 @@ EN.builder = (function () {
       var c = eng.getClass(k); if (!c) return null;
       return el("div.opt-card" + (ch.class === k ? ".sel" : ""), {
         onclick: function () {
-          store.update(function (cc) { if (cc.class !== k) { cc.class = k; cc.subclass = null; cc.classSkillChoices = []; cc.classGearChoices = { weapons: [], armor: [], tools: [], vehicles: [] }; cc.gambits = []; pruneGrantedFocuses(cc); } });
+          store.update(function (cc) { if (cc.class !== k) { cc.class = k; cc.subclass = null; cc.classSkillChoices = []; cc.classGearChoices = { weapons: [], armor: [], tools: [], vehicles: [] }; cc.gambits = []; if (cc.startingKit && !cc.startingKit.claimed) { cc.startingKit.picks = {}; cc.startingKit.alt = false; } pruneGrantedFocuses(cc); } });
           if (eng.unresolvedOverlaps(store.active()).length) toast("⚠ Overlapping training with your Background; claim your Free Skill Focus below.");
         }
       }, [
@@ -952,13 +1154,17 @@ EN.builder = (function () {
         blocks.push(EN.ui.sectionTitle("Subclass"));
         blocks.push(el("div.card-grid", null, cls.subclasses.map(function (s) {
           return el("div.opt-card" + (ch.subclass === s.key ? ".sel" : ""), {
-            onclick: function () { store.update(function (c) { c.subclass = s.key; }); }
+            onclick: function () { store.update(function (c) { if (c.subclass !== s.key && c.startingKit && !c.startingKit.claimed) c.startingKit.alt = false; c.subclass = s.key; }); }
           }, [el("span.check", { text: "◉" }), el("h4", { text: s.name }), el("p", { text: (s.description || "").slice(0, 180) })]);
         })));
       }
 
       // class skill choices
       // (class skill/tool choices are picked directly on the Starting Proficiencies chips above)
+
+      // Starting Gear Kit (Core Pack + Class Kit + Subclass Extra, 700 budget)
+      var kitPanel = startingKitPanel(ch, cls);
+      if (kitPanel) { blocks.push(el("div", { style: { height: "16px" } })); blocks.push(kitPanel); }
 
       // full class progression, all 10 levels as collapsible boxes (collapsed by default)
       blocks.push(el("div", { style: { height: "16px" } }));

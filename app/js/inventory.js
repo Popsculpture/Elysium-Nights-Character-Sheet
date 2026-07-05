@@ -125,16 +125,18 @@ EN.inventoryView = (function () {
     toast(was ? it.name + " stowed." : it.name + " " + v.act + "; its DR, Block, Defense, and Ward now read on the Freelancer tab.");
   }
   // called after an entry's qty drops to <=0 (sell/drop); key is the specific
-  // entry's identity (id for a tracked instance, name for a pooled stack)
-  function unequipIfGone(c, key) {
+  // entry's identity (id for a tracked instance, name for a pooled stack) and
+  // name is its catalog name (magazine tracking is name-keyed and shared
+  // across copies, so it only drops once the LAST copy leaves the stash)
+  function unequipIfGone(c, key, name) {
     var still = (c.equipment || []).some(function (x) { return (x.id || x.name) === key && x.qty > 0; });
     if (!still) {
       if (c.equippedWeapons) c.equippedWeapons = c.equippedWeapons.filter(function (n) { return n !== key; });
-      if (c.weaponAmmo) delete c.weaponAmmo[key];   // drop the tracked magazine when the weapon leaves the stash
       if (c.equippedArmor === key) c.equippedArmor = null;     // a sold/dropped piece can't stay worn
       if (c.equippedShield === key) c.equippedShield = null;
       if (c.equippedFocus === key) c.equippedFocus = null;
       if (c.carry) delete c.carry[key];                        // drop its Loadout carry status too (no orphaned key)
+      if (name && c.weaponAmmo && !(c.equipment || []).some(function (x) { return x.name === name && x.qty > 0; })) delete c.weaponAmmo[name];
     }
   }
 
@@ -295,7 +297,7 @@ EN.inventoryView = (function () {
       e.qty = (e.qty || 1) - 1;
       if (e.qty <= 0) c.equipment = c.equipment.filter(function (x) { return x !== e; });
       c.glimmer = (c.glimmer || 0) + pay;
-      unequipIfGone(c, key);
+      unequipIfGone(c, key, e.name);
     });
     toast("Fence takes the " + name + " at street rate. " + fmtG(pay) + " credited. No questions asked.");
   }
@@ -305,7 +307,7 @@ EN.inventoryView = (function () {
       if (!e) return;
       e.qty = (e.qty || 1) - 1;
       if (e.qty <= 0) c.equipment = c.equipment.filter(function (x) { return x !== e; });
-      unequipIfGone(c, key);
+      unequipIfGone(c, key, e.name);
     });
   }
   function donate(key) {
