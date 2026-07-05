@@ -1364,10 +1364,45 @@ EN.engine = (function () {
     return { mods: mods, edge: edge, snag: snag, critMin: o.critMin || 20 };
   }
 
+  /* ---- damage roll --------------------------------------------------------
+     Rolls a weapon's damage. spec = { dice, flat, crit, bonus, types }.
+     dice is the weapon damage string ("1d4", "2d6", "Unarmed + 1d4", "0", "").
+     flat is the on-hit attribute mod (melee/thrown; 0 for ranged). A crit
+     doubles the WEAPON dice count only; flat mods and bonus dice are not
+     doubled. bonus is extra dice groups [{ n, sides, label }] (Cheap Shot,
+     ammo riders). Returns grouped rolls + total for a breakdown display. */
+  function parseDamageDice(s) {
+    var m = String(s == null ? "" : s).match(/(\d+)\s*d\s*(\d+)/i);
+    return m ? { n: parseInt(m[1], 10), sides: parseInt(m[2], 10) } : null;
+  }
+  function rollDamage(spec) {
+    spec = spec || {};
+    function die(sides) { return 1 + Math.floor(Math.random() * sides); }
+    function rollN(n, sides) { var r = []; for (var i = 0; i < n; i++) r.push(die(sides)); return r; }
+    var groups = [];
+    var main = parseDamageDice(spec.dice);
+    if (main && main.n > 0 && main.sides > 0) {
+      var n = main.n * (spec.crit ? 2 : 1);
+      var rolls = rollN(n, main.sides);
+      groups.push({ label: "Weapon" + (spec.crit ? " (crit x2)" : ""), n: n, sides: main.sides,
+        rolls: rolls, subtotal: rolls.reduce(function (a, b) { return a + b; }, 0) });
+    }
+    (spec.bonus || []).forEach(function (b) {
+      var bn = Math.max(0, Math.floor((b && b.n) || 0)), bs = Math.max(0, Math.floor((b && b.sides) || 0));
+      if (!bn || !bs) return;
+      var br = rollN(bn, bs);
+      groups.push({ label: (b.label || (bn + "d" + bs)), n: bn, sides: bs,
+        rolls: br, subtotal: br.reduce(function (a, c) { return a + c; }, 0) });
+    });
+    var flat = Math.floor(spec.flat || 0);
+    var diceTotal = groups.reduce(function (s, g) { return s + g.subtotal; }, 0);
+    return { groups: groups, flat: flat, total: diceTotal + flat, crit: !!spec.crit, types: spec.types || [] };
+  }
+
   return {
     derive: derive, mod: mod, caliber: caliber, fmtMod: fmtMod, clamp: clamp,
     buildEdgePool: buildEdgePool, buildSnagPool: buildSnagPool, rollDicePool: rollDicePool, rollD20: rollD20,
-    composeRollSpec: composeRollSpec,
+    composeRollSpec: composeRollSpec, rollDamage: rollDamage,
     installedCyberware: installedCyberware, installedCyberBases: installedCyberBases,
     gambitList: gambitList, gambitsAllowed: gambitsAllowed,
     resourceAbilities: resourceAbilities, resourceKnowsAll: resourceKnowsAll,
