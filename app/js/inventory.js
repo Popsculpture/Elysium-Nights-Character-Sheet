@@ -447,18 +447,29 @@ EN.inventoryView = (function () {
     var afford = (ch.glimmer || 0) >= sp;
     var slotLabel = Array.isArray(it.slot) ? it.slot.join(" + ") : it.slot;
     // Worn armor supports its own weight; the same suit merely carried,
-    // packed, or freshly looted counts its full Load instead.
-    var wornArmor = mode === "stash" && ch.equippedArmor === ownedKey;
-    var ld = EN.engine.itemLoad ? EN.engine.itemLoad(it.name, { worn: wornArmor }) : 0;
+    // packed, or freshly looted counts its full Load instead. Nothing is
+    // "worn" pre-purchase, so this (and the Load reduction it drives) is
+    // always false in market mode. Armor/shield/focus equip through their
+    // own dedicated field; everything else (a slot-bearing device) reads
+    // its generic Worn carry status instead.
+    var isWorn = mode === "stash" && (
+      it.kind === "armor" ? ch.equippedArmor === ownedKey :
+      it.kind === "shield" ? ch.equippedShield === ownedKey :
+      it.kind === "focus" ? ch.equippedFocus === ownedKey :
+      !!(ch.carry && ch.carry[ownedKey] === "worn"));
+    var ld = EN.engine.itemLoad ? EN.engine.itemLoad(it.name, { worn: isWorn }) : 0;
+    // Benched by a Body Slot conflict (ch.slotInert): still worn, still keeps
+    // its Load break, it just isn't actively benefiting from (or competing
+    // for) the slot right now, so the pill shouldn't glow "worn" while inert.
+    var isInert = isWorn && !!(ch.slotInert && ch.slotInert[ownedKey]);
+    var pillWorn = isWorn && !isInert;
+    var traits = Array.isArray(it.traits) ? it.traits : [];
+    var traitsId = id + "-traits", traitsOpen = !!_open[traitsId];
     var head = el("h4", { style: { cursor: "pointer" }, onclick: function () { _open[id] = !open; EN.app.render(); } }, [
       el("span", null, [
         el("span.collapse-caret", { text: open ? "▾" : "▸" }),
         document.createTextNode(" " + it.name),
-        tagChip(it.legality, LEGAL_COLOR[it.legality], "Legality: " + it.legality),
-        tagChip(it.availability, AVAIL_COLOR[it.availability], "Availability: " + it.availability),
-        (mode === "stash" && ld > 0)
-          ? tagChip("⚖ " + ld, "var(--text2)", "Load " + ld + (wornArmor ? " (reduced by 2 while Worn, min 0)" : "") + "; spends your Load Budget while on-person (equipped, carried, worn, or racked)") : null,
-        (EN.engine.itemSlots && EN.engine.itemSlots(it).length) ? tagChip("◧ " + slotLabel, "var(--flow)", "Body Slot: " + slotLabel) : null,
+        (mode === "mkt" && ownedTotal > 0) ? tagChip("Owned ×" + ownedTotal, "var(--success)") : null,
         it.counted ? tagChip("Counted", "var(--ember)", "Counted, track every unit from purchase to spend") : null,
         it.cyber ? tagChip("◆ " + it.zone, "var(--accent)", "Interface Zone: " + it.zone) : null,
         it.cyber ? tagChip(it.sp + " SP", it.sp >= 3 ? "var(--ember)" : "var(--gold)", "Static Points, adds to your Total Static / Chrome Tax") : null,
@@ -468,29 +479,56 @@ EN.inventoryView = (function () {
           ? (owned.leaseOwned ? tagChip("OWNED OUTRIGHT", "var(--success)", "Lease bought out; it is yours, no more Upkeep.")
              : owned.leaseDue ? tagChip("⚠ PAYMENT DUE", "var(--danger)", "Installment due: " + fmtG(it.upkeep) + ". It grants none of its benefits until you pay.")
              : tagChip("LEASE · " + leaseDaysOf(owned) + (leaseDaysOf(owned) === 1 ? " DAY" : " DAYS"), "var(--gold)", "Next installment " + fmtG(it.upkeep) + " in " + leaseDaysOf(owned) + " day(s); each Long Rest marks one day."))
-          : tagChip("LEASED", "var(--ember)", "Leased, 𝒢0 buy-in, " + fmtG(it.upkeep) + "/wk Upkeep. Lapse and it drops to its zero state.")) : null,
-        (mode === "mkt" && ownedTotal > 0) ? tagChip("Owned ×" + ownedTotal, "var(--success)") : null,
-        (mode === "stash" && isEquipped(ch, ownedKey)) ? tagChip("⚔ Equipped", "var(--accent)", "Live in the Attacks list on the Freelancer tab") : null,
-        (mode === "stash" && isDefEquipped(ch, it, entry)) ? tagChip((DEF_VERB[it.kind] || {}).off || "✓ Equipped", "var(--accent)", "Active, its stats read on the Freelancer tab") : null
+          : tagChip("LEASED", "var(--ember)", "Leased, 𝒢0 buy-in, " + fmtG(it.upkeep) + "/wk Upkeep. Lapse and it drops to its zero state.")) : null
       ]),
-      el("span.mono", { title: mode === "mkt" ? priceTitle(it) : (_mode === "fivefinger" ? "No provenance, no payout, the fence won't touch it." : "Fence pays " + fmtG(fencePrice(it)) + " (street rate, ~35% of list)"),
-        style: { color: mode === "mkt" ? (_mode === "fivefinger" ? "var(--success)" : (it.vendor === false ? "var(--flow)" : (it.upkeep ? "var(--ember)" : (afford ? "var(--gold)" : "var(--danger)")))) : "var(--text3)", fontSize: "13px" } },
-        mode === "mkt"
-          ? (_mode === "fivefinger" ? "FREE" : it.vendor === false ? (it.nexus || "-") : it.upkeep ? fmtG(it.upkeep) + "/wk" : fmtG(sp) + (it.unit ? " " + it.unit : ""))
-          : "×" + ((owned && owned.qty) || 0))
+      el("span", { style: { display: "inline-flex", alignItems: "baseline", gap: "10px", flexShrink: 0 } }, [
+        el("span.mono", { style: { fontSize: "10.5px", letterSpacing: ".03em" } }, [
+          el("span", { style: { color: LEGAL_COLOR[it.legality] || "var(--text3)" }, text: it.legality }),
+          document.createTextNode(" · "),
+          el("span", { style: { color: AVAIL_COLOR[it.availability] || "var(--text3)" }, text: it.availability }),
+          (isDefensive(it) && it.slots) ? document.createTextNode(" · " + it.slots + " mod slots") : null
+        ]),
+        el("span.mono", { title: mode === "mkt" ? priceTitle(it) : (_mode === "fivefinger" ? "No provenance, no payout, the fence won't touch it." : "Fence pays " + fmtG(fencePrice(it)) + " (street rate, ~35% of list)"),
+          style: { color: mode === "mkt" ? (_mode === "fivefinger" ? "var(--success)" : (it.vendor === false ? "var(--flow)" : (it.upkeep ? "var(--ember)" : (afford ? "var(--gold)" : "var(--danger)")))) : "var(--text3)", fontSize: "13px" } },
+          mode === "mkt"
+            ? (_mode === "fivefinger" ? "FREE" : it.vendor === false ? (it.nexus || "-") : it.upkeep ? fmtG(it.upkeep) + "/wk" : fmtG(sp) + (it.unit ? " " + it.unit : ""))
+            : "×" + ((owned && owned.qty) || 0))
+      ])
     ]);
     var statChips = [];
     if (it.damage && it.damage !== "0") statChips.push(el("span.mono", { style: { fontSize: "11.5px", color: "var(--accent)", marginRight: "4px" }, text: it.damage }));
     if (it.range && !/^Melee/.test(it.range)) statChips.push(el("span.chip", { title: "Range (normal / long, long range rolls with Snag)", style: { fontSize: "9.5px", color: "var(--gold)", borderColor: "var(--gold)" } }, "RNG " + it.range.replace(/\s/g, "")));
     if (typeof it.ammo === "number" && it.ammo > 1) statChips.push(el("span.chip", { title: "Magazine / capacity", style: { fontSize: "9.5px", color: "var(--gold)", borderColor: "var(--gold)" } }, "MAG " + it.ammo));
-    /* defensive-gear stat chips: DR / Block / Defense / Ward / mod slots */
+    /* defensive-gear stat chips: DR / Block / Defense / Ward (mod slots moved into the caption line) */
     function statChip(text, color, title) { return el("span.chip", { title: title || "", style: { fontSize: "9.5px", color: color, borderColor: color, fontWeight: 600 } }, text); }
     if (typeof it.dr === "number") statChips.push(statChip("⛨ " + it.dr + " DR", "var(--success)", "Damage Reduction against physical damage (passive mitigation)"));
     if (it.blockBonus) statChips.push(statChip("⛊ +" + it.blockBonus + " Block", "var(--gold)", "Flat Block Bonus, improves the Block Defensive Impulse"));
     if (typeof it.defense === "number") statChips.push(statChip((it.defense >= 0 ? "+" : "") + it.defense + " DEF", it.defense ? "var(--accent)" : "var(--text3)", "Defense bonus while this shield is wielded"));
     if (it.blockDie) statChips.push(statChip("⛊ " + it.blockDie + " Block", "var(--gold)", "Block die, added when you Block with this shield"));
     if (it.wardDie) statChips.push(statChip("✦ " + it.wardDie + " Ward", "var(--flow)", "Ward die, once per round, added to your Ward reduction"));
-    if (isDefensive(it) && it.slots) statChips.push(statChip(it.slots + " mod slots", "var(--text2)", "Armor Mod slots (Modular trait)"));
+    // Body Slot + Worn state read as one merged pill: filled gold while
+    // actively worn, outlined while merely owned-but-not-worn, previewed in
+    // the market (nothing is ever "worn" pre-purchase), or benched by a Body
+    // Slot conflict (still worn, just not currently competing for the slot).
+    if (EN.engine.itemSlots && EN.engine.itemSlots(it).length) {
+      statChips.push(el("span.chip", {
+        title: "Body Slot: " + slotLabel + (isInert ? " (Worn, but benched by a Body Slot conflict, see Freelancer > Loadout)" : pillWorn ? " (Worn)" : ""),
+        style: pillWorn
+          ? { fontSize: "9.5px", color: "var(--gold)", borderColor: "var(--gold)", background: "rgba(255,207,92,.14)" }
+          : { fontSize: "9.5px", color: "var(--text3)", borderColor: "var(--border2)" }
+      }, [
+        el("span", { style: { display: "inline-block", width: "6px", height: "6px", borderRadius: "50%", marginRight: "5px",
+          background: pillWorn ? "var(--gold)" : "var(--text4)", boxShadow: pillWorn ? "0 0 6px var(--gold)" : "none" } }),
+        document.createTextNode(slotLabel)
+      ]));
+    }
+    if (ld > 0) statChips.push(tagChip("⚖ " + ld, "var(--text2)", "Load " + ld + (isWorn ? " (reduced by 2 while Worn, min 0)" : "") + "; spends your Load Budget while on-person (equipped, carried, worn, or racked)"));
+    // every trait tucks behind one tap-to-expand count chip instead of its own pill
+    if (traits.length) statChips.push(el("span.chip", {
+      title: "Traits: " + traits.join(", "),
+      style: { fontSize: "9.5px", cursor: "pointer", color: traitsOpen ? "var(--accent)" : "var(--text2)", borderColor: traitsOpen ? "var(--accent)" : "var(--border2)" },
+      onclick: function () { _open[traitsId] = !traitsOpen; EN.app.render(); }
+    }, traits.length + (traits.length === 1 ? " trait " : " traits ") + (traitsOpen ? "▾" : "▸")));
     var defDefs = isDefensive(it) ? armorTraitDefs() : null;
     var mktBtn;
     if (_mode === "fivefinger") {
@@ -537,12 +575,16 @@ EN.inventoryView = (function () {
           ]));
     // chips wrap freely on the left; the action group is always pinned to the right
     var info = el("div.row", { style: { gap: "10px", alignItems: "flex-start", margin: "4px 0 0", flexWrap: "nowrap" } }, [
-      el("div.row.wrap", { style: { gap: "6px", alignItems: "center", flex: "1 1 auto", minWidth: 0 } },
-        statChips.concat((it.traits || []).map(function (t) { return traitChip(t, defDefs); }))),
+      el("div.row.wrap", { style: { gap: "6px", alignItems: "center", flex: "1 1 auto", minWidth: 0 } }, statChips),
       el("div.row.wrap", { style: { gap: "6px", flex: "0 0 auto", marginLeft: "auto", justifyContent: "flex-end", alignItems: "center" } }, [actionEl])
     ]);
+    // the traits chip above only shows a count; tapping it opens this row with the real trait chips
+    var traitsExpandRow = (traits.length && traitsOpen)
+      ? el("div.row.wrap", { style: { gap: "6px", marginTop: "6px", paddingTop: "6px", borderTop: "1px dashed var(--border)" } },
+          traits.map(function (t) { return traitChip(t, defDefs); }))
+      : null;
     return el("div.feature", { style: { borderLeftColor: LEGAL_COLOR[it.legality] || "var(--border2)" } }, [
-      head, info,
+      head, info, traitsExpandRow,
       it.benchPart ? partInfoLine(ch, it) : it.armorMod ? armorModInfoLine(ch, it) : (mode !== "mkt" ? installedPartsLine(ch, it) : null),
       open && it.desc ? el("p", { style: { marginTop: "8px" }, text: it.desc }) : null,
       open && it.type ? el("p.help", { style: { margin: "4px 0 0", color: "var(--text2)" }, text: "Type: " + it.type + (it.upkeep ? " · Leased: 𝒢0 buy-in, " + fmtG(it.upkeep) + "/wk Upkeep" : "") + (it.nexus ? " · Nexus: " + it.nexus : "") }) : null,
