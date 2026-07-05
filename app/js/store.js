@@ -116,7 +116,7 @@ EN.store = (function () {
       equippedShield: null,              // wielded physical shield (one at a time)
       equippedFocus: null,               // attuned Warding Focus (one at a time)
       weaponAmmo: {},                    // {weaponName: {cur, mode, ammoType}}, magazine/fire-mode tracking
-      carry: {},                         // Loadout carry status per entry key: "carried" | "mission" | "racked" (absent = stashed)
+      carry: {},                         // Loadout carry status per entry key: "carried" | "worn" | "racked" (absent = stashed)
       racked: {},                        // Racked assignments: {itemEntryKey: carryGearEntryKey} (Carry Gear, one rack per item)
       slotInert: {},                     // Body Slot conflicts: {itemEntryKey: true} for on-person items the player benched
       haul: "none",                      // active Haul: "none" | "lift" (body-sized) | "drag" (oversized/double)
@@ -155,12 +155,25 @@ EN.store = (function () {
     if (!ch.carry || typeof ch.carry !== "object") ch.carry = {};            // Loadout carry status per item
     if (!ch.racked || typeof ch.racked !== "object") ch.racked = {};         // Carry Gear rack assignments
     Object.keys(ch.racked).forEach(function (k) { if (typeof ch.racked[k] !== "string") delete ch.racked[k]; });
-    // carry values must be a real status, and a "racked" status without a
-    // surviving rack target downgrades to carried (still on-person, no break)
+    // carry values must be a real status. "Mission" never had a distinct
+    // mechanical meaning (identical to Carried everywhere it was read), so a
+    // legacy save folds it into Carried instead of losing the on-person state.
+    // A "racked" status without a surviving rack target downgrades to carried
+    // (still on-person, no break); a "worn" status on armor/shield/focus is
+    // meaningless noise (those equip through their own dedicated field, not
+    // carry status) and downgrades to carried so it can't double-count toward
+    // its Body Slot alongside the real equipped entry.
     Object.keys(ch.carry).forEach(function (k) {
       var v = ch.carry[k];
-      if (["carried", "mission", "racked"].indexOf(v) === -1) delete ch.carry[k];
-      else if (v === "racked" && typeof ch.racked[k] !== "string") ch.carry[k] = "carried";
+      if (v === "mission") v = "carried";
+      if (["carried", "worn", "racked"].indexOf(v) === -1) { delete ch.carry[k]; return; }
+      if (v === "racked" && typeof ch.racked[k] !== "string") v = "carried";
+      if (v === "worn") {
+        var e = (ch.equipment || []).find(function (x) { return (x.id || x.name) === k; });
+        var it = e && EN.engine && EN.engine.catalogItem ? EN.engine.catalogItem(e.name) : null;
+        if (it && (it.kind === "armor" || it.kind === "shield" || it.kind === "focus")) v = "carried";
+      }
+      ch.carry[k] = v;
     });
     // Body Slot conflict picks: a hand-edited/imported save can carry garbage
     // here, and slotState() only ever reads true/false per entry key, so any

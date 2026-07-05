@@ -124,7 +124,7 @@ EN.inventoryView = (function () {
     var v = DEF_VERB[it.kind] || DEF_VERB.armor;
     toast(was ? it.name + " stowed." : it.name + " " + v.act + "; its DR, Block, Defense, and Ward now read on the Freelancer tab.");
   }
-  /* ---- Loadout status from the Stash (carried / mission / racked) --------
+  /* ---- Loadout status from the Stash (carried / worn / racked) -----------
      Mirrors the Freelancer tab's Loadout controls so the whole loadout can be
      built here. "racked|<gearKey>" stows the item in worn Carry Gear: its
      Load drops by 1 (minimum 0), one piece of Carry Gear per item. */
@@ -150,6 +150,13 @@ EN.inventoryView = (function () {
     var rackedGear = racks.byItem[key] || null;
     var isGear = EN.engine.isCarryGear(it);
     var targets = !isGear ? EN.engine.rackTargets(ch, entry) : [];
+    // slot-bearing gear that isn't armor/shield/focus (those equip through
+    // their own dedicated field) gets a Wear toggle; only "worn" competes
+    // for its Body Slot, so a spare merely Carried never does.
+    var mySlots = it && EN.engine.itemSlots ? EN.engine.itemSlots(it) : [];
+    var wearable = mySlots.length > 0 && it && it.kind !== "armor" && it.kind !== "shield" && it.kind !== "focus";
+    var wearBtn = wearable ? el("button.btn.sm", { title: cs === "worn" ? "Take it off; it stays Carried and keeps costing Load, but frees its Body Slot" : "Wear it; it competes for its Body Slot",
+      style: { fontSize: "10px" }, onclick: function () { invSetCarry(key, cs === "worn" ? "carried" : "worn"); } }, cs === "worn" ? "✓ WORN" : "WEAR") : null;
     if (equipped) {
       // equip state already reads on the card; racking keeps carry status and
       // the rack target in lockstep, and a stale assignment renders as
@@ -169,15 +176,21 @@ EN.inventoryView = (function () {
         })).concat(staleKey && !targets.some(function (g) { return entryKey(g) === staleKey; })
           ? [el("option", { value: staleKey, selected: true, text: "⧉ racked (adrift)" })] : []));
     }
-    var opts = [["stashed", "Stashed"], ["carried", "Carried"], ["mission", "Mission"]].map(function (o) {
+    if (cs === "worn") {
+      // worn is exclusive with Carried/Racked (one carry status per item), so
+      // taking it off (falling back to Carried) is the only control needed here
+      return el("div.row", { style: { gap: "6px", alignItems: "center" } }, [wearBtn]);
+    }
+    var opts = [["stashed", "Stashed"], ["carried", "Carried"]].map(function (o) {
       return el("option", { value: o[0], selected: cs === o[0], text: o[1] });
     }).concat(targets.map(function (g) {
       var gk = entryKey(g);
       return el("option", { value: "racked|" + gk, selected: cs === "racked" && (ch.racked || {})[key] === gk, text: "⧉ Racked: " + g.name });
     }));
     if (cs === "racked" && !rackedGear) opts.push(el("option", { value: "racked|" + ((ch.racked || {})[key] || ""), selected: true, text: "⧉ Racked (adrift)" }));
-    return el("select", { title: "Loadout status; Racked stows it in worn Carry Gear for 1 less Load", style: { fontSize: "11px", width: "auto" },
+    var dropdown = el("select", { title: "Loadout status; Racked stows it in worn Carry Gear for 1 less Load", style: { fontSize: "11px", width: "auto" },
       onchange: function () { invSetCarry(key, this.value); } }, opts);
+    return el("div.row", { style: { gap: "6px", alignItems: "center" } }, [wearBtn, dropdown]);
   }
 
   // called after an entry's qty drops to <=0 (sell/drop); key is the specific
@@ -440,7 +453,7 @@ EN.inventoryView = (function () {
         tagChip(it.legality, LEGAL_COLOR[it.legality], "Legality: " + it.legality),
         tagChip(it.availability, AVAIL_COLOR[it.availability], "Availability: " + it.availability),
         (mode === "stash" && EN.engine.itemLoad && EN.engine.itemLoad(it.name) > 0)
-          ? tagChip("⚖ " + EN.engine.itemLoad(it.name), "var(--text2)", "Load " + EN.engine.itemLoad(it.name) + "; spends your Load Budget while on-person (equipped, carried, or mission)") : null,
+          ? tagChip("⚖ " + EN.engine.itemLoad(it.name), "var(--text2)", "Load " + EN.engine.itemLoad(it.name) + "; spends your Load Budget while on-person (equipped, carried, worn, or racked)") : null,
         (EN.engine.itemSlots && EN.engine.itemSlots(it).length) ? tagChip("◧ " + slotLabel, "var(--flow)", "Body Slot: " + slotLabel) : null,
         it.counted ? tagChip("Counted", "var(--ember)", "Counted, track every unit from purchase to spend") : null,
         it.cyber ? tagChip("◆ " + it.zone, "var(--accent)", "Interface Zone: " + it.zone) : null,
@@ -585,7 +598,7 @@ EN.inventoryView = (function () {
     var stateColor = enc.state === "overloaded" ? "var(--danger)" : enc.state === "encumbered" ? "var(--warn)" : "var(--success)";
     var tierColor = enc.tier === "light" ? "var(--success)" : enc.tier === "standard" ? "var(--accent)" : enc.tier === "heavy" ? "var(--warn)" : "var(--danger)";
     var loadBar = el("div.row.wrap", { style: { gap: "10px", alignItems: "center", padding: "7px 10px", border: "1px solid var(--border)", borderRadius: "4px", background: "rgba(0,0,0,.15)", marginBottom: "10px" } }, [
-      el("span.mono", { title: "On-person Load (equipped + carried + mission + racked gear). Each item's ⚖ chip is its Load; 0-Load gear rides free, and a Racked item carries 1 less.\nLight ≤ " + encBands.light + " · Standard ≤ " + encBands.standard + " · Heavy ≤ " + encBands.heavy + " · beyond = Overloaded",
+      el("span.mono", { title: "On-person Load (equipped + carried + worn + racked gear). Each item's ⚖ chip is its Load; 0-Load gear rides free, and a Racked item carries 1 less.\nLight ≤ " + encBands.light + " · Standard ≤ " + encBands.standard + " · Heavy ≤ " + encBands.heavy + " · beyond = Overloaded",
         style: { fontSize: "16px", color: "var(--text)" },
         html: "LOAD " + enc.current + " <span style='font-size:11px;color:var(--text3)'>/ " + encBands.standard + "</span>" }),
       el("span.chip", { title: "Your Loadout tier, calculated from what you carry", style: { fontSize: "9px", color: tierColor, borderColor: tierColor } },
@@ -610,7 +623,7 @@ EN.inventoryView = (function () {
       el("button.btn.sm", { title: allOpen ? "Collapse every category" : "Expand every category",
         onclick: function () { var target = !allOpen; catNames.forEach(function (c) { _stashOpen[c] = target; }); EN.app.render(); } },
         allOpen ? "▾ COLLAPSE ALL" : "▸ EXPAND ALL"),
-      el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "Sorted by category. Set each item's loadout status (carried, mission, racked) right on its card." })
+      el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "Sorted by category. Set each item's loadout status (carried, worn, racked) right on its card." })
     ]);
     var body = [loadBar, controls];
     catNames.forEach(function (cat) {

@@ -647,7 +647,7 @@ EN.engine = (function () {
     }
     return 1;
   }
-  // on-person = equipped, or carry status "carried" / "mission" / "racked"
+  // on-person = equipped, or carry status "carried" / "worn" / "racked"
   // (Racked = stowed in a worn piece of Carry Gear, still on your person).
   // Takes the actual equipment entry (not just its name) since carry/equip state
   // is keyed by entryKey (an id for individually-tracked gear, else the name).
@@ -657,7 +657,7 @@ EN.engine = (function () {
     if ((ch.equippedWeapons || []).indexOf(key) !== -1) return true;
     if (ch.equippedArmor === key || ch.equippedShield === key || ch.equippedFocus === key) return true;
     var cs = ch.carry && ch.carry[key];
-    return cs === "carried" || cs === "mission" || cs === "racked";
+    return cs === "carried" || cs === "worn" || cs === "racked";
   }
 
   /* ---- Carry Gear & Racking -----------------------------------------------
@@ -675,10 +675,13 @@ EN.engine = (function () {
     if (gearIt.rackFits === "sidearm") return it.group === "Sidearm";
     return true;                                              // plausibility is the GM's call
   }
-  // the character's on-person Carry Gear entries, with their catalog items
+  // the character's actually-WORN Carry Gear entries, with their catalog items.
+  // A bag merely Carried (in your hands, not strapped on) racks nothing; only
+  // a Worn piece of Carry Gear functions, per its own Body Slot.
   function carryGearWorn(ch) {
+    var carry = (ch && ch.carry) || {};
     return ((ch && ch.equipment) || []).filter(function (e) {
-      return e.qty > 0 && isCarryGear(loadCatalogItem(e.name)) && onPerson(ch, e);
+      return e.qty > 0 && isCarryGear(loadCatalogItem(e.name)) && carry[entryKey(e)] === "worn";
     });
   }
   // validated rack assignments: byItem {itemKey: gearEntry}, byGear {gearKey: [entries]}.
@@ -783,22 +786,26 @@ EN.engine = (function () {
     var raw = Array.isArray(it.slot) ? it.slot : [it.slot];
     return raw.filter(function (s) { return SLOT_CAPACITY.hasOwnProperty(s); });
   }
-  // per-slot occupancy for every on-person item that calls out a Body Slot:
-  // which entries are active vs player-benched ("inert"), and whether the
-  // active count exceeds capacity (a conflict awaiting a pick). A benched
-  // item stays on-person and keeps any Load/rack effects, it just stops
-  // counting toward (and benefiting from) its Body Slot.
+  // per-slot occupancy for every genuinely-WORN item that calls out a Body
+  // Slot: which entries are active vs player-benched ("inert"), and whether
+  // the active count exceeds capacity (a conflict awaiting a pick). Merely
+  // Carrying a slot-bearing item (a spare in your bag, not on your body)
+  // never competes for its slot, only carry status "worn" does; armor,
+  // shields, and Warding Foci are "worn" via their own dedicated equip
+  // field instead, since only one of each can ever be equipped at a time.
   function slotState(ch) {
     var groups = {};
     Object.keys(SLOT_CAPACITY).forEach(function (s) { groups[s] = { capacity: SLOT_CAPACITY[s], active: [], inert: [], overflow: false }; });
-    var racks = rackState(ch);
     var inertMap = (ch && ch.slotInert) || {};
     (ch.equipment || []).forEach(function (e) {
-      if (!(e.qty > 0) || !onPerson(ch, e)) return;
-      if (racks.byItem[entryKey(e)]) return;    // racked inside a worn bag: not worn on its own slot
+      if (!(e.qty > 0)) return;
+      var key = entryKey(e);
+      var directlyEquipped = ch.equippedArmor === key || ch.equippedShield === key || ch.equippedFocus === key;
+      var isWorn = directlyEquipped || (ch.carry && ch.carry[key] === "worn");
+      if (!isWorn) return;
       var slots = itemSlots(loadCatalogItem(e.name));
       if (!slots.length) return;
-      var inert = !!inertMap[entryKey(e)];
+      var inert = !!inertMap[key];
       slots.forEach(function (s) {
         var g = groups[s];
         if (!g) return;

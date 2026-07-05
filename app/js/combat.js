@@ -443,7 +443,7 @@ EN.combatView = (function () {
        Abilities  active, spendable, triggerable things (resource abilities + active features)
        Features   "what does my character have": passive computed features + manual GM/player entries
        Weapons    equipped-weapon attacks (unchanged behavior; pulled from the Inventory stash)
-       Loadout    a filtered view of Inventory: what's carried / on a mission / equipped for the scene
+       Loadout    a filtered view of Inventory: what's carried / worn / equipped for the scene
        Notes      a freeform field (shared with the #PRINT Identity notes)
      DEFEND is intentionally NOT a tab; it lives in its own always-visible section. */
   var _panelTab = "abilities";
@@ -615,7 +615,7 @@ EN.combatView = (function () {
   // catalog name for a pooled consumable/ammo stack).
   function entryKey(e) { return EN.engine.entryKey ? EN.engine.entryKey(e) : (e && e.name); }
   function carryStatus(ch, key) { return (ch.carry && ch.carry[key]) || "stashed"; }
-  // status is "stashed" | "carried" | "mission" | "racked|<carryGearEntryKey>";
+  // status is "stashed" | "carried" | "worn" | "racked|<carryGearEntryKey>";
   // racking stows the item in worn Carry Gear (Load reduced by 1, min 0)
   function setCarry(key, status) {
     store.update(function (c) {
@@ -638,6 +638,15 @@ EN.combatView = (function () {
       c.slotInert = c.slotInert || {};
       if (c.slotInert[key]) delete c.slotInert[key]; else c.slotInert[key] = true;
     });
+  }
+  // Wear/take-off for slot-bearing gear that isn't armor/shield/focus (those
+  // equip through their own dedicated field instead). Only "worn" competes
+  // for its Body Slot; taking it off falls back to Carried, still on-person
+  // and still costing Load, just not on your body anymore.
+  function toggleWorn(key) {
+    var ch = store.active();
+    var cs = (ch.carry && ch.carry[key]) || "stashed";
+    setCarry(key, cs === "worn" ? "carried" : "worn");
   }
   // a weapon (equippedWeapons) or the worn armor / wielded shield / attuned focus is on-person by definition
   function isEquippedAny(ch, key) {
@@ -1978,13 +1987,13 @@ EN.combatView = (function () {
       var inScene = owned.filter(function (e) { return isEquippedAny(ch, entryKey(e)) || carryStatus(ch, entryKey(e)) !== "stashed"; });
       var racks = eng.rackState(ch);
       var slotConflicts = eng.slotConflicts ? eng.slotConflicts(ch) : {};
-      var nCarried = 0, nMission = 0, nEquipped = 0, nRacked = 0, nHeavy = 0;
+      var nCarried = 0, nWorn = 0, nEquipped = 0, nRacked = 0, nHeavy = 0;
       inScene.forEach(function (e) {
         var it = invItem(e.name), cs = carryStatus(ch, entryKey(e));
-        // equipped wins; an equipped item is never also tallied as carried/mission
+        // equipped wins; an equipped item is never also tallied as carried/worn
         if (isEquippedAny(ch, entryKey(e))) nEquipped++;
         else if (cs === "carried") nCarried++;
-        else if (cs === "mission") nMission++;
+        else if (cs === "worn") nWorn++;
         else if (cs === "racked") nRacked++;
         if (it && isHeavy(it)) nHeavy++;
       });
@@ -2006,7 +2015,7 @@ EN.combatView = (function () {
             }))) : null
         ]),
         el("p.help", { style: { margin: 0, flex: "1 1 auto" }, text: "What you brought to the scene. "
-          + nEquipped + " equipped · " + nCarried + " carried · " + nMission + " mission" + (nRacked ? " · " + nRacked + " racked" : "") + (nHeavy ? " · " + nHeavy + " heavy" : "") + "." })
+          + nEquipped + " equipped · " + nCarried + " carried" + (nWorn ? " · " + nWorn + " worn" : "") + (nRacked ? " · " + nRacked + " racked" : "") + (nHeavy ? " · " + nHeavy + " heavy" : "") + "." })
       ]));
       if (!inScene.length) {
         kids.push(el("p.help", { style: { margin: "0 0 6px", color: "var(--text3)" }, text: "Nothing in your loadout yet. Equip gear in Inventory, or use ＋ ADD TO LOADOUT above." }));
@@ -2014,7 +2023,7 @@ EN.combatView = (function () {
         // a validly racked item renders NESTED under its Carry Gear, not in the flat lists
         function isNested(e) { return !!racks.byItem[entryKey(e)]; }
         var carried = inScene.filter(function (e) { return !isEquippedAny(ch, entryKey(e)) && carryStatus(ch, entryKey(e)) === "carried" && !isNested(e); });
-        var mission = inScene.filter(function (e) { return !isEquippedAny(ch, entryKey(e)) && carryStatus(ch, entryKey(e)) === "mission" && !isNested(e); });
+        var worn = inScene.filter(function (e) { return !isEquippedAny(ch, entryKey(e)) && carryStatus(ch, entryKey(e)) === "worn" && !isNested(e); });
         var equipped = inScene.filter(function (e) { return isEquippedAny(ch, entryKey(e)) && !isNested(e); });
         // racked items whose Carry Gear is missing or over capacity: still on-person, no break
         var strays = inScene.filter(function (e) { return !isEquippedAny(ch, entryKey(e)) && carryStatus(ch, entryKey(e)) === "racked" && !isNested(e); });
@@ -2028,7 +2037,7 @@ EN.combatView = (function () {
           items.forEach(pushRow);
         }
         section("Carried", carried);
-        section("Mission", mission);
+        section("Worn", worn);
         section("On-Person", equipped);
         section("Racked Adrift", strays);
         if (strays.length) kids.push(el("p.help", { style: { margin: "2px 0 6px", color: "var(--warn)", fontSize: "10.5px" }, text: "These are marked Racked but their Carry Gear is not on-person, does not fit them, or is over capacity; they carry full Load until re-racked." }));
@@ -2048,6 +2057,11 @@ EN.combatView = (function () {
       var racks = eng.rackState(ch);
       var rackedGear = racks.byItem[key] || null;
       var isGear = eng.isCarryGear(it);
+      // slot-bearing gear that isn't armor/shield/focus (those equip through
+      // their own dedicated field) gets a Wear toggle; only "worn" competes
+      // for its Body Slot, so a spare merely Carried never does.
+      var mySlots = it && eng.itemSlots ? eng.itemSlots(it) : [];
+      var wearable = mySlots.length > 0 && it && it.kind !== "armor" && it.kind !== "shield" && it.kind !== "focus";
       var chips = [];
       if (eqLabel) chips.push(el("span.chip", { style: { fontSize: "9px", color: "var(--accent)", borderColor: "var(--accent)" }, text: eqLabel.toUpperCase() }));
       var baseLd = eng.itemLoad ? eng.itemLoad(e.name) : 0;
@@ -2056,7 +2070,8 @@ EN.combatView = (function () {
       if (isGear) {
         var gearIt = invItem(e.name);
         var held = (racks.byGear[key] || []).length;
-        chips.push(el("span.chip", { title: (gearIt && gearIt.effect) || "Carry Gear", style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" }, text: "⧉ RACKS " + held + "/" + eng.rackLimit(gearIt) }));
+        var gearWorn = cs === "worn";
+        chips.push(el("span.chip", { title: (gearWorn ? "" : "Wear it to use its racks. ") + ((gearIt && gearIt.effect) || "Carry Gear"), style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" }, text: "⧉ RACKS " + held + "/" + eng.rackLimit(gearIt) + (gearWorn ? "" : " (not worn)") }));
         chips.push(el("span.chip", { title: "Carry Gear is Load 0 and never counts against your own Load Budget", style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" }, text: "⚖ 0" }));
       } else if (ldTotal > 0 || rackedGear) {
         chips.push(el("span.chip", { title: "Load " + ldTotal + (rackedGear ? " (reduced by 1 while Racked in the " + rackedGear.name + ")" : "") + (e.qty > 1 && !rackedGear ? " (" + baseLd + " each)" : "") + "; spends your Load Budget while on-person",
@@ -2067,26 +2082,28 @@ EN.combatView = (function () {
         if (isHeavy(it)) chips.push(el("span.chip", { title: "Heavy Item; bulky, slot-limited, or cumbersome", style: { fontSize: "9px", color: "var(--ember)", borderColor: "var(--ember)" }, text: "HEAVY" }));
         if (isRestricted(it)) chips.push(el("span.chip", { title: "Legality: " + it.legality, style: { fontSize: "9px", color: it.legality === "Contraband" ? "var(--danger)" : "var(--ember)", borderColor: it.legality === "Contraband" ? "var(--danger)" : "var(--ember)" }, text: it.legality.toUpperCase() }));
         if (isLimitedUse(it)) chips.push(el("span.chip", { title: "Counted / limited-use; track every unit", style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" }, text: "LIMITED" }));
-        var mySlots = eng.itemSlots ? eng.itemSlots(it) : [];
         if (mySlots.length) {
           var slotLabel = Array.isArray(it.slot) ? it.slot.join(" + ") : it.slot;
           chips.push(el("span.chip", { title: "Body slot: " + slotLabel, style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" }, text: "◧ " + slotLabel }));
-          // a racked child is stowed inside worn Carry Gear, not worn on its
-          // own Body Slot (engine.slotState excludes it entirely), so the
-          // bench toggle would be a confusing no-op here; only its slot label shows.
-          var isInert = !nested && !!(ch.slotInert && ch.slotInert[key]);
-          var conflicted = !nested && !isInert && mySlots.some(function (s) { return slotConflicts && slotConflicts[s]; });
-          if (isInert) {
-            chips.push(el("span.chip", { title: "Benched: not counted toward, or benefiting from, its Body Slot. Click to reactivate.",
-              style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)", cursor: "pointer" },
-              onclick: function () { toggleSlotInert(key); } }, "INERT"));
-          } else if (conflicted) {
-            chips.push(el("span.chip", { title: "This Body Slot is over capacity. Click to bench this item and free it up for another.",
-              style: { fontSize: "9px", color: "var(--warn)", borderColor: "var(--warn)", cursor: "pointer" },
-              onclick: function () { toggleSlotInert(key); } }, "⚠ SLOT CONFLICT"));
+          // only a genuinely-worn item ever enters the active/inert tally, so
+          // the bench toggle only ever matters (and only ever shows) here.
+          if (cs === "worn") {
+            var isInert = !!(ch.slotInert && ch.slotInert[key]);
+            var conflicted = !isInert && mySlots.some(function (s) { return slotConflicts && slotConflicts[s]; });
+            if (isInert) {
+              chips.push(el("span.chip", { title: "Benched: not counted toward, or benefiting from, its Body Slot. Click to reactivate.",
+                style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)", cursor: "pointer" },
+                onclick: function () { toggleSlotInert(key); } }, "INERT"));
+            } else if (conflicted) {
+              chips.push(el("span.chip", { title: "This Body Slot is over capacity. Click to bench this item and free it up for another.",
+                style: { fontSize: "9px", color: "var(--warn)", borderColor: "var(--warn)", cursor: "pointer" },
+                onclick: function () { toggleSlotInert(key); } }, "⚠ SLOT CONFLICT"));
+            }
           }
         }
       }
+      var wearBtn = wearable ? el("button.btn.sm", { title: cs === "worn" ? "Take it off; it stays Carried and keeps costing Load, but frees its Body Slot" : "Wear it; it competes for its Body Slot",
+        style: { fontSize: "10px" }, onclick: function () { toggleWorn(key); } }, cs === "worn" ? "✓ WORN" : "WEAR") : null;
       // status control: equipped gear keeps its static tag (managed in Inventory)
       // plus a rack selector; everything else folds Racked targets into the
       // carry select ("racked|<gearKey>" values)
@@ -2112,8 +2129,12 @@ EN.combatView = (function () {
             })).concat(staleKey && !targets.some(function (g) { return entryKey(g) === staleKey; })
               ? [el("option", { value: staleKey, selected: true, text: "⧉ racked (adrift)" })] : [])) : null
         ]);
+      } else if (cs === "worn") {
+        // worn is exclusive with Carried/Racked (one carry status per item), so
+        // taking it off (falling back to Carried) is the only control needed here
+        statusCtrl = el("div.row", { style: { gap: "6px", alignItems: "center" } }, [wearBtn]);
       } else {
-        var opts = [["stashed", "Stashed"], ["carried", "Carried"], ["mission", "Mission"]].map(function (o) {
+        var opts = [["stashed", "Stashed"], ["carried", "Carried"]].map(function (o) {
           return el("option", { value: o[0], selected: cs === o[0] && !(cs === "racked"), text: o[1] });
         }).concat(targets.map(function (g) {
           var gk = entryKey(g);
@@ -2122,10 +2143,11 @@ EN.combatView = (function () {
         }));
         // keep a stale racked target selectable so the row shows the truth
         if (cs === "racked" && !rackedGear) opts.push(el("option", { value: "racked|" + ((ch.racked || {})[key] || ""), selected: true, text: "⧉ Racked (adrift)" }));
-        statusCtrl = el("select", { title: "Carry status; Racked stows it in worn Carry Gear for 1 less Load", style: { fontSize: "11px", width: "auto" },
+        var dropdown = el("select", { title: "Carry status; Racked stows it in worn Carry Gear for 1 less Load", style: { fontSize: "11px", width: "auto" },
           onchange: function () { setCarry(key, this.value); } }, opts);
+        statusCtrl = el("div.row", { style: { gap: "6px", alignItems: "center" } }, [wearBtn, dropdown]);
       }
-      return el("div.feature", { style: { borderLeftColor: equipped ? "var(--accent)" : cs === "mission" ? "var(--gold)" : rackedGear ? "var(--flow)" : "var(--border2)", marginLeft: nested ? "26px" : "0" } }, [
+      return el("div.feature", { style: { borderLeftColor: equipped ? "var(--accent)" : cs === "worn" ? "var(--gold)" : rackedGear ? "var(--flow)" : "var(--border2)", marginLeft: nested ? "26px" : "0" } }, [
         el("div.row", { style: { gap: "8px", alignItems: "center", flexWrap: "wrap" } }, [
           nested ? el("span.mono", { title: "Racked inside the item above", style: { fontSize: "11px", color: "var(--flow)" }, text: "⧉" }) : null,
           el("span", { style: { fontWeight: 600, fontSize: "13px" }, text: e.name }),
