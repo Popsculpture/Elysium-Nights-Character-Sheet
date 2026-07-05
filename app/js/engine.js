@@ -604,7 +604,7 @@ EN.engine = (function () {
     }
     return null;
   }
-  function itemLoad(name) {
+  function itemLoad(name, opts) {
     // installable components weigh nothing on the budget
     if (EN.weaponParts && (EN.weaponParts.parts || []).some(function (p) { return p.name === name; })) return 0;
     if (EN.armorMods && (EN.armorMods.mods || []).some(function (m) { return m.name === name; })) return 0;
@@ -622,9 +622,10 @@ EN.engine = (function () {
     function has(t) { return traits.indexOf(t) !== -1; }
     if (it.kind === "armor") {
       var ag = it.group || "";
-      if (/Light/i.test(ag)) return 1;
-      if (/Heavy|Exoframe/i.test(ag)) return 3;
-      return 2;                                               // medium plate and mystech shells
+      var base = /Light/i.test(ag) ? 1 : /Heavy|Exoframe/i.test(ag) ? 3 : 2;   // medium plate and mystech shells
+      // Worn armor supports its own weight; the same suit carried, packed, or
+      // freshly looted (not on your body) is dead weight and counts in full.
+      return (opts && opts.worn) ? Math.max(0, base - 2) : base;
     }
     if (it.kind === "shield") return has("Heavy") ? 3 : 2;
     if (it.kind === "focus") return 1;
@@ -743,11 +744,14 @@ EN.engine = (function () {
     var current = 0, items = [];
     // a validly Racked item (stowed in worn Carry Gear) carries 1 less Load,
     // min 0. One rack slot holds ONE item, so a pooled qty stack racked as a
-    // single slot gets the break once, not once per unit.
+    // single slot gets the break once, not once per unit. Worn armor gets its
+    // own separate break (itemLoad's { worn } option, -2 min 0): it counts in
+    // full whenever carried, packed, or looted, since supporting its own
+    // weight is what "worn" means for a suit of armor.
     var racks = rackState(ch);
     (ch.equipment || []).forEach(function (e) {
       if (!(e.qty > 0) || !onPerson(ch, e)) return;
-      var l = itemLoad(e.name);
+      var l = itemLoad(e.name, { worn: ch.equippedArmor === entryKey(e) });
       var rackedGear = racks.byItem[entryKey(e)] || null;
       var total = l * e.qty;
       if (rackedGear) total = Math.max(0, total - 1);

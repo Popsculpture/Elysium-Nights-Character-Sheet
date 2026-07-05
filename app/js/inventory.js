@@ -446,14 +446,18 @@ EN.inventoryView = (function () {
     var sp = streetPrice(it);
     var afford = (ch.glimmer || 0) >= sp;
     var slotLabel = Array.isArray(it.slot) ? it.slot.join(" + ") : it.slot;
+    // Worn armor supports its own weight; the same suit merely carried,
+    // packed, or freshly looted counts its full Load instead.
+    var wornArmor = mode === "stash" && ch.equippedArmor === ownedKey;
+    var ld = EN.engine.itemLoad ? EN.engine.itemLoad(it.name, { worn: wornArmor }) : 0;
     var head = el("h4", { style: { cursor: "pointer" }, onclick: function () { _open[id] = !open; EN.app.render(); } }, [
       el("span", null, [
         el("span.collapse-caret", { text: open ? "▾" : "▸" }),
         document.createTextNode(" " + it.name),
         tagChip(it.legality, LEGAL_COLOR[it.legality], "Legality: " + it.legality),
         tagChip(it.availability, AVAIL_COLOR[it.availability], "Availability: " + it.availability),
-        (mode === "stash" && EN.engine.itemLoad && EN.engine.itemLoad(it.name) > 0)
-          ? tagChip("⚖ " + EN.engine.itemLoad(it.name), "var(--text2)", "Load " + EN.engine.itemLoad(it.name) + "; spends your Load Budget while on-person (equipped, carried, worn, or racked)") : null,
+        (mode === "stash" && ld > 0)
+          ? tagChip("⚖ " + ld, "var(--text2)", "Load " + ld + (wornArmor ? " (reduced by 2 while Worn, min 0)" : "") + "; spends your Load Budget while on-person (equipped, carried, worn, or racked)") : null,
         (EN.engine.itemSlots && EN.engine.itemSlots(it).length) ? tagChip("◧ " + slotLabel, "var(--flow)", "Body Slot: " + slotLabel) : null,
         it.counted ? tagChip("Counted", "var(--ember)", "Counted, track every unit from purchase to spend") : null,
         it.cyber ? tagChip("◆ " + it.zone, "var(--accent)", "Interface Zone: " + it.zone) : null,

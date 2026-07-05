@@ -2073,7 +2073,8 @@ EN.combatView = (function () {
       var wearable = mySlots.length > 0 && it && it.kind !== "armor" && it.kind !== "shield" && it.kind !== "focus";
       var chips = [];
       if (eqLabel) chips.push(el("span.chip", { style: { fontSize: "9px", color: "var(--accent)", borderColor: "var(--accent)" }, text: eqLabel.toUpperCase() }));
-      var baseLd = eng.itemLoad ? eng.itemLoad(e.name) : 0;
+      var wornArmor = ch.equippedArmor === key;
+      var baseLd = eng.itemLoad ? eng.itemLoad(e.name, { worn: wornArmor }) : 0;
       // one rack slot holds one item: a racked entry's TOTAL drops by 1, min 0
       var ldTotal = Math.max(0, baseLd * e.qty - (rackedGear ? 1 : 0));
       if (isGear) {
@@ -2083,8 +2084,8 @@ EN.combatView = (function () {
         chips.push(el("span.chip", { title: (gearWorn ? "" : "Wear it to use its racks. ") + ((gearIt && gearIt.effect) || "Carry Gear"), style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" }, text: "⧉ RACKS " + held + "/" + eng.rackLimit(gearIt) + (gearWorn ? "" : " (not worn)") }));
         chips.push(el("span.chip", { title: "Carry Gear is Load 0 and never counts against your own Load Budget", style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" }, text: "⚖ 0" }));
       } else if (ldTotal > 0 || rackedGear) {
-        chips.push(el("span.chip", { title: "Load " + ldTotal + (rackedGear ? " (reduced by 1 while Racked in the " + rackedGear.name + ")" : "") + (e.qty > 1 && !rackedGear ? " (" + baseLd + " each)" : "") + "; spends your Load Budget while on-person",
-          style: { fontSize: "9px", color: rackedGear ? "var(--success)" : "var(--text2)", borderColor: rackedGear ? "var(--success)" : "var(--border2)" },
+        chips.push(el("span.chip", { title: "Load " + ldTotal + (rackedGear ? " (reduced by 1 while Racked in the " + rackedGear.name + ")" : "") + (wornArmor ? " (reduced by 2 while Worn, min 0)" : "") + (e.qty > 1 && !rackedGear ? " (" + baseLd + " each)" : "") + "; spends your Load Budget while on-person",
+          style: { fontSize: "9px", color: (rackedGear || wornArmor) ? "var(--success)" : "var(--text2)", borderColor: (rackedGear || wornArmor) ? "var(--success)" : "var(--border2)" },
           text: "⚖ " + ldTotal + (rackedGear ? " ⧉" : "") }));
       }
       if (it) {
