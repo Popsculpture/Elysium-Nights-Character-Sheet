@@ -431,7 +431,7 @@ EN.gearCatalog.tools = {
     { name: "Bio Monitor Band", bucket: "devices", group: "Worn Tech", price: 140, availability: "Uncommon", legality: "Licensed", slot: "Arms",
       effect: "Broadcasts your location at 0 Wounds. Allies gain Edge to Stabilize you.",
       desc: "An arm or chest vitals monitor with a short-range distress ping. The first time each day you drop to 0 Wounds, it flags your location to nearby Allies with comms. Allies attempting to Stabilize you roll their first Medtech check with Edge." },
-    { name: "Adaptive Camo Cloak", bucket: "devices", group: "Worn Tech", price: 260, availability: "Rare", legality: "Restricted", slot: "Head or Accessory",
+    { name: "Adaptive Camo Cloak", bucket: "devices", group: "Worn Tech", price: 260, availability: "Rare", legality: "Restricted", slot: "Accessories",
       effect: "Edge (or +1 Edge Die) on Stealth to hide in clutter or low light.",
       desc: "A hooded outer layer with shifting patterns and heat scatter. While powered, gain Edge on Stealth checks to hide in low light, clutter, or urban ruins. The faint hum and heat bleed mean attacks against you cannot be treated as Silent by virtue of the cloak alone." },
     { name: "Respirator Mask", bucket: "devices", group: "Worn Tech", price: 90, availability: "Common", legality: "Legal", slot: "Face",
@@ -443,13 +443,13 @@ EN.gearCatalog.tools = {
     { name: "Gravshift Anklets", bucket: "devices", group: "Worn Tech", price: 170, availability: "Uncommon", legality: "Licensed", slot: "Feet",
       effect: "Halve falling damage past 2 spaces and land on your feet.",
       desc: "Slim ankle bands that catch and bleed off momentum. If you would fall more than 2 spaces, your descent slows to a controlled drift and you land on your feet instead of prone; you still take falling damage, but halve the final total." },
-    { name: "Streaming Rig", bucket: "devices", group: "Worn Tech", price: 180, availability: "Common", legality: "Legal", slot: "Accessory",
+    { name: "Streaming Rig", bucket: "devices", group: "Worn Tech", price: 180, availability: "Common", legality: "Legal", slot: "Accessories",
       effect: "Broadcast live. Build Cred, at the cost of position and Heat.",
       desc: "A personal array of camera, mic, halo light, and edit software. While live and working a scene-relevant audience, once per scene a successful Performance or Persuasion result can build Cred. Going live gives away your position; deniable actions roll with Snag, and loud public work raises Heat." },
     { name: "Vital Sync Bracer", bucket: "devices", group: "Worn Tech", price: 230, availability: "Rare", legality: "Restricted", slot: "Arms",
       effect: "Auto-Stabilizes you at 0 Wounds. Allies treating you gain Edge and 1d4 Vitality.",
       desc: "A woven bracer that maps your vitals and Flow rhythm. The first time each day you drop to 0 Wounds, it auto-fires: you are Stabilized and fall Unconscious instead of worsening, and it pings Allies with your status. Once per day, an Ally treating you rolls with Edge and, on a success, the Target also regains 1d4 Vitality." },
-    { name: "Hazmat Suit", bucket: "devices", group: "Worn Tech", price: 220, availability: "Uncommon", legality: "Licensed", slot: "None",
+    { name: "Hazmat Suit", bucket: "devices", group: "Worn Tech", price: 220, availability: "Uncommon", legality: "Licensed",
       effect: "Immunity to contact and inhaled toxins while sealed.",
       desc: "A sealed chemsuit worn over your armor. While sealed and intact, grants Immunity to many contact and inhaled toxic hazards. Take damage that can tear or slice it and the seal fails until the suit is repaired and resealed." },
 
@@ -550,7 +550,7 @@ EN.gearCatalog.tools = {
       desc: "An injector of volatile catalyst and stabilizers. As a Swift Action, enter Overchannel until the encounter ends: Edge on Flow attacks and Esoterica checks, +1 to Flow attack rolls and Invocation Save DC, and once each turn +1d6 on Invocation damage; once, reduce an Invocation's cost by 3. When it ends, gain 2 Strain and make a Body save DC 12 or gain 1 Fatigue. One per long rest." },
 
     /* ---- Worn Resonant Gear (Body Slot) ---- */
-    { name: "Resonant Anchor Charm", bucket: "flow", group: "Worn Resonant Gear", price: 180, availability: "Uncommon", legality: "Licensed", slot: "Accessory",
+    { name: "Resonant Anchor Charm", bucket: "flow", group: "Worn Resonant Gear", price: 180, availability: "Uncommon", legality: "Licensed", slot: "Accessories",
       effect: "Edge (or +1 Edge Die) vs forced movement. Once per scene, halve it.",
       desc: "A talisman tuned to local Flow currents. While worn, gain Edge on saves to resist forced movement from Resonant, Force, or Tech effects. Once per scene, when such an effect would move you 2 spaces or more, use your Impulse Action to halve that distance." },
     { name: "Channel Stabilizer Band", bucket: "flow", group: "Worn Resonant Gear", price: 220, availability: "Rare", legality: "Restricted", slot: "Arms",
