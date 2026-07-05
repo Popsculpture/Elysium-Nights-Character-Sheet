@@ -66,20 +66,27 @@ EN.combatView = (function () {
      snapshot captured when a HIT number is clicked, so the modal never reaches
      back into the weapon render scope. */
   var _rollTray = { open: false, ctx: null, mode: "none", help: 0, other: 0, roll: null, animating: false };
+  // monotonic animation id: a pending scramble's callback only settles the tray
+  // if no newer roll / close / mode change / open has superseded it (the same
+  // guard the Deep Run and Tech Bench pool rollers use).
+  var _rollAnimId = 0;
   function openRollTray(ctx) {
     // default the switch to the net the sheet already knows about, so an
     // untrained or condition-Snagged attack opens pre-set to Snag
     var mode = (ctx.baseSnag > 0) ? "snag" : (ctx.baseEdge > 0 && !ctx.shaken) ? "edge" : "none";
+    _rollAnimId++;
     _rollTray = { open: true, ctx: ctx, mode: mode, help: 0, other: 0, roll: null, animating: false };
     EN.app.render();
   }
   function closeRollTray() {
+    _rollAnimId++;
     _rollTray.open = false; _rollTray.roll = null; _rollTray.animating = false;
     EN.app.render();
   }
   function rollTraySetMode(m) {
     if (m === "edge" && _rollTray.ctx && _rollTray.ctx.shaken) return;   // Shaken: no Edge
     if (_rollTray.mode === m) return;
+    _rollAnimId++;
     _rollTray.mode = m; _rollTray.roll = null;   // the die count changed; reroll
     EN.app.render();
   }
@@ -115,8 +122,10 @@ EN.combatView = (function () {
     }, { silent: true });
     _rollTray.roll = { dice: res.dice, keptIndex: res.keptIndex, nat: res.nat };
     _rollTray.animating = true;
+    var myAnim = ++_rollAnimId;
     EN.app.render();
     EN.ui.animatePoolRoll(document.querySelector('[data-roll="d20tray"]'), function () {
+      if (myAnim !== _rollAnimId) return;   // superseded by a close/reopen/reroll
       _rollTray.animating = false; EN.app.render();
     });
   }
@@ -243,7 +252,8 @@ EN.combatView = (function () {
     // --- ammo readout (fired weapons) + a compact recent-rolls strip ---
     var ammoLine = ammo ? el("div.mono", { style: { fontSize: "10px", color: "var(--text3)", textAlign: "center", padding: "6px 16px 0", letterSpacing: ".06em" } },
       ["AMMO ", el("span", { style: { color: ammo.cur === 0 ? "var(--danger)" : "var(--text2)" }, text: ammo.cur + " / " + ammo.cap }), document.createTextNode("  ·  −" + ammo.cost + "/shot")]) : null;
-    var logList = (store.active().log || []).slice(0, 4);
+    var actv = store.active();
+    var logList = (actv && Array.isArray(actv.log) ? actv.log : []).slice(0, 4);
     var recent = logList.length ? el("div", { style: { padding: "10px 16px 12px", borderTop: "1px solid var(--border)" } }, [
       el("div.mono", { style: { fontSize: "9px", letterSpacing: ".18em", color: "var(--text4)", marginBottom: "6px" }, text: "RECENT ROLLS" }),
       el("div", { style: { display: "flex", flexDirection: "column", gap: "3px" } }, logList.map(function (e) {
@@ -956,12 +966,6 @@ EN.combatView = (function () {
       a.cur = Math.max(0, Math.min(a.cur, capacityOf(it)));   // keep persisted value in range
       c.weaponAmmo[wname] = a;
     });
-  }
-  function fireWeapon(wname) {
-    var it = findWeapon(wname); if (!it) return;
-    var st = readAmmo(store.active(), it), cost = costFor(it, st.mode);
-    if (st.cur < cost) { toast(it.name + ", needs " + cost + " for " + (st.mode || "Fire") + ", magazine has " + st.cur + ". Switch mode or reload."); return; }
-    writeAmmo(wname, { cur: Math.max(0, st.cur - cost) });
   }
   function reloadWeapon(wname) {
     var it = findWeapon(wname); if (!it) return;
