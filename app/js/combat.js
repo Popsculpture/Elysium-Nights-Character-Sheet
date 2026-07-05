@@ -631,6 +631,14 @@ EN.combatView = (function () {
       }
     });
   }
+  // Body Slot conflict resolution: benching an item stops it from counting
+  // toward (or benefiting from) its slot, without touching its Load or rack state.
+  function toggleSlotInert(key) {
+    store.update(function (c) {
+      c.slotInert = c.slotInert || {};
+      if (c.slotInert[key]) delete c.slotInert[key]; else c.slotInert[key] = true;
+    });
+  }
   // a weapon (equippedWeapons) or the worn armor / wielded shield / attuned focus is on-person by definition
   function isEquippedAny(ch, key) {
     return (ch.equippedWeapons || []).indexOf(key) !== -1 || ch.equippedArmor === key || ch.equippedShield === key || ch.equippedFocus === key;
@@ -1969,6 +1977,7 @@ EN.combatView = (function () {
       var owned = (ch.equipment || []).filter(function (e) { return e.qty > 0; });
       var inScene = owned.filter(function (e) { return isEquippedAny(ch, entryKey(e)) || carryStatus(ch, entryKey(e)) !== "stashed"; });
       var racks = eng.rackState(ch);
+      var slotConflicts = eng.slotConflicts ? eng.slotConflicts(ch) : {};
       var nCarried = 0, nMission = 0, nEquipped = 0, nRacked = 0, nHeavy = 0;
       inScene.forEach(function (e) {
         var it = invItem(e.name), cs = carryStatus(ch, entryKey(e));
@@ -2010,8 +2019,8 @@ EN.combatView = (function () {
         // racked items whose Carry Gear is missing or over capacity: still on-person, no break
         var strays = inScene.filter(function (e) { return !isEquippedAny(ch, entryKey(e)) && carryStatus(ch, entryKey(e)) === "racked" && !isNested(e); });
         function pushRow(e) {
-          kids.push(loadoutRow(e, false));
-          (racks.byGear[entryKey(e)] || []).forEach(function (child) { kids.push(loadoutRow(child, true)); });
+          kids.push(loadoutRow(e, false, slotConflicts));
+          (racks.byGear[entryKey(e)] || []).forEach(function (child) { kids.push(loadoutRow(child, true, slotConflicts)); });
         }
         function section(label, items) {
           if (!items.length) return;
@@ -2023,10 +2032,16 @@ EN.combatView = (function () {
         section("On-Person", equipped);
         section("Racked Adrift", strays);
         if (strays.length) kids.push(el("p.help", { style: { margin: "2px 0 6px", color: "var(--warn)", fontSize: "10.5px" }, text: "These are marked Racked but their Carry Gear is not on-person, does not fit them, or is over capacity; they carry full Load until re-racked." }));
+        var conflictSlots = Object.keys(slotConflicts);
+        if (conflictSlots.length) {
+          kids.push(el("p.help", { style: { margin: "2px 0 6px", color: "var(--warn)", fontSize: "10.5px" },
+            text: "Body Slot conflict: " + conflictSlots.map(function (s) { return s + " " + slotConflicts[s].active.length + "/" + slotConflicts[s].capacity; }).join(", ")
+              + ". Click ⚠ SLOT CONFLICT on an item below to bench it and free the slot." }));
+        }
       }
       return kids;
     }
-    function loadoutRow(e, nested) {
+    function loadoutRow(e, nested, slotConflicts) {
       var it = invItem(e.name), key = entryKey(e);
       var equipped = isEquippedAny(ch, key), eqLabel = equipLabel(ch, key);
       var cs = carryStatus(ch, key);
@@ -2052,7 +2067,25 @@ EN.combatView = (function () {
         if (isHeavy(it)) chips.push(el("span.chip", { title: "Heavy Item; bulky, slot-limited, or cumbersome", style: { fontSize: "9px", color: "var(--ember)", borderColor: "var(--ember)" }, text: "HEAVY" }));
         if (isRestricted(it)) chips.push(el("span.chip", { title: "Legality: " + it.legality, style: { fontSize: "9px", color: it.legality === "Contraband" ? "var(--danger)" : "var(--ember)", borderColor: it.legality === "Contraband" ? "var(--danger)" : "var(--ember)" }, text: it.legality.toUpperCase() }));
         if (isLimitedUse(it)) chips.push(el("span.chip", { title: "Counted / limited-use; track every unit", style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" }, text: "LIMITED" }));
-        if (it.slot && it.slot !== "None") chips.push(el("span.chip", { title: "Body slot: " + it.slot, style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" }, text: "◧ " + it.slot }));
+        var mySlots = eng.itemSlots ? eng.itemSlots(it) : [];
+        if (mySlots.length) {
+          var slotLabel = Array.isArray(it.slot) ? it.slot.join(" + ") : it.slot;
+          chips.push(el("span.chip", { title: "Body slot: " + slotLabel, style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" }, text: "◧ " + slotLabel }));
+          // a racked child is stowed inside worn Carry Gear, not worn on its
+          // own Body Slot (engine.slotState excludes it entirely), so the
+          // bench toggle would be a confusing no-op here; only its slot label shows.
+          var isInert = !nested && !!(ch.slotInert && ch.slotInert[key]);
+          var conflicted = !nested && !isInert && mySlots.some(function (s) { return slotConflicts && slotConflicts[s]; });
+          if (isInert) {
+            chips.push(el("span.chip", { title: "Benched: not counted toward, or benefiting from, its Body Slot. Click to reactivate.",
+              style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)", cursor: "pointer" },
+              onclick: function () { toggleSlotInert(key); } }, "INERT"));
+          } else if (conflicted) {
+            chips.push(el("span.chip", { title: "This Body Slot is over capacity. Click to bench this item and free it up for another.",
+              style: { fontSize: "9px", color: "var(--warn)", borderColor: "var(--warn)", cursor: "pointer" },
+              onclick: function () { toggleSlotInert(key); } }, "⚠ SLOT CONFLICT"));
+          }
+        }
       }
       // status control: equipped gear keeps its static tag (managed in Inventory)
       // plus a rack selector; everything else folds Racked targets into the

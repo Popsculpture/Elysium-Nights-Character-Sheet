@@ -258,6 +258,11 @@ EN.store = (function () {
         Object.keys(ch.carry).forEach(function (name) { newCarry[nameToIds[name] ? firstId(name) : name] = ch.carry[name]; });
         ch.carry = newCarry;
       }
+      if (ch.slotInert && typeof ch.slotInert === "object") {
+        var newSlotInert = {};
+        Object.keys(ch.slotInert).forEach(function (name) { newSlotInert[nameToIds[name] ? firstId(name) : name] = ch.slotInert[name]; });
+        ch.slotInert = newSlotInert;
+      }
     }
     // cyberware: legacy string entries → objects. sp:0 so old manual marks don't
     // retroactively spike Static; chrome bought from the market carries real SP.

@@ -432,6 +432,7 @@ EN.inventoryView = (function () {
     var ownedTotal = (ch.equipment || []).filter(function (e) { return e.name === it.name; }).reduce(function (n, e) { return n + (e.qty || 0); }, 0);
     var sp = streetPrice(it);
     var afford = (ch.glimmer || 0) >= sp;
+    var slotLabel = Array.isArray(it.slot) ? it.slot.join(" + ") : it.slot;
     var head = el("h4", { style: { cursor: "pointer" }, onclick: function () { _open[id] = !open; EN.app.render(); } }, [
       el("span", null, [
         el("span.collapse-caret", { text: open ? "▾" : "▸" }),
@@ -440,7 +441,7 @@ EN.inventoryView = (function () {
         tagChip(it.availability, AVAIL_COLOR[it.availability], "Availability: " + it.availability),
         (mode === "stash" && EN.engine.itemLoad && EN.engine.itemLoad(it.name) > 0)
           ? tagChip("⚖ " + EN.engine.itemLoad(it.name), "var(--text2)", "Load " + EN.engine.itemLoad(it.name) + "; spends your Load Budget while on-person (equipped, carried, or mission)") : null,
-        (it.slot && it.slot !== "None") ? tagChip("◧ " + it.slot, "var(--flow)", "Body Slot: " + it.slot) : null,
+        (EN.engine.itemSlots && EN.engine.itemSlots(it).length) ? tagChip("◧ " + slotLabel, "var(--flow)", "Body Slot: " + slotLabel) : null,
         it.counted ? tagChip("Counted", "var(--ember)", "Counted, track every unit from purchase to spend") : null,
         it.cyber ? tagChip("◆ " + it.zone, "var(--accent)", "Interface Zone: " + it.zone) : null,
         it.cyber ? tagChip(it.sp + " SP", it.sp >= 3 ? "var(--ember)" : "var(--gold)", "Static Points, adds to your Total Static / Chrome Tax") : null,
