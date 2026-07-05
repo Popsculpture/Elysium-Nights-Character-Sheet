@@ -91,7 +91,28 @@ EN.combatView = (function () {
     });
   }
   function rollTrayCommit() {
-    var res = eng.rollD20(rollTraySpec());
+    var ctx = _rollTray.ctx, spec = rollTraySpec();
+    var res = eng.rollD20(spec);
+    var flatSum = spec.mods.reduce(function (s, m) { return s + m.value; }, 0);
+    var it = ctx.usesAmmo ? findWeapon(ctx.weaponName) : null;
+    // one roll = one attack: a fired weapon spends a shot, and every roll is
+    // written to the character's roll log. Done silently so the render below
+    // is the one that shows the dice mid-animation.
+    var entry = { w: ctx.weaponName, mode: _rollTray.mode, nat: res.nat, total: res.nat + flatSum,
+      crit: res.nat >= (ctx.critMin || 20), fumble: res.nat === 1, t: Date.now() };
+    store.update(function (c) {
+      if (it) {
+        var st = readAmmo(c, it), cost = costFor(it, st.mode);
+        c.weaponAmmo = c.weaponAmmo || {};
+        var a = c.weaponAmmo[ctx.weaponName] || { cur: st.cur, mode: st.mode, ammoType: st.ammoType };
+        if (typeof a.cur !== "number") a.cur = st.cur;
+        a.cur = Math.max(0, a.cur - cost);
+        c.weaponAmmo[ctx.weaponName] = a;
+      }
+      c.log = Array.isArray(c.log) ? c.log : [];
+      c.log.unshift(entry);
+      if (c.log.length > 30) c.log.length = 30;
+    }, { silent: true });
     _rollTray.roll = { dice: res.dice, keptIndex: res.keptIndex, nat: res.nat };
     _rollTray.animating = true;
     EN.app.render();
@@ -115,6 +136,14 @@ EN.combatView = (function () {
       : mode === "snag" ? "Snag · roll 2d20, keep the lower" : "Straight · roll one d20";
     var modeColor = mode === "edge" ? "var(--accent)" : mode === "snag" ? "var(--danger)" : "var(--text2)";
 
+    // --- live ammo: a fired weapon spends one shot per roll ---
+    var ammo = null, canFire = true;
+    if (ctx.usesAmmo) {
+      var wIt = findWeapon(ctx.weaponName);
+      if (wIt) { var ast = readAmmo(store.active(), wIt); ammo = { cur: ast.cur, cap: ast.cap, cost: costFor(wIt, ast.mode), mode: ast.mode, unit: wIt.ammoUnit || "" }; canFire = ast.cur >= ammo.cost; }
+    }
+    var againWord = ctx.usesAmmo ? "TAP TO FIRE AGAIN" : "TAP TO ROLL AGAIN";
+
     // --- hero: the d20(s) you tap to roll ---
     var diceEls, prompt;
     if (roll) {
@@ -128,23 +157,25 @@ EN.combatView = (function () {
       prompt = anim ? el("div.mono", { style: { fontSize: "11px", letterSpacing: ".22em", color: "var(--text3)", marginTop: "12px", textTransform: "uppercase" }, text: "rolling…" })
         : el("div", { style: { marginTop: "10px" } }, [
             el("div.mono", { style: { fontSize: "48px", fontWeight: 700, lineHeight: "1", color: crit ? "var(--gold)" : fumble ? "var(--danger)" : "var(--accent)", textShadow: "0 0 20px currentColor" }, text: String(total) }),
-            el("div.mono", { style: { fontSize: "9px", letterSpacing: ".2em", color: "var(--text3)", marginTop: "5px" }, text: "TOTAL · TAP TO ROLL AGAIN" }),
+            el("div.mono", { style: { fontSize: "9px", letterSpacing: ".2em", color: canFire ? "var(--text3)" : "var(--warn)", marginTop: "5px" }, text: "TOTAL · " + (canFire ? againWord : "OUT OF AMMO") }),
             crit ? el("div.mono", { style: { fontWeight: 700, letterSpacing: ".14em", fontSize: "12px", color: "var(--gold)", marginTop: "7px" }, text: "◆ CRITICAL HIT" })
               : fumble ? el("div.mono", { style: { fontWeight: 700, letterSpacing: ".14em", fontSize: "12px", color: "var(--danger)", marginTop: "7px" }, text: "✖ FUMBLE (NAT 1)" }) : null
           ]);
     } else {
       diceEls = [];
       for (var i = 0; i < diceN; i++) { var d = EN.ui.d20Face("", { size: 62 }); d.style.opacity = ".45"; diceEls.push(d); }
-      prompt = el("div.mono", { style: { fontSize: "11px", letterSpacing: ".22em", color: "var(--accent)", marginTop: "12px", textTransform: "uppercase", opacity: ".9" }, text: "Tap to roll" });
+      prompt = el("div.mono", { style: { fontSize: "11px", letterSpacing: ".22em", color: canFire ? "var(--accent)" : "var(--warn)", marginTop: "12px", textTransform: "uppercase", opacity: ".9" }, text: canFire ? "Tap to roll" : "Out of ammo" });
     }
+    var reloadBtn = (ctx.usesAmmo && !canFire) ? el("button.btn.sm", { style: { marginTop: "10px", color: "var(--warn)", borderColor: "var(--warn)" },
+      onclick: function () { reloadWeapon(ctx.weaponName); } }, "⟳ RELOAD") : null;
     var hero = el("div", {
-      title: "Tap to roll", role: "button",
-      style: { textAlign: "center", padding: "22px 16px 18px", cursor: anim ? "default" : "pointer", userSelect: "none",
-        background: "radial-gradient(220px 140px at 50% 36%, rgba(0,229,255,.10), transparent 70%)" },
-      onclick: function () { if (!anim) rollTrayCommit(); }
+      title: canFire ? "Tap to roll" : "Reload to keep firing", role: "button",
+      style: { textAlign: "center", padding: "22px 16px 18px", cursor: (anim || !canFire) ? "default" : "pointer", userSelect: "none",
+        background: "radial-gradient(220px 140px at 50% 36%, rgba(0,229,255," + (canFire ? ".10" : ".03") + "), transparent 70%)" },
+      onclick: function () { if (!anim && canFire) rollTrayCommit(); }
     }, [
       el("div", { dataset: { roll: "d20tray" }, style: { display: "flex", gap: "14px", alignItems: "center", justifyContent: "center", minHeight: "64px" } }, diceEls),
-      prompt
+      prompt, reloadBtn
     ]);
 
     // --- auto modifiers as one muted caption ---
@@ -209,6 +240,20 @@ EN.combatView = (function () {
       el("span.mono", { style: { fontSize: "13px", color: "var(--text)" }, text: "MOD " + eng.fmtMod(flatSum) + (ctx.critMin < 20 ? " · crit " + ctx.critMin + "-20" : "") })
     ]);
 
+    // --- ammo readout (fired weapons) + a compact recent-rolls strip ---
+    var ammoLine = ammo ? el("div.mono", { style: { fontSize: "10px", color: "var(--text3)", textAlign: "center", padding: "6px 16px 0", letterSpacing: ".06em" } },
+      ["AMMO ", el("span", { style: { color: ammo.cur === 0 ? "var(--danger)" : "var(--text2)" }, text: ammo.cur + " / " + ammo.cap }), document.createTextNode("  ·  −" + ammo.cost + "/shot")]) : null;
+    var logList = (store.active().log || []).slice(0, 4);
+    var recent = logList.length ? el("div", { style: { padding: "10px 16px 12px", borderTop: "1px solid var(--border)" } }, [
+      el("div.mono", { style: { fontSize: "9px", letterSpacing: ".18em", color: "var(--text4)", marginBottom: "6px" }, text: "RECENT ROLLS" }),
+      el("div", { style: { display: "flex", flexDirection: "column", gap: "3px" } }, logList.map(function (e) {
+        return el("div.row.between", { style: { fontFamily: "var(--mono)", fontSize: "10.5px" } }, [
+          el("span", { style: { color: "var(--text3)" }, text: e.w + (e.mode && e.mode !== "none" ? " · " + e.mode : "") }),
+          el("span", { style: { color: e.crit ? "var(--gold)" : e.fumble ? "var(--danger)" : "var(--text)" }, text: String(e.total) + (e.crit ? " ◆" : e.fumble ? " ✖" : "") })
+        ]);
+      }))
+    ]) : null;
+
     var header = el("div.row.between", { style: { alignItems: "center", padding: "13px 16px", borderBottom: "1px solid var(--border)", background: "linear-gradient(180deg, rgba(0,229,255,.04), transparent)" } }, [
       el("div", null, [
         el("div", { style: { fontFamily: "var(--disp)", fontWeight: 700, fontSize: "15.5px", letterSpacing: ".02em", color: "var(--text)" }, text: ctx.weaponName }),
@@ -223,7 +268,7 @@ EN.combatView = (function () {
     }, [
       el("div", { style: { width: "min(430px, 96vw)", maxHeight: "94vh", overflowY: "auto", borderRadius: "12px",
         background: "linear-gradient(180deg, var(--bg2), var(--bg1))", border: "1px solid var(--border2)",
-        boxShadow: "0 20px 60px rgba(0,0,0,.55), 0 0 40px rgba(0,229,255,.10)" } }, [header, hero, autoLine, breakdown, ctrls, foot])
+        boxShadow: "0 20px 60px rgba(0,0,0,.55), 0 0 40px rgba(0,229,255,.10)" } }, [header, hero, autoLine, ammoLine, breakdown, ctrls, foot, recent])
     ]);
   }
 
@@ -1925,6 +1970,7 @@ EN.combatView = (function () {
           weaponName: it.name,
           subtype: (h.melee ? "Melee" : h.thrownItem ? "Thrown" : "Ranged") + " Weapon · " + h.cat,
           melee: h.melee, thrownItem: h.thrownItem, ranged: !h.melee && !h.thrownItem,
+          usesAmmo: !h.melee && !h.thrownItem && it.ammo != null,   // a fired weapon spends a shot per roll
           traits: it.traits || [], baseMods: baseMods, critMin: h.spec ? 19 : 20,
           autoSnag: autoSnag, autoEdge: [], baseSnag: autoSnag.length, baseEdge: 0,
           shaken: (ch.conditions || []).indexOf("Shaken") !== -1
