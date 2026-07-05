@@ -2033,8 +2033,17 @@ EN.combatView = (function () {
         }
         function section(label, items) {
           if (!items.length) return;
-          kids.push(el("div.section-title", { style: { margin: "8px 0 4px" } }, [document.createTextNode(label), el("span.line")]));
-          items.forEach(pushRow);
+          var id = "loadout-sec:" + label;
+          var open = _open[id] !== false;   // expanded by default; stays collapsed once tapped closed
+          kids.push(el("div.section-title", { style: { margin: "8px 0 4px", cursor: "pointer" },
+            title: open ? "Collapse " + label : "Expand " + label,
+            onclick: function () { _open[id] = !open; EN.app.render(); } }, [
+            el("span.collapse-caret", { text: open ? "▾" : "▸" }),
+            document.createTextNode(" " + label + " "),
+            el("span.mono", { style: { fontSize: "10px", color: "var(--text3)" }, text: "(" + items.length + ")" }),
+            el("span.line")
+          ]));
+          if (open) items.forEach(pushRow);
         }
         section("Carried", carried);
         section("Worn", worn);
