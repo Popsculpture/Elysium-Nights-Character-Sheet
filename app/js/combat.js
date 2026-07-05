@@ -51,7 +51,7 @@ EN.combatView = (function () {
   }
 
   var _fxBox = { mode: "open", closedKey: null };   // sticky Active Condition Effects box ("open"/"min"; closedKey = content-keyed dismiss)
-  var _pops = { vit: false, wound: false, rest: false, short: false, settings: false };   // popover state (VITALITY / WOUNDS / REST / ⚙ buttons)
+  var _pops = { vit: false, wound: false, rest: false, short: false, settings: false, addgear: false };   // popover state (VITALITY / WOUNDS / REST / ⚙ / ＋ ADD TO LOADOUT)
   var _amts = { vit: 1, wound: 1, rd: 1 };                 // remembered amounts per popover
   function closePops() { Object.keys(_pops).forEach(function (k) { _pops[k] = false; }); }
   document.addEventListener("click", function (ev) {
@@ -615,10 +615,20 @@ EN.combatView = (function () {
   // catalog name for a pooled consumable/ammo stack).
   function entryKey(e) { return EN.engine.entryKey ? EN.engine.entryKey(e) : (e && e.name); }
   function carryStatus(ch, key) { return (ch.carry && ch.carry[key]) || "stashed"; }
+  // status is "stashed" | "carried" | "mission" | "racked|<carryGearEntryKey>";
+  // racking stows the item in worn Carry Gear (Load reduced by 1, min 0)
   function setCarry(key, status) {
     store.update(function (c) {
       c.carry = c.carry || {};
-      if (!status || status === "stashed") delete c.carry[key]; else c.carry[key] = status;
+      c.racked = c.racked || {};
+      if (status && status.indexOf("racked|") === 0) {
+        var gearKey = status.slice(7);
+        if (gearKey) { c.carry[key] = "racked"; c.racked[key] = gearKey; }
+        else { delete c.racked[key]; c.carry[key] = "carried"; }   // empty rack target self-heals to carried
+      } else {
+        delete c.racked[key];
+        if (!status || status === "stashed") delete c.carry[key]; else c.carry[key] = status;
+      }
     });
   }
   // a weapon (equippedWeapons) or the worn armor / wielded shield / attuned focus is on-person by definition
@@ -1958,70 +1968,133 @@ EN.combatView = (function () {
       ]));
       var owned = (ch.equipment || []).filter(function (e) { return e.qty > 0; });
       var inScene = owned.filter(function (e) { return isEquippedAny(ch, entryKey(e)) || carryStatus(ch, entryKey(e)) !== "stashed"; });
-      var nCarried = 0, nMission = 0, nEquipped = 0, nHeavy = 0;
+      var racks = eng.rackState(ch);
+      var nCarried = 0, nMission = 0, nEquipped = 0, nRacked = 0, nHeavy = 0;
       inScene.forEach(function (e) {
         var it = invItem(e.name), cs = carryStatus(ch, entryKey(e));
         // equipped wins; an equipped item is never also tallied as carried/mission
         if (isEquippedAny(ch, entryKey(e))) nEquipped++;
         else if (cs === "carried") nCarried++;
         else if (cs === "mission") nMission++;
+        else if (cs === "racked") nRacked++;
         if (it && isHeavy(it)) nHeavy++;
       });
-      kids.push(el("p.help", { style: { margin: "2px 0 8px" }, text: "What you brought to the scene. Inventory is the warehouse; this is the kit on your person. "
-        + nEquipped + " equipped · " + nCarried + " carried · " + nMission + " mission" + (nHeavy ? " · " + nHeavy + " heavy" : "") + "." }));
+      // add-to-loadout pop-out lives at the TOP so the whole loadout can be
+      // managed from here without scrolling past every section
+      var stashOnly = owned.filter(function (e) { return !isEquippedAny(ch, entryKey(e)) && carryStatus(ch, entryKey(e)) === "stashed"; });
+      kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", margin: "2px 0 8px" } }, [
+        el("div.pop-anchor", { style: { position: "relative" } }, [
+          el("button.btn.sm" + (stashOnly.length ? ".primary" : ""), { disabled: !stashOnly.length,
+            title: stashOnly.length ? "Add stashed gear to your loadout" : "Everything you own is already in your loadout",
+            onclick: function () { var was = _pops.addgear; closePops(); _pops.addgear = !was; EN.app.render(); } }, "＋ ADD TO LOADOUT"),
+          _pops.addgear ? el("div", { style: { position: "absolute", left: 0, top: "calc(100% + 6px)", zIndex: 30, width: "280px", maxHeight: "300px", overflowY: "auto",
+            background: "var(--bg1)", border: "1px solid var(--accent)", borderRadius: "6px", padding: "8px", boxShadow: "0 8px 24px rgba(0,0,0,.5)" } },
+            [el("p.help", { style: { margin: "0 0 6px", fontSize: "10.5px" }, text: "Tap an item to add it as Carried; fine-tune its status on its row after." })]
+            .concat(stashOnly.map(function (e) {
+              return el("button.btn.sm", { style: { display: "block", width: "100%", textAlign: "left", marginBottom: "3px" },
+                onclick: function () { setCarry(entryKey(e), "carried"); } },
+                e.name + (e.qty > 1 ? " ×" + e.qty : ""));
+            }))) : null
+        ]),
+        el("p.help", { style: { margin: 0, flex: "1 1 auto" }, text: "What you brought to the scene. "
+          + nEquipped + " equipped · " + nCarried + " carried · " + nMission + " mission" + (nRacked ? " · " + nRacked + " racked" : "") + (nHeavy ? " · " + nHeavy + " heavy" : "") + "." })
+      ]));
       if (!inScene.length) {
-        kids.push(el("p.help", { style: { margin: "0 0 6px", color: "var(--text3)" }, text: "Nothing in your loadout yet. Equip gear in Inventory, or add carried items below." }));
+        kids.push(el("p.help", { style: { margin: "0 0 6px", color: "var(--text3)" }, text: "Nothing in your loadout yet. Equip gear in Inventory, or use ＋ ADD TO LOADOUT above." }));
       } else {
-        var carried = inScene.filter(function (e) { return !isEquippedAny(ch, entryKey(e)) && carryStatus(ch, entryKey(e)) === "carried"; });
-        var mission = inScene.filter(function (e) { return !isEquippedAny(ch, entryKey(e)) && carryStatus(ch, entryKey(e)) === "mission"; });
-        var equipped = inScene.filter(function (e) { return isEquippedAny(ch, entryKey(e)); });
+        // a validly racked item renders NESTED under its Carry Gear, not in the flat lists
+        function isNested(e) { return !!racks.byItem[entryKey(e)]; }
+        var carried = inScene.filter(function (e) { return !isEquippedAny(ch, entryKey(e)) && carryStatus(ch, entryKey(e)) === "carried" && !isNested(e); });
+        var mission = inScene.filter(function (e) { return !isEquippedAny(ch, entryKey(e)) && carryStatus(ch, entryKey(e)) === "mission" && !isNested(e); });
+        var equipped = inScene.filter(function (e) { return isEquippedAny(ch, entryKey(e)) && !isNested(e); });
+        // racked items whose Carry Gear is missing or over capacity: still on-person, no break
+        var strays = inScene.filter(function (e) { return !isEquippedAny(ch, entryKey(e)) && carryStatus(ch, entryKey(e)) === "racked" && !isNested(e); });
+        function pushRow(e) {
+          kids.push(loadoutRow(e, false));
+          (racks.byGear[entryKey(e)] || []).forEach(function (child) { kids.push(loadoutRow(child, true)); });
+        }
         function section(label, items) {
           if (!items.length) return;
           kids.push(el("div.section-title", { style: { margin: "8px 0 4px" } }, [document.createTextNode(label), el("span.line")]));
-          items.forEach(function (e) { kids.push(loadoutRow(e)); });
+          items.forEach(pushRow);
         }
         section("Carried", carried);
         section("Mission", mission);
         section("On-Person", equipped);
-      }
-      // add-to-loadout picker (stash items not yet carried or equipped)
-      var stashOnly = owned.filter(function (e) { return !isEquippedAny(ch, entryKey(e)) && carryStatus(ch, entryKey(e)) === "stashed"; });
-      if (stashOnly.length) {
-        var addSel = el("select", { style: { fontSize: "12px", width: "auto" } },
-          [el("option", { value: "", text: "＋ add a carried item…" })].concat(stashOnly.map(function (e) {
-            return el("option", { value: entryKey(e), text: e.name + (e.qty > 1 ? " ×" + e.qty : "") });
-          })));
-        addSel.addEventListener("change", function () { if (addSel.value) setCarry(addSel.value, "carried"); });
-        kids.push(el("div.row", { style: { gap: "8px", marginTop: "10px", alignItems: "center" } }, [addSel]));
-      } else if (owned.length) {
-        kids.push(el("p.help", { style: { margin: "10px 0 0", color: "var(--text4)" }, text: "Everything you own is already in your loadout." }));
+        section("Racked Adrift", strays);
+        if (strays.length) kids.push(el("p.help", { style: { margin: "2px 0 6px", color: "var(--warn)", fontSize: "10.5px" }, text: "These are marked Racked but their Carry Gear is not on-person, does not fit them, or is over capacity; they carry full Load until re-racked." }));
       }
       return kids;
     }
-    function loadoutRow(e) {
+    function loadoutRow(e, nested) {
       var it = invItem(e.name), key = entryKey(e);
       var equipped = isEquippedAny(ch, key), eqLabel = equipLabel(ch, key);
       var cs = carryStatus(ch, key);
+      var racks = eng.rackState(ch);
+      var rackedGear = racks.byItem[key] || null;
+      var isGear = eng.isCarryGear(it);
       var chips = [];
       if (eqLabel) chips.push(el("span.chip", { style: { fontSize: "9px", color: "var(--accent)", borderColor: "var(--accent)" }, text: eqLabel.toUpperCase() }));
-      var ld = eng.itemLoad ? eng.itemLoad(e.name) : 0;
-      if (ld > 0) chips.push(el("span.chip", { title: "Load " + ld + (e.qty > 1 ? " each, " + (ld * e.qty) + " total" : "") + "; spends your Load Budget while on-person", style: { fontSize: "9px", color: "var(--text2)", borderColor: "var(--border2)" }, text: "⚖ " + (e.qty > 1 ? ld + "×" + e.qty : ld) }));
+      var baseLd = eng.itemLoad ? eng.itemLoad(e.name) : 0;
+      // one rack slot holds one item: a racked entry's TOTAL drops by 1, min 0
+      var ldTotal = Math.max(0, baseLd * e.qty - (rackedGear ? 1 : 0));
+      if (isGear) {
+        var gearIt = invItem(e.name);
+        var held = (racks.byGear[key] || []).length;
+        chips.push(el("span.chip", { title: (gearIt && gearIt.effect) || "Carry Gear", style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" }, text: "⧉ RACKS " + held + "/" + eng.rackLimit(gearIt) }));
+        chips.push(el("span.chip", { title: "Carry Gear is Load 0 and never counts against your own Load Budget", style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" }, text: "⚖ 0" }));
+      } else if (ldTotal > 0 || rackedGear) {
+        chips.push(el("span.chip", { title: "Load " + ldTotal + (rackedGear ? " (reduced by 1 while Racked in the " + rackedGear.name + ")" : "") + (e.qty > 1 && !rackedGear ? " (" + baseLd + " each)" : "") + "; spends your Load Budget while on-person",
+          style: { fontSize: "9px", color: rackedGear ? "var(--success)" : "var(--text2)", borderColor: rackedGear ? "var(--success)" : "var(--border2)" },
+          text: "⚖ " + ldTotal + (rackedGear ? " ⧉" : "") }));
+      }
       if (it) {
         if (isHeavy(it)) chips.push(el("span.chip", { title: "Heavy Item; bulky, slot-limited, or cumbersome", style: { fontSize: "9px", color: "var(--ember)", borderColor: "var(--ember)" }, text: "HEAVY" }));
         if (isRestricted(it)) chips.push(el("span.chip", { title: "Legality: " + it.legality, style: { fontSize: "9px", color: it.legality === "Contraband" ? "var(--danger)" : "var(--ember)", borderColor: it.legality === "Contraband" ? "var(--danger)" : "var(--ember)" }, text: it.legality.toUpperCase() }));
         if (isLimitedUse(it)) chips.push(el("span.chip", { title: "Counted / limited-use; track every unit", style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" }, text: "LIMITED" }));
         if (it.slot && it.slot !== "None") chips.push(el("span.chip", { title: "Body slot: " + it.slot, style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" }, text: "◧ " + it.slot }));
       }
-      // equipped gear is on-person by definition; its slot is managed in Inventory, so it
-      // shows a static tag rather than the carry selector (no "Stashed but Equipped" contradiction)
-      var statusCtrl = equipped
-        ? el("span.mono", { title: "Equipped gear is managed in Inventory", style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".06em" }, text: "ON-PERSON" })
-        : el("select", { title: "Carry status", style: { fontSize: "11px", width: "auto" }, onchange: function () { setCarry(key, this.value); } },
-            [["stashed", "Stashed"], ["carried", "Carried"], ["mission", "Mission"]].map(function (o) {
-              return el("option", { value: o[0], selected: cs === o[0], text: o[1] });
-            }));
-      return el("div.feature", { style: { borderLeftColor: equipped ? "var(--accent)" : cs === "mission" ? "var(--gold)" : "var(--border2)" } }, [
+      // status control: equipped gear keeps its static tag (managed in Inventory)
+      // plus a rack selector; everything else folds Racked targets into the
+      // carry select ("racked|<gearKey>" values)
+      var targets = it && !isGear ? eng.rackTargets(ch, e) : [];
+      var statusCtrl;
+      if (equipped) {
+        // racking keeps carry status and the rack target in lockstep so an
+        // unequipped item stays visibly racked (or visibly not) afterward;
+        // a stale assignment renders as "adrift" so it can always be cleared
+        var staleKey = !rackedGear ? (ch.racked || {})[key] : null;
+        statusCtrl = el("div.row", { style: { gap: "6px", alignItems: "center" } }, [
+          el("span.mono", { title: "Equipped gear is managed in Inventory", style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".06em" }, text: "ON-PERSON" }),
+          (targets.length || rackedGear || staleKey) ? el("select", { title: "Rack this in worn Carry Gear (Load reduced by 1, and a Sheath/Holster draws it free on your first attack)",
+            style: { fontSize: "11px", width: "auto" },
+            onchange: function () { var v = this.value; store.update(function (c) {
+              c.racked = c.racked || {}; c.carry = c.carry || {};
+              if (v) { c.racked[key] = v; c.carry[key] = "racked"; }
+              else { delete c.racked[key]; if (c.carry[key] === "racked") c.carry[key] = "carried"; }
+            }); } },
+            [el("option", { value: "", selected: !rackedGear && !staleKey, text: "not racked" })].concat(targets.map(function (g) {
+              var gk = entryKey(g);
+              return el("option", { value: gk, selected: !!(rackedGear && entryKey(rackedGear) === gk) || staleKey === gk, text: "⧉ " + g.name });
+            })).concat(staleKey && !targets.some(function (g) { return entryKey(g) === staleKey; })
+              ? [el("option", { value: staleKey, selected: true, text: "⧉ racked (adrift)" })] : [])) : null
+        ]);
+      } else {
+        var opts = [["stashed", "Stashed"], ["carried", "Carried"], ["mission", "Mission"]].map(function (o) {
+          return el("option", { value: o[0], selected: cs === o[0] && !(cs === "racked"), text: o[1] });
+        }).concat(targets.map(function (g) {
+          var gk = entryKey(g);
+          var on = cs === "racked" && (ch.racked || {})[key] === gk;
+          return el("option", { value: "racked|" + gk, selected: on, text: "⧉ Racked: " + g.name });
+        }));
+        // keep a stale racked target selectable so the row shows the truth
+        if (cs === "racked" && !rackedGear) opts.push(el("option", { value: "racked|" + ((ch.racked || {})[key] || ""), selected: true, text: "⧉ Racked (adrift)" }));
+        statusCtrl = el("select", { title: "Carry status; Racked stows it in worn Carry Gear for 1 less Load", style: { fontSize: "11px", width: "auto" },
+          onchange: function () { setCarry(key, this.value); } }, opts);
+      }
+      return el("div.feature", { style: { borderLeftColor: equipped ? "var(--accent)" : cs === "mission" ? "var(--gold)" : rackedGear ? "var(--flow)" : "var(--border2)", marginLeft: nested ? "26px" : "0" } }, [
         el("div.row", { style: { gap: "8px", alignItems: "center", flexWrap: "wrap" } }, [
+          nested ? el("span.mono", { title: "Racked inside the item above", style: { fontSize: "11px", color: "var(--flow)" }, text: "⧉" }) : null,
           el("span", { style: { fontWeight: 600, fontSize: "13px" }, text: e.name }),
           e.qty > 1 ? el("span.mono", { style: { fontSize: "11px", color: "var(--text3)" }, text: "×" + e.qty }) : null,
           el("span", { style: { flex: "1 1 auto" } }),

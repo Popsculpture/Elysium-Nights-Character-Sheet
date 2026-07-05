@@ -640,13 +640,15 @@ EN.engine = (function () {
     switch (it.bucket) {
       case "kits": return 2;
       case "consumables": return 0;
+      case "carry": return 0;   // Carry Gear never counts against your own Load Budget
       case "flow": return /tonic|draught|philter|salve|vial|dose/i.test(it.name) ? 0 : 1;
       case "rigs": return 2;
       case "devices": return /drone|mule|case|rack/i.test(it.name) ? 2 : 1;
     }
     return 1;
   }
-  // on-person = equipped, or carry status "carried" / "mission" (the Loadout tab).
+  // on-person = equipped, or carry status "carried" / "mission" / "racked"
+  // (Racked = stowed in a worn piece of Carry Gear, still on your person).
   // Takes the actual equipment entry (not just its name) since carry/equip state
   // is keyed by entryKey (an id for individually-tracked gear, else the name).
   function onPerson(ch, e) {
@@ -655,7 +657,70 @@ EN.engine = (function () {
     if ((ch.equippedWeapons || []).indexOf(key) !== -1) return true;
     if (ch.equippedArmor === key || ch.equippedShield === key || ch.equippedFocus === key) return true;
     var cs = ch.carry && ch.carry[key];
-    return cs === "carried" || cs === "mission";
+    return cs === "carried" || cs === "mission" || cs === "racked";
+  }
+
+  /* ---- Carry Gear & Racking -----------------------------------------------
+     Carry Gear (bucket "carry") is Load 0 and holds up to `rack` items; each
+     validly Racked item's Load drops by 1 (minimum 0). An item Racks in one
+     piece of Carry Gear at a time (ch.racked = {itemKey: gearKey}), the gear
+     itself must be on-person, the item must fit (rackFits "melee"/"sidearm",
+     or anything that isn't Carry Gear), and capacity is enforced in equipment
+     order, so an over-stuffed bag quietly stops giving the break. */
+  function isCarryGear(it) { return !!(it && it.bucket === "carry"); }
+  function rackLimit(it) { return (it && it.rack) || 0; }
+  function rackFits(gearIt, it) {
+    if (!gearIt || !it || isCarryGear(it)) return false;      // no bags inside bags
+    if (gearIt.rackFits === "melee") return it.group === "Simple" || it.group === "Martial";
+    if (gearIt.rackFits === "sidearm") return it.group === "Sidearm";
+    return true;                                              // plausibility is the GM's call
+  }
+  // the character's on-person Carry Gear entries, with their catalog items
+  function carryGearWorn(ch) {
+    return ((ch && ch.equipment) || []).filter(function (e) {
+      return e.qty > 0 && isCarryGear(loadCatalogItem(e.name)) && onPerson(ch, e);
+    });
+  }
+  // validated rack assignments: byItem {itemKey: gearEntry}, byGear {gearKey: [entries]}.
+  // An item is Racked only while BOTH halves agree: carry status "racked" AND
+  // a racked[key] target (equipped or not); a leftover mapping without the
+  // status is inert, so an unracked-then-recarried item never silently
+  // re-racks itself off stale state.
+  function rackState(ch) {
+    var byItem = {}, byGear = {}, counts = {};
+    var racked = (ch && ch.racked) || {};
+    var carry = (ch && ch.carry) || {};
+    var gearByKey = {};
+    carryGearWorn(ch).forEach(function (g) { gearByKey[entryKey(g)] = g; });
+    ((ch && ch.equipment) || []).forEach(function (e) {
+      var key = entryKey(e);
+      var gk = racked[key];
+      if (!gk || carry[key] !== "racked" || !(e.qty > 0) || !onPerson(ch, e)) return;
+      var gear = gearByKey[gk];
+      if (!gear) return;                                       // rack target not worn: no break
+      var gearIt = loadCatalogItem(gear.name);
+      if (!rackFits(gearIt, loadCatalogItem(e.name))) return;
+      counts[gk] = counts[gk] || 0;
+      if (counts[gk] >= rackLimit(gearIt)) return;             // over capacity: first come, first racked
+      counts[gk]++;
+      byItem[key] = gear;
+      (byGear[gk] = byGear[gk] || []).push(e);
+    });
+    return { byItem: byItem, byGear: byGear };
+  }
+  // on-person Carry Gear that COULD take this entry right now (fits + free slot)
+  function rackTargets(ch, entry) {
+    var it = loadCatalogItem(entry.name);
+    var rs = rackState(ch);
+    var myKey = entryKey(entry);
+    return carryGearWorn(ch).filter(function (g) {
+      var gk = entryKey(g);
+      if (gk === myKey) return false;
+      var gearIt = loadCatalogItem(g.name);
+      if (!rackFits(gearIt, it)) return false;
+      var used = (rs.byGear[gk] || []).filter(function (e) { return entryKey(e) !== myKey; }).length;
+      return used < rackLimit(gearIt);
+    });
   }
   function encumbranceInfo(ch, attributes, dl, linFeats) {
     var base = Math.max(3, 6 + attributes.BOD.mod);
@@ -673,10 +738,20 @@ EN.engine = (function () {
     var threshold = base; steps.forEach(function (s) { threshold += s.value; });
     var bands = { light: threshold - 3, standard: threshold, heavy: threshold + 3 };
     var current = 0, items = [];
+    // a validly Racked item (stowed in worn Carry Gear) carries 1 less Load,
+    // min 0. One rack slot holds ONE item, so a pooled qty stack racked as a
+    // single slot gets the break once, not once per unit.
+    var racks = rackState(ch);
     (ch.equipment || []).forEach(function (e) {
       if (!(e.qty > 0) || !onPerson(ch, e)) return;
       var l = itemLoad(e.name);
-      if (l > 0) { current += l * e.qty; items.push({ name: e.name, load: l, qty: e.qty }); }
+      var rackedGear = racks.byItem[entryKey(e)] || null;
+      var total = l * e.qty;
+      if (rackedGear) total = Math.max(0, total - 1);
+      if (total > 0 || rackedGear) {
+        current += total;
+        items.push({ name: e.name, load: l, qty: e.qty, total: total, rackedIn: rackedGear ? rackedGear.name : null });
+      }
     });
     // the Loadout tier is not declared; it is whatever your carried Load says it is
     var tier = current <= bands.light ? "light" : current <= bands.standard ? "standard" : current <= bands.heavy ? "heavy" : "over";
@@ -1195,6 +1270,8 @@ EN.engine = (function () {
     grantedGear: grantedGear, gearFloorTier: gearFloorTier, effectiveGearTier: effectiveGearTier, gearTierCost: gearTierCost,
     activeLineageFeatures: activeLineageFeatures, splitTalentText: splitTalentText, leaseLapsed: leaseLapsed, itemLoad: itemLoad,
     isStackableItem: isStackableItem, isStackableName: isStackableName, entryKey: entryKey, findEntry: findEntry, keyToName: keyToName,
+    isCarryGear: isCarryGear, rackLimit: rackLimit, rackFits: rackFits, carryGearWorn: carryGearWorn, rackState: rackState, rackTargets: rackTargets,
+    catalogItem: loadCatalogItem,
     focusList: focusList, specList: specList, activeFocusList: activeFocusList, focusesFor: focusesFor, specFor: specFor,
     aspectMatches: aspectMatches, weaponFocus: weaponFocus, weaponSpec: weaponSpec, signatureUnlocked: signatureUnlocked,
     overlapGrants: overlapGrants, grantedFocusFor: grantedFocusFor, unresolvedOverlaps: unresolvedOverlaps,

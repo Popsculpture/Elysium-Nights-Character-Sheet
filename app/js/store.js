@@ -116,7 +116,8 @@ EN.store = (function () {
       equippedShield: null,              // wielded physical shield (one at a time)
       equippedFocus: null,               // attuned Warding Focus (one at a time)
       weaponAmmo: {},                    // {weaponName: {cur, mode, ammoType}}, magazine/fire-mode tracking
-      carry: {},                         // Loadout carry status per item name: "carried" | "mission" (absent = stashed)
+      carry: {},                         // Loadout carry status per entry key: "carried" | "mission" | "racked" (absent = stashed)
+      racked: {},                        // Racked assignments: {itemEntryKey: carryGearEntryKey} (Carry Gear, one rack per item)
       haul: "none",                      // active Haul: "none" | "lift" (body-sized) | "drag" (oversized/double)
       glimmer: 0,
       nexus: 0,                          // Nexus tokens (◎), the high-scrutiny currency; fractional
@@ -151,6 +152,15 @@ EN.store = (function () {
     if (!Array.isArray(ch.customFeatures)) ch.customFeatures = [];           // manual Features on the Freelancer tab
     if (!ch.featureAnnotations || typeof ch.featureAnnotations !== "object") ch.featureAnnotations = {};  // notes/flags on computed features
     if (!ch.carry || typeof ch.carry !== "object") ch.carry = {};            // Loadout carry status per item
+    if (!ch.racked || typeof ch.racked !== "object") ch.racked = {};         // Carry Gear rack assignments
+    Object.keys(ch.racked).forEach(function (k) { if (typeof ch.racked[k] !== "string") delete ch.racked[k]; });
+    // carry values must be a real status, and a "racked" status without a
+    // surviving rack target downgrades to carried (still on-person, no break)
+    Object.keys(ch.carry).forEach(function (k) {
+      var v = ch.carry[k];
+      if (["carried", "mission", "racked"].indexOf(v) === -1) delete ch.carry[k];
+      else if (v === "racked" && typeof ch.racked[k] !== "string") ch.carry[k] = "carried";
+    });
     if (typeof ch.nexus !== "number") ch.nexus = 0;                          // Nexus wallet (◎)
     delete ch.loadout;                                                       // the Loadout tier is derived from carried Load, never declared
     if (["none", "lift", "drag"].indexOf(ch.haul) === -1) ch.haul = "none";  // active Haul

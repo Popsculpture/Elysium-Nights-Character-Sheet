@@ -42,6 +42,11 @@ EN.gearCatalog.tools = {
         { name: "Worn Tech", intro: "Devices that run on you all day. Each calls out a Body Slot." },
         { name: "Mystech & Tactical Utility", intro: "" }
       ] },
+    { key: "carry", title: "Carry Gear",
+      intro: "Where you rack it matters as much as what it weighs. A pistol crammed into a duffel rides heavier than the same pistol sitting in a rig built to hold it. Carry Gear rewards good rigging with a small, specific break on Load, tied to what you actually stow in it. Carry Gear itself is Load 0 and never counts against your own Load Budget.",
+      groups: [
+        { name: "Carry Gear", intro: "Racked: when you set up your Loadout, also set which items go into each piece of Carry Gear you are wearing, up to its stated limit. A Racked item's Load is reduced by 1 (minimum 0). An item can only be Racked in one piece of Carry Gear at a time, and it still has to plausibly fit the container; a Fanny Pack does not hold a Longarm. GM's call on anything borderline." }
+      ] },
     { key: "consumables", title: "Consumables",
       intro: "Single-use gear that patches a body, breaches a wall, or makes the evidence disappear.",
       groups: [
@@ -272,9 +277,27 @@ EN.gearCatalog.tools = {
     { name: "Rebreather", bucket: "devices", group: "Everyday Utility", price: 90, availability: "Uncommon", legality: "Licensed", slot: "Face",
       effect: "Breathe in water or thin air for up to 1 hour. Will not protect against toxic atmospheres on its own.",
       desc: "A compact mouthpiece and gill-filter for the flooded sectors and dead-air crawlspaces. While worn and charged, you do not begin Drowning in water or low-oxygen air for up to 1 hour of active use, refreshing between scenes." },
-    { name: "Swift Draw Holster", bucket: "devices", group: "Everyday Utility", price: 30, availability: "Common", legality: "Legal",
-      effect: "Draw a sidearm as part of your first attack with it. Does not stack with the Quick Draw weapon trait.",
-      desc: "A custom rig tuned to one specific sidearm. As long as the weapon is sheathed there, you draw it as part of your first attack with it in an encounter rather than spending a separate Action." },
+    /* ============================== CARRY GEAR ==============================
+       Type: Worn Gear · Body Slot: Carry · Load 0 (never counts against your
+       own Load Budget). rack = how many items it holds; each Racked item's
+       Load is reduced by 1 (minimum 0). rackFits gates what it can hold:
+       "melee" (Simple/Martial weapons), "sidearm" (Sidearm group), or any
+       non-Carry-Gear item when absent. */
+    { name: "Backpack", bucket: "carry", group: "Carry Gear", price: 35, availability: "Common", legality: "Legal", slot: "Carry", rack: 3,
+      effect: "Rack 3 items. Each item's Load is reduced by 1 (minimum 0).",
+      desc: "The default answer to where the rest of it goes. More room than a belt, at the cost of digging for it under pressure." },
+    { name: "Fanny Pack", bucket: "carry", group: "Carry Gear", price: 15, availability: "Common", legality: "Legal", slot: "Carry", rack: 1,
+      effect: "Rack 1 item. Its Load is reduced by 1 (minimum 0).",
+      desc: "Reads as harmless. A courier's kit, a tourist's kit, whatever the block expects to see. Holds just enough to be worth wearing." },
+    { name: "Sheath", bucket: "carry", group: "Carry Gear", price: 35, availability: "Common", legality: "Legal", slot: "Carry", rack: 1, rackFits: "melee",
+      effect: "Rack 1 melee weapon. As long as the weapon is sheathed here, draw it as part of your first attack with it in an encounter, rather than spending a separate Action. Does not stack with the Quick Draw weapon trait. The weapon's Load is also reduced by 1 (minimum 0) while sheathed here.",
+      desc: "A dedicated rig for one blade, worn at the hip, the thigh, or across the back. The melee counterpart to a Swift Draw Holster." },
+    { name: "Swift Draw Holster", bucket: "carry", group: "Carry Gear", price: 35, availability: "Common", legality: "Legal", slot: "Carry", rack: 1, rackFits: "sidearm",
+      effect: "Rack 1 sidearm. As long as the weapon is sheathed there, draw it as part of your first attack with it in an encounter, rather than spending a separate Action. Does not stack with the Quick Draw weapon trait. The weapon's Load is also reduced by 1 (minimum 0) while sheathed there.",
+      desc: "A custom rig tuned to one specific sidearm." },
+    { name: "Utility Belt", bucket: "carry", group: "Carry Gear", price: 25, availability: "Common", legality: "Legal", slot: "Carry", rack: 2,
+      effect: "Rack 2 items. Each item's Load is reduced by 1 (minimum 0).",
+      desc: "Loops, pouches, a clasp or two. The gear you actually reach for mid job lives here, not at the bottom of a bag." },
     { name: "Cargo Mule", bucket: "devices", group: "Everyday Utility", price: 600, availability: "Uncommon", legality: "Licensed",
       effect: "A multi-legged drone that hauls your gear and follows you around.",
       desc: "A squat, multi-legged robotic lockbox. Follows simple voice or app commands and carries up to 4 Heavy Items without tiring. It cannot fight and flees if attacked; treat as Average cover material if shot, and gone for the scene if it takes serious fire." },

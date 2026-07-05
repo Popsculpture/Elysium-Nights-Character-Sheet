@@ -994,6 +994,15 @@ EN.builder = (function () {
           if (c.equippedShield === g.key) c.equippedShield = null;
           if (c.equippedFocus === g.key) c.equippedFocus = null;
           if (c.carry) delete c.carry[g.key];
+          if (c.racked) {
+            delete c.racked[g.key];
+            Object.keys(c.racked).forEach(function (k) {
+              if (c.racked[k] === g.key) {
+                delete c.racked[k];
+                if (c.carry && c.carry[k] === "racked") c.carry[k] = "carried";
+              }
+            });
+          }
           // magazine tracking is keyed by weapon NAME and shared across copies;
           // drop it only when no other copy of this weapon remains
           if (c.weaponAmmo && !(c.equipment || []).some(function (x) { return x.name === e.name && x.qty > 0; })) delete c.weaponAmmo[e.name];

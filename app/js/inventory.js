@@ -124,6 +124,62 @@ EN.inventoryView = (function () {
     var v = DEF_VERB[it.kind] || DEF_VERB.armor;
     toast(was ? it.name + " stowed." : it.name + " " + v.act + "; its DR, Block, Defense, and Ward now read on the Freelancer tab.");
   }
+  /* ---- Loadout status from the Stash (carried / mission / racked) --------
+     Mirrors the Freelancer tab's Loadout controls so the whole loadout can be
+     built here. "racked|<gearKey>" stows the item in worn Carry Gear: its
+     Load drops by 1 (minimum 0), one piece of Carry Gear per item. */
+  function invSetCarry(key, status) {
+    store.update(function (c) {
+      c.carry = c.carry || {};
+      c.racked = c.racked || {};
+      if (status && status.indexOf("racked|") === 0) {
+        var gearKey = status.slice(7);
+        if (gearKey) { c.carry[key] = "racked"; c.racked[key] = gearKey; }
+        else { delete c.racked[key]; c.carry[key] = "carried"; }   // empty rack target self-heals to carried
+      } else {
+        delete c.racked[key];
+        if (!status || status === "stashed") delete c.carry[key]; else c.carry[key] = status;
+      }
+    });
+  }
+  function carryCtrl(ch, it, entry) {
+    var key = entryKey(entry);
+    var equipped = (ch.equippedWeapons || []).indexOf(key) !== -1 || ch.equippedArmor === key || ch.equippedShield === key || ch.equippedFocus === key;
+    var cs = (ch.carry && ch.carry[key]) || "stashed";
+    var racks = EN.engine.rackState(ch);
+    var rackedGear = racks.byItem[key] || null;
+    var isGear = EN.engine.isCarryGear(it);
+    var targets = !isGear ? EN.engine.rackTargets(ch, entry) : [];
+    if (equipped) {
+      // equip state already reads on the card; racking keeps carry status and
+      // the rack target in lockstep, and a stale assignment renders as
+      // "adrift" so it can always be cleared
+      var staleKey = !rackedGear ? (ch.racked || {})[key] : null;
+      if (!targets.length && !rackedGear && !staleKey) return null;
+      return el("select", { title: "Rack this in worn Carry Gear: Load reduced by 1, and a Sheath or Holster draws it free on your first attack",
+        style: { fontSize: "11px", width: "auto" },
+        onchange: function () { var v = this.value; store.update(function (c) {
+          c.racked = c.racked || {}; c.carry = c.carry || {};
+          if (v) { c.racked[key] = v; c.carry[key] = "racked"; }
+          else { delete c.racked[key]; if (c.carry[key] === "racked") c.carry[key] = "carried"; }
+        }); } },
+        [el("option", { value: "", selected: !rackedGear && !staleKey, text: "not racked" })].concat(targets.map(function (g) {
+          var gk = entryKey(g);
+          return el("option", { value: gk, selected: !!(rackedGear && entryKey(rackedGear) === gk) || staleKey === gk, text: "⧉ " + g.name });
+        })).concat(staleKey && !targets.some(function (g) { return entryKey(g) === staleKey; })
+          ? [el("option", { value: staleKey, selected: true, text: "⧉ racked (adrift)" })] : []));
+    }
+    var opts = [["stashed", "Stashed"], ["carried", "Carried"], ["mission", "Mission"]].map(function (o) {
+      return el("option", { value: o[0], selected: cs === o[0], text: o[1] });
+    }).concat(targets.map(function (g) {
+      var gk = entryKey(g);
+      return el("option", { value: "racked|" + gk, selected: cs === "racked" && (ch.racked || {})[key] === gk, text: "⧉ Racked: " + g.name });
+    }));
+    if (cs === "racked" && !rackedGear) opts.push(el("option", { value: "racked|" + ((ch.racked || {})[key] || ""), selected: true, text: "⧉ Racked (adrift)" }));
+    return el("select", { title: "Loadout status; Racked stows it in worn Carry Gear for 1 less Load", style: { fontSize: "11px", width: "auto" },
+      onchange: function () { invSetCarry(key, this.value); } }, opts);
+  }
+
   // called after an entry's qty drops to <=0 (sell/drop); key is the specific
   // entry's identity (id for a tracked instance, name for a pooled stack) and
   // name is its catalog name (magazine tracking is name-keyed and shared
@@ -136,6 +192,15 @@ EN.inventoryView = (function () {
       if (c.equippedShield === key) c.equippedShield = null;
       if (c.equippedFocus === key) c.equippedFocus = null;
       if (c.carry) delete c.carry[key];                        // drop its Loadout carry status too (no orphaned key)
+      if (c.racked) {
+        delete c.racked[key];                                  // it can't stay racked anywhere
+        Object.keys(c.racked).forEach(function (k) {           // and nothing can stay racked IN it
+          if (c.racked[k] === key) {
+            delete c.racked[k];
+            if (c.carry && c.carry[k] === "racked") c.carry[k] = "carried";   // contents fall back to carried
+          }
+        });
+      }
       if (name && c.weaponAmmo && !(c.equipment || []).some(function (x) { return x.name === name && x.qty > 0; })) delete c.weaponAmmo[name];
     }
   }
@@ -433,11 +498,11 @@ EN.inventoryView = (function () {
         title: "Buy out the lease for " + fmtNx(bpx) + " Nexus. The item becomes yours outright and Upkeep ends.",
         style: { color: "var(--flow)", borderColor: "var(--flow)" }, onclick: function () { buyoutLease(ownedKey); } }, "BUYOUT · " + fmtNx(bpx)));
     }
-    // action button(s): a single market button, or the stash equip/fence/drop group
+    // action button(s): a single market button, or the stash loadout/equip/fence/drop group
     var actionEl = mode === "mkt"
       ? mktBtn
       : el("div.row.wrap", { style: { gap: "6px", justifyContent: "flex-end" } },
-          leaseBtns.concat(isWeapon(it) ? [
+          (entry ? [carryCtrl(ch, it, entry)] : []).concat(leaseBtns).concat(isWeapon(it) ? [
             isEquipped(ch, ownedKey)
               ? el("button.btn.sm.primary", { title: "Unequip, remove from the Attacks list on the Freelancer tab", onclick: function () { toggleEquip(entry); } }, "✓ EQUIPPED")
               : el("button.btn.sm", { title: "Equip, add to the Attacks list on the Freelancer tab", style: { color: "var(--accent)", borderColor: "var(--accent)" }, onclick: function () { toggleEquip(entry); } }, "⚔ EQUIP")
@@ -486,6 +551,30 @@ EN.inventoryView = (function () {
   }
 
   /* ---- sub-views ---- */
+  // Stash categories: fixed display order, collapsible (collapsed by default)
+  var STASH_CATS = ["Melee Weapons", "Ranged Weapons", "Signature Weapons", "Ammunition & Munitions",
+    "Armor & Defensive Gear", "Carry Gear", "Skill Kits", "Field Devices & Gadgets", "Consumables",
+    "Flow Tonics & Resonant Devices", "Smartdecks & B&E Buddies", "Cipher Library", "Weapon Parts", "Armor Mods", "Custom & Unknown"];
+  var _stashOpen = {};   // category name -> true when expanded
+  function stashCategory(it) {
+    if (!it) return "Custom & Unknown";
+    if (it.benchPart) return "Weapon Parts";
+    if (it.armorMod) return "Armor Mods";
+    if (it.signature) return "Signature Weapons";
+    if (isWeapon(it)) return (it.group === "Simple" || it.group === "Martial") ? "Melee Weapons" : "Ranged Weapons";
+    if (isDefensive(it)) return "Armor & Defensive Gear";
+    if (it.legality === "As weapon" || ["Plentiful", "Counted", "Specialty", "Launcher Shell", "Signature Munition"].indexOf(it.group) !== -1) return "Ammunition & Munitions";
+    switch (it.bucket) {
+      case "carry": return "Carry Gear";
+      case "kits": return "Skill Kits";
+      case "devices": return "Field Devices & Gadgets";
+      case "consumables": return "Consumables";
+      case "flow": return "Flow Tonics & Resonant Devices";
+      case "rigs": return "Smartdecks & B&E Buddies";
+      case "ciphers": return "Cipher Library";
+    }
+    return "Custom & Unknown";
+  }
   function stashView(ch) {
     var entries = (ch.equipment || []).filter(function (e) { return e.qty > 0; });
     // Load readout: what your on-person gear spends against the declared Loadout's budget
@@ -495,7 +584,7 @@ EN.inventoryView = (function () {
     var stateColor = enc.state === "overloaded" ? "var(--danger)" : enc.state === "encumbered" ? "var(--warn)" : "var(--success)";
     var tierColor = enc.tier === "light" ? "var(--success)" : enc.tier === "standard" ? "var(--accent)" : enc.tier === "heavy" ? "var(--warn)" : "var(--danger)";
     var loadBar = el("div.row.wrap", { style: { gap: "10px", alignItems: "center", padding: "7px 10px", border: "1px solid var(--border)", borderRadius: "4px", background: "rgba(0,0,0,.15)", marginBottom: "10px" } }, [
-      el("span.mono", { title: "On-person Load (equipped + carried + mission gear). Each item's ⚖ chip is its Load; 0-Load gear rides free.\nLight ≤ " + encBands.light + " · Standard ≤ " + encBands.standard + " · Heavy ≤ " + encBands.heavy + " · beyond = Overloaded",
+      el("span.mono", { title: "On-person Load (equipped + carried + mission + racked gear). Each item's ⚖ chip is its Load; 0-Load gear rides free, and a Racked item carries 1 less.\nLight ≤ " + encBands.light + " · Standard ≤ " + encBands.standard + " · Heavy ≤ " + encBands.heavy + " · beyond = Overloaded",
         style: { fontSize: "16px", color: "var(--text)" },
         html: "LOAD " + enc.current + " <span style='font-size:11px;color:var(--text3)'>/ " + encBands.standard + "</span>" }),
       el("span.chip", { title: "Your Loadout tier, calculated from what you carry", style: { fontSize: "9px", color: tierColor, borderColor: tierColor } },
@@ -504,20 +593,53 @@ EN.inventoryView = (function () {
         String((encStates[enc.state] || {}).name || enc.state || "").toUpperCase()),
       el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "Calculated from on-person gear; hauls live on the Freelancer tab's Loadout sub-tab." })
     ]);
-    var cards = entries.map(function (e) {
+    if (!entries.length) {
+      return [EN.ui.panel("Stash", "0 ENTRIES", [el("p.help", { style: { margin: 0 }, text: "Empty. The Undercut is open; it's always open." })], { corners: true })];
+    }
+    // group entries by category, keep the fixed order
+    var groups = {};
+    entries.forEach(function (e) {
       var it = findItem(e.name);
-      if (it) return itemCard(it, ch, "stash", e);
-      // unknown / custom item (incl. #GRID rigs), minimal row with its Load
-      var ld = EN.engine.itemLoad ? EN.engine.itemLoad(e.name) : 0;
-      return el("div.feature", null, [
-        el("h4", null, [el("span", null, [document.createTextNode(e.name),
-          ld > 0 ? tagChip("⚖ " + ld, "var(--text2)", "Load " + ld + "; spends your Load Budget while on-person") : null]),
-          el("span.mono", { style: { color: "var(--text3)", fontSize: "13px" }, text: "×" + e.qty })]),
-        el("div.row", { style: { gap: "6px", marginTop: "4px", justifyContent: "flex-end" } }, [el("button.btn.sm", { onclick: function () { drop(e.name); } }, "DROP")])
-      ]);
+      var cat = stashCategory(it);
+      (groups[cat] = groups[cat] || []).push({ e: e, it: it });
     });
-    return [EN.ui.panel("Stash", entries.length + " ENTRIES", cards.length ? [loadBar].concat(cards) :
-      [el("p.help", { style: { margin: 0 }, text: "Empty. The Undercut is open; it's always open." })], { corners: true })];
+    var catNames = STASH_CATS.filter(function (c) { return groups[c]; });
+    var allOpen = catNames.every(function (c) { return _stashOpen[c]; });
+    var controls = el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginBottom: "4px" } }, [
+      el("button.btn.sm", { title: allOpen ? "Collapse every category" : "Expand every category",
+        onclick: function () { var target = !allOpen; catNames.forEach(function (c) { _stashOpen[c] = target; }); EN.app.render(); } },
+        allOpen ? "▾ COLLAPSE ALL" : "▸ EXPAND ALL"),
+      el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "Sorted by category. Set each item's loadout status (carried, mission, racked) right on its card." })
+    ]);
+    var body = [loadBar, controls];
+    catNames.forEach(function (cat) {
+      var list = groups[cat];
+      var open = !!_stashOpen[cat];
+      body.push(el("div.section-title", { style: { margin: "10px 0 4px", cursor: "pointer" },
+        title: open ? "Collapse " + cat : "Expand " + cat,
+        onclick: function () { _stashOpen[cat] = !open; EN.app.render(); } }, [
+        el("span.collapse-caret", { text: open ? "▾" : "▸" }),
+        document.createTextNode(" " + cat + " "),
+        el("span.mono", { style: { fontSize: "10px", color: "var(--text3)" }, text: "(" + list.length + ")" }),
+        el("span.line")
+      ]));
+      if (open) list.forEach(function (x) {
+        if (x.it) { body.push(itemCard(x.it, ch, "stash", x.e)); return; }
+        // unknown / custom item (incl. #GRID rigs), minimal row with its Load
+        var e = x.e;
+        var ld = EN.engine.itemLoad ? EN.engine.itemLoad(e.name) : 0;
+        body.push(el("div.feature", null, [
+          el("h4", null, [el("span", null, [document.createTextNode(e.name),
+            ld > 0 ? tagChip("⚖ " + ld, "var(--text2)", "Load " + ld + "; spends your Load Budget while on-person") : null]),
+            el("span.mono", { style: { color: "var(--text3)", fontSize: "13px" }, text: "×" + e.qty })]),
+          el("div.row", { style: { gap: "6px", marginTop: "4px", justifyContent: "flex-end" } }, [
+            carryCtrl(ch, null, e),
+            el("button.btn.sm", { onclick: function () { drop(entryKey(e)); } }, "DROP")
+          ])
+        ]));
+      });
+    });
+    return [EN.ui.panel("Stash", entries.length + " ENTRIES", body, { corners: true })];
   }
 
   /* ---- Chrome tab: body silhouette + Chrome-Tax heat map, installed list, Open Architecture ---- */
@@ -888,7 +1010,7 @@ EN.inventoryView = (function () {
     }
     var T = g.tools;
     if (T && T.buckets) {
-      var SHORT = { kits: "KITS", devices: "DEVICES", consumables: "CONSUMABLES", flow: "FLOW", rigs: "RIGS", ciphers: "CIPHERS" };
+      var SHORT = { kits: "KITS", devices: "DEVICES", carry: "CARRY", consumables: "CONSUMABLES", flow: "FLOW", rigs: "RIGS", ciphers: "CIPHERS" };
       T.buckets.forEach(function (bucket) {
         cats.push({ key: bucket.key, title: bucket.title, short: SHORT[bucket.key] || bucket.key.toUpperCase(), intro: bucket.intro,
           subs: (bucket.groups || []).map(function (grp) {
