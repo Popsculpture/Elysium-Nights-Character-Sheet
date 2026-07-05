@@ -118,6 +118,7 @@ EN.store = (function () {
       weaponAmmo: {},                    // {weaponName: {cur, mode, ammoType}}, magazine/fire-mode tracking
       carry: {},                         // Loadout carry status per entry key: "carried" | "mission" | "racked" (absent = stashed)
       racked: {},                        // Racked assignments: {itemEntryKey: carryGearEntryKey} (Carry Gear, one rack per item)
+      slotInert: {},                     // Body Slot conflicts: {itemEntryKey: true} for on-person items the player benched
       haul: "none",                      // active Haul: "none" | "lift" (body-sized) | "drag" (oversized/double)
       glimmer: 0,
       nexus: 0,                          // Nexus tokens (◎), the high-scrutiny currency; fractional
@@ -161,6 +162,11 @@ EN.store = (function () {
       if (["carried", "mission", "racked"].indexOf(v) === -1) delete ch.carry[k];
       else if (v === "racked" && typeof ch.racked[k] !== "string") ch.carry[k] = "carried";
     });
+    // Body Slot conflict picks: a hand-edited/imported save can carry garbage
+    // here, and slotState() only ever reads true/false per entry key, so any
+    // non-true value is just noise to strip.
+    if (!ch.slotInert || typeof ch.slotInert !== "object") ch.slotInert = {};
+    Object.keys(ch.slotInert).forEach(function (k) { if (ch.slotInert[k] !== true) delete ch.slotInert[k]; });
     if (typeof ch.nexus !== "number") ch.nexus = 0;                          // Nexus wallet (◎)
     delete ch.loadout;                                                       // the Loadout tier is derived from carried Load, never declared
     if (["none", "lift", "drag"].indexOf(ch.haul) === -1) ch.haul = "none";  // active Haul

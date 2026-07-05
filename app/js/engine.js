@@ -765,6 +765,56 @@ EN.engine = (function () {
              current: current, items: items, haul: haul, state: state };
   }
 
+  /* ---- Body Slots & Worn Gear ---------------------------------------------
+     Nine canonical worn-gear groups, each with a capacity: how many distinct
+     on-person items may occupy it before the player has to choose which are
+     active. "Carry" here is a BODY slot (how many pieces of Carry Gear you
+     can wear at once), a different mechanic from a Carry Gear item's own
+     rack capacity (how many items go inside one worn bag). A validly Racked
+     item is stowed inside worn Carry Gear, not worn on its own body slot, so
+     it never counts here even though it is on-person. */
+  var SLOT_CAPACITY = { Head: 1, Face: 1, Torso: 1, Arms: 2, Hands: 1, Legs: 1, Feet: 1, Accessories: 4, Carry: 3 };
+  // normalizes a catalog item's slot field (absent, a single string, or an
+  // array for multi-slot gear like Torso+Legs armor) into a flat array of
+  // only recognized slot names, so malformed or custom data never breaks
+  // capacity math.
+  function itemSlots(it) {
+    if (!it || !it.slot) return [];
+    var raw = Array.isArray(it.slot) ? it.slot : [it.slot];
+    return raw.filter(function (s) { return SLOT_CAPACITY.hasOwnProperty(s); });
+  }
+  // per-slot occupancy for every on-person item that calls out a Body Slot:
+  // which entries are active vs player-benched ("inert"), and whether the
+  // active count exceeds capacity (a conflict awaiting a pick). A benched
+  // item stays on-person and keeps any Load/rack effects, it just stops
+  // counting toward (and benefiting from) its Body Slot.
+  function slotState(ch) {
+    var groups = {};
+    Object.keys(SLOT_CAPACITY).forEach(function (s) { groups[s] = { capacity: SLOT_CAPACITY[s], active: [], inert: [], overflow: false }; });
+    var racks = rackState(ch);
+    var inertMap = (ch && ch.slotInert) || {};
+    (ch.equipment || []).forEach(function (e) {
+      if (!(e.qty > 0) || !onPerson(ch, e)) return;
+      if (racks.byItem[entryKey(e)]) return;    // racked inside a worn bag: not worn on its own slot
+      var slots = itemSlots(loadCatalogItem(e.name));
+      if (!slots.length) return;
+      var inert = !!inertMap[entryKey(e)];
+      slots.forEach(function (s) {
+        var g = groups[s];
+        if (!g) return;
+        (inert ? g.inert : g.active).push(e);
+      });
+    });
+    Object.keys(groups).forEach(function (s) { groups[s].overflow = groups[s].active.length > groups[s].capacity; });
+    return groups;
+  }
+  // just the overflowing slot groups, for a summary "N slots need a pick" banner
+  function slotConflicts(ch) {
+    var st = slotState(ch), out = {};
+    Object.keys(st).forEach(function (s) { if (st[s].overflow) out[s] = st[s]; });
+    return out;
+  }
+
   /* ---- #GRID hacking stats: Cipher Attack / Save DC, Links, Bandwidth, and the
      equipped rig (Smartdeck for Power Users / B&E Buddy for Standard Users).
      Cipher Attack = d20 + Tech mod + Systems Proficiency Bonus; the deck's Device
@@ -1271,6 +1321,7 @@ EN.engine = (function () {
     activeLineageFeatures: activeLineageFeatures, splitTalentText: splitTalentText, leaseLapsed: leaseLapsed, itemLoad: itemLoad,
     isStackableItem: isStackableItem, isStackableName: isStackableName, entryKey: entryKey, findEntry: findEntry, keyToName: keyToName,
     isCarryGear: isCarryGear, rackLimit: rackLimit, rackFits: rackFits, carryGearWorn: carryGearWorn, rackState: rackState, rackTargets: rackTargets,
+    SLOT_CAPACITY: SLOT_CAPACITY, itemSlots: itemSlots, slotState: slotState, slotConflicts: slotConflicts,
     catalogItem: loadCatalogItem,
     focusList: focusList, specList: specList, activeFocusList: activeFocusList, focusesFor: focusesFor, specFor: specFor,
     aspectMatches: aspectMatches, weaponFocus: weaponFocus, weaponSpec: weaponSpec, signatureUnlocked: signatureUnlocked,
