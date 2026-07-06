@@ -538,7 +538,9 @@ EN.pdfExport = (function () {
     // vitality & wounds
     ctx.sectionTitle("Vitality & Wounds", "Vigor to Vitality to Wounds");
     ctx.row([{ label: "Vigor", name: "vigor", value: st.vigor || "", w: 1 }], { height: 18 });
-    ctx.checkboxRow("Resilience d" + (d.resilienceDie || "?"), "resilience", st.rdMax, st.rd);
+    // checked = spent (not available), so an untouched pool renders fully open
+    // and a mid-session character still shows the dice it has actually burned
+    ctx.checkboxRow("Resilience d" + (d.resilienceDie || "?"), "resilience", st.rdMax, st.rdMax - st.rd);
     ctx.row([
       { label: "Vitality", name: "vitality.current", value: st.vit, w: 1, align: "center" },
       { label: "Max", name: "vitality.max", value: st.vitMax, w: "50px", align: "center" }

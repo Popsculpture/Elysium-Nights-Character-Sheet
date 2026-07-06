@@ -379,7 +379,7 @@ EN.printSheet = (function () {
       el("span.ps-fl", { text: "VIGOR" }), el("span.ps-box.ps-write")
     ]));
     vw.appendChild(el("div.ps-vw-cell", null, [
-      el("span.ps-fl", { text: "RESILIENCE d" + (d.resilienceDie || "?") }), pips(d.resilienceMax, d.resilienceMax, "dot")
+      el("span.ps-fl", { text: "RESILIENCE d" + (d.resilienceDie || "?") }), pips(0, d.resilienceMax, "dot")
     ]));
     vw.appendChild(el("div.ps-vw-cell", null, [
       el("span.ps-fl", { text: "VITALITY" }), el("span.ps-box.ps-write"), el("span.ps-vw-sl", { text: "/" }), el("span.ps-box", { text: d.vitalityMax })
@@ -399,7 +399,7 @@ EN.printSheet = (function () {
     R.push(wtable(["Name", "Atk Bonus / DC", "Damage & Type", "Notes"], atkRows, Math.max(6, atkRows.length + 2), ".ps-tbl-atk"));
     // Abilities table (blank write-in; resource tracker in the header)
     var resLabel = d.resource ? (d.resource.name.toUpperCase() + " MAX " + d.resource.max) : (d.flow ? "FLOW FP MAX " + d.flow.max : "");
-    var trackPips = d.resource ? pips(d.resource.max, Math.min(d.resource.max, 12), "dot") : null;
+    var trackPips = d.resource ? pips(0, Math.min(d.resource.max, 12), "dot") : null;
     R.push(el("div.ps-sect", null, [
       el("span", { text: "Abilities" }),
       el("span.ps-sect-track", null, [resLabel ? el("span.ps-fl", { text: resLabel }) : null, trackPips].filter(Boolean))
