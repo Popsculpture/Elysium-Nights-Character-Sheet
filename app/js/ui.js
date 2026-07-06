@@ -155,7 +155,7 @@ EN.ui = (function () {
           facets: ["P:50,24 74.7,42 65.3,71 34.7,71 25.3,42", "M50,24 L50,2 M74.7,42 L95.6,35.2 M65.3,71 L78.2,88.8 M34.7,71 L21.8,88.8 M25.3,42 L4.4,35.2"],
           numY: 50 }
   };
-  // opts: { size (width px), edge (stroke), num (value color), value, animating, numSize }
+  // opts: { size (width px), edge (stroke), num (value color), value, animating, numSize, glow (drop-shadow color) }
   function dieFaceSvg(sides, opts) {
     opts = opts || {};
     var g = DIE_GEOM[sides] || DIE_GEOM[6];
@@ -168,19 +168,29 @@ EN.ui = (function () {
         ? '<polygon points="' + f.slice(2) + '" fill="none" style="stroke:' + edge + '" stroke-width="3" stroke-linejoin="round" opacity=".7"/>'
         : '<path d="' + f + '" fill="none" style="stroke:' + edge + '" stroke-width="3" stroke-linejoin="round" opacity=".7"/>';
     }).join("");
-    return '<svg viewBox="0 0 100 100" width="' + w + '" height="' + h + '" aria-hidden="true">'
+    var glow = opts.glow ? "filter:drop-shadow(0 0 " + Math.round(w / 5) + "px " + opts.glow + ");" : "";
+    return '<svg viewBox="0 0 100 100" width="' + w + '" height="' + h + '" aria-hidden="true" style="' + glow + '">'
       + '<polygon points="' + g.outer + '" fill="rgba(0,0,0,.35)" style="stroke:' + edge + '" stroke-width="4" stroke-linejoin="round"/>'
       + inner
       + '<text x="50" y="' + g.numY + '" text-anchor="middle" dominant-baseline="central" style="fill:' + num + ';font-family:var(--mono);font-weight:700" font-size="' + fs + '">' + shown + '</text>'
       + '</svg>';
   }
-  // one rolled Dice-Pool die (#GRID); colored by how many hits it counts for,
-  // gold-edged for a d12, shakes via .tb-die.rolling with animatePoolRoll attrs.
+  // one rolled Dice-Pool die (#GRID Deep Run + crafting Work Intervals). poolColor
+  // is the row's own colour: var(--success) for an Edge row, var(--danger) for a
+  // Snag row. A d10 is outlined in that colour; a sharpened d12 goes gold for
+  // Edge or arc-violet (var(--fp)) for Snag, so a lone die still reads which
+  // pool it came from. Hit count drives the number: dim for a miss, plain text
+  // for one hit, glowing in the die's own colour for two. Shakes via
+  // .tb-die.rolling with animatePoolRoll attrs.
   function dieFace(die, poolColor, animating) {
-    var num = animating ? "var(--text)" : (die.hits === 2 ? poolColor : (die.hits === 1 ? "var(--text)" : "var(--text4)"));
+    var isD12 = die.sides === 12, isEdge = poolColor === "var(--success)";
+    var faceColor = isD12 ? (isEdge ? "var(--gold)" : "var(--fp)") : poolColor;
+    var hit2 = die.hits === 2 && !animating;
+    var num = animating ? "var(--text)" : (hit2 ? faceColor : (die.hits === 1 ? "var(--text)" : "var(--text4)"));
     var svg = dieFaceSvg(die.sides, {
-      size: die.sides === 12 ? 24 : 23, hRatio: 1.06, edge: die.sides === 12 ? "var(--gold)" : "var(--border2)",
-      num: num, value: die.value, animating: animating, numSize: animating ? 32 : (die.value >= 10 ? 30 : 36)
+      size: isD12 ? 24 : 23, hRatio: 1.06, edge: faceColor,
+      num: num, value: die.value, animating: animating, numSize: animating ? 32 : (die.value >= 10 ? 30 : 36),
+      glow: hit2 ? faceColor : null
     });
     return el("span.tb-die" + (animating ? ".rolling" : ""), {
       title: "d" + die.sides + (animating ? "" : (die.hits ? ", counts " + die.hits : ", no effect")), html: svg,
