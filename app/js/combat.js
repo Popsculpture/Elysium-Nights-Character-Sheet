@@ -208,6 +208,14 @@ EN.combatView = (function () {
       breakdown = el("div.mono", { style: { fontSize: "10.5px", color: "var(--text3)", textAlign: "center", padding: "8px 16px 0" } }, bParts);
     }
 
+    // --- hand off to the damage tray, carrying the crit from this attack ---
+    var dmgHandoff = (roll && !anim && ctx.dmg) ? el("div", { style: { padding: "12px 16px 0", textAlign: "center" } }, [
+      el("button.btn.sm", {
+        title: crit ? "Roll damage with the weapon dice doubled" : "Roll this weapon's damage",
+        style: { color: "var(--ember)", borderColor: "var(--ember)", padding: "6px 18px", fontSize: "12px", letterSpacing: ".06em" },
+        onclick: function () { var dc = Object.assign({}, ctx.dmg, { crit: crit }); closeRollTray(); openDmgTray(dc); }
+      }, (crit ? "◆ ROLL DAMAGE ×2 →" : "ROLL DAMAGE →")) ]) : null;
+
     // --- segmented Edge / None / Snag ---
     function segBtn(m, label, onColor) {
       var on = mode === m, blocked = m === "edge" && ctx.shaken;
@@ -258,7 +266,7 @@ EN.combatView = (function () {
       el("div.mono", { style: { fontSize: "9px", letterSpacing: ".18em", color: "var(--text4)", marginBottom: "6px" }, text: "RECENT ROLLS" }),
       el("div", { style: { display: "flex", flexDirection: "column", gap: "3px" } }, logList.map(function (e) {
         return el("div.row.between", { style: { fontFamily: "var(--mono)", fontSize: "10.5px" } }, [
-          el("span", { style: { color: "var(--text3)" }, text: e.w + (e.mode && e.mode !== "none" ? " · " + e.mode : "") }),
+          el("span", { style: { color: "var(--text3)" }, text: e.w + (e.dmg ? " dmg" : (e.mode && e.mode !== "none" ? " · " + e.mode : "")) }),
           el("span", { style: { color: e.crit ? "var(--gold)" : e.fumble ? "var(--danger)" : "var(--text)" }, text: String(e.total) + (e.crit ? " ◆" : e.fumble ? " ✖" : "") })
         ]);
       }))
@@ -278,7 +286,157 @@ EN.combatView = (function () {
     }, [
       el("div", { style: { width: "min(430px, 96vw)", maxHeight: "94vh", overflowY: "auto", borderRadius: "12px",
         background: "linear-gradient(180deg, var(--bg2), var(--bg1))", border: "1px solid var(--border2)",
-        boxShadow: "0 20px 60px rgba(0,0,0,.55), 0 0 40px rgba(0,229,255,.10)" } }, [header, hero, autoLine, ammoLine, breakdown, ctrls, foot, recent])
+        boxShadow: "0 20px 60px rgba(0,0,0,.55), 0 0 40px rgba(0,229,255,.10)" } }, [header, hero, autoLine, ammoLine, breakdown, dmgHandoff, ctrls, foot, recent])
+    ]);
+  }
+
+  /* ---------- Damage tray: the companion roller for weapon damage --------
+     A crit doubles the weapon dice; Cheap Shot and the versatile two-handed
+     die are toggles. Opened off a weapon's DMG box, or handed off from the
+     attack tray carrying the crit. Square dice, to read differently from the
+     hexagonal d20. */
+  var _dmgTray = { open: false, ctx: null, crit: false, cheap: false, twoHand: false, roll: null, animating: false };
+  var _dmgAnimId = 0;
+  function openDmgTray(ctx) {
+    _dmgAnimId++;
+    _dmgTray = { open: true, ctx: ctx, crit: !!ctx.crit, cheap: false, twoHand: false, roll: null, animating: false };
+    EN.app.render();
+  }
+  function closeDmgTray() { _dmgAnimId++; _dmgTray.open = false; _dmgTray.roll = null; _dmgTray.animating = false; EN.app.render(); }
+  function dmgTrayReset() { _dmgTray.roll = null; EN.app.render(); }   // a toggle changed the dice
+  function dmgTraySpec() {
+    var ctx = _dmgTray.ctx || {};
+    var dice = (_dmgTray.twoHand && ctx.versatile) ? ctx.versatile : ctx.dice;
+    var bonus = [];
+    if (_dmgTray.cheap && ctx.cheapEligible) bonus.push({ n: ctx.cheapDice, sides: 6, label: "Cheap Shot" });
+    return { dice: dice, flat: ctx.flat || 0, crit: _dmgTray.crit, bonus: bonus, types: ctx.types || [] };
+  }
+  function dmgTrayCommit() {
+    var res = eng.rollDamage(dmgTraySpec());
+    _dmgTray.roll = res; _dmgTray.animating = true;
+    var myAnim = ++_dmgAnimId;
+    store.update(function (c) {
+      c.log = Array.isArray(c.log) ? c.log : [];
+      c.log.unshift({ w: _dmgTray.ctx.weaponName, dmg: true, total: res.total, crit: res.crit, t: Date.now() });
+      if (c.log.length > 30) c.log.length = 30;
+    }, { silent: true });
+    EN.app.render();
+    EN.ui.animatePoolRoll(document.querySelector('[data-roll="dmgtray"]'), function () {
+      if (myAnim !== _dmgAnimId) return;
+      _dmgTray.animating = false; EN.app.render();
+    });
+  }
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && _dmgTray.open) closeDmgTray(); });
+  // a damage die as a rounded square, to read differently from the d20 hexagon
+  function dmgDie(value, sides, opts) {
+    opts = opts || {};
+    var col = opts.cheap ? "var(--ember)" : "var(--accent)";
+    var sz = opts.cheap ? 34 : 44;
+    var svg = '<svg viewBox="0 0 100 100" width="' + sz + '" height="' + sz + '" aria-hidden="true">'
+      + '<rect x="9" y="9" width="82" height="82" rx="16" fill="rgba(0,0,0,.32)" style="stroke:' + col + '" stroke-width="5"/>'
+      + '<text x="50" y="45" text-anchor="middle" dominant-baseline="central" style="fill:var(--text);font-family:var(--mono);font-weight:700" font-size="40">' + (opts.animating ? "?" : value) + '</text>'
+      + '<text x="50" y="82" text-anchor="middle" style="fill:var(--text4);font-family:var(--mono)" font-size="14">d' + sides + '</text>'
+      + '</svg>';
+    return el("span.tb-die" + (opts.animating ? ".rolling" : ""), {
+      html: svg, dataset: opts.animating ? { die: "1", final: String(value), sides: String(sides) } : null,
+      style: { display: "inline-flex", opacity: opts.dim ? 0.5 : 1 } });
+  }
+  function dmgFormula(ctx, st) {
+    var md = /(\d+)d(\d+)/.exec((st.twoHand && ctx.versatile) ? ctx.versatile : ctx.dice);
+    var parts = [];
+    if (md) parts.push((parseInt(md[1], 10) * (st.crit ? 2 : 1)) + "d" + md[2]);
+    if (st.cheap && ctx.cheapEligible) parts.push(ctx.cheapDice + "d6");
+    var s = parts.join(" + ") || "no dice";
+    if (ctx.flat) s += " " + eng.fmtMod(ctx.flat);
+    if (st.crit) s += "  (crit)";
+    return s;
+  }
+  function dmgTrayModal() {
+    if (!_dmgTray.open || !_dmgTray.ctx) return null;
+    var ctx = _dmgTray.ctx, roll = _dmgTray.roll, anim = _dmgTray.animating;
+    var typeStr = (ctx.types && ctx.types.length) ? ctx.types.join(" + ") : "";
+    var activeDice = (_dmgTray.twoHand && ctx.versatile) ? ctx.versatile : ctx.dice;
+    var md = /(\d+)d(\d+)/.exec(activeDice), canRoll = !!md;
+
+    var diceEls = [], prompt;
+    if (roll) {
+      roll.groups.forEach(function (g) {
+        var isCheap = g.label.indexOf("Cheap") === 0;
+        g.rolls.forEach(function (v) { diceEls.push(dmgDie(v, g.sides, { cheap: isCheap, animating: anim })); });
+      });
+      if (!diceEls.length) diceEls.push(el("span.mono", { style: { color: "var(--text3)", fontSize: "12px" }, text: "no damage dice" }));
+      prompt = anim ? el("div.mono", { style: { fontSize: "11px", letterSpacing: ".22em", color: "var(--text3)", marginTop: "12px", textTransform: "uppercase" }, text: "rolling…" })
+        : el("div", { style: { marginTop: "10px" } }, [
+            el("div.mono", { style: { fontSize: "46px", fontWeight: 700, lineHeight: "1", color: roll.crit ? "var(--gold)" : "var(--ember)", textShadow: "0 0 20px currentColor" }, text: String(roll.total) }),
+            el("div.mono", { style: { fontSize: "9px", letterSpacing: ".18em", color: "var(--text3)", marginTop: "5px" }, text: "DAMAGE" + (typeStr ? " · " + typeStr.toUpperCase() : "") + " · TAP TO ROLL AGAIN" }),
+            roll.crit ? el("div.mono", { style: { fontWeight: 700, letterSpacing: ".14em", fontSize: "12px", color: "var(--gold)", marginTop: "7px" }, text: "◆ DOUBLED ON CRIT" }) : null
+          ]);
+    } else {
+      if (md) { var wc = parseInt(md[1], 10) * (_dmgTray.crit ? 2 : 1); for (var i = 0; i < wc; i++) diceEls.push(dmgDie("", parseInt(md[2], 10), { dim: true })); }
+      if (_dmgTray.cheap && ctx.cheapEligible) for (var j = 0; j < ctx.cheapDice; j++) diceEls.push(dmgDie("", 6, { cheap: true, dim: true }));
+      if (!diceEls.length) diceEls.push(el("span.mono", { style: { color: "var(--text3)", fontSize: "12px" }, text: "no damage" }));
+      prompt = el("div.mono", { style: { fontSize: "11px", letterSpacing: ".22em", color: canRoll ? "var(--ember)" : "var(--text3)", marginTop: "12px", textTransform: "uppercase" }, text: canRoll ? "Tap to roll damage" : "No damage" });
+    }
+    var hero = el("div", { title: "Tap to roll damage", role: "button",
+      style: { textAlign: "center", padding: "22px 16px 16px", cursor: (anim || !canRoll) ? "default" : "pointer", userSelect: "none",
+        background: "radial-gradient(230px 145px at 50% 38%, rgba(255,107,53,.11), transparent 70%)" },
+      onclick: function () { if (!anim && canRoll) dmgTrayCommit(); } },
+      [ el("div", { dataset: { roll: "dmgtray" }, style: { display: "flex", gap: "10px", alignItems: "center", justifyContent: "center", flexWrap: "wrap", minHeight: "54px" } }, diceEls), prompt ]);
+
+    var autoParts = [];
+    if (ctx.flat) { autoParts.push(el("span", { style: { color: "var(--text2)" }, text: ctx.flatLabel })); autoParts.push(document.createTextNode(" " + eng.fmtMod(ctx.flat) + " on hit")); }
+    if (typeStr) { if (autoParts.length) autoParts.push(el("span", { style: { color: "var(--text4)", margin: "0 5px" }, text: "·" })); autoParts.push(document.createTextNode(typeStr)); }
+    var autoLine = autoParts.length ? el("div.mono", { style: { fontSize: "11px", color: "var(--text3)", textAlign: "center", padding: "12px 16px 0" } }, autoParts) : null;
+
+    var breakdown = null;
+    if (roll && !anim && roll.groups.length) {
+      var bParts = [];
+      roll.groups.forEach(function (g, i) { if (i) bParts.push(el("span", { style: { color: "var(--text4)", margin: "0 5px" }, text: "·" })); bParts.push(document.createTextNode(g.label + " ")); bParts.push(el("span", { style: { color: "var(--text)" }, text: String(g.subtotal) })); });
+      if (roll.flat) { bParts.push(el("span", { style: { color: "var(--text4)", margin: "0 5px" }, text: "·" })); bParts.push(document.createTextNode(ctx.flatLabel + " ")); bParts.push(el("span", { style: { color: "var(--text)" }, text: eng.fmtMod(roll.flat) })); }
+      breakdown = el("div.mono", { style: { fontSize: "10.5px", color: "var(--text3)", textAlign: "center", padding: "8px 16px 0" } }, bParts);
+    }
+
+    function tog(on, label, col, fn) {
+      return el("span", { onclick: fn, style: { display: "inline-flex", alignItems: "center", gap: "6px", padding: "7px 11px", cursor: "pointer", fontFamily: "var(--mono)", fontSize: "11.5px", borderRadius: "8px",
+        border: "1px solid " + col, color: on ? "var(--bg1)" : col, background: on ? col : "transparent", fontWeight: on ? 700 : 400 } }, label);
+    }
+    var togs = [ tog(_dmgTray.crit, "◆ Critical ×2 dice", "var(--gold)", function () { _dmgTray.crit = !_dmgTray.crit; dmgTrayReset(); }) ];
+    if (ctx.cheapEligible) togs.push(tog(_dmgTray.cheap, "Cheap Shot +" + ctx.cheapDice + "d6", "var(--ember)", function () { _dmgTray.cheap = !_dmgTray.cheap; dmgTrayReset(); }));
+    if (ctx.versatile) togs.push(tog(_dmgTray.twoHand, "Two-handed (" + ctx.versatile + ")", "var(--accent)", function () { _dmgTray.twoHand = !_dmgTray.twoHand; dmgTrayReset(); }));
+    var togRow = el("div", { style: { padding: "14px 16px", borderTop: "1px solid var(--border)", display: "flex", gap: "8px", flexWrap: "wrap" } }, togs);
+
+    var foot = el("div.row.between", { style: { padding: "11px 16px", borderTop: "1px solid var(--border)", alignItems: "baseline" } }, [
+      el("span.mono", { style: { fontSize: "11px", color: "var(--text2)" }, text: dmgFormula(ctx, _dmgTray) }),
+      el("span.mono", { style: { fontSize: "11px", color: typeStr ? "var(--ember)" : "var(--text3)" }, text: typeStr || "no type" })
+    ]);
+
+    var actv = store.active();
+    var logList = (actv && Array.isArray(actv.log) ? actv.log : []).slice(0, 4);
+    var recent = logList.length ? el("div", { style: { padding: "10px 16px 12px", borderTop: "1px solid var(--border)" } }, [
+      el("div.mono", { style: { fontSize: "9px", letterSpacing: ".18em", color: "var(--text4)", marginBottom: "6px" }, text: "RECENT ROLLS" }),
+      el("div", { style: { display: "flex", flexDirection: "column", gap: "3px" } }, logList.map(function (e) {
+        return el("div.row.between", { style: { fontFamily: "var(--mono)", fontSize: "10.5px" } }, [
+          el("span", { style: { color: "var(--text3)" }, text: e.w + (e.dmg ? " dmg" : (e.mode && e.mode !== "none" ? " · " + e.mode : "")) }),
+          el("span", { style: { color: e.crit ? "var(--gold)" : e.fumble ? "var(--danger)" : "var(--text)" }, text: String(e.total) + (e.crit ? " ◆" : e.fumble ? " ✖" : "") })
+        ]);
+      }))
+    ]) : null;
+
+    var header = el("div.row.between", { style: { alignItems: "center", padding: "13px 16px", borderBottom: "1px solid var(--border)", background: "linear-gradient(180deg, rgba(255,107,53,.05), transparent)" } }, [
+      el("div", null, [
+        el("div", { style: { fontFamily: "var(--disp)", fontWeight: 700, fontSize: "15.5px", letterSpacing: ".02em", color: "var(--text)" }, text: ctx.weaponName }),
+        el("div.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".08em", marginTop: "2px" }, text: ("DAMAGE · " + activeDice + (typeStr ? " " + typeStr : "")).toUpperCase() })
+      ]),
+      el("button", { title: "Close (Esc)", onclick: closeDmgTray, style: { background: "transparent", border: "none", color: "var(--text4)", fontSize: "19px", cursor: "pointer", lineHeight: "1", padding: "2px 5px" } }, "✕")
+    ]);
+
+    return el("div", {
+      style: { position: "fixed", inset: "0", zIndex: "4001", background: "rgba(4,7,11,.74)", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" },
+      onclick: function (e) { if (e.target === e.currentTarget) closeDmgTray(); }
+    }, [
+      el("div", { style: { width: "min(430px, 96vw)", maxHeight: "94vh", overflowY: "auto", borderRadius: "12px",
+        background: "linear-gradient(180deg, var(--bg2), var(--bg1))", border: "1px solid #3a2b22",
+        boxShadow: "0 20px 60px rgba(0,0,0,.55), 0 0 40px rgba(255,107,53,.12)" } }, [header, hero, autoLine, breakdown, togRow, foot, recent])
     ]);
   }
 
@@ -1977,7 +2135,27 @@ EN.combatView = (function () {
           usesAmmo: !h.melee && !h.thrownItem && it.ammo != null,   // a fired weapon spends a shot per roll
           traits: it.traits || [], baseMods: baseMods, critMin: h.spec ? 19 : 20,
           autoSnag: autoSnag, autoEdge: [], baseSnag: autoSnag.length, baseEdge: 0,
-          shaken: (ch.conditions || []).indexOf("Shaken") !== -1
+          shaken: (ch.conditions || []).indexOf("Shaken") !== -1,
+          dmg: damageCtx(it, h)   // carried so the attack tray can hand off to damage
+        };
+      }
+      // a damage snapshot the damage tray opens against. Melee and thrown add the
+      // hit attribute to damage; ranged do not. Cheap Shot rides as an optional
+      // bonus group for a Scoundrel wielding a Sidearm, Simple, or Light-melee weapon.
+      function damageCtx(it, h) {
+        var p = parseDamage(it.damage), traits = it.traits || [];
+        var addsMod = h.melee || h.thrownItem;
+        var hasLight = traits.some(function (t) { return /^Light$/i.test(t); });
+        var cheapEligible = ch.class === "scoundrel" && (
+          it.group === "Sidearm" || it.group === "Simple" || (it.group === "Martial" && hasLight));
+        return {
+          weaponName: it.name,
+          subtype: (h.melee ? "Melee" : h.thrownItem ? "Thrown" : "Ranged") + " Weapon · " + h.cat,
+          dice: p.dice, types: p.types,
+          flat: addsMod ? h.mod : 0, flatLabel: h.attrName + " Modifier",
+          versatile: versatileDie(traits),
+          cheapEligible: cheapEligible, cheapDice: d.caliber || 1,
+          crit: false
         };
       }
       // ch.equippedWeapons holds ids, not names; move the first id that
@@ -2005,10 +2183,11 @@ EN.combatView = (function () {
             style: { background: "transparent", border: "none", color: wi === equippedNames.length - 1 ? "var(--text4)" : "var(--text3)", cursor: wi === equippedNames.length - 1 ? "default" : "pointer", fontSize: "9px", lineHeight: "1", padding: "1px 3px" } }, "▼")
         ]);
       }
-      function statBox(label, value, color, title) {
-        return el("div", { title: title || "", style: { textAlign: "center", flex: "0 0 auto", minWidth: "44px" } }, [
+      function statBox(label, value, color, title, onClick) {
+        return el("div", { title: title || "", onclick: onClick || null,
+          style: { textAlign: "center", flex: "0 0 auto", minWidth: "44px", cursor: onClick ? "pointer" : "default" } }, [
           el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: label }),
-          el("span.mono", { style: { fontSize: "15px", color: color || "var(--text)" }, text: value })
+          el("span.mono", { style: { fontSize: "15px", color: color || "var(--text)", borderBottom: onClick ? "1px dotted currentColor" : "none" }, text: value })
         ]);
       }
       equippedNames.forEach(function (wname, wi) {
@@ -2016,7 +2195,7 @@ EN.combatView = (function () {
         if (!it) return;
         var h = weaponHit(it), norm = normalizeWeapon(it);
         var snagWhy = atkSnag || (h.tier === "untrained" ? "Untrained with " + h.cat + "; attacks roll with Snag" : null);
-        var dmgTip = norm.damageDisplay + (h.melee || h.thrownItem ? " " + eng.fmtMod(h.mod) + " (" + h.attrName + ") on hit" : "");
+        var dmgTip = norm.damageDisplay + (h.melee || h.thrownItem ? " " + eng.fmtMod(h.mod) + " (" + h.attrName + ") on hit" : "") + " · Tap to roll damage";
         var hitTip = "d20 + " + h.attrName + " Modifier (" + eng.fmtMod(h.mod) + ")"
           + (h.prof ? " + Weapon Proficiency Bonus (" + eng.fmtMod(h.prof) + ")" : " (untrained, Snag)")
           + (h.focus ? " + Caliber from " + h.cat + " (" + h.focus.aspect + ") Focus (" + eng.fmtMod(h.focusCal) + ", outside the +15 static cap)" : "");
@@ -2065,7 +2244,7 @@ EN.combatView = (function () {
           rowKids.push(el("div.row.wrap", { style: { gap: "12px", alignItems: "center", marginTop: "6px" } }, [
             statBox("RANGE", norm.rangeDisplay, "var(--gold)", it.range || ""),
             hitCell,
-            statBox("DMG", norm.damageDisplay, "var(--accent)", dmgTip),
+            statBox("DMG", norm.damageDisplay, "var(--accent)", dmgTip, function () { openDmgTray(damageCtx(it, h)); }),
             ammoCell
           ]));
 
@@ -2103,7 +2282,7 @@ EN.combatView = (function () {
               el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "HIT" }),
               el("span.mono", { style: { fontSize: "15px", color: "var(--ember)", borderBottom: "1px dotted var(--ember)" }, text: eng.fmtMod(h.total) })
             ]),
-            statBox("DMG", norm.damageDisplay, "var(--accent)", dmgTip)
+            statBox("DMG", norm.damageDisplay, "var(--accent)", dmgTip, function () { openDmgTray(damageCtx(it, h)); })
           ]));
         }
 
@@ -2710,6 +2889,8 @@ EN.combatView = (function () {
     mount.appendChild(el("div", null, blocks));
     var tray = rollTrayModal();
     if (tray) mount.appendChild(tray);
+    var dtray = dmgTrayModal();
+    if (dtray) mount.appendChild(dtray);
   }
 
   return { render: render };
