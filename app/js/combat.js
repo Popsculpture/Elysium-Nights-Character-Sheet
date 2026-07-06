@@ -165,6 +165,23 @@ EN.combatView = (function () {
   function trayStepBtn(txt, fn) {
     return el("button", { onclick: fn, style: { width: "26px", height: "26px", lineHeight: "1", background: "var(--bg3)", color: "var(--text2)", border: "1px solid var(--border2)", borderRadius: "6px", cursor: "pointer", fontFamily: "var(--mono)", fontSize: "15px" } }, txt);
   }
+  /* ---------- crit/fumble fanfare: a one-shot cyberpunk beat the instant a
+     roll settles as a nat 20 or nat 1 (see theme.css's "fx-" rules). Keyed
+     off the roll object itself (roll._fxShown) so it plays exactly once no
+     matter how many times the tray re-renders while that same roll is on
+     screen (Moxie gambit toggles, unrelated app state, etc). ------------- */
+  var FX_CRIT_CHARS = "01#$%&*ABCDEFGHIJKLMNOPQRSTUVWXYZ<>/";
+  var FX_FAULT_CHARS = "░▒▓#!?X0";
+  function fxSparks(n) {
+    var arr = [];
+    for (var i = 0; i < n; i++) {
+      var angle = (360 / n) * i + (Math.random() * 18 - 9);
+      var dist = 46 + Math.random() * 38;
+      var delay = Math.random() * 80;
+      arr.push(el("span.fx-spark" + (i % 2 ? ".cy" : ""), { style: { "--a": angle + "deg", "--d": dist + "px", animationDelay: delay + "ms" } }));
+    }
+    return arr;
+  }
   function rollTrayModal() {
     if (!_rollTray.open || !_rollTray.ctx) return null;
     var ctx = _rollTray.ctx, spec = rollTraySpec();
@@ -190,15 +207,21 @@ EN.combatView = (function () {
     var againWord = ctx.usesAmmo ? "TAP TO FIRE AGAIN" : "TAP TO ROLL AGAIN";
 
     // --- hero: the d20(s) you tap to roll ---
-    var diceEls, prompt;
+    var diceEls, prompt, shouldPlayFx = false;
     if (roll) {
       var nat = roll.nat, crit = roll.crit != null ? roll.crit : nat >= (ctx.critMin || 20),
           fumble = roll.fumble != null ? roll.fumble : nat === 1, total = roll.total != null ? roll.total : nat + flatSum;
+      // the fanfare fires exactly once: the first render where this roll
+      // object is shown settled as a crit/fumble. Flagging the roll object
+      // itself (rather than some outside counter) means it naturally survives
+      // re-renders triggered by anything else while this result is on screen.
+      if ((crit || fumble) && !anim && !roll._fxShown) { roll._fxShown = true; shouldPlayFx = true; }
       diceEls = roll.dice.map(function (v, i) {
         var kept = i === roll.keptIndex;
         return EN.ui.d20Face(v, { size: 62, animating: anim,
           kept: kept && !anim, dropped: !kept && roll.dice.length > 1 && !anim,
-          crit: kept && crit && !anim, fumble: kept && fumble && !anim });
+          crit: kept && crit && !anim, fumble: kept && fumble && !anim,
+          fxCrit: shouldPlayFx && kept && crit, fxFault: shouldPlayFx && kept && fumble });
       });
       // Gambit-specific epilogue: Press Your Luck's bet and Pure Luck's rescue
       var luckLine = null;
@@ -209,12 +232,35 @@ EN.combatView = (function () {
           : pr.bust ? el("div.mono", { style: { fontWeight: 700, letterSpacing: ".12em", fontSize: "11px", color: "var(--danger)", marginTop: "6px" }, text: "✖ PRESS YOUR LUCK · 1 = MOXIE LOST" + (ctx.countingCards ? " (KEEP NAT)" : "") })
           : el("div.mono", { style: { fontWeight: 700, letterSpacing: ".12em", fontSize: "11px", color: "var(--flow)", marginTop: "6px" }, text: "◆ PRESS YOUR LUCK · d6 +" + pr.bonus });
       }
+      // the fanfare caption: a terminal-style decode into OVERCLOCKED / SYSTEM
+      // FAULT, right under the existing CRITICAL HIT / FUMBLE line. Only
+      // scrambles in on the first settle (shouldPlayFx); a later re-render of
+      // the same roll just shows the plain word, no replay.
+      var fxCaption = null;
+      if (crit || fumble) {
+        var fxWord = crit ? "OVERCLOCKED" : "SYSTEM FAULT";
+        fxCaption = el("div.mono", { style: { fontWeight: 700, letterSpacing: ".22em", fontSize: "10px",
+          color: crit ? "var(--gold)" : "var(--danger)", marginTop: "4px", opacity: .85 },
+          text: shouldPlayFx ? "" : fxWord });
+        if (shouldPlayFx) {
+          EN.ui.scrambleText(fxCaption, fxWord, crit
+            ? { charset: FX_CRIT_CHARS, duration: 520, stutter: false }
+            : { charset: FX_FAULT_CHARS, duration: 760, stutter: true });
+        }
+      }
+      var totalNum = el("div.mono.fx-num", {
+        dataset: { text: String(total) },
+        style: { fontSize: "48px", fontWeight: 700, lineHeight: "1", position: "relative",
+          color: crit ? "var(--gold)" : fumble ? "var(--danger)" : "var(--accent)", textShadow: "0 0 20px currentColor" },
+        text: String(total)
+      });
       prompt = anim ? el("div.mono", { style: { fontSize: "11px", letterSpacing: ".22em", color: "var(--text3)", marginTop: "12px", textTransform: "uppercase" }, text: "rolling…" })
         : el("div", { style: { marginTop: "10px" } }, [
-            el("div.mono", { style: { fontSize: "48px", fontWeight: 700, lineHeight: "1", color: crit ? "var(--gold)" : fumble ? "var(--danger)" : "var(--accent)", textShadow: "0 0 20px currentColor" }, text: String(total) }),
+            totalNum,
             el("div.mono", { style: { fontSize: "9px", letterSpacing: ".2em", color: canFire ? "var(--text3)" : "var(--warn)", marginTop: "5px" }, text: "TOTAL · " + (canFire ? againWord : "OUT OF AMMO") }),
             crit ? el("div.mono", { style: { fontWeight: 700, letterSpacing: ".14em", fontSize: "12px", color: "var(--gold)", marginTop: "7px" }, text: "◆ CRITICAL HIT" })
               : fumble ? el("div.mono", { style: { fontWeight: 700, letterSpacing: ".14em", fontSize: "12px", color: "var(--danger)", marginTop: "7px" }, text: "✖ FUMBLE (NAT 1)" }) : null,
+            fxCaption,
             luckLine
           ]);
     } else {
@@ -224,13 +270,21 @@ EN.combatView = (function () {
     }
     var reloadBtn = (ctx.usesAmmo && !canFire) ? el("button.btn.sm", { style: { marginTop: "10px", color: "var(--warn)", borderColor: "var(--warn)" },
       onclick: function () { reloadWeapon(ctx.weaponName); } }, "⟳ RELOAD") : null;
-    var hero = el("div", {
+    var fxIsCrit = shouldPlayFx && crit, fxIsFault = shouldPlayFx && fumble;
+    var heroFxClass = fxIsCrit ? ".fx-crit" : fxIsFault ? ".fx-fault" : "";
+    var diceRow = el("div", { dataset: { roll: "d20tray" }, style: { position: "relative", display: "flex", gap: "14px", alignItems: "center", justifyContent: "center", minHeight: "64px" } },
+      diceEls.concat(fxIsCrit ? fxSparks(14) : []));
+    var hero = el("div" + heroFxClass, {
       title: canFire ? "Tap to roll" : "Reload to keep firing", role: "button",
       style: { textAlign: "center", padding: "22px 16px 18px", cursor: (anim || !canFire) ? "default" : "pointer", userSelect: "none",
+        position: "relative", overflow: "hidden",
         background: "radial-gradient(220px 140px at 50% 36%, rgba(0,229,255," + (canFire ? ".10" : ".03") + "), transparent 70%)" },
       onclick: function () { if (!anim && canFire) rollTrayCommit(); }
     }, [
-      el("div", { dataset: { roll: "d20tray" }, style: { display: "flex", gap: "14px", alignItems: "center", justifyContent: "center", minHeight: "64px" } }, diceEls),
+      shouldPlayFx ? el("div.fx-flash") : null,
+      fxIsCrit ? el("div.fx-scan") : null,
+      fxIsFault ? el("div.fx-noise") : null,
+      diceRow,
       prompt, reloadBtn
     ]);
 

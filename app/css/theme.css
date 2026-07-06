@@ -308,6 +308,65 @@ select{ appearance:none; background-image:linear-gradient(45deg,transparent 50%,
 @keyframes die-shake{ 0%{transform:translateY(0) rotate(0);} 25%{transform:translateY(-1px) rotate(-6deg);} 75%{transform:translateY(1px) rotate(6deg);} }
 .roll-group{ background:var(--bg1); border:1px solid var(--border); border-radius:var(--r); padding:12px; margin-bottom:10px; }
 
+/* ===== crit / fumble fanfare (attack roll tray) =========================
+   Plays once, the instant a settled roll resolves as a nat 20 or nat 1: a
+   cyberpunk "overclock" burst for the crit, a "system fault" glitch-and-sag
+   for the fumble. .fx-crit/.fx-fault go on the tray's hero container; the
+   overlay divs and the total's ::before/::after pseudo-elements key off that
+   ancestor. Everything ends at the tray's normal steady-state colors, so a
+   later re-render of the same roll (no fx classes attached) just shows the
+   plain settled look with nothing left mid-animation. */
+.fx-flash{ position:absolute; inset:0; pointer-events:none; }
+.fx-scan{ position:absolute; left:0; right:0; height:36%; top:-40%; pointer-events:none;
+  background:linear-gradient(180deg, transparent, rgba(0,229,255,.4), rgba(255,207,92,.4), transparent);
+  mix-blend-mode:screen; opacity:0; }
+.fx-noise{ position:absolute; inset:0; pointer-events:none; opacity:0; mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  filter:sepia(1) hue-rotate(310deg) saturate(5) brightness(.85); }
+.fx-num::before, .fx-num::after{ content:attr(data-text); position:absolute; left:0; top:0; width:100%; opacity:0; pointer-events:none; }
+.fx-crit .fx-num::before{ color:var(--accent); mix-blend-mode:screen; }
+.fx-crit .fx-num::after{ color:var(--gold); mix-blend-mode:screen; }
+.fx-fault .fx-num::before{ color:#ff8a94; mix-blend-mode:screen; }
+.fx-fault .fx-num::after{ color:#5c0812; mix-blend-mode:screen; }
+.fx-spark{ position:absolute; left:50%; top:50%; width:7px; height:7px; margin:-3.5px 0 0 -3.5px;
+  background:var(--gold); opacity:0; pointer-events:none; transform-origin:center; }
+.fx-spark.cy{ background:var(--accent); }
+
+@keyframes fxFlashCrit{ 0%{ background:rgba(255,207,92,0);} 8%{ background:rgba(255,207,92,.18);} 100%{ background:rgba(255,207,92,0);} }
+@keyframes fxShakeCrit{ 0%,100%{ transform:translate(0,0);} 20%{ transform:translate(-2px,1px);} 40%{ transform:translate(2px,-1px);} 60%{ transform:translate(-1px,-1px);} 80%{ transform:translate(1px,1px);} }
+@keyframes fxScanCrit{ 0%{ top:-40%; opacity:0;} 12%{ opacity:1;} 60%{ opacity:1;} 100%{ top:112%; opacity:0;} }
+@keyframes fxGlitchA{ 0%{ opacity:0;} 6%{ opacity:1; transform:translate(0,0); clip-path:inset(10% 0 55% 0);} 24%{ transform:translate(-4px,1px); clip-path:inset(60% 0 5% 0);} 42%{ transform:translate(3px,-2px); clip-path:inset(20% 0 45% 0);} 60%{ transform:translate(-2px,0); clip-path:inset(75% 0 2% 0);} 78%{ transform:translate(2px,1px); clip-path:inset(5% 0 65% 0);} 100%{ opacity:0; transform:translate(0,0); clip-path:inset(0 0 0 0);} }
+@keyframes fxGlitchB{ 0%{ opacity:0;} 6%{ opacity:1; transform:translate(0,0); clip-path:inset(65% 0 5% 0);} 24%{ transform:translate(4px,-1px); clip-path:inset(5% 0 70% 0);} 42%{ transform:translate(-3px,2px); clip-path:inset(45% 0 20% 0);} 60%{ transform:translate(2px,0); clip-path:inset(2% 0 78% 0);} 78%{ transform:translate(-2px,-1px); clip-path:inset(60% 0 10% 0);} 100%{ opacity:0; transform:translate(0,0); clip-path:inset(0 0 0 0);} }
+@keyframes fxSparkFly{ 0%{ transform:rotate(var(--a)) translate(0,0) scale(1); opacity:1;} 100%{ transform:rotate(var(--a)) translate(var(--d),0) scale(0); opacity:0;} }
+@keyframes fxDieGlowCrit{ 0%{ filter:drop-shadow(0 0 2px var(--gold));} 18%{ filter:drop-shadow(0 0 24px var(--gold));} 100%{ filter:drop-shadow(0 0 9px var(--gold));} }
+
+@keyframes fxFlashFault{ 0%{ background:rgba(255,77,94,0);} 5%{ background:rgba(255,77,94,.22);} 13%{ background:rgba(8,3,4,.55);} 100%{ background:rgba(255,77,94,0);} }
+@keyframes fxSagFault{ 0%{ transform:scaleY(1) skewX(0deg) translateY(0);} 32%{ transform:scaleY(.93) skewX(-1.1deg) translateY(4px);} 58%{ transform:scaleY(1.02) skewX(.5deg) translateY(-1px);} 100%{ transform:scaleY(1) skewX(0deg) translateY(0);} }
+@keyframes fxNoiseFault{ 0%,100%{ opacity:0;} 7%{ opacity:.55;} 15%{ opacity:.08;} 23%{ opacity:.4;} 38%{ opacity:0;} 66%{ opacity:.22;} 74%{ opacity:0;} }
+@keyframes fxTearA{ 0%{ opacity:0;} 5%{ opacity:1; transform:translate(0,0); clip-path:inset(15% 0 55% 0);} 20%{ transform:translate(-7px,0); clip-path:inset(60% 0 8% 0);} 38%{ transform:translate(6px,0); clip-path:inset(30% 0 40% 0);} 54%{ transform:translate(-5px,0); clip-path:inset(70% 0 4% 0);} 74%{ opacity:.6; transform:translate(3px,0); clip-path:inset(10% 0 60% 0);} 100%{ opacity:0; transform:translate(0,0); clip-path:inset(0 0 0 0);} }
+@keyframes fxTearB{ 0%{ opacity:0;} 5%{ opacity:.8; transform:translate(0,0); clip-path:inset(70% 0 5% 0);} 20%{ transform:translate(6px,0); clip-path:inset(5% 0 75% 0);} 38%{ transform:translate(-6px,0); clip-path:inset(50% 0 25% 0);} 54%{ transform:translate(5px,0); clip-path:inset(2% 0 80% 0);} 74%{ opacity:.5; transform:translate(-3px,0); clip-path:inset(65% 0 12% 0);} 100%{ opacity:0; transform:translate(0,0); clip-path:inset(0 0 0 0);} }
+@keyframes fxDieFlickerFault{ 0%{ opacity:1; filter:drop-shadow(0 0 6px var(--danger));} 12%{ opacity:.25;} 22%{ opacity:1;} 34%{ opacity:.15;} 50%{ opacity:.75;} 64%{ opacity:.1;} 100%{ opacity:.6; filter:drop-shadow(0 0 3px var(--danger));} }
+
+.fx-crit{ animation:fxShakeCrit .26s ease-in-out 1; }
+.fx-crit .fx-flash{ animation:fxFlashCrit .9s ease-out 1; }
+.fx-crit .fx-scan{ animation:fxScanCrit .7s ease-out 1; }
+.fx-crit .fx-num::before{ animation:fxGlitchA .62s steps(1,end) 1; }
+.fx-crit .fx-num::after{ animation:fxGlitchB .62s steps(1,end) 1; }
+.fx-crit .fx-spark{ animation:fxSparkFly .7s cubic-bezier(.2,.7,.3,1) 1 both; }
+.tb-die.fx-die-crit{ animation:fxDieGlowCrit .9s ease-out 1; }
+
+.fx-fault{ animation:fxSagFault .95s ease-in-out 1; }
+.fx-fault .fx-flash{ animation:fxFlashFault .95s ease-out 1; }
+.fx-fault .fx-noise{ animation:fxNoiseFault .95s steps(2,end) 1; }
+.fx-fault .fx-num::before{ animation:fxTearA .82s steps(1,end) 1; }
+.fx-fault .fx-num::after{ animation:fxTearB .82s steps(1,end) 1; }
+.tb-die.fx-die-fault{ animation:fxDieFlickerFault .95s steps(2,end) 1; }
+
+@media (prefers-reduced-motion: reduce){
+  .fx-crit, .fx-fault, .fx-flash, .fx-scan, .fx-noise, .fx-spark,
+  .fx-num::before, .fx-num::after, .tb-die.fx-die-crit, .tb-die.fx-die-fault{ animation:none !important; }
+}
+
 /* misc */
 .hr{ height:1px; background:linear-gradient(90deg,var(--border),transparent); margin:18px 0; border:0; }
 .muted-box{ background:var(--bg1); border:1px dashed var(--border2); border-radius:var(--r); padding:16px; color:var(--text3); font-family:var(--mono); font-size:12px; text-align:center; }

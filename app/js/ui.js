@@ -218,6 +218,32 @@ EN.ui = (function () {
       if (t >= dur) { clearInterval(timer); if (done) done(); }
     }, 50);
   }
+  // terminal-style decode: scrambles el's text through a charset before
+  // landing on finalText. opts: { charset, duration (ms), stutter (lets an
+  // already-locked character re-scramble once in a while, for a corrupted,
+  // glitchy decode instead of a clean one) }. Used by the attack roll tray's
+  // crit/fumble fanfare caption (el must already be attached, or about to be
+  // in this render pass, since the loop just writes textContent over time).
+  function scrambleText(el, finalText, opts) {
+    opts = opts || {};
+    var charset = opts.charset || "01#$%&*ABCDEFGHIJKLMNOPQRSTUVWXYZ<>/";
+    var dur = opts.duration || 600, stutter = !!opts.stutter, start = null;
+    function frame(ts) {
+      if (start == null) start = ts;
+      var t = ts - start, pct = Math.min(1, t / dur);
+      var lockCount = Math.floor(pct * finalText.length * (stutter ? 1.35 : 1.15));
+      var out = "";
+      for (var i = 0; i < finalText.length; i++) {
+        if (finalText[i] === " ") { out += " "; continue; }
+        var locked = i < lockCount;
+        if (locked && stutter && Math.random() < 0.06 && pct < 0.92) locked = false;
+        out += locked ? finalText[i] : charset[Math.floor(Math.random() * charset.length)];
+      }
+      el.textContent = out;
+      if (t < dur) requestAnimationFrame(frame); else el.textContent = finalText;
+    }
+    requestAnimationFrame(frame);
+  }
 
   // the d20 art is Brandon's own vector, drawn in CorelDRAW and handed over as a
   // real SVG path (not a raster): the classic point-up icosahedron with a big
@@ -230,8 +256,13 @@ EN.ui = (function () {
   var D20_NUM_X = 10400, D20_NUM_Y = 13175;
   var D20_PATH = "M9837.74 20987.1c-1795.67,-1030.37 -4364.29,-2525.4 -6160.57,-3554.7l1829.87 -1066.62c1308.33,1409.54 2884.15,3350.04 4330.7,4621.32zm-3889.21 -5104.93l8939.57 16.44 -4481.34 -8162.21c-1426.82,2721.46 -3105.68,5421.49 -4458.23,8145.77zm8927.67 429.52l-8893.44 14.84c902.97,999.05 3928.33,4187.67 4500.81,4805.88l4392.63 -4820.72zm-4912.29 -8603.11c-1462.72,2634.41 -2981.31,5368.32 -4444.34,8002.57l-1859.27 -6469.45c2074.75,-519.22 4228.66,-1014.61 6303.61,-1533.12zm179.45 -490.76c-1926.69,481.01 -3962.76,958.69 -5885.31,1439.23l5957.55 -3322.55 -72.24 1883.32zm735.93 495.18c953.04,213.92 5921.66,1341.56 6561.35,1518.19 -709.3,2178.75 -1426.09,4387.38 -2136.08,6565.93l-4425.27 -8084.12zm325.01 13226.34l4059.11 -4422.92c720.09,356.76 1331.26,668.07 1860.19,985.83l-5919.3 3437.09zm6420.1 -10977.11l-121.75 7201.73c-596.55,-291.66 -1283.33,-672.82 -1880.29,-963.63l2002.04 -6238.1zm-14605.43 7617.75l7439.44 4303.68c387.13,-236.25 6517.57,-3740.32 7453.7,-4277.37l98.7 -8668.54 -7597.97 -4255.4 -7439.96 4255.4 46.09 8642.23zm2167.44 -1478.59l-1721.77 962.43 23.01 -6803.49 1698.76 5841.06zm5440.28 -8911.91c7.6,-613.19 17.23,-1275.81 24.08,-1889.01 1879.77,1077.1 4098.55,2239.72 5975.14,3316.42l-5999.22 -1427.41z";
   /* A single d20 for the roll tray. opts: { animating, kept, dropped, crit,
-     fumble }. When animating it carries data attrs so animatePoolRoll scrambles
-     it (the value is the only <text>, so the scramble still finds it). */
+     fumble, fxCrit, fxFault }. When animating it carries data attrs so
+     animatePoolRoll scrambles it (the value is the only <text>, so the
+     scramble still finds it). fxCrit/fxFault add a one-shot CSS animation
+     (the crit/fumble fanfare, played the instant a roll settles) on top of
+     the plain crit/fumble steady state below: a fumble sits dimmer and with
+     a weaker glow than a crit, so it reads as drained rather than a red
+     copy of the same triumphant look. */
   function d20Face(value, opts) {
     opts = opts || {};
     var w = opts.size || 34, h = Math.round(w * 1.14);
@@ -239,19 +270,21 @@ EN.ui = (function () {
     var num = opts.animating ? "var(--text)" : opts.dropped ? "var(--text4)" : opts.crit ? "var(--gold)" : opts.fumble ? "var(--danger)" : "var(--text)";
     var shown = opts.animating ? "?" : String(value);
     var fs = shown.length >= 2 ? 4200 : 5400;
-    var glow = (opts.kept && !opts.animating) ? "filter:drop-shadow(0 0 " + Math.round(w / 6) + "px " + edge + ");" : "";
+    var glowPx = opts.fumble ? Math.round(w / 10) : Math.round(w / 6);
+    var glow = (opts.kept && !opts.animating) ? "filter:drop-shadow(0 0 " + glowPx + "px " + edge + ");" : "";
     var svg = '<svg viewBox="' + D20_VIEWBOX + '" width="' + w + '" height="' + h + '" aria-hidden="true" style="' + glow + '">'
       + '<path d="' + D20_PATH + '" fill="rgba(2,10,18,.55)" fill-rule="evenodd" style="stroke:' + edge + '" stroke-width="260" stroke-linejoin="round"/>'
       + '<text x="' + D20_NUM_X + '" y="' + D20_NUM_Y + '" text-anchor="middle" dominant-baseline="central" style="fill:' + num + ';font-family:var(--mono);font-weight:700" font-size="' + fs + '">' + shown + '</text>'
       + '</svg>';
-    return el("span.tb-die" + (opts.animating ? ".rolling" : ""), {
+    return el("span.tb-die" + (opts.animating ? ".rolling" : "") + (opts.fxCrit ? ".fx-die-crit" : "") + (opts.fxFault ? ".fx-die-fault" : ""), {
       title: "d20" + (opts.animating ? "" : ": " + value + (opts.dropped ? " (dropped)" : opts.kept ? " (kept)" : "")),
       html: svg,
       dataset: opts.animating ? { die: "1", final: String(value), sides: "20" } : null,
-      style: { display: "inline-flex", alignItems: "center", opacity: (opts.dropped && !opts.animating) ? 0.4 : 1 }
+      style: { display: "inline-flex", alignItems: "center",
+        opacity: (opts.dropped && !opts.animating) ? 0.4 : (opts.fumble && !opts.animating) ? 0.6 : 1 }
     });
   }
 
   return { el: el, append: append, clear: clear, frag: frag, panel: panel, sectionTitle: sectionTitle, stat: stat, toast: toast, renderText: renderText, applyInline: applyInline,
-           dieFace: dieFace, dieFaceSvg: dieFaceSvg, d20Face: d20Face, animatePoolRoll: animatePoolRoll };
+           dieFace: dieFace, dieFaceSvg: dieFaceSvg, d20Face: d20Face, animatePoolRoll: animatePoolRoll, scrambleText: scrambleText };
 })();
