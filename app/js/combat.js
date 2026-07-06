@@ -2245,12 +2245,13 @@ EN.combatView = (function () {
           dmg: opts.dmg || null
         }, moxieFlags());
       }
-      // a damage snapshot the damage tray opens against. Melee and thrown add the
-      // hit attribute to damage; ranged do not. Cheap Shot rides as an optional
-      // bonus group for a Scoundrel wielding a Sidearm, Simple, or Light-melee weapon.
+      // a damage snapshot the damage tray opens against. Every weapon adds its
+      // attack attribute modifier to damage (weapon dice + Body or Agility), so a
+      // ranged weapon adds Agility exactly as its attack roll does. Cheap Shot rides
+      // as an optional bonus group for a Scoundrel wielding a Sidearm, Simple, or
+      // Light-melee weapon.
       function damageCtx(it, h) {
         var p = parseDamage(it.damage), traits = it.traits || [];
-        var addsMod = h.melee || h.thrownItem;
         var hasLight = traits.some(function (t) { return /^Light$/i.test(t); });
         var cheapEligible = ch.class === "scoundrel" && (
           it.group === "Sidearm" || it.group === "Simple" || (h.melee && it.group === "Martial" && hasLight));
@@ -2258,7 +2259,7 @@ EN.combatView = (function () {
           weaponName: it.name,
           subtype: (h.melee ? "Melee" : h.thrownItem ? "Thrown" : "Ranged") + " Weapon · " + h.cat,
           dice: p.dice, types: p.types,
-          flat: addsMod ? h.mod : 0, flatLabel: h.attrName + " Modifier",
+          flat: h.mod, flatLabel: h.attrName + " Modifier",
           versatile: versatileDie(traits),
           cheapEligible: cheapEligible, cheapDice: d.caliber || 1,
           crit: false
@@ -2301,7 +2302,7 @@ EN.combatView = (function () {
         if (!it) return;
         var h = weaponHit(it), norm = normalizeWeapon(it);
         var snagWhy = atkSnag || (h.tier === "untrained" ? "Untrained with " + h.cat + "; attacks roll with Snag" : null);
-        var dmgTip = norm.damageDisplay + (h.melee || h.thrownItem ? " " + eng.fmtMod(h.mod) + " (" + h.attrName + ") on hit" : "") + " · Tap to roll damage";
+        var dmgTip = norm.damageDisplay + " " + eng.fmtMod(h.mod) + " (" + h.attrName + ") on hit · Tap to roll damage";
         var hitTip = "d20 + " + h.attrName + " Modifier (" + eng.fmtMod(h.mod) + ")"
           + (h.prof ? " + Weapon Proficiency Bonus (" + eng.fmtMod(h.prof) + ")" : " (untrained, Snag)")
           + (h.focus ? " + Caliber from " + h.cat + " (" + h.focus.aspect + ") Focus (" + eng.fmtMod(h.focusCal) + ", outside the +15 static cap)" : "");
