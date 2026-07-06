@@ -1325,23 +1325,41 @@ EN.engine = (function () {
      third die, Press Your Luck's bonus die) layer on top of this later. */
   function rollD20(spec) {
     spec = spec || {};
-    var mods = spec.mods || [];
-    var flat = mods.reduce(function (s, m) { return s + (Number(m && m.value) || 0); }, 0);
+    var mods = (spec.mods || []).slice();
     var net = Math.max(0, Math.floor(spec.edge || 0)) - Math.max(0, Math.floor(spec.snag || 0));
     var state = net > 0 ? "edge" : net < 0 ? "snag" : "flat";
     function d20() { return 1 + Math.floor(Math.random() * 20); }
     var dice = state === "flat" ? [d20()] : [d20(), d20()];
+    // Lucky Break (a Scoundrel Gambit) is the one thing that breaks the 2d20
+    // cap: roll one extra die and keep the best, even stacked on Edge.
+    var lucky = !!spec.luckyBreak;
+    if (lucky) dice.push(d20());
     var keptIndex = 0;
-    if (state === "edge") keptIndex = dice[0] >= dice[1] ? 0 : 1;
+    if (lucky) { for (var i = 1; i < dice.length; i++) if (dice[i] > dice[keptIndex]) keptIndex = i; }
+    else if (state === "edge") keptIndex = dice[0] >= dice[1] ? 0 : 1;
     else if (state === "snag") keptIndex = dice[0] <= dice[1] ? 0 : 1;
     var nat = dice[keptIndex];
     // critMin can widen the crit floor (e.g. 19) but never reaches the Nat 1
     // fumble; anything malformed falls back to a Nat-20-only crit.
     var critMin = (typeof spec.critMin === "number" && spec.critMin >= 2 && spec.critMin <= 20) ? Math.floor(spec.critMin) : 20;
+    var crit = nat >= critMin, fumble = nat === 1;
+    // Press Your Luck (The Wildcard subclass): a d6 rides the d20. A 6 forces a
+    // Critical Success, a 2 to 5 adds to the total, and a 1 busts the bet into a
+    // Critical Failure that eats the Moxie, unless Counting Cards keeps the
+    // natural result on a bust.
+    var press = null;
+    if (spec.pressLuck) {
+      var pd = 1 + Math.floor(Math.random() * 6);
+      press = { die: pd, bust: pd === 1, bonus: 0 };
+      if (pd === 6) { crit = true; fumble = false; }
+      else if (pd === 1) { if (!spec.countingCards) { fumble = true; crit = false; } }
+      else { press.bonus = pd; mods.push({ label: "Press Your Luck", value: pd }); }
+    }
+    var flat = mods.reduce(function (s, m) { return s + (Number(m && m.value) || 0); }, 0);
     return {
       dice: dice, keptIndex: keptIndex, nat: nat, state: state, net: net,
       mods: mods, flat: flat, total: nat + flat,
-      crit: nat >= critMin, fumble: nat === 1, critMin: critMin
+      crit: crit, fumble: fumble, critMin: critMin, lucky: lucky, press: press
     };
   }
 
@@ -1361,7 +1379,8 @@ EN.engine = (function () {
     var edge = Math.max(0, Math.floor(o.edge || 0));
     var snag = Math.max(0, Math.floor(o.snag || 0));
     if (o.shaken) edge = 0;
-    return { mods: mods, edge: edge, snag: snag, critMin: o.critMin || 20 };
+    return { mods: mods, edge: edge, snag: snag, critMin: o.critMin || 20,
+      luckyBreak: !!o.luckyBreak, pressLuck: !!o.pressLuck, countingCards: !!o.countingCards };
   }
 
   /* ---- damage roll --------------------------------------------------------

@@ -75,7 +75,7 @@ EN.combatView = (function () {
     // untrained or condition-Snagged attack opens pre-set to Snag
     var mode = (ctx.baseSnag > 0) ? "snag" : (ctx.baseEdge > 0 && !ctx.shaken) ? "edge" : "none";
     _rollAnimId++;
-    _rollTray = { open: true, ctx: ctx, mode: mode, help: 0, other: 0, roll: null, animating: false };
+    _rollTray = { open: true, ctx: ctx, mode: mode, help: 0, other: 0, lucky: false, press: false, roll: null, animating: false };
     EN.app.render();
   }
   function closeRollTray() {
@@ -94,19 +94,23 @@ EN.combatView = (function () {
     var ctx = _rollTray.ctx || {};
     return eng.composeRollSpec({
       baseMods: ctx.baseMods || [], edge: _rollTray.mode === "edge" ? 1 : 0, snag: _rollTray.mode === "snag" ? 1 : 0,
-      helpValue: _rollTray.help, manual: _rollTray.other, shaken: ctx.shaken, critMin: ctx.critMin || 20
+      helpValue: _rollTray.help, manual: _rollTray.other, shaken: ctx.shaken, critMin: ctx.critMin || 20,
+      luckyBreak: !!(_rollTray.lucky && ctx.luckyBreak),
+      pressLuck: !!(_rollTray.press && ctx.pressLuck), countingCards: !!ctx.countingCards
     });
   }
   function rollTrayCommit() {
     var ctx = _rollTray.ctx, spec = rollTraySpec();
     var res = eng.rollD20(spec);
-    var flatSum = spec.mods.reduce(function (s, m) { return s + m.value; }, 0);
     var it = ctx.usesAmmo ? findWeapon(ctx.weaponName) : null;
+    // a Gambit costs 1 Moxie each; Press Your Luck's bet is spent whether it
+    // hits or busts (a bust just cannot be recovered this turn)
+    var spend = (spec.luckyBreak ? 1 : 0) + (spec.pressLuck ? 1 : 0);
     // one roll = one attack: a fired weapon spends a shot, and every roll is
     // written to the character's roll log. Done silently so the render below
     // is the one that shows the dice mid-animation.
-    var entry = { w: ctx.weaponName, mode: _rollTray.mode, nat: res.nat, total: res.nat + flatSum,
-      crit: res.nat >= (ctx.critMin || 20), fumble: res.nat === 1, t: Date.now() };
+    var entry = { w: ctx.weaponName, mode: _rollTray.mode, nat: res.nat, total: res.total,
+      crit: res.crit, fumble: res.fumble, t: Date.now() };
     store.update(function (c) {
       if (it) {
         var st = readAmmo(c, it), cost = costFor(it, st.mode);
@@ -116,11 +120,16 @@ EN.combatView = (function () {
         a.cur = Math.max(0, a.cur - cost);
         c.weaponAmmo[ctx.weaponName] = a;
       }
+      if (spend && ctx.moxie) {
+        c.resources = c.resources || {}; c.resources.current = c.resources.current || {};
+        var cur = (c.resources.current[ctx.moxie.name] != null) ? c.resources.current[ctx.moxie.name] : ctx.moxie.max;
+        c.resources.current[ctx.moxie.name] = Math.max(0, cur - spend);
+      }
       c.log = Array.isArray(c.log) ? c.log : [];
       c.log.unshift(entry);
       if (c.log.length > 30) c.log.length = 30;
     }, { silent: true });
-    _rollTray.roll = { dice: res.dice, keptIndex: res.keptIndex, nat: res.nat };
+    _rollTray.roll = res;
     _rollTray.animating = true;
     var myAnim = ++_rollAnimId;
     EN.app.render();
@@ -128,6 +137,27 @@ EN.combatView = (function () {
       if (myAnim !== _rollAnimId) return;   // superseded by a close/reopen/reroll
       _rollTray.animating = false; EN.app.render();
     });
+  }
+  // Pure Luck (a Scoundrel Gambit): after a roll comes up short, spend 1 Moxie
+  // to treat the kept die as a 10, then apply modifiers normally.
+  function rollTrayPureLuck() {
+    var ctx = _rollTray.ctx, roll = _rollTray.roll;
+    if (!roll || roll.pureLuck) return;
+    var dice = roll.dice.slice(); dice[roll.keptIndex] = 10;
+    var next = Object.assign({}, roll, {
+      dice: dice, nat: 10, total: 10 + roll.flat,
+      crit: 10 >= (roll.critMin || 20), fumble: false, pureLuck: true
+    });
+    store.update(function (c) {
+      if (ctx.moxie) {
+        c.resources = c.resources || {}; c.resources.current = c.resources.current || {};
+        var cur = (c.resources.current[ctx.moxie.name] != null) ? c.resources.current[ctx.moxie.name] : ctx.moxie.max;
+        c.resources.current[ctx.moxie.name] = Math.max(0, cur - 1);
+      }
+      if (Array.isArray(c.log) && c.log.length) { c.log[0].nat = 10; c.log[0].total = next.total; c.log[0].crit = next.crit; c.log[0].fumble = false; c.log[0].pure = true; }
+    }, { silent: true });
+    _rollTray.roll = next;
+    EN.app.render();
   }
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape" && _rollTray.open) closeRollTray();
@@ -140,7 +170,13 @@ EN.combatView = (function () {
     var ctx = _rollTray.ctx, spec = rollTraySpec();
     var flatSum = spec.mods.reduce(function (s, m) { return s + m.value; }, 0);
     var mode = _rollTray.mode, roll = _rollTray.roll, anim = _rollTray.animating;
-    var diceN = mode === "none" ? 1 : 2;
+    var diceN = (mode === "none" ? 1 : 2) + (_rollTray.lucky && ctx.luckyBreak ? 1 : 0);
+    // live Moxie (spent by Gambits on commit, so read it fresh like ammo)
+    var mox = ctx.moxie ? { name: ctx.moxie.name, max: ctx.moxie.max, cur: (function () {
+      var a = store.active(), c = (a && a.resources && a.resources.current && a.resources.current[ctx.moxie.name] != null) ? a.resources.current[ctx.moxie.name] : ctx.moxie.max;
+      return eng.clamp(c, 0, ctx.moxie.max);
+    })() } : null;
+    var MOXIE_CLR = "#FF2DAA";
     var modeLabel = mode === "edge" ? "Edge · roll 2d20, keep the higher"
       : mode === "snag" ? "Snag · roll 2d20, keep the lower" : "Straight · roll one d20";
     var modeColor = mode === "edge" ? "var(--accent)" : mode === "snag" ? "var(--danger)" : "var(--text2)";
@@ -156,19 +192,30 @@ EN.combatView = (function () {
     // --- hero: the d20(s) you tap to roll ---
     var diceEls, prompt;
     if (roll) {
-      var nat = roll.nat, crit = nat >= (ctx.critMin || 20), fumble = nat === 1, total = nat + flatSum;
+      var nat = roll.nat, crit = roll.crit != null ? roll.crit : nat >= (ctx.critMin || 20),
+          fumble = roll.fumble != null ? roll.fumble : nat === 1, total = roll.total != null ? roll.total : nat + flatSum;
       diceEls = roll.dice.map(function (v, i) {
         var kept = i === roll.keptIndex;
         return EN.ui.d20Face(v, { size: 62, animating: anim,
           kept: kept && !anim, dropped: !kept && roll.dice.length > 1 && !anim,
           crit: kept && crit && !anim, fumble: kept && fumble && !anim });
       });
+      // Gambit-specific epilogue: Press Your Luck's bet and Pure Luck's rescue
+      var luckLine = null;
+      if (!anim && roll.pureLuck) luckLine = el("div.mono", { style: { fontWeight: 700, letterSpacing: ".12em", fontSize: "11px", color: "var(--flow)", marginTop: "6px" }, text: "◆ PURE LUCK · TREATED AS 10" });
+      else if (!anim && roll.press) {
+        var pr = roll.press;
+        luckLine = pr.die === 6 ? el("div.mono", { style: { fontWeight: 700, letterSpacing: ".12em", fontSize: "11px", color: "var(--gold)", marginTop: "6px" }, text: "◆ PRESS YOUR LUCK · 6 = AUTO CRIT" })
+          : pr.bust ? el("div.mono", { style: { fontWeight: 700, letterSpacing: ".12em", fontSize: "11px", color: "var(--danger)", marginTop: "6px" }, text: "✖ PRESS YOUR LUCK · 1 = MOXIE LOST" + (ctx.countingCards ? " (KEEP NAT)" : "") })
+          : el("div.mono", { style: { fontWeight: 700, letterSpacing: ".12em", fontSize: "11px", color: "var(--flow)", marginTop: "6px" }, text: "◆ PRESS YOUR LUCK · d6 +" + pr.bonus });
+      }
       prompt = anim ? el("div.mono", { style: { fontSize: "11px", letterSpacing: ".22em", color: "var(--text3)", marginTop: "12px", textTransform: "uppercase" }, text: "rolling…" })
         : el("div", { style: { marginTop: "10px" } }, [
             el("div.mono", { style: { fontSize: "48px", fontWeight: 700, lineHeight: "1", color: crit ? "var(--gold)" : fumble ? "var(--danger)" : "var(--accent)", textShadow: "0 0 20px currentColor" }, text: String(total) }),
             el("div.mono", { style: { fontSize: "9px", letterSpacing: ".2em", color: canFire ? "var(--text3)" : "var(--warn)", marginTop: "5px" }, text: "TOTAL · " + (canFire ? againWord : "OUT OF AMMO") }),
             crit ? el("div.mono", { style: { fontWeight: 700, letterSpacing: ".14em", fontSize: "12px", color: "var(--gold)", marginTop: "7px" }, text: "◆ CRITICAL HIT" })
-              : fumble ? el("div.mono", { style: { fontWeight: 700, letterSpacing: ".14em", fontSize: "12px", color: "var(--danger)", marginTop: "7px" }, text: "✖ FUMBLE (NAT 1)" }) : null
+              : fumble ? el("div.mono", { style: { fontWeight: 700, letterSpacing: ".14em", fontSize: "12px", color: "var(--danger)", marginTop: "7px" }, text: "✖ FUMBLE (NAT 1)" }) : null,
+            luckLine
           ]);
     } else {
       diceEls = [];
@@ -199,8 +246,8 @@ EN.combatView = (function () {
     // --- breakdown caption, only after a settled roll ---
     var breakdown = null;
     if (roll && !anim) {
-      var bParts = [el("span", { style: { color: "var(--text)" }, text: "d20 " + roll.nat })];
-      spec.mods.forEach(function (m) {
+      var bParts = [el("span", { style: { color: "var(--text)" }, text: "d20 " + roll.nat + (roll.pureLuck ? " (Pure Luck)" : "") })];
+      (roll.mods || spec.mods).forEach(function (m) {
         bParts.push(el("span", { style: { color: "var(--text4)", margin: "0 5px" }, text: "·" }));
         bParts.push(document.createTextNode(m.label + " "));
         bParts.push(el("span", { style: { color: "var(--text)" }, text: eng.fmtMod(m.value) }));
@@ -215,6 +262,13 @@ EN.combatView = (function () {
         style: { color: "var(--ember)", borderColor: "var(--ember)", padding: "6px 18px", fontSize: "12px", letterSpacing: ".06em" },
         onclick: function () { var dc = Object.assign({}, ctx.dmg, { crit: crit }); closeRollTray(); openDmgTray(dc); }
       }, (crit ? "◆ ROLL DAMAGE ×2 →" : "ROLL DAMAGE →")) ]) : null;
+
+    // --- Pure Luck: a post-roll rescue that only helps when the die came up short ---
+    var pureLuckBtn = (mox && ctx.pureLuck && roll && !anim && !roll.pureLuck && roll.nat < 10 && mox.cur >= 1)
+      ? el("div", { style: { padding: "10px 16px 0", textAlign: "center" } }, [
+          el("button.btn.sm", { title: "Spend 1 Moxie to treat the kept die as a 10",
+            style: { color: MOXIE_CLR, borderColor: MOXIE_CLR, padding: "6px 16px", fontSize: "12px", letterSpacing: ".04em" },
+            onclick: rollTrayPureLuck }, "◆ PURE LUCK · TREAT AS 10") ]) : null;
 
     // --- segmented Edge / None / Snag ---
     function segBtn(m, label, onColor) {
@@ -249,8 +303,27 @@ EN.combatView = (function () {
       trayStepBtn("+", function () { _rollTray.other += 1; EN.app.render(); }),
       el("span.mono", { style: { fontSize: "10px", color: "var(--text4)", marginLeft: "auto" }, text: "optional · one-off ±" })
     ]);
+    // --- MOXIE: the Gambits this character actually has, each spending 1 Moxie ---
+    var moxRow = null;
+    if (mox && (ctx.luckyBreak || ctx.pressLuck)) {
+      var activeCost = (_rollTray.lucky ? 1 : 0) + (_rollTray.press ? 1 : 0);
+      var gambitPill = function (on, label, fn) {
+        var canEnable = on || mox.cur > activeCost;
+        return el("span", { onclick: canEnable ? fn : null,
+          title: canEnable ? "" : "Not enough Moxie",
+          style: { display: "inline-flex", alignItems: "center", gap: "5px", padding: "6px 10px", borderRadius: "7px",
+            cursor: canEnable ? "pointer" : "not-allowed", fontFamily: "var(--mono)", fontSize: "11px",
+            border: "1px solid " + MOXIE_CLR, color: on ? "var(--bg1)" : MOXIE_CLR, background: on ? MOXIE_CLR : "transparent",
+            opacity: canEnable ? 1 : 0.4, fontWeight: on ? 700 : 400 } }, label);
+      };
+      var pills = [];
+      if (ctx.luckyBreak) pills.push(gambitPill(_rollTray.lucky, "Lucky Break ◆1", function () { _rollTray.lucky = !_rollTray.lucky; _rollTray.roll = null; EN.app.render(); }));
+      if (ctx.pressLuck) pills.push(gambitPill(_rollTray.press, "Press Your Luck ◆1", function () { _rollTray.press = !_rollTray.press; _rollTray.roll = null; EN.app.render(); }));
+      pills.push(el("span.mono", { style: { marginLeft: "auto", fontSize: "12px", color: mox.cur > 0 ? MOXIE_CLR : "var(--text4)" }, text: "◆ " + mox.cur + " / " + mox.max }));
+      moxRow = ctrlRow("MOXIE", [el("div.row.wrap", { style: { gap: "6px", flex: "1 1 auto", alignItems: "center" } }, pills)]);
+    }
     var ctrls = el("div", { style: { padding: "16px", display: "flex", flexDirection: "column", gap: "13px", borderTop: "1px solid var(--border)", marginTop: "14px" } },
-      [ctrlRow("ROLL", [seg]), ctrlRow("HELP", [helpPills]), ctrlRow("OTHER", [otherRow])]);
+      [ctrlRow("ROLL", [seg]), ctrlRow("HELP", [helpPills]), ctrlRow("OTHER", [otherRow])].concat(moxRow ? [moxRow] : []));
 
     var foot = el("div.row.between", { style: { padding: "11px 16px", borderTop: "1px solid var(--border)", alignItems: "baseline" } }, [
       el("span.mono", { style: { fontSize: "11px", color: modeColor }, text: modeLabel }),
@@ -286,7 +359,7 @@ EN.combatView = (function () {
     }, [
       el("div", { style: { width: "min(430px, 96vw)", maxHeight: "94vh", overflowY: "auto", borderRadius: "12px",
         background: "linear-gradient(180deg, var(--bg2), var(--bg1))", border: "1px solid var(--border2)",
-        boxShadow: "0 20px 60px rgba(0,0,0,.55), 0 0 40px rgba(0,229,255,.10)" } }, [header, hero, autoLine, ammoLine, breakdown, dmgHandoff, ctrls, foot, recent])
+        boxShadow: "0 20px 60px rgba(0,0,0,.55), 0 0 40px rgba(0,229,255,.10)" } }, [header, hero, autoLine, ammoLine, breakdown, dmgHandoff, pureLuckBtn, ctrls, foot, recent])
     ]);
   }
 
@@ -2128,6 +2201,11 @@ EN.combatView = (function () {
         var autoSnag = [];
         if (fx.snagAtk) autoSnag.push("Active condition");
         if (h.tier === "untrained") autoSnag.push("Untrained (" + h.cat + ")");
+        // Moxie Gambits and the Wildcard bet ride outside the clean 2d20 rule;
+        // each is offered only if the character actually has it and has Moxie.
+        var gambitNames = (eng.chosenResourceAbilities ? eng.chosenResourceAbilities(ch) : []).map(function (a) { return a.name; });
+        var featNames = (d.features || []).map(function (f) { return f.name; });
+        var moxie = (d.resource && d.resource.name === "Moxie") ? { name: "Moxie", max: d.resource.max } : null;
         return {
           weaponName: it.name,
           subtype: (h.melee ? "Melee" : h.thrownItem ? "Thrown" : "Ranged") + " Weapon · " + h.cat,
@@ -2136,6 +2214,11 @@ EN.combatView = (function () {
           traits: it.traits || [], baseMods: baseMods, critMin: h.spec ? 19 : 20,
           autoSnag: autoSnag, autoEdge: [], baseSnag: autoSnag.length, baseEdge: 0,
           shaken: (ch.conditions || []).indexOf("Shaken") !== -1,
+          moxie: moxie,
+          luckyBreak: !!moxie && gambitNames.indexOf("Lucky Break") !== -1,
+          pureLuck: !!moxie && gambitNames.indexOf("Pure Luck") !== -1,
+          pressLuck: !!moxie && featNames.indexOf("Press Your Luck") !== -1,
+          countingCards: featNames.indexOf("Counting Cards") !== -1,
           dmg: damageCtx(it, h)   // carried so the attack tray can hand off to damage
         };
       }
