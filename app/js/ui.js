@@ -209,36 +209,30 @@ EN.ui = (function () {
     }, 50);
   }
 
-  // a geometrically exact icosahedron, projected straight down a 3-fold (face)
-  // axis: a pointy-top hexagon silhouette with all 24 interior edges, which read
-  // as the classic overlapping-triangle "d20 icon" (front face + back face form
-  // the central hexagram). Coordinates come from the real 12 vertices, so every
-  // line lands where a twenty-sider's edges actually project. viewBox is 100x116
-  // (taller than wide) so the top and bottom apexes are not clipped. Interior
-  // edges stay faint and the value sits opaque in the central void of the star.
-  var D20_OUTER = "50,4.9 96,31.5 96,84.5 50,111.1 4,84.5 4,31.5";
-  var D20_FACETS = "M78.4,74.4 L21.6,74.4 M78.4,74.4 L50,25.2 M78.4,74.4 L96,84.5"
-    + " M78.4,74.4 L96,31.5 M78.4,74.4 L50,111.1 M21.6,74.4 L50,25.2 M21.6,74.4 L4,84.5"
-    + " M21.6,74.4 L50,111.1 M21.6,74.4 L4,31.5 M50,25.2 L50,4.9 M50,25.2 L96,31.5"
-    + " M50,25.2 L4,31.5 M4,84.5 L21.6,41.6 M4,84.5 L50,90.8 M50,4.9 L21.6,41.6"
-    + " M50,4.9 L78.4,41.6 M96,84.5 L78.4,41.6 M96,84.5 L50,90.8 M96,31.5 L78.4,41.6"
-    + " M50,111.1 L50,90.8 M4,31.5 L21.6,41.6 M21.6,41.6 L78.4,41.6 M21.6,41.6 L50,90.8"
-    + " M78.4,41.6 L50,90.8";
+  // the d20 art is Brandon's own vector, drawn in CorelDRAW and handed over as a
+  // real SVG path (not a raster): the classic point-up icosahedron with a big
+  // front-face triangle that holds the value. The path is used verbatim, so the
+  // die matches his reference exactly. The svg viewBox is the path's own bounding
+  // box (padded for the stroke); the value sits at the front face's centroid,
+  // which the parser found at (10400, 13175). Edges are stroked in the state
+  // colour over a faint dark body; the single <text> keeps the roll animation.
+  var D20_VIEWBOX = "2773 4482 15438 17601";
+  var D20_NUM_X = 10400, D20_NUM_Y = 13175;
+  var D20_PATH = "M9837.74 20987.1c-1795.67,-1030.37 -4364.29,-2525.4 -6160.57,-3554.7l1829.87 -1066.62c1308.33,1409.54 2884.15,3350.04 4330.7,4621.32zm-3889.21 -5104.93l8939.57 16.44 -4481.34 -8162.21c-1426.82,2721.46 -3105.68,5421.49 -4458.23,8145.77zm8927.67 429.52l-8893.44 14.84c902.97,999.05 3928.33,4187.67 4500.81,4805.88l4392.63 -4820.72zm-4912.29 -8603.11c-1462.72,2634.41 -2981.31,5368.32 -4444.34,8002.57l-1859.27 -6469.45c2074.75,-519.22 4228.66,-1014.61 6303.61,-1533.12zm179.45 -490.76c-1926.69,481.01 -3962.76,958.69 -5885.31,1439.23l5957.55 -3322.55 -72.24 1883.32zm735.93 495.18c953.04,213.92 5921.66,1341.56 6561.35,1518.19 -709.3,2178.75 -1426.09,4387.38 -2136.08,6565.93l-4425.27 -8084.12zm325.01 13226.34l4059.11 -4422.92c720.09,356.76 1331.26,668.07 1860.19,985.83l-5919.3 3437.09zm6420.1 -10977.11l-121.75 7201.73c-596.55,-291.66 -1283.33,-672.82 -1880.29,-963.63l2002.04 -6238.1zm-14605.43 7617.75l7439.44 4303.68c387.13,-236.25 6517.57,-3740.32 7453.7,-4277.37l98.7 -8668.54 -7597.97 -4255.4 -7439.96 4255.4 46.09 8642.23zm2167.44 -1478.59l-1721.77 962.43 23.01 -6803.49 1698.76 5841.06zm5440.28 -8911.91c7.6,-613.19 17.23,-1275.81 24.08,-1889.01 1879.77,1077.1 4098.55,2239.72 5975.14,3316.42l-5999.22 -1427.41z";
   /* A single d20 for the roll tray. opts: { animating, kept, dropped, crit,
      fumble }. When animating it carries data attrs so animatePoolRoll scrambles
      it (the value is the only <text>, so the scramble still finds it). */
   function d20Face(value, opts) {
     opts = opts || {};
-    var w = opts.size || 34, h = Math.round(w * 1.16);
+    var w = opts.size || 34, h = Math.round(w * 1.14);
     var edge = opts.crit ? "var(--gold)" : opts.fumble ? "var(--danger)" : opts.kept ? "var(--accent)" : "var(--border2)";
     var num = opts.animating ? "var(--text)" : opts.dropped ? "var(--text4)" : opts.crit ? "var(--gold)" : opts.fumble ? "var(--danger)" : "var(--text)";
     var shown = opts.animating ? "?" : String(value);
-    var fs = shown.length >= 2 ? 28 : 36;
+    var fs = shown.length >= 2 ? 4200 : 5400;
     var glow = (opts.kept && !opts.animating) ? "filter:drop-shadow(0 0 " + Math.round(w / 6) + "px " + edge + ");" : "";
-    var svg = '<svg viewBox="0 0 100 116" width="' + w + '" height="' + h + '" aria-hidden="true" style="' + glow + '">'
-      + '<polygon points="' + D20_OUTER + '" fill="rgba(0,0,0,.35)" style="stroke:' + edge + '" stroke-width="4" stroke-linejoin="round"/>'
-      + '<path d="' + D20_FACETS + '" fill="none" style="stroke:' + edge + '" stroke-width="1.6" stroke-linejoin="round" opacity=".45"/>'
-      + '<text x="50" y="58" text-anchor="middle" dominant-baseline="central" style="fill:' + num + ';font-family:var(--mono);font-weight:700" font-size="' + fs + '">' + shown + '</text>'
+    var svg = '<svg viewBox="' + D20_VIEWBOX + '" width="' + w + '" height="' + h + '" aria-hidden="true" style="' + glow + '">'
+      + '<path d="' + D20_PATH + '" fill="rgba(2,10,18,.55)" fill-rule="evenodd" style="stroke:' + edge + '" stroke-width="260" stroke-linejoin="round"/>'
+      + '<text x="' + D20_NUM_X + '" y="' + D20_NUM_Y + '" text-anchor="middle" dominant-baseline="central" style="fill:' + num + ';font-family:var(--mono);font-weight:700" font-size="' + fs + '">' + shown + '</text>'
       + '</svg>';
     return el("span.tb-die" + (opts.animating ? ".rolling" : ""), {
       title: "d20" + (opts.animating ? "" : ": " + value + (opts.dropped ? " (dropped)" : opts.kept ? " (kept)" : "")),
