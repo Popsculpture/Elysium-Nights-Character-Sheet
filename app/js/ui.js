@@ -147,8 +147,8 @@ EN.ui = (function () {
        d10 pentagonal-trapezohedron (kite)          <- authored for #GRID
        d12 dodecahedron (pentagon face + spokes)     <- authored for #GRID  */
   var DIE_GEOM = {
-    4:  { outer: "50,5 92,87 8,87", facets: ["P:71,46 50,87 29,46"], numY: 61 },
-    6:  { outer: "14,14 86,14 86,86 14,86", facets: ["P:26,26 74,26 74,74 26,74"], numY: 50 },
+    4:  { outer: "50,5 92,87 8,87", facets: [], numY: 61 },
+    6:  { outer: "14,14 86,14 86,86 14,86", facets: [], numY: 50 },
     8:  { outer: "50,3 93,26 93,74 50,97 7,74 7,26", facets: ["M50,3 L7,74 M50,3 L93,74 M7,74 L93,74"], numY: 54 },
     10: { outer: "50,2 97,52 50,96 3,52", facets: ["M50,2 L28,62 L50,84 L72,62 Z M28,62 L3,52 M72,62 L97,52 M3,52 L50,84 L97,52"], numY: 49 },
     12: { outer: "50,2 78.2,11.2 95.6,35.2 95.6,64.8 78.2,88.8 50,98 21.8,88.8 4.4,64.8 4.4,35.2 21.8,11.2",
