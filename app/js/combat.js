@@ -1022,11 +1022,13 @@ EN.combatView = (function () {
       usesRow
     ]);
   }
-  function attackRow(name, hit, note, color, snagWhy) {
+  function attackRow(name, hit, note, color, snagWhy, onClick) {
     return el("div.row.wrap", { style: { gap: "10px", alignItems: "center", padding: "8px 4px", borderBottom: "1px solid rgba(35,48,68,.5)" } }, [
       el("span", { style: { flex: 1, minWidth: "130px", fontWeight: 600 }, text: name }),
       snagWhy ? snagChip(snagWhy) : null,
-      el("span.mono", { style: { fontSize: "18px", color: color || "var(--accent)", minWidth: "48px", textAlign: "center" }, text: hit }),
+      el("span.mono", { onclick: onClick || null, title: onClick ? "Tap to roll to hit" : "",
+        style: { fontSize: "18px", color: color || "var(--accent)", minWidth: "48px", textAlign: "center",
+          cursor: onClick ? "pointer" : "default", borderBottom: onClick ? "1px dotted currentColor" : "none" }, text: hit }),
       el("span.help", { style: { margin: 0, flex: 2 }, text: note })
     ]);
   }
@@ -2194,6 +2196,21 @@ EN.combatView = (function () {
                  total: mod + prof + focusCal, melee: melee, thrownItem: thrownItem };
       }
       // a plain snapshot the roll tray opens against (no live-scope closures)
+      // Moxie Gambits and the Wildcard bet ride outside the clean 2d20 rule;
+      // each is offered on any d20 attack only if the character actually has it
+      // and has Moxie. Shared by weapon and class-attack contexts.
+      function moxieFlags() {
+        var gambitNames = (eng.chosenResourceAbilities ? eng.chosenResourceAbilities(ch) : []).map(function (a) { return a.name; });
+        var featNames = (d.features || []).map(function (f) { return f.name; });
+        var moxie = (d.resource && d.resource.name === "Moxie") ? { name: "Moxie", max: d.resource.max } : null;
+        return {
+          moxie: moxie,
+          luckyBreak: !!moxie && gambitNames.indexOf("Lucky Break") !== -1,
+          pureLuck: !!moxie && gambitNames.indexOf("Pure Luck") !== -1,
+          pressLuck: !!moxie && featNames.indexOf("Press Your Luck") !== -1,
+          countingCards: featNames.indexOf("Counting Cards") !== -1
+        };
+      }
       function attackCtx(it, h) {
         var baseMods = [{ label: h.attrName + " Modifier", value: h.mod }];
         if (h.prof) baseMods.push({ label: "Weapon Proficiency", value: h.prof });
@@ -2201,12 +2218,7 @@ EN.combatView = (function () {
         var autoSnag = [];
         if (fx.snagAtk) autoSnag.push("Active condition");
         if (h.tier === "untrained") autoSnag.push("Untrained (" + h.cat + ")");
-        // Moxie Gambits and the Wildcard bet ride outside the clean 2d20 rule;
-        // each is offered only if the character actually has it and has Moxie.
-        var gambitNames = (eng.chosenResourceAbilities ? eng.chosenResourceAbilities(ch) : []).map(function (a) { return a.name; });
-        var featNames = (d.features || []).map(function (f) { return f.name; });
-        var moxie = (d.resource && d.resource.name === "Moxie") ? { name: "Moxie", max: d.resource.max } : null;
-        return {
+        return Object.assign({
           weaponName: it.name,
           subtype: (h.melee ? "Melee" : h.thrownItem ? "Thrown" : "Ranged") + " Weapon · " + h.cat,
           melee: h.melee, thrownItem: h.thrownItem, ranged: !h.melee && !h.thrownItem,
@@ -2214,13 +2226,23 @@ EN.combatView = (function () {
           traits: it.traits || [], baseMods: baseMods, critMin: h.spec ? 19 : 20,
           autoSnag: autoSnag, autoEdge: [], baseSnag: autoSnag.length, baseEdge: 0,
           shaken: (ch.conditions || []).indexOf("Shaken") !== -1,
-          moxie: moxie,
-          luckyBreak: !!moxie && gambitNames.indexOf("Lucky Break") !== -1,
-          pureLuck: !!moxie && gambitNames.indexOf("Pure Luck") !== -1,
-          pressLuck: !!moxie && featNames.indexOf("Press Your Luck") !== -1,
-          countingCards: featNames.indexOf("Counting Cards") !== -1,
           dmg: damageCtx(it, h)   // carried so the attack tray can hand off to damage
-        };
+        }, moxieFlags());
+      }
+      // a non-weapon attack (Cipher, Flow, natural / unarmed strike) the roll
+      // tray can open against. mods is the named breakdown; opts carries an
+      // auto-Snag reason, an optional damage snapshot, and a crit floor.
+      function simpleAttackCtx(name, subtype, mods, opts) {
+        opts = opts || {};
+        var autoSnag = opts.snag ? [opts.snag] : [];
+        return Object.assign({
+          weaponName: name, subtype: subtype,
+          melee: false, thrownItem: false, ranged: false, usesAmmo: false,
+          traits: [], baseMods: mods, critMin: opts.critMin || 20,
+          autoSnag: autoSnag, autoEdge: [], baseSnag: autoSnag.length, baseEdge: 0,
+          shaken: (ch.conditions || []).indexOf("Shaken") !== -1,
+          dmg: opts.dmg || null
+        }, moxieFlags());
       }
       // a damage snapshot the damage tray opens against. Melee and thrown add the
       // hit attribute to damage; ranged do not. Cheap Shot rides as an optional
@@ -2404,14 +2426,25 @@ EN.combatView = (function () {
       if (d.lineageUnarmed) {
         var lu = d.lineageUnarmed, luFin = lu.traits && /Finesse/.test(lu.traits);
         var luMod = luFin ? Math.max(d.attributes.BOD.mod, d.attributes.AGI.mod) : d.attributes.BOD.mod;
-        kids.push(attackRow("Natural Weapon · " + lu.source, eng.fmtMod(luMod), "d20 + " + (luFin ? "Body/Agility" : "Body") + " Modifier · " + lu.die + " " + lu.type + (lu.traits ? " (" + lu.traits + ")" : "") + " + mod" + (lu.note ? " · " + lu.note : ""), "var(--ember)", atkSnag));
+        var luLabel = (luFin ? "Body/Agility" : "Body") + " Modifier";
+        var luName = "Natural Weapon · " + lu.source;
+        var luDmg = { weaponName: luName, subtype: "NATURAL WEAPON", dice: lu.die, types: [lu.type],
+          flat: luMod, flatLabel: luLabel, versatile: null, cheapEligible: false, cheapDice: d.caliber || 1, crit: false };
+        kids.push(attackRow(luName, eng.fmtMod(luMod), "d20 + " + (luFin ? "Body/Agility" : "Body") + " Modifier · " + lu.die + " " + lu.type + (lu.traits ? " (" + lu.traits + ")" : "") + " + mod" + (lu.note ? " · " + lu.note : ""), "var(--ember)", atkSnag,
+          (function (nm, mv, lbl, dmg) { return function () { openRollTray(simpleAttackCtx(nm, "NATURAL WEAPON · " + String(lu.type).toUpperCase(), [{ label: lbl, value: mv }], { snag: atkSnag, dmg: dmg })); }; })(luName, luMod, luLabel, luDmg)));
       }
       if (!equippedNames.length) {
-        if (!d.lineageUnarmed) kids.push(attackRow("Unarmed Strike", eng.fmtMod(d.attributes.BOD.mod), "d20 + Body Modifier · unarmed damage + Body mod", "var(--ember)", atkSnag));
+        if (!d.lineageUnarmed) kids.push(attackRow("Unarmed Strike", eng.fmtMod(d.attributes.BOD.mod), "d20 + Body Modifier · unarmed damage + Body mod", "var(--ember)", atkSnag,
+          function () { openRollTray(simpleAttackCtx("Unarmed Strike", "UNARMED STRIKE", [{ label: "Body Modifier", value: d.attributes.BOD.mod }], { snag: atkSnag })); }));
         kids.push(el("p.help", { style: { margin: "4px 0 6px" }, text: "No weapons equipped; hit ⚔ EQUIP on a weapon in Inventory → Stash to list it here." }));
       }
-      if (ch.class === "codebreaker") kids.push(attackRow("Cipher Attack", eng.fmtMod((d.grid && d.grid.cipherAttackBonus) != null ? d.grid.cipherAttackBonus : d.attributes.TEC.mod), "d20 + Tech Modifier + Systems Proficiency Bonus vs Node · Quick Hacks under fire", "var(--accent)"));
-      if (d.flow) kids.push(attackRow("Flow Attack", eng.fmtMod(d.flow.attackBonus), "d20 + " + d.flow.attributeName + " + Caliber · Invocation Save DC " + d.flow.dc, "var(--flow)"));
+      if (ch.class === "codebreaker") {
+        var cipherBonus = (d.grid && d.grid.cipherAttackBonus) != null ? d.grid.cipherAttackBonus : d.attributes.TEC.mod;
+        kids.push(attackRow("Cipher Attack", eng.fmtMod(cipherBonus), "d20 + Tech Modifier + Systems Proficiency Bonus vs Node · Quick Hacks under fire", "var(--accent)", null,
+          function () { openRollTray(simpleAttackCtx("Cipher Attack", "CIPHER · VS NODE DEFENSE", [{ label: "Cipher Attack", value: cipherBonus }], {})); }));
+      }
+      if (d.flow) kids.push(attackRow("Flow Attack", eng.fmtMod(d.flow.attackBonus), "d20 + " + d.flow.attributeName + " + Caliber · Invocation Save DC " + d.flow.dc, "var(--flow)", null,
+        function () { openRollTray(simpleAttackCtx("Flow Attack", "FLOW · SAVE DC " + d.flow.dc, [{ label: d.flow.attributeName + " + Caliber", value: d.flow.attackBonus }], {})); }));
       if (ch.class === "scoundrel") {
         var csdie = d.caliber + "d6";
         kids.push(el("div", { style: { padding: "8px 4px", borderBottom: "1px solid rgba(35,48,68,.5)" } }, [
