@@ -146,7 +146,7 @@ EN.combatView = (function () {
     var dice = roll.dice.slice(); dice[roll.keptIndex] = 10;
     var next = Object.assign({}, roll, {
       dice: dice, nat: 10, total: 10 + roll.flat,
-      crit: 10 >= (roll.critMin || 20), fumble: false, pureLuck: true
+      crit: roll.crit || (10 >= (roll.critMin || 20)), fumble: false, pureLuck: true
     });
     store.update(function (c) {
       if (ctx.moxie) {
@@ -263,8 +263,9 @@ EN.combatView = (function () {
         onclick: function () { var dc = Object.assign({}, ctx.dmg, { crit: crit }); closeRollTray(); openDmgTray(dc); }
       }, (crit ? "◆ ROLL DAMAGE ×2 →" : "ROLL DAMAGE →")) ]) : null;
 
-    // --- Pure Luck: a post-roll rescue that only helps when the die came up short ---
-    var pureLuckBtn = (mox && ctx.pureLuck && roll && !anim && !roll.pureLuck && roll.nat < 10 && mox.cur >= 1)
+    // --- Pure Luck: a post-roll rescue for a roll that failed, never for a crit
+    // (Press Your Luck can force a crit on a low natural die, so gate on !crit) ---
+    var pureLuckBtn = (mox && ctx.pureLuck && roll && !anim && !roll.pureLuck && !roll.crit && (roll.nat < 10 || roll.fumble) && mox.cur >= 1)
       ? el("div", { style: { padding: "10px 16px 0", textAlign: "center" } }, [
           el("button.btn.sm", { title: "Spend 1 Moxie to treat the kept die as a 10",
             style: { color: MOXIE_CLR, borderColor: MOXIE_CLR, padding: "6px 16px", fontSize: "12px", letterSpacing: ".04em" },
@@ -295,12 +296,12 @@ EN.combatView = (function () {
       return el("span", { style: { flex: "1", textAlign: "center", padding: "7px 0", cursor: "pointer", fontFamily: "var(--mono)", fontSize: "12px",
         border: "1px solid var(--gold)", borderRadius: "7px", color: on ? "var(--bg1)" : "var(--gold)", background: on ? "var(--gold)" : "transparent", fontWeight: on ? 700 : 400 },
         title: v === 0 ? "No ally assist" : "Ally assist " + eng.fmtMod(v) + " (Proficient / Expertise / Mastery)",
-        onclick: function () { _rollTray.help = v; EN.app.render(); } }, v === 0 ? "none" : eng.fmtMod(v));
+        onclick: function () { _rollTray.help = v; _rollTray.roll = null; EN.app.render(); } }, v === 0 ? "none" : eng.fmtMod(v));
     }));
     var otherRow = el("div.row", { style: { gap: "8px", alignItems: "center" } }, [
-      trayStepBtn("−", function () { _rollTray.other -= 1; EN.app.render(); }),
+      trayStepBtn("−", function () { _rollTray.other -= 1; _rollTray.roll = null; EN.app.render(); }),
       el("span.mono", { style: { fontSize: "13px", minWidth: "34px", textAlign: "center", color: _rollTray.other ? "var(--text)" : "var(--text3)" }, text: eng.fmtMod(_rollTray.other) }),
-      trayStepBtn("+", function () { _rollTray.other += 1; EN.app.render(); }),
+      trayStepBtn("+", function () { _rollTray.other += 1; _rollTray.roll = null; EN.app.render(); }),
       el("span.mono", { style: { fontSize: "10px", color: "var(--text4)", marginLeft: "auto" }, text: "optional · one-off ±" })
     ]);
     // --- MOXIE: the Gambits this character actually has, each spending 1 Moxie ---
@@ -2252,7 +2253,7 @@ EN.combatView = (function () {
         var addsMod = h.melee || h.thrownItem;
         var hasLight = traits.some(function (t) { return /^Light$/i.test(t); });
         var cheapEligible = ch.class === "scoundrel" && (
-          it.group === "Sidearm" || it.group === "Simple" || (it.group === "Martial" && hasLight));
+          it.group === "Sidearm" || it.group === "Simple" || (h.melee && it.group === "Martial" && hasLight));
         return {
           weaponName: it.name,
           subtype: (h.melee ? "Melee" : h.thrownItem ? "Thrown" : "Ranged") + " Weapon · " + h.cat,
