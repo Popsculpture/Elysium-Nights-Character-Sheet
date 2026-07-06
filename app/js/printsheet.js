@@ -653,6 +653,7 @@ EN.printSheet = (function () {
       el("span.print-bar-s", { text: (ch.name || "Unnamed") + " · " + pages.length + " pages · Letter" }),
       el("span", { style: { flex: 1 } }),
       el("button.btn.sm.primary", { onclick: function () { window.print(); } }, "⎙ PRINT / SAVE PDF"),
+      el("button.btn.sm", { onclick: function () { EN.pdfExport.download(store.active()); } }, "✎ FILLABLE PDF"),
       el("button.btn.sm", { onclick: close }, "✕ CLOSE")
     ]);
     var ov = el("div#print-overlay", null, [bar, el("div.print-scroll", null, pages)]);
