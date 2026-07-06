@@ -28,6 +28,22 @@ EN.pdfExport = (function () {
   var MARGIN = { left: 40, right: 40, top: 46, bottom: 34 };
   var CONTENT_W = PAGE_W - MARGIN.left - MARGIN.right;
 
+  // word-wrap plain drawText() calls to a max width; drawText itself never
+  // wraps, it just draws past the page edge, so any unbounded caller (an
+  // ability's brief text, a long proficiency line) needs this before it ships.
+  function wrapLines(font, text, size, maxWidth) {
+    var words = String(text == null ? "" : text).split(/\s+/).filter(Boolean);
+    if (!words.length) return [""];
+    var lines = [], cur = "";
+    words.forEach(function (w) {
+      var test = cur ? cur + " " + w : w;
+      if (cur && font.widthOfTextAtSize(test, size) > maxWidth) { lines.push(cur); cur = w; }
+      else cur = test;
+    });
+    if (cur) lines.push(cur);
+    return lines;
+  }
+
   /* =======================================================================
      Layout toolkit: a coordinate-cursor wrapper around a pdf-lib PDFDocument.
      One Ctx per logical dossier section (Front Sheet, Talents & Lineage, ...);
@@ -119,12 +135,18 @@ EN.pdfExport = (function () {
 
     ctx.spacer = function (h) { ctx.y -= h; };
 
+    // wraps to (CONTENT_W - x) by default, or opts.maxWidth; pass wrap:false for
+    // a caller that already guarantees a short string (e.g. a table cell).
     ctx.text = function (str, opts) {
       opts = opts || {};
       var size = opts.size || 9, font = opts.font || fonts.sans, h = opts.h || (size + 4);
-      ctx.ensure(h);
-      ctx.page.drawText(str, { x: MARGIN.left + (opts.x || 0), y: ctx.y - size, size: size, font: font, color: opts.color || hexColor("ink") });
-      ctx.y -= h;
+      var maxW = opts.maxWidth || (CONTENT_W - (opts.x || 0));
+      var lines = opts.wrap === false ? [String(str == null ? "" : str)] : wrapLines(font, str, size, maxW);
+      ctx.ensure(h * lines.length);
+      lines.forEach(function (ln) {
+        ctx.page.drawText(ln, { x: MARGIN.left + (opts.x || 0), y: ctx.y - size, size: size, font: font, color: opts.color || hexColor("ink") });
+        ctx.y -= h;
+      });
     };
 
     /* row(cells): cells=[{label,name,value,w,type:'static'|undefined,size,align,font,color,sub}]
@@ -522,6 +544,278 @@ EN.pdfExport = (function () {
     return ctx;
   }
 
+  /* =======================================================================
+     SECTION 02 - TALENTS & LINEAGE (abilities at a glance)
+     ======================================================================= */
+  function parseUses(text, d) {
+    if (!text) return null;
+    var t = text.replace(/\s+/g, " "), m;
+    function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase(); }
+    if ((m = t.match(/number of (?:times|uses)(?:[^.]{0,60}?)equal to your Caliber per (Long|Short) Rest/i))) return { max: d.caliber, recharge: cap(m[1]) + " Rest" };
+    if (/number of (?:times|uses) per Encounter equal to your Caliber/i.test(t)) return { max: d.caliber, recharge: "Encounter" };
+    if ((m = t.match(/\b(once|twice|(\d+) times) per (Long Rest|Short Rest|Encounter|scene)\b/i))) {
+      var max = m[2] ? Number(m[2]) : (/twice/i.test(m[1]) ? 2 : 1);
+      return { max: max, recharge: m[3] };
+    }
+    return null;
+  }
+  function autoBrief(text) {
+    if (!text) return "";
+    var t = text.replace(/\s+/g, " ").trim();
+    var parts = t.split(/\.\s+/);
+    var kw = /\b(gain|add|spend|roll|reroll|Edge|Snag|DC|damage|Resist|Immun|Advantage|reduce|deal|ignore|Speed|Defense|Vitality|Wound|Vigor|FP|Bandwidth|d4|d6|d8|d10|d12|d20|once per|\+\d)/i;
+    var pick = parts.find(function (s) { return kw.test(s); }) || parts[0] || t;
+    pick = pick.trim().replace(/[.]+$/, "");
+    if (pick.length > 160) pick = pick.slice(0, 158).replace(/\s+\S*$/, "") + "...";
+    return pick;
+  }
+  function briefFor(f) { var b = EN.briefs && EN.briefs[f._base || f.name]; return b || autoBrief(f.text); }
+
+  function proficientCats(ch, bucket) {
+    return ((EN.rules.gear || {})[bucket] || []).filter(function (cat) { return eng.effectiveGearTier(ch, bucket, cat) !== "untrained"; });
+  }
+  function proficiencyLines(ch) {
+    var lines = [];
+    [["Weapons", "weapons"], ["Armor", "armor"], ["Tools", "tools"], ["Vehicles", "vehicles"]].forEach(function (p) {
+      var cats = proficientCats(ch, p[1]);
+      if (cats.length) lines.push(p[0] + ": " + cats.join(", "));
+    });
+    function fsLabel(f) {
+      var parent = f.parent || f.skill;
+      var name = (f.type && f.type !== "skill") ? parent : ((EN.rules.skillByKey[parent] || {}).name || parent);
+      return name + (f.aspect ? " (" + f.aspect + ")" : "") + (f.granted ? " [free]" : "");
+    }
+    var foci = (ch.skillFocuses || []).map(fsLabel);
+    if (foci.length) lines.push("Focus: " + foci.join(", "));
+    var specs = (ch.specializations || []).map(fsLabel);
+    if (specs.length) lines.push("Spec: " + specs.join(", "));
+    return lines;
+  }
+
+  function buildTalentsLineage(doc, form, fonts, ch, d) {
+    var ctx = makeCtx(doc, form, fonts, { title: "TALENTS & LINEAGE", tag: "02 · PROGRESSION", serial: idSerial(ch), fieldPrefix: "talents" });
+    ctx.sectionTitle("Abilities at a Glance", "track uses");
+    var feats = gatherFeatures(ch, d);
+    if (!feats.length) {
+      ctx.text("No features yet.", { size: 9, color: hexColor("dim") });
+    } else {
+      var ACT_OVERRIDE = { Bandwidth: "Passive", Overdrive: "Passive", Leverage: "Passive", Moxie: "Passive", "Battlefield Command": "Passive", Triage: "Passive", Reservoir: "Passive", "Core Channeling": "Passive", "Reality Fracture": "Swift" };
+      var groups = { Passive: [], Action: [], Swift: [], Impulse: [], Free: [] };
+      feats.forEach(function (f) { var act = ACT_OVERRIDE[f.name] || actionCost(f.text); (groups[act] || groups.Passive).push(Object.assign({}, f, { _act: act })); });
+      var featIdx = 0;
+      [["Passive", "PASSIVE"], ["Action", "ACTION"], ["Swift", "SWIFT ACTION"], ["Impulse", "IMPULSE · REACTION"], ["Free", "FREE ACTION"]].forEach(function (g) {
+        var arr = groups[g[0]];
+        if (!arr.length) return;
+        ctx.text(g[1] + "  ·  " + arr.length, { size: 7.5, font: fonts.mono, color: hexColor("accent"), h: 12 });
+        arr.forEach(function (f) {
+          var cost = f._act !== "Passive" ? costTag(f.text) : null;
+          var uses = parseUses(f.text, d);
+          ctx.text(f.name + (cost ? "   [" + cost + "]" : ""), { size: 9, font: fonts.bold, h: 11 });
+          ctx.text(briefFor(f), { size: 8, h: 10 });
+          ctx.text((f.source || "") + (f.level ? " · L" + f.level : ""), { size: 6.5, color: hexColor("dim"), h: uses ? 8 : 11 });
+          if (uses) ctx.checkboxRow("Uses (" + uses.recharge + ")", "ability." + (featIdx++) + ".uses", Math.min(uses.max, 8), 0, { size: 8 });
+          else featIdx++;
+        });
+      });
+    }
+
+    var uu = ch.universalUpgrades || {};
+    var uuKeys = Object.keys(uu);
+    if (uuKeys.length) {
+      ctx.sectionTitle("Universal Upgrades");
+      uuKeys.sort(function (a, b) { return Number(a) - Number(b); }).forEach(function (lv) {
+        var u = uu[lv] || {};
+        var talName = function (k) { var t = (EN.talents || []).find(function (x) { return x.key === k || x.name === k; }); return t ? t.name : (k || ""); };
+        var what = u.type === "attr" ? ("+1 " + (u.attr || "Attribute"))
+          : u.type === "talent" ? ("Talent: " + talName(u.talent))
+          : u.type === "talentUpgrade" ? ("Talent Upgrade: " + talName(u.talent))
+          : u.type === "evolution" ? ("Lineage Evolution: " + (u.feature || u.name || ""))
+          : (u.name || u.type || "choice");
+        ctx.text("L" + lv + "   " + what, { size: 9, h: 13 });
+      });
+    }
+
+    var profLines = proficiencyLines(ch);
+    if (profLines.length) {
+      ctx.sectionTitle("Proficiencies & Training");
+      profLines.forEach(function (l) { ctx.text(l, { size: 9, h: 13 }); });
+    }
+    return ctx;
+  }
+
+  /* =======================================================================
+     SECTION 03 - GEAR & HOLDINGS
+     ======================================================================= */
+  function allGear() {
+    var g = EN.gearCatalog || {};
+    return [].concat((g.melee && g.melee.items) || [], (g.ranged && g.ranged.items) || [], (g.signature && g.signature.items) || [],
+      (g.signature && g.signature.munitions) || [], (g.ammo && g.ammo.items) || [], (g.armor && g.armor.items) || [], (g.tools && g.tools.items) || []);
+  }
+  function catItem(name) { return allGear().find(function (i) { return i.name === name; }); }
+  function gearSummaryLine(it) {
+    var stat = [];
+    if (it.damage) stat.push("Dmg " + it.damage);
+    if (it.range) stat.push("Rng " + it.range);
+    if (it.ammo != null) stat.push("Ammo " + it.ammo);
+    if (it.dr != null) stat.push("DR " + it.dr);
+    if (it.traits && it.traits.length) stat.push(it.traits.join(", "));
+    if (it.skill) stat.push("Skill: " + it.skill);
+    return stat.join("  ·  ");
+  }
+
+  function buildGearHoldings(doc, form, fonts, ch, d) {
+    var ctx = makeCtx(doc, form, fonts, { title: "GEAR & HOLDINGS", tag: "03 · GEAR", serial: idSerial(ch), fieldPrefix: "gear" });
+
+    ctx.row([
+      { label: "Glimmer", name: "glimmer", value: ch.glimmer || 0, w: 1 },
+      { label: "Nexus Tokens", name: "nexus", value: "", w: 1 }
+    ]);
+
+    var dg = d.defenseGear || {};
+    var loadout = equippedWeaponNames(ch).slice();
+    if (dg.armor) loadout.push("Armor: " + dg.armor.name);
+    if (dg.shield) loadout.push("Shield: " + dg.shield.name);
+    if (dg.focus) loadout.push("Focus: " + dg.focus.name);
+    ctx.sectionTitle("Equipped / Worn");
+    ctx.text(loadout.length ? loadout.join("  ·  ") : "Nothing equipped.", { size: 9, h: 14 });
+
+    ctx.sectionTitle("Inventory", "item detail");
+    var entries = (ch.equipment || []).filter(function (e) { return e.qty > 0; });
+    var invRows = entries.map(function (e) {
+      var it = catItem(e.name);
+      var key = e.id || e.name;
+      var worn = (ch.equippedWeapons || []).indexOf(key) !== -1 || ch.equippedArmor === key || ch.equippedShield === key || ch.equippedFocus === key;
+      return { name: e.name, qty: e.qty, status: worn ? "Equipped" : "Stash", notes: it ? gearSummaryLine(it) : "" };
+    });
+    if (!invRows.length) invRows.push({ name: "", qty: "", status: "", notes: "" });
+    ctx.table(
+      [{ header: "Item", key: "name", w: 2 }, { header: "Qty", key: "qty", w: "40px", align: "center" }, { header: "Status", key: "status", w: "70px", type: "static" }, { header: "Notes", key: "notes", w: 3 }],
+      "inv", invRows
+    );
+
+    var stash = (ch.cyberStash || []);
+    if (stash.length) {
+      ctx.sectionTitle("Chrome Stash", "uninstalled");
+      ctx.table(
+        [{ header: "Name", key: "name", w: 2, type: "static" }, { header: "Zone", key: "zone", w: 1, type: "static" }, { header: "SP", key: "sp", w: "40px", align: "center", type: "static" }],
+        "chromeStash",
+        stash.map(function (cw) { return { name: cw.name || cw.base, zone: cw.zone || "", sp: (cw.sp || 0) }; })
+      );
+    }
+
+    ctx.sectionTitle("Load / Carry");
+    var enc = d.encumbrance || {};
+    ctx.row([
+      { label: "Current Load", name: "loadCurrent", value: enc.current != null ? enc.current : "", w: 1, align: "center" },
+      { label: "Threshold", name: "loadThreshold", value: enc.threshold != null ? enc.threshold : "", w: 1, align: "center" }
+    ]);
+    ctx.multiline(null, "carryNotes", { height: 40 });
+
+    return ctx;
+  }
+
+  /* =======================================================================
+     SECTION 04 - PROFILE
+     ======================================================================= */
+  function buildProfile(doc, form, fonts, ch, d) {
+    var id = ch.identity || {};
+    var ctx = makeCtx(doc, form, fonts, { title: "PROFILE", tag: "04 · PROFILE", serial: idSerial(ch), fieldPrefix: "profile" });
+
+    ctx.multiline("Concept", "concept", { value: id.concept, height: 34 });
+    ctx.multiline("Where you came from", "whereFrom", { value: id.whereFrom, height: 34 });
+    ctx.sectionTitle("Appearance");
+    ctx.multiline(null, "appearance", { value: id.appearance, height: 50 });
+    ctx.sectionTitle("Inner Profile", "pure story");
+    ctx.multiline("Facets", "facets", { value: id.facets, height: 40 });
+    ctx.multiline("Core Sparks", "coreSparks", { value: id.coreSparks, height: 40 });
+    ctx.multiline("Tethers", "tethers", { value: id.tethers, height: 40 });
+    ctx.multiline("Fault Lines", "faultLines", { value: id.faultLines, height: 40 });
+    ctx.sectionTitle("Contacts & Crews");
+    ctx.multiline(null, "contacts", { height: 40 });
+    ctx.sectionTitle("Backstory & Notes");
+    ctx.multiline(null, "backstory", { value: id.notes, height: 80 });
+
+    ctx.sectionTitle("Standing", "Cred · Heat");
+    ctx.checkboxRow("Cred", "cred", 10, 0);
+    ctx.checkboxRow("Heat", "heat", 10, 0);
+
+    return ctx;
+  }
+
+  /* =======================================================================
+     SECTION 05 - SYSTEMS (Flow / Cyberware / #GRID; only what the build uses)
+     ======================================================================= */
+  function buildSystems(doc, form, fonts, ch, d) {
+    var installed = (eng.installedCyberware ? eng.installedCyberware(ch) : (ch.cyberware || []));
+    var hasFlow = !!d.flow;
+    var hasChrome = installed.length > 0;
+    var hasGrid = d.grid && (d.grid.userType === "Power User" || (ch.grid && ch.grid.deckType));
+    if (!hasFlow && !hasChrome && !hasGrid) return null;
+
+    var ctx = makeCtx(doc, form, fonts, { title: "SYSTEMS", tag: "05 · SYSTEMS", serial: idSerial(ch), fieldPrefix: "sys" });
+    var any = false;
+
+    if (hasFlow) {
+      any = true;
+      var f = d.flow;
+      ctx.sectionTitle("Flow Reservoir", f.attributeName + " · Overdraw at 0 FP");
+      ctx.row([
+        { label: "FP Max", name: "flow.fpMax", value: f.max, w: 1, align: "center" },
+        { label: "Flow DC", name: "flow.dc", value: f.dc, w: 1, align: "center" },
+        { label: "Flow Atk", name: "flow.atk", value: sgn(f.attack), w: 1, align: "center" },
+        { label: "FP Now", name: "flow.fpNow", value: "", w: 1, align: "center" }
+      ]);
+      ctx.checkboxRow("Strain", "flow.strain", 6, 0);
+      ctx.sectionTitle("Known Resonances", "Kinetic · Thermal · EM · Visceral · Spatial · Cognitive · Temporal");
+      ctx.table([{ header: "Resonance / Invocation", key: "name", w: 1 }], "flow.resonance", [null, null, null, null, null]);
+      ctx.multiline("Counter Flow", "counterFlow", { height: 30 });
+      ctx.multiline("Static Zones", "staticZones", { height: 30 });
+    }
+
+    if (hasChrome) {
+      if (any) ctx.rule();
+      any = true;
+      var tax = d.chromeTax || { total: 0, index: 0, resDiePenalty: 0 };
+      ctx.sectionTitle("Cybernetic Frame", "Static " + tax.total + " SP");
+      ctx.row([
+        { label: "Static", name: "chrome.static", value: tax.total, w: 1, align: "center" },
+        { label: "Chrome Tax", name: "chrome.tax", value: "T" + (tax.index || 0), w: 1, align: "center" },
+        { label: "Installed", name: "chrome.installed", value: installed.length, w: 1, align: "center" }
+      ]);
+      ctx.table(
+        [{ header: "Name", key: "name", w: 2, type: "static" }, { header: "Zone", key: "zone", w: 1, type: "static" }, { header: "SP", key: "sp", w: "36px", align: "center", type: "static" }, { header: "Notes", key: "notes", w: 2 }],
+        "chrome",
+        installed.map(function (cw) { return { name: cw.name || cw.base || "Chrome", zone: cw.zone || "", sp: cw.sp || 0, notes: "" }; })
+      );
+    }
+
+    if (hasGrid) {
+      if (any) ctx.rule();
+      var g = d.grid, deck = g.deck;
+      ctx.sectionTitle("#GRID Rig", g.userType);
+      ctx.row([
+        { label: "Cipher Atk", name: "grid.cipherAtk", value: sgn(g.effectiveAttack), w: 1, align: "center" },
+        { label: "Save DC", name: "grid.saveDc", value: g.effectiveSaveDC, w: 1, align: "center" },
+        { label: "Links", name: "grid.links", value: g.unlimitedLinks ? "no cap" : g.maxLinks, w: 1, align: "center" },
+        { label: "Stability", name: "grid.stability", value: "DC " + g.stabilityDcBase, w: 1, align: "center" }
+      ]);
+      ctx.row([
+        { label: "Smartdeck / Buddy", name: "grid.deck", value: deck ? deck.tier + (deck.type === "buddy" ? " Buddy" : " Deck") : "-", w: 2 },
+        { label: "Device", name: "grid.device", value: deck ? sgn(deck.deviceBonus) : "-", w: "54px", align: "center" },
+        { label: "Deck HP", name: "grid.deckHp", value: deck ? deck.maxHp : "-", w: "54px", align: "center" },
+        { label: "Bandwidth", name: "grid.bandwidth", value: g.bandwidthMax != null ? g.bandwidthMax : "-", w: "60px", align: "center" }
+      ]);
+      ctx.sectionTitle("Repertoire", "cipher · CX · cost");
+      ctx.table(
+        [{ header: "Cipher", key: "name", w: 2 }, { header: "CX", key: "cx", w: "50px", align: "center" }, { header: "Cost", key: "cost", w: "50px", align: "center" }],
+        "grid.rep",
+        [null, null, null, null, null, null, null, null]
+      );
+    }
+
+    return ctx;
+  }
+
   /* ---- proof-of-concept stub (task #62): one page, one field ------------- */
   async function buildProof() {
     var doc = await PDFLib.PDFDocument.create();
@@ -560,13 +854,17 @@ EN.pdfExport = (function () {
     return doc.save();
   }
 
-  /* ---- the real dossier: front sheet only for now; pages 2-5 land next ---- */
+  /* ---- the real dossier: all five sections, mirroring EN.printSheet's pages ---- */
   async function build(ch) {
     var d = eng.derive(ch);
     var doc = await PDFLib.PDFDocument.create();
     var form = doc.getForm();
     var fonts = await loadFonts(doc);
     buildFrontSheet(doc, form, fonts, ch, d);
+    buildTalentsLineage(doc, form, fonts, ch, d);
+    buildGearHoldings(doc, form, fonts, ch, d);
+    buildProfile(doc, form, fonts, ch, d);
+    buildSystems(doc, form, fonts, ch, d);   // omits itself (no pages) if the build uses no systems
     return doc.save();
   }
 
