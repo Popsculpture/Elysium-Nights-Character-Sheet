@@ -127,13 +127,15 @@ EN.pdfExport = (function () {
       ctx.y -= h;
     };
 
-    /* row(cells): cells=[{label,name,value,w,type:'static'|undefined,size,align,font,color}]
-       w is a flex weight (number, default 1) OR a fixed width string like "60px". */
+    /* row(cells): cells=[{label,name,value,w,type:'static'|undefined,size,align,font,color,sub}]
+       w is a flex weight (number, default 1) OR a fixed width string like "60px".
+       sub, if given, is a small caption drawn under the box (e.g. a stat's attribute name). */
     ctx.row = function (cells, opts) {
       opts = opts || {};
       var boxH = opts.height || 16;
       var hasLabels = cells.some(function (c) { return c.label; });
-      var rowH = (hasLabels ? 11 : 0) + boxH;
+      var hasSub = cells.some(function (c) { return c.sub; });
+      var rowH = (hasLabels ? 11 : 0) + boxH + (hasSub ? 9 : 0);
       ctx.ensure(rowH + 6);
       var fixed = 0, flexSum = 0;
       cells.forEach(function (c) {
@@ -146,6 +148,11 @@ EN.pdfExport = (function () {
       cells.forEach(function (c) {
         var w = typeof c.w === "string" ? parseFloat(c.w) : (flexSum ? (c.w || 1) / flexSum * flexW : 0);
         if (c.label) ctx.page.drawText(c.label.toUpperCase(), { x: x, y: ctx.y - 8, size: 6.5, font: fonts.mono, color: hexColor("muted") });
+        if (c.sub) {
+          var subW = fonts.mono.widthOfTextAtSize(String(c.sub), 7);
+          var subX = c.align === "center" ? x + (w - subW) / 2 : x;
+          ctx.page.drawText(String(c.sub), { x: subX, y: boxTop - boxH - 8, size: 7, font: fonts.mono, color: hexColor("dim") });
+        }
         if (c.type === "static") {
           ctx.page.drawText(c.value == null ? "" : String(c.value), { x: x + 1, y: boxTop - boxH + 5, size: c.size || 9.5, font: c.font || fonts.sans, color: c.color || hexColor("ink") });
         } else {
@@ -197,8 +204,10 @@ EN.pdfExport = (function () {
       ctx.y -= (h + 6);
     };
 
-    /* table(columns, name, rows): columns=[{header,key,w,align,size}] (w: flex weight or "60px");
-       rows=array of row-objects keyed by column.key, or null entries for blank write-in rows. */
+    /* table(columns, name, rows): columns=[{header,key,w,align,size,type:'static'|undefined}]
+       (w: flex weight or "60px"; a 'static' column prints plain text instead of a field, for
+       structural labels like a skill's fixed attribute); rows=array of row-objects keyed by
+       column.key, or null entries for blank write-in rows. */
     ctx.table = function (columns, name, rows) {
       var fixed = 0, flexSum = 0;
       columns.forEach(function (c) { if (typeof c.w === "string") fixed += parseFloat(c.w); else flexSum += (c.w || 1); });
@@ -219,12 +228,16 @@ EN.pdfExport = (function () {
         var xx = MARGIN.left;
         columns.forEach(function (c, ci) {
           var val = r ? r[c.key] : null;
-          ctx.page.drawRectangle({ x: xx, y: ctx.y - boxH, width: widths[ci], height: boxH, borderColor: hexColor("rule"), borderWidth: 0.6, color: WHITE });
-          var tf = form.createTextField(ctx.field(name + "." + ri + "." + c.key));
-          tf.addToPage(ctx.page, { x: xx + 2, y: ctx.y - boxH + 2, width: Math.max(4, widths[ci] - 4), height: boxH - 4, font: fonts.sans, textColor: hexColor("field") });
-          if (c.align === "center" && PDFLib.TextAlignment) tf.setAlignment(PDFLib.TextAlignment.Center);
-          tf.setFontSize(c.size || 8.5);
-          if (val != null && val !== "") tf.setText(String(val));
+          if (c.type === "static") {
+            ctx.page.drawText(val == null ? "" : String(val), { x: xx + 1, y: ctx.y - boxH + 4, size: c.size || 8.5, font: fonts.sans, color: hexColor("ink") });
+          } else {
+            ctx.page.drawRectangle({ x: xx, y: ctx.y - boxH, width: widths[ci], height: boxH, borderColor: hexColor("rule"), borderWidth: 0.6, color: WHITE });
+            var tf = form.createTextField(ctx.field(name + "." + ri + "." + c.key));
+            tf.addToPage(ctx.page, { x: xx + 2, y: ctx.y - boxH + 2, width: Math.max(4, widths[ci] - 4), height: boxH - 4, font: fonts.sans, textColor: hexColor("field") });
+            if (c.align === "center" && PDFLib.TextAlignment) tf.setAlignment(PDFLib.TextAlignment.Center);
+            tf.setFontSize(c.size || 8.5);
+            if (val != null && val !== "") tf.setText(String(val));
+          }
           xx += widths[ci] + gap;
         });
         ctx.y -= (boxH + 3);
@@ -241,6 +254,272 @@ EN.pdfExport = (function () {
       mono: await doc.embedFont(PDFLib.StandardFonts.Courier),
       monoBold: await doc.embedFont(PDFLib.StandardFonts.CourierBold)
     };
+  }
+
+  /* =======================================================================
+     Shared derivation helpers, ported from EN.printSheet's own private copies
+     (this codebase's existing convention: each view module keeps its own small
+     gear/feature lookups rather than sharing a gear-utils file, e.g. combat.js
+     and printsheet.js each already carry their own weaponHit/findWeapon).
+     ======================================================================= */
+  var eng = EN.engine, store = EN.store;
+  function sgn(n) { return eng.fmtMod(n); }
+  function idSerial(ch) {
+    return "ID." + ((ch.meta && ch.meta.id) ? ch.meta.id.replace(/[^a-z0-9]/gi, "").slice(-6).toUpperCase() : "000000");
+  }
+  // live current state (mirrors combatView's private state() helper) so the
+  // fillable PDF prefills the same current Vitality/Wounds/Vigor the play
+  // dashboard shows, rather than the static print sheet's always-blank boxes.
+  function liveState(ch, d) {
+    var woundsMax = d.woundsMax;
+    var wounds = eng.clamp((ch.wounds && ch.wounds.current != null) ? ch.wounds.current : woundsMax, 0, woundsMax);
+    var woundsLost = woundsMax - wounds;
+    var vitMax = Math.max(0, (d.vitalityMax || 0) - woundsLost);
+    var vit = eng.clamp((ch.vitality && ch.vitality.current != null) ? ch.vitality.current : vitMax, 0, vitMax);
+    var vigor = (ch.vitality && ch.vitality.temp) || 0;
+    var rdMax = d.resilienceMax, rdSpent = (ch.resilience && ch.resilience.spent) || 0;
+    return { vit: vit, vitMax: vitMax, vigor: vigor, wounds: wounds, woundsMax: woundsMax, rd: Math.max(0, rdMax - rdSpent), rdMax: rdMax };
+  }
+
+  var GROUP_CAT = { Simple: "Simple Weapons", Martial: "Martial Weapons", Sidearm: "Sidearms", Longarm: "Longarms", Heavy: "Heavy Weapons", Launcher: "Explosive Launchers", Thrown: "Thrown Weapons", Bowfire: "Bowfire Weapons" };
+  function findWeapon(name) {
+    var g = EN.gearCatalog || {};
+    return [].concat((g.melee && g.melee.items) || [], (g.ranged && g.ranged.items) || [], (g.signature && g.signature.items) || []).find(function (w) { return w.name === name; });
+  }
+  function equippedWeaponNames(ch) {
+    var out = [];
+    (ch.equippedWeapons || []).forEach(function (key) {
+      var e = (ch.equipment || []).find(function (x) { return (x.id || x.name) === key; });
+      if (e && e.qty > 0 && out.indexOf(e.name) === -1) out.push(e.name);
+    });
+    return out;
+  }
+  function weaponHit(ch, d, w) {
+    var melee = w._melee || w.group === "Simple" || w.group === "Martial";
+    var thrown = (w.traits || []).some(function (t) { return /^Thrown/.test(t); });
+    var finesse = (w.traits || []).some(function (t) { return /^Finesse/.test(t); });
+    var bod = d.attributes.BOD.mod, agi = d.attributes.AGI.mod;
+    var useAgi = melee ? (finesse && agi > bod) : (thrown ? agi >= bod : true);
+    var mod = useAgi ? agi : bod;
+    var cat = GROUP_CAT[w.group], tier = cat ? eng.effectiveGearTier(ch, "weapons", cat) : "untrained";
+    var prof = ((EN.rules.profTiers || {})[tier] || {}).d20 || 0;
+    var focusCal = cat && eng.weaponFocus && eng.weaponFocus(ch, cat, w.name) ? (d.caliber || 1) : 0;
+    return mod + prof + focusCal;
+  }
+
+  /* ---- resource-spending abilities (Gambits/Maneuvers/etc), ported from printsheet.js ---- */
+  function actionCost(text) {
+    text = text || "";
+    if (/Impulse Action/i.test(text)) return "Impulse";
+    if (/Swift Action/i.test(text)) return "Swift";
+    if (/Free Action/i.test(text)) return "Free";
+    if (/Complex Action/i.test(text)) return "Action";
+    if (/as an Action|use your Action|spend (?:an|your) Action|standard Action|as a single Action|take the Attack Action/i.test(text)) return "Action";
+    return "Passive";
+  }
+  function costTag(text) {
+    var m = (text || "").match(/(\d+)\s*(Bandwidth|Flow Points?|FP|Overdrive|Moxie|Leverage|Execution|Triage|Grit)\b/i);
+    if (!m) return null;
+    var r = m[2].toLowerCase();
+    var abbr = r.indexOf("bandwidth") === 0 ? "BW" : (r.indexOf("flow") === 0 || r === "fp") ? "FP" : m[2].slice(0, 3).toUpperCase();
+    return m[1] + " " + abbr;
+  }
+  function resAbbr(name) {
+    var r = (name || "").toLowerCase();
+    if (r.indexOf("bandwidth") === 0) return "BW";
+    if (r.indexOf("flow") === 0 || r === "fp") return "FP";
+    return (name || "RES").slice(0, 3).toUpperCase();
+  }
+  function actLabel(s) {
+    if (/Impulse/i.test(s)) return "Impulse";
+    if (/Swift/i.test(s)) return "Swift";
+    if (/Free/i.test(s)) return "Free";
+    if (/Action/i.test(s)) return "Action";
+    return "";
+  }
+  function talentFeatures(ch) {
+    var TAL = Array.isArray(EN.talents) ? EN.talents : [];
+    return (ch.talents || []).map(function (tk) {
+      var t = TAL.find(function (x) { return x.key === tk || x.name === tk; });
+      return t ? { name: t.name, text: t.text || t.desc || "", source: "Talent", level: 0 } : null;
+    }).filter(Boolean);
+  }
+  function gatherFeatures(ch, d) {
+    var feats = (d.features || []).concat(talentFeatures(ch));
+    if (ch.class === "codebreaker") {
+      var EX = (EN.classes && EN.classes.codebreaker && EN.classes.codebreaker.extra && EN.classes.codebreaker.extra.gridExploits) || [];
+      feats = feats.concat(EX.map(function (x) { return { name: x.name, text: (x.action ? x.action + ". " : "") + (x.text || ""), source: "Signature Exploit", level: 0 }; }));
+    }
+    feats = feats.filter(function (f) { return !/^(Universal Upgrade|Subclass Feature)$/.test(f.name) && !/Subclass( Capstone)?$/.test(f.name); });
+    function base(n) { return n.replace(/\s*\([^)]*\)\s*$/, "").trim(); }
+    var present = {}; feats.forEach(function (f) { present[f.name] = true; });
+    var top = {};
+    feats.forEach(function (f) {
+      var b = base(f.name);
+      if (b !== f.name && present[b]) { var c = top[b]; if (!c || (f.level || 0) >= (c.level || 0)) top[b] = { name: f.name, level: f.level || 0 }; }
+    });
+    return feats.filter(function (f) { var b = base(f.name); return !(b !== f.name && present[b]); })
+      .map(function (f) { return top[f.name] ? { name: top[f.name].name, _base: f.name, text: f.text, source: f.source, level: f.level } : f; });
+  }
+  function resourceSpenders(ch, d, feats) {
+    var res = d.resource || d.flow;
+    if (!res || !res.name) return [];
+    var rname = res.name, abbr = resAbbr(rname), seen = {}, rows = [];
+    function add(name, cost, act) { var k = name.toLowerCase(); if (seen[k]) return; seen[k] = 1; rows.push({ name: name, cost: cost, act: act || "" }); }
+    var resFeat = (d.features || []).find(function (f) { return f.name === rname; });
+    var defCost = (((resFeat && resFeat.text) || res.fuels || "").match(/costs?\s+(\d+)\s/i) || [])[1] || "1";
+    var gl = eng.gambitList ? eng.gambitList(ch) : [];
+    if (gl.length) {
+      var pick = (ch.gambits && ch.gambits.length) ? gl.filter(function (g) { return ch.gambits.indexOf(g.name) !== -1; }) : gl;
+      pick.forEach(function (g) { add(g.name, (g.cost || defCost) + " " + abbr, actLabel(g.action)); });
+    }
+    var spend = new RegExp("spend(?:s|ing)?\\s+\\d+\\s+" + rname, "i");
+    (feats || []).forEach(function (f) {
+      var t = f.text || "";
+      if (f.name === rname || !spend.test(t)) return;
+      var clause = t.split(/\.\s+/).find(function (s) { return spend.test(s); }) || t;
+      var act = actionCost(clause);
+      if (act === "Passive") return;
+      add(f.name, costTag(t) || (defCost + " " + abbr), act);
+    });
+    return rows;
+  }
+
+  /* =======================================================================
+     SECTION 01 - FRONT SHEET
+     ======================================================================= */
+  function buildFrontSheet(doc, form, fonts, ch, d) {
+    var id = ch.identity || {};
+    var ctx = makeCtx(doc, form, fonts, { title: "FREELANCER FIELD DOSSIER", tag: "01 · FRONT", serial: idSerial(ch), fieldPrefix: "front" });
+    var classLine = [d.classInfo ? d.classInfo.name : "-", d.subclassInfo ? d.subclassInfo.name : null].filter(Boolean).join(" · ");
+    var speciesLine = [d.speciesInfo ? d.speciesInfo.name : "-", d.lineageInfo ? d.lineageInfo.name : null].filter(Boolean).join(" · ");
+    var progression = ch.useXp ? ("XP " + (d.xp || 0) + (d.xpForNext ? " / " + d.xpForNext : "")) : ("Milestones " + ((ch.milestones && ch.milestones.major) || 0) + " maj, " + ((ch.milestones && ch.milestones.minor) || 0) + " min");
+
+    ctx.row([{ label: "Handle / alias", name: "handle", value: id.handle || ch.name, w: 1 }, { label: "Name on record", name: "name", value: ch.name, w: 1 }]);
+    ctx.row([
+      { label: "Class · level", name: "classLevel", value: classLine + " · L" + d.level, w: 3 },
+      { label: "Lineage", name: "lineage", value: speciesLine, w: 2 },
+      { label: "Cal", name: "cal", value: d.caliber, w: "40px", align: "center" },
+      { label: "Size", name: "size", value: d.size || "-", w: "60px", align: "center" }
+    ]);
+    ctx.row([
+      { label: "Background", name: "background", value: d.backgroundInfo ? d.backgroundInfo.name : "-", w: 1 },
+      { label: "Progression", name: "progression", value: progression, w: 1 }
+    ]);
+    ctx.spacer(4);
+
+    // top stat strip
+    var dg = d.defenseGear || {};
+    var st = liveState(ch, d);
+    ctx.row([
+      { label: "Def", name: "def", value: d.defense, w: 1, align: "center", size: 13, sub: (d.defenseAttr === "BOD" ? "Body" : "Agility") + (dg.shield ? " +shield" : "") },
+      { label: "DR", name: "dr", value: d.armorDR || 0, w: 1, align: "center", size: 13, sub: dg.armor ? dg.armor.name : "no armor" },
+      { label: "SPD", name: "spd", value: d.speed, w: 1, align: "center", size: 13, sub: "spaces" },
+      { label: "INIT", name: "init", value: sgn(Math.max(d.attributes.AGI.mod, d.attributes.WIT.mod)), w: 1, align: "center", size: 13, sub: d.attributes.WIT.mod > d.attributes.AGI.mod ? "Wits" : "Agility" }
+    ], { height: 20 });
+
+    // attribute matrix
+    ctx.sectionTitle("Attribute Matrix");
+    ctx.row((EN.rules.attributes || []).map(function (a) {
+      var A = d.attributes[a.key];
+      return { label: a.name, name: "attr." + a.key + ".score", value: A.score, w: 1, align: "center", size: 13, sub: sgn(A.mod) };
+    }), { height: 18 });
+
+    // skills
+    ctx.sectionTitle("Skills", "d20 bonus  ·  Snag = untrained");
+    ctx.table(
+      [{ header: "Attr", key: "attr", w: "34px", type: "static" }, { header: "Skill", key: "name", w: 3, type: "static" }, { header: "Bonus", key: "bonus", w: "50px", align: "center" }],
+      "skill",
+      (d.skills || []).map(function (s) {
+        return { attr: s.attr, name: s.name + (s.untrained ? "  (Snag)" : s.focus ? "  (Focus)" : ""), bonus: sgn(s.total) };
+      })
+    );
+
+    // versatile skills
+    ctx.sectionTitle("Versatile Skills");
+    var V = ch.versatile || {};
+    ctx.table(
+      [{ header: "Skill", key: "name", w: 1, type: "static" }, { header: "Attribute", key: "attr", w: 1 }, { header: "Parent Skill", key: "parent", w: 1 }],
+      "versatile",
+      ["insight", "performance", "intimidation"].map(function (k) {
+        var s = V[k] || {};
+        return { name: k.charAt(0).toUpperCase() + k.slice(1), attr: s.attr || "", parent: s.skill || "" };
+      })
+    );
+
+    // saves
+    ctx.sectionTitle("Saves", "d20 + MOD + Caliber (Focus)");
+    ctx.table(
+      [{ header: "Save", key: "save", w: 1, type: "static" }, { header: "Focus", key: "focus", w: "60px", align: "center" }, { header: "Bonus", key: "bonus", w: "50px", align: "center" }],
+      "save",
+      (EN.rules.attributes || []).map(function (a) {
+        var S = d.saves[a.key] || {};
+        return { save: a.name, focus: S.focus ? "FOCUS" : "", bonus: sgn(S.bonus != null ? S.bonus : d.attributes[a.key].mod) };
+      })
+    );
+
+    // conditions & fatigue
+    ctx.sectionTitle("Conditions & Fatigue");
+    ctx.multiline(null, "conditions", { value: (ch.conditions || []).join(", "), height: 24 });
+    ctx.checkboxRow("Fatigue", "fatigue", 6, ch.fatigue || 0);
+
+    // senses
+    ctx.sectionTitle("Senses", "10 + MOD + PROF (+/- 5 Edge/Snag)");
+    var passiveRows = [];
+    ["perception", "investigation", "intuition", "systems"].forEach(function (k) {
+      var s = (d.skills || []).find(function (x) { return x.key === k; });
+      if (s) passiveRows.push({ name: "Passive " + s.name, val: s.passive });
+    });
+    ctx.table([{ header: "Sense", key: "name", w: 2, type: "static" }, { header: "Value", key: "val", w: "50px", align: "center" }], "passive", passiveRows);
+    var SENSE_GRANTS = {
+      "Lowlight Optics": { sense: "Darkvision", range: "12 sp." }, "Predator's Glare": { sense: "Darkvision", range: "6 sp." },
+      "Fungal Network": { sense: "Tremor Sense", range: "6 sp." }, "Seismic Sense": { sense: "Tremor Sense", range: "8 sp." },
+      "Warmblood Sense": { sense: "Heat Sense", range: "6 sp." }, "Blood-Scent Tracker": { sense: "Blood Scent", range: "6 sp." },
+      "Disturbance Compass": { sense: "Flow Sense", range: "12 sp." }, "Scent Marker": { sense: "Scent Tracking", range: "1 mile" },
+      "The Machine Medium": { sense: "Sprite Sight", range: "passive" }, "Echo Sighted": { sense: "Resonance Sense", range: "12 sp." }
+    };
+    var special = (d.features || []).map(function (f) { var g = SENSE_GRANTS[f.name]; return g ? { name: g.sense, val: g.range } : null; }).filter(Boolean);
+    if (special.length) ctx.table([{ header: "Special Sense", key: "name", w: 2, type: "static" }, { header: "Range", key: "val", w: "60px", align: "center" }], "specialSense", special);
+
+    // vitality & wounds
+    ctx.sectionTitle("Vitality & Wounds", "Vigor to Vitality to Wounds");
+    ctx.row([{ label: "Vigor", name: "vigor", value: st.vigor || "", w: 1 }], { height: 18 });
+    ctx.checkboxRow("Resilience d" + (d.resilienceDie || "?"), "resilience", st.rdMax, st.rd);
+    ctx.row([
+      { label: "Vitality", name: "vitality.current", value: st.vit, w: 1, align: "center" },
+      { label: "Max", name: "vitality.max", value: st.vitMax, w: "50px", align: "center" }
+    ]);
+    ctx.row([
+      { label: "Wounds", name: "wounds.current", value: st.wounds, w: 1, align: "center" },
+      { label: "Max", name: "wounds.max", value: st.woundsMax, w: "50px", align: "center" }
+    ]);
+    ctx.checkboxRow("Death Saves - Success", "deathSaveS", 3, (ch.deathSaves && ch.deathSaves.s) || 0);
+    ctx.checkboxRow("Death Saves - Fail", "deathSaveF", 3, (ch.deathSaves && ch.deathSaves.f) || 0);
+
+    // attacks
+    ctx.sectionTitle("Attacks");
+    var atkRows = equippedWeaponNames(ch).map(findWeapon).filter(Boolean).map(function (w) {
+      return { name: w.name, atk: sgn(weaponHit(ch, d, w)), dmg: w.damage || "", notes: (w.traits || []).join(", ") };
+    });
+    while (atkRows.length < 6) atkRows.push({ name: "", atk: "", dmg: "", notes: "" });
+    ctx.table(
+      [{ header: "Name", key: "name", w: 2 }, { header: "Atk Bonus / DC", key: "atk", w: 1, align: "center" }, { header: "Damage & Type", key: "dmg", w: 2 }, { header: "Notes", key: "notes", w: 2 }],
+      "attack", atkRows
+    );
+
+    // abilities (resource spenders)
+    var feats = gatherFeatures(ch, d);
+    var spenders = resourceSpenders(ch, d, feats).slice(0, 10);
+    var resLabel = d.resource ? (d.resource.name.toUpperCase() + "  MAX " + d.resource.max) : (d.flow ? "FLOW FP MAX " + d.flow.max : "");
+    ctx.sectionTitle("Abilities", resLabel);
+    var abilityRows = spenders.map(function (s) { return { name: s.name, cost: s.cost, act: s.act }; });
+    while (abilityRows.length < 8) abilityRows.push({ name: "", cost: "", act: "" });
+    ctx.table(
+      [{ header: "Name", key: "name", w: 3 }, { header: "Cost", key: "cost", w: 1, align: "center" }, { header: "Action Type", key: "act", w: 1, align: "center" }],
+      "ability", abilityRows
+    );
+
+    return ctx;
   }
 
   /* ---- proof-of-concept stub (task #62): one page, one field ------------- */
@@ -281,10 +560,20 @@ EN.pdfExport = (function () {
     return doc.save();
   }
 
+  /* ---- the real dossier: front sheet only for now; pages 2-5 land next ---- */
+  async function build(ch) {
+    var d = eng.derive(ch);
+    var doc = await PDFLib.PDFDocument.create();
+    var form = doc.getForm();
+    var fonts = await loadFonts(doc);
+    buildFrontSheet(doc, form, fonts, ch, d);
+    return doc.save();
+  }
+
   async function download(ch) {
     if (!ch) { toast("No #PRINT on file."); return; }
     try {
-      var bytes = await buildProof();   // TODO: swap for the real multi-page build()
+      var bytes = await build(ch);
       var blob = new Blob([bytes], { type: "application/pdf" });
       var a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
@@ -296,5 +585,5 @@ EN.pdfExport = (function () {
     }
   }
 
-  return { buildProof: buildProof, buildToolkitSmokeTest: buildToolkitSmokeTest, download: download };
+  return { buildProof: buildProof, buildToolkitSmokeTest: buildToolkitSmokeTest, build: build, download: download };
 })();
