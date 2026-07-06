@@ -134,30 +134,54 @@ EN.ui = (function () {
     return wrap;
   }
 
-  /* ---- Dice Pool visuals, shared by every bench/console that rolls pools ----
-     dieFace draws a rolled die as its physical shape (d10 kite face, d12
-     pentagon); while animating it shows "?", shakes via .tb-die.rolling, and
-     carries data attrs for animatePoolRoll to scramble. */
+  /* ---- Dice visuals, shared by every bench/console/tray that shows dice ----
+     A die is drawn as its physical solid, not a generic token: each size has a
+     silhouette with faint interior facet edges. dieFaceSvg is the single source
+     of that art, so the #GRID dice pool (dieFace, below) and the combat damage
+     tray render the same d4-to-d12 set. Each entry: the outer polygon, the inner
+     facet edges (a "P:" prefix marks a polygon, otherwise it's a path), and the
+     y the centered value sits at.
+       d4  tetrahedron (triangle + medial triforce)
+       d6  cube face (square + inset bevel)
+       d8  octahedron (tall diamond + equator/spine ridge)
+       d10 pentagonal-trapezohedron (kite)          <- authored for #GRID
+       d12 dodecahedron (pentagon face + spokes)     <- authored for #GRID  */
+  var DIE_GEOM = {
+    4:  { outer: "50,5 92,87 8,87", facets: ["P:71,46 50,87 29,46"], numY: 61 },
+    6:  { outer: "14,14 86,14 86,86 14,86", facets: ["P:26,26 74,26 74,74 26,74"], numY: 50 },
+    8:  { outer: "50,4 84,50 50,96 16,50", facets: ["M16,50 L84,50 M50,4 L50,96"], numY: 50 },
+    10: { outer: "50,2 97,52 50,96 3,52", facets: ["M50,2 L28,62 L50,84 L72,62 Z M28,62 L3,52 M72,62 L97,52 M3,52 L50,84 L97,52"], numY: 49 },
+    12: { outer: "50,2 78.2,11.2 95.6,35.2 95.6,64.8 78.2,88.8 50,98 21.8,88.8 4.4,64.8 4.4,35.2 21.8,11.2",
+          facets: ["P:50,24 74.7,42 65.3,71 34.7,71 25.3,42", "M50,24 L50,2 M74.7,42 L95.6,35.2 M65.3,71 L78.2,88.8 M34.7,71 L21.8,88.8 M25.3,42 L4.4,35.2"],
+          numY: 50 }
+  };
+  // opts: { size (width px), edge (stroke), num (value color), value, animating, numSize }
+  function dieFaceSvg(sides, opts) {
+    opts = opts || {};
+    var g = DIE_GEOM[sides] || DIE_GEOM[6];
+    var w = opts.size || 24, h = Math.round(w * (opts.hRatio || 1.04));
+    var edge = opts.edge || "var(--border2)", num = opts.num || "var(--text)";
+    var shown = opts.animating ? "?" : (opts.value == null ? "" : String(opts.value));
+    var fs = opts.numSize || (shown.length >= 2 ? 30 : 36);
+    var inner = g.facets.map(function (f) {
+      return f.charAt(0) === "P"
+        ? '<polygon points="' + f.slice(2) + '" fill="none" style="stroke:' + edge + '" stroke-width="3" stroke-linejoin="round" opacity=".7"/>'
+        : '<path d="' + f + '" fill="none" style="stroke:' + edge + '" stroke-width="3" stroke-linejoin="round" opacity=".7"/>';
+    }).join("");
+    return '<svg viewBox="0 0 100 100" width="' + w + '" height="' + h + '" aria-hidden="true">'
+      + '<polygon points="' + g.outer + '" fill="rgba(0,0,0,.35)" style="stroke:' + edge + '" stroke-width="4" stroke-linejoin="round"/>'
+      + inner
+      + '<text x="50" y="' + g.numY + '" text-anchor="middle" dominant-baseline="central" style="fill:' + num + ';font-family:var(--mono);font-weight:700" font-size="' + fs + '">' + shown + '</text>'
+      + '</svg>';
+  }
+  // one rolled Dice-Pool die (#GRID); colored by how many hits it counts for,
+  // gold-edged for a d12, shakes via .tb-die.rolling with animatePoolRoll attrs.
   function dieFace(die, poolColor, animating) {
     var num = animating ? "var(--text)" : (die.hits === 2 ? poolColor : (die.hits === 1 ? "var(--text)" : "var(--text4)"));
-    var edge = die.sides === 12 ? "var(--gold)" : "var(--border2)";
-    var fs = animating ? 32 : (die.value >= 10 ? 30 : 36);
-    var shown = animating ? "?" : die.value;
-    var svg;
-    if (die.sides === 12) {
-      svg = '<svg viewBox="0 0 100 100" width="24" height="25" aria-hidden="true">'
-        + '<polygon points="50,2 78.2,11.2 95.6,35.2 95.6,64.8 78.2,88.8 50,98 21.8,88.8 4.4,64.8 4.4,35.2 21.8,11.2" fill="rgba(0,0,0,.35)" style="stroke:' + edge + '" stroke-width="4" stroke-linejoin="round"/>'
-        + '<polygon points="50,24 74.7,42 65.3,71 34.7,71 25.3,42" fill="none" style="stroke:' + edge + '" stroke-width="3" stroke-linejoin="round" opacity=".7"/>'
-        + '<path d="M50,24 L50,2 M74.7,42 L95.6,35.2 M65.3,71 L78.2,88.8 M34.7,71 L21.8,88.8 M25.3,42 L4.4,35.2" fill="none" style="stroke:' + edge + '" stroke-width="3" opacity=".7"/>'
-        + '<text x="50" y="50" text-anchor="middle" dominant-baseline="central" style="fill:' + num + ';font-family:var(--mono);font-weight:700" font-size="' + fs + '">' + shown + '</text>'
-        + '</svg>';
-    } else {
-      svg = '<svg viewBox="0 0 100 100" width="23" height="25" aria-hidden="true">'
-        + '<polygon points="50,2 97,52 50,96 3,52" fill="rgba(0,0,0,.35)" style="stroke:' + edge + '" stroke-width="4" stroke-linejoin="round"/>'
-        + '<path d="M50,2 L28,62 L50,84 L72,62 Z M28,62 L3,52 M72,62 L97,52 M3,52 L50,84 L97,52" fill="none" style="stroke:' + edge + '" stroke-width="3" stroke-linejoin="round" opacity=".7"/>'
-        + '<text x="50" y="49" text-anchor="middle" dominant-baseline="central" style="fill:' + num + ';font-family:var(--mono);font-weight:700" font-size="' + fs + '">' + shown + '</text>'
-        + '</svg>';
-    }
+    var svg = dieFaceSvg(die.sides, {
+      size: die.sides === 12 ? 24 : 23, hRatio: 1.06, edge: die.sides === 12 ? "var(--gold)" : "var(--border2)",
+      num: num, value: die.value, animating: animating, numSize: animating ? 32 : (die.value >= 10 ? 30 : 36)
+    });
     return el("span.tb-die" + (animating ? ".rolling" : ""), {
       title: "d" + die.sides + (animating ? "" : (die.hits ? ", counts " + die.hits : ", no effect")), html: svg,
       dataset: animating ? { die: "1", final: String(die.value), sides: String(die.sides) } : null,
@@ -210,5 +234,5 @@ EN.ui = (function () {
   }
 
   return { el: el, append: append, clear: clear, frag: frag, panel: panel, sectionTitle: sectionTitle, stat: stat, toast: toast, renderText: renderText, applyInline: applyInline,
-           dieFace: dieFace, d20Face: d20Face, animatePoolRoll: animatePoolRoll };
+           dieFace: dieFace, dieFaceSvg: dieFaceSvg, d20Face: d20Face, animatePoolRoll: animatePoolRoll };
 })();
