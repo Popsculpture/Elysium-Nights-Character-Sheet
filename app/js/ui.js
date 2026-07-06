@@ -209,28 +209,36 @@ EN.ui = (function () {
     }, 50);
   }
 
-  // the full icosahedron wireframe: a hexagon with a top fan to the belt line,
-  // a central up-triangle, and a lower fan to the bottom vertex, so it reads as
-  // a real twenty-sider. Interior edges stay faint (opacity .5) and the value
-  // sits opaque on top in the central triangle.
-  var D20_FACETS = "M25,40 L75,40 M50,4 L25,40 M50,4 L75,40 M25,40 L9,27 M75,40 L91,27"
-    + " M50,40 L25,70 M50,40 L75,70 M25,70 L75,70 M25,40 L25,70 M75,40 L75,70"
-    + " M25,70 L9,73 M25,70 L50,96 M75,70 L91,73 M75,70 L50,96";
+  // a geometrically exact icosahedron, projected straight down a 3-fold (face)
+  // axis: a pointy-top hexagon silhouette with all 24 interior edges, which read
+  // as the classic overlapping-triangle "d20 icon" (front face + back face form
+  // the central hexagram). Coordinates come from the real 12 vertices, so every
+  // line lands where a twenty-sider's edges actually project. viewBox is 100x116
+  // (taller than wide) so the top and bottom apexes are not clipped. Interior
+  // edges stay faint and the value sits opaque in the central void of the star.
+  var D20_OUTER = "50,4.9 96,31.5 96,84.5 50,111.1 4,84.5 4,31.5";
+  var D20_FACETS = "M78.4,74.4 L21.6,74.4 M78.4,74.4 L50,25.2 M78.4,74.4 L96,84.5"
+    + " M78.4,74.4 L96,31.5 M78.4,74.4 L50,111.1 M21.6,74.4 L50,25.2 M21.6,74.4 L4,84.5"
+    + " M21.6,74.4 L50,111.1 M21.6,74.4 L4,31.5 M50,25.2 L50,4.9 M50,25.2 L96,31.5"
+    + " M50,25.2 L4,31.5 M4,84.5 L21.6,41.6 M4,84.5 L50,90.8 M50,4.9 L21.6,41.6"
+    + " M50,4.9 L78.4,41.6 M96,84.5 L78.4,41.6 M96,84.5 L50,90.8 M96,31.5 L78.4,41.6"
+    + " M50,111.1 L50,90.8 M4,31.5 L21.6,41.6 M21.6,41.6 L78.4,41.6 M21.6,41.6 L50,90.8"
+    + " M78.4,41.6 L50,90.8";
   /* A single d20 for the roll tray. opts: { animating, kept, dropped, crit,
      fumble }. When animating it carries data attrs so animatePoolRoll scrambles
      it (the value is the only <text>, so the scramble still finds it). */
   function d20Face(value, opts) {
     opts = opts || {};
-    var w = opts.size || 34, h = Math.round(w * 1.03);
+    var w = opts.size || 34, h = Math.round(w * 1.16);
     var edge = opts.crit ? "var(--gold)" : opts.fumble ? "var(--danger)" : opts.kept ? "var(--accent)" : "var(--border2)";
     var num = opts.animating ? "var(--text)" : opts.dropped ? "var(--text4)" : opts.crit ? "var(--gold)" : opts.fumble ? "var(--danger)" : "var(--text)";
     var shown = opts.animating ? "?" : String(value);
-    var fs = shown.length >= 2 ? 26 : 32;
+    var fs = shown.length >= 2 ? 28 : 36;
     var glow = (opts.kept && !opts.animating) ? "filter:drop-shadow(0 0 " + Math.round(w / 6) + "px " + edge + ");" : "";
-    var svg = '<svg viewBox="0 0 100 100" width="' + w + '" height="' + h + '" aria-hidden="true" style="' + glow + '">'
-      + '<polygon points="50,4 91,27 91,73 50,96 9,73 9,27" fill="rgba(0,0,0,.35)" style="stroke:' + edge + '" stroke-width="4" stroke-linejoin="round"/>'
-      + '<path d="' + D20_FACETS + '" fill="none" style="stroke:' + edge + '" stroke-width="2" stroke-linejoin="round" opacity=".5"/>'
-      + '<text x="50" y="56" text-anchor="middle" dominant-baseline="central" style="fill:' + num + ';font-family:var(--mono);font-weight:700" font-size="' + fs + '">' + shown + '</text>'
+    var svg = '<svg viewBox="0 0 100 116" width="' + w + '" height="' + h + '" aria-hidden="true" style="' + glow + '">'
+      + '<polygon points="' + D20_OUTER + '" fill="rgba(0,0,0,.35)" style="stroke:' + edge + '" stroke-width="4" stroke-linejoin="round"/>'
+      + '<path d="' + D20_FACETS + '" fill="none" style="stroke:' + edge + '" stroke-width="1.6" stroke-linejoin="round" opacity=".45"/>'
+      + '<text x="50" y="58" text-anchor="middle" dominant-baseline="central" style="fill:' + num + ';font-family:var(--mono);font-weight:700" font-size="' + fs + '">' + shown + '</text>'
       + '</svg>';
     return el("span.tb-die" + (opts.animating ? ".rolling" : ""), {
       title: "d20" + (opts.animating ? "" : ": " + value + (opts.dropped ? " (dropped)" : opts.kept ? " (kept)" : "")),
