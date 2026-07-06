@@ -2303,6 +2303,8 @@ EN.combatView = (function () {
         var h = weaponHit(it), norm = normalizeWeapon(it);
         var snagWhy = atkSnag || (h.tier === "untrained" ? "Untrained with " + h.cat + "; attacks roll with Snag" : null);
         var dmgTip = norm.damageDisplay + " " + eng.fmtMod(h.mod) + " (" + h.attrName + ") on hit · Tap to roll damage";
+        // DMG box shows the dice plus the attribute modifier the roll adds (e.g. "1d4 +3")
+        var dmgDisplay = norm.damageDisplay + " " + eng.fmtMod(h.mod);
         var hitTip = "d20 + " + h.attrName + " Modifier (" + eng.fmtMod(h.mod) + ")"
           + (h.prof ? " + Weapon Proficiency Bonus (" + eng.fmtMod(h.prof) + ")" : " (untrained, Snag)")
           + (h.focus ? " + Caliber from " + h.cat + " (" + h.focus.aspect + ") Focus (" + eng.fmtMod(h.focusCal) + ", outside the +15 static cap)" : "");
@@ -2351,7 +2353,7 @@ EN.combatView = (function () {
           rowKids.push(el("div.row.wrap", { style: { gap: "12px", alignItems: "center", marginTop: "6px" } }, [
             statBox("RANGE", norm.rangeDisplay, "var(--gold)", it.range || ""),
             hitCell,
-            statBox("DMG", norm.damageDisplay, "var(--accent)", dmgTip, function () { openDmgTray(damageCtx(it, h)); }),
+            statBox("DMG", dmgDisplay, "var(--accent)", dmgTip, function () { openDmgTray(damageCtx(it, h)); }),
             ammoCell
           ]));
 
@@ -2389,7 +2391,7 @@ EN.combatView = (function () {
               el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "HIT" }),
               el("span.mono", { style: { fontSize: "15px", color: "var(--ember)", borderBottom: "1px dotted var(--ember)" }, text: eng.fmtMod(h.total) })
             ]),
-            statBox("DMG", norm.damageDisplay, "var(--accent)", dmgTip, function () { openDmgTray(damageCtx(it, h)); })
+            statBox("DMG", dmgDisplay, "var(--accent)", dmgTip, function () { openDmgTray(damageCtx(it, h)); })
           ]));
         }
 
