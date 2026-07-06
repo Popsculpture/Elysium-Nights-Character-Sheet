@@ -44,6 +44,31 @@ EN.pdfExport = (function () {
     return lines;
   }
 
+  // The standard fonts encode WinAnsi (Windows-1252) only. A field's setText()
+  // does not validate, but doc.save() throws deep inside appearance-stream
+  // generation the moment it hits an unencodable character, failing the WHOLE
+  // multi-page document over one bad character in any single free-text field
+  // (a pasted emoji, a CJK name). Strip anything outside WinAnsi before it
+  // ever reaches setText, so one character can't take down the whole build.
+  var WINANSI_SPECIAL = {
+    0x20AC: 1, 0x201A: 1, 0x0192: 1, 0x201E: 1, 0x2026: 1, 0x2020: 1, 0x2021: 1, 0x02C6: 1, 0x2030: 1,
+    0x0160: 1, 0x2039: 1, 0x0152: 1, 0x017D: 1, 0x2018: 1, 0x2019: 1, 0x201C: 1, 0x201D: 1, 0x2022: 1,
+    0x2013: 1, 0x2014: 1, 0x02DC: 1, 0x2122: 1, 0x0161: 1, 0x203A: 1, 0x0153: 1, 0x017E: 1, 0x0178: 1
+  };
+  function isWinAnsiChar(code) {
+    if (code === 0x0A || code === 0x0D || code === 0x09) return true;   // newline / CR / tab
+    if (code >= 0x20 && code <= 0x7E) return true;                     // ASCII printable
+    if (code >= 0xA0 && code <= 0xFF) return true;                     // Latin-1 supplement
+    return !!WINANSI_SPECIAL[code];
+  }
+  function sanitizeText(s) {
+    if (s == null) return s;
+    return Array.from(String(s)).filter(function (ch) { return isWinAnsiChar(ch.codePointAt(0)); }).join("");
+  }
+  function safeSetText(tf, val) {
+    if (val != null && val !== "") tf.setText(sanitizeText(String(val)));
+  }
+
   /* =======================================================================
      Layout toolkit: a coordinate-cursor wrapper around a pdf-lib PDFDocument.
      One Ctx per logical dossier section (Front Sheet, Talents & Lineage, ...);
@@ -176,7 +201,7 @@ EN.pdfExport = (function () {
           ctx.page.drawText(String(c.sub), { x: subX, y: boxTop - boxH - 8, size: 7, font: fonts.mono, color: hexColor("dim") });
         }
         if (c.type === "static") {
-          ctx.page.drawText(c.value == null ? "" : String(c.value), { x: x + 1, y: boxTop - boxH + 5, size: c.size || 9.5, font: c.font || fonts.sans, color: c.color || hexColor("ink") });
+          ctx.page.drawText(sanitizeText(c.value == null ? "" : String(c.value)), { x: x + 1, y: boxTop - boxH + 5, size: c.size || 9.5, font: c.font || fonts.sans, color: c.color || hexColor("ink") });
         } else {
           ctx.page.drawRectangle({ x: x, y: boxTop - boxH, width: w, height: boxH, borderColor: hexColor("rule"), borderWidth: 0.75, color: WHITE });
           // addToPage first: it establishes the field's default appearance (font), which
@@ -188,13 +213,15 @@ EN.pdfExport = (function () {
           if (c.align === "center" && PDFLib.TextAlignment) tf.setAlignment(PDFLib.TextAlignment.Center);
           if (c.align === "right" && PDFLib.TextAlignment) tf.setAlignment(PDFLib.TextAlignment.Right);
           tf.setFontSize(c.size || 9.5);
-          if (c.value != null && c.value !== "") tf.setText(String(c.value));
+          safeSetText(tf, c.value);
         }
         x += w + gap;
       });
       ctx.y -= rowH + 6;
     };
 
+    // total can legitimately be 0 (e.g. Resilience zeroed out by the Chrome Tax);
+    // rather than a label with nothing after it, say so in the same muted caption.
     ctx.checkboxRow = function (label, name, total, checked, opts) {
       opts = opts || {};
       var box = opts.size || 9, gap = opts.gap || 3;
@@ -202,6 +229,11 @@ EN.pdfExport = (function () {
       var lw = fonts.mono.widthOfTextAtSize(label.toUpperCase(), 7);
       ctx.page.drawText(label.toUpperCase(), { x: MARGIN.left, y: ctx.y - box + 1, size: 7, font: fonts.mono, color: hexColor("muted") });
       var x = MARGIN.left + lw + 10;
+      if (total <= 0) {
+        ctx.page.drawText("(none)", { x: x, y: ctx.y - box + 1, size: 7, font: fonts.mono, color: hexColor("dim") });
+        ctx.y -= (box + 6);
+        return;
+      }
       for (var i = 0; i < total; i++) {
         var cb = form.createCheckBox(ctx.field(name + "." + i));
         if (i < (checked || 0)) cb.check();
@@ -222,7 +254,7 @@ EN.pdfExport = (function () {
       tf.addToPage(ctx.page, { x: MARGIN.left + 4, y: ctx.y - h + 4, width: CONTENT_W - 8, height: h - 8, font: fonts.sans, textColor: hexColor("field") });
       tf.enableMultiline();
       tf.setFontSize(opts.size || 9);
-      if (opts.value) tf.setText(String(opts.value));
+      safeSetText(tf, opts.value);
       ctx.y -= (h + 6);
     };
 
@@ -251,14 +283,14 @@ EN.pdfExport = (function () {
         columns.forEach(function (c, ci) {
           var val = r ? r[c.key] : null;
           if (c.type === "static") {
-            ctx.page.drawText(val == null ? "" : String(val), { x: xx + 1, y: ctx.y - boxH + 4, size: c.size || 8.5, font: fonts.sans, color: hexColor("ink") });
+            ctx.page.drawText(sanitizeText(val == null ? "" : String(val)), { x: xx + 1, y: ctx.y - boxH + 4, size: c.size || 8.5, font: fonts.sans, color: hexColor("ink") });
           } else {
             ctx.page.drawRectangle({ x: xx, y: ctx.y - boxH, width: widths[ci], height: boxH, borderColor: hexColor("rule"), borderWidth: 0.6, color: WHITE });
             var tf = form.createTextField(ctx.field(name + "." + ri + "." + c.key));
             tf.addToPage(ctx.page, { x: xx + 2, y: ctx.y - boxH + 2, width: Math.max(4, widths[ci] - 4), height: boxH - 4, font: fonts.sans, textColor: hexColor("field") });
             if (c.align === "center" && PDFLib.TextAlignment) tf.setAlignment(PDFLib.TextAlignment.Center);
             tf.setFontSize(c.size || 8.5);
-            if (val != null && val !== "") tf.setText(String(val));
+            safeSetText(tf, val);
           }
           xx += widths[ci] + gap;
         });
