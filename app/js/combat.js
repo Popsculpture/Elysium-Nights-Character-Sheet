@@ -401,15 +401,33 @@ EN.combatView = (function () {
     });
   }
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && _dmgTray.open) closeDmgTray(); });
-  // a damage die as a rounded square, to read differently from the d20 hexagon
+  // one silhouette per die size, each a plausible single-face read of the actual
+  // polyhedron (triangle/tetrahedron, square/cube, diamond/octahedron, kite/
+  // pentagonal-trapezohedron, pentagon/dodecahedron), so a glance at the outline
+  // tells you which die you're looking at, not just the small "dN" caption.
+  // numY/numSize position the rolled value; capY/capSize position the "dN" tag,
+  // both tuned per shape so they sit in a wide-enough band to stay readable.
+  var DIE_SHAPES = {
+    4:  { poly: "50,8 92,88 8,88", numY: 63, numSize: 32, capY: 80, capSize: 13 },
+    6:  { rect: { x: 12, y: 12, w: 76, h: 76, rx: 7 }, numY: 45, numSize: 38, capY: 80, capSize: 14 },
+    8:  { poly: "50,6 94,50 50,94 6,50", numY: 46, numSize: 26, capY: 65, capSize: 11 },
+    // a kite, not a symmetric diamond: short tip up top, long tip at bottom, so
+    // it doesn't read as just a smaller d8 at a glance
+    10: { poly: "50,10 85,38 50,92 15,38", numY: 40, numSize: 26, capY: 63, capSize: 11 },
+    12: { poly: "50,8 90,38 74,90 26,90 10,38", numY: 50, numSize: 28, capY: 80, capSize: 12 }
+  };
   function dmgDie(value, sides, opts) {
     opts = opts || {};
     var col = opts.cheap ? "var(--ember)" : "var(--accent)";
     var sz = opts.cheap ? 34 : 44;
+    var shape = DIE_SHAPES[sides] || DIE_SHAPES[6];
+    var outline = shape.rect
+      ? '<rect x="' + shape.rect.x + '" y="' + shape.rect.y + '" width="' + shape.rect.w + '" height="' + shape.rect.h + '" rx="' + shape.rect.rx + '" fill="rgba(0,0,0,.32)" style="stroke:' + col + '" stroke-width="5"/>'
+      : '<polygon points="' + shape.poly + '" fill="rgba(0,0,0,.32)" style="stroke:' + col + '" stroke-width="5" stroke-linejoin="round"/>';
     var svg = '<svg viewBox="0 0 100 100" width="' + sz + '" height="' + sz + '" aria-hidden="true">'
-      + '<rect x="9" y="9" width="82" height="82" rx="16" fill="rgba(0,0,0,.32)" style="stroke:' + col + '" stroke-width="5"/>'
-      + '<text x="50" y="45" text-anchor="middle" dominant-baseline="central" style="fill:var(--text);font-family:var(--mono);font-weight:700" font-size="40">' + (opts.animating ? "?" : value) + '</text>'
-      + '<text x="50" y="82" text-anchor="middle" style="fill:var(--text4);font-family:var(--mono)" font-size="14">d' + sides + '</text>'
+      + outline
+      + '<text x="50" y="' + shape.numY + '" text-anchor="middle" dominant-baseline="central" style="fill:var(--text);font-family:var(--mono);font-weight:700" font-size="' + shape.numSize + '">' + (opts.animating ? "?" : value) + '</text>'
+      + '<text x="50" y="' + shape.capY + '" text-anchor="middle" style="fill:var(--text4);font-family:var(--mono)" font-size="' + shape.capSize + '">d' + sides + '</text>'
       + '</svg>';
     return el("span.tb-die" + (opts.animating ? ".rolling" : ""), {
       html: svg, dataset: opts.animating ? { die: "1", final: String(value), sides: String(sides) } : null,
