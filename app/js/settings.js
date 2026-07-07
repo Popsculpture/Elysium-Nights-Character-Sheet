@@ -387,12 +387,13 @@ EN.settings = (function () {
 
   // Freelancer-only: the panel-layout customization toggle, formerly its own
   // ⚙ popover in the Freelancer header. Shown here only while that tab is
-  // active, since it edits that tab's own panel arrangement.
+  // active, since it edits that tab's own panel arrangement; it takes
+  // priority at the top of the tray when it applies (see rebuild()).
   function freelancerLayoutSection() {
     var cv = EN.combatView;
     var em = cv.isLayoutEditMode();
     var kids = [
-      el("div.set-sectitle", { style: { marginTop: "22px", paddingTop: "18px", borderTop: "1px solid var(--border)" }, text: "// FREELANCER LAYOUT" }),
+      el("div.set-sectitle", { text: "// FREELANCER LAYOUT" }),
       el("label.set-label", { text: "Panel Customization" }),
       el("p.set-hint", { text: em
         ? "Drag ⠿ on a panel to rearrange; − / + sets its width (1-6 columns)."
@@ -409,19 +410,32 @@ EN.settings = (function () {
     return kids;
   }
 
-  // (re)build the tray body. New settings sections get appended here.
+  function themeSection() {
+    var kids = [
+      el("div.set-sectitle", { text: "// CHANGE SHEET APPEARANCE" }),
+      el("label.set-label", { text: "Color Theme" }),
+      el("p.set-hint", { text: "Each palette recolors the accent, frames, backgrounds, and text. Saved to this Freelancer and bundled into their .JSON export. Pick #GRID for the default." }),
+      themeSwatches()
+    ];
+    kids.push(_editing ? editorPanel() : el("button.btn.sm.set-newbtn", { onclick: startNew }, "+ NEW CUSTOM THEME"));
+    return kids;
+  }
+
+  // (re)build the tray body. Context-sensitive sections (tied to whichever
+  // tab is active) take priority at the top; general settings sit below.
+  // New general sections get appended after that split.
   function rebuild() {
     var ov = document.getElementById("set-ov");
     if (!ov) return;
     var body = ov.querySelector(".set-body");
     clear(body);
-    body.appendChild(el("div.set-sectitle", { text: "// CHANGE SHEET APPEARANCE" }));
-    body.appendChild(el("label.set-label", { text: "Color Theme" }));
-    body.appendChild(el("p.set-hint", { text: "Each palette recolors the accent, frames, backgrounds, and text. Saved to this Freelancer and bundled into their .JSON export. Pick #GRID for the default." }));
-    body.appendChild(themeSwatches());
-    if (_editing) body.appendChild(editorPanel());
-    else body.appendChild(el("button.btn.sm.set-newbtn", { onclick: startNew }, "+ NEW CUSTOM THEME"));
-    if (EN.app.activeTab() === "combat" && EN.combatView) freelancerLayoutSection().forEach(function (n) { body.appendChild(n); });
+    var sections = [];
+    if (EN.app.activeTab() === "combat" && EN.combatView) sections.push(freelancerLayoutSection());
+    sections.push(themeSection());
+    sections.forEach(function (kids, i) {
+      if (i > 0) Object.assign(kids[0].style, { marginTop: "22px", paddingTop: "18px", borderTop: "1px solid var(--border)" });
+      kids.forEach(function (n) { body.appendChild(n); });
+    });
   }
 
   function open() {
