@@ -381,12 +381,25 @@ EN.combatView = (function () {
       }))
     ]) : null;
 
+    // a glanceable ammo badge in the header, on top of the detailed AMMO
+    // line further down (which keeps the "-1/shot" cost note): this one is
+    // just the count, colored so low/empty ammo reads at a glance without
+    // scrolling to the modifiers.
+    var ammoBadge = ammo ? el("div.mono", {
+      title: "Ammo: " + ammo.cur + " of " + ammo.cap + (ammo.unit ? " " + ammo.unit : "") + " · −" + ammo.cost + "/shot",
+      style: { fontSize: "12px", fontWeight: 700, letterSpacing: ".03em", padding: "4px 10px", borderRadius: "999px", whiteSpace: "nowrap",
+        border: "1px solid " + (ammo.cur === 0 ? "var(--danger)" : ammo.cur <= Math.ceil(ammo.cap * 0.25) ? "var(--warn)" : "var(--border2)"),
+        color: ammo.cur === 0 ? "var(--danger)" : ammo.cur <= Math.ceil(ammo.cap * 0.25) ? "var(--warn)" : "var(--text2)" }
+    }, ammo.cur + " / " + ammo.cap) : null;
     var header = el("div.row.between", { style: { alignItems: "center", padding: "13px 16px", borderBottom: "1px solid var(--border)", background: "linear-gradient(180deg, rgba(0,229,255,.04), transparent)" } }, [
       el("div", null, [
         el("div", { style: { fontFamily: "var(--disp)", fontWeight: 700, fontSize: "15.5px", letterSpacing: ".02em", color: "var(--text)" }, text: ctx.weaponName }),
         el("div.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".08em", marginTop: "2px" }, text: ctx.subtype.toUpperCase() })
       ]),
-      el("button", { title: "Close (Esc)", onclick: closeRollTray, style: { background: "transparent", border: "none", color: "var(--text4)", fontSize: "19px", cursor: "pointer", lineHeight: "1", padding: "2px 5px" } }, "✕")
+      el("div.row", { style: { gap: "8px", alignItems: "center" } }, [
+        ammoBadge,
+        el("button", { title: "Close (Esc)", onclick: closeRollTray, style: { background: "transparent", border: "none", color: "var(--text4)", fontSize: "19px", cursor: "pointer", lineHeight: "1", padding: "2px 5px" } }, "✕")
+      ])
     ]);
 
     return el("div", {
