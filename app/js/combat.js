@@ -170,8 +170,6 @@ EN.combatView = (function () {
      off the roll object itself (roll._fxShown) so it plays exactly once no
      matter how many times the tray re-renders while that same roll is on
      screen (Moxie gambit toggles, unrelated app state, etc). ------------- */
-  var FX_CRIT_CHARS = "01#$%&*ABCDEFGHIJKLMNOPQRSTUVWXYZ<>/";
-  var FX_FAULT_CHARS = "░▒▓#!?X0";
   function fxSparks(n) {
     var arr = [];
     for (var i = 0; i < n; i++) {
@@ -232,22 +230,6 @@ EN.combatView = (function () {
           : pr.bust ? el("div.mono", { style: { fontWeight: 700, letterSpacing: ".12em", fontSize: "11px", color: "var(--danger)", marginTop: "6px" }, text: "✖ PRESS YOUR LUCK · 1 = MOXIE LOST" + (ctx.countingCards ? " (KEEP NAT)" : "") })
           : el("div.mono", { style: { fontWeight: 700, letterSpacing: ".12em", fontSize: "11px", color: "var(--flow)", marginTop: "6px" }, text: "◆ PRESS YOUR LUCK · d6 +" + pr.bonus });
       }
-      // the fanfare caption: a terminal-style decode into OVERCLOCKED / SYSTEM
-      // FAULT, right under the existing CRITICAL HIT / FUMBLE line. Only
-      // scrambles in on the first settle (shouldPlayFx); a later re-render of
-      // the same roll just shows the plain word, no replay.
-      var fxCaption = null;
-      if (crit || fumble) {
-        var fxWord = crit ? "OVERCLOCKED" : "SYSTEM FAULT";
-        fxCaption = el("div.mono", { style: { fontWeight: 700, letterSpacing: ".22em", fontSize: "10px",
-          color: crit ? "var(--gold)" : "var(--danger)", marginTop: "4px", opacity: .85 },
-          text: shouldPlayFx ? "" : fxWord });
-        if (shouldPlayFx) {
-          EN.ui.scrambleText(fxCaption, fxWord, crit
-            ? { charset: FX_CRIT_CHARS, duration: 520, stutter: false }
-            : { charset: FX_FAULT_CHARS, duration: 760, stutter: true });
-        }
-      }
       var totalNum = el("div.mono.fx-num", {
         dataset: { text: String(total) },
         style: { fontSize: "48px", fontWeight: 700, lineHeight: "1", position: "relative",
@@ -260,7 +242,6 @@ EN.combatView = (function () {
             el("div.mono", { style: { fontSize: "9px", letterSpacing: ".2em", color: canFire ? "var(--text3)" : "var(--warn)", marginTop: "5px" }, text: "TOTAL · " + (canFire ? againWord : "OUT OF AMMO") }),
             crit ? el("div.mono", { style: { fontWeight: 700, letterSpacing: ".14em", fontSize: "12px", color: "var(--gold)", marginTop: "7px" }, text: "◆ CRITICAL HIT" })
               : fumble ? el("div.mono", { style: { fontWeight: 700, letterSpacing: ".14em", fontSize: "12px", color: "var(--danger)", marginTop: "7px" }, text: "✖ FUMBLE (NAT 1)" }) : null,
-            fxCaption,
             luckLine
           ]);
     } else {

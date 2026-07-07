@@ -218,33 +218,6 @@ EN.ui = (function () {
       if (t >= dur) { clearInterval(timer); if (done) done(); }
     }, 50);
   }
-  // terminal-style decode: scrambles el's text through a charset before
-  // landing on finalText. opts: { charset, duration (ms), stutter (lets an
-  // already-locked character re-scramble once in a while, for a corrupted,
-  // glitchy decode instead of a clean one) }. Used by the attack roll tray's
-  // crit/fumble fanfare caption (el must already be attached, or about to be
-  // in this render pass, since the loop just writes textContent over time).
-  function scrambleText(el, finalText, opts) {
-    opts = opts || {};
-    var charset = opts.charset || "01#$%&*ABCDEFGHIJKLMNOPQRSTUVWXYZ<>/";
-    var dur = opts.duration || 600, stutter = !!opts.stutter, start = null;
-    function frame(ts) {
-      if (start == null) start = ts;
-      var t = ts - start, pct = Math.min(1, t / dur);
-      var lockCount = Math.floor(pct * finalText.length * (stutter ? 1.35 : 1.15));
-      var out = "";
-      for (var i = 0; i < finalText.length; i++) {
-        if (finalText[i] === " ") { out += " "; continue; }
-        var locked = i < lockCount;
-        if (locked && stutter && Math.random() < 0.06 && pct < 0.92) locked = false;
-        out += locked ? finalText[i] : charset[Math.floor(Math.random() * charset.length)];
-      }
-      el.textContent = out;
-      if (t < dur) requestAnimationFrame(frame); else el.textContent = finalText;
-    }
-    requestAnimationFrame(frame);
-  }
-
   // the d20 art is Brandon's own vector, drawn in CorelDRAW and handed over as a
   // real SVG path (not a raster): the classic point-up icosahedron with a big
   // front-face triangle that holds the value. The path is used verbatim, so the
@@ -286,5 +259,5 @@ EN.ui = (function () {
   }
 
   return { el: el, append: append, clear: clear, frag: frag, panel: panel, sectionTitle: sectionTitle, stat: stat, toast: toast, renderText: renderText, applyInline: applyInline,
-           dieFace: dieFace, dieFaceSvg: dieFaceSvg, d20Face: d20Face, animatePoolRoll: animatePoolRoll, scrambleText: scrambleText };
+           dieFace: dieFace, dieFaceSvg: dieFaceSvg, d20Face: d20Face, animatePoolRoll: animatePoolRoll };
 })();
