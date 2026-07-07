@@ -12,6 +12,7 @@ EN.app = (function () {
   var TABS = [
     { key: "print",   label: "#PRINT",    glyph: "▤", view: function (m) { EN.builder.render(m); } },
     { key: "combat",  label: "Freelancer", glyph: "✦", view: function (m) { EN.combatView.render(m); } },
+    { key: "face",    label: "Face",      glyph: "◑", view: function (m) { EN.faceView.render(m); } },
     { key: "grid",    label: "#GRID",     glyph: "⌬", view: function (m) { EN.gridView.render(m); } },
     { key: "flow",    label: "Flow",      glyph: "❋", view: function (m) { EN.flowView.render(m); } },
     { key: "gear",    label: "Inventory", glyph: "▣", view: function (m) { EN.inventoryView.render(m); } },
