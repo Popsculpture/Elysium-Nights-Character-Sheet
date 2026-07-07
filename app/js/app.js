@@ -127,7 +127,7 @@ EN.app = (function () {
     boot();
   }
 
-  return { start: start, render: render, gotoTab: function (k) { activeTab = k; render(); } };
+  return { start: start, render: render, activeTab: function () { return activeTab; }, gotoTab: function (k) { activeTab = k; render(); } };
 })();
 
 document.addEventListener("DOMContentLoaded", EN.app.start);

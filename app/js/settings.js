@@ -385,6 +385,30 @@ EN.settings = (function () {
     rebuild();
   }
 
+  // Freelancer-only: the panel-layout customization toggle, formerly its own
+  // ⚙ popover in the Freelancer header. Shown here only while that tab is
+  // active, since it edits that tab's own panel arrangement.
+  function freelancerLayoutSection() {
+    var cv = EN.combatView;
+    var em = cv.isLayoutEditMode();
+    var kids = [
+      el("div.set-sectitle", { style: { marginTop: "22px", paddingTop: "18px", borderTop: "1px solid var(--border)" }, text: "// FREELANCER LAYOUT" }),
+      el("label.set-label", { text: "Panel Customization" }),
+      el("p.set-hint", { text: em
+        ? "Drag ⠿ on a panel to rearrange; − / + sets its width (1-6 columns)."
+        : "Customization is off; panels are locked and headers slimmed for play." }),
+      el("button.btn.sm" + (em ? ".primary" : ""), {
+        title: "Show the layout controls on every panel, drag to rearrange, − / + width, attribute view toggle",
+        onclick: function () { cv.setLayoutEditMode(!em); EN.app.render(); rebuild(); }
+      }, em ? "🔧 CUSTOMIZE LAYOUT: ON" : "🔧 CUSTOMIZE LAYOUT: OFF")
+    ];
+    if (em) kids.push(el("button.btn.sm", {
+      title: "Restore the default panel arrangement and widths", style: { marginTop: "8px" },
+      onclick: function () { cv.resetLayout(); EN.app.render(); rebuild(); }
+    }, "⊞ RESET LAYOUT"));
+    return kids;
+  }
+
   // (re)build the tray body. New settings sections get appended here.
   function rebuild() {
     var ov = document.getElementById("set-ov");
@@ -397,6 +421,7 @@ EN.settings = (function () {
     body.appendChild(themeSwatches());
     if (_editing) body.appendChild(editorPanel());
     else body.appendChild(el("button.btn.sm.set-newbtn", { onclick: startNew }, "+ NEW CUSTOM THEME"));
+    if (EN.app.activeTab() === "combat" && EN.combatView) freelancerLayoutSection().forEach(function (n) { body.appendChild(n); });
   }
 
   function open() {

@@ -51,7 +51,7 @@ EN.combatView = (function () {
   }
 
   var _fxBox = { mode: "open", closedKey: null };   // sticky Active Condition Effects box ("open"/"min"; closedKey = content-keyed dismiss)
-  var _pops = { vit: false, wound: false, rest: false, short: false, settings: false, addgear: false };   // popover state (VITALITY / WOUNDS / REST / ⚙ / ＋ ADD TO LOADOUT)
+  var _pops = { vit: false, wound: false, rest: false, short: false, addgear: false };   // popover state (VITALITY / WOUNDS / REST / ＋ ADD TO LOADOUT)
   var _amts = { vit: 1, wound: 1, rd: 1 };                 // remembered amounts per popover
   function closePops() { Object.keys(_pops).forEach(function (k) { _pops[k] = false; }); }
   document.addEventListener("click", function (ev) {
@@ -1415,27 +1415,6 @@ EN.combatView = (function () {
               el("button.btn.sm", { onclick: function () { _pops.rest = false; EN.app.render(); } }, "CANCEL"),
               el("button.btn.sm.primary", { onclick: function () { _pops.rest = false; longRest(ch, d); } }, "☾ REST")
             ])
-          ]) : null
-        ]),
-        el("div.pop-anchor", { style: { position: "relative" } }, [
-          el("button.btn.sm", { title: "Sheet settings",
-            style: _pops.settings ? { color: "var(--accent)", borderColor: "var(--accent)" } : null,
-            onclick: function () { var was = _pops.settings; closePops(); _pops.settings = !was; EN.app.render(); } }, "⚙"),
-          _pops.settings ? el("div", { style: { position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 30, width: "232px",
-                                                display: "flex", flexDirection: "column", gap: "8px", padding: "10px",
-                                                background: "var(--bg2)", border: "1px solid var(--border2)", borderRadius: "4px",
-                                                boxShadow: "0 8px 24px rgba(0,0,0,.55)", textAlign: "left" } }, [
-            el("label.fl", { style: { margin: 0 }, text: "Sheet Settings" }),
-            el("button.btn.sm" + (_editMode ? ".primary" : ""), {
-              title: "Show the layout controls on every panel, drag to rearrange, − / + width, attribute view toggle",
-              style: { justifyContent: "center" },
-              onclick: function () { setEditMode(!_editMode); EN.app.render(); } },
-              _editMode ? "🔧 CUSTOMIZE LAYOUT: ON" : "🔧 CUSTOMIZE LAYOUT: OFF"),
-            _editMode ? el("button.btn.sm", { title: "Restore the default panel arrangement and widths", style: { justifyContent: "center" },
-              onclick: function () { try { localStorage.removeItem(LAYOUT_KEY); localStorage.removeItem(LAYOUT_KEY_V1); } catch (e) {} _pops.settings = false; EN.app.render(); } }, "⊞ RESET LAYOUT") : null,
-            el("p.help", { style: { margin: 0 }, text: _editMode
-              ? "Drag ⠿ on a panel to rearrange; − / + sets its width (1-6 columns)."
-              : "Customization is off; panels are locked and headers slimmed for play." })
           ]) : null
         ])
       ])
@@ -3060,5 +3039,10 @@ EN.combatView = (function () {
     if (dtray) mount.appendChild(dtray);
   }
 
-  return { render: render };
+  // layout customization (drag/width/attribute-view controls): surfaced from
+  // #GRIDOS's settings tray, but only while the Freelancer tab is active, since
+  // the layout it edits is this tab's own panel arrangement.
+  function isLayoutEditMode() { return _editMode; }
+  function resetLayout() { try { localStorage.removeItem(LAYOUT_KEY); localStorage.removeItem(LAYOUT_KEY_V1); } catch (e) {} }
+  return { render: render, isLayoutEditMode: isLayoutEditMode, setLayoutEditMode: setEditMode, resetLayout: resetLayout };
 })();
