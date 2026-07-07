@@ -983,14 +983,15 @@ EN.inventoryView = (function () {
                "No receipts. No refunds. No snitching."]
       }
     };
-    blocks.push(el("div.row.wrap", { style: { gap: "6px", marginBottom: "14px" } },
+    blocks.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginBottom: "14px" } },
+      [el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".14em" }, text: "MARKET UPLINK" })].concat(
       STOREFRONTS.map(function (m) {
         var on = _mode === m.key;
         return el("button.btn.sm" + (on ? ".primary" : ""), {
           title: m.desc,
           onclick: function () { _mode = m.key; EN.app.render(); }
         }, m.name.toUpperCase());
-      })
+      }))
     ));
     var B = BANNERS[_mode] || BANNERS.undercut;
     blocks.push(el("div", { style: { marginBottom: "14px", padding: "12px 14px", border: "1px solid var(--border2)", borderRadius: "4px",
