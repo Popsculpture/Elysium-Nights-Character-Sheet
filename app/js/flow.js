@@ -18,14 +18,25 @@ EN.flowView = (function () {
                 extraTargets: 0, extraSpaces: 0, empoweredEffect: null, unwilling: true };
   var _open = {};              // collapse state for reference sections
   var _od = 1;                 // overdraw amount input
+  /* Immersive Flow tab: opt-in cosmetic layer (see theme.css ".flowtab.immersive").
+     Device-level preference; intensity "auto" follows the live Strain stage, or a
+     forced "1".."5" pins the animation to that escalation level. */
+  var IMM_KEY = "en_flow_immersive_v1", INT_KEY = "en_flow_intensity_v1";
+  var _immersive = false, _intensity = "auto";
+  try { _immersive = localStorage.getItem(IMM_KEY) === "1"; } catch (e) {}
+  try { var _iv = localStorage.getItem(INT_KEY); if (_iv) _intensity = _iv; } catch (e) {}
+  function isImmersive() { return _immersive; }
+  function setImmersive(on) { _immersive = !!on; try { localStorage.setItem(IMM_KEY, on ? "1" : "0"); } catch (e) {} }
+  function getIntensity() { return _intensity; }
+  function setIntensity(v) { _intensity = String(v); try { localStorage.setItem(INT_KEY, _intensity); } catch (e) {} }
 
   /* ---- small shared bits ---- */
   function fset(mut, silent) { store.update(function (c) { c.flow = c.flow || {}; mut(c.flow, c); }, silent ? { silent: true } : undefined); }
   function noteP(t, color) { return el("p.help", { style: { margin: "2px 0 6px", color: color || "var(--text3)", fontSize: "11.5px" }, text: t }); }
   function bar(cur, max, color) {
     var pct = max > 0 ? Math.max(0, Math.min(100, cur / max * 100)) : 0;
-    return el("div", { style: { height: "11px", background: "var(--bg1)", border: "1px solid var(--border)", borderRadius: "6px", overflow: "hidden", margin: "5px 0 2px" } },
-      [el("div", { style: { width: pct + "%", height: "100%", background: color, boxShadow: "0 0 8px " + color, transition: "width .2s" } })]);
+    return el("div.flow-bar", { style: { height: "11px", background: "var(--bg1)", border: "1px solid var(--border)", borderRadius: "6px", overflow: "hidden", margin: "5px 0 2px" } },
+      [el("div.flow-bar-fill", { style: { width: pct + "%", height: "100%", background: color, boxShadow: "0 0 8px " + color, transition: "width .2s" } })]);
   }
   function stepper(onMinus, onPlus, minusOff, plusOff) {
     return el("div.stepper", { style: { marginTop: 0, width: "auto" } }, [
@@ -96,7 +107,7 @@ EN.flowView = (function () {
 
     // FP readout + spend/restore + rest
     kids.push(el("div.row.between.wrap", { style: { alignItems: "baseline" } }, [
-      el("div.mono", { style: { fontSize: "26px", color: FP }, html: cur + " <span style='font-size:14px;color:var(--text3)'>/ " + f.max + " FP</span>" }),
+      el("div.mono.flow-fp", { style: { fontSize: "26px", color: FP }, html: cur + " <span style='font-size:14px;color:var(--text3)'>/ " + f.max + " FP</span>" }),
       el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
         stepper(function () { fset(function (fl) { fl.current = Math.max(0, cur - 1); }); },
                 function () { fset(function (fl) { fl.current = Math.min(f.max, cur + 1); }); }, cur <= 0, cur >= f.max),
@@ -127,7 +138,7 @@ EN.flowView = (function () {
     // Overdraw logger
     var odIn = el("input", { type: "number", min: "1", value: _od, style: { width: "54px", textAlign: "center", fontFamily: "var(--mono)" },
       oninput: function () { _od = Math.max(1, parseInt(this.value, 10) || 1); }, onchange: function () { EN.app.render(); } });
-    kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "10px", padding: "8px 10px", border: "1px solid var(--border2)", borderRadius: "4px", background: "rgba(0,0,0,.18)" } }, [
+    kids.push(el("div.row.wrap.flow-overdraw", { style: { gap: "8px", alignItems: "center", marginTop: "10px", padding: "8px 10px", border: "1px solid var(--border2)", borderRadius: "4px", background: "rgba(0,0,0,.18)" } }, [
       el("span", { style: { fontFamily: "var(--disp)", fontSize: "9.5px", letterSpacing: ".12em", color: "var(--danger)" }, text: "OVERDRAW" }),
       odIn, el("span.mono", { style: { fontSize: "11px", color: "var(--text3)" }, text: "FP past empty" }),
       el("span.help", { style: { margin: 0, flex: "1 1 120px", fontSize: "10.5px" }, text: "→ lose " + _od + "d" + f.overdrawDie + " Vitality, +" + _od + " Strain point" + (_od === 1 ? "" : "s") }),
@@ -150,7 +161,8 @@ EN.flowView = (function () {
         ])
       ]));
     }
-    return EN.ui.panel("Reservoir", "DC " + f.dc + " · " + f.attributeName.toUpperCase(), kids, { corners: true });
+    var rp = EN.ui.panel("Reservoir", "DC " + f.dc + " · " + f.attributeName.toUpperCase(), kids, { corners: true });
+    rp.classList.add("res-panel"); return rp;
   }
 
   /* ============================ SUSTAIN TRACKER ========================== */
@@ -174,7 +186,8 @@ EN.flowView = (function () {
     } else {
       kids.push(noteP("No sustained effect. Build a Sustain Invocation and Channel it to anchor one here. Only one runs at a time."));
     }
-    return EN.ui.panel("Sustain", "MAINTENANCE · CAPACITY", kids, { corners: true });
+    var sp = EN.ui.panel("Sustain", "MAINTENANCE · CAPACITY", kids, { corners: true });
+    sp.classList.add("sustain-panel"); if (s) sp.classList.add("occupied"); return sp;
   }
 
   /* ========================= FREE-SHAPING BUILDER ======================== */
@@ -241,7 +254,7 @@ EN.flowView = (function () {
     var cost = inv.fp, cur = curFP(ch, d), over = Math.max(0, cost - cur);
     var summary = [];
     summary.push(el("div.row.between.wrap", { style: { alignItems: "baseline" } }, [
-      el("div.mono", { style: { fontSize: "30px", color: over > 0 ? "var(--danger)" : FP }, html: cost + " <span style='font-size:13px;color:var(--text3)'>FP" + (inv.baseFp !== cost ? " · base " + inv.baseFp : "") + "</span>" }),
+      el("div.mono.flow-fp", { style: { fontSize: "30px", color: over > 0 ? "var(--danger)" : FP }, html: cost + " <span style='font-size:13px;color:var(--text3)'>FP" + (inv.baseFp !== cost ? " · base " + inv.baseFp : "") + "</span>" }),
       inv.damageText ? el("div", { style: { textAlign: "right" } }, [
         el("div", { style: { fontFamily: "var(--disp)", fontSize: "9px", letterSpacing: ".12em", color: "var(--text3)" }, text: "DAMAGE" }),
         el("span.mono", { style: { fontSize: "18px", color: "var(--accent)" }, text: inv.damageText })
@@ -257,9 +270,10 @@ EN.flowView = (function () {
         onclick: function () { doChannel(ch, d, inv, defaultName(R)); } }, over > 0 ? "CHANNEL · OVERDRAW " + over : "CHANNEL · " + cost + " FP"),
       el("button.btn.sm", { title: "Save this formulation as a Resonant Pattern", style: { color: VIO, borderColor: VIO }, onclick: function () { savePattern(R); } }, "✚ SAVE PATTERN")
     ]));
-    rows.push(el("div", { style: { marginTop: "12px", padding: "10px 12px", border: "1px solid var(--border2)", borderRadius: "4px", background: "rgba(123,44,255,.05)" } }, summary));
+    rows.push(el("div.flow-result", { style: { marginTop: "12px", padding: "10px 12px", border: "1px solid var(--border2)", borderRadius: "4px", background: "rgba(123,44,255,.05)" } }, summary));
 
-    return EN.ui.panel("Free-Shaping", "ORDER OF SHAPING", rows, { corners: true });
+    var bp = EN.ui.panel("Free-Shaping", "ORDER OF SHAPING", rows, { corners: true });
+    bp.classList.add("builder"); return bp;
   }
 
   function defaultName(R) {
@@ -344,7 +358,8 @@ EN.flowView = (function () {
     collapsible("flow-premade", "Premade Templates", function () {
       return el("div", null, [noteP(EN.flow.premadeNote, "var(--text2)")].concat((EN.flow.premadePatterns || []).map(function (p) { return patternRow(ch, d, p, -1, true); })));
     }).forEach(function (n) { rows.push(n); });
-    return EN.ui.panel("Resonant Patterns", "SAVED FORMULATIONS", rows, { corners: true });
+    var pp = EN.ui.panel("Resonant Patterns", "SAVED FORMULATIONS", rows, { corners: true });
+    pp.classList.add("flow-patterns"); return pp;
   }
 
   /* ============================== REFERENCE ============================== */
@@ -384,7 +399,8 @@ EN.flowView = (function () {
         noteP(F.breakflowRestoration.rough, "var(--text2)")
       ]);
     }));
-    return EN.ui.panel("Flow Reference", "RULES", kids, { corners: true });
+    var fp = EN.ui.panel("Flow Reference", "RULES", kids, { corners: true });
+    fp.classList.add("flow-reference"); return fp;
   }
 
   /* ===================== UNATTUNED (non-Shaper) ========================== */
@@ -415,6 +431,7 @@ EN.flowView = (function () {
       el("p.help", { style: { margin: 0, maxWidth: "820px" }, text: "The current under everything. Shape it by leaning your attention against it until it bends." })
     ]));
 
+    // Non-Shaper (Unattuned) view never gets the immersive layer.
     if (!d.flow) { blocks.push(unattunedPanel(ch, d)); mount.appendChild(el("div", null, blocks)); return; }
 
     blocks.push(el("div.modgrid6", { style: { marginBottom: "0" } }, [
@@ -424,8 +441,23 @@ EN.flowView = (function () {
     blocks.push(el("div", { style: { marginTop: "14px" } }, [patternsPanel(ch, d)]));
     blocks.push(el("div", { style: { marginTop: "14px" } }, [referencePanel(ch, d)]));
 
-    mount.appendChild(el("div", null, blocks));
+    // Immersive layer: wrap in .flowtab(.immersive) and set the escalation level.
+    // fx follows the live Strain stage on "auto", or a pinned 1-5 from the setting.
+    var imm = isImmersive();
+    var fx = imm ? (_intensity === "auto" ? (d.flow.strainStage || 0) : (parseInt(_intensity, 10) || 0)) : 0;
+    var root = el("div.flowtab" + (imm ? ".immersive" : ""), { dataset: { fx: String(fx) } }, blocks);
+    if (imm) {
+      root.insertBefore(el("div.flow-glitch"), root.firstChild);
+      root.insertBefore(el("div.flow-bg"), root.firstChild);   // both sit behind (z-index in CSS)
+    }
+    mount.appendChild(root);
+    if (imm) {                                                 // two running pin-lights per panel
+      [].slice.call(root.querySelectorAll(".panel")).forEach(function (p) {
+        p.insertAdjacentHTML("beforeend", '<i class="beam"></i><i class="beam b2"></i>');
+      });
+    }
   }
 
-  return { render: render, myPatternsInline: myPatternsInline };
+  return { render: render, myPatternsInline: myPatternsInline,
+           isImmersive: isImmersive, setImmersive: setImmersive, getIntensity: getIntensity, setIntensity: setIntensity };
 })();

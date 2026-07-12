@@ -410,6 +410,34 @@ EN.settings = (function () {
     return kids;
   }
 
+  // Flow-only: the Immersive toggle + intensity for the animated Flow tab.
+  // Shown here only while the Flow tab is active; takes priority at the top.
+  function flowSection() {
+    var fv = EN.flowView;
+    var imm = fv.isImmersive();
+    var intensity = fv.getIntensity();
+    var kids = [
+      el("div.set-sectitle", { text: "// FLOW" }),
+      el("label.set-label", { text: "Immersive Flow" }),
+      el("p.set-hint", { text: imm
+        ? "The Flow tab reveals a live metaphysical layer that reacts to your Strain. Reduced-motion is respected automatically."
+        : "Turn on a live, animated Flow tab: the occult bleeding through the interface, escalating with Strain." }),
+      el("button.btn.sm" + (imm ? ".primary" : ""), {
+        title: "Enable the animated Flow tab", onclick: function () { fv.setImmersive(!imm); EN.app.render(); rebuild(); }
+      }, imm ? "◇ IMMERSIVE: ON" : "◇ IMMERSIVE: OFF")
+    ];
+    if (imm) {
+      kids.push(el("label.set-label", { style: { marginTop: "14px" }, text: "Intensity" }));
+      kids.push(el("p.set-hint", { text: "Auto follows your current Strain. Pick 1-5 to pin the animation to that level." }));
+      kids.push(el("div.row.wrap", { style: { gap: "6px" } },
+        [{ k: "auto", label: "Auto" }, { k: "1", label: "1" }, { k: "2", label: "2" }, { k: "3", label: "3" }, { k: "4", label: "4" }, { k: "5", label: "5" }].map(function (o) {
+          var on = String(intensity) === o.k;
+          return el("button.btn.sm" + (on ? ".primary" : ""), { onclick: function () { fv.setIntensity(o.k); EN.app.render(); rebuild(); } }, o.label);
+        })));
+    }
+    return kids;
+  }
+
   function themeSection() {
     var kids = [
       el("div.set-sectitle", { text: "// CHANGE SHEET APPEARANCE" }),
@@ -431,6 +459,7 @@ EN.settings = (function () {
     clear(body);
     var sections = [];
     if (EN.app.activeTab() === "combat" && EN.combatView) sections.push(freelancerLayoutSection());
+    if (EN.app.activeTab() === "flow" && EN.flowView && EN.flowView.isImmersive) sections.push(flowSection());
     sections.push(themeSection());
     sections.forEach(function (kids, i) {
       if (i > 0) Object.assign(kids[0].style, { marginTop: "22px", paddingTop: "18px", borderTop: "1px solid var(--border)" });
