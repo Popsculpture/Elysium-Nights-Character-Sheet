@@ -411,8 +411,8 @@ EN.flowView = (function () {
   var REPORT_FAILS = [
     { head: "TRANSMISSION INTERCEPTED",
       body: "A Codebreaker riding the district relay folded your uplink into noise before it cleared the block. Someone on the wire did not want this tip filed." },
-    { head: "SIGNAL SWARMED",
-      body: "A swarm of Nixies tore into the packet stream and chewed your report down to static. The little ones follow the light on the wires, and they are always hungry." },
+    { head: "UNKNOWN FAULT · 0x6E??", swarm: true,
+      body: "The uplink opened from the outside and went quiet. #FLAG logs no source and no fault code it can match. There is no record this transmission was ever made." },
     { head: "#FLAG UNAVAILABLE",
       body: "Tip line #FLAG is down for scheduled maintenance. Please hold. Your vigilance is important to us. Estimated wait: indefinite." }
   ];
@@ -468,7 +468,14 @@ EN.flowView = (function () {
       result.textContent = "REPORT NOT DELIVERED · NO BOUNTY CREDITED"; result.style.color = "var(--danger)";
       pct.textContent = "FAILED"; pct.style.color = "var(--danger)";
       closeBtn.textContent = "DISMISS"; closeBtn.className = "btn sm primary"; closeBtn.style.color = "";
-      if (card.animate) card.animate([{ transform: "translateX(0)" }, { transform: "translateX(-5px)" }, { transform: "translateX(4px)" }, { transform: "translateX(-2px)" }, { transform: "translateX(0)" }], { duration: 300 });
+      if (ev.swarm) {
+        // the mysterious one: tracer pin-lights run the border at variable
+        // speeds and the whole modal wobbles until dismissed (see theme.css).
+        card.classList.add("uplink-swarmed");
+        ["b1", "b2", "b3", "b4"].forEach(function (c) { card.insertAdjacentHTML("beforeend", '<i class="uplink-beam ' + c + '"></i>'); });
+      } else if (card.animate) {
+        card.animate([{ transform: "translateX(0)" }, { transform: "translateX(-5px)" }, { transform: "translateX(4px)" }, { transform: "translateX(-2px)" }, { transform: "translateX(0)" }], { duration: 300 });
+      }
     }
   }
 
