@@ -403,20 +403,65 @@ EN.flowView = (function () {
     fp.classList.add("flow-reference"); return fp;
   }
 
-  /* ===================== UNATTUNED (non-Shaper) ========================== */
+  /* ===================== UNATTUNED (non-Shaper) ==========================
+     Non-Shapers do not get a Flow interface. Instead they get the Bureau of
+     Resonance Compliance's public-service propaganda: a "see something, say
+     something" advisory about reporting unregistered Shapers. The actual game
+     mechanics stay barebones, tucked into a small secondary panel below. */
   function unattunedPanel(ch, d) {
     var awareness = (d.skills || []).find(function (s) { return s.key === "awareness"; });
-    return el("div", null, [
-      EN.ui.panel("Unattuned", "NO FLOW CONNECTION", [
-        noteP("Your class runs on grit, chrome, and gunpowder, not resonance. You have 0 Flow Points and cannot cast Invocations, join cooperative channeling, or spend FP. You also never risk Overdraw."),
-        noteP("Defending against the Flow: when targeted by an Enemy Invocation, roll the saving throw attribute it dictates (for example an Agility Save to dodge a Kinetic blast)."),
-        awareness ? el("div.row.wrap", { style: { gap: "10px", alignItems: "center", marginTop: "6px" } }, [
-          el("span", { style: { fontFamily: "var(--disp)", fontSize: "9.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "AWARENESS" }),
-          el("span.mono", { style: { fontSize: "16px", color: "var(--accent)" }, text: eng.fmtMod(awareness.total) }),
-          el("span.help", { style: { margin: 0 }, text: "Mystique-based: sense unseen forces, detect an Enemy shaping the Flow, and read resonance anomalies before you walk into them." })
-        ]) : null
-      ], { corners: true })
+    var stamp = el("span", { style: { position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%) rotate(-11deg)",
+      fontFamily: "var(--disp)", fontWeight: 700, fontSize: "13px", letterSpacing: ".2em", color: "var(--danger)", opacity: .5,
+      border: "2px solid var(--danger)", borderRadius: "4px", padding: "5px 9px", textAlign: "center", lineHeight: 1.05, pointerEvents: "none" },
+      html: "COMPLIANCE<br><span style='font-size:8px;letter-spacing:.12em;opacity:.9'>MANDATORY POSTING</span>" });
+
+    var banner = el("div", { style: { position: "relative", overflow: "hidden", borderRadius: "6px", marginBottom: "14px",
+      border: "1px solid var(--warn)", background: "linear-gradient(180deg, rgba(255,179,64,.10), rgba(255,77,94,.04) 60%, transparent)" } }, [
+      el("div", { style: { height: "8px", background: "repeating-linear-gradient(45deg, var(--warn) 0 12px, #0a0e14 12px 24px)", opacity: .8 } }),
+      el("div", { style: { padding: "16px 18px" } }, [
+        el("div.mono", { style: { fontSize: "10px", letterSpacing: ".22em", color: "var(--warn)" }, text: "// RESONANCE COMPLIANCE ADVISORY" }),
+        el("div", { style: { fontFamily: "var(--disp)", fontWeight: 700, fontSize: "30px", letterSpacing: ".02em", color: "var(--text)", lineHeight: 1.05, margin: "4px 0 6px", textShadow: "0 0 18px rgba(255,77,94,.35)" }, text: "SEE SOMETHING. SAY SOMETHING." }),
+        el("p", { style: { margin: 0, maxWidth: "560px", fontSize: "13px", color: "var(--text2)", lineHeight: 1.5 }, text: "An unregistered Shaper is an unlicensed hazard. Report resonance anomalies before they report you to the morgue." }),
+        stamp
+      ])
     ]);
+
+    var signs = ["Objects that move, freeze, or ignite with no hand on them.",
+      "Cyberware and cameras failing in a tight circle around one person.",
+      "Wounds that knit too fast. Fear that lands a half-second early.",
+      "A face the #GRID keeps losing, a name the registry never had.",
+      "Ozone in a room with nothing plugged in."
+    ].map(function (s) {
+      return el("div.row", { style: { gap: "8px", alignItems: "baseline", margin: "3px 0" } }, [
+        el("span", { style: { color: "var(--warn)", fontFamily: "var(--mono)", flex: "0 0 auto" }, text: "▸" }),
+        el("span", { style: { fontSize: "12.5px", color: "var(--text2)", lineHeight: 1.4 }, text: s })
+      ]);
+    });
+
+    var notice = EN.ui.panel("Public Notice", "BUREAU OF RESONANCE COMPLIANCE", [
+      noteP("The Flow does not respect zoning. One unlicensed resonance event can drop a tenement, brick a block of chrome, or stop a heart from across the room. Registered Shapers file their frequencies with the Bureau. The unregistered file nothing. That is the whole difference between an accident and a crime.", "var(--text2)"),
+      noteP("Reporting is fast, anonymous, and rewarded. Flag a verified unregistered Shaper and the Bureau credits your account in Glimmer, no questions logged. Vigilance is its own protection.", "var(--text2)"),
+      el("div.section-title", { style: { margin: "12px 0 6px" } }, [document.createTextNode("Know the Signs"), el("span.line")]),
+      el("div", null, signs),
+      el("div.row.wrap", { style: { gap: "10px", alignItems: "center", marginTop: "12px" } }, [
+        el("button.btn.sm", { style: { color: "var(--danger)", borderColor: "var(--danger)" },
+          onclick: function () { toast("Tip logged. Compliance thanks you for your vigilance."); } }, "⚑ REPORT A RESONANCE ANOMALY"),
+        el("span.mono", { style: { fontSize: "10.5px", color: "var(--text3)", letterSpacing: ".06em" }, text: "TIP LINE // dial #FLAG on any registered deck · paid in Glimmer" })
+      ]),
+      noteP("Filing a false report is a Class-2 civic offense. Harboring an unregistered Shaper carries the sentence of being one.", "var(--text4)")
+    ], { corners: true });
+
+    var status = EN.ui.panel("Unattuned", "NO FLOW CONNECTION", [
+      noteP("Your class runs on grit, chrome, and gunpowder, not resonance. You have 0 Flow Points and cannot cast Invocations, join cooperative channeling, or spend FP. You also never risk Overdraw."),
+      noteP("Defending against the Flow: when targeted by an Enemy Invocation, roll the saving throw attribute it dictates (for example an Agility Save to dodge a Kinetic blast)."),
+      awareness ? el("div.row.wrap", { style: { gap: "10px", alignItems: "center", marginTop: "6px" } }, [
+        el("span", { style: { fontFamily: "var(--disp)", fontSize: "9.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "AWARENESS" }),
+        el("span.mono", { style: { fontSize: "16px", color: "var(--accent)" }, text: eng.fmtMod(awareness.total) }),
+        el("span.help", { style: { margin: 0 }, text: "Mystique-based: sense unseen forces, detect an Enemy shaping the Flow, and read resonance anomalies before you walk into them." })
+      ]) : null
+    ], { corners: true });
+
+    return el("div", null, [banner, notice, el("div", { style: { marginTop: "14px" } }, [status])]);
   }
 
   /* ================================ RENDER =============================== */
@@ -445,7 +490,9 @@ EN.flowView = (function () {
     // fx follows the live Strain stage on "auto", or a pinned 1-5 from the setting.
     var imm = isImmersive();
     var fx = imm ? (_intensity === "auto" ? (d.flow.strainStage || 0) : (parseInt(_intensity, 10) || 0)) : 0;
-    var root = el("div.flowtab" + (imm ? ".immersive" : ""), { dataset: { fx: String(fx) } }, blocks);
+    // .attuned: the gentle always-on flow-color pulse for Shapers (baseline when
+    // Immersive is off; the richer Immersive layer supersedes it when on).
+    var root = el("div.flowtab.attuned" + (imm ? ".immersive" : ""), { dataset: { fx: String(fx) } }, blocks);
     if (imm) {
       root.insertBefore(el("div.flow-glitch"), root.firstChild);
       root.insertBefore(el("div.flow-bg"), root.firstChild);   // both sit behind (z-index in CSS)

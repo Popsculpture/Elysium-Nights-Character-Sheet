@@ -587,7 +587,17 @@ html.light .pop-btn:hover{ background:rgba(0,0,0,.05) !important; }
 @keyframes tabQuake{ 0%,83%,100%{ transform:translate(0,0); } 85%{ transform:translate(-2px,1px); } 87%{ transform:translate(2px,-1px); }
   89%{ transform:translate(-1px,0); } 91%{ transform:translate(1px,1px); } 93%{ transform:translate(-1px,-1px); } }
 
+/* Attuned baseline: a Shaper's Flow tab gently pulses the flow color even with
+   Immersive off. text-shadow is inherited, so the whole tab's text softly
+   breathes violet; the panels get a faint edge breath. Subtle but present.
+   Immersive's richer treatment supersedes this (hence :not(.immersive)). */
+.flowtab.attuned:not(.immersive){ animation:flowAttuneText 6.5s ease-in-out infinite; }
+.flowtab.attuned:not(.immersive) .panel{ animation:flowAttunePanel 6.5s ease-in-out infinite; }
+@keyframes flowAttuneText{ 0%,100%{ text-shadow:0 0 0 rgba(185,139,255,0); } 50%{ text-shadow:0 0 6px rgba(185,139,255,.24); } }
+@keyframes flowAttunePanel{ 0%,100%{ box-shadow:0 0 0 rgba(185,139,255,0); } 50%{ box-shadow:0 0 22px rgba(185,139,255,.09); } }
+
 @media (prefers-reduced-motion: reduce){
+  .flowtab.attuned, .flowtab.attuned .panel{ animation:none !important; }
   .flowtab.immersive, .flowtab.immersive .panel, .flowtab.immersive .panel > .beam, .flowtab.immersive .flow-bg::before,
   .flowtab.immersive .flow-bg::after, .flowtab.immersive .flow-glitch, .flowtab.immersive .flow-glitch::before,
   .flowtab.immersive .flow-bar-fill, .flowtab.immersive .flow-bar-fill::after, .flowtab.immersive .res-panel,
