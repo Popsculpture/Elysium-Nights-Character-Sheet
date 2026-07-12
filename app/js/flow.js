@@ -403,6 +403,75 @@ EN.flowView = (function () {
     fp.classList.add("flow-reference"); return fp;
   }
 
+  /* The compliance tip line never actually works. Pressing REPORT opens an
+     uplink modal whose progress bar climbs to a random 50-75%, stalls, and
+     then fails one of three ways (a Codebreaker cutting the wire, a Nixie
+     swarm eating the packets, or #FLAG being down for maintenance). Every
+     path ends the same: the report is never delivered. */
+  var REPORT_FAILS = [
+    { head: "TRANSMISSION INTERCEPTED",
+      body: "A Codebreaker riding the district relay folded your uplink into noise before it cleared the block. Someone on the wire did not want this tip filed." },
+    { head: "SIGNAL SWARMED",
+      body: "A swarm of Nixies tore into the packet stream and chewed your report down to static. The little ones follow the light on the wires, and they are always hungry." },
+    { head: "#FLAG UNAVAILABLE",
+      body: "Tip line #FLAG is down for scheduled maintenance. Please hold. Your vigilance is important to us. Estimated wait: indefinite." }
+  ];
+  function reportTransmission() {
+    var old = document.getElementById("flag-uplink"); if (old) old.remove();
+    var raf = 0;
+    var fill = el("div", { style: { width: "0%", height: "100%", borderRadius: "5px",
+      background: "linear-gradient(90deg, var(--warn), var(--gold))", boxShadow: "0 0 10px var(--warn)", transition: "background .25s, box-shadow .25s" } });
+    var track = el("div", { style: { height: "12px", background: "var(--bg1)", border: "1px solid var(--border2)", borderRadius: "6px", overflow: "hidden", marginTop: "14px" } }, [fill]);
+    var head = el("div", { style: { fontFamily: "var(--disp)", fontWeight: 700, fontSize: "17px", letterSpacing: ".04em", color: "var(--text)" }, text: "TRANSMITTING TIP" });
+    var body = el("p", { style: { margin: "4px 0 0", fontSize: "12.5px", color: "var(--text2)", lineHeight: 1.5, minHeight: "52px" },
+      text: "Establishing secure uplink to compliance tip line #FLAG. Do not close this window. Your report is being routed." });
+    var result = el("div.mono", { style: { fontSize: "10.5px", letterSpacing: ".1em", color: "var(--text4)", marginTop: "10px", minHeight: "13px" }, text: "" });
+    var pct = el("span.mono", { style: { fontSize: "11px", color: "var(--text3)" }, text: "0%" });
+    var closeBtn = el("button.btn.sm", { style: { color: "var(--text3)" }, onclick: close }, "CANCEL");
+    var card = el("div", { style: { width: "min(440px, 94vw)", position: "relative", overflow: "hidden", borderRadius: "8px",
+      background: "linear-gradient(180deg, var(--bg2), var(--bg1))", border: "1px solid var(--warn)",
+      boxShadow: "0 20px 60px rgba(0,0,0,.6), 0 0 40px rgba(255,179,64,.12)" } }, [
+      el("div", { style: { height: "6px", background: "repeating-linear-gradient(45deg, var(--warn) 0 10px, #0a0e14 10px 20px)", opacity: .8 } }),
+      el("div", { style: { padding: "16px 20px 16px" } }, [
+        el("div.mono", { style: { fontSize: "10px", letterSpacing: ".22em", color: "var(--warn)" }, text: "// RESONANCE COMPLIANCE · SECURE UPLINK" }),
+        el("div", { style: { marginTop: "6px" } }, [head, body, track, result]),
+        el("div.row.between", { style: { alignItems: "center", marginTop: "14px" } }, [pct, closeBtn])
+      ])
+    ]);
+    var overlay = el("div#flag-uplink", { style: { position: "fixed", inset: "0", zIndex: "5000", background: "rgba(4,7,11,.74)",
+      display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" },
+      onclick: function (e) { if (e.target === overlay) close(); } }, [card]);
+    function onKey(e) { if (e.key === "Escape") close(); }
+    function close() { if (raf) cancelAnimationFrame(raf); document.removeEventListener("keydown", onKey); if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }
+    document.addEventListener("keydown", onKey);
+    document.body.appendChild(overlay);
+
+    var target = 50 + Math.floor(Math.random() * 26);   // stalls somewhere in 50-75%
+    var start = null, dur = 1700;
+    function frame(ts) {
+      if (start == null) start = ts;
+      var t = Math.min(1, (ts - start) / dur), eased = 1 - Math.pow(1 - t, 2);
+      var v = eased * target;
+      fill.style.width = v + "%"; pct.textContent = Math.round(v) + "%";
+      if (t < 1) raf = requestAnimationFrame(frame);
+      else { raf = 0; setTimeout(fail, 480); }
+    }
+    raf = requestAnimationFrame(frame);
+
+    function fail() {
+      var ev = REPORT_FAILS[Math.floor(Math.random() * REPORT_FAILS.length)];
+      card.style.borderColor = "var(--danger)";
+      fill.style.background = "linear-gradient(90deg, var(--danger), var(--ember))";
+      fill.style.boxShadow = "0 0 12px var(--danger)";
+      head.textContent = ev.head; head.style.color = "var(--danger)";
+      body.textContent = ev.body;
+      result.textContent = "REPORT NOT DELIVERED · NO BOUNTY CREDITED"; result.style.color = "var(--danger)";
+      pct.textContent = "FAILED"; pct.style.color = "var(--danger)";
+      closeBtn.textContent = "DISMISS"; closeBtn.className = "btn sm primary"; closeBtn.style.color = "";
+      if (card.animate) card.animate([{ transform: "translateX(0)" }, { transform: "translateX(-5px)" }, { transform: "translateX(4px)" }, { transform: "translateX(-2px)" }, { transform: "translateX(0)" }], { duration: 300 });
+    }
+  }
+
   /* ===================== UNATTUNED (non-Shaper) ==========================
      Non-Shapers do not get a Flow interface. Instead they get the Bureau of
      Resonance Compliance's public-service propaganda: a "see something, say
@@ -445,7 +514,7 @@ EN.flowView = (function () {
       el("div", null, signs),
       el("div.row.wrap", { style: { gap: "10px", alignItems: "center", marginTop: "12px" } }, [
         el("button.btn.sm", { style: { color: "var(--danger)", borderColor: "var(--danger)" },
-          onclick: function () { toast("Tip logged. Compliance thanks you for your vigilance."); } }, "⚑ REPORT A RESONANCE ANOMALY"),
+          onclick: reportTransmission }, "⚑ REPORT A RESONANCE ANOMALY"),
         el("span.mono", { style: { fontSize: "10.5px", color: "var(--text3)", letterSpacing: ".06em" }, text: "TIP LINE // dial #FLAG on any registered deck · paid in Glimmer" })
       ]),
       noteP("Filing a false report is a Class-2 civic offense. Harboring an unregistered Shaper carries the sentence of being one.", "var(--text4)")
