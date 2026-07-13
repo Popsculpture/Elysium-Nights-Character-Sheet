@@ -14,7 +14,7 @@ EN.app = (function () {
   // Advance step (onSelect), since advancing is the usual reason to return.
   var TABS = [
     { key: "combat",  label: "Freelancer", glyph: "✦", view: function (m) { EN.combatView.render(m); } },
-    { key: "face",    label: "Face",      glyph: "◑", view: function (m) { EN.faceView.render(m); } },
+    { key: "face",    label: "Social",    glyph: "◑", view: function (m) { EN.faceView.render(m); } },
     { key: "grid",    label: "#GRID",     glyph: "⌬", view: function (m) { EN.gridView.render(m); } },
     { key: "flow",    label: "Flow",      glyph: "❋", view: function (m) { EN.flowView.render(m); } },
     { key: "gear",    label: "Inventory", glyph: "▣", view: function (m) { EN.inventoryView.render(m); } },
