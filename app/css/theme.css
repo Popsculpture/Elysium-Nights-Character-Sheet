@@ -833,13 +833,13 @@ html.light .pop-btn:hover{ background:rgba(0,0,0,.05) !important; }
 #filed-ov.out{ animation:filedOut .3s ease forwards; }
 @keyframes filedIn{ from{ opacity:0; } to{ opacity:1; } }
 @keyframes filedOut{ from{ opacity:1; } to{ opacity:0; } }
-.filed-card{ width:min(360px,84vw); background:#f6f3ec; border-radius:16px; padding:26px 26px 20px; text-align:center;
-  box-shadow:0 24px 80px rgba(0,0,0,.55); border:1px solid rgba(201,162,39,.3); }
+.filed-card{ width:min(360px,84vw); background:var(--panel); border:1px solid var(--border); border-radius:var(--r); padding:26px 26px 20px; text-align:center;
+  box-shadow:0 24px 80px rgba(0,0,0,.55); }
 .filed-svgwrap{ width:72%; margin:0 auto 8px; }
-.filed-cap{ font-family:var(--disp); font-weight:700; letter-spacing:.14em; font-size:15px; color:#2a2140; }
-.filed-card.filed-done .filed-cap{ color:#8a6a12; }
-.filed-sub{ font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; color:#7a728c; margin-top:5px; }
-.filed-skip{ font-family:var(--mono); font-size:9.5px; letter-spacing:.14em; color:#b3a9c2; margin-top:12px; text-transform:uppercase; }
+.filed-cap{ font-family:var(--disp); font-weight:700; letter-spacing:.14em; font-size:15px; color:var(--text2); }
+.filed-card.filed-done .filed-cap{ color:#C9A227; }
+.filed-sub{ font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; color:var(--text3); margin-top:5px; }
+.filed-skip{ font-family:var(--mono); font-size:9.5px; letter-spacing:.14em; color:var(--text3); margin-top:12px; text-transform:uppercase; }
 
 @media (prefers-reduced-motion: reduce){
   .fx-svg .fx-env-open, .fx-svg .fx-env, .fx-svg .fx-streak, .fx-svg .fx-trail, .fx-svg .fx-dot,
