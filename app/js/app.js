@@ -9,14 +9,18 @@ EN.app = (function () {
 
   // Tabs. Only "#PRINT" is built today; the rest are stubs that read the same
   // character record once they're implemented (the foundation is shared).
+  // #PRINT lives last and is framed as "Update #PRINT": you create + file a
+  // record there, then it becomes the place to level up. Tapping it lands on the
+  // Advance step (onSelect), since advancing is the usual reason to return.
   var TABS = [
-    { key: "print",   label: "#PRINT",    glyph: "▤", view: function (m) { EN.builder.render(m); } },
     { key: "combat",  label: "Freelancer", glyph: "✦", view: function (m) { EN.combatView.render(m); } },
     { key: "face",    label: "Face",      glyph: "◑", view: function (m) { EN.faceView.render(m); } },
     { key: "grid",    label: "#GRID",     glyph: "⌬", view: function (m) { EN.gridView.render(m); } },
     { key: "flow",    label: "Flow",      glyph: "❋", view: function (m) { EN.flowView.render(m); } },
     { key: "gear",    label: "Inventory", glyph: "▣", view: function (m) { EN.inventoryView.render(m); } },
-    { key: "codex",   label: "Codex",     glyph: "❒", view: function (m) { EN.codexView.render(m); } }
+    { key: "codex",   label: "Codex",     glyph: "❒", view: function (m) { EN.codexView.render(m); } },
+    { key: "print",   label: "Update #PRINT", glyph: "▤", view: function (m) { EN.builder.render(m); },
+      onSelect: function () { if (EN.builder && EN.builder.openAdvance) EN.builder.openAdvance(); } }
   ];
   var activeTab = "print";
 
@@ -27,7 +31,7 @@ EN.app = (function () {
     var scroll = el("div.os-tabs-scroll");
     TABS.forEach(function (t) {
       scroll.appendChild(el("div.os-tab" + (t.key === activeTab ? ".active" : ""), {
-        onclick: function () { activeTab = t.key; render(); }
+        onclick: function () { activeTab = t.key; if (t.onSelect) t.onSelect(); render(); }
       }, [el("span", { text: t.glyph }), document.createTextNode(t.label)]));
     });
     nav.appendChild(scroll);

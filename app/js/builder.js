@@ -2270,5 +2270,8 @@ EN.builder = (function () {
     document.body.appendChild(inp); inp.click(); setTimeout(function () { inp.remove(); }, 1000);
   }
 
-  return { render: render, setStep: function (i) { _step = i; }, importPrompt: importPrompt };
+  // Jump the wizard to the Advance step (used by the "Update #PRINT" tab).
+  function openAdvance() { for (var i = 0; i < STEPS.length; i++) { if (STEPS[i].key === "advance") { _step = i; return; } } }
+
+  return { render: render, setStep: function (i) { _step = i; }, openAdvance: openAdvance, importPrompt: importPrompt };
 })();
