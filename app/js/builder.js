@@ -2039,7 +2039,7 @@ EN.builder = (function () {
 
     // export
     blocks.push(el("div.row.wrap", null, [
-      el("button.btn.primary", { onclick: function () { exportChar(ch); } }, "⤓ EXPORT RECORD (.JSON)"),
+      el("button.btn", { onclick: function () { exportChar(ch); } }, "⤓ EXPORT RECORD (.JSON)"),
       el("button.btn", { onclick: function () { EN.printSheet.open(); } }, "⎙ PRINT HARDCOPY"),
       el("button.btn.danger", { onclick: function () { if (confirm("Revoke and permanently delete this #PRINT record? This cannot be undone.")) { store.remove(ch.meta.id); EN.app.render(); } } }, "✕ REVOKE #PRINT")
     ]));
