@@ -258,6 +258,78 @@ EN.ui = (function () {
     });
   }
 
+  /* ------------------------------------------------------------------ *
+     "Record filed" confirmation animation. A reusable, dependency-free
+     message-sent motion built from inline SVG + CSS keyframes (theme.css,
+     `.fx-svg` / #filed-ov): an envelope closes, tilts, streaks away, then a
+     ring draws and a checkmark lands. Single ~10.6s timeline; every element
+     shares the duration and self-schedules via keyframe percentages, so a
+     replay is just re-adding the `.play` class. prefers-reduced-motion skips
+     straight to the drawn ring + check. playFiled() drops it on a paper card
+     over a dim backdrop, and calls opts.onDone once the check has settled
+     (or immediately on tap/Esc to skip). */
+  function filedSvg() {
+    return '' +
+      '<svg class="fx-svg" viewBox="0 0 640 640" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+        '<g class="fx-env-open">' +                                  // open envelope, crossfades out
+          '<rect x="155" y="250" width="330" height="195" rx="16"/>' +
+          '<path d="M155 250 L320 145 L485 250"/>' +                 // flap standing open
+          '<path d="M155 445 L320 320 L485 445"/>' +                 // front pocket fold
+          '<path d="M155 250 L320 320"/><path d="M485 250 L320 320"/>' +  // side folds
+        '</g>' +
+        '<g class="fx-env">' +                                       // closed / flying envelope
+          '<rect x="155" y="250" width="330" height="195" rx="16"/>' +
+          '<path d="M155 250 L320 352 L485 250"/>' +                 // folded flap crease
+        '</g>' +
+        '<line class="fx-trail" x1="470" y1="180" x2="512" y2="150"/>' +   // exit trail
+        '<line class="fx-streak a" x1="196" y1="232" x2="230" y2="210"/>' +
+        '<line class="fx-streak b" x1="168" y1="276" x2="206" y2="252"/>' +
+        '<line class="fx-streak a" x1="440" y1="432" x2="474" y2="410"/>' +
+        '<line class="fx-streak b" x1="470" y1="392" x2="508" y2="368"/>' +
+        '<circle class="fx-ring" cx="320" cy="320" r="150" pathLength="100"/>' +
+        '<path class="fx-check" d="M270 325 L305 360 L380 280"/>' +
+        '<circle class="fx-dot" cx="300" cy="398" r="5"/><circle class="fx-dot" cx="330" cy="404" r="5"/>' +
+      '</svg>';
+  }
+  function playFiled(opts) {
+    opts = opts || {};
+    if (document.getElementById("filed-ov")) return null;            // one at a time
+    var reduce = false;
+    try { reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) {}
+
+    var cap = el("div.filed-cap", { role: "status", "aria-live": "polite", text: reduce ? "" : "FILING TO REGISTRY" });
+    var card = el("div.filed-card", null, [
+      el("div.filed-svgwrap", { html: filedSvg() }),
+      cap,
+      el("div.filed-sub", { text: (opts.ref || "IDENTITY NETWORK TAG") + (opts.name ? " · " + opts.name : "") }),
+      el("div.filed-skip", { text: "tap to skip" })
+    ]);
+    if (reduce) card.classList.add("filed-done");                   // final caption color without waiting on the swap
+    var ov = el("div#filed-ov", { role: "dialog", "aria-modal": "true", "aria-label": "Record filing confirmation", tabindex: "-1" }, [card]);
+    document.body.appendChild(ov);
+    try { ov.focus(); } catch (e) {}
+    if (reduce) setTimeout(function () { cap.textContent = "RECORD FILED"; }, 60);   // announce via the live region
+
+    var done = false, tEnd, tCap;
+    function finish() {
+      if (done) return; done = true;
+      clearTimeout(tEnd); clearTimeout(tCap);
+      document.removeEventListener("keydown", onKey, true);
+      ov.classList.add("out");
+      setTimeout(function () { if (ov.parentNode) ov.parentNode.removeChild(ov); if (opts.onDone) opts.onDone(); }, 300);
+    }
+    function onKey(e) { if (e.key === "Escape") { e.preventDefault(); finish(); } }
+    document.addEventListener("keydown", onKey, true);
+    ov.addEventListener("click", finish);
+
+    void ov.offsetWidth;                                             // reflow, then arm the timeline
+    var svg = ov.querySelector(".fx-svg");
+    if (svg) svg.classList.add("play");
+    if (!reduce) tCap = setTimeout(function () { cap.textContent = "RECORD FILED"; card.classList.add("filed-done"); }, 7600);
+    tEnd = setTimeout(finish, reduce ? 1500 : 8400);                 // navigate once the check has settled
+    return { skip: finish };
+  }
+
   return { el: el, append: append, clear: clear, frag: frag, panel: panel, sectionTitle: sectionTitle, stat: stat, toast: toast, renderText: renderText, applyInline: applyInline,
-           dieFace: dieFace, dieFaceSvg: dieFaceSvg, d20Face: d20Face, animatePoolRoll: animatePoolRoll };
+           dieFace: dieFace, dieFaceSvg: dieFaceSvg, d20Face: d20Face, animatePoolRoll: animatePoolRoll, playFiled: playFiled };
 })();

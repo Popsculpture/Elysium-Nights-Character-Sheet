@@ -23,6 +23,7 @@ EN.builder = (function () {
   var _collapsed = {};   // {sectionId: true}, UI-only collapse state (persists across re-renders)
   var _dismissed = {};   // {sectionId: dismissKey}, attention markers the player has dismissed
   var _progFilter = "both"; // "both" | "class" | "subclass": progression feature filter
+  var _certifiedFor = null; // #PRINT confirmation: meta.id of the record the player has certified for filing (scoped so it never leaks across characters)
 
   // Advance-tab sections default to COLLAPSED: a section is collapsed unless the
   // player has explicitly expanded it (_collapsed[id] === false).
@@ -1982,10 +1983,17 @@ EN.builder = (function () {
       ch.identity.concept ? el("p", { style: { color: "var(--text2)" }, text: "“" + ch.identity.concept + "”" }) : null
     ], { corners: true, glow: true }));
 
-    blocks.push(el("div", { style: { height: "14px" } }));
+    // official "review & certify" framing (medical / government form styling)
+    blocks.push(el("div.certify-banner", null, [
+      el("div.mono.cb-kick", { text: "◈ FORM RF-07 · FREELANCER REGISTRY FILING" }),
+      el("p.cb-body", { html: "Review every section below, then certify and file. Filing enters this record into the Freelancer Registry and issues your <b>Identity Network Tag</b>. Corrections after filing require a re-verification request. Falsified records are prosecutable." })
+    ]));
+
+    blocks.push(EN.ui.sectionTitle("A · VITAL STATISTICS"));
     blocks.push(vitalsStrip(d));
 
     // attributes + saves
+    blocks.push(EN.ui.sectionTitle("B · ATTRIBUTES & SAVING THROWS"));
     blocks.push(el("div.grid2", null, [
       EN.ui.panel("Attributes", null, [el("div.attr-grid", { style: { gridTemplateColumns: "repeat(3,1fr)" } }, R.attributes.map(function (a) {
         return el("div.attr-cell", null, [el("div.abbr", { text: a.abbr }), el("div.mod", { text: eng.fmtMod(d.attributes[a.key].mod) }), el("div.s.mono", { text: "score " + d.attributes[a.key].score })]);
@@ -1997,7 +2005,7 @@ EN.builder = (function () {
     ]));
 
     // combined skills & proficiencies (Background + Class + Advance)
-    blocks.push(el("div", { style: { height: "14px" } }));
+    blocks.push(EN.ui.sectionTitle("C · SKILLS & PROFICIENCIES"));
     blocks.push(skillProfSummary(ch, d));
 
     // warnings
@@ -2007,8 +2015,7 @@ EN.builder = (function () {
     }
 
     // features
-    blocks.push(el("div", { style: { height: "14px" } }));
-    blocks.push(EN.ui.sectionTitle("All Features (" + d.features.length + ")"));
+    blocks.push(EN.ui.sectionTitle("D · FEATURES & ABILITIES (" + d.features.length + ")"));
     var fb = el("div.scroll-box");
     d.features.forEach(function (f) {
       if (f.name === "Open Architecture") fb.appendChild(openArchitectureCard(ch, d.lineageInfo));
@@ -2016,8 +2023,21 @@ EN.builder = (function () {
     });
     blocks.push(fb);
 
+    // certification + filing
+    blocks.push(EN.ui.sectionTitle("E · CERTIFICATION"));
+    var recordComplete = stepComplete(ch, "dossier");
+    if (!recordComplete) blocks.push(el("p.help", { style: { color: "var(--warn)", margin: "0 0 10px" }, text: d.warnings.length
+      ? "Resolve the incomplete fields flagged above before this record can be certified and filed."
+      : "One or more steps are still incomplete (check the step rail above). Every step must be complete before this record can be certified and filed." }));
+    var certd = _certifiedFor === (ch.meta && ch.meta.id);
+    blocks.push(el("label.certify-row" + (!recordComplete ? ".disabled" : (certd ? ".on" : "")), null, [
+      el("input", { type: "checkbox", checked: certd, disabled: !recordComplete,
+        onchange: function (e) { _certifiedFor = e.target.checked ? (ch.meta && ch.meta.id) : null; EN.app.render(); } }),
+      el("span", { text: "I certify that the record above is accurate and complete, and I authorize its filing with the Freelancer Registry." })
+    ]));
+    blocks.push(el("p.help", { style: { margin: "2px 0 14px", fontSize: "11px" }, text: "Filing is confirmed with SUBMIT & FILE below and opens your live Freelancer sheet. You may also export, print, or revoke this record instead." }));
+
     // export
-    blocks.push(el("div", { style: { height: "16px" } }));
     blocks.push(el("div.row.wrap", null, [
       el("button.btn.primary", { onclick: function () { exportChar(ch); } }, "⤓ EXPORT RECORD (.JSON)"),
       el("button.btn", { onclick: function () { EN.printSheet.open(); } }, "⎙ PRINT HARDCOPY"),
@@ -2038,6 +2058,23 @@ EN.builder = (function () {
     a.download = (ch.name || "freelancer").replace(/[^\w]+/g, "_") + ".json";
     a.click();
     toast("#PRINT record exported.");
+  }
+
+  // A stable-looking filing tag derived from the record id, shown on the
+  // confirmation animation (cosmetic only).
+  function recordRef(ch) {
+    var id = (ch.meta && ch.meta.id) ? String(ch.meta.id) : "";
+    var tag = id.replace(/[^a-z0-9]/gi, "").slice(-6).toUpperCase();
+    while (tag.length < 6) tag = "0" + tag;
+    return "TAG RF-" + tag;
+  }
+  // SUBMIT on the #PRINT step: play the "record filed" confirmation, then hand
+  // the player their live Freelancer sheet.
+  function submitRecord(ch) {
+    _certifiedFor = null;                        // consumed; a return to #PRINT must re-certify
+    var name = (ch.name || "UNNAMED FREELANCER").toUpperCase();
+    if (EN.ui.playFiled) EN.ui.playFiled({ name: name, ref: recordRef(ch), onDone: function () { EN.app.gotoTab("combat"); } });
+    else EN.app.gotoTab("combat");
   }
 
   var renderText = EN.ui.renderText;
@@ -2134,10 +2171,16 @@ EN.builder = (function () {
     else if (key === "advance") body = stepAdvance(ch, d);
     else body = stepDossier(ch, d);
 
+    var isLast = _step === STEPS.length - 1;
+    var recordComplete = stepComplete(ch, "dossier");            // every wizard step done (deeper than d.warnings)
+    var canFile = recordComplete && _certifiedFor === (ch.meta && ch.meta.id);
+    var primaryBtn = isLast
+      ? el("button.btn.primary", { disabled: !canFile, title: canFile ? "File this record and open the Freelancer sheet" : (recordComplete ? "Certify the record below to file" : "Complete every step first"), onclick: function () { submitRecord(ch); } }, "◈ SUBMIT & FILE")
+      : el("button.btn.primary", { onclick: function () { _step = Math.min(STEPS.length - 1, _step + 1); render(mount); } }, "NEXT ►");
     var foot = el("div.wizard-foot", null, [
       el("button.btn.ghost", { disabled: _step === 0, onclick: function () { _step = Math.max(0, _step - 1); render(mount); } }, "◄ BACK"),
-      el("span.help", { text: STEPS[_step].n + " / " + STEPS.length + "  ·  " + STEPS[_step].t }),
-      el("button.btn.primary", { disabled: _step === STEPS.length - 1, onclick: function () { _step = Math.min(STEPS.length - 1, _step + 1); render(mount); } }, "NEXT ►")
+      el("span.help", { text: isLast ? (canFile ? "Ready to file · issues your Identity Network Tag" : (recordComplete ? "Certify the record below to file" : "Complete every step above to file")) : (STEPS[_step].n + " / " + STEPS.length + "  ·  " + STEPS[_step].t) }),
+      primaryBtn
     ]);
 
     mount.appendChild(el("div", null, [

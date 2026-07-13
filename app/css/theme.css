@@ -753,3 +753,108 @@ html.light .pop-btn:hover{ background:rgba(0,0,0,.05) !important; }
   .gridtab[data-dmg] .btn, .gridtab[data-dmg] .stepper button, .gridtab[data-dmg] .corner,
   .gridtab[data-dmg]::before, .gridtab[data-dmg]::after{ animation:none !important; }
 }
+
+/* ===== "RECORD FILED" CONFIRMATION ANIMATION =================================
+   Reusable message-sent motion (EN.ui.playFiled), inline SVG + one ~10.6s CSS
+   timeline. Every element runs the same 10.6s duration and gates itself with
+   keyframe percentages that map to the 7 phases, so the whole thing stays in
+   sync and replays by re-adding `.play`. Purple #7D3EA1 line art, gray motion
+   streaks, flat and friendly. Reduced-motion jumps to the drawn ring + check. */
+.fx-svg{ display:block; width:100%; height:auto; }
+.fx-svg path, .fx-svg line, .fx-svg circle, .fx-svg rect{ fill:none; stroke-linecap:round; stroke-linejoin:round; }
+.fx-svg .fx-env-open, .fx-svg .fx-env{ stroke:#7D3EA1; stroke-width:11; }
+.fx-svg .fx-ring, .fx-svg .fx-check{ stroke:#7D3EA1; stroke-width:11; }
+.fx-svg .fx-trail{ stroke:#7D3EA1; stroke-width:9; }
+.fx-svg .fx-streak{ stroke:#AFAFAF; stroke-width:7; }
+.fx-svg .fx-dot{ fill:#AFAFAF; stroke:none; }
+.fx-svg .fx-env, .fx-svg .fx-ring, .fx-svg .fx-check, .fx-svg .fx-streak{ transform-box:fill-box; transform-origin:center; }
+/* idle (pre-play) state: only the open envelope shows */
+.fx-svg .fx-env, .fx-svg .fx-trail, .fx-svg .fx-streak, .fx-svg .fx-dot{ opacity:0; }
+.fx-svg .fx-ring{ stroke-dasharray:100; stroke-dashoffset:100; opacity:0; }
+.fx-svg .fx-check{ stroke-dasharray:160; stroke-dashoffset:160; opacity:0; }
+
+.fx-svg.play .fx-env-open{ animation:fxEnvOpen 10.6s linear both; }
+.fx-svg.play .fx-env{ animation:fxEnv 10.6s ease-in-out both; }
+.fx-svg.play .fx-trail{ animation:fxTrail 10.6s linear both; }
+.fx-svg.play .fx-streak.a{ animation:fxStreakA 10.6s linear both; }
+.fx-svg.play .fx-streak.b{ animation:fxStreakB 10.6s linear both; }
+.fx-svg.play .fx-ring{ animation:fxRing 10.6s ease-in-out both; }
+.fx-svg.play .fx-check{ animation:fxCheck 10.6s ease-out both; }
+.fx-svg.play .fx-dot{ animation:fxDot 10.6s linear both; }
+
+/* P1 close (0-0.5s = 0-4.7%) */
+@keyframes fxEnvOpen{ 0%{ opacity:1; } 4.7%{ opacity:0; } 100%{ opacity:0; } }
+/* P1 crossfade in, P2 tilt (0.5-1.2s), P3 hold (1.2-4.6s), P4 exit (4.6-5.2s) */
+@keyframes fxEnv{
+  0%{ opacity:0; transform:translate(0px,0px) rotate(0deg) scale(1); }
+  3%{ opacity:1; }
+  4.7%{ opacity:1; transform:translate(0px,0px) rotate(0deg) scale(1); }
+  11.3%{ opacity:1; transform:translate(-6px,-6px) rotate(-32deg) scale(1); }
+  40%{ opacity:1; transform:translate(8px,-14px) rotate(-32deg) scale(.99); }
+  43.4%{ opacity:1; transform:translate(12px,-18px) rotate(-32deg) scale(.98); animation-timing-function:ease-in; }
+  49%{ opacity:0; transform:translate(390px,-430px) rotate(-32deg) scale(.4); }
+  100%{ opacity:0; transform:translate(390px,-430px) rotate(-32deg) scale(.4); }
+}
+@keyframes fxTrail{ 0%,44%{ opacity:0; } 47%{ opacity:.85; } 51%{ opacity:0; } 100%{ opacity:0; } }
+/* P3 motion streaks: alternating groups pulse-slide-fade */
+@keyframes fxStreakA{
+  0%,12%{ opacity:0; transform:translate(0,0); }
+  16%{ opacity:.85; } 22%{ opacity:0; transform:translate(22px,-16px); }
+  24%{ transform:translate(-8px,6px); } 30%{ opacity:.85; transform:translate(0,0); }
+  37%{ opacity:0; transform:translate(22px,-16px); } 43.4%,100%{ opacity:0; }
+}
+@keyframes fxStreakB{
+  0%,18%{ opacity:0; transform:translate(0,0); }
+  24%{ opacity:.8; } 31%{ opacity:0; transform:translate(22px,-16px); }
+  33%{ transform:translate(-8px,6px); } 39%{ opacity:.8; transform:translate(0,0); }
+  43.4%,100%{ opacity:0; }
+}
+/* P5 ring draws (5.2-6.8s = 49-64%); rotation drifts the seam for an organic draw */
+@keyframes fxRing{
+  0%,49%{ opacity:0; stroke-dashoffset:100; transform:rotate(80deg); }
+  50%{ opacity:1; }
+  64.2%{ opacity:1; stroke-dashoffset:0; transform:rotate(215deg); }
+  100%{ opacity:1; stroke-dashoffset:0; transform:rotate(215deg); }
+}
+/* P6 checkmark (6.8-7.6s = 64-72%) with a restrained settle */
+@keyframes fxCheck{
+  0%,64.2%{ opacity:0; stroke-dashoffset:160; transform:scale(1); }
+  65%{ opacity:1; }
+  71.7%{ opacity:1; stroke-dashoffset:0; transform:scale(1); }
+  74%{ transform:scale(1.07); } 77.5%{ transform:scale(1); }
+  100%{ opacity:1; stroke-dashoffset:0; transform:scale(1); }
+}
+@keyframes fxDot{ 0%,62%{ opacity:0; } 66%{ opacity:.55; } 71%{ opacity:.2; } 74%{ opacity:0; } 100%{ opacity:0; } }
+
+/* the paper-receipt overlay playFiled() drops the icon onto */
+#filed-ov{ position:fixed; inset:0; z-index:4000; display:flex; align-items:center; justify-content:center;
+  background:rgba(6,8,12,.82); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px); cursor:pointer; animation:filedIn .25s ease both; }
+#filed-ov.out{ animation:filedOut .3s ease forwards; }
+@keyframes filedIn{ from{ opacity:0; } to{ opacity:1; } }
+@keyframes filedOut{ from{ opacity:1; } to{ opacity:0; } }
+.filed-card{ width:min(360px,84vw); background:#f6f3ec; border-radius:16px; padding:26px 26px 20px; text-align:center;
+  box-shadow:0 24px 80px rgba(0,0,0,.55); border:1px solid rgba(125,62,161,.25); }
+.filed-svgwrap{ width:72%; margin:0 auto 8px; }
+.filed-cap{ font-family:var(--disp); font-weight:700; letter-spacing:.14em; font-size:15px; color:#2a2140; }
+.filed-card.filed-done .filed-cap{ color:#5b2c86; }
+.filed-sub{ font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; color:#7a728c; margin-top:5px; }
+.filed-skip{ font-family:var(--mono); font-size:9.5px; letter-spacing:.14em; color:#b3a9c2; margin-top:12px; text-transform:uppercase; }
+
+@media (prefers-reduced-motion: reduce){
+  .fx-svg .fx-env-open, .fx-svg .fx-env, .fx-svg .fx-streak, .fx-svg .fx-trail, .fx-svg .fx-dot,
+  .fx-svg.play .fx-env-open, .fx-svg.play .fx-env, .fx-svg.play .fx-streak, .fx-svg.play .fx-trail, .fx-svg.play .fx-dot{ display:none; animation:none; }
+  .fx-svg .fx-ring, .fx-svg.play .fx-ring, .fx-svg .fx-check, .fx-svg.play .fx-check{ opacity:1; stroke-dashoffset:0; transform:none; animation:none; }
+  #filed-ov, #filed-ov.out{ animation:none; }
+}
+
+/* #PRINT confirmation-page framing: an official filing notice + a certify row
+   that gates the SUBMIT & FILE control (builder stepDossier). */
+.certify-banner{ border:1px solid var(--border); border-left:3px solid var(--flow); background:var(--bg2); border-radius:8px; padding:12px 16px; margin:14px 0 4px; }
+.certify-banner .cb-kick{ font-size:10px; letter-spacing:.18em; color:var(--flow); margin-bottom:6px; }
+.certify-banner .cb-body{ margin:0; font-size:12.5px; line-height:1.55; color:var(--text2); }
+.certify-banner .cb-body b{ color:var(--text); }
+.certify-row{ display:flex; align-items:flex-start; gap:10px; padding:12px 14px; border:1px solid var(--border); border-radius:8px; background:var(--bg2); cursor:pointer; font-size:12.5px; line-height:1.5; color:var(--text2); }
+.certify-row input{ margin-top:2px; flex:0 0 auto; width:16px; height:16px; accent-color:var(--flow); cursor:pointer; }
+.certify-row.on{ border-color:var(--flow); box-shadow:inset 0 0 0 1px var(--flow); color:var(--text); }
+.certify-row.disabled{ opacity:.55; cursor:not-allowed; }
+.certify-row.disabled input{ cursor:not-allowed; }
