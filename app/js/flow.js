@@ -409,13 +409,40 @@ EN.flowView = (function () {
      swarm eating the packets, or #FLAG being down for maintenance). Every
      path ends the same: the report is never delivered. */
   var REPORT_FAILS = [
-    { head: "TRANSMISSION INTERCEPTED",
-      body: "A Codebreaker riding the district relay folded your uplink into noise before it cleared the block. Someone on the wire did not want this tip filed." },
+    { hack: true },   // the Codebreaker: glitches and rewrites itself as a message (hackFail)
     { head: "UNKNOWN FAULT · 0x6E??", swarm: true,
       body: "The uplink opened from the outside and went quiet. #FLAG logs no source and no fault code it can match. There is no record this transmission was ever made." },
     { head: "#FLAG UNAVAILABLE",
       body: "Tip line #FLAG is down for scheduled maintenance. Please hold. Your vigilance is important to us. Estimated wait: indefinite." }
   ];
+  // canned messages the intercepting Codebreaker leaves behind: some framed as a
+  // favor for stopping the tip, some as a threat for sending it at all.
+  var HACK_MSGS = [
+    { from: "NULLJACK", text: "You almost handed the Bureau a live one. I folded your uplink before it cleared the relay. Call it a favor. Do not make me spend another one on you." },
+    { from: "a friend you do not have", text: "That tip files a person into a cell or a coffin. I ate it at the relay. Nobody will ever know you reached. Go home." },
+    { from: "GHOST // #FLAG", text: "I watched you trade a life for a bounty. I have your deck ID, your handle, and the room you are sitting in. Reach for #FLAG again and the next signal to drop will be yours." },
+    { from: "UNKNOWN NODE", text: "Cute. Filing tips for Glimmer. I traced the uplink back before it went dark, so now I know exactly who you are. This is the only warning the wire gives." }
+  ];
+  function reducedMotion() { try { return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; } }
+  // scramble el's text through a glitchy charset, then land on finalText
+  function glitchText(node, finalText, opts) {
+    opts = opts || {};
+    if (reducedMotion()) { node.textContent = finalText; return; }
+    var charset = "!<>-_\\/[]{}=+*^?#01ABCDEF▓▒░", dur = opts.dur || 600, stutter = !!opts.stutter, start = null;
+    function frame(ts) {
+      if (!node.isConnected) return;
+      if (start == null) start = ts;
+      var t = ts - start, pct = Math.min(1, t / dur), lock = Math.floor(pct * finalText.length * (stutter ? 1.3 : 1.12)), out = "";
+      for (var i = 0; i < finalText.length; i++) {
+        if (finalText[i] === " ") { out += " "; continue; }
+        var on = i < lock; if (on && stutter && Math.random() < 0.05 && pct < 0.9) on = false;
+        out += on ? finalText[i] : charset[Math.floor(Math.random() * charset.length)];
+      }
+      node.textContent = out;
+      if (t < dur) requestAnimationFrame(frame); else node.textContent = finalText;
+    }
+    requestAnimationFrame(frame);
+  }
   function reportTransmission() {
     var old = document.getElementById("flag-uplink"); if (old) old.remove();
     var raf = 0;
@@ -428,12 +455,13 @@ EN.flowView = (function () {
     var result = el("div.mono", { style: { fontSize: "10.5px", letterSpacing: ".1em", color: "var(--text4)", marginTop: "10px", minHeight: "13px" }, text: "" });
     var pct = el("span.mono", { style: { fontSize: "11px", color: "var(--text3)" }, text: "0%" });
     var closeBtn = el("button.btn.sm", { style: { color: "var(--text3)" }, onclick: close }, "CANCEL");
+    var kicker = el("div.mono", { style: { fontSize: "10px", letterSpacing: ".22em", color: "var(--warn)" }, text: "// RESONANCE COMPLIANCE · SECURE UPLINK" });
     var card = el("div", { style: { width: "min(440px, 94vw)", position: "relative", overflow: "hidden", borderRadius: "8px",
       background: "linear-gradient(180deg, var(--bg2), var(--bg1))", border: "1px solid var(--warn)",
       boxShadow: "0 20px 60px rgba(0,0,0,.6), 0 0 40px rgba(255,179,64,.12)" } }, [
       el("div", { style: { height: "6px", background: "repeating-linear-gradient(45deg, var(--warn) 0 10px, #0a0e14 10px 20px)", opacity: .8 } }),
       el("div", { style: { padding: "16px 20px 16px" } }, [
-        el("div.mono", { style: { fontSize: "10px", letterSpacing: ".22em", color: "var(--warn)" }, text: "// RESONANCE COMPLIANCE · SECURE UPLINK" }),
+        kicker,
         el("div", { style: { marginTop: "6px" } }, [head, body, track, result]),
         el("div.row.between", { style: { alignItems: "center", marginTop: "14px" } }, [pct, closeBtn])
       ])
@@ -460,6 +488,8 @@ EN.flowView = (function () {
 
     function fail() {
       var ev = REPORT_FAILS[Math.floor(Math.random() * REPORT_FAILS.length)];
+      closeBtn.textContent = "DISMISS"; closeBtn.className = "btn sm primary"; closeBtn.style.color = "";
+      if (ev.hack) { hackFail(); return; }
       card.style.borderColor = "var(--danger)";
       fill.style.background = "linear-gradient(90deg, var(--danger), var(--ember))";
       fill.style.boxShadow = "0 0 12px var(--danger)";
@@ -467,7 +497,6 @@ EN.flowView = (function () {
       body.textContent = ev.body;
       result.textContent = "REPORT NOT DELIVERED · NO BOUNTY CREDITED"; result.style.color = "var(--danger)";
       pct.textContent = "FAILED"; pct.style.color = "var(--danger)";
-      closeBtn.textContent = "DISMISS"; closeBtn.className = "btn sm primary"; closeBtn.style.color = "";
       if (ev.swarm) {
         // the mysterious one: tracer pin-lights run the border at variable
         // speeds and the whole modal wobbles until dismissed (see theme.css).
@@ -476,6 +505,32 @@ EN.flowView = (function () {
       } else if (card.animate) {
         card.animate([{ transform: "translateX(0)" }, { transform: "translateX(-5px)" }, { transform: "translateX(4px)" }, { transform: "translateX(-2px)" }, { transform: "translateX(0)" }], { duration: 300 });
       }
+    }
+    // the Codebreaker branch: a one-shot glitch cascade tears the modal, then its
+    // text is rewritten as a message from whoever intercepted the tip. The card
+    // keeps a residual glitch (theme.css) and holds until DISMISS.
+    function hackFail() {
+      var m = HACK_MSGS[Math.floor(Math.random() * HACK_MSGS.length)];
+      card.style.borderColor = "var(--accent)";
+      fill.style.background = "linear-gradient(90deg, var(--accent), var(--flow))";
+      fill.style.boxShadow = "0 0 12px var(--accent)";
+      pct.textContent = "//"; pct.style.color = "var(--accent)";
+      head.style.color = "var(--accent)";
+      card.classList.add("uplink-hacked");
+      if (!reducedMotion() && card.animate) card.animate([
+        { transform: "translate(0,0)", clipPath: "inset(0 0 0 0)" },
+        { transform: "translate(-4px,2px) skewX(1deg)" },
+        { transform: "translate(5px,-2px) skewX(-1.2deg)", clipPath: "inset(0 0 55% 0)" },
+        { transform: "translate(-6px,1px)", clipPath: "inset(45% 0 0 0)" },
+        { transform: "translate(4px,0)", clipPath: "inset(0 0 0 0)" },
+        { transform: "translate(-2px,1px) skewX(.6deg)" }, { transform: "translate(2px,-1px)" },
+        { transform: "translate(0,0)", clipPath: "inset(0 0 0 0)" }
+      ], { duration: 900, easing: "ease-out" });
+      glitchText(kicker, "// UPLINK HIJACKED · SOURCE UNKNOWN", { dur: 520 });
+      glitchText(head, m.from, { dur: 640 });
+      result.textContent = ""; result.style.color = "var(--text3)";
+      setTimeout(function () { glitchText(body, m.text, { dur: 1050, stutter: true }); }, 260);
+      setTimeout(function () { glitchText(result, "// the report never left this deck.", { dur: 640 }); }, 780);
     }
   }
 

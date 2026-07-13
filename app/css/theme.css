@@ -612,9 +612,21 @@ html.light .pop-btn:hover{ background:rgba(0,0,0,.05) !important; }
 @keyframes uplinkTrace{ from{ offset-distance:0%; } to{ offset-distance:100%; } }
 @keyframes uplinkTraceErratic{ 0%{ offset-distance:0%; } 15%{ offset-distance:30%; } 22%{ offset-distance:31%; } 50%{ offset-distance:74%; } 60%{ offset-distance:70%; } 80%{ offset-distance:88%; } 100%{ offset-distance:100%; } }
 
+/* Report-modal "hijacked": the Codebreaker branch. flow.js fires a one-shot
+   glitch cascade (WAAPI) that tears the modal, then this residual chromatic
+   flicker + scanline persist while the text is rewritten as the interceptor's
+   message. Holds until DISMISS. */
+#flag-uplink .uplink-hacked{ animation:hackChroma 1.2s steps(2) infinite; }
+@keyframes hackChroma{ 0%,100%{ text-shadow:none; } 46%{ text-shadow:-1.4px 0 rgba(255,77,94,.55), 1.4px 0 rgba(0,229,255,.55); }
+  60%{ text-shadow:1.4px 0 rgba(255,77,94,.45), -1.4px 0 rgba(0,229,255,.45); } }
+#flag-uplink .uplink-hacked::after{ content:""; position:absolute; inset:0; z-index:4; pointer-events:none; mix-blend-mode:screen; opacity:.3;
+  background:repeating-linear-gradient(0deg, rgba(0,229,255,.05) 0 2px, transparent 2px 4px); animation:hackScan 2.6s steps(1) infinite; }
+@keyframes hackScan{ 0%,100%{ opacity:.22; } 33%{ opacity:.5; } 36%{ opacity:.12; } 66%{ opacity:.42; } 69%{ opacity:.15; } }
+
 @media (prefers-reduced-motion: reduce){
   #flag-uplink .uplink-swarmed{ animation:none !important; }
   #flag-uplink .uplink-beam{ animation:none !important; display:none; }
+  #flag-uplink .uplink-hacked, #flag-uplink .uplink-hacked::after{ animation:none !important; }
   .flowtab.attuned, .flowtab.attuned .panel{ animation:none !important; }
   .flowtab.immersive, .flowtab.immersive .panel, .flowtab.immersive .panel > .beam, .flowtab.immersive .flow-bg::before,
   .flowtab.immersive .flow-bg::after, .flowtab.immersive .flow-glitch, .flowtab.immersive .flow-glitch::before,
