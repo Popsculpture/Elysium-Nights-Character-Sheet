@@ -216,7 +216,7 @@ EN.faceView = (function () {
     var blocks = [];
     blocks.push(el("div", { style: { marginBottom: "14px" } }, [
       el("h1", { style: { fontSize: "22px", margin: "0 0 2px", letterSpacing: ".04em" },
-        html: "THE <span style='color:var(--accent)'>FACE</span> <span style='font-family:var(--disp);font-size:12px;color:var(--text3);letter-spacing:.18em'>// SOCIAL PRESSURE · FACTION STANDING</span>" }),
+        html: "MY <span style='color:var(--accent)'>SOCIALS</span> <span style='font-family:var(--disp);font-size:12px;color:var(--text3);letter-spacing:.18em'>// SOCIAL PRESSURE · FACTION STANDING</span>" }),
       el("p.help", { style: { margin: 0, maxWidth: "820px" }, text: "Some jobs end in gunfire. More end in a room: two chairs, two people working the same problem until one gives ground. This is the ledger that room leaves behind." })
     ]));
     blocks.push(profilesPanel());
