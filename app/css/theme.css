@@ -623,6 +623,100 @@ html.light .pop-btn:hover{ background:rgba(0,0,0,.05) !important; }
   background:repeating-linear-gradient(0deg, rgba(0,229,255,.05) 0 2px, transparent 2px 4px); animation:hackScan 2.6s steps(1) infinite; }
 @keyframes hackScan{ 0%,100%{ opacity:.22; } 33%{ opacity:.5; } 36%{ opacity:.12; } 66%{ opacity:.42; } 69%{ opacity:.15; } }
 
+/* ===== #GRID BATTLE DAMAGE ===================================================
+   The whole tab degrades with rig Durability. grid.js stamps data-dmg 0-4 on the
+   .gridtab wrapper and sets per-element delays (--pd panels, --cd chips, --bd
+   buttons) so the tells desync and only some elements act up at once.
+     1 worn     -> faint amber edge glow
+     2 heavy    -> red glow + panel flicker + chip lurch + button glitch + rare letter scramble (JS)
+     3 critical -> faster/redder + TV static + interlace + red corners + letters scramble more often
+     4 bricked  -> dead: grayscale, dimmed, flat black panels, dead static + scanlines
+   Reduced-motion kills every animation below; the bricked look is a filter, not
+   motion, so a dead device still reads as dead. */
+.gridtab{ position:relative; --gc:255,77,94; --gi:0; }
+.gridtab[data-dmg="1"]{ --gc:255,179,64; --gi:.14; }
+.gridtab[data-dmg="2"]{ --gc:255,77,94;  --gi:.20; }
+.gridtab[data-dmg="3"]{ --gc:255,77,94;  --gi:.30; }
+.gridtab[data-dmg]:not([data-dmg="0"]) > *{ position:relative; z-index:1; }   /* content above the static/scanline layers */
+
+/* panel edge glow: breathes faster and redder as damage climbs */
+.gridtab[data-dmg="1"] .panel{ animation:dmgGlow 3.4s ease-in-out infinite; animation-delay:var(--pd,0s); }
+.gridtab[data-dmg="2"] .panel{ animation:dmgGlow 2.4s ease-in-out infinite, dmgFlicker 7s steps(1) infinite; animation-delay:var(--pd,0s); }
+.gridtab[data-dmg="3"] .panel{ animation:dmgGlow 1.5s ease-in-out infinite, dmgFlicker 4.5s steps(1) infinite; animation-delay:var(--pd,0s); }
+@keyframes dmgGlow{
+  0%,100%{ box-shadow:0 0 0 rgba(var(--gc),0); border-color:var(--border); }
+  50%{ box-shadow:0 0 calc(16px + 10px * var(--gi,0)) rgba(var(--gc), var(--gi,0)); border-color:rgba(var(--gc),.55); }
+}
+/* some panels briefly flicker (video sag) */
+@keyframes dmgFlicker{
+  0%,90%,100%{ opacity:1; filter:none; }
+  91%{ opacity:.66; filter:brightness(1.5); } 92%{ opacity:1; } 94%{ opacity:.84; } 95%{ opacity:1; }
+}
+/* interlaced-video comb that rolls across a panel briefly (critical) */
+.gridtab[data-dmg="3"] .panel::after{
+  content:""; position:absolute; inset:0; z-index:2; pointer-events:none; mix-blend-mode:multiply; opacity:0;
+  background:repeating-linear-gradient(0deg, rgba(0,0,0,.32) 0 1px, transparent 1px 3px);
+  animation:dmgInterlace 3.6s steps(1) infinite; animation-delay:var(--pd,0s);
+}
+@keyframes dmgInterlace{
+  0%,66%,100%{ opacity:0; }
+  68%{ opacity:.55; background-position:0 0; } 70%{ opacity:.2; background-position:0 2px; }
+  72%{ opacity:.5; background-position:0 -1px; } 74%{ opacity:0; }
+}
+/* corner brackets go red and flicker at critical */
+.gridtab[data-dmg="3"] .corner{ border-color:var(--danger); animation:dmgCorner 2.4s steps(1) infinite; animation-delay:var(--pd,0s); }
+@keyframes dmgCorner{ 0%,80%,100%{ opacity:.5; } 82%{ opacity:1; } 84%{ opacity:.2; } 86%{ opacity:.9; } }
+
+/* chips lurch off-alignment, hold a beat, then snap back (staggered by --cd) */
+.gridtab[data-dmg="2"] .chip{ animation:dmgLurch 5.5s linear infinite; animation-delay:var(--cd,0s); }
+.gridtab[data-dmg="3"] .chip{ animation:dmgLurch 4s linear infinite; animation-delay:var(--cd,0s); }
+@keyframes dmgLurch{
+  0%,77%{ transform:translate(0,0) skewX(0); }
+  79%{ transform:translate(2px,-1px) skewX(-5deg); }   /* lurch out */
+  85%{ transform:translate(2px,-1px) skewX(-5deg); }   /* hold off-alignment */
+  86%{ transform:translate(-1px,1px) skewX(3deg); }
+  87%,100%{ transform:translate(0,0) skewX(0); }       /* snap back */
+}
+
+/* buttons glitch: a quick chromatic tear + jump (staggered by --bd) */
+.gridtab[data-dmg="2"] .btn, .gridtab[data-dmg="2"] .stepper button{ animation:dmgBtn 4.5s steps(1) infinite; animation-delay:var(--bd,0s); }
+.gridtab[data-dmg="3"] .btn, .gridtab[data-dmg="3"] .stepper button{ animation:dmgBtn 3s steps(1) infinite; animation-delay:var(--bd,0s); }
+@keyframes dmgBtn{
+  0%,88%,100%{ transform:translate(0,0); text-shadow:none; }
+  89%{ transform:translate(-2px,0); text-shadow:-1.6px 0 rgba(255,77,94,.7), 1.6px 0 rgba(0,229,255,.7); }
+  91%{ transform:translate(2px,0);  text-shadow:1.6px 0 rgba(255,77,94,.6), -1.6px 0 rgba(0,229,255,.6); }
+  92%{ transform:translate(0,0); text-shadow:none; }
+}
+
+/* TV static behind everything in the last durability quarter */
+.gridtab[data-dmg="3"]::before{
+  content:""; position:absolute; inset:0; z-index:0; pointer-events:none; mix-blend-mode:screen; opacity:.16;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='s'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23s)'/></svg>");
+  background-size:150px 150px; animation:dmgStatic .26s steps(3) infinite;
+}
+@keyframes dmgStatic{ 0%{ background-position:0 0; } 33%{ background-position:-42px 24px; } 66%{ background-position:34px -30px; } 100%{ background-position:-18px 12px; } }
+
+/* BRICKED: dead screen. Desaturate to black/gray/white, dim, flatten the panels,
+   kill the live tells, and leave a faint dead static under heavy rolling scanlines. */
+.gridtab[data-dmg="4"]{ filter:grayscale(1) brightness(.6) contrast(1.06); }
+.gridtab[data-dmg="4"] .panel{ background:#050506; border-color:#3b3b3b; box-shadow:none; animation:none; }
+.gridtab[data-dmg="4"] .panel::after{ animation:none; }
+.gridtab[data-dmg="4"] .corner{ border-color:#5a5a5a; opacity:.5; animation:none; }
+.gridtab[data-dmg="4"] .chip,
+.gridtab[data-dmg="4"] .btn,
+.gridtab[data-dmg="4"] .stepper button{ animation:none; transform:none; text-shadow:none; }
+.gridtab[data-dmg="4"]::before{
+  content:""; position:absolute; inset:0; z-index:0; pointer-events:none; opacity:.06;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='sb'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23sb)'/></svg>");
+  background-size:150px 150px; animation:dmgStatic .5s steps(2) infinite;
+}
+.gridtab[data-dmg="4"]::after{
+  content:""; position:absolute; inset:0; z-index:3; pointer-events:none; mix-blend-mode:multiply; opacity:.5;
+  background:repeating-linear-gradient(0deg, rgba(0,0,0,.5) 0 1px, transparent 1px 3px);
+  animation:dmgRoll 10s steps(20) infinite;   /* stepped: ~2 repaints/sec, not 60 - the tab is grayscale-filtered so each paint re-filters the whole subtree */
+}
+@keyframes dmgRoll{ 0%{ background-position:0 0; } 100%{ background-position:0 120px; } }
+
 @media (prefers-reduced-motion: reduce){
   #flag-uplink .uplink-swarmed{ animation:none !important; }
   #flag-uplink .uplink-beam{ animation:none !important; display:none; }
@@ -634,4 +728,7 @@ html.light .pop-btn:hover{ background:rgba(0,0,0,.05) !important; }
   .flowtab.immersive .res-panel::after, .flowtab.immersive .flow-overdraw::before,
   .flowtab.immersive .sustain-panel .panel-b::before, .flowtab.immersive .sustain-panel .panel-b::after{ animation:none !important; }
   .flowtab.immersive .flow-glitch{ display:none; }
+  .gridtab[data-dmg] .panel, .gridtab[data-dmg] .panel::after, .gridtab[data-dmg] .chip,
+  .gridtab[data-dmg] .btn, .gridtab[data-dmg] .stepper button, .gridtab[data-dmg] .corner,
+  .gridtab[data-dmg]::before, .gridtab[data-dmg]::after{ animation:none !important; }
 }

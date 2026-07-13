@@ -18,6 +18,17 @@ EN.gridView = (function () {
   var _runMode = "hot";
   var _deep = { edges: {}, snags: {}, kitsOff: {}, risk: 2, result: null, animating: false, animToken: 0, focusSrc: "skill" };
 
+  // Battle Damage: the whole #GRID tab visibly degrades as rig Durability drops.
+  // Device-level preference, matching the Flow immersive pattern (en_flow_*).
+  var DMG_KEY = "en_grid_damage_v1", DMG_INT_KEY = "en_grid_damage_intensity_v1";
+  var _dmgOn = true, _dmgIntensity = "auto";               // default: on, follow live Durability
+  try { _dmgOn = localStorage.getItem(DMG_KEY) !== "0"; } catch (e) {}
+  try { var _dv = localStorage.getItem(DMG_INT_KEY); if (_dv) _dmgIntensity = _dv; } catch (e) {}
+  function isDamage() { return _dmgOn; }
+  function setDamage(on) { _dmgOn = !!on; try { localStorage.setItem(DMG_KEY, on ? "1" : "0"); } catch (e) {} }
+  function getDmgIntensity() { return _dmgIntensity; }
+  function setDmgIntensity(v) { _dmgIntensity = String(v); try { localStorage.setItem(DMG_INT_KEY, _dmgIntensity); } catch (e) {} }
+
   /* ---- small shared bits ---- */
   function bar(cur, max, color) {
     var pct = max > 0 ? Math.max(0, Math.min(100, cur / max * 100)) : 0;
@@ -726,6 +737,79 @@ EN.gridView = (function () {
     ]);
   }
 
+  /* ===================== BATTLE-DAMAGE LAYER =====================
+     The tab degrades as rig Durability falls. Stage 0 pristine; 1-3 escalate
+     (glow, chip lurch, button glitch, panel flicker/interlace, TV static);
+     4 = bricked (dead, desaturated). Most tells are CSS driven off data-dmg;
+     only the rare letter-scramble needs JS. prefers-reduced-motion respected. */
+  function reducedMotion() {
+    try { return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; }
+  }
+  // Map current rig Durability to a 0-4 damage stage. Off / no rig -> 0.
+  // A pinned Intensity (1-4) previews that stage regardless of actual HP.
+  function damageStage(ch, d) {
+    if (!_dmgOn) return 0;
+    if (_dmgIntensity !== "auto") return Math.max(0, Math.min(4, parseInt(_dmgIntensity, 10) || 0));
+    var dk = d.grid && d.grid.deck;
+    if (!dk || !(dk.maxHp > 0)) return 0;                    // no rig -> nothing to damage
+    var cur = Math.max(0, dk.maxHp - (((ch.grid || {}).deckHpSpent) || 0));
+    if (cur <= 0) return 4;                                  // bricked
+    var pct = cur / dk.maxHp;
+    return pct <= 0.25 ? 3 : pct <= 0.5 ? 2 : pct <= 0.75 ? 1 : 0;   // last quarter = 3 (static)
+  }
+  // Deterministic 0..1 hash: staggered animation delays look random but stay
+  // stable across re-renders (no reshuffle jump on every store change).
+  function _h(i) { var x = Math.sin(i * 99.13) * 43758.5453; return x - Math.floor(x); }
+  function _stagger(list, prop, span) {
+    [].slice.call(list).forEach(function (n, i) { n.style.setProperty(prop, "-" + (_h(i + 1) * span).toFixed(2) + "s"); });
+  }
+  var GLITCH_CHARS = "!<>-_\\/[]{}=+*^?#01ABCDEF▓▒░";
+  var _glitchTimer = null;
+  function stopGlitch() { if (_glitchTimer) { clearTimeout(_glitchTimer); _glitchTimer = null; } }
+  // The rarest tell: occasionally scramble a few characters of one readout, then
+  // restore it. Leaf text only, never inputs, self-stops when the tab unmounts.
+  function startGlitch(root, stage) {
+    var pool = [].slice.call(root.querySelectorAll(".mono, .panel-h h3")).filter(function (n) {
+      if (n.children.length) return false;                  // leaf text nodes only
+      if (n.closest("input, textarea, .stepper")) return false;
+      var t = n.textContent.trim();
+      return t.length >= 2 && t.length <= 26;
+    });
+    if (!pool.length) return;
+    var base = stage >= 3 ? 2600 : 4400;                     // heavier stage scrambles a touch more often
+    function scramble(node) {
+      var orig = node.textContent, chars = orig.split(""), n = chars.length, frame = 0;
+      (function step() {
+        if (!node.isConnected) return;                       // detached mid-scramble: drop it
+        if (frame >= 4) { node.textContent = orig; return; } // always restore the true text
+        var out = chars.slice(), picks = Math.min(3, Math.max(1, Math.floor(n * 0.25)));
+        for (var k = 0; k < picks; k++) {
+          var idx = Math.floor(Math.random() * n);
+          if (out[idx] !== " ") out[idx] = GLITCH_CHARS[Math.floor(Math.random() * GLITCH_CHARS.length)];
+        }
+        node.textContent = out.join(""); frame++;
+        setTimeout(step, 45);
+      })();
+    }
+    function tick() {
+      if (!root.isConnected) { stopGlitch(); return; }       // left the tab / re-rendered
+      var node = pool[Math.floor(Math.random() * pool.length)];
+      if (node && node.isConnected) scramble(node);
+      _glitchTimer = setTimeout(tick, base + Math.random() * base * 0.8);
+    }
+    _glitchTimer = setTimeout(tick, 900 + Math.random() * 1400);
+  }
+  // Wire the damage stage onto the mounted tab: desync the CSS tells so only some
+  // chips/buttons/panels act up at once, then arm the letter-scramble driver.
+  function applyDamage(root, stage) {
+    stopGlitch();
+    if (stage <= 0) return;
+    _stagger(root.querySelectorAll(".panel"), "--pd", 6);
+    _stagger(root.querySelectorAll(".chip"), "--cd", 5);
+    _stagger(root.querySelectorAll(".btn, .stepper button"), "--bd", 4);
+    if (!reducedMotion() && stage >= 2 && stage < 4) startGlitch(root, stage);   // letters: the rarest tell, heavy/critical only (dead when bricked)
+  }
+
   /* ============================ RENDER ============================ */
   function render(mount) {
     var ch = store.active();
@@ -753,8 +837,13 @@ EN.gridView = (function () {
     if (!deep) blocks.push(el("div", { style: { marginTop: "14px" } }, [targetPanel(ch, d, G)]));
     blocks.push(el("div", { style: { marginTop: "14px" } }, [referencePanel(ch, d, G)]));
 
-    mount.appendChild(el("div", null, blocks));
+    // Wrap in .gridtab and stamp the live Durability damage stage; the CSS layer
+    // and the JS glitch driver read it from here.
+    var dmg = damageStage(ch, d);
+    var root = el("div.gridtab", { dataset: { dmg: String(dmg) } }, blocks);
+    mount.appendChild(root);
+    applyDamage(root, dmg);
   }
 
-  return { render: render };
+  return { render: render, isDamage: isDamage, setDamage: setDamage, getDmgIntensity: getDmgIntensity, setDmgIntensity: setDmgIntensity };
 })();

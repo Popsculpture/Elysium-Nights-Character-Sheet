@@ -438,6 +438,32 @@ EN.settings = (function () {
     return kids;
   }
 
+  function gridSection() {
+    var gv = EN.gridView;
+    var on = gv.isDamage();
+    var intensity = gv.getDmgIntensity();
+    var kids = [
+      el("div.set-sectitle", { text: "// #GRID" }),
+      el("label.set-label", { text: "Battle Damage" }),
+      el("p.set-hint", { text: on
+        ? "The #GRID tab physically degrades as your rig's Durability drops: pulsing glow, jittering chips, glitching buttons and letters, TV static in the last quarter, and a dead black-and-white screen when bricked. Reduced-motion is respected automatically."
+        : "Let the #GRID tab take visible battle damage as your rig loses Durability, all the way to a bricked screen." }),
+      el("button.btn.sm" + (on ? ".primary" : ""), {
+        title: "Toggle the #GRID battle-damage layer", onclick: function () { gv.setDamage(!on); EN.app.render(); rebuild(); }
+      }, on ? "◈ BATTLE DAMAGE: ON" : "◈ BATTLE DAMAGE: OFF")
+    ];
+    if (on) {
+      kids.push(el("label.set-label", { style: { marginTop: "14px" }, text: "Intensity" }));
+      kids.push(el("p.set-hint", { text: "Auto follows your rig's live Durability. Pick 1-4 to preview a damage stage (4 is bricked)." }));
+      kids.push(el("div.row.wrap", { style: { gap: "6px" } },
+        [{ k: "auto", label: "Auto" }, { k: "1", label: "1" }, { k: "2", label: "2" }, { k: "3", label: "3" }, { k: "4", label: "4" }].map(function (o) {
+          var sel = String(intensity) === o.k;
+          return el("button.btn.sm" + (sel ? ".primary" : ""), { onclick: function () { gv.setDmgIntensity(o.k); EN.app.render(); rebuild(); } }, o.label);
+        })));
+    }
+    return kids;
+  }
+
   function themeSection() {
     var kids = [
       el("div.set-sectitle", { text: "// CHANGE SHEET APPEARANCE" }),
@@ -460,6 +486,7 @@ EN.settings = (function () {
     var sections = [];
     if (EN.app.activeTab() === "combat" && EN.combatView) sections.push(freelancerLayoutSection());
     if (EN.app.activeTab() === "flow" && EN.flowView && EN.flowView.isImmersive) sections.push(flowSection());
+    if (EN.app.activeTab() === "grid" && EN.gridView && EN.gridView.isDamage) sections.push(gridSection());
     sections.push(themeSection());
     sections.forEach(function (kids, i) {
       if (i > 0) Object.assign(kids[0].style, { marginTop: "22px", paddingTop: "18px", borderTop: "1px solid var(--border)" });
