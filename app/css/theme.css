@@ -758,13 +758,14 @@ html.light .pop-btn:hover{ background:rgba(0,0,0,.05) !important; }
    Reusable message-sent motion (EN.ui.playFiled), inline SVG + one ~10.6s CSS
    timeline. Every element runs the same 10.6s duration and gates itself with
    keyframe percentages that map to the 7 phases, so the whole thing stays in
-   sync and replays by re-adding `.play`. Purple #7D3EA1 line art, gray motion
-   streaks, flat and friendly. Reduced-motion jumps to the drawn ring + check. */
+   sync and replays by re-adding `.play`. Gold #C9A227 line art (reads as an
+   official filing on the paper card), gray motion streaks, flat and friendly.
+   Reduced-motion jumps to the drawn ring + check. */
 .fx-svg{ display:block; width:100%; height:auto; }
 .fx-svg path, .fx-svg line, .fx-svg circle, .fx-svg rect{ fill:none; stroke-linecap:round; stroke-linejoin:round; }
-.fx-svg .fx-env-open, .fx-svg .fx-env{ stroke:#7D3EA1; stroke-width:11; }
-.fx-svg .fx-ring, .fx-svg .fx-check{ stroke:#7D3EA1; stroke-width:11; }
-.fx-svg .fx-trail{ stroke:#7D3EA1; stroke-width:9; }
+.fx-svg .fx-env-open, .fx-svg .fx-env{ stroke:#C9A227; stroke-width:11; }
+.fx-svg .fx-ring, .fx-svg .fx-check{ stroke:#C9A227; stroke-width:11; }
+.fx-svg .fx-trail{ stroke:#C9A227; stroke-width:9; }
 .fx-svg .fx-streak{ stroke:#AFAFAF; stroke-width:7; }
 .fx-svg .fx-dot{ fill:#AFAFAF; stroke:none; }
 .fx-svg .fx-env, .fx-svg .fx-ring, .fx-svg .fx-check, .fx-svg .fx-streak{ transform-box:fill-box; transform-origin:center; }
@@ -833,10 +834,10 @@ html.light .pop-btn:hover{ background:rgba(0,0,0,.05) !important; }
 @keyframes filedIn{ from{ opacity:0; } to{ opacity:1; } }
 @keyframes filedOut{ from{ opacity:1; } to{ opacity:0; } }
 .filed-card{ width:min(360px,84vw); background:#f6f3ec; border-radius:16px; padding:26px 26px 20px; text-align:center;
-  box-shadow:0 24px 80px rgba(0,0,0,.55); border:1px solid rgba(125,62,161,.25); }
+  box-shadow:0 24px 80px rgba(0,0,0,.55); border:1px solid rgba(201,162,39,.3); }
 .filed-svgwrap{ width:72%; margin:0 auto 8px; }
 .filed-cap{ font-family:var(--disp); font-weight:700; letter-spacing:.14em; font-size:15px; color:#2a2140; }
-.filed-card.filed-done .filed-cap{ color:#5b2c86; }
+.filed-card.filed-done .filed-cap{ color:#8a6a12; }
 .filed-sub{ font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; color:#7a728c; margin-top:5px; }
 .filed-skip{ font-family:var(--mono); font-size:9.5px; letter-spacing:.14em; color:#b3a9c2; margin-top:12px; text-transform:uppercase; }
 
