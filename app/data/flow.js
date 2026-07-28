@@ -77,10 +77,11 @@ EN.flow = {
       ] },
     { key: "electromagnetic", name: "Electromagnetic", unlock: 1, focus: "Light and Currents", damage: "Electric / Energy",
       resolution: "attack",
-      base: "Magnetize a metal object (a holder makes a Flow Save DC, Body or Agility, to avoid being disarmed), power a dead electronic device, or bend light to alter an object's appearance.",
+      base: "Choose one: Magnetize (a target holding or wearing metal makes a Flow Save DC, Body or Agility, or the object tears free and loose metal leaps to your hand); Live Current (light a spark, deal 1 Electric damage to a target you touch or see, or push power into a dead device or rip it out of a live one; you can break or feed a machine, never command it); Flare (brighten a dark space to daylight, or lance a beam a target must make a Flow Save DC, Agility, to avoid or be dazzled, taking Snag on their next attack roll).",
       empowered: [
-        { name: "Optic Scramble", sustain: true, text: "Disable drones, cameras, and cybernetic eyes in the area. Organic targets make a Flow Save DC (Body) or are Blinded." },
-        { name: "Light Bend", sustain: false, text: "Wrap a target in bent light, granting Invisible. Ends immediately if the target attacks or forces a saving throw." }
+        { name: "Optic Scramble", sustain: true, text: "A blaze of light and current overloads everything watching. Cameras, drone eyes, and cybernetic optics in the area go dark for the duration. Organic targets make a Flow Save DC (Body) or are Blinded." },
+        { name: "Overload", sustain: false, text: "Drive raw current through a target. They make a Flow Save DC (Body) or are Staggered until the end of their next turn. A target in metal armor or running cyberware rolls this save with Snag; the metal carries the charge." },
+        { name: "Magnetic Seize", sustain: true, text: "Twist the local field until metal turns traitor. Each target in the area makes a Flow Save DC (Body) or has any metal weapon wrenched from their grip, and cannot draw, aim, or fire a metal weapon while the effect lasts." }
       ] },
     { key: "visceral", name: "Visceral", unlock: 1, focus: "Biology and Decay", damage: "Toxic / Entropy",
       resolution: "attack",
@@ -104,7 +105,8 @@ EN.flow = {
       base: "Project thoughts telepathically to a visible target, induce a minor sensory hallucination, or alter a single short-term memory (an unwilling target makes a Flow Save DC, Wits, to resist).",
       empowered: [
         { name: "Neural Override", sustain: false, text: "Target makes a Flow Save DC (Wits) or you dictate their movement and Action on their next turn. You cannot force direct lethal self-harm." },
-        { name: "Sensory Collapse", sustain: true, text: "Target makes a Flow Save DC (Wits) or suffers Frightened or Charmed (your choice) for the duration." }
+        { name: "Sensory Collapse", sustain: true, text: "Target makes a Flow Save DC (Wits) or suffers Frightened or Charmed (your choice) for the duration." },
+        { name: "Blind Spot", sustain: false, text: "A target you choose slips beneath notice, gaining the Invisible condition. Ends immediately if that target makes an attack or forces a saving throw." }
       ] },
     { key: "temporal", name: "Temporal", unlock: 5, focus: "Chronological Flow", damage: "Entropy",
       resolution: "attack", noSustain: true,
@@ -124,7 +126,8 @@ EN.flow = {
     { resonance: "Thermal", effect: "Structural Melt", allowed: true, notes: "-2 Defense persists with sustain." },
     { resonance: "Thermal", effect: "Thermal Fog", allowed: true, notes: "Area persists with sustain." },
     { resonance: "Electromagnetic", effect: "Optic Scramble", allowed: true, notes: "Standard sustain rules." },
-    { resonance: "Electromagnetic", effect: "Light Bend", allowed: false, notes: "Ends on the target's attack or save-forcing action." },
+    { resonance: "Electromagnetic", effect: "Overload", allowed: false, notes: "Staggered resolves at the end of the target's next turn." },
+    { resonance: "Electromagnetic", effect: "Magnetic Seize", allowed: true, notes: "Area persists; target saves at the start of each turn to shake free." },
     { resonance: "Visceral", effect: "Adrenal Overclock", allowed: false, notes: "Resolves at the end of the target's next turn." },
     { resonance: "Visceral", effect: "Forceful Sedation", allowed: false, notes: "Resolves on damage or being woken." },
     { resonance: "Visceral", effect: "Cellular Crash", allowed: false, notes: "Resolves at the end of the target's next turn." },
@@ -133,6 +136,7 @@ EN.flow = {
     { resonance: "Spatial", effect: "Void Pocket", allowed: true, notes: "Targets save each round in the zone." },
     { resonance: "Cognitive", effect: "Neural Override", allowed: false, notes: "One turn of forced action only." },
     { resonance: "Cognitive", effect: "Sensory Collapse", allowed: true, notes: "Lockdown effect; target saves at the start of each turn." },
+    { resonance: "Cognitive", effect: "Blind Spot", allowed: false, notes: "Ends on the target's attack or save-forcing action." },
     { resonance: "Temporal", effect: "Chronal Acceleration", allowed: false, notes: "Resolves on the target's next turn." },
     { resonance: "Temporal", effect: "Stasis Field", allowed: false, notes: "Always Instant per Stability Factor." }
   ],
@@ -192,7 +196,7 @@ EN.flow = {
     { name: "Arc Lightning", resonance: "electromagnetic", intent: "hybrid", deliveryBand: "wide", deliveryOption: "Line (6 spaces)", force: "empowered", duration: "instant", precision: false, empoweredEffect: "Optic Scramble" },
     { name: "Dimensional Tear", resonance: "spatial", intent: "damage", deliveryBand: "directed", deliveryOption: "Remote", force: "empowered", duration: "instant", precision: false },
     { name: "Gravity Anchor", resonance: "kinetic", intent: "effect", deliveryBand: "focused", deliveryOption: "Cube (2 spaces)", force: "empowered", duration: "instant", precision: false, empoweredEffect: "Gravity Pin" },
-    { name: "Phantom Shroud", resonance: "electromagnetic", intent: "effect", deliveryBand: "directed", deliveryOption: "Remote", force: "empowered", duration: "instant", precision: false, empoweredEffect: "Light Bend" },
+    { name: "Phantom Shroud", resonance: "cognitive", intent: "effect", deliveryBand: "directed", deliveryOption: "Remote", force: "empowered", duration: "instant", precision: false, empoweredEffect: "Blind Spot" },
     { name: "Adrenaline Overclock", resonance: "visceral", intent: "effect", deliveryBand: "directed", deliveryOption: "Remote", force: "empowered", duration: "instant", precision: false, empoweredEffect: "Adrenal Overclock" },
     { name: "Thermal Breach", resonance: "thermal", intent: "effect", deliveryBand: "directed", deliveryOption: "Touch", force: "empowered", duration: "instant", precision: false, empoweredEffect: "Structural Melt" },
     { name: "Fold Space", resonance: "spatial", intent: "effect", deliveryBand: "directed", deliveryOption: "Remote", force: "empowered", duration: "instant", precision: false, empoweredEffect: "Spatial Displacement" }
