@@ -736,9 +736,10 @@ EN.engine = (function () {
     if (hasLB || hasLD) steps.push({ label: (hasLB ? "Load-Bearing" : "Load Distributor") + " (" + armor.name + ")", value: 2 });
     // Powered frames: two steps while powered (training left to the table; a lapsed lease grants nothing)
     if (armor && !lapsed && hasTrait(armor, "Powered")) steps.push({ label: "Powered frame (" + armor.name + ")", value: 4 });
-    // Size-larger effects read as one step
-    if ((linFeats || []).indexOf("Synthetic Musculature") !== -1) steps.push({ label: "Synthetic Musculature (one Size larger)", value: 2 });
-    if (activeTalents(ch).some(function (t) { return t.talent.name === "Heavy Payload"; })) steps.push({ label: "Heavy Payload (one Size larger)", value: 2 });
+    // Lineage features that raise the Threshold outright ("+2 Threshold, and one
+    // Size larger for grappling"). Both are lineage Additive Features, never Talents.
+    if ((linFeats || []).indexOf("Synthetic Musculature") !== -1) steps.push({ label: "Synthetic Musculature (+2 Threshold)", value: 2 });
+    if ((linFeats || []).indexOf("Heavy Payload") !== -1) steps.push({ label: "Heavy Payload (+2 Threshold)", value: 2 });
     var threshold = base; steps.forEach(function (s) { threshold += s.value; });
     var bands = { light: threshold - 3, standard: threshold, heavy: threshold + 3 };
     var current = 0, items = [];
