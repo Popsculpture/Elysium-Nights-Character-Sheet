@@ -648,7 +648,7 @@ EN.inventoryView = (function () {
         style: { fontSize: "16px", color: "var(--text)" },
         html: "LOAD " + enc.current + " <span style='font-size:11px;color:var(--text3)'>/ " + encBands.standard + "</span>" }),
       el("span.chip", { title: "Your Loadout tier, calculated from what you carry", style: { fontSize: "9px", color: tierColor, borderColor: tierColor } },
-        enc.tier === "over" ? "OVER HEAVY" : String(enc.tier || "").toUpperCase() + " LOADOUT"),
+        String(enc.tier || "").toUpperCase() + " LOADOUT"),
       el("span.chip", { title: (encStates[enc.state] || {}).effect || "", style: { fontSize: "9px", color: stateColor, borderColor: stateColor } },
         String((encStates[enc.state] || {}).name || enc.state || "").toUpperCase()),
       el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "Calculated from on-person gear; hauls live on the Freelancer tab's Loadout sub-tab." })

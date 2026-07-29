@@ -621,11 +621,12 @@ EN.engine = (function () {
     var traits = it.traits || [];
     function has(t) { return traits.indexOf(t) !== -1; }
     if (it.kind === "armor") {
-      var ag = it.group || "";
-      var base = /Light/i.test(ag) ? 1 : /Heavy|Exoframe/i.test(ag) ? 3 : 2;   // medium plate and mystech shells
-      // Worn armor supports its own weight; the same suit carried, packed, or
-      // freshly looted (not on your body) is dead weight and counts in full.
-      return (opts && opts.worn) ? Math.max(0, base - 2) : base;
+      // "Armor counts whether worn or packed: 1 for Light, 2 for Medium, 3 for
+      // Heavy." No discount for wearing it. Read the weight class from `type`,
+      // which states it even for Mystech ("Heavy Mystech Armor"); `group` alone
+      // says only "Mystech Armor" and would silently score every one of them 2.
+      var ag = (it.type || "") + " " + (it.group || "");
+      return /Light/i.test(ag) ? 1 : /Heavy|Exoframe/i.test(ag) ? 3 : 2;
     }
     if (it.kind === "shield") return has("Heavy") ? 3 : 2;
     if (it.kind === "focus") return 1;
@@ -761,15 +762,23 @@ EN.engine = (function () {
         items.push({ name: e.name, load: l, qty: e.qty, total: total, rackedIn: rackedGear ? rackedGear.name : null });
       }
     });
-    // the Loadout tier is not declared; it is whatever your carried Load says it is
-    var tier = current <= bands.light ? "light" : current <= bands.standard ? "standard" : current <= bands.heavy ? "heavy" : "over";
+    // "When a job starts, each Freelancer declares one Loadout... If nobody
+    // declares, assume Standard." The declared tier sets the Load Budget; it is not
+    // inferred from what you happen to be carrying.
+    var tier = (ch.loadout === "light" || ch.loadout === "heavy") ? ch.loadout : "standard";
+    var budget = bands[tier];
     var haul = (ch.haul === "lift" || ch.haul === "drag") ? ch.haul : "none";
+    // Encumbered: "carrying more Load than your Load Budget, or hauling something
+    // that is clearly heavy but still plausible." Overloaded is defined by the haul
+    // ("something that clearly belongs on a dolly, cart, vehicle, forklift, or
+    // exoframe"), not by a numeric band.
     var state = "unencumbered";
+    if (current > budget) state = "encumbered";
     if (tier === "heavy") state = "encumbered";           // a Heavy loadout is Encumbered for the run
-    if (tier === "over") state = "overloaded";            // past any plausible loadout
     if (haul === "lift") state = (state === "unencumbered") ? "encumbered" : "overloaded";
     if (haul === "drag") state = "overloaded";
-    return { base: base, steps: steps, threshold: threshold, bands: bands, tier: tier,
+    return { base: base, steps: steps, threshold: threshold, bands: bands, tier: tier, budget: budget,
+             overBudget: Math.max(0, current - budget),
              current: current, items: items, haul: haul, state: state };
   }
 
@@ -959,14 +968,30 @@ EN.engine = (function () {
 
     /* Chrome Tax, Total Static from installed cyberware drives a Static Threshold,
        cutting max Resilience Dice and (for Shapers) max Reservoir by the threshold index. */
+    var installed = (ch.cyberware || []).filter(function (cw) { return cw && typeof cw === "object" && typeof cw.sp === "number"; });
     var staticTotal = 0;
-    (ch.cyberware || []).forEach(function (cw) { if (cw && typeof cw === "object" && typeof cw.sp === "number") staticTotal += cw.sp; });
+    installed.forEach(function (cw) { staticTotal += cw.sp; });
+    // Resonance Crown: reduces the SP of up to 4 separate OTHER pieces by 1 each
+    // (minimum 1 per piece) for Threshold purposes. It cannot harmonize itself, the
+    // Disruption Lattice, or the Convergence Engine. The rulebook lets the player
+    // pick which pieces benefit; taking the 4 highest-SP eligible pieces is always
+    // at least as good as any other choice, so it is applied automatically.
+    var CROWN_EXEMPT = { resonanceCrown: 1, disruptionLattice: 1, convergenceEngine: 1 };
+    var crownHarmonized = [];
+    if (installed.some(function (cw) { return cw.key === "resonanceCrown"; })) {
+      crownHarmonized = installed
+        .filter(function (cw) { return !CROWN_EXEMPT[cw.key] && cw.sp > 1; })
+        .sort(function (a, b) { return b.sp - a.sp; })
+        .slice(0, 4);
+      staticTotal -= crownHarmonized.length;      // 1 SP off each, min 1 guaranteed by the sp > 1 filter
+    }
     var CT = (EN.cyberware && EN.cyberware.thresholds) || [];
     var ctTier = null;
     for (var ci = 0; ci < CT.length; ci++) { if (staticTotal >= CT[ci].min && staticTotal <= CT[ci].max) { ctTier = CT[ci]; break; } }
     var ctIndex = ctTier ? ctTier.index : 0;
     var chromeTax = {
       total: staticTotal, index: ctIndex,
+      crownHarmonized: crownHarmonized.map(function (cw) { return cw.name || cw.key; }),
       name: ctTier ? ctTier.name : "Safe Capacity",
       resDiePenalty: ctIndex, fpPenalty: ctIndex,
       effects: ctTier ? ctTier.effects : [],

@@ -691,16 +691,23 @@ EN.combatView = (function () {
   }
 
   /* ---------- rests ---------- */
+  function hasCyber(c, key) {
+    return ((c && c.cyberware) || []).some(function (cw) { return cw && typeof cw === "object" && cw.key === key; });
+  }
   function shortRest(ch, d) {
     store.update(function (c) {
       var s = state(c, d);
-      if (s.rd <= 0) { c.resilience.spent = Math.max(0, d.resilienceMax - 1); }  // regain 1 die if empty
+      // Static Threshold 5 ("Dead Battery") removes the free die you would otherwise
+      // get for starting a Short Rest with none left.
+      var deadBattery = !!(d.chromeTax && d.chromeTax.deadBattery);
+      if (s.rd <= 0 && !deadBattery) { c.resilience.spent = Math.max(0, d.resilienceMax - 1); }
       // refresh class resource pool
       if (d.resource) c.resources.current[d.resource.name] = d.resource.max;
-      // Shaper: regain FP equal to Flow modifier (min 1)
+      // Shaper: regain FP equal to Flow modifier (min 1), plus 1 from a Resonance Crown
       if (d.flow) {
         var cur = (c.flow.current != null) ? c.flow.current : d.flow.max;
-        c.flow.current = Math.min(d.flow.max, cur + Math.max(1, d.flow.attack));
+        var crownFp = hasCyber(c, "resonanceCrown") ? 1 : 0;
+        c.flow.current = Math.min(d.flow.max, cur + Math.max(1, d.flow.attack) + crownFp);
       }
       // limited-use features keyed to Short Rest / Encounter / Scene refresh now
       if (c.featureUses) Object.keys(c.featureUses).forEach(function (k) {
@@ -710,11 +717,15 @@ EN.combatView = (function () {
     toast("Short Rest taken; resource refreshed. Spend Resilience Dice to heal.");
   }
   function longRest(ch, d) {
-    var leaseDue = [], severeFatigue = 0;
+    var leaseDue = [], severeFatigue = 0, noNaturalHealing = false;
     store.update(function (c) {
       var s = state(c, d);
       var bodMod = d.attributes.BOD.mod;
-      var nw = eng.clamp(s.wounds + Math.max(1, bodMod), 0, s.woundsMax);   // recover Wounds = Body mod (min 1)
+      // Static Threshold 4 ("Maintenance Required") stops natural Wound recovery on a
+      // Long Rest; Wounds then need medical or engineering treatment instead.
+      var noWoundRecovery = !!(d.chromeTax && d.chromeTax.noWoundRecovery);
+      if (noWoundRecovery) noNaturalHealing = true;
+      var nw = noWoundRecovery ? s.wounds : eng.clamp(s.wounds + Math.max(1, bodMod), 0, s.woundsMax);
       c.wounds.current = nw;
       if (nw > 0) { c.stable = false; c.deathSaves = { s: 0, f: 0 }; }
       c.vitality.current = Math.max(0, (d.vitalityMax || 0) - (s.woundsMax - nw));  // full Vitality (wound-adjusted)
@@ -740,6 +751,7 @@ EN.combatView = (function () {
       if (EN.inventoryView && EN.inventoryView.leaseTick) leaseDue = EN.inventoryView.leaseTick(c);
     });
     if (leaseDue.length) toast("Long Rest complete. LEASE PAYMENT DUE: " + leaseDue.join(", ") + ". It grants nothing until you pay (Inventory > Stash).");
+    else if (noNaturalHealing) toast("Long Rest complete. Static Threshold 4: no natural Wound recovery. Wounds need medical or engineering treatment.");
     else if (severeFatigue) toast("Long Rest complete. Fatigue " + severeFatigue + " is Severe: it needs medical, mystical, or technological treatment, not sleep.");
     else toast("Long Rest complete, restored and refreshed.");
   }
@@ -2550,22 +2562,23 @@ EN.combatView = (function () {
           el("span.mono", { title: thTip, style: { fontSize: "18px", color: "var(--text)" },
             html: "LOAD " + enc.current + " <span style='font-size:12px;color:var(--text3)'>/ " + bands.standard + "</span>" }),
           el("span.chip", { title: tierDef ? tierDef.effect : "Past any plausible loadout; this belongs on a cart, dolly, vehicle, or exoframe.",
-            style: { fontSize: "9px", color: tierColor, borderColor: tierColor } }, enc.tier === "over" ? "OVER HEAVY" : (tierDef ? tierDef.name : enc.tier).toUpperCase() + " LOADOUT"),
+            style: { fontSize: "9px", color: tierColor, borderColor: tierColor } }, (tierDef ? tierDef.name : enc.tier).toUpperCase() + " LOADOUT"),
           el("span.chip", { title: stateDef.effect || "", style: { fontSize: "9px", color: stateColor, borderColor: stateColor } }, (stateDef.name || enc.state || "").toUpperCase()),
           enc.speedDelta ? el("span.mono", { style: { fontSize: "11px", color: stateColor }, text: "SPD " + enc.speedDelta }) : null,
           enc.haul !== "none" ? el("span.chip", { title: "Active Haul; expand to change it", style: { fontSize: "9px", color: "var(--warn)", borderColor: "var(--warn)" } }, "HAULING") : null
         ]),
-        // the band scale your carried Load moves through (calculated, not chosen)
+        // the Loadout you declared for the run; it sets the Load Budget
         loadOpen ? el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "7px" } },
           [el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em", minWidth: "58px" }, text: "LOADOUT" })].concat(
             (EE.loadouts || []).map(function (t) {
               var on = enc.tier === t.key;
               var cap = enc.threshold + t.delta;
-              return el("span.chip", { title: t.effect,
-                style: { fontSize: "9px", color: on ? tierColor : "var(--text4)", borderColor: on ? tierColor : "var(--border)" } },
+              return el("span.chip", { title: t.effect + " (click to declare)",
+                style: { fontSize: "9px", cursor: "pointer", color: on ? tierColor : "var(--text4)", borderColor: on ? tierColor : "var(--border)" },
+                onclick: function () { store.update(function (c) { c.loadout = t.key; }); } },
                 (on ? "● " : "") + t.name.toUpperCase() + " ≤ " + cap);
             }),
-            [el("span.help", { style: { margin: 0, fontSize: "10px", color: "var(--text4)" }, text: "calculated from what you carry" })])) : null,
+            [el("span.help", { style: { margin: 0, fontSize: "10px", color: "var(--text4)" }, text: "declared at the start of the job" })])) : null,
         loadOpen ? el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "6px" } }, [
           el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em", minWidth: "58px" }, text: "HAUL" }),
           el("select", { style: { fontSize: "11px", width: "auto" }, title: "A Haul (body, crate, machine) does not count as carried Load; it sets your state directly.",

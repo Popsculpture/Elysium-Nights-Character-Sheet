@@ -181,7 +181,9 @@ EN.store = (function () {
     if (!ch.slotInert || typeof ch.slotInert !== "object") ch.slotInert = {};
     Object.keys(ch.slotInert).forEach(function (k) { if (ch.slotInert[k] !== true) delete ch.slotInert[k]; });
     if (typeof ch.nexus !== "number") ch.nexus = 0;                          // Nexus wallet (◎)
-    delete ch.loadout;                                                       // the Loadout tier is derived from carried Load, never declared
+    // The Loadout is declared at the start of a job and sets the Load Budget;
+    // "If nobody declares, assume Standard."
+    if (["light", "standard", "heavy"].indexOf(ch.loadout) === -1) ch.loadout = "standard";
     if (["none", "lift", "drag"].indexOf(ch.haul) === -1) ch.haul = "none";  // active Haul
     if (ch.identity && ch.identity.notes === undefined) ch.identity.notes = "";  // freeform notes, shared with the #PRINT Identity step
     // First/Last Name split: a legacy single ch.name seeds them once (best

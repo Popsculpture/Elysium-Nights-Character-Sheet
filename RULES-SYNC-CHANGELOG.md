@@ -182,6 +182,81 @@ Flow formulas, the 19 damage types and 39 of 41 conditions are also in sync.
   the doc defines it (a fresh Stability Check for the surviving Links at a DC that
   counts the feedback), not as an automatic bricking.
 
+### A5. Cyberware Static and the Load / Loadout system (rest of step 3)
+- **Files:** `app/js/engine.js`, `app/js/combat.js`, `app/js/store.js`, `app/js/inventory.js`
+
+**A5a. Resonance Crown now reduces Total Static.**
+- **Rule:** Part 3, line 4300 - "reduces the SP cost of up to **4 separate pieces**
+  of your other installed cyberware by **1 SP each** (minimum 1 SP per piece). This
+  reduction applies to your Total Static calculation."
+- **Was:** Total Static was a raw sum; the Crown's headline effect did nothing.
+- **Now:** applied in `derive()`, skipping the exclusions the item itself names
+  (itself, the Disruption Lattice, the Convergence Engine) and never taking a piece
+  below 1 SP. Since the player would always pick their four most expensive eligible
+  implants, the app selects those automatically rather than adding a picker.
+- **Verified:** four 3-SP implants plus a Crown went from 12 SP (Threshold 5, "The
+  Ghost Fades") to 10 SP (Threshold 4); 1-SP pieces are never reduced.
+- **Also:** the Crown's "+1 FP at the end of a Short Rest" now applies.
+
+**A5b. Static Threshold 4 and 5 riders now do something.**
+- **Rule:** Part 3, line 4000 - Threshold 4 "**Maintenance Required:** You no longer
+  naturally recover Wounds at the end of a Long Rest." Line 4003 - Threshold 5
+  "**Dead Battery:** You no longer benefit from the rule that grants 1 free
+  Resilience Die when starting a Short Rest with 0 dice."
+- **Was:** `derive()` computed `noWoundRecovery` and `deadBattery` and nothing ever
+  read them (confirmed by grep: the only occurrence was the assignment).
+- **Now:** a Long Rest at Threshold 4+ leaves Wounds untouched and says why; a Short
+  Rest at Threshold 5+ grants no free die.
+
+**A5c. Armor Load counts whether worn or packed.**
+- **Rule:** Part 3, line 4435 - "Armor counts whether worn or packed: **1** for
+  Light, **2** for Medium, **3** for Heavy."
+- **Was:** worn armor was discounted by 2, so worn Heavy armor cost 1 and worn Light
+  armor cost 0.
+- **Now:** full value in both states.
+
+**A5d. Mystech armor was reading the wrong field for its weight class.**
+- **Was:** the class came from `group`, which for all four Mystech suits is just
+  "Mystech Armor" - no Light/Heavy match, so every one fell through to Medium (2).
+- **Now:** read from `type`, which states the real class.
+- **Verified:** Veilskin (Light Mystech) 1, Resonant Carapace (Medium Mystech) 2,
+  Aegis Shroud (Heavy Mystech) 3, and the ordinary suits unchanged at 1 and 3.
+
+**A5e. The Loadout is declared, not derived.**
+- **Rule:** Part 3, line 4423 - "When a job starts, each Freelancer declares one
+  **Loadout**... If nobody declares, assume **Standard**." Line 4424 - "Your Loadout
+  sets your **Load Budget**."
+- **Was:** the app inferred the tier from carried Load (`store.js` even deleted
+  `ch.loadout` on load, commented "never declared"), and the Loadout chips in the
+  Freelancer tab were captioned "calculated from what you carry".
+- **Now:** `ch.loadout` persists (defaulting to Standard), the chips are clickable to
+  declare it, and the declared tier sets the Load Budget. `encumbrance` also exposes
+  `budget` and `overBudget`.
+
+**A5f. Overloaded is no longer triggered by an invented number.**
+- **Rule:** Part 3, line 4462 - Encumbered is "carrying more Load than your Load
+  Budget, or hauling something that is clearly heavy but still plausible." Line 4468 -
+  Overloaded is "hauling something that clearly belongs on a dolly, cart, vehicle,
+  forklift, or exoframe."
+- **Was:** a fourth pseudo-tier ("over", shown as "OVER HEAVY") triggered at
+  Load > Threshold + 3, which appears nowhere in the rulebook.
+- **Now:** over budget means Encumbered; Overloaded comes from the Haul. The "over"
+  tier is removed from the Freelancer and Inventory readouts.
+- **Verified** on a character carrying 7 with Threshold 9: Light (budget 6)
+  Encumbered, Standard (9) Unencumbered, Heavy Encumbered for the run, Haul lift
+  Encumbered, Haul drag Overloaded.
+
+**Deferred from this tranche (needs a schema plus UI change, not just math):**
+- **Cyberware platform slots.** Part 3 line 4037: "Compatible mods installed in those
+  slots do *not* add SP to your Total Static; the platform has already paid that
+  cost." The catalog already marks Cyberarm and Cyberlegs `platform: true` with a
+  slot count per tier, but an installed implant has no way to record which platform
+  it sits in, so the exemption cannot be computed yet. Mods in a platform currently
+  charge full SP, which is stricter than the rules, never more lenient.
+- **Flat implant bonuses beyond Speed and Wounds.** `cyberFlatBonuses()` reads only
+  those two keys, so Reflex Booster's Initiative bonus, Subdermal Armor's DR, and the
+  Convergence Engine's Vitality never reach the sheet.
+
 ---
 
 ## PART B: Pending, in the agreed order
