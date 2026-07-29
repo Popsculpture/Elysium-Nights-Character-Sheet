@@ -176,7 +176,7 @@ EN.combat = {
     { name: "Fire", group: "Elemental", text: "Flamethrowers, incendiary ammo, plasma wash, burning Invocations. Damage from rapid combustion and heat." },
     { name: "Electric", group: "Elemental", text: "Shock batons, tasers, arc weapons, EM bursts. Damage from focused electrical current." },
     { name: "Sonic", group: "Elemental", text: "Sound cannons, resonance blades, vibration pulses. Damage from concentrated acoustic or vibrational force." },
-    { name: "Force", group: "Elemental", text: "Concussive blasts, gravity hammers, telekinetic impacts, spatial shearing. Damage from pure shaped pressure with no physical object behind it; gravity, telekinesis, kinetic shaping, dimensional shear." },
+    { name: "Force", group: "Elemental", text: "Concussive blasts, gravity hammers, telekinetic impacts, Spatial Shearing. Damage from pure shaped pressure with no physical object behind it; gravity, telekinesis, kinetic shaping, dimensional shear." },
     { name: "Energy", group: "Elemental", text: "Lasers, particle beams, hard light, exotic directed energy. Damage from concentrated coherent light or particle streams." },
     { name: "Radiation", group: "Exotic and Thematic", text: "Irradiated zones, leaking reactor cores, depleted uranium munitions. Damage from ionizing particle exposure that breaks down cells at a molecular level." },
     { name: "Entropy", group: "Exotic and Thematic", text: "Decay, unraveling, time wear, reality breakdown. Damage that erodes matter and pattern. The metaphysical opposite of Genesis." },

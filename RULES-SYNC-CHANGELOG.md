@@ -411,20 +411,36 @@ no code change was needed.
 - Part 2's Vitality & Recovery chapter states the relationship inconsistently.
 - App implements: Long Rest wound recovery = Body mod (min 1).
 
-### M6. "Spatial" damage type is used but not defined
-- **Part 2, line 1714** (Damage Resolution): "Some damage types (like Spatial or
-  Psychic) may ignore standard physical DR entirely."
-- **Spatial does not appear in the canonical 19-type list.** Psychic does.
-- The Spatial *Resonance* exists and deals "Force (Spatial)" damage, so the intent
-  is probably to add Spatial to the damage-type table, or to reword line 1714.
+### M6. "Spatial" damage type (RESOLVED 2026-07-28)
+- **Author ruling:** Spatial is not a separate damage type. It is a named variety of
+  **Force** damage, written **"Force (Spatial)"**. The Force entry covers it
+  ("Concussive blasts, gravity hammers, telekinetic impacts, Spatial Shearing...")
+  and the Damage Type Sources table lists Force as "Kinetic Invocations, gravity
+  weapons, Spatial Shearing."
+- **App status:** already correct; the Force entry matched almost verbatim. Only
+  change was capitalising **Spatial Shearing** as the proper noun it is.
+- **Optional manuscript tidy:** Part 2 line 1714 reads "Some damage types (like
+  Spatial or Psychic) may ignore standard physical DR entirely." Since Spatial is a
+  Force variety rather than a type, that could read "like Force (Spatial) or Psychic"
+  to avoid implying a 20th damage type.
 
-### M7. Block: physical shield only, or armor too?
-- **Part 2, lines 1512-1517:** "**Requirement:** Must have a physical Shield
-  equipped... Add the Shield's listed Block Value directly to your Armor DR against
-  this specific attack." Pipeline at 1713 agrees.
-- **App implements:** an armor Block Bonus plus a computed half-value for the
-  Plated trait, i.e. Block without a shield.
-- Needs reconciling against the Part 3 armor tables before either side is changed.
+### M7. Block: what contributes (RESOLVED 2026-07-28)
+- **Author ruling:** armor adds a **static Block Bonus** to your Block value; shields
+  add a **dynamic die** (1d4 / 1d6 / 1d8) under Block; shields **also** add a static
+  bonus to Defense.
+- **Part 3 line 2145 already says exactly this:** "**Block Bonus:** A flat bonus that
+  improves the **Block** Defensive Impulse, listed only on armor built to brace and
+  absorb. This is separate from the **Plated** trait's own Block benefit, and the two
+  stack on the same suit."
+- **App status: correct, no change.** It implements armor `blockBonus` (flat), the
+  Plated trait's extra half-DR on Block, and the shield's `blockDie`.
+- **Manuscript fix needed in Part 2 (lines 1512-1517), which is stale on three counts:**
+  1. "**Requirement:** Must have a physical Shield equipped" - armor Block Bonus and
+     the Plated trait both grant Block benefits without a shield.
+  2. "Add the Shield's listed **Block Value** directly to your **Armor DR**" - the
+     shield contributes a rolled die, not a flat value.
+  3. The Tactical Note calls Blocking "a guaranteed spike in damage reduction
+     **without a die roll**", which directly contradicts the 1d4/1d6/1d8 shield die.
 
 ### M8. Crafting Max Mods contradicts the Part 3 Slot Count table
 - Part 2's Crafting chapter and Part 3's weapon-customization Slot Count table give
@@ -456,17 +472,10 @@ no code change was needed.
   deck-absorbs-the-pool interaction, explicitly marked as coming from the #GRID
   chapter.
 
-### M11. Structural defects in Part 1 (formatting, not rules)
-- **Duplicated chapter title:** `# Origin` appears twice in a row, lines 130 and 132.
-- **Inconsistent heading levels**, which will break any generated table of contents
-  or export:
-  - "Backgrounds" is H2; every other chapter title is H1.
-  - The Codebreaker's "Core Traits" and "Features Table" are H3 where the other six
-    classes use H2 (or vice versa) - the class chapters are not uniform.
-  - The **Sourcerer** subclass is H4; all 21 other subclasses are H3.
-- No version number, date, "last updated" line, or changelog appears anywhere in
-  any of the three Parts, and there are no Google Docs comment threads. Consider
-  adding a version stamp so future syncs can diff doc-to-doc instead of doc-to-code.
+### M11. Structural defects in Part 1 (RESOLVED 2026-07-28)
+- Duplicated `# Origin` heading and the inconsistent heading levels were fixed by the
+  author in the manuscript. No app impact.
+
 
 ---
 
