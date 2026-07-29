@@ -392,13 +392,17 @@ EN.gridView = (function () {
         el("button.btn.sm", { title: "Close this Link (clean, no backlash)", style: { color: "var(--text3)" }, onclick: function () { gset(function (g) { g.links.splice(i, 1); }); } }, "✕")
       ]));
     });
-    // LinkDeath risk
-    var extra = Math.max(0, links.length - 1);
-    var dmg = "2d6" + (extra ? " + " + extra + "d6" : "");
+    // LinkDeath risk. Feedback is 2d6 PER severed Link, and the failed Stability
+    // Check's margin decides how hard it lands (soft landing vs hard landing).
+    var n = Math.max(1, links.length);
+    var poolAll = (2 * n) + "d6";
     rows.push(el("div", { style: { marginTop: "8px", padding: "8px 10px", border: "1px solid " + (links.length >= 2 ? "var(--danger)" : "var(--border2)"), borderRadius: "4px", background: "rgba(0,0,0,.18)" } }, [
       el("div.row.between", { style: { alignItems: "baseline" } }, [
         el("span", { style: { fontFamily: "var(--disp)", fontSize: "10px", letterSpacing: ".12em", color: "var(--danger)" }, text: "LINKDEATH RISK" }) ]),
-      noteP("Fail a Stability Check (Body or Wits, vs the higher of DC " + gd.stabilityDcBase + " or ½ the damage taken this turn, set in the Hacking panel) → all Links sever and you take " + dmg + " Psychic, Unconscious." + (links.length >= 2 ? " Fail by 5+ with 2+ Links = Cascade Failure (deck auto-Bricked)." : " Succeed → ride it: half damage, Dazed."), links.length >= 2 ? "var(--danger)" : "var(--text3)")
+      noteP("Fail a Stability Check (Body or Wits, vs the higher of DC " + gd.stabilityDcBase + " or ½ the damage taken this turn, set in the Hacking panel) and one Link of your choice tears away. Every Link severed involuntarily deals 2d6 Psychic feedback.", "var(--text3)"),
+      noteP("Failed by 4 or less: half the feedback, Dazed until the end of your next turn. Failed by 5 or more: full feedback and Unconscious (Wits Save vs the same DC at the end of each of your turns to wake, Dazed).", links.length >= 2 ? "var(--danger)" : "var(--text3)"),
+      noteP("Falling Unconscious severs every Link you hold: roll 2d6 per Link as one pool (" + poolAll + " at " + n + " Link" + (n === 1 ? "" : "s") + "). Your Smartdeck absorbs it first, subtracting from its remaining System Integrity with no Firewall applied; if the deck hits 0 it is Bricked and every point beyond spills into you as Psychic damage in full. A deckless user has no hardware in the way.", "var(--text3)"),
+      links.length >= 2 ? noteP("Cascade Failure: losing a Link while holding others forces a fresh Stability Check for the rest, at a DC that now counts that feedback in the turn's damage total.", "var(--danger)") : null
     ]));
     return EN.ui.panel("Links", gd.unlimitedLinks ? "UNLIMITED THREADING" : "MULTI-LINK", rows, { corners: true });
   }

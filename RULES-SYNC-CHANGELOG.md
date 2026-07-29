@@ -117,6 +117,71 @@ Flow formulas, the 19 damage types and 39 of 41 conditions are also in sync.
   Max Complexity per tier, the damage/repair control, and the visual staging.
 - **Manuscript impact:** none. See M1 and M2 for the rulings that shaped this.
 
+### A4. Combat and recovery engine fixes (first batch of step 3)
+- **Files:** `app/js/combat.js`, `app/js/grid.js`
+
+**A4a. Speed reductions now apply in the right order.**
+- **Rule:** Part 2, line 1264 - "When multiple Speed reductions apply, subtract all
+  flat reductions first, then apply any halving or percentage reductions, rounding
+  down. Speed cannot fall below 0 (or its stated minimum)."
+- **Was:** `s = base + speedDelta; if (halved) s = Math.min(s, Math.floor(base / 2))`
+  - the halving was computed from the UNREDUCED base and then the larger of the two
+  values was kept, so flat reductions and halving never compounded.
+- **Now:** flat first, then halve.
+- **Verified live** on a Speed 9 character: Fatigue 1 = 8, Fatigue 2 = 6,
+  Fatigue 3 = 3 (was 4), Bloodied = 4.
+
+**A4b. The minimum-3 Speed floor belongs to Agility alone.**
+- **Rule:** Part 2, line 1339 - "Even with a negative modifier, total Speed cannot
+  drop below **3** due to Agility alone. Environmental effects, injuries, or
+  abilities can still reduce Speed to 0."
+- **Was:** `Math.max(3, s)` was re-applied after every condition, so conditions and
+  encumbrance could never take a character below 3.
+- **Now:** conditions clamp at 0, or at a condition's own stated minimum. Fatigue 3
+  ("Speed is halved, rounded down, **minimum 3**", doc line 2318 ladder) sets that
+  minimum explicitly via a new `speedMin` field.
+
+**A4c. Any damage while Stable returns you to Dying.**
+- **Rule:** Part 2, line 1942 - "Taking damage while Stable returns you to **Dying**."
+- **Was:** `c.stable` was cleared only inside the wound-overflow branch, and only
+  when the hit drove Wounds to 0. Damage absorbed by Vigor or Vitality left a Stable
+  character Stable.
+- **Now:** cleared for any damage amount before the pools are touched.
+
+**A4d. A Long Rest no longer cures Severe Fatigue.**
+- **Rule:** Part 2, line 1999 - "Reduce **Fatigue** by 1 level. Severe Fatigue
+  (level 4 or higher) requires professional care or ritual support." Corroborated at
+  2329: "**Severe Fatigue (4 to 6):** Requires **medical, mystical, or technological
+  treatment** to reduce."
+- **Was:** Long Rest stepped Fatigue down by 1 unconditionally, from any level.
+- **Now:** levels 1 to 3 step down as before; 4 to 6 are left untouched and the
+  player is told why via a toast.
+- **Verified live:** Fatigue 2 -> 1, Fatigue 1 -> cleared, Fatigue 5 -> stays 5.
+  Short Rest correctly leaves Fatigue alone at every level (doc 2327).
+
+**A4e. Unarmed strikes use the Simple Weapons Proficiency Bonus.**
+- **Rule:** Part 2, line 795 - "Unarmed strikes use your Simple Weapons Proficiency
+  Bonus, and follow the usual Untrained rule if you lack it."
+- **Was:** unarmed strikes and lineage natural weapons rolled a bare attribute
+  modifier with no proficiency and no Untrained Snag.
+- **Now:** both add the Simple Weapons tier bonus (+2/+4/+6) to the ATTACK roll only,
+  and roll with Snag when Untrained. Damage keeps the attribute modifier alone, since
+  proficiency has never applied to damage.
+
+**A4f. LinkDeath feedback is 2d6 per severed Link, graded on the margin.**
+- **Rule:** Part 2, lines 3448-3451 - "Every Link severed involuntarily deals **2d6
+  psychic damage** in feedback." / "**Failed by 4 or less:** Take **half** the
+  feedback and be **Dazed**." / "**Failed by 5 or more:** Take the **full** feedback
+  and fall **Unconscious**." / "Roll **2d6 per severed Link** as one pool."
+- **Was:** `2d6 + (N-1)d6`, with no margin grading and an invented "Cascade Failure =
+  deck auto-Bricked" line.
+- **Now:** N x 2d6, both landing bands stated, plus the doc's new interaction with
+  A3: on falling Unconscious the pool subtracts from the deck's remaining System
+  Integrity with **no Firewall applied**, and only the overflow past what the deck
+  absorbed reaches the character as Psychic damage. Cascade Failure is described as
+  the doc defines it (a fresh Stability Check for the surviving Links at a DC that
+  counts the feedback), not as an automatic bricking.
+
 ---
 
 ## PART B: Pending, in the agreed order

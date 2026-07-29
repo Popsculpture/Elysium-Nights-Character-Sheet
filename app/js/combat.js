@@ -649,6 +649,9 @@ EN.combatView = (function () {
       var s = state(c, d);
       c.lastDamage = amount;   // record the hit so the #GRID Stability DC auto-pulls it
       var left = amount;
+      // "Taking damage while Stable returns you to Dying." Any damage does it, not
+      // only a hit that reaches the Wound track.
+      if (amount > 0 && c.stable) c.stable = false;
       // Vigor absorbs first
       var vig = Math.min(s.vigor, left);
       c.vitality.temp = s.vigor - vig; left -= vig;
@@ -660,7 +663,6 @@ EN.combatView = (function () {
       if (left > 0) {
         var newWounds = Math.max(0, s.wounds - left);
         c.wounds.current = newWounds;
-        if (newWounds <= 0) { c.stable = false; }   // damage while stable returns to Dying
       } else {
         c.wounds.current = s.wounds;
       }
@@ -708,7 +710,7 @@ EN.combatView = (function () {
     toast("Short Rest taken; resource refreshed. Spend Resilience Dice to heal.");
   }
   function longRest(ch, d) {
-    var leaseDue = [];
+    var leaseDue = [], severeFatigue = 0;
     store.update(function (c) {
       var s = state(c, d);
       var bodMod = d.attributes.BOD.mod;
@@ -722,16 +724,23 @@ EN.combatView = (function () {
       if (d.resource) c.resources.current[d.resource.name] = d.resource.max;
       if (d.flow) c.flow.current = d.flow.max;                              // full Reservoir
       c.flow.strain = Math.max(0, (c.flow.strain || 0) - 1);                // Strain −1
-      // Fatigue −1 (tracked as a leveled condition; removed at 0)
+      // Fatigue −1, but only up to level 3. Severe Fatigue (4 to 6) "requires
+      // medical, mystical, or technological treatment to reduce", so a night's
+      // sleep does nothing for it. Tracked as a leveled condition; removed at 0.
       if ((c.conditions || []).indexOf("Fatigue") !== -1) {
-        var fl = ((c.conditionLevels || {})["Fatigue"] || 1) - 1;
-        if (fl <= 0) { c.conditions = c.conditions.filter(function (n) { return n !== "Fatigue"; }); delete c.conditionLevels["Fatigue"]; }
-        else c.conditionLevels["Fatigue"] = fl;
+        var cur = (c.conditionLevels || {})["Fatigue"] || 1;
+        if (cur >= 4) severeFatigue = cur;                                  // untouched; player is told why
+        else {
+          var fl = cur - 1;
+          if (fl <= 0) { c.conditions = c.conditions.filter(function (n) { return n !== "Fatigue"; }); delete c.conditionLevels["Fatigue"]; }
+          else c.conditionLevels["Fatigue"] = fl;
+        }
       }
       // leased gear: a Long Rest marks one day toward the next installment
       if (EN.inventoryView && EN.inventoryView.leaseTick) leaseDue = EN.inventoryView.leaseTick(c);
     });
     if (leaseDue.length) toast("Long Rest complete. LEASE PAYMENT DUE: " + leaseDue.join(", ") + ". It grants nothing until you pay (Inventory > Stash).");
+    else if (severeFatigue) toast("Long Rest complete. Fatigue " + severeFatigue + " is Severe: it needs medical, mystical, or technological treatment, not sleep.");
     else toast("Long Rest complete, restored and refreshed.");
   }
   function spendResilience(ch, d, count) {
@@ -840,7 +849,7 @@ EN.combatView = (function () {
     "Fatigue": function (e, l) {
       if (l >= 1) { e.speedDelta -= 1; e.snagChk.AGI = true; }
       if (l >= 2) { e.speedDelta -= 2; e.snagChk.BOD = true; e.snagAtk = true; }
-      if (l >= 3) { e.speedHalved = true; e.snagSave.BOD = e.snagSave.AGI = true; }
+      if (l >= 3) { e.speedHalved = true; e.speedMin = 3; e.snagSave.BOD = e.snagSave.AGI = true; }   // "halved (rounded down, minimum 3)"
       if (l >= 4) e.derived.push({ name: "Drowsy", from: "Fatigue " + l });
       if (l >= 5) e.derived.push({ name: "Hallucinating", from: "Fatigue " + l });
       if (l >= 6) e.derived.push({ name: "Unconscious", from: "Fatigue 6 · Helpless" });
@@ -877,7 +886,7 @@ EN.combatView = (function () {
   // Aggregate effects across ALL active conditions, recursively including
   // derived conditions' own riders (e.g. Fatigue 4 → Drowsy → −2 Initiative).
   function condEffects(ch) {
-    var e = { init: 0, saveDelta: 0, speedDelta: 0, speedHalved: false, speedZero: false,
+    var e = { init: 0, saveDelta: 0, speedDelta: 0, speedHalved: false, speedZero: false, speedMin: 0,
               snagAtk: false, snagChk: {}, snagSave: {}, perceptionSnag: false,
               edgeToAttackers: false, cannotAct: false, autoFailBodAgiSaves: false,
               noImpulse: false, noSwift: false, derived: [], notes: [] };
@@ -898,11 +907,15 @@ EN.combatView = (function () {
     e.derived = e.derived.filter(function (dc) { return (ch.conditions || []).indexOf(dc.name) === -1; });
     return e;
   }
+  // Order matters: subtract every flat reduction first, THEN halve, rounding down.
+  // The minimum-3 floor belongs to the Agility-derived base only ("total Speed cannot
+  // drop below 3 due to Agility alone"); conditions and injuries may drive it to 0,
+  // except where a condition states its own minimum (Fatigue 3 states minimum 3).
   function adjSpeed(base, e) {
     if (e.speedZero) return 0;
     var s = base + e.speedDelta;
-    if (e.speedHalved) s = Math.min(s, Math.floor(base / 2));
-    return Math.max(3, s);
+    if (e.speedHalved) s = Math.floor(s / 2);
+    return Math.max(e.speedMin || 0, s);
   }
   function snagChip(why) {
     return el("span.chip", { title: why, style: { fontSize: "9px", color: "var(--danger)", borderColor: "var(--danger)" }, text: "SNAG" });
@@ -2455,17 +2468,34 @@ EN.combatView = (function () {
       });
       if (d.lineageUnarmed) {
         var lu = d.lineageUnarmed, luFin = lu.traits && /Finesse/.test(lu.traits);
-        var luMod = luFin ? Math.max(d.attributes.BOD.mod, d.attributes.AGI.mod) : d.attributes.BOD.mod;
-        var luLabel = (luFin ? "Body/Agility" : "Body") + " Modifier";
+        var luAttr = luFin ? Math.max(d.attributes.BOD.mod, d.attributes.AGI.mod) : d.attributes.BOD.mod;
+        // "Unarmed strikes use your Simple Weapons Proficiency Bonus, and follow the
+        // usual Untrained rule if you lack it."
+        var swTier = eng.effectiveGearTier(ch, "weapons", "Simple Weapons");
+        var swProf = R.profTiers[swTier].d20, swUntrained = swTier === "untrained";
+        var luMod = luAttr + swProf;
+        var luLabel = (luFin ? "Body/Agility" : "Body") + " Modifier + Simple Weapons";
         var luName = "Natural Weapon · " + lu.source;
+        var luAttrLabel = (luFin ? "Body/Agility" : "Body") + " Modifier";
+        var luSnag = atkSnag || swUntrained;
+        // proficiency rides the attack roll only; damage keeps the attribute modifier
         var luDmg = { weaponName: luName, subtype: "NATURAL WEAPON", dice: lu.die, types: [lu.type],
-          flat: luMod, flatLabel: luLabel, versatile: null, cheapEligible: false, cheapDice: d.caliber || 1, crit: false };
-        kids.push(attackRow(luName, eng.fmtMod(luMod), "d20 + " + (luFin ? "Body/Agility" : "Body") + " Modifier · " + lu.die + " " + lu.type + (lu.traits ? " (" + lu.traits + ")" : "") + " + mod" + (lu.note ? " · " + lu.note : ""), "var(--ember)", atkSnag,
-          (function (nm, mv, lbl, dmg) { return function () { openRollTray(simpleAttackCtx(nm, "NATURAL WEAPON · " + String(lu.type).toUpperCase(), [{ label: lbl, value: mv }], { snag: atkSnag, dmg: dmg })); }; })(luName, luMod, luLabel, luDmg)));
+          flat: luAttr, flatLabel: luAttrLabel, versatile: null, cheapEligible: false, cheapDice: d.caliber || 1, crit: false };
+        kids.push(attackRow(luName, eng.fmtMod(luMod), "d20 + " + luAttrLabel + " + Simple Weapons Proficiency Bonus · " + lu.die + " " + lu.type + (lu.traits ? " (" + lu.traits + ")" : "") + " + mod" + (lu.note ? " · " + lu.note : "") + (swUntrained ? " · Untrained (Simple Weapons): Snag" : ""), "var(--ember)", luSnag,
+          (function (nm, dmg) { return function () { openRollTray(simpleAttackCtx(nm, "NATURAL WEAPON · " + String(lu.type).toUpperCase(),
+            [{ label: luAttrLabel, value: luAttr }].concat(swProf ? [{ label: "Simple Weapons Proficiency Bonus", value: swProf }] : []),
+            { snag: luSnag, dmg: dmg })); }; })(luName, luDmg)));
       }
       if (!equippedNames.length) {
-        if (!d.lineageUnarmed) kids.push(attackRow("Unarmed Strike", eng.fmtMod(d.attributes.BOD.mod), "d20 + Body Modifier · unarmed damage + Body mod", "var(--ember)", atkSnag,
-          function () { openRollTray(simpleAttackCtx("Unarmed Strike", "UNARMED STRIKE", [{ label: "Body Modifier", value: d.attributes.BOD.mod }], { snag: atkSnag })); }));
+        if (!d.lineageUnarmed) {
+          var uTier = eng.effectiveGearTier(ch, "weapons", "Simple Weapons");
+          var uProf = R.profTiers[uTier].d20, uUntrained = uTier === "untrained";
+          var uBod = d.attributes.BOD.mod, uSnag = atkSnag || uUntrained;
+          kids.push(attackRow("Unarmed Strike", eng.fmtMod(uBod + uProf), "d20 + Body Modifier + Simple Weapons Proficiency Bonus · unarmed damage + Body mod" + (uUntrained ? " · Untrained (Simple Weapons): Snag" : ""), "var(--ember)", uSnag,
+            function () { openRollTray(simpleAttackCtx("Unarmed Strike", "UNARMED STRIKE",
+              [{ label: "Body Modifier", value: uBod }].concat(uProf ? [{ label: "Simple Weapons Proficiency Bonus", value: uProf }] : []),
+              { snag: uSnag })); }));
+        }
         kids.push(el("p.help", { style: { margin: "4px 0 6px" }, text: "No weapons equipped; hit ⚔ EQUIP on a weapon in Inventory → Stash to list it here." }));
       }
       if (ch.class === "codebreaker") {
