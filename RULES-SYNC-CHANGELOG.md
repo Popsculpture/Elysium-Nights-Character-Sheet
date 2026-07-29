@@ -442,18 +442,19 @@ no code change was needed.
 - Also reported absent from the app and not yet added: the **Sustain Focus
   Disruption** rule.
 
-### M12. LinkDeath feedback stated two ways (NEW, needs a ruling)
-- **Part 2, line 2412** (the Conditions chapter entry): the damage is
-  "**2d6 + 1d6 per additional active Link**".
-- **Part 2, lines 3448 and 3451** (the #GRID chapter): "Every Link severed
-  involuntarily deals **2d6 psychic damage** in feedback" and "Roll **2d6 per severed
-  Link** as one pool."
-- With 3 Links that is 4d6 under the Conditions entry and 6d6 under the #GRID chapter.
-- Both chapters agree on everything else (the margin bands, the Wits Save to wake).
-- **App implements** the #GRID chapter version, since that chapter defines the
-  subsystem and states the per-Link rule twice. Changed in commit `4e7dffb` and
-  reflected in the Conditions entry text.
-- **If the Conditions entry is the intended rule, tell me and I will switch both.**
+### M12. LinkDeath feedback stated two ways (RESOLVED 2026-07-28)
+- **Was:** the Conditions entry read "2d6 + 1d6 per additional active Link" while the
+  #GRID chapter read "2d6 per severed Link" (3448, restated 3451). With 3 Links that
+  was 4d6 versus 6d6.
+- **Resolved in the manuscript:** the author rewrote the Conditions entry to match the
+  #GRID chapter. No further ruling needed.
+- **App:** already implemented the #GRID version (commit `4e7dffb`). The condition
+  text was then aligned word for word with the rewritten entry, picking up two
+  clarifications it adds: the two ways a Link severs (failed Stability Check tears
+  away one of your choice; a forced disconnect rips away every Link at once) and
+  that **closing a Link yourself costs nothing**. The app keeps one extra line, the
+  deck-absorbs-the-pool interaction, explicitly marked as coming from the #GRID
+  chapter.
 
 ### M11. Structural defects in Part 1 (formatting, not rules)
 - **Duplicated chapter title:** `# Origin` appears twice in a row, lines 130 and 132.
