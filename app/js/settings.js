@@ -446,15 +446,15 @@ EN.settings = (function () {
       el("div.set-sectitle", { text: "// #GRID" }),
       el("label.set-label", { text: "Battle Damage" }),
       el("p.set-hint", { text: on
-        ? "The #GRID tab physically degrades as your rig's Durability drops: pulsing glow, jittering chips, glitching buttons and letters, TV static in the last quarter, and a dead black-and-white screen when bricked. Reduced-motion is respected automatically."
-        : "Let the #GRID tab take visible battle damage as your rig loses Durability, all the way to a bricked screen." }),
+        ? "The #GRID tab physically degrades as your rig's System Integrity drops: pulsing glow, jittering chips, glitching buttons and letters, TV static in the last quarter, and a dead black-and-white screen when bricked. Reduced-motion is respected automatically."
+        : "Let the #GRID tab take visible battle damage as your rig loses System Integrity, all the way to a bricked screen." }),
       el("button.btn.sm" + (on ? ".primary" : ""), {
         title: "Toggle the #GRID battle-damage layer", onclick: function () { gv.setDamage(!on); EN.app.render(); rebuild(); }
       }, on ? "◈ BATTLE DAMAGE: ON" : "◈ BATTLE DAMAGE: OFF")
     ];
     if (on) {
       kids.push(el("label.set-label", { style: { marginTop: "14px" }, text: "Intensity" }));
-      kids.push(el("p.set-hint", { text: "Auto follows your rig's live Durability. Pick 1-4 to preview a damage stage (4 is bricked)." }));
+      kids.push(el("p.set-hint", { text: "Auto follows your rig's live System Integrity. Pick 1-4 to preview a damage stage (4 is bricked)." }));
       kids.push(el("div.row.wrap", { style: { gap: "6px" } },
         [{ k: "auto", label: "Auto" }, { k: "1", label: "1" }, { k: "2", label: "2" }, { k: "3", label: "3" }, { k: "4", label: "4" }].map(function (o) {
           var sel = String(intensity) === o.k;

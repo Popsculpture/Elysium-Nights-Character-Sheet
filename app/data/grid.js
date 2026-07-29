@@ -26,11 +26,11 @@ EN.grid = {
   nodeTiers: [
     { tier: "Rudimentary", t: 0, security: 10, saveBonus: 3, integrity: null },
     { tier: "Standard",    t: 1, security: 12, saveBonus: 4, integrity: null },
-    { tier: "Improved",    t: 2, security: 14, saveBonus: 5, integrity: 3 },
-    { tier: "Advanced",    t: 3, security: 16, saveBonus: 6, integrity: 4 },
-    { tier: "Premium",     t: 4, security: 18, saveBonus: 7, integrity: 5 },
-    { tier: "Elite",       t: 5, security: 20, saveBonus: 8, integrity: 6 },
-    { tier: "Apex",        t: 6, security: 21, saveBonus: 9, integrity: 7 }
+    { tier: "Improved",    t: 2, security: 14, saveBonus: 5, integrity: 20 },
+    { tier: "Advanced",    t: 3, security: 16, saveBonus: 6, integrity: 30 },
+    { tier: "Premium",     t: 4, security: 18, saveBonus: 7, integrity: 35 },
+    { tier: "Elite",       t: 5, security: 20, saveBonus: 8, integrity: 40 },
+    { tier: "Apex",        t: 6, security: 21, saveBonus: 9, integrity: 50 }
   ],
   hardenedNote: "A Hardened Node adds its Tier as a flat bonus to its Cipher Save Bonus, on the shared tier scale (Standard 0 → Apex 5): a Hardened Apex node has +9 + 5 = +14 to saves. Reserve for genuinely high-stakes targets: corporate vaults, military mainframes, Pre-Collapse black boxes.",
   lowSecurityNote: "Rudimentary nodes are the floor of the #GRID, cameras, cheap smartlocks, disposable consumer devices. No Integrity, no Firewall: a single successful Cipher Attack or Quick Hack bricks them. Standard nodes (civilian vehicles, commercial smartguns) still lack Integrity, but a Firewall might stand in the way; flip a coin on whether the owner paid for one.",
@@ -93,7 +93,7 @@ EN.grid = {
     { tier: "Elite",    price: 2500, securityBonus: 6, threshold: 6 },
     { tier: "Apex",     price: 3500, securityBonus: 7, threshold: 7 }
   ],
-  firewallNote: "Firewalls are armor, not HP. Security Bonus adds to the node's Security Rating; incoming cipher damage must EXCEED the Damage Threshold to deal 1 HP to System Integrity. Rolls equal to or under the threshold are discarded.",
+  firewallNote: "Firewalls are armor, not HP. Security Bonus adds to the node's Security Rating; the Damage Threshold subtracts from every incoming cipher damage roll before it touches System Integrity, and whatever remains comes off Integrity. Damage reduced to 0 or less is discarded.",
 
   /* ---- Intrusion Countermeasures ---- */
   icIntro: "IC are scripts that live inside nodes, waiting. When a node succeeds its Cipher Saving Throw, the resident IC triggers ONE response (the GM picks which, by tier). No extra dice, only the cipher save matters.",
@@ -113,9 +113,9 @@ EN.grid = {
   ],
   interceptionNote: "Codebreaker Damage Interception: when an IC Counterattack triggers, before the damage is rolled you may intercept the hit personally instead of letting the deck take 1 HP. The damage is rolled, reduced by your deck's Firewall threshold, and the remainder is taken as Psychic damage; then you make a Stability Check. Decide before the roll; no peeking.",
 
-  /* ---- Devices & durability ---- */
-  durabilityNote: "Smartdecks and B&E Buddies use durability HP: any successful hit deals exactly 1 HP regardless of the rolled damage. At 0 HP the device is Bricked, completely inoperative; all active Links sever, triggering LinkDeath; it must be repaired before reuse.",
-  repair: "Downtime Repair (full HP): during an 8-hour Downtime, restore to full at 𝒢10 per HP (a Bricked device also needs replacement parts at 𝒢100 × (Tier+1)). Field Repair (partial): 1 hour + an Engineering Dice Pool restores 1 HP per successful Edge die, up to missing HP, but cannot recover a Bricked device.",
+  /* ---- Devices & System Integrity ---- */
+  durabilityNote: "Carried gear always has an Integrity track: Smartdecks and B&E Buddies track System Integrity like any node, and damage subtracts from it. Cipher damage tests the device's Firewall first and the remainder comes off Integrity; physical damage ignores Firewalls and lands at full value. Unlike Rudimentary and Standard infrastructure, a device never bricks on a single hit; it dies by the numbers. At 0 Integrity the device is Bricked, completely inoperative; all active Links sever, triggering LinkDeath as a forced disconnect, and it must be repaired before reuse.",
+  repair: "Downtime Repair (full restore): during an 8-hour Downtime, restore a device to full System Integrity at 𝒢10 per 5 Integrity restored (round up); a Bricked device also needs replacement parts at 𝒢100 × (Tier+1). Field Repair (partial): 1 hour plus a successful Engineering Dice Pool restores 5 System Integrity per successful Edge die, up to the missing total, but cannot recover a Bricked device. Only Downtime can do that.",
 
   /* ---- LinkDeath ---- */
   linkDeathIntro: "LinkDeath is what happens when a Link is torn out of your skull instead of closed cleanly. It triggers when you fail a Stability Check, your deck is Bricked while linked, you 'cut bait and run' out of Lockdown, or your device is physically destroyed while linked.",
@@ -138,14 +138,15 @@ EN.grid = {
   ],
 
   /* ============================ EQUIPMENT ============================ */
-  /* Smartdecks · the Codebreaker's Power-User rig. HP = Tier+3, Mod Slots = Tier. */
+  /* Smartdecks · the Codebreaker's Power-User rig. Mod Slots = Tier; System
+     Integrity is listed per tier (gear runs tougher than infrastructure). */
   smartdecks: [
-    { tier: "Standard", t: 0, price: 450,   deviceBonus: 0, trait: "Hacking tool",              modSlots: 0, hp: 3 },
-    { tier: "Improved", t: 1, price: 1200,  deviceBonus: 1, trait: "Encrypted comms",           modSlots: 1, hp: 4 },
-    { tier: "Advanced", t: 2, price: 3000,  deviceBonus: 1, trait: "Trace-resistant signature", modSlots: 2, hp: 5 },
-    { tier: "Premium",  t: 3, price: 6500,  deviceBonus: 2, trait: "Encrypted Channel",          modSlots: 3, hp: 6 },
-    { tier: "Elite",    t: 4, price: 11000, deviceBonus: 2, trait: "Adaptive Buffer",            modSlots: 4, hp: 7 },
-    { tier: "Apex",     t: 5, price: 18000, deviceBonus: 3, trait: "Quantum Core",               modSlots: 5, hp: 8 }
+    { tier: "Standard", t: 0, price: 450,   deviceBonus: 0, trait: "Hacking tool",              modSlots: 0, integrity: 20 },
+    { tier: "Improved", t: 1, price: 1200,  deviceBonus: 1, trait: "Encrypted comms",           modSlots: 1, integrity: 30 },
+    { tier: "Advanced", t: 2, price: 3000,  deviceBonus: 1, trait: "Trace-resistant signature", modSlots: 2, integrity: 35 },
+    { tier: "Premium",  t: 3, price: 6500,  deviceBonus: 2, trait: "Encrypted Channel",          modSlots: 3, integrity: 40 },
+    { tier: "Elite",    t: 4, price: 11000, deviceBonus: 2, trait: "Adaptive Buffer",            modSlots: 4, integrity: 50 },
+    { tier: "Apex",     t: 5, price: 18000, deviceBonus: 3, trait: "Quantum Core",               modSlots: 5, integrity: 55 }
   ],
   smartdeckTraitNote: "Each Smartdeck has the trait on its tier row, and keeps all lower traits too (an Apex deck has every trait). Governing Skill: Systems; Tech runs the load-bearing math (Bandwidth, Cipher Attacks, Cipher Save DC, Links); Wits applies to general Systems checks. A deck runs ciphers up to (Tier + 1) in Complexity.",
   smartdeckTraits: [
@@ -159,9 +160,9 @@ EN.grid = {
 
   /* B&E Buddy · the Standard-User rig. HP = Tier+2. */
   buddies: [
-    { tier: "Standard", t: 0, price: 250, attack: 3, saveDc: 11, maxNode: 0, hp: 2 },
-    { tier: "Improved", t: 1, price: 500, attack: 5, saveDc: 13, maxNode: 1, hp: 3 },
-    { tier: "Advanced", t: 2, price: 900, attack: 7, saveDc: 15, maxNode: 2, hp: 4 }
+    { tier: "Standard", t: 0, price: 250, attack: 3, saveDc: 11, maxNode: 0, integrity: 15 },
+    { tier: "Improved", t: 1, price: 500, attack: 5, saveDc: 13, maxNode: 1, integrity: 20 },
+    { tier: "Advanced", t: 2, price: 900, attack: 7, saveDc: 15, maxNode: 2, integrity: 30 }
   ],
   buddyNote: "The Smartdeck's criminal cousin, handheld, ugly, dependable, for anyone who never trained as a Power User. Governing Skill: Systems (Tech). User Type: Standard User. Hardware Lockout: breaching a Premium or higher node makes the Buddy audibly spark and refuse, taking 1 HP of durability damage; the hack fails before it begins.",
   buddyCiphers: [
@@ -187,7 +188,7 @@ EN.grid = {
   /* Smartdeck hardware modifications. avail/legal drive the gray-market listing. */
   mods: [
     { key: "heatsinks",   name: "Reinforced Heatsinks", price: 600,  slots: 1, type: "Durability", avail: "Uncommon", legal: "Restricted",
-      text: "Repurposed gaming-rig cooling. Increases the deck's Durability HP by +2. Once per deck.", bonus: { hp: 2 } },
+      text: "Repurposed gaming-rig cooling: aluminum fins, copper piping, thermal paste applied with a steady hand. Increases the deck's System Integrity by +15. Once per deck.", bonus: { integrity: 15 } },
     { key: "sweep",       name: "Sweep Suite Plug-In", price: 800,  slots: 1, type: "Scanning", avail: "Uncommon", legal: "Restricted",
       text: "Military-grade detection libraries. +1 Edge Die on all Scanning Dice Pools (or Edge on d20 Systems checks) to detect hidden, camouflaged, or hardened nodes. Does not interact with the Modifier Stack Cap." },
     { key: "burnnotice",  name: "Burn Notice Module", price: 900,  slots: 1, type: "Trace Evasion", avail: "Rare", legal: "Contraband",
@@ -289,7 +290,7 @@ EN.grid.ciphers = [
   { name: "Phantom Shell", cx: 3, cat: "Protection", sub: "Defensive", exec: "1 Swift Action", range: "Self", runtime: "1 round", link: true,
     text: "Wrap your digital presence in a decoy shell. Until the start of your next turn, IC Counterattacks targeting you must first roll vs. your Cipher Save DC. On failure, the Counterattack hits the shell instead and is wasted entirely." },
   { name: "Hotpatch", cx: 3, cat: "Protection", sub: "Defensive", exec: "1 Action", range: "Touch (Linked friendly node or device)", runtime: "Instant", link: true,
-    text: "Restore System Integrity equal to your Tech Modifier (minimum 1) to a Linked allied node, or durability HP equal to your Tech Modifier (minimum 1) to a Linked allied device (a Smartdeck, B&E Buddy, or drone). This cannot bring back something already at zero: Bricked nodes and devices still require standard repair. Usable once per scene per target." },
+    text: "Restore System Integrity equal to 5 × your Tech Modifier (minimum 5) to a Linked allied node or device (a Smartdeck, B&E Buddy, or drone). This cannot bring back something already at zero: Bricked nodes and devices still require standard repair. Usable once per scene per target." },
 
   /* ---- Complexity 4 · Elite ---- */
   { name: "System Cascade", cx: 4, cat: "Offense", sub: "Combat", exec: "1 Action", range: "Self (via Link)", runtime: "Instant", link: true, signature: true,

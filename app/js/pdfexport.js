@@ -836,7 +836,7 @@ EN.pdfExport = (function () {
       ctx.row([
         { label: "Smartdeck / Buddy", name: "grid.deck", value: deck ? deck.tier + (deck.type === "buddy" ? " Buddy" : " Deck") : "-", w: 2 },
         { label: "Device", name: "grid.device", value: deck ? sgn(deck.deviceBonus) : "-", w: "54px", align: "center" },
-        { label: "Deck HP", name: "grid.deckHp", value: deck ? deck.maxHp : "-", w: "54px", align: "center" },
+        { label: "Integrity", name: "grid.deckIntegrity", value: deck ? deck.maxIntegrity : "-", w: "54px", align: "center" },
         { label: "Bandwidth", name: "grid.bandwidth", value: g.bandwidthMax != null ? g.bandwidthMax : "-", w: "60px", align: "center" }
       ]);
       ctx.sectionTitle("Repertoire", "cipher · CX · cost");

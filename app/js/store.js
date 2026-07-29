@@ -90,7 +90,7 @@ EN.store = (function () {
       grid: {                            // #GRID rig + live hacking state (Bandwidth tracks via resources.current)
         deckType: null,                  // 'smartdeck' (Power User) | 'buddy' (Standard User) | null
         deckTier: null,                  // tier name from EN.grid.smartdecks / .buddies
-        deckHpSpent: 0,                  // durability HP lost (deck Bricked at deckHpSpent >= maxHp)
+        deckHpSpent: 0,                  // System Integrity lost (deck Bricked at deckHpSpent >= maxIntegrity)
         deckMods: [],                    // installed Smartdeck mod keys (Codebreaker only)
         links: []                        // active Links: [{name, tier}]
       },

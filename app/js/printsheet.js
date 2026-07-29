@@ -617,7 +617,7 @@ EN.printSheet = (function () {
     out.push(el("div.ps-row", null, [
       field("Smartdeck / Buddy", deck ? deck.tier + (deck.type === "buddy" ? " Buddy" : " Deck") : "-", { style: { flex: "2 1 0" } }),
       field("Device", deck ? sgn(deck.deviceBonus) : "-", { style: { flex: "0 0 54px" } }),
-      field("Deck HP", deck ? deck.maxHp : "-", { style: { flex: "0 0 54px" } }),
+      field("Integrity", deck ? deck.maxIntegrity : "-", { style: { flex: "0 0 54px" } }),
       field("Bandwidth", g.bandwidthMax != null ? g.bandwidthMax : "-", { style: { flex: "0 0 70px" } })
     ]));
     if (deck && deck.traits && deck.traits.length) out.push(el("div.ps-chiprow", null, deck.traits.map(function (t) { return chip(t); })));

@@ -1,6 +1,6 @@
 /* ===========================================================================
    ELYSIUM NIGHTS · The #GRID tab
-   Play-time hacking console: your rig (Smartdeck / B&E Buddy) with durability +
+   Play-time hacking console: your rig (Smartdeck / B&E Buddy) with System Integrity +
    Bandwidth, live Cipher Attack / Save DC / Link math, an active-Link tracker, a
    target-node calculator, and the full #GRID rules reference. Reads the same
    #PRINT record; rig + links persist on ch.grid, Bandwidth on resources.current.
@@ -18,10 +18,10 @@ EN.gridView = (function () {
   var _runMode = "hot";
   var _deep = { edges: {}, snags: {}, kitsOff: {}, risk: 2, result: null, animating: false, animToken: 0, focusSrc: "skill" };
 
-  // Battle Damage: the whole #GRID tab visibly degrades as rig Durability drops.
+  // Battle Damage: the whole #GRID tab visibly degrades as rig System Integrity drops.
   // Device-level preference, matching the Flow immersive pattern (en_flow_*).
   var DMG_KEY = "en_grid_damage_v1", DMG_INT_KEY = "en_grid_damage_intensity_v1";
-  var _dmgOn = true, _dmgIntensity = "auto";               // default: on, follow live Durability
+  var _dmgOn = true, _dmgIntensity = "auto";               // default: on, follow live Integrity
   try { _dmgOn = localStorage.getItem(DMG_KEY) !== "0"; } catch (e) {}
   try { var _dv = localStorage.getItem(DMG_INT_KEY); if (_dv) _dmgIntensity = _dv; } catch (e) {}
   function isDamage() { return _dmgOn; }
@@ -115,20 +115,32 @@ EN.gridView = (function () {
 
     if (!deck) { rows.push(noteP("No rig selected. Codebreakers run a Smartdeck (Power User); everyone else can crack low-tier nodes with a B&E Buddy.")); return EN.ui.panel("Rig", "SMARTDECK / B&E BUDDY", rows, { corners: true }); }
 
-    // durability HP
-    var maxHp = deck.maxHp, spent = grid.deckHpSpent || 0, cur = Math.max(0, maxHp - spent), bricked = cur <= 0;
+    // System Integrity: damage subtracts (cipher damage after the Firewall, physical
+    // damage at full value). Amounts are rolled, so take a typed number, not a +1 tick.
+    var maxInt = deck.maxIntegrity, spent = grid.deckHpSpent || 0, cur = Math.max(0, maxInt - spent), bricked = cur <= 0;
+    var amtInput = el("input.mono", { type: "number", min: "1", value: "1", title: "Amount of System Integrity to subtract or restore",
+      style: { width: "56px", textAlign: "center", padding: "4px 6px" } });
+    function shiftIntegrity(sign) {
+      var n = Math.max(1, parseInt(amtInput.value, 10) || 1);
+      gset(function (g) { g.deckHpSpent = eng.clamp((g.deckHpSpent || 0) + sign * n, 0, maxInt); });
+    }
     rows.push(el("div", { style: { marginTop: "10px" } }, [
       el("div.row.between", { style: { alignItems: "baseline" } }, [
-        el("span", { style: { fontFamily: "var(--disp)", fontSize: "10px", letterSpacing: ".12em", color: "var(--text3)" }, text: "DURABILITY HP" }),
-        el("span.mono", { style: { fontSize: "13px", color: bricked ? "var(--danger)" : "var(--text2)" }, text: bricked ? "BRICKED" : cur + " / " + maxHp })
+        el("span", { style: { fontFamily: "var(--disp)", fontSize: "10px", letterSpacing: ".12em", color: "var(--text3)" }, text: "SYSTEM INTEGRITY" }),
+        el("span.mono", { style: { fontSize: "13px", color: bricked ? "var(--danger)" : "var(--text2)" }, text: bricked ? "BRICKED" : cur + " / " + maxInt })
       ]),
-      bar(cur, maxHp, bricked ? "var(--danger)" : "var(--success)"),
-      el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "4px" } }, [
-        stepper(function () { gset(function (g) { g.deckHpSpent = Math.min(maxHp, (g.deckHpSpent || 0) + 1); }); },
-                function () { gset(function (g) { g.deckHpSpent = Math.max(0, (g.deckHpSpent || 0) - 1); }); }, cur <= 0, spent <= 0),
-        el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: bricked ? "Bricked; all Links sever (LinkDeath). Downtime repair only." : "−1 per hit (any successful hit deals 1 HP)." }),
-        spent > 0 ? el("button.btn.sm", { style: { color: "var(--text2)" }, onclick: function () { gset(function (g) { g.deckHpSpent = 0; }); toast("Rig repaired to full."); } }, "⟳ REPAIR FULL") : null
-      ])
+      bar(cur, maxInt, bricked ? "var(--danger)" : "var(--success)"),
+      el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "6px" } }, [
+        amtInput,
+        el("button.btn.sm", { disabled: bricked, title: "Subtract this much System Integrity",
+          style: { color: "var(--danger)", borderColor: "var(--danger)" }, onclick: function () { shiftIntegrity(1); } }, "− DAMAGE"),
+        el("button.btn.sm", { disabled: spent <= 0, title: "Restore this much System Integrity",
+          onclick: function () { shiftIntegrity(-1); } }, "+ REPAIR"),
+        spent > 0 ? el("button.btn.sm", { style: { color: "var(--text2)" }, onclick: function () { gset(function (g) { g.deckHpSpent = 0; }); toast("Rig restored to full Integrity."); } }, "⟳ FULL") : null
+      ]),
+      el("span.help", { style: { margin: "4px 0 0", fontSize: "10.5px", display: "block" },
+        text: bricked ? "Bricked; all Links sever (LinkDeath as a forced disconnect). Downtime repair only."
+                      : "Cipher damage subtracts after the Firewall Threshold; physical damage lands at full value." })
     ]));
 
     // Bandwidth (Codebreaker)
@@ -738,23 +750,23 @@ EN.gridView = (function () {
   }
 
   /* ===================== BATTLE-DAMAGE LAYER =====================
-     The tab degrades as rig Durability falls. Stage 0 pristine; 1-3 escalate
+     The tab degrades as rig System Integrity falls. Stage 0 pristine; 1-3 escalate
      (glow, chip lurch, button glitch, panel flicker/interlace, TV static);
      4 = bricked (dead, desaturated). Most tells are CSS driven off data-dmg;
      only the rare letter-scramble needs JS. prefers-reduced-motion respected. */
   function reducedMotion() {
     try { return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; }
   }
-  // Map current rig Durability to a 0-4 damage stage. Off / no rig -> 0.
+  // Map current rig System Integrity to a 0-4 damage stage. Off / no rig -> 0.
   // A pinned Intensity (1-4) previews that stage regardless of actual HP.
   function damageStage(ch, d) {
     if (!_dmgOn) return 0;
     if (_dmgIntensity !== "auto") return Math.max(0, Math.min(4, parseInt(_dmgIntensity, 10) || 0));
     var dk = d.grid && d.grid.deck;
-    if (!dk || !(dk.maxHp > 0)) return 0;                    // no rig -> nothing to damage
-    var cur = Math.max(0, dk.maxHp - (((ch.grid || {}).deckHpSpent) || 0));
+    if (!dk || !(dk.maxIntegrity > 0)) return 0;                    // no rig -> nothing to damage
+    var cur = Math.max(0, dk.maxIntegrity - (((ch.grid || {}).deckHpSpent) || 0));
     if (cur <= 0) return 4;                                  // bricked
-    var pct = cur / dk.maxHp;
+    var pct = cur / dk.maxIntegrity;
     return pct <= 0.25 ? 3 : pct <= 0.5 ? 2 : pct <= 0.75 ? 1 : 0;   // last quarter = 3 (static)
   }
   // Deterministic 0..1 hash: staggered animation delays look random but stay
@@ -837,7 +849,7 @@ EN.gridView = (function () {
     if (!deep) blocks.push(el("div", { style: { marginTop: "14px" } }, [targetPanel(ch, d, G)]));
     blocks.push(el("div", { style: { marginTop: "14px" } }, [referencePanel(ch, d, G)]));
 
-    // Wrap in .gridtab and stamp the live Durability damage stage; the CSS layer
+    // Wrap in .gridtab and stamp the live Integrity damage stage; the CSS layer
     // and the JS glitch driver read it from here.
     var dmg = damageStage(ch, d);
     var root = el("div.gridtab", { dataset: { dmg: String(dmg) } }, blocks);

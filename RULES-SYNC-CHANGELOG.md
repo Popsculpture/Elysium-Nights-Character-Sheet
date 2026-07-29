@@ -71,14 +71,59 @@ Flow formulas, the 19 damage types and 39 of 41 conditions are also in sync.
   Electromagnetic and Cognitive tables were rewritten in the overhaul and the app
   was never resynced.
 
+### A3. #GRID device damage: durability HP replaced by System Integrity
+- **Files:** `app/data/grid.js`, `app/js/engine.js`, `app/js/grid.js`,
+  `app/js/settings.js`, `app/js/store.js`, `app/js/printsheet.js`, `app/js/pdfexport.js`
+- **Rule:** Part 2, lines 3389-3407 - "Smartdecks and B&E Buddies track **System
+  Integrity** like any node. Damage subtracts from it. At 0, the device is
+  **Bricked**." / "**Damage is damage.** Cipher damage tests the device's Firewall
+  first (if it has one) and the remainder subtracts from System Integrity. Physical
+  damage does not care about Firewalls; a rifle round argues with the chassis
+  directly, at full value." / "Rudimentary and Standard infrastructure bricks on a
+  single successful hit; a device never does."
+- **Was:** the retired durability model. Decks had `hp` 3/4/5/6/7/8, buddies 2/3/4,
+  nodes 3-7, "any successful hit deals exactly 1 HP regardless of the rolled
+  damage," and the Firewall Damage Threshold was a pass/fail gate ("damage must
+  EXCEED the threshold to deal 1 HP").
+- **Now, all values from the doc:**
+  - Smartdeck Integrity **20 / 30 / 35 / 40 / 50 / 55** (Standard through Apex),
+    doc table 3398-3407.
+  - B&E Buddy Integrity **15 / 20 / 30**, doc 3537-3539.
+  - Node Integrity **20 / 30 / 35 / 40 / 50** for Improved through Apex, doc
+    3267-3271. Rudimentary and Standard stay null: they brick on one hit.
+  - Firewall Damage Threshold is now **subtractive** (roll minus threshold comes off
+    Integrity; a result of 0 or less is discarded), doc 3374.
+  - `Reinforced Heatsinks` **+2 HP -> +15 System Integrity**, doc 3597.
+  - Repair rescaled to the doc: Downtime **𝒢10 per 5 Integrity** restored (round
+    up), Field Repair **5 Integrity per successful Edge die** (3411-3412).
+  - The restore cipher now grants **5 x Tech Modifier (minimum 5)** Integrity to a
+    Linked allied node **or device**, doc 3754. It previously granted Tech Modifier
+    (minimum 1) and split nodes from devices, a distinction the new model removes.
+- **Engine:** `deck.hp` -> `deck.integrity`; `deckBaseHp`/`modHp`/`deckMaxHp` ->
+  `deckBaseIntegrity`/`modIntegrity`/`deckMaxIntegrity`; the derived field
+  `d.grid.deck.maxHp` is now **`maxIntegrity`**. Mod bonuses read `bonus.integrity`.
+- **UI:** the rig readout is now "SYSTEM INTEGRITY". The old plus/minus-one stepper
+  was replaced by an amount box with **DAMAGE** / **REPAIR** / **FULL**, because
+  damage is a rolled number against a 15-55 track rather than one tick per hit.
+  Print sheet and PDF export now label the field "Integrity".
+- **Battle-damage visual layer:** the escalation added earlier in commit `3144a6b`
+  reads a percentage of the track, so it needed no logic change and now has far
+  better granularity. Verified on a 45-point rig: 100% pristine, 60% worn,
+  40% heavy, 20% critical (static), 0% bricked.
+- **Saved characters:** the persisted field `ch.grid.deckHpSpent` keeps its name and
+  now counts Integrity lost. Any character mid-repair carries their old number
+  forward, which reads as *less* damaged on the new larger track. Nothing breaks.
+- **Verified live:** all Integrity values, Heatsinks +15 (Improved 30 + 15 = 45),
+  Max Complexity per tier, the damage/repair control, and the visual staging.
+- **Manuscript impact:** none. See M1 and M2 for the rulings that shaped this.
+
 ---
 
 ## PART B: Pending, in the agreed order
 
-1. Rulings needed on the contradictions in PART C (blocking the #GRID and
-   save-DC work).
-2. **#GRID System Integrity rework** - replace the retired durability-HP model,
-   and repair the battle-damage visual layer that sits on it (see M1).
+1. ~~Rulings on the contradictions in PART C.~~ **M1 and M2 ruled 2026-07-28**;
+   both need manuscript edits, neither needed a code change. M3 and M5-M9 still open.
+2. ~~**#GRID System Integrity rework.**~~ **Done, see A3.**
 3. Remaining verified engine bugs: Speed reduction order, damage-while-Stable,
    Severe Fatigue on Long Rest, LinkDeath 2d6-per-Link, unarmed Simple Weapons
    proficiency, cyberware SP platform/Crown rules, Load and Loadout rules.
@@ -98,7 +143,19 @@ These are places where the rulebook contradicts itself, states a rule the app
 cannot implement unambiguously, or omits a rule the rest of the text assumes.
 Nothing here has been changed in the app; each needs an author ruling.
 
-### M1. Max Complexity: "Equal to Tier" vs "Tier + 1"  (HIGH PRIORITY)
+### M1. Max Complexity: "Equal to Tier" vs "Tier + 1"  (RULED - manuscript edit needed)
+**Author ruling (2026-07-28): Tier + 1.** Part 2's line and table are the ones to
+correct. Replace the Part 2 bullet at line 3568 with, verbatim:
+
+> **Max Complexity:** Equal to Tier + 1. The deck cannot execute a cipher above this line.
+
+and change the **Max Complexity** column of the Smartdeck table (3575-3580) from
+0/1/2/3/4/5 to **1/2/3/4/5/5** (Apex is capped by the library, which stops at
+Complexity 5). Part 1 line 2063 already states this rule correctly and needs no edit.
+**App status: already correct**, `Math.min(5, deck.t + 1)`; no code change was needed.
+Verified per tier: Standard 1, Improved 2, Advanced 3, Premium 4, Elite 5, Apex 5.
+
+<details><summary>Original conflict, for reference</summary>
 - **Part 2, line 3568 + table 3575-3580:** "**Max Complexity:** Equal to Tier."
   Table gives Standard[0] = 0 ... Apex[5] = 5.
 - **Part 1, line 2063:** "A Smartdeck can run Ciphers up to **(Smartdeck Tier + 1)
@@ -109,11 +166,20 @@ Nothing here has been changed in the app; each needs an author ruling.
   character cannot run half their own starting kit.
 - **Note:** Part 1's formula also breaks at the ceiling - Tier 5 + 1 = 6, but the
   library stops at Complexity 5.
-- **App currently implements:** Part 1's rule (`Math.min(5, deck.t + 1)`).
-- **Recommendation:** keep Tier + 1 and fix Part 2's table, or move the starting
-  deck to Tier 1. Not changed pending your ruling.
+- **App implements:** Part 1's rule (`Math.min(5, deck.t + 1)`).
+</details>
 
-### M2. Cipher Save DC: Systems Proficiency Bonus vs Caliber  (HIGH PRIORITY)
+### M2. Cipher Save DC: Systems Proficiency Bonus vs Caliber  (RULED - manuscript edit needed)
+**Author ruling (2026-07-28): 8 + Tech modifier + Systems Proficiency Bonus.**
+Part 2 line 3352 is correct and stays. **Part 1 line 2080 (Codebreaker feature
+*Brownout*) must be corrected** - it currently reads "(8 + your Tech Modifier + your
+Caliber)" and should read "(8 + your Tech Modifier + your Systems Proficiency
+Bonus)", or simply "against your Cipher Save DC" with no parenthetical, since the
+formula is defined in the #GRID chapter.
+**App status: already correct** (`8 + techMod + sysProf`, `app/js/engine.js:839`);
+no code change was needed.
+
+<details><summary>Original conflict, for reference</summary>
 - **Part 2, line 3352** (the canonical #GRID reference): "**Cipher Save DC:**
   8 + Tech mod + Systems Proficiency Bonus".
 - **Part 1, line 2080** (Codebreaker feature *Brownout*): "...must make a Body Save
@@ -121,8 +187,8 @@ Nothing here has been changed in the app; each needs an author ruling.
 - These are the only two places in all three Parts that spell the formula out.
 - **Scale of the difference:** a Level 9 Codebreaker with Tech 18 (+4) and Adept
   Systems is DC 13 under one rule and DC 17 under the other.
-- **App currently implements:** the #GRID chapter version.
-- Not changed pending your ruling.
+- **App implements:** the #GRID chapter version.
+</details>
 
 ### M3. Weapon Save DC is now split three ways, but the app has one formula
 - **Part 3, line 495:** "**Weapon Save DC (Melee):** 8 + Body modifier + your Caliber"

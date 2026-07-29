@@ -842,29 +842,29 @@ EN.engine = (function () {
     // SysAdmin (Root Access) at L9 removes the Link cap for Codebreakers
     var unlimitedLinks = isCodebreaker && level >= 9;
     var g = (ch && ch.grid) || {};
-    var deck = null, deviceBonus = 0, deckBaseHp = 0, modSlots = 0, deckTraits = [], maxComplexity = null;
+    var deck = null, deviceBonus = 0, deckBaseIntegrity = 0, modSlots = 0, deckTraits = [], maxComplexity = null;
     if (g.deckType === "smartdeck") {
       deck = (G.smartdecks || []).find(function (t) { return t.tier === g.deckTier; });
       if (deck) {
-        deviceBonus = deck.deviceBonus; deckBaseHp = deck.hp; modSlots = deck.modSlots; maxComplexity = Math.min(5, deck.t + 1);
+        deviceBonus = deck.deviceBonus; deckBaseIntegrity = deck.integrity; modSlots = deck.modSlots; maxComplexity = Math.min(5, deck.t + 1);
         deckTraits = (G.smartdecks || []).filter(function (x) { return x.t <= deck.t; }).map(function (x) { return x.trait; });
       }
     } else if (g.deckType === "buddy") {
       deck = (G.buddies || []).find(function (t) { return t.tier === g.deckTier; });
-      if (deck) { deckBaseHp = deck.hp; }   // buddies have no mod slots → mods never apply
+      if (deck) { deckBaseIntegrity = deck.integrity; }   // buddies have no mod slots → mods never apply
     }
     // mods apply only up to the deck's mod-slot capacity (0 for buddies / no rig).
     // This also drops mods left stranded after a deck downgrade, and is safe against stale/imported data.
-    var modKeys = g.deckMods || [], modHp = 0, modLinks = 0, hasRedline = false, usedSlots = 0;
+    var modKeys = g.deckMods || [], modIntegrity = 0, modLinks = 0, hasRedline = false, usedSlots = 0;
     modKeys.forEach(function (k) {
       var m = (G.mods || []).find(function (x) { return x.key === k; });
       if (!m || usedSlots + m.slots > modSlots) return;
       usedSlots += m.slots;
-      if (m.bonus && m.bonus.hp) modHp += m.bonus.hp;
+      if (m.bonus && m.bonus.integrity) modIntegrity += m.bonus.integrity;
       if (m.bonus && m.bonus.links) modLinks += m.bonus.links;
       if (k === "redline") hasRedline = true;
     });
-    var deckMaxHp = deck ? deckBaseHp + modHp : 0;
+    var deckMaxIntegrity = deck ? deckBaseIntegrity + modIntegrity : 0;
     var isSmart = g.deckType === "smartdeck" && !!deck;
     var isBuddy = g.deckType === "buddy" && !!deck;
     // effective attack/save with the current rig (Buddy uses its baked-in numbers)
@@ -890,7 +890,7 @@ EN.engine = (function () {
       bandwidthMax: (isCodebreaker && resource && resource.name === "Bandwidth") ? resource.max : null,
       stabilityDcBase: stabilityDcBase, stabilityDcMod: stabilityDcMod,
       stabilityLastDamage: stabilityLastDamage, stabilityDcFromDamage: stabilityDcFromDamage, stabilityDcLive: stabilityDcLive,
-      deck: deck ? { type: g.deckType, tier: deck.tier, t: deck.t, deviceBonus: deviceBonus, maxHp: deckMaxHp,
+      deck: deck ? { type: g.deckType, tier: deck.tier, t: deck.t, deviceBonus: deviceBonus, maxIntegrity: deckMaxIntegrity,
                      modSlots: modSlots, traits: deckTraits, maxComplexity: maxComplexity,
                      attack: deck.attack, saveDc: deck.saveDc, maxNode: deck.maxNode } : null
     };
