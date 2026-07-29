@@ -277,6 +277,35 @@ Flow formulas, the 19 damage types and 39 of 41 conditions are also in sync.
   Body because it was higher are the ones affected at the table.
 - **Manuscript impact:** none.
 
+### A7. Conditions resynced (step 4, domain 1 of 7)
+- **Files:** `app/data/conditions.js`, `app/js/combat.js`
+- **Added the missing condition:** **Surprised** (Part 2, lines 2555-2562), with its
+  effect handler: no Action, Move, Swift or Impulse on your first turn (Saves still
+  allowed), Speed 0, and attacks against you have Edge until the start of your second
+  turn. Verified live: Speed 9 -> 0 while Surprised, restoring cleanly.
+  The app now carries 41 of the rulebook's 41 conditions.
+- **LinkDeath** rewritten to the margin model (2411-2413): there is no second saving
+  throw; the margin of the failed Stability Check decides the landing (failed by up
+  to 4 = half feedback and Dazed, by 5 or more = full feedback and Unconscious with a
+  Wits Save to wake). Also notes the new deck interaction from A3.
+- **Strain** stages corrected (2537-2538): Stage 3 Surge is "Overdraw Vitality damage
+  rises from 1d4 to 1d6 per FP, Snag on Breakflow Checks" (the app had it as a
+  Breakflow Check on Overdraw, which is Stage 4); Stage 4 Rend is "Breakflow Check
+  when Overdrawing, and spending FP at all costs 1 flat Vitality per FP".
+- **Strain accumulation** restored to "Strain points equal to the FP spent **beyond
+  your Reservoir**" (2530); the app had dropped the qualifier, which inflated Strain.
+- **Strain / Breakflow recovery** (2544): Downtime clears all Strain; Breakflow
+  Restoration ends Breakflow and lowers Strain to **Stage 2**, not to zero.
+- **Critical Wound** trigger restored (2225): a failed Body Save against Wound damage,
+  or an effect that specifies one.
+- **Renamed action and skills:** "Sprint" -> **Dash** throughout (the rulebook's action
+  is Dash, doc 1327); Grappled escape and Restrained both now name **Athletics**
+  rather than the non-existent "Brawl" and "Strength" skills (2352, 2502).
+- **Frightened** retreat range changed from "ten metres" to **10 spaces** (2342).
+- **Metadata rows added** for Mutating, Immunity, Resistance and Vulnerability, which
+  previously rendered with blank duration and save columns.
+- **Manuscript impact:** see M12.
+
 ---
 
 ## PART B: Pending, in the agreed order
@@ -412,6 +441,19 @@ no code change was needed.
   three named choices Magnetize / Live Current / Flare.
 - Also reported absent from the app and not yet added: the **Sustain Focus
   Disruption** rule.
+
+### M12. LinkDeath feedback stated two ways (NEW, needs a ruling)
+- **Part 2, line 2412** (the Conditions chapter entry): the damage is
+  "**2d6 + 1d6 per additional active Link**".
+- **Part 2, lines 3448 and 3451** (the #GRID chapter): "Every Link severed
+  involuntarily deals **2d6 psychic damage** in feedback" and "Roll **2d6 per severed
+  Link** as one pool."
+- With 3 Links that is 4d6 under the Conditions entry and 6d6 under the #GRID chapter.
+- Both chapters agree on everything else (the margin bands, the Wits Save to wake).
+- **App implements** the #GRID chapter version, since that chapter defines the
+  subsystem and states the per-Link rule twice. Changed in commit `4e7dffb` and
+  reflected in the Conditions entry text.
+- **If the Conditions entry is the intended rule, tell me and I will switch both.**
 
 ### M11. Structural defects in Part 1 (formatting, not rules)
 - **Duplicated chapter title:** `# Origin` appears twice in a row, lines 130 and 132.

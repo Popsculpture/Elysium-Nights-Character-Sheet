@@ -866,8 +866,8 @@ EN.combatView = (function () {
       if (l >= 5) e.derived.push({ name: "Hallucinating", from: "Fatigue " + l });
       if (l >= 6) e.derived.push({ name: "Unconscious", from: "Fatigue 6 · Helpless" });
     },
-    "Frightened": function (e) { e.snagAtk = true; e.snagChk.ALL = true; e.notes.push("Frightened: can't approach the source; must retreat to cover within 10m"); },
-    "Grappled": function (e) { e.speedZero = true; e.notes.push("Grappled: Speed 0; Action + contested Brawl/Acrobatics to escape"); },
+    "Frightened": function (e) { e.snagAtk = true; e.snagChk.ALL = true; e.notes.push("Frightened: can't approach the source; must retreat to cover within 10 spaces"); },
+    "Grappled": function (e) { e.speedZero = true; e.notes.push("Grappled: Speed 0; Action + contested Athletics (Body) or Acrobatics (Agility) vs the grappler's Athletics to escape"); },
     "Hallucinating": function (e) { e.perceptionSnag = true; e.snagChk.WIT = true; e.notes.push("Hallucinating: treat false stimuli as real; Wits Save DC 12 to ignore them"); },
     "Hardwired": function (e) { e.notes.push("Hardwired: targetable by Quick Hacks; Snag on saves vs EMP / viruses / Electromagnetic"); },
     "Incapacitated": function (e) { e.cannotAct = true; e.notes.push("Incapacitated: no Actions of any kind; minor Free Actions only"); },
@@ -890,6 +890,8 @@ EN.combatView = (function () {
       if (l >= 4) e.notes.push("Strain · Rend: Breakflow Check whenever you spend FP");
       if (l >= 5) { e.derived.push({ name: "Breakflow", from: "Strain 5 · Collapse" }); e.derived.push({ name: "Unconscious", from: "Strain 5 · Collapse" }); }
     },
+    "Surprised": function (e) { e.cannotAct = true; e.noSwift = true; e.noImpulse = true; e.speedZero = true; e.edgeToAttackers = true;
+      e.notes.push("Surprised: no Action, Move, Swift, or Impulse on your first turn (Saves still allowed); attacks against you have Edge until the start of your second turn"); },
     "Stunned": function (e) { e.speedZero = true; e.noImpulse = true; e.snagSave.BOD = e.snagSave.AGI = true; e.edgeToAttackers = true; e.notes.push("Stunned: no Move; only one Action OR Swift this turn"); },
     "Soul Shock": function (e) { e.snagChk.MYS = e.snagChk.WIT = true; e.notes.push("Soul Shock: +1d6 damage per repeat instance before resting"); },
     "Unconscious": function (e) { e.cannotAct = true; e.speedZero = true; e.edgeToAttackers = true; e.autoFailBodAgiSaves = true; e.notes.push("Unconscious: drop items, fall Prone, unaware; lose Focus/Sustains and network links"); }
@@ -943,13 +945,15 @@ EN.combatView = (function () {
     "Critical Wound": ["Persistent", "Surgery / Regenerative Tech"], "Cursed": ["Persistent", "Ritual / Rare Relics"],
     "Dazed": ["1 Round", "End of turn Wits DC 12"], "Drowning": ["Special", "Access to breathable air"],
     "Drowsy": ["Persistent", "Exertion / Action to wake"], "Fatigue": ["Until Restored", "Long Rest / Treatment / Medtech"],
-    "Frightened": ["Until Save", "End of turn Wits / Charm DC 15"], "Grappled": ["Until Escaped", "Contested Brawl / Acrobatics"],
+    "Surprised": ["1st turn of combat", "-"], "Mutating": ["Until Treated", "Complex Action Medtech DC 12 + stacks"],
+    "Immunity": ["Persistent", "-"], "Resistance": ["Persistent", "-"], "Vulnerability": ["Persistent", "-"],
+    "Frightened": ["Until Save", "End of turn Wits / Charm DC 15"], "Grappled": ["Until Escaped", "Contested Athletics / Acrobatics"],
     "Hallucinating": ["Persistent", "Purge / Source Expiration"], "Hardwired": ["Permanent", "Uninstall Cyberware"],
     "Incapacitated": ["Until Freed", "Removal of source"], "Invisible": ["Until Revealed", "Narrative / Tech Reveal"],
     "Lagged": ["Persistent", "Exit Zone / Purge"], "LinkDeath": ["Until Save", "End of turn Wits Save"],
     "Panic": ["Special", "End of turn Wits DC 12"], "Paralyzed": ["Until Save", "Body Save (varies)"],
     "Poisoned": ["Varies", "Antitoxin / Medtech Check"], "Prone": ["Until Stand", "Half Move or Swift Action"],
-    "Restrained": ["Until Freed", "Strength / Brawl Check"], "Shaken": ["1-3 Rounds", "End of turn Wits DC 12"],
+    "Restrained": ["Until Freed", "Athletics Check / Destroy Restraint"], "Shaken": ["1-3 Rounds", "End of turn Wits DC 12"],
     "Signal Jammed": ["Until Jam Ends", "Move / Disable Jammer"], "Soul Shock": ["Until Short Rest", "Short Rest"],
     "Staggered": ["1-2 Rounds", "End of turn Wits DC 10"], "Strain": ["Until Restored", "Long Rest / Ritual"],
     "Stunned": ["1 Round", "End of turn Body DC 15"], "Unconscious": ["Until Revived", "Healing / Allied Action"]
