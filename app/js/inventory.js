@@ -1008,7 +1008,7 @@ EN.inventoryView = (function () {
     var byGroup = function (list, grp) { return list.filter(function (i) { return i.group === grp; }); };
     var byKind = function (list, k) { return list.filter(function (i) { return i.kind === k; }); };
     var cats = [
-      { key: "melee", title: "Melee Weapons", short: "MELEE", subs: [
+      { key: "melee", title: "Melee Weapons", short: "MELEE", intro: g.melee && g.melee.saveDcNote, subs: [
         { label: "Simple", intro: g.melee && g.melee.simpleIntro, items: byGroup(melee, "Simple") },
         { label: "Martial", intro: g.melee && g.melee.martialIntro, items: byGroup(melee, "Martial") }
       ] },

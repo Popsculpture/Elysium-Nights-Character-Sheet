@@ -257,6 +257,26 @@ Flow formulas, the 19 damage types and 39 of 41 conditions are also in sync.
   those two keys, so Reflex Booster's Initiative bonus, Subdermal Armor's DR, and the
   Convergence Engine's Vitality never reach the sheet.
 
+### A6. Weapon Save DC split three ways (closes M3, and step 3)
+- **Files:** `app/data/combat.js`, `app/data/gear_melee.js`, `app/data/gear_ranged.js`,
+  `app/js/inventory.js`
+- **Rule:** stated consistently in both Parts, so this is a real change rather than a
+  contradiction. Part 2 lines 1463-1465 give all three in one table, and Part 3
+  repeats them at 497, 677 (again at 3119) and 958:
+  - **Melee:** 8 + Body modifier + Caliber
+  - **Range:** 8 + Agility modifier + Caliber
+  - **Thrown:** 8 + the higher of your Body or Agility modifier + Caliber
+- **Was:** one unified "8 + Body or Agility modifier (whichever is higher) + Caliber"
+  in the common-actions table and the ranged note, and no melee note at all.
+- **Now:** three separate common-action rows, a corrected ranged note that also
+  states the Thrown case, and a new melee note. The melee note had nowhere to render,
+  so the Inventory melee section now carries it as its intro, matching how the ranged
+  note already appears above Ammunition.
+- **Note:** the Weapon Save DC is reference text in this app, not a computed stat, so
+  nothing on a character sheet changes number. Ranged users who were quietly using
+  Body because it was higher are the ones affected at the table.
+- **Manuscript impact:** none.
+
 ---
 
 ## PART B: Pending, in the agreed order
@@ -264,9 +284,8 @@ Flow formulas, the 19 damage types and 39 of 41 conditions are also in sync.
 1. ~~Rulings on the contradictions in PART C.~~ **M1 and M2 ruled 2026-07-28**;
    both need manuscript edits, neither needed a code change. M3 and M5-M9 still open.
 2. ~~**#GRID System Integrity rework.**~~ **Done, see A3.**
-3. Remaining verified engine bugs: Speed reduction order, damage-while-Stable,
-   Severe Fatigue on Long Rest, LinkDeath 2d6-per-Link, unarmed Simple Weapons
-   proficiency, cyberware SP platform/Crown rules, Load and Loadout rules.
+3. ~~Remaining verified engine bugs.~~ **Done, see A4, A5 and A6.** Two items
+   deferred with reasons (cyberware platform slots, flat implant bonuses).
 4. Data corrections, domain by domain.
 5. New subsystems (each a feature build, not a data edit): Flow Disturbances,
    Sit-Downs and Social Pressure numbers, Vehicles & Chases, Improvised Weapons,

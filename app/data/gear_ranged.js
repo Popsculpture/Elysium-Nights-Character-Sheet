@@ -9,7 +9,7 @@ EN.gearCatalog = EN.gearCatalog || {};
 
 EN.gearCatalog.ranged = {
   intro: "In Elysium, the gap between you and trouble is the only currency that buys you time. Ranged weapons are what you spend to keep that gap honest.",
-  saveDcNote: "Weapon Save DC: whenever a firing mode or shell forces a saving throw, the DC is 8 + your Body or Agility modifier (whichever is higher) + your Caliber.",
+  saveDcNote: "Weapon Save DC (Range): whenever a firing mode or shell forces a saving throw, the DC is 8 + your Agility modifier + your Caliber. A Thrown weapon uses the higher of your Body or Agility modifier instead.",
   groupIntros: {
     "Sidearm": "Compact firearms built for the quick draw, the close hallway, the backup tucked under a jacket. Less range and less raw output than a longarm, but they fit where longarms cannot, and they decide whether you make it to the door.",
     "Longarm": "Two hands, two points of stability, two reasons the bullet goes where you wanted it to. Rifles, carbines, shotguns. Longarms own the open ground, where distance is the best armor you have.",

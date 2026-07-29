@@ -9,6 +9,7 @@ EN.gearCatalog = EN.gearCatalog || {};
 
 EN.gearCatalog.melee = {
   intro: "Some fights end with sirens and a clean exit. More end at arm's length, in a service corridor or a back alley, with one of these in your hand. Melee weapons are what you reach for when distance has already collapsed.",
+  saveDcNote: "Weapon Save DC (Melee): whenever a melee weapon forces a saving throw, the DC is 8 + your Body modifier + your Caliber.",
   simpleIntro: "Clubs, kitchen blades, hatchets, short spears. The gear that ends up in a fight because it was already in the room, in the toolbelt, or in the kitchen drawer. No manual, no specialist training, just weight and intent.",
   martialIntro: "The weapons that ask for training before they answer back. Swords, axes, polearms, the heavier melee work that rewards a few years of drill over a few minutes of swinging.",
 

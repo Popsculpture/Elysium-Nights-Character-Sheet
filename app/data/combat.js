@@ -47,7 +47,9 @@ EN.combat = {
   commonActions: [
     { name: "Melee Attack", cost: "Action", text: "d20 + Body Modifier + Weapon Proficiency Bonus, Close-range weapon or unarmed attack." },
     { name: "Ranged Attack", cost: "Action", text: "d20 + Agility Modifier + Weapon Proficiency Bonus, Apply Snag if firing while engaged in melee." },
-    { name: "Weapon Save DC", cost: "Action", text: "8 + Body or Agility modifier (whichever is higher) + Caliber, Sets the DC for enemies to resist your weapon effects." },
+    { name: "Weapon Save DC (Melee)", cost: "-", text: "8 + Body modifier + Caliber, Sets the DC for enemies to resist your melee weapon effects." },
+    { name: "Weapon Save DC (Range)", cost: "-", text: "8 + Agility modifier + Caliber, Sets the DC for enemies to resist your ranged weapon effects." },
+    { name: "Weapon Save DC (Thrown)", cost: "-", text: "8 + the higher of your Body or Agility modifier + Caliber, Sets the DC for enemies to resist thrown weapon effects." },
     { name: "Flow Attack", cost: "Action", text: "d20 + Flow Modifier + Caliber, Consumes FP as defined by the Invocation; effect varies." },
     { name: "Flow Save DC", cost: "Action", text: "8 + Flow Modifier + Caliber, Sets the DC for enemies to resist your Flow Invocations and effects." },
     { name: "Quick Hack", cost: "Action", text: "d20 + Tech Modifier + Systems Proficiency Bonus, Disrupt, override, or support allied systems in combat." },
