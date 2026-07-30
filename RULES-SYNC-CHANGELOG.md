@@ -537,17 +537,35 @@ no code change was needed.
   weapon adds whichever modifier made the attack; cipher damage adds no Tech modifier;
   Flow damage adds the Flow Modifier only because the Invocation rules state it
   ("1d6 + Flow Modifier base").
-- **Two adjacent cases I did NOT change, both need a word from the author:**
-  1. **Finesse melee.** The ruling says Finesse Melee = + Agility. The Finesse trait
-     itself (Part 3 gear traits) says "you may use Body **or** Agility for the attack
-     and damage calculation. You choose which Attribute each time." The app implements
-     the trait: it uses Agility only when Agility is the higher modifier, so a
-     Body-heavy character keeps Body. Reading the ruling literally would force Agility
-     even when that lowers the damage. Left as the trait's choice.
-  2. **Launched explosives.** The carve-out was stated for thrown grenades. A Grenade
-     Launcher or Rocket Launcher is equally indirect, but is Range, and Range says
-     + Agility. The app still adds Agility to launcher damage. If indirect delivery is
-     the real principle rather than the word "thrown", these should be suppressed too.
+- **Both adjacent cases resolved 2026-07-30**, and the manuscript now carries the
+  final wording in the Damage section and a rewritten Damage Resolution pipeline:
+  > On a hit, roll the weapon's damage dice and add the same attribute modifier used
+  > for the attack roll: Body for a standard melee attack, Agility for a ranged attack,
+  > or the attribute used to make a Finesse or direct-contact thrown attack.
+  > Indirect attacks add no attribute modifier. A grenade or launcher shell lands at a
+  > point, forces a save, and deals only its listed damage dice. Cipher, Flow, and Tech
+  > effects also add no attribute modifier unless their text says otherwise.
+  1. **Launched explosives are indirect.** The app was still adding Agility to Grenade,
+     Rocket and Missile Launcher damage. The `indirect` test is now simply the
+     **Explosive trait**, which marks exactly the right set: the three launchers and
+     the five thrown grenades, and nothing else in the catalog. A Grenade Launcher
+     reads `2d8` where it previously read `2d8 +3`.
+  2. **Finesse follows the attack attribute.** Confirmed correct: attack and damage
+     share one computed modifier, so damage can never diverge from the attribute the
+     attack used. Verified with Body +0 and Agility +4: a Longsword stays
+     `+0 (Body)`, a Dagger switches to `+4 (Agility)` on both the attack tooltip and
+     the damage, and a Pistol reads `+4 (Agility)`.
+- **Damage Resolution pipeline rewritten** to the author's new text
+  (`EN.combat.damagePipeline`). Three substantive changes beyond wording:
+  - Step 1 now states that raw damage is the dice plus the attack's attribute
+    modifier, and carries the indirect and cipher/Flow/Tech carve-outs.
+  - **Block moved from step 3 to step 2.** It is an Active Mitigation rolled alongside
+    Parry, Ward, Resurge, Siphon and Brace, "plus any flat bonuses the defense carries
+    (a suit's Block Bonus, the Plated trait)". The old text had Block as a passive flat
+    add to Armor DR in step 3, which contradicted the M7 ruling, and omitted Brace
+    from the step 2 list entirely.
+  - Step 3 now reads "like Force (Spatial) or Psychic", closing the M6 wording.
+- **Commits:** `23db9b2` (thrown grenades), `1c12062` (launchers + pipeline).
 
 ### M5. Resilience Dice: Body modifier per die (RESOLVED 2026-07-28)
 - **Author ruling:** per die. The rule now reads "Roll each die and add your **Body
