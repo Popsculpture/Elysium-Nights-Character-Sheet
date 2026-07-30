@@ -472,6 +472,75 @@ EN.combatView = (function () {
     if (st.crit) s += "  (crit)";
     return s;
   }
+  /* ---- Defensive Impulse tray -------------------------------------------
+     Rolls an active defense and resolves it against the incoming damage, so the
+     player never does the subtraction by hand. Defenses that reduce damage roll
+     their dice plus any flat bonuses and net it against the hit; Dodge instead
+     raises Defense, so it reports the new number rather than a reduction. Some
+     defenses trigger only when the damage is fully absorbed (Resurge's rebound)
+     or scale off the roll itself (Siphon's Vigor). */
+  var _defTray = { open: false, spec: null, incoming: "", roll: null };
+  function openDefTray(spec) { _defTray = { open: true, spec: spec, incoming: "", roll: null }; EN.app.render(); }
+  function closeDefTray() { _defTray = { open: false, spec: null, incoming: "", roll: null }; EN.app.render(); }
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && _defTray.open) closeDefTray(); });
+  function defTrayCommit() {
+    var s = _defTray.spec, parts = [], total = 0;
+    (s.dice || []).forEach(function (dd) {
+      for (var i = 0; i < dd.n; i++) {
+        var r = 1 + Math.floor(Math.random() * dd.sides);
+        parts.push({ label: dd.label || ("d" + dd.sides), value: r }); total += r;
+      }
+    });
+    (s.flat || []).forEach(function (f) { parts.push({ label: f.label, value: f.value, flat: true }); total += f.value; });
+    _defTray.roll = { parts: parts, total: total };
+    EN.app.render();
+  }
+  function defTrayModal() {
+    if (!_defTray.open || !_defTray.spec) return null;
+    var s = _defTray.spec, roll = _defTray.roll;
+    var incoming = parseInt(_defTray.incoming, 10);
+    var hasIncoming = !isNaN(incoming) && incoming >= 0;
+    var dieText = (s.dice || []).map(function (dd) { return dd.n + "d" + dd.sides; }).concat(
+      (s.flat || []).filter(function (f) { return f.value; }).map(function (f) { return eng.fmtMod(f.value); })).join(" + ") || "no roll";
+    var inp = el("input.mono", { type: "number", min: "0", value: _defTray.incoming, placeholder: "0",
+      style: { width: "84px", textAlign: "center", padding: "6px" },
+      oninput: function () { _defTray.incoming = this.value; var o = document.getElementById("def-outcome"); if (o) o.textContent = outcomeText(); } });
+    function outcomeText() {
+      var inc = parseInt(_defTray.incoming, 10);
+      if (isNaN(inc) || inc < 0) return "Enter the incoming damage to resolve it.";
+      if (s.mode === "defense") return "Defense " + (s.baseDefense + s.bonus) + " against this hit (was " + s.baseDefense + "). If it now misses, the attack ends here.";
+      if (!roll) return "Roll to resolve against " + inc + " damage.";
+      var net = Math.max(0, inc - roll.total);
+      var out = inc + " reduced by " + roll.total + " -> " + net + " damage";
+      if (net === 0 && s.onZero) out += ". " + s.onZero;
+      if (s.onRoll) out += ". " + s.onRoll(roll.total);
+      return out;
+    }
+    var card = el("div", { style: { width: "min(430px, 94vw)", background: "linear-gradient(180deg, var(--bg2), var(--bg1))",
+      border: "1px solid var(--accent)", borderRadius: "8px", padding: "16px 18px", boxShadow: "0 20px 60px rgba(0,0,0,.6)" } }, [
+      el("div.mono", { style: { fontSize: "10px", letterSpacing: ".2em", color: "var(--accent)" }, text: "DEFENSIVE IMPULSE" }),
+      el("div", { style: { fontFamily: "var(--disp)", fontWeight: 700, fontSize: "18px", margin: "2px 0 2px" }, text: s.name }),
+      el("p.help", { style: { margin: "0 0 10px" }, text: s.note || "" }),
+      el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
+        el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".1em" }, text: "INCOMING" }), inp,
+        s.mode !== "defense" ? el("button.btn.sm.primary", { onclick: defTrayCommit }, roll ? "REROLL " + dieText : "ROLL " + dieText) : null
+      ]),
+      roll ? el("div.row.wrap", { style: { gap: "6px", marginTop: "10px" } }, roll.parts.map(function (p) {
+        return el("span.chip", { title: p.label, style: { fontSize: "10px", color: p.flat ? "var(--text2)" : "var(--accent)", borderColor: p.flat ? "var(--border2)" : "var(--accent)" },
+          text: p.label + " " + (p.flat ? eng.fmtMod(p.value) : p.value) });
+      })) : null,
+      el("div#def-outcome.mono", { style: { marginTop: "12px", fontSize: "12.5px", color: "var(--text)", lineHeight: 1.5 }, text: outcomeText() }),
+      el("div.row.between", { style: { marginTop: "14px", alignItems: "center" } }, [
+        el("span.help", { style: { margin: 0, fontSize: "10px" }, text: "Esc to close" }),
+        el("button.btn.sm", { onclick: closeDefTray }, "DONE")
+      ])
+    ]);
+    var ov = el("div", { style: { position: "fixed", inset: "0", zIndex: "5000", background: "rgba(4,7,11,.74)",
+      display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" },
+      onclick: function (e) { if (e.target === ov) closeDefTray(); } }, [card]);
+    return ov;
+  }
+
   function dmgTrayModal() {
     if (!_dmgTray.open || !_dmgTray.ctx) return null;
     var ctx = _dmgTray.ctx, roll = _dmgTray.roll, anim = _dmgTray.animating;
@@ -2240,6 +2309,20 @@ EN.combatView = (function () {
     }
 
     /* ---- WEAPONS tab: equipped-weapon attacks (behavior unchanged) ---- */
+    // Scoundrel Gambits ride on attack rolls, ability checks AND saving throws, so
+    // this lives at render scope where both the Attacks panel and Defense panel see it.
+    function moxieFlags() {
+      var gambitNames = (eng.chosenResourceAbilities ? eng.chosenResourceAbilities(ch) : []).map(function (a) { return a.name; });
+      var featNames = (d.features || []).map(function (f) { return f.name; });
+      var moxie = (d.resource && d.resource.name === "Moxie") ? { name: "Moxie", max: d.resource.max } : null;
+      return {
+        moxie: moxie,
+        luckyBreak: !!moxie && gambitNames.indexOf("Lucky Break") !== -1,
+        pureLuck: !!moxie && gambitNames.indexOf("Pure Luck") !== -1,
+        pressLuck: !!moxie && featNames.indexOf("Press Your Luck") !== -1,
+        countingCards: featNames.indexOf("Counting Cards") !== -1
+      };
+    }
     function weaponsKids() {
       var kids = [];
       var atkSnag = fx.snagAtk ? "Active condition · Snag on all attack rolls" : null;
@@ -2272,18 +2355,6 @@ EN.combatView = (function () {
       // Moxie Gambits and the Wildcard bet ride outside the clean 2d20 rule;
       // each is offered on any d20 attack only if the character actually has it
       // and has Moxie. Shared by weapon and class-attack contexts.
-      function moxieFlags() {
-        var gambitNames = (eng.chosenResourceAbilities ? eng.chosenResourceAbilities(ch) : []).map(function (a) { return a.name; });
-        var featNames = (d.features || []).map(function (f) { return f.name; });
-        var moxie = (d.resource && d.resource.name === "Moxie") ? { name: "Moxie", max: d.resource.max } : null;
-        return {
-          moxie: moxie,
-          luckyBreak: !!moxie && gambitNames.indexOf("Lucky Break") !== -1,
-          pureLuck: !!moxie && gambitNames.indexOf("Pure Luck") !== -1,
-          pressLuck: !!moxie && featNames.indexOf("Press Your Luck") !== -1,
-          countingCards: featNames.indexOf("Counting Cards") !== -1
-        };
-      }
       function attackCtx(it, h) {
         var baseMods = [{ label: h.attrName + " Modifier", value: h.mod }];
         if (h.prof) baseMods.push({ label: "Weapon Proficiency", value: h.prof });
@@ -2877,6 +2948,57 @@ EN.combatView = (function () {
         var left = Math.max(0, max - ((ch.shieldWear || {})[nm] | 0) - delta);
         if (delta > 0 && left <= 0) toast(dg.shieldEmitter ? nm + " overloaded and went dark." : nm + " is destroyed; the wreck is salvage.");
       }
+      // Per-defense roll specs for the Defensive Impulse tray. Dice come from live
+      // gear, so a Ward reads the attuned Focus and a Parry reads the equipped melee
+      // weapon rather than a fixed die.
+      function parseDie(str) { var m = /(\d*)d(\d+)/.exec(String(str || "")); return m ? { n: parseInt(m[1] || "1", 10), sides: parseInt(m[2], 10), label: (m[1] || "1") + "d" + m[2] } : null; }
+      function firstMeleeDie() {
+        for (var i = 0; i < equippedNames.length; i++) {
+          var it = findWeapon(equippedNames[i]);
+          if (it && (it.group === "Simple" || it.group === "Martial")) { var pd = parseDie(it.damage); if (pd) { pd.label = it.name; return pd; } }
+        }
+        return null;
+      }
+      function defSpec(name) {
+        var base = { name: name, baseDefense: d.defense, dice: [], flat: [] };
+        if (name === "Block") {
+          var sd = liveShield ? parseDie(dg.shieldBlockDie) : null;
+          if (sd) { sd.label = liveShield.name; base.dice.push(sd); }
+          if (blockBonus) base.flat.push({ label: "Block Bonus", value: blockBonus });
+          if (platedHalf) base.flat.push({ label: "Plated half-DR", value: platedHalf });
+          base.flat.push({ label: "Armor DR", value: d.armorDR || 0 });
+          base.note = "Roll the shield die and add your flat bonuses and Armor DR against this hit." + wearNote;
+          return base;
+        }
+        if (name === "Dodge") { base.mode = "defense"; base.bonus = 2; base.note = "Raise your Defense against this hit. On a miss you may shift 1 space."; return base; }
+        if (name === "Parry") {
+          var md = firstMeleeDie();
+          if (md) base.dice.push(md); else base.flat.push({ label: "no melee weapon", value: 0 });
+          base.note = "Roll your melee weapon's damage die and subtract it from the incoming damage.";
+          return base;
+        }
+        if (name === "Resurge") {
+          base.dice.push({ n: 1, sides: 6, label: "d6" });
+          base.onZero = "Reduced to 0: the Flow attack rebounds for +3 Resonant damage.";
+          base.note = "Against a Flow attack. Roll d6 and subtract it; if the damage drops to 0, it rebounds.";
+          return base;
+        }
+        if (name === "Siphon") {
+          base.dice.push({ n: 1, sides: 6, label: "d6" });
+          base.onRoll = function (t) { return "Restore " + t + " Vigor."; };
+          base.note = "Against elemental or Flow damage. Roll d6, subtract it, and restore that much Vigor.";
+          return base;
+        }
+        if (name === "Ward") {
+          base.dice.push({ n: 1, sides: 6, label: "d6" });
+          var wd = parseDie(dg.wardDie);
+          if (wd) { wd.label = (dg.focus && dg.focus.name) || "Ward"; base.dice.push(wd); }
+          base.note = "Roll d6" + (wd ? " plus your Focus die" : "") + " and subtract the total from the incoming damage.";
+          return base;
+        }
+        base.note = "";
+        return base;
+      }
       var wearNote = dg.shield && dg.shieldWearThreshold
         ? " Wear " + dg.shieldWearThreshold + ": a Blocked hit of " + dg.shieldWearThreshold + "+ raw damage, or any Blocked critical, marks a box (" + dg.shieldBoxesLeft + "/" + dg.shieldBoxesMax + " left)."
         : "";
@@ -2918,24 +3040,47 @@ EN.combatView = (function () {
         if (C.defenseNotes) kids.push(el("p.help", { style: { margin: "0 0 6px", color: "var(--warn)" }, text: "Conditions: " + C.defenseNotes }));
       }
 
-      // LEFT column: saving throws
+      // LEFT column: saving throws. Each row is a button that opens the roll tray,
+      // pre-loaded with the attribute modifier, the class Save Focus Caliber, and any
+      // condition delta, so a save is one tap rather than mental arithmetic.
+      function rollSave(a) {
+        var sv = d.saves[a.key];
+        var mods = [{ label: a.name + " Modifier", value: d.attributes[a.key].mod }];
+        if (sv.focus) mods.push({ label: "Caliber (Save Focus)", value: d.caliber || 0 });
+        if (fx.saveDelta) mods.push({ label: "Conditions", value: fx.saveDelta });
+        var why = fx.snagSave[a.key] ? "Condition: Snag on " + a.name + " saves" : null;
+        openRollTray(Object.assign({
+          weaponName: a.name + " Save", subtype: "SAVING THROW",
+          melee: false, thrownItem: false, ranged: false, usesAmmo: false,
+          traits: [], baseMods: mods, critMin: 20,
+          autoSnag: why ? [why] : [], autoEdge: [], baseSnag: why ? 1 : 0, baseEdge: 0,
+          shaken: (ch.conditions || []).indexOf("Shaken") !== -1, dmg: null
+        }, moxieFlags()));
+      }
       var savesCol = el("div", { style: { flex: "0 0 auto", borderRight: "1px solid rgba(35,48,68,.6)", paddingRight: "12px", marginRight: "4px" } }, [
         el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".14em", color: "var(--text3)", fontWeight: 700, marginBottom: "3px" } }, "SAVES"),
-        el("table.sktable", { style: { fontSize: "12px" } }, [el("tbody", null, R.attributes.map(function (a) {
+        el("div", { style: { fontSize: "9.5px", color: "var(--text4)", marginBottom: "5px" } }, "tap to roll"),
+        el("div", { style: { display: "flex", flexDirection: "column", gap: "3px" } }, R.attributes.map(function (a) {
           var sv = d.saves[a.key];
           var svSnag = fx.snagSave[a.key];
           var autoFail = fx.autoFailBodAgiSaves && (a.key === "BOD" || a.key === "AGI");
           var bonus = sv.bonus + fx.saveDelta;
-          return el("tr", null, [
-            el("td", { text: a.key }),
-            el("td", null, [
-              sv.focus ? el("span.badge", { style: { color: "var(--flow)", fontSize: "8px" }, text: "FOCUS" }) : null,
-              autoFail ? el("span.chip", { style: { fontSize: "8px", color: "var(--danger)", borderColor: "var(--danger)" }, text: "AUTO-FAIL" }) :
-                (svSnag ? snagChip("Condition · Snag on " + a.name + " saves") : null)
-            ]),
-            el("td.tot", { style: fx.saveDelta ? { color: "var(--warn)" } : null, title: fx.saveDelta ? "includes " + eng.fmtMod(fx.saveDelta) + " from conditions" : null, text: eng.fmtMod(bonus) })
+          return el("div.row", {
+            title: autoFail ? a.name + " saves automatically fail while this condition holds" : "Roll a " + a.name + " Save",
+            style: { gap: "7px", alignItems: "center", cursor: autoFail ? "not-allowed" : "pointer",
+                     padding: "3px 6px", borderRadius: "4px", border: "1px solid var(--border)",
+                     background: "var(--bg2)", opacity: autoFail ? .55 : 1 },
+            onclick: function () { if (!autoFail) rollSave(a); }
+          }, [
+            el("span.mono", { style: { fontSize: "11px", color: "var(--text3)", minWidth: "26px" }, text: a.key }),
+            sv.focus ? el("span.badge", { style: { color: "var(--flow)", fontSize: "8px" }, text: "FOCUS" }) : null,
+            autoFail ? el("span.chip", { style: { fontSize: "8px", color: "var(--danger)", borderColor: "var(--danger)" }, text: "AUTO-FAIL" })
+                     : (svSnag ? snagChip("Condition · Snag on " + a.name + " saves") : null),
+            el("span", { style: { flex: 1 } }),
+            el("span.mono", { style: { fontSize: "13px", fontWeight: 600, color: fx.saveDelta ? "var(--warn)" : "var(--accent)" },
+              title: fx.saveDelta ? "includes " + eng.fmtMod(fx.saveDelta) + " from conditions" : null, text: eng.fmtMod(bonus) })
           ]);
-        }))])
+        }))
       ]);
 
       // RIGHT column: loadout chips + active defense maneuvers
@@ -2955,7 +3100,11 @@ EN.combatView = (function () {
           el("span.collapse-caret", { text: open ? "▾" : "▸" }),
           el("span", { style: { fontWeight: 600, minWidth: "52px" }, text: def.name }),
           el("span.chip", { title: def.cost, style: { fontSize: "9px", color: fp ? "var(--flow)" : "var(--accent)", borderColor: fp ? "var(--flow)" : "var(--accent)" } }, fp ? "IMPULSE · 1 FP" : "IMPULSE"),
-          el("span", { style: { flex: 1, minWidth: "100px", fontSize: "11.5px", color: "var(--text2)" }, text: L.summary })
+          el("span", { style: { flex: 1, minWidth: "100px", fontSize: "11.5px", color: "var(--text2)" }, text: L.summary }),
+          el("button.btn.sm", { title: "Resolve " + def.name + " against an incoming hit",
+            style: { flex: "0 0 auto", color: "var(--accent)", borderColor: "var(--accent)" },
+            onclick: function (e) { e.stopPropagation(); openDefTray(defSpec(def.name)); } },
+            def.name === "Dodge" ? "USE" : "ROLL")
         ]);
         var dkids = [head];
         if (open) dkids.push(el("p.help", { style: { margin: "4px 0 8px 18px", whiteSpace: "pre-wrap" }, text: def.text }));
@@ -3129,6 +3278,8 @@ EN.combatView = (function () {
     if (tray) mount.appendChild(tray);
     var dtray = dmgTrayModal();
     if (dtray) mount.appendChild(dtray);
+    var deftray = defTrayModal();
+    if (deftray) mount.appendChild(deftray);
   }
 
   // layout customization (drag/width/attribute-view controls): surfaced from

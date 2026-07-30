@@ -441,6 +441,40 @@ Flow formulas, the 19 damage types and 39 of 41 conditions are also in sync.
   1d6 Block, Half Cover), worn to 1 box (still live), destroyed at 0 (all benefits
   gone), and an emitter at 0 (dark, flagged as an emitter rather than destroyed).
 
+### A11. Rollable saves and a Defensive Impulse resolver (usability)
+- **Files:** `app/js/combat.js`
+- The Defense panel listed saves and active defenses as static reference text. Every
+  number had to be applied by hand at the table, and the defenses that resolve against
+  a moving target (incoming damage) had no way to show their result.
+- **Saving throws are now one tap.** Each save is a button that opens the existing roll
+  tray preloaded with its parts: the attribute modifier, the class Save Focus Caliber,
+  and any condition delta, shown separately rather than as one opaque total. Verified
+  on a Shaper: Mystique reads "Mystique Modifier +3, Caliber (Save Focus) +3" for the
+  +6 on the sheet. Conditions that impose Snag on a save open the tray pre-set to Snag,
+  and an auto-failing save is greyed out and refuses the roll.
+- **Active defenses are rollable, and resolve themselves.** A new Defensive Impulse
+  tray takes the incoming damage, rolls the defense, and reports the net. The dice come
+  from live gear rather than fixed text:
+  - **Block** rolls the equipped shield's die and adds the flat bonuses (armor Block
+    Bonus, Plated half-DR) and Armor DR, matching the rewritten pipeline where Block is
+    an Active Mitigation rather than a passive add.
+  - **Parry** rolls the equipped melee weapon's own damage die, by name.
+  - **Ward** rolls d6 plus the attuned Focus die, by name.
+  - **Resurge** and **Siphon** roll d6.
+  - **Dodge** does not reduce damage; it reports the raised Defense instead
+    ("Defense 14 against this hit, was 12").
+- **Conditional outcomes fire automatically**, which was the point of the request:
+  Resurge announces its rebound only when the damage actually reaches 0, and Siphon
+  reports Vigor restored equal to the roll. Verified: Resurge on 1 damage gives
+  "1 reduced by 5 -> 0 damage. Reduced to 0: the Flow attack rebounds for +3 Resonant
+  damage."; Siphon on 10 gives "10 reduced by 5 -> 5 damage. Restore 5 Vigor."
+- **Readability:** the saves column is now spaced rows with the total right-aligned and
+  a "tap to roll" hint, instead of a cramped table.
+- **Refactor:** `moxieFlags()` moved from inside the Attacks panel up to render scope,
+  since Scoundrel Gambits apply to attack rolls, ability checks AND saving throws.
+  Lucky Break and Press Your Luck are now offered on saves, which the rules allow and
+  the sheet previously did not.
+
 ---
 
 ## PART B: Pending, in the agreed order
