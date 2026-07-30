@@ -50,6 +50,15 @@ EN.flow = {
     { key: "instant", name: "Instant", desc: "Resolves immediately. Effects last until the start of your next turn unless sustained." },
     { key: "sustain", name: "Sustain", desc: "Spend 1 FP at the start of your turn to maintain it. Only one sustained effect at a time." }
   ],
+  /* Stability Factor: sustained resonance is fragile. Taking damage while sustaining
+     forces a Focus Check or the effect collapses. */
+  focusDisruption: {
+    save: "Wits or Body Saving Throw (your choice)",
+    dc: 12, bigHitThreshold: 20,
+    dcNote: "DC 12, unless the damage taken that turn exceeds 20, in which case the DC equals half the total damage taken.",
+    failure: "The sustained effect ends immediately as the Flow destabilizes.",
+    text: "Focus Disruption: if you take damage while sustaining an effect, make a Wits or Body Saving Throw (your choice). DC 12, unless the damage taken that turn exceeds 20, in which case the DC equals half the total damage taken. On a failure the sustained effect ends immediately."
+  },
   precisionShaping: {
     fp: 1, fpStrain3: 2,
     desc: "On Focused or Wide delivery, spend +1 FP to exclude up to your Flow Modifier in targets (characters or objects) you can see or sense. At Stage 3 Strain (Surge) or higher the cost rises to 2 FP."

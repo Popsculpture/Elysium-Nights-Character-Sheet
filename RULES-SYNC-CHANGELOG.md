@@ -306,6 +306,27 @@ Flow formulas, the 19 damage types and 39 of 41 conditions are also in sync.
   previously rendered with blank duration and save columns.
 - **Manuscript impact:** see M12.
 
+### A8. Flow resynced (step 4, domain 2 of 7)
+- **Files:** `app/data/flow.js`, `app/js/flow.js`
+- Most of this domain was already closed by A2, which removed the invented
+  "Light Bend", restored **Blind Spot** to Cognitive, added Electromagnetic's
+  **Overload** and **Magnetic Seize**, rewrote the Electromagnetic base effect to
+  Magnetize / Live Current / Flare, and re-pointed the Phantom Shroud premade to
+  cognitive/Blind Spot. All re-verified live here.
+- **Added the missing Stability Factor: Focus Disruption** (Part 2, lines 2883-2887):
+  "**Focus Check:** When damaged, you must succeed on a **Wits or Body Saving Throw**
+  (Shaper's choice). **DC: 12**, unless the damage taken that turn exceeds **20**, in
+  which case the DC equals **half the total damage taken**. **Failure:** The sustained
+  effect ends immediately."
+  - This is the only rule that threatens a sustained Invocation, and the app had no
+    trace of it. Now stored as `EN.flow.focusDisruption` and surfaced in the Sustain
+    panel whenever an effect is actually being sustained, where a Shaper needs it.
+- **Everything computed in this domain was already correct** and stayed untouched:
+  the Reservoir formula, Flow Attack, Flow Save DC, the Intent/Delivery/Force FP
+  bands, Precision Shaping, the Level 5 Layered Force gate, Overdraw (1d4 rising to
+  1d6 at Stage 3), 3 Strain points per Stage, and Breakflow DC 12 + Stage.
+- **Manuscript impact:** see M13.
+
 ---
 
 ## PART B: Pending, in the agreed order
@@ -494,6 +515,24 @@ no code change was needed.
     being bundled into a 𝒢120-for-6 standard bandolier.
 - **Confirmed:** the "Systems or Body" / "Body or Systems" construction is now extinct
   in the app's data, matching its extinction in Part 3.
+
+### M13. A Caliber 1 example uses a Level 5 ability (NEW)
+- **Part 2, line 2696** gates Layered Force: "At **Level 5 (Expanded Frequency)**, you
+  may pay both the **Hybrid (1 FP)** and the **Empowered Force (1 FP)** costs on a
+  single Invocation."
+- **Part 2, line 2909** heads the worked examples "**Premade Resonant Patterns
+  (Caliber 1, Flow Modifier +4)**". Caliber 1 is Levels 1 to 2.
+- **Arc Lightning**, at lines 2929-2933 inside that section, is built as
+  "**Intent:** Hybrid / Damage + Scramble (1 FP)" plus "**Force:** Empowered (1 FP)",
+  which is exactly the Level 5 combination.
+- So the chapter's showcase pattern cannot legally be built by the character the
+  section says is building it.
+- **App status:** faithful to the doc, no change. It ships Arc Lightning as
+  hybrid + empowered and separately states the Level 5 gate correctly, which is what
+  makes the conflict visible.
+- **Fix is likely one of:** move Arc Lightning out of the Caliber 1 set, relabel the
+  section's example character as Level 5, or rebuild Arc Lightning as Hybrid without
+  Empowered Force.
 
 ### M10. Electromagnetic / Cognitive Resonance tables were rewritten
 - Recorded here because the app had drifted far enough to invent an effect (see A2).
