@@ -15,11 +15,11 @@ EN.grid = {
     { term: "Element", summary: "Anything inside a node: Personas, programs, IC, anomalies, or data caches." },
     { term: "Link", summary: "A live connection between your device and a node. Needed to inject most ciphers (⇋)." },
     { term: "Cipher", summary: "Illegal hardware modules that let you breach, subvert, or weaponize nodes." },
-    { term: "System Integrity", summary: "A node's durability. When it hits 0, the node is bricked." },
-    { term: "Firewall", summary: "A node's outer armor, a damage threshold against incoming cipher damage." },
+    { term: "System Integrity", summary: "A node's hit points. When they hit 0, the node is bricked." },
+    { term: "Firewall", summary: "A node's armor. Its threshold subtracts from every incoming cipher damage roll." },
     { term: "Stability Check", summary: "The save that determines whether you keep your Links online under disruption." },
-    { term: "LinkDeath", summary: "Violent severing of your Links to the #GRID, with psychic backlash." },
-    { term: "Cascade Failure", summary: "The catastrophic critical-failure state of LinkDeath. Multi-Link only." }
+    { term: "LinkDeath", summary: "The violent severing of a Link instead of a clean close, with psychic backlash." },
+    { term: "Cascade Failure", summary: "One involuntary disconnect dragging more Links down with it. Multi-Link only." }
   ],
 
   /* ---- Nodes (Tier → Security Rating / Cipher Save Bonus / System Integrity) ---- */
@@ -43,36 +43,36 @@ EN.grid = {
   ],
 
   /* ---- Scanning & Detection ---- */
-  scanIntro: "Finding what to hack is its own skill; half of what's worth hitting hides behind a node disguised as a vending machine. Out of combat, scan via a Systems (Tech) Dice Pool; in combat, a d20 Systems check or Quick Hack.",
+  scanIntro: "Finding what to hack is its own skill; half of what's worth hitting hides behind a node disguised as a vending machine. Anything loud enough to broadcast is already on your map, no roll required. For anything quieter, compare your Passive Systems (10 + Tech modifier + Systems Proficiency Bonus, plus always-on scanning gear) against the node's Scan DC; that is the default, and most scenes never need more. When a node hides better than your Passive can reach, stop and sweep: out of combat a Systems (Tech) Dice Pool, under fire a single Systems check or Quick Hack (d20 + Tech modifier + Systems Proficiency Bonus) that costs your Action. You cannot Link, breach, or target a node you have not found.",
+  /* Scan DC measures concealment, not power: a Standard smartwatch can be Ghosted,
+     an Apex server can sit wide open. Only nodes hidden on purpose (or strange by
+     nature) get a Scan DC at all; everything else broadcasts. */
   scanning: [
-    { quality: "Rudimentary device",     dc: 8,  snag: 1 },
-    { quality: "Standard consumer gear", dc: 10, snag: 1 },
-    { quality: "Improved security gear", dc: 11, snag: 2 },
-    { quality: "Advanced infrastructure",dc: 12, snag: 2 },
-    { quality: "Premium corporate",      dc: 13, snag: 3 },
-    { quality: "Elite or black lab",     dc: 14, snag: 4 },
-    { quality: "Apex or experimental",   dc: 15, snag: 5 }
+    { quality: "Broadcasting",   dc: "none", reads: "Wants to be found: consumer gear, public infrastructure, anything advertising a service. Detected automatically." },
+    { quality: "Obscured",       dc: 12,     reads: "Not hidden on purpose, just lost in the noise. One device in a crowded signal-space." },
+    { quality: "Masked",         dc: 15,     reads: "Wearing another object's face. The camera disguised as a smoke detector." },
+    { quality: "Stealth-Routed", dc: 18,     reads: "Actively dodging: decoy beacons, bounced signals, corporate concealment built to be overlooked." },
+    { quality: "Ghosted",        dc: 21,     reads: "Barely there. Pre-Collapse black boxes, Flow-shrouded nodes, things that went dark on purpose and stayed that way." }
   ],
+  /* What helps, what hurts: each grants Edge or Snag on the scan, never a DC shift. */
   scanMods: [
-    { name: "Camouflaged Node",   condition: "Disguised as something else", d20: "+2", pool: "+1 Snag Die" },
-    { name: "High Interference",  condition: "RF noise, Flow storms, jamming", d20: "+4", pool: "+2 Snag Dice" },
-    { name: "Hardened Security",  condition: "Stealth routing, decoy beacons", d20: "+6", pool: "+3 Snag Dice" },
-    { name: "Rural / Clear Space",condition: "Few signals, open sight lines", d20: "-2", pool: "+1 Edge Die" },
-    { name: "Familiar Ground",    condition: "You have maps or prior intel", d20: "-3", pool: "+1 Edge Die" },
-    { name: "Specialized Scanner",condition: "Top shelf or Flow-tuned gear", d20: "-4", pool: "+2 Edge Dice" }
+    { name: "High Interference", condition: "RF noise, Flow storms, active jamming",       d20: "Snag", pool: "+1 Snag Die" },
+    { name: "Clear Space",       condition: "Few competing signals, open sight lines",     d20: "Edge", pool: "+1 Edge Die" },
+    { name: "Familiar Ground",   condition: "Maps or prior intel on the target",           d20: "Edge", pool: "+1 Edge Die" },
+    { name: "Specialized Gear",  condition: "A Flow-tuned scanner, a dedicated signal rig", d20: "Edge", pool: "+1 Edge Die" }
   ],
-  scanCapNote: "Modifier Stack Cap: beneficial modifiers cannot reduce a scan DC by more than 6 total. A perfectly prepped scan can be easy, but never trivial.",
+  scanCapNote: "Modifier Stack Cap: situational Edge caps at +2 Edge Dice on a Dice Pool scan. On a d20 or Passive scan, Edge does not stack: a second source adds nothing. Gear built to ignore this cap, like the Sweep Suite Plug-In, says so in its own text. A perfect setup makes a hard scan easy. Nothing makes a Ghosted node routine.",
 
   /* ---- Links ---- */
   linkEstablish: "1. Identify the target node within range. 2. Roll a Cipher Attack vs. the node's Security Rating. 3. On success you establish a Link; it persists until severed.",
-  linkLimits: "Standard Users: 1 active Link at a time (opening a new one closes the old). Codebreakers: maximum active Links equal to 2 × Caliber; at Level 9 the SysAdmin (Root Access) feature removes the cap entirely (unlimited Links, bounded only by Stability Checks). Multi-linking is the signature loop of the class, and a tightrope: the more Links you hold, the worse a failed Stability Check becomes.",
-  stabilityCheck: "A Link doesn't care that you're being shot at, only whether you're still upright. A Stability Check is a Body or Wits save, DC 10 or half the total damage taken that turn, whichever is higher. Roll one whenever you take damage from outside the #GRID while holding any Links, or take direct psychic damage from an IC Counterattack you elected to intercept. Success: all Links hold. Failure: all Links sever and LinkDeath triggers. Falling unconscious severs all Links automatically; a clean voluntary shutdown has no backlash. If your deck is Bricked, no Stability Check is possible; all Links sever and LinkDeath triggers.",
+  linkLimits: "Standard Users: 1 active Link at a time (opening a new one closes the old). Sourcerers: maximum active Links equal to Caliber, held open by sprites instead of hardware. Codebreakers: maximum active Links equal to 2 × Caliber; at Level 9 the SysAdmin (Root Access) feature removes the cap entirely (unlimited Links, bounded only by Stability Checks). Multi-linking is the signature loop of the class, and a tightrope: the more Links you hold, the worse a failed Stability Check becomes.",
+  stabilityCheck: "A Link doesn't care that you're being shot at, only whether you're still upright. A Stability Check is a Body or Wits save, DC 10 or half the total damage taken that turn, whichever is higher. Roll one whenever you take damage from any source while holding one or more Links: gunfire, a blast wave, an IC Counterattack you intercepted, or LinkDeath feedback itself. Success: your Links hold and nothing else happens. Failure: one Link of your choice is torn away, and that severance is a LinkDeath graded by the margin of this same check; there is no second roll, and your remaining Links hold, for the moment. If the damage knocks you Unconscious outright, skip the check: falling Unconscious severs every Link on its own terms. Closing a Link voluntarily never requires a roll and carries no backlash of any kind. A Bricked deck is a forced disconnect instead: every Link tears away at once, with no check to save it.",
 
   /* ---- Ciphers ---- */
   cipherAttackFormula: "Cipher Attack: d20 + Tech mod + Systems Proficiency Bonus vs. node's Security Rating.",
   cipherSaveFormula: "Cipher Save DC: 8 + Tech mod + Systems Proficiency Bonus. Nodes resist save-based ciphers with d20 + Cipher Save Bonus.",
   cipherOutcomes: "Node fails its save: cipher takes full effect. Node succeeds: cipher is resisted, and IC automatically retaliates.",
-  cipherComplexityNote: "Complexity 0-5. Standard Users can use Complexity 0; Complexity 1+ is Power User territory. Casting cost (Codebreaker): Complexity 0 free; 1-3 cost 1 Bandwidth; 4-5 cost 2 Bandwidth; Signature ciphers a flat 1 Bandwidth.",
+  cipherComplexityNote: "Complexity 0-5. Standard Users run Complexity 0 on their own; Complexity 1+ is Power User territory, and a Codebreaker's Smartdeck sets their ceiling. The B&E Buddy is the exception: its baked-in suite scales to the Buddy's own tier and still works for a Standard User at Complexity 1 or 2. Casting cost (Codebreaker): Complexity 0 free; 1-3 cost 1 Bandwidth; 4-5 cost 2 Bandwidth; Signature ciphers a flat 1 Bandwidth.",
   cipherDamage: [
     { complexity: "Standard", c: 0, roll: "1d6" },
     { complexity: "Improved", c: 1, roll: "2d6" },
@@ -81,8 +81,8 @@ EN.grid = {
     { complexity: "Elite",    c: 4, roll: "5d6" },
     { complexity: "Apex",     c: 5, roll: "6d6" }
   ],
-  cipherDamageNote: "Combat ciphers roll damage by Complexity, compared to the node's Firewall threshold. If the damage EXCEEDS the threshold, the node loses 1 System Integrity; if equal or less, it's discarded; the Firewall holds. Even an Apex cipher can be turned aside by an Elite Firewall on a low roll; the way through is layered (bypasses, drains, ciphers that target Cipher Saves).",
-  minionRule: "Rudimentary and Standard nodes ignore the Firewall-threshold rule: any successful cipher hit deals 1 HP and bricks them outright (Minion Rule).",
+  cipherDamageNote: "Combat ciphers roll damage by Complexity. Subtract the target node's Firewall Damage Threshold (if any) from the roll; whatever remains comes off the node's System Integrity. A roll reduced to 0 or less is discarded entirely and the Firewall holds. At 0 System Integrity the node is bricked. Even an Apex cipher can be turned aside by an Elite Firewall on a low roll; the way through is layered (bypasses, drains, ciphers that target Cipher Saves instead of slamming the Firewall).",
+  minionRule: "Rudimentary and Standard nodes ignore the Firewall-threshold rule: they have no Integrity to whittle down, so any successful cipher hit bricks them outright (Minion Rule).",
 
   /* ---- Firewalls (node armor) ---- */
   firewalls: [
@@ -93,10 +93,10 @@ EN.grid = {
     { tier: "Elite",    price: 2500, securityBonus: 6, threshold: 6 },
     { tier: "Apex",     price: 3500, securityBonus: 7, threshold: 7 }
   ],
-  firewallNote: "Firewalls are armor, not HP. Security Bonus adds to the node's Security Rating; the Damage Threshold subtracts from every incoming cipher damage roll before it touches System Integrity, and whatever remains comes off Integrity. Damage reduced to 0 or less is discarded.",
+  firewallNote: "Firewalls are armor, not hit points. Security Bonus adds to the node's Security Rating; the Damage Threshold subtracts from every incoming cipher damage roll before it touches System Integrity, and whatever remains comes off Integrity. Damage reduced to 0 or less is discarded.",
 
   /* ---- Intrusion Countermeasures ---- */
-  icIntro: "IC are scripts that live inside nodes, waiting. When a node succeeds its Cipher Saving Throw, the resident IC triggers ONE response (the GM picks which, by tier). No extra dice, only the cipher save matters.",
+  icIntro: "IC are scripts that live inside nodes, waiting. When a node resists a cipher, whether by succeeding its Cipher Saving Throw or by turning aside a Cipher Attack that missed its Security Rating, the resident IC triggers ONE response. Higher tiers gain additional response types; the GM selects which fires based on the situation. No additional dice are needed to determine whether IC triggers.",
   ic: [
     { tier: "Basic",      price: 300,  detection: 1, responses: ["Alert"] },
     { tier: "Advanced",   price: 600,  detection: 2, responses: ["Alert", "Analyze"] },
@@ -108,33 +108,34 @@ EN.grid = {
   icResponses: [
     { name: "Alert", text: "The IC silently logs the breach attempt and your digital signature. You are NOT notified. The GM tracks the trace, advancing a security clock, dispatching a #GRID Guardian, or triggering physical response forces." },
     { name: "Analyze", text: "The node's Cipher Save Bonus increases by +2 against this specific hacker for the rest of the scene. Stacks if Analyze triggers again. The longer you poke at a smart node, the smarter it gets." },
-    { name: "Counterattack", text: "Hostile code fires back down your attack vector. Damage by IC tier (Adaptive 3d6 / Aggressive 4d6). It normally hits your Smartdeck or B&E Buddy for 1 HP regardless of the roll; the rolled damage only applies if you choose to intercept." },
+    { name: "Counterattack", text: "Hostile code fires back down the cipher's attack vector. Roll damage by IC tier (Adaptive 3d6 / Aggressive 4d6). The rolled damage always applies: it normally hits your Smartdeck or B&E Buddy, so subtract that device's Firewall Damage Threshold (if any) and the remainder comes off its System Integrity. A Codebreaker may intercept the hit personally instead. A Sourcerer has no device to eat the hit and no Firewall to reduce it: the rolled damage always lands in full as Psychic damage, then a Stability Check as normal." },
     { name: "Lockdown", text: "(Aggressive only) You cannot voluntarily disconnect for 1d4 rounds, AND a #GRID Guardian is dispatched. Wait it out (other ciphers still work, but every action draws attention) or cut bait and run (force-sever, triggers LinkDeath immediately)." }
   ],
-  interceptionNote: "Codebreaker Damage Interception: when an IC Counterattack triggers, before the damage is rolled you may intercept the hit personally instead of letting the deck take 1 HP. The damage is rolled, reduced by your deck's Firewall threshold, and the remainder is taken as Psychic damage; then you make a Stability Check. Decide before the roll; no peeking.",
+  interceptionNote: "Codebreaker Damage Interception: when an IC Counterattack triggers, you may choose, before the damage is rolled, to intercept the hit personally instead of letting your Smartdeck eat it. Either way the damage is rolled once and reduced by the deck's Firewall Damage Threshold (if any); the only question is who takes what is left. Let the deck eat it and the remainder subtracts from the Smartdeck's System Integrity; intercept and the remainder lands on you as Psychic damage, and you must then make a Stability Check to maintain your Links. Decide before the damage roll; no peeking at the dice.",
 
   /* ---- Devices & System Integrity ---- */
   durabilityNote: "Carried gear always has an Integrity track: Smartdecks and B&E Buddies track System Integrity like any node, and damage subtracts from it. Cipher damage tests the device's Firewall first and the remainder comes off Integrity; physical damage ignores Firewalls and lands at full value. Unlike Rudimentary and Standard infrastructure, a device never bricks on a single hit; it dies by the numbers. At 0 Integrity the device is Bricked, completely inoperative; all active Links sever, triggering LinkDeath as a forced disconnect, and it must be repaired before reuse.",
   repair: "Downtime Repair (full restore): during an 8-hour Downtime, restore a device to full System Integrity at 𝒢10 per 5 Integrity restored (round up); a Bricked device also needs replacement parts at 𝒢100 × (Tier+1). Field Repair (partial): 1 hour plus a successful Engineering Dice Pool restores 5 System Integrity per successful Edge die, up to the missing total, but cannot recover a Bricked device. Only Downtime can do that.",
 
   /* ---- LinkDeath ---- */
-  linkDeathIntro: "LinkDeath is what happens when a Link is torn out of your skull instead of closed cleanly. It triggers when you fail a Stability Check, your deck is Bricked while linked, you 'cut bait and run' out of Lockdown, or your device is physically destroyed while linked.",
-  linkDeathResolution: "Make a single Stability Check vs. the disconnection DC (DC 10, or half the total damage taken that turn, whichever is higher). One save, one damage roll, no chaining. Success: you ride the disconnect, take half damage and are Dazed until the end of your next turn. Failure: take 2d6 Psychic + 1d6 per additional Link beyond the first, and fall Unconscious (at the end of each turn while Unconscious, make a Wits Save vs. the DC to wake, Dazed until end of next turn).",
-  cascadeFailure: "Cascade Failure triggers only when you fail the LinkDeath Stability Check by 5 or more AND held 2+ active Links. All normal LinkDeath consequences apply, AND your Smartdeck is automatically Bricked regardless of remaining HP; full Downtime repair required. The candle burning twice as bright: multi-linking is the Codebreaker's greatest weapon and greatest risk.",
-  standardUserLinkDeath: "Standard Users don't connect deeply enough to take psychic damage. LinkDeath hits the B&E Buddy directly (1 HP per dropped Link, always 1 for Standard Users); rolled damage is discarded. The user is Dazed until end of next turn but takes no personal damage. If the Buddy hits 0 HP it's Bricked.",
-  sourcererLinkDeath: "As an Impulse Action, a Sourcerer may voluntarily take 1 Wound to ground the feedback through their resonance: they take half the rolled psychic damage and are Dazed until end of next turn, staying conscious even if Vitality drops to 0.",
+  linkDeathIntro: "LinkDeath is what happens when a Link is torn out of your skull instead of closed cleanly. A Link severs involuntarily in one of two ways: a failed Stability Check tears away one Link of your choice, or a forced disconnect rips away every Link involved at once (your deck is Bricked while you hold Links, a device you are linked to is physically destroyed, or you 'cut bait and run' to escape a Lockdown). Either way, the price is paid per Link.",
+  linkDeathResolution: "Every Link severed involuntarily deals 2d6 Psychic damage in feedback; when several go at once, roll 2d6 per severed Link as one pool. The margin of the failed Stability Check grades the landing. Failed by 4 or less, the soft landing: take half the feedback and be Dazed until the end of your next turn. Failed by 5 or more, the hard landing: take the full feedback and fall Unconscious (at the end of each of your turns while Unconscious, make a Wits Save against the same DC to wake, Dazed until the end of your next turn). On a forced disconnect the check cannot save the Links, it only grades the landing, and passing it counts as the soft landing. On a mass involuntary disconnect (a Bricked deck, or falling Unconscious while linked) your Smartdeck stands in the way first: the pool subtracts from its remaining System Integrity and no Firewall applies, because the surge comes up the Links themselves. If the deck hits 0 it is Bricked, and every point beyond what it absorbed spills into you as Psychic damage in full. A deckless user has no hardware in the way; the psychic price is the whole bill.",
+  cascadeFailure: "Feedback is damage, and you are still linked. Each severed Link's feedback adds to the turn's damage total and immediately forces a fresh Stability Check for the Links you have left, at the higher DC that total now sets. Every failure tears away another Link, deals its own feedback, and asks the question again, harder. When one involuntary disconnect drags more Links down with it, that is a Cascade Failure. A cascade ends one of three ways: you pass a check and the survivors hold, you run out of Links, or you fall Unconscious and everything left discharges at once. The candle burning twice as bright: multi-linking is the Codebreaker's greatest weapon and greatest risk.",
+  standardUserLinkDeath: "Standard Users don't connect deeply enough to take psychic damage from a disconnect. When a Standard User suffers LinkDeath, the feedback hits the B&E Buddy instead: roll it and subtract it from the Buddy's System Integrity. However hard the landing, the user is Dazed until the end of their next turn, takes no personal damage, and never falls Unconscious from the disconnect. If the feedback zeroes the Buddy it is Bricked and the rest of the surge dissipates; a Standard User does not run deep enough for the spill to reach them.",
+  sourcererLinkDeath: "As an Impulse Action when LinkDeath lands on them, a Sourcerer may take 1 Wound to ground the feedback through their resonance: treat their landing as a soft landing (half the Psychic damage, Dazed until the end of their next turn) no matter how hard the severance hit. If something else has already dropped them and the severance fires while they are going down, they may still spend the Impulse and the Wound to ground the backlash to that same soft tier. It spares them the feedback; it does not undo the wound that put them there.",
   guardians: "#GRID Guardians are elite corporate counter-hackers with god-tier admin access over entire node clusters, not scripts. They build like Codebreakers, fight in the same digital space, and own the floor. Drawing one's attention can be fatal: if a Guardian tracks your signature, they can dispatch armed physical security to your exact location.",
 
   /* ---- Repertoire economy ---- */
-  repertoireNote: "A Codebreaker integrates any rulebook cipher into their Repertoire by spending the Material Cost + one uninterrupted Downtime (8 hours), no Dice Pool checks. Dice Pool checks (Engineering or Systems) are only needed to invent a wholly new cipher or to craft a standard one at a steep discount. Back up your Repertoire regularly; if you lose your deck, slotted ciphers stay usable until it's lost or Bricked.",
+  repertoireNote: "Acquire it clean: a Codebreaker integrates any rulebook cipher into their Repertoire by spending the Material Cost + one uninterrupted Downtime (8 hours), no Dice Pool checks, full price for certainty. Craft it instead and the materials cost half (the Craft column): a Project on the Dice Pool Method, Primary Skill Systems (Tech) or Engineering (Tech), Kit Codebreaker Suite with the Smartdeck Peripheral Kit helping, and the Project Tier scales to Complexity (0 to 1 Simple, 2 to 3 Standard, 4 to 5 Advanced). A Failure burns the interval and the parts; a Mixed Result lands a flawed cipher (a reduced Cipher Save DC, or an Alert that trips on first use each scene) until you tear it down and rebuild it. Inventing a wholly new cipher is its own animal: a Prototype-tier Project. Back up your Repertoire regularly; if you lose your deck, slotted ciphers stay usable until it's lost or Bricked.",
+  /* Six tiers, Standard [0] through Apex [5]. craft = half materials as a Project,
+     material = Acquire Clean (no roll), recovery = restore from backup. */
   cipherCosts: [
-    { tier: "Rudimentary", material: 25,  recovery: 5 },
-    { tier: "Standard",    material: 50,  recovery: 10 },
-    { tier: "Improved",    material: 100, recovery: 20 },
-    { tier: "Advanced",    material: 150, recovery: 30 },
-    { tier: "Premium",     material: 200, recovery: 40 },
-    { tier: "Elite",       material: 300, recovery: 50 },
-    { tier: "Apex",        material: 500, recovery: 60 }
+    { tier: "Standard", cx: 0, craft: 25,  material: 50,  recovery: 10 },
+    { tier: "Improved", cx: 1, craft: 50,  material: 100, recovery: 20 },
+    { tier: "Advanced", cx: 2, craft: 75,  material: 150, recovery: 30 },
+    { tier: "Premium",  cx: 3, craft: 100, material: 200, recovery: 40 },
+    { tier: "Elite",    cx: 4, craft: 150, material: 300, recovery: 50 },
+    { tier: "Apex",     cx: 5, craft: 250, material: 500, recovery: 60 }
   ],
 
   /* ============================ EQUIPMENT ============================ */
@@ -158,15 +159,15 @@ EN.grid = {
     { name: "Quantum Core", text: "Once per scene, reroll a failed Cipher Attack." }
   ],
 
-  /* B&E Buddy · the Standard-User rig. HP = Tier+2. */
+  /* B&E Buddy · the Standard-User rig. System Integrity is listed per tier. */
   buddies: [
     { tier: "Standard", t: 0, price: 250, attack: 3, saveDc: 11, maxNode: 0, integrity: 15 },
     { tier: "Improved", t: 1, price: 500, attack: 5, saveDc: 13, maxNode: 1, integrity: 20 },
     { tier: "Advanced", t: 2, price: 900, attack: 7, saveDc: 15, maxNode: 2, integrity: 30 }
   ],
-  buddyNote: "The Smartdeck's criminal cousin, handheld, ugly, dependable, for anyone who never trained as a Power User. Governing Skill: Systems (Tech). User Type: Standard User. Hardware Lockout: breaching a Premium or higher node makes the Buddy audibly spark and refuse, taking 1 HP of durability damage; the hack fails before it begins.",
+  buddyNote: "The Smartdeck's criminal cousin, handheld, ugly, dependable, for anyone who never trained as a Power User. Governing Skill: Systems (Tech). User Type: Standard User. Suite only: a Buddy runs its baked-in Cipher Suite and nothing else; it cannot execute Repertoire ciphers, mount a Firewall, or take hardware mods. Cipher Complexity: each suite cipher's Complexity matches the tier of the Buddy in use (Standard 0, Improved 1, Advanced 2), and the tier modifier applies as a flat bonus to whatever the cipher does (Save DC, duration, scanning bonus). Hardware Lockout: a Buddy lacks the architecture for high-end intrusion countermeasures, so attempting to breach a Premium or higher node makes it audibly spark and refuse the connection, taking 5 System Integrity damage from the rejection; the hack fails before it can begin.",
   buddyCiphers: [
-    { name: "Node Sweeper", type: "Utility", exec: "1 Action", range: "Self (Area 6 radius)", text: "Scan for nearby devices and nodes. Hidden devices roll Cipher Save vs. the Buddy's DC or are revealed." },
+    { name: "Node Sweeper", type: "Utility", exec: "1 Action", range: "Self (Area 6 radius)", text: "Sweep the area for devices and nodes. Automatically reveals every hidden node whose Scan DC is 12 + (3 × the Buddy's Tier) or lower: Obscured for a Standard [0] Buddy, Masked for an Improved [1], Stealth-Routed for an Advanced [2]. More deeply hidden nodes still require an active Systems (Tech) scan against their Scan DC. No Cipher Save is involved." },
     { name: "Access Spike", type: "Breach", exec: "1 Action", range: "12 spaces", text: "Cipher Attack vs. node Security Rating. On hit, establish a Link (lasts 8 hours)." },
     { name: "Access Override ⇋", type: "Utility", exec: "1 Action", range: "Touch (linked)", text: "Target an electronic lock on a linked node. Fail: lock/unlock the mechanism. Success: lock resists; IC retaliates." },
     { name: "Hijack Stream ⇋", type: "Detection", exec: "1 Action", range: "12 spaces", text: "Intercept video/audio from a linked device. Fail: clone or reroute the feed. Success: access denied; IC retaliates." },
@@ -187,14 +188,14 @@ EN.grid = {
 
   /* Smartdeck hardware modifications. avail/legal drive the gray-market listing. */
   mods: [
-    { key: "heatsinks",   name: "Reinforced Heatsinks", price: 600,  slots: 1, type: "Durability", avail: "Uncommon", legal: "Restricted",
+    { key: "heatsinks",   name: "Reinforced Heatsinks", price: 600,  slots: 1, type: "System Integrity", avail: "Uncommon", legal: "Restricted",
       text: "Repurposed gaming-rig cooling: aluminum fins, copper piping, thermal paste applied with a steady hand. Increases the deck's System Integrity by +15. Once per deck.", bonus: { integrity: 15 } },
     { key: "sweep",       name: "Sweep Suite Plug-In", price: 800,  slots: 1, type: "Scanning", avail: "Uncommon", legal: "Restricted",
       text: "Military-grade detection libraries. +1 Edge Die on all Scanning Dice Pools (or Edge on d20 Systems checks) to detect hidden, camouflaged, or hardened nodes. Does not interact with the Modifier Stack Cap." },
     { key: "burnnotice",  name: "Burn Notice Module", price: 900,  slots: 1, type: "Trace Evasion", avail: "Rare", legal: "Contraband",
       text: "If the deck is Bricked by a LinkDeath failure (including Cascade), it wipes its memory and routes a false ping; the enemy node rolls with Snag to trace your physical location." },
     { key: "icebreaker",  name: "ICE-Breaker Algorithm", price: 1200, slots: 1, type: "Failure Mitigation", avail: "Rare", legal: "Contraband",
-      text: "On a critical failure (margin -5 or worse on d20, or -3 or worse on a Dice Pool) of a Systems check to breach a node, spend 1 deck HP to downgrade it to a standard Failure, preventing immediate lockout." },
+      text: "On a critical failure (margin -5 or worse on d20, or -3 or worse on a Dice Pool) of a Systems check to breach a node, spend 5 System Integrity from the Smartdeck to downgrade it to a standard Failure, preventing immediate lockout." },
     { key: "coprocessor", name: "Overclocked Coprocessor", price: 1500, slots: 1, type: "Action Economy", avail: "Rare", legal: "Contraband",
       text: "As an Impulse Action, spend 1 Bandwidth to accelerate one Cipher by one step (Action→Swift, Swift→Impulse). No per-encounter limit." },
     { key: "trigger",     name: "Trigger Cache", price: 1800, slots: 1, type: "Bandwidth", avail: "Rare", legal: "Contraband",
@@ -202,7 +203,7 @@ EN.grid = {
     { key: "redline",     name: "Redline Lattice", price: 2800, slots: 2, type: "Multi-Link (Speed)", avail: "Rare", legal: "Contraband",
       text: "Maintain one additional active Link beyond your normal maximum. Downside: Stability Check DCs against you +2, and any Alert response upgrades to also include Analyze, even from Basic IC.", bonus: { links: 1 } },
     { key: "crown",       name: "Crown Spike Array", price: 3500, slots: 2, type: "Offensive Multi-Target", avail: "Rare", legal: "Contraband",
-      text: "As an Action, cast one cipher and apply it to two Linked nodes simultaneously, paying its Bandwidth cost once (both save independently). Downside: IC Counterattacks against you roll with Edge, and you land in corporate threat databases fast." },
+      text: "As an Action, cast one cipher and apply it to two Linked nodes simultaneously, paying its Bandwidth cost once (both save independently). Downside: IC Counterattack damage against you is rolled twice, taking the higher total (damage rolls never take Edge), and you land in corporate threat databases fast." },
     { key: "predator",    name: "Predator Stack", price: 4000, slots: 2, type: "Offensive Bonus", avail: "Rare", legal: "Contraband",
       text: "+2 to Cipher Attack rolls against Advanced or higher nodes, and +1 to your Cipher Save DC against the same. Downside: each successful breach of an Advanced+ node leaves a forensic hash; gain 1 Heat with that node's owning faction." }
   ]
@@ -226,17 +227,18 @@ EN.grid = {
 })();
 
 /* ============================ CIPHER LIBRARY ============================
-   The acquirable ciphers (Complexity 1-5). Complexity 0 (the universal suite
-   that ships with every rig) lives in EN.grid.buddyCiphers. cat = Offense /
+   The acquirable ciphers (Complexity 1-5). The universal suite that ships with
+   every rig lives in EN.grid.buddyCiphers: Complexity 0 on a Smartdeck, and on a
+   B&E Buddy the same six ciphers run at the Buddy's own tier. cat = Offense /
    Manipulation / Protection; link = the ⇋ "requires an active Link" flag;
    signature = the tier's flat-1-Bandwidth signature cipher. */
 EN.grid.cipherTierNames = ["Standard", "Improved", "Advanced", "Premium", "Elite", "Apex"];
 EN.grid.ciphers = [
   /* ---- Complexity 1 · Improved ---- */
   { name: "Logic Bomb", cx: 1, cat: "Offense", sub: "Combat", exec: "1 Action", range: "12 spaces", runtime: "Instant", signature: true,
-    text: "Inject malicious code into a target node. Cipher Attack vs. Security Rating. On hit, roll 2d6 damage vs. the node's Firewall threshold. If damage exceeds threshold, deal 1 HP to System Integrity." },
+    text: "Inject malicious code into a target node. Cipher Attack vs. Security Rating. On hit, roll 2d6 damage. Subtract the node's Firewall Damage Threshold (if any); the remainder comes off its System Integrity." },
   { name: "Shrapnel Code", cx: 1, cat: "Offense", sub: "Combat", exec: "1 Action", range: "Area 6 cone", runtime: "Instant",
-    text: "Spray corrupted code in a cone. Each node in the cone rolls Cipher Save vs. your DC. Each that fails takes 1d6 damage vs. its Firewall threshold." },
+    text: "Spray corrupted code in a cone. Each node in the cone rolls Cipher Save vs. your DC. Roll 2d6 damage once; every node that fails subtracts its own Firewall Damage Threshold from that roll and takes the remainder to its System Integrity." },
   { name: "Hardline Tap", cx: 1, cat: "Offense", sub: "Breach", exec: "1 Action", range: "Touch", runtime: "Link lasts 8 hours", link: true,
     text: "Establish a Link to a node by physically interfacing with a wired access port. Cipher Attack vs. Security Rating, made with Edge. Wired Links cannot be detected by passive scans and are immune to Alert traces while you remain physically connected." },
   { name: "Spoof Persona", cx: 1, cat: "Manipulation", sub: "Utility", exec: "1 Action", range: "Self (via Link)", runtime: "10 minutes", link: true,
@@ -250,7 +252,7 @@ EN.grid.ciphers = [
   { name: "Live Tap", cx: 1, cat: "Manipulation", sub: "Utility", exec: "1 Action", range: "Self (via Link)", runtime: "1 scene", link: true,
     text: "Open a quiet channel into a Linked node carrying audio or video and ride it live for the rest of the scene. Node rolls Cipher Save vs. your DC. On failure, you see and hear everything the node does, in real time, hands free, while you get on with other work. On success, the feed catches you in it and Alert triggers. The tap rides one node; move it and you cast again." },
   { name: "Firewall Patch", cx: 1, cat: "Protection", sub: "Defensive", exec: "1 Swift Action", range: "Touch (Linked friendly node)", runtime: "1 scene", link: true,
-    text: "Bolster a Linked allied node's defenses. Increase the node's Firewall threshold by 1 for the remainder of the scene. Useful for protecting your own gear or temporarily fortifying compromised infrastructure." },
+    text: "Bolster a Linked allied node's defenses. Increase the node's Firewall Damage Threshold by 1 for the remainder of the scene. Useful for protecting your own gear or temporarily fortifying compromised infrastructure." },
   { name: "Bounce Routing", cx: 1, cat: "Protection", sub: "Defensive", exec: "1 Impulse Action", range: "Self", runtime: "Instant",
     text: "When you would be detected by an Alert response, you may invoke Bounce Routing. The Alert is rerouted through dummy nodes; the trace continues, but it logs an incorrect signature. The GM does not advance whatever clock or response the Alert would have triggered." },
 
@@ -258,7 +260,7 @@ EN.grid.ciphers = [
   { name: "Daisy Chain", cx: 2, cat: "Offense", sub: "Breach", exec: "1 Action", range: "Self (via existing Link)", runtime: "Persistent", link: true, signature: true,
     text: "From a Linked node, automatically establish a new Link to any node directly networked to it. The new Link costs no additional Cipher Attack roll, but counts against your maximum Links. Cannot chain into a Hardened Node." },
   { name: "Brute Force", cx: 2, cat: "Offense", sub: "Combat", exec: "1 Action", range: "12 spaces", runtime: "Instant",
-    text: "Hammer a node with raw processing pressure. Cipher Attack vs. Security Rating. On hit, roll 3d6 damage. This damage ignores Firewall threshold entirely but cannot exceed 1 HP of System Integrity per hit (still subject to standard durability rules)." },
+    text: "Hammer a node with raw processing pressure. Cipher Attack vs. Security Rating. On hit, roll 3d6 damage. This damage ignores the Firewall Damage Threshold entirely, but only half the roll (rounded down) comes off the node's System Integrity." },
   { name: "Smartgun Hijack", cx: 2, cat: "Offense", sub: "Combat", exec: "1 Action", range: "12 spaces", runtime: "1 round", link: true,
     text: "Target a Linked smartgun, smartweapon, or networked turret. Node rolls Cipher Save vs. your DC. On failure, the weapon is slaved to you until the start of your next turn: it fires at targets you choose, using its own attack bonus, and it will not turn on your crew no matter who has hands on it. Its owner can try to wrest it back on their turn with a contested Systems check, and until they win that contest the gun answers to you. On success, the weapon shakes off the intrusion and IC retaliates." },
   { name: "Feedback Loop", cx: 2, cat: "Manipulation", sub: "Control", exec: "1 Action", range: "Touch (Linked)", runtime: "1 scene", link: true,
@@ -274,11 +276,11 @@ EN.grid.ciphers = [
   { name: "Trace Cutter", cx: 2, cat: "Protection", sub: "Defensive", exec: "1 Impulse Action", range: "Self", runtime: "Instant",
     text: "When you would suffer the effects of an Alert response, you may invoke Trace Cutter. The Alert is wiped from the node's logs entirely. Usable once per scene." },
   { name: "Decoy Persona", cx: 2, cat: "Protection", sub: "Defensive", exec: "1 Action", range: "Self (via Link)", runtime: "1 hour", link: true,
-    text: "Spawn a false Persona inside a Linked node that mimics your own digital signature. Any IC retaliation directed at you in this node targets the Decoy instead, until the Decoy is destroyed (treat as a Tier 1 node with no Firewall and 1 HP)." },
+    text: "Spawn a false Persona inside a Linked node that mimics your own digital signature. Any IC retaliation directed at you in this node targets the Decoy instead, until the Decoy is destroyed (treat as a Tier 1 node with no Firewall and 1 System Integrity)." },
 
   /* ---- Complexity 3 · Premium ---- */
   { name: "Glitchstorm", cx: 3, cat: "Offense", sub: "Combat", exec: "1 Action", range: "12 spaces, Area 4 sphere", runtime: "Instant",
-    text: "Flood an area with corrupted code. All nodes in the radius roll Cipher Save vs. your DC. Each that fails takes 4d6 damage vs. its Firewall threshold (1 HP per success). Excellent for clearing camera clusters or networked turret nests." },
+    text: "Flood an area with corrupted code. All nodes in the radius roll Cipher Save vs. your DC. Roll 4d6 damage once; every node that fails subtracts its own Firewall Damage Threshold from that roll and takes the remainder to its System Integrity. Excellent for clearing camera clusters or networked turret nests." },
   { name: "Cascade Worm", cx: 3, cat: "Offense", sub: "Breach", exec: "1 Action", range: "Self (via Link)", runtime: "Persistent", link: true,
     text: "Deploy a self-replicating worm through your Linked node and into every node directly networked to it. The primary node and one networked node per Caliber you possess receive a Link to you automatically (no Cipher Attack roll). These chained Links count toward your maximum Links." },
   { name: "Puppet String", cx: 3, cat: "Manipulation", sub: "Control", exec: "1 Action", range: "Touch (Linked)", runtime: "1 minute", link: true, signature: true,
@@ -294,25 +296,25 @@ EN.grid.ciphers = [
 
   /* ---- Complexity 4 · Elite ---- */
   { name: "System Cascade", cx: 4, cat: "Offense", sub: "Combat", exec: "1 Action", range: "Self (via Link)", runtime: "Instant", link: true, signature: true,
-    text: "Detonate corrupted code through a Linked node and into every node it is networked to. The primary node takes 5d6 damage vs. its Firewall threshold. Every node directly networked to it takes 3d6 damage vs. its own Firewall threshold. Damage resolves normally (1 HP per success against System Integrity)." },
+    text: "Detonate corrupted code through a Linked node and into every node it is networked to. The primary node takes 5d6 damage. Every node directly networked to it takes 3d6 damage, rolled once and applied to each. Both resolve as normal cipher damage: subtract each node's own Firewall Damage Threshold, and the remainder comes off its System Integrity." },
   { name: "Backtrace", cx: 4, cat: "Offense", sub: "Breach", exec: "1 Action", range: "Self (via Link)", runtime: "Instant", link: true,
     text: "When a hostile operator is reaching into a node you are Linked to, choose one: pin their physical location and hand it to your crew for the scene; or force that operator to make a Cipher Save vs. your DC and, on a failure, sever one of their active Links and deal them the standard LinkDeath feedback for the dropped connection." },
   { name: "Ghost in the Machine", cx: 4, cat: "Manipulation", sub: "Utility", exec: "1 Action", range: "Self (via Link)", runtime: "1 hour", link: true,
     text: "Embed a persistent backdoor in a Linked node. Even if your Link is severed, you can re-establish it as a Swift Action with no Cipher Attack roll for the duration. The backdoor is hidden from passive scans but can be detected by an active Systems check (DC equal to your Cipher Save DC)." },
   { name: "IC Inversion", cx: 4, cat: "Manipulation", sub: "Control", exec: "1 Action", range: "Touch (Linked)", runtime: "1 scene", link: true,
-    text: "Subvert a Linked node's Intrusion Countermeasures. Node rolls Cipher Save vs. your DC at Disadvantage. On failure, the node's IC treats other users (including its owner) as hostile intruders for the duration." },
+    text: "Subvert a Linked node's Intrusion Countermeasures. Node rolls Cipher Save vs. your DC at Snag. On failure, the node's IC treats other users (including its owner) as hostile intruders for the duration." },
   { name: "Deep Sync", cx: 4, cat: "Protection", sub: "Defensive", exec: "1 Swift Action", range: "Self", runtime: "1 scene",
-    text: "You sink into a hardened sync state. While Deep Sync holds, you roll every Stability Check with Edge. If you intercept an IC Counterattack, the psychic damage is reduced by your Firewall threshold a second time (in addition to the standard interception reduction)." },
+    text: "You sink into a hardened sync state. While Deep Sync holds, you roll every Stability Check with Edge. If you intercept an IC Counterattack, the psychic damage is reduced by your Firewall Damage Threshold a second time (in addition to the standard interception reduction)." },
 
   /* ---- Complexity 5 · Apex ---- */
   { name: "Black Sun", cx: 5, cat: "Offense", sub: "Combat", exec: "1 Action", range: "Self (via Link)", runtime: "Instant", link: true, signature: true,
-    text: "Roll 6d6 damage vs. the Linked node's Firewall threshold. If damage exceeds threshold, the node loses System Integrity equal to its current System Integrity divided by 2 (rounded down) instead of 1 HP. A successful Black Sun against a damaged Apex node can brick it in a single strike. Using Black Sun automatically triggers Alert on the node regardless of save outcome." },
+    text: "The legendary cipher. Roll 6d6 damage and subtract the Linked node's Firewall Damage Threshold. If any damage remains, the node loses System Integrity equal to half its MAXIMUM System Integrity (rounded down) instead of the rolled damage. A successful Black Sun against a damaged Apex node can brick it in a single strike. Using Black Sun automatically triggers Alert on the node regardless of save outcome." },
   { name: "Soul Transcription", cx: 5, cat: "Manipulation", sub: "Utility", exec: "1 Action (sustained 1 minute)", range: "Touch (Linked)", runtime: "Permanent", link: true,
     text: "Make a complete digital copy of a Linked node, including every element inside it (Personas, Scripts, Caches). The copy exists as a static snapshot in your Repertoire and can be analyzed at leisure during Downtime. If used on a node containing an AI Persona, the GM determines whether the copy 'wakes up.' This rarely ends well." },
   { name: "Override Reality", cx: 5, cat: "Manipulation", sub: "Control", exec: "1 Action", range: "Self (via Link)", runtime: "1 round", link: true,
     text: "For one round, you rewrite the rules of a Linked node. Within that node, you may declare one fundamental change to its function (e.g., 'this turret targets its own faction,' 'this door is open to me but locked to everyone else'). Node rolls Cipher Save vs. your DC. On failure, the change holds for one round. On success, IC triggers Lockdown automatically regardless of IC tier." },
   { name: "Severance", cx: 5, cat: "Protection", sub: "Defensive", exec: "1 Impulse Action", range: "Self", runtime: "Instant",
-    text: "When you would suffer LinkDeath, when your deck would be Bricked, or when Lockdown catches you, you cut your consciousness clear of the stream a half-second before the feedback lands. The triggering effect is negated outright: no psychic damage, no durability loss, your Links hold (or, against Lockdown, you disconnect freely and the Lockdown ends). Usable once per scene." }
+    text: "When you would suffer LinkDeath, when your deck would be Bricked, or when Lockdown catches you, you cut your consciousness clear of the stream a half-second before the feedback lands. The triggering effect is negated outright: no psychic damage, no System Integrity loss, your Links hold (or, against Lockdown, you disconnect freely and the Lockdown ends). Usable once per scene." }
 ];
 
 /* Surface the cipher library in the gray market, derived from EN.grid.ciphers

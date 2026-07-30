@@ -360,7 +360,10 @@ EN.gridView = (function () {
     var stats = [
       EN.ui.stat("CIPHER ATK", fmt(gd.effectiveAttack), gd.deck ? (gd.deck.type === "buddy" ? "Buddy bonus" : "Tech+Systems+dev") : "Tech+Systems"),
       EN.ui.stat("SAVE DC", gd.effectiveSaveDC, gd.deck && gd.deck.type === "buddy" ? "Buddy DC" : "8+Tech+Systems"),
-      EN.ui.stat("LINKS", gd.unlimitedLinks ? "∞" : gd.maxLinks, gd.isCodebreaker ? (gd.unlimitedLinks ? "SysAdmin" : "2 × Caliber" + (gd.modLinks ? " +" + gd.modLinks : "")) : "Standard User"),
+      EN.ui.stat("PASSIVE SYS", gd.passiveSystems, "vs hidden Scan DC"),
+      EN.ui.stat("LINKS", gd.unlimitedLinks ? "∞" : gd.maxLinks,
+        gd.isCodebreaker ? (gd.unlimitedLinks ? "SysAdmin" : "2 × Caliber" + (gd.modLinks ? " +" + gd.modLinks : ""))
+        : gd.isSourcerer ? "Caliber · sprites" : "Standard User"),
       stabilityStat(gd)
     ];
     if (gd.quickHackBonus != null) stats.splice(1, 0, EN.ui.stat("QUICK HACK", fmt(gd.quickHackBonus), "+ Device Bonus"));
@@ -507,7 +510,7 @@ EN.gridView = (function () {
     kids = kids.concat(collapsible("ref-scan", "Scanning & Detection", function () {
       return el("div", null, [
         noteP(G.scanIntro, "var(--text2)"),
-        tableEl([{ label: "Node Quality", key: "quality" }, { label: "Base DC", key: "dc", align: "center", mono: true }, { label: "Snag Dice", key: "snag", align: "center", mono: true }], G.scanning || []),
+        tableEl([{ label: "Concealment", key: "quality" }, { label: "Scan DC", key: "dc", align: "center", mono: true }, { label: "Reads As", key: "reads" }], G.scanning || []),
         el("div", { style: { height: "6px" } }),
         tableEl([{ label: "Modifier", key: "name" }, { label: "Condition", key: "condition" }, { label: "d20", key: "d20", align: "center", mono: true }, { label: "Dice Pool", key: "pool", align: "center" }], G.scanMods || []),
         noteP(G.scanCapNote, "var(--warn)")
@@ -524,7 +527,11 @@ EN.gridView = (function () {
     kids = kids.concat(collapsible("ref-repertoire", "Repertoire & Ciphers", function () {
       return el("div", null, [
         noteP(G.repertoireNote, "var(--text2)"),
-        tableEl([{ label: "Cipher Tier", key: "tier" }, { label: "Material Cost", get: function (r) { return "𝒢" + r.material; }, align: "right", mono: true }, { label: "Recovery", get: function (r) { return "𝒢" + r.recovery; }, align: "right", mono: true }], G.cipherCosts || [])
+        tableEl([{ label: "Cipher Tier", key: "tier" },
+                 { label: "CX", key: "cx", align: "center", mono: true },
+                 { label: "Craft (half)", get: function (r) { return r.craft != null ? "𝒢" + r.craft : "-"; }, align: "right", mono: true },
+                 { label: "Acquire Clean", get: function (r) { return "𝒢" + r.material; }, align: "right", mono: true },
+                 { label: "Recovery", get: function (r) { return "𝒢" + r.recovery; }, align: "right", mono: true }], G.cipherCosts || [])
       ]);
     }));
 

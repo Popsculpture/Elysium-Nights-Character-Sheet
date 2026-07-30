@@ -344,6 +344,69 @@ Flow formulas, the 19 damage types and 39 of 41 conditions are also in sync.
   1d6 at Stage 3), 3 Strain points per Stage, and Breakflow DC 12 + Stage.
 - **Manuscript impact:** see M13.
 
+### A9. #GRID and Cipher Library resynced (step 4, domain 3 of 7)
+- **Files:** `app/js/engine.js`, `app/js/grid.js`, `app/data/grid.js`
+- The largest domain in the audit: 42 findings, about a third already closed by A3
+  (System Integrity) and A4f (LinkDeath). Findings that said "Max Complexity is Tier"
+  were deliberately NOT applied, since the author ruled Tier + 1 in M1.
+
+**Engine (three computed numbers):**
+- **Stability Check DC modifiers were being lost on big hits.** The rig modifier was
+  applied only to the DC 10 floor, so the moment the damage-derived DC took over it
+  vanished. An Elite deck's Adaptive Buffer (-2) silently stopped working exactly when
+  it mattered. Doc 3335: "DC equal to 10, or half the total damage taken that turn,
+  whichever is higher"; the modifier belongs on the final DC. Verified: 40 damage now
+  gives DC 18 rather than 20, and 4 damage still gives 8.
+- **Sourcerers are Power Users holding Caliber-many Links** (doc 3331, named a Power
+  User at 3286), with no hardware in the loop. They were computing as Standard Users
+  with 1 Link, and the print sheet suppressed their whole #GRID block because its gate
+  keys on userType. Verified at Level 10: Caliber 5 gives 5 Links.
+- **Added Passive Systems** (doc 3292): 10 + Tech modifier + Systems Proficiency Bonus,
+  the number compared against a hidden node's Scan DC. It did not exist in the app.
+  Now a stat tile in the Hacking panel.
+
+**Data (app/data/grid.js), all against Part 2:**
+- **Scan DC table rekeyed from node tier to concealment** (3302-3307): Broadcasting
+  (auto-detected), Obscured 12, Masked 15, Stealth-Routed 18, Ghosted 21, each with the
+  doc's "Reads As" description. Scan DC measures how well something hides, not how
+  powerful it is, so the old tier-keyed table was categorically wrong.
+- **Scanning modifiers** now grant Edge or Snag only, never a numeric DC shift
+  (3313-3317), and the Modifier Stack Cap is +2 Edge Dice on a Dice Pool with no
+  stacking on d20 or Passive (3319).
+- **IC triggers** on a node resisting a cipher EITHER by making its Cipher Save OR by
+  turning aside a Cipher Attack that missed (3415). The app previously told players a
+  whiffed breach roll was consequence-free.
+- **IC Counterattack and Codebreaker Interception**: damage is rolled once, reduced
+  once by the Firewall Damage Threshold, and interception only changes who takes the
+  remainder (3428, 3435, 3439-3444).
+- **Cascade Failure** is the recursive-check rule, not an automatic bricking: each
+  severed Link's feedback adds to the turn's damage total and forces a fresh Stability
+  Check on the survivors (3452-3454).
+- **Stability Check** failure tears away ONE Link of your choice, graded by that same
+  check's margin with no second roll, and triggers on damage from any source including
+  LinkDeath feedback itself (3335-3338).
+- **Costs corrected to System Integrity**: B&E Buddy Hardware Lockout 5 (3533),
+  ICE-Breaker Algorithm 5 (3603). Standard User LinkDeath is rolled and subtracted from
+  the Buddy's Integrity (3471).
+- **Cipher ladder**: deleted the phantom "Rudimentary" tier, added the Craft-at-half
+  column (25/50/75/100/150/250) and the Project Tier scaling (3643-3652).
+- **Seven cipher entries taken off the retired damage model**: Logic Bomb, Shrapnel Code
+  (1d6 to **2d6**, rolled once for the cone), Glitchstorm (4d6 once), System Cascade
+  (5d6 / 3d6 once), Brute Force (ignores the threshold, half the roll rounded down),
+  Black Sun (half its **maximum** Integrity, not current), plus Decoy Persona and
+  Severance terminology.
+- **Node Sweeper** auto-reveals every hidden node at Scan DC 12 + (3 x Buddy Tier) or
+  lower instead of running a Cipher Save contest (3544).
+- **Smaller fixes**: Crown Spike Array rolls IC damage twice and takes the higher
+  (Edge does not apply to damage rolls, 3613); IC Inversion says "at Snag" rather than
+  the non-existent "Disadvantage" (3770); "Firewall Damage Threshold" spelled in full.
+- **UI**: the Scanning table headers now read Concealment / Scan DC / Reads As, and the
+  Repertoire table gained CX and Craft columns so the new data is visible.
+- **Verified live:** the retired phrases ("1 HP per hit", "must exceed the threshold",
+  "durability HP", "Disadvantage") are all extinct in the data, `(Tier + 1)` survives
+  intact, 36 ciphers load, and the reference panels render with no undefined or NaN.
+- **Manuscript impact:** see M14 and M15.
+
 ---
 
 ## PART B: Pending, in the agreed order
@@ -532,6 +595,25 @@ no code change was needed.
     being bundled into a 𝒢120-for-6 standard bandolier.
 - **Confirmed:** the "Systems or Body" / "Body or Systems" construction is now extinct
   in the app's data, matching its extinction in Part 3.
+
+### M14. Standard User cipher Complexity ceiling stated two ways (NEW)
+- **Part 2, line 3342:** a Standard User is limited to Complexity 0, and Complexity 1
+  and up is Power User territory.
+- **Part 2, line 3542:** "Each cipher's Complexity matches the tier of the B&E Buddy in
+  use. A Standard Buddy fires Standard ciphers; an Advanced Buddy fires Advanced
+  versions", which puts a Standard User at Complexity 1 or 2 through the Buddy's suite.
+- **App:** implements the tier-scaling version, writing 3342 as the general rule with
+  the Buddy named as the explicit exception, which is how 3542 itself frames it. Works,
+  but the two lines read as contradictory in isolation.
+
+### M15. A passed Stability Check: free, or still half feedback? (NEW)
+- **Part 2, line 3336:** passing the Stability Check means "nothing else happens".
+- **Part 2, line 3467** (forced disconnects): "Pass, or fail by 4 or less" still takes
+  **half** the feedback.
+- So passing costs nothing on a normal disruption but costs half the feedback on a
+  forced disconnect. The app now states both paths explicitly rather than picking one.
+- Worth confirming that asymmetry is intended; if it is, a sentence in 3336 noting the
+  forced-disconnect exception would settle it.
 
 ### M13. A Caliber 1 example uses a Level 5 ability (NEW)
 - **Part 2, line 2696** gates Layered Force: "At **Level 5 (Expanded Frequency)**, you

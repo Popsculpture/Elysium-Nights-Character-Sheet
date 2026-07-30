@@ -847,7 +847,12 @@ EN.engine = (function () {
     var techMod = attributes.TEC.mod;
     var cipherAttackBonus = techMod + sysProf;
     var cipherSaveDC = 8 + techMod + sysProf;
+    // Passive Systems: what you notice without actively scanning, compared against a
+    // hidden node's Scan DC ("10 + your Tech modifier + your Systems Proficiency Bonus").
+    var passiveSystems = 10 + techMod + sysProf;
     var isCodebreaker = ch.class === "codebreaker";
+    // A Sourcerer tethers through sprites rather than a deck, and counts as a Power User.
+    var isSourcerer = ch.class === "shaper" && ch.subclass === "sourcerer";
     // SysAdmin (Root Access) at L9 removes the Link cap for Codebreakers
     var unlimitedLinks = isCodebreaker && level >= 9;
     var g = (ch && ch.grid) || {};
@@ -881,18 +886,23 @@ EN.engine = (function () {
     var effectiveSaveDC = isBuddy ? deck.saveDc : cipherSaveDC;
     var hasAdaptiveBuffer = isSmart && deck.t >= 4;   // Elite+ trait (Elite t=4, Apex t=5)
     var stabilityDcMod = (hasAdaptiveBuffer ? -2 : 0) + (hasRedline ? 2 : 0);
-    // Live Stability DC: the disconnection save is the HIGHER of the rig-adjusted
-    // DC 10 floor or half (rounded down) of the damage taken this turn while linked.
-    var stabilityDcBase = 10 + stabilityDcMod;
+    // Live Stability DC: "DC equal to 10, or half the total damage taken that turn,
+    // whichever is higher." A rig modifier (an Elite deck's Adaptive Buffer lowers it,
+    // a Crown Spike Array raises it) adjusts the FINAL DC, not just the 10 floor, so
+    // it keeps working once the damage-derived number takes over.
     var stabilityLastDamage = Math.max(0, ((ch && ch.lastDamage) | 0));
     var stabilityDcFromDamage = Math.floor(stabilityLastDamage / 2);
-    var stabilityDcLive = Math.max(stabilityDcBase, stabilityDcFromDamage);
-    var baseMaxLinks = isCodebreaker ? (2 * cal) : 1;
+    var stabilityDcBase = 10 + stabilityDcMod;
+    var stabilityDcLive = Math.max(10, stabilityDcFromDamage) + stabilityDcMod;
+    // Link capacity: a Codebreaker holds 2 x Caliber; a Sourcerer's sprites hold
+    // Caliber-many with no hardware in the loop; everyone else holds one.
+    var baseMaxLinks = isCodebreaker ? (2 * cal) : (isSourcerer ? cal : 1);
     var maxLinks = unlimitedLinks ? null : baseMaxLinks + (isCodebreaker ? modLinks : 0);
     return {
-      isCodebreaker: isCodebreaker, userType: isCodebreaker ? "Power User" : "Standard User",
+      isCodebreaker: isCodebreaker, isSourcerer: isSourcerer,
+      userType: (isCodebreaker || isSourcerer) ? "Power User" : "Standard User",
       techMod: techMod, systemsProf: sysProf, systemsTier: sysTier,
-      cipherAttackBonus: cipherAttackBonus, cipherSaveDC: cipherSaveDC,
+      cipherAttackBonus: cipherAttackBonus, cipherSaveDC: cipherSaveDC, passiveSystems: passiveSystems,
       effectiveAttack: effectiveAttack, effectiveSaveDC: effectiveSaveDC,
       quickHackBonus: isSmart ? cipherAttackBonus + deviceBonus : null,
       maxLinks: maxLinks, unlimitedLinks: unlimitedLinks, modLinks: isCodebreaker ? modLinks : 0,
