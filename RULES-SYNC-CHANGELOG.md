@@ -508,6 +508,20 @@ no code change was needed.
 - **Manuscript action:** write the rule into the Part 3 Damage column (line 463) or the
   Part 2 Damage Resolution pipeline (1702-1719). It was the largest undocumented
   assumption in the system; every damage roll in the app depends on it.
+  Suggested wording covering every case:
+  > Add your attack attribute modifier to the damage roll: Body for melee, Agility for
+  > a Finesse melee weapon or a ranged weapon, and for a Thrown weapon whichever
+  > modifier made the attack. Indirect delivery adds no attribute modifier: a grenade
+  > lands at a point and forces a save. Flow and Tech attacks add no attribute modifier
+  > unless their own text says so.
+- **Original problem, for the record.** Part 3 line 463 was the only general statement
+  and read merely "The dice rolled on a hit, plus the damage type." The Part 2 Damage
+  Resolution pipeline (1702-1719) never added a modifier either. Yet feature text
+  assumed one existed:
+  - Part 1 line 2819 (Shaper, *Edge of Oneness*): "use your Body modifier instead of
+    Agility for the attack **and damage rolls**..."
+  - Part 3 lines 1658 and 2082 (Mystech): "...Flow Modifier in place of their Body or
+    Agility Modifier for attack rolls, **damage rolls**..."
 - **App: one real bug fixed.** Thrown explosives were adding an attribute modifier.
   All five Thrown-group weapons in the catalog are grenades (Frag Mk I and Mk II,
   Flashbang, Smoke, EMP), and each was adding the higher of Body or Agility to its
@@ -518,6 +532,7 @@ no code change was needed.
   - Verified live side by side: Dagger (direct thrown, melee group) reads
     "1d4 +3 (Body) on hit"; Frag Grenade Mk I reads "2d6 on hit, indirect delivery
     adds no attribute modifier". The damage tray adds nothing for the grenade.
+  - Commit `23db9b2`.
 - **Already correct, no change:** melee adds Body; ranged adds Agility; a direct thrown
   weapon adds whichever modifier made the attack; cipher damage adds no Tech modifier;
   Flow damage adds the Flow Modifier only because the Invocation rules state it
