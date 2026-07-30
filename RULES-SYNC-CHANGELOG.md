@@ -495,28 +495,44 @@ no code change was needed.
 - Practical effect at the table: ranged users were previously free to use Body when it
   was the higher modifier.
 
-### M4. Damage rolls never state that an attribute modifier is added
-- **Part 3, line 463** (the Damage column definition, the only general statement):
-  "The dice rolled on a hit, plus the damage type."
-- **Part 2, lines 1401/1406:** "On a hit, deal the weapon's damage through Damage
-  Resolution." The Damage Resolution pipeline (1702-1719) never adds an attribute
-  modifier either.
-- **But the feature text assumes one exists:**
-  - Part 1, line 2819 (Shaper, *Edge of Oneness*): "You can use your Body modifier
-    instead of Agility for the attack **and damage rolls** of any melee weapon with
-    the Finesse or Light trait."
-  - Part 3, lines 1658 and 2082 (Mystech): "...may use their Flow Modifier in place
-    of their **Body or Agility Modifier** for attack rolls, **damage rolls**, and
-    any attribute requirement..."
-- **App currently implements:** every weapon adds its attack attribute modifier to
-  damage (Body melee, Agility ranged), which matches the feature text.
-- **STILL OPEN. This is the one manuscript item with no ruling yet.**
-- **Needed:** one sentence, in the Part 3 Damage column definition (line 463) or in the
-  Part 2 Damage Resolution pipeline (1702-1719), stating the base rule. Suggested
-  wording: "Add your attack attribute modifier to the damage roll: Body for melee,
-  Agility for ranged, and the higher of the two for a Thrown weapon."
-- Until it is written down, this is the largest undocumented assumption in the system:
-  every damage roll in the app depends on it, and only feature text implies it exists.
+### M4. The damage attribute modifier rule (RESOLVED 2026-07-30)
+- **Author ruling.** The rule exists and is now stated:
+  - **Melee:** + Body Modifier
+  - **Finesse Melee:** + Agility Modifier
+  - **Range:** + Agility Modifier
+  - **Thrown:** the same modifier used to make the thrown attack. This applies only to
+    thrown weapons meant to make **direct contact** (a dagger, a hammer); it does
+    **not** apply to indirect contact such as a grenade.
+  - **Flow and Tech attacks:** no extra attribute modifier unless the rule text for
+    that effect says so.
+- **Manuscript action:** write the rule into the Part 3 Damage column (line 463) or the
+  Part 2 Damage Resolution pipeline (1702-1719). It was the largest undocumented
+  assumption in the system; every damage roll in the app depends on it.
+- **App: one real bug fixed.** Thrown explosives were adding an attribute modifier.
+  All five Thrown-group weapons in the catalog are grenades (Frag Mk I and Mk II,
+  Flashbang, Smoke, EMP), and each was adding the higher of Body or Agility to its
+  damage. A Frag Grenade Mk I showed `2d6 +3` where the rule gives `2d6`.
+  - `weaponHit()` now computes an `indirect` flag (Thrown group carrying an Explosive
+    trait) and a separate `dmgMod` that is 0 for indirect delivery. The attack roll is
+    untouched; only the damage modifier is suppressed.
+  - Verified live side by side: Dagger (direct thrown, melee group) reads
+    "1d4 +3 (Body) on hit"; Frag Grenade Mk I reads "2d6 on hit, indirect delivery
+    adds no attribute modifier". The damage tray adds nothing for the grenade.
+- **Already correct, no change:** melee adds Body; ranged adds Agility; a direct thrown
+  weapon adds whichever modifier made the attack; cipher damage adds no Tech modifier;
+  Flow damage adds the Flow Modifier only because the Invocation rules state it
+  ("1d6 + Flow Modifier base").
+- **Two adjacent cases I did NOT change, both need a word from the author:**
+  1. **Finesse melee.** The ruling says Finesse Melee = + Agility. The Finesse trait
+     itself (Part 3 gear traits) says "you may use Body **or** Agility for the attack
+     and damage calculation. You choose which Attribute each time." The app implements
+     the trait: it uses Agility only when Agility is the higher modifier, so a
+     Body-heavy character keeps Body. Reading the ruling literally would force Agility
+     even when that lowers the damage. Left as the trait's choice.
+  2. **Launched explosives.** The carve-out was stated for thrown grenades. A Grenade
+     Launcher or Rocket Launcher is equally indirect, but is Range, and Range says
+     + Agility. The app still adds Agility to launcher damage. If indirect delivery is
+     the real principle rather than the word "thrown", these should be suppressed too.
 
 ### M5. Resilience Dice: Body modifier per die (RESOLVED 2026-07-28)
 - **Author ruling:** per die. The rule now reads "Roll each die and add your **Body

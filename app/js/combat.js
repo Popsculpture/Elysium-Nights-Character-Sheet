@@ -2240,6 +2240,11 @@ EN.combatView = (function () {
         var bod = d.attributes.BOD.mod, agi = d.attributes.AGI.mod;
         var useAgi = melee ? (finesse && agi > bod) : (thrownItem ? agi >= bod : true);
         var mod = useAgi ? agi : bod, attrName = useAgi ? "Agility" : "Body";
+        // The damage attribute modifier rides on making CONTACT: Body for melee,
+        // Agility for Finesse melee and for ranged, and for a Thrown weapon whichever
+        // modifier made the attack. It does NOT apply to indirect delivery: a grenade
+        // lands at a point and forces a save, so no attribute modifier is added.
+        var indirect = it.group === "Thrown" && (it.traits || []).some(function (t) { return /^Explosive/.test(t); });
         var cat = GROUP_CAT[it.group], tier = eng.effectiveGearTier(ch, "weapons", cat), prof = R.profTiers[tier].d20;
         // A Weapon Focus naming this weapon type adds Caliber to attack rolls;
         // Focus Caliber rides outside the +15 static modifier cap. A matching
@@ -2248,7 +2253,8 @@ EN.combatView = (function () {
         var focusCal = focus ? (d.caliber || 1) : 0;
         var spec = eng.weaponSpec(ch, cat, it.name);
         return { mod: mod, attrName: attrName, cat: cat, tier: tier, prof: prof,
-                 focus: focus, focusCal: focusCal, spec: spec,
+                 focus: focus, focusCal: focusCal, spec: spec, indirect: indirect,
+                 dmgMod: indirect ? 0 : mod,
                  total: mod + prof + focusCal, melee: melee, thrownItem: thrownItem };
       }
       // a plain snapshot the roll tray opens against (no live-scope closures)
@@ -2314,7 +2320,7 @@ EN.combatView = (function () {
           weaponName: it.name,
           subtype: (h.melee ? "Melee" : h.thrownItem ? "Thrown" : "Ranged") + " Weapon · " + h.cat,
           dice: p.dice, types: p.types,
-          flat: h.mod, flatLabel: h.attrName + " Modifier",
+          flat: h.dmgMod, flatLabel: h.indirect ? "Indirect: no attribute modifier" : (h.attrName + " Modifier"),
           versatile: versatileDie(traits),
           cheapEligible: cheapEligible, cheapDice: d.caliber || 1,
           crit: false
@@ -2357,9 +2363,12 @@ EN.combatView = (function () {
         if (!it) return;
         var h = weaponHit(it), norm = normalizeWeapon(it);
         var snagWhy = atkSnag || (h.tier === "untrained" ? "Untrained with " + h.cat + "; attacks roll with Snag" : null);
-        var dmgTip = norm.damageDisplay + " " + eng.fmtMod(h.mod) + " (" + h.attrName + ") on hit · Tap to roll damage";
-        // DMG box shows the dice plus the attribute modifier the roll adds (e.g. "1d4 +3")
-        var dmgDisplay = norm.damageDisplay + " " + eng.fmtMod(h.mod);
+        var dmgTip = h.indirect
+          ? norm.damageDisplay + " on hit · indirect delivery adds no attribute modifier · Tap to roll damage"
+          : norm.damageDisplay + " " + eng.fmtMod(h.mod) + " (" + h.attrName + ") on hit · Tap to roll damage";
+        // DMG box shows the dice plus the attribute modifier the roll adds (e.g. "1d4 +3");
+        // indirect weapons (thrown explosives) show the dice alone.
+        var dmgDisplay = norm.damageDisplay + (h.indirect ? "" : " " + eng.fmtMod(h.mod));
         var hitTip = "d20 + " + h.attrName + " Modifier (" + eng.fmtMod(h.mod) + ")"
           + (h.prof ? " + Weapon Proficiency Bonus (" + eng.fmtMod(h.prof) + ")" : " (untrained, Snag)")
           + (h.focus ? " + Caliber from " + h.cat + " (" + h.focus.aspect + ") Focus (" + eng.fmtMod(h.focusCal) + ", outside the +15 static cap)" : "");
