@@ -481,15 +481,19 @@ no code change was needed.
 - **App implements:** the #GRID chapter version.
 </details>
 
-### M3. Weapon Save DC is now split three ways, but the app has one formula
-- **Part 3, line 495:** "**Weapon Save DC (Melee):** 8 + Body modifier + your Caliber"
-- **Part 3, line 677** (restated 3119): "**Weapon Save DC (Range):** 8 + Agility
-  modifier + your Caliber"
-- **Thrown:** the higher of Body or Agility.
-- **App currently implements:** one unified "higher of Body or Agility" formula.
-- Unlike M1/M2 this reads as a genuine intended change rather than a contradiction
-  (two independent audit passes found it, stated twice in Part 3). Queued for the
-  engine tranche; flagged here so the manuscript stays consistent.
+### M3. Weapon Save DC split three ways (RESOLVED - app updated, no manuscript action)
+- Not a contradiction: a genuine intended change, stated consistently in both Parts
+  (Part 2 table 1463-1465; Part 3 at 497, 677, 958, 3119).
+  - **Melee:** 8 + Body modifier + Caliber
+  - **Range:** 8 + Agility modifier + Caliber
+  - **Thrown:** 8 + the higher of Body or Agility + Caliber
+- **App: updated** in commit `fc1db7f`. It previously carried one unified "higher of
+  Body or Agility" formula and had no melee note at all. Now three separate
+  common-action rows, a corrected ranged note that also states the Thrown case, and a
+  new melee note surfaced in the Inventory melee section.
+- **Manuscript action: none.** Part 3 is already consistent.
+- Practical effect at the table: ranged users were previously free to use Body when it
+  was the higher modifier.
 
 ### M4. Damage rolls never state that an attribute modifier is added
 - **Part 3, line 463** (the Damage column definition, the only general statement):
@@ -506,9 +510,13 @@ no code change was needed.
     any attribute requirement..."
 - **App currently implements:** every weapon adds its attack attribute modifier to
   damage (Body melee, Agility ranged), which matches the feature text.
-- **Needed:** one sentence in the Damage column or in Damage Resolution stating the
-  base rule. Until then this is the single largest undocumented assumption in the
-  system.
+- **STILL OPEN. This is the one manuscript item with no ruling yet.**
+- **Needed:** one sentence, in the Part 3 Damage column definition (line 463) or in the
+  Part 2 Damage Resolution pipeline (1702-1719), stating the base rule. Suggested
+  wording: "Add your attack attribute modifier to the damage roll: Body for melee,
+  Agility for ranged, and the higher of the two for a Thrown weapon."
+- Until it is written down, this is the largest undocumented assumption in the system:
+  every damage roll in the app depends on it, and only feature text implies it exists.
 
 ### M5. Resilience Dice: Body modifier per die (RESOLVED 2026-07-28)
 - **Author ruling:** per die. The rule now reads "Roll each die and add your **Body
@@ -632,8 +640,9 @@ no code change was needed.
 - The overhaul added **Blind Spot** to Cognitive and **Overload** / **Magnetic
   Seize** to Electromagnetic, and rewrote the Electromagnetic Base Effect into the
   three named choices Magnetize / Live Current / Flare.
-- Also reported absent from the app and not yet added: the **Sustain Focus
-  Disruption** rule.
+- The **Sustain Focus Disruption** rule was also absent from the app; **added in A8**
+  and later updated to the author's revised DC wording in A8's follow-up.
+- Informational record only. No manuscript action.
 
 ### M12. LinkDeath feedback stated two ways (RESOLVED 2026-07-28)
 - **Was:** the Conditions entry read "2d6 + 1d6 per additional active Link" while the
