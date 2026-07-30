@@ -321,6 +321,23 @@ Flow formulas, the 19 damage types and 39 of 41 conditions are also in sync.
   - This is the only rule that threatens a sustained Invocation, and the app had no
     trace of it. Now stored as `EN.flow.focusDisruption` and surfaced in the Sustain
     panel whenever an effect is actually being sustained, where a Shaper needs it.
+- **Author update, same day:** the DC was rewritten to "**DC 12, or half the total
+  damage taken that turn, whichever is higher**", and a Focus Check was defined as
+  **a Body Save**. Applied to both places the app uses a Focus Check:
+  - `EN.flow.focusDisruption` (Sustain) now reads DC 12 or half the turn's damage,
+    whichever is higher, and names the check a Focus Check (a Body Save).
+  - The **Critical Condition** entry's stay-conscious check now reads "make a Focus
+    Check (**a Body Save**) to stay conscious (DC 12, or half the total damage taken
+    that turn, **whichever is higher**)".
+  - Both previously used "unless the damage taken that turn exceeds 20, in which case
+    the DC equals half the total damage taken", which had a latent gap: for a turn of
+    21 to 24 damage, half is 10 to 12, i.e. **lower** than the base 12, so a bigger
+    hit could produce an easier check. "Whichever is higher" removes that.
+  - **Open question for the author:** Focus Disruption's original text called for a
+    "Wits **or** Body Saving Throw (Shaper's choice)". The app now uses Body only, on
+    the strength of the new "Focus Check (a Body Save)" definition. If Shapers keep
+    the Wits-or-Body choice for Sustain specifically, say so and it is a one-line
+    change.
 - **Everything computed in this domain was already correct** and stayed untouched:
   the Reservoir formula, Flow Attack, Flow Save DC, the Intent/Delivery/Force FP
   bands, Precision Shaping, the Level 5 Layered Force gate, Overdraw (1d4 rising to

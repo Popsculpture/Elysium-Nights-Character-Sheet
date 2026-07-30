@@ -185,7 +185,7 @@ EN.flowView = (function () {
       kids.push(noteP("Capacity: one sustained effect at a time. Ends if you are Incapacitated, Unconscious, or enter Breakflow. Starting a new sustain replaces this one."));
       // Stability Factor: taking damage while sustaining threatens the effect.
       var fdz = (EN.flow && EN.flow.focusDisruption) || null;
-      if (fdz) kids.push(noteP("Focus Disruption: take damage while sustaining and you must make a " + fdz.save + ". " + fdz.dcNote + " " + fdz.failure, "var(--warn)"));
+      if (fdz) kids.push(noteP("Focus Disruption: take damage while sustaining and you must succeed on a " + fdz.save + ". " + fdz.dcNote + " " + fdz.failure, "var(--warn)"));
     } else {
       kids.push(noteP("No sustained effect. Build a Sustain Invocation and Channel it to anchor one here. Only one runs at a time."));
     }

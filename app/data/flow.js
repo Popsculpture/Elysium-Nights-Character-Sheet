@@ -53,11 +53,12 @@ EN.flow = {
   /* Stability Factor: sustained resonance is fragile. Taking damage while sustaining
      forces a Focus Check or the effect collapses. */
   focusDisruption: {
-    save: "Wits or Body Saving Throw (your choice)",
-    dc: 12, bigHitThreshold: 20,
-    dcNote: "DC 12, unless the damage taken that turn exceeds 20, in which case the DC equals half the total damage taken.",
+    // A Focus Check is a Body Save (see the Critical Condition entry, which defines it).
+    save: "Focus Check (a Body Save)",
+    dc: 12,
+    dcNote: "DC 12, or half the total damage taken that turn, whichever is higher.",
     failure: "The sustained effect ends immediately as the Flow destabilizes.",
-    text: "Focus Disruption: if you take damage while sustaining an effect, make a Wits or Body Saving Throw (your choice). DC 12, unless the damage taken that turn exceeds 20, in which case the DC equals half the total damage taken. On a failure the sustained effect ends immediately."
+    text: "Focus Disruption: if you take damage while sustaining an effect, make a Focus Check. DC 12, or half the total damage taken that turn, whichever is higher. On a failure the sustained effect ends immediately."
   },
   precisionShaping: {
     fp: 1, fpStrain3: 2,
