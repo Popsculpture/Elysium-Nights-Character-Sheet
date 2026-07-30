@@ -407,9 +407,15 @@ no code change was needed.
   base rule. Until then this is the single largest undocumented assumption in the
   system.
 
-### M5. Resilience Dice: the Body modifier attaches two different ways
-- Part 2's Vitality & Recovery chapter states the relationship inconsistently.
-- App implements: Long Rest wound recovery = Body mod (min 1).
+### M5. Resilience Dice: Body modifier per die (RESOLVED 2026-07-28)
+- **Author ruling:** per die. The rule now reads "Roll each die and add your **Body
+  modifier to each**. Recover the total as Vitality."
+- **App status: already correct**, no change. It rolls each die and adds the Body
+  modifier to each, and the Freelancer readout says so ("d8 +3 BOD each").
+- Worth noting for the manuscript: the worked example still reads "rolling 2d8 +
+  Body modifier to regain 14 Vitality", which in isolation reads as one modifier for
+  the whole spend. The rule's "to each" now governs, so the example is not wrong,
+  just terser than the rule.
 
 ### M6. "Spatial" damage type (RESOLVED 2026-07-28)
 - **Author ruling:** Spatial is not a separate damage type. It is a named variety of
@@ -442,13 +448,52 @@ no code change was needed.
   3. The Tactical Note calls Blocking "a guaranteed spike in damage reduction
      **without a die roll**", which directly contradicts the 1d4/1d6/1d8 shield die.
 
-### M8. Crafting Max Mods contradicts the Part 3 Slot Count table
-- Part 2's Crafting chapter and Part 3's weapon-customization Slot Count table give
-  different maximums. The app implements the Part 3 table.
+### M8. Weapon mod capacity (RESOLVED 2026-07-28)
+- **Author ruling:** the gear chapters own capacity. The rewritten Customization
+  section now says "**Capacity lives with the host.** Weapons carry Parts up to their
+  Slot Count across the five slots. Armor takes mods only with the **Modular** trait,
+  up to its listed Mod Slots. Vehicles carry Mod Slots equal to 1 + Tier... Each gear
+  chapter's own rules for slots, stacking, and exclusions govern; this chapter never
+  overrides them." The old "Sidearms support 2, Longarms 3" line is gone.
+- **App status:** correct on the headline number, since it implements Part 3's Slot
+  Count table (Sidearm 4, Longarm 5, Holdout 1, Melee 4, Signature 0).
+- **Follow-up now in scope for step 4 domain 7**, because the rewrite adds rules the
+  app does not yet model:
+  - **Over-Engineering:** one Part past capacity is allowed, but it becomes a
+    **Prototype tier** Project and never invents a mount (a missing slot stays empty,
+    non-Modular armor stays bare, a Signature weapon's 0 slots are absolute). One
+    extra Part is the ceiling. The app has an over-engineering rule of its own that
+    predates this text and needs checking against it.
+  - **Mandatory Flaw:** a successful Over-Engineering must carry a permanent quirk,
+    heavy maintenance burden, or obvious visual tell.
+  - **Three kinds of work:** Accessories (snap on and off outside initiative, no roll,
+    no Project), Mods (bench work in downtime with the right kit and Proficiency, roll
+    only if the work fights back), Fabrication (full Dice Pool Project).
+  - **Armor mods require the Modular trait**, which the app should gate on.
 
-### M9. Two equipment entries stated two ways
-- **EMP Grenade:** save type given inconsistently.
-- **Concussion shells:** effect stated two ways.
+### M9. Electronic-payload saves unified as a Tech Save (RESOLVED 2026-07-28)
+- **Author ruling:** one save resolves electronic-payload resistance everywhere, a
+  **Tech Save**. The old "Systems or Body" hybrid was an undefined construction
+  (saves are attribute saves; Systems is a skill), and Agility was considered and
+  rejected because the save gates the Bricked/Breached condition rather than the
+  blast. Flesh is covered by the Pulse trait's automatic halving.
+- **App updated to match, all verified live:**
+  - **EMP Grenade:** gained the **Pulse** trait (it previously dealt full 2d6 to
+    unaugmented people, contradicting its own "useless on the people" flavor), plus
+    the Tech Save and a stated duration (Bricked/Breached ends at the end of the
+    target's next turn), so its "matching the EMP Round and EMP Shell" claim is now
+    true on save, outcome and duration.
+  - **EMP Shell:** Tech Save vs your Weapon Save DC.
+  - **EMP Rounds:** Tech Save DC 13. **Spike Rounds:** Tech Save DC 14. The flat DCs
+    are deliberate: cartridge ammo uses flat DCs, thrown and launched ordnance scales
+    with the user via Weapon Save DC.
+  - **Surge Pulse** (storm generator): Tech Save DC 13, and damage changed from
+    1d6 Energy to **1d6 Electric** for family consistency with the EMP lane.
+  - **Grenade Shells** bandolier: "standard frag or concussion shells" became
+    "standard frag shells". Concussion Shell is specialty ammo at 𝒢50 each and was
+    being bundled into a 𝒢120-for-6 standard bandolier.
+- **Confirmed:** the "Systems or Body" / "Body or Systems" construction is now extinct
+  in the app's data, matching its extinction in Part 3.
 
 ### M10. Electromagnetic / Cognitive Resonance tables were rewritten
 - Recorded here because the app had drifted far enough to invent an effect (see A2).
