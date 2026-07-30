@@ -1584,7 +1584,18 @@ EN.combatView = (function () {
       }
       if (dg.shield) {
         if (dg.shieldLapsed) chips.push(gchip("SHIELD · LEASE DUE", dg.shield.name, DUE_TIP, "var(--danger)"));
-        else { var spv = [(dg.shieldDef >= 0 ? "+" : "") + dg.shieldDef + " DEF"]; if (dg.shieldBlockDie) spv.push(dg.shieldBlockDie + " Block"); chips.push(gchip("SHIELD", dg.shield.name, spv.join(" · "), "var(--accent)")); }
+        else if (!dg.shieldAlive) {
+          // 0 Durability boxes: a physical shield is wreckage, an emitter has gone dark
+          chips.push(gchip(dg.shieldEmitter ? "SHIELD · DARK" : "SHIELD · DESTROYED", dg.shield.name,
+            dg.shieldEmitter ? "Emitter overloaded; grants nothing until it resets or is repaired"
+                             : "Beyond repair; the wreck counts as salvage", "var(--danger)"));
+        } else {
+          var spv = [(dg.shieldDef >= 0 ? "+" : "") + dg.shieldDef + " DEF"];
+          if (dg.shieldBlockDie) spv.push(dg.shieldBlockDie + " Block");
+          if (dg.shieldWearThreshold) spv.push("Wear " + dg.shieldWearThreshold);
+          spv.push("□".repeat(dg.shieldBoxesLeft) + "■".repeat(dg.shieldSpent));
+          chips.push(gchip("SHIELD", dg.shield.name, spv.join(" · "), "var(--accent)"));
+        }
       }
       if (dg.focus) {
         if (dg.focusLapsed) chips.push(gchip("FOCUS · LEASE DUE", dg.focus.name, DUE_TIP, "var(--danger)"));
@@ -2844,7 +2855,7 @@ EN.combatView = (function () {
       });
       // Block works with a shield, a flat Block Bonus, or the Plated trait; a shield's
       // die stacks on top. Gear whose lease is in arrears grants none of this.
-      var liveShield = dg.shield && !dg.shieldLapsed ? dg.shield : null;
+      var liveShield = (dg.shield && !dg.shieldLapsed && dg.shieldAlive) ? dg.shield : null;
       var plated = !!(dg.armor && !dg.armorLapsed && (dg.armor.traits || []).indexOf("Plated") !== -1);
       var blockBonus = dg.blockBonus || 0;
       var platedHalf = plated ? Math.floor((dg.armorDR || 0) / 2) : 0;
@@ -2853,11 +2864,35 @@ EN.combatView = (function () {
       if (blockBonus) blockAdds.push("+" + blockBonus + " Block Bonus");
       if (platedHalf) blockAdds.push("+" + platedHalf + " half-DR (Plated)");
       if (liveShield && dg.shieldBlockDie) blockAdds.push("+" + dg.shieldBlockDie + " (" + liveShield.name + ")");
+      // Shield Durability: a Blocked hit whose RAW damage meets the Wear Threshold
+      // marks a box, as does any Blocked critical. Offered as a one-tap control on
+      // the Block row, since that is the only moment it can happen.
+      function markShieldWear(delta) {
+        if (!dg.shield) return;
+        var nm = dg.shield.name, max = dg.shieldBoxesMax;
+        store.update(function (c) {
+          c.shieldWear = c.shieldWear || {};
+          c.shieldWear[nm] = eng.clamp((c.shieldWear[nm] | 0) + delta, 0, max);
+        });
+        var left = Math.max(0, max - ((ch.shieldWear || {})[nm] | 0) - delta);
+        if (delta > 0 && left <= 0) toast(dg.shieldEmitter ? nm + " overloaded and went dark." : nm + " is destroyed; the wreck is salvage.");
+      }
+      var wearNote = dg.shield && dg.shieldWearThreshold
+        ? " Wear " + dg.shieldWearThreshold + ": a Blocked hit of " + dg.shieldWearThreshold + "+ raw damage, or any Blocked critical, marks a box (" + dg.shieldBoxesLeft + "/" + dg.shieldBoxesMax + " left)."
+        : "";
       var DEF_LIVE = {
         Block:   { avail: canBlock, req: "a shield, a Block Bonus, or Plated armor",
-                   summary: blockAdds.length
+                   summary: (blockAdds.length
                      ? "Adds " + blockAdds.join(", ") + " to your Armor DR (" + (d.armorDR || 0) + ") against this hit, no roll"
-                     : "Reinforce your Armor DR against this hit" },
+                     : "Reinforce your Armor DR against this hit") + wearNote,
+                   extra: dg.shield ? el("div.row.wrap", { style: { gap: "6px", marginTop: "6px", alignItems: "center" } }, [
+                     el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".1em" }, text: "DURABILITY" }),
+                     el("span.mono", { style: { fontSize: "12px", color: dg.shieldAlive ? "var(--text2)" : "var(--danger)" },
+                       text: "□".repeat(dg.shieldBoxesLeft) + "■".repeat(dg.shieldSpent) }),
+                     el("button.btn.sm", { disabled: !dg.shieldAlive, title: "Mark 1 Durability box (a Blocked hit at or above the Wear Threshold, or a Blocked critical)",
+                       style: { color: "var(--danger)", borderColor: "var(--danger)" }, onclick: function () { markShieldWear(1); } }, "− WEAR"),
+                     dg.shieldSpent > 0 ? el("button.btn.sm", { title: "Restore 1 box (Repair Project)", onclick: function () { markShieldWear(-1); } }, "+ REPAIR") : null
+                   ]) : null },
         Dodge:   { avail: true, req: "",
                    summary: (acro ? "+" + acro.total + " Defense" : "+Agility + Acrobatics to Defense") + " vs this hit; on a miss, shift 1 space" + (dg.speedPenalty ? " · GM may forbid in heavy armor" : "") },
         Parry:   { avail: !!meleeDie || !!liveShield, req: "a melee weapon or shield",
@@ -2924,6 +2959,7 @@ EN.combatView = (function () {
         ]);
         var dkids = [head];
         if (open) dkids.push(el("p.help", { style: { margin: "4px 0 8px 18px", whiteSpace: "pre-wrap" }, text: def.text }));
+        if (open && L.extra) dkids.push(el("div", { style: { margin: "0 0 8px 18px" } }, [L.extra]));
         defKids.push(el("div", null, dkids));
       });
       var defensesCol = el("div", { style: { flex: 1, minWidth: 0 } }, defKids);

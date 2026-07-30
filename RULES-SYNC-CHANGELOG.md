@@ -409,6 +409,38 @@ Flow formulas, the 19 damage types and 39 of 41 conditions are also in sync.
   intact, 36 ciphers load, and the reference panels render with no undefined or NaN.
 - **Manuscript impact:** see M14 and M15.
 
+### A10. Shields: Durability, Cover, and the Wear trait (author update)
+- **Files:** `app/data/gear_armor.js`, `app/data/combat.js`, `app/js/engine.js`,
+  `app/js/combat.js`, `app/js/store.js`
+- The author rewrote Shields and Cover, added a **Shield Durability** subsystem, and
+  added a **Wear X** gear trait. The app referenced Shield Durability in two shields'
+  flavor text but never modelled it.
+- **New subsystem, implemented end to end:**
+  - **Wear Threshold** equals twice the maximum result of the Block die: 8 for 1d4,
+    12 for 1d6, 16 for 1d8. Stored per shield as `wear`.
+  - **Durability boxes**, 3 by default and 2 on the Scrap Shield, stored as `boxes`
+    and tracked per shield name on the record as `ch.shieldWear`.
+  - Blocking a hit whose **raw** damage meets the threshold marks a box, as does any
+    Blocked critical. Damage below the threshold does not wear the shield.
+  - **At 0 boxes:** a physical shield is destroyed and grants no Defense, Block or
+    Cover, and its wreck is salvage; an **emitter or hardlight** shield goes dark
+    instead and is not destroyed. Flagged per item with `emitter: true` on the
+    Sentinel Barrier and Hardlight Barrier.
+- **Shields now grant Cover:** Riot Shield gives **Half Cover** and Ballistic Bulwark
+  gives **Three Quarter Cover** while in Full Defense, stored as
+  `coverOnFullDefense`. Shield cover does not track Structure or Integrity.
+- **Data fix found along the way:** the Sentinel Barrier had `price: 0`. It now carries
+  its 𝒢90 buy-in alongside the 𝒢60/week upkeep, matching the leased-gear pattern.
+- **Wear X trait** added to the armor trait glossary.
+- **UI:** the defensive loadout chip shows Wear rating and boxes as filled and empty
+  squares, and turns red reading DESTROYED or DARK at zero. The Block defense row
+  gained a DURABILITY control with WEAR and REPAIR buttons, placed there because
+  Blocking is the only moment a box can be marked.
+- **Engine:** a dead or dark shield contributes no Defense bonus, no Block die and no
+  Cover. Verified across the full lifecycle: fresh (threshold 12, 3 boxes, +1 DEF,
+  1d6 Block, Half Cover), worn to 1 box (still live), destroyed at 0 (all benefits
+  gone), and an emitter at 0 (dark, flagged as an emitter rather than destroyed).
+
 ---
 
 ## PART B: Pending, in the agreed order

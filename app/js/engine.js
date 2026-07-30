@@ -573,13 +573,29 @@ EN.engine = (function () {
     // ignores it), but training isn't modeled, so we leave Powered Speed to the player.
     // A lapsed Powered frame seizes, so Bulky bites it too.
     var speedPenalty = (hasTrait(armor, "Bulky") && (!hasTrait(armor, "Powered") || armorLapsed)) ? -1 : 0;
+    // Shield Durability boxes, tracked per shield name on the record.
+    var shieldBoxesMax = shield ? (typeof shield.boxes === "number" ? shield.boxes : 3) : 0;
+    var shieldSpent = shield ? clamp(((ch.shieldWear || {})[shield.name]) | 0, 0, shieldBoxesMax) : 0;
+    var shieldBoxesLeft = Math.max(0, shieldBoxesMax - shieldSpent);
+    var shieldAlive = !shield || shieldBoxesLeft > 0;
     return {
-      armor: armor, shield: shield, focus: focus,
+      armor: armor, focus: focus,
       armorLapsed: armorLapsed, shieldLapsed: shieldLapsed, focusLapsed: focusLapsed,
       armorDR: (armor && !armorLapsed && armor.dr) || 0,
       blockBonus: (armor && !armorLapsed && armor.blockBonus) || 0,   // flat Block Bonus from medium/heavy plate
-      shieldDef: (shield && !shieldLapsed && typeof shield.defense === "number") ? shield.defense : 0,
-      shieldBlockDie: (shield && !shieldLapsed && shield.blockDie) || null,
+      shieldDef: (shield && !shieldLapsed && shieldAlive && typeof shield.defense === "number") ? shield.defense : 0,
+      shieldBlockDie: (shield && !shieldLapsed && shieldAlive && shield.blockDie) || null,
+      // Shield Durability: boxes are marked when a Blocked hit's RAW damage meets the
+      // Wear Threshold (twice the Block die's maximum), or on any Blocked critical.
+      // At 0 boxes a physical shield is destroyed; an emitter shield goes dark.
+      shield: shield || null,
+      shieldWearThreshold: shield ? (shield.wear || 0) : 0,
+      shieldBoxesMax: shieldBoxesMax,
+      shieldBoxesLeft: shieldBoxesLeft,
+      shieldSpent: shieldSpent,
+      shieldAlive: shieldAlive,
+      shieldEmitter: !!(shield && shield.emitter),
+      shieldCoverOnFullDefense: (shield && !shieldLapsed && shieldAlive && shield.coverOnFullDefense) || null,
       wardDie: wardDie,                               // from the Focus item, or a Focus-trait armor
       wardFromArmor: !(focus && !focusLapsed) && !!(armor && !armorLapsed && armor.wardDie),
       speedPenalty: speedPenalty

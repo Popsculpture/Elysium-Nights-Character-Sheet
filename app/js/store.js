@@ -119,6 +119,7 @@ EN.store = (function () {
       carry: {},                         // Loadout carry status per entry key: "carried" | "worn" | "racked" (absent = stashed)
       racked: {},                        // Racked assignments: {itemEntryKey: carryGearEntryKey} (Carry Gear, one rack per item)
       slotInert: {},                     // Body Slot conflicts: {itemEntryKey: true} for on-person items the player benched
+      shieldWear: {},                    // Shield Durability: {shieldName: boxesMarked}
       haul: "none",                      // active Haul: "none" | "lift" (body-sized) | "drag" (oversized/double)
       glimmer: 0,
       nexus: 0,                          // Nexus tokens (◎), the high-scrutiny currency; fractional
@@ -180,6 +181,9 @@ EN.store = (function () {
     // non-true value is just noise to strip.
     if (!ch.slotInert || typeof ch.slotInert !== "object") ch.slotInert = {};
     Object.keys(ch.slotInert).forEach(function (k) { if (ch.slotInert[k] !== true) delete ch.slotInert[k]; });
+    // Shield Durability boxes marked, keyed by shield name
+    if (!ch.shieldWear || typeof ch.shieldWear !== "object") ch.shieldWear = {};
+    Object.keys(ch.shieldWear).forEach(function (k) { var v = ch.shieldWear[k]; if (typeof v !== "number" || v < 0) delete ch.shieldWear[k]; });
     if (typeof ch.nexus !== "number") ch.nexus = 0;                          // Nexus wallet (◎)
     // The Loadout is declared at the start of a job and sets the Load Budget;
     // "If nobody declares, assume Standard."
