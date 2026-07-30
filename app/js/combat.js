@@ -2240,11 +2240,11 @@ EN.combatView = (function () {
         var bod = d.attributes.BOD.mod, agi = d.attributes.AGI.mod;
         var useAgi = melee ? (finesse && agi > bod) : (thrownItem ? agi >= bod : true);
         var mod = useAgi ? agi : bod, attrName = useAgi ? "Agility" : "Body";
-        // The damage attribute modifier rides on making CONTACT: Body for melee,
-        // Agility for Finesse melee and for ranged, and for a Thrown weapon whichever
-        // modifier made the attack. It does NOT apply to indirect delivery: a grenade
-        // lands at a point and forces a save, so no attribute modifier is added.
-        var indirect = it.group === "Thrown" && (it.traits || []).some(function (t) { return /^Explosive/.test(t); });
+        // Damage adds the SAME attribute modifier the attack roll used. Indirect
+        // delivery adds none: "a grenade or launcher shell lands at a point, forces a
+        // save, and deals only its listed damage dice." The Explosive trait marks
+        // exactly that set (the thrown grenades and the three launchers).
+        var indirect = (it.traits || []).some(function (t) { return /^Explosive/.test(t); });
         var cat = GROUP_CAT[it.group], tier = eng.effectiveGearTier(ch, "weapons", cat), prof = R.profTiers[tier].d20;
         // A Weapon Focus naming this weapon type adds Caliber to attack rolls;
         // Focus Caliber rides outside the +15 static modifier cap. A matching
