@@ -333,11 +333,13 @@ Flow formulas, the 19 damage types and 39 of 41 conditions are also in sync.
     the DC equals half the total damage taken", which had a latent gap: for a turn of
     21 to 24 damage, half is 10 to 12, i.e. **lower** than the base 12, so a bigger
     hit could produce an easier check. "Whichever is higher" removes that.
-  - **Open question for the author:** Focus Disruption's original text called for a
-    "Wits **or** Body Saving Throw (Shaper's choice)". The app now uses Body only, on
-    the strength of the new "Focus Check (a Body Save)" definition. If Shapers keep
-    the Wits-or-Body choice for Sustain specifically, say so and it is a one-line
-    change.
+  - **Resolved 2026-07-30:** the author ruled **Body only, everywhere**. A Focus Check
+    is always a Body Save, in Critical Condition and in Sustain alike. The app already
+    implements this, so no change was needed. Accepted trade-off: Shapers are
+    Mystique-primary and often have poor Body, so holding a Sustain under fire is
+    genuinely hard. Manuscript action: drop the "Wits or Body Saving Throw (Shaper's
+    choice)" phrasing from the Focus Disruption entry so it does not contradict the
+    Focus Check definition.
 - **Everything computed in this domain was already correct** and stayed untouched:
   the Reservoir formula, Flow Attack, Flow Save DC, the Intent/Delivery/Force FP
   bands, Precision Shaping, the Level 5 Layered Force gate, Overdraw (1d4 rising to
@@ -596,42 +598,34 @@ no code change was needed.
 - **Confirmed:** the "Systems or Body" / "Body or Systems" construction is now extinct
   in the app's data, matching its extinction in Part 3.
 
-### M14. Standard User cipher Complexity ceiling stated two ways (NEW)
-- **Part 2, line 3342:** a Standard User is limited to Complexity 0, and Complexity 1
-  and up is Power User territory.
-- **Part 2, line 3542:** "Each cipher's Complexity matches the tier of the B&E Buddy in
-  use. A Standard Buddy fires Standard ciphers; an Advanced Buddy fires Advanced
-  versions", which puts a Standard User at Complexity 1 or 2 through the Buddy's suite.
-- **App:** implements the tier-scaling version, writing 3342 as the general rule with
-  the Buddy named as the explicit exception, which is how 3542 itself frames it. Works,
-  but the two lines read as contradictory in isolation.
+### M14. Standard User Complexity ceiling (RESOLVED 2026-07-30)
+- **Author ruling:** the **Buddy is the exception**. Standard Users are capped at
+  Complexity 0 in general, but a B&E Buddy's baked-in suite runs at the Buddy's own
+  tier (0/1/2).
+- **Manuscript action:** add that exception clause to line 3342, which currently reads
+  as an absolute cap. Line 3542 already frames it correctly.
+- **App: already correct**, no change. It implements tier-scaling with 3342 as the
+  general rule and the Buddy named as the explicit exception.
 
-### M15. A passed Stability Check: free, or still half feedback? (NEW)
-- **Part 2, line 3336:** passing the Stability Check means "nothing else happens".
-- **Part 2, line 3467** (forced disconnects): "Pass, or fail by 4 or less" still takes
-  **half** the feedback.
-- So passing costs nothing on a normal disruption but costs half the feedback on a
-  forced disconnect. The app now states both paths explicitly rather than picking one.
-- Worth confirming that asymmetry is intended; if it is, a sentence in 3336 noting the
-  forced-disconnect exception would settle it.
+### M15. A passed Stability Check (RESOLVED 2026-07-30)
+- **Author ruling:** **keep the asymmetry.** A pass on a normal disruption costs
+  nothing; on a forced disconnect the Link is gone regardless, so a pass (or a fail by
+  4 or less) still costs half the feedback.
+- **Manuscript action:** optional but worthwhile, note the forced-disconnect exception
+  at line 3336 so the two rules do not read as contradictory in isolation.
+- **App: already correct**, no change. Both paths are stated explicitly in the
+  LinkDeath resolution text.
 
-### M13. A Caliber 1 example uses a Level 5 ability (NEW)
-- **Part 2, line 2696** gates Layered Force: "At **Level 5 (Expanded Frequency)**, you
-  may pay both the **Hybrid (1 FP)** and the **Empowered Force (1 FP)** costs on a
-  single Invocation."
-- **Part 2, line 2909** heads the worked examples "**Premade Resonant Patterns
-  (Caliber 1, Flow Modifier +4)**". Caliber 1 is Levels 1 to 2.
-- **Arc Lightning**, at lines 2929-2933 inside that section, is built as
-  "**Intent:** Hybrid / Damage + Scramble (1 FP)" plus "**Force:** Empowered (1 FP)",
-  which is exactly the Level 5 combination.
-- So the chapter's showcase pattern cannot legally be built by the character the
-  section says is building it.
-- **App status:** faithful to the doc, no change. It ships Arc Lightning as
-  hybrid + empowered and separately states the Level 5 gate correctly, which is what
-  makes the conflict visible.
-- **Fix is likely one of:** move Arc Lightning out of the Caliber 1 set, relabel the
-  section's example character as Level 5, or rebuild Arc Lightning as Hybrid without
-  Empowered Force.
+### M13. Arc Lightning is a Level 5 example (RESOLVED 2026-07-30)
+- **Author ruling:** keep the pattern exactly as written and mark it a **Level 5**
+  example, rather than weakening it or relabelling the whole Caliber 1 set.
+- **Manuscript action:** inside "Premade Resonant Patterns (Caliber 1, Flow Modifier
+  +4)", label Arc Lightning as a Level 5 showcase (or lift it into its own higher-tier
+  block), so the section no longer implies a Caliber 1 character can build it.
+- **App:** the Arc Lightning template now carries `minLevel: 5` plus the note
+  "Layered Force: needs Level 5 (Expanded Frequency)", and the pattern list shows a
+  level chip that turns red with a cross when the loaded character is below it.
+  Verified: red "LVL 5 x" on a Level 1 Shaper, neutral "LVL 5" at Level 5.
 
 ### M10. Electromagnetic / Cognitive Resonance tables were rewritten
 - Recorded here because the app had drifted far enough to invent an effect (see A2).

@@ -322,7 +322,13 @@ EN.flowView = (function () {
       ? el("span", { style: { fontWeight: 600, fontSize: "13px" }, text: p.name })
       : el("input", { type: "text", value: p.name || "", placeholder: "pattern name…", style: { fontWeight: 600, fontSize: "13px", flex: "1 1 140px", minWidth: "120px" },
           oninput: function () { var v = this.value; fset(function (fl) { if (fl.patterns[idx]) fl.patterns[idx].name = v; }, true); } });
+    // A pattern can carry a level gate (Layered Force needs Level 5); show it, and
+    // flag it red once we know the character cannot legally build it yet.
+    var gated = p.minLevel && (d.level || 1) < p.minLevel;
     var right = el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } }, [
+      p.minLevel ? el("span.chip", { title: p.gateNote || ("Requires Level " + p.minLevel),
+        style: { fontSize: "9px", color: gated ? "var(--danger)" : "var(--text3)", borderColor: gated ? "var(--danger)" : "var(--border2)" },
+        text: "LVL " + p.minLevel + (gated ? " ✕" : "") }) : null,
       el("span.chip", { style: { fontSize: "9px", color: over > 0 ? "var(--danger)" : FP, borderColor: over > 0 ? "var(--danger)" : VIO }, text: inv.fp + " FP" }),
       inv.damageText ? el("span.chip", { style: { fontSize: "9px", color: "var(--accent)", borderColor: "var(--accent)" }, text: inv.damageText } ) : null,
       el("button.btn.sm", { title: "Load this formulation into the builder", style: { color: "var(--text2)" }, onclick: function () { loadForm(p); toast("Loaded " + p.name + " into Free-Shaping"); } }, "LOAD"),

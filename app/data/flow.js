@@ -203,7 +203,10 @@ EN.flow = {
     { name: "Kinetic Slam", resonance: "kinetic", intent: "damage", deliveryBand: "directed", deliveryOption: "Remote", force: "empowered", duration: "instant", precision: false },
     { name: "Flash-Freeze Zone", resonance: "thermal", intent: "effect", deliveryBand: "wide", deliveryOption: "Sphere (3 spaces)", force: "base", duration: "instant", precision: true },
     { name: "Triage Pulse", resonance: "visceral", intent: "effect", deliveryBand: "directed", deliveryOption: "Touch", force: "base", duration: "instant", precision: false, baseChoice: "Patch" },
-    { name: "Arc Lightning", resonance: "electromagnetic", intent: "hybrid", deliveryBand: "wide", deliveryOption: "Line (6 spaces)", force: "empowered", duration: "instant", precision: false, empoweredEffect: "Optic Scramble" },
+    // Hybrid + Empowered Force on one Invocation is Layered Force, which unlocks at
+    // Level 5 (Expanded Frequency), so this pattern is a Level 5 showcase rather than
+    // a starting build.
+    { name: "Arc Lightning", resonance: "electromagnetic", intent: "hybrid", deliveryBand: "wide", deliveryOption: "Line (6 spaces)", force: "empowered", duration: "instant", precision: false, empoweredEffect: "Optic Scramble", minLevel: 5, gateNote: "Layered Force: needs Level 5 (Expanded Frequency)" },
     { name: "Dimensional Tear", resonance: "spatial", intent: "damage", deliveryBand: "directed", deliveryOption: "Remote", force: "empowered", duration: "instant", precision: false },
     { name: "Gravity Anchor", resonance: "kinetic", intent: "effect", deliveryBand: "focused", deliveryOption: "Cube (2 spaces)", force: "empowered", duration: "instant", precision: false, empoweredEffect: "Gravity Pin" },
     { name: "Phantom Shroud", resonance: "cognitive", intent: "effect", deliveryBand: "directed", deliveryOption: "Remote", force: "empowered", duration: "instant", precision: false, empoweredEffect: "Blind Spot" },
