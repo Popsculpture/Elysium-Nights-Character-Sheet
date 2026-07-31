@@ -234,7 +234,7 @@ EN.classes.hustler = {
   ],
   extra: {
     playbook: {
-      turnToTurn: "You manipulate the action economy. You observe enemy positioning and spend your Leverage to ensure your allies strike with Edge while your enemies stumble blindly into your traps with Snag.",
+      turnToTurn: "You manipulate the action economy. You observe enemy positioning and spend your Leverage to make sure your allies strike with Edge while your enemies stumble blindly into your traps with Snag.",
       winningEncounters: "You win by amplifying your team's damage output and crippling the opposition's options before they can even draw their weapons. You talk your way out of ambushes, buy critical time, and turn the environment itself into a psychological weapon.",
       whatToAvoid: "Direct frontline combat. With a d6 Resilience die, you cannot afford to trade blows with heavy hitters. If you find yourself cornered without Leverage or an exit strategy, your brilliant plans will end very quickly."
     },
@@ -264,7 +264,7 @@ var OPERATOR_TACTICAL_TEXT = OPERATOR_TACTICAL_INTRO + "\n\n" + OPERATOR_TACTICA
 EN.classes.operator = {
   key: "operator",
   name: "Operator",
-  tagline: "You are a specialist in timing, positioning, and coordination. In a world of unpredictable variables, you hold the line with iron discipline, secure comms, and a tactical plan designed to survive contact with the enemy. Your path is about making the right call at the exact right moment, turning the chaos of a firefight into a calculated, lethal advantage. You train to be the professional that crews bet their lives on, the anchor who keeps moving forward when every other plan collapses.",
+  tagline: "You hold the line with iron discipline, secure comms, and a tactical plan built to survive contact with the enemy. You do not win by being the strongest body in the room. You win by deciding where the fight happens, who gets to move, and who keeps their head down while your crew does the work. A plan is only intent until someone executes it on time and on target. That is the job.",
   vitality: {
     text: "Resilience Die: d10\nStarting Vitality: 10 + Body Modifier\nVitality Per Level: 1d10 + Body Modifier"
   },
@@ -274,7 +274,7 @@ EN.classes.operator = {
   attributePriorities: [
     "Wits (Primary): Drives your Execution pool and powers critical situational awareness through Perception.",
     "Agility (Secondary): Key for landing ranged attacks with Longarms or Heavy Weapons, and keeps your Defense high during a firefight.",
-    "Body (Tertiary): Increases your Vitality and maximum Wounds, ensuring you can survive return fire while holding a tactical anchor point."
+    "Body (Tertiary): Increases your Vitality and maximum Wounds, so you can survive return fire while holding a tactical anchor point."
   ],
   saveFocus: "Wits and Body",
   resource: {
@@ -413,7 +413,7 @@ EN.classes.operator = {
     {
       key: "the_deadeye",
       name: "The Deadeye",
-      description: "Your training ensures that priority targets never even get a chance to draw their weapons. You specialize in ballistic trajectory and pinpoint accuracy, reading the geometry of a firefight before the first shot rings out. You do not need a massive sniper rifle to be a lethal threat; in your hands, a heavy revolver or a standard carbine becomes an instrument of deadly efficiency. You win by finding the angles your enemies overlook and putting a bullet exactly where it belongs.",
+      description: "Your training means priority targets never even get a chance to draw their weapons. You specialize in ballistic trajectory and pinpoint accuracy, reading the geometry of a firefight before the first shot rings out. You do not need a massive sniper rifle to be a lethal threat; in your hands, a heavy revolver or a standard carbine becomes an instrument of deadly efficiency. You win by finding the angles your enemies overlook and putting a bullet exactly where it belongs.",
       features: [
         {
           level: 1,

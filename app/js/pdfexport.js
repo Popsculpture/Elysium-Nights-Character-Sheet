@@ -633,7 +633,7 @@ EN.pdfExport = (function () {
     if (!feats.length) {
       ctx.text("No features yet.", { size: 9, color: hexColor("dim") });
     } else {
-      var ACT_OVERRIDE = { Bandwidth: "Passive", Overdrive: "Passive", Leverage: "Passive", Moxie: "Passive", "Battlefield Command": "Passive", Triage: "Passive", Reservoir: "Passive", "Core Channeling": "Passive", "Reality Fracture": "Swift" };
+      var ACT_OVERRIDE = { Bandwidth: "Passive", Overdrive: "Passive", Leverage: "Passive", Moxie: "Passive", Execution: "Passive", Triage: "Passive", Reservoir: "Passive", "Core Channeling": "Passive", "Reality Fracture": "Swift" };
       var groups = { Passive: [], Action: [], Swift: [], Impulse: [], Free: [] };
       feats.forEach(function (f) { var act = ACT_OVERRIDE[f.name] || actionCost(f.text); (groups[act] || groups.Passive).push(Object.assign({}, f, { _act: act })); });
       var featIdx = 0;

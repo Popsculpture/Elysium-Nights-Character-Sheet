@@ -38,7 +38,7 @@ EN.classes.stitcher = {
   attributePriorities: [
     "1. Tech (Primary): Drives your Triage pool and powers your Medtech skill for stabilizing Allies, repairing cybernetics, and safely deploying complex treatments.",
     "2. Wits (Secondary): Powers your Investigation to diagnose strange ailments or analyze chemical environments.",
-    "3. Agility (Tertiary): Ensures you have the Speed required to physically reach fallen Allies quickly and the Defense to survive the sprint."
+    "3. Agility (Tertiary): Gives you the Speed required to physically reach fallen Allies quickly and the Defense to survive the sprint."
   ],
 
   saveFocus: "Tech and Agility",
@@ -247,6 +247,11 @@ EN.classes.stitcher = {
   ],
 
   extra: {
+    playbook: {
+      turnToTurn: "You dictate survival. You manage the physical condition of your team by cleansing debuffs, applying temporary health through Vigor, and keeping the front line in the fight.",
+      winningEncounters: "You win by turning the war of attrition in your favor. You outpace the enemy by repairing your squad's damage on the fly, or you cripple the opposition's biology with targeted toxins and chemical warfare.",
+      whatToAvoid: "Getting isolated. You are resilient, but your abilities are force multipliers. If you are not near your team to buff them, heal them, or pull them back from the brink, your impact drops significantly."
+    },
     triageProtocols: STITCHER_TRIAGE_PROTOCOLS.map(function (p) {
       return {
         name: p.name + (p.action ? " (" + p.action + ")" : ""),

@@ -421,7 +421,7 @@ EN.printSheet = (function () {
     var out = [];
     var feats = gatherFeatures(ch, d);
     if (!feats.length) { out.push(note("No features yet.")); return out; }
-    var ACT_OVERRIDE = { Bandwidth: "Passive", Overdrive: "Passive", Leverage: "Passive", Moxie: "Passive", "Battlefield Command": "Passive", Triage: "Passive", Reservoir: "Passive", "Core Channeling": "Passive", "Reality Fracture": "Swift" };
+    var ACT_OVERRIDE = { Bandwidth: "Passive", Overdrive: "Passive", Leverage: "Passive", Moxie: "Passive", Execution: "Passive", Triage: "Passive", Reservoir: "Passive", "Core Channeling": "Passive", "Reality Fracture": "Swift" };
     var groups = { Passive: [], Action: [], Swift: [], Impulse: [], Free: [] };
     feats.forEach(function (f) { f._act = ACT_OVERRIDE[f.name] || actionCost(f.text); (groups[f._act] || groups.Passive).push(f); });
     function snipRow(f) {

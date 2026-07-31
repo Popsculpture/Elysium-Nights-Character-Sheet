@@ -81,7 +81,7 @@ EN.briefs = {
   "The Fix Is In": "Spend 1 Leverage when ally within 6 takes damage; reduce it 1d6 + Charm mod + Caliber",
   "Off-the-Books Asset": "Spend 2 Leverage; Area 2 within 24, Agility save (DC 8+Charm mod+Caliber) or 3d8+Charm-mod damage and Prone",
   "Corner the Market": "At Initiative, jam up to Charm-mod foes: no consumables this encounter; 2 temp Leverage, lost after round 1",
-  "Battlefield Command": "Execution pool = Caliber + Wits mod; spend 1 EX for Reposition, Focus Fire, or Intercepting Guard",
+  "Execution": "Execution pool = Caliber + Wits mod; spend 1 EX for Reposition, Focus Fire, or Intercepting Guard",
   "Operator Subclass": "Choose a subclass granting features at set levels",
   "Overwatch": "Establish Area 6 Cone/12 Line; first foe acting within triggers Impulse Action attack; on hit Speed drops to 0",
   "Fluid Engagement": "When you take the Attack action, attack twice instead of once",

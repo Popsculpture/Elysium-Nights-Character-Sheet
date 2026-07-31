@@ -1103,10 +1103,19 @@ EN.builder = (function () {
   function stepClass(ch, d) {
     var clsKeys = ["codebreaker", "fury", "hustler", "operator", "scoundrel", "shaper", "stitcher"];
     var cls = eng.getClass(ch.class);
+    // Classes of Elysium is the copy layer for this step. Its Play-if lines are the
+    // only text in the book written for the moment of the decision itself, so a card
+    // leads with one; the overview paragraph joins it once the class is selected.
+    var PICK = EN.classPicker || { intro: [], classes: {} };
     var blocks = [EN.ui.sectionTitle("Choose a Class")];
+    (PICK.intro || []).forEach(function (p, i) {
+      blocks.push(el("p.help", { style: { margin: i ? "0 0 8px" : "0 0 6px", color: i ? "var(--text3)" : "var(--text2)" }, text: p }));
+    });
     blocks.push(el("div.card-grid", null, clsKeys.map(function (k) {
       var c = eng.getClass(k); if (!c) return null;
-      return el("div.opt-card" + (ch.class === k ? ".sel" : ""), {
+      var pk = (PICK.classes || {})[k] || {};
+      var sel = ch.class === k;
+      return el("div.opt-card" + (sel ? ".sel" : ""), {
         onclick: function () {
           store.update(function (cc) { if (cc.class !== k) { cc.class = k; cc.subclass = null; cc.classSkillChoices = []; cc.classGearChoices = { weapons: [], armor: [], tools: [], vehicles: [] }; cc.gambits = []; if (cc.startingKit && !cc.startingKit.claimed) { cc.startingKit.picks = {}; cc.startingKit.alt = false; } pruneGrantedFocuses(cc); } });
           if (eng.unresolvedOverlaps(store.active()).length) toast("⚠ Overlapping training with your Background; claim your Free Skill Focus below.");
@@ -1115,7 +1124,9 @@ EN.builder = (function () {
         el("span.check", { text: "◉" }),
         el("h4", { text: c.name.replace(/^The\s+/, "") }),
         el("div.sub", { text: (c.resource ? c.resource.name + " · " : "") + "d" + (R.classVitality[k] ? R.classVitality[k].die : "?") + " VIT" }),
-        el("p", { text: (c.tagline || "").slice(0, 150) + ((c.tagline || "").length > 150 ? "…" : "") })
+        (sel && pk.blurb) ? el("p", { style: { color: "var(--text3)" }, text: pk.blurb }) : null,
+        el("p", { style: { color: "var(--text2)" },
+          text: pk.playIf || ((c.tagline || "").slice(0, 150) + ((c.tagline || "").length > 150 ? "…" : "")) })
       ]);
     })));
 
@@ -1162,10 +1173,18 @@ EN.builder = (function () {
       if ((cls.subclasses || []).length) {
         blocks.push(el("div", { style: { height: "16px" } }));
         blocks.push(EN.ui.sectionTitle("Subclass"));
+        var subPick = ((PICK.classes || {})[ch.class] || {}).subs || {};
         blocks.push(el("div.card-grid", null, cls.subclasses.map(function (s) {
-          return el("div.opt-card" + (ch.subclass === s.key ? ".sel" : ""), {
+          var sp = subPick[s.key] || {}, ssel = ch.subclass === s.key;
+          return el("div.opt-card" + (ssel ? ".sel" : ""), {
             onclick: function () { store.update(function (c) { if (c.subclass !== s.key && c.startingKit && !c.startingKit.claimed) c.startingKit.alt = false; c.subclass = s.key; }); }
-          }, [el("span.check", { text: "◉" }), el("h4", { text: s.name }), el("p", { text: (s.description || "").slice(0, 180) })]);
+          }, [
+            el("span.check", { text: "◉" }),
+            el("h4", { text: s.name }),
+            sp.flowAttribute ? el("div.sub", { text: "FLOW ATTRIBUTE · " + sp.flowAttribute.toUpperCase() }) : null,
+            (ssel && sp.blurb) ? el("p", { style: { color: "var(--text3)" }, text: sp.blurb }) : null,
+            el("p", { style: { color: "var(--text2)" }, text: sp.playIf || (s.description || "").slice(0, 180) })
+          ]);
         })));
       }
 

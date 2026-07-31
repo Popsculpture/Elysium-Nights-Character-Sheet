@@ -4,7 +4,7 @@ EN.classes = EN.classes || {};
 // Moxie Gambits as structured sub-entries, the single source for the engine, the Class-tab
 // picker, and the print sheet. The Moxie feature's prose (below) is composed from this list,
 // so the displayed text and the machine-readable data can never drift apart.
-var SCOUNDREL_MOXIE_INTRO = "You survive on instinct, audacity, and luck that has no business holding. You have a pool of **Moxie** equal to your **Caliber + your Agility Modifier** (minimum 1). You regain all spent Moxie at the end of a Short or Long Rest.\n\nAt 1st Level you learn three Gambits of your choice from the list below, and you learn two more at 5th Level through Expanded Moxie. Unless a Gambit says otherwise, activating it costs 1 Moxie.";
+var SCOUNDREL_MOXIE_INTRO = "You survive on instinct, audacity, and luck that has no business holding. You have a pool of **Moxie** equal to your **Caliber + your Agility Modifier** (minimum 1). You regain all spent Moxie at the end of a Short or Long Rest.\n\nAt 1st Level you learn three Gambits of your choice from the list below, and you learn two more at 5th Level through Expanded Moxie. Unless otherwise noted, all Gambits cost 1 Moxie to activate.";
 var SCOUNDREL_MOXIE_GAMBITS = [
   { name: "Lucky Break", action: "Special Action", cost: 1, text: "When you make an attack roll, an ability check, or a saving throw, spend 1 Moxie to roll one additional d20 and choose which die to use, even if you are already rolling with Edge. This deliberately breaks the normal rule that you can never roll more than 2d20. A Lucky Break stacks on top of Edge: Edge plus a Lucky Break is 3d20, and you keep whichever result you like." },
   { name: "Jinx", action: "Impulse Action", cost: 1, text: "When an enemy you can see makes an attack roll or a saving throw, spend 1 Moxie to force them to roll one additional d20 and use the lowest result, even if they are already rolling with Snag. Jinxing a target who already has Snag forces a third d20, and they are stuck with the worst of the three." },
@@ -274,7 +274,7 @@ EN.classes.scoundrel = {
 EN.classes.shaper = {
   key: "shaper",
   name: "Shaper",
-  tagline: "Tuned to the city's metaphysical current, you practice the Flow. Whether through logic, momentum, or empathy, you perceive reality as a vibration you can alter. Your path offers limitless potential to shape elements and bend physics to your absolute will.",
+  tagline: "Tuned to the city's metaphysical current, you practice the Flow. Through logic, momentum, or empathy, you feel reality as a note you can bend. It answers when you reach for it, and it always answers back, through your blood and your bones, because the Flow never lends without keeping the receipt.",
 
   vitality: {
     text: "Resilience Die: d6\nStarting Vitality: 6 + Body Modifier\nVitality Per Level: 1d6 + Body Modifier"
@@ -529,7 +529,7 @@ EN.classes.shaper = {
 
   extra: {
     playbook: {
-      turnToTurn: "You are a dynamic problem solver. Because you build Invocations on the fly rather than relying on static spells, you adapt to the exact needs of the moment. You manage your Reservoir carefully, deciding when to unleash a massive area effect and when to rely on precise, low cost manipulations.",
+      turnToTurn: "You improvise. Because you build Invocations on the fly rather than relying on static spells, you adapt to the exact needs of the moment. You manage your Reservoir carefully, deciding when to unleash a massive area effect and when to rely on precise, low cost manipulations.",
       winningEncounters: "You win by dictating the terms of reality. You shift the battlefield environment, exploit enemy elemental vulnerabilities, and use your subclass abilities to violently disrupt the opposition. When a fight gets desperate, you win by being willing to push your body into Overdraw to secure a victory.",
       whatToAvoid: "Reckless Overdraw and ignoring your physical limits. Burning through your Flow Points too early leaves you entirely reliant on Overdraw. Accumulating too much Strain will quickly tear your body apart from the inside out before the enemy even touches you."
     },

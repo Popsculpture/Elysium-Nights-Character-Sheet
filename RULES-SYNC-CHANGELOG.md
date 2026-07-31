@@ -596,6 +596,8 @@ states a blanket "each Gambit costs 1 Moxie" default the chapter never states; a
 "Classes of Elysium" overview (doc 1746-1810, the "Play a X if" hints) has no home in
 the app. None of these change a number.
 
+**All five closed by the author's correction report, 2026-07-31. See A15.**
+
 ---
 
 ### A14. Synthetica, the Sourcerer's Unique Resonance (step 4, domain 4)
@@ -622,6 +624,63 @@ the app. None of these change a number.
   every Shaper knows at Level 1, so you choose only two more"). The builder's picker now
   shows it as a granted gold chip and drops the standard pick cap by one, so a Level 1
   Sourcerer picks 2 and a Level 6 Sourcerer picks 4, five Resonances in total either way.
+
+---
+
+### A15. C1-C5 class-copy corrections (author report, 2026-07-31)
+- **Files:** the four class data files, `app/data/briefs.js`, `app/data/class_picker.js`
+  (new), `app/js/builder.js`, `app/js/pdfexport.js`, `app/js/printsheet.js`, `app/index.html`
+
+**One of my five held-back items was wrong.** I reported that the Fury had no Playbook
+block. The manuscript has all seven. The Codebreaker's alone is marked as a heading
+(`### **The Playbook**`) while the other six are bold paragraphs, so a structural read
+finds one and misses six. The correct count was the other way round: the **app** was
+missing three Playbooks (Codebreaker, Fury, Stitcher), all now copied verbatim.
+
+**The dating test settled C1.** The app's class copy could not be shown to be an older
+draft from the manuscript side, so the author supplied a 14-row table of strings that
+changed between 2026-07-10 and 2026-07-14. The app hit **9 of 14**, including the fully
+retired feature name "Battlefield Command" and three rows that predate 2026-07-11. The
+snapshot is therefore a pre-July-11 manuscript state, not app-authored text, so the
+Fury and Operator taglines were safe to overwrite. Two independent corroborations: the
+app's Fury tagline ends "You do not train to fight fair; you train to hit hardest",
+a precursor of the current sentence, and its Operator tagline reads "designed to
+survive contact" where the manuscript now reads "built to survive contact". All nine
+stale strings replaced; the test now returns 0 of 14.
+- Retired **Battlefield Command**: the Operator's Level 1 feature is **Execution**, which
+  the class data already called it. The dead name survived in three lookup tables
+  (`briefs.js`, and the `ACT_OVERRIDE` maps in the PDF and print-sheet exporters).
+
+**C2:** the three Codebreaker subclass descriptions each carried a second paragraph. Every
+one of the 22 subclasses in the book is a single epigraph paragraph; all 22 now are in the
+app. Note the counting hazard the author flagged: in the overview chapter a subclass is
+"one description plus one Play-if line", not "one paragraph".
+
+**C4 inverted, and the app was right.** The Scoundrel chapter states no blanket Gambit
+cost, but four of the five other resource classes do state one, so the app had patched a
+hole rather than invented a rule. The author ruled the manuscript adopts the line. The
+app's wording is now the manuscript's, hedge included: "Unless otherwise noted, all
+Gambits cost 1 Moxie to activate."
+
+**C5: Classes of Elysium is now the copy layer for the pickers**, not a page. New
+`app/data/class_picker.js` carries the two framing paragraphs, seven class blurbs and
+Play-if lines, and 22 subclass blurbs and Play-if lines, verbatim. The class-selection
+step shows the framing paragraphs as its header; each card leads with its Play-if line
+and reveals the overview paragraph when selected. Same shape for the subclass cards,
+which also surface the Shaper's Flow Attribute tag (the Shaper is the only class whose
+subclass names carry one, and it contains its own colon, which is a parsing hazard).
+- The reasoning, from the report: the book carries three copy layers per class, and the
+  app had two. **Choosing** (the overview blurb and Play-if line, for a player who has
+  not decided) was the missing one; **Arriving** is the chapter epigraph on `tagline`,
+  and **Playing** is the Playbook. The Play-if lines are the only text in Part 1 written
+  for the moment of the decision itself.
+- Author rulings **M-A1 / M-A2** applied: "Play the Arsenal if" and "Play the Lifeline
+  if" normalised to "Play an Arsenal if" and "Play a Lifeline if". All 29 labels now
+  carry the manuscript's own article.
+
+**Manuscript-side edits the author ruled in this batch** (for the tracker, not the app):
+M-C4 appends the blanket Gambit line to the Scoundrel's Level 1 Moxie paragraph; M-A1
+and M-A2 are the two Play-if article fixes above.
 
 ---
 
