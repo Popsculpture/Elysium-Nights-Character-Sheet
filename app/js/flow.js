@@ -73,11 +73,24 @@ EN.flowView = (function () {
 
   // Resonances this Shaper actually knows. If the character recorded picks in
   // #PRINT, use those; otherwise (legacy build) fall back to everything unlocked
-  // by level so older Shapers keep working.
+  // by level so older Shapers keep working. A Unique Resonance is never picked:
+  // it is granted by the subclass that owns it (Synthetica, for the Sourcerer),
+  // and counts as one of the three known at Level 1.
+  function grantedResKeys(ch) {
+    return ownResonances(ch).filter(function (r) { return r.unique; }).map(function (r) { return r.key; });
+  }
+  // every Resonance this character could ever hold: the standard list, plus a
+  // Unique Resonance only if it belongs to their subclass
+  function ownResonances(ch) {
+    return EN.flow.resonances.filter(function (r) { return !r.unique || (ch && ch.subclass === r.unique); });
+  }
   function knownResKeys(ch, d) {
+    var granted = grantedResKeys(ch);
     var rec = (ch && ch.resonances) || [];
-    if (rec.length) return rec.slice();
-    return EN.flow.resonances.filter(function (r) { return r.unlock <= d.level; }).map(function (r) { return r.key; });
+    var picked = rec.length
+      ? rec.slice()
+      : EN.flow.resonances.filter(function (r) { return !r.unique && r.unlock <= d.level; }).map(function (r) { return r.key; });
+    return granted.concat(picked.filter(function (k) { return granted.indexOf(k) === -1; }));
   }
   /* normalize the transient form against the known resonance set (called each render) */
   function normForm(ch, d) {
@@ -200,9 +213,11 @@ EN.flowView = (function () {
     var known = knownResKeys(ch, d);
     var rows = [];
 
-    // Resonance (only the ones this Shaper knows are selectable)
+    // Resonance (only the ones this Shaper knows are selectable). A Unique
+    // Resonance belongs to one subclass and no other Shaper can learn, buy, or
+    // steal it, so it is not listed at all for anyone else.
     rows.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginBottom: "6px" } }, [fieldLabel("RESONANCE"),
-      seg(F.resonances.map(function (r) {
+      seg(ownResonances(ch).map(function (r) {
         var isKnown = known.indexOf(r.key) !== -1;
         return { key: r.key, label: r.name, disabled: !isKnown,
                  title: isKnown ? r.focus + " · " + r.damage : (r.unlock > d.level ? "Eligible at Level " + r.unlock : "Not known; learn it in #PRINT") };
@@ -381,7 +396,7 @@ EN.flowView = (function () {
   function referencePanel(ch, d) {
     var F = EN.flow, kids = [];
     kids = kids.concat(collapsible("ref-res", "Resonances", function () {
-      return el("div", null, F.resonances.map(function (r) {
+      return el("div", null, ownResonances(ch).map(function (r) {
         return el("div.feature", { style: { borderLeftColor: VIO } }, [
           el("h4", null, [document.createTextNode(r.name), el("span.src", { text: "L" + r.unlock + " · " + r.damage })]),
           el("p", { text: r.base }),

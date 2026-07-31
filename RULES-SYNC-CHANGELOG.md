@@ -588,6 +588,41 @@ Caliber ladder in six of seven tables; all eight Operator Calls with their actio
 and costs; the entire Stitcher entry including all twelve Triage Protocols; and the
 Shaper's (Caliber x 3) + Flow Modifier pool.
 
+**Held back for an author call** (mechanically inert, so not applied unilaterally):
+the Fury, Operator and Shaper taglines are older-draft paragraphs; the three Codebreaker
+subclass descriptions carry an added second paragraph the manuscript does not have; the
+Fury entry has no Playbook block where the other classes do; the Scoundrel's Moxie intro
+states a blanket "each Gambit costs 1 Moxie" default the chapter never states; and the
+"Classes of Elysium" overview (doc 1746-1810, the "Play a X if" hints) has no home in
+the app. None of these change a number.
+
+---
+
+### A14. Synthetica, the Sourcerer's Unique Resonance (step 4, domain 4)
+- **Files:** `app/data/flow.js`, `app/js/flow.js`, `app/js/builder.js`
+- The overhaul gave the Sourcerer a **Unique Resonance** (doc 2839-2860) that the app did
+  not model at all. Its absence meant the Free-Shaping interface could never offer a
+  Sourcerer their signature Resonance.
+- **Data:** added `synthetica` with focus "Favor and Malfunction", Electric / Fire damage,
+  a Tech-save resolution, the targeting restriction (a valid target carries, wears, or is
+  installed with powered tech, or is itself a device, drone, Proxy or Construct), the
+  Base Effect trio (Ask Around / Nixie Favor / Gremlin Jinx), the three Empowered Effects
+  (Nixie Synchronization, Gremlin Tantrum, and Poltergeist which unlocks at Level 3), and
+  **Favors Travel Light** (1 FP to fold a Favor or Jinx into any other Resonance's
+  Invocation, allowing no save, one per Invocation).
+- **Stability Factor (Short Attention Spans):** Synthetica Empowered Effects cannot use
+  the Sustain duration (doc 2851), recorded the same way Temporal's is, with all three
+  effects listed in `sustainCompat`.
+- **A new `unique` field marks a Resonance as subclass-owned.** The doc is explicit that
+  "no other Shaper can learn it, buy it, or steal it", so a Unique Resonance is granted,
+  never picked, and is hidden entirely from any other subclass rather than shown greyed
+  out. Verified both directions: a Sourcerer sees eight Resonances, a Harmonist sees the
+  standard seven.
+- **It spends a Level 1 slot** (doc 2833: "It counts as one of the three Base Resonances
+  every Shaper knows at Level 1, so you choose only two more"). The builder's picker now
+  shows it as a granted gold chip and drops the standard pick cap by one, so a Level 1
+  Sourcerer picks 2 and a Level 6 Sourcerer picks 4, five Resonances in total either way.
+
 ---
 
 ## PART B: Pending, in the agreed order

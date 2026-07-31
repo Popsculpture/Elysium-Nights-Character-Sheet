@@ -1337,15 +1337,27 @@ EN.builder = (function () {
   function resonancePicker(ch) {
     var F = EN.flow; if (!F) return null;
     var level = ch.level || 1;
-    var cap = 3 + (level >= 3 ? 1 : 0) + (level >= 5 ? 1 : 0);
+    // A Unique Resonance is granted by its subclass, never picked. It still counts
+    // as one of the three known at Level 1, so it spends a slot: a Sourcerer gets
+    // Synthetica for free and chooses only two more from the standard list.
+    var granted = F.resonances.filter(function (r) { return r.unique && ch.subclass === r.unique; });
+    var cap = 3 + (level >= 3 ? 1 : 0) + (level >= 5 ? 1 : 0) - granted.length;
     var known = ch.resonances || [];
-    var pool = F.resonances.filter(function (r) { return r.unlock <= level; });
+    var pool = F.resonances.filter(function (r) { return !r.unique && r.unlock <= level; });
     var head = el("div.row.wrap", { style: { gap: "8px", alignItems: "baseline", margin: "10px 0 6px" } }, [
       el("label.fl", { text: "Base Resonances Known" }),
-      el("span.chip" + (known.length >= cap ? ".on" : ""), { style: { fontSize: "10px" }, text: known.length + " / " + cap + " known" }),
-      el("span", { style: { fontFamily: "var(--mono)", fontSize: "10px", color: "var(--text3)" }, text: "3 at L1, +1 at L3, +1 at L5; click to learn" })
+      el("span.chip" + (known.length >= cap ? ".on" : ""), { style: { fontSize: "10px" }, text: known.length + " / " + cap + " chosen" }),
+      el("span", { style: { fontFamily: "var(--mono)", fontSize: "10px", color: "var(--text3)" },
+        text: granted.length ? "3 at L1, +1 at L3, +1 at L5; " + granted[0].name + " is granted" : "3 at L1, +1 at L3, +1 at L5; click to learn" })
     ]);
     var chipRow = el("div.row.wrap", { style: { gap: "6px" } });
+    granted.forEach(function (r) {
+      chipRow.appendChild(el("span.chip", {
+        title: r.focus + " · " + r.damage + " · Unique Resonance, granted by your subclass and not chosen. No other Shaper can learn it.",
+        style: { fontSize: "10.5px", color: "var(--gold)", borderColor: "var(--gold)", cursor: "default",
+                 boxShadow: "0 0 9px var(--gold)" }
+      }, [el("span", { text: "◆ " + r.name })]));
+    });
     pool.forEach(function (r) {
       var on = known.indexOf(r.key) !== -1, full = !on && known.length >= cap;
       chipRow.appendChild(el("span.chip", {

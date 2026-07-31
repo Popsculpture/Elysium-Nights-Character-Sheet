@@ -118,6 +118,17 @@ EN.flow = {
         { name: "Sensory Collapse", sustain: true, text: "Target makes a Flow Save DC (Wits) or suffers Frightened or Charmed (your choice) for the duration." },
         { name: "Blind Spot", sustain: false, text: "A target you choose slips beneath notice, gaining the Invisible condition. Ends immediately if that target makes an attack or forces a saving throw." }
       ] },
+    { key: "synthetica", name: "Synthetica", unlock: 1, unique: "sourcerer", focus: "Favor and Malfunction", damage: "Electric / Fire",
+      resolution: "save", saveAttr: "Tech", noSustain: true,
+      stabilityNote: "Short Attention Spans: Synthetica Empowered Effects cannot use the Sustain duration. A favor is a transaction; the sprite does the work, collects the amusement, and wanders off. Effects last exactly as long as their entries say and not a round longer.",
+      targeting: "Synthetica works through machines, never around them. A valid target carries, wears, or is installed with powered tech, or is itself a device, drone, Proxy, or Construct. A target with nothing electronic on or in them is beyond the sprites' reach.",
+      special: "Favors Travel Light: when you shape an Invocation of any other Resonance, you may spend an additional 1 FP to fold a Nixie Favor or a Gremlin Jinx into it. A favor folded this way allows no save. One folded favor per Invocation.",
+      base: "Choose one: Ask Around (interview the sprites in a device you can see or touch; you learn what the machine is, what it does, and what it has noticed recently, as impressions rather than records); Nixie Favor (a Nixie settles into a willing target's weapon or cybernetics; they gain a 1d4 bonus on their next attack roll or Saving Throw); Gremlin Jinx (a Gremlin crawls into an unwilling target's weapon or cybernetics; they make a Flow Save DC, Tech, or suffer a 1d4 penalty on their next attack roll or Saving Throw).",
+      empowered: [
+        { name: "Nixie Synchronization", sustain: false, text: "A Nixie tunes a willing target's weapon or cybernetic implant to its wielder's pulse. For the next turn, the target gains Edge on their next attack roll with that weapon, and the weapon deals an additional 1d6 Force damage on its next hit." },
+        { name: "Gremlin Tantrum", sustain: false, text: "Point the local Gremlins at a target's firearm, smart tech, or cyberlimb. The target makes a Flow Save DC (Tech). On a failure, they take 1d6 Fire damage as the device cooks against them, and that weapon or cyberlimb seizes up, preventing its use until the end of their next turn." },
+        { name: "Poltergeist", sustain: false, unlock: 3, text: "Unlocked at Level 3 (Hardware Harmonization). Ask the sprites riding a device, drone, or Construct to take the wheel. The target makes a Flow Save DC (Tech). On a failure, you dictate its movement and its Action on its next turn. The sprites will not drive a machine into its own obvious destruction, and they cannot drive a mind: a Clanker, a Synthetic, or any target that is someone rather than something is immune." }
+      ] },
     { key: "temporal", name: "Temporal", unlock: 5, focus: "Chronological Flow", damage: "Entropy",
       resolution: "attack", noSustain: true,
       stabilityNote: "The timeline resists alteration: Temporal Empowered Effects are strictly Instant and resolve at the end of the target's next turn. They cannot be sustained.",
@@ -127,7 +138,7 @@ EN.flow = {
         { name: "Stasis Field", sustain: false, text: "Target makes a Flow Save DC (Agility or Wits) or their Speed is halved and they lose their primary Action on their next turn." }
       ] }
   ],
-  resonanceUnlockNote: "At Level 1 a Shaper knows three of the standard Base Resonances (Kinetic, Thermal, Electromagnetic, Visceral, Spatial). Cognitive unlocks at Level 3 (Resonance Synthesis); Temporal unlocks at Level 5 (Expanded Frequency).",
+  resonanceUnlockNote: "At Level 1 a Shaper knows three of the standard Base Resonances (Kinetic, Thermal, Electromagnetic, Visceral, Spatial). Cognitive unlocks at Level 3 (Resonance Synthesis); Temporal unlocks at Level 5 (Expanded Frequency). A Sourcerer is the exception: Synthetica, their Unique Resonance, counts as one of the three known at Level 1, so they choose only two more from the standard list. No other Shaper can learn it.",
 
   /* ---- Sustain compatibility -------------------------------------------- */
   sustainCompat: [
@@ -147,6 +158,9 @@ EN.flow = {
     { resonance: "Cognitive", effect: "Neural Override", allowed: false, notes: "One turn of forced action only." },
     { resonance: "Cognitive", effect: "Sensory Collapse", allowed: true, notes: "Lockdown effect; target saves at the start of each turn." },
     { resonance: "Cognitive", effect: "Blind Spot", allowed: false, notes: "Ends on the target's attack or save-forcing action." },
+    { resonance: "Synthetica", effect: "Nixie Synchronization", allowed: false, notes: "Short Attention Spans: no Sustain." },
+    { resonance: "Synthetica", effect: "Gremlin Tantrum", allowed: false, notes: "Short Attention Spans: no Sustain." },
+    { resonance: "Synthetica", effect: "Poltergeist", allowed: false, notes: "Short Attention Spans: no Sustain." },
     { resonance: "Temporal", effect: "Chronal Acceleration", allowed: false, notes: "Resolves on the target's next turn." },
     { resonance: "Temporal", effect: "Stasis Field", allowed: false, notes: "Always Instant per Stability Factor." }
   ],
