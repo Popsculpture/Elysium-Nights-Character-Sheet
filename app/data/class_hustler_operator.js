@@ -139,15 +139,15 @@ EN.classes.hustler = {
   },
   progressionTable: [
     { level: 1, caliber: 1, features: ["Leverage", "Read the Room", "Hustler Subclass"], resource: "-" },
-    { level: 2, caliber: 2, features: ["Slippery", "Universal Upgrade"], resource: "+5 Points" },
-    { level: 3, caliber: 3, features: ["Subclass Feature"], resource: "-" },
-    { level: 4, caliber: 4, features: ["Universal Upgrade"], resource: "+5 Points" },
-    { level: 5, caliber: 5, features: ["Compound Interest", "Expanded Leverage"], resource: "-" },
-    { level: 6, caliber: 5, features: ["Two Steps Ahead", "Universal Upgrade"], resource: "+5 Points" },
-    { level: 7, caliber: 5, features: ["Subclass Feature"], resource: "-" },
-    { level: 8, caliber: 5, features: ["Universal Upgrade"], resource: "-" },
+    { level: 2, caliber: 1, features: ["Slippery", "Universal Upgrade"], resource: "-" },
+    { level: 3, caliber: 2, features: ["Subclass Feature"], resource: "+5 Points" },
+    { level: 4, caliber: 2, features: ["Universal Upgrade"], resource: "-" },
+    { level: 5, caliber: 3, features: ["Compound Interest", "Expanded Leverage"], resource: "-" },
+    { level: 6, caliber: 3, features: ["Two Steps Ahead", "Universal Upgrade"], resource: "+5 Points" },
+    { level: 7, caliber: 4, features: ["Subclass Feature"], resource: "-" },
+    { level: 8, caliber: 4, features: ["Universal Upgrade"], resource: "-" },
     { level: 9, caliber: 5, features: ["Return on Investment (ROI)"], resource: "-" },
-    { level: 10, caliber: 5, features: ["Subclass Capstone"], resource: "-" }
+    { level: 10, caliber: 5, features: ["Subclass Capstone"], resource: "+5 Points" }
   ],
   subclasses: [
     {
@@ -280,7 +280,7 @@ EN.classes.operator = {
   resource: {
     name: "Execution",
     attribute: "Wits",
-    maxFormula: "Caliber + Wits Modifier",
+    maxFormula: "Caliber + Wits Modifier (minimum of 1)",
     refresh: "You regain all spent Execution at the end of a Short or Long Rest.",
     fuels: "Execution (EX) fuels the Operator's Tactical Maneuvers (the Calls) and subclass precision attacks.",
     abilityNoun: "Tactical Maneuver",
@@ -401,7 +401,7 @@ EN.classes.operator = {
         {
           level: 7,
           name: "CQC Takedown",
-          text: "You gain two abilities:\n\n• **CQC Takedown:** As an **Action**, spend 2 Execution to drive a close-quarters combination into an adjacent enemy. The target must make a Body Save (DC = 8 + your Body Modifier + your Athletics Proficiency Bonus). On a failure, they take 3d6 Bludgeoning damage, are knocked Prone, and are Stunned until the end of your next turn. On a success, they take half damage and are not Stunned.\n• **Double Tap:** Whenever an enemy within 2 spaces is knocked Prone by any source, you may use your **Impulse Action** to make a single retaliatory attack against them. If you use a melee weapon or shield bash, you may step up to 1 space as part of this reaction to reach them."
+          text: "You gain two abilities:\n\n• **CQC Takedown:** As an **Action**, spend 2 Execution to drive a close-quarters combination into an adjacent enemy. The target must make a Body Save (DC = 8 + your Body Modifier + your Caliber). On a failure, they take 3d6 Bludgeoning damage, are knocked Prone, and are Stunned until the end of your next turn. On a success, they take half damage and are not Stunned.\n• **Double Tap:** Whenever an enemy within 2 spaces is knocked Prone by any source, you may use your **Impulse Action** to make a single retaliatory attack against them. If you use a melee weapon or shield bash, you may step up to 1 space as part of this reaction to reach them."
         },
         {
           level: 10,
@@ -450,12 +450,12 @@ EN.classes.operator = {
         {
           level: 3,
           name: "Disarming Precision",
-          text: "Whenever you hit an enemy with a weapon attack, you may spend 1 Execution. The target must make a Body or Agility Save. On a failure, they drop one weapon or object they are holding. If they try to pick it up before the end of their next turn, you may immediately fire a single retaliatory shot at them as an **Impulse Action**."
+          text: "Whenever you hit an enemy with a weapon attack, you may spend 1 Execution. The target must make a Body or Agility Save (DC = 8 + your Wits Modifier + your Caliber). On a failure, they drop one weapon or object they are holding. If they try to pick it up before the end of their next turn, you may immediately fire a single retaliatory shot at them as an **Impulse Action**."
         },
         {
           level: 7,
           name: "Cornered Prey",
-          text: "As an **Action**, spend 2 Execution to unleash a sequence of shots or strikes against an enemy within your weapon's range, ignoring the Defense bonuses from Half or Three Quarter Cover. The target must make an Agility Save.\n\n• **On a failure:** They take 3d6 Ballistic or Physical damage and are Staggered until the end of your next turn. If their cover is Average or weaker (standard doors, drywall, shipping crates), it is instantly reduced to 0 Integrity. If their cover is Heavy, Fortified, or Hardened, it stays intact, but they still take the damage and condition.\n• **On a success:** They take half damage, are not Staggered, and their cover takes no damage."
+          text: "As an **Action**, spend 2 Execution to unleash a sequence of shots or strikes against an enemy within your weapon's range, ignoring the Defense bonuses from Half or Three Quarter Cover. The target must make an Agility Save (DC = 8 + your Wits Modifier + your Caliber).\n\n• **On a failure:** They take 3d6 Ballistic or Physical damage and are Staggered until the end of your next turn. If their cover is Average or weaker (standard doors, drywall, shipping crates), it is instantly reduced to 0 Integrity. If their cover is Heavy, Fortified, or Hardened, it stays intact, but they still take the damage and condition.\n• **On a success:** They take half damage, are not Staggered, and their cover takes no damage."
         },
         {
           level: 10,

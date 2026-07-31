@@ -475,6 +475,119 @@ Flow formulas, the 19 damage types and 39 of 41 conditions are also in sync.
   Lucky Break and Press Your Luck are now offered on saves, which the rules allow and
   the sheet previously did not.
 
+### A12. Rollable Skills, with aspect-gated Focus and Specialization (usability)
+- **File:** `app/js/combat.js`
+- Every Skills row now opens the roll tray, mirroring the saves. The itemised modifiers
+  are the attribute modifier plus the proficiency tier bonus, which is exactly what
+  `engine.derive` sums into the number printed on the row, so the tray total and the
+  row can never disagree.
+- **Untrained costs a Snag, not a number** (Proficiency Growth table, Part 2 doc 874:
+  "Roll with **Snag**", pool method "+2 Snag Dice"). The tray opens pre-set to Snag.
+- **Conditions reach checks only through Snag.** There is no check-side counterpart to
+  the saves' flat `saveDelta`, so none was invented.
+- **Skill Focus (+Caliber) and Specialization (crit 19-20) ride as opt-in ASPECT pills.**
+  Both apply only "inside that focus" (Part 2 doc 675, 681) or "when your Specialization
+  applies" (doc 659), and the sheet cannot know what the player is attempting. Weapons
+  auto-apply theirs because the aspect matches a concrete weapon name; a skill has no
+  such handle, so auto-applying would over-roll every out-of-aspect check.
+- **Crit wording is now per-context.** Part 2 doc 95: "Skill checks can only achieve
+  critical success results if you have appropriate tools, gear, or situational
+  advantages. Otherwise, treat the roll as a normal success." The tray had been
+  asserting "CRITICAL HIT" on any natural 20. Skill checks now read "CRITICAL THREAT"
+  with the caveat printed; attack rolls are unchanged.
+- **Also fixed:** Parry was offered to a character carrying only a shield but opened
+  with no dice. The rulebook requires "a Simple Weapon, Martial Weapon, or physical
+  Shield", so Parry now falls back to the shield die.
+
+---
+
+### A13. Classes resynced (step 4, domain 4 of 7)
+- **Files:** `app/data/class_codebreaker_fury.js`, `app/data/class_hustler_operator.js`,
+  `app/data/class_scoundrel_shaper.js`, `app/data/class_stitcher_resources.js`,
+  `app/data/briefs.js`
+- Audited all 7 classes plus the Class Resource Definitions chapter against Part 1
+  (doc 1740-3037). All 22 subclasses were present and correctly named; the divergences
+  were numbers, save DCs, and features replaced in the overhaul.
+
+**Codebreaker**
+- **Starting Smartdeck is Tier 0 (Standard), not Tier 1 (Improved)** (doc 2061, and
+  Step 12 at doc 293: "Start with a Tier 0 Smartdeck and four Complexity 0 or 1
+  Ciphers"). Corrected in all five places. The example ceiling follows: a Tier 0 deck
+  runs Complexity 0-1, not 0-2. The (Tier + 1) formula itself was already right, and
+  this now agrees with the M1 ruling and with the four starting Ciphers.
+- **Two #GRID Weaver save DCs keyed off the Systems Proficiency Bonus instead of
+  Caliber** (Memetic Virus doc 2155, Sensory Rejection doc 2160). Every other DC in the
+  chapter uses 8 + Tech modifier + Caliber.
+- **Deck repair and hijack thresholds are measured in System Integrity, not Durability**
+  (doc 2101, 2131). Durability is the shield track; a deck has no such stat, so the old
+  text priced repairs against a number that does not exist.
+- **Rigger drone rebuild** regained its Snag Dice guidance and failure consequence (doc 2112).
+- **Deleted the `startingEquipment` array.** It was an older-draft kit that contradicted
+  the manuscript, was the only such field on any class, and was read by no code in the
+  app. `kits.js` already carries the manuscript's Codebreaker Kit exactly.
+
+**Fury**
+- **Juggernaut Level 3 was the wrong feature entirely.** The app had "Brace for Impact";
+  the manuscript has **Immovable** (doc 2276-2279), an Impulse Action for 1 Overdrive
+  that refuses forced movement and Prone, returns Body-modifier damage to a source in
+  reach, anchors an adjacent ally, and makes the Juggernaut an obstacle so anything
+  shoved into them stops and takes the full 1d6 Bludgeoning per space denied.
+- Arsenal's Walking Emplacement said "Sprint", now **Dash**.
+
+**Hustler**
+- **The progression table was wrong on two columns.** Caliber ran 1,2,3,4,5,5,5,5,5,5
+  instead of the standard ladder 1,1,2,2,3,3,4,4,5,5, and Training Points sat on levels
+  2/4/6 instead of 3/6/10 (doc 2356-2365). Display only: `engine.caliber()` reads the
+  global ladder, so no computed value was affected, but the class tab was showing a
+  Level 5 Hustler Caliber 5 instead of 3.
+
+**Operator**
+- **Three save DCs corrected or supplied:** Vanguard CQC Takedown keyed off the
+  Athletics Proficiency Bonus instead of Caliber (doc 2532); Headhunter Disarming
+  Precision (doc 2558) and Cornered Prey (doc 2560) named a save with no DC at all.
+- Execution's max formula regained its "(minimum of 1)" floor, matching the other five.
+
+**Scoundrel**
+- Dropped "and bad neighborhoods" from the subclass intro (doc 2632); Level 1 Training
+  Points cell now reads 0 rather than blank.
+
+**Shaper, and the Sourcerer rewrite**
+- Training Points moved from level 7 to level 6 (doc 2737-2738).
+- **The Sourcerer was substantially rewritten in the overhaul.** Level 1 loses the
+  older-draft Nixie Boon / Gremlin Bane and gains **Synthetica** (the Unique Resonance)
+  plus **Sprite Tether**: Power User standing, Links equal to Caliber, a Flow Attack to
+  open a tether with no deck, and LinkDeath landing on the body rather than hardware
+  (doc 2831-2837). Level 3 "Hardware Harmonization" is now **Quick Favors + Deeper
+  Standing** (doc 2865-2868); its old contents became Synthetica's Empowered Effects.
+- Absolute Symbiosis frees "any **Synthetica** Invocation", not "any Invocation with a
+  Tech delivery method" (doc 2894).
+- **Four saves that named no DC** now say "against your Flow Save DC" (Primal Eruption,
+  Sensory Overload in both the feature and the familiar entry, Absolute Symbiosis).
+- The Skyhook familiar's invented drone rotors are gone (doc 2879).
+- `coreChanneling` now states the Sourcerer carve-out: Synthetica counts as one of the
+  three Level 1 Base Resonances, so a Sourcerer picks only two more.
+
+**Class Resource Definitions**
+- **The Scoundrel's Moxie had no entry in `EN.resourceRules.byClass` at all**, though
+  the chapter defines it in full (doc 1929-1947). Added, and the summary table's
+  Scoundrel row regained its Refresh column.
+- Execution "fuels **Calls**", not "Tactical Maneuvers", and its example list was stale
+  (doc 1896-1901). The Examples in Play line names **Intercepting Guard**, not Brace for
+  Impact (doc 1998).
+
+**Briefs (`app/data/briefs.js`)**
+- Brief text is what a player reads at the table, and several briefs carried the wrong
+  mechanic: the Icon's Plot Armor and Do Not Look Away both said a **Wits** save where
+  the manuscript says **Charm** (doc 2789-2790, 2795-2796); the three Operator DCs above;
+  Absolute Symbiosis's Swift-Action clause; and "Brace for Impact" replaced by Immovable.
+
+**Checked and already correct** (recorded so the coverage is auditable): all 22 subclass
+names; every Vitality, Resilience and save-focus line; every resource formula and its
+worked example (Leverage 7, Overdrive 8, Execution 5, Triage 4, Bandwidth 10); the
+Caliber ladder in six of seven tables; all eight Operator Calls with their action types
+and costs; the entire Stitcher entry including all twelve Triage Protocols; and the
+Shaper's (Caliber x 3) + Flow Modifier pool.
+
 ---
 
 ## PART B: Pending, in the agreed order
