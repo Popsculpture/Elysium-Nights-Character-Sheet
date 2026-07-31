@@ -684,6 +684,72 @@ and M-A2 are the two Play-if article fixes above.
 
 ---
 
+### A16. Species and Lineage Evolution resynced (step 4, domain 5 of 7)
+- **Files:** `app/data/species.js`, `app/data/briefs.js`
+- Audited all 5 species (doc 575-1389) and the whole Lineage Evolution chapter
+  (doc 3478-3671). **Structurally the app was complete**: 5 species, 15 lineages, 123
+  features, with no feature present in the doc and missing from the app or vice versa.
+  A programmatic diff of all 60 species-chapter bullets against their Lineage Evolution
+  twins found the manuscript self-consistent in every lineage but one (see below).
+- The divergences were almost entirely **stale pre-overhaul vocabulary**, and they fell
+  into four repeating classes. Counted against the manuscript before applying:
+
+**1. "Will Save" does not exist** (0 occurrences in the manuscript; "Mystique Save" 9).
+Three features carried it: Volcanic Temper, Uncanny Presence, Stasis Lock. Note the DC
+formula was already right in each case (8 + Mystique modifier + Caliber), so only the
+save's name disagreed with its own DC.
+
+**2. "Exhaustion" is not the condition; Fatigue is** (0 vs 12). Radiation Callouses,
+Ration Discipline and Hearthglow all named it. Ration Discipline mattered most: "Edge on
+Body Saves against Exhaustion" reads as applying only at Fatigue level 4, which is
+labelled Exhausted, rather than to every Fatigue save.
+
+**3. "Slowed" does not exist** (0 vs Dazed 11). Hyper-Kinetic Metabolism purged the wrong
+condition. Its app text also added "on your turn", a restriction the manuscript does not
+impose.
+
+**4. Targeting widened from ally or enemy to "any creature"** in seven features: Phase
+Veil, Guardian Protocol, Threat Projection, Smelter's Hands, Light-Fingered Relay, and
+Heavy Payload in three places. This is a real play difference, not wording: the app's
+Light-Fingered Relay would let a Ryn plant an item on a hostile as a Free Action, and its
+Threat Projection would let you taunt an ally.
+
+**Plus three of their own:**
+- **The Encumbrance features contradicted the app's own math.** The manuscript grants a
+  flat +2 Encumbrance Threshold, with the Size-larger bonus applying to grappling ONLY
+  (doc 661, 951). Both Synthetic Musculature and Heavy Payload displayed "one Size larger
+  for Encumbrance Thresholds and grappling" instead, while `engine.js:758-759` was already
+  computing the flat +2. Verified live: the feature adds exactly +2 (threshold 9 to 11),
+  which the text now says. The Open Architecture Integration clause carried the same error.
+- **Entropic Lash blocked "Hit Points"**, a resource this system does not have (0
+  occurrences in the manuscript). It should block Vitality or Wounds.
+- **Briefs dropped usage limits and action types** on six Outsider features (Volcanic
+  Temper, Cinder Shroud, Volcanic Surge, Stasis Lock, Riddling Tongue, Probability Nudge).
+  Volcanic Surge's is the only per-Short-Rest limit in the section and it was missing
+  entirely; Probability Nudge lost the unusual Special Action type. Restored, with action
+  types written out in full. Two briefs also said "non-magical restraints" where the
+  manuscript says "non-Flow".
+
+**Held for an author call:**
+- **Biometric Spoofing is the manuscript's one self-contradiction here.** The species
+  chapter (doc 1026) ends with "Machines are your specialty: you copy the measurable body,
+  not the behavior, so people who personally know the Target may still feel something is
+  off." The Lineage Evolution copy (doc 3592) drops that sentence. The app follows the
+  evolution copy. The caveat matters because it bounds Biometric Spoofing against Method
+  Actor, so which copy wins is a real ruling.
+- **Ryn size.** `rules.js:177` allows `["Small", "Medium"]`. The manuscript describes Ryn
+  at 5 to 6 feet (doc 1196), which is Medium by the same height banding the app already
+  applies to the Hulsk (Large, over 6 feet) and the Skarn (Small, 3.5 to 4.5 feet). But
+  the doc never states Ryn sizes explicitly, so this is inference, and removing the option
+  would invalidate an existing Small Ryn. Not applied.
+
+**Correction to my own earlier report:** I said the Cinder-Heart lineage was missing from
+the app. It is present at `species.js:504`. My count used a regex that did not match the
+hyphen in the `"cinder-heart"` key, so I under-counted the Outsiders at two lineages.
+All 15 lineages and all four Cinder-Heart creation features were already correct.
+
+---
+
 ## PART B: Pending, in the agreed order
 
 1. ~~Rulings on the contradictions in PART C.~~ **M1 and M2 ruled 2026-07-28**;
