@@ -75,7 +75,7 @@ EN.combatView = (function () {
     // untrained or condition-Snagged attack opens pre-set to Snag
     var mode = (ctx.baseSnag > 0) ? "snag" : (ctx.baseEdge > 0 && !ctx.shaken) ? "edge" : "none";
     _rollAnimId++;
-    _rollTray = { open: true, ctx: ctx, mode: mode, help: 0, other: 0, lucky: false, press: false, roll: null, animating: false };
+    _rollTray = { open: true, ctx: ctx, mode: mode, help: 0, other: 0, lucky: false, press: false, asp: {}, roll: null, animating: false };
     EN.app.render();
   }
   function closeRollTray() {
@@ -90,11 +90,25 @@ EN.combatView = (function () {
     _rollTray.mode = m; _rollTray.roll = null;   // the die count changed; reroll
     EN.app.render();
   }
+  // Aspect-gated bonuses (a Skill Focus, a Specialization) only apply when the
+  // action falls inside their narrow aspect ("Athletics (Throwing)"). Nothing on
+  // the sheet knows what the player is attempting, so they ride as opt-in pills
+  // rather than being folded in silently.
+  function rollTrayAspects() {
+    var ctx = _rollTray.ctx || {}, on = _rollTray.asp || {};
+    var mods = [], critMin = ctx.critMin || 20;
+    (ctx.aspectMods || []).forEach(function (a) {
+      if (!on[a.key]) return;
+      if (a.value) mods.push({ label: a.modLabel || a.label, value: a.value });
+      if (a.critMin) critMin = Math.min(critMin, a.critMin);
+    });
+    return { mods: mods, critMin: critMin };
+  }
   function rollTraySpec() {
-    var ctx = _rollTray.ctx || {};
+    var ctx = _rollTray.ctx || {}, asp = rollTrayAspects();
     return eng.composeRollSpec({
-      baseMods: ctx.baseMods || [], edge: _rollTray.mode === "edge" ? 1 : 0, snag: _rollTray.mode === "snag" ? 1 : 0,
-      helpValue: _rollTray.help, manual: _rollTray.other, shaken: ctx.shaken, critMin: ctx.critMin || 20,
+      baseMods: (ctx.baseMods || []).concat(asp.mods), edge: _rollTray.mode === "edge" ? 1 : 0, snag: _rollTray.mode === "snag" ? 1 : 0,
+      helpValue: _rollTray.help, manual: _rollTray.other, shaken: ctx.shaken, critMin: asp.critMin,
       luckyBreak: !!(_rollTray.lucky && ctx.luckyBreak),
       pressLuck: !!(_rollTray.press && ctx.pressLuck), countingCards: !!ctx.countingCards
     });
@@ -207,7 +221,7 @@ EN.combatView = (function () {
     // --- hero: the d20(s) you tap to roll ---
     var diceEls, prompt, shouldPlayFx = false;
     if (roll) {
-      var nat = roll.nat, crit = roll.crit != null ? roll.crit : nat >= (ctx.critMin || 20),
+      var nat = roll.nat, crit = roll.crit != null ? roll.crit : nat >= spec.critMin,
           fumble = roll.fumble != null ? roll.fumble : nat === 1, total = roll.total != null ? roll.total : nat + flatSum;
       // the fanfare fires exactly once: the first render where this roll
       // object is shown settled as a crit/fumble. Flagging the roll object
@@ -240,8 +254,9 @@ EN.combatView = (function () {
         : el("div", { style: { marginTop: "10px" } }, [
             totalNum,
             el("div.mono", { style: { fontSize: "9px", letterSpacing: ".2em", color: canFire ? "var(--text3)" : "var(--warn)", marginTop: "5px" }, text: "TOTAL · " + (canFire ? againWord : "OUT OF AMMO") }),
-            crit ? el("div.mono", { style: { fontWeight: 700, letterSpacing: ".14em", fontSize: "12px", color: "var(--gold)", marginTop: "7px" }, text: "◆ CRITICAL HIT" })
-              : fumble ? el("div.mono", { style: { fontWeight: 700, letterSpacing: ".14em", fontSize: "12px", color: "var(--danger)", marginTop: "7px" }, text: "✖ FUMBLE (NAT 1)" }) : null,
+            crit ? el("div.mono", { title: ctx.critNote || null, style: { fontWeight: 700, letterSpacing: ".14em", fontSize: "12px", color: "var(--gold)", marginTop: "7px" }, text: ctx.critLabel || "◆ CRITICAL HIT" })
+              : fumble ? el("div.mono", { style: { fontWeight: 700, letterSpacing: ".14em", fontSize: "12px", color: "var(--danger)", marginTop: "7px" }, text: ctx.fumbleLabel || "✖ FUMBLE (NAT 1)" }) : null,
+            crit && ctx.critNote ? el("div.mono", { style: { fontSize: "9.5px", color: "var(--text3)", marginTop: "5px", padding: "0 14px", lineHeight: 1.5 }, text: ctx.critNote }) : null,
             luckLine
           ]);
     } else {
@@ -358,12 +373,25 @@ EN.combatView = (function () {
       pills.push(el("span.mono", { style: { marginLeft: "auto", fontSize: "12px", color: mox.cur > 0 ? MOXIE_CLR : "var(--text4)" }, text: "◆ " + mox.cur + " / " + mox.max }));
       moxRow = ctrlRow("MOXIE", [el("div.row.wrap", { style: { gap: "6px", flex: "1 1 auto", alignItems: "center" } }, pills)]);
     }
+    // --- ASPECT: a Skill Focus or Specialization the player declares this roll falls inside ---
+    var aspRow = null;
+    if ((ctx.aspectMods || []).length) {
+      var aspPills = ctx.aspectMods.map(function (a) {
+        var on = !!_rollTray.asp[a.key], col = a.color || "var(--gold)";
+        return el("span", { title: a.title || "",
+          onclick: function () { _rollTray.asp[a.key] = !on; _rollTray.roll = null; _rollAnimId++; EN.app.render(); },
+          style: { display: "inline-flex", alignItems: "center", gap: "5px", padding: "6px 10px", borderRadius: "7px",
+            cursor: "pointer", fontFamily: "var(--mono)", fontSize: "11px", border: "1px solid " + col,
+            color: on ? "var(--bg1)" : col, background: on ? col : "transparent", fontWeight: on ? 700 : 400 } }, a.label);
+      });
+      aspRow = ctrlRow("ASPECT", [el("div.row.wrap", { style: { gap: "6px", flex: "1 1 auto", alignItems: "center" } }, aspPills)]);
+    }
     var ctrls = el("div", { style: { padding: "16px", display: "flex", flexDirection: "column", gap: "13px", borderTop: "1px solid var(--border)", marginTop: "14px" } },
-      [ctrlRow("ROLL", [seg]), ctrlRow("HELP", [helpPills]), ctrlRow("OTHER", [otherRow])].concat(moxRow ? [moxRow] : []));
+      [ctrlRow("ROLL", [seg]), ctrlRow("HELP", [helpPills]), ctrlRow("OTHER", [otherRow])].concat(aspRow ? [aspRow] : []).concat(moxRow ? [moxRow] : []));
 
     var foot = el("div.row.between", { style: { padding: "11px 16px", borderTop: "1px solid var(--border)", alignItems: "baseline" } }, [
       el("span.mono", { style: { fontSize: "11px", color: modeColor }, text: modeLabel }),
-      el("span.mono", { style: { fontSize: "13px", color: "var(--text)" }, text: "MOD " + eng.fmtMod(flatSum) + (ctx.critMin < 20 ? " · crit " + ctx.critMin + "-20" : "") })
+      el("span.mono", { style: { fontSize: "13px", color: "var(--text)" }, text: "MOD " + eng.fmtMod(flatSum) + (spec.critMin < 20 ? " · crit " + spec.critMin + "-20" : "") })
     ]);
 
     // --- ammo readout (fired weapons) + a compact recent-rolls strip ---
@@ -1752,18 +1780,58 @@ EN.combatView = (function () {
     }
     /* skills rows (rendered beside the matrix) */
     var TIERC = { untrained: "var(--text4)", proficient: "var(--accent)", expertise: "var(--flow)", mastery: "var(--gold)" };
+    // one reason at most, highest precedence first. Named so the chip on the row
+    // and the Snag the roll tray opens with can never drift apart.
+    function skillSnagWhy(s) {
+      return s.untrained ? "Untrained; roll with Snag (or +2 Snag Dice in pools)" :
+        fx.snagChk.ALL ? "Condition · Snag on all checks" :
+        fx.snagChk[s.attr] ? "Condition · Snag on " + s.attrName + " checks" :
+        (s.key === "perception" && fx.perceptionSnag) ? "Condition · Snag on Perception checks" : null;
+    }
+    /* Every skill row opens the roll tray, the same one-tap path the saves use.
+       s.total is exactly attribute modifier + proficiency bonus (engine.derive),
+       so itemising those two reproduces the number printed on the row: nothing is
+       added on top. Untrained costs a Snag, never a negative modifier, and
+       conditions penalise checks only through Snag (there is no check-side
+       counterpart to the saves' flat saveDelta).
+       A Skill Focus (+Caliber) and a Specialization (crit 19-20) both apply only
+       inside a narrow aspect, so they ride as ASPECT pills the player turns on
+       when the action fits, rather than being folded in on every check. */
+    function rollSkill(s) {
+      var mods = [{ label: s.attrName + " Modifier", value: s.attrMod }];
+      if (s.profBonus) mods.push({ label: R.profTiers[s.tier].name + " (" + s.name + ")", value: s.profBonus });
+      var why = skillSnagWhy(s);
+      var asp = [];
+      var sf = (eng.focusesFor(ch, "skill", s.key) || [])[0] || null;
+      if (sf) asp.push({ key: "focus", label: "Focus +" + (d.caliber || 1) + (sf.aspect ? " · " + sf.aspect : ""),
+        modLabel: "Skill Focus (Caliber)", value: d.caliber || 1, color: "var(--gold)",
+        title: "Skill Focus: " + s.name + (sf.aspect ? " (" + sf.aspect + ")" : "") + ". Adds your Caliber only when the action falls inside that aspect, and rides outside the +15 static cap." });
+      var sp = eng.specFor(ch, "skill", s.key);
+      if (sp) asp.push({ key: "spec", label: "Spec crit 19-20" + (sp.aspect ? " · " + sp.aspect : ""), critMin: 19, color: "var(--flow)",
+        title: "Specialization: " + s.name + (sp.aspect ? " (" + sp.aspect + ")" : "") + ". Widens the critical threat range by 1 only when the action falls inside that aspect." });
+      openRollTray(Object.assign({
+        weaponName: s.name + " Check", subtype: s.attrName + " · " + R.profTiers[s.tier].name,
+        melee: false, thrownItem: false, ranged: false, usesAmmo: false,
+        traits: [], baseMods: mods, critMin: 20, aspectMods: asp,
+        // a natural 20 on a check is only a critical success with the right tools,
+        // gear, or situational advantage; otherwise it is a normal success
+        critLabel: "◆ CRITICAL THREAT", critNote: "A skill check crits only with appropriate tools, gear, or a situational advantage. Otherwise treat it as a normal success.",
+        fumbleLabel: "✖ NAT 1 · FAILS DRAMATICALLY",
+        autoSnag: why ? [why] : [], autoEdge: [], baseSnag: why ? 1 : 0, baseEdge: 0,
+        shaken: (ch.conditions || []).indexOf("Shaken") !== -1, dmg: null
+      }, moxieFlags()));
+    }
     var skillRows = d.skills.map(function (s) {
-      return el("div.row", { style: { gap: "8px", alignItems: "center", padding: "5px 4px", borderBottom: "1px solid rgba(35,48,68,.4)" } }, [
+      var why = skillSnagWhy(s);
+      return el("div.row", {
+        title: "Roll " + s.name + " (" + s.attrName + " " + eng.fmtMod(s.attrMod) + ", " + R.profTiers[s.tier].name + ")",
+        style: { gap: "8px", alignItems: "center", padding: "5px 4px", borderBottom: "1px solid rgba(35,48,68,.4)", cursor: "pointer" },
+        onclick: function () { rollSkill(s); }
+      }, [
         el("span", { title: R.profTiers[s.tier].name, style: { width: "10px", height: "10px", borderRadius: "50%", flex: "0 0 auto", border: "1px solid " + TIERC[s.tier], background: s.tier === "untrained" ? "transparent" : TIERC[s.tier] } }),
         el("span.att", { text: s.attr }),
         el("span", { style: { flex: 1 }, text: s.name }),
-        (function () {
-          var why = s.untrained ? "Untrained; roll with Snag (or +2 Snag Dice in pools)" :
-            fx.snagChk.ALL ? "Condition · Snag on all checks" :
-            fx.snagChk[s.attr] ? "Condition · Snag on " + s.attrName + " checks" :
-            (s.key === "perception" && fx.perceptionSnag) ? "Condition · Snag on Perception checks" : null;
-          return why ? snagChip(why) : null;
-        })(),
+        why ? snagChip(why) : null,
         el("span.mono", { style: { color: "var(--accent)" }, text: eng.fmtMod(s.total) })
       ]);
     });
@@ -1902,7 +1970,7 @@ EN.combatView = (function () {
       });
       return el("div", null, kids);
     }
-    sectionEls.skills = EN.ui.panel("Skills", "d20 BONUS · DOT = TIER", [el("div", { style: { columnCount: 1 } }, skillRows), versatileBlock()], { corners: true });
+    sectionEls.skills = EN.ui.panel("Skills", "TAP TO ROLL · DOT = TIER", [el("div", { style: { columnCount: 1 } }, skillRows), versatileBlock()], { corners: true });
 
     /* state banners */
     if (s.dying) {
