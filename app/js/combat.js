@@ -479,66 +479,133 @@ EN.combatView = (function () {
      raises Defense, so it reports the new number rather than a reduction. Some
      defenses trigger only when the damage is fully absorbed (Resurge's rebound)
      or scale off the roll itself (Siphon's Vigor). */
-  var _defTray = { open: false, spec: null, incoming: "", roll: null };
-  function openDefTray(spec) { _defTray = { open: true, spec: spec, incoming: "", roll: null }; EN.app.render(); }
-  function closeDefTray() { _defTray = { open: false, spec: null, incoming: "", roll: null }; EN.app.render(); }
+  var _defTray = { open: false, spec: null, incoming: "", roll: null, animating: false };
+  var _defAnimId = 0;
+  function openDefTray(spec) { _defAnimId++; _defTray = { open: true, spec: spec, incoming: "", roll: null, animating: false }; EN.app.render(); }
+  function closeDefTray() { _defAnimId++; _defTray = { open: false, spec: null, incoming: "", roll: null, animating: false }; EN.app.render(); }
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && _defTray.open) closeDefTray(); });
   function defTrayCommit() {
     var s = _defTray.spec, parts = [], total = 0;
     (s.dice || []).forEach(function (dd) {
       for (var i = 0; i < dd.n; i++) {
         var r = 1 + Math.floor(Math.random() * dd.sides);
-        parts.push({ label: dd.label || ("d" + dd.sides), value: r }); total += r;
+        parts.push({ label: dd.label || ("d" + dd.sides), value: r, sides: dd.sides }); total += r;
       }
     });
     (s.flat || []).forEach(function (f) { parts.push({ label: f.label, value: f.value, flat: true }); total += f.value; });
     _defTray.roll = { parts: parts, total: total };
     EN.app.render();
   }
+  function defTrayCommitAnimated() {
+    _defTray.animating = true; defTrayCommit();
+    var myId = ++_defAnimId;
+    EN.ui.animatePoolRoll(document.querySelector('[data-roll="deftray"]'), function () {
+      if (myId !== _defAnimId) return;
+      _defTray.animating = false; EN.app.render();
+    });
+  }
   function defTrayModal() {
     if (!_defTray.open || !_defTray.spec) return null;
-    var s = _defTray.spec, roll = _defTray.roll;
-    var incoming = parseInt(_defTray.incoming, 10);
-    var hasIncoming = !isNaN(incoming) && incoming >= 0;
+    var s = _defTray.spec, roll = _defTray.roll, anim = _defTray.animating;
+    var isDefense = s.mode === "defense";
     var dieText = (s.dice || []).map(function (dd) { return dd.n + "d" + dd.sides; }).concat(
       (s.flat || []).filter(function (f) { return f.value; }).map(function (f) { return eng.fmtMod(f.value); })).join(" + ") || "no roll";
-    var inp = el("input.mono", { type: "number", min: "0", value: _defTray.incoming, placeholder: "0",
-      style: { width: "84px", textAlign: "center", padding: "6px" },
-      oninput: function () { _defTray.incoming = this.value; var o = document.getElementById("def-outcome"); if (o) o.textContent = outcomeText(); } });
+
+    // hero: the dice you tap, mirroring the attack tray
+    var diceEls = [], prompt;
+    if (isDefense) {
+      diceEls = [el("div.mono", { style: { fontSize: "48px", fontWeight: 700, lineHeight: "1", color: "var(--accent)", textShadow: "0 0 20px currentColor" }, text: eng.fmtMod(s.bonus) })];
+      prompt = el("div.mono", { style: { fontSize: "9px", letterSpacing: ".2em", color: "var(--text3)", marginTop: "8px" }, text: "DEFENSE BONUS · NO ROLL" });
+    } else if (roll) {
+      diceEls = roll.parts.filter(function (pp) { return !pp.flat; }).map(function (pp) {
+        return dmgDie(pp.value, pp.sides, { animating: anim });
+      });
+      if (!diceEls.length) diceEls.push(el("span.mono", { style: { color: "var(--text3)", fontSize: "12px" }, text: "no dice" }));
+      prompt = anim ? el("div.mono", { style: { fontSize: "11px", letterSpacing: ".22em", color: "var(--text3)", marginTop: "12px" }, text: "ROLLING..." })
+        : el("div", { style: { marginTop: "10px" } }, [
+            el("div.mono", { style: { fontSize: "48px", fontWeight: 700, lineHeight: "1", color: "var(--accent)", textShadow: "0 0 20px currentColor" }, text: String(roll.total) }),
+            el("div.mono", { style: { fontSize: "9px", letterSpacing: ".2em", color: "var(--text3)", marginTop: "5px" }, text: "MITIGATED · TAP TO ROLL AGAIN" })
+          ]);
+    } else {
+      (s.dice || []).forEach(function (dd) {
+        for (var i = 0; i < dd.n; i++) diceEls.push(dmgDie("", dd.sides, { dim: true }));
+      });
+      if (!diceEls.length) diceEls.push(el("span.mono", { style: { color: "var(--text3)", fontSize: "12px" }, text: "no dice" }));
+      prompt = el("div.mono", { style: { fontSize: "11px", letterSpacing: ".22em", color: "var(--accent)", marginTop: "12px", textTransform: "uppercase", opacity: ".9" }, text: "Tap to roll" });
+    }
+    var diceRow = el("div", { dataset: { roll: "deftray" }, style: { display: "flex", gap: "10px", alignItems: "center", justifyContent: "center", flexWrap: "wrap", minHeight: "54px" } }, diceEls);
+    var hero = el("div", {
+      title: isDefense ? "" : "Tap to roll", role: "button",
+      style: { textAlign: "center", padding: "20px 16px 16px", cursor: (anim || isDefense) ? "default" : "pointer", userSelect: "none",
+        position: "relative", overflow: "hidden",
+        background: "radial-gradient(220px 140px at 50% 36%, rgba(0,229,255,.10), transparent 70%)" },
+      onclick: function () { if (!anim && !isDefense) defTrayCommitAnimated(); }
+    }, [diceRow, prompt]);
+
+    // the parts caption, in the attack tray's voice
+    var autoParts = [];
+    (s.dice || []).concat((s.flat || []).filter(function (f) { return f.value; })).forEach(function (m, i) {
+      if (i) autoParts.push(el("span", { style: { color: "var(--text4)", margin: "0 5px" }, text: "·" }));
+      var notation = m.sides ? (m.n + "d" + m.sides) : eng.fmtMod(m.value);
+      // a die whose only label is its own size ("d6") would read "d6 1d6"
+      var named = m.label && m.label !== "d" + m.sides;
+      if (named) autoParts.push(el("span", { style: { color: "var(--text2)" }, text: m.label + " " }));
+      autoParts.push(document.createTextNode(notation));
+    });
+    var autoLine = el("div.mono", { style: { fontSize: "11px", color: "var(--text3)", textAlign: "center", padding: "12px 16px 0" } }, autoParts);
+
+    var breakdown = (roll && !anim) ? el("div.mono", { style: { fontSize: "10.5px", color: "var(--text3)", textAlign: "center", padding: "8px 16px 0" } },
+      roll.parts.map(function (pp, i) {
+        return el("span", null, [
+          i ? el("span", { style: { color: "var(--text4)", margin: "0 5px" }, text: "·" } ) : null,
+          document.createTextNode((pp.sides && pp.label === "d" + pp.sides ? "d" + pp.sides : pp.label) + " "),
+          el("span", { style: { color: "var(--text)" }, text: pp.flat ? eng.fmtMod(pp.value) : String(pp.value) })
+        ]);
+      })) : null;
+
     function outcomeText() {
       var inc = parseInt(_defTray.incoming, 10);
+      if (isDefense) return "Defense " + (s.baseDefense + s.bonus) + " against this hit (was " + s.baseDefense + "). If it now misses, the attack ends here.";
+      if (anim) return "Resolving...";                     // don't spoil the total while the dice are still tumbling
       if (isNaN(inc) || inc < 0) return "Enter the incoming damage to resolve it.";
-      if (s.mode === "defense") return "Defense " + (s.baseDefense + s.bonus) + " against this hit (was " + s.baseDefense + "). If it now misses, the attack ends here.";
       if (!roll) return "Roll to resolve against " + inc + " damage.";
       var net = Math.max(0, inc - roll.total);
-      var out = inc + " reduced by " + roll.total + " -> " + net + " damage";
+      var out = inc + " reduced by " + roll.total + " to " + net + " damage";
       if (net === 0 && s.onZero) out += ". " + s.onZero;
       if (s.onRoll) out += ". " + s.onRoll(roll.total);
       return out;
     }
-    var card = el("div", { style: { width: "min(430px, 94vw)", background: "linear-gradient(180deg, var(--bg2), var(--bg1))",
-      border: "1px solid var(--accent)", borderRadius: "8px", padding: "16px 18px", boxShadow: "0 20px 60px rgba(0,0,0,.6)" } }, [
-      el("div.mono", { style: { fontSize: "10px", letterSpacing: ".2em", color: "var(--accent)" }, text: "DEFENSIVE IMPULSE" }),
-      el("div", { style: { fontFamily: "var(--disp)", fontWeight: 700, fontSize: "18px", margin: "2px 0 2px" }, text: s.name }),
-      el("p.help", { style: { margin: "0 0 10px" }, text: s.note || "" }),
-      el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
-        el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".1em" }, text: "INCOMING" }), inp,
-        s.mode !== "defense" ? el("button.btn.sm.primary", { onclick: defTrayCommit }, roll ? "REROLL " + dieText : "ROLL " + dieText) : null
-      ]),
-      roll ? el("div.row.wrap", { style: { gap: "6px", marginTop: "10px" } }, roll.parts.map(function (p) {
-        return el("span.chip", { title: p.label, style: { fontSize: "10px", color: p.flat ? "var(--text2)" : "var(--accent)", borderColor: p.flat ? "var(--border2)" : "var(--accent)" },
-          text: p.label + " " + (p.flat ? eng.fmtMod(p.value) : p.value) });
-      })) : null,
-      el("div#def-outcome.mono", { style: { marginTop: "12px", fontSize: "12.5px", color: "var(--text)", lineHeight: 1.5 }, text: outcomeText() }),
-      el("div.row.between", { style: { marginTop: "14px", alignItems: "center" } }, [
-        el("span.help", { style: { margin: 0, fontSize: "10px" }, text: "Esc to close" }),
-        el("button.btn.sm", { onclick: closeDefTray }, "DONE")
-      ])
+    var inp = el("input.mono", { type: "number", min: "0", value: _defTray.incoming, placeholder: "0",
+      style: { width: "76px", textAlign: "center", padding: "5px" },
+      oninput: function () { _defTray.incoming = this.value; var o = document.getElementById("def-outcome"); if (o) o.textContent = outcomeText(); } });
+    var ctrls = isDefense ? null : el("div.row.wrap", { style: { gap: "8px", alignItems: "center", justifyContent: "center", padding: "12px 16px 0" } }, [
+      el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".12em" }, text: "INCOMING" }), inp,
+      el("button.btn.sm", { onclick: defTrayCommitAnimated, style: { color: "var(--accent)", borderColor: "var(--accent)" } }, roll ? "REROLL" : "ROLL")
     ]);
-    var ov = el("div", { style: { position: "fixed", inset: "0", zIndex: "5000", background: "rgba(4,7,11,.74)",
-      display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" },
-      onclick: function (e) { if (e.target === ov) closeDefTray(); } }, [card]);
-    return ov;
+    var outcome = el("div#def-outcome.mono", { style: { margin: "12px 16px 0", padding: "9px 11px", borderRadius: "6px",
+      background: "rgba(0,229,255,.06)", border: "1px solid var(--border2)", fontSize: "12px", color: "var(--text)", lineHeight: 1.5, textAlign: "center" }, text: outcomeText() });
+
+    var header = el("div.row.between", { style: { alignItems: "flex-start", gap: "10px", padding: "14px 16px 12px", borderBottom: "1px solid var(--border)" } }, [
+      el("div", null, [
+        el("div", { style: { fontFamily: "var(--disp)", fontWeight: 700, fontSize: "15.5px", letterSpacing: ".02em", color: "var(--text)" }, text: s.name }),
+        el("div.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".08em", marginTop: "2px" }, text: "DEFENSIVE IMPULSE" })
+      ]),
+      el("button", { title: "Close (Esc)", onclick: closeDefTray, style: { background: "transparent", border: "none", color: "var(--text4)", fontSize: "19px", cursor: "pointer", lineHeight: "1", padding: "2px 5px" } }, "✕")
+    ]);
+    var foot = el("div.row.between", { style: { alignItems: "center", padding: "12px 16px 14px", borderTop: "1px solid var(--border)", marginTop: "14px" } }, [
+      el("span.mono", { style: { fontSize: "10.5px", color: "var(--text3)" }, text: isDefense ? "No roll" : dieText }),
+      el("button.btn.sm", { onclick: closeDefTray }, "DONE")
+    ]);
+    var note = s.note ? el("p.help", { style: { margin: "10px 16px 0", textAlign: "center" }, text: s.note }) : null;
+
+    return el("div", {
+      style: { position: "fixed", inset: "0", zIndex: "4000", background: "rgba(4,7,11,.74)", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" },
+      onclick: function (e) { if (e.target === e.currentTarget) closeDefTray(); }
+    }, [
+      el("div", { style: { width: "min(430px, 96vw)", maxHeight: "94vh", overflowY: "auto", borderRadius: "12px",
+        background: "linear-gradient(180deg, var(--bg2), var(--bg1))", border: "1px solid var(--border2)",
+        boxShadow: "0 20px 60px rgba(0,0,0,.55), 0 0 40px rgba(0,229,255,.10)" } }, [header, hero, autoLine, breakdown, ctrls, outcome, note, foot])
+    ]);
   }
 
   function dmgTrayModal() {
@@ -2972,9 +3039,14 @@ EN.combatView = (function () {
         }
         if (name === "Dodge") { base.mode = "defense"; base.bonus = 2; base.note = "Raise your Defense against this hit. On a miss you may shift 1 space."; return base; }
         if (name === "Parry") {
+          // a physical shield satisfies the requirement on its own, so fall back to
+          // the shield die when no Simple or Martial weapon is equipped
           var md = firstMeleeDie();
-          if (md) base.dice.push(md); else base.flat.push({ label: "no melee weapon", value: 0 });
-          base.note = "Roll your melee weapon's damage die and subtract it from the incoming damage.";
+          if (!md && liveShield) { md = parseDie(dg.shieldBlockDie); if (md) md.label = liveShield.name; }
+          if (md) base.dice.push(md); else base.flat.push({ label: "nothing to parry with", value: 0 });
+          base.note = md
+            ? "Roll " + md.n + "d" + md.sides + " (" + md.label + ") and subtract it from the incoming damage. Melee attacks only."
+            : "Equip a Simple Weapon, a Martial Weapon, or a physical shield to parry.";
           return base;
         }
         if (name === "Resurge") {
@@ -3018,7 +3090,9 @@ EN.combatView = (function () {
         Dodge:   { avail: true, req: "",
                    summary: (acro ? "+" + acro.total + " Defense" : "+Agility + Acrobatics to Defense") + " vs this hit; on a miss, shift 1 space" + (dg.speedPenalty ? " · GM may forbid in heavy armor" : "") },
         Parry:   { avail: !!meleeDie || !!liveShield, req: "a melee weapon or shield",
-                   summary: meleeDie ? "Roll " + meleeDie + " (" + meleeName + "), subtract from incoming damage" : "Roll your melee weapon's damage die, subtract from damage" },
+                   summary: meleeDie ? "Roll " + meleeDie + " (" + meleeName + "), subtract from incoming damage"
+                     : (liveShield && dg.shieldBlockDie ? "Roll " + dg.shieldBlockDie + " (" + liveShield.name + "), subtract from incoming damage"
+                                                        : "Roll your melee weapon's damage die, subtract from damage") },
         Resurge: { avail: attuned, req: "Flow attunement",
                    summary: "Roll " + resDie + " vs Flow attacks; reduce to 0 → rebound " + (flowMod || "your Flow Mod") + " Resonant" },
         Siphon:  { avail: attuned, req: "Flow attunement",
@@ -3099,12 +3173,12 @@ EN.combatView = (function () {
         }, [
           el("span.collapse-caret", { text: open ? "▾" : "▸" }),
           el("span", { style: { fontWeight: 600, minWidth: "52px" }, text: def.name }),
-          el("span.chip", { title: def.cost, style: { fontSize: "9px", color: fp ? "var(--flow)" : "var(--accent)", borderColor: fp ? "var(--flow)" : "var(--accent)" } }, fp ? "IMPULSE · 1 FP" : "IMPULSE"),
-          el("span", { style: { flex: 1, minWidth: "100px", fontSize: "11.5px", color: "var(--text2)" }, text: L.summary }),
           el("button.btn.sm", { title: "Resolve " + def.name + " against an incoming hit",
             style: { flex: "0 0 auto", color: "var(--accent)", borderColor: "var(--accent)" },
             onclick: function (e) { e.stopPropagation(); openDefTray(defSpec(def.name)); } },
-            def.name === "Dodge" ? "USE" : "ROLL")
+            def.name === "Dodge" ? "USE" : "ROLL"),
+          el("span.chip", { title: def.cost, style: { fontSize: "9px", color: fp ? "var(--flow)" : "var(--accent)", borderColor: fp ? "var(--flow)" : "var(--accent)" } }, fp ? "IMPULSE · 1 FP" : "IMPULSE"),
+          el("span", { style: { flex: 1, minWidth: "100px", fontSize: "11.5px", color: "var(--text2)" }, text: L.summary })
         ]);
         var dkids = [head];
         if (open) dkids.push(el("p.help", { style: { margin: "4px 0 8px 18px", whiteSpace: "pre-wrap" }, text: def.text }));
