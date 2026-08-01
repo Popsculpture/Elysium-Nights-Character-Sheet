@@ -167,16 +167,100 @@ EN.rules = {
     ]
   },
 
-  // Creature Size, per lineage. Most are fixed; some lineages are variable
-  // (the player chooses one), which matters for grappling, encumbrance, etc.
-  sizes: ["Small", "Medium", "Large"],
-  lineageSize: {
-    freeborn: ["Medium"], nextgen: ["Medium"], phasebound: ["Medium"],
-    arboreal: ["Large"], floral: ["Medium"], mycelial: ["Small"],
-    laborframes: ["Medium", "Large"], durabodies: ["Medium"], lifelikes: ["Small", "Medium"],
-    hulsk: ["Large"], skarn: ["Small"], ryn: ["Small", "Medium"],
-    "cinder-heart": ["Medium", "Large"], harbinger: ["Medium"], grinling: ["Small"]
+  /* ---- Size -------------------------------------------------------------
+     Size is comparative and DERIVED: the player picks a height inside their
+     Lineage's range and the band decides the category. There is deliberately
+     no default: an unstatted NPC, drone, or vehicle does not silently become
+     Medium. Tiny and Huge exist only for NPCs, animals, drones and vehicles;
+     no lineage reaches either. */
+  sizes: ["Tiny", "Small", "Medium", "Large", "Huge"],
+  // Inclusive ranges in feet. A height landing exactly on a boundary takes the
+  // LARGER category, which a simple less-than cascade implements exactly
+  // (see eng.sizeFromHeightFt).
+  sizeBands: [
+    { size: "Tiny",   underFt: 2,        imperial: "under 2 ft.",  metric: "under 0.6 m" },
+    { size: "Small",  underFt: 4,        imperial: "2 to 4 ft.",   metric: "0.6 to 1.2 m" },
+    { size: "Medium", underFt: 8,        imperial: "4 to 8 ft.",   metric: "1.2 to 2.4 m" },
+    { size: "Large",  underFt: 16,       imperial: "8 to 16 ft.",  metric: "2.4 to 4.8 m" },
+    { size: "Huge",   underFt: Infinity, imperial: "over 16 ft.",  metric: "over 4.8 m" }
+  ],
+  sizeBandNote: "Two overrides stay with the GM and are not automated. Bulk overrides height: something low and wide, or long and coiled, may sit one category above what its height implies. Non-upright bodies (animals, drones, vehicles) are measured on their longest dimension, not height.",
+  // Height range per lineage, the source of truth for that lineage's Sizes.
+  // Harbingers have no variance: every Harbinger is exactly 6 ft.
+  lineageHeight: {
+    freeborn:      { min: 3, max: 7 },
+    nextgen:       { min: 3, max: 7 },
+    phasebound:    { min: 3, max: 7 },
+    mycelial:      { min: 2, max: 4 },
+    floral:        { min: 5, max: 6 },
+    arboreal:      { min: 6, max: 10 },
+    lifelikes:     { min: 3, max: 7 },
+    durabodies:    { min: 6, max: 8 },
+    laborframes:   { min: 6, max: 10 },
+    skarn:         { min: 3, max: 4 },
+    ryn:           { min: 3, max: 7 },
+    hulsk:         { min: 6, max: 9 },
+    grinling:      { min: 3, max: 5 },
+    "cinder-heart": { min: 3, max: 7 },
+    harbinger:     { min: 6, max: 6, fixed: true }
   },
+  // Derived from lineageHeight via the bands above, listed explicitly so the
+  // pairing can be validated without recomputing it.
+  lineageSize: {
+    freeborn: ["Small", "Medium"], nextgen: ["Small", "Medium"], phasebound: ["Small", "Medium"],
+    mycelial: ["Small", "Medium"], floral: ["Medium"], arboreal: ["Medium", "Large"],
+    lifelikes: ["Small", "Medium"], durabodies: ["Medium", "Large"], laborframes: ["Medium", "Large"],
+    skarn: ["Small", "Medium"], ryn: ["Small", "Medium"], hulsk: ["Medium", "Large"],
+    grinling: ["Small", "Medium"], "cinder-heart": ["Small", "Medium"], harbinger: ["Medium"]
+  },
+  // The printed Species Traits row for each species.
+  speciesSizeDisplay: {
+    humans: "Small to Medium", verdine: "Small to Large", clankers: "Small to Large",
+    chimera: "Small to Large", outsiders: "Small to Medium"
+  },
+  // Grid footprint. A body filling more than one space is measured FROM THE
+  // NEAREST OF ITS SPACES in both directions, which governs Range, Reach and
+  // line of sight. An effect centred on you starts from whichever of your
+  // spaces you choose at use time: Large on hex is three hexes meeting at a
+  // corner, so there is no centre hex to default to.
+  sizeFootprint: {
+    Tiny:   { square: "1 space (up to 4 share a space)", hex: "1 hex (up to 4 share)", spaces: 1 },
+    Small:  { square: "1 space", hex: "1 hex", spaces: 1 },
+    Medium: { square: "1 space", hex: "1 hex", spaces: 1 },
+    Large:  { square: "4 spaces (2 by 2)", hex: "3 hexes (a tight triangle)", spaces: 4 },
+    Huge:   { square: "9 spaces (3 by 3)", hex: "7 hexes (1 plus its ring)", spaces: 9 }
+  },
+  // The only mechanical effects of Size beyond comparison. Neither touches a
+  // d20 roll: Size grants no Edge, no Snag, no Defense and no Speed modifier.
+  sizeTraits: {
+    Small:  { encumbrance: -1, text: "Encumbrance Threshold -1. Passes tight geometry that forces a Medium to squeeze." },
+    Medium: { encumbrance: 0,  text: "Baseline. No modifier." },
+    Large:  { encumbrance: 1,  text: "Encumbrance Threshold +1. Squeezes at gaps a Medium passes freely." }
+  },
+  tightGeometry: "Passing through a gap too narrow for your Size means squeezing, which halves Speed for that movement only. It is not a standing penalty and deliberately not Difficult Terrain, so anything that ignores Difficult Terrain does not bypass it. It is relative: a Large body squeezes where a Medium walks, and a Small body walks where a Medium turns sideways. Whether a gap is narrow is a GM and scene input.",
+  sizeComparison: {
+    maneuvers: "Shove, Trip and Grapple can target something up to one Size larger than you. Two or more Sizes larger is out of reach without a feature or a favorable situation.",
+    dragLift: "A body of your Size or smaller can be dragged or lifted without straining. A grapple-drag moves at half Speed.",
+    occupiedSpace: "You may move into an ally's space, or the space of an enemy at least one Size smaller than you, at a cost of 2 Speed for that space instead of 1. Anyone else blocks movement entirely. You cannot end movement in an occupied space.",
+    bodyGate: [
+      { theirSize: "Smaller than you",        body: "Any",         holding: "Unencumbered" },
+      { theirSize: "Your Size",               body: "16+",         holding: "Encumbered (Speed -2)" },
+      { theirSize: "One Size larger",         body: "18+",         holding: "Overloaded (Speed halved, no Dash)" },
+      { theirSize: "Two or more Sizes larger", body: "Not by hand", holding: "Needs an exoframe, heavy-lift cyberware, or the Flow" }
+    ],
+    meatShield: "A held body smaller than you grants Half Cover (+2 Defense). A body your Size or larger grants Three-Quarter Cover (+5 Defense)."
+  },
+  // Features that shift EFFECTIVE Size for one purpose only. None changes the
+  // character's actual Size, footprint, or Encumbrance beyond what it states.
+  sizeShiftFeatures: [
+    { name: "Synthetic Musculature", lineage: "NextGen",    effect: "+2 Encumbrance Threshold; counts as one Size larger for grappling." },
+    { name: "Heavy Payload",         lineage: "Laborframe", effect: "+2 Encumbrance Threshold; counts as one Size larger for grappling; carrying a willing ally of your Size or smaller does not reduce Speed." },
+    { name: "Sludge Crawler",        lineage: "Mycelial",   effect: "Counts as one Size smaller in narrow corridors and tight spaces, at full Speed (exempt from the tight-geometry halving)." },
+    { name: "Disjointed Anatomy",    lineage: "Grinling",   effect: "Squeezes as one Size smaller without penalty." },
+    { name: "Unshakable Bulk",       lineage: "Hulsk",      effect: "Moving through the space of a smaller enemy costs no extra movement (waives the 2-Speed cost)." },
+    { name: "Breaching Charge",      lineage: "Durabody",   effect: "Moves in a straight line through the spaces of anyone smaller, ignoring Difficult Terrain." },
+    { name: "Impossible Geometry",   lineage: "Grinling",   effect: "May move through occupied spaces regardless of Size; cannot end its turn there." }
+  ],
 
   // Gear proficiency categories (acquired/upgraded with Training Points).
   gear: {

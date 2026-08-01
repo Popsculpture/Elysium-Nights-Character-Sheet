@@ -60,7 +60,8 @@ EN.store = (function () {
       overclocked: { grid: [], pick: null, allowDiagonals: false },
       species: null,
       lineage: null,
-      size: null,                        // creature Size (auto from lineage; player-picked when variable)
+      heightFt: null,                    // height in feet, inside the lineage's printed range; Size derives from it
+      size: null,                        // legacy direct Size pick, honoured only for characters built before heightFt
       lineageFeatures: [],               // chosen feature names (creation + evolution)
       background: null,
       backgroundSkillChoice: null,

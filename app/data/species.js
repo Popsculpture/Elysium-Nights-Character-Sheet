@@ -14,7 +14,7 @@ EN.species = [
     },
     blurb: "Humans built Elysium because they were afraid of being forgotten. They are fragile by comparison to many of the beings that now share the sprawl, but fragility never made humanity gentle. It made them urgent.",
     traits: {
-      size: "Medium: Stand anywhere from 5 feet to well over 6 feet tall.",
+      size: "Small to Medium: 3 to 7 feet tall, whatever the lineage.",
       languages: "Common Trade and one additional language of your choice, usually reflecting your home district or corporate affiliation.",
       coreTrait: {
         name: "Relentless Will",
@@ -132,7 +132,7 @@ EN.species = [
     },
     blurb: "Verdine were created as living infrastructure, then became something far more difficult to manage: people with long memories.",
     traits: {
-      size: "Small to Large: Height varies drastically by lineage. Mycelial stand around 3 to 4 feet tall, Florals range from 5 to 6 feet, and Arboreals can tower up to 8 feet.",
+      size: "Small to Large: Mycelial stand 2 to 4 feet tall, Florals range from 5 to 6 feet, and Arboreals tower from 6 to 10 feet.",
       languages: "Common Trade and Root-code, a chemical and tactile language shared among Verdine and ancient flora.",
       coreTrait: {
         name: "Ecological Filter",
@@ -252,7 +252,7 @@ EN.species = [
     },
     blurb: "Clankers are the accident the corporations cannot reproduce. They are not uploaded humans, not standard artificial intelligences, and not malfunctioning appliances with delusions of personhood.",
     traits: {
-      size: "Varies by chassis. Laborframes are broad and tall; Durabodies are boxy; Lifelikes feature near-human silhouettes.",
+      size: "Small to Large: Lifelikes run 3 to 7 feet on near-human silhouettes, Durabodies are boxy at 6 to 8 feet, and Laborframes are broad and tall at 6 to 10 feet.",
       languages: "Common Trade and Machine Cant, a rapid, compressed burst-code used for silent data exchange between synthetics over short distances.",
       coreTrait: {
         name: "Machine Physiology",
@@ -370,7 +370,7 @@ EN.species = [
     },
     blurb: "Chimera were made for an apocalypse they did not cause. The old world called them breakthroughs, assets, survival platforms, battlefield adaptations, and other clean words for people grown to suffer efficiently.",
     traits: {
-      size: "Small to Large, ranging from 3.5 feet to well over 6 feet tall depending on Lineage.",
+      size: "Small to Large: Skarn stand 3 to 4 feet tall, Ryn range from 3 to 7 feet, and Hulsk reach 6 to 9 feet.",
       languages: "Common Trade and one pack-specific dialect that relies heavily on physical gestures, scent markers, and micro-expressions.",
       coreTrait: {
         name: "Feral Metabolism",
@@ -488,7 +488,7 @@ EN.species = [
     },
     blurb: "Outsiders do not belong here, which has not stopped them from making rent. They come from adjacent realities: mythic pressure zones, impossible stasis realms, predatory wonderlands, and stranger places that do not translate cleanly into local physics.",
     traits: {
-      size: "Small to Large, varying drastically by Lineage.",
+      size: "Small to Medium: Grinlings stand 3 to 5 feet tall, Cinder-Hearts range from 3 to 7 feet, and every Harbinger is exactly 6 feet.",
       languages: "Common Trade and one native, otherworldly dialect that relies on impossible frequencies, shifting colors, or non-vocal resonance that baseline humans cannot accurately replicate.",
       coreTrait: {
         name: "Cosmic Disconnect",

@@ -750,6 +750,64 @@ All 15 lineages and all four Cinder-Heart creation features were already correct
 
 ---
 
+### A17. The Size system (author spec, 2026-08-01)
+- **Files:** `app/data/rules.js`, `app/data/species.js`, `app/js/engine.js`,
+  `app/js/builder.js`, `app/js/combat.js`, `app/js/codex.js`, `app/js/store.js`
+- Replaces the old behaviour, which treated every Freelancer as Medium with an ad hoc
+  `["Small","Medium"]` exception on Ryn.
+
+**Size is now derived, never chosen.** The player picks a height inside their lineage's
+printed range and the band resolves the category. `ch.heightFt` is the new stored field;
+the legacy `ch.size` is honoured only when it is still legal for the lineage, so existing
+characters keep their Size until a height is set.
+
+**The scale is five entries** (Tiny, Small, Medium, Large, Huge) with the height bands and
+a boundary-takes-larger rule, which a strict less-than cascade gives exactly: 2 ft is
+Small, 4 ft is Medium, 8 ft is Large. Verified against all three of the spec's assertions.
+Tiny and Huge exist only for NPCs, drones and vehicles; no lineage can reach either, since
+lineage heights span 2 to 10 ft.
+
+**All 15 lineage height ranges added**, with `lineageSize` derived from them. Verified in
+the browser that every listed `allowedSizes` equals the cascade applied to both endpoints
+of its own range: zero mismatches. Ten of the fifteen changed, the largest being Humans,
+who were Medium-only and are now 3 to 7 ft, so a 3 ft human is Small. Harbingers have no
+variance and their picker is locked at 6 ft, at both the UI and the model layer.
+
+**Encumbrance Threshold is 6 + Body Modifier +/- 1 for Size, floored at 3, then gear steps
+of +2 on top.** The floor lands after the Size adjustment, which is the case the spec calls
+out: Small with Body -3 gives 3, not 2. Verified live. The Size adjustment is a raw +/-1
+and never enters the steps array, so it cannot be doubled by step math.
+
+**Reference rules** (footprints on square and hex, multi-space measuring, tight geometry,
+the maneuver gate, drag and lift, moving through an occupied space, the Body Gate table,
+Meat Shield, and the seven features that shift effective Size) are carried as data and
+surfaced in a new Codex panel. The comparison rules stay text-only, a soft block, because
+features explicitly grant exceptions to them.
+
+**The section 10 non-rules are respected**: no Edge or Snag from Size, no Defense modifier,
+no Speed modifier beyond the tight-geometry halving (which is left to the GM and is
+deliberately not Difficult Terrain), no attack, damage or save modifier, no Tiny or Huge
+player characters, and no default Size anywhere.
+
+**Four defects an adversarial verification pass caught in my own first implementation**,
+all fixed and re-verified:
+- **A silent default.** `derive()` fell through to the lineage's first allowed Size when no
+  height was recorded. That is exactly what the spec forbids, and it was not a rare state:
+  every freshly built character sat in it, receiving a real Encumbrance adjustment nobody
+  chose. Now no height and no legal legacy pick means no Size, and the sheet shows a dash.
+- **`speciesSizeDisplay` was dead data.** The species Size line rendered from
+  `species.js`, and three of the five strings disagreed with it. The builder now takes the
+  category from `rules.js` so there is one source of truth.
+- **Outsiders advertised "Small to Large"**, which no Outsider can reach: their tallest
+  lineage tops out at 7 ft, inside Medium.
+- **An imported record with no lineage and a bogus height could mint a Huge character**,
+  because an unvalidatable height was trusted. It is now ignored.
+
+**Still open, per the spec:** vehicles carry no Size and use a separate mass scale. Not
+unified, and not attempted.
+
+---
+
 ## PART B: Pending, in the agreed order
 
 1. ~~Rulings on the contradictions in PART C.~~ **M1 and M2 ruled 2026-07-28**;

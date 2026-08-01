@@ -1668,7 +1668,25 @@ EN.combatView = (function () {
         rows: [bdRow((initAttr === "WIT" ? "Wits" : "Agility") + " modifier (best of Agility/Wits)", initMod, chromeNote(initAttr))]
           .concat(d.lineageInit && d.lineageInit.caliber ? [bdRow("Lineage · Static Premonition", d.lineageInit.caliber)] : [])
           .concat(fx.init ? [bdRow("Conditions", fx.init)] : []),
-        foot: "Initiative roll = d20 + Caliber (" + d.caliber + ") + this." + (d.lineageInit && d.lineageInit.edge ? " Roll with Edge (Tuned Synapses)." : "") }
+        foot: "Initiative roll = d20 + Caliber (" + d.caliber + ") + this." + (d.lineageInit && d.lineageInit.edge ? " Roll with Edge (Tuned Synapses)." : "") },
+      // Size is derived from height, and its only mechanical reach is the
+      // Encumbrance Threshold and comparison (grappling, moving through a
+      // space, the Body Gate). It never touches a d20 roll, Defense, or Speed.
+      SIZE: (function () {
+        var band = (R.lineageHeight || {})[ch.lineage] || null;
+        var foot = (R.sizeFootprint || {})[d.size];
+        var trait = (R.sizeTraits || {})[d.size];
+        var rows = [];
+        if (d.heightFt != null) rows.push({ label: "Height", val: d.heightFt + " ft", raw: true });
+        if (band) rows.push({ label: "Lineage range", val: band.fixed ? band.min + " ft, no variance" : band.min + " to " + band.max + " ft", raw: true });
+        if (foot) rows.push({ label: "Footprint", val: foot.square, raw: true });
+        if (trait && trait.encumbrance) rows.push(bdRow("Encumbrance Threshold", trait.encumbrance));
+        return { title: "Size", total: d.size || "not set", sign: false,
+          formula: "derived from height; a boundary height takes the larger category",
+          empty: d.size ? null : "Pick a height on the #PRINT tab to set your Size.",
+          rows: rows,
+          foot: trait ? trait.text : null };
+      })()
     };
     function fmtVal(r) { return r.raw ? String(r.val) : (r.val >= 0 ? "+" : "") + r.val; }
     function titleFor(bd) {
@@ -1692,7 +1710,12 @@ EN.combatView = (function () {
       statEl("DEF", "DEF", d.defense, defAttrName + (dg.shield ? " " + (dg.shieldDef >= 0 ? "+" : "") + dg.shieldDef + " shield" : "")),
       statEl("DR", "DR", d.totalDR || 0, dg.armor ? dg.armor.name : (d.naturalDR ? "natural · lineage" : "no armor"), function (n) { if (!(d.totalDR > 0)) n.querySelector(".v").style.color = "var(--text3)"; }),
       statEl("SPD", "SPD", spDisplay, spDisplay < d.speed ? "of " + d.speed + ", conditions" : "spaces", function (n) { if (spDisplay < d.speed) n.querySelector(".v").style.color = "var(--danger)"; }),
-      statEl("INIT", "INIT", eng.fmtMod(initVal), (initAttr === "WIT" ? "Wits" : "Agility") + (fx.init ? " " + eng.fmtMod(fx.init) + " cond." : ""), function (n) { if (fx.init < 0) n.querySelector(".v").style.color = "var(--danger)"; })
+      statEl("INIT", "INIT", eng.fmtMod(initVal), (initAttr === "WIT" ? "Wits" : "Agility") + (fx.init ? " " + eng.fmtMod(fx.init) + " cond." : ""), function (n) { if (fx.init < 0) n.querySelector(".v").style.color = "var(--danger)"; }),
+      // Size sits beside Speed and Defense, the way the manuscript's Step 8
+      // orders them. It is derived from height, so a character with no height
+      // recorded shows a dash rather than defaulting to Medium.
+      statEl("SIZE", "SIZE", d.size || "-", d.heightFt != null ? d.heightFt + " ft" : "set a height",
+        function (n) { if (!d.size) n.querySelector(".v").style.color = "var(--text3)"; })
     ]));
     // breakdown panel (shows when a stat above is selected)
     if (_open.statbd && BD[_open.statbd]) {

@@ -217,6 +217,36 @@ EN.codexView = (function () {
     blocks.push(refPanel("ref-dmg", "Damage Types", (C.damageTypes || []).length + " TYPES",
       (C.damageTypes || []).map(function (t) { return ruleBlock(t.name, t.text); })));
 
+    /* Size: comparative, derived from height, and its whole mechanical reach is
+       the Encumbrance Threshold plus comparison. It touches no d20 roll. */
+    (function () {
+      var R = EN.rules; if (!R || !R.sizeBands) return;
+      var kids = [];
+      kids.push(ruleBlock("The Scale", (R.sizes || []).join(", ") + ". Size is comparative: \"one Size larger\" means one step up this list. It is derived from height, never chosen directly, and there is no default: an unstatted NPC, drone, or vehicle does not silently become Medium."));
+      kids.push(ruleBlock("Height Bands", R.sizeBands.map(function (b) {
+        return b.size + ": " + b.imperial + " (" + b.metric + ")";
+      }).join("\n") + "\n\nA height landing exactly on a boundary takes the larger category, so 2 ft is Small, 4 ft is Medium and 8 ft is Large.\n\n" + (R.sizeBandNote || "")));
+      kids.push(ruleBlock("Grid Footprint", (R.sizes || []).map(function (s) {
+        var f = (R.sizeFootprint || {})[s]; return f ? s + ": " + f.square + " | hex: " + f.hex : null;
+      }).filter(Boolean).join("\n") + "\n\nA body filling more than one space is measured from the nearest of its spaces, in both directions, which governs Range, Reach and line of sight. An effect centred on you starts from whichever of your spaces you choose when you use it, because Large on a hex grid is three hexes meeting at a corner and has no centre hex."));
+      kids.push(ruleBlock("Small and Large", ["Small", "Medium", "Large"].map(function (s) {
+        var t = (R.sizeTraits || {})[s]; return t ? s + ": " + t.text : null;
+      }).filter(Boolean).join("\n") + "\n\nNeither touches a d20 roll. Size grants no Edge, no Snag, no Defense modifier, and no Speed modifier apart from the squeeze below."));
+      if (R.tightGeometry) kids.push(ruleBlock("Tight Geometry", R.tightGeometry));
+      var SC = R.sizeComparison || {};
+      if (SC.maneuvers) kids.push(ruleBlock("Shove, Trip and Grapple", SC.maneuvers));
+      if (SC.dragLift) kids.push(ruleBlock("Dragging and Lifting", SC.dragLift));
+      if (SC.occupiedSpace) kids.push(ruleBlock("Moving Through an Occupied Space", SC.occupiedSpace));
+      if ((SC.bodyGate || []).length) kids.push(ruleBlock("The Body Gate", SC.bodyGate.map(function (r) {
+        return r.theirSize + " | Body " + r.body + " | " + r.holding;
+      }).join("\n")));
+      if (SC.meatShield) kids.push(ruleBlock("Meat Shield", SC.meatShield));
+      if ((R.sizeShiftFeatures || []).length) kids.push(ruleBlock("Features That Shift Effective Size",
+        R.sizeShiftFeatures.map(function (f) { return f.name + " (" + f.lineage + "): " + f.effect; }).join("\n")
+        + "\n\nEach shifts Size for its stated purpose only. None changes your actual Size, footprint, or Encumbrance beyond what it says."));
+      blocks.push(refPanel("ref-size", "Size", "DERIVED FROM HEIGHT", kids));
+    })();
+
     /* conditions library */
     blocks.push(el("div", { style: { height: "10px" } }));
     blocks.push(EN.ui.sectionTitle("Conditions Library"));

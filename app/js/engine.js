@@ -419,6 +419,35 @@ EN.engine = (function () {
 
   // All active lineage Additive Features: creation pick + Universal-Upgrade
   // evolution picks + the Level 4 Awakening evolution.
+  /* ---- Size ---------------------------------------------------------------
+     Heights are inclusive ranges and a height landing exactly on a boundary
+     takes the LARGER category, which this less-than cascade gives for free:
+     2 ft is Small, 4 ft is Medium, 8 ft is Large. There is deliberately no
+     default Size, so an unstatted body returns null rather than Medium. */
+  function sizeFromHeightFt(h) {
+    if (typeof h !== "number" || !isFinite(h)) return null;
+    var bands = R.sizeBands || [];
+    for (var i = 0; i < bands.length; i++) if (h < bands[i].underFt) return bands[i].size;
+    return bands.length ? bands[bands.length - 1].size : null;
+  }
+  // the character's height, clamped into their lineage's printed range. A
+  // lineage flagged fixed (Harbingers, always exactly 6 ft) ignores any stored
+  // value entirely.
+  function lineageHeightFt(ch) {
+    var band = (ch && ch.lineage && R.lineageHeight) ? R.lineageHeight[ch.lineage] : null;
+    // With no lineage there is no range to validate against, so a stored height
+    // is not trusted: an imported record claiming 30 ft must not mint a Huge
+    // player character.
+    if (!band) return null;
+    if (band.fixed) return band.min;
+    var h = (ch && typeof ch.heightFt === "number") ? ch.heightFt : null;
+    if (h == null) return null;
+    return clamp(h, band.min, band.max);
+  }
+  function sizeEncumbranceAdj(size) {
+    var t = (R.sizeTraits || {})[size];
+    return t ? (t.encumbrance || 0) : 0;
+  }
   function activeLineageFeatures(ch) {
     var names = (ch.lineageFeatures || []).slice();
     var ups = ch.universalUpgrades || {};
@@ -743,8 +772,13 @@ EN.engine = (function () {
       return used < rackLimit(gearIt);
     });
   }
-  function encumbranceInfo(ch, attributes, dl, linFeats) {
-    var base = Math.max(3, 6 + attributes.BOD.mod);
+  // Encumbrance Threshold = 6 + Body Modifier +/- 1 for Size, minimum 3, and
+  // the minimum applies AFTER the Size adjustment: a Small character on Body -3
+  // lands at 3, not 2. Gear, mods, frames, cyberware and Flow effects speak in
+  // STEPS of +2; the Size adjustment is a raw +/-1 and is not a step.
+  function encumbranceInfo(ch, attributes, dl, linFeats, size) {
+    var sizeAdj = sizeEncumbranceAdj(size);
+    var base = Math.max(3, 6 + attributes.BOD.mod + sizeAdj);
     var steps = [];
     var armor = dl.armor, lapsed = dl.armorLapsed;
     // Load-Bearing and the Load Distributor mod grant a single, non-stacking step
@@ -793,7 +827,8 @@ EN.engine = (function () {
     if (tier === "heavy") state = "encumbered";           // a Heavy loadout is Encumbered for the run
     if (haul === "lift") state = (state === "unencumbered") ? "encumbered" : "overloaded";
     if (haul === "drag") state = "overloaded";
-    return { base: base, steps: steps, threshold: threshold, bands: bands, tier: tier, budget: budget,
+    return { base: base, sizeAdj: sizeAdj, size: size || null,
+             steps: steps, threshold: threshold, bands: bands, tier: tier, budget: budget,
              overBudget: Math.max(0, current - budget),
              current: current, items: items, haul: haul, state: state };
   }
@@ -945,9 +980,18 @@ EN.engine = (function () {
     var bg = getBackground(ch.background);
     var warnings = [];
 
-    /* creature size, player pick if valid for the lineage, else lineage default */
+    /* Size is derived from the height the player picked, never chosen directly.
+       Characters built before heights existed still carry a stored ch.size, so
+       that is honoured as a fallback when it is legal for the lineage. */
     var sizeOpts = (ch.lineage && R.lineageSize) ? R.lineageSize[ch.lineage] : null;
-    var size = sizeOpts ? ((ch.size && sizeOpts.indexOf(ch.size) !== -1) ? ch.size : sizeOpts[0]) : (ch.size || null);
+    var heightFt = lineageHeightFt(ch);
+    // No default: a character with no height and no legal legacy pick has NO
+    // Size, and the sheet says so rather than inventing one. Falling back to
+    // the lineage's first allowed Size would silently hand every freshly built
+    // character a real Encumbrance adjustment nobody chose.
+    var size = heightFt != null ? sizeFromHeightFt(heightFt)
+      : (ch.size && sizeOpts && sizeOpts.indexOf(ch.size) !== -1) ? ch.size
+      : null;
 
     /* attributes + modifiers (installed cyberware Enhancement Bonuses fold into the score, capped at 20) */
     var scores = effectiveAttributes(ch);
@@ -973,7 +1017,7 @@ EN.engine = (function () {
 
     /* encumbrance: state from the declared Loadout, on-person Load, and hauls;
        Encumbered = Speed -2, Overloaded = Speed halved (round down, min 1) */
-    var enc = encumbranceInfo(ch, attributes, defLoadout, linFeats);
+    var enc = encumbranceInfo(ch, attributes, defLoadout, linFeats, size);
     enc.speedDelta = enc.state === "encumbered" ? -2
                    : enc.state === "overloaded" ? (Math.floor(speed / 2) - speed) : 0;
     if (enc.speedDelta) speed = Math.max(1, speed + enc.speedDelta);
@@ -1185,7 +1229,7 @@ EN.engine = (function () {
       woundsMax: woundsMax, critThreshold: critThreshold,
       saves: saves, skills: skills,
       resource: resource, flow: flow,
-      size: size,
+      size: size, heightFt: heightFt, sizeOpts: sizeOpts || null,
       classInfo: cls, subclassInfo: sub, speciesInfo: sp, lineageInfo: lin, backgroundInfo: bg,
       features: features,
       trainingPoints: { total: tpTotal, spent: tpSpent, remaining: tpTotal - tpSpent },
@@ -1487,6 +1531,7 @@ EN.engine = (function () {
     skillFloorTier: skillFloorTier, effectiveSkillTier: effectiveSkillTier,
     skillTierCost: skillTierCost, trainingSpent: trainingSpent, trainingBudget: trainingBudget,
     grantedGear: grantedGear, gearFloorTier: gearFloorTier, effectiveGearTier: effectiveGearTier, gearTierCost: gearTierCost,
+    sizeFromHeightFt: sizeFromHeightFt, lineageHeightFt: lineageHeightFt, sizeEncumbranceAdj: sizeEncumbranceAdj,
     activeLineageFeatures: activeLineageFeatures, splitTalentText: splitTalentText, leaseLapsed: leaseLapsed, itemLoad: itemLoad,
     isStackableItem: isStackableItem, isStackableName: isStackableName, entryKey: entryKey, findEntry: findEntry, keyToName: keyToName,
     isCarryGear: isCarryGear, rackLimit: rackLimit, rackFits: rackFits, carryGearWorn: carryGearWorn, rackState: rackState, rackTargets: rackTargets,

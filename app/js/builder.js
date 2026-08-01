@@ -578,7 +578,10 @@ EN.builder = (function () {
       blocks.push(EN.ui.sectionTitle(sp.name + " · Species Traits"));
       var t = sp.traits || {};
       blocks.push(el("div", null, [
-        sizeRow(ch, lin, t.size), traitLine("Languages", t.languages),
+        // the Size category comes from rules.js so there is one source of truth;
+        // the species prose rides along as detail
+        sizeRow(ch, lin, ((R.speciesSizeDisplay || {})[sp.key] ? (R.speciesSizeDisplay[sp.key] + ". " + (t.size || "")).trim() : t.size)),
+        traitLine("Languages", t.languages),
         t.coreTrait ? feature(t.coreTrait.name, t.coreTrait.text, "species", "Core Trait") : null,
         t.secondaryTrait ? feature(t.secondaryTrait.name, t.secondaryTrait.text, "species", "Secondary Trait") : null
       ]));
@@ -587,7 +590,7 @@ EN.builder = (function () {
       blocks.push(EN.ui.sectionTitle("Choose a Lineage"));
       blocks.push(el("div.card-grid", null, (sp.lineages || []).map(function (l) {
         return el("div.opt-card" + (ch.lineage === l.key ? ".sel" : ""), {
-          onclick: function () { store.update(function (c) { if (c.lineage !== l.key) { c.lineage = l.key; c.lineageFeatures = []; c.size = (R.lineageSize[l.key] || ["Medium"])[0]; } }); }
+          onclick: function () { store.update(function (c) { if (c.lineage !== l.key) { c.lineage = l.key; c.lineageFeatures = []; c.size = null; c.heightFt = null; } }); }
         }, [el("span.check", { text: "◉" }), el("h4", { text: l.name }), el("p", { text: l.description || "" })]);
       })));
     }
@@ -613,24 +616,47 @@ EN.builder = (function () {
     if (!val) return null;
     return el("div", { style: { marginBottom: "8px" } }, [el("span.chip", { text: label }), el("span", { style: { marginLeft: "10px", color: "var(--text2)", fontSize: "14px" }, text: val })]);
   }
-  // effective creature Size: player pick if valid, else the lineage default
+  // effective creature Size: derived from the chosen height, with a stored
+  // ch.size honoured as a fallback for characters built before heights existed
   function effectiveSize(ch) {
+    var h = eng.lineageHeightFt(ch);
+    if (h != null) return eng.sizeFromHeightFt(h);
     var opts = ch.lineage && R.lineageSize ? R.lineageSize[ch.lineage] : null;
-    if (!opts) return ch.size || null;
-    return (ch.size && opts.indexOf(ch.size) !== -1) ? ch.size : opts[0];
+    // no height and no legal legacy pick means no Size; never invent one
+    return (ch.size && opts && opts.indexOf(ch.size) !== -1) ? ch.size : null;
   }
-  // Size as a chip; variable-size lineages get clickable options
+  /* Size is derived, never picked: the player chooses a height inside their
+     Lineage's printed range and the band decides the category. Harbingers have
+     no variance (every one is exactly 6 ft), so their picker is locked. */
   function sizeRow(ch, lin, speciesDesc) {
     if (!lin) return traitLine("Size", speciesDesc);   // species-level flavor before a lineage is picked
-    var opts = R.lineageSize[lin.key] || ["Medium"];
+    var band = (R.lineageHeight || {})[lin.key];
     var current = effectiveSize(ch);
-    var kids = [el("span.chip", { text: "Size" })];
-    if (opts.length === 1) {
-      kids.push(solidChip(opts[0], "var(--accent)"));
-    } else {
-      kids.push(el("span", { style: { fontFamily: "var(--mono)", fontSize: "10px", color: "var(--text3)" }, text: "choose one:" }));
-      opts.forEach(function (o) { kids.push(pickChip(o, "var(--accent)", current === o, function () { store.update(function (c) { c.size = o; }); })); });
+    var kids = [el("span.chip", { text: "Size" }), solidChip(current || "choose a height", "var(--accent)")];
+    if (!band) return el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginBottom: "8px" } }, kids);
+
+    if (band.fixed) {
+      kids.push(el("span.mono", { style: { fontSize: "10px", color: "var(--text3)" },
+        text: "every " + lin.name.replace(/s$/, "") + " is exactly " + band.min + " ft" }));
+      return el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginBottom: "8px" } }, kids);
     }
+    var h = eng.lineageHeightFt(ch);
+    kids.push(el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".08em" }, text: "HEIGHT" }));
+    kids.push(el("input.mono", {
+      type: "number", min: String(band.min), max: String(band.max), step: "0.5",
+      value: h == null ? "" : String(h), placeholder: band.min + "-" + band.max,
+      style: { width: "72px", textAlign: "center", padding: "4px" },
+      onchange: function () {
+        var v = parseFloat(this.value);
+        store.update(function (c) {
+          if (isNaN(v)) { c.heightFt = null; return; }
+          c.heightFt = eng.clamp(v, band.min, band.max);
+          c.size = null;                       // derived from here on; drop the legacy pick
+        });
+      }
+    }));
+    kids.push(el("span.mono", { style: { fontSize: "10px", color: "var(--text4)" },
+      text: "ft (" + band.min + " to " + band.max + ")" }));
     return el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginBottom: "8px" } }, kids);
   }
 
