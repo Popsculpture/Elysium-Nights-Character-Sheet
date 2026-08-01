@@ -1045,6 +1045,36 @@ replacement clause carried a second correction alongside the terminology one:
 ("effective creature Size"), which is not rules, ability, trait, table or gear text and never
 renders to a player.
 
+**Author intent, recorded 2026-08-01 so a later audit does not have to reconstruct it from
+the diff.**
+
+*The rule is about the slot, not the word.* `creature` is not banned outright. What is banned
+is `creature` occupying the **universal rules-referent slot**, because that is D&D's signature
+construction ("each creature in the area makes a save") and Elysium already has `Target` for
+that job. `Target` can cover a door, a Node, a drone and a hull; `creature` structurally
+cannot, since it carries organic and alive as implied constraints. Avoiding its common use in
+favour of a strict criteria is what keeps the voice distinct. This is why the sweep replaced
+39 rules-text occurrences and why the near-neighbour audit mattered equally: the failure mode
+is any word being promoted into that slot, not this particular word existing.
+
+*The permitted-`creature` exception stays open.* Not closed into a flat ban. It has zero
+exercises today, but it is deliberately available for descriptive fiction meeting the strict
+criteria, so a future bestiary can write "the creature has no face" without a house-rule
+argument. Closing it early would only force a re-litigation.
+
+*`beast` carries a specific register, and it is load-bearing.* The near-neighbour guidance
+lists `beast` as "allowed as metaphor", which undersells one of its two manuscript uses:
+- **doc 1083, the register use:** "Chimera are not failed humans or clever **beasts**." Here
+  `beast` is the derogatory term for engineered people, and the manuscript's stance is to
+  **name it in order to reject it**. This is not incidental metaphor and must not be edited
+  away as though it were.
+- **doc 2780, the ordinary metaphor:** "an audience is a hungry, fickle **beast**." Unrelated
+  register, no charge attached.
+
+The author's framing: Chimera read as beasts rather than as creatures, and the derogatory
+sense is not on the table as a neutral descriptor. An auditor working only from the
+near-neighbour rule would have read 1083 as incidental and might have flattened it.
+
 ---
 
 ## PART B: Pending, in the agreed order
