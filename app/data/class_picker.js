@@ -79,3 +79,20 @@ EN.classPicker = {
     }
   }
 };
+
+/* Invariant, ruled by the author on 2026-07-31 (M-A1 and M-A2): every Play-if
+   line uses "a" or "an", never "the". There are 29 of them, 7 class-level and
+   22 subclass, and exactly three take "an": the Arsenal, the Operator and the
+   Icon, each before a vowel sound. Checked at load so a regenerated or
+   hand-edited table cannot quietly reintroduce a "the" form. */
+(function () {
+  var P = EN.classPicker, lines = [], bad = [];
+  Object.keys(P.classes).forEach(function (k) {
+    lines.push(P.classes[k].playIf);
+    Object.keys(P.classes[k].subs).forEach(function (s) { lines.push(P.classes[k].subs[s].playIf); });
+  });
+  lines.forEach(function (l) { if (!/^Play (a|an) \S/.test(l || "")) bad.push(l); });
+  if (bad.length || lines.length !== 29) {
+    console.warn("classPicker: Play-if invariant broken (" + lines.length + " lines, expected 29).", bad);
+  }
+})();

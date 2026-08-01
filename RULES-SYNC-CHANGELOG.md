@@ -682,6 +682,27 @@ subclass names carry one, and it contains its own colon, which is a parsing haza
 M-C4 appends the blanket Gambit line to the Scoundrel's Level 1 Moxie paragraph; M-A1
 and M-A2 are the two Play-if article fixes above.
 
+**All three verified applied to the live manuscript 2026-08-01, and verified against the
+app the same day.** No app change was needed; the checks below are recorded because the
+rulings each named something specific to confirm.
+- **M-C4, the hedge:** the app's line reads "Unless otherwise noted, all Gambits cost 1
+  Moxie to activate", matching the Hustler's and Stitcher's wording.
+- **M-C4, no deduplication:** all ten Gambits are present, all at cost 1, and every one
+  still states "spend 1 Moxie" in its own text. The manuscript deliberately follows the
+  Codebreaker's blanket-plus-restate shape, so the per-entry costs must NOT be collapsed
+  now that a blanket line exists.
+- **M-C4, the scope boundary:** the blanket line governs Gambits only. Verified that the
+  Shiv's Level 7 **Cripple stays at 2 Moxie**, and that the five other subclass spends
+  (The Getaway, Press Your Luck, Lucky Charm, Fight Dirty, Pressure) each state their own
+  1 Moxie rather than inheriting it.
+- **M-A1 and M-A2:** 29 Play-if lines, 7 class-level and 22 subclass. Zero "Play the"
+  forms, and exactly three "an" forms: the Arsenal, the Operator and the Icon.
+- **Invariant asserted, per the ruling's request.** `app/data/class_picker.js` now checks
+  at load that all 29 lines match `Play (a|an)` and warns if a "the" form or a missing
+  line reappears. Verified it stays silent on the live data and fires on both failure
+  modes. The file is generated, so a load-time guard is the only thing that catches a
+  regeneration or a hand edit.
+
 ---
 
 ### A16. Species and Lineage Evolution resynced (step 4, domain 5 of 7)
