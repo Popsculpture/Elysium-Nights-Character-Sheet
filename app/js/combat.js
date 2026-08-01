@@ -2237,9 +2237,9 @@ EN.combatView = (function () {
       "Lowlight Optics":     { sense: "Darkvision", range: "12 sp.", note: "Blinding flashes and strobes impose no Snag." },
       "Predator's Glare":    { sense: "Darkvision", range: "6 sp." },
       "Fungal Network":      { sense: "Tremor Sense", range: "6 sp.", note: "While touching a connected surface; telepathic comms with allies within 12 sp." },
-      "Seismic Sense":       { sense: "Tremor Sense", range: "8 sp.", note: "Via ground contact; can't detect flying, climbing, or levitating creatures." },
+      "Seismic Sense":       { sense: "Tremor Sense", range: "8 sp.", note: "Via ground contact; can't detect anyone flying, climbing, or levitating." },
       "Warmblood Sense":     { sense: "Heat Sense", range: "6 sp.", note: "Ignore Invisible and Hidden for living, heat-producing targets." },
-      "Blood-Scent Tracker": { sense: "Blood Scent", range: "6 sp.", note: "Know the direction of any Bleeding or below-half-Vitality creature, even hidden or behind cover." },
+      "Blood-Scent Tracker": { sense: "Blood Scent", range: "6 sp.", note: "Know the direction of anyone Bleeding or below half Vitality, even hidden or behind cover." },
       "Disturbance Compass": { sense: "Flow Sense", range: "12 sp.", note: "Presence and direction of Flow disturbances and active Invocations, through walls. Always on." },
       "Scent Marker":        { sense: "Scent Tracking", range: "1 mile", note: "Tagged targets only, for 48 hours." },
       "The Machine Medium":  { sense: "Sprite Sight", range: "-", note: "Passively see and communicate with Nixies and Gremlins, the Flow sprites in complex machinery." }

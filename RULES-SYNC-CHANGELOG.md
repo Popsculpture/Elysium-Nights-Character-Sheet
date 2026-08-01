@@ -993,6 +993,60 @@ and deliberate absence (no action cost, where the book's silence is the rule).
 
 ---
 
+### A22. The "creature" terminology rule (enforced, 2026-08-01)
+- **Files:** `app/data/species.js`, `app/data/briefs.js`, `app/data/rules.js`,
+  `app/js/combat.js`, `app/js/builder.js`
+- The manuscript sits at **zero occurrences** of `creature` / `creatures` across all three
+  parts. The app had **40**. Now zero, verified by the rule's own self-check.
+
+**Distribution before:** species.js 24, briefs.js 11, combat.js 2, rules.js 1, builder.js 1.
+
+**A blanket find-and-replace would have been wrong.** Every one of the 39 rules-text
+occurrences already had a manuscript counterpart, so the book had made every call, and it
+uses **five different resolutions**, not one:
+
+| Resolution | Count | When the book uses it |
+| --- | ---: | --- |
+| `Target` | 18 | the entity a rule actually resolves against |
+| `anyone` | 11 | passive senses and pass-through, everybody in range |
+| `organic Target` | 5 | where the rule must exclude machines and programs |
+| noun deleted | 4 | where the sentence reads better without it |
+| `an enemy` | 1 | where the book named the side instead |
+
+**Breaching Charge is the proof**, and was verified directly at doc 3586: one sentence pair
+uses "passing through the spaces of **anyone** smaller than you" and then "The first
+**Target** you pass through... takes 1d8 Bludgeoning." Replacing `creature` with `Target`
+everywhere would have silently narrowed 11 clauses from "everybody in range" to "a chosen
+target".
+
+**Two traps worth recording** for anyone auditing later:
+- **Blood-Scent Tracker** invites `organic Target` because the fiction is scent-based. The
+  book deliberately says `anyone`, which keeps Synthetics with Vitality inside the effect.
+- **Predictive Targeting Integration** is duplicated verbatim in `species.js:71` and
+  `rules.js:162`. Both had to change together or the survivor reintroduces the word.
+
+**Near-neighbour audit came back clean.** No `beast`, `monster`, `animal` or `being` has
+been promoted into a rules referent anywhere in the app; every occurrence is metaphor or
+descriptive prose, matching the manuscript's own pattern. The rules-slot smell test returns
+nothing.
+
+**Two riders applied with the author's approval**, both cases where the manuscript's
+replacement clause carried a second correction alongside the terminology one:
+- **Hulskpitality** dropped a stray "first". The app read "until you or one of your declared
+  charges harms them **first**"; the book reads "harms them." The app's version implied a
+  race in which the guest striking first could also void guest-right. The book's is
+  one-directional.
+- **The Hydraulic Throw brief** regained "unattended" and "your Size". It had read
+  "same-size-or-smaller object", losing both the word that stops you hurling a held weapon
+  and the clarity about whose Size is meant. The full feature text was already correct;
+  only the compressed brief had drifted.
+
+**One occurrence was out of scope and tidied anyway:** `builder.js:619` was a source comment
+("effective creature Size"), which is not rules, ability, trait, table or gear text and never
+renders to a player.
+
+---
+
 ## PART B: Pending, in the agreed order
 
 1. ~~Rulings on the contradictions in PART C.~~ **M1 and M2 ruled 2026-07-28**;

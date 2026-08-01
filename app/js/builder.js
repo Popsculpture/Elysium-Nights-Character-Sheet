@@ -616,7 +616,7 @@ EN.builder = (function () {
     if (!val) return null;
     return el("div", { style: { marginBottom: "8px" } }, [el("span.chip", { text: label }), el("span", { style: { marginLeft: "10px", color: "var(--text2)", fontSize: "14px" }, text: val })]);
   }
-  // effective creature Size: derived from the chosen height, with a stored
+  // effective Size: derived from the chosen height, with a stored
   // ch.size honoured as a fallback for characters built before heights existed
   function effectiveSize(ch) {
     var h = eng.lineageHeightFt(ch);
