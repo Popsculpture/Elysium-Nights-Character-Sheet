@@ -135,6 +135,21 @@ EN.store = (function () {
     // that predates the current schema and fails the check below (a corrupt
     // record should still be safely displayable, e.g. in the #PRINT switcher).
     if (typeof ch.name !== "string") ch.name = "";
+    // Saved Lifelike Personas (ch.face.personas). Sanitized AHEAD of the
+    // proficiencies guard below, because losing one is unrecoverable without
+    // redoing the scan in fiction, and a hand-edited or imported record must not
+    // be able to smuggle in a malformed entry or a second active Persona.
+    if (ch.face && ch.face.personas != null) {
+      if (!Array.isArray(ch.face.personas)) ch.face.personas = [];
+      var seenActive = false;
+      ch.face.personas = ch.face.personas.filter(function (p) { return p && typeof p === "object"; });
+      ch.face.personas.forEach(function (p) {
+        if (p.sourceFeature !== "BiometricSpoofing" && p.sourceFeature !== "MethodActor") p.sourceFeature = "BiometricSpoofing";
+        if (typeof p.subjectName !== "string") p.subjectName = "";
+        if (typeof p.daysLeft !== "number" || p.daysLeft < 0) p.daysLeft = 30;
+        if (p.isActive && seenActive) p.isActive = false; else if (p.isActive) seenActive = true;
+      });
+    }
     if (!ch.proficiencies) return;
     var p = ch.proficiencies;
     // gear buckets used to be arrays; convert to { category: tier } maps

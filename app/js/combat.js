@@ -881,7 +881,7 @@ EN.combatView = (function () {
     toast("Short Rest taken; resource refreshed. Spend Resilience Dice to heal.");
   }
   function longRest(ch, d) {
-    var leaseDue = [], severeFatigue = 0, noNaturalHealing = false;
+    var leaseDue = [], severeFatigue = 0, noNaturalHealing = false, personaExpired = 0;
     store.update(function (c) {
       var s = state(c, d);
       var bodMod = d.attributes.BOD.mod;
@@ -913,8 +913,11 @@ EN.combatView = (function () {
       }
       // leased gear: a Long Rest marks one day toward the next installment
       if (EN.inventoryView && EN.inventoryView.leaseTick) leaseDue = EN.inventoryView.leaseTick(c);
+      // saved Personas age on the same in-world day a lease does
+      if (EN.faceView && EN.faceView.personaTick) personaExpired = EN.faceView.personaTick(c);
     });
-    if (leaseDue.length) toast("Long Rest complete. LEASE PAYMENT DUE: " + leaseDue.join(", ") + ". It grants nothing until you pay (Inventory > Stash).");
+    if (personaExpired) toast("Long Rest complete. " + personaExpired + " saved Persona" + (personaExpired > 1 ? "s have" : " has") + " gone obsolete (Social tab). Taking one again needs a fresh scan or fresh observation.");
+    else if (leaseDue.length) toast("Long Rest complete. LEASE PAYMENT DUE: " + leaseDue.join(", ") + ". It grants nothing until you pay (Inventory > Stash).");
     else if (noNaturalHealing) toast("Long Rest complete. Static Threshold 4: no natural Wound recovery. Wounds need medical or engineering treatment.");
     else if (severeFatigue) toast("Long Rest complete. Fatigue " + severeFatigue + " is Severe: it needs medical, mystical, or technological treatment, not sleep.");
     else toast("Long Rest complete, restored and refreshed.");

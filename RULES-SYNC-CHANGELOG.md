@@ -829,6 +829,66 @@ unified, and not attempted.
 
 ---
 
+### A18. Biometric Spoofing and the Persona resource (author spec, 2026-08-01)
+- **Files:** `app/data/species.js`, `app/data/briefs.js`, `app/js/face.js`,
+  `app/js/store.js`, `app/js/combat.js`
+- Closes the Biometric Spoofing item held for a ruling in A16. **No mechanic changed**;
+  the manuscript edit restored one sentence, and the real work was modelling Persona.
+
+**The restored sentence.** Biometric Spoofing now ends "Machines are your specialty: you
+copy the measurable body, not the behavior, so people who personally know the Target may
+still feel something is off." The app followed the Lineage Evolution copy, which lacked it.
+This is the only printed text separating Biometric Spoofing from Method Actor, which
+otherwise share a resource name, a 10-minute observation, a Caliber cap and a 30-day decay,
+so it is now in the feature text and in the brief. The brief also regained the organic-only
+restriction on the scan, which Method Actor deliberately does not have.
+
+**Every other printed value was already correct** and is recorded here so the coverage is
+auditable: both features at 10 minutes, storage equal to Caliber score, overwrite at any
+time, a new physical scan versus fresh observation to recover, 30-day decay, Edge on the
+listed skills, and Method Actor's once-per-scene suspicion reroll. `rules.js` already
+restricted character creation to the four species-chapter features, so **Method Actor is
+correctly not selectable at level 1**.
+
+**Persona is now a tracked resource**, on the Social tab. `ch.face.personas` holds
+`{ id, sourceFeature, subjectName, daysLeft, isActive }`. The panel only appears once the
+character actually has Biometric Spoofing or Method Actor.
+- **The cap is read from live Caliber at render**, never stored, so it tracks level
+  advancement. Going over the cap shows a warning instead of truncating, because deleting
+  a Persona is unrecoverable without redoing the acquisition in fiction.
+- **One assumed at a time.** The toggle clears every other entry in the same write, so the
+  state cannot show two actives. No action cost is attached, because the rules print none.
+- **`migrate()` sanitizes the list ahead of its own early return**, since a hand-edited or
+  imported record must not smuggle in a malformed entry or a second active Persona.
+  Verified against a deliberately corrupt import: a null entry dropped, a bogus source
+  coerced, a numeric name and a string `daysLeft` cleaned, and the second active cleared.
+
+**Where it deliberately does NOT live**, following the spec's collision warning. Persona
+means four unrelated things in this manuscript, and an audit confirmed the app had no
+conflation in code, only prose, so this is a greenfield model whose only risk was forward
+looking. It is kept out of `ch.grid` (whose own data already defines Personas as #GRID
+avatars), out of `ch.equipment` (where the cipher names Spoof Persona and Decoy Persona are
+live inventory keys that a subject name could alias), and out of `featureUses` (which is
+keyed per feature name and is wiped on every Long Rest, which would both split the cap and
+destroy a 30-day resource).
+
+**Two modelling choices the manuscript does not settle, made explicitly rather than
+silently, and both flagged in the panel text:**
+1. **Separate pools per feature.** Each feature independently grants storage "equal to your
+   Caliber score", which reads either as Caliber total or Caliber each. Separate pools were
+   chosen because the profiles differ in kind, a body versus a behavior. A ruling would
+   change the cap by a factor of two for a character holding both.
+2. **The 30-day decay counts down one day per Long Rest.** The spec says in-world days, but
+   the app has no in-world calendar; the Long Rest is its only in-world day unit, and gear
+   leases already work exactly this way. Wall-clock time would have decayed Personas by
+   real-world days, which is not what the rule means.
+
+**Also still unresolved, and not guessed at:** whether two Personas of the same subject can
+be assumed at once (the obvious intent and the obvious power spike), and whether taking a
+shared feature at both creation and Lineage Evolution should be blocked.
+
+---
+
 ## PART B: Pending, in the agreed order
 
 1. ~~Rulings on the contradictions in PART C.~~ **M1 and M2 ruled 2026-07-28**;

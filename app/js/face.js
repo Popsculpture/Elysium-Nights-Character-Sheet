@@ -46,11 +46,17 @@ EN.faceView = (function () {
     f.cred = f.cred || [];
     f.heat = f.heat || [];
     f.debts = f.debts || [];
+    // Lifelike lineage: saved biometric and behavioral profiles of real people.
+    // NOT the #GRID Persona (an avatar inside a node), not Ghost Persona
+    // Protocol, and not the Faceless Persona Talent. Four unrelated things share
+    // the word, so this list stays in the social ledger and out of ch.grid.
+    f.personas = f.personas || [];
     return f;
   }
   function faceRead(ch) {
     var f = ch.face || {};
-    return { profiles: f.profiles || [], factions: f.factions || [], cred: f.cred || [], heat: f.heat || [], debts: f.debts || [] };
+    return { profiles: f.profiles || [], factions: f.factions || [], cred: f.cred || [], heat: f.heat || [], debts: f.debts || [],
+             personas: f.personas || [] };
   }
   function fset(mut, silent) { store.update(function (c) { mut(face(c)); }, silent ? { silent: true } : undefined); }
 
@@ -100,6 +106,101 @@ EN.faceView = (function () {
     var inp = el("input", { type: "text", value: rec[c.k] || "", placeholder: c.placeholder || "",
       oninput: function () { fset(function (f) { f[opts.key][i][c.k] = inp.value; }, true); } });
     return inp;
+  }
+
+  /* ---- Personas (Lifelike lineage) ----------------------------------------
+     Biometric Spoofing saves a measurable body, Method Actor saves a behavior.
+     Each grants storage "equal to your Caliber score", so the cap is dynamic and
+     is read from live Caliber at render rather than stored. Overwriting is the
+     printed way to exceed it, and deletion is destructive: recovering a Persona
+     means redoing the acquisition in fiction, not undoing a click.
+
+     Two modelling choices the manuscript does not settle, flagged in the panel:
+     the two features hold SEPARATE pools here (the profiles differ in kind), and
+     the 30-day decay counts down one day per Long Rest, which is the only
+     in-world day unit this app has (leases already work that way). Neither
+     assuming nor dropping a Persona costs an action; the rules print none. */
+  var PERSONA_SRC = {
+    BiometricSpoofing: { feature: "Biometric Spoofing", label: "BODY",     color: "var(--accent)",
+                         regain: "a new physical scan", saves: "physical and vocal profile" },
+    MethodActor:       { feature: "Method Actor",       label: "BEHAVIOR", color: "var(--flow)",
+                         regain: "fresh observation",   saves: "behavioral profile" }
+  };
+  var PERSONA_DAYS = 30;
+  function personaSources(ch) {
+    var have = (EN.engine.activeLineageFeatures(ch) || []);
+    return Object.keys(PERSONA_SRC).filter(function (k) { return have.indexOf(PERSONA_SRC[k].feature) !== -1; });
+  }
+  function personasPanel() {
+    var ch = store.active();
+    var srcs = personaSources(ch);
+    if (!srcs.length) return null;                 // nothing to track without the feature
+    var cap = EN.engine.caliber(ch.level || 1);
+    var rows = faceRead(ch).personas;
+    var kids = [];
+    kids.push(help("A saved profile of a real person. Storage is " + cap + " per feature at your Caliber, overwriting is how you exceed it, and a Persona goes obsolete " + PERSONA_DAYS + " days after it is taken. Deleting one is permanent: getting it back means taking it again."));
+
+    srcs.forEach(function (key) {
+      var S = PERSONA_SRC[key];
+      var mine = rows.map(function (r, i) { return { r: r, i: i }; }).filter(function (x) { return x.r.sourceFeature === key; });
+      var over = mine.length > cap;
+      kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "baseline", margin: "12px 0 6px" } }, [
+        el("span.chip", { style: { color: S.color, borderColor: S.color, fontSize: "9px" }, text: S.label }),
+        el("span", { style: { fontWeight: 600 }, text: S.feature }),
+        el("span.mono", { style: { fontSize: "10.5px", color: over ? "var(--warn)" : "var(--text3)" }, text: mine.length + " / " + cap + (over ? " OVER CAP" : "") }),
+        el("span.help", { style: { margin: 0, fontSize: "10px", color: "var(--text4)" }, text: "saves the " + S.saves })
+      ]));
+      if (over) kids.push(help("Over your storage limit. Nothing is dropped automatically, since losing a Persona costs " + S.regain + " to undo. Remove one yourself.", "var(--warn)"));
+      if (!mine.length) kids.push(help("None saved."));
+      mine.forEach(function (x) { kids.push(personaRow(x.r, x.i, S)); });
+      kids.push(el("button.btn.sm", { style: { marginTop: "4px", color: S.color, borderColor: S.color },
+        onclick: function () {
+          fset(function (f) {
+            f.personas.push({ id: "p" + Date.now() + Math.floor(Math.random() * 1000),
+              sourceFeature: key, subjectName: "", daysLeft: PERSONA_DAYS, isActive: false });
+          });
+        } }, "+ SAVE A PERSONA"));
+    });
+    return EN.ui.panel("Personas", "LIFELIKE · SAVED PROFILES", kids, { corners: true });
+  }
+  function personaRow(rec, idx, S) {
+    var days = typeof rec.daysLeft === "number" ? rec.daysLeft : PERSONA_DAYS;
+    var dead = days <= 0;
+    var name = el("input", { type: "text", value: rec.subjectName || "", placeholder: "who you scanned",
+      oninput: function () { fset(function (f) { f.personas[idx].subjectName = name.value; }, true); } });
+    // one assumed at a time: turning this on turns every other one off in the
+    // same write, so the state can never show two actives
+    var assume = el("button.btn.sm", { title: rec.isActive ? "Stop assuming this Persona" : "Assume this Persona",
+      style: { flex: "0 0 auto", color: rec.isActive ? "var(--bg1)" : S.color, borderColor: S.color,
+               background: rec.isActive ? S.color : "transparent", fontWeight: rec.isActive ? 700 : 400 },
+      onclick: function () {
+        var on = !rec.isActive;
+        fset(function (f) {
+          f.personas.forEach(function (p) { p.isActive = false; });
+          f.personas[idx].isActive = on;
+        });
+      } }, rec.isActive ? "ASSUMED" : "ASSUME");
+    return el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginBottom: "7px", opacity: dead ? .55 : 1 } }, [
+      el("span", { style: { flex: 1, minWidth: "120px" } }, [name]),
+      el("span.mono", { title: "Counts down one day per Long Rest",
+        style: { fontSize: "10.5px", flex: "0 0 auto", minWidth: "74px", textAlign: "center",
+                 color: dead ? "var(--danger)" : days <= 5 ? "var(--warn)" : "var(--text3)" },
+        text: dead ? "OBSOLETE" : days + " DAYS" }),
+      assume,
+      el("button.btn.sm.ghost", { title: "Delete permanently; recovering it needs " + S.regain,
+        style: { width: "26px", flex: "0 0 auto", color: "var(--text4)" },
+        onclick: function () { fset(function (f) { f.personas.splice(idx, 1); }); } }, "✕")
+    ]);
+  }
+  // one Long Rest is one in-world day, the same unit gear leases use
+  function personaTick(c) {
+    var f = c.face; if (!f || !f.personas || !f.personas.length) return 0;
+    var expired = 0;
+    f.personas.forEach(function (p) {
+      if (typeof p.daysLeft !== "number") p.daysLeft = PERSONA_DAYS;
+      if (p.daysLeft > 0) { p.daysLeft -= 1; if (p.daysLeft <= 0) expired++; }
+    });
+    return expired;
   }
 
   /* ---- quick reference (collapsible) -------------------------------------- */
@@ -226,9 +327,11 @@ EN.faceView = (function () {
       el("div", { style: { gridColumn: "span 3", minWidth: 0 } }, [heatPanel()])
     ]));
     blocks.push(el("div", { style: { marginTop: "14px" } }, [debtsPanel()]));
+    var pp = personasPanel();
+    if (pp) blocks.push(el("div", { style: { marginTop: "14px" } }, [pp]));
     blocks.push(el("div", { style: { marginTop: "14px" } }, [referencePanel()]));
     mount.appendChild(el("div", null, blocks));
   }
 
-  return { render: render };
+  return { render: render, personaTick: personaTick };
 })();
