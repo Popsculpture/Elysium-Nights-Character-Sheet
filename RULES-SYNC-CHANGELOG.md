@@ -889,6 +889,28 @@ shared feature at both creation and Lineage Evolution should be blocked.
 
 ---
 
+### A19. A story calendar, so downtime moves the day clocks (author request)
+- **Files:** `app/js/combat.js`
+- Tying day counters to the Long Rest button meant a stretch of downtime that advanced the
+  story without a rest left every clock frozen. There is now a **DOWNTIME** control beside
+  SHORT REST and LONG REST that advances the calendar directly, with 1 / 7 / 30 day presets
+  and a free entry up to a year.
+- **It applies to every "one day per Long Rest" timer, not just Personas.** Both current
+  systems are covered: gear lease installments and Persona decay.
+- **One shared clock.** `tickDays(c, n)` is now the single place that knows which systems
+  count days, and the Long Rest calls it with 1 rather than ticking each system itself. Any
+  future day-based timer is registered in that one list and both paths get it for free.
+- **Ticked a day at a time, never by arithmetic**, because the per-day rules are not linear:
+  a lease that comes due stops counting until it is paid, and a Persona stops at 0 instead of
+  going negative. Verified over a 7-day span that a 3-day lease came due and stopped, and a
+  3-day Persona expired at 0 while a 30-day one correctly read 23.
+- **Downtime restores nothing.** It moves clocks only, so a GM can skip weeks without
+  handing out recovery the fiction did not include. Verified that Vitality, Wounds and Flow
+  were untouched across a downtime advance, and that a Long Rest still advances exactly one
+  day and still restores normally.
+
+---
+
 ## PART B: Pending, in the agreed order
 
 1. ~~Rulings on the contradictions in PART C.~~ **M1 and M2 ruled 2026-07-28**;

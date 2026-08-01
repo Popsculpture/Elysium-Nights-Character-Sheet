@@ -51,7 +51,8 @@ EN.combatView = (function () {
   }
 
   var _fxBox = { mode: "open", closedKey: null };   // sticky Active Condition Effects box ("open"/"min"; closedKey = content-keyed dismiss)
-  var _pops = { vit: false, wound: false, rest: false, short: false, addgear: false };   // popover state (VITALITY / WOUNDS / REST / ＋ ADD TO LOADOUT)
+  var _pops = { vit: false, wound: false, rest: false, short: false, down: false, addgear: false };   // popover state (VITALITY / WOUNDS / REST / DOWNTIME / ＋ ADD TO LOADOUT)
+  var _downDays = 7;   // last downtime span typed, remembered across renders
   var _amts = { vit: 1, wound: 1, rd: 1 };                 // remembered amounts per popover
   function closePops() { Object.keys(_pops).forEach(function (k) { _pops[k] = false; }); }
   document.addEventListener("click", function (ev) {
@@ -880,6 +881,45 @@ EN.combatView = (function () {
     });
     toast("Short Rest taken; resource refreshed. Spend Resilience Dice to heal.");
   }
+  /* ---- the story calendar -------------------------------------------------
+     Everything in the app that counts down "one day per Long Rest" advances
+     here, so a Long Rest and a stretch of downtime move the same clocks. Each
+     system is ticked one day at a time rather than by arithmetic, because their
+     per-day rules are not linear: a lease that comes due stops counting until it
+     is paid, and a Persona stops at 0 rather than going negative.
+
+     Register any future day-based timer in this one list. */
+  function tickDays(c, n) {
+    var out = { days: n, leaseDue: [], personaExpired: 0 };
+    for (var i = 0; i < n; i++) {
+      if (EN.inventoryView && EN.inventoryView.leaseTick) {
+        EN.inventoryView.leaseTick(c).forEach(function (nm) {
+          if (out.leaseDue.indexOf(nm) === -1) out.leaseDue.push(nm);
+        });
+      }
+      if (EN.faceView && EN.faceView.personaTick) out.personaExpired += EN.faceView.personaTick(c);
+    }
+    return out;
+  }
+  // what the day-advance did, as one sentence, shared by the rest and downtime paths
+  function dayReport(t) {
+    var bits = [];
+    if (t.leaseDue.length) bits.push("LEASE PAYMENT DUE: " + t.leaseDue.join(", ") + " (grants nothing until paid, Inventory > Stash)");
+    if (t.personaExpired) bits.push(t.personaExpired + " saved Persona" + (t.personaExpired > 1 ? "s have" : " has")
+      + " gone obsolete (Social tab); taking one again needs a fresh scan or fresh observation");
+    return bits.join(". ");
+  }
+  /* Downtime that advances the story calendar without a Long Rest. Recovery is
+     deliberately NOT applied: this moves clocks only, so a GM can skip weeks
+     without handing out a rest the fiction did not include. */
+  function advanceDowntime(ch, days) {
+    days = Math.max(1, Math.min(365, Math.floor(days) || 1));
+    var t = null;
+    store.update(function (c) { t = tickDays(c, days); });
+    var label = days + (days === 1 ? " day" : " days") + " of downtime passes";
+    var rep = dayReport(t);
+    toast(rep ? label + ". " + rep + "." : label + ". Nothing came due.");
+  }
   function longRest(ch, d) {
     var leaseDue = [], severeFatigue = 0, noNaturalHealing = false, personaExpired = 0;
     store.update(function (c) {
@@ -911,13 +951,12 @@ EN.combatView = (function () {
           else c.conditionLevels["Fatigue"] = fl;
         }
       }
-      // leased gear: a Long Rest marks one day toward the next installment
-      if (EN.inventoryView && EN.inventoryView.leaseTick) leaseDue = EN.inventoryView.leaseTick(c);
-      // saved Personas age on the same in-world day a lease does
-      if (EN.faceView && EN.faceView.personaTick) personaExpired = EN.faceView.personaTick(c);
+      // a Long Rest is one day on the story calendar
+      var t = tickDays(c, 1);
+      leaseDue = t.leaseDue; personaExpired = t.personaExpired;
     });
-    if (personaExpired) toast("Long Rest complete. " + personaExpired + " saved Persona" + (personaExpired > 1 ? "s have" : " has") + " gone obsolete (Social tab). Taking one again needs a fresh scan or fresh observation.");
-    else if (leaseDue.length) toast("Long Rest complete. LEASE PAYMENT DUE: " + leaseDue.join(", ") + ". It grants nothing until you pay (Inventory > Stash).");
+    var dayRep = dayReport({ leaseDue: leaseDue, personaExpired: personaExpired });
+    if (dayRep) toast("Long Rest complete. " + dayRep + ".");
     else if (noNaturalHealing) toast("Long Rest complete. Static Threshold 4: no natural Wound recovery. Wounds need medical or engineering treatment.");
     else if (severeFatigue) toast("Long Rest complete. Fatigue " + severeFatigue + " is Severe: it needs medical, mystical, or technological treatment, not sleep.");
     else toast("Long Rest complete, restored and refreshed.");
@@ -1612,6 +1651,35 @@ EN.combatView = (function () {
               el("button.btn.sm.primary", { onclick: function () { _pops.rest = false; longRest(ch, d); } }, "☾ REST")
             ])
           ]) : null
+        ]),
+        /* Downtime: advance the story calendar without taking a Long Rest, for
+           the stretches between jobs. Moves every day-based timer and nothing
+           else, so it never hands out recovery the fiction did not include. */
+        el("div.pop-anchor", { style: { position: "relative" } }, [
+          el("button.btn.sm", { title: "Advance the story calendar without resting", onclick: function () { var was = _pops.down; closePops(); _pops.down = !was; EN.app.render(); } }, "⏳ DOWNTIME"),
+          _pops.down ? (function () {
+            var inp = el("input.mono", { type: "number", min: "1", max: "365", value: String(_downDays),
+              style: { width: "72px", textAlign: "center", padding: "5px" },
+              oninput: function () { _downDays = Math.max(1, Math.min(365, parseInt(this.value, 10) || 1)); } });
+            function go(n) { _pops.down = false; advanceDowntime(ch, n); }
+            return el("div", { style: { position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 30, width: "260px",
+                                        display: "flex", flexDirection: "column", gap: "10px", padding: "12px",
+                                        background: "var(--bg2)", border: "1px solid var(--border2)", borderRadius: "4px",
+                                        boxShadow: "0 8px 24px rgba(0,0,0,.55)", textAlign: "left" } }, [
+              el("p", { style: { margin: 0, fontSize: "12px", lineHeight: "1.5", color: "var(--text2)" },
+                        text: "Advance the calendar without resting. Marks lease installments and ages saved Personas. Restores nothing." }),
+              el("div.row", { style: { gap: "6px", alignItems: "center" } }, [
+                el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".1em" }, text: "DAYS" }), inp,
+                el("button.btn.sm.primary", { style: { marginLeft: "auto" }, onclick: function () { go(_downDays); } }, "ADVANCE")
+              ]),
+              el("div.row", { style: { gap: "6px", flexWrap: "wrap" } }, [1, 7, 30].map(function (n) {
+                return el("button.btn.sm", { style: { flex: 1 }, onclick: function () { go(n); } }, n === 1 ? "1 DAY" : n + " DAYS");
+              })),
+              el("div.row", { style: { gap: "8px", justifyContent: "flex-end" } }, [
+                el("button.btn.sm", { onclick: function () { _pops.down = false; EN.app.render(); } }, "CANCEL")
+              ])
+            ]);
+          })() : null
         ])
       ])
     ]));
