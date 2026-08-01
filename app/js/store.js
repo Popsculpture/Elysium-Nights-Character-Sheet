@@ -141,13 +141,18 @@ EN.store = (function () {
     // be able to smuggle in a malformed entry or a second active Persona.
     if (ch.face && ch.face.personas != null) {
       if (!Array.isArray(ch.face.personas)) ch.face.personas = [];
-      var seenActive = false;
+      // Author ruling 2026-08-01: one active PER FEATURE, and the two need not
+      // be the same person. So this de-duplicates actives per source, not
+      // globally: a Biometric Spoofing face and a Method Actor performance may
+      // both be worn at once.
+      var seenActive = {};
       ch.face.personas = ch.face.personas.filter(function (p) { return p && typeof p === "object"; });
       ch.face.personas.forEach(function (p) {
         if (p.sourceFeature !== "BiometricSpoofing" && p.sourceFeature !== "MethodActor") p.sourceFeature = "BiometricSpoofing";
         if (typeof p.subjectName !== "string") p.subjectName = "";
         if (typeof p.daysLeft !== "number" || p.daysLeft < 0) p.daysLeft = 30;
-        if (p.isActive && seenActive) p.isActive = false; else if (p.isActive) seenActive = true;
+        if (p.isActive && seenActive[p.sourceFeature]) p.isActive = false;
+        else if (p.isActive) seenActive[p.sourceFeature] = true;
       });
     }
     if (!ch.proficiencies) return;

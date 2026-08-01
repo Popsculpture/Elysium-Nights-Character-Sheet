@@ -883,9 +883,7 @@ silently, and both flagged in the panel text:**
    leases already work exactly this way. Wall-clock time would have decayed Personas by
    real-world days, which is not what the rule means.
 
-**Also still unresolved, and not guessed at:** whether two Personas of the same subject can
-be assumed at once (the obvious intent and the obvious power spike), and whether taking a
-shared feature at both creation and Lineage Evolution should be blocked.
+**Both of those were settled by the revised spec, 2026-08-01. See A20.**
 
 ---
 
@@ -908,6 +906,45 @@ shared feature at both creation and Lineage Evolution should be blocked.
   handing out recovery the fiction did not include. Verified that Vitality, Wounds and Flow
   were untouched across a downtime advance, and that a Long Rest still advances exactly one
   day and still restores normally.
+
+---
+
+### A20. The Persona ruling, and rules the app knows that the book does not
+- **Files:** `app/js/face.js`, `app/js/store.js`
+- The revised spec settled the two questions A18 had left open, and one of the answers
+  reversed what I had built.
+
+**Author ruling, 2026-08-01: one Persona may be active PER FEATURE, and they need not be
+the same person.** A Lifelike with both features can wear one person's fingerprints and
+another's mannerisms at once. My first cut enforced one active in total, which was wrong.
+The toggle now clears only the other Personas from the same source, and the import
+sanitizer de-duplicates actives per source rather than globally. Verified both directions:
+a body Persona and a behavior Persona of two different people run together, while picking a
+second body Persona still replaces the first and leaves the behavior one alone.
+
+**Running both is coverage, not magnitude, and is not implemented as a bonus.** The two
+features overlap on Deception, and under the Modifier Stack Cap Edge does not stack, so a
+second source adds nothing. Nothing sums or escalates.
+
+**Duplicate selection was already blocked.** The Talents chapter's "one **unpicked**
+Additive Feature" wording forbids taking a creation pick again at Lineage Evolution.
+Verified live: a Lifelike who took Biometric Spoofing at creation is offered the other seven
+features and not that one. This is general to every lineage, not a Lifelike case.
+
+**The four tiers are now labelled in the code**, because this feature pair is one the app
+knows better than the book does, and a later sync must not "correct" it toward a manuscript
+that never covered the case:
+- **[PRINTED]** storage, overwrite, decay, Edge, no action cost.
+- **[RULING]** the simultaneous-Persona rule, recorded in `claude/locked-rulings.md` and
+  deliberately never added to the manuscript.
+- **[INFERRED]** separate pools per feature rather than one shared pool.
+- **[APP]** the decay ticking one day per Long Rest or per day of downtime.
+
+**Neither unprinted rule is enforced silently.** The panel carries a gold **NOT IN THE
+BOOK** note stating the simultaneous-Persona ruling in the player's own words, and a
+**READING** note marking the separate-pools count as an interpretation rather than a printed
+rule. A player asked "can you do that?" at the table now has an answer better than "the app
+let me."
 
 ---
 

@@ -110,16 +110,34 @@ EN.faceView = (function () {
 
   /* ---- Personas (Lifelike lineage) ----------------------------------------
      Biometric Spoofing saves a measurable body, Method Actor saves a behavior.
-     Each grants storage "equal to your Caliber score", so the cap is dynamic and
-     is read from live Caliber at render rather than stored. Overwriting is the
-     printed way to exceed it, and deletion is destructive: recovering a Persona
-     means redoing the acquisition in fiction, not undoing a click.
 
-     Two modelling choices the manuscript does not settle, flagged in the panel:
-     the two features hold SEPARATE pools here (the profiles differ in kind), and
-     the 30-day decay counts down one day per Long Rest, which is the only
-     in-world day unit this app has (leases already work that way). Neither
-     assuming nor dropping a Persona costs an action; the rules print none. */
+     This feature pair is a case where the app knows rules the book does not
+     print, so the four tiers below are kept distinguishable on purpose. A future
+     sync against the manuscript must not "correct" the app toward a book that
+     never covered the case.
+
+     [PRINTED]   Storage equal to your Caliber score, overwrite at any time,
+                 deletion recoverable only by redoing the acquisition, obsolete
+                 after 30 days, and Edge on the listed skills while assumed.
+                 No action cost is printed for assuming or dropping, so none is
+                 invented here.
+     [RULING]    Author, 2026-08-01, recorded in claude/locked-rulings.md and
+                 deliberately NOT added to the manuscript: ONE PERSONA MAY BE
+                 ACTIVE PER FEATURE, and they need not be the same person. This
+                 is surfaced in the panel rather than enforced silently, because
+                 a GM reading the book cannot find it.
+     [INFERRED]  Each feature holds its own pool of Caliber Personas rather than
+                 sharing one. Neither printed nor ruled: it reads that way
+                 because each feature independently grants "Personas equal to
+                 your Caliber score" and the two store different kinds of
+                 profile. Labelled as an inference in the panel.
+     [APP]       The 30-day decay counts one day per Long Rest or per day of
+                 downtime, because that is the only in-world day unit this app
+                 has and gear leases already work that way.
+
+     Running both features is COVERAGE, NOT MAGNITUDE. They overlap on Deception,
+     and under the Modifier Stack Cap Edge does not stack: a second source adds
+     nothing. Never sum, escalate, or otherwise reward holding two Personas. */
   var PERSONA_SRC = {
     BiometricSpoofing: { feature: "Biometric Spoofing", label: "BODY",     color: "var(--accent)",
                          regain: "a new physical scan", saves: "physical and vocal profile" },
@@ -138,7 +156,19 @@ EN.faceView = (function () {
     var cap = EN.engine.caliber(ch.level || 1);
     var rows = faceRead(ch).personas;
     var kids = [];
-    kids.push(help("A saved profile of a real person. Storage is " + cap + " per feature at your Caliber, overwriting is how you exceed it, and a Persona goes obsolete " + PERSONA_DAYS + " days after it is taken. Deleting one is permanent: getting it back means taking it again."));
+    kids.push(help("A saved profile of a real person. Overwriting is how you exceed your storage, and a Persona goes obsolete " + PERSONA_DAYS + " days after it is taken. Deleting one is permanent: getting it back means taking it again."));
+    // [RULING] and [INFERRED] are stated in the interface, not enforced quietly,
+    // because neither is printed in the book a GM will reach for at the table.
+    if (srcs.length > 1) {
+      kids.push(el("p.help", { style: { margin: "0 0 10px", color: "var(--text2)" } }, [
+        el("span.chip", { style: { fontSize: "8.5px", color: "var(--gold)", borderColor: "var(--gold)", marginRight: "7px" }, text: "NOT IN THE BOOK" }),
+        document.createTextNode("One Persona may be active per feature, and they need not be the same person: you can wear one person's fingerprints and another's mannerisms at once. Author ruling, not printed in the rulebook. It is coverage, not a bigger bonus, since Edge does not stack on a Deception check.")
+      ]));
+    }
+    kids.push(el("p.help", { style: { margin: "0 0 10px", color: "var(--text3)" } }, [
+      el("span.chip", { style: { fontSize: "8.5px", color: "var(--text4)", borderColor: "var(--border2)", marginRight: "7px" }, text: "READING" }),
+      document.createTextNode("Storage is counted as " + cap + " per feature at your Caliber. The rules give each feature its own “Personas equal to your Caliber score” without saying whether the two share one pool, so this is an interpretation rather than a printed rule.")
+    ]));
 
     srcs.forEach(function (key) {
       var S = PERSONA_SRC[key];
@@ -168,15 +198,18 @@ EN.faceView = (function () {
     var dead = days <= 0;
     var name = el("input", { type: "text", value: rec.subjectName || "", placeholder: "who you scanned",
       oninput: function () { fset(function (f) { f.personas[idx].subjectName = name.value; }, true); } });
-    // one assumed at a time: turning this on turns every other one off in the
-    // same write, so the state can never show two actives
-    var assume = el("button.btn.sm", { title: rec.isActive ? "Stop assuming this Persona" : "Assume this Persona",
+    // [RULING] one active PER FEATURE, so this clears the other Personas from
+    // the SAME source only. A Biometric Spoofing face and a Method Actor
+    // performance can run together, and can be two different people.
+    var assume = el("button.btn.sm", {
+      title: rec.isActive ? "Stop assuming this Persona"
+        : "Assume this Persona. Replaces any other " + S.feature + " Persona you are wearing; a Persona from the other feature is unaffected.",
       style: { flex: "0 0 auto", color: rec.isActive ? "var(--bg1)" : S.color, borderColor: S.color,
                background: rec.isActive ? S.color : "transparent", fontWeight: rec.isActive ? 700 : 400 },
       onclick: function () {
-        var on = !rec.isActive;
+        var on = !rec.isActive, src = rec.sourceFeature;
         fset(function (f) {
-          f.personas.forEach(function (p) { p.isActive = false; });
+          f.personas.forEach(function (p) { if (p.sourceFeature === src) p.isActive = false; });
           f.personas[idx].isActive = on;
         });
       } }, rec.isActive ? "ASSUMED" : "ASSUME");
