@@ -922,9 +922,12 @@ sanitizer de-duplicates actives per source rather than globally. Verified both d
 a body Persona and a behavior Persona of two different people run together, while picking a
 second body Persona still replaces the first and leaves the behavior one alone.
 
-**Running both is coverage, not magnitude, and is not implemented as a bonus.** The two
-features overlap on Deception, and under the Modifier Stack Cap Edge does not stack, so a
-second source adds nothing. Nothing sums or escalates.
+**Running both is coverage, not magnitude, and is not implemented as a bonus.** Nothing
+sums or escalates. **Correction, 2026-08-01: the justification I gave here was wrong.** I
+wrote that "Edge does not stack" and put that sentence in the panel and in code comments.
+That sentence was drafted for the manuscript and deliberately cut, because it is false out
+of combat, where Dice Pool Edge accumulates to +2 Edge Dice. Removed everywhere I had
+repeated it. See A21.
 
 **Duplicate selection was already blocked.** The Talents chapter's "one **unpicked**
 Additive Feature" wording forbids taking a creation pick again at Lineage Evolution.
@@ -945,6 +948,48 @@ BOOK** note stating the simultaneous-Persona ruling in the player's own words, a
 **READING** note marking the separate-pools count as an interpretation rather than a printed
 rule. A player asked "can you do that?" at the table now has an answer better than "the app
 let me."
+
+**Superseded 2026-08-01: the ruling is now printed. See A21.**
+
+---
+
+### A21. Both Persona entries rewritten in print, and a false claim of mine removed
+- **Files:** `app/data/species.js`, `app/data/briefs.js`, `app/js/face.js`
+- The revised spec supersedes A20. Both feature entries were rewritten in the manuscript,
+  and the simultaneous-Persona rule is no longer an unprinted ruling: it is the third
+  paragraph of Method Actor.
+
+**Both texts replaced wholesale** with the printed wording. Verified the Biometric Spoofing
+body is character-for-character identical to the spec once whitespace is normalized (809
+characters both). Two substantive changes beyond phrasing:
+- **Recovery is now a timed action, not a vague redo.** "Recovering a deleted file requires
+  another 10 minutes of scanning" (Biometric Spoofing) and "another 10 minutes of
+  observation" (Method Actor). The app had said "a new physical scan" and "fresh
+  observation", which lost the 10-minute cost.
+- **The verbs are deliberately different.** Biometric Spoofing SCANS a body, Method Actor
+  OBSERVES a person, and each recovers the way it acquired. Kept in the UI copy, since it
+  is the fastest way to convey that one reads bodies and the other reads people.
+
+**A drift check between the two Biometric Spoofing copies must normalize whitespace.** They
+match on wording but differ in paragraphing on purpose: one paragraph in the species chapter,
+where it sits inside a bulleted list of four, and two in Lineage Evolution, split before
+"While assuming a Persona." A byte comparison would report a false positive forever.
+
+**I had propagated a sentence that is false.** In A20 I justified the no-compounding rule
+with "Edge does not stack on a Deception check", and put it in the Persona panel, in code
+comments, and in this changelog. That sentence was drafted for the manuscript and
+deliberately cut, because it is false out of combat, where Dice Pool Edge accumulates to
++2 Edge Dice. Removed from all three. The rule it was supporting is unchanged and still
+correct: a second Persona buys coverage across two skill lanes, never a bigger number, which
+is what the printed line means by covering more ground.
+
+**The panel no longer flags the rule as house policy.** The gold "NOT IN THE BOOK" chip is
+now a cyan **ONE PER FEATURE** rule chip carrying the printed wording, and the Method Actor
+brief gained the interaction line. Only the pool count is still marked as a **READING**,
+since that remains an inference rather than print.
+
+**Tiers reduced from four to three**, matching the spec: printed and canonical, inference,
+and deliberate absence (no action cost, where the book's silence is the rule).
 
 ---
 

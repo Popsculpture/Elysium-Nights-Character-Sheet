@@ -320,7 +320,7 @@ EN.briefs = {
   "Disarming Cadence": "Edge on Charm to calm/de-escalate; once per Encounter force an organic within 6 spaces, Wits Save or Snag on attacks vs you",
   "Cognitive Partition": "Edge on Saves vs Charm and mind-reading; breaches perceive only your cover-identity thoughts; always know when your mind is probed",
   "Ghost Pulse": "Once per Short Rest, scene-long: read as organic to Tier 2 or lower sensors; Tier 3+ needs opposed Tech check vs your Deception",
-  "Method Actor": "Observe any individual 10 min to save a behavioral Persona (max = Caliber, decays 30 days); Edge to fool acquaintances, force one suspicion reroll per scene",
+  "Method Actor": "Observe any individual 10 min to save a behavioral Persona (max = Caliber, decays 30 days); Edge to fool acquaintances, force one suspicion reroll per scene. One Persona active per feature, and the two need not be the same person",
   "Killer Confidant": "Vs a target Charmed by you, allied, or unaware: Edge on the attack and +1d6 damage; target immune until you rebuild trust over a scene",
   "Feral Metabolism (Passive)": "Eat raw/spoiled meat safely; Resilience Die healing on a Short Rest grants extra Vitality equal to Body modifier",
   "Spliced Instinct (Active)": "On rolling Initiative, move up to half Speed as a Free Action",

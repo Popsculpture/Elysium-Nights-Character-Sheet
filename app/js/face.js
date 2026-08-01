@@ -111,38 +111,39 @@ EN.faceView = (function () {
   /* ---- Personas (Lifelike lineage) ----------------------------------------
      Biometric Spoofing saves a measurable body, Method Actor saves a behavior.
 
-     This feature pair is a case where the app knows rules the book does not
-     print, so the four tiers below are kept distinguishable on purpose. A future
-     sync against the manuscript must not "correct" the app toward a book that
-     never covered the case.
+     Three tiers, kept distinguishable so a later manuscript sync does not
+     "correct" the app toward a book that never covered the case.
 
      [PRINTED]   Storage equal to your Caliber score, overwrite at any time,
-                 deletion recoverable only by redoing the acquisition, obsolete
-                 after 30 days, and Edge on the listed skills while assumed.
-                 No action cost is printed for assuming or dropping, so none is
-                 invented here.
-     [RULING]    Author, 2026-08-01, recorded in claude/locked-rulings.md and
-                 deliberately NOT added to the manuscript: ONE PERSONA MAY BE
-                 ACTIVE PER FEATURE, and they need not be the same person. This
-                 is surfaced in the panel rather than enforced silently, because
-                 a GM reading the book cannot find it.
+                 recovery costing another 10 minutes of scanning or observation,
+                 obsolescence after 30 days, the Edge grants, and ONE PERSONA
+                 ACTIVE PER FEATURE with the two free to be different people.
+                 The last of these used to be an unprinted ruling; it is in the
+                 book now (Method Actor, third paragraph), so it is enforced as
+                 a rule and no longer flagged as house policy.
      [INFERRED]  Each feature holds its own pool of Caliber Personas rather than
-                 sharing one. Neither printed nor ruled: it reads that way
-                 because each feature independently grants "Personas equal to
-                 your Caliber score" and the two store different kinds of
-                 profile. Labelled as an inference in the panel.
+                 the two sharing one. Not printed: it reads that way because each
+                 feature independently grants "Personas equal to your Caliber
+                 score" and the two store different kinds of profile. Still
+                 labelled as a reading in the panel.
+     [ABSENCE]   No action cost is printed for assuming or dropping a Persona.
+                 The silence is the rule; do not fill it.
      [APP]       The 30-day decay counts one day per Long Rest or per day of
                  downtime, because that is the only in-world day unit this app
                  has and gear leases already work that way.
 
-     Running both features is COVERAGE, NOT MAGNITUDE. They overlap on Deception,
-     and under the Modifier Stack Cap Edge does not stack: a second source adds
-     nothing. Never sum, escalate, or otherwise reward holding two Personas. */
+     A second Persona buys COVERAGE ACROSS TWO SKILL LANES, never a bigger
+     number, which is what the printed line means by covering more ground. Do NOT
+     restate this as "Edge does not stack on a Deception check": that sentence
+     was drafted for the manuscript and deliberately cut, because it is false out
+     of combat where Dice Pool Edge accumulates to +2 Edge Dice. */
   var PERSONA_SRC = {
+    // the verbs are deliberately different: Biometric Spoofing SCANS a body,
+    // Method Actor OBSERVES a person, and each recovers the way it acquired
     BiometricSpoofing: { feature: "Biometric Spoofing", label: "BODY",     color: "var(--accent)",
-                         regain: "a new physical scan", saves: "physical and vocal profile" },
+                         regain: "another 10 minutes of scanning",    saves: "physical and vocal profile" },
     MethodActor:       { feature: "Method Actor",       label: "BEHAVIOR", color: "var(--flow)",
-                         regain: "fresh observation",   saves: "behavioral profile" }
+                         regain: "another 10 minutes of observation", saves: "behavioral profile" }
   };
   var PERSONA_DAYS = 30;
   function personaSources(ch) {
@@ -156,13 +157,13 @@ EN.faceView = (function () {
     var cap = EN.engine.caliber(ch.level || 1);
     var rows = faceRead(ch).personas;
     var kids = [];
-    kids.push(help("A saved profile of a real person. Overwriting is how you exceed your storage, and a Persona goes obsolete " + PERSONA_DAYS + " days after it is taken. Deleting one is permanent: getting it back means taking it again."));
-    // [RULING] and [INFERRED] are stated in the interface, not enforced quietly,
-    // because neither is printed in the book a GM will reach for at the table.
+    kids.push(help("A saved profile of a real person. Overwriting is how you exceed your storage, and a Persona goes obsolete " + PERSONA_DAYS + " days after it is taken. Deleting one is permanent: getting it back costs another 10 minutes of scanning or observation, whichever the feature uses."));
+    // The one-active-per-feature rule is printed now, so it reads as a rule
+    // rather than as house policy. Only the pool count is still an inference.
     if (srcs.length > 1) {
       kids.push(el("p.help", { style: { margin: "0 0 10px", color: "var(--text2)" } }, [
-        el("span.chip", { style: { fontSize: "8.5px", color: "var(--gold)", borderColor: "var(--gold)", marginRight: "7px" }, text: "NOT IN THE BOOK" }),
-        document.createTextNode("One Persona may be active per feature, and they need not be the same person: you can wear one person's fingerprints and another's mannerisms at once. Author ruling, not printed in the rulebook. It is coverage, not a bigger bonus, since Edge does not stack on a Deception check.")
+        el("span.chip", { style: { fontSize: "8.5px", color: "var(--accent)", borderColor: "var(--accent)", marginRight: "7px" }, text: "ONE PER FEATURE" }),
+        document.createTextNode("One Persona may be active per feature, and the two do not have to belong to the same individual: you can wear one person's fingerprints and another's mannerisms at once. A second Persona does not make the lie better. It makes the lie cover more ground.")
       ]));
     }
     kids.push(el("p.help", { style: { margin: "0 0 10px", color: "var(--text3)" } }, [
