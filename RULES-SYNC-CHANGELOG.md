@@ -1120,8 +1120,22 @@ the A22 terminology sweep as out of domain, now in scope and corrected).
 that "If you replace a Talent that you have Upgraded, you lose both the base Talent and its
 Upgrade" (doc 3054). The app dropped the base correctly and the Upgrade stopped applying,
 but the Upgrade slot kept its stored reference, so the pick was silently wasted while still
-reading as a completed choice. Verified the sweep clears the orphan, leaves an unrelated
-Upgrade untouched, and is a no-op when re-selecting the same Talent.
+reading as a completed choice. Clearing it also returns that slot to selectable. Verified
+the sweep clears the orphan, leaves an unrelated Upgrade untouched, and is a no-op when
+re-selecting the same Talent.
+
+To be precise about what that clause means, since the phrasing invites a misread: Retraining
+swaps Talent A for Talent B, so you keep a Talent. What you lose is A **and** the Upgrade you
+bought for it. The Upgrade does not transfer to B and the slot is not refunded as an Upgrade
+for B. It is a cost warning: upgrading a Talent makes retraining it cost two picks to change
+one.
+
+**[APP POLICY, deliberate] Retraining is NOT gated to level-up.** The book scopes it to
+"whenever you gain a new level" (doc 3054). The app lets any Universal Upgrade slot change at
+any time, and the author confirmed on 2026-08-01 that this stays: a character sheet you cannot
+freely edit is worse to use than one that trusts you. **Do not add the level-up gate in a
+later manuscript sync.** Its absence is a decision, not drift. Recorded in the code beside the
+fix as well. The "you lose both" consequence still fires on any Talent change.
 
 **`EN.talentRules.progression` carried an older draft** of the Universal Upgrade rule (a
 single +1 rather than +2 to one Attribute or +1 to two). Corrected, though nothing currently

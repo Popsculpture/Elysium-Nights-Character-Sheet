@@ -1976,10 +1976,18 @@ EN.builder = (function () {
     // group talents by category into <optgroup>s
     var cats = {};
     (EN.talents || []).forEach(function (t) { (cats[t.category || "Other"] = cats[t.category || "Other"] || []).push(t); });
-    // "If you replace a Talent that you have Upgraded, you lose both the base
-    // Talent and its Upgrade." Without this sweep the Upgrade slot keeps
-    // pointing at a Talent you no longer own: it stops applying, but it still
-    // reads as a spent choice, so the pick is silently wasted.
+    /* [PRINTED] "If you replace a Talent that you have Upgraded, you lose both
+       the base Talent and its Upgrade." Without this sweep the Upgrade slot
+       keeps pointing at a Talent you no longer own: it stops applying, but it
+       still reads as a spent choice, so the pick is silently wasted. Clearing
+       it also returns that slot to selectable.
+
+       [APP POLICY, deliberate] The book scopes Retraining to "whenever you gain
+       a new level". This app does NOT gate it: any Universal Upgrade slot can be
+       changed at any time, because a character sheet you cannot freely edit is
+       worse to use than one that trusts you. Author decision, 2026-08-01. Do not
+       add the level-up gate in a later manuscript sync; its absence is a choice,
+       not drift. The consequence above still applies whenever a Talent changes. */
     var sel = el("select", { onchange: function (e) {
       var picked = e.target.value || null;
       store.update(function (c) {
