@@ -83,8 +83,8 @@ EN.armorMods = {
     { key: "self-seal-nanopaste", name: "Self-Seal Nanopaste", category: "power", price: 500, rarity: "Uncommon", legality: "Licensed", fits: "Any",
       grants: "Self-repairing shell", effect: "The suit never requires routine maintenance and self-repairs cosmetic and minor functional damage at the end of each scene at no cost. It does not restore DR mid-fight and does not settle Upkeep on Leased gear." },
     { key: "reactive-countermeasures", name: "Reactive Countermeasures", category: "power", price: 650, rarity: "Rare", legality: "Restricted", fits: "Any",
-      grants: "Vents smoke or dazzle on a hit", effect: "Choose smoke or dazzle at install. Once per scene, when hit, you may vent the charge as an Impulse. Smoke: you and adjacent allies gain concealment until the start of your next turn. Dazzle: the attacker makes a Body or Wits save (chosen at install), DC 13, or attacks with Snag until the end of its next turn." },
-    { key: "sentinel-active-defense", name: "Sentinel Active Defense", category: "power", price: 120, upkeep: 90, buyout: 800, rarity: "Uncommon", legality: "Licensed", fits: "Any",
+      grants: "Vents smoke or dazzle on a hit", effect: "Choose smoke or dazzle at install. Once per scene, when hit, you may vent the charge as an Impulse. Smoke: you and adjacent allies gain concealment until the start of your next turn. Dazzle: the attacker makes a Body or Wits save (chosen at install) or attacks with Snag until the end of its next turn." },
+    { key: "sentinel-active-defense", name: "Sentinel Active Defense", category: "power", price: 0, upkeep: 90, rarity: "Uncommon", legality: "Licensed", fits: "Any",
       grants: "Leased point-defense", effect: "While the plan is current, once per round when hit by a Ranged attack, reduce that attack's damage by 1d6 as the system intercepts. Lapsed or Locked: the rig goes dark and grants nothing until you settle the account or crack the lock." },
 
     /* ---- Mystech Augments (Mystech armor only) ---- */

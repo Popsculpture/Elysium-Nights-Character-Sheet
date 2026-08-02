@@ -102,17 +102,17 @@ EN.weaponParts = {
     { key: "reflex-sight", name: "Reflex Sight", category: "ranged", slot: "targeting", partType: "Accessory", fits: "Any Ranged", price: 120, rarity: "Common", legality: "Legal",
       grants: "+1 to attack rolls within short range", effect: "+1 to ranged attack rolls within the weapon's short range. Flat bonus, does not stack." },
     { key: "combat-scope", name: "Combat Scope", category: "ranged", slot: "targeting", partType: "Accessory", fits: "Any Ranged", price: 250, rarity: "Common", legality: "Licensed",
-      grants: "Scoped", effect: "Apply the Scoped trait. When you Take Aim (Swift Action) before attacking with this weapon, the attack ignores Snag from long range and treats the Target's Half or Three-Quarter Cover as one step lower: Three-Quarter Cover becomes Half Cover, and Half Cover becomes no cover." },
+      grants: "Scoped", effect: "When you take time to Aim, the weapon gains bonuses on long-range attacks, often Edge or reduced penalties for distance and partial cover." },
     { key: "thermal-optic", name: "Thermal Optic", category: "ranged", slot: "targeting", partType: "Accessory", fits: "Any Ranged", price: 350, rarity: "Uncommon", legality: "Restricted",
       grants: "Ignore low-light Snag", effect: "Ignore Snag on attack rolls from dim light, darkness, smoke, or fog while sighting through it. Does not see through total cover or Flow-infused darkness." },
     { key: "smart-sight", name: "Smart-Sight", category: "ranged", slot: "targeting", partType: "Accessory", fits: "Any Ranged", price: 250, rarity: "Common", legality: "Licensed",
       grants: "Smart-capable (requires Smartlink)", effect: "Bolts an onboard targeting computer onto a weapon that lacks one, marking it smart-capable. No bonus on its own; it bridges a wielder's Smartlink to the gun so every Smartlink feature works through it." },
     { key: "targeting-suite", name: "Targeting Suite", category: "ranged", slot: "targeting", partType: "Accessory", fits: "Any Ranged", price: 700, rarity: "Rare", legality: "Restricted",
-      grants: "Guided at long range; paint targets; HUD (requires Smartlink)", effect: "For a smart-capable weapon and a wielder with a Smartlink: attacks no longer suffer Snag at long range; as a Swift Action paint a visible target covertly, one painted Target at a time, the mark lasting until the end of your next turn and refreshable (your Smart Round attacks against it gain Replay from the first shot); HUD gives ammo count, rangefinding, threat highlighting, and target handoff to an ally." },
+      grants: "Guided at long range; paint targets; HUD (requires Smartlink)", effect: "For a smart-capable weapon and a wielder with a Smartlink: attacks no longer suffer Snag at long range; as a Swift Action paint a visible target covertly (your Smart Round attacks against it gain Replay from the first shot); HUD gives ammo count, rangefinding, threat highlighting, and target handoff to an ally." },
 
     // Output
     { key: "match-barrel", name: "Match Barrel", category: "ranged", slot: "output", partType: "Mod", fits: "Any Firearm", price: 350, rarity: "Uncommon", legality: "Licensed",
-      grants: "+25% range", effect: "Increase the weapon's short and long range values by 25% (round up).", excludes: [] },
+      grants: "+25% range", effect: "Increase the weapon's short and long range values by 25% (round up). The precision barrel is fixed to the frame; cannot share a build with a Folding Stock.", excludes: ["folding-stock"] },
     { key: "shotgun-choke", name: "Shotgun Choke", category: "ranged", slot: "output", partType: "Mod", fits: "Shotgun", price: 200, rarity: "Common", legality: "Licensed",
       grants: "Extends Spread range", effect: "Increase the weapon's short range by 50% (round up). The Spread trait's short-range Edge now applies to this extended short range before the long-range penalty takes over." },
     { key: "heavy-barrel", name: "Heavy Barrel", category: "ranged", slot: "output", partType: "Mod", fits: "Any Firearm", price: 300, rarity: "Uncommon", legality: "Licensed",
@@ -136,7 +136,7 @@ EN.weaponParts = {
 
     // Handling
     { key: "folding-stock", name: "Folding Stock", category: "ranged", slot: "handling", partType: "Mod", fits: "Longarm", price: 200, rarity: "Uncommon", legality: "Licensed",
-      grants: "Concealable", effect: "Attacks and operations work as normal. Checks to detect the weapon on a casual search are made with Snag.", excludes: [] },
+      grants: "Concealable", effect: "Attacks and operations work as normal. Checks to detect the weapon on a casual search are made with Snag. Cannot share a build with a Match Barrel.", excludes: ["match-barrel"] },
     { key: "recoil-stock", name: "Recoil Stock", category: "ranged", slot: "handling", partType: "Mod", fits: "Longarm", price: 120, rarity: "Common", legality: "Legal",
       grants: "Stabilized", effect: "You count as Stabilized for the High Recoil trait, negating its Snag." },
     { key: "quick-draw-grip", name: "Quick-Draw Grip", category: "ranged", slot: "handling", partType: "Mod", fits: "Sidearm", price: 150, rarity: "Common", legality: "Licensed",
@@ -156,7 +156,7 @@ EN.weaponParts = {
     { key: "case-catcher", name: "Case Catcher", category: "ranged", slot: "utility", partType: "Accessory", fits: "Any Firearm", price: 30, rarity: "Common", legality: "Legal",
       grants: "Leaves no brass", effect: "Catches ejected casings, so no spent brass is left at the scene. Investigations that rely on recovered casings to trace the weapon get nothing." },
     { key: "target-spotter", name: "Target Spotter", category: "ranged", slot: "utility", partType: "Accessory", fits: "Any Ranged", price: 300, rarity: "Uncommon", legality: "Restricted",
-      grants: "Spotlight target; rangefinding; read targets", effect: "Standalone laser ranging, recon optic, and designator (no Smartlink needed). Spotlight (Action): choose a visible Target, which stays illuminated until the start of your next turn, and the next ally attack against it ignores Half Cover's Defense bonus; always know exact range; Edge on Perception to read a target (drawn weapons, visible cyberware, rough wound state). Detection only, never an attack roll." },
+      grants: "Spotlight target; rangefinding; read targets", effect: "Standalone laser ranging, recon optic, and designator (no Smartlink needed). Spotlight a visible target so the next ally attack ignores Half Cover's Defense bonus; always know exact range; Edge on Perception to read a target (drawn weapons, visible cyberware, rough wound state). Detection only, never an attack roll." },
     { key: "foregrip", name: "Foregrip", category: "ranged", slot: "utility", partType: "Accessory", fits: "Longarm", price: 60, rarity: "Common", legality: "Legal",
       grants: "Stabilized", effect: "You count as Stabilized for the High Recoil trait, negating its Snag." },
     { key: "bipod", name: "Bipod", category: "ranged", slot: "utility", partType: "Accessory", fits: "Longarm", price: 80, rarity: "Common", legality: "Legal",
@@ -197,10 +197,10 @@ EN.weaponParts = {
   /* ---- trait glossary (every trait a Part grants or references) ---------- */
   traits: [
     { name: "Armor Piercing X", text: "When you hit, ignore X points of flat damage reduction from armor. Does not affect Resistances or Immunities unless a rule says so." },
-    { name: "Bleeding", text: "At the start of your turn, and each time you willingly move 1 space, lose 1d4 / 2d4 / 3d4 Vitality by stacks. An Action plus a Medtech check (DC 10 / 15 / 20 by stacks) ends the condition entirely; any effect that restores Vitality removes 1 stack." },
+    { name: "Bleeding", text: "At the start of your turn, and each time you willingly move 1 space, lose 1d4 / 2d4 / 3d4 Vitality by stacks. A Medtech check (DC 10/15/20) or any Vitality restoration removes a stack." },
     { name: "Burst Fire", text: "Spend 3 rounds and attack one Target; every other Target within 1 space makes an Agility save vs your Weapon Save DC, taking the weapon's damage die (no Attribute mod) on a failure." },
     { name: "Close Quarters", text: "No Snag for attacking while engaged in melee or in cramped spaces where similar weapons would be awkward." },
-    { name: "Concealable", text: "Checks to spot the item on a casual search, or to notice you are armored, are made with Snag. A deliberate pat-down or a scanner still finds it." },
+    { name: "Concealable", text: "Attacks and operation work as normal. Checks to detect the weapon on a casual search are made with Snag." },
     { name: "Defensive", text: "When targeted by a melee attack while wielding this weapon (and not Surprised, Restrained, or Incapacitated), spend an Impulse Action to impose Snag on the attack." },
     { name: "Finesse", text: "Use Body or Agility for the attack and damage, chosen each time you attack." },
     { name: "Full-Auto", text: "As an Action once per round, spend 8 rounds to project an Area 3 cone or an Area 6 by 1 line; Targets save vs your Weapon Save DC per the firing-mode rules." },
@@ -208,12 +208,12 @@ EN.weaponParts = {
     { name: "Heavy", text: "Adds to encumbrance and may interact with rules that penalize low Body or long-distance movement. Usually unsuitable for off-hand or dual-wield use." },
     { name: "High Recoil", text: "Multiple attacks with this weapon in one round apply Snag to later attacks unless Stabilized." },
     { name: "Light", text: "Compact and easy in one hand; interacts with dual-wield rules and can be carried discreetly under loose clothing without counting as Concealable." },
-    { name: "Nonlethal", text: "If damage from this weapon reduces a Target to 0 Vitality, that Target is immediately rendered Unconscious." },
-    { name: "Precision Frame", text: "A weapon with Precision Frame scores a critical hit on a roll of 19 or 20. A weapon whose only firing mode is Single Shot has Precision Frame inherently; the Match Trigger Group mod can also grant it." },
+    { name: "Nonlethal", text: "If damage reduces a Target to 0, they are Unconscious and stable rather than dying." },
+    { name: "Precision Frame", text: "If a weapon's only firing mode is Single Shot, its attacks score a critical hit on a roll of 19 or 20." },
     { name: "Quick Draw", text: "Drawing the weapon costs no extra action as part of an attack; the first attack in an encounter with it drawn this way gains Edge." },
     { name: "Reach X", text: "Each point of Reach extends your melee threat by 1 space. Reach 1 strikes Targets up to 2 spaces away." },
     { name: "Reliable", text: "Natural 1 results are treated as simple misses unless an effect calls out a worse outcome." },
-    { name: "Scoped", text: "When you Take Aim (Swift Action) before attacking with this weapon, that attack ignores the long-range Snag penalty and treats the Target's Half or Three-Quarter Cover as one step less: Three-Quarter becomes Half, Half becomes none." },
+    { name: "Scoped", text: "When you Aim, gain bonuses on long-range attacks, often Edge or reduced penalties for distance and partial cover." },
     { name: "Shock", text: "On a hit against an organic, cyber-augmented, or robotic Target, they make a Body save (DC 12) or are Staggered until the end of their next turn." },
     { name: "Silent", text: "Attacks do not automatically trigger sound-based alerts in the area." },
     { name: "Slow", text: "Only one attack per round with this weapon, regardless of extra-attack features, unless explicitly overridden." },
@@ -230,9 +230,7 @@ EN.weaponParts = {
     dieStep: "A weapon gains at most one damage die step from aftermarket Parts. It still stacks with steps from class features, cyberware, or the Flow.",
     legality: "A Part never lowers a weapon's legality, only raises the heat. The strictest tag among the weapon and everything on it is what a scanner reports.",
     overEngineering: "Pushing past a weapon's Slot Count is allowed, but it instantly makes the modification a Prototype-tier Project and the finished weapon carries a Mandatory Flaw: a permanent quirk, heavy maintenance burden, or obvious visual tell.",
-    install: "Accessories snap on anytime out of initiative, no roll. Mods are bench work: a Short or Long Rest with a relevant tool kit and Proficiency, occasionally a single Engineering check or a short crafting Project.",
-    fabrication: "Fabrication is legwork: complex, built-to-order work reached through a fixer or face, resolved as a crafting Project on the Dice Pool Method. Most Restricted and all Contraband Parts require it. It is also the road to a Signature weapon: a conversion welds the current configuration in permanently, the weapon gains a defined special property worked out with the GM, and from then on it follows the Signature rules of 0 further slots and fixed Parts.",
-    highScrutiny: "Street-level purchases are paid in Glimmer. A fabrication commission routed through an institutional broker, a corporate armorer, or a black-market clearinghouse that demands a paper trail is a high-scrutiny transaction billed in Nexus, at the GM's discretion."
+    install: "Accessories snap on anytime out of initiative, no roll. Mods are bench work: a Short or Long Rest with a relevant tool kit and Proficiency, occasionally a single Engineering check or a short crafting Project."
   }
 };
 

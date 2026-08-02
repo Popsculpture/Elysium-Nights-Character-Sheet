@@ -528,15 +528,13 @@ EN.engine = (function () {
       if (!m) return;
       var base = parseInt(m[1], 10), key = NAME2KEY[m[2]];
       var amt = cw.tier === "Streetware" ? 0 : cw.tier === "Blackware" ? base * 2 : base;
-      // Same-attribute Enhancement Bonuses do not stack; the highest one applies.
-      if (key && amt) out[key] = Math.max(out[key] || 0, amt);
+      if (key && amt) out[key] = (out[key] || 0) + amt;
     });
     return out;
   }
-  // flat sheet bonuses (speed / wounds / DR / initiative) summed from installed
-  // pieces' tier `bonus` data
+  // flat sheet bonuses (speed / wounds) summed from installed pieces' tier `bonus` data
   function cyberFlatBonuses(ch) {
-    var out = { speed: 0, wounds: 0, dr: 0, init: 0 };
+    var out = { speed: 0, wounds: 0 };
     var items = (EN.cyberware && EN.cyberware.items) || [];
     ((ch && ch.cyberware) || []).forEach(function (cw) {
       if (!cw || typeof cw !== "object") return;
@@ -546,8 +544,6 @@ EN.engine = (function () {
       if (!b) return;
       if (b.speed) out.speed += b.speed;
       if (b.wounds) out.wounds += b.wounds;
-      if (b.dr) out.dr += b.dr;
-      if (b.init) out.init += b.init;
     });
     return out;
   }
@@ -618,10 +614,11 @@ EN.engine = (function () {
       blockBonus: (armor && !armorLapsed && armor.blockBonus) || 0,   // flat Block Bonus from medium/heavy plate
       shieldDef: (shield && !shieldLapsed && shieldAlive && typeof shield.defense === "number") ? shield.defense : 0,
       shieldBlockDie: (shield && !shieldLapsed && shieldAlive && shield.blockDie) || null,
-      // Shield Durability: a box is marked each time the shield's Block prevents damage
-      // from a heavy hit, which the book leaves to the GM (typically any hit it fully or
-      // mostly absorbs). At 0 boxes a physical shield is destroyed; an emitter goes dark.
+      // Shield Durability: boxes are marked when a Blocked hit's RAW damage meets the
+      // Wear Threshold (twice the Block die's maximum), or on any Blocked critical.
+      // At 0 boxes a physical shield is destroyed; an emitter shield goes dark.
       shield: shield || null,
+      shieldWearThreshold: shield ? (shield.wear || 0) : 0,
       shieldBoxesMax: shieldBoxesMax,
       shieldBoxesLeft: shieldBoxesLeft,
       shieldSpent: shieldSpent,
@@ -1049,7 +1046,7 @@ EN.engine = (function () {
     // Disruption Lattice, or the Convergence Engine. The rulebook lets the player
     // pick which pieces benefit; taking the 4 highest-SP eligible pieces is always
     // at least as good as any other choice, so it is applied automatically.
-    var CROWN_EXEMPT = { resonanceCrown: 1, disruption: 1, convergence: 1 };
+    var CROWN_EXEMPT = { resonanceCrown: 1, disruptionLattice: 1, convergenceEngine: 1 };
     var crownHarmonized = [];
     if (installed.some(function (cw) { return cw.key === "resonanceCrown"; })) {
       crownHarmonized = installed
@@ -1219,7 +1216,7 @@ EN.engine = (function () {
       defense: defense, defenseAttr: defenseAttr, speed: speed,
       vitalityMax: vitalityMax, resilienceDie: resilienceDie, resilienceMax: resilienceMax,
       armorDR: defLoadout.armorDR, blockBonus: defLoadout.blockBonus,
-      naturalDR: linMech.dr, totalDR: (defLoadout.armorDR || 0) + linMech.dr + (cyberFlat.dr || 0),
+      naturalDR: linMech.dr, totalDR: (defLoadout.armorDR || 0) + linMech.dr,
       lineageSpeed: linMech.speed,
       lineageSpeedFirstRound: linMech.speedFirstRound,
       lineageInit: { caliber: linMech.initCaliber ? cal : 0, edge: linMech.initEdge },

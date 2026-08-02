@@ -138,7 +138,7 @@ EN.gearCatalog.tools = {
       category: "Engineering Tools", skill: "Engineering", effect: "Safe explosives handling. Edge (or +1 Edge Die) on clean placement and disarm.",
       edgeDice: 1, requiresProficient: true, edgeNote: "placing or disarming explosives",
       desc: "Initiators, adhesive charges, and the steady hands to place them where they count.",
-      basic: "Enables safe handling of Breach Charges, adhesive explosives, and initiators. Without kit support, the GM may apply Snag (or +1 Snag Die) or refuse the attempt for safety.",
+      basic: "Enables safe handling of breaching charges, adhesive explosives, and initiators. Without kit support, the GM may apply Snag (or +1 Snag Die) or refuse the attempt for safety.",
       proficient: "Run advanced functions like shaped placement, low-signature initiation, and controlled disarm. With at least 1 minute to work, gain Edge on one in-combat Engineering d20 check (or +1 Edge Die on an out-of-combat Dice Pool) to place or disable explosives cleanly." },
     { name: "Smartdeck Peripheral Kit", load: 1, bucket: "kits", group: "Technical & Hardware", price: 80, availability: "Common", legality: "Legal",
       category: "Systems Tools", skill: "Systems", effect: "Clean physical connections. Can force a physical access point, leaving marks.",
@@ -300,7 +300,7 @@ EN.gearCatalog.tools = {
       desc: "Loops, pouches, a clasp or two. The gear you actually reach for mid job lives here, not at the bottom of a bag." },
     { name: "Cargo Mule", bucket: "devices", group: "Everyday Utility", price: 600, availability: "Uncommon", legality: "Licensed",
       effect: "A multi-legged drone that hauls your gear and follows you around.",
-      desc: "A squat, multi-legged robotic lockbox. Follows simple voice or app commands and carries up to 8 Load (see Encumbrance and Load) without tiring. It cannot fight and flees if attacked; treat as Average cover material if shot, and gone for the scene if it takes serious fire." },
+      desc: "A squat, multi-legged robotic lockbox. Follows simple voice or app commands and carries up to 4 Heavy Items without tiring. It cannot fight and flees if attacked; treat as Average cover material if shot, and gone for the scene if it takes serious fire." },
 
     /* ---- Light & Illumination ---- */
     { name: "Flashlight", bucket: "devices", group: "Light & Illumination", price: 10, availability: "Common", legality: "Legal",
@@ -419,10 +419,10 @@ EN.gearCatalog.tools = {
       desc: "Standard restraints blended with low-grade mystech binding. Invocations that would normally unlock, corrode, or phase through mundane restraints do not affect them unless they explicitly bypass mystech restraints." },
     { name: "Neurocut Jack", bucket: "devices", group: "Restraints & Suppression", price: 190, availability: "Rare", legality: "Restricted",
       effect: "Suppresses one piece of an adjacent Target's cyberware on a successful hack.",
-      desc: "A compact intrusion plug for cyberware ports and exposed data jacks. As an Action against an adjacent willing, Restrained, or grappled Target, jack into a visible cyber limb or implant and make a Systems check vs the Target's Tech save DC. On a success, that cyberware is suppressed until removed or destroyed: its active bonuses are disabled and actions relying on it suffer Snag (or +1 Snag Die). On a failure, the jack locks out and cannot affect that Target again this scene." },
+      desc: "A compact intrusion plug for cyberware ports and exposed data jacks. As an Action against an adjacent willing, Restrained, or grappled Target, jack into a visible cyber limb or implant and make a Systems check vs the Target's Tech save DC. On a success, that cyberware is suppressed until removed or destroyed. On a failure, the jack locks out and cannot affect that Target again this scene." },
     { name: "Flux Gel Sprayer", bucket: "devices", group: "Restraints & Suppression", price: 90, availability: "Rare", legality: "Restricted",
       effect: "Restrains Targets in an Area 2 Cone or Area 1 Cube. Creates difficult terrain.",
-      desc: "A single-use canister of crackling Flow-infused adhesive. As an Action, spray an Area 2 Cone or coat an Area 1 Cube within 4 spaces. Targets make a Body save, DC 13; on a failure they are Restrained until they spend an Action to break free or an Ally helps. Any square you coat becomes difficult terrain until cleaned." },
+      desc: "A single-use canister of crackling Flow-infused adhesive. As an Action, spray an Area 2 Cone or coat an Area 1 Cube within 4 spaces. Targets make a Body save (DC by tier); on a failure they are Restrained until they break free or an Ally helps. Any square you coat becomes difficult terrain until cleaned." },
 
     /* ---- Worn Tech (Body Slot) ---- */
     { name: "AR Optics", load: 0, bucket: "devices", group: "Worn Tech", price: 180, availability: "Uncommon", legality: "Licensed", slot: "Head",
@@ -459,7 +459,7 @@ EN.gearCatalog.tools = {
       desc: "A palm-sized puck that vents a focused cleaning mist. After 1 minute of use on a small space, it scrubs away signs of struggle, splatter, and prints; subsequent Investigation or Forensics checks for that area suffer Snag without advanced tools or Flow. It will not fool expert forensics, but stops most casual scrutiny." },
     { name: "Tempest Core", load: 3, bucket: "devices", group: "Mystech & Tactical Utility", price: 400, availability: "Rare", legality: "Restricted",
       effect: "Deployable storm generator. Powers a site, overcharges a weapon, or emits an EMP.",
-      desc: "A briefcase generator built around a bound micro-storm. Holds up to 8 hours of active output per day in 1-hour charge blocks, routed three ways: #GRID Anchor (power a small site, 1 hr/hr, ignore power-lack Snag); Weapon Overcharge (link one energy weapon, 1 hr/attack, +1 damage-die step, non-stacking); or Surge Pulse (1 Action, 3 hrs charge; every unattended electronic in an Area 4 Sphere shuts down, and up to three Tech-carrying Targets make a Tech Save DC 13 or take 1d6 Energy and lose a device for 1 round). After a day of active use, an Engineering or Esoterica check (DC 13) safely vents and re-cages the storm. On a failure it deals 1d6 Energy damage to every Target within 2 spaces for each full hour of unused charge remaining, then locks down until serviced in downtime." },
+      desc: "A briefcase generator built around a bound micro-storm. Holds up to 8 hours of active output per day in 1-hour charge blocks, routed three ways: #GRID Anchor (power a small site, 1 hr/hr, ignore power-lack Snag); Weapon Overcharge (link one energy weapon, 1 hr/attack, +1 damage-die step, non-stacking); or Surge Pulse (1 Action, 3 hrs charge; every unattended electronic in an Area 4 Sphere shuts down, and up to three Tech-carrying Targets make a Tech Save DC 13 or take 1d6 Electric and lose a device for 1 round). After a day of use, an Engineering or Esoterica check (DC 13) safely re-cages the storm, or it lashes out." },
 
     /* ============================= CONSUMABLES ============================= */
     /* ---- Medical Consumables ---- */
@@ -483,15 +483,15 @@ EN.gearCatalog.tools = {
       desc: "An emergency heart stim. As an Action, inject a Target at 0 Wounds that is already Stabilized: they stand up with 1 Wound and 1d6 Vitality, Dazed until the end of their next turn. Afterward they gain 1 level of Fatigue." },
     { name: "Nightwatch Tablets", bucket: "consumables", group: "Medical Consumables", price: 40, availability: "Common", legality: "Legal",
       effect: "Ignore Fatigue 1 for 4 hours. Edge (or +1 Edge Die) on Wits. Crash Stack risk.",
-      desc: "Legal, intense wake-up pills. A dose lets you ignore Fatigue 1 for 4 hours and grants Edge on Wits saves to stay alert. A fresh dose before the last ends extends it another 4 hours and builds a Crash Stack. When the effect ends, Fatigue returns and you make a Body check (DC 10) or gain +1 Fatigue. When your last dose wears off, make one Body save (DC 10 + 2 per Crash Stack); on a failure, gain +1 Fatigue per Crash Stack on top of Fatigue returning. Beyond 4 consecutive doses, also make a Body save (DC 25) on the final crash; on a failure you suffer heart failure and drop to 0 Wounds." },
+      desc: "Legal, intense wake-up pills. A dose lets you ignore Fatigue 1 for 4 hours and grants Edge on Wits saves to stay alert. A fresh dose before the last ends extends it another 4 hours and builds a Crash Stack; the crash worsens per stack, and beyond 4 consecutive doses risks heart failure on the final crash." },
     { name: "Emergency Sealant Foam", bucket: "consumables", group: "Medical Consumables", price: 90, availability: "Uncommon", legality: "Licensed",
       effect: "Seals a breach in a hull or suit. Cures rigid.",
       desc: "Fast-expanding foam for hull cracks, suit tears, and ruptured seals. As an Action, seal a 1-space section of wall, floor, ceiling, or a single major suit or armor breach in reach. It stops gas seepage and vacuum pull and holds until destroyed; it cures rigid, so pushing through needs a Body check or the right tools." },
 
     /* ---- Breaching & Demolition (Counted) ---- */
-    { name: "Breach Charge", load: 1, bucket: "consumables", group: "Breaching & Demolition", price: 120, availability: "Rare", legality: "Restricted", counted: true,
+    { name: "Breaching Charge", load: 1, bucket: "consumables", group: "Breaching & Demolition", price: 120, availability: "Rare", legality: "Restricted", counted: true,
       effect: "One-use charge. Opens most doors and weaker cover, blasts the doorway.",
-      desc: "A pre-shaped adhesive charge. As an Action, place it on a door, panel, or section of cover within reach and detonate it. Placing it cleanly is an Engineering check; a Demolition Kit grants Edge on it (or +1 Edge Die out of combat), and without one the GM may apply Snag or refuse for safety. It destroys a 1-space section of Average or weaker cover, or a standard door, outright; against Heavy or better, roll 4d6 + your Engineering Proficiency Bonus against its Integrity. Every Target adjacent to the breach makes an Agility save (DC 8 + your Tech modifier + your Engineering Proficiency Bonus) or takes 2d6 Force damage, half on a success." },
+      desc: "A pre-shaped adhesive charge. As an Action, place it on a door, panel, or section of cover within reach and detonate it (a Demolition Kit places it cleanly). It destroys a 1-space section of Average or weaker cover, or a standard door, outright; against Heavy or better, roll 4d6 against its Integrity. Every Target adjacent to the breach makes an Agility save (DC 8 + your Agility modifier) or takes 2d6 Force damage, half on a success." },
     { name: "Thermite Slug", bucket: "consumables", group: "Breaching & Demolition", price: 60, availability: "Rare", legality: "Restricted", counted: true,
       effect: "One-use slug. Melts a lock, drive, or small device beyond recovery.",
       desc: "A thumb-sized incendiary that burns hot enough to erase hardware and the data inside it. As an Action, set it on a lock, drive, terminal, or small device; it burns through over a round, destroying the object and rendering any data unrecoverable by ordinary means." },

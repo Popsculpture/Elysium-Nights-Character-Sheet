@@ -70,15 +70,15 @@ EN.cyberware = {
       street: "No Enhancement; jittery, first time you take combat damage each session, Body Save DC 12 or take 1d4 Vitality as it misfires.",
       black: "+4 Initiative, +2 Speed, and once per combat (Impulse) fully evade one ranged hit.",
       tiers: [
-        { tier: "Streetware", sp: 2, price: 2500,  legality: "Restricted", bonus: { speed: 1, init: 2 } },
-        { tier: "Brandware",  sp: 2, price: 11000, legality: "Restricted", bonus: { speed: 1, init: 2 } },
-        { tier: "Blackware",  sp: 3, price: 28000, legality: "Restricted", bonus: { speed: 2, init: 4 } }
+        { tier: "Streetware", sp: 2, price: 2500,  legality: "Restricted", bonus: { speed: 1 } },
+        { tier: "Brandware",  sp: 2, price: 11000, legality: "Restricted", bonus: { speed: 1 } },
+        { tier: "Blackware",  sp: 3, price: 28000, legality: "Restricted", bonus: { speed: 2 } }
       ] },
     { key: "disruption", short: "Disruption Lattice", name: "Disruption Lattice", zone: "Neural", enhancement: "None", mystech: true,
       desc: "Resonance-dampening circuitry through the upper spine and skull. Built to counter Shapers; it does not discriminate; it dampens the Flow for everyone near the wearer, including the wearer.",
-      effect: "Passive Area 2 disruption field: all Invocations cost +1 FP, friend or foe, always on. Pulse (Impulse, 1/Short Rest): anyone sustaining an Invocation within 3 spaces makes a Focus Check (a Wits or Body save, DC 14) or it ends.",
+      effect: "Passive Area 2 disruption field: all Invocations cost +1 FP, friend or foe, always on. Pulse (Impulse, 1/Short Rest): sustained Invocations within 3 spaces make a Focus Disruption check DC 14 or end.",
       street: "Field shrinks to Area 1, no Pulse; audible static → Snag on Stealth within 2 spaces of anyone.",
-      black: "Area 3 sphere field, Pulse up to 2/Short Rest, plus targeted suppression (Action, 3 charges/Long Rest): designate one Flow-user within 6 spaces; until the start of your next turn their Invocations cost +2 FP and they suffer Snag on Invocation checks.",
+      black: "Area 3 field, Pulse up to 2/Short Rest, plus targeted suppression (3 charges/Long Rest): one Flow-user within 6 spaces casts at +2 FP with Snag.",
       tiers: [
         { tier: "Streetware", sp: 2, price: 4000,  legality: "Restricted" },
         { tier: "Brandware",  sp: 2, price: 13000, legality: "Restricted" },
@@ -86,7 +86,7 @@ EN.cyberware = {
       ] },
     { key: "resonanceCrown", short: "Resonance Crown", name: "Resonance Crown", zone: "Neural", enhancement: "+1 Mystique", mystech: true,
       desc: "A circlet of hand-tuned mystech filaments in the skull's outer surface, visible as silver tracery along the brow. One of the few implants the Flow does not reject; it harmonizes chrome to the wearer's natural frequency.",
-      effect: "Reduces the SP cost of up to 4 separate pieces of your other installed cyberware by 1 SP each (minimum 1 SP per piece) for Threshold purposes. You choose which pieces benefit at install and can change the selection in Downtime. +1 FP at the end of a Short Rest, wasted if you have no Flow Reservoir. One Crown only; it cannot harmonize itself, another Crown, the Disruption Lattice, or the Convergence Engine.",
+      effect: "Reduces the SP cost of up to 4 SP of your other cyberware by 1 each (min 1) for Threshold purposes. +1 FP at the end of a Short Rest. One Crown only; cannot harmonize itself, the Disruption Lattice, or the Convergence Engine.",
       tiers: [
         { tier: "Prototype", sp: 1, price: 28000, legality: "Restricted" }
       ] },
@@ -96,7 +96,7 @@ EN.cyberware = {
       desc: "A fully replaced cardiac unit. It doesn't get tired, doesn't panic, and can be revved during combat. Wearers describe feeling calm in firefights.",
       effect: "1/Long Rest, when you'd drop to 0 Vitality, drop to 1 instead (not Bloodied) and gain +2 Speed next turn. Immune to Panic; Edge on Wits Saves vs Frightened and Shaken.",
       street: "Irregular rhythm, medical ID is automatic; Snag on Stealth vs heartbeat detection.",
-      black: "Death-prevention twice/Long Rest, plus Stillness Mode (Action): suspend cardiac function for up to 1 minute, appearing dead to mundane scans and casual observation. You cannot take Actions, Move Actions, Swift Actions, or use other cyberware while in Stillness Mode, but you remain aware of your surroundings. Exiting is a Free Action on your turn.",
+      black: "Death-prevention twice/Long Rest, plus Stillness Mode (Action): appear dead to scans for up to 1 minute.",
       tiers: [
         { tier: "Streetware", sp: 2, price: 3500,  legality: "Restricted" },
         { tier: "Brandware",  sp: 2, price: 9500,  legality: "Licensed" },
@@ -124,13 +124,13 @@ EN.cyberware = {
       ] },
     { key: "feedbackCore", short: "Resonance Feedback Core", name: "Resonance Feedback Core", zone: "Core", enhancement: "None", mystech: true,
       desc: "A reactive implant in the upper torso that absorbs incoming Flow and re-emits it as kinetic or thermal output. The rare chrome that lets an Unattuned character interact with the Flow, not just resist it.",
-      effect: "Taking Invocation damage grants a Feedback Charge (max 3). Discharge (1, Impulse): +1d6 Resonant on an attack within 6. Surge (2, Action): Area 3, Body Save DC 14 or 2d6 Resonant + push 1. Burst (3, Action): Area 6 Cone, 4d6 Resonant, no save, then 1-hour cooldown. Charges expire in 10 min. Damage beyond 3 charges generates none until you spend some, and the Core never charges from environmental Flow damage such as Flow Disturbances or Anomaly hazards, only from deliberate Invocations cast at you.",
+      effect: "Taking Invocation damage grants a Feedback Charge (max 3). Discharge (1, Impulse): +1d6 Resonant on an attack within 6. Surge (2, Action): Area 3, Body Save DC 14 or 2d6 Resonant + push 1. Burst (3, Action): Area 6 Cone, 4d6 Resonant, no save, then 1-hour cooldown. Charges expire in 10 min.",
       tiers: [
         { tier: "Prototype", sp: 2, price: 25000, legality: "Restricted" }
       ] },
     { key: "convergence", short: "Convergence Engine", name: "Convergence Engine", zone: "Core", enhancement: "None", mystech: true,
       desc: "An implant that is, by all measurable standards, both circuit and Flow construct at once. Should not exist; three are documented in Elysium. A campaign-level reward, not a purchase.",
-      effect: "Unattuned: +1 Vitality max and Resistance to Resonant. Attuned: use any one implant as a Ritual Implement, route Invocations through your chrome, and once/Long Rest bypass a Static Threshold (Total Static −2 SP for one combat, then gain 1 Stage of Strain). A character cannot have both this and a Resonance Crown installed; the Engine's hybrid construction conflicts with the Crown's tuning and the two destroy each other on contact.",
+      effect: "Unattuned: +1 Vitality max and Resistance to Resonant. Attuned: use any one implant as a Ritual Implement, route Invocations through your chrome, and once/Long Rest bypass a Static Threshold (Total Static −2 SP for one combat, then gain 1 Stage of Strain). Does not stack with the Resonance Crown.",
       tiers: [
         { tier: "Prototype", sp: 3, price: 45000, legality: "Restricted" }
       ] },
@@ -142,9 +142,9 @@ EN.cyberware = {
       street: "No Enhancement; rough alignment, close inspection (DC 12) spots the bulges and scar lines through clothing.",
       black: "+2 DR vs all physical, plus a reactive surface: first melee hit each combat reflects 1d4 of the same type back.",
       tiers: [
-        { tier: "Streetware", sp: 2, price: 2800,  legality: "Licensed", bonus: { dr: 1 } },
-        { tier: "Brandware",  sp: 2, price: 8500,  legality: "Licensed", bonus: { dr: 1 } },
-        { tier: "Blackware",  sp: 3, price: 21000, legality: "Restricted", bonus: { dr: 2 } }
+        { tier: "Streetware", sp: 2, price: 2800,  legality: "Licensed" },
+        { tier: "Brandware",  sp: 2, price: 8500,  legality: "Licensed" },
+        { tier: "Blackware",  sp: 3, price: 21000, legality: "Restricted" }
       ] },
     { key: "skeleton", short: "Reinforced Skeleton", name: "Reinforced Skeleton", zone: "Integument", enhancement: "+1 Body",
       desc: "Composite woven through your bones. It doesn't make you stronger by itself, but it makes you durable enough to use strength you couldn't otherwise survive.",
@@ -171,7 +171,7 @@ EN.cyberware = {
     { key: "handRazors", short: "Hand Razors", name: "Hand Razors", zone: "Arms", enhancement: "None",
       desc: "Retractable monoblade claws inside the back of the hand. Always with you, always silent, always lethal at arm's length. Can slot into a Cyberarm without adding SP.",
       effect: "Swift Action to extend/retract. While extended, unarmed strikes deal 1d6 Slashing with Armor Piercing 1; silent on deployment and pass standard weapon scans.",
-      street: "Audible clack on deploy (Snag on Stealth that turn); no Armor Piercing. Installed in a Cyberarm slot, they add no SP and extend from a more concealed mechanism, so no Stealth Snag even at this tier.",
+      street: "Audible clack on deploy (Snag on Stealth that turn); no Armor Piercing.",
       black: "1d8 Slashing, Armor Piercing 2; on a crit the target's worn armor loses 1 DR until repaired.",
       tiers: [
         { tier: "Streetware", sp: 1, price: 1500,  legality: "Restricted" },
@@ -193,7 +193,7 @@ EN.cyberware = {
     { key: "springJoints", short: "Spring Joints", name: "Spring Joints", zone: "Legs", enhancement: "None",
       desc: "Leg modifications that store and release kinetic energy explosively. Couriers, parkour operators, and roof-runners consider this essential. Can slot into a Cyberleg without adding SP.",
       effect: "Jump twice your distance; no damage from falls up to 4 spaces. Impulse 1/round: leap up to 3 spaces in any direction without provoking opportunity attacks.",
-      street: "Audible clack (Snag on Stealth while moving); after the leap, can't reuse it for 1d4 rounds. Installed in a Cyberleg slot, they add no SP and operate from a fully integrated mounting, so no Stealth Snag even at this tier.",
+      street: "Audible clack (Snag on Stealth while moving); after the leap, can't reuse it for 1d4 rounds.",
       black: "Safe fall 8 spaces, leap 5 spaces, and store fall energy: next melee within 1 min of a 2+ space fall deals +1d6 Bludgeoning.",
       tiers: [
         { tier: "Streetware", sp: 1, price: 1800,  legality: "Common" },

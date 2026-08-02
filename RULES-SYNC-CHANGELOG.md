@@ -1166,143 +1166,6 @@ its Upgrade)" (doc 3053).
 
 ---
 
-### A24. Equipment resynced (step 4, domain 7 of 7)
-- **Files:** `app/data/gear_melee.js`, `gear_ranged.js`, `gear_signature.js`, `gear_armor.js`,
-  `gear_tools.js`, `weapon_parts.js`, `armor_mods.js`, `cyberware.js`, `crafting.js`,
-  `app/js/engine.js`, `combat.js`, `inventory.js`
-- The catalogs are structurally sound: 464 entries across eight files, and the sweep found
-  no missing or invented items in the tools, cyberware or armor chapters. Prices, availability
-  and legality tags matched the manuscript essentially everywhere. What drifted was mechanics,
-  and in four places the app carried rules the book does not have.
-
-**Four invented mechanics, now removed.**
-- **Shield "Wear X"** was the largest. The app defined a numeric **Wear Threshold** equal to
-  twice the Block die's maximum (8 / 12 / 16), added a critical-hit clause, and stamped
-  "Wear N" into all six shields' traits arrays, their player-facing Type strings, the engine's
-  derived values and the Block tray. **"Wear Threshold" has zero occurrences across all three
-  parts.** The real rule (Part 2, Shield Durability) is a judgement call, not a number: a box
-  is marked each time the shield's Block prevents damage from a heavy hit, "the GM's call,
-  typically any hit it fully or mostly absorbs." Removed everywhere. The manuscript-backed
-  data stays: the Scrap Shield's 2 boxes, and the emitter flags on the Sentinel and Hardlight
-  Barriers.
-- **Leased gear at a zero buy-in.** `streetPrice` forced every leased item to a 0 buy-in, and
-  that invented rule was printed to the player in five separate places. Every Leased entry in
-  the book lists a real buy-in. See the pricing table below.
-- **Warding Foci each charged an Accessories Body Slot.** No focus entry lists a Body Slot, and
-  the book's own rule is explicit: worn gear uses a slot only when its entry both grants a
-  mechanical effect **and** calls out a slot. Removed from all five. The one-focus-at-a-time
-  limit comes from the section intro and is enforced separately, so it is unaffected.
-- **Match Barrel and Folding Stock could not share a build.** The app both printed this and
-  enforced it through `excludes`. Neither entry mentions the other in the manuscript.
-
-**Three engine bugs, all silent.**
-- **Enhancement Bonuses were summed.** The book says bonuses to the same attribute do not
-  stack and the highest applies. Two pieces each granting +1 Body were reading as +2 Body on
-  the sheet.
-- **Subdermal Armor's DR and the Reflex Booster's Initiative never reached the sheet.**
-  `cyberFlatBonuses` whitelisted only `speed` and `wounds`, so both bonuses were printed in
-  the item text and silently dropped from the derived numbers. Both now flow through, with a
-  Chrome row in the DR and INIT breakdowns naming the piece.
-- **The Resonance Crown's exemption never fired.** `CROWN_EXEMPT` keyed off
-  `disruptionLattice` and `convergenceEngine`; the catalog keys are `disruption` and
-  `convergence`. The Crown was harmonizing the two pieces the book explicitly excludes.
-
-**Leased pricing, restored to the book's three separate numbers.** A Buyout is a one-time
-lump sum, separate from Upkeep and never offset by Upkeep already paid. Four of the five are
-priced in Glimmer, which the app could not charge at all: `buyoutLease` was Nexus-only, so
-those four leases were impossible to close.
-
-| Entry | Buy-in | Upkeep | Buyout |
-| :- | :- | :- | :- |
-| SkinPlan Daywear | 70 | 40/wk | 500 |
-| Sentinel Issue | 150 | 120/wk | 1,000 |
-| Bailiff Rig | 430 | 400/wk | 0.3 Nexus |
-| Sentinel Barrier | 90 | 60/wk | 600 |
-| Sentinel Active Defense | 120 | 90/wk | 800 |
-
-**Nonlethal fired a whole health layer too late.** The app triggered Unconscious at **0
-Wounds**; the book says **0 Vitality**, in three independent places. It also granted the
-Target "stable, rather than dying or bleeding out," a state the book gives to nobody, and one
-that matters because Part 2 keeps Unconscious and Dying deliberately separate. Fixed in all
-four glossaries. Affects the Baton, Shock Gloves, Stun Baton and Net Launcher.
-
-**Firing modes and traits that had drifted to an older draft.**
-- **Full-Auto Suppress** had no **Pinned** condition and no break-cover damage, and carried
-  two invented rules (doubled movement cost inside the area, and a cover downgrade).
-- **Semi-Automatic** dropped the Snag on the second attack and the 2-round cost, and invented
-  a "no Attribute modifier to damage" penalty. It also called the second shot a **Follow-Up
-  Attack**, which is a different rule entirely (an off-hand or linked strike).
-- **Continuous** kept only its first bullet, losing **Live Hazard** and **Ground In**. Ground
-  In is the whole mechanical point of Continuous on a melee weapon.
-- **Scoped** was a vague placeholder ("often Edge or reduced penalties") in place of the Take
-  Aim trigger, the long-range Snag waiver and the cover step-down. Same text on the Combat
-  Scope Part.
-- **Crew Served** forbade a "Sprint" while carrying. There is no Sprint action; it is Dash.
-  It also cleared only a Jam, where the loader clears any **Jam or Mishap**.
-- **High Recoil** waived its Snag "unless braced or supported" rather than naming the
-  **Stabilized** trait, which was itself missing from both glossaries. Added.
-- **Precision Frame** existed only as a consequence of Single-Shot-only weapons, so the Match
-  Trigger Group's grant of it had no rule to point at. Added as its own entry.
-- **Bulky** had lost its +1 Load and penalized a "Mobility" skill, which does not exist; the
-  book penalizes **Acrobatics and Stealth**.
-- **Off-Hand, Worn, Light and Heavy** had each been rewritten as shield-specific notes, losing
-  the general rules they carry. **Worn** in particular asserted a Body Slot cost and dropped
-  the drop and disarm protection that is its actual effect.
-- **Powered, Load-Bearing and Leased** were each missing a clause: the unpowered-frame
-  fallback, the non-stacking rule against the Load Distributor, and both the zero-state
-  override and the entire Buyout paragraph.
-- **Bleeding** said a Medtech check removes one stack; it ends the condition entirely.
-
-**Signature weapons: the proficiency gate was stated backwards.** The app locked **area
-projections** behind Proficiency and implied Proficiency alone unlocked the **On Hit riders**.
-The book is the reverse. Untrained you attack with Snag but the basic mode and any area
-projection still work, because the projection is simply how the attack is delivered.
-Proficient adds your Weapon Proficiency Bonus and full base effect, including a Net Launcher's
-Restrain or a Cryo Lance's freeze. Only the special On Hit riders stay locked, and they open
-to a **Weapon Focus naming that specific weapon**. Also fixed: the Gravlock Maul pushed 1
-space instead of 2, and the Harmonic Edge was missing **Quick Draw** and **Versatile (1d10)**
-while carrying an invented **Reach 1**.
-
-**Fabrication, the third kind of work, was missing.** The book names three ways to get a Part
-onto a weapon: Accessories (anytime, no roll), Mods (bench work in downtime), and
-**Fabrication** (legwork through a fixer or face, resolved as a full Dice Pool Project; most
-Restricted and all Contraband Parts require it). Only the first two were modelled. Added,
-along with **Fabrication to Signature Conversion** and the **high-scrutiny commission** rule
-that bills institutional or black-market commissions in Nexus rather than Glimmer. All three
-now surface in the Arms Table.
-
-**Missing numbers that made a rule unrollable.** Reactive Countermeasures' Dazzle save had no
-DC (13). The Flux Gel Sprayer had an invented "DC by tier" in place of a flat DC 13, and
-dropped the Action cost to break free. The Breach Charge keyed its blast save off Agility
-instead of Tech and left the Engineering Proficiency Bonus off both the save DC and the
-Integrity roll, and it had lost the placement check along with the Demolition Kit's Edge,
-which was the entire payoff for owning a 320 kit. Nightwatch Tablets had all three crash DCs
-compressed away. The Disruption Lattice called for a "Focus Disruption check" without naming
-an attribute (it is a Wits or Body save).
-
-**Other corrections.** The Cargo Mule was rated in "Heavy Items", a unit with zero occurrences
-in the manuscript, at the wrong number (the book says 8 Load). The Breach Charge was named
-"Breaching Charge", colliding with the Durabody lineage feature of that name. The Tempest Core
-dealt Electric instead of Energy and had lost its end-of-day damage, radius and per-hour
-scaling. The Flashbang dealt "1d4 Sonic and Light" and had no On Hit rule at all; both Frag
-Grenades had lost their save-for-half. The Resonance Crown counted harmonization in SP rather
-than in **pieces** (4 separate pieces at 1 SP each is much larger than a 4-SP pool). The
-Convergence Engine's restriction read as a non-stacking clause where the book makes it a hard
-mutual exclusion. Synthetic Heart's Stillness Mode had lost its whole cost side. The Resonance
-Feedback Core was missing the restriction that stops it charging off environmental Flow damage.
-Hand Razors and Spring Joints were missing the half of their limb-slot rider that waives the
-Streetware Stealth Snag. **Wall-to-Wall** was referenced by the Explosive trait but defined
-nowhere in the app, so following the pointer found nothing; it is now in with its Trigger,
-Rebound, sealed-room and Pressure clauses, alongside the specialty-ammo usage rules.
-
-**Terminology sweep: clean.** `creature` returns **zero** hits across the entire app, matching
-the manuscript's zero. The invented-term sweep cleared Follow-Up Attack, Cover Integrity,
-Wall-to-Wall, Bricked, Breached, Take Aim, Flow-touched, Weapon Save DC, Stabilized, Pinned and
-Precision Frame, and caught the two that were genuinely unbacked: "Wear Threshold" and "Heavy
-Items", both fixed above.
-
----
-
 ## PART B: Pending, in the agreed order
 
 1. ~~Rulings on the contradictions in PART C.~~ **M1 and M2 ruled 2026-07-28**;
@@ -1310,30 +1173,10 @@ Items", both fixed above.
 2. ~~**#GRID System Integrity rework.**~~ **Done, see A3.**
 3. ~~Remaining verified engine bugs.~~ **Done, see A4, A5 and A6.** Two items
    deferred with reasons (cyberware platform slots, flat implant bonuses).
-4. ~~Data corrections, domain by domain.~~ **Done. All seven domains closed:**
-   Conditions (A11), Skills (A12), Classes (A13), Species and Lineage (A16),
-   the Flow (A14, A18-A21), Talents (A23), Equipment (A24).
+4. Data corrections, domain by domain.
 5. New subsystems (each a feature build, not a data edit): Flow Disturbances,
    Sit-Downs and Social Pressure numbers, Vehicles & Chases, Improvised Weapons,
-   Economy, Mystech Ammunition, cyberware platform slots.
-   - **Mystech Ammunition** was confirmed absent again in domain 7: all three rounds
-     (Hex-Etched, Resonant, Genesis), their prices and availability tiers, their
-     damage-type conversions and the shared **Backlash** rule have no entry anywhere
-     in `app/data`, and the Inventory tab builds no Mystech ammo sub-tab. It is the
-     single largest gap left in the gear catalogs.
-   - **Cyberware platform slots** moved from "deferred" to this list. Mods slotted
-     into a Cyberarm or Cyberleg still add their SP to Total Static, because slot
-     installation is not modelled at all. The book waives that SP, and also waives
-     the Streetware Stealth Snag, for Hand Razors in a Cyberarm and Spring Joints in
-     a Cyberleg. The rider text is now correct (A24); the SP math still is not.
-6. Smaller follow-ups surfaced by domain 7, none blocking:
-   - Enforce the **Convergence Engine / Resonance Crown** mutual exclusion at install
-     time. The text is now correct, but nothing stops a player installing both.
-   - The **Adaptive Camo Cloak**'s two legal Body Slots need a slot-options array
-     (see M21).
-   - Six ammo traits (Pulse, Expanding, Concussive, Intrusion, Marking, Pressure) are
-     carried by items but defined in no glossary; **Area X** and **Stabilized** are
-     defined in some catalogs and not others.
+   Economy, Mystech Ammunition.
 
 Full machine-readable findings, with doc line numbers and `file:line` targets, are
 in the audit scratchpad as `part2_findings.json` and `part3_findings.json`.
@@ -1527,27 +1370,21 @@ no code change was needed.
   up to its listed Mod Slots. Vehicles carry Mod Slots equal to 1 + Tier... Each gear
   chapter's own rules for slots, stacking, and exclusions govern; this chapter never
   overrides them." The old "Sidearms support 2, Longarms 3" line is gone.
-- **App status:** correct, and more complete than this note assumed. The app implements
-  Part 3's full Slot Count table, all eight profiles (Holdout 1, Revolver 2, Light bow 2,
-  Sidearm 4, Hand crossbow 4, Melee 4, Longarm 5, Signature 0), with a per-weapon override.
-- **Correction to my earlier note (2026-08-01):** I wrote that "the old 'Sidearms support 2,
-  Longarms 3' line is gone." **It is not.** The rewrite landed in Part 3's Weapon
-  Customization chapter, but Part 2's Crafting chapter still carries the old line verbatim.
-  That is now logged separately as **M16**.
-- **All four follow-ups are closed** as of step 4 domain 7:
-  - **Over-Engineering** and **Mandatory Flaw:** already implemented, and enforced at the
-    install gate. The app's rule predated the text but says the same thing. Its wording has
-    been moved from the Part 2 vocabulary (Max Mods, mounts) to the Part 3 vocabulary (Slot
-    Count, slots) so the displayed text matches what the code enforces. One dead duplicate of
-    the rule in `weapon_parts.js`, which nothing read, was left in place as data but is no
-    longer the source of the bench text.
-  - **Three kinds of work:** the repair tiers were already in `crafting.js`. The Parts-side
-    trio was not: **Fabrication** was missing entirely and has been added, along with the
-    Signature conversion and the high-scrutiny Nexus commission rule. See A24.
-  - **Armor mods require the Modular trait:** already gated, in the data and in the installer.
-- **One thing to note:** Over-Engineering and Mandatory Flaws live **only in Part 2's Crafting
-  chapter**. Part 3's Weapon Customization chapter never mentions them, so a reader working
-  from the gear chapter alone would not know an over-capacity build is possible.
+- **App status:** correct on the headline number, since it implements Part 3's Slot
+  Count table (Sidearm 4, Longarm 5, Holdout 1, Melee 4, Signature 0).
+- **Follow-up now in scope for step 4 domain 7**, because the rewrite adds rules the
+  app does not yet model:
+  - **Over-Engineering:** one Part past capacity is allowed, but it becomes a
+    **Prototype tier** Project and never invents a mount (a missing slot stays empty,
+    non-Modular armor stays bare, a Signature weapon's 0 slots are absolute). One
+    extra Part is the ceiling. The app has an over-engineering rule of its own that
+    predates this text and needs checking against it.
+  - **Mandatory Flaw:** a successful Over-Engineering must carry a permanent quirk,
+    heavy maintenance burden, or obvious visual tell.
+  - **Three kinds of work:** Accessories (snap on and off outside initiative, no roll,
+    no Project), Mods (bench work in downtime with the right kit and Proficiency, roll
+    only if the work fights back), Fabrication (full Dice Pool Project).
+  - **Armor mods require the Modular trait**, which the app should gate on.
 
 ### M9. Electronic-payload saves unified as a Tech Save (RESOLVED 2026-07-28)
 - **Author ruling:** one save resolves electronic-payload resistance everywhere, a
@@ -1631,66 +1468,6 @@ no code change was needed.
 
 
 ---
-
-### M16. Part 2 and Part 3 describe weapon mod capacity two different ways (NEW 2026-08-01)
-- **Part 2, Crafting, "Modifications and Customization":** "Weapons rely on specific physical
-  **mounts** (such as Barrel, Top, or Underbarrel) and possess a **Max Mods** limit. For
-  example, **Sidearms** safely support up to **2** mods, while **Longarms** support up to
-  **3**. An item cannot safely exceed its Max Mods limit, and a single mount can only hold one
-  mod at a time."
-- **Part 3, Weapon Customization:** the same subsystem, but built on **Slots** (Output, Core,
-  Handling, Utility, Targeting) and a **Slot Count** per profile: **Sidearm 4, Longarm 5**,
-  Holdout 1, Revolver 2, Light bow 2, Hand crossbow 4, Melee 4, Signature 0.
-- These clash twice over. The **numbers** disagree (a Sidearm carries 2 or 4; a Longarm 3 or
-  5), and the **vocabulary** disagrees (mounts and Max Mods, versus slots and Slot Count).
-  Part 3's version is the one with the full table, the five named slots and the per-profile
-  breakdown, and it is what the app implements.
-- **Suggested fix:** rewrite the Part 2 bullet to defer to Part 3 rather than restate it, in
-  the same way M8's ruling already has the Customization section defer to the gear chapters.
-  Something like: "Weapons and armor have a strict structural limit. A weapon carries Parts up
-  to its **Slot Count** across its five slots; armor takes mods only with the **Modular**
-  trait, up to its listed Mod Slots. One Part or mod per slot. See the gear chapters for the
-  per-profile numbers." That kills the stale example without losing the rule.
-- **No app action.** The app already follows Part 3.
-
-### M17. EMP Grenade: the app has a Pulse trait and a half-damage clause the book does not
-- The app's EMP Grenade carries a **Pulse** trait and a clause halving its damage against
-  organic Targets. Neither appears in the manuscript entry.
-- This is not obviously a transcription slip: without something like it, the grenade's damage
-  line contradicts its own promise of "matching the EMP Round and EMP Shell."
-- **Needs a ruling:** either add **Pulse** and the organics clause to the manuscript entry
-  (which makes the app correct as written), or drop both from the app. Left as-is pending
-  your call, since guessing either way changes a real number.
-
-### M18. Serrated Edge: the summary table and the entry disagree
-- The Weapon Parts summary table lists the Serrated Edge's effect as **"Bleed on hit."** The
-  entry below it applies Bleeding **on a critical hit**.
-- **Needs a ruling on which wins.** If the entry wins, the table row should read "Bleed on a
-  critical hit." If the table wins, the app's text becomes "On a hit, the Target gains 1 stack
-  of Bleeding." The app currently follows the entry.
-
-### M19. Shotgun Choke: the summary table and the entry disagree on Part Type
-- The summary table lists it as an **Accessory** (threaded snap-on, no bench time). The entry
-  lists it as a **Mod** (bench work in downtime).
-- This is a real play difference: an Accessory can be swapped mid-mission, a Mod cannot.
-- **Needs a ruling.** Align the table row and the entry, then the app follows.
-
-### M20. Tempest Core Surge Pulse save is out of step with the M9 ruling
-- M9 unified electronic-payload resistance as a **Tech Save**, and the app applies that. The
-  Tempest Core's Surge Pulse still reads **"Body or Systems Save DC 13"** in Part 3.
-- **Suggested fix:** amend it to "make a **Tech Save** DC 13", the same edit M9 already calls
-  for on the EMP Rounds, EMP Shell and Spike Rounds entries. Grouping it with those keeps one
-  rule for the whole category.
-- The app already uses the Tech Save here, so this is a manuscript-only edit.
-
-### M21. Adaptive Camo Cloak lists two legal Body Slots
-- The entry allows the cloak in either the **Head** or the **Accessories** slot; the app's
-  `slot` field holds a single string everywhere, so it records only one and silently drops the
-  other.
-- **This one is an app limitation, not a manuscript defect**, but it needs a small engine
-  change (a slot-options array and a pick at equip time) rather than a data edit, so it is
-  parked here rather than fixed in A24. Flagging in case you would rather simplify the entry
-  to one slot, which would close it with no code.
 
 ## PART D: Systems in the rulebook that the app does not model
 

@@ -1692,25 +1692,21 @@ EN.combatView = (function () {
     // Initiative rolls d20 + Caliber + Agility OR Wits; use the better of the two
     var initAttr = d.attributes.WIT.mod > agiMod ? "WIT" : "AGI";
     var initMod = Math.max(agiMod, d.attributes.WIT.mod);
-    var initVal = initMod + fx.init + ((d.lineageInit && d.lineageInit.caliber) || 0)
-      + ((d.cyberFlat && d.cyberFlat.init) || 0);
+    var initVal = initMod + fx.init + ((d.lineageInit && d.lineageInit.caliber) || 0);
     var spDisplay = adjSpeed(d.speed, fx);
     var lineFeats = (eng.activeLineageFeatures ? eng.activeLineageFeatures(ch) : []) || [];
     var defAttrName = d.defenseAttr === "BOD" ? "Body" : "Agility";
     var defAttrReason = d.defenseAttr === "BOD"
       ? (lineFeats.indexOf("Dermal Plating") !== -1 ? "Dermal Plating" : "lineage")
       : null;
-    // chrome that moves Speed, DR or Initiative, attributed to the installed piece
-    var cyberSpeedRows = [], cyberInitRows = [], cyberDrRows = [];
+    // chrome that moves Speed, attributed to the specific installed piece
+    var cyberSpeedRows = [];
     var _cwItems = (EN.cyberware && EN.cyberware.items) || [];
     (ch.cyberware || []).forEach(function (cw) {
       if (!cw || typeof cw !== "object") return;
       var cdef = _cwItems.find(function (i) { return i.key === cw.key; });
       var ctier = cdef && (cdef.tiers || []).find(function (t) { return t.tier === cw.tier; });
-      var clabel = cw.name || cw.base || "chrome";
-      if (ctier && ctier.bonus && ctier.bonus.speed) cyberSpeedRows.push({ label: clabel, val: ctier.bonus.speed });
-      if (ctier && ctier.bonus && ctier.bonus.init) cyberInitRows.push({ label: clabel, val: ctier.bonus.init });
-      if (ctier && ctier.bonus && ctier.bonus.dr) cyberDrRows.push({ label: clabel, val: ctier.bonus.dr });
+      if (ctier && ctier.bonus && ctier.bonus.speed) cyberSpeedRows.push({ label: cw.name || cw.base || "chrome", val: ctier.bonus.speed });
     });
     var baseMove = Math.max(3, 6 + agiMod), spdFloored = (6 + agiMod) < 3, spCond = spDisplay - d.speed;
     function bdRow(label, val, note, raw) { return { label: label, val: val, note: note || null, raw: !!raw }; }
@@ -1723,11 +1719,10 @@ EN.combatView = (function () {
           .concat(dg.shield ? [bdRow("Shield · " + dg.shield.name, dg.shieldDef)] : []),
         foot: "Cover (+2 Half / +5 ¾) and a declared Active Defense add more against a specific attack, see Defend." },
       DR: { title: "Damage Reduction", total: d.totalDR || 0, sign: false,
-        formula: "Worn armor + natural lineage DR + chrome vs physical damage",
+        formula: "Worn armor + natural lineage DR vs physical damage",
         rows: (dg.armor ? [bdRow("Armor · " + dg.armor.name + (dg.armorLapsed ? " (LEASE DUE)" : ""), dg.armorDR, null, true)] : [])
-          .concat(d.naturalDR ? [bdRow("Natural (lineage)", d.naturalDR)] : [])
-          .concat(cyberDrRows.map(function (r) { return bdRow("Chrome · " + r.label, r.val); })),
-        empty: (dg.armor || d.naturalDR || cyberDrRows.length) ? null : "No armor equipped; WEAR armor in Inventory → Stash.",
+          .concat(d.naturalDR ? [bdRow("Natural (lineage)", d.naturalDR)] : []),
+        empty: (dg.armor || d.naturalDR) ? null : "No armor equipped; WEAR armor in Inventory → Stash.",
         foot: dg.armor && (dg.armor.traits || []).indexOf("Plated") !== -1 ? "Plated: when you Block, add half this DR (rounded down) on top." : null },
       SPD: { title: "Speed", total: spDisplay, sign: false,
         formula: "max(3, 6 + Agility modifier) + chrome + lineage − Bulky − load − conditions",
@@ -1740,9 +1735,8 @@ EN.combatView = (function () {
           .concat(spCond ? [bdRow("Conditions", spCond)] : []),
         foot: d.lineageSpeedFirstRound ? "+" + d.lineageSpeedFirstRound + " Speed during the first round of any combat (Tuned Synapses)." : null },
       INIT: { title: "Initiative", total: initVal, sign: true,
-        formula: "Agility or Wits modifier (best)" + (cyberInitRows.length ? " + chrome" : "") + (d.lineageInit && d.lineageInit.caliber ? " + lineage" : "") + (fx.init ? " + conditions" : ""),
+        formula: "Agility or Wits modifier (best)" + (d.lineageInit && d.lineageInit.caliber ? " + lineage" : "") + (fx.init ? " + conditions" : ""),
         rows: [bdRow((initAttr === "WIT" ? "Wits" : "Agility") + " modifier (best of Agility/Wits)", initMod, chromeNote(initAttr))]
-          .concat(cyberInitRows.map(function (r) { return bdRow("Chrome · " + r.label, r.val); }))
           .concat(d.lineageInit && d.lineageInit.caliber ? [bdRow("Lineage · Static Premonition", d.lineageInit.caliber)] : [])
           .concat(fx.init ? [bdRow("Conditions", fx.init)] : []),
         foot: "Initiative roll = d20 + Caliber (" + d.caliber + ") + this." + (d.lineageInit && d.lineageInit.edge ? " Roll with Edge (Tuned Synapses)." : "") },
@@ -1856,6 +1850,7 @@ EN.combatView = (function () {
         } else {
           var spv = [(dg.shieldDef >= 0 ? "+" : "") + dg.shieldDef + " DEF"];
           if (dg.shieldBlockDie) spv.push(dg.shieldBlockDie + " Block");
+          if (dg.shieldWearThreshold) spv.push("Wear " + dg.shieldWearThreshold);
           spv.push("□".repeat(dg.shieldBoxesLeft) + "■".repeat(dg.shieldSpent));
           chips.push(gchip("SHIELD", dg.shield.name, spv.join(" · "), "var(--accent)"));
         }
@@ -3238,8 +3233,8 @@ EN.combatView = (function () {
         base.note = "";
         return base;
       }
-      var wearNote = dg.shield
-        ? " Durability: if this Block prevents a heavy hit (the GM's call, typically one it fully or mostly absorbs), mark a box (" + dg.shieldBoxesLeft + "/" + dg.shieldBoxesMax + " left)."
+      var wearNote = dg.shield && dg.shieldWearThreshold
+        ? " Wear " + dg.shieldWearThreshold + ": a Blocked hit of " + dg.shieldWearThreshold + "+ raw damage, or any Blocked critical, marks a box (" + dg.shieldBoxesLeft + "/" + dg.shieldBoxesMax + " left)."
         : "";
       var DEF_LIVE = {
         Block:   { avail: canBlock, req: "a shield, a Block Bonus, or Plated armor",
