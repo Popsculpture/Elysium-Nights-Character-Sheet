@@ -240,7 +240,8 @@ EN.inventoryView = (function () {
       (g.armor && g.armor.items) || [],
       (g.tools && g.tools.items) || [],
       partItems(),
-      armorModItems()
+      armorModItems(),
+      vehicleItems()
     );
   }
   function findItem(name) { return catalog().find(function (i) { return i.name === name; }); }
@@ -622,10 +623,11 @@ EN.inventoryView = (function () {
   // Stash categories: fixed display order, collapsible (collapsed by default)
   var STASH_CATS = ["Melee Weapons", "Ranged Weapons", "Signature Weapons", "Ammunition & Munitions",
     "Armor & Defensive Gear", "Carry Gear", "Skill Kits", "Field Devices & Gadgets", "Consumables",
-    "Flow Tonics & Resonant Devices", "Smartdecks & B&E Buddies", "Cipher Library", "Weapon Parts", "Armor Mods", "Custom & Unknown"];
+    "Flow Tonics & Resonant Devices", "Smartdecks & B&E Buddies", "Cipher Library", "Weapon Parts", "Armor Mods", "Vehicles", "Custom & Unknown"];
   var _stashOpen = {};   // category name -> true when expanded
   function stashCategory(it) {
     if (!it) return "Custom & Unknown";
+    if (it.vehicle) return "Vehicles";
     if (it.benchPart) return "Weapon Parts";
     if (it.armorMod) return "Armor Mods";
     if (it.signature) return "Signature Weapons";
@@ -1041,6 +1043,16 @@ EN.inventoryView = (function () {
         { label: "Mystech", intro: (EN.gearCatalog.ammo && EN.gearCatalog.ammo.mystechNote) || "", items: byGroup(ammo, "Mystech") }
       ] }
     ];
+    if (VEH().length) {
+      var V = EN.vehicles;
+      cats.push({ key: "vehicles", title: "Vehicles", short: "VEHICLES", intro: V.intro, subs: [
+        { label: "Buy Outright", intro: "List price is twenty weeks of upkeep. " + (V.unlisted || ""),
+          items: VEH().map(vehicleAsItem) },
+        { label: "Corporate Lease", intro: (V.acquisition || []).filter(function (a) { return a.mode === "Leased"; })
+            .map(function (a) { return a.note; }).join(" "),
+          items: VEH().map(vehicleLeaseAsItem) }
+      ] });
+    }
     if (g.armor && armorItems.length) {
       var ai = g.armor.groupIntros || {};
       cats.push({ key: "armor", title: "Armor & Defensive Gear", short: "ARMOR", intro: g.armor.intro, subs: [
@@ -1382,6 +1394,29 @@ EN.inventoryView = (function () {
              nexus: m.nexus, upkeep: m.upkeep, buyout: m.buyout, vendor: m.vendor };
   }
   function armorModItems() { return (AM().mods || []).map(armorModAsItem); }
+
+  /* ---- vehicles in the market -----------------------------------------
+     Each profile lists twice: outright at list price, and on a corporate
+     lease. The book gives a vehicle lease no buy-in and makes the list
+     price its Buyout, so the lease entry is price 0 with buyout set. */
+  function VEH() { return (EN.vehicles && EN.vehicles.profiles) || []; }
+  function vehicleDesc(v) {
+    return v.category + ", Tier " + v.tier + ". " + v.modSlots + " Mod Slots (1 + Tier). Weekly upkeep " + fmtG(v.upkeep) + ": " + fmtG(v.fuel) + " Fuel and Routine plus " + fmtG(v.reserve) + " Repair Reserve.";
+  }
+  function vehicleAsItem(v) {
+    return { name: v.name, kind: "vehicle", group: "Vehicle", price: v.listPrice,
+             availability: v.availability, legality: v.legality, vehicle: true,
+             desc: vehicleDesc(v) + " List price is twenty weeks of upkeep.",
+             effect: "Owned outright. You still owe weekly upkeep of " + fmtG(v.upkeep) + " per week of active use." };
+  }
+  function vehicleLeaseAsItem(v) {
+    return { name: v.name + " (Lease)", kind: "vehicle", group: "Vehicle Lease", price: 0,
+             upkeep: v.upkeep, buyout: v.listPrice,
+             availability: v.availability, legality: v.legality, vehicle: true,
+             desc: vehicleDesc(v) + " A corporate fleet lease: no buy-in, and the list price is the Buyout.",
+             effect: "Runs the Leased trait. Lapsed or Locked is a dead ignition: the engine will not turn over, installed mods sit inert, and the doors open for whoever holds the note. Miss a payment and the repo arrives as people, not paperwork." };
+  }
+  function vehicleItems() { return VEH().map(vehicleAsItem).concat(VEH().map(vehicleLeaseAsItem)); }
   function aggregateArmorLegality(armor, lo) {
     var order = ["Legal", "Licensed", "Restricted", "Contraband"];
     var worst = armor.legality || "Legal";
