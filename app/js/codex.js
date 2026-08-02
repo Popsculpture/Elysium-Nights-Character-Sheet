@@ -271,6 +271,38 @@ EN.codexView = (function () {
       blocks.push(refPanel("ref-improvised", "Improvised Weapons", "ANYTHING IN REACH", kids));
     })();
 
+    /* vehicles: ownership and customization */
+    (function () {
+      var V = EN.vehicles; if (!V) return;
+      var kids = [];
+      function bullets(a) { return (a || []).map(function (x) { return "\u2022 " + x; }).join("\n"); }
+      function g(nv) { return "𝒢" + Number(nv).toLocaleString(); }
+      kids.push(ruleBlock("Buying a Vehicle", V.intro
+        + "\n\nA vehicle's list price is twenty weeks of its upkeep.\n\n"
+        + V.profiles.map(function (v) {
+            return v.name + " | " + g(v.listPrice) + " | " + v.category + " T" + v.tier + " | " + v.availability + " | " + v.legality;
+          }).join("\n")
+        + "\n\n" + V.unlisted));
+      kids.push(ruleBlock("How to Get One", V.acquisition.map(function (a) {
+        return a.mode + " (" + a.cost + "): " + a.note; }).join("\n")));
+      kids.push(ruleBlock("Weekly Upkeep", V.upkeepNote + "\n\n"
+        + V.profiles.map(function (v) {
+            return v.name + " | fuel " + g(v.fuel) + " + reserve " + g(v.reserve) + " = " + g(v.upkeep) + " per week";
+          }).join("\n")));
+      kids.push(ruleBlock("Parking, Docking, and Storage",
+        V.storage.map(function (s2) { return s2.service + " | 𝒢" + s2.cost; }).join("\n")));
+      kids.push(ruleBlock("Vehicle Repair", bullets(V.repair)));
+      kids.push(ruleBlock("How Vehicle Mods Work", bullets(V.modRules)));
+      kids.push(ruleBlock("Vehicle Mods", V.mods.map(function (m) {
+        return m.name + " | " + (m.priceNote || g(m.price)) + " | fits " + m.fits
+             + " | " + m.availability + ", " + m.legality + "\n    " + m.effect;
+      }).join("\n\n")));
+      kids.push(ruleBlock("Mod Slots by Profile", V.profiles.map(function (v) {
+        return v.name + " | Tier " + v.tier + " | " + v.modSlots + " slots"; }).join("\n")
+        + "\n\nMod Slot Count is 1 + the vehicle's Tier."));
+      blocks.push(refPanel("ref-vehicles", "Vehicles", "OWNERSHIP & CUSTOMIZATION", kids));
+    })();
+
     /* conditions library */
     blocks.push(el("div", { style: { height: "10px" } }));
     blocks.push(EN.ui.sectionTitle("Conditions Library"));
