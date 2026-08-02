@@ -226,6 +226,12 @@ EN.store = (function () {
     if (ch.equippedShield === undefined) ch.equippedShield = null;
     if (ch.equippedFocus === undefined) ch.equippedFocus = null;
     if (!ch.weaponAmmo) ch.weaponAmmo = {};
+    // the firing mode was renamed "Burst" -> "Burst Fire" to match the book;
+    // a record saved before that carries the old string in its magazine state
+    Object.keys(ch.weaponAmmo).forEach(function (w) {
+      var a = ch.weaponAmmo[w];
+      if (a && a.mode === "Burst") a.mode = "Burst Fire";
+    });
     // Overclocked Array state (6x6 rolled matrix + picked line + table rule).
     // A hand-edited/imported file can carry anything here, and the matrix
     // render reads every slot, so anything short of exactly 36 well-formed

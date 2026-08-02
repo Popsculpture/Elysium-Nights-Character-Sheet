@@ -53,7 +53,7 @@ EN.briefs = {
   "Thresher Stance": "Spend 2 Overdrive, 1 min: melee hits splash half damage to second enemy in reach; Edge vs grapples",
   "Avalanche of Iron": "Charge within 6; four max-damage melee attacks driving target back; pinned against obstacle = auto-hit + Stunned",
   "Walking Emplacement": "Ignore Two-Handed/Heavy/Setup/Crew-Served traits; Body for Weapon Save DC; dual-wield ranged Follow-Up Attack",
-  "Suppressive Counter": "Spend 1 Overdrive to impose Snag; Burst/Full-Auto also cuts attack damage (and Cover) by 1d10 + Body",
+  "Suppressive Counter": "Spend 1 Overdrive to impose Snag; Burst Fire/Full-Auto also cuts attack damage (and Cover) by 1d10 + Body",
   "Bullet-Storm Protocol": "Spend 2 Overdrive, 1 min: no ammo; ranged damage shoves 1, halves Speed; melee Maneuvers fire to 2",
   "Maximum Overdrive": "Spend 2 Overdrive; Area-6 Cone Agility-save or 6d10+Body, Deafened, Speed 0; flattens all Cover to 0",
   "Wrecking Ball": "Spend 1 Overdrive; standard melee attack deals +1d8 Bludgeoning and inflicts 1 stack of Bleeding",

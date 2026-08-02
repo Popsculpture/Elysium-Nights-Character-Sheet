@@ -14,7 +14,7 @@ EN.gearCatalog.weaponTraits = {
   "Arc": "May target spaces behind low barriers or around corners if there is open space above the path. Cannot be used where there is no vertical room for the projectile to arc.",
   "Area X": "Some effects fill a space and catch whatever is standing in it. The number is the size in spaces; the word after gives the shape, Sphere (burst), Cone (spreads from you), Line (X long, 1 wide), Cube, or Aura. Targets caught usually save for half or no damage; roll the effect's damage once and apply it to everyone the area touches.",
   "Armor Piercing X": "On a hit, ignore X points of flat damage reduction from armor or similar gear for that attack. Does not affect Resistances or Immunities unless a rule explicitly says otherwise.",
-  "Burst": "Choose a primary Target and attack (3 rounds). Hit or miss, every other Target within 1 space of the primary makes an Agility Save vs your Weapon Save DC; on a failure they take the weapon's damage die without your Attribute modifier.",
+  "Burst Fire": "Choose a primary Target and attack (3 rounds). Hit or miss, every other Target within 1 space of the primary makes an Agility Save vs your Weapon Save DC; on a failure they take the weapon's damage die without your Attribute modifier.",
   "Close Quarters": "You do not suffer Snag for attacking while engaged in melee or in cramped environments where similar weapons would be awkward.",
   "Compact": "Easier to handle in vehicles, narrow corridors, and cluttered spaces. Penalties that apply only to long or oversized weapons in very tight spaces do not apply.",
   "Concealable": "Checks to spot the item on a casual search, or to notice you are armored, are made with Snag. A deliberate pat-down or a scanner still finds it.",

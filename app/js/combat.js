@@ -1320,11 +1320,11 @@ EN.combatView = (function () {
      Normalization spec validated against the rulebook reference tables (72/73 weapons;
      the lone flag, Harmonic Edge range, is a known reference inconsistency the
      consistent reach rule resolves correctly). */
-  var FIRING_MODES = ["Single Shot", "Semi-Automatic", "Burst", "Full-Auto"];
+  var FIRING_MODES = ["Single Shot", "Semi-Automatic", "Burst Fire", "Full-Auto"];
   // per-shot ammo cost. Single Shot & Semi-Automatic each spend 1 round per shot;
   // Semi-Auto differs by allowing a second shot via a Swift Action (fire it again), so
-  // each tap here deducts 1. Burst (3) and Full-Auto (8) spend their full volley per use.
-  var MODE_COST = { "Single Shot": 1, "Semi-Automatic": 1, "Burst": 3, "Full-Auto": 8 };
+  // each tap here deducts 1. Burst Fire (3) and Full-Auto (8) spend their full volley per use.
+  var MODE_COST = { "Single Shot": 1, "Semi-Automatic": 1, "Burst Fire": 3, "Full-Auto": 8 };
   var TRAIT_DISPLAY = { "Nonlethal": "Nonlethal Damage" };   // display rename to match reference
 
   function catWeapons() {
