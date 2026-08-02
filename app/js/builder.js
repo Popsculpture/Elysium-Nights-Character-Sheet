@@ -1976,8 +1976,23 @@ EN.builder = (function () {
     // group talents by category into <optgroup>s
     var cats = {};
     (EN.talents || []).forEach(function (t) { (cats[t.category || "Other"] = cats[t.category || "Other"] || []).push(t); });
-    var sel = el("select", { onchange: function (e) { store.update(function (c) { c.universalUpgrades[L] = { type: "talent", talent: e.target.value || null }; }); } },
-      [el("option", { value: "", text: "- choose a Talent -" })]);
+    // "If you replace a Talent that you have Upgraded, you lose both the base
+    // Talent and its Upgrade." Without this sweep the Upgrade slot keeps
+    // pointing at a Talent you no longer own: it stops applying, but it still
+    // reads as a spent choice, so the pick is silently wasted.
+    var sel = el("select", { onchange: function (e) {
+      var picked = e.target.value || null;
+      store.update(function (c) {
+        var dropped = (c.universalUpgrades[L] || {}).talent;
+        c.universalUpgrades[L] = { type: "talent", talent: picked };
+        if (dropped && dropped !== picked) {
+          Object.keys(c.universalUpgrades).forEach(function (k) {
+            var u = c.universalUpgrades[k];
+            if (u && u.type === "talentUpgrade" && u.talent === dropped) c.universalUpgrades[k] = null;
+          });
+        }
+      });
+    } }, [el("option", { value: "", text: "- choose a Talent -" })]);
     Object.keys(cats).forEach(function (cat) {
       var grp = el("optgroup", { label: cat });
       cats[cat].forEach(function (t) { grp.appendChild(el("option", { value: t.key, selected: current === t.key, text: t.name })); });

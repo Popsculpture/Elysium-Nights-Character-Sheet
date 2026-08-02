@@ -1077,6 +1077,66 @@ near-neighbour rule would have read 1083 as incidental and might have flattened 
 
 ---
 
+### A23. Talents resynced (step 4, domain 6 of 7)
+- **Files:** `app/data/talents.js`, `app/data/briefs.js`, `app/js/builder.js`
+- All 63 talents and 7 categories were present and correctly named; the divergences were
+  mechanics, not structure. 43 findings survived adversarial verification, 14 of them high.
+
+**Three talents had lost or broadened a printed mechanic:**
+- **Akimbo Specialist was missing its first bullet entirely.** The manuscript opens with
+  "Increase your Body or Agility score by 1, to a maximum of 20" (doc 3066). The app went
+  straight to the Defense bonus, so the talent silently cost a player a +1.
+- **Echo Sighted granted Edge on all d20 checks** where the book grants it only on
+  **Awareness** checks (doc 3271).
+- **Crowd Reader hardcoded a Charm (Insight) check**, dropping both choices the book offers:
+  "an Insight or Intuition check using Charm or Wits" (doc 3389). That matters because the
+  same talent can raise either Charm or Wits.
+
+**Lockdown Specialist's Upgrade was a different mechanic.** The manuscript grants one
+Opportunity Attack per round **without spending your Impulse Action** (doc 3185). The app
+instead granted **Caliber-many Opportunity Attacks per round, to a maximum of 3**, which is
+a substantial power increase the book never gives.
+
+**Three terms in the app do not exist in the manuscript at all**, verified at zero
+occurrences across all three parts: **"Hull Point"** (Asphalt Rider; vehicles use Integrity,
+99 occurrences), **"Strain Threshold"** (Augment Specialist brief; the mechanic is reducing
+Total Static for your Static Threshold), and **"Saving Throw Proficiency"** (Hardened
+Survivor brief; the term is Saving Throw Focus). A fourth, **"Source Coder"**, was a stale
+class name in Parallel Processing's requirement; the subclass is the **Sourcerer**.
+
+**Briefs were inventing mechanics, which is worse than drift** because a brief is what a
+player reads at the table. Arsenal Adept advertised a per-Short-Rest limit and "Proficiency
+Bonus twice to damage" where the book gives once per turn and Caliber. Toxicologist invented
+a flat DC 14 where the book scales it. Close-Quarters Brawler named the wrong skill and
+Restrained both combatants instead of one. Laceration Expert promised Caliber-many Bleeding
+stacks instead of one. All corrected.
+
+**Also fixed:** Operator resource abilities are **Calls**, not "Tactical Maneuvers", in two
+talents; Static Grounding said "magical effect" where the book says resonant; the Armor
+Piercing brief said "non-magical armor DR" (the one `non-magical` deliberately left out of
+the A22 terminology sweep as out of domain, now in scope and corrected).
+
+**One engine fix: replacing a Talent now clears its Upgrade.** The manuscript is explicit
+that "If you replace a Talent that you have Upgraded, you lose both the base Talent and its
+Upgrade" (doc 3054). The app dropped the base correctly and the Upgrade stopped applying,
+but the Upgrade slot kept its stored reference, so the pick was silently wasted while still
+reading as a completed choice. Verified the sweep clears the orphan, leaves an unrelated
+Upgrade untouched, and is a no-op when re-selecting the same Talent.
+
+**`EN.talentRules.progression` carried an older draft** of the Universal Upgrade rule (a
+single +1 rather than +2 to one Attribute or +1 to two). Corrected, though nothing currently
+reads that object; the live builder already implemented the rule correctly.
+
+**Still open, reported rather than built:** **Talent requirements are never enforced.**
+`talentPicker` lists every talent with no Attribute or Level gate, so a Level 2 character can
+select one requiring "Character Level 8, Tech 16+"; the requirement shows only as an advisory
+line, and only after selection. The same gap exists in the Level 6+ Upgrade picker, which
+also never displays the requirement. The requirement data is complete and machine-readable
+enough to gate on: 25 of 63 talents carry one, matching the manuscript's 25 Prerequisite
+lines exactly.
+
+---
+
 ## PART B: Pending, in the agreed order
 
 1. ~~Rulings on the contradictions in PART C.~~ **M1 and M2 ruled 2026-07-28**;
