@@ -796,7 +796,7 @@ EN.pdfExport = (function () {
       ctx.row([
         { label: "FP Max", name: "flow.fpMax", value: f.max, w: 1, align: "center" },
         { label: "Flow DC", name: "flow.dc", value: f.dc, w: 1, align: "center" },
-        { label: "Flow Atk", name: "flow.atk", value: sgn(f.attack), w: 1, align: "center" },
+        { label: "Flow Atk", name: "flow.atk", value: sgn(f.attackBonus), w: 1, align: "center" },
         { label: "FP Now", name: "flow.fpNow", value: "", w: 1, align: "center" }
       ]);
       ctx.checkboxRow("Strain", "flow.strain", 6, 0);

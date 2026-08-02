@@ -593,7 +593,7 @@ EN.printSheet = (function () {
     out.push(el("div.ps-statrow", null, [
       stat("FP MAX", f.max, "(Cal x3) + mod"),
       stat("FLOW DC", f.dc, "enemy saves"),
-      stat("FLOW ATK", sgn(f.attack), "d20 + this"),
+      stat("FLOW ATK", sgn(f.attackBonus), "d20 + this"),
       stat("STRAIN", "0 to 6", "track in play")
     ]));
     out.push(el("div.ps-surv-row", { style: { marginTop: "4px" } }, [el("span.ps-fl", { text: "FP NOW" }), el("span.ps-box.ps-write") , el("span.ps-fl", { text: "STRAIN" }), pips(0, 6, "dot")]));

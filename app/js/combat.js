@@ -3200,7 +3200,14 @@ EN.combatView = (function () {
           base.note = "Roll the shield die and add your flat bonuses and Armor DR against this hit." + wearNote;
           return base;
         }
-        if (name === "Dodge") { base.mode = "defense"; base.bonus = 2; base.note = "Raise your Defense against this hit. On a miss you may shift 1 space."; return base; }
+        if (name === "Dodge") {
+          // take the same Acrobatics total the row summary advertises, so the
+          // tray and the row cannot drift apart
+          base.mode = "defense";
+          base.bonus = acro ? acro.total : d.attributes.AGI.mod;
+          base.note = "Raise your Defense against this hit. On a miss you may shift 1 space.";
+          return base;
+        }
         if (name === "Parry") {
           // a physical shield satisfies the requirement on its own, so fall back to
           // the shield die when no Simple or Martial weapon is equipped
@@ -3213,19 +3220,19 @@ EN.combatView = (function () {
           return base;
         }
         if (name === "Resurge") {
-          base.dice.push({ n: 1, sides: 6, label: "d6" });
+          base.dice.push({ n: 1, sides: d.resilienceDie || 6, label: "d" + (d.resilienceDie || 6) });
           base.onZero = "Reduced to 0: the Flow attack rebounds for +3 Resonant damage.";
-          base.note = "Against a Flow attack. Roll d6 and subtract it; if the damage drops to 0, it rebounds.";
+          base.note = "Against a Flow attack. Roll your Resilience Die and subtract it; if the damage drops to 0, it rebounds.";
           return base;
         }
         if (name === "Siphon") {
-          base.dice.push({ n: 1, sides: 6, label: "d6" });
+          base.dice.push({ n: 1, sides: d.resilienceDie || 6, label: "d" + (d.resilienceDie || 6) });
           base.onRoll = function (t) { return "Restore " + t + " Vigor."; };
-          base.note = "Against elemental or Flow damage. Roll d6, subtract it, and restore that much Vigor.";
+          base.note = "Against elemental or Flow damage. Roll your Resilience Die, subtract it, and restore that much Vigor.";
           return base;
         }
         if (name === "Ward") {
-          base.dice.push({ n: 1, sides: 6, label: "d6" });
+          base.dice.push({ n: 1, sides: d.resilienceDie || 6, label: "d" + (d.resilienceDie || 6) });
           var wd = parseDie(dg.wardDie);
           if (wd) { wd.label = (dg.focus && dg.focus.name) || "Ward"; base.dice.push(wd); }
           base.note = "Roll d6" + (wd ? " plus your Focus die" : "") + " and subtract the total from the incoming damage.";
