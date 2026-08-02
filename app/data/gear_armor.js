@@ -194,7 +194,7 @@ EN.gearCatalog.armor = {
     { name: "Ballistic Bulwark", kind: "shield", group: "Physical Shield", type: "Physical Shield (+2 Defense, +1d8 Block, Wear 16)", price: 300,
       defense: 2, blockDie: "1d8", wear: 16, boxes: 3, coverOnFullDefense: "Three Quarter Cover", traits: ["Heavy", "Off-Hand", "Wear 16"], availability: "Uncommon", legality: "Restricted",
       desc: "A planted ballistic wall you set down and fight from behind. It does not move fast. It does not need to. Hold a corridor with one and the corridor is yours until somebody brings a vehicle.",
-      effect: "Adds +2 to your Defense while wielded. When you initiate Full Defense, you also gain three-quarter cover until the start of your next turn. When you initiate Full Defense, you also gain Three Quarter Cover until the start of your next turn." },
+      effect: "Adds +2 to your Defense while wielded. When you initiate Full Defense, you also gain Three Quarter Cover until the start of your next turn." },
     { name: "Hardlight Barrier", kind: "shield", group: "Physical Shield", type: "Physical Shield (+1 Defense, +1d6 Block, Wear 12)", price: 450,
       defense: 1, blockDie: "1d6", wear: 12, boxes: 3, emitter: true, traits: ["Concealable", "Off-Hand", "Wear 12"], availability: "Uncommon", legality: "Restricted",
       desc: "A wrist projector that throws a plane of hardened light on command. Stowed, it is a bracelet nobody clocks. Raised, it is a shield that was not there a second ago, exactly long enough to ruin someone's aim. Prototype corporate tech.",

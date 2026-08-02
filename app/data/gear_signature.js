@@ -135,7 +135,7 @@ EN.gearCatalog.signature = {
     "Reach X": "Extends your melee threat beyond arm's length. You can attack Targets up to 1 space farther per point of Reach (Reach 1 = up to 2 spaces). Any rule referencing 'entering your reach' uses this extended distance.",
     "Semi-Automatic": "After you attack with this weapon, you may spend a Swift Action to make one additional attack with it against the same or a different target. That second attack rolls with Snag, and the pair spends 2 rounds of ammo.",
     "Siege": "Deals double damage to Vehicle armor and to Cover Integrity. If an attack destroys a piece of cover, overflow damage applied to the Target behind it ignores their personal armor Damage Reduction.",
-    "Single Shot": "Make a single attack against one Target for 1 round of ammo. If Single Shot is a weapon's only firing mode, its attacks score a critical hit on a roll of 19 or 20.",
+    "Single Shot": "Make a single attack against one Target for 1 round of ammo. If Single Shot is a weapon's only firing mode, it has the Precision Frame trait inherently, scoring a critical hit on a roll of 19 or 20.",
     "Slow": "You can make only one attack per round with this weapon, regardless of extra-attack features, unless something explicitly overrides it.",
     "Two-Handed": "Requires both hands for effective use. Using it one-handed applies heavy penalties (typically Snag on attacks and a downgraded damage die) unless you have a specific feature or powered assistance.",
     "Worn": "Built to attach to the body, clothing, or armor rather than be held. Cannot be easily dropped or disarmed; may take time, tools, or a specific action to equip or remove. Counts as equipped gear for any effect that checks what you are wearing or bearing."

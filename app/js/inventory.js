@@ -1383,7 +1383,7 @@ EN.inventoryView = (function () {
   function armorModAsItem(m) {
     return { name: m.name, price: m.price, legality: m.legality, availability: m.rarity, desc: m.effect,
              armorMod: true, modKey: m.key, fits: m.fits, grants: m.grants, modCategory: m.category,
-             nexus: m.nexus, upkeep: m.upkeep, vendor: m.vendor };
+             nexus: m.nexus, upkeep: m.upkeep, buyout: m.buyout, vendor: m.vendor };
   }
   function armorModItems() { return (AM().mods || []).map(armorModAsItem); }
   function aggregateArmorLegality(armor, lo) {

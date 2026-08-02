@@ -302,7 +302,7 @@ EN.rules = {
   formulas: {
     speed:    "6 + Agility Modifier (minimum 3)",
     defense:  "10 + Agility Modifier (+ armor & cover)",
-    wounds:   "Maximum Wounds = Body score; Critical Condition at 50% or less Vitality",
+    wounds:   "Maximum Wounds = Body score; Critical Condition at 50% or less of maximum Wounds",
     passive:  "10 + Attribute Modifier + Skill Proficiency Bonus + Caliber inside a Skill Focus (+5 Edge / -5 Snag)",
     save:     "d20 + Attribute Modifier + Caliber (if Saving Throw Focus, no proficiency required)",
     melee:    "d20 + Body Modifier + Weapon Proficiency Bonus",

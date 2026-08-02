@@ -194,33 +194,6 @@ EN.weaponParts = {
       grants: "Tags hit Targets with a location beacon", effect: "On a hit, the Target is tagged with an embedded tracking chip. You know their location to within 10 meters for 1 hour or until the chip is removed (typically needs medical attention)." }
   ],
 
-  /* ---- trait glossary (every trait a Part grants or references) ---------- */
-  traits: [
-    { name: "Armor Piercing X", text: "When you hit, ignore X points of flat damage reduction from armor. Does not affect Resistances or Immunities unless a rule says so." },
-    { name: "Bleeding", text: "At the start of your turn, and each time you willingly move 1 space, lose 1d4 / 2d4 / 3d4 Vitality by stacks. A Medtech check (DC 10/15/20) or any Vitality restoration removes a stack." },
-    { name: "Burst Fire", text: "Spend 3 rounds and attack one Target; every other Target within 1 space makes an Agility save vs your Weapon Save DC, taking the weapon's damage die (no Attribute mod) on a failure." },
-    { name: "Close Quarters", text: "No Snag for attacking while engaged in melee or in cramped spaces where similar weapons would be awkward." },
-    { name: "Concealable", text: "Attacks and operation work as normal. Checks to detect the weapon on a casual search are made with Snag." },
-    { name: "Defensive", text: "When targeted by a melee attack while wielding this weapon (and not Surprised, Restrained, or Incapacitated), spend an Impulse Action to impose Snag on the attack." },
-    { name: "Finesse", text: "Use Body or Agility for the attack and damage, chosen each time you attack." },
-    { name: "Full-Auto", text: "As an Action once per round, spend 8 rounds to project an Area 3 cone or an Area 6 by 1 line; Targets save vs your Weapon Save DC per the firing-mode rules." },
-    { name: "Guided", text: "Attacks ignore the Defense bonus of Half Cover and do not suffer Snag when firing at long range." },
-    { name: "Heavy", text: "Adds to encumbrance and may interact with rules that penalize low Body or long-distance movement. Usually unsuitable for off-hand or dual-wield use." },
-    { name: "High Recoil", text: "Multiple attacks with this weapon in one round apply Snag to later attacks unless Stabilized." },
-    { name: "Light", text: "Compact and easy in one hand; interacts with dual-wield rules and can be carried discreetly under loose clothing without counting as Concealable." },
-    { name: "Nonlethal", text: "If damage from this weapon reduces a Target to 0 Vitality, that Target is immediately rendered Unconscious." },
-    { name: "Precision Frame", text: "If a weapon's only firing mode is Single Shot, its attacks score a critical hit on a roll of 19 or 20." },
-    { name: "Quick Draw", text: "Drawing the weapon costs no extra action as part of an attack; the first attack in an encounter with it drawn this way gains Edge." },
-    { name: "Reach X", text: "Each point of Reach extends your melee threat by 1 space. Reach 1 strikes Targets up to 2 spaces away." },
-    { name: "Reliable", text: "Natural 1 results are treated as simple misses unless an effect calls out a worse outcome." },
-    { name: "Scoped", text: "When you Take Aim (Swift) before attacking with this weapon, that attack ignores the long-range Snag penalty and treats the target's Half or Three-Quarter Cover as one step less: Three-Quarter becomes Half, Half becomes none." },
-    { name: "Shock", text: "On a hit against an organic, cyber-augmented, or robotic Target, they make a Body save (DC 12) or are Staggered until the end of their next turn." },
-    { name: "Silent", text: "Attacks do not automatically trigger sound-based alerts in the area." },
-    { name: "Slow", text: "Only one attack per round with this weapon, regardless of extra-attack features, unless explicitly overridden." },
-    { name: "Spread", text: "Best at short range, degrades at long range (for example, Edge at short range, Snag at long range)." },
-    { name: "Stabilized", text: "Negates the High Recoil Snag." },
-    { name: "Two-Handed", text: "Requires both hands; using it one-handed applies heavy penalties without a specific feature or powered assist." }
-  ],
 
   /* ---- stacking + over-engineering rules (surfaced as bench guidance) ---- */
   rules: {

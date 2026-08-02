@@ -422,9 +422,12 @@ EN.pdfExport = (function () {
     function add(name, cost, act) { var k = name.toLowerCase(); if (seen[k]) return; seen[k] = 1; rows.push({ name: name, cost: cost, act: act || "" }); }
     var resFeat = (d.features || []).find(function (f) { return f.name === rname; });
     var defCost = (((resFeat && resFeat.text) || res.fuels || "").match(/costs?\s+(\d+)\s/i) || [])[1] || "1";
-    var gl = eng.gambitList ? eng.gambitList(ch) : [];
+    // one source of truth: the engine already handles the classes that know
+    // every ability, which these local copies used to get wrong
+    var gl = eng.chosenResourceAbilities ? eng.chosenResourceAbilities(ch)
+           : (eng.gambitList ? eng.gambitList(ch) : []);
     if (gl.length) {
-      var pick = (ch.gambits && ch.gambits.length) ? gl.filter(function (g) { return ch.gambits.indexOf(g.name) !== -1; }) : gl;
+      var pick = gl;
       pick.forEach(function (g) { add(g.name, (g.cost || defCost) + " " + abbr, actLabel(g.action)); });
     }
     var spend = new RegExp("spend(?:s|ing)?\\s+\\d+\\s+" + rname, "i");
