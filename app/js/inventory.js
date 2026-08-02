@@ -53,7 +53,6 @@ EN.inventoryView = (function () {
   // the ◎ number inside an item's nexus tag ("◎0.3 buyout" -> 0.3); null when absent
   function nexusPrice(it) { var m = String((it && it.nexus) || "").match(/[\d.]+/); return m ? parseFloat(m[0]) : null; }
   function streetPrice(it) {
-    if (it.upkeep) return 0;   // leased gear always has a 𝒢0 buy-in; the cost is the recurring Upkeep, not a sale price
     if (_mode === "register") return Math.ceil(it.price * (LEGAL_MULT[it.legality] || 1) * (AVAIL_MULT[it.availability] || 1));
     if (_mode === "surplus") return Math.max(1, Math.floor(it.price * FENCE_RATE));
     if (_mode === "fivefinger") return 0;
@@ -62,7 +61,9 @@ EN.inventoryView = (function () {
   function fencePrice(it) { return Math.max(1, Math.floor(it.price * FENCE_RATE)); }
   function priceTitle(it) {
     var sp = streetPrice(it);
-    if (it.upkeep) return "Leased, 𝒢0 buy-in, " + fmtG(it.upkeep) + "/wk Upkeep. Lapse, get flagged, or cross the issuer and it drops to its zero state.";
+    if (it.upkeep) return "Leased, " + fmtG(it.price || 0) + " buy-in, " + fmtG(it.upkeep) + "/wk Upkeep"
+      + (buyoutCost(it) ? ", " + fmtBuyout(buyoutCost(it)) + " Buyout" : "")
+      + ". Lapse, get flagged, or cross the issuer and it drops to its zero state.";
     if (_mode === "register") {
       if (sp === it.price) return "List price " + fmtG(it.price) + (it.unit ? " " + it.unit : "") + ". Standard compliance handling included. All sales final.";
       return "List " + fmtG(it.price) + " · compliance surcharge ×" + (LEGAL_MULT[it.legality] || 1) + " (" + it.legality + ") · scarcity index ×" +
@@ -279,7 +280,7 @@ EN.inventoryView = (function () {
     toast(_mode === "register" ? it.name + " purchased for " + fmtG(sp) + ". Compliance fees included. All sales final." :
           _mode === "surplus" ? it.name + " claimed from the Guild lot for " + fmtG(sp) + ". Mostly works." :
           _mode === "fivefinger" ? it.name + " taken. You were never here." :
-          it.upkeep ? it.name + " lease signed: 𝒢0 buy-in, " + fmtG(it.upkeep) + " due in 7 days (Long Rests)." :
+          it.upkeep ? it.name + " lease signed: " + fmtG(it.price || 0) + " buy-in, " + fmtG(it.upkeep) + " due in 7 days (Long Rests)." :
           it.name + " acquired for " + fmtG(sp) + ". No receipt. It never happened.");
   }
 
@@ -313,17 +314,28 @@ EN.inventoryView = (function () {
     });
     toast(it.name + " installment paid (" + fmtG(it.upkeep) + "); next payment in 7 days. Benefits restored.");
   }
+  // A Buyout is priced in Glimmer on most entries and in Nexus on a few
+  // (the Bailiff Rig). Whichever the entry lists is the currency it debits.
+  function buyoutCost(it) {
+    if (!it || !it.upkeep) return null;
+    if (typeof it.buyout === "number") return { amt: it.buyout, nexus: false };
+    var px = nexusPrice(it);
+    return px == null ? null : { amt: px, nexus: true };
+  }
+  function fmtBuyout(b) { return b.nexus ? fmtNx(b.amt) : fmtG(b.amt); }
   function buyoutLease(key) {
-    var ch = store.active(), e0 = findEntry(ch, key), it = e0 && findItem(e0.name), px = it && nexusPrice(it);
-    if (!it || !it.upkeep || px == null || !e0 || e0.leaseOwned) return;   // only leased, not-yet-owned gear
-    if ((ch.nexus || 0) < px) { toast("Not enough Nexus for the buyout (" + fmtNx(px) + ")."); return; }
+    var ch = store.active(), e0 = findEntry(ch, key), it = e0 && findItem(e0.name), b = buyoutCost(it);
+    if (!it || !b || !e0 || e0.leaseOwned) return;   // only leased, not-yet-owned gear
+    var purse = b.nexus ? (ch.nexus || 0) : (ch.glimmer || 0);
+    if (purse < b.amt) { toast("Not enough " + (b.nexus ? "Nexus" : "Glimmer") + " for the buyout (" + fmtBuyout(b) + ")."); return; }
     store.update(function (c) {
       var e = findEntry(c, key);
       if (!e || e.leaseOwned) return;   // re-check live: a double-fire cannot double-charge
-      c.nexus = Math.round(((c.nexus || 0) - px) * 100) / 100;
+      if (b.nexus) c.nexus = Math.round(((c.nexus || 0) - b.amt) * 100) / 100;
+      else c.glimmer = (c.glimmer || 0) - b.amt;
       e.leaseOwned = true; e.leaseDue = false; delete e.leaseDays;
     });
-    toast(it.name + " bought out for " + fmtNx(px) + ". It's yours outright; no more Upkeep, no off switch.");
+    toast(it.name + " bought out for " + fmtBuyout(b) + ". It's yours outright; no more Upkeep, no off switch.");
   }
   // buying chrome drops it in the Chrome Stash (uninstalled); you install it at a clinic from the Chrome tab
   function buyCyber(it) {
@@ -479,7 +491,7 @@ EN.inventoryView = (function () {
           ? (owned.leaseOwned ? tagChip("OWNED OUTRIGHT", "var(--success)", "Lease bought out; it is yours, no more Upkeep.")
              : owned.leaseDue ? tagChip("⚠ PAYMENT DUE", "var(--danger)", "Installment due: " + fmtG(it.upkeep) + ". It grants none of its benefits until you pay.")
              : tagChip("LEASE · " + leaseDaysOf(owned) + (leaseDaysOf(owned) === 1 ? " DAY" : " DAYS"), "var(--gold)", "Next installment " + fmtG(it.upkeep) + " in " + leaseDaysOf(owned) + " day(s); each Long Rest marks one day."))
-          : tagChip("LEASED", "var(--ember)", "Leased, 𝒢0 buy-in, " + fmtG(it.upkeep) + "/wk Upkeep. Lapse and it drops to its zero state.")) : null
+          : tagChip("LEASED", "var(--ember)", "Leased, " + fmtG(it.price || 0) + " buy-in, " + fmtG(it.upkeep) + "/wk Upkeep. Lapse and it drops to its zero state.")) : null
       ]),
       el("span", { style: { display: "inline-flex", alignItems: "baseline", gap: "10px", flexShrink: 0 } }, [
         el("span.mono", { style: { fontSize: "10.5px", letterSpacing: ".03em" } }, [
@@ -538,7 +550,7 @@ EN.inventoryView = (function () {
     } else if (it.vendor === false) {
       mktBtn = el("button.btn.sm", { disabled: true, title: "Not vendor stock, found, recovered, or campaign-granted, not bought. It can still turn up in Five-Finger Supply.", style: { color: "var(--flow)", borderColor: "var(--flow)" } }, "FOUND, NOT SOLD");
     } else if (it.upkeep) {
-      mktBtn = el("button.btn.sm.primary", { title: "Sign the lease, 𝒢0 buy-in, " + fmtG(it.upkeep) + "/wk Upkeep. It works until the autopay lapses.", onclick: function () { buy(it); } }, "LEASE · " + fmtG(it.upkeep) + "/wk");
+      mktBtn = el("button.btn.sm.primary", { title: "Sign the lease, " + fmtG(it.price || 0) + " buy-in, " + fmtG(it.upkeep) + "/wk Upkeep. It works until the autopay lapses.", onclick: function () { buy(it); } }, "LEASE · " + fmtG(it.upkeep) + "/wk");
     } else {
       mktBtn = el("button.btn.sm" + (afford ? ".primary" : ""), { disabled: !afford, title: it.cyber ? "Buy to your Chrome Stash; install it later at a clinic (Chrome tab)" : priceTitle(it), onclick: function () { it.cyber ? buyCyber(it) : buy(it); } },
         afford ? "BUY · " + fmtG(sp) : "CAN'T AFFORD");
@@ -549,10 +561,10 @@ EN.inventoryView = (function () {
       if (owned.leaseDue) leaseBtns.push(el("button.btn.sm", {
         title: "Pay the installment (" + fmtG(it.upkeep) + "). Until paid, " + it.name + " grants none of its benefits.",
         style: { color: "var(--danger)", borderColor: "var(--danger)" }, onclick: function () { payLease(ownedKey); } }, "⚠ PAY · " + fmtG(it.upkeep)));
-      var bpx = nexusPrice(it);
-      if (bpx != null) leaseBtns.push(el("button.btn.sm", {
-        title: "Buy out the lease for " + fmtNx(bpx) + " Nexus. The item becomes yours outright and Upkeep ends.",
-        style: { color: "var(--flow)", borderColor: "var(--flow)" }, onclick: function () { buyoutLease(ownedKey); } }, "BUYOUT · " + fmtNx(bpx)));
+      var bo = buyoutCost(it);
+      if (bo) leaseBtns.push(el("button.btn.sm", {
+        title: "Buy out the lease for " + fmtBuyout(bo) + ". Separate from Upkeep and never offset by Upkeep already paid; only the Buyout closes the lease.",
+        style: { color: "var(--flow)", borderColor: "var(--flow)" }, onclick: function () { buyoutLease(ownedKey); } }, "BUYOUT · " + fmtBuyout(bo)));
     }
     // action button(s): a single market button, or the stash loadout/equip/fence/drop group
     var actionEl = mode === "mkt"
@@ -587,7 +599,7 @@ EN.inventoryView = (function () {
       head, info, traitsExpandRow,
       it.benchPart ? partInfoLine(ch, it) : it.armorMod ? armorModInfoLine(ch, it) : (mode !== "mkt" ? installedPartsLine(ch, it) : null),
       open && it.desc ? el("p", { style: { marginTop: "8px" }, text: it.desc }) : null,
-      open && it.type ? el("p.help", { style: { margin: "4px 0 0", color: "var(--text2)" }, text: "Type: " + it.type + (it.upkeep ? " · Leased: 𝒢0 buy-in, " + fmtG(it.upkeep) + "/wk Upkeep" : "") + (it.nexus ? " · Nexus: " + it.nexus : "") }) : null,
+      open && it.type ? el("p.help", { style: { margin: "4px 0 0", color: "var(--text2)" }, text: "Type: " + it.type + (it.upkeep ? " · Leased: " + fmtG(it.price || 0) + " buy-in, " + fmtG(it.upkeep) + "/wk Upkeep" : "") + (it.nexus ? " · Nexus: " + it.nexus : "") }) : null,
       open && it.proficiency ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: "Proficiency: " + it.proficiency + (it.signature ? " · Signature weapon (0 customization slots)" : "") }) : null,
       open && (it.category || it.skill) ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: (it.category ? "Tool Category: " + it.category : "") + (it.category && it.skill ? " · " : "") + (it.skill ? "Governing Skill: " + it.skill : "") }) : null,
       open && it.feeds ? el("p.help", { style: { margin: "4px 0 0", color: "var(--gold)" }, text: "Feeds: " + it.feeds }) : null,

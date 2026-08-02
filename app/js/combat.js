@@ -1856,7 +1856,6 @@ EN.combatView = (function () {
         } else {
           var spv = [(dg.shieldDef >= 0 ? "+" : "") + dg.shieldDef + " DEF"];
           if (dg.shieldBlockDie) spv.push(dg.shieldBlockDie + " Block");
-          if (dg.shieldWearThreshold) spv.push("Wear " + dg.shieldWearThreshold);
           spv.push("□".repeat(dg.shieldBoxesLeft) + "■".repeat(dg.shieldSpent));
           chips.push(gchip("SHIELD", dg.shield.name, spv.join(" · "), "var(--accent)"));
         }
@@ -3239,8 +3238,8 @@ EN.combatView = (function () {
         base.note = "";
         return base;
       }
-      var wearNote = dg.shield && dg.shieldWearThreshold
-        ? " Wear " + dg.shieldWearThreshold + ": a Blocked hit of " + dg.shieldWearThreshold + "+ raw damage, or any Blocked critical, marks a box (" + dg.shieldBoxesLeft + "/" + dg.shieldBoxesMax + " left)."
+      var wearNote = dg.shield
+        ? " Durability: if this Block prevents a heavy hit (the GM's call, typically one it fully or mostly absorbs), mark a box (" + dg.shieldBoxesLeft + "/" + dg.shieldBoxesMax + " left)."
         : "";
       var DEF_LIVE = {
         Block:   { avail: canBlock, req: "a shield, a Block Bonus, or Plated armor",

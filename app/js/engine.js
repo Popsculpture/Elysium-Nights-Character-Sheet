@@ -618,11 +618,10 @@ EN.engine = (function () {
       blockBonus: (armor && !armorLapsed && armor.blockBonus) || 0,   // flat Block Bonus from medium/heavy plate
       shieldDef: (shield && !shieldLapsed && shieldAlive && typeof shield.defense === "number") ? shield.defense : 0,
       shieldBlockDie: (shield && !shieldLapsed && shieldAlive && shield.blockDie) || null,
-      // Shield Durability: boxes are marked when a Blocked hit's RAW damage meets the
-      // Wear Threshold (twice the Block die's maximum), or on any Blocked critical.
-      // At 0 boxes a physical shield is destroyed; an emitter shield goes dark.
+      // Shield Durability: a box is marked each time the shield's Block prevents damage
+      // from a heavy hit, which the book leaves to the GM (typically any hit it fully or
+      // mostly absorbs). At 0 boxes a physical shield is destroyed; an emitter goes dark.
       shield: shield || null,
-      shieldWearThreshold: shield ? (shield.wear || 0) : 0,
       shieldBoxesMax: shieldBoxesMax,
       shieldBoxesLeft: shieldBoxesLeft,
       shieldSpent: shieldSpent,
