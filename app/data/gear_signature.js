@@ -3,15 +3,16 @@
    Extracted verbatim from "Gear and Equipment → Signature Weapons" (Part 3).
    Prices in Glimmer (𝒢). Each Signature weapon is handled under a conventional
    weapon category (its Proficiency); untrained in that category you attack with
-   Snag and cannot use its On Hit effects or area projections. `group` is the
-   conventional category so the equip/attack logic treats them like any weapon.
+   Snag but still get the basic mode and any area projection, and only the special
+   On Hit riders stay locked behind a Weapon Focus naming that weapon. `group` is
+   the conventional category so the equip/attack logic treats them like any weapon.
    =========================================================================== */
 window.EN = window.EN || {};
 EN.gearCatalog = EN.gearCatalog || {};
 
 EN.gearCatalog.signature = {
   intro: "Some weapons do a job and vanish back into the work. These do not. A Signature weapon is loud, strange, or unconventional enough that it becomes the thing people remember you by. You trade anonymity for presence. Some nights, presence is the most useful thing in your hands. Other nights it is a description on every screen in the district.",
-  usingNote: "Each Signature Weapon is handled under a conventional weapon category (its Proficiency) and used exactly like any other weapon in that family. Untrained in that category, you attack with Snag and cannot use the weapon's On Hit effects or area projections. Proficient or better, you add your Weapon Proficiency Bonus. A Signature weapon has 0 customization slots; it arrives complete; its power lives in the wielder.",
+  usingNote: "Each Signature Weapon is handled under a conventional weapon category (its Proficiency) and used exactly like any other weapon in that family.\n\nUntrained in that category, you attack with Snag. You can still fire the weapon in its basic mode, including any area projection that is simply how it delivers its attack, but you cannot trigger its special On Hit riders (the extra conditions it stacks on top of a hit).\n\nProficient or better, you add your Weapon Proficiency Bonus and fire the weapon normally for full base effect, including its area projection and whatever that attack is built to do, such as a Net Launcher\u0027s Restrain or a Cryo Lance\u0027s freeze. Only its special On Hit riders stay locked. Reaching Proficient makes you safe with the category. It does not make you fluent in this particular weapon\u0027s tricks.\n\nA Weapon Focus naming that specific weapon, such as Martial Weapons (Gravlock Maul), unlocks its special On Hit riders. Below that Focus, a Signature Weapon behaves as an ordinary member of its category and nothing more. A Specialization in the same named weapon layers the usual expanded critical range and Dice Pool bonus on top, once you have Expertise in the category.\n\nA Signature weapon has 0 slots. It arrives complete and is not customized. Its power lives in the wielder, not in the bolt-ons.",
   groupIntros: {
     melee: "Howling edges, kinetic mauls, and worn talons. Loud, strange, and unforgettable, the detail a witness leads with.",
     ranged: "Arc casters, chem spewers, coil drivers. Presence you can point down a hallway. The collateral is the receipt."
@@ -31,10 +32,10 @@ EN.gearCatalog.signature = {
       price: 750, damage: "2d6 Force", range: "Melee",
       traits: ["Heavy", "Two-Handed"], availability: "Rare", legality: "Restricted",
       desc: "A maul head packed with a kinetic discharge core. The swing is ordinary. The landing is a shockwave that throws everyone near the point of impact off their feet, including, on a bad grip, you.",
-      effect: "On Hit: the target and anyone adjacent to it are pushed 1 space away from the point of impact. The target then makes a Body save vs your Weapon Save DC or is knocked Prone." },
+      effect: "On Hit: the target and anyone adjacent to it are pushed 2 spaces away from the point of impact. The target then makes a Body save vs your Weapon Save DC or is knocked Prone." },
     { name: "Harmonic Edge", signature: true, kind: "melee", group: "Martial", proficiency: "Martial Weapons",
-      price: 650, damage: "1d8 Sonic", range: "Melee (Reach 1)",
-      traits: ["Finesse", "Armor Piercing 2"], availability: "Rare", legality: "Restricted",
+      price: 650, damage: "1d8 Sonic", range: "Melee",
+      traits: ["Finesse", "Armor Piercing 2", "Quick Draw", "Versatile (1d10)"], availability: "Rare", legality: "Restricted",
       desc: "A blade wrapped in sonic emitters that howl at a frequency just past hearing. It does not so much cut as shake a body apart at the seams. You feel the hum in your fillings from across the room.",
       effect: "On Hit: the target makes a Body save vs your Weapon Save DC or is Staggered until the end of its next turn." },
     { name: "Nanowire", signature: true, kind: "melee", group: "Martial", proficiency: "Martial Weapons", load: 1,
@@ -122,20 +123,22 @@ EN.gearCatalog.signature = {
   traits: {
     "Area X": "Some effects fill a space and catch whatever is standing in it. The number is the size in spaces; the word after gives the shape, Sphere (burst), Cone (spreads from you), Line (X long, 1 wide), Cube, or Aura. Targets caught usually save for half or no damage; roll the effect's damage once and apply it to everyone the area touches.",
     "Armor Piercing X": "On a hit, ignore X points of flat damage reduction from armor or similar gear for that attack. Does not affect Resistances or Immunities unless a rule says so.",
-    "Concealable": "Attacks and operation work as normal. Checks to detect the weapon on a casual search are made with Snag.",
-    "Continuous": "Once you begin the attack, you can repeat it on later rounds by spending the required ammo and Action, no need to fully re-ready or reprime the weapon between those rounds.",
+    "Concealable": "Checks to spot the item on a casual search, or to notice you are armored, are made with Snag. A deliberate pat-down or a scanner still finds it.",
+    "Continuous": "Once you begin the attack, you can sustain it on later rounds by spending the required ammo and Action. You do not need to fully re-ready or reprime the weapon between those rounds.\n\nLive Hazard: the spaces the stream fills (its Area, line, or cone, as the weapon lists) stay dangerous until the start of your next turn. A Target that enters those spaces, is moved into them (willingly or not), or starts its turn in them is caught in the stream, making the save the attack calls for and taking the listed damage and effect on a failure. A Target can be caught this way only once on a given turn. Sustaining the attack on your turn refreshes the hazard; stop sustaining it and the hazard ends. Anything that lingers afterward comes from another trait, such as Incendiary or a Persistent field, not from this one.\n\nGround In (melee): on a melee weapon there is no Area to hold, so the stream becomes the bite. After you hit a Target with a Continuous melee weapon, you may keep the edge buried: on later rounds, spend the same Action to deal the weapon\u0027s damage to that Target again with no attack roll, as long as it stays within your reach and you take no other Action. The grind ends the moment you do anything else, the Target leaves your reach, or you choose to pull the blade free.",
     "Finesse": "When attacking with a Finesse weapon, you may use Body or Agility for the attack and damage. You choose which each time you attack.",
-    "Heavy": "Dense, reinforced, and awkward to swing or fire. Adds to encumbrance, interacts with rules penalizing low Body, usually unsuitable for off-hand or dual-wield use, and a poor fit for nimble, stealth-focused Freelancers.",
-    "High Recoil": "Multiple attacks with the same weapon in one round apply Snag to later attacks unless braced or supported.",
+    "Heavy": "Dense, reinforced, and awkward to swing or fire. Adds to encumbrance and interacts with rules that penalize low Body or long-distance movement. Usually unsuitable for off-hand or dual-wield use without a specific feature or powered assistance, and a poor fit for nimble, stealth-focused Freelancers.",
+    "High Recoil": "Multiple attacks with the same weapon in one round apply Snag to later attacks unless Stabilized.",
+    "Stabilized": "The weapon counts as stabilized and supported. Negates the High Recoil Snag.",
     "Incendiary": "Deals Fire and leaves fire behind; a struck target may catch Burning, or it may leave a burning zone. Readily ignites fuel, flammable cover, and environmental hazards.",
-    "Light": "Compact and easy to handle in one hand. Interacts with dual-wield and off-hand rules and contributes minimally to encumbrance; can be carried discreetly without counting as Concealable.",
-    "Nonlethal": "If damage from this weapon reduces a Target to 0 Wounds, that Target is immediately rendered Unconscious and stable, rather than dying or bleeding out.",
+    "Light": "Compact and easy to handle in one hand. Light weapons interact with dual-wield and off-hand fighting rules and contribute minimally to encumbrance. They can be carried discreetly under loose clothing without counting as Concealable.",
+    "Nonlethal": "If damage from this weapon reduces a Target to 0 Vitality, that Target is immediately rendered Unconscious.",
     "Obscuring": "Areas affected count as heavily obscured for sight-based targeting. Targets inside are harder to hit with attacks that need clear visual contact.",
     "Persistent": "Leaves behind a lingering hazard or field. A Target entering or starting its turn in the zone usually saves or takes the listed damage or effect; the entry gives duration and exact effect.",
     "Reach X": "Extends your melee threat beyond arm's length. You can attack Targets up to 1 space farther per point of Reach (Reach 1 = up to 2 spaces). Any rule referencing 'entering your reach' uses this extended distance.",
-    "Semi-Automatic": "After you attack with this weapon, you may spend a Swift Action to make one Follow-Up Attack: a single additional shot against the same or a different target. The Follow-Up Attack does not add your Attribute modifier to its damage.",
+    "Semi-Automatic": "After you attack with this weapon, you may spend a Swift Action to make one additional attack with it against the same or a different target. That second attack rolls with Snag, and the pair spends 2 rounds of ammo.",
     "Siege": "Deals double damage to Vehicle armor and to Cover Integrity. If an attack destroys a piece of cover, overflow damage applied to the Target behind it ignores their personal armor Damage Reduction.",
-    "Single Shot": "Make a single attack against one Target for 1 round of ammo. If Single Shot is a weapon's only firing mode, its attacks score a critical hit on a roll of 19 or 20.",
+    "Single Shot": "Make a single attack against one Target for 1 round of ammo. If Single Shot is a weapon's only firing mode, it has the Precision Frame trait inherently.",
+    "Precision Frame": "A weapon with Precision Frame scores a critical hit on a roll of 19 or 20. A weapon whose only firing mode is Single Shot has Precision Frame inherently; the Match Trigger Group mod can also grant it.",
     "Slow": "You can make only one attack per round with this weapon, regardless of extra-attack features, unless something explicitly overrides it.",
     "Two-Handed": "Requires both hands for effective use. Using it one-handed applies heavy penalties (typically Snag on attacks and a downgraded damage die) unless you have a specific feature or powered assistance.",
     "Worn": "Built to attach to the body, clothing, or armor rather than be held. Cannot be easily dropped or disarmed; may take time, tools, or a specific action to equip or remove. Counts as equipped gear for any effect that checks what you are wearing or bearing."

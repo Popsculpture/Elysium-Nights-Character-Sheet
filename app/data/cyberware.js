@@ -70,9 +70,9 @@ EN.cyberware = {
       street: "No Enhancement; jittery, first time you take combat damage each session, Body Save DC 12 or take 1d4 Vitality as it misfires.",
       black: "+4 Initiative, +2 Speed, and once per combat (Impulse) fully evade one ranged hit.",
       tiers: [
-        { tier: "Streetware", sp: 2, price: 2500,  legality: "Restricted", bonus: { speed: 1 } },
-        { tier: "Brandware",  sp: 2, price: 11000, legality: "Restricted", bonus: { speed: 1 } },
-        { tier: "Blackware",  sp: 3, price: 28000, legality: "Restricted", bonus: { speed: 2 } }
+        { tier: "Streetware", sp: 2, price: 2500,  legality: "Restricted", bonus: { speed: 1, init: 2 } },
+        { tier: "Brandware",  sp: 2, price: 11000, legality: "Restricted", bonus: { speed: 1, init: 2 } },
+        { tier: "Blackware",  sp: 3, price: 28000, legality: "Restricted", bonus: { speed: 2, init: 4 } }
       ] },
     { key: "disruption", short: "Disruption Lattice", name: "Disruption Lattice", zone: "Neural", enhancement: "None", mystech: true,
       desc: "Resonance-dampening circuitry through the upper spine and skull. Built to counter Shapers; it does not discriminate; it dampens the Flow for everyone near the wearer, including the wearer.",
@@ -142,9 +142,9 @@ EN.cyberware = {
       street: "No Enhancement; rough alignment, close inspection (DC 12) spots the bulges and scar lines through clothing.",
       black: "+2 DR vs all physical, plus a reactive surface: first melee hit each combat reflects 1d4 of the same type back.",
       tiers: [
-        { tier: "Streetware", sp: 2, price: 2800,  legality: "Licensed" },
-        { tier: "Brandware",  sp: 2, price: 8500,  legality: "Licensed" },
-        { tier: "Blackware",  sp: 3, price: 21000, legality: "Restricted" }
+        { tier: "Streetware", sp: 2, price: 2800,  legality: "Licensed", bonus: { dr: 1 } },
+        { tier: "Brandware",  sp: 2, price: 8500,  legality: "Licensed", bonus: { dr: 1 } },
+        { tier: "Blackware",  sp: 3, price: 21000, legality: "Restricted", bonus: { dr: 2 } }
       ] },
     { key: "skeleton", short: "Reinforced Skeleton", name: "Reinforced Skeleton", zone: "Integument", enhancement: "+1 Body",
       desc: "Composite woven through your bones. It doesn't make you stronger by itself, but it makes you durable enough to use strength you couldn't otherwise survive.",
