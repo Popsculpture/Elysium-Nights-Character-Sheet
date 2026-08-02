@@ -5,7 +5,8 @@
    (DR) against the physical damage types; medium/heavy plate adds a flat Block
    Bonus. Physical Shields add Defense and a Block die; Warding Foci feed the
    Ward defense with a die. Prices in Glimmer (𝒢); some high-end gear also lists
-   a Nexus (◎) alternative. Leased gear has 0 buy-in and a recurring Upkeep.
+   a Nexus (◎) alternative. Leased gear lists a buy-in, a recurring Upkeep,
+   and usually a one-time Buyout that ends the lease.
    Mystech runs its own Availability scale (Iconic → Legendary → Mythical →
    Artifact). Per-suit conditional effects (resistance choices, lease zero-state,
    Powered training) live in the entry's Effect line, not as auto-applied stats.
