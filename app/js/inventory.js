@@ -1284,6 +1284,9 @@ EN.inventoryView = (function () {
     if (it.signature) return 0;
     var prof = (WP().profiles || []).find(function (p) { return p.key === lo._profile; });
     if (prof && prof.count != null) return prof.count;
+    // an entry can state its own Slot Count; bows especially, since the book
+    // splits them into hand crossbow (4), light frame (2) and full frame (5)
+    if (typeof it.slots === "number") return it.slots;
     var byG = WP().slotCountByGroup || {};
     return byG[it.group] != null ? byG[it.group] : 4;
   }
@@ -1298,8 +1301,11 @@ EN.inventoryView = (function () {
       case "Any bow": return isBowGroup(g);
       case "Blades": return isMeleeGroup(g) && (/slashing|piercing/.test(dmg) || hasTrait("Blade"));
       case "Shotgun": return /shotgun/.test(name) || hasTrait("Spread");
-      case "Longarm": return g === "Longarm" || g === "Heavy";
-      case "Sidearm": return g === "Sidearm";
+      // a full-frame bow is the Longarm equivalent and a hand crossbow the
+      // Sidearm equivalent, and the book routes bows to the firearm catalog
+      // for Targeting, Handling and Utility Parts
+      case "Longarm": return g === "Longarm" || g === "Heavy" || (isBowGroup(g) && (it.slots || 0) >= 5);
+      case "Sidearm": return g === "Sidearm" || (isBowGroup(g) && /hand crossbow/.test(name));
       case "Semi-Auto Firearm": return isFirearmGroup(g) && hasTrait("Semi-Auto");
       case "Compound": return isBowGroup(g) && /compound/.test(name);
       case "Crossbow": return isBowGroup(g) && /crossbow/.test(name);
