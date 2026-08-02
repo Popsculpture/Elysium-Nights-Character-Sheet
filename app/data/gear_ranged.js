@@ -147,6 +147,7 @@ EN.gearCatalog.ranged = {
 --------------------------------------------------------------------------- */
 EN.gearCatalog.ammo = {
   intro: "Talk is cheap in Elysium. Lead is not. The right round seated in the right chamber at the right second: that is the thin margin between finishing the contract and bleeding out behind a dumpster while the city bills your estate for the cleanup.",
+  mystechNote: "Most rounds are inert until the primer goes. Mystech rounds are never inert. They are etched, tuned, or quenched in something that was alive in the metaphysical sense, and they carry that current all the way down the barrel and out the other side. You do not buy these at a gun store.\n\nMystech ammunition uses the Mystech Availability scale (Iconic through Artifact) and is almost always Contraband. All of it is Counted, tracked one round at a time, and it comes in small lots because nobody makes it in volume.\n\nBacklash (all Mystech rounds): a Mystech round leaves a resonance signature when it fires. Until the end of the scene you read as Flow-touched to shrines, Shapers, Flow-sensitive trackers, and any #GRID system tuned to watch for it. Beyond that, the round only bites when the channel slips: on a Natural 1 on the attack roll, the discharge flares back through the weapon. You take 1d4 Resonant damage, or, if you have a Flow Reservoir, you lose 1d4 Flow Points instead. If that loss takes your Reservoir below 0, standard Overdraw rules apply.",
   trackingNote: "Plentiful ammo (sidearms, longarms, bowfire): track only the loaded magazine and restock between contracts. Counted ammo (heavy weapons, launchers, all Specialty): track every unit. A missile is a decision, not a refill.",
 
   items: [
@@ -254,6 +255,22 @@ EN.gearCatalog.ammo = {
     { name: "Thermobaric Shell", group: "Launcher Shell", price: 100, unit: "each", availability: "Rare", legality: "Contraband",
       feeds: "Grenade Launcher", traits: ["Explosive (Area 3 Sphere)", "Pressure"],
       desc: "A fuel-air charge that breathes in the room before it breathes out fire. In open ground it is brutal. Behind a closed door it is a war crime with a serial number.",
-      effect: "3d6 Fire and Force; Agility save for half. In an enclosed space the Pressure trait triggers Wall-to-Wall as if the room were one space narrower; the blast gains extra dice and partial cover gives no help." }
+      effect: "3d6 Fire and Force; Agility save for half. In an enclosed space the Pressure trait triggers Wall-to-Wall as if the room were one space narrower; the blast gains extra dice and partial cover gives no help." },
+
+    /* ---- Mystech ----
+       Never inert. Runs on the Mystech Availability scale, always Counted, and
+       every round carries Backlash. See EN.gearCatalog.ammo.mystechNote. */
+    { name: "Hex-Etched Rounds", group: "Mystech", price: 600, unit: "per 3", availability: "Legendary", legality: "Contraband", counted: true,
+      feeds: "Ballistic Sidearms, Longarms", traits: ["Sticky", "Backlash"],
+      desc: "Rounds carved with a decay sigil so fine it looks like a fingerprint. The sigil keeps working after the round stops. Flesh, bone, ceramic plate, it does not matter to the etching: it just keeps unraveling the pattern it landed in, and the wound forgets how to be whole.",
+      effect: "On Hit: the attack\u0027s damage type becomes Entropy. Sticky: Vitality lost to this attack cannot be healed by standard Medkits, the Visceral Patch, or swift Resilience Die spends; restoring it requires a Long Rest or specialized Flow mending. Backlash applies." },
+    { name: "Resonant Rounds", group: "Mystech", price: 750, unit: "per 3", availability: "Legendary", legality: "Contraband", counted: true,
+      feeds: "Ballistic Sidearms, Longarms", traits: ["Armor Bypass", "Backlash"],
+      desc: "Rounds tuned to the frequency that the Flow hates to hear. They ignore armor the way a sound ignores a wall, and against anyone carrying a current inside them, they set that current ringing until it shakes something loose.",
+      effect: "On Hit: the attack\u0027s damage type becomes Resonant. Resonant Armor Bypass: this attack ignores standard Armor DR unless the armor has Resonant Plating. Strain Feedback: a Target with a Flow Reservoir makes a Flow save (DC 13) or gains 1 Strain Point. Backlash applies." },
+    { name: "Genesis Rounds", group: "Mystech", price: 1200, unit: "per 3", availability: "Mythical", legality: "Contraband", counted: true,
+      feeds: "Ballistic Sidearms, Longarms", traits: ["Mutating", "Backlash"],
+      desc: "Rounds quenched in raw potential, the stuff the Flow uses before it decides what a thing is going to be. They do not tear. They add. What grows out of the entry wound is never useful and never stops at once.",
+      effect: "On Hit: the attack\u0027s damage type becomes Genesis. Mutating: on a hit, the Target gains one stack of the Mutating condition (see the Codex). Backlash applies." }
   ]
 };

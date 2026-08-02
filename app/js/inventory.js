@@ -631,7 +631,7 @@ EN.inventoryView = (function () {
     if (it.signature) return "Signature Weapons";
     if (isWeapon(it)) return (it.group === "Simple" || it.group === "Martial") ? "Melee Weapons" : "Ranged Weapons";
     if (isDefensive(it)) return "Armor & Defensive Gear";
-    if (it.legality === "As weapon" || ["Plentiful", "Counted", "Specialty", "Launcher Shell", "Signature Munition"].indexOf(it.group) !== -1) return "Ammunition & Munitions";
+    if (it.legality === "As weapon" || ["Plentiful", "Counted", "Specialty", "Launcher Shell", "Signature Munition", "Mystech"].indexOf(it.group) !== -1) return "Ammunition & Munitions";
     switch (it.bucket) {
       case "carry": return "Carry Gear";
       case "kits": return "Skill Kits";
@@ -1037,7 +1037,8 @@ EN.inventoryView = (function () {
         { label: "Standard · Plentiful", intro: "Track only the loaded magazine; restock to full between contracts. Prices buy one reload.", items: byGroup(ammo, "Plentiful") },
         { label: "Standard · Counted", intro: "Heavy, expensive, watched, and scarce. Track each unit from purchase to spend.", items: byGroup(ammo, "Counted") },
         { label: "Specialty", intro: "All Counted: Load it, Declare it before the attack, Apply it on resolution.", items: byGroup(ammo, "Specialty") },
-        { label: "Launcher Shells", intro: "Fired from a Grenade Launcher. Targets save Agility vs your Weapon Save DC.", items: byGroup(ammo, "Launcher Shell") }
+        { label: "Launcher Shells", intro: "Fired from a Grenade Launcher. Targets save Agility vs your Weapon Save DC.", items: byGroup(ammo, "Launcher Shell") },
+        { label: "Mystech", intro: (EN.gearCatalog.ammo && EN.gearCatalog.ammo.mystechNote) || "", items: byGroup(ammo, "Mystech") }
       ] }
     ];
     if (g.armor && armorItems.length) {
