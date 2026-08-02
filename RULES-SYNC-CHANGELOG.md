@@ -1302,6 +1302,20 @@ These are places where the rulebook contradicts itself, states a rule the app
 cannot implement unambiguously, or omits a rule the rest of the text assumes.
 Nothing here has been changed in the app; each needs an author ruling.
 
+**Open items are listed first. Everything already ruled or resolved is archived
+at the end of this section.**
+
+### CAVEAT on source coverage (2026-08-01)
+The Drive reader truncates a large document. All three current spills end
+mid-word: Part 1 at "Ranged attacks agains", Part 2 at "the contested C", Part 3
+at "If the object or Target is roughl". Everything before those points was
+audited; the tails were not. For Part 3 the loss is only the end of the final
+**Short Lift and Carry** subsection, so domain 7 is effectively complete. For
+Parts 1 and 2 the extent is unmeasured. Worth a second pass on the tails before
+the sync is called finished.
+
+### STILL OPEN
+
 ### M1. Max Complexity: "Equal to Tier" vs "Tier + 1"  (RULED - manuscript edit needed)
 **Author ruling (2026-07-28): Tier + 1.** Part 2's line and table are the ones to
 correct. Replace the Part 2 bullet at line 3568 with, verbatim:
@@ -1348,6 +1362,105 @@ no code change was needed.
   Systems is DC 13 under one rule and DC 17 under the other.
 - **App implements:** the #GRID chapter version.
 </details>
+
+### M16. Shotgun Choke is an Accessory in the table and a Mod in its entry (NEW 2026-08-01)
+- Summary table: `| Shotgun Choke | 200 | Accessory | Shotgun | Extends Spread range |`.
+  Its own entry: `- **Part Type:** Mod`.
+- This is a real play difference, not a wording nit. An **Accessory** snaps on and
+  off outside initiative with no tools and no roll; a **Mod** needs downtime, a
+  workbench and the right kit.
+- The app follows the detailed entry (Mod). **Needs a ruling**, then align the
+  table row and the entry.
+
+### M17. Seven suits list Mod Slots without carrying the Modular trait (NEW 2026-08-01)
+- Three separate rules say slots only exist on Modular armor: "Slots only matter
+  on armor with the **Modular** trait"; "An Armor Mod needs a host. Only armor
+  with the **Modular** trait has the rails to take one"; and the glossary, "A suit
+  without it takes no mods at all."
+- But seven entries list Mod Slots and do not carry Modular: **Laborframe Exorig**
+  (3), **Bailiff Rig** (3), **Warframe Shell** (3), **Veilskin** (1), **Resonant
+  Carapace**, **Aegis Shroud**, **Reliquary Shell**.
+- **Needs a ruling:** either add Modular to those seven, or drop their slot counts.
+  Until then the app gates on the trait, so those suits take no mods.
+
+### M18. Precision Frame vs the Match Trigger Group that grants it (NEW 2026-08-01)
+- The trait: "A weapon with Precision Frame scores a critical hit on a roll of
+  **19 or 20**", unconditionally.
+- The mod that grants it: "Apply Precision Frame. **Single Shot and Semi-Auto**
+  attacks with this weapon score a critical hit on a roll of 19 or 20."
+- A Match-Trigger rifle firing Burst is genuinely undefined. **Needs a ruling** on
+  whether the mod's grant is mode-limited.
+
+### M19. "Resonance Energy" is not a damage type (NEW 2026-08-01)
+- The **Resonant Shield Elixir** grants DR against "Resonance Energy". That phrase
+  appears exactly three times in the whole book, all inside that one entry.
+- The Damage Types chapter defines **Energy** and **Resonant** as two distinct
+  types. "Resonance Energy" is neither.
+- **Needs a ruling.** If it means Energy, the app is already right. If it means
+  Resonant, the elixir stacks Resistance and DR on one type and does nothing
+  against lasers.
+
+### M20. Surgical Instruments applies a flat +2 to a Dice Pool (NEW 2026-08-01)
+- The entry grants "**+2** on the primary out-of-combat Medtech Dice Pool (or
+  in-combat d20 check)". Dice Pools do not take flat modifiers: "d20 rolls gain a
+  flat bonus, while Dice Pools gain additional **Edge Dice**."
+- The book's own neighbouring entry does it correctly: "+2 on in-combat Medtech d20
+  checks (or **+1 Edge Die** on out-of-combat Dice Pools)".
+- The app renders it as 2 Edge Dice, so its printed text and its math disagree.
+  **Needs a ruling** on the Edge Die conversion.
+
+### M21. The Axe's Load is stated two ways (NEW 2026-08-01)
+- A worked example in Part 1 counts "a Warhammer (or Axe)" as **2 Load**. But the
+  Axe carries the **Heavy** trait and the Warhammer does not, and Heavy "adds to
+  encumbrance", which puts the Axe at **3** under the app's Load table.
+- **Needs a ruling:** either the example should not treat the two as
+  interchangeable, or Heavy should not add Load here.
+
+### M22. Improvised Weapons: can a Proficiency Bonus ever apply? (NEW 2026-08-01)
+- The chapter: "**No Proficiency:** Nobody trains on a fire extinguisher. You do
+  not add a Weapon Proficiency Bonus to an improvised attack roll."
+- But two features grant exactly that: the Fury's **Street Scrapper** ("You gain
+  Proficiency with Improvised Weapons") and the **Walking Anvil** talent ("You add
+  your Simple Weapons Proficiency Bonus to attack rolls with improvised weapons").
+- The app carries all three faithfully, so it currently contradicts itself the way
+  the book does. **Needs a ruling** on whether the features are the stated
+  exception to the chapter rule.
+
+### M23. Two unrelated mechanics are both named "Meat Shield" (NEW 2026-08-01)
+- The Fury Overdrive Impulse (redirects a hit to a grappled Target and grants
+  Resistance to the redirected damage), and the Improvised Weapons grapple-cover
+  stance. Different rules, same name. **Rename one.**
+
+### M24. Cyberarm and Cyberlegs hard-code 3 mod slots against their own table (NEW 2026-08-01)
+- Both base Effect lines say "up to **3 compatible mods**", while the tier table in
+  the same entry gives Streetware 2 / Brandware 3 / Blackware 4, and the tier
+  paragraphs restate 2 and 4.
+- **Editorial:** the base line should say "its slots" rather than a number. The app
+  already sidesteps it and says only "in its slots".
+
+### M25. The legality worked example contradicts the rule it illustrates (NEW 2026-08-01)
+- Rule: "The strictest tag among the weapon and everything bolted to it is what a
+  checkpoint scanner cares about." Example, same paragraph: "A **Licensed** pistol
+  wearing a Suppressor and a Full-Auto Receiver reads as **Contraband**."
+- Both Parts are **Restricted**. Strictest of Licensed + Restricted + Restricted is
+  **Restricted**, not Contraband. No Part in the catalog is Contraband at all.
+- **Editorial:** fix the example, or state that certain combinations escalate a
+  step. The app implements the rule, not the example.
+
+### M26. The Powered Assist Grip exclusion can never fire (NEW 2026-08-01)
+- The Powered Assist Grip "cannot share a build with a **Breakdown Frame**". But the
+  Grip is Handling / Fits Longarm and the only Breakdown Frame in the book is
+  Utility / Fits Any Melee, so no weapon can hold both.
+- **Editorial:** either the exclusion is vestigial, or a ranged Breakdown Frame is
+  missing from the catalog.
+
+### M27. "Heavy/Two-Handed" is a Fits frame no Part uses (NEW 2026-08-01)
+- Core Concepts lists it as a valid Fits value; it appears exactly once in the book
+  and no catalog entry uses it. **Editorial:** drop it, or add the Parts it was for.
+
+---
+
+### ARCHIVED: ruled or resolved
 
 ### M3. Weapon Save DC split three ways (RESOLVED - app updated, no manuscript action)
 - Not a contradiction: a genuine intended change, stated consistently in both Parts
