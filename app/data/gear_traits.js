@@ -66,6 +66,7 @@ EN.gearCatalog.weaponTraits = {
   "Thrown": "Uses the weapon's listed thrown range, given in short / long format. When you make a thrown attack, you generally choose Body or Agility as the governing Attribute. A thrown weapon does not automatically return to you and must be retrieved or replaced after use.",
   "Two-Handed": "Requires both hands for effective use. Using a Two-Handed weapon one-handed applies heavy penalties (typically Snag on attacks and a downgraded damage die) unless you have a specific feature or powered assistance.",
   "Unregistered": "Lacks valid marks in official systems. Harder to trace; often treated as illegal on its face if discovered in controlled zones.",
+  "Unwieldy": "Attacks with this weapon always carry Snag. Swinging it is not precision work.",
   "Versatile": "The weapon lists an alternate damage die in parentheses. Use the base damage when wielded in one hand, and the Versatile damage when wielded in two hands.",
   "Worn": "Built to attach to the body, clothing, or armor rather than be held. Cannot be easily dropped or disarmed; may take time, tools, or a specific action to equip or remove. Counts as equipped gear for any effect that checks what you are wearing or bearing.",
 };

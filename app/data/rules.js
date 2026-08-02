@@ -247,8 +247,48 @@ EN.rules = {
       { theirSize: "Your Size",               body: "16+",         holding: "Encumbered (Speed -2)" },
       { theirSize: "One Size larger",         body: "18+",         holding: "Overloaded (Speed halved, no Dash)" },
       { theirSize: "Two or more Sizes larger", body: "Not by hand", holding: "Needs an exoframe, heavy-lift cyberware, or the Flow" }
+    ]
+  },
+  /* ---- Improvised Weapons (Part 3) ------------------------------------
+     Reference rules, not catalog items: anything can be a weapon, so there is
+     nothing to list. The Body Gate lives under sizeComparison because it is a
+     Size table; meatShield is defined here once and rendered in both places. */
+  improvised: {
+    intro: "Improvised weapons are everything you pick up that was never built to be swung, which in Elysium is most things, and on a bad enough day, most people.",
+    using: [
+      "Action Economy: attacking costs an Action. Grabbing an obvious item within reach costs a Swift Action.",
+      "No Proficiency: nobody trains on a fire extinguisher. You do not add a Weapon Proficiency Bonus to an improvised attack roll.",
+      "Melee: roll an in-combat d20 (or out-of-combat Dice Pool) + your Body modifier + any relevant Skill.",
+      "Thrown: roll an in-combat d20 (or out-of-combat Dice Pool) + your Body or Agility modifier + any relevant Skill."
     ],
-    meatShield: "A held body smaller than you grants Half Cover (+2 Defense). A body your Size or larger grants Three-Quarter Cover (+5 Defense)."
+    damageNote: "Pick a base die and a damage type (Bludgeoning, Slashing, or Piercing) from the object's shape and heft. The GM may shift the die one step either way for exceptionally dense or soft materials.",
+    damage: [
+      { size: "Tiny",       examples: "Bottle, mug, wrench, brick",          die: "1d4" },
+      { size: "One-Handed", examples: "Pipe, chair leg, crowbar, laptop",    die: "1d6" },
+      { size: "Two-Handed", examples: "Barstool, small sign, tool box",      die: "1d8" },
+      { size: "Heavy",      examples: "Cinder block, street sign, engine block", die: "1d10 (gains Heavy and Unwieldy)" }
+    ],
+    thrownNote: "When you throw something that was never meant to fly, set its range by weight.",
+    thrown: [
+      { kind: "Light",    range: "4 / 12", examples: "Cans, bottles, tools, loose parts" },
+      { kind: "Standard", range: "3 / 9",  examples: "Bricks, one-handed tools, small crates" },
+      { kind: "Heavy",    range: "2 / 6",  examples: "Barstools, cinder blocks. Attack rolls suffer Snag." }
+    ],
+    desperation: [
+      "Throwing a Melee Weapon: when you hurl a melee weapon that lacks the Thrown trait, it gains a range of 2 / 6. Use your Athletics skill for the Weapon Attack. The attack gains no Weapon Proficiency Bonus and ignores all of the weapon's normal melee traits, including Reach and Finesse.",
+      "Using a Ranged Weapon as a Club: swinging something delicate, like a rifle, as a crude bludgeon deals 1d4 or 1d6 Bludgeoning by size. The weapon's own damage die and traits do not apply, and you should expect to need a gunsmith afterward."
+    ],
+    specialEffects: "On a Critical hit or a high Margin of success, the GM may rule that an improvised weapon inflicts a fitting condition: Bleeding from a shattered bottle, Staggered from a slab of concrete. When this happens, the Target makes a relevant Body or Wits save to resist it.",
+    peopleIntro: "First you have to grapple them. An Unconscious, Restrained, or willing Target can automatically be grappled as a Swift Action, the same as grabbing any heavy object. A conscious, unwilling Target has to be Grappled by force first, and on a success they are yours to misuse until they manage to break free.",
+    wieldedBody: "A wielded body is a Heavy improvised weapon: 1d10 Bludgeoning, Heavy, Unwieldy. Unwieldy means these attacks always carry Snag; swinging a person is not precision work. Both the Target and the body you swung take the rolled damage.",
+    meatShield: [
+      "A shield smaller than you grants Half Cover (+2 Defense). One your Size or larger grants Three-Quarter Cover (+5 Defense), against attacks that have to pass through them.",
+      "Any attack the cover turns from a hit into a miss strikes the shield instead. Roll that attack's full damage against the meat shield you are holding.",
+      "You keep the grapple up the whole time, and one arm is full of person, so the other can only manage One-Handed gear.",
+      "A shield does nothing against an attacker who can see around it (a flank), and less than nothing against Area effects, which cook you both."
+    ],
+    bludgeon: "Spend an Action to swing your grappled Target at another Target within reach as an improvised melee attack. On a hit, deal 1d10 Bludgeoning to the Target and the same to the body. On a Critical or a wide Margin, the Target also makes a Body save or is knocked Prone.",
+    throw: "Spend an Action to lob your grappled Target at a Target. Treat it as a Heavy improvised throw, range 2 / 6, and attack rolls carry Snag (the same Snag the Unwieldy body already imposes, which changes nothing, since Snag does not stack past rolling two dice). On a hit, deal 1d10 Bludgeoning to both, and the thrown Target lands Prone in the nearest open space to the Target, who makes a Body save or is knocked Prone alongside it. On a miss, your projectile still finds the floor: it lands Prone and takes 1d6 from the arrival."
   },
   // Features that shift EFFECTIVE Size for one purpose only. None changes the
   // character's actual Size, footprint, or Encumbrance beyond what it states.

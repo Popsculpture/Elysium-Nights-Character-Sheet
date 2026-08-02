@@ -240,11 +240,35 @@ EN.codexView = (function () {
       if ((SC.bodyGate || []).length) kids.push(ruleBlock("The Body Gate", SC.bodyGate.map(function (r) {
         return r.theirSize + " | Body " + r.body + " | " + r.holding;
       }).join("\n")));
-      if (SC.meatShield) kids.push(ruleBlock("Meat Shield", SC.meatShield));
+      // one definition, rendered here for Size context and in full under Improvised Weapons
+      if ((((R.improvised || {}).meatShield) || []).length) kids.push(ruleBlock("Meat Shield",
+        R.improvised.meatShield[0] + "\n\nFull rules under Improvised Weapons."));
       if ((R.sizeShiftFeatures || []).length) kids.push(ruleBlock("Features That Shift Effective Size",
         R.sizeShiftFeatures.map(function (f) { return f.name + " (" + f.lineage + "): " + f.effect; }).join("\n")
         + "\n\nEach shifts Size for its stated purpose only. None changes your actual Size, footprint, or Encumbrance beyond what it says."));
       blocks.push(refPanel("ref-size", "Size", "DERIVED FROM HEIGHT", kids));
+    })();
+
+    /* improvised weapons */
+    (function () {
+      var R = EN.rules; if (!R) return;
+      var IW = R.improvised;
+      if (!IW) return;
+      var kids = [];
+      function bullets(a) { return (a || []).map(function (x) { return "\u2022 " + x; }).join("\n"); }
+      kids.push(ruleBlock("Using Improvised Weapons", IW.intro + "\n\n" + bullets(IW.using)));
+      kids.push(ruleBlock("Improvised Damage", IW.damageNote + "\n\n"
+        + (IW.damage || []).map(function (d) { return d.size + " | " + d.die + " | " + d.examples; }).join("\n")));
+      kids.push(ruleBlock("Improvised Thrown Weapons", IW.thrownNote + "\n\n"
+        + (IW.thrown || []).map(function (d) { return d.kind + " | " + d.range + " | " + d.examples; }).join("\n")));
+      kids.push(ruleBlock("Desperation Attacks", bullets(IW.desperation)));
+      kids.push(ruleBlock("Special Effects and Conditions", IW.specialEffects));
+      kids.push(ruleBlock("People as Improvised Weapons", IW.peopleIntro + "\n\n" + IW.wieldedBody
+        + "\n\nWhether you can lift and swing someone at all is the Body Gate, under Size."));
+      kids.push(ruleBlock("Meat Shield", bullets(IW.meatShield)));
+      kids.push(ruleBlock("Bludgeon", IW.bludgeon));
+      kids.push(ruleBlock("Throw", IW.throw));
+      blocks.push(refPanel("ref-improvised", "Improvised Weapons", "ANYTHING IN REACH", kids));
     })();
 
     /* conditions library */
