@@ -1065,7 +1065,8 @@ EN.inventoryView = (function () {
           .sort(function (a, b) { return (slotOrder.indexOf(a.partSlot) - slotOrder.indexOf(b.partSlot)) || a.name.localeCompare(b.name); });
       };
       cats.push({ key: "parts", title: "Mods & Accessories", short: "PARTS",
-        intro: (WP().rules ? WP().rules.install + " " + WP().rules.legality : "") + " Buy a Part here, then install it from the Workbench (Arms Table).",
+        intro: (WP().rules ? WP().rules.install + " " + WP().rules.fabrication + " " + WP().rules.legality + " " + WP().rules.highScrutiny : "")
+          + " Buy a Part here, then install it from the Workbench (Arms Table).",
         subs: [
           { label: "Melee Parts", intro: "Edges, heads, cores, hilts, and locks worked into a melee weapon.", items: partsByCat("melee") },
           { label: "Firearm Parts", intro: "Optics, barrels, receivers, stocks, and muzzle gear. Bows also draw Targeting, Handling, and Utility from here.", items: partsByCat("ranged") },
