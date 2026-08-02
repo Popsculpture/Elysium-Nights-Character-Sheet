@@ -1166,6 +1166,100 @@ its Upgrade)" (doc 3053).
 
 ---
 
+### A24. Equipment resynced (step 4, domain 7 of 7)
+
+**Read this part first.** Domain 7 was done twice. The first pass was audited
+against local copies of Part 1/2/3 taken 2026-07-27 and was wrong enough to
+throw away. All three documents were edited on 2026-08-01, and Part 3 alone
+moved by roughly 1,269 added and 1,288 removed lines, about a third of the
+chapter. The clearest casualty: the shield **Wear X** trait was deleted from
+six shields, the engine and the Block tray on the grounds that it was invented.
+It is in the current Part 3 as its own trait entry, and the current Part 2
+spells the threshold out ("twice the maximum result of its Block die: 8 for a
+1d4 shield, 12 for a 1d6 shield, or 16 for a 1d8 shield"). The app already had
+it right and was corrected backwards. All six commits were reverted and the
+work was redone against the current documents. Everything below is from the
+redo. Where the redo did not re-confirm a first-pass claim, that claim was
+dropped rather than re-applied.
+
+- **Files:** `app/data/gear_melee.js`, `gear_ranged.js`, `gear_signature.js`,
+  `gear_armor.js`, `gear_tools.js`, `weapon_parts.js`, `armor_mods.js`,
+  `crafting.js`, `app/js/engine.js`, `combat.js`, `inventory.js`
+
+**Traits and firing modes.**
+- **Nonlethal** triggered at 0 Wounds instead of **0 Vitality**, a whole health
+  layer later, and granted a "stable" state the book gives nobody. It was wrong
+  in **four** glossaries, including the ranged copy that the Taser and Rubber
+  Rounds actually read.
+- **Full-Auto Suppress** carried an older draft with no **Pinned** condition and
+  no break-cover damage, plus a movement-cost and cover-downgrade sentence that
+  returns zero hits across all three current parts. Pinned has no entry in the
+  Conditions chapter anywhere in the book, so its inline definition now travels
+  with the trait.
+- **Semi-Automatic** in the signature glossary dropped the Snag and the 2-round
+  cost and invented a damage penalty. This mattered more than it looked: the
+  signature dictionary shadows the ranged one when the app merges them, so the
+  invented text was what every semi-automatic firearm in the catalog displayed.
+- **Scoped** was a vague placeholder in three places instead of the Take Aim
+  trigger, the long-range Snag waiver and the cover step-down.
+- **Continuous** kept only its first sentence, losing **Live Hazard** and
+  **Ground In**, which is the whole point of the trait on a melee weapon.
+- **Concealable** was missing the sentence that limits it.
+- Six traits carried by shipped items (**Concussive, Expanding, Intrusion,
+  Marking, Pressure, Pulse**) had no definition in any of the five glossaries.
+
+**Engine math, all silent.**
+- **Enhancement Bonuses were summed.** The book says same-attribute bonuses do
+  not stack and the highest applies, so two +1 Body pieces read as +2 Body.
+- **The Resonance Crown's exemption never fired**, because it keyed off
+  `disruptionLattice` and `convergenceEngine` while the catalog keys are
+  `disruption` and `convergence`. The Crown was discounting the two implants the
+  book excludes.
+- **Flat DR from Armor Mods never reached the sheet.** Trauma Plates' +1 was
+  printed and dropped. Mods do not stack with each other (the highest applies),
+  and the DR breakdown now names the source.
+- **A lapsed lease was forced to DR 0 for every suit.** DR 0 is only the default
+  zero state; where an item's own Lapsed or Locked line names a value, that
+  governs. Sentinel Issue falls to **DR 1**, the Bailiff Rig to **DR 3**.
+
+**Leases.** Every leased entry was stored with a zero buy-in, an invented rule
+printed to the player in five places, and no Glimmer Buyout, so four of the five
+leases could never be closed (the buyout path was Nexus-only).
+
+| Entry | Buy-in | Upkeep | Buyout |
+| :- | :- | :- | :- |
+| SkinPlan Daywear | 70 | 40/wk | 500 |
+| Sentinel Issue | 150 | 120/wk | 1,000 |
+| Bailiff Rig | 430 | 400/wk | 0.3 Nexus |
+| Sentinel Barrier | 90 | 60/wk | 600 |
+| Sentinel Active Defense | 120 | 90/wk | 800 |
+
+**Bench gating.**
+- **Match Barrel and Folding Stock** carried a mutual exclusion that the
+  installer enforced. The book's only two exclusions are Pared Hilt / Weighted
+  Head and Powered Assist Grip / Breakdown Frame, and both are already modelled.
+- **Grenades were classed as firearms** and given a customization bench. The
+  Slot Count by Profile table has eight rows and no thrown profile.
+- **A Revolver defaulted to a Sidearm's 4 slots**; the table gives it 2.
+- `crafting.js` used **"Max Mods"**, a term with zero occurrences in any part.
+
+**Other.** The Gravlock Maul pushed 1 space instead of 2. The Harmonic Edge was
+missing Quick Draw and Versatile (1d10) and carried a Reach the entry never
+grants. The Breach Charge blast save keyed off Agility and dropped the
+Engineering Proficiency Bonus. The Flashbang dealt "Sonic and Light" (there is
+no Light damage type) and had no On Hit rider. The **Load readout printed the
+STANDARD band as its denominator** rather than the declared Load Budget, in both
+places it appears.
+
+**Deliberately not changed.** Shield Wear thresholds, Durability boxes, Warding
+Focus slots and every armor and shield number: the redo checked all 22 armor
+suits, 6 shields and 5 Warding Foci against the book and found them correct on
+price, DR, Block Bonus, mod slots, Defense, Block die, Wear threshold, Durability
+boxes, Ward die, traits, Availability and Legality, with the leased buy-ins as
+the only exception.
+
+---
+
 ## PART B: Pending, in the agreed order
 
 1. ~~Rulings on the contradictions in PART C.~~ **M1 and M2 ruled 2026-07-28**;
@@ -1173,10 +1267,29 @@ its Upgrade)" (doc 3053).
 2. ~~**#GRID System Integrity rework.**~~ **Done, see A3.**
 3. ~~Remaining verified engine bugs.~~ **Done, see A4, A5 and A6.** Two items
    deferred with reasons (cyberware platform slots, flat implant bonuses).
-4. Data corrections, domain by domain.
-5. New subsystems (each a feature build, not a data edit): Flow Disturbances,
-   Sit-Downs and Social Pressure numbers, Vehicles & Chases, Improvised Weapons,
-   Economy, Mystech Ammunition.
+4. ~~Data corrections, domain by domain.~~ **Done. All seven domains closed:**
+   Conditions (A11), Skills (A12), Classes (A13), Species and Lineage (A16),
+   the Flow (A14, A18-A21), Talents (A23), Equipment (A24, done twice).
+5. New subsystems (each a feature build, not a data edit). **The 2026-08-01
+   documents changed this list: four things previously recorded as absent from
+   the book are now written, and are absent only from the APP.**
+   - **Economy and Rewards.** A full chapter now opens Part 3 (Glimmer, Nexus,
+     exchange and regional variation, lifestyle costs, safehouses, day jobs,
+     crew pool splits, debt, fences, bribes, reward tables). The app models
+     currency and markets but none of the exchange, lifestyle or safehouse
+     rules.
+   - **Vehicle Ownership and Vehicle Customization.** Two chapters, thirteen
+     Vehicle Mods, chassis profiles, upkeep and repair. Not modelled at all.
+     Handling for all seven chassis is published, so the Garage's manual
+     Handling field could become a chassis picker.
+   - **Improvised Weapons.** A full chapter. Only the Body Gate and a one-line
+     Meat Shield summary are in the app.
+   - **Mystech Ammunition.** Hex-Etched, Resonant and Genesis Rounds with their
+     damage-type conversions and the shared Backlash rule. Still absent.
+   - Still absent from the book's side as before: Flow Disturbances, Sit-Downs
+     and Social Pressure numbers.
+   - **Cyberware platform slots** moves here from "deferred": mods slotted into
+     a Cyberarm or Cyberleg still add their SP to Total Static.
 
 Full machine-readable findings, with doc line numbers and `file:line` targets, are
 in the audit scratchpad as `part2_findings.json` and `part3_findings.json`.
