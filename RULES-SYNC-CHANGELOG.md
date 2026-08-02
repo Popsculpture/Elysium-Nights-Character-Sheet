@@ -1305,14 +1305,37 @@ Nothing here has been changed in the app; each needs an author ruling.
 **Open items are listed first. Everything already ruled or resolved is archived
 at the end of this section.**
 
-### CAVEAT on source coverage (2026-08-01)
-The Drive reader truncates a large document. All three current spills end
-mid-word: Part 1 at "Ranged attacks agains", Part 2 at "the contested C", Part 3
-at "If the object or Target is roughl". Everything before those points was
-audited; the tails were not. For Part 3 the loss is only the end of the final
-**Short Lift and Carry** subsection, so domain 7 is effectively complete. For
-Parts 1 and 2 the extent is unmeasured. Worth a second pass on the tails before
-the sync is called finished.
+### RESOLVED: source coverage (2026-08-01, measured 2026-08-02)
+The Drive connector truncates a large document, and all three spills ended
+mid-word. That is now measured and repaired, and the loss was far smaller than
+it looked.
+
+Measured against the authenticated `docs.google.com/.../export?format=txt` text,
+which is the complete document:
+
+| Part | Characters lost | Share of the doc | What was missing |
+| :- | -: | -: | :- |
+| Part 1 | 384 | 0.09% | the tail of one sentence in **Impossible Geometry** |
+| Part 2 | 414 | 0.07% | the tail of the chase-round summary |
+| Part 3 | 2,477 | 0.64% | **Short Lift and Carry**, **Dragging, Pushing, and Pulling**, **Traits, Mods, and Frames**, and the closing GM Guidance |
+
+All three local spills have had their real endings spliced back on and now end on
+complete sentences. The recovered Part 3 text was then audited: its one hard
+mechanic, "when a trait says your Encumbrance Threshold is a step higher, one
+step is +2", is already implemented correctly in `engine.js`, including the
+non-stacking Load-Bearing / Load Distributor rule and Powered frames counting as
+two steps. **No app change was needed.** Nothing in any of the three recovered
+tails contradicts the app.
+
+**Method, for next time.** The connector caps its output by tokens, not
+characters, so it cuts each document at a different point and re-reading never
+returns more. To get the true text: open any lightweight same-origin page on
+`docs.google.com` (its `robots.txt` works and will not freeze the renderer the
+way the editor page does), then `fetch('/document/d/<ID>/export?format=txt')`.
+Do not pass `credentials: 'include'`; on a same-origin request it makes the fetch
+fail. The plain-text export carries no heading or table markup, so it is the
+right source for *completeness* checks but the connector's version is still the
+better one to read for structure.
 
 ### STILL OPEN
 
