@@ -244,14 +244,9 @@ EN.inventoryView = (function () {
     );
   }
   function findItem(name) { return catalog().find(function (i) { return i.name === name; }); }
-  function traitDefs() {
-    var g = EN.gearCatalog || {};
-    var out = {};
-    [(g.melee && g.melee.traits), (g.ranged && g.ranged.traits), (g.signature && g.signature.traits)].forEach(function (d) {
-      if (d) Object.keys(d).forEach(function (k) { out[k] = d[k]; });
-    });
-    return out;
-  }
+  // one canonical weapon glossary (app/data/gear_traits.js); armor keeps its own,
+  // because Heavy, Light, Loud and Concealable mean different things on armor
+  function traitDefs() { return (EN.gearCatalog && EN.gearCatalog.weaponTraits) || {}; }
   // Armor/defensive traits live in their own table; several keys (Heavy, Light,
   // Loud, Concealable) mean different things on armor than on weapons, so a
   // defensive item resolves its chips against this set first.

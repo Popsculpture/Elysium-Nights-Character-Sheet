@@ -1,0 +1,67 @@
+/* ===========================================================================
+   ELYSIUM NIGHTS - Weapon trait glossary (canonical)
+   One definition per trait, shared by the melee, ranged and signature
+   catalogs. These used to live in three separate `traits` maps that the UI
+   flattened last-write-wins, so 12 keys were defined more than once with
+   differing text and the losing copy was silently unreachable.
+   Armor and defensive traits deliberately stay separate, in gear_armor.js:
+   Heavy, Light, Loud and Concealable mean different things on armor.
+   =========================================================================== */
+window.EN = window.EN || {};
+EN.gearCatalog = EN.gearCatalog || {};
+
+EN.gearCatalog.weaponTraits = {
+  "Arc": "May target spaces behind low barriers or around corners if there is open space above the path. Cannot be used where there is no vertical room for the projectile to arc.",
+  "Area X": "Some effects fill a space and catch whatever is standing in it. The number is the size in spaces; the word after gives the shape, Sphere (burst), Cone (spreads from you), Line (X long, 1 wide), Cube, or Aura. Targets caught usually save for half or no damage; roll the effect's damage once and apply it to everyone the area touches.",
+  "Armor Piercing X": "On a hit, ignore X points of flat damage reduction from armor or similar gear for that attack. Does not affect Resistances or Immunities unless a rule explicitly says otherwise.",
+  "Burst": "Choose a primary Target and attack (3 rounds). Hit or miss, every other Target within 1 space of the primary makes an Agility Save vs your Weapon Save DC; on a failure they take the weapon's damage die without your Attribute modifier.",
+  "Close Quarters": "You do not suffer Snag for attacking while engaged in melee or in cramped environments where similar weapons would be awkward.",
+  "Compact": "Easier to handle in vehicles, narrow corridors, and cluttered spaces. Penalties that apply only to long or oversized weapons in very tight spaces do not apply.",
+  "Concealable": "Checks to spot the item on a casual search, or to notice you are armored, are made with Snag. A deliberate pat-down or a scanner still finds it.",
+  "Concussive": "On a failed save, the target is Staggered until the end of its next turn, and is knocked Prone as well if the entry says so. The force works on anything with a body to shake, no current required.",
+  "Continuous": "Once you begin the attack, you can sustain it on later rounds by spending the required ammo and Action. You do not need to fully re-ready or reprime the weapon between those rounds.\n\nLive Hazard: the spaces the stream fills (its Area, line, or cone, as the weapon lists) stay dangerous until the start of your next turn. A Target that enters those spaces, is moved into them (willingly or not), or starts its turn in them is caught in the stream, making the save the attack calls for and taking the listed damage and effect on a failure. A Target can be caught this way only once on a given turn. Sustaining the attack on your turn refreshes the hazard; stop sustaining it and the hazard ends. Anything that lingers afterward comes from another trait, such as Incendiary or a Persistent field, not from this one.\n\nGround In (melee): on a melee weapon there is no Area to hold, so the stream becomes the bite. After you hit a Target with a Continuous melee weapon, you may keep the edge buried: on later rounds, spend the same Action to deal the weapon\u0027s damage to that Target again with no attack roll, as long as it stays within your reach and you take no other Action. The grind ends the moment you do anything else, the Target leaves your reach, or you choose to pull the blade free.",
+  "Cover": "Creates temporary barriers or dense fields that grant half or three-quarter cover, as listed in the entry.",
+  "Crew Served": "Solo: fire with Snag and no Sprint while carrying. An Ally within 1 space can spend a Swift Action as Loader/Spotter; the gunner loses the Snag, gains Edge on their next attack, and any Jam from a Natural 1 is cleared.",
+  "Defensive": "When you are targeted by a melee attack while wielding this weapon, and you are not Surprised, Restrained, or Incapacitated, you may spend an Impulse Action to impose Snag on the attack.",
+  "Delivery": "On a hit, apply a listed condition or payload effect (sedative, toxin, nanite package). Base damage is modest compared to what it delivers.",
+  "Disposable": "After a successful use, the weapon is spent and cannot be reloaded or reused without special rules.",
+  "Expanding": "Against a target with no armor DR, the attack deals extra Wound damage as listed. Against a target with armor DR at or above the listed threshold, the round cannot add that bonus Wound, including from critical hits or abilities that stack bonus Wound, though those effects still apply to Vitality as normal.",
+  "Explosive": "Damage comes from an explosion. Usually combines with Area and a save for half or no damage. Can damage objects, structures, and vehicles. Indoors, see Wall-to-Wall.",
+  "Finesse": "When making an in-combat d20 attack or an out-of-combat Dice Pool attack with a Finesse weapon, you may use Body or Agility for the attack and damage calculation. You choose which Attribute each time you make an attack.",
+  "Full-Auto": "As an Action once per round, spend 8 rounds to project an Area 3 cone or an Area 6 by 1 line from yourself, then choose Saturate or Suppress. Each Target in the area makes an Agility Save against your Weapon Save DC.\n\nSaturate: on a failure the Target takes the weapon\u0027s normal damage and effects; on a success, half damage and no additional effects.\n\nSuppress: on a failure the Target is Pinned until the start of your next turn, its Speed halved and rolling with Snag on attack rolls. A Pinned Target that stays behind cover and holds its fire takes nothing more. If it attacks, or moves while not behind cover, the stream catches it: it takes the weapon\u0027s damage die without your Attribute modifier, and the Pin ends. On a success, no effect.",
+  "Guided": "Attacks ignore the Defense bonuses of Half Cover and do not suffer Snag when firing at long range.",
+  "Heavy": "Dense, reinforced, and awkward to swing or fire. Adds to encumbrance and interacts with rules that penalize low Body or long-distance movement. Usually unsuitable for off-hand or dual-wield use without a specific feature or powered assistance, and a poor fit for nimble, stealth-focused Freelancers.",
+  "High Recoil": "Multiple attacks with the same weapon in one round apply Snag to later attacks unless Stabilized.",
+  "Incendiary": "Deals Fire and leaves fire behind; a struck target may catch Burning, or it may leave a burning zone. Readily ignites fuel, flammable cover, and environmental hazards.",
+  "Intrusion": "Against a target with significant cyberware, a drone, or a smart device, the round delivers a digital payload alongside its damage. On a failed save it can leave the target Breached and open a foothold an ally on the #GRID can exploit. Against a purely organic target there is nothing for the payload to reach, and it does nothing.",
+  "Light": "Compact and easy to handle in one hand. Light weapons interact with dual-wield and off-hand fighting rules and contribute minimally to encumbrance. They can be carried discreetly under loose clothing without counting as Concealable.",
+  "Marking": "The first hit each round marks the target for a short time. While marked, you and your allies gain Edge on in-combat ranged attack rolls against it, or +1 Edge Die on out-of-combat Dice Pools.",
+  "Nonlethal": "If damage from this weapon reduces a Target to 0 Vitality, that Target is immediately rendered Unconscious.",
+  "Obscuring": "Areas affected by an Obscuring effect count as heavily obscured for sight-based targeting. Targets in the area are harder to target with attacks that require clear visual contact.",
+  "One-Handed": "Designed for full effectiveness in one hand, leaving the other free for a shield, tool, second weapon, or climbing.",
+  "Persistent": "Leaves behind a lingering hazard or field. A Target entering or starting its turn in the zone usually saves or takes the listed damage or effect; the entry gives duration and exact effect.",
+  "Precision Frame": "A weapon with Precision Frame scores a critical hit on a roll of 19 or 20. A weapon whose only firing mode is Single Shot has Precision Frame inherently; the Match Trigger Group mod can also grant it.",
+  "Pressure": "When an effect with this trait triggers Wall-to-Wall, treat the room as one space narrower than it is when counting Rebound.",
+  "Pulse": "Against devices, drones, cyberware, powered armor, and smart weapons, the attack deals full Electric and Tech damage and, on a failed save, can leave them Bricked or Breached. Against living targets without significant cybernetics, the damage is halved, counts as Electric only, and carries no further effect.",
+  "Pump Action": "Once per encounter, before firing, rack the action as a Swift Action: each hostile within 6 spaces who can see or hear it must succeed on a Wits Save (DC 8 + Agility Mod + Caliber) or gain Shaken. Those who haven't seen you brandish it this scene save with Snag.",
+  "Quick Draw": "Drawing this weapon from a sheath or harness costs no additional action when made as part of an attack. The first attack you make in a combat encounter with a Quick Draw weapon drawn this way gains Edge.",
+  "Quick Nock": "After your attack, you may use a Swift Action to make a second attack with the same bow (with Snag). Does not stack with Semi-Automatic or other extra-attack modes on the same turn.",
+  "Reach X": "Each point of Reach extends the weapon's attack distance by 1 space beyond your normal melee reach. Most Freelancers can attack Targets in an adjacent space, which is 1 space away. A weapon with Reach 1 can strike Targets up to 2 spaces away, Reach 2 up to 3 spaces, and so on. Any rule that references a Target entering your reach uses this extended distance.",
+  "Reliable": "Natural 1 results are treated as simple misses unless an effect specifically calls out a more severe outcome.",
+  "Scoped": "When you Take Aim (Swift) before attacking with this weapon, that attack ignores the long-range Snag penalty and treats the target's Half or Three-Quarter Cover as one step less: Three-Quarter becomes Half, Half becomes none.",
+  "Semi-Automatic": "After you attack with this weapon, you may spend a Swift Action to make one additional attack with it against the same or a different target. That second attack rolls with Snag, and the pair spends 2 rounds of ammo.",
+  "Setup": "An Action to deploy on flat ground, or a Swift Action to brace against existing cover. While set up: ignore High Recoil and double the weapon's range bands. Moving ends the Setup state.",
+  "Shock": "On a hit against an organic, cyber-augmented, or robotic Target, that Target must make an in-combat Body d20 save (DC 12). On a failure, they gain the Staggered condition until the end of their next turn.",
+  "Siege": "This weapon deals double damage to Vehicle armor and to Cover Integrity. If an attack with this weapon destroys a piece of cover, any overflow damage applied to the Target behind it ignores their personal armor Damage Reduction.",
+  "Silent": "Attacks do not automatically trigger sound-based alerts in the area.",
+  "Single Shot": "Make a single attack against one Target for 1 round of ammo. If Single Shot is a weapon's only firing mode, its attacks gain Precision Frame (a critical hit on a roll of 19 or 20).",
+  "Slow": "You can make only one attack per round with this weapon, regardless of extra-attack features, unless something explicitly overrides it.",
+  "Spread": "Performs best at short range and degrades at long range (for example, Edge at short range, Snag at long range).",
+  "Suppressive": "When using Full-Auto in Suppress mode, this weapon increases the Weapon Save DC by +2.",
+  "Stabilized": "The weapon counts as stabilized and supported. Negates the High Recoil Snag.",
+  "Thrown": "Uses the weapon's listed thrown range, given in short / long format. When you make a thrown attack, you generally choose Body or Agility as the governing Attribute. A thrown weapon does not automatically return to you and must be retrieved or replaced after use.",
+  "Two-Handed": "Requires both hands for effective use. Using a Two-Handed weapon one-handed applies heavy penalties (typically Snag on attacks and a downgraded damage die) unless you have a specific feature or powered assistance.",
+  "Unregistered": "Lacks valid marks in official systems. Harder to trace; often treated as illegal on its face if discovered in controlled zones.",
+  "Versatile": "The weapon lists an alternate damage die in parentheses. Use the base damage when wielded in one hand, and the Versatile damage when wielded in two hands.",
+  "Worn": "Built to attach to the body, clothing, or armor rather than be held. Cannot be easily dropped or disarmed; may take time, tools, or a specific action to equip or remove. Counts as equipped gear for any effect that checks what you are wearing or bearing.",
+};

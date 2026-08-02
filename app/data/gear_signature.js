@@ -116,28 +116,6 @@ EN.gearCatalog.signature = {
       feeds: "Pulse Laser, Arc Caster, Cryo Lance", desc: "A fresh charge cell. Slots into any one of these and refills it to full." },
     { name: "Coil Slugs", group: "Signature Munition", price: 120, unit: "per 8", availability: "Rare", legality: "Restricted",
       feeds: "Coil Driver", desc: "Dense tungsten slugs for the accelerator." }
-  ],
+  ]
 
-  /* Trait glossary: verbatim from the Signature section so it runs on its own */
-  traits: {
-    "Area X": "Some effects fill a space and catch whatever is standing in it. The number is the size in spaces; the word after gives the shape, Sphere (burst), Cone (spreads from you), Line (X long, 1 wide), Cube, or Aura. Targets caught usually save for half or no damage; roll the effect's damage once and apply it to everyone the area touches.",
-    "Armor Piercing X": "On a hit, ignore X points of flat damage reduction from armor or similar gear for that attack. Does not affect Resistances or Immunities unless a rule says so.",
-    "Concealable": "Attacks and operation work as normal. Checks to detect the weapon on a casual search are made with Snag. A deliberate pat-down or a scanner still finds it.",
-    "Continuous": "Once you begin the attack, you can sustain it on later rounds by spending the required ammo and Action. You do not need to fully re-ready or reprime the weapon between those rounds.\n\nLive Hazard: the spaces the stream fills (its Area, line, or cone, as the weapon lists) stay dangerous until the start of your next turn. A Target that enters those spaces, is moved into them (willingly or not), or starts its turn in them is caught in the stream, making the save the attack calls for and taking the listed damage and effect on a failure. A Target can be caught this way only once on a given turn. Sustaining the attack on your turn refreshes the hazard; stop sustaining it and the hazard ends. Anything that lingers afterward comes from another trait, such as Incendiary or a Persistent field, not from this one.\n\nGround In (melee): on a melee weapon there is no Area to hold, so the stream becomes the bite. After you hit a Target with a Continuous melee weapon, you may keep the edge buried: on later rounds, spend the same Action to deal the weapon\u0027s damage to that Target again with no attack roll, as long as it stays within your reach and you take no other Action. The grind ends the moment you do anything else, the Target leaves your reach, or you choose to pull the blade free.",
-    "Finesse": "When attacking with a Finesse weapon, you may use Body or Agility for the attack and damage. You choose which each time you attack.",
-    "Heavy": "Dense, reinforced, and awkward to swing or fire. Adds to encumbrance, interacts with rules penalizing low Body, usually unsuitable for off-hand or dual-wield use, and a poor fit for nimble, stealth-focused Freelancers.",
-    "High Recoil": "Multiple attacks with the same weapon in one round apply Snag to later attacks unless braced or supported.",
-    "Incendiary": "Deals Fire and leaves fire behind; a struck target may catch Burning, or it may leave a burning zone. Readily ignites fuel, flammable cover, and environmental hazards.",
-    "Light": "Compact and easy to handle in one hand. Interacts with dual-wield and off-hand rules and contributes minimally to encumbrance; can be carried discreetly without counting as Concealable.",
-    "Nonlethal": "If damage from this weapon reduces a Target to 0 Vitality, that Target is immediately rendered Unconscious.",
-    "Obscuring": "Areas affected count as heavily obscured for sight-based targeting. Targets inside are harder to hit with attacks that need clear visual contact.",
-    "Persistent": "Leaves behind a lingering hazard or field. A Target entering or starting its turn in the zone usually saves or takes the listed damage or effect; the entry gives duration and exact effect.",
-    "Reach X": "Extends your melee threat beyond arm's length. You can attack Targets up to 1 space farther per point of Reach (Reach 1 = up to 2 spaces). Any rule referencing 'entering your reach' uses this extended distance.",
-    "Semi-Automatic": "After you attack with this weapon, you may spend a Swift Action to make one additional attack with it against the same or a different target. That second attack rolls with Snag, and the pair spends 2 rounds of ammo.",
-    "Siege": "Deals double damage to Vehicle armor and to Cover Integrity. If an attack destroys a piece of cover, overflow damage applied to the Target behind it ignores their personal armor Damage Reduction.",
-    "Single Shot": "Make a single attack against one Target for 1 round of ammo. If Single Shot is a weapon's only firing mode, it has the Precision Frame trait inherently, scoring a critical hit on a roll of 19 or 20.",
-    "Slow": "You can make only one attack per round with this weapon, regardless of extra-attack features, unless something explicitly overrides it.",
-    "Two-Handed": "Requires both hands for effective use. Using it one-handed applies heavy penalties (typically Snag on attacks and a downgraded damage die) unless you have a specific feature or powered assistance.",
-    "Worn": "Built to attach to the body, clothing, or armor rather than be held. Cannot be easily dropped or disarmed; may take time, tools, or a specific action to equip or remove. Counts as equipped gear for any effect that checks what you are wearing or bearing."
-  }
 };

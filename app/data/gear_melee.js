@@ -85,22 +85,6 @@ EN.gearCatalog.melee = {
     { name: "Whip", group: "Martial", price: 50, damage: "1d4 Slashing", range: "Melee (Reach 2)",
       traits: ["Finesse", "Reach 2"], availability: "Common", legality: "Licensed",
       desc: "A long lash of braided polymer, weighted for cutting arcs and distance control. Doesn't kill quickly. Sometimes that's the point." }
-  ],
+  ]
 
-  /* Weapon trait glossary (melee), verbatim effects */
-  traits: {
-    "Armor Piercing X": "On a hit, ignore X points of flat damage reduction from armor or similar gear for that attack. Does not affect Resistances or Immunities unless a rule explicitly says otherwise.",
-    "Concealable": "Attacks and use work normally. Checks to detect the weapon on a casual search are made with Snag. A deliberate pat-down or a scanner still finds it.",
-    "Defensive": "When you are targeted by a melee attack while wielding this weapon, and you are not Surprised, Restrained, or Incapacitated, you may spend an Impulse Action to impose Snag on the attack.",
-    "Finesse": "When making an in-combat d20 attack or an out-of-combat Dice Pool attack with a Finesse weapon, you may use Body or Agility for the attack and damage calculation. You choose which Attribute each time you make an attack.",
-    "Heavy": "Heavy weapons add to overall encumbrance and cannot be used effectively off-hand or in dual wield without a specific feature or powered assistance.",
-    "Light": "Light weapons interact with dual wield and off-hand fighting rules and contribute minimally to encumbrance. They can be carried discreetly under loose clothing without counting as Concealable.",
-    "Nonlethal": "If damage from this weapon reduces a Target to 0 Vitality, that Target is immediately rendered Unconscious.",
-    "Quick Draw": "Drawing this weapon from a sheath or harness costs no additional action when made as part of an attack. The first attack you make in a combat encounter with a Quick Draw weapon drawn this way gains Edge.",
-    "Reach X": "Each point of Reach extends the weapon's attack distance by 1 space beyond your normal melee reach.",
-    "Shock": "On a hit against an organic, cyber-augmented, or robotic Target, that Target must make an in-combat Body d20 save (DC 12). On a failure, they gain the Staggered condition until the end of their next turn.",
-    "Thrown": "Uses the weapon's listed thrown range, given in short / long format. When you make a thrown attack, you generally choose Body or Agility as the governing Attribute. A thrown weapon must be retrieved or replaced after use.",
-    "Two-Handed": "Requires both hands for effective use. Using a Two-Handed weapon one-handed applies heavy penalties (typically Snag on attacks and a downgraded damage die) unless you have a specific feature or powered assistance.",
-    "Versatile": "The weapon lists an alternate damage die in parentheses. Use the base damage when wielded in one hand, and the Versatile damage when wielded in two hands."
-  }
 };

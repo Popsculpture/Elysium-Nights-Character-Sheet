@@ -1542,10 +1542,7 @@ EN.combatView = (function () {
 
   /* trait + damage-type tooltips for the attack-row chips */
   function weaponTraitTip(t) {
-    var g = EN.gearCatalog || {}, defs = {};
-    [(g.melee && g.melee.traits), (g.ranged && g.ranged.traits), (g.signature && g.signature.traits)].forEach(function (dd) {
-      if (dd) Object.keys(dd).forEach(function (k) { defs[k] = dd[k]; });
-    });
+    var g = EN.gearCatalog || {}, defs = g.weaponTraits || {};
     var REVERSE = { "Nonlethal Damage": "Nonlethal" };   // renamed mechanical traits → real trait def
     if (REVERSE[t] && defs[REVERSE[t]]) return defs[REVERSE[t]];
     var base = t.replace(/\s*\(.*\)$/, "").trim();
