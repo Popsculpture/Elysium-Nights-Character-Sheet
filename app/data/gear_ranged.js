@@ -107,15 +107,18 @@ EN.gearCatalog.ranged = {
     { name: "EMP Grenade", group: "Thrown", price: 175, damage: "2d6 Electric and Tech", ammo: 1, range: "4 / 12",
       traits: ["Explosive (Area 2 Sphere)", "Thrown (4/12)", "Pulse"], availability: "Uncommon", legality: "Restricted",
       desc: "A compact charge tuned to fry circuits instead of flesh. Useless on the people. Devastating on the people's gear. On Hit: living targets without significant cybernetics take half damage, Electric only, no further effect (Pulse). Devices, drones, and augmented targets in the area make a Tech Save vs your Weapon Save DC or gain Bricked (devices) or Breached (augmented) until the end of their next turn, matching the EMP Round and EMP Shell." },
-    { name: "Flashbang", group: "Thrown", price: 100, damage: "1d4 Sonic and Light", ammo: 1, range: "4 / 12",
+    { name: "Flashbang", group: "Thrown", price: 100, damage: "1d4 Sonic", ammo: 1, range: "4 / 12",
       traits: ["Explosive (Area 3 Sphere)", "Nonlethal", "Thrown (4/12)"], availability: "Common", legality: "Licensed",
-      desc: "A nonlethal grenade that turns light and sound into weapons. Standard issue for breach teams that want hostages who can still walk to the door." },
+      desc: "A nonlethal grenade that turns light and sound into weapons. Standard issue for breach teams that want hostages who can still walk to the door.",
+      effect: "On Hit: each Target in the area makes an Agility Save vs your Weapon Save DC or is Blinded and Deafened until the end of its next turn." },
     { name: "Frag Grenade Mk I", group: "Thrown", price: 150, damage: "2d6 Ballistic and Force", ammo: 1, range: "4 / 12",
       traits: ["Explosive (Area 2 Sphere)", "Thrown (4/12)"], availability: "Common", legality: "Licensed",
-      desc: "A basic fragmentation grenade. Cheap, widely distributed, packs a kill zone the size of a small room. The standard answer to the question \"is anyone behind that wall.\"" },
+      desc: "A basic fragmentation grenade. Cheap, widely distributed, packs a kill zone the size of a small room. The standard answer to the question \"is anyone behind that wall.\"",
+      effect: "On Hit: each Target in the area makes an Agility Save vs your Weapon Save DC, taking full damage on a failure and half on a success." },
     { name: "Frag Grenade Mk II", group: "Thrown", price: 200, damage: "2d8 Ballistic and Force", ammo: 1, range: "4 / 12",
       traits: ["Explosive (Area 3 Sphere)", "Thrown (4/12)"], availability: "Uncommon", legality: "Restricted",
-      desc: "An upgraded frag with more shrapnel and a wider kill zone. Costs more, kills more, leaves less to identify afterward." },
+      desc: "An upgraded frag with more shrapnel and a wider kill zone. Costs more, kills more, leaves less to identify afterward.",
+      effect: "On Hit: each Target in the area makes an Agility Save vs your Weapon Save DC, taking full damage on a failure and half on a success." },
     { name: "Smoke Grenade", group: "Thrown", price: 75, damage: "0", ammo: 1, range: "4 / 12",
       traits: ["Explosive (Area 3 Sphere)", "Obscuring", "Cover", "Thrown (4/12)"], availability: "Common", legality: "Licensed",
       desc: "A canister that trades damage for cover and confusion. The cleanest extraction tool nobody talks about until they need it." },
@@ -139,6 +142,12 @@ EN.gearCatalog.ranged = {
   ],
 
   /* Firing modes + ranged trait glossary, verbatim effects (condensed where long) */
+  /* Indoor blast rules, referenced by the Explosive trait. part3.txt:1205-1211. */
+  wallToWall: "Trigger: any damaging Area effect, Sphere or Cube, that goes off in an enclosed space. A space is enclosed if the blast cannot vent: a closed room, a corridor, a stairwell, a parked car, a sealed container. A blown-out wall, an open roof, or a doorway wide enough to bleed off the pressure means it is not enclosed. A lingering cloud such as smoke or gas does not rebound; it simply fills the space.\n\nRebound: place the Area on the grid and compare it to the room's tightest open dimension, counting in spaces. For each space the Area is wider than the room can hold, the blast gains one extra die of its own damage, up to a number of extra dice equal to its normal damage dice. This extra damage is part of the same attack, so a save that halves the damage halves the extra dice with it.\n\nIn a sealed room: each Target in the Area rolls its save with Snag, and Half Cover and Three-Quarter Cover grant no bonus, because the blast never passes anyone by.\n\nPressure: when an effect with the Pressure trait triggers Wall-to-Wall, treat the room as one space narrower than it is when counting Rebound.",
+
+  /* How specialty ammo is spent and when its effect lands. part3.txt:1054-1058. */
+  specialtyNote: "To use specialty ammo you must Load it, Declare it before the attack, and Apply its effect when the attack resolves. By default each shot spends one unit.\n\nWith a multi-round firing mode you spend specialty rounds equal to the number of rounds fired: 3 for Burst Fire, 8 for Full-Auto. The specialty effect applies to each Target the attack hits.\n\nWhen a firing mode resolves with a save instead of an attack roll, a Target counts as hit only if it fails the save and takes the weapon's damage. That includes a Burst Fire spillover Target, a Target that fails against Full-Auto Saturate, or a Pinned Target caught breaking cover.\n\nA Target that succeeds on its save gains no specialty effect and takes no damage of the specialty kind, even if it still takes half damage from Saturate. A Target left only Pinned by Full-Auto Suppress also gains no specialty effect.\n\nYou cannot use specialty ammo with a firing mode unless you have enough specialty rounds loaded to pay its full ammunition cost. You may mix standard and specialty rounds in the same magazine, provided you track their loading order.",
+
   traits: {
     "Single Shot": "Make a single attack against one Target for 1 round of ammo. If Single Shot is a weapon's only firing mode, it has the Precision Frame trait inherently.",
     "Precision Frame": "A weapon with Precision Frame scores a critical hit on a roll of 19 or 20. A weapon whose only firing mode is Single Shot has Precision Frame inherently; the Match Trigger Group mod can also grant it.",
