@@ -57,7 +57,7 @@ EN.gearCatalog.armor = {
 
   items: [
     /* ============================== LIGHT ARMOR ============================== */
-    { name: "SkinPlan Daywear", kind: "armor", group: "Light Armor", type: "Light Armor", price: 0, upkeep: 40,
+    { name: "SkinPlan Daywear", kind: "armor", group: "Light Armor", type: "Light Armor", price: 70, upkeep: 40, buyout: 500,
       slot: ["Torso", "Legs"], dr: 1, traits: ["Streetwear", "Leased"], availability: "Common", legality: "Legal",
       desc: "Armor as a service. The cut reads as this season's drop, the impact panels are real, and the whole thing keeps working exactly as long as the autopay clears. Miss one Tuesday and you are wearing a very expensive coat.",
       effect: "Grants 1 DR. A Premium plan (double Upkeep) raises this to 2 DR while active. Lapsed payment drops it to its zero state (DR 0)." },
@@ -107,7 +107,7 @@ EN.gearCatalog.armor = {
       slot: ["Torso", "Legs"], dr: 4, blockBonus: 1, traits: ["Plated", "Bulky"], availability: "Uncommon", legality: "Restricted",
       desc: "A heavy medium suit that gives up the easy step for an extra layer of hard plate. As much armor as you can carry before you cross into the kind that climbs into you.",
       effect: "Grants 4 DR and a +1 Block Bonus." },
-    { name: "Sentinel Issue", kind: "armor", group: "Medium Armor", type: "Medium Armor", price: 0, upkeep: 120,
+    { name: "Sentinel Issue", kind: "armor", group: "Medium Armor", type: "Medium Armor", price: 150, upkeep: 120, buyout: 1000, lapsedDR: 1,
       slot: ["Torso", "Legs"], dr: 3, blockBonus: 1, traits: ["Plated", "Hostile Appearance", "Leased"], availability: "Common", legality: "Licensed",
       desc: "Corporate security armor, leased to contractors by the shift. Full protection while your credential is live, and a quiet little brick in the spine for the moment you stop being theirs. Plenty of Freelancers wear it anyway; the plan is cheaper than the funeral.",
       effect: "Grants 3 DR and a +1 Block Bonus. Lapsed or Locked: DR drops to 1 and you lose the Block Bonus until you settle the account or crack the lock (lapsed payment, flagged Persona, or revoked credentials)." },
@@ -144,7 +144,7 @@ EN.gearCatalog.armor = {
       desc: "A civilian heavy-lift frame stripped of its safety governors and bolted full of plate. It was built to move cargo containers. It moves Freelancers, doors, and the occasional unlucky enforcer just as well.",
       effect: "Grants 5 DR and a +2 Block Bonus.",
       poweredBenefits: "While trained and powered, you ignore the Speed reduction from Bulky, treat your Encumbrance threshold as two steps higher, and gain Edge on in-combat d20 checks (or +1 Edge Die out-of-combat) to lift, shove, or force movement." },
-    { name: "Bailiff Rig", kind: "armor", group: "Powered Exoframe", type: "Powered Heavy Armor (3 Mod Slots)", price: 0, upkeep: 400, nexus: "◎0.3 buyout",
+    { name: "Bailiff Rig", kind: "armor", group: "Powered Exoframe", type: "Powered Heavy Armor (3 Mod Slots)", price: 430, upkeep: 400, nexus: "◎0.3 buyout", lapsedDR: 3,
       slot: ["Torso", "Legs"], dr: 5, blockBonus: 2, slots: 3, traits: ["Powered", "Plated", "Bulky", "Loud", "Leased"], availability: "Uncommon", legality: "Restricted",
       desc: "The repo man's frame. Corporations lease these to enforcement contractors and keep one finger on the off switch the entire time. It carries you through a firefight right up until the morning the lease lapses and the legs simply stop agreeing with you.",
       effect: "Grants 5 DR and a +2 Block Bonus. Lapsed or Locked: the frame seizes; you lose all Powered Benefits, the Powered drawbacks apply in full, and DR drops to 3 until the lease is restored or the lock is cracked.",
@@ -186,7 +186,7 @@ EN.gearCatalog.armor = {
       defense: 1, blockDie: "1d6", wear: 12, boxes: 3, coverOnFullDefense: "Half Cover", traits: ["Off-Hand", "Wear 12"], availability: "Uncommon", legality: "Licensed",
       desc: "Transparent polycarbonate, issued to crowd-control lines and flagged by every scanner that reads it. Light enough to advance behind and built to walk into thrown bottles and stay upright while it does.",
       effect: "Adds +1 to your Defense while wielded. When you initiate Full Defense, you also gain Half Cover until the start of your next turn." },
-    { name: "Sentinel Barrier", kind: "shield", group: "Physical Shield", type: "Physical Shield (+1 Defense, +1d6 Block, Wear 12)", price: 90, upkeep: 60,
+    { name: "Sentinel Barrier", kind: "shield", group: "Physical Shield", type: "Physical Shield (+1 Defense, +1d6 Block, Wear 12)", price: 90, upkeep: 60, buyout: 600,
       defense: 1, blockDie: "1d6", wear: 12, boxes: 3, emitter: true, traits: ["Off-Hand", "Leased", "Wear 12"], availability: "Common", legality: "Licensed",
       desc: "The leased, budget cousin of the Hardlight Barrier. A corporate emitter that throws the same plane of hardened light, billed by the week and stamped with whose it is. The morning the invoice bounces, you are gripping a dead handle.",
       effect: "Adds +1 to your Defense while wielded. Durability boxes represent emitter overload. Lapsed or Locked: the emitter goes dark, no Defense bonus and no Block die until you settle up or crack the lock." },

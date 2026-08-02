@@ -22,7 +22,7 @@ EN.weaponParts = {
      Keyed by the catalog's weapon `group`. A specific weapon can override this
      with a manual profile (Holdout 1, Revolver 2, Light bow 2, Hand crossbow 4)
      stored as _profile on its loadout. Signature weapons carry 0. */
-  slotCountByGroup: { Sidearm: 4, Longarm: 5, Heavy: 5, Launcher: 5, Thrown: 1, Bowfire: 5, Simple: 4, Martial: 4, Signature: 0 },
+  slotCountByGroup: { Sidearm: 4, Longarm: 5, Heavy: 5, Launcher: 5, Bowfire: 5, Simple: 4, Martial: 4, Signature: 0 },
   // manual profiles for the per-weapon override picker
   profiles: [
     { key: "auto",         name: "By weapon type", count: null },
@@ -112,7 +112,7 @@ EN.weaponParts = {
 
     // Output
     { key: "match-barrel", name: "Match Barrel", category: "ranged", slot: "output", partType: "Mod", fits: "Any Firearm", price: 350, rarity: "Uncommon", legality: "Licensed",
-      grants: "+25% range", effect: "Increase the weapon's short and long range values by 25% (round up). The precision barrel is fixed to the frame; cannot share a build with a Folding Stock.", excludes: ["folding-stock"] },
+      grants: "+25% range", effect: "Increase the weapon's short and long range values by 25% (round up).", excludes: [] },
     { key: "shotgun-choke", name: "Shotgun Choke", category: "ranged", slot: "output", partType: "Mod", fits: "Shotgun", price: 200, rarity: "Common", legality: "Licensed",
       grants: "Extends Spread range", effect: "Increase the weapon's short range by 50% (round up). The Spread trait's short-range Edge now applies to this extended short range before the long-range penalty takes over." },
     { key: "heavy-barrel", name: "Heavy Barrel", category: "ranged", slot: "output", partType: "Mod", fits: "Any Firearm", price: 300, rarity: "Uncommon", legality: "Licensed",
@@ -136,7 +136,7 @@ EN.weaponParts = {
 
     // Handling
     { key: "folding-stock", name: "Folding Stock", category: "ranged", slot: "handling", partType: "Mod", fits: "Longarm", price: 200, rarity: "Uncommon", legality: "Licensed",
-      grants: "Concealable", effect: "Attacks and operations work as normal. Checks to detect the weapon on a casual search are made with Snag. Cannot share a build with a Match Barrel.", excludes: ["match-barrel"] },
+      grants: "Concealable", effect: "Attacks and operations work as normal. Checks to detect the weapon on a casual search are made with Snag.", excludes: [] },
     { key: "recoil-stock", name: "Recoil Stock", category: "ranged", slot: "handling", partType: "Mod", fits: "Longarm", price: 120, rarity: "Common", legality: "Legal",
       grants: "Stabilized", effect: "You count as Stabilized for the High Recoil trait, negating its Snag." },
     { key: "quick-draw-grip", name: "Quick-Draw Grip", category: "ranged", slot: "handling", partType: "Mod", fits: "Sidearm", price: 150, rarity: "Common", legality: "Licensed",

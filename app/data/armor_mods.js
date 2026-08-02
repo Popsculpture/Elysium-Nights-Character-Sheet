@@ -32,7 +32,7 @@ EN.armorMods = {
   mods: [
 
     /* ---- Plating & Protection ---- */
-    { key: "trauma-plates", name: "Trauma Plates", category: "plating", price: 400, rarity: "Uncommon", legality: "Legal", fits: "Any",
+    { key: "trauma-plates", name: "Trauma Plates", dr: 1, category: "plating", price: 400, rarity: "Uncommon", legality: "Legal", fits: "Any",
       grants: "+1 DR", effect: "Grants +1 Damage Reduction. Flat DR from mods does not stack; if you run a second flat-DR mod, only the higher applies. It does stack with your suit's base DR and DR from cyberware or the Flow." },
     { key: "ablative-coating", name: "Ablative Coating", category: "plating", price: 450, rarity: "Uncommon", legality: "Licensed", fits: "Any",
       grants: "Resistance to one physical type", effect: "Choose Ballistic, Piercing, Slashing, or Bludgeoning at install; you gain Resistance to that type. The first time each scene a hit of that type would carry through to your Wounds, the coating burns away instead (ignore that damage), then it grants no Resistance until you re-layer it in downtime." },
@@ -84,7 +84,7 @@ EN.armorMods = {
       grants: "Self-repairing shell", effect: "The suit never requires routine maintenance and self-repairs cosmetic and minor functional damage at the end of each scene at no cost. It does not restore DR mid-fight and does not settle Upkeep on Leased gear." },
     { key: "reactive-countermeasures", name: "Reactive Countermeasures", category: "power", price: 650, rarity: "Rare", legality: "Restricted", fits: "Any",
       grants: "Vents smoke or dazzle on a hit", effect: "Choose smoke or dazzle at install. Once per scene, when hit, you may vent the charge as an Impulse. Smoke: you and adjacent allies gain concealment until the start of your next turn. Dazzle: the attacker makes a Body or Wits save (chosen at install) or attacks with Snag until the end of its next turn." },
-    { key: "sentinel-active-defense", name: "Sentinel Active Defense", category: "power", price: 0, upkeep: 90, rarity: "Uncommon", legality: "Licensed", fits: "Any",
+    { key: "sentinel-active-defense", name: "Sentinel Active Defense", category: "power", price: 120, upkeep: 90, buyout: 800, rarity: "Uncommon", legality: "Licensed", fits: "Any",
       grants: "Leased point-defense", effect: "While the plan is current, once per round when hit by a Ranged attack, reduce that attack's damage by 1d6 as the system intercepts. Lapsed or Locked: the rig goes dark and grants nothing until you settle the account or crack the lock." },
 
     /* ---- Mystech Augments (Mystech armor only) ---- */

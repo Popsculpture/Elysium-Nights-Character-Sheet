@@ -53,7 +53,6 @@ EN.inventoryView = (function () {
   // the ◎ number inside an item's nexus tag ("◎0.3 buyout" -> 0.3); null when absent
   function nexusPrice(it) { var m = String((it && it.nexus) || "").match(/[\d.]+/); return m ? parseFloat(m[0]) : null; }
   function streetPrice(it) {
-    if (it.upkeep) return 0;   // leased gear always has a 𝒢0 buy-in; the cost is the recurring Upkeep, not a sale price
     if (_mode === "register") return Math.ceil(it.price * (LEGAL_MULT[it.legality] || 1) * (AVAIL_MULT[it.availability] || 1));
     if (_mode === "surplus") return Math.max(1, Math.floor(it.price * FENCE_RATE));
     if (_mode === "fivefinger") return 0;
@@ -646,7 +645,7 @@ EN.inventoryView = (function () {
     var loadBar = el("div.row.wrap", { style: { gap: "10px", alignItems: "center", padding: "7px 10px", border: "1px solid var(--border)", borderRadius: "4px", background: "rgba(0,0,0,.15)", marginBottom: "10px" } }, [
       el("span.mono", { title: "On-person Load (equipped + carried + worn + racked gear). Each item's ⚖ chip is its Load; 0-Load gear rides free, and a Racked item carries 1 less.\nLight ≤ " + encBands.light + " · Standard ≤ " + encBands.standard + " · Heavy ≤ " + encBands.heavy + " · beyond = Overloaded",
         style: { fontSize: "16px", color: "var(--text)" },
-        html: "LOAD " + enc.current + " <span style='font-size:11px;color:var(--text3)'>/ " + encBands.standard + "</span>" }),
+        html: "LOAD " + enc.current + " <span style='font-size:11px;color:var(--text3)'>/ " + enc.budget + "</span>" }),
       el("span.chip", { title: "Your Loadout tier, calculated from what you carry", style: { fontSize: "9px", color: tierColor, borderColor: tierColor } },
         String(enc.tier || "").toUpperCase() + " LOADOUT"),
       el("span.chip", { title: (encStates[enc.state] || {}).effect || "", style: { fontSize: "9px", color: stateColor, borderColor: stateColor } },
@@ -1246,7 +1245,7 @@ EN.inventoryView = (function () {
   var WP = function () { return EN.weaponParts || {}; };
   function isBowGroup(g) { return g === "Bowfire"; }
   function isMeleeGroup(g) { return g === "Simple" || g === "Martial"; }
-  function isFirearmGroup(g) { return ["Sidearm", "Longarm", "Heavy", "Launcher", "Thrown"].indexOf(g) !== -1; }
+  function isFirearmGroup(g) { return ["Sidearm", "Longarm", "Heavy", "Launcher"].indexOf(g) !== -1; }
   function weaponCategory(it) { return it.signature ? "signature" : isBowGroup(it.group) ? "bowfire" : isMeleeGroup(it.group) ? "melee" : "ranged"; }
   function ownedWeapons(ch) {
     var seen = {};
@@ -1271,6 +1270,9 @@ EN.inventoryView = (function () {
     if (it.signature) return 0;
     var prof = (WP().profiles || []).find(function (p) { return p.key === lo._profile; });
     if (prof && prof.count != null) return prof.count;
+    // an entry may state its own Slot Count (a Revolver is a Sidearm that
+    // carries 2, per the Slot Count by Profile table)
+    if (typeof it.slots === "number") return it.slots;
     var byG = WP().slotCountByGroup || {};
     return byG[it.group] != null ? byG[it.group] : 4;
   }

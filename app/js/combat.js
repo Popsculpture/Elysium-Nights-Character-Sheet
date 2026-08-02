@@ -1719,8 +1719,9 @@ EN.combatView = (function () {
           .concat(dg.shield ? [bdRow("Shield · " + dg.shield.name, dg.shieldDef)] : []),
         foot: "Cover (+2 Half / +5 ¾) and a declared Active Defense add more against a specific attack, see Defend." },
       DR: { title: "Damage Reduction", total: d.totalDR || 0, sign: false,
-        formula: "Worn armor + natural lineage DR vs physical damage",
+        formula: "Worn armor + armor mods + natural lineage DR vs physical damage",
         rows: (dg.armor ? [bdRow("Armor · " + dg.armor.name + (dg.armorLapsed ? " (LEASE DUE)" : ""), dg.armorDR, null, true)] : [])
+          .concat(dg.armorModDR ? [bdRow("Armor Mod (highest flat DR)", dg.armorModDR)] : [])
           .concat(d.naturalDR ? [bdRow("Natural (lineage)", d.naturalDR)] : []),
         empty: (dg.armor || d.naturalDR) ? null : "No armor equipped; WEAR armor in Inventory → Stash.",
         foot: dg.armor && (dg.armor.traits || []).indexOf("Plated") !== -1 ? "Plated: when you Block, add half this DR (rounded down) on top." : null },
@@ -2884,7 +2885,7 @@ EN.combatView = (function () {
           onclick: function () { _open["load-console"] = !loadOpen; EN.app.render(); } }, [
           el("span.collapse-caret", { text: loadOpen ? "▾" : "▸" }),
           el("span.mono", { title: thTip, style: { fontSize: "18px", color: "var(--text)" },
-            html: "LOAD " + enc.current + " <span style='font-size:12px;color:var(--text3)'>/ " + bands.standard + "</span>" }),
+            html: "LOAD " + enc.current + " <span style='font-size:12px;color:var(--text3)'>/ " + enc.budget + "</span>" }),
           el("span.chip", { title: tierDef ? tierDef.effect : "Past any plausible loadout; this belongs on a cart, dolly, vehicle, or exoframe.",
             style: { fontSize: "9px", color: tierColor, borderColor: tierColor } }, (tierDef ? tierDef.name : enc.tier).toUpperCase() + " LOADOUT"),
           el("span.chip", { title: stateDef.effect || "", style: { fontSize: "9px", color: stateColor, borderColor: stateColor } }, (stateDef.name || enc.state || "").toUpperCase()),

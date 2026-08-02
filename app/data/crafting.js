@@ -36,7 +36,7 @@ EN.crafting = {
   kinds: [
     { key: "build",  name: "Build",  desc: "Fabricate a new item from scratch. Materials cost half the item's market price." },
     { key: "repair", name: "Repair", desc: "Restore damaged gear. Cosmetic upkeep needs no roll; functional damage is a Simple or Standard Project; catastrophic is Advanced or higher." },
-    { key: "modify", name: "Modify", desc: "Install one mod or customization. One Project per mod. Past the item's Max Mods it becomes a Prototype with a Mandatory Flaw." },
+    { key: "modify", name: "Modify", desc: "Install one mod or customization. One Project per mod. Past the item's Slot Count it becomes a Prototype with a Mandatory Flaw." },
     { key: "custom", name: "Custom", desc: "Freeform work the catalog does not cover: software suite, disguise, drug, ritual implement, surveillance rig." }
   ],
 
@@ -59,7 +59,7 @@ EN.crafting = {
     materials: "Building from scratch, raw materials and components cost half the item's market price. Salvaging parts from similar broken gear can reduce or eliminate that cost.",
     kits: "A kit's Basic Use is open to anyone. Its Proficient Use needs the matching Tool Proficiency; without it you own the kit but not its edge. Missing suitable kits can raise the Target or add Snag.",
     oneProjectPerMod: "Each modification is its own Project. You cannot batch several upgrades into a single roll.",
-    overEngineering: "Every weapon and armor has a Max Mods limit and fixed mounts, one mod per mount. Pushing an item past its safe capacity instantly elevates the work to a Prototype Project, and the finished piece carries a Mandatory Flaw: a permanent quirk, a heavy maintenance burden, or an obvious tell.",
+    overEngineering: "Every weapon has a Slot Count and every suit of armor a Mod Slot count, one Part or mod per slot. Pushing an item past its safe capacity instantly elevates the work to a Prototype Project, and the finished piece carries a Mandatory Flaw: a permanent quirk, a heavy maintenance burden, or an obvious tell.",
     focusSpec: "Inside a Skill Focus you add Edge Dice equal to your Caliber to Work Intervals, and your Caliber to emergency d20 fixes. Inside a Specialization you add plus 2 Edge Dice, and widen your emergency crit range by 1."
   },
 

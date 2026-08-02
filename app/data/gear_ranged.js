@@ -39,7 +39,7 @@ EN.gearCatalog.ranged = {
     { name: "Pocket Pistol", group: "Sidearm", price: 250, damage: "1d6 Ballistic", ammo: 8, range: "4 / 12",
       traits: ["Light", "Concealable", "Semi-Automatic"], availability: "Common", legality: "Licensed",
       desc: "Tiny, concealable, stamped with whatever cheap branding moved units that month. The kind of gun you carry knowing it will probably not solve the problem on the first shot." },
-    { name: "Revolver", group: "Sidearm", price: 450, damage: "1d10 Ballistic", ammo: 6, range: "5 / 15",
+    { name: "Revolver", group: "Sidearm", slots: 2, price: 450, damage: "1d10 Ballistic", ammo: 6, range: "5 / 15",
       traits: ["Single Shot", "Reliable"], availability: "Common", legality: "Licensed",
       desc: "A wheel gun. Six rounds, no jams, no software. The mechanics of a revolver have not meaningfully changed in two centuries, which is the point." },
     { name: "Taser", group: "Sidearm", price: 200, damage: "1d6 Electric", ammo: 4, range: "3 / 6",
