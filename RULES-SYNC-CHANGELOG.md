@@ -1141,13 +1141,28 @@ fix as well. The "you lose both" consequence still fires on any Talent change.
 single +1 rather than +2 to one Attribute or +1 to two). Corrected, though nothing currently
 reads that object; the live builder already implemented the rule correctly.
 
-**Still open, reported rather than built:** **Talent requirements are never enforced.**
-`talentPicker` lists every talent with no Attribute or Level gate, so a Level 2 character can
-select one requiring "Character Level 8, Tech 16+"; the requirement shows only as an advisory
-line, and only after selection. The same gap exists in the Level 6+ Upgrade picker, which
-also never displays the requirement. The requirement data is complete and machine-readable
-enough to gate on: 25 of 63 talents carry one, matching the manuscript's 25 Prerequisite
-lines exactly.
+**Talent requirements are now enforced.** Previously `talentPicker` listed every talent with
+no gate, so a Level 2 character could select one requiring "Character Level 8, Tech 16+", and
+the requirement appeared only as an advisory line after selection. The manuscript is explicit:
+"You must meet all Attribute and Level requirements at the moment you select the Talent (or
+its Upgrade)" (doc 3053).
+- **What blocks:** Level, Attribute (including the either-or forms like "Tech or Wits 13 or
+  higher"), class, subclass, and named armor Proficiency. Unmet talents render disabled with
+  the shortfall in the option text, e.g. "Hardware Harmonizer  (needs Level 8, Tech 16)".
+- **What does not block:** capability clauses ("the ability to shape Flow Invocations"),
+  "at least one ranged weapon", "Unattuned Classes", and the "or possession of a combat-grade
+  cybernetic" alternative. These are shown as a "Table call:" note. Refusing a pick on a rule
+  the app only half-understands is worse than letting the table decide.
+- **A held pick is never stranded.** A talent already in the slot stays selectable even if it
+  no longer qualifies, so an edit elsewhere cannot lock a player out of their own choice. The
+  requirement line then turns red and names the shortfall, e.g. "Requires: Character Level 8,
+  Shaper.  (short: Level 8)".
+- **The Level 6+ Upgrade picker got the same gate**, and now displays the requirement at all,
+  which it never did before.
+- **One bug caught in my own first cut:** I mapped Sourcerer to the Shaper class, which would
+  have let any Harmonist qualify for Parallel Processing. Sourcerer is a Shaper *subclass*, so
+  it is matched on `ch.subclass`. Verified both directions: a Harmonist is blocked with "needs
+  Codebreaker or Sourcerer", a Sourcerer is not.
 
 ---
 

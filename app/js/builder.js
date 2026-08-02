@@ -1972,7 +1972,80 @@ EN.builder = (function () {
     var counts = {}; a.forEach(function (k) { counts[k] = (counts[k] || 0) + 1; });
     return Object.keys(counts).map(function (k) { return "+" + counts[k] + " " + (R.attrByKey[k] ? R.attrByKey[k].name : k); }).join(" / ");
   }
+  /* ---- Talent requirements -------------------------------------------------
+     "You must meet all Attribute and Level requirements at the moment you
+     select the Talent (or its Upgrade)." Twenty-five of the sixty-three talents
+     carry a Prerequisite line, in a small number of stable shapes:
+
+       "Character Level 4."                     level
+       "Character Level 8, Tech 16+."           level + attribute
+       "Agility 13 or higher."                  attribute
+       "Tech or Wits 13 or higher."             either of two attributes
+       "Character Level 8, Shaper."             class
+       "Character Level 4, Codebreaker or Sourcerer."   either of two classes
+       "Proficiency with Heavy Armor."          gear proficiency
+       "The ability to shape Flow Invocations." capability, prose
+
+     Level, attribute, class and named-armor proficiency are checked and BLOCK
+     selection. Capability clauses ("the ability to..."), "at least one ranged
+     weapon", "Unattuned Classes" and the "or possession of a combat-grade
+     cybernetic" alternative are not reliably machine-checkable, so they are
+     surfaced as advisories and never block: refusing a pick on a rule the app
+     only half-understands is worse than letting the table decide. */
+  var REQ_ATTR = { Body: "BOD", Agility: "AGI", Wits: "WIT", Tech: "TEC", Mystique: "MYS", Charm: "CHA" };
+  // Sourcerer is a Shaper SUBCLASS, not a class, so it is matched on ch.subclass.
+  // Mapping it to "shaper" would let a Harmonist qualify for Parallel Processing.
+  var REQ_CLASS = { Codebreaker: "codebreaker", Fury: "fury", Hustler: "hustler", Operator: "operator",
+                    Scoundrel: "scoundrel", Shaper: "shaper", Stitcher: "stitcher" };
+  var REQ_SUBCLASS = { Sourcerer: "sourcerer" };
+  function talentGate(ch, d, t) {
+    var req = (t && t.requirements) || "";
+    var out = { ok: true, unmet: [], advisory: [] };
+    if (!req) return out;
+    // "X, or Y" is a single alternative, not two clauses; the app cannot judge
+    // the second half of these, so the whole line becomes advisory.
+    if (/,\s*or\s/i.test(req)) { out.advisory.push(req.replace(/\.$/, "")); return out; }
+
+    req.split(/,\s*/).forEach(function (raw) {
+      var c = raw.replace(/\.$/, "").trim();
+      if (!c) return;
+      var m;
+      if ((m = /^Character Level (\d+)$/i.exec(c))) {
+        if ((ch.level || 1) < Number(m[1])) { out.ok = false; out.unmet.push("Level " + m[1]); }
+        return;
+      }
+      // "Tech 16+" or "Tech or Wits 13 or higher"
+      if ((m = /^([A-Za-z]+)(?:\s+or\s+([A-Za-z]+))?\s+(\d+)\s*(?:\+|or higher)$/i.exec(c))) {
+        var keys = [m[1], m[2]].filter(Boolean).map(function (nm) { return REQ_ATTR[nm]; }).filter(Boolean);
+        if (!keys.length) { out.advisory.push(c); return; }
+        var need = Number(m[3]);
+        var best = Math.max.apply(null, keys.map(function (k) { return (d.attributes[k] && d.attributes[k].score) || 0; }));
+        if (best < need) {
+          out.ok = false;
+          out.unmet.push([m[1], m[2]].filter(Boolean).join(" or ") + " " + need);
+        }
+        return;
+      }
+      if ((m = /^Proficiency with (Light Armor|Medium Armor|Heavy Armor|Physical Shields|Warding Foci)$/i.exec(c))) {
+        var tier = eng.effectiveGearTier(ch, "armor", m[1]);
+        if (!tier || tier === "untrained") { out.ok = false; out.unmet.push(m[1] + " Proficiency"); }
+        return;
+      }
+      // one or two class or subclass names, e.g. "Shaper" or "Codebreaker or Sourcerer"
+      var names = c.split(/\s+or\s+/).map(function (x) { return x.trim(); });
+      if (names.length && names.every(function (x) { return REQ_CLASS[x] || REQ_SUBCLASS[x]; })) {
+        var okClass = names.some(function (x) {
+          return REQ_SUBCLASS[x] ? ch.subclass === REQ_SUBCLASS[x] : ch.class === REQ_CLASS[x];
+        });
+        if (!okClass) { out.ok = false; out.unmet.push(names.join(" or ")); }
+        return;
+      }
+      out.advisory.push(c);
+    });
+    return out;
+  }
   function talentPicker(ch, L, current) {
+    var d = eng.derive(ch);
     // group talents by category into <optgroup>s
     var cats = {};
     (EN.talents || []).forEach(function (t) { (cats[t.category || "Other"] = cats[t.category || "Other"] || []).push(t); });
@@ -2003,16 +2076,44 @@ EN.builder = (function () {
     } }, [el("option", { value: "", text: "- choose a Talent -" })]);
     Object.keys(cats).forEach(function (cat) {
       var grp = el("optgroup", { label: cat });
-      cats[cat].forEach(function (t) { grp.appendChild(el("option", { value: t.key, selected: current === t.key, text: t.name })); });
+      cats[cat].forEach(function (t) {
+        var g = talentGate(ch, d, t);
+        // A talent already sitting in this slot stays selectable even if it no
+        // longer qualifies, so a later edit elsewhere cannot strand a pick the
+        // player cannot see or change.
+        var blocked = !g.ok && current !== t.key;
+        grp.appendChild(el("option", {
+          value: t.key, selected: current === t.key, disabled: blocked,
+          title: blocked ? "Needs " + g.unmet.join(", ") : (t.requirements || ""),
+          text: blocked ? t.name + "  (needs " + g.unmet.join(", ") + ")" : t.name
+        }));
+      });
       sel.appendChild(grp);
     });
     var info = null;
     var t = (EN.talents || []).find(function (x) { return x.key === current; });
     if (t) info = el("div.feature", { style: { marginTop: "8px" } }, [
       el("h4", null, [document.createTextNode(t.name), el("span.src", { text: t.category || "" })]),
-      t.requirements ? el("p.help", { style: { color: "var(--warn)" }, text: "Requires: " + t.requirements }) : null,
+      reqLine(ch, d, t),
       renderText(t.text)]);
     return el("div", null, [sel, info]);
+  }
+  /* The requirement line reads differently depending on whether it is satisfied:
+     green when met, red naming exactly what is short when not, and a neutral
+     note for the clauses the app cannot judge. A selected-but-unqualified pick
+     is possible (it stays selectable so an edit elsewhere cannot strand it), so
+     this has to be able to say "you no longer meet this". */
+  function reqLine(ch, d, t) {
+    if (!t || !t.requirements) return null;
+    var g = talentGate(ch, d, t);
+    var color = g.ok ? "var(--success)" : "var(--danger)";
+    var label = g.ok ? "Requires: " + t.requirements
+                     : "Requires: " + t.requirements + "  (short: " + g.unmet.join(", ") + ")";
+    return el("div", { style: { margin: "0 0 6px" } }, [
+      el("p.help", { style: { margin: 0, color: color }, text: label }),
+      g.advisory.length ? el("p.help", { style: { margin: "2px 0 0", color: "var(--text4)" },
+        text: "Table call: " + g.advisory.join("; ") }) : null
+    ]);
   }
   // Level 6+ slot: spend it to unlock the Upgrade of a Talent you already possess.
   function uuTalentsOwned(ch) {
@@ -2026,13 +2127,20 @@ EN.builder = (function () {
     return o;
   }
   function talentUpgradePicker(ch, L, current) {
+    var d = eng.derive(ch);
     var owned = uuTalentsOwned(ch), taken = uuUpgradesTaken(ch, L);
     var eligible = (EN.talents || []).filter(function (t) {
       return owned.indexOf(t.key) !== -1 && /\*\*Upgrade/.test(t.text || "") && (taken.indexOf(t.key) === -1 || t.key === current);
     });
     var sel = el("select", { onchange: function (e) { store.update(function (c) { c.universalUpgrades[L] = { type: "talentUpgrade", talent: e.target.value || null }; }); } },
       [el("option", { value: "", text: "- upgrade a Talent you have -" })].concat(
-        eligible.map(function (t) { return el("option", { value: t.key, selected: current === t.key, text: t.name }); })));
+        eligible.map(function (t) {
+          var g = talentGate(ch, d, t);
+          var blocked = !g.ok && current !== t.key;
+          return el("option", { value: t.key, selected: current === t.key, disabled: blocked,
+            title: blocked ? "Needs " + g.unmet.join(", ") : (t.requirements || ""),
+            text: blocked ? t.name + "  (needs " + g.unmet.join(", ") + ")" : t.name });
+        })));
     var info;
     if (!owned.length) info = el("p.help", { style: { color: "var(--warn)" }, text: "Take a Talent in an earlier slot first; an Upgrade deepens a Talent you already possess." });
     else if (!eligible.length) info = el("p.help", { style: { color: "var(--warn)" }, text: "No upgradeable Talents available; you need one you have not already upgraded that lists an Upgrade." });
@@ -2042,6 +2150,7 @@ EN.builder = (function () {
       var upText = t ? (eng.splitTalentText(t.text).upgrade || t.text) : "";
       info = t ? el("div.feature", { style: { marginTop: "8px" } }, [
         el("h4", null, [document.createTextNode(t.name + " · Upgrade"), el("span.src", { text: t.category || "" })]),
+        reqLine(ch, d, t),
         renderText(upText)
       ]) : null;
     }
