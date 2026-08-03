@@ -235,6 +235,11 @@ EN.store = (function () {
     if (!Array.isArray(hh.upgrades)) hh.upgrades = [];
     if (typeof hh.days !== "number" || hh.days < 0 || hh.days > 7) hh.days = 7;
     hh.due = !!hh.due;
+    if (typeof hh.hypercare !== "string") hh.hypercare = "";      // tier name, billed monthly
+    if (typeof hh.hypercareDays !== "number" || hh.hypercareDays < 0 || hh.hypercareDays > 30) hh.hypercareDays = 30;
+    hh.hypercareDue = !!hh.hypercareDue;
+    if (!Array.isArray(hh.licenses)) hh.licenses = [];              // names held, cost is the GM's call
+    if (!Array.isArray(ch.debts)) ch.debts = [];                    // {kind, holder, principal, clock}
     // the firing mode was renamed "Burst" -> "Burst Fire" to match the book;
     // a record saved before that carries the old string in its magazine state
     Object.keys(ch.weaponAmmo).forEach(function (w) {

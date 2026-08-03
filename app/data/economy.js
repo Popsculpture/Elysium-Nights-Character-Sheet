@@ -81,6 +81,24 @@ EN.economy = {
     { type: "Deferred Reward",  meaning: "Payment released later, in stages, or after conditions are met" }
   ],
 
+  /* ---- Hypercare: the book's only ongoing coverage contract ------------
+     Billed MONTHLY, unlike lifestyle and safehouse rent which bill weekly.
+     Tiers 3 and 4 are priced in Nexus, so cost carries its own currency. */
+  hypercareNote: "A prepaid emergency medical response service keyed to your #PRINT or a linked wearable tag. If you drop to 0 Wounds in a covered service area and the alert is transmitted, a Hypercare team is dispatched. Contracts are traceable, expensive, and often come with fine print.",
+  hypercareTiers: [
+    { tier: "Patchline",           rank: 1, cost: 300, currency: "glimmer", coverage: "Single district or defined zone",        response: "Dispatch only if conditions are safe enough" },
+    { tier: "Rapid Extract",       rank: 2, cost: 600, currency: "glimmer", coverage: "Most major districts in one metro",      response: "Faster dispatch, will push into yellow conditions" },
+    { tier: "Blackglass Priority", rank: 3, cost: 1.2, currency: "nexus",   coverage: "Metro wide, including fringe routes",    response: "Aggressive dispatch with security escort" },
+    { tier: "Corporate Platinum",  rank: 4, cost: 2.5, currency: "nexus",   coverage: "Multi city network and travel corridors", response: "Best available dispatch, favors contracted clients" }
+  ],
+
+  /* ---- debt: shape only, deliberately not an accounting tool ------------
+     The book is explicit: "Debt is a story engine, not an accounting tool.
+     Track the holder and the clock; let the principal float a little." So the
+     app tracks exactly those three fields and computes no interest. */
+  debtKinds: ["Medical", "Gambling", "Faction", "Ritual", "Personal"],
+  debtNote: "Each debt has a principal, a holder, and a clock. Holders rarely send polite reminders; debt in Elysium escalates through pressure, not paperwork.",
+
   /* ---- GM reward tables (both printed in full) ------------------------- */
   rewardTablesNote: "Use these when you need fast numbers.",
   glimmerRewards: [

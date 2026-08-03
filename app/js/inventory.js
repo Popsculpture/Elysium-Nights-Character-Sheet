@@ -326,6 +326,29 @@ EN.inventoryView = (function () {
     });
     return { total: total, lines: lines };
   }
+  function hypercareTick(c) {
+    var hh = c.household; if (!hh || !hh.hypercare || hh.hypercareDue) return false;
+    var d = (typeof hh.hypercareDays === "number" ? hh.hypercareDays : 30) - 1;
+    if (d <= 0) { hh.hypercareDays = 0; hh.hypercareDue = true; return true; }
+    hh.hypercareDays = d; return false;
+  }
+  function hypercareOf(c) {
+    var hh = c.household || {};
+    return (ECON().hypercareTiers || []).filter(function (t) { return t.tier === hh.hypercare; })[0] || null;
+  }
+  function payHypercare() {
+    var c = store.active(), t = hypercareOf(c); if (!t) return;
+    var nexus = t.currency === "nexus";
+    var purse = nexus ? (c.nexus || 0) : (c.glimmer || 0);
+    if (purse < t.cost) { toast("Not enough " + (nexus ? "Nexus" : "Glimmer") + " for " + t.tier + " (" + (nexus ? fmtNx(t.cost) : fmtG(t.cost)) + ")."); return; }
+    store.update(function (x) {
+      if (nexus) x.nexus = Math.round(((x.nexus || 0) - t.cost) * 100) / 100;
+      else x.glimmer = (x.glimmer || 0) - t.cost;
+      x.household.hypercareDue = false; x.household.hypercareDays = 30;
+    });
+    toast(t.tier + " renewed for " + (nexus ? fmtNx(t.cost) : fmtG(t.cost)) + ".");
+    EN.app.render();
+  }
   function householdTick(c) {
     var hh = c.household; if (!hh) return false;
     if (householdWeekly(c).total <= 0 || hh.due) return false;
@@ -2553,63 +2576,169 @@ EN.inventoryView = (function () {
   }
 
   var _hh = { open: false };
-  function householdPanel(ch) {
-    var E = ECON(), hh = ch.household || {}, w = householdWeekly(ch);
+  var _newDebt = { kind: "Personal", holder: "", principal: "", clock: "" };
+
+  /* every recurring cost the book defines, in one place: lifestyle and
+     safehouse (weekly), gear and vehicle leases (their own 7-day clocks),
+     Hypercare (monthly), licences, and debts. Nothing is invented here. */
+  function activeLeases(ch) {
+    return (ch.equipment || []).filter(function (e) {
+      if (!(e.qty > 0) || e.leaseOwned) return false;
+      var it = findItem(e.name);
+      return !!(it && it.upkeep);
+    });
+  }
+  function billsOverdue(ch) {
+    var hh = ch.household || {};
+    if (hh.due || hh.hypercareDue) return true;
+    return activeLeases(ch).some(function (e) { return e.leaseDue; });
+  }
+  function billSection(title, kids) {
+    return el("div", { style: { marginBottom: "14px" } },
+      [el("div.section-title", { style: { margin: "0 0 6px" } }, [document.createTextNode(title), el("span.line")])].concat(kids));
+  }
+  function billsPanel(ch) {
+    var E = ECON(), hh = ch.household || {}, w = householdWeekly(ch), out = [];
+
+    /* --- lifestyle + safehouse, weekly --- */
     function pick(label, cur, opts, tip, apply) {
       return el("div.row", { style: { gap: "5px", alignItems: "center" } }, [
         el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em" }, text: label }),
         el("select", { style: { fontSize: "12px", width: "auto" }, title: tip,
           onchange: function () { var v = this.value; setHousehold(function (h) { apply(h, v); }); } },
           [el("option", { value: "", selected: !cur, text: "none" })].concat(
-            opts.map(function (o) {
-              return el("option", { value: o.v, selected: o.v === cur, text: o.v + " (" + fmtG(o.w) + "/wk)" });
-            })))
+            opts.map(function (o) { return el("option", { value: o.v, selected: o.v === cur, text: o.v + " (" + fmtG(o.w) + "/wk)" }); })))
       ]);
     }
-    var kids = [
-      el("div.row.wrap", { style: { gap: "12px", alignItems: "center", marginBottom: "10px" } }, [
-        pick("LIFESTYLE", hh.lifestyle,
-          (E.lifestyleTiers || []).map(function (t) { return { v: t.tier, w: t.weekly }; }),
-          "What it costs to live between jobs",
-          function (h, v) { h.lifestyle = v; }),
-        pick("SAFEHOUSE", hh.safehouse,
-          (E.safehouseRent || []).map(function (r) { return { v: r.type, w: r.weekly }; }),
-          "A base costs rent whether you sleep in it or not",
-          function (h, v) { h.safehouse = v; })
+    out.push(billSection("Lifestyle & Safehouse \u00b7 weekly", [
+      el("div.row.wrap", { style: { gap: "12px", alignItems: "center", marginBottom: "8px" } }, [
+        pick("LIFESTYLE", hh.lifestyle, (E.lifestyleTiers || []).map(function (t) { return { v: t.tier, w: t.weekly }; }),
+          "What it costs to live between jobs", function (h, v) { h.lifestyle = v; }),
+        pick("SAFEHOUSE", hh.safehouse, (E.safehouseRent || []).map(function (r) { return { v: r.type, w: r.weekly }; }),
+          "A base costs rent whether you sleep in it or not", function (h, v) { h.safehouse = v; })
       ]),
-      el("div.row.wrap", { style: { gap: "6px", marginBottom: "10px", alignItems: "center" } },
+      el("div.row.wrap", { style: { gap: "6px", marginBottom: "8px", alignItems: "center" } },
         [el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em", marginRight: "2px" }, text: "UPGRADES" })].concat(
           (E.safehouseUpgrades || []).map(function (u) {
             var on = (hh.upgrades || []).indexOf(u.name) !== -1;
             return el("button.btn.sm" + (on ? ".primary" : ""), {
               title: u.benefit + ". Build " + fmtG(u.cost) + (u.ongoingWeekly ? ", then " + fmtG(u.ongoingWeekly) + "/wk" : ", no ongoing cost") + ".",
-              onclick: function () {
-                setHousehold(function (h) {
-                  h.upgrades = h.upgrades || [];
-                  var i = h.upgrades.indexOf(u.name);
-                  if (i === -1) h.upgrades.push(u.name); else h.upgrades.splice(i, 1);
-                });
-              } }, (on ? "\u2713 " : "") + u.name);
+              onclick: function () { setHousehold(function (h) {
+                h.upgrades = h.upgrades || [];
+                var i = h.upgrades.indexOf(u.name);
+                if (i === -1) h.upgrades.push(u.name); else h.upgrades.splice(i, 1);
+              }); } }, (on ? "\u2713 " : "") + u.name);
           }))),
-      el("div.row.wrap", { style: { gap: "16px", alignItems: "center" } }, [
-        el("div", { style: { textAlign: "center", minWidth: "110px" } }, [
-          el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "WEEKLY TOTAL" }),
-          el("span.mono", { style: { fontSize: "20px", color: w.total ? "var(--ember)" : "var(--text4)" }, text: fmtG(w.total) })
-        ]),
-        el("div", { style: { textAlign: "center", minWidth: "110px" } }, [
-          el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "NEXT DUE" }),
-          el("span.mono", { style: { fontSize: "20px", color: hh.due ? "var(--danger)" : "var(--text2)" },
-            text: !w.total ? "-" : hh.due ? "NOW" : (hh.days || 7) + "d" })
-        ]),
-        (w.total && hh.due) ? el("button.btn.sm", { title: "Pay this week: " + w.lines.join(", "),
-          style: { color: "var(--danger)", borderColor: "var(--danger)" },
-          onclick: payHousehold }, "\u26a0 PAY WEEK \u00b7 " + fmtG(w.total)) : null
+      el("div.row.wrap", { style: { gap: "14px", alignItems: "center" } }, [
+        el("span.mono", { style: { fontSize: "13px", color: w.total ? "var(--ember)" : "var(--text4)" },
+          text: fmtG(w.total) + " / week" }),
+        el("span.mono", { style: { fontSize: "11px", color: hh.due ? "var(--danger)" : "var(--text3)" },
+          text: !w.total ? "nothing owed" : hh.due ? "DUE NOW" : "due in " + (hh.days || 7) + "d" }),
+        (w.total && hh.due) ? el("button.btn.sm", { style: { color: "var(--danger)", borderColor: "var(--danger)" },
+          title: w.lines.join(", "), onclick: payHousehold }, "PAY \u00b7 " + fmtG(w.total)) : null
+      ])
+    ]));
+
+    /* --- leases already tracked elsewhere in the app --- */
+    var leases = activeLeases(ch);
+    out.push(billSection("Leases \u00b7 per 7 days", leases.length ? [
+      el("div", null, leases.map(function (e) {
+        var it = findItem(e.name), bo = buyoutCost(it);
+        return el("div.row.wrap", { style: { gap: "10px", alignItems: "center", marginBottom: "4px" } }, [
+          el("span", { style: { fontSize: "12.5px", minWidth: "190px" }, text: e.name }),
+          el("span.mono", { style: { fontSize: "11.5px", color: "var(--ember)" }, text: fmtG(it.upkeep) + "/wk" }),
+          el("span.mono", { style: { fontSize: "10.5px", color: e.leaseDue ? "var(--danger)" : "var(--text3)" },
+            text: e.leaseDue ? "DUE NOW" : "due in " + (e.leaseDays == null ? 7 : e.leaseDays) + "d" }),
+          e.leaseDue ? el("button.btn.sm", { style: { color: "var(--danger)", borderColor: "var(--danger)" },
+            onclick: function () { payLease(e.id); EN.app.render(); } }, "PAY \u00b7 " + fmtG(it.upkeep)) : null,
+          bo ? el("button.btn.sm", { style: { color: "var(--flow)", borderColor: "var(--flow)" },
+            title: "Only the Buyout closes a lease; Upkeep just keeps the plan current.",
+            onclick: function () { buyoutLease(e.id); EN.app.render(); } }, "BUYOUT \u00b7 " + fmtBuyout(bo)) : null
+        ]);
+      }))
+    ] : [el("p.help", { style: { margin: 0, fontSize: "11px", color: "var(--text3)" },
+      text: "No active leases. Leased armor, shields, mods and vehicles show up here with their installment clocks." })]));
+
+    /* --- Hypercare, the book's only ongoing coverage contract, monthly --- */
+    var hc = hypercareOf(ch);
+    out.push(billSection("Hypercare \u00b7 monthly", [
+      el("div.row.wrap", { style: { gap: "6px", marginBottom: "6px", alignItems: "center" } },
+        [el("button.btn.sm" + (!hh.hypercare ? ".primary" : ""), {
+          onclick: function () { setHousehold(function (h) { h.hypercare = ""; h.hypercareDue = false; h.hypercareDays = 30; }); } }, "none")].concat(
+          (E.hypercareTiers || []).map(function (t) {
+            var on = t.tier === hh.hypercare;
+            return el("button.btn.sm" + (on ? ".primary" : ""), {
+              title: t.coverage + ". " + t.response + ".",
+              onclick: function () { setHousehold(function (h) { h.hypercare = t.tier; h.hypercareDays = 30; h.hypercareDue = false; }); } },
+              t.tier + " (" + (t.currency === "nexus" ? fmtNx(t.cost) : fmtG(t.cost)) + ")");
+          }))),
+      hc ? el("div.row.wrap", { style: { gap: "14px", alignItems: "center" } }, [
+        el("span.mono", { style: { fontSize: "13px", color: "var(--ember)" },
+          text: (hc.currency === "nexus" ? fmtNx(hc.cost) : fmtG(hc.cost)) + " / month" }),
+        el("span.mono", { style: { fontSize: "11px", color: hh.hypercareDue ? "var(--danger)" : "var(--text3)" },
+          text: hh.hypercareDue ? "DUE NOW" : "due in " + (hh.hypercareDays || 30) + "d" }),
+        hh.hypercareDue ? el("button.btn.sm", { style: { color: "var(--danger)", borderColor: "var(--danger)" },
+          onclick: payHypercare }, "PAY \u00b7 " + (hc.currency === "nexus" ? fmtNx(hc.cost) : fmtG(hc.cost))) : null
+      ]) : el("p.help", { style: { margin: 0, fontSize: "11px", color: "var(--text3)" }, text: E.hypercareNote || "" })
+    ]));
+
+    /* --- licences: the book gives ranges, so the app tracks what you hold --- */
+    out.push(billSection("Licences & Papers", [
+      el("div.row.wrap", { style: { gap: "6px", marginBottom: "6px" } },
+        (E.licenses || []).map(function (l) {
+          var on = (hh.licenses || []).indexOf(l.item) !== -1;
+          return el("button.btn.sm" + (on ? ".primary" : ""), {
+            title: fmtG(0).replace("0", "") + l.cost + ", renewed " + l.renewal,
+            onclick: function () { setHousehold(function (h) {
+              h.licenses = h.licenses || [];
+              var i = h.licenses.indexOf(l.item);
+              if (i === -1) h.licenses.push(l.item); else h.licenses.splice(i, 1);
+            }); } }, (on ? "\u2713 " : "") + l.item);
+        })),
+      el("p.help", { style: { margin: 0, fontSize: "11px", color: "var(--text3)" },
+        text: "The book prices these as ranges renewed monthly, quarterly, or as needed, so the exact number and cadence are the GM's call. Held papers are tracked here as a checklist." })
+    ]));
+
+    /* --- debts: holder and clock, no interest math --- */
+    var debts = ch.debts || [];
+    out.push(billSection("Debts", [
+      debts.length ? el("div", null, debts.map(function (d, idx) {
+        return el("div.row.wrap", { style: { gap: "10px", alignItems: "center", marginBottom: "4px" } }, [
+          el("span.chip", { style: { fontSize: "9px" }, text: d.kind }),
+          el("span", { style: { fontSize: "12.5px", minWidth: "150px" }, text: d.holder || "unnamed holder" }),
+          el("span.mono", { style: { fontSize: "11.5px", color: "var(--gold)" }, text: d.principal || "?" }),
+          el("span.mono", { style: { fontSize: "10.5px", color: "var(--text3)" }, text: d.clock || "no clock set" }),
+          el("button.btn.sm", { title: "Settled, forgiven, or paid in something that is not money",
+            onclick: function () { store.update(function (c) { (c.debts || []).splice(idx, 1); }); EN.app.render(); } }, "\u2716")
+        ]);
+      })) : el("p.help", { style: { margin: "0 0 6px", fontSize: "11px", color: "var(--text3)" },
+        text: "No debts recorded. " + (E.debtNote || "") }),
+      el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "6px" } }, [
+        el("select", { style: { fontSize: "12px", width: "auto" },
+          onchange: function () { _newDebt.kind = this.value; } },
+          (E.debtKinds || []).map(function (k) { return el("option", { value: k, selected: k === _newDebt.kind, text: k }); })),
+        el("input", { type: "text", placeholder: "holder", value: _newDebt.holder,
+          style: { width: "150px", padding: "4px 8px", fontSize: "12.5px" },
+          oninput: function () { _newDebt.holder = this.value; } }),
+        el("input", { type: "text", placeholder: "principal", value: _newDebt.principal,
+          style: { width: "110px", padding: "4px 8px", fontSize: "12.5px" },
+          oninput: function () { _newDebt.principal = this.value; } }),
+        el("input", { type: "text", placeholder: "clock: when it comes due", value: _newDebt.clock,
+          style: { width: "180px", padding: "4px 8px", fontSize: "12.5px" },
+          oninput: function () { _newDebt.clock = this.value; } }),
+        el("button.btn.sm", { onclick: function () {
+          if (!_newDebt.holder.trim()) { toast("A debt needs a holder. Somebody is owed."); return; }
+          var d = { kind: _newDebt.kind, holder: _newDebt.holder.trim(), principal: _newDebt.principal.trim(), clock: _newDebt.clock.trim() };
+          store.update(function (c) { c.debts = c.debts || []; c.debts.push(d); });
+          _newDebt.holder = ""; _newDebt.principal = ""; _newDebt.clock = "";
+          EN.app.render();
+        } }, "+ ADD")
       ]),
-      el("p.help", { style: { margin: "10px 0 0", fontSize: "11px" },
-        text: w.total ? "Billed per week of downtime; a day ticks with each Long Rest. " + w.lines.join(" + ") + "."
-                      : "Nothing is being paid for. Living on favors, couch surfing, or sleeping rough is a choice with consequences, not a blank line." })
-    ];
-    return EN.ui.panel("Lifestyle & Safehouse", "WEEKLY UPKEEP", kids, { corners: true });
+      el("p.help", { style: { margin: "6px 0 0", fontSize: "11px", color: "var(--text4)" },
+        text: "Principal, holder, and a clock. No interest is calculated: debt here escalates through pressure, not paperwork." })
+    ]));
+
+    return EN.ui.panel("Bills", "RECURRING COSTS \u00b7 LEASES \u00b7 DEBTS", out, { corners: true });
   }
 
   function workbenchView(ch) {
@@ -2716,14 +2845,14 @@ EN.inventoryView = (function () {
           onclick: function () { ledgerApply(-1); } }, "− DEBIT"),
         el("button.btn.sm" + (_split.open ? ".primary" : ""), { title: "Split a contract payout: fixer's cut off the top, then even shares",
           onclick: function () { _split.open = !_split.open; EN.app.render(); } }, "÷ SPLIT"),
-        el("button.btn.sm" + (_hh.open ? ".primary" : ""), { title: "Lifestyle and safehouse: what the week costs and when it is due",
-          style: (ch.household && ch.household.due) ? { color: "var(--danger)", borderColor: "var(--danger)" } : null,
+        el("button.btn.sm" + (_hh.open ? ".primary" : ""), { title: "Bills: lifestyle, safehouse, leases, Hypercare, licences and debts",
+          style: billsOverdue(ch) ? { color: "var(--danger)", borderColor: "var(--danger)" } : null,
           onclick: function () { _hh.open = !_hh.open; EN.app.render(); } },
-          ((ch.household && ch.household.due) ? "⚠ " : "") + "⌂ WEEK")
+          (billsOverdue(ch) ? "⚠ " : "") + "▤ BILLS")
       ])
     ]));
     if (_split.open) blocks.push(splitterPanel());
-    if (_hh.open) blocks.push(householdPanel(ch));
+    if (_hh.open) blocks.push(billsPanel(ch));
 
     var body = _sub === "market" ? marketView(ch) : _sub === "chrome" ? chromeView(ch) : _sub === "workbench" ? workbenchView(ch) : stashView(ch);
     body.forEach(function (b) { blocks.push(b); });
@@ -2732,5 +2861,5 @@ EN.inventoryView = (function () {
 
   // leaseTick: mutator for store.update, marks one day on every active lease
   // (called by the Freelancer tab's Long Rest); returns names that came due
-  return { render: render, leaseTick: leaseTick, householdTick: householdTick };
+  return { render: render, leaseTick: leaseTick, householdTick: householdTick, hypercareTick: hypercareTick };
 })();
