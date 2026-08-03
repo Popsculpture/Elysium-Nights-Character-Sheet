@@ -2657,9 +2657,9 @@ EN.combatView = (function () {
             el("span.mono", { style: { fontSize: "15px", color: color || "var(--text)" }, text: value })
           ]);
         }
-        return el("div.statbtn" + (kind ? "." + kind : ""), { title: title || "", onclick: onClick }, [
+        return el("div.statwrap", { title: title || "" }, [
           el("div.lbl", { text: label }),
-          el("span.mono.val", { style: { color: color || "var(--text)" }, text: value })
+          el("span.mono.statkey", { style: { color: color || "var(--text)" }, onclick: onClick, text: value })
         ]);
       }
       equippedNames.forEach(function (wname, wi) {
@@ -2704,10 +2704,11 @@ EN.combatView = (function () {
               el("button.btn.sm", { style: { color: "var(--warn)", borderColor: "var(--warn)", padding: "1px 7px" }, onclick: function () { reloadWeapon(wname); } }, "⟳ RELOAD")
             ]);
           } else {   // can fire something; grey the number when the SELECTED mode is unaffordable
-            hitCell = el("div.statbtn.hit", { title: hitTip + " · Roll to hit (" + st.mode + " \u00b7 \u2212" + selCost + ")",
-              style: { opacity: canSel ? 1 : 0.5 }, onclick: function () { openRollTray(attackCtx(it, h)); } }, [
+            hitCell = el("div.statwrap", { title: hitTip + " \u00b7 Roll to hit (" + st.mode + " \u00b7 \u2212" + selCost + ")",
+              style: { opacity: canSel ? 1 : 0.5 } }, [
               el("div.lbl", { text: "HIT" }),
-              el("span.mono.val", { style: { color: canSel ? "var(--ember)" : "var(--danger)" }, text: eng.fmtMod(h.total) })
+              el("span.mono.statkey", { style: { color: canSel ? "var(--ember)" : "var(--danger)" },
+                onclick: function () { openRollTray(attackCtx(it, h)); }, text: eng.fmtMod(h.total) })
             ]);
           }
           var pct = st.cap > 0 ? Math.round(st.cur / st.cap * 100) : 0;
@@ -2755,9 +2756,10 @@ EN.combatView = (function () {
           // melee / thrown: Range · Hit · Damage (no ammo). HIT opens the roll tray.
           rowKids.push(el("div.row.wrap", { style: { gap: "14px", alignItems: "center", marginTop: "6px" } }, [
             statBox(h.melee ? "REACH" : "RANGE", norm.rangeDisplay, "var(--gold)", it.range || ""),
-            el("div.statbtn.hit", { title: "Roll to hit · " + hitTip, onclick: function () { openRollTray(attackCtx(it, h)); } }, [
+            el("div.statwrap", { title: "Roll to hit \u00b7 " + hitTip }, [
               el("div.lbl", { text: "HIT" }),
-              el("span.mono.val", { style: { color: "var(--ember)" }, text: eng.fmtMod(h.total) })
+              el("span.mono.statkey", { style: { color: "var(--ember)" },
+                onclick: function () { openRollTray(attackCtx(it, h)); }, text: eng.fmtMod(h.total) })
             ]),
             statBox("DMG", dmgDisplay, "var(--accent)", dmgTip, function () { openDmgTray(damageCtx(it, h)); }, "dmg")
           ]));
