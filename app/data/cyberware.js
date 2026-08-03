@@ -160,7 +160,7 @@ EN.cyberware = {
     /* ---------------- Arms ---------------- */
     { key: "cyberarm", short: "Cyberarm", name: "Cyberarm", zone: "Arms", enhancement: "+1 Body (arm only)", sided: true, platform: true,
       desc: "A full prosthetic arm, the most \"this is a different person now\" piece of common chrome. A platform: compatible mods slot in without adding SP to your Total Static.",
-      effect: "Unarmed strikes with the arm deal 1d6 Bludgeoning. Install compatible mods in its slots without adding their SP.",
+      effect: "Unarmed strikes with the arm deal 1d6 Bludgeoning. Install compatible mods in its slots without adding their SP to Total Static; the platform already paid it.",
       street: "2 mod slots, no Enhancement; lacks fine calibration → Snag on delicate handwork with that arm.",
       black: "4 mod slots, +2 Body for arm actions, 1d8 unarmed, cannot be disarmed, Edge on grapples with it.",
       tiers: [
@@ -168,7 +168,7 @@ EN.cyberware = {
         { tier: "Brandware",  sp: 3, slots: 3, price: 14000, legality: "Licensed" },
         { tier: "Blackware",  sp: 4, slots: 4, price: 36000, legality: "Restricted" }
       ] },
-    { key: "handRazors", short: "Hand Razors", name: "Hand Razors", zone: "Arms", enhancement: "None",
+    { key: "handRazors", short: "Hand Razors", name: "Hand Razors", zone: "Arms", enhancement: "None", platformHost: "cyberarm",
       desc: "Retractable monoblade claws inside the back of the hand. Always with you, always silent, always lethal at arm's length. Can slot into a Cyberarm without adding SP.",
       effect: "Swift Action to extend/retract. While extended, unarmed strikes deal 1d6 Slashing with Armor Piercing 1; silent on deployment and pass standard weapon scans.",
       street: "Audible clack on deploy (Snag on Stealth that turn); no Armor Piercing.",
@@ -182,7 +182,7 @@ EN.cyberware = {
     /* ---------------- Legs ---------------- */
     { key: "cyberlegs", short: "Cyberlegs", name: "Cyberlegs", zone: "Legs", enhancement: "+1 Agility", platform: true, sided: true,
       desc: "Full prosthetic legs. Most people got them involuntarily and upgraded after. A platform with mod slots, like Cyberarms.",
-      effect: "+2 Speed and Edge on Athletics for jumping, climbing, balance. Install compatible mods in its slots without adding their SP.",
+      effect: "+2 Speed and Edge on Athletics for jumping, climbing, balance. Install compatible mods in its slots without adding their SP to Total Static; the platform already paid it.",
       street: "+1 Speed only, 2 slots, no Enhancement; audible servos → Snag on Stealth while moving >half Speed.",
       black: "+3 Speed, 4 slots, plus Burst Sprint (Impulse, 1/combat): triple Speed for one Move, ignoring opportunity attacks.",
       tiers: [
@@ -190,7 +190,7 @@ EN.cyberware = {
         { tier: "Brandware",  sp: 3, slots: 3, price: 14000, legality: "Licensed", bonus: { speed: 2 } },
         { tier: "Blackware",  sp: 4, slots: 4, price: 36000, legality: "Restricted", bonus: { speed: 3 } }
       ] },
-    { key: "springJoints", short: "Spring Joints", name: "Spring Joints", zone: "Legs", enhancement: "None",
+    { key: "springJoints", short: "Spring Joints", name: "Spring Joints", zone: "Legs", enhancement: "None", platformHost: "cyberlegs",
       desc: "Leg modifications that store and release kinetic energy explosively. Couriers, parkour operators, and roof-runners consider this essential. Can slot into a Cyberleg without adding SP.",
       effect: "Jump twice your distance; no damage from falls up to 4 spaces. Impulse 1/round: leap up to 3 spaces in any direction without provoking opportunity attacks.",
       street: "Audible clack (Snag on Stealth while moving); after the leap, can't reuse it for 1d4 rounds.",

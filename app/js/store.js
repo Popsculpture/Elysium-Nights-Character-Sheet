@@ -227,6 +227,10 @@ EN.store = (function () {
     if (ch.equippedFocus === undefined) ch.equippedFocus = null;
     if (!ch.weaponAmmo) ch.weaponAmmo = {};
     if (!ch.vehicleMods || typeof ch.vehicleMods !== "object") ch.vehicleMods = {};   // {vehicleName: [modKey]}
+    // a limb-platform mod records which platform it sits in; slotted pieces pay no SP
+    (ch.cyberware || []).forEach(function (cw) {
+      if (cw && typeof cw === "object" && typeof cw.slottedIn !== "string") delete cw.slottedIn;
+    });
     // lifestyle + safehouse ride one weekly clock, ticked a day per Long Rest
     if (!ch.household || typeof ch.household !== "object") ch.household = {};
     var hh = ch.household;

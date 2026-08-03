@@ -531,6 +531,36 @@ EN.engine = (function () {
     });
     return best;
   }
+  /* Which installed cyberware is currently sitting in a limb platform's slot.
+     Returns a {key: true} map. A piece counts as slotted only when it names a
+     host platform, that platform is installed, and the platform's tier has a
+     slot left, so removing or downgrading an arm re-charges its mods. */
+  function platformSlotted(ch) {
+    var out = {};
+    var list = (ch && ch.cyberware) || [];
+    var defs = (EN.cyberware && EN.cyberware.items) || [];
+    function defOf(key) { return defs.filter(function (i) { return i.key === key; })[0]; }
+    function slotsOf(cw) {
+      var d = defOf(cw.key); if (!d) return 0;
+      var t = (d.tiers || []).filter(function (x) { return x.tier === cw.tier; })[0];
+      return (t && t.slots) || 0;
+    }
+    var capacity = {};
+    list.forEach(function (cw) {
+      if (!cw || typeof cw !== "object") return;
+      var d = defOf(cw.key);
+      if (d && d.platform) capacity[cw.key] = (capacity[cw.key] || 0) + slotsOf(cw);
+    });
+    list.forEach(function (cw) {
+      if (!cw || typeof cw !== "object" || !cw.slottedIn) return;
+      var d = defOf(cw.key);
+      if (!d || d.platformHost !== cw.slottedIn) return;      // not a legal host
+      if (!(capacity[cw.slottedIn] > 0)) return;              // platform absent or full
+      capacity[cw.slottedIn] -= 1;
+      out[cw.key] = true;
+    });
+    return out;
+  }
   function cyberEnhancements(ch) {
     var out = {}, NAME2KEY = {};
     (R.attributes || []).forEach(function (a) { NAME2KEY[a.name] = a.key; });
@@ -1057,7 +1087,12 @@ EN.engine = (function () {
        cutting max Resilience Dice and (for Shapers) max Reservoir by the threshold index. */
     var installed = (ch.cyberware || []).filter(function (cw) { return cw && typeof cw === "object" && typeof cw.sp === "number"; });
     var staticTotal = 0;
-    installed.forEach(function (cw) { staticTotal += cw.sp; });
+    // A mod slotted into a Cyberarm or Cyberleg adds no SP: the platform has
+    // already paid that cost. Only a slot that really exists counts, so a
+    // stale slottedIn on a character whose platform was removed or downgraded
+    // falls back to paying full price rather than silently discounting.
+    var slotted = platformSlotted(ch);
+    installed.forEach(function (cw) { if (!slotted[cw.key]) staticTotal += cw.sp; });
     // Resonance Crown: reduces the SP of up to 4 separate OTHER pieces by 1 each
     // (minimum 1 per piece) for Threshold purposes. It cannot harmonize itself, the
     // Disruption Lattice, or the Convergence Engine. The rulebook lets the player
@@ -1241,7 +1276,7 @@ EN.engine = (function () {
       lineageUnarmed: linMech.unarmed,
       shieldDef: defLoadout.shieldDef, shieldBlockDie: defLoadout.shieldBlockDie,
       wardDie: defLoadout.wardDie, defenseGear: defLoadout,
-      chromeTax: chromeTax, cyberEnh: cyberEnh, cyberFlat: cyberFlat,
+      chromeTax: chromeTax, cyberEnh: cyberEnh, cyberFlat: cyberFlat, platformSlotted: platformSlotted(ch),
       grid: grid,
       woundsMax: woundsMax, critThreshold: critThreshold,
       saves: saves, skills: skills,

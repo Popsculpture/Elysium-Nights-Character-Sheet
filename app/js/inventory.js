@@ -2299,19 +2299,85 @@ EN.inventoryView = (function () {
     });
     return EN.ui.panel("Smartdeck Mods", deck.tier.toUpperCase() + " SMARTDECK · " + used + " / " + slots + " SLOTS", kids, { corners: true });
   }
+  /* ---- Cyberware platform slots ----------------------------------------
+     A Cyberarm or Cyberleg carries slots by tier (2/3/4). A compatible mod
+     seated in one adds no SP to Total Static, because the platform already
+     paid that cost. Only two mods are limb-compatible in the book: Hand Razors
+     in a Cyberarm, Spring Joints in a Cyberleg. */
   function tbCyberwareMods(ch, d) {
-    // platforms the character has installed (Cyberarms / Cyberlegs carry mod slots)
-    var platforms = (ch.cyberware || []).filter(function (cw) { return cw && (cw.platform || (cw.slots || 0) > 0); });
-    var kids = [
-      el("div.muted-box", { style: { padding: "22px 18px", textAlign: "center", borderColor: "var(--accent)" },
-        html: "<div style='font-family:var(--disp);font-size:13px;letter-spacing:.18em;color:var(--accent)'>⚒ CYBERWARE MODS · WORK IN PROGRESS</div><div style='font-size:12px;color:var(--text3);margin-top:8px;max-width:480px;margin-left:auto;margin-right:auto'>Platform chrome like Cyberarms and Cyberlegs carries mod slots, but the cyberware mod catalog is not wired up yet. This bench will slot those mods once they land.</div>" })
-    ];
-    if (platforms.length) {
-      kids.push(el("div.row.wrap", { style: { gap: "6px", marginTop: "10px", alignItems: "center" } },
-        [el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em", marginRight: "2px" }, text: "YOUR PLATFORMS" })].concat(
-          platforms.map(function (cw) { return el("span.chip", { title: "Mod slots reserved for cyberware mods", style: { fontSize: "9.5px", color: "var(--flow)", borderColor: "var(--flow)" } }, cw.name + " · " + (cw.slots || 0) + " slots"); }))));
+    var defs = ((EN.cyberware || {}).items) || [];
+    function defOf(k) { return defs.filter(function (i) { return i.key === k; })[0]; }
+    function slotsOf(cw) {
+      var def = defOf(cw.key); if (!def) return 0;
+      var t = (def.tiers || []).filter(function (x) { return x.tier === cw.tier; })[0];
+      return (t && t.slots) || 0;
     }
-    return EN.ui.panel("Cyberware Mods", "PLATFORM SLOTS · COMING SOON", kids, { corners: true });
+    var installed = (ch.cyberware || []).filter(function (cw) { return cw && typeof cw === "object"; });
+    var platforms = installed.filter(function (cw) { var def = defOf(cw.key); return def && def.platform; });
+    var slottedMap = (d && d.platformSlotted) || {};
+    var kids = [];
+
+    if (!platforms.length) {
+      kids.push(el("div.muted-box", { style: { padding: "18px", textAlign: "center" },
+        html: "<div style='font-size:12px;color:var(--text3)'>No platform chrome installed. A <b>Cyberarm</b> or <b>Cyberleg</b> carries mod slots; a compatible mod seated in one costs no Static.</div>" }));
+      return EN.ui.panel("Cyberware Mods", "PLATFORM SLOTS", kids, { corners: true });
+    }
+
+    platforms.forEach(function (plat) {
+      var cap = slotsOf(plat);
+      var seated = installed.filter(function (cw) { return cw.slottedIn === plat.key && slottedMap[cw.key]; });
+      kids.push(el("div.section-title", { style: { margin: "10px 0 4px" } },
+        [document.createTextNode(plat.name + (plat.tier ? " \u00b7 " + plat.tier : "")), el("span.line"),
+         el("span.mono", { style: { fontSize: "9.5px", color: seated.length >= cap ? "var(--warn)" : "var(--text3)" },
+           text: seated.length + " / " + cap + " SLOTS" })]));
+
+      if (seated.length) {
+        kids.push(el("div.row.wrap", { style: { gap: "6px", marginBottom: "6px" } }, seated.map(function (cw) {
+          return el("button.btn.sm", { title: "Pull " + cw.name + " out of the platform; it starts paying its own " + cw.sp + " SP again",
+            style: { color: "var(--gold)", borderColor: "var(--gold)" },
+            onclick: function () {
+              store.update(function (c) {
+                (c.cyberware || []).forEach(function (x) { if (x && x.key === cw.key) delete x.slottedIn; });
+              });
+              toast(cw.name + " pulled from " + plat.name + "; it costs " + cw.sp + " SP again.");
+              EN.app.render();
+            } }, "\u2716 " + cw.name + " \u00b7 \u22120 SP");
+        })));
+      }
+
+      // compatible, installed, and not already seated somewhere
+      var avail = installed.filter(function (cw) {
+        var def = defOf(cw.key);
+        return def && def.platformHost === plat.key && !slottedMap[cw.key];
+      });
+      if (!avail.length) {
+        kids.push(el("p.help", { style: { margin: "0 0 8px", fontSize: "11px", color: "var(--text3)" },
+          text: seated.length ? "Nothing else compatible is installed."
+            : "Install a compatible mod to seat it here. This platform takes: "
+              + defs.filter(function (i) { return i.platformHost === plat.key; }).map(function (i) { return i.name; }).join(", ") + "." }));
+      } else {
+        kids.push(el("div.row.wrap", { style: { gap: "6px", marginBottom: "8px" } }, avail.map(function (cw) {
+          var full = seated.length >= cap;
+          return el("button.btn.sm", { disabled: full,
+            title: full ? plat.name + " has no free slot." : "Seat " + cw.name + " in " + plat.name + "; it stops adding its " + cw.sp + " SP to Total Static",
+            onclick: function () {
+              store.update(function (c) {
+                (c.cyberware || []).forEach(function (x) { if (x && x.key === cw.key) x.slottedIn = plat.key; });
+              });
+              toast(cw.name + " seated in " + plat.name + "; its " + cw.sp + " SP no longer counts.");
+              EN.app.render();
+            } }, "+ " + cw.name + " \u00b7 \u2212" + cw.sp + " SP");
+        })));
+      }
+    });
+
+    var saved = installed.filter(function (cw) { return slottedMap[cw.key]; })
+      .reduce(function (t, cw) { return t + (cw.sp || 0); }, 0);
+    kids.push(el("p.help", { style: { margin: "6px 0 0", fontSize: "11px" },
+      text: "A compatible mod seated in a platform adds no SP to Total Static; the platform already paid it. "
+        + (saved ? "You are currently saving " + saved + " SP." : "Nothing is seated yet.")
+        + " A mod that is not compatible cannot occupy a slot and pays its full SP." }));
+    return EN.ui.panel("Cyberware Mods", "PLATFORM SLOTS", kids, { corners: true });
   }
   function techBay(ch) {
     var d = EN.engine.derive(ch);
@@ -2770,7 +2836,7 @@ EN.inventoryView = (function () {
       return out;
     }
     if (_bench === "garage") {
-      out.push(el("p.help", { style: { margin: "0 0 10px", maxWidth: "720px" }, text: "Vehicle Ops: the live operating math for the ride you are in. Pick a chassis to pull its category, type and Handling from the catalog, or leave it on Custom and enter your own. Installing Vehicle Mods on an owned vehicle is not wired up yet; the catalog of thirteen lives in the Codex under Vehicles." }));
+      out.push(el("p.help", { style: { margin: "0 0 10px", maxWidth: "720px" }, text: "Vehicle Ops: the live operating math for the ride you are in. Pick a chassis to pull its category, type and Handling from the catalog, or leave it on Custom and enter your own. Vehicle Mods are fitted in the panel below; the full catalog of thirteen is in the Codex under Vehicles." }));
       garageBench(ch).forEach(function (n) { out.push(n); });
       return out;
     }
