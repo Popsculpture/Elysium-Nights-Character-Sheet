@@ -40,8 +40,6 @@ EN.combatView = (function () {
   }
   function saveLayout(l) { try { localStorage.setItem(LAYOUT_KEY, JSON.stringify(l)); } catch (e) {} }
 
-  var _attrCompact = false;                         // Attribute Matrix view: bars (default) or compact cells
-  try { _attrCompact = localStorage.getItem("en_attr_compact_v1") === "1"; } catch (e) {}
 
   var _editMode = false;                            // layout customization: shows drag/width/view controls
   try { _editMode = localStorage.getItem("en_freelancer_edit_v1") === "1"; } catch (e) {}
@@ -1930,54 +1928,19 @@ EN.combatView = (function () {
       ]);
     });
     var sectionEls = {};   // modular sections, placed by the saved layout at the end of render
-    var ATTR_GRAD = "linear-gradient(90deg, #ff2e88 0%, #8b3dff 55%, #00b3ff 100%)";
-    var attrBody;
-    if (_attrCompact) {
-      /* compact cells: abbr / big mod / tier-colored score capsule / mini gradient strip */
-      attrBody = [el("div.attr-grid", null, R.attributes.map(function (a) {
-        var sc = d.attributes[a.key].score, mod = d.attributes[a.key].mod;
-        var t = attrTier(sc);
-        return el("div.attr-cell", { title: a.blurb + " " + (t.icon || "") + t.label + ", score " + sc + " · modifier " + eng.fmtMod(mod) + "." }, [
-          el("div.abbr", { text: a.name.toUpperCase() }),
-          el("div.mod", { text: eng.fmtMod(mod) }),
-          el("div", { style: { display: "flex", justifyContent: "center", marginTop: "3px" } }, [
-            el("span.mono", { style: { fontSize: "11.5px", padding: "1px 12px", borderRadius: "9px", border: "1px solid " + t.color, color: t.color, boxShadow: "0 0 6px " + t.color + "33" }, text: String(sc) })
-          ])
-        ]);
-      }))];
-    } else {
-      attrBody = R.attributes.map(function (a) {
-        var sc = d.attributes[a.key].score, mod = d.attributes[a.key].mod;
-        var t = attrTier(sc);
-        var pct = Math.max(4, Math.min(100, sc / 20 * 100));
-        var peak = sc >= 20;
-        return el("div", { title: a.blurb + " Score " + sc + " · modifier " + eng.fmtMod(mod) + ".",
-                           style: { display: "grid", gridTemplateColumns: "68px 1fr 46px", columnGap: "12px", alignItems: "center", padding: "7px 4px", borderBottom: "1px solid rgba(35,48,68,.5)" } }, [
-          el("span", { style: { fontWeight: 600 }, text: a.name }),
-          el("div", null, [
-            el("div", { style: { position: "relative", height: "10px", background: "var(--bg1)", border: "1px solid var(--border)", borderRadius: "5px", overflow: "hidden" } }, [
-              el("div", { style: { width: pct + "%", height: "100%", background: ATTR_GRAD,
-                                   boxShadow: "0 0 8px rgba(120,80,255,.5)", transition: "width .25s" } })
-            ]),
-            el("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "baseline", marginTop: "1px" } }, [
-              el("span.mono", { style: { fontSize: "9px", color: "var(--text4)" }, text: "1" }),
-              el("span", { style: { fontFamily: "var(--disp)", fontSize: "10px", letterSpacing: ".12em", color: t.color }, text: (t.icon || "") + t.label }),
-              el("span.mono", { style: { fontSize: "10px", color: "var(--text3)" }, text: String(sc) })
-            ])
-          ]),
-          el("span.mono", { style: { fontSize: peak ? "19px" : "16px", textAlign: "center", color: "var(--accent)",
-                                     border: peak ? "1px solid var(--accent)" : "none", borderRadius: "4px", padding: peak ? "1px 4px" : "0",
-                                     boxShadow: peak ? "0 0 10px rgba(0,229,255,.4)" : "none", justifySelf: "end" }, text: eng.fmtMod(mod) })
-        ]);
-      });
-    }
-    var attrToggle = _editMode ? el("button", {
-      title: _attrCompact ? "Switch to bar view" : "Switch to compact view",
-      onclick: function () { _attrCompact = !_attrCompact; try { localStorage.setItem("en_attr_compact_v1", _attrCompact ? "1" : "0"); } catch (e) {} EN.app.render(); },
-      style: { background: "transparent", border: "1px solid var(--accent)", color: "var(--accent)", borderRadius: "3px",
-               width: "18px", height: "18px", lineHeight: "1", fontSize: "10px", cursor: "pointer", padding: 0, flex: "0 0 auto" }
-    }, _attrCompact ? "▤" : "▦") : null;
-    sectionEls.matrix = EN.ui.panel("Attribute Matrix", "BIOMETRIC PROFILE", attrBody, { corners: true, headerRight: attrToggle ? [attrToggle] : null });
+    /* compact cells: abbr / big mod / tier-colored score capsule */
+    var attrBody = [el("div.attr-grid", null, R.attributes.map(function (a) {
+      var sc = d.attributes[a.key].score, mod = d.attributes[a.key].mod;
+      var t = attrTier(sc);
+      return el("div.attr-cell", { title: a.blurb + " " + (t.icon || "") + t.label + ", score " + sc + " \u00b7 modifier " + eng.fmtMod(mod) + "." }, [
+        el("div.abbr", { text: a.name.toUpperCase() }),
+        el("div.mod", { text: eng.fmtMod(mod) }),
+        el("div", { style: { display: "flex", justifyContent: "center", marginTop: "3px" } }, [
+          el("span.mono", { style: { fontSize: "11.5px", padding: "1px 12px", borderRadius: "9px", border: "1px solid " + t.color, color: t.color, boxShadow: "0 0 6px " + t.color + "33" }, text: String(sc) })
+        ])
+      ]);
+    }))];
+    sectionEls.matrix = EN.ui.panel("Attribute Matrix", "BIOMETRIC PROFILE", attrBody, { corners: true });
     /* versatile skills, Insight · Performance · Intimidation (ported from the original sheet):
        pick an Attribute + a Proficient parent skill; the combo resolves to a named technique
        (or refuses; some pairings Do Not Work). Roll = attr mod + parent tier bonus. */
