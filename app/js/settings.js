@@ -410,6 +410,30 @@ EN.settings = (function () {
     return kids;
   }
 
+  // Freelancer-only: how dice get rolled. Digital lets the sheet roll and makes
+  // HIT and DMG pressable; Physical assumes real dice at the table, so those go
+  // back to plain numbers and only the things that SPEND something keep a
+  // button, since the app is still tracking the magazine.
+  function diceSection() {
+    var cv = EN.combatView;
+    var physical = cv.diceMode() === "physical";
+    return [
+      el("div.set-sectitle", { text: "// DICE" }),
+      el("label.set-label", { text: "How You Roll" }),
+      el("p.set-hint", { text: physical
+        ? "Physical: you roll at the table. HIT and DMG are plain numbers to read off, and a weapon that spends ammo keeps a FIRE button so the sheet still tracks the magazine."
+        : "Digital: the sheet rolls for you. HIT and DMG are pressable and open the roll trays." }),
+      el("div.row", { style: { gap: "0", marginTop: "4px" } }, [
+        el("button.btn.sm" + (physical ? "" : ".primary"), {
+          style: { borderTopRightRadius: 0, borderBottomRightRadius: 0 },
+          onclick: function () { cv.setDiceMode("digital"); rebuild(); } }, "\u2b22 DIGITAL DICE"),
+        el("button.btn.sm" + (physical ? ".primary" : ""), {
+          style: { borderTopLeftRadius: 0, borderBottomLeftRadius: 0, marginLeft: "-1px" },
+          onclick: function () { cv.setDiceMode("physical"); rebuild(); } }, "\u2680 PHYSICAL DICE")
+      ])
+    ];
+  }
+
   // Flow-only: the Immersive toggle + intensity for the animated Flow tab.
   // Shown here only while the Flow tab is active; takes priority at the top.
   function flowSection() {
@@ -485,6 +509,7 @@ EN.settings = (function () {
     clear(body);
     var sections = [];
     if (EN.app.activeTab() === "combat" && EN.combatView) sections.push(freelancerLayoutSection());
+    if (EN.app.activeTab() === "combat" && EN.combatView && EN.combatView.diceMode) sections.push(diceSection());
     if (EN.app.activeTab() === "flow" && EN.flowView && EN.flowView.isImmersive) sections.push(flowSection());
     if (EN.app.activeTab() === "grid" && EN.gridView && EN.gridView.isDamage) sections.push(gridSection());
     sections.push(themeSection());

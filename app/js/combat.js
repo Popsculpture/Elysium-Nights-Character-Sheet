@@ -1494,6 +1494,7 @@ EN.combatView = (function () {
   var _dice = "digital";
   try { if (localStorage.getItem("en_dice_mode_v1") === "physical") _dice = "physical"; } catch (e) {}
   function physicalDice() { return _dice === "physical"; }
+  function diceMode() { return _dice; }
   function setDiceMode(m) {
     _dice = m;
     try { localStorage.setItem("en_dice_mode_v1", m); } catch (e) {}
@@ -1658,16 +1659,6 @@ EN.combatView = (function () {
         return 'FREELANCER <span class="dim3" style="font-size:13px">// live status · ' + handle + classStr + levelStr + "</span>";
       })() }),
       el("div.row.wrap", { style: { gap: "8px" } }, [
-        el("div.row", { style: { gap: "0", marginRight: "4px" } }, [
-          el("button.btn.sm" + (physicalDice() ? "" : ".primary"), {
-            title: "Digital dice: the sheet rolls for you. HIT and DMG are pressable.",
-            style: { borderTopRightRadius: 0, borderBottomRightRadius: 0 },
-            onclick: function () { setDiceMode("digital"); } }, "⬢ DIGITAL"),
-          el("button.btn.sm" + (physicalDice() ? ".primary" : ""), {
-            title: "Physical dice: you roll at the table. HIT and DMG become plain numbers, and anything that spends ammo keeps a FIRE button.",
-            style: { borderTopLeftRadius: 0, borderBottomLeftRadius: 0, marginLeft: "-1px" },
-            onclick: function () { setDiceMode("physical"); } }, "⚀ PHYSICAL")
-        ]),
         el("div.pop-anchor", { style: { position: "relative" } }, [
           el("button.btn.sm", { onclick: function () { var was = _pops.short; closePops(); _pops.short = !was; EN.app.render(); } }, "⏾ SHORT REST"),
           _pops.short ? (function () {
@@ -3584,5 +3575,6 @@ EN.combatView = (function () {
   // the layout it edits is this tab's own panel arrangement.
   function isLayoutEditMode() { return _editMode; }
   function resetLayout() { try { localStorage.removeItem(LAYOUT_KEY); localStorage.removeItem(LAYOUT_KEY_V1); } catch (e) {} }
-  return { render: render, isLayoutEditMode: isLayoutEditMode, setLayoutEditMode: setEditMode, resetLayout: resetLayout };
+  return { render: render, isLayoutEditMode: isLayoutEditMode, setLayoutEditMode: setEditMode, resetLayout: resetLayout,
+           diceMode: diceMode, setDiceMode: setDiceMode };
 })();
