@@ -303,6 +303,35 @@ EN.codexView = (function () {
       blocks.push(refPanel("ref-vehicles", "Vehicles", "OWNERSHIP & CUSTOMIZATION", kids));
     })();
 
+    /* economy and rewards */
+    (function () {
+      var E = EN.economy; if (!E) return;
+      var kids = [];
+      function bullets(a) { return (a || []).map(function (x) { return "\u2022 " + x; }).join("\n"); }
+      function g(v) { return "𝒢" + Number(v).toLocaleString(); }
+      kids.push(ruleBlock("Currency and Exchange",
+        E.currencies.map(function (c) { return c.symbol + " " + c.name + " | " + c.use; }).join("\n")
+        + "\n\n" + E.exchangeRate));
+      kids.push(ruleBlock("Lifestyle Costs", E.lifestyleNote + "\n\n"
+        + E.lifestyleTiers.map(function (t) {
+            return t.tier + " | " + g(t.weekly) + "/wk | " + g(t.monthly) + "/mo | " + t.living; }).join("\n")
+        + "\n\n" + bullets(E.lifestyleRules)));
+      kids.push(ruleBlock("Safehouse Rent", E.safehouseRent.map(function (r) {
+        return r.type + " | " + g(r.weekly) + "/wk | " + g(r.monthly) + "/mo | " + r.notes; }).join("\n")));
+      kids.push(ruleBlock("Safehouse Upgrades", E.safehouseUpgrades.map(function (u) {
+        return u.name + " | " + g(u.cost) + " | ongoing " + u.ongoing + " | " + u.benefit; }).join("\n")));
+      kids.push(ruleBlock("Licenses, Papers, and Legitimacy", E.licenses.map(function (l) {
+        return l.item + " | 𝒢" + l.cost + " | " + l.renewal; }).join("\n")));
+      kids.push(ruleBlock("Day Jobs and Between-Contract Income", E.dayJobs.map(function (j) {
+        return j.job + " | 𝒢" + j.pay + "/wk | " + j.time + " | " + j.web; }).join("\n")));
+      kids.push(ruleBlock("Reward Types", E.rewardTypes.map(function (r) {
+        return r.type + " | " + r.meaning; }).join("\n")));
+      kids.push(ruleBlock("Not Yet In The App",
+        "These parts of the chapter are rules the sheet does not model yet. They live in the book:\n\n"
+        + bullets(E.notModelled)));
+      blocks.push(refPanel("ref-economy", "Economy & Rewards", "COSTS \u00b7 INCOME \u00b7 REWARDS", kids));
+    })();
+
     /* conditions library */
     blocks.push(el("div", { style: { height: "10px" } }));
     blocks.push(EN.ui.sectionTitle("Conditions Library"));
