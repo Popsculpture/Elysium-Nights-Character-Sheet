@@ -1387,8 +1387,8 @@ EN.inventoryView = (function () {
     allInstalledKeys(lo).forEach(function (k) { var p = WP().byKey[k]; if (p && order.indexOf(p.legality) > order.indexOf(worst)) worst = p.legality; });
     return worst;
   }
-  // (legality chip colors reuse the module-level LEGAL_COLOR defined near the top)
-  var RARITY_COLOR = { Common: "var(--text3)", Uncommon: "var(--accent)", Rare: "var(--flow)" };
+  // (legality chip colors reuse the module-level LEGAL_COLOR defined near the top;
+  //  rarity chips reuse AVAIL_COLOR, which covers the Mystech tiers too)
   // local chip for the bench slot cards: mixed-case, no extra margin (parent rows own the gap).
   // named distinctly so it does NOT hoist over the header/Chrome tagChip() at the top of the module.
   function partChip(text, color) { return el("span.chip", { style: { fontSize: "9px", color: color, borderColor: color } }, text); }
@@ -1582,7 +1582,7 @@ EN.inventoryView = (function () {
           el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } }, [
             el("span", { style: { fontWeight: 600, fontSize: "12.5px" }, text: p.name }),
             partChip(p.partType, p.partType === "Mod" ? "var(--ember)" : "var(--text2)"),
-            partChip(p.legality, LEGAL_COLOR[p.legality]), partChip(p.rarity, RARITY_COLOR[p.rarity])
+            partChip(p.legality, LEGAL_COLOR[p.legality]), partChip(p.rarity, AVAIL_COLOR[p.rarity] || "var(--text3)")
           ]),
           el("p.help", { style: { margin: "2px 0 0", fontSize: "11px" }, text: p.grants })
         ]),
@@ -1771,7 +1771,7 @@ EN.inventoryView = (function () {
       var cat = it.category || "";
       if (!cats[cat]) return null;
       return { name: it.name, category: cat, skill: cats[cat], proficient: !!profs[cat], effect: it.effect || it.desc || "",
-               edgeDice: it.edgeDice || 0, edgeNote: it.edgeNote || null, requiresProficient: !!it.requiresProficient, requiredToAttempt: !!it.requiredToAttempt };
+               edgeDice: it.edgeDice || 0, edgeNote: it.edgeNote || null, requiresProficient: !!it.requiresProficient };
     }).filter(Boolean);
   }
 

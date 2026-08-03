@@ -71,11 +71,9 @@ EN.flowView = (function () {
     if (fl.strain >= 5) { fl.breakflow = true; fl.sustained = null; }
   }
 
-  // Resonances this Shaper actually knows. If the character recorded picks in
-  // #PRINT, use those; otherwise (legacy build) fall back to everything unlocked
-  // by level so older Shapers keep working. A Unique Resonance is never picked:
-  // it is granted by the subclass that owns it (Synthetica, for the Sourcerer),
-  // and counts as one of the three known at Level 1.
+  // A Unique Resonance is never picked: it is granted by the subclass that owns
+  // it (Synthetica, for the Sourcerer), and counts as one of the three known at
+  // Level 1.
   function grantedResKeys(ch) {
     return ownResonances(ch).filter(function (r) { return r.unique; }).map(function (r) { return r.key; });
   }
@@ -84,6 +82,9 @@ EN.flowView = (function () {
   function ownResonances(ch) {
     return EN.flow.resonances.filter(function (r) { return !r.unique || (ch && ch.subclass === r.unique); });
   }
+  // Resonances this Shaper actually knows. If the character recorded picks in
+  // #PRINT, use those; otherwise (legacy build) fall back to everything unlocked
+  // by level so older Shapers keep working.
   function knownResKeys(ch, d) {
     var granted = grantedResKeys(ch);
     var rec = (ch && ch.resonances) || [];
@@ -304,11 +305,7 @@ EN.flowView = (function () {
              deliveryOption: _form.deliveryOption, force: _form.force, duration: _form.duration, precision: _form.precision,
              extraTargets: _form.extraTargets, extraSpaces: _form.extraSpaces, empoweredEffect: _form.empoweredEffect, unwilling: _form.unwilling };
   }
-  function loadForm(p) {
-    Object.keys(_form).forEach(function (k) { if (p[k] !== undefined) _form[k] = p[k]; });
-    if (p.unwilling === undefined) _form.unwilling = true;
-    EN.app.render();
-  }
+  function loadForm(p) { loadFormSilent(p); EN.app.render(); }
   function doChannel(ch, d, inv, fallbackName) {
     var cur = curFP(ch, d), cost = inv.fp, over = Math.max(0, cost - cur), die = d.flow.overdrawDie;
     var nm = _form.name || (inv.empoweredEffect ? inv.empoweredEffect.name : fallbackName);

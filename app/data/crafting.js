@@ -12,8 +12,6 @@ window.EN = window.EN || {};
 
 EN.crafting = {
 
-  intro: "Knowledge, tools, and time, turned into gear that matters. Most work is a downtime Project on the Dice Pool Method; the d20 Method is for emergency fixes under fire.",
-
   /* ---- Project tiers: Target Progress, expected skill tier, time, difficulty ---- */
   tiers: [
     { key: "simple",    name: "Simple",    target: 3,   skillTier: "proficient", time: "A scene or a few hours",         difficulty: "Routine DC or easy pool",          examples: "Patch armor, routine repairs, a standard dose, basic disguise touch-ups" },
@@ -54,13 +52,11 @@ EN.crafting = {
   },
 
   rules: {
-    method: "Most crafting is a downtime Project on the Dice Pool Method. Build the pool from the primary Skill and its Attribute, add Edge from kits, Focus, Specialization, setup, and help, apply Snag for missing tools or bad materials, then convert each Work Interval into Progress until it meets the Target.",
     emergency: "The d20 Method is for emergency fixes under pressure: one roll of d20 plus the Skill, and the fix holds for the scene. It rarely creates a permanent upgrade.",
     materials: "Building from scratch, raw materials and components cost half the item's market price. Salvaging parts from similar broken gear can reduce or eliminate that cost.",
     kits: "A kit's Basic Use is open to anyone. Its Proficient Use needs the matching Tool Proficiency; without it you own the kit but not its edge. Missing suitable kits can raise the Target or add Snag.",
     oneProjectPerMod: "Each modification is its own Project. You cannot batch several upgrades into a single roll.",
-    overEngineering: "Every weapon has a Slot Count and every suit of armor a Mod Slot count, one Part or mod per slot. Pushing an item past its safe capacity instantly elevates the work to a Prototype Project, and the finished piece carries a Mandatory Flaw: a permanent quirk, a heavy maintenance burden, or an obvious tell.",
-    focusSpec: "Inside a Skill Focus you add Edge Dice equal to your Caliber to Work Intervals, and your Caliber to emergency d20 fixes. Inside a Specialization you add plus 2 Edge Dice, and widen your emergency crit range by 1."
+    overEngineering: "Every weapon has a Slot Count and every suit of armor a Mod Slot count, one Part or mod per slot. Pushing an item past its safe capacity instantly elevates the work to a Prototype Project, and the finished piece carries a Mandatory Flaw: a permanent quirk, a heavy maintenance burden, or an obvious tell."
   },
 
   /* ---- Dice Pool assembly (Dicey Situations, Dice Pool Method) -------------
@@ -113,11 +109,13 @@ EN.crafting = {
   snagForTier: { simple: 1, standard: 2, advanced: 3, prototype: 4, relic: 5 },
 
   /* ---- derivation: map a catalog item to a craft Skill, a Project tier, a cost ---- */
-  _weaponGroups: { Simple: 1, Martial: 1, Sidearm: 1, Longarm: 1, Heavy: 1, Launcher: 1, Thrown: 1, Bowfire: 1 },
   _availTier:   { Common: "standard", Uncommon: "standard", Rare: "advanced", Iconic: "prototype", Legendary: "prototype", Mythical: "prototype", Artifact: "relic" },
   _tierRank:    { simple: 0, standard: 1, advanced: 2, prototype: 3, relic: 4 },
 
-  // ammo and munitions carry the legality tag "As weapon"; use that plus category text
+  // standard ammo (groups Plentiful and Counted) carries the legality tag
+  // "As weapon". Specialty ammo and Signature Munitions do NOT, and carry no
+  // `category` or `type`, so they are not classified as ammo here and craft at
+  // their own availability tier instead of the flat "simple" tier.
   _isAmmo: function (it) { return it && (it.legality === "As weapon" || /Ammunition|Munition|Grenade|Shell/i.test(it.category || it.type || "")); },
 
   skillForItem: function (it) {

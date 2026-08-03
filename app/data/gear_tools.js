@@ -86,8 +86,6 @@ EN.gearCatalog.tools = {
                             kit's own text; edgeNote carries the printed scope
          requiresProficient the Edge comes from the kit's Proficient Use and
                             needs the matching Tool Proficiency
-         requiredToAttempt  a hard gate; the work is usually impossible without
-                            the kit (no Edge bonus of its own)
        Kits whose text only prevents Snag or enables an attempt carry no
        edgeDice; that friction is handled by the Snag side of the pool. */
     /* ---- Medical & Care (Medical Tools · Medtech) ---- */
@@ -147,7 +145,6 @@ EN.gearCatalog.tools = {
       proficient: "Once per scene, create a temporary physical access point on an adjacent device, conduit, or sealed panel with no usable port. This always leaves visible cosmetic damage and obvious tamper marks, success or failure." },
     { name: "Codebreaker Suite", load: 0, bucket: "kits", group: "Technical & Hardware", price: 320, availability: "Rare", legality: "Restricted",
       category: "Systems Tools", skill: "Systems", effect: "Core hacking software. Downgrades a hack failure once per scene.",
-      requiredToAttempt: true,
       desc: "The installed software stack that roots a Smartdeck and gives it the executables intrusion work demands.",
       basic: "Required for most Hacks and Quick Hacks. Without it, hacking procedures and executables are usually impossible, at GM discretion. Also enables decrypt, deleted-data recovery, and hostile-code analysis at full effect.",
       proficient: "Run deeper modules: counter-intrusion hygiene, trace minimization, hardened recovery. Once per scene, when you fail an in-combat Systems d20 check (or out-of-combat Dice Pool) made with the suite, downgrade one consequence the GM would apply, such as reducing Noise, Trace, or log severity." },

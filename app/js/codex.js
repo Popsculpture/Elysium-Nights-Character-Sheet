@@ -350,7 +350,7 @@ EN.codexView = (function () {
       var q = _filter.trim().toLowerCase();
       (EN.conditions || []).filter(function (c) { return !q || c.name.toLowerCase().indexOf(q) !== -1 || (c.summary || "").toLowerCase().indexOf(q) !== -1; })
         .forEach(function (c) {
-          var id = "cond-" + c.name, open = !!_open[id];
+          var id = "cond-" + c.name;
           listBox.appendChild(el("div.feature", { style: { borderLeftColor: "var(--warn)" } }, [
             el("h4", { style: { cursor: "pointer" }, onclick: function () { _open[id] = !_open[id]; renderList(); } }, [
               el("span", null, [el("span.collapse-caret", { text: _open[id] ? "▾" : "▸" }), document.createTextNode(" " + c.name)]),

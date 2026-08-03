@@ -330,6 +330,6 @@ EN.ui = (function () {
     return { skip: finish };
   }
 
-  return { el: el, append: append, clear: clear, frag: frag, panel: panel, sectionTitle: sectionTitle, stat: stat, toast: toast, renderText: renderText, applyInline: applyInline,
+  return { el: el, append: append, clear: clear, panel: panel, sectionTitle: sectionTitle, stat: stat, toast: toast, renderText: renderText, applyInline: applyInline,
            dieFace: dieFace, dieFaceSvg: dieFaceSvg, d20Face: d20Face, animatePoolRoll: animatePoolRoll, playFiled: playFiled };
 })();

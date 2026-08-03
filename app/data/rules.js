@@ -33,7 +33,6 @@ EN.rules = {
     maxFlaws: 1
   },
   standardArray: [16, 14, 12, 10, 10, 8],
-  hardCapStart: 16,
   hardCapMax: 20,
 
   /* Encumbrance and Load ---------------------------------------------------
@@ -41,7 +40,6 @@ EN.rules = {
      gear that raises it "one step" adds 2. The declared Loadout tier sets the
      Load Budget; on-person gear spends it. */
   encumbrance: {
-    stepValue: 2,
     loadouts: [
       { key: "light",    name: "Light",    delta: -3, effect: "You read as foot traffic. Edge on in-combat d20 checks to blend into a crowd, conceal your gear, or pass checkpoint scrutiny; +1 Edge Die on related out-of-combat Dice Pools." },
       { key: "standard", name: "Standard", delta: 0,  effect: "You look like a Freelancer on a job. No perk, no penalty." },
@@ -311,7 +309,6 @@ EN.rules = {
   },
   // Armor can be ACQUIRED with TP but not upgraded to higher tiers (per rules).
   gearUpgradable: { weapons: true, armor: false, tools: true, vehicles: true },
-  gearLabel: { weapons: "Weapon", armor: "Armor", tools: "Tool", vehicles: "Vehicle" },
 
   // Versatile skills: NOT directly trainable; borrow the parent skill's tier.
   versatileSkills: [

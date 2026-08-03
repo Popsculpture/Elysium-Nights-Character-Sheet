@@ -22,7 +22,7 @@ EN.weaponParts = {
      Keyed by the catalog's weapon `group`. A specific weapon can override this
      with a manual profile (Holdout 1, Revolver 2, Light bow 2, Hand crossbow 4)
      stored as _profile on its loadout. Signature weapons carry 0. */
-  slotCountByGroup: { Sidearm: 4, Longarm: 5, Heavy: 5, Launcher: 5, Bowfire: 5, Simple: 4, Martial: 4, Signature: 0 },
+  slotCountByGroup: { Sidearm: 4, Longarm: 5, Heavy: 5, Launcher: 5, Bowfire: 5, Simple: 4, Martial: 4 },
   // manual profiles for the per-weapon override picker
   profiles: [
     { key: "auto",         name: "By weapon type", count: null },
@@ -37,7 +37,6 @@ EN.weaponParts = {
   ],
 
   legalityOrder: ["Legal", "Licensed", "Restricted", "Contraband"],
-  rarityOrder: ["Common", "Uncommon", "Rare"],
 
   /* ---- the Parts catalog ------------------------------------------------
      category: melee | ranged | bowfire (which weapons it is authored for)
@@ -112,7 +111,7 @@ EN.weaponParts = {
 
     // Output
     { key: "match-barrel", name: "Match Barrel", category: "ranged", slot: "output", partType: "Mod", fits: "Any Firearm", price: 350, rarity: "Uncommon", legality: "Licensed",
-      grants: "+25% range", effect: "Increase the weapon's short and long range values by 25% (round up).", excludes: [] },
+      grants: "+25% range", effect: "Increase the weapon's short and long range values by 25% (round up)." },
     { key: "shotgun-choke", name: "Shotgun Choke", category: "ranged", slot: "output", partType: "Mod", fits: "Shotgun", price: 200, rarity: "Common", legality: "Licensed",
       grants: "Extends Spread range", effect: "Increase the weapon's short range by 50% (round up). The Spread trait's short-range Edge now applies to this extended short range before the long-range penalty takes over." },
     { key: "heavy-barrel", name: "Heavy Barrel", category: "ranged", slot: "output", partType: "Mod", fits: "Any Firearm", price: 300, rarity: "Uncommon", legality: "Licensed",
@@ -136,11 +135,13 @@ EN.weaponParts = {
 
     // Handling
     { key: "folding-stock", name: "Folding Stock", category: "ranged", slot: "handling", partType: "Mod", fits: "Longarm", price: 200, rarity: "Uncommon", legality: "Licensed",
-      grants: "Concealable", effect: "Attacks and operations work as normal. Checks to detect the weapon on a casual search are made with Snag.", excludes: [] },
+      grants: "Concealable", effect: "Attacks and operations work as normal. Checks to detect the weapon on a casual search are made with Snag." },
     { key: "recoil-stock", name: "Recoil Stock", category: "ranged", slot: "handling", partType: "Mod", fits: "Longarm", price: 120, rarity: "Common", legality: "Legal",
       grants: "Stabilized", effect: "You count as Stabilized for the High Recoil trait, negating its Snag." },
     { key: "quick-draw-grip", name: "Quick-Draw Grip", category: "ranged", slot: "handling", partType: "Mod", fits: "Sidearm", price: 150, rarity: "Common", legality: "Licensed",
       grants: "Quick Draw", effect: "Grants the Quick Draw trait." },
+    // the Breakdown Frame exclusion below mirrors the book; in the app it can
+    // never fire, since this Part fits Longarm only and that one fits Any Melee
     { key: "powered-assist-grip", name: "Powered Assist Grip", category: "ranged", slot: "handling", partType: "Mod", fits: "Longarm", price: 600, rarity: "Rare", legality: "Restricted",
       grants: "Wield a Heavy or Two-Handed weapon one-handed", effect: "Lets you wield a Heavy or Two-Handed weapon effectively in one hand. Requires a power cell, adds bulk, and cannot share a build with a Breakdown Frame.", excludes: ["breakdown-frame-melee"] },
     { key: "marksman-stock", name: "Marksman Stock", category: "ranged", slot: "handling", partType: "Mod", fits: "Longarm", price: 250, rarity: "Uncommon", legality: "Licensed",
@@ -197,12 +198,9 @@ EN.weaponParts = {
 
   /* ---- stacking + over-engineering rules (surfaced as bench guidance) ---- */
   rules: {
-    onePerSlot: "One Part per slot. A weapon holds at most one Targeting, Output, Core, and Handling Part, plus up to two Utility Parts.",
-    flatBonus: "Flat bonuses do not stack: if two Parts give a flat bonus to the same attack, take the highest and drop the rest.",
     stabilized: "Stabilized sources do not stack: multiple Parts negate the High Recoil Snag only once.",
     dieStep: "A weapon gains at most one damage die step from aftermarket Parts. It still stacks with steps from class features, cyberware, or the Flow.",
     legality: "A Part never lowers a weapon's legality, only raises the heat. The strictest tag among the weapon and everything on it is what a scanner reports.",
-    overEngineering: "Pushing past a weapon's Slot Count is allowed, but it instantly makes the modification a Prototype-tier Project and the finished weapon carries a Mandatory Flaw: a permanent quirk, heavy maintenance burden, or obvious visual tell.",
     install: "Accessories snap on anytime out of initiative, no roll. Mods are bench work: a Short or Long Rest with a relevant tool kit and Proficiency, occasionally a single Engineering check or a short crafting Project."
   }
 };

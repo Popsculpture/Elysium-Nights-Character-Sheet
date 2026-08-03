@@ -315,11 +315,11 @@ EN.gridView = (function () {
     var driven = gd.stabilityDcFromDamage > gd.stabilityDcBase;
     var dcSpan = el("span.mono", { style: { fontSize: "17px", color: driven ? "var(--danger)" : "var(--accent)" }, text: "DC " + gd.stabilityDcLive });
     var explSpan = el("span", { style: { fontSize: "10.5px", color: "var(--text3)", flex: "1 1 120px", minWidth: "120px" } });
-    function expl(dmg, live, isDriven) {
+    function expl(dmg, isDriven) {
       return isDriven ? "½ of " + dmg + " beats the DC " + gd.stabilityDcBase + " floor"
         : (dmg > 0 ? "DC " + gd.stabilityDcBase + " floor holds (½ of " + dmg + " is " + Math.floor(dmg / 2) + ")" : "DC " + gd.stabilityDcBase + " floor, auto-fills from your last hit on the Freelancer tab");
     }
-    explSpan.textContent = expl(gd.stabilityLastDamage, gd.stabilityDcLive, driven);
+    explSpan.textContent = expl(gd.stabilityLastDamage, driven);
     var input = el("input", { type: "number", min: "0", value: gd.stabilityLastDamage || "", placeholder: "0",
       title: "Damage taken this turn while linked; auto-pulls the last damage you applied on the Freelancer tab",
       style: { width: "62px", textAlign: "center", fontFamily: "var(--mono)" },
@@ -328,7 +328,7 @@ EN.gridView = (function () {
         gset(function (g, c) { c.lastDamage = v; }, true);   // silent: keep focus while typing
         var live = Math.max(gd.stabilityDcBase, Math.floor(v / 2)), d2 = Math.floor(v / 2) > gd.stabilityDcBase;
         dcSpan.textContent = "DC " + live; dcSpan.style.color = d2 ? "var(--danger)" : "var(--accent)";
-        explSpan.textContent = expl(v, live, d2);
+        explSpan.textContent = expl(v, d2);
       },
       onchange: function () { EN.app.render(); } });   // commit: sync the LinkDeath panel
     return el("div.row.wrap", { style: { gap: "9px", alignItems: "center", margin: "2px 0 4px", padding: "8px 10px", border: "1px solid var(--border2)", borderRadius: "4px", background: "rgba(0,0,0,.18)" } }, [

@@ -49,7 +49,7 @@ EN.combatView = (function () {
   }
 
   var _fxBox = { mode: "open", closedKey: null };   // sticky Active Condition Effects box ("open"/"min"; closedKey = content-keyed dismiss)
-  var _pops = { vit: false, wound: false, rest: false, short: false, down: false, addgear: false };   // popover state (VITALITY / WOUNDS / REST / DOWNTIME / ＋ ADD TO LOADOUT)
+  var _pops = { vit: false, wound: false, rest: false, short: false, down: false, addgear: false };   // popover state (VITALITY / WOUNDS / LONG REST / SHORT REST / DOWNTIME / ＋ ADD TO LOADOUT)
   var _downDays = 7;   // last downtime span typed, remembered across renders
   var _amts = { vit: 1, wound: 1, rd: 1 };                 // remembered amounts per popover
   function closePops() { Object.keys(_pops).forEach(function (k) { _pops[k] = false; }); }
@@ -1412,9 +1412,9 @@ EN.combatView = (function () {
     if (ch.equippedFocus === key) return "Attuned";
     return null;
   }
-  function isHeavy(it) { return it.group === "Heavy" || it.heavy === true || (it.traits || []).some(function (t) { return /^Heavy\b/.test(t); }); }
+  function isHeavy(it) { return it.group === "Heavy" || (it.traits || []).some(function (t) { return /^Heavy\b/.test(t); }); }
   function isRestricted(it) { return it.legality === "Restricted" || it.legality === "Contraband"; }
-  function isLimitedUse(it) { return !!it.counted || typeof it.uses === "number" || (it.traits || []).some(function (t) { return /^Disposable\b/.test(t); }); }
+  function isLimitedUse(it) { return !!it.counted || (it.traits || []).some(function (t) { return /^Disposable\b/.test(t); }); }
 
   /* damage parse: "1d8 Ballistic" / "2d6 Ballistic and Force" / "Unarmed + 1d4 Electric" / "0" */
   function parseDamage(raw) {
@@ -2855,7 +2855,6 @@ EN.combatView = (function () {
         var swTier = eng.effectiveGearTier(ch, "weapons", "Simple Weapons");
         var swProf = R.profTiers[swTier].d20, swUntrained = swTier === "untrained";
         var luMod = luAttr + swProf;
-        var luLabel = (luFin ? "Body/Agility" : "Body") + " Modifier + Simple Weapons";
         var luName = "Natural Weapon · " + lu.source;
         var luAttrLabel = (luFin ? "Body/Agility" : "Body") + " Modifier";
         var luSnag = atkSnag || swUntrained;
@@ -3291,7 +3290,7 @@ EN.combatView = (function () {
       var DEF_LIVE = {
         Block:   { avail: canBlock, req: "a shield, a Block Bonus, or Plated armor",
                    summary: (blockAdds.length
-                     ? "Adds " + blockAdds.join(", ") + " to your Armor DR (" + (d.armorDR || 0) + ") against this hit, no roll"
+                     ? "Adds " + blockAdds.join(", ") + " to your Armor DR (" + (d.armorDR || 0) + ") against this hit" + ((liveShield && dg.shieldBlockDie) ? "" : ", no roll")
                      : "Reinforce your Armor DR against this hit") + wearNote,
                    extra: dg.shield ? el("div.row.wrap", { style: { gap: "6px", marginTop: "6px", alignItems: "center" } }, [
                      el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".1em" }, text: "DURABILITY" }),

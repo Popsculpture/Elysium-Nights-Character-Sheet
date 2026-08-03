@@ -2462,5 +2462,5 @@ EN.builder = (function () {
   // Jump the wizard to the Advance step (used by the "Update #PRINT" tab).
   function openAdvance() { for (var i = 0; i < STEPS.length; i++) { if (STEPS[i].key === "advance") { _step = i; return; } } }
 
-  return { render: render, setStep: function (i) { _step = i; }, openAdvance: openAdvance, importPrompt: importPrompt };
+  return { render: render, openAdvance: openAdvance };
 })();

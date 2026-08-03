@@ -417,8 +417,6 @@ EN.engine = (function () {
     return { skills: dupSkills, gear: dupGear, any: (dupSkills.length + dupGear.length) > 0 };
   }
 
-  // All active lineage Additive Features: creation pick + Universal-Upgrade
-  // evolution picks + the Level 4 Awakening evolution.
   /* ---- Size ---------------------------------------------------------------
      Heights are inclusive ranges and a height landing exactly on a boundary
      takes the LARGER category, which this less-than cascade gives for free:
@@ -448,6 +446,8 @@ EN.engine = (function () {
     var t = (R.sizeTraits || {})[size];
     return t ? (t.encumbrance || 0) : 0;
   }
+  // All active lineage Additive Features: creation pick + Universal-Upgrade
+  // evolution picks + the Level 4 Awakening evolution.
   function activeLineageFeatures(ch) {
     var names = (ch.lineageFeatures || []).slice();
     var ups = ch.universalUpgrades || {};
@@ -515,9 +515,6 @@ EN.engine = (function () {
     return { base: text.slice(0, idx).trim(), upgrade: text.slice(idx).replace(/^\*\*Upgrade[^*]*\*\*\s*/, "").trim() };
   }
 
-  /* ---- installed cyberware: Enhancement Bonuses (attribute) + flat sheet bonuses ----
-     Enhancement scales by tier: Streetware 0, Brandware/Prototype = listed, Blackware ×2.
-     'arm only' (Cyberarm) is a focused bonus and does NOT touch the general attribute. */
   // Flat DR granted by installed Armor Mods. They do not stack with each other:
   // the highest applies (part3.txt:3567). Lapsed armor carries no mods.
   function armorModDR(ch, armor, armorLapsed) {
@@ -561,6 +558,9 @@ EN.engine = (function () {
     });
     return out;
   }
+  /* ---- installed cyberware: Enhancement Bonuses (attribute) + flat sheet bonuses ----
+     Enhancement scales by tier: Streetware 0, Brandware/Prototype = listed, Blackware ×2.
+     'arm only' (Cyberarm) is a focused bonus and does NOT touch the general attribute. */
   function cyberEnhancements(ch) {
     var out = {}, NAME2KEY = {};
     (R.attributes || []).forEach(function (a) { NAME2KEY[a.name] = a.key; });
@@ -671,9 +671,7 @@ EN.engine = (function () {
       shieldSpent: shieldSpent,
       shieldAlive: shieldAlive,
       shieldEmitter: !!(shield && shield.emitter),
-      shieldCoverOnFullDefense: (shield && !shieldLapsed && shieldAlive && shield.coverOnFullDefense) || null,
       wardDie: wardDie,                               // from the Focus item, or a Focus-trait armor
-      wardFromArmor: !(focus && !focusLapsed) && !!(armor && !armorLapsed && armor.wardDie),
       speedPenalty: speedPenalty
     };
   }
@@ -874,9 +872,8 @@ EN.engine = (function () {
     if (tier === "heavy") state = "encumbered";           // a Heavy loadout is Encumbered for the run
     if (haul === "lift") state = (state === "unencumbered") ? "encumbered" : "overloaded";
     if (haul === "drag") state = "overloaded";
-    return { base: base, sizeAdj: sizeAdj, size: size || null,
+    return { base: base, size: size || null,
              steps: steps, threshold: threshold, bands: bands, tier: tier, budget: budget,
-             overBudget: Math.max(0, current - budget),
              current: current, items: items, haul: haul, state: state };
   }
 
@@ -999,7 +996,7 @@ EN.engine = (function () {
     return {
       isCodebreaker: isCodebreaker, isSourcerer: isSourcerer,
       userType: (isCodebreaker || isSourcerer) ? "Power User" : "Standard User",
-      techMod: techMod, systemsProf: sysProf, systemsTier: sysTier,
+      techMod: techMod, systemsProf: sysProf,
       cipherAttackBonus: cipherAttackBonus, cipherSaveDC: cipherSaveDC, passiveSystems: passiveSystems,
       effectiveAttack: effectiveAttack, effectiveSaveDC: effectiveSaveDC,
       quickHackBonus: isSmart ? cipherAttackBonus + deviceBonus : null,
@@ -1048,7 +1045,7 @@ EN.engine = (function () {
     R.attributes.forEach(function (a) {
       var bonus = cyberEnh[a.key] || 0;
       var sc = Math.min(20, scores[a.key] + bonus);
-      attributes[a.key] = { key: a.key, name: a.name, score: sc, mod: mod(sc), baseScore: scores[a.key], cyberBonus: bonus };
+      attributes[a.key] = { key: a.key, name: a.name, score: sc, mod: mod(sc), cyberBonus: bonus };
     });
     var agiMod = attributes.AGI.mod, bodMod = attributes.BOD.mod;
 
@@ -1113,11 +1110,10 @@ EN.engine = (function () {
     var ctIndex = ctTier ? ctTier.index : 0;
     var chromeTax = {
       total: staticTotal, index: ctIndex,
-      crownHarmonized: crownHarmonized.map(function (cw) { return cw.name || cw.key; }),
       name: ctTier ? ctTier.name : "Safe Capacity",
       resDiePenalty: ctIndex, fpPenalty: ctIndex,
       effects: ctTier ? ctTier.effects : [],
-      hardwired: ctIndex >= 2, noWoundRecovery: ctIndex >= 4, deadBattery: ctIndex >= 5
+      noWoundRecovery: ctIndex >= 4, deadBattery: ctIndex >= 5
     };
     resilienceMax = Math.max(0, resilienceMax - chromeTax.resDiePenalty);
 
@@ -1183,9 +1179,8 @@ EN.engine = (function () {
       var strainStage = clamp((ch.flow && ch.flow.strain) || 0, 0, 5);
       var stInfo = (EN.flow && EN.flow.strainTrack) ? EN.flow.strainTrack[strainStage - 1] : null;
       flow = {
-        isShaper: true, attribute: fAttr, attributeName: flowAttrName,
+        attribute: fAttr, attributeName: flowAttrName,
         max: Math.max(0, cal * 3 + fMod + pactBonus - chromeTax.fpPenalty), dc: 8 + fMod + cal,
-        pactBonus: pactBonus,
         // `attack` is the bare Flow Modifier (used for FP recovery on a Short Rest
         // and Resurge rebound damage). `attackBonus` is the d20 Flow Attack roll
         // bonus, which per the core rules is Flow Modifier + Caliber.
@@ -1198,8 +1193,6 @@ EN.engine = (function () {
         overdrawDie: strainStage >= 3 ? 6 : 4,     // Surge: 1d6 per FP instead of 1d4
         fpSurcharge: strainStage >= 2 ? 1 : 0,     // Wave: every Invocation costs +1 FP
         precisionFp: strainStage >= 3 ? 2 : 1,     // Surge: Precision Shaping costs 2 FP
-        vitalityPerFp: strainStage >= 4 ? 1 : 0,   // Rend: spending FP costs 1 flat Vitality/FP
-        breakflowOnOverdraw: strainStage >= 4,     // Rend: Overdraw forces a Breakflow Check
         snagInvoke: strainStage >= 1,              // Ripple: Snag on all Invocation rolls
         inBreakflow: !!(ch.flow && ch.flow.breakflow),
         note: "Overdraw builds Strain when FP hits 0."
@@ -1276,17 +1269,16 @@ EN.engine = (function () {
       lineageUnarmed: linMech.unarmed,
       shieldDef: defLoadout.shieldDef, shieldBlockDie: defLoadout.shieldBlockDie,
       wardDie: defLoadout.wardDie, defenseGear: defLoadout,
-      chromeTax: chromeTax, cyberEnh: cyberEnh, cyberFlat: cyberFlat, platformSlotted: platformSlotted(ch),
+      chromeTax: chromeTax, platformSlotted: platformSlotted(ch),
       grid: grid,
       woundsMax: woundsMax, critThreshold: critThreshold,
       saves: saves, skills: skills,
       resource: resource, flow: flow,
-      size: size, heightFt: heightFt, sizeOpts: sizeOpts || null,
+      size: size, heightFt: heightFt,
       classInfo: cls, subclassInfo: sub, speciesInfo: sp, lineageInfo: lin, backgroundInfo: bg,
       features: features,
       trainingPoints: { total: tpTotal, spent: tpSpent, remaining: tpTotal - tpSpent },
       xpForNext: level < R.maxLevel ? R.xpThresholds[level + 1] : null,
-      xpForCurrent: R.xpThresholds[level] || 0,
       warnings: warnings
     };
   }
@@ -1571,27 +1563,26 @@ EN.engine = (function () {
     buildEdgePool: buildEdgePool, buildSnagPool: buildSnagPool, rollDicePool: rollDicePool, rollD20: rollD20,
     composeRollSpec: composeRollSpec, rollDamage: rollDamage,
     installedCyberware: installedCyberware, installedCyberBases: installedCyberBases,
-    gambitList: gambitList, gambitsAllowed: gambitsAllowed,
-    resourceAbilities: resourceAbilities, resourceKnowsAll: resourceKnowsAll,
+    gambitList: gambitList,
+    resourceAbilities: resourceAbilities,
     resourcePicksAllowed: resourcePicksAllowed, chosenResourceAbilities: chosenResourceAbilities,
     flowInvocation: flowInvocation,
     getClass: getClass, getSpecies: getSpecies, getLineage: getLineage,
     getBackground: getBackground, getSubclass: getSubclass,
-    pointBuySpent: pointBuySpent, trainingPointsTotal: trainingPointsTotal,
-    attrInText: attrInText, parseAttrKeys: parseAttrKeys,
-    grantedSkills: grantedSkills, parseSkillGrants: parseSkillGrants, skillKeyOf: skillKeyOf,
+    pointBuySpent: pointBuySpent,
+    parseSkillGrants: parseSkillGrants, skillKeyOf: skillKeyOf,
     skillFloorTier: skillFloorTier, effectiveSkillTier: effectiveSkillTier,
-    skillTierCost: skillTierCost, trainingSpent: trainingSpent, trainingBudget: trainingBudget,
-    grantedGear: grantedGear, gearFloorTier: gearFloorTier, effectiveGearTier: effectiveGearTier, gearTierCost: gearTierCost,
-    sizeFromHeightFt: sizeFromHeightFt, lineageHeightFt: lineageHeightFt, sizeEncumbranceAdj: sizeEncumbranceAdj,
+    trainingBudget: trainingBudget,
+    gearFloorTier: gearFloorTier, effectiveGearTier: effectiveGearTier,
+    sizeFromHeightFt: sizeFromHeightFt, lineageHeightFt: lineageHeightFt,
     activeLineageFeatures: activeLineageFeatures, splitTalentText: splitTalentText, leaseLapsed: leaseLapsed, itemLoad: itemLoad,
-    isStackableItem: isStackableItem, isStackableName: isStackableName, entryKey: entryKey, findEntry: findEntry, keyToName: keyToName,
-    isCarryGear: isCarryGear, rackLimit: rackLimit, rackFits: rackFits, carryGearWorn: carryGearWorn, rackState: rackState, rackTargets: rackTargets,
-    SLOT_CAPACITY: SLOT_CAPACITY, itemSlots: itemSlots, slotState: slotState, slotConflicts: slotConflicts,
+    isStackableItem: isStackableItem, isStackableName: isStackableName, entryKey: entryKey, findEntry: findEntry,
+    isCarryGear: isCarryGear, rackLimit: rackLimit, rackState: rackState, rackTargets: rackTargets,
+    itemSlots: itemSlots, slotConflicts: slotConflicts,
     catalogItem: loadCatalogItem,
-    focusList: focusList, specList: specList, activeFocusList: activeFocusList, focusesFor: focusesFor, specFor: specFor,
+    focusesFor: focusesFor, specFor: specFor,
     aspectMatches: aspectMatches, weaponFocus: weaponFocus, weaponSpec: weaponSpec, signatureUnlocked: signatureUnlocked,
-    overlapGrants: overlapGrants, grantedFocusFor: grantedFocusFor, unresolvedOverlaps: unresolvedOverlaps,
+    overlapGrants: overlapGrants, unresolvedOverlaps: unresolvedOverlaps,
     grantSourceMap: grantSourceMap, duplicateGrants: duplicateGrants, pendingChoices: pendingChoices,
     tp: { STEP_COST: STEP_COST, TIER_LEVEL_REQ: TIER_LEVEL_REQ, FOCUS_COST: FOCUS_COST, FOCUS_LEVEL_REQ: FOCUS_LEVEL_REQ, SPEC_COST: SPEC_COST, SPEC_LEVEL_REQ: SPEC_LEVEL_REQ }
   };

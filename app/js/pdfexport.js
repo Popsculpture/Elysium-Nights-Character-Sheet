@@ -305,8 +305,7 @@ EN.pdfExport = (function () {
     return {
       sans: await doc.embedFont(PDFLib.StandardFonts.Helvetica),
       bold: await doc.embedFont(PDFLib.StandardFonts.HelveticaBold),
-      mono: await doc.embedFont(PDFLib.StandardFonts.Courier),
-      monoBold: await doc.embedFont(PDFLib.StandardFonts.CourierBold)
+      mono: await doc.embedFont(PDFLib.StandardFonts.Courier)
     };
   }
 

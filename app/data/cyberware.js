@@ -50,8 +50,8 @@ EN.cyberware = {
       street: "No encryption, intercept/trace your traffic at Edge against you; visible scarring, Snag on passing as un-chromed.",
       black: "Encrypted & dark (intercept at Snag against you), no registered identity/log, and installed Quick Hacks deal +1d4 on System Failure / Network Spread.",
       tiers: [
-        { tier: "Streetware", sp: 1, price: 600,   legality: "Common" },
-        { tier: "Brandware",  sp: 1, price: 3500,  legality: "Common" },
+        { tier: "Streetware", sp: 1, price: 600,   legality: "Legal" },
+        { tier: "Brandware",  sp: 1, price: 3500,  legality: "Legal" },
         { tier: "Blackware",  sp: 2, price: 14000, legality: "Restricted" }
       ] },
     { key: "cybereyes", short: "Cybereyes", name: "Cybereyes", zone: "Neural", enhancement: "+1 Wits",
@@ -60,7 +60,7 @@ EN.cyberware = {
       street: "One mode only, no Enhancement, swaps need a clinic; visibly mechanical → Snag on blending-in social checks.",
       black: "Three modes, and perceive Anomaly auras within 6 spaces (type + approximate Severity, no check).",
       tiers: [
-        { tier: "Streetware", sp: 1, price: 1200,  legality: "Common" },
+        { tier: "Streetware", sp: 1, price: 1200,  legality: "Legal" },
         { tier: "Brandware",  sp: 1, price: 5500,  legality: "Licensed" },
         { tier: "Blackware",  sp: 2, price: 22000, legality: "Restricted" }
       ] },
@@ -118,8 +118,8 @@ EN.cyberware = {
       street: "No Enhancement; cycles loudly, heard from 2 spaces in silence, Snag on Stealth there.",
       black: "Immunity to mundane toxins, Resistance to Radiation, and scrubs minor Resonant contamination within 1 hour.",
       tiers: [
-        { tier: "Streetware", sp: 1, price: 2000,  legality: "Common" },
-        { tier: "Brandware",  sp: 1, price: 5500,  legality: "Common" },
+        { tier: "Streetware", sp: 1, price: 2000,  legality: "Legal" },
+        { tier: "Brandware",  sp: 1, price: 5500,  legality: "Legal" },
         { tier: "Blackware",  sp: 2, price: 15000, legality: "Licensed" }
       ] },
     { key: "feedbackCore", short: "Resonance Feedback Core", name: "Resonance Feedback Core", zone: "Core", enhancement: "None", mystech: true,
@@ -196,8 +196,8 @@ EN.cyberware = {
       street: "Audible clack (Snag on Stealth while moving); after the leap, can't reuse it for 1d4 rounds.",
       black: "Safe fall 8 spaces, leap 5 spaces, and store fall energy: next melee within 1 min of a 2+ space fall deals +1d6 Bludgeoning.",
       tiers: [
-        { tier: "Streetware", sp: 1, price: 1800,  legality: "Common" },
-        { tier: "Brandware",  sp: 1, price: 5500,  legality: "Common" },
+        { tier: "Streetware", sp: 1, price: 1800,  legality: "Legal" },
+        { tier: "Brandware",  sp: 1, price: 5500,  legality: "Legal" },
         { tier: "Blackware",  sp: 2, price: 14000, legality: "Licensed" }
       ] },
 
@@ -217,7 +217,7 @@ EN.cyberware = {
       effect: "Silent subvocal comms with paired units within 1 mile (less in dense urban), invisible to casual observers; standard encryption.",
       black: "Military-grade encryption (decrypt at two Snag dice), 5-mile range, and passive threat-tone keyword detection.",
       tiers: [
-        { tier: "Brandware", sp: 1, price: 3500,  legality: "Common" },
+        { tier: "Brandware", sp: 1, price: 3500,  legality: "Legal" },
         { tier: "Blackware", sp: 2, price: 11000, legality: "Restricted" }
       ] },
     { key: "skinweave", short: "Skinweave", name: "Skinweave", zone: "Hardware", enhancement: "None",

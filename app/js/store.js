@@ -121,6 +121,7 @@ EN.store = (function () {
       racked: {},                        // Racked assignments: {itemEntryKey: carryGearEntryKey} (Carry Gear, one rack per item)
       slotInert: {},                     // Body Slot conflicts: {itemEntryKey: true} for on-person items the player benched
       shieldWear: {},                    // Shield Durability: {shieldName: boxesMarked}
+      loadout: "standard",               // declared Loadout: "light" | "standard" | "heavy", sets the Load Budget
       haul: "none",                      // active Haul: "none" | "lift" (body-sized) | "drag" (oversized/double)
       glimmer: 0,
       nexus: 0,                          // Nexus tokens (◎), the high-scrutiny currency; fractional
@@ -440,10 +441,10 @@ EN.store = (function () {
   }
 
   return {
-    load: load, on: on, emit: emit,
-    active: active, roster: roster, state: function () { return state; },
-    newCharacter: newCharacter, createAndActivate: createAndActivate,
+    load: load, on: on,
+    active: active, roster: roster,
+    createAndActivate: createAndActivate,
     setActive: setActive, remove: remove, update: update,
-    importCharacter: importCharacter, persist: persist, composeFullName: composeFullName
+    importCharacter: importCharacter, composeFullName: composeFullName
   };
 })();

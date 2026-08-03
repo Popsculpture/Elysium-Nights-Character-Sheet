@@ -13,7 +13,6 @@ EN.kits = {
   budgetNote: "Every Freelancer starts with \u{1D4A2}700 to spend across the Core Pack, Class Kit, and Subclass Extra. Add up whatever you picked. Whatever is left over loads onto the Glimmer Stick in your Core Pack: real spending money for the first job, not a rounding error. Nobody's kit runs past that number, however they build it. Pick cheap and walk in with more cash on hand. Pick expensive and walk in with nothing to spare.",
 
   corePack: {
-    name: "Core Freelance Pack",
     blurb: "Comms, light, a way to keep files off the #GRID, food, water that won't turn on you, and a stick to hold whatever Glimmer is left once the shopping's done.",
     items: [
       { name: "Whisperlink Earpiece" },
