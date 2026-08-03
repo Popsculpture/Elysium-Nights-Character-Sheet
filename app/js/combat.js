@@ -130,8 +130,11 @@ EN.combatView = (function () {
         c.weaponAmmo = c.weaponAmmo || {};
         var a = c.weaponAmmo[ctx.weaponName] || { cur: st.cur, mode: st.mode, ammoType: st.ammoType };
         if (typeof a.cur !== "number") a.cur = st.cur;
+        var spentRounds = Math.min(a.cur, cost);
         a.cur = Math.max(0, a.cur - cost);
         c.weaponAmmo[ctx.weaponName] = a;
+        // kick the card on the next render if this actually burned rounds
+        if (spentRounds > 0) _recoil = ctx.weaponName;
       }
       if (spend && ctx.moxie) {
         c.resources = c.resources || {}; c.resources.current = c.resources.current || {};
@@ -980,6 +983,18 @@ EN.combatView = (function () {
   }
 
   /* ---------- small widgets ---------- */
+  /* Magazine as one cell per round. Above 24 rounds the cells get too thin to
+     read, so a belt-fed weapon falls back to the solid bar. */
+  function magBar(cur, max, dry) {
+    if (!(max > 0) || max > 24) return bar(cur, max, dry ? "var(--danger)" : "var(--accent)");
+    var cells = [];
+    for (var i = 0; i < max; i++) {
+      cells.push(el("i" + (i < cur ? ".live" : ".spent"),
+        { style: dry ? { borderColor: "var(--danger)" } : null }));
+    }
+    return el("div.mag" + (dry ? ".dry" : ""),
+      { title: cur + " of " + max + " loaded" }, cells);
+  }
   function bar(cur, max, color) {
     var pct = max > 0 ? Math.round(cur / max * 100) : 0;
     return el("div", { style: { height: "10px", background: "var(--bg1)", border: "1px solid var(--border)", borderRadius: "5px", overflow: "hidden", margin: "6px 0" } }, [
@@ -1471,8 +1486,15 @@ EN.combatView = (function () {
     if (ammoType !== "Standard" && ammoType !== base && base === "Standard" && ownedQty(ch, ammoType) <= 0) ammoType = "Standard";
     return { cur: cur, cap: cap, mode: mode, ammoType: ammoType, base: base, modes: modes };
   }
+  var _recoil = null;   // weapon name to kick on the next render, set when rounds are spent
   function writeAmmo(wname, patch) {
     var it = findWeapon(wname); if (!it) return;
+    // a re-render replaces the card node, so flag the weapon and let the
+    // render attach the animation to the fresh node
+    if (typeof patch.cur === "number") {
+      var before = readAmmo(store.active(), it).cur;
+      if (patch.cur < before) _recoil = wname;
+    }
     store.update(function (c) {
       c.weaponAmmo = c.weaponAmmo || {};
       var cur = readAmmo(c, it);
@@ -2657,7 +2679,10 @@ EN.combatView = (function () {
             style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" } }, "FOCUS +" + h.focusCal) : null,
           h.spec ? el("span.chip", { title: "Specialization: " + h.cat + " (" + h.spec.aspect + "). Crit threat range widens by 1 (19-20), stacking with other crit range sources.",
             style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" } }, "CRIT 19-20") : null,
-          el("span", { style: { fontSize: "10px", color: "var(--text3)", flex: "1 1 auto" }, text: subtype })
+          el("span", { style: { fontSize: "10px", color: "var(--text3)", flex: "1 1 auto" }, text: subtype }),
+          el("button.btn.sm", { title: "Roll to hit with " + it.name,
+            style: { color: "var(--ember)", borderColor: "var(--ember)", flex: "0 0 auto" },
+            onclick: function () { openRollTray(attackCtx(it, h)); } }, "ATTACK")
         ]);
 
         var rowKids = [head];
@@ -2686,7 +2711,7 @@ EN.combatView = (function () {
               el("span", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "AMMO" }),
               el("span.mono", { style: { fontSize: "12px", color: st.cur === 0 ? "var(--danger)" : "var(--text2)" }, text: st.cur + " / " + st.cap + (it.ammoUnit ? " " + it.ammoUnit : "") })
             ]),
-            bar(st.cur, st.cap, st.cur === 0 ? "var(--danger)" : "var(--accent)")
+            magBar(st.cur, st.cap, st.cur === 0)
           ]);
           rowKids.push(el("div.row.wrap", { style: { gap: "12px", alignItems: "center", marginTop: "6px" } }, [
             statBox("RANGE", norm.rangeDisplay, "var(--gold)", it.range || ""),
@@ -2770,7 +2795,9 @@ EN.combatView = (function () {
                       : isRanged ? "var(--gold)"
                       : h.thrownItem ? "var(--ember)"
                       : "var(--accent)";
-        kids.push(el("div.feature", { style: { borderLeftColor: railColor } }, rowKids));
+        var kicking = _recoil === wname;
+        if (kicking) _recoil = null;
+        kids.push(el("div.feature" + (kicking ? ".recoil" : ""), { style: { borderLeftColor: railColor } }, rowKids));
       });
       if (d.lineageUnarmed) {
         var lu = d.lineageUnarmed, luFin = lu.traits && /Finesse/.test(lu.traits);
