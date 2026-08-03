@@ -2513,7 +2513,7 @@ EN.inventoryView = (function () {
       el("p.help", { style: { margin: "10px 0 0", fontSize: "11px" },
         text: (EN.economy && EN.economy.splitNote) || "" }),
       r.over ? el("p.help", { style: { margin: "4px 0 0", fontSize: "11px", color: "var(--gold)" },
-        text: fmtG(r.over) + " does not divide evenly. The book leaves that to argue over." }) : null
+        text: fmtG(r.over) + " does not divide evenly. Somebody always notices." }) : null
     ];
     return EN.ui.panel("Payout Splitter", "FIXER \u00b7 CREW KIT \u00b7 SHARES", kids, { corners: true });
   }
