@@ -43,12 +43,12 @@ EN.economy = {
     { type: "Blacksite Hideout",  weekly: 15000, monthly: 60000, notes: "Serious concealment, layered security, dedicated infrastructure" }
   ],
   safehouseUpgrades: [
-    { name: "Secure Locks and Cameras", cost: 1500, ongoing: "100 / week", benefit: "Better warning against intrusion" },
-    { name: "Hidden Storage",           cost: 1000, ongoing: "none",       benefit: "Better concealment for contraband or sensitive goods" },
-    { name: "Medical Nook",             cost: 2500, ongoing: "200 / week", benefit: "Supports treatment and stocked recovery supplies" },
-    { name: "Drone Bench",              cost: 3000, ongoing: "200 / week", benefit: "Supports drone repair and systems work" },
-    { name: "Ritual Corner",            cost: 2000, ongoing: "150 / week", benefit: "Supports reagent storage and Flow work" },
-    { name: "Signal Masking",           cost: 5000, ongoing: "400 / week", benefit: "Better resistance to casual passive tracing" }
+    { name: "Secure Locks and Cameras", ongoingWeekly: 100, cost: 1500, ongoing: "100 / week", benefit: "Better warning against intrusion" },
+    { name: "Hidden Storage", ongoingWeekly: 0,           cost: 1000, ongoing: "none",       benefit: "Better concealment for contraband or sensitive goods" },
+    { name: "Medical Nook", ongoingWeekly: 200,             cost: 2500, ongoing: "200 / week", benefit: "Supports treatment and stocked recovery supplies" },
+    { name: "Drone Bench", ongoingWeekly: 200,              cost: 3000, ongoing: "200 / week", benefit: "Supports drone repair and systems work" },
+    { name: "Ritual Corner", ongoingWeekly: 150,            cost: 2000, ongoing: "150 / week", benefit: "Supports reagent storage and Flow work" },
+    { name: "Signal Masking", ongoingWeekly: 400,           cost: 5000, ongoing: "400 / week", benefit: "Better resistance to casual passive tracing" }
   ],
 
   /* ---- papers ------------------------------------------------------------ */

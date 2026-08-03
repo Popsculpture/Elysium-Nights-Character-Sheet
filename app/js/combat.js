@@ -890,13 +890,14 @@ EN.combatView = (function () {
 
      Register any future day-based timer in this one list. */
   function tickDays(c, n) {
-    var out = { days: n, leaseDue: [], personaExpired: 0 };
+    var out = { days: n, leaseDue: [], personaExpired: 0, householdDue: false };
     for (var i = 0; i < n; i++) {
       if (EN.inventoryView && EN.inventoryView.leaseTick) {
         EN.inventoryView.leaseTick(c).forEach(function (nm) {
           if (out.leaseDue.indexOf(nm) === -1) out.leaseDue.push(nm);
         });
       }
+      if (EN.inventoryView && EN.inventoryView.householdTick && EN.inventoryView.householdTick(c)) out.householdDue = true;
       if (EN.faceView && EN.faceView.personaTick) out.personaExpired += EN.faceView.personaTick(c);
     }
     return out;

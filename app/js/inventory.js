@@ -309,6 +309,40 @@ EN.inventoryView = (function () {
     });
     return due;
   }
+  /* ---- household: lifestyle + safehouse, one weekly clock ---------------
+     Same shape as a lease: a day ticks per Long Rest, at 0 the week is due and
+     the app says so. Nothing auto-debits; paying is a button, because a crew
+     choosing NOT to pay is a story beat the book asks the GM to lean on. */
+  function ECON() { return EN.economy || {}; }
+  function householdWeekly(c) {
+    var hh = c.household || {}, total = 0, lines = [];
+    var lt = (ECON().lifestyleTiers || []).filter(function (t) { return t.tier === hh.lifestyle; })[0];
+    if (lt) { total += lt.weekly; lines.push(lt.tier + " lifestyle " + fmtG(lt.weekly)); }
+    var sh = (ECON().safehouseRent || []).filter(function (r) { return r.type === hh.safehouse; })[0];
+    if (sh) { total += sh.weekly; lines.push(sh.type + " " + fmtG(sh.weekly)); }
+    (hh.upgrades || []).forEach(function (nm) {
+      var u = (ECON().safehouseUpgrades || []).filter(function (x) { return x.name === nm; })[0];
+      if (u && u.ongoingWeekly) { total += u.ongoingWeekly; lines.push(u.name + " " + fmtG(u.ongoingWeekly)); }
+    });
+    return { total: total, lines: lines };
+  }
+  function householdTick(c) {
+    var hh = c.household; if (!hh) return false;
+    if (householdWeekly(c).total <= 0 || hh.due) return false;
+    var d = (typeof hh.days === "number" ? hh.days : 7) - 1;
+    if (d <= 0) { hh.days = 0; hh.due = true; return true; }
+    hh.days = d; return false;
+  }
+  function payHousehold() {
+    var c = store.active(), w = householdWeekly(c);
+    if (!w.total) return;
+    if ((c.glimmer || 0) < w.total) { toast("Not enough Glimmer for the week (" + fmtG(w.total) + ")."); return; }
+    store.update(function (x) { x.glimmer = (x.glimmer || 0) - w.total; x.household.due = false; x.household.days = 7; });
+    toast("Week paid: " + fmtG(w.total) + ". " + w.lines.join(", ") + ".");
+    EN.app.render();
+  }
+  function setHousehold(fn) { store.update(function (c) { fn(c.household); }); EN.app.render(); }
+
   function payLease(key) {
     var ch = store.active(), e0 = findEntry(ch, key), it = e0 && findItem(e0.name);
     if (!it || !it.upkeep || !e0 || !e0.leaseDue || e0.leaseOwned) return;   // nothing due, nothing to pay
@@ -2518,6 +2552,66 @@ EN.inventoryView = (function () {
     return EN.ui.panel("Payout Splitter", "FIXER \u00b7 CREW KIT \u00b7 SHARES", kids, { corners: true });
   }
 
+  var _hh = { open: false };
+  function householdPanel(ch) {
+    var E = ECON(), hh = ch.household || {}, w = householdWeekly(ch);
+    function pick(label, cur, opts, tip, apply) {
+      return el("div.row", { style: { gap: "5px", alignItems: "center" } }, [
+        el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em" }, text: label }),
+        el("select", { style: { fontSize: "12px", width: "auto" }, title: tip,
+          onchange: function () { var v = this.value; setHousehold(function (h) { apply(h, v); }); } },
+          [el("option", { value: "", selected: !cur, text: "none" })].concat(
+            opts.map(function (o) {
+              return el("option", { value: o.v, selected: o.v === cur, text: o.v + " (" + fmtG(o.w) + "/wk)" });
+            })))
+      ]);
+    }
+    var kids = [
+      el("div.row.wrap", { style: { gap: "12px", alignItems: "center", marginBottom: "10px" } }, [
+        pick("LIFESTYLE", hh.lifestyle,
+          (E.lifestyleTiers || []).map(function (t) { return { v: t.tier, w: t.weekly }; }),
+          "What it costs to live between jobs",
+          function (h, v) { h.lifestyle = v; }),
+        pick("SAFEHOUSE", hh.safehouse,
+          (E.safehouseRent || []).map(function (r) { return { v: r.type, w: r.weekly }; }),
+          "A base costs rent whether you sleep in it or not",
+          function (h, v) { h.safehouse = v; })
+      ]),
+      el("div.row.wrap", { style: { gap: "6px", marginBottom: "10px", alignItems: "center" } },
+        [el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em", marginRight: "2px" }, text: "UPGRADES" })].concat(
+          (E.safehouseUpgrades || []).map(function (u) {
+            var on = (hh.upgrades || []).indexOf(u.name) !== -1;
+            return el("button.btn.sm" + (on ? ".primary" : ""), {
+              title: u.benefit + ". Build " + fmtG(u.cost) + (u.ongoingWeekly ? ", then " + fmtG(u.ongoingWeekly) + "/wk" : ", no ongoing cost") + ".",
+              onclick: function () {
+                setHousehold(function (h) {
+                  h.upgrades = h.upgrades || [];
+                  var i = h.upgrades.indexOf(u.name);
+                  if (i === -1) h.upgrades.push(u.name); else h.upgrades.splice(i, 1);
+                });
+              } }, (on ? "\u2713 " : "") + u.name);
+          }))),
+      el("div.row.wrap", { style: { gap: "16px", alignItems: "center" } }, [
+        el("div", { style: { textAlign: "center", minWidth: "110px" } }, [
+          el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "WEEKLY TOTAL" }),
+          el("span.mono", { style: { fontSize: "20px", color: w.total ? "var(--ember)" : "var(--text4)" }, text: fmtG(w.total) })
+        ]),
+        el("div", { style: { textAlign: "center", minWidth: "110px" } }, [
+          el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "NEXT DUE" }),
+          el("span.mono", { style: { fontSize: "20px", color: hh.due ? "var(--danger)" : "var(--text2)" },
+            text: !w.total ? "-" : hh.due ? "NOW" : (hh.days || 7) + "d" })
+        ]),
+        (w.total && hh.due) ? el("button.btn.sm", { title: "Pay this week: " + w.lines.join(", "),
+          style: { color: "var(--danger)", borderColor: "var(--danger)" },
+          onclick: payHousehold }, "\u26a0 PAY WEEK \u00b7 " + fmtG(w.total)) : null
+      ]),
+      el("p.help", { style: { margin: "10px 0 0", fontSize: "11px" },
+        text: w.total ? "Billed per week of downtime; a day ticks with each Long Rest. " + w.lines.join(" + ") + "."
+                      : "Nothing is being paid for. Living on favors, couch surfing, or sleeping rough is a choice with consequences, not a blank line." })
+    ];
+    return EN.ui.panel("Lifestyle & Safehouse", "WEEKLY UPKEEP", kids, { corners: true });
+  }
+
   function workbenchView(ch) {
     var out = [];
     out.push(el("div.row.wrap", { style: { gap: "6px", marginBottom: "12px" } }, BENCHES.map(function (b) {
@@ -2621,10 +2715,15 @@ EN.inventoryView = (function () {
         el("button.btn.sm", { title: "Debit whichever field you filled: Glimmer (lifestyle, bribes) or Nexus (buyouts, high-scrutiny buys).", style: { color: "var(--danger)", borderColor: "var(--danger)" },
           onclick: function () { ledgerApply(-1); } }, "− DEBIT"),
         el("button.btn.sm" + (_split.open ? ".primary" : ""), { title: "Split a contract payout: fixer's cut off the top, then even shares",
-          onclick: function () { _split.open = !_split.open; EN.app.render(); } }, "÷ SPLIT")
+          onclick: function () { _split.open = !_split.open; EN.app.render(); } }, "÷ SPLIT"),
+        el("button.btn.sm" + (_hh.open ? ".primary" : ""), { title: "Lifestyle and safehouse: what the week costs and when it is due",
+          style: (ch.household && ch.household.due) ? { color: "var(--danger)", borderColor: "var(--danger)" } : null,
+          onclick: function () { _hh.open = !_hh.open; EN.app.render(); } },
+          ((ch.household && ch.household.due) ? "⚠ " : "") + "⌂ WEEK")
       ])
     ]));
     if (_split.open) blocks.push(splitterPanel());
+    if (_hh.open) blocks.push(householdPanel(ch));
 
     var body = _sub === "market" ? marketView(ch) : _sub === "chrome" ? chromeView(ch) : _sub === "workbench" ? workbenchView(ch) : stashView(ch);
     body.forEach(function (b) { blocks.push(b); });
@@ -2633,5 +2732,5 @@ EN.inventoryView = (function () {
 
   // leaseTick: mutator for store.update, marks one day on every active lease
   // (called by the Freelancer tab's Long Rest); returns names that came due
-  return { render: render, leaseTick: leaseTick };
+  return { render: render, leaseTick: leaseTick, householdTick: householdTick };
 })();

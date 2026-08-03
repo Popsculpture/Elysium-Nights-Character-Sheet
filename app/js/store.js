@@ -227,6 +227,14 @@ EN.store = (function () {
     if (ch.equippedFocus === undefined) ch.equippedFocus = null;
     if (!ch.weaponAmmo) ch.weaponAmmo = {};
     if (!ch.vehicleMods || typeof ch.vehicleMods !== "object") ch.vehicleMods = {};   // {vehicleName: [modKey]}
+    // lifestyle + safehouse ride one weekly clock, ticked a day per Long Rest
+    if (!ch.household || typeof ch.household !== "object") ch.household = {};
+    var hh = ch.household;
+    if (typeof hh.lifestyle !== "string") hh.lifestyle = "";
+    if (typeof hh.safehouse !== "string") hh.safehouse = "";
+    if (!Array.isArray(hh.upgrades)) hh.upgrades = [];
+    if (typeof hh.days !== "number" || hh.days < 0 || hh.days > 7) hh.days = 7;
+    hh.due = !!hh.due;
     // the firing mode was renamed "Burst" -> "Burst Fire" to match the book;
     // a record saved before that carries the old string in its magazine state
     Object.keys(ch.weaponAmmo).forEach(function (w) {
