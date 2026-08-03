@@ -2454,6 +2454,70 @@ EN.inventoryView = (function () {
             garageMods(ch)];
   }
 
+  /* ---- payout splitter -------------------------------------------------
+     The book's default: a fixer's cut comes off the top, then the rest splits
+     evenly, and the remainder is left "to argue over" rather than rounded away.
+     A crew may also vote 10 to 30 percent into a shared Crew Kit; that share is
+     computed here but not tracked, because the Crew Kit is a table-level fund
+     the sheet has no notion of. */
+  var _split = { total: "", crew: 4, fixer: 15, kit: 0, open: false };
+  function splitPayout(total, crew, fixerPct, kitPct) {
+    total = Math.max(0, Math.floor(Number(total) || 0));
+    crew = Math.max(1, Math.floor(Number(crew) || 1));
+    var fixer = Math.floor(total * (Number(fixerPct) || 0) / 100);
+    var afterFixer = total - fixer;
+    var kit = Math.floor(afterFixer * (Number(kitPct) || 0) / 100);
+    var pool = afterFixer - kit;
+    var each = Math.floor(pool / crew);
+    return { total: total, fixer: fixer, kit: kit, pool: pool, each: each, over: pool - each * crew };
+  }
+  function splitterPanel() {
+    var r = splitPayout(_split.total, _split.crew, _split.fixer, _split.kit);
+    function num(label, key, min, max, w, tip) {
+      return el("div.row", { style: { gap: "4px", alignItems: "center" } }, [
+        el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em" }, text: label }),
+        el("input", { type: "number", value: String(_split[key]), min: String(min), max: String(max), title: tip,
+          style: { width: w, padding: "4px 6px", fontSize: "12.5px" },
+          oninput: function () { _split[key] = this.value; EN.app.render(); } })
+      ]);
+    }
+    function stat(label, value, color) {
+      return el("div", { style: { textAlign: "center", minWidth: "96px" } }, [
+        el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: label }),
+        el("span.mono", { style: { fontSize: "19px", color: color }, text: fmtG(value) })
+      ]);
+    }
+    var kids = [
+      el("div.row.wrap", { style: { gap: "10px", alignItems: "center", marginBottom: "10px" } }, [
+        num("PAYOUT", "total", 0, 9999999, "110px", "The contract's lump sum, before anyone takes a cut"),
+        num("CREW", "crew", 1, 12, "56px", "How many Freelancers split it"),
+        num("FIXER %", "fixer", 0, 100, "56px", "The fixer's cut, taken off the top before the split"),
+        num("CREW KIT %", "kit", 0, 100, "56px", "Optional shared fund; the book suggests 10 to 30 percent")
+      ]),
+      el("div.row.wrap", { style: { gap: "16px", alignItems: "center" } }, [
+        stat("FIXER", r.fixer, "var(--ember)"),
+        stat("CREW KIT", r.kit, "var(--flow)"),
+        stat("EACH SHARE", r.each, "var(--success)"),
+        el("div", { style: { textAlign: "center", minWidth: "96px" } }, [
+          el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "LEFT OVER" }),
+          el("span.mono", { style: { fontSize: "19px", color: r.over ? "var(--gold)" : "var(--text4)" }, text: fmtG(r.over) })
+        ]),
+        r.each > 0 ? el("button.btn.sm", { title: "Credit one share to this character",
+          style: { color: "var(--success)", borderColor: "var(--success)" },
+          onclick: function () {
+            store.update(function (c) { c.glimmer = (c.glimmer || 0) + r.each; });
+            toast("Share of " + fmtG(r.each) + " credited.");
+            EN.app.render();
+          } }, "+ MY SHARE") : null
+      ]),
+      el("p.help", { style: { margin: "10px 0 0", fontSize: "11px" },
+        text: (EN.economy && EN.economy.splitNote) || "" }),
+      r.over ? el("p.help", { style: { margin: "4px 0 0", fontSize: "11px", color: "var(--gold)" },
+        text: fmtG(r.over) + " does not divide evenly. The book leaves that to argue over." }) : null
+    ];
+    return EN.ui.panel("Payout Splitter", "FIXER \u00b7 CREW KIT \u00b7 SHARES", kids, { corners: true });
+  }
+
   function workbenchView(ch) {
     var out = [];
     out.push(el("div.row.wrap", { style: { gap: "6px", marginBottom: "12px" } }, BENCHES.map(function (b) {
@@ -2555,9 +2619,12 @@ EN.inventoryView = (function () {
         el("button.btn.sm", { title: "Credit whichever field you filled: Glimmer (payouts, fenced goods) or Nexus (brokered payouts, favors called in).", style: { color: "var(--success)", borderColor: "var(--success)", marginLeft: "4px" },
           onclick: function () { ledgerApply(1); } }, "+ CREDIT"),
         el("button.btn.sm", { title: "Debit whichever field you filled: Glimmer (lifestyle, bribes) or Nexus (buyouts, high-scrutiny buys).", style: { color: "var(--danger)", borderColor: "var(--danger)" },
-          onclick: function () { ledgerApply(-1); } }, "− DEBIT")
+          onclick: function () { ledgerApply(-1); } }, "− DEBIT"),
+        el("button.btn.sm" + (_split.open ? ".primary" : ""), { title: "Split a contract payout: fixer's cut off the top, then even shares",
+          onclick: function () { _split.open = !_split.open; EN.app.render(); } }, "÷ SPLIT")
       ])
     ]));
+    if (_split.open) blocks.push(splitterPanel());
 
     var body = _sub === "market" ? marketView(ch) : _sub === "chrome" ? chromeView(ch) : _sub === "workbench" ? workbenchView(ch) : stashView(ch);
     body.forEach(function (b) { blocks.push(b); });

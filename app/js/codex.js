@@ -326,6 +326,13 @@ EN.codexView = (function () {
         return j.job + " | 𝒢" + j.pay + "/wk | " + j.time + " | " + j.web; }).join("\n")));
       kids.push(ruleBlock("Reward Types", E.rewardTypes.map(function (r) {
         return r.type + " | " + r.meaning; }).join("\n")));
+      kids.push(ruleBlock("GM Reward Tables", E.rewardTablesNote + "\n\nGlimmer Rewards (1d8)\n"
+        + E.glimmerRewards.map(function (r) { return r.roll + ". " + r.reward + " | 𝒢" + r.value; }).join("\n")
+        + "\n\nNexus Token Rewards (1d8). " + E.nexusRewardsNote + "\n"
+        + E.nexusRewards.map(function (r) { return r.roll + ". " + r.reward; }).join("\n")));
+      kids.push(ruleBlock("Splitting a Payout", E.splitNote + "\n\n" + E.splitExample
+        + "\n\nNot every reward divides cleanly:\n" + bullets(E.splitNonStandard)
+        + "\n\nThe Inventory tab has a Payout Splitter that does this math."));
       kids.push(ruleBlock("Not Yet In The App",
         "These parts of the chapter are rules the sheet does not model yet. They live in the book:\n\n"
         + bullets(E.notModelled)));

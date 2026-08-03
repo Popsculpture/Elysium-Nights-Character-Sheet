@@ -1,11 +1,11 @@
 /* ===========================================================================
    ELYSIUM NIGHTS - Economy and Rewards (reference layer)
    Extracted from Part 3, "Economy and Rewards". Costs in Glimmer.
-   This file carries the chapter's TABLES and standing rules, which is what a
-   table needs to look up mid-session. The state-bearing halves of the chapter
-   (charging lifestyle each week, tracking which safehouse upgrades a crew has
-   bought, the crew pool ledger, debt) are not modelled yet and are not
-   pretended at here.
+   This file carries the chapter's TABLES and standing rules, including both
+   1d8 GM reward tables and the payout split math. What is NOT here is the
+   state: billing lifestyle each week, tracking safehouse upgrades a crew owns,
+   a Crew Kit ledger, a debt list. `notModelled` names those explicitly so the
+   gap stays visible.
    =========================================================================== */
 window.EN = window.EN || {};
 
@@ -81,16 +81,48 @@ EN.economy = {
     { type: "Deferred Reward",  meaning: "Payment released later, in stages, or after conditions are met" }
   ],
 
+  /* ---- GM reward tables (both printed in full) ------------------------- */
+  rewardTablesNote: "Use these when you need fast numbers.",
+  glimmerRewards: [
+    { roll: 1, reward: "Street payout", value: "100 to 300" },
+    { roll: 2, reward: "Small job", value: "500 to 1,000" },
+    { roll: 3, reward: "Mid tier contract", value: "1,500 to 3,000" },
+    { roll: 4, reward: "Faction favor", value: "about 5,000" },
+    { roll: 5, reward: "Captured goods or liquidated assets", value: "about 7,500" },
+    { roll: 6, reward: "Major property retrieval or escort", value: "10,000 to 20,000" },
+    { roll: 7, reward: "Corporate operation or high risk job", value: "30,000 to 50,000" },
+    { roll: 8, reward: "Campaign defining world change", value: "about 100,000, once per campaign" }
+  ],
+  nexusRewardsNote: "Nexus should feel rare and meaningful.",
+  nexusRewards: [
+    { roll: 1, reward: "No direct Nexus, but gain access to an account, pillar, or vault" },
+    { roll: 2, reward: "Access code or partial key that may lead to Nexus later" },
+    { roll: 3, reward: "1 Nexus Token" },
+    { roll: 4, reward: "2 Nexus Tokens" },
+    { roll: 5, reward: "3 to 5 Nexus Tokens" },
+    { roll: 6, reward: "10 Nexus Tokens for a major storyline success" },
+    { roll: 7, reward: "15 to 20 Nexus Tokens for campaign-scale impact or faction shifts" },
+    { roll: 8, reward: "100 Nexus Tokens as a one-time artifact-level event tied to a major arc or finale" }
+  ],
+
+  /* ---- splitting a payout ------------------------------------------------ */
+  splitNote: "By default a contract payout splits evenly between every Freelancer who participated. A fixer's cut, when there is one, comes off the top before the split. A crew may also vote to dedicate 10 to 30 percent of every payout to a shared Crew Kit.",
+  splitExample: "A four-person crew completing a 3,000 contract with a 15 percent fixer cut: the fixer takes 450, and the remaining 2,550 splits four ways at 637 each, with 2 left to argue over.",
+  splitNonStandard: [
+    "Tagged or watched goods may go to the crew member with the best laundering connections.",
+    "Narrative rewards (a favor owed, an access code, a faction patron) usually attach to the Character who earned them in fiction.",
+    "Single high-value items can be sold and split, kept by one member with the others taking IOU equivalents, or held in trust by the Crew Kit until needed."
+  ],
+
   /* sections of the chapter this file does NOT carry yet, so the gap is
      visible rather than looking like the chapter is fully covered */
   notModelled: [
-    "Crew Pool and Splitting Payouts",
+    "Crew Kit as a tracked shared fund (the split math itself is in the Payout Splitter)",
     "Debt and Obligation",
     "Captured Goods and Fences",
     "Flow-Touched and Haunted Goods",
     "Identity Theft and Account Compromise",
     "Services and Daily Spending, Premium Services, Bribes",
     "Regional Exchange Variation and Conversion Scene Complications",
-    "The GM Reward Tables (1d8 Glimmer and Nexus rolls)"
   ]
 };
