@@ -8,19 +8,20 @@
 window.EN = window.EN || {};
 
 EN.vehicles = {
+  statsNote: "Speed, Handling, Structure, Integrity, Node Tier, Cargo and Traits come from the Vehicles and Chases table in Part 2. The Piloting Check is d20 + Agility modifier + Vehicle Proficiency Bonus + the vehicle's Handling.",
   intro: "The title says the vehicle is yours. The garage, the fuel line, and whoever holds the note all have opinions about that. Buying is the easy part. Then the machine moves in: it wants power and fluids every week, somewhere to sit overnight where nobody strips it or tows it, and money set aside against the afternoon something shears loose in traffic.",
 
   /* ---- the seven printed profiles -------------------------------------
      listPrice is twenty weeks of upkeep and modSlots is 1 + tier; both are
      computed at load so a Tier or upkeep edit can never desync them. */
   profiles: [
-    { name: "Street Bike",            category: "Ground",             tier: 1, fuel: 150,  reserve: 100,  availability: "Common",   legality: "Licensed" },
-    { name: "Armored Sedan",          category: "Ground",             tier: 2, fuel: 300,  reserve: 200,  availability: "Uncommon", legality: "Licensed" },
-    { name: "Cargo Hauler",           category: "Ground",             tier: 2, fuel: 500,  reserve: 400,  availability: "Common",   legality: "Licensed" },
-    { name: "Hydrofoil",              category: "Marine",             tier: 1, fuel: 500,  reserve: 400,  availability: "Uncommon", legality: "Licensed" },
-    { name: "Corporate VTOL",         category: "Aerial",             tier: 3, fuel: 1500, reserve: 1000, availability: "Rare",     legality: "Restricted" },
-    { name: "Riot Suppression Mech",  category: "Industrial / Mechs", tier: 3, fuel: 2000, reserve: 1500, availability: "Rare",     legality: "Restricted" },
-    { name: "Light Shuttle",          category: "Starcraft",          tier: 2, fuel: 2500, reserve: 1500, availability: "Rare",     legality: "Licensed" }
+    { name: "Street Bike", speed: "Fast", handling: 2, structure: 7, integrity: 20, nodeTier: "Standard [0]", cargo: 2, traits: ["Agile", "Open-Frame"],            category: "Ground",             tier: 1, fuel: 150,  reserve: 100,  availability: "Common",   legality: "Licensed" },
+    { name: "Armored Sedan", speed: "Standard", handling: 0, structure: 14, integrity: 45, nodeTier: "Improved [1]", cargo: 8, traits: ["Enclosed", "Passenger (4)"],          category: "Ground",             tier: 2, fuel: 300,  reserve: 200,  availability: "Uncommon", legality: "Licensed" },
+    { name: "Cargo Hauler", speed: "Slow", handling: -2, structure: 11, integrity: 80, nodeTier: "Standard [0]", cargo: 40, traits: ["Broadframe", "Passenger (6)"],           category: "Ground",             tier: 2, fuel: 500,  reserve: 400,  availability: "Common",   legality: "Licensed" },
+    { name: "Hydrofoil", speed: "Fast", handling: 1, structure: 9, integrity: 30, nodeTier: "Standard [0]", cargo: 10, traits: ["Hover", "Agile", "Open-Frame"],              category: "Marine",             tier: 1, fuel: 500,  reserve: 400,  availability: "Uncommon", legality: "Licensed" },
+    { name: "Corporate VTOL", speed: "Very Fast", handling: 1, structure: 14, integrity: 50, nodeTier: "Advanced [2]", cargo: 16, traits: ["Flight", "Hover"],         category: "Aerial",             tier: 3, fuel: 1500, reserve: 1000, availability: "Rare",     legality: "Restricted" },
+    { name: "Riot Suppression Mech", speed: "Slow", handling: -1, structure: 18, integrity: 100, nodeTier: "Advanced [2]", cargo: 4, traits: ["Walker", "Armored"],  category: "Industrial / Mechs", tier: 3, fuel: 2000, reserve: 1500, availability: "Rare",     legality: "Restricted" },
+    { name: "Light Shuttle", speed: "Very Fast", handling: -1, structure: 11, integrity: 40, nodeTier: "Improved [1]", cargo: 20, traits: ["Flight", "Enclosed"],          category: "Starcraft",          tier: 2, fuel: 2500, reserve: 1500, availability: "Rare",     legality: "Licensed" }
   ],
 
   unlisted: "For vehicles not listed, base upkeep on the closest example by Category and Tier, then price the vehicle at twenty weeks of that upkeep. Each step up in Tier roughly doubles weekly upkeep, and non-Ground categories carry a premium for specialty parts, licensing, and limited service options.",

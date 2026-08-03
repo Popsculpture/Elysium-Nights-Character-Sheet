@@ -2205,17 +2205,32 @@ EN.inventoryView = (function () {
   }
 
   /* ============================ GARAGE (Vehicle Ops) ========================
-     No vehicle catalog exists yet, so the Garage runs Vehicle Ops: live math
-     for operating whatever ride the story provides. Category proficiency
-     reads off the sheet; the vehicle's type and Handling are table facts the
-     GM supplies. Chase Check, d20 Method: Agility or Tech Modifier
+     The Garage runs Vehicle Ops: live math for operating a ride. Picking a
+     chassis from the catalog (EN.vehicles) fills in its category, type and
+     Handling from the Part 2 table; "Custom" leaves all three free for a
+     ride the story invented. Category proficiency reads off the sheet. Chase Check, d20 Method: Agility or Tech Modifier
      + Vehicle Proficiency Bonus (if proficient) + Handling. Dice Pool Method:
      Edge Dice from the same sources. A Vehicle Focus naming the specific
      type adds Caliber to attack rolls, vehicle checks, AND damage rolls;
      a matching Specialization adds crit 19-20 (d20) and +2 Edge Dice (pools).
      Untrained: the check is allowed but rolls with Snag, and the GM can bar
      operation entirely for complex, restricted, or specialized vehicles. */
-  var _garage = { cat: "Ground Vehicles", type: "", handling: 0, attr: "AGI", bar: false };
+  var _garage = { chassis: "", cat: "Ground Vehicles", type: "", handling: 0, attr: "AGI", bar: false };
+  // a catalog chassis carries its own category, type and Handling; selecting one
+  // fills all three, and the fields stay editable for a custom ride
+  function garageProfiles() { return (EN.vehicles && EN.vehicles.profiles) || []; }
+  function garageCatFor(profileCat) {
+    var list = (EN.rules.gear && EN.rules.gear.vehicles) || [];
+    return list.filter(function (c) { return c === profileCat || c.indexOf(profileCat) === 0; })[0] || list[0];
+  }
+  function garagePickChassis(name) {
+    _garage.chassis = name;
+    var v = (EN.vehicles && EN.vehicles.byName && EN.vehicles.byName[name]) || null;
+    if (!v) return;                       // "Custom" leaves the fields alone
+    _garage.cat = garageCatFor(v.category);
+    _garage.type = v.name;
+    _garage.handling = v.handling;
+  }
   function garageBench(ch) {
     var d = EN.engine.derive(ch);
     var eng = EN.engine, R = EN.rules;
@@ -2233,8 +2248,17 @@ EN.inventoryView = (function () {
     var handling = Number(_garage.handling) || 0;
     var barred = _garage.bar && untrained;
     function reRender() { EN.app.render(); }
-    // controls: category, vehicle type, Handling, governing attribute, GM bar
+    // controls: chassis, category, vehicle type, Handling, governing attribute, GM bar
+    var chassisSel = el("select", { style: { fontSize: "12px", width: "auto" },
+      title: "Pick a chassis from the catalog to fill in its category, type and Handling",
+      onchange: function () { garagePickChassis(this.value); reRender(); } },
+      [el("option", { value: "", selected: !_garage.chassis, text: "Custom ride\u2026" })].concat(
+        garageProfiles().map(function (v) {
+          return el("option", { value: v.name, selected: v.name === _garage.chassis,
+            text: v.name + " (" + (v.handling >= 0 ? "+" : "") + v.handling + ")" });
+        })));
     var controls = el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginBottom: "10px" } }, [
+      chassisSel,
       el("select", { style: { fontSize: "12px", width: "auto" }, title: "Vehicle category (proficiency reads off your sheet)",
         onchange: function () { _garage.cat = this.value; reRender(); } },
         (R.gear.vehicles || []).map(function (c) { return el("option", { value: c, selected: c === cat, text: c }); })),
@@ -2342,7 +2366,7 @@ EN.inventoryView = (function () {
       return out;
     }
     if (_bench === "garage") {
-      out.push(el("p.help", { style: { margin: "0 0 10px", maxWidth: "720px" }, text: "Vehicle crafting and modding lands with the Garage rules; until then this bench runs Vehicle Ops: the live operating math for whatever ride the story hands you." }));
+      out.push(el("p.help", { style: { margin: "0 0 10px", maxWidth: "720px" }, text: "Vehicle Ops: the live operating math for the ride you are in. Pick a chassis to pull its category, type and Handling from the catalog, or leave it on Custom and enter your own. Installing Vehicle Mods on an owned vehicle is not wired up yet; the catalog of thirteen lives in the Codex under Vehicles." }));
       garageBench(ch).forEach(function (n) { out.push(n); });
       return out;
     }
