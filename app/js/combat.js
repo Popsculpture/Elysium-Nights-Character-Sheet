@@ -1487,6 +1487,36 @@ EN.combatView = (function () {
     return { cur: cur, cap: cap, mode: mode, ammoType: ammoType, base: base, modes: modes };
   }
   var _recoil = null;   // weapon name to kick on the next render, set when rounds are spent
+  /* Dice mode. Digital is the default: the sheet rolls for you and HIT/DMG are
+     pressable. Physical means real dice on the table, so those become plain
+     numbers to read off, and anything that SPENDS something when used keeps a
+     button, because the app is still the one tracking the magazine. */
+  var _dice = "digital";
+  try { if (localStorage.getItem("en_dice_mode_v1") === "physical") _dice = "physical"; } catch (e) {}
+  function physicalDice() { return _dice === "physical"; }
+  function setDiceMode(m) {
+    _dice = m;
+    try { localStorage.setItem("en_dice_mode_v1", m); } catch (e) {}
+    EN.app.render();
+  }
+  /* Physical mode: spend the round without opening a tray. Same deduction the
+     roll tray makes, so the magazine and the recoil kick stay consistent. */
+  function fireWeapon(wname) {
+    var it = findWeapon(wname); if (!it) return;
+    var st = readAmmo(store.active(), it), cost = costFor(it, st.mode);
+    if (st.cur < cost) { toast(it.name + " needs " + cost + " round" + (cost > 1 ? "s" : "") + " for " + st.mode + "; reload first."); return; }
+    store.update(function (c) {
+      c.weaponAmmo = c.weaponAmmo || {};
+      var cur = readAmmo(c, it);
+      var a = c.weaponAmmo[wname] || { cur: cur.cur, mode: cur.mode, ammoType: cur.ammoType };
+      if (typeof a.cur !== "number") a.cur = cur.cur;
+      a.cur = Math.max(0, a.cur - cost);
+      c.weaponAmmo[wname] = a;
+    });
+    _recoil = wname;
+    toast(it.name + ": " + st.mode + ", " + cost + " round" + (cost > 1 ? "s" : "") + " spent.");
+    EN.app.render();
+  }
   function writeAmmo(wname, patch) {
     var it = findWeapon(wname); if (!it) return;
     // a re-render replaces the card node, so flag the weapon and let the
@@ -1628,6 +1658,16 @@ EN.combatView = (function () {
         return 'FREELANCER <span class="dim3" style="font-size:13px">// live status · ' + handle + classStr + levelStr + "</span>";
       })() }),
       el("div.row.wrap", { style: { gap: "8px" } }, [
+        el("div.row", { style: { gap: "0", marginRight: "4px" } }, [
+          el("button.btn.sm" + (physicalDice() ? "" : ".primary"), {
+            title: "Digital dice: the sheet rolls for you. HIT and DMG are pressable.",
+            style: { borderTopRightRadius: 0, borderBottomRightRadius: 0 },
+            onclick: function () { setDiceMode("digital"); } }, "⬢ DIGITAL"),
+          el("button.btn.sm" + (physicalDice() ? ".primary" : ""), {
+            title: "Physical dice: you roll at the table. HIT and DMG become plain numbers, and anything that spends ammo keeps a FIRE button.",
+            style: { borderTopLeftRadius: 0, borderBottomLeftRadius: 0, marginLeft: "-1px" },
+            onclick: function () { setDiceMode("physical"); } }, "⚀ PHYSICAL")
+        ]),
         el("div.pop-anchor", { style: { position: "relative" } }, [
           el("button.btn.sm", { onclick: function () { var was = _pops.short; closePops(); _pops.short = !was; EN.app.render(); } }, "⏾ SHORT REST"),
           _pops.short ? (function () {
@@ -2650,6 +2690,7 @@ EN.combatView = (function () {
       /* A stat that rolls something renders as a pressable key; a stat that is
          just a number (Reach, Range) stays plain text. */
       function statBox(label, value, color, title, onClick, kind) {
+        if (physicalDice()) onClick = null;   // real dice: the number is just a number
         if (!onClick) {
           return el("div", { title: title || "",
             style: { textAlign: "center", flex: "0 0 auto", minWidth: "44px" } }, [
@@ -2687,7 +2728,12 @@ EN.combatView = (function () {
             style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" } }, "FOCUS +" + h.focusCal) : null,
           h.spec ? el("span.chip", { title: "Specialization: " + h.cat + " (" + h.spec.aspect + "). Crit threat range widens by 1 (19-20), stacking with other crit range sources.",
             style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" } }, "CRIT 19-20") : null,
-          el("span", { style: { fontSize: "10px", color: "var(--text3)", flex: "1 1 auto" }, text: subtype })
+          el("span", { style: { fontSize: "10px", color: "var(--text3)", flex: "1 1 auto" }, text: subtype }),
+          // real dice roll on the table, but the magazine is still the app's job
+          (physicalDice() && isRanged) ? el("button.btn.sm", {
+            title: "Spend this weapon's ammo for one use; roll the dice yourself",
+            style: { color: "var(--ember)", borderColor: "var(--ember)", flex: "0 0 auto" },
+            onclick: function () { fireWeapon(wname); } }, "FIRE") : null
         ]);
 
         var rowKids = [head];
@@ -2704,12 +2750,14 @@ EN.combatView = (function () {
               el("button.btn.sm", { style: { color: "var(--warn)", borderColor: "var(--warn)", padding: "1px 7px" }, onclick: function () { reloadWeapon(wname); } }, "⟳ RELOAD")
             ]);
           } else {   // can fire something; grey the number when the SELECTED mode is unaffordable
-            hitCell = el("div.statwrap", { title: hitTip + " \u00b7 Roll to hit (" + st.mode + " \u00b7 \u2212" + selCost + ")",
-              style: { opacity: canSel ? 1 : 0.5 } }, [
-              el("div.lbl", { text: "HIT" }),
-              el("span.mono.statkey", { style: { color: canSel ? "var(--ember)" : "var(--danger)" },
-                onclick: function () { openRollTray(attackCtx(it, h)); }, text: eng.fmtMod(h.total) })
-            ]);
+            hitCell = physicalDice()
+              ? statBox("HIT", eng.fmtMod(h.total), canSel ? "var(--ember)" : "var(--danger)", hitTip)
+              : el("div.statwrap", { title: hitTip + " \u00b7 Roll to hit (" + st.mode + " \u00b7 \u2212" + selCost + ")",
+                  style: { opacity: canSel ? 1 : 0.5 } }, [
+                  el("div.lbl", { text: "HIT" }),
+                  el("span.mono.statkey", { style: { color: canSel ? "var(--ember)" : "var(--danger)" },
+                    onclick: function () { openRollTray(attackCtx(it, h)); }, text: eng.fmtMod(h.total) })
+                ]);
           }
           var pct = st.cap > 0 ? Math.round(st.cur / st.cap * 100) : 0;
           var ammoCell = el("div", { style: { flex: "1 1 120px", minWidth: "110px" } }, [
@@ -2756,11 +2804,13 @@ EN.combatView = (function () {
           // melee / thrown: Range · Hit · Damage (no ammo). HIT opens the roll tray.
           rowKids.push(el("div.row.wrap", { style: { gap: "14px", alignItems: "center", marginTop: "6px" } }, [
             statBox(h.melee ? "REACH" : "RANGE", norm.rangeDisplay, "var(--gold)", it.range || ""),
-            el("div.statwrap", { title: "Roll to hit \u00b7 " + hitTip }, [
-              el("div.lbl", { text: "HIT" }),
-              el("span.mono.statkey", { style: { color: "var(--ember)" },
-                onclick: function () { openRollTray(attackCtx(it, h)); }, text: eng.fmtMod(h.total) })
-            ]),
+            physicalDice()
+              ? statBox("HIT", eng.fmtMod(h.total), "var(--ember)", hitTip)
+              : el("div.statwrap", { title: "Roll to hit \u00b7 " + hitTip }, [
+                  el("div.lbl", { text: "HIT" }),
+                  el("span.mono.statkey", { style: { color: "var(--ember)" },
+                    onclick: function () { openRollTray(attackCtx(it, h)); }, text: eng.fmtMod(h.total) })
+                ]),
             statBox("DMG", dmgDisplay, "var(--accent)", dmgTip, function () { openDmgTray(damageCtx(it, h)); }, "dmg")
           ]));
         }
