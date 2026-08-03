@@ -2827,8 +2827,8 @@ EN.inventoryView = (function () {
       el("div.row.wrap", { style: { gap: "6px" } }, [
         subTab("stash", "▣ STASH"),
         subTab("chrome", "⌖ CHROME"),
-        subTab("market", "◉ GRAY MARKET"),
-        subTab("workbench", "⚒ WORKBENCH")
+        subTab("workbench", "⚒ WORKBENCH"),
+        subTab("market", "◉ GRAY MARKET")
       ]),
       // wallets on top, ledger controls beneath, so the bar stays compact
       el("div", { style: { display: "flex", flexDirection: "column", gap: "5px", alignItems: "flex-end" } }, [
