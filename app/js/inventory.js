@@ -938,7 +938,7 @@ EN.inventoryView = (function () {
       var sided = !!cw.sided, oid = where + "-cw-" + idx, open = !!_open[oid];
       var chips = [
         where === "installed" ? tagChip("● INSTALLED", "var(--success)", "Installed, counts toward your Static") : tagChip("STASHED", "var(--text3)", "In your stash, not yet installed"),
-        cw.tier ? tagChip(cw.tier, tierChipColor(cw.tier)) : null,
+        cw.tier ? tagChip(cw.tier, tierChipColor(cw.tier), ((EN.cyberware || {}).qualityTiers || {})[cw.tier] || "") : null,
         tagChip((cw.sp || 0) + " SP", heatColor(cw.sp || 0)),
         tagChip("◆ " + cw.zone, "var(--accent)", "Interface Zone"),
         (function () { var e = enhScaled(cw); return e ? tagChip("✦ " + e, "var(--gold)", where === "installed" ? "Enhancement Bonus, applied to your attributes" : "Enhancement Bonus, applies once installed") : null; })()
@@ -1146,7 +1146,7 @@ EN.inventoryView = (function () {
       var allMods = armorModItems();
       var modsByCat = function (catKey) { return allMods.filter(function (m) { return m.modCategory === catKey; }); };
       cats.push({ key: "armormods", title: "Armor Mods", short: "ARMOR MODS",
-        intro: (AM().rules ? AM().rules.host + " " + AM().rules.legality : "") + " Buy a mod here, then fit it from the Workbench (Impact Table).",
+        intro: (AM().intro ? AM().intro + " " : "") + (AM().rules ? AM().rules.host + " " + AM().rules.legality : "") + " Buy a mod here, then fit it from the Workbench (Impact Table).",
         subs: (AM().categories || []).map(function (cg) { return { label: cg.name, intro: cg.blurb, items: modsByCat(cg.key) }; })
       });
     }
@@ -1250,7 +1250,10 @@ EN.inventoryView = (function () {
         el("span", { style: { flex: 1, height: "1px", background: "linear-gradient(90deg,var(--border),transparent)" } })
       ]);
     };
-    var tierLabel = function (t) { var col = { Streetware: "var(--text3)", Brandware: "var(--accent)", Blackware: "var(--danger)", Prototype: "var(--flow)" }[t] || "var(--text3)"; return el("div", { style: { margin: "6px 0 3px 12px", fontFamily: "var(--mono)", fontSize: "10px", letterSpacing: ".14em", textTransform: "uppercase", color: col } }, "› " + t); };
+    // the quality tier decides price, SP and whether you get an Enhancement at all,
+    // so hang the book's own description of each one off its market header
+    var tierBlurb = function (t) { return ((EN.cyberware || {}).qualityTiers || {})[t] || ""; };
+    var tierLabel = function (t) { var col = { Streetware: "var(--text3)", Brandware: "var(--accent)", Blackware: "var(--danger)", Prototype: "var(--flow)" }[t] || "var(--text3)"; return el("div", { title: tierBlurb(t), style: { margin: "6px 0 3px 12px", fontFamily: "var(--mono)", fontSize: "10px", letterSpacing: ".14em", textTransform: "uppercase", color: col } }, "› " + t); };
     var introP = function (t) { return el("p.help", { style: { margin: "0 0 6px", fontSize: "11.5px" }, text: t }); };
     var TIER_ORDER = ["Streetware", "Brandware", "Blackware", "Prototype"];
     cats.forEach(function (c) {
@@ -1739,7 +1742,12 @@ EN.inventoryView = (function () {
   var TB_SKILL_COLOR = { Engineering: "var(--ember)", Systems: "var(--accent)", Medtech: "var(--success)", Esoterica: "var(--flow)", Investigation: "var(--gold)", Awareness: "var(--gold)" };
   function tbMod(n) { n = n || 0; return (n >= 0 ? "+" : "") + n; }
   function tbChip(text, color, title) { return el("span.chip", { title: title || "", style: { fontSize: "9px", color: color, borderColor: color } }, text); }
-  function tbTierChip(tierKey) { var t = CRAFT().tier(tierKey); return tbChip(t.name.toUpperCase() + (t.target ? " · " + t.target : ""), TB_TIER_COLOR[tierKey] || "var(--text2)", t.difficulty + " · " + t.time); }
+  function tbTierChip(tierKey) {
+    var t = CRAFT().tier(tierKey);
+    // the tier also records the training it expects; the Snag count alone never says so
+    var expects = t.skillTier ? " · Expects " + t.skillTier.charAt(0).toUpperCase() + t.skillTier.slice(1) : "";
+    return tbChip(t.name.toUpperCase() + (t.target ? " · " + t.target : ""), TB_TIER_COLOR[tierKey] || "var(--text2)", t.difficulty + " · " + t.time + expects);
+  }
   function tbSkillChip(skill) { return tbChip(skill, TB_SKILL_COLOR[skill] || "var(--text2)", "Primary Skill"); }
 
   // shared Dice Pool visuals live in EN.ui (also used by the #GRID Deep Run console)
@@ -1963,7 +1971,8 @@ EN.inventoryView = (function () {
     // emergency fixes stay d20; keep that distinct rule visible but separate
     var engS = tbSkill(d, "Engineering"), sysS = tbSkill(d, "Systems");
     kids.push(el("p.help", { style: { margin: "6px 0 0", fontSize: "10.5px", color: "var(--text3)" },
-      text: "Emergency fixes under pressure stay d20: Engineering " + tbMod(engS ? engS.total : 0) + " · Systems " + tbMod(sysS ? sysS.total : 0) + " (+ Caliber inside a Focus). Everything below rolls the pool." }));
+      title: CRAFT().rules.emergency,
+      text: "Emergency fixes under pressure stay d20: Engineering " + tbMod(engS ? engS.total : 0) + " · Systems " + tbMod(sysS ? sysS.total : 0) + " (+ Caliber inside a Focus). That fix holds for the scene and rarely becomes a permanent upgrade. Everything below rolls the pool." }));
     // secondary craft skills, compact
     var secondary = ["Medtech", "Esoterica", "Investigation", "Awareness"].map(function (nm) {
       var s = tbSkill(d, nm); if (!s) return null;
@@ -2001,9 +2010,15 @@ EN.inventoryView = (function () {
       el("div.row.wrap", { style: { gap: "12px", alignItems: "center", marginBottom: "10px" } }, [
         el("label.row.wrap", { style: { gap: "5px", alignItems: "center", fontSize: "11px", color: "var(--text3)" } }, ["KIND", sel(f.kind, CRAFT().kinds.map(function (k) { return { v: k.key, t: k.name }; }), function (e) { f.kind = e.target.value; EN.app.render(); })]),
         el("label.row.wrap", { style: { gap: "5px", alignItems: "center", fontSize: "11px", color: "var(--text3)" } }, ["SKILL", sel(f.skill, CRAFT().craftSkills.map(function (s) { return { v: s, t: s }; }), function (e) { f.skill = e.target.value; })]),
-        el("label.row.wrap", { style: { gap: "5px", alignItems: "center", fontSize: "11px", color: "var(--text3)" } }, ["TIER", sel(f.tier, CRAFT().tiers.filter(function (t) { return t.target; }).map(function (t) { return { v: t.key, t: t.name + " (" + t.target + ")" }; }), function (e) { f.tier = e.target.value; })])
+        el("label.row.wrap", { style: { gap: "5px", alignItems: "center", fontSize: "11px", color: "var(--text3)" } }, ["TIER", sel(f.tier, CRAFT().tiers.filter(function (t) { return t.target; }).map(function (t) { return { v: t.key, t: t.name + " (" + t.target + ")" }; }), function (e) { f.tier = e.target.value; EN.app.render(); })])
       ]),
       CRAFT().kinds.find(function (k) { return k.key === f.kind; }) ? el("p.help", { style: { margin: "0 0 10px", fontSize: "11px" }, text: CRAFT().kinds.find(function (k) { return k.key === f.kind; }).desc }) : null,
+      // custom work has no catalog row to calibrate against, so show what the chosen tier looks like
+      (function () {
+        var t = CRAFT().tier(f.tier);
+        return (t && t.examples) ? el("p.help", { style: { margin: "0 0 10px", fontSize: "11px", color: "var(--text3)" },
+          text: "Work at this tier looks like: " + t.examples + "." }) : null;
+      })(),
       el("div.row.wrap", { style: { gap: "8px" } }, [
         el("button.btn.sm.primary", { onclick: function () { tbStart(f); _tbForm = null; EN.app.render(); } }, "✓ START PROJECT"),
         el("button.btn.sm", { onclick: function () { _tbForm = null; EN.app.render(); } }, "CANCEL")
