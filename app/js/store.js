@@ -226,6 +226,7 @@ EN.store = (function () {
     if (ch.equippedShield === undefined) ch.equippedShield = null;
     if (ch.equippedFocus === undefined) ch.equippedFocus = null;
     if (!ch.weaponAmmo) ch.weaponAmmo = {};
+    if (!ch.vehicleMods || typeof ch.vehicleMods !== "object") ch.vehicleMods = {};   // {vehicleName: [modKey]}
     // the firing mode was renamed "Burst" -> "Burst Fire" to match the book;
     // a record saved before that carries the old string in its magazine state
     Object.keys(ch.weaponAmmo).forEach(function (w) {

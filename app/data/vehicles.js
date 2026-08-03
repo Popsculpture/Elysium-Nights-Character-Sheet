@@ -102,3 +102,21 @@ EN.vehicles.profiles.forEach(function (v) {
 });
 EN.vehicles.byName = {};
 EN.vehicles.profiles.forEach(function (v) { EN.vehicles.byName[v.name] = v; });
+
+/* mods get a stable key derived from the name, and a Fits matcher. "Any" fits
+   everything; otherwise the entry names one or more chassis categories, and a
+   profile matches when its category starts with one of them ("Industrial"
+   matches the "Industrial / Mechs" category). */
+EN.vehicles.byKey = {};
+EN.vehicles.mods.forEach(function (m) {
+  m.key = m.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  EN.vehicles.byKey[m.key] = m;
+});
+EN.vehicles.modFits = function (mod, profile) {
+  if (!mod || !profile) return false;
+  var fits = String(mod.fits || "Any");
+  if (/^any$/i.test(fits)) return true;
+  return fits.split(",").map(function (f) { return f.trim(); }).some(function (f) {
+    return f && profile.category.indexOf(f) === 0;
+  });
+};

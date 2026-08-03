@@ -241,7 +241,8 @@ EN.inventoryView = (function () {
       (g.tools && g.tools.items) || [],
       partItems(),
       armorModItems(),
-      vehicleItems()
+      vehicleItems(),
+      vehicleModItems()
     );
   }
   function findItem(name) { return catalog().find(function (i) { return i.name === name; }); }
@@ -623,11 +624,12 @@ EN.inventoryView = (function () {
   // Stash categories: fixed display order, collapsible (collapsed by default)
   var STASH_CATS = ["Melee Weapons", "Ranged Weapons", "Signature Weapons", "Ammunition & Munitions",
     "Armor & Defensive Gear", "Carry Gear", "Skill Kits", "Field Devices & Gadgets", "Consumables",
-    "Flow Tonics & Resonant Devices", "Smartdecks & B&E Buddies", "Cipher Library", "Weapon Parts", "Armor Mods", "Vehicles", "Custom & Unknown"];
+    "Flow Tonics & Resonant Devices", "Smartdecks & B&E Buddies", "Cipher Library", "Weapon Parts", "Armor Mods", "Vehicles", "Vehicle Mods", "Custom & Unknown"];
   var _stashOpen = {};   // category name -> true when expanded
   function stashCategory(it) {
     if (!it) return "Custom & Unknown";
     if (it.vehicle) return "Vehicles";
+    if (it.vehicleMod) return "Vehicle Mods";
     if (it.benchPart) return "Weapon Parts";
     if (it.armorMod) return "Armor Mods";
     if (it.signature) return "Signature Weapons";
@@ -1050,7 +1052,8 @@ EN.inventoryView = (function () {
           items: VEH().map(vehicleAsItem) },
         { label: "Corporate Lease", intro: (V.acquisition || []).filter(function (a) { return a.mode === "Leased"; })
             .map(function (a) { return a.note; }).join(" "),
-          items: VEH().map(vehicleLeaseAsItem) }
+          items: VEH().map(vehicleLeaseAsItem) },
+        { label: "Vehicle Mods", intro: (V.modRules || []).join(" "), items: vehicleModItems() }
       ] });
     }
     if (g.armor && armorItems.length) {
@@ -1417,6 +1420,16 @@ EN.inventoryView = (function () {
              effect: "Runs the Leased trait. Lapsed or Locked is a dead ignition: the engine will not turn over, installed mods sit inert, and the doors open for whoever holds the note. Miss a payment and the repo arrives as people, not paperwork." };
   }
   function vehicleItems() { return VEH().map(vehicleAsItem).concat(VEH().map(vehicleLeaseAsItem)); }
+  function VMODS() { return (EN.vehicles && EN.vehicles.mods) || []; }
+  function vehicleModAsItem(m) {
+    return { name: m.name, kind: "vehiclemod", group: "Vehicle Mod", vehicleMod: true, modKey: m.key,
+             price: m.price == null ? 0 : m.price, vendor: m.price != null,
+             availability: m.availability, legality: m.legality, fits: m.fits,
+             desc: "Fits " + m.fits + ". Bench work: downtime, a garage, and Engineering Tools."
+                   + (m.priceNote ? " Price: " + m.priceNote + "." : ""),
+             effect: m.effect };
+  }
+  function vehicleModItems() { return VMODS().map(vehicleModAsItem); }
   function aggregateArmorLegality(armor, lo) {
     var order = ["Legal", "Licensed", "Restricted", "Contraband"];
     var worst = armor.legality || "Legal";
@@ -1432,6 +1445,50 @@ EN.inventoryView = (function () {
     toast(mod.name + " worked into " + armor.name + " (bench work: a rest with a kit).");
   }
   function removeArmorMod(armorName, key) { setArmorMods(armorName, function (l) { return l.filter(function (k) { return k !== key; }); }); }
+
+  /* ---- vehicle mods ---------------------------------------------------
+     Slots are generic (1 + Tier), so this follows the armor-mod bench
+     rather than the slot-typed Arms Table. A leased vehicle is stashed as
+     "<Name> (Lease)", so the profile is resolved from the base name. */
+  function vehicleProfileOf(itemName) {
+    var base = String(itemName || "").replace(/\s*\(Lease\)$/, "");
+    return (EN.vehicles && EN.vehicles.byName && EN.vehicles.byName[base]) || null;
+  }
+  function ownedVehicles(ch) {
+    var seen = {};
+    return (ch.equipment || []).filter(function (e) { return e.qty > 0; })
+      .map(function (e) { return findItem(e.name); })
+      .filter(function (it) { return it && it.vehicle && !seen[it.name] && (seen[it.name] = 1); });
+  }
+  function vehicleLoadout(ch, name) { return ((ch.vehicleMods || {})[name] || []).slice(); }
+  function setVehicleMods(name, fn) {
+    store.update(function (c) { c.vehicleMods = c.vehicleMods || {}; c.vehicleMods[name] = fn((c.vehicleMods[name] || []).slice()); });
+  }
+  function installedVehicleModCount(ch, key) {
+    var t = 0, vm = ch.vehicleMods || {};
+    Object.keys(vm).forEach(function (vn) { (vm[vn] || []).forEach(function (k) { if (k === key) t++; }); });
+    return t;
+  }
+  function availableVehicleModQty(ch, m) { return ownedQtyOf(ch, m.name) - installedVehicleModCount(ch, m.key); }
+  function aggregateVehicleLegality(prof, lo) {
+    var order = ["Legal", "Licensed", "Restricted", "Contraband"];
+    var worst = (prof && prof.legality) || "Legal";
+    (lo || []).forEach(function (k) {
+      var m = EN.vehicles.byKey[k];
+      if (m && order.indexOf(m.legality) > order.indexOf(worst)) worst = m.legality;
+    });
+    return worst;
+  }
+  function tryInstallVehicleMod(vItem, prof, lo, key) {
+    var mod = EN.vehicles.byKey[key]; if (!mod || !prof) return;
+    if (availableVehicleModQty(store.active(), mod) <= 0) { toast("You do not own a free " + mod.name + ". Buy it in the gray market first."); return; }
+    if (lo.indexOf(key) !== -1) { toast(mod.name + " is already fitted to this vehicle."); return; }
+    if (!EN.vehicles.modFits(mod, prof)) { toast(mod.name + " fits " + mod.fits + "; the " + prof.name + " is " + prof.category + "."); return; }
+    if (lo.length >= prof.modSlots) { toast("No open Mod Slots. A " + prof.name + " carries " + prof.modSlots + " (1 + Tier " + prof.tier + ")."); return; }
+    setVehicleMods(vItem.name, function (l) { l.push(key); return l; });
+    toast(mod.name + " fitted to " + vItem.name + " (bench work: downtime, a garage, and Engineering Tools).");
+  }
+  function removeVehicleMod(vName, key) { setVehicleMods(vName, function (l) { return l.filter(function (k) { return k !== key; }); }); }
   function tryInstall(it, lo, slotKey, key) {
     var part = WP().byKey[key]; if (!part) return;
     if (availablePartQty(store.active(), part) <= 0) { toast("You do not own a free " + part.name + ". Buy it in the gray market first."); return; }
@@ -2231,6 +2288,65 @@ EN.inventoryView = (function () {
     _garage.type = v.name;
     _garage.handling = v.handling;
   }
+
+  /* ---- Garage panel 2: fit Vehicle Mods to an owned vehicle -------------- */
+  function garageMods(ch) {
+    var owned = ownedVehicles(ch);
+    var kids = [];
+    if (!owned.length) {
+      kids.push(el("div.muted-box", { style: { padding: "18px", textAlign: "center" },
+        html: "<div style='font-size:12px;color:var(--text3)'>You do not own a vehicle yet. Buy or lease one in the <b>Gray Market</b>, then fit mods here.</div>" }));
+      return EN.ui.panel("Vehicle Mods", "NO VEHICLE OWNED", kids, { corners: true });
+    }
+    owned.forEach(function (vIt) {
+      var prof = vehicleProfileOf(vIt.name);
+      if (!prof) return;
+      var lo = vehicleLoadout(ch, vIt.name);
+      var legal = aggregateVehicleLegality(prof, lo);
+      var full = lo.length >= prof.modSlots;
+      kids.push(el("div.section-title", { style: { margin: "10px 0 4px" } },
+        [document.createTextNode(vIt.name), el("span.line"),
+         el("span.mono", { style: { fontSize: "9.5px", color: full ? "var(--warn)" : "var(--text3)" },
+           text: lo.length + " / " + prof.modSlots + " SLOTS" }),
+         el("span.chip", { title: "Strictest tag among the vehicle and everything mounted on it",
+           style: { fontSize: "9px", marginLeft: "6px", color: LEGAL_COLOR[legal] || "var(--text3)", borderColor: LEGAL_COLOR[legal] || "var(--border)" },
+           text: legal.toUpperCase() })]));
+      // fitted
+      if (lo.length) {
+        kids.push(el("div.row.wrap", { style: { gap: "6px", marginBottom: "6px" } }, lo.map(function (k) {
+          var m = EN.vehicles.byKey[k] || { name: k };
+          return el("button.btn.sm", { title: (m.effect || "") + "  (click to pull it)",
+            style: { color: "var(--gold)", borderColor: "var(--gold)" },
+            onclick: function () { removeVehicleMod(vIt.name, k); reRender(); } }, "\u2716 " + m.name);
+        })));
+      }
+      // installable: owned, free, and fitting this chassis
+      var avail = VMODS().filter(function (m) {
+        return lo.indexOf(m.key) === -1 && availableVehicleModQty(ch, m) > 0 && EN.vehicles.modFits(m, prof);
+      });
+      if (!avail.length) {
+        kids.push(el("p.help", { style: { margin: "0 0 8px", fontSize: "11px", color: "var(--text3)" },
+          text: "No owned mods fit this chassis right now. Vehicle Mods are bought in the Gray Market under Vehicles." }));
+      } else {
+        kids.push(el("div.row.wrap", { style: { gap: "6px", marginBottom: "8px" } }, avail.map(function (m) {
+          return el("button.btn.sm", { disabled: full, title: m.effect + "  (fits " + m.fits + ")",
+            onclick: function () { tryInstallVehicleMod(vIt, prof, lo, m.key); reRender(); } }, "+ " + m.name);
+        })));
+      }
+      // mods owned but blocked by the Fits gate, so the reason is visible
+      var misfit = VMODS().filter(function (m) {
+        return lo.indexOf(m.key) === -1 && availableVehicleModQty(ch, m) > 0 && !EN.vehicles.modFits(m, prof);
+      });
+      if (misfit.length) {
+        kids.push(el("p.help", { style: { margin: "0 0 10px", fontSize: "10.5px", color: "var(--text4)" },
+          text: "Owned but will not mount on a " + prof.category + " chassis: " + misfit.map(function (m) { return m.name + " (" + m.fits + ")"; }).join(", ") + "." }));
+      }
+    });
+    kids.push(el("p.help", { style: { margin: "6px 0 0", fontSize: "11px" },
+      text: "Mod Slots are 1 + the vehicle's Tier. One mod per slot, fitting or pulling is bench work in downtime, and a mod never lowers a vehicle's Legality, it only raises the heat." }));
+    return EN.ui.panel("Vehicle Mods", "FIT & PULL \u00b7 BENCH WORK", kids, { corners: true });
+  }
+
   function garageBench(ch) {
     var d = EN.engine.derive(ch);
     var eng = EN.engine, R = EN.rules;
@@ -2334,7 +2450,8 @@ EN.inventoryView = (function () {
           ? "Untrained operation is allowed but rolls with Snag. The GM may bar operation entirely for complex, restricted, or specialized vehicles (toggle above)."
           : "Vehicle checks add your Vehicle Proficiency Bonus. A Vehicle Focus naming this type adds Caliber to attack rolls, vehicle checks, and damage rolls; a Specialization adds crit 19-20 and +2 Edge Dice." }));
     }
-    return [EN.ui.panel("Garage · Vehicle Ops", cat.toUpperCase() + (typeName ? " · " + typeName.toUpperCase() : ""), body, { corners: true })];
+    return [EN.ui.panel("Garage · Vehicle Ops", cat.toUpperCase() + (typeName ? " · " + typeName.toUpperCase() : ""), body, { corners: true }),
+            garageMods(ch)];
   }
 
   function workbenchView(ch) {
