@@ -2649,7 +2649,7 @@ EN.combatView = (function () {
         var subtype = (h.melee ? "Melee" : h.thrownItem ? "Thrown" : "Ranged") + " Weapon · " + h.cat;
         var isRanged = !h.melee && !h.thrownItem && it.ammo != null;
 
-        var head = el("div.row", { style: { gap: "8px", alignItems: "center", flexWrap: "wrap" } }, [
+        var head = el("div.row", { style: { gap: "8px", alignItems: "center", flexWrap: "wrap", marginBottom: "2px" } }, [
           equippedNames.length > 1 ? reorderArrows(wname, wi) : null,
           el("span", { title: it.desc || "", style: { fontWeight: 600, fontSize: "14px" }, text: it.name }),
           snagWhy ? snagChip(snagWhy) : null,
@@ -2734,7 +2734,8 @@ EN.combatView = (function () {
         }
 
         // traits line
-        rowKids.push(el("div.row.wrap", { style: { gap: "5px", marginTop: "6px" } }, norm.traits.map(wTraitChip)));
+        rowKids.push(el("div.row.wrap", { style: { gap: "5px", marginTop: "9px", paddingTop: "8px",
+          borderTop: "1px solid rgba(35,48,68,.6)" } }, norm.traits.map(wTraitChip)));
 
         // Signature Weapons: On Hit effects and area projections stay locked at
         // any proficiency tier until a Skill Focus names this specific weapon.
@@ -2763,7 +2764,13 @@ EN.combatView = (function () {
             [el("span", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "MODS" })].concat(wpChips)));
         }
 
-        kids.push(el("div", { style: { padding: "8px 4px", borderBottom: "1px solid rgba(35,48,68,.5)" } }, rowKids));
+        // same card treatment the Abilities list uses, with the left rail keyed to
+        // what kind of weapon it is so the list reads at a glance
+        var railColor = it.signature ? "var(--flow)"
+                      : isRanged ? "var(--gold)"
+                      : h.thrownItem ? "var(--ember)"
+                      : "var(--accent)";
+        kids.push(el("div.feature", { style: { borderLeftColor: railColor } }, rowKids));
       });
       if (d.lineageUnarmed) {
         var lu = d.lineageUnarmed, luFin = lu.traits && /Finesse/.test(lu.traits);
