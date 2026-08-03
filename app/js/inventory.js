@@ -2830,25 +2830,30 @@ EN.inventoryView = (function () {
         subTab("market", "◉ GRAY MARKET"),
         subTab("workbench", "⚒ WORKBENCH")
       ]),
-      el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
-        el("span.mono", { title: "Glimmer, issued by the Luster Interchange Treasury. What ordinary life costs.",
-          style: { fontSize: "20px", color: "var(--gold)" }, text: fmtG(ch.glimmer || 0) }),
-        amtIn,
-        // Nexus wallet: the high-scrutiny currency (lease buyouts, brokered commissions)
-        el("span.mono", { title: "Nexus tokens, the high-scrutiny currency. Brokered commissions, lease buyouts, favors with a paper trail.",
-          style: { fontSize: "20px", color: "var(--flow)", marginLeft: "6px" }, text: fmtNx(ch.nexus || 0) }),
-        nxIn,
-        // CREDIT / DEBIT act on whichever field you filled (Glimmer or Nexus), then clear
-        el("button.btn.sm", { title: "Credit whichever field you filled: Glimmer (payouts, fenced goods) or Nexus (brokered payouts, favors called in).", style: { color: "var(--success)", borderColor: "var(--success)", marginLeft: "4px" },
-          onclick: function () { ledgerApply(1); } }, "+ CREDIT"),
-        el("button.btn.sm", { title: "Debit whichever field you filled: Glimmer (lifestyle, bribes) or Nexus (buyouts, high-scrutiny buys).", style: { color: "var(--danger)", borderColor: "var(--danger)" },
-          onclick: function () { ledgerApply(-1); } }, "− DEBIT"),
-        el("button.btn.sm" + (_split.open ? ".primary" : ""), { title: "Split a contract payout: fixer's cut off the top, then even shares",
-          onclick: function () { _split.open = !_split.open; EN.app.render(); } }, "÷ SPLIT"),
-        el("button.btn.sm" + (_hh.open ? ".primary" : ""), { title: "Bills: lifestyle, safehouse, leases, Hypercare, licences and debts",
-          style: billsOverdue(ch) ? { color: "var(--danger)", borderColor: "var(--danger)" } : null,
-          onclick: function () { _hh.open = !_hh.open; EN.app.render(); } },
-          (billsOverdue(ch) ? "⚠ " : "") + "▤ BILLS")
+      // wallets on top, ledger controls beneath, so the bar stays compact
+      el("div", { style: { display: "flex", flexDirection: "column", gap: "5px", alignItems: "flex-end" } }, [
+        el("div.row.wrap", { style: { gap: "8px", alignItems: "center", justifyContent: "flex-end" } }, [
+          el("span.mono", { title: "Glimmer, issued by the Luster Interchange Treasury. What ordinary life costs.",
+            style: { fontSize: "20px", color: "var(--gold)" }, text: fmtG(ch.glimmer || 0) }),
+          amtIn,
+          // Nexus wallet: the high-scrutiny currency (lease buyouts, brokered commissions)
+          el("span.mono", { title: "Nexus tokens, the high-scrutiny currency. Brokered commissions, lease buyouts, favors with a paper trail.",
+            style: { fontSize: "20px", color: "var(--flow)", marginLeft: "6px" }, text: fmtNx(ch.nexus || 0) }),
+          nxIn
+        ]),
+        el("div.row.wrap", { style: { gap: "6px", alignItems: "center", justifyContent: "flex-end" } }, [
+          // CREDIT / DEBIT act on whichever field you filled (Glimmer or Nexus), then clear
+          el("button.btn.sm", { title: "Credit whichever field you filled: Glimmer (payouts, fenced goods) or Nexus (brokered payouts, favors called in).", style: { color: "var(--success)", borderColor: "var(--success)" },
+            onclick: function () { ledgerApply(1); } }, "+ CREDIT"),
+          el("button.btn.sm", { title: "Debit whichever field you filled: Glimmer (lifestyle, bribes) or Nexus (buyouts, high-scrutiny buys).", style: { color: "var(--danger)", borderColor: "var(--danger)" },
+            onclick: function () { ledgerApply(-1); } }, "− DEBIT"),
+          el("button.btn.sm" + (_split.open ? ".primary" : ""), { title: "Split a contract payout: fixer's cut off the top, then even shares",
+            onclick: function () { _split.open = !_split.open; EN.app.render(); } }, "÷ SPLIT"),
+          el("button.btn.sm" + (_hh.open ? ".primary" : ""), { title: "Bills: lifestyle, safehouse, leases, Hypercare, licences and debts",
+            style: billsOverdue(ch) ? { color: "var(--danger)", borderColor: "var(--danger)" } : null,
+            onclick: function () { _hh.open = !_hh.open; EN.app.render(); } },
+            (billsOverdue(ch) ? "⚠ " : "") + "▤ BILLS")
+        ])
       ])
     ]));
     if (_split.open) blocks.push(splitterPanel());
