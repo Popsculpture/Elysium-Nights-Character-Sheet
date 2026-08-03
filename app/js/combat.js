@@ -2647,11 +2647,19 @@ EN.combatView = (function () {
             style: { background: "transparent", border: "none", color: wi === equippedNames.length - 1 ? "var(--text4)" : "var(--text3)", cursor: wi === equippedNames.length - 1 ? "default" : "pointer", fontSize: "9px", lineHeight: "1", padding: "1px 3px" } }, "▼")
         ]);
       }
-      function statBox(label, value, color, title, onClick) {
-        return el("div", { title: title || "", onclick: onClick || null,
-          style: { textAlign: "center", flex: "0 0 auto", minWidth: "44px", cursor: onClick ? "pointer" : "default" } }, [
-          el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: label }),
-          el("span.mono", { style: { fontSize: "15px", color: color || "var(--text)", borderBottom: onClick ? "1px dotted currentColor" : "none" }, text: value })
+      /* A stat that rolls something renders as a pressable key; a stat that is
+         just a number (Reach, Range) stays plain text. */
+      function statBox(label, value, color, title, onClick, kind) {
+        if (!onClick) {
+          return el("div", { title: title || "",
+            style: { textAlign: "center", flex: "0 0 auto", minWidth: "44px" } }, [
+            el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: label }),
+            el("span.mono", { style: { fontSize: "15px", color: color || "var(--text)" }, text: value })
+          ]);
+        }
+        return el("div.statbtn" + (kind ? "." + kind : ""), { title: title || "", onclick: onClick }, [
+          el("div.lbl", { text: label }),
+          el("span.mono.val", { style: { color: color || "var(--text)" }, text: value })
         ]);
       }
       equippedNames.forEach(function (wname, wi) {
@@ -2679,10 +2687,7 @@ EN.combatView = (function () {
             style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" } }, "FOCUS +" + h.focusCal) : null,
           h.spec ? el("span.chip", { title: "Specialization: " + h.cat + " (" + h.spec.aspect + "). Crit threat range widens by 1 (19-20), stacking with other crit range sources.",
             style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" } }, "CRIT 19-20") : null,
-          el("span", { style: { fontSize: "10px", color: "var(--text3)", flex: "1 1 auto" }, text: subtype }),
-          el("button.btn.sm", { title: "Roll to hit with " + it.name,
-            style: { color: "var(--ember)", borderColor: "var(--ember)", flex: "0 0 auto" },
-            onclick: function () { openRollTray(attackCtx(it, h)); } }, "ATTACK")
+          el("span", { style: { fontSize: "10px", color: "var(--text3)", flex: "1 1 auto" }, text: subtype })
         ]);
 
         var rowKids = [head];
@@ -2699,10 +2704,10 @@ EN.combatView = (function () {
               el("button.btn.sm", { style: { color: "var(--warn)", borderColor: "var(--warn)", padding: "1px 7px" }, onclick: function () { reloadWeapon(wname); } }, "⟳ RELOAD")
             ]);
           } else {   // can fire something; grey the number when the SELECTED mode is unaffordable
-            hitCell = el("div", { title: "Tap to roll to hit (" + st.mode + " · −" + selCost + ")",
-              style: { textAlign: "center", flex: "0 0 auto", minWidth: "44px", cursor: "pointer", opacity: canSel ? 1 : 0.5 }, onclick: function () { openRollTray(attackCtx(it, h)); } }, [
-              el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "HIT" }),
-              el("span.mono", { title: hitTip, style: { fontSize: "16px", color: canSel ? "var(--ember)" : "var(--danger)", borderBottom: "1px dotted currentColor" }, text: eng.fmtMod(h.total) })
+            hitCell = el("div.statbtn.hit", { title: hitTip + " · Roll to hit (" + st.mode + " \u00b7 \u2212" + selCost + ")",
+              style: { opacity: canSel ? 1 : 0.5 }, onclick: function () { openRollTray(attackCtx(it, h)); } }, [
+              el("div.lbl", { text: "HIT" }),
+              el("span.mono.val", { style: { color: canSel ? "var(--ember)" : "var(--danger)" }, text: eng.fmtMod(h.total) })
             ]);
           }
           var pct = st.cap > 0 ? Math.round(st.cur / st.cap * 100) : 0;
@@ -2716,7 +2721,7 @@ EN.combatView = (function () {
           rowKids.push(el("div.row.wrap", { style: { gap: "12px", alignItems: "center", marginTop: "6px" } }, [
             statBox("RANGE", norm.rangeDisplay, "var(--gold)", it.range || ""),
             hitCell,
-            statBox("DMG", dmgDisplay, "var(--accent)", dmgTip, function () { openDmgTray(damageCtx(it, h)); }),
+            statBox("DMG", dmgDisplay, "var(--accent)", dmgTip, function () { openDmgTray(damageCtx(it, h)); }, "dmg"),
             ammoCell
           ]));
 
@@ -2750,11 +2755,11 @@ EN.combatView = (function () {
           // melee / thrown: Range · Hit · Damage (no ammo). HIT opens the roll tray.
           rowKids.push(el("div.row.wrap", { style: { gap: "14px", alignItems: "center", marginTop: "6px" } }, [
             statBox(h.melee ? "REACH" : "RANGE", norm.rangeDisplay, "var(--gold)", it.range || ""),
-            el("div", { title: "Tap to roll to hit · " + hitTip, style: { textAlign: "center", flex: "0 0 auto", minWidth: "44px", cursor: "pointer" }, onclick: function () { openRollTray(attackCtx(it, h)); } }, [
-              el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "HIT" }),
-              el("span.mono", { style: { fontSize: "15px", color: "var(--ember)", borderBottom: "1px dotted var(--ember)" }, text: eng.fmtMod(h.total) })
+            el("div.statbtn.hit", { title: "Roll to hit · " + hitTip, onclick: function () { openRollTray(attackCtx(it, h)); } }, [
+              el("div.lbl", { text: "HIT" }),
+              el("span.mono.val", { style: { color: "var(--ember)" }, text: eng.fmtMod(h.total) })
             ]),
-            statBox("DMG", dmgDisplay, "var(--accent)", dmgTip, function () { openDmgTray(damageCtx(it, h)); })
+            statBox("DMG", dmgDisplay, "var(--accent)", dmgTip, function () { openDmgTray(damageCtx(it, h)); }, "dmg")
           ]));
         }
 
