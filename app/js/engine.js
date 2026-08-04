@@ -471,7 +471,7 @@ EN.engine = (function () {
     "Tuned Synapses":        { initEdge: true, speedFirstRound: 2 },
     "Synthetic Musculature": { unarmed: { die: "1d6", type: "Bludgeoning" } },
     "Briar Strike":          { unarmed: { die: "1d6", type: "Piercing/Slashing", traits: "Light, Finesse" } },
-    "Brutal Frame":          { unarmed: { die: "1d6", type: "Bludgeoning", note: "+1d4 on hit" } },
+    "Brutal Frame":          { unarmed: { die: "1d6", type: "Bludgeoning", note: "+1d4 Bludgeoning or Slashing on a hit with this die" } },
     "Butcher Spurs":         { unarmed: { die: "1d6", type: "Slashing", note: "−2 target Speed on hit" } },
     "Scavenger's Maw":       { unarmed: { die: "1d6", type: "Piercing", note: "bite; +1 Vitality on hit" } }
   };

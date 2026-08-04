@@ -104,7 +104,7 @@ EN.talents = [
     name: "Street Scrapper",
     category: "Combat & Weapon Mastery",
     requirements: "",
-    text: "Accustomed to the rough-and-tumble fighting using whatever weapons happen to be at hand, you gain the following benefits:\n• Increase your Body score by 1, to a maximum of 20.\n• You add your Simple Weapons Proficiency Bonus to attack rolls with improvised weapons, and you do not roll with Snag when wielding them.\n• Your unarmed strikes deal 1d4 Bludgeoning damage.\n• When you hit a Target with an unarmed strike or an improvised weapon on your turn, you can use a Swift Action to attempt to Grapple the Target.\n\n**Upgrade (Level 6+):** Your unarmed strike damage increases to 1d8, and improvised weapons you wield are treated as Proficient martial weapons that deal an additional 1d4 damage of their normal type. You also gain Resistance to damage from improvised weapons used against you."
+    text: "Accustomed to the rough-and-tumble fighting using whatever weapons happen to be at hand, you gain the following benefits:\n• Increase your Body score by 1, to a maximum of 20.\n• You add your Simple Weapons Proficiency Bonus to attack rolls with improvised weapons, and you do not roll with Snag when wielding or throwing them.\n• Your unarmed strikes deal 1d4 Bludgeoning damage.\n• When you hit a Target with an unarmed strike or an improvised weapon on your turn, you can use a Swift Action to attempt to Grapple the Target.\n\n**Upgrade (Level 6+):** Your unarmed strike damage increases to 1d8, and you deal an additional 1d4 damage with improvised weapons. You also gain Resistance to Slashing, Bludgeoning, and Piercing damage from improvised weapons used against you."
   },
 
   // ===== Tactics & Hybrid Fighting =====

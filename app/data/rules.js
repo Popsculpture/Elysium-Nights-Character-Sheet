@@ -259,12 +259,12 @@ EN.rules = {
       "Melee: roll an in-combat d20 (or out-of-combat Dice Pool) + your Body modifier + any relevant Skill.",
       "Thrown: roll an in-combat d20 (or out-of-combat Dice Pool) + your Body or Agility modifier + any relevant Skill."
     ],
-    damageNote: "Pick a base die and a damage type (Bludgeoning, Slashing, or Piercing) from the object's shape and heft. The GM may shift the die one step either way for exceptionally dense or soft materials.",
+    damageNote: "Size sets the die. Balance sets the trait: anything that sloshes, sags, squirms, or carries its weight at the wrong end is Unwieldy at any size. Pick a base die and a damage type (Bludgeoning, Slashing, or Piercing) from the object's shape and heft. The GM may shift the die one step either way for exceptionally dense or soft materials.",
     damage: [
       { size: "Tiny",       examples: "Bottle, mug, wrench, brick",          die: "1d4" },
       { size: "One-Handed", examples: "Pipe, chair leg, crowbar, laptop",    die: "1d6" },
       { size: "Two-Handed", examples: "Barstool, small sign, tool box",      die: "1d8" },
-      { size: "Heavy",      examples: "Cinder block, street sign, engine block", die: "1d10 (gains Heavy and Unwieldy)" }
+      { size: "Heavy",      examples: "Cinder block, street sign, engine block", die: "1d10 (gains Heavy)" }
     ],
     thrownNote: "When you throw something that was never meant to fly, set its range by weight.",
     thrown: [
@@ -278,7 +278,7 @@ EN.rules = {
     ],
     specialEffects: "On a Critical hit or a high Margin of success, the GM may rule that an improvised weapon inflicts a fitting condition: Bleeding from a shattered bottle, Staggered from a slab of concrete. When this happens, the Target makes a relevant Body or Wits save to resist it.",
     peopleIntro: "First you have to grapple them. An Unconscious, Restrained, or willing Target can automatically be grappled as a Swift Action, the same as grabbing any heavy object. A conscious, unwilling Target has to be Grappled by force first, and on a success they are yours to misuse until they manage to break free.",
-    wieldedBody: "A wielded body is a Heavy improvised weapon: 1d10 Bludgeoning, Heavy, Unwieldy. Unwieldy means these attacks always carry Snag; swinging a person is not precision work. Both the Target and the body you swung take the rolled damage.",
+    wieldedBody: "A wielded body is a Heavy improvised weapon: 1d10 Bludgeoning, Heavy. It is Unwieldy too, since people are heavy, badly balanced, and rarely cooperative. Unwieldy means every attack with them carries Snag; swinging a person is not precision work. Both the Target and the body you swung take the rolled damage. Using a person as a weapon is extremely hard on the person.",
     meatShield: [
       "A shield smaller than you grants Half Cover (+2 Defense). One your Size or larger grants Three-Quarter Cover (+5 Defense), against attacks that have to pass through them.",
       "Any attack the cover turns from a hit into a miss strikes the shield instead. Roll that attack's full damage against the meat shield you are holding.",
