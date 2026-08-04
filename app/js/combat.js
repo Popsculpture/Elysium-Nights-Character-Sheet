@@ -1320,15 +1320,45 @@ EN.combatView = (function () {
       usesRow
     ]);
   }
-  function attackRow(name, hit, note, color, snagWhy, onClick) {
+  // `extra` is an optional node that wraps onto its own line inside the same
+  // bordered band as the row (the unarmed strike picker rides there).
+  function attackRow(name, hit, note, color, snagWhy, onClick, extra) {
     return el("div.row.wrap", { style: { gap: "10px", alignItems: "center", padding: "8px 4px", borderBottom: "1px solid rgba(35,48,68,.5)" } }, [
       el("span", { style: { flex: 1, minWidth: "130px", fontWeight: 600 }, text: name }),
       snagWhy ? snagChip(snagWhy) : null,
       el("span.mono", { onclick: onClick || null, title: onClick ? "Tap to roll to hit" : "",
         style: { fontSize: "18px", color: color || "var(--accent)", minWidth: "48px", textAlign: "center",
           cursor: onClick ? "pointer" : "default", borderBottom: onClick ? "1px dotted currentColor" : "none" }, text: hit }),
-      el("span.help", { style: { margin: 0, flex: 2 }, text: note })
+      el("span.help", { style: { margin: 0, flex: 2 }, text: note }),
+      extra || null
     ]);
+  }
+
+  /* ---------- unarmed strike picker ----------
+     "If more than one effect sets your unarmed strike damage, pick which one you
+     are using when you attack." The choice belongs to the player, so every setter
+     they have is listed and the live one is marked. The plain 1 + Body Modifier
+     strike is one of the entries, because a bite or a spur kick is not always
+     what you want to throw. With nothing but that base there is no choice to
+     make and no picker to draw. */
+  var UNARMED_KIND = { lineage: "Natural Weapon", chrome: "Chrome", talent: "Talent" };
+  function unarmedPicker(opts, active, base) {
+    if (!opts.length) return null;
+    var entries = [{ pick: eng.unarmedBasePick, label: "Unarmed Strike", note: null, on: !active,
+      dmg: base.flat + " " + base.type + " + Body mod" }]
+      .concat(opts.map(function (o) {
+        return { pick: o.pick, label: o.label || o.source, note: o.note, on: !!active && active.pick === o.pick,
+          dmg: o.die + " " + o.type + (o.traits ? " (" + o.traits + ")" : "") };
+      }));
+    return el("div.row.wrap", { style: { gap: "5px", marginTop: "7px", alignItems: "center", flex: "1 1 100%" } },
+      [el("span", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "STRIKE" })]
+        .concat(entries.map(function (e) {
+          return el("span.chip" + (e.on ? ".on" : ""), {
+            title: e.dmg + (e.note ? " · " + e.note : "") + (e.on ? "" : " · tap to strike with this instead"),
+            style: { fontSize: "8.5px", cursor: "pointer" },
+            onclick: function () { store.update(function (c) { c.unarmedPick = e.pick; }); }
+          }, e.label + " · " + e.dmg);
+        })));
   }
 
   /* ---------- equipped-weapon attacks: normalization + ammo/fire-mode ----------
@@ -2847,35 +2877,40 @@ EN.combatView = (function () {
         if (kicking) _recoil = null;
         kids.push(el("div.feature" + (kicking ? ".recoil" : ""), { style: { borderLeftColor: railColor } }, rowKids));
       });
-      if (d.lineageUnarmed) {
-        var lu = d.lineageUnarmed, luFin = lu.traits && /Finesse/.test(lu.traits);
+      // Unarmed strike. Once anything sets the die it is a real attack you carry
+      // and the row is always listed; with nothing set it is the bare fallback,
+      // so it only shows when there is no weapon in hand.
+      var uOpts = d.unarmedOptions || [];
+      if (uOpts.length || !equippedNames.length) {
+        var uBase = d.unarmedBase;
+        var lu = d.unarmed, luFin = !!(lu && lu.traits && /Finesse/.test(lu.traits));
         var luAttr = luFin ? Math.max(d.attributes.BOD.mod, d.attributes.AGI.mod) : d.attributes.BOD.mod;
         // "Unarmed strikes use your Simple Weapons Proficiency Bonus, and follow the
         // usual Untrained rule if you lack it."
         var swTier = eng.effectiveGearTier(ch, "weapons", "Simple Weapons");
         var swProf = R.profTiers[swTier].d20, swUntrained = swTier === "untrained";
         var luMod = luAttr + swProf;
-        var luName = "Natural Weapon · " + lu.source;
+        var luKind = lu ? (UNARMED_KIND[lu.kind] || "Natural Weapon") : "Unarmed Strike";
+        var luName = lu ? luKind + " · " + lu.source : "Unarmed Strike";
         var luAttrLabel = (luFin ? "Body/Agility" : "Body") + " Modifier";
         var luSnag = atkSnag || swUntrained;
-        // proficiency rides the attack roll only; damage keeps the attribute modifier
-        var luDmg = { weaponName: luName, subtype: "NATURAL WEAPON", dice: lu.die, types: [lu.type],
-          flat: luAttr, flatLabel: luAttrLabel, versatile: null, cheapEligible: false, cheapDice: d.caliber || 1, crit: false };
-        kids.push(attackRow(luName, eng.fmtMod(luMod), "d20 + " + luAttrLabel + " + Simple Weapons Proficiency Bonus · " + lu.die + " " + lu.type + (lu.traits ? " (" + lu.traits + ")" : "") + " + mod" + (lu.note ? " · " + lu.note : "") + (swUntrained ? " · Untrained (Simple Weapons): Snag" : ""), "var(--ember)", luSnag,
-          (function (nm, dmg) { return function () { openRollTray(simpleAttackCtx(nm, "NATURAL WEAPON · " + String(lu.type).toUpperCase(),
+        // proficiency rides the attack roll only; damage keeps the attribute
+        // modifier. The base strike is a flat 1 and not a die, so it has nothing
+        // to roll and opens no damage tray; the row states its damage instead.
+        var luDmg = lu
+          ? { weaponName: luName, subtype: luKind.toUpperCase(), dice: lu.die, types: [lu.type],
+              flat: luAttr, flatLabel: luAttrLabel, versatile: null, cheapEligible: false, cheapDice: d.caliber || 1, crit: false }
+          : null;
+        var luDmgText = lu ? lu.die + " " + lu.type + (lu.traits ? " (" + lu.traits + ")" : "") + " + mod"
+                           : uBase.flat + " " + uBase.type + " + Body mod";
+        var luSubtype = (lu ? luKind + " · " + lu.type : "UNARMED STRIKE").toUpperCase();
+        kids.push(attackRow(luName, eng.fmtMod(luMod), "d20 + " + luAttrLabel + " + Simple Weapons Proficiency Bonus · " + luDmgText + (lu && lu.note ? " · " + lu.note : "") + (swUntrained ? " · Untrained (Simple Weapons): Snag" : ""), "var(--ember)", luSnag,
+          (function (nm, dmg) { return function () { openRollTray(simpleAttackCtx(nm, luSubtype,
             [{ label: luAttrLabel, value: luAttr }].concat(swProf ? [{ label: "Simple Weapons Proficiency Bonus", value: swProf }] : []),
-            { snag: luSnag, dmg: dmg })); }; })(luName, luDmg)));
+            { snag: luSnag, dmg: dmg })); }; })(luName, luDmg),
+          unarmedPicker(uOpts, lu, uBase)));
       }
       if (!equippedNames.length) {
-        if (!d.lineageUnarmed) {
-          var uTier = eng.effectiveGearTier(ch, "weapons", "Simple Weapons");
-          var uProf = R.profTiers[uTier].d20, uUntrained = uTier === "untrained";
-          var uBod = d.attributes.BOD.mod, uSnag = atkSnag || uUntrained;
-          kids.push(attackRow("Unarmed Strike", eng.fmtMod(uBod + uProf), "d20 + Body Modifier + Simple Weapons Proficiency Bonus · unarmed damage + Body mod" + (uUntrained ? " · Untrained (Simple Weapons): Snag" : ""), "var(--ember)", uSnag,
-            function () { openRollTray(simpleAttackCtx("Unarmed Strike", "UNARMED STRIKE",
-              [{ label: "Body Modifier", value: uBod }].concat(uProf ? [{ label: "Simple Weapons Proficiency Bonus", value: uProf }] : []),
-              { snag: uSnag })); }));
-        }
         kids.push(el("p.help", { style: { margin: "4px 0 6px" }, text: "No weapons equipped; hit ⚔ EQUIP on a weapon in Inventory → Stash to list it here." }));
       }
       if (ch.class === "codebreaker") {

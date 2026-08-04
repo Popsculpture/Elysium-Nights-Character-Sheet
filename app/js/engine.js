@@ -460,8 +460,10 @@ EN.engine = (function () {
   }
 
   // Lineage features that change a derived number (DR, Speed, Initiative) or the
-  // unarmed strike, keyed by feature name. derive() folds these into the sheet so
-  // the player does not have to hand-track them. Source values per app/data/species.js.
+  // unarmed strike, keyed by feature name. derive() folds the numbers into the
+  // sheet so the player does not have to hand-track them; the `unarmed` entries
+  // are read by unarmedOptions() instead, because those are a choice and not a
+  // sum. Source values per app/data/species.js.
   var LINEAGE_MECH = {
     "Ironbark Carapace":     { dr: 2 },
     "Ironhide Tusks":        { dr: 1 },
@@ -476,7 +478,7 @@ EN.engine = (function () {
     "Scavenger's Maw":       { unarmed: { die: "1d6", type: "Piercing", note: "bite; +1 Vitality on hit" } }
   };
   function lineageMechanics(ch) {
-    var out = { dr: 0, speed: 0, speedFirstRound: 0, initCaliber: false, initEdge: false, unarmed: null };
+    var out = { dr: 0, speed: 0, speedFirstRound: 0, initCaliber: false, initEdge: false };
     activeLineageFeatures(ch).forEach(function (fn) {
       var m = LINEAGE_MECH[fn]; if (!m) return;
       if (m.dr) out.dr += m.dr;
@@ -484,9 +486,116 @@ EN.engine = (function () {
       if (m.speedFirstRound) out.speedFirstRound += m.speedFirstRound;   // conditional: first round of combat only
       if (m.initCaliber) out.initCaliber = true;
       if (m.initEdge) out.initEdge = true;
-      if (m.unarmed) out.unarmed = { source: fn, die: m.unarmed.die, type: m.unarmed.type, traits: m.unarmed.traits || null, note: m.unarmed.note || null };
+      // m.unarmed is NOT folded here: unarmed die-setters are a player choice,
+      // not a running total. unarmedOptions() collects them all instead.
     });
     return out;
+  }
+
+  /* ---- unarmed strike ----------------------------------------------------
+     "If more than one effect sets your unarmed strike damage, pick which one you
+     are using when you attack. You get that effect's die, its damage type, and
+     whatever else rides along with it. You do not weld two of them into one
+     punch." So every setter the character currently has is collected as an
+     option and exactly one of them resolves. Nothing here merges dice, and
+     nothing here prefers the largest die: the pick belongs to the player.
+     Standing benefits that are not about punching (Synthetic Musculature's
+     Encumbrance Threshold, a Cyberarm's mod slots) do not ride on the pick and
+     keep resolving through their own paths.
+     With nothing set at all: "deal 1 Bludgeoning damage plus your Body Modifier",
+     which is a flat 1 and not a die. */
+  var UNARMED_BASE = { die: null, flat: 1, type: "Bludgeoning", note: "1 Bludgeoning plus your Body Modifier" };
+  // reserved ch.unarmedPick value: the player is throwing a plain punch rather
+  // than using any of the effects available to them (a bite that eats the target
+  // or a kick that carves them up is not always what you want).
+  var UNARMED_BASE_PICK = "base";
+  // one die size up, for an effect that steps an existing die instead of setting one
+  var DIE_STEP = { "1d4": "1d6", "1d6": "1d8", "1d8": "1d10", "1d10": "1d12" };
+  // Installed chrome that sets the unarmed die, keyed by cyberware key then by
+  // tier. Source values per app/data/cyberware.js.
+  var CYBER_UNARMED = {
+    skeleton: { type: "Bludgeoning", tiers: {
+      Streetware: { die: "1d6" },
+      Brandware:  { die: "1d6" },
+      Blackware:  { die: "1d8", note: "one strike per round can be made as a Swift Action" } } },
+    cyberarm: { type: "Bludgeoning", tiers: {
+      Streetware: { die: "1d6", note: "the cyberarm only" },
+      Brandware:  { die: "1d6", note: "the cyberarm only" },
+      Blackware:  { die: "1d8", note: "the cyberarm only; cannot be disarmed, Edge on grapples with it" } } },
+    handRazors: { type: "Slashing", tiers: {
+      Streetware: { die: "1d6", note: "Swift Action to extend; no Armor Piercing, Snag on Stealth the turn you deploy" },
+      Brandware:  { die: "1d6", note: "Swift Action to extend; Armor Piercing 1" },
+      Blackware:  { die: "1d8", note: "Swift Action to extend; Armor Piercing 2; a crit strips 1 DR from worn armor" } } }
+  };
+  // Talents that set the unarmed die, keyed by talent key. upgradeDie applies
+  // once the Level 6+ Upgrade has been unlocked with a Universal Upgrade slot.
+  // Source values per app/data/talents.js.
+  var TALENT_UNARMED = {
+    "street-scrapper": { die: "1d4", upgradeDie: "1d8", type: "Bludgeoning",
+      note: "Swift Action to Grapple after you hit with it" }
+  };
+  // Every effect currently available to the character that SETS the unarmed die,
+  // as [{source, kind, die, type, traits, note}].
+  function unarmedOptions(ch) {
+    var out = [];
+    var linFeats = activeLineageFeatures(ch);
+    var cyber = installedCyberware(ch);
+    // Open Architecture pairing: with Synthetic Musculature and an installed
+    // Reinforced Skeleton, "the Engineered Baseline effect ends", so the lineage
+    // feature stops offering a die of its own and the implant's die steps up one
+    // size. The Encumbrance and grappling halves of the feature are untouched.
+    // The pairing only counts when the skeleton is a piece we can actually read a
+    // die off. A hand-marked entry from the Open Architecture "+ CHROME" toggle
+    // carries no key, so it yields no option: treating it as integrated there
+    // would retire Synthetic Musculature's die and put nothing in its place,
+    // leaving the character with no option at all.
+    var skeletonIntegrated = linFeats.indexOf("Open Architecture") !== -1 &&
+      linFeats.indexOf("Synthetic Musculature") !== -1 &&
+      cyber.some(function (cw) { return cw && cw.key === "skeleton" && CYBER_UNARMED[cw.key]; });
+    linFeats.forEach(function (fn) {
+      var m = LINEAGE_MECH[fn];
+      if (!m || !m.unarmed) return;
+      if (fn === "Synthetic Musculature" && skeletonIntegrated) return;
+      out.push({ source: fn, pick: fn, label: fn, kind: "lineage", die: m.unarmed.die,
+        type: m.unarmed.type, traits: m.unarmed.traits || null, note: m.unarmed.note || null });
+    });
+    cyber.forEach(function (cw) {
+      var spec = cw && CYBER_UNARMED[cw.key];
+      if (!spec) return;
+      // a legacy hand-entered piece carries no tier; read it at its lowest one
+      var t = spec.tiers[cw.tier] || spec.tiers.Streetware;
+      var die = t.die;
+      if (cw.key === "skeleton" && skeletonIntegrated) die = DIE_STEP[die] || die;
+      var nm = cw.base || cw.name;
+      // Two installs of the same piece at different tiers are different effects,
+      // not one choice, so the tier and side are part of what is being chosen
+      // between. Keying the pick on the name alone would make the second one
+      // unreachable, which is the exact bug this function exists to remove.
+      var qual = (cw.tier ? " · " + cw.tier : "") + (cw.side ? " (" + cw.side + ")" : "");
+      out.push({ source: nm, pick: nm + qual, label: nm + qual, kind: "chrome", die: die,
+        type: spec.type, traits: null, note: t.note || null });
+    });
+    var upKeys = talentUpgradeKeys(ch);
+    activeTalents(ch).forEach(function (t) {
+      var spec = TALENT_UNARMED[t.talent.key];
+      if (!spec) return;
+      var upgraded = upKeys.indexOf(t.talent.key) !== -1;
+      out.push({ source: t.talent.name, pick: t.talent.name, label: t.talent.name, kind: "talent",
+        die: (upgraded && spec.upgradeDie) || spec.die, type: spec.type,
+        traits: null, note: spec.note || null });
+    });
+    // identical installs (a matched pair of arms) collapse; differing ones do not
+    var seen = {};
+    return out.filter(function (o) { if (seen[o.pick]) return false; seen[o.pick] = true; return true; });
+  }
+  // The option the character is striking with: their stored pick while it is
+  // still available, otherwise the first option. null means the base strike,
+  // either because they picked it or because they have no options at all.
+  function resolveUnarmed(ch, options) {
+    var pick = ch && ch.unarmedPick;
+    if (pick === UNARMED_BASE_PICK) return null;
+    var chosen = options.filter(function (o) { return o.pick === pick; })[0];
+    return chosen || options[0] || null;
   }
   // Talents the character has taken via Universal Upgrades (type "talent"), resolved
   // against EN.talents. Folded into d.features so the play sheet and print sheet
@@ -1055,6 +1164,9 @@ EN.engine = (function () {
     var linFeats = activeLineageFeatures(ch);
     if (linFeats.indexOf("Dermal Plating") !== -1) defenseAttr = "BOD";
     var linMech = lineageMechanics(ch);
+    /* unarmed strike: every effect that sets the die, plus the one in use */
+    var unarmedOpts = unarmedOptions(ch);
+    var unarmedActive = resolveUnarmed(ch, unarmedOpts);
     var defLoadout = defensiveLoadout(ch);
     var defense = defenseBase + attributes[defenseAttr].mod + (defLoadout.shieldDef || 0);
     var speed = Math.max(3, 6 + agiMod) + (cyberFlat.speed || 0) + (defLoadout.speedPenalty || 0) + linMech.speed;
@@ -1266,7 +1378,11 @@ EN.engine = (function () {
       lineageSpeedFirstRound: linMech.speedFirstRound,
       lineageInit: { caliber: linMech.initCaliber ? cal : 0, edge: linMech.initEdge },
       encumbrance: enc,
-      lineageUnarmed: linMech.unarmed,
+      // `unarmed` is the resolved pick (null = the plain 1 + Body Modifier
+      // strike); `lineageUnarmed` is the older name for the same object, kept so
+      // any consumer still reading it keeps working.
+      unarmed: unarmedActive, lineageUnarmed: unarmedActive,
+      unarmedOptions: unarmedOpts, unarmedBase: UNARMED_BASE,
       shieldDef: defLoadout.shieldDef, shieldBlockDie: defLoadout.shieldBlockDie,
       wardDie: defLoadout.wardDie, defenseGear: defLoadout,
       chromeTax: chromeTax, platformSlotted: platformSlotted(ch),
@@ -1576,6 +1692,7 @@ EN.engine = (function () {
     gearFloorTier: gearFloorTier, effectiveGearTier: effectiveGearTier,
     sizeFromHeightFt: sizeFromHeightFt, lineageHeightFt: lineageHeightFt,
     activeLineageFeatures: activeLineageFeatures, splitTalentText: splitTalentText, leaseLapsed: leaseLapsed, itemLoad: itemLoad,
+    unarmedBasePick: UNARMED_BASE_PICK,
     isStackableItem: isStackableItem, isStackableName: isStackableName, entryKey: entryKey, findEntry: findEntry,
     isCarryGear: isCarryGear, rackLimit: rackLimit, rackState: rackState, rackTargets: rackTargets,
     itemSlots: itemSlots, slotConflicts: slotConflicts,
