@@ -44,7 +44,7 @@ EN.briefs = {
   "Expanded Overdrive": "Learn two more Overdrive Maneuvers",
   "Shrug It Off": "Auto-succeed a save vs Stunned/Paralyzed/Confused, taking unresistable Caliber Vitality damage",
   "Adrenaline Engine": "Regain 1 Overdrive on a Natural 20 attack or once per round when you take Wound damage",
-  "The Walking Anvil": "Improvised Weapon proficiency; in Medium/Heavy/Shield, Edge vs forced movement/Prone; Wrecking Ball/Clear the Path with Heavy/Improvised/Shield shove +1",
+  "The Walking Anvil": "Improvised weapons step up one damage die (max 1d12); in Medium/Heavy/Shield, Edge vs forced movement/Prone; Wrecking Ball/Clear the Path with Heavy/Improvised/Shield shove +1",
   "Immovable": "Impulse + 1 Overdrive: refuse forced movement or Prone; source in reach takes Body damage; also anchors an adjacent ally, and foes shoved into you stop and eat the full 1d6/space",
   "Unstoppable Momentum": "Spend 2 Overdrive for 1 min: physical Resistance, unslowable; lose Caliber Vigor/Vitality each turn",
   "Earthbreaker": "Leap within 6; enemies within 4 Body-save or 6d8+Body Bludgeoning, pushed 2, Prone; creates Difficult Terrain, wrecks Cover",

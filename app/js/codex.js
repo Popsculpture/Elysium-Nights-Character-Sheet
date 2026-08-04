@@ -257,8 +257,26 @@ EN.codexView = (function () {
       var kids = [];
       function bullets(a) { return (a || []).map(function (x) { return "\u2022 " + x; }).join("\n"); }
       kids.push(ruleBlock("Using Improvised Weapons", IW.intro + "\n\n" + bullets(IW.using)));
-      kids.push(ruleBlock("Improvised Damage", IW.damageNote + "\n\n"
-        + (IW.damage || []).map(function (d) { return d.size + " | " + d.die + " | " + d.examples; }).join("\n")));
+      /* The Walking Anvil steps every improvised die up one, capped at 1d12. The
+         table is the only place improvised damage is stated, so a Juggernaut who
+         reads it here would otherwise get the wrong number every time. */
+      var anvil = (function () {
+        var c = EN.store && EN.store.active();
+        return !!(c && c.subclass === "juggernaut");   // stored as the subclass key, not its display name
+      })();
+      var LADDER = ["1d4", "1d6", "1d8", "1d10", "1d12"];
+      function stepUp(die) {
+        var i = LADDER.indexOf(String(die).match(/^\d*d\d+/) ? String(die).match(/^\d*d\d+/)[0] : die);
+        if (i < 0 || i >= LADDER.length - 1) return null;
+        return LADDER[i + 1];
+      }
+      kids.push(ruleBlock("Improvised Damage", IW.damageNote
+        + (anvil ? "\n\nThe Walking Anvil steps each of these up one die, to a maximum of 1d12. Your dice are shown after the arrow." : "")
+        + "\n\n"
+        + (IW.damage || []).map(function (d) {
+            var up = anvil ? stepUp(d.die) : null;
+            return d.size + " | " + d.die + (up ? " → " + up : "") + " | " + d.examples;
+          }).join("\n")));
       kids.push(ruleBlock("Improvised Thrown Weapons", IW.thrownNote + "\n\n"
         + (IW.thrown || []).map(function (d) { return d.kind + " | " + d.range + " | " + d.examples; }).join("\n")));
       kids.push(ruleBlock("Desperation Attacks", bullets(IW.desperation)));
