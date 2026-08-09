@@ -1335,30 +1335,72 @@ EN.combatView = (function () {
   }
 
   /* ---------- unarmed strike picker ----------
-     "If more than one effect sets your unarmed strike damage, pick which one you
-     are using when you attack." The choice belongs to the player, so every setter
-     they have is listed and the live one is marked. The plain 1 + Body Modifier
-     strike is one of the entries, because a bite or a spur kick is not always
-     what you want to throw. With nothing but that base there is no choice to
-     make and no picker to draw. */
+     "If two replacers apply, the player chooses one per attack." The choice
+     belongs to the player, so every replacer they have is listed on a STRIKE row
+     and the live one is marked. The plain 1 + Body Modifier strike is one of the
+     entries, because a bite or a spur kick is not always what you want to throw.
+     Increases are NOT a choice, so they get their own row: one chip per source
+     and a final chip spelling out the ladder walk, so a player looking at 1d10
+     can see the three effects that got them there. Riders hang off a third row.
+     With nothing to choose and nothing to explain there is no picker to draw. */
   var UNARMED_KIND = { lineage: "Natural Weapon", chrome: "Chrome", talent: "Talent" };
-  function unarmedPicker(opts, active, base) {
-    if (!opts.length) return null;
-    var entries = [{ pick: eng.unarmedBasePick, label: "Unarmed Strike", note: null, on: !active,
-      dmg: base.flat + " " + base.type + " + Body mod" }]
-      .concat(opts.map(function (o) {
-        return { pick: o.pick, label: o.label || o.source, note: o.note, on: !!active && active.pick === o.pick,
-          dmg: o.die + " " + o.type + (o.traits ? " (" + o.traits + ")" : "") };
-      }));
+  // one chip row with the little all-caps label down its left
+  function unarmedRow(label, chips) {
     return el("div.row.wrap", { style: { gap: "5px", marginTop: "7px", alignItems: "center", flex: "1 1 100%" } },
-      [el("span", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "STRIKE" })]
-        .concat(entries.map(function (e) {
-          return el("span.chip" + (e.on ? ".on" : ""), {
-            title: e.dmg + (e.note ? " · " + e.note : "") + (e.on ? "" : " · tap to strike with this instead"),
-            style: { fontSize: "8.5px", cursor: "pointer" },
-            onclick: function () { store.update(function (c) { c.unarmedPick = e.pick; }); }
-          }, e.label + " · " + e.dmg);
-        })));
+      [el("span", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: label })].concat(chips));
+  }
+  function unarmedPicker(strike, base) {
+    var reps = strike.replacers, inc = strike.increases, riders = strike.riders;
+    if (!reps.length && !inc.count && !riders.length && !strike.reach.spaces) return null;
+    var rows = [];
+    // STRIKE: the replacer choice. One replacer plus the bare punch is still a
+    // real choice, so the row draws whenever there is anything to pick.
+    if (reps.length) {
+      // Every chip shows what THAT pick would actually deal, increases included.
+      // Advertising the replacer's own die would print 1d6 next to a strike that
+      // lands 1d12, and would print a flat 1 for a bare punch that steps to a die.
+      var steps = inc.count;
+      var baseStepped = eng.stepDie(null, steps);
+      var entries = [{ pick: eng.unarmedBasePick, label: "Unarmed Strike", note: null, on: !strike.replacer,
+        dmg: (baseStepped ? baseStepped : base.flat) + " " + base.type }]
+        .concat(reps.map(function (o) {
+          return { pick: o.pick, label: o.label || o.source, note: o.note,
+            on: !!strike.replacer && strike.replacer.pick === o.pick,
+            dmg: eng.stepDie(o.die, steps) + " " + o.type + (o.traits ? " (" + o.traits + ")" : "") };
+        }));
+      rows.push(unarmedRow("STRIKE", entries.map(function (e) {
+        return el("span.chip" + (e.on ? ".on" : ""), {
+          title: e.dmg + (e.note ? " · " + e.note : "") + (e.on ? "" : " · tap to strike with this instead"),
+          style: { fontSize: "8.5px", cursor: "pointer" },
+          onclick: function () { store.update(function (c) { c.unarmedPick = e.pick; }); }
+        }, e.label + " · " + e.dmg);
+      })));
+    }
+    // STEPS: why the die is what it is. The last chip walks the ladder from the
+    // replacer's own die (or from nothing) to the die actually rolled.
+    if (inc.count) {
+      var chips = inc.sources.map(function (s) {
+        return el("span.chip", { title: s.label + ": +" + s.steps + " die size" + (s.steps === 1 ? "" : "s") + (s.note ? " · " + s.note : ""),
+          style: { fontSize: "8.5px", color: "var(--gold)", borderColor: "var(--gold)" } },
+          s.label + " +" + s.steps);
+      });
+      chips.push(el("span.chip.on", {
+        title: "Increases step the die up 1d4 to 1d6 to 1d8 to 1d10 to 1d12, they stack, and nothing caps how many apply. The ladder itself stops at 1d12.",
+        style: { fontSize: "8.5px" } },
+        (strike.baseDie || "no die") + " to " + strike.die + " (" + inc.count + " step" + (inc.count === 1 ? "" : "s") + ")"));
+      rows.push(unarmedRow("STEPS", chips));
+    }
+    // PLUS: dice that ride alongside, and reach, which is not damage at all
+    var plus = riders.map(function (r) {
+      return el("span.chip", { title: r.label + (r.when ? " · " + r.when : "") + (r.note ? " · " + r.note : ""),
+        style: { fontSize: "8.5px", color: "var(--ember)", borderColor: "var(--ember)" } },
+        "+" + r.damage + " · " + r.label);
+    });
+    if (strike.reach.spaces) plus.push(el("span.chip", { title: strike.reach.sources.join(" + ") + ": extra reach, not extra damage",
+      style: { fontSize: "8.5px", color: "var(--accent)", borderColor: "var(--accent)" } },
+      "+" + strike.reach.spaces + " reach"));
+    if (plus.length) rows.push(unarmedRow("PLUS", plus));
+    return el("div", { style: { flex: "1 1 100%" } }, rows);
   }
 
   /* ---------- equipped-weapon attacks: normalization + ammo/fire-mode ----------
@@ -2877,13 +2919,13 @@ EN.combatView = (function () {
         if (kicking) _recoil = null;
         kids.push(el("div.feature" + (kicking ? ".recoil" : ""), { style: { borderLeftColor: railColor } }, rowKids));
       });
-      // Unarmed strike. Once anything sets the die it is a real attack you carry
-      // and the row is always listed; with nothing set it is the bare fallback,
-      // so it only shows when there is no weapon in hand.
-      var uOpts = d.unarmedOptions || [];
-      if (uOpts.length || !equippedNames.length) {
+      // Unarmed strike. Once anything replaces, steps, or rides on the die it is a
+      // real attack you carry and the row is always listed; with nothing on it at
+      // all it is the bare fallback, so it only shows with no weapon in hand.
+      var uStrike = d.unarmed;
+      if (uStrike.replacers.length || uStrike.increases.count || uStrike.riders.length || !equippedNames.length) {
         var uBase = d.unarmedBase;
-        var lu = d.unarmed, luFin = !!(lu && lu.traits && /Finesse/.test(lu.traits));
+        var lu = uStrike.replacer, luFin = !!(uStrike.traits && /Finesse/.test(uStrike.traits));
         var luAttr = luFin ? Math.max(d.attributes.BOD.mod, d.attributes.AGI.mod) : d.attributes.BOD.mod;
         // "Unarmed strikes use your Simple Weapons Proficiency Bonus, and follow the
         // usual Untrained rule if you lack it."
@@ -2895,20 +2937,23 @@ EN.combatView = (function () {
         var luAttrLabel = (luFin ? "Body/Agility" : "Body") + " Modifier";
         var luSnag = atkSnag || swUntrained;
         // proficiency rides the attack roll only; damage keeps the attribute
-        // modifier. The base strike is a flat 1 and not a die, so it has nothing
-        // to roll and opens no damage tray; the row states its damage instead.
-        var luDmg = lu
-          ? { weaponName: luName, subtype: luKind.toUpperCase(), dice: lu.die, types: [lu.type],
+        // modifier. A strike with no die is a flat 1, so it has nothing to roll
+        // and opens no damage tray; the row states its damage instead. Riders are
+        // situational (a Surge that is not up adds nothing), so they stay in the
+        // row text rather than being pre-loaded into the tray.
+        var luDmg = uStrike.die
+          ? { weaponName: luName, subtype: luKind.toUpperCase(), dice: uStrike.die, types: [uStrike.type],
               flat: luAttr, flatLabel: luAttrLabel, versatile: null, cheapEligible: false, cheapDice: d.caliber || 1, crit: false }
           : null;
-        var luDmgText = lu ? lu.die + " " + lu.type + (lu.traits ? " (" + lu.traits + ")" : "") + " + mod"
-                           : uBase.flat + " " + uBase.type + " + Body mod";
-        var luSubtype = (lu ? luKind + " · " + lu.type : "UNARMED STRIKE").toUpperCase();
-        kids.push(attackRow(luName, eng.fmtMod(luMod), "d20 + " + luAttrLabel + " + Simple Weapons Proficiency Bonus · " + luDmgText + (lu && lu.note ? " · " + lu.note : "") + (swUntrained ? " · Untrained (Simple Weapons): Snag" : ""), "var(--ember)", luSnag,
+        var luDmgText = (uStrike.die ? uStrike.die : uBase.flat) + " " + uStrike.type
+          + (uStrike.traits ? " (" + uStrike.traits + ")" : "") + " + " + (luFin ? "mod" : "Body mod");
+        uStrike.riders.forEach(function (r) { luDmgText += " + " + r.damage + (r.when ? " " + r.when : ""); });
+        var luSubtype = (lu ? luKind + " · " + uStrike.type : "UNARMED STRIKE").toUpperCase();
+        kids.push(attackRow(luName, eng.fmtMod(luMod), "d20 + " + luAttrLabel + " + Simple Weapons Proficiency Bonus · " + luDmgText + (uStrike.note ? " · " + uStrike.note : "") + (swUntrained ? " · Untrained (Simple Weapons): Snag" : ""), "var(--ember)", luSnag,
           (function (nm, dmg) { return function () { openRollTray(simpleAttackCtx(nm, luSubtype,
             [{ label: luAttrLabel, value: luAttr }].concat(swProf ? [{ label: "Simple Weapons Proficiency Bonus", value: swProf }] : []),
             { snag: luSnag, dmg: dmg })); }; })(luName, luDmg),
-          unarmedPicker(uOpts, lu, uBase)));
+          unarmedPicker(uStrike, uBase)));
       }
       if (!equippedNames.length) {
         kids.push(el("p.help", { style: { margin: "4px 0 6px" }, text: "No weapons equipped; hit ⚔ EQUIP on a weapon in Inventory → Stash to list it here." }));
@@ -3232,6 +3277,10 @@ EN.combatView = (function () {
         var w = findWeapon(n);
         if (w && (w.group === "Simple" || w.group === "Martial")) { var m = (w.damage || "").match(/\d*d\d+/); if (m) { meleeDie = m[0]; meleeName = w.name; } }
       });
+      // Parry also accepts bare hands, so the unarmed strike's own damage is a
+      // parry source: the resolved die if anything granted one, else the flat 1.
+      var uParryDie = d.unarmed.die, uParryFlat = d.unarmed.flat;
+      var uParryText = uParryDie || String(uParryFlat);
       // Block works with a shield, a flat Block Bonus, or the Plated trait; a shield's
       // die stacks on top. Gear whose lease is in arrears grants none of this.
       var liveShield = (dg.shield && !dg.shieldLapsed && dg.shieldAlive) ? dg.shield : null;
@@ -3287,14 +3336,23 @@ EN.combatView = (function () {
           return base;
         }
         if (name === "Parry") {
-          // a physical shield satisfies the requirement on its own, so fall back to
-          // the shield die when no Simple or Martial weapon is equipped
+          // A physical shield satisfies the requirement on its own, so fall back to
+          // the shield die when no Simple or Martial weapon is equipped, and to the
+          // unarmed strike when neither is: bare hands are a legal parry.
           var md = firstMeleeDie();
           if (!md && liveShield) { md = parseDie(dg.shieldBlockDie); if (md) md.label = liveShield.name; }
-          if (md) base.dice.push(md); else base.flat.push({ label: "nothing to parry with", value: 0 });
-          base.note = md
-            ? "Roll " + md.n + "d" + md.sides + " (" + md.label + ") and subtract it from the incoming damage. Melee attacks only."
-            : "Equip a Simple Weapon, a Martial Weapon, or a physical shield to parry.";
+          if (md) {
+            base.dice.push(md);
+            base.note = "Roll " + md.n + "d" + md.sides + " (" + md.label + ") and subtract it from the incoming damage. Melee attacks only.";
+          } else if (uParryDie) {
+            var ud = parseDie(uParryDie); ud.label = "unarmed strike";
+            base.dice.push(ud);
+            base.note = "Roll " + uParryDie + " (your unarmed strike) and subtract it from the incoming damage. Melee attacks only.";
+          } else {
+            // a bare-handed strike with no die deals a flat 1, so that is what it parries
+            base.flat.push({ label: "unarmed strike", value: uParryFlat });
+            base.note = "Bare hands with no die behind them: subtract " + uParryFlat + " from the incoming damage. Melee attacks only.";
+          }
           return base;
         }
         if (name === "Resurge") {
@@ -3337,10 +3395,12 @@ EN.combatView = (function () {
                    ]) : null },
         Dodge:   { avail: true, req: "",
                    summary: (acro ? "+" + acro.total + " Defense" : "+Agility + Acrobatics to Defense") + " vs this hit; on a miss, shift 1 space" + (dg.speedPenalty ? " · GM may forbid in heavy armor" : "") },
-        Parry:   { avail: !!meleeDie || !!liveShield, req: "a melee weapon or shield",
+        // "or be fighting unarmed": bare hands always satisfy the requirement, so
+        // Parry is never unavailable. The die falls back from weapon to shield to fists.
+        Parry:   { avail: true, req: "a melee weapon, a shield, or bare hands",
                    summary: meleeDie ? "Roll " + meleeDie + " (" + meleeName + "), subtract from incoming damage"
                      : (liveShield && dg.shieldBlockDie ? "Roll " + dg.shieldBlockDie + " (" + liveShield.name + "), subtract from incoming damage"
-                                                        : "Roll your melee weapon's damage die, subtract from damage") },
+                                                        : "Roll " + uParryText + " (your unarmed strike), subtract from incoming damage") },
         Resurge: { avail: attuned, req: "Flow attunement",
                    summary: "Roll " + resDie + " vs Flow attacks; reduce to 0 → rebound " + (flowMod || "your Flow Mod") + " Resonant" },
         Siphon:  { avail: attuned, req: "Flow attunement",

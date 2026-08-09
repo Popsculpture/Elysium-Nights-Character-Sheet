@@ -38,7 +38,7 @@ EN.gearCatalog.melee = {
       traits: ["Reach 1", "Two-Handed", "Versatile (1d8)"], availability: "Common", legality: "Legal",
       desc: "A length of tough wood or composite pole, hip-high to head-high depending on the wielder. Street monks, crowd-control drills, and old-school brawlers all swear by it for reach and discipline." },
     { name: "Shock Gloves", group: "Simple", price: 100, damage: "Unarmed + 1d4 Electric", range: "Melee",
-      traits: ["Light", "Finesse", "Nonlethal", "Shock"], availability: "Uncommon", legality: "Restricted",
+      traits: ["Light", "Nonlethal", "Shock"], availability: "Uncommon", legality: "Restricted",
       desc: "Reinforced gloves wired to a discharge core in the cuff. Your fists hit normally. The charge does the rest, and the lights in the room flicker once when it does.",
       effect: "Augments unarmed strikes. On a hit, you deal your normal unarmed strike damage plus an additional 1d4 Electric damage." },
     { name: "Snap-Blades", group: "Simple", price: 150, damage: "1d6 Slashing", range: "Melee",

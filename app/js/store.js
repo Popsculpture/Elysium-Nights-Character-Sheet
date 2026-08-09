@@ -206,11 +206,12 @@ EN.store = (function () {
     // Shield Durability boxes marked, keyed by shield name
     if (!ch.shieldWear || typeof ch.shieldWear !== "object") ch.shieldWear = {};
     Object.keys(ch.shieldWear).forEach(function (k) { var v = ch.shieldWear[k]; if (typeof v !== "number" || v < 0) delete ch.shieldWear[k]; });
-    // Which effect that SETS the unarmed strike die the player is currently
-    // punching with: the name of a lineage feature, an installed piece of chrome
-    // or a Talent, or "base" for the plain 1 + Body Modifier strike. Absent means
-    // "not chosen yet" and the engine falls back to the first option available,
-    // so anything that is not a non-empty string is just noise to strip.
+    // Which REPLACER the player is currently punching with: the name of a lineage
+    // feature or an installed piece of chrome, or "base" for the plain
+    // 1 + Body Modifier strike. Increases are not a choice and never land here.
+    // Absent means "not chosen yet", and a pick naming a replacer the character no
+    // longer has falls back to the first one available, so anything that is not a
+    // non-empty string is just noise to strip.
     if (typeof ch.unarmedPick !== "string" || !ch.unarmedPick) delete ch.unarmedPick;
     if (typeof ch.nexus !== "number") ch.nexus = 0;                          // Nexus wallet (◎)
     // The Loadout is declared at the start of a job and sets the Load Budget;

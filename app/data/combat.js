@@ -84,9 +84,9 @@ EN.combat = {
     {
       name: "Parry",
       cost: "1 Impulse Action",
-      requirement: "Melee Weapon or Shield",
+      requirement: "Melee Weapon, Shield, or bare hands",
       trigger: "Melee attacks only",
-      text: "You meet force with force, stepping into the strike to aggressively knock the Enemy's weapon offline before it lands clean.\n- Requirement: Must have a Simple Weapon, Martial Weapon, or physical Shield equipped.\n- Trigger Limit: Can only be used against Melee attacks.\n- The Effect: Roll your equipped weapon's base damage die (e.g., a d8 for a standard longsword). Subtract the result directly from the raw incoming damage.\n\nPlayer Advice: Tactical Note: If you are dual-wielding, you must choose which weapon you parry with and roll its specific damage die."
+      text: "You meet force with force, stepping into the strike to aggressively knock the Enemy's weapon offline before it lands clean.\n- Requirement: Must have a Simple Weapon, Martial Weapon, Signature Weapon, or physical Shield equipped, or be fighting unarmed.\n- Trigger Limit: Can only be used against Melee attacks.\n- The Effect: Roll the equipped weapon's base damage die (e.g., a d8 for a standard longsword), or your unarmed strike damage if your hands are what you brought. Subtract the result directly from the raw incoming damage.\n\nPlayer Advice: Tactical Note: If you are dual-wielding, you must choose which weapon you parry with and roll its specific damage die."
     },
     {
       name: "Resurge",
