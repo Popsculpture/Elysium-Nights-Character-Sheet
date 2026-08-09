@@ -1262,23 +1262,28 @@ EN.engine = (function () {
   /* ======================================================================
      MAIN: derive a full computed snapshot for a character
      ====================================================================== */
-  /* ---- Stitcher medical hardware: the equipped Trauma Rig and the Triage Save DC.
+  /* ---- Trauma Rig, the OBJECT. Anyone can buy one ("User Type: Anyone (Standard
+     Users). Stitchers (Practitioners)"), so everything that belongs to the piece of
+     gear is derived for every character regardless of class: the tier, its Output
+     Bonus, Mod Slots, the accumulated trait ladder, the Medical Baseline grade,
+     Integrity, and the #GRID node it projects. The Stitcher CLASS RESOURCE reads this
+     record and adds what only a Stitcher has (see triageStats below).
 
-     Triage Save DC = 8 + Tech Modifier + the Rig's Output Bonus. Output Bonus is the
-     rig tier's own value from EN.traumaRigs.tiers. It is NOT a proficiency bonus and
-     NOT Caliber. No tool-proficiency tier bonus feeds this DC, and no such tier bonus
-     exists in this system; Medical Tools stays an ordinary Tool Proficiency.
+     Rig state lives on ch.rig ({tier, scrap, hpSpent, hpTier}), read by tier NAME the
+     same way a Smartdeck is read out of ch.grid.deckTier. This is the ONE place a Rig
+     is resolved; every surface (the Freelancer tab's Rig block, the #GRID tab's node,
+     the Tech Bay's kit scan) consumes the answer rather than re-deriving its own, so
+     they cannot disagree about which Rig is live.
 
-     Rig state lives on ch.rig ({tier, scrap, hpSpent}), read by tier NAME the same way
-     a Smartdeck is read out of ch.grid.deckTier. When no tier has been recorded we fall
-     back to the best Trauma Rig the character actually owns, matched on a gear row's
-     rigTier (the counterpart of a Smartdeck row's deckTier), so the free Field Kit
-     resolves with no extra UI. A Scrap Rig, an unknown tier, and no rig at all all
-     resolve to Output Bonus +0, so the DC is always a number and never NaN.
+     A recorded tier is only honoured while the character still OWNS that Rig. Sell it
+     and the recording is inert: resolution falls through to the best Trauma Rig
+     actually in the stash, which is what the AUTO path does when nothing is recorded
+     at all. Own none and there is no Rig. A Scrap Rig, an unknown tier, and no rig at
+     all all resolve to Output Bonus +0, so the DC is always a number and never NaN.
 
-     Everything else the Rig carries is read straight off the tier row, where it was
-     derived from the Tier ordinal: Mod Slots (= Tier), the cumulative trait list, the
-     Medical Baseline grade, Integrity, and the #GRID node tier it projects. Nothing is
+     Everything the Rig carries is read straight off the tier row, where it was derived
+     from the Tier ordinal: Mod Slots (= Tier), the cumulative trait list, the Medical
+     Baseline grade, Integrity, and the #GRID node tier it projects. Nothing is
      recomputed here, so the sheet and the storefront always agree. */
   function rigTierRow(tier) {
     if (!tier) return null;
@@ -1297,24 +1302,34 @@ EN.engine = (function () {
     return rows.sort(function (a, b) { return b.t - a.t; });
   }
   function ownedRigTier(ch) { return ownedRigTiers(ch)[0] || null; }
-  function triageStats(ch, attributes) {
-    var techMod = attributes.TEC.mod;
+  function rigStats(ch) {
     var r = (ch && ch.rig) || {};
     var scrap = !!r.scrap;
+    var owned = ownedRigTiers(ch);
+    // A recorded tier only counts while the Rig is still in the stash. Sell it and the
+    // recording is inert, so resolution falls through to the AUTO owned-gear path
+    // instead of crediting the character with hardware they no longer have.
     var recorded = scrap ? null : rigTierRow(r.tier);
-    var row = scrap ? null : (recorded || ownedRigTier(ch));
+    if (recorded && !owned.some(function (o) { return o.tier === recorded.tier; })) recorded = null;
+    var row = scrap ? null : (recorded || owned[0] || null);
     var outputBonus = row ? (row.outputBonus || 0) : 0;
     // Integrity, the Rig's #GRID node: damage subtracts, Bricked at 0. Mirrors the
     // Smartdeck's System Integrity track (ch.grid.deckHpSpent).
+    // Damage belongs to the Rig it was taken on: ch.rig.hpTier records that tier, and a
+    // total recorded against a DIFFERENT tier is discarded outright rather than clamped
+    // onto the new Rig's shorter track. Otherwise a fresh Field Kit inherits a Black
+    // Clinic's 40 points and arrives Bricked.
     var maxIntegrity = row ? (row.integrity || 0) : 0;
-    var spent = clamp((r.hpSpent | 0), 0, maxIntegrity);
+    var damageTier = typeof r.hpTier === "string" ? r.hpTier : null;
+    var sameRig = !!row && damageTier === row.tier;
+    var spent = sameRig ? clamp((r.hpSpent | 0), 0, maxIntegrity) : 0;
     return {
       rigTier: row ? row.tier : null,
       rigTierIndex: row ? row.t : null,
       rigLabel: row ? row.label : null,
       // true when the tier came from the owned-gear fallback rather than a recorded pick
       fromOwnedGear: !!(row && !recorded),
-      ownedTiers: ownedRigTiers(ch),
+      ownedTiers: owned,
       scrapRig: scrap,
       outputBonus: outputBonus,
       // Mod Slots equal the Tier, and the trait list accumulates; both derived in the data
@@ -1327,15 +1342,33 @@ EN.engine = (function () {
       integritySpent: spent,
       bricked: maxIntegrity > 0 && spent >= maxIntegrity,
       nodeTier: row ? (row.nodeTier || null) : null,
-      price: row ? (row.price || 0) : 0,
-      techMod: techMod,
-      saveDC: 8 + techMod + outputBonus,
-      formula: "8 + Tech Modifier + Rig's Output Bonus",
-      // A Scrap Rig imposes Snag on every Triage healing roll and attack roll, and
-      // upgrades any Swift Action Protocol to an Action.
-      snagOnTriage: scrap,
-      swiftBecomesAction: scrap
+      price: row ? (row.price || 0) : 0
     };
+  }
+  /* ---- Stitcher medical hardware: the CLASS RESOURCE riding on the Rig object.
+
+     Triage Save DC = 8 + Tech Modifier + the Rig's Output Bonus. Output Bonus is the
+     rig tier's own value from EN.traumaRigs.tiers. It is NOT a proficiency bonus and
+     NOT Caliber. No tool-proficiency tier bonus feeds this DC, and no such tier bonus
+     exists in this system; Medical Tools stays an ordinary Tool Proficiency.
+
+     Every object fact is spread in off rigStats, so d.triage keeps the exact shape it
+     always had for the surfaces that read it. What is added here is Stitcher-only: the
+     Save DC and its terms, and the Scrap Rig's Snag and Swift-becomes-Action penalty,
+     which are Protocol rules and mean nothing to a character with no Protocols. */
+  function triageStats(ch, attributes, rig) {
+    var techMod = attributes.TEC.mod;
+    rig = rig || rigStats(ch);
+    var out = {};
+    Object.keys(rig).forEach(function (k) { out[k] = rig[k]; });
+    out.techMod = techMod;
+    out.saveDC = 8 + techMod + rig.outputBonus;
+    out.formula = "8 + Tech Modifier + Rig's Output Bonus";
+    // A Scrap Rig imposes Snag on every Triage healing roll and attack roll, and
+    // upgrades any Swift Action Protocol to an Action.
+    out.snagOnTriage = rig.scrapRig;
+    out.swiftBecomesAction = rig.scrapRig;
+    return out;
   }
 
   function derive(ch) {
@@ -1530,8 +1563,10 @@ EN.engine = (function () {
     /* #GRID hacking stats + equipped rig */
     var grid = gridStats(ch, attributes, skills, level, cal, resource);
 
-    /* Stitcher medical hardware: the equipped Trauma Rig and the Triage Save DC it feeds */
-    var triage = ch.class === "stitcher" ? triageStats(ch, attributes) : null;
+    /* Trauma Rig, the object: universal, because anyone can buy one. The Stitcher class
+       resource layers the Triage Save DC and the Scrap Rig penalties on top of it. */
+    var rig = rigStats(ch);
+    var triage = ch.class === "stitcher" ? triageStats(ch, attributes, rig) : null;
 
     /* features unlocked up to current level (class + subclass + identity) */
     var features = [];
@@ -1608,7 +1643,13 @@ EN.engine = (function () {
       wardDie: defLoadout.wardDie, defenseGear: defLoadout,
       chromeTax: chromeTax, platformSlotted: platformSlotted(ch),
       grid: grid,
-      // Stitcher only: {rigTier, outputBonus, scrapRig, saveDC, ...}; null otherwise.
+      // The Trauma Rig as an OBJECT, derived for every class: {rigTier, rigTierIndex,
+      // rigLabel, fromOwnedGear, ownedTiers, scrapRig, outputBonus, modSlots, traits,
+      // medkitGrade, maxIntegrity, integrity, integritySpent, bricked, nodeTier, price}.
+      // Always present; rigTier is null when the character owns no Rig.
+      rig: rig,
+      // Stitcher only: every d.rig field plus the class resource's own
+      // {techMod, saveDC, formula, snagOnTriage, swiftBecomesAction}; null otherwise.
       triage: triage,
       woundsMax: woundsMax, critThreshold: critThreshold,
       saves: saves, skills: skills,
@@ -1922,7 +1963,10 @@ EN.engine = (function () {
     isCarryGear: isCarryGear, rackLimit: rackLimit, rackState: rackState, rackTargets: rackTargets,
     itemSlots: itemSlots, slotConflicts: slotConflicts,
     catalogItem: loadCatalogItem,
-    rigTierRow: rigTierRow, ownedRigTiers: ownedRigTiers,   // Stitcher Trauma Rig, for the Rig picker
+    // Trauma Rig. rigStats is THE resolver: every surface that needs to know which Rig
+    // is live reads it rather than matching ch.rig.tier against the stash itself.
+    rigStats: rigStats,
+    rigTierRow: rigTierRow, ownedRigTiers: ownedRigTiers,   // Trauma Rig tier lookup, for the Rig picker
     focusesFor: focusesFor, specFor: specFor,
     aspectMatches: aspectMatches, weaponFocus: weaponFocus, weaponSpec: weaponSpec, signatureUnlocked: signatureUnlocked,
     overlapGrants: overlapGrants, unresolvedOverlaps: unresolvedOverlaps,

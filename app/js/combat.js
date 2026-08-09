@@ -1268,16 +1268,23 @@ EN.combatView = (function () {
   };
   function resourceColor(name) { return RESOURCE_COLOR[name] || "var(--accent)"; }
 
-  /* ---- Stitcher Trauma Rig, the class item that feeds the Triage Save DC.
+  /* ---- The Trauma Rig as an OBJECT. Anyone can buy one, so this block is not
+     Stitcher-only: it renders off d.rig, which the engine derives for every class.
+     The Triage Save DC, the Triage pool and the Scrap Rig's Protocol penalties are the
+     class resource's business and are rendered separately, next to the pool.
+
      The counterpart of the #GRID tab's Rig panel, and built the same way: a picker
      over the Trauma Rigs the character actually OWNS (matched on a gear row's
      rigTier), the tier's derived numbers, its accumulated traits, and the System
-     Integrity of the #GRID node the Rig projects. Every value comes off d.triage,
-     which reads the tier row; nothing is recalculated here. */
+     Integrity of the #GRID node the Rig projects. Every value comes off d.rig, which
+     reads the tier row; nothing is recalculated here. */
   function traumaRigKids(ch, d) {
-    var t = d.triage, T = EN.traumaRigs || {}, tiers = T.tiers || [];
+    var t = d.rig, T = EN.traumaRigs || {}, tiers = T.tiers || [];
     var mint = resourceColor("Triage"), rig = ch.rig || {};
     var owned = t.ownedTiers || [];
+    // The Scrap Rig is a Stitcher's Long Rest fallback for running Protocols, so only a
+    // Stitcher is offered it; everyone else picks from the Rigs they own or none.
+    var isStitcher = !!d.triage;
     var kids = [];
 
     kids.push(el("div.section-title", { style: { margin: "12px 0 4px" } }, [
@@ -1286,11 +1293,11 @@ EN.combatView = (function () {
                         text: t.scrapRig ? "SCRAP RIG" : (t.rigLabel || "NONE EQUIPPED").toUpperCase() })
     ]));
 
-    // picker: no rig, the Scrap Rig fallback, or any tier in the stash
+    // picker: no rig, the Scrap Rig fallback (Stitchers only), or any tier in the stash
     var selKids = [
-      el("option", { value: "none", selected: !t.scrapRig && !rig.tier, text: "- No Rig -" }),
-      el("option", { value: "scrap", selected: !!t.scrapRig, text: "Scrap Rig (Output Bonus +0, Snag)" })
+      el("option", { value: "none", selected: !t.scrapRig && !rig.tier, text: "- No Rig -" })
     ];
+    if (isStitcher) selKids.push(el("option", { value: "scrap", selected: !!t.scrapRig, text: "Scrap Rig (Output Bonus +0, Snag)" }));
     if (owned.length) selKids.push(el("optgroup", { label: "Trauma Rigs in your stash" }, owned.map(function (r) {
       return el("option", { value: "tier:" + r.tier, selected: !t.scrapRig && rig.tier === r.tier,
         text: r.label + " · +" + r.outputBonus + " output · " + r.modSlots + " slot" + (r.modSlots === 1 ? "" : "s") + " · " + r.integrity + " Int" });
@@ -1302,7 +1309,7 @@ EN.combatView = (function () {
           var v = this.value;
           store.update(function (c) {
             c.rig = c.rig || {};
-            c.rig.hpSpent = 0;                       // a swapped Rig starts on a full Integrity track
+            c.rig.hpSpent = 0; c.rig.hpTier = null;  // a swapped Rig starts on a full Integrity track
             if (v === "scrap") { c.rig.scrap = true; c.rig.tier = null; return; }
             c.rig.scrap = false;
             c.rig.tier = v === "none" ? null : v.split(":")[1];
@@ -1314,7 +1321,9 @@ EN.combatView = (function () {
 
     if (!t.rigTier) {
       kids.push(el("p.help", { style: { margin: "4px 0 0", fontSize: "10.5px" },
-        text: t.scrapRig ? (T.scrapRig || "") : "No Rig equipped, so Output Bonus is +0. " + (T.startingRig || "") }));
+        text: t.scrapRig ? (T.scrapRig || "")
+          : "No Rig equipped, so Output Bonus is +0. " + (isStitcher ? (T.startingRig || "")
+            : "Anyone can buy a Trauma Rig; running Triage Protocols through one is the Stitcher's trade.") }));
       return kids;
     }
 
@@ -1334,9 +1343,17 @@ EN.combatView = (function () {
     var maxInt = t.maxIntegrity, cur = t.integrity, bricked = t.bricked;
     var amt = el("input.mono", { type: "number", min: "1", value: "1", title: "Amount of Integrity to subtract or restore",
       style: { width: "54px", textAlign: "center", padding: "4px 6px" } });
+    // Damage is written against the tier it was taken on, and it accumulates from the
+    // DERIVED spend rather than the raw stored number, so a total left over from a Rig
+    // the character no longer runs never rejoins the track.
     function shift(sign) {
       var n = Math.max(1, parseInt(amt.value, 10) || 1);
-      store.update(function (c) { c.rig = c.rig || {}; c.rig.hpSpent = eng.clamp((c.rig.hpSpent || 0) + sign * n, 0, maxInt); });
+      var tier = t.rigTier, base = t.integritySpent;
+      store.update(function (c) {
+        c.rig = c.rig || {};
+        c.rig.hpTier = tier;
+        c.rig.hpSpent = eng.clamp(base + sign * n, 0, maxInt);
+      });
     }
     kids.push(el("div", { style: { marginTop: "8px" } }, [
       el("div.row.between", { style: { alignItems: "baseline" } }, [
@@ -1352,7 +1369,7 @@ EN.combatView = (function () {
         el("button.btn.sm", { disabled: t.integritySpent <= 0, title: "Restore this much Integrity",
           onclick: function () { shift(-1); } }, "+ REPAIR"),
         t.integritySpent > 0 ? el("button.btn.sm", { style: { color: "var(--text2)" },
-          onclick: function () { store.update(function (c) { c.rig = c.rig || {}; c.rig.hpSpent = 0; }); toast("Trauma Rig restored to full Integrity."); } }, "⟳ FULL") : null
+          onclick: function () { store.update(function (c) { c.rig = c.rig || {}; c.rig.hpSpent = 0; c.rig.hpTier = null; }); toast("Trauma Rig restored to full Integrity."); } }, "⟳ FULL") : null
       ])
     ]));
 
@@ -2605,6 +2622,13 @@ EN.combatView = (function () {
           traumaRigKids(ch, d).forEach(function (k) { kids.push(k); });
         }
         resourceFeats.forEach(pushFeat);
+      }
+      // A Trauma Rig is ordinary gear anyone can buy, so a non-Stitcher who owns one
+      // gets the object's block (tier, Output Bonus, Mod Slots, traits, Medical
+      // Baseline, its #GRID node and its Integrity track) with no class resource
+      // attached: no Triage Save DC, no Triage pool, no Protocols, no Scrap Rig.
+      if (!d.triage && d.rig && (d.rig.rigTier || (d.rig.ownedTiers || []).length)) {
+        traumaRigKids(ch, d).forEach(function (k) { kids.push(k); });
       }
       if (otherFeats.length) {
         kids.push(el("div.section-title", { style: { margin: d.resource ? "12px 0 2px" : "2px 0 2px" } }, [document.createTextNode("Abilities"), el("span.line")]));

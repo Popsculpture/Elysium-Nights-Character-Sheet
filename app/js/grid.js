@@ -74,7 +74,10 @@ EN.gridView = (function () {
     var grid = ch.grid || {}, gd = d.grid, deck = gd.deck;
     var rows = [];
 
-    // rig selector: only show owned smartdecks/buddies from the character's inventory
+    // rig selector: only show owned smartdecks/buddies from the character's inventory.
+    // Trauma Rigs are enumerated too, but not here: they are not hacking platforms, so
+    // they cannot be your deck. They appear below as the #GRID node each one projects,
+    // which is what makes a Rig reachable from this tab at all.
     var ownedDecks = (ch.equipment || []).filter(function (e) { return e.qty > 0 && (e.name.endsWith(" Smartdeck") || e.name.endsWith(" B&E Buddy")); });
     var ownedSmartdecks = ownedDecks.filter(function (e) { return e.name.endsWith(" Smartdeck"); }).map(function (e) {
       var tier = e.name.replace(" Smartdeck", "");
@@ -87,10 +90,10 @@ EN.gridView = (function () {
 
     var selChildren = [el("option", { value: "none", selected: !grid.deckType, text: "- No rig -" })];
     if (ownedSmartdecks.length) selChildren.push(el("optgroup", { label: "Smartdecks (Power User)" }, ownedSmartdecks.map(function (s) {
-      return el("option", { value: "smartdeck:" + s.tier, selected: grid.deckType === "smartdeck" && grid.deckTier === s.tier, text: s.tier + " · +" + s.deviceBonus + " dev · " + s.hp + " HP" });
+      return el("option", { value: "smartdeck:" + s.tier, selected: grid.deckType === "smartdeck" && grid.deckTier === s.tier, text: s.tier + " · +" + s.deviceBonus + " dev · " + s.integrity + " HP" });
     })));
     if (ownedBuddies.length) selChildren.push(el("optgroup", { label: "B&E Buddies (Standard User)" }, ownedBuddies.map(function (b) {
-      return el("option", { value: "buddy:" + b.tier, selected: grid.deckType === "buddy" && grid.deckTier === b.tier, text: b.tier + " · +" + b.attack + " atk · " + b.hp + " HP" });
+      return el("option", { value: "buddy:" + b.tier, selected: grid.deckType === "buddy" && grid.deckTier === b.tier, text: b.tier + " · +" + b.attack + " atk · " + b.integrity + " HP" });
     })));
     if (!ownedSmartdecks.length && !ownedBuddies.length) selChildren.push(el("option", { disabled: true, text: "No rigs in stash; buy one in Inventory" }));
 
@@ -113,7 +116,58 @@ EN.gridView = (function () {
       (deck && deck.type === "smartdeck") ? el("span.chip", { style: { fontSize: "9.5px", color: "var(--flow)", borderColor: "var(--flow)" }, title: "Runs ciphers up to this Complexity" }, "≤ CX " + deck.maxComplexity) : null
     ]));
 
-    if (!deck) { rows.push(noteP("No rig selected. Codebreakers run a Smartdeck (Power User); everyone else can crack low-tier nodes with a B&E Buddy.")); return EN.ui.panel("Rig", "SMARTDECK / B&E BUDDY", rows, { corners: true }); }
+    /* A Trauma Rig is powered gear: it projects a #GRID node at its own Tier and is a
+       valid #GRID target, so it belongs on this tab and not only on the Freelancer tab.
+       Object facts come off d.rig, which the engine resolves for every class, so the
+       node tier and the Integrity total here are the same numbers the Rig block shows.
+       Purely the OBJECT: no Output Bonus, no Triage Save DC, nothing class-flavoured. */
+    function traumaRigRows() {
+      var t = d.rig;
+      if (!t || !t.rigTier) return [];
+      var T = EN.traumaRigs || {};
+      var maxI = t.maxIntegrity, curI = t.integrity, br = t.bricked;
+      var amtR = el("input.mono", { type: "number", min: "1", value: "1", title: "Amount of System Integrity to subtract or restore",
+        style: { width: "56px", textAlign: "center", padding: "4px 6px" } });
+      // damage is stamped with the tier it was taken on and accumulates off the derived
+      // spend, so a total from a Rig you no longer run never lands on this one
+      function shiftRig(sign) {
+        var n = Math.max(1, parseInt(amtR.value, 10) || 1), tier = t.rigTier, base = t.integritySpent;
+        store.update(function (c) { c.rig = c.rig || {}; c.rig.hpTier = tier; c.rig.hpSpent = eng.clamp(base + sign * n, 0, maxI); });
+      }
+      return [
+        el("div.section-title", { style: { margin: "14px 0 4px" } }, [document.createTextNode("Trauma Rig Node"), el("span.line"),
+          el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", marginLeft: "6px" }, text: (t.rigLabel || "").toUpperCase() })]),
+        el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } }, [
+          t.nodeTier ? el("span.chip", { style: { fontSize: "9.5px", color: "var(--bw)", borderColor: "var(--bw)" },
+            title: T.integrityNote || "" }, "NODE " + t.nodeTier.toUpperCase()) : null,
+          el("span.chip", { style: { fontSize: "9.5px", color: "var(--text2)", borderColor: "var(--border2)" },
+            title: "Modification Slots equal the Rig's Tier" }, "TIER " + t.rigTierIndex)
+        ]),
+        el("div", { style: { marginTop: "8px" } }, [
+          el("div.row.between", { style: { alignItems: "baseline" } }, [
+            el("span", { style: { fontFamily: "var(--disp)", fontSize: "10px", letterSpacing: ".12em", color: "var(--text3)" }, text: "RIG INTEGRITY" }),
+            el("span.mono", { style: { fontSize: "13px", color: br ? "var(--danger)" : "var(--text2)" }, text: br ? "BRICKED" : curI + " / " + maxI })
+          ]),
+          bar(curI, maxI, br ? "var(--danger)" : "var(--success)"),
+          el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "6px" } }, [
+            amtR,
+            el("button.btn.sm", { disabled: br, title: "Subtract this much Integrity",
+              style: { color: "var(--danger)", borderColor: "var(--danger)" }, onclick: function () { shiftRig(1); } }, "− DAMAGE"),
+            el("button.btn.sm", { disabled: t.integritySpent <= 0, title: "Restore this much Integrity",
+              onclick: function () { shiftRig(-1); } }, "+ REPAIR"),
+            t.integritySpent > 0 ? el("button.btn.sm", { style: { color: "var(--text2)" },
+              onclick: function () { store.update(function (c) { c.rig = c.rig || {}; c.rig.hpSpent = 0; c.rig.hpTier = null; }); toast("Trauma Rig restored to full Integrity."); } }, "⟳ FULL") : null
+          ])
+        ]),
+        noteP(T.integrityNote || "")
+      ];
+    }
+
+    if (!deck) {
+      rows.push(noteP("No rig selected. Codebreakers run a Smartdeck (Power User); everyone else can crack low-tier nodes with a B&E Buddy."));
+      traumaRigRows().forEach(function (r) { rows.push(r); });
+      return EN.ui.panel("Rig", "SMARTDECK / B&E BUDDY", rows, { corners: true });
+    }
 
     // System Integrity: damage subtracts (cipher damage after the Firewall, physical
     // damage at full value). Amounts are rolled, so take a typed number, not a +1 tick.
@@ -185,6 +239,7 @@ EN.gridView = (function () {
         rows.push(noteP("Add or remove hardware mods at the Tech Bay (Inventory > Workbench > Tech Bay)."));
       }
     }
+    traumaRigRows().forEach(function (r) { rows.push(r); });
     return EN.ui.panel("Rig", (deck.type === "smartdeck" ? "SMARTDECK" : "B&E BUDDY") + " · " + deck.tier.toUpperCase(), rows, { corners: true });
   }
 

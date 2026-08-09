@@ -104,12 +104,10 @@ Recorded so nobody re-investigates them.
 
 ## Found in step 4 (Trauma Rig)
 
-- **The #GRID Rig selector prints "undefined HP".** `app/js/grid.js` lines 90 and 93
-  build each option as `s.tier + " · +" + s.deviceBonus + " dev · " + s.hp + " HP"`,
-  but `EN.grid.smartdecks` and `EN.grid.buddies` rows carry `integrity`, not `hp`.
-  Every Smartdeck and B&E Buddy option therefore reads "undefined HP". Confirmed live
-  with an Advanced Smartdeck equipped. Pre-existing, untouched, one-word fix
-  (`s.hp` -> `s.integrity`, `b.hp` -> `b.integrity`).
+- ~~**The #GRID Rig selector prints "undefined HP".**~~ **Fixed while working the three
+  step-4 defects below.** `app/js/grid.js` read `s.hp` / `b.hp` where the data field is
+  `integrity`, so every Smartdeck and B&E Buddy option read "undefined HP". Now reads
+  `s.integrity` / `b.integrity`; an Apex Smartdeck renders "Apex · +3 dev · 55 HP".
 - **Remote Applicator is displayed, not applied.** The Trauma Grade [2] trait adds +3
   spaces to any Protocol with a listed range, but Protocol ranges live inside prose
   strings ("within 6 spaces") in `STITCHER_TRIAGE_PROTOCOLS`. Deriving the stepped
@@ -138,42 +136,87 @@ Recorded so nobody re-investigates them.
   Load column, so the rows take the `rigs` bucket default of 2, matching a Smartdeck
   and a Basic Medkit. Worth an author ruling if a worn gauntlet should cost less.
 
-## Confirmed in step 4, reproduced live, NOT fixed
+## Confirmed in step 4, reproduced live, NOW FIXED
 
-These three came out of the Trauma Rig review with live reproductions. The default
-path (own a rig, equip it, read the DC) is verified correct; all three are edge or
-scope failures. Fix these before step 5.
+All three came out of the Trauma Rig review with live reproductions. All three were
+reproduced again before being touched, fixed, and re-checked against the original
+repro. Nothing in this section is outstanding. The default path stayed verified: all
+six tiers give the right Output Bonus and Triage Save DC, Mod Slots equal the Tier,
+traits accumulate 1 through 6, and a Trauma Grade rig still feeds a Medtech pool as an
+Advanced Medkit (Edge 6) while a Clinic Grade feeds it as Basic (Edge 5).
 
-- **The two Medical Baseline surfaces disagree about ownership.**
-  `app/js/engine.js` around line 1304 honours a recorded `ch.rig.tier` with NO
-  ownership check, while `app/js/inventory.js` around line 1795 requires the row to
-  be in the stash AND to equal the live tier. Nothing clears `ch.rig.tier` when the
-  rig leaves the stash. Repro: Stitcher with `rig.tier = "Trauma Grade"` who has sold
-  that rig and holds only a Field Kit. The Actions panel claims COUNTS AS ADVANCED
-  MEDKIT while the Fabrication bench says "No crafting kits in your Stash" and drops
-  Medtech Edge to 2. The narrower gate also filters out the Field Kit the character
-  DOES own, so the disagreement lands as "no kit" instead of the lower grade. The two
-  gates need to be one gate.
-- **Rig integrity and the #GRID node are Stitcher-only.** `engine.js` computes
-  `triage` only when `ch.class === "stitcher"`, and `combat.js` renders the rig block
-  only `if (d.triage)`. The manuscript is explicit that ANYONE can buy one (User
-  Type: Anyone, Standard Users). Repro: a Hustler owning a Black Clinic rig gets
-  `derive().triage === null`, no Output Bonus, no node, no integrity track. A
-  Smartdeck on the same character shows a working integrity track, so deck integrity
-  is universal while rig integrity is not. Separately, `grid.js` enumerates only
-  names ending "Smartdeck" or "B&E Buddy", so the rig cannot be reached from the
-  #GRID tab at all despite being documented as a valid target.
-- **A fresh rig can arrive BRICKED.** The picker resets `ch.rig.hpSpent` on change,
-  but the AUTO owned-gear fallback does not; the engine only clamps. Repro: brick a
-  Black Clinic at 40 damage, lose it, and the Field Kit that AUTO selects next reports
-  0/15 BRICKED with `hpSpent` still 40, with DAMAGE disabled. Recoverable with
-  REPAIR, but wrong by default. Likely fix is recording which tier the damage belongs
-  to and discarding it when the resolved tier changes.
+- ~~**The two Medical Baseline surfaces disagree about ownership.**~~ **Fixed.** There
+  is now exactly one resolver, `EN.engine.rigStats(ch)`, and it refuses to honour a
+  recorded `ch.rig.tier` the character does not own: an unowned recording falls through
+  to the AUTO owned-gear path. The second gate is gone, not reconciled. `activeRigTier`
+  in `app/js/inventory.js` was DELETED and `tbKits` reads
+  `EN.engine.rigStats(ch).rigTier` instead of matching `ch.rig.tier` against the stash
+  itself. The repro Stitcher (recorded Trauma Grade, sold it, holds only a Field Kit)
+  now reads Field Kit [0] / COUNTS AS BASIC MEDKIT / OUTPUT +0 on the Actions panel and
+  "Basic Medkit (Field Kit Trauma Rig [0])" on the Fabrication bench, and the Field Kit
+  she does own is no longer filtered out.
+- ~~**Rig integrity and the #GRID node are Stitcher-only.**~~ **Fixed by splitting the
+  item from the class resource.** `rigStats(ch)` derives the OBJECT for every class and
+  lands on the derived record as `d.rig`: tier, Output Bonus, Mod Slots, the trait
+  ladder, Medical Baseline grade, Integrity, and the projected #GRID node.
+  `triageStats(ch, attributes, rig)` spreads all of that in and adds only what is
+  Stitcher-only (`techMod`, `saveDC`, `formula`, `snagOnTriage`, `swiftBecomesAction`),
+  so `d.triage` keeps its exact old shape and still means the class resource. The
+  Freelancer tab's rig block renders off `d.rig` and now renders for a non-Stitcher who
+  owns a rig, with no Triage Save DC and no Scrap Rig option. `app/js/grid.js` also
+  carries a Trauma Rig Node block off `d.rig`, so the rig is reachable from the #GRID
+  tab as the node it projects (it is deliberately NOT offered in the deck picker: a
+  Trauma Rig is not a hacking platform). Repro Hustler with a Black Clinic now shows
+  OUTPUT +3, MOD SLOTS 5 / TIER 5, COUNTS AS ADVANCED MEDKIT, #GRID NODE APEX [5], all
+  six traits, and a working 40/40 integrity track.
+- ~~**A fresh rig can arrive BRICKED.**~~ **Fixed by making stored damage know which rig
+  it belongs to.** New field `ch.rig.hpTier` records the tier the damage was taken
+  against. The engine discards `hpSpent` outright when the resolved tier differs rather
+  than clamping a number that belongs to another object, and both integrity controls
+  (Freelancer tab and #GRID tab) stamp `hpTier` and accumulate off the DERIVED spend, so
+  a stale total can never rejoin a track. Migration in `app/js/store.js` normalizes the
+  field beside the other `ch.rig` defaults: a pre-change save with damage and an
+  explicitly recorded tier adopts that tier, and one with damage but no recorded tier
+  cannot attribute it and drops it, so nobody inherits damage into a rig they never had.
+  Repro (brick a Black Clinic at 40, lose it) now yields a Field Kit at 15/15 with
+  DAMAGE enabled.
 
-Also found and left alone as out of scope: a pre-existing `undefined HP` bug in the
-#GRID Rig selector (`app/js/grid.js` reads `s.hp` / `b.hp` where the data field is
-`integrity`); Remote Applicator's +3 spaces is displayed but not applied, since
-Protocol ranges are prose; the two once-per-scene rig traits have no usage tracking.
+Still out of scope and untouched: Remote Applicator's +3 spaces is displayed but not
+applied, since Protocol ranges are prose; the two once-per-scene rig traits have no
+usage tracking.
+
+## Found reviewing the step-4 fixes, NOT fixed
+
+The three original step-4 defects are fixed and verified. The review of those fixes
+then found six more, all variations of two root causes: **state that should be
+per-rig is stored globally**, and **resolvers multiplied instead of collapsing to
+one**. Worth fixing together, since a per-rig damage map plus a single resolver
+consumed everywhere would close most of them at once.
+
+Multiple resolvers still deciding which rig is live:
+
+- **The Rig picker is a second resolver.** `app/js/combat.js` around lines 1298 and
+  1302 decide the selected option from raw `ch.rig.tier` rather than from the
+  engine's resolved `d.rig`. When the recorded tier is not owned, `rig.tier` is
+  truthy so "No Rig" is not selected, no owned option matches either, and the browser
+  silently falls back to index 0. The stale recording it cannot clear then downgrades
+  the live rig later.
+- **The crafting bench still owns a row-selection gate** and counts one live rig
+  twice.
+- **The bench's ownership predicate differs from the engine's**, reproducing a
+  narrower version of the original disagreement.
+- **A now-dead second resolver function remains in the engine.** Trivial to remove.
+
+Damage state:
+
+- **Stale damage is masked, not discarded, so it re-arms.** Ignoring `hpSpent` when
+  `hpTier` disagrees leaves the number in storage. The implementer reported that
+  re-acquiring the original tier reads full integrity; the reviewer reproduced it
+  re-arming. Those two claims conflict and the conflict itself needs settling before
+  either is trusted.
+- **There is one damage slot for all rigs, so damaging rig B silently repairs rig A.**
+  A character owning two rigs cannot have both damaged. This needs damage keyed per
+  rig rather than a single `hpSpent`.
 
 ## Environment
 

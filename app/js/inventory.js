@@ -1769,25 +1769,17 @@ EN.inventoryView = (function () {
 
   function tbSkill(d, name) { return (d.skills || []).find(function (s) { return (s.name || "").toLowerCase() === name.toLowerCase(); }); }
 
-  // The Trauma Rig the character is actually running: the recorded tier, else the best
-  // one in the stash, and nothing at all while they are on a Scrap Rig. Same resolution
-  // the engine's Triage Save DC uses, so the Rig's Medical Baseline and its Output Bonus
-  // never disagree about which Rig is live.
-  function activeRigTier(ch) {
-    var r = (ch && ch.rig) || {};
-    if (r.scrap) return null;
-    var row = EN.engine.rigTierRow(r.tier) || EN.engine.ownedRigTiers(ch)[0];
-    return row ? row.tier : null;
-  }
   // owned crafting kits, flagged Basic vs Proficient by the character's tool proficiencies.
   // kitEquivalent is how a piece of gear that is not itself a Skill Kit stands in for one:
   // a Trauma Rig's Medical Baseline makes it count as a Basic Medkit, or an Advanced Medkit
   // at Trauma Grade [2] and up, so it feeds a Medtech pool exactly like the kit it replaces.
   // Only the Rig you are running counts; spare tiers sitting in the stash are just stock.
+  // Which Rig that is comes off the engine's resolver, the single source for it, so this
+  // bench and the Freelancer tab's Rig block can never disagree about the live tier.
   function tbKits(ch) {
     var cats = CRAFT().kitCategories || {};
     var profs = (ch.proficiencies && ch.proficiencies.tools) || {};
-    var liveRig = activeRigTier(ch);
+    var liveRig = EN.engine.rigStats(ch).rigTier;
     return (ch.equipment || []).map(function (e) {
       if (!(e.qty > 0)) return null;
       var it = findItem(e.name);

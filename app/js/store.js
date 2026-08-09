@@ -95,10 +95,11 @@ EN.store = (function () {
         deckMods: [],                    // installed Smartdeck mod keys (Codebreaker only)
         links: []                        // active Links: [{name, tier}]
       },
-      rig: {                             // Stitcher Trauma Rig, the Triage Save DC's third term
+      rig: {                             // Trauma Rig (anyone can own one); a Stitcher's Triage Save DC reads its Output Bonus
         tier: null,                      // tier name from EN.traumaRigs.tiers; null = fall back to owned gear, else Output Bonus +0
         scrap: false,                    // cobbled Scrap Rig: Output Bonus +0, Snag on Triage, Swift Protocols cost an Action
-        hpSpent: 0                       // Integrity lost off the Rig's #GRID node (Bricked at hpSpent >= the tier's Integrity)
+        hpSpent: 0,                      // Integrity lost off the Rig's #GRID node (Bricked at hpSpent >= the tier's Integrity)
+        hpTier: null                     // which tier hpSpent was taken against; a different live tier discards the damage
       },
       trainingPoints: { spent: 0, allocations: [] },
       resources: { current: {} },
@@ -239,11 +240,21 @@ EN.store = (function () {
     if (ch.equippedShield === undefined) ch.equippedShield = null;
     if (ch.equippedFocus === undefined) ch.equippedFocus = null;
     if (!ch.weaponAmmo) ch.weaponAmmo = {};
-    // Stitcher Trauma Rig state; absent on every character built before rigs existed.
-    if (!ch.rig || typeof ch.rig !== "object") ch.rig = { tier: null, scrap: false, hpSpent: 0 };
+    // Trauma Rig state; absent on every character built before rigs existed.
+    if (!ch.rig || typeof ch.rig !== "object") ch.rig = { tier: null, scrap: false, hpSpent: 0, hpTier: null };
     if (typeof ch.rig.tier !== "string") ch.rig.tier = null;
     ch.rig.scrap = !!ch.rig.scrap;
     if (typeof ch.rig.hpSpent !== "number" || ch.rig.hpSpent < 0) ch.rig.hpSpent = 0;
+    // hpTier says which Rig the recorded Integrity damage belongs to, so swapping tiers
+    // discards it instead of dumping a Black Clinic's 40 points onto a Field Kit's 15.
+    // A file saved before this field existed cannot say. If a tier was explicitly
+    // recorded the damage was taken on that Rig, so adopt it; otherwise the damage
+    // cannot be attributed to any Rig and is dropped rather than carried into one the
+    // character may never have owned.
+    if (typeof ch.rig.hpTier !== "string") {
+      ch.rig.hpTier = (ch.rig.hpSpent > 0 && ch.rig.tier) ? ch.rig.tier : null;
+      if (!ch.rig.hpTier) ch.rig.hpSpent = 0;
+    }
     if (!ch.vehicleMods || typeof ch.vehicleMods !== "object") ch.vehicleMods = {};   // {vehicleName: [modKey]}
     // a limb-platform mod records which platform it sits in; slotted pieces pay no SP
     (ch.cyberware || []).forEach(function (cw) {
