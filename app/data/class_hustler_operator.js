@@ -332,7 +332,7 @@ EN.classes.operator = {
     "5": [
       {
         name: "Fluid Engagement",
-        text: "When you take the Attack Action on your turn, you can make two attacks instead of one."
+        text: "Whenever you take the Attack Action on your turn, you can make two standard attacks instead of one."
       }
     ],
     "6": [

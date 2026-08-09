@@ -187,7 +187,7 @@ EN.flow = {
 
   /* ---- Ritual Recovery + Breakflow Restoration -------------------------- */
   ritualRecovery: {
-    note: "A structured meditation that repairs the Reservoir and eases Strain. Usable once per 24 hours; extra attempts fail and inflict 1 Stage of Strain (Resonant Fatigue). Each Stage recovered needs its own Flow Dice Pool check.",
+    note: "A structured meditation that repairs the Reservoir and eases Strain. Usable once per 24 hours; extra attempts fail and inflict 1 Stage of Strain (Resonant Saturation). Each Stage recovered needs its own Flow Dice Pool check.",
     byStage: [
       { stage: 1, name: "Ripple", time: "10 Minutes", snag: 1 },
       { stage: 2, name: "Wave", time: "30 Minutes", snag: 2 },

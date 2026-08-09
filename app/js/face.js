@@ -266,7 +266,7 @@ EN.faceView = (function () {
         ["Strong", "Solid Win", "Get what you want at a minor cost (Concession, Scrutiny, Debt)."],
         ["Mixed", "Yes, But", "Succeed with a real social cost. One benefit, one Social Fallout."],
         ["Failure", "No, And", "Miss. Lose position, alienate the room, or worsen terms."],
-        ["Critical", "Hard Burn", "The scene turns against you. Exposure, a Profile, a posture shift."]
+        ["Critical", "Hard Burn", "The scene turns against you. A Tipped Hand, a Profile, a posture shift."]
       ])),
       refSection("sit", "The Sit-Down (Resolve)", el("div", null, [
         help("A big negotiation run like a combat encounter: the Opposition has Resolve, the crew has Rounds to break it. Each successful Approach deals Pressure equal to its success tier (Flawless 3, Strong 2, Mixed 1). At 0 Resolve, the target breaks."),

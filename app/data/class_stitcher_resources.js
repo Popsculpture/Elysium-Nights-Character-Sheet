@@ -185,7 +185,7 @@ EN.classes.stitcher = {
         },
         {
           level: 10,
-          name: "Mass Revival",
+          name: "Not on My Watch",
           text: "Once per Long Rest, as an **Action**, choose up to four allies within 12 spaces. Each regains all lost Vitality and immediately ends any of the following conditions affecting them: Bleeding, Burning, Dazed, Drowsy, Hallucinating, Paralyzed, Poisoned, Staggered, or Stunned. Any chosen ally currently at 0 Wounds (dead or dying) is revived and restored to half their maximum Wounds."
         }
       ]

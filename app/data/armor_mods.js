@@ -44,7 +44,7 @@ EN.armorMods = {
     { key: "rebreather-liner", name: "Rebreather Liner", category: "environmental", price: 250, rarity: "Common", legality: "Licensed", fits: "Any",
       grants: "Sealed benefit", effect: "The suit counts as Sealed: Resistance to Toxic damage and Edge on saves against gas, disease, and airborne or environmental hazards. Does not cover vacuum. If the suit is already Sealed, it instead upgrades that seal to hold against vacuum." },
     { key: "thermal-regulation-weave", name: "Thermal Regulation Weave", category: "environmental", price: 400, rarity: "Uncommon", legality: "Licensed", fits: "Any",
-      grants: "Resistance to Fire or Cold", effect: "Choose Fire or Cold at install; you gain Resistance to that type and ignore Snag from extreme environmental heat or cold of that kind." },
+      grants: "Resistance to Fire or Cold", effect: "Choose Fire or Cold at install; you gain Resistance to that type and you do not gain Fatigue from Exposure to that kind of heat or cold." },
 
     /* ---- Stealth & Signature ---- */
     { key: "acoustic-baffles", name: "Acoustic Baffles", category: "stealth", price: 200, rarity: "Common", legality: "Legal", fits: "Loud or Powered",

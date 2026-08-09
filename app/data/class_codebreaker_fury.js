@@ -226,7 +226,7 @@ EN.classes.fury = {
       { name: "Universal Upgrade", text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements." }
     ],
     "5": [
-      { name: "Extra Attack", text: "Whenever you take the Attack Action on your turn, you can make two standard weapon attacks instead of one." },
+      { name: "Extra Attack", text: "Whenever you take the Attack Action on your turn, you can make two standard attacks instead of one." },
       { name: "Expanded Overdrive", text: "You learn **two additional** Overdrive Maneuvers from the core list." }
     ],
     "6": [

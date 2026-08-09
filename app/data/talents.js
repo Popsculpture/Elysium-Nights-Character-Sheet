@@ -104,7 +104,7 @@ EN.talents = [
     name: "Street Scrapper",
     category: "Combat & Weapon Mastery",
     requirements: "",
-    text: "Accustomed to the rough-and-tumble fighting using whatever weapons happen to be at hand, you gain the following benefits:\n• Increase your Body score by 1, to a maximum of 20.\n• You add your Simple Weapons Proficiency Bonus to attack rolls with improvised weapons, and you do not roll with Snag when wielding or throwing them.\n• Your unarmed strikes deal 1d4 Bludgeoning damage.\n• When you hit a Target with an unarmed strike or an improvised weapon on your turn, you can use a Swift Action to attempt to Grapple the Target.\n\n**Upgrade (Level 6+):** Your unarmed strike damage increases to 1d8, and you deal an additional 1d4 damage with improvised weapons. You also gain Resistance to Slashing, Bludgeoning, and Piercing damage from improvised weapons used against you."
+    text: "Accustomed to the rough-and-tumble fighting using whatever weapons happen to be at hand, you gain the following benefits:\n• Increase your Body score by 1, to a maximum of 20.\n• You add your Simple Weapons Proficiency Bonus to attack rolls with improvised weapons, and you do not roll with Snag when wielding or throwing them.\n• Your unarmed strike damage die steps up one size (a strike with no die gains 1d4).\n• When you hit a Target with an unarmed strike or an improvised weapon on your turn, you can use a Swift Action to attempt to Grapple the Target.\n\n**Upgrade (Level 6+):** Your unarmed strike damage die steps up one further size, two steps in total, and you deal an additional 1d4 damage with improvised weapons. You also gain Resistance to Slashing, Bludgeoning, and Piercing damage from improvised weapons used against you."
   },
 
   // ===== Tactics & Hybrid Fighting =====
@@ -371,6 +371,13 @@ EN.talents = [
     text: "You read a room the way a netrunner reads code: instantly and ruthlessly. You gain the following benefits:\n• Increase your Charm or Wits score by 1, to a maximum of 20.\n• When an Encounter that includes negotiation, deception, or social pressure begins, you may roll an Insight or Intuition check using Charm or Wits (DC 12). On a success, you immediately learn one piece of useful information about one Target of your choice: their highest non-physical Attribute, their most pressing emotional state (Fear, Greed, Anger, etc.), or whether they are armed or augmented.\n• You gain Edge on Initiative checks made during social Encounters, and you can use your Charm modifier in place of Wits for Initiative in such Encounters.\n\n**Upgrade (Level 6+):** You learn two pieces of useful information instead of one, and your insight applies to all hostile Targets in the social Encounter rather than just one."
   },
   {
+    key: "cutting-agent",
+    name: "Cutting Agent",
+    category: "Skills, Social & Utility",
+    requirements: "",
+    text: "For reasons that are definitely not malicious, you learn to prepare and deliver deadly chemical payloads, gaining the following benefits:\n• When you make a damage roll, you ignore Resistance to Toxic damage.\n• You can coat a weapon in toxin as a Swift Action, instead of an Action.\n• You gain Proficiency with medical and chemistry tools. With one hour of work using these tools and expending 𝒢50 worth of materials, you can create a number of doses of potent toxin equal to your Caliber.\n• Once applied to a weapon or ammunition, the toxin retains its potency for 1 minute or until you hit. When a Target takes damage from the coated weapon, they must succeed on a Body Saving Throw (DC 8 + your Tech modifier + your Caliber) or take 2d8 Toxic damage and gain the Poisoned condition until the end of your next turn.\n\n**Upgrade (Level 6+):** The toxin damage increases to 3d8 and the Poisoned condition lasts for 1 minute (with a save at the end of each of the Target's turns). You can also produce twice as many doses per crafting session."
+  },
+  {
     key: "faceless-persona",
     name: "Faceless Persona",
     category: "Skills, Social & Utility",
@@ -439,13 +446,6 @@ EN.talents = [
     category: "Skills, Social & Utility",
     requirements: "",
     text: "Time and effort spent mastering the culinary arts in the undercity has paid off. You gain the following benefits:\n• Increase your Body or Wits score by 1, to a maximum of 20.\n• You gain Proficiency with culinary tools or survival cooking gear.\n• As part of a Short Rest, you can cook a hearty meal, provided you have ingredients and proper gear. You can prepare enough food for a number of Characters equal to 4 + your Caliber. At the end of the Short Rest, any Character who eats the food and spends one or more Resilience Dice to regain Vitality regains an extra 1d8 Vitality.\n• With one hour of work or when you finish a Long Rest, you can cook a number of specialized rations equal to your Caliber. These last 8 hours. A Character can use a Swift Action to eat one to gain Vigor equal to your Caliber.\n\n**Upgrade (Level 6+):** The hearty meal bonus increases to 2d8 Vitality, and your specialized rations now also grant the eater Edge on their next Body Saving Throw within 1 hour of consumption."
-  },
-  {
-    key: "toxicologist",
-    name: "Toxicologist",
-    category: "Skills, Social & Utility",
-    requirements: "",
-    text: "For reasons that are definitely not malicious, you learn to prepare and deliver deadly chemical payloads, gaining the following benefits:\n• When you make a damage roll, you ignore Resistance to Toxic damage.\n• You can coat a weapon in toxin as a Swift Action, instead of an Action.\n• You gain Proficiency with medical and chemistry tools. With one hour of work using these tools and expending 𝒢50 worth of materials, you can create a number of doses of potent toxin equal to your Caliber.\n• Once applied to a weapon or ammunition, the toxin retains its potency for 1 minute or until you hit. When a Target takes damage from the coated weapon, they must succeed on a Body Saving Throw (DC 8 + your Tech modifier + your Caliber) or take 2d8 Toxic damage and gain the Poisoned condition until the end of your next turn.\n\n**Upgrade (Level 6+):** The toxin damage increases to 3d8 and the Poisoned condition lasts for 1 minute (with a save at the end of each of the Target's turns). You can also produce twice as many doses per crafting session."
   },
   {
     key: "trauma-medic",

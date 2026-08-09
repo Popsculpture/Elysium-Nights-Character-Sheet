@@ -1162,10 +1162,10 @@ EN.combatView = (function () {
     "Breached": ["Until Purged", "Engineering / Tech Check"], "Breakflow": ["24 Hours", "Flow Ritual / 1 Day Rest"],
     "Bricked": ["Until Repaired", "Engineering / Tech Check"], "Burning": ["Until Out", "End of turn Body DC 10"],
     "Cascade Failure": ["Until Resolved", "Engineering / Systems Check"], "Charmed": ["Until Broken", "End of turn Wits / Charm Save"],
-    "Confused": ["Special", "End of turn Wits DC 15"], "Critical Condition": ["Until Healed", "Heal above 50% Wounds"],
+    "Confused": ["Special", "End of turn Wits DC 15"], "Critical Condition": ["Until Healed", "Body DC (Varies)"],
     "Critical Wound": ["Persistent", "Surgery / Regenerative Tech"], "Cursed": ["Persistent", "Ritual / Rare Relics"],
     "Dazed": ["1 Round", "End of turn Wits DC 12"], "Drowning": ["Special", "Access to breathable air"],
-    "Drowsy": ["Persistent", "Exertion / Action to wake"], "Fatigue": ["Until Restored", "Long Rest / Treatment / Medtech"],
+    "Drowsy": ["Persistent", "Body DC 12 (shake off) / Body DC 15 (resist sleep)"], "Fatigue": ["Until Restored", "Long Rest / Treatment / Medtech"],
     "Surprised": ["1st turn of combat", "-"], "Mutating": ["Until Treated", "Complex Action Medtech DC 12 + stacks"],
     "Immunity": ["Persistent", "-"], "Resistance": ["Persistent", "-"], "Vulnerability": ["Persistent", "-"],
     "Frightened": ["Until Save", "End of turn Wits / Charm DC 15"], "Grappled": ["Until Escaped", "Contested Athletics / Acrobatics"],
@@ -2769,6 +2769,12 @@ EN.combatView = (function () {
       equippedNames.forEach(function (wname, wi) {
         var it = findWeapon(wname);
         if (!it) return;
+        // Knuckles and Shock Gloves augment the punch rather than being weapons of
+        // their own. Their catalog damage is a legacy of the old replace-the-die
+        // model, so a row here would offer a strictly worse 1d4 attack beside the
+        // stepped unarmed strike they are the reason for. The strike row and the
+        // STRIKE picker already account for them.
+        if (eng.isUnarmedAugmentName(it.name)) return;
         var h = weaponHit(it), norm = normalizeWeapon(it);
         var snagWhy = atkSnag || (h.tier === "untrained" ? "Untrained with " + h.cat + "; attacks roll with Snag" : null);
         var dmgTip = h.indirect
@@ -3271,11 +3277,22 @@ EN.combatView = (function () {
       var acro = d.skills.find(function (s) { return s.name === "Acrobatics"; });
       var attuned = !!d.flow, flowMod = d.flow ? eng.fmtMod(d.flow.attack) : null;
       var focusDie = dg.wardDie || null, focusName = dg.focus ? dg.focus.name : (dg.armor && dg.armor.wardDie ? dg.armor.name : null);
+      /* A real melee weapon die for the Parry row. Unarmed AUGMENTS (Knuckles,
+         Shock Gloves) are deliberately skipped: their catalog `damage` is what they
+         ADD to a punch, not a die you roll instead of one, so reading it here made
+         strapping them on lower your Parry below the bare fist they improve. With
+         no real weapon the row falls through to the resolved unarmed strike, which
+         already has the augment folded into it. */
+      function realMeleeWeapon(n) {
+        var w = findWeapon(n);
+        if (!w || eng.isUnarmedAugmentName(w.name)) return null;
+        return (w.group === "Simple" || w.group === "Martial") ? w : null;
+      }
       var meleeDie = null, meleeName = null;
       equippedNames.forEach(function (n) {
         if (meleeDie) return;
-        var w = findWeapon(n);
-        if (w && (w.group === "Simple" || w.group === "Martial")) { var m = (w.damage || "").match(/\d*d\d+/); if (m) { meleeDie = m[0]; meleeName = w.name; } }
+        var w = realMeleeWeapon(n);
+        if (w) { var m = (w.damage || "").match(/\d*d\d+/); if (m) { meleeDie = m[0]; meleeName = w.name; } }
       });
       // Parry also accepts bare hands, so the unarmed strike's own damage is a
       // parry source: the resolved die if anything granted one, else the flat 1.
@@ -3311,8 +3328,8 @@ EN.combatView = (function () {
       function parseDie(str) { var m = /(\d*)d(\d+)/.exec(String(str || "")); return m ? { n: parseInt(m[1] || "1", 10), sides: parseInt(m[2], 10), label: (m[1] || "1") + "d" + m[2] } : null; }
       function firstMeleeDie() {
         for (var i = 0; i < equippedNames.length; i++) {
-          var it = findWeapon(equippedNames[i]);
-          if (it && (it.group === "Simple" || it.group === "Martial")) { var pd = parseDie(it.damage); if (pd) { pd.label = it.name; return pd; } }
+          var it = realMeleeWeapon(equippedNames[i]);
+          if (it) { var pd = parseDie(it.damage); if (pd) { pd.label = it.name; return pd; } }
         }
         return null;
       }

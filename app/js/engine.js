@@ -572,6 +572,17 @@ EN.engine = (function () {
   // were already dealing. Source values per app/data/gear_melee.js.
   var GEAR_UNARMED_STEP = { "Knuckles": { steps: 1, note: "stacks with every other increase" } };
   var GEAR_UNARMED_RIDER = { "Shock Gloves": { damage: "1d4 Electric" } };
+  /* An unarmed AUGMENT is not a weapon with a die of its own. Both pieces carry a
+     `damage` string in the catalog so the stash row has something to print, but
+     that number is what the augment CONTRIBUTES to a punch, never a die you roll
+     in place of one. Anything scanning equipped gear for "the melee weapon I am
+     holding" has to skip them, or it reads 1d4 off a pair of Knuckles and hands
+     back a smaller die than the bare fist it is strapped to. Exported because the
+     Parry row and the Defensive Impulse tray both do exactly that scan. */
+  function isUnarmedAugmentName(name) {
+    return Object.prototype.hasOwnProperty.call(GEAR_UNARMED_STEP, name) ||
+           Object.prototype.hasOwnProperty.call(GEAR_UNARMED_RIDER, name);
+  }
   // Not resolvable from this sheet: the Ripper Hot-Wire "Pneumatic Bypass" is an
   // increase a Stitcher hangs on somebody ELSE's chrome, and a character record
   // carries no field for a Hot-Wire an ally installed on you, so there is
@@ -1824,6 +1835,7 @@ EN.engine = (function () {
     sizeFromHeightFt: sizeFromHeightFt, lineageHeightFt: lineageHeightFt,
     activeLineageFeatures: activeLineageFeatures, splitTalentText: splitTalentText, leaseLapsed: leaseLapsed, itemLoad: itemLoad,
     unarmedBasePick: UNARMED_BASE_PICK,
+    isUnarmedAugmentName: isUnarmedAugmentName,   // gear that augments a punch instead of being a weapon
     stepDie: stepDie,   // the picker walks the ladder too, so each option can show what it really deals
     isStackableItem: isStackableItem, isStackableName: isStackableName, entryKey: entryKey, findEntry: findEntry,
     isCarryGear: isCarryGear, rackLimit: rackLimit, rackState: rackState, rackTargets: rackTargets,

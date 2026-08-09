@@ -22,7 +22,7 @@ EN.gearCatalog.ranged = {
   items: [
     /* ---- Sidearms ---- */
     { name: "Dart Gun", group: "Sidearm", price: 400, damage: "1d4 Toxic", ammo: 6, range: "4 / 12",
-      traits: ["Single Shot", "Silent", "Delivery"], availability: "Uncommon", legality: "Restricted",
+      traits: ["Light", "Single Shot", "Silent", "Delivery"], availability: "Uncommon", legality: "Restricted",
       desc: "A compact launcher that trades stopping power for the quiet, precise delivery of whatever is loaded in the dart. Fires dart-compatible Specialty Ammo such as Toxin Rounds and Neural Disruptor Darts." },
     { name: "Ghost Gun", group: "Sidearm", price: 450, damage: "1d8 Ballistic", ammo: 10, range: "5 / 15",
       traits: ["Semi-Automatic", "Concealable", "Unregistered"], availability: "Common", legality: "Contraband",

@@ -258,6 +258,15 @@ EN.store = (function () {
       var a = ch.weaponAmmo[w];
       if (a && a.mode === "Burst") a.mode = "Burst Fire";
     });
+    // The Talent "Toxicologist" was renamed "Cutting Agent" to stop colliding with
+    // the Stitcher subclass of the same name, which KEEPS its name. Universal
+    // Upgrade slots store the talent key, so a record saved before the rename
+    // still points at "toxicologist" and would resolve to nothing.
+    Object.keys(ch.universalUpgrades || {}).forEach(function (lvl) {
+      var u = ch.universalUpgrades[lvl];
+      if (u && (u.type === "talent" || u.type === "talentUpgrade") &&
+          (u.talent === "toxicologist" || u.talent === "Toxicologist")) u.talent = "cutting-agent";
+    });
     // Overclocked Array state (6x6 rolled matrix + picked line + table rule).
     // A hand-edited/imported file can carry anything here, and the matrix
     // render reads every slot, so anything short of exactly 36 well-formed

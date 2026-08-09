@@ -170,7 +170,7 @@ EN.resolution = {
     costs: [
       { cost: "Concession", effect: "You get what you want, but must give up a term, price, timeline, favor, or piece of leverage." },
       { cost: "Debt", effect: "You now owe the Target a favor, payment, introduction, future service, or operational support." },
-      { cost: "Exposure", effect: "You reveal more than intended: your motive, urgency, affiliation, weakness, or relationship." },
+      { cost: "Tipped Hand", effect: "You reveal more than intended: your motive, urgency, affiliation, weakness, or relationship." },
       { cost: "Scrutiny", effect: "The scene attracts attention from witnesses, rivals, handlers, security, or faction observers." },
       { cost: "Reputation Tag", effect: "You gain a temporary narrative tag such as Pushy, Desperate, Unreliable, Bought, or Difficult." },
       { cost: "Faction Shift", effect: "One faction, office, or social circle shifts colder, more suspicious, or more transactional toward you." },
@@ -184,7 +184,7 @@ EN.resolution = {
     tracks: [
       { term: "Fatigue", meaning: "Physical or mental wear caused by exertion, deprivation, overwork, or extended pressure." },
       { term: "Strain", meaning: "Resonance instability caused by Overdraw, Flow misuse, or unstable channeling." },
-      { term: "Social Fallout", meaning: "Damaged trust, worsened terms, exposure, debt, scrutiny, or changes in faction posture." }
+      { term: "Social Fallout", meaning: "Damaged trust, worsened terms, a tipped hand, debt, scrutiny, or changes in faction posture." }
     ],
     guidance: "Use Fatigue as the default cost for physical wear and overexertion. Use Strain only when the consequence directly involves Overdraw or instability with the Flow. Use Social Fallout for persuasion, deception, bargaining, contract work, faction pressure, and other social negotiation scenes."
   },

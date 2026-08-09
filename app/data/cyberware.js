@@ -170,7 +170,7 @@ EN.cyberware = {
       ] },
     { key: "handRazors", short: "Hand Razors", name: "Hand Razors", zone: "Arms", enhancement: "None", platformHost: "cyberarm",
       desc: "Retractable monoblade claws inside the back of the hand. Always with you, always silent, always lethal at arm's length. Can slot into a Cyberarm without adding SP.",
-      effect: "Swift Action to extend/retract. While extended, unarmed strikes deal 1d6 Slashing with Armor Piercing 1; silent on deployment and pass standard weapon scans.",
+      effect: "Swift Action to extend/retract. While extended, unarmed strikes deal 1d6 Slashing damage and carry the Finesse and Armor Piercing 1 traits; silent on deployment and pass standard weapon scans.",
       street: "Audible clack on deploy (Snag on Stealth that turn); no Armor Piercing.",
       black: "1d8 Slashing, Armor Piercing 2; on a crit the target's worn armor loses 1 DR until repaired.",
       tiers: [

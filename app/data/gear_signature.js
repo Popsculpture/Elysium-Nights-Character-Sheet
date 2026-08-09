@@ -24,7 +24,7 @@ EN.gearCatalog.signature = {
       traits: ["Reach 1", "Two-Handed", "Armor Piercing 1"], availability: "Rare", legality: "Contraband",
       desc: "A polearm haft that projects a blade of contained plasma where a cutting edge should be. It does not chip, dull, or care what you point it at. It cuts on the way out and on the way back, and it lights the corridor while it does." },
     { name: "Claws", signature: true, kind: "melee", group: "Simple", proficiency: "Simple Weapons",
-      price: 80, damage: "1d4 Slashing", range: "Melee",
+      price: 80, damage: "1d6 Slashing", range: "Melee",
       traits: ["Light", "Finesse", "Worn"], availability: "Uncommon", legality: "Restricted",
       desc: "Reinforced claw caps or mounted talons, worn rather than held. They are always out, which is the point and the problem." },
     { name: "Gravlock Maul", signature: true, kind: "melee", group: "Martial", proficiency: "Martial Weapons",
