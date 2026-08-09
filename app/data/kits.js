@@ -98,7 +98,7 @@ EN.kits = {
       ]
     },
     stitcher: {
-      note: "Your Triage Rig comes free with the class, the same as a Codebreaker's Smartdeck. Lose it and your Protocols go dark with it.",
+      note: "A Field Kit [0] Rig comes free with the class, the same as a Codebreaker's Standard Smartdeck. It must be equipped to run Protocols, and its Output Bonus (+0 at this tier) feeds your Triage Save DC. Lose it and your Protocols go dark with it.",
       fixed: [{ name: "Basic Medkit" }],
       slots: [
         { key: "weapon", label: "Weapon", options: [

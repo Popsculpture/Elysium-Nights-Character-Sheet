@@ -1262,6 +1262,55 @@ EN.engine = (function () {
   /* ======================================================================
      MAIN: derive a full computed snapshot for a character
      ====================================================================== */
+  /* ---- Stitcher medical hardware: the equipped Trauma Rig and the Triage Save DC.
+
+     Triage Save DC = 8 + Tech Modifier + the Rig's Output Bonus. Output Bonus is the
+     rig tier's own value from EN.traumaRigs.tiers. It is NOT a proficiency bonus and
+     NOT Caliber. No tool-proficiency tier bonus feeds this DC, and no such tier bonus
+     exists in this system; Medical Tools stays an ordinary Tool Proficiency.
+
+     Rig state lives on ch.rig ({tier, scrap}), read by tier NAME the same way a
+     Smartdeck is read out of ch.grid.deckTier. When no tier has been recorded we fall
+     back to the best Trauma Rig the character actually owns, matched on a gear row's
+     rigTier (the counterpart of a Smartdeck row's deckTier), so the free Field Kit
+     resolves with no extra UI. A Scrap Rig, an unknown tier, and no rig at all all
+     resolve to Output Bonus +0, so the DC is always a number and never NaN. */
+  function rigTierRow(tier) {
+    if (!tier) return null;
+    var tiers = (EN.traumaRigs && EN.traumaRigs.tiers) || [];
+    return tiers.find(function (r) { return r.tier === tier; }) || null;
+  }
+  function ownedRigTier(ch) {
+    var best = null;
+    ((ch && ch.equipment) || []).forEach(function (e) {
+      if (!e || (e.qty != null && e.qty <= 0)) return;
+      var it = loadCatalogItem(e.name);
+      var row = rigTierRow(it && it.rigTier);
+      if (row && (!best || row.t > best.t)) best = row;
+    });
+    return best;
+  }
+  function triageStats(ch, attributes) {
+    var techMod = attributes.TEC.mod;
+    var r = (ch && ch.rig) || {};
+    var scrap = !!r.scrap;
+    var row = scrap ? null : (rigTierRow(r.tier) || ownedRigTier(ch));
+    var outputBonus = row ? (row.outputBonus || 0) : 0;
+    return {
+      rigTier: row ? row.tier : null,
+      rigTierIndex: row ? row.t : null,
+      scrapRig: scrap,
+      outputBonus: outputBonus,
+      techMod: techMod,
+      saveDC: 8 + techMod + outputBonus,
+      formula: "8 + Tech Modifier + Rig's Output Bonus",
+      // A Scrap Rig imposes Snag on every Triage healing roll and attack roll, and
+      // upgrades any Swift Action Protocol to an Action.
+      snagOnTriage: scrap,
+      swiftBecomesAction: scrap
+    };
+  }
+
   function derive(ch) {
     ch = ch || {};
     var level = clamp(ch.level || 1, 1, R.maxLevel);
@@ -1454,6 +1503,9 @@ EN.engine = (function () {
     /* #GRID hacking stats + equipped rig */
     var grid = gridStats(ch, attributes, skills, level, cal, resource);
 
+    /* Stitcher medical hardware: the equipped Trauma Rig and the Triage Save DC it feeds */
+    var triage = ch.class === "stitcher" ? triageStats(ch, attributes) : null;
+
     /* features unlocked up to current level (class + subclass + identity) */
     var features = [];
     if (cls && cls.featuresByLevel) {
@@ -1529,6 +1581,8 @@ EN.engine = (function () {
       wardDie: defLoadout.wardDie, defenseGear: defLoadout,
       chromeTax: chromeTax, platformSlotted: platformSlotted(ch),
       grid: grid,
+      // Stitcher only: {rigTier, outputBonus, scrapRig, saveDC, ...}; null otherwise.
+      triage: triage,
       woundsMax: woundsMax, critThreshold: critThreshold,
       saves: saves, skills: skills,
       resource: resource, flow: flow,

@@ -1,6 +1,31 @@
 window.EN = window.EN || {};
 EN.classes = EN.classes || {};
 
+/* Trauma Rig tiers, the Stitcher's medical hardware and the direct counterpart to the
+   Codebreaker's Smartdeck: a tier table the engine reads by tier name, exactly the way
+   EN.grid.smartdecks is read through a gear row's deckTier. Gear rows for the Rig carry
+   rigTier, and the engine picks the best one the character owns.
+
+   Output Bonus is the rig's own tier value and the third term of the Triage Save DC. It
+   is NOT a proficiency bonus and NOT Caliber. No tool-proficiency tier bonus feeds this
+   DC, and no such tier bonus exists in this system; Medical Tools remains an ordinary
+   Tool Proficiency and nothing more. No rig at all, and a cobbled Scrap Rig, both
+   resolve to Output Bonus +0, so the DC always resolves to a number. */
+EN.traumaRigs = {
+  saveDcFormula: "Triage Save DC: 8 + your Tech Modifier + your Rig's Output Bonus",
+  tiers: [
+    { tier: "Field Kit",     t: 0, outputBonus: 0 },
+    { tier: "Clinic Grade",  t: 1, outputBonus: 1 },
+    { tier: "Trauma Grade",  t: 2, outputBonus: 1 },
+    { tier: "Combat Grade",  t: 3, outputBonus: 2 },
+    { tier: "Ward Response", t: 4, outputBonus: 2 },
+    { tier: "Black Clinic",  t: 5, outputBonus: 3 }
+  ],
+  startingRig: "A Stitcher starts with a Field Kit [0] free with the class, the same way a Codebreaker starts with a Standard Smartdeck. The Rig must be equipped to use Triage Protocols. Upgrading the Rig carries your Protocols and any modifications across.",
+  scrapRig: "A cobbled-together Scrap Rig counts as Output Bonus +0 regardless of what you carried before. You suffer Snag on all Triage healing rolls and attack rolls, and any Triage Protocol that normally costs a Swift Action costs an Action instead.",
+  replacement: "Buy a replacement Rig at its listed price, or build one during Downtime with access to a workshop, 250 \u{1D4A2} in chemical precursors, and a successful Medtech or Engineering Dice Pool check. On a failure the materials are wasted."
+};
+
 // Triage Protocols as structured sub-entries, the single source for the engine, the Class-tab
 // picker, and the print sheet. The Triage feature's prose (below) is composed from this list,
 // so the displayed text and the machine-readable data can never drift apart.
@@ -8,17 +33,17 @@ var STITCHER_TRIAGE_PROTOCOLS = [
   { name: "Adrenaline Spike", action: "Swift Action", cost: 1, text: "Target one ally within 6 spaces. The target immediately gains **Vigor** equal to 1d8 + your Tech Modifier. Until the end of their next turn, their Speed increases by 2 and they ignore Difficult Terrain." },
   { name: "Chemical Purge", action: "Swift Action", cost: 1, text: "Target one ally within 6 spaces. The target may immediately end one of the following conditions: *Poisoned*, *Bleeding*, *Paralyzed*, or *Blinded*." },
   { name: "Trauma Patch", action: "Action", cost: 1, text: "Target one Character within your melee reach. The target regains Vitality equal to 2d8 + your Tech Modifier. If the target is Unconscious due to a Critical Condition or Fatigue, they immediately regain consciousness." },
-  { name: "Toxic Overdose", action: "Action", cost: 1, text: "Target one enemy within 6 spaces. The target must make a Body Save (DC = 8 + your Tech Modifier + your Medical Tools Proficiency Bonus). On a failure, they take Toxic damage equal to 2d6 + your Tech Modifier and are *Poisoned* until the end of their next turn." },
-  { name: "Sedative", action: "Action", cost: 1, text: "Target one enemy within 6 spaces. The target must make a Body Save (DC = 8 + your Tech Modifier + your Medical Tools Proficiency Bonus). On a failure, they become *Drowsy*. Dosing a target who is already Drowsy stacks toward unconsciousness, as described under the Drowsy condition. Outside of combat, a single dose is usually enough to drop a lone, unaware mark into true sleep, at the GM's discretion." },
+  { name: "Toxic Overdose", action: "Action", cost: 1, text: "Target one enemy within 6 spaces. The target must make a Body Save (DC = 8 + your Tech Modifier + your Rig's Output Bonus). On a failure, they take Toxic damage equal to 2d6 + your Tech Modifier and are *Poisoned* until the end of their next turn." },
+  { name: "Sedative", action: "Action", cost: 1, text: "Target one enemy within 6 spaces. The target must make a Body Save (DC = 8 + your Tech Modifier + your Rig's Output Bonus). On a failure, they become *Drowsy*. Dosing a target who is already Drowsy stacks toward unconsciousness, as described under the Drowsy condition. Outside of combat, a single dose is usually enough to drop a lone, unaware mark into true sleep, at the GM's discretion." },
   { name: "Coagulant Burst", action: "Impulse Action", cost: 1, text: "Trigger: An ally within 6 spaces takes damage or gains the Bleeding condition. You immediately reduce the incoming damage by an amount equal to your Tech Modifier + Caliber and completely prevent the *Bleeding* condition from applying." },
   { name: "Failsafe", action: "Impulse Action", cost: 1, text: "Trigger: An ally within 6 spaces is reduced to 0 Vitality by damage, or takes damage while already at 0 Vitality. They immediately gain **Vigor** equal to 2d8 + your Tech Modifier. Until the end of their next turn, they ignore the Speed reduction from being Bloodied." },
   { name: "Nerve Block", action: "Action", cost: 1, text: "Target one ally within 6 spaces. For the next minute, that ally gains **Resistance** to Bludgeoning, Piercing, and Slashing damage, but cannot benefit from any effects that restore Vitality or Wounds. You or the affected ally can disable this Nerve Block early at any time (no action required)." },
   { name: "Triage Sweep", action: "Action", cost: 1, text: "Target up to three allies within 6 spaces. Each target regains Vitality equal to 1d6 + your Tech Modifier." },
   { name: "Casualty Extraction", action: "Swift Action", cost: 1, text: "Target one ally within 12 spaces. The ally is pulled up to 6 spaces toward you without provoking opportunity attacks and regains Vitality equal to your Tech Modifier + your Caliber." },
   { name: "Booster Shot", action: "Swift Action", cost: 1, text: "Target one ally within 6 spaces. Until the start of your next turn, the target rolls all Saving Throws with Edge." },
-  { name: "Muscle Relaxant", action: "Action", cost: 1, text: "Target one enemy within 6 spaces. The target must make a Body Save (DC = 8 + your Tech Modifier + your Medical Tools Proficiency Bonus). On a failure, until the end of their next turn their Speed is halved and they roll with Snag on attack rolls." }
+  { name: "Muscle Relaxant", action: "Action", cost: 1, text: "Target one enemy within 6 spaces. The target must make a Body Save (DC = 8 + your Tech Modifier + your Rig's Output Bonus). On a failure, until the end of their next turn their Speed is halved and they roll with Snag on attack rolls." }
 ];
-var STITCHER_TRIAGE_INTRO = "The Stitcher's core tool is a **Triage Rig**: a cybernetic auto-injector gauntlet, an alchemical synthesizer harness, a smart-medic backpack, or something functionally equivalent. The Rig rapidly mixes base reagents or standard medical supplies into fast-acting chemical assets.\n\n*You must have your Triage Rig equipped to use Triage Protocols. If your Rig is lost or destroyed, you can assemble a new one during a Long Rest using standard medical and chemistry tools.*\n\n**Your Triage Pool.** Your maximum Triage equals your **Caliber + your Tech Modifier** (minimum 1). You regain all spent Triage at the end of a Short or Long Rest.\n\n**Triage Protocols.** At 1st Level, you learn four Triage Protocols. You learn two additional Triage Protocols at 5th Level through Expanded Triage.\n\n*Unless otherwise noted, all Triage Protocols cost 1 Triage to activate. Ranged protocols are delivered via your Rig's hardware, such as smart-darts or wireless auto-injector patches.*";
+var STITCHER_TRIAGE_INTRO = "The Stitcher's core tool is a **Triage Rig**: a cybernetic auto-injector gauntlet, an alchemical synthesizer harness, a smart-medic backpack, or something functionally equivalent. The Rig rapidly mixes base reagents or standard medical supplies into fast-acting chemical assets.\n\n**Your Rig.** You start with a **Field Kit [0]** free with the class, the same way a Codebreaker starts with a Standard Smartdeck. Every Rig lists an **Output Bonus** for its tier, and that number is what your chemistry hits with. *You must have your Rig equipped to use Triage Protocols.* Upgrading to a higher-tier Rig carries your Protocols and any modifications across.\n\n**Triage Save DC:** 8 + your Tech Modifier + your Rig's Output Bonus\n\n**Your Triage Pool.** Your maximum Triage equals your **Caliber + your Tech Modifier** (minimum 1). You regain all spent Triage at the end of a Short or Long Rest.\n\n**Triage Protocols.** At 1st Level, you learn four Triage Protocols. You learn two additional Triage Protocols at 5th Level through Expanded Triage.\n\n*Unless otherwise noted, all Triage Protocols cost 1 Triage to activate. Ranged protocols are delivered via your Rig's hardware, such as smart-darts or wireless auto-injector patches.*\n\n**The Scrap Rig.** During a Long Rest you can cobble a Scrap Rig together out of standard supplies using Medical and Engineering tools. A Scrap Rig counts as **Output Bonus +0** regardless of what you carried before, you suffer **Snag** on all Triage healing rolls and attack rolls, and any Triage Protocol that normally costs a Swift Action costs an Action instead.\n\n**Replacing a Rig.** Buy a replacement at its listed price, or build one during Downtime with access to a workshop, 250 \u{1D4A2} in chemical precursors, and a successful Medtech or Engineering Dice Pool check. On a failure the materials are wasted and you must acquire more to try again.";
 var STITCHER_TRIAGE_TEXT = STITCHER_TRIAGE_INTRO + "\n\n" + STITCHER_TRIAGE_PROTOCOLS.map(function (p) {
   return "**" + p.name + " (" + p.action + "):** " + p.text;
 }).join("\n\n");
@@ -49,7 +74,7 @@ EN.classes.stitcher = {
     maxFormula: "Your maximum Triage is equal to your Caliber + your Tech Modifier (minimum of 1).",
     refresh: "You regain all spent Triage at the end of a Short or Long Rest.",
     fuels: "Triage fuels Triage Protocols and subclass medical or toxic burst effects. Examples already present in the draft include: Adrenaline Spike, Chemical Purge, Trauma Patch, Toxic Overdose, Neuro-Corrosive Cloud, Biological Meltdown.",
-    hardware: "The Stitcher relies on a highly specialized piece of equipment known as a Triage Rig. This might be a cybernetic auto-injector gauntlet, an alchemical synthesizer harness, or a smart-medic backpack. The Rig rapidly mixes base reagents or standard medical supplies into potent, fast-acting chemical assets.\n\nYou must have your Triage Rig equipped to use Triage Protocols. If your Rig is lost or destroyed, you can assemble a new one during a Long Rest using standard medical and chemistry tools.\n\nHardware Dependency (Optional Rule)\n\nYour Triage Rig is a highly complex piece of proprietary hardware, relying on micro-synthesizers and chemical calibrators. It cannot simply be snapped together from spare bandages. If your Triage Rig is lost or destroyed, you face the following logistics to recover your abilities:\n\nThe Scrap Rig (Emergency Stopgap): During a Long Rest, you can use Medical and Engineering tools to cobble together a \"Scrap Rig\" out of standard supplies. While using a Scrap Rig, you can activate your Triage Protocols, but the unstable mixtures cause you to suffer Snag on all Triage healing rolls and attack rolls. Furthermore, any Triage Protocol that normally costs a Swift Action now costs a standard Action due to the clunky manual injection process.\n\nPurchasing a Replacement: You can purchase a factory-standard replacement Rig from corporate medical suppliers or high-end black market fixers. A replacement Rig costs 500.\n\nCrafting a Replacement: If you have access to a proper laboratory or workshop during downtime, you can build a new Rig from scratch. This requires 250 in raw chemical precursors and a successful Medtech or Engineering Dice Pool check. On a failure, the materials are wasted, and you must acquire more to try again.",
+    hardware: "The Stitcher relies on a piece of equipment known as a Triage Rig. This might be a cybernetic auto-injector gauntlet, an alchemical synthesizer harness, or a smart-medic backpack. The Rig rapidly mixes base reagents or standard medical supplies into potent, fast-acting chemical assets.\n\nYou start with a Field Kit [0] free with the class, the same way a Codebreaker starts with a Standard Smartdeck. You must have your Rig equipped to use Triage Protocols, and upgrading the Rig carries your Protocols and any modifications across.\n\nEvery Rig tier lists an Output Bonus, which is the third term of your Triage Save DC: 8 + your Tech Modifier + your Rig's Output Bonus. The Scrap Rig fallback, purchase, and Downtime crafting rules all live in the Level 1 Triage feature.",
 
     abilityNoun: "Triage Protocol",
     abilityNounPlural: "Triage Protocols",
@@ -58,7 +83,12 @@ EN.classes.stitcher = {
   },
 
   startingProficiencies: {
-    weapons: ["Simple Weapons", "Sidearms", "Dart Guns", "Chem Spewers"],
+    // Dart Guns and Chem Spewers were never proficiency categories. A Dart Gun sits
+    // under Sidearms, which this class already has; a Chem Spewer needs Heavy Weapons,
+    // which this class does not get. Non-Toxicologist Stitchers therefore have no path
+    // to the Chem Spewer, and that is intended: a Toxicologist gets chemical output
+    // through the Spewer Rig instead.
+    weapons: ["Simple Weapons", "Sidearms"],
     armor: ["Light Armor", "Medium Armor"],
     shields: [],
     skills: ["Medtech", "Investigation", "choose one (Intuition, Systems, or Perception)"],
@@ -171,12 +201,12 @@ EN.classes.stitcher = {
         {
           level: 1,
           name: "Field Triage",
-          text: "You gain the following benefits:\n\n• **Ranged Care:** When you use the Trauma Patch Triage Protocol, its range increases from melee reach to 6 spaces.\n• **Trauma Buffer:** Whenever you grant an ally Vigor, they gain an extra amount of Vigor equal to your Caliber.\n• **Forensic Pathology:** Out of combat, spend 10 minutes examining a biological subject (living or dead) to determine the exact cause and time of death, identify any toxins or diseases in their system, and assess their physical limitations or hidden injuries (making Medtech or Investigation Dice Pool checks if the GM rules the information is deliberately obfuscated)."
+          text: "You gain the following benefits:\n\n• **Ranged Care:** When you use the Trauma Patch Triage Protocol, its range increases from melee reach to 6 spaces.\n• **Trauma Buffer:** Whenever you grant an ally Vigor, they gain an extra amount of Vigor equal to your Caliber.\n• **Forensic Pathology:** Out of combat, spend 10 minutes examining a biological subject (living or dead) to determine the exact cause and time of death, identify any toxins or diseases in their system, and assess their physical limitations or hidden injuries (making Medtech or Investigation Dice Pool checks if the GM rules the information is deliberately obfuscated).\n• **Beacon Rig:** Your Rig broadcasts a vital-sign aura. While you are broadcasting, allies within 3 spaces ignore the Speed reduction from being Bloodied, ignore the level of Fatigue they took for dropping to 0 Vitality, and roll Body Saves with **Edge**. That Fatigue is suppressed, not cured: it lands the moment they leave the broadcast or it stops. You cannot be Hidden while broadcasting, and you are visible to anything with a scanner. Starting or stopping the broadcast is a **Free Action**. As an exception to normal recovery, one ally who takes a Short Rest inside the broadcast reduces their Fatigue by 1 level."
         },
         {
           level: 3,
           name: "Clear!",
-          text: "As an **Impulse Action** when an enemy within 3 spaces makes an attack against an ally, spend 1 Triage to fire a pair of electrode probes into them. The attacker must make a Body Save (DC = 8 + your Tech Modifier + your Medical Tools Proficiency Bonus). On a failure, they take 2d8 Electric damage and are pushed 2 spaces away from your ally, automatically causing the attack to miss if they are pushed out of melee reach."
+          text: "As an **Impulse Action** when an enemy within 3 spaces makes an attack against an ally, spend 1 Triage to fire a pair of electrode probes into them. The attacker must make a Body Save (DC = 8 + your Tech Modifier + your Rig's Output Bonus). On a failure, they take 2d8 Electric damage and are pushed 2 spaces away from your ally, automatically causing the attack to miss if they are pushed out of melee reach."
         },
         {
           level: 7,
@@ -198,7 +228,7 @@ EN.classes.stitcher = {
         {
           level: 1,
           name: "Chemical Warfare",
-          text: "You gain the following benefits:\n\n• **Heavy Application:** Proficiency with the Chem Spewer and Flamethrower Heavy Weapons.\n• **Corrosive Degradation:** Whenever you deal Toxic or Acid damage to an enemy, you ignore Toxic/Acid Resistance (but not Immunity). If you inflict the Poisoned condition on an enemy, they also suffer a -2 penalty to their Damage Reduction (DR) while poisoned. This DR penalty does not stack with itself if the target is subject to multiple corrosive or poisonous effects.\n• **Chemical Breaching:** Out of combat, spend 1 minute applying corrosive gels with your Triage Rig to melt through standard locks, chains, chain-link fences, or thin metal plating, without triggering noise alarms or requiring a Dice Pool tool check."
+          text: "You gain the following benefits:\n\n• **Spewer Rig:** As an Action, spend 1 Triage to vent a Chemical Discharge in an Area 3 cone. Every enemy in the cone makes a Body Save against your Triage Save DC, taking 2d6 Toxic damage on a failure and half as much on a success. This is indirect delivery: it adds no attribute modifier to damage.\n• **Corrosive Degradation:** Whenever you deal Toxic or Acid damage to an enemy, you ignore Toxic/Acid Resistance (but not Immunity). If you inflict the Poisoned condition on an enemy, they also suffer a -2 penalty to their Damage Reduction (DR) while poisoned. This DR penalty does not stack with itself if the target is subject to multiple corrosive or poisonous effects.\n• **Chemical Breaching:** Out of combat, spend 1 minute applying corrosive gels with your Triage Rig to melt through standard locks, chains, chain-link fences, or thin metal plating, without triggering noise alarms or requiring a Dice Pool tool check."
         },
         {
           level: 3,
@@ -208,12 +238,12 @@ EN.classes.stitcher = {
         {
           level: 7,
           name: "Neuro-Corrosive Cloud",
-          text: "As an **Action**, spend 2 Triage to unleash a caustic cloud in an Area 4 centered on a point you can see within 12 spaces. The cloud heavily obscures the area and lasts 1 minute. When an enemy enters the cloud for the first time on a turn or starts its turn there, it must make a Body Save (DC = 8 + your Tech Modifier + your Medical Tools Proficiency Bonus). On a failure, it takes 3d6 Acid damage and is Blinded until the end of its next turn. Allies who enter the cloud are unaffected."
+          text: "As an **Action**, spend 2 Triage to unleash a caustic cloud in an Area 4 centered on a point you can see within 12 spaces. The cloud heavily obscures the area and lasts 1 minute. When an enemy enters the cloud for the first time on a turn or starts its turn there, it must make a Body Save (DC = 8 + your Tech Modifier + your Rig's Output Bonus). On a failure, it takes 3d6 Acid damage and is Blinded until the end of its next turn. Allies who enter the cloud are unaffected."
         },
         {
           level: 10,
           name: "Biological Meltdown",
-          text: "Once per Long Rest, as an **Action**, force one target within 12 spaces to make a Body Save (DC = 8 + your Tech Modifier + your Medical Tools Proficiency Bonus).\n\n• **On a failure:** The target takes 8d10 Toxic damage and suffers severe necrosis. For 1 minute, it cannot regain Vitality or Wounds and takes an additional 2d10 Toxic damage at the start of each of its turns.\n• **On a success:** It takes half the initial damage and suffers no ongoing effects.\n\nIf a target dies while under this necrosis, its body bursts, dealing 4d6 Acid damage to all other enemies within 2 spaces."
+          text: "Once per Long Rest, as an **Action**, force one target within 12 spaces to make a Body Save (DC = 8 + your Tech Modifier + your Rig's Output Bonus).\n\n• **On a failure:** The target takes 8d10 Toxic damage and suffers severe necrosis. For 1 minute, it cannot regain Vitality or Wounds and takes an additional 2d10 Toxic damage at the start of each of its turns.\n• **On a success:** It takes half the initial damage and suffers no ongoing effects.\n\nIf a target dies while under this necrosis, its body bursts, dealing 4d6 Acid damage to all other enemies within 2 spaces."
         }
       ]
     },
@@ -225,7 +255,7 @@ EN.classes.stitcher = {
         {
           level: 1,
           name: "Black Market Butcher",
-          text: "You gain Proficiency with Engineering Tools. If you spend 10 minutes extracting tech from a defeated enemy with cybernetics or the Machine Physiology trait, you harvest Cyber-Scrap. You also harvest organic salvage from defeated biological enemies (adrenal tissue, bio-gel), which is stored and used identically to Cyber-Scrap (including for Rig Fuel and Pawn It). You can hold Cyber-Scrap up to your Tech Modifier, and use it in two ways:\n\n• **Rig Fuel:** As an **Action**, break down a piece of Cyber-Scrap into your Triage Rig to regain 1 spent Triage.\n• **Pawn It:** Sell Cyber-Scrap to fixers, merchants, or underground clinics for a modest payout (the exact \u{1D4A2} value is set by the GM based on the tier of the enemy it was harvested from)."
+          text: "You gain Proficiency with Engineering Tools. If you spend 10 minutes extracting tech from a defeated enemy with cybernetics or the Machine Physiology trait, you harvest Cyber-Scrap. You also harvest organic salvage from defeated biological enemies (adrenal tissue, bio-gel), which is stored and used identically to Cyber-Scrap (including for Rig Fuel and Pawn It). You can hold Cyber-Scrap up to your Tech Modifier, and use it in two ways:\n\n• **Rig Fuel:** As an **Action**, break down a piece of Cyber-Scrap into your Triage Rig to regain 1 spent Triage.\n• **Pawn It:** Sell Cyber-Scrap to fixers, merchants, or underground clinics for a modest payout (the exact \u{1D4A2} value is set by the GM based on the tier of the enemy it was harvested from).\n• **Chop Rig:** Harvesting Cyber-Scrap takes 1 minute instead of 10, and your Cyber-Scrap capacity becomes **twice your Tech Modifier**. As an **Action**, spend 1 Cyber-Scrap to apply an Aftermarket Hot-Wire to a willing ally within your melee reach; it lasts until the end of the encounter and does not count against your usual number of Hot-Wires."
         },
         {
           level: 3,
@@ -240,7 +270,7 @@ EN.classes.stitcher = {
         {
           level: 10,
           name: "Cyber-Rejection",
-          text: "Once per Long Rest, as an **Action**, force an enemy within 12 spaces to make a Body Save (DC = 8 + your Tech Modifier + your Medical or Engineering Tools Proficiency Bonus).\n\n• **On a failure:** For 1 minute, their Speed is halved, they suffer Snag on all attack rolls and physical saving throws, and they take 4d10 Toxic damage at the start of each of their turns. They may repeat the Save at the end of each of their turns to end the effect.\n• **On a success:** They take half the initial 4d10 damage and suffer no ongoing effects."
+          text: "Once per Long Rest, as an **Action**, force an enemy within 12 spaces to make a Body Save (DC = 8 + your Tech Modifier + your Rig's Output Bonus).\n\n• **On a failure:** For 1 minute, their Speed is halved, they suffer Snag on all attack rolls and physical saving throws, and they take 4d10 Toxic damage at the start of each of their turns. They may repeat the Save at the end of each of their turns to end the effect.\n• **On a success:** They take half the initial 4d10 damage and suffer no ongoing effects."
         }
       ]
     }

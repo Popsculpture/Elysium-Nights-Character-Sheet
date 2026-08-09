@@ -1174,7 +1174,15 @@ EN.builder = (function () {
           prio.notes.map(function (n) { return el("p.help", { text: n }); }))));
       }
       if (cls.resource && ch.class !== "shaper") {
-        corePb.push(feature(cls.resource.name + " (Resource)", (cls.resource.maxFormula ? "Max Pool = " + cls.resource.maxFormula + "\n\n" : "") + (cls.resource.fuels || ""), "class", "Pool " + (d.resource ? d.resource.max : "")));
+        // A Stitcher's chemistry lands against a derived Triage Save DC, so print it
+        // with the pool rather than leaving the player to add the Rig's Output Bonus up.
+        var resBody = (cls.resource.maxFormula ? "Max Pool = " + cls.resource.maxFormula + "\n\n" : "");
+        if (d.triage) {
+          resBody += "Triage Save DC = 8 + Tech Modifier + your Rig's Output Bonus = " + d.triage.saveDC +
+            " (" + (d.triage.scrapRig ? "Scrap Rig" : (d.triage.rigTier || "no Rig recorded")) +
+            ", Output Bonus " + (d.triage.outputBonus >= 0 ? "+" : "") + d.triage.outputBonus + ")\n\n";
+        }
+        corePb.push(feature(cls.resource.name + " (Resource)", resBody + (cls.resource.fuels || ""), "class", "Pool " + (d.resource ? d.resource.max : "")));
         var gp = resourcePicker(ch); if (gp) corePb.push(gp);
       }
       if (ch.class === "shaper" && d.flow) {

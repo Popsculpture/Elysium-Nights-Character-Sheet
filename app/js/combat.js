@@ -2480,6 +2480,22 @@ EN.combatView = (function () {
                     function () { store.update(function (c) { c.resources.current[d.resource.name] = Math.min(d.resource.max, rCur + 1); }); })
         ]));
         kids.push(bar(rCur, d.resource.max, resourceColor(d.resource.name)));
+        // Stitcher: the Triage Save DC every Protocol save lands against, plus the Rig
+        // tier feeding its Output Bonus. Both come off the derived record.
+        if (d.triage) {
+          var signed = function (n) { return (n >= 0 ? "+" : "") + n; };
+          kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "6px" } }, [
+            el("span.chip", { style: { fontSize: "9.5px", color: resourceColor("Triage"), borderColor: resourceColor("Triage") },
+                              title: "Triage Save DC: 8 + your Tech Modifier + your Rig's Output Bonus" },
+               "TRIAGE SAVE DC " + d.triage.saveDC),
+            el("span.help", { style: { margin: 0, fontSize: "10.5px" },
+                              text: (d.triage.scrapRig ? "Scrap Rig" : (d.triage.rigTier || "no Rig recorded")) +
+                                    " · Output Bonus " + signed(d.triage.outputBonus) +
+                                    " · Tech " + signed(d.triage.techMod) })
+          ]));
+          if (d.triage.scrapRig) kids.push(el("p.help", { style: { margin: "4px 0 0", fontSize: "10.5px" },
+            text: "Scrap Rig: Snag on all Triage healing and attack rolls, and every Swift Action Protocol costs an Action." }));
+        }
         resourceFeats.forEach(pushFeat);
       }
       if (otherFeats.length) {

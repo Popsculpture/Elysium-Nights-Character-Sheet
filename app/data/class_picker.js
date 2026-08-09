@@ -69,7 +69,7 @@ EN.classPicker = {
       }
     },
     stitcher: {
-      blurb: "Stitchers are the combat medics and brilliant field chemists keeping the underworld alive. Armed with proprietary Triage Rigs, they synthesize potent compounds in the middle of a firefight. Whether they are stabilizing a dying ally, purging toxins, or providing preventative care through chemical enhancements, a Stitcher absolutely refuses to let anyone die on their watch.",
+      blurb: "Stitchers are the combat medics and brilliant field chemists keeping the underworld alive. Armed with a rig anyone can buy and the knowledge nobody sells, they synthesize potent compounds in the middle of a firefight. Whether they are stabilizing a dying ally, purging toxins, or providing preventative care through chemical enhancements, a Stitcher absolutely refuses to let anyone die on their watch.",
       playIf: "Play a Stitcher if: You want to hold the line against death itself, buffing your team and punishing threats with chemical warfare.",
       subs: {
         the_lifeline: { blurb: "A dedicated combat medic focused purely on stabilization, cellular repair, and keeping the crew in the fight.", playIf: "Play a Lifeline if: You want to be the ultimate safety net, so no ally falls on your watch no matter how bad the firefight gets." },

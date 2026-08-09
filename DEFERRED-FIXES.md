@@ -75,6 +75,30 @@ Recorded so nobody re-investigates them.
   set or step unarmed damage, at which tier. Scope went past what was specified, so
   the classifications deserve a read.
 
+## Latent issue found in step 3
+
+- **The action-type classifier cannot see bolded action types.** It is a plain-text
+  regex (`app/js/combat.js` around line 1230, duplicated in `app/js/printsheet.js`
+  and `app/js/pdfexport.js`) matching `as an Action`, so any feature written
+  `As an **Action**` falls through and renders as PASSIVE on the sheet, the print
+  sheet and the PDF. Step 3 tripped this twice and was fixed by unbolding those two
+  strings, which is the convention that already worked. But `Rig Fuel`,
+  `Biological Meltdown` and `Chemical Warfare` are mis-tagged PASSIVE for the same
+  reason, and that predates this sync. Widening the regex to tolerate `**` would fix
+  all of them at once, but it reclassifies features beyond the sync's scope, so it
+  was left alone. Worth doing deliberately later.
+- **`Field Triage` moved from Features to Abilities** because the Beacon Rig toggle
+  introduced "Free Action" into its text. Correct for a feature that now has an
+  active toggle, but it is a visible relocation.
+- **"Triage Rig" versus "Trauma Rig" naming.** The tier table exports as
+  `EN.traumaRigs` while the class prose still says Triage Rig. Settle in step 4.
+- **"The modifier this Talent raised" is not derivable.** Talent attribute increases
+  are not modeled at all, so the app never learns whether the player raised Wits or
+  Tech on Trauma Medic. The text carries a parenthetical instead. Deriving it needs a
+  new stored choice on the talent.
+- **Cyber-Scrap capacity is prose only.** Nothing computes it, so the Chop Rig
+  doubling to twice Tech Modifier is text with no engine path behind it.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from
