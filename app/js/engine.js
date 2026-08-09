@@ -1269,38 +1269,65 @@ EN.engine = (function () {
      NOT Caliber. No tool-proficiency tier bonus feeds this DC, and no such tier bonus
      exists in this system; Medical Tools stays an ordinary Tool Proficiency.
 
-     Rig state lives on ch.rig ({tier, scrap}), read by tier NAME the same way a
-     Smartdeck is read out of ch.grid.deckTier. When no tier has been recorded we fall
+     Rig state lives on ch.rig ({tier, scrap, hpSpent}), read by tier NAME the same way
+     a Smartdeck is read out of ch.grid.deckTier. When no tier has been recorded we fall
      back to the best Trauma Rig the character actually owns, matched on a gear row's
      rigTier (the counterpart of a Smartdeck row's deckTier), so the free Field Kit
      resolves with no extra UI. A Scrap Rig, an unknown tier, and no rig at all all
-     resolve to Output Bonus +0, so the DC is always a number and never NaN. */
+     resolve to Output Bonus +0, so the DC is always a number and never NaN.
+
+     Everything else the Rig carries is read straight off the tier row, where it was
+     derived from the Tier ordinal: Mod Slots (= Tier), the cumulative trait list, the
+     Medical Baseline grade, Integrity, and the #GRID node tier it projects. Nothing is
+     recomputed here, so the sheet and the storefront always agree. */
   function rigTierRow(tier) {
     if (!tier) return null;
     var tiers = (EN.traumaRigs && EN.traumaRigs.tiers) || [];
     return tiers.find(function (r) { return r.tier === tier; }) || null;
   }
-  function ownedRigTier(ch) {
-    var best = null;
+  // every Trauma Rig tier the character owns, best first; the Rig picker lists these
+  function ownedRigTiers(ch) {
+    var rows = [], seen = {};
     ((ch && ch.equipment) || []).forEach(function (e) {
       if (!e || (e.qty != null && e.qty <= 0)) return;
       var it = loadCatalogItem(e.name);
       var row = rigTierRow(it && it.rigTier);
-      if (row && (!best || row.t > best.t)) best = row;
+      if (row && !seen[row.tier]) { seen[row.tier] = 1; rows.push(row); }
     });
-    return best;
+    return rows.sort(function (a, b) { return b.t - a.t; });
   }
+  function ownedRigTier(ch) { return ownedRigTiers(ch)[0] || null; }
   function triageStats(ch, attributes) {
     var techMod = attributes.TEC.mod;
     var r = (ch && ch.rig) || {};
     var scrap = !!r.scrap;
-    var row = scrap ? null : (rigTierRow(r.tier) || ownedRigTier(ch));
+    var recorded = scrap ? null : rigTierRow(r.tier);
+    var row = scrap ? null : (recorded || ownedRigTier(ch));
     var outputBonus = row ? (row.outputBonus || 0) : 0;
+    // Integrity, the Rig's #GRID node: damage subtracts, Bricked at 0. Mirrors the
+    // Smartdeck's System Integrity track (ch.grid.deckHpSpent).
+    var maxIntegrity = row ? (row.integrity || 0) : 0;
+    var spent = clamp((r.hpSpent | 0), 0, maxIntegrity);
     return {
       rigTier: row ? row.tier : null,
       rigTierIndex: row ? row.t : null,
+      rigLabel: row ? row.label : null,
+      // true when the tier came from the owned-gear fallback rather than a recorded pick
+      fromOwnedGear: !!(row && !recorded),
+      ownedTiers: ownedRigTiers(ch),
       scrapRig: scrap,
       outputBonus: outputBonus,
+      // Mod Slots equal the Tier, and the trait list accumulates; both derived in the data
+      modSlots: row ? row.modSlots : 0,
+      traits: row ? (row.traits || []).slice() : [],
+      // Medical Baseline: Basic Medkit, or Advanced Medkit at Trauma Grade [2] and up
+      medkitGrade: row ? row.medkitGrade : null,
+      maxIntegrity: maxIntegrity,
+      integrity: Math.max(0, maxIntegrity - spent),
+      integritySpent: spent,
+      bricked: maxIntegrity > 0 && spent >= maxIntegrity,
+      nodeTier: row ? (row.nodeTier || null) : null,
+      price: row ? (row.price || 0) : 0,
       techMod: techMod,
       saveDC: 8 + techMod + outputBonus,
       formula: "8 + Tech Modifier + Rig's Output Bonus",
@@ -1895,6 +1922,7 @@ EN.engine = (function () {
     isCarryGear: isCarryGear, rackLimit: rackLimit, rackState: rackState, rackTargets: rackTargets,
     itemSlots: itemSlots, slotConflicts: slotConflicts,
     catalogItem: loadCatalogItem,
+    rigTierRow: rigTierRow, ownedRigTiers: ownedRigTiers,   // Stitcher Trauma Rig, for the Rig picker
     focusesFor: focusesFor, specFor: specFor,
     aspectMatches: aspectMatches, weaponFocus: weaponFocus, weaponSpec: weaponSpec, signatureUnlocked: signatureUnlocked,
     overlapGrants: overlapGrants, unresolvedOverlaps: unresolvedOverlaps,

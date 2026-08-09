@@ -97,7 +97,8 @@ EN.store = (function () {
       },
       rig: {                             // Stitcher Trauma Rig, the Triage Save DC's third term
         tier: null,                      // tier name from EN.traumaRigs.tiers; null = fall back to owned gear, else Output Bonus +0
-        scrap: false                     // cobbled Scrap Rig: Output Bonus +0, Snag on Triage, Swift Protocols cost an Action
+        scrap: false,                    // cobbled Scrap Rig: Output Bonus +0, Snag on Triage, Swift Protocols cost an Action
+        hpSpent: 0                       // Integrity lost off the Rig's #GRID node (Bricked at hpSpent >= the tier's Integrity)
       },
       trainingPoints: { spent: 0, allocations: [] },
       resources: { current: {} },
@@ -239,9 +240,10 @@ EN.store = (function () {
     if (ch.equippedFocus === undefined) ch.equippedFocus = null;
     if (!ch.weaponAmmo) ch.weaponAmmo = {};
     // Stitcher Trauma Rig state; absent on every character built before rigs existed.
-    if (!ch.rig || typeof ch.rig !== "object") ch.rig = { tier: null, scrap: false };
+    if (!ch.rig || typeof ch.rig !== "object") ch.rig = { tier: null, scrap: false, hpSpent: 0 };
     if (typeof ch.rig.tier !== "string") ch.rig.tier = null;
     ch.rig.scrap = !!ch.rig.scrap;
+    if (typeof ch.rig.hpSpent !== "number" || ch.rig.hpSpent < 0) ch.rig.hpSpent = 0;
     if (!ch.vehicleMods || typeof ch.vehicleMods !== "object") ch.vehicleMods = {};   // {vehicleName: [modKey]}
     // a limb-platform mod records which platform it sits in; slotted pieces pay no SP
     (ch.cyberware || []).forEach(function (cw) {

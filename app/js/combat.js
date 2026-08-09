@@ -1267,6 +1267,113 @@ EN.combatView = (function () {
     Triage:    "#2FE6A6"    // medical mint, clinical / restorative / urgent
   };
   function resourceColor(name) { return RESOURCE_COLOR[name] || "var(--accent)"; }
+
+  /* ---- Stitcher Trauma Rig, the class item that feeds the Triage Save DC.
+     The counterpart of the #GRID tab's Rig panel, and built the same way: a picker
+     over the Trauma Rigs the character actually OWNS (matched on a gear row's
+     rigTier), the tier's derived numbers, its accumulated traits, and the System
+     Integrity of the #GRID node the Rig projects. Every value comes off d.triage,
+     which reads the tier row; nothing is recalculated here. */
+  function traumaRigKids(ch, d) {
+    var t = d.triage, T = EN.traumaRigs || {}, tiers = T.tiers || [];
+    var mint = resourceColor("Triage"), rig = ch.rig || {};
+    var owned = t.ownedTiers || [];
+    var kids = [];
+
+    kids.push(el("div.section-title", { style: { margin: "12px 0 4px" } }, [
+      document.createTextNode("Trauma Rig"), el("span.line"),
+      el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", marginLeft: "6px" },
+                        text: t.scrapRig ? "SCRAP RIG" : (t.rigLabel || "NONE EQUIPPED").toUpperCase() })
+    ]));
+
+    // picker: no rig, the Scrap Rig fallback, or any tier in the stash
+    var selKids = [
+      el("option", { value: "none", selected: !t.scrapRig && !rig.tier, text: "- No Rig -" }),
+      el("option", { value: "scrap", selected: !!t.scrapRig, text: "Scrap Rig (Output Bonus +0, Snag)" })
+    ];
+    if (owned.length) selKids.push(el("optgroup", { label: "Trauma Rigs in your stash" }, owned.map(function (r) {
+      return el("option", { value: "tier:" + r.tier, selected: !t.scrapRig && rig.tier === r.tier,
+        text: r.label + " · +" + r.outputBonus + " output · " + r.modSlots + " slot" + (r.modSlots === 1 ? "" : "s") + " · " + r.integrity + " Int" });
+    })));
+    else selKids.push(el("option", { disabled: true, text: "No Trauma Rig in your stash; buy one in Inventory" }));
+    kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "2px" } }, [
+      el("select", { style: { fontSize: "12px", width: "auto", minWidth: "230px" },
+        onchange: function () {
+          var v = this.value;
+          store.update(function (c) {
+            c.rig = c.rig || {};
+            c.rig.hpSpent = 0;                       // a swapped Rig starts on a full Integrity track
+            if (v === "scrap") { c.rig.scrap = true; c.rig.tier = null; return; }
+            c.rig.scrap = false;
+            c.rig.tier = v === "none" ? null : v.split(":")[1];
+          });
+        } }, selKids),
+      t.fromOwnedGear ? el("span.chip", { style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" },
+        title: "No Rig recorded, so the best Trauma Rig in your stash is standing in. Pick one to lock it." }, "AUTO") : null
+    ]));
+
+    if (!t.rigTier) {
+      kids.push(el("p.help", { style: { margin: "4px 0 0", fontSize: "10.5px" },
+        text: t.scrapRig ? (T.scrapRig || "") : "No Rig equipped, so Output Bonus is +0. " + (T.startingRig || "") }));
+      return kids;
+    }
+
+    // the tier's derived numbers: Output Bonus, Mod Slots (= Tier), the node it projects
+    kids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "6px" } }, [
+      el("span.chip", { style: { fontSize: "9.5px", color: mint, borderColor: mint }, title: T.outputBonusNote || "" },
+        "OUTPUT " + (t.outputBonus >= 0 ? "+" : "") + t.outputBonus),
+      el("span.chip", { style: { fontSize: "9.5px", color: "var(--accent)", borderColor: "var(--accent)" }, title: T.modSlotNote || "" },
+        "MOD SLOTS " + t.modSlots + " / TIER " + t.rigTierIndex),
+      t.medkitGrade ? el("span.chip", { style: { fontSize: "9.5px", color: "var(--success)", borderColor: "var(--success)" },
+        title: T.medicalBaseline || "" }, "COUNTS AS " + t.medkitGrade.toUpperCase()) : null,
+      t.nodeTier ? el("span.chip", { style: { fontSize: "9.5px", color: "var(--bw)", borderColor: "var(--bw)" },
+        title: T.integrityNote || "" }, "#GRID NODE " + t.nodeTier.toUpperCase()) : null
+    ]));
+
+    // System Integrity of the projected node, tracked the way a Smartdeck's is
+    var maxInt = t.maxIntegrity, cur = t.integrity, bricked = t.bricked;
+    var amt = el("input.mono", { type: "number", min: "1", value: "1", title: "Amount of Integrity to subtract or restore",
+      style: { width: "54px", textAlign: "center", padding: "4px 6px" } });
+    function shift(sign) {
+      var n = Math.max(1, parseInt(amt.value, 10) || 1);
+      store.update(function (c) { c.rig = c.rig || {}; c.rig.hpSpent = eng.clamp((c.rig.hpSpent || 0) + sign * n, 0, maxInt); });
+    }
+    kids.push(el("div", { style: { marginTop: "8px" } }, [
+      el("div.row.between", { style: { alignItems: "baseline" } }, [
+        el("span", { style: { fontFamily: "var(--disp)", fontSize: "10px", letterSpacing: ".12em", color: "var(--text3)" }, text: "RIG INTEGRITY" }),
+        el("span.mono", { style: { fontSize: "13px", color: bricked ? "var(--danger)" : "var(--text2)" },
+                          text: bricked ? "BRICKED" : cur + " / " + maxInt })
+      ]),
+      bar(cur, maxInt, bricked ? "var(--danger)" : "var(--success)"),
+      el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } }, [
+        amt,
+        el("button.btn.sm", { disabled: bricked, style: { color: "var(--danger)", borderColor: "var(--danger)" },
+          title: "Subtract this much Integrity", onclick: function () { shift(1); } }, "− DAMAGE"),
+        el("button.btn.sm", { disabled: t.integritySpent <= 0, title: "Restore this much Integrity",
+          onclick: function () { shift(-1); } }, "+ REPAIR"),
+        t.integritySpent > 0 ? el("button.btn.sm", { style: { color: "var(--text2)" },
+          onclick: function () { store.update(function (c) { c.rig = c.rig || {}; c.rig.hpSpent = 0; }); toast("Trauma Rig restored to full Integrity."); } }, "⟳ FULL") : null
+      ])
+    ]));
+
+    // traits: this tier's own, plus every trait below it
+    if (t.traits.length) {
+      var defs = T.traitDefs || {};
+      kids.push(el("div.row.wrap", { style: { gap: "6px", marginTop: "8px", alignItems: "center" } },
+        [el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em", marginRight: "2px" }, text: "TRAITS" })].concat(
+          t.traits.map(function (nm) {
+            return el("span.chip", { title: defs[nm] || "", style: { fontSize: "9.5px", color: "var(--gold)", borderColor: "var(--gold)" } }, nm);
+          }))));
+      kids.push(el("p.help", { style: { margin: "4px 0 0", fontSize: "10.5px" }, text: T.traitNote || "" }));
+    }
+    // the one rung above, so an upgrade is a known price rather than a mystery
+    var next = tiers.find(function (r) { return r.t === t.rigTierIndex + 1; });
+    if (next) kids.push(el("p.help", { style: { margin: "2px 0 0", fontSize: "10.5px", color: "var(--text3)" },
+      text: "Next rung: " + next.label + ", \u{1D4A2}" + next.price.toLocaleString() + " · +" + next.outputBonus +
+            " Output · " + next.modSlots + " mod slots · adds " + next.trait + "." }));
+    return kids;
+  }
+
   /* a resource chip like "1 MOXIE" tints to the resource named within it */
   function chipResourceColor(chip) {
     var up = String(chip || "").toUpperCase();
@@ -2489,12 +2596,13 @@ EN.combatView = (function () {
                               title: "Triage Save DC: 8 + your Tech Modifier + your Rig's Output Bonus" },
                "TRIAGE SAVE DC " + d.triage.saveDC),
             el("span.help", { style: { margin: 0, fontSize: "10.5px" },
-                              text: (d.triage.scrapRig ? "Scrap Rig" : (d.triage.rigTier || "no Rig recorded")) +
+                              text: (d.triage.scrapRig ? "Scrap Rig" : (d.triage.rigLabel || "no Rig recorded")) +
                                     " · Output Bonus " + signed(d.triage.outputBonus) +
                                     " · Tech " + signed(d.triage.techMod) })
           ]));
           if (d.triage.scrapRig) kids.push(el("p.help", { style: { margin: "4px 0 0", fontSize: "10.5px" },
             text: "Scrap Rig: Snag on all Triage healing and attack rolls, and every Swift Action Protocol costs an Action." }));
+          traumaRigKids(ch, d).forEach(function (k) { kids.push(k); });
         }
         resourceFeats.forEach(pushFeat);
       }

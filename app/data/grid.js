@@ -233,6 +233,16 @@ EN.grid = {
    Manipulation / Protection; link = the ⇋ "requires an active Link" flag;
    signature = the tier's flat-1-Bandwidth signature cipher. */
 EN.grid.cipherTierNames = ["Standard", "Improved", "Advanced", "Premium", "Elite", "Apex"];
+
+/* A Trauma Rig is powered gear, so like a Smartdeck it projects a #GRID node at
+   its own tier. Derived here rather than in the Stitcher data because the shared
+   Standard-to-Apex tier scale lives in EN.grid, and this file loads after the
+   class data. Bracket notation matches how EN.vehicles states a Node Tier. */
+((EN.traumaRigs && EN.traumaRigs.tiers) || []).forEach(function (r) {
+  var nm = EN.grid.cipherTierNames[r.t] || EN.grid.cipherTierNames[0];
+  r.nodeTierName = nm;
+  r.nodeTier = nm + " [" + r.t + "]";
+});
 EN.grid.ciphers = [
   /* ---- Complexity 1 · Improved ---- */
   { name: "Logic Bomb", cx: 1, cat: "Offense", sub: "Combat", exec: "1 Action", range: "12 spaces", runtime: "Instant", signature: true,

@@ -5,8 +5,8 @@ six-step sync. **Nothing here gets fixed until steps 1 to 6 are done.** Add to i
 as each step turns things up; work it after step 6.
 
 Sync steps: 1 unarmed rewrite (done, `2ede818`), 2 renames and gear values (done,
-`70f66b8`), 3 Triage Save DC and Stitcher class data, 4 Trauma Rig, 5 Armor Repair,
-6 Environmental Hazards.
+`70f66b8`), 3 Triage Save DC and Stitcher class data, 4 Trauma Rig (done, working
+tree), 5 Armor Repair, 6 Environmental Hazards.
 
 ---
 
@@ -90,14 +90,90 @@ Recorded so nobody re-investigates them.
 - **`Field Triage` moved from Features to Abilities** because the Beacon Rig toggle
   introduced "Free Action" into its text. Correct for a feature that now has an
   active toggle, but it is a visible relocation.
-- **"Triage Rig" versus "Trauma Rig" naming.** The tier table exports as
-  `EN.traumaRigs` while the class prose still says Triage Rig. Settle in step 4.
+- ~~**"Triage Rig" versus "Trauma Rig" naming.**~~ **Settled in step 4: the item is
+  the Trauma Rig everywhere.** All nine prose sites were renamed; nothing in `EN`
+  says "Triage Rig" any more. "Triage" as the class RESOURCE, the Triage Save DC,
+  the Triage Protocols, the Triage Pool, the Triage Sweep Protocol, Field Triage,
+  and Expanded Triage all keep their name.
 - **"The modifier this Talent raised" is not derivable.** Talent attribute increases
   are not modeled at all, so the app never learns whether the player raised Wits or
   Tech on Trauma Medic. The text carries a parenthetical instead. Deriving it needs a
   new stored choice on the talent.
 - **Cyber-Scrap capacity is prose only.** Nothing computes it, so the Chop Rig
   doubling to twice Tech Modifier is text with no engine path behind it.
+
+## Found in step 4 (Trauma Rig)
+
+- **The #GRID Rig selector prints "undefined HP".** `app/js/grid.js` lines 90 and 93
+  build each option as `s.tier + " · +" + s.deviceBonus + " dev · " + s.hp + " HP"`,
+  but `EN.grid.smartdecks` and `EN.grid.buddies` rows carry `integrity`, not `hp`.
+  Every Smartdeck and B&E Buddy option therefore reads "undefined HP". Confirmed live
+  with an Advanced Smartdeck equipped. Pre-existing, untouched, one-word fix
+  (`s.hp` -> `s.integrity`, `b.hp` -> `b.integrity`).
+- **Remote Applicator is displayed, not applied.** The Trauma Grade [2] trait adds +3
+  spaces to any Protocol with a listed range, but Protocol ranges live inside prose
+  strings ("within 6 spaces") in `STITCHER_TRIAGE_PROTOCOLS`. Deriving the stepped
+  range needs structured range data on each Protocol, which does not exist yet. The
+  trait renders as a chip with its full text; nothing computes the +3.
+- **The once-per-scene rig traits have no use counter.** Redundant Injector [3] and
+  Autonomous Loop [5] are both "once per scene" and render as trait chips only. The
+  featureUses tracker keys off feature names, not rig traits.
+- **Rig Mod Slots have nothing to put in them.** Mod Slots equal the Tier and are
+  derived and displayed, but the manuscript supplied no Trauma Rig modification list,
+  so there is no counterpart to `EN.grid.mods` and no Tech Bay install path. The slot
+  count is currently a number with no inventory behind it.
+- **Kit Edge Dice still stack per owned kit.** `EN.crafting.edgePointsFor` pushes one
+  Edge part per active kit, so two Advanced Medkits in the stash grant +2 Edge Dice on
+  a Medtech pool. Contained for Trauma Rigs (only the Rig you are actually running
+  counts as a medkit, so a shelf of old tiers grants nothing), but the general case is
+  untouched and predates this step.
+- **A new Stitcher still owns no Trauma Rig row.** The free Field Kit [0] is
+  deliberately NOT in `EN.kits.classKits.stitcher.fixed`, exactly like the
+  Codebreaker's free Standard Smartdeck, so it does not eat the 700 Glimmer budget.
+  The engine's fallback resolves to Output Bonus +0 either way, which is the Field
+  Kit's own value, so the DC is right; the character just has no gear row to equip
+  until they buy one. If class-granted gear should ever appear in the stash, both
+  classes need the same treatment.
+- **The Trauma Rig's Load is not printed anywhere.** The manuscript's table has no
+  Load column, so the rows take the `rigs` bucket default of 2, matching a Smartdeck
+  and a Basic Medkit. Worth an author ruling if a worn gauntlet should cost less.
+
+## Confirmed in step 4, reproduced live, NOT fixed
+
+These three came out of the Trauma Rig review with live reproductions. The default
+path (own a rig, equip it, read the DC) is verified correct; all three are edge or
+scope failures. Fix these before step 5.
+
+- **The two Medical Baseline surfaces disagree about ownership.**
+  `app/js/engine.js` around line 1304 honours a recorded `ch.rig.tier` with NO
+  ownership check, while `app/js/inventory.js` around line 1795 requires the row to
+  be in the stash AND to equal the live tier. Nothing clears `ch.rig.tier` when the
+  rig leaves the stash. Repro: Stitcher with `rig.tier = "Trauma Grade"` who has sold
+  that rig and holds only a Field Kit. The Actions panel claims COUNTS AS ADVANCED
+  MEDKIT while the Fabrication bench says "No crafting kits in your Stash" and drops
+  Medtech Edge to 2. The narrower gate also filters out the Field Kit the character
+  DOES own, so the disagreement lands as "no kit" instead of the lower grade. The two
+  gates need to be one gate.
+- **Rig integrity and the #GRID node are Stitcher-only.** `engine.js` computes
+  `triage` only when `ch.class === "stitcher"`, and `combat.js` renders the rig block
+  only `if (d.triage)`. The manuscript is explicit that ANYONE can buy one (User
+  Type: Anyone, Standard Users). Repro: a Hustler owning a Black Clinic rig gets
+  `derive().triage === null`, no Output Bonus, no node, no integrity track. A
+  Smartdeck on the same character shows a working integrity track, so deck integrity
+  is universal while rig integrity is not. Separately, `grid.js` enumerates only
+  names ending "Smartdeck" or "B&E Buddy", so the rig cannot be reached from the
+  #GRID tab at all despite being documented as a valid target.
+- **A fresh rig can arrive BRICKED.** The picker resets `ch.rig.hpSpent` on change,
+  but the AUTO owned-gear fallback does not; the engine only clamps. Repro: brick a
+  Black Clinic at 40 damage, lose it, and the Field Kit that AUTO selects next reports
+  0/15 BRICKED with `hpSpent` still 40, with DAMAGE disabled. Recoverable with
+  REPAIR, but wrong by default. Likely fix is recording which tier the damage belongs
+  to and discarding it when the resolved tier changes.
+
+Also found and left alone as out of scope: a pre-existing `undefined HP` bug in the
+#GRID Rig selector (`app/js/grid.js` reads `s.hp` / `b.hp` where the data field is
+`integrity`); Remote Applicator's +3 spaces is displayed but not applied, since
+Protocol ranges are prose; the two once-per-scene rig traits have no usage tracking.
 
 ## Environment
 

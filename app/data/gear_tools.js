@@ -61,12 +61,13 @@ EN.gearCatalog.tools = {
         { name: "Worn Resonant Gear", intro: "Each calls out a Body Slot." },
         { name: "Handheld Resonant Tools", intro: "Drawn and activated when needed. None use a Body Slot." }
       ] },
-    { key: "rigs", title: "Smartdecks & B&E Buddies",
-      intro: "Hacking hardware. Smartdecks are Power User rigs for Codebreakers and serious grid runners; B&E Buddies are handheld, civilian-grade cracker boxes that anyone can operate. Equip one from your stash to activate it on the #GRID tab.",
+    { key: "rigs", title: "Smartdecks, B&E Buddies & Trauma Rigs",
+      intro: "Powered personal hardware, every piece of it a #GRID node in its own right. Smartdecks are Power User rigs for Codebreakers and serious grid runners; B&E Buddies are handheld, civilian-grade cracker boxes that anyone can operate; Trauma Rigs are the Stitcher's chemistry, and anyone can buy one of those too. Equip one from your stash to activate it: a Smartdeck or Buddy on the #GRID tab, a Trauma Rig on the Freelancer tab under Actions, Abilities.",
       groups: [
         { name: "Smartdecks", intro: "Power User hardware. Governs Cipher complexity ceiling, Device Bonus, and mod slots. Restricted citywide; Contraband in corporate sectors." },
         { name: "B&E Buddies", intro: "Standard User rigs. No Bandwidth, no multi-Link, and locked out of Premium+ nodes. Restricted." },
-        { name: "Hardware Mods", intro: "Smartdeck plug-ins. Buy them here, then slot them into a Smartdeck's mod slots on the #GRID tab. B&E Buddies cannot take mods." }
+        { name: "Hardware Mods", intro: "Smartdeck plug-ins. Buy them here, then slot them into a Smartdeck's mod slots on the #GRID tab. B&E Buddies cannot take mods." },
+        { name: "Trauma Rigs", intro: "Governing Skill: Medtech (Tech). Worn. Output Bonus adds to any healing roll the Rig delivers and sets the Triage Save DC; Mod Slots equal the Tier; every Rig counts as a Basic Medkit, and Trauma Grade [2] and up counts as an Advanced Medkit. A Rig carries the trait on its own Tier row and every trait below it." }
       ] },
     { key: "ciphers", title: "Cipher Library",
       intro: "Power-User ciphers, the exploits a Smartdeck runs against a node that would rather it didn't. Buy them here at the Acquire-Clean price (no roll, one Downtime period), then cast them from your Repertoire on the #GRID tab. A deck runs ciphers up to (Tier + 1) in Complexity. Complexity 0 ships free with every rig as the B&E Buddy Cipher Suite, so it is not sold here.",
@@ -613,3 +614,55 @@ EN.gearCatalog.tools = {
       desc: "As good as a B&E Buddy gets. Hits hard, holds up, still locks out of the top tier nodes." }
   ]
 };
+
+/* ---- Trauma Rigs in the gray market -----------------------------------------
+   The Stitcher's class item and the direct counterpart of the Smartdeck rows
+   above: one ownable, equippable row per tier, each carrying rigTier so the
+   engine's ownedRigTier() matches it exactly the way a deck row is matched on
+   deckTier. Anyone can buy one; Stitchers are the ones who run Protocols
+   through it.
+
+   Every number, the trait list, and the Medical Baseline grade come off
+   EN.traumaRigs.tiers (app/data/class_stitcher_resources.js, which loads
+   first), so nothing here is retyped and a Tier edit moves the storefront with
+   it. Same single-source pattern as the Smartdeck hardware mods, which
+   app/data/grid.js pushes into this catalog.
+
+   Medical Baseline is WIRED, not just described: each row copies the Tool
+   Category, Governing Skill, and Edge grant off the very medkit catalog row it
+   stands in for, and kitEquivalent lets the Tech Bay's kit scan (tbKits in
+   app/js/inventory.js) count a Rig as that kit on a Medtech Dice Pool. So a
+   Trauma Grade [2] Rig carries the Advanced Medkit's +1 Edge Die and a Clinic
+   Grade [1] Rig does not, because the Basic Medkit grants none. */
+(function () {
+  var T = EN.traumaRigs;
+  if (!T || !T.tiers || !EN.gearCatalog.tools) return;
+  var items = EN.gearCatalog.tools.items;
+  function medkit(name) { return items.find(function (i) { return i.name === name; }) || {}; }
+  T.tiers.forEach(function (r) {
+    var name = r.tier + " Trauma Rig [" + r.t + "]";
+    if (items.some(function (i) { return i.name === name; })) return;   // idempotent
+    var med = medkit(r.medkitGrade);
+    items.push({
+      name: name, bucket: "rigs", group: "Trauma Rigs", rigTier: r.tier, rigTierIndex: r.t,
+      price: r.price, availability: r.availability, legality: r.legality,
+      traits: ["Worn"],
+      // Medical Baseline, taken off the medkit's own row so the two cannot drift
+      category: med.category || "Medical Tools", skill: med.skill || "Medtech",
+      kitEquivalent: r.medkitGrade,
+      edgeDice: med.edgeDice || 0, edgeNote: med.edgeNote || null, requiresProficient: !!med.requiresProficient,
+      effect: "+" + r.outputBonus + " Output Bonus · " + r.integrity + " Integrity · " +
+              (r.modSlots === 1 ? "1 mod slot" : r.modSlots + " mod slots") +
+              " · counts as " + (/^[AEIOU]/.test(r.medkitGrade) ? "an " : "a ") + r.medkitGrade +
+              ". Trait: " + r.trait + ".",
+      desc: "Worn medical hardware: a cybernetic auto-injector gauntlet, an alchemical synthesizer harness, " +
+            "a smart-medic backpack, or something functionally equivalent. The Output Bonus adds to any healing " +
+            "roll the Rig delivers and sets the Triage Save DC. Powered gear, so it projects a #GRID node at its " +
+            "own tier [" + r.t + "] with " + r.integrity + " System Integrity and is a valid #GRID target. " +
+            "Carries every trait at or below its tier: " + r.traits.join(", ") + ".",
+      basic: "Medical Baseline: counts as " + (/^[AEIOU]/.test(r.medkitGrade) ? "an " : "a ") + r.medkitGrade +
+             " for Treat Wounds and Treat Fatigue. " + (med.basic || ""),
+      proficient: med.proficient || ""
+    });
+  });
+})();

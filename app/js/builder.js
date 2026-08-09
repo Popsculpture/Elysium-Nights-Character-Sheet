@@ -147,7 +147,7 @@ EN.builder = (function () {
           el("div.field", null, [el("label.fl", { text: "Last Name" }), nameFieldNode("lastName", "Last name…")])
         ]),
         el("p.help", { style: { margin: "6px 0 0" }, text: 'Full name displays as First "Handle" Last.' }),
-        txt("concept", "Concept, the one-line pitch", "An ex-corporate Stitcher with a stolen triage rig…", true),
+        txt("concept", "Concept, the one-line pitch", "An ex-corporate Stitcher with a stolen trauma rig…", true),
         txt("whereFrom", "Where You Came From", "Burbclave, Warrens, void station, corporate creche…", true)
       ], { corners: true }),
       el("div", { style: { height: "16px" } }),
@@ -1179,8 +1179,17 @@ EN.builder = (function () {
         var resBody = (cls.resource.maxFormula ? "Max Pool = " + cls.resource.maxFormula + "\n\n" : "");
         if (d.triage) {
           resBody += "Triage Save DC = 8 + Tech Modifier + your Rig's Output Bonus = " + d.triage.saveDC +
-            " (" + (d.triage.scrapRig ? "Scrap Rig" : (d.triage.rigTier || "no Rig recorded")) +
+            " (" + (d.triage.scrapRig ? "Scrap Rig" : (d.triage.rigLabel || "no Rig recorded")) +
             ", Output Bonus " + (d.triage.outputBonus >= 0 ? "+" : "") + d.triage.outputBonus + ")\n\n";
+          // the rest of the Rig, so the printed record carries the whole item and not
+          // just the one number the DC needs: slots equal the Tier, traits accumulate
+          if (d.triage.rigTier) {
+            resBody += "Trauma Rig: " + d.triage.rigLabel + " · " + d.triage.modSlots + " Mod Slot" +
+              (d.triage.modSlots === 1 ? "" : "s") + " · " + d.triage.maxIntegrity + " Integrity · counts as " +
+              (/^[AEIOU]/.test(d.triage.medkitGrade || "") ? "an " : "a ") + d.triage.medkitGrade +
+              (d.triage.nodeTier ? " · projects a " + d.triage.nodeTier + " #GRID node" : "") +
+              "\nTraits: " + d.triage.traits.join(", ") + "\n\n";
+          }
         }
         corePb.push(feature(cls.resource.name + " (Resource)", resBody + (cls.resource.fuels || ""), "class", "Pool " + (d.resource ? d.resource.max : "")));
         var gp = resourcePicker(ch); if (gp) corePb.push(gp);

@@ -681,7 +681,7 @@ EN.inventoryView = (function () {
   // Stash categories: fixed display order, collapsible (collapsed by default)
   var STASH_CATS = ["Melee Weapons", "Ranged Weapons", "Signature Weapons", "Ammunition & Munitions",
     "Armor & Defensive Gear", "Carry Gear", "Skill Kits", "Field Devices & Gadgets", "Consumables",
-    "Flow Tonics & Resonant Devices", "Smartdecks & B&E Buddies", "Cipher Library", "Weapon Parts", "Armor Mods", "Vehicles", "Vehicle Mods", "Custom & Unknown"];
+    "Flow Tonics & Resonant Devices", "Smartdecks & B&E Buddies", "Trauma Rigs", "Cipher Library", "Weapon Parts", "Armor Mods", "Vehicles", "Vehicle Mods", "Custom & Unknown"];
   var _stashOpen = {};   // category name -> true when expanded
   function stashCategory(it) {
     if (!it) return "Custom & Unknown";
@@ -689,6 +689,7 @@ EN.inventoryView = (function () {
     if (it.vehicleMod) return "Vehicle Mods";
     if (it.benchPart) return "Weapon Parts";
     if (it.armorMod) return "Armor Mods";
+    if (it.rigTier) return "Trauma Rigs";     // shares the rigs bucket with the hacking hardware
     if (it.signature) return "Signature Weapons";
     if (isWeapon(it)) return (it.group === "Simple" || it.group === "Martial") ? "Melee Weapons" : "Ranged Weapons";
     if (isDefensive(it)) return "Armor & Defensive Gear";
@@ -1768,18 +1769,35 @@ EN.inventoryView = (function () {
 
   function tbSkill(d, name) { return (d.skills || []).find(function (s) { return (s.name || "").toLowerCase() === name.toLowerCase(); }); }
 
-  // owned crafting kits, flagged Basic vs Proficient by the character's tool proficiencies
+  // The Trauma Rig the character is actually running: the recorded tier, else the best
+  // one in the stash, and nothing at all while they are on a Scrap Rig. Same resolution
+  // the engine's Triage Save DC uses, so the Rig's Medical Baseline and its Output Bonus
+  // never disagree about which Rig is live.
+  function activeRigTier(ch) {
+    var r = (ch && ch.rig) || {};
+    if (r.scrap) return null;
+    var row = EN.engine.rigTierRow(r.tier) || EN.engine.ownedRigTiers(ch)[0];
+    return row ? row.tier : null;
+  }
+  // owned crafting kits, flagged Basic vs Proficient by the character's tool proficiencies.
+  // kitEquivalent is how a piece of gear that is not itself a Skill Kit stands in for one:
+  // a Trauma Rig's Medical Baseline makes it count as a Basic Medkit, or an Advanced Medkit
+  // at Trauma Grade [2] and up, so it feeds a Medtech pool exactly like the kit it replaces.
+  // Only the Rig you are running counts; spare tiers sitting in the stash are just stock.
   function tbKits(ch) {
     var cats = CRAFT().kitCategories || {};
     var profs = (ch.proficiencies && ch.proficiencies.tools) || {};
+    var liveRig = activeRigTier(ch);
     return (ch.equipment || []).map(function (e) {
       if (!(e.qty > 0)) return null;
       var it = findItem(e.name);
-      if (!it || it.bucket !== "kits") return null;
+      if (!it || (it.bucket !== "kits" && !it.kitEquivalent)) return null;
+      if (it.rigTier && it.rigTier !== liveRig) return null;
       var cat = it.category || "";
       if (!cats[cat]) return null;
       return { name: it.name, category: cat, skill: cats[cat], proficient: !!profs[cat], effect: it.effect || it.desc || "",
-               edgeDice: it.edgeDice || 0, edgeNote: it.edgeNote || null, requiresProficient: !!it.requiresProficient };
+               edgeDice: it.edgeDice || 0, edgeNote: it.edgeNote || null, requiresProficient: !!it.requiresProficient,
+               kitEquivalent: it.kitEquivalent || null };
     }).filter(Boolean);
   }
 
@@ -1988,8 +2006,9 @@ EN.inventoryView = (function () {
       el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em" }, text: "CRAFTING KITS" }),
       kits.length
         ? el("div.row.wrap", { style: { gap: "6px", marginTop: "6px", alignItems: "center" } }, kits.map(function (k) {
-            return el("span.chip", { title: k.effect, style: { fontSize: "9.5px", color: k.proficient ? "var(--success)" : "var(--text2)", borderColor: k.proficient ? "var(--success)" : "var(--border2)" } },
-              k.name + " · " + (k.proficient ? "PROFICIENT" : "BASIC"));
+            return el("span.chip", { title: (k.kitEquivalent ? "Counts as " + (/^[AEIOU]/.test(k.kitEquivalent) ? "an " : "a ") + k.kitEquivalent + ".\n" : "") + k.effect,
+              style: { fontSize: "9.5px", color: k.proficient ? "var(--success)" : "var(--text2)", borderColor: k.proficient ? "var(--success)" : "var(--border2)" } },
+              (k.kitEquivalent ? k.kitEquivalent + " (" + k.name + ")" : k.name) + " · " + (k.proficient ? "PROFICIENT" : "BASIC"));
           }))
         : el("p.help", { style: { margin: "4px 0 0", fontSize: "11px", color: "var(--text3)" }, text: "No crafting kits in your Stash. Buy an Engineering Toolkit, Fabrication Rig, or Smartdeck kit in the gray market; demanding Projects without the right kit run with Snag or a higher Target." })
     ]));
