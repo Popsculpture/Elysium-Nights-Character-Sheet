@@ -218,6 +218,56 @@ Damage state:
   A character owning two rigs cannot have both damaged. This needs damage keyed per
   rig rather than a single `hpSpent`.
 
+## SETTLED: the rig damage contradiction, and the fix it implies
+
+Two independent observers ran both candidate sequences through the real UI. They
+agree, and so did the two earlier agents: they had run **different sequences**.
+
+- **No intervening damage:** brick a Black Clinic, drop it, re-buy a Black Clinic.
+  It arrives `0/40` BRICKED. The damage re-arms.
+- **With intervening damage:** same, but damage the Field Kit in between. The
+  re-bought Black Clinic arrives `40/40`.
+
+Cause: discarding stale damage is **display-only**. `ch.rig.hpSpent` and
+`ch.rig.hpTier` survive the drop untouched, so when the original tier returns the
+stored tag matches again and the damage reapplies. Touching the intervening rig's
+damage control overwrites the record in place, which is why the other observer saw a
+clean rig. Both readings reproduce. `ch.rig.tier` has the same staleness shape: it is
+ignored while unowned but never cleared, so re-buying a dropped tier silently
+re-locks a pick the player abandoned.
+
+**Ruling: a re-acquired rig always arrives at full integrity.** The app has no
+vocabulary for "recovered" (every outflow is unconditional and unrecorded; the only
+inflows are a full-price purchase and a bench build), so every re-acquisition is a new
+object in the app's own terms. The asymmetry of harm decides it: a wrongly-full rig
+costs one DAMAGE click the GM was narrating anyway, while a wrongly-bricked rig
+silently strips a Stitcher's class hardware mid-scene with no visible cause. Paying
+16,000 Glimmer and receiving a bricked rig is indefensible. GM-ruled recovery stays a
+fiction-level event: they type the damage back in.
+
+**The fix, which closes the one-damage-slot defect at the same time.** Equipment
+instance identity already exists: rigs are non-stackable, so every purchase gets its
+own `eq_` id from `newEquipId()` and a re-bought rig carries a different id from the
+dropped one. So key damage to the entry, not the tier:
+
+    ch.rig.hpSpent + ch.rig.hpTier   ->   ch.rig.hp = { <entryKey>: <spent> }
+    ch.rig.tier (a tier name)        ->   ch.rig.key (an entry key)
+
+"Re-acquired rigs arrive full" then falls out with no heuristic, and two rigs can be
+damaged independently. Five touch points, starting with `ownedRigTiers` becoming
+`ownedRigs(ch)` returning `{key, row}` pairs with the same-tier dedupe removed. The
+tempting one-liner (clear the damage when the recorded rig leaves the stash) fixes the
+re-arm but leaves the tier-keyed slot, so it does nothing for two-rigs-one-slot, and
+still breaks for a character holding two rigs of the same tier.
+
+This supersedes the two damage bullets in the section above.
+
+**Methodology note worth keeping.** One observer's first attempt ran in a long-lived
+tab where `EN.traumaRigs` was absent and the catalog held zero rig rows, a stale page
+load. Observations taken there would have been worthless. That is a second way two
+agents can diverge on the same question, and a reason to force a reload before
+believing any browser reading.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from
