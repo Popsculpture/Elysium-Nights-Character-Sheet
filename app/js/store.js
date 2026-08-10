@@ -141,8 +141,20 @@ EN.store = (function () {
         },
         thermalWeave: {},                // {armorEntryKey: "Fire"|"Cold"}, the Thermal Regulation Weave install pick
         hazmatTorn: false,               // the Hazmat Suit's own entry: a tear fails the seal until repaired
-        rebreatherMinutes: 60            // minutes of Rebreather thin-air cover left this scene
+        rebreatherMinutes: 60,           // minutes of Rebreather thin-air cover left this scene
+        // Which hazards the player has APPLIED in the Status Changes panel, as
+        // EN.statusChanges option keys: {"deprivation:water": true}. This is
+        // STATED, never inferred from whether a clock happens to be non-zero.
+        // A thirst track at 0 days that the player applied is on the panel; one
+        // they never applied is not, and the two are indistinguishable from the
+        // clock alone. Exposures are not listed here: an exposure row exists
+        // only because it was applied, so the row IS the statement.
+        applied: {}
       },
+      // Applied Bonuses, as EN.statusChanges option keys. Player-declared by
+      // definition: a Hot-Wire an ally installed on you, or a consumable you
+      // just took, are both states this sheet cannot derive.
+      bonuses: {},
       equipment: [],
       equippedWeapons: [],               // ordered weapon names, drives the Attacks list on the Freelancer tab
       equippedArmor: null,               // worn body armor (one at a time), name from EN.gearCatalog.armor
@@ -594,6 +606,70 @@ EN.store = (function () {
     hz.hazmatTorn = !!hz.hazmatTorn;
     if (typeof hz.rebreatherMinutes !== "number" || !isFinite(hz.rebreatherMinutes) || hz.rebreatherMinutes < 0) hz.rebreatherMinutes = 60;
     hz.rebreatherMinutes = Math.min(60, Math.floor(hz.rebreatherMinutes));
+
+    /* Applied Status Changes: the hazards and the bonuses the player has put on
+       the panel. Both are sanitized against the EN.statusChanges registry, so a
+       key that no longer names an option is dropped rather than rendering as a
+       blank row, and both maps are null-prototype because their keys arrive out
+       of a save file.
+
+       Applied-ness is STATED, not inferred. That distinction is the one this
+       codebase has now paid for twice (the rig pick, the armor migration), and
+       it is load-bearing here for a specific reason: a deprivation clock at 0
+       days and a vacuum clock at 0 rounds are the resting state of a track
+       nobody has applied AND of one that was applied a second ago. Reading the
+       numbers cannot tell those apart, so the record says which it is.
+
+       LEGACY RECORDS. A save written before this panel existed has live hazard
+       state and no `applied` map at all. Inferring nothing would silently drop
+       a running clock off the panel, so a record with no map (and only such a
+       record) adopts one built from whatever is actually running. That is a
+       one-time read of the numbers to seed the statement, not an ongoing
+       inference: once the map exists it is authoritative, including when it is
+       deliberately empty. */
+    var SC = EN.statusChanges || null;
+    var hadApplied = hz.applied && typeof hz.applied === "object" && !Array.isArray(hz.applied);
+    var apIn = hadApplied ? hz.applied : {};
+    var apOut = Object.create(null);
+    Object.keys(apIn).forEach(function (k) {
+      if (apIn[k] === true && (!SC || SC.isKey(k))) apOut[k] = true;
+    });
+    if (!hadApplied) {
+      // seed from running state, once
+      Object.keys(hz.deprivation || {}).forEach(function (t) {
+        var r = hz.deprivation[t];
+        if (r && ((r.days | 0) > 0 || (r.saves | 0) > 0 || (r.fatigue | 0) > 0)) apOut["deprivation:" + t] = true;
+      });
+      var vb = (hz.breath || {}).vacuum;
+      if (vb && (vb.active || (vb.rounds | 0) > 0 || (vb.saves | 0) > 0)) apOut["environmental:vacuum"] = true;
+      var cz = hz.caustic || {};
+      if (cz.inside || cz.lingering || (cz.sceneTicks | 0) > 0) apOut["environmental:caustic"] = true;
+    }
+    hz.applied = apOut;
+
+    var bnIn = (ch.bonuses && typeof ch.bonuses === "object" && !Array.isArray(ch.bonuses)) ? ch.bonuses : {};
+    var bnOut = Object.create(null);
+    Object.keys(bnIn).forEach(function (k) {
+      if (bnIn[k] !== true) return;
+      var opt = SC ? SC.get(k) : null;
+      if (SC && (!opt || opt.menu !== "bonus")) return;   // not a bonus option any more
+      bnOut[k] = true;
+    });
+    // An ally can hold only ONE Hot-Wire at a time. A hand-edited record can
+    // carry several; keep the first one the record lists and drop the rest,
+    // rather than letting the sheet claim two mutually exclusive buffs at once.
+    // The panel's own apply path already replaces rather than stacks, so this
+    // only ever fires for an imported or hand-edited file.
+    if (SC) {
+      var seenExclusive = Object.create(null);
+      Object.keys(bnOut).forEach(function (k) {
+        var opt = SC.get(k), g = opt && opt.exclusiveGroup;
+        if (!g) return;
+        if (seenExclusive[g]) delete bnOut[k];
+        else seenExclusive[g] = k;
+      });
+    }
+    ch.bonuses = bnOut;
     // cyberware: legacy string entries → objects. sp:0 so old manual marks don't
     // retroactively spike Static; chrome bought from the market carries real SP.
     if (Array.isArray(ch.cyberware)) {

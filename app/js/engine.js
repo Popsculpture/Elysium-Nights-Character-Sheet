@@ -583,10 +583,22 @@ EN.engine = (function () {
     return Object.prototype.hasOwnProperty.call(GEAR_UNARMED_STEP, name) ||
            Object.prototype.hasOwnProperty.call(GEAR_UNARMED_RIDER, name);
   }
-  // Not resolvable from this sheet: the Ripper Hot-Wire "Pneumatic Bypass" is an
-  // increase a Stitcher hangs on somebody ELSE's chrome, and a character record
-  // carries no field for a Hot-Wire an ally installed on you, so there is
-  // nothing here to read. It counts as one step whenever the GM says it is live.
+  /* Applied Bonuses that change the unarmed strike. The Ripper Hot-Wire
+     "Pneumatic Bypass" is an increase a Stitcher hangs on somebody ELSE's
+     chrome. The record used to carry no field for a Hot-Wire an ally installed
+     on you, so this was a comment and nothing else; the Status Changes panel
+     supplies that missing state, and the player toggling it is the GM saying it
+     is live. It steps the die rather than setting it: a Freelancer already
+     punching for 1d8 does not drop to 1d6 because an ally tuned their servos.
+     Keyed on the EN.statusChanges option key, which is what gets persisted. */
+  var BONUS_UNARMED_STEP = [
+    { key: "bonus:pneumatic-bypass", label: "Pneumatic Bypass", steps: 1,
+      note: "Ripper Hot-Wire, installed by a Stitcher" }
+  ];
+  function bonusApplied(ch, key) {
+    var b = ch && ch.bonuses;
+    return !!(b && typeof b === "object" && b[key] === true);
+  }
 
   // A piece of gear only augments the strike while it is on your hands: equipped
   // as a weapon, or carried at "worn". A pair in your bag augments nothing, and
@@ -664,6 +676,15 @@ EN.engine = (function () {
       if (!unarmedGearOnHands(ch, nm)) return;
       var spec = GEAR_UNARMED_STEP[nm];
       sources.push({ label: nm, kind: "gear", steps: spec.steps, note: spec.note || null });
+    });
+    // Applied Bonuses. This is the path the Pneumatic Bypass comment below used
+    // to say did not exist. It is a Ripper Hot-Wire a Stitcher installs on an
+    // ALLY, so nothing on the recipient's record can imply it; the player
+    // declares it in the Status Changes panel and it lands here as one step,
+    // exactly as the old comment said it should whenever the GM says it is live.
+    BONUS_UNARMED_STEP.forEach(function (spec) {
+      if (!bonusApplied(ch, spec.key)) return;
+      sources.push({ label: spec.label, kind: "bonus", steps: spec.steps, note: spec.note || null });
     });
     var count = 0;
     sources.forEach(function (s) { count += s.steps; });
@@ -1417,6 +1438,27 @@ EN.engine = (function () {
       return e && e.name === name && !(e.qty != null && e.qty <= 0) && onPerson(ch, e);
     });
   }
+  /* Owned at all, anywhere in the stash, whether or not it is on your person.
+     The Status Changes panel draws the line the spec draws: a mitigation you
+     OWN surfaces (greyed when it is not doing anything), and one you do not own
+     does not surface at all. `gearOnPerson` answers the second, narrower
+     question and is what decides whether the mitigation actually fires; this
+     one only decides whether the player gets to see it listed. */
+  function gearInStash(ch, name) {
+    return ((ch && ch.equipment) || []).some(function (e) {
+      return e && e.name === name && !(e.qty != null && e.qty <= 0);
+    });
+  }
+  /* Is this armor mod fitted to ANY suit the character owns, not just the one
+     they are wearing? ch.armorMods is {armorName: [modKey]}, so a mod on a
+     spare suit in the stash is possessed but inactive, which is exactly the
+     greyed-out state the panel wants to show. */
+  function armorModOwned(ch, modKey) {
+    var am = (ch && ch.armorMods) || {};
+    return Object.keys(am).some(function (n) {
+      return Array.isArray(am[n]) && am[n].indexOf(modKey) !== -1;
+    });
+  }
   /* The worn suit, once: its entry key, its catalog row, whether its lease has
      lapsed, the mods fitted to it, and the two seal questions every hazard
      asks. Resolved in one place because three hazard readers used to work it
@@ -1503,8 +1545,24 @@ EN.engine = (function () {
           }
         }
       }
+      /* POSSESSED vs ACTIVE, which the Status Changes panel needs to keep
+         apart. The panel shows a mitigation only when the player actually has
+         it, and greys it when it is had but not doing anything.
+           gear      : possessed = the item is in the STASH at all; active =
+                       it is on your person (worn, equipped, or applied), which
+                       is what `on` already means.
+           armorMod  : possessed = fitted to ANY suit you own, so a mod on a
+                       spare in the stash greys rather than vanishing; active =
+                       that suit is worn, unlapsed, and (for the weave) tuned.
+           lineage   : possession IS activity. A trait you have is always on and
+                       needs no toggle, so possessed tracks `on` exactly, and a
+                       trait you lack never surfaces. */
+      var possessed = on;
+      if (src.type === "gear") possessed = on || gearInStash(ch, src.name);
+      else if (src.type === "armorMod") possessed = armorModOwned(ch, src.key);
       var row = { key: m.key, name: m.name, kind: m.kind, summary: m.summary, note: m.note || null,
-                  active: on, why: why, detail: detail };
+                  active: on, possessed: possessed, sourceType: src.type || null,
+                  sourceName: src.name || null, why: why, detail: detail };
       if (!on) { inactive.push(row); return; }
       active.push(row);
       var e = m.effects || {};
@@ -1601,6 +1659,13 @@ EN.engine = (function () {
       };
     }
 
+    /* Which hazards the player has APPLIED in the Status Changes panel. Read
+       from the record, never inferred from whether a clock is non-zero: a
+       deprivation track at 0 days reads identically whether it was just applied
+       or never applied at all. Exposures carry no key here because an exposure
+       ROW exists only when one was applied, so the row is the statement. */
+    var appliedSet = (hz.applied && typeof hz.applied === "object") ? hz.applied : {};
+
     var exposures = [];
     var exMap = (hz.exposures && typeof hz.exposures === "object") ? hz.exposures : {};
     Object.keys(exMap).forEach(function (id) {
@@ -1626,6 +1691,8 @@ EN.engine = (function () {
       r.typeName = t.name;
       r.unit = t.unit;
       r.crossedText = t.crossed;
+      r.statusKey = "deprivation:" + t.key;
+      r.applied = appliedSet[r.statusKey] === true;
       return r;
     });
 
@@ -1640,6 +1707,13 @@ EN.engine = (function () {
       return {
         kind: k.key, name: k.name, condition: k.condition,
         active: !!row.active && !sealedOut,
+        // Vacuum is applied through the Hazard menu; Drowning is applied as a
+        // CONDITION and renders inside it, so its applied-ness is the condition's
+        // presence rather than an entry in the hazard map.
+        statusKey: k.key === "vacuum" ? "environmental:vacuum" : null,
+        applied: k.key === "vacuum"
+          ? appliedSet["environmental:vacuum"] === true
+          : ((ch && ch.conditions) || []).indexOf(k.condition || "Drowning") !== -1,
         sealedOut: sealedOut, seal: seal,
         holdRounds: bodScore,                                    // "rounds equal to your Body score"
         rounds: Math.max(0, row.rounds | 0),
@@ -1669,6 +1743,8 @@ EN.engine = (function () {
     var immune = fx.immuneCaustic || null, blocked = fx.blocksCaustic || null, noLinger = fx.noCausticLinger || null;
     var stopped = immune || blocked;
     var caustic = {
+      statusKey: "environmental:caustic",
+      applied: appliedSet["environmental:caustic"] === true,
       inside: !!cz.inside,
       lingering: !!cz.lingering && !stopped && !noLinger,
       sceneTicks: Math.max(0, cz.sceneTicks | 0),

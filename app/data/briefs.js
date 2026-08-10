@@ -176,7 +176,7 @@ EN.briefs = {
   "Nerve Block": "Ally within 6 gains Resistance to Bludgeoning/Piercing/Slashing for 1 min but cannot be healed; dismissible early",
   "Optical Overclock": "Ally ignores partial Cover penalties on ranged attacks; Darkvision 12",
   "Dermal Reinforcement": "Ally +1 Defense; first Wound damage each encounter reduced by your Caliber",
-  "Pneumatic Bypass": "Ally's unarmed strikes deal 1d6 Bludgeoning; Edge on grapple/shove/break checks",
+  "Pneumatic Bypass": "Ally's unarmed strike die steps up one (no die gains 1d4); Edge on grapple/shove/break checks",
   "Synaptic Accelerator": "Ally base Speed +1 and +2 Initiative",
   "Recoil Compensator": "Ally ignores Heavy/Cumbersome penalties; Edge on Body Saves vs Prone",
   "Akimbo Specialist": "+1 Body/Agility; +1 Defense wielding a weapon each hand; two-weapon fighting with non-Light; draw/stow two free. Upgrade: crit grants free off-hand attack.",

@@ -1222,7 +1222,9 @@ EN.combatView = (function () {
      10 + 2 * saves from that row alone. LEAVE deletes the row, which is why
      leaving resets both the clock and the DC with no reset step to forget.
      ---------------------------------------------------------------------- */
-  var _hazPick = { type: "cold", severity: "mild" };   // the "enter an exposure" selects
+  // (the old "enter an exposure" type/severity selects lived here; exposures are
+  // entered from the Status Changes header dropdown now, and severity is picked
+  // on the row itself, so there is no pending-pick state to hold between renders)
   function newExposureId(c) {
     var m = (c.hazards && c.hazards.exposures) || {};
     var id;
@@ -1266,20 +1268,44 @@ EN.combatView = (function () {
     return el("div.section-title", { style: { margin: "12px 0 4px" } }, [document.createTextNode(label), el("span.line")]);
   }
 
-  function hazardsPanel(ch, d, fx) {
+  /* Hazards as BLOCKS rather than as their own panel. The Status Changes panel
+     is one place for every temporary state, so these render inside it beside
+     the conditions and the bonuses. Each subsection is gated on the hazard
+     having been APPLIED: nothing appears until the player picks it out of the
+     "- add a Hazard -" dropdown, exactly the way a condition appears.
+
+     Returns {kids, count}. Drowning is NOT here; it is a condition, and its
+     breath clock renders inside the Drowning condition entry (drowningRow). */
+  function hazardBlocks(ch, d, fx) {
     var H = EN.hazards || {}, hzd = d.hazard;
-    if (!H.exposure || !hzd) return EN.ui.panel("Environmental Hazards", "DATA MISSING", [el("p.help", { text: "EN.hazards did not load." })], { corners: true });
+    if (!H.exposure || !hzd) return { kids: [el("p.help", { text: "EN.hazards did not load." })], count: 0 };
     var kids = [];
 
     /* ---- 3.1 Exposure -------------------------------------------------- */
+    if (hzd.exposures.length) {
     kids.push(hazSub("Exposure"));
     kids.push(el("p.help", { style: { margin: "0 0 8px" }, text: H.exposure.intro }));
-    if (!hzd.exposures.length) kids.push(el("p.help", { style: { margin: 0, color: "var(--text2)" }, text: "No exposure running. Enter one below; each one you enter gets its own clock and its own DC." }));
     hzd.exposures.forEach(function (row) {
       var right = [];
       right.push(el("span.mono", { style: { fontSize: "17px", color: row.shielded ? "var(--text3)" : "var(--warn)" }, text: "DC " + row.dc }));
       right.push(el("button.btn.sm.primary", { style: { padding: "1px 8px" }, onclick: function () { exposureTick(row, fx); } },
         row.shielded ? "⏱ SPEND " + row.intervalMinutes + " MIN" : "⏱ SAVE"));
+      // Severity sets the interval and NOTHING else, and the weather can turn
+      // while you are standing in it, so it is editable on the row. Changing it
+      // deliberately does not touch this exposure's save count: the escalating
+      // DC belongs to the exposure, not to how bad it currently is.
+      right.push(el("select", { style: { width: "auto", fontSize: "11px" },
+        title: "Severity sets the interval and nothing else. Changing it leaves this exposure's DC where it is.",
+        onchange: function () {
+          var v = this.value, id = row.id;
+          store.update(function (c) {
+            var r = ((c.hazards || {}).exposures || {})[id];
+            if (r) r.severity = v;
+          });
+        } },
+        (H.exposure.severities || []).map(function (s) {
+          return el("option", { value: s.key, selected: row.severity === s.key, text: s.name + " · " + s.interval });
+        })));
       right.push(el("button.btn.sm", { style: { padding: "1px 8px" }, title: "Leaving resets both the clock and the DC", onclick: function () { exposureLeave(row); } }, "LEAVE"));
       var chips = [];
       chips.push(hazChip(row.severityName.toUpperCase() + " · " + row.interval, "var(--accent)", "Severity sets the interval and nothing else"));
@@ -1301,29 +1327,16 @@ EN.combatView = (function () {
           + row.clockMinutes + " min" + (row.rider ? " · " + row.rider : "") })
       ]));
     });
-    var typeSel = el("select", { style: { width: "auto", fontSize: "12px" }, onchange: function () { _hazPick.type = this.value; } },
-      (H.exposure.types || []).filter(function (t) { return t.severityDriven; }).map(function (t) {
-        return el("option", { value: t.key, selected: _hazPick.type === t.key, text: t.name });
-      }));
-    var sevSel = el("select", { style: { width: "auto", fontSize: "12px" }, onchange: function () { _hazPick.severity = this.value; } },
-      (H.exposure.severities || []).map(function (s) {
-        return el("option", { value: s.key, selected: _hazPick.severity === s.key, text: s.name + " · " + s.interval });
-      }));
-    kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "8px" } }, [
-      typeSel, sevSel,
-      el("button.btn.sm.primary", { onclick: function () {
-        store.update(function (c) {
-          c.hazards = c.hazards || {}; c.hazards.exposures = c.hazards.exposures || {};
-          c.hazards.exposures[newExposureId(c)] = { type: _hazPick.type, severity: _hazPick.severity, saves: 0, fatigue: 0, minutes: 0, clockMinutes: 0 };
-        });
-        toast("Exposure entered at DC " + H.exposure.baseDC + ". It carries its own clock and its own DC.");
-      } }, "+ ENTER EXPOSURE")
-    ]));
+    }   // end: at least one exposure applied
 
-    /* ---- Deprivation: three independent day-scale clocks ---------------- */
+    /* ---- Deprivation: three independent day-scale clocks ----------------
+       Only the tracks the player applied. Each is still its OWN clock with its
+       own DC and its own Fatigue; applying one says nothing about the others. */
+    var depOn = hzd.deprivation.filter(function (r) { return r.applied; });
+    if (depOn.length) {
     kids.push(hazSub("Deprivation"));
     kids.push(el("p.help", { style: { margin: "0 0 8px" }, text: (H.typeByKey.deprivation || {}).rider || "" }));
-    hzd.deprivation.forEach(function (row) {
+    depOn.forEach(function (row) {
       var chips = [];
       chips.push(hazChip(row.days + " " + row.unit + (row.days === 1 ? "" : "s"), row.crossed ? "var(--danger)" : "var(--text3)",
         "Threshold: " + row.thresholdDays + " " + row.unit + (row.thresholdDays === 1 ? "" : "s")));
@@ -1340,7 +1353,11 @@ EN.combatView = (function () {
         ]),
         el("button.btn.sm.primary", { style: { padding: "1px 8px" }, disabled: !row.crossed,
           title: row.crossed ? "One save per day at Mild" : "Threshold not crossed yet", onclick: function () { depTick(row, fx); } }, "⏱ SAVE"),
-        el("button.btn.sm", { style: { padding: "1px 8px" }, title: "Fed, watered or slept: this clock resets, and so does its DC", onclick: function () { depReset(row); } }, "RESET")
+        el("button.btn.sm", { style: { padding: "1px 8px" }, title: "Fed, watered or slept: this clock resets, and so does its DC", onclick: function () { depReset(row); } }, "RESET"),
+        // RESET zeroes the clock but keeps the track on the panel; Remove takes
+        // it off entirely. An exposure needs no equivalent, because LEAVE
+        // deletes its row and the row was the whole statement.
+        statusRemoveBtn(row.statusKey, "Take this track off the panel")
       ];
       kids.push(el("div.feature", { style: { borderLeftColor: row.crossed ? "var(--warn)" : "var(--border2)" } }, [
         el("h4", null, [el("span", { text: row.trackName }), el("span", { style: { display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" } }, right)]),
@@ -1350,12 +1367,31 @@ EN.combatView = (function () {
       ]));
     });
 
-    /* ---- 3.2 Vacuum, and the Drowning it mirrors ------------------------ */
-    kids.push(hazSub("Held Breath: Vacuum & Drowning"));
+    }   // end: at least one deprivation track applied
+
+    /* ---- 3.2 Vacuum ------------------------------------------------------
+       Drowning used to render beside it here. It has moved to Conditions,
+       where it belongs, and its row is built by the SAME breathRow() below off
+       the SAME EN.hazards.breath spec, so the two still cannot drift. */
+    var vacOn = hzd.breath.filter(function (b) { return b.kind === "vacuum" && b.applied; });
+    if (vacOn.length) {
+    kids.push(hazSub("Vacuum"));
     kids.push(el("p.help", { style: { margin: "0 0 8px" },
       text: "Vacuum mirrors Drowning exactly, and both are built from one spec, so the two cannot drift: breath held " + (H.breath || {}).holdRule
           + ", then a Body Save at the start of each of your turns, DC " + (H.breath || {}).dc + " and +" + (H.breath || {}).step + " each round." }));
-    hzd.breath.forEach(function (b) {
+    vacOn.forEach(function (b) { kids.push(breathRow(b, d, fx)); });
+    }   // end: vacuum applied
+
+    breathBlockTail(kids, hzd, d, fx);
+    return { kids: kids, count: hazardCount(hzd) };
+  }
+
+  /* ONE breath row builder, used by Vacuum in the hazard blocks and by Drowning
+     inside its condition. Both read the same EN.hazards.breath spec through
+     d.hazard.breath, so moving Drowning to Conditions moved WHERE it renders
+     and nothing else: it cannot drift from Vacuum, because there is no second
+     renderer to drift. */
+  function breathRow(b, d, fx) {
       var chips = [];
       chips.push(hazChip("HOLD " + b.holdRounds + " ROUNDS", "var(--accent)", "Rounds equal to your Body score"));
       chips.push(hazChip("ROUND " + b.rounds, "var(--text3)"));
@@ -1376,17 +1412,31 @@ EN.combatView = (function () {
           b.clockStarts ? (b.holding > 0 ? "⏱ ROUND" : "⏱ SAVE") : "HOLDING"));
         right.push(el("button.btn.sm", { style: { padding: "1px 8px" }, onclick: function () { breathEnd(b); } }, "END"));
       }
-      kids.push(el("div.feature", { style: { borderLeftColor: b.active ? "var(--danger)" : b.sealedOut ? "var(--success)" : "var(--border2)" } }, [
+      // Vacuum is applied from the Hazard dropdown, so it gets the same Remove
+      // every other applied hazard has. Drowning does NOT: it is a condition,
+      // and the condition's own Remove above already owns clearing it.
+      if (b.statusKey) right.push(statusRemoveBtn(b.statusKey, "Take Vacuum off the panel"));
+      return el("div.feature", { style: { borderLeftColor: b.active ? "var(--danger)" : b.sealedOut ? "var(--success)" : "var(--border2)" } }, [
         el("h4", null, [el("span", { text: b.name }), el("span", { style: { display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" } }, right)]),
         el("div.row.wrap", { style: { gap: "5px", margin: "4px 0" } }, chips),
         el("p.help", { style: { margin: 0 }, text: b.note }),
         b.riders.length ? el("p.help", { style: { margin: "3px 0 0", color: "var(--text2)" }, text: b.riders.join(" ") }) : null,
         b.kind === "vacuum" ? el("p.help", { style: { margin: "3px 0 0", color: b.sealedOut ? "var(--success)" : "var(--warn)" }, text: b.seal.why }) : null
-      ]));
-    });
+      ]);
+  }
 
-    /* ---- 3.3 Caustic Environments --------------------------------------- */
+  /* Caustic Air & Sludge, and the Mitigations tail. Split out only so the
+     hazard blocks above can return early once every subsection is gated. */
+  function breathBlockTail(kids, hzd, d, fx) {
+    var ch = store.active() || {};
+    var H = EN.hazards || {};
+
+    /* ---- 3.3 Caustic Environments ---------------------------------------
+       Gear Degradation is deliberately NOT its own applied entry: it is a
+       rider on this one, where it is most relevant, so it renders inside the
+       Caustic block or not at all. */
     var cz = hzd.caustic;
+    if (cz.applied) {
     kids.push(hazSub("Caustic Environments"));
     var cChips = [];
     cChips.push(hazChip(cz.inside ? "STANDING IN IT" : "OUT", cz.inside ? "var(--danger)" : "var(--text3)"));
@@ -1400,7 +1450,8 @@ EN.combatView = (function () {
         el("span", { style: { display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" } }, [
           el("button.btn.sm" + (cz.inside ? "" : ".primary"), { style: { padding: "1px 8px" }, onclick: function () { causticToggle(cz); } }, cz.inside ? "STEP OUT" : "STEP IN"),
           el("button.btn.sm", { style: { padding: "1px 8px" }, disabled: !cz.inside, title: "One turn spent in it", onclick: function () { causticTurn(cz); } }, "⏱ END OF TURN"),
-          el("button.btn.sm", { style: { padding: "1px 8px" }, disabled: !cz.lingering, title: cz.wash, onclick: function () { causticWash(); } }, "WASH (ACTION)")
+          el("button.btn.sm", { style: { padding: "1px 8px" }, disabled: !cz.lingering, title: cz.wash, onclick: function () { causticWash(); } }, "WASH (ACTION)"),
+          statusRemoveBtn(cz.statusKey, "Take Caustic Air & Sludge off the panel")
         ])
       ]),
       el("div.row.wrap", { style: { gap: "5px", margin: "4px 0" } }, cChips),
@@ -1434,10 +1485,28 @@ EN.combatView = (function () {
         text: "PENDING " + dg.lost + " DR, recorded against this exact suit. Armor Repair owns current DR per piece and lives on another branch, so this branch reports the loss rather than applying it. It has not been subtracted from your Damage Reduction above, and there is deliberately no second armor DR system here to subtract it." }) : null
     ]));
 
-    /* ---- 3.4 Mitigations ------------------------------------------------ */
+    }   // end: caustic applied
+
+    /* ---- 3.4 Mitigations -------------------------------------------------
+       Only what the player ACTUALLY HAS, per the spec. A mitigation you do not
+       own is not listed at all, because a list of everything you could have
+       bought is noise on a play sheet.
+
+       Two shapes, and the difference is visible:
+         GEAR (and armor mods) surface once the piece is in the stash, and
+         render greyed when they are not doing anything (not worn, not
+         equipped, not applied, not tuned, torn). The `why` line says which.
+         ALWAYS-ON SOURCES (a lineage trait) need no toggle, because there is
+         nothing to switch: if you have it, it is on. They render active and
+         simply tell the player what they are benefiting from.
+       The rest of the block, the per-hazard chips on the rows above, is the
+       other half of the spec: mitigations also surface as riders on the hazard
+       they answer, which is where a player looks mid-scene. */
     var mit = hzd.mitigations;
-    kids.push(hazSub("Mitigations (" + mit.active.length + " of " + (mit.active.length + mit.inactive.length) + " live)"));
-    mit.active.concat(mit.inactive).forEach(function (m) {
+    var owned = mit.active.concat(mit.inactive).filter(function (m) { return m.possessed; });
+    if (!owned.length) return;
+    kids.push(hazSub("Mitigations (" + owned.filter(function (m) { return m.active; }).length + " of " + owned.length + " live)"));
+    owned.forEach(function (m) {
       var row = [
         el("h4", null, [
           el("span", null, [document.createTextNode(m.name + " "), hazChip(m.kind.toUpperCase(), "var(--text3)")]),
@@ -1482,12 +1551,191 @@ EN.combatView = (function () {
           } }, "REFRESH (NEW SCENE)")
         ]));
       }
-      kids.push(el("div.feature", { style: { borderLeftColor: m.active ? "var(--success)" : "var(--border2)" } }, row));
+      kids.push(el("div.feature", { style: { borderLeftColor: m.active ? "var(--success)" : "var(--border2)", opacity: m.active ? 1 : 0.6 } }, row));
     });
+  }
 
-    var badge = hzd.exposures.length + hzd.deprivation.filter(function (r) { return r.crossed; }).length
-              + hzd.breath.filter(function (b) { return b.active; }).length + (cz.inside || cz.lingering ? 1 : 0);
-    return EN.ui.panel("Environmental Hazards", badge ? badge + " RUNNING" : "NOTHING RUNNING", kids, { corners: true });
+  /* The Drowning breath clock, rendered inside the Drowning condition. Returns
+     null for every other condition, so it can be dropped straight into the
+     condition body without a branch at the call site. */
+  function drowningClock(name, d, fx) {
+    if (name !== "Drowning") return null;
+    var b = (((d && d.hazard) || {}).breath || []).filter(function (x) { return x.kind === "drowning"; })[0];
+    return b ? breathRow(b, d, fx) : null;
+  }
+
+  /* ---- applying and clearing a Status Change ---------------------------
+     One entry point per direction, both keyed on the registry option, so the
+     panel never writes hazard or bonus storage by hand. Each `kind` names the
+     state it drives and nothing else touches it.
+
+     Applied-ness is written as a STATEMENT (ch.hazards.applied[key] = true)
+     alongside whatever clock the hazard runs, rather than being implied by that
+     clock being non-zero. A freshly applied deprivation track is at 0 days and
+     is on the panel; an unapplied one is at 0 days and is not. Nothing about
+     the numbers can tell those apart, so the record says which it is. */
+  function statusApplied(ch, opt) {
+    if (!opt) return false;
+    if (opt.menu === "bonus") return ((ch && ch.bonuses) || {})[opt.key] === true;
+    if (opt.kind === "exposure") {
+      // Exposures stack: two separate cold exposures each run their own clock
+      // and their own DC, so this one is never "already applied".
+      return false;
+    }
+    return (((ch && ch.hazards) || {}).applied || {})[opt.key] === true;
+  }
+
+  function applyStatusChange(opt) {
+    if (!opt) return;
+    if (opt.menu === "bonus") {
+      store.update(function (c) {
+        c.bonuses = c.bonuses || {};
+        // One Hot-Wire at a time: applying a second REPLACES the first rather
+        // than stacking, which is the rule the feature states.
+        if (opt.exclusiveGroup && EN.statusChanges) {
+          Object.keys(c.bonuses).forEach(function (k) {
+            var o = EN.statusChanges.get(k);
+            if (o && o.exclusiveGroup === opt.exclusiveGroup) delete c.bonuses[k];
+          });
+        }
+        c.bonuses[opt.key] = true;
+      });
+      toast(opt.name + " applied.");
+      return;
+    }
+    store.update(function (c) {
+      c.hazards = c.hazards || {};
+      var hz = c.hazards;
+      if (opt.kind === "exposure") {
+        hz.exposures = hz.exposures || {};
+        hz.exposures[newExposureId(c)] = { type: opt.type, severity: opt.defaultSeverity || "harsh",
+                                           saves: 0, fatigue: 0, minutes: 0, clockMinutes: 0 };
+        return;   // the row IS the statement; no applied key for exposures
+      }
+      hz.applied = hz.applied || {};
+      hz.applied[opt.key] = true;
+      /* Vacuum is a clock AND a condition. The clock is this hazard; the
+         condition is what makes you unable to speak and stops anything needing
+         air. Applying the hazard applies both, so there is one door into the
+         state and it opens the whole state. Drowning is the mirror of this and
+         goes the other way: the condition is the door, and it starts the clock. */
+      if (opt.kind === "breath" && opt.track === "vacuum") {
+        c.conditions = c.conditions || [];
+        if (c.conditions.indexOf("Vacuum") === -1) c.conditions.push("Vacuum");
+      }
+    });
+    toast(opt.kind === "exposure"
+      ? (opt.name + " exposure entered at DC " + ((EN.hazards || {}).exposure || {}).baseDC + ". It carries its own clock and its own DC.")
+      : (opt.name + " applied."));
+  }
+
+  /* Clearing one. The clock it drove is reset at the same time, because leaving
+     a hazard resets both the clock and the DC, and a hazard removed from the
+     panel has certainly been left. Fatigue already gained is NOT touched: it is
+     ordinary Fatigue and comes off by the ordinary rules. */
+  function clearStatusChange(opt) {
+    if (!opt) return;
+    if (opt.menu === "bonus") {
+      store.update(function (c) { if (c.bonuses) delete c.bonuses[opt.key]; });
+      return;
+    }
+    store.update(function (c) {
+      var hz = c.hazards || (c.hazards = {});
+      if (hz.applied) delete hz.applied[opt.key];
+      if (opt.kind === "deprivation" && hz.deprivation && hz.deprivation[opt.track]) {
+        hz.deprivation[opt.track] = { days: 0, saves: 0, fatigue: 0 };
+      } else if (opt.kind === "breath" && hz.breath && hz.breath[opt.track]) {
+        hz.breath[opt.track] = { active: false, rounds: 0, saves: 0 };
+        if (opt.track === "vacuum" && Array.isArray(c.conditions)) {
+          c.conditions = c.conditions.filter(function (n) { return n !== "Vacuum"; });
+        }
+      } else if (opt.kind === "caustic" && hz.caustic) {
+        hz.caustic.inside = false; hz.caustic.lingering = false; hz.caustic.sceneTicks = 0;
+      }
+    });
+  }
+
+  // The remove control every applied Status Change carries, matching the one a
+  // condition already has so the panel reads as one thing.
+  function statusRemoveBtn(key, label) {
+    return el("button.btn.sm.danger", { style: { padding: "1px 8px" }, title: label || "Remove",
+      onclick: function (e) {
+        e.stopPropagation();
+        clearStatusChange(EN.statusChanges && EN.statusChanges.get(key));
+        EN.app.render();
+      } }, "✕ Remove");
+  }
+
+  /* The panel badge counts everything on the panel: conditions the player
+     applied, conditions derived from another source, applied hazards, and
+     applied bonuses. */
+  function statusBadge(ch, hazCount, derivedCount) {
+    var conds = ((ch && ch.conditions) || []).length;
+    var bonuses = Object.keys((ch && ch.bonuses) || {}).length;
+    var n = conds + (derivedCount || 0) + (hazCount || 0) + bonuses;
+    return n ? n + " ACTIVE" : "NOTHING APPLIED";
+  }
+
+  /* ---- Bonuses ----------------------------------------------------------
+     Class Buffs and Consumables. Everything here is player-declared, because
+     none of it is derivable from this sheet: a Hot-Wire lives on somebody
+     else's action, and a swallowed pill leaves no trace in the record.
+
+     Pneumatic Bypass is the one with a live mechanical consequence, and the
+     row says so rather than leaving the player to wonder: the engine reads the
+     applied bonus and steps the unarmed strike, and the row prints the die it
+     produced. */
+  function bonusBlocks(ch, d) {
+    var SC = EN.statusChanges; if (!SC) return [];
+    var on = Object.keys((ch && ch.bonuses) || {});
+    if (!on.length) return [];
+    var kids = [hazSub("Bonuses")];
+    // registry order, not record order, so the list does not reshuffle itself
+    // as the player toggles things
+    var ordered = [];
+    SC.bonus.groups.forEach(function (g) {
+      (g.options || []).forEach(function (o) { if (on.indexOf(o.key) !== -1) ordered.push(o); });
+    });
+    ordered.forEach(function (o) {
+      var chips = [hazChip(o.groupName.toUpperCase(), "var(--accent)", o.source || "")];
+      var stepped = null;
+      var incSrc = (((d && d.unarmed) || {}).increases || {}).sources || [];
+      if (incSrc.some(function (s) { return s.kind === "bonus" && s.label === o.name; })) {
+        stepped = d.unarmed.die || (d.unarmed.flat ? String(d.unarmed.flat) : null);
+      }
+      if (stepped) chips.push(hazChip("UNARMED " + stepped, "var(--success)", "This bonus steps your unarmed strike; the sheet already reflects it"));
+      if (o.requires) chips.push(hazChip("NEEDS " + o.requires.toUpperCase(), "var(--text3)", "The tuning must match the recipient's installed hardware"));
+      // A consumable takes its prose from the gear catalog rather than carrying
+      // a second copy of it here.
+      var summary = o.summary || "";
+      if (o.itemName && EN.engine && EN.engine.catalogItem) {
+        var it = EN.engine.catalogItem(o.itemName);
+        if (it) summary = it.desc || it.effect || summary;
+      }
+      kids.push(el("div.feature", { style: { borderLeftColor: "var(--success)" } }, [
+        el("h4", null, [
+          el("span", { text: o.name }),
+          el("span", { style: { display: "flex", alignItems: "center", gap: "8px" } }, [statusRemoveBtn(o.key)])
+        ]),
+        el("div.row.wrap", { style: { gap: "5px", margin: "4px 0" } }, chips),
+        el("p.help", { style: { margin: 0, color: "var(--text2)" }, text: summary }),
+        o.endsOn ? el("p.help", { style: { margin: "3px 0 0" }, html: "<span style='color:var(--success)'>✓ Ends:</span> " + o.endsOn }) : null
+      ]));
+    });
+    return kids;
+  }
+
+  /* How many Status Changes the hazard side is contributing to the panel badge.
+     Applied, not merely running: an applied deprivation track that has not
+     crossed its threshold yet is still a thing on the sheet the player put
+     there, and the badge should say so. Drowning is counted with the
+     conditions, not here, because that is where it now lives. */
+  function hazardCount(hzd) {
+    if (!hzd) return 0;
+    return hzd.exposures.length
+         + hzd.deprivation.filter(function (r) { return r.applied; }).length
+         + hzd.breath.filter(function (b) { return b.kind === "vacuum" && b.applied; }).length
+         + (hzd.caustic && hzd.caustic.applied ? 1 : 0);
   }
 
   /* ---- the writes. Each one touches exactly the row it names. ---------- */
@@ -2872,9 +3120,16 @@ EN.combatView = (function () {
 
     /* conditions */
     var condSel = el("select", { style: { width: "auto", minWidth: "200px" } },
-      [el("option", { value: "", text: "- add a condition -" })].concat((EN.conditions || []).map(function (c) {
-        return el("option", { value: c.name, disabled: (ch.conditions || []).indexOf(c.name) !== -1, text: c.name });
-      })));
+      [el("option", { value: "", text: "- add a condition -" })].concat((EN.conditions || [])
+        // Vacuum is applied from the Hazard dropdown now (Environmental >
+        // Vacuum), which brings its clock with it and adds this same condition.
+        // Leaving it here too would be two doors into one state, and only one of
+        // them would start the breath clock. Drowning goes the other way: it is
+        // a condition, it is offered here, and applying it starts ITS clock.
+        .filter(function (c) { return c.name !== "Vacuum"; })
+        .map(function (c) {
+          return el("option", { value: c.name, disabled: (ch.conditions || []).indexOf(c.name) !== -1, text: c.name });
+        })));
     var active = (ch.conditions || []).map(function (name) {
       var info = (EN.conditions || []).find(function (x) { return x.name === name; });
       var lv = LEVELED[name];
@@ -2900,20 +3155,75 @@ EN.combatView = (function () {
         ]),
         !open ? el("p.help", { style: { margin: 0, color: "var(--text2)" }, text: (lv && lv.effects ? lv.effects[lvl - 1] : (info && info.summary) || "") }) : null,
         !open && COND_META[name] ? el("p.help", { style: { margin: "4px 0 0" }, html: "⏱ " + COND_META[name][0] + " &nbsp;·&nbsp; <span style='color:var(--success)'>✓ End:</span> " + COND_META[name][1] }) : null,
+        // Drowning moved here from the hazards panel, so it brings its breath
+        // clock with it: the held-breath rounds, the escalating Body Save, and
+        // the Wound on a failure. Built by the SAME breathRow() that renders
+        // Vacuum, off the same shared spec, so the two cannot drift apart.
+        drowningClock(name, d, fx),
         severe ? el("p.help", { style: { margin: "4px 0 0", color: "var(--danger)" }, text: "Severe; level 4+ needs professional care or ritual support to recover." }) : null,
         info && open ? el("p", { text: info.text || info.summary || "" }) : null
       ]);
     });
+    /* The two Status Change dropdowns that sit beside the conditions one. Both
+       are built from EN.statusChanges, which is a registry rather than a
+       hardcoded list, so a new hazard type or a new bonus appears here with no
+       edit to this file. Both behave exactly like the conditions dropdown:
+       pick, hit the ONE shared + APPLY, and the entry joins the panel while the
+       dropdown snaps back to its placeholder ready for the next one. */
+    function statusSelect(menu) {
+      if (!menu) return null;
+      var opts = [el("option", { value: "", text: menu.placeholder })];
+      menu.groups.forEach(function (g) {
+        if (!g.options || !g.options.length) return;
+        opts.push(el("optgroup", { label: g.name }, g.options.map(function (o) {
+          return el("option", { value: o.key, disabled: statusApplied(ch, o), text: o.name });
+        })));
+      });
+      return el("select", { style: { width: "auto", minWidth: "170px" } }, opts);
+    }
+    var SC = EN.statusChanges || null;
+    var hazSel = SC ? statusSelect(SC.hazard) : null;
+    var bonusSel = SC ? statusSelect(SC.bonus) : null;
+
+    /* ONE apply button for all three dropdowns. It reads whichever ones carry a
+       selection, applies each, and resets each. Applying two at once is not a
+       special case worth forbidding: the player picked both, so both land. */
     var applyBtn = el("button.btn.sm.primary", { onclick: function () {
       var v = condSel.value;
-      if (v) store.update(function (c) {
-        c.conditions = c.conditions || [];
-        if (c.conditions.indexOf(v) === -1) c.conditions.push(v);
-        if (LEVELED[v]) { c.conditionLevels = c.conditionLevels || {}; c.conditionLevels[v] = c.conditionLevels[v] || 1; }
+      var applied = 0;
+      if (v) {
+        store.update(function (c) {
+          c.conditions = c.conditions || [];
+          if (c.conditions.indexOf(v) === -1) c.conditions.push(v);
+          if (LEVELED[v]) { c.conditionLevels = c.conditionLevels || {}; c.conditionLevels[v] = c.conditionLevels[v] || 1; }
+        });
+        condSel.value = "";
+        applied++;
+      }
+      [hazSel, bonusSel].forEach(function (sel) {
+        if (!sel || !sel.value) return;
+        var opt = SC && SC.get(sel.value);
+        sel.value = "";
+        if (!opt) return;
+        applyStatusChange(opt);
+        applied++;
       });
+      // Every dropdown resets to its default option whether or not anything was
+      // applied, so the header never sits on a stale selection.
+      if (hazSel) hazSel.value = "";
+      if (bonusSel) bonusSel.value = "";
+      if (applied) EN.app.render();
     } }, "+ APPLY");
-    sectionEls.conditions = EN.ui.panel("Conditions", (ch.conditions || []).length + " ACTIVE",
-      (active.length ? active : [el("p.help", { style: { margin: 0 }, text: "No active conditions." })])
+    var hazBlocks = hazardBlocks(ch, d, fx);
+    var bonusKids = bonusBlocks(ch, d);
+    var condKids = active.length ? active : [];
+    // The empty state has to speak for the whole panel now, not just for
+    // conditions, or an empty sheet reads "No active conditions" while three
+    // dropdowns sit above it offering two other kinds of thing.
+    var nothingAtAll = !condKids.length && !fx.derived.length && !hazBlocks.count && !bonusKids.length;
+
+    sectionEls.conditions = EN.ui.panel("Status Changes", statusBadge(ch, hazBlocks.count, fx.derived.length),
+      (nothingAtAll ? [el("p.help", { style: { margin: 0 }, text: "Nothing applied. Add a condition, a hazard or a bonus above." })] : condKids)
      .concat(fx.derived.map(function (dc) {
         var info = (EN.conditions || []).find(function (x) { return x.name === dc.name; });
         return el("div.feature", { style: { borderLeftColor: "var(--danger)" } }, [
@@ -2924,7 +3234,8 @@ EN.combatView = (function () {
           ]),
           info ? el("p.help", { style: { margin: 0 }, text: info.summary || "" }) : null
         ]);
-      })), { corners: true, headerRight: [condSel, applyBtn] });
+      })).concat(hazBlocks.kids).concat(bonusKids),
+      { corners: true, headerRight: [condSel, hazSel, bonusSel, applyBtn].filter(Boolean) });
 
     /* ---------- Environmental Hazards ----------------------------------------
        Every number rendered here comes off d.hazard (EN.engine.hazardStats),
@@ -2933,7 +3244,12 @@ EN.combatView = (function () {
        mitigation is on: that would be the second resolver the Trauma Rig work
        already paid to delete once. Writes go back through store.update and are
        then re-derived, so what you see is always what the engine believes. */
-    sectionEls.hazards = hazardsPanel(ch, d, fx);
+    /* The standalone Environmental Hazards panel is retired. Hazards are Status
+       Changes, and they now render inside that one panel beside the conditions
+       and the bonuses, which is the whole point of the rework: one place to
+       look for every temporary state. The layout slot stays so any saved
+       arrangement referencing it keeps working; it just renders nothing. */
+    sectionEls.hazards = null;
 
     /* saving throws + senses */
     var passives = ["perception", "investigation", "intuition", "systems"].map(function (k) {

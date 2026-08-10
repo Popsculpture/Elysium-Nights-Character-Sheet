@@ -1092,6 +1092,104 @@ ambiguous, so the deprivation clocks are player-driven.
 **Also flagged:** `ch.armorMods` is a third name-keyed per-piece map and belongs in the
 same conversion pass as `ch.shieldWear`.
 
+## Status Changes panel, BUILT on this branch
+
+Per the author spec of 2026-08-10 (`STATUS-CHANGES-SPEC.md`, which lives on `main`;
+this branch predates it). Every clause of the spec is implemented and driven through
+the real UI. What follows is what the spec left open and how it was resolved.
+
+**The rename and the shared apply flow.** The Conditions panel is now **Status
+Changes**. Conditions are untouched: same dropdown, same stacking, same levels. Two
+more dropdowns sit beside it, `- add a Hazard -` and `- add a Bonus -`, and all three
+feed the ONE `+ APPLY` button on the far right. Applying resets every dropdown to its
+placeholder, whether or not it had a selection, so the header can never sit on a stale
+pick. Applying from two dropdowns at once is allowed and lands both; the player picked
+both.
+
+**The standalone Environmental Hazards panel is retired.** Its content renders inside
+Status Changes now, which is the point of the rework. `sectionEls.hazards` stays as a
+slot that renders nothing, so a saved layout referencing it keeps working.
+
+**Applied-ness is STATED, not inferred**, in a new `ch.hazards.applied` map plus
+`ch.bonuses`. This is the invariant this codebase has now paid for twice, and it is
+load-bearing here for a concrete reason: a deprivation clock at 0 days and a vacuum
+clock at 0 rounds read **identically** whether they were applied a second ago or never
+applied at all. Nothing in the numbers can tell those apart, so the record says which
+it is. Exposures are the one exception and deliberately carry no key: an exposure ROW
+exists only because one was applied, so the row is already the statement, and two cold
+exposures still each run their own clock and their own DC.
+
+**Legacy records get one read of the numbers, once.** A save written before this panel
+has live hazard state and no `applied` map. Dropping a running clock off the panel
+would be worse than a heuristic, so a record with **no map at all** seeds one from
+what is actually running. Once the map exists it is authoritative, including when it
+is deliberately empty. That is a migration, not an ongoing inference.
+
+**Drowning moved to Conditions, and cannot drift from Vacuum.** The breath row builder
+was extracted into one `breathRow()`. Vacuum calls it from the hazard blocks; Drowning
+calls it from inside its own condition entry. Both read the same `EN.hazards.breath`
+spec through `d.hazard.breath`, so the move changed WHERE it renders and nothing else:
+there is no second renderer to drift.
+
+**Vacuum has one door, not two.** It was both a hazard and a condition, and only one
+of those doors started the breath clock. Applying Environmental > Vacuum now also
+applies the Vacuum condition (which is what stops you speaking), and removing it
+removes both; `Vacuum` is filtered out of the conditions dropdown so the state cannot
+be entered halfway. Drowning is the mirror: the condition is the door, and it carries
+the clock.
+
+**Exposure severity moved onto the row.** The old panel had a type select, a severity
+select and an ENTER button. Type is now the dropdown option; severity is a select on
+the exposure row itself, because the weather can turn while you are standing in it.
+Changing severity deliberately does NOT touch the save count: severity sets the
+interval and nothing else, and the escalating DC belongs to the exposure.
+
+**Mitigations surface only when the player has them.** `hazardMitigations` now returns
+`possessed` beside `active`, and the panel lists only what is possessed. Gear is
+possessed once it is in the STASH (new `gearInStash`) and greys when it is not on your
+person; an armor mod is possessed if fitted to ANY suit you own (new `armorModOwned`),
+so a mod on a spare greys rather than vanishing; a lineage trait is always on, so it
+shows active with no toggle and simply says what you are benefiting from. The
+per-hazard chips on the rows are unchanged and remain the other half of the spec.
+
+**Gear Degradation stayed a rider** on Caustic Air & Sludge, as specified, rather than
+becoming its own applied entry.
+
+**Pneumatic Bypass finally has a path into the engine.** This closes the question open
+since the unarmed rewrite. `BONUS_UNARMED_STEP` in `engine.js` reads the applied bonus
+key and pushes one step into `unarmedIncreases`, so the comment that used to say "there
+is nothing here to read" is now the code that reads it. It STEPS rather than SETS: a
+Freelancer already punching 1d8 does not drop to 1d6 because an ally tuned their
+servos. The three stale replacer prose sites were corrected to increaser wording in the
+same pass (two in `class_stitcher_resources.js`, one at `briefs.js:179`), which also
+closes the "fifth stale unarmed string" bullet above.
+
+**Registry, not hardcoding.** `app/data/status_changes.js` builds both menus by walking
+`EN.hazards` and the Stitcher's `aftermarketTunings`, so a new exposure type or a new
+Hot-Wire appears in the dropdown with no edit to that file. A whole new group is one
+push onto `.groups`. `optionByKey` is null-prototype, because it is indexed by keys
+that arrive out of a save file.
+
+**Driven through the real UI, not asserted.** Applying Cold, Thirst, Vacuum, Caustic
+and Pneumatic Bypass, then the Drowning condition: all six land, the three dropdowns
+reset to their placeholders, the badge reads `7 ACTIVE`, storage holds
+`applied: [deprivation:water, environmental:vacuum, environmental:caustic]`,
+`bonuses: [bonus:pneumatic-bypass]`, one exposure row at `cold/harsh`, and
+`conditions: [Vacuum, Drowning]`. The unarmed strike goes from flat 1 to **1d4** with
+the bonus row printing an `UNARMED 1D4` chip, and back to flat 1 when the bonus is
+removed. All of it survives a full page reload. A character owning a Rebreather but
+not carrying it shows `MITIGATIONS (0 OF 1 LIVE)` with the Rebreather greyed and "No
+Rebreather carried or worn"; a character owning none shows no Mitigations section at
+all. Removing Thirst, Vacuum and Caustic through their Remove buttons empties `applied`
+and drops the Vacuum condition with it. No console error on any tab.
+
+**One gap worth knowing.** An applied hazard's Remove resets the clock it drove, since
+leaving a hazard resets both the clock and the DC. It does NOT clear Fatigue already
+gained, which is correct (that is ordinary Fatigue on the ordinary recovery rules) but
+means the thin-air Long Rest lock still drifts exactly as recorded above. **That defect
+is untouched by this work and is still open**, along with the unverified vacuum
+subsystem whose review lens died.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from
