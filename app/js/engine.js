@@ -1391,6 +1391,319 @@ EN.engine = (function () {
     return out;
   }
 
+  /* ======================= ENVIRONMENTAL HAZARDS ==========================
+     ONE resolver, the way rigStats(ch) is the one resolver for a Trauma Rig.
+     Every surface (the Freelancer tab's Hazards panel, the Long Rest, the
+     Codex chapter) reads hazardStats and never re-reads raw storage, so no
+     second reading of "which exposure is live" or "does this suit hold
+     vacuum" can grow beside it.
+
+     THE ESCALATING DC IS PER EXPOSURE INSTANCE, and it is kept out of a global
+     counter structurally rather than by discipline: each exposure is a row in
+     ch.hazards.exposures under its own minted `ex_` id, carrying its own
+     `saves` count, and the DC is derived from THAT row alone
+     (10 + 2 * row.saves). There is nowhere for a shared counter to live. Two
+     concurrent Cold exposures are two rows and escalate independently. Leaving
+     an exposure DELETES its row, so "leaving resets both the clock and the DC"
+     is not a reset step that could be forgotten; the state that held the DC is
+     gone. Starting again mints a new id at saves 0, which is DC 10.
+     Deprivation's three tracks are three such rows, one per threshold, and
+     each stacks its own Fatigue in its own field. ------------------------- */
+
+  // Gear counts as a mitigation only when it is ON YOUR PERSON, which is the
+  // Loadout's own answer (carried / worn / racked / equipped), not the stash.
+  function gearOnPerson(ch, name) {
+    return ((ch && ch.equipment) || []).some(function (e) {
+      return e && e.name === name && !(e.qty != null && e.qty <= 0) && onPerson(ch, e);
+    });
+  }
+  /* The worn suit, once: its entry key, its catalog row, whether its lease has
+     lapsed, the mods fitted to it, and the two seal questions every hazard
+     asks. Resolved in one place because three hazard readers used to work it
+     out for themselves, which is how two of them end up disagreeing later.
+     Both seal answers read the mod's own DATA FLAGS (`grantsSealed`,
+     `sealToVacuum`), never its display strings. */
+  function wornArmor(ch) {
+    var key = (ch && ch.equippedArmor) || null;
+    var item = armorItem(keyToName(ch, key));
+    var byKey = (EN.armorMods && EN.armorMods.byKey) || {};
+    var fitted = (item && ((ch && ch.armorMods) || {})[item.name]) || [];
+    function anyMod(flag) { return fitted.some(function (k) { var m = byKey[k]; return !!(m && m[flag]); }); }
+    return {
+      key: key, item: item, name: item ? item.name : null,
+      lapsed: !!item && leaseLapsed(ch, key),
+      fitted: fitted,
+      // Sealed by its own trait, or by a mod whose data says it grants one.
+      sealed: !!item && (hasTrait(item, "Sealed") || anyMod("grantsSealed")),
+      sealedTrait: hasTrait(item, "Sealed"),
+      vacuumLiner: anyMod("sealToVacuum")
+    };
+  }
+  /* Does the worn suit hold VACUUM? The Sealed trait alone never does. Exactly
+     two paths, and each is read off the item's own data rather than off a
+     generic flag: `vacuum: true` on the armor row (Warframe Shell), or a
+     Rebreather Liner (`sealToVacuum`) fitted to a suit that is ALREADY Sealed.
+     A lapsed lease grants nothing, here as everywhere else. */
+  function vacuumSeal(ch, w) {
+    w = w || wornArmor(ch);
+    var armor = w.item;
+    if (!armor) return { sealed: false, via: null, armor: null, sealedTrait: false, liner: false,
+                         why: "No armor worn. Nothing you are wearing holds vacuum." };
+    var base = { armor: w.name, sealedTrait: w.sealedTrait, liner: w.vacuumLiner, lapsed: w.lapsed };
+    if (w.lapsed) { base.sealed = false; base.via = null; base.why = w.name + "'s lease has lapsed, so it grants nothing, seals included."; return base; }
+    if (armor.vacuum) { base.sealed = true; base.via = w.name; base.why = w.name + " holds vacuum natively; its own entry says so."; return base; }
+    if (w.vacuumLiner && w.sealedTrait) { base.sealed = true; base.via = "Rebreather Liner on " + w.name;
+      base.why = "The Rebreather Liner upgraded " + w.name + "'s existing Sealed trait to hold vacuum."; return base; }
+    base.sealed = false; base.via = null;
+    base.why = w.vacuumLiner ? (w.name + " is not Sealed, so the Rebreather Liner only grants the Sealed benefit, which does not cover vacuum.")
+             : w.sealedTrait ? (w.name + " is Sealed, and the Sealed trait alone does NOT hold vacuum. Fit a Rebreather Liner to upgrade the seal.")
+             : (w.name + " is not sealed at all.");
+    return base;
+  }
+
+  /* Which of the nine mitigations are live, and why the others are not.
+     Every one of them resolves to an EFFECT the hazard math reads; none of
+     them is decorative. */
+  function hazardMitigations(ch, w) {
+    var H = EN.hazards; if (!H) return { active: [], inactive: [], fx: {} };
+    var hz = (ch && ch.hazards) || {};
+    var linFeats = activeLineageFeatures(ch);
+    w = w || wornArmor(ch);
+    var armorKey = w.key, armor = w.item, armorLapsed = w.lapsed, fittedMods = w.fitted;
+    var active = [], inactive = [];
+    // the accumulated effect vocabulary the rest of the file reads
+    var fx = { noFatigue: {}, edgeOn: {}, graceDays: {}, blocksCaustic: false,
+               noCausticLinger: false, immuneCaustic: false, thinAirMinutes: 0, breathMinutes: 0 };
+
+    (H.mitigations || []).forEach(function (m) {
+      var src = m.source || {}, on = false, why = "", detail = null;
+      if (src.type === "lineageFeature") {
+        on = linFeats.indexOf(src.name) !== -1;
+        why = on ? "Active feature." : "You do not have " + src.name + ".";
+      } else if (src.type === "gear") {
+        on = gearOnPerson(ch, src.name);
+        why = on ? "On your person." : "No " + src.name + " carried or worn.";
+        if (on && m.key === "hazmat" && hz.hazmatTorn) { on = false; why = "The suit is torn; the seal has failed until it is repaired and resealed."; }
+        if (on && m.key === "rebreather") detail = Math.max(0, hz.rebreatherMinutes | 0) + " min left this scene";
+      } else if (src.type === "armorMod") {
+        var fitted = fittedMods.indexOf(src.key) !== -1;
+        on = fitted && !armorLapsed;
+        why = !armor ? "No armor worn." : !fitted ? "Not fitted to " + armor.name + "."
+            : armorLapsed ? armor.name + "'s lease has lapsed, so its mods grant nothing." : "Fitted to " + armor.name + ".";
+        if (on && m.effects && m.effects.noFatigueChosen) {
+          // The element is picked at install. It is recorded per ARMOR ENTRY,
+          // so two suits each keep their own tuning and neither can read the
+          // other's. Untuned grants nothing, and says so rather than guessing.
+          var tuned = ((hz.thermalWeave || {})[armorKey]) || null;
+          detail = tuned ? "tuned to " + tuned : null;
+          if (!tuned) { on = false; why = "Fitted to " + armor.name + ", but no element chosen yet. Pick Fire or Cold."; }
+          else {
+            var typeKey = m.effects.noFatigueChosen[String(tuned).toLowerCase()];
+            if (typeKey) fx.noFatigue[typeKey] = m.name;
+          }
+        }
+      }
+      var row = { key: m.key, name: m.name, kind: m.kind, summary: m.summary, note: m.note || null,
+                  active: on, why: why, detail: detail };
+      if (!on) { inactive.push(row); return; }
+      active.push(row);
+      var e = m.effects || {};
+      (e.noFatigue || []).forEach(function (t) { fx.noFatigue[t] = m.name; });
+      (e.edgeOn || []).forEach(function (t) { fx.edgeOn[t] = m.name; });
+      Object.keys(e.graceDays || {}).forEach(function (t) { fx.graceDays[t] = Math.max(fx.graceDays[t] || 0, e.graceDays[t]); });
+      if (e.blocksCaustic) fx.blocksCaustic = m.name;
+      if (e.noCausticLinger) fx.noCausticLinger = m.name;
+      if (e.immuneCaustic) fx.immuneCaustic = m.name;
+      if (e.thinAirMinutes) fx.thinAirMinutes = Math.max(fx.thinAirMinutes, e.thinAirMinutes);
+      if (e.breathMinutes) fx.breathMinutes = Math.max(fx.breathMinutes, e.breathMinutes);
+    });
+    return { active: active, inactive: inactive, fx: fx };
+  }
+
+  /* Caustic gear degradation. SCOPE: Armor Repair lives on another branch and
+     armor DR is immutable here, so this computes and REPORTS the degradation
+     and writes it to ONE entry-keyed ledger. It deliberately does not subtract
+     from d.armorDR: doing that would be a second, parallel armor DR system,
+     which is exactly what must not exist when Armor Repair merges.
+     `applied` reports the state of the single hook: when EN.armorRepair exists
+     it is the module that owns current DR per piece and the Hazards panel hands
+     the loss to it; until then the loss sits in the ledger and shows as PENDING. */
+  function causticArmorDR(ch, w) {
+    w = w || wornArmor(ch);
+    var ledger = ((ch && ch.hazards && ch.hazards.caustic) || {}).armorDR || {};
+    var lost = w.key ? Math.max(0, ledger[w.key] | 0) : 0;
+    var baseDR = w.item ? (w.item.dr || 0) : 0;
+    return {
+      armor: w.name,
+      armorKey: w.key,
+      // "Unsealed armor" is armor with no Sealed trait and no mod granting one.
+      sealed: w.sealed,
+      exposed: !!w.item && !w.sealed,
+      baseDR: baseDR,
+      lost: lost,
+      wouldBe: Math.max(0, baseDR - lost),
+      applied: !!(EN.armorRepair && EN.armorRepair.applyDegradation)   // false on this branch
+    };
+  }
+
+  /* The whole hazard record, derived. Nothing here mutates; the Hazards panel
+     owns every write and routes it back through these same numbers. */
+  function hazardStats(ch, attributes, saves, woundsMax) {
+    var H = EN.hazards;
+    var hz = (ch && ch.hazards) || {};
+    var worn = wornArmor(ch);                 // resolved once, shared by all three readers below
+    var mit = hazardMitigations(ch, worn);
+    var fx = mit.fx;
+    var E = (H && H.exposure) || {};
+    var baseDC = E.baseDC || 10, step = E.step || 2;
+    var bodSave = (saves && saves.BOD && saves.BOD.bonus) || 0;
+    var bodScore = (attributes && attributes.BOD && attributes.BOD.score) || 0;
+
+    // one instance -> its live numbers. `saves` on the row is the only input to
+    // the DC, so nothing global can raise it.
+    function exposureRow(id, row, opts) {
+      opts = opts || {};
+      var type = (H.typeByKey || {})[row.type] || { key: row.type, name: row.type };
+      var sev = (H.severityByKey || {})[row.severity] || (H.severityByKey || {}).mild || { minutes: 60, name: "Mild", interval: "1 hour" };
+      var n = Math.max(0, row.saves | 0);
+      var edgeFrom = fx.edgeOn[opts.trackKey || row.type] || null;
+      var noFatigueFrom = fx.noFatigue[row.type] || null;
+      // Thin air: a Rebreather buys an hour before the clock starts at all. The
+      // hour is one SCENE-level pool ("refreshing between scenes", per the item's
+      // own entry), not an hour per exposure, so it is read from the single
+      // ch.hazards.rebreatherMinutes counter rather than from this row.
+      var minutesIn = Math.max(0, row.minutes | 0);
+      var shieldLeft = (row.type === "thinair" && fx.thinAirMinutes > 0)
+        ? Math.max(0, Math.min(fx.thinAirMinutes, hz.rebreatherMinutes | 0)) : 0;
+      return {
+        id: id, type: type.key, typeName: type.name, rider: type.rider || null,
+        severity: sev.key || row.severity, severityName: sev.name, interval: sev.interval,
+        intervalMinutes: opts.intervalMinutes || sev.minutes,
+        saves: n,
+        dc: baseDC + step * n,                                  // PER INSTANCE. Read row.saves, nothing else.
+        nextDC: baseDC + step * (n + 1),
+        minutes: minutesIn,
+        clockMinutes: Math.max(0, row.clockMinutes | 0),         // since the last success; a success restarts it
+        fatigue: Math.max(0, row.fatigue | 0),                   // levels THIS instance has dealt
+        saveBonus: bodSave,
+        edge: !!edgeFrom, edgeFrom: edgeFrom,
+        noFatigue: !!noFatigueFrom, noFatigueFrom: noFatigueFrom,
+        lethalDamage: (row.severity === "lethal" && type.lethalDamage) ? type.lethalDamage : null,
+        shielded: shieldLeft > 0, shieldMinutesLeft: shieldLeft, shieldFrom: shieldLeft > 0 ? "Rebreather" : null,
+        // thin air only: while this instance is ACTIVE, the Fatigue it dealt does
+        // not come off a Long Rest, because the Long Rest is at the same altitude
+        lockedFatigue: row.type === "thinair" ? Math.max(0, row.fatigue | 0) : 0,
+        track: opts.trackKey || null, trackName: opts.trackName || null,
+        days: opts.days != null ? opts.days : null,
+        thresholdDays: opts.thresholdDays != null ? opts.thresholdDays : null,
+        graceDays: opts.graceDays || 0, graceFrom: opts.graceFrom || null,
+        crossed: opts.crossed != null ? opts.crossed : true
+      };
+    }
+
+    var exposures = [];
+    var exMap = (hz.exposures && typeof hz.exposures === "object") ? hz.exposures : {};
+    Object.keys(exMap).forEach(function (id) {
+      var row = exMap[id];
+      if (!row || typeof row !== "object") return;
+      exposures.push(exposureRow(id, row));
+    });
+
+    // Deprivation: THREE independent day-scale clocks, never one. Each is its
+    // own row with its own days, its own escalating DC and its own Fatigue.
+    var dep = (hz.deprivation && typeof hz.deprivation === "object") ? hz.deprivation : {};
+    var depRows = ((E.deprivation || {}).tracks || []).map(function (t) {
+      var row = (dep[t.key] && typeof dep[t.key] === "object") ? dep[t.key] : {};
+      var grace = fx.graceDays[t.key] || 0;
+      var graceFrom = grace ? (H.mitigationByKey["ration-discipline"] || {}).name : null;
+      var threshold = t.thresholdDays + grace;
+      var days = Math.max(0, row.days | 0);
+      var r = exposureRow(t.key, { type: "deprivation", severity: (E.deprivation || {}).severity || "mild",
+                                   saves: row.saves, fatigue: row.fatigue, minutes: row.minutes, clockMinutes: row.clockMinutes },
+        { trackKey: t.key, trackName: t.name, days: days, thresholdDays: threshold,
+          graceDays: grace, graceFrom: graceFrom, crossed: days >= threshold,
+          intervalMinutes: (E.deprivation || {}).intervalMinutes || 1440 });
+      r.typeName = t.name;
+      r.unit = t.unit;
+      r.crossedText = t.crossed;
+      return r;
+    });
+
+    // Vacuum and Drowning: ONE spec, two instantiations. See EN.hazards.breath.
+    var B = (H && H.breath) || {};
+    var breathState = (hz.breath && typeof hz.breath === "object") ? hz.breath : {};
+    var seal = vacuumSeal(ch, worn);
+    var breath = (B.kinds || []).map(function (k) {
+      var row = (breathState[k.key] && typeof breathState[k.key] === "object") ? breathState[k.key] : {};
+      var n = Math.max(0, row.saves | 0);
+      var sealedOut = k.key === "vacuum" && seal.sealed;
+      return {
+        kind: k.key, name: k.name, condition: k.condition,
+        active: !!row.active && !sealedOut,
+        sealedOut: sealedOut, seal: seal,
+        holdRounds: bodScore,                                    // "rounds equal to your Body score"
+        rounds: Math.max(0, row.rounds | 0),
+        holding: Math.max(0, bodScore - Math.max(0, row.rounds | 0)),
+        saves: n,
+        dc: (B.dc || 10) + (B.step || 2) * n,
+        nextDC: (B.dc || 10) + (B.step || 2) * (n + 1),
+        saveBonus: bodSave,
+        woundsOnFail: B.woundsOnFail || 1,
+        halfWounds: Math.floor((woundsMax || 0) / 2),
+        riders: k.riders || [],
+        everyRoundDamage: k.everyRoundDamage || null,
+        ends: k.ends,
+        // Void Lung measures held breath in MINUTES, which outlasts any scene,
+        // so the save clock never starts inside one. No minutes-to-rounds
+        // conversion is attempted: nothing in EN states how long a round is.
+        breathMinutes: fx.breathMinutes || 0,
+        clockStarts: !(fx.breathMinutes > 0),
+        breathFrom: fx.breathMinutes > 0 ? (H.mitigationByKey["void-lung"] || {}).name : null,
+        note: EN.hazards.breathNote ? EN.hazards.breathNote(k.key) : ""
+      };
+    });
+
+    // Caustic
+    var cz = (hz.caustic && typeof hz.caustic === "object") ? hz.caustic : {};
+    var C = (H && H.caustic) || {};
+    var immune = fx.immuneCaustic || null, blocked = fx.blocksCaustic || null, noLinger = fx.noCausticLinger || null;
+    var stopped = immune || blocked;
+    var caustic = {
+      inside: !!cz.inside,
+      lingering: !!cz.lingering && !stopped && !noLinger,
+      sceneTicks: Math.max(0, cz.sceneTicks | 0),
+      insideDamage: stopped ? null : C.inside,
+      lingerDamage: (stopped || noLinger) ? null : C.lingering,
+      stoppedBy: stopped || null,
+      lingerStoppedBy: stopped || noLinger || null,
+      wash: C.wash,
+      degradation: causticArmorDR(ch, worn),
+      degradationRule: C.gearDegradation || {}
+    };
+
+    // The thin-air Long Rest restriction, resolved once here so the Long Rest
+    // and the panel cannot disagree about it. LONG RESTS ONLY.
+    var lockedFatigue = 0, lockSources = [];
+    exposures.forEach(function (r) {
+      if (r.lockedFatigue > 0) { lockedFatigue += r.lockedFatigue; lockSources.push(r.typeName + " (" + r.severityName + ")"); }
+    });
+
+    return {
+      exposures: exposures,
+      deprivation: depRows,
+      breath: breath,
+      vacuumSeal: seal,
+      caustic: caustic,
+      mitigations: mit,
+      fx: fx,
+      // Fatigue levels a Long Rest cannot remove because the rest is taken at
+      // the same altitude. Abilities that clear Fatigue ignore this entirely.
+      longRestLockedFatigue: lockedFatigue,
+      longRestLockSources: lockSources,
+      thermalWeaveKey: ch && ch.equippedArmor ? ch.equippedArmor : null
+    };
+  }
+
   function derive(ch) {
     ch = ch || {};
     var level = clamp(ch.level || 1, 1, R.maxLevel);
@@ -1673,6 +1986,11 @@ EN.engine = (function () {
       // Stitcher only: every d.rig field plus the class resource's own
       // {techMod, saveDC, formula, snagOnTriage, swiftBecomesAction}; null otherwise.
       triage: triage,
+      // Environmental Hazards: {exposures, deprivation, breath, vacuumSeal,
+      // caustic, mitigations, fx, longRestLockedFatigue, ...}. THE resolver for
+      // every hazard surface; the escalating DC on each exposure row is derived
+      // from that row's own save count, so there is no global counter to share.
+      hazard: hazardStats(ch, attributes, saves, woundsMax),
       woundsMax: woundsMax, critThreshold: critThreshold,
       saves: saves, skills: skills,
       resource: resource, flow: flow,
@@ -1990,6 +2308,12 @@ EN.engine = (function () {
     // stash itself. It answers with an ENTRY key, so the answer names one specific Rig.
     rigStats: rigStats,
     rigTierRow: rigTierRow, ownedRigs: ownedRigs,   // Trauma Rig tier lookup and the owned-entry list
+    // Environmental Hazards. hazardStats is THE resolver: the Hazards panel, the
+    // Long Rest and the Codex chapter all read it rather than raw storage, so
+    // "which exposure is live", "does this suit hold vacuum" and "which
+    // mitigation is on" have exactly one answer each.
+    hazardStats: hazardStats, hazardMitigations: hazardMitigations,
+    vacuumSeal: vacuumSeal, causticArmorDR: causticArmorDR, gearOnPerson: gearOnPerson,
     focusesFor: focusesFor, specFor: specFor,
     aspectMatches: aspectMatches, weaponFocus: weaponFocus, weaponSpec: weaponSpec, signatureUnlocked: signatureUnlocked,
     overlapGrants: overlapGrants, unresolvedOverlaps: unresolvedOverlaps,

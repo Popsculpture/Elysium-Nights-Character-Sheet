@@ -948,6 +948,150 @@ non-Stitcher's rig block still shows no Triage Save DC and no Scrap Rig option.
 - **`nameToIds` last-write-wins** remains open and is unrelated to the id work: it
   concerns two rows sharing a NAME, not an id.
 
+## Found in step 6 (Environmental Hazards)
+
+The chapter is in: `app/data/hazards.js` (rules), `EN.engine.hazardStats` (the one
+resolver, landing on `d.hazard`), the Hazards panel on the Freelancer tab, the
+`ch.hazards` block in `app/js/store.js` (after the split, per the ordering rule), and
+an Environmental Hazards chapter in the Codex. Everything below is what it could NOT
+close.
+
+**Blocked on the Armor Repair branch, by design.**
+
+- **Caustic gear degradation is computed and reported, not applied.** Armor DR is
+  immutable on main, so the loss is recorded in `ch.hazards.caustic.armorDR`, an
+  ENTRY-keyed ledger (`{armorEntryKey: DR lost}`), pruned to owned entries on every
+  load and clamped to the suit's own DR so "minimum 0" holds in storage as well as on
+  screen. `d.hazard.caustic.degradation` reports `baseDR`, `lost` and `wouldBe`, and
+  the panel prints them as PENDING. **`d.armorDR` is deliberately untouched.** The
+  single hook is in `causticScene` (`app/js/combat.js`): if
+  `EN.armorRepair.applyDegradation` exists the loss is handed to it, otherwise it
+  stays in the ledger. `d.hazard.caustic.degradation.applied` reports which of those
+  happened, and is `false` on this branch. **When Armor Repair merges, the ledger
+  should be retired into whatever that branch's per-piece current-DR map is, and the
+  hook left as the only call site.** Do not add a second subtractor.
+
+**Needs an author ruling.**
+
+- **How long is a round?** Nothing anywhere in `EN` says. It matters because Void Lung
+  is "15 minutes of held breath" while Drowning and Vacuum are "rounds equal to your
+  Body score". Rather than invent a conversion, Void Lung is implemented as "the save
+  clock does not start inside a scene", which is true for any round length under about
+  six seconds and is the strongest reading of "the largest single vacuum mitigation in
+  the game". If a round length is ever stated, this becomes a real countdown.
+- **Does a Long Rest feed and water you?** The three Deprivation clocks are advanced
+  only by the player's own +DAY control. They are deliberately NOT registered in
+  `tickDays` (`app/js/combat.js`), because a Long Rest is one day on the story
+  calendar and registering them would silently start starving every character who
+  sleeps. The Fatigue rules already assume a Long Rest has "safe shelter, food, and
+  water", which argues the opposite way: that a Long Rest should RESET all three. Both
+  readings are defensible, so neither was implemented. Ask Brandon.
+- **A full scene of caustic exposure is a button, not a clock.** The app has no scene
+  timer, and a turn is not a scene, so END OF TURN only reports the 1d6 Acid and a
+  separate MARK FULL SCENE applies the DR loss. If a scene clock ever exists, wire it
+  to `causticScene`.
+
+**Mitigations: all nine are wired, with two carrying a switch that did not exist.**
+
+Each of the nine changes an outcome, verified one at a time against a control
+character. Two needed state the app was not keeping:
+
+- **The Thermal Regulation Weave's Fire-or-Cold pick was never stored.** `ch.armorMods`
+  is a flat key list with no room for an install-time choice. The pick now lives at
+  `ch.hazards.thermalWeave`, keyed on the ARMOR ENTRY, so two suits each keep their own
+  tuning and a re-bought suit arrives untuned. Untuned grants nothing and says so
+  rather than guessing an element. **If armor mods ever grow a general per-install
+  options map, this should move into it** rather than stay a hazard-specific side
+  table; it is the only mod in the catalog with a choice today.
+- **"While intact" had nothing behind it.** The Hazmat Suit's own entry says a tear
+  fails the seal until repaired, so the panel carries a MARK TORN toggle
+  (`ch.hazards.hazmatTorn`). It is a player declaration, not a derived value; no
+  damage-to-gear system exists to derive it from.
+
+Half-wired, and honest about it:
+
+- **Hearthglow's 2 space aura is not modelled.** The sheet is one character, so only
+  the self half ("no Fatigue from cold") is applied. Allies within 2 spaces are the
+  GM's to run. Same shape as every other aura in the app.
+- **Radiation Callouses and the Thermal Regulation Weave refuse the FATIGUE only.** A
+  failed Lethal Cold save still deals its 1d6 Cold, correctly: both features speak
+  about Fatigue, and the Weave's Resistance to Cold is displayed rather than applied
+  because there is no automatic damage pipeline on the sheet to halve anything in.
+
+**Pre-existing defects this step landed on top of.**
+
+- **L12 now has a new member.** The `ch.hazards` migration sits after the instance-id
+  split, as the ordering rule requires, which also puts it after the bare
+  `if (!ch.proficiencies) return;` at `app/js/store.js:165`. **Measured, not assumed:**
+  a record with no `proficiencies` skips the whole hazards block, so its exposure rows,
+  its entry-keyed ledgers and its orphan prune never run. It degrades safely (the
+  engine guards every read, `derive()` does not throw and the panel renders NOTHING
+  RUNNING), and it is import-only, but an orphaned `armorDR` entry can survive there
+  where it would be pruned anywhere else. Fixing L12 properly closes this too; a
+  hazards-only workaround would just be a second early-return to unpick later.
+- **`ch.armorMods` is still keyed on the armor NAME**, not on `entryKey`
+  (`app/js/store.js` has no normalization for it; `app/js/engine.js` reads
+  `ch.armorMods[armor.name]` in four places). So two Kevlar Weaves share one mod
+  loadout, and a re-bought suit inherits the previous one's mods. This is L7's defect
+  one item over, and it is the reason `ch.hazards.thermalWeave` is keyed on the ENTRY
+  while the mod list it describes is keyed on the name: the tuning is per-suit even
+  though the mod that carries it is not. **Not touched**, because converting
+  `ch.armorMods` is Armor Repair's neighbourhood and belongs in the same pass as
+  `ch.shieldWear`. It is the third name-keyed per-piece map, and it was already here.
+
+**Data flags added, so nothing reads prose to decide a mechanic.**
+
+- `vacuum: true` on Warframe Shell (`app/data/gear_armor.js`) and
+  `grantsSealed: true, sealToVacuum: true` on the Rebreather Liner
+  (`app/data/armor_mods.js`). The vacuum check reads those flags and never the Sealed
+  trait, which is what makes "a generic Sealed flag does not satisfy a vacuum check"
+  true by construction: `Riot Wall`, `Aegis Shroud` and `Reliquary Shell` all carry
+  Sealed and all correctly fail, and an Aegis Shroud passes only once a liner is
+  fitted. `grantsSealed` also replaced a `/Sealed/.test(mod.grants)` regex over a
+  display string in the caustic degradation test, which was the same brittleness the
+  vacuum rule was written to avoid.
+
+## STEP 6 IS ON A BRANCH: env-hazards-wip
+
+Environmental Hazards is built and largely working, but branched rather than merged.
+
+**Unverified: the vacuum lens never ran.** Its agent died on an API error, so Vacuum,
+the breath clock and the sealing rule have only the implementer's own testing behind
+them. That subsystem needs a verification pass before merge. Re-running the workflow
+with `resumeFromRunId` replays the other agents from cache and re-runs only that lens.
+
+**CONFIRMED, thin air:** the Long Rest lock outlives the Fatigue it was locking, then
+locks Fatigue that has nothing to do with thin air. `ex.fatigue` is written on a failed
+save and never decremented, and the path an ability or a medic uses to clear Fatigue
+does not touch the hazard rows. The rules explicitly bless that path, so the drifted
+state is guaranteed rather than an edge case. Two further clock findings sit in
+`tasks/wbkcw3wnd.output` alongside it.
+
+**Genuinely good, and worth preserving through the fixes:**
+
+- Per-instance escalation is structural, not disciplined. Each exposure is a row under
+  its own minted id and the DC reads `10 + 2 * row.saves` from that row, so there is
+  nowhere for a global counter to live. LEAVE deletes the row, which makes "leaving
+  resets both clock and DC" a consequence of the shape rather than a step that can be
+  forgotten.
+- There was no Drowning implementation to share, so the breath machinery was built once
+  and both conditions consume it. No second copy of the DC sentence exists.
+- Sealing reads data flags and never the Sealed trait, verified across seven cases
+  including a lapsed Warframe lease.
+- The armor DR scope note was handled as asked: the caustic loss is computed into an
+  entry-keyed ledger and printed as PENDING, with one hook that fires only if the Armor
+  Repair branch's applier exists. No parallel armor DR system was built.
+
+**Honest gaps the implementer declared rather than faked:** Hearthglow's 2 space aura
+applies only to the bearer, since the sheet is one character; Radiation Callouses and
+the Thermal Weave refuse Fatigue but not the Lethal rider's damage, as there is no
+damage pipeline to reduce; round length is stated nowhere in the data so Void Lung does
+not convert minutes to rounds; and whether a Long Rest feeds and waters you is
+ambiguous, so the deprivation clocks are player-driven.
+
+**Also flagged:** `ch.armorMods` is a third name-keyed per-piece map and belongs in the
+same conversion pass as `ch.shieldWear`.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

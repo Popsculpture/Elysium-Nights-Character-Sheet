@@ -117,6 +117,32 @@ EN.store = (function () {
       stable: false,
       conditions: [],
       conditionLevels: {},               // {name: level} for stackable/leveled conditions
+      /* Environmental Hazards. The escalating Exposure DC is PER EXPOSURE
+         INSTANCE, and the shape is what enforces that: every exposure is its
+         own row under a minted "ex_" id carrying its OWN save count, and the
+         DC is derived from that row alone. There is no global counter here to
+         share, and leaving an exposure deletes its row, so "leaving resets both
+         the clock and the DC" happens because the state that held the DC is
+         gone. Deprivation is three such clocks, one per threshold, never one. */
+      hazards: {
+        exposures: {},                   // {exId: {type, severity, saves, fatigue, minutes, clockMinutes}}
+        deprivation: {                   // THREE independent day-scale clocks, each stacking its own Fatigue
+          water: { days: 0, saves: 0, fatigue: 0 },
+          food:  { days: 0, saves: 0, fatigue: 0 },
+          sleep: { days: 0, saves: 0, fatigue: 0 }
+        },
+        breath: {                        // Vacuum and Drowning, one shared spec (EN.hazards.breath)
+          drowning: { active: false, rounds: 0, saves: 0 },
+          vacuum:   { active: false, rounds: 0, saves: 0 }
+        },
+        caustic: {
+          inside: false, lingering: false, sceneTicks: 0,
+          armorDR: {}                    // {armorEntryKey: DR lost}, ENTRY-keyed, pruned to owned entries on load
+        },
+        thermalWeave: {},                // {armorEntryKey: "Fire"|"Cold"}, the Thermal Regulation Weave install pick
+        hazmatTorn: false,               // the Hazmat Suit's own entry: a tear fails the seal until repaired
+        rebreatherMinutes: 60            // minutes of Rebreather thin-air cover left this scene
+      },
       equipment: [],
       equippedWeapons: [],               // ordered weapon names, drives the Attacks list on the Freelancer tab
       equippedArmor: null,               // worn body armor (one at a time), name from EN.gearCatalog.armor
@@ -484,6 +510,90 @@ EN.store = (function () {
       else rg.hp[k] = Math.floor(v);
     });
     if (rg.key && !liveKeys[rg.key]) rg.key = null;
+    /* Environmental Hazards state. This block sits HERE, after the instance-id
+       split, for the same reason ch.rig does and under the same ordering rule
+       written at the split: two of its maps (caustic.armorDR and thermalWeave)
+       are keyed on an EQUIPMENT ENTRY, so they can only be resolved and pruned
+       once the entries actually carry their ids. Written twenty lines earlier,
+       beside the other equipment defaults, they would key on the armor NAME and
+       the split would orphan every one of them.
+
+       Every map keyed on a user-supplied string is null-prototype. An exposure
+       id or an entry key of "constructor" or "toString" would otherwise read as
+       present through the prototype chain and be mistaken for real state.
+
+       Unattributable state is DROPPED, not moved or clamped: a recorded weave
+       tuning or a recorded caustic DR loss whose armor entry has left the
+       equipment list is deleted, exactly as ch.rig.hp prunes, so a re-bought
+       suit arrives at full DR and untuned rather than inheriting a stranger's
+       damage. */
+    if (!ch.hazards || typeof ch.hazards !== "object" || Array.isArray(ch.hazards)) ch.hazards = {};
+    var hz = ch.hazards;
+    var HZ = EN.hazards || {};
+    var okType = HZ.typeByKey || {}, okSev = HZ.severityByKey || {};
+    function nn(v) { return (typeof v === "number" && isFinite(v) && v > 0) ? Math.floor(v) : 0; }
+    // exposures: one row per LIVE exposure, each with its own escalating save
+    // count. A row naming a type or severity that does not exist is noise, and
+    // Deprivation is never an exposures row (it has its own three clocks).
+    var exIn = (hz.exposures && typeof hz.exposures === "object" && !Array.isArray(hz.exposures)) ? hz.exposures : {};
+    var exOut = Object.create(null);
+    Object.keys(exIn).forEach(function (id) {
+      var r = exIn[id];
+      if (!r || typeof r !== "object" || Array.isArray(r)) return;
+      if (!okType[r.type] || r.type === "deprivation") return;
+      if (!okSev[r.severity]) return;
+      exOut[id] = { type: r.type, severity: r.severity, saves: nn(r.saves),
+                    fatigue: nn(r.fatigue), minutes: nn(r.minutes), clockMinutes: nn(r.clockMinutes) };
+    });
+    hz.exposures = exOut;
+    // deprivation: exactly the three tracks the rules name, always all three
+    var depIn = (hz.deprivation && typeof hz.deprivation === "object" && !Array.isArray(hz.deprivation)) ? hz.deprivation : {};
+    var depOut = Object.create(null);
+    (((HZ.exposure || {}).deprivation || {}).tracks || [{ key: "water" }, { key: "food" }, { key: "sleep" }]).forEach(function (t) {
+      var r = (depIn[t.key] && typeof depIn[t.key] === "object") ? depIn[t.key] : {};
+      depOut[t.key] = { days: nn(r.days), saves: nn(r.saves), fatigue: nn(r.fatigue) };
+    });
+    hz.deprivation = depOut;
+    // breath: the two kinds EN.hazards.breath declares, and nothing else
+    var brIn = (hz.breath && typeof hz.breath === "object" && !Array.isArray(hz.breath)) ? hz.breath : {};
+    var brOut = Object.create(null);
+    (((HZ.breath || {}).kinds) || [{ key: "drowning" }, { key: "vacuum" }]).forEach(function (k) {
+      var r = (brIn[k.key] && typeof brIn[k.key] === "object") ? brIn[k.key] : {};
+      brOut[k.key] = { active: !!r.active, rounds: nn(r.rounds), saves: nn(r.saves) };
+    });
+    hz.breath = brOut;
+    // caustic; armorDR is the entry-keyed ledger the Armor Repair branch will consume
+    if (!hz.caustic || typeof hz.caustic !== "object" || Array.isArray(hz.caustic)) hz.caustic = {};
+    hz.caustic.inside = !!hz.caustic.inside;
+    hz.caustic.lingering = !!hz.caustic.lingering;
+    hz.caustic.sceneTicks = nn(hz.caustic.sceneTicks);
+    var eqKeys = Object.create(null);
+    ((ch.equipment) || []).forEach(function (e) { var k = e && (e.id || e.name); if (k) eqKeys[k] = 1; });
+    var drIn = (hz.caustic.armorDR && typeof hz.caustic.armorDR === "object" && !Array.isArray(hz.caustic.armorDR)) ? hz.caustic.armorDR : {};
+    var drOut = Object.create(null);
+    Object.keys(drIn).forEach(function (k) {
+      var v = nn(drIn[k]);
+      if (!eqKeys[k] || v <= 0) return;                 // orphaned or empty: dropped, never moved
+      // "minimum 0": a suit cannot lose more DR than it has, so an imported or
+      // hand-edited number above the suit's own DR is clamped to it rather than
+      // handed to Armor Repair as a debt the piece could never pay.
+      var e = ch.equipment.find(function (x) { return (x.id || x.name) === k; });
+      var it = (e && EN.engine && EN.engine.catalogItem) ? EN.engine.catalogItem(e.name) : null;
+      var cap = (it && typeof it.dr === "number") ? it.dr : v;
+      drOut[k] = Math.min(v, cap);
+    });
+    hz.caustic.armorDR = drOut;
+    // the Thermal Regulation Weave's install-time element, per ARMOR ENTRY
+    var twIn = (hz.thermalWeave && typeof hz.thermalWeave === "object" && !Array.isArray(hz.thermalWeave)) ? hz.thermalWeave : {};
+    var twOut = Object.create(null);
+    Object.keys(twIn).forEach(function (k) {
+      var v = twIn[k];
+      if (eqKeys[k] && (v === "Fire" || v === "Cold")) twOut[k] = v;
+    });
+    hz.thermalWeave = twOut;
+    hz.hazmatTorn = !!hz.hazmatTorn;
+    if (typeof hz.rebreatherMinutes !== "number" || !isFinite(hz.rebreatherMinutes) || hz.rebreatherMinutes < 0) hz.rebreatherMinutes = 60;
+    hz.rebreatherMinutes = Math.min(60, Math.floor(hz.rebreatherMinutes));
     // cyberware: legacy string entries → objects. sp:0 so old manual marks don't
     // retroactively spike Static; chrome bought from the market carries real SP.
     if (Array.isArray(ch.cyberware)) {
