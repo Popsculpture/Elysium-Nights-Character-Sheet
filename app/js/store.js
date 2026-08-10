@@ -37,7 +37,10 @@ EN.store = (function () {
     var parts = String(name || "").trim().split(/\s+/).filter(Boolean);
     var firstName = parts[0] || "", lastName = parts.slice(1).join(" ") || "";
     return {
-      meta: { id: uid(), schemaVersion: EN.rules.schemaVersion, createdAt: Date.now(), updatedAt: Date.now() },
+      // wearKeys states which scheme the per-piece wear maps use, so migrate() never
+      // has to guess it from a key's shape. A record born here is entry-keyed by
+      // definition: its maps are empty and every row it ever gains carries an id.
+      meta: { id: uid(), schemaVersion: EN.rules.schemaVersion, wearKeys: 2, createdAt: Date.now(), updatedAt: Date.now() },
       name: composeFullName(firstName, "", lastName),
       firstName: firstName, lastName: lastName,
       identity: {
@@ -524,10 +527,29 @@ EN.store = (function () {
        because nobody knows it happened. Same asymmetry, and the same ruling, as the Rig
        damage that cannot be attributed to an entry.
 
-       The live-entry test runs FIRST, and that is what makes this idempotent across
-       loads: once converted the keys are ids, and an id-keyed map is indistinguishable
-       from a name-keyed one except by asking the equipment list. It also keeps a pooled
-       or custom row working, since entryKey() legitimately hands such a row its own name.
+       IDEMPOTENCY IS STATED, NOT INFERRED, and that is the design change this block
+       needed rather than a fourth patch. It used to decide "this key is already
+       converted" by testing whether the key happened to name a live entry. That is an
+       inference from the key's SHAPE, and the shape is ambiguous: entryKey() is
+       `e.id || e.name`, so a legitimately name-keyed row (a pooled or custom entry)
+       puts a NAME into the live-key set. A legacy name key that collided with one of
+       those was therefore read as "already an entry key" and left alone, which silently
+       attributed a suit's wear to the colliding row instead of to the suit. The test
+       could not tell a converted key from an unconverted one, because in that case
+       they are the same string.
+
+       So the record says which scheme its maps use. `ch.meta.wearKeys` is absent on
+       every save written before this migration, which is exactly what "these keys are
+       item names" means, and it is stamped to WEAR_KEY_SCHEME once the conversion has
+       run. Under the legacy scheme EVERY key goes through attribution, with no
+       shortcut to take; under the current scheme every key is already an entry key and
+       the only work left is pruning ones whose entry has left the stash, the way
+       ch.rig.hp prunes so the map cannot grow across a campaign.
+
+       That also fixes the collision on its own terms rather than by special-casing it:
+       a legacy "Anvil Frame" key with both a real suit and a pooled row of that name
+       now reaches rule 1, which picks the EQUIPPED suit, and reaches rule 3 when
+       nothing distinguishes the candidates.
 
        Rebuilt null-prototype: these keys are user-supplied strings, and a plain literal
        reads "constructor" and "toString" as already present. */
@@ -547,10 +569,22 @@ EN.store = (function () {
     // used to attribute.
     function equippedEntryKey(slotVal) {
       if (typeof slotVal !== "string" || !slotVal) return null;
-      if (wearLiveKeys[slotVal]) return slotVal;
-      var byName = wearKeysByName[slotVal];
-      return (byName && byName.length === 1) ? byName[0] : null;
+      // Same ambiguity as the wear keys, one field over: `e.id || e.name` puts ids and
+      // names in ONE namespace, so a string can be a live key for one entry and the
+      // item NAME of others at the same time. Being a live key is therefore only proof
+      // of identity when nothing else answers to that string as a name; otherwise it
+      // falls through to the name rules, and an ambiguous slot is no more attributable
+      // than the wear key it would be used to attribute.
+      var alsoNames = wearKeysByName[slotVal] || [];
+      var onlyItself = alsoNames.length === 0 || (alsoNames.length === 1 && alsoNames[0] === slotVal);
+      if (wearLiveKeys[slotVal] && onlyItself) return slotVal;
+      return alsoNames.length === 1 ? alsoNames[0] : null;
     }
+    // The scheme the record states its wear maps are in. Absent means legacy item-name
+    // keys, because no save written before this migration could have said otherwise.
+    var WEAR_KEY_SCHEME = 2;
+    if (!ch.meta || typeof ch.meta !== "object") ch.meta = {};
+    var wearKeysAreEntries = ch.meta.wearKeys === WEAR_KEY_SCHEME;
     function migrateWearMap(field, slotField, valueOf) {
       var src = ch[field];
       if (!src || typeof src !== "object" || Array.isArray(src)) src = {};
@@ -560,8 +594,16 @@ EN.store = (function () {
         var v = valueOf(src[k]);
         if (v == null) return;
         var key = null;
-        if (wearLiveKeys[k]) key = k;                       // already an entry key: idempotent
-        else {
+        if (wearKeysAreEntries) {
+          // Already converted, because the RECORD says so. The only work left is the
+          // prune: a key whose entry has left the stash describes a piece the character
+          // no longer owns, and a re-acquired piece is a new entry, so its state is
+          // dropped rather than inherited. Same ruling as ch.rig.hp.
+          key = wearLiveKeys[k] ? k : null;
+        } else {
+          // Legacy scheme: EVERY key is an item name. There is no shortcut to take and
+          // no shape to misread, so a name that collides with a live key is attributed
+          // like any other name instead of being mistaken for an already-converted key.
           var cands = wearKeysByName[k] || [];
           if (wornKey && cands.indexOf(wornKey) !== -1) key = wornKey;   // rule 1
           else if (cands.length === 1) key = cands[0];                   // rule 2
@@ -579,6 +621,9 @@ EN.store = (function () {
     migrateWearMap("shieldWear", "equippedShield", positiveInt);
     migrateWearMap("armorWear", "equippedArmor", positiveInt);
     migrateWearMap("armorGuard", "equippedArmor", function (v) { return v === true ? true : null; });
+    // Stamped only after all three maps have converted, so a throw midway cannot leave
+    // the record claiming a conversion that did not finish.
+    ch.meta.wearKeys = WEAR_KEY_SCHEME;
     // cyberware: legacy string entries → objects. sp:0 so old manual marks don't
     // retroactively spike Static; chrome bought from the market carries real SP.
     if (Array.isArray(ch.cyberware)) {

@@ -1382,18 +1382,64 @@ Three things a merge knowingly carries, none of them defects in this work:
 
 ## BRANCH STATUS after the defect-fix round
 
-Four of five defects are fixed with strong evidence. **Defect 1 is still blocking, and
-the branch still must not merge.**
+**All five defects are now fixed.** Defect 1, the blocker, was closed by the design
+change below rather than by a fourth patch.
 
-**STILL BLOCKING: the live-key fast path bypasses attribution.** The migration keeps a
-key that already names a live entry, for idempotency. But a legacy name key can collide
-with a live entry key, and the fast path takes it before attribution ever runs, so wear
-relocates onto a different piece and even a different item. Third round on this defect.
-The attribution rule itself is now good (equipped piece first, then a single owned
-entry of that name, else dropped); the hole is that the idempotency shortcut runs
-BEFORE it. Likely resolution: make idempotency provable rather than assumed, for
-instance by tagging the map as already converted rather than inferring it from whether
-a key looks like a live entry.
+- ~~**STILL BLOCKING: the live-key fast path bypasses attribution.**~~ **FIXED, by
+  making idempotency STATED rather than inferred.**
+
+  The old shortcut was `if (wearLiveKeys[k]) key = k;`, which decided "this key is
+  already converted" by testing whether it happened to name a live entry. That is an
+  inference from the key's SHAPE, and the shape is ambiguous: `entryKey()` is
+  `e.id || e.name`, so ids and names share one flat namespace and a string can be a
+  live key for one entry and the item NAME of others at the same time. The test could
+  not tell a converted key from an unconverted one, because in that case they are
+  literally the same string.
+
+  **The record now says which scheme its maps use.** `ch.meta.wearKeys` is absent on
+  every save written before this migration, which is exactly what "these keys are item
+  names" means, and it is stamped to `2` once all three maps have converted (stamped
+  after, so a throw midway cannot leave the record claiming a conversion that did not
+  finish). Under the legacy scheme EVERY key goes through attribution and there is no
+  shortcut to take; under the current scheme every key is already an entry key and the
+  only work left is the prune, the way `ch.rig.hp` prunes so the map cannot grow across
+  a campaign. `newCharacter()` stamps it too, since a record born there is entry-keyed
+  by definition.
+
+  This closes the collision on the rules' own terms rather than by special-casing it:
+  the ambiguous key now reaches rule 1, which picks the EQUIPPED piece, and reaches
+  rule 3 (drop, never relocate) when nothing distinguishes the candidates.
+
+  **`equippedEntryKey` had the identical root cause in its own first clause** and is
+  fixed the same way: being a live key is proof of identity only when nothing else
+  answers to that string as a NAME, otherwise it falls through to the name rules.
+
+  **Repro before, the lens's exact shape, through the real `importCharacter`:**
+  `equipment: [{id:"Anvil Frame", name:"Bastion Plate"}, {id:"eq_a2", name:"Anvil
+  Frame"}]`, `equippedArmor: "eq_a2"`, `armorWear: {"Anvil Frame": 3}`,
+  `armorGuard: {"Anvil Frame": true}`. Both maps stay keyed `"Anvil Frame"`, so the
+  loss and the quality edge land on the **Bastion Plate**, a suit that was never hit,
+  while the worn Anvil Frame reads full. **After:** `{"eq_a2": 3}` and
+  `{"eq_a2": true}`, on the suit that was actually damaged.
+
+  **One correction to the lens, in its favour and against mine.** A first attempt to
+  reproduce this used a POOLED row of the same name rather than an id-equals-name
+  collision, and it did not reproduce: armor is non-stackable, so the split gives every
+  armor row an `eq_` id and no name-keyed armor row can exist. The lens's shape, a
+  hand-authored `id` that happens to be an item name, is the reachable one, and it
+  reaches through `importCharacter`, whose whole job is ingesting foreign records.
+
+**Verification, twelve migration shapes through `importCharacter`, each re-loaded
+twice more.** Zero throws, **all twelve byte-stable across three loads**, and
+`Object.prototype` clean afterwards. Normal single suit lands on `eq_a`; two suits with
+one worn lands on the WORN one; two suits with none worn DROPS rather than relocating;
+the id-equals-name collision lands on `eq_a2`; an `equippedArmor` that is itself a
+colliding bare name resolves to `eq_x`; an already-converted record keeps `eq_a` and
+prunes the dead `eq_dead`; a `qty`-less row gets its minted id and keeps its wear; a
+legacy shield name with two Scrap Shields lands on the wielded one; junk values, an
+array in place of the map, prototype-named ids (`constructor`, `toString`) and a record
+with no `meta` at all all normalize without throwing. All seven tabs render for two
+classes with no console error.
 
 **Fixed this round, with evidence:**
 
