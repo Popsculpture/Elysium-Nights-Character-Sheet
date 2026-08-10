@@ -138,7 +138,7 @@ EN.gate = (function () {
      real unlock does, so later reloads stay open without carrying the parameter,
      and clearing site data restores the gate. */
   function devBypass() {
-    try { return /[?&](dev|nogate)/.test(window.location.search); } catch (e) { return false; }
+    try { return /[?&](dev|nogate)/.test(window.location.search); } catch (e) { return false; }
   }
 
   function require(onUnlock) {
