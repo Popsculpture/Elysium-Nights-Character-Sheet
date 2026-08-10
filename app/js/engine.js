@@ -1586,17 +1586,26 @@ EN.engine = (function () {
      `applied` reports the state of the single hook: when EN.armorRepair exists
      it is the module that owns current DR per piece and the Hazards panel hands
      the loss to it; until then the loss sits in the ledger and shows as PENDING. */
-  function causticArmorDR(ch, w) {
+  function causticArmorDR(ch, w, fx) {
     w = w || wornArmor(ch);
     var ledger = ((ch && ch.hazards && ch.hazards.caustic) || {}).armorDR || {};
     var lost = w.key ? Math.max(0, ledger[w.key] | 0) : 0;
     var baseDR = w.item ? (w.item.dr || 0) : 0;
+    /* A mitigation that stops the caustic reaching you stops it reaching your
+       ARMOR too. The Hazmat Suit is "a sealed chemsuit worn over your armor",
+       so a suit that nulls the damage cannot leave the plate underneath it
+       corroding: the panel used to print "No damage inside it: Hazmat Suit" and
+       "Vanguard Plate is unsealed and will lose 1 DR after a full scene in it"
+       in the same block, and MARK FULL SCENE wrote the ledger anyway. This
+       function never received fx, which is exactly why it could not know. */
+    var blockedBy = (fx && (fx.immuneCaustic || fx.blocksCaustic)) || null;
     return {
       armor: w.name,
       armorKey: w.key,
       // "Unsealed armor" is armor with no Sealed trait and no mod granting one.
       sealed: w.sealed,
-      exposed: !!w.item && !w.sealed,
+      blockedBy: blockedBy,
+      exposed: !!w.item && !w.sealed && !blockedBy,
       baseDR: baseDR,
       lost: lost,
       wouldBe: Math.max(0, baseDR - lost),
@@ -1650,7 +1659,11 @@ EN.engine = (function () {
         shielded: shieldLeft > 0, shieldMinutesLeft: shieldLeft, shieldFrom: shieldLeft > 0 ? "Rebreather" : null,
         // thin air only: while this instance is ACTIVE, the Fatigue it dealt does
         // not come off a Long Rest, because the Long Rest is at the same altitude
-        lockedFatigue: row.type === "thinair" ? Math.max(0, row.fatigue | 0) : 0,
+        // Per-row thin-air lock is GONE. It was an attribution stored on a row
+        // whose lifetime is not the attribution's lifetime; the character-scoped
+        // count below replaces it. Kept as a field so the row shape is stable,
+        // and filled in after the character count is resolved.
+        lockedFatigue: 0,
         track: opts.trackKey || null, trackName: opts.trackName || null,
         days: opts.days != null ? opts.days : null,
         thresholdDays: opts.thresholdDays != null ? opts.thresholdDays : null,
@@ -1753,16 +1766,47 @@ EN.engine = (function () {
       stoppedBy: stopped || null,
       lingerStoppedBy: stopped || noLinger || null,
       wash: C.wash,
-      degradation: causticArmorDR(ch, worn),
+      degradation: causticArmorDR(ch, worn, fx),
       degradationRule: C.gearDegradation || {}
     };
 
-    // The thin-air Long Rest restriction, resolved once here so the Long Rest
-    // and the panel cannot disagree about it. LONG RESTS ONLY.
-    var lockedFatigue = 0, lockSources = [];
-    exposures.forEach(function (r) {
-      if (r.lockedFatigue > 0) { lockedFatigue += r.lockedFatigue; lockSources.push(r.typeName + " (" + r.severityName + ")"); }
-    });
+    /* The thin-air Long Rest restriction, resolved once here so the Long Rest
+       and the panel cannot disagree about it. LONG RESTS ONLY.
+
+       The attribution is CHARACTER-scoped (ch.hazards.thinAirFatigue), not
+       row-scoped, and that is the whole fix for two defects that were one root
+       cause pointing in opposite directions:
+
+         It used to read `row.fatigue` off the live thin-air row. `row.fatigue`
+         is only ever incremented, so an ability or a medic clearing Fatigue
+         left the lock standing over Fatigue that no longer existed, and the
+         next level gained from HEAT was then locked as thin-air Fatigue. The
+         rules explicitly bless that clearing path, so the drift was guaranteed.
+
+         And because the lock lived on the row, deleting the row deleted the
+         lock: LEAVE then re-ENTER at the same altitude laundered locked Fatigue
+         in two clicks.
+
+       This is the "unattributable state" family the rig work already paid for:
+       the row was holding an attribution that outlived what it described.
+
+       Two clamps make it honest. The count can never exceed the Fatigue the
+       character actually has, so a clear can never leave a phantom lock; and
+       the lock only APPLIES while a thin-air exposure is live, because the rule
+       is about a Long Rest taken at the same altitude. Descend and the Fatigue
+       comes off normally; come back up and it is locked again, which is why
+       LEAVE plus re-ENTER no longer launders anything. */
+    var fatigueNow = (ch && ch.conditionLevels && ((ch.conditions || []).indexOf("Fatigue") !== -1))
+      ? Math.max(0, ch.conditionLevels.Fatigue | 0) : 0;
+    var thinAirOwed = Math.min(Math.max(0, hz.thinAirFatigue | 0), fatigueNow);
+    var thinAirLive = exposures.filter(function (r) { return r.type === "thinair"; });
+    var lockedFatigue = thinAirLive.length ? thinAirOwed : 0;
+    var lockSources = thinAirLive.map(function (r) { return r.typeName + " (" + r.severityName + ")"; });
+    if (!lockedFatigue) lockSources = [];
+    // The chip on the row reports the CHARACTER's locked count, not a per-row
+    // tally, so two thin-air exposures cannot each claim the same locked levels
+    // and sum to more Fatigue than the character has.
+    thinAirLive.forEach(function (r) { r.lockedFatigue = lockedFatigue; });
 
     return {
       exposures: exposures,

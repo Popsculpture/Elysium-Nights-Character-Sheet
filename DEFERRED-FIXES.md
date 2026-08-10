@@ -1185,10 +1185,122 @@ and drops the Vacuum condition with it. No console error on any tab.
 
 **One gap worth knowing.** An applied hazard's Remove resets the clock it drove, since
 leaving a hazard resets both the clock and the DC. It does NOT clear Fatigue already
-gained, which is correct (that is ordinary Fatigue on the ordinary recovery rules) but
-means the thin-air Long Rest lock still drifts exactly as recorded above. **That defect
-is untouched by this work and is still open**, along with the unverified vacuum
-subsystem whose review lens died.
+gained, which is correct: that is ordinary Fatigue on the ordinary recovery rules.
+
+## The five hazard defects, ALL NOW FIXED, and the vacuum subsystem verified
+
+The two surviving review lenses in `review-findings/wbkcw3wnd.json` were read (the
+third, the vacuum lens, died on an API error and is absent; that subsystem is verified
+below instead). Between them they confirmed five defects. All five are fixed, each
+re-driven through the real panel buttons with the die pinned to 1 so failures are
+deterministic, and each checked against the lens's own failing scenario.
+
+**Two of the five were one root cause pointing in opposite directions, and it is the
+`unattributable state` family this codebase has now paid for three times.** "How many of
+my current Fatigue levels came from thin air" was stored on the live exposure ROW, and a
+row's lifetime is not that attribution's lifetime.
+
+- ~~**The thin-air Long Rest lock survives the Fatigue it was locking, then locks
+  Fatigue that has nothing to do with thin air.**~~ **FIXED.** `row.fatigue` is only ever
+  incremented, and `setCondLevel` (the path an ability or a medic uses, which the rules
+  explicitly bless) never touched it. **Repro before, from the lens:** enter Thin Air,
+  fail one save (Fatigue 1, locked 1), clear Fatigue through the condition's own Remove,
+  and the character sits at Fatigue **0** with `longRestLockedFatigue` **1**; then a
+  failed HEAT save gives a level that the Long Rest refuses as "thin air". **After:**
+  clearing Fatigue reads `{fatigue: 0, thinAir: 0, locked: 0}`, and the Heat level reads
+  `{fatigue: 1, thinAir: 0, locked: 0}`.
+- ~~**LEAVE then re-ENTER at the same altitude launders locked Fatigue in two
+  clicks.**~~ **FIXED.** The lock lived on the row, so deleting the row deleted the lock.
+  **Repro before:** two failed thin-air saves (Fatigue 2, locked 2, Long Rest correctly
+  refused), LEAVE, re-ENTER, Long Rest, and the toast reads "restored and refreshed" with
+  Fatigue **1**. **After:** re-entering reads locked **2** again and the Long Rest is
+  still refused with the altitude toast; Fatigue stays 2.
+
+**The fix.** `ch.hazards.thinAirFatigue`, character-scoped: incremented on a thin-air
+failure, decremented in `setCondLevel` when Fatigue is cleared, and clamped by the engine
+to the Fatigue actually held. The lock only APPLIES while a thin-air exposure is live,
+because the rule is about a Long Rest taken *at the same altitude*, so descending
+suspends it and climbing back re-applies it to the same levels. Descending for real and
+resting then does drop Fatigue 2 to 1, which is the behaviour the rules want and the one
+the laundering exploit was faking. Thin-air levels come off FIRST on a partial clear:
+the rules do not say which levels a partial clear removes, and the asymmetry of harm
+decides it the way the rig ruling did, since a wrongly-LOCKED level silently denies a
+player a recovery they were entitled to. Legacy saves recover the count by summing the
+thin-air rows' own tallies once, capped by real Fatigue, so a record that had ALREADY
+drifted lands correct rather than importing the drift: a legacy record with `fatigue: 3`
+on the row and Fatigue 2 on the character migrates to `thinAirFatigue: 2`, stable across
+three loads.
+
+- ~~**A deprivation track can end and restart without resetting its DC.**~~ **FIXED** in
+  `depDay`. An exposure cannot get this wrong because LEAVE deletes the row and the DC
+  lived nowhere else; deprivation has no row to delete. **Repro before:** Thirst at 1 day
+  with three failed saves (DC 16), step days down to 0 and the exposure ends, step back
+  up and a fresh thirst resumes at **DC 16**. **After:** stepping below the threshold
+  zeroes `saves` and `clockMinutes`, so it reads DC **10** on the way down and DC **10**
+  when crossed again. Fatigue already stacked is untouched, exactly as for an exposure.
+  Stepping the counter down is the natural gesture for "I got a drink yesterday", so this
+  could not be left to remembering RESET.
+- ~~**The Hazmat Suit blocks the caustic damage but not the gear degradation it is
+  physically standing between.**~~ **FIXED.** `causticArmorDR` never received `fx`, so
+  `blocksCaustic` and `immuneCaustic` could not reach it. **Repro before:** Vanguard Plate
+  (unsealed) under a worn, untorn Hazmat Suit in caustic, and the panel prints "No damage
+  inside it: Hazmat Suit" and "Vanguard Plate is unsealed and will lose 1 DR after a full
+  scene in it" in the same block, with MARK FULL SCENE enabled and writing the ledger.
+  **After:** `blockedBy: "Hazmat Suit"`, `exposed: false`, MARK FULL SCENE **disabled**,
+  and the line reads "Hazmat Suit is worn over Vanguard Plate and keeps the caustic off it
+  too, so it does not degrade." MARK TORN puts `exposed` back to **true**, so the suit's
+  own failure mode still bites. `causticScene` already guarded on `dg.exposed`, so the
+  write path closed with it.
+- ~~**Shaken does not cancel the mitigation Edge on hazard saves.**~~ **FIXED** in
+  `hazardSave`. Shaken's own text says it prevents benefiting from Edge "from any
+  source", and every other d20 surface in the app honours that; this one did not.
+  **Repro before:** Ration Discipline plus Shaken, thin-air save, spec `{edge:1}` and two
+  dice rolled. **After:** unshaken reads `{edge:1, snag:0}` and Shaken reads
+  `{edge:0, snag:0}`, on the exposure and on all three deprivation tracks. The Snag half
+  is deliberately untouched: Shaken imposes Snag on attacks and Wits checks, not Body Saves.
+
+### The vacuum subsystem, now verified
+
+The lens that was meant to cover this died, so it was driven directly. **The seal matrix
+is exactly the rule**, including the part the rule goes out of its way to state, that the
+Sealed trait alone never holds vacuum:
+
+| worn | holds vacuum | via |
+| ----- | ----- | ----- |
+| no armor | no | |
+| Riot Wall (Sealed) | **no** | |
+| Riot Wall + Rebreather Liner | yes | Rebreather Liner on Riot Wall |
+| Vanguard Plate (unsealed) + Liner | **no** | |
+| Warframe Shell | yes | Warframe Shell (native) |
+
+**The clock is right too**, at Body 4: held breath is 4 rounds (rounds equal to the Body
+SCORE, not the modifier), ticking down 4/3/2/1/0 with no save and no damage; then the
+saves begin and escalate 10, 12, 14, 16, 18 at +2 each; each failure costs exactly 1
+Wound, 4 to 3 to 2 to 1 to 0; Unconscious lands at 2 Wounds, which is at or below half of
+4, and not before; and 1d6 Cold every round regardless of the save is carried on the row.
+Void Lung suspends the whole thing: `clockStarts` goes false and the tick button
+disables, since fifteen minutes of held breath outlasts any scene.
+
+### Still open from these lenses, deliberately
+
+- **The Thermal Regulation Weave's Resistance is neither applied nor displayed inside the
+  hazard.** The mod grants "Resistance to Fire or Cold" beside its no-Fatigue clause, but
+  `hazards.js` encodes only `noFatigueChosen` and the Lethal rider's damage passes through
+  untouched. This is the already-declared "no damage pipeline to reduce" gap, one item
+  over, and fixing it means building damage application rather than editing a number.
+  Radiation Callouses taking the full 1d6 Cold is NOT this bug: that trait grants
+  Resistance to Radiation, not to Cold.
+
+### What both lenses found clean and could not break
+
+Per-instance DC escalation with two concurrent exposures; success restarting the clock but
+not the DC; leaving resetting both while Fatigue persists; the three deprivation clocks
+genuinely independent; eight of nine mitigations proven to change a real outcome through
+the real buttons, including the fiddly Ration Discipline wording (Thirst threshold stays
+1, Hunger and Sleeplessness go 3 to 6) and Frictionless Stasis stopping the residue but
+not the acid you are standing in; persistence byte-identical across reloads; and hostile
+persisted state (`__proto__` and `constructor` as exposure ids) round-tripping onto the
+null-prototype maps leaving `Object.prototype` clean.
 
 ## Environment
 

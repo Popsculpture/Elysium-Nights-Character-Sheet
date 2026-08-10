@@ -142,6 +142,14 @@ EN.store = (function () {
         thermalWeave: {},                // {armorEntryKey: "Fire"|"Cold"}, the Thermal Regulation Weave install pick
         hazmatTorn: false,               // the Hazmat Suit's own entry: a tear fails the seal until repaired
         rebreatherMinutes: 60,           // minutes of Rebreather thin-air cover left this scene
+        // How many of the character's CURRENT Fatigue levels came from thin air.
+        // Character-scoped on purpose: it used to be read off the live exposure
+        // row, and a row's lifetime is not this attribution's lifetime, so the
+        // lock outlived the Fatigue it described and LEAVE plus re-ENTER
+        // laundered it. Incremented on a thin-air failure, decremented when
+        // Fatigue is cleared, and clamped by the engine to the Fatigue actually
+        // held. It only LOCKS anything while a thin-air exposure is live.
+        thinAirFatigue: 0,
         // Which hazards the player has APPLIED in the Status Changes panel, as
         // EN.statusChanges option keys: {"deprivation:water": true}. This is
         // STATED, never inferred from whether a clock happens to be non-zero.
@@ -606,6 +614,28 @@ EN.store = (function () {
     hz.hazmatTorn = !!hz.hazmatTorn;
     if (typeof hz.rebreatherMinutes !== "number" || !isFinite(hz.rebreatherMinutes) || hz.rebreatherMinutes < 0) hz.rebreatherMinutes = 60;
     hz.rebreatherMinutes = Math.min(60, Math.floor(hz.rebreatherMinutes));
+
+    /* Thin-air Fatigue attribution, character-scoped. A save written before this
+       existed carries the attribution on its exposure ROWS instead, so it is
+       recovered by summing the thin-air rows' own tallies once. That sum is the
+       best available reading of the old shape and it is capped two ways: by the
+       Fatigue the character actually holds, here, and again by the engine on
+       every derive. A record whose thin-air Fatigue had already drifted above
+       its real Fatigue therefore lands correct rather than importing the drift.
+       Nothing seeds it out of thin air: a record with no thin-air row and no
+       stored count gets 0. */
+    if (typeof hz.thinAirFatigue !== "number" || !isFinite(hz.thinAirFatigue) || hz.thinAirFatigue < 0) {
+      var seeded = 0;
+      Object.keys(hz.exposures).forEach(function (id) {
+        var r = hz.exposures[id];
+        if (r && r.type === "thinair") seeded += Math.max(0, r.fatigue | 0);
+      });
+      hz.thinAirFatigue = seeded;
+    }
+    hz.thinAirFatigue = Math.floor(hz.thinAirFatigue);
+    var fatigueHeld = ((ch.conditions || []).indexOf("Fatigue") !== -1)
+      ? Math.max(0, ((ch.conditionLevels || {}).Fatigue | 0)) : 0;
+    hz.thinAirFatigue = Math.min(hz.thinAirFatigue, fatigueHeld);
 
     /* Applied Status Changes: the hazards and the bonuses the player has put on
        the panel. Both are sanitized against the EN.statusChanges registry, so a

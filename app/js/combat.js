@@ -952,8 +952,12 @@ EN.combatView = (function () {
         // lives here and not in setCondLevel: an ability or a hand adjustment
         // that clears Fatigue is deliberately unaffected. The locked count comes
         // off d.hazard, so the rest and the Hazards panel cannot disagree about
-        // it, and it is released the moment the thin-air exposure is left,
-        // because leaving deletes the instance that was holding the levels.
+        // it. The count is CHARACTER-scoped (ch.hazards.thinAirFatigue) and the
+        // lock only applies while a thin-air exposure is live, so descending
+        // releases it and coming back up re-applies it. Levels that come off
+        // here are always UNLOCKED ones, since the rest is refused outright when
+        // it would eat into the locked count; the engine's clamp to current
+        // Fatigue keeps the attribution honest from every other direction.
         var locked = (d.hazard && d.hazard.longRestLockedFatigue) || 0;
         if (cur >= 4) severeFatigue = cur;                                  // untouched; player is told why
         else if (locked > 0 && cur - 1 < locked) {
@@ -963,6 +967,18 @@ EN.combatView = (function () {
           var fl = cur - 1;
           if (fl <= 0) { c.conditions = c.conditions.filter(function (n) { return n !== "Fatigue"; }); delete c.conditionLevels["Fatigue"]; }
           else c.conditionLevels["Fatigue"] = fl;
+          /* Keep the thin-air attribution honest in STORAGE, not just at derive
+             time. When `locked` is 0 the character is off the altitude (or owes
+             nothing), so the level that just came off is fair game and the count
+             follows it down. When `locked` is above 0 this branch is not reached
+             at all unless there are unlocked levels to spend first, so the level
+             removed is never a locked one and the count must not move. Without
+             this the record would sit on an attribution larger than the Fatigue
+             it describes, which is the exact smell this whole fix removes. */
+          if (!locked) {
+            c.hazards = c.hazards || {};
+            c.hazards.thinAirFatigue = Math.max(0, Math.min((c.hazards.thinAirFatigue | 0) - 1, fl));
+          }
         }
       }
       // a Long Rest is one day on the story calendar
@@ -1207,8 +1223,26 @@ EN.combatView = (function () {
     store.update(function (c) {
       c.conditionLevels = c.conditionLevels || {};
       var max = LEVELED[name] ? LEVELED[name].max : 1;
+      var before = (c.conditions || []).indexOf(name) !== -1 ? (c.conditionLevels[name] || 1) : 0;
       if (lvl <= 0) { c.conditions = (c.conditions || []).filter(function (n) { return n !== name; }); delete c.conditionLevels[name]; }
       else c.conditionLevels[name] = Math.min(max, lvl);
+      var after = lvl <= 0 ? 0 : Math.min(max, lvl);
+      /* Clearing Fatigue also retires the thin-air attribution for the levels
+         that came off. This is the path an ability or a medic uses, and the
+         rules bless it ("abilities that clear Fatigue are unaffected"), so
+         without this the lock outlives the Fatigue it describes.
+
+         Thin-air levels come off FIRST when something clears Fatigue. The rules
+         do not say which levels a partial clear removes, and the asymmetry of
+         harm decides it the same way the rig ruling did: a wrongly-LOCKED level
+         silently denies a player a Long Rest recovery they were entitled to,
+         while a wrongly-unlocked one hands back a level the GM was narrating
+         anyway. The engine also clamps this to the character's current Fatigue,
+         so any other path that lowers it cannot leave a phantom lock either. */
+      if (name === "Fatigue" && after < before) {
+        c.hazards = c.hazards || {};
+        c.hazards.thinAirFatigue = Math.max(0, (c.hazards.thinAirFatigue | 0) - (before - after));
+      }
     });
   }
 
@@ -1252,8 +1286,17 @@ EN.combatView = (function () {
   function hazardSave(row, dc, fx) {
     var mods = [{ label: "Body Save", value: row.saveBonus || 0 }];
     if (fx && fx.saveDelta) mods.push({ label: "Conditions", value: fx.saveDelta });
-    var r = eng.rollD20({ mods: mods, edge: row.edge ? 1 : 0, snag: (fx && fx.snagSave && fx.snagSave.BOD) ? 1 : 0 });
+    /* Shaken cancels Edge from ANY source, per its own condition text, and every
+       other d20 surface in the app honours that (the roll tray at :86, the tray
+       control at :330). A hazard mitigation's Edge is a source like any other,
+       so Ration Discipline granting Edge to a Shaken character was this one
+       surface disagreeing with the rest. The Snag half is untouched: Shaken
+       imposes Snag on attacks and Wits checks, not on Body Saves. */
+    var shaken = (((store.active() || {}).conditions) || []).indexOf("Shaken") !== -1;
+    var r = eng.rollD20({ mods: mods, edge: (row.edge && !shaken) ? 1 : 0,
+                          snag: (fx && fx.snagSave && fx.snagSave.BOD) ? 1 : 0 });
     r.dc = dc; r.pass = r.total >= dc;
+    r.edgeBlocked = !!(row.edge && shaken);
     return r;
   }
   function rollText(r) {
@@ -1471,7 +1514,9 @@ EN.combatView = (function () {
           // scene of exposure is something the table declares rather than
           // something a turn tick can quietly add up to.
           el("button.btn.sm", { style: { padding: "1px 8px" }, disabled: !dg.exposed,
-            title: dg.exposed ? "A full scene of exposure: the suit loses 1 DR" : (dg.armor ? dg.armor + " is sealed; caustic exposure does not reach it" : "No armor worn"),
+            title: dg.exposed ? "A full scene of exposure: the suit loses 1 DR"
+              : dg.blockedBy ? (dg.blockedBy + " keeps the caustic off your armor as well as off you")
+              : (dg.armor ? dg.armor + " is sealed; caustic exposure does not reach it" : "No armor worn"),
             onclick: function () { causticScene(cz); } }, "MARK FULL SCENE"),
           el("button.btn.sm", { style: { padding: "1px 8px" }, disabled: !dg.lost, title: "Repaired during Downtime", onclick: function () { causticRepair(dg); } }, "REPAIR")
         ])
@@ -1479,6 +1524,7 @@ EN.combatView = (function () {
       el("p.help", { style: { margin: 0 }, text: cz.degradationRule.text || "" }),
       el("p.help", { style: { margin: "3px 0 0", color: dg.exposed ? "var(--warn)" : "var(--success)" },
         text: !dg.armor ? "No armor worn, so there is nothing to degrade."
+            : dg.blockedBy ? (dg.blockedBy + " is worn over " + dg.armor + " and keeps the caustic off it too, so it does not degrade.")
             : dg.sealed ? (dg.armor + " is sealed; caustic exposure does not reach it.")
             : (dg.armor + " is unsealed and will lose 1 DR after a full scene in it.") }),
       dg.lost ? el("p.help", { style: { margin: "3px 0 0", color: "var(--gold)" },
@@ -1766,6 +1812,13 @@ EN.combatView = (function () {
       gained = gainFatigue(c, 1);
       capped = gained === 0;
       ex.fatigue = (ex.fatigue | 0) + gained;
+      // Thin-air Fatigue is attributed to the CHARACTER, not to this row, so
+      // the attribution survives the row and does not outlive the Fatigue.
+      // ex.fatigue stays as this row's own tally for its chip; it is no longer
+      // what the Long Rest lock reads.
+      if (ex.type === "thinair" && gained) {
+        c.hazards.thinAirFatigue = Math.max(0, c.hazards.thinAirFatigue | 0) + gained;
+      }
     });
     var tail = r.pass ? " No effect; the clock restarts, the DC does not. Next save DC " + row.nextDC + "."
       : row.noFatigue ? (" " + row.noFatigueFrom + " refuses the Fatigue."
@@ -1781,15 +1834,35 @@ EN.combatView = (function () {
       var m = (c.hazards || {}).exposures;
       if (m) delete m[row.id];
     });
-    // deleting the row IS the reset: the escalating DC lived nowhere else
+    // deleting the row IS the reset: the escalating DC lived nowhere else.
+    // The thin-air ATTRIBUTION is not in the row, so leaving does not launder
+    // it. Descending suspends the lock; climbing back up re-applies it to the
+    // same levels, because the count lives on the character.
+    var stillUp = Object.keys(((store.active() || {}).hazards || {}).exposures || {}).some(function (id) {
+      var ex = store.active().hazards.exposures[id];
+      return ex && ex.type === "thinair";
+    });
     toast("Left the " + row.typeName + " exposure. Clock and DC both reset; a new exposure starts again at DC "
       + EN.hazards.exposure.baseDC + ". Fatigue already gained stays and comes off by the normal Fatigue rules."
-      + (row.lockedFatigue ? " Its " + row.lockedFatigue + " level(s) of thin-air Fatigue are no longer locked against a Long Rest." : ""));
+      + (row.lockedFatigue && !stillUp
+          ? " You are off the altitude, so its " + row.lockedFatigue + " level(s) of thin-air Fatigue are no longer locked; going back up locks them again."
+          : row.lockedFatigue ? " Another thin-air exposure is still running, so those levels stay locked." : ""));
   }
   function depDay(row, delta) {
     store.update(function (c) {
       var t = ((c.hazards || {}).deprivation || {})[row.track];
-      if (t) t.days = Math.max(0, (t.days | 0) + delta);
+      if (!t) return;
+      var was = row.crossed;
+      t.days = Math.max(0, (t.days | 0) + delta);
+      /* Dropping back below the threshold ENDS the exposure, and leaving an
+         exposure resets both the clock and the DC. An exposure row cannot get
+         this wrong because LEAVE deletes it and the DC lived nowhere else; a
+         deprivation track has no row to delete, so stepping the days down was
+         leaving `saves` in place and a fresh thirst resumed at DC 16 instead of
+         10. Stepping back down is the natural gesture for "I got a drink
+         yesterday", so this cannot be left to remembering RESET. Fatigue
+         already stacked is untouched, exactly as it is for an exposure. */
+      if (was && t.days < row.thresholdDays) { t.saves = 0; t.clockMinutes = 0; }
     });
   }
   function depTick(row, fx) {
