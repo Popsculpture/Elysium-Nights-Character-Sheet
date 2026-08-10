@@ -25,10 +25,18 @@ section instead.
 
 ## Needs an author ruling (blocked on Brandon, not on code)
 
-- **RULED 2026-08-10, not yet applied: `Dead-Eye Sniper` HAS been renamed `Zeroed In`.**
-  Apply the rename (key, display name, brief, any cross-reference) and then resort
-  Combat & Weapon Mastery so `Zeroed In` sits last, per the printed order. The original
-  question follows, for context.
+- ~~**RULED 2026-08-10, not yet applied: `Dead-Eye Sniper` HAS been renamed `Zeroed In`.**~~
+  **APPLIED.** Key `dead-eye-sniper` to `zeroed-in`, display name and brief to
+  `Zeroed In`, and the talent moved from position 6 to position 14 of Combat & Weapon
+  Mastery, which is both "last" per the printed order and still alphabetical, since the
+  category was already in alphabetical order and `Zeroed In` sorts last there too. The
+  brief in `app/data/briefs.js` moved with it, so the file's order still tracks
+  `talents.js`. The subclass `The Deadeye` (`the_deadeye`) is a different thing and KEEPS
+  its name; nothing in `class_picker.js`, `kits.js` or `class_hustler_operator.js` was
+  touched. Verified on screen with the bypass working (see the gate note below): the
+  picker's Combat & Weapon Mastery optgroup ends `... Staff & Spear Master, Street
+  Scrapper, Zeroed In`, picking it stores `{type:"talent", talent:"zeroed-in"}`, and
+  `derive()` renders the feature as `Zeroed In`. The original question follows, for context.
 - **`Zeroed In` versus `Dead-Eye Sniper`.** The handoff's printed order for Combat &
   Weapon Mastery ends with `Zeroed In` and omits `Dead-Eye Sniper`, which currently
   occupies position 6. `Zeroed In` does not exist anywhere in the app. That reads as
@@ -701,16 +709,25 @@ at `store.js:245` is the same shape. **Not tracked.** The id-uniqueness fix adds
 `ch.equipment.forEach` pre-pass, but it sits inside the existing
 `if (Array.isArray(ch.equipment))` guard, so it adds no new unguarded read.
 
-**L11. The Toxicologist rename migration misses `ch.talents`.**
-`app/js/store.js:271-275` migrates only `ch.universalUpgrades[lvl].talent`. `ch.talents`
-(declared `app/js/store.js:84`) is never touched, and its two consumers,
+**~~L11. The Toxicologist rename migration misses `ch.talents`.~~** **FIXED**, as a
+byproduct of applying the `Zeroed In` rename, because the second rename would otherwise
+have inherited the same hole on day one. The single-rename `if` became a
+`TALENT_RENAMES` table covering BOTH storage sites: `ch.universalUpgrades[lvl].talent`
+and the flat `ch.talents` list. The table is null-prototype, per the lesson in "Open
+after the duplicate-id fix": it is keyed on strings out of a save file, so a plain
+object literal would have read `talents: ["constructor"]` as a rename hit and rewritten
+it. Verified through `importCharacter` at runtime: a record carrying
+`talents: ["dead-eye-sniper","toxicologist","melee-mastery","constructor"]` and four
+Universal Upgrade slots spanning both types and both spellings (`dead-eye-sniper`,
+`Dead-Eye Sniper`, a `talentUpgrade`, and `toxicologist`) migrates to
+`["zeroed-in","cutting-agent","melee-mastery","constructor"]` with every slot rewritten,
+is byte-stable across three loads, and derives both talents as named features.
+`constructor` passes through untouched. The original write-up follows.
+`app/js/store.js:271-275` migrated only `ch.universalUpgrades[lvl].talent`. `ch.talents`
+(declared `app/js/store.js:84`) was never touched, and its two consumers,
 `app/js/printsheet.js:116` and `app/js/pdfexport.js:395`, resolve it with `.find(...)`
-then `.filter(Boolean)`, so a stale key vanishes with no warning. **Severity: low,
-import-only.** Failing scenario: import a record with `talents:["toxicologist"]` and the
-field stays `["toxicologist"]`, resolves to nothing, and the print sheet renders zero
-rows for it, while both Universal Upgrade slot types and both spellings migrate
-correctly. Nothing in the app writes `ch.talents`, which is why this stays low. **Not
-tracked.**
+then `.filter(Boolean)`, so a stale key vanished with no warning. **Severity was: low,
+import-only,** since nothing in the app writes `ch.talents`.
 
 **L12. `if (!ch.proficiencies) return;` at `app/js/store.js:165` skips every migration
 added since.** GROUP D. **Severity: low, import-only, and broader than the finding it
@@ -731,9 +748,8 @@ it floats `v.slice(4)` at `combat.js:1329`, but the picker's option values are `
 hand-edit only. **Not tracked.**
 
 Also live and already correctly recorded, restated only so the count is honest: the
-`Zeroed In` versus `Dead-Eye Sniper` rename (blocked on Brandon, and the Combat and
-Weapon Mastery category is still unreordered with `Dead-Eye Sniper` at position 6;
-`grep -rn "Zeroed" app/` returns nothing, and `git log` shows no reorder since), and
+`Zeroed In` versus `Dead-Eye Sniper` rename (**no longer live: ruled, and now applied,
+with the category resorted so `Zeroed In` sits at position 14**), and
 Pneumatic Bypass having nowhere to live. On the latter, one correction: `ch.customFeatures`
 **does** exist (`app/js/store.js:85`, a manual Feature list on the Freelancer tab), so
 there is somewhere to write it down. What is missing is any path from there into
@@ -957,6 +973,60 @@ non-Stitcher's rig block still shows no Triage Save DC and no Scrap Rig option.
   will key on an equipment entry.
 - **`nameToIds` last-write-wins** remains open and is unrelated to the id work: it
   concerns two rows sharing a NAME, not an id.
+
+## The `?dev` bypass never worked, and why that matters more than it looks
+
+**FIXED.** Found on 2026-08-10 while trying to verify the `Zeroed In` rename on screen.
+`?dev` and `?nogate` were landing on the credential gate exactly as if the bypass did
+not exist, on a clean profile, on the current `main`.
+
+**Cause: one invisible byte.** `fe2df0e` committed the predicate as
+
+    /[?&](dev|nogate)\x08/.test(window.location.search)
+
+with a literal **backspace character, `0x08`,** sitting between the closing paren of the
+alternation and the closing slash. So the regex demanded that a backspace follow the
+word `dev` in the query string, which nothing can supply, and `devBypass()` returned
+`false` on every load. `app/js/gate.js:141`, now one byte shorter.
+
+**Why it took a while to find, which is the part worth keeping.** Every cheap check
+passes. The file reads correctly in an editor and in `git show`. `grep` for the pattern
+finds it. `node --check` passes, because a backspace inside a regex literal is legal
+syntax. `EN.gate.require.toString()` in the live page prints the bypass verbatim,
+because the character has no glyph. And `/[?&](dev|nogate)/.test(location.search)` typed
+by hand into the console returns `true`, because the hand-typed regex is not the one in
+the file. The diagnosis only closed on `curl ... | cat -A`, which renders it as `^H`.
+**`cat -A` (or `grep -P` for a control-character class) is the tool; reading the source,
+including reading it in the browser, cannot find this.**
+
+The sweep is now clean and worth repeating: `grep -rlP "[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]"`
+over the repo, excluding `.git`, `review-findings` and `app/vendor`, returns nothing.
+`app/js/gate.js` was the only file that ever matched, and the backspace was its only
+control character. `app/vendor/pdf-lib.min.js` matches legitimately and is not ours.
+
+**The consequence for everything already recorded.** This sits directly under the
+convention that stale JS has produced false readings twice, and it is the same failure
+in a nastier form: any agent that loaded `?dev`, hit the gate, and did not notice would
+have been reading a page where the app never opened. It does NOT invalidate the
+verification runs above, which drove `importCharacter` and `EN.store.load()` and were
+therefore reading the real engine, and which reported on-screen numbers that only exist
+past the gate (so those sessions got past it, by the password or by an already-set
+`en_gate_ok_v1` flag). It does mean the bypass was never the thing letting them in.
+Worth knowing before trusting a future "I loaded with ?dev and saw X."
+
+Two smaller things noticed alongside it, neither fixed, neither a defect in this file's
+sense:
+
+- **The root `index.html` redirects twice.** A `<meta http-equiv="refresh" content="0;
+  url=app/">` and a `location.replace("app/" + location.search + location.hash)` race
+  each other, and only the script carries the query string. The script won every time it
+  was measured here, so `?dev` survived the hop, but the meta tag is a coin toss by
+  construction. Loading `app/?dev&cb=x` directly sidesteps it.
+- **`migrate()` does not default `ch.identity`.** A hand-authored fixture without it
+  throws in `stepIdentity` at `app/js/builder.js:135` (`ch.identity.handle`) the moment
+  the builder renders. Same class as L10 and L12: import-only, hand-authored-only, and
+  the record is otherwise fine. Recorded so the next person writing a fixture knows to
+  include it rather than filing a bug.
 
 ## Environment
 

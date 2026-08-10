@@ -44,13 +44,6 @@ EN.talents = [
     text: "You are practiced in the art of crushing your Enemies, granting you the following benefits:\n• Increase your Body score by 1, to a maximum of 20.\n• Once per turn, when you hit a Target with an attack that deals Bludgeoning damage, you can move it 1 space to an unoccupied space, provided the Target is no more than one Size category larger than you.\n• When you score a critical hit that deals Bludgeoning damage to a Target, all attack rolls against that Target gain Edge until the start of your next turn.\n\n**Upgrade (Level 6+):** When you hit a Target with a Bludgeoning attack on your turn, you may force it to make a Body Saving Throw (DC 8 + your Body modifier + your Weapon Proficiency Bonus) or be Stunned until the end of your next turn. Once you stun a Target this way, you cannot do so again until you finish a Short Rest."
   },
   {
-    key: "dead-eye-sniper",
-    name: "Dead-Eye Sniper",
-    category: "Combat & Weapon Mastery",
-    requirements: "",
-    text: "You have mastered ranged weapons and can make shots that others find impossible. You gain the following benefits:\n• Attacking at long range does not impose Snag on your ranged weapon attack rolls.\n• Your ranged weapon attacks ignore the Defense bonuses provided by Half Cover.\n• Before you make an attack with a ranged weapon that you are Proficient with, you can choose to take a -5 penalty to the attack roll. If that attack hits, you add +10 to the attack's damage.\n• You can use this option once per turn.\n\n**Upgrade (Level 6+):** Your ranged weapon attacks now also ignore the Defense bonuses provided by Three-Quarter Cover, and you no longer have Snag on ranged attacks when an Enemy is within 1 space of you."
-  },
-  {
     key: "heavy-handed",
     name: "Heavy Handed",
     category: "Combat & Weapon Mastery",
@@ -105,6 +98,13 @@ EN.talents = [
     category: "Combat & Weapon Mastery",
     requirements: "",
     text: "Accustomed to the rough-and-tumble fighting using whatever weapons happen to be at hand, you gain the following benefits:\n• Increase your Body score by 1, to a maximum of 20.\n• You add your Simple Weapons Proficiency Bonus to attack rolls with improvised weapons, and you do not roll with Snag when wielding or throwing them.\n• Your unarmed strike damage die steps up one size (a strike with no die gains 1d4).\n• When you hit a Target with an unarmed strike or an improvised weapon on your turn, you can use a Swift Action to attempt to Grapple the Target.\n\n**Upgrade (Level 6+):** Your unarmed strike damage die steps up one further size, two steps in total, and you deal an additional 1d4 damage with improvised weapons. You also gain Resistance to Slashing, Bludgeoning, and Piercing damage from improvised weapons used against you."
+  },
+  {
+    key: "zeroed-in",
+    name: "Zeroed In",
+    category: "Combat & Weapon Mastery",
+    requirements: "",
+    text: "You have mastered ranged weapons and can make shots that others find impossible. You gain the following benefits:\n• Attacking at long range does not impose Snag on your ranged weapon attack rolls.\n• Your ranged weapon attacks ignore the Defense bonuses provided by Half Cover.\n• Before you make an attack with a ranged weapon that you are Proficient with, you can choose to take a -5 penalty to the attack roll. If that attack hits, you add +10 to the attack's damage.\n• You can use this option once per turn.\n\n**Upgrade (Level 6+):** Your ranged weapon attacks now also ignore the Defense bonuses provided by Three-Quarter Cover, and you no longer have Snag on ranged attacks when an Enemy is within 1 space of you."
   },
 
   // ===== Tactics & Hybrid Fighting =====

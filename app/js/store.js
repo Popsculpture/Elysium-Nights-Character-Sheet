@@ -264,15 +264,30 @@ EN.store = (function () {
       var a = ch.weaponAmmo[w];
       if (a && a.mode === "Burst") a.mode = "Burst Fire";
     });
-    // The Talent "Toxicologist" was renamed "Cutting Agent" to stop colliding with
-    // the Stitcher subclass of the same name, which KEEPS its name. Universal
-    // Upgrade slots store the talent key, so a record saved before the rename
-    // still points at "toxicologist" and would resolve to nothing.
+    // Renamed Talents. A record saved before a rename still stores the OLD key and
+    // would resolve to nothing, silently, because every reader looks the key up with
+    // .find() and drops a miss. Both spellings a record can carry (the key and the
+    // display name, since readers accept either) map to the new key.
+    //   "Toxicologist" -> "Cutting Agent", to stop colliding with the Stitcher
+    //     subclass of the same name, which KEEPS its name.
+    //   "Dead-Eye Sniper" -> "Zeroed In", the author's rename of 2026-08-10.
+    // Talent keys live in TWO places, not one: the Universal Upgrade slots and the
+    // flat ch.talents list the print sheet and the PDF export read. The
+    // Toxicologist rename only ever covered the first, so a ch.talents entry has
+    // been rendering as nothing since; this table covers both.
+    var TALENT_RENAMES = Object.create(null);
+    TALENT_RENAMES["toxicologist"] = TALENT_RENAMES["Toxicologist"] = "cutting-agent";
+    TALENT_RENAMES["dead-eye-sniper"] = TALENT_RENAMES["Dead-Eye Sniper"] = "zeroed-in";
     Object.keys(ch.universalUpgrades || {}).forEach(function (lvl) {
       var u = ch.universalUpgrades[lvl];
       if (u && (u.type === "talent" || u.type === "talentUpgrade") &&
-          (u.talent === "toxicologist" || u.talent === "Toxicologist")) u.talent = "cutting-agent";
+          typeof u.talent === "string" && TALENT_RENAMES[u.talent]) u.talent = TALENT_RENAMES[u.talent];
     });
+    if (Array.isArray(ch.talents)) {
+      ch.talents = ch.talents.map(function (tk) {
+        return (typeof tk === "string" && TALENT_RENAMES[tk]) ? TALENT_RENAMES[tk] : tk;
+      });
+    }
     // Overclocked Array state (6x6 rolled matrix + picked line + table rule).
     // A hand-edited/imported file can carry anything here, and the matrix
     // render reads every slot, so anything short of exactly 36 well-formed
