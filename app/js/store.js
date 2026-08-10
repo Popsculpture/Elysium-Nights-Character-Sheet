@@ -330,7 +330,14 @@ EN.store = (function () {
     // legacy record's Rig damage and recorded pick after exactly one load because of
     // it. The natural-looking place is the wrong place. Put it after this block.
     if (Array.isArray(ch.equipment)) {
-      var nameToIds = {}, splitEquipment = [];
+      // null-prototype for the same reason reservedIds and usedIds are: it is keyed on
+      // item NAMES out of a save file. As a plain literal, nameToIds["constructor"] read
+      // back the Object constructor, which is truthy, so the rekey passes below took the
+      // firstId() branch and firstId() then returned null (Object.prototype.constructor[0]
+      // is undefined). A carry entry for an item called "constructor" came out keyed on
+      // the literal string "null", destroying that item's carry state. Measured, not
+      // theorised. This was the one map in the block the earlier prototype pass missed.
+      var nameToIds = Object.create(null), splitEquipment = [];
       // UNIQUENESS, the other half of entry identity. Every consumer keys per-piece
       // state on engine.entryKey(e) === e.id || e.name, so an id that appears on TWO
       // rows is exactly as broken as no id at all: ownedRigs returns two entries with
@@ -395,7 +402,30 @@ EN.store = (function () {
         // the engine also reads as unowned (qty 0, negative, or ""), which stays id-less
         // because the two predicates already agree about it.
         if (!e.id && !stackable && !(e.qty > 0) && !(e.qty != null && e.qty <= 0)) e.qty = 1;
-        if (e.id || !(e.qty > 0) || stackable) {
+        /* ONE ROW IS NOT ONE PIECE, and the skip clause used to assume it was. `e.id`
+           short-circuited before qty was ever looked at, so `{id:"eq_x", name:"Kevlar
+           Weave", qty:3}` stayed a single row: three suits sharing one entryKey, one
+           repair state, one damage slot, one picker option. That is the whole collision
+           set the duplicate-id fix closed, reached through the other operand.
+
+           It matters because the floor this block sells to Armor Repair is per-PIECE,
+           not per-row: "two Kevlar Weaves cannot share a repair state no matter how the
+           record was authored" is false while an authored qty:3 is one row. So a
+           non-stackable owned row splits on its count whether or not it carries an id.
+
+           THE FIRST INSTANCE KEEPS THE ROW'S ORIGINAL ID, for exactly the reason the
+           duplicate pass keeps it for the first-seen row: ch.rig.key, ch.rig.hp,
+           armorWear, armorGuard, shieldWear, carry, slotInert, racked and the four equip
+           slots already point at that id and they meant this row. The instances split off
+           it are new objects with minted ids and therefore no per-entry state, which is
+           the settled ruling that unattributable state is dropped rather than duplicated
+           onto another piece.
+
+           Untouched: pooled rows (a stackable qty IS a stack, not a set of pieces),
+           unowned rows, and an id-carrying row that is already exactly one piece, which
+           takes the same push-as-is path it always did so that records without a
+           qty > 1 row migrate byte-identically. */
+        if (stackable || !(e.qty > 0) || (e.id && !(e.qty > 1))) {
           splitEquipment.push(e);
           return;
         }
@@ -403,7 +433,7 @@ EN.store = (function () {
         for (var i = 0; i < n; i++) {
           var ne = {};
           Object.keys(e).forEach(function (k) { if (k !== "qty") ne[k] = e[k]; });
-          ne.id = mintId();
+          ne.id = (i === 0 && e.id) ? e.id : mintId();
           ne.qty = 1;
           splitEquipment.push(ne);
           ids.push(ne.id);
@@ -601,11 +631,25 @@ EN.store = (function () {
           // dropped rather than inherited. Same ruling as ch.rig.hp.
           key = wearLiveKeys[k] ? k : null;
         } else {
-          // Legacy scheme: EVERY key is an item name. There is no shortcut to take and
-          // no shape to misread, so a name that collides with a live key is attributed
-          // like any other name instead of being mistaken for an already-converted key.
+          /* Legacy scheme. Rule 0 first: a key that names a live entry AND that nothing
+             else answers to as an item NAME is unambiguously that entry, so it is kept.
+             This is NOT the old shortcut. The old one fired on "is this string a live
+             key" alone, which is ambiguous precisely because entryKey() is
+             `e.id || e.name` and one string can be an id here and an item name there.
+             Narrowing it to "live and nothing else claims this string as a name" is the
+             fix the review asked for: the ambiguous case re-enters the rules instead of
+             skipping them.
+
+             It has to exist, because armorWear and armorGuard are NEW fields that never
+             had a legacy name-keyed form. Any record carrying them without the marker
+             was written by this branch and is already entry-keyed; sending its keys
+             through name attribution would find no item of that name and drop the wear.
+             shieldWear is the one map with a genuine legacy shape, and a shield NAME is
+             not a live entry key, so it still lands in the rules below. */
           var cands = wearKeysByName[k] || [];
-          if (wornKey && cands.indexOf(wornKey) !== -1) key = wornKey;   // rule 1
+          var onlyItself = cands.length === 0 || (cands.length === 1 && cands[0] === k);
+          if (wearLiveKeys[k] && onlyItself) key = k;                    // rule 0
+          else if (wornKey && cands.indexOf(wornKey) !== -1) key = wornKey;   // rule 1
           else if (cands.length === 1) key = cands[0];                   // rule 2
           // rule 3: nothing to attribute it to, or several equally likely pieces.
           // Leave `key` null and the state is dropped rather than moved.

@@ -863,10 +863,27 @@ left, and it belongs to step 5.
 ## Still open after the ordering, qty, duplicate-id and racked fixes
 
 **Both of the first two are now CLOSED.** Their entries are struck below and carry their
-before-and-after numbers. Entry identity is now complete: **every equipment row's
-`entryKey` is unique after migration**, whether it arrived with an id, without one, or
-with somebody else's. Only the two recorded nits are left in this section, and neither is
-a defect to fix.
+before-and-after numbers.
+
+**Corrected 2026-08-10, after reading the `w4qe3petu` lenses.** This paragraph used to
+claim "every equipment row's `entryKey` is unique after migration, whether it arrived
+with an id, without one, or with somebody else's". That was overstated in two directions
+and a reviewer measured both. What is actually true, and all step 5 should ever have been
+sold:
+
+- **Every row that carries an id ends up with an id no other row carries.** Uniqueness is
+  enforced over IDS, never over the effective `entryKey`. Two pooled stacks of the same
+  name, two custom rows of one name, and two unowned rows all still share a key after
+  migration. The first two are benign and pre-existing (pooled rows are legitimately
+  name-keyed) and the third is excluded by the engine's ownership test, but the sentence
+  as written denied they existed. It also contradicted the surviving `nameToIds`
+  last-write-wins nit twelve lines below it, which concedes two rows can share a name.
+- **And it was per-ROW, which is not per-PIECE.** `{id:"eq_x", name:"Kevlar Weave",
+  qty:3}` was one row holding three suits, so the promise that "two Kevlar Weaves cannot
+  share a repair state no matter how the record was authored" was false for exactly that
+  authoring. **That gap is now closed** (see the section on the two `w4qe3petu` findings
+  below): a non-stackable owned row splits on its count whether or not it carries an id,
+  so the per-piece statement is now true rather than merely claimed.
 
 - ~~**Duplicate ids reopen the collision class.**~~ **FIXED in the split,
   `app/js/store.js:328-402`.** The split now walks the list tracking the ids it has
@@ -923,9 +940,9 @@ every load, so minted ids are reproducible and the pre-fix and post-fix runs are
 comparable byte for byte rather than only structurally.
 
 **The no-op proof, measured rather than asserted.** Every shape's ENTIRE migrated record
-was fingerprinted, not just the fields this work touches. **All twenty-six shapes without
-a duplicate id hash identically to the pre-fix run**, including the eleven that mint ids,
-which is the load-bearing part: `mintId()` draws exactly one random number per instance
+was fingerprinted, not just the fields this work touches. **All twenty-seven shapes
+without a duplicate id hash identically to the pre-fix run**, including the eleven that
+mint ids, which is the load-bearing part: `mintId()` draws exactly one random number per instance
 in the no-collision case, so the RNG sequence is unchanged and the minted ids come out
 the same. Exactly seven shapes changed, and they are exactly the six carrying duplicate
 ids plus the racked one. Nothing else moved.
@@ -1429,8 +1446,65 @@ change below rather than by a fourth patch.
   hand-authored `id` that happens to be an item name, is the reachable one, and it
   reaches through `importCharacter`, whose whole job is ingesting foreign records.
 
-**Verification, twelve migration shapes through `importCharacter`, each re-loaded
-twice more.** Zero throws, **all twelve byte-stable across three loads**, and
+## The two `w4qe3petu` findings, both now FIXED
+
+The three lenses in `review-findings/w4qe3petu.json` were read on 2026-08-10. Their
+prototype-key finding was already closed before that commit (`reservedIds`, `usedIds` and
+`liveKeys` are `Object.create(null)`), and their large clean list holds. Two findings were
+still live in the code, and one of them was load-bearing for this branch.
+
+- ~~**The floor is per-ROW, not per-PIECE.**~~ **FIXED in the split.** The skip clause was
+  `if (e.id || !(e.qty > 0) || stackable)`, and `e.id` short-circuited before `qty` was
+  ever looked at, so an id-carrying non-stackable row with `qty > 1` was never split.
+  **Measured before:** `{id:"eq_x", name:"Anvil Frame", qty:3}` stayed ONE row with one
+  wear key and one piece, while the same three suits authored id-less split into three;
+  the rig equivalent returned `ownedRigs` of **1** for three owned rigs, one picker
+  option, one damage slot. **After:** three rows `eq_x` plus two minted, three distinct
+  keys, `ownedRigs` **3**, and the wear, the guard, the recorded pick, the damage and
+  `equippedArmor` all still on `eq_x`. **The first instance keeps the row's original id**,
+  for the same reason the duplicate pass keeps it for the first-seen row: every per-entry
+  map already points at that id and meant this row. The instances split off it are new
+  objects with minted ids and therefore no per-entry state, which is the settled ruling
+  that unattributable state is dropped rather than duplicated.
+- ~~**`nameToIds` is a bare object literal.**~~ **FIXED.** It was the one map in the block
+  the earlier prototype pass missed. **Measured before:** an item named `constructor` with
+  `carry: {"constructor": "carried"}` migrated to `carry: {"null": "carried"}`, because
+  `nameToIds["constructor"]` read back the Object constructor (truthy), took the
+  `firstId()` branch, and `firstId()` returned `null`. The item's carry state was
+  destroyed and replaced by a key that is the literal string `null`. **After:** the key
+  survives as `constructor`.
+
+**A regression this pass introduced and then closed, worth recording because it was not
+obvious.** Making idempotency stated meant an UNMARKED record sent every wear key through
+name attribution, which is right for `shieldWear` and wrong for `armorWear` and
+`armorGuard`: those are NEW fields with no legacy name-keyed form, so any record carrying
+them without the marker was written by this branch and is already entry-keyed. Attribution
+found no item of that name and dropped the wear. Caught by the fingerprint run, which
+showed `armorWear: {eq_a: 2}` becoming `{}`. Closed with the narrowing the review itself
+recommended: **rule 0**, a key that names a live entry AND that nothing else answers to as
+an item NAME is unambiguously that entry and is kept. That is not the old shortcut, which
+fired on "is this a live key" alone; the ambiguous case still re-enters the rules, which
+is why the id-equals-name collision still lands on the equipped suit.
+
+**Verification, thirteen shapes plus a twelve-shape no-op run.** Zero throws, all stable
+across three loads, `Object.prototype` clean, no console error on seven tabs for two
+classes. The regression guard (entry-keyed but unmarked) keeps its wear; the blocker
+(id equal to another row's name) still lands on `eq_a2`; a legacy shield name still lands
+on the wielded shield; two suits with none worn still DROP rather than relocate; pooled
+`qty:5`, unowned `qty:0` and a numeric-string `qty:"3"` all behave as before. **The no-op
+run compared this change against the previous commit with a seeded LCG: 11 of 12 shapes
+byte-identical, and the single shape that changed is the regression guard, changing in
+the direction that recovers state rather than losing it.**
+
+### Still open from these lenses, not fixed here
+
+- **A `null` element in `ch.equipment` throws, and `load()` answers by wiping the whole
+  roster.** On the import path it throws before storing, which is safe; the dangerous case
+  is a record already in localStorage. Pre-existing, unrelated to this branch, and it
+  belongs with L10 and L12 in one hardening pass rather than bolted on here.
+
+**Verification for the attribution redesign, twelve migration shapes through
+`importCharacter`, each re-loaded twice more.** Zero throws, **all twelve byte-stable across three loads**, and
 `Object.prototype` clean afterwards. Normal single suit lands on `eq_a`; two suits with
 one worn lands on the WORN one; two suits with none worn DROPS rather than relocating;
 the id-equals-name collision lands on `eq_a2`; an `equippedArmor` that is itself a
