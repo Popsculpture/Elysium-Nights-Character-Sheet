@@ -25,12 +25,22 @@ section instead.
 
 ## Needs an author ruling (blocked on Brandon, not on code)
 
+- **RULED 2026-08-10, not yet applied: `Dead-Eye Sniper` HAS been renamed `Zeroed In`.**
+  Apply the rename (key, display name, brief, any cross-reference) and then resort
+  Combat & Weapon Mastery so `Zeroed In` sits last, per the printed order. The original
+  question follows, for context.
 - **`Zeroed In` versus `Dead-Eye Sniper`.** The handoff's printed order for Combat &
   Weapon Mastery ends with `Zeroed In` and omits `Dead-Eye Sniper`, which currently
   occupies position 6. `Zeroed In` does not exist anywhere in the app. That reads as
   an unlisted rename, but the same handoff says the Deadeye naming is deliberately
   unresolved. **That category is currently unreordered.** Is `Dead-Eye Sniper`
   becoming `Zeroed In`?
+- **RULED 2026-08-10: Pneumatic Bypass is a Ripper Hot-Wired Implant, and it gets a
+  player toggle.** It lives under Class Buffs in the new Status Changes panel, specced
+  in `STATUS-CHANGES-SPEC.md`. That supplies the missing state: the recipient's sheet
+  cannot know an ally installed it, so the player says so. Its stale replacer prose
+  (the two copies in `class_stitcher_resources.js` and `briefs.js:179`) should be
+  corrected to increaser wording in the same pass. The original question follows.
 - **Pneumatic Bypass has nowhere to live.** Classified as a +1 unarmed increaser, but
   it is a Ripper Hot-Wire a Stitcher installs on an *ally*, and the character record
   has no field for "an ally augmented me." Recorded as a comment in `engine.js`,
