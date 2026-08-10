@@ -1,17 +1,17 @@
-# #GRID OS — Elysium Nights Character Sheet
+# #GRID OS: Elysium Nights Character Sheet
 
 An interactive, fully-automated character sheet for the **Elysium Nights** TTRPG, themed as a
 cyberpunk "#GRID" Smartdeck operating system. Build a Freelancer, level them up, and run them at
-the table — attributes, skills, proficiencies, conditions, weapons, ammo, and class features are
+the table. Attributes, skills, proficiencies, conditions, weapons, ammo, and class features are
 all tracked and derived live.
 
 ## Tabs
 
-- **#PRINT** — character creation & leveling (the foundation every other tab reads from). Export / import a record as JSON.
-- **Freelancer** — the live play dashboard: vitality/wounds, conditions, saves, senses, attacks (equipped weapons with firing modes & ammo), and class features.
-- **Inventory** — Stash, Chrome, and a gray-market storefront with selectable pricing modes.
-- **Codex** — searchable rules reference (action economy, defenses, cover, damage types, conditions).
-- **#GRID / Flow** — module stubs.
+- **#PRINT**: character creation & leveling (the foundation every other tab reads from). Export / import a record as JSON.
+- **Freelancer**: the live play dashboard for vitality/wounds, conditions, saves, senses, attacks (equipped weapons with firing modes & ammo), and class features.
+- **Inventory**: Stash, Chrome, and a gray-market storefront with selectable pricing modes.
+- **Codex**: searchable rules reference (action economy, defenses, cover, damage types, conditions).
+- **#GRID / Flow**: module stubs.
 
 ## Tech
 
