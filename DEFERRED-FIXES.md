@@ -8,6 +8,12 @@ Sync steps: 1 unarmed rewrite (done, `2ede818`), 2 renames and gear values (done
 `70f66b8`), 3 Triage Save DC and Stitcher class data (done, `28c17b2`), 4 Trauma Rig
 (done, `7e48e67`), 5 Armor Repair, 6 Environmental Hazards.
 
+**Two items were pulled forward and fixed BEFORE step 5, deliberately:** the `ch.rig`
+migration ordering (L8) and the missing-`qty` id-assignment mismatch (L9). Both are
+prerequisites for Armor Repair rather than deferred cleanup, for the reasons in "The
+Armor Repair question" at the bottom. They are the exception to the rule above, not a
+change to it.
+
 **Every review finding from steps 1, 2 and 4 has now been read and re-verified against
 `7e48e67`.** The consolidated list is the section "All review findings, read and
 merged" near the bottom. The bullets that used to say "unread" are gone; read that
@@ -324,43 +330,91 @@ load. Observations taken there would have been worthless. That is a second way t
 agents can diverge on the same question, and a reason to force a reload before
 believing any browser reading.
 
-## Found reviewing the entry-key refactor, NOT fixed
+## Found reviewing the entry-key refactor, NOW FIXED (the entry-identity floor)
 
 The refactor's wins are real and verified for equipment that carries ids: two rigs of
 one tier hold independent damage, a re-bought rig arrives full, the damage map prunes
 so it cannot grow across a campaign, and one resolver answers with an entry key. The
-findings below are about the path where that id is MISSING.
+findings below were about the path where that id is MISSING. **Both are now fixed**, in
+the order the Armor Repair verdict asked for and each proved against its own live
+reproduction before and after. Nothing in this section is outstanding.
 
-**ROOT CAUSE, one line, resurrects three bugs already marked fixed.** `entryKey(e)`
-in `app/js/engine.js` returns `e.id || e.name`, so an entry with no id keys on its
-NAME. Two predicates disagree about an entry with a MISSING `qty`:
+**ROOT CAUSE, one line, resurrected three bugs already marked fixed.** `entryKey(e)`
+in `app/js/engine.js:871` returns `e.id || e.name`, so an entry with no id keys on its
+NAME. Two predicates disagreed about an entry with a MISSING `qty`:
 
     app/js/store.js  (id assignment)  if (e.id || !(e.qty > 0) || isStackableName(e.name)) skip
     app/js/engine.js (ownership)      if (!e || (e.qty != null && e.qty <= 0)) return
 
-A missing `qty` fails the first (so it never gets an id) and passes the second (so it
-counts as owned). The result is a permanently name-keyed live rig, on every load. With
-two such rigs: `ownedRigs` returns two rows with the SAME key, the picker renders two
-options with the same value so one rig is unaddressable, damage lands in one shared
-slot and both rigs read the same integrity, and the Fabrication bench prints its chip
-twice. Those are verbatim the "one damage slot" and "bench counts one live rig twice"
-repros this file marks closed.
+A missing `qty` failed the first (so it never got an id) and passed the second (so it
+counted as owned). The result was a permanently name-keyed live rig, on every load.
 
-Reachable through `importCharacter` with hand-authored or legacy equipment, not
-through the Gray Market purchase path, which does set `qty` and does get an id.
+- ~~**The `ch.rig` migration ran before equipment ids existed.**~~ **FIXED by pure
+  relocation.** The `ch.rig` block now sits at `app/js/store.js:380-426`, immediately
+  AFTER the instance-id split at `:326-379`, instead of a hundred lines before it. The
+  block itself is unchanged, only when it runs. The split now carries the rule in a
+  comment at `:317-325`: **any migration that keys state on an equipment entry runs
+  AFTER the split, never before it.** That comment exists because the natural-looking
+  place is twenty lines earlier and the next person to add equipment-keyed state would
+  otherwise reintroduce this. See L8 for the repro and the numbers.
+- ~~**An entry with a MISSING `qty` never got an id.**~~ **FIXED at
+  `app/js/store.js:345`,** inside the split: a NON-STACKABLE row with no id, whose `qty`
+  fails `qty > 0` but which the engine still reads as owned, is normalized to `qty: 1`
+  and then splits like any other row, receiving an `eq_` id. So **every owned
+  non-stackable row carries an `eq_` id** is now an invariant, which is the floor
+  `ch.armorDR` and `ch.shieldWear` need in step 5. See L9 for the repro and the numbers.
 
-**Likely fix:** make the two predicates agree about a missing `qty`, so anything the
-engine treats as owned also gets an id assigned. NOT done here because that changes id
-assignment for ALL equipment, not just rigs, and the blast radius needs its own
-verification pass rather than being smuggled in.
+Deliberately still id-less, because the two predicates already agree about them:
+stackable rows and unknown/custom items (pooled, legitimately name-keyed), and any row
+the engine also reads as unowned (`qty` 0, negative, or `""`). A numeric-string `qty`
+like `"3"` still splits into its full three instances; it was never in the broken set.
+
+**What the blast-radius pass found, since the earlier note deferred this as "changes id
+assignment for ALL equipment".** Measured, not reasoned: a record whose non-stackable
+rows have no `qty` now migrates **identically in every field** to the same record with
+`qty: 1`. `equippedWeapons`, `equippedArmor`, `equippedShield`, `equippedFocus`, `carry`
+and `slotInert` all rekey from the name to the new id through the split's own
+`nameToIds` pass, `findEntry` resolves all three equip slots, and encumbrance agrees
+(`current: 4` in both, where the no-`qty` record previously reported `0`). Nothing was
+found that depends on an entry having no id. Three things worth recording:
+
+- **`ch.racked` is missing from the split's rekey pass** (`app/js/store.js:363-378`
+  covers `equippedWeapons`, `equippedArmor/Shield/Focus`, `carry` and `slotInert`, and
+  omits `racked`). This is **pre-existing and unchanged by the fix**: a name-keyed
+  `racked` entry is already dead for any row that splits, confirmed by measuring both
+  cases, where `rackState().byItem` is empty and the encumbrance row reads
+  `rackedIn: null` with `qty: 1` exactly as it does without one. Not worked around.
+  **The one-line follow-up is to add `racked` to the rekey pass, rekeying both its keys
+  and its values**, since it is the only per-entry map the pass forgets.
+- **A pre-fix save that already persisted a NAME key in `ch.rig.hp`** (only reachable
+  for the broken shape) loses that damage once, on the first load after this fix: the
+  row now gets an id and the block's prune drops the orphan name key. That is the
+  settled ruling applied to damage that was already being shared between two colliding
+  rigs, so it is correct rather than a regression.
+- **`nameToIds[e.name] = ids` is last-write-wins** for two rows of the same name, so a
+  surviving name-keyed reference resolves to the second row's first instance. Nit,
+  pre-existing for `qty: 1` duplicates, unchanged in kind.
 
 The other two lenses have now been read. Between them they found one genuinely new
-defect (the rig migration runs before equipment ids exist, so it keys the pick and the
-damage on the item NAME and the split then orphans both), one hardening item (an
-unguarded `equipment` read whose throw makes `load()` discard the whole roster) and one
-inert nit (`rig.key === ""`). All three are written up in full in the consolidated
-section below. Both lenses also confirmed the win: every shape whose entries DO carry
-ids migrates exactly as specified and is stable across repeated `load()` calls.
+defect (the rig migration ordering, now fixed), one hardening item (an unguarded
+`equipment` read whose throw makes `load()` discard the whole roster, L10, still open)
+and one inert nit (`rig.key === ""`, L13, still open). All three are written up in full
+in the consolidated section below. Both lenses also confirmed the win: every shape whose
+entries DO carry ids migrates exactly as specified and is stable across repeated
+`load()` calls.
+
+**Verification run for both fixes.** Thirty migration shapes through `importCharacter`
+(which calls the same `migrate`), each snapshotted on load 1 and re-migrated twice more:
+zero throws, all thirty byte-stable across three loads. The twenty shapes that carry ids
+or a real `qty` produce output identical to the pre-fix run, which is what makes FIX 1 a
+behaviour-neutral move. All six tiers re-verified after both fixes: Output Bonus
++0/+1/+1/+2/+2/+3, Triage Save DC 8/9/9/10/10/11 at Tech +0, Mod Slots equal to the
+Tier, traits 1 through 6, Integrity 15/20/25/30/35/40, nodes Standard through Apex, and
+the Medical Baseline grade flipping to Advanced at Trauma Grade [2]. A non-Stitcher
+holding a Black Clinic derives the whole `d.rig` record with `d.triage` absent. All seven
+tabs render for a Stitcher and for a non-Stitcher with no console error. The settled
+ruling still falls out: dropping a damaged rig and acquiring another leaves the new one
+at 40/40 with the orphan pruned and the other rig's damage untouched.
 
 **Environment note.** Two verifiers drove `localhost:8777` concurrently and stepped on
 each other's roster. One moved to a private origin and re-ran everything cleanly, but
@@ -376,6 +430,9 @@ Three reviewers read the three unread task files and re-verified every item agai
 live findings**, because several were the same defect seen from a different angle. Six
 were already fixed by a later commit and two were rejected; those are in the closing
 tally, not in the live list.
+
+**Two of the thirteen are now closed, L8 and L9, leaving eleven live.** Their entries
+below are struck and carry their before-and-after numbers.
 
 The live list is ordered by **what a player would actually notice**, not by how
 interesting the defect is. In-app reachable wrong numbers come first; things reachable
@@ -424,32 +481,31 @@ terms.
 
 **GROUP C: per-piece mutable state is keyed on something that is not the equipment
 entry, and two predicates disagree about which entries have an entry id at all.**
-Members L7, L9 and the step-5 risk. `entryKey(e)` at `app/js/engine.js:871` returns
-`e.id || e.name`; `app/js/store.js:364` withholds an id from a row with a missing
-`qty`; `app/js/engine.js:1315` counts that same row as owned; and `ch.shieldWear` at
-`app/js/store.js:129` never used an entry key in the first place.
-**One change closes the whole class:** make the two predicates agree, by normalizing a
-missing or non-numeric `qty` on a non-stackable row to 1 inside the split at
-`app/js/store.js:361-379`, so "every owned non-stackable row carries an `eq_` id"
-becomes an invariant. Then key every per-piece map on `entryKey`, which retires
-`shieldWear`'s name key and gives Armor Repair a floor to stand on. The earlier note in
-this file deferred this as "changes id assignment for ALL equipment"; the narrowed
-version only affects rows that today receive NO id and are therefore already name-keyed
-and already broken, and the split's own `nameToIds` rekey pass then repairs their
-`carry` and `equippedWeapons` references for free. It still deserves its own
-verification pass, but a smaller one than that note assumed.
+Members L7, L9 and the step-5 risk. **The predicate half is now DONE.**
+`app/js/store.js:345` normalizes a missing or non-numeric `qty` on a non-stackable row
+to 1 inside the split at `:326-379`, so `app/js/engine.js:1315` and the split's own skip
+clause at `:346` finally agree and **"every owned non-stackable row carries an `eq_`
+id" is an invariant.** `entryKey(e)` at `app/js/engine.js:871` still returns
+`e.id || e.name`, which is correct: the name branch now serves only pooled stackables.
+**What remains in this group is step 5's own work:** key every per-piece map on
+`entryKey`, which retires `shieldWear`'s name key (declared `app/js/store.js:129`,
+normalized `:213-214`, read `app/js/engine.js:900`) and gives `ch.armorDR` a floor to
+stand on. The blast-radius pass the earlier note asked for was run; see the
+entry-identity section above for what it measured, including the one gap it found
+(`ch.racked` is absent from the rekey pass) and deliberately did not work around.
 
 **GROUP D: `migrate()` is order-dependent and guard-dependent, and its newest blocks do
-not survive either.** Members L8, L10, L12 and L13. The `ch.rig` block sits at
-`app/js/store.js:259-286`, about a hundred lines BEFORE the instance-id split at
-`:361-397`, and the split's name-to-id rekey pass at `:380-396` covers
+not survive either.** Members L8, L10, L12 and L13. **L8 is now DONE:** the `ch.rig`
+block was relocated to `app/js/store.js:380-426`, immediately after the instance-id
+split at `:326-379`, and the ordering rule is recorded in a comment at the split
+(`:317-325`). The split's name-to-id rekey pass at `:363-378` still covers
 `equippedWeapons`, `equippedArmor/Shield/Focus`, `carry` and `slotInert` while omitting
-`ch.rig`. Separately, `app/js/store.js:165` is a bare `if (!ch.proficiencies) return;`
-and every migration added since sits after it.
-**One change closes the group:** move all equipment-keyed migration blocks to AFTER the
-split at `:397` (or add their keys to the rekey pass), and turn the `:165` early return
-into a guard around only the proficiency conversion it was written for, so a record
-missing one field stops skipping a hundred and fifty lines of unrelated normalization.
+`ch.racked`, which no longer matters for `ch.rig` but is still a gap of its own.
+**Still open in this group:** `app/js/store.js:165` is a bare
+`if (!ch.proficiencies) return;` and every migration added since sits after it (L12);
+plus L10 and L13. Turn the `:165` early return into a guard around only the proficiency
+conversion it was written for, so a record missing one field stops skipping a hundred
+and fifty lines of unrelated normalization.
 
 ### Live findings
 
@@ -543,10 +599,12 @@ Knuckles and Shock Gloves. The tab reads `WEAPONS (2)`, zero weapon rows render,
 reads `WEAPONS (1)` beside zero rows. **Not tracked.**
 
 **L7. Shield Durability is keyed on the shield's NAME, so two shields share one wear
-track and a re-bought shield arrives already worn.** `app/js/store.js:129` declares
+track and a re-bought shield arrives already worn.** STILL OPEN, and now the last name-keyed per-piece map in
+the app. `app/js/store.js:129` declares
 `shieldWear: {}` as `{shieldName: boxesMarked}` and `app/js/engine.js:900` reads
 `(ch.shieldWear || {})[shield.name]`; the writes at `app/js/combat.js:3482-3483` use the
-same name key. **Severity: medium, and in-app reachable with no import.** GROUP C. This
+same name key. **Severity: medium, and in-app reachable with no import.** GROUP C, whose
+predicate half is now closed, so the entry-id floor this needs already exists. This
 is not from the three task files; it was found while answering the Armor Repair question
 below, and it is **the same defect the rig work already ruled on and fixed**, one item
 over. Failing scenario, static, repro not driven: shields are non-stackable so two Scrap
@@ -558,39 +616,49 @@ always arrives at full integrity" applied by parity. **Not tracked.** It should 
 in the same pass as Armor Repair, because they are the same mechanic and will otherwise
 disagree with each other on screen.
 
-**L8. The `ch.rig` migration runs about a hundred lines before equipment ids exist, so
-it keys the pick and the damage on the item NAME, and the split then orphans both.**
-GROUP D. `app/js/store.js:269` calls `EN.engine.ownedRigs(ch)` from inside the rig block
-at `:259-286`; the instance-id split is at `:361-397` and its rekey pass at `:380-396`
-omits `ch.rig`. **Severity: high where reachable, and it is the one genuinely new item in
-the three task files. Reachability is narrow: `importCharacter` only.** Failing
-scenario, reproduced at runtime: a legacy Stitcher owning a Field Kit and a Black Clinic
+**~~L8. The `ch.rig` migration runs about a hundred lines before equipment ids exist, so
+it keys the pick and the damage on the item NAME, and the split then orphans both.~~**
+**FIXED, by relocating the block and nothing else.** GROUP D. The block now runs at
+`app/js/store.js:380-426`, after the split at `:326-379`; the ordering rule it violated
+is written down at the split, `:317-325`. **Repro before, driven through
+`importCharacter` at runtime:** a legacy Stitcher owning a Field Kit and a Black Clinic
 whose entries carry `qty:1` and no `id`, with
-`rig:{tier:"Field Kit", hpSpent:10, hpTier:"Field Kit"}`, migrates to
+`rig:{tier:"Field Kit", hpSpent:10, hpTier:"Field Kit"}`, migrated to
 `{key:"Field Kit Trauma Rig [0]", hp:{"Field Kit Trauma Rig [0]":10}}`; the split then
-mints unrelated ids, `rigStats` lands on the **Black Clinic** at 40/40 with output +3,
-and `derive().triage.saveDC` reads **11** where the control record with ids reads **8**.
-It is also not idempotent: a second `load()` prunes the now-dead name keys, so the 10
-recorded points are destroyed rather than misfiled (`{scrap:false, key:null, hp:{}}`).
-Both spec clauses in the block's own comment at `:244-258` fail on exactly the legacy
-shape the block exists to convert. No in-app insert can produce an id-less rig row, and
-that was checked: `inventory.js:106` and `builder.js:993` mint ids for non-stackables,
-the id-less pushes at `inventory.js:104` and `builder.js:989` are stackable-only, and
-`isStackableName("Black Clinic Trauma Rig [5]")` is `false`. **Not tracked** (the
-entry-key section above records only the `qty`/`entryKey` root cause). **Fix before step
-5, see the Armor Repair verdict.**
+minted `eq_u0ugqig` / `eq_55axa54`, `rigStats` landed on the **Black Clinic** at 40/40
+with output +3, and `derive().triage.saveDC` read **11** where the control record with
+ids read **8**. It was also not idempotent: a second `load()` pruned the now-dead name
+keys, destroying the 10 recorded points rather than misfiling them
+(`{scrap:false, key:null, hp:{}}`). **After:** the same legacy record migrates to
+`{key:"eq_7ljilpi", hp:{"eq_7ljilpi":10}}` and derives Field Kit **5/15**, output **+0**,
+Basic Medkit, **saveDC 8**, byte-identical to the control, and unchanged across a second
+and third `load()`. The control record itself is unchanged in every field, which is the
+proof that the move is behaviour-neutral for anything that already carries ids. Both
+spec clauses in the block's own comment now hold on exactly the legacy shape the block
+exists to convert. No in-app insert can produce an id-less rig row, and that was
+checked: `inventory.js:106` and `builder.js:993` mint ids for non-stackables, the id-less
+pushes at `inventory.js:104` and `builder.js:989` are stackable-only, and
+`isStackableName("Black Clinic Trauma Rig [5]")` is `false`.
 
-**L9. An entry with a MISSING `qty` never gets an id, so two rigs share one key, one
-damage slot, one picker option and a doubled bench chip.** GROUP C. **Severity: medium,
-import-only. ALREADY TRACKED IN FULL** in the entry-key section above, including the
-rationale for deferring it. Restated here only for the one thing the two reports added:
-their suggested fixes differ, and the narrow one is to normalize the missing `qty` in
-the split rather than to require a real `e.id` in `ownedRigs`, because the former makes
-the invariant true for all consumers at once. Runtime confirmation that it is still
-live: two id-less, `qty`-less Black Clinic rows produce two `ownedRigs` entries with the
-same key, two picker options with the identical value `key:Black Clinic Trauma Rig [5]`
-so one rig is unaddressable, one shared damage slot with both rows reading
-`Black Clinic 23/40`, and a doubled Advanced Medkit chip on the bench.
+**~~L9. An entry with a MISSING `qty` never gets an id, so two rigs share one key, one
+damage slot, one picker option and a doubled bench chip.~~** **FIXED at
+`app/js/store.js:345`.** GROUP C. The narrow fix was the right one: normalize the
+missing `qty` in the split rather than require a real `e.id` in `ownedRigs`, because it
+makes the invariant true for every consumer at once. **Repro before, at runtime and on
+screen:** two id-less, `qty`-less Black Clinic rows produced two `ownedRigs` entries with
+the same key, so `hp[k0]=23` then `hp[k1]+=7` collapsed to
+`{"Black Clinic Trauma Rig [5]": 30}` and both rows read **10/40**; the picker rendered
+two options with the identical value `key:Black Clinic Trauma Rig [5]`, leaving #1
+unaddressable; the Fabrication bench printed
+`Advanced Medkit (Black Clinic Trauma Rig [5]) · BASIC` **twice** and Medtech read
+**Edge 4**; and the Stash header read **0 ENTRIES**, because every other surface gates on
+`qty > 0` and so could not see the rows the engine called owned. **After:** the two rows
+are `eq_alp2t54` and `eq_avc0ewy`, the picker renders two distinct option values, the
+bench prints the chip **once** with Medtech at **Edge 3**, and the Stash reads **2
+ENTRIES / TRAUMA RIGS (2)**. Damage driven through the real DAMAGE button on the
+Freelancer tab: 12 on #1 and 31 on #2 hold independently at **28/40** and **9/40**,
+survive switching between them, survive a detour through the Scrap Rig and back, and
+survive a full page reload.
 
 **L10. The new rig read has no `Array.isArray` guard, and `load()` answers the throw by
 discarding the entire roster.** GROUP D. `app/js/engine.js:1314`
@@ -727,35 +795,58 @@ What armor does **not** sidestep, and this is the part that matters:
    read `shieldWear` first and copy it. That single fact is the strongest argument for
    fixing the floor before starting, rather than after.
 
-**Recommendation, in the order to do it.**
+**Recommendation, in the order to do it.** The first two are **DONE**; only the third is
+left, and it belongs to step 5.
 
-- **First, unconditionally, because it is a pure move with zero behavior change for any
-  record whose entries carry ids:** relocate the `ch.rig` block from
-  `app/js/store.js:259-286` to after the split at `:397`, and re-run the twelve-shape
-  migration check already described in the settled section. This closes L8, and it
-  establishes the rule that step 5 needs: **equipment-keyed migration runs after the
-  split, never before it.**
-- **Second, and this is the one the file previously deferred:** normalize a missing or
-  non-numeric `qty` on a non-stackable row to 1 inside the split, so
-  `app/js/store.js:364` and `app/js/engine.js:1315` finally agree and "every owned
-  non-stackable row carries an id" becomes true. The blast radius is smaller than the
-  earlier note assumed, because the only rows whose behavior changes are the ones that
-  today get no id and are therefore already name-keyed and already wrong, and the
-  split's `nameToIds` rekey pass repairs their `carry` and `equippedWeapons` references
-  as a side effect. It still wants its own verification pass. Do that pass now, on one
-  mechanic (rigs), rather than later on three (rigs, shields, armor).
-- **Third, inside step 5 itself:** key `ch.armorDR` on `entryKey`, and convert
-  `ch.shieldWear` to entry keys in the same commit, with a migration that attributes
-  existing name-keyed wear to the first owned entry of that name and drops it when none
-  is owned, which is the pattern `firstKeyOfTier` at `app/js/store.js:272-275` already
-  established for rigs. Apply the settled ruling by parity: a re-acquired piece of armor
-  arrives at full DR, and a re-acquired shield arrives unworn.
+- ~~**First:** relocate the `ch.rig` block to after the split.~~ **DONE.** It lives at
+  `app/js/store.js:380-426`, and the rule step 5 needs is written down at the split
+  itself (`:317-325`): **equipment-keyed migration runs after the split, never before
+  it.** Thirty migration shapes re-run afterwards, zero throws, all stable across three
+  loads, and every id-carrying shape byte-identical to before the move.
+- ~~**Second:** normalize a missing or non-numeric `qty` on a non-stackable row to 1
+  inside the split.~~ **DONE** at `app/js/store.js:345`, with its own verification pass.
+  `app/js/store.js:346` and `app/js/engine.js:1315` now agree, and **"every owned
+  non-stackable row carries an `eq_` id" is true.** The blast radius was measured, not
+  assumed: a record with no `qty` on its non-stackable rows now migrates identically in
+  every field to the same record with `qty: 1`, including all four equip slots, `carry`,
+  `slotInert` and encumbrance. Done on one mechanic (rigs) rather than later on three.
+- **Third, and all that is left, inside step 5 itself:** key `ch.armorDR` on `entryKey`,
+  and convert `ch.shieldWear` to entry keys in the same commit, with a migration that
+  attributes existing name-keyed wear to the first owned entry of that name and drops it
+  when none is owned, which is the pattern `firstKeyOfTier` at `app/js/store.js:412-415`
+  already established for rigs. Put both migrations **after the split**, per the rule now
+  recorded there. Apply the settled ruling by parity: a re-acquired piece of armor arrives
+  at full DR, and a re-acquired shield arrives unworn. Point 1 of the four reasons above
+  ("armor lives entirely inside the broken predicate") no longer applies: the predicate is
+  fixed, so an imported Kevlar Weave with no `qty` now gets an `eq_` id like everything
+  else. Points 2, 3 and 4 stand. What step 5 must not do under any circumstance is
+  introduce a **third** name-keyed per-piece map.
 
-**If Brandon wants to keep deferring the predicate fix**, step 5 is still safe to write
-provided it does two things: put the armor migration after the split, and key `armorDR`
-on `entryKey` anyway. The id-less imported rows will then collide exactly as rigs do,
-which is a known, recorded, import-only limitation rather than a new one. What step 5
-must not do under any circumstance is introduce a **third** name-keyed per-piece map.
+## Still open after the ordering and qty fixes
+
+- **Duplicate ids reopen the collision class.** `app/js/store.js` around line 346 skips
+  any row that already carries an `id` without checking the id is unique, so two rows
+  sharing one `id` reproduce the whole defect set: `ownedRigs` returns two entries with
+  one distinct key, damage lands in one shared slot with both rows reading the same
+  integrity, and the picker renders two options with the identical value leaving one
+  unaddressable. Measured with two rows both carrying `id: "eq_DUP"`. The qty fix
+  closed the missing-id door; this is the other one. Reachable by import and by
+  hand-authored records. The split is the only place that could enforce identity, so
+  the fix belongs there: reassign an id that collides with one already seen.
+- **`ch.racked` is missing from the split's rekey pass** (`app/js/store.js` around
+  lines 363 to 378, which covers `equippedWeapons`, the armor, shield and focus slots,
+  `carry` and `slotInert`). Pre-existing and unchanged by these fixes: a name-keyed
+  `racked` entry is already dead for any row that splits, confirmed by measuring both
+  the qty and no-qty cases. It is the only per-entry map the pass forgets. One-line
+  follow-up, rekeying both its keys and its values.
+- **`nameToIds` is last-write-wins** for two rows sharing one name, so a surviving
+  name-keyed reference lands on the second row's first instance. Nit, pre-existing for
+  duplicate rows generally.
+- **A pre-fix save that already persisted a NAME key in `ch.rig.hp` loses that damage
+  once**, on the first load after the qty fix, because the row now receives an id and
+  the prune drops the orphan. Reachable only for the broken shape, whose damage was
+  already being shared between two colliding rigs, so this is the settled ruling being
+  applied rather than a regression. Recorded so it is not rediscovered as a bug.
 
 ## Environment
 

@@ -240,50 +240,6 @@ EN.store = (function () {
     if (ch.equippedShield === undefined) ch.equippedShield = null;
     if (ch.equippedFocus === undefined) ch.equippedFocus = null;
     if (!ch.weaponAmmo) ch.weaponAmmo = {};
-    /* Trauma Rig state; absent on every character built before Rigs existed.
-       Both the pick and the damage are keyed on the EQUIPMENT ENTRY, so they name one
-       specific Rig instead of a tier that any number of Rigs can share. Records saved
-       before that carry {tier, scrap, hpSpent, hpTier}, all of them tier names, and are
-       converted here:
-         - tier      -> key, if the character still owns a Rig of that tier. An unowned
-                        pick is dropped, which is what the engine was already doing with
-                        it, and it cannot come back: a re-bought Rig is a new entry.
-         - hpSpent   -> hp[key] for the Rig hpTier names, again only if one is owned.
-                        Damage that cannot be attributed to an entry is dropped, per the
-                        ruling that an unattributable Rig arrives at full Integrity.
-       Then hp is pruned to entries the character still holds, so a campaign's worth of
-       bought-and-dropped Rigs cannot make the map grow without bound, and a pick whose
-       entry is gone is cleared for the same reason. Every read is type-guarded: junk in
-       any field, an hp that is already present, a rig that is an array or a string, and a
-       record with no ch.rig at all all normalize without throwing. */
-    if (!ch.rig || typeof ch.rig !== "object" || Array.isArray(ch.rig)) ch.rig = {};
-    var rg = ch.rig;
-    rg.scrap = !!rg.scrap;
-    var oldTier = typeof rg.tier === "string" ? rg.tier : null;
-    var oldHpTier = typeof rg.hpTier === "string" ? rg.hpTier : null;
-    var oldSpent = (typeof rg.hpSpent === "number" && isFinite(rg.hpSpent) && rg.hpSpent > 0) ? Math.floor(rg.hpSpent) : 0;
-    delete rg.tier; delete rg.hpSpent; delete rg.hpTier;
-    if (typeof rg.key !== "string") rg.key = null;
-    if (!rg.hp || typeof rg.hp !== "object" || Array.isArray(rg.hp)) rg.hp = {};
-    // the engine owns the ownership question, here as everywhere else
-    var ownedRigs = (EN.engine && EN.engine.ownedRigs) ? EN.engine.ownedRigs(ch) : [];
-    var liveKeys = {};
-    ownedRigs.forEach(function (o) { liveKeys[o.key] = 1; });
-    function firstKeyOfTier(tier) {
-      var hit = ownedRigs.find(function (o) { return o.row.tier === tier; });
-      return hit ? hit.key : null;
-    }
-    if (!rg.key && oldTier) rg.key = firstKeyOfTier(oldTier);
-    if (oldSpent > 0 && oldHpTier) {
-      var dmgKey = firstKeyOfTier(oldHpTier);
-      if (dmgKey && rg.hp[dmgKey] == null) rg.hp[dmgKey] = oldSpent;
-    }
-    Object.keys(rg.hp).forEach(function (k) {
-      var v = rg.hp[k];
-      if (!liveKeys[k] || typeof v !== "number" || !isFinite(v) || v <= 0) delete rg.hp[k];
-      else rg.hp[k] = Math.floor(v);
-    });
-    if (rg.key && !liveKeys[rg.key]) rg.key = null;
     if (!ch.vehicleMods || typeof ch.vehicleMods !== "object") ch.vehicleMods = {};   // {vehicleName: [modKey]}
     // a limb-platform mod records which platform it sits in; slotted pieces pay no SP
     (ch.cyberware || []).forEach(function (cw) {
@@ -358,10 +314,36 @@ EN.store = (function () {
     // equipped/carried state; equip/carry re-key from the old catalog name to
     // the specific instance id, keeping the first split instance's state and
     // leaving any extras as unequipped, uncarried spares.
+    //
+    // ORDERING RULE, and it is not optional: ANY migration that keys state on an
+    // EQUIPMENT ENTRY (engine.entryKey) must run AFTER this split, never before it.
+    // Before the split runs, a legacy row carries no id, so entryKey() falls back to
+    // the item NAME; the split then mints real ids and every name key just written is
+    // an orphan, which the next load()'s prune deletes. The ch.rig block below used to
+    // sit a hundred lines earlier, beside the other equipment defaults, and lost a
+    // legacy record's Rig damage and recorded pick after exactly one load because of
+    // it. The natural-looking place is the wrong place. Put it after this block.
     if (Array.isArray(ch.equipment)) {
       var nameToIds = {}, splitEquipment = [];
       ch.equipment.forEach(function (e) {
-        if (e.id || !(e.qty > 0) || (EN.engine && EN.engine.isStackableName ? EN.engine.isStackableName(e.name) : true)) {
+        var stackable = (EN.engine && EN.engine.isStackableName) ? EN.engine.isStackableName(e.name) : true;
+        // Two predicates used to disagree about a row with a MISSING or non-numeric
+        // qty: this one skipped it, so it never received an instance id, while the
+        // engine's ownership test (`e.qty != null && e.qty <= 0` -> not owned) counted
+        // it as owned. engine.entryKey() then fell back to the item NAME forever, so two
+        // such rows collided on one key: one shared damage slot, two picker options with
+        // the same value leaving one piece unaddressable, a doubled crafting-bench chip.
+        // Normalizing that qty to 1 on a NON-STACKABLE row makes both predicates agree
+        // that the row is one owned thing, and it receives an id like any other, which
+        // is the invariant every per-piece map (ch.rig.hp today, armor and shield state
+        // later) needs: every owned non-stackable row carries an eq_ id.
+        // Deliberately NOT touched: stackable rows and unknown/custom items, which are
+        // pooled and legitimately keyed on their name; any row that already splits
+        // (qty > 0, including a numeric string, which keeps its full count); and any row
+        // the engine also reads as unowned (qty 0, negative, or ""), which stays id-less
+        // because the two predicates already agree about it.
+        if (!e.id && !stackable && !(e.qty > 0) && !(e.qty != null && e.qty <= 0)) e.qty = 1;
+        if (e.id || !(e.qty > 0) || stackable) {
           splitEquipment.push(e);
           return;
         }
@@ -395,6 +377,53 @@ EN.store = (function () {
         ch.slotInert = newSlotInert;
       }
     }
+    /* Trauma Rig state; absent on every character built before Rigs existed.
+       Both the pick and the damage are keyed on the EQUIPMENT ENTRY, so they name one
+       specific Rig instead of a tier that any number of Rigs can share. Which is why
+       this block sits HERE, after the instance-id split above and not beside the other
+       equipment defaults: it resolves entry keys, so it has to run once the entries
+       actually carry their ids. See the ordering rule at the split.
+       Records saved before that carry {tier, scrap, hpSpent, hpTier}, all of them tier
+       names, and are converted here:
+         - tier      -> key, if the character still owns a Rig of that tier. An unowned
+                        pick is dropped, which is what the engine was already doing with
+                        it, and it cannot come back: a re-bought Rig is a new entry.
+         - hpSpent   -> hp[key] for the Rig hpTier names, again only if one is owned.
+                        Damage that cannot be attributed to an entry is dropped, per the
+                        ruling that an unattributable Rig arrives at full Integrity.
+       Then hp is pruned to entries the character still holds, so a campaign's worth of
+       bought-and-dropped Rigs cannot make the map grow without bound, and a pick whose
+       entry is gone is cleared for the same reason. Every read is type-guarded: junk in
+       any field, an hp that is already present, a rig that is an array or a string, and a
+       record with no ch.rig at all all normalize without throwing. */
+    if (!ch.rig || typeof ch.rig !== "object" || Array.isArray(ch.rig)) ch.rig = {};
+    var rg = ch.rig;
+    rg.scrap = !!rg.scrap;
+    var oldTier = typeof rg.tier === "string" ? rg.tier : null;
+    var oldHpTier = typeof rg.hpTier === "string" ? rg.hpTier : null;
+    var oldSpent = (typeof rg.hpSpent === "number" && isFinite(rg.hpSpent) && rg.hpSpent > 0) ? Math.floor(rg.hpSpent) : 0;
+    delete rg.tier; delete rg.hpSpent; delete rg.hpTier;
+    if (typeof rg.key !== "string") rg.key = null;
+    if (!rg.hp || typeof rg.hp !== "object" || Array.isArray(rg.hp)) rg.hp = {};
+    // the engine owns the ownership question, here as everywhere else
+    var ownedRigs = (EN.engine && EN.engine.ownedRigs) ? EN.engine.ownedRigs(ch) : [];
+    var liveKeys = {};
+    ownedRigs.forEach(function (o) { liveKeys[o.key] = 1; });
+    function firstKeyOfTier(tier) {
+      var hit = ownedRigs.find(function (o) { return o.row.tier === tier; });
+      return hit ? hit.key : null;
+    }
+    if (!rg.key && oldTier) rg.key = firstKeyOfTier(oldTier);
+    if (oldSpent > 0 && oldHpTier) {
+      var dmgKey = firstKeyOfTier(oldHpTier);
+      if (dmgKey && rg.hp[dmgKey] == null) rg.hp[dmgKey] = oldSpent;
+    }
+    Object.keys(rg.hp).forEach(function (k) {
+      var v = rg.hp[k];
+      if (!liveKeys[k] || typeof v !== "number" || !isFinite(v) || v <= 0) delete rg.hp[k];
+      else rg.hp[k] = Math.floor(v);
+    });
+    if (rg.key && !liveKeys[rg.key]) rg.key = null;
     // cyberware: legacy string entries → objects. sp:0 so old manual marks don't
     // retroactively spike Static; chrome bought from the market carries real SP.
     if (Array.isArray(ch.cyberware)) {
