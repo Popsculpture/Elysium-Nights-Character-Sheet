@@ -10,16 +10,20 @@ report. Parse with UTF-8; a naive print can choke on the arrow glyphs, so set
 
 `DEFERRED-FIXES.md` cites these by their original task id, which is the filename here.
 
-| File | Round | Unread findings still in it |
+| File | Round | Read? |
 | ----- | ----- | ----- |
-| `wgxtatdtw.json` | Unarmed two-phase rewrite | none, all read in the consolidation pass |
-| `w2e5slhtt.json` | Renames and gear values | none, all read |
-| `wvcpodf55.json` | Entry-key refactor | none, all read |
-| `w07f74fu1.json` | The consolidation pass itself | the merged prioritized list |
-| `wiq3wag7g.json` | Migration ordering and qty predicates | none |
-| `w4qe3petu.json` | Duplicate-id door | TWO unread lenses |
-| `wx7cb0612.json` | Armor Repair build | the three lens reports |
-| `wmudlussk.json` | Armor Repair defect fixes | TWO unread lenses |
-| `wbkcw3wnd.json` | Environmental Hazards build | remaining clock findings; the vacuum lens DIED and is absent |
+| `wgxtatdtw.json` | Unarmed two-phase rewrite | read, in the consolidation pass |
+| `w2e5slhtt.json` | Renames and gear values | read |
+| `wvcpodf55.json` | Entry-key refactor | read |
+| `w07f74fu1.json` | The consolidation pass itself | read; its merged list is the L-numbered section in `DEFERRED-FIXES.md` |
+| `wiq3wag7g.json` | Migration ordering and qty predicates | read |
+| `w4qe3petu.json` | Duplicate-id door | **all three lenses read 2026-08-10.** Both live findings fixed |
+| `wx7cb0612.json` | Armor Repair build | **NOT READ.** Three lens reports, never opened |
+| `wmudlussk.json` | Armor Repair defect fixes | lens 0 (migration mis-attribution) read in full and its blocker fixed; **lenses 1 and 2 read only by headline** |
+| `wbkcw3wnd.json` | Environmental Hazards build | **both surviving lenses read 2026-08-10**, all five findings fixed. The vacuum lens DIED and is absent; that subsystem was verified directly instead |
 
-The three rows worth opening first are `w4qe3petu`, `wmudlussk` and `wbkcw3wnd`.
+**What is genuinely still unread**, and worth knowing before trusting any "all clear":
+`wx7cb0612` in full, and two of the three lenses in `wmudlussk`. Both cover Armor Repair,
+which has since merged, so anything in them now reviews shipped code rather than blocking
+a merge. Every lens that WAS read is recorded in `DEFERRED-FIXES.md` with its finding
+either fixed or explicitly left open.

@@ -1,11 +1,13 @@
 # Status Changes panel
 
 Author spec, given 2026-08-10. Reworks the Conditions panel into one place for every
-temporary state a Freelancer can be under. Not built yet.
+temporary state a Freelancer can be under. **BUILT, and merged to `main` on 2026-08-10.**
 
-**Where this belongs.** It surfaces Hazards, which live on branch `env-hazards-wip`.
-Build it there, or after that branch merges. It also gives Pneumatic Bypass its home,
-which closes a question that has been open since the unarmed rewrite.
+Every clause below is implemented. The build notes, including the four decisions this
+spec left open and how each was resolved, are in `DEFERRED-FIXES.md` under "Status
+Changes panel". It also gave Pneumatic Bypass its home, which closed a question that had
+been open since the unarmed rewrite: the panel supplies the state the sheet could not
+derive, and the engine reads it as one step on the unarmed strike.
 
 ## 1. Rename
 
