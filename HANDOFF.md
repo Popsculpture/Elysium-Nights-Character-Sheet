@@ -8,16 +8,16 @@ Continuing work on the Elysium Nights Character Sheet (`C:\Users\Popsc\OneDrive\
 
 ## Read these first, in this order
 
-1. `DEFERRED-FIXES.md` — the running log. It carries five invariants this codebase paid for one at a time, each learned by getting it wrong. Do not relitigate them.
-2. `STATUS-CHANGES-SPEC.md` — the next feature, fully specced.
-3. `review-findings/README.md` — archived adversarial-review output. Rows `w4qe3petu`, `wmudlussk` and `wbkcw3wnd` still have unread lenses.
+1. `DEFERRED-FIXES.md`: the running log. It carries five invariants this codebase paid for one at a time, each learned by getting it wrong. Do not relitigate them.
+2. `STATUS-CHANGES-SPEC.md`: the next feature, fully specced.
+3. `review-findings/README.md`: archived adversarial-review output. Rows `w4qe3petu`, `wmudlussk` and `wbkcw3wnd` still have unread lenses.
 
 ## State
 
 `main` is deployed and healthy. Two branches carry unmerged work:
 
-- **`armor-repair-wip`** — Armor Repair. One blocking defect: the migration's idempotency shortcut runs before attribution, so a legacy key that collides with a live entry key relocates armor wear onto the wrong piece. Three rounds have patched this. It needs a design change: make idempotency *stated* by the record rather than *inferred* from whether a key looks like an entry key.
-- **`env-hazards-wip`** — Environmental Hazards. The thin-air Long Rest lock drifts, because the hazard row is never decremented when an ability clears Fatigue. The vacuum lens died on an API error, so that subsystem is unverified.
+- **`armor-repair-wip`**: Armor Repair. One blocking defect: the migration's idempotency shortcut runs before attribution, so a legacy key that collides with a live entry key relocates armor wear onto the wrong piece. Three rounds have patched this. It needs a design change: make idempotency *stated* by the record rather than *inferred* from whether a key looks like an entry key.
+- **`env-hazards-wip`**: Environmental Hazards. The thin-air Long Rest lock drifts, because the hazard row is never decremented when an ability clears Fatigue. The vacuum lens died on an API error, so that subsystem is unverified.
 
 ## Queued, cheapest first
 
