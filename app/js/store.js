@@ -136,12 +136,82 @@ EN.store = (function () {
   }
 
   /* ---- schema migration (normalize older saved characters) -------------- */
+  /* The default shape a record is filled from, built ONCE and cached. It is
+     newCharacter()'s own return value with the per-record identity fields removed,
+     so the schema has exactly one definition and this cannot drift from it.
+
+     Memoized rather than rebuilt per record for two reasons: building a whole
+     character object for every record on every load is waste, and newCharacter()
+     mints a uid, which consumes a Math.random() draw. Per-record that would shift
+     the RNG sequence by one for each record loaded, which changes every id minted
+     afterwards and makes a seeded before-and-after comparison incomparable. One
+     draw for the session is the whole cost. Callers deep-copy what they take. */
+  var _schemaTemplate = null;
+  function schemaTemplate() {
+    if (!_schemaTemplate) {
+      _schemaTemplate = newCharacter("");
+      ["meta", "name", "firstName", "lastName"].forEach(function (k) { delete _schemaTemplate[k]; });
+    }
+    return _schemaTemplate;
+  }
+
   function migrate(ch) {
     if (!ch) return;
     // name must always be a string, even for an ancient/malformed roster entry
     // that predates the current schema and fails the check below (a corrupt
     // record should still be safely displayable, e.g. in the #PRINT switcher).
     if (typeof ch.name !== "string") ch.name = "";
+
+    /* THE TWO LIST FIELDS EVERY OTHER PASS ASSUMES ARE ARRAYS OF OBJECTS.
+       Normalized here, first, because the cost of getting this wrong is the whole
+       roster rather than one field. Both are walked unguarded in several places
+       (`(ch.equipment || []).forEach` and friends in engine.js and below), and
+       `|| []` defends against absent, not against a plain object or a null hole:
+
+         ch.equipment as an OBJECT -> .forEach is undefined -> throw
+         a null ELEMENT in the array -> e.name throws inside the split
+
+       Either throw propagates out of migrate() into load()'s catch, which answers
+       by discarding the ENTIRE roster (measured: 5 records to 0, activeId null),
+       and the next persist() writes that emptiness back. One malformed record
+       silently destroys every other character on the device.
+
+       Not reachable by clicking: importCharacter throws on its own validation
+       before storing, so this needs a record already in localStorage, which means
+       a hand edit or a file written by an older build. Cheap to make impossible,
+       and the blast radius is the reason to bother. (L10, plus the null-element
+       shape a reviewer measured separately.) */
+    /* MISSING TOP-LEVEL FIELDS ARE FILLED FROM THE SCHEMA, which is newCharacter()
+       itself rather than a second list that can drift from it. migrate() defaults a
+       great many fields by hand but never touched resources, vitality, wounds, flow,
+       conditions or deathSaves, so a record without them threw on the Freelancer tab
+       the moment it rendered (`ch.resources.current` is dereferenced unguarded at
+       combat.js:2613, and it is far from the only one). Pre-existing and not caused
+       by the guard fix below: before it, such a record returned early and did not get
+       these defaults either, so it crashed identically.
+
+       ONLY ABSENT keys are filled, never present ones, so this cannot overwrite a
+       real value with a blank. Identity fields are skipped because they are derived
+       or per-record: meta carries a minted id and timestamps, and name/firstName/
+       lastName are recomposed further down. Deep-copied per record, or every record
+       missing a field would share one mutable object with all the others. */
+    var TEMPLATE = schemaTemplate();
+    Object.keys(TEMPLATE).forEach(function (k) {
+      if (ch[k] === undefined) ch[k] = JSON.parse(JSON.stringify(TEMPLATE[k]));
+    });
+
+    if (!Array.isArray(ch.equipment)) ch.equipment = [];
+    // Equipment rows have always been objects, and every pass reads e.name / e.id
+    // off them, so anything that is not one is not a row.
+    ch.equipment = ch.equipment.filter(function (e) { return e && typeof e === "object" && !Array.isArray(e); });
+    // Chrome keeps its holes dropped but its STRINGS intact: ch.cyberware
+    // legitimately carries legacy string entries that its own pass below converts
+    // to objects, so filtering those out here would destroy exactly the records
+    // that migration exists to rescue.
+    ["cyberware", "cyberStash"].forEach(function (f) {
+      if (!Array.isArray(ch[f])) { ch[f] = []; return; }
+      ch[f] = ch[f].filter(function (e) { return e != null; });
+    });
     // Saved Lifelike Personas (ch.face.personas). Sanitized AHEAD of the
     // proficiencies guard below, because losing one is unrecoverable without
     // redoing the scan in fiction, and a hand-edited or imported record must not
@@ -162,18 +232,27 @@ EN.store = (function () {
         else if (p.isActive) seenActive[p.sourceFeature] = true;
       });
     }
-    if (!ch.proficiencies) return;
-    var p = ch.proficiencies;
-    // gear buckets used to be arrays; convert to { category: tier } maps
-    ["weapons", "armor", "tools", "vehicles"].forEach(function (b) {
-      if (!p[b] || Array.isArray(p[b])) {
-        var map = {};
-        if (Array.isArray(p[b])) p[b].forEach(function (c) { if (c) map[c] = "proficient"; });
-        p[b] = map;
-      }
-    });
-    delete p.shields; // shields folded into armor (Physical Shields)
-    if (!p.skills) p.skills = {};
+    /* This used to be a bare `if (!ch.proficiencies) return;`, and every migration
+       added since sat after it. A record missing that ONE field therefore skipped
+       about a hundred and fifty lines of unrelated normalization: the Toxicologist
+       and Zeroed In talent renames, the weaponAmmo firing-mode rename, the entire
+       equipment instance-id split, and the equipment-keyed ch.rig block. It is now a
+       guard around exactly the conversion it was written for, which is all it ever
+       meant. (L12 in GROUP D. A reviewer independently lost a test run to it: a record
+       without `proficiencies` kept its duplicate ids because the split never ran.) */
+    if (ch.proficiencies && typeof ch.proficiencies === "object" && !Array.isArray(ch.proficiencies)) {
+      var p = ch.proficiencies;
+      // gear buckets used to be arrays; convert to { category: tier } maps
+      ["weapons", "armor", "tools", "vehicles"].forEach(function (b) {
+        if (!p[b] || Array.isArray(p[b])) {
+          var map = {};
+          if (Array.isArray(p[b])) p[b].forEach(function (c) { if (c) map[c] = "proficient"; });
+          p[b] = map;
+        }
+      });
+      delete p.shields; // shields folded into armor (Physical Shields)
+      if (!p.skills) p.skills = {};
+    }
     if (!ch.versatile) ch.versatile = {};
     ["insight", "performance", "intimidation"].forEach(function (t) {
       if (!ch.versatile[t]) ch.versatile[t] = { attr: "", skill: "" };
@@ -546,7 +625,26 @@ EN.store = (function () {
       var roster = JSON.parse(localStorage.getItem(KEY_ROSTER) || "{}");
       var activeId = localStorage.getItem(KEY_ACTIVE) || null;
       state.roster = roster && typeof roster === "object" ? roster : {};
-      Object.keys(state.roster).forEach(function (id) { migrate(state.roster[id]); });
+      /* Migrate each record in its OWN try. The outer catch below is the last
+         resort for a genuinely unreadable store (bad JSON, localStorage denied),
+         and its answer is to discard the whole roster. That answer is far too big
+         for one malformed record: a single throw inside migrate() used to take
+         every other character on the device with it, and the next persist() wrote
+         that emptiness back over the top. The normalization above makes the known
+         throws impossible, but this is the structural half, and it is the half
+         that keeps a future unguarded read from costing somebody their roster.
+
+         A record that still cannot be migrated is DROPPED from the roster rather
+         than kept half-normalized, because every reader downstream assumes
+         migrate() ran to completion. It is left in localStorage untouched until
+         the next persist, and it is named in the console so it can be recovered
+         by hand. Losing one record is recoverable; losing five is not. */
+      var failed = [];
+      Object.keys(state.roster).forEach(function (id) {
+        try { migrate(state.roster[id]); }
+        catch (e) { failed.push(id); console.error("Character " + id + " could not be migrated and was dropped from this session.", e); }
+      });
+      failed.forEach(function (id) { delete state.roster[id]; });
       state.activeId = activeId && state.roster[activeId] ? activeId : (Object.keys(state.roster)[0] || null);
     } catch (e) {
       console.warn("Load failed; starting fresh.", e);

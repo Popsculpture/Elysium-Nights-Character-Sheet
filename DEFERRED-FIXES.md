@@ -1028,6 +1028,64 @@ sense:
   the record is otherwise fine. Recorded so the next person writing a fixture knows to
   include it rather than filing a bug.
 
+## The migrate() hardening pass, 2026-08-10
+
+Four items, all the same shape: an imported or hand-authored record that `migrate()`
+either could not survive or quietly skipped. Reachability is import and hand-edit only
+in every case; the reason to fix them is blast radius, not likelihood. **L10 and L12 are
+closed by this pass.**
+
+- ~~**L12: `if (!ch.proficiencies) return;` skips every migration added since.**~~
+  **FIXED.** It is now a guard around exactly the proficiency conversion it was written
+  for. **Repro before:** a record with no `proficiencies` field kept its duplicate
+  equipment ids (the split never ran), kept `dead-eye-sniper` and `toxicologist` as
+  talent keys, kept `weaponAmmo` mode `"Burst"`, and never got the entry-keyed `ch.rig`
+  block. **After:** four distinct entry keys, `zeroed-in`, `cutting-agent`,
+  `"Burst Fire"`, and `rig.hp` present. A reviewer had independently lost a test run to
+  this same line.
+- ~~**L10, and the null-element shape beside it: one malformed record destroys the whole
+  roster.**~~ **FIXED, twice over.** `ch.equipment` as a plain object makes `.forEach`
+  undefined; a `null` element makes `e.name` throw inside the split. Either throw
+  propagates out of `migrate()` into `load()`'s catch, whose answer is to discard the
+  ENTIRE roster, and the next `persist()` writes that emptiness back.
+  **Repro before, four poison shapes each planted in a store beside four healthy
+  records:** `null` element, `equipment` as an object, and `cyberware` as an object all
+  left **0 survivors** with `activeId: null`. (A string element happened to survive.)
+  **After: 5 survivors in all four**, `activeId` intact, and the poisoned record itself
+  normalized rather than dropped.
+  Fixed at both levels deliberately. The *normalization* makes the known throws
+  impossible: `equipment`, `cyberware` and `cyberStash` are coerced to arrays first
+  thing, `equipment` drops non-object rows, and chrome drops only null holes because it
+  legitimately carries legacy STRING entries its own pass converts. The *structure* is
+  the other half: each record now migrates in its own `try`, so a future unguarded read
+  costs one record instead of the device. A record that still cannot migrate is dropped
+  from the session and named in the console, rather than kept half-normalized, because
+  every reader downstream assumes `migrate()` ran to completion; it stays in
+  localStorage until the next persist, so it can be recovered by hand.
+- **A fourth item, found while testing the third and fixed with it: `migrate()` defaulted
+  none of `resources`, `vitality`, `wounds`, `flow`, `conditions` or `deathSaves`,** so a
+  record missing any of them threw on the Freelancer tab the moment it rendered
+  (`ch.resources.current`, unguarded, `combat.js:2613`, and it is far from the only such
+  read). **Pre-existing and NOT caused by the L12 fix**: before it, such a record returned
+  early and did not get these defaults either, so it crashed identically. Missing
+  top-level fields are now filled from `newCharacter()` itself, so the schema keeps
+  exactly one definition and the fill cannot drift from it. Only ABSENT keys are filled,
+  never present ones; `meta`, `name`, `firstName` and `lastName` are skipped as
+  per-record or derived. The template is built once and cached, both to avoid building a
+  character object per record and because `newCharacter()` mints a uid: per-record that
+  would shift the RNG sequence once per record and make a seeded before-and-after
+  comparison incomparable.
+
+**Verification.** Four poison shapes measured before and after against a five-record
+store. A no-proficiencies record now renders across all seven tabs, where before it
+threw. Five well-formed shapes (a complete record, duplicate ids, a splitting row, a rig
+with damage, a name-keyed rack) were fingerprinted whole against the pre-fix code with a
+seeded LCG: **two byte-identical, and the other three identical once minted ids are
+normalized positionally, so all five are structurally unchanged.** The residual id
+difference is the single `uid()` draw the cached template costs at session start, which
+shifts every later mint by one; ids are random in production, and the structural equality
+is the claim that matters. Five classes across seven tabs, no console error.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from
