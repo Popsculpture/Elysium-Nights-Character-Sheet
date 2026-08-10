@@ -37,7 +37,10 @@ EN.store = (function () {
     var parts = String(name || "").trim().split(/\s+/).filter(Boolean);
     var firstName = parts[0] || "", lastName = parts.slice(1).join(" ") || "";
     return {
-      meta: { id: uid(), schemaVersion: EN.rules.schemaVersion, createdAt: Date.now(), updatedAt: Date.now() },
+      // wearKeys states which scheme the per-piece wear maps use, so migrate() never
+      // has to guess it from a key's shape. A record born here is entry-keyed by
+      // definition: its maps are empty and every row it ever gains carries an id.
+      meta: { id: uid(), schemaVersion: EN.rules.schemaVersion, wearKeys: 2, createdAt: Date.now(), updatedAt: Date.now() },
       name: composeFullName(firstName, "", lastName),
       firstName: firstName, lastName: lastName,
       identity: {
@@ -172,7 +175,10 @@ EN.store = (function () {
       carry: {},                         // Loadout carry status per entry key: "carried" | "worn" | "racked" (absent = stashed)
       racked: {},                        // Racked assignments: {itemEntryKey: carryGearEntryKey} (Carry Gear, one rack per item)
       slotInert: {},                     // Body Slot conflicts: {itemEntryKey: true} for on-person items the player benched
-      shieldWear: {},                    // Shield Durability: {shieldName: boxesMarked}
+      shieldWear: {},                    // Shield Durability: {shieldEntryKey: boxesMarked}
+      armorWear: {},                     // Armor Repair: {armorEntryKey: DR points lost}. The catalog dr is the
+                                         // BASE and the ceiling; absent means the suit is at full DR
+      armorGuard: {},                    // {armorEntryKey: true}: a clean repair's quality edge, absorbs the next point of DR lost
       loadout: "standard",               // declared Loadout: "light" | "standard" | "heavy", sets the Load Budget
       haul: "none",                      // active Haul: "none" | "lift" (body-sized) | "drag" (oversized/double)
       glimmer: 0,
@@ -334,9 +340,9 @@ EN.store = (function () {
     // non-true value is just noise to strip.
     if (!ch.slotInert || typeof ch.slotInert !== "object") ch.slotInert = {};
     Object.keys(ch.slotInert).forEach(function (k) { if (ch.slotInert[k] !== true) delete ch.slotInert[k]; });
-    // Shield Durability boxes marked, keyed by shield name
-    if (!ch.shieldWear || typeof ch.shieldWear !== "object") ch.shieldWear = {};
-    Object.keys(ch.shieldWear).forEach(function (k) { var v = ch.shieldWear[k]; if (typeof v !== "number" || v < 0) delete ch.shieldWear[k]; });
+    // ch.shieldWear, ch.armorWear and ch.armorGuard are keyed on the equipment
+    // ENTRY, so they are normalized AFTER the instance-id split, not here beside
+    // the other gear defaults. See the ordering rule at the split.
     // Which REPLACER the player is currently punching with: the name of a lineage
     // feature or an installed piece of chrome, or "base" for the plain
     // 1 + Body Modifier strike. Increases are not a choice and never land here.
@@ -464,7 +470,14 @@ EN.store = (function () {
     // legacy record's Rig damage and recorded pick after exactly one load because of
     // it. The natural-looking place is the wrong place. Put it after this block.
     if (Array.isArray(ch.equipment)) {
-      var nameToIds = {}, splitEquipment = [];
+      // null-prototype for the same reason reservedIds and usedIds are: it is keyed on
+      // item NAMES out of a save file. As a plain literal, nameToIds["constructor"] read
+      // back the Object constructor, which is truthy, so the rekey passes below took the
+      // firstId() branch and firstId() then returned null (Object.prototype.constructor[0]
+      // is undefined). A carry entry for an item called "constructor" came out keyed on
+      // the literal string "null", destroying that item's carry state. Measured, not
+      // theorised. This was the one map in the block the earlier prototype pass missed.
+      var nameToIds = Object.create(null), splitEquipment = [];
       // UNIQUENESS, the other half of entry identity. Every consumer keys per-piece
       // state on engine.entryKey(e) === e.id || e.name, so an id that appears on TWO
       // rows is exactly as broken as no id at all: ownedRigs returns two entries with
@@ -529,7 +542,30 @@ EN.store = (function () {
         // the engine also reads as unowned (qty 0, negative, or ""), which stays id-less
         // because the two predicates already agree about it.
         if (!e.id && !stackable && !(e.qty > 0) && !(e.qty != null && e.qty <= 0)) e.qty = 1;
-        if (e.id || !(e.qty > 0) || stackable) {
+        /* ONE ROW IS NOT ONE PIECE, and the skip clause used to assume it was. `e.id`
+           short-circuited before qty was ever looked at, so `{id:"eq_x", name:"Kevlar
+           Weave", qty:3}` stayed a single row: three suits sharing one entryKey, one
+           repair state, one damage slot, one picker option. That is the whole collision
+           set the duplicate-id fix closed, reached through the other operand.
+
+           It matters because the floor this block sells to Armor Repair is per-PIECE,
+           not per-row: "two Kevlar Weaves cannot share a repair state no matter how the
+           record was authored" is false while an authored qty:3 is one row. So a
+           non-stackable owned row splits on its count whether or not it carries an id.
+
+           THE FIRST INSTANCE KEEPS THE ROW'S ORIGINAL ID, for exactly the reason the
+           duplicate pass keeps it for the first-seen row: ch.rig.key, ch.rig.hp,
+           armorWear, armorGuard, shieldWear, carry, slotInert, racked and the four equip
+           slots already point at that id and they meant this row. The instances split off
+           it are new objects with minted ids and therefore no per-entry state, which is
+           the settled ruling that unattributable state is dropped rather than duplicated
+           onto another piece.
+
+           Untouched: pooled rows (a stackable qty IS a stack, not a set of pieces),
+           unowned rows, and an id-carrying row that is already exactly one piece, which
+           takes the same push-as-is path it always did so that records without a
+           qty > 1 row migrate byte-identically. */
+        if (stackable || !(e.qty > 0) || (e.id && !(e.qty > 1))) {
           splitEquipment.push(e);
           return;
         }
@@ -537,7 +573,7 @@ EN.store = (function () {
         for (var i = 0; i < n; i++) {
           var ne = {};
           Object.keys(e).forEach(function (k) { if (k !== "qty") ne[k] = e[k]; });
-          ne.id = mintId();
+          ne.id = (i === 0 && e.id) ? e.id : mintId();
           ne.qty = 1;
           splitEquipment.push(ne);
           ids.push(ne.id);
@@ -794,6 +830,154 @@ EN.store = (function () {
       });
     }
     ch.bonuses = bnOut;
+    /* Per-piece defensive degradation: Shield Durability and Armor Repair. They are
+       one mechanic wearing two names (a defensive piece that degrades and is repaired
+       back toward its printed value), so they carry ONE shape, the same shape ch.rig.hp
+       carries: {entryKey: points}. That is why this block sits HERE, after the
+       instance-id split, and not beside the other equipment defaults a hundred lines
+       up: it resolves entry keys. See the ordering rule at the split.
+
+         ch.shieldWear   Durability boxes marked. WAS keyed on the shield's NAME, so two
+                         Scrap Shields shared one wear track and a re-bought shield
+                         arrived already worn. Converted here.
+         ch.armorWear    DR points a suit has lost. New; the catalog `dr` is the base and
+                         the ceiling, and an absent row means the suit is at full DR.
+         ch.armorGuard   The quality edge a clean repair earns, one absorbed point of DR.
+
+       CONVERSION RULE. A key that already names a LIVE entry is left alone. A key that
+       names an ITEM is attributed to one entry only when one entry can be named with
+       confidence, and is otherwise DROPPED:
+
+         1. the EQUIPPED piece, when it is one of the entries carrying that name. This
+            is not a tiebreak, it is what the legacy state meant. The old reader was
+            (ch.shieldWear || {})[shield.name] with `shield` the WIELDED shield, and the
+            old writer was markShieldWear, which returns early unless a shield is
+            wielded and writes dg.shield.name. So a legacy name key can only ever have
+            described the piece in the slot. Same for armor, whose DR was only ever read
+            for ch.equippedArmor.
+         2. otherwise the single owned entry of that name, when there is exactly one.
+         3. otherwise NOTHING. Two or more candidates and nothing in the record that
+            distinguishes them: the state is discarded.
+
+       Clause 3 is the point. It used to read "that item's FIRST owned entry", which
+       silently RELOCATED a save's damage onto a piece that was never damaged: wear a
+       second Anvil Frame, load once, and the worn suit reads 5/5 while the spare in the
+       stash reads 2/5 and holds the quality edge. Losing the wear costs one typed number
+       and the player can see that it is gone; moving it is invisible and unrecoverable,
+       because nobody knows it happened. Same asymmetry, and the same ruling, as the Rig
+       damage that cannot be attributed to an entry.
+
+       IDEMPOTENCY IS STATED, NOT INFERRED, and that is the design change this block
+       needed rather than a fourth patch. It used to decide "this key is already
+       converted" by testing whether the key happened to name a live entry. That is an
+       inference from the key's SHAPE, and the shape is ambiguous: entryKey() is
+       `e.id || e.name`, so a legitimately name-keyed row (a pooled or custom entry)
+       puts a NAME into the live-key set. A legacy name key that collided with one of
+       those was therefore read as "already an entry key" and left alone, which silently
+       attributed a suit's wear to the colliding row instead of to the suit. The test
+       could not tell a converted key from an unconverted one, because in that case
+       they are the same string.
+
+       So the record says which scheme its maps use. `ch.meta.wearKeys` is absent on
+       every save written before this migration, which is exactly what "these keys are
+       item names" means, and it is stamped to WEAR_KEY_SCHEME once the conversion has
+       run. Under the legacy scheme EVERY key goes through attribution, with no
+       shortcut to take; under the current scheme every key is already an entry key and
+       the only work left is pruning ones whose entry has left the stash, the way
+       ch.rig.hp prunes so the map cannot grow across a campaign.
+
+       That also fixes the collision on its own terms rather than by special-casing it:
+       a legacy "Anvil Frame" key with both a real suit and a pooled row of that name
+       now reaches rule 1, which picks the EQUIPPED suit, and reaches rule 3 when
+       nothing distinguishes the candidates.
+
+       Rebuilt null-prototype: these keys are user-supplied strings, and a plain literal
+       reads "constructor" and "toString" as already present. */
+    var eqRows = Array.isArray(ch.equipment) ? ch.equipment : [];
+    var wearLiveKeys = Object.create(null), wearKeysByName = Object.create(null);
+    eqRows.forEach(function (e) {
+      if (!e || (e.qty != null && e.qty <= 0)) return;
+      var k = e.id || e.name;
+      if (!k) return;
+      wearLiveKeys[k] = 1;
+      if (e.name) (wearKeysByName[e.name] = wearKeysByName[e.name] || []).push(k);
+    });
+    // The equip slot a legacy NAME key could have been describing, resolved to a live
+    // entry key. A slot still holding a bare item name (an id-carrying record the split
+    // had no reason to rekey) counts only when that name identifies exactly one owned
+    // entry: an ambiguous slot is no more attributable than the wear key it would be
+    // used to attribute.
+    function equippedEntryKey(slotVal) {
+      if (typeof slotVal !== "string" || !slotVal) return null;
+      // Same ambiguity as the wear keys, one field over: `e.id || e.name` puts ids and
+      // names in ONE namespace, so a string can be a live key for one entry and the
+      // item NAME of others at the same time. Being a live key is therefore only proof
+      // of identity when nothing else answers to that string as a name; otherwise it
+      // falls through to the name rules, and an ambiguous slot is no more attributable
+      // than the wear key it would be used to attribute.
+      var alsoNames = wearKeysByName[slotVal] || [];
+      var onlyItself = alsoNames.length === 0 || (alsoNames.length === 1 && alsoNames[0] === slotVal);
+      if (wearLiveKeys[slotVal] && onlyItself) return slotVal;
+      return alsoNames.length === 1 ? alsoNames[0] : null;
+    }
+    // The scheme the record states its wear maps are in. Absent means legacy item-name
+    // keys, because no save written before this migration could have said otherwise.
+    var WEAR_KEY_SCHEME = 2;
+    if (!ch.meta || typeof ch.meta !== "object") ch.meta = {};
+    var wearKeysAreEntries = ch.meta.wearKeys === WEAR_KEY_SCHEME;
+    function migrateWearMap(field, slotField, valueOf) {
+      var src = ch[field];
+      if (!src || typeof src !== "object" || Array.isArray(src)) src = {};
+      var wornKey = equippedEntryKey(ch[slotField]);
+      var out = Object.create(null);
+      Object.keys(src).forEach(function (k) {
+        var v = valueOf(src[k]);
+        if (v == null) return;
+        var key = null;
+        if (wearKeysAreEntries) {
+          // Already converted, because the RECORD says so. The only work left is the
+          // prune: a key whose entry has left the stash describes a piece the character
+          // no longer owns, and a re-acquired piece is a new entry, so its state is
+          // dropped rather than inherited. Same ruling as ch.rig.hp.
+          key = wearLiveKeys[k] ? k : null;
+        } else {
+          /* Legacy scheme. Rule 0 first: a key that names a live entry AND that nothing
+             else answers to as an item NAME is unambiguously that entry, so it is kept.
+             This is NOT the old shortcut. The old one fired on "is this string a live
+             key" alone, which is ambiguous precisely because entryKey() is
+             `e.id || e.name` and one string can be an id here and an item name there.
+             Narrowing it to "live and nothing else claims this string as a name" is the
+             fix the review asked for: the ambiguous case re-enters the rules instead of
+             skipping them.
+
+             It has to exist, because armorWear and armorGuard are NEW fields that never
+             had a legacy name-keyed form. Any record carrying them without the marker
+             was written by this branch and is already entry-keyed; sending its keys
+             through name attribution would find no item of that name and drop the wear.
+             shieldWear is the one map with a genuine legacy shape, and a shield NAME is
+             not a live entry key, so it still lands in the rules below. */
+          var cands = wearKeysByName[k] || [];
+          var onlyItself = cands.length === 0 || (cands.length === 1 && cands[0] === k);
+          if (wearLiveKeys[k] && onlyItself) key = k;                    // rule 0
+          else if (wornKey && cands.indexOf(wornKey) !== -1) key = wornKey;   // rule 1
+          else if (cands.length === 1) key = cands[0];                   // rule 2
+          // rule 3: nothing to attribute it to, or several equally likely pieces.
+          // Leave `key` null and the state is dropped rather than moved.
+        }
+        // no attributable entry, or an earlier key already claimed that entry:
+        // drop it rather than duplicate or overwrite
+        if (!key || out[key] != null) return;
+        out[key] = v;
+      });
+      ch[field] = out;
+    }
+    function positiveInt(v) { return (typeof v === "number" && isFinite(v) && v > 0) ? Math.floor(v) : null; }
+    migrateWearMap("shieldWear", "equippedShield", positiveInt);
+    migrateWearMap("armorWear", "equippedArmor", positiveInt);
+    migrateWearMap("armorGuard", "equippedArmor", function (v) { return v === true ? true : null; });
+    // Stamped only after all three maps have converted, so a throw midway cannot leave
+    // the record claiming a conversion that did not finish.
+    ch.meta.wearKeys = WEAR_KEY_SCHEME;
     // cyberware: legacy string entries → objects. sp:0 so old manual marks don't
     // retroactively spike Static; chrome bought from the market carries real SP.
     if (Array.isArray(ch.cyberware)) {

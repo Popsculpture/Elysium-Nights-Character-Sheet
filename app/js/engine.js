@@ -902,6 +902,77 @@ EN.engine = (function () {
     var e = findEntry(ch, key);
     return !!(e && e.leaseDue && !e.leaseOwned);
   }
+  /* ---- Armor Integrity: the ONE resolver for a piece's current DR ----------
+     A suit's DR is MUTABLE. The catalog's `dr` is the BASE, which is both where a
+     fresh piece starts and the ceiling repair can ever restore it to; ch.armorWear
+     records how many of those points are currently gone. It is keyed on the
+     equipment ENTRY (entryKey), never on the item name, so two Kevlar Weaves hold
+     their damage independently and a re-bought piece, being a new entry with no
+     row in the map, arrives at full DR with no heuristic anywhere. Current DR is
+     base minus wear, floored at 0 per piece and never raised past base.
+
+     ch.armorGuard is the crafting quality edge a clean repair earns: one point of
+     DR the suit would lose is absorbed instead, keyed the same way and spent by
+     whatever marks the damage.
+
+     Every surface reads THIS, or the d.armorDR / d.totalDR it feeds. Nothing
+     re-derives a current DR out of ch.armorWear on its own. */
+  function armorBaseDR(it) { return (it && typeof it.dr === "number" && it.dr > 0) ? Math.floor(it.dr) : 0; }
+  function armorState(ch, key) {
+    var name = key ? keyToName(ch, key) : null;
+    var it = name ? loadCatalogItem(name) : null;
+    var base = armorBaseDR(it);
+    var wearMap = (ch && ch.armorWear && typeof ch.armorWear === "object") ? ch.armorWear : {};
+    var lost = key ? clamp(wearMap[key] | 0, 0, base) : 0;
+    var guardMap = (ch && ch.armorGuard && typeof ch.armorGuard === "object") ? ch.armorGuard : {};
+    return {
+      key: key || null, name: name || null, item: it || null,
+      base: base,
+      lost: lost,
+      current: Math.max(0, base - lost),
+      damaged: lost > 0,
+      breached: base > 0 && lost >= base,          // 0 DR: past repair, a rebuild Project
+      guard: !!(key && guardMap[key])
+    };
+  }
+  /* The ONE writer, the other half of the one-resolver rule. Every surface that
+     moves a piece's DR calls this inside a store.update rather than reaching into
+     ch.armorWear itself, so the clamps and the quality edge cannot differ between
+     the Defenses row and the Impact Table (they did, once, and the bench lane's
+     button quietly burned a point the guard should have absorbed).
+       delta > 0  lose DR. A pending armorGuard absorbs the first point instead,
+                  and is spent doing it. Never past 0 DR.
+       delta < 0  restore DR. Never past the base, which is why repair cannot
+                  inflate a suit above its printed value however it is driven.
+     `c` is the mutable character inside store.update. Returns what happened. */
+  function applyArmorDamage(c, key, delta) {
+    var st = armorState(c, key);
+    if (!key || !st.base || !delta) return { absorbed: false, lost: st.lost, current: st.current, breached: st.breached, base: st.base, name: st.name };
+    c.armorWear = c.armorWear || {};
+    c.armorGuard = c.armorGuard || {};
+    if (delta > 0 && c.armorGuard[key]) {
+      delete c.armorGuard[key];
+      return { absorbed: true, lost: st.lost, current: st.current, breached: st.breached, base: st.base, name: st.name };
+    }
+    var n = clamp((c.armorWear[key] | 0) + delta, 0, st.base);
+    if (n > 0) c.armorWear[key] = n; else delete c.armorWear[key];
+    return { absorbed: false, lost: n, current: st.base - n, breached: n >= st.base, base: st.base, name: st.name };
+  }
+  // Every suit of armor the character owns, as armorState records, in equipment
+  // order. Two pieces of the same type are two records, each with its own track.
+  function ownedArmorPieces(ch) {
+    var out = [];
+    // Array.isArray, not `|| []`: a hand-edited record whose `equipment` is a plain
+    // object throws on .forEach, and load() answers a throw by discarding the whole
+    // roster (DEFERRED-FIXES L10). That class is pre-existing; this does not join it.
+    (Array.isArray(ch && ch.equipment) ? ch.equipment : []).forEach(function (e) {
+      if (!e || (e.qty != null && e.qty <= 0)) return;
+      var it = loadCatalogItem(e.name);
+      if (!it || it.kind !== "armor") return;
+      out.push(armorState(ch, entryKey(e)));
+    });
+    return out;
+  }
   function defensiveLoadout(ch) {
     var armorKey = ch && ch.equippedArmor, shieldKey = ch && ch.equippedShield, focusKey = ch && ch.equippedFocus;
     var armor = armorItem(keyToName(ch, armorKey));
@@ -916,9 +987,13 @@ EN.engine = (function () {
     // ignores it), but training isn't modeled, so we leave Powered Speed to the player.
     // A lapsed Powered frame seizes, so Bulky bites it too.
     var speedPenalty = (hasTrait(armor, "Bulky") && (!hasTrait(armor, "Powered") || armorLapsed)) ? -1 : 0;
-    // Shield Durability boxes, tracked per shield name on the record.
+    // Shield Durability boxes, tracked per shield ENTRY on the record. Keyed the
+    // same way armor wear is, and for the same reason: two Scrap Shields are two
+    // objects, and a re-bought shield arrives unworn because it is a new entry.
     var shieldBoxesMax = shield ? (typeof shield.boxes === "number" ? shield.boxes : 3) : 0;
-    var shieldSpent = shield ? clamp(((ch.shieldWear || {})[shield.name]) | 0, 0, shieldBoxesMax) : 0;
+    var shieldSpent = shield ? clamp(((ch.shieldWear || {})[shieldKey]) | 0, 0, shieldBoxesMax) : 0;
+    // Current DR of the worn suit, from the one resolver.
+    var armorSt = armorState(ch, armorKey);
     var shieldBoxesLeft = Math.max(0, shieldBoxesMax - shieldSpent);
     var shieldAlive = !shield || shieldBoxesLeft > 0;
     return {
@@ -926,7 +1001,19 @@ EN.engine = (function () {
       armorLapsed: armorLapsed, shieldLapsed: shieldLapsed, focusLapsed: focusLapsed,
       // part3.txt:4325 - DR 0 is only the DEFAULT zero state; an item whose own
       // Lapsed or Locked line names a different value uses that value instead.
-      armorDR: armor ? (armorLapsed ? (armor.lapsedDR || 0) : (armor.dr || 0)) : 0,
+      // Either way the number is capped by the suit's CURRENT DR: a lapsed lease
+      // does not un-punch a hole in the plating, so a Sentinel Issue that has lost
+      // its way to 0 grants 0 rather than falling back up to its lapsedDR of 1.
+      armorDR: armor ? (armorLapsed ? Math.min(armor.lapsedDR || 0, armorSt.current) : armorSt.current) : 0,
+      // the whole armor-integrity record for the worn suit, so no surface has to
+      // reach into ch.armorWear to find out what a piece is missing
+      armorBaseDR: armorSt.base,
+      armorDRLost: armorSt.lost,
+      armorBreached: armorSt.breached,
+      armorGuard: armorSt.guard,
+      armorState: armorSt,
+      armorKey: armorKey || null,
+      shieldKey: shieldKey || null,
       armorModDR: armorModDR(ch, armor, armorLapsed),
       blockBonus: (armor && !armorLapsed && armor.blockBonus) || 0,   // flat Block Bonus from medium/heavy plate
       shieldDef: (shield && !shieldLapsed && shieldAlive && typeof shield.defense === "number") ? shield.defense : 0,
@@ -2420,6 +2507,13 @@ EN.engine = (function () {
     isUnarmedAugmentName: isUnarmedAugmentName,   // gear that augments a punch instead of being a weapon
     stepDie: stepDie,   // the picker walks the ladder too, so each option can show what it really deals
     isStackableItem: isStackableItem, isStackableName: isStackableName, entryKey: entryKey, findEntry: findEntry,
+    // Armor Integrity. armorState IS the resolver for a piece's current DR: every
+    // surface that shows, prints or defends with a DR asks it (or reads the
+    // d.armorDR / d.totalDR it feeds) rather than reading ch.armorWear itself.
+    armorState: armorState, ownedArmorPieces: ownedArmorPieces, armorBaseDR: armorBaseDR,
+    // and the one WRITER: every surface that moves a piece's DR goes through this
+    // inside a store.update, so the clamps and the quality edge cannot diverge
+    applyArmorDamage: applyArmorDamage,
     isCarryGear: isCarryGear, rackLimit: rackLimit, rackState: rackState, rackTargets: rackTargets,
     itemSlots: itemSlots, slotConflicts: slotConflicts,
     catalogItem: loadCatalogItem,

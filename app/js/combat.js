@@ -2777,11 +2777,12 @@ EN.combatView = (function () {
         foot: "Cover (+2 Half / +5 ¾) and a declared Active Defense add more against a specific attack, see Defend." },
       DR: { title: "Damage Reduction", total: d.totalDR || 0, sign: false,
         formula: "Worn armor + armor mods + natural lineage DR vs physical damage",
-        rows: (dg.armor ? [bdRow("Armor · " + dg.armor.name + (dg.armorLapsed ? " (LEASE DUE)" : ""), dg.armorDR, null, true)] : [])
+        rows: (dg.armor ? [bdRow("Armor · " + dg.armor.name + (dg.armorLapsed ? " (LEASE DUE)" : "") + (dg.armorDRLost ? " (" + dg.armorDR + " of " + dg.armorBaseDR + ", " + dg.armorDRLost + " lost)" : ""), dg.armorDR, null, true)] : [])
           .concat(dg.armorModDR ? [bdRow("Armor Mod (highest flat DR)", dg.armorModDR)] : [])
           .concat(d.naturalDR ? [bdRow("Natural (lineage)", d.naturalDR)] : []),
         empty: (dg.armor || d.naturalDR) ? null : "No armor equipped; WEAR armor in Inventory → Stash.",
-        foot: dg.armor && (dg.armor.traits || []).indexOf("Plated") !== -1 ? "Plated: when you Block, add half this DR (rounded down) on top." : null },
+        foot: (dg.armorDRLost ? "Damaged plating: " + dg.armorDRLost + " point" + (dg.armorDRLost === 1 ? "" : "s") + " of DR gone until repaired, on the Impact Table. " : "") +
+              (dg.armor && (dg.armor.traits || []).indexOf("Plated") !== -1 ? "Plated: when you Block, add half this DR (rounded down) on top." : "") || null },
       SPD: { title: "Speed", total: spDisplay, sign: false,
         formula: "max(3, 6 + Agility modifier) + chrome + lineage − Bulky − load − conditions",
         rows: (spdFloored ? [bdRow("Base move (Agility floored to min 3)", baseMove, null, true)]
@@ -2887,7 +2888,7 @@ EN.combatView = (function () {
       var DUE_TIP = "Lease installment due; it grants none of its benefits until you pay (Inventory > Stash).";
       if (dg.armor) {
         if (dg.armorLapsed) chips.push(gchip("ARMOR · LEASE DUE", dg.armor.name, DUE_TIP, "var(--danger)"));
-        else { var ap = [dg.armorDR + " DR"]; if (dg.blockBonus) ap.push("+" + dg.blockBonus + " Block"); if (dg.armor.wardDie && !dg.focus) ap.push(dg.armor.wardDie + " Ward"); if (dg.speedPenalty) ap.push(dg.speedPenalty + " SPD"); if (dg.armor.slots) ap.push(dg.armor.slots + " slots"); chips.push(gchip("ARMOR", dg.armor.name, ap.join(" · "), "var(--success)")); }
+        else { var ap = [dg.armorDRLost ? dg.armorDR + " of " + dg.armorBaseDR + " DR" : dg.armorDR + " DR"]; if (dg.blockBonus) ap.push("+" + dg.blockBonus + " Block"); if (dg.armor.wardDie && !dg.focus) ap.push(dg.armor.wardDie + " Ward"); if (dg.speedPenalty) ap.push(dg.speedPenalty + " SPD"); if (dg.armor.slots) ap.push(dg.armor.slots + " slots"); chips.push(gchip("ARMOR", dg.armor.name, ap.join(" · "), "var(--success)")); }
       }
       // installed Armor Mods (Impact Table) on the worn suit; a leased mod in arrears is dark
       if (dg.armor && EN.armorMods) {
@@ -4350,13 +4351,31 @@ EN.combatView = (function () {
       // the Block row, since that is the only moment it can happen.
       function markShieldWear(delta) {
         if (!dg.shield) return;
-        var nm = dg.shield.name, max = dg.shieldBoxesMax;
+        // keyed on the wielded ENTRY, not the shield's name: two Scrap Shields wear
+        // out one at a time, and a replacement arrives with a clean track
+        var key = dg.shieldKey, nm = dg.shield.name, max = dg.shieldBoxesMax;
+        if (!key) return;
         store.update(function (c) {
           c.shieldWear = c.shieldWear || {};
-          c.shieldWear[nm] = eng.clamp((c.shieldWear[nm] | 0) + delta, 0, max);
+          var n = eng.clamp((c.shieldWear[key] | 0) + delta, 0, max);
+          if (n > 0) c.shieldWear[key] = n; else delete c.shieldWear[key];
         });
-        var left = Math.max(0, max - ((ch.shieldWear || {})[nm] | 0) - delta);
+        var left = Math.max(0, max - eng.clamp((((ch.shieldWear || {})[key] | 0) + delta), 0, max));
         if (delta > 0 && left <= 0) toast(dg.shieldEmitter ? nm + " overloaded and went dark." : nm + " is destroyed; the wreck is salvage.");
+      }
+      /* Armor DR is mutable, and this is the moment it moves: Demolition Engine
+         attacking worn armor, a Blackware Hand Razors crit, a caustic environment.
+         Damage only; the two repair lanes (shop and bench) are priced work on the
+         Impact Table, and the one-point UNDO here is for a misclick, not a lane.
+         A clean repair's quality edge is spent first, absorbing the point for free. */
+      function markArmorDR(delta) {
+        var st = dg.armorState;
+        if (!st || !st.key || !st.base) return;
+        var res = null;
+        store.update(function (c) { res = eng.applyArmorDamage(c, st.key, delta); });
+        if (!res) return;
+        if (res.absorbed) { toast(st.name + ": the freshly seated plate absorbs the hit. No DR lost."); return; }
+        if (delta > 0 && res.breached) toast(st.name + " is breached at 0 DR; rebuilding it is a full Project on the Impact Table.");
       }
       // Per-defense roll specs for the Defensive Impulse tray. Dice come from live
       // gear, so a Ward reads the attuned Focus and a Parry reads the equipped melee
@@ -4438,13 +4457,30 @@ EN.combatView = (function () {
                    summary: (blockAdds.length
                      ? "Adds " + blockAdds.join(", ") + " to your Armor DR (" + (d.armorDR || 0) + ") against this hit" + ((liveShield && dg.shieldBlockDie) ? "" : ", no roll")
                      : "Reinforce your Armor DR against this hit") + wearNote,
-                   extra: dg.shield ? el("div.row.wrap", { style: { gap: "6px", marginTop: "6px", alignItems: "center" } }, [
-                     el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".1em" }, text: "DURABILITY" }),
-                     el("span.mono", { style: { fontSize: "12px", color: dg.shieldAlive ? "var(--text2)" : "var(--danger)" },
-                       text: "□".repeat(dg.shieldBoxesLeft) + "■".repeat(dg.shieldSpent) }),
-                     el("button.btn.sm", { disabled: !dg.shieldAlive, title: "Mark 1 Durability box (a Blocked hit at or above the Wear Threshold, or a Blocked critical)",
-                       style: { color: "var(--danger)", borderColor: "var(--danger)" }, onclick: function () { markShieldWear(1); } }, "− WEAR"),
-                     dg.shieldSpent > 0 ? el("button.btn.sm", { title: "Restore 1 box (Repair Project)", onclick: function () { markShieldWear(-1); } }, "+ REPAIR") : null
+                   extra: (dg.shield || (dg.armor && dg.armorBaseDR)) ? el("div", null, [
+                     dg.shield ? el("div.row.wrap", { style: { gap: "6px", marginTop: "6px", alignItems: "center" } }, [
+                       el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".1em" }, text: "DURABILITY" }),
+                       el("span.mono", { style: { fontSize: "12px", color: dg.shieldAlive ? "var(--text2)" : "var(--danger)" },
+                         text: "□".repeat(dg.shieldBoxesLeft) + "■".repeat(dg.shieldSpent) }),
+                       el("button.btn.sm", { disabled: !dg.shieldAlive, title: "Mark 1 Durability box (a Blocked hit at or above the Wear Threshold, or a Blocked critical)",
+                         style: { color: "var(--danger)", borderColor: "var(--danger)" }, onclick: function () { markShieldWear(1); } }, "− WEAR"),
+                       dg.shieldSpent > 0 ? el("button.btn.sm", { title: "Restore 1 box (Repair Project)", onclick: function () { markShieldWear(-1); } }, "+ REPAIR") : null
+                     ]) : null,
+                     // Armor Integrity, the same track one mechanic over: a suit loses DR
+                     // and is repaired back toward its printed value, never past it.
+                     (dg.armor && dg.armorBaseDR) ? el("div.row.wrap", { style: { gap: "6px", marginTop: "6px", alignItems: "center" } }, [
+                       el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".1em" }, text: "PLATING" }),
+                       el("span.mono", { style: { fontSize: "12px", color: dg.armorBreached ? "var(--danger)" : (dg.armorDRLost ? "var(--warn)" : "var(--text2)") },
+                         title: dg.armor.name + ": current DR out of the suit's printed base",
+                         text: dg.armorDR + " / " + dg.armorBaseDR + " DR  " + "□".repeat(Math.max(0, dg.armorBaseDR - dg.armorDRLost)) + "■".repeat(dg.armorDRLost) }),
+                       dg.armorGuard ? el("span.chip", { title: ((EN.crafting || {}).armorRepair || {}).qualityText || "", style: { fontSize: "9px", color: "var(--success)", borderColor: "var(--success)" } }, "PLATE SEATED") : null,
+                       el("button.btn.sm", { disabled: dg.armorBreached, title: "Lose 1 DR until repaired (Demolition Engine on worn armor, a Hand Razors crit, a caustic environment)",
+                         style: { color: "var(--danger)", borderColor: "var(--danger)" }, onclick: function () { markArmorDR(1); } }, "− DR"),
+                       dg.armorDRLost > 0 ? el("button.btn.sm", { title: "Undo one point of DR loss. This is a misclick fix, not a repair: repairs are shop or bench work on the Impact Table.",
+                         style: { color: "var(--text3)" }, onclick: function () { markArmorDR(-1); } }, "↶ UNDO") : null,
+                       dg.armorDRLost > 0 ? el("button.btn.sm", { title: "Open the Impact Table and repair this suit", style: { color: "var(--success)", borderColor: "var(--success)" },
+                         onclick: function () { if (EN.inventoryView.openBench) EN.inventoryView.openBench("armor"); EN.app.gotoTab("gear"); } }, "→ REPAIR") : null
+                     ]) : null
                    ]) : null },
         Dodge:   { avail: true, req: "",
                    summary: (acro ? "+" + acro.total + " Defense" : "+Agility + Acrobatics to Defense") + " vs this hit; on a miss, shift 1 space" + (dg.speedPenalty ? " · GM may forbid in heavy armor" : "") },

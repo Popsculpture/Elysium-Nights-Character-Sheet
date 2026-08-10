@@ -11,6 +11,13 @@ window.EN = window.EN || {};
 
 EN.economy = {
   exchangeRate: "The fair market reference value is 1 Nexus Token = 10,000 Glimmer. That is the number that appears in contracts, ledgers, and official books. Actual cash-out is lower, because verification, compliance, service, laundering, and transfer fees all take a cut.",
+  // The reference value above as a number, for the one thing it is safe to compute:
+  // reading a LISTED value stated in Nexus as a listed value in Glimmer (a lease
+  // Buyout priced in ◎, when something needs to know what the item is worth). It is
+  // deliberately NOT a cash-out rate. Nothing converts a wallet with it: the two
+  // purses stay separate everywhere money actually moves, because the paragraph
+  // above says the real rate is lower and unstated.
+  nexusToGlimmer: 10000,
 
   currencies: [
     { name: "Glimmer",     symbol: "\u{1D4A2}", use: "Everyday purchases, gear, services, upkeep" },

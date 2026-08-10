@@ -214,12 +214,17 @@ EN.printSheet = (function () {
   function catItem(name) { return allGear().find(function (i) { return i.name === name; }); }
   // detail lines for one catalog item, driven by whichever fields it carries
   // (weapon: damage/range/traits; armor: DR; tool/kit: effect/basic/proficient; tonic: desc/effect)
-  function gearDetailLines(it) {
+  // `drState` is the engine's armorState for THIS entry when the caller has one:
+  // armor DR is mutable and per piece, so a damaged suit must print the DR it
+  // actually defends with, not the catalog's base.
+  function gearDetailLines(it, drState) {
     var lines = [], stat = [];
     if (it.damage) stat.push("Damage " + it.damage);
     if (it.range) stat.push("Range " + it.range);
     if (it.ammo != null) stat.push("Ammo " + it.ammo);
-    if (it.dr != null) stat.push("DR " + it.dr);
+    if (it.dr != null) stat.push((drState && drState.base && drState.lost > 0)
+      ? "DR " + drState.current + " of " + drState.base + " (" + drState.lost + " lost, until repaired)"
+      : "DR " + it.dr);
     if (it.feeds) stat.push("Feeds " + it.feeds);
     if (it.traits && it.traits.length) stat.push(it.traits.join(", "));
     if (it.skill) stat.push("Skill: " + it.skill);
@@ -304,7 +309,9 @@ EN.printSheet = (function () {
     var dg = d.defenseGear || {};
     body.push(el("div.ps-statrow", { style: { margin: "10px 0 4px" } }, [
       stat("DEF", d.defense, (d.defenseAttr === "BOD" ? "Body" : "Agility") + (dg.shield ? " +shield" : "")),
-      stat("DR", d.armorDR || 0, dg.armor ? dg.armor.name : "no armor"),
+      // d.armorDR is already the worn suit's CURRENT DR; the sublabel names the
+      // damage so the sheet does not read as a suit that was always this weak
+      stat("DR", d.armorDR || 0, dg.armor ? (dg.armor.name + (dg.armorDRLost ? " · " + dg.armorDR + " of " + dg.armorBaseDR : "")) : "no armor"),
       stat("SPD", d.speed, "spaces"),
       stat("INIT", sgn(Math.max(d.attributes.AGI.mod, d.attributes.WIT.mod)), d.attributes.WIT.mod > d.attributes.AGI.mod ? "Wits" : "Agility")
     ]));
@@ -510,7 +517,7 @@ EN.printSheet = (function () {
         var block = el("div.ps-invitem", null, [
           el("div.ps-invhead", null, [el("span.ps-invname", { text: e.name }), el("span.ps-invmeta", { text: meta })])
         ]);
-        if (it) gearDetailLines(it).forEach(function (l) { block.appendChild(l); });
+        if (it) gearDetailLines(it, eng.armorState ? eng.armorState(ch, key) : null).forEach(function (l) { block.appendChild(l); });
         else block.appendChild(el("div.ps-invdesc.ps-dim", { text: "No catalog entry - note details by hand." }));
         body.push(block);
       });
