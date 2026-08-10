@@ -469,7 +469,9 @@ EN.pdfExport = (function () {
     var st = liveState(ch, d);
     ctx.row([
       { label: "Def", name: "def", value: d.defense, w: 1, align: "center", size: 13, sub: (d.defenseAttr === "BOD" ? "Body" : "Agility") + (dg.shield ? " +shield" : "") },
-      { label: "DR", name: "dr", value: d.armorDR || 0, w: 1, align: "center", size: 13, sub: dg.armor ? dg.armor.name : "no armor" },
+      // d.armorDR is the worn suit's CURRENT DR; the sublabel names the damage
+      { label: "DR", name: "dr", value: d.armorDR || 0, w: 1, align: "center", size: 13,
+        sub: dg.armor ? (dg.armor.name + (dg.armorDRLost ? " (" + dg.armorDR + "/" + dg.armorBaseDR + ")" : "")) : "no armor" },
       { label: "SPD", name: "spd", value: d.speed, w: 1, align: "center", size: 13, sub: "spaces" },
       { label: "INIT", name: "init", value: sgn(Math.max(d.attributes.AGI.mod, d.attributes.WIT.mod)), w: 1, align: "center", size: 13, sub: d.attributes.WIT.mod > d.attributes.AGI.mod ? "Wits" : "Agility" }
     ], { height: 20 });
@@ -688,12 +690,16 @@ EN.pdfExport = (function () {
       (g.signature && g.signature.munitions) || [], (g.ammo && g.ammo.items) || [], (g.armor && g.armor.items) || [], (g.tools && g.tools.items) || []);
   }
   function catItem(name) { return allGear().find(function (i) { return i.name === name; }); }
-  function gearSummaryLine(it) {
+  // `drState` is the engine's armorState for THIS entry: armor DR is mutable and
+  // per piece, so a damaged suit prints the DR it actually defends with.
+  function gearSummaryLine(it, drState) {
     var stat = [];
     if (it.damage) stat.push("Dmg " + it.damage);
     if (it.range) stat.push("Rng " + it.range);
     if (it.ammo != null) stat.push("Ammo " + it.ammo);
-    if (it.dr != null) stat.push("DR " + it.dr);
+    if (it.dr != null) stat.push((drState && drState.base && drState.lost > 0)
+      ? "DR " + drState.current + " of " + drState.base + " (" + drState.lost + " lost)"
+      : "DR " + it.dr);
     if (it.traits && it.traits.length) stat.push(it.traits.join(", "));
     if (it.skill) stat.push("Skill: " + it.skill);
     return stat.join("  ·  ");
@@ -721,7 +727,8 @@ EN.pdfExport = (function () {
       var it = catItem(e.name);
       var key = e.id || e.name;
       var worn = (ch.equippedWeapons || []).indexOf(key) !== -1 || ch.equippedArmor === key || ch.equippedShield === key || ch.equippedFocus === key;
-      return { name: e.name, qty: e.qty, status: worn ? "Equipped" : "Stash", notes: it ? gearSummaryLine(it) : "" };
+      return { name: e.name, qty: e.qty, status: worn ? "Equipped" : "Stash",
+               notes: it ? gearSummaryLine(it, eng.armorState ? eng.armorState(ch, key) : null) : "" };
     });
     if (!invRows.length) invRows.push({ name: "", qty: "", status: "", notes: "" });
     ctx.table(

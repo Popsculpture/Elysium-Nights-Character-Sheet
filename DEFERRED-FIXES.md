@@ -6,7 +6,8 @@ as each step turns things up; work it after step 6.
 
 Sync steps: 1 unarmed rewrite (done, `2ede818`), 2 renames and gear values (done,
 `70f66b8`), 3 Triage Save DC and Stitcher class data (done, `28c17b2`), 4 Trauma Rig
-(done, `7e48e67`), 5 Armor Repair, 6 Environmental Hazards.
+(done, `7e48e67`), 5 Armor Repair (done, uncommitted, see "Step 5" below),
+6 Environmental Hazards.
 
 **Four items were pulled forward and fixed BEFORE step 5, deliberately:** the `ch.rig`
 migration ordering (L8), the missing-`qty` id-assignment mismatch (L9), the
@@ -498,13 +499,14 @@ two rows share an id (`:328-402`). Together those make **"every equipment row ha
 unique `entryKey` after migration" an invariant**, and its stronger form for the pieces
 step 5 cares about: **every owned non-stackable row carries its own `eq_` id.**
 `entryKey(e)` at `app/js/engine.js:871` still returns
-`e.id || e.name`, which is correct: the name branch now serves only pooled stackables.
-**What remains in this group is step 5's own work:** key every per-piece map on
-`entryKey`, which retires `shieldWear`'s name key (declared `app/js/store.js:129`,
-normalized `:213-214`, read `app/js/engine.js:900`) and gives `ch.armorDR` a floor to
-stand on. The blast-radius pass the earlier note asked for was run; see the
-entry-identity section above for what it measured. The one gap it found and deliberately
-did not work around, `ch.racked` missing from the rekey pass, is now closed too.
+`e.id || e.name`, which is correct: the name branch serves pooled stackables and rows the
+engine reads as unowned. **Step 5 has now done its half:** `ch.shieldWear` is entry-keyed
+and `ch.armorWear` and `ch.armorGuard` were born entry-keyed, all three migrated after the
+split. **The group is NOT fully closed**, because the floor is per-ROW and not per-PIECE;
+see "The one hole in the floor" under Step 5. The blast-radius pass the earlier note asked
+for was run; see the entry-identity section above for what it measured. The one gap it
+found and deliberately did not work around, `ch.racked` missing from the rekey pass, is
+now closed too.
 
 **GROUP D: `migrate()` is order-dependent and guard-dependent, and its newest blocks do
 not survive either.** Members L8, L10, L12 and L13. **L8 is now DONE:** the `ch.rig`
@@ -610,9 +612,19 @@ Knuckles and Shock Gloves. The tab reads `WEAPONS (2)`, zero weapon rows render,
 "No weapons equipped; hit EQUIP on a weapon" hint is suppressed. With Knuckles alone it
 reads `WEAPONS (1)` beside zero rows. **Not tracked.**
 
-**L7. Shield Durability is keyed on the shield's NAME, so two shields share one wear
-track and a re-bought shield arrives already worn.** STILL OPEN, and now the last name-keyed per-piece map in
-the app. `app/js/store.js:129` declares
+**~~L7. Shield Durability is keyed on the shield's NAME, so two shields share one wear
+track and a re-bought shield arrives already worn.~~** **FIXED in step 5, in the same
+pass as Armor Repair and deliberately so: they are one mechanic and would otherwise
+disagree on screen.** `ch.shieldWear` is now `{shieldEntryKey: boxesMarked}`. The read
+is `app/js/engine.js` `defensiveLoadout`, which keys on `shieldKey` (`ch.equippedShield`)
+instead of `shield.name`; the write is `markShieldWear` in `app/js/combat.js`, which
+keys on `dg.shieldKey` and deletes a zeroed row instead of storing a 0; the migration is
+the shared block described under "Step 5" below. **Repro, driven through the real
+− WEAR button with two Scrap Shields:** mark 1 box on shield #1 (`eq_a3`), swap to #2
+(`eq_a4`) and it reads 0 marked / 2 left where it used to inherit #1's box; wear #2 to
+destruction (`shieldAlive false`) and swap back, and #1 still reads 1 box and alive.
+Stored state is `{"eq_a3":1,"eq_a4":2}` where it used to be a single `{"Scrap Shield":n}`.
+The original text is kept below for the history. `app/js/store.js:129` declared
 `shieldWear: {}` as `{shieldName: boxesMarked}` and `app/js/engine.js:900` reads
 `(ch.shieldWear || {})[shield.name]`; the writes at `app/js/combat.js:3482-3483` use the
 same name key. **Severity: medium, and in-app reachable with no import.** GROUP C, whose
@@ -835,17 +847,18 @@ left, and it belongs to step 5.
   so two Kevlar Weaves cannot share a repair state no matter how the record was authored.
   The `ch.racked` rekey gap was closed in the same pass (`:421-434`), which also removed
   the only shape in the verification set that was not stable across loads.
-- **Third, and all that is left, inside step 5 itself:** key `ch.armorDR` on `entryKey`,
-  and convert `ch.shieldWear` to entry keys in the same commit, with a migration that
-  attributes existing name-keyed wear to the first owned entry of that name and drops it
-  when none is owned, which is the pattern `firstKeyOfTier` at `app/js/store.js:468-471`
-  already established for rigs. Put both migrations **after the split**, per the rule now
-  recorded there. Apply the settled ruling by parity: a re-acquired piece of armor arrives
-  at full DR, and a re-acquired shield arrives unworn. Point 1 of the four reasons above
-  ("armor lives entirely inside the broken predicate") no longer applies: the predicate is
-  fixed, so an imported Kevlar Weave with no `qty` now gets an `eq_` id like everything
-  else. Points 2, 3 and 4 stand. What step 5 must not do under any circumstance is
-  introduce a **third** name-keyed per-piece map.
+- ~~**Third, and all that is left, inside step 5 itself:** key `ch.armorDR` on `entryKey`,
+  and convert `ch.shieldWear` to entry keys in the same commit.~~ **DONE, with one naming
+  correction: the map is `ch.armorWear` and it stores DR LOST, not `ch.armorDR` storing
+  current.** A map named `armorDR` would either hold a number that is not the DR (a lie in
+  the name) or hold the current value, which duplicates the catalog on every acquisition
+  and has to be written for pieces nobody has touched. Storing wear makes "absent means
+  undamaged" the default, which is what delivers the settled ruling for free, and it makes
+  `armorWear` and `shieldWear` the same shape for the same reason, which was the whole
+  argument for doing them together. Both migrations run after the split, per the rule
+  recorded there, and both use the `firstKeyOfTier` attribution pattern. Points 2, 3 and 4
+  of the four reasons above were all live and all handled; point 1 was already dead.
+  No third name-keyed per-piece map was introduced.
 
 ## Still open after the ordering, qty, duplicate-id and racked fixes
 
@@ -932,12 +945,207 @@ Medical Baseline grade flipping to Advanced at Trauma Grade [2]. All seven tabs 
 with no console error for a Stitcher and for a non-Stitcher holding two Rigs, and the
 non-Stitcher's rig block still shows no Triage Save DC and no Scrap Rig option.
 
+## Step 5: Armor Repair, and Shield Durability converted beside it
+
+**Built, verified live, uncommitted.** The rule fills the gap behind four features that
+said "until repaired during Downtime" with nothing behind them: Demolition Engine,
+Corrosion (Acid), Blackware Hand Razors, and the caustic environment clause.
+
+### State
+
+    ch.armorWear   { armorEntryKey: DR points lost }   new
+    ch.armorGuard  { armorEntryKey: true }             new, the crafting quality edge
+    ch.shieldWear  { shieldEntryKey: boxesMarked }     converted from a NAME key (L7)
+
+Declared in `blank()` at `app/js/store.js:129-132`. The catalog `dr` is the BASE and the
+ceiling; absent from `armorWear` means the suit is at full DR, which is what delivers "a
+re-acquired piece arrives fresh" with no heuristic, exactly as it does for `ch.rig.hp`.
+
+**Migration** is one shared block in `migrate()`, immediately after the `ch.rig` block and
+therefore after the instance-id split, per the ordering rule recorded at the split. It
+rebuilds all three maps null-prototype and applies one rule to each key: **a key that
+already names a live entry is kept, a key that names an owned item's NAME becomes that
+item's first owned entry, anything else is dropped.** The live-entry test running first is
+what makes it idempotent, since after one pass the keys are ids and an id-keyed map is
+indistinguishable from a name-keyed one except by asking the equipment list; it is also
+what keeps a legitimately name-keyed pooled or custom row working. Two keys resolving to
+one entry keep the first and drop the second rather than overwrite. The old pre-split
+normalization of `shieldWear` at `:213-214` is gone, replaced by a pointer comment saying
+where it went and why.
+
+Seven import shapes through `importCharacter`, each re-loaded twice more: **zero throws,
+all seven byte-stable across three loads.** Legacy `{"Scrap Shield":2,"Riot Shield":1}`
+plus `armorWear:{"Anvil Frame":3}` and `armorGuard:{"Anvil Frame":true}` land on the first
+owned entry of each name, with the SECOND Anvil Frame untouched at 5/5 (dropped, never
+duplicated); a name nothing owns is dropped to `{}`; junk values, non-object maps, an
+absent field and prototype-name keys all normalize to `{}` without throwing; a stored
+wear of 99 against a base of 5 reads 0/5 (the resolver floors it) and stays stable.
+
+### One resolver, one writer
+
+- `EN.engine.armorState(ch, key)` is THE resolver: `{key, name, item, base, lost, current,
+  damaged, breached, guard}`. Nothing anywhere else derives a current DR.
+- `EN.engine.applyArmorDamage(c, key, delta)` is THE writer, called inside `store.update`.
+  It clamps to `[0, base]` in both directions and spends `armorGuard` on the first point
+  of loss. **This existed as two writers for part of the build and they diverged**: the
+  Impact Table's own mutator ignored the guard, so a click there burned a point the
+  Defenses row would have absorbed. Reproduced, then collapsed. That is the one-resolver
+  rule applying to the write path, not only the read path.
+
+### Every reader of armor DR, and how each now gets the current value
+
+1. `defensiveLoadout` in `app/js/engine.js` sets `armorDR` from `armorState().current`,
+   and adds `armorBaseDR`, `armorDRLost`, `armorBreached`, `armorGuard`, `armorState`,
+   `armorKey`, `shieldKey` to `d.defenseGear`. A LAPSED lease now grants
+   `min(lapsedDR, current)`: a lapsed lease does not un-punch a hole, so a breached
+   Sentinel Issue grants 0 rather than falling back up to its `lapsedDR` of 1.
+2. `derive()`'s `d.armorDR` and `d.totalDR` ride that, so every consumer of either is
+   current by construction: the Freelancer DR stat tile, the DR breakdown popover, the
+   Block tray's flat "Armor DR" row, the Block summary line, and the Plated half-DR term
+   (`Math.floor(dg.armorDR / 2)`, which now halves the CURRENT DR).
+3. Freelancer gear chip (`app/js/combat.js`): reads `3 of 5 DR` when damaged.
+4. DR breakdown row and footer: names the loss and points at the Impact Table.
+5. Stash item card (`app/js/inventory.js`): a stash card asks the resolver for THAT entry
+   and shows `3 / 5 DR`; the market card, which has no entry, still shows the base.
+6. Impact Table header tag: still the catalog base, and now SAYS `5 BASE DR`, because that
+   panel is keyed on the armor TYPE (`ch.armorMods` is name-keyed) and not on a piece.
+7. Print sheet: stat tile value is current, sublabel reads `Resonant Carapace · 1 of 3`;
+   the inventory detail line reads `DR 1 of 3 (2 lost, until repaired)`.
+8. PDF export: the DR field's sublabel reads `Resonant Carapace (1/3)`, and the inventory
+   table's notes column reads `DR 1 of 3 (2 lost)`. Verified by instrumenting
+   `armorState` during a real `EN.pdfExport.build`, which logged `eq_b1->1/3`.
+
+### The two lanes
+
+Numbers live in `EN.crafting.armorRepair`, priced per POINT of DR restored:
+
+| lane | cost | resolves as |
+|---|---|---|
+| Shop | 10 percent of list per point | 1 Downtime period, no roll, pays on the spot |
+| Bench | 5 percent of list per point in parts | a Simple Project using Engineering |
+| Fab Rig | 0 parts | `Portable Fabrication Rig` in the stash prints the plate |
+| At 0 DR | full parts cost (`materialCost`, half list) | not a repair: an ordinary Project |
+
+Measured on an Anvil Frame (list 920, base 5): 2 points shop `𝒢184`, bench `𝒢92`; 3 points
+shop `𝒢276`; a full 5 points shop `𝒢460`, which is half of 920 and reproduces the rate
+derivation the manuscript gives, so nobody retunes it by accident. A breached suit's
+rebuild is `𝒢460` in parts at the item's own Project tier (Standard, target 5), restoring
+the whole base.
+
+The bench lane hands the work to the existing Projects system: `tbStart` carries
+`repairKey` (the armor entry) and `repairPoints`, the card rolls, salvages, secures and
+logs like any other Project, and `tbComplete` pays out in DR through the one writer, so it
+cannot exceed the base and a piece that left the stash mid-Project restores nothing (the
+card shows a `PIECE GONE` chip in that case, verified). The quality edge is the ordinary
+results table: a log containing a Flawless interval sets `armorGuard`, and the next point
+of DR the suit would lose is absorbed.
+
+### The crafter gate is not a new rule
+
+`EN.crafting.tiers` already carries `skillTier` per tier ("Expects Proficient" on the
+bench chips), and it was DISPLAYED and never ASKED. `EN.crafting.meetsTier(tierKey,
+skillTier)` asks it, against `EN.rules.profOrder`. The bench lane resolves as a Simple
+Project, so it is closed to an untrained Engineer for the one reason every Simple Project
+is; there is no armor-specific gate anywhere. Verified: untrained, the BENCH button is
+`disabled` and clicking it creates no Project, while the SHOP lane still works; granting
+Engineering Proficiency enables it with no other change.
+
+**Scope note, deliberate and worth knowing.** `meetsTier` is called from the bench lane
+only. Blueprints and custom Projects remain advisory (untrained just pays +2 Snag), which
+is the pre-existing behaviour, and the 0 DR rebuild routes through that same ungated
+ordinary path on purpose so it matches building the identical suit from the Blueprints
+panel. Making the tier requirement bite everywhere is a real change to every Project in
+the app and was not in this step's scope.
+
+### The one hole in the floor, reproduced
+
+`app/js/store.js:392`'s skip clause is `if (e.id || !(e.qty > 0) || stackable)`, and `e.id`
+short-circuits before `qty` is ever looked at. So the inherited invariant is true per ROW
+and **false per PIECE**: one row can be several pieces. Measured on armor through the real
+`migrate`:
+
+    equipment: [{id:"eq_multi", name:"Anvil Frame", qty:3}]
+      -> ONE row, ONE armorState, ONE DR track: three suits reading "eq_multi 3/5"
+
+    equipment: [{name:"Anvil Frame", qty:3}]        (the same three, authored id-less)
+      -> three rows, three keys, three tracks, all 5/5
+
+This is verbatim the "two Kevlar Weaves share a repair state" case the Armor Repair
+argument above says the split now prevents, arriving through the operand nobody checked.
+It was flagged by the third lens of the duplicate-id run and went unread until now.
+**Reachability is import and hand-edit only**, confirmed: `inventory.js` and `builder.js`
+mint one `eq_` id per non-stackable purchase at `qty: 1`, and `addToStash` merges only on
+`x.name === name && !x.id`, so no in-app path can produce an id-carrying non-stackable row
+with `qty > 1`. **NOT fixed here on purpose:** the fix is one clause in the split (split an
+id-carrying non-stackable row with `qty > 1`, first instance keeping the original id), but
+it changes id assignment for every multi-quantity id-carrying row of every gear type, and
+changes of that shape have each earned their own thirty-plus-shape seeded-RNG verification
+run. It should get one. It is the first thing to do next in GROUP C.
+
+Related doc correction while here: the claim at "Still open after the ordering, qty,
+duplicate-id and racked fixes" that **"every equipment row's `entryKey` is unique after
+migration"** is overstated in two ways, both already measured by the lenses. Uniqueness is
+enforced over **ids**, never over the effective `entryKey`, so two pooled stackable rows
+and two unowned non-stackable rows still share a name key (benign, pre-existing), and a
+hand-authored id equal to another row's catalog name still collides (not benign, needs a
+hand-edit). What was actually proved is: **every row that carries an id ends up with an id
+no other row carries.** Read the section with that substitution.
+
+### Found while building step 5
+
+- **`app/js/builder.js:135` reads `ch.identity.handle` unguarded**, so importing a record
+  with no `identity` object throws inside `emit()` and the #PRINT tab cannot render it.
+  Pre-existing (the blank character always has `identity`), import and hand-edit only, same
+  family as L10 and L12. Hit it four times while running import fixtures.
+- **`ch.armorMods` is now the last name-keyed gear map** (`app/js/engine.js` `armorModDR`
+  reads `ch.armorMods[armor.name]`), and it is deliberately NOT converted. It is not
+  per-piece degradation state: it records which mods a TYPE of suit carries, and the
+  Impact Table's mod bench is keyed on the type to match. Converting it is a separate
+  decision about whether two Anvil Frames can be modded differently, not a defect. The
+  header now reads `BASE DR` so it does not claim to be per-piece.
+- `EN.engine.ownedArmorPieces` guards its `ch.equipment` read with `Array.isArray` rather
+  than `|| []`, so it does not join the L10 class of unguarded reads that let one bad
+  record wipe the roster.
+- `EN.inventoryView.openBench(key)` is new, so another view can land the player on a
+  specific Workbench bench (the damaged-plating readout sends them to the Impact Table).
+
+### Verification run for step 5
+
+Own origin `http://localhost:8831`, forced reload before every reading, four characters.
+
+- Two Anvil Frames on one character hold damage independently (`{eq_a1:2, eq_a2:1}`), and
+  the worn suit defends as 3 while the spare reads 4.
+- DR never exceeds base and never falls below 0, forced through the writer directly:
+  over-repair by 99 on an undamaged suit stays 5/5, over-repair on a damaged one lands
+  exactly 5/5, over-damage by 99 stops at 0/5, and a non-armor entry and a missing entry
+  are both inert.
+- Shop lane driven through the real button: `𝒢184` off the wallet, 3/5 to 5/5, the other
+  piece untouched.
+- Bench lane driven through the real button: opens `Repair Anvil Frame (+1 DR)`, Simple,
+  Engineering, target 3, parts `𝒢46`, lands the player on the Fabrication bench; SECURE
+  pays, two Flawless intervals complete it, DR returns to 5/5 and `armorGuard` is set. The
+  next `− DR` is absorbed with no loss, and the one after that lands.
+- Breached suit routes to `REBUILD PROJECT · 𝒢460` and restores the full 5 on completion.
+- Re-acquisition, through the real stash DROP and the real gray-market BUY: drop a breached
+  Anvil Frame (`eq_a1`, 5 lost) and buy another; the new piece is `eq_jfcky5i` and arrives
+  5/5. The orphan `{eq_a1:5}` survives in memory to the end of the session exactly as
+  `ch.rig.hp` orphans do, and the next load prunes it to `{}`.
+- Shield Durability per entry, driven through the real − WEAR button: see L7 above.
+- Lapsed leases: a Sentinel Issue reads 3, then 2 with 1 lost, then 1 lapsed, then 0 when
+  lapsed and breached, then 0 when paid and still breached.
+- **All seven tabs plus all five Workbench benches render for four characters with zero
+  console errors and zero throws**, re-run after a forced reload.
+
 ## Open after the duplicate-id fix
 
-- **A second lens finding went unread.** The collision lens confirmed a prototype-key
-  defect (fixed before commit, see below) and also flagged an overstated invariant in
-  this document. Two further lens reports from that run were never read. They are in
-  `tasks/w4qe3petu.output`. Read before step 5.
+- ~~**A second lens finding went unread.**~~ **READ during step 5.**
+  `tasks/w4qe3petu.output` held three lens reports. The prototype-key defect they found
+  was already fixed before commit and is recorded below. The two findings that were still
+  live are both folded into the Step 5 section above: the per-ROW versus per-PIECE hole in
+  the floor (now reproduced on armor), and the overstated `entryKey` uniqueness claim (now
+  corrected in place). A third, documentation-only nit from that run is also true: the
+  verification-run prose says 34 shapes, then 26 unchanged and 7 changed, which leaves one
+  shape unaccounted for.
 - **Prototype keys, fixed but worth knowing.** The uniqueness check used plain object
   literals, so an id like `constructor` or `toString` read as already taken through the
   prototype chain: a row that was the ONLY one carrying it was judged a duplicate and
@@ -947,6 +1155,53 @@ non-Stitcher's rig block still shows no Triage Save DC and no Scrap Rig option.
   will key on an equipment entry.
 - **`nameToIds` last-write-wins** remains open and is unrelated to the id work: it
   concerns two rows sharing a NAME, not an id.
+
+## STEP 5 IS ON A BRANCH, NOT ON MAIN
+
+Armor Repair is built and mostly working, but review found defects serious enough that
+it was committed to `armor-repair-wip` rather than `main`. Fix these, then merge.
+
+**Blocking, data corruption:**
+
+- **The migration lands name-keyed wear on a different piece than the one damaged.**
+  Confirmed live and called "the one that matters" by the reviewer. A saved character
+  loading once has its armor damage silently moved to the wrong suit. This is why the
+  branch exists: it corrupts real records rather than merely reading wrong.
+
+**Blocking, spec violation:**
+
+- **The bench gate IS a new gate.** The instruction was explicit that the existing
+  Project Tier requirement closes the bench lane and no separate gate should be added.
+  `meetsTier` is now the ONLY place in the app a Project tier is enforced, and it is
+  called from the bench lane alone. So the cheap lane is gated and the stronger lane
+  is not, which is backwards, and Blueprints and custom Projects remain ungated. Either
+  enforce tiers everywhere Projects are created, or nowhere and let the existing
+  machinery do it. Not in one lane.
+
+**Rules fidelity:**
+
+- **Leased armor is priced off the lease deposit**, so both lanes and the rebuild
+  mis-price a leased suit.
+- **Both lanes are all-or-nothing**, so the per-point rate the rule specifies is not
+  actually purchasable per point. The manuscript prices per point of DR restored.
+- **A repair Project can complete without paying**, making the bench lane's parts cost
+  optional. Inherited shape from the existing Project flow, but it lands here.
+- At least one path **debits payment and restores zero DR**.
+
+**Not fixed, reproduced, and it lands on this step:** the split's skip clause
+short-circuits on `e.id` before looking at `qty`, so entry identity holds per ROW and
+not per PIECE. One id-carrying row with `qty: 3` is three suits sharing one DR track,
+verbatim the "two Kevlar Weaves share a repair state" case. Import and hand-edit only.
+The fix is one clause in the split affecting every multi-quantity row of every gear
+type, so it wants its own seeded-RNG verification run like the two before it.
+
+**Worth keeping from this round:** the implementer chose `ch.armorWear` (points LOST)
+over the sketched `ch.armorDR` (current value), because absent then means undamaged and
+a re-acquired piece arrives fresh with no heuristic, matching `ch.rig.hp` and
+`shieldWear` in one shape. That reasoning is sound and should survive the fixes. It also
+found and fixed a defect in its own work: two writers existed briefly and the Impact
+Table's ignored the quality guard, now collapsed to one writer that clamps both
+directions.
 
 ## Environment
 

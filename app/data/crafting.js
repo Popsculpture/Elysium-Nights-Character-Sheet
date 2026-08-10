@@ -108,6 +108,52 @@ EN.crafting = {
   /* suggested base Snag Dice by Project tier; the table adjusts from there */
   snagForTier: { simple: 1, standard: 2, advanced: 3, prototype: 4, relic: 5 },
 
+  /* Does a skill tier clear a Project tier's stated requirement? Every tier row
+     above already carries the training it expects (`skillTier`), and the bench
+     chips already print it as "Expects Proficient"; this is that same field being
+     ASKED rather than merely displayed. Nothing here is per-mechanic: a Simple
+     Project expects Proficient, so any lane that resolves as a Simple Project is
+     closed to an untrained crafter for the one reason every Simple Project is. */
+  meetsTier: function (tierKey, skillTier) {
+    var order = (EN.rules && EN.rules.profOrder) || ["untrained", "proficient", "expertise", "mastery"];
+    var need = this.tier(tierKey).skillTier || "proficient";
+    var have = order.indexOf(skillTier || "untrained");
+    return have >= 0 && have >= order.indexOf(need);
+  },
+
+  /* ---- Armor Repair -------------------------------------------------------
+     Armor DR is mutable. The catalog `dr` is the BASE and the ceiling; damage
+     lowers a suit's CURRENT DR and repair raises it back, never past the base.
+     Two lanes, both priced per POINT of DR restored off the suit's listed price:
+
+       SHOP    10 percent per point. One Downtime period, no roll.
+       BENCH    5 percent per point in parts, and it resolves as a Simple Project
+                using Engineering, so the Project tier requirement above is the
+                only crafter gate there is. A Portable Fabrication Rig prints the
+                plate, so with stock on hand the parts cost nothing; salvage cuts
+                or clears it the ordinary way any Project's materials are cut.
+
+     A suit at 0 DR is not repaired, it is rebuilt: an ordinary Project at the
+     item's own tier and full parts cost (materialCost, half the market price).
+
+     Where 10 percent comes from, so nobody retunes it by accident: at that rate
+     re-plating a 5 DR suit from 0 costs half its price, exactly the ratio the
+     materials rule above already charges to build one from nothing. */
+  armorRepair: {
+    shopRate: 0.10,
+    benchRate: 0.05,
+    benchTier: "simple",
+    benchSkill: "Engineering",
+    freeParts: "Portable Fabrication Rig",
+    shopTime: "1 Downtime period",
+    shopCost:  function (price, points) { return Math.ceil(Math.max(0, price || 0) * this.shopRate  * Math.max(0, points || 0)); },
+    benchCost: function (price, points) { return Math.ceil(Math.max(0, price || 0) * this.benchRate * Math.max(0, points || 0)); },
+    shopText: "Hand it to a shop. One Downtime period and 10 percent of the suit's listed price per point of DR restored. No roll.",
+    benchText: "Do it yourself. A Simple Project using Engineering, parts at 5 percent of the listed price per point. A Portable Fabrication Rig prints the plate from stock, so the parts cost nothing.",
+    breachedText: "A suit at 0 DR is past repair. Rebuilding it is an ordinary Project at full parts cost.",
+    qualityText: "Clean run: the plate seats true, and the next point of DR this suit would lose is absorbed for free."
+  },
+
   /* ---- derivation: map a catalog item to a craft Skill, a Project tier, a cost ---- */
   _availTier:   { Common: "standard", Uncommon: "standard", Rare: "advanced", Iconic: "prototype", Legendary: "prototype", Mythical: "prototype", Artifact: "relic" },
   _tierRank:    { simple: 0, standard: 1, advanced: 2, prototype: 3, relic: 4 },

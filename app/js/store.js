@@ -126,7 +126,10 @@ EN.store = (function () {
       carry: {},                         // Loadout carry status per entry key: "carried" | "worn" | "racked" (absent = stashed)
       racked: {},                        // Racked assignments: {itemEntryKey: carryGearEntryKey} (Carry Gear, one rack per item)
       slotInert: {},                     // Body Slot conflicts: {itemEntryKey: true} for on-person items the player benched
-      shieldWear: {},                    // Shield Durability: {shieldName: boxesMarked}
+      shieldWear: {},                    // Shield Durability: {shieldEntryKey: boxesMarked}
+      armorWear: {},                     // Armor Repair: {armorEntryKey: DR points lost}. The catalog dr is the
+                                         // BASE and the ceiling; absent means the suit is at full DR
+      armorGuard: {},                    // {armorEntryKey: true}: a clean repair's quality edge, absorbs the next point of DR lost
       loadout: "standard",               // declared Loadout: "light" | "standard" | "heavy", sets the Load Budget
       haul: "none",                      // active Haul: "none" | "lift" (body-sized) | "drag" (oversized/double)
       glimmer: 0,
@@ -209,9 +212,9 @@ EN.store = (function () {
     // non-true value is just noise to strip.
     if (!ch.slotInert || typeof ch.slotInert !== "object") ch.slotInert = {};
     Object.keys(ch.slotInert).forEach(function (k) { if (ch.slotInert[k] !== true) delete ch.slotInert[k]; });
-    // Shield Durability boxes marked, keyed by shield name
-    if (!ch.shieldWear || typeof ch.shieldWear !== "object") ch.shieldWear = {};
-    Object.keys(ch.shieldWear).forEach(function (k) { var v = ch.shieldWear[k]; if (typeof v !== "number" || v < 0) delete ch.shieldWear[k]; });
+    // ch.shieldWear, ch.armorWear and ch.armorGuard are keyed on the equipment
+    // ENTRY, so they are normalized AFTER the instance-id split, not here beside
+    // the other gear defaults. See the ordering rule at the split.
     // Which REPLACER the player is currently punching with: the name of a lineage
     // feature or an installed piece of chrome, or "base" for the plain
     // 1 + Body Modifier strike. Increases are not a choice and never land here.
@@ -484,6 +487,61 @@ EN.store = (function () {
       else rg.hp[k] = Math.floor(v);
     });
     if (rg.key && !liveKeys[rg.key]) rg.key = null;
+    /* Per-piece defensive degradation: Shield Durability and Armor Repair. They are
+       one mechanic wearing two names (a defensive piece that degrades and is repaired
+       back toward its printed value), so they carry ONE shape, the same shape ch.rig.hp
+       carries: {entryKey: points}. That is why this block sits HERE, after the
+       instance-id split, and not beside the other equipment defaults a hundred lines
+       up: it resolves entry keys. See the ordering rule at the split.
+
+         ch.shieldWear   Durability boxes marked. WAS keyed on the shield's NAME, so two
+                         Scrap Shields shared one wear track and a re-bought shield
+                         arrived already worn. Converted here.
+         ch.armorWear    DR points a suit has lost. New; the catalog `dr` is the base and
+                         the ceiling, and an absent row means the suit is at full DR.
+         ch.armorGuard   The quality edge a clean repair earns, one absorbed point of DR.
+
+       Conversion rule, the same one firstKeyOfTier applies to Rigs: a key that already
+       names a LIVE entry is left alone, a key that names an owned item's NAME becomes
+       that item's first owned entry, and anything else is DROPPED. Dropped rather than
+       parked on another piece, per the settled ruling that state which cannot be
+       attributed to one object is discarded and a re-acquired piece arrives fresh.
+
+       The live-entry test runs FIRST, and that is what makes this idempotent across
+       loads: once converted the keys are ids, and an id-keyed map is indistinguishable
+       from a name-keyed one except by asking the equipment list. It also keeps a pooled
+       or custom row working, since entryKey() legitimately hands such a row its own name.
+
+       Rebuilt null-prototype: these keys are user-supplied strings, and a plain literal
+       reads "constructor" and "toString" as already present. */
+    var eqRows = Array.isArray(ch.equipment) ? ch.equipment : [];
+    var wearLiveKeys = Object.create(null), wearFirstKeyByName = Object.create(null);
+    eqRows.forEach(function (e) {
+      if (!e || (e.qty != null && e.qty <= 0)) return;
+      var k = e.id || e.name;
+      if (!k) return;
+      wearLiveKeys[k] = 1;
+      if (e.name && wearFirstKeyByName[e.name] == null) wearFirstKeyByName[e.name] = k;
+    });
+    function migrateWearMap(field, valueOf) {
+      var src = ch[field];
+      if (!src || typeof src !== "object" || Array.isArray(src)) src = {};
+      var out = Object.create(null);
+      Object.keys(src).forEach(function (k) {
+        var v = valueOf(src[k]);
+        if (v == null) return;
+        var key = wearLiveKeys[k] ? k : wearFirstKeyByName[k];
+        // no owned entry to attribute it to, or an earlier key already claimed
+        // that entry: drop it rather than duplicate or overwrite
+        if (!key || out[key] != null) return;
+        out[key] = v;
+      });
+      ch[field] = out;
+    }
+    function positiveInt(v) { return (typeof v === "number" && isFinite(v) && v > 0) ? Math.floor(v) : null; }
+    migrateWearMap("shieldWear", positiveInt);
+    migrateWearMap("armorWear", positiveInt);
+    migrateWearMap("armorGuard", function (v) { return v === true ? true : null; });
     // cyberware: legacy string entries → objects. sp:0 so old manual marks don't
     // retroactively spike Static; chrome bought from the market carries real SP.
     if (Array.isArray(ch.cyberware)) {

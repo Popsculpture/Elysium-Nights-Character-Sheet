@@ -568,7 +568,17 @@ EN.inventoryView = (function () {
     if (typeof it.ammo === "number" && it.ammo > 1) statChips.push(el("span.chip", { title: "Magazine / capacity", style: { fontSize: "9.5px", color: "var(--gold)", borderColor: "var(--gold)" } }, "MAG " + it.ammo));
     /* defensive-gear stat chips: DR / Block / Defense / Ward (mod slots moved into the caption line) */
     function statChip(text, color, title) { return el("span.chip", { title: title || "", style: { fontSize: "9.5px", color: color, borderColor: color, fontWeight: 600 } }, text); }
-    if (typeof it.dr === "number") statChips.push(statChip("⛨ " + it.dr + " DR", "var(--success)", "Damage Reduction against physical damage (passive mitigation)"));
+    // DR is per PIECE and mutable, so a stash card shows THIS entry's current DR
+    // out of its base (the market card, which has no entry, shows the base alone).
+    if (typeof it.dr === "number") {
+      var drSt = (mode === "stash" && EN.engine.armorState) ? EN.engine.armorState(ch, ownedKey) : null;
+      if (drSt && drSt.base && drSt.lost > 0) {
+        statChips.push(statChip("⛨ " + drSt.current + " / " + drSt.base + " DR", drSt.breached ? "var(--danger)" : "var(--warn)",
+          "Damage Reduction: " + drSt.lost + " point" + (drSt.lost === 1 ? "" : "s") + " lost until repaired (Workbench > Impact Table)"));
+      } else {
+        statChips.push(statChip("⛨ " + it.dr + " DR", "var(--success)", "Damage Reduction against physical damage (passive mitigation)"));
+      }
+    }
     if (it.blockBonus) statChips.push(statChip("⛊ +" + it.blockBonus + " Block", "var(--gold)", "Flat Block Bonus, improves the Block Defensive Impulse"));
     if (typeof it.defense === "number") statChips.push(statChip((it.defense >= 0 ? "+" : "") + it.defense + " DEF", it.defense ? "var(--accent)" : "var(--text3)", "Defense bonus while this shield is wielded"));
     if (it.blockDie) statChips.push(statChip("⛊ " + it.blockDie + " Block", "var(--gold)", "Block die, added when you Block with this shield"));
@@ -1659,8 +1669,185 @@ EN.inventoryView = (function () {
     return out;
   }
 
+  /* ============================ ARMOR INTEGRITY ============================
+     Armor Repair, the rule behind the four features that said "until repaired
+     during Downtime" and had nothing behind them. A suit's catalog DR is its BASE
+     and its ceiling; ch.armorWear says how much of it is currently gone, keyed on
+     the equipment ENTRY, so this panel lists PIECES and not item types: two Kevlar
+     Weaves are two rows with two independent tracks.
+
+     Two lanes, both priced per point restored off the suit's listed price, both
+     read out of EN.crafting.armorRepair so the numbers live in the rules data:
+
+       SHOP    10 percent per point, one Downtime period, no roll. Pays on the spot.
+       BENCH    5 percent per point in parts, opened as a Simple Project using
+                Engineering on the Fabrication bench, where it rolls, salvages and
+                completes like any other Project. A Portable Fabrication Rig prints
+                the plate from stock, so its parts cost is 0.
+
+     The bench lane's crafter requirement is NOT a rule written here. It is the
+     Project tier requirement that every Project already carries: a Simple Project
+     expects the Proficient skill tier, so EN.crafting.meetsTier answers the
+     question and an untrained Engineer is turned away for the same reason they are
+     turned away from any other Simple Project. There is no armor-specific gate.
+
+     A suit at 0 DR is not repairable at all: the button routes to an ordinary
+     Project at the item's own tier and full parts cost, exactly the Project the
+     Blueprints panel would open for it. */
+  function armorRepairRules() { return (CRAFT().armorRepair) || {}; }
+  // The character's live tier in a craft skill, asked of the engine rather than of
+  // ch.proficiencies, so trained-by-feature floors count the way they do everywhere.
+  function craftSkillTier(ch, skillName) {
+    var key = EN.engine.skillKeyOf ? EN.engine.skillKeyOf(skillName) : null;
+    return key && EN.engine.effectiveSkillTier ? EN.engine.effectiveSkillTier(ch, key) : "untrained";
+  }
+  function ownsFabRig(ch) {
+    var nm = armorRepairRules().freeParts;
+    return !!nm && (ch.equipment || []).some(function (e) { return e && e.name === nm && (e.qty == null || e.qty > 0); });
+  }
+  // Damage and its undo both go through the engine's one writer, so the bench and
+  // the Defenses row clamp the same way and spend the quality edge the same way.
+  function markArmorDR(st, delta) {
+    var res = null;
+    store.update(function (c) { res = EN.engine.applyArmorDamage(c, st.key, delta); });
+    if (res && res.absorbed) toast(st.name + ": the freshly seated plate absorbs the hit. No DR lost.");
+    else if (res && delta > 0 && res.breached) toast(st.name + " is breached at 0 DR; rebuilding it is a full Project.");
+    EN.app.render();
+  }
+  // The shop lane: no roll, one Downtime period, Glimmer off the top. Restoring is
+  // always toward the base and never past it, because the points asked for are
+  // clamped to what the piece has actually lost.
+  function armorShopRepair(st, points) {
+    var AR = armorRepairRules();
+    var pts = Math.max(0, Math.min(points, st.lost));
+    if (!pts) return;
+    var cost = AR.shopCost((st.item && st.item.price) || 0, pts);
+    var ch = store.active();
+    if (cost > (ch.glimmer || 0)) { toast("Not enough Glimmer for the shop repair (" + fmtG(cost) + ")."); return; }
+    store.update(function (c) {
+      c.glimmer = (c.glimmer || 0) - cost;
+      EN.engine.applyArmorDamage(c, st.key, -pts);    // the one writer; it is what stops DR passing the base
+    });
+    toast(st.name + " repaired to " + Math.min(st.base, st.current + pts) + " of " + st.base + " DR for " + fmtG(cost) + ". " + AR.shopTime + ".");
+    EN.app.render();
+  }
+  // The bench lane: hand the work to the Projects system and get out of the way.
+  // The Project carries which piece it repairs and how many points it buys back,
+  // and tbComplete applies them.
+  function armorBenchProject(ch, st, points) {
+    var AR = armorRepairRules();
+    var pts = Math.max(0, Math.min(points, st.lost));
+    if (!pts) return;
+    var price = (st.item && st.item.price) || 0;
+    tbStart({
+      kind: "repair",
+      name: "Repair " + st.name + " (+" + pts + " DR)",
+      itemName: st.name,
+      skill: AR.benchSkill || "Engineering",
+      tier: AR.benchTier || "simple",
+      materialCost: ownsFabRig(ch) ? 0 : AR.benchCost(price, pts),
+      addOnComplete: false,
+      repairKey: st.key,
+      repairPoints: pts
+    });
+    _bench = "fab";   // the Project is live on the Fabrication bench; land the player on it
+    EN.app.render();
+  }
+  // A breached suit is a rebuild, not a repair: the ordinary Project the Blueprints
+  // panel would open for this item, at full parts cost, restoring the whole base.
+  function armorRebuildProject(st) {
+    var it = st.item || {};
+    tbStart({
+      kind: "repair",
+      name: "Rebuild " + st.name,
+      itemName: st.name,
+      skill: CRAFT().skillForItem(it),
+      tier: CRAFT().tierForItem(it),
+      materialCost: CRAFT().materialCost(it),
+      addOnComplete: false,
+      repairKey: st.key,
+      repairPoints: st.base
+    });
+    _bench = "fab";   // the Project is live on the Fabrication bench; land the player on it
+    EN.app.render();
+  }
+  function armorIntegrityPanel(ch) {
+    var AR = armorRepairRules();
+    var pieces = (EN.engine.ownedArmorPieces ? EN.engine.ownedArmorPieces(ch) : []).filter(function (p) { return p.base > 0; });
+    var engTier = craftSkillTier(ch, AR.benchSkill || "Engineering");
+    var benchOpen = CRAFT().meetsTier(AR.benchTier || "simple", engTier);
+    var benchTierName = CRAFT().tier(AR.benchTier || "simple").name;
+    var needTier = CRAFT().tier(AR.benchTier || "simple").skillTier || "proficient";
+    var needName = (((EN.rules || {}).profTiers || {})[needTier] || {}).name || needTier;
+    var hasRig = ownsFabRig(ch);
+    var kids = [el("p.help", { style: { margin: "0 0 8px", fontSize: "11.5px" },
+      text: "Damage lowers a suit's DR; repair raises it back toward the printed value and never past it. " + (AR.shopText || "") + " " + (AR.benchText || "") })];
+    if (!pieces.length) {
+      kids.push(el("p.help", { style: { margin: "6px 0 0", fontSize: "11px", color: "var(--text3)" }, text: "No armor in your Stash to keep in the fight." }));
+      return EN.ui.panel("Armor Integrity", "DR TRACK · REPAIR LANES", kids, { corners: true });
+    }
+    pieces.forEach(function (st) {
+      var price = (st.item && st.item.price) || 0;
+      var worn = ch.equippedArmor === st.key;
+      var head = el("div.row.between.wrap", { style: { gap: "8px", alignItems: "center" } }, [
+        el("div.row.wrap", { style: { gap: "7px", alignItems: "center", flex: "1 1 auto", minWidth: 0 } }, [
+          el("span", { style: { fontWeight: 600, fontSize: "13px" }, text: st.name }),
+          worn ? tagChip("WORN", "var(--gold)", "This is the suit you have on") : null,
+          el("span.mono", { title: "Current DR out of the suit's printed base",
+            style: { fontSize: "13px", color: st.breached ? "var(--danger)" : (st.damaged ? "var(--warn)" : "var(--success)") },
+            text: st.current + " / " + st.base + " DR" }),
+          el("span.mono", { style: { fontSize: "12px", color: "var(--text3)" }, text: "□".repeat(st.current) + "■".repeat(st.lost) }),
+          st.breached ? tagChip("BREACHED", "var(--danger)", AR.breachedText) : null,
+          st.guard ? tagChip("PLATE SEATED", "var(--success)", AR.qualityText) : null
+        ]),
+        el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } }, [
+          el("button.btn.sm", { disabled: st.breached, title: "Mark 1 point of DR lost (Demolition Engine on worn armor, a Hand Razors crit, a caustic environment)",
+            style: { color: "var(--danger)", borderColor: "var(--danger)" },
+            onclick: function () { markArmorDR(st, 1); } }, "− DR"),
+          st.lost > 0 ? el("button.btn.sm", { title: "Undo one point of DR loss. A misclick fix, not a repair.",
+            style: { color: "var(--text3)" },
+            onclick: function () { markArmorDR(st, -1); } }, "↶ UNDO") : null
+        ])
+      ]);
+      var lanes;
+      if (st.breached) {
+        lanes = el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "7px" } }, [
+          el("span.help", { style: { margin: 0, fontSize: "11px", color: "var(--danger)" }, text: AR.breachedText }),
+          el("button.btn.sm.primary", { title: "Open a full Project for this suit at " + fmtG(CRAFT().materialCost(st.item || {})) + " in parts, restoring all " + st.base + " DR",
+            onclick: function () { armorRebuildProject(st); } }, "⚒ REBUILD PROJECT · " + fmtG(CRAFT().materialCost(st.item || {})))
+        ]);
+      } else if (!st.lost) {
+        lanes = el("p.help", { style: { margin: "6px 0 0", fontSize: "11px", color: "var(--text4)" }, text: "Undamaged. Nothing to repair." });
+      } else {
+        var pts = st.lost;   // repair the whole loss; the lanes price per point either way
+        var shop = AR.shopCost(price, pts), bench = hasRig ? 0 : AR.benchCost(price, pts);
+        lanes = el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "7px" } }, [
+          el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em" }, text: "REPAIR " + pts + " DR" }),
+          el("button.btn.sm", { title: (AR.shopText || "") + " " + fmtG(AR.shopCost(price, 1)) + " per point at this suit's " + fmtG(price) + " list price.",
+            style: { color: "var(--gold)", borderColor: "var(--gold)" },
+            onclick: function () { armorShopRepair(st, pts); } }, "▤ SHOP · " + fmtG(shop)),
+          el("button.btn.sm", {
+            disabled: !benchOpen,
+            title: benchOpen
+              ? (AR.benchText || "") + " Opens a " + benchTierName + " Project on the Fabrication bench" + (hasRig ? " with parts printed by your " + AR.freeParts + "." : " for " + fmtG(bench) + " in parts.")
+              : "A " + benchTierName + " Project expects " + needName + " in " + (AR.benchSkill || "Engineering") + "; yours is " + ((((EN.rules || {}).profTiers || {})[engTier] || {}).name || engTier) + ". Use the shop lane, or train the skill.",
+            style: benchOpen ? { color: "var(--accent)", borderColor: "var(--accent)" } : null,
+            onclick: function () { armorBenchProject(ch, st, pts); } },
+            "⚒ BENCH · " + (hasRig ? "PARTS FREE" : fmtG(bench))),
+          !benchOpen ? el("span.help", { style: { margin: 0, fontSize: "10.5px", color: "var(--text4)" },
+            text: "Bench lane needs " + (AR.benchSkill || "Engineering") + " " + needName + " (the " + benchTierName + " Project tier's own requirement)." }) : null,
+          (benchOpen && hasRig) ? tagChip("FAB RIG", "var(--accent)", AR.freeParts + ": prints the plate from stock, so the parts cost nothing.") : null
+        ]);
+      }
+      kids.push(el("div.feature", { style: { borderLeftColor: st.breached ? "var(--danger)" : (st.damaged ? "var(--warn)" : "var(--success)") } }, [head, lanes]));
+    });
+    kids.push(el("p.help", { style: { margin: "10px 0 0", fontSize: "10.5px", color: "var(--text3)" },
+      text: "Rate check: at 10 percent per point the shop lane re-plates a 5 DR suit for half its price, the same ratio the crafting rules charge in materials to build one from scratch. " + (AR.qualityText || "") }));
+    return EN.ui.panel("Armor Integrity", "DR TRACK · SHOP & BENCH REPAIR", kids, { corners: true });
+  }
+
   function impactTable(ch) {
-    var out = [];
+    var out = [armorIntegrityPanel(ch)];
     var armors = ownedArmor(ch);
     if (!armors.length) {
       out.push(el("div.muted-box", { style: { padding: "28px 20px", textAlign: "center", borderColor: "var(--success)" },
@@ -1676,7 +1863,10 @@ EN.inventoryView = (function () {
         }))));
     var it = armors.find(function (a) { return a.name === _benchArmor; }) || armors[0];
     var lo = armorLoadout(ch, it.name);
-    var tag = (it.group || "").toUpperCase() + (typeof it.dr === "number" ? " · " + it.dr + " DR" : "");
+    // The mod bench is keyed on the armor TYPE (ch.armorMods is name-keyed), not on
+    // one piece, so this header prints the catalog BASE and says so. Per-piece
+    // current DR lives in the Armor Integrity panel above, which is entry-keyed.
+    var tag = (it.group || "").toUpperCase() + (typeof it.dr === "number" ? " · " + it.dr + " BASE DR" : "");
     var kids = [el("p.help", { style: { margin: "0 0 8px", fontSize: "11.5px" }, text: "One mod per slot; only Modular armor carries slots (Integrated adds one). Every Armor Mod is bench work. The strictest legality on the suit is what a scanner reports." })];
 
     if (!isModularArmor(it) || armorSlotCount(it) === 0) {
@@ -1899,6 +2089,12 @@ EN.inventoryView = (function () {
       salvaged: false,
       overEngineered: over,
       addOnComplete: spec.addOnComplete !== false && !!spec.itemName,
+      // Armor Repair rides the ordinary Project: repairKey names the armor ENTRY
+      // this work restores and repairPoints how much DR it buys back. tbComplete
+      // applies them, clamped by the piece's own base, so a Project that outlived
+      // the suit it was for quietly restores nothing instead of resurrecting it.
+      repairKey: spec.repairKey || null,
+      repairPoints: spec.repairPoints || 0,
       log: [],
       createdAt: Date.now()
     };
@@ -1946,12 +2142,28 @@ EN.inventoryView = (function () {
   }
   function tbComplete(p) {
     var addName = p.addOnComplete ? p.itemName : null;
+    var ch = store.active();
+    // An Armor Repair Project pays out in DR. The engine's resolver says what the
+    // piece is missing right now, so the restore can never take it past its base
+    // and a piece that left the stash mid-Project restores nothing.
+    var st = (p.repairKey && EN.engine.armorState) ? EN.engine.armorState(ch, p.repairKey) : null;
+    var restored = (st && st.base) ? Math.max(0, Math.min(p.repairPoints || 0, st.lost)) : 0;
+    // The ordinary Project results table's quality edge, spent on armor as the
+    // manuscript suggests: a clean run (a Flawless Work Interval) seats the plate
+    // so the next point of DR the suit would lose is absorbed for free.
+    var clean = restored > 0 && (p.log || []).some(function (l) { return l && l.o === "flawless"; });
     tbSetProjects(function (list, c) {
       var i = list.map(function (x) { return x.id; }).indexOf(p.id);
       if (i >= 0) list.splice(i, 1);
       if (addName) addToStash(c, addName);
+      if (restored > 0) {
+        EN.engine.applyArmorDamage(c, p.repairKey, -restored);   // the one writer, clamped at the base
+        if (clean) { c.armorGuard = c.armorGuard || {}; c.armorGuard[p.repairKey] = true; }
+      }
     });
-    toast(addName ? p.name + " complete; " + addName + " added to your Stash." : p.name + " complete.");
+    toast(addName ? p.name + " complete; " + addName + " added to your Stash."
+      : restored > 0 ? p.name + " complete; " + st.name + " back to " + Math.min(st.base, st.current + restored) + " of " + st.base + " DR." + (clean ? " Clean run: the next point of DR it would lose is absorbed." : "")
+      : p.name + " complete.");
   }
   function tbAbandon(id) {
     if (!confirm("Abandon this Project? Its Progress is lost.")) return;
@@ -2052,6 +2264,15 @@ EN.inventoryView = (function () {
         tbChip(kindName.toUpperCase(), "var(--text2)", "Project kind"),
         tbTierChip(p.overEngineered ? "prototype" : p.tier),
         tbSkillChip(p.skill),
+        // Armor Repair: name the piece and what completing this buys back, read
+        // from the engine's resolver so the chip cannot drift from the sheet
+        (function () {
+          if (!p.repairKey || !EN.engine.armorState) return null;
+          var st = EN.engine.armorState(ch, p.repairKey);
+          if (!st.base) return tbChip("PIECE GONE", "var(--text4)", "The armor this Project was repairing is no longer in the Stash; completing it restores nothing.");
+          return tbChip("+" + Math.min(p.repairPoints || 0, st.lost) + " DR · " + st.current + "/" + st.base, "var(--success)",
+            st.name + " is at " + st.current + " of " + st.base + " DR. Completing this Project restores up to " + (p.repairPoints || 0) + ".");
+        })(),
         p.overEngineered ? tbChip("OVER-ENGINEERED", "var(--danger)", "Pushed past safe capacity: Prototype tier, and the result carries a Mandatory Flaw") : null
       ]),
       el("button.btn.sm", { title: "Abandon this Project", style: { color: "var(--text3)" }, onclick: function () { tbAbandon(p.id); } }, "✕")
@@ -2169,7 +2390,10 @@ EN.inventoryView = (function () {
       matKids = [el("span.chip", { style: { fontSize: "9.5px", color: "var(--success)", borderColor: "var(--success)" }, text: p.salvaged ? "✓ SALVAGED" : "✓ MATERIALS SECURED" })];
     } else if ((p.materialCost || 0) > 0) {
       matKids = [
-        el("span.mono", { style: { fontSize: "11px", color: "var(--text2)" }, text: "Materials " + fmtG(cost) + (p.salvaged ? " (salvaged)" : " (half list)") }),
+        // a Build's materials are half list; an Armor Repair's parts are priced per
+        // point of DR restored, so the caption must not claim the wrong rate
+        el("span.mono", { style: { fontSize: "11px", color: "var(--text2)" },
+          text: "Materials " + fmtG(cost) + (p.salvaged ? " (salvaged)" : p.repairKey ? " (repair parts)" : " (half list)") }),
         el("button.btn.sm", { style: { color: "var(--flow)", borderColor: "var(--flow)" }, title: "Salvage parts from broken gear to cut the material cost", onclick: function () { tbToggleSalvage(p.id); } }, p.salvaged ? "UNSALVAGE" : "SALVAGE"),
         el("button.btn.sm.primary", { title: "Pay the material cost from your Glimmer", onclick: function () { tbSecure(p.id); } }, cost ? "SECURE · " + fmtG(cost) : "SECURE (FREE)")
       ];
@@ -2961,5 +3185,11 @@ EN.inventoryView = (function () {
 
   // leaseTick: mutator for store.update, marks one day on every active lease
   // (called by the Freelancer tab's Long Rest); returns names that came due
-  return { render: render, leaseTick: leaseTick, householdTick: householdTick, hypercareTick: hypercareTick };
+  // openBench: land on one Workbench sub-tab from another view (the Freelancer
+  // tab's damaged-plating readout sends the player to the Impact Table)
+  function openBench(key) {
+    _sub = "workbench";
+    if (BENCHES.some(function (b) { return b.key === key; })) _bench = key;
+  }
+  return { render: render, leaseTick: leaseTick, householdTick: householdTick, hypercareTick: hypercareTick, openBench: openBench };
 })();
