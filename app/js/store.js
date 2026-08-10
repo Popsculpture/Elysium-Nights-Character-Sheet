@@ -325,8 +325,54 @@ EN.store = (function () {
     // it. The natural-looking place is the wrong place. Put it after this block.
     if (Array.isArray(ch.equipment)) {
       var nameToIds = {}, splitEquipment = [];
+      // UNIQUENESS, the other half of entry identity. Every consumer keys per-piece
+      // state on engine.entryKey(e) === e.id || e.name, so an id that appears on TWO
+      // rows is exactly as broken as no id at all: ownedRigs returns two entries with
+      // one distinct key, both rows read the same Integrity out of one shared damage
+      // slot, and the Rig picker renders two options with the identical value, leaving
+      // one piece unaddressable. The qty fix above closed the missing-id door; this
+      // closes the duplicate-id one. Reachable by import and by hand-authored records
+      // (no in-app insert can do it: inventory.js:106 and builder.js:993 each mint a
+      // fresh id per non-stackable purchase).
+      //
+      // reservedIds is every id the incoming list carries ANYWHERE, collected before a
+      // single row is processed, so a freshly minted id can never be one that a LATER
+      // row already owns. usedIds is what has actually been handed out so far, in list
+      // order, which is what detects a duplicate.
+      //
+      // FIRST SEEN KEEPS THE ORIGINAL ID; later colliding rows are re-idded. That
+      // direction is deliberate: ch.rig.key, ch.rig.hp, carry, slotInert, racked and
+      // the four equip slots all already point at that id, and they meant the row that
+      // was there first. A re-idded row therefore starts with NO per-entry state, which
+      // is the settled ruling for a rig: state that cannot be attributed to one object
+      // is dropped rather than duplicated onto another. It was only ever sharing the
+      // first row's state anyway.
+      // "Carries an id" means exactly what the skip clause below means by it: a truthy
+      // e.id. That deliberately includes a hand-edited non-string id, because entryKey()
+      // hands it straight back and two rows sharing it collide just the same; object
+      // keys coerce, so 5 and "5" are one reservation here, as they are one key there.
+      // null-prototype: an id like "constructor" or "toString" would otherwise read
+      // as already taken through the prototype chain, so a row that is the only one
+      // carrying it would be judged a duplicate and silently re-idded, losing the
+      // per-entry state that legitimately belongs to it.
+      var reservedIds = Object.create(null), usedIds = Object.create(null);
+      ch.equipment.forEach(function (e) { if (e && e.id) reservedIds[e.id] = 1; });
+      function mintId() {
+        var id;
+        do { id = "eq_" + Math.random().toString(36).slice(2, 9); } while (reservedIds[id] || usedIds[id]);
+        usedIds[id] = 1;
+        return id;
+      }
       ch.equipment.forEach(function (e) {
         var stackable = (EN.engine && EN.engine.isStackableName) ? EN.engine.isStackableName(e.name) : true;
+        // A row carrying an id that an earlier row already claimed gets a fresh one.
+        // Stackability is irrelevant here: a pooled row that carries an id is already
+        // id-keyed by entryKey(), so re-idding the duplicate disambiguates it without
+        // changing which branch of entryKey() it uses.
+        if (e.id) {
+          if (usedIds[e.id]) e.id = mintId();
+          else usedIds[e.id] = 1;
+        }
         // Two predicates used to disagree about a row with a MISSING or non-numeric
         // qty: this one skipped it, so it never received an instance id, while the
         // engine's ownership test (`e.qty != null && e.qty <= 0` -> not owned) counted
@@ -351,7 +397,7 @@ EN.store = (function () {
         for (var i = 0; i < n; i++) {
           var ne = {};
           Object.keys(e).forEach(function (k) { if (k !== "qty") ne[k] = e[k]; });
-          ne.id = "eq_" + Math.random().toString(36).slice(2, 9);
+          ne.id = mintId();
           ne.qty = 1;
           splitEquipment.push(ne);
           ids.push(ne.id);
@@ -375,6 +421,20 @@ EN.store = (function () {
         var newSlotInert = {};
         Object.keys(ch.slotInert).forEach(function (name) { newSlotInert[nameToIds[name] ? firstId(name) : name] = ch.slotInert[name]; });
         ch.slotInert = newSlotInert;
+      }
+      // ch.racked is the one per-entry map that maps an entry to ANOTHER entry
+      // ({itemEntryKey: carryGearEntryKey}), so BOTH sides rekey. It was the only map
+      // this pass forgot, and the omission did not just orphan a rack, it made the
+      // record unstable across loads: the carry sanitizer above downgrades a "racked"
+      // status whose ch.racked target is missing, so load 1 left carry "racked" with a
+      // name-keyed rack and load 2 quietly rewrote it to "carried".
+      if (ch.racked && typeof ch.racked === "object") {
+        var newRacked = {};
+        Object.keys(ch.racked).forEach(function (name) {
+          var target = ch.racked[name];
+          newRacked[nameToIds[name] ? firstId(name) : name] = nameToIds[target] ? firstId(target) : target;
+        });
+        ch.racked = newRacked;
       }
     }
     /* Trauma Rig state; absent on every character built before Rigs existed.
@@ -407,7 +467,7 @@ EN.store = (function () {
     if (!rg.hp || typeof rg.hp !== "object" || Array.isArray(rg.hp)) rg.hp = {};
     // the engine owns the ownership question, here as everywhere else
     var ownedRigs = (EN.engine && EN.engine.ownedRigs) ? EN.engine.ownedRigs(ch) : [];
-    var liveKeys = {};
+    var liveKeys = Object.create(null);   // null-prototype, same reason as the split above
     ownedRigs.forEach(function (o) { liveKeys[o.key] = 1; });
     function firstKeyOfTier(tier) {
       var hit = ownedRigs.find(function (o) { return o.row.tier === tier; });
