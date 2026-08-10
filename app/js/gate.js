@@ -131,7 +131,25 @@ EN.gate = (function () {
     })();
   }
 
+  /* Dev bypass. This gate is atmosphere, not security: a real unlock writes one
+     localStorage flag that anyone can set from the console in a second. Loading
+     with ?dev (or ?nogate) in the query string skips the screen and drops you on
+     the Identity step, which is where testing starts. It writes the same flag a
+     real unlock does, so later reloads stay open without carrying the parameter,
+     and clearing site data restores the gate. */
+  function devBypass() {
+    try { return /[?&](dev|nogate)/.test(window.location.search); } catch (e) { return false; }
+  }
+
   function require(onUnlock) {
+    if (devBypass()) {
+      persist();
+      onUnlock();
+      setTimeout(function () {
+        try { if (EN.app && EN.app.gotoTab) EN.app.gotoTab("print"); } catch (e) {}
+      }, 0);
+      return;
+    }
     if (!CONFIG.enabled || unlocked()) { onUnlock(); return; }
     injectCss();
     var ov = document.createElement("div");
