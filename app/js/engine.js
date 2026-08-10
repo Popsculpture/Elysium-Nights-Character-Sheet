@@ -1269,17 +1269,32 @@ EN.engine = (function () {
      Integrity, and the #GRID node it projects. The Stitcher CLASS RESOURCE reads this
      record and adds what only a Stitcher has (see triageStats below).
 
-     Rig state lives on ch.rig ({tier, scrap, hpSpent, hpTier}), read by tier NAME the
-     same way a Smartdeck is read out of ch.grid.deckTier. This is the ONE place a Rig
-     is resolved; every surface (the Freelancer tab's Rig block, the #GRID tab's node,
-     the Tech Bay's kit scan) consumes the answer rather than re-deriving its own, so
-     they cannot disagree about which Rig is live.
+     Rig state lives on ch.rig ({key, scrap, hp}) and is keyed on the EQUIPMENT ENTRY,
+     not on the tier name. Trauma Rigs are non-stackable, so every purchase already gets
+     its own entry id and entryKey(e) returns it: ch.rig.key names the specific Rig the
+     player picked, and ch.rig.hp maps an entry key to the Integrity spent on THAT Rig.
+     This is the ONE place a Rig is resolved; every surface (the Freelancer tab's Rig
+     block and its picker, the #GRID tab's node, the Tech Bay's kit scan) consumes the
+     answer rather than re-deriving its own, so they cannot disagree about which Rig is
+     live or how hurt it is.
 
-     A recorded tier is only honoured while the character still OWNS that Rig. Sell it
-     and the recording is inert: resolution falls through to the best Trauma Rig
-     actually in the stash, which is what the AUTO path does when nothing is recorded
-     at all. Own none and there is no Rig. A Scrap Rig, an unknown tier, and no rig at
-     all all resolve to Output Bonus +0, so the DC is always a number and never NaN.
+     Keying on the entry is what makes two facts fall out with no heuristic:
+
+       - A RE-ACQUIRED RIG ALWAYS ARRIVES FULL. Dropping a Rig and buying another of the
+         same tier produces a DIFFERENT entry id, so the dropped Rig's damage can never
+         find its way onto the new one. The app has no vocabulary for "recovered": every
+         outflow is unconditional and unrecorded and the only inflows are a full-price
+         purchase or a bench build, so every re-acquisition is a new object in the app's
+         own terms. GM-ruled recovery is a fiction-level event: they type the damage
+         back in.
+       - TWO RIGS CAN BE DAMAGED INDEPENDENTLY, including two of the same tier, because
+         each one owns its own slot in the hp map instead of sharing one total.
+
+     A recorded key is only honoured while that exact entry is still in the stash. Drop
+     it and the recording is inert: resolution falls through to the best Trauma Rig
+     actually in the stash, which is what the AUTO path does when nothing is recorded at
+     all. Own none and there is no Rig. A Scrap Rig, a stale key, and no rig at all all
+     resolve to Output Bonus +0, so the DC is always a number and never NaN.
 
      Everything the Rig carries is read straight off the tier row, where it was derived
      from the Tier ordinal: Mod Slots (= Tier), the cumulative trait list, the Medical
@@ -1290,46 +1305,51 @@ EN.engine = (function () {
     var tiers = (EN.traumaRigs && EN.traumaRigs.tiers) || [];
     return tiers.find(function (r) { return r.tier === tier; }) || null;
   }
-  // every Trauma Rig tier the character owns, best first; the Rig picker lists these
-  function ownedRigTiers(ch) {
-    var rows = [], seen = {};
+  /* Every Trauma Rig the character owns, as {key, row} pairs, best tier first. The key
+     is the equipment entry's own identity, so two Rigs of the SAME tier are two distinct
+     entries here (no dedupe): they are two objects, each pickable and each damageable on
+     its own. The Rig picker lists exactly these. */
+  function ownedRigs(ch) {
+    var out = [];
     ((ch && ch.equipment) || []).forEach(function (e) {
       if (!e || (e.qty != null && e.qty <= 0)) return;
       var it = loadCatalogItem(e.name);
       var row = rigTierRow(it && it.rigTier);
-      if (row && !seen[row.tier]) { seen[row.tier] = 1; rows.push(row); }
+      if (row) out.push({ key: entryKey(e), row: row });
     });
-    return rows.sort(function (a, b) { return b.t - a.t; });
+    return out.sort(function (a, b) { return b.row.t - a.row.t; });
   }
-  function ownedRigTier(ch) { return ownedRigTiers(ch)[0] || null; }
   function rigStats(ch) {
     var r = (ch && ch.rig) || {};
     var scrap = !!r.scrap;
-    var owned = ownedRigTiers(ch);
-    // A recorded tier only counts while the Rig is still in the stash. Sell it and the
-    // recording is inert, so resolution falls through to the AUTO owned-gear path
-    // instead of crediting the character with hardware they no longer have.
-    var recorded = scrap ? null : rigTierRow(r.tier);
-    if (recorded && !owned.some(function (o) { return o.tier === recorded.tier; })) recorded = null;
-    var row = scrap ? null : (recorded || owned[0] || null);
+    var owned = ownedRigs(ch);
+    // A recorded pick only counts while that exact entry is still in the stash. Drop it
+    // and the recording is inert, so resolution falls through to the AUTO owned-gear
+    // path instead of crediting the character with hardware they no longer have. A
+    // re-bought Rig is a new entry with a new key, so it never re-locks an abandoned
+    // pick either.
+    var recordedKey = (!scrap && typeof r.key === "string") ? r.key : null;
+    var recorded = recordedKey ? (owned.find(function (o) { return o.key === recordedKey; }) || null) : null;
+    var entry = scrap ? null : (recorded || owned[0] || null);
+    var row = entry ? entry.row : null;
+    var key = entry ? entry.key : null;
     var outputBonus = row ? (row.outputBonus || 0) : 0;
     // Integrity, the Rig's #GRID node: damage subtracts, Bricked at 0. Mirrors the
-    // Smartdeck's System Integrity track (ch.grid.deckHpSpent).
-    // Damage belongs to the Rig it was taken on: ch.rig.hpTier records that tier, and a
-    // total recorded against a DIFFERENT tier is discarded outright rather than clamped
-    // onto the new Rig's shorter track. Otherwise a fresh Field Kit inherits a Black
-    // Clinic's 40 points and arrives Bricked.
+    // Smartdeck's System Integrity track (ch.grid.deckHpSpent), except that a Smartdeck
+    // is one slot on the record while a character can own several Rigs. So damage is
+    // read out of ch.rig.hp under THIS entry's key: a fresh Rig has no entry there and
+    // arrives full, and damaging one Rig cannot touch another's total.
     var maxIntegrity = row ? (row.integrity || 0) : 0;
-    var damageTier = typeof r.hpTier === "string" ? r.hpTier : null;
-    var sameRig = !!row && damageTier === row.tier;
-    var spent = sameRig ? clamp((r.hpSpent | 0), 0, maxIntegrity) : 0;
+    var hpMap = (r.hp && typeof r.hp === "object") ? r.hp : {};
+    var spent = key ? clamp((hpMap[key] | 0), 0, maxIntegrity) : 0;
     return {
+      rigKey: key,
       rigTier: row ? row.tier : null,
       rigTierIndex: row ? row.t : null,
       rigLabel: row ? row.label : null,
-      // true when the tier came from the owned-gear fallback rather than a recorded pick
-      fromOwnedGear: !!(row && !recorded),
-      ownedTiers: owned,
+      // true when the Rig came from the owned-gear fallback rather than a recorded pick
+      fromOwnedGear: !!(entry && !recorded),
+      ownedRigs: owned,
       scrapRig: scrap,
       outputBonus: outputBonus,
       // Mod Slots equal the Tier, and the trait list accumulates; both derived in the data
@@ -1643,10 +1663,12 @@ EN.engine = (function () {
       wardDie: defLoadout.wardDie, defenseGear: defLoadout,
       chromeTax: chromeTax, platformSlotted: platformSlotted(ch),
       grid: grid,
-      // The Trauma Rig as an OBJECT, derived for every class: {rigTier, rigTierIndex,
-      // rigLabel, fromOwnedGear, ownedTiers, scrapRig, outputBonus, modSlots, traits,
-      // medkitGrade, maxIntegrity, integrity, integritySpent, bricked, nodeTier, price}.
-      // Always present; rigTier is null when the character owns no Rig.
+      // The Trauma Rig as an OBJECT, derived for every class: {rigKey, rigTier,
+      // rigTierIndex, rigLabel, fromOwnedGear, ownedRigs, scrapRig, outputBonus,
+      // modSlots, traits, medkitGrade, maxIntegrity, integrity, integritySpent, bricked,
+      // nodeTier, price}. Always present; rigKey and rigTier are null when the character
+      // owns no Rig. rigKey names the one live entry, and every surface that writes
+      // damage writes it under that key.
       rig: rig,
       // Stitcher only: every d.rig field plus the class resource's own
       // {techMod, saveDC, formula, snagOnTriage, swiftBecomesAction}; null otherwise.
@@ -1964,9 +1986,10 @@ EN.engine = (function () {
     itemSlots: itemSlots, slotConflicts: slotConflicts,
     catalogItem: loadCatalogItem,
     // Trauma Rig. rigStats is THE resolver: every surface that needs to know which Rig
-    // is live reads it rather than matching ch.rig.tier against the stash itself.
+    // is live, and how hurt it is, reads it rather than matching ch.rig against the
+    // stash itself. It answers with an ENTRY key, so the answer names one specific Rig.
     rigStats: rigStats,
-    rigTierRow: rigTierRow, ownedRigTiers: ownedRigTiers,   // Trauma Rig tier lookup, for the Rig picker
+    rigTierRow: rigTierRow, ownedRigs: ownedRigs,   // Trauma Rig tier lookup and the owned-entry list
     focusesFor: focusesFor, specFor: specFor,
     aspectMatches: aspectMatches, weaponFocus: weaponFocus, weaponSpec: weaponSpec, signatureUnlocked: signatureUnlocked,
     overlapGrants: overlapGrants, unresolvedOverlaps: unresolvedOverlaps,

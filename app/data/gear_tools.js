@@ -618,9 +618,10 @@ EN.gearCatalog.tools = {
 /* ---- Trauma Rigs in the gray market -----------------------------------------
    The Stitcher's class item and the direct counterpart of the Smartdeck rows
    above: one ownable, equippable row per tier, each carrying rigTier so the
-   engine's ownedRigTier() matches it exactly the way a deck row is matched on
-   deckTier. Anyone can buy one; Stitchers are the ones who run Protocols
-   through it.
+   engine's ownedRigs() can match a stash entry to its tier row. Rigs are
+   non-stackable, so each purchase is its own equipment entry and the engine
+   resolves a specific ENTRY rather than a tier name. Anyone can buy one;
+   Stitchers are the ones who run Protocols through it.
 
    Every number, the trait list, and the Medical Baseline grade come off
    EN.traumaRigs.tiers (app/data/class_stitcher_resources.js, which loads

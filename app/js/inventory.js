@@ -1773,18 +1773,21 @@ EN.inventoryView = (function () {
   // kitEquivalent is how a piece of gear that is not itself a Skill Kit stands in for one:
   // a Trauma Rig's Medical Baseline makes it count as a Basic Medkit, or an Advanced Medkit
   // at Trauma Grade [2] and up, so it feeds a Medtech pool exactly like the kit it replaces.
-  // Only the Rig you are running counts; spare tiers sitting in the stash are just stock.
-  // Which Rig that is comes off the engine's resolver, the single source for it, so this
-  // bench and the Freelancer tab's Rig block can never disagree about the live tier.
+  // Only the Rig you are running counts; spares sitting in the stash are just stock.
+  // WHICH Rig that is, and whether it counts as owned at all, is entirely the engine
+  // resolver's answer: the bench compares this row's own entry key against the resolved
+  // rigKey and asks nothing else. So it has no ownership predicate of its own to drift
+  // from the engine's, and two Rigs of the same tier no longer both match one live Rig
+  // and grant its Edge twice.
   function tbKits(ch) {
     var cats = CRAFT().kitCategories || {};
     var profs = (ch.proficiencies && ch.proficiencies.tools) || {};
-    var liveRig = EN.engine.rigStats(ch).rigTier;
+    var liveRigKey = EN.engine.rigStats(ch).rigKey;
     return (ch.equipment || []).map(function (e) {
-      if (!(e.qty > 0)) return null;
       var it = findItem(e.name);
       if (!it || (it.bucket !== "kits" && !it.kitEquivalent)) return null;
-      if (it.rigTier && it.rigTier !== liveRig) return null;
+      if (it.rigTier) { if (entryKey(e) !== liveRigKey) return null; }
+      else if (!(e.qty > 0)) return null;
       var cat = it.category || "";
       if (!cats[cat]) return null;
       return { name: it.name, category: cat, skill: cats[cat], proficient: !!profs[cat], effect: it.effect || it.desc || "",

@@ -128,11 +128,16 @@ EN.gridView = (function () {
       var maxI = t.maxIntegrity, curI = t.integrity, br = t.bricked;
       var amtR = el("input.mono", { type: "number", min: "1", value: "1", title: "Amount of System Integrity to subtract or restore",
         style: { width: "56px", textAlign: "center", padding: "4px 6px" } });
-      // damage is stamped with the tier it was taken on and accumulates off the derived
-      // spend, so a total from a Rig you no longer run never lands on this one
+      // damage is written under the live Rig's own entry key and accumulates off the
+      // derived spend, so it lands on this object and no other Rig's total moves
       function shiftRig(sign) {
-        var n = Math.max(1, parseInt(amtR.value, 10) || 1), tier = t.rigTier, base = t.integritySpent;
-        store.update(function (c) { c.rig = c.rig || {}; c.rig.hpTier = tier; c.rig.hpSpent = eng.clamp(base + sign * n, 0, maxI); });
+        var n = Math.max(1, parseInt(amtR.value, 10) || 1), key = t.rigKey, base = t.integritySpent;
+        if (!key) return;
+        store.update(function (c) {
+          c.rig = c.rig || {}; c.rig.hp = c.rig.hp || {};
+          var v = eng.clamp(base + sign * n, 0, maxI);
+          if (v > 0) c.rig.hp[key] = v; else delete c.rig.hp[key];
+        });
       }
       return [
         el("div.section-title", { style: { margin: "14px 0 4px" } }, [document.createTextNode("Trauma Rig Node"), el("span.line"),
@@ -156,7 +161,7 @@ EN.gridView = (function () {
             el("button.btn.sm", { disabled: t.integritySpent <= 0, title: "Restore this much Integrity",
               onclick: function () { shiftRig(-1); } }, "+ REPAIR"),
             t.integritySpent > 0 ? el("button.btn.sm", { style: { color: "var(--text2)" },
-              onclick: function () { store.update(function (c) { c.rig = c.rig || {}; c.rig.hpSpent = 0; c.rig.hpTier = null; }); toast("Trauma Rig restored to full Integrity."); } }, "⟳ FULL") : null
+              onclick: function () { var key = t.rigKey; store.update(function (c) { c.rig = c.rig || {}; if (c.rig.hp) delete c.rig.hp[key]; }); toast("Trauma Rig restored to full Integrity."); } }, "⟳ FULL") : null
           ])
         ]),
         noteP(T.integrityNote || "")

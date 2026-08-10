@@ -96,10 +96,10 @@ EN.store = (function () {
         links: []                        // active Links: [{name, tier}]
       },
       rig: {                             // Trauma Rig (anyone can own one); a Stitcher's Triage Save DC reads its Output Bonus
-        tier: null,                      // tier name from EN.traumaRigs.tiers; null = fall back to owned gear, else Output Bonus +0
+        key: null,                       // the picked Rig's EQUIPMENT ENTRY key; null = fall back to owned gear, else Output Bonus +0
         scrap: false,                    // cobbled Scrap Rig: Output Bonus +0, Snag on Triage, Swift Protocols cost an Action
-        hpSpent: 0,                      // Integrity lost off the Rig's #GRID node (Bricked at hpSpent >= the tier's Integrity)
-        hpTier: null                     // which tier hpSpent was taken against; a different live tier discards the damage
+        hp: {}                           // Integrity lost per Rig: {entryKey: spent}. Bricked at the tier's Integrity; a Rig with no
+                                         // entry here is undamaged, so a re-bought Rig (a new entry key) always arrives full
       },
       trainingPoints: { spent: 0, allocations: [] },
       resources: { current: {} },
@@ -240,21 +240,50 @@ EN.store = (function () {
     if (ch.equippedShield === undefined) ch.equippedShield = null;
     if (ch.equippedFocus === undefined) ch.equippedFocus = null;
     if (!ch.weaponAmmo) ch.weaponAmmo = {};
-    // Trauma Rig state; absent on every character built before rigs existed.
-    if (!ch.rig || typeof ch.rig !== "object") ch.rig = { tier: null, scrap: false, hpSpent: 0, hpTier: null };
-    if (typeof ch.rig.tier !== "string") ch.rig.tier = null;
-    ch.rig.scrap = !!ch.rig.scrap;
-    if (typeof ch.rig.hpSpent !== "number" || ch.rig.hpSpent < 0) ch.rig.hpSpent = 0;
-    // hpTier says which Rig the recorded Integrity damage belongs to, so swapping tiers
-    // discards it instead of dumping a Black Clinic's 40 points onto a Field Kit's 15.
-    // A file saved before this field existed cannot say. If a tier was explicitly
-    // recorded the damage was taken on that Rig, so adopt it; otherwise the damage
-    // cannot be attributed to any Rig and is dropped rather than carried into one the
-    // character may never have owned.
-    if (typeof ch.rig.hpTier !== "string") {
-      ch.rig.hpTier = (ch.rig.hpSpent > 0 && ch.rig.tier) ? ch.rig.tier : null;
-      if (!ch.rig.hpTier) ch.rig.hpSpent = 0;
+    /* Trauma Rig state; absent on every character built before Rigs existed.
+       Both the pick and the damage are keyed on the EQUIPMENT ENTRY, so they name one
+       specific Rig instead of a tier that any number of Rigs can share. Records saved
+       before that carry {tier, scrap, hpSpent, hpTier}, all of them tier names, and are
+       converted here:
+         - tier      -> key, if the character still owns a Rig of that tier. An unowned
+                        pick is dropped, which is what the engine was already doing with
+                        it, and it cannot come back: a re-bought Rig is a new entry.
+         - hpSpent   -> hp[key] for the Rig hpTier names, again only if one is owned.
+                        Damage that cannot be attributed to an entry is dropped, per the
+                        ruling that an unattributable Rig arrives at full Integrity.
+       Then hp is pruned to entries the character still holds, so a campaign's worth of
+       bought-and-dropped Rigs cannot make the map grow without bound, and a pick whose
+       entry is gone is cleared for the same reason. Every read is type-guarded: junk in
+       any field, an hp that is already present, a rig that is an array or a string, and a
+       record with no ch.rig at all all normalize without throwing. */
+    if (!ch.rig || typeof ch.rig !== "object" || Array.isArray(ch.rig)) ch.rig = {};
+    var rg = ch.rig;
+    rg.scrap = !!rg.scrap;
+    var oldTier = typeof rg.tier === "string" ? rg.tier : null;
+    var oldHpTier = typeof rg.hpTier === "string" ? rg.hpTier : null;
+    var oldSpent = (typeof rg.hpSpent === "number" && isFinite(rg.hpSpent) && rg.hpSpent > 0) ? Math.floor(rg.hpSpent) : 0;
+    delete rg.tier; delete rg.hpSpent; delete rg.hpTier;
+    if (typeof rg.key !== "string") rg.key = null;
+    if (!rg.hp || typeof rg.hp !== "object" || Array.isArray(rg.hp)) rg.hp = {};
+    // the engine owns the ownership question, here as everywhere else
+    var ownedRigs = (EN.engine && EN.engine.ownedRigs) ? EN.engine.ownedRigs(ch) : [];
+    var liveKeys = {};
+    ownedRigs.forEach(function (o) { liveKeys[o.key] = 1; });
+    function firstKeyOfTier(tier) {
+      var hit = ownedRigs.find(function (o) { return o.row.tier === tier; });
+      return hit ? hit.key : null;
     }
+    if (!rg.key && oldTier) rg.key = firstKeyOfTier(oldTier);
+    if (oldSpent > 0 && oldHpTier) {
+      var dmgKey = firstKeyOfTier(oldHpTier);
+      if (dmgKey && rg.hp[dmgKey] == null) rg.hp[dmgKey] = oldSpent;
+    }
+    Object.keys(rg.hp).forEach(function (k) {
+      var v = rg.hp[k];
+      if (!liveKeys[k] || typeof v !== "number" || !isFinite(v) || v <= 0) delete rg.hp[k];
+      else rg.hp[k] = Math.floor(v);
+    });
+    if (rg.key && !liveKeys[rg.key]) rg.key = null;
     if (!ch.vehicleMods || typeof ch.vehicleMods !== "object") ch.vehicleMods = {};   // {vehicleName: [modKey]}
     // a limb-platform mod records which platform it sits in; slotted pieces pay no SP
     (ch.cyberware || []).forEach(function (cw) {

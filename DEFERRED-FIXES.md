@@ -122,9 +122,11 @@ Recorded so nobody re-investigates them.
   count is currently a number with no inventory behind it.
 - **Kit Edge Dice still stack per owned kit.** `EN.crafting.edgePointsFor` pushes one
   Edge part per active kit, so two Advanced Medkits in the stash grant +2 Edge Dice on
-  a Medtech pool. Contained for Trauma Rigs (only the Rig you are actually running
-  counts as a medkit, so a shelf of old tiers grants nothing), but the general case is
-  untouched and predates this step.
+  a Medtech pool. Now genuinely contained for Trauma Rigs: only the one ENTRY the engine
+  resolved counts as a medkit, so a shelf of old tiers grants nothing and neither does a
+  second rig of the live tier. (The containment claimed here originally was only
+  tier-deep, and two rigs of one tier did double up; that is fixed.) The general case
+  for real kits is untouched and predates this step.
 - **A new Stitcher still owns no Trauma Rig row.** The free Field Kit [0] is
   deliberately NOT in `EN.kits.classKits.stitcher.fixed`, exactly like the
   Codebreaker's free Standard Smartdeck, so it does not eat the 700 Glimmer budget.
@@ -145,13 +147,20 @@ six tiers give the right Output Bonus and Triage Save DC, Mod Slots equal the Ti
 traits accumulate 1 through 6, and a Trauma Grade rig still feeds a Medtech pool as an
 Advanced Medkit (Edge 6) while a Clinic Grade feeds it as Basic (Edge 5).
 
+Re-verified after the entry-keyed refactor: all six tiers still read Output Bonus
++0/+1/+1/+2/+2/+3, Triage Save DC 8/9/9/10/10/11 at Tech +0, Mod Slots equal to the
+Tier, traits 1 through 6, Integrity 15/20/25/30/35/40, nodes Standard through Apex, and
+the Medical Baseline grade flipping to Advanced at Trauma Grade [2]. A Trauma Grade rig
+grants one more Medtech Edge Die than a Clinic Grade, as an Advanced Medkit over a Basic.
+
 - ~~**The two Medical Baseline surfaces disagree about ownership.**~~ **Fixed.** There
   is now exactly one resolver, `EN.engine.rigStats(ch)`, and it refuses to honour a
-  recorded `ch.rig.tier` the character does not own: an unowned recording falls through
+  recorded pick the character does not own (`ch.rig.tier` then, `ch.rig.key` now): an
+  unowned recording falls through
   to the AUTO owned-gear path. The second gate is gone, not reconciled. `activeRigTier`
-  in `app/js/inventory.js` was DELETED and `tbKits` reads
-  `EN.engine.rigStats(ch).rigTier` instead of matching `ch.rig.tier` against the stash
-  itself. The repro Stitcher (recorded Trauma Grade, sold it, holds only a Field Kit)
+  in `app/js/inventory.js` was DELETED and `tbKits` reads the resolver's answer instead
+  of matching against the stash itself (`.rigTier` then, `.rigKey` now, which also
+  stopped it counting one live rig twice). The repro Stitcher (recorded Trauma Grade, sold it, holds only a Field Kit)
   now reads Field Kit [0] / COUNTS AS BASIC MEDKIT / OUTPUT +0 on the Actions panel and
   "Basic Medkit (Field Kit Trauma Rig [0])" on the Fabrication bench, and the Field Kit
   she does own is no longer filtered out.
@@ -170,7 +179,11 @@ Advanced Medkit (Edge 6) while a Clinic Grade feeds it as Basic (Edge 5).
   OUTPUT +3, MOD SLOTS 5 / TIER 5, COUNTS AS ADVANCED MEDKIT, #GRID NODE APEX [5], all
   six traits, and a working 40/40 integrity track.
 - ~~**A fresh rig can arrive BRICKED.**~~ **Fixed by making stored damage know which rig
-  it belongs to.** New field `ch.rig.hpTier` records the tier the damage was taken
+  it belongs to.** *Superseded: `hpTier` was a tier name, which masked stale damage
+  instead of discarding it and gave every rig one shared slot. Damage is now keyed on the
+  equipment entry (`ch.rig.hp`), and `hpTier` no longer exists. See the settled section
+  below; the account here is kept for the history.* New field `ch.rig.hpTier` records the
+  tier the damage was taken
   against. The engine discards `hpSpent` outright when the resolved tier differs rather
   than clamping a number that belongs to another object, and both integrity controls
   (Freelancer tab and #GRID tab) stamp `hpTier` and accumulate off the DERIVED spend, so
@@ -185,40 +198,46 @@ Still out of scope and untouched: Remote Applicator's +3 spaces is displayed but
 applied, since Protocol ranges are prose; the two once-per-scene rig traits have no
 usage tracking.
 
-## Found reviewing the step-4 fixes, NOT fixed
+## Found reviewing the step-4 fixes, ALL NOW FIXED
 
-The three original step-4 defects are fixed and verified. The review of those fixes
-then found six more, all variations of two root causes: **state that should be
-per-rig is stored globally**, and **resolvers multiplied instead of collapsing to
-one**. Worth fixing together, since a per-rig damage map plus a single resolver
-consumed everywhere would close most of them at once.
+The review of the three step-4 fixes found six more defects, all variations of two
+root causes: **state that should be per-rig is stored globally**, and **resolvers
+multiplied instead of collapsing to one**. All six are closed by the entry-keyed
+refactor below, and each was confirmed closed rather than assumed. Nothing in this
+section is outstanding.
 
-Multiple resolvers still deciding which rig is live:
+Multiple resolvers deciding which rig is live: there is now exactly **one**,
+`EN.engine.rigStats(ch)`, and it answers with an equipment ENTRY key.
 
-- **The Rig picker is a second resolver.** `app/js/combat.js` around lines 1298 and
-  1302 decide the selected option from raw `ch.rig.tier` rather than from the
-  engine's resolved `d.rig`. When the recorded tier is not owned, `rig.tier` is
-  truthy so "No Rig" is not selected, no owned option matches either, and the browser
-  silently falls back to index 0. The stale recording it cannot clear then downgrades
-  the live rig later.
-- **The crafting bench still owns a row-selection gate** and counts one live rig
-  twice.
-- **The bench's ownership predicate differs from the engine's**, reproducing a
-  narrower version of the original disagreement.
-- **A now-dead second resolver function remains in the engine.** Trivial to remove.
+- ~~**The Rig picker is a second resolver.**~~ **Fixed.** The picker's selection now
+  reads the engine's resolved `d.rig.rigKey`, and each option's value is an entry key.
+  Repro before: recorded `Combat Grade`, owns only a Field Kit, engine resolves Field
+  Kit, picker sits on index 0 showing "- No Rig -". After: the picker shows
+  "Field Kit [0] · +0 output · 0 slots · 15 Int" selected, matching the sheet. Picking
+  "- No Rig -" while still owning a rig now reverts to AUTO and the picker honestly
+  redisplays the auto rig with the AUTO chip beside it, instead of showing "No Rig"
+  while the sheet quietly used one.
+- ~~**The crafting bench still owns a row-selection gate**~~ and counted one live rig
+  twice. **Fixed.** `tbKits` compares each row's own entry key against the resolved
+  `rigKey`. Repro before: two Black Clinics, one live, bench printed
+  "Advanced Medkit (Black Clinic Trauma Rig [5]) · BASIC" **twice**. After: once.
+- ~~**The bench's ownership predicate differs from the engine's.**~~ **Fixed by
+  deleting the bench's predicate for rigs entirely.** A rig row is admitted if and only
+  if it is the entry the engine resolved, so there is no second predicate left to
+  drift. Non-rig kit rows keep their ordinary `qty > 0` check.
+- ~~**A now-dead second resolver function remains in the engine.**~~ **Removed.**
+  `ownedRigTier(ch)` (singular) had no callers and is gone. `ownedRigTiers` became
+  `ownedRigs(ch)`, which returns `{key, row}` pairs with the same-tier dedupe removed,
+  since two rigs of one tier are now two distinct pickable, separately damageable rows.
 
-Damage state:
+Damage state, both bullets superseded by the settled ruling below and fixed with it:
 
-- **Stale damage is masked, not discarded, so it re-arms.** Ignoring `hpSpent` when
-  `hpTier` disagrees leaves the number in storage. The implementer reported that
-  re-acquiring the original tier reads full integrity; the reviewer reproduced it
-  re-arming. Those two claims conflict and the conflict itself needs settling before
-  either is trusted.
-- **There is one damage slot for all rigs, so damaging rig B silently repairs rig A.**
-  A character owning two rigs cannot have both damaged. This needs damage keyed per
-  rig rather than a single `hpSpent`.
+- ~~**Stale damage is masked, not discarded, so it re-arms.**~~ **Fixed.** Damage is
+  keyed on the entry, and a re-bought rig is a new entry, so there is nothing to re-arm.
+- ~~**There is one damage slot for all rigs.**~~ **Fixed.** `ch.rig.hp` is a map from
+  entry key to points spent, so every rig owns its own slot, including two of one tier.
 
-## SETTLED: the rig damage contradiction, and the fix it implies
+## SETTLED, AND NOW IMPLEMENTED: the rig damage contradiction and its fix
 
 Two independent observers ran both candidate sequences through the real UI. They
 agree, and so did the two earlier agents: they had run **different sequences**.
@@ -262,11 +281,80 @@ still breaks for a character holding two rigs of the same tier.
 
 This supersedes the two damage bullets in the section above.
 
+**IMPLEMENTED.** Both failures were reproduced again before anything was touched, then
+re-checked against the original repro.
+
+- Repro A, the settled scenario, driven entirely through the real UI (real DAMAGE
+  button, real stash DROP, real gray-market BUY). Before: brick a Black Clinic at 40,
+  drop it, buy another, and the Freelancer tab reads `BRICKED` with `hpSpent: 40` still
+  sitting in storage under `hpTier: "Black Clinic"`. After: the re-bought rig reads
+  `40 / 40`, because it is entry `eq_2trd2zy` and the damage was recorded against
+  `eq_wmtzne4`.
+- Repro B, two rigs sharing one slot. Before: damage a Black Clinic 12, switch to a
+  Field Kit and damage it 5, switch back, and the Black Clinic reads `40 / 40` with its
+  12 points overwritten. After, with two Black Clinics (the case the tier key could
+  never handle): damage #1 by 12 and #2 by 31 and both hold, `hp` reading
+  `{eq_x0lisa8: 12, eq_tx09gyp: 31}`. Switching between them, and detouring through the
+  Scrap Rig and back, leaves both totals untouched. Swapping rigs no longer zeroes
+  damage at all, which was the write that used to mask this.
+
+Migration lives beside the other `ch.rig` defaults in `app/js/store.js`. Twelve old
+shapes were run through `importCharacter`, which calls the same `migrate`: an owned
+`tier` becomes the owned entry's `key`; an unowned `tier` is dropped; `hpSpent` is
+attributed to the entry `hpTier` names when one is owned and dropped when it is not;
+`hp` entries whose key has left the equipment list are pruned on every load, so the map
+cannot grow across a campaign; and a record with no `ch.rig`, an `hp` already present, a
+`rig` that is an array or a string, and junk types in any field all normalize without
+throwing.
+
 **Methodology note worth keeping.** One observer's first attempt ran in a long-lived
 tab where `EN.traumaRigs` was absent and the catalog held zero rig rows, a stale page
 load. Observations taken there would have been worthless. That is a second way two
 agents can diverge on the same question, and a reason to force a reload before
 believing any browser reading.
+
+## Found reviewing the entry-key refactor, NOT fixed
+
+The refactor's wins are real and verified for equipment that carries ids: two rigs of
+one tier hold independent damage, a re-bought rig arrives full, the damage map prunes
+so it cannot grow across a campaign, and one resolver answers with an entry key. The
+findings below are about the path where that id is MISSING.
+
+**ROOT CAUSE, one line, resurrects three bugs already marked fixed.** `entryKey(e)`
+in `app/js/engine.js` returns `e.id || e.name`, so an entry with no id keys on its
+NAME. Two predicates disagree about an entry with a MISSING `qty`:
+
+    app/js/store.js  (id assignment)  if (e.id || !(e.qty > 0) || isStackableName(e.name)) skip
+    app/js/engine.js (ownership)      if (!e || (e.qty != null && e.qty <= 0)) return
+
+A missing `qty` fails the first (so it never gets an id) and passes the second (so it
+counts as owned). The result is a permanently name-keyed live rig, on every load. With
+two such rigs: `ownedRigs` returns two rows with the SAME key, the picker renders two
+options with the same value so one rig is unaddressable, damage lands in one shared
+slot and both rigs read the same integrity, and the Fabrication bench prints its chip
+twice. Those are verbatim the "one damage slot" and "bench counts one live rig twice"
+repros this file marks closed.
+
+Reachable through `importCharacter` with hand-authored or legacy equipment, not
+through the Gray Market purchase path, which does set `qty` and does get an id.
+
+**Likely fix:** make the two predicates agree about a missing `qty`, so anything the
+engine treats as owned also gets an id assigned. NOT done here because that changes id
+assignment for ALL equipment, not just rigs, and the blast radius needs its own
+verification pass rather than being smuggled in.
+
+Two more lenses also came back not clean and their findings are unread in
+`tasks/wvcpodf55.output`: the single-resolver lens found two defects (one at
+`app/js/store.js` around line 269), and the migration lens found three plus a nit,
+noting that every shape whose entries DO carry ids migrates exactly as specified. Read
+both before trusting the refactor on legacy records.
+
+**Environment note.** Two verifiers drove `localhost:8777` concurrently and stepped on
+each other's roster. One moved to a private origin and re-ran everything cleanly, but
+left two imported fixtures behind, `L1_noid_legacy` and `L2_dup_namekey`, and reset one
+character's equipment and Glimmer. Harmless given the loaded character is expendable,
+but worth knowing why the roster has strangers in it. Parallel agents sharing one dev
+server and one localStorage will contaminate each other; give them separate origins.
 
 ## Environment
 

@@ -1274,14 +1274,18 @@ EN.combatView = (function () {
      class resource's business and are rendered separately, next to the pool.
 
      The counterpart of the #GRID tab's Rig panel, and built the same way: a picker
-     over the Trauma Rigs the character actually OWNS (matched on a gear row's
-     rigTier), the tier's derived numbers, its accumulated traits, and the System
-     Integrity of the #GRID node the Rig projects. Every value comes off d.rig, which
-     reads the tier row; nothing is recalculated here. */
-  function traumaRigKids(ch, d) {
+     over the Trauma Rigs the character actually OWNS (one option per equipment entry,
+     so two Rigs of one tier are two options), the tier's derived numbers, its
+     accumulated traits, and the System Integrity of the #GRID node the Rig projects.
+     Every value comes off d.rig, which reads the tier row; nothing is recalculated here,
+     and in particular the picker's SELECTION is the engine's resolved d.rig.rigKey rather
+     than a second reading of raw storage, so what the picker shows is always the Rig the
+     rest of the sheet is using. It takes only the DERIVED record, deliberately: with no
+     ch in scope it cannot grow a second reading of raw storage again. */
+  function traumaRigKids(d) {
     var t = d.rig, T = EN.traumaRigs || {}, tiers = T.tiers || [];
-    var mint = resourceColor("Triage"), rig = ch.rig || {};
-    var owned = t.ownedTiers || [];
+    var mint = resourceColor("Triage");
+    var owned = t.ownedRigs || [];
     // The Scrap Rig is a Stitcher's Long Rest fallback for running Protocols, so only a
     // Stitcher is offered it; everyone else picks from the Rigs they own or none.
     var isStitcher = !!d.triage;
@@ -1293,26 +1297,36 @@ EN.combatView = (function () {
                         text: t.scrapRig ? "SCRAP RIG" : (t.rigLabel || "NONE EQUIPPED").toUpperCase() })
     ]));
 
-    // picker: no rig, the Scrap Rig fallback (Stitchers only), or any tier in the stash
+    // picker: no rig, the Scrap Rig fallback (Stitchers only), or any Rig in the stash.
+    // Selection reads the RESOLVED rigKey, so the AUTO fallback shows as the live option
+    // and a pick the character no longer owns can never leave the picker on index 0.
     var selKids = [
-      el("option", { value: "none", selected: !t.scrapRig && !rig.tier, text: "- No Rig -" })
+      el("option", { value: "none", selected: !t.scrapRig && !t.rigKey, text: "- No Rig -" })
     ];
     if (isStitcher) selKids.push(el("option", { value: "scrap", selected: !!t.scrapRig, text: "Scrap Rig (Output Bonus +0, Snag)" }));
-    if (owned.length) selKids.push(el("optgroup", { label: "Trauma Rigs in your stash" }, owned.map(function (r) {
-      return el("option", { value: "tier:" + r.tier, selected: !t.scrapRig && rig.tier === r.tier,
-        text: r.label + " · +" + r.outputBonus + " output · " + r.modSlots + " slot" + (r.modSlots === 1 ? "" : "s") + " · " + r.integrity + " Int" });
+    // two Rigs of one tier read identically in a list, so number the duplicates
+    var tierCount = {}, tierNth = {};
+    owned.forEach(function (o) { tierCount[o.row.tier] = (tierCount[o.row.tier] || 0) + 1; });
+    if (owned.length) selKids.push(el("optgroup", { label: "Trauma Rigs in your stash" }, owned.map(function (o) {
+      var r = o.row;
+      tierNth[r.tier] = (tierNth[r.tier] || 0) + 1;
+      var dup = tierCount[r.tier] > 1 ? " #" + tierNth[r.tier] : "";
+      return el("option", { value: "key:" + o.key, selected: !t.scrapRig && t.rigKey === o.key,
+        text: r.label + dup + " · +" + r.outputBonus + " output · " + r.modSlots + " slot" + (r.modSlots === 1 ? "" : "s") + " · " + r.integrity + " Int" });
     })));
     else selKids.push(el("option", { disabled: true, text: "No Trauma Rig in your stash; buy one in Inventory" }));
     kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "2px" } }, [
       el("select", { style: { fontSize: "12px", width: "auto", minWidth: "230px" },
         onchange: function () {
           var v = this.value;
+          // Swapping Rigs does NOT touch damage any more: each Rig's Integrity lives in
+          // its own slot in c.rig.hp, so switching to another one and back finds the
+          // first one exactly as hurt as you left it.
           store.update(function (c) {
             c.rig = c.rig || {};
-            c.rig.hpSpent = 0; c.rig.hpTier = null;  // a swapped Rig starts on a full Integrity track
-            if (v === "scrap") { c.rig.scrap = true; c.rig.tier = null; return; }
+            if (v === "scrap") { c.rig.scrap = true; c.rig.key = null; return; }
             c.rig.scrap = false;
-            c.rig.tier = v === "none" ? null : v.split(":")[1];
+            c.rig.key = v === "none" ? null : v.slice(4);
           });
         } }, selKids),
       t.fromOwnedGear ? el("span.chip", { style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" },
@@ -1343,16 +1357,17 @@ EN.combatView = (function () {
     var maxInt = t.maxIntegrity, cur = t.integrity, bricked = t.bricked;
     var amt = el("input.mono", { type: "number", min: "1", value: "1", title: "Amount of Integrity to subtract or restore",
       style: { width: "54px", textAlign: "center", padding: "4px 6px" } });
-    // Damage is written against the tier it was taken on, and it accumulates from the
-    // DERIVED spend rather than the raw stored number, so a total left over from a Rig
-    // the character no longer runs never rejoins the track.
+    // Damage is written under the live Rig's own ENTRY key and accumulates from the
+    // DERIVED spend, so it lands on this object and nothing else: no other Rig's total
+    // moves, and a Rig that leaves the stash takes its damage out of play with it.
     function shift(sign) {
       var n = Math.max(1, parseInt(amt.value, 10) || 1);
-      var tier = t.rigTier, base = t.integritySpent;
+      var key = t.rigKey, base = t.integritySpent;
+      if (!key) return;
       store.update(function (c) {
-        c.rig = c.rig || {};
-        c.rig.hpTier = tier;
-        c.rig.hpSpent = eng.clamp(base + sign * n, 0, maxInt);
+        c.rig = c.rig || {}; c.rig.hp = c.rig.hp || {};
+        var v = eng.clamp(base + sign * n, 0, maxInt);
+        if (v > 0) c.rig.hp[key] = v; else delete c.rig.hp[key];
       });
     }
     kids.push(el("div", { style: { marginTop: "8px" } }, [
@@ -1369,7 +1384,7 @@ EN.combatView = (function () {
         el("button.btn.sm", { disabled: t.integritySpent <= 0, title: "Restore this much Integrity",
           onclick: function () { shift(-1); } }, "+ REPAIR"),
         t.integritySpent > 0 ? el("button.btn.sm", { style: { color: "var(--text2)" },
-          onclick: function () { store.update(function (c) { c.rig = c.rig || {}; c.rig.hpSpent = 0; c.rig.hpTier = null; }); toast("Trauma Rig restored to full Integrity."); } }, "⟳ FULL") : null
+          onclick: function () { var key = t.rigKey; store.update(function (c) { c.rig = c.rig || {}; if (c.rig.hp) delete c.rig.hp[key]; }); toast("Trauma Rig restored to full Integrity."); } }, "⟳ FULL") : null
       ])
     ]));
 
@@ -2619,7 +2634,7 @@ EN.combatView = (function () {
           ]));
           if (d.triage.scrapRig) kids.push(el("p.help", { style: { margin: "4px 0 0", fontSize: "10.5px" },
             text: "Scrap Rig: Snag on all Triage healing and attack rolls, and every Swift Action Protocol costs an Action." }));
-          traumaRigKids(ch, d).forEach(function (k) { kids.push(k); });
+          traumaRigKids(d).forEach(function (k) { kids.push(k); });
         }
         resourceFeats.forEach(pushFeat);
       }
@@ -2627,8 +2642,8 @@ EN.combatView = (function () {
       // gets the object's block (tier, Output Bonus, Mod Slots, traits, Medical
       // Baseline, its #GRID node and its Integrity track) with no class resource
       // attached: no Triage Save DC, no Triage pool, no Protocols, no Scrap Rig.
-      if (!d.triage && d.rig && (d.rig.rigTier || (d.rig.ownedTiers || []).length)) {
-        traumaRigKids(ch, d).forEach(function (k) { kids.push(k); });
+      if (!d.triage && d.rig && (d.rig.rigTier || (d.rig.ownedRigs || []).length)) {
+        traumaRigKids(d).forEach(function (k) { kids.push(k); });
       }
       if (otherFeats.length) {
         kids.push(el("div.section-title", { style: { margin: d.resource ? "12px 0 2px" : "2px 0 2px" } }, [document.createTextNode("Abilities"), el("span.line")]));
