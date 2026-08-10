@@ -16,7 +16,7 @@ EN.combatView = (function () {
   var DEFAULT_LAYOUT = [
     { key: "matrix", w: 4 }, { key: "vitality", w: 2 },
     { key: "skills", w: 2 }, { key: "flow", w: 6 }, { key: "actions", w: 4 }, { key: "defend", w: 6 },
-    { key: "conditions", w: 6 }, { key: "senses", w: 2 },
+    { key: "conditions", w: 6 }, { key: "hazards", w: 6 }, { key: "senses", w: 2 },
     { key: "profs", w: 4 }
   ];
   var _drag = null;
@@ -924,7 +924,7 @@ EN.combatView = (function () {
     toast(rep ? label + ". " + rep + "." : label + ". Nothing came due.");
   }
   function longRest(ch, d) {
-    var leaseDue = [], severeFatigue = 0, noNaturalHealing = false, personaExpired = 0;
+    var leaseDue = [], severeFatigue = 0, noNaturalHealing = false, personaExpired = 0, altitudeLocked = 0, altitudeFrom = [];
     store.update(function (c) {
       var s = state(c, d);
       var bodMod = d.attributes.BOD.mod;
@@ -947,11 +947,38 @@ EN.combatView = (function () {
       // sleep does nothing for it. Tracked as a leveled condition; removed at 0.
       if ((c.conditions || []).indexOf("Fatigue") !== -1) {
         var cur = (c.conditionLevels || {})["Fatigue"] || 1;
+        // Thin air: "Fatigue from thin air does NOT come off during a Long Rest
+        // taken at the same altitude." LONG RESTS ONLY, which is why the check
+        // lives here and not in setCondLevel: an ability or a hand adjustment
+        // that clears Fatigue is deliberately unaffected. The locked count comes
+        // off d.hazard, so the rest and the Hazards panel cannot disagree about
+        // it. The count is CHARACTER-scoped (ch.hazards.thinAirFatigue) and the
+        // lock only applies while a thin-air exposure is live, so descending
+        // releases it and coming back up re-applies it. Levels that come off
+        // here are always UNLOCKED ones, since the rest is refused outright when
+        // it would eat into the locked count; the engine's clamp to current
+        // Fatigue keeps the attribution honest from every other direction.
+        var locked = (d.hazard && d.hazard.longRestLockedFatigue) || 0;
         if (cur >= 4) severeFatigue = cur;                                  // untouched; player is told why
-        else {
+        else if (locked > 0 && cur - 1 < locked) {
+          altitudeLocked = locked;
+          altitudeFrom = (d.hazard && d.hazard.longRestLockSources) || [];
+        } else {
           var fl = cur - 1;
           if (fl <= 0) { c.conditions = c.conditions.filter(function (n) { return n !== "Fatigue"; }); delete c.conditionLevels["Fatigue"]; }
           else c.conditionLevels["Fatigue"] = fl;
+          /* Keep the thin-air attribution honest in STORAGE, not just at derive
+             time. When `locked` is 0 the character is off the altitude (or owes
+             nothing), so the level that just came off is fair game and the count
+             follows it down. When `locked` is above 0 this branch is not reached
+             at all unless there are unlocked levels to spend first, so the level
+             removed is never a locked one and the count must not move. Without
+             this the record would sit on an attribution larger than the Fatigue
+             it describes, which is the exact smell this whole fix removes. */
+          if (!locked) {
+            c.hazards = c.hazards || {};
+            c.hazards.thinAirFatigue = Math.max(0, Math.min((c.hazards.thinAirFatigue | 0) - 1, fl));
+          }
         }
       }
       // a Long Rest is one day on the story calendar
@@ -959,7 +986,10 @@ EN.combatView = (function () {
       leaseDue = t.leaseDue; personaExpired = t.personaExpired;
     });
     var dayRep = dayReport({ leaseDue: leaseDue, personaExpired: personaExpired });
-    if (dayRep) toast("Long Rest complete. " + dayRep + ".");
+    if (altitudeLocked) toast("Long Rest complete. " + altitudeLocked + " level(s) of Fatigue came from thin air ("
+      + altitudeFrom.join(", ") + ") and do not come off a Long Rest taken at the same altitude. Descend, or use an ability that clears Fatigue."
+      + (dayRep ? " " + dayRep + "." : ""));
+    else if (dayRep) toast("Long Rest complete. " + dayRep + ".");
     else if (noNaturalHealing) toast("Long Rest complete. Static Threshold 4: no natural Wound recovery. Wounds need medical or engineering treatment.");
     else if (severeFatigue) toast("Long Rest complete. Fatigue " + severeFatigue + " is Severe: it needs medical, mystical, or technological treatment, not sleep.");
     else toast("Long Rest complete, restored and refreshed.");
@@ -1077,7 +1107,15 @@ EN.combatView = (function () {
     "Critical Wound": function (e) { e.notes.push("Critical Wound: permanent penalties by body part (see entry) until replaced"); },
     "Cursed": function (e) { e.notes.push("Cursed: GM-defined affliction (see Curse Effects table)"); },
     "Dazed": function (e) { e.noImpulse = true; e.notes.push("Dazed: no Impulse Actions; only ONE of Action / Move / Swift this turn"); },
-    "Drowning": function (e) { e.notes.push("Drowning: Body Save DC 10 (+2/round) or take 1 Wound; at ≤half Wounds also fall Unconscious"); },
+    // Drowning and Vacuum are the SAME machinery, so neither prints a hand-typed
+    // sentence: both notes are generated from the one spec in EN.hazards.breath.
+    // Change the spec and both conditions change together; there is no second
+    // copy of "DC 10, +2 a round, 1 Wound" anywhere to fall out of step.
+    "Drowning": function (e) { e.notes.push(EN.hazards ? EN.hazards.breathNote("drowning") : "Drowning"); },
+    "Vacuum": function (e) {
+      e.notes.push(EN.hazards ? EN.hazards.breathNote("vacuum") : "Vacuum");
+      e.notes.push("Vacuum: you cannot speak, and nothing requiring air functions. The Sealed trait alone does NOT hold vacuum");
+    },
     "Drowsy": function (e) { e.init -= 2; e.saveDelta -= 1; e.perceptionSnag = true; e.notes.push("Drowsy: −2 Initiative, −1 all Saves, Snag on Perception; second Drowsy effect → Body Save DC 15 or Unconscious"); },
     "Fatigue": function (e, l) {
       if (l >= 1) { e.speedDelta -= 1; e.snagChk.AGI = true; }
@@ -1177,16 +1215,774 @@ EN.combatView = (function () {
     "Restrained": ["Until Freed", "Athletics Check / Destroy Restraint"], "Shaken": ["1-3 Rounds", "End of turn Wits DC 12"],
     "Signal Jammed": ["Until Jam Ends", "Move / Disable Jammer"], "Soul Shock": ["Until Short Rest", "Short Rest"],
     "Staggered": ["1-2 Rounds", "End of turn Wits DC 10"], "Strain": ["Until Restored", "Long Rest / Ritual"],
-    "Stunned": ["1 Round", "End of turn Body DC 15"], "Unconscious": ["Until Revived", "Healing / Allied Action"]
+    "Stunned": ["1 Round", "End of turn Body DC 15"], "Unconscious": ["Until Revived", "Healing / Allied Action"],
+    "Vacuum": ["Special", "Pressure and air, or a suit that holds vacuum"]
   };
   function condLevel(ch, name) { return (ch.conditionLevels || {})[name] || 1; }
   function setCondLevel(name, lvl) {
     store.update(function (c) {
       c.conditionLevels = c.conditionLevels || {};
       var max = LEVELED[name] ? LEVELED[name].max : 1;
+      var before = (c.conditions || []).indexOf(name) !== -1 ? (c.conditionLevels[name] || 1) : 0;
       if (lvl <= 0) { c.conditions = (c.conditions || []).filter(function (n) { return n !== name; }); delete c.conditionLevels[name]; }
       else c.conditionLevels[name] = Math.min(max, lvl);
+      var after = lvl <= 0 ? 0 : Math.min(max, lvl);
+      /* Clearing Fatigue also retires the thin-air attribution for the levels
+         that came off. This is the path an ability or a medic uses, and the
+         rules bless it ("abilities that clear Fatigue are unaffected"), so
+         without this the lock outlives the Fatigue it describes.
+
+         Thin-air levels come off FIRST when something clears Fatigue. The rules
+         do not say which levels a partial clear removes, and the asymmetry of
+         harm decides it the same way the rig ruling did: a wrongly-LOCKED level
+         silently denies a player a Long Rest recovery they were entitled to,
+         while a wrongly-unlocked one hands back a level the GM was narrating
+         anyway. The engine also clamps this to the character's current Fatigue,
+         so any other path that lowers it cannot leave a phantom lock either. */
+      if (name === "Fatigue" && after < before) {
+        c.hazards = c.hazards || {};
+        c.hazards.thinAirFatigue = Math.max(0, (c.hazards.thinAirFatigue | 0) - (before - after));
+      }
     });
+  }
+
+  /* =================== ENVIRONMENTAL HAZARDS (the panel) ===================
+     Clocks for Exposure, Deprivation, Vacuum/Drowning and Caustic. Every
+     rendered number comes off d.hazard, the engine's one resolver; this file
+     owns the WRITES and nothing else.
+
+     The escalating DC never touches a shared counter: a save writes
+     `saves + 1` onto THAT exposure's own row, and the engine derives
+     10 + 2 * saves from that row alone. LEAVE deletes the row, which is why
+     leaving resets both the clock and the DC with no reset step to forget.
+     ---------------------------------------------------------------------- */
+  // (the old "enter an exposure" type/severity selects lived here; exposures are
+  // entered from the Status Changes header dropdown now, and severity is picked
+  // on the row itself, so there is no pending-pick state to hold between renders)
+  function newExposureId(c) {
+    var m = (c.hazards && c.hazards.exposures) || {};
+    var id;
+    do { id = "ex_" + Math.random().toString(36).slice(2, 9); } while (m[id]);
+    return id;
+  }
+  // Fatigue is the existing leveled condition; hazards never build a parallel
+  // track. Returns the levels actually gained (0 once Fatigue is capped at 6).
+  function gainFatigue(c, n) {
+    n = Math.max(0, Math.floor(n || 0));
+    if (!n) return 0;
+    c.conditions = c.conditions || [];
+    c.conditionLevels = c.conditionLevels || {};
+    var has = c.conditions.indexOf("Fatigue") !== -1;
+    var cur = has ? (c.conditionLevels["Fatigue"] || 1) : 0;
+    var next = Math.min(6, cur + n);
+    if (next === cur) return 0;
+    if (!has) c.conditions.push("Fatigue");
+    c.conditionLevels["Fatigue"] = next;
+    return next - cur;
+  }
+  // One d20 Body Save, with the sheet's real bonus and whatever Edge or Snag is
+  // genuinely in play: a mitigation's Edge, and the Snag the character's own
+  // conditions already impose on Body saves (Fatigue 3 feeds straight back in).
+  function hazardSave(row, dc, fx) {
+    var mods = [{ label: "Body Save", value: row.saveBonus || 0 }];
+    if (fx && fx.saveDelta) mods.push({ label: "Conditions", value: fx.saveDelta });
+    /* Shaken cancels Edge from ANY source, per its own condition text, and every
+       other d20 surface in the app honours that (the roll tray at :86, the tray
+       control at :330). A hazard mitigation's Edge is a source like any other,
+       so Ration Discipline granting Edge to a Shaken character was this one
+       surface disagreeing with the rest. The Snag half is untouched: Shaken
+       imposes Snag on attacks and Wits checks, not on Body Saves. */
+    var shaken = (((store.active() || {}).conditions) || []).indexOf("Shaken") !== -1;
+    var r = eng.rollD20({ mods: mods, edge: (row.edge && !shaken) ? 1 : 0,
+                          snag: (fx && fx.snagSave && fx.snagSave.BOD) ? 1 : 0 });
+    r.dc = dc; r.pass = r.total >= dc;
+    r.edgeBlocked = !!(row.edge && shaken);
+    return r;
+  }
+  function rollText(r) {
+    var kept = r.dice[r.keptIndex];
+    var dice = r.dice.length > 1 ? "[" + r.dice.join(" / ") + "] keep " + kept : String(kept);
+    return dice + " " + eng.fmtMod(r.flat) + " = " + r.total + " vs DC " + r.dc + " · " + (r.pass ? "SUCCESS" : "FAILURE");
+  }
+  function hazChip(text, color, title) {
+    return el("span.chip", { title: title || "", style: { fontSize: "9px", color: color, borderColor: color }, text: text });
+  }
+  function hazSub(label) {
+    return el("div.section-title", { style: { margin: "12px 0 4px" } }, [document.createTextNode(label), el("span.line")]);
+  }
+
+  /* Hazards as BLOCKS rather than as their own panel. The Status Changes panel
+     is one place for every temporary state, so these render inside it beside
+     the conditions and the bonuses. Each subsection is gated on the hazard
+     having been APPLIED: nothing appears until the player picks it out of the
+     "- add a Hazard -" dropdown, exactly the way a condition appears.
+
+     Returns {kids, count}. Drowning is NOT here; it is a condition, and its
+     breath clock renders inside the Drowning condition entry (drowningRow). */
+  function hazardBlocks(ch, d, fx) {
+    var H = EN.hazards || {}, hzd = d.hazard;
+    if (!H.exposure || !hzd) return { kids: [el("p.help", { text: "EN.hazards did not load." })], count: 0 };
+    var kids = [];
+
+    /* ---- 3.1 Exposure -------------------------------------------------- */
+    if (hzd.exposures.length) {
+    kids.push(hazSub("Exposure"));
+    kids.push(el("p.help", { style: { margin: "0 0 8px" }, text: H.exposure.intro }));
+    hzd.exposures.forEach(function (row) {
+      var right = [];
+      right.push(el("span.mono", { style: { fontSize: "17px", color: row.shielded ? "var(--text3)" : "var(--warn)" }, text: "DC " + row.dc }));
+      right.push(el("button.btn.sm.primary", { style: { padding: "1px 8px" }, onclick: function () { exposureTick(row, fx); } },
+        row.shielded ? "⏱ SPEND " + row.intervalMinutes + " MIN" : "⏱ SAVE"));
+      // Severity sets the interval and NOTHING else, and the weather can turn
+      // while you are standing in it, so it is editable on the row. Changing it
+      // deliberately does not touch this exposure's save count: the escalating
+      // DC belongs to the exposure, not to how bad it currently is.
+      right.push(el("select", { style: { width: "auto", fontSize: "11px" },
+        title: "Severity sets the interval and nothing else. Changing it leaves this exposure's DC where it is.",
+        onchange: function () {
+          var v = this.value, id = row.id;
+          store.update(function (c) {
+            var r = ((c.hazards || {}).exposures || {})[id];
+            if (r) r.severity = v;
+          });
+        } },
+        (H.exposure.severities || []).map(function (s) {
+          return el("option", { value: s.key, selected: row.severity === s.key, text: s.name + " · " + s.interval });
+        })));
+      right.push(el("button.btn.sm", { style: { padding: "1px 8px" }, title: "Leaving resets both the clock and the DC", onclick: function () { exposureLeave(row); } }, "LEAVE"));
+      var chips = [];
+      chips.push(hazChip(row.severityName.toUpperCase() + " · " + row.interval, "var(--accent)", "Severity sets the interval and nothing else"));
+      chips.push(hazChip("SAVES " + row.saves, "var(--text3)", "This exposure's own save count; the DC is 10 + 2 per save on THIS row"));
+      if (row.fatigue) chips.push(hazChip("FATIGUE " + row.fatigue, "var(--danger)", "Levels this exposure has dealt"));
+      if (row.noFatigue) chips.push(hazChip("NO FATIGUE · " + row.noFatigueFrom.toUpperCase(), "var(--success)", row.noFatigueFrom + " refuses the Fatigue from this exposure"));
+      if (row.edge) chips.push(hazChip("EDGE · " + row.edgeFrom.toUpperCase(), "var(--success)", row.edgeFrom + " grants Edge on this save"));
+      if (row.shielded) chips.push(hazChip(row.shieldFrom.toUpperCase() + " " + row.shieldMinutesLeft + " MIN", "var(--success)",
+        "The clock does not start while the " + row.shieldFrom + " is covering you"));
+      if (row.lethalDamage) chips.push(hazChip("+" + row.lethalDamage.dice + " " + row.lethalDamage.type.toUpperCase() + " ON FAIL", "var(--ember)", "Lethal severity rider"));
+      if (row.lockedFatigue) chips.push(hazChip("LOCKED " + row.lockedFatigue, "var(--gold)", "Thin air: this Fatigue does not come off a Long Rest taken at the same altitude"));
+      kids.push(el("div.feature", { style: { borderLeftColor: row.shielded ? "var(--success)" : "var(--warn)" } }, [
+        el("h4", null, [
+          el("span", { text: row.typeName }),
+          el("span", { style: { display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" } }, right)
+        ]),
+        el("div.row.wrap", { style: { gap: "5px", margin: "4px 0" } }, chips),
+        el("p.help", { style: { margin: 0 }, text: "Next save DC " + row.nextDC + " · " + row.minutes + " min in this exposure · clock at "
+          + row.clockMinutes + " min" + (row.rider ? " · " + row.rider : "") })
+      ]));
+    });
+    }   // end: at least one exposure applied
+
+    /* ---- Deprivation: three independent day-scale clocks ----------------
+       Only the tracks the player applied. Each is still its OWN clock with its
+       own DC and its own Fatigue; applying one says nothing about the others. */
+    var depOn = hzd.deprivation.filter(function (r) { return r.applied; });
+    if (depOn.length) {
+    kids.push(hazSub("Deprivation"));
+    kids.push(el("p.help", { style: { margin: "0 0 8px" }, text: (H.typeByKey.deprivation || {}).rider || "" }));
+    depOn.forEach(function (row) {
+      var chips = [];
+      chips.push(hazChip(row.days + " " + row.unit + (row.days === 1 ? "" : "s"), row.crossed ? "var(--danger)" : "var(--text3)",
+        "Threshold: " + row.thresholdDays + " " + row.unit + (row.thresholdDays === 1 ? "" : "s")));
+      chips.push(hazChip("SAVES " + row.saves, "var(--text3)", "This track's own save count, independent of the other two"));
+      if (row.fatigue) chips.push(hazChip("FATIGUE " + row.fatigue, "var(--danger)", "Levels this track has stacked, its own"));
+      if (row.graceDays) chips.push(hazChip("+" + row.graceDays + "D GRACE · " + row.graceFrom.toUpperCase(), "var(--success)", row.graceFrom + " pushes this threshold back " + row.graceDays + " days"));
+      if (row.edge) chips.push(hazChip("EDGE · " + row.edgeFrom.toUpperCase(), "var(--success)", row.edgeFrom + " grants Edge on this save"));
+      var right = [
+        el("span.mono", { style: { fontSize: "17px", color: row.crossed ? "var(--warn)" : "var(--text3)" }, text: "DC " + row.dc }),
+        el("div.stepper", { style: { marginTop: 0 } }, [
+          el("button", { title: "One day back", onclick: function () { depDay(row, -1); } }, "−"),
+          el("span.mono", { style: { fontSize: "12px", minWidth: "34px", textAlign: "center", color: "var(--text2)" }, text: row.days + "d" }),
+          el("button", { title: "One more day without it", onclick: function () { depDay(row, +1); } }, "+")
+        ]),
+        el("button.btn.sm.primary", { style: { padding: "1px 8px" }, disabled: !row.crossed,
+          title: row.crossed ? "One save per day at Mild" : "Threshold not crossed yet", onclick: function () { depTick(row, fx); } }, "⏱ SAVE"),
+        el("button.btn.sm", { style: { padding: "1px 8px" }, title: "Fed, watered or slept: this clock resets, and so does its DC", onclick: function () { depReset(row); } }, "RESET"),
+        // RESET zeroes the clock but keeps the track on the panel; Remove takes
+        // it off entirely. An exposure needs no equivalent, because LEAVE
+        // deletes its row and the row was the whole statement.
+        statusRemoveBtn(row.statusKey, "Take this track off the panel")
+      ];
+      kids.push(el("div.feature", { style: { borderLeftColor: row.crossed ? "var(--warn)" : "var(--border2)" } }, [
+        el("h4", null, [el("span", { text: row.trackName }), el("span", { style: { display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" } }, right)]),
+        el("div.row.wrap", { style: { gap: "5px", margin: "4px 0" } }, chips),
+        el("p.help", { style: { margin: 0 }, text: row.crossed ? ("Crossed " + row.crossedText + "; one save per day at Mild. Next save DC " + row.nextDC + ".")
+          : ("Threshold " + row.thresholdDays + " " + row.unit + "s (" + row.crossedText + (row.graceDays ? ", pushed back " + row.graceDays + " by " + row.graceFrom : "") + "). Nothing runs until it is crossed.") })
+      ]));
+    });
+
+    }   // end: at least one deprivation track applied
+
+    /* ---- 3.2 Vacuum ------------------------------------------------------
+       Drowning used to render beside it here. It has moved to Conditions,
+       where it belongs, and its row is built by the SAME breathRow() below off
+       the SAME EN.hazards.breath spec, so the two still cannot drift. */
+    var vacOn = hzd.breath.filter(function (b) { return b.kind === "vacuum" && b.applied; });
+    if (vacOn.length) {
+    kids.push(hazSub("Vacuum"));
+    kids.push(el("p.help", { style: { margin: "0 0 8px" },
+      text: "Vacuum mirrors Drowning exactly, and both are built from one spec, so the two cannot drift: breath held " + (H.breath || {}).holdRule
+          + ", then a Body Save at the start of each of your turns, DC " + (H.breath || {}).dc + " and +" + (H.breath || {}).step + " each round." }));
+    vacOn.forEach(function (b) { kids.push(breathRow(b, d, fx)); });
+    }   // end: vacuum applied
+
+    breathBlockTail(kids, hzd, d, fx);
+    return { kids: kids, count: hazardCount(hzd) };
+  }
+
+  /* ONE breath row builder, used by Vacuum in the hazard blocks and by Drowning
+     inside its condition. Both read the same EN.hazards.breath spec through
+     d.hazard.breath, so moving Drowning to Conditions moved WHERE it renders
+     and nothing else: it cannot drift from Vacuum, because there is no second
+     renderer to drift. */
+  function breathRow(b, d, fx) {
+      var chips = [];
+      chips.push(hazChip("HOLD " + b.holdRounds + " ROUNDS", "var(--accent)", "Rounds equal to your Body score"));
+      chips.push(hazChip("ROUND " + b.rounds, "var(--text3)"));
+      chips.push(hazChip("SAVES " + b.saves, "var(--text3)", "This exposure's own save count"));
+      if (b.everyRoundDamage) chips.push(hazChip(b.everyRoundDamage.dice + " " + b.everyRoundDamage.type.toUpperCase() + " EVERY ROUND", "var(--ember)", "Regardless of the save"));
+      if (!b.clockStarts) chips.push(hazChip("VOID LUNG · 15 MIN", "var(--success)", b.breathFrom + ": fifteen minutes of held breath outlasts any scene, so the save clock never starts inside one"));
+      if (b.kind === "vacuum") chips.push(hazChip(b.sealedOut ? "SEALED · " + String(b.seal.via).toUpperCase() : "NOT VACUUM-SEALED",
+        b.sealedOut ? "var(--success)" : "var(--danger)", b.seal.why));
+      var right = [];
+      // while a suit is holding vacuum the clock is not running, so its DC is
+      // shown greyed rather than as a live number the player has to beat
+      right.push(el("span.mono", { style: { fontSize: "17px", color: b.sealedOut ? "var(--text3)" : b.active ? "var(--danger)" : "var(--text3)",
+                                            opacity: b.sealedOut ? 0.45 : 1 }, text: "DC " + b.dc }));
+      if (b.sealedOut) right.push(hazChip("IMMUNE", "var(--success)", b.seal.why));
+      else if (!b.active) right.push(el("button.btn.sm", { style: { padding: "1px 8px" }, onclick: function () { breathStart(b); } }, "START"));
+      else {
+        right.push(el("button.btn.sm.primary", { style: { padding: "1px 8px" }, disabled: !b.clockStarts, onclick: function () { breathTick(b, fx, d); } },
+          b.clockStarts ? (b.holding > 0 ? "⏱ ROUND" : "⏱ SAVE") : "HOLDING"));
+        right.push(el("button.btn.sm", { style: { padding: "1px 8px" }, onclick: function () { breathEnd(b); } }, "END"));
+      }
+      // Vacuum is applied from the Hazard dropdown, so it gets the same Remove
+      // every other applied hazard has. Drowning does NOT: it is a condition,
+      // and the condition's own Remove above already owns clearing it.
+      if (b.statusKey) right.push(statusRemoveBtn(b.statusKey, "Take Vacuum off the panel"));
+      return el("div.feature", { style: { borderLeftColor: b.active ? "var(--danger)" : b.sealedOut ? "var(--success)" : "var(--border2)" } }, [
+        el("h4", null, [el("span", { text: b.name }), el("span", { style: { display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" } }, right)]),
+        el("div.row.wrap", { style: { gap: "5px", margin: "4px 0" } }, chips),
+        el("p.help", { style: { margin: 0 }, text: b.note }),
+        b.riders.length ? el("p.help", { style: { margin: "3px 0 0", color: "var(--text2)" }, text: b.riders.join(" ") }) : null,
+        b.kind === "vacuum" ? el("p.help", { style: { margin: "3px 0 0", color: b.sealedOut ? "var(--success)" : "var(--warn)" }, text: b.seal.why }) : null
+      ]);
+  }
+
+  /* Caustic Air & Sludge, and the Mitigations tail. Split out only so the
+     hazard blocks above can return early once every subsection is gated. */
+  function breathBlockTail(kids, hzd, d, fx) {
+    var ch = store.active() || {};
+    var H = EN.hazards || {};
+
+    /* ---- 3.3 Caustic Environments ---------------------------------------
+       Gear Degradation is deliberately NOT its own applied entry: it is a
+       rider on this one, where it is most relevant, so it renders inside the
+       Caustic block or not at all. */
+    var cz = hzd.caustic;
+    if (cz.applied) {
+    kids.push(hazSub("Caustic Environments"));
+    var cChips = [];
+    cChips.push(hazChip(cz.inside ? "STANDING IN IT" : "OUT", cz.inside ? "var(--danger)" : "var(--text3)"));
+    if (cz.lingering) cChips.push(hazChip("RESIDUE CLINGING", "var(--ember)", "1d6 Acid at the end of each of your turns until washed off"));
+    if (cz.stoppedBy) cChips.push(hazChip("STOPPED · " + String(cz.stoppedBy).toUpperCase(), "var(--success)"));
+    else if (cz.lingerStoppedBy) cChips.push(hazChip("NO RESIDUE · " + String(cz.lingerStoppedBy).toUpperCase(), "var(--success)"));
+    cChips.push(hazChip(cz.sceneTicks + " TURN" + (cz.sceneTicks === 1 ? "" : "S") + " IN IT", cz.sceneTicks ? "var(--warn)" : "var(--text3)", "Turns spent in it so far this scene"));
+    kids.push(el("div.feature", { style: { borderLeftColor: cz.inside ? "var(--danger)" : cz.lingering ? "var(--ember)" : "var(--border2)" } }, [
+      el("h4", null, [
+        el("span", { text: "Caustic Air & Sludge" }),
+        el("span", { style: { display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" } }, [
+          el("button.btn.sm" + (cz.inside ? "" : ".primary"), { style: { padding: "1px 8px" }, onclick: function () { causticToggle(cz); } }, cz.inside ? "STEP OUT" : "STEP IN"),
+          el("button.btn.sm", { style: { padding: "1px 8px" }, disabled: !cz.inside, title: "One turn spent in it", onclick: function () { causticTurn(cz); } }, "⏱ END OF TURN"),
+          el("button.btn.sm", { style: { padding: "1px 8px" }, disabled: !cz.lingering, title: cz.wash, onclick: function () { causticWash(); } }, "WASH (ACTION)"),
+          statusRemoveBtn(cz.statusKey, "Take Caustic Air & Sludge off the panel")
+        ])
+      ]),
+      el("div.row.wrap", { style: { gap: "5px", margin: "4px 0" } }, cChips),
+      el("p.help", { style: { margin: 0 }, text: cz.insideDamage ? (cz.insideDamage.dice + " " + cz.insideDamage.type + " " + cz.insideDamage.when + ".")
+        : ("No damage inside it: " + cz.stoppedBy + ".") }),
+      el("p.help", { style: { margin: "3px 0 0" }, text: cz.lingerDamage ? (cz.lingerDamage.dice + " " + cz.lingerDamage.type + " " + cz.lingerDamage.when + ". " + cz.wash)
+        : ("Nothing lingers after you step out: " + cz.lingerStoppedBy + ".") })
+    ]));
+    var dg = cz.degradation;
+    kids.push(el("div.feature", { style: { borderLeftColor: dg.lost ? "var(--gold)" : "var(--border2)" } }, [
+      el("h4", null, [
+        el("span", { text: "Gear Degradation" }),
+        el("span", { style: { display: "flex", alignItems: "center", gap: "8px" } }, [
+          el("span.mono", { style: { fontSize: "15px", color: dg.lost ? "var(--gold)" : "var(--text3)" },
+            text: dg.armor ? (dg.baseDR + (dg.lost ? " → " + dg.wouldBe : "") + " DR") : "NO ARMOR" }),
+          // The app has no scene clock, and a turn is not a scene, so a full
+          // scene of exposure is something the table declares rather than
+          // something a turn tick can quietly add up to.
+          el("button.btn.sm", { style: { padding: "1px 8px" }, disabled: !dg.exposed,
+            title: dg.exposed ? "A full scene of exposure: the suit loses 1 DR"
+              : dg.blockedBy ? (dg.blockedBy + " keeps the caustic off your armor as well as off you")
+              : (dg.armor ? dg.armor + " is sealed; caustic exposure does not reach it" : "No armor worn"),
+            onclick: function () { causticScene(cz); } }, "MARK FULL SCENE"),
+          el("button.btn.sm", { style: { padding: "1px 8px" }, disabled: !dg.lost, title: "Repaired during Downtime", onclick: function () { causticRepair(dg); } }, "REPAIR")
+        ])
+      ]),
+      el("p.help", { style: { margin: 0 }, text: cz.degradationRule.text || "" }),
+      el("p.help", { style: { margin: "3px 0 0", color: dg.exposed ? "var(--warn)" : "var(--success)" },
+        text: !dg.armor ? "No armor worn, so there is nothing to degrade."
+            : dg.blockedBy ? (dg.blockedBy + " is worn over " + dg.armor + " and keeps the caustic off it too, so it does not degrade.")
+            : dg.sealed ? (dg.armor + " is sealed; caustic exposure does not reach it.")
+            : (dg.armor + " is unsealed and will lose 1 DR after a full scene in it.") }),
+      dg.lost ? el("p.help", { style: { margin: "3px 0 0", color: "var(--gold)" },
+        text: "PENDING " + dg.lost + " DR, recorded against this exact suit. Armor Repair owns current DR per piece and lives on another branch, so this branch reports the loss rather than applying it. It has not been subtracted from your Damage Reduction above, and there is deliberately no second armor DR system here to subtract it." }) : null
+    ]));
+
+    }   // end: caustic applied
+
+    /* ---- 3.4 Mitigations -------------------------------------------------
+       Only what the player ACTUALLY HAS, per the spec. A mitigation you do not
+       own is not listed at all, because a list of everything you could have
+       bought is noise on a play sheet.
+
+       Two shapes, and the difference is visible:
+         GEAR (and armor mods) surface once the piece is in the stash, and
+         render greyed when they are not doing anything (not worn, not
+         equipped, not applied, not tuned, torn). The `why` line says which.
+         ALWAYS-ON SOURCES (a lineage trait) need no toggle, because there is
+         nothing to switch: if you have it, it is on. They render active and
+         simply tell the player what they are benefiting from.
+       The rest of the block, the per-hazard chips on the rows above, is the
+       other half of the spec: mitigations also surface as riders on the hazard
+       they answer, which is where a player looks mid-scene. */
+    var mit = hzd.mitigations;
+    var owned = mit.active.concat(mit.inactive).filter(function (m) { return m.possessed; });
+    if (!owned.length) return;
+    kids.push(hazSub("Mitigations (" + owned.filter(function (m) { return m.active; }).length + " of " + owned.length + " live)"));
+    owned.forEach(function (m) {
+      var row = [
+        el("h4", null, [
+          el("span", null, [document.createTextNode(m.name + " "), hazChip(m.kind.toUpperCase(), "var(--text3)")]),
+          el("span", { style: { display: "flex", alignItems: "center", gap: "8px" } }, [
+            m.detail ? el("span.help", { style: { margin: 0 }, text: m.detail }) : null,
+            hazChip(m.active ? "ACTIVE" : "OFF", m.active ? "var(--success)" : "var(--text3)", m.why)
+          ])
+        ]),
+        el("p.help", { style: { margin: 0, color: m.active ? "var(--text2)" : "var(--text3)" }, text: m.summary }),
+        el("p.help", { style: { margin: "3px 0 0" }, text: m.why })
+      ];
+      if (m.note) row.push(el("p.help", { style: { margin: "3px 0 0", fontStyle: "italic" }, text: m.note }));
+      if (m.key === "thermal-weave" && hzd.thermalWeaveKey) {
+        var tuned = ((ch.hazards || {}).thermalWeave || {})[hzd.thermalWeaveKey] || "";
+        row.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "5px" } }, [
+          el("span.help", { style: { margin: 0 }, text: "Chosen at install:" }),
+          el("select", { style: { width: "auto", fontSize: "12px" }, onchange: function () {
+            var v = this.value, k = hzd.thermalWeaveKey;
+            store.update(function (c) {
+              c.hazards = c.hazards || {}; c.hazards.thermalWeave = c.hazards.thermalWeave || {};
+              if (v) c.hazards.thermalWeave[k] = v; else delete c.hazards.thermalWeave[k];
+            });
+          } }, [
+            el("option", { value: "", selected: !tuned, text: "- not chosen -" }),
+            el("option", { value: "Fire", selected: tuned === "Fire", text: "Fire" }),
+            el("option", { value: "Cold", selected: tuned === "Cold", text: "Cold" })
+          ])
+        ]));
+      }
+      if (m.key === "hazmat") {
+        row.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "5px" } }, [
+          el("button.btn.sm", { style: { padding: "1px 8px" }, onclick: function () {
+            store.update(function (c) { c.hazards = c.hazards || {}; c.hazards.hazmatTorn = !c.hazards.hazmatTorn; });
+          } }, (ch.hazards || {}).hazmatTorn ? "MARK REPAIRED & RESEALED" : "MARK TORN")
+        ]));
+      }
+      if (m.key === "rebreather" && m.active) {
+        row.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "5px" } }, [
+          el("button.btn.sm", { style: { padding: "1px 8px" }, title: "Refreshes between scenes, per its own entry", onclick: function () {
+            store.update(function (c) { c.hazards = c.hazards || {}; c.hazards.rebreatherMinutes = 60; });
+            toast("Rebreather refreshed: 60 minutes of thin air.");
+          } }, "REFRESH (NEW SCENE)")
+        ]));
+      }
+      kids.push(el("div.feature", { style: { borderLeftColor: m.active ? "var(--success)" : "var(--border2)", opacity: m.active ? 1 : 0.6 } }, row));
+    });
+  }
+
+  /* The Drowning breath clock, rendered inside the Drowning condition. Returns
+     null for every other condition, so it can be dropped straight into the
+     condition body without a branch at the call site. */
+  function drowningClock(name, d, fx) {
+    if (name !== "Drowning") return null;
+    var b = (((d && d.hazard) || {}).breath || []).filter(function (x) { return x.kind === "drowning"; })[0];
+    return b ? breathRow(b, d, fx) : null;
+  }
+
+  /* ---- applying and clearing a Status Change ---------------------------
+     One entry point per direction, both keyed on the registry option, so the
+     panel never writes hazard or bonus storage by hand. Each `kind` names the
+     state it drives and nothing else touches it.
+
+     Applied-ness is written as a STATEMENT (ch.hazards.applied[key] = true)
+     alongside whatever clock the hazard runs, rather than being implied by that
+     clock being non-zero. A freshly applied deprivation track is at 0 days and
+     is on the panel; an unapplied one is at 0 days and is not. Nothing about
+     the numbers can tell those apart, so the record says which it is. */
+  function statusApplied(ch, opt) {
+    if (!opt) return false;
+    if (opt.menu === "bonus") return ((ch && ch.bonuses) || {})[opt.key] === true;
+    if (opt.kind === "exposure") {
+      // Exposures stack: two separate cold exposures each run their own clock
+      // and their own DC, so this one is never "already applied".
+      return false;
+    }
+    return (((ch && ch.hazards) || {}).applied || {})[opt.key] === true;
+  }
+
+  function applyStatusChange(opt) {
+    if (!opt) return;
+    if (opt.menu === "bonus") {
+      store.update(function (c) {
+        c.bonuses = c.bonuses || {};
+        // One Hot-Wire at a time: applying a second REPLACES the first rather
+        // than stacking, which is the rule the feature states.
+        if (opt.exclusiveGroup && EN.statusChanges) {
+          Object.keys(c.bonuses).forEach(function (k) {
+            var o = EN.statusChanges.get(k);
+            if (o && o.exclusiveGroup === opt.exclusiveGroup) delete c.bonuses[k];
+          });
+        }
+        c.bonuses[opt.key] = true;
+      });
+      toast(opt.name + " applied.");
+      return;
+    }
+    store.update(function (c) {
+      c.hazards = c.hazards || {};
+      var hz = c.hazards;
+      if (opt.kind === "exposure") {
+        hz.exposures = hz.exposures || {};
+        hz.exposures[newExposureId(c)] = { type: opt.type, severity: opt.defaultSeverity || "harsh",
+                                           saves: 0, fatigue: 0, minutes: 0, clockMinutes: 0 };
+        return;   // the row IS the statement; no applied key for exposures
+      }
+      hz.applied = hz.applied || {};
+      hz.applied[opt.key] = true;
+      /* Vacuum is a clock AND a condition. The clock is this hazard; the
+         condition is what makes you unable to speak and stops anything needing
+         air. Applying the hazard applies both, so there is one door into the
+         state and it opens the whole state. Drowning is the mirror of this and
+         goes the other way: the condition is the door, and it starts the clock. */
+      if (opt.kind === "breath" && opt.track === "vacuum") {
+        c.conditions = c.conditions || [];
+        if (c.conditions.indexOf("Vacuum") === -1) c.conditions.push("Vacuum");
+      }
+    });
+    toast(opt.kind === "exposure"
+      ? (opt.name + " exposure entered at DC " + ((EN.hazards || {}).exposure || {}).baseDC + ". It carries its own clock and its own DC.")
+      : (opt.name + " applied."));
+  }
+
+  /* Clearing one. The clock it drove is reset at the same time, because leaving
+     a hazard resets both the clock and the DC, and a hazard removed from the
+     panel has certainly been left. Fatigue already gained is NOT touched: it is
+     ordinary Fatigue and comes off by the ordinary rules. */
+  function clearStatusChange(opt) {
+    if (!opt) return;
+    if (opt.menu === "bonus") {
+      store.update(function (c) { if (c.bonuses) delete c.bonuses[opt.key]; });
+      return;
+    }
+    store.update(function (c) {
+      var hz = c.hazards || (c.hazards = {});
+      if (hz.applied) delete hz.applied[opt.key];
+      if (opt.kind === "deprivation" && hz.deprivation && hz.deprivation[opt.track]) {
+        hz.deprivation[opt.track] = { days: 0, saves: 0, fatigue: 0 };
+      } else if (opt.kind === "breath" && hz.breath && hz.breath[opt.track]) {
+        hz.breath[opt.track] = { active: false, rounds: 0, saves: 0 };
+        if (opt.track === "vacuum" && Array.isArray(c.conditions)) {
+          c.conditions = c.conditions.filter(function (n) { return n !== "Vacuum"; });
+        }
+      } else if (opt.kind === "caustic" && hz.caustic) {
+        hz.caustic.inside = false; hz.caustic.lingering = false; hz.caustic.sceneTicks = 0;
+      }
+    });
+  }
+
+  // The remove control every applied Status Change carries, matching the one a
+  // condition already has so the panel reads as one thing.
+  function statusRemoveBtn(key, label) {
+    return el("button.btn.sm.danger", { style: { padding: "1px 8px" }, title: label || "Remove",
+      onclick: function (e) {
+        e.stopPropagation();
+        clearStatusChange(EN.statusChanges && EN.statusChanges.get(key));
+        EN.app.render();
+      } }, "✕ Remove");
+  }
+
+  /* The panel badge counts everything on the panel: conditions the player
+     applied, conditions derived from another source, applied hazards, and
+     applied bonuses. */
+  function statusBadge(ch, hazCount, derivedCount) {
+    var conds = ((ch && ch.conditions) || []).length;
+    var bonuses = Object.keys((ch && ch.bonuses) || {}).length;
+    var n = conds + (derivedCount || 0) + (hazCount || 0) + bonuses;
+    return n ? n + " ACTIVE" : "NOTHING APPLIED";
+  }
+
+  /* ---- Bonuses ----------------------------------------------------------
+     Class Buffs and Consumables. Everything here is player-declared, because
+     none of it is derivable from this sheet: a Hot-Wire lives on somebody
+     else's action, and a swallowed pill leaves no trace in the record.
+
+     Pneumatic Bypass is the one with a live mechanical consequence, and the
+     row says so rather than leaving the player to wonder: the engine reads the
+     applied bonus and steps the unarmed strike, and the row prints the die it
+     produced. */
+  function bonusBlocks(ch, d) {
+    var SC = EN.statusChanges; if (!SC) return [];
+    var on = Object.keys((ch && ch.bonuses) || {});
+    if (!on.length) return [];
+    var kids = [hazSub("Bonuses")];
+    // registry order, not record order, so the list does not reshuffle itself
+    // as the player toggles things
+    var ordered = [];
+    SC.bonus.groups.forEach(function (g) {
+      (g.options || []).forEach(function (o) { if (on.indexOf(o.key) !== -1) ordered.push(o); });
+    });
+    ordered.forEach(function (o) {
+      var chips = [hazChip(o.groupName.toUpperCase(), "var(--accent)", o.source || "")];
+      var stepped = null;
+      var incSrc = (((d && d.unarmed) || {}).increases || {}).sources || [];
+      if (incSrc.some(function (s) { return s.kind === "bonus" && s.label === o.name; })) {
+        stepped = d.unarmed.die || (d.unarmed.flat ? String(d.unarmed.flat) : null);
+      }
+      if (stepped) chips.push(hazChip("UNARMED " + stepped, "var(--success)", "This bonus steps your unarmed strike; the sheet already reflects it"));
+      if (o.requires) chips.push(hazChip("NEEDS " + o.requires.toUpperCase(), "var(--text3)", "The tuning must match the recipient's installed hardware"));
+      // A consumable takes its prose from the gear catalog rather than carrying
+      // a second copy of it here.
+      var summary = o.summary || "";
+      if (o.itemName && EN.engine && EN.engine.catalogItem) {
+        var it = EN.engine.catalogItem(o.itemName);
+        if (it) summary = it.desc || it.effect || summary;
+      }
+      kids.push(el("div.feature", { style: { borderLeftColor: "var(--success)" } }, [
+        el("h4", null, [
+          el("span", { text: o.name }),
+          el("span", { style: { display: "flex", alignItems: "center", gap: "8px" } }, [statusRemoveBtn(o.key)])
+        ]),
+        el("div.row.wrap", { style: { gap: "5px", margin: "4px 0" } }, chips),
+        el("p.help", { style: { margin: 0, color: "var(--text2)" }, text: summary }),
+        o.endsOn ? el("p.help", { style: { margin: "3px 0 0" }, html: "<span style='color:var(--success)'>✓ Ends:</span> " + o.endsOn }) : null
+      ]));
+    });
+    return kids;
+  }
+
+  /* How many Status Changes the hazard side is contributing to the panel badge.
+     Applied, not merely running: an applied deprivation track that has not
+     crossed its threshold yet is still a thing on the sheet the player put
+     there, and the badge should say so. Drowning is counted with the
+     conditions, not here, because that is where it now lives. */
+  function hazardCount(hzd) {
+    if (!hzd) return 0;
+    return hzd.exposures.length
+         + hzd.deprivation.filter(function (r) { return r.applied; }).length
+         + hzd.breath.filter(function (b) { return b.kind === "vacuum" && b.applied; }).length
+         + (hzd.caustic && hzd.caustic.applied ? 1 : 0);
+  }
+
+  /* ---- the writes. Each one touches exactly the row it names. ---------- */
+  function exposureTick(row, fx) {
+    // A Rebreather covering thin air means no save at all: the interval simply
+    // burns the hour down. The clock starts when the hour runs out.
+    if (row.shielded) {
+      var left = 0;
+      store.update(function (c) {
+        var ex = ((c.hazards || {}).exposures || {})[row.id];
+        if (ex) { ex.minutes = (ex.minutes | 0) + row.intervalMinutes; ex.clockMinutes = (ex.clockMinutes | 0) + row.intervalMinutes; }
+        c.hazards.rebreatherMinutes = left = Math.max(0, (c.hazards.rebreatherMinutes | 0) - row.intervalMinutes);
+      });
+      toast(row.intervalMinutes + " min of thin air passes with no save; the " + row.shieldFrom + " is covering you. "
+        + (left > 0 ? left + " min of cover left." : "The cover is spent; the clock starts now at DC " + row.dc + "."));
+      return;
+    }
+    var r = hazardSave(row, row.dc, fx);
+    var gained = 0, capped = false;
+    store.update(function (c) {
+      var ex = ((c.hazards || {}).exposures || {})[row.id];
+      if (!ex) return;
+      ex.saves = (ex.saves | 0) + 1;                       // THIS row's counter, and only this one
+      ex.minutes = (ex.minutes | 0) + row.intervalMinutes;
+      if (r.pass) { ex.clockMinutes = 0; return; }         // success: the clock restarts, the DC does not
+      ex.clockMinutes = (ex.clockMinutes | 0) + row.intervalMinutes;
+      if (row.noFatigue) return;
+      gained = gainFatigue(c, 1);
+      capped = gained === 0;
+      ex.fatigue = (ex.fatigue | 0) + gained;
+      // Thin-air Fatigue is attributed to the CHARACTER, not to this row, so
+      // the attribution survives the row and does not outlive the Fatigue.
+      // ex.fatigue stays as this row's own tally for its chip; it is no longer
+      // what the Long Rest lock reads.
+      if (ex.type === "thinair" && gained) {
+        c.hazards.thinAirFatigue = Math.max(0, c.hazards.thinAirFatigue | 0) + gained;
+      }
+    });
+    var tail = r.pass ? " No effect; the clock restarts, the DC does not. Next save DC " + row.nextDC + "."
+      : row.noFatigue ? (" " + row.noFatigueFrom + " refuses the Fatigue."
+          + (row.lethalDamage ? " Lethal severity: still take " + row.lethalDamage.dice + " " + row.lethalDamage.type + "." : "")
+          + " Next save DC " + row.nextDC + ".")
+      : capped ? " Fatigue is already at 6 (Helpless)."
+      : (" +1 level of Fatigue." + (row.lethalDamage ? " Lethal severity: also take " + row.lethalDamage.dice + " " + row.lethalDamage.type + "." : "")
+         + " Next save DC " + row.nextDC + ".");
+    toast(row.typeName + " " + rollText(r) + "." + tail);
+  }
+  function exposureLeave(row) {
+    store.update(function (c) {
+      var m = (c.hazards || {}).exposures;
+      if (m) delete m[row.id];
+    });
+    // deleting the row IS the reset: the escalating DC lived nowhere else.
+    // The thin-air ATTRIBUTION is not in the row, so leaving does not launder
+    // it. Descending suspends the lock; climbing back up re-applies it to the
+    // same levels, because the count lives on the character.
+    var stillUp = Object.keys(((store.active() || {}).hazards || {}).exposures || {}).some(function (id) {
+      var ex = store.active().hazards.exposures[id];
+      return ex && ex.type === "thinair";
+    });
+    toast("Left the " + row.typeName + " exposure. Clock and DC both reset; a new exposure starts again at DC "
+      + EN.hazards.exposure.baseDC + ". Fatigue already gained stays and comes off by the normal Fatigue rules."
+      + (row.lockedFatigue && !stillUp
+          ? " You are off the altitude, so its " + row.lockedFatigue + " level(s) of thin-air Fatigue are no longer locked; going back up locks them again."
+          : row.lockedFatigue ? " Another thin-air exposure is still running, so those levels stay locked." : ""));
+  }
+  function depDay(row, delta) {
+    store.update(function (c) {
+      var t = ((c.hazards || {}).deprivation || {})[row.track];
+      if (!t) return;
+      var was = row.crossed;
+      t.days = Math.max(0, (t.days | 0) + delta);
+      /* Dropping back below the threshold ENDS the exposure, and leaving an
+         exposure resets both the clock and the DC. An exposure row cannot get
+         this wrong because LEAVE deletes it and the DC lived nowhere else; a
+         deprivation track has no row to delete, so stepping the days down was
+         leaving `saves` in place and a fresh thirst resumed at DC 16 instead of
+         10. Stepping back down is the natural gesture for "I got a drink
+         yesterday", so this cannot be left to remembering RESET. Fatigue
+         already stacked is untouched, exactly as it is for an exposure. */
+      if (was && t.days < row.thresholdDays) { t.saves = 0; t.clockMinutes = 0; }
+    });
+  }
+  function depTick(row, fx) {
+    var r = hazardSave(row, row.dc, fx);
+    var gained = 0;
+    store.update(function (c) {
+      var t = ((c.hazards || {}).deprivation || {})[row.track];
+      if (!t) return;
+      t.saves = (t.saves | 0) + 1;                          // this track's own counter; the other two do not move
+      if (r.pass) return;
+      gained = gainFatigue(c, 1);
+      t.fatigue = (t.fatigue | 0) + gained;                 // and its own Fatigue tally
+    });
+    toast(row.trackName + " " + rollText(r) + "." + (r.pass ? " No effect." : gained ? " +1 level of Fatigue." : " Fatigue is already at 6 (Helpless).")
+      + " Next save DC " + row.nextDC + ".");
+  }
+  function depReset(row) {
+    store.update(function (c) {
+      var t = ((c.hazards || {}).deprivation || {})[row.track];
+      if (t) { t.days = 0; t.saves = 0; t.fatigue = 0; }
+    });
+    toast(row.trackName + " clock and DC reset. Fatigue already gained stays.");
+  }
+  function breathStart(b) {
+    store.update(function (c) {
+      var s = ((c.hazards || {}).breath || {})[b.kind];
+      if (s) { s.active = true; s.rounds = 0; s.saves = 0; }
+    });
+    toast(b.name + " begins. Breath held for " + b.holdRounds + " rounds (your Body score), then Body Save DC "
+      + EN.hazards.breath.dc + ", +" + EN.hazards.breath.step + " each round.");
+  }
+  function breathEnd(b) {
+    store.update(function (c) {
+      var s = ((c.hazards || {}).breath || {})[b.kind];
+      if (s) { s.active = false; s.rounds = 0; s.saves = 0; }
+    });
+    toast(b.name + " ends. " + b.ends);
+  }
+  function breathTick(b, fx, d) {
+    var holding = b.holding > 0;
+    var r = holding ? null : hazardSave(b, b.dc, fx);
+    var wounds = null, dead = false, ko = false;
+    store.update(function (c) {
+      var s = ((c.hazards || {}).breath || {})[b.kind];
+      if (!s) return;
+      s.rounds = (s.rounds | 0) + 1;
+      if (holding) return;
+      s.saves = (s.saves | 0) + 1;                          // this exposure's own counter
+      if (r.pass) return;
+      var st = state(c, d);
+      wounds = Math.max(0, st.wounds - b.woundsOnFail);
+      c.wounds.current = wounds;
+      if (wounds <= 0) dead = true;
+      else if (wounds <= b.halfWounds) { ko = true; if ((c.conditions || []).indexOf("Unconscious") === -1) (c.conditions = c.conditions || []).push("Unconscious"); }
+    });
+    var rider = b.everyRoundDamage ? " Every round regardless of the save: " + b.everyRoundDamage.dice + " " + b.everyRoundDamage.type + "." : "";
+    if (holding) { toast(b.name + " round " + (b.rounds + 1) + ": still holding (" + Math.max(0, b.holding - 1) + " of " + b.holdRounds + " left)." + rider); return; }
+    toast(b.name + " " + rollText(r) + "." + (r.pass ? "" : " Take " + b.woundsOnFail + " Wound.")
+      + (dead ? " Wounds reduced to 0 while exposed: you die." : ko ? " At or below half Wounds: you also fall Unconscious." : "")
+      + rider + " Next save DC " + b.nextDC + ".");
+  }
+  function causticToggle(cz) {
+    var wasInside = cz.inside;
+    store.update(function (c) {
+      var q = (c.hazards || {}).caustic; if (!q) return;
+      if (q.inside) { q.inside = false; q.lingering = true; }   // the residue comes out with you
+      else q.inside = true;
+    });
+    toast(wasInside ? "Stepped out. The residue comes with you: it keeps burning until washed off."
+                    : "Stepped into it. 1d6 Acid at the end of each turn spent in it.");
+  }
+  function causticTurn(cz) {
+    store.update(function (c) {
+      var q = (c.hazards || {}).caustic; if (!q) return;
+      q.sceneTicks = (q.sceneTicks | 0) + 1;    // turns in it, this scene; display only
+    });
+    toast(cz.insideDamage ? (cz.insideDamage.dice + " " + cz.insideDamage.type + " at the end of this turn.")
+                          : ("No damage: " + cz.stoppedBy + "."));
+  }
+  /* A full scene of exposure degrades unsealed armor by 1 DR. The loss is
+     recorded against the ARMOR ENTRY, not the armor name, so two identical
+     suits cannot share it and a re-bought suit arrives at full DR.
+
+     THE SCOPE NOTE, in code: this writes to ONE ledger and hands it to the one
+     hook. Armor Repair owns current DR per piece and is not on this branch, so
+     EN.armorRepair is absent and the loss stays PENDING and displayed. When
+     that branch merges, applyDegradation exists and the same call lands there.
+     Nothing here subtracts from d.armorDR, deliberately: a second, parallel
+     armor DR system is exactly what must not be waiting when Armor Repair
+     arrives. */
+  function causticScene(cz) {
+    var dg = cz.degradation, rule = cz.degradationRule;
+    if (!dg.exposed || !dg.armorKey) return;
+    var handed = false;
+    store.update(function (c) {
+      var q = (c.hazards || {}).caustic; if (!q) return;
+      q.armorDR = q.armorDR || {};
+      // "minimum 0": the suit cannot lose more DR than it has
+      q.armorDR[dg.armorKey] = Math.min(dg.baseDR, (q.armorDR[dg.armorKey] | 0) + rule.drLost);
+      q.sceneTicks = 0;
+      if (EN.armorRepair && EN.armorRepair.applyDegradation) {
+        EN.armorRepair.applyDegradation(c, dg.armorKey, rule.drLost,
+          { source: "caustic", minimum: rule.minimum, repairedBy: rule.repairedBy });
+        handed = true;
+      }
+    });
+    toast("A full scene in it: " + dg.armor + " loses " + rule.drLost + " DR (minimum " + rule.minimum
+      + "), until repaired during " + rule.repairedBy + ". "
+      + (handed ? "Handed to Armor Repair." : "Recorded against that exact suit and reported as pending; Armor Repair is not on this branch, so nothing here lowers your Damage Reduction."));
+  }
+  function causticWash() {
+    store.update(function (c) { var q = (c.hazards || {}).caustic; if (q) q.lingering = false; });
+    toast("Washed off (an Action, and something to wash with). The lingering Acid stops.");
+  }
+  function causticRepair(dg) {
+    store.update(function (c) {
+      var q = (c.hazards || {}).caustic;
+      if (q && q.armorDR && dg.armorKey) delete q.armorDR[dg.armorKey];
+    });
+    toast(dg.armor + " repaired during Downtime; its recorded caustic DR loss is cleared.");
   }
 
   /* ---------- the tabbed Freelancer Actions panel ----------
@@ -2397,9 +3193,16 @@ EN.combatView = (function () {
 
     /* conditions */
     var condSel = el("select", { style: { width: "auto", minWidth: "200px" } },
-      [el("option", { value: "", text: "- add a condition -" })].concat((EN.conditions || []).map(function (c) {
-        return el("option", { value: c.name, disabled: (ch.conditions || []).indexOf(c.name) !== -1, text: c.name });
-      })));
+      [el("option", { value: "", text: "- add a condition -" })].concat((EN.conditions || [])
+        // Vacuum is applied from the Hazard dropdown now (Environmental >
+        // Vacuum), which brings its clock with it and adds this same condition.
+        // Leaving it here too would be two doors into one state, and only one of
+        // them would start the breath clock. Drowning goes the other way: it is
+        // a condition, it is offered here, and applying it starts ITS clock.
+        .filter(function (c) { return c.name !== "Vacuum"; })
+        .map(function (c) {
+          return el("option", { value: c.name, disabled: (ch.conditions || []).indexOf(c.name) !== -1, text: c.name });
+        })));
     var active = (ch.conditions || []).map(function (name) {
       var info = (EN.conditions || []).find(function (x) { return x.name === name; });
       var lv = LEVELED[name];
@@ -2425,20 +3228,75 @@ EN.combatView = (function () {
         ]),
         !open ? el("p.help", { style: { margin: 0, color: "var(--text2)" }, text: (lv && lv.effects ? lv.effects[lvl - 1] : (info && info.summary) || "") }) : null,
         !open && COND_META[name] ? el("p.help", { style: { margin: "4px 0 0" }, html: "⏱ " + COND_META[name][0] + " &nbsp;·&nbsp; <span style='color:var(--success)'>✓ End:</span> " + COND_META[name][1] }) : null,
+        // Drowning moved here from the hazards panel, so it brings its breath
+        // clock with it: the held-breath rounds, the escalating Body Save, and
+        // the Wound on a failure. Built by the SAME breathRow() that renders
+        // Vacuum, off the same shared spec, so the two cannot drift apart.
+        drowningClock(name, d, fx),
         severe ? el("p.help", { style: { margin: "4px 0 0", color: "var(--danger)" }, text: "Severe; level 4+ needs professional care or ritual support to recover." }) : null,
         info && open ? el("p", { text: info.text || info.summary || "" }) : null
       ]);
     });
+    /* The two Status Change dropdowns that sit beside the conditions one. Both
+       are built from EN.statusChanges, which is a registry rather than a
+       hardcoded list, so a new hazard type or a new bonus appears here with no
+       edit to this file. Both behave exactly like the conditions dropdown:
+       pick, hit the ONE shared + APPLY, and the entry joins the panel while the
+       dropdown snaps back to its placeholder ready for the next one. */
+    function statusSelect(menu) {
+      if (!menu) return null;
+      var opts = [el("option", { value: "", text: menu.placeholder })];
+      menu.groups.forEach(function (g) {
+        if (!g.options || !g.options.length) return;
+        opts.push(el("optgroup", { label: g.name }, g.options.map(function (o) {
+          return el("option", { value: o.key, disabled: statusApplied(ch, o), text: o.name });
+        })));
+      });
+      return el("select", { style: { width: "auto", minWidth: "170px" } }, opts);
+    }
+    var SC = EN.statusChanges || null;
+    var hazSel = SC ? statusSelect(SC.hazard) : null;
+    var bonusSel = SC ? statusSelect(SC.bonus) : null;
+
+    /* ONE apply button for all three dropdowns. It reads whichever ones carry a
+       selection, applies each, and resets each. Applying two at once is not a
+       special case worth forbidding: the player picked both, so both land. */
     var applyBtn = el("button.btn.sm.primary", { onclick: function () {
       var v = condSel.value;
-      if (v) store.update(function (c) {
-        c.conditions = c.conditions || [];
-        if (c.conditions.indexOf(v) === -1) c.conditions.push(v);
-        if (LEVELED[v]) { c.conditionLevels = c.conditionLevels || {}; c.conditionLevels[v] = c.conditionLevels[v] || 1; }
+      var applied = 0;
+      if (v) {
+        store.update(function (c) {
+          c.conditions = c.conditions || [];
+          if (c.conditions.indexOf(v) === -1) c.conditions.push(v);
+          if (LEVELED[v]) { c.conditionLevels = c.conditionLevels || {}; c.conditionLevels[v] = c.conditionLevels[v] || 1; }
+        });
+        condSel.value = "";
+        applied++;
+      }
+      [hazSel, bonusSel].forEach(function (sel) {
+        if (!sel || !sel.value) return;
+        var opt = SC && SC.get(sel.value);
+        sel.value = "";
+        if (!opt) return;
+        applyStatusChange(opt);
+        applied++;
       });
+      // Every dropdown resets to its default option whether or not anything was
+      // applied, so the header never sits on a stale selection.
+      if (hazSel) hazSel.value = "";
+      if (bonusSel) bonusSel.value = "";
+      if (applied) EN.app.render();
     } }, "+ APPLY");
-    sectionEls.conditions = EN.ui.panel("Conditions", (ch.conditions || []).length + " ACTIVE",
-      (active.length ? active : [el("p.help", { style: { margin: 0 }, text: "No active conditions." })])
+    var hazBlocks = hazardBlocks(ch, d, fx);
+    var bonusKids = bonusBlocks(ch, d);
+    var condKids = active.length ? active : [];
+    // The empty state has to speak for the whole panel now, not just for
+    // conditions, or an empty sheet reads "No active conditions" while three
+    // dropdowns sit above it offering two other kinds of thing.
+    var nothingAtAll = !condKids.length && !fx.derived.length && !hazBlocks.count && !bonusKids.length;
+
+    sectionEls.conditions = EN.ui.panel("Status Changes", statusBadge(ch, hazBlocks.count, fx.derived.length),
+      (nothingAtAll ? [el("p.help", { style: { margin: 0 }, text: "Nothing applied. Add a condition, a hazard or a bonus above." })] : condKids)
      .concat(fx.derived.map(function (dc) {
         var info = (EN.conditions || []).find(function (x) { return x.name === dc.name; });
         return el("div.feature", { style: { borderLeftColor: "var(--danger)" } }, [
@@ -2449,7 +3307,22 @@ EN.combatView = (function () {
           ]),
           info ? el("p.help", { style: { margin: 0 }, text: info.summary || "" }) : null
         ]);
-      })), { corners: true, headerRight: [condSel, applyBtn] });
+      })).concat(hazBlocks.kids).concat(bonusKids),
+      { corners: true, headerRight: [condSel, hazSel, bonusSel, applyBtn].filter(Boolean) });
+
+    /* ---------- Environmental Hazards ----------------------------------------
+       Every number rendered here comes off d.hazard (EN.engine.hazardStats),
+       the one resolver. Nothing in this block re-reads raw hazard storage to
+       decide which exposure is live, whether a suit holds vacuum, or which
+       mitigation is on: that would be the second resolver the Trauma Rig work
+       already paid to delete once. Writes go back through store.update and are
+       then re-derived, so what you see is always what the engine believes. */
+    /* The standalone Environmental Hazards panel is retired. Hazards are Status
+       Changes, and they now render inside that one panel beside the conditions
+       and the bonuses, which is the whole point of the rework: one place to
+       look for every temporary state. The layout slot stays so any saved
+       arrangement referencing it keeps working; it just renders nothing. */
+    sectionEls.hazards = null;
 
     /* saving throws + senses */
     var passives = ["perception", "investigation", "intuition", "systems"].map(function (k) {

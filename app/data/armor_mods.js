@@ -41,7 +41,15 @@ EN.armorMods = {
       grants: "+1d6 to Block", effect: "When you Block, add +1d6 to the damage prevented. Stacks with the Plated trait's Block benefit, the suit's listed Block Bonus, and shield dice. Applies only when you Block." },
 
     /* ---- Environmental & Sealing ---- */
+    // Two flags, because two different hazard questions ask about this mod and
+    // neither should have to read the `grants` or `effect` prose to answer.
+    //   grantsSealed:  the suit counts as Sealed (which is what caustic gear
+    //                  degradation means by "unsealed armor").
+    //   sealToVacuum:  fitted to a suit that is ALREADY Sealed, this upgrades
+    //                  that seal to hold vacuum. On an unsealed suit it grants
+    //                  only the Sealed benefit, which does not cover vacuum.
     { key: "rebreather-liner", name: "Rebreather Liner", category: "environmental", price: 250, rarity: "Common", legality: "Licensed", fits: "Any",
+      grantsSealed: true, sealToVacuum: true,
       grants: "Sealed benefit", effect: "The suit counts as Sealed: Resistance to Toxic damage and Edge on saves against gas, disease, and airborne or environmental hazards. Does not cover vacuum. If the suit is already Sealed, it instead upgrades that seal to hold against vacuum." },
     { key: "thermal-regulation-weave", name: "Thermal Regulation Weave", category: "environmental", price: 400, rarity: "Uncommon", legality: "Licensed", fits: "Any",
       grants: "Resistance to Fire or Cold", effect: "Choose Fire or Cold at install; you gain Resistance to that type and you do not gain Fatigue from Exposure to that kind of heat or cold." },

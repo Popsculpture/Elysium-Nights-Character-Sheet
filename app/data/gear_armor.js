@@ -152,6 +152,11 @@ EN.gearCatalog.armor = {
       poweredBenefits: "While trained, powered, and on an active lease, you ignore the Speed reduction from Bulky, treat your Encumbrance threshold as two steps higher, and gain Edge on in-combat d20 checks (or +1 Edge Die out-of-combat) to lift, shove, or force movement." },
     { name: "Warframe Shell", kind: "armor", group: "Powered Exoframe", type: "Powered Heavy Armor (3 Mod Slots)", price: 2400, nexus: "◎0.25",
       slot: ["Torso", "Legs"], dr: 5, blockBonus: 2, slots: 3, traits: ["Powered", "Plated", "Bulky", "Sealed", "Loud"], availability: "Rare", legality: "Restricted",
+      // Holds vacuum NATIVELY, which is why its own entry carries the flag. The
+      // Sealed trait alone never satisfies a vacuum check (see EN.hazards.breath
+      // .vacuumSeal); this suit and a Rebreather Liner on an already-Sealed suit
+      // are the only two paths in the game.
+      vacuum: true,
       desc: "A sealed military combat frame, the kind a corporation deploys when it has decided a problem is worth the optics. Air recycled, joints armored, every system tuned to keep one operator standing through a crossfire.",
       effect: "Grants 5 DR and a +2 Block Bonus. Its seals also hold against vacuum. When you acquire the frame, choose one physical damage type (Ballistic, Piercing, Slashing, or Bludgeoning); you gain Resistance to that type.",
       poweredBenefits: "While trained and powered, you ignore the Speed reduction from Bulky, treat your Encumbrance threshold as two steps higher, and gain Edge on in-combat d20 checks (or +1 Edge Die out-of-combat) to lift, shove, or force movement." },

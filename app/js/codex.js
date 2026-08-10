@@ -382,6 +382,58 @@ EN.codexView = (function () {
     renderList();
     blocks.push(refPanel("ref-conds", "Conditions", (EN.conditions || []).length + " ENTRIES", [search, listBox]));
 
+    /* Environmental Hazards: the chapter that sits between Conditions and The
+       Flow. Everything here is read out of EN.hazards, the same data the live
+       clocks on the Freelancer tab run on, so the reference and the sheet
+       cannot state different numbers. */
+    (function () {
+      var H = EN.hazards; if (!H) return;
+      var E = H.exposure, B = H.breath, C = H.caustic;
+      var kids = [];
+      kids.push(ruleBlock("Exposure", E.intro + "\n\n" + E.onLeave + "\n\n" + E.fatigueNote));
+      kids.push(subTitle("Severity sets the interval"));
+      kids.push(refTable(["Severity", "Interval"], E.severities.map(function (s) { return [s.name, s.interval]; }), [0]));
+      kids.push(subTitle("The clock"));
+      kids.push(proseBlock("- First save in an exposure: DC " + E.baseDC
+        + "\n- Each save after it: previous DC + " + E.step
+        + "\n- On failure: " + E.onFail
+        + "\n- On success: " + E.onSuccess
+        + "\n- The escalating DC is per EXPOSURE INSTANCE, not a global counter. Two separate exposures each start at DC " + E.baseDC + "."));
+      kids.push(subTitle("Per-type riders"));
+      kids.push(refTable(["Type", "Rider"], E.types.map(function (t) { return [t.name, t.rider]; }), [0]));
+      kids.push(subTitle("Deprivation's three clocks"));
+      kids.push(refTable(["Track", "Threshold", "Runs"], E.deprivation.tracks.map(function (t) {
+        return [t.name, t.crossed, "One save per day at Mild, on its own clock, stacking its own Fatigue"];
+      }), [0, 1]));
+      kids.push(subTitle("Vacuum"));
+      kids.push(ruleBlock("Vacuum mirrors Drowning exactly",
+        "Breath held: " + B.holdRule + ".\nThen, at " + B.timing + ": Body Save DC " + B.dc + ", +" + B.step + " each round."
+        + "\n- On failure: take " + B.woundsOnFail + " Wound."
+        + "\n- On failure and at or below half max Wounds: also fall Unconscious."
+        + "\n- Wounds reach 0 while exposed: death."
+        + "\n\n" + (B.kinds[1].riders || []).join("\n")
+        + "\n\nBoth conditions are built from one spec in the data, so if Drowning changes, Vacuum changes with it."));
+      kids.push(ruleBlock("Sealing against vacuum", B.vacuumSeal.rule + "\n\n"
+        + B.vacuumSeal.paths.map(function (p) { return p.name + ": " + p.how; }).join("\n\n")));
+      kids.push(subTitle("Caustic Environments"));
+      kids.push(ruleBlock("In it, and after it", C.intro
+        + "\n- " + C.inside.dice + " " + C.inside.type + " " + C.inside.when + "."
+        + "\n- Persists after exit: " + C.lingering.dice + " " + C.lingering.type + " " + C.lingering.when + "."
+        + "\n- " + C.wash));
+      kids.push(ruleBlock("Gear degradation", C.gearDegradation.text
+        + "\n\nThe sheet computes and records this loss against the exact suit that took it, and reports it as pending. Current DR per piece belongs to Armor Repair, which is not on this branch, so nothing here subtracts from your Damage Reduction: a second armor DR system is exactly what must not exist when Armor Repair arrives."));
+      kids.push(subTitle("Mitigations"));
+      kids.push(el("p", { style: { margin: "0 0 8px", fontSize: "13px", color: "var(--text2)", lineHeight: "1.5" },
+        text: "Nothing new. Each of these already exists elsewhere in the book, and each one changes an outcome on the Hazards panel rather than only being described." }));
+      kids.push(refTable(["Mitigation", "Source", "Effect"], H.mitigations.map(function (m) {
+        return [m.name, m.kind, m.summary];
+      }), [0]));
+      H.mitigations.filter(function (m) { return m.note; }).forEach(function (m) {
+        kids.push(ruleBlock(m.name, m.note, m.kind));
+      });
+      blocks.push(refPanel("ref-hazards", "Environmental Hazards", "EXPOSURE · VACUUM · CAUSTIC", kids));
+    })();
+
     mount.appendChild(el("div", null, blocks));
   }
 

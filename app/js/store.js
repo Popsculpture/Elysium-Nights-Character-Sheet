@@ -117,6 +117,52 @@ EN.store = (function () {
       stable: false,
       conditions: [],
       conditionLevels: {},               // {name: level} for stackable/leveled conditions
+      /* Environmental Hazards. The escalating Exposure DC is PER EXPOSURE
+         INSTANCE, and the shape is what enforces that: every exposure is its
+         own row under a minted "ex_" id carrying its OWN save count, and the
+         DC is derived from that row alone. There is no global counter here to
+         share, and leaving an exposure deletes its row, so "leaving resets both
+         the clock and the DC" happens because the state that held the DC is
+         gone. Deprivation is three such clocks, one per threshold, never one. */
+      hazards: {
+        exposures: {},                   // {exId: {type, severity, saves, fatigue, minutes, clockMinutes}}
+        deprivation: {                   // THREE independent day-scale clocks, each stacking its own Fatigue
+          water: { days: 0, saves: 0, fatigue: 0 },
+          food:  { days: 0, saves: 0, fatigue: 0 },
+          sleep: { days: 0, saves: 0, fatigue: 0 }
+        },
+        breath: {                        // Vacuum and Drowning, one shared spec (EN.hazards.breath)
+          drowning: { active: false, rounds: 0, saves: 0 },
+          vacuum:   { active: false, rounds: 0, saves: 0 }
+        },
+        caustic: {
+          inside: false, lingering: false, sceneTicks: 0,
+          armorDR: {}                    // {armorEntryKey: DR lost}, ENTRY-keyed, pruned to owned entries on load
+        },
+        thermalWeave: {},                // {armorEntryKey: "Fire"|"Cold"}, the Thermal Regulation Weave install pick
+        hazmatTorn: false,               // the Hazmat Suit's own entry: a tear fails the seal until repaired
+        rebreatherMinutes: 60,           // minutes of Rebreather thin-air cover left this scene
+        // How many of the character's CURRENT Fatigue levels came from thin air.
+        // Character-scoped on purpose: it used to be read off the live exposure
+        // row, and a row's lifetime is not this attribution's lifetime, so the
+        // lock outlived the Fatigue it described and LEAVE plus re-ENTER
+        // laundered it. Incremented on a thin-air failure, decremented when
+        // Fatigue is cleared, and clamped by the engine to the Fatigue actually
+        // held. It only LOCKS anything while a thin-air exposure is live.
+        thinAirFatigue: 0,
+        // Which hazards the player has APPLIED in the Status Changes panel, as
+        // EN.statusChanges option keys: {"deprivation:water": true}. This is
+        // STATED, never inferred from whether a clock happens to be non-zero.
+        // A thirst track at 0 days that the player applied is on the panel; one
+        // they never applied is not, and the two are indistinguishable from the
+        // clock alone. Exposures are not listed here: an exposure row exists
+        // only because it was applied, so the row IS the statement.
+        applied: {}
+      },
+      // Applied Bonuses, as EN.statusChanges option keys. Player-declared by
+      // definition: a Hot-Wire an ally installed on you, or a consumable you
+      // just took, are both states this sheet cannot derive.
+      bonuses: {},
       equipment: [],
       equippedWeapons: [],               // ordered weapon names, drives the Attacks list on the Freelancer tab
       equippedArmor: null,               // worn body armor (one at a time), name from EN.gearCatalog.armor
@@ -578,6 +624,176 @@ EN.store = (function () {
       else rg.hp[k] = Math.floor(v);
     });
     if (rg.key && !liveKeys[rg.key]) rg.key = null;
+    /* Environmental Hazards state. This block sits HERE, after the instance-id
+       split, for the same reason ch.rig does and under the same ordering rule
+       written at the split: two of its maps (caustic.armorDR and thermalWeave)
+       are keyed on an EQUIPMENT ENTRY, so they can only be resolved and pruned
+       once the entries actually carry their ids. Written twenty lines earlier,
+       beside the other equipment defaults, they would key on the armor NAME and
+       the split would orphan every one of them.
+
+       Every map keyed on a user-supplied string is null-prototype. An exposure
+       id or an entry key of "constructor" or "toString" would otherwise read as
+       present through the prototype chain and be mistaken for real state.
+
+       Unattributable state is DROPPED, not moved or clamped: a recorded weave
+       tuning or a recorded caustic DR loss whose armor entry has left the
+       equipment list is deleted, exactly as ch.rig.hp prunes, so a re-bought
+       suit arrives at full DR and untuned rather than inheriting a stranger's
+       damage. */
+    if (!ch.hazards || typeof ch.hazards !== "object" || Array.isArray(ch.hazards)) ch.hazards = {};
+    var hz = ch.hazards;
+    var HZ = EN.hazards || {};
+    var okType = HZ.typeByKey || {}, okSev = HZ.severityByKey || {};
+    function nn(v) { return (typeof v === "number" && isFinite(v) && v > 0) ? Math.floor(v) : 0; }
+    // exposures: one row per LIVE exposure, each with its own escalating save
+    // count. A row naming a type or severity that does not exist is noise, and
+    // Deprivation is never an exposures row (it has its own three clocks).
+    var exIn = (hz.exposures && typeof hz.exposures === "object" && !Array.isArray(hz.exposures)) ? hz.exposures : {};
+    var exOut = Object.create(null);
+    Object.keys(exIn).forEach(function (id) {
+      var r = exIn[id];
+      if (!r || typeof r !== "object" || Array.isArray(r)) return;
+      if (!okType[r.type] || r.type === "deprivation") return;
+      if (!okSev[r.severity]) return;
+      exOut[id] = { type: r.type, severity: r.severity, saves: nn(r.saves),
+                    fatigue: nn(r.fatigue), minutes: nn(r.minutes), clockMinutes: nn(r.clockMinutes) };
+    });
+    hz.exposures = exOut;
+    // deprivation: exactly the three tracks the rules name, always all three
+    var depIn = (hz.deprivation && typeof hz.deprivation === "object" && !Array.isArray(hz.deprivation)) ? hz.deprivation : {};
+    var depOut = Object.create(null);
+    (((HZ.exposure || {}).deprivation || {}).tracks || [{ key: "water" }, { key: "food" }, { key: "sleep" }]).forEach(function (t) {
+      var r = (depIn[t.key] && typeof depIn[t.key] === "object") ? depIn[t.key] : {};
+      depOut[t.key] = { days: nn(r.days), saves: nn(r.saves), fatigue: nn(r.fatigue) };
+    });
+    hz.deprivation = depOut;
+    // breath: the two kinds EN.hazards.breath declares, and nothing else
+    var brIn = (hz.breath && typeof hz.breath === "object" && !Array.isArray(hz.breath)) ? hz.breath : {};
+    var brOut = Object.create(null);
+    (((HZ.breath || {}).kinds) || [{ key: "drowning" }, { key: "vacuum" }]).forEach(function (k) {
+      var r = (brIn[k.key] && typeof brIn[k.key] === "object") ? brIn[k.key] : {};
+      brOut[k.key] = { active: !!r.active, rounds: nn(r.rounds), saves: nn(r.saves) };
+    });
+    hz.breath = brOut;
+    // caustic; armorDR is the entry-keyed ledger the Armor Repair branch will consume
+    if (!hz.caustic || typeof hz.caustic !== "object" || Array.isArray(hz.caustic)) hz.caustic = {};
+    hz.caustic.inside = !!hz.caustic.inside;
+    hz.caustic.lingering = !!hz.caustic.lingering;
+    hz.caustic.sceneTicks = nn(hz.caustic.sceneTicks);
+    var eqKeys = Object.create(null);
+    ((ch.equipment) || []).forEach(function (e) { var k = e && (e.id || e.name); if (k) eqKeys[k] = 1; });
+    var drIn = (hz.caustic.armorDR && typeof hz.caustic.armorDR === "object" && !Array.isArray(hz.caustic.armorDR)) ? hz.caustic.armorDR : {};
+    var drOut = Object.create(null);
+    Object.keys(drIn).forEach(function (k) {
+      var v = nn(drIn[k]);
+      if (!eqKeys[k] || v <= 0) return;                 // orphaned or empty: dropped, never moved
+      // "minimum 0": a suit cannot lose more DR than it has, so an imported or
+      // hand-edited number above the suit's own DR is clamped to it rather than
+      // handed to Armor Repair as a debt the piece could never pay.
+      var e = ch.equipment.find(function (x) { return (x.id || x.name) === k; });
+      var it = (e && EN.engine && EN.engine.catalogItem) ? EN.engine.catalogItem(e.name) : null;
+      var cap = (it && typeof it.dr === "number") ? it.dr : v;
+      drOut[k] = Math.min(v, cap);
+    });
+    hz.caustic.armorDR = drOut;
+    // the Thermal Regulation Weave's install-time element, per ARMOR ENTRY
+    var twIn = (hz.thermalWeave && typeof hz.thermalWeave === "object" && !Array.isArray(hz.thermalWeave)) ? hz.thermalWeave : {};
+    var twOut = Object.create(null);
+    Object.keys(twIn).forEach(function (k) {
+      var v = twIn[k];
+      if (eqKeys[k] && (v === "Fire" || v === "Cold")) twOut[k] = v;
+    });
+    hz.thermalWeave = twOut;
+    hz.hazmatTorn = !!hz.hazmatTorn;
+    if (typeof hz.rebreatherMinutes !== "number" || !isFinite(hz.rebreatherMinutes) || hz.rebreatherMinutes < 0) hz.rebreatherMinutes = 60;
+    hz.rebreatherMinutes = Math.min(60, Math.floor(hz.rebreatherMinutes));
+
+    /* Thin-air Fatigue attribution, character-scoped. A save written before this
+       existed carries the attribution on its exposure ROWS instead, so it is
+       recovered by summing the thin-air rows' own tallies once. That sum is the
+       best available reading of the old shape and it is capped two ways: by the
+       Fatigue the character actually holds, here, and again by the engine on
+       every derive. A record whose thin-air Fatigue had already drifted above
+       its real Fatigue therefore lands correct rather than importing the drift.
+       Nothing seeds it out of thin air: a record with no thin-air row and no
+       stored count gets 0. */
+    if (typeof hz.thinAirFatigue !== "number" || !isFinite(hz.thinAirFatigue) || hz.thinAirFatigue < 0) {
+      var seeded = 0;
+      Object.keys(hz.exposures).forEach(function (id) {
+        var r = hz.exposures[id];
+        if (r && r.type === "thinair") seeded += Math.max(0, r.fatigue | 0);
+      });
+      hz.thinAirFatigue = seeded;
+    }
+    hz.thinAirFatigue = Math.floor(hz.thinAirFatigue);
+    var fatigueHeld = ((ch.conditions || []).indexOf("Fatigue") !== -1)
+      ? Math.max(0, ((ch.conditionLevels || {}).Fatigue | 0)) : 0;
+    hz.thinAirFatigue = Math.min(hz.thinAirFatigue, fatigueHeld);
+
+    /* Applied Status Changes: the hazards and the bonuses the player has put on
+       the panel. Both are sanitized against the EN.statusChanges registry, so a
+       key that no longer names an option is dropped rather than rendering as a
+       blank row, and both maps are null-prototype because their keys arrive out
+       of a save file.
+
+       Applied-ness is STATED, not inferred. That distinction is the one this
+       codebase has now paid for twice (the rig pick, the armor migration), and
+       it is load-bearing here for a specific reason: a deprivation clock at 0
+       days and a vacuum clock at 0 rounds are the resting state of a track
+       nobody has applied AND of one that was applied a second ago. Reading the
+       numbers cannot tell those apart, so the record says which it is.
+
+       LEGACY RECORDS. A save written before this panel existed has live hazard
+       state and no `applied` map at all. Inferring nothing would silently drop
+       a running clock off the panel, so a record with no map (and only such a
+       record) adopts one built from whatever is actually running. That is a
+       one-time read of the numbers to seed the statement, not an ongoing
+       inference: once the map exists it is authoritative, including when it is
+       deliberately empty. */
+    var SC = EN.statusChanges || null;
+    var hadApplied = hz.applied && typeof hz.applied === "object" && !Array.isArray(hz.applied);
+    var apIn = hadApplied ? hz.applied : {};
+    var apOut = Object.create(null);
+    Object.keys(apIn).forEach(function (k) {
+      if (apIn[k] === true && (!SC || SC.isKey(k))) apOut[k] = true;
+    });
+    if (!hadApplied) {
+      // seed from running state, once
+      Object.keys(hz.deprivation || {}).forEach(function (t) {
+        var r = hz.deprivation[t];
+        if (r && ((r.days | 0) > 0 || (r.saves | 0) > 0 || (r.fatigue | 0) > 0)) apOut["deprivation:" + t] = true;
+      });
+      var vb = (hz.breath || {}).vacuum;
+      if (vb && (vb.active || (vb.rounds | 0) > 0 || (vb.saves | 0) > 0)) apOut["environmental:vacuum"] = true;
+      var cz = hz.caustic || {};
+      if (cz.inside || cz.lingering || (cz.sceneTicks | 0) > 0) apOut["environmental:caustic"] = true;
+    }
+    hz.applied = apOut;
+
+    var bnIn = (ch.bonuses && typeof ch.bonuses === "object" && !Array.isArray(ch.bonuses)) ? ch.bonuses : {};
+    var bnOut = Object.create(null);
+    Object.keys(bnIn).forEach(function (k) {
+      if (bnIn[k] !== true) return;
+      var opt = SC ? SC.get(k) : null;
+      if (SC && (!opt || opt.menu !== "bonus")) return;   // not a bonus option any more
+      bnOut[k] = true;
+    });
+    // An ally can hold only ONE Hot-Wire at a time. A hand-edited record can
+    // carry several; keep the first one the record lists and drop the rest,
+    // rather than letting the sheet claim two mutually exclusive buffs at once.
+    // The panel's own apply path already replaces rather than stacks, so this
+    // only ever fires for an imported or hand-edited file.
+    if (SC) {
+      var seenExclusive = Object.create(null);
+      Object.keys(bnOut).forEach(function (k) {
+        var opt = SC.get(k), g = opt && opt.exclusiveGroup;
+        if (!g) return;
+        if (seenExclusive[g]) delete bnOut[k];
+        else seenExclusive[g] = k;
+      });
+    }
+    ch.bonuses = bnOut;
     // cyberware: legacy string entries → objects. sp:0 so old manual marks don't
     // retroactively spike Static; chrome bought from the market carries real SP.
     if (Array.isArray(ch.cyberware)) {
