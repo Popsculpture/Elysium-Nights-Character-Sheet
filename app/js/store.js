@@ -501,11 +501,28 @@ EN.store = (function () {
                          the ceiling, and an absent row means the suit is at full DR.
          ch.armorGuard   The quality edge a clean repair earns, one absorbed point of DR.
 
-       Conversion rule, the same one firstKeyOfTier applies to Rigs: a key that already
-       names a LIVE entry is left alone, a key that names an owned item's NAME becomes
-       that item's first owned entry, and anything else is DROPPED. Dropped rather than
-       parked on another piece, per the settled ruling that state which cannot be
-       attributed to one object is discarded and a re-acquired piece arrives fresh.
+       CONVERSION RULE. A key that already names a LIVE entry is left alone. A key that
+       names an ITEM is attributed to one entry only when one entry can be named with
+       confidence, and is otherwise DROPPED:
+
+         1. the EQUIPPED piece, when it is one of the entries carrying that name. This
+            is not a tiebreak, it is what the legacy state meant. The old reader was
+            (ch.shieldWear || {})[shield.name] with `shield` the WIELDED shield, and the
+            old writer was markShieldWear, which returns early unless a shield is
+            wielded and writes dg.shield.name. So a legacy name key can only ever have
+            described the piece in the slot. Same for armor, whose DR was only ever read
+            for ch.equippedArmor.
+         2. otherwise the single owned entry of that name, when there is exactly one.
+         3. otherwise NOTHING. Two or more candidates and nothing in the record that
+            distinguishes them: the state is discarded.
+
+       Clause 3 is the point. It used to read "that item's FIRST owned entry", which
+       silently RELOCATED a save's damage onto a piece that was never damaged: wear a
+       second Anvil Frame, load once, and the worn suit reads 5/5 while the spare in the
+       stash reads 2/5 and holds the quality edge. Losing the wear costs one typed number
+       and the player can see that it is gone; moving it is invisible and unrecoverable,
+       because nobody knows it happened. Same asymmetry, and the same ruling, as the Rig
+       damage that cannot be attributed to an entry.
 
        The live-entry test runs FIRST, and that is what makes this idempotent across
        loads: once converted the keys are ids, and an id-keyed map is indistinguishable
@@ -515,33 +532,53 @@ EN.store = (function () {
        Rebuilt null-prototype: these keys are user-supplied strings, and a plain literal
        reads "constructor" and "toString" as already present. */
     var eqRows = Array.isArray(ch.equipment) ? ch.equipment : [];
-    var wearLiveKeys = Object.create(null), wearFirstKeyByName = Object.create(null);
+    var wearLiveKeys = Object.create(null), wearKeysByName = Object.create(null);
     eqRows.forEach(function (e) {
       if (!e || (e.qty != null && e.qty <= 0)) return;
       var k = e.id || e.name;
       if (!k) return;
       wearLiveKeys[k] = 1;
-      if (e.name && wearFirstKeyByName[e.name] == null) wearFirstKeyByName[e.name] = k;
+      if (e.name) (wearKeysByName[e.name] = wearKeysByName[e.name] || []).push(k);
     });
-    function migrateWearMap(field, valueOf) {
+    // The equip slot a legacy NAME key could have been describing, resolved to a live
+    // entry key. A slot still holding a bare item name (an id-carrying record the split
+    // had no reason to rekey) counts only when that name identifies exactly one owned
+    // entry: an ambiguous slot is no more attributable than the wear key it would be
+    // used to attribute.
+    function equippedEntryKey(slotVal) {
+      if (typeof slotVal !== "string" || !slotVal) return null;
+      if (wearLiveKeys[slotVal]) return slotVal;
+      var byName = wearKeysByName[slotVal];
+      return (byName && byName.length === 1) ? byName[0] : null;
+    }
+    function migrateWearMap(field, slotField, valueOf) {
       var src = ch[field];
       if (!src || typeof src !== "object" || Array.isArray(src)) src = {};
+      var wornKey = equippedEntryKey(ch[slotField]);
       var out = Object.create(null);
       Object.keys(src).forEach(function (k) {
         var v = valueOf(src[k]);
         if (v == null) return;
-        var key = wearLiveKeys[k] ? k : wearFirstKeyByName[k];
-        // no owned entry to attribute it to, or an earlier key already claimed
-        // that entry: drop it rather than duplicate or overwrite
+        var key = null;
+        if (wearLiveKeys[k]) key = k;                       // already an entry key: idempotent
+        else {
+          var cands = wearKeysByName[k] || [];
+          if (wornKey && cands.indexOf(wornKey) !== -1) key = wornKey;   // rule 1
+          else if (cands.length === 1) key = cands[0];                   // rule 2
+          // rule 3: nothing to attribute it to, or several equally likely pieces.
+          // Leave `key` null and the state is dropped rather than moved.
+        }
+        // no attributable entry, or an earlier key already claimed that entry:
+        // drop it rather than duplicate or overwrite
         if (!key || out[key] != null) return;
         out[key] = v;
       });
       ch[field] = out;
     }
     function positiveInt(v) { return (typeof v === "number" && isFinite(v) && v > 0) ? Math.floor(v) : null; }
-    migrateWearMap("shieldWear", positiveInt);
-    migrateWearMap("armorWear", positiveInt);
-    migrateWearMap("armorGuard", function (v) { return v === true ? true : null; });
+    migrateWearMap("shieldWear", "equippedShield", positiveInt);
+    migrateWearMap("armorWear", "equippedArmor", positiveInt);
+    migrateWearMap("armorGuard", "equippedArmor", function (v) { return v === true ? true : null; });
     // cyberware: legacy string entries → objects. sp:0 so old manual marks don't
     // retroactively spike Static; chrome bought from the market carries real SP.
     if (Array.isArray(ch.cyberware)) {

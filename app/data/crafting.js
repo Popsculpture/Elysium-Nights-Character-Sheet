@@ -108,18 +108,21 @@ EN.crafting = {
   /* suggested base Snag Dice by Project tier; the table adjusts from there */
   snagForTier: { simple: 1, standard: 2, advanced: 3, prototype: 4, relic: 5 },
 
-  /* Does a skill tier clear a Project tier's stated requirement? Every tier row
-     above already carries the training it expects (`skillTier`), and the bench
-     chips already print it as "Expects Proficient"; this is that same field being
-     ASKED rather than merely displayed. Nothing here is per-mechanic: a Simple
-     Project expects Proficient, so any lane that resolves as a Simple Project is
-     closed to an untrained crafter for the one reason every Simple Project is. */
-  meetsTier: function (tierKey, skillTier) {
-    var order = (EN.rules && EN.rules.profOrder) || ["untrained", "proficient", "expertise", "mastery"];
-    var need = this.tier(tierKey).skillTier || "proficient";
-    var have = order.indexOf(skillTier || "untrained");
-    return have >= 0 && have >= order.indexOf(need);
-  },
+  /* A tier's `skillTier` is an EXPECTATION, not a bar, and it is advisory at every
+     Project this app opens. There is deliberately no meetsTier() predicate here:
+     one existed briefly, it was asked from the Armor Repair bench lane and from
+     nowhere else, and a rule enforced in one of four Project lanes is worse than
+     one enforced in none. It gated the cheap 5-percent parts lane while leaving
+     the same suit's full rebuild, every Blueprint Build and every custom Project
+     wide open to the same untrained crafter.
+     Advisory is the app's existing and consistent answer: an untrained crafter
+     opens the Project and pays for it in the roll, +2 Snag Dice on every Work
+     Interval (see EN.rules.profTiers and the UNTRAINED chip on the bench), which
+     is exactly how this ruleset expresses "you may try this without the training".
+     `rules.kits` says the same thing about a missing kit: it raises the Target or
+     adds Snag, it does not refuse the work. Turning the expectation into a hard
+     requirement is a real change to every Project in the app and belongs to
+     whoever decides it deliberately, not to an armor patch. */
 
   /* ---- Armor Repair -------------------------------------------------------
      Armor DR is mutable. The catalog `dr` is the BASE and the ceiling; damage
@@ -128,13 +131,16 @@ EN.crafting = {
 
        SHOP    10 percent per point. One Downtime period, no roll.
        BENCH    5 percent per point in parts, and it resolves as a Simple Project
-                using Engineering, so the Project tier requirement above is the
-                only crafter gate there is. A Portable Fabrication Rig prints the
-                plate, so with stock on hand the parts cost nothing; salvage cuts
+                using Engineering like any other. A Portable Fabrication Rig prints
+                the plate, so with stock on hand the parts cost nothing; salvage cuts
                 or clears it the ordinary way any Project's materials are cut.
 
      A suit at 0 DR is not repaired, it is rebuilt: an ordinary Project at the
-     item's own tier and full parts cost (materialCost, half the market price).
+     item's own tier and full parts cost (half the listed price, the same ratio
+     materialCost charges).
+
+     Every one of those numbers is a percentage of the suit's LISTED price, which
+     for LEASED armor is its Buyout and not its buy-in. See listPrice below.
 
      Where 10 percent comes from, so nobody retunes it by accident: at that rate
      re-plating a 5 DR suit from 0 costs half its price, exactly the ratio the
@@ -146,8 +152,14 @@ EN.crafting = {
     benchSkill: "Engineering",
     freeParts: "Portable Fabrication Rig",
     shopTime: "1 Downtime period",
-    shopCost:  function (price, points) { return Math.ceil(Math.max(0, price || 0) * this.shopRate  * Math.max(0, points || 0)); },
-    benchCost: function (price, points) { return Math.ceil(Math.max(0, price || 0) * this.benchRate * Math.max(0, points || 0)); },
+    // Both lanes take the ITEM, never a bare number, so no call site can hand them
+    // a leased suit's deposit by reaching for `it.price` (they all used to).
+    shopCost:  function (it, points) { return Math.ceil(EN.crafting.listPrice(it) * this.shopRate  * Math.max(0, points || 0)); },
+    benchCost: function (it, points) { return Math.ceil(EN.crafting.listPrice(it) * this.benchRate * Math.max(0, points || 0)); },
+    // A breached suit is rebuilt, not repaired: half the listed price in parts,
+    // which is materialCost's own ratio taken off the listed price rather than the
+    // deposit. Identical to materialCost for everything that is not leased.
+    rebuildCost: function (it) { return Math.ceil(EN.crafting.listPrice(it) / 2); },
     shopText: "Hand it to a shop. One Downtime period and 10 percent of the suit's listed price per point of DR restored. No roll.",
     benchText: "Do it yourself. A Simple Project using Engineering, parts at 5 percent of the listed price per point. A Portable Fabrication Rig prints the plate from stock, so the parts cost nothing.",
     breachedText: "A suit at 0 DR is past repair. Rebuilding it is an ordinary Project at full parts cost.",
@@ -184,6 +196,36 @@ EN.crafting = {
   },
 
   materialCost: function (it) { return Math.ceil((((it && it.price) || 0)) / 2); },
+
+  /* What the thing is WORTH, as opposed to what it costs to get your hands on it.
+     For ordinary gear those are the same number and this returns `price`.
+
+     For LEASED gear they are not. A leased entry's `price` is the buy-in, a deposit
+     that buys a week of service and no ownership; the sum that represents the item
+     itself is its Buyout, the one-time payment that ends the lease and makes it
+     yours. The app already draws that line: inventory.js buyoutCost(it) reads a
+     numeric `buyout` or the ◎ figure inside the `nexus` tag, gated on `it.upkeep`
+     the way every other lease check is, and the vehicle catalog mapping is explicit
+     that a lease row is "price 0 with buyout set". This is that same distinction,
+     asked for pricing rather than for a purchase button.
+
+     A Nexus buyout converts at the reference value the economy chapter states, the
+     one that "appears in contracts, ledgers, and official books" (EN.economy). That
+     is the ledger value of the object, which is exactly the question being asked.
+
+     Anything priced off what a piece is worth (repair per point, a rebuild's parts)
+     reads this. Anything priced off what you handed over at the counter keeps
+     reading `price`. */
+  listPrice: function (it) {
+    if (!it) return 0;
+    var price = Math.max(0, it.price || 0);
+    if (!it.upkeep) return price;
+    if (typeof it.buyout === "number" && it.buyout > 0) return it.buyout;
+    var m = String(it.nexus || "").match(/[\d.]+/);
+    var rate = (EN.economy && EN.economy.nexusToGlimmer) || 10000;
+    if (m) return Math.ceil(parseFloat(m[0]) * rate);
+    return price;   // a lease with no stated way out: the deposit is all there is
+  },
 
   tier: function (key) { for (var i = 0; i < this.tiers.length; i++) { if (this.tiers[i].key === key) return this.tiers[i]; } return this.tiers[1]; },
   outcome: function (key) { for (var i = 0; i < this.outcomes.length; i++) { if (this.outcomes[i].key === key) return this.outcomes[i]; } return null; }

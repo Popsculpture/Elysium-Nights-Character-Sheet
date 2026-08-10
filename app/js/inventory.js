@@ -15,6 +15,11 @@ EN.inventoryView = (function () {
   var _bench = "ballistics"; // Workbench sub-tab: 'ballistics' | 'armor' | 'tech' | 'garage'
   var _benchWeapon = null;   // Arms Table: the weapon currently being customized
   var _benchArmor = null;    // Impact Table: the armor currently being customized
+  // Armor Integrity: how many points of DR the player is buying back on each piece,
+  // {armorEntryKey: points}. The rule prices repair PER POINT, so a player with three
+  // points gone and a thin wallet has to be able to buy one. Absent means "all of it",
+  // which is the common case and keeps the default one click.
+  var _armorPts = {};
   var _open = {};          // collapse state for item cards
   // Storefront (picked via the ⚙ settings popover; same stock, different pricing):
   //   'undercut'   · The Undercut: book list prices, no markups
@@ -1676,8 +1681,9 @@ EN.inventoryView = (function () {
      the equipment ENTRY, so this panel lists PIECES and not item types: two Kevlar
      Weaves are two rows with two independent tracks.
 
-     Two lanes, both priced per point restored off the suit's listed price, both
-     read out of EN.crafting.armorRepair so the numbers live in the rules data:
+     Two lanes, both priced per point restored off the suit's LISTED price (its
+     Buyout when it is leased, per CRAFT().listPrice), both read out of
+     EN.crafting.armorRepair so the numbers live in the rules data:
 
        SHOP    10 percent per point, one Downtime period, no roll. Pays on the spot.
        BENCH    5 percent per point in parts, opened as a Simple Project using
@@ -1685,16 +1691,32 @@ EN.inventoryView = (function () {
                 completes like any other Project. A Portable Fabrication Rig prints
                 the plate from stock, so its parts cost is 0.
 
-     The bench lane's crafter requirement is NOT a rule written here. It is the
-     Project tier requirement that every Project already carries: a Simple Project
-     expects the Proficient skill tier, so EN.crafting.meetsTier answers the
-     question and an untrained Engineer is turned away for the same reason they are
-     turned away from any other Simple Project. There is no armor-specific gate.
+     Per POINT means per point: each piece carries a points picker, so a Freelancer
+     with three points gone and 200 Glimmer can buy one back. Both lanes price the
+     number that is picked.
+
+     There is NO crafter gate on either lane, and that is deliberate rather than an
+     omission. The Project tier's `skillTier` is advisory everywhere else in this app
+     (Blueprints, custom Projects, the rebuild below), and an untrained crafter pays
+     for it in the roll at +2 Snag per Work Interval. A gate here and nowhere else
+     was worse than no gate at all, because it closed the cheap lane and left the
+     expensive one open. See the note where meetsTier used to live in crafting.js.
 
      A suit at 0 DR is not repairable at all: the button routes to an ordinary
      Project at the item's own tier and full parts cost, exactly the Project the
      Blueprints panel would open for it. */
   function armorRepairRules() { return (CRAFT().armorRepair) || {}; }
+  // How many points this piece is currently set to buy back: the player's pick,
+  // clamped live to what the suit has actually lost, defaulting to all of it.
+  function armorPtsFor(st) {
+    var want = _armorPts[st.key];
+    if (typeof want !== "number" || !(want > 0)) want = st.lost;
+    return Math.max(1, Math.min(Math.floor(want), st.lost));
+  }
+  function setArmorPts(st, n) {
+    _armorPts[st.key] = Math.max(1, Math.min(n, st.lost));
+    EN.app.render();
+  }
   // The character's live tier in a craft skill, asked of the engine rather than of
   // ch.proficiencies, so trained-by-feature floors count the way they do everywhere.
   function craftSkillTier(ch, skillName) {
@@ -1715,20 +1737,36 @@ EN.inventoryView = (function () {
     EN.app.render();
   }
   // The shop lane: no roll, one Downtime period, Glimmer off the top. Restoring is
-  // always toward the base and never past it, because the points asked for are
+  // always toward the base and never past it, because the points paid for are
   // clamped to what the piece has actually lost.
+  //
+  // The debit and the restore happen inside ONE store.update, against state re-read
+  // live in that same tick, and the count that is charged for is the count that is
+  // restored. That is the whole point: the two cannot be separated by any ordering,
+  // so no sequence of clicks, no stale render and no double-fire can take Glimmer
+  // for DR it did not give back. It used to price and check the purse off the `st`
+  // captured when the row was rendered and then apply the delta to whatever the
+  // character looked like later. The lease ledger already guards its own writes this
+  // way ("re-check live: a double-fire cannot double-charge"); this is that.
   function armorShopRepair(st, points) {
     var AR = armorRepairRules();
-    var pts = Math.max(0, Math.min(points, st.lost));
-    if (!pts) return;
-    var cost = AR.shopCost((st.item && st.item.price) || 0, pts);
-    var ch = store.active();
-    if (cost > (ch.glimmer || 0)) { toast("Not enough Glimmer for the shop repair (" + fmtG(cost) + ")."); return; }
+    var done = null, short = null;
     store.update(function (c) {
-      c.glimmer = (c.glimmer || 0) - cost;
-      EN.engine.applyArmorDamage(c, st.key, -pts);    // the one writer; it is what stops DR passing the base
+      var live = EN.engine.armorState(c, st.key);
+      var pts = Math.max(0, Math.min(Math.floor(points || 0), live.lost));
+      if (!pts) return;                                     // nothing left to buy back: charge nothing
+      var cost = AR.shopCost(live.item, pts);
+      if (cost > (c.glimmer || 0)) { short = cost; return; }
+      var res = EN.engine.applyArmorDamage(c, st.key, -pts);  // the one writer; it is what stops DR passing the base
+      var restored = live.lost - res.lost;                    // what the writer actually gave back
+      if (restored <= 0) return;                              // it gave nothing, so it takes nothing
+      c.glimmer = (c.glimmer || 0) - AR.shopCost(live.item, restored);
+      done = { pts: restored, cost: AR.shopCost(live.item, restored), current: res.current, base: res.base, name: live.name };
     });
-    toast(st.name + " repaired to " + Math.min(st.base, st.current + pts) + " of " + st.base + " DR for " + fmtG(cost) + ". " + AR.shopTime + ".");
+    if (short != null) { toast("Not enough Glimmer for the shop repair (" + fmtG(short) + ")."); return; }
+    if (!done) { toast(st.name + " has no DR to buy back."); EN.app.render(); return; }
+    delete _armorPts[st.key];   // the pick was spent; the row re-defaults to whatever is still gone
+    toast(done.name + " repaired to " + done.current + " of " + done.base + " DR for " + fmtG(done.cost) + ". " + AR.shopTime + ".");
     EN.app.render();
   }
   // The bench lane: hand the work to the Projects system and get out of the way.
@@ -1738,23 +1776,25 @@ EN.inventoryView = (function () {
     var AR = armorRepairRules();
     var pts = Math.max(0, Math.min(points, st.lost));
     if (!pts) return;
-    var price = (st.item && st.item.price) || 0;
     tbStart({
       kind: "repair",
       name: "Repair " + st.name + " (+" + pts + " DR)",
       itemName: st.name,
       skill: AR.benchSkill || "Engineering",
       tier: AR.benchTier || "simple",
-      materialCost: ownsFabRig(ch) ? 0 : AR.benchCost(price, pts),
+      materialCost: ownsFabRig(ch) ? 0 : AR.benchCost(st.item, pts),
       addOnComplete: false,
       repairKey: st.key,
       repairPoints: pts
     });
+    delete _armorPts[st.key];
     _bench = "fab";   // the Project is live on the Fabrication bench; land the player on it
     EN.app.render();
   }
   // A breached suit is a rebuild, not a repair: the ordinary Project the Blueprints
   // panel would open for this item, at full parts cost, restoring the whole base.
+  // Parts are half the LISTED price, so a leased suit rebuilds off its Buyout and
+  // not off the deposit it takes to walk out wearing one.
   function armorRebuildProject(st) {
     var it = st.item || {};
     tbStart({
@@ -1763,7 +1803,7 @@ EN.inventoryView = (function () {
       itemName: st.name,
       skill: CRAFT().skillForItem(it),
       tier: CRAFT().tierForItem(it),
-      materialCost: CRAFT().materialCost(it),
+      materialCost: armorRepairRules().rebuildCost(it),
       addOnComplete: false,
       repairKey: st.key,
       repairPoints: st.base
@@ -1775,10 +1815,12 @@ EN.inventoryView = (function () {
     var AR = armorRepairRules();
     var pieces = (EN.engine.ownedArmorPieces ? EN.engine.ownedArmorPieces(ch) : []).filter(function (p) { return p.base > 0; });
     var engTier = craftSkillTier(ch, AR.benchSkill || "Engineering");
-    var benchOpen = CRAFT().meetsTier(AR.benchTier || "simple", engTier);
     var benchTierName = CRAFT().tier(AR.benchTier || "simple").name;
     var needTier = CRAFT().tier(AR.benchTier || "simple").skillTier || "proficient";
     var needName = (((EN.rules || {}).profTiers || {})[needTier] || {}).name || needTier;
+    // Advisory, exactly as it is on every other Project: an untrained crafter may open
+    // the work and pays the ordinary untrained price for it, +2 Snag per Work Interval.
+    var engUntrained = engTier === "untrained";
     var hasRig = ownsFabRig(ch);
     var kids = [el("p.help", { style: { margin: "0 0 8px", fontSize: "11.5px" },
       text: "Damage lowers a suit's DR; repair raises it back toward the printed value and never past it. " + (AR.shopText || "") + " " + (AR.benchText || "") })];
@@ -1787,7 +1829,10 @@ EN.inventoryView = (function () {
       return EN.ui.panel("Armor Integrity", "DR TRACK · REPAIR LANES", kids, { corners: true });
     }
     pieces.forEach(function (st) {
-      var price = (st.item && st.item.price) || 0;
+      // The suit's LISTED price: for a leased suit that is its Buyout, not the
+      // buy-in it took to put it on. Everything below prices off this.
+      var price = CRAFT().listPrice(st.item);
+      var leased = !!(st.item && st.item.upkeep);
       var worn = ch.equippedArmor === st.key;
       var head = el("div.row.between.wrap", { style: { gap: "8px", alignItems: "center" } }, [
         el("div.row.wrap", { style: { gap: "7px", alignItems: "center", flex: "1 1 auto", minWidth: 0 } }, [
@@ -1811,32 +1856,44 @@ EN.inventoryView = (function () {
       ]);
       var lanes;
       if (st.breached) {
+        var rebuild = AR.rebuildCost(st.item || {});
         lanes = el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "7px" } }, [
           el("span.help", { style: { margin: 0, fontSize: "11px", color: "var(--danger)" }, text: AR.breachedText }),
-          el("button.btn.sm.primary", { title: "Open a full Project for this suit at " + fmtG(CRAFT().materialCost(st.item || {})) + " in parts, restoring all " + st.base + " DR",
-            onclick: function () { armorRebuildProject(st); } }, "⚒ REBUILD PROJECT · " + fmtG(CRAFT().materialCost(st.item || {})))
+          el("button.btn.sm.primary", { title: "Open a full Project for this suit at " + fmtG(rebuild) + " in parts, half its " + fmtG(price) + (leased ? " Buyout" : " list price") + ", restoring all " + st.base + " DR",
+            onclick: function () { armorRebuildProject(st); } }, "⚒ REBUILD PROJECT · " + fmtG(rebuild))
         ]);
       } else if (!st.lost) {
         lanes = el("p.help", { style: { margin: "6px 0 0", fontSize: "11px", color: "var(--text4)" }, text: "Undamaged. Nothing to repair." });
       } else {
-        var pts = st.lost;   // repair the whole loss; the lanes price per point either way
-        var shop = AR.shopCost(price, pts), bench = hasRig ? 0 : AR.benchCost(price, pts);
+        // Per POINT: pick how much of the loss to buy back, and both lanes price
+        // exactly that. Defaults to the whole loss, so the common case is one click.
+        var pts = armorPtsFor(st);
+        var shop = AR.shopCost(st.item, pts), bench = hasRig ? 0 : AR.benchCost(st.item, pts);
+        var perPoint = AR.shopCost(st.item, 1);
+        var priceNote = fmtG(perPoint) + " per point at this suit's " + fmtG(price) + (leased ? " Buyout (a leased suit is priced off what it is worth, not off the deposit)" : " list price") + ".";
         lanes = el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "7px" } }, [
-          el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em" }, text: "REPAIR " + pts + " DR" }),
-          el("button.btn.sm", { title: (AR.shopText || "") + " " + fmtG(AR.shopCost(price, 1)) + " per point at this suit's " + fmtG(price) + " list price.",
+          el("div.row", { style: { gap: "4px", alignItems: "center" } }, [
+            el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em", marginRight: "2px" }, text: "REPAIR" }),
+            el("button.btn.sm", { disabled: pts <= 1, title: "Buy back one point fewer",
+              style: { padding: "1px 7px" }, onclick: function () { setArmorPts(st, pts - 1); } }, "−"),
+            el("span.mono", { title: "Points of DR this repair buys back, out of the " + st.lost + " this suit has lost",
+              style: { fontSize: "12px", minWidth: "42px", textAlign: "center", color: "var(--text)" }, text: pts + " / " + st.lost }),
+            el("button.btn.sm", { disabled: pts >= st.lost, title: "Buy back one point more",
+              style: { padding: "1px 7px" }, onclick: function () { setArmorPts(st, pts + 1); } }, "+")
+          ]),
+          el("button.btn.sm", { title: (AR.shopText || "") + " " + priceNote,
             style: { color: "var(--gold)", borderColor: "var(--gold)" },
             onclick: function () { armorShopRepair(st, pts); } }, "▤ SHOP · " + fmtG(shop)),
           el("button.btn.sm", {
-            disabled: !benchOpen,
-            title: benchOpen
-              ? (AR.benchText || "") + " Opens a " + benchTierName + " Project on the Fabrication bench" + (hasRig ? " with parts printed by your " + AR.freeParts + "." : " for " + fmtG(bench) + " in parts.")
-              : "A " + benchTierName + " Project expects " + needName + " in " + (AR.benchSkill || "Engineering") + "; yours is " + ((((EN.rules || {}).profTiers || {})[engTier] || {}).name || engTier) + ". Use the shop lane, or train the skill.",
-            style: benchOpen ? { color: "var(--accent)", borderColor: "var(--accent)" } : null,
+            title: (AR.benchText || "") + " Opens a " + benchTierName + " Project on the Fabrication bench"
+              + (hasRig ? " with parts printed by your " + AR.freeParts + "." : " for " + fmtG(bench) + " in parts.")
+              + (engUntrained ? " Your " + (AR.benchSkill || "Engineering") + " is untrained: the Project expects " + needName + ", so every Work Interval runs with +2 Snag." : ""),
+            style: { color: "var(--accent)", borderColor: "var(--accent)" },
             onclick: function () { armorBenchProject(ch, st, pts); } },
             "⚒ BENCH · " + (hasRig ? "PARTS FREE" : fmtG(bench))),
-          !benchOpen ? el("span.help", { style: { margin: 0, fontSize: "10.5px", color: "var(--text4)" },
-            text: "Bench lane needs " + (AR.benchSkill || "Engineering") + " " + needName + " (the " + benchTierName + " Project tier's own requirement)." }) : null,
-          (benchOpen && hasRig) ? tagChip("FAB RIG", "var(--accent)", AR.freeParts + ": prints the plate from stock, so the parts cost nothing.") : null
+          engUntrained ? tagChip("UNTRAINED +2 SNAG", "var(--warn)",
+            "A " + benchTierName + " Project expects " + (AR.benchSkill || "Engineering") + " " + needName + ". Untrained you can still do the work; every Work Interval adds +2 Snag Dice, the same as any other Project.") : null,
+          hasRig ? tagChip("FAB RIG", "var(--accent)", AR.freeParts + ": prints the plate from stock, so the parts cost nothing.") : null
         ]);
       }
       kids.push(el("div.feature", { style: { borderLeftColor: st.breached ? "var(--danger)" : (st.damaged ? "var(--warn)" : "var(--success)") } }, [head, lanes]));
@@ -2129,25 +2186,44 @@ EN.inventoryView = (function () {
   function tbToggleSalvage(id) {
     tbSetProjects(function (list) { var p = list.find(function (x) { return x.id === id; }); if (p && !p.materialsSecured) p.salvaged = !p.salvaged; });
   }
+  // Materials are paid for HERE, and materialsPaid records what actually left the
+  // wallet. A Project that pays out in something other than an item (Armor Repair
+  // pays in DR) has to be able to hand that money back if the payout turns out to be
+  // nothing, and it cannot do that by re-deriving the price later: salvage may have
+  // been toggled, or the rate may have moved.
   function tbSecure(id) {
     var ch = store.active(), p = tbFind(ch, id); if (!p) return;
+    if (p.materialsSecured) return;                      // already paid; a double-fire cannot double-charge
     var cost = p.salvaged ? 0 : (p.materialCost || 0);
     if (cost > (ch.glimmer || 0)) { toast("Not enough Glimmer for materials (" + fmtG(cost) + ")."); return; }
     tbSetProjects(function (list, c) {
-      var pp = list.find(function (x) { return x.id === id; }); if (!pp) return;
+      var pp = list.find(function (x) { return x.id === id; }); if (!pp || pp.materialsSecured) return;
       c.glimmer = (c.glimmer || 0) - cost;
       pp.materialsSecured = true;
+      pp.materialsPaid = cost;
     });
     toast(cost ? "Materials secured for " + fmtG(cost) + "." : "Salvaged; no Glimmer spent.");
   }
+  // Can this Project be finished? Its materials have to be paid for (or salvaged)
+  // first. Completing an unsecured Project used to hand over the finished work with
+  // the bill still outstanding, which made every material cost in the app optional,
+  // the bench lane's parts included.
+  function tbUnpaid(p) { return !p.materialsSecured && (p.materialCost || 0) > 0; }
   function tbComplete(p) {
-    var addName = p.addOnComplete ? p.itemName : null;
     var ch = store.active();
+    if (tbUnpaid(p)) { toast("Secure the materials first (" + fmtG(p.materialCost || 0) + ")."); return; }
+    var addName = p.addOnComplete ? p.itemName : null;
     // An Armor Repair Project pays out in DR. The engine's resolver says what the
     // piece is missing right now, so the restore can never take it past its base
     // and a piece that left the stash mid-Project restores nothing.
     var st = (p.repairKey && EN.engine.armorState) ? EN.engine.armorState(ch, p.repairKey) : null;
     var restored = (st && st.base) ? Math.max(0, Math.min(p.repairPoints || 0, st.lost)) : 0;
+    // The other half of "no path pays without restoring". This Project's whole
+    // payout is DR; if there is none left to give (the suit was repaired some other
+    // way, or it left the Stash), the parts that were paid for went into nothing, so
+    // they come back. The debit and the restore are one transaction even when they
+    // happen at opposite ends of a Project.
+    var refund = (p.repairKey && restored <= 0) ? (p.materialsSecured ? (p.materialsPaid || 0) : 0) : 0;
     // The ordinary Project results table's quality edge, spent on armor as the
     // manuscript suggests: a clean run (a Flawless Work Interval) seats the plate
     // so the next point of DR the suit would lose is absorbed for free.
@@ -2160,9 +2236,11 @@ EN.inventoryView = (function () {
         EN.engine.applyArmorDamage(c, p.repairKey, -restored);   // the one writer, clamped at the base
         if (clean) { c.armorGuard = c.armorGuard || {}; c.armorGuard[p.repairKey] = true; }
       }
+      if (refund > 0) c.glimmer = (c.glimmer || 0) + refund;
     });
     toast(addName ? p.name + " complete; " + addName + " added to your Stash."
       : restored > 0 ? p.name + " complete; " + st.name + " back to " + Math.min(st.base, st.current + restored) + " of " + st.base + " DR." + (clean ? " Clean run: the next point of DR it would lose is absorbed." : "")
+      : p.repairKey ? p.name + " closed with no DR to restore" + (refund > 0 ? "; " + fmtG(refund) + " in unused parts refunded." : "; nothing was spent on it.")
       : p.name + " complete.");
   }
   function tbAbandon(id) {
@@ -2421,7 +2499,14 @@ EN.inventoryView = (function () {
         el("input", { type: "checkbox", checked: !!p.overEngineered, onchange: function () { tbToggleOverEng(p.id); } }),
         document.createTextNode("Over-engineer (past Max Mods → Prototype + flaw)")
       ]),
-      done ? el("button.btn.sm.primary", { onclick: function () { tbComplete(p); } }, p.addOnComplete ? "✓ COMPLETE · ADD TO STASH" : "✓ COMPLETE") : null
+      // Completing is gated on the materials being paid for. The bill is not optional
+      // and never was; the button simply used to ignore it.
+      done ? el("button.btn.sm.primary", {
+        disabled: tbUnpaid(p),
+        title: tbUnpaid(p) ? "Secure the materials first: " + fmtG(p.materialCost || 0) + " in parts, or mark the Project salvaged." : "Finish the Project",
+        onclick: function () { tbComplete(p); } }, p.addOnComplete ? "✓ COMPLETE · ADD TO STASH" : "✓ COMPLETE") : null,
+      (done && tbUnpaid(p)) ? el("span.help", { style: { margin: 0, fontSize: "10.5px", color: "var(--warn)" },
+        text: "Materials still owed: " + fmtG(p.materialCost || 0) + "." }) : null
     ]);
     return el("div.feature", { style: { borderLeftColor: done ? "var(--success)" : (TB_TIER_COLOR[p.overEngineered ? "prototype" : p.tier] || "var(--border2)") } },
       [head, rollBox, bar, materials, logRow, foot]);
