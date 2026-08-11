@@ -4349,19 +4349,18 @@ EN.combatView = (function () {
       // Shield Durability: a Blocked hit whose RAW damage meets the Wear Threshold
       // marks a box, as does any Blocked critical. Offered as a one-tap control on
       // the Block row, since that is the only moment it can happen.
+      // The one writer answers with what it did, and the toast reads THAT. It used to
+      // re-derive "boxes left" out here by adding the delta to ch.shieldWear again,
+      // after store.update had already added it to the same object, so every click
+      // counted twice: a 3-box Riot Shield announced its destruction at 2 boxes spent
+      // while still alive and still granting its Block die, and a 2-box Scrap Shield
+      // announced it on the first click. Nothing outside the engine derives this now.
       function markShieldWear(delta) {
-        if (!dg.shield) return;
-        // keyed on the wielded ENTRY, not the shield's name: two Scrap Shields wear
-        // out one at a time, and a replacement arrives with a clean track
-        var key = dg.shieldKey, nm = dg.shield.name, max = dg.shieldBoxesMax;
-        if (!key) return;
-        store.update(function (c) {
-          c.shieldWear = c.shieldWear || {};
-          var n = eng.clamp((c.shieldWear[key] | 0) + delta, 0, max);
-          if (n > 0) c.shieldWear[key] = n; else delete c.shieldWear[key];
-        });
-        var left = Math.max(0, max - eng.clamp((((ch.shieldWear || {})[key] | 0) + delta), 0, max));
-        if (delta > 0 && left <= 0) toast(dg.shieldEmitter ? nm + " overloaded and went dark." : nm + " is destroyed; the wreck is salvage.");
+        if (!dg.shield || !dg.shieldKey) return;
+        var res = null;
+        store.update(function (c) { res = eng.applyShieldWear(c, dg.shieldKey, delta); });
+        if (!res || !res.changed) return;
+        if (delta > 0 && res.destroyed) toast(res.emitter ? res.name + " overloaded and went dark." : res.name + " is destroyed; the wreck is salvage.");
       }
       /* Armor DR is mutable, and this is the moment it moves: Demolition Engine
          attacking worn armor, a Blackware Hand Razors crit, a caustic environment.

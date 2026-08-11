@@ -216,8 +216,10 @@ EN.printSheet = (function () {
   // (weapon: damage/range/traits; armor: DR; tool/kit: effect/basic/proficient; tonic: desc/effect)
   // `drState` is the engine's armorState for THIS entry when the caller has one:
   // armor DR is mutable and per piece, so a damaged suit must print the DR it
-  // actually defends with, not the catalog's base.
-  function gearDetailLines(it, drState) {
+  // actually defends with, not the catalog's base. `shState` is shieldState for the
+  // same entry, and it is here for the same reason: Durability boxes are per piece
+  // and mutable, and printing only the armor half told half the truth.
+  function gearDetailLines(it, drState, shState) {
     var lines = [], stat = [];
     if (it.damage) stat.push("Damage " + it.damage);
     if (it.range) stat.push("Range " + it.range);
@@ -225,6 +227,9 @@ EN.printSheet = (function () {
     if (it.dr != null) stat.push((drState && drState.base && drState.lost > 0)
       ? "DR " + drState.current + " of " + drState.base + " (" + drState.lost + " lost, until repaired)"
       : "DR " + it.dr);
+    if (shState && shState.boxesMax) stat.push(shState.spent > 0
+      ? "Durability " + shState.left + " of " + shState.boxesMax + (shState.destroyed ? " (destroyed)" : " (" + shState.spent + " marked)")
+      : "Durability " + shState.boxesMax);
     if (it.feeds) stat.push("Feeds " + it.feeds);
     if (it.traits && it.traits.length) stat.push(it.traits.join(", "));
     if (it.skill) stat.push("Skill: " + it.skill);
@@ -498,7 +503,11 @@ EN.printSheet = (function () {
     var loadout = [];
     equippedWeaponNames(ch).forEach(function (n) { loadout.push(chip(n, ".ps-chip-box")); });
     if (dg.armor) loadout.push(chip("Armor: " + dg.armor.name, ".ps-chip-box"));
-    if (dg.shield) loadout.push(chip("Shield: " + dg.shield.name, ".ps-chip-box"));
+    // Shield Durability travels with the sheet the way armor DR does. It is the same
+    // mechanic and it was on neither the print sheet nor the PDF, so a shield one box
+    // from the scrap heap left the app looking untouched.
+    if (dg.shield) loadout.push(chip("Shield: " + dg.shield.name
+      + (dg.shieldSpent > 0 ? " (" + dg.shieldBoxesLeft + " of " + dg.shieldBoxesMax + " boxes)" : ""), ".ps-chip-box"));
     if (dg.focus) loadout.push(chip("Focus: " + dg.focus.name, ".ps-chip-box"));
     body.push(sect("Equipped / Worn"));
     body.push(loadout.length ? el("div.ps-chiprow", null, loadout) : note("Nothing equipped."));
@@ -517,7 +526,8 @@ EN.printSheet = (function () {
         var block = el("div.ps-invitem", null, [
           el("div.ps-invhead", null, [el("span.ps-invname", { text: e.name }), el("span.ps-invmeta", { text: meta })])
         ]);
-        if (it) gearDetailLines(it, eng.armorState ? eng.armorState(ch, key) : null).forEach(function (l) { block.appendChild(l); });
+        if (it) gearDetailLines(it, eng.armorState ? eng.armorState(ch, key) : null,
+                                eng.shieldState ? eng.shieldState(ch, key) : null).forEach(function (l) { block.appendChild(l); });
         else block.appendChild(el("div.ps-invdesc.ps-dim", { text: "No catalog entry - note details by hand." }));
         body.push(block);
       });

@@ -918,12 +918,21 @@ EN.engine = (function () {
      Every surface reads THIS, or the d.armorDR / d.totalDR it feeds. Nothing
      re-derives a current DR out of ch.armorWear on its own. */
   function armorBaseDR(it) { return (it && typeof it.dr === "number" && it.dr > 0) ? Math.floor(it.dr) : 0; }
+  /* Every per-entry map in this app is keyed on a string out of a save file, and the
+     maps are built null-prototype for that reason. This asks the question the OTHER
+     way round, so a map that is somehow plain (a record mid-flight, a caller handing
+     in a literal) still cannot answer for a key it does not hold: an entry whose id
+     is "toString" or "constructor" used to read as already guarded and then absorb
+     every point of DR forever, because spending the guard is a delete on a property
+     that was never there. Null-prototype at the creation sites stops the map being
+     wrong; this stops the READ being wrong whatever the map is. */
+  function ownVal(map, key) { return (map && key != null && Object.prototype.hasOwnProperty.call(map, key)) ? map[key] : undefined; }
   function armorState(ch, key) {
     var name = key ? keyToName(ch, key) : null;
     var it = name ? loadCatalogItem(name) : null;
     var base = armorBaseDR(it);
     var wearMap = (ch && ch.armorWear && typeof ch.armorWear === "object") ? ch.armorWear : {};
-    var lost = key ? clamp(wearMap[key] | 0, 0, base) : 0;
+    var lost = key ? clamp(ownVal(wearMap, key) | 0, 0, base) : 0;
     var guardMap = (ch && ch.armorGuard && typeof ch.armorGuard === "object") ? ch.armorGuard : {};
     return {
       key: key || null, name: name || null, item: it || null,
@@ -932,7 +941,7 @@ EN.engine = (function () {
       current: Math.max(0, base - lost),
       damaged: lost > 0,
       breached: base > 0 && lost >= base,          // 0 DR: past repair, a rebuild Project
-      guard: !!(key && guardMap[key])
+      guard: !!(key && ownVal(guardMap, key))
     };
   }
   /* The ONE writer, the other half of the one-resolver rule. Every surface that
@@ -944,19 +953,38 @@ EN.engine = (function () {
                   and is spent doing it. Never past 0 DR.
        delta < 0  restore DR. Never past the base, which is why repair cannot
                   inflate a suit above its printed value however it is driven.
-     `c` is the mutable character inside store.update. Returns what happened. */
+     `c` is the mutable character inside store.update. Returns what happened.
+
+     THE DELTA IS APPLIED TO THE RESOLVER'S ANSWER, not to the raw stored number,
+     and that is the whole reason there is a resolver. armorState() clamps a stored
+     value into [0, base]; this used to read ch.armorWear[key] straight and add to
+     that instead, so an out-of-range stored value survived every repair. An imported
+     armorWear of 999 on a base-5 suit displayed correctly as 0/5 breached, and then a
+     full rebuild Project paid 𝒢460, ran three Flawless intervals, and computed
+     clamp(999 - 5, 0, 5) = 5: still 0/5, still breached, with the toast announcing
+     "back to 5 of 5 DR". Reading the resolver makes the first write self-healing. */
   function applyArmorDamage(c, key, delta) {
     var st = armorState(c, key);
     if (!key || !st.base || !delta) return { absorbed: false, lost: st.lost, current: st.current, breached: st.breached, base: st.base, name: st.name };
-    c.armorWear = c.armorWear || {};
-    c.armorGuard = c.armorGuard || {};
-    if (delta > 0 && c.armorGuard[key]) {
+    c.armorWear = c.armorWear || Object.create(null);
+    c.armorGuard = c.armorGuard || Object.create(null);
+    if (delta > 0 && ownVal(c.armorGuard, key)) {
       delete c.armorGuard[key];
       return { absorbed: true, lost: st.lost, current: st.current, breached: st.breached, base: st.base, name: st.name };
     }
-    var n = clamp((c.armorWear[key] | 0) + delta, 0, st.base);
+    var n = clamp(st.lost + delta, 0, st.base);
     if (n > 0) c.armorWear[key] = n; else delete c.armorWear[key];
     return { absorbed: false, lost: n, current: st.base - n, breached: n >= st.base, base: st.base, name: st.name };
+  }
+  // The one writer for the quality edge, so the map is created in exactly one place
+  // and cannot be born on Object.prototype at a second site. A plain literal there
+  // reads an entry whose id is "toString" or "constructor" as already guarded, and a
+  // suit keyed that way absorbs every point of DR forever.
+  function grantArmorGuard(c, key) {
+    if (!c || !key) return false;
+    c.armorGuard = c.armorGuard || Object.create(null);
+    c.armorGuard[key] = true;
+    return true;
   }
   // Every suit of armor the character owns, as armorState records, in equipment
   // order. Two pieces of the same type are two records, each with its own track.
@@ -972,6 +1000,59 @@ EN.engine = (function () {
       out.push(armorState(ch, entryKey(e)));
     });
     return out;
+  }
+  /* ---- Shield Durability: the ONE resolver for a shield's remaining boxes ------
+     Armor got a resolver and a writer; shields got a key and neither, and the two
+     are the same mechanic (a defensive piece that degrades and is repaired back
+     toward its printed value). The cost of that asymmetry was measured: the Block
+     row derived "boxes left" a SECOND time, off ch.shieldWear read after the update
+     that had just mutated the same object, so it counted the click twice and a
+     3-box Riot Shield announced its own destruction with a box still to spend.
+     A 2-box Scrap Shield announced it on the FIRST click.
+
+     Same contract as armorState: the catalog `boxes` is the ceiling, the stored
+     number is boxes MARKED, absent means untouched, and a stored value out of range
+     is clamped here rather than trusted anywhere downstream. */
+  // Only a `kind: "shield"` row has Durability boxes. Every shield in the catalog
+  // carries its own `boxes`; the 3 is the fallback for one that does not. Asking
+  // `kind` rather than just "is this in the armor catalog" is what lets the
+  // migration use this as a capacity cap: a suit of armor sitting in a shieldWear
+  // key answers 0 boxes and its value is dropped instead of capped at a made-up 3.
+  function shieldBoxesMaxOf(it) {
+    if (!it || it.kind !== "shield") return 0;
+    return typeof it.boxes === "number" && it.boxes > 0 ? Math.floor(it.boxes) : 3;
+  }
+  function shieldState(ch, key) {
+    var name = key ? keyToName(ch, key) : null;
+    var found = name ? armorItem(name) : null;
+    var it = (found && found.kind === "shield") ? found : null;
+    var max = shieldBoxesMaxOf(it);
+    var wearMap = (ch && ch.shieldWear && typeof ch.shieldWear === "object") ? ch.shieldWear : {};
+    var spent = key ? clamp(ownVal(wearMap, key) | 0, 0, max) : 0;
+    var left = Math.max(0, max - spent);
+    return {
+      key: key || null, name: name || null, item: it || null,
+      boxesMax: max, spent: spent, left: left,
+      worn: spent > 0,
+      // "no shield" is alive the way "no armor" has no DR: the absence is not a wreck
+      alive: !it || left > 0,
+      destroyed: !!it && left <= 0,
+      emitter: !!(it && it.emitter)
+    };
+  }
+  /* The ONE writer, and the reason the toast can be trusted: it returns what it
+     actually did, so nothing has to re-derive the result from state it just changed.
+     Like applyArmorDamage it applies the delta to the RESOLVER's clamped value, so a
+     stored number out of range is healed by the first write rather than surviving it. */
+  function applyShieldWear(c, key, delta) {
+    var st = shieldState(c, key);
+    if (!key || !st.item || !delta) return { changed: false, spent: st.spent, left: st.left, boxesMax: st.boxesMax, destroyed: st.destroyed, name: st.name, emitter: st.emitter };
+    c.shieldWear = c.shieldWear || Object.create(null);
+    var n = clamp(st.spent + delta, 0, st.boxesMax);
+    if (n > 0) c.shieldWear[key] = n; else delete c.shieldWear[key];
+    var left = Math.max(0, st.boxesMax - n);
+    return { changed: n !== st.spent, spent: n, left: left, boxesMax: st.boxesMax,
+             destroyed: left <= 0, name: st.name, emitter: st.emitter };
   }
   function defensiveLoadout(ch) {
     var armorKey = ch && ch.equippedArmor, shieldKey = ch && ch.equippedShield, focusKey = ch && ch.equippedFocus;
@@ -990,8 +1071,12 @@ EN.engine = (function () {
     // Shield Durability boxes, tracked per shield ENTRY on the record. Keyed the
     // same way armor wear is, and for the same reason: two Scrap Shields are two
     // objects, and a re-bought shield arrives unworn because it is a new entry.
-    var shieldBoxesMax = shield ? (typeof shield.boxes === "number" ? shield.boxes : 3) : 0;
-    var shieldSpent = shield ? clamp(((ch.shieldWear || {})[shieldKey]) | 0, 0, shieldBoxesMax) : 0;
+    // Read from the one resolver, exactly as the armor line below is: this used to
+    // be derived here AND again in the Block row's wear button, and the second copy
+    // was wrong.
+    var shieldSt = shieldState(ch, shieldKey);
+    var shieldBoxesMax = shield ? shieldSt.boxesMax : 0;
+    var shieldSpent = shield ? shieldSt.spent : 0;
     // Current DR of the worn suit, from the one resolver.
     var armorSt = armorState(ch, armorKey);
     var shieldBoxesLeft = Math.max(0, shieldBoxesMax - shieldSpent);
@@ -1027,6 +1112,8 @@ EN.engine = (function () {
       shieldBoxesLeft: shieldBoxesLeft,
       shieldSpent: shieldSpent,
       shieldAlive: shieldAlive,
+      shieldState: shieldSt,                          // the whole record, the way armorState is carried
+
       shieldEmitter: !!(shield && shield.emitter),
       wardDie: wardDie,                               // from the Focus item, or a Focus-trait armor
       speedPenalty: speedPenalty
@@ -2513,7 +2600,11 @@ EN.engine = (function () {
     armorState: armorState, ownedArmorPieces: ownedArmorPieces, armorBaseDR: armorBaseDR,
     // and the one WRITER: every surface that moves a piece's DR goes through this
     // inside a store.update, so the clamps and the quality edge cannot diverge
-    applyArmorDamage: applyArmorDamage,
+    applyArmorDamage: applyArmorDamage, grantArmorGuard: grantArmorGuard,
+    // Shield Durability, the same mechanic one piece over, and now the same shape:
+    // one resolver for how many boxes are left, one writer for marking and repairing
+    // them. The Block row used to derive both for itself and got the answer wrong.
+    shieldState: shieldState, applyShieldWear: applyShieldWear,
     isCarryGear: isCarryGear, rackLimit: rackLimit, rackState: rackState, rackTargets: rackTargets,
     itemSlots: itemSlots, slotConflicts: slotConflicts,
     catalogItem: loadCatalogItem,

@@ -691,8 +691,10 @@ EN.pdfExport = (function () {
   }
   function catItem(name) { return allGear().find(function (i) { return i.name === name; }); }
   // `drState` is the engine's armorState for THIS entry: armor DR is mutable and
-  // per piece, so a damaged suit prints the DR it actually defends with.
-  function gearSummaryLine(it, drState) {
+  // per piece, so a damaged suit prints the DR it actually defends with. `shState`
+  // is shieldState for the same entry, for the same reason: Durability is the same
+  // mechanic and it used to leave the app on neither export.
+  function gearSummaryLine(it, drState, shState) {
     var stat = [];
     if (it.damage) stat.push("Dmg " + it.damage);
     if (it.range) stat.push("Rng " + it.range);
@@ -700,6 +702,9 @@ EN.pdfExport = (function () {
     if (it.dr != null) stat.push((drState && drState.base && drState.lost > 0)
       ? "DR " + drState.current + " of " + drState.base + " (" + drState.lost + " lost)"
       : "DR " + it.dr);
+    if (shState && shState.boxesMax) stat.push(shState.spent > 0
+      ? "Durability " + shState.left + " of " + shState.boxesMax + (shState.destroyed ? " (destroyed)" : "")
+      : "Durability " + shState.boxesMax);
     if (it.traits && it.traits.length) stat.push(it.traits.join(", "));
     if (it.skill) stat.push("Skill: " + it.skill);
     return stat.join("  ·  ");
@@ -716,7 +721,8 @@ EN.pdfExport = (function () {
     var dg = d.defenseGear || {};
     var loadout = equippedWeaponNames(ch).slice();
     if (dg.armor) loadout.push("Armor: " + dg.armor.name);
-    if (dg.shield) loadout.push("Shield: " + dg.shield.name);
+    if (dg.shield) loadout.push("Shield: " + dg.shield.name
+      + (dg.shieldSpent > 0 ? " (" + dg.shieldBoxesLeft + " of " + dg.shieldBoxesMax + " boxes)" : ""));
     if (dg.focus) loadout.push("Focus: " + dg.focus.name);
     ctx.sectionTitle("Equipped / Worn");
     ctx.text(loadout.length ? loadout.join("  ·  ") : "Nothing equipped.", { size: 9, h: 14 });
@@ -728,7 +734,8 @@ EN.pdfExport = (function () {
       var key = e.id || e.name;
       var worn = (ch.equippedWeapons || []).indexOf(key) !== -1 || ch.equippedArmor === key || ch.equippedShield === key || ch.equippedFocus === key;
       return { name: e.name, qty: e.qty, status: worn ? "Equipped" : "Stash",
-               notes: it ? gearSummaryLine(it, eng.armorState ? eng.armorState(ch, key) : null) : "" };
+               notes: it ? gearSummaryLine(it, eng.armorState ? eng.armorState(ch, key) : null,
+                                           eng.shieldState ? eng.shieldState(ch, key) : null) : "" };
     });
     if (!invRows.length) invRows.push({ name: "", qty: "", status: "", notes: "" });
     ctx.table(

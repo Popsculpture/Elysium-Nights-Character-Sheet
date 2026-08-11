@@ -213,17 +213,27 @@ EN.crafting = {
      one that "appears in contracts, ledgers, and official books" (EN.economy). That
      is the ledger value of the object, which is exactly the question being asked.
 
+     A row with NO Glimmer price at all is the third case, and it reads the same ◎
+     figure for the same reason. The Reliquary Shell is `price: 0, nexus: "◎2+"`: it
+     is not sold for Glimmer, so its Glimmer price is 0, and taking that literally
+     made a 4 DR Artifact repair for 𝒢0 a point and rebuild for 𝒢0. Nothing is being
+     converted and no wallet changes currency; the ◎ figure is being read as the
+     ledger value of the object, which is the only question repair pricing asks.
+     Measured: it is the one armor row in the catalog with a listed value of zero.
+
      Anything priced off what a piece is worth (repair per point, a rebuild's parts)
      reads this. Anything priced off what you handed over at the counter keeps
      reading `price`. */
   listPrice: function (it) {
     if (!it) return 0;
     var price = Math.max(0, it.price || 0);
-    if (!it.upkeep) return price;
-    if (typeof it.buyout === "number" && it.buyout > 0) return it.buyout;
-    var m = String(it.nexus || "").match(/[\d.]+/);
-    var rate = (EN.economy && EN.economy.nexusToGlimmer) || 10000;
-    if (m) return Math.ceil(parseFloat(m[0]) * rate);
+    if (it.upkeep && typeof it.buyout === "number" && it.buyout > 0) return it.buyout;
+    // a leased row's ◎ Buyout, or an unpriced row's ◎ asking figure
+    if (it.upkeep || !price) {
+      var m = String(it.nexus || "").match(/[\d.]+/);
+      var rate = (EN.economy && EN.economy.nexusToGlimmer) || 10000;
+      if (m) return Math.ceil(parseFloat(m[0]) * rate);
+    }
     return price;   // a lease with no stated way out: the deposit is all there is
   },
 

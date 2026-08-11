@@ -1822,6 +1822,23 @@ EN.inventoryView = (function () {
     // the work and pays the ordinary untrained price for it, +2 Snag per Work Interval.
     var engUntrained = engTier === "untrained";
     var hasRig = ownsFabRig(ch);
+    /* The advisory has to appear on BOTH lanes this panel opens, and it used to appear
+       on only the cheap one. The whole justification for leaving the tier expectation
+       advisory is that it is communicated and paid for rather than enforced, and the
+       communication was landing on the 𝒢138 Simple bench Project while the 𝒢460
+       Standard rebuild beside it, which expects the same Proficient and takes the same
+       +2 Snag, said nothing at all.
+       The rebuild's skill is the ITEM's, not the bench lane's: Resonant Carapace, Aegis
+       Shroud and Reliquary Shell rebuild under Esoterica, so reusing the Engineering
+       reading here would have printed the wrong skill's training. */
+    function untrainedChip(skillName, tierKey) {
+      if (craftSkillTier(ch, skillName) !== "untrained") return null;
+      var tn = CRAFT().tier(tierKey).name;
+      var need = CRAFT().tier(tierKey).skillTier || "proficient";
+      var needNm = (((EN.rules || {}).profTiers || {})[need] || {}).name || need;
+      return tagChip("UNTRAINED +2 SNAG", "var(--warn)",
+        "A " + tn + " Project expects " + skillName + " " + needNm + ". Untrained you can still do the work; every Work Interval adds +2 Snag Dice, the same as any other Project.");
+    }
     var kids = [el("p.help", { style: { margin: "0 0 8px", fontSize: "11.5px" },
       text: "Damage lowers a suit's DR; repair raises it back toward the printed value and never past it. " + (AR.shopText || "") + " " + (AR.benchText || "") })];
     if (!pieces.length) {
@@ -1857,10 +1874,13 @@ EN.inventoryView = (function () {
       var lanes;
       if (st.breached) {
         var rebuild = AR.rebuildCost(st.item || {});
+        var rbSkill = CRAFT().skillForItem(st.item || {}), rbTier = CRAFT().tierForItem(st.item || {});
         lanes = el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "7px" } }, [
           el("span.help", { style: { margin: 0, fontSize: "11px", color: "var(--danger)" }, text: AR.breachedText }),
-          el("button.btn.sm.primary", { title: "Open a full Project for this suit at " + fmtG(rebuild) + " in parts, half its " + fmtG(price) + (leased ? " Buyout" : " list price") + ", restoring all " + st.base + " DR",
-            onclick: function () { armorRebuildProject(st); } }, "⚒ REBUILD PROJECT · " + fmtG(rebuild))
+          el("button.btn.sm.primary", { title: "Open a full Project for this suit at " + fmtG(rebuild) + " in parts, half its " + fmtG(price) + (leased ? " Buyout" : " list price") + ", restoring all " + st.base + " DR"
+              + " · " + CRAFT().tier(rbTier).name + " Project using " + rbSkill,
+            onclick: function () { armorRebuildProject(st); } }, "⚒ REBUILD PROJECT · " + fmtG(rebuild)),
+          untrainedChip(rbSkill, rbTier)
         ]);
       } else if (!st.lost) {
         lanes = el("p.help", { style: { margin: "6px 0 0", fontSize: "11px", color: "var(--text4)" }, text: "Undamaged. Nothing to repair." });
@@ -1891,8 +1911,7 @@ EN.inventoryView = (function () {
             style: { color: "var(--accent)", borderColor: "var(--accent)" },
             onclick: function () { armorBenchProject(ch, st, pts); } },
             "⚒ BENCH · " + (hasRig ? "PARTS FREE" : fmtG(bench))),
-          engUntrained ? tagChip("UNTRAINED +2 SNAG", "var(--warn)",
-            "A " + benchTierName + " Project expects " + (AR.benchSkill || "Engineering") + " " + needName + ". Untrained you can still do the work; every Work Interval adds +2 Snag Dice, the same as any other Project.") : null,
+          untrainedChip(AR.benchSkill || "Engineering", AR.benchTier || "simple"),
           hasRig ? tagChip("FAB RIG", "var(--accent)", AR.freeParts + ": prints the plate from stock, so the parts cost nothing.") : null
         ]);
       }
@@ -2209,43 +2228,92 @@ EN.inventoryView = (function () {
   // the bill still outstanding, which made every material cost in the app optional,
   // the bench lane's parts included.
   function tbUnpaid(p) { return !p.materialsSecured && (p.materialCost || 0) > 0; }
+  /* EVERY read AND every write happens inside ONE store.update, against the live
+     character in that same tick, and the Project is re-found by id in there rather
+     than trusted from the node that was clicked. `p` is only ever used for its id.
+
+     That is not tidiness. tbComplete used to take the Project OBJECT captured at
+     render, splice it out by id, and pay a refund read off that still-live object.
+     Re-firing one rendered button therefore recomputed `restored` as 0 (the suit was
+     already whole) and paid the refund again, every time: 5000 -> 4862 for a
+     legitimate 3 DR repair, then 5000, 5138, 5276. It CREATED currency. tbSecure got
+     exactly this guard ("a double-fire cannot double-charge") and armorShopRepair got
+     the live re-read; this function got neither, and it is the one that pays out.
+
+     The same re-entry also handed out one Build item per fire off a single payment.
+     That half was pre-existing rather than new, and it is closed here too: a Project
+     that is no longer in the list completes NOTHING and says nothing. */
   function tbComplete(p) {
-    var ch = store.active();
-    if (tbUnpaid(p)) { toast("Secure the materials first (" + fmtG(p.materialCost || 0) + ")."); return; }
-    var addName = p.addOnComplete ? p.itemName : null;
-    // An Armor Repair Project pays out in DR. The engine's resolver says what the
-    // piece is missing right now, so the restore can never take it past its base
-    // and a piece that left the stash mid-Project restores nothing.
-    var st = (p.repairKey && EN.engine.armorState) ? EN.engine.armorState(ch, p.repairKey) : null;
-    var restored = (st && st.base) ? Math.max(0, Math.min(p.repairPoints || 0, st.lost)) : 0;
-    // The other half of "no path pays without restoring". This Project's whole
-    // payout is DR; if there is none left to give (the suit was repaired some other
-    // way, or it left the Stash), the parts that were paid for went into nothing, so
-    // they come back. The debit and the restore are one transaction even when they
-    // happen at opposite ends of a Project.
-    var refund = (p.repairKey && restored <= 0) ? (p.materialsSecured ? (p.materialsPaid || 0) : 0) : 0;
-    // The ordinary Project results table's quality edge, spent on armor as the
-    // manuscript suggests: a clean run (a Flawless Work Interval) seats the plate
-    // so the next point of DR the suit would lose is absorbed for free.
-    var clean = restored > 0 && (p.log || []).some(function (l) { return l && l.o === "flawless"; });
+    var done = null, unpaid = null;
     tbSetProjects(function (list, c) {
       var i = list.map(function (x) { return x.id; }).indexOf(p.id);
-      if (i >= 0) list.splice(i, 1);
+      if (i < 0) return;                                    // already completed: a re-fire is a no-op
+      var pp = list[i];
+      if (tbUnpaid(pp)) { unpaid = pp.materialCost || 0; return; }
+      // An Armor Repair Project pays out in DR. The engine's resolver says what the
+      // piece is missing right now, so the restore can never take it past its base
+      // and a piece that left the stash mid-Project restores nothing.
+      var st = (pp.repairKey && EN.engine.armorState) ? EN.engine.armorState(c, pp.repairKey) : null;
+      var restored = (st && st.base) ? Math.max(0, Math.min(pp.repairPoints || 0, st.lost)) : 0;
+      /* The other half of "no path pays without restoring", and it is per POINT
+         because that is how the parts were priced. Parts bought `repairPoints` points
+         of work; whatever share of them the Project cannot deliver went into nothing,
+         so that share comes back. It used to refund all-or-nothing, firing only when
+         `restored` was exactly 0, which meant a Project that bought 3 points and
+         landed 1 kept the other two points' parts: 𝒢138 for 𝒢46 of work. Floor, so
+         rounding never invents Glimmer. */
+      var pts = pp.repairPoints || 0;
+      var paid = pp.materialsSecured ? (pp.materialsPaid || 0) : 0;
+      var refund = (pp.repairKey && paid > 0 && pts > 0)
+        ? Math.floor(paid * Math.max(0, pts - restored) / pts) : 0;
+      // The ordinary Project results table's quality edge, spent on armor as the
+      // manuscript suggests: a clean run (a Flawless Work Interval) seats the plate
+      // so the next point of DR the suit would lose is absorbed for free.
+      var clean = restored > 0 && (pp.log || []).some(function (l) { return l && l.o === "flawless"; });
+      list.splice(i, 1);
+      var addName = pp.addOnComplete ? pp.itemName : null;
       if (addName) addToStash(c, addName);
+      var res = null;
       if (restored > 0) {
-        EN.engine.applyArmorDamage(c, p.repairKey, -restored);   // the one writer, clamped at the base
-        if (clean) { c.armorGuard = c.armorGuard || {}; c.armorGuard[p.repairKey] = true; }
+        res = EN.engine.applyArmorDamage(c, pp.repairKey, -restored);   // the one writer, clamped at the base
+        if (clean) EN.engine.grantArmorGuard(c, pp.repairKey);          // and the one writer for the guard
       }
       if (refund > 0) c.glimmer = (c.glimmer || 0) + refund;
+      done = { name: pp.name, addName: addName, repair: !!pp.repairKey, refund: refund, clean: clean,
+               // what the WRITER actually gave back, not what was asked for
+               restored: res ? Math.max(0, st.lost - res.lost) : 0,
+               piece: st ? st.name : null, current: res ? res.current : (st ? st.current : 0), base: st ? st.base : 0 };
     });
-    toast(addName ? p.name + " complete; " + addName + " added to your Stash."
-      : restored > 0 ? p.name + " complete; " + st.name + " back to " + Math.min(st.base, st.current + restored) + " of " + st.base + " DR." + (clean ? " Clean run: the next point of DR it would lose is absorbed." : "")
-      : p.repairKey ? p.name + " closed with no DR to restore" + (refund > 0 ? "; " + fmtG(refund) + " in unused parts refunded." : "; nothing was spent on it.")
-      : p.name + " complete.");
+    if (unpaid != null) { toast("Secure the materials first (" + fmtG(unpaid) + ")."); return; }
+    if (!done) return;                                      // nothing was completed, so nothing is announced
+    var back = done.refund > 0 ? " " + fmtG(done.refund) + " in unused parts refunded." : "";
+    toast(done.addName ? done.name + " complete; " + done.addName + " added to your Stash."
+      : done.restored > 0 ? done.name + " complete; " + done.piece + " back to " + done.current + " of " + done.base + " DR." + (done.clean ? " Clean run: the next point of DR it would lose is absorbed." : "") + back
+      : done.repair ? done.name + " closed with no DR to restore" + (done.refund > 0 ? ";" + back : "; nothing was spent on it.")
+      : done.name + " complete.");
   }
+  /* Abandoning a repair is a zero-DR outcome reached through the other door, so it
+     answers the same way COMPLETE does: the parts come back. It used to keep them,
+     which meant the player who could not afford to finish paid for nothing and was
+     not told, while the identical outcome one button over was refunded. The confirm
+     says so, because a prompt that mentions only Progress is not consent to a debit.
+     Build Projects are untouched: their materials are consumed by the attempt, and
+     COMPLETE does not refund them either. */
   function tbAbandon(id) {
-    if (!confirm("Abandon this Project? Its Progress is lost.")) return;
-    tbSetProjects(function (list) { var i = list.map(function (x) { return x.id; }).indexOf(id); if (i >= 0) list.splice(i, 1); });
+    var ch = store.active(), p = tbFind(ch, id); if (!p) return;
+    var back = (p.repairKey && p.materialsSecured) ? (p.materialsPaid || 0) : 0;
+    if (!confirm("Abandon this Project? Its Progress is lost."
+      + (back > 0 ? " The " + fmtG(back) + " you paid for parts comes back." : ""))) return;
+    var paidBack = 0;
+    tbSetProjects(function (list, c) {
+      var i = list.map(function (x) { return x.id; }).indexOf(id);
+      if (i < 0) return;                                    // already gone: a re-fire cannot refund twice
+      var pp = list[i];
+      paidBack = (pp.repairKey && pp.materialsSecured) ? (pp.materialsPaid || 0) : 0;
+      list.splice(i, 1);
+      if (paidBack > 0) c.glimmer = (c.glimmer || 0) + paidBack;
+    });
+    if (paidBack > 0) toast("Project abandoned; " + fmtG(paidBack) + " in parts refunded.");
   }
 
   /* ---- Panel 1: Fabrication Profile (live Engineering / Systems checks + kits) ---- */

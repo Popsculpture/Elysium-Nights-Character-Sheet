@@ -175,10 +175,18 @@ EN.store = (function () {
       carry: {},                         // Loadout carry status per entry key: "carried" | "worn" | "racked" (absent = stashed)
       racked: {},                        // Racked assignments: {itemEntryKey: carryGearEntryKey} (Carry Gear, one rack per item)
       slotInert: {},                     // Body Slot conflicts: {itemEntryKey: true} for on-person items the player benched
-      shieldWear: {},                    // Shield Durability: {shieldEntryKey: boxesMarked}
-      armorWear: {},                     // Armor Repair: {armorEntryKey: DR points lost}. The catalog dr is the
+      // The three per-piece degradation maps, born NULL-PROTOTYPE like every other
+      // map in this app that is keyed on a user-supplied string. migrate() rebuilds
+      // them that way and the split's id maps are that way, but a character created
+      // in-session never passes through migrate(), so as plain literals these three
+      // were the one place the invariant did not hold. Measured, not theorised: with
+      // a plain armorGuard, a suit whose entry id is "toString" reads guard TRUE
+      // without ever being repaired, and then absorbs every point of DR forever,
+      // because "spending" the guard is a delete on an inherited property.
+      shieldWear: Object.create(null),   // Shield Durability: {shieldEntryKey: boxesMarked}
+      armorWear: Object.create(null),    // Armor Repair: {armorEntryKey: DR points lost}. The catalog dr is the
                                          // BASE and the ceiling; absent means the suit is at full DR
-      armorGuard: {},                    // {armorEntryKey: true}: a clean repair's quality edge, absorbs the next point of DR lost
+      armorGuard: Object.create(null),   // {armorEntryKey: true}: a clean repair's quality edge, absorbs the next point of DR lost
       loadout: "standard",               // declared Loadout: "light" | "standard" | "heavy", sets the Load Budget
       haul: "none",                      // active Haul: "none" | "lift" (body-sized) | "drag" (oversized/double)
       glimmer: 0,
@@ -925,56 +933,92 @@ EN.store = (function () {
     var WEAR_KEY_SCHEME = 2;
     if (!ch.meta || typeof ch.meta !== "object") ch.meta = {};
     var wearKeysAreEntries = ch.meta.wearKeys === WEAR_KEY_SCHEME;
-    function migrateWearMap(field, slotField, valueOf) {
+    /* RESOLUTION RUNS IN TWO PASSES, AND THE ORDER IS NOT THE FILE'S TO CHOOSE.
+       Rule 0 keys (unambiguously an entry already) are resolved FIRST, across the
+       whole map, and only then do the name rules run. In one pass the outcome
+       depended on JSON key order, because whichever key reached the entry first
+       claimed it and `out[key] != null` dropped the other:
+
+         {"eq_d1":1, "Anvil Frame":4}  ->  {eq_d1: 1}
+         {"Anvil Frame":4, "eq_d1":1}  ->  {eq_d1: 4}
+
+       Two logically identical records, two different numbers, and the authoritative
+       key lost half the time. Reachable on any half-converted file (hand-merged, or
+       exported mid-refactor). Resolving the certain keys before the inferred ones
+       makes the answer a property of the record rather than of its serialization. */
+    function migrateWearMap(field, slotField, valueOf, capOf) {
       var src = ch[field];
       if (!src || typeof src !== "object" || Array.isArray(src)) src = {};
       var wornKey = equippedEntryKey(ch[slotField]);
       var out = Object.create(null);
-      Object.keys(src).forEach(function (k) {
+      /* Rule 0: a key that names a live entry AND that nothing else answers to as an
+         item NAME is unambiguously that entry, so it is kept. This is NOT the old
+         shortcut. The old one fired on "is this string a live key" alone, which is
+         ambiguous precisely because entryKey() is `e.id || e.name` and one string can
+         be an id here and an item name there. Narrowing it to "live and nothing else
+         claims this string as a name" is the fix the review asked for: the ambiguous
+         case re-enters the rules instead of skipping them.
+
+         It has to exist, because armorWear and armorGuard are NEW fields that never
+         had a legacy name-keyed form. Any record carrying them without the marker was
+         written after they existed and is already entry-keyed; sending its keys
+         through name attribution would find no item of that name and drop the wear.
+         shieldWear is the one map with a genuine legacy shape, and a shield NAME is
+         not a live entry key, so it still lands in the name rules. */
+      function rule0(k) {
+        var cands = wearKeysByName[k] || [];
+        var onlyItself = cands.length === 0 || (cands.length === 1 && cands[0] === k);
+        return !!(wearLiveKeys[k] && onlyItself);
+      }
+      // A value is only kept if the piece it names can actually hold it. The cap is
+      // the piece's own printed ceiling (a suit's DR, a shield's boxes), so an
+      // imported 999 on a base-5 suit is stored as 5 rather than displayed as 5 and
+      // stored as 999. It used to be the second: the display clamped and the writer
+      // did not, so a full rebuild computed 999 - 5 and left the suit breached after
+      // charging for it. A cap of 0 means the key names nothing that can wear, which
+      // is the same case as a key whose entry has left the stash: dropped.
+      function place(k, key) {
+        if (!key || out[key] != null) return;               // unattributable, or already claimed
         var v = valueOf(src[k]);
         if (v == null) return;
-        var key = null;
-        if (wearKeysAreEntries) {
-          // Already converted, because the RECORD says so. The only work left is the
-          // prune: a key whose entry has left the stash describes a piece the character
-          // no longer owns, and a re-acquired piece is a new entry, so its state is
-          // dropped rather than inherited. Same ruling as ch.rig.hp.
-          key = wearLiveKeys[k] ? k : null;
-        } else {
-          /* Legacy scheme. Rule 0 first: a key that names a live entry AND that nothing
-             else answers to as an item NAME is unambiguously that entry, so it is kept.
-             This is NOT the old shortcut. The old one fired on "is this string a live
-             key" alone, which is ambiguous precisely because entryKey() is
-             `e.id || e.name` and one string can be an id here and an item name there.
-             Narrowing it to "live and nothing else claims this string as a name" is the
-             fix the review asked for: the ambiguous case re-enters the rules instead of
-             skipping them.
-
-             It has to exist, because armorWear and armorGuard are NEW fields that never
-             had a legacy name-keyed form. Any record carrying them without the marker
-             was written by this branch and is already entry-keyed; sending its keys
-             through name attribution would find no item of that name and drop the wear.
-             shieldWear is the one map with a genuine legacy shape, and a shield NAME is
-             not a live entry key, so it still lands in the rules below. */
+        if (capOf) {
+          var cap = capOf(key);
+          if (!(cap > 0)) return;
+          if (typeof v === "number" && v > cap) v = cap;
+        }
+        out[key] = v;
+      }
+      var keys = Object.keys(src);
+      if (wearKeysAreEntries) {
+        // Already converted, because the RECORD says so. The only work left is the
+        // prune: a key whose entry has left the stash describes a piece the character
+        // no longer owns, and a re-acquired piece is a new entry, so its state is
+        // dropped rather than inherited. Same ruling as ch.rig.hp. No two keys can
+        // collide here, so there is nothing for a second pass to arbitrate.
+        keys.forEach(function (k) { place(k, wearLiveKeys[k] ? k : null); });
+      } else {
+        keys.forEach(function (k) { if (rule0(k)) place(k, k); });
+        keys.forEach(function (k) {
+          if (rule0(k)) return;
           var cands = wearKeysByName[k] || [];
-          var onlyItself = cands.length === 0 || (cands.length === 1 && cands[0] === k);
-          if (wearLiveKeys[k] && onlyItself) key = k;                    // rule 0
-          else if (wornKey && cands.indexOf(wornKey) !== -1) key = wornKey;   // rule 1
-          else if (cands.length === 1) key = cands[0];                   // rule 2
+          var key = null;
+          if (wornKey && cands.indexOf(wornKey) !== -1) key = wornKey;   // rule 1: the equipped piece
+          else if (cands.length === 1) key = cands[0];                   // rule 2: the single owned entry
           // rule 3: nothing to attribute it to, or several equally likely pieces.
           // Leave `key` null and the state is dropped rather than moved.
-        }
-        // no attributable entry, or an earlier key already claimed that entry:
-        // drop it rather than duplicate or overwrite
-        if (!key || out[key] != null) return;
-        out[key] = v;
-      });
+          place(k, key);
+        });
+      }
       ch[field] = out;
     }
     function positiveInt(v) { return (typeof v === "number" && isFinite(v) && v > 0) ? Math.floor(v) : null; }
-    migrateWearMap("shieldWear", "equippedShield", positiveInt);
-    migrateWearMap("armorWear", "equippedArmor", positiveInt);
-    migrateWearMap("armorGuard", "equippedArmor", function (v) { return v === true ? true : null; });
+    // The ceilings, asked of the same resolvers every surface asks. A key naming an
+    // entry that is not a shield (or not armor) caps at 0 and is dropped.
+    function shieldCap(key) { var E = EN.engine; return (E && E.shieldState) ? E.shieldState(ch, key).boxesMax : Infinity; }
+    function armorCap(key) { var E = EN.engine; return (E && E.armorState) ? E.armorState(ch, key).base : Infinity; }
+    migrateWearMap("shieldWear", "equippedShield", positiveInt, shieldCap);
+    migrateWearMap("armorWear", "equippedArmor", positiveInt, armorCap);
+    migrateWearMap("armorGuard", "equippedArmor", function (v) { return v === true ? true : null; }, armorCap);
     // Stamped only after all three maps have converted, so a throw midway cannot leave
     // the record claiming a conversion that did not finish.
     ch.meta.wearKeys = WEAR_KEY_SCHEME;
