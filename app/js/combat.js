@@ -1504,21 +1504,28 @@ EN.combatView = (function () {
         : ("Nothing lingers after you step out: " + cz.lingerStoppedBy + ".") })
     ]));
     var dg = cz.degradation;
-    kids.push(el("div.feature", { style: { borderLeftColor: dg.lost ? "var(--gold)" : "var(--border2)" } }, [
+    kids.push(el("div.feature", { style: { borderLeftColor: dg.breached ? "var(--danger)" : (dg.lost ? "var(--warn)" : "var(--border2)") } }, [
       el("h4", null, [
         el("span", { text: "Gear Degradation" }),
         el("span", { style: { display: "flex", alignItems: "center", gap: "8px" } }, [
-          el("span.mono", { style: { fontSize: "15px", color: dg.lost ? "var(--gold)" : "var(--text3)" },
-            text: dg.armor ? (dg.baseDR + (dg.lost ? " → " + dg.wouldBe : "") + " DR") : "NO ARMOR" }),
+          // the suit's real current DR, from the one resolver, so this reads the
+          // same as the Defenses row rather than quoting the catalog at it
+          el("span.mono", { title: dg.armor ? dg.armor + ": current DR out of the suit's printed base" : "",
+            style: { fontSize: "15px", color: dg.breached ? "var(--danger)" : (dg.lost ? "var(--warn)" : "var(--text3)") },
+            text: dg.armor ? (dg.current + " / " + dg.baseDR + " DR") : "NO ARMOR" }),
+          dg.guard ? el("span.chip", { title: ((EN.crafting || {}).armorRepair || {}).qualityText || "",
+            style: { fontSize: "9px", color: "var(--success)", borderColor: "var(--success)" } }, "PLATE SEATED") : null,
           // The app has no scene clock, and a turn is not a scene, so a full
           // scene of exposure is something the table declares rather than
           // something a turn tick can quietly add up to.
-          el("button.btn.sm", { style: { padding: "1px 8px" }, disabled: !dg.exposed,
-            title: dg.exposed ? "A full scene of exposure: the suit loses 1 DR"
+          el("button.btn.sm", { style: { padding: "1px 8px" }, disabled: !dg.exposed || dg.breached,
+            title: dg.breached ? (dg.armor + " is already at 0 DR; there is nothing left to corrode")
+              : dg.exposed ? "A full scene of exposure: the suit loses 1 DR"
               : dg.blockedBy ? (dg.blockedBy + " keeps the caustic off your armor as well as off you")
               : (dg.armor ? dg.armor + " is sealed; caustic exposure does not reach it" : "No armor worn"),
             onclick: function () { causticScene(cz); } }, "MARK FULL SCENE"),
-          el("button.btn.sm", { style: { padding: "1px 8px" }, disabled: !dg.lost, title: "Repaired during Downtime", onclick: function () { causticRepair(dg); } }, "REPAIR")
+          dg.lost ? el("button.btn.sm", { style: { padding: "1px 8px", color: "var(--success)", borderColor: "var(--success)" },
+            title: "Open the Impact Table and repair this suit", onclick: causticOpenRepair }, "→ REPAIR") : null
         ])
       ]),
       el("p.help", { style: { margin: 0 }, text: cz.degradationRule.text || "" }),
@@ -1527,8 +1534,10 @@ EN.combatView = (function () {
             : dg.blockedBy ? (dg.blockedBy + " is worn over " + dg.armor + " and keeps the caustic off it too, so it does not degrade.")
             : dg.sealed ? (dg.armor + " is sealed; caustic exposure does not reach it.")
             : (dg.armor + " is unsealed and will lose 1 DR after a full scene in it.") }),
-      dg.lost ? el("p.help", { style: { margin: "3px 0 0", color: "var(--gold)" },
-        text: "PENDING " + dg.lost + " DR, recorded against this exact suit. Armor Repair owns current DR per piece and lives on another branch, so this branch reports the loss rather than applying it. It has not been subtracted from your Damage Reduction above, and there is deliberately no second armor DR system here to subtract it." }) : null
+      dg.lost ? el("p.help", { style: { margin: "3px 0 0", color: dg.breached ? "var(--danger)" : "var(--warn)" },
+        text: dg.armor + " has lost " + dg.lost + " DR, and that is already off the Damage Reduction above. "
+          + (dg.breached ? "At 0 DR it is past repair: rebuilding it is a full Project on the Impact Table."
+                         : "Repair it during Downtime on the Impact Table, at the shop or on the bench. Wear is one track per piece, so this is the suit's whole loss and not a caustic-only tally.") }) : null
     ]));
 
     }   // end: caustic applied
@@ -1942,47 +1951,49 @@ EN.combatView = (function () {
     toast(cz.insideDamage ? (cz.insideDamage.dice + " " + cz.insideDamage.type + " at the end of this turn.")
                           : ("No damage: " + cz.stoppedBy + "."));
   }
-  /* A full scene of exposure degrades unsealed armor by 1 DR. The loss is
-     recorded against the ARMOR ENTRY, not the armor name, so two identical
-     suits cannot share it and a re-bought suit arrives at full DR.
+  /* A full scene of exposure degrades unsealed armor by 1 DR, and it goes through
+     EN.engine.applyArmorDamage, the ONE writer, against the ARMOR ENTRY. So two
+     identical suits cannot share it, a re-bought suit arrives at full DR, and the
+     loss shows up everywhere DR shows up rather than in a ledger of its own.
 
-     THE SCOPE NOTE, in code: this writes to ONE ledger and hands it to the one
-     hook. Armor Repair owns current DR per piece and is not on this branch, so
-     EN.armorRepair is absent and the loss stays PENDING and displayed. When
-     that branch merges, applyDegradation exists and the same call lands there.
-     Nothing here subtracts from d.armorDR, deliberately: a second, parallel
-     armor DR system is exactly what must not be waiting when Armor Repair
-     arrives. */
+     This used to write a parallel ch.hazards.caustic.armorDR and hand the loss to
+     EN.armorRepair.applyDegradation if that module existed. It never did: Armor
+     Repair merged as EN.crafting.armorRepair plus the engine's resolver and
+     writer, so the hook could not fire and the rule was inert on a build that had
+     everything it needed. The ledger is retired in migrate().
+
+     Two consequences worth stating rather than discovering. The quality edge
+     applies here like anywhere else, so a freshly repaired suit shrugs off one
+     scene and says so; and "minimum 0" needs no enforcement of its own, because
+     the writer clamps to [0, base] by construction. */
   function causticScene(cz) {
     var dg = cz.degradation, rule = cz.degradationRule;
     if (!dg.exposed || !dg.armorKey) return;
-    var handed = false;
+    var res = null;
     store.update(function (c) {
-      var q = (c.hazards || {}).caustic; if (!q) return;
-      q.armorDR = q.armorDR || {};
-      // "minimum 0": the suit cannot lose more DR than it has
-      q.armorDR[dg.armorKey] = Math.min(dg.baseDR, (q.armorDR[dg.armorKey] | 0) + rule.drLost);
-      q.sceneTicks = 0;
-      if (EN.armorRepair && EN.armorRepair.applyDegradation) {
-        EN.armorRepair.applyDegradation(c, dg.armorKey, rule.drLost,
-          { source: "caustic", minimum: rule.minimum, repairedBy: rule.repairedBy });
-        handed = true;
-      }
+      var q = (c.hazards || {}).caustic; if (q) q.sceneTicks = 0;
+      res = eng.applyArmorDamage(c, dg.armorKey, rule.drLost);
     });
-    toast("A full scene in it: " + dg.armor + " loses " + rule.drLost + " DR (minimum " + rule.minimum
-      + "), until repaired during " + rule.repairedBy + ". "
-      + (handed ? "Handed to Armor Repair." : "Recorded against that exact suit and reported as pending; Armor Repair is not on this branch, so nothing here lowers your Damage Reduction."));
+    if (!res) return;
+    if (res.absorbed) { toast("A full scene in it, and " + dg.armor + " holds: the freshly seated plate takes the corrosion instead. No DR lost."); return; }
+    toast("A full scene in it: " + dg.armor + " is down to " + res.current + " of " + res.base + " DR"
+      + (res.breached ? ", breached. Rebuilding it is a full Project on the Impact Table."
+                      : ", until repaired during " + rule.repairedBy + " on the Impact Table."));
   }
   function causticWash() {
     store.update(function (c) { var q = (c.hazards || {}).caustic; if (q) q.lingering = false; });
     toast("Washed off (an Action, and something to wash with). The lingering Acid stops.");
   }
-  function causticRepair(dg) {
-    store.update(function (c) {
-      var q = (c.hazards || {}).caustic;
-      if (q && q.armorDR && dg.armorKey) delete q.armorDR[dg.armorKey];
-    });
-    toast(dg.armor + " repaired during Downtime; its recorded caustic DR loss is cleared.");
+  /* "Until repaired during Downtime" is the Impact Table's job now, and it is
+     priced there: a shop lane, a bench Project, or a rebuild at 0 DR. This used to
+     be a free REPAIR button that deleted the ledger row, which was the only thing
+     available while the loss was a pending number nothing defended with. Sending
+     the player to the lanes is the rule the caustic entry has always pointed at.
+     A misclick is still free: the `↶ UNDO` beside the DR track on both the Block
+     row and the Impact Table gives the point back. */
+  function causticOpenRepair() {
+    if (EN.inventoryView.openBench) EN.inventoryView.openBench("armor");
+    EN.app.gotoTab("gear");
   }
 
   /* ---------- the tabbed Freelancer Actions panel ----------

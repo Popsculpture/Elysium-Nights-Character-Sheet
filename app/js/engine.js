@@ -1752,19 +1752,22 @@ EN.engine = (function () {
     return { active: active, inactive: inactive, fx: fx };
   }
 
-  /* Caustic gear degradation. SCOPE: Armor Repair lives on another branch and
-     armor DR is immutable here, so this computes and REPORTS the degradation
-     and writes it to ONE entry-keyed ledger. It deliberately does not subtract
-     from d.armorDR: doing that would be a second, parallel armor DR system,
-     which is exactly what must not exist when Armor Repair merges.
-     `applied` reports the state of the single hook: when EN.armorRepair exists
-     it is the module that owns current DR per piece and the Hazards panel hands
-     the loss to it; until then the loss sits in the ledger and shows as PENDING. */
+  /* Caustic gear degradation. It reads armorState, the same one resolver every
+     other DR surface reads, and the loss it reports IS the suit's current DR.
+
+     It used to keep its own ledger, ch.hazards.caustic.armorDR, and hand the
+     loss to EN.armorRepair.applyDegradation when that module appeared. That was
+     the right shape while Armor Repair was on a branch and armor DR here was
+     immutable: a second parallel DR system was exactly what must not be waiting
+     when it merged. But it merged as EN.crafting.armorRepair plus
+     EN.engine.applyArmorDamage, so EN.armorRepair was never defined and the hook
+     could not fire. The loss sat PENDING forever while the panel told the player
+     Armor Repair was "on another branch". The ledger is retired; migrate() folds
+     any recorded loss into ch.armorWear once and drops the field. There is one
+     map, one resolver and one writer, which is what the scope note asked for. */
   function causticArmorDR(ch, w, fx) {
     w = w || wornArmor(ch);
-    var ledger = ((ch && ch.hazards && ch.hazards.caustic) || {}).armorDR || {};
-    var lost = w.key ? Math.max(0, ledger[w.key] | 0) : 0;
-    var baseDR = w.item ? (w.item.dr || 0) : 0;
+    var st = armorState(ch, w.key);
     /* A mitigation that stops the caustic reaching you stops it reaching your
        ARMOR too. The Hazmat Suit is "a sealed chemsuit worn over your armor",
        so a suit that nulls the damage cannot leave the plate underneath it
@@ -1780,10 +1783,14 @@ EN.engine = (function () {
       sealed: w.sealed,
       blockedBy: blockedBy,
       exposed: !!w.item && !w.sealed && !blockedBy,
-      baseDR: baseDR,
-      lost: lost,
-      wouldBe: Math.max(0, baseDR - lost),
-      applied: !!(EN.armorRepair && EN.armorRepair.applyDegradation)   // false on this branch
+      baseDR: st.base,
+      // The suit's real numbers, not a caustic-only tally. Wear is one map and it
+      // does not record what took each point, so this block reports the state of
+      // the plate rather than claiming a share of it.
+      lost: st.lost,
+      current: st.current,
+      guard: st.guard,
+      breached: st.breached
     };
   }
 

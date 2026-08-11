@@ -140,7 +140,9 @@ EN.store = (function () {
         },
         caustic: {
           inside: false, lingering: false, sceneTicks: 0,
-          armorDR: {}                    // {armorEntryKey: DR lost}, ENTRY-keyed, pruned to owned entries on load
+          // no armorDR here: caustic DR loss goes through EN.engine.applyArmorDamage
+          // into ch.armorWear like every other point of DR a suit loses. The separate
+          // ledger this field used to hold is retired in migrate()
         },
         thermalWeave: {},                // {armorEntryKey: "Fire"|"Cold"}, the Thermal Regulation Weave install pick
         hazmatTorn: false,               // the Hazmat Suit's own entry: a tear fails the seal until repaired
@@ -670,11 +672,11 @@ EN.store = (function () {
     if (rg.key && !liveKeys[rg.key]) rg.key = null;
     /* Environmental Hazards state. This block sits HERE, after the instance-id
        split, for the same reason ch.rig does and under the same ordering rule
-       written at the split: two of its maps (caustic.armorDR and thermalWeave)
-       are keyed on an EQUIPMENT ENTRY, so they can only be resolved and pruned
-       once the entries actually carry their ids. Written twenty lines earlier,
-       beside the other equipment defaults, they would key on the armor NAME and
-       the split would orphan every one of them.
+       written at the split: thermalWeave, and the caustic ledger this block now
+       retires, are keyed on an EQUIPMENT ENTRY, so they can only be resolved and
+       pruned once the entries actually carry their ids. Written twenty lines
+       earlier, beside the other equipment defaults, they would key on the armor
+       NAME and the split would orphan every one of them.
 
        Every map keyed on a user-supplied string is null-prototype. An exposure
        id or an entry key of "constructor" or "toString" would otherwise read as
@@ -720,27 +722,32 @@ EN.store = (function () {
       brOut[k.key] = { active: !!r.active, rounds: nn(r.rounds), saves: nn(r.saves) };
     });
     hz.breath = brOut;
-    // caustic; armorDR is the entry-keyed ledger the Armor Repair branch will consume
     if (!hz.caustic || typeof hz.caustic !== "object" || Array.isArray(hz.caustic)) hz.caustic = {};
     hz.caustic.inside = !!hz.caustic.inside;
     hz.caustic.lingering = !!hz.caustic.lingering;
     hz.caustic.sceneTicks = nn(hz.caustic.sceneTicks);
     var eqKeys = Object.create(null);
     ((ch.equipment) || []).forEach(function (e) { var k = e && (e.id || e.name); if (k) eqKeys[k] = 1; });
-    var drIn = (hz.caustic.armorDR && typeof hz.caustic.armorDR === "object" && !Array.isArray(hz.caustic.armorDR)) ? hz.caustic.armorDR : {};
-    var drOut = Object.create(null);
-    Object.keys(drIn).forEach(function (k) {
-      var v = nn(drIn[k]);
-      if (!eqKeys[k] || v <= 0) return;                 // orphaned or empty: dropped, never moved
-      // "minimum 0": a suit cannot lose more DR than it has, so an imported or
-      // hand-edited number above the suit's own DR is clamped to it rather than
-      // handed to Armor Repair as a debt the piece could never pay.
-      var e = ch.equipment.find(function (x) { return (x.id || x.name) === k; });
-      var it = (e && EN.engine && EN.engine.catalogItem) ? EN.engine.catalogItem(e.name) : null;
-      var cap = (it && typeof it.dr === "number") ? it.dr : v;
-      drOut[k] = Math.min(v, cap);
-    });
-    hz.caustic.armorDR = drOut;
+    /* ch.hazards.caustic.armorDR is RETIRED. It was an entry-keyed ledger of caustic
+       DR loss, written here because Armor Repair was on another branch and armor DR
+       was immutable, and handed over through EN.armorRepair.applyDegradation once
+       that branch merged. It merged as EN.crafting.armorRepair plus the engine's
+       resolver and writer, so EN.armorRepair was never defined, the hook could not
+       fire, and the loss sat pending forever.
+       The raw value is CAPTURED here, where it still exists, and folded into
+       ch.armorWear after the wear maps below are final: that map is the per-piece
+       DR track the ledger was always a placeholder for, and merging into it before
+       it is entry-keyed and clamped would be the ordering trap all over again.
+       The field itself is dropped, so a second load finds nothing to merge. */
+    var causticLedgerIn = null;
+    if (hz.caustic.armorDR && typeof hz.caustic.armorDR === "object" && !Array.isArray(hz.caustic.armorDR)) {
+      causticLedgerIn = Object.create(null);
+      Object.keys(hz.caustic.armorDR).forEach(function (k) {
+        var v = nn(hz.caustic.armorDR[k]);
+        if (eqKeys[k] && v > 0) causticLedgerIn[k] = v;   // orphaned or empty: dropped, never moved
+      });
+    }
+    delete hz.caustic.armorDR;
     // the Thermal Regulation Weave's install-time element, per ARMOR ENTRY
     var twIn = (hz.thermalWeave && typeof hz.thermalWeave === "object" && !Array.isArray(hz.thermalWeave)) ? hz.thermalWeave : {};
     var twOut = Object.create(null);
@@ -1057,6 +1064,28 @@ EN.store = (function () {
     // Stamped only after all three maps have converted, so a throw midway cannot leave
     // the record claiming a conversion that did not finish.
     ch.meta.wearKeys = WEAR_KEY_SCHEME;
+    /* THE CAUSTIC LEDGER, FOLDED IN. Captured up in the hazards block (see the note
+       there), applied here because ch.armorWear is only now entry-keyed, pruned and
+       clamped. Both are {armorEntryKey: DR lost}, so the merge is addition capped at
+       the suit's own base.
+       The quality edge is deliberately NOT spent: armorGuard absorbs the NEXT point a
+       suit would lose, and this is a loss the record already took, possibly long before
+       the guard was earned. Cashing it retroactively would invent history.
+       Built into a fresh map and assigned in one statement, the way the wear marker is
+       stamped only once its maps are done: a throw partway through cannot leave half a
+       merge behind for the next load to add on top of, and the ledger field is already
+       gone, so there is nothing to merge twice. */
+    if (causticLedgerIn) {
+      var merged = Object.create(null);
+      Object.keys(ch.armorWear).forEach(function (k) { merged[k] = ch.armorWear[k]; });
+      Object.keys(causticLedgerIn).forEach(function (k) {
+        if (!wearLiveKeys[k]) return;
+        var cap = armorCap(k);
+        if (!(cap > 0)) return;                       // names nothing that can wear
+        merged[k] = Math.min(cap, (merged[k] | 0) + causticLedgerIn[k]);
+      });
+      ch.armorWear = merged;
+    }
     // cyberware: legacy string entries → objects. sp:0 so old manual marks don't
     // retroactively spike Static; chrome bought from the market carries real SP.
     if (Array.isArray(ch.cyberware)) {
