@@ -95,3 +95,34 @@ Five things earned the hard way, and the reason the log is worth reading:
   until it was written down explicitly.
 - **Unattributable state is dropped, never moved.** Losing a number the player can see is
   recoverable; silently relocating it onto the wrong object is not.
+
+## Manuscript source of truth
+
+Three live Google Docs. The app is synced against these, never against a local copy.
+
+| Part | Doc id |
+| ----- | ----- |
+| 1, Welcome and Building a Character | `10x_s1WJ-gWsFxKViuGQvlB1Ddz3MyA-FBAPaMQjsNpQ` |
+| 2, Core Rules, Combat, Survival and Specialized Systems | `1P74ExjneDDSUvEXQpVuDYvAvNz_w3rOVzVGVg7w-XHM` |
+| 3, Equipment | `1ehY_1lcqpugD1bdcpBTvq32c7SpxdYj0m5h7ClYPKgM` |
+
+Read one at `https://docs.google.com/document/d/<id>/edit`, or pull raw text from
+`https://docs.google.com/document/d/<id>/export?format=markdown`.
+
+**Use the markdown export, not txt.** Plain text strips bold and heading levels, which
+produced false negatives here: a probe for a bolded trait name found nothing and looked
+like the edit had never landed.
+
+**How to spill without burning context.** Navigate real Chrome to
+`https://docs.google.com/robots.txt`, a lightweight same-origin page, then fetch the
+export endpoint from there. Do NOT pass `credentials: "include"`; on a same-origin
+request it makes the fetch fail. The Docs editor itself freezes the renderer and its
+CSP blocks the fetch, so do not load the document.
+
+**Freshness is a hard gate.** Compare each doc's modified time against any local copy
+before auditing. Auditing against a stale spill once produced a report claiming a live
+trait had been invented, and six commits were reverted.
+
+Parts 2 and 3 have never been spilled in full: Chrome refuses downloads from
+`docs.google.com` on this machine. Targeted extracts of the changed passages are the
+working substitute. Allowing automatic downloads for that origin would fix it.
