@@ -584,6 +584,32 @@ EN.combatView = (function () {
     });
     var autoLine = el("div.mono", { style: { fontSize: "11px", color: "var(--text3)", textAlign: "center", padding: "12px 16px 0" } }, autoParts);
 
+    /* Which implement you are parrying with. The rule is explicit that the choice is
+       yours ("if you are dual-wielding, you must choose which weapon you parry with"),
+       so this offers every legal source rather than picking one for you. Ordered best
+       first, so the default is already the strongest and most hits need no tap.
+       Switching clears any roll on screen: it was rolled with the other die. */
+    var sourceRow = null;
+    if ((s.sources || []).length > 1) {
+      sourceRow = el("div", { style: { padding: "12px 16px 0" } }, [
+        el("div.mono", { style: { fontSize: "9px", letterSpacing: ".18em", color: "var(--text3)", textAlign: "center", marginBottom: "6px" }, text: "PARRY WITH" }),
+        el("div.row.wrap", { style: { gap: "6px", justifyContent: "center" } }, s.sources.map(function (src) {
+          var on = src.key === s.sourceKey;
+          var face = src.sides ? src.n + "d" + src.sides : "+" + (src.flat || 0);
+          return el("button.btn.sm" + (on ? ".primary" : ""), {
+            style: { padding: "2px 9px", fontSize: "11px" },
+            title: src.kind === "unarmed" ? "Bare hands are a legal parry" : src.label,
+            onclick: function () {
+              if (on) return;
+              s.applySource(src.key);
+              _defTray.roll = null; _defTray.animating = false;   // that total belonged to the other die
+              EN.app.render();
+            }
+          }, src.label + " " + face);
+        }))
+      ]);
+    }
+
     var breakdown = (roll && !anim) ? el("div.mono", { style: { fontSize: "10.5px", color: "var(--text3)", textAlign: "center", padding: "8px 16px 0" } },
       roll.parts.map(function (pp, i) {
         return el("span", null, [
@@ -634,7 +660,7 @@ EN.combatView = (function () {
     }, [
       el("div", { style: { width: "min(430px, 96vw)", maxHeight: "94vh", overflowY: "auto", borderRadius: "12px",
         background: "linear-gradient(180deg, var(--bg2), var(--bg1))", border: "1px solid var(--border2)",
-        boxShadow: "0 20px 60px rgba(0,0,0,.55), 0 0 40px rgba(0,229,255,.10)" } }, [header, hero, autoLine, breakdown, ctrls, outcome, note, foot])
+        boxShadow: "0 20px 60px rgba(0,0,0,.55), 0 0 40px rgba(0,229,255,.10)" } }, [header, hero, autoLine, breakdown, sourceRow, ctrls, outcome, note, foot])
     ]);
   }
 
@@ -4336,16 +4362,63 @@ EN.combatView = (function () {
         if (!w || eng.isUnarmedAugmentName(w.name)) return null;
         return (w.group === "Simple" || w.group === "Martial") ? w : null;
       }
-      var meleeDie = null, meleeName = null;
-      equippedNames.forEach(function (n) {
-        if (meleeDie) return;
-        var w = realMeleeWeapon(n);
-        if (w) { var m = (w.damage || "").match(/\d*d\d+/); if (m) { meleeDie = m[0]; meleeName = w.name; } }
-      });
       // Parry also accepts bare hands, so the unarmed strike's own damage is a
       // parry source: the resolved die if anything granted one, else the flat 1.
       var uParryDie = d.unarmed.die, uParryFlat = d.unarmed.flat;
-      var uParryText = uParryDie || String(uParryFlat);
+      /* THE PARRY SOURCES, resolved once, best first. Everything that renders or
+         rolls a Parry reads this list; there is no second place that decides.
+
+         It used to be a precedence CHAIN, weapon then shield then fists, first match
+         wins, written out twice (the row summary and the tray). Three things fell out
+         of that, and all three reproduced:
+           a 1d4 Scrap Shield beat a resolved 1d8 unarmed strike, so strapping on a
+             shield HALVED your Parry;
+           a Dagger listed before a Greatsword beat 2d6 with 1d4, purely on list order;
+           bare hands with no die read "Roll 1", which is not a die and not rollable.
+
+         The book does not describe a chain. Parry's Effect is "Roll your equipped
+         weapon's base damage die ... or your unarmed strike damage if your hands are
+         what you brought", and its Tactical Note is explicit that "if you are
+         dual-wielding, you must choose which weapon you parry with". So this offers
+         the CHOICE, ordered by expected value so the default is the best one and the
+         common case is still one tap.
+
+         A SHIELD IS NOT A SOURCE HERE, and that is the correction that matters most.
+         The app used to parry with the shield's `blockDie`, which is not a damage die:
+         it belongs to Block, whose Effect is "Roll your Shield's Block die (if you
+         carry one) and add your armor's flat Block Bonus". Parry rolls a DAMAGE die,
+         and no shield in the catalog has one. Verified against both live manuscripts
+         on 2026-08-11: Part 3's Physical Shields table is Name / Price / Defense /
+         Block / Traits with no damage column, there is no shield bash anywhere in
+         either book, and Parry never names a die for a shield.
+         A shield still SATISFIES Parry's Requirement ("a Simple Weapon, Martial
+         Weapon, Signature Weapon, or physical Shield equipped, or be fighting
+         unarmed"), so carrying one does not stop you parrying. It just contributes no
+         die, and you roll a damage die you actually have: a weapon's, or your fists'. */
+      function parryValue(s) { return s.sides ? s.n * (s.sides + 1) / 2 : (s.flat || 0); }
+      function parrySources() {
+        var out = [];
+        equippedNames.forEach(function (n) {
+          var w = realMeleeWeapon(n);
+          if (!w) return;
+          var m = (w.damage || "").match(/(\d*)d(\d+)/);
+          if (!m) return;
+          out.push({ key: "w:" + n, label: w.name, kind: "weapon",
+                     n: parseInt(m[1] || "1", 10), sides: parseInt(m[2], 10) });
+        });
+        var um = uParryDie ? /(\d*)d(\d+)/.exec(uParryDie) : null;
+        if (um) out.push({ key: "unarmed", label: "your unarmed strike", kind: "unarmed",
+                           n: parseInt(um[1] || "1", 10), sides: parseInt(um[2], 10) });
+        else out.push({ key: "unarmed", label: "your unarmed strike", kind: "unarmed", flat: uParryFlat });
+        out.sort(function (a, b) { return parryValue(b) - parryValue(a); });
+        return out;
+      }
+      function parryText(s) {
+        if (!s) return "nothing to parry with";
+        return s.sides ? "Roll " + s.n + "d" + s.sides + " (" + s.label + "), subtract from incoming damage"
+                       : "Bare hands with no die behind them: subtract " + (s.flat || 0) + " from incoming damage";
+      }
+      var pSources = parrySources(), pBest = pSources[0];
       // Block works with a shield, a flat Block Bonus, or the Plated trait; a shield's
       // die stacks on top. Gear whose lease is in arrears grants none of this.
       var liveShield = (dg.shield && !dg.shieldLapsed && dg.shieldAlive) ? dg.shield : null;
@@ -4391,13 +4464,10 @@ EN.combatView = (function () {
       // gear, so a Ward reads the attuned Focus and a Parry reads the equipped melee
       // weapon rather than a fixed die.
       function parseDie(str) { var m = /(\d*)d(\d+)/.exec(String(str || "")); return m ? { n: parseInt(m[1] || "1", 10), sides: parseInt(m[2], 10), label: (m[1] || "1") + "d" + m[2] } : null; }
-      function firstMeleeDie() {
-        for (var i = 0; i < equippedNames.length; i++) {
-          var it = realMeleeWeapon(equippedNames[i]);
-          if (it) { var pd = parseDie(it.damage); if (pd) { pd.label = it.name; return pd; } }
-        }
-        return null;
-      }
+      // (firstMeleeDie lived here and was the first half of Parry's precedence chain:
+      //  "the first equipped melee weapon", which handed a Dagger the parry over a
+      //  Greatsword on list order alone. parrySources() replaced it and nothing else
+      //  called it, so it is gone rather than left for someone to wire back in.)
       function defSpec(name) {
         var base = { name: name, baseDefense: d.defense, dice: [], flat: [] };
         if (name === "Block") {
@@ -4418,24 +4488,23 @@ EN.combatView = (function () {
           return base;
         }
         if (name === "Parry") {
-          // A physical shield satisfies the requirement on its own, so fall back to
-          // the shield die when no Simple or Martial weapon is equipped, and to the
-          // unarmed strike when neither is: bare hands are a legal parry.
-          var md = firstMeleeDie();
-          if (!md && liveShield) { md = parseDie(dg.shieldBlockDie); if (md) md.label = liveShield.name; }
-          if (md) {
-            base.dice.push(md);
-            base.note = "Roll " + md.n + "d" + md.sides + " (" + md.label + ") and subtract it from the incoming damage. Melee attacks only.";
-          } else if (uParryDie) {
-            var ud = parseDie(uParryDie); ud.label = "unarmed strike";
-            base.dice.push(ud);
-            base.note = "Roll " + uParryDie + " (your unarmed strike) and subtract it from the incoming damage. Melee attacks only.";
-          } else {
-            // a bare-handed strike with no die deals a flat 1, so that is what it parries
-            base.flat.push({ label: "unarmed strike", value: uParryFlat });
-            base.note = "Bare hands with no die behind them: subtract " + uParryFlat + " from the incoming damage. Melee attacks only.";
-          }
-          return base;
+          /* One list, best first, and the player picks. `applySource` is what the
+             tray's chips call, so switching implement re-reads this same resolver
+             rather than deriving a second answer somewhere else. */
+          base.sources = pSources;
+          base.applySource = function (key) {
+            var s = pSources.find(function (x) { return x.key === key; }) || pBest;
+            base.sourceKey = s.key;
+            base.dice = []; base.flat = [];
+            if (s.sides) base.dice.push({ n: s.n, sides: s.sides, label: s.label });
+            else base.flat.push({ label: s.label, value: s.flat || 0 });
+            base.note = (s.sides
+              ? "Roll " + s.n + "d" + s.sides + " (" + s.label + ") and subtract it from the incoming damage."
+              : "Bare hands with no die behind them: subtract " + (s.flat || 0) + " from the incoming damage.")
+              + " Melee attacks only." + (pSources.length > 1 ? " You choose what you parry with." : "");
+            return base;
+          };
+          return base.applySource(pBest && pBest.key);
         }
         if (name === "Resurge") {
           base.dice.push({ n: 1, sides: d.resilienceDie || 6, label: "d" + (d.resilienceDie || 6) });
@@ -4495,11 +4564,10 @@ EN.combatView = (function () {
         Dodge:   { avail: true, req: "",
                    summary: (acro ? "+" + acro.total + " Defense" : "+Agility + Acrobatics to Defense") + " vs this hit; on a miss, shift 1 space" + (dg.speedPenalty ? " · GM may forbid in heavy armor" : "") },
         // "or be fighting unarmed": bare hands always satisfy the requirement, so
-        // Parry is never unavailable. The die falls back from weapon to shield to fists.
+        // Parry is never unavailable. The row names the BEST source and says how many
+        // others there are; the tray is where you switch. Both read parrySources().
         Parry:   { avail: true, req: "a melee weapon, a shield, or bare hands",
-                   summary: meleeDie ? "Roll " + meleeDie + " (" + meleeName + "), subtract from incoming damage"
-                     : (liveShield && dg.shieldBlockDie ? "Roll " + dg.shieldBlockDie + " (" + liveShield.name + "), subtract from incoming damage"
-                                                        : "Roll " + uParryText + " (your unarmed strike), subtract from incoming damage") },
+                   summary: parryText(pBest) + (pSources.length > 1 ? " · " + pSources.length + " to choose from" : "") },
         Resurge: { avail: attuned, req: "Flow attunement",
                    summary: "Roll " + resDie + " vs Flow attacks; reduce to 0 → rebound " + (flowMod || "your Flow Mod") + " Resonant" },
         Siphon:  { avail: attuned, req: "Flow attunement",
