@@ -2315,6 +2315,159 @@ driven through the real DOM buttons.
   screenshot was taken. Every reading above is text off the live DOM, the live toast node
   and the live store, which is the more precise form, but nobody has looked at the pixels.
 
+## The adversarial pass over that commit, and the four more it found
+
+`cfc4886` was then put through five review lenses (the money paths, the engine's new
+resolver and writers, the migration, rules fidelity and the doc, and a completeness
+critic re-reading both review files against the diff), and every finding they raised was
+handed to an independent skeptic told to refute it. **Twenty-two were refuted and five
+survived.** Four are fixed in `339ac12`; the fifth is below, under what needs a ruling.
+
+Worth keeping about the refuted twenty-two, because it is the point of running the second
+half: several were arithmetically correct and still wrong as findings. The two most
+instructive both claimed `applyArmorDamage`'s quality edge "absorbs the entire delta
+rather than one point", which is true of the code and is behaviour `cfc4886` neither
+wrote nor changed, and no caller passes a delta above 1. A third correctly described a
+disagreement between `defensiveLoadout`'s own fields and the resolver record it now also
+carries, and the remedy it proposed would have reopened the hole the commit closed.
+
+**~~A name-valued equip slot makes every Durability box and DR point evaporate on the
+next load.~~ FIXED, and it is the worst thing in this round.** **Severity: medium.
+PRE-EXISTING, not caused by `cfc4886`:** the prune has always asked whether a wear key
+names a live entry, and the pre-commit code said `key = wearLiveKeys[k] ? k : null` with
+identical semantics.
+
+The instance-id split rekeys an equip slot only when the slot's value is a name the split
+actually split (`nameToIds[ch[slot]]`). A row that ARRIVED with an id and `qty: 1`
+populates nothing, so a slot holding that row's NAME is left alone. Nothing downstream
+minds: `keyToName` hands an unmatched key straight back, `armorItem` resolves it, and the
+whole app runs with `dg.shieldKey === "Riot Shield"`. The Block row's wear button then
+writes `shieldWear["Riot Shield"]`, which is a perfectly good key to everything except
+the prune. **Repro through the real buttons, with the debounced `persist()` forced so
+nothing is a timing artifact** (the first attempt at this repro was contaminated by
+exactly that, and by driving a leftover character from an earlier run; both are recorded
+here because they are the same two traps the log already names): a record with
+`equipment: [{id:"eq_s1", name:"Riot Shield"}, {id:"eq_a1", name:"Anvil Frame"}]` and
+`equippedShield: "Riot Shield"`, `equippedArmor: "Anvil Frame"`. Two `− WEAR` and one
+`− DR` land, display (1 of 3 boxes, DR 4) and reach storage as
+`{"Riot Shield":2}` / `{"Anvil Frame":1}`. **One load later both maps are `{}`, the shield
+is back to 3 of 3 and the suit to 5 DR, with no message,** and it repeats for as long as
+the record exists. Import puts a record in that state once; the app then stamps
+`meta.wearKeys` and it is in-app and permanent from then on.
+
+**Fixed at the source, which is the slot, not by teaching the prune to accept a name.**
+Invariant 1 says per-piece state is keyed on the ENTRY, so a slot that is not an entry key
+is the thing to correct. `migrate()` now resolves `equippedArmor`, `equippedShield` and
+`equippedFocus` through the same `equippedEntryKey` the wear rules already use, and only
+when the answer is unambiguous. **An ambiguous slot is left exactly as it is rather than
+emptied:** unequipping a piece the player is wearing is a bigger harm than the one being
+fixed. A slot that is already a live entry key is skipped untouched, which keeps the
+id-equals-another-row's-name shape from the attribution redesign resolving exactly as it
+did. **After: the slots migrate to `eq_s1` and `eq_a1`, and the two boxes and the DR
+point survive both reloads.**
+
+**~~The print sheet and the PDF call an emitter shield "destroyed".~~ FIXED.** Introduced
+by `cfc4886`, in code it added. `EN.combat.shieldDurability` draws the line deliberately:
+a physical shield at 0 boxes "is destroyed ... and is beyond repair, but the wreck counts
+as salvage", while an emitter "goes dark instead ... It is not destroyed and leaves no
+salvage." That decides whether the piece can be repaired at all and whether it yields
+salvage, and the Combat tab already got it right, rendering `SHIELD · DARK` and toasting
+"overloaded and went dark". The two new renderers ignored the `emitter` flag the resolver
+was already carrying for exactly this. **Repro:** a Hardlight Barrier at 0 boxes printed
+`Durability 0 of 3 (destroyed)` on the sheet and in the PDF. **After:** `(dark)` for the
+Hardlight Barrier and `(destroyed)` for a Riot Shield beside it on the same sheet. Two
+catalog rows are affected, `Hardlight Barrier` and `Sentinel Barrier`.
+
+**~~`_armorPts` is the one map in this path still a bare literal.~~ FIXED.** The points
+picker's map is keyed on the raw entry key, and `cfc4886`'s null-prototype sweep covered
+the three PERSISTED character maps and not this transient view one. **Repro, on a record
+whose armor row carries `id: "__proto__"` (authored through `JSON.parse`, which is how a
+real save file arrives, so the key is a genuine own property):** the picker reads `3 / 3`
+with `−` enabled, and clicking it does nothing, because `_armorPts["__proto__"] = 2`
+invokes the `Object.prototype` setter, which discards a non-object value, and the read
+back is `Object.prototype`, fails the `typeof` test and re-defaults to the whole loss. The
+row can then only be bought at `SHOP · 𝒢276`. No currency is created or wrongly debited;
+the harm is that the per-point purchase the feature exists to provide is unreachable on
+that piece. **After: `3 / 3` steps to `2 / 3` (`𝒢184`) and `1 / 3` (`𝒢92`), and the shop
+click takes exactly 𝒢92 and moves the suit 2/5 to 3/5.** `_open` was checked and left
+alone: every one of its keys is prefixed, so no bare entry key reaches it.
+
+**~~Blueprints builds a Reliquary Shell for 𝒢0 beside a rebuild that costs 𝒢10,000.~~
+FIXED, and `cfc4886` created this one.** Teaching `listPrice` to read a Nexus-only row
+moved the repair lanes and left `materialCost` reading `it.price`, so the Fabrication
+bench offered `Reliquary Shell · mat 𝒢0` while the Impact Table priced rebuilding the
+damaged one at `𝒢10,000`. `materialCost` now asks `listPrice` too, which is the same
+question ("half what the thing is worth"), and `rebuildCost` is now literally
+`materialCost`, which its own comment always claimed. **Blast radius measured over all 327
+catalog items: exactly six move, and four of them are leased rows that `tbBlueprints`
+already refuses (`!it.upkeep`), so exactly two Blueprint entries change** (`Reliquary
+Shell` and `Martyr's Halo`, the two rows with no Glimmer price at all).
+
+**Also corrected while there: the panel no longer asserts a "list price" a row does not
+have.** A damaged Reliquary Shell used to read "𝒢2,000 per point at this suit's 𝒢20,000
+list price", and the catalog prints no list price for it: it is `price: 0, nexus: "◎2+"`,
+its description says "Nobody manufactures one of these. They are found", and the Gray
+Market renders it `FOUND, NOT SOLD`. It now reads "at this suit's 𝒢20,000 value at its ◎2+
+asking figure", with the derivation stated. Leased rows keep "Buyout" and ordinary rows
+keep "list price", both unchanged to the character.
+
+### Needs a ruling from Brandon, and both came out of this pass
+
+- **What is a ◎ figure worth when the row has no Glimmer price?** `cfc4886` closed a real
+  hole (a 4 DR Artifact repairing at 𝒢0 a point) by reading the ◎ figure at
+  `EN.economy.nexusToGlimmer`, the 10,000 the economy chapter states is the ledger value.
+  That is defensible, and I did not measure the catalog before picking it. **Measured
+  now, and the catalog disagrees with itself:** the four unleased rows that carry BOTH a
+  Glimmer price and a ◎ figure imply 9,600 (Warframe Shell), 3,200 (Resonant Carapace),
+  2,800 (Aegis Shroud) and 2,400 (Hex Lattice Projector) Glimmer per ◎, a median of about
+  3,200 rather than 10,000. So `◎2` reading as `𝒢20,000` makes the Reliquary Shell roughly
+  three to six times more expensive than the catalog's own Mystech pricing pattern
+  suggests. Three answers, and it is an author's call, not a code one: keep the stated
+  ledger rate; use the catalog's own implied rate of roughly 3,000, which puts the shell
+  near the Aegis Shroud; or declare ◎-only gear unpriceable and close the paid lanes on
+  it with a line saying so. **The leased branch is unaffected either way**, because a
+  stated `◎0.3 buyout` is a buyout and the ledger rate is the right read there (Bailiff
+  Rig, 𝒢3,000). Whatever is ruled, `materialCost` and the repair lanes now move together.
+  The `+` in `◎2+` is also read as a flat 2, which is the conservative direction.
+- **Environmental Hazards still hands caustic armor loss to a module that does not
+  exist.** `grep` finds `EN.armorRepair` at five sites in `app/`, all of them consumers,
+  and **it is defined nowhere**: Armor Repair merged as `EN.crafting.armorRepair` plus
+  `EN.engine.armorState` / `applyArmorDamage`. So `causticScene`'s forward hook
+  (`if (EN.armorRepair && EN.armorRepair.applyDegradation)`) can never fire, the caustic
+  DR loss sits in `ch.hazards.caustic.armorDR` as PENDING forever, and the panel still
+  tells the player "Armor Repair is not on this branch, so nothing here lowers your
+  Damage Reduction" on a build where it demonstrably is. `d.hazard.caustic.degradation
+  .applied` is hardcoded false in a comment that says "false on this branch". **This is
+  exactly what the step-6 section above instructed and it did not happen at merge:**
+  "When Armor Repair merges, the ledger should be retired into whatever that branch's
+  per-piece current-DR map is, and the hook left as the only call site. Do not add a
+  second subtractor." The second half was obeyed; the retirement was skipped.
+  **To be clear about the blast radius:** there is no second subtractor and no
+  double-counted number. `armorState` is still the only resolver and `applyArmorDamage`
+  the only writer, and the caustic ledger reaches no defense surface at all. What is
+  broken is that a shipped rule does nothing and two disclosure strings are false.
+  Retiring it is a small change (`applyArmorDamage(c, key, +drLost)` at the one hook,
+  the ledger dropped, the strings rewritten), but it makes caustic exposure start
+  actually lowering DR at the table, so it is left for Brandon rather than taken
+  unilaterally. **Not fixed.**
+
+### Still open out of this pass, deliberately
+
+- **`ch.armorMods` is keyed on the armor NAME and is never pruned**, so two identical
+  suits share one mod loadout and a re-bought suit arrives pre-modded. Raised again here
+  and refuted as a finding against this commit, correctly: it is the third name-keyed
+  per-piece map and it is already recorded twice above, at "Found while building step 5"
+  and in the step-6 section. Still true, still untouched, and still a separate decision
+  about whether two Anvil Frames can be modded differently.
+- **The `↶ UNDO` and `+ REPAIR` buttons restore a point of DR and a Durability box for
+  free**, without limit. Both are symmetric with the manual `− DR` and `− WEAR` beside
+  them and read as tracker affordances for a misclick, which is what their tooltips say.
+  Raised twice in this pass and refuted twice on that ground.
+- **`ownsFabRig` grants free bench parts for merely owning the rig**, where the
+  manuscript says "with stock on hand". No consumable stock exists to model. Author call.
+- **The print sheet's DEF stat reads "+shield" for a shield contributing nothing.**
+  Pre-existing, adjacent, and outside everything here.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from
