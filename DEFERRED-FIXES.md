@@ -2411,7 +2411,29 @@ Market renders it `FOUND, NOT SOLD`. It now reads "at this suit's 𝒢20,000 val
 asking figure", with the derivation stated. Leased rows keep "Buyout" and ordinary rows
 keep "list price", both unchanged to the character.
 
-### Needs a ruling from Brandon, and both came out of this pass
+### Both rulings came back, 2026-08-10, and both are now applied
+
+- **RULED: the ◎ reference value stands, and the catalog was never disagreeing with it.**
+  Brandon supplied the exchange text: `◎1 = 𝒢10,000` is "the number that appears in
+  contracts, ledgers, and official books", and actual cash-out is lower, returning
+  `𝒢5,000` to `𝒢7,500` at a legal licensed exchange and `𝒢2,000` to `𝒢4,000` unlicensed.
+  That resolves the objection in the entry below rather than sustaining it. Three of the
+  four dual-priced rows imply 2,400 to 3,200, which is the UNLICENSED band: those items
+  are priced at what a Freelancer actually clears selling a token on the street. The
+  outlier, Warframe Shell at 9,600, sits at the licensed reference, which fits a
+  corporate frame. And a shop quoting a repair prices off what the OBJECT is worth in a
+  ledger, not off what its owner could liquidate a token for, so `nexusToGlimmer` is the
+  right read for `listPrice`. **No code change; the pricing shipped in `cfc4886` and
+  `339ac12` is correct as it stands.** The conversion bands, the three strings an
+  unlicensed conversion can come with, and the "Freelancers should not assume" line were
+  missing from `economy.js` and are now Codex reference data (`1858843`), deliberately
+  with no mechanical hookup: the bands are wide and the cheap one costs things a number
+  cannot express, so a cash-out is a scene the GM runs. The block says so in as many
+  words, so nobody wires it up later by accident.
+- **RULED and BUILT: caustic degradation is retired into `ch.armorWear` (`373df43`).**
+  See the section below.
+
+### The original ruling entries, kept for the reasoning
 
 - **What is a ◎ figure worth when the row has no Glimmer price?** `cfc4886` closed a real
   hole (a 4 DR Artifact repairing at 𝒢0 a point) by reading the ◎ figure at
@@ -2429,8 +2451,9 @@ keep "list price", both unchanged to the character.
   stated `◎0.3 buyout` is a buyout and the ledger rate is the right read there (Bailiff
   Rig, 𝒢3,000). Whatever is ruled, `materialCost` and the repair lanes now move together.
   The `+` in `◎2+` is also read as a flat 2, which is the conservative direction.
-- **Environmental Hazards still hands caustic armor loss to a module that does not
-  exist.** `grep` finds `EN.armorRepair` at five sites in `app/`, all of them consumers,
+- ~~**Environmental Hazards still hands caustic armor loss to a module that does not
+  exist.**~~ **RULED AND BUILT, `373df43`; see the retirement section below.**
+  `grep` found `EN.armorRepair` at five sites in `app/`, all of them consumers,
   and **it is defined nowhere**: Armor Repair merged as `EN.crafting.armorRepair` plus
   `EN.engine.armorState` / `applyArmorDamage`. So `causticScene`'s forward hook
   (`if (EN.armorRepair && EN.armorRepair.applyDegradation)`) can never fire, the caustic
@@ -2467,6 +2490,89 @@ keep "list price", both unchanged to the character.
   manuscript says "with stock on hand". No consumable stock exists to model. Author call.
 - **The print sheet's DEF stat reads "+shield" for a shield contributing nothing.**
   Pre-existing, adjacent, and outside everything here.
+
+## Caustic degradation, retired into `ch.armorWear` and finally doing something
+
+**BUILT 2026-08-10 (`373df43`), on Brandon's ruling.** The manuscript entry, quoted so
+the target is not in doubt: "Unsealed gear degrades. After a full scene of exposure,
+armor loses 1 DR until repaired during Downtime, to a minimum of 0."
+
+**Reproduced first, and it was as dead as the completeness lens said.** Two
+`MARK FULL SCENE` clicks on an unsealed Vanguard Plate (base 4) with the caustic hazard
+applied through the real Status Changes dropdown: `d.armorDR` stayed **4**, `armorWear`
+stayed `{}`, the parallel ledger filled to `{eq_v1: 2}`, the panel printed "PENDING 2 DR
+... Armor Repair owns current DR per piece and lives on another branch", and the toast
+said "Armor Repair is not on this branch, so nothing here lowers your Damage Reduction."
+`causticScene` gated on `EN.armorRepair.applyDegradation`, and `EN.armorRepair` is
+defined nowhere: Armor Repair merged as `EN.crafting.armorRepair` plus
+`EN.engine.armorState` and `applyArmorDamage`. The hook could not fire on a build that
+had everything it needed, and the step-6 section had asked for the retirement at merge.
+
+**What changed.**
+
+- **One writer.** `causticScene` calls `EN.engine.applyArmorDamage(c, key, drLost)`.
+  After: `4 -> 3 -> 2`, in `ch.armorWear`, visible on every DR surface.
+- **The ledger is retired.** `migrate()` captures `ch.hazards.caustic.armorDR` in the
+  hazards block, where the raw value still exists, and folds it into `ch.armorWear`
+  **after** the wear maps are final, so it merges into a map that is already entry-keyed,
+  pruned and clamped. Merging it in the hazards block instead would be the ordering trap
+  a third time. The field is deleted and `blank()` no longer declares it, so a second
+  load finds nothing to merge and there is no way to double-count.
+- **The quality edge is not spent by the merge, and is spent at runtime.** `armorGuard`
+  absorbs the NEXT point a suit would lose; a recorded loss may predate the guard
+  entirely, so cashing it retroactively would invent history. At the table it applies
+  like anywhere else: a freshly repaired suit shrugs off one scene and the toast says so.
+- **"Minimum 0" stops needing its own enforcement,** because the writer clamps to
+  `[0, base]` by construction. `MARK FULL SCENE` disables at 0 with a reason.
+- **The free REPAIR button is gone.** It deleted a ledger row, which was the only thing
+  it could do while the loss was a pending number nothing defended with. Repair is the
+  Impact Table's priced work now, so the button became a `→ REPAIR` jump. A misclick is
+  still free: `↶ UNDO` sits beside the DR track on both the Block row and the Impact
+  Table.
+- **`causticArmorDR` reads `armorState`,** so the block's header shows the suit's real
+  current DR and matches the Defenses row instead of quoting the catalog at it. It
+  reports the whole loss rather than a caustic-only share, and says so on screen: wear is
+  one track per piece and does not record what took each point.
+
+**The one table-facing consequence, stated plainly:** caustic exposure now lowers DR, and
+undoing it costs Glimmer or a Project rather than a click. That is what the rule says and
+it is one of the four features Armor Repair was built to fill, but it is a real change to
+play and it was Brandon's to authorize rather than mine.
+
+### Verification run for the retirement
+
+- **Thirteen retirement shapes** through the real `EN.store.load()` with a seeded LCG,
+  three loads each. **Zero throws, all thirteen stable across three loads,
+  `Object.prototype` clean.** A ledger alone lands (`{eq_a:2}`, DR 3/5); a ledger plus
+  existing wear sums (2 + 1 = 3); a ledger of 99 and a 4-plus-3 sum both cap at the base
+  of 5; an orphaned key and a key naming a non-armor entry are both dropped rather than
+  moved; a pending `armorGuard` survives unspent; junk values, a non-object ledger and
+  prototype-named keys all normalize to nothing; two suits stay independent
+  (`{eq_a:1, eq_b:2}`); and an **unmarked legacy record** merges its ledger while its
+  name-keyed `shieldWear` still lands on the wielded shield (`{eq_s:1}`).
+- **The no-op proof.** The same 24-shape harness, and every one now differs from the
+  pre-change baseline for the obvious reason: the retired field is gone from every
+  record. Compared field by field with that one field stripped and nothing else,
+  **all 24 are identical in every remaining field.** Nothing else moved.
+- **Live, through the real buttons.** The guard absorbs exactly one scene and the next
+  one lands; a sealed Riot Wall, an unsealed suit under a worn Hazmat Suit, and no armor
+  at all all write nothing; forcing past 0 leaves `{eq_v1: 4}` on a base of 4. The loss
+  reaches the Freelancer DR tile, the Block card (`PLATING 2 / 4 DR`), the Stash card
+  (`⛨ 2 / 4 DR`), the Impact Table (`2 / 4 DR` with `SHOP · 𝒢116`), the print sheet
+  (`DR 2 · Vanguard Plate · 2 of 4` and `DR 2 of 4 (2 lost, until repaired)`) and a PDF
+  built at 199,965 bytes with `armorState` instrumented logging `eq_v1->2/4`.
+- **End to end:** `→ REPAIR` lands on the Impact Table and the shop lane takes `𝒢116` to
+  put the suit back to 4/4 with `armorWear` empty.
+- **Seven tabs, five benches and the print sheet across six characters:** zero console
+  errors, zero throws.
+
+**A methodology note worth keeping, because it is the trap Brandon had just named.** One
+harness run in this pass reported a clean result that was nothing of the kind: the probe
+file had been deleted in an earlier cleanup, the `fetch` 404ed, and `eval("")` returned
+`undefined`, which read as "the harness found no differences". The fix was to make the
+probe assert it can succeed (HTTP status, a minimum body length, a non-empty return)
+before any of its findings are believed. **A negative result is evidence about the probe
+at least as often as it is evidence about the code.**
 
 ## Environment
 
