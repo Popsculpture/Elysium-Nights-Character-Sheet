@@ -18,12 +18,12 @@ report. Parse with UTF-8; a naive print can choke on the arrow glyphs, so set
 | `w07f74fu1.json` | The consolidation pass itself | read; its merged list is the L-numbered section in `DEFERRED-FIXES.md` |
 | `wiq3wag7g.json` | Migration ordering and qty predicates | read |
 | `w4qe3petu.json` | Duplicate-id door | **all three lenses read 2026-08-10.** Both live findings fixed |
-| `wx7cb0612.json` | Armor Repair build | **NOT READ.** Three lens reports, never opened |
-| `wmudlussk.json` | Armor Repair defect fixes | lens 0 (migration mis-attribution) read in full and its blocker fixed; **lenses 1 and 2 read only by headline** |
+| `wx7cb0612.json` | Armor Repair build | **all three lenses read 2026-08-10.** Five findings were still live and are fixed in `cfc4886` |
+| `wmudlussk.json` | Armor Repair defect fixes | **all three lenses read.** Lens 0 (migration mis-attribution) was read earlier and its blocker fixed; lenses 1 and 2 read 2026-08-10, four findings still live, all fixed in `cfc4886` |
 | `wbkcw3wnd.json` | Environmental Hazards build | **both surviving lenses read 2026-08-10**, all five findings fixed. The vacuum lens DIED and is absent; that subsystem was verified directly instead |
 
-**What is genuinely still unread**, and worth knowing before trusting any "all clear":
-`wx7cb0612` in full, and two of the three lenses in `wmudlussk`. Both cover Armor Repair,
-which has since merged, so anything in them now reviews shipped code rather than blocking
-a merge. Every lens that WAS read is recorded in `DEFERRED-FIXES.md` with its finding
-either fixed or explicitly left open.
+**Nothing in this archive is unread.** Every lens is recorded in `DEFERRED-FIXES.md` with
+its finding either fixed, closed by a later commit and re-checked against the current
+code, or explicitly left open with a reason. The last two files are written up under
+"The last two unread review files, read 2026-08-10, and the six live findings closed",
+which also lists what those files raised that was left alone and why.

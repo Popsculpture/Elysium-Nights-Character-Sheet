@@ -2050,8 +2050,270 @@ classes with no console error.
 now advisory at all four Project creation sites where it used to be enforced at one, and
 no Project of any kind can complete with its materials unpaid.
 
-**Two lens reports from this round are unread**, in `tasks/wmudlussk.output`. Read them
-with the attribution fix.
+~~**Two lens reports from this round are unread**, in `tasks/wmudlussk.output`. Read them
+with the attribution fix.~~ **READ 2026-08-10.** See the section below; the archived copy
+is `review-findings/wmudlussk.json`.
+
+## The last two unread review files, read 2026-08-10, and the six live findings closed
+
+`review-findings/wx7cb0612.json` (all three lenses, never opened) and lenses 1 and 2 of
+`review-findings/wmudlussk.json`. Both cover Armor Repair, which merged in `ae06cb1`, so
+they reviewed shipped code rather than blocking a merge. **Nothing in the archive is
+unread now.**
+
+Between them they raise eighteen distinct items. Twelve were already closed by commits
+that landed after the reviews ran, and each of those was re-checked against the current
+code rather than taken on the log's word. **Six were still live, all six are now fixed in
+`cfc4886`,** each reproduced through the real UI before being touched and re-checked
+against its own repro after.
+
+### The six that were live
+
+**~~1. `tbComplete` re-entry MINTS Glimmer.~~ FIXED.** `wmudlussk` lens 2, and the worst
+thing in either file. **Severity: high, in-app, no import.** It took the Project OBJECT
+captured at render, spliced it out of the list by id, and then paid a refund read off
+that still-live object. A second fire recomputed `restored` as 0, because the suit was
+already whole, and paid the refund again. **Repro, one rendered `✓ COMPLETE` node fired
+four times** on an Anvil Frame at 2/5 with a secured `𝒢138` bench repair:
+`5000 -> 4862` (the legitimate repair), then **`5000`, `5138`, `5276`**. Every further
+fire adds another 138. `tbSecure` already carried exactly this guard ("a double-fire
+cannot double-charge") and `armorShopRepair` already re-read live; the one function that
+pays OUT had neither. **Now every read and every write happens inside one
+`tbSetProjects`, which re-finds the Project by id and returns without doing or saying
+anything when it is gone.** `p` is used for its id and nothing else. **After: `4862`
+across all four fires, one repair, and the later fires emit no toast.**
+
+The same re-entry handed out one Build item per fire off a single payment. That half was
+**pre-existing on main**, not introduced by Armor Repair, and it is closed by the same
+change: `Build Ablative Coating` fired four times off one node now yields **one** coating
+for one `𝒢225`, where it used to yield one per fire.
+
+**~~2. Abandoning a repair keeps the parts money.~~ FIXED.** `wmudlussk` lens 2.
+**Severity: medium, fully user-reachable, and it contradicts the rule the same branch had
+just written three lines above it.** **Repro:** `⚒ BENCH · 𝒢138`, `SECURE · 𝒢138`
+(`5000 -> 4862`), then `✕`. The Project is gone, the suit is still 2/5, and the 𝒢138 is
+simply gone with no refund and no warning; the confirm string mentioned only Progress.
+Meanwhile the identical zero-restore outcome reached through `COMPLETE` refunded. Two
+doors out of one room with opposite answers, and the one that kept the money is the one a
+player reaches when they cannot afford to finish. **After: `4862 -> 5000`, toast
+"Project abandoned; 𝒢138 in parts refunded", and the confirm now says the money comes
+back.** Re-firing the detached `✕` node cannot refund twice. **Build Projects are
+deliberately untouched:** their materials are consumed by the attempt and `COMPLETE` does
+not refund them either, so `✕` on a `Build Ablative Coating` still keeps the 𝒢225.
+Verified both ways in the same run.
+
+**~~3. A partial repair keeps the difference.~~ FIXED.** `wmudlussk` lens 2. The refund
+fired only when `restored` was exactly 0, but parts are priced per POINT. **Repro:** open
+a 3-point bench repair (`𝒢138`), secure it, repair the same suit 2 points at the shop
+first, then complete. The Project restores **1** point, the toast says so, and the wallet
+does not move: `𝒢138` in parts bought `𝒢46` of work and the other `𝒢92` was kept.
+**After: the refund is the unused share,** `floor(paid * (repairPoints - restored) /
+repairPoints)`, floored so rounding can never mint. Same repro now ends
+`4678 -> 4770`: `𝒢92` back, `𝒢46` spent, which is the listed one-point bench rate to the
+Glimmer. The all-or-nothing case is unchanged, because `restored` 0 makes the share the
+whole thing.
+
+**~~4. A shield announces its own destruction one box early.~~ FIXED, by giving shields
+the resolver they never had.** `wx7cb0612` lens 0, filed as F1 with F6 named as its root
+cause, and the lens was right about that. **Severity: medium, in-app, no import.**
+`markShieldWear` re-derived "boxes left" out in the view by adding the delta to
+`ch.shieldWear` a second time, after `store.update` had already added it to that same
+object (`store.update` mutates the record `store.active()` returns, which is the same
+object the render closed over). **Repro through the real `− WEAR` button, toast captured
+off the live node:** a 3-box Riot Shield on click 2 reads `wear {eq_sh1:2}`, **2 boxes
+left, alive, still granting its `1d6` Block die**, and toasts "Riot Shield is destroyed;
+the wreck is salvage." A 2-box Scrap Shield says it on the **first** click. The panel
+contradicted itself in one frame, and the toast is the only thing that tells a player the
+shield is gone.
+
+The fix is the one the lens asked for, not a patch to the arithmetic. **`EN.engine.shieldState(ch, key)`
+is now THE resolver** (`{key, name, item, boxesMax, spent, left, worn, alive, destroyed,
+emitter}`) and **`EN.engine.applyShieldWear(c, key, delta)` is THE writer**, returning
+what it did so the toast reads that rather than re-deriving anything. `defensiveLoadout`
+reads the resolver too, and carries the whole record as `d.defenseGear.shieldState` the
+way it already carried `armorState`. **After: the toast fires exactly once, on the click
+that actually destroys the shield, for both box counts, and a click past zero changes
+nothing and says nothing.** Two shields still hold their wear independently through the
+real buttons, and `+ REPAIR` runs through the same writer.
+
+One deliberate narrowing came with it: `shieldBoxesMaxOf` now requires
+`it.kind === "shield"`, where the old inline derivation accepted anything in the armor
+catalog and defaulted it to 3 boxes. That is what lets the migration use the resolver as
+a capacity cap, and the only state it changes is a non-shield sitting in
+`ch.equippedShield`, which grants no Block die and no Defense either way.
+
+**~~5. Out-of-range stored wear eats a paid repair whole.~~ FIXED at both ends.**
+`wx7cb0612` lens 0, F3. **Severity: medium, import and hand-edit only, but the money is
+real.** `migrateWearMap`'s `positiveInt` accepted any finite positive number, and
+`applyArmorDamage` added its delta to the RAW stored value rather than to the resolver's
+clamped one. The display was right and the write was not. **Repro, end to end through the
+real buttons:** import `armorWear: {eq_o1: 999}` on a base-5 Anvil Frame. It survives
+migration and every reload, displays correctly as 0/5 BREACHED, and then
+`⚒ REBUILD PROJECT · 𝒢460` secures, runs three Flawless intervals, completes, and the
+suit is **still 0/5 breached** while the toast announces "back to 5 of 5 DR". The writer
+had computed `clamp(999 - 5, 0, 5) = 5`. No refund fires either, because `restored`
+computed as 5.
+
+Fixed in two places on purpose. **The writer now applies its delta to `armorState().lost`,**
+which is the clamped answer, so the first write to any piece heals a bad stored value.
+That is the one-resolver rule applied to the writer's INPUT, not only to readers.
+**And `migrateWearMap` clamps to the piece's own ceiling,** so storage is honest rather
+than merely displayed honestly: a suit's `dr` for `armorWear` and `armorGuard`, a
+shield's `boxes` for `shieldWear`, both asked of the same resolvers every surface asks.
+**After: `999` migrates to `5` and `99` to `3`, and the same 𝒢460 rebuild leaves the suit
+at 5/5.** `applyShieldWear` heals the same way: a planted `99` on a 3-box shield takes one
+`+ REPAIR` to read 1 of 3.
+
+A key whose cap is **0** is dropped rather than clamped, which is the same ruling the
+block already applies to a key whose entry has left the stash: it names nothing that can
+wear. That is what removes an `armorWear` row parked on a Dagger, and a `shieldWear` row
+parked on a suit of armor.
+
+**~~6. The wear conversion depends on JSON key order.~~ FIXED with a second pass.**
+`wx7cb0612` lens 0, F4. **Severity: low, reachable on any half-converted file (hand-merged,
+or exported mid-refactor).** In one pass, whichever key reached an entry first claimed it
+and `out[key] != null` dropped the other, so the authoritative entry key lost half the
+time. **Repro through the real `importCharacter`:**
+
+    {"eq_d1":1, "Anvil Frame":4}   ->  {eq_d1: 1}
+    {"Anvil Frame":4, "eq_d1":1}   ->  {eq_d1: 4}
+    {"Riot Shield":2, "eq_s1":1}   ->  {eq_s1: 2}
+    {"eq_s1":1, "Riot Shield":2}   ->  {eq_s1: 1}
+
+Two logically identical records, two different numbers. **Rule 0 keys (unambiguously an
+entry already) are now resolved across the whole map FIRST, and only then do the name
+rules run.** The answer is a property of the record rather than of its serialization.
+**After: both armor orders land on `{eq_d1: 1}` and both shield orders on `{eq_s1: 1}`,**
+which is the entry key winning in both directions.
+
+### Three more from the same files, fixed in the same commit
+
+Smaller, and none of them a defect in the sense the six are, but all three are the record
+disagreeing with itself.
+
+- **~~The three wear maps are born on `Object.prototype`.~~ FIXED.** `wx7cb0612` lens 0,
+  F5. `blank()` declared them as plain literals and the `|| {}` fallbacks in `engine.js`
+  and `inventory.js` created plain ones, so a character born in-app carried three plain
+  maps until the next load, and `migrateWearMap` was the only thing that ever built them
+  null-prototype. **Measured on the shipped functions:** with a plain `armorGuard` and an
+  entry whose `id` is `toString`, `armorState().guard` reads **true** on a suit that was
+  never repaired, and `applyArmorDamage(+1)` returns `absorbed: true` **forever**, because
+  spending the guard is a `delete` on an inherited property. The same call against a
+  null-prototype map correctly stores `{"toString": 1}`. Fixed at every creation site,
+  and the second writer that made one of them (`c.armorGuard[p.repairKey] = true` in
+  `tbComplete`) is gone, replaced by `EN.engine.grantArmorGuard`. **Also fixed one level
+  down:** both maps are now read through `hasOwnProperty`, so the map's prototype cannot
+  decide the answer even if a caller hands in a literal.
+- **~~The untrained advisory prints on one of the two lanes this feature added.~~ FIXED.**
+  `wmudlussk` lens 1, its one finding, and it is fair. `engUntrained` was computed once
+  and used only in the damaged branch, so an untrained crafter saw `UNTRAINED +2 SNAG`
+  beside `⚒ BENCH · 𝒢138` and **nothing at all** beside the same suit's
+  `⚒ REBUILD PROJECT · 𝒢460`, which is Standard rather than Simple, expects Proficient
+  just the same, and takes the same +2 Snag. Option (b)'s whole justification is that the
+  expectation is communicated and paid for rather than enforced, and it was being
+  communicated on one lane. **The chip is now computed per lane against that lane's own
+  skill and tier,** which the lens specifically asked for: the rebuild reads
+  `CRAFT().skillForItem(st.item)`, so a Resonant Carapace says **Esoterica** and not
+  Engineering. **Verified by toggling proficiencies:** both untrained shows both chips,
+  Engineering proficient leaves only the Esoterica one, Esoterica trained leaves only the
+  Engineering one, both trained shows none.
+- **~~A 4 DR Artifact repairs for 𝒢0.~~ FIXED.** `wx7cb0612` lens 1 filed this as a
+  smaller observation rather than a finding, and it is a real hole. `listPrice` reads a ◎
+  figure only inside its leased branch, so an UNLEASED row with `price: 0` returns 0.
+  **Measured: the Reliquary Shell is the one armor row in the catalog with a listed value
+  of zero** (`price: 0, nexus: "◎2+"`), and it repaired at `𝒢0` a point and rebuilt for
+  `𝒢0`. It now reads the ◎ figure at the same reference rate the leased branch already
+  uses, which the economy chapter states is the ledger value of an object, and that is
+  exactly the question repair pricing asks. **`𝒢20,000` listed, `𝒢2,000` a point,
+  `𝒢10,000` to rebuild**, at Relic tier under Esoterica. **No-op proof: all 327 catalog
+  items were priced through the old function and the new one, and exactly two move**, the
+  Reliquary Shell and `Martyr's Halo`, a focus with the same `price: 0, nexus: "◎2+"`
+  shape that no repair lane prices today. Every leased row is unchanged to the Glimmer
+  (Sentinel Issue 1,000, Bailiff Rig 3,000, SkinPlan Daywear 500, Sentinel Barrier 600),
+  and so is everything unleased with a real price.
+- **~~Shield Durability leaves the app on neither the print sheet nor the PDF.~~ FIXED.**
+  `wx7cb0612` lens 0, the second half of F6. Armor DR prints its current value in three
+  places and the shield printed nothing, though the two are declared one mechanic. Both
+  exports now carry it: the Equipped line reads `Shield: Riot Shield (1 of 3 boxes)` and
+  the inventory detail reads `Durability 1 of 3 (2 marked)`, or `(destroyed)` at zero.
+  Verified on the rendered print sheet and by instrumenting both resolvers during a real
+  `EN.pdfExport.build`, which logged `AR eq_ar->2/5`, `SH eq_sh->1/3`, `SH eq_sh2->0/2`
+  into a 205,017 byte document.
+
+### What was already closed, re-checked rather than assumed
+
+Twelve items in these files describe code that later commits changed. Each was verified
+against the current source by finding the quoted code, not by trusting the log.
+
+- **`wx7cb0612` lens 0, F2: `if (!ch.proficiencies) return;` puts every step-5 map behind
+  an early return.** Closed by the `migrate()` hardening pass (`28f45ce`), which turned it
+  into a guard around only the proficiency conversion. This is L12, and the lens hit it
+  independently. Its companion observation, that `keyToName` returns the key itself when
+  no entry matches so a name-keyed piece keeps reporting a real base, is no longer
+  reachable for armor: armor is non-stackable, every owned armor row gets an `eq_` id in
+  the split, and a wear key that names no live entry is pruned. The shape it needs cannot
+  survive a load.
+- **`wx7cb0612` lens 0, the per-ROW versus per-PIECE hole,** which that lens reproduced
+  and correctly reported as already disclosed. Closed by `f739e4b`.
+- **`wx7cb0612` lens 1, findings 1 to 4, and `wx7cb0612` lens 2, findings 2 and 3:** the
+  bench tier gate, leased armor priced off the deposit, both lanes all-or-nothing, and a
+  repair Project completing without securing parts. All four are the branch fixes recorded
+  above and merged in `ae06cb1`. `wmudlussk` lens 1 re-verified the gate independently and
+  found (b) genuinely applied at all four Project creation sites.
+- **`wx7cb0612` lens 2, finding 1: name-keyed wear lands on a different piece than the
+  equip slots do,** because `nameToIds[e.name] = ids` assigns rather than accumulates, so
+  `firstId()` returns the LAST such row while the wear map indexed the first. Closed by
+  the attribution redesign (`dbe4f09`): the wear rules no longer carry their own index at
+  all. Rule 1 attributes a name key to the EQUIPPED piece, and the equip slot itself
+  resolves through `firstId`, so the two now name the same entry by construction rather
+  than by two indexes agreeing. Re-checked on the lens's own shape.
+- **`wx7cb0612` lens 2's two non-findings** (a non-array `ch.equipment` wiping the roster,
+  and the plain-literal maps) are L10, closed by `28f45ce`, and F5, closed here.
+
+### Still open out of these files, deliberately
+
+- **`ownsFabRig` grants free bench parts for merely OWNING the rig.** The manuscript says
+  "with stock on hand" and the item's own line says "when materials are available";
+  neither is modelled, because the app has no consumable stock. An author call, not a
+  defect.
+- **The `↶ UNDO` button restores a point of DR for free, without limit, and stays enabled
+  on a breached suit.** It is symmetric with the manual `− DR` beside it and reads as a
+  deliberate tracker affordance for a misclick, which is what its tooltip says. Left alone.
+- **`nameToIds` is last-write-wins** for two rows sharing one NAME. Unchanged, and now
+  genuinely inert for the wear maps, since attribution stopped depending on it.
+- **The shop lane consumes no calendar time.** Nothing else in the app charges a Downtime
+  period either, so this is consistent rather than a gap.
+
+### Verification run for these six
+
+Own tab on `http://localhost:8777`, forced reload before every reading, every defect
+driven through the real DOM buttons.
+
+- **The no-op proof, measured rather than asserted.** Twenty-four migration shapes through
+  the real `EN.store.load()` with `Math.random` stubbed to a seeded LCG, each written back
+  to storage and re-loaded twice more. **Zero throws, all twenty-four byte-stable across
+  three loads, `Object.prototype` clean.** The identical harness was then run against the
+  pre-change code with the same seed: **21 of 24 are byte-identical, and the three that
+  move are exactly the three these fixes target** (the out-of-range clamp, the key-order
+  case, and wear parked on a non-armor entry). Nothing else moved, including the
+  attribution shapes, the duplicate-id shape, the racked shape, the rig shape and the
+  qty-splitting shapes.
+- **Both writers forced in both directions.** `+99` stops at 0/5 storing 5, `+5` again
+  stays, `-99` lands exactly 5/5 and deletes the key, `-5` again stays, a granted guard
+  absorbs exactly one point and is spent, the next point lands, and delta 0, `NaN`,
+  `-Infinity`, a missing entry and a non-armor entry are all inert. `applyShieldWear`
+  refuses an armor entry outright (`boxesMax 0`, `changed false`, nothing stored).
+- **Seven tabs, five Workbench benches, Stash, Chrome, Gray Market and the print sheet
+  across five characters** (damaged suit and worn shield, breached suit and destroyed
+  shield, the Reliquary Shell, a bare character, and a legacy id-less name-keyed record):
+  **zero console errors, zero throws.**
+- **A relic-tier rebuild is coherent.** A breached Reliquary Shell opens
+  `Rebuild Reliquary Shell`, Relic or Breakthrough, Esoterica, `𝒢10,000` in parts, target
+  10 through the tier table's existing `|| 10` fallback for a null target, Snag 5, and the
+  card prints `+2 UNTRAINED`.
+- **Not seen on screen:** the browser pane was not displayed in this session, so no
+  screenshot was taken. Every reading above is text off the live DOM, the live toast node
+  and the live store, which is the more precise form, but nobody has looked at the pixels.
 
 ## Environment
 
