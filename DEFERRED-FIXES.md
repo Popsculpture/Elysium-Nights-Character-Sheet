@@ -546,9 +546,10 @@ The list below is written as an archaeological record: entries are struck and an
 in place rather than deleted, so the reasoning survives. That makes it a poor to-do list
 at a glance. What is ACTUALLY still open, of the thirteen:
 
-**Open: L1, L2, L3, L4, L5, L6, L13.** L1 is the only one reachable without an import and
-is the one to take first. L13 was re-verified against the merged code and is still true
-and still inert.
+**Open: L2, L3, L4, L5, L6, L13.** L13 was re-verified against the merged code and is
+still true and still inert. **L1 is CLOSED (`51102f8`, 2026-08-10);** it was the only one
+reachable without an import, which is why it went first. L2 is now the only remaining
+finding a player can hit without hand-authoring a record.
 
 **Closed: L7, L8, L9, L10, L11, L12.** Each is struck below and says which commit closed
 it and what was measured.
@@ -559,10 +560,62 @@ hundred lines. Treat every `file.js:NNN` as a hint about WHICH file, and find th
 the quoted code, which is still accurate. The same applies to the sections above this one.
 
 
-**L1. One Talent in two Universal Upgrade slots double-counts its unarmed step.**
-`app/js/builder.js:2096-2107` never filters talents already sitting in another slot,
-while `app/js/builder.js:2148-2151` (`talentUpgradePicker`) does; `activeTalents` at
-`app/js/engine.js:743-753` pushes one entry per slot with no dedupe.
+**~~L1. One Talent in two Universal Upgrade slots double-counts its unarmed step.~~**
+**FIXED 2026-08-10 in `51102f8`.** The original write-up follows, and it was accurate;
+what it understated is the blast radius, which is three consumers rather than the unarmed
+die alone.
+
+**Reproduced first, through the real pickers,** on a level 6 character with empty hands:
+Street Scrapper in Universal Upgrade slots 2 and 4 gave `inc 2` and **1d6** off a bare
+fist, and adding its Upgrade in slot 6 gave `inc 4` and **1d10**, exactly as written. The
+Talent also rendered **twice** in the features list, which the original report did not
+mention.
+
+**Root cause is one function, and that is why one change closes all of it.**
+`engine.activeTalents` pushed an entry per SLOT, and all three of its consumers read that
+one list: `unarmedIncreases` pushed two step sources and two Upgrade sources (the Upgrade
+push sits INSIDE the per-entry loop, which is where `inc 4` comes from),
+`unarmedRiders` pushed two riders, and `derive()` pushed two feature rows. It now yields
+one entry per Talent, **earliest slot winning**, because that is the level the character
+gained it at and the level the play sheet prints beside the feature. Sorted numerically
+rather than trusting object key order.
+
+**The picker half, which stops it being created.** `talentPicker` now refuses a Talent
+held in another slot, **disabled and labelled** `(already taken at Level N)` rather than
+hidden, which is what that same picker already does for a Talent whose requirements are
+unmet: a player looking for it should learn why it is unavailable, not wonder where it
+went. `talentUpgradePicker` has always done this for Upgrades through `uuUpgradesTaken`;
+this is `uuTalentsHeldElsewhere`, the same rule for the base Talent. It is dynamic
+(moving the other slot off the Talent frees it again, verified) and a slot's own current
+pick always stays selectable, so an edit elsewhere cannot strand it.
+
+**Existing records are told, not silently corrected.** A character built before this can
+be carrying a duplicate and nothing on the sheet showed it, so the offending slot now
+reads "This slot is doing nothing: X is already taken at Level N ... Pick something else
+here to get the choice back." **Deliberately NOT a `d.warnings` entry:** that list renders
+on the dossier step under the heading `INCOMPLETE:`, and such a record is not incomplete,
+it is complete with a wasted choice. The slot is also the one place the player can act on
+it. Certification does not gate on `warnings` either way, so nothing is blocked.
+
+**Both halves canonicalize through the same lookup,** because `activeTalents` accepts a
+Talent named by its KEY or by its display NAME, so `"Street Scrapper"` and
+`"street-scrapper"` in two slots is one Talent twice and has to read as one. An
+unresolvable key raises no notice: that slot is wasted too, but for a different reason,
+and the message would name a Talent nobody can look up.
+
+**Verification.** Thirteen derived shapes fingerprinted WHOLE against the pre-change code.
+**The seven without a duplicate are byte-identical; the only six that moved are the six
+carrying one,** each from the wrong number to the right one: base twice `1d6 -> 1d4`, base
+twice plus Upgrade `1d10 -> 1d6`, three copies `1d8 -> 1d4`, a doubled Cybernetic Surge
+rider to one, and both the reverse-slot-order and display-name spellings resolving to the
+Level 2 slot. Driven live: the picker refuses the second pick and frees it when the first
+slot moves off, two different Talents are unaffected and raise nothing, and the
+already-broken record reads `1d6` / `inc 2` with one feature row and the notice on slot 4
+only. Seven tabs, the print sheet and five PDFs across five shapes, zero console errors.
+
+The original write-up: `app/js/builder.js:2096-2107` never filters talents already sitting
+in another slot, while `app/js/builder.js:2148-2151` (`talentUpgradePicker`) does;
+`activeTalents` at `app/js/engine.js:743-753` pushes one entry per slot with no dedupe.
 **Severity: medium, and the most player-visible item here, because it needs no import.**
 Failing scenario: pick Street Scrapper in Universal Upgrade slots 2 and 4 and you get
 `inc 2` and a `1d6` punch off a bare fist; add its Upgrade in slot 6 and the Upgrade
