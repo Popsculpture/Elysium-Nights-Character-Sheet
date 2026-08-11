@@ -1903,6 +1903,17 @@ EN.builder = (function () {
       wrap.appendChild(el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [attrSelect(0), el("span.dim3", { text: "+" }), attrSelect(1)]));
       wrap.appendChild(el("p.help", { style: { marginTop: "4px" }, text: "Pick the same Attribute twice to raise it by 2, or two different Attributes for +1 each (max 20)." }));
     } else if (cur && cur.type === "talent") {
+      /* If an EARLIER slot already holds this Talent, this slot is buying nothing: a
+         Talent applies once, and the engine counts it once. Nothing else on the sheet
+         shows that, and the picker allowed it until this was closed, so a character
+         built before then can still be carrying one. Said here rather than in
+         d.warnings, which renders under "INCOMPLETE:" and would call a complete record
+         broken. The pick is left exactly as it is; re-picking it is the player's. */
+      var dupe = (eng.duplicateTalentSlots ? eng.duplicateTalentSlots(ch) : [])
+        .find(function (x) { return String(x.level) === String(L); });
+      if (dupe) wrap.appendChild(el("p.help", { style: { margin: "0 0 6px", color: "var(--warn)" },
+        text: "This slot is doing nothing: " + dupe.name + " is already taken at Level " + dupe.firstAt
+            + ", and a Talent applies once. Pick something else here to get the choice back." }));
       wrap.appendChild(talentPicker(ch, L, cur.talent));
     }
     return wrap;
@@ -2091,6 +2102,15 @@ EN.builder = (function () {
         }
       });
     } }, [el("option", { value: "", text: "- choose a Talent -" })]);
+    /* A Talent held in ANOTHER slot cannot be taken again. It is not a quantity you
+       stack: taking it twice spends a level-up on nothing, and before this the engine
+       counted it twice, so Street Scrapper in two slots punched 1d6 off a bare fist.
+       talentUpgradePicker has always refused an Upgrade it had already taken
+       (`uuUpgradesTaken`); this is the same rule for the base Talent.
+       DISABLED with the reason rather than hidden, which is what this picker already
+       does for a Talent whose requirements are unmet: a player who is looking for it
+       should find out why it is unavailable, not wonder where it went. */
+    var heldElsewhere = uuTalentsHeldElsewhere(ch, L);
     Object.keys(cats).forEach(function (cat) {
       var grp = el("optgroup", { label: cat });
       cats[cat].forEach(function (t) {
@@ -2098,11 +2118,15 @@ EN.builder = (function () {
         // A talent already sitting in this slot stays selectable even if it no
         // longer qualifies, so a later edit elsewhere cannot strand a pick the
         // player cannot see or change.
-        var blocked = !g.ok && current !== t.key;
+        var dupeAt = current === t.key ? null : heldElsewhere[t.key];
+        var blocked = (!g.ok && current !== t.key) || !!dupeAt;
+        var why = dupeAt ? "already taken in the Level " + dupeAt + " slot; a Talent applies once"
+                         : (!g.ok ? "Needs " + g.unmet.join(", ") : null);
         grp.appendChild(el("option", {
           value: t.key, selected: current === t.key, disabled: blocked,
-          title: blocked ? "Needs " + g.unmet.join(", ") : (t.requirements || ""),
-          text: blocked ? t.name + "  (needs " + g.unmet.join(", ") + ")" : t.name
+          title: why || (t.requirements || ""),
+          text: dupeAt ? t.name + "  (already taken at Level " + dupeAt + ")"
+              : blocked ? t.name + "  (needs " + g.unmet.join(", ") + ")" : t.name
         }));
       });
       sel.appendChild(grp);
@@ -2136,6 +2160,26 @@ EN.builder = (function () {
   function uuTalentsOwned(ch) {
     var u = ch.universalUpgrades || {}, o = [];
     Object.keys(u).forEach(function (k) { var x = u[k]; if (x && x.type === "talent" && x.talent) o.push(x.talent); });
+    return o;
+  }
+  /* {talentKey: level} for every Talent held in a slot OTHER than this one, so the
+     picker can refuse a second copy and name the slot that already has it. Same
+     shape and same purpose as uuUpgradesTaken one function down, which has always
+     done this for Upgrades. Null-prototype: it is keyed on talent keys out of a save
+     file, and a Talent named "constructor" would otherwise read as already held. */
+  function uuTalentsHeldElsewhere(ch, exceptL) {
+    var u = ch.universalUpgrades || {}, o = Object.create(null);
+    Object.keys(u).sort(function (a, b) { return (Number(a) || 0) - (Number(b) || 0); }).forEach(function (k) {
+      if (String(k) === String(exceptL)) return;
+      var x = u[k];
+      if (!x || x.type !== "talent" || !x.talent) return;
+      // keyed on the resolved KEY, because a slot can name a Talent by its display
+      // name and the option values here are keys; engine.activeTalents accepts either
+      // and this has to agree with it about what counts as the same Talent
+      var t = (EN.talents || []).find(function (y) { return y.key === x.talent || y.name === x.talent; });
+      var key = t ? t.key : x.talent;
+      if (!o[key]) o[key] = Number(k) || 1;
+    });
     return o;
   }
   function uuUpgradesTaken(ch, exceptL) {

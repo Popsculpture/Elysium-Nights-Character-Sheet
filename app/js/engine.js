@@ -761,16 +761,61 @@ EN.engine = (function () {
   // Talents the character has taken via Universal Upgrades (type "talent"), resolved
   // against EN.talents. Folded into d.features so the play sheet and print sheet
   // surface them with their action type and rules text.
+  /* ONE ENTRY PER TALENT, not one per slot. A Talent is something you have, not a
+     quantity you stack: nothing in the ruleset lets the same Talent apply twice, and
+     the Upgrade picker has always refused to offer one it had already taken. The
+     talent picker did not, so the same Talent could sit in two Universal Upgrade
+     slots, and this function pushed an entry for each.
+
+     Every consumer then counted it twice, because they all read this one list:
+     unarmedIncreases pushed two step sources AND two Upgrade sources, unarmedRiders
+     pushed two riders, and derive() rendered the Talent twice on the play sheet.
+     Measured on a level 6 character with empty hands: Street Scrapper in slots 2 and
+     4 punched 1d6 off a bare fist at `inc 2`, and adding its Upgrade in slot 6 made
+     that `inc 4` and 1d10. Harmless before the unarmed rewrite, because Street
+     Scrapper used to SET a die rather than step one, so a second copy set it again.
+
+     The EARLIEST slot wins, since that is the level the character actually gained it
+     at, and `level` is what the play sheet prints beside the feature. Sorted
+     numerically rather than trusting key order, because these are object keys. */
   function activeTalents(ch) {
-    var ups = (ch && ch.universalUpgrades) || {}, out = [];
-    Object.keys(ups).forEach(function (lvl) {
-      var u = ups[lvl];
-      if (u && u.type === "talent" && u.talent) {
+    var ups = (ch && ch.universalUpgrades) || {}, out = [], seen = Object.create(null);
+    Object.keys(ups)
+      .sort(function (a, b) { return (Number(a) || 0) - (Number(b) || 0); })
+      .forEach(function (lvl) {
+        var u = ups[lvl];
+        if (!u || u.type !== "talent" || !u.talent) return;
         var t = (EN.talents || []).find(function (x) { return x.key === u.talent || x.name === u.talent; });
-        if (t) out.push({ level: Number(lvl) || 1, talent: t });
-      }
-    });
+        if (!t || seen[t.key]) return;
+        seen[t.key] = 1;
+        out.push({ level: Number(lvl) || 1, talent: t });
+      });
     return out;
+  }
+  /* The slots that hold a Talent some EARLIER slot already holds. They are spent
+     choices buying nothing, and a player cannot see that from the sheet, so the
+     builder says so rather than leaving them to wonder why the second pick did
+     nothing. Reachable with no import: the picker allowed it until now, so a
+     character built before this can be carrying one. */
+  function duplicateTalentSlots(ch) {
+    var ups = (ch && ch.universalUpgrades) || {}, seen = Object.create(null), dupes = [];
+    Object.keys(ups)
+      .sort(function (a, b) { return (Number(a) || 0) - (Number(b) || 0); })
+      .forEach(function (lvl) {
+        var u = ups[lvl];
+        if (!u || u.type !== "talent" || !u.talent) return;
+        // Canonicalize exactly the way activeTalents does, or the two disagree about
+        // what a duplicate is. A record can name a Talent by its KEY or by its display
+        // name (activeTalents accepts either), so "Street Scrapper" and
+        // "street-scrapper" in two slots is one Talent twice and has to read as one.
+        // An unresolvable key is skipped: that slot is wasted too, but for a different
+        // reason, and this warning would name a Talent nobody can look up.
+        var t = (EN.talents || []).find(function (x) { return x.key === u.talent || x.name === u.talent; });
+        if (!t) return;
+        if (seen[t.key]) dupes.push({ level: Number(lvl) || 1, talent: t.key, name: t.name, firstAt: seen[t.key] });
+        else seen[t.key] = Number(lvl) || 1;
+      });
+    return dupes;
   }
   // Talent keys whose Level 6+ Upgrade has been unlocked via a Universal Upgrade slot.
   function talentUpgradeKeys(ch) {
@@ -2254,6 +2299,11 @@ EN.engine = (function () {
     if (!lin) warnings.push("No lineage selected.");
     if (lin && !(ch.lineageFeatures || []).length) warnings.push("No lineage feature chosen.");
     if (!bg) warnings.push("No background selected.");
+    /* A duplicate Talent slot is deliberately NOT a `warnings` entry. That list renders
+       on the dossier step under the heading "INCOMPLETE:", and a record carrying one is
+       not incomplete, it is complete with a wasted choice. It is surfaced on the slot
+       itself in the Advance step instead, which is both honest about what it is and the
+       one place the player can act on it. `duplicateTalentSlots` is exported for that. */
 
     return {
       level: level, caliber: cal, xp: ch.xp || 0,
@@ -2597,6 +2647,9 @@ EN.engine = (function () {
     gearFloorTier: gearFloorTier, effectiveGearTier: effectiveGearTier,
     sizeFromHeightFt: sizeFromHeightFt, lineageHeightFt: lineageHeightFt,
     activeLineageFeatures: activeLineageFeatures, splitTalentText: splitTalentText, leaseLapsed: leaseLapsed, itemLoad: itemLoad,
+    // the Universal Upgrade slots holding a Talent an earlier slot already holds, so
+    // the builder can say which slot is buying nothing
+    duplicateTalentSlots: duplicateTalentSlots,
     unarmedBasePick: UNARMED_BASE_PICK,
     isUnarmedAugmentName: isUnarmedAugmentName,   // gear that augments a punch instead of being a weapon
     stepDie: stepDie,   // the picker walks the ladder too, so each option can show what it really deals
