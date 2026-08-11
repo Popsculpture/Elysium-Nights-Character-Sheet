@@ -499,8 +499,13 @@ it mid-fix. Comparing dice sizes would have kept a Ballistic Bulwark's `1d8` com
 for the Parry, just fairly instead of unfairly. The shield is not a Parry source at all.
 See the L2 entry for what the books actually say and what was built.
 
-**GROUP B: the Weapons panel gates and counts on `equippedNames`, which is neither the
-list it renders nor the list the rules ask about.** Members L5 and L6.
+**~~GROUP B: the Weapons panel gates and counts on `equippedNames`, which is neither the
+list it renders nor the list the rules ask about.~~** **CLOSED 2026-08-11 in `5340506`,**
+except L5's melee-weapon half, which is a modelling decision and is written up under L5.
+The diagnosis was exactly right and the scope was three times too small: a survey of every
+`equippedNames` consumer found **seven** sites asking the wrong question, not three, and
+the two worst were on the print sheet and in the PDF rather than on screen. The original
+prescription follows; read it with the corrections in the L5 and L6 entries.
 `app/js/combat.js:2940` suppresses unarmed augments from the weapon rows, but
 `app/js/combat.js:3095` (unarmed row gate), `:3127` (empty state) and `:3414` (tab
 badge) all still count them, and the gate at `:3095` has no `reach` term.
@@ -548,12 +553,13 @@ The list below is written as an archaeological record: entries are struck and an
 in place rather than deleted, so the reasoning survives. That makes it a poor to-do list
 at a glance. What is ACTUALLY still open, of the thirteen:
 
-**Open: L3, L4, L5, L6, L13.** L13 was re-verified against the merged code and is still
-true and still inert. **L1 is CLOSED (`51102f8`) and L2 is CLOSED (`51d51ad`), both
-2026-08-10 and 2026-08-11;** they were the two reachable without an import, which is why
-they went first. **Nothing still open in this list can be reached without hand-authoring
-or importing a record**, except the half of L5 that is a feature doing nothing (a
-reach-only character losing the unarmed row).
+**Open: L3, L4, L13, and one half of L5.** L13 was re-verified against the merged code
+and is still true and still inert. **Closed: L1 (`51102f8`), L2 (`51d51ad`), L5's first
+half and L6 (both `5340506`).** L5's remaining half, character-granted reach on melee
+weapons, is not a defect to fix but a modelling decision about how three differently
+scoped reach grants compose; it is written up in the L5 entry and waiting on Brandon.
+**Nothing still open here can be reached without hand-authoring or importing a record**,
+except that reach decision, which is a feature doing nothing rather than a wrong number.
 
 **Closed: L7, L8, L9, L10, L11, L12.** Each is struck below and says which commit closed
 it and what was measured.
@@ -742,8 +748,46 @@ Three faces, one block:
 claiming a step it does not move? **Not tracked** (`DEFERRED-FIXES.md` asks for review
 of the `CYBER_UNARMED` and step tables, which is adjacent but not this).
 
-**L5. A reach-only character loses the whole unarmed row, so the reach chip is dead code
-whenever a weapon is held.** GROUP B. `app/js/combat.js:3095` has no `reach` term; the
+**~~L5. A reach-only character loses the whole unarmed row.~~** **FIRST HALF FIXED
+2026-08-11 in `5340506`. The MELEE-WEAPON half is still open and is now a stated
+decision rather than an oversight; see "Melee weapon reach" below.**
+
+The gate now tests `uStrike.reach.spaces` alongside replacers, increases and riders, so
+a Verdine Arboreal with `Canopy Reach` and a Longsword gets the unarmed row and its
+`+1 reach` chip. **Before:** the Longsword row only, no unarmed row, the feature's one
+mechanical grant rendered nowhere. **After:** `Unarmed Strike +9 ... 1 Bludgeoning + Body
+mod` carrying `PLUS +1 reach`. It is a thin row to sit beside a Longsword, and that is
+accepted deliberately: it is the only place on that tab the feature surfaces.
+
+**MELEE WEAPON REACH, and why it did not ship with it.** The log said this "should be
+fixed in the same sitting or the feature stays half dead", and that was written believing
+it was one number. A survey of the data found **three grants with three different
+scopes**, and a single `d.meleeReachBonus` added to every melee row is correct for only
+the first:
+
+1. **Canopy Reach** (`app/data/species.js`, lineage): "+1 space of reach" to unarmed
+   strikes **and melee weapons**. Unconditional, every melee weapon.
+2. **Staff & Spear Master, Level 6+ Upgrade** (`app/data/talents.js`): "your reach with
+   **reach weapons** extends an additional 1 space". Only weapons that already carry a
+   Reach trait, plus staffs. Wiring this as a flat bonus would silently give a Longsword
+   +1 reach.
+3. **Extended Haft** (`app/data/weapon_parts.js`): "Grants or increases Reach by 1",
+   keyed on `ch.weaponParts[weaponName]`, so it is **per weapon instance**. Wiring this
+   at character level would give the haft's reach to every melee weapon owned.
+
+There is also no place for the number to land cleanly. `normalizeWeapon(it)` takes the
+CATALOG item and no character, and its whole reach logic is
+`rangeDisplay = String(1 + (Reach n from the item's range string))`. The row prints that
+number beside a traits chip taken straight off the catalog, so moving the number alone
+gives a Quarterstaff reading `REACH 3` next to a chip saying `Reach 1`; the two have to
+move together or the bonus needs its own source chip, the way the unarmed picker's
+`+1 reach` chip names its sources. Reach is displayed at seven places across four files
+and used mechanically at none, since the app has no grid or positioning code.
+
+So this is a modelling decision about how reach grants compose, not a number to add, and
+it is Brandon's. **Not tracked as a defect; recorded as a decision.**
+
+The original write-up: GROUP B. `app/js/combat.js:3095` has no `reach` term; the
 picker guard at `app/js/combat.js:1493` does count `strike.reach.spaces`, and the chip
 is at `:1538-1540`. **Severity: low to medium.** Failing scenario: Verdine Arboreal with
 `Canopy Reach`, Longsword equipped. `d.unarmed.reach = {spaces:1, sources:["Canopy
@@ -758,13 +802,70 @@ identically with and without the feature. That second half is pre-existing and o
 the seven findings, but it should be fixed in the same sitting or the feature stays half
 dead. **Not tracked.**
 
-**L6. The Weapons panel says you are armed when you are not.** GROUP B. Three sites
-count `equippedNames.length` while `app/js/combat.js:2940` suppresses unarmed augments
-from the rows: `:3095` (gate fallback), `:3127` (empty-state hint) and `:3414` (tab
-badge). **Severity: low, cosmetic, but on screen.** Failing scenario: equip only
-Knuckles and Shock Gloves. The tab reads `WEAPONS (2)`, zero weapon rows render, and the
-"No weapons equipped; hit EQUIP on a weapon" hint is suppressed. With Knuckles alone it
-reads `WEAPONS (1)` beside zero rows. **Not tracked.**
+**~~L6. The Weapons panel says you are armed when you are not.~~** **FIXED 2026-08-11 in
+`5340506`, and it was not cosmetic and not confined to the panel.** The original
+write-up follows.
+
+**Seven sites, not three.** A survey of every `equippedNames` consumer found four more
+asking the same wrong question: the reorder arrows' bounds test, the arrows' render
+condition, and the Attacks tables in **both exports**.
+
+**The two on paper are the ones that mattered, and neither finding mentioned them.**
+`printsheet.js` and `pdfexport.js` each hold their own private copy of the weapon-name
+resolver, neither filtered, and **neither export has ever read `d.unarmed` at all**
+(a case-insensitive grep for "unarmed" across both files returned zero hits). So a
+Knuckles-only Freelancer exported a sheet whose only attack line was
+`Knuckles | +5 | 1d4 Bludgeoning`, strictly worse than the punch it improves and the
+very row the app suppresses on screen, while the attack they actually have appeared
+nowhere. A bare-handed Freelancer exported a **blank Attacks table**. Filtering the
+augments out without also printing the strike would have made that worse, so both
+exports now do both. `equippedWeaponNames` itself is deliberately left unfiltered: the
+Equipped / Worn line is right that the Knuckles are on you. It was the attack PROFILE
+that was the lie, not the presence.
+
+**`realWeaponNames` is defined as "names that produce a row", not "names that are not
+augments".** The row loop drops a name for two reasons, and a count built on the augment
+test alone stays wrong for the other: an equipped name the catalog cannot resolve renders
+nothing and was still counted. That shape is import-only, which is exactly where the rest
+of the open findings live.
+
+**Two traps the survey caught before they were written.**
+- **The augments must stay in `ch.equippedWeapons`.** `engine.unarmedGearOnHands` reads
+  that array to decide whether Knuckles steps the die at all, so implementing the filter
+  at a write site would have silently stopped the augment augmenting, dropping the strike
+  back to a flat 1 with no error. The fix is display-only everywhere.
+- **The reorder arrows keep using `equippedNames`.** Their index is handed to
+  `moveWeaponName`, which swaps one slot of the raw stored array; an index from a
+  filtered list would move the wrong slot. Left alone rather than half-changed, and
+  recorded here so the inconsistency is deliberate. (Separately and pre-existing: that
+  swap moves one slot at a time, so reordering past a hidden augment takes two presses.)
+
+**The empty state needed a second branch, not just un-suppressing.** Showing
+"No weapons equipped; hit ⚔ EQUIP on a weapon" to a player who just pressed EQUIP on
+their Knuckles trades a wrong count for a wrong instruction, and the Inventory toast had
+just told them "it's live in the Attacks list on the Freelancer tab". Augment-only now
+names the augments and points at the strike row they improved, and that toast tells the
+truth for an augment too.
+
+**One correction to the finding, in its favour.** The gate change is a no-op for L6's own
+scenario: Knuckles pushes an increase, so the unarmed row was already rendering. The
+visible L6 changes are the badge, the empty state and the exports.
+
+**Verification.** Eleven loadouts, the Weapons tab body and the printed Attacks table
+captured before and after. Every badge that moved was one of the four that was lying
+(`(1)->(0)`, `(2)->(0)`, `(2)->(1)`, and `(1)->(0)` for an uncatalogued name); six were
+unchanged. Every printed-table diff is the intended one, and the two loadouts that should
+not move are byte-identical. The PDF was instrumented to prove both new paths execute
+rather than merely not throwing. Nine characters across seven tabs, five Actions
+sub-tabs, the print sheet and nine PDFs: zero console errors.
+
+The original write-up: GROUP B. Three sites count `equippedNames.length` while
+`app/js/combat.js:2940` suppresses unarmed augments from the rows: `:3095` (gate
+fallback), `:3127` (empty-state hint) and `:3414` (tab badge). **Severity: low,
+cosmetic, but on screen.** Failing scenario: equip only Knuckles and Shock Gloves. The
+tab reads `WEAPONS (2)`, zero weapon rows render, and the "No weapons equipped; hit EQUIP
+on a weapon" hint is suppressed. With Knuckles alone it reads `WEAPONS (1)` beside zero
+rows. **Not tracked.**
 
 **~~L7. Shield Durability is keyed on the shield's NAME, so two shields share one wear
 track and a re-bought shield arrives already worn.~~** **FIXED in step 5, in the same
