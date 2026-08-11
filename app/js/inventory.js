@@ -133,7 +133,13 @@ EN.inventoryView = (function () {
       var i = c.equippedWeapons.indexOf(key);
       if (i === -1) c.equippedWeapons.push(key); else c.equippedWeapons.splice(i, 1);
     });
-    toast(on ? entry.name + " equipped; it's live in the Attacks list on the Freelancer tab." : entry.name + " unequipped.");
+    // An unarmed augment gets no row of its own on the Attacks list, so promising one
+    // sets the player looking for something that will never appear. It DOES arrive,
+    // folded into the unarmed strike, which is what to point at.
+    var aug = EN.engine.isUnarmedAugmentName && EN.engine.isUnarmedAugmentName(entry.name);
+    toast(!on ? entry.name + " unequipped."
+      : aug ? entry.name + " equipped; it augments your unarmed strike on the Freelancer tab rather than listing as a weapon of its own."
+            : entry.name + " equipped; it's live in the Attacks list on the Freelancer tab.");
   }
   // Defensive gear is single-slot per kind: one worn armor, one wielded shield,
   // one attuned Warding Focus. Equipping another in the same slot replaces it.

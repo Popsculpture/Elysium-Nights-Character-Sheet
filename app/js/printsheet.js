@@ -211,6 +211,36 @@ EN.printSheet = (function () {
     });
     return out;
   }
+  /* The unarmed strike as an Attacks-table row, or nothing.
+     Neither export knew the strike existed, so a Freelancer whose whole offence is
+     Butcher Spurs or a stepped punch printed a blank Attacks table. The row mirrors
+     what the Freelancer tab draws: the resolved die (or the flat 1), the replacer's
+     name when one is picked, Simple Weapons proficiency on the attack, Body or the
+     better of Body and Agility on a Finesse strike, and the riders and reach that
+     ride along. Same gate as the on-screen row, so paper and screen agree about when
+     the strike is worth listing. */
+  function unarmedAttackRow(ch, d) {
+    var u = d.unarmed;
+    if (!u) return [];
+    var realWeapons = equippedWeaponNames(ch).filter(function (n) {
+      var it = catItem(n);
+      return !!it && !(eng.isUnarmedAugmentName && eng.isUnarmedAugmentName(it.name));
+    });
+    if (!(u.replacers.length || u.increases.count || u.riders.length || u.reach.spaces || !realWeapons.length)) return [];
+    var fin = !!(u.traits && /Finesse/.test(u.traits));
+    var attr = fin ? Math.max(d.attributes.BOD.mod, d.attributes.AGI.mod) : d.attributes.BOD.mod;
+    var tier = eng.effectiveGearTier(ch, "weapons", "Simple Weapons");
+    var prof = ((EN.rules.profTiers || {})[tier] || {}).d20 || 0;
+    var name = u.replacer ? u.replacer.source : "Unarmed Strike";
+    var dmg = (u.die || u.flat) + " " + u.type + " " + sgn(attr);
+    (u.riders || []).forEach(function (r) { dmg += " + " + r.damage + (r.when ? " " + r.when : ""); });
+    var notes = [];
+    if (u.traits) notes.push(u.traits);
+    if (u.reach.spaces) notes.push("+" + u.reach.spaces + " reach (" + u.reach.sources.join(", ") + ")");
+    if (u.note) notes.push(u.note);
+    if (tier === "untrained") notes.push("Untrained (Simple Weapons): Snag");
+    return [[name, sgn(attr + prof), dmg, notes.join(" · ")]];
+  }
   function catItem(name) { return allGear().find(function (i) { return i.name === name; }); }
   // detail lines for one catalog item, driven by whichever fields it carries
   // (weapon: damage/range/traits; armor: DR; tool/kit: effect/basic/proficient; tonic: desc/effect)
@@ -412,11 +442,26 @@ EN.printSheet = (function () {
       el("span.ps-fl", { text: "DEATH SAVES" }), el("span.ps-fl.ps-acc", { text: "S" }), pips((ch.deathSaves && ch.deathSaves.s) || 0, 3, "dot"), el("span.ps-fl.ps-emb", { text: "F" }), pips((ch.deathSaves && ch.deathSaves.f) || 0, 3, "dot")
     ]));
     R.push(vw);
-    // Attacks table (equipped weapons auto-filled, blank rows for the rest)
+    /* Attacks table (equipped weapons auto-filled, blank rows for the rest).
+
+       Two corrections that have to land together, or the sheet gets worse rather
+       than better. An unarmed AUGMENT is filtered OUT: Knuckles printed as
+       "Knuckles | +5 | 1d4 Bludgeoning", a strictly worse attack than the punch it
+       improves, and the app deliberately suppresses that same row on screen. And the
+       unarmed strike is printed IN: neither export read `d.unarmed` at all, so a
+       bare-handed or augment-only Freelancer exported a blank Attacks table. Filtering
+       without adding would have left them with nothing at all.
+
+       `equippedWeaponNames` itself is deliberately not filtered: the Equipped / Worn
+       line further down is right to say the Knuckles are on you. It is the attack
+       PROFILE that was the lie, not the presence. */
     R.push(sect("Attacks"));
-    var atkRows = equippedWeaponNames(ch).map(findWeapon).filter(Boolean).map(function (w) {
-      return [w.name, sgn(weaponHit(ch, d, w)), w.damage || "", (w.traits || []).join(", ")];
-    });
+    var atkRows = equippedWeaponNames(ch).map(findWeapon).filter(Boolean)
+      .filter(function (w) { return !(eng.isUnarmedAugmentName && eng.isUnarmedAugmentName(w.name)); })
+      .map(function (w) {
+        return [w.name, sgn(weaponHit(ch, d, w)), w.damage || "", (w.traits || []).join(", ")];
+      });
+    atkRows = atkRows.concat(unarmedAttackRow(ch, d));
     R.push(wtable(["Name", "Atk Bonus / DC", "Damage & Type", "Notes"], atkRows, Math.max(6, atkRows.length + 2), ".ps-tbl-atk"));
     // Abilities table (blank write-in; resource tracker in the header)
     var resLabel = d.resource ? (d.resource.name.toUpperCase() + " MAX " + d.resource.max) : (d.flow ? "FLOW FP MAX " + d.flow.max : "");

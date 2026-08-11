@@ -360,6 +360,32 @@ EN.pdfExport = (function () {
     return mod + prof + focusCal;
   }
 
+  /* The unarmed strike as an Attacks-table row, or nothing. Mirrors printsheet.js's
+     copy of the same function and the on-screen row's own gate, so all three agree
+     about when the strike is worth listing. */
+  function unarmedAttackRow(ch, d) {
+    var u = d.unarmed;
+    if (!u) return [];
+    var realWeapons = equippedWeaponNames(ch).filter(function (n) {
+      var it = findWeapon(n);
+      return !!it && !(eng.isUnarmedAugmentName && eng.isUnarmedAugmentName(it.name));
+    });
+    if (!(u.replacers.length || u.increases.count || u.riders.length || u.reach.spaces || !realWeapons.length)) return [];
+    var fin = !!(u.traits && /Finesse/.test(u.traits));
+    var attr = fin ? Math.max(d.attributes.BOD.mod, d.attributes.AGI.mod) : d.attributes.BOD.mod;
+    var tier = eng.effectiveGearTier(ch, "weapons", "Simple Weapons");
+    var prof = ((EN.rules.profTiers || {})[tier] || {}).d20 || 0;
+    var name = u.replacer ? u.replacer.source : "Unarmed Strike";
+    var dmg = (u.die || u.flat) + " " + u.type + " " + sgn(attr);
+    (u.riders || []).forEach(function (r) { dmg += " + " + r.damage + (r.when ? " " + r.when : ""); });
+    var notes = [];
+    if (u.traits) notes.push(u.traits);
+    if (u.reach.spaces) notes.push("+" + u.reach.spaces + " reach (" + u.reach.sources.join(", ") + ")");
+    if (u.note) notes.push(u.note);
+    if (tier === "untrained") notes.push("Untrained (Simple Weapons): Snag");
+    return [{ name: name, atk: sgn(attr + prof), dmg: dmg, notes: notes.join(" · ") }];
+  }
+
   /* ---- resource-spending abilities (Gambits/Maneuvers/etc), ported from printsheet.js ---- */
   function actionCost(text) {
     text = text || "";
@@ -556,11 +582,20 @@ EN.pdfExport = (function () {
     ctx.checkboxRow("Death Saves - Success", "deathSaveS", 3, (ch.deathSaves && ch.deathSaves.s) || 0);
     ctx.checkboxRow("Death Saves - Fail", "deathSaveF", 3, (ch.deathSaves && ch.deathSaves.f) || 0);
 
-    // attacks
+    /* attacks. Same pair of corrections as the print sheet, and for the same reason:
+       an unarmed AUGMENT is filtered out (Knuckles printed a 1d4 profile strictly
+       worse than the punch it improves, which the app suppresses on screen), and the
+       unarmed strike is printed in (neither export read `d.unarmed`, so a bare-handed
+       Freelancer exported an empty table). Filtering without adding makes it worse.
+       `equippedWeaponNames` stays unfiltered: the Equipped / Worn line is right that
+       the Knuckles are on you. */
     ctx.sectionTitle("Attacks");
-    var atkRows = equippedWeaponNames(ch).map(findWeapon).filter(Boolean).map(function (w) {
-      return { name: w.name, atk: sgn(weaponHit(ch, d, w)), dmg: w.damage || "", notes: (w.traits || []).join(", ") };
-    });
+    var atkRows = equippedWeaponNames(ch).map(findWeapon).filter(Boolean)
+      .filter(function (w) { return !(eng.isUnarmedAugmentName && eng.isUnarmedAugmentName(w.name)); })
+      .map(function (w) {
+        return { name: w.name, atk: sgn(weaponHit(ch, d, w)), dmg: w.damage || "", notes: (w.traits || []).join(", ") };
+      });
+    atkRows = atkRows.concat(unarmedAttackRow(ch, d));
     while (atkRows.length < 6) atkRows.push({ name: "", atk: "", dmg: "", notes: "" });
     ctx.table(
       [{ header: "Name", key: "name", w: 2 }, { header: "Atk Bonus / DC", key: "atk", w: 1, align: "center" }, { header: "Damage & Type", key: "dmg", w: 2 }, { header: "Notes", key: "notes", w: 2 }],

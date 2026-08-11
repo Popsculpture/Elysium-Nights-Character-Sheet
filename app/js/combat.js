@@ -3453,6 +3453,35 @@ EN.combatView = (function () {
       var e = (ch.equipment || []).find(function (x) { return (x.id || x.name) === key && x.qty > 0; });
       if (e && equippedNames.indexOf(e.name) === -1) equippedNames.push(e.name);
     });
+    /* THE NAMES THAT ACTUALLY PRODUCE A WEAPON ROW, which is not the same question as
+       "what is equipped". Anything asking "am I armed" has to ask this one.
+
+       The row loop drops a name for two reasons, and a count that asks neither is
+       wrong in two ways: an unarmed AUGMENT (Knuckles, Shock Gloves) improves the
+       punch rather than being a weapon of its own, and a name the catalog cannot
+       resolve renders nothing at all. Counting either produced the L6 symptom, a tab
+       reading WEAPONS (2) above zero rows with the "no weapons equipped" hint
+       suppressed. Defining the list as "names that produce a row" makes the count
+       truthful by construction rather than by coincidence.
+
+       DISPLAY ONLY, and this is the one way to get the fix badly wrong: the augments
+       must stay in `ch.equippedWeapons`, because `engine.unarmedGearOnHands` reads
+       that array to decide whether Knuckles steps the die at all. Filtering them out
+       at a write site would silently stop the augment augmenting, which is the entire
+       reason it is equipped.
+
+       The reorder arrows deliberately keep using `equippedNames`: their index is fed
+       to `moveWeaponName`, which swaps one slot of the raw stored array, so an index
+       from a filtered list would move the wrong slot. That coupling is a separate
+       pre-existing wrinkle and is left alone rather than half-changed. */
+    var realWeaponNames = equippedNames.filter(function (n) {
+      var w = findWeapon(n);
+      return !!w && !eng.isUnarmedAugmentName(w.name);
+    });
+    var augmentNames = equippedNames.filter(function (n) {
+      var w = findWeapon(n);
+      return !!w && eng.isUnarmedAugmentName(w.name);
+    });
 
     /* ---- ABILITIES tab: the class resource fuel + active, triggerable abilities ---- */
     function abilitiesKids() {
@@ -3999,11 +4028,25 @@ EN.combatView = (function () {
         if (kicking) _recoil = null;
         kids.push(el("div.feature" + (kicking ? ".recoil" : ""), { style: { borderLeftColor: railColor } }, rowKids));
       });
-      // Unarmed strike. Once anything replaces, steps, or rides on the die it is a
-      // real attack you carry and the row is always listed; with nothing on it at
-      // all it is the bare fallback, so it only shows with no weapon in hand.
+      /* Unarmed strike. Once anything replaces, steps, rides on or LENGTHENS the
+         strike it is a real attack you carry and the row is always listed; with
+         nothing on it at all it is the bare fallback, so it only shows with no weapon
+         in hand.
+
+         `reach` is the term this gate was missing (L5). Canopy Reach adds a space of
+         reach and nothing else, so a Verdine Arboreal holding a Longsword had the one
+         benefit their lineage feature grants rendered nowhere: the STRIKE picker's own
+         guard counts reach, but the picker lives inside this block and never ran. The
+         row it now draws is a flat-1 punch beside a real weapon, which looks thin, but
+         it carries the `+1 reach` chip and that chip is the only place the feature
+         surfaces on this tab.
+
+         The fallback term is `realWeaponNames`, not `equippedNames`: holding only a
+         pair of Knuckles is not holding a weapon. That term is belt and braces here,
+         since an augment also pushes an increase and the gate is already true. */
       var uStrike = d.unarmed;
-      if (uStrike.replacers.length || uStrike.increases.count || uStrike.riders.length || !equippedNames.length) {
+      if (uStrike.replacers.length || uStrike.increases.count || uStrike.riders.length
+          || uStrike.reach.spaces || !realWeaponNames.length) {
         var uBase = d.unarmedBase;
         var lu = uStrike.replacer, luFin = !!(uStrike.traits && /Finesse/.test(uStrike.traits));
         var luAttr = luFin ? Math.max(d.attributes.BOD.mod, d.attributes.AGI.mod) : d.attributes.BOD.mod;
@@ -4035,8 +4078,17 @@ EN.combatView = (function () {
             { snag: luSnag, dmg: dmg })); }; })(luName, luDmg),
           unarmedPicker(uStrike, uBase)));
       }
-      if (!equippedNames.length) {
-        kids.push(el("p.help", { style: { margin: "4px 0 6px" }, text: "No weapons equipped; hit ⚔ EQUIP on a weapon in Inventory → Stash to list it here." }));
+      /* The empty state, and it needs two branches now that it can actually appear
+         for someone holding something. Telling a player who just pressed EQUIP on
+         their Knuckles to go press EQUIP is worse than the wrong count it replaced:
+         the Inventory toast literally said "Knuckles equipped; it's live in the
+         Attacks list". So when the only things in hand are augments, say what they
+         are and point at the row they improved. */
+      if (!realWeaponNames.length) {
+        kids.push(el("p.help", { style: { margin: "4px 0 6px" }, text: augmentNames.length
+          ? augmentNames.join(" and ") + (augmentNames.length > 1 ? " augment" : " augments")
+            + " your unarmed strike rather than being a weapon in their own right, so there is no separate row: the strike above already counts them. Hit ⚔ EQUIP on an actual weapon in Inventory → Stash to list one here."
+          : "No weapons equipped; hit ⚔ EQUIP on a weapon in Inventory → Stash to list it here." }));
       }
       if (ch.class === "codebreaker") {
         var cipherBonus = (d.grid && d.grid.cipherAttackBonus) != null ? d.grid.cipherAttackBonus : d.attributes.TEC.mod;
@@ -4322,7 +4374,10 @@ EN.combatView = (function () {
     var TAB_DEFS = [
       { key: "abilities", label: "Abilities", count: activeFeats.length },
       { key: "features", label: "Features", count: passiveFeats.length + (ch.customFeatures || []).length },
-      { key: "weapons", label: "Weapons", count: equippedNames.length },
+      // the badge counts WEAPONS, so it counts the rows this tab will actually draw
+      // for one. It used to count everything equipped, which read WEAPONS (2) over an
+      // empty list for a character holding Knuckles and Shock Gloves.
+      { key: "weapons", label: "Weapons", count: realWeaponNames.length },
       { key: "loadout", label: "Loadout", count: loadoutCount() },
       { key: "notes", label: "Notes", count: null }
     ];
