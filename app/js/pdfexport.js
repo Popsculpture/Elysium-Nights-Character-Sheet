@@ -702,8 +702,11 @@ EN.pdfExport = (function () {
     if (it.dr != null) stat.push((drState && drState.base && drState.lost > 0)
       ? "DR " + drState.current + " of " + drState.base + " (" + drState.lost + " lost)"
       : "DR " + it.dr);
+    // Same distinction the print sheet draws, and the same reason: an emitter at 0 boxes
+    // goes dark and is repairable, a physical shield at 0 boxes is destroyed and is not.
     if (shState && shState.boxesMax) stat.push(shState.spent > 0
-      ? "Durability " + shState.left + " of " + shState.boxesMax + (shState.destroyed ? " (destroyed)" : "")
+      ? "Durability " + shState.left + " of " + shState.boxesMax
+        + (shState.destroyed ? (shState.emitter ? " (dark)" : " (destroyed)") : " (" + shState.spent + " marked)")
       : "Durability " + shState.boxesMax);
     if (it.traits && it.traits.length) stat.push(it.traits.join(", "));
     if (it.skill) stat.push("Skill: " + it.skill);

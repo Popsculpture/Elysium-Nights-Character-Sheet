@@ -156,10 +156,13 @@ EN.crafting = {
     // a leased suit's deposit by reaching for `it.price` (they all used to).
     shopCost:  function (it, points) { return Math.ceil(EN.crafting.listPrice(it) * this.shopRate  * Math.max(0, points || 0)); },
     benchCost: function (it, points) { return Math.ceil(EN.crafting.listPrice(it) * this.benchRate * Math.max(0, points || 0)); },
-    // A breached suit is rebuilt, not repaired: half the listed price in parts,
-    // which is materialCost's own ratio taken off the listed price rather than the
-    // deposit. Identical to materialCost for everything that is not leased.
-    rebuildCost: function (it) { return Math.ceil(EN.crafting.listPrice(it) / 2); },
+    // A breached suit is rebuilt, not repaired: half the listed price in parts, which
+    // is materialCost's own ratio. It is now the same number as materialCost for
+    // everything, leased included, because materialCost reads listPrice too; the two
+    // used to diverge on a leased row and, once listPrice learned Nexus-only rows, on
+    // those as well. Kept as its own name because the rebuild lane means something
+    // different from a Blueprint even when the figure matches.
+    rebuildCost: function (it) { return EN.crafting.materialCost(it); },
     shopText: "Hand it to a shop. One Downtime period and 10 percent of the suit's listed price per point of DR restored. No roll.",
     benchText: "Do it yourself. A Simple Project using Engineering, parts at 5 percent of the listed price per point. A Portable Fabrication Rig prints the plate from stock, so the parts cost nothing.",
     breachedText: "A suit at 0 DR is past repair. Rebuilding it is an ordinary Project at full parts cost.",
@@ -195,7 +198,16 @@ EN.crafting = {
     return t;
   },
 
-  materialCost: function (it) { return Math.ceil((((it && it.price) || 0)) / 2); },
+  /* Half what the thing is WORTH, which is the same question listPrice answers, so it
+     asks listPrice rather than reading `price` itself. It used to read `price`, and once
+     listPrice learned to read a Nexus-only row the two disagreed on screen: the
+     Blueprints panel offered a brand new Reliquary Shell for `mat 𝒢0` while the Impact
+     Table priced rebuilding the damaged one at 𝒢10,000, four inches apart. Measured, the
+     only rows where listPrice and price differ are leased ones (which tbBlueprints
+     already refuses, `!it.upkeep`) and the two Nexus-only rows, so this moves exactly
+     those two Blueprint entries and nothing else in the catalog. rebuildCost is now
+     literally this function, which is what its own comment always claimed. */
+  materialCost: function (it) { return Math.ceil(EN.crafting.listPrice(it) / 2); },
 
   /* What the thing is WORTH, as opposed to what it costs to get your hands on it.
      For ordinary gear those are the same number and this returns `price`.

@@ -227,8 +227,14 @@ EN.printSheet = (function () {
     if (it.dr != null) stat.push((drState && drState.base && drState.lost > 0)
       ? "DR " + drState.current + " of " + drState.base + " (" + drState.lost + " lost, until repaired)"
       : "DR " + it.dr);
+    // At 0 boxes an EMITTER goes dark rather than being destroyed, and the rules go out
+    // of their way to say so: it is not destroyed, it can come back, and it leaves no
+    // salvage, where a physical shield is beyond repair and its wreck is salvage. The
+    // sheet is the copy that leaves the app, so it has to draw the same line the Block
+    // row does. `emitter` is on the resolver's record for exactly this.
     if (shState && shState.boxesMax) stat.push(shState.spent > 0
-      ? "Durability " + shState.left + " of " + shState.boxesMax + (shState.destroyed ? " (destroyed)" : " (" + shState.spent + " marked)")
+      ? "Durability " + shState.left + " of " + shState.boxesMax
+        + (shState.destroyed ? (shState.emitter ? " (dark)" : " (destroyed)") : " (" + shState.spent + " marked)")
       : "Durability " + shState.boxesMax);
     if (it.feeds) stat.push("Feeds " + it.feeds);
     if (it.traits && it.traits.length) stat.push(it.traits.join(", "));

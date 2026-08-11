@@ -928,6 +928,41 @@ EN.store = (function () {
       if (wearLiveKeys[slotVal] && onlyItself) return slotVal;
       return alsoNames.length === 1 ? alsoNames[0] : null;
     }
+    /* AND THE SLOT ITSELF IS NORMALIZED, not merely read. This is the same answer
+       applied one field over, and without it the three wear maps lose everything the
+       player records, silently, on every load.
+
+       The split rekeys an equip slot only when the slot's value is a name it actually
+       split (`nameToIds[ch[slot]]`), so a row that ARRIVED with an id and `qty: 1`
+       populates nothing and a slot holding that row's NAME is left alone. Downstream
+       nothing minds: `keyToName` hands an unmatched key straight back, `armorItem`
+       resolves it, and the whole app runs with `dg.shieldKey === "Riot Shield"`. The
+       Block row's wear button then writes `shieldWear["Riot Shield"]`, which is a
+       perfectly good key to everything except the prune, which asks whether it names a
+       LIVE ENTRY. It does not. The live key is `eq_s1`.
+
+       Measured, through the real buttons: two Durability boxes and one point of DR
+       recorded, displayed and persisted, then `{}` and back to 3 of 3 and 5 DR after one
+       reload, with no message, repeating for as long as the record exists. Import puts
+       the record in that state once and the app then stamps `meta.wearKeys`, so it is
+       in-app and permanent from then on.
+
+       Pre-existing rather than new: the prune has always asked for a live key. What is
+       new is only that it is written down here and fixed at the source, which is the
+       slot, rather than by teaching the prune to accept a name. Invariant 1 says
+       per-piece state is keyed on the ENTRY; a slot that is not an entry key is the
+       thing to correct.
+
+       Unambiguous cases only. `equippedEntryKey` returns null when two owned entries
+       answer to the name, and a null there means "leave the slot exactly as it is"
+       rather than "unequip", because dropping a piece the player is wearing is a bigger
+       harm than the one being fixed. */
+    ["equippedArmor", "equippedShield", "equippedFocus"].forEach(function (slot) {
+      var v = ch[slot];
+      if (typeof v !== "string" || !v || wearLiveKeys[v]) return;   // absent, or already an entry key
+      var resolved = equippedEntryKey(v);
+      if (resolved) ch[slot] = resolved;
+    });
     // The scheme the record states its wear maps are in. Absent means legacy item-name
     // keys, because no save written before this migration could have said otherwise.
     var WEAR_KEY_SCHEME = 2;

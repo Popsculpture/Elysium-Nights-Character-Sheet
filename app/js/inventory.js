@@ -19,8 +19,17 @@ EN.inventoryView = (function () {
   // {armorEntryKey: points}. The rule prices repair PER POINT, so a player with three
   // points gone and a thin wallet has to be able to buy one. Absent means "all of it",
   // which is the common case and keeps the default one click.
-  var _armorPts = {};
-  var _open = {};          // collapse state for item cards
+  //
+  // Null-prototype, like every other map in this app keyed on a raw entry key. This is
+  // transient view state rather than anything persisted, which is why the earlier sweep
+  // over the three character maps did not reach it, but the hazard is the same and it
+  // bites here: an entry whose id is "__proto__" makes `_armorPts[key] = 2` invoke the
+  // Object.prototype setter, which silently discards a non-object value, so the read
+  // back is Object.prototype, fails the typeof test, and re-defaults to the whole loss.
+  // The picker then reads "3 / 3" forever and the row can only be bought whole.
+  // `_open` below is safe as it stands because every one of its keys is prefixed.
+  var _armorPts = Object.create(null);
+  var _open = {};          // collapse state for item cards (keys are all prefixed, never a bare entry key)
   // Storefront (picked via the ⚙ settings popover; same stock, different pricing):
   //   'undercut'   · The Undercut: book list prices, no markups
   //   'register'   · The Register: predatory corporate markups (legality × scarcity)
@@ -1850,6 +1859,13 @@ EN.inventoryView = (function () {
       // buy-in it took to put it on. Everything below prices off this.
       var price = CRAFT().listPrice(st.item);
       var leased = !!(st.item && st.item.upkeep);
+      // A row with no Glimmer price at all is priced off its Nexus asking figure, and
+      // the label has to say so rather than claim a list price the catalog does not
+      // print. The Reliquary Shell's own text is "Rarely offered for sale (◎2+)": that
+      // is a floor, not a figure, and calling the number derived from it a "list price"
+      // asserts something the book does not.
+      var nexusOnly = !leased && !(st.item && st.item.price > 0) && price > 0;
+      var priceLabel = leased ? " Buyout" : (nexusOnly ? " value at its " + (st.item.nexus || "Nexus") + " asking figure" : " list price");
       var worn = ch.equippedArmor === st.key;
       var head = el("div.row.between.wrap", { style: { gap: "8px", alignItems: "center" } }, [
         el("div.row.wrap", { style: { gap: "7px", alignItems: "center", flex: "1 1 auto", minWidth: 0 } }, [
@@ -1877,7 +1893,7 @@ EN.inventoryView = (function () {
         var rbSkill = CRAFT().skillForItem(st.item || {}), rbTier = CRAFT().tierForItem(st.item || {});
         lanes = el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "7px" } }, [
           el("span.help", { style: { margin: 0, fontSize: "11px", color: "var(--danger)" }, text: AR.breachedText }),
-          el("button.btn.sm.primary", { title: "Open a full Project for this suit at " + fmtG(rebuild) + " in parts, half its " + fmtG(price) + (leased ? " Buyout" : " list price") + ", restoring all " + st.base + " DR"
+          el("button.btn.sm.primary", { title: "Open a full Project for this suit at " + fmtG(rebuild) + " in parts, half its " + fmtG(price) + priceLabel + ", restoring all " + st.base + " DR"
               + " · " + CRAFT().tier(rbTier).name + " Project using " + rbSkill,
             onclick: function () { armorRebuildProject(st); } }, "⚒ REBUILD PROJECT · " + fmtG(rebuild)),
           untrainedChip(rbSkill, rbTier)
@@ -1890,7 +1906,9 @@ EN.inventoryView = (function () {
         var pts = armorPtsFor(st);
         var shop = AR.shopCost(st.item, pts), bench = hasRig ? 0 : AR.benchCost(st.item, pts);
         var perPoint = AR.shopCost(st.item, 1);
-        var priceNote = fmtG(perPoint) + " per point at this suit's " + fmtG(price) + (leased ? " Buyout (a leased suit is priced off what it is worth, not off the deposit)" : " list price") + ".";
+        var priceNote = fmtG(perPoint) + " per point at this suit's " + fmtG(price) + priceLabel
+          + (leased ? " (a leased suit is priced off what it is worth, not off the deposit)"
+                    : (nexusOnly ? " (this suit has no Glimmer price; the figure is its Nexus asking value at the ledger rate)" : "")) + ".";
         lanes = el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "7px" } }, [
           el("div.row", { style: { gap: "4px", alignItems: "center" } }, [
             el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em", marginRight: "2px" }, text: "REPAIR" }),
@@ -2602,7 +2620,10 @@ EN.inventoryView = (function () {
         el("span", { style: { fontWeight: 600, fontSize: "12.5px" }, text: it.name }),
         tbTierChip(tierKey),
         tbSkillChip(skill),
-        el("span.mono", { style: { fontSize: "10.5px", color: "var(--gold)" }, title: "Materials cost half the list price of " + fmtG(it.price || 0), text: "mat " + fmtG(cost) })
+        // the tooltip has to quote the same figure the cost is half OF, which is
+        // listPrice and not `price`: a leased row's price is a deposit and a
+        // Nexus-only row has no Glimmer price at all
+        el("span.mono", { style: { fontSize: "10.5px", color: "var(--gold)" }, title: "Materials cost half of " + fmtG(CRAFT().listPrice(it)) + ", what this item is worth", text: "mat " + fmtG(cost) })
       ]),
       el("button.btn.sm.primary", { title: "Open a Build Project for this item", onclick: function () {
         tbStart({ kind: "build", name: "Build " + it.name, itemName: it.name, skill: skill, tier: tierKey, materialCost: cost });
