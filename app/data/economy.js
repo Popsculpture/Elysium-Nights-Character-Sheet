@@ -19,6 +19,34 @@ EN.economy = {
   // above says the real rate is lower and unstated.
   nexusToGlimmer: 10000,
 
+  /* What a token actually returns when somebody turns it into spendable Glimmer, as
+     opposed to what the ledger says it is worth. REFERENCE DATA ONLY: nothing computes
+     with these and no wallet converts, deliberately. The bands are wide and the
+     unlicensed one comes with strings, so a conversion is a scene the GM runs, not a
+     number the sheet can hand out. They are here because the sheet was quoting the
+     reference value and saying nothing about the haircut, which is the part that
+     actually bites a Freelancer.
+
+     Worth knowing while reading the catalog: the four unleased items priced in BOTH
+     currencies imply about 2,400 to 3,200 Glimmer per token, except the Warframe Shell
+     at 9,600. That is not the catalog disagreeing with the reference value. Three of
+     them sit inside the unlicensed band below, which is what a Freelancer selling a
+     token on the street actually clears, and the corporate frame sits at the licensed
+     reference. Anything the app prices off a stated Nexus figure (a lease Buyout, a
+     repair lane) uses nexusToGlimmer above, because that asks what the OBJECT is worth
+     in a ledger, not what its owner could liquidate a token for. */
+  nexusConversionNote: "Actual cash-out is lower than the reference value because verification, compliance, service, laundering, and transfer fees all take a cut. What a token returns depends entirely on who is changing it.",
+  nexusConversion: [
+    { channel: "Legal, licensed exchange",       low: 5000, high: 7500, note: "Documented, traceable, and slow enough to be noticed" },
+    { channel: "Unlicensed or black market",     low: 2000, high: 4000, note: "Faster and quieter, and the rate is the smallest thing you give up" }
+  ],
+  nexusUnlicensedRisks: [
+    "Contract traps or clawback clauses",
+    "Delayed or staggered payouts",
+    "Future claims, favors, or leverage owed to the broker"
+  ],
+  nexusAssumptions: "Freelancers should not assume full access to the reference value, instant anonymous cash-out, or guaranteed safety when moving or converting Nexus.",
+
   currencies: [
     { name: "Glimmer",     symbol: "\u{1D4A2}", use: "Everyday purchases, gear, services, upkeep" },
     { name: "Nexus Token", symbol: "◎",    use: "Major contracts, institutional exchange, off world and corporate deals" }

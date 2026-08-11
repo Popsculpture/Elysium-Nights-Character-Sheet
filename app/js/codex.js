@@ -330,6 +330,15 @@ EN.codexView = (function () {
       kids.push(ruleBlock("Currency and Exchange",
         E.currencies.map(function (c) { return c.symbol + " " + c.name + " | " + c.use; }).join("\n")
         + "\n\n" + E.exchangeRate));
+      // What a token actually returns, as opposed to what the ledger says it is worth.
+      // Reference only: nothing in the app converts a wallet, because the bands are wide
+      // and the cheap one comes with strings that are a scene rather than a number.
+      if (E.nexusConversion) kids.push(ruleBlock("Converting Nexus to Glimmer",
+        E.nexusConversionNote + "\n\n"
+        + E.nexusConversion.map(function (c) { return c.channel + " | " + g(c.low) + " to " + g(c.high) + " per ◎ | " + c.note; }).join("\n")
+        + "\n\nUnlicensed conversion may also involve:\n" + bullets(E.nexusUnlicensedRisks)
+        + "\n\n" + E.nexusAssumptions
+        + "\n\nThe sheet never converts a wallet for you. A cash-out is a scene: who is changing it, what they want, and what it costs you later."));
       kids.push(ruleBlock("Lifestyle Costs", E.lifestyleNote + "\n\n"
         + E.lifestyleTiers.map(function (t) {
             return t.tier + " | " + g(t.weekly) + "/wk | " + g(t.monthly) + "/mo | " + t.living; }).join("\n")
