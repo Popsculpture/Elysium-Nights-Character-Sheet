@@ -20,6 +20,14 @@ merged and deleted. Everything is on `main`, which is deployed to elysiumnightsr
    carries the invariants this codebase paid for one at a time, each learned by getting
    it wrong. Do not relitigate them. It is long; read the section headings first and go
    deep only where you are about to touch.
+
+   Two things about how to read it. It is an archaeological record, not a to-do list:
+   entries are struck and annotated in place rather than deleted, so the reasoning
+   survives. The "Live findings" section opens with a reconciliation naming exactly which
+   of the thirteen L-numbered findings are still open, and that is the list to trust. And
+   every `file.js:NNN` line reference in it is STALE, written before three branches merged
+   into `main`; treat them as a hint about which file and find the site by the quoted
+   code, which is still accurate.
 2. `review-findings/README.md`: archived adversarial-review output, with an honest table
    of what has and has not been read.
 

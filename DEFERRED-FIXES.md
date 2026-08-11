@@ -541,6 +541,24 @@ and fifty lines of unrelated normalization.
 
 ### Live findings
 
+**RECONCILED 2026-08-10, after everything merged to `main`. Read this before the list.**
+The list below is written as an archaeological record: entries are struck and annotated
+in place rather than deleted, so the reasoning survives. That makes it a poor to-do list
+at a glance. What is ACTUALLY still open, of the thirteen:
+
+**Open: L1, L2, L3, L4, L5, L6, L13.** L1 is the only one reachable without an import and
+is the one to take first. L13 was re-verified against the merged code and is still true
+and still inert.
+
+**Closed: L7, L8, L9, L10, L11, L12.** Each is struck below and says which commit closed
+it and what was measured.
+
+**LINE NUMBERS BELOW ARE STALE.** They were written against pre-merge files, and three
+branches have since merged into `main`; `app/js/store.js` in particular grew by several
+hundred lines. Treat every `file.js:NNN` as a hint about WHICH file, and find the site by
+the quoted code, which is still accurate. The same applies to the sections above this one.
+
+
 **L1. One Talent in two Universal Upgrade slots double-counts its unarmed step.**
 `app/js/builder.js:2096-2107` never filters talents already sitting in another slot,
 while `app/js/builder.js:2148-2151` (`talentUpgradePicker`) does; `activeTalents` at
@@ -702,8 +720,10 @@ Freelancer tab: 12 on #1 and 31 on #2 hold independently at **28/40** and **9/40
 survive switching between them, survive a detour through the Scrap Rig and back, and
 survive a full page reload.
 
-**L10. The new rig read has no `Array.isArray` guard, and `load()` answers the throw by
-discarding the entire roster.** GROUP D. `app/js/engine.js:1314`
+**~~L10. The new rig read has no `Array.isArray` guard, and `load()` answers the throw by
+discarding the entire roster.~~** **FIXED 2026-08-10 by the migrate() hardening pass**;
+see that section for the measured before and after (three poison shapes took a five-record
+roster to zero; all now leave five survivors). GROUP D. `app/js/engine.js:1314`
 (`((ch && ch.equipment) || []).forEach`) is reached unconditionally from
 `app/js/store.js:465`; the swallow is `app/js/store.js:532-535`
 (`catch { state.roster = {}; state.activeId = null; }`). **Severity: medium, on
@@ -741,8 +761,9 @@ is byte-stable across three loads, and derives both talents as named features.
 then `.filter(Boolean)`, so a stale key vanished with no warning. **Severity was: low,
 import-only,** since nothing in the app writes `ch.talents`.
 
-**L12. `if (!ch.proficiencies) return;` at `app/js/store.js:165` skips every migration
-added since.** GROUP D. **Severity: low, import-only, and broader than the finding it
+**~~L12. `if (!ch.proficiencies) return;` skips every migration added since.~~** **FIXED
+2026-08-10 by the migrate() hardening pass**, which turned it into a guard around only the
+proficiency conversion it was written for. GROUP D. **Severity: low, import-only, and broader than the finding it
 came attached to.** Failing scenario: import a record with universal upgrades and no
 `proficiencies` field. The Toxicologist rename does not run, `weaponAmmo` is not
 normalized, and the entire entry-keyed `ch.rig` migration is skipped, about a hundred
