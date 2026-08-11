@@ -488,14 +488,16 @@ invisible internal inconsistencies come last.
 Four groups, four single changes. The session already learned that six rig defects were
 two root causes; this is the same accounting applied to the rest.
 
-**GROUP A: the Parry die resolver walks a precedence chain instead of comparing dice.**
-Members L2 and its second face. `app/js/combat.js:3522-3528` (tray) and
-`app/js/combat.js:3580-3583` (row summary) both go weapon, then shield, then unarmed,
-first match wins. **One change closes it:** resolve the Parry die once, by taking the
-largest of the equipped melee weapons' dice, the shield's Block die and the resolved
-unarmed die, and render the dieless case as prose rather than as a die. That also
-retires the pre-existing "first equipped weapon, not the largest" behavior and the
-"Roll 1" string in the same edit.
+**~~GROUP A: the Parry die resolver walks a precedence chain instead of comparing dice.~~**
+**CLOSED 2026-08-11 in `51d51ad`, and the remedy this paragraph proposed was WRONG.**
+The diagnosis held: `app/js/combat.js:3522-3528` (tray) and `:3580-3583` (row summary)
+both went weapon, then shield, then unarmed, first match wins, and one resolver closes
+it. But "take the largest of the equipped melee weapons' dice, **the shield's Block
+die**, and the resolved unarmed die" bakes in the category error underneath the whole
+finding: **a shield's die is a BLOCK die and Parry rolls a DAMAGE die.** Brandon caught
+it mid-fix. Comparing dice sizes would have kept a Ballistic Bulwark's `1d8` competing
+for the Parry, just fairly instead of unfairly. The shield is not a Parry source at all.
+See the L2 entry for what the books actually say and what was built.
 
 **GROUP B: the Weapons panel gates and counts on `equippedNames`, which is neither the
 list it renders nor the list the rules ask about.** Members L5 and L6.
@@ -546,10 +548,12 @@ The list below is written as an archaeological record: entries are struck and an
 in place rather than deleted, so the reasoning survives. That makes it a poor to-do list
 at a glance. What is ACTUALLY still open, of the thirteen:
 
-**Open: L2, L3, L4, L5, L6, L13.** L13 was re-verified against the merged code and is
-still true and still inert. **L1 is CLOSED (`51102f8`, 2026-08-10);** it was the only one
-reachable without an import, which is why it went first. L2 is now the only remaining
-finding a player can hit without hand-authoring a record.
+**Open: L3, L4, L5, L6, L13.** L13 was re-verified against the merged code and is still
+true and still inert. **L1 is CLOSED (`51102f8`) and L2 is CLOSED (`51d51ad`), both
+2026-08-10 and 2026-08-11;** they were the two reachable without an import, which is why
+they went first. **Nothing still open in this list can be reached without hand-authoring
+or importing a record**, except the half of L5 that is a feature doing nothing (a
+reach-only character losing the unarmed row).
 
 **Closed: L7, L8, L9, L10, L11, L12.** Each is struck below and says which commit closed
 it and what was measured.
@@ -623,13 +627,74 @@ duplicates too, for `inc 4` and `1d10` off nothing. Harmless before the rewrite,
 Street Scrapper set a die rather than stepping one. `uuTalentsOwned` already exists in
 the same file, so the filter is one expression away. **Not tracked.**
 
-**L2. Strapping on a shield lowers your Parry below your bare fists.** GROUP A.
-`app/js/combat.js:3523` (tray) and `app/js/combat.js:3582` (summary) both prefer the
-shield's Block die unconditionally, exactly the way Knuckles used to before `70f66b8`
-fixed the augment case eight lines up. **Severity: medium.** Failing scenario: L6 Fury
-with a resolved `1d8` unarmed die and a Scrap Shield (`1d4` Block) reads
-`Roll 1d4 (Scrap Shield)` in the row and in the tray; unequip the shield and it reads
-`Roll 1d8 (your unarmed strike)`. Catalog Block dice run 1d4 to 1d8
+**~~L2. Strapping on a shield lowers your Parry below your bare fists.~~** **FIXED
+2026-08-11 in `51d51ad`, and the finding was right about the symptom and wrong about the
+cause.** The original write-up follows.
+
+**THE PART BOTH THE FINDING AND GROUP A MISSED, caught by Brandon mid-fix: a shield's
+die is a BLOCK die, and Parry rolls a DAMAGE die.** The reviewer proposed comparing die
+sizes and taking the largest, and I had built exactly that before he stopped it. That
+would have left a Ballistic Bulwark's `1d8` competing for the Parry, losing fairly
+instead of winning unfairly, and the whole premise would still have been wrong.
+
+**What the books say, pulled fresh from both live manuscripts on 2026-08-11.**
+- **Block:** "Roll your **Shield's Block die** (if you carry one) and add your armor's
+  flat Block Bonus and any other Block benefits you have."
+- **Parry:** "Roll your equipped weapon's base **damage** die (e.g., a d8 for a standard
+  longsword), **or your unarmed strike damage** if your hands are what you brought."
+- **Part 3, Physical Shields:** the table is Name / Price / Defense / **Block** / Traits.
+  There is no damage column, no shield in the catalog carries a `damage` field, and
+  `shield bash` appears nowhere in either part.
+
+So a shield has no die that Parry can roll, and the app was inventing one out of the
+Block die. **A shield does still SATISFY Parry's Requirement** ("a Simple Weapon, Martial
+Weapon, Signature Weapon, or physical Shield equipped, or be fighting unarmed"), so
+carrying one never stops you parrying; it just contributes no die, and you roll a damage
+die you actually have. A shield-and-empty-hand character parries with their fists. That
+is the literal reading of Requirement-versus-Effect and it is the one implemented; the
+book does not address the case directly.
+
+**Three faces, one precedence chain written out twice, all reproduced first:**
+
+| loadout | before | after |
+| ----- | ----- | ----- |
+| `1d8` unarmed + `1d4` Scrap Shield | `Roll 1d4 (Scrap Shield)` | `Roll 1d8 (your unarmed strike)` |
+| Riot Shield, no weapon | `Roll 1d6 (Riot Shield)` | `Bare hands with no die behind them: subtract 1` |
+| Dagger listed before Greatsword | `Roll 1d4 (Dagger)` | `Roll 2d6 (Greatsword) · 3 to choose from` |
+| bare hands, no die | `Roll 1 (your unarmed strike)` | `Bare hands with no die behind them: subtract 1` |
+
+**`parrySources()` is now the only thing that decides**, and it offers the CHOICE rather
+than picking for you, because that is the rule and not a convenience: Parry's Tactical
+Note is "if you are dual-wielding, you must choose which weapon you parry with and roll
+its specific damage die". Sources are ordered by EXPECTED VALUE, not by die size, so a
+Greatsword's `2d6` (avg 7) correctly outranks a `1d8` (avg 4.5); the default is the best
+one so the common case is still one tap, and the tray carries chips to switch. Switching
+clears any roll on screen, because that total belonged to the other die.
+`firstMeleeDie()` was the chain's first half, had no other caller, and is deleted rather
+than left for someone to wire back in.
+
+**Verification.** Nine loadouts, the whole rendered Defense section captured before and
+after. **Parry is the only field that moved, in all nine**, and the section is otherwise
+identical, so Block, Dodge and Ward are untouched. Two shapes differing only in equip
+ORDER now produce the same answer. Every reader of `blockDie` was audited and Parry was
+the only one treating it as damage; a Ballistic Bulwark still reads
+`+1d8 (Ballistic Bulwark)` on the Block row. Driven live: the tray rolls `2d6` for 8
+against 12 incoming and reports "12 reduced by 8 to 4 damage", the chips switch implement
+and clear the stale total, and a shield-only character still parries. Seven tabs, the
+print sheet and four PDFs, zero console errors.
+
+**Worth keeping.** The reviewer, GROUP A and I all reasoned about which die was BIGGEST
+and none of us asked what KIND of die it was. The catalog says it plainly in the item's
+own `type` string, "Physical Shield (+1 Defense, **+1d4 Block**, Wear 8)", and every
+other consumer in the app labels it "Block". A precedence bug and a category error looked
+identical from inside the code, and only the rules text told them apart.
+
+The original write-up: `app/js/combat.js:3523` (tray) and `app/js/combat.js:3582`
+(summary) both prefer the shield's Block die unconditionally, exactly the way Knuckles
+used to before `70f66b8` fixed the augment case eight lines up. **Severity: medium.**
+Failing scenario: L6 Fury with a resolved `1d8` unarmed die and a Scrap Shield (`1d4`
+Block) reads `Roll 1d4 (Scrap Shield)` in the row and in the tray; unequip the shield and
+it reads `Roll 1d8 (your unarmed strike)`. Catalog Block dice run 1d4 to 1d8
 (`app/data/gear_armor.js:179-199`), so this bites every unarmed build at 1d6 and up.
 **Second face, same two sites:** with no die anywhere, the summary reads
 `Roll 1 (your unarmed strike)`, which is not a die and not rollable, while the tray at
