@@ -50,10 +50,15 @@ Bypass wired into the unarmed engine, and a `migrate()` hardening pass.
    `app/js/builder.js`, so the filter is one expression away. Full write-up in
    `DEFERRED-FIXES.md`.
 3. **The action-type classifier cannot see bolded action types.** A plain-text regex
-   matching `as an Action` means `Rig Fuel`, `Biological Meltdown` and `Chemical Warfare`
-   all render PASSIVE on the sheet, the print sheet and the PDF. Widening the regex to
-   tolerate `**` fixes all three at once but reclassifies features, so it wants a
-   deliberate decision rather than a quiet patch.
+   matching `as an Action` (three copies: `app/js/combat.js`, `app/js/printsheet.js`,
+   `app/js/pdfexport.js`) means a feature written `As an **Action**` falls through and
+   renders PASSIVE on the sheet, the print sheet and the PDF. `DEFERRED-FIXES.md` names
+   `Rig Fuel`, `Biological Meltdown` and `Chemical Warfare` as mis-tagged, but measure
+   before you fix: there are **11 bolded occurrences across four class data files**, and
+   widening the regex touches every one. Some of those features state their action type
+   unbolded elsewhere in the same text and already classify correctly, so the blast radius
+   is larger than the three. That is exactly why this wants a deliberate decision rather
+   than a quiet patch.
 4. **L2 through L7 and L13**, plus the 14 PART C rulings. All in `DEFERRED-FIXES.md`.
 5. **Thermal Regulation Weave's Resistance** is neither applied nor displayed inside the
    hazard. Blocked on there being no damage pipeline to reduce, so it is a build, not a
