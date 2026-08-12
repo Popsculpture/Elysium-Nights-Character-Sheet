@@ -3628,6 +3628,85 @@ complete and its leads were useful, but **none of it was verified**, so it was t
 leads and re-checked by hand rather than quoted as fact.
 
 
+## L4, second pass: the step is a blanket one, and the pairing's real debt is the SP
+
+The reading shipped an hour earlier was wrong, the author caught it from the numbers, and
+this is the correction plus what looking for it turned up.
+
+### What went wrong and how it surfaced
+
+"In its place, the Reinforced Skeleton's unarmed strike damage die increases by one size"
+was implemented literally: Synthetic Musculature's generic step was removed and the increase
+was moved onto the implant's own die. That is defensible from the words and it produced a
+real regression, which the report named rather than buried: **skeleton plus Hand Razors,
+striking with the razors, went 1d8 Slashing to 1d6 and lost Armor Piercing 1 at that die
+size.** Open Architecture became a downgrade for anyone running a second replacer.
+
+Brandon, reading that: "I was thinking it would blanket step up the user's unarmed damage.
+I'm going to want to change it to enhance all unarmed by one step, making the fist and the
+razor 1 step higher independently and not stacking."
+
+**The correction was cheap because the regression was reported as a consequence of the
+ruling rather than presented as a finished feature.** The reading was wrong; naming the
+razors case in the same breath as shipping it is what made it a one-message fix.
+
+### What the sheet does now
+
+Reverted to the blanket step, which is what Synthetic Musculature always did, and which the
+STRIKE picker was already rendering correctly: `eng.stepDie(o.die, steps)` per option, with a
+comment already explaining that every chip shows what THAT pick would deal. So "independently
+and not stacking" needed no new code at all, only the removal of the code that had broken it.
+
+Measured, skeleton (Brandware) plus Hand Razors, Synthetic Musculature plus Open Architecture:
+
+| option | die shown, and rolled if picked |
+| ----- | ----- |
+| bare fists | flat 1 becomes **1d4** |
+| Reinforced Skeleton | 1d6 becomes **1d8** Bludgeoning |
+| Hand Razors | 1d6 becomes **1d8** Slashing |
+
+`increases.count` is **1** in every configuration, so nothing compounds. With a Blackware
+skeleton the same character reads skeleton 1d10, razors 1d8, fists 1d4.
+
+The clause text in `app/data/rules.js` and `app/data/species.js` was rewritten to describe
+the blanket step. **That wording is mine, matching Brandon's stated intent, and the manuscript
+is the authority.** It should be replaced with his own sentence when he writes it.
+
+### And the finding underneath: the SP reduction does not exist
+
+Open Architecture's own text promises, for every activated pairing, that the chrome's
+"Static Point cost is reduced by 1 (minimum 0)". Read `staticTotal` in engine.js: it knows
+about platform-slotted mods (a mod seated in a Cyberarm adds no SP) and about the Resonance
+Crown (up to 4 pieces at 1 SP off each), **and nothing else**. There is no Open Architecture
+reduction anywhere in the engine.
+
+Which matters more now than it did this morning. Under the blanket-step ruling the pairing
+adds no damage the character did not already have, so the SP -1 IS the Synthetic Musculature
+pairing's live mechanical benefit, and it is unimplemented. **Open Architecture currently does
+nothing at all for this pairing.** That is the original L4 finding standing, relocated from
+the damage clause to the SP clause.
+
+Not built here, deliberately, and it should not be built as a one-off. Open Architecture
+grants the reduction to all SEVEN pairings, and `R.openArchitecture.combos` already carries
+the feature-and-chrome pairs as data, so the implementation is one generic pass over that
+list rather than a predicate per pairing. It also lands on Chrome Tax, which drives the
+Static Threshold, which cuts max Resilience Dice and a Shaper's max Reservoir, so it has a
+real verification surface of its own.
+
+The `synthMusculatureIntegrated()` predicate written for the first reading was **deleted**
+rather than left behind for that work, with a comment saying why: a one-off predicate is the
+wrong shape for a rule that covers seven pairings from data.
+
+### Verified
+
+* The five-row table above, on fresh records through `importCharacter` and `derive`.
+* The regressed case specifically: razors picked, Synthetic Musculature only versus
+  Synthetic Musculature plus Open Architecture, **1d8 Slashing in both**. No difference,
+  which is the point.
+* `increases.count === 1` in every configuration tested.
+* 84 tab, bench and print-sheet visits across all six roster characters: zero console errors.
+
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from
