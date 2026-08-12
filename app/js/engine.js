@@ -741,18 +741,27 @@ EN.engine = (function () {
      everyone else's. A single character-level bonus would be correct for only the
      first, so this takes the WEAPON as well as the character:
 
-       lineage    Canopy Reach, +1 to every melee weapon, unconditional.
-       talent     Staff & Spear Master's Level 6+ Upgrade, +1 but only to a weapon
-                  that IS a reach weapon. Its own text says "reach weapons", and the
-                  talent elsewhere says "a Reach melee weapon or staff"; the only
-                  staff in the catalog is the Quarterstaff, which carries Reach 1
-                  anyway, so "has Reach" is the whole test.
        part       Extended Haft, +1, and only on the weapon it is fitted to.
                   ch.weaponParts is keyed by weapon NAME, so it applies to that TYPE.
+       talent     Staff & Spear Master's Level 6+ Upgrade, +1 to LONG-SHAFTED weapons.
+                  Not "weapons with Reach": the manuscript retargeted this on
+                  2026-08-11 and the talent now says "long-shafted weapons, such as a
+                  staff or spear" throughout. A Whip has Reach 2 and is not one; a
+                  hafted Longsword has Reach and is not one either. Read off the
+                  item's `shafted` flag, never off its Reach.
+       lineage    Canopy Reach, +1 to every melee weapon, unconditional, and it is
+                  the one grant that BREAKS THE CAP.
 
-     ORDER MATTERS between the part and the talent, and only there. The haft "grants
-     OR increases" Reach, so a Longsword with one becomes a reach weapon, and the
-     talent then sees a reach weapon to extend. Part first, then the talent's test.
+     ORDER, and every step of it is load-bearing:
+       base + part, because the haft "increases Reach by 1" on the weapon itself;
+       + the talent, which is also a property of the weapon in your hands;
+       CAP HERE, because the general rule is "if an effect would increase a weapon's
+         Reach beyond its cap ... any excess is lost. A feature can exceed this cap
+         only if its own text specifically says so", and neither the haft nor the
+         talent says so (the haft says the opposite in as many words);
+       + Canopy Reach LAST and uncapped, because its text does say so: "This bonus
+         can exceed a weapon's normal Reach cap, since the vine is extending the
+         attack rather than the weapon itself."
 
      Ranged weapons are not touched: their row shows RANGE, not REACH. */
   function weaponPartsOn(ch, item) {
@@ -769,34 +778,38 @@ EN.engine = (function () {
     out.cap = out.flexible ? caps.flexible : caps.rigid;
     var m = String(item.range || "").match(/Reach\s*(\d+)/i);
     out.base = m ? parseInt(m[1], 10) : 0;
+    out.shafted = !!(item && item.shafted);
     var pts = out.base;
-    // the part first: it can turn a plain weapon into a reach weapon
+    // the part, which increases the weapon's own Reach
     weaponPartsOn(ch, item).forEach(function (p) {
       if (!p || !p.reachBonus) return;
       pts += p.reachBonus;
       out.sources.push({ label: p.name, kind: "part", spaces: p.reachBonus });
     });
-    // then the talent, which only extends a weapon that already reaches
-    if (pts > 0 && talentUpgradeKeys(ch).indexOf("staff-spear-master") !== -1) {
+    // the talent, on long-shafted weapons only, and never on Reach alone
+    if (out.shafted && talentUpgradeKeys(ch).indexOf("staff-spear-master") !== -1) {
       pts += 1;
       out.sources.push({ label: "Staff & Spear Master (Upgrade)", kind: "talent", spaces: 1 });
     }
-    // and the lineage, which does not care what the weapon is
+    /* THE CAP, on Reach POINTS rather than on spaces, and applied HERE: a rigid shaft
+       or blade stops being swingable past a point, while a lash or a filament pays
+       out further. Everything above this line is the weapon plus what has been done
+       to the weapon, and the rule is that its excess is lost. `capped` is how many
+       points went nowhere, so the row can say so instead of quietly swallowing them. */
+    var uncapped = pts;
+    pts = Math.min(pts, out.cap);
+    out.capped = uncapped - pts;
+    /* AND THEN the grants whose own text lets them break the cap, added after it.
+       "A feature can exceed this cap only if its own text specifically says so", and
+       Canopy Reach says exactly that: the vine is extending the ATTACK, not the
+       weapon. So a capped Quarterstaff still gains its space. */
     activeLineageFeatures(ch).forEach(function (fn) {
       var lm = LINEAGE_MECH[fn];
       if (!lm || !lm.meleeReach) return;
       pts += lm.meleeReach;
-      out.sources.push({ label: fn, kind: "lineage", spaces: lm.meleeReach });
+      out.uncapped = (out.uncapped || 0) + lm.meleeReach;
+      out.sources.push({ label: fn, kind: "lineage", spaces: lm.meleeReach, breaksCap: true });
     });
-    /* THE CAP, and it is on Reach POINTS rather than on spaces. A rigid shaft or
-       blade stops being swingable past a point; a lash or a filament pays out
-       further. Applied after everything is summed, so a character can be carrying
-       more bonus than the weapon can use and the row says so rather than quietly
-       swallowing it: a Quarterstaff with all three grants is Reach 4 on paper and
-       Reach 2 in the hand. `capped` is how many points went nowhere. */
-    var uncapped = pts;
-    pts = Math.min(pts, out.cap);
-    out.capped = uncapped - pts;
     out.bonus = pts - out.base;
     out.total = 1 + pts;              // the adjacent space, plus a space per Reach point
     /* One sentence, built here, so the weapon row, the print sheet and the PDF cannot
@@ -804,12 +817,17 @@ EN.engine = (function () {
        cap bit: "+1 (Extended Haft, Staff & Spear Master, Canopy Reach)" reads as three
        features producing one point, which is exactly the confusion the cap creates. */
     if (out.sources.length) {
-      var names = out.sources.map(function (s) { return s.label; }).join(", ");
-      out.note = "reaches " + out.total + " space" + (out.total === 1 ? "" : "s")
-        + " (" + names + (out.capped
-            ? "; capped at Reach " + out.cap + " for a " + (out.flexible ? "flexible" : "rigid")
-              + " weapon, so " + out.capped + " point" + (out.capped > 1 ? "s go" : " goes") + " nowhere"
-            : "") + ")";
+      var capped = out.sources.filter(function (s) { return !s.breaksCap; }).map(function (s) { return s.label; });
+      var breaks = out.sources.filter(function (s) { return s.breaksCap; }).map(function (s) { return s.label; });
+      var bits = [];
+      if (capped.length) bits.push(capped.join(", "));
+      if (out.capped) {
+        bits.push("capped at Reach " + out.cap + " for a " + (out.flexible ? "flexible" : "rigid")
+          + " weapon, so " + out.capped + " point" + (out.capped > 1 ? "s are" : " is") + " lost");
+      }
+      // named separately, because a total ABOVE the cap otherwise looks like a bug
+      if (breaks.length) bits.push(breaks.join(", ") + (out.capped || out.total > 1 + out.cap ? " reaches past the cap" : ""));
+      out.note = "reaches " + out.total + " space" + (out.total === 1 ? "" : "s") + " (" + bits.join("; ") + ")";
     } else out.note = "";
     return out;
   }

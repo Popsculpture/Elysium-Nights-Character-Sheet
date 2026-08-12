@@ -19,7 +19,8 @@ EN.gearCatalog.signature = {
 
   items: [
     /* ---- Melee ---- */
-    { name: "Arc Glaive", signature: true, kind: "melee", group: "Martial", proficiency: "Martial Weapons",
+    // shafted: "a polearm haft that projects a blade", so Staff & Spear Master applies
+    { name: "Arc Glaive", shafted: true, signature: true, kind: "melee", group: "Martial", proficiency: "Martial Weapons",
       price: 800, damage: "1d10 Energy", range: "Melee (Reach 1)",
       traits: ["Reach 1", "Two-Handed", "Armor Piercing 1"], availability: "Rare", legality: "Contraband",
       desc: "A polearm haft that projects a blade of contained plasma where a cutting edge should be. It does not chip, dull, or care what you point it at. It cuts on the way out and on the way back, and it lights the corridor while it does." },

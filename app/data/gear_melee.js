@@ -34,7 +34,9 @@ EN.gearCatalog.melee = {
       traits: ["Light", "Concealable"], availability: "Common", legality: "Restricted",
       desc: "Composite or alloy bands that turn a punch into a hospital visit. Easy to hide. Harder to explain when a patrol officer flips your jacket open.",
       effect: "Augments unarmed strikes. While wearing Knuckles, your unarmed strike damage die steps up one size, and on a strike with no die that first step grants 1d4 Bludgeoning. This stacks with every other increase to your unarmed damage." },
-    { name: "Quarterstaff", group: "Simple", load: 2, price: 60, damage: "1d6 Bludgeoning", range: "Melee (Reach 1)",
+    // shafted: a long-shafted weapon, which is what Staff & Spear Master keys on.
+    // NOT the same question as "has Reach": a Whip reaches 2 and is not one.
+    { name: "Quarterstaff", shafted: true, group: "Simple", load: 2, price: 60, damage: "1d6 Bludgeoning", range: "Melee (Reach 1)",
       traits: ["Reach 1", "Two-Handed", "Versatile (1d8)"], availability: "Common", legality: "Legal",
       desc: "A length of tough wood or composite pole, hip-high to head-high depending on the wielder. Street monks, crowd-control drills, and old-school brawlers all swear by it for reach and discipline." },
     { name: "Shock Gloves", group: "Simple", price: 100, damage: "Unarmed + 1d4 Electric", range: "Melee",
@@ -44,7 +46,7 @@ EN.gearCatalog.melee = {
     { name: "Snap-Blades", group: "Simple", price: 150, damage: "1d6 Slashing", range: "Melee",
       traits: ["Light", "Finesse", "Concealable"], availability: "Uncommon", legality: "Restricted",
       desc: "Hidden blades that ride along the forearm until a flick of the wrist sends them out. Quiet to carry, and a bad answer to a casual search." },
-    { name: "Spear", group: "Simple", price: 40, damage: "1d6 Piercing", range: "Melee (Reach 1) or thrown 4 / 12",
+    { name: "Spear", shafted: true, group: "Simple", price: 40, damage: "1d6 Piercing", range: "Melee (Reach 1) or thrown 4 / 12",
       traits: ["Reach 1", "Thrown (4/12)", "Versatile (1d8)"], availability: "Common", legality: "Legal",
       desc: "A full-length shaft with a reinforced point. As old as war itself, still good at it, and still cheap enough that you can lose three in an alley and not feel it." },
     { name: "Stun Baton", group: "Simple", price: 120, damage: "1d6 Bludgeoning", range: "Melee",
@@ -58,7 +60,7 @@ EN.gearCatalog.melee = {
     { name: "Greatsword", group: "Martial", price: 180, damage: "2d6 Slashing", range: "Melee",
       traits: ["Heavy", "Two-Handed"], availability: "Uncommon", legality: "Licensed",
       desc: "A long two-handed blade meant for open spaces and decisive swings. The kind of weapon people step back from before the swing even starts." },
-    { name: "Halberd", group: "Martial", price: 120, damage: "1d10 Slashing", range: "Melee (Reach 1)",
+    { name: "Halberd", shafted: true, group: "Martial", price: 120, damage: "1d10 Slashing", range: "Melee (Reach 1)",
       traits: ["Heavy", "Reach 1", "Two-Handed"], availability: "Common", legality: "Licensed",
       desc: "A two-handed polearm with a chopping head, a spike, and a hook. Designed in another century for breaking armor. Redesigned in this one for breaking exosuits." },
     { name: "Katana", group: "Martial", price: 200, damage: "1d8 Slashing", range: "Melee",
