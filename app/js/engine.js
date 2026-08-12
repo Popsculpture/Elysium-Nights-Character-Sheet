@@ -482,7 +482,10 @@ EN.engine = (function () {
     "Scavenger's Maw":       { unarmed: { die: "1d6", type: "Piercing", note: "bite; +1 Vitality on a hit" } },
     "Smelter's Hands":       { unarmedRider: { damage: "1d4 Fire", when: "while your hands are lit" } },
     "Envenomed Thorns":      { unarmedRider: { damage: "1d4 Toxic", when: "while active", note: "the Target then makes a Body Save" } },
-    "Canopy Reach":          { unarmedReach: 1 }
+    // "Your unarmed strikes AND melee weapons gain an additional 1 space of reach."
+    // Both halves are stated, because both are real: the weapon half used to be prose
+    // with no engine path, so an Arboreal's Longsword read the same reach as anyone's.
+    "Canopy Reach":          { unarmedReach: 1, meleeReach: 1 }
   };
   function lineageMechanics(ch) {
     var out = { dr: 0, speed: 0, speedFirstRound: 0, initCaliber: false, initEdge: false };
@@ -726,6 +729,89 @@ EN.engine = (function () {
       sources.push(fn);
     });
     return { spaces: spaces, sources: sources };
+  }
+  /* ---- Weapon reach: THE one resolver -------------------------------------
+     "Melee range covers any space directly adjacent to you ... Each point of Reach
+     extends the weapon's range by 1 space beyond Melee range." So the number a row
+     shows is 1 + total Reach points, and points simply ADD; there is no stacking
+     rule to arbitrate.
+
+     Three grants existed in the data with three different SCOPES, all of them prose
+     with no engine path, which is why an Arboreal's Longsword read the same reach as
+     everyone else's. A single character-level bonus would be correct for only the
+     first, so this takes the WEAPON as well as the character:
+
+       lineage    Canopy Reach, +1 to every melee weapon, unconditional.
+       talent     Staff & Spear Master's Level 6+ Upgrade, +1 but only to a weapon
+                  that IS a reach weapon. Its own text says "reach weapons", and the
+                  talent elsewhere says "a Reach melee weapon or staff"; the only
+                  staff in the catalog is the Quarterstaff, which carries Reach 1
+                  anyway, so "has Reach" is the whole test.
+       part       Extended Haft, +1, and only on the weapon it is fitted to.
+                  ch.weaponParts is keyed by weapon NAME, so it applies to that TYPE.
+
+     ORDER MATTERS between the part and the talent, and only there. The haft "grants
+     OR increases" Reach, so a Longsword with one becomes a reach weapon, and the
+     talent then sees a reach weapon to extend. Part first, then the talent's test.
+
+     Ranged weapons are not touched: their row shows RANGE, not REACH. */
+  function weaponPartsOn(ch, item) {
+    var lo = ((ch && ch.weaponParts) || {})[item && item.name] || {};
+    var byKey = (EN.weaponParts && EN.weaponParts.byKey) || {};
+    return Object.keys(lo).map(function (slot) { return byKey[lo[slot]]; }).filter(Boolean);
+  }
+  function isMeleeWeapon(item) { return !!item && /^Melee/i.test(String(item.range || "")); }
+  function weaponReach(ch, item) {
+    var out = { melee: isMeleeWeapon(item), base: 0, bonus: 0, total: 0, sources: [],
+                flexible: !!(item && item.flexible), cap: 0, capped: 0 };
+    if (!out.melee) return out;
+    var caps = ((EN.combat || {}).reachCap) || { rigid: 2, flexible: 3 };
+    out.cap = out.flexible ? caps.flexible : caps.rigid;
+    var m = String(item.range || "").match(/Reach\s*(\d+)/i);
+    out.base = m ? parseInt(m[1], 10) : 0;
+    var pts = out.base;
+    // the part first: it can turn a plain weapon into a reach weapon
+    weaponPartsOn(ch, item).forEach(function (p) {
+      if (!p || !p.reachBonus) return;
+      pts += p.reachBonus;
+      out.sources.push({ label: p.name, kind: "part", spaces: p.reachBonus });
+    });
+    // then the talent, which only extends a weapon that already reaches
+    if (pts > 0 && talentUpgradeKeys(ch).indexOf("staff-spear-master") !== -1) {
+      pts += 1;
+      out.sources.push({ label: "Staff & Spear Master (Upgrade)", kind: "talent", spaces: 1 });
+    }
+    // and the lineage, which does not care what the weapon is
+    activeLineageFeatures(ch).forEach(function (fn) {
+      var lm = LINEAGE_MECH[fn];
+      if (!lm || !lm.meleeReach) return;
+      pts += lm.meleeReach;
+      out.sources.push({ label: fn, kind: "lineage", spaces: lm.meleeReach });
+    });
+    /* THE CAP, and it is on Reach POINTS rather than on spaces. A rigid shaft or
+       blade stops being swingable past a point; a lash or a filament pays out
+       further. Applied after everything is summed, so a character can be carrying
+       more bonus than the weapon can use and the row says so rather than quietly
+       swallowing it: a Quarterstaff with all three grants is Reach 4 on paper and
+       Reach 2 in the hand. `capped` is how many points went nowhere. */
+    var uncapped = pts;
+    pts = Math.min(pts, out.cap);
+    out.capped = uncapped - pts;
+    out.bonus = pts - out.base;
+    out.total = 1 + pts;              // the adjacent space, plus a space per Reach point
+    /* One sentence, built here, so the weapon row, the print sheet and the PDF cannot
+       word this three different ways. It has to name the sources AND the cap when the
+       cap bit: "+1 (Extended Haft, Staff & Spear Master, Canopy Reach)" reads as three
+       features producing one point, which is exactly the confusion the cap creates. */
+    if (out.sources.length) {
+      var names = out.sources.map(function (s) { return s.label; }).join(", ");
+      out.note = "reaches " + out.total + " space" + (out.total === 1 ? "" : "s")
+        + " (" + names + (out.capped
+            ? "; capped at Reach " + out.cap + " for a " + (out.flexible ? "flexible" : "rigid")
+              + " weapon, so " + out.capped + " point" + (out.capped > 1 ? "s go" : " goes") + " nowhere"
+            : "") + ")";
+    } else out.note = "";
+    return out;
   }
   // The replacer the character is striking with: their stored pick while it is
   // still available, otherwise the first one. null means the bare strike, either
@@ -2650,6 +2736,10 @@ EN.engine = (function () {
     // the Universal Upgrade slots holding a Talent an earlier slot already holds, so
     // the builder can say which slot is buying nothing
     duplicateTalentSlots: duplicateTalentSlots,
+    // THE resolver for how far a melee weapon reaches, character bonuses folded in.
+    // Every surface that prints a reach asks this; nothing re-derives it from the
+    // catalog string, which is what let three features be prose with no effect.
+    weaponReach: weaponReach,
     unarmedBasePick: UNARMED_BASE_PICK,
     isUnarmedAugmentName: isUnarmedAugmentName,   // gear that augments a punch instead of being a weapon
     stepDie: stepDie,   // the picker walks the ladder too, so each option can show what it really deals

@@ -82,7 +82,10 @@ EN.gearCatalog.melee = {
     { name: "Warhammer", group: "Martial", price: 100, damage: "1d8 Bludgeoning", range: "Melee",
       traits: ["Armor Piercing 1", "Versatile (1d10)"], availability: "Common", legality: "Licensed",
       desc: "A reinforced head on a fighting haft, built to dent plate and crack exosuit ceramic. The bludgeon that beats armor for a living." },
-    { name: "Whip", group: "Martial", price: 50, damage: "1d4 Slashing", range: "Melee (Reach 2)",
+    // flexible: a lash, not a shaft. Reach caps higher for these than for a rigid
+    // weapon; see EN.combat.reachCap. A data flag rather than a name or desc match,
+    // so adding another flexible weapon is one field and not a regex.
+    { name: "Whip", group: "Martial", price: 50, damage: "1d4 Slashing", range: "Melee (Reach 2)", flexible: true,
       traits: ["Finesse", "Reach 2"], availability: "Common", legality: "Licensed",
       desc: "A long lash of braided polymer, weighted for cutting arcs and distance control. Doesn't kill quickly. Sometimes that's the point." }
   ]

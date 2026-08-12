@@ -593,7 +593,12 @@ EN.pdfExport = (function () {
     var atkRows = equippedWeaponNames(ch).map(findWeapon).filter(Boolean)
       .filter(function (w) { return !(eng.isUnarmedAugmentName && eng.isUnarmedAugmentName(w.name)); })
       .map(function (w) {
-        return { name: w.name, atk: sgn(weaponHit(ch, d, w)), dmg: w.damage || "", notes: (w.traits || []).join(", ") };
+        // same as the print sheet: the catalog traits, plus the reach the character
+        // adds, so the exported row matches the one on the Freelancer tab
+        var notes = (w.traits || []).slice();
+        var wr = eng.weaponReach ? eng.weaponReach(ch, w) : null;
+        if (wr && wr.melee && wr.note) notes.push(wr.note);
+        return { name: w.name, atk: sgn(weaponHit(ch, d, w)), dmg: w.damage || "", notes: notes.join(", ") };
       });
     atkRows = atkRows.concat(unarmedAttackRow(ch, d));
     while (atkRows.length < 6) atkRows.push({ name: "", atk: "", dmg: "", notes: "" });

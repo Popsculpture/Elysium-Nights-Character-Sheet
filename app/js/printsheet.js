@@ -459,7 +459,13 @@ EN.printSheet = (function () {
     var atkRows = equippedWeaponNames(ch).map(findWeapon).filter(Boolean)
       .filter(function (w) { return !(eng.isUnarmedAugmentName && eng.isUnarmedAugmentName(w.name)); })
       .map(function (w) {
-        return [w.name, sgn(weaponHit(ch, d, w)), w.damage || "", (w.traits || []).join(", ")];
+        // the weapon's own traits, plus the reach the CHARACTER adds to it. The
+        // traits list prints the catalog's "Reach 1"; a Verdine Arboreal actually
+        // reaches further than that and the printed sheet is what they play from.
+        var notes = (w.traits || []).slice();
+        var wr = eng.weaponReach ? eng.weaponReach(ch, w) : null;
+        if (wr && wr.melee && wr.note) notes.push(wr.note);
+        return [w.name, sgn(weaponHit(ch, d, w)), w.damage || "", notes.join(", ")];
       });
     atkRows = atkRows.concat(unarmedAttackRow(ch, d));
     R.push(wtable(["Name", "Atk Bonus / DC", "Damage & Type", "Notes"], atkRows, Math.max(6, atkRows.length + 2), ".ps-tbl-atk"));

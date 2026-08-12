@@ -3879,6 +3879,10 @@ EN.combatView = (function () {
         // STRIKE picker already account for them.
         if (eng.isUnarmedAugmentName(it.name)) return;
         var h = weaponHit(it), norm = normalizeWeapon(it);
+        // resolved once per row and used by both the REACH box and the traits line,
+        // so the number and the chips cannot disagree. Ranged weapons come back
+        // `melee: false` and nothing below touches them.
+        var wr = eng.weaponReach(ch, it);
         var snagWhy = atkSnag || (h.tier === "untrained" ? "Untrained with " + h.cat + "; attacks roll with Snag" : null);
         var dmgTip = h.indirect
           ? norm.damageDisplay + " on hit · indirect delivery adds no attribute modifier · Tap to roll damage"
@@ -3974,8 +3978,21 @@ EN.combatView = (function () {
           if (statusChips.length) rowKids.push(el("div.row.wrap", { style: { gap: "6px", marginTop: "6px" } }, statusChips));
         } else {
           // melee / thrown: Range · Hit · Damage (no ammo). HIT opens the roll tray.
+          /* REACH is the one number on this row a character feature can move, so it
+             comes from the engine's resolver rather than from the catalog string.
+             The tooltip breaks it down, because "REACH 5" on a Quarterstaff is
+             otherwise unexplainable next to a trait chip that says Reach 2. */
+          var reachTip = wr.melee && (wr.bonus || wr.capped)
+            ? "Melee range is the adjacent space, plus 1 space per point of Reach.\n"
+              + (wr.base ? it.name + " has Reach " + wr.base + ".\n" : it.name + " has no Reach of its own.\n")
+              + wr.sources.map(function (s) { return "+" + s.spaces + " " + s.label; }).join("\n")
+              + (wr.capped ? "\n\n" + wr.capped + " point" + (wr.capped > 1 ? "s" : "") + " wasted: "
+                  + (wr.flexible ? "a flexible weapon" : "a rigid weapon") + " caps at Reach " + wr.cap + "." : "")
+              + "\nReaches " + wr.total + " spaces."
+            : (it.range || "");
           rowKids.push(el("div.row.wrap", { style: { gap: "14px", alignItems: "center", marginTop: "6px" } }, [
-            statBox(h.melee ? "REACH" : "RANGE", norm.rangeDisplay, "var(--gold)", it.range || ""),
+            statBox(h.melee ? "REACH" : "RANGE", (wr.melee ? String(wr.total) : norm.rangeDisplay),
+              wr.bonus ? "var(--flow)" : "var(--gold)", reachTip),
             physicalDice()
               ? statBox("HIT", eng.fmtMod(h.total), "var(--ember)", hitTip)
               : el("div.statwrap", { title: "Roll to hit \u00b7 " + hitTip }, [
@@ -3987,9 +4004,20 @@ EN.combatView = (function () {
           ]));
         }
 
-        // traits line
+        /* traits line. The catalog's own "Reach 2" chip stays exactly as printed,
+           because that is the weapon's trait and it is true; the character's bonus
+           rides beside it as its own chip naming its sources, the same shape the
+           unarmed strike's "+1 reach" chip uses. Rewriting the trait chip instead
+           would make the row claim the weapon has a Reach it does not have. */
+        var reachChip = (wr.melee && (wr.bonus || wr.capped))
+          ? el("span.chip", { title: wr.sources.map(function (s) { return "+" + s.spaces + " " + s.label; }).join("\n")
+                + (wr.capped ? "\n\n" + ((EN.combat || {}).reachCapText || "") : "")
+                + "\nReaches " + wr.total + " spaces in total.",
+              style: { color: wr.capped ? "var(--warn)" : "var(--flow)", borderColor: wr.capped ? "var(--warn)" : "var(--flow)" } },
+              wr.bonus ? ("+" + wr.bonus + " reach" + (wr.capped ? " · AT CAP" : "")) : "REACH AT CAP")
+          : null;
         rowKids.push(el("div.row.wrap", { style: { gap: "5px", marginTop: "9px", paddingTop: "8px",
-          borderTop: "1px solid rgba(35,48,68,.6)" } }, norm.traits.map(wTraitChip)));
+          borderTop: "1px solid rgba(35,48,68,.6)" } }, norm.traits.map(wTraitChip).concat(reachChip ? [reachChip] : [])));
 
         // Signature Weapons: On Hit effects and area projections stay locked at
         // any proficiency tier until a Skill Focus names this specific weapon.

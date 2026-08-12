@@ -76,6 +76,10 @@ EN.weaponParts = {
     { key: "balanced-hilt", name: "Balanced Hilt", category: "melee", slot: "handling", partType: "Mod", fits: "Any Melee", price: 200, rarity: "Common", legality: "Licensed",
       grants: "Finesse", effect: "When attacking with a Finesse weapon, you may use Body or Agility for the attack and damage, choosing each time you attack." },
     { key: "extended-haft", name: "Extended Haft", category: "melee", slot: "handling", partType: "Mod", fits: "Any Melee", price: 180, rarity: "Common", legality: "Licensed",
+      // reachBonus is the mechanical half of `grants`, as a number the engine can add.
+      // Nothing parses the prose: this is the only Weapon Part that moves a computed
+      // value, and it says so in data rather than in a string somebody has to regex.
+      reachBonus: 1,
       grants: "+1 Reach, adds Two-Handed", effect: "Grants or increases Reach by 1 (a Reach 1 weapon becomes Reach 2) and grants the Two-Handed trait." },
     { key: "counterweight-pommel", name: "Counterweight Pommel", category: "melee", slot: "handling", partType: "Mod", fits: "Any Melee", price: 200, rarity: "Common", legality: "Licensed",
       grants: "Edge on first attack per Target per round", effect: "Your first attack each round against a Target you have not yet attacked this round gains Edge." },
