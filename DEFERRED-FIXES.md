@@ -3522,6 +3522,112 @@ throws and a bad way to leave a fixture in a known state; the worn-suit assertio
 re-run against a freshly seeded record.
 
 
+## L4, RULED AND FIXED: "in its place" was the whole mechanic
+
+The long-running L4 question is closed, and the answer was not any of the three options this
+log had drafted.
+
+### How the question got asked wrong twice
+
+First reading (mine): the pairing's damage clause is a no-op, because Open Architecture
+derives 1d8 at Brandware with or without it. Measured and true, but it treated the clause as
+a promise about a NUMBER.
+
+Second reading (Brandon's first answer): Synthetic Musculature is not a standalone feature at
+all, but a benefit derived from Human + NextGen + Open Architecture + Reinforced Skeleton.
+This was checked against the app's data before anything was built, and it contradicted it:
+`species.js` carries Synthetic Musculature as an independently selectable NextGen feature,
+`rules.js lineageCreationFeatures.nextgen` offers it as one of four picks at level 1, and
+Open Architecture's own text lists it among SEVEN pairings whose clause it "opens", which
+only parses if you already possess it. **Raising that contradiction is what produced the real
+ruling** rather than a refactor that would have deleted a level-1 pick and left NextGen with
+three.
+
+### The ruling
+
+Brandon, 2026-08-12: "Synthetic Musculature is a standalone lineage trait for NextGen Humans,
+the requirements should be: Human + NextGen + Synthetic Musculature + Open Architecture +
+Reinforced Skeleton = symbiotic bonuses of Synthetic Musculature (Reinforced Skeleton): When
+you install a Reinforced Skeleton at any tier, **the Engineered Baseline effect ends.** Your
+synthetic muscle has integrated with the new bone-weaving. **In its place**, the Reinforced
+Skeleton's unarmed strike damage die increases by one size, and you retain the Encumbrance
+Threshold bonus and the Size-larger bonus for grappling."
+
+**"In its place" is the mechanic, and it is not about the number.** Synthetic Musculature's
+step is GENERIC: it lands on whichever replacer you strike with. Integrated, that generic step
+ends and the benefit becomes SPECIFIC to the implant's die. With only a skeleton installed the
+two readings produce the same number, which is exactly why the pairing looked like a no-op
+when measured. The difference appears the moment a second replacer exists.
+
+### Measured, before and after
+
+| setup | before | after |
+| ----- | ----- | ----- |
+| skeleton Brandware, SM only | 1d6 replacer + generic step = **1d8** | unchanged, **1d8** |
+| skeleton Brandware, SM + OA | 1d6 replacer + generic step = **1d8** | replacer is **1d8**, no step |
+| skeleton Blackware, SM + OA | 1d8 + step = **1d10** | replacer is **1d10**, no step |
+| skeleton + razors, SM only, striking with the RAZORS | **1d8** Slashing | unchanged, **1d8** |
+| skeleton + razors, SM + OA, striking with the RAZORS | **1d8** Slashing | **1d6** Slashing |
+| SM + OA but NO skeleton | 1d8 | unchanged, **1d8** (requirement unmet, baseline still runs) |
+
+The last two rows are the ruling. Integrated, the Engineered Baseline has ended, so the razors
+are bare at 1d6 and the skeleton's own option reads 1d8 instead. Unintegrated, nothing moves.
+
+### What changed in the code
+
+`synthMusculatureIntegrated(ch)` is one predicate, because it now gates two things and two
+copies would drift. Human and NextGen are not tested separately: both features are NextGen
+human lineage features, so holding both IS that half of the requirement, and testing a stored
+species string as well would only give a hand-edited record a way to lose a benefit it has.
+
+The increase moved to where the die is READ (`unarmedReplacers`) rather than staying a floating
+step in `unarmedIncreases`. That is what makes it stay with the skeleton when the player
+strikes with something else. `unarmedIncreases` now SKIPS Synthetic Musculature's step when
+integrated instead of merely relabelling it, which is what the old code did and is how the
+pairing came to advertise as its enhanced capability a die the character already had.
+
+**The note is now true rather than fixed.** It used to read "Open Architecture: the step lands
+on the Reinforced Skeleton's die" while the step landed on whatever won, reproduced with Hand
+Razors picked: 1d8 Slashing off the razors under a note naming the skeleton. There is no note
+to correct any more, because the step is gone and the implant's own die carries the label.
+
+The pairing text was updated to Brandon's wording in both places that print it,
+`app/data/rules.js` and `app/data/species.js`.
+
+### L3, closed in the same pass because the ruling promoted it
+
+`builder.js toggleChrome`, behind the Open Architecture card's "+ CHROME" button, minted an
+installed-chrome record with **no `key`**. The card's own chip reads `base || name` through
+`installedCyberBases`, so it lit up, while every mechanical reader looks the piece up by key:
+`CYBER_UNARMED[cw.key]` for the die, and now `cw.key === "skeleton"` for the integration gate.
+Before the ruling that cost a wrong note. After it, a player who marked the skeleton there
+would have seen INTEGRATED and been granted nothing at all. The toggle resolves the key from
+the catalog by name now, minting the same shape the Chrome tab does. A name the catalog does
+not carry still stores without a key, which is the honest outcome for a piece the rules do not
+have.
+
+Verified: the toggle's record stores `key: "skeleton"`, the skeleton is offered as a replacer,
+and integration steps it to 1d8 at the null tier (which reads as Streetware, per the existing
+"a legacy hand-entered piece carries no tier" rule).
+
+### Verified
+
+* The six-row table above, measured on fresh records through `importCharacter` and `derive`.
+* The decisive pair measured with the razors explicitly picked: **1d8 Slashing unintegrated,
+  1d6 Slashing integrated**, with the skeleton's option at 1d8 in the second case.
+* L3 closed, with the derived strike checked end to end.
+* 96 tab, builder-step and print-sheet visits across all six roster characters: zero console
+  errors.
+
+### A process note
+
+Two workflows in this session died wholesale, one on repeated API 529s and one on the session
+limit (108 of 112 agents). Both returned empty or partial result sets that would read as "no
+findings" to anyone who did not check the failure list. The survey half of the second run did
+complete and its leads were useful, but **none of it was verified**, so it was treated as
+leads and re-checked by hand rather than quoted as fact.
+
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

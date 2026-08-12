@@ -1953,7 +1953,21 @@ EN.builder = (function () {
     store.update(function (c) {
       c.cyberware = c.cyberware || [];
       var i = c.cyberware.findIndex(function (cw) { return (cw && (cw.base || cw.name)) === cyberName || cw === cyberName; });
-      if (i === -1) c.cyberware.push({ base: cyberName, name: cyberName, tier: null, zone: "Hardware", sp: 0, side: null, custom: true });
+      /* L3, and Brandon's 2026-08-12 ruling promoted it from cosmetic to load-bearing.
+         This record used to carry NO `key`, while every mechanical reader looks the piece
+         up by key: engine.CYBER_UNARMED[cw.key] for the unarmed die, and the Synthetic
+         Musculature integration test for `cw.key === "skeleton"`. The card's own chip reads
+         `base || name` through installedCyberBases, so it lit up while the sheet granted
+         nothing. Now that the integration GATE reads the key, a player who marks the
+         skeleton here would see INTEGRATED and get no die at all. Resolved from the catalog
+         by name, so the toggle mints the same shape the Chrome tab does. A name the catalog
+         does not know still stores without a key, which is the honest outcome for a piece
+         the rules do not carry. */
+      if (i === -1) {
+        var cat = ((EN.cyberware && EN.cyberware.items) || []).find(function (x) { return x && x.name === cyberName; });
+        c.cyberware.push({ key: cat ? cat.key : undefined, base: cyberName, name: cyberName,
+                           tier: null, zone: "Hardware", sp: 0, side: null, custom: true });
+      }
       else c.cyberware.splice(i, 1);
     });
   }

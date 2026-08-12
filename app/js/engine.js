@@ -617,6 +617,34 @@ EN.engine = (function () {
   }
   // Every effect currently available to the character that REPLACES the unarmed
   // die, as [{source, pick, label, kind, die, type, traits, note}].
+  /* THE Synthetic Musculature / Reinforced Skeleton Integration, as one predicate, because
+     it now gates two different things and two copies would drift.
+
+     Brandon's ruling, 2026-08-12: "Human + NextGen + Synthetic Musculature + Open
+     Architecture + Reinforced Skeleton = symbiotic bonuses of Synthetic Musculature ...
+     the Engineered Baseline effect ends. Your synthetic muscle has integrated with the new
+     bone-weaving. IN ITS PLACE, the Reinforced Skeleton's unarmed strike damage die
+     increases by one size, and you retain the Encumbrance Threshold bonus and the
+     Size-larger bonus for grappling."
+
+     "In its place" is the whole mechanic. Synthetic Musculature's own step is a generic one:
+     it lands on whichever replacer you are striking with. Integrated, that generic step ENDS
+     and the benefit becomes specific to the implant's die. With only a skeleton installed the
+     two readings give the same number, which is why this looked like a no-op when measured;
+     the difference appears the moment a second replacer exists. Skeleton plus Hand Razors,
+     striking with the razors: unintegrated the razors step to 1d8, integrated they stay 1d6
+     and the skeleton's own option is 1d8 instead.
+
+     Human and NextGen are not tested separately: Synthetic Musculature and Open Architecture
+     are both NextGen human lineage features, so holding both IS that half of the requirement.
+     Testing a stored species string as well would only add a way for a hand-edited record to
+     lose a benefit it legitimately has. */
+  function synthMusculatureIntegrated(ch) {
+    var linFeats = activeLineageFeatures(ch);
+    return linFeats.indexOf("Open Architecture") !== -1 &&
+           linFeats.indexOf("Synthetic Musculature") !== -1 &&
+           installedCyberware(ch).some(function (cw) { return cw && cw.key === "skeleton" && CYBER_UNARMED[cw.key]; });
+  }
   function unarmedReplacers(ch) {
     var out = [];
     activeLineageFeatures(ch).forEach(function (fn) {
@@ -625,19 +653,30 @@ EN.engine = (function () {
       out.push({ source: fn, pick: fn, label: fn, kind: "lineage", die: m.unarmed.die,
         type: m.unarmed.type, traits: m.unarmed.traits || null, note: m.unarmed.note || null });
     });
+    var smInt = synthMusculatureIntegrated(ch);
     installedCyberware(ch).forEach(function (cw) {
       var spec = cw && CYBER_UNARMED[cw.key];
       if (!spec) return;
       // a legacy hand-entered piece carries no tier; read it at its lowest one
       var t = spec.tiers[cw.tier] || spec.tiers.Streetware;
       var nm = cw.base || cw.name;
+      /* Integrated, the increase is a property of THIS IMPLANT'S die rather than a floating
+         step, so it is applied here where the die is read and not in unarmedIncreases below.
+         That is what makes it stay with the skeleton when the player strikes with something
+         else, and it is why the note the sheet prints is finally true. */
+      var died = t.die, dnote = t.note || null;
+      if (smInt && cw.key === "skeleton") {
+        died = stepDie(died, 1);
+        dnote = (dnote ? dnote + " · " : "")
+          + "Synthetic Musculature integrated: this implant's die is one size larger";
+      }
       // Two installs of the same piece at different tiers are different effects,
       // not one choice, so the tier and side are part of what is being chosen
       // between. Keying the pick on the name alone would make the second one
       // unreachable, which is the exact bug this function exists to remove.
       var qual = (cw.tier ? " · " + cw.tier : "") + (cw.side ? " (" + cw.side + ")" : "");
-      out.push({ source: nm, pick: nm + qual, label: nm + qual, kind: "chrome", die: t.die,
-        type: spec.type, traits: spec.traits || null, note: t.note || null });
+      out.push({ source: nm, pick: nm + qual, label: nm + qual, kind: "chrome", die: died,
+        type: spec.type, traits: spec.traits || null, note: dnote });
     });
     // identical installs (a matched pair of arms) collapse; differing ones do not
     var seen = {};
@@ -648,23 +687,22 @@ EN.engine = (function () {
   // a number the player has to take on faith.
   function unarmedIncreases(ch) {
     var sources = [], linFeats = activeLineageFeatures(ch);
-    // Open Architecture pairing: with Synthetic Musculature and an installed
-    // Reinforced Skeleton "the Engineered Baseline effect ends" and the implant's
-    // die goes up one size in its place. That step IS Synthetic Musculature's,
-    // now that the feature is an increase, so the pairing relabels the step
-    // rather than adding a second one: the clause prints 1d8 at Brandware and
-    // 1d10 at Blackware, exactly one rung above the implant's own die. The
-    // Encumbrance Threshold and Size-for-grappling halves are retained, and they
-    // were never on this path in the first place.
-    var integrated = linFeats.indexOf("Open Architecture") !== -1 &&
-      linFeats.indexOf("Synthetic Musculature") !== -1 &&
-      installedCyberware(ch).some(function (cw) { return cw && cw.key === "skeleton" && CYBER_UNARMED[cw.key]; });
+    /* "The Engineered Baseline effect ENDS ... in its place, the Reinforced Skeleton's
+       unarmed strike damage die increases by one size." So integrated, Synthetic
+       Musculature's generic step is not relabelled, it is GONE: the benefit moved onto the
+       implant's own die up in unarmedReplacers. Pushing it here as well would double the
+       increase, and leaving it here alone would let it land on a weapon the clause does not
+       name. The Encumbrance Threshold and Size-for-grappling halves are explicitly retained
+       by the clause and were never on this path anyway.
+
+       This block used to keep the step and only change its NOTE, which is how the pairing
+       came to advertise, as its enhanced capability, a die the character already had. */
+    var integrated = synthMusculatureIntegrated(ch);
     linFeats.forEach(function (fn) {
       var m = LINEAGE_MECH[fn];
       if (!m || !m.unarmedStep) return;
-      sources.push({ label: fn, kind: "lineage", steps: m.unarmedStep,
-        note: (fn === "Synthetic Musculature" && integrated)
-          ? "Open Architecture: the step lands on the Reinforced Skeleton's die" : null });
+      if (fn === "Synthetic Musculature" && integrated) return;   // absorbed into the implant
+      sources.push({ label: fn, kind: "lineage", steps: m.unarmedStep, note: null });
     });
     var upKeys = talentUpgradeKeys(ch);
     activeTalents(ch).forEach(function (t) {
