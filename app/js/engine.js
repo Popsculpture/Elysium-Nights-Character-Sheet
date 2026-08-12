@@ -741,35 +741,66 @@ EN.engine = (function () {
      everyone else's. A single character-level bonus would be correct for only the
      first, so this takes the WEAPON as well as the character:
 
-       part       Extended Haft, +1, and only on the weapon it is fitted to.
+       part       Extended Shaft, +1, and only on the weapon it is fitted to.
                   ch.weaponParts is keyed by weapon NAME, so it applies to that TYPE.
+                  Since 2026-08-12 the part itself only FITS a long-shafted weapon,
+                  so this and the talent below now gate on the same question.
        talent     Staff & Spear Master's Level 6+ Upgrade, +1 to LONG-SHAFTED weapons.
                   Not "weapons with Reach": the manuscript retargeted this on
                   2026-08-11 and the talent now says "long-shafted weapons, such as a
                   staff or spear" throughout. A Whip has Reach 2 and is not one; a
-                  hafted Longsword has Reach and is not one either. Read off the
-                  item's `shafted` flag, never off its Reach.
+                  shafted Longsword has Reach and is not one either. Read it off
+                  isLongShafted(), never off its Reach.
        lineage    Canopy Reach, +1 to every melee weapon, unconditional, and it is
                   the one grant that BREAKS THE CAP.
 
      ORDER, and every step of it is load-bearing:
-       base + part, because the haft "increases Reach by 1" on the weapon itself;
+       base + part, because the shaft "increases Reach by 1" on the weapon itself;
        + the talent, which is also a property of the weapon in your hands;
        CAP HERE, because the general rule is "if an effect would increase a weapon's
          Reach beyond its cap ... any excess is lost. A feature can exceed this cap
-         only if its own text specifically says so", and neither the haft nor the
-         talent says so (the haft says the opposite in as many words);
+         only if its own text specifically says so", and neither the part nor the
+         talent says so;
        + Canopy Reach LAST and uncapped, because its text does say so: "This bonus
          can exceed a weapon's normal Reach cap, since the vine is extending the
          attack rather than the weapon itself."
 
      Ranged weapons are not touched: their row shows RANGE, not REACH. */
+  /* Every Part installed on this weapon. It used to walk Object.keys(loadout) and index
+     byKey with whatever each property held, which quietly got two things wrong: it probed
+     `_profile` (a profile name, never a part key) as though it were a slot, and it handed
+     byKey the whole UTILITY ARRAY, which stringifies to "key1,key2" and matches nothing.
+     Utility holds two of the fifteen Utility Parts and NONE of them resolved. Latent
+     rather than live, because the only Part carrying engine-read flags today
+     (Extended Shaft: reachBonus, grantsTwoHanded) sits in Handling. It was a trap for the
+     next one. Enumerated the same way inventory.js's allInstalledKeys() does, because
+     "which Parts are on this weapon" should not have two different answers. */
   function weaponPartsOn(ch, item) {
     var lo = ((ch && ch.weaponParts) || {})[item && item.name] || {};
     var byKey = (EN.weaponParts && EN.weaponParts.byKey) || {};
-    return Object.keys(lo).map(function (slot) { return byKey[lo[slot]]; }).filter(Boolean);
+    var keys = ["targeting", "output", "core", "handling"]
+      .map(function (slot) { return lo[slot]; })
+      .concat(Array.isArray(lo.utility) ? lo.utility : []);
+    return keys.map(function (k) { return byKey[k]; }).filter(Boolean);
   }
   function isMeleeWeapon(item) { return !!item && /^Melee/i.test(String(item.range || "")); }
+  /* LONG-SHAFTED is one question with one answer, asked by two unrelated systems: the
+     Staff & Spear Master reach bonus below, and the mod bench's Fits gate on the
+     Extended Shaft. It lived as a bare `!!item.shafted` read in exactly one of them.
+
+     The catalog's own flag WINS whenever it states anything, true or false, because it
+     is the book's word about a weapon the book carries. The name list is the fallback
+     for an item that says nothing, and it is future-proofing rather than classification:
+     Brandon named five weapons the book does not carry yet so that an expansion cannot
+     land silently unshafted. Order matters: `typeof === "boolean"` and not a truthiness
+     test, or an explicit `shafted: false` would fall through to the names and be
+     overturned by the very list it is supposed to outrank. */
+  function isLongShafted(item) {
+    if (!item) return false;
+    if (typeof item.shafted === "boolean") return item.shafted;
+    var names = ((EN.combat || {}).longShaftedNames) || [];
+    return names.indexOf(String(item.name || "")) !== -1;
+  }
   function weaponReach(ch, item) {
     var out = { melee: isMeleeWeapon(item), base: 0, bonus: 0, total: 0, sources: [],
                 flexible: !!(item && item.flexible), cap: 0, capped: 0 };
@@ -778,7 +809,7 @@ EN.engine = (function () {
     out.cap = out.flexible ? caps.flexible : caps.rigid;
     var m = String(item.range || "").match(/Reach\s*(\d+)/i);
     out.base = m ? parseInt(m[1], 10) : 0;
-    out.shafted = !!(item && item.shafted);
+    out.shafted = isLongShafted(item);
     var pts = out.base;
     // the part, which increases the weapon's own Reach
     weaponPartsOn(ch, item).forEach(function (p) {
@@ -814,7 +845,7 @@ EN.engine = (function () {
     out.total = 1 + pts;              // the adjacent space, plus a space per Reach point
     /* One sentence, built here, so the weapon row, the print sheet and the PDF cannot
        word this three different ways. It has to name the sources AND the cap when the
-       cap bit: "+1 (Extended Haft, Staff & Spear Master, Canopy Reach)" reads as three
+       cap bit: "+1 (Extended Shaft, Staff & Spear Master, Canopy Reach)" reads as three
        features producing one point, which is exactly the confusion the cap creates. */
     if (out.sources.length) {
       var capped = out.sources.filter(function (s) { return !s.breaksCap; }).map(function (s) { return s.label; });
@@ -842,7 +873,7 @@ EN.engine = (function () {
      "Two-Handed: requires both hands for effective use." A weapon that is Two-Handed
      therefore has no one-handed grip to choose, and if it is also Versatile the
      alternate die is simply its damage. That is reachable two ways: the trait on the
-     weapon itself, and the Extended Haft, whose text ends "and grants the Two-Handed
+     weapon itself, and the Extended Shaft, whose text ends "and grants the Two-Handed
      trait". Fitting one to a Versatile weapon spends its lower die permanently.
 
      `forcedBy` names whichever did it, so the row can say why the choice is gone
@@ -2817,6 +2848,7 @@ EN.engine = (function () {
     // whether the player still has the choice. Every surface that prints weapon
     // damage asks it rather than printing both dice and hoping.
     weaponGrip: weaponGrip, weaponVersatileDie: weaponVersatileDie,
+    isLongShafted: isLongShafted,   // one answer for the reach talent AND the bench's Fits gate
     unarmedBasePick: UNARMED_BASE_PICK,
     isUnarmedAugmentName: isUnarmedAugmentName,   // gear that augments a punch instead of being a weapon
     stepDie: stepDie,   // the picker walks the ladder too, so each option can show what it really deals

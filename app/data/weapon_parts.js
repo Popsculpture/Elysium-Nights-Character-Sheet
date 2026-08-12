@@ -75,7 +75,10 @@ EN.weaponParts = {
     // Handling
     { key: "balanced-hilt", name: "Balanced Hilt", category: "melee", slot: "handling", partType: "Mod", fits: "Any Melee", price: 200, rarity: "Common", legality: "Licensed",
       grants: "Finesse", effect: "When attacking with a Finesse weapon, you may use Body or Agility for the attack and damage, choosing each time you attack." },
-    { key: "extended-haft", name: "Extended Haft", category: "melee", slot: "handling", partType: "Mod", fits: "Any Melee", price: 180, rarity: "Common", legality: "Licensed",
+    // Renamed from "Extended Haft" and re-gated from "Any Melee" on 2026-08-12, to match
+    // the manuscript. `fits: "Long-Shafted"` is a HARD frame gate, so this no longer fits
+    // a Longsword or a Whip; see EN.weaponParts.renames for the save migration.
+    { key: "extended-shaft", name: "Extended Shaft", category: "melee", slot: "handling", partType: "Mod", fits: "Long-Shafted", price: 180, rarity: "Common", legality: "Licensed",
       // reachBonus is the mechanical half of `grants`, as a number the engine can add.
       // Nothing parses the prose: this is the only Weapon Part that moves a computed
       // value, and it says so in data rather than in a string somebody has to regex.
@@ -84,7 +87,7 @@ EN.weaponParts = {
       // fitted with one can only be held in two hands, so it loses the Versatile choice
       // and keeps the two-handed die permanently.
       grantsTwoHanded: true,
-      grants: "+1 Reach, adds Two-Handed", effect: "Grants or increases Reach by 1 (a Reach 1 weapon becomes Reach 2) and grants the Two-Handed trait." },
+      grants: "+1 Reach, adds Two-Handed", effect: "Increases Reach by 1 (a Reach 1 weapon becomes Reach 2) and grants the Two-Handed trait." },
     { key: "counterweight-pommel", name: "Counterweight Pommel", category: "melee", slot: "handling", partType: "Mod", fits: "Any Melee", price: 200, rarity: "Common", legality: "Licensed",
       grants: "Edge on first attack per Target per round", effect: "Your first attack each round against a Target you have not yet attacked this round gains Edge." },
     { key: "pared-hilt", name: "Pared Hilt", category: "melee", slot: "handling", partType: "Mod", fits: "Any Melee", price: 150, rarity: "Common", legality: "Legal",
@@ -212,6 +215,20 @@ EN.weaponParts = {
     install: "Accessories snap on anytime out of initiative, no roll. Mods are bench work: a Short or Long Rest with a relevant tool kit and Proficiency, occasionally a single Engineering check or a short crafting Project."
   }
 };
+
+/* ---- Parts that have been renamed, and what they were called -------------
+   A Part is persisted TWICE in a saved character, under two different strings, so a
+   rename has to move both or it half-lands:
+     ch.weaponParts[weaponName][slot] = <part KEY>   the install
+     ch.equipment[n].name             = <part NAME>  the owned copy in the stash
+   and availablePartQty() is literally owned-by-name minus installed-by-key, so moving
+   one and not the other makes a character own -1 of something.
+   The rename lives HERE, beside the Part, rather than as a literal in store.js, so the
+   next rename is a row in this table and not a second place to remember. store.js reads
+   it in migrate(); nothing else should. */
+EN.weaponParts.renames = [
+  { oldKey: "extended-haft", key: "extended-shaft", oldName: "Extended Haft", name: "Extended Shaft" }
+];
 
 /* index by key (built once at load) */
 EN.weaponParts.byKey = {};

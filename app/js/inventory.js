@@ -506,6 +506,15 @@ EN.inventoryView = (function () {
     return el("div.row.wrap", { style: { gap: "6px", marginTop: "5px", alignItems: "center" } }, [
       el("span.chip", { title: "Installs in the " + slotName + " slot", style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" } }, slotName + " slot"),
       el("span.chip", { title: it.partType === "Mod" ? "Bench work: a rest with a kit" : "Snap-on, no tools, no roll", style: { fontSize: "9px", color: it.partType === "Mod" ? "var(--ember)" : "var(--text2)", borderColor: it.partType === "Mod" ? "var(--ember)" : "var(--text2)" } }, it.partType),
+      /* The frame gate, on the card you buy from. The Armor Mod line beside this one has
+         drawn its "fits" chip all along; the Part line never did, because for melee the
+         gate was Any Melee or Blades and effectively always passed. Long-Shafted made it
+         bite: the market would happily sell you an Extended Shaft with nothing but a
+         Longsword to your name, and only the bench would ever mention it. A broad
+         category is left unchipped, the same way "Any" is on the armor line, so this
+         stays a warning about a narrow frame and not noise on every card. */
+      (it.fits && !/^Any\b/i.test(String(it.fits)))
+        ? el("span.chip", { title: "Only fits " + it.fits + " weapons", style: { fontSize: "9px", color: "var(--warn)", borderColor: "var(--warn)" } }, "fits " + it.fits) : null,
       el("span.help", { style: { margin: 0, fontSize: "11px", color: "var(--text2)" }, text: it.grants }),
       installedN ? el("span.chip", { style: { fontSize: "9px", color: "var(--success)", borderColor: "var(--success)" } }, "installed ×" + installedN) : null
     ]);
@@ -1402,6 +1411,10 @@ EN.inventoryView = (function () {
       case "Any Firearm": return isFirearmGroup(g);
       case "Any bow": return isBowGroup(g);
       case "Blades": return isMeleeGroup(g) && (/slashing|piercing/.test(dmg) || hasTrait("Blade"));
+      // "Fits: a HARD frame gate." Long-Shafted arrived as a frame on 2026-08-12 and gates
+      // exactly one Part, the Extended Shaft. Asked of the engine rather than answered here,
+      // because the reach talent asks the same question and two answers would drift.
+      case "Long-Shafted": return isMeleeGroup(g) && !!(EN.engine.isLongShafted && EN.engine.isLongShafted(it));
       case "Shotgun": return /shotgun/.test(name) || hasTrait("Spread");
       case "Longarm": return g === "Longarm" || g === "Heavy";
       case "Sidearm": return g === "Sidearm";
@@ -1582,6 +1595,12 @@ EN.inventoryView = (function () {
   function removeVehicleMod(vName, key) { setVehicleMods(vName, function (l) { return l.filter(function (k) { return k !== key; }); }); }
   function tryInstall(it, lo, slotKey, key) {
     var part = WP().byKey[key]; if (!part) return;
+    // The frame gate, checked by the WRITER and not only by the picker that feeds it.
+    // Unreachable through the dropdown, which only ever offers fitting Parts, and that is
+    // exactly why it belongs here: "Fits" is a hard gate and the only thing enforcing it
+    // was a filter on a list. The vehicle bench already guards its own install this way
+    // (see installVehicleMod). Cheap, and it keeps the rule in the same place as the rule.
+    if (!partFits(part, it)) { toast(part.name + " fits " + part.fits + "; the " + it.name + " is not."); return; }
     if (availablePartQty(store.active(), part) <= 0) { toast("You do not own a free " + part.name + ". Buy it in the gray market first."); return; }
     if (installedCount(lo) >= slotCountFor(it, lo)) { toast("Slot Count is full. Over-Engineering past it makes this a Prototype-tier Project with a Mandatory Flaw; track it as a Project."); return; }
     var installed = allInstalledKeys(lo);
@@ -1641,6 +1660,21 @@ EN.inventoryView = (function () {
       kids.push(el("p.help", { style: { margin: "5px 0 0", fontSize: "10.5px", color: "var(--text3)" }, text: "You own no Parts for this slot. Buy Mods & Accessories in the gray market." }));
     } else {
       kids.push(el("p.help", { style: { margin: "5px 0 0", fontSize: "10.5px", color: "var(--text4)" }, text: "No Parts fit this weapon's " + sd.name + " slot." }));
+    }
+    /* Owned but does not fit THIS frame. Worth a line of its own since Long-Shafted
+       arrived: before it, "Fits" for melee was Any Melee or Blades, so owning a Handling
+       Part and standing at a Longsword meant it went on. Now a player can own two Extended
+       Shafts, see "You own no Parts for this slot", and have no way to learn that the mod
+       is shaft-only. The Garage says exactly this for a chassis mismatch; the same sentence
+       belongs here. Listed whatever the slot's state, because a full slot does not explain
+       a misfit either. */
+    var misfit = (WP().parts || []).filter(function (p) {
+      return p.slot === slotKey && !partFits(p, it) && ownedQtyOf(ch, p.name) > 0;
+    });
+    if (misfit.length) {
+      kids.push(el("p.help", { style: { margin: "4px 0 0", fontSize: "10.5px", color: "var(--warn)" },
+        text: "Owned but will not fit a " + it.name + ": "
+            + misfit.map(function (p) { return p.name + " (fits " + p.fits + ")"; }).join(", ") + "." }));
     }
     return el("div", { style: { padding: "8px 10px", border: "1px solid var(--border2)", borderRadius: "4px", background: "rgba(0,0,0,.12)" } }, kids);
   }

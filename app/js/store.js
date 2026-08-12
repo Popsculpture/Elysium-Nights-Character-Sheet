@@ -419,6 +419,104 @@ EN.store = (function () {
     var gripOut = Object.create(null);
     Object.keys(gripIn).forEach(function (k) { if (gripIn[k] === "two") gripOut[k] = "two"; });
     ch.weaponGrip = gripOut;
+    /* RENAMED WEAPON PARTS. "Extended Haft" became "Extended Shaft" on 2026-08-12, and a
+       Part is persisted under TWO different strings that have to move together:
+
+         ch.weaponParts[weaponName][slot]  the install, by part KEY
+         ch.equipment[n].name              the owned copy in the stash, by part NAME
+
+       and availablePartQty() is owned-by-name minus installed-by-key. Move one and not
+       the other and a character owns -1 of the thing. Move neither and it is worse than
+       cosmetic: weaponPartsOn() resolves through byKey and .filter(Boolean)s the miss, so
+       a Quarterstaff would keep an occupied Handling slot while silently losing its +1
+       Reach and its forced two-handed grip, and its Versatile toggle would reappear.
+
+       The table lives in the data beside the Part (EN.weaponParts.renames), following the
+       TALENT_RENAMES precedent below but read from the catalog rather than restated here,
+       so the next rename is a row in that file and not a second place to remember.
+
+       Keyed on weapon NAME rather than on an equipment entry, like weaponAmmo and
+       weaponGrip above, so it belongs here and not after the instance-id split. */
+    var PART_RENAMES = Object.create(null), PART_NAME_RENAMES = Object.create(null);
+    ((EN.weaponParts && EN.weaponParts.renames) || []).forEach(function (r) {
+      if (r && r.oldKey && r.key) PART_RENAMES[r.oldKey] = r.key;
+      if (r && r.oldName && r.name) PART_NAME_RENAMES[r.oldName] = r.name;
+    });
+    var wpIn = (ch.weaponParts && typeof ch.weaponParts === "object" && !Array.isArray(ch.weaponParts)) ? ch.weaponParts : {};
+    ch.weaponParts = wpIn;
+    /* The loadout is normalized on the way through, not just renamed. ch.weaponParts has
+       never been validated, and a hand-edited or older record can carry anything: the
+       bench reads `(wp.utility || []).slice()`, and "x".slice() is the STRING "x", which
+       then reaches a .map() that does not exist on it and throws the whole Inventory tab.
+       Measured on a `{handling: 7, utility: "x"}` record, not theorised. Pre-existing, but
+       this block is now the thing that says a loadout is an object, and half a guarantee
+       is worse than none: the next reader will trust it. Slots hold one key or null,
+       utility holds up to its stated capacity of real keys. */
+    var UTIL_CAP = (((EN.weaponParts && EN.weaponParts.slots) || [])
+      .filter(function (s) { return s.key === "utility"; })[0] || {}).capacity || 2;
+    Object.keys(wpIn).forEach(function (wn) {
+      var lo = wpIn[wn];
+      if (!lo || typeof lo !== "object" || Array.isArray(lo)) { delete wpIn[wn]; return; }
+      ["targeting", "output", "core", "handling"].forEach(function (s) {
+        if (typeof lo[s] !== "string" || !lo[s]) { lo[s] = null; return; }
+        lo[s] = PART_RENAMES[lo[s]] || lo[s];
+      });
+      lo.utility = (Array.isArray(lo.utility) ? lo.utility : [])
+        .filter(function (k) { return typeof k === "string" && k; })
+        .map(function (k) { return PART_RENAMES[k] || k; })
+        .slice(0, UTIL_CAP);
+      if (typeof lo._profile !== "string" || !lo._profile) lo._profile = "auto";
+    });
+    if (Array.isArray(ch.equipment)) {
+      ch.equipment.forEach(function (e) {
+        if (e && typeof e.name === "string" && PART_NAME_RENAMES[e.name]) e.name = PART_NAME_RENAMES[e.name];
+      });
+    }
+    /* THE THIRD place a Part name is persisted, and the one that outlives a migration.
+       A crafting Project stores `itemName`, and tbComplete does addToStash(c, pp.itemName)
+       when it finishes. An open "Build Extended Haft" therefore mints a stash row named
+       "Extended Haft" AFTER this pass has already run for the session, and that row
+       resolves to no catalog item at all: not sellable at its price, not installable,
+       not a Part. Rewriting only the two obvious stores would have left a machine in the
+       save file that keeps manufacturing the old name. The display `name` moves too, or
+       the card would read "Build Extended Haft" and hand you an Extended Shaft. */
+    if (Array.isArray(ch.projects)) {
+      ch.projects.forEach(function (pj) {
+        if (!pj) return;
+        var to = (typeof pj.itemName === "string") ? PART_NAME_RENAMES[pj.itemName] : null;
+        if (!to) return;
+        if (typeof pj.name === "string") pj.name = pj.name.split(pj.itemName).join(to);
+        pj.itemName = to;
+      });
+    }
+    /* AND THEN the gate the rename brought with it. Extended Shaft went from
+       "Fits: Any Melee" to "Fits: Long-Shafted", which Part 3 calls "a HARD frame gate",
+       so an install saved under the old rule may now sit on a weapon that cannot take it,
+       still paying out +1 Reach and still forcing two hands. Un-install those.
+
+       Nothing is destroyed by this: an install is a key in weaponParts, the OWNED part is
+       a separate equipment entry, and removePart() in the bench does exactly this and
+       nothing more. The part goes back to the stash pool and the bench simply will not
+       re-fit it to that weapon.
+
+       A weapon name with no catalog entry is left ALONE rather than cleared. The gate is a
+       fact about the weapon, and an unknown weapon is a question we cannot answer, not an
+       answer of "no". */
+    var partsByKey = (EN.weaponParts && EN.weaponParts.byKey) || {};
+    Object.keys(ch.weaponParts).forEach(function (wn) {
+      var lo = ch.weaponParts[wn];
+      var wit = (EN.engine && EN.engine.catalogItem) ? EN.engine.catalogItem(wn) : null;
+      if (!wit) return;
+      function illegal(k) {
+        var p = partsByKey[k];
+        if (!p || p.fits !== "Long-Shafted") return false;
+        return !(EN.engine && EN.engine.isLongShafted && EN.engine.isLongShafted(wit));
+      }
+      ["targeting", "output", "core", "handling"].forEach(function (s) {
+        if (typeof lo[s] === "string" && illegal(lo[s])) lo[s] = null;
+      });
+      if (Array.isArray(lo.utility)) lo.utility = lo.utility.filter(function (k) { return !illegal(k); });
+    });
     // Renamed Talents. A record saved before a rename still stores the OLD key and
     // would resolve to nothing, silently, because every reader looks the key up with
     // .find() and drops a miss. Both spellings a record can carry (the key and the

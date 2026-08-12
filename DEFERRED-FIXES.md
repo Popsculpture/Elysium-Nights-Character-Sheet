@@ -818,6 +818,12 @@ chip would make the row claim the weapon has a Reach it does not have.
 | Whip, all three grants | REACH 3 | REACH 4, 2 wasted |
 | Machine Pistol, Canopy Reach | RANGE, untouched | RANGE, untouched |
 
+These are the numbers as measured on the day. Two rows have since become unbuildable: on
+2026-08-12 the Extended Haft became the **Extended Shaft** and its Fits gate narrowed to
+Long-Shafted, so it cannot go on a Longsword or a Whip at all, and migrate() un-installs
+any save that has one there. Kept as measured rather than corrected, because the point of
+the table is what the reach fix did, not what the catalog holds today.
+
 **THE MANUSCRIPT REWRITE, `9b70fc0`, and it changed the arithmetic twice.** All four
 passages were re-read from the live docs before anything was touched.
 
@@ -835,11 +841,11 @@ passages were re-read from the live docs before anything was touched.
   flag on Quarterstaff, Spear, Halberd and Arc Glaive ("a polearm haft"), never Reach.
 
 The note the resolver builds names the two cases separately, because a total ABOVE the
-cap otherwise reads as a bug: "reaches 4 spaces (Extended Haft, Staff & Spear Master
+cap otherwise reads as a bug: "reaches 4 spaces (Extended Shaft, Staff & Spear Master
 (Upgrade); capped at Reach 2 for a rigid weapon, so 1 point is lost; Canopy Reach reaches
 past the cap)".
 
-**One reading worth confirming, and it is the only ambiguity left in the rewrite.** The
+~~**One reading worth confirming, and it is the only ambiguity left in the rewrite.** The
 Extended Haft's own entry ends "**Cap:** Reach 2, if fitted to a weapon already at its cap,
 the additional Reach is lost", while the general rule and the Reach X trait both say the
 cap "depends on its construction", which makes it 3 for a flexible weapon. Those disagree
@@ -848,7 +854,15 @@ construction rule, so that Whip reaches Reach 3 from the haft and 4 with Canopy 
 top. If the haft is meant to impose a flat Reach 2 ceiling of its own regardless of what
 it is bolted to, that is a one-line change. Nothing else in the catalog is affected,
 since the haft is the only reach-granting part and Whip and Nanowire are the only
-flexible weapons.
+flexible weapons.~~
+
+**ANSWERED 2026-08-12, by deletion rather than by ruling.** Brandon rewrote the Part. It
+is now the **Extended Shaft**, its "Cap: Reach 2" sentence is gone entirely, and its Fits
+line reads "Long-Shafted (Quarterstaff, Spear, Halberd)". So the question had no subject:
+a Whip is not long-shafted, the Part cannot be fitted to it, and the one loadout where the
+two readings disagreed is unbuildable. The general construction cap is the only cap. Read
+in the live Part 3 in both places it is printed, the Handling table row and the detail
+entry, and the old "Extended Haft" string returns zero hits across all three manuscripts.
 
 **Guards, all measured:** the Upgrade does nothing to a Longsword with no haft (it is not
 a reach weapon), the talent WITHOUT its Level 6 Upgrade grants nothing, a non-reach part
@@ -2931,7 +2945,7 @@ one the exports exist for. The screen has a button; a printed sheet does not, an
 who switches grips mid-fight needs the other number in front of them. So both exports now
 print `1d8 (1d10) Slashing` in the book's own order, with the stored grip alongside as
 `held two-handed (1d10)`. A **forced** weapon still prints one die, because there is no
-other die to switch to, plus `two-handed only (Extended Haft)`.
+other die to switch to, plus `two-handed only (Extended Shaft)`.
 
 ### The Quarterstaff was carrying a contradiction
 
@@ -2964,9 +2978,152 @@ Driven through the real UI on a character with all three reach grants and six we
   stays clean.
 - **Both exports.** Print sheet and a PDF built at 192,579 bytes, read back out of the
   AcroForm: `1d8 (1d10) Slashing / held two-handed (1d10)` for the Longsword,
-  `1d8 Bludgeoning / two-handed only (Extended Haft)` for the Quarterstaff, and
+  `1d8 Bludgeoning / two-handed only (Extended Shaft)` for the Quarterstaff, and
   Greatsword and Whip untouched.
 - Zero console errors.
+
+
+## Extended Haft became Extended Shaft, and Long-Shafted became a frame
+
+Brandon, 2026-08-12: the shafted list is "Quarterstaff, Spear, Halberd, Glaive (Arc
+Glaive)", plus five that "are not in the book but add them to the list for future
+potential expansion just in case they ever comes into play": Trident, Harpoon, Naginata,
+Pike, Polearm. And: "I also changed the mod Extended Haft to Extended Shaft. check the
+manuscript for more info."
+
+The manuscript had more info than the rename. Read live from Part 3:
+
+* **Extended Shaft.** "Fits: **Long-Shafted (Quarterstaff, Spear, Halberd)**", was
+  "Any Melee". "Effect: **Increases** Reach by 1 ... and grants the Two-Handed trait",
+  was "**Grants or** increases". Its old "**Cap:** Reach 2" sentence is gone.
+* **The Parts glossary** now lists Long-Shafted as a frame: "Fits: **a hard frame gate**.
+  Most Parts fit a broad category, such as Any Melee ... Others require a specific frame:
+  Longarm, Shotgun, Bladed, Long-Shafted, Compound, Crossbow, or Heavy/Two-Handed."
+
+So this was not a rename with a new label. It was a rename that made an existing data flag
+load-bearing in a second system, and it answered a question this log had open (see the
+struck Whip paragraph above: the loadout the two readings disagreed about is now
+unbuildable, so there is nothing left to rule on).
+
+### One question, one answer, two askers
+
+`shafted` was a bare `!!item.shafted` read inside `weaponReach`. Now `eng.isLongShafted()`
+answers it for both the reach talent and the bench's Fits gate, because two answers drift.
+**The catalog's flag wins whenever it states anything, true or false**; the name list in
+`EN.combat.longShaftedNames` is the fallback for an item that states nothing. The test is
+`typeof === "boolean"`, not truthiness, or an explicit `shafted: false` would fall through
+to the very list it is meant to outrank. The five reserved names are future-proofing, not
+classification: a Pike added to the catalog later is long-shafted the day it lands.
+
+### A Part is persisted under THREE strings, and the third one outlives the migration
+
+    ch.weaponParts[weaponName][slot]  the install, by part KEY
+    ch.equipment[n].name              the owned copy, by part NAME
+    ch.projects[n].itemName           an open crafting Project, by part NAME
+
+`availablePartQty()` is literally owned-by-name minus installed-by-key, so moving one and
+not the other makes a character own -1 of something. Moving neither is worse than
+cosmetic: `weaponPartsOn()` resolves through `byKey` and `.filter(Boolean)`s the miss, so
+a Quarterstaff keeps an occupied Handling slot while silently losing its +1 Reach and its
+forced two-handed grip, and its Versatile toggle reappears.
+
+The third one was the one worth finding. **A Project is a machine in the save file that
+keeps manufacturing the old name.** `tbComplete` does `addToStash(c, pp.itemName)`, so an
+open "Build Extended Haft" mints a stash row named "Extended Haft" AFTER migrate() has
+already run for that session, and that row matches no catalog item at all. Reproduced
+before it was fixed. The rename table lives in the data beside the Part
+(`EN.weaponParts.renames`), following the `TALENT_RENAMES` precedent but read from the
+catalog rather than restated in store.js, so the next rename is a row in that file.
+
+### A hard gate needs enforcing on data that predates it
+
+A save can carry an Extended Shaft on a Longsword, fitted under the old Any Melee rule and
+still paying out +1 Reach and still forcing two hands. migrate() un-installs those.
+**Nothing is destroyed**: the install is a key in `weaponParts`, the owned Part is a
+separate equipment entry, and this is exactly what `removePart()` does. The Part returns
+to the stash pool and the bench declines to re-fit it. A weapon name with no catalog entry
+is **left alone**, because the gate is a fact about the weapon and an unknown weapon is a
+question we cannot answer rather than an answer of no.
+
+### Three defects found while measuring, all pre-existing, all fixed
+
+1. **`weaponPartsOn` never resolved a Utility Part.** It walked `Object.keys(loadout)` and
+   indexed `byKey` with whatever each property held, so it probed `_profile` as though it
+   were a slot and handed `byKey` the whole utility ARRAY, which stringifies to "k1,k2" and
+   matches nothing. Fifteen Utility Parts, none of them visible to the engine. Latent, not
+   live, because the only Part with engine-read flags sits in Handling. It was a trap for
+   the next one. Now enumerated the way `allInstalledKeys()` does.
+2. **A non-array `utility` threw the whole Inventory tab.** The bench reads
+   `(wp.utility || []).slice()`, and `"x".slice()` is the string `"x"`, which then reaches
+   a `.map()` it does not have. Measured on a `{handling: 7, utility: "x"}` record, not
+   theorised. `ch.weaponParts` had never been validated at all; this pass now says a
+   loadout is an object with slot-or-null and a real array, because half a guarantee is
+   worse than none once a reader starts trusting it.
+3. **`tryInstall` never consulted `partFits`.** The only thing enforcing a "hard frame
+   gate" was a filter on the list feeding the picker. The vehicle bench already guards its
+   own install. Now so does this one.
+
+### And two places the gate had no voice
+
+The gray market sold a gated Part with no hint it was gated: `partInfoLine` drew slot,
+type and grants but never `fits`, while the Armor Mod line beside it has drawn its "fits"
+chip all along. And the bench said "You own no Parts for this slot" to a player holding
+two Extended Shafts. Both now say it: `fits Long-Shafted` on the market card, and
+"Owned but will not fit a Longsword: Extended Shaft (fits Long-Shafted)" under the slot,
+the same sentence the Garage already used for a chassis mismatch.
+
+### Verified
+
+* **Classification.** Quarterstaff, Spear, Halberd, Arc Glaive true; Longsword, Whip,
+  Greatsword, Dagger, Assault Rifle false. The five reserved names resolve true through the
+  fallback, and an explicit `shafted: false` beats the list.
+* **Migration, through the real `importCharacter`.** Legacy legal: key rewritten, owned
+  entries renamed, Quarterstaff still reaches 3 and is still forced to `1d8` by
+  "Extended Shaft". Legacy illegal: the Longsword install cleared to null, the owned Part
+  still in the stash, the weapon back to Reach 1 and a toggleable grip. Utility arrays
+  rewrite; an unknown weapon keeps its install; a Project's `itemName` AND its display name
+  both move; hostile shapes (`null`, `"nope"`, an array, `handling: 7`, `utility: "x"`,
+  a 6-long utility list) normalize without throwing and clamp to the stated capacity of 2.
+* **The bench, through the real UI.** Extended Shaft offered on Quarterstaff and Halberd,
+  refused on Longsword and Whip, with the misfit line naming why. Installed through the
+  real dropdown: reach 4 with the cap note, forced two-handed, `1d8`.
+* **The writer's own gate, isolated.** Owning the misfitting Part so the ownership guard
+  passes, then forcing `suppressor` through the real change handler: refused, with
+  "Suppressor fits Any Firearm; the Quarterstaff is not.", loadout untouched. The control
+  through the identical path with `extended-shaft` installs, so the handler does run.
+* **Exports.** Print sheet and PDF both carry the new name in every generated string;
+  "Extended Haft" appears nowhere in either.
+* **102 tab and bench visits across all six roster characters: zero console errors.**
+
+**A probe note, since two probes lied in this pass.** `EN.ui.toast` is captured at
+inventory.js module load, so stubbing `EN.ui.toast` at runtime intercepts nothing and the
+toast reads as absent. And the first version of the writer-gate test used a Part the
+character did not own, so the ownership guard would have rejected it too and the test
+proved nothing about the new one. Both were caught by insisting on a control that must
+succeed, which is the same discipline the earlier deleted-harness episode bought.
+
+### Still open, and NOT caused by this change
+
+**`ownedQtyOf` counts one row, not all of them.** `app/js/inventory.js`:
+`function ownedQtyOf(ch, name) { var e = (ch.equipment || []).find(...); return e ? (e.qty || 0) : 0; }`
+Parts are non-stackable, so every purchase mints its own `eq_` row of qty 1. `.find` reads
+only the first, and `availablePartQty` is owned-minus-installed, so **the second copy you
+buy can never be installed.** Reproduced live through the real gray market: two BUY clicks,
+𝒢360 spent, two rows in the stash, one installed, and the second vanishes from the picker
+while the slot reads "You own no Parts for this slot". 𝒢180 stranded.
+
+The rename does not cause or worsen it. The migration is a strict 1:1 in-place rewrite that
+changes no row count and no qty, so the miscount reads identically before and after; an
+adversarial pass confirmed the "one of each name" scenario is unreachable because migrate()
+is unconditional and ships in the same build as the renamed catalog entry. Left alone
+deliberately: `ownedQtyOf` also backs **armor mods and vehicle mods**, so summing instead of
+finding is a change with its own verification surface and not a rider on this one.
+
+Underneath it, two modules disagree about whether a Part is stackable at all:
+`inventory.js` asks `isStackableItem` with a resolved `partAsItem` and gets false, while
+`store.js` asks `isStackableName`, whose `loadCatalogItem` has no weapon-parts pool, so it
+resolves to null and gets true. That disagreement is the root cause, and it should be
+settled before the counting is patched.
 
 
 ## Environment

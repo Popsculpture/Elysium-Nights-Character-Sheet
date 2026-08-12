@@ -3840,7 +3840,7 @@ EN.combatView = (function () {
              opens on the grip the row is showing, and renders the toggle only when
              the grip is actually a choice. It used to default to one-handed on every
              open, so a two-handed Longsword rolled 1d8 unless you flipped it again,
-             and a weapon forced two-handed by an Extended Haft still offered a
+             and a weapon forced two-handed by an Extended Shaft still offered a
              one-handed option it cannot have. */
           versatile: versatileDie(traits),
           grip: eng.weaponGrip(ch, it),
@@ -4040,7 +4040,7 @@ EN.combatView = (function () {
            would make the row claim the weapon has a Reach it does not have. */
         /* The grip control. A real button when the choice exists, because it changes
            the damage the row above is advertising; a plain chip when a Two-Handed
-           trait or an Extended Haft has taken the choice away, saying which, so a
+           trait or an Extended Shaft has taken the choice away, saying which, so a
            player whose Versatile die vanished after a bench visit can see why. */
         var gripEl = grip.canToggle
           ? el("button.btn.sm", { title: grip.why + "\nTap to switch grip.",

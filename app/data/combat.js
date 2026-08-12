@@ -161,8 +161,27 @@ EN.combat = {
   ],
 
   shieldsAndCover: "Some shields create Cover on top of their Block bonus and static Defense bonus. A Riot Shield grants Half Cover while you are using Full Defense; a Ballistic Bulwark grants Three Quarter Cover while you are using Full Defense. These use the same Cover rules as terrain. You do NOT track Structure and Integrity for shield cover; shield wear and tear is handled by Shield Durability.",
+  /* LONG-SHAFTED, which the manuscript made a formal frame category on 2026-08-12.
+     Part 3's Weapon Parts glossary: "Fits: a hard frame gate. Most Parts fit a broad
+     category, such as Any Melee ... Others require a specific frame: Longarm, Shotgun,
+     Bladed, Long-Shafted, Compound, Crossbow, or Heavy/Two-Handed." It gates two things:
+     the Extended Shaft mod ("Fits: Long-Shafted (Quarterstaff, Spear, Halberd)") and
+     Staff & Spear Master, whose every clause reads "long-shafted weapon".
+
+     THE CATALOG'S OWN `shafted` FLAG IS THE AUTHORITY. This list is only consulted for an
+     item that states nothing either way, and it exists because Brandon named five weapons
+     on 2026-08-12 that the book does not carry yet: "add them to the list for future
+     potential expansion just in case they ever comes into play". A future catalog entry
+     for a Pike is long-shafted the day it lands, without anyone remembering the flag, and
+     an entry that explicitly says `shafted: false` still overrules this. */
+  longShaftedNames: [
+    // in the book today, and flagged in the catalog
+    "Quarterstaff", "Spear", "Halberd", "Arc Glaive",
+    // not in the book: reserved so an expansion cannot land silently unshafted
+    "Glaive", "Trident", "Harpoon", "Naginata", "Pike", "Polearm"
+  ],
   /* How far Reach can be pushed. A weapon's own Reach plus everything a character
-     adds to it (Canopy Reach, Staff & Spear Master's Upgrade, an Extended Haft) is
+     adds to it (Canopy Reach, Staff & Spear Master's Upgrade, an Extended Shaft) is
      capped by what the weapon physically is: a rigid shaft or blade only extends so
      far before it stops being swingable, while a lash or a filament pays out.
      The cap is on REACH POINTS, not on the spaces displayed, so a rigid weapon at the
