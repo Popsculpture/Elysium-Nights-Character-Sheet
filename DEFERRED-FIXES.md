@@ -795,8 +795,8 @@ blunts, shaft weapons) and **3 for flexible ones** (whips, filament weapons). `W
 `Nanowire` carry a `flexible: true` data flag and are the only two in the catalog; the
 numbers live in `EN.combat.reachCap` so retuning is a data edit, not a code one. The cap
 is on Reach POINTS, so a rigid weapon at the cap strikes 3 spaces and a flexible one 4.
-**A manuscript update to match is pending,** so the `Reach X` trait text in
-`gear_traits.js` still describes Reach without the cap; that is deliberate, not drift.
+**The manuscript update landed the same day** and is tracked in `9b70fc0`; see the
+addendum below, which changed two things about how this composes.
 
 **Capped points are reported rather than swallowed,** which matters because a character
 can easily carry more bonus than the weapon can use: a Quarterstaff with all three grants
@@ -817,6 +817,38 @@ chip would make the row claim the weapon has a Reach it does not have.
 | Whip, Canopy Reach | REACH 3 | REACH 4 |
 | Whip, all three grants | REACH 3 | REACH 4, 2 wasted |
 | Machine Pistol, Canopy Reach | RANGE, untouched | RANGE, untouched |
+
+**THE MANUSCRIPT REWRITE, `9b70fc0`, and it changed the arithmetic twice.** All four
+passages were re-read from the live docs before anything was touched.
+
+- **Canopy Reach now breaks the cap.** "This bonus can exceed a weapon's normal Reach
+  cap, since the vine is extending the attack rather than the weapon itself." The general
+  rule says excess is lost and "a feature can exceed this cap only if its own text
+  specifically says so", and Canopy Reach is the only feature that says so. So the cap
+  now lands MID-calculation rather than at the end: base, plus the part, plus the talent,
+  **cap**, then Canopy Reach on top. A Quarterstaff with all three grants went from
+  REACH 3 to **REACH 4**.
+- **Staff & Spear Master retargeted** from "reach weapons" to "long-shafted weapons",
+  throughout the talent and in its Upgrade. That is a different question, and the
+  difference shows: a **Whip** has Reach 2 and is not long-shafted, a **hafted Longsword**
+  has Reach and is not either, and both used to take the bonus. It now reads a `shafted`
+  flag on Quarterstaff, Spear, Halberd and Arc Glaive ("a polearm haft"), never Reach.
+
+The note the resolver builds names the two cases separately, because a total ABOVE the
+cap otherwise reads as a bug: "reaches 4 spaces (Extended Haft, Staff & Spear Master
+(Upgrade); capped at Reach 2 for a rigid weapon, so 1 point is lost; Canopy Reach reaches
+past the cap)".
+
+**One reading worth confirming, and it is the only ambiguity left in the rewrite.** The
+Extended Haft's own entry ends "**Cap:** Reach 2, if fitted to a weapon already at its cap,
+the additional Reach is lost", while the general rule and the Reach X trait both say the
+cap "depends on its construction", which makes it 3 for a flexible weapon. Those disagree
+for exactly one loadout: a **Whip with an Extended Haft**. The engine follows the general
+construction rule, so that Whip reaches Reach 3 from the haft and 4 with Canopy Reach on
+top. If the haft is meant to impose a flat Reach 2 ceiling of its own regardless of what
+it is bolted to, that is a one-line change. Nothing else in the catalog is affected,
+since the haft is the only reach-granting part and Whip and Nanowire are the only
+flexible weapons.
 
 **Guards, all measured:** the Upgrade does nothing to a Longsword with no haft (it is not
 a reach weapon), the talent WITHOUT its Level 6 Upgrade grants nothing, a non-reach part
