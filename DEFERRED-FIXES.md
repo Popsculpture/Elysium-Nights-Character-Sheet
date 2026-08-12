@@ -553,13 +553,11 @@ The list below is written as an archaeological record: entries are struck and an
 in place rather than deleted, so the reasoning survives. That makes it a poor to-do list
 at a glance. What is ACTUALLY still open, of the thirteen:
 
-**Open: L3, L4, L13, and one half of L5.** L13 was re-verified against the merged code
+**Open: L3, L4, L13.** L5 and L6 are both fully closed as of 2026-08-11. L13 was re-verified against the merged code
 and is still true and still inert. **Closed: L1 (`51102f8`), L2 (`51d51ad`), L5's first
 half and L6 (both `5340506`).** L5's remaining half, character-granted reach on melee
-weapons, is not a defect to fix but a modelling decision about how three differently
-scoped reach grants compose; it is written up in the L5 entry and waiting on Brandon.
-**Nothing still open here can be reached without hand-authoring or importing a record**,
-except that reach decision, which is a feature doing nothing rather than a wrong number.
+weapons, was ruled on and built the same day (`c723997`); see the L5 entry.
+**Nothing still open here can be reached without hand-authoring or importing a record.**
 
 **Closed: L7, L8, L9, L10, L11, L12.** Each is struck below and says which commit closed
 it and what was measured.
@@ -784,8 +782,45 @@ move together or the bonus needs its own source chip, the way the unarmed picker
 `+1 reach` chip names its sources. Reach is displayed at seven places across four files
 and used mechanically at none, since the app has no grid or positioning code.
 
-So this is a modelling decision about how reach grants compose, not a number to add, and
-it is Brandon's. **Not tracked as a defect; recorded as a decision.**
+**RULED AND BUILT 2026-08-11 in `c723997`: all three, with a cap.** Brandon took the
+widest option, and then added a rule the app did not have.
+
+`EN.engine.weaponReach(ch, item)` is the one resolver, and it takes the WEAPON as well as
+the character because that is the only shape that handles three scopes. Order matters in
+exactly one place: the haft runs first, because it "grants or increases" Reach, so a
+hafted Longsword becomes a reach weapon that the talent can then extend.
+
+**THE CAP, author ruling of the same day.** Reach caps at **2 for rigid weapons** (blades,
+blunts, shaft weapons) and **3 for flexible ones** (whips, filament weapons). `Whip` and
+`Nanowire` carry a `flexible: true` data flag and are the only two in the catalog; the
+numbers live in `EN.combat.reachCap` so retuning is a data edit, not a code one. The cap
+is on Reach POINTS, so a rigid weapon at the cap strikes 3 spaces and a flexible one 4.
+**A manuscript update to match is pending,** so the `Reach X` trait text in
+`gear_traits.js` still describes Reach without the cap; that is deliberate, not drift.
+
+**Capped points are reported rather than swallowed,** which matters because a character
+can easily carry more bonus than the weapon can use: a Quarterstaff with all three grants
+is Reach 4 on paper and Reach 2 in the hand. The chip reads `+1 reach · AT CAP` and the
+tooltip says "2 points wasted: a rigid weapon caps at Reach 2." The resolver builds that
+sentence once, so the weapon row, the print sheet and the PDF cannot word it three ways.
+
+The catalog's own `Reach 2` trait chip is left exactly as printed and the bonus rides
+beside it as its own chip, the shape the unarmed strike already uses. Rewriting the trait
+chip would make the row claim the weapon has a Reach it does not have.
+
+| loadout | before | after |
+| ----- | ----- | ----- |
+| Quarterstaff, Canopy Reach | REACH 2 | REACH 3 |
+| Quarterstaff, all three grants | REACH 2 | REACH 3, `+1 reach · AT CAP`, 2 wasted |
+| Longsword, Canopy Reach | REACH 1 | REACH 2 |
+| Longsword, Canopy Reach + Extended Haft | REACH 1 | REACH 3 |
+| Whip, Canopy Reach | REACH 3 | REACH 4 |
+| Whip, all three grants | REACH 3 | REACH 4, 2 wasted |
+| Machine Pistol, Canopy Reach | RANGE, untouched | RANGE, untouched |
+
+**Guards, all measured:** the Upgrade does nothing to a Longsword with no haft (it is not
+a reach weapon), the talent WITHOUT its Level 6 Upgrade grants nothing, a non-reach part
+grants nothing, and a ranged weapon comes back `melee: false` with nothing touched.
 
 The original write-up: GROUP B. `app/js/combat.js:3095` has no `reach` term; the
 picker guard at `app/js/combat.js:1493` does count `strike.reach.spaces`, and the chip
@@ -2692,6 +2727,20 @@ keep "list price", both unchanged to the character.
   the ledger dropped, the strings rewritten), but it makes caustic exposure start
   actually lowering DR at the table, so it is left for Brandon rather than taken
   unilaterally. **Not fixed.**
+
+### Found while verifying the reach work, pre-existing
+
+- **Building more than one PDF in a single page session can hang after the first.** Hit
+  while running a six-shape export sweep: the first `EN.pdfExport.build` resolves and the
+  second never settles, with no throw and nothing on the console. **Confirmed
+  pre-existing rather than assumed:** the same three-build chain was run against the
+  unmodified code, on the same fixtures and the same page-load conditions, and stalled
+  identically after the first. It is also FLAKY rather than deterministic, since chains of
+  five, six, nine and eleven builds all completed earlier in the same session, so it looks
+  like accumulated state in the tab rather than a fixed limit. Harmless in ordinary use
+  (a player exports one sheet and the button reloads nothing), which is why it has never
+  been noticed, but it makes any multi-PDF verification run unreliable: **force a page
+  reload between builds, or the second reading is worthless.** Not fixed here.
 
 ### Still open out of this pass, deliberately
 
