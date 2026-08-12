@@ -339,6 +339,29 @@ EN.pdfExport = (function () {
     var g = EN.gearCatalog || {};
     return [].concat((g.melee && g.melee.items) || [], (g.ranged && g.ranged.items) || [], (g.signature && g.signature.items) || []).find(function (w) { return w.name === name; });
   }
+  /* ONE ROW PER EQUIPPED PIECE. It used to dedupe to catalog names, because the Attacks
+     list was "per weapon TYPE"; since 2026-08-12 mods, grip and magazine are per ENTRY, so
+     two equipped Longswords can print two different attack profiles and the sheet is what
+     the table is played from. `label` only numbers a name that actually repeats.
+     equippedWeaponNames stays for the Equipped / Worn line, which genuinely wants names. */
+  function equippedWeaponRows(ch) {
+    var out = [];
+    (ch.equippedWeapons || []).forEach(function (key) {
+      var e = (ch.equipment || []).find(function (x) { return (x.id || x.name) === key; });
+      if (!e || !(e.qty > 0)) return;
+      var w = findWeapon(e.name);
+      if (!w) return;
+      out.push({ key: (e.id || e.name), name: e.name, w: w });
+    });
+    var total = {};
+    out.forEach(function (r) { total[r.name] = (total[r.name] || 0) + 1; });
+    var seen = {};
+    out.forEach(function (r) {
+      if (total[r.name] > 1) { seen[r.name] = (seen[r.name] || 0) + 1; r.label = r.name + " " + seen[r.name]; }
+      else r.label = r.name;
+    });
+    return out;
+  }
   function equippedWeaponNames(ch) {
     var out = [];
     (ch.equippedWeapons || []).forEach(function (key) {
@@ -590,16 +613,17 @@ EN.pdfExport = (function () {
        `equippedWeaponNames` stays unfiltered: the Equipped / Worn line is right that
        the Knuckles are on you. */
     ctx.sectionTitle("Attacks");
-    var atkRows = equippedWeaponNames(ch).map(findWeapon).filter(Boolean)
-      .filter(function (w) { return !(eng.isUnarmedAugmentName && eng.isUnarmedAugmentName(w.name)); })
-      .map(function (w) {
+    var atkRows = equippedWeaponRows(ch)
+      .filter(function (r) { return !(eng.isUnarmedAugmentName && eng.isUnarmedAugmentName(r.w.name)); })
+      .map(function (r) {
+        var w = r.w, wKey = r.key;
         // same as the print sheet: the catalog traits, plus the reach the character
         // adds, so the exported row matches the one on the Freelancer tab
         var notes = (w.traits || []).slice();
-        var wr = eng.weaponReach ? eng.weaponReach(ch, w) : null;
+        var wr = eng.weaponReach ? eng.weaponReach(ch, w, wKey) : null;
         if (wr && wr.melee && wr.note) notes.push(wr.note);
         // same as the print sheet: one damage rating, the one the grip selects
-        var g = eng.weaponGrip ? eng.weaponGrip(ch, w) : null;
+        var g = eng.weaponGrip ? eng.weaponGrip(ch, w, wKey) : null;
         var dmg = w.damage || "";
         if (g && g.versatile && g.forcedBy) {
           /* Forced into two hands, so the Versatile trait is gone, not merely unused:
@@ -615,7 +639,7 @@ EN.pdfExport = (function () {
           notes.push(g.twoHanded ? "held two-handed (" + g.versatile + ")"
                                  : "held one-handed (" + g.baseDice + ")");
         }
-        return { name: w.name, atk: sgn(weaponHit(ch, d, w)), dmg: dmg, notes: notes.join(", ") };
+        return { name: r.label, atk: sgn(weaponHit(ch, d, w)), dmg: dmg, notes: notes.join(", ") };
       });
     atkRows = atkRows.concat(unarmedAttackRow(ch, d));
     while (atkRows.length < 6) atkRows.push({ name: "", atk: "", dmg: "", notes: "" });
@@ -808,7 +832,7 @@ EN.pdfExport = (function () {
       return { name: e.name, qty: e.qty, status: worn ? "Equipped" : "Stash",
                notes: it ? gearSummaryLine(it, eng.armorState ? eng.armorState(ch, key) : null,
                                            eng.shieldState ? eng.shieldState(ch, key) : null,
-                                           eng.weaponGrip ? eng.weaponGrip(ch, it) : null) : "" };
+                                           eng.weaponGrip ? eng.weaponGrip(ch, it, key) : null) : "" };
     });
     if (!invRows.length) invRows.push({ name: "", qty: "", status: "", notes: "" });
     ctx.table(

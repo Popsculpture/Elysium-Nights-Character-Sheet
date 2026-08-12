@@ -11,9 +11,13 @@ window.EN = window.EN || {};
 EN.inventoryView = (function () {
   var el = EN.ui.el, clear = EN.ui.clear, toast = EN.ui.toast;
   var store = EN.store;
+  // module-level, because entry identity is now read at the top level of this file
+  // (the bench addresses weapon ENTRIES, not weapon names) and the older `eng` aliases
+  // are local to individual render functions.
+  var ENG = function () { return EN.engine; };
   var _sub = "stash";      // 'stash' | 'chrome' | 'market' | 'workbench'
   var _bench = "ballistics"; // Workbench sub-tab: 'ballistics' | 'armor' | 'tech' | 'garage'
-  var _benchWeapon = null;   // Arms Table: the weapon currently being customized
+  var _benchWeapon = null;   // Arms Table: the weapon ENTRY KEY currently being customized
   var _benchArmor = null;    // Impact Table: the armor currently being customized
   // Armor Integrity: how many points of DR the player is buying back on each piece,
   // {armorEntryKey: points}. The rule prices repair PER POINT, so a player with three
@@ -484,9 +488,10 @@ EN.inventoryView = (function () {
 
   /* ---- shared item card (market + stash render through this) ---- */
   // MODS chip line for a customized weapon, mirroring the Freelancer weapon row.
-  function installedPartsLine(ch, it) {
+  function installedPartsLine(ch, it, entry) {
     if (!isWeapon(it) || !EN.weaponParts) return null;
-    var lo = (ch.weaponParts || {})[it.name];
+    // per ENTRY: the card is drawn for one piece, so it must report that piece's build
+    var lo = (ch.weaponParts || {})[entry ? ENG().entryKey(entry) : null];
     if (!lo) return null;
     var keys = ["targeting", "output", "core", "handling"].map(function (s) { return lo[s]; }).filter(Boolean).concat(lo.utility || []);
     var chips = keys.map(function (k) {
@@ -691,7 +696,7 @@ EN.inventoryView = (function () {
       : null;
     return el("div.feature", { style: { borderLeftColor: LEGAL_COLOR[it.legality] || "var(--border2)" } }, [
       head, info, traitsExpandRow,
-      it.benchPart ? partInfoLine(ch, it) : it.armorMod ? armorModInfoLine(ch, it) : (mode !== "mkt" ? installedPartsLine(ch, it) : null),
+      it.benchPart ? partInfoLine(ch, it) : it.armorMod ? armorModInfoLine(ch, it) : (mode !== "mkt" ? installedPartsLine(ch, it, entry) : null),
       open && it.desc ? el("p", { style: { marginTop: "8px" }, text: it.desc }) : null,
       open && it.type ? el("p.help", { style: { margin: "4px 0 0", color: "var(--text2)" }, text: "Type: " + it.type + (it.upkeep ? " · Leased: " + fmtG(it.price || 0) + " buy-in, " + fmtG(it.upkeep) + "/wk Upkeep" : "") + (it.nexus ? " · Nexus: " + it.nexus : "") }) : null,
       open && it.proficiency ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: "Proficiency: " + it.proficiency + (it.signature ? " · Signature weapon (0 customization slots)" : "") }) : null,
@@ -1372,23 +1377,37 @@ EN.inventoryView = (function () {
   function isMeleeGroup(g) { return g === "Simple" || g === "Martial"; }
   function isFirearmGroup(g) { return ["Sidearm", "Longarm", "Heavy", "Launcher"].indexOf(g) !== -1; }
   function weaponCategory(it) { return it.signature ? "signature" : isBowGroup(it.group) ? "bowfire" : isMeleeGroup(it.group) ? "melee" : "ranged"; }
+  /* EVERY owned weapon entry, not one per name. It used to dedupe on it.name, so a
+     character holding three Quarterstaffs saw one bench chip and necessarily one loadout.
+     Brandon's ruling of 2026-08-12: "same-named weapons should be independently moddable",
+     so the bench addresses PIECES. Each row carries the entry, its catalog item and its
+     entryKey, plus a label that only grows a number when a name actually repeats, so the
+     ordinary one-of-each case reads exactly as it always did. */
   function ownedWeapons(ch) {
+    var rows = (ch.equipment || []).filter(function (e) { return e && e.qty > 0; })
+      .map(function (e) { var it = findItem(e.name); return it && isWeapon(it) ? { e: e, it: it, key: ENG().entryKey(e) } : null; })
+      .filter(Boolean);
+    var total = {};
+    rows.forEach(function (r) { total[r.it.name] = (total[r.it.name] || 0) + 1; });
     var seen = {};
-    return (ch.equipment || []).filter(function (e) { return e.qty > 0; })
-      .map(function (e) { return findItem(e.name); })
-      .filter(function (it) { return it && isWeapon(it) && !seen[it.name] && (seen[it.name] = 1); });
+    rows.forEach(function (r) {
+      if (total[r.it.name] > 1) { seen[r.it.name] = (seen[r.it.name] || 0) + 1; r.label = r.it.name + " " + seen[r.it.name]; }
+      else r.label = r.it.name;
+    });
+    return rows;
   }
-  function weaponLoadout(ch, name) {
-    var wp = (ch.weaponParts || {})[name] || {};
+  // keyed on the equipment ENTRY, so two copies of one weapon hold two builds
+  function weaponLoadout(ch, key) {
+    var wp = (ch.weaponParts || {})[key] || {};
     return { _profile: wp._profile || "auto", targeting: wp.targeting || null, output: wp.output || null,
              core: wp.core || null, handling: wp.handling || null, utility: (wp.utility || []).slice() };
   }
-  function setLoadout(name, mut) {
+  function setLoadout(key, mut) {
     store.update(function (c) {
       c.weaponParts = c.weaponParts || {};
-      var wp = c.weaponParts[name] || { _profile: "auto", targeting: null, output: null, core: null, handling: null, utility: [] };
+      var wp = c.weaponParts[key] || { _profile: "auto", targeting: null, output: null, core: null, handling: null, utility: [] };
       mut(wp);
-      c.weaponParts[name] = wp;
+      c.weaponParts[key] = wp;
     });
   }
   function slotCountFor(it, lo) {
@@ -1612,7 +1631,7 @@ EN.inventoryView = (function () {
     toast(mod.name + " fitted to " + vItem.name + " (bench work: downtime, a garage, and Engineering Tools).");
   }
   function removeVehicleMod(vName, key) { setVehicleMods(vName, function (l) { return l.filter(function (k) { return k !== key; }); }); }
-  function tryInstall(it, lo, slotKey, key) {
+  function tryInstall(it, wKey, lo, slotKey, key) {
     var part = WP().byKey[key]; if (!part) return;
     // The frame gate, checked by the WRITER and not only by the picker that feeds it.
     // Unreachable through the dropdown, which only ever offers fitting Parts, and that is
@@ -1625,19 +1644,19 @@ EN.inventoryView = (function () {
     var installed = allInstalledKeys(lo);
     var conflictKey = installed.find(function (k) { var ip = WP().byKey[k]; return (part.excludes || []).indexOf(k) !== -1 || (ip && (ip.excludes || []).indexOf(key) !== -1); });
     if (conflictKey) { toast(part.name + " cannot share a build with " + (WP().byKey[conflictKey] || {}).name + "."); return; }
-    setLoadout(it.name, function (wp) {
+    setLoadout(wKey, function (wp) {
       if (slotKey === "utility") { wp.utility = wp.utility || []; if (wp.utility.length < 2) wp.utility.push(key); }
       else wp[slotKey] = key;
     });
     toast(part.name + (part.partType === "Mod" ? " worked in (Mod: needs a rest + kit)" : " snapped on") + " · " + it.name);
   }
-  function removePart(name, slotKey, key) {
-    setLoadout(name, function (wp) {
+  function removePart(wKey, slotKey, key) {
+    setLoadout(wKey, function (wp) {
       if (slotKey === "utility") wp.utility = (wp.utility || []).filter(function (k) { return k !== key; });
       else wp[slotKey] = null;
     });
   }
-  function slotCard(ch, it, lo, sd) {
+  function slotCard(ch, it, wKey, lo, sd) {
     var slotKey = sd.key;
     var installed = slotKey === "utility" ? (lo.utility || []) : (lo[slotKey] ? [lo[slotKey]] : []);
     var cat = weaponCategory(it);
@@ -1658,7 +1677,7 @@ EN.inventoryView = (function () {
           ]),
           el("p.help", { style: { margin: "2px 0 0", fontSize: "11px" }, text: p.grants })
         ]),
-        el("button.btn.sm", { title: "Remove " + p.name, style: { color: "var(--text3)" }, onclick: function () { removePart(it.name, slotKey, key); } }, "✕")
+        el("button.btn.sm", { title: "Remove " + p.name, style: { color: "var(--text3)" }, onclick: function () { removePart(wKey, slotKey, key); } }, "✕")
       ]));
     });
     var full = slotKey === "utility" ? installed.length >= 2 : installed.length >= 1;
@@ -1670,7 +1689,7 @@ EN.inventoryView = (function () {
     } else if (capReached) {
       kids.push(el("p.help", { style: { margin: "5px 0 0", fontSize: "10.5px", color: "var(--warn)" }, text: "Slot Count full; remove a Part or Over-Engineer (Prototype Project)." }));
     } else if (ownedOpts.length) {
-      kids.push(el("select", { style: { marginTop: "5px", fontSize: "11px", width: "auto", maxWidth: "100%" }, onchange: function (e) { var k = e.target.value; e.target.value = ""; if (k) tryInstall(it, lo, slotKey, k); } },
+      kids.push(el("select", { style: { marginTop: "5px", fontSize: "11px", width: "auto", maxWidth: "100%" }, onchange: function (e) { var k = e.target.value; e.target.value = ""; if (k) tryInstall(it, wKey, lo, slotKey, k); } },
         [el("option", { value: "", text: "+ install from stash" })].concat(ownedOpts.map(function (p) {
           var av = availablePartQty(ch, p);
           return el("option", { value: p.key, text: p.name + " · " + p.partType + (av > 1 ? " ×" + av : "") });
@@ -1705,25 +1724,28 @@ EN.inventoryView = (function () {
         html: "<div style='font-family:var(--disp);font-size:13px;letter-spacing:.18em;color:var(--ember)'>⊚ NO WEAPONS ON THE BENCH</div><div style='font-size:12px;color:var(--text3);margin-top:8px'>Acquire a weapon in the gray market or your stash, then bring it here to customize.</div>" }));
       return out;
     }
-    if (!_benchWeapon || !weapons.some(function (w) { return w.name === _benchWeapon; })) _benchWeapon = weapons[0].name;
+    // _benchWeapon holds an entry KEY, so selecting "the second Quarterstaff" is a thing
+    // the bench can express. A stale key (the piece was sold) falls back to the first row.
+    if (!_benchWeapon || !weapons.some(function (w) { return w.key === _benchWeapon; })) _benchWeapon = weapons[0].key;
     out.push(el("div.row.wrap", { style: { gap: "6px", marginBottom: "10px", alignItems: "center" } },
       [el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".1em", marginRight: "4px" }, text: "ON THE BENCH" })].concat(
         weapons.map(function (w) {
-          var on = _benchWeapon === w.name;
-          return el("button.btn.sm" + (on ? ".primary" : ""), { onclick: function () { _benchWeapon = w.name; EN.app.render(); } }, w.name);
+          var on = _benchWeapon === w.key;
+          return el("button.btn.sm" + (on ? ".primary" : ""), { onclick: (function (k) { return function () { _benchWeapon = k; EN.app.render(); }; })(w.key) }, w.label);
         }))));
-    var it = weapons.find(function (w) { return w.name === _benchWeapon; }) || weapons[0];
-    var lo = weaponLoadout(ch, it.name);
+    var row = weapons.find(function (w) { return w.key === _benchWeapon; }) || weapons[0];
+    var it = row.it, wKey = row.key;
+    var lo = weaponLoadout(ch, wKey);
 
     if (it.signature) {
-      out.push(EN.ui.panel(it.name, it.group.toUpperCase() + " · SIGNATURE", [
+      out.push(EN.ui.panel(row.label, it.group.toUpperCase() + " · SIGNATURE", [
         el("p.help", { style: { margin: 0 }, text: "Signature weapon: 0 customization slots. It arrives complete, with fixed Parts and a built-in property you cannot replicate with bolt-ons. Its power lives in the wielder, not the rails." })
       ], { corners: true }));
       return out;
     }
 
     var count = installedCount(lo), max = slotCountFor(it, lo), legal = aggregateLegality(it, lo);
-    var profSel = el("select", { style: { fontSize: "11px", width: "auto" }, onchange: function (e) { var v = e.target.value; setLoadout(it.name, function (wp) { wp._profile = v; }); } },
+    var profSel = el("select", { style: { fontSize: "11px", width: "auto" }, onchange: function (e) { var v = e.target.value; setLoadout(wKey, function (wp) { wp._profile = v; }); } },
       (WP().profiles || []).map(function (p) { return el("option", { value: p.key, selected: lo._profile === p.key, text: p.name + (p.count != null ? " (" + p.count + ")" : "") }); }));
     var header = el("div.row.between.wrap", { style: { gap: "10px", alignItems: "center", marginBottom: "10px" } }, [
       el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
@@ -1733,8 +1755,8 @@ EN.inventoryView = (function () {
       ]),
       el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } }, [el("span.help", { style: { margin: 0, fontSize: "10px" }, text: "PROFILE" }), profSel])
     ]);
-    var grid = el("div.grid2", { style: { gap: "10px" } }, (WP().slots || []).map(function (sd) { return slotCard(ch, it, lo, sd); }));
-    out.push(EN.ui.panel(it.name, it.group.toUpperCase() + " · " + (it.damage || ""), [
+    var grid = el("div.grid2", { style: { gap: "10px" } }, (WP().slots || []).map(function (sd) { return slotCard(ch, it, wKey, lo, sd); }));
+    out.push(EN.ui.panel(row.label, it.group.toUpperCase() + " · " + (it.damage || ""), [
       el("p.help", { style: { margin: "0 0 8px", fontSize: "11.5px" }, text: "One Part per slot (Utility holds two). Accessories snap on anytime; Mods are bench work on a rest with a kit. The strictest legality on the build is what a scanner reports." }),
       header, grid,
       el("p.help", { style: { margin: "10px 0 0", fontSize: "10.5px", color: "var(--text3)" }, text: WP().rules ? WP().rules.dieStep + " " + WP().rules.stabilized : "" })

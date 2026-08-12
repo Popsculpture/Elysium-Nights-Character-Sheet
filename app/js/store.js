@@ -413,8 +413,9 @@ EN.store = (function () {
     /* How each Versatile weapon is being held. Rebuilt null-prototype and reduced to
        the only value that means anything, because absent already means one-handed:
        storing "one" would be a second way to say nothing and would then need keeping
-       in sync. Anything that is not the literal "two" is dropped. Not keyed on an
-       equipment entry, so it does not belong after the instance-id split. */
+       in sync. Anything that is not the literal "two" is dropped. This pass only filters
+       VALUES; the keys are still weapon names here and are re-keyed to equipment entries
+       after the instance-id split, which is where that has to happen. */
     var gripIn = (ch.weaponGrip && typeof ch.weaponGrip === "object" && !Array.isArray(ch.weaponGrip)) ? ch.weaponGrip : {};
     var gripOut = Object.create(null);
     Object.keys(gripIn).forEach(function (k) { if (gripIn[k] === "two") gripOut[k] = "two"; });
@@ -435,8 +436,9 @@ EN.store = (function () {
        TALENT_RENAMES precedent below but read from the catalog rather than restated here,
        so the next rename is a row in that file and not a second place to remember.
 
-       Keyed on weapon NAME rather than on an equipment entry, like weaponAmmo and
-       weaponGrip above, so it belongs here and not after the instance-id split. */
+       This pass rewrites part KEYS inside a loadout and normalizes the loadout's shape,
+       neither of which depends on how the map itself is keyed, so it runs here. The map's
+       own keys move from weapon names to equipment entries after the split. */
     var PART_RENAMES = Object.create(null), PART_NAME_RENAMES = Object.create(null);
     ((EN.weaponParts && EN.weaponParts.renames) || []).forEach(function (r) {
       if (r && r.oldKey && r.key) PART_RENAMES[r.oldKey] = r.key;
@@ -489,34 +491,6 @@ EN.store = (function () {
         pj.itemName = to;
       });
     }
-    /* AND THEN the gate the rename brought with it. Extended Shaft went from
-       "Fits: Any Melee" to "Fits: Long-Shafted", which Part 3 calls "a HARD frame gate",
-       so an install saved under the old rule may now sit on a weapon that cannot take it,
-       still paying out +1 Reach and still forcing two hands. Un-install those.
-
-       Nothing is destroyed by this: an install is a key in weaponParts, the OWNED part is
-       a separate equipment entry, and removePart() in the bench does exactly this and
-       nothing more. The part goes back to the stash pool and the bench simply will not
-       re-fit it to that weapon.
-
-       A weapon name with no catalog entry is left ALONE rather than cleared. The gate is a
-       fact about the weapon, and an unknown weapon is a question we cannot answer, not an
-       answer of "no". */
-    var partsByKey = (EN.weaponParts && EN.weaponParts.byKey) || {};
-    Object.keys(ch.weaponParts).forEach(function (wn) {
-      var lo = ch.weaponParts[wn];
-      var wit = (EN.engine && EN.engine.catalogItem) ? EN.engine.catalogItem(wn) : null;
-      if (!wit) return;
-      function illegal(k) {
-        var p = partsByKey[k];
-        if (!p || p.fits !== "Long-Shafted") return false;
-        return !(EN.engine && EN.engine.isLongShafted && EN.engine.isLongShafted(wit));
-      }
-      ["targeting", "output", "core", "handling"].forEach(function (s) {
-        if (typeof lo[s] === "string" && illegal(lo[s])) lo[s] = null;
-      });
-      if (Array.isArray(lo.utility)) lo.utility = lo.utility.filter(function (k) { return !illegal(k); });
-    });
     // Renamed Talents. A record saved before a rename still stores the OLD key and
     // would resolve to nothing, silently, because every reader looks the key up with
     // .find() and drops a miss. Both spellings a record can carry (the key and the
@@ -734,6 +708,48 @@ EN.store = (function () {
         });
         ch.racked = newRacked;
       }
+      /* THE THREE WEAPON MAPS, name-keyed until now, re-keyed to equipment ENTRIES.
+         Brandon's ruling of 2026-08-12: "same-named weapons should be independently
+         moddable", and the magazine and the grip follow the mods for the same reason. A
+         forced two-handed grip comes FROM a Part fitted to one piece, so grip could not
+         stay name-keyed once parts moved; ammo was the one genuine choice and was ruled
+         per-entry too, so two pistols no longer draw from one magazine.
+
+         The shared state goes to the FIRST instance of that name and the others start
+         clean, which is the same ruling the split above already applies to armor wear and
+         Rig damage: state that cannot be attributed to one piece is not duplicated onto
+         another. It is also the arithmetic the player already owns. One Extended Shaft
+         installed "on the Quarterstaff" used to arm every Quarterstaff at once; you own
+         one Part, so exactly one of them keeps it.
+
+         State naming a weapon the character does not own is DROPPED rather than carried,
+         for the same reason the wear maps drop an orphan: there is no piece for it. */
+      /* The name -> first-entry lookup is built from the FINAL equipment array and not from
+         nameToIds, which is the trap here: nameToIds is only populated for rows the split
+         actually fanned, so an ordinary `{id:"eq_x", name:"Quarterstaff", qty:1}` row never
+         appears in it. Keying off nameToIds dropped the install on every weapon that did
+         not split, which is the common case. Measured, on a two-Quarterstaff record whose
+         Extended Shaft vanished entirely. */
+      var firstEntryOfName = Object.create(null), ownedKeys = Object.create(null);
+      ch.equipment.forEach(function (e) {
+        if (!e || typeof e.name !== "string") return;
+        var k = e.id || e.name;
+        ownedKeys[k] = 1;
+        if (firstEntryOfName[e.name] === undefined) firstEntryOfName[e.name] = k;
+      });
+      ["weaponParts", "weaponGrip", "weaponAmmo"].forEach(function (field) {
+        var src = ch[field];
+        if (!src || typeof src !== "object" || Array.isArray(src)) { ch[field] = Object.create(null); return; }
+        var out = Object.create(null);
+        Object.keys(src).forEach(function (k) {
+          // already an entry key: a record saved after this change, a re-run, or a pooled
+          // row whose entryKey IS its name. Left exactly where it is.
+          if (ownedKeys[k]) { if (out[k] === undefined) out[k] = src[k]; return; }
+          var id = firstEntryOfName[k];
+          if (id && out[id] === undefined) out[id] = src[k];
+        });
+        ch[field] = out;
+      });
     }
     /* THE MERGE, and it runs AFTER the split for the reason the split states: it is
        equipment-keyed, so it needs entries that already carry their real ids.
@@ -782,6 +798,39 @@ EN.store = (function () {
         return false;
       });
     }
+    /* THE Fits GATE, on data that predates it, and it runs HERE rather than beside the
+       part rename above because it needs to know WHICH WEAPON each loadout belongs to and
+       the map is only keyed on the entry once the re-key above has run. Sited earlier it
+       worked exactly once: on the second load the keys were entry ids, catalogItem(<id>)
+       answered null, and the sweep skipped every loadout while reading as if it had passed.
+
+       Extended Shaft went from "Fits: Any Melee" to "Fits: Long-Shafted", which Part 3
+       calls "a HARD frame gate", so an install saved under the old rule may sit on a weapon
+       that cannot take it and still pay out +1 Reach and still force two hands.
+
+       Nothing is destroyed: an install is a key in weaponParts, the OWNED part is a
+       separate equipment entry, and removePart() in the bench does exactly this and no
+       more. The part returns to the stash pool and the bench declines to re-fit it.
+
+       An entry whose name has no catalog item is left ALONE. The gate is a fact about the
+       weapon, and an unknown weapon is a question we cannot answer, not an answer of no. */
+    var partsByKey = (EN.weaponParts && EN.weaponParts.byKey) || {};
+    Object.keys(ch.weaponParts).forEach(function (wKey) {
+      var lo = ch.weaponParts[wKey];
+      if (!lo || typeof lo !== "object") return;
+      var e = (ch.equipment || []).find(function (x) { return (x.id || x.name) === wKey; });
+      var wit = (e && EN.engine && EN.engine.catalogItem) ? EN.engine.catalogItem(e.name) : null;
+      if (!wit) return;
+      function illegal(k) {
+        var p = partsByKey[k];
+        if (!p || p.fits !== "Long-Shafted") return false;
+        return !(EN.engine && EN.engine.isLongShafted && EN.engine.isLongShafted(wit));
+      }
+      ["targeting", "output", "core", "handling"].forEach(function (sl) {
+        if (typeof lo[sl] === "string" && illegal(lo[sl])) lo[sl] = null;
+      });
+      if (Array.isArray(lo.utility)) lo.utility = lo.utility.filter(function (k) { return !illegal(k); });
+    });
     /* Trauma Rig state; absent on every character built before Rigs existed.
        Both the pick and the damage are keyed on the EQUIPMENT ENTRY, so they name one
        specific Rig instead of a tier that any number of Rigs can share. Which is why

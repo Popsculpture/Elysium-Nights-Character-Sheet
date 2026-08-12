@@ -203,6 +203,29 @@ EN.printSheet = (function () {
   // ch.equippedWeapons holds equipment-entry ids (each a specific owned
   // instance); the Attacks list is per weapon TYPE, so resolve to deduped
   // catalog names once here.
+  /* ONE ROW PER EQUIPPED PIECE. It used to dedupe to catalog names, because the Attacks
+     list was "per weapon TYPE"; since 2026-08-12 mods, grip and magazine are per ENTRY, so
+     two equipped Longswords can print two different attack profiles and the sheet is what
+     the table is played from. `label` only numbers a name that actually repeats.
+     equippedWeaponNames stays for the Equipped / Worn line, which genuinely wants names. */
+  function equippedWeaponRows(ch) {
+    var out = [];
+    (ch.equippedWeapons || []).forEach(function (key) {
+      var e = (ch.equipment || []).find(function (x) { return (x.id || x.name) === key; });
+      if (!e || !(e.qty > 0)) return;
+      var w = findWeapon(e.name);
+      if (!w) return;
+      out.push({ key: (e.id || e.name), name: e.name, w: w });
+    });
+    var total = {};
+    out.forEach(function (r) { total[r.name] = (total[r.name] || 0) + 1; });
+    var seen = {};
+    out.forEach(function (r) {
+      if (total[r.name] > 1) { seen[r.name] = (seen[r.name] || 0) + 1; r.label = r.name + " " + seen[r.name]; }
+      else r.label = r.name;
+    });
+    return out;
+  }
   function equippedWeaponNames(ch) {
     var out = [];
     (ch.equippedWeapons || []).forEach(function (key) {
@@ -470,18 +493,19 @@ EN.printSheet = (function () {
        line further down is right to say the Knuckles are on you. It is the attack
        PROFILE that was the lie, not the presence. */
     R.push(sect("Attacks"));
-    var atkRows = equippedWeaponNames(ch).map(findWeapon).filter(Boolean)
-      .filter(function (w) { return !(eng.isUnarmedAugmentName && eng.isUnarmedAugmentName(w.name)); })
-      .map(function (w) {
+    var atkRows = equippedWeaponRows(ch)
+      .filter(function (r) { return !(eng.isUnarmedAugmentName && eng.isUnarmedAugmentName(r.w.name)); })
+      .map(function (r) {
+        var w = r.w, wKey = r.key;
         // the weapon's own traits, plus the reach the CHARACTER adds to it. The
         // traits list prints the catalog's "Reach 1"; a Verdine Arboreal actually
         // reaches further than that and the printed sheet is what they play from.
         var notes = (w.traits || []).slice();
-        var wr = eng.weaponReach ? eng.weaponReach(ch, w) : null;
+        var wr = eng.weaponReach ? eng.weaponReach(ch, w, wKey) : null;
         if (wr && wr.melee && wr.note) notes.push(wr.note);
         // the damage this weapon is actually dealing, for the grip it is being held in.
         // Printing "1d8 (1d10)" left the player to work out which applied at the table.
-        var g = eng.weaponGrip ? eng.weaponGrip(ch, w) : null;
+        var g = eng.weaponGrip ? eng.weaponGrip(ch, w, wKey) : null;
         var dmg = w.damage || "";
         if (g && g.versatile && g.forcedBy) {
           /* Forced into two hands, so the Versatile trait is gone, not merely unused:
@@ -497,7 +521,7 @@ EN.printSheet = (function () {
           notes.push(g.twoHanded ? "held two-handed (" + g.versatile + ")"
                                  : "held one-handed (" + g.baseDice + ")");
         }
-        return [w.name, sgn(weaponHit(ch, d, w)), dmg, notes.join(", ")];
+        return [r.label, sgn(weaponHit(ch, d, w)), dmg, notes.join(", ")];
       });
     atkRows = atkRows.concat(unarmedAttackRow(ch, d));
     R.push(wtable(["Name", "Atk Bonus / DC", "Damage & Type", "Notes"], atkRows, Math.max(6, atkRows.length + 2), ".ps-tbl-atk"));
@@ -617,7 +641,7 @@ EN.printSheet = (function () {
         ]);
         if (it) gearDetailLines(it, eng.armorState ? eng.armorState(ch, key) : null,
                                 eng.shieldState ? eng.shieldState(ch, key) : null,
-                                eng.weaponGrip ? eng.weaponGrip(ch, it) : null).forEach(function (l) { block.appendChild(l); });
+                                eng.weaponGrip ? eng.weaponGrip(ch, it, key) : null).forEach(function (l) { block.appendChild(l); });
         else block.appendChild(el("div.ps-invdesc.ps-dim", { text: "No catalog entry - note details by hand." }));
         body.push(block);
       });

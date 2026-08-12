@@ -126,15 +126,15 @@ EN.combatView = (function () {
       crit: res.crit, fumble: res.fumble, t: Date.now() };
     store.update(function (c) {
       if (it) {
-        var st = readAmmo(c, it), cost = costFor(it, st.mode);
+        var st = readAmmo(c, it, ctx.weaponKey), cost = costFor(it, st.mode);
         c.weaponAmmo = c.weaponAmmo || {};
-        var a = c.weaponAmmo[ctx.weaponName] || { cur: st.cur, mode: st.mode, ammoType: st.ammoType };
+        var a = c.weaponAmmo[ctx.weaponKey] || { cur: st.cur, mode: st.mode, ammoType: st.ammoType };
         if (typeof a.cur !== "number") a.cur = st.cur;
         var spentRounds = Math.min(a.cur, cost);
         a.cur = Math.max(0, a.cur - cost);
-        c.weaponAmmo[ctx.weaponName] = a;
+        c.weaponAmmo[ctx.weaponKey] = a;
         // kick the card on the next render if this actually burned rounds
-        if (spentRounds > 0) _recoil = ctx.weaponName;
+        if (spentRounds > 0) _recoil = ctx.weaponKey;
       }
       if (spend && ctx.moxie) {
         c.resources = c.resources || {}; c.resources.current = c.resources.current || {};
@@ -216,7 +216,7 @@ EN.combatView = (function () {
     var ammo = null, canFire = true;
     if (ctx.usesAmmo) {
       var wIt = findWeapon(ctx.weaponName);
-      if (wIt) { var ast = readAmmo(store.active(), wIt); ammo = { cur: ast.cur, cap: ast.cap, cost: costFor(wIt, ast.mode), mode: ast.mode, unit: wIt.ammoUnit || "" }; canFire = ast.cur >= ammo.cost; }
+      if (wIt) { var ast = readAmmo(store.active(), wIt, ctx.weaponKey); ammo = { cur: ast.cur, cap: ast.cap, cost: costFor(wIt, ast.mode), mode: ast.mode, unit: wIt.ammoUnit || "" }; canFire = ast.cur >= ammo.cost; }
     }
     var againWord = ctx.usesAmmo ? "TAP TO FIRE AGAIN" : "TAP TO ROLL AGAIN";
 
@@ -267,7 +267,7 @@ EN.combatView = (function () {
       prompt = el("div.mono", { style: { fontSize: "11px", letterSpacing: ".22em", color: canFire ? "var(--accent)" : "var(--warn)", marginTop: "12px", textTransform: "uppercase", opacity: ".9" }, text: canFire ? "Tap to roll" : "Out of ammo" });
     }
     var reloadBtn = (ctx.usesAmmo && !canFire) ? el("button.btn.sm", { style: { marginTop: "10px", color: "var(--warn)", borderColor: "var(--warn)" },
-      onclick: function () { reloadWeapon(ctx.weaponName); } }, "⟳ RELOAD") : null;
+      onclick: function () { reloadWeapon(ctx.weaponKey); } }, "⟳ RELOAD") : null;
     var fxIsCrit = shouldPlayFx && crit, fxIsFault = shouldPlayFx && fumble;
     var heroFxClass = fxIsCrit ? ".fx-crit" : fxIsFault ? ".fx-fault" : "";
     var diceRow = el("div", { dataset: { roll: "d20tray" }, style: { position: "relative", display: "flex", gap: "14px", alignItems: "center", justifyContent: "center", minHeight: "64px" } },
@@ -2531,8 +2531,11 @@ EN.combatView = (function () {
   }
 
   /* non-mutating read of a weapon's magazine state (defaults: full, cheapest mode, base feed) */
-  function readAmmo(ch, it) {
-    var st = (ch.weaponAmmo && ch.weaponAmmo[it.name]) || {};
+  // `key` is the equipment ENTRY: since 2026-08-12 two pistols carry two magazines.
+  // No key reads the weapon's defaults (a full magazine, cheapest mode, base feed),
+  // which is the honest answer for a caller with no piece in hand.
+  function readAmmo(ch, it, key) {
+    var st = (ch.weaponAmmo && ch.weaponAmmo[key]) || {};
     var cap = capacityOf(it), modes = weaponModes(it), base = baseFeedName(it);
     var mode = (st.mode && modes.indexOf(st.mode) !== -1) ? st.mode : defaultMode(it);
     var cur = typeof st.cur === "number" ? Math.max(0, Math.min(st.cur, cap)) : cap;
@@ -2541,7 +2544,7 @@ EN.combatView = (function () {
     if (ammoType !== "Standard" && ammoType !== base && base === "Standard" && ownedQty(ch, ammoType) <= 0) ammoType = "Standard";
     return { cur: cur, cap: cap, mode: mode, ammoType: ammoType, base: base, modes: modes };
   }
-  var _recoil = null;   // weapon name to kick on the next render, set when rounds are spent
+  var _recoil = null;   // weapon ENTRY KEY to kick on the next render, set when rounds are spent
   /* Dice mode. Digital is the default: the sheet rolls for you and HIT/DMG are
      pressable. Physical means real dice on the table, so those become plain
      numbers to read off, and anything that SPENDS something when used keeps a
@@ -2559,42 +2562,49 @@ EN.combatView = (function () {
      roll tray makes, so the magazine and the recoil kick stay consistent. */
   function fireWeapon(wname) {
     var it = findWeapon(wname); if (!it) return;
-    var st = readAmmo(store.active(), it), cost = costFor(it, st.mode);
+    var st = readAmmo(store.active(), it, key), cost = costFor(it, st.mode);
     if (st.cur < cost) { toast(it.name + " needs " + cost + " round" + (cost > 1 ? "s" : "") + " for " + st.mode + "; reload first."); return; }
     store.update(function (c) {
       c.weaponAmmo = c.weaponAmmo || {};
-      var cur = readAmmo(c, it);
-      var a = c.weaponAmmo[wname] || { cur: cur.cur, mode: cur.mode, ammoType: cur.ammoType };
+      var cur = readAmmo(c, it, key);
+      var a = c.weaponAmmo[key] || { cur: cur.cur, mode: cur.mode, ammoType: cur.ammoType };
       if (typeof a.cur !== "number") a.cur = cur.cur;
       a.cur = Math.max(0, a.cur - cost);
-      c.weaponAmmo[wname] = a;
+      c.weaponAmmo[key] = a;
     });
     _recoil = wname;
     toast(it.name + ": " + st.mode + ", " + cost + " round" + (cost > 1 ? "s" : "") + " spent.");
     EN.app.render();
   }
-  function writeAmmo(wname, patch) {
-    var it = findWeapon(wname); if (!it) return;
+  // one magazine per equipped PIECE, so both of these address an entry key and read the
+  // catalog item off that entry rather than being handed a bare name
+  function weaponOfKey(ch, key) {
+    var e = (ch.equipment || []).find(function (x) { return (x.id || x.name) === key; });
+    return e ? findWeapon(e.name) : null;
+  }
+  function writeAmmo(key, patch) {
+    var it = weaponOfKey(store.active(), key); if (!it) return;
     // a re-render replaces the card node, so flag the weapon and let the
     // render attach the animation to the fresh node
     if (typeof patch.cur === "number") {
-      var before = readAmmo(store.active(), it).cur;
-      if (patch.cur < before) _recoil = wname;
+      var before = readAmmo(store.active(), it, key).cur;
+      if (patch.cur < before) _recoil = key;
     }
     store.update(function (c) {
       c.weaponAmmo = c.weaponAmmo || {};
-      var cur = readAmmo(c, it);
-      var a = c.weaponAmmo[wname] || { cur: cur.cur, mode: cur.mode, ammoType: cur.ammoType };
+      var cur = readAmmo(c, it, key);
+      var a = c.weaponAmmo[key] || { cur: cur.cur, mode: cur.mode, ammoType: cur.ammoType };
       if (typeof a.cur !== "number") a.cur = cur.cur;
       Object.keys(patch).forEach(function (k) { a[k] = patch[k]; });
       a.cur = Math.max(0, Math.min(a.cur, capacityOf(it)));   // keep persisted value in range
-      c.weaponAmmo[wname] = a;
+      c.weaponAmmo[key] = a;
     });
   }
-  function reloadWeapon(wname) {
-    var it = findWeapon(wname); if (!it) return;
+  function reloadWeapon(key) {
+    var ch0 = store.active();
+    var it = weaponOfKey(ch0, key); if (!it) return;
     if ((it.traits || []).indexOf("Disposable") !== -1) { toast(it.name + " is Disposable; spent once fired, it cannot be reloaded."); return; }
-    var ch = store.active(), st = readAmmo(ch, it), base = st.base;
+    var ch = ch0, st = readAmmo(ch, it, key), base = st.base;
     var type = st.ammoType;
     if (type === "Standard" && base !== "Standard") type = base;        // coerce to the weapon's only (counted) feed
     var msg;
@@ -2609,7 +2619,7 @@ EN.combatView = (function () {
         var e = (c.equipment || []).find(function (x) { return x.name === type; });
         if (e) { e.qty = (e.qty || 1) - 1; if (e.qty <= 0) c.equipment = c.equipment.filter(function (x) { return x !== e; }); }
       }
-      c.weaponAmmo[wname] = { cur: capacityOf(it), mode: st.mode, ammoType: type };
+      c.weaponAmmo[key] = { cur: capacityOf(it), mode: st.mode, ammoType: type };
     });
     toast(msg || (it.name + " reloaded, " + capacityOf(it) + " " + (it.ammoUnit || "rounds") + (type !== "Standard" ? " · " + type : "") + "."));
   }
@@ -3464,6 +3474,32 @@ EN.combatView = (function () {
       var e = (ch.equipment || []).find(function (x) { return (x.id || x.name) === key && x.qty > 0; });
       if (e && equippedNames.indexOf(e.name) === -1) equippedNames.push(e.name);
     });
+    /* ONE ROW PER EQUIPPED PIECE, which is a different list from the deduped names above.
+       Brandon's ruling of 2026-08-12 made mods, grip and magazine per ENTRY, so two
+       equipped Quarterstaffs are two weapons with two builds and the panel has to be able
+       to show both. `label` only grows a number when a name actually repeats, so the
+       ordinary one-of-each loadout reads exactly as it always did.
+       equippedNames survives for the two consumers that genuinely want names: the reorder
+       arrows (whose index feeds moveWeaponName and must match the stored array) and the
+       Parry source list (where two copies of one weapon offer the same die anyway). */
+    var equippedRows = [];
+    (ch.equippedWeapons || []).forEach(function (key) {
+      var e = (ch.equipment || []).find(function (x) { return (x.id || x.name) === key && x.qty > 0; });
+      if (!e) return;
+      var it = findWeapon(e.name);
+      if (!it) return;
+      equippedRows.push({ key: eng.entryKey(e), name: e.name, it: it });
+    });
+    (function () {
+      var total = {};
+      equippedRows.forEach(function (r) { total[r.name] = (total[r.name] || 0) + 1; });
+      var seen = {};
+      equippedRows.forEach(function (r) {
+        if (total[r.name] > 1) { seen[r.name] = (seen[r.name] || 0) + 1; r.label = r.name + " " + seen[r.name]; }
+        else r.label = r.name;
+      });
+    })();
+    var realWeaponRows = equippedRows.filter(function (r) { return !eng.isUnarmedAugmentName(r.it.name); });
     /* THE NAMES THAT ACTUALLY PRODUCE A WEAPON ROW, which is not the same question as
        "what is equipped". Anything asking "am I armed" has to ask this one.
 
@@ -3786,7 +3822,7 @@ EN.combatView = (function () {
       // Moxie Gambits and the Wildcard bet ride outside the clean 2d20 rule;
       // each is offered on any d20 attack only if the character actually has it
       // and has Moxie. Shared by weapon and class-attack contexts.
-      function attackCtx(it, h) {
+      function attackCtx(it, h, wk) {
         var baseMods = [{ label: h.attrName + " Modifier", value: h.mod }];
         if (h.prof) baseMods.push({ label: "Weapon Proficiency", value: h.prof });
         if (h.focusCal) baseMods.push({ label: h.cat + " Focus (Caliber)", value: h.focusCal });
@@ -3795,13 +3831,14 @@ EN.combatView = (function () {
         if (h.tier === "untrained") autoSnag.push("Untrained (" + h.cat + ")");
         return Object.assign({
           weaponName: it.name,
+          weaponKey: wk || null,   // the PIECE: its magazine, its mods, its grip
           subtype: (h.melee ? "Melee" : h.thrownItem ? "Thrown" : "Ranged") + " Weapon · " + h.cat,
           melee: h.melee, thrownItem: h.thrownItem, ranged: !h.melee && !h.thrownItem,
           usesAmmo: !h.melee && !h.thrownItem && it.ammo != null,   // a fired weapon spends a shot per roll
           traits: it.traits || [], baseMods: baseMods, critMin: h.spec ? 19 : 20,
           autoSnag: autoSnag, autoEdge: [], baseSnag: autoSnag.length, baseEdge: 0,
           shaken: (ch.conditions || []).indexOf("Shaken") !== -1,
-          dmg: damageCtx(it, h)   // carried so the attack tray can hand off to damage
+          dmg: damageCtx(it, h, wk)   // carried so the attack tray can hand off to damage
         }, moxieFlags());
       }
       // a non-weapon attack (Cipher, Flow, natural / unarmed strike) the roll
@@ -3824,13 +3861,14 @@ EN.combatView = (function () {
       // ranged weapon adds Agility exactly as its attack roll does. Cheap Shot rides
       // as an optional bonus group for a Scoundrel wielding a Sidearm, Simple, or
       // Light-melee weapon.
-      function damageCtx(it, h) {
+      function damageCtx(it, h, wk) {
         var p = parseDamage(it.damage), traits = it.traits || [];
         var hasLight = traits.some(function (t) { return /^Light$/i.test(t); });
         var cheapEligible = ch.class === "scoundrel" && (
           it.group === "Sidearm" || it.group === "Simple" || (h.melee && it.group === "Martial" && hasLight));
         return {
           weaponName: it.name,
+          weaponKey: wk || null,
           subtype: (h.melee ? "Melee" : h.thrownItem ? "Thrown" : "Ranged") + " Weapon · " + h.cat,
           dice: p.dice, types: p.types,
           flat: h.dmgMod, flatLabel: h.indirect ? "Indirect: no attribute modifier" : (h.attrName + " Modifier"),
@@ -3843,7 +3881,7 @@ EN.combatView = (function () {
              and a weapon forced two-handed by an Extended Shaft still offered a
              one-handed option it cannot have. */
           versatile: versatileDie(traits),
-          grip: eng.weaponGrip(ch, it),
+          grip: eng.weaponGrip(ch, it, wk),
           cheapEligible: cheapEligible, cheapDice: d.caliber || 1,
           crit: false
         };
@@ -3889,8 +3927,8 @@ EN.combatView = (function () {
           el("span.mono.statkey", { style: { color: color || "var(--text)" }, onclick: onClick, text: value })
         ]);
       }
-      equippedNames.forEach(function (wname, wi) {
-        var it = findWeapon(wname);
+      realWeaponRows.forEach(function (row, wi) {
+        var it = row.it, wname = row.name, wKey = row.key;
         if (!it) return;
         // Knuckles and Shock Gloves augment the punch rather than being weapons of
         // their own. Their catalog damage is a legacy of the old replace-the-die
@@ -3902,13 +3940,13 @@ EN.combatView = (function () {
         // resolved once per row and used by both the REACH box and the traits line,
         // so the number and the chips cannot disagree. Ranged weapons come back
         // `melee: false` and nothing below touches them.
-        var wr = eng.weaponReach(ch, it);
+        var wr = eng.weaponReach(ch, it, wKey);
         var snagWhy = atkSnag || (h.tier === "untrained" ? "Untrained with " + h.cat + "; attacks roll with Snag" : null);
         /* ONE damage rating, the one this weapon is actually dealing. A Versatile
            weapon used to print both dice ("1d8 (1d10)") and leave the player to work
            out which applied; it has one at a time, and which one is a fact about the
            grip. The rest of the damage string (the type, any rider) is unchanged. */
-        var grip = eng.weaponGrip(ch, it);
+        var grip = eng.weaponGrip(ch, it, wKey);
         var dmgActive = grip.dice
           ? norm.damageDisplay.replace(/^\s*\d+d\d+(\s*\(\d+d\d+\))?/, grip.dice)
           : norm.damageDisplay;
@@ -3927,7 +3965,10 @@ EN.combatView = (function () {
 
         var head = el("div.row", { style: { gap: "8px", alignItems: "center", flexWrap: "wrap", marginBottom: "2px" } }, [
           equippedNames.length > 1 ? reorderArrows(wname, wi) : null,
-          el("span", { title: it.desc || "", style: { fontWeight: 600, fontSize: "14px" }, text: it.name }),
+          // row.label, not it.name: two equipped copies of one weapon are two rows with two
+          // builds, and two identical headers over different numbers is the confusing part.
+          // The label is the bare name whenever the name does not repeat.
+          el("span", { title: it.desc || "", style: { fontWeight: 600, fontSize: "14px" }, text: row.label }),
           snagWhy ? snagChip(snagWhy) : null,
           h.focus ? el("span.chip", { title: "Skill Focus: " + h.cat + " (" + h.focus.aspect + ")" + (h.focus.granted ? " · Free overlap Focus" : "") + ". Adds Caliber (" + eng.fmtMod(h.focusCal) + ") to attack rolls with this weapon type, outside the +15 static cap.",
             style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" } }, "FOCUS +" + h.focusCal) : null,
@@ -3944,7 +3985,7 @@ EN.combatView = (function () {
         var rowKids = [head];
 
         if (isRanged) {
-          var st = readAmmo(ch, it);
+          var st = readAmmo(ch, it, wKey);
           var selCost = costFor(it, st.mode);
           var canAny = st.cur >= minFireCost(it);   // any mode could fire?
           var canSel = st.cur >= selCost;           // the selected mode can fire?
@@ -3952,7 +3993,7 @@ EN.combatView = (function () {
           if (!canAny) {   // magazine can't pay even the cheapest mode → Reload affordance
             hitCell = el("div", { style: { textAlign: "center", flex: "0 0 auto", minWidth: "56px" } }, [
               el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "HIT" }),
-              el("button.btn.sm", { style: { color: "var(--warn)", borderColor: "var(--warn)", padding: "1px 7px" }, onclick: function () { reloadWeapon(wname); } }, "⟳ RELOAD")
+              el("button.btn.sm", { style: { color: "var(--warn)", borderColor: "var(--warn)", padding: "1px 7px" }, onclick: function () { reloadWeapon(wKey); } }, "⟳ RELOAD")
             ]);
           } else {   // can fire something; grey the number when the SELECTED mode is unaffordable
             hitCell = physicalDice()
@@ -3961,7 +4002,7 @@ EN.combatView = (function () {
                   style: { opacity: canSel ? 1 : 0.5 } }, [
                   el("div.lbl", { text: "HIT" }),
                   el("span.mono.statkey", { style: { color: canSel ? "var(--ember)" : "var(--danger)" },
-                    onclick: function () { openRollTray(attackCtx(it, h)); }, text: eng.fmtMod(h.total) })
+                    onclick: function () { openRollTray(attackCtx(it, h, wKey)); }, text: eng.fmtMod(h.total) })
                 ]);
           }
           var pct = st.cap > 0 ? Math.round(st.cur / st.cap * 100) : 0;
@@ -3975,14 +4016,14 @@ EN.combatView = (function () {
           rowKids.push(el("div.row.wrap", { style: { gap: "12px", alignItems: "center", marginTop: "6px" } }, [
             statBox("RANGE", norm.rangeDisplay, "var(--gold)", it.range || ""),
             hitCell,
-            statBox("DMG", dmgDisplay, "var(--accent)", dmgTip, function () { openDmgTray(damageCtx(it, h)); }, "dmg"),
+            statBox("DMG", dmgDisplay, "var(--accent)", dmgTip, function () { openDmgTray(damageCtx(it, h, wKey)); }, "dmg"),
             ammoCell
           ]));
 
           // controls: fire-mode selector, ammo-type dropdown, reload
           var controls = [];
           if (st.modes.length > 1) {
-            controls.push(el("select", { style: { fontSize: "11px", width: "auto" }, onchange: function () { writeAmmo(wname, { mode: this.value }); } },
+            controls.push(el("select", { style: { fontSize: "11px", width: "auto" }, onchange: function () { writeAmmo(wKey, { mode: this.value }); } },
               st.modes.map(function (m) { return el("option", { value: m, selected: m === st.mode, title: weaponTraitTip(m), text: m + " · −" + MODE_COST[m] }); })));
           } else if (st.modes.length === 1) {
             controls.push(el("span.chip", { title: weaponTraitTip(st.modes[0]), style: { fontSize: "9.5px", color: "var(--gold)", borderColor: "var(--gold)" } }, st.modes[0].toUpperCase() + " · −" + MODE_COST[st.modes[0]]));
@@ -3992,10 +4033,10 @@ EN.combatView = (function () {
           var ammoOpts = ammoTypeOptions(ch, it);
           if (ammoOpts.indexOf(st.ammoType) === -1) ammoOpts.push(st.ammoType);   // keep the loaded type selectable even if its stash ran out
           if (ammoOpts.length > 1) {
-            controls.push(el("select", { title: "Loaded ammunition (Reload to apply)", style: { fontSize: "11px", width: "auto" }, onchange: function () { writeAmmo(wname, { ammoType: this.value }); } },
+            controls.push(el("select", { title: "Loaded ammunition (Reload to apply)", style: { fontSize: "11px", width: "auto" }, onchange: function () { writeAmmo(wKey, { ammoType: this.value }); } },
               ammoOpts.map(function (o) { return el("option", { value: o, selected: o === st.ammoType, text: o + (o !== "Standard" && ownedQty(ch, o) <= 0 ? " (none in stash)" : "") }); })));
           }
-          controls.push(el("button.btn.sm", { title: "Reload to " + st.cap + (it.ammoUnit ? " " + it.ammoUnit : ""), style: { color: "var(--text2)", padding: "2px 8px" }, onclick: function () { reloadWeapon(wname); } }, "⟳ RELOAD"));
+          controls.push(el("button.btn.sm", { title: "Reload to " + st.cap + (it.ammoUnit ? " " + it.ammoUnit : ""), style: { color: "var(--text2)", padding: "2px 8px" }, onclick: function () { reloadWeapon(wKey); } }, "⟳ RELOAD"));
           rowKids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "6px" } }, controls));
 
           // status sub-row: loaded special round/munition effect + (future) mods
@@ -4027,9 +4068,9 @@ EN.combatView = (function () {
               : el("div.statwrap", { title: "Roll to hit \u00b7 " + hitTip }, [
                   el("div.lbl", { text: "HIT" }),
                   el("span.mono.statkey", { style: { color: "var(--ember)" },
-                    onclick: function () { openRollTray(attackCtx(it, h)); }, text: eng.fmtMod(h.total) })
+                    onclick: function () { openRollTray(attackCtx(it, h, wKey)); }, text: eng.fmtMod(h.total) })
                 ]),
-            statBox("DMG", dmgDisplay, "var(--accent)", dmgTip, function () { openDmgTray(damageCtx(it, h)); }, "dmg")
+            statBox("DMG", dmgDisplay, "var(--accent)", dmgTip, function () { openDmgTray(damageCtx(it, h, wKey)); }, "dmg")
           ]));
         }
 
@@ -4047,12 +4088,12 @@ EN.combatView = (function () {
               style: { padding: "1px 8px", fontSize: "10.5px",
                        color: grip.twoHanded ? "var(--accent)" : "var(--text3)",
                        borderColor: grip.twoHanded ? "var(--accent)" : "var(--border2)" },
-              onclick: (function (nm, now) { return function () {
+              onclick: (function (k, now) { return function () {
                 store.update(function (c) {
                   c.weaponGrip = c.weaponGrip || {};
-                  if (now) delete c.weaponGrip[nm]; else c.weaponGrip[nm] = "two";
+                  if (now) delete c.weaponGrip[k]; else c.weaponGrip[k] = "two";
                 });
-              }; })(it.name, grip.twoHanded) },
+              }; })(wKey, grip.twoHanded) },
               grip.twoHanded ? "TWO-HANDED · " + grip.versatile : "ONE-HANDED · " + grip.baseDice)
           : (grip.versatile && grip.forcedBy
               ? el("span.chip", { title: grip.why, style: { color: "var(--warn)", borderColor: "var(--warn)" } },
@@ -4092,7 +4133,7 @@ EN.combatView = (function () {
         }
 
         // installed Workbench Parts (Mods + Accessories) for this weapon
-        var wpLo = (ch.weaponParts || {})[it.name];
+        var wpLo = (ch.weaponParts || {})[wKey];
         if (wpLo && EN.weaponParts) {
           var wpKeys = ["targeting", "output", "core", "handling"].map(function (s) { return wpLo[s]; }).filter(Boolean).concat(wpLo.utility || []);
           var wpChips = wpKeys.map(function (k) {
@@ -4109,7 +4150,7 @@ EN.combatView = (function () {
                       : isRanged ? "var(--gold)"
                       : h.thrownItem ? "var(--ember)"
                       : "var(--accent)";
-        var kicking = _recoil === wname;
+        var kicking = _recoil === wKey;
         if (kicking) _recoil = null;
         kids.push(el("div.feature" + (kicking ? ".recoil" : ""), { style: { borderLeftColor: railColor } }, rowKids));
       });
@@ -4462,7 +4503,7 @@ EN.combatView = (function () {
       // the badge counts WEAPONS, so it counts the rows this tab will actually draw
       // for one. It used to count everything equipped, which read WEAPONS (2) over an
       // empty list for a character holding Knuckles and Shock Gloves.
-      { key: "weapons", label: "Weapons", count: realWeaponNames.length },
+      { key: "weapons", label: "Weapons", count: realWeaponRows.length },
       { key: "loadout", label: "Loadout", count: loadoutCount() },
       { key: "notes", label: "Notes", count: null }
     ];

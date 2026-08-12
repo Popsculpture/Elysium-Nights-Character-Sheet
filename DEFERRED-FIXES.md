@@ -3339,6 +3339,107 @@ authority on what exists; a probe that invents a name is testing nothing. Real a
 "SkinPlan Daywear", "Liner Mesh", "Courier Shell".
 
 
+## Two pistols are two pistols: mods, grip and magazine per ENTRY
+
+Brandon, 2026-08-12, after the analysis that showed his stated premise was not implemented:
+"same-named weapons should be independently moddable." And on the one adjacent question,
+ruled per entry as well: each weapon entry tracks its own magazine and fire mode.
+
+### What was actually true before
+
+`ch.weaponParts` was keyed by weapon NAME. Measured live: two Machine Pistols, ONE
+`weaponParts` key, and setting a Suppressor on the type meant both entries resolved it.
+`weaponAmmo` and `weaponGrip` were name-keyed too, the bench deduped its chips by name, and
+`equippedNames` collapsed equipped entries to unique names before the weapon panel ever saw
+them. So the sheet could not express two same-named weapons differing in any way, and the
+thing the log had been citing as the reason weapons are per-instance was not the reason.
+
+### Grip had no choice about following
+
+A forced two-handed grip comes FROM a Part fitted to one piece. Leave grip name-keyed while
+parts go per-entry and the question "is this weapon forced two-handed" has no answer: the
+resolver is handed a catalog item, and a catalog item cannot tell two pistols apart. Ammo
+was the one genuine choice; ruled per entry too, so two pistols no longer share a magazine.
+
+### The resolvers take an ENTRY, and a missing key is not a fallback
+
+`weaponPartsOn(ch, key)`, `weaponReach(ch, item, key)`, `weaponGrip(ch, item, key)`,
+`readAmmo(ch, item, key)`. **No key answers for an unmodded weapon of that type**, which is
+the honest answer for a caller with no piece in hand (a shop card, a catalog preview).
+Falling back to the name would have quietly restored the bug this replaced, so it does not.
+
+`writeAmmo(key, patch)` and `reloadWeapon(key)` resolve the catalog item off the entry rather
+than being handed a bare name, so there is no path where a writer knows the type but not the
+piece. `_recoil` holds an entry key, so firing one pistol kicks that card and not its twin.
+
+### Two lists where there was one
+
+`equippedRows` (one per equipped piece, with a `label`) drives the weapon panel, the trays,
+the ammo controls and the MODS chips. `equippedNames` survives for the two consumers that
+genuinely want names: the reorder arrows, whose index feeds `moveWeaponName` and must match
+the raw stored array, and the Parry source list, where two copies of a weapon offer the same
+die anyway. The bench got the same treatment: `ownedWeapons` returns entries and
+`_benchWeapon` holds an entry key. Both exports iterate `equippedWeaponRows`.
+
+**Labels only number a name that actually repeats.** A character with one of each reads
+exactly as it always did; two Quarterstaffs read "Quarterstaff 1" and "Quarterstaff 2" on the
+bench, on the weapon row, on the print sheet and in the PDF.
+
+### The migration, and the bug in the first version of it
+
+Name-keyed state goes to the FIRST entry of that name and the others start clean. That is the
+ruling the instance-id split already applies to armor wear and Rig damage: state that cannot
+be attributed to one piece is not duplicated onto another. It is also the arithmetic the
+player already owns. One Extended Shaft installed "on the Quarterstaff" used to arm every
+Quarterstaff at once; you own one Part, so exactly one keeps it. State naming a weapon the
+character does not own is dropped, for the same reason the wear maps drop an orphan.
+
+**The first version keyed off `nameToIds` and lost everything.** That map is only populated
+for rows the split actually fanned, so an ordinary `{id:"eq_x", name:"Quarterstaff", qty:1}`
+row never appears in it, and the re-key dropped the install on every weapon that did not
+split, which is the common case. Caught by running it: a two-Quarterstaff record came back
+with an empty `weaponParts` and the Extended Shaft simply gone. Rebuilt to derive the
+name lookup from the FINAL equipment array.
+
+**And the Fits sweep had to move.** The Long-Shafted un-install pass resolved its weapon with
+`catalogItem(<map key>)`, which only works while the keys are names. Left where it was it
+would have run correctly exactly once: on the second load the keys are entry ids,
+`catalogItem(<id>)` answers null, and it skips every loadout while reading as though it had
+passed. Relocated to after the re-key and made entry-aware.
+
+### Verified
+
+* **Migration.** A legacy record with a shared `weaponParts` on "Quarterstaff", a shared
+  magazine on "Machine Pistol", and a grip on an unowned Longsword: the install lands on
+  `q1` only, `q2` has no loadout at all, ammo lands on `p1` at cur 4 with `p2` full, and the
+  unowned grip is dropped. **Idempotent across three loads** feeding each output back in.
+* **The resolvers disagree between pieces, which is the whole point.** Same character, same
+  catalog item: `q1` reaches 3 and deals 1d8 forced by Extended Shaft; `q2` reaches 2 and
+  deals 1d6 with no forcing.
+* **The bench, through the real UI.** Two chips, "Quarterstaff 1" and "Quarterstaff 2".
+  Fitting the shaft to the second one stored `w2` only and left `w1` null.
+* **The weapon panel.** `Weapons (2)`, two rows: "Quarterstaff 1" at `DMG 1d6 +3` with a
+  `Versatile (1d8)` chip and a `ONE-HANDED · 1D6` toggle, and "Quarterstaff 2" at
+  `DMG 1d8 +3`, Versatile chip removed, `TWO-HANDED ONLY · 1d8`, `MODS +1 Reach, adds
+  Two-Handed`, and `+2 reach · AT CAP` where the first reads plain `+2 reach`.
+* **Two magazines.** Seeded m1 at 5 and m2 at 3, clicked RELOAD on the second row only:
+  m2 went to 20 and **m1 stayed at 5**.
+* **Both exports.** Print sheet and a PDF at 183,611 bytes each print two rows:
+  `Quarterstaff 1 | 1d6 (1d8) Bludgeoning | ... held one-handed (1d6)` and
+  `Quarterstaff 2 | 1d8 Bludgeoning | ... two-handed only (Extended Shaft)`, with the reach
+  note capped on the second and not the first.
+* **132 tab, sub-tab, bench and print-sheet visits across all six roster characters: zero
+  console errors.**
+
+### Left alone, deliberately
+
+The reorder arrows still index `equippedNames`, because `moveWeaponName` swaps a slot of the
+raw stored array and an index from a per-entry list would move the wrong slot. That coupling
+was already recorded as a pre-existing wrinkle and is still one; it is not made worse here,
+but reordering a loadout that holds two copies of one name is now a sharper question than it
+was, and it should be looked at on its own.
+
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

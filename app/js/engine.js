@@ -742,9 +742,10 @@ EN.engine = (function () {
      first, so this takes the WEAPON as well as the character:
 
        part       Extended Shaft, +1, and only on the weapon it is fitted to.
-                  ch.weaponParts is keyed by weapon NAME, so it applies to that TYPE.
-                  Since 2026-08-12 the part itself only FITS a long-shafted weapon,
-                  so this and the talent below now gate on the same question.
+                  ch.weaponParts is keyed by the equipment ENTRY since 2026-08-12, so
+                  it applies to that one weapon and not to every copy of its name.
+                  The part itself only FITS a long-shafted weapon, so this and the
+                  talent below now gate on the same question.
        talent     Staff & Spear Master's Level 6+ Upgrade, +1 to LONG-SHAFTED weapons.
                   Not "weapons with Reach": the manuscript retargeted this on
                   2026-08-11 and the talent now says "long-shafted weapons, such as a
@@ -775,8 +776,8 @@ EN.engine = (function () {
      (Extended Shaft: reachBonus, grantsTwoHanded) sits in Handling. It was a trap for the
      next one. Enumerated the same way inventory.js's allInstalledKeys() does, because
      "which Parts are on this weapon" should not have two different answers. */
-  function weaponPartsOn(ch, item) {
-    var lo = ((ch && ch.weaponParts) || {})[item && item.name] || {};
+  function weaponPartsOn(ch, key) {
+    var lo = ((ch && ch.weaponParts) || {})[key] || {};
     var byKey = (EN.weaponParts && EN.weaponParts.byKey) || {};
     var keys = ["targeting", "output", "core", "handling"]
       .map(function (slot) { return lo[slot]; })
@@ -801,7 +802,12 @@ EN.engine = (function () {
     var names = ((EN.combat || {}).longShaftedNames) || [];
     return names.indexOf(String(item.name || "")) !== -1;
   }
-  function weaponReach(ch, item) {
+  /* `key` is the equipment ENTRY this weapon is, because a Part is fitted to one piece
+     and not to a name. Passing no key is not an error and not a fallback to the name: it
+     answers for an unmodded weapon of this type, which is what a caller with no entry in
+     hand (a catalog preview, a shop card) is actually asking about. Falling back to the
+     name would quietly restore the bug this replaced. */
+  function weaponReach(ch, item, key) {
     var out = { melee: isMeleeWeapon(item), base: 0, bonus: 0, total: 0, sources: [],
                 flexible: !!(item && item.flexible), cap: 0, capped: 0 };
     if (!out.melee) return out;
@@ -812,7 +818,7 @@ EN.engine = (function () {
     out.shafted = isLongShafted(item);
     var pts = out.base;
     // the part, which increases the weapon's own Reach
-    weaponPartsOn(ch, item).forEach(function (p) {
+    weaponPartsOn(ch, key).forEach(function (p) {
       if (!p || !p.reachBonus) return;
       pts += p.reachBonus;
       out.sources.push({ label: p.name, kind: "part", spaces: p.reachBonus });
@@ -877,7 +883,11 @@ EN.engine = (function () {
      trait". Fitting one to a Versatile weapon spends its lower die permanently.
 
      `forcedBy` names whichever did it, so the row can say why the choice is gone
-     rather than silently removing a toggle the player used yesterday. */
+     rather than silently removing a toggle the player used yesterday.
+
+     `key` is the equipment ENTRY, for the same reason weaponReach takes one: the grip is a
+     fact about the weapon in your hands, and a forced grip comes from a Part fitted to that
+     one piece. No key answers for an unmodded, one-handed weapon of this type. */
   function weaponVersatileDie(item) {
     var traits = (item && item.traits) || [];
     for (var i = 0; i < traits.length; i++) {
@@ -886,7 +896,7 @@ EN.engine = (function () {
     }
     return null;
   }
-  function weaponGrip(ch, item) {
+  function weaponGrip(ch, item, key) {
     var traits = (item && item.traits) || [];
     var out = {
       versatile: weaponVersatileDie(item),
@@ -895,14 +905,14 @@ EN.engine = (function () {
       forcedBy: null, twoHanded: false, canToggle: false, dice: null, why: ""
     };
     if (out.twoHandedTrait) out.forcedBy = "the Two-Handed trait";
-    weaponPartsOn(ch, item).forEach(function (p) {
+    weaponPartsOn(ch, key).forEach(function (p) {
       if (p && p.grantsTwoHanded && !out.twoHandedTrait) out.forcedBy = p.name;
     });
     if (out.forcedBy) {
       out.twoHanded = true;
       out.canToggle = false;
     } else if (out.versatile) {
-      out.twoHanded = (((ch && ch.weaponGrip) || {})[item && item.name] === "two");
+      out.twoHanded = (((ch && ch.weaponGrip) || {})[key] === "two");
       out.canToggle = true;
     }
     out.dice = (out.twoHanded && out.versatile) ? out.versatile : out.baseDice;
