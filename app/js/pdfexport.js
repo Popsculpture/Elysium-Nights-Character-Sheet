@@ -598,7 +598,24 @@ EN.pdfExport = (function () {
         var notes = (w.traits || []).slice();
         var wr = eng.weaponReach ? eng.weaponReach(ch, w) : null;
         if (wr && wr.melee && wr.note) notes.push(wr.note);
-        return { name: w.name, atk: sgn(weaponHit(ch, d, w)), dmg: w.damage || "", notes: notes.join(", ") };
+        // same as the print sheet: one damage rating, the one the grip selects
+        var g = eng.weaponGrip ? eng.weaponGrip(ch, w) : null;
+        var dmg = w.damage || "";
+        if (g && g.versatile && g.forcedBy) {
+          /* Forced into two hands, so the Versatile trait is gone, not merely unused:
+             ONE die, and the trait chip goes with it. Same edit the weapon row makes. */
+          dmg = dmg.replace(/^\s*\d+d\d+/, g.dice);
+          notes = notes.filter(function (t) { return !/^Versatile\s*\(/i.test(String(t)); });
+          notes.push("two-handed only (" + g.forcedBy + ")");
+        } else if (g && g.versatile) {
+          /* Both dice, in the book's own "1d8 (1d10)" order, because paper has no
+             toggle: a player who switches grips mid-fight needs the other number
+             printed in front of them. The stored grip still rides along as a note. */
+          dmg = dmg.replace(/^\s*\d+d\d+/, g.baseDice + " (" + g.versatile + ")");
+          notes.push(g.twoHanded ? "held two-handed (" + g.versatile + ")"
+                                 : "held one-handed (" + g.baseDice + ")");
+        }
+        return { name: w.name, atk: sgn(weaponHit(ch, d, w)), dmg: dmg, notes: notes.join(", ") };
       });
     atkRows = atkRows.concat(unarmedAttackRow(ch, d));
     while (atkRows.length < 6) atkRows.push({ name: "", atk: "", dmg: "", notes: "" });
@@ -734,9 +751,17 @@ EN.pdfExport = (function () {
   // per piece, so a damaged suit prints the DR it actually defends with. `shState`
   // is shieldState for the same entry, for the same reason: Durability is the same
   // mechanic and it used to leave the app on neither export.
-  function gearSummaryLine(it, drState, shState) {
+  // `grip` is weaponGrip for this weapon, here for the same reason drState is:
+  // which die a Versatile weapon deals is mutable and the catalog names two.
+  function gearSummaryLine(it, drState, shState, grip) {
     var stat = [];
-    if (it.damage) stat.push("Dmg " + it.damage);
+    if (it.damage && grip && grip.versatile && grip.forcedBy) {
+      stat.push("Dmg " + (it.damage || "").replace(/^\s*\d+d\d+/, grip.dice)
+        + " (two-handed only, " + grip.forcedBy + ")");
+    } else if (it.damage && grip && grip.versatile) {
+      stat.push("Dmg " + (it.damage || "").replace(/^\s*\d+d\d+/, grip.baseDice + " (" + grip.versatile + ")")
+        + (grip.twoHanded ? ", held two-handed" : ", held one-handed"));
+    } else if (it.damage) stat.push("Dmg " + it.damage);
     if (it.range) stat.push("Rng " + it.range);
     if (it.ammo != null) stat.push("Ammo " + it.ammo);
     if (it.dr != null) stat.push((drState && drState.base && drState.lost > 0)
@@ -748,7 +773,11 @@ EN.pdfExport = (function () {
       ? "Durability " + shState.left + " of " + shState.boxesMax
         + (shState.destroyed ? (shState.emitter ? " (dark)" : " (destroyed)") : " (" + shState.spent + " marked)")
       : "Durability " + shState.boxesMax);
-    if (it.traits && it.traits.length) stat.push(it.traits.join(", "));
+    // same as the print sheet: a forced grip has removed the Versatile trait
+    var gTraits = (it.traits || []).filter(function (t) {
+      return !(grip && grip.forcedBy && grip.versatile && /^Versatile\s*\(/i.test(String(t)));
+    });
+    if (gTraits.length) stat.push(gTraits.join(", "));
     if (it.skill) stat.push("Skill: " + it.skill);
     return stat.join("  ·  ");
   }
@@ -778,7 +807,8 @@ EN.pdfExport = (function () {
       var worn = (ch.equippedWeapons || []).indexOf(key) !== -1 || ch.equippedArmor === key || ch.equippedShield === key || ch.equippedFocus === key;
       return { name: e.name, qty: e.qty, status: worn ? "Equipped" : "Stash",
                notes: it ? gearSummaryLine(it, eng.armorState ? eng.armorState(ch, key) : null,
-                                           eng.shieldState ? eng.shieldState(ch, key) : null) : "" };
+                                           eng.shieldState ? eng.shieldState(ch, key) : null,
+                                           eng.weaponGrip ? eng.weaponGrip(ch, it) : null) : "" };
     });
     if (!invRows.length) invRows.push({ name: "", qty: "", status: "", notes: "" });
     ctx.table(

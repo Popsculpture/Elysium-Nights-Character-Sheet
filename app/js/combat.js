@@ -451,7 +451,11 @@ EN.combatView = (function () {
   var _dmgAnimId = 0;
   function openDmgTray(ctx) {
     _dmgAnimId++;
-    _dmgTray = { open: true, ctx: ctx, crit: !!ctx.crit, cheap: false, twoHand: false, roll: null, animating: false };
+    // twoHand opens on the grip the row is already showing, rather than resetting to
+    // one-handed every time: the grip is a stored fact about how you are holding the
+    // weapon, not a per-roll question.
+    _dmgTray = { open: true, ctx: ctx, crit: !!ctx.crit, cheap: false,
+                 twoHand: !!(ctx.grip && ctx.grip.twoHanded), roll: null, animating: false };
     EN.app.render();
   }
   function closeDmgTray() { _dmgAnimId++; _dmgTray.open = false; _dmgTray.roll = null; _dmgTray.animating = false; EN.app.render(); }
@@ -715,7 +719,14 @@ EN.combatView = (function () {
     }
     var togs = [ tog(_dmgTray.crit, "◆ Critical ×2 dice", "var(--gold)", function () { _dmgTray.crit = !_dmgTray.crit; dmgTrayReset(); }) ];
     if (ctx.cheapEligible) togs.push(tog(_dmgTray.cheap, "Cheap Shot +" + ctx.cheapDice + "d6", "var(--ember)", function () { _dmgTray.cheap = !_dmgTray.cheap; dmgTrayReset(); }));
-    if (ctx.versatile) togs.push(tog(_dmgTray.twoHand, "Two-handed (" + ctx.versatile + ")", "var(--accent)", function () { _dmgTray.twoHand = !_dmgTray.twoHand; dmgTrayReset(); }));
+    // offered only when the grip is a real choice; a weapon forced two-handed shows
+    // what is holding it that way instead of a switch that cannot move
+    if (ctx.versatile && ctx.grip && ctx.grip.canToggle) {
+      togs.push(tog(_dmgTray.twoHand, "Two-handed (" + ctx.versatile + ")", "var(--accent)", function () { _dmgTray.twoHand = !_dmgTray.twoHand; dmgTrayReset(); }));
+    } else if (ctx.versatile && ctx.grip && ctx.grip.forcedBy) {
+      togs.push(el("span.chip", { title: ctx.grip.why, style: { color: "var(--warn)", borderColor: "var(--warn)" } },
+        "TWO-HANDED ONLY · " + ctx.versatile));
+    }
     var togRow = el("div", { style: { padding: "14px 16px", borderTop: "1px solid var(--border)", display: "flex", gap: "8px", flexWrap: "wrap" } }, togs);
 
     var foot = el("div.row.between", { style: { padding: "11px 16px", borderTop: "1px solid var(--border)", alignItems: "baseline" } }, [
@@ -3823,7 +3834,16 @@ EN.combatView = (function () {
           subtype: (h.melee ? "Melee" : h.thrownItem ? "Thrown" : "Ranged") + " Weapon · " + h.cat,
           dice: p.dice, types: p.types,
           flat: h.dmgMod, flatLabel: h.indirect ? "Indirect: no attribute modifier" : (h.attrName + " Modifier"),
+          /* `dice` stays the BASE and `versatile` stays the alternate, because the
+             tray's own arithmetic picks between them off its twoHand flag. What
+             changes is where that flag STARTS and whether it can be moved: the tray
+             opens on the grip the row is showing, and renders the toggle only when
+             the grip is actually a choice. It used to default to one-handed on every
+             open, so a two-handed Longsword rolled 1d8 unless you flipped it again,
+             and a weapon forced two-handed by an Extended Haft still offered a
+             one-handed option it cannot have. */
           versatile: versatileDie(traits),
+          grip: eng.weaponGrip(ch, it),
           cheapEligible: cheapEligible, cheapDice: d.caliber || 1,
           crit: false
         };
@@ -3884,12 +3904,21 @@ EN.combatView = (function () {
         // `melee: false` and nothing below touches them.
         var wr = eng.weaponReach(ch, it);
         var snagWhy = atkSnag || (h.tier === "untrained" ? "Untrained with " + h.cat + "; attacks roll with Snag" : null);
-        var dmgTip = h.indirect
-          ? norm.damageDisplay + " on hit · indirect delivery adds no attribute modifier · Tap to roll damage"
-          : norm.damageDisplay + " " + eng.fmtMod(h.mod) + " (" + h.attrName + ") on hit · Tap to roll damage";
+        /* ONE damage rating, the one this weapon is actually dealing. A Versatile
+           weapon used to print both dice ("1d8 (1d10)") and leave the player to work
+           out which applied; it has one at a time, and which one is a fact about the
+           grip. The rest of the damage string (the type, any rider) is unchanged. */
+        var grip = eng.weaponGrip(ch, it);
+        var dmgActive = grip.dice
+          ? norm.damageDisplay.replace(/^\s*\d+d\d+(\s*\(\d+d\d+\))?/, grip.dice)
+          : norm.damageDisplay;
+        var dmgTip = (h.indirect
+          ? dmgActive + " on hit · indirect delivery adds no attribute modifier · Tap to roll damage"
+          : dmgActive + " " + eng.fmtMod(h.mod) + " (" + h.attrName + ") on hit · Tap to roll damage")
+          + (grip.why ? "\n" + grip.why : "");
         // DMG box shows the dice plus the attribute modifier the roll adds (e.g. "1d4 +3");
         // indirect weapons (thrown explosives) show the dice alone.
-        var dmgDisplay = norm.damageDisplay + (h.indirect ? "" : " " + eng.fmtMod(h.mod));
+        var dmgDisplay = dmgActive + (h.indirect ? "" : " " + eng.fmtMod(h.mod));
         var hitTip = "d20 + " + h.attrName + " Modifier (" + eng.fmtMod(h.mod) + ")"
           + (h.prof ? " + Weapon Proficiency Bonus (" + eng.fmtMod(h.prof) + ")" : " (untrained, Snag)")
           + (h.focus ? " + Caliber from " + h.cat + " (" + h.focus.aspect + ") Focus (" + eng.fmtMod(h.focusCal) + ", outside the +15 static cap)" : "");
@@ -4009,6 +4038,26 @@ EN.combatView = (function () {
            rides beside it as its own chip naming its sources, the same shape the
            unarmed strike's "+1 reach" chip uses. Rewriting the trait chip instead
            would make the row claim the weapon has a Reach it does not have. */
+        /* The grip control. A real button when the choice exists, because it changes
+           the damage the row above is advertising; a plain chip when a Two-Handed
+           trait or an Extended Haft has taken the choice away, saying which, so a
+           player whose Versatile die vanished after a bench visit can see why. */
+        var gripEl = grip.canToggle
+          ? el("button.btn.sm", { title: grip.why + "\nTap to switch grip.",
+              style: { padding: "1px 8px", fontSize: "10.5px",
+                       color: grip.twoHanded ? "var(--accent)" : "var(--text3)",
+                       borderColor: grip.twoHanded ? "var(--accent)" : "var(--border2)" },
+              onclick: (function (nm, now) { return function () {
+                store.update(function (c) {
+                  c.weaponGrip = c.weaponGrip || {};
+                  if (now) delete c.weaponGrip[nm]; else c.weaponGrip[nm] = "two";
+                });
+              }; })(it.name, grip.twoHanded) },
+              grip.twoHanded ? "TWO-HANDED · " + grip.versatile : "ONE-HANDED · " + grip.baseDice)
+          : (grip.versatile && grip.forcedBy
+              ? el("span.chip", { title: grip.why, style: { color: "var(--warn)", borderColor: "var(--warn)" } },
+                  "TWO-HANDED ONLY · " + grip.versatile)
+              : null);
         var reachChip = (wr.melee && (wr.bonus || wr.capped))
           ? el("span.chip", { title: wr.sources.map(function (s) { return "+" + s.spaces + " " + s.label; }).join("\n")
                 + (wr.capped ? "\n\n" + ((EN.combat || {}).reachCapText || "") : "")
@@ -4016,8 +4065,16 @@ EN.combatView = (function () {
               style: { color: wr.capped ? "var(--warn)" : "var(--flow)", borderColor: wr.capped ? "var(--warn)" : "var(--flow)" } },
               wr.bonus ? ("+" + wr.bonus + " reach" + (wr.capped ? " · AT CAP" : "")) : "REACH AT CAP")
           : null;
+        /* A weapon forced into two hands has lost its Versatile trait, not just the
+           use of it, so the trait chip goes too and the warn chip stands in its place.
+           Leaving "Versatile (1d10)" up beside "TWO-HANDED ONLY" would advertise a
+           one-handed die the weapon can no longer be held for. */
+        var traitChips = norm.traits.filter(function (t) {
+          return !(grip.forcedBy && grip.versatile && /^Versatile\s*\(/i.test(String(t)));
+        });
         rowKids.push(el("div.row.wrap", { style: { gap: "5px", marginTop: "9px", paddingTop: "8px",
-          borderTop: "1px solid rgba(35,48,68,.6)" } }, norm.traits.map(wTraitChip).concat(reachChip ? [reachChip] : [])));
+          borderTop: "1px solid rgba(35,48,68,.6)" } },
+          traitChips.map(wTraitChip).concat([reachChip, gripEl].filter(Boolean))));
 
         // Signature Weapons: On Hit effects and area projections stay locked at
         // any proficiency tier until a Skill Focus names this specific weapon.

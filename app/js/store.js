@@ -174,6 +174,11 @@ EN.store = (function () {
       equippedShield: null,              // wielded physical shield (one at a time)
       equippedFocus: null,               // attuned Warding Focus (one at a time)
       weaponAmmo: {},                    // {weaponName: {cur, mode, ammoType}}, magazine/fire-mode tracking
+      // How a Versatile weapon is being held: {weaponName: "two"}. Absent means one
+      // hand, which is the base damage. Keyed by NAME like weaponAmmo and weaponParts,
+      // because the choice is about the weapon type you are wielding, not about which
+      // copy of it. Null-prototype: the keys are item names out of a save file.
+      weaponGrip: Object.create(null),
       carry: {},                         // Loadout carry status per entry key: "carried" | "worn" | "racked" (absent = stashed)
       racked: {},                        // Racked assignments: {itemEntryKey: carryGearEntryKey} (Carry Gear, one rack per item)
       slotInert: {},                     // Body Slot conflicts: {itemEntryKey: true} for on-person items the player benched
@@ -405,6 +410,15 @@ EN.store = (function () {
       var a = ch.weaponAmmo[w];
       if (a && a.mode === "Burst") a.mode = "Burst Fire";
     });
+    /* How each Versatile weapon is being held. Rebuilt null-prototype and reduced to
+       the only value that means anything, because absent already means one-handed:
+       storing "one" would be a second way to say nothing and would then need keeping
+       in sync. Anything that is not the literal "two" is dropped. Not keyed on an
+       equipment entry, so it does not belong after the instance-id split. */
+    var gripIn = (ch.weaponGrip && typeof ch.weaponGrip === "object" && !Array.isArray(ch.weaponGrip)) ? ch.weaponGrip : {};
+    var gripOut = Object.create(null);
+    Object.keys(gripIn).forEach(function (k) { if (gripIn[k] === "two") gripOut[k] = "two"; });
+    ch.weaponGrip = gripOut;
     // Renamed Talents. A record saved before a rename still stores the OLD key and
     // would resolve to nothing, silently, because every reader looks the key up with
     // .find() and drops a miss. Both spellings a record can carry (the key and the

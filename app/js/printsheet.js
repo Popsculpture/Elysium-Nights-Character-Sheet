@@ -249,9 +249,18 @@ EN.printSheet = (function () {
   // actually defends with, not the catalog's base. `shState` is shieldState for the
   // same entry, and it is here for the same reason: Durability boxes are per piece
   // and mutable, and printing only the armor half told half the truth.
-  function gearDetailLines(it, drState, shState) {
+  // `grip` is the engine's weaponGrip for this weapon, and it is here for the same
+  // reason drState is: which die a Versatile weapon deals is a mutable fact about
+  // how it is being held, and the catalog string names two dice without saying which.
+  function gearDetailLines(it, drState, shState, grip) {
     var lines = [], stat = [];
-    if (it.damage) stat.push("Damage " + it.damage);
+    if (it.damage && grip && grip.versatile && grip.forcedBy) {
+      stat.push("Damage " + (it.damage || "").replace(/^\s*\d+d\d+/, grip.dice)
+        + " (two-handed only, " + grip.forcedBy + ")");
+    } else if (it.damage && grip && grip.versatile) {
+      stat.push("Damage " + (it.damage || "").replace(/^\s*\d+d\d+/, grip.baseDice + " (" + grip.versatile + ")")
+        + (grip.twoHanded ? ", held two-handed" : ", held one-handed"));
+    } else if (it.damage) stat.push("Damage " + it.damage);
     if (it.range) stat.push("Range " + it.range);
     if (it.ammo != null) stat.push("Ammo " + it.ammo);
     if (it.dr != null) stat.push((drState && drState.base && drState.lost > 0)
@@ -267,7 +276,12 @@ EN.printSheet = (function () {
         + (shState.destroyed ? (shState.emitter ? " (dark)" : " (destroyed)") : " (" + shState.spent + " marked)")
       : "Durability " + shState.boxesMax);
     if (it.feeds) stat.push("Feeds " + it.feeds);
-    if (it.traits && it.traits.length) stat.push(it.traits.join(", "));
+    // a forced grip has taken the Versatile trait off this weapon, so it does not
+    // get listed among the traits it still has
+    var gTraits = (it.traits || []).filter(function (t) {
+      return !(grip && grip.forcedBy && grip.versatile && /^Versatile\s*\(/i.test(String(t)));
+    });
+    if (gTraits.length) stat.push(gTraits.join(", "));
     if (it.skill) stat.push("Skill: " + it.skill);
     if (stat.length) lines.push(el("div.ps-invstat", { text: stat.join("  ·  ") }));
     if (it.desc) lines.push(el("div.ps-invdesc", { text: it.desc }));
@@ -465,7 +479,25 @@ EN.printSheet = (function () {
         var notes = (w.traits || []).slice();
         var wr = eng.weaponReach ? eng.weaponReach(ch, w) : null;
         if (wr && wr.melee && wr.note) notes.push(wr.note);
-        return [w.name, sgn(weaponHit(ch, d, w)), w.damage || "", notes.join(", ")];
+        // the damage this weapon is actually dealing, for the grip it is being held in.
+        // Printing "1d8 (1d10)" left the player to work out which applied at the table.
+        var g = eng.weaponGrip ? eng.weaponGrip(ch, w) : null;
+        var dmg = w.damage || "";
+        if (g && g.versatile && g.forcedBy) {
+          /* Forced into two hands, so the Versatile trait is gone, not merely unused:
+             ONE die, and the trait chip goes with it. Same edit the weapon row makes. */
+          dmg = dmg.replace(/^\s*\d+d\d+/, g.dice);
+          notes = notes.filter(function (t) { return !/^Versatile\s*\(/i.test(String(t)); });
+          notes.push("two-handed only (" + g.forcedBy + ")");
+        } else if (g && g.versatile) {
+          /* Both dice, in the book's own "1d8 (1d10)" order, because paper has no
+             toggle: a player who switches grips mid-fight needs the other number
+             printed in front of them. The stored grip still rides along as a note. */
+          dmg = dmg.replace(/^\s*\d+d\d+/, g.baseDice + " (" + g.versatile + ")");
+          notes.push(g.twoHanded ? "held two-handed (" + g.versatile + ")"
+                                 : "held one-handed (" + g.baseDice + ")");
+        }
+        return [w.name, sgn(weaponHit(ch, d, w)), dmg, notes.join(", ")];
       });
     atkRows = atkRows.concat(unarmedAttackRow(ch, d));
     R.push(wtable(["Name", "Atk Bonus / DC", "Damage & Type", "Notes"], atkRows, Math.max(6, atkRows.length + 2), ".ps-tbl-atk"));
@@ -584,7 +616,8 @@ EN.printSheet = (function () {
           el("div.ps-invhead", null, [el("span.ps-invname", { text: e.name }), el("span.ps-invmeta", { text: meta })])
         ]);
         if (it) gearDetailLines(it, eng.armorState ? eng.armorState(ch, key) : null,
-                                eng.shieldState ? eng.shieldState(ch, key) : null).forEach(function (l) { block.appendChild(l); });
+                                eng.shieldState ? eng.shieldState(ch, key) : null,
+                                eng.weaponGrip ? eng.weaponGrip(ch, it) : null).forEach(function (l) { block.appendChild(l); });
         else block.appendChild(el("div.ps-invdesc.ps-dim", { text: "No catalog entry - note details by hand." }));
         body.push(block);
       });

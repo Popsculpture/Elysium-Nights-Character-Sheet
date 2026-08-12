@@ -36,8 +36,12 @@ EN.gearCatalog.melee = {
       effect: "Augments unarmed strikes. While wearing Knuckles, your unarmed strike damage die steps up one size, and on a strike with no die that first step grants 1d4 Bludgeoning. This stacks with every other increase to your unarmed damage." },
     // shafted: a long-shafted weapon, which is what Staff & Spear Master keys on.
     // NOT the same question as "has Reach": a Whip reaches 2 and is not one.
+    // Two-Handed removed 2026-08-11 to match the manuscript. It contradicted Versatile:
+    // a Two-Handed weapon is always in two hands, so the 1d6 one-handed die could never
+    // be rolled and the Versatile trait bought nothing. Verified in both places the book
+    // prints its traits, the melee table row and the Quarterstaff entry.
     { name: "Quarterstaff", shafted: true, group: "Simple", load: 2, price: 60, damage: "1d6 Bludgeoning", range: "Melee (Reach 1)",
-      traits: ["Reach 1", "Two-Handed", "Versatile (1d8)"], availability: "Common", legality: "Legal",
+      traits: ["Reach 1", "Versatile (1d8)"], availability: "Common", legality: "Legal",
       desc: "A length of tough wood or composite pole, hip-high to head-high depending on the wielder. Street monks, crowd-control drills, and old-school brawlers all swear by it for reach and discipline." },
     { name: "Shock Gloves", group: "Simple", price: 100, damage: "Unarmed + 1d4 Electric", range: "Melee",
       traits: ["Light", "Nonlethal", "Shock"], availability: "Uncommon", legality: "Restricted",

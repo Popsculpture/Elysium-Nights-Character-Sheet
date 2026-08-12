@@ -2874,6 +2874,101 @@ probe assert it can succeed (HTTP status, a minimum body length, a non-empty ret
 before any of its findings are believed. **A negative result is evidence about the probe
 at least as often as it is evidence about the code.**
 
+## Versatile got a grip, and the Quarterstaff lost a trait it should never have had
+
+Brandon, reading the sheet: "Versatile weapons need a toggle so you can swap from
+one-handed damage and two-handed damage. In doing that you can get rid of the two damage
+rating and just maintain the one set of damage numbers and surface the correct set based
+on how it's being held. Also, the Extended Haft mod imposes two-handed on a weapon it's
+installed on, so that means it would lose its Versatile tag becoming two-handed only."
+
+The rule was already in the book and the sheet was not playing it. "Versatile: the weapon
+lists an alternate damage die in parentheses. Use the base damage when wielded in one
+hand, and the Versatile damage when wielded in two." A Versatile weapon therefore does not
+HAVE two damage ratings. It has one at a time, and which one is a fact about how you are
+holding it. The weapon row printed both and left the player to pick, and the damage tray
+carried a private two-handed toggle that **reset to one-handed every time it opened**, so
+the grip you set for a fight did not survive closing the tray.
+
+### The seven weapons this touches
+
+Quarterstaff, Spear, Axe, Katana, Longsword, Warhammer, Harmonic Edge.
+
+### One resolver, one writer, the fifth invariant
+
+`eng.weaponGrip(ch, item)` is THE answer to which die a weapon is dealing. It returns the
+Versatile die, the base die, whether the weapon is in two hands, whether that is a choice,
+what took the choice away if it is not, the die that results, and a `why` sentence built
+once so the row, the tray, the print sheet and the PDF cannot word it four ways.
+`ch.weaponGrip[name] = "two"` is the only stored bit, and absent means one-handed, so the
+default costs no storage and a stale key cannot mean anything but "two hands".
+
+**Keyed on the weapon NAME, deliberately, and this is the one place the entry-identity
+invariant does not apply.** The thing that can FORCE a grip is `ch.weaponParts`, which has
+always been name-keyed: fit an Extended Haft and both your Longswords have it. Keying the
+grip on the entry while its governing mod is keyed on the name would produce the worse bug
+of the two: one copy forced two-handed and the other toggleable, from the same mod. The
+two maps agree, and they will have to be moved together if weapon mods ever go per-entry.
+
+### Two ways a weapon can lose the choice
+
+The `Two-Handed` trait on the weapon itself, and the **Extended Haft**, whose entry ends
+"and grants the Two-Handed trait". `forcedBy` names whichever did it, because a player
+whose lower die vanished after a bench visit is owed the reason and not just a missing
+button. Fitting a haft to a Versatile weapon spends its one-handed die permanently, and
+the row says so: the `Versatile (1d8)` chip is **removed**, not merely ignored, and a warn
+chip reads `TWO-HANDED ONLY · 1d8`. The tray does the same: no toggle, the same chip in
+its place. The first cut of this gated `ctx.versatile` instead of the toggle's rendering,
+which would have made a forced weapon roll its **base** die, since `activeDice` falls back
+to `ctx.dice`. Caught before it shipped, by reading what the fallback does.
+
+### Paper keeps both dice
+
+First pass made the print sheet and the PDF print the single active die, matching the
+screen. Brandon: "since you can't toggle on the PDF, you should probably maintain the
+format of `1dx (1dx)` for versatile weapon damage." He is right, and the reason is the
+one the exports exist for. The screen has a button; a printed sheet does not, and a player
+who switches grips mid-fight needs the other number in front of them. So both exports now
+print `1d8 (1d10) Slashing` in the book's own order, with the stored grip alongside as
+`held two-handed (1d10)`. A **forced** weapon still prints one die, because there is no
+other die to switch to, plus `two-handed only (Extended Haft)`.
+
+### The Quarterstaff was carrying a contradiction
+
+Its catalog traits were `Reach 1, Two-Handed, Versatile (1d8)`. Two-Handed means the
+weapon is always in two hands, so the 1d6 one-handed die could never be rolled and the
+Versatile trait bought nothing. Brandon fixed it in the manuscript to `Reach 1,
+Versatile (1d8)`, and it was verified live in **both** places Part 3 prints the traits,
+the melee table row and the Quarterstaff detail entry, before the data file was touched.
+
+### Verified
+
+Driven through the real UI on a character with all three reach grants and six weapons.
+
+- **Resolver, eight weapons.** Quarterstaff with a haft: forced, `1d8`, `canToggle`
+  false. Longsword stored `"two"`: `1d10`, toggleable. Greatsword: forced by the trait, no
+  Versatile die, `2d6`. Whip: no grip control at all. Spear, Axe, Katana, Warhammer: one
+  hand by default with the two-hand die named in the tooltip.
+- **The toggle, clicked.** Spear went `DMG 1d6 +3` to `DMG 1d8 +3`, the button flipped
+  `ONE-HANDED · 1d6` to `TWO-HANDED · 1d8`, and `ch.weaponGrip` recorded `Spear: "two"`.
+- **The tray opens on the grip the row is showing.** Longsword's tray opened with
+  `DAMAGE · 1d10 SLASHING`, the d10 die art, and the `Two-handed (1d10)` toggle already
+  lit, instead of silently reverting to `1d8`. Toggling inside the tray still works and is
+  still a per-roll override.
+- **A forced weapon cannot be toggled back.** Quarterstaff's tray shows the warn chip and
+  no switch; rolled it and got a d8 face, `Weapon 3 · Body Modifier +3`, total 6.
+- **Migration, six hostile shapes** through the real `importCharacter`: an array, a bare
+  string, `null`, junk values (`"TWO"`, `true`, `1`, `"one"`), a JSON-parsed
+  `__proto__`/`constructor` payload, and the field absent entirely. Every one normalizes
+  to a **null-prototype** map holding only the literal `"two"`, and `Object.prototype`
+  stays clean.
+- **Both exports.** Print sheet and a PDF built at 192,579 bytes, read back out of the
+  AcroForm: `1d8 (1d10) Slashing / held two-handed (1d10)` for the Longsword,
+  `1d8 Bludgeoning / two-handed only (Extended Haft)` for the Quarterstaff, and
+  Greatsword and Whip untouched.
+- Zero console errors.
+
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

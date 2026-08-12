@@ -80,6 +80,10 @@ EN.weaponParts = {
       // Nothing parses the prose: this is the only Weapon Part that moves a computed
       // value, and it says so in data rather than in a string somebody has to regex.
       reachBonus: 1,
+      // and it makes the weapon Two-Handed, which is not cosmetic: a Versatile weapon
+      // fitted with one can only be held in two hands, so it loses the Versatile choice
+      // and keeps the two-handed die permanently.
+      grantsTwoHanded: true,
       grants: "+1 Reach, adds Two-Handed", effect: "Grants or increases Reach by 1 (a Reach 1 weapon becomes Reach 2) and grants the Two-Handed trait." },
     { key: "counterweight-pommel", name: "Counterweight Pommel", category: "melee", slot: "handling", partType: "Mod", fits: "Any Melee", price: 200, rarity: "Common", legality: "Licensed",
       grants: "Edge on first attack per Target per round", effect: "Your first attack each round against a Target you have not yet attacked this round gains Edge." },

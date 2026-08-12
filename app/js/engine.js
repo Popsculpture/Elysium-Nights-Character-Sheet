@@ -831,6 +831,61 @@ EN.engine = (function () {
     } else out.note = "";
     return out;
   }
+  /* ---- Grip: THE one resolver for which damage die a weapon is actually using ----
+     "Versatile: the weapon lists an alternate damage die in parentheses. Use the base
+     damage when wielded in one hand, and the Versatile damage when wielded in two."
+     So a Versatile weapon does not HAVE two damage ratings, it has one at a time, and
+     which one is a fact about how you are holding it. The row used to print both
+     ("1d8 (1d10)") and leave the player to pick, and the damage tray carried its own
+     two-handed toggle that reset to one-handed every time it opened.
+
+     "Two-Handed: requires both hands for effective use." A weapon that is Two-Handed
+     therefore has no one-handed grip to choose, and if it is also Versatile the
+     alternate die is simply its damage. That is reachable two ways: the trait on the
+     weapon itself, and the Extended Haft, whose text ends "and grants the Two-Handed
+     trait". Fitting one to a Versatile weapon spends its lower die permanently.
+
+     `forcedBy` names whichever did it, so the row can say why the choice is gone
+     rather than silently removing a toggle the player used yesterday. */
+  function weaponVersatileDie(item) {
+    var traits = (item && item.traits) || [];
+    for (var i = 0; i < traits.length; i++) {
+      var m = String(traits[i]).match(/^Versatile\s*\((\d+d\d+)\)$/i);
+      if (m) return m[1];
+    }
+    return null;
+  }
+  function weaponGrip(ch, item) {
+    var traits = (item && item.traits) || [];
+    var out = {
+      versatile: weaponVersatileDie(item),
+      baseDice: (String((item && item.damage) || "").match(/^\s*(\d+d\d+)/) || [])[1] || null,
+      twoHandedTrait: traits.indexOf("Two-Handed") !== -1,
+      forcedBy: null, twoHanded: false, canToggle: false, dice: null, why: ""
+    };
+    if (out.twoHandedTrait) out.forcedBy = "the Two-Handed trait";
+    weaponPartsOn(ch, item).forEach(function (p) {
+      if (p && p.grantsTwoHanded && !out.twoHandedTrait) out.forcedBy = p.name;
+    });
+    if (out.forcedBy) {
+      out.twoHanded = true;
+      out.canToggle = false;
+    } else if (out.versatile) {
+      out.twoHanded = (((ch && ch.weaponGrip) || {})[item && item.name] === "two");
+      out.canToggle = true;
+    }
+    out.dice = (out.twoHanded && out.versatile) ? out.versatile : out.baseDice;
+    if (out.versatile && out.forcedBy) {
+      out.why = "Held in two hands because of " + out.forcedBy + ", so it deals its Versatile "
+        + out.versatile + " and its one-handed " + out.baseDice + " is out of reach.";
+    } else if (out.versatile) {
+      out.why = out.twoHanded ? "Held in two hands: " + out.versatile + "."
+                              : "Held in one hand: " + out.baseDice + ". Two hands deals " + out.versatile + ".";
+    } else if (out.forcedBy) {
+      out.why = "Held in two hands because of " + out.forcedBy + ".";
+    }
+    return out;
+  }
   // The replacer the character is striking with: their stored pick while it is
   // still available, otherwise the first one. null means the bare strike, either
   // because they picked it or because they have no replacers at all.
@@ -2758,6 +2813,10 @@ EN.engine = (function () {
     // Every surface that prints a reach asks this; nothing re-derives it from the
     // catalog string, which is what let three features be prose with no effect.
     weaponReach: weaponReach,
+    // THE resolver for which damage die a Versatile weapon is currently using, and
+    // whether the player still has the choice. Every surface that prints weapon
+    // damage asks it rather than printing both dice and hoping.
+    weaponGrip: weaponGrip, weaponVersatileDie: weaponVersatileDie,
     unarmedBasePick: UNARMED_BASE_PICK,
     isUnarmedAugmentName: isUnarmedAugmentName,   // gear that augments a punch instead of being a weapon
     stepDie: stepDie,   // the picker walks the ladder too, so each option can show what it really deals
