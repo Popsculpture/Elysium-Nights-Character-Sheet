@@ -2807,7 +2807,7 @@ EN.combatView = (function () {
     // Initiative rolls d20 + Caliber + Agility OR Wits; use the better of the two
     var initAttr = d.attributes.WIT.mod > agiMod ? "WIT" : "AGI";
     var initMod = Math.max(agiMod, d.attributes.WIT.mod);
-    var initVal = initMod + fx.init + ((d.lineageInit && d.lineageInit.caliber) || 0);
+    var initVal = initMod + fx.init + ((d.lineageInit && d.lineageInit.caliber) || 0) + (d.cyberInit || 0);
     var spDisplay = adjSpeed(d.speed, fx);
     var lineFeats = (eng.activeLineageFeatures ? eng.activeLineageFeatures(ch) : []) || [];
     var defAttrName = d.defenseAttr === "BOD" ? "Body" : "Agility";
@@ -2837,8 +2837,9 @@ EN.combatView = (function () {
         formula: "Worn armor + armor mods + natural lineage DR vs physical damage",
         rows: (dg.armor ? [bdRow("Armor · " + dg.armor.name + (dg.armorLapsed ? " (LEASE DUE)" : "") + (dg.armorDRLost ? " (" + dg.armorDR + " of " + dg.armorBaseDR + ", " + dg.armorDRLost + " lost)" : ""), dg.armorDR, null, true)] : [])
           .concat(dg.armorModDR ? [bdRow("Armor Mod (highest flat DR)", dg.armorModDR)] : [])
-          .concat(d.naturalDR ? [bdRow("Natural (lineage)", d.naturalDR)] : []),
-        empty: (dg.armor || d.naturalDR) ? null : "No armor equipped; WEAR armor in Inventory → Stash.",
+          .concat(d.naturalDR ? [bdRow("Natural (lineage)", d.naturalDR)] : [])
+          .concat(d.cyberDR ? [bdRow("Chrome · Subdermal Armor", d.cyberDR)] : []),
+        empty: (dg.armor || d.naturalDR || d.cyberDR) ? null : "No armor equipped; WEAR armor in Inventory → Stash.",
         foot: (dg.armorDRLost ? "Damaged plating: " + dg.armorDRLost + " point" + (dg.armorDRLost === 1 ? "" : "s") + " of DR gone until repaired, on the Impact Table. " : "") +
               (dg.armor && (dg.armor.traits || []).indexOf("Plated") !== -1 ? "Plated: when you Block, add half this DR (rounded down) on top." : "") || null },
       SPD: { title: "Speed", total: spDisplay, sign: false,
@@ -2852,9 +2853,10 @@ EN.combatView = (function () {
           .concat(spCond ? [bdRow("Conditions", spCond)] : []),
         foot: d.lineageSpeedFirstRound ? "+" + d.lineageSpeedFirstRound + " Speed during the first round of any combat (Tuned Synapses)." : null },
       INIT: { title: "Initiative", total: initVal, sign: true,
-        formula: "Agility or Wits modifier (best)" + (d.lineageInit && d.lineageInit.caliber ? " + lineage" : "") + (fx.init ? " + conditions" : ""),
+        formula: "Agility or Wits modifier (best)" + (d.lineageInit && d.lineageInit.caliber ? " + lineage" : "") + (d.cyberInit ? " + chrome" : "") + (fx.init ? " + conditions" : ""),
         rows: [bdRow((initAttr === "WIT" ? "Wits" : "Agility") + " modifier (best of Agility/Wits)", initMod, chromeNote(initAttr))]
           .concat(d.lineageInit && d.lineageInit.caliber ? [bdRow("Lineage · Static Premonition", d.lineageInit.caliber)] : [])
+          .concat(d.cyberInit ? [bdRow("Chrome · Reflex Booster", d.cyberInit)] : [])
           .concat(fx.init ? [bdRow("Conditions", fx.init)] : []),
         foot: "Initiative roll = d20 + Caliber (" + d.caliber + ") + this." + (d.lineageInit && d.lineageInit.edge ? " Roll with Edge (Tuned Synapses)." : "") },
       // Size is derived from height, and its only mechanical reach is the
@@ -2896,7 +2898,7 @@ EN.combatView = (function () {
     }
     blocks.push(el("div.stat-row", { style: { marginBottom: _open.statbd ? "8px" : "16px" } }, [
       statEl("DEF", "DEF", d.defense, defAttrName + (dg.shield ? " " + (dg.shieldDef >= 0 ? "+" : "") + dg.shieldDef + " shield" : "")),
-      statEl("DR", "DR", d.totalDR || 0, dg.armor ? dg.armor.name : (d.naturalDR ? "natural · lineage" : "no armor"), function (n) { if (!(d.totalDR > 0)) n.querySelector(".v").style.color = "var(--text3)"; }),
+      statEl("DR", "DR", d.totalDR || 0, dg.armor ? dg.armor.name : (d.naturalDR ? "natural · lineage" : (d.cyberDR ? "chrome · subdermal" : "no armor")), function (n) { if (!(d.totalDR > 0)) n.querySelector(".v").style.color = "var(--text3)"; }),
       statEl("SPD", "SPD", spDisplay, spDisplay < d.speed ? "of " + d.speed + ", conditions" : "spaces", function (n) { if (spDisplay < d.speed) n.querySelector(".v").style.color = "var(--danger)"; }),
       statEl("INIT", "INIT", eng.fmtMod(initVal), (initAttr === "WIT" ? "Wits" : "Agility") + (fx.init ? " " + eng.fmtMod(fx.init) + " cond." : ""), function (n) { if (fx.init < 0) n.querySelector(".v").style.color = "var(--danger)"; }),
       // Size sits beside Speed and Defense, the way the manuscript's Step 8

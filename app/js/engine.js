@@ -1154,9 +1154,19 @@ EN.engine = (function () {
     });
     return out;
   }
-  // flat sheet bonuses (speed / wounds) summed from installed pieces' tier `bonus` data
+  /* Flat sheet bonuses summed from installed pieces' tier `bonus` data.
+     `speed` and `wounds` were the only two fields this ever read, which left most of the
+     cyberware catalog as prose: a character wearing Subdermal Armor derived DR 0, and a
+     Reflex Booster's "+2 Initiative" reached nothing. `dr` and `init` are the two more it
+     reads now, chosen because they are UNCONDITIONAL on the pieces that carry them and
+     because they are what the Open Architecture Integration clauses needed underneath them.
+
+     Still prose, deliberately: damage-type Resistances (Toxin Filter, Convergence Engine),
+     the Convergence Engine's +1 Vitality (its clause is gated on being Unattuned, which the
+     sheet has no state for), and everything conditional, per-encounter or GM-facing. Those
+     want their own channels and their own display surfaces; see DEFERRED-FIXES. */
   function cyberFlatBonuses(ch) {
-    var out = { speed: 0, wounds: 0 };
+    var out = { speed: 0, wounds: 0, dr: 0, init: 0 };
     var items = (EN.cyberware && EN.cyberware.items) || [];
     ((ch && ch.cyberware) || []).forEach(function (cw) {
       if (!cw || typeof cw !== "object") return;
@@ -1166,6 +1176,8 @@ EN.engine = (function () {
       if (!b) return;
       if (b.speed) out.speed += b.speed;
       if (b.wounds) out.wounds += b.wounds;
+      if (b.dr) out.dr += b.dr;
+      if (b.init) out.init += b.init;
     });
     return out;
   }
@@ -2443,8 +2455,18 @@ EN.engine = (function () {
        clauses with a channel to land in; see the note beside oaSaved for why the others do
        not. Read off the generic pairing list rather than a bespoke test, so a data change to
        the combo (a third qualifying implant, say) needs no code here. */
-    var oaSpeed = 0;
-    openArchCombos(ch).forEach(function (m) { if (m.combo.key === "calibrated-gait") oaSpeed += 1; });
+    /* The Integration deltas that now have a channel to land in, because cyberFlatBonuses
+       learned `dr` and `init` and the implants' own numbers finally exist to stack on:
+         Calibrated Gait  "+1 Speed beyond its normal benefits"
+         Dermal Plating   "+1 DR (stacking with its normal bonus)"
+         Tuned Synapses   "Initiative bonus increases by an additional +2"
+       Read off the generic pairing list, so a data change to a combo needs no code here. */
+    var oaSpeed = 0, oaDR = 0, oaInit = 0;
+    openArchCombos(ch).forEach(function (m) {
+      if (m.combo.key === "calibrated-gait") oaSpeed += 1;
+      if (m.combo.key === "dermal-plating") oaDR += 1;
+      if (m.combo.key === "tuned-synapses") oaInit += 2;
+    });
     var speed = Math.max(3, 6 + agiMod) + (cyberFlat.speed || 0) + (defLoadout.speedPenalty || 0) + linMech.speed + oaSpeed;
 
     /* encumbrance: state from the declared Loadout, on-person Load, and hauls;
@@ -2684,10 +2706,14 @@ EN.engine = (function () {
       defense: defense, defenseAttr: defenseAttr, speed: speed,
       vitalityMax: vitalityMax, resilienceDie: resilienceDie, resilienceMax: resilienceMax,
       armorDR: defLoadout.armorDR, blockBonus: defLoadout.blockBonus,
-      naturalDR: linMech.dr, totalDR: (defLoadout.armorDR || 0) + (defLoadout.armorModDR || 0) + linMech.dr,
+      // cyberDR is chrome worn UNDER the skin, so it stacks with worn armor exactly as
+      // Subdermal Armor's own text says it does ("Stacks with worn armor")
+      naturalDR: linMech.dr, cyberDR: (cyberFlat.dr || 0) + oaDR,
+      totalDR: (defLoadout.armorDR || 0) + (defLoadout.armorModDR || 0) + linMech.dr + (cyberFlat.dr || 0) + oaDR,
       lineageSpeed: linMech.speed,
       lineageSpeedFirstRound: linMech.speedFirstRound,
       lineageInit: { caliber: linMech.initCaliber ? cal : 0, edge: linMech.initEdge },
+      cyberInit: (cyberFlat.init || 0) + oaInit,   // Reflex Booster "+2"/"+4", plus Tuned Synapses' Integration "+2"
       encumbrance: enc,
       // `unarmed` is the whole resolved strike: {die, flat, type, traits, note,
       // replacer, replacers, baseDie, increases, riders, reach}, with die null

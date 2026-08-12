@@ -3856,6 +3856,86 @@ rather than being reinvented three times. Verified on all seven.
 * All seven clauses surface as features with the right name and source.
 * 84 tab, bench and print-sheet visits across all six roster characters: zero console errors.
 
+## The cyberware effects layer, and the two Integration clauses it unblocked
+
+"take the cyberware effects layer next."
+
+### What was actually there
+
+Not nothing, and not much: `cyberEnhancements` reads each piece's `enhancement` string for its
+attribute bonus, and `cyberFlatBonuses` reads exactly two fields off a tier's `bonus` object,
+`speed` and `wounds`. Three items carried `bonus` data at all: Reflex Booster and Cyberlegs
+(speed), Reinforced Skeleton (wounds). Everything else in the twenty-item catalog was prose in
+`effect`, `street` and `black`.
+
+So a character with **Subdermal Armor derived DR 0**, and a Reflex Booster's "+2 Initiative"
+reached nothing at all, while the same implant's "+1 Speed" worked.
+
+### What was added, and why only these
+
+`cyberFlatBonuses` now also reads **`dr`** and **`init`**. Those two, and not more, because
+they are UNCONDITIONAL on the pieces that carry them and because they were the layer the Open
+Architecture clauses were sitting on top of.
+
+Numbers taken from the catalog's own text, not invented. The data files follow a consistent
+shape: `effect` is the Streetware and Brandware baseline, `black` is what Blackware upgrades
+to, `street` is what Streetware gives up.
+
+* **Subdermal Armor.** effect "+1 DR against Ballistic, Piercing, Bludgeoning, and Slashing.
+  Stacks with worn armor." / black "+2 DR vs all physical". So `dr: 1, 1, 2`. It is summed
+  into `totalDR` alongside worn armor because the item says in as many words that it stacks.
+* **Reflex Booster.** effect "+2 Initiative and +1 Speed" / black "+4 Initiative, +2 Speed".
+  The speed half was already `1, 1, 2` and matches; the init half is new at `2, 2, 4`.
+
+Both surface with their own breakdown rows, so the DR tile and the INIT tile say where the
+number came from rather than just showing a bigger figure: "Chrome · Subdermal Armor" and
+"Chrome · Reflex Booster".
+
+### Deliberately still prose
+
+* **Damage-type Resistances.** Toxin Filter grants Resistance to Toxic (and Radiation at
+  Blackware); the Convergence Engine grants Resistance to Resonant. There is no resistances
+  channel in `derive()` at all, so this needs a new derived collection AND a display surface,
+  not just a summed number.
+* **The Convergence Engine's "+1 Vitality max".** Its clause reads "Unattuned: +1 Vitality max
+  and Resistance to Resonant", and the sheet has no Unattuned/Attuned state to gate on.
+  Implementing it unconditionally would grant it to exactly the characters the clause excludes.
+* **Everything conditional, per-encounter, or GM-facing**: Cybereyes' modes, the Smartlink's
+  "+1 to attack with a connected smart-weapon", Synthetic Heart's once-per-Long-Rest save,
+  every Edge grant. These are decisions at the table, not standing modifiers.
+
+### The two Integration clauses this unblocked
+
+With the layer underneath them, both are one line off the generic pairing list:
+
+| pairing | clause | measured |
+| ----- | ----- | ----- |
+| Dermal Plating + Subdermal Armor (Brandware) | +1 DR, stacking with its normal bonus | DR **1 -> 2** |
+| Dermal Plating + Subdermal Armor (Blackware) | as above | DR **2 -> 3** |
+| Tuned Synapses + Reflex Booster (Brandware) | Initiative +2 additional | init **2 -> 4** |
+| Tuned Synapses + Reflex Booster (Blackware) | as above | init **4 -> 6** |
+| Calibrated Gait + Spring Joints | +1 Speed beyond normal | speed **7 -> 8** |
+
+Every row also drops 1 SP, as the universal clause requires. Open Architecture now moves five
+numbers where three days ago it moved none.
+
+What remains unbuilt of the seven pairings is the half with nothing to move: the Datajack's
+touch-Link, untraceable comms, permanently-active Threat Targeting, the ally's +1d4 against a
+marked target, half falling damage. All of those already reach the player as clause text on
+the Freelancer tab, the print sheet and the PDF.
+
+### Verified
+
+* Subdermal DR by tier: Streetware 1, Brandware 1, Blackware 2. Reflex init by tier: 2, 2, 4,
+  with speed still 1, 1, 2. Reinforced Skeleton still +1 Wound (woundsMax 11).
+* **Stacking, per the item's own text**: Courier Shell (DR 2) plus Subdermal Armor Brandware
+  gives totalDR 3.
+* The five Integration rows above, each measured with and without Open Architecture.
+* The gate: Open Architecture with Subdermal Armor but WITHOUT Dermal Plating moves nothing,
+  DR 1 and SP 2.
+* 84 tab, bench and print-sheet visits across all six roster characters, zero console errors,
+  and a PDF at 180,187 bytes.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from
