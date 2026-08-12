@@ -3707,6 +3707,70 @@ wrong shape for a rule that covers seven pairings from data.
 * 84 tab, bench and print-sheet visits across all six roster characters: zero console errors.
 
 
+## Open Architecture is entirely unimplemented, all seven pairings and the SP clause
+
+Brandon, after the second L4 pass: "I don't know if you captured every interaction, did you
+read all of Open Architecture?"
+
+Fair challenge, and the honest answer is that the text had been read and quoted but only ONE
+of the seven pairings had ever been audited. Auditing the other six is what this entry is.
+
+### Measured, not grepped
+
+Each pairing built twice on a fresh record, identical but for the presence of Open
+Architecture, and the two `derive()` outputs compared field by field with a stable
+stringifier:
+
+| pairing | what the clause owes | derived difference |
+| ----- | ----- | ----- |
+| Dermal Plating + Subdermal Armor | Baseline CONTINUES; the armor gains +1 DR, stacking | none |
+| Synthetic Musculature + Reinforced Skeleton | blanket unarmed step; retain Threshold and grappling | none (the step comes from the feature itself) |
+| Dermal Induction + Neural Interface | no port or scarring at any tier; touch-Link past air-gaps; Swift Action 1/Encounter to slave a Tier 0-1 device | none |
+| Living Relay + Subdermal Comm | range doubles to 24 spaces; Tech DC 20 even to DETECT the transmission | none |
+| Predictive Targeting + Cybereyes | Threat Targeting permanently active; allies deal +1d4 against your target | none |
+| Tuned Synapses + Reflex Booster | Initiative +2 on top; retain first-round Speed 2, stacking | none (Speed 7 with and without) |
+| Calibrated Gait + Cyberlegs or Spring Joints | +1 Speed beyond normal; half falling damage | none |
+| **every activated pairing** | **Static Point cost reduced by 1 (minimum 0)** | **none** |
+
+**The only field that differs across all seven is `features`, and the only entry it gains is
+Open Architecture's own description.** Nothing the feature promises reaches a number.
+
+So the original L4 finding was never really about Synthetic Musculature. It was the first
+visible symptom of a feature that does nothing. Taking Open Architecture today costs a
+Lineage Feature pick and buys prose.
+
+### The work splits in two, and the halves are not the same job
+
+**Hard numbers the engine must move.** +1 DR on the Subdermal Armor; +2 Initiative; +1 Speed;
+half falling damage; the ally's +1d4 against a marked target; and the SP -1 on every activated
+pairing. These are ordinary derived-value work, and the SP one is the widest: it lands on
+Chrome Tax, which sets the Static Threshold, which cuts max Resilience Dice and a Shaper's
+max Reservoir.
+
+**Clauses with no number to move.** The Datajack's absent port and touch-Link, the untraceable
+comms, permanently-active Threat Targeting, the once-per-Encounter device slave. These are
+fiction and GM-facing permissions. They do not want engine arithmetic; they want to APPEAR ON
+THE SHEET as active text once the pairing is live, the way an ability's brief does, so the
+player can see what they now have. That is a display job, not a maths job.
+
+### Shape it should take when it is built
+
+Generic over `R.openArchitecture.combos`, which already carries every feature-and-chrome pair
+as data. One predicate answering "is this pairing active" for all seven, one place applying
+the SP reduction, one place surfacing the active clause text. NOT a predicate per pairing: the
+one written during the first L4 pass was deleted for exactly this reason.
+
+Note the asymmetry in the data worth preserving: Dermal Plating's clause says the Engineered
+Baseline effect **continues**, while the other six say it **ends**. Whatever implements this
+has to read that per pairing rather than assume.
+
+### Verified
+
+* Seven pairings, fourteen derived records, field-by-field comparison: zero mechanical
+  differences.
+* Spot-checked Tuned Synapses in detail: features list gains only "Open Architecture",
+  Speed is 7 in both, Initiative unchanged.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from
