@@ -617,6 +617,46 @@ EN.engine = (function () {
   }
   // Every effect currently available to the character that REPLACES the unarmed
   // die, as [{source, pick, label, kind, die, type, traits, note}].
+  /* ---- OPEN ARCHITECTURE, generically ---------------------------------------
+     "Whenever you have both halves of a listed pairing (the Lineage Feature and its
+     matching cyberware, installed at any tier), that clause activates: the Engineered
+     Baseline effect ends as a separate system and is absorbed into the chrome, the chrome
+     gains enhanced capability, and its Static Point cost is reduced by 1 (minimum 0)."
+
+     Measured before this was written: NONE of the seven pairings moved a single derived
+     number. The only difference Open Architecture made to a character record was its own
+     entry appearing in the feature list. It cost a Lineage Feature pick and bought prose.
+
+     Driven off R.openArchitecture.combos, which already carries every feature-and-chrome
+     pair as data, so this is one predicate for all seven rather than seven predicates. A
+     combo's `cyberware` may name alternatives ("Cyberlegs or Spring Joints"), which is why
+     the match splits on " or " the same way the builder card's comboHasChrome does.
+
+     Matched on the installed piece's NAME rather than its key, because the Open Architecture
+     card's own toggle and the Chrome tab historically wrote different shapes and the combo
+     data speaks in names. The key is preferred when it resolves, so a renamed catalog entry
+     still matches. */
+  function openArchCombos(ch) {
+    var R = EN.rules || {};
+    var oa = R.openArchitecture || {};
+    var out = [];
+    if (activeLineageFeatures(ch).indexOf("Open Architecture") === -1) return out;
+    var feats = activeLineageFeatures(ch);
+    var items = (EN.cyberware && EN.cyberware.items) || [];
+    var inst = ((ch && ch.cyberware) || []).filter(function (cw) { return cw && typeof cw === "object"; });
+    (oa.combos || []).forEach(function (combo) {
+      if (!combo || feats.indexOf(combo.feature) === -1) return;
+      var opts = String(combo.cyberware || "").split(/\s+or\s+/).map(function (x) { return x.trim(); });
+      var piece = inst.filter(function (cw) {
+        var def = cw.key ? items.filter(function (i) { return i.key === cw.key; })[0] : null;
+        var nm = (def && def.name) || cw.base || cw.name;
+        return opts.indexOf(nm) !== -1;
+      })[0];
+      if (piece) out.push({ combo: combo, piece: piece });
+    });
+    return out;
+  }
+
   /* NO synthMusculatureIntegrated() predicate lives here any more, deliberately.
      It was written to gate the damage step and the author's ruling removed that job: the step
      is a blanket one and fires whether or not the pairing is integrated. What Open
@@ -2398,7 +2438,14 @@ EN.engine = (function () {
     var unarmedStrike = resolveUnarmedStrike(ch);
     var defLoadout = defensiveLoadout(ch);
     var defense = defenseBase + attributes[defenseAttr].mod + (defLoadout.shieldDef || 0);
-    var speed = Math.max(3, 6 + agiMod) + (cyberFlat.speed || 0) + (defLoadout.speedPenalty || 0) + linMech.speed;
+    /* Open Architecture, Calibrated Gait + Cyberlegs or Spring Joints: "The implant grants an
+       additional +1 Speed beyond its normal benefits." The only one of the seven numeric
+       clauses with a channel to land in; see the note beside oaSaved for why the others do
+       not. Read off the generic pairing list rather than a bespoke test, so a data change to
+       the combo (a third qualifying implant, say) needs no code here. */
+    var oaSpeed = 0;
+    openArchCombos(ch).forEach(function (m) { if (m.combo.key === "calibrated-gait") oaSpeed += 1; });
+    var speed = Math.max(3, 6 + agiMod) + (cyberFlat.speed || 0) + (defLoadout.speedPenalty || 0) + linMech.speed + oaSpeed;
 
     /* encumbrance: state from the declared Loadout, on-person Load, and hauls;
        Encumbered = Speed -2, Overloaded = Speed halved (round down, min 1) */
@@ -2436,6 +2483,20 @@ EN.engine = (function () {
     // Disruption Lattice, or the Convergence Engine. The rulebook lets the player
     // pick which pieces benefit; taking the 4 highest-SP eligible pieces is always
     // at least as good as any other choice, so it is applied automatically.
+    /* OPEN ARCHITECTURE: "its Static Point cost is reduced by 1 (minimum 0)", on every
+       pairing whose clause is active. Applied per PIECE and floored at 0 rather than
+       subtracted from the running total, because a 0 SP implant must not hand a refund back
+       to the pool; the clause's own "(minimum 0)" is about that piece, not about the sum.
+       Skipped for a piece already discounted to nothing by a platform slot, which pays no SP
+       at all, so the reduction has nothing to reduce and cannot go negative. */
+    var oaSaved = 0;
+    openArchCombos(ch).forEach(function (m) {
+      var cw = m.piece;
+      if (!cw || slotted[cw.key]) return;
+      if (typeof cw.sp !== "number" || cw.sp <= 0) return;
+      oaSaved += 1;
+    });
+    staticTotal -= oaSaved;
     var CROWN_EXEMPT = { resonanceCrown: 1, disruption: 1, convergence: 1 };
     var crownHarmonized = [];
     if (installed.some(function (cw) { return cw.key === "resonanceCrown"; })) {
@@ -2574,6 +2635,17 @@ EN.engine = (function () {
         if (match) features.push({ level: 1, name: match.name, text: match.text, source: lin.name + " (Lineage)", kind: "lineage" });
       });
     }
+    /* Open Architecture's ACTIVE clauses, one entry per live pairing. Several of them have
+       no number for the engine to move (the Datajack's absent port and touch-Link, the
+       untraceable comms, permanently-active Threat Targeting, the once-per-Encounter device
+       slave), and those are exactly the ones a player most needs in front of them at the
+       table. Pushed as features so they reach the Freelancer tab, the print sheet and the
+       PDF through the paths that already carry ability text, rather than being reinvented
+       three times. Named for the pairing so the row says which chrome it is riding on. */
+    openArchCombos(ch).forEach(function (m) {
+      features.push({ level: 1, name: m.combo.feature + " (" + (m.piece.base || m.piece.name) + ")",
+        text: m.combo.text, source: "Open Architecture (Integration)", kind: "lineage" });
+    });
     // Talents taken via Universal Upgrades, so the play sheet renders them with
     // their action type and uses (many are active/limited-use combat abilities).
     // The Level 6+ Upgrade rider only shows as active once it has been unlocked.
@@ -2978,6 +3050,9 @@ EN.engine = (function () {
     shieldState: shieldState, applyShieldWear: applyShieldWear,
     isCarryGear: isCarryGear, rackLimit: rackLimit, rackState: rackState, rackTargets: rackTargets,
     itemSlots: itemSlots, slotConflicts: slotConflicts,
+    // one answer to "which Open Architecture pairings are live", for the engine, the
+    // builder card and the Chrome tab card, which each used to work it out separately
+    openArchCombos: openArchCombos,
     catalogItem: loadCatalogItem,
     // inventory.js owns the normalized item shapes for Parts, armor Mods, vehicles and
     // vehicle Mods, and registers them here so BOTH halves of the app resolve one catalog.

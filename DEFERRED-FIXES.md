@@ -3771,6 +3771,91 @@ has to read that per pairing rather than assume.
 * Spot-checked Tuned Synapses in detail: features list gains only "Open Architecture",
   Speed is 7 in both, Initiative unchanged.
 
+## Open Architecture, built: the SP clause, the one live number, and every clause on the sheet
+
+"build it." What landed, and what it ran into.
+
+### One predicate for all seven
+
+`openArchCombos(ch)` walks `R.openArchitecture.combos`, which already carries every
+feature-and-chrome pair as data, and returns the live pairings with the specific installed
+piece each one matched. Seven pairings, one function. The combo's `cyberware` may name
+alternatives ("Cyberlegs or Spring Joints"), so the match splits on " or " the way the
+builder card's `comboHasChrome` already did. It matches on the piece's catalog NAME, taking
+the key's name when the key resolves, because the combo data speaks in names and the two
+historical writers (the OA card's toggle, the Chrome tab) wrote different shapes.
+
+Exported, so the builder card and the Chrome tab can stop computing the same answer twice.
+
+### The SP clause, which is the one every pairing shares
+
+"its Static Point cost is reduced by 1 (minimum 0)". Applied **per piece and floored at 0**,
+not subtracted from the running total: a 0 SP implant must not hand a refund back to the
+pool, and the clause's "(minimum 0)" is about that piece rather than the sum. A piece already
+discounted to nothing by a platform slot is skipped, since it pays no SP to reduce.
+
+| pairing | Chrome Tax without / with |
+| ----- | ----- |
+| Dermal Plating + Subdermal Armor (sp 2) | 2 -> 1 |
+| Synthetic Musculature + Reinforced Skeleton (sp 2) | 2 -> 1 |
+| Dermal Induction + Neural Interface (sp 1) | 1 -> 0 |
+| Living Relay + Subdermal Comm (sp 1) | 1 -> 0 |
+| Predictive Targeting + Cybereyes (sp 2) | 2 -> 1 |
+| Tuned Synapses + Reflex Booster (sp 3) | 3 -> 2 |
+| Calibrated Gait + Spring Joints (sp 2) | 2 -> 1 |
+
+Guards measured: a 0 SP piece stays at 0 with no refund; no reduction without Open
+Architecture; no reduction with Open Architecture but no matching feature.
+
+This is not cosmetic. Chrome Tax sets the Static Threshold, which cuts max Resilience Dice
+and a Shaper's max Reservoir, so every one of those rows can move a character's survivability.
+
+### The numeric clauses: one had a channel, the rest do not
+
+**Calibrated Gait, "+1 Speed beyond its normal benefits": BUILT.** Speed 7 to 8 on a
+Calibrated Gait character with Spring Joints. Not doubled by owning both Cyberlegs AND Spring
+Joints (10 either way, because the pairing matches once), not granted with Open Architecture
+but no qualifying implant, and an unrelated pairing leaves Speed alone.
+
+**The others are blocked on a layer below them, and this is the finding worth keeping.**
+Cyberware effects in `app/data/cyberware.js` are PROSE: `effect`, `street` and `black` are
+strings. The only mechanical hook is `tier.bonus`, and `cyberFlatBonuses` reads exactly two
+fields off it, `speed` and `wounds`. So:
+
+* **Dermal Plating, "+1 DR, stacking with its normal bonus"** has no normal bonus to stack
+  with: Subdermal Armor's own +1 DR (+2 at Blackware) is not implemented, and there is no
+  cyber-DR channel at all. Measured: a character with Subdermal Armor derives DR 0. Building
+  Open Architecture's +1 alone would print DR 1 where the book says 2, which is a different
+  wrong number rather than a right one.
+* **Tuned Synapses, "Initiative bonus increases by an additional +2"** has nowhere to land:
+  Initiative is modelled as Edge and Caliber flags (`lineageInit: {caliber, edge}`), with no
+  flat channel, and the Reflex Booster's own Initiative bonus is not implemented either.
+* **Calibrated Gait's "half damage from falling"** has no falling-damage pipeline to halve.
+
+The honest shape of that work is not "finish Open Architecture", it is **implement cyberware
+effects generally**: give the tier `bonus` object more than `speed` and `wounds`, wire a
+cyber-DR channel and a flat-initiative channel, and then the Integration deltas are one line
+each on top. Recorded rather than half-built, because a +1 on a missing base is a number that
+looks right and is not.
+
+### Every clause now reaches the player
+
+The three clauses with no number at all (the Datajack's absent port and touch-Link, the
+untraceable comms, permanently-active Threat Targeting, the once-per-Encounter device slave)
+are exactly the ones a player most needs in front of them, and they were nowhere. Each live
+pairing now pushes a feature entry named for the pairing and its chrome, sourced
+"Open Architecture (Integration)", carrying the clause text. That flows to the Freelancer
+Features tab, the print sheet and the PDF through the paths that already carry ability text,
+rather than being reinvented three times. Verified on all seven.
+
+### Verified
+
+* Seven pairings, Chrome Tax measured with and without: every one drops exactly 1.
+* Three SP guards: 0 SP piece, no-OA, and OA-without-the-feature.
+* Speed: +1 exactly, not doubled, correctly gated, no leakage to other pairings.
+* All seven clauses surface as features with the right name and source.
+* 84 tab, bench and print-sheet visits across all six roster characters: zero console errors.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from
