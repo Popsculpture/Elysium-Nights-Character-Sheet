@@ -2950,7 +2950,9 @@ EN.combatView = (function () {
       }
       // installed Armor Mods (Impact Table) on the worn suit; a leased mod in arrears is dark
       if (dg.armor && EN.armorMods) {
-        ((ch.armorMods || {})[dg.armor.name] || []).forEach(function (k) {
+        // dg.armorKey is the WORN suit's entry: since 2026-08-12 a spare of the same name
+        // carries its own mods, so the Block card has to name the piece, not the type.
+        (eng.armorModsOn ? eng.armorModsOn(ch, dg.armorKey) : []).forEach(function (k) {
           var m = EN.armorMods.byKey[k]; if (!m) return;
           var mLapsed = eng.leaseLapsed && eng.leaseLapsed(ch, m.name);
           chips.push(mLapsed ? gchip("MOD · LEASE DUE", m.name, DUE_TIP, "var(--danger)")

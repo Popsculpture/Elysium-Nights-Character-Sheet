@@ -3440,6 +3440,88 @@ but reordering a loadout that holds two copies of one name is now a sharper ques
 was, and it should be looked at on its own.
 
 
+## Armor and vehicles follow the weapons; decks and Rigs turn out to be different questions
+
+Brandon, 2026-08-12: "same needs to go for same-named armor, vehicles, smartdecks and
+trauma rigs, they should be independently moddable too."
+
+Two of those four were the same job as weapons. The other two are not re-keying problems at
+all, and saying so is more useful than pretending otherwise.
+
+### Armor was the sharpest case, because the same suit had two identities
+
+`ch.armorMods` was keyed by armor NAME while `ch.armorWear`, `ch.armorGuard` and
+`ch.shieldWear` were keyed by the ENTRY. So a damaged Courier Shell knew exactly which piece
+it was and a modded one did not: fit Trauma Plates to a suit and the spare in the stash wore
+them too, while the DR each had lost stayed correctly separate. Measured before the change,
+on a record whose `armorMods` read `{"Courier Shell": [...]}` beside an `armorWear` of
+`{a1: 1}`.
+
+`eng.armorModsOn(ch, key)` is now THE resolver, asked by all four readers (mod DR, both seal
+questions, Load Distribution, the Block card) so they cannot drift. `armorModDR` takes the
+entry key and `defenseLoadout` hands it the worn suit's `armorKey`, which it already had.
+
+**A visible consequence worth naming:** the Impact Table header used to print the catalog
+BASE DR and carry a comment apologising that it could not know which suit it was. It prints
+that piece's own current DR now, and the apology is gone.
+
+### Vehicles were the same shape, one file over
+
+`ch.vehicleMods` was name-keyed; it is entry-keyed now, and the Garage iterates pieces.
+
+### Smartdecks are not a name-keyed map, and that is the finding
+
+`ch.grid` holds `deckType`, `deckTier`, `deckMods` (a FLAT array) and `deckHpSpent` (a single
+number). There is no map to re-key: the #GRID tab models **one live rig for the character**,
+chosen by TIER from a dropdown, and it is not tied to an owned equipment entry at all. Decks
+are purchasable items (Standard through Apex Smartdeck), so you can own two, but the tab has
+no concept of which one you are jacked into.
+
+So "two decks independently moddable" is a redesign rather than a re-key: the deck would have
+to become an owned entry with its own mods and its own Integrity, and that raises a rules
+question this log cannot answer for itself. **Can two decks be live at once, or do you jack in
+with one and the others sit in the bag?** If it is one at a time, the shape that matches the
+rest of the app is the Trauma Rig's: an entry-keyed pick plus an entry-keyed damage map, i.e.
+`ch.grid.deckKey` naming a specific owned deck, `deckMods` and `deckHpSpent` becoming
+`{entryKey: ...}`. That is buildable, but it wants an author ruling first, so it is NOT built
+here.
+
+### Trauma Rigs already work the way the ruling asks, and have no mods to speak of
+
+`ch.rig` is `{key, scrap, hp}`: `key` names one specific owned ENTRY and `hp` is
+`{entryKey: spent}`. Both have been per-piece since the Rig work in step 4. And there is no
+Rig mod system at all: searching the whole tree for a Rig mod map returns nothing, "Hardware
+Mods" are Smartdeck plug-ins, and `gear_tools.js` says in as many words that B&E Buddies
+cannot take mods either. So there is nothing to make independently moddable; the state Rigs
+DO carry is already per entry.
+
+Two Rigs of the same tier are therefore already independent for damage, and only one is live
+at a time by design (`rig.key` is a single pick). If Rig mods are ever written, they should be
+`{entryKey: [modKey]}` from the first line.
+
+### Verified
+
+* **Migration.** `armorMods: {"Courier Shell": ["trauma-plates"]}` becomes `{a1: [...]}`,
+  landing in the SAME keyspace as `armorWear: {a1: 1}`. `vehicleMods` likewise to `{v1:
+  [...]}`. The spare suit `a2` resolves to no mods at all. Idempotent on re-import.
+* **The resolver follows the piece, not the type.** Same character, Reactive Plating on `s1`
+  and Trauma Plates on `s2`: wearing `s1` reports mod DR 0, and swapping to `s2` reports 1.
+  The number moves when the suit moves.
+* **The Impact Table, through the real UI.** Two chips, "Courier Shell 1" and "Courier Shell
+  2". Header prints `1 / 2 DR` for the damaged piece and `2 / 2 DR` for the other. Fitting
+  Trauma Plates to the second stored `s2` only and left `s1` empty.
+* **136 tab, bench and print-sheet visits across all six characters, zero console errors, and
+  a PDF at 180,669 bytes.**
+
+### A test artifact worth recording, because it looked like a bug
+
+The 136-visit sweep clicks every button it can find, which includes EQUIP toggles, so it
+left `equippedArmor` null and the follow-up read of worn mod DR came back 0 for a reason that
+had nothing to do with the change. A sweep that clicks indiscriminately is a good way to find
+throws and a bad way to leave a fixture in a known state; the worn-suit assertion had to be
+re-run against a freshly seeded record.
+
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

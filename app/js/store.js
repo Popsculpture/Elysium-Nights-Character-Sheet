@@ -386,7 +386,7 @@ EN.store = (function () {
     if (ch.equippedShield === undefined) ch.equippedShield = null;
     if (ch.equippedFocus === undefined) ch.equippedFocus = null;
     if (!ch.weaponAmmo) ch.weaponAmmo = {};
-    if (!ch.vehicleMods || typeof ch.vehicleMods !== "object") ch.vehicleMods = {};   // {vehicleName: [modKey]}
+    if (!ch.vehicleMods || typeof ch.vehicleMods !== "object") ch.vehicleMods = {};   // {vehicleEntryKey: [modKey]}
     // a limb-platform mod records which platform it sits in; slotted pieces pay no SP
     (ch.cyberware || []).forEach(function (cw) {
       if (cw && typeof cw === "object" && typeof cw.slottedIn !== "string") delete cw.slottedIn;
@@ -737,7 +737,13 @@ EN.store = (function () {
         ownedKeys[k] = 1;
         if (firstEntryOfName[e.name] === undefined) firstEntryOfName[e.name] = k;
       });
-      ["weaponParts", "weaponGrip", "weaponAmmo"].forEach(function (field) {
+      /* armorMods and vehicleMods joined this list on 2026-08-12, when Brandon extended the
+         ruling: "same needs to go for same-named armor, vehicles, smartdecks and trauma
+         rigs, they should be independently moddable too". Armor was the sharpest case,
+         because the SAME suit was already addressed two ways: armorWear, armorGuard and
+         shieldWear were entry-keyed while armorMods was name-keyed, so a damaged Courier
+         Shell knew which piece it was and a modded one did not. */
+      ["weaponParts", "weaponGrip", "weaponAmmo", "armorMods", "vehicleMods"].forEach(function (field) {
         var src = ch[field];
         if (!src || typeof src !== "object" || Array.isArray(src)) { ch[field] = Object.create(null); return; }
         var out = Object.create(null);

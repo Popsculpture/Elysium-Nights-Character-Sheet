@@ -1515,17 +1515,29 @@ EN.inventoryView = (function () {
       default: return true;
     }
   }
+  /* One row per owned PIECE, disambiguated only when a name repeats. Three benches need
+     the identical shape (weapons, armor, vehicles), so the numbering lives here once
+     rather than three times. `pred` picks the catalog items this bench cares about. */
+  function ownedPieces(ch, pred) {
+    var rows = (ch.equipment || []).filter(function (e) { return e && e.qty > 0; })
+      .map(function (e) { var it = findItem(e.name); return it && pred(it) ? { e: e, it: it, key: ENG().entryKey(e) } : null; })
+      .filter(Boolean);
+    var total = {};
+    rows.forEach(function (r) { total[r.it.name] = (total[r.it.name] || 0) + 1; });
+    var seen = {};
+    rows.forEach(function (r) {
+      if (total[r.it.name] > 1) { seen[r.it.name] = (seen[r.it.name] || 0) + 1; r.label = r.it.name + " " + seen[r.it.name]; }
+      else r.label = r.it.name;
+    });
+    return rows;
+  }
   function isModularArmor(armor) { return (armor.traits || []).indexOf("Modular") !== -1 || (armor.slots || 0) > 0; }
   function armorSlotCount(armor) { return armor.slots || 0; }
-  function ownedArmor(ch) {
-    var seen = {};
-    return (ch.equipment || []).filter(function (e) { return e.qty > 0; })
-      .map(function (e) { return findItem(e.name); })
-      .filter(function (it) { return it && isDefensive(it) && !seen[it.name] && (seen[it.name] = 1); });
-  }
-  function armorLoadout(ch, name) { return ((ch.armorMods || {})[name] || []).slice(); }
-  function setArmorMods(name, fn) {
-    store.update(function (c) { c.armorMods = c.armorMods || {}; c.armorMods[name] = fn((c.armorMods[name] || []).slice()); });
+  function ownedArmor(ch) { return ownedPieces(ch, isDefensive); }
+  // keyed on the equipment ENTRY, so a spare suit of the same name holds its own build
+  function armorLoadout(ch, key) { return ((ch.armorMods || {})[key] || []).slice(); }
+  function setArmorMods(key, fn) {
+    store.update(function (c) { c.armorMods = c.armorMods || {}; c.armorMods[key] = fn((c.armorMods[key] || []).slice()); });
   }
   function installedArmorModCount(ch, modKey) {
     var n = 0, am = ch.armorMods || {};
@@ -1578,15 +1590,15 @@ EN.inventoryView = (function () {
     (lo || []).forEach(function (k) { var m = AM().byKey[k]; if (m && order.indexOf(m.legality) > order.indexOf(worst)) worst = m.legality; });
     return worst;
   }
-  function tryInstallArmorMod(armor, lo, key) {
+  function tryInstallArmorMod(armor, aKey, lo, key) {
     var mod = AM().byKey[key]; if (!mod) return;
     if (availableArmorModQty(store.active(), mod) <= 0) { toast("You do not own a free " + mod.name + ". Buy it in the gray market first."); return; }
     if (lo.indexOf(key) !== -1) { toast(mod.name + " is already fitted to this suit."); return; }
     if (lo.length >= armorSlotCount(armor)) { toast("No open Mod Slots. Only Modular armor carries slots, up to its listed count."); return; }
-    setArmorMods(armor.name, function (l) { l.push(key); return l; });
+    setArmorMods(aKey, function (l) { l.push(key); return l; });
     toast(mod.name + " worked into " + armor.name + " (bench work: a rest with a kit).");
   }
-  function removeArmorMod(armorName, key) { setArmorMods(armorName, function (l) { return l.filter(function (k) { return k !== key; }); }); }
+  function removeArmorMod(aKey, key) { setArmorMods(aKey, function (l) { return l.filter(function (k) { return k !== key; }); }); }
 
   /* ---- vehicle mods ---------------------------------------------------
      Slots are generic (1 + Tier), so this follows the armor-mod bench
@@ -1596,15 +1608,10 @@ EN.inventoryView = (function () {
     var base = String(itemName || "").replace(/\s*\(Lease\)$/, "");
     return (EN.vehicles && EN.vehicles.byName && EN.vehicles.byName[base]) || null;
   }
-  function ownedVehicles(ch) {
-    var seen = {};
-    return (ch.equipment || []).filter(function (e) { return e.qty > 0; })
-      .map(function (e) { return findItem(e.name); })
-      .filter(function (it) { return it && it.vehicle && !seen[it.name] && (seen[it.name] = 1); });
-  }
-  function vehicleLoadout(ch, name) { return ((ch.vehicleMods || {})[name] || []).slice(); }
-  function setVehicleMods(name, fn) {
-    store.update(function (c) { c.vehicleMods = c.vehicleMods || {}; c.vehicleMods[name] = fn((c.vehicleMods[name] || []).slice()); });
+  function ownedVehicles(ch) { return ownedPieces(ch, function (it) { return !!it.vehicle; }); }
+  function vehicleLoadout(ch, key) { return ((ch.vehicleMods || {})[key] || []).slice(); }
+  function setVehicleMods(key, fn) {
+    store.update(function (c) { c.vehicleMods = c.vehicleMods || {}; c.vehicleMods[key] = fn((c.vehicleMods[key] || []).slice()); });
   }
   function installedVehicleModCount(ch, key) {
     var t = 0, vm = ch.vehicleMods || {};
@@ -1621,16 +1628,16 @@ EN.inventoryView = (function () {
     });
     return worst;
   }
-  function tryInstallVehicleMod(vItem, prof, lo, key) {
+  function tryInstallVehicleMod(vItem, vKey, prof, lo, key) {
     var mod = EN.vehicles.byKey[key]; if (!mod || !prof) return;
     if (availableVehicleModQty(store.active(), mod) <= 0) { toast("You do not own a free " + mod.name + ". Buy it in the gray market first."); return; }
     if (lo.indexOf(key) !== -1) { toast(mod.name + " is already fitted to this vehicle."); return; }
     if (!EN.vehicles.modFits(mod, prof)) { toast(mod.name + " fits " + mod.fits + "; the " + prof.name + " is " + prof.category + "."); return; }
     if (lo.length >= prof.modSlots) { toast("No open Mod Slots. A " + prof.name + " carries " + prof.modSlots + " (1 + Tier " + prof.tier + ")."); return; }
-    setVehicleMods(vItem.name, function (l) { l.push(key); return l; });
+    setVehicleMods(vKey, function (l) { l.push(key); return l; });
     toast(mod.name + " fitted to " + vItem.name + " (bench work: downtime, a garage, and Engineering Tools).");
   }
-  function removeVehicleMod(vName, key) { setVehicleMods(vName, function (l) { return l.filter(function (k) { return k !== key; }); }); }
+  function removeVehicleMod(vKey, key) { setVehicleMods(vKey, function (l) { return l.filter(function (k) { return k !== key; }); }); }
   function tryInstall(it, wKey, lo, slotKey, key) {
     var part = WP().byKey[key]; if (!part) return;
     // The frame gate, checked by the WRITER and not only by the picker that feeds it.
@@ -2029,25 +2036,31 @@ EN.inventoryView = (function () {
         html: "<div style='font-family:var(--disp);font-size:13px;letter-spacing:.18em;color:var(--success)'>⛨ NO ARMOR ON THE BENCH</div><div style='font-size:12px;color:var(--text3);margin-top:8px'>Acquire armor in the gray market or your stash, then bring it here to fit Armor Mods.</div>" }));
       return out;
     }
-    if (!_benchArmor || !armors.some(function (a) { return a.name === _benchArmor; })) _benchArmor = armors[0].name;
+    // _benchArmor holds an entry KEY, so "the second Courier Shell" is addressable
+    if (!_benchArmor || !armors.some(function (a) { return a.key === _benchArmor; })) _benchArmor = armors[0].key;
     out.push(el("div.row.wrap", { style: { gap: "6px", marginBottom: "10px", alignItems: "center" } },
       [el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".1em", marginRight: "4px" }, text: "ON THE BENCH" })].concat(
         armors.map(function (a) {
-          var on = _benchArmor === a.name;
-          return el("button.btn.sm" + (on ? ".primary" : ""), { onclick: function () { _benchArmor = a.name; EN.app.render(); } }, a.name);
+          var on = _benchArmor === a.key;
+          return el("button.btn.sm" + (on ? ".primary" : ""), { onclick: (function (k) { return function () { _benchArmor = k; EN.app.render(); }; })(a.key) }, a.label);
         }))));
-    var it = armors.find(function (a) { return a.name === _benchArmor; }) || armors[0];
-    var lo = armorLoadout(ch, it.name);
-    // The mod bench is keyed on the armor TYPE (ch.armorMods is name-keyed), not on
-    // one piece, so this header prints the catalog BASE and says so. Per-piece
-    // current DR lives in the Armor Integrity panel above, which is entry-keyed.
-    var tag = (it.group || "").toUpperCase() + (typeof it.dr === "number" ? " · " + it.dr + " BASE DR" : "");
+    var aRow = armors.find(function (a) { return a.key === _benchArmor; }) || armors[0];
+    var it = aRow.it, aKey = aRow.key;
+    var lo = armorLoadout(ch, aKey);
+    /* The bench addresses the PIECE now, so this header prints THAT piece's current DR
+       instead of the catalog base plus an apology about not knowing which suit it was.
+       Both numbers when it is damaged, because a suit at 2 of 4 wants both on one line. */
+    var aSt = ENG().armorState ? ENG().armorState(ch, aKey) : null;
+    var drTag = (aSt && aSt.base)
+      ? (aSt.lost > 0 ? " · " + aSt.current + " OF " + aSt.base + " DR" : " · " + aSt.base + " DR")
+      : (typeof it.dr === "number" ? " · " + it.dr + " BASE DR" : "");
+    var tag = (it.group || "").toUpperCase() + drTag;
     var kids = [el("p.help", { style: { margin: "0 0 8px", fontSize: "11.5px" }, text: "One mod per slot; only Modular armor carries slots (Integrated adds one). Every Armor Mod is bench work. The strictest legality on the suit is what a scanner reports." })];
 
     if (!isModularArmor(it) || armorSlotCount(it) === 0) {
       kids.push(el("div.muted-box", { style: { padding: "18px", textAlign: "center", borderColor: "var(--border2)" },
         html: "<div style='font-size:12px;color:var(--text3)'>" + it.name + " is not <b>Modular</b>; it has no Mod Slots. Only Modular armor takes Armor Mods.</div>" }));
-      out.push(EN.ui.panel(it.name, tag, kids, { corners: true }));
+      out.push(EN.ui.panel(aRow.label, tag, kids, { corners: true }));
       return out;
     }
 
@@ -2067,7 +2080,7 @@ EN.inventoryView = (function () {
           ]),
           el("p.help", { style: { margin: "2px 0 0", fontSize: "11px" }, title: m.effect, text: m.grants })
         ]),
-        el("button.btn.sm", { title: "Pull " + m.name, style: { color: "var(--text3)" }, onclick: function () { removeArmorMod(it.name, key); } }, "✕")
+        el("button.btn.sm", { title: "Pull " + m.name, style: { color: "var(--text3)" }, onclick: function () { removeArmorMod(aKey, key); } }, "✕")
       ]));
     });
     var fitting = (AM().mods || []).filter(function (m) { return armorModFits(m, it) && lo.indexOf(m.key) === -1; });
@@ -2077,7 +2090,7 @@ EN.inventoryView = (function () {
     } else if (ownedOpts.length) {
       kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "8px" } }, [
         el("span", { style: { fontFamily: "var(--disp)", fontSize: "9.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "FIT A MOD" }),
-        el("select", { style: { fontSize: "11px", width: "auto", maxWidth: "100%" }, onchange: function (e) { var k = e.target.value; e.target.value = ""; if (k) tryInstallArmorMod(it, lo, k); } },
+        el("select", { style: { fontSize: "11px", width: "auto", maxWidth: "100%" }, onchange: function (e) { var k = e.target.value; e.target.value = ""; if (k) tryInstallArmorMod(it, aKey, lo, k); } },
           [el("option", { value: "", text: "+ fit from stash" })].concat(ownedOpts.map(function (m) {
             var av = availableArmorModQty(ch, m);
             return el("option", { value: m.key, text: m.name + (av > 1 ? " ×" + av : "") });
@@ -2089,7 +2102,7 @@ EN.inventoryView = (function () {
       kids.push(el("p.help", { style: { margin: "8px 0 0", fontSize: "10.5px", color: "var(--text4)" }, text: "No Armor Mods fit this suit." }));
     }
     kids.push(el("p.help", { style: { margin: "10px 0 0", fontSize: "10.5px", color: "var(--text3)" }, text: AM().rules ? AM().rules.flatDR + " " + AM().rules.resistance : "" }));
-    out.push(EN.ui.panel(it.name, tag, kids, { corners: true }));
+    out.push(EN.ui.panel(aRow.label, tag, kids, { corners: true }));
     return out;
   }
 
@@ -2929,14 +2942,15 @@ EN.inventoryView = (function () {
         html: "<div style='font-size:12px;color:var(--text3)'>You do not own a vehicle yet. Buy or lease one in the <b>Gray Market</b>, then fit mods here.</div>" }));
       return EN.ui.panel("Vehicle Mods", "NO VEHICLE OWNED", kids, { corners: true });
     }
-    owned.forEach(function (vIt) {
+    owned.forEach(function (vRow) {
+      var vIt = vRow.it, vKey = vRow.key;
       var prof = vehicleProfileOf(vIt.name);
       if (!prof) return;
-      var lo = vehicleLoadout(ch, vIt.name);
+      var lo = vehicleLoadout(ch, vKey);
       var legal = aggregateVehicleLegality(prof, lo);
       var full = lo.length >= prof.modSlots;
       kids.push(el("div.section-title", { style: { margin: "10px 0 4px" } },
-        [document.createTextNode(vIt.name), el("span.line"),
+        [document.createTextNode(vRow.label), el("span.line"),
          el("span.mono", { style: { fontSize: "9.5px", color: full ? "var(--warn)" : "var(--text3)" },
            text: lo.length + " / " + prof.modSlots + " SLOTS" }),
          el("span.chip", { title: "Strictest tag among the vehicle and everything mounted on it",
@@ -2948,7 +2962,7 @@ EN.inventoryView = (function () {
           var m = EN.vehicles.byKey[k] || { name: k };
           return el("button.btn.sm", { title: (m.effect || "") + "  (click to pull it)",
             style: { color: "var(--gold)", borderColor: "var(--gold)" },
-            onclick: function () { removeVehicleMod(vIt.name, k); reRender(); } }, "\u2716 " + m.name);
+            onclick: function () { removeVehicleMod(vKey, k); reRender(); } }, "\u2716 " + m.name);
         })));
       }
       // installable: owned, free, and fitting this chassis
@@ -2961,7 +2975,7 @@ EN.inventoryView = (function () {
       } else {
         kids.push(el("div.row.wrap", { style: { gap: "6px", marginBottom: "8px" } }, avail.map(function (m) {
           return el("button.btn.sm", { disabled: full, title: m.effect + "  (fits " + m.fits + ")",
-            onclick: function () { tryInstallVehicleMod(vIt, prof, lo, m.key); reRender(); } }, "+ " + m.name);
+            onclick: function () { tryInstallVehicleMod(vIt, vKey, prof, lo, m.key); reRender(); } }, "+ " + m.name);
         })));
       }
       // mods owned but blocked by the Fits gate, so the reason is visible

@@ -1030,11 +1030,21 @@ EN.engine = (function () {
     return { base: text.slice(0, idx).trim(), upgrade: text.slice(idx).replace(/^\*\*Upgrade[^*]*\*\*\s*/, "").trim() };
   }
 
+  /* THE one resolver for "which Armor Mods are fitted to this piece". ch.armorMods was
+     keyed by armor NAME until 2026-08-12, which meant a spare Courier Shell in the stash
+     wore whatever its twin wore, while the same suit's DR loss and repair guard were keyed
+     on the ENTRY. One object, two identities. Keyed on the entry now, and asked here so the
+     four readers (mod DR, the seal questions, Load Distribution, the Block card) cannot
+     drift. No key means no piece, which means no mods. */
+  function armorModsOn(ch, key) {
+    var l = ((ch && ch.armorMods) || {})[key];
+    return Array.isArray(l) ? l : [];
+  }
   // Flat DR granted by installed Armor Mods. They do not stack with each other:
   // the highest applies (part3.txt:3567). Lapsed armor carries no mods.
-  function armorModDR(ch, armor, armorLapsed) {
+  function armorModDR(ch, armor, armorLapsed, key) {
     if (!armor || armorLapsed) return 0;
-    var mods = ((ch && ch.armorMods) || {})[armor.name] || [];
+    var mods = armorModsOn(ch, key);
     var byKey = (EN.armorMods && EN.armorMods.byKey) || {};
     var best = 0;
     mods.forEach(function (k) {
@@ -1381,7 +1391,7 @@ EN.engine = (function () {
       armorState: armorSt,
       armorKey: armorKey || null,
       shieldKey: shieldKey || null,
-      armorModDR: armorModDR(ch, armor, armorLapsed),
+      armorModDR: armorModDR(ch, armor, armorLapsed, armorKey),
       blockBonus: (armor && !armorLapsed && armor.blockBonus) || 0,   // flat Block Bonus from medium/heavy plate
       shieldDef: (shield && !shieldLapsed && shieldAlive && typeof shield.defense === "number") ? shield.defense : 0,
       shieldBlockDie: (shield && !shieldLapsed && shieldAlive && shield.blockDie) || null,
@@ -1594,7 +1604,7 @@ EN.engine = (function () {
     var armor = dl.armor, lapsed = dl.armorLapsed;
     // Load-Bearing and the Load Distributor mod grant a single, non-stacking step
     var hasLB = !!armor && !lapsed && hasTrait(armor, "Load-Bearing");
-    var hasLD = !!armor && !lapsed && (((ch.armorMods || {})[armor.name]) || []).indexOf("load-distributor") !== -1;
+    var hasLD = !!armor && !lapsed && armorModsOn(ch, dl.armorKey).indexOf("load-distributor") !== -1;
     if (hasLB || hasLD) steps.push({ label: (hasLB ? "Load-Bearing" : "Load Distributor") + " (" + armor.name + ")", value: 2 });
     // Powered frames: two steps while powered (training left to the table; a lapsed lease grants nothing)
     if (armor && !lapsed && hasTrait(armor, "Powered")) steps.push({ label: "Powered frame (" + armor.name + ")", value: 4 });
@@ -1946,9 +1956,10 @@ EN.engine = (function () {
     });
   }
   /* Is this armor mod fitted to ANY suit the character owns, not just the one
-     they are wearing? ch.armorMods is {armorName: [modKey]}, so a mod on a
+     they are wearing? ch.armorMods is {armorEntryKey: [modKey]}, so a mod on a
      spare suit in the stash is possessed but inactive, which is exactly the
-     greyed-out state the panel wants to show. */
+     greyed-out state the panel wants to show. Unaffected by the re-key: it asks
+     about VALUES across every piece, not about which piece. */
   function armorModOwned(ch, modKey) {
     var am = (ch && ch.armorMods) || {};
     return Object.keys(am).some(function (n) {
@@ -1965,7 +1976,7 @@ EN.engine = (function () {
     var key = (ch && ch.equippedArmor) || null;
     var item = armorItem(keyToName(ch, key));
     var byKey = (EN.armorMods && EN.armorMods.byKey) || {};
-    var fitted = (item && ((ch && ch.armorMods) || {})[item.name]) || [];
+    var fitted = armorModsOn(ch, key);
     function anyMod(flag) { return fitted.some(function (k) { var m = byKey[k]; return !!(m && m[flag]); }); }
     return {
       key: key, item: item, name: item ? item.name : null,
@@ -2944,6 +2955,7 @@ EN.engine = (function () {
     // surface that shows, prints or defends with a DR asks it (or reads the
     // d.armorDR / d.totalDR it feeds) rather than reading ch.armorWear itself.
     armorState: armorState, ownedArmorPieces: ownedArmorPieces, armorBaseDR: armorBaseDR,
+    armorModsOn: armorModsOn,   // one answer for which Mods are on THIS suit
     // and the one WRITER: every surface that moves a piece's DR goes through this
     // inside a store.update, so the clamps and the quality edge cannot diverge
     applyArmorDamage: applyArmorDamage, grantArmorGuard: grantArmorGuard,
