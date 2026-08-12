@@ -3936,6 +3936,88 @@ the Freelancer tab, the print sheet and the PDF.
 * 84 tab, bench and print-sheet visits across all six roster characters, zero console errors,
   and a PDF at 180,187 bytes.
 
+## The resistances channel: five source families, three rules, and what it deliberately leaves out
+
+"take the resistances channel next."
+
+### It was never a cyberware problem
+
+Scoping first turned up mentions across eighteen data files, not the two the previous entry
+named. Sorted by shape rather than by file, the grants fall into four kinds, and only one of
+them is a lookup:
+
+**A. Standing damage-type grants.** A fixed type, no choice, no condition. Twelve of them,
+across five different owners, and the sheet showed none.
+
+**B. Choose-one-on-acquisition.** "When you acquire it, choose one of Fire, Electric, or Cold;
+you gain Resistance to that type." Veilskin, Aegis Shroud, Reliquary Shell (which picks TWO),
+Resonance Coil, Saint's Knot, Hex Lattice Projector, Martyr's Halo, the Ablative Coating mod,
+and the Cyber-Reinforced Vitality talent. These need a STORED PICK per item, which is a state
+change of the same kind as the Versatile grip, not a lookup.
+
+**C. Transient.** "When your Ward reduces an attack's damage to 0, you gain Resistance to that
+damage type until the start of your next turn." Four Warding Foci.
+
+**D. Condition immunity.** Timber Fortitude to Frightened, Distributed Anatomy to Bleeding,
+Axiomatic Mind to Confused, and others. A different axis entirely: a condition is not a damage
+type, and it wants its own channel rather than being crammed into this one.
+
+Only **A** is built here. B, C and D are recorded above as the follow-ups they are.
+
+### The arithmetic is the book's
+
+From `EN.combat.damageTypeRules`, three rules, all three now implemented and each measured:
+
+* "Multiple sources of Resistance to the same type do not stack." So the resolver keeps a SET
+  of sources per type rather than a count. Three sources of Toxic collapse to one Resistant
+  entry naming all three.
+* "Resistance and Vulnerability to the same damage type cancel each other; the Target takes
+  normal damage." Both are still NAMED on the row, so a player seeing "Normal" can tell it is
+  a cancellation rather than an absence.
+* "Immunity overrides both."
+
+### Five source families, one uniform schema
+
+`damageResistances(ch, linFeats, worn)` reads `resist` / `vulnerable` / `immune` arrays from
+lineage features, Talents, the worn suit's own flags, the worn suit's TRAITS, its installed
+armor Mods, and installed chrome by tier. Data flags throughout, never prose matching, so
+adding a resistance to an item is one field.
+
+**All five families read all three levels**, even though nothing in the catalog grants a
+Vulnerability today. Uniformity is the point: the first item that says "Resistance to Fire,
+Vulnerability to Cold" should be a data edit and not a code edit.
+
+The trait path is the one worth calling out. The **Sealed** trait's glossary entry says
+"Resistance to Toxic damage", so every Sealed suit grants it and no suit says so individually.
+That went into `EN.gearCatalog.armor.traitResist` as the machine-readable half of the glossary,
+sitting beside the prose so the two cannot drift apart through a regex.
+
+Flags added: Radiation Callouses (Radiation) and Forge-Blooded (Fire) in LINEAGE_MECH; Street
+Scrapper (Slashing), Pain Editor (Psychic) and Cutting Agent (Toxic) in a TALENT_RESIST table
+beside the existing TALENT_UNARMED_STEP; Rebreather Liner (Toxic), Thermal Regulation Weave
+(Fire) and Resonance Dampener (Resonant) in armor_mods; Toxin Filter in cyberware, Toxic at
+every tier and Toxic plus Radiation at Blackware, per its own `black` line.
+
+### Where it shows
+
+The Defense panel's DR breakdown gains a row per type, the print sheet gains a Resistances
+section, and the PDF gains a one-line block. All three name the sources, because a Resistance
+that arrives from a suit's trait, an implant and a Talent at once is otherwise unattributable.
+
+### Verified
+
+* Each source family in isolation: chrome, Talent, armor trait, armor Mod, lineage.
+* Tiering: a Blackware Toxin Filter yields Toxic AND Radiation where Brandware yields Toxic.
+* **No stacking**: a Sealed suit plus a Toxin Filter plus Cutting Agent gives one Toxic entry
+  reading Resistant and naming all three.
+* **Cancellation and Immunity**, exercised by injecting synthetic armor Mods at runtime since
+  no shipping item grants either yet: resist plus vulnerable resolves to Normal naming both,
+  and adding immune resolves to Immune.
+* Live on a character with three families at once: Fire from a mod, Radiation from Blackware
+  chrome, Toxic from the suit's Sealed trait AND the implant, collapsed correctly.
+* Print sheet section renders; PDF builds at 182,976 bytes.
+* 84 tab, bench and print-sheet visits across all six roster characters, zero console errors.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

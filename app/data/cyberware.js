@@ -118,9 +118,9 @@ EN.cyberware = {
       street: "No Enhancement; cycles loudly, heard from 2 spaces in silence, Snag on Stealth there.",
       black: "Immunity to mundane toxins, Resistance to Radiation, and scrubs minor Resonant contamination within 1 hour.",
       tiers: [
-        { tier: "Streetware", sp: 1, price: 2000,  legality: "Legal" },
-        { tier: "Brandware",  sp: 1, price: 5500,  legality: "Legal" },
-        { tier: "Blackware",  sp: 2, price: 15000, legality: "Licensed" }
+        { tier: "Streetware", sp: 1, price: 2000,  legality: "Legal", bonus: { resist: ["Toxic"] } },
+        { tier: "Brandware",  sp: 1, price: 5500,  legality: "Legal", bonus: { resist: ["Toxic"] } },
+        { tier: "Blackware",  sp: 2, price: 15000, legality: "Licensed", bonus: { resist: ["Toxic", "Radiation"] } }
       ] },
     { key: "feedbackCore", short: "Resonance Feedback Core", name: "Resonance Feedback Core", zone: "Core", enhancement: "None", mystech: true,
       desc: "A reactive implant in the upper torso that absorbs incoming Flow and re-emits it as kinetic or thermal output. The rare chrome that lets an Unattuned character interact with the Flow, not just resist it.",

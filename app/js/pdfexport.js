@@ -612,6 +612,14 @@ EN.pdfExport = (function () {
        Freelancer exported an empty table). Filtering without adding makes it worse.
        `equippedWeaponNames` stays unfiltered: the Equipped / Worn line is right that
        the Knuckles are on you. */
+    /* Same reason as the print sheet: a Resistance changes every incoming damage number and
+       nothing else on the page reveals it. One line, because the PDF is tight for space. */
+    if ((d.resistances || []).length) {
+      ctx.sectionTitle("Resistances");
+      ctx.text(d.resistances.map(function (r) {
+        return r.type + " " + r.level.toUpperCase() + " (" + r.sources.join(", ") + ")";
+      }).join("  ·  "), { size: 8, h: 12 });
+    }
     ctx.sectionTitle("Attacks");
     var atkRows = equippedWeaponRows(ch)
       .filter(function (r) { return !(eng.isUnarmedAugmentName && eng.isUnarmedAugmentName(r.w.name)); })

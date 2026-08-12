@@ -2838,7 +2838,10 @@ EN.combatView = (function () {
         rows: (dg.armor ? [bdRow("Armor · " + dg.armor.name + (dg.armorLapsed ? " (LEASE DUE)" : "") + (dg.armorDRLost ? " (" + dg.armorDR + " of " + dg.armorBaseDR + ", " + dg.armorDRLost + " lost)" : ""), dg.armorDR, null, true)] : [])
           .concat(dg.armorModDR ? [bdRow("Armor Mod (highest flat DR)", dg.armorModDR)] : [])
           .concat(d.naturalDR ? [bdRow("Natural (lineage)", d.naturalDR)] : [])
-          .concat(d.cyberDR ? [bdRow("Chrome · Subdermal Armor", d.cyberDR)] : []),
+          .concat(d.cyberDR ? [bdRow("Chrome · Subdermal Armor", d.cyberDR)] : [])
+          .concat((d.resistances || []).map(function (r) {
+            return bdRow(r.type + " · " + r.level, r.sources.join(", "));
+          })),
         empty: (dg.armor || d.naturalDR || d.cyberDR) ? null : "No armor equipped; WEAR armor in Inventory → Stash.",
         foot: (dg.armorDRLost ? "Damaged plating: " + dg.armorDRLost + " point" + (dg.armorDRLost === 1 ? "" : "s") + " of DR gone until repaired, on the Impact Table. " : "") +
               (dg.armor && (dg.armor.traits || []).indexOf("Plated") !== -1 ? "Plated: when you Block, add half this DR (rounded down) on top." : "") || null },

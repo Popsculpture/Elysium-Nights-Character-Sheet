@@ -492,6 +492,16 @@ EN.printSheet = (function () {
        `equippedWeaponNames` itself is deliberately not filtered: the Equipped / Worn
        line further down is right to say the Knuckles are on you. It is the attack
        PROFILE that was the lie, not the presence. */
+    /* Damage-type Resistance, Vulnerability and Immunity. It has to be on the paper copy
+       because it changes every incoming damage number and nothing else on the sheet says
+       it: a suit's Sealed trait, a Toxin Filter and a Talent all grant one silently. */
+    if ((d.resistances || []).length) {
+      R.push(sect("Resistances"));
+      R.push(el("div.row.wrap", { style: { gap: "6px" } }, d.resistances.map(function (r) {
+        return chip(r.type + " " + r.level.toUpperCase() + " (" + r.sources.join(", ") + ")", ".ps-chip-box");
+      })));
+    }
+
     R.push(sect("Attacks"));
     var atkRows = equippedWeaponRows(ch)
       .filter(function (r) { return !(eng.isUnarmedAugmentName && eng.isUnarmedAugmentName(r.w.name)); })

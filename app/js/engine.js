@@ -485,7 +485,10 @@ EN.engine = (function () {
     // "Your unarmed strikes AND melee weapons gain an additional 1 space of reach."
     // Both halves are stated, because both are real: the weapon half used to be prose
     // with no engine path, so an Arboreal's Longsword read the same reach as anyone's.
-    "Canopy Reach":          { unarmedReach: 1, meleeReach: 1 }
+    "Canopy Reach":          { unarmedReach: 1, meleeReach: 1 },
+    // standing damage-type grants, read by damageResistances()
+    "Radiation Callouses":   { resist: ["Radiation"] },
+    "Forge-Blooded":         { resist: ["Fire"] }
   };
   function lineageMechanics(ch) {
     var out = { dr: 0, speed: 0, speedFirstRound: 0, initCaliber: false, initEdge: false };
@@ -542,6 +545,14 @@ EN.engine = (function () {
   }
   // Installed chrome that REPLACES the unarmed die, keyed by cyberware key then
   // by tier. Source values per app/data/cyberware.js.
+  /* Talents granting a standing damage-type Resistance, as a table rather than a flag on
+     each talent, matching TALENT_UNARMED_STEP right below. Only the FIXED grants: the
+     choose-one talents (Cyber-Reinforced Vitality) need a stored pick and are not here. */
+  var TALENT_RESIST = {
+    "street-scrapper": { resist: ["Slashing"] },
+    "pain-editor":     { resist: ["Psychic"] },
+    "cutting-agent":   { resist: ["Toxic"] }
+  };
   var CYBER_UNARMED = {
     skeleton: { type: "Bludgeoning", tiers: {
       Streetware: { die: "1d6" },
@@ -617,6 +628,106 @@ EN.engine = (function () {
   }
   // Every effect currently available to the character that REPLACES the unarmed
   // die, as [{source, pick, label, kind, die, type, traits, note}].
+  /* ---- DAMAGE-TYPE RESISTANCE, VULNERABILITY AND IMMUNITY --------------------
+     The last unconditional mechanical thing in the gear and chrome catalogs with nowhere to
+     land. Twelve sources across five data files granted a standing Resistance in prose and
+     the sheet showed none of it.
+
+     The arithmetic is the book's, from EN.combat.damageTypeRules:
+       "Resistance ... takes half damage ... Multiple sources of Resistance to the same type
+        do not stack." (so this is a SET, not a sum)
+       "Cancellation: Resistance and Vulnerability to the same damage type cancel each other;
+        the Target takes normal damage."
+       "Immunity overrides both."
+     Which makes the resolution per type: immune wins outright; otherwise resist and
+     vulnerable annihilate; otherwise whichever is present.
+
+     Sources are DATA FLAGS (`resist` / `vulnerable` / `immune` arrays), never prose matching,
+     so adding a resistance to an item is one field. Read from five places, because that is
+     where the grants actually live: lineage features, Talents, the worn suit's own flags AND
+     its traits (the Sealed trait grants Resistance to Toxic to any suit that has it),
+     installed armor Mods, and installed chrome by tier.
+
+     Deliberately NOT here: the choose-one-on-acquisition grants (Veilskin, Aegis Shroud,
+     Reliquary Shell, Resonance Coil, Saint's Knot, Hex Lattice Projector, Martyr's Halo,
+     Ablative Coating, Cyber-Reinforced Vitality), which need a stored pick per item and are
+     a state change rather than a lookup; the transient ones (a Ward that reduced damage to
+     0 grants Resistance until your next turn); and CONDITION immunity (Frightened, Bleeding,
+     Confused), which is a different axis from a damage type and wants its own channel. */
+  var RESIST_LEVELS = { immune: 3, vulnerable: 2, resist: 1 };
+  function pushResist(acc, level, types, label) {
+    (types || []).forEach(function (t) {
+      if (typeof t !== "string" || !t) return;
+      acc.push({ type: t, level: level, label: label });
+    });
+  }
+  function damageResistances(ch, linFeats, worn) {
+    var acc = [];
+    // lineage features
+    (linFeats || []).forEach(function (fn) {
+      var m = LINEAGE_MECH[fn]; if (!m) return;
+      pushResist(acc, "resist", m.resist, fn);
+      pushResist(acc, "vulnerable", m.vulnerable, fn);
+      pushResist(acc, "immune", m.immune, fn);
+    });
+    // Talents
+    activeTalents(ch).forEach(function (t) {
+      var spec = TALENT_RESIST[t.talent.key]; if (!spec) return;
+      pushResist(acc, "resist", spec.resist, t.talent.name);
+      pushResist(acc, "vulnerable", spec.vulnerable, t.talent.name);
+      pushResist(acc, "immune", spec.immune, t.talent.name);
+    });
+    // the worn suit: its own flags, and its TRAITS (Sealed grants Toxic)
+    if (worn && worn.item && !worn.lapsed) {
+      pushResist(acc, "resist", worn.item.resist, worn.item.name);
+      pushResist(acc, "vulnerable", worn.item.vulnerable, worn.item.name);
+      pushResist(acc, "immune", worn.item.immune, worn.item.name);
+      var TRAIT_RESIST = (EN.gearCatalog && EN.gearCatalog.armor && EN.gearCatalog.armor.traitResist) || {};
+      (worn.item.traits || []).forEach(function (tr) {
+        pushResist(acc, "resist", TRAIT_RESIST[tr], worn.item.name + " (" + tr + ")");
+      });
+      // installed armor Mods on that suit
+      var amByKey = (EN.armorMods && EN.armorMods.byKey) || {};
+      (worn.fitted || []).forEach(function (k) {
+        var m = amByKey[k]; if (!m) return;
+        pushResist(acc, "resist", m.resist, m.name);
+        pushResist(acc, "vulnerable", m.vulnerable, m.name);
+        pushResist(acc, "immune", m.immune, m.name);
+      });
+    }
+    // installed chrome, per tier
+    var items = (EN.cyberware && EN.cyberware.items) || [];
+    ((ch && ch.cyberware) || []).forEach(function (cw) {
+      if (!cw || typeof cw !== "object") return;
+      var def = items.filter(function (i) { return i.key === cw.key; })[0];
+      var tier = def && (def.tiers || []).filter(function (t) { return t.tier === cw.tier; })[0];
+      var b = tier && tier.bonus; if (!b) return;
+      pushResist(acc, "resist", b.resist, def.name);
+      pushResist(acc, "vulnerable", b.vulnerable, def.name);
+      pushResist(acc, "immune", b.immune, def.name);
+    });
+
+    // resolve per type, applying the book's three rules
+    var byType = Object.create(null);
+    acc.forEach(function (e) {
+      var cur = byType[e.type] || (byType[e.type] = { type: e.type, resist: [], vulnerable: [], immune: [] });
+      if (cur[e.level].indexOf(e.label) === -1) cur[e.level].push(e.label);
+    });
+    var out = [];
+    Object.keys(byType).sort().forEach(function (t) {
+      var c = byType[t], level, why;
+      if (c.immune.length) { level = "Immune"; why = c.immune; }
+      else if (c.resist.length && c.vulnerable.length) {
+        level = "Normal"; why = c.resist.concat(c.vulnerable);   // they cancel; shown so it is not a mystery
+      }
+      else if (c.resist.length) { level = "Resistant"; why = c.resist; }
+      else if (c.vulnerable.length) { level = "Vulnerable"; why = c.vulnerable; }
+      else return;
+      out.push({ type: t, level: level, sources: why });
+    });
+    return out;
+  }
+
   /* ---- OPEN ARCHITECTURE, generically ---------------------------------------
      "Whenever you have both halves of a listed pairing (the Lineage Feature and its
      matching cyberware, installed at any tier), that clause activates: the Engineered
@@ -2712,6 +2823,7 @@ EN.engine = (function () {
       totalDR: (defLoadout.armorDR || 0) + (defLoadout.armorModDR || 0) + linMech.dr + (cyberFlat.dr || 0) + oaDR,
       lineageSpeed: linMech.speed,
       lineageSpeedFirstRound: linMech.speedFirstRound,
+      resistances: damageResistances(ch, linFeats, wornArmor(ch)),
       lineageInit: { caliber: linMech.initCaliber ? cal : 0, edge: linMech.initEdge },
       cyberInit: (cyberFlat.init || 0) + oaInit,   // Reflex Booster "+2"/"+4", plus Tuned Synapses' Integration "+2"
       encumbrance: enc,

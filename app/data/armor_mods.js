@@ -48,10 +48,10 @@ EN.armorMods = {
     //   sealToVacuum:  fitted to a suit that is ALREADY Sealed, this upgrades
     //                  that seal to hold vacuum. On an unsealed suit it grants
     //                  only the Sealed benefit, which does not cover vacuum.
-    { key: "rebreather-liner", name: "Rebreather Liner", category: "environmental", price: 250, rarity: "Common", legality: "Licensed", fits: "Any",
+    { key: "rebreather-liner", resist: ["Toxic"], name: "Rebreather Liner", category: "environmental", price: 250, rarity: "Common", legality: "Licensed", fits: "Any",
       grantsSealed: true, sealToVacuum: true,
       grants: "Sealed benefit", effect: "The suit counts as Sealed: Resistance to Toxic damage and Edge on saves against gas, disease, and airborne or environmental hazards. Does not cover vacuum. If the suit is already Sealed, it instead upgrades that seal to hold against vacuum." },
-    { key: "thermal-regulation-weave", name: "Thermal Regulation Weave", category: "environmental", price: 400, rarity: "Uncommon", legality: "Licensed", fits: "Any",
+    { key: "thermal-regulation-weave", resist: ["Fire"], name: "Thermal Regulation Weave", category: "environmental", price: 400, rarity: "Uncommon", legality: "Licensed", fits: "Any",
       grants: "Resistance to Fire or Cold", effect: "Choose Fire or Cold at install; you gain Resistance to that type and you do not gain Fatigue from Exposure to that kind of heat or cold." },
 
     /* ---- Stealth & Signature ---- */
@@ -97,7 +97,7 @@ EN.armorMods = {
       grants: "Leased point-defense", effect: "While the plan is current, once per round when hit by a Ranged attack, reduce that attack's damage by 1d6 as the system intercepts. Lapsed or Locked: the rig goes dark and grants nothing until you settle the account or crack the lock." },
 
     /* ---- Mystech Augments (Mystech armor only) ---- */
-    { key: "resonance-dampener", name: "Resonance Dampener", category: "mystech", price: 700, rarity: "Iconic", legality: "Contraband", fits: "Mystech",
+    { key: "resonance-dampener", resist: ["Resonant"], name: "Resonance Dampener", category: "mystech", price: 700, rarity: "Iconic", legality: "Contraband", fits: "Mystech",
       grants: "Resistance to Resonant", effect: "You gain Resistance to Resonant damage." },
     { key: "echo-shroud", name: "Echo Shroud", category: "mystech", price: 800, nexus: "◎0.3", rarity: "Legendary", legality: "Contraband", fits: "Mystech",
       grants: "Hides your Flow signature", effect: "Attempts to detect, scry, or track you through the Flow (by Echoes, resonance, or metaphysical sensing) roll with Snag (or add +1 Snag Die). Ordinary technological sensors are unaffected." },

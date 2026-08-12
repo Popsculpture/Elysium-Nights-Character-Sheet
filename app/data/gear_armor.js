@@ -33,6 +33,12 @@ EN.gearCatalog.armor = {
   },
 
   /* ---- Armor and Defensive Traits ---- */
+  /* The mechanical half of the trait glossary above, as data the engine can read. The
+     glossary text is what a player sees; this is what the sheet computes with, so the two
+     cannot drift into disagreement through a regex. Only STANDING damage-type grants live
+     here; Edge on saves and the vacuum rules stay prose. */
+  traitResist: { "Sealed": ["Toxic"] },
+
   traits: {
     "Wear X": "X is the shield's Wear Threshold, equal to twice the maximum result of its Block die (8 for 1d4, 12 for 1d6, 16 for 1d8). When you Block an attack whose RAW damage is X or more, or any critical hit you Block, mark off 1 of the shield's Durability boxes. See Shield Durability in the Combat chapter.",
     "Concealable": "It does not look like armor, worn under a shirt, or cut to pass as an ordinary jacket. Checks to notice you are armored roll with Snag. A pat-down or scanner still finds it.",
