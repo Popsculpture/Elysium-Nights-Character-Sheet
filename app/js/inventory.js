@@ -3424,5 +3424,17 @@ EN.inventoryView = (function () {
     _sub = "workbench";
     if (BENCHES.some(function (b) { return b.key === key; })) _bench = key;
   }
+  /* ONE CATALOG. These four sources were visible only from in here, so the engine's
+     loadCatalogItem answered null for all 105 of them and isStackableItem then answered
+     "pooled" off its unknown-item fallback, while this module resolved the same names and
+     answered "per-instance". Registering the same normalized objects both halves already
+     agree on ends that split at the source rather than papering over it downstream.
+     The engine caches what it is handed, and these builders are pure over static data. */
+  if (EN.engine && EN.engine.registerCatalogSource) {
+    [partItems, armorModItems, vehicleItems, vehicleModItems].forEach(function (fn) {
+      EN.engine.registerCatalogSource(fn);
+    });
+  }
+
   return { render: render, leaseTick: leaseTick, householdTick: householdTick, hypercareTick: hypercareTick, openBench: openBench };
 })();

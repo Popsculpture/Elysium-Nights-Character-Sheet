@@ -1114,12 +1114,41 @@ EN.engine = (function () {
   // devices, rigs, ciphers) is tracked as an individually equippable/carriable
   // instance, each with its own equipment-entry id, so owning two daggers
   // doesn't force them to share one equipped/carried state.
+  /* WHAT POOLS INTO A SHARED QTY STACK, AND WHAT GETS ITS OWN TRACKED ROW.
+     Brandon's ruling, 2026-08-12: "consumable gear and mods should stack ... those types
+     of things are identical and for all intentions immutable. weapons, armor and vehicles
+     are not." The rule as implemented is one step more precise than by-category, because
+     the thing that actually forbids pooling is not what an item IS, it is whether a COPY
+     of it carries state of its own. Two copies that differ in no stored way are one stack.
+
+     Order matters: the disqualifiers run FIRST, so a leasable mod cannot be pooled by the
+     mod clause below it. That single carve-out is real and not hypothetical: Sentinel
+     Active Defense is an armor Mod with upkeep 90, and the buy path attaches leaseDays /
+     leaseDue / leaseOwned to the ROW. Its own comment already knew: "leased gear is never
+     pooled, so each contract is its own instance and re-leasing an item already in arrears
+     never clears another one's debt." Pool it and two contracts share one clock. */
   function isStackableItem(it) {
     if (!it) return true;                                  // unknown/custom items: legacy pooled behavior
+
+    /* --- carries per-copy state, therefore never pools --- */
+    if (it.upkeep) return false;                            // leasable: each contract is its own row
+    if (it.kind === "armor" || it.kind === "shield") return false;  // armorWear / shieldWear / armorGuard, per piece
+    if (it.rigTier) return false;                           // Trauma Rigs: ch.rig.key and ch.rig.hp, per piece
+    if (it.bucket === "rigs" && it.group !== "Hardware Mods") return false;  // decks and Buddies are tracked units
+
+    /* --- fungible, immutable, identity-free, therefore pools --- */
     if (it.legality === "As weapon") return true;           // ammo & munitions, fungible by the box
     if (it.bucket === "consumables") return true;
     if (it.group === "Resonance Tonics") return true;       // bucket "flow", but drunk once and gone
-    return false;
+    if (it.bucket === "ciphers") return true;               // software; ch.grid holds cipher KEYS, not rows
+    if (it.group === "Hardware Mods") return true;          // deck chips, the #GRID equivalent of a Part
+    // Installable components. An install never references a ROW: ch.weaponParts stores the
+    // part's KEY, ch.armorMods and the garage the mod's key, and ownership is counted
+    // separately. The app has always treated these as fungible; it just stored them one
+    // row each, which is what stranded the second copy you bought.
+    if (it.benchPart || it.armorMod || it.vehicleMod) return true;
+
+    return false;                                           // weapons, vehicles, tools, kits, devices
   }
   function isStackableName(name) { return isStackableItem(loadCatalogItem(name)); }
   // Stable identity for equip/carry state: the entry's id if it has one
@@ -1152,7 +1181,15 @@ EN.engine = (function () {
 
      Every surface reads THIS, or the d.armorDR / d.totalDR it feeds. Nothing
      re-derives a current DR out of ch.armorWear on its own. */
-  function armorBaseDR(it) { return (it && typeof it.dr === "number" && it.dr > 0) ? Math.floor(it.dr) : 0; }
+  // `kind === "armor"` rather than just "has a dr number", because armor MODS carry a `dr`
+  // of their own (Trauma Plates is dr 1) and they resolve through loadCatalogItem now that
+  // the catalog is unified. Measured: armorModAsItem does NOT copy `dr` onto the normalized
+  // object, so this is not closing a live hole, it is refusing to depend on that omission.
+  // Same shape as shieldBoxesMaxOf requiring kind "shield", for the same reason.
+  function armorBaseDR(it) {
+    if (!it || it.kind !== "armor") return 0;
+    return (typeof it.dr === "number" && it.dr > 0) ? Math.floor(it.dr) : 0;
+  }
   /* Every per-entry map in this app is keyed on a string out of a save file, and the
      maps are built null-prototype for that reason. This asks the question the OTHER
      way round, so a map that is somehow plain (a record mid-flight, a caller handing
@@ -1361,6 +1398,42 @@ EN.engine = (function () {
      Powered frames two steps) and Size-larger effects. The declared Loadout
      tier is DERIVED from carried Load against the threshold bands. Hauls
      (ch.haul) bypass the budget and set the state directly. */
+  /* ---- the catalog, and the four pools it used to be blind to ---------------
+     loadCatalogItem searched seven pools while inventory.js's own catalog() searched
+     those seven PLUS weapon Parts, armor Mods, vehicles and vehicle Mods. Measured in
+     the live app: 327 of 327 resolved in the seven, and 0 of 105 in the other four.
+
+     That is not a cosmetic gap. isStackableItem(null) answers TRUE on its
+     "unknown/custom items" line, so every one of those 105 read as POOLED to anything
+     asking the engine, while inventory.js resolved the same name to a real object and
+     read it as per-instance. One question, two doors, opposite answers, which is the
+     invariant this codebase exists to keep.
+
+     Registered rather than hardcoded, and the registered source hands over the SAME
+     normalized objects inventory builds for its own market cards. That matters: the raw
+     data carries field names that mean something else here. A raw weapon Part has
+     `slot: "handling"`, and itemSlots() reads `.slot` as a BODY slot; partAsItem()
+     already renames it to partSlot for exactly that reason. Feeding raw objects in would
+     have imported every one of those collisions. (Body slots are capitalized and part
+     slots are not, so this particular one would have been survivable, but the next one
+     might not be, and the normalized objects are already correct.)
+
+     Lazy and cached: engine.js loads before inventory.js, so the source cannot be read
+     at load time, and loadCatalogItem is called once per equipment row in several loops,
+     so rebuilding 105 objects per call would be quadratic. */
+  var _extraSources = [], _extraCache = null;
+  function registerCatalogSource(fn) { _extraSources.push(fn); _extraCache = null; }
+  function extraCatalogItems() {
+    if (!_extraCache) {
+      _extraCache = [];
+      _extraSources.forEach(function (fn) {
+        var list;
+        try { list = fn() || []; } catch (e) { list = []; }
+        _extraCache = _extraCache.concat(list);
+      });
+    }
+    return _extraCache;
+  }
   function loadCatalogItem(name) {
     var g = EN.gearCatalog || {};
     var pools = [g.melee && g.melee.items, g.ranged && g.ranged.items,
@@ -1371,6 +1444,10 @@ EN.engine = (function () {
       var f = p.find(function (x) { return x.name === name; });
       if (f) return f;
     }
+    // the registered pools last, so a name collision resolves to the gear catalog and
+    // the seven pools keep behaving exactly as they did
+    var extra = extraCatalogItems();
+    for (var j = 0; j < extra.length; j++) if (extra[j] && extra[j].name === name) return extra[j];
     return null;
   }
   function itemLoad(name, opts) {
@@ -2867,6 +2944,9 @@ EN.engine = (function () {
     isCarryGear: isCarryGear, rackLimit: rackLimit, rackState: rackState, rackTargets: rackTargets,
     itemSlots: itemSlots, slotConflicts: slotConflicts,
     catalogItem: loadCatalogItem,
+    // inventory.js owns the normalized item shapes for Parts, armor Mods, vehicles and
+    // vehicle Mods, and registers them here so BOTH halves of the app resolve one catalog.
+    registerCatalogSource: registerCatalogSource,
     // Trauma Rig. rigStats is THE resolver: every surface that needs to know which Rig
     // is live, and how hurt it is, reads it rather than matching ch.rig against the
     // stash itself. It answers with an ENTRY key, so the answer names one specific Rig.

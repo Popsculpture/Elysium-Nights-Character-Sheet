@@ -3215,6 +3215,130 @@ was done by hand.
 * **102 tab and bench visits across all six roster characters: zero console errors.**
 
 
+## One catalog, and a stacking rule about state rather than category
+
+Brandon, 2026-08-12: "what issues would arize if I set the parameters that consumable gear
+and mods should stack? my thought process is that those types of things are identical and
+for all intentions immutable. weapons, armor and vehicles are not, for example, two pistols
+side by side can be totally different thanks to mods." Then, after the analysis below:
+"ok, adopt it."
+
+### What the analysis found before anything was changed
+
+**Half of it was already the rule.** 37 items already pooled: 19 in the `consumables`
+bucket, 7 Resonance Tonics, 11 ammo types through `legality: "As weapon"`.
+
+**One real carve-out, and it is not a category.** Of the four candidate categories, exactly
+one member carries per-copy state: **Sentinel Active Defense**, an armor Mod with upkeep 90.
+The buy path attaches `leaseDays` / `leaseDue` / `leaseOwned` to the ROW, and its own comment
+already knew why that matters: "leased gear is never pooled, so each contract is its own
+instance and re-leasing an item already in arrears never clears another one's debt." Pool it
+and two contracts share one clock. So the predicate is not "is it a mod", it is **"does a
+copy carry state of its own"**, and the rule is written that way.
+
+**The premise about weapons is not true in this app.** `ch.weaponParts` is keyed by weapon
+NAME. Measured live: two Machine Pistols, one `weaponParts` key, and setting a Suppressor on
+the type means both entries resolve it. `weaponAmmo` and `weaponGrip` are name-keyed too, and
+the bench dedupes its weapon chips by name, so you see one Machine Pistol however many you
+own. **You cannot currently give two same-named weapons different mods.** The conclusion
+still holds for other reasons (equip, carry, rack and slot state are per entry, and armor and
+shields have genuinely mutable per-piece state), but the stated justification does not. Left
+as a design fork for the author, not fixed: either weapons should be independently moddable,
+which means re-keying `weaponParts` to entry ids, or mods-apply-to-the-type is the rule and
+the reasoning needs restating.
+
+**One category Brandon did not name, now included.** Ciphers (36) and #GRID Hardware Mods
+(deck chips) are software with no per-entry state, and `ch.grid` holds cipher KEYS rather
+than rows. Smartdecks, B&E Buddies and Trauma Rigs are the opposite (`ch.rig.key`,
+`ch.rig.hp`) and stay individuated.
+
+### The root cause had to go first
+
+The rule could not even be expressed, because the engine could not see the items it was
+about. `engine.loadCatalogItem` searched seven pools; `inventory.catalog()` searched those
+seven plus weapon Parts, armor Mods, vehicles and vehicle Mods. Measured exhaustively:
+
+| pool | items | resolved by the engine, before |
+| ----- | ----- | ----- |
+| the seven it searched | 327 | 327 |
+| weapon parts | 60 | 0 |
+| armor mods | 25 | 0 |
+| vehicles | 7 | 0 |
+| vehicle mods | 13 | 0 |
+
+`isStackableItem(null)` answers TRUE on its unknown-item line, so all 105 read as **pooled**
+to anything asking the engine while `inventory.js` resolved the same names and read them as
+per-instance. One question, two doors, opposite answers.
+
+**Registered, not hardcoded, and it hands over the SAME normalized objects inventory builds
+for its market cards.** That is not tidiness. A raw weapon Part carries `slot: "handling"`,
+and `itemSlots()` reads `.slot` as a BODY slot; `partAsItem()` renames it to `partSlot` for
+precisely that reason. Feeding raw objects in would have imported every such collision. (As
+it happens body slots are capitalized and part slots are not, so `itemSlots` would have
+filtered them anyway, but the next collision might not be so lucky.) Lazy because engine.js
+loads before inventory.js, and cached because `loadCatalogItem` runs once per equipment row
+inside several loops.
+
+### The merge, and what it refuses to merge
+
+Everything bought before the ruling is on disk as one id-bearing row per copy, and flipping
+the flag does not fold them: `addToStash` only merges into a row with no id, so the next
+purchase opens a fresh pooled row beside the old ones and one name ends up in two shapes at
+once. Counting survives that, because `ownedQtyOf` already sums every row of a name, which is
+why that fix went first. The merge is so the Stash stops showing four cards for four
+identical chips.
+
+**Only bare rows merge.** A row carrying anything beyond id/name/qty, or an id that any
+per-entry map still points at, is left exactly where it is. That is the standing ruling
+applied honestly: unattributable state is dropped rather than moved, so rather than merge a
+row and silently discard the carry status or lease clock keyed on its id, the row does not
+merge. It stays a per-instance stray, which the summing counter handles, and nothing is
+destroyed to tidy a display.
+
+### Verified
+
+* **Resolution:** 60/60 weapon parts, 25/25 armor mods, 7/7 vehicles, 13/13 vehicle mods now
+  resolve. All 327 of the original seven pools still resolve.
+* **The rule:** parts 60/60 pool, vehicle mods 13/13, armor mods **24 of 25** with Sentinel
+  Active Defense correctly excluded, vehicles **0 of 7**. Unchanged and still per-instance:
+  weapons, armor, shields, Backpacks, Smartdecks, kits. Newly pooling: ciphers, deck chips.
+* **The merge, five shapes.** Four bare rows fold to one of qty 4 while a Longsword beside
+  them is untouched. A row named by `ch.carry` stays separate and keeps its carry status. Two
+  leased Sentinel rows keep their own clocks. A legacy pooled row of 3 plus two instances
+  folds to 5. Armor at qty 2 and a Longsword at qty 3 still fan into per-instance rows, with
+  the first keeping the id `equippedArmor` points at.
+* **Idempotent from the first load.** Feeding each load's output back in, three times: the
+  equipment signature is identical at loads 1, 2 and 3.
+* **End to end through the real market and bench.** Three BUY clicks on Extended Shaft,
+  𝒢540, ONE row of qty 3. Picker reads `×3`, installs on the Quarterstaff, then reads `×2`
+  and installs on the Halberd. The Stash shows one card instead of three.
+* **Nothing else moved.** `itemLoad` unchanged: parts, armor mods and ciphers weigh 0,
+  Longsword 2, Courier Shell 1. Armor DR unchanged across every real armor entry.
+  `armorBaseDR` now requires `kind === "armor"`, because armor Mods carry a `dr` of their own
+  (Trauma Plates is dr 1) and resolve now. Measured: `armorModAsItem` does not copy `dr` onto
+  the normalized object, so that guard is not closing a live hole, it is refusing to depend on
+  an omission. Same shape as `shieldBoxesMaxOf` requiring `kind === "shield"`.
+* **108 tab, bench and print-sheet visits across all six roster characters, zero console
+  errors, and a PDF built at 180,563 bytes.**
+
+### Noted, not changed
+
+* **A vehicle and a vehicle Mod both weigh 1 load.** They did before this change too (the
+  `!it` fallback returned 1), so nothing moved, but a garaged vehicle arguably should not sit
+  on a carry budget at all. `itemLoad` zeroes weapon Parts, armor Mods, deck chips and ciphers
+  by name and never learned about the vehicle side.
+* **"Hair Trigger" is both an Operator subclass feature and a weapon Part.** Harmless today,
+  since features are not looked up in the item catalog, but the names now both resolve.
+
+### A probe note
+
+Three times this session a probe used an item name that does not exist ("Autopistol",
+"Medkit", "Kevlar Weave", the last two lifted from this log's own illustrative examples), and
+each time the null result briefly read as a finding about the code. The catalog is the
+authority on what exists; a probe that invents a name is testing nothing. Real armor is
+"SkinPlan Daywear", "Liner Mesh", "Courier Shell".
+
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

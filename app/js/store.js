@@ -735,6 +735,53 @@ EN.store = (function () {
         ch.racked = newRacked;
       }
     }
+    /* THE MERGE, and it runs AFTER the split for the reason the split states: it is
+       equipment-keyed, so it needs entries that already carry their real ids.
+
+       Brandon's 2026-08-12 ruling made consumables and mods pool. Everything bought
+       BEFORE that is already on disk as one id-bearing row per copy, and flipping the
+       flag does not fold them: addToStash only merges into a row with no id, so the next
+       purchase opens a fresh pooled row beside the old ones and one name ends up in two
+       shapes at once. Counting survives that (ownedQtyOf sums every row of a name, fixed
+       first for exactly this reason), so this is not load-bearing for correctness. It is
+       here so the Stash stops showing four cards for four identical chips.
+
+       ONLY BARE ROWS MERGE. A row carrying anything beyond id/name/qty, or an id that any
+       per-entry map still points at, is left exactly where it is. That is the standing
+       ruling applied honestly: unattributable state is DROPPED rather than moved, so
+       rather than merge a row and silently discard the carry status or lease clock keyed
+       on its id, the row simply does not merge. It stays a per-instance stray, which the
+       summing counter already handles, and no state is destroyed to tidy a display. */
+    if (Array.isArray(ch.equipment)) {
+      var claimed = Object.create(null);
+      [ch.carry, ch.slotInert, ch.racked, ch.armorWear, ch.armorGuard, ch.shieldWear].forEach(function (m) {
+        if (m && typeof m === "object") Object.keys(m).forEach(function (k) { claimed[k] = 1; });
+      });
+      if (ch.racked && typeof ch.racked === "object") {
+        Object.keys(ch.racked).forEach(function (k) { claimed[ch.racked[k]] = 1; });
+      }
+      [ch.equippedArmor, ch.equippedShield, ch.equippedFocus].forEach(function (k) { if (k) claimed[k] = 1; });
+      (ch.equippedWeapons || []).forEach(function (k) { claimed[k] = 1; });
+      if (ch.rig && ch.rig.key) claimed[ch.rig.key] = 1;
+      if (ch.rig && ch.rig.hp && typeof ch.rig.hp === "object") {
+        Object.keys(ch.rig.hp).forEach(function (k) { claimed[k] = 1; });
+      }
+      var BARE = { id: 1, name: 1, qty: 1 };
+      var pooledRow = Object.create(null);
+      ch.equipment = ch.equipment.filter(function (e) {
+        if (!e || typeof e.name !== "string") return true;
+        var poolable = (EN.engine && EN.engine.isStackableName) ? EN.engine.isStackableName(e.name) : false;
+        if (!poolable) return true;
+        if (e.id && claimed[e.id]) return true;                       // some map still names this row
+        if (Object.keys(e).some(function (k) { return !BARE[k]; })) return true;   // carries its own fields
+        var q = Number(e.qty);
+        if (!(isFinite(q) && q > 0)) return true;                     // unowned rows are the split's business
+        var keep = pooledRow[e.name];
+        if (!keep) { pooledRow[e.name] = e; delete e.id; e.qty = q; return true; }
+        keep.qty = Number(keep.qty) + q;
+        return false;
+      });
+    }
     /* Trauma Rig state; absent on every character built before Rigs existed.
        Both the pick and the damage are keyed on the EQUIPMENT ENTRY, so they name one
        specific Rig instead of a tier that any number of Rigs can share. Which is why
