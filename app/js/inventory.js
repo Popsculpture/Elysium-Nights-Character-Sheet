@@ -1447,7 +1447,26 @@ EN.inventoryView = (function () {
              benchPart: true, partKey: p.key, partType: p.partType, partSlot: p.slot, fits: p.fits, grants: p.grants, partCategory: p.category };
   }
   function partItems() { return (WP().parts || []).map(partAsItem); }
-  function ownedQtyOf(ch, name) { var e = (ch.equipment || []).find(function (x) { return x.name === name; }); return e ? (e.qty || 0) : 0; }
+  /* How many of a named thing you own, counted across EVERY row that carries the name.
+     It used to `.find` the first row and report that row's qty, which is only right when
+     one name means one row. It does not: installable components (weapon Parts, armor Mods,
+     vehicle Mods) are non-stackable HERE, so addToStash mints a fresh id-bearing row of
+     qty 1 for each one bought. Buy two Extended Shafts and you own two rows of 1; this
+     reported 1. Since availablePartQty is owned-minus-installed, installing the first took
+     the count to 0 and the SECOND COPY BECAME PERMANENTLY UNINSTALLABLE: absent from the
+     picker, refused by tryInstall, and still sitting in the Stash. Reproduced through the
+     real gray market at 𝒢180 a copy before this was changed.
+     One function, three mechanics: availablePartQty, availableArmorModQty and
+     availableVehicleModQty all read it, so all three were wrong the same way.
+     Number() because a hand-edited or imported qty can be a numeric STRING, and `0 + "3"`
+     is "03", which then compares as a string against the install count. */
+  function ownedQtyOf(ch, name) {
+    return (ch.equipment || []).reduce(function (n, x) {
+      if (!x || x.name !== name) return n;
+      var q = Number(x.qty);
+      return n + (isFinite(q) && q > 0 ? q : 0);
+    }, 0);
+  }
   function installedPartCount(ch, partKey) {
     var n = 0, wp = ch.weaponParts || {};
     Object.keys(wp).forEach(function (wn) {

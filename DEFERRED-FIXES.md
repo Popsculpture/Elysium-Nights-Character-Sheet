@@ -3104,7 +3104,7 @@ succeed, which is the same discipline the earlier deleted-harness episode bought
 
 ### Still open, and NOT caused by this change
 
-**`ownedQtyOf` counts one row, not all of them.** `app/js/inventory.js`:
+~~**`ownedQtyOf` counts one row, not all of them.**~~ **CLOSED 2026-08-12, see below.**  `app/js/inventory.js`:
 `function ownedQtyOf(ch, name) { var e = (ch.equipment || []).find(...); return e ? (e.qty || 0) : 0; }`
 Parts are non-stackable, so every purchase mints its own `eq_` row of qty 1. `.find` reads
 only the first, and `availablePartQty` is owned-minus-installed, so **the second copy you
@@ -3124,6 +3124,95 @@ Underneath it, two modules disagree about whether a Part is stackable at all:
 `store.js` asks `isStackableName`, whose `loadCatalogItem` has no weapon-parts pool, so it
 resolves to null and gets true. That disagreement is the root cause, and it should be
 settled before the counting is patched.
+
+
+## `ownedQtyOf` counted one row, and the second copy you bought was stranded
+
+Carried over from the Extended Shaft round, where it was found and deliberately left
+alone. Brandon: "can we resolve ownedQtyOf before addressing the L3 and L4 issues?" Yes,
+and there is a scheduling reason beyond preference: L4 is blocked on an author ruling and
+this is not blocked on anything.
+
+**The defect.** `ownedQtyOf` used `.find`, which returns the FIRST row carrying a name and
+reports that row's qty. One name is not one row: installable components are non-stackable
+to the inventory module, so `addToStash` mints a fresh id-bearing row of qty 1 for every
+one purchased. Own two and it reported 1.
+
+`availablePartQty` is owned-minus-installed, so installing the first copy took the count to
+0 and **the second became permanently uninstallable**: gone from the picker, refused by
+`tryInstall`, still sitting in the Stash. One function feeds three mechanics, so weapon
+Parts, armor Mods and vehicle Mods were all wrong the same way.
+
+Reproduced through the real gray market before it was touched: two BUY clicks on Extended
+Shaft, 𝒢360 spent, two rows in the Stash, install one, and the slot then reads "You own no
+Parts for this slot" while the second copy sits there. 𝒢180 gone.
+
+**The fix** is a reduce over every matching row rather than a find of the first, with
+`Number()` on the qty because a hand-edited or imported record can carry a numeric STRING
+and `0 + "3"` is `"03"`, which then compares as a string against the install count.
+
+### What this is NOT, and a correction to what I told Brandon
+
+I said the counting question "answers itself" once the catalog split below is fixed. **That
+was wrong.** Unifying the catalog makes the two halves of the app AGREE that a Part is
+per-instance; it does not make rows collapse. Rows stay per-instance either way, so `.find`
+under-counts either way. The catalog is the invariant problem. This was the money problem,
+and it needed its own fix.
+
+### The catalog split, measured but deliberately not fixed here
+
+`engine.js loadCatalogItem` searches seven pools; `inventory.js catalog()` searches those
+seven plus four more. Measured exhaustively in the live app:
+
+| pool | items | resolved by the engine |
+| ----- | ----- | ----- |
+| the seven the engine searches | 327 | 327 |
+| weapon parts | 60 | 0 |
+| armor mods | 25 | 0 |
+| vehicles | 7 | 0 |
+| vehicle mods | 13 | 0 |
+
+**105 items invisible to the engine, and all 105 read as pooled**, because
+`isStackableItem(null)` returns true on its "unknown/custom items: legacy pooled behavior"
+line. Zero misses in the seven it does search, so this is a clean boundary rather than a
+scatter of one-offs. The consequence is a fifth-invariant violation with a name: the same
+question asked through two doors gets opposite answers. `builder.js` claims kit gear with
+`isStackableName(name)` and pools a Part; `inventory.js` claims a purchase with
+`isStackableItem(findItem(name))` and instances it.
+
+**Latent, not live.** Walking every kit, class and subclass source for a grant of any of
+the 105 returns exactly one hit, and it is a false positive: "Hair Trigger" is an Operator
+subclass FEATURE whose name collides with a weapon Part. No starting kit grants a blind
+item, so the builder cannot currently produce the pooled shape for one.
+
+**Why it is not fixed in this commit.** `loadCatalogItem` has ten internal callers in
+engine.js plus three external ones, and every one of them would start receiving an object
+where it receives null today: `isCarryGear`, the rack logic in four places, `itemSlots`,
+the carry/worn normalization in migrate, and the instance-id split. The split is the one
+that matters, because `stackable` flipping to false for those 105 makes it fan any id-less
+`qty > 1` row into per-instance rows, which is a one-way change to saved data. Checked
+against the live roster: **no row on any of the six characters would change shape**, since
+purchases already mint ids and the builder cannot grant these. So the change is safe as far
+as it has been measured, but it is a separate change with its own verification surface, and
+bundling it into a money fix would have made both harder to trust.
+
+An adversarial audit of those thirteen callers was attempted twice and both runs died
+entirely on API 529s, zero agents completing. **That is a failed run, not a clean result**,
+and it is recorded as such rather than as evidence of nothing to find. The tracing above
+was done by hand.
+
+### Verified
+
+* **The original repro, re-run through the real market and bench.** Two BUY clicks, 𝒢360,
+  two id-bearing rows. The picker now reads `Extended Shaft · Mod ×2` where it read
+  `· Mod`. Installed one on the Quarterstaff; **the second is still offered** and installs
+  on the Halberd. A third is correctly refused, so the over-install guard still holds.
+* **The other two lanes.** Armor Mods and vehicle Mods read the same counter and were fixed
+  by the same line. A mixed record of two instanced rows plus a legacy pooled row of 3
+  counts 5, which is the point: it is right for both shapes at once.
+* **Numeric-string qty** coerces instead of concatenating: `"3"` and `2` count 5, not
+  `"032"`.
+* **102 tab and bench visits across all six roster characters: zero console errors.**
 
 
 ## Environment
