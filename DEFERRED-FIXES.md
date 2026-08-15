@@ -4018,6 +4018,85 @@ that arrives from a suit's trait, an implant and a Talent at once is otherwise u
 * Print sheet section renders; PDF builds at 182,976 bytes.
 * 84 tab, bench and print-sheet visits across all six roster characters, zero console errors.
 
+## The Glimmer and Nexus marks, on devices and exports that cannot draw them
+
+"can we imbed the glimmer symbol into the app so that devices without that symbol can
+actually see it without getting that missing symbol emoji."
+
+### What the marks actually are, and why nothing has them
+
+Glimmer is **U+1D4A2 MATHEMATICAL SCRIPT CAPITAL G** (a surrogate pair) and Nexus is
+**U+25CE BULLSEYE**. The app loads Rajdhani, Barlow Condensed and Share Tech Mono from the
+Google Fonts CDN, all Latin display faces, none of which carry either. So the browser falls
+through to whatever the device happens to have. Windows and macOS usually carry one; plenty
+of Android builds carry neither, and the player gets a tofu box where a price should be.
+
+Embedding a real font is not available here: **there are no font files in the repo**, the
+faces come from a CDN, and **fontkit is not vendored** beside pdf-lib, so the PDF can only
+use the standard 14 fonts, which are WinAnsi-only.
+
+### The export was quietly worse than the screen
+
+`sanitizeText` in pdfexport.js filters every character outside WinAnsi, so one bad character
+cannot fail a whole document. Correct, and destructive here: both marks are outside WinAnsi,
+so they were **deleted**. Every price in an exported PDF printed as a bare number with no
+currency mark at all, and a reader could not tell Glimmer from Nexus, which are not
+interchangeable currencies. Confirmed by building a PDF and reading the fields back.
+
+It transliterates before filtering now: Glimmer to "G", Nexus to "N". A readable letter is
+strictly better than deletion, and this is not invented notation, **the print sheet has been
+writing a literal "G " at printsheet.js:620 all along**, so the exports now agree instead of
+one silently dropping what the other spells out.
+
+The PDF's own Glimmer field carried a bare figure, so a filled-in sheet said 12,345 without
+saying of what, beside a Nexus box holding a different currency. It carries the mark now.
+
+### On screen: detected, not assumed
+
+`EN.ui.currencyGlyphsOk()` measures each mark against a private-use codepoint nothing maps,
+in the page's own font stack. Equal advance widths means both fell through to the same
+`.notdef` box, so the glyph is genuinely absent. Measured once and cached, since it cannot
+change while the page is open.
+
+`substituteCurrencyGlyphs()` then runs at the end of every render, and is a **no-op on any
+device that has the glyphs**, which is the common case and costs one cached measurement. On
+devices that lack them it walks the freshly rendered text and swaps each mark for a letter in
+a `.cur-sub` span carrying the currency's name as its title.
+
+It walks TEXT NODES rather than hooking `el()`, because most of these marks never pass
+through a builder at all: they are inside catalog prose, "Price: <G>60 (Common, Legal)",
+written into the data files. Nothing short of touching rendered text reaches them.
+
+### What is deliberately NOT here
+
+**A drawing of the mark.** The stand-in is a letter. Reconstructing Brandon's glyph by eye is
+exactly the wrong move, and the standing instruction on die and icon art is to embed his own
+exported SVG verbatim rather than approximate a shape. `substituteCurrencyGlyphs` is written
+so that swapping the letter for real artwork is a change to one function, and the `.cur-sub`
+class is the one place its styling lives.
+
+### Verified
+
+* On this device, which HAS both glyphs: detection reports true for both, zero substitutions
+  made, the raw characters still present. The pass costs one measurement and does nothing.
+* With detection forced false, simulating a device with neither: **zero raw marks left
+  anywhere on the page**, substitutions in place, a market row reading "Quarterstaff | Legal ·
+  Common | G60", and the currency header reading "G" and "O" with the right titles.
+* **Idempotent**: a second render does not double-wrap, still the same span count.
+* PDF, end to end: a string containing both marks now arrives as "Probe G60 and N2 test"
+  where it previously arrived with both characters deleted. The Glimmer field reads
+  "G 12,345".
+* Thirteen tab and bench visits plus the print sheet: zero console errors. PDF at 167,115
+  bytes.
+
+### Open, and it needs Brandon
+
+The letter is a floor, not the finish. **The real fix is his own artwork**: an SVG of the
+Glimmer mark (and the Nexus mark, if it has one), which becomes the substitution's output and
+renders identically on every device regardless of installed fonts. The PDF is the harder half
+even then, since AcroForm text fields cannot hold vector art; embedding a real font there
+would mean vendoring fontkit plus a licensed face carrying U+1D4A2.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

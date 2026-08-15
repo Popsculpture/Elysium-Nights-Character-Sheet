@@ -70,6 +70,12 @@ EN.app = (function () {
     // reflect active name
     var ch = store.active();
     document.getElementById("active-name").textContent = ch ? (ch.name || "UNNAMED FREELANCER").toUpperCase() : "NO FREELANCER LOADED";
+    /* Currency marks, last, once the view is fully built. A NO-OP on any device whose fonts
+       carry U+1D4A2 and U+25CE, which is the common case and costs one cached measurement;
+       on devices that lack them it walks the freshly-rendered text and swaps the tofu box
+       for a readable letter. Runs here rather than inside el() because most of these marks
+       arrive as catalog PROSE, never passing through a builder at all. */
+    if (EN.ui.substituteCurrencyGlyphs) EN.ui.substituteCurrencyGlyphs(document.getElementById("os") || document.body);
   }
 
   /* save indicator pulse */

@@ -61,9 +61,27 @@ EN.pdfExport = (function () {
     if (code >= 0xA0 && code <= 0xFF) return true;                     // Latin-1 supplement
     return !!WINANSI_SPECIAL[code];
   }
+  /* TRANSLITERATE BEFORE FILTERING, or a meaningful character is silently deleted.
+     The filter above exists so one unencodable character cannot fail the whole document,
+     and it was doing that job correctly and destructively: the Glimmer mark is U+1D4A2
+     MATHEMATICAL SCRIPT CAPITAL G and the Nexus mark is U+25CE BULLSEYE, neither of them
+     WinAnsi, so EVERY price in an exported PDF printed as a bare number with no currency
+     mark at all. A player reading "60" cannot tell Glimmer from Nexus, and those are not
+     interchangeable.
+
+     The standard 14 PDF fonts are WinAnsi-only and fontkit is not vendored, so a real glyph
+     cannot be embedded here. A readable letter is the honest substitute, and it is strictly
+     better than deletion. If different notation is wanted on the printed copy, this map is
+     the one place to change it. */
+  var PDF_TRANSLITERATE = {};
+  PDF_TRANSLITERATE[String.fromCodePoint(0x1D4A2)] = "G";   // Glimmer
+  PDF_TRANSLITERATE[String.fromCodePoint(0x25CE)]  = "N";   // Nexus
   function sanitizeText(s) {
     if (s == null) return s;
-    return Array.from(String(s)).filter(function (ch) { return isWinAnsiChar(ch.codePointAt(0)); }).join("");
+    return Array.from(String(s))
+      .map(function (ch) { return Object.prototype.hasOwnProperty.call(PDF_TRANSLITERATE, ch) ? PDF_TRANSLITERATE[ch] : ch; })
+      .filter(function (ch) { return isWinAnsiChar(ch.codePointAt(0)); })
+      .join("");
   }
   function safeSetText(tf, val) {
     if (val != null && val !== "") tf.setText(sanitizeText(String(val)));
@@ -817,8 +835,12 @@ EN.pdfExport = (function () {
   function buildGearHoldings(doc, form, fonts, ch, d) {
     var ctx = makeCtx(doc, form, fonts, { title: "GEAR & HOLDINGS", tag: "03 · GEAR", serial: idSerial(ch), fieldPrefix: "gear" });
 
+    /* The mark travels with the number, the way the print sheet already writes it ("G ").
+       This field carried a bare figure, so a filled-in PDF said 12,345 without saying of
+       WHAT, next to a Nexus box that takes a figure in a different currency entirely.
+       Grouped too, since these are read at a glance across a table. */
     ctx.row([
-      { label: "Glimmer", name: "glimmer", value: ch.glimmer || 0, w: 1 },
+      { label: "Glimmer", name: "glimmer", value: ch.glimmer != null ? "G " + Number(ch.glimmer).toLocaleString() : "G 0", w: 1 },
       { label: "Nexus Tokens", name: "nexus", value: "", w: 1 }
     ]);
 

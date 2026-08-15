@@ -330,6 +330,76 @@ EN.ui = (function () {
     return { skip: finish };
   }
 
+  /* ---- the currency marks, on devices whose fonts do not have them ----------
+     Glimmer is U+1D4A2 MATHEMATICAL SCRIPT CAPITAL G and Nexus is U+25CE BULLSEYE. Both
+     live outside the Latin display faces this app loads (Rajdhani, Barlow Condensed), so
+     the browser falls through to whatever the device happens to have. Windows and macOS
+     usually carry one; plenty of Android builds carry neither, and the player gets a tofu
+     box where a price should be.
+
+     Detected rather than assumed: the mark is measured against a private-use codepoint
+     nothing maps, in the same font stack. Equal advance widths means both fell through to
+     the same .notdef box, so the glyph is genuinely absent. Measured ONCE and cached,
+     because it cannot change while the page is open.
+
+     The substitution runs only on devices that need it, and it walks TEXT NODES, because
+     most of these marks are not written by code at all: they are inside catalog prose
+     ("Price: <G>60 (Common, Legal)"), so nothing short of touching the rendered text
+     reaches them.
+
+     The stand-in is a LETTER, deliberately, not a drawing of the mark. Reconstructing
+     Brandon's glyph by eye is exactly the wrong move; when he supplies the real artwork
+     this is the one function that has to change. */
+  var GLIMMER = String.fromCodePoint(0x1D4A2), NEXUS = String.fromCodePoint(0x25CE);
+  var _glyphOk = null;
+  function glyphSupported(ch) {
+    var probe = document.createElement("canvas").getContext("2d");
+    var stack = getComputedStyle(document.body).fontFamily || "sans-serif";
+    probe.font = "72px " + stack;
+    var a = probe.measureText(ch).width;
+    var b = probe.measureText(String.fromCodePoint(0xF8FF)).width;   // private use: nothing maps it
+    return Math.abs(a - b) > 0.5;
+  }
+  function currencyGlyphsOk() {
+    if (_glyphOk === null) {
+      try { _glyphOk = { glimmer: glyphSupported(GLIMMER), nexus: glyphSupported(NEXUS) }; }
+      catch (e) { _glyphOk = { glimmer: true, nexus: true }; }   // cannot measure: leave the text alone
+    }
+    return _glyphOk;
+  }
+  function substituteCurrencyGlyphs(root) {
+    var ok = currencyGlyphsOk();
+    if (ok.glimmer && ok.nexus) return;
+    var subs = [];
+    if (!ok.glimmer) subs.push([GLIMMER, "G", "Glimmer"]);
+    if (!ok.nexus) subs.push([NEXUS, "O", "Nexus"]);
+    var re = new RegExp("[" + subs.map(function (x) { return x[0]; }).join("") + "]", "u");
+    var walker = document.createTreeWalker(root || document.body, NodeFilter.SHOW_TEXT, {
+      acceptNode: function (n) {
+        if (!n.nodeValue || n.nodeValue.indexOf(GLIMMER) === -1 && n.nodeValue.indexOf(NEXUS) === -1) return NodeFilter.FILTER_REJECT;
+        var p = n.parentNode;
+        if (p && (p.nodeName === "SCRIPT" || p.nodeName === "STYLE" || p.classList && p.classList.contains("cur-sub"))) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    var hits = [], n;
+    while ((n = walker.nextNode())) hits.push(n);
+    hits.forEach(function (node) {
+      var frag = document.createDocumentFragment();
+      Array.from(node.nodeValue).forEach(function (chr) {
+        var hit = subs.filter(function (x) { return x[0] === chr; })[0];
+        if (!hit) { frag.appendChild(document.createTextNode(chr)); return; }
+        var span = document.createElement("span");
+        span.className = "cur-sub";
+        span.title = hit[2];
+        span.textContent = hit[1];
+        frag.appendChild(span);
+      });
+      node.parentNode.replaceChild(frag, node);
+    });
+  }
+
   return { el: el, append: append, clear: clear, panel: panel, sectionTitle: sectionTitle, stat: stat, toast: toast, renderText: renderText, applyInline: applyInline,
+           currencyGlyphsOk: currencyGlyphsOk, substituteCurrencyGlyphs: substituteCurrencyGlyphs,
            dieFace: dieFace, dieFaceSvg: dieFaceSvg, d20Face: d20Face, animatePoolRoll: animatePoolRoll, playFiled: playFiled };
 })();

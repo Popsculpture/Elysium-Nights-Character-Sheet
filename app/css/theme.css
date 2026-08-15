@@ -878,3 +878,15 @@ html.light .pop-btn:hover{ background:rgba(0,0,0,.05) !important; }
 .certify-row.on{ border-color:var(--flow); box-shadow:inset 0 0 0 1px var(--flow); color:var(--text); }
 .certify-row.disabled{ opacity:.55; cursor:not-allowed; }
 .certify-row.disabled input{ cursor:not-allowed; }
+
+/* The Glimmer and Nexus marks, substituted on devices whose fonts lack them.
+   A letter standing in for a currency sign wants to read as a MARK and not as the first
+   letter of the next word, so it takes the display face, a little weight and a hair of
+   tracking. See EN.ui.substituteCurrencyGlyphs; this class is only ever emitted there. */
+.cur-sub {
+  font-family: var(--disp);
+  font-style: italic;
+  font-weight: 600;
+  letter-spacing: .02em;
+  margin-right: .06em;
+}
