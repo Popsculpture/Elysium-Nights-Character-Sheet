@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "gridos",
+      "runtimeExecutable": "powershell.exe",
+      "runtimeArgs": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "$p=$env:PORT; if(-not $p){$p=8777}; $l=New-Object Net.HttpListener;$l.Prefixes.Add(\"http://localhost:$p/\");$l.Start();Write-Host \"Serving app/ on http://localhost:$p\";$types=@{'.html'='text/html';'.js'='text/javascript';'.css'='text/css';'.json'='application/json';'.svg'='image/svg+xml';'.png'='image/png';'.jpg'='image/jpeg';'.ico'='image/x-icon';'.woff2'='font/woff2'};while($l.IsListening){$ctx=$l.GetContext();$req=$ctx.Request;$res=$ctx.Response;$p=$req.Url.LocalPath;if($p -eq '/'){$p='/index.html'};$file=Join-Path '.\\app' ($p.TrimStart('/'));if(Test-Path $file -PathType Leaf){$b=[IO.File]::ReadAllBytes((Resolve-Path $file));$ext=[IO.Path]::GetExtension($file).ToLower();$ct=$types[$ext];if(-not $ct){$ct='application/octet-stream'};$res.ContentType=$ct;$res.Headers.Add('Cache-Control','no-cache');$res.ContentLength64=$b.Length;$res.OutputStream.Write($b,0,$b.Length)}else{$res.StatusCode=404};$res.Close()}"
+      ],
+      "autoPort": true
+    }
+  ]
+}

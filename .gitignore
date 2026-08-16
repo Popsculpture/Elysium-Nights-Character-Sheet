@@ -1,5 +1,8 @@
-# Claude Code session data: internal, never published
-.claude/
+# Claude Code: the LOCAL settings file only. It is 310 accumulated permission grants
+# carrying this machine's absolute paths, which is what the .local suffix means.
+# .claude/launch.json (how to run the dev server) and .claude/skills/ (project skills)
+# ARE project config and are tracked deliberately.
+.claude/settings.local.json
 
 # OS / editor cruft
 .DS_Store
