@@ -54,14 +54,25 @@ section instead.
   it is a Ripper Hot-Wire a Stitcher installs on an *ally*, and the character record
   has no field for "an ally augmented me." Recorded as a comment in `engine.js`,
   implemented as nothing. Needs a manual toggle on the sheet if it should be live.
+- **RULED 2026-08-16: a wielded body does NOT get the Walking Anvil step-up.** Bodies are
+  exempt; that text stands on its own and the Walking Anvil does not reach it. Nothing to
+  build, and the current behaviour was already correct. The original question follows.
 - **Juggernaut step-up on a wielded body.** The Walking Anvil steps improvised
   weapons up one die, and a wielded body is explicitly a Heavy improvised weapon.
   Not applied, since that text lives in a separate block.
+- **RULED 2026-08-16: the damage tray learns flat-only totals, AND preloads unconditional
+  riders.** The base unarmed strike opens a tray like every other attack, showing its flat
+  1 plus Body Modifier, and unconditional riders are preloaded into it. Shock Gloves is the
+  only rider that qualifies today, so the preload needs a rule rather than a list: a rider
+  that fires on every hit with no condition attached. The original question follows.
 - **Should the damage tray learn flat-only totals?** The base unarmed strike is a
   flat 1 plus Body Modifier, and the tray is dice-driven, so the base strike opens no
   tray. Riders are also not preloaded into it; Shock Gloves is the one unconditional
   rider that could be.
-- **14 PART C rulings** still outstanding from earlier sessions.
+- **ALL 12 REMAINING PART C ITEMS RULED 2026-08-16.** M16 through M27 each carry an author
+  ruling in `RULES-SYNC-CHANGELOG.md`. Note the count: this line previously said 14, which
+  was stale, since M1 through M15 were already ruled or resolved. **Seven of the twelve
+  move the app, not the book**, and are listed as buildable work below.
 
 ## Confirmed defects, unfixed
 
@@ -125,6 +136,11 @@ Recorded so nobody re-investigates them.
   reason, and that predates this sync. Widening the regex to tolerate `**` would fix
   all of them at once, but it reclassifies features beyond the sync's scope, so it
   was left alone. Worth doing deliberately later.
+  **RULED 2026-08-16: widen the regex.** Tolerate `**` in all three copies, which fixes `Rig
+  Fuel`, `Biological Meltdown` and `Chemical Warfare` together and disarms the trap for
+  every future bolded string. Because it reclassifies features, the build wants a
+  before-and-after sweep of EVERY feature's action type, not just the three named ones, so
+  any fourth case surfaces as a deliberate change rather than a surprise.
 - **`Field Triage` moved from Features to Abilities** because the Beacon Rig toggle
   introduced "Free Action" into its text. Correct for a feature that now has an
   active toggle, but it is a visible relocation.
@@ -3485,6 +3501,14 @@ rest of the app is the Trauma Rig's: an entry-keyed pick plus an entry-keyed dam
 `ch.grid.deckKey` naming a specific owned deck, `deckMods` and `deckHpSpent` becoming
 `{entryKey: ...}`. That is buildable, but it wants an author ruling first, so it is NOT built
 here.
+
+**RULED 2026-08-16: one deck live at a time.** You jack into one and the others sit in the bag,
+so the shape above is the one to build: `ch.grid.deckKey` naming a specific owned deck,
+with `deckMods` and `deckHpSpent` becoming entry-keyed maps. This is the Trauma Rig's
+shape, which is the point: it is the pattern the app already uses rather than a new one.
+Migration has to move the existing flat `deckMods` array and single `deckHpSpent` number
+onto whichever owned deck the character has, and drop them if the character owns none,
+per the standing rule that unattributable state is dropped rather than moved.
 
 ### Trauma Rigs already work the way the ruling asks, and have no mods to speak of
 
