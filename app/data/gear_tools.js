@@ -107,13 +107,17 @@ EN.gearCatalog.tools = {
       basic: "Functions as a Basic Medkit. When you Stabilize a Target at 0 Wounds with at least 1 minute and no active threats, they also gain 1d4 Vigor.",
       proficient: "Once per scene when you Stabilize a Target, you can also clear Bleeding or a similar minor ongoing wound effect." },
     { name: "Surgical Instruments", bucket: "kits", group: "Medical & Care", price: 500, availability: "Rare", legality: "Restricted",
-      category: "Medical Tools", skill: "Medtech", effect: "+2 on Medtech. Enables major cybernetic and invasive procedures.",
-      // "+2 on the primary out-of-combat Medtech Dice Pool" read as +2 Edge Dice:
-      // pools have no flat modifiers, and the Edge build table prices Tools or Gear in dice (+1 to 3)
-      edgeDice: 2, requiresProficient: true, edgeNote: "invasive or surgical procedures in a clean workspace",
+      category: "Medical Tools", skill: "Medtech", effect: "+2 (or +1 Edge Die) on Medtech. Enables major cybernetic and invasive procedures.",
+      /* M20, ruled 2026-08-16. The book grants "+2 on the primary out-of-combat Medtech Dice
+         Pool", but Dice Pools take no flat modifiers, they take Edge Dice, so the +2 had to be
+         converted and the app had read it as 2 Edge Dice. The ruling follows the Advanced
+         Medkit directly above, which states the same thing correctly: the +2 is the IN-COMBAT
+         d20 bonus and the pool equivalent is ONE Edge Die. Corroborated by the catalog, where
+         this was the only edgeDice above 1 in any tool. */
+      edgeDice: 1, requiresProficient: true, edgeNote: "invasive or surgical procedures in a clean workspace",
       desc: "Precision tools for invasive work and delicate cybernetic extraction.",
       basic: "Enables planned invasive work in downtime: surgery, deep extraction, major cybernetic servicing. Without them, these procedures are usually impossible.",
-      proficient: "Requires Proficiency and Medtech (Expertise). In a clean workspace, gain +2 on the primary out-of-combat Medtech Dice Pool (or in-combat d20 check) for the procedure, and attempt outcomes that would otherwise demand a hospital-grade facility." },
+      proficient: "Requires Proficiency and Medtech (Expertise). In a clean workspace, gain +2 on in-combat Medtech d20 checks (or +1 Edge Die on out-of-combat Dice Pools) for the procedure, and attempt outcomes that would otherwise demand a hospital-grade facility." },
 
     /* ---- Technical & Hardware ---- */
     { name: "Engineering Toolkit", bucket: "kits", group: "Technical & Hardware", price: 100, availability: "Common", legality: "Legal",
@@ -538,8 +542,15 @@ EN.gearCatalog.tools = {
       effect: "Edge (or +1 Edge Die) on Awareness and Esoterica to sense a chosen effect.",
       desc: "A mind-expanding infusion. As an Action, drink while focusing on one Invocation or mystech focus: for 10 minutes, gain Edge on Awareness or Esoterica checks tied to sensing or interpreting that effect. Your first roll ignores Snag from mild environmental interference." },
     { name: "Resonant Shield Elixir", load: 0, bucket: "flow", group: "Resonance Tonics", price: 120, availability: "Rare", legality: "Restricted",
-      effect: "Resistance to Resonant and +1 DR vs Energy.",
-      desc: "A dense, metallic-tasting liquid. As an Action, drink: for the next minute or until the encounter ends, gain Resistance to Resonant damage and +1 DR vs Energy. If you already have Resonant Resistance, instead gain +2 DR vs Energy." },
+      /* M19, ruled 2026-08-16: the book's "Resonance Energy" means RESONANT, not Energy.
+         That phrase appears three times in the whole book, all inside this one entry, and is
+         neither of the two types the Damage Types chapter defines. Reading it as Resonant makes
+         the elixir purely anti-Resonant, matching its name, and the author accepted the
+         consequence explicitly: it now stacks Resistance and DR on a single type and does
+         nothing at all against lasers or plasma. The second clause stops that stacking being
+         wasted, trading the redundant Resistance for a second point of DR. */
+      effect: "Resistance to Resonant and +1 DR vs Resonant.",
+      desc: "A dense, metallic-tasting liquid. As an Action, drink: for the next minute or until the encounter ends, gain Resistance to Resonant damage and +1 DR vs Resonant. If you already have Resonant Resistance, instead gain +2 DR vs Resonant." },
     { name: "Flow Surge Ampoule", load: 0, bucket: "flow", group: "Resonance Tonics", price: 150, availability: "Rare", legality: "Restricted",
       effect: "+3d6 damage or healing to your next Invocation. Causes 1 Strain.",
       desc: "A volatile injectable spike that overcharges an Invocation. As a Swift Action before or after declaring an Invocation: it deals +3d6 damage of its type, or grants 3d6 Vigor if it heals. Afterward, you automatically gain 1 Strain, even if the Invocation fails." },

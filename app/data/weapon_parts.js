@@ -123,7 +123,12 @@ EN.weaponParts = {
     // Output
     { key: "match-barrel", name: "Match Barrel", category: "ranged", slot: "output", partType: "Mod", fits: "Any Firearm", price: 350, rarity: "Uncommon", legality: "Licensed",
       grants: "+25% range", effect: "Increase the weapon's short and long range values by 25% (round up)." },
-    { key: "shotgun-choke", name: "Shotgun Choke", category: "ranged", slot: "output", partType: "Mod", fits: "Shotgun", price: 200, rarity: "Common", legality: "Licensed",
+    /* M16, ruled 2026-08-16: ACCESSORY, not a Mod. The summary table was right and the
+       entry was wrong, and the difference is a play difference rather than a label: an
+       Accessory snaps on and off in the field with no tools and no roll, a Mod wants
+       downtime, a bench and a kit. partType drives that distinction everywhere it shows,
+       so this one word changes the chip, its tooltip and the install toast together. */
+    { key: "shotgun-choke", name: "Shotgun Choke", category: "ranged", slot: "output", partType: "Accessory", fits: "Shotgun", price: 200, rarity: "Common", legality: "Licensed",
       grants: "Extends Spread range", effect: "Increase the weapon's short range by 50% (round up). The Spread trait's short-range Edge now applies to this extended short range before the long-range penalty takes over." },
     { key: "heavy-barrel", name: "Heavy Barrel", category: "ranged", slot: "output", partType: "Mod", fits: "Any Firearm", price: 300, rarity: "Uncommon", legality: "Licensed",
       grants: "+1 damage die step; adds Heavy", effect: "Upgrade the weapon's damage die one step. The weapon gains the Heavy trait." },
