@@ -146,22 +146,47 @@ EN.rules = {
   // Each combo pairs a NextGen Lineage Feature with its matching cyberware.
   openArchitecture: {
     intro: "You were not built finished. You were built ready. Your body was engineered to documented interface standards: pre-threaded neural shunts, reserved anatomical space, tolerances no baseline human was ever given. Taking this feature opens the Integration clause of every NextGen Lineage Feature you possess, now or in the future.",
-    rule: "Whenever you have both halves of a listed pairing (the Lineage Feature and its matching cyberware, installed at any tier), that clause activates: the Engineered Baseline effect ends as a separate system and is absorbed into the chrome, the chrome gains enhanced capability, and its Static Point cost is reduced by 1 (minimum 0). You never lose a Lineage Feature to an install; it lives on through the chrome. Select Open Architecture once; it covers every qualifying combination you ever assemble. Without it, your features and your chrome remain separate systems.",
+    /* ADDITIVE, never subtractive. The old model had the Lineage Feature's effect "end as a
+       separate system and be absorbed into the chrome", which meant the app had to REMOVE a
+       feature's effects and substitute new ones. That model is gone, along with the term
+       Engineered Baseline. The feature keeps working in full, the implant keeps working in
+       full, and a third NAMED record switches on while both halves are held. */
+    rule: "Whenever you have both halves of a listed pairing (the Lineage Feature and its matching cyberware, installed at any tier), its Integration activates: a new named benefit switches on, and the matching cyberware's Static Point cost is reduced by 1 (minimum 0). The Lineage Feature keeps working in full and so does the chrome; nothing is replaced. Select Open Architecture once; it covers every qualifying combination you ever assemble.",
     combos: [
-      { key: "dermal-plating", feature: "Dermal Plating", cyberware: "Subdermal Armor",
-        text: "When you install Subdermal Armor at any tier, your engineered bone integrates with the new chrome rather than being replaced by it. The Engineered Baseline effect continues, and the installed Subdermal Armor gains +1 DR (stacking with its normal bonus)." },
-      { key: "synthetic-musculature", feature: "Synthetic Musculature", cyberware: "Reinforced Skeleton",
-        text: "When you install a Reinforced Skeleton at any tier, your synthetic muscle integrates with the new bone-weaving. Every unarmed strike you can make steps up one damage die size, each on its own die and never stacking with itself: your bare fists, the Reinforced Skeleton, and any other implant you strike with. You retain the Encumbrance Threshold bonus and the Size-larger bonus for grappling." },
-      { key: "dermal-induction", feature: "Dermal Induction", cyberware: "Neural Interface (Datajack)",
-        text: "When you install a Neural Interface (Datajack) at any tier, the Engineered Baseline effect ends as a separate system and is absorbed into the implant. The Datajack now runs entirely through your skin: there is no exposed port and no install scarring at any tier, nothing for a hostile party to see, find, or physically access (this overrides the visible-port drawback of a Streetware Datajack). You can open a direct, wired-grade Link to any device you can physically touch, reaching past air-gaps that a remote hacker cannot, and while that touch-Link holds there is no wireless signal to intercept and no physical trace left at the device. (Encryption and tracing of your #GRID activity at range are still governed by the Datajack's own tier; Dermal Induction protects the body and the hands, not the signal.) In addition, as a Swift Action once per Encounter, by touching or coming within 1 space of a basic (Tier 0-1) security camera, automated door, or terminal, you can silently slave it without tripping an alert or notifying its network; you retain control of the device until the end of the Encounter." },
-      { key: "living-relay", feature: "Living Relay", cyberware: "Subdermal Comm",
-        text: "When you install a Subdermal Comm at any tier, the Engineered Baseline effect ends as a separate system and is absorbed into the implant. The relay network persists through the chrome and its range doubles to 24 spaces, and your transmissions become effectively untraceable through standard means: an enemy must succeed on a Tech check vs. DC 20 even to detect that you are transmitting, let alone trace or intercept it." },
-      { key: "predictive-targeting", feature: "Predictive Targeting", cyberware: "Cybereyes",
-        text: "When you install Cybereyes at any tier, the Engineered Baseline effect ends as a separate system and is absorbed into the implant. The mark lives on through the chrome, and your Cybereyes' Threat Targeting mode is permanently active whether or not you selected it as one of your modes. In addition, your optics broadcast the target lock to your crew; any ally who can see your target deals an additional 1d4 damage against it." },
-      { key: "tuned-synapses", feature: "Tuned Synapses", cyberware: "Reflex Booster",
-        text: "When you install a Reflex Booster at any tier, the Engineered Baseline effect ends as a separate system and is absorbed into the implant. The Reflex Booster's Initiative bonus increases by an additional +2, and you retain the first-round Speed increase of 2, which stacks with the implant's own Speed bonus." },
-      { key: "calibrated-gait", feature: "Calibrated Gait", cyberware: "Cyberlegs or Spring Joints",
-        text: "When you install Cyberlegs or Spring Joints at any tier, the Engineered Baseline effect ends as a separate system and is absorbed into the implant. The implant grants an additional +1 Speed beyond its normal benefits, and you take half damage from falling." }
+      { key: "dermal-aegis", name: "Dermal Aegis", feature: "Dermal Plating", cyberware: "Subdermal Armor",
+        text: "Your engineered plating and Subdermal Armor lock together into a single load-bearing shell.\n\u2022 The first time each round a physical attack hits you, increase your Subdermal Armor's DR by 2 against that attack, applied at passive mitigation.\n\u2022 Any effect of that attack that would knock you Prone or forcibly move you fails to do so.",
+        // passive, no action cost, so it never competes with an Impulse. Per-ROUND flag,
+        // reset at round start, and it lands at damage step 3 rather than step 2.
+        cadence: "round", cost: "passive", step: 3 },
+      { key: "reinforced-physique", name: "Reinforced Physique", feature: "Synthetic Musculature", cyberware: "Reinforced Skeleton",
+        text: "Your synthetic muscle and Reinforced Skeleton drive through an impact as a single system.\n\u2022 Once per turn when you hit a Target with an unarmed strike, you can immediately attempt to Shove or Trip that Target at no action cost, as part of the same attack.",
+        // Grapple is deliberately EXCLUDED; that stays with Street Scrapper, which charges a
+        // Swift Action for it. Do not add Grapple here.
+        cadence: "turn", cost: "free", maneuvers: ["Shove", "Trip"] },
+      { key: "dermal-neuralink", name: "Dermal Neuralink", feature: "Dermal Induction", cyberware: "Neural Interface (Datajack)",
+        text: "Your Neural Interface routes directly through your skin, turning physical contact into a hardwired connection.\n\u2022 Your Neural Interface has no exposed port and leaves no visible scarring.\n\u2022 By touching a device, you can establish a direct wired Link without a cable, including with air-gapped systems. The connection creates no wireless signal and leaves no physical trace.\n\u2022 Once per Encounter as a Swift Action, you can touch a basic Tier 0-1 camera, automated door, or terminal and silently slave it until the end of the Encounter without triggering an alert or network notification.\n\u2022 This cancels the Streetware Datajack's visible-port drawback, but not its lack of encryption. Interception and tracing of your #GRID activity at range are still governed by the Datajack's own tier.",
+        // suppresses the Streetware visible-port drawback ONLY; the tier's interception
+        // penalty is untouched, and tier-based encryption is unchanged at every tier.
+        cadence: "encounter", cost: "Swift Action", negates: "streetware-visible-port" },
+      { key: "living-transceiver", name: "Living Transceiver", feature: "Living Relay", cyberware: "Subdermal Comm",
+        text: "Your Living Relay and Subdermal Comm fuse into a single communications hub.\n\u2022 Any willing ally connected to your Living Relay can send communications through your Subdermal Comm as though they had a compatible comm of their own.\n\u2022 Incoming communications can be rebroadcast through your Living Relay to any connected allies.\n\u2022 Communications that leave the Living Relay use your Subdermal Comm's normal range, encryption, and interception rules.\n\u2022 You are the hub. If you go down, the crew goes quiet.",
+        // TWO legs that do not merge: the relay leg keeps its own properties, the comm leg
+        // keeps its own range and encryption. Conditional on the character being up.
+        cadence: "passive", cost: "passive", requiresConscious: true },
+      { key: "hitscan-optics", name: "Hitscan Optics", feature: "Hitscan", cyberware: "Cyberoptics",
+        text: "Your Hitscan subroutine feeds its Priority Target data directly into your Cyberoptics.\n\u2022 While you have a Priority Target, Threat Targeting is automatically active against it and does not occupy one of your Cyberoptic modes.\n\u2022 Once per round when you hit your Priority Target, choose one ally who can see it. That ally gains Edge on their next attack against it before the start of your next turn.",
+        // the mode rides FREE, on top of the tier budget (1/2/3), and must not decrement it
+        cadence: "round", cost: "free", grantsFreeMode: "Threat Targeting" },
+      { key: "synaptic-reflex", name: "Synaptic Reflex", feature: "Tuned Synapses", cyberware: "Reflex Booster",
+        text: "Your nervous system stays ahead of the booster instead of struggling to keep up.\n\u2022 The Reflex Booster's extra Move or Swift Action can be used a number of times equal to your Caliber per Encounter instead of once. You cannot use it more than once per turn.",
+        // MUTATES an existing implant counter rather than adding an ability: max goes from
+        // 1 to Caliber, and the per-turn cap closes a spend-Swift-gain-Swift churn loop.
+        cadence: "encounter", cost: "mutates", mutates: { implant: "reflex", maxUses: "caliber", perTurnCap: 1 } },
+      { key: "springstep", name: "Springstep", feature: "Calibrated Gait", cyberware: "Spring Joints",
+        text: "Your gait calibration turns every landing into a controlled impact.\n\u2022 When you land from a leap, jump, or fall of 2 or more spaces, each Target of your choice within 1 space of your landing space must succeed on a Body Save (DC 8 + your Body modifier + your Caliber) or be knocked Prone.",
+        // Caliber DC, not a proficiency DC: no trainable proficiency sits behind leg chrome.
+        // Targets are player-selected, so allies are never forced into the save. No cap.
+        cadence: "trigger", cost: "free", saveDC: { base: 8, attr: "BOD", caliber: true } }
     ]
   },
 

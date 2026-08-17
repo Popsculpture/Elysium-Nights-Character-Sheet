@@ -73,7 +73,7 @@ EN.classes.hustler = {
     "2": [
       {
         name: "Slippery",
-        text: "Whenever you spend an Action to **Dash**, a Swift Action to **Disengage**, or an Impulse Action to **Dodge**, you gain a bonus to your Defense equal to your Caliber until the start of your next turn."
+        text: "Whenever you **Dash**, **Disengage**, or **Dodge**, you gain a bonus to your Defense equal to your Caliber until the start of your next turn."
       },
       {
         name: "Universal Upgrade",

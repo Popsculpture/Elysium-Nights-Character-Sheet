@@ -491,6 +491,26 @@ EN.store = (function () {
         pj.itemName = to;
       });
     }
+    /* RENAMED IMPLANTS. ch.cyberware[n].key is the stored identity of an installed piece,
+       and ch.cyberStash holds the uninstalled ones, so both move together. Miss this and the
+       implant is not merely mislabelled: every reader looks it up by key, so it keeps
+       charging its Static Points while granting nothing at all. Read from the catalog
+       (EN.cyberware.renames) rather than restated here, like the weapon-part table above. */
+    var CYBER_RENAMES = Object.create(null), CYBER_NAME_RENAMES = Object.create(null);
+    ((EN.cyberware && EN.cyberware.renames) || []).forEach(function (r) {
+      if (r && r.oldKey && r.key) CYBER_RENAMES[r.oldKey] = r.key;
+      if (r && r.oldName && r.name) CYBER_NAME_RENAMES[r.oldName] = r.name;
+    });
+    [ch.cyberware, ch.cyberStash].forEach(function (list) {
+      if (!Array.isArray(list)) return;
+      list.forEach(function (cw) {
+        if (!cw || typeof cw !== "object") return;
+        if (typeof cw.key === "string" && CYBER_RENAMES[cw.key]) cw.key = CYBER_RENAMES[cw.key];
+        ["name", "base", "short"].forEach(function (f) {
+          if (typeof cw[f] === "string" && CYBER_NAME_RENAMES[cw[f]]) cw[f] = CYBER_NAME_RENAMES[cw[f]];
+        });
+      });
+    });
     // Renamed Talents. A record saved before a rename still stores the OLD key and
     // would resolve to nothing, silently, because every reader looks the key up with
     // .find() and drops a miss. Both spellings a record can carry (the key and the

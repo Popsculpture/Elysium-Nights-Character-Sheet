@@ -746,7 +746,11 @@ EN.engine = (function () {
      Matched on the installed piece's NAME rather than its key, because the Open Architecture
      card's own toggle and the Chrome tab historically wrote different shapes and the combo
      data speaks in names. The key is preferred when it resolves, so a renamed catalog entry
-     still matches. */
+     still matches, which is what carried the Cybereyes to Cyberoptics rename through.
+
+     Each combo now carries its own Integration NAME (Dermal Aegis, Springstep, ...), because
+     the 2026-08-12 sync made every pairing a named record in its own right rather than an
+     anonymous clause hanging off the feature. */
   function openArchCombos(ch) {
     var R = EN.rules || {};
     var oa = R.openArchitecture || {};
@@ -2572,13 +2576,16 @@ EN.engine = (function () {
          Dermal Plating   "+1 DR (stacking with its normal bonus)"
          Tuned Synapses   "Initiative bonus increases by an additional +2"
        Read off the generic pairing list, so a data change to a combo needs no code here. */
-    var oaSpeed = 0, oaDR = 0, oaInit = 0;
-    openArchCombos(ch).forEach(function (m) {
-      if (m.combo.key === "calibrated-gait") oaSpeed += 1;
-      if (m.combo.key === "dermal-plating") oaDR += 1;
-      if (m.combo.key === "tuned-synapses") oaInit += 2;
-    });
-    var speed = Math.max(3, 6 + agiMod) + (cyberFlat.speed || 0) + (defLoadout.speedPenalty || 0) + linMech.speed + oaSpeed;
+    /* NO flat Integration bonuses here any more. The 2026-08-12 manuscript sync replaced all
+       three with mechanics that are not standing modifiers, so adding them to a derived total
+       would double-count against the clause text the sheet now prints:
+         Dermal Aegis      +2 DR against ONE attack, the first physical hit each round, and it
+                           lands at damage step 3, not on the character's standing DR.
+         Synaptic Reflex   mutates the Reflex Booster's own counter (max 1 -> Caliber, capped
+                           at 1 per turn). Not an Initiative bonus at all.
+         Springstep        a Body Save or Prone on landing. Not a Speed bonus.
+       They are surfaced as clause text and as the per-Integration records below. */
+    var speed = Math.max(3, 6 + agiMod) + (cyberFlat.speed || 0) + (defLoadout.speedPenalty || 0) + linMech.speed;
 
     /* encumbrance: state from the declared Loadout, on-person Load, and hauls;
        Encumbered = Speed -2, Overloaded = Speed halved (round down, min 1) */
@@ -2776,8 +2783,13 @@ EN.engine = (function () {
        PDF through the paths that already carry ability text, rather than being reinvented
        three times. Named for the pairing so the row says which chrome it is riding on. */
     openArchCombos(ch).forEach(function (m) {
-      features.push({ level: 1, name: m.combo.feature + " (" + (m.piece.base || m.piece.name) + ")",
-        text: m.combo.text, source: "Open Architecture (Integration)", kind: "lineage" });
+      /* Named record, because that is what an Integration now IS. The row reads
+         "Dermal Aegis" with the pairing beneath it, rather than repeating the feature's own
+         name back at a player who can already see it in the list above. */
+      features.push({ level: 1, name: m.combo.name || m.combo.feature,
+        text: m.combo.text,
+        source: "Open Architecture · " + m.combo.feature + " + " + (m.piece.base || m.piece.name),
+        kind: "lineage" });
     });
     // Talents taken via Universal Upgrades, so the play sheet renders them with
     // their action type and uses (many are active/limited-use combat abilities).
@@ -2819,13 +2831,13 @@ EN.engine = (function () {
       armorDR: defLoadout.armorDR, blockBonus: defLoadout.blockBonus,
       // cyberDR is chrome worn UNDER the skin, so it stacks with worn armor exactly as
       // Subdermal Armor's own text says it does ("Stacks with worn armor")
-      naturalDR: linMech.dr, cyberDR: (cyberFlat.dr || 0) + oaDR,
-      totalDR: (defLoadout.armorDR || 0) + (defLoadout.armorModDR || 0) + linMech.dr + (cyberFlat.dr || 0) + oaDR,
+      naturalDR: linMech.dr, cyberDR: (cyberFlat.dr || 0),
+      totalDR: (defLoadout.armorDR || 0) + (defLoadout.armorModDR || 0) + linMech.dr + (cyberFlat.dr || 0),
       lineageSpeed: linMech.speed,
       lineageSpeedFirstRound: linMech.speedFirstRound,
       resistances: damageResistances(ch, linFeats, wornArmor(ch)),
       lineageInit: { caliber: linMech.initCaliber ? cal : 0, edge: linMech.initEdge },
-      cyberInit: (cyberFlat.init || 0) + oaInit,   // Reflex Booster "+2"/"+4", plus Tuned Synapses' Integration "+2"
+      cyberInit: (cyberFlat.init || 0),   // Reflex Booster "+2" / "+4" at Blackware
       encumbrance: enc,
       // `unarmed` is the whole resolved strike: {die, flat, type, traits, note,
       // replacer, replacers, baseDie, increases, riders, reach}, with die null

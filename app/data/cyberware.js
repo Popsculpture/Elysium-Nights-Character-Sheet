@@ -45,7 +45,7 @@ EN.cyberware = {
   items: [
     /* ---------------- Neural ---------------- */
     { key: "datajack", short: "Datajack", name: "Neural Interface (Datajack)", zone: "Neural", enhancement: "None",
-      desc: "A direct neural-to-machine port at the base of the skull. The backbone of half the chrome in a head; Smartlinks, Cybereye recording, vehicle rigging all route through it. A door that opens both ways.",
+      desc: "A direct neural-to-machine port at the base of the skull. The backbone of half the chrome in a head; Smartlinks, Cyberoptic recording, vehicle rigging all route through it. A door that opens both ways.",
       effect: "A neural port for #GRID hardware, Smartdecks, drones, and compatible cyberware; lets you run Quick Hacks. Operates as Surface Link (conscious, silent comms within 20 spaces) or Full Immersion (body helpless, Prone, attacks vs you at Edge).",
       street: "No encryption, intercept/trace your traffic at Edge against you; visible scarring, Snag on passing as un-chromed.",
       black: "Encrypted & dark (intercept at Snag against you), no registered identity/log, and installed Quick Hacks deal +1d4 on System Failure / Network Spread.",
@@ -54,7 +54,7 @@ EN.cyberware = {
         { tier: "Brandware",  sp: 1, price: 3500,  legality: "Legal" },
         { tier: "Blackware",  sp: 2, price: 14000, legality: "Restricted" }
       ] },
-    { key: "cybereyes", short: "Cybereyes", name: "Cybereyes", zone: "Neural", enhancement: "+1 Wits",
+    { key: "cyberoptics", short: "Cyberoptics", name: "Cyberoptics", zone: "Neural", enhancement: "+1 Wits",
       desc: "Replacement optical units that transcend organic vision. The most visible piece of common chrome, a statement of identity as much as a tactical investment.",
       effect: "Choose two modes (swap as a Free Action): Low-Light, Thermal, Telescopic Zoom (Edge vs distant), Threat Targeting (Edge on first attack/round), Visual Recording (1 hr, retrieved via datajack).",
       street: "One mode only, no Enhancement, swaps need a clinic; visibly mechanical → Snag on blending-in social checks.",
@@ -66,9 +66,9 @@ EN.cyberware = {
       ] },
     { key: "reflex", short: "Reflex Booster", name: "Reflex Booster", zone: "Neural", enhancement: "+1 Agility",
       desc: "A neural co-processor woven through the brainstem that accelerates the speed of thought between perception and action. Combat freelancers consider this the essential investment.",
-      effect: "+2 Initiative and +1 Speed. Once per combat, spend a Swift Action to gain an additional Move or Swift Action this turn.",
+      effect: "+2 Initiative and +1 Speed. Once per Encounter, spend a Swift Action to gain an additional Move or Swift Action this turn.",
       street: "No Enhancement; jittery, first time you take combat damage each session, Body Save DC 12 or take 1d4 Vitality as it misfires.",
-      black: "+4 Initiative, +2 Speed, and once per combat (Impulse) fully evade one ranged hit.",
+      black: "+4 Initiative, +2 Speed, and once per Encounter (Impulse) fully evade one ranged hit.",
       tiers: [
         { tier: "Streetware", sp: 2, price: 2500,  legality: "Restricted", bonus: { speed: 1, init: 2 } },
         { tier: "Brandware",  sp: 2, price: 11000, legality: "Restricted", bonus: { speed: 1, init: 2 } },
@@ -184,7 +184,7 @@ EN.cyberware = {
       desc: "Full prosthetic legs. Most people got them involuntarily and upgraded after. A platform with mod slots, like Cyberarms.",
       effect: "+2 Speed and Edge on Athletics for jumping, climbing, balance. Install compatible mods in its slots without adding their SP to Total Static; the platform already paid it.",
       street: "+1 Speed only, 2 slots, no Enhancement; audible servos → Snag on Stealth while moving >half Speed.",
-      black: "+3 Speed, 4 slots, plus Burst Sprint (Impulse, 1/combat): triple Speed for one Move, ignoring opportunity attacks.",
+      black: "+3 Speed, 4 slots, plus Burst Sprint (Impulse, 1/Encounter): triple Speed for one Move, ignoring opportunity attacks.",
       tiers: [
         { tier: "Streetware", sp: 2, slots: 2, price: 4500,  legality: "Licensed", bonus: { speed: 1 } },
         { tier: "Brandware",  sp: 3, slots: 3, price: 14000, legality: "Licensed", bonus: { speed: 2 } },
@@ -206,7 +206,7 @@ EN.cyberware = {
       desc: "A neural-to-weapon interface, usually paired with a Datajack. Your firearms aim with your eyes and fire with your thoughts. The gunslinger's signature chrome. Requires a neural port.",
       effect: "+1 to attack rolls with a connected smart-weapon, and ignore Snag from cover/prone/partial visibility on your first attack each round.",
       street: "No Enhancement; firmware quirks, 1d6 on first connect, on a 1 it can't interface until a clinic patch.",
-      black: "+2 to attacks, Snag-ignoring on every attack, plus tag a target (Swift, 1/combat) for Edge on all attacks vs it until end of next turn.",
+      black: "+2 to attacks, Snag-ignoring on every attack, plus tag a target (Swift, 1/Encounter) for Edge on all attacks vs it until end of next turn.",
       tiers: [
         { tier: "Streetware", sp: 1, price: 2200,  legality: "Licensed" },
         { tier: "Brandware",  sp: 1, price: 7500,  legality: "Licensed" },
@@ -242,3 +242,13 @@ EN.cyberware = {
       ] }
   ]
 };
+
+/* ---- implants that have been renamed, and what they were called ----------
+   An installed implant is persisted as ch.cyberware[n].key, so a rename that does not move
+   the stored key silently uninstalls it: CYBER_UNARMED[key], the Open Architecture pairing
+   match and the platform-slot logic all miss, and the piece keeps costing Static Points
+   while granting nothing. Same shape as EN.weaponParts.renames, read by store.js migrate().
+     Cybereyes -> Cyberoptics, manuscript sync of 2026-08-12. */
+EN.cyberware.renames = [
+  { oldKey: "cybereyes", key: "cyberoptics", oldName: "Cybereyes", name: "Cyberoptics" }
+];

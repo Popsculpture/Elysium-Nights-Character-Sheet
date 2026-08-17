@@ -256,7 +256,7 @@ EN.briefs = {
   "Synthetic Musculature": "+2 Encumbrance Threshold, one Size larger for grappling; unarmed strike die steps up one size",
   "Dermal Induction": "Interface unsecured devices by touch leaving no trace; Edge on Tech to bypass mundane locks",
   "Living Relay": "Silent unjammable comms network with willing allies within 12 spaces, no #GRID needed",
-  "Predictive Targeting": "Mark a Quarry (Caliber/Long Rest): +1d6 damage, know location/Vitality tier, ignore Hidden/Invisible; reacquires on kill",
+  "Hitscan": "Mark a Priority Target (Caliber/Long Rest): +1d6 damage, know location/Vitality tier, ignore Hidden/Invisible; reacquires on kill",
   "Tuned Synapses": "Edge on Initiative; +2 Speed during first combat round",
   "Calibrated Gait": "+1 Speed; Edge on Athletics to sprint/jump/pace; always land jumps exactly as intended",
   "Open Architecture": "Pairing a NextGen feature with its matching cyberware fuses them: chrome gains enhanced effect, costs 1 less Static",
