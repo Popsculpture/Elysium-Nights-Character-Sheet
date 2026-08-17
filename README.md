@@ -47,3 +47,7 @@ repo, so without a version on the asset URLs a browser can pair a cached `js/ui.
 `data/rules.js` and run half of one build against half of another. Stamping makes a deploy atomic:
 all 49 local assets change name together, so the build swaps in one piece. It does not make the
 deploy arrive any sooner, because the HTML carries the same ten minute cache. `--strip` undoes it.
+
+The stamped URLs do **not** break opening `app/index.html` straight from disk. Browsers ignore the
+query when resolving a `file:` path, and this was confirmed by hand on Windows, so the app stays
+usable offline with the versions in place.
