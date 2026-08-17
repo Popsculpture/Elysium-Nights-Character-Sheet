@@ -142,7 +142,6 @@
 .ps-block{ background:#fbfaf5; border:.5px solid #cfc8b7; border-radius:2px; padding:4px 7px; min-height:30px; }
 .ps-block-tall{ min-height:52px; }
 .ps-block-v{ font-size:10.5px; color:#18222c; line-height:1.4; white-space:pre-wrap; }
-.ps-write-fv{ min-height:15px; }
 
 .ps-tbl-inv td:nth-child(2){ width:38px; text-align:center; }
 .ps-tbl-inv td:nth-child(3){ width:64px; }

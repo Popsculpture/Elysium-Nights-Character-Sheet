@@ -16,6 +16,26 @@ EN.printSheet = (function () {
   function sgn(n) { return eng.fmtMod(n); }
   function txt(v) { return (v == null || v === "") ? "" : String(v); }
 
+  /* A wallet figure, grouped and pinned to en-US so a printed sheet matches the book's own
+     examples whatever locale the machine runs: a German default would render 1.234,56 and
+     disagree with every price in the manuscript. Fractions print at exactly two places or
+     not at all, the book subdividing Glimmer twice by a hundred (100 Flickers to a Gleam,
+     100 Gleams to a Glow), so two places is the currency's own precision while a whole
+     balance stays "GLM 1,234" rather than padding it with a meaningless ".00".
+
+     Deliberately a second copy of pdfexport.js's money(), following this codebase's
+     convention that each view module carries its own small helpers rather than sharing a
+     utils file (combat.js and printsheet.js already each keep their own weaponHit and
+     findWeapon). The two are the same document in two media, so a change to one belongs in
+     the other. */
+  function money(v) {
+    var n = Number(v);
+    if (!isFinite(n)) n = 0;
+    return n % 1
+      ? n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      : n.toLocaleString("en-US", { maximumFractionDigits: 0 });
+  }
+
   /* ---- small builders ---- */
   function sect(title, right) {
     return el("div.ps-sect", null, [el("span", { text: title }), right ? el("span.ps-sect-r", { text: right }) : null]);
@@ -615,10 +635,19 @@ EN.printSheet = (function () {
      ======================================================================= */
   function gearHoldings(ch, d) {
     var body = [];
-    // currency
+    /* Both wallets print as CODE then figure, the notation the book gives them, matching
+       the fillable PDF exactly. Glimmer used to carry a bare "G ", a stand-in letter from
+       the days when nothing could draw the mark, which is now the only place one survived:
+       the app renders the real characters as outlines everywhere else.
+
+       AND THE NEXUS BOX WAS ALWAYS BLANK. ch.nexus is a real stored balance, seeded and
+       type-guarded in store.js beside ch.glimmer, but this cell was a hardcoded &nbsp; and
+       never read it, the same omission the PDF's Nexus field carried. It is read now, which
+       also retires the one-off ps-write-fv class: that existed only to hold an empty box
+       open, and duplicated a min-height .ps-fv already sets. */
     body.push(el("div.ps-row", null, [
-      field("Glimmer", "G " + (ch.glimmer || 0).toLocaleString(), { style: { flex: "1 1 0" } }),
-      el("div.ps-field", { style: { flex: "1 1 0" } }, [el("div.ps-fl", { text: "Nexus Tokens" }), el("div.ps-fv ps-write-fv", { html: "&nbsp;" })])
+      field("Glimmer",      "GLM " + money(ch.glimmer), { style: { flex: "1 1 0" } }),
+      field("Nexus Tokens", "NXT " + money(ch.nexus),   { style: { flex: "1 1 0" } })
     ]));
 
     // equipped loadout summary
