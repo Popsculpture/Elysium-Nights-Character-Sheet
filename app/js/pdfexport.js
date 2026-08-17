@@ -69,20 +69,61 @@ EN.pdfExport = (function () {
      mark at all. A player reading "60" cannot tell Glimmer from Nexus, and those are not
      interchangeable.
 
-     The standard 14 PDF fonts are WinAnsi-only and fontkit is not vendored, so a real glyph
-     cannot be embedded here. A readable letter is the honest substitute, and it is strictly
-     better than deletion. If different notation is wanted on the printed copy, this map is
-     the one place to change it. */
-  var PDF_TRANSLITERATE = {};
-  PDF_TRANSLITERATE[String.fromCodePoint(0x1D4A2)] = "G";   // Glimmer
-  PDF_TRANSLITERATE[String.fromCodePoint(0x25CE)]  = "N";   // Nexus
+     The standard 14 PDF fonts are WinAnsi-only and fontkit is not vendored, so the real
+     glyph cannot be embedded here. What prints instead is the book's own CURRENCY CODE,
+     the notation a real currency uses when the sign is unavailable, exactly as USD stands
+     in for $: "GLM 1,234.56" and "NXT 421.88". These are the manuscript's codes, not an
+     abbreviation invented here. On screen nothing changes, because the app draws both
+     marks as outlines and never needs a substitute (see EN.ui.substituteCurrencyGlyphs).
+
+     THE SPACE IS THE WHOLE DIFFICULTY, and it is why this is a scanner and not the flat
+     character map it replaced. Each mark does two jobs in the source text:
+
+         a PRICE PREFIX, bound to a figure    "<G>100"          wants  "GLM 100"
+         a NOUN, naming the currency itself   "Nexus Tokens (<N>)"  wants  "(NXT)"
+
+     Both appear in the catalog, roughly 31 of the first and 26 of the second. A map that
+     substituted "GLM " would punctuate every price correctly and leave a trailing space
+     inside every parenthesis; a map that substituted "GLM" would get the nouns right and
+     print "GLM100". So the space is emitted only when a figure actually follows, and an
+     existing space is consumed rather than doubled, which keeps "<N> 500" from becoming
+     "NXT  500". */
+  var PDF_CURRENCY = Object.create(null);
+  PDF_CURRENCY[String.fromCodePoint(0x1D4A2)] = "GLM";   // Glimmer, issued by the Luster Interchange Treasury
+  PDF_CURRENCY[String.fromCodePoint(0x25CE)]  = "NXT";   // Nexus Tokens, ledger-only on Data Pillars
   function sanitizeText(s) {
     if (s == null) return s;
-    return Array.from(String(s))
-      .map(function (ch) { return Object.prototype.hasOwnProperty.call(PDF_TRANSLITERATE, ch) ? PDF_TRANSLITERATE[ch] : ch; })
-      .filter(function (ch) { return isWinAnsiChar(ch.codePointAt(0)); })
-      .join("");
+    var chars = Array.from(String(s)), out = [];
+    for (var i = 0; i < chars.length; i++) {
+      var ch = chars[i], code = PDF_CURRENCY[ch];
+      if (code) {
+        out.push(code);
+        var j = i + 1;
+        if (chars[j] === " " || chars[j] === "\u00A0") j++;          // do not double a space already there
+        if (j < chars.length && chars[j] >= "0" && chars[j] <= "9") { out.push(" "); i = j - 1; }
+        continue;
+      }
+      if (isWinAnsiChar(ch.codePointAt(0))) out.push(ch);
+    }
+    return out.join("");
   }
+
+  /* A wallet figure, grouped and pinned to en-US so the printed sheet matches the book's
+     own examples whatever locale the exporting machine runs in: a German default would
+     otherwise render 1.234,56 and disagree with every price in the manuscript.
+
+     Fractions print at exactly two places or not at all. The book subdivides Glimmer twice
+     by a hundred (100 Flickers to a Gleam, 100 Gleams to a Glow), so two places is the
+     currency's own precision, while a whole balance stays "GLM 1,234" rather than padding
+     every catalog-priced purse with a meaningless ".00". */
+  function money(v) {
+    var n = Number(v);
+    if (!isFinite(n)) n = 0;
+    return n % 1
+      ? n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      : n.toLocaleString("en-US", { maximumFractionDigits: 0 });
+  }
+
   function safeSetText(tf, val) {
     if (val != null && val !== "") tf.setText(sanitizeText(String(val)));
   }
@@ -184,7 +225,21 @@ EN.pdfExport = (function () {
       opts = opts || {};
       var size = opts.size || 9, font = opts.font || fonts.sans, h = opts.h || (size + 4);
       var maxW = opts.maxWidth || (CONTENT_W - (opts.x || 0));
-      var lines = opts.wrap === false ? [String(str == null ? "" : str)] : wrapLines(font, str, size, maxW);
+      /* SANITIZE HERE, BEFORE WRAPPING, AND NOT AT THE drawText CALL.
+
+         This is the prose primitive: talent text, briefs, inventory detail, every line
+         that is drawn rather than parked in a form field. row() and table() each sanitize
+         their own value, but this one passed its string straight through, so a catalog
+         price reaching it handed drawText a raw U+1D4A2 and pdf-lib threw "WinAnsi cannot
+         encode". download() catches everything and reports only "Fillable PDF failed to
+         generate", so such an export did not lose the mark quietly, it died quietly.
+
+         Before wrapping, because the substitution is WIDER than what it replaces (one
+         character becomes "GLM "), so wrapLines has to measure the text that will really
+         be drawn or the last word on a line runs past the column. wrapLines would throw on
+         the raw mark regardless: widthOfTextAtSize encodes in order to measure. */
+      str = sanitizeText(String(str == null ? "" : str));
+      var lines = opts.wrap === false ? [str] : wrapLines(font, str, size, maxW);
       ctx.ensure(h * lines.length);
       lines.forEach(function (ln) {
         ctx.page.drawText(ln, { x: MARGIN.left + (opts.x || 0), y: ctx.y - size, size: size, font: font, color: opts.color || hexColor("ink") });
@@ -835,13 +890,17 @@ EN.pdfExport = (function () {
   function buildGearHoldings(doc, form, fonts, ch, d) {
     var ctx = makeCtx(doc, form, fonts, { title: "GEAR & HOLDINGS", tag: "03 · GEAR", serial: idSerial(ch), fieldPrefix: "gear" });
 
-    /* The mark travels with the number, the way the print sheet already writes it ("G ").
-       This field carried a bare figure, so a filled-in PDF said 12,345 without saying of
-       WHAT, next to a Nexus box that takes a figure in a different currency entirely.
-       Grouped too, since these are read at a glance across a table. */
+    /* Both wallets print as CODE then figure, the notation the book gives them.
+       Glimmer carried a bare number before, so a filled-in PDF said 12,345 without saying
+       of WHAT, next to a Nexus box in a different currency entirely.
+
+       AND THE NEXUS BOX WAS ALWAYS EMPTY. ch.nexus is a real stored balance, seeded and
+       type-guarded in store.js beside ch.glimmer and spent by the same benches, but this
+       row hardcoded "" and never read it, so the one currency the book calls watched money
+       printed blank on every sheet ever exported. It is read now. */
     ctx.row([
-      { label: "Glimmer", name: "glimmer", value: ch.glimmer != null ? "G " + Number(ch.glimmer).toLocaleString() : "G 0", w: 1 },
-      { label: "Nexus Tokens", name: "nexus", value: "", w: 1 }
+      { label: "Glimmer",      name: "glimmer", value: "GLM " + money(ch.glimmer), w: 1 },
+      { label: "Nexus Tokens", name: "nexus",   value: "NXT " + money(ch.nexus),   w: 1 }
     ]);
 
     var dg = d.defenseGear || {};
