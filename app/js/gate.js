@@ -15,6 +15,12 @@
    EASTER EGG: three wrong codes summons an unseen Codebreaker who hijacks the
                node and walks the visitor past the gate. Pure flavor (the gate
                was never real security), and a reward for fumbling the password.
+
+   BYPASS:     a deliberately quiet "// maintenance" button in the lower left of
+               the node opens it with no code. It is dim until hovered so it reads
+               as terminal furniture rather than an offer, and it writes the same
+               unlock flag every other route does, so a reload will not ask again.
+               Clearing site data (or removing en_gate_ok_v1) restores the gate.
    =========================================================================== */
 window.EN = window.EN || {};
 EN.gate = (function () {
@@ -61,6 +67,12 @@ EN.gate = (function () {
     ".gate-go:hover{ filter:brightness(1.12); }",
     ".gate-err{ min-height:16px; margin-top:12px; font-size:11px; letter-spacing:.1em; color:var(--danger); text-align:center; }",
     ".gate-foot{ margin-top:16px; text-align:center; font-size:9px; letter-spacing:.2em; color:var(--text4); }",
+    "/* ----- maintenance bypass: deliberately the quietest thing on the screen ----- */",
+    ".gate-skip{ position:absolute; left:14px; bottom:12px; z-index:2; background:none; border:0; padding:7px 9px;",
+    "  font-family:var(--mono); font-size:9px; letter-spacing:.18em; text-transform:uppercase;",
+    "  color:var(--text4); opacity:.45; cursor:pointer; transition:opacity .18s, color .18s; }",
+    ".gate-skip:hover{ opacity:1; color:var(--accent); }",
+    ".gate-skip:focus-visible{ opacity:1; color:var(--accent); outline:1px solid var(--accent-dim); outline-offset:2px; }",
     "/* ----- 3-strikes Codebreaker hijack easter egg ----- */",
     ".gate-card.hijacked{ animation:gate-glitch .5s steps(2) 2; border-color:var(--accent); box-shadow:0 0 0 1px var(--accent), 0 0 44px rgba(0,229,255,.4); }",
     "@keyframes gate-glitch{ 0%,100%{transform:translate(0,0); filter:none} 20%{transform:translate(-3px,1px)} 40%{transform:translate(3px,-2px); filter:hue-rotate(45deg)} 60%{transform:translate(-2px,1px)} 80%{transform:translate(2px,-1px); filter:hue-rotate(-35deg)} }",
@@ -166,7 +178,10 @@ EN.gate = (function () {
         '<button id="gate-go" class="gate-go" type="button">AUTHENTICATE</button>' +
         '<div id="gate-err" class="gate-err"></div>' +
         '<div class="gate-foot">NODE 763 // ELYSIUM NIGHTS</div>' +
-      '</div>';
+      '</div>' +
+      /* Sits in the corner of the NODE, not on the card, so it reads as part of the
+         terminal furniture rather than an option the login screen is offering. */
+      '<button id="gate-skip" class="gate-skip" type="button" title="Open the node without a code">// maintenance</button>';
     document.body.appendChild(ov);
     var input = ov.querySelector("#gate-pass");
     var err = ov.querySelector("#gate-err");
@@ -174,10 +189,21 @@ EN.gate = (function () {
 
     var tries = 0, hijacked = false;
 
+    /* THE one way this node opens, shared by all three routes in: a correct code, the
+       Codebreaker hijack, and the maintenance bypass. They differ only in how long the
+       overlay lingers, so each passes its own fade, and none of them owns a private copy
+       of "persist, mark ok, hand over, tidy up" that could drift from the others. */
+    function openNode(fade) {
+      persist();
+      ov.classList.add("ok");
+      onUnlock();
+      setTimeout(function () { if (ov.parentNode) ov.parentNode.removeChild(ov); }, fade || 480);
+    }
+
     // third failed code: an unseen Codebreaker takes over the node and bypasses the gate
     function codebreakerHijack() {
       var card = ov.querySelector(".gate-card");
-      if (!card) { persist(); onUnlock(); return; }
+      if (!card) { openNode(0); return; }   // nothing to glitch: open it without the theatre
       card.classList.add("hijacked");
       ov.classList.add("hijacking");   // glitch the whole node background while the break is live
       setTimeout(function () {
@@ -188,10 +214,7 @@ EN.gate = (function () {
             '<div class="gate-prog"><div class="gate-progfill"></div></div>' +
           '</div>';
         runHijackScript(card.querySelector(".gate-term"), card.querySelector(".gate-progfill"), function () {
-          persist();
-          ov.classList.add("ok");
-          onUnlock();
-          setTimeout(function () { if (ov.parentNode) ov.parentNode.removeChild(ov); }, 540);
+          openNode(540);
         });
       }, 540);
     }
@@ -199,12 +222,9 @@ EN.gate = (function () {
     function submit() {
       if (hijacked) return;
       if (input.value === CONFIG.password) {
-        persist();
         err.style.color = "var(--success)";
         err.textContent = "ACCESS GRANTED";
-        ov.classList.add("ok");
-        onUnlock();
-        setTimeout(function () { if (ov.parentNode) ov.parentNode.removeChild(ov); }, 480);
+        openNode();
         return;
       }
       tries++;
@@ -219,6 +239,11 @@ EN.gate = (function () {
     }
     ov.querySelector("#gate-go").addEventListener("click", submit);
     input.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); submit(); } });
+
+    /* Opens the node the same way a correct code does, flag and all, so a reload does not
+       ask again. It costs nothing the gate was protecting: the code sits in this file in
+       plain text a few lines up, and three wrong guesses already walk you in. */
+    ov.querySelector("#gate-skip").addEventListener("click", function () { openNode(); });
   }
 
   return { require: require };
