@@ -26,15 +26,26 @@ back to system fonts offline.)
 
 ## Deploy
 
-This repo ships a GitHub Actions workflow (`.github/workflows/deploy.yml`) that publishes the
-`app/` folder to GitHub Pages. In the repo settings, set **Pages → Build and deployment → Source:
-GitHub Actions**, then every push to `main` redeploys the live site.
+GitHub Pages serves this repo **straight from the `main` branch root**, with no build step. Push to
+`main` and the live site follows a minute later. `Pages -> Build and deployment -> Source` is set to
+**Deploy from a branch**, and `CNAME` at the repo root is what points elysiumnightsrpg.com here.
 
-**As currently configured the live site is NOT built by that workflow.** It is served from the
-branch root: `https://elysiumnightsrpg.com/` returns this repo's root `index.html` (the redirect
-stub) rather than `app/index.html`, the app lives under `/app/`, and `CNAME` sits at the repo
-root. Switching Pages to the GitHub Actions source as described above would make `app/` the site
-root and move every URL, so treat that paragraph as the intended setup, not the current one.
+That is why the layout is what it is: `https://elysiumnightsrpg.com/` serves the root `index.html`,
+a redirect stub, and the app itself lives under `/app/`. Every published URL carries that `/app/`
+prefix.
+
+This repo used to also ship `.github/workflows/deploy.yml`, which uploaded `app/` as a Pages
+artifact. It was deleted, and deliberately. It did not fail, which is what made it worth removing:
+it succeeded on every push, so each commit produced TWO deployments to the same `github-pages`
+environment about twenty seconds apart, the workflow's and the branch builder's. The branch builder
+consistently landed second and won, which is the only reason the URL layout stayed stable. Had the
+order ever flipped, `app/` would have become the site root, this stub would have vanished, and every
+`/app/...` link would have broken. One publisher, no race.
+
+**If a build step is ever needed**, that is the moment to reintroduce a workflow, and the switch has
+to be made properly: set the Pages source to **GitHub Actions** at the same time, so only one
+publisher is ever live. Be aware that doing so makes `app/` the site root and moves every URL on the
+site.
 
 ### Before each deploy
 
