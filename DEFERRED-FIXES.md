@@ -4097,6 +4097,115 @@ renders identically on every device regardless of installed fonts. The PDF is th
 even then, since AcroForm text fields cannot hold vector art; embedding a real font there
 would mean vendoring fontkit plus a licensed face carrying U+1D4A2.
 
+## Manuscript sync, 2026-08-12: Open Architecture rebuilt, Disengage and Opportunity Attack exist
+
+Brandon delivered an App Sync Handoff covering everything final in the three live Docs as of
+2026-08-12. Sections 1 to 7 are implemented. What follows is what changed in the app, what was
+deliberately NOT changed, and the two things the sync exposed.
+
+### The headline: additive, not subtract-and-replace
+
+The old model had the Lineage Feature's effect "end as a separate system and be absorbed into
+the chrome", which would have required the app to REMOVE a feature's effects and substitute
+new ones. That model is gone. The feature keeps working in full, the implant keeps working in
+full, and a third NAMED record switches on while both halves are held.
+
+Seven Integrations, each now its own record carrying its own name, activation predicate and
+cadence: **Dermal Aegis, Reinforced Physique, Dermal Neuralink, Living Transceiver, Hitscan
+Optics, Synaptic Reflex, Springstep**. The engine surfaces each under its own name, sourced
+"Open Architecture · <feature> + <chrome>", rather than repeating the feature's name back at a
+player who can already see it in the list above.
+
+### Three bonuses built THIS MORNING were superseded and removed
+
+This is the part worth remembering. Earlier the same day, Open Architecture was implemented
+with three flat numeric deltas. The sync replaced all three with mechanics that are not
+standing modifiers at all:
+
+| built in the morning | replaced by | why it could not stay |
+| ----- | ----- | ----- |
+| Dermal Plating, flat +1 DR | **Dermal Aegis** | +2 DR against ONE attack, the first physical hit each round, applied at damage step 3. Not standing DR. |
+| Tuned Synapses, +2 Initiative | **Synaptic Reflex** | mutates the Reflex Booster's own counter, max 1 to Caliber with a per-turn cap. Not an Initiative bonus. |
+| Calibrated Gait, +1 Speed | **Springstep** | a Body Save or Prone on landing. Not a Speed bonus. |
+
+Left in place they would have double-counted against the clause text the sheet now prints.
+Verified by measuring every pairing with and without Open Architecture: **no derived number
+moves on any of the seven.** The only thing that moves is the Static Point reduction.
+
+### What the SP clause does, measured
+
+Every pairing drops the matching implant by 1 SP, floored at 0, before Total Static is summed.
+Measured across all seven at Brandware: 2 to 1 for Dermal Aegis, Reinforced Physique and
+Synaptic Reflex; 1 to 0 for Dermal Neuralink, Living Transceiver, Hitscan Optics and
+Springstep. A character with Brandware Cyberoptics and Spring Joints plus both features
+derives **Chrome Tax 0**, which is the "deliberate consequence, do not patch" the handoff calls
+out. It is not patched.
+
+### Renames, and the four traps in them
+
+`Cybereyes` to `Cyberoptics`, `Quarry` to `Priority Target`, `Predictive Targeting` to
+`Hitscan`. `Rebound Strike` never existed in the app.
+
+**`cyberoptics` is a persisted KEY**, not just a label. An installed implant is stored as
+`ch.cyberware[n].key`, and every reader looks it up by key, so a rename that does not move the
+stored key does not merely mislabel the piece: it keeps charging its Static Points while
+granting nothing at all. A rename table now sits beside the catalog (`EN.cyberware.renames`)
+and migrate() moves both the installed list and the stash, the same shape the Extended Shaft
+rename used. Verified: a saved record holding `cybereyes` migrates and Hitscan Optics fires.
+
+Three strings were deliberately left alone, per the handoff: the lowercase `quarry` in
+tracking gear, `a proper combat blade` in the Dagger, and **Heavy Payload's** `count as one
+Size larger for grappling`, which must NOT follow Synthetic Musculature's widening to Shove,
+Trip and Grapple. The app now holds one of each phrasing, which is the intended divergence.
+
+### Disengage and Opportunity Attack
+
+Disengage joins the **Action** examples, not the Swift list. The three features that discount
+it to a Swift Action (Watch How I Soar, Rhythmic Shaping, The Getaway) are discounts on a
+baseline that now exists, and all three read correctly as printed with no app exception
+needed. Slippery is action-agnostic now and classifies as Passive, which is right: the Defense
+bonus is a consequence of moving, not an action you take.
+
+The Opportunity Attacks block sits at the end of the Impulse Action entry, which is where the
+manuscript puts it (after the Impulse examples, before Free Actions), and renders under the
+Codex's ACTION ECONOMY panel with all five rules intact. The cross-referencing features are
+already in print and now function: a Talent overrides "Disengage denies the attack", Spring
+Joints' leap states it does not provoke, and Watch How I Soar imposes Snag on Opportunity
+Attacks against you.
+
+### Verified
+
+* All seven Integrations load under their new names with the right pairings.
+* SP drops match the handoff's section 1.5 table exactly, at every tier tested.
+* No stray derived numbers on any pairing, with and without Open Architecture.
+* The `cybereyes` migration, end to end.
+* Deletions absent from the app: `Engineered Baseline`, `remain separate systems`,
+  `range doubles to 24 spaces`, `Cyberlegs or Spring Joints`, `Cybereyes`, `Quarry`,
+  `Predictive Targeting`.
+* Disengage renders in the Action examples; the Opportunity Attacks block renders with all
+  five rules; the Impulse bullet is reworded.
+* Thirteen tab and bench visits plus the print sheet: zero console errors, PDF at 191,143 bytes.
+
+### NOT implemented, and it is the bigger half
+
+**The Integration mechanics are recorded as data and displayed as text. They are not
+ENFORCED.** The handoff's section 6 lists three counter types (per-round flags for Dermal
+Aegis and the Hitscan Optics ally buff, a per-turn flag for Reinforced Physique, per-Encounter
+counters for Dermal Neuralink and Synaptic Reflex), plus a free Cyberoptic mode that must ride
+outside the tier slot budget, plus a damage-step placement for Dermal Aegis. The sheet has no
+round or turn tracker, no per-Encounter counter surface for chrome, and no Cyberoptic mode
+picker, so none of that can be tracked yet. Each is a feature in its own right.
+
+### A tooling note worth keeping
+
+Two data files were corrupted mid-sync and had to be rewritten: a `\\n` intended as a JS escape
+was written as a REAL newline inside a string literal, which is a syntax error, and the whole
+app failed to parse. The cause was blamed on the shell and was not the shell: the replacement
+regex built the character class `[^"\\]`, in which the backslash escapes the closing bracket
+and leaves the class unterminated. **Building JS string literals with `json.dumps` and finding
+their bounds with a manual scanner, rather than a regex, is the fix.** The same malformed class
+had already failed twice earlier in the session before the cause was identified.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from
