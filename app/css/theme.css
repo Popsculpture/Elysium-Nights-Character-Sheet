@@ -879,14 +879,25 @@ html.light .pop-btn:hover{ background:rgba(0,0,0,.05) !important; }
 .certify-row.disabled{ opacity:.55; cursor:not-allowed; }
 .certify-row.disabled input{ cursor:not-allowed; }
 
-/* The Glimmer and Nexus marks, substituted on devices whose fonts lack them.
-   A letter standing in for a currency sign wants to read as a MARK and not as the first
-   letter of the next word, so it takes the display face, a little weight and a hair of
-   tracking. See EN.ui.substituteCurrencyGlyphs; this class is only ever emitted there. */
-.cur-sub {
-  font-family: var(--disp);
-  font-style: italic;
-  font-weight: 600;
-  letter-spacing: .02em;
-  margin-right: .06em;
+/* The Glimmer and Nexus marks, drawn as outlines on devices whose fonts lack them.
+   Sized in em so they scale with whatever text they sit in, and shifted down by the
+   glyph's own descender depth (130/1000 em) so the outline sits on the text baseline
+   rather than floating. fill:currentColor is set on the element, not here, so the mark
+   follows the surrounding colour through every theme. See EN.ui.substituteCurrencyGlyphs. */
+.cur-sub { display: inline-block; }
+.cur-sub .cur-svg {
+  height: .827em;
+  width: auto;
+  vertical-align: -.13em;
+  fill: currentColor;
+  margin-right: .04em;
+}
+/* Matched to the printed mark by MEASUREMENT, not by eye. The device font's bullseye is
+   0.70em of ink sitting 0.69em above the baseline and 0.01em below it. The ring's ink fills
+   600 of this glyph's 700-unit viewBox, so the box has to be 0.70 * 700/600 = .817em for the
+   ink to land at 0.70em, and the box bottom drops .07em below the baseline to put the ink
+   where the font puts it. */
+.cur-sub .cur-svg-nexus {
+  height: .817em;
+  vertical-align: -.07em;
 }

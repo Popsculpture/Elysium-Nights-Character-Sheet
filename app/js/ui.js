@@ -367,18 +367,94 @@ EN.ui = (function () {
     }
     return _glyphOk;
   }
+
+  /* ---- the marks as REAL OUTLINES, so no device has to own a font ------------
+     GLIMMER is U+1D4A2 MATHEMATICAL SCRIPT CAPITAL G, outlined from **Latin Modern Math
+     1.959** (Jackowski, Strzelczyk and Pianowski), which carries the codepoint and ships
+     under the **GUST Font License**, an instance of the LPPL: free to use, distribute and
+     modify. That licence is the reason this glyph and not another. Brandon's first SVG was
+     the same character set in Cambria and still LIVE TEXT, so it asked the device for a
+     font exactly like the bare character did, and would have drawn the same tofu box on the
+     phone that started this.
+
+     Font coordinates are y-UP with the baseline at 0; SVG is y-down. Hence scale(1,-1) and
+     a viewBox whose top is the glyph's ascent as a negative number. From the font: 1000
+     units per em, advance 685, ink from x 39..644 and y -130..697.
+
+     NEXUS is U+25CE BULLSEYE, which Latin Modern Math does not carry. It needs no font and
+     no artwork: a bullseye IS a circle inside a circle, two concentric rings with an open
+     middle, so it is drawn from the character's own definition rather than traced from
+     anyone's typeface.
+
+     fill: currentColor throughout, so both marks inherit the surrounding text colour and
+     follow every theme without a second definition. */
+  var GLIMMER_PATH = "M641 582C648 611 645 636 629 657C605 690 547 697 514 697C439 697 366 678 292 629C231 588 189 521 173 455C158 395 153 333 186 289C220 245 277 223 340 223C390 223 445 238 493 268L472 172C462 129 445 91 423 50C405 18 382 -13 352 -38C312 -70 266 -93 220 -93C190 -93 159 -87 143 -65C133 -52 133 -34 133 -16C134 -3 135 12 128 21C123 28 115 31 105 31C92 31 77 29 66 20C55 11 46 -2 43 -14C35 -43 42 -69 57 -89C81 -122 126 -130 171 -130C254 -130 337 -95 411 -36C449 -6 476 32 497 74C527 135 548 198 563 261L596 393L540 380C527 351 498 311 483 299C443 267 399 253 354 253C313 253 280 272 258 301C228 341 232 400 246 456C261 517 297 576 351 619C390 650 437 663 481 663C506 663 541 653 558 629C570 613 576 595 570 573C566 554 559 533 542 519C519 501 497 498 473 498L466 481C481 478 505 472 510 472C540 472 569 488 595 509C619 529 634 555 641 582Z";
+  function glimmerSvg() {
+    var NS = "http://www.w3.org/2000/svg";
+    var svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("viewBox", "0 -697 685 827");
+    svg.setAttribute("class", "cur-svg");
+    svg.setAttribute("aria-hidden", "true");
+    var g = document.createElementNS(NS, "g");
+    g.setAttribute("transform", "scale(1,-1)");
+    var path = document.createElementNS(NS, "path");
+    path.setAttribute("d", GLIMMER_PATH);
+    g.appendChild(path);
+    svg.appendChild(g);
+    return svg;
+  }
+  function nexusSvg() {
+    var NS = "http://www.w3.org/2000/svg";
+    var svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("viewBox", "0 -700 700 700");
+    // its own class, because a ring wants different metrics from a letter: it sits centred
+    // on the x-height rather than on the baseline, and reads heavy at a letter's full height
+    svg.setAttribute("class", "cur-svg cur-svg-nexus");
+    svg.setAttribute("aria-hidden", "true");
+    var g = document.createElementNS(NS, "g");
+    g.setAttribute("transform", "translate(350,-350)");
+    var ring = document.createElementNS(NS, "circle");
+    /* Proportions taken from the printed bullseye rather than invented: a THIN ring, a
+       small inner ring, and visible air between them. Sized by MEASUREMENT against the
+       device font: 0.70em of ink sitting 0.69em above the baseline. */
+    ring.setAttribute("r", "280");
+    ring.setAttribute("fill", "none");
+    ring.setAttribute("stroke", "currentColor");
+    ring.setAttribute("stroke-width", "60");
+    // TWO CONCENTRIC RINGS. The first cut drew a filled centre dot, which is a target
+    // reticle, not a bullseye: U+25CE is a circle inside a circle and the middle is open.
+    var inner = document.createElementNS(NS, "circle");
+    inner.setAttribute("r", "112");
+    inner.setAttribute("fill", "none");
+    inner.setAttribute("stroke", "currentColor");
+    inner.setAttribute("stroke-width", "60");
+    g.appendChild(ring);
+    g.appendChild(inner);
+    svg.appendChild(g);
+    return svg;
+  }
+
+  /* Runs at the end of every render and is a NO-OP on any device whose fonts carry both
+     marks, which is the common case and costs one cached measurement. Only devices that
+     would otherwise show a tofu box pay anything, and only they lose the ability to select
+     and copy the mark as text, which is the trade that buys them a readable price.
+
+     It walks TEXT NODES because most of these marks are not written by code at all: they
+     are inside catalog prose ("Price: <G>60 (Common, Legal)"), so nothing short of touching
+     the rendered text reaches them. */
   function substituteCurrencyGlyphs(root) {
     var ok = currencyGlyphsOk();
     if (ok.glimmer && ok.nexus) return;
     var subs = [];
-    if (!ok.glimmer) subs.push([GLIMMER, "G", "Glimmer"]);
-    if (!ok.nexus) subs.push([NEXUS, "O", "Nexus"]);
-    var re = new RegExp("[" + subs.map(function (x) { return x[0]; }).join("") + "]", "u");
+    if (!ok.glimmer) subs.push([GLIMMER, glimmerSvg, "Glimmer"]);
+    if (!ok.nexus) subs.push([NEXUS, nexusSvg, "Nexus"]);
     var walker = document.createTreeWalker(root || document.body, NodeFilter.SHOW_TEXT, {
       acceptNode: function (n) {
-        if (!n.nodeValue || n.nodeValue.indexOf(GLIMMER) === -1 && n.nodeValue.indexOf(NEXUS) === -1) return NodeFilter.FILTER_REJECT;
+        if (!n.nodeValue) return NodeFilter.FILTER_REJECT;
+        if (n.nodeValue.indexOf(GLIMMER) === -1 && n.nodeValue.indexOf(NEXUS) === -1) return NodeFilter.FILTER_REJECT;
         var p = n.parentNode;
-        if (p && (p.nodeName === "SCRIPT" || p.nodeName === "STYLE" || p.classList && p.classList.contains("cur-sub"))) return NodeFilter.FILTER_REJECT;
+        if (p && (p.nodeName === "SCRIPT" || p.nodeName === "STYLE")) return NodeFilter.FILTER_REJECT;
+        if (p && p.classList && p.classList.contains("cur-sub")) return NodeFilter.FILTER_REJECT;
         return NodeFilter.FILTER_ACCEPT;
       }
     });
@@ -392,7 +468,7 @@ EN.ui = (function () {
         var span = document.createElement("span");
         span.className = "cur-sub";
         span.title = hit[2];
-        span.textContent = hit[1];
+        span.appendChild(hit[1]());
         frag.appendChild(span);
       });
       node.parentNode.replaceChild(frag, node);

@@ -4206,6 +4206,75 @@ and leaves the class unterminated. **Building JS string literals with `json.dump
 their bounds with a manual scanner, rather than a regex, is the fix.** The same malformed class
 had already failed twice earlier in the session before the cause was identified.
 
+## The currency marks, now real outlines instead of a stand-in letter
+
+Follow-on to the letter fallback. Brandon supplied artwork, and then Latin Modern Math.
+
+### The first SVG did not solve it, and the reason is the bug itself
+
+`Glimmer.svg` contained **zero `<path>` elements**. It was a `<text>` element holding the
+literal U+1D4A2 character styled `font-family:'Cambria', serif`. So it was the same character
+in a new wrapper, still asking the device for a font: on the Android build that started this
+it would have drawn the identical tofu box. What was needed was the glyph converted to
+OUTLINES, which is geometry that needs no font at all.
+
+### Latin Modern Math, and why the licence decided it
+
+Checked with fontTools: **U+1D4A2 present** (glyph `u1D4A2`), **U+25CE absent**. Ships under
+the **GUST Font License**, an instance of the LPPL, which permits free use, distribution and
+modification. That is what made it usable, where outlining Cambria's glyph would have meant
+embedding Microsoft font geometry in a public site. The licensing question was put to the
+author rather than decided quietly.
+
+Extracted at 1000 units per em, advance 685, ink x 39..644 and y -130..697, giving 834
+characters of path data now inlined in `ui.js`. Font coordinates are y-UP with the baseline
+at 0 and SVG is y-down, hence `scale(1,-1)` and a viewBox whose top is the ascent negated.
+
+### Nexus needed no font and no artwork
+
+Latin Modern Math has no U+25CE, and it does not need one: a bullseye is a circle inside a
+circle, so it is drawn from the character's own definition rather than traced from anyone's
+typeface. Two corrections came from the author while it was being fitted:
+
+1. **"I like the ◎, not the new one."** The first attempt used a 10.7% stroke, which read as
+   a heavy target reticle beside the printed mark.
+2. **"It's a circle in a circle, there is no center dot."** The inner circle had been drawn
+   FILLED. A filled centre is a reticle; the bullseye's middle is open. Both circles are
+   stroked now.
+
+Sized by measurement rather than by eye: the device font's bullseye is **0.70em of ink sitting
+0.69em above the baseline and 0.01em below**. The ring's ink fills 600 of the glyph's 700-unit
+viewBox, so the box is 0.70 x 700/600 = .817em and drops .07em below the baseline to land the
+ink where the font lands it.
+
+### Behaviour, unchanged in shape
+
+Still gated on detection, so a device whose fonts carry both marks keeps the real characters
+and keeps them selectable and copyable. Only devices that would otherwise show a tofu box get
+the outlines, and only they lose text selection on the mark, which is the trade that buys them
+a readable price. `fill: currentColor` throughout, so both marks follow every theme.
+
+### Verified
+
+* Fallback forced on: **zero raw marks anywhere on the page**, outlines in place, idempotent
+  across re-renders.
+* Detection true: **zero outlines, raw characters intact.** The pass costs one cached
+  measurement and does nothing.
+* Nexus ink diameter measured at **0.70em, matching the font exactly**; both circles stroked,
+  neither filled.
+* Twelve tab and bench visits plus the print sheet: zero console errors, PDF at 166,879 bytes.
+
+### Open
+
+**The letterform is Latin Modern's, not Cambria's.** They are visibly different script Gs, and
+Brandon's own SVG was set in Cambria. Latin Modern's is the one that is licensed for this, so
+it is what shipped, but if he wants Cambria's exact shape that is his licensing call to make.
+
+**The PDF still transliterates to "G" and "N".** AcroForm text fields cannot hold vector art,
+and fontkit is not vendored beside pdf-lib, so a real glyph there would mean vendoring fontkit
+plus embedding the font. Latin Modern's licence would now permit exactly that, which makes it
+a genuine option rather than a dead end.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from
