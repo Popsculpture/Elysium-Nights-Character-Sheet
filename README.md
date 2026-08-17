@@ -29,3 +29,21 @@ back to system fonts offline.)
 This repo ships a GitHub Actions workflow (`.github/workflows/deploy.yml`) that publishes the
 `app/` folder to GitHub Pages. In the repo settings, set **Pages → Build and deployment → Source:
 GitHub Actions**, then every push to `main` redeploys the live site.
+
+**As currently configured the live site is NOT built by that workflow.** It is served from the
+branch root: `https://elysiumnightsrpg.com/` returns this repo's root `index.html` (the redirect
+stub) rather than `app/index.html`, the app lives under `/app/`, and `CNAME` sits at the repo
+root. Switching Pages to the GitHub Actions source as described above would make `app/` the site
+root and move every URL, so treat that paragraph as the intended setup, not the current one.
+
+### Before each deploy
+
+Run this whenever anything under `app/` changed, then commit the result with your work:
+
+    python tools/stamp_version.py
+
+Pages serves every file with `Cache-Control: max-age=600` and that cannot be configured from the
+repo, so without a version on the asset URLs a browser can pair a cached `js/ui.js` with a fresh
+`data/rules.js` and run half of one build against half of another. Stamping makes a deploy atomic:
+all 49 local assets change name together, so the build swaps in one piece. It does not make the
+deploy arrive any sooner, because the HTML carries the same ten minute cache. `--strip` undoes it.
