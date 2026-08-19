@@ -170,7 +170,17 @@ var FURY_OVERDRIVE_MANEUVERS = [
   { name: "Bring the House Down", action: "Action", cost: 1, text: "Target one wall, pillar, vehicle, barricade, or similar large structure within your melee reach, or a point on the ground within reach. The structure is torn apart or the floor is cratered. The area within 2 spaces of that point becomes Difficult Terrain from the wreckage, and any Cover the destroyed object was providing is gone. Each Enemy within 2 spaces must succeed on an Agility Save (DC = 8 + your Body Modifier + your Caliber) or be knocked *Prone* and take Bludgeoning damage equal to your Caliber from flying debris. Thanks to Collateral Damage, you can bring down reinforced structures that would normally be too solid to break in a single blow, though the GM may rule that truly massive or load-bearing targets require more than one." },
   { name: "Linebreaker", action: "Swift Action", cost: 1, text: "Until the end of your turn, you can move through spaces occupied by enemies. Any enemy whose space you pass through must make a Body Save (DC = 8 + your Body Modifier + your Caliber) or be knocked *Prone*." },
   { name: "Redline", action: "Swift Action", cost: 1, text: "You take Vitality damage equal to your Caliber (this damage cannot be reduced or prevented). Until the end of your turn, each of your weapon attacks deals an additional 1d10 damage of the weapon's type.\n\n• **Cornered:** Redline costs no Vitality, the bonus damage increases to 2d10, and your attacks ignore Resistance until the end of your turn." },
-  { name: "Meat Shield", action: "Impulse Action", cost: 1, text: "Trigger: An ally within 2 spaces is hit by an attack. You instantly swap places with the ally and take the damage from the attack instead. You have Resistance to the damage taken this way.\n\n• **Cornered:** After you take the hit, you may immediately make a single standard melee attack against the attacker if they are within your reach." },
+  /* M23, ruled 2026-08-16: was "Meat Shield", which the Improvised Weapons grapple-cover
+     stance also owned. Two different mechanics, one name, and the name reads correctly for
+     both from opposite ends: there you HOLD a meat shield, here you ARE one. The generic
+     stance keeps it, since it describes that one literally, and this became "On Me".
+
+     Worth recording because the PART C note that raised the collision described THIS ability
+     as redirecting a hit onto a grappled Target, which is what the improvised stance does,
+     not what this does. The note conflated the two, which is the very confusion it was
+     reporting. The author confirmed 2026-08-16 that the ally-swap below is correct, so no
+     mechanic changed here, only the name. */
+  { name: "On Me", action: "Impulse Action", cost: 1, text: "Trigger: An ally within 2 spaces is hit by an attack. You instantly swap places with the ally and take the damage from the attack instead. You have Resistance to the damage taken this way.\n\n• **Cornered:** After you take the hit, you may immediately make a single standard melee attack against the attacker if they are within your reach." },
   { name: "Make an Example", action: "Impulse Action", cost: 1, text: "Trigger: You reduce an Enemy to 0 Vitality with a melee attack. Each Enemy within 3 spaces who can see you must succeed on a Wits Save (DC = 8 + your Body Modifier + your Caliber) or become *Shaken*.\n\n• **Cornered:** An Enemy that fails the save is *Frightened* instead of *Shaken*." }
 ];
 var FURY_OVERDRIVE_TEXT = FURY_OVERDRIVE_INTRO + "\n\n" + FURY_OVERDRIVE_MANEUVERS.map(function (m) {

@@ -65,7 +65,20 @@ EN.gridView = (function () {
   // Bandwidth lives on resources.current (not ch.grid), like every other class resource.
   function setBandwidth(n) { store.update(function (c) { c.resources = c.resources || {}; c.resources.current = c.resources.current || {}; c.resources.current.Bandwidth = n; }); }
   // Cipher casting cost: Complexity 0 free, 1-3 = 1 BW, 4-5 = 2 BW, Signature flat 1 BW.
-  function cipherCost(cy) { var cx = cy.cx || 0; if (cx <= 0) return 0; if (cy.signature) return 1; return cx <= 3 ? 1 : 2; }
+  /* Casting cost: Complexity 0 free, 1-3 cost 1 Bandwidth, 4-5 cost 2, Signature a flat 1.
+     THE QUANTUM CORE TRAIT IS THE EXCEPTION (Part 2, verified 2026-08-19): "ciphers of
+     Complexity 4 or 5 cost 1 Bandwidth instead of 2". It is the TRAIT'S rule, not a property
+     of the tier. Matching on "Apex" is exact today because Quantum Core sits on the Apex row
+     and nothing else grants it, and a deck keeps every lower tier's traits rather than
+     swapping them. If anything ever grants Quantum Core to a lesser rig, this becomes a
+     lookup against the deck's trait list rather than its tier name. */
+  function cipherCost(cy, deckTier) {
+    var cx = cy.cx || 0;
+    if (cx <= 0) return 0;
+    if (cy.signature) return 1;
+    if (cx <= 3) return 1;
+    return deckTier === "Apex" ? 1 : 2;
+  }
   // Category accent: Offense red, Protection green, Manipulation purple.
   function catColor(cat) { return cat === "Offense" ? "var(--danger)" : cat === "Protection" ? "var(--success)" : "var(--flow)"; }
 
@@ -254,8 +267,8 @@ EN.gridView = (function () {
      the rulebook, not the app, so the player hand-tracks what they know). Everyone
      else is a Standard User and gets the universal B&E Buddy cipher list. */
   // One acquired-cipher card in the Repertoire: collapsible detail, complexity-gated CAST.
-  function cipherCard(cy, runCx, bwCur) {
-    var cx = cy.cx || 0, cost = cipherCost(cy);
+  function cipherCard(cy, runCx, bwCur, deckTier) {
+    var cx = cy.cx || 0, cost = cipherCost(cy, deckTier);
     var castable = runCx >= cx, can = castable && bwCur >= cost;
     var key = "cipher-" + cy.name, open = !!_open[key], color = catColor(cy.cat);
     return el("div.feature", { style: { borderLeftColor: castable ? color : "var(--border2)", opacity: castable ? 1 : .6 } }, [
@@ -355,7 +368,7 @@ EN.gridView = (function () {
       if (!owned.length) {
         rows.push(noteP("No ciphers acquired yet. Buy them in the Inventory tab's gray market (Cipher Library), then cast them here.", "var(--text2)"));
       } else {
-        owned.forEach(function (cy) { rows.push(cipherCard(cy, runCx, bwCur)); });
+        owned.forEach(function (cy) { rows.push(cipherCard(cy, runCx, bwCur, deck && deck.tier)); });
       }
       rows.push(noteP("Casting costs: Complexity 0 free · 1-3 = 1 BW · 4-5 = 2 BW · Signature Ciphers a flat 1 BW.", "var(--text2)"));
       return EN.ui.panel("Ciphers", "EXPLOITS · REPERTOIRE", rows,

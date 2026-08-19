@@ -375,7 +375,7 @@ EN.talents = [
     name: "Cutting Agent",
     category: "Skills, Social & Utility",
     requirements: "",
-    text: "For reasons that are definitely not malicious, you learn to prepare and deliver deadly chemical payloads, gaining the following benefits:\n• When you make a damage roll, you ignore Resistance to Toxic damage.\n• You can coat a weapon in toxin as a Swift Action, instead of an Action.\n• You gain Proficiency with medical and chemistry tools. With one hour of work using these tools and expending 𝒢50 worth of materials, you can create a number of doses of potent toxin equal to your Caliber.\n• Once applied to a weapon or ammunition, the toxin retains its potency for 1 minute or until you hit. When a Target takes damage from the coated weapon, they must succeed on a Body Saving Throw (DC 8 + your Tech modifier + your Caliber) or take 2d8 Toxic damage and gain the Poisoned condition until the end of your next turn.\n\n**Upgrade (Level 6+):** The toxin damage increases to 3d8 and the Poisoned condition lasts for 1 minute (with a save at the end of each of the Target's turns). You can also produce twice as many doses per crafting session."
+    text: "For reasons that are definitely not malicious, you learn to prepare and deliver deadly chemical payloads, gaining the following benefits:\n• When you make a damage roll, you ignore Resistance to Toxic damage.\n• You can coat a weapon in toxin as a Swift Action, instead of an Action.\n• With 1 hour of work and 𝒢50 worth of chemical materials, you can create a number of doses of potent toxin equal to your Caliber.\n• Once applied to a weapon or ammunition, the toxin retains its potency for 1 minute or until you hit. When a Target takes damage from the coated weapon, they must succeed on a Body Saving Throw (DC 8 + Tech modifier + Caliber) or take 2d8 Toxic damage and gain the Poisoned condition until the end of your next turn.\n\n**Upgrade (Level 6+):** The toxin damage increases to 3d8 and the Poisoned condition lasts for 1 minute (with a save at the end of each of the Target's turns). You can also produce twice as many doses per crafting session."
   },
   {
     key: "faceless-persona",
@@ -413,11 +413,14 @@ EN.talents = [
     text: "Always on the lookout for danger in the sprawl, you gain the following benefits:\n• You cannot be caught off guard or Surprised while you are conscious.\n• You gain a +5 bonus to Initiative rolls.\n• Enemies do not gain Edge on attack rolls against you as a result of being Hidden from you.\n\n**Upgrade (Level 6+):** On the first round of any combat Encounter, you gain a free Swift Action that you may use only to move, take cover, or draw a weapon."
   },
   {
-    key: "kinetic-manipulator",
-    name: "Kinetic Manipulator",
+    /* Renamed 2026-08-19 (manuscript). The KEY is persisted in ch.universalUpgrades and the
+       flat ch.talents list, so store.js migrates it; renaming here alone would silently blank
+       the talent on every saved character that had taken it. */
+    key: "spooky-action",
+    name: "Spooky Action",
     category: "Skills, Social & Utility",
     requirements: "",
-    text: "You have attained a mastery over a localized Kinetic resonance or a specialized hover drone, granting you the following benefits:\n• Increase your Tech, Wits, or Mystique score by 1, to a maximum of 20.\n• You learn a localized Kinetic Base Resonance or gain a specialized utility drone that can manipulate objects remotely up to 6 spaces away. It operates silently and invisibly.\n• As a Swift Action, you can try to Shove one Target you can see within 6 spaces of you using this force. The Target must succeed on a Body Saving Throw (DC 8 + Caliber + the modifier of the score increased by this Talent) or be moved 1 space toward or away from you. A Target can willingly fail this save.\n\n**Upgrade (Level 6+):** You can manipulate objects up to 12 spaces away, and your Shove can move Targets up to 2 spaces. You can also use your manipulator to make a single ranged attack as a Swift Action against a Target within 6 spaces, dealing 1d8 Bludgeoning damage on a hit."
+    text: "You reach for something on the far side of the room, and the current hands it over. For half a second you and it are one thing in two places, and nobody who watches it happen asks to see it twice. You gain the following benefits:\n• Increase your Mystique or Tech score by 1, to a maximum of 20.\n• You can handle unattended objects within 6 spaces as though you were holding them, provided the task takes no more force than your own hands could manage. The force is silent and leaves nothing to see.\n• As a Swift Action, choose one Target you can see within 6 spaces. The Target must succeed on a Body Saving Throw (DC 8 + your Mystique or Tech modifier, whichever this Talent raised, + your Caliber) or be moved 1 space toward or away from you. A Target can willingly fail this save.\n\n**Upgrade (Level 6+):** Your reach extends to 12 spaces, and a failed save moves the Target up to 2 spaces. Once per turn, you can also spend a Swift Action to make a ranged attack (d20 + your Mystique or Tech modifier, whichever this Talent raised, + your Caliber) against a Target within 6 spaces, dealing 1d8 Bludgeoning damage on a hit."
   },
   {
     key: "photographic-memory",

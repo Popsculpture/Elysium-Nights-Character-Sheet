@@ -282,6 +282,11 @@ EN.codexView = (function () {
       kids.push(ruleBlock("Desperation Attacks", bullets(IW.desperation)));
       kids.push(ruleBlock("Special Effects and Conditions", IW.specialEffects));
       kids.push(ruleBlock("People as Improvised Weapons", IW.peopleIntro + "\n\n" + IW.wieldedBody
+        /* A wielded body IS an improvised weapon, so the Walking Anvil steps it too (manuscript
+           2026-08-19, reversing the earlier exemption). Its 1d10 is stated in three separate
+           places, the body itself plus the Bludgeon and Throw attacks, so this says it once here
+           rather than rewriting prose that is correct for everyone who is not a Juggernaut. */
+        + (anvil ? "\n\nThe Walking Anvil steps a wielded body up one die like any other improvised weapon: your Bludgeon and Throw each deal " + (stepUp("1d10") || "1d10") + " Bludgeoning, not 1d10." : "")
         + "\n\nWhether you can lift and swing someone at all is the Body Gate, under Size."));
       kids.push(ruleBlock("Meat Shield", bullets(IW.meatShield)));
       kids.push(ruleBlock("Bludgeon", IW.bludgeon));

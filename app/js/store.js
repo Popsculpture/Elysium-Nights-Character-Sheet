@@ -525,6 +525,7 @@ EN.store = (function () {
     var TALENT_RENAMES = Object.create(null);
     TALENT_RENAMES["toxicologist"] = TALENT_RENAMES["Toxicologist"] = "cutting-agent";
     TALENT_RENAMES["dead-eye-sniper"] = TALENT_RENAMES["Dead-Eye Sniper"] = "zeroed-in";
+    TALENT_RENAMES["kinetic-manipulator"] = TALENT_RENAMES["Kinetic Manipulator"] = "spooky-action";
     Object.keys(ch.universalUpgrades || {}).forEach(function (lvl) {
       var u = ch.universalUpgrades[lvl];
       if (u && (u.type === "talent" || u.type === "talentUpgrade") &&

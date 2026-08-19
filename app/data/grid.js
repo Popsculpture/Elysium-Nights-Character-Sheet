@@ -72,7 +72,7 @@ EN.grid = {
   cipherAttackFormula: "Cipher Attack: d20 + Tech mod + Systems Proficiency Bonus vs. node's Security Rating.",
   cipherSaveFormula: "Cipher Save DC: 8 + Tech mod + Systems Proficiency Bonus. Nodes resist save-based ciphers with d20 + Cipher Save Bonus.",
   cipherOutcomes: "Node fails its save: cipher takes full effect. Node succeeds: cipher is resisted, and IC automatically retaliates.",
-  cipherComplexityNote: "Complexity 0-5. Standard Users run Complexity 0 on their own; Complexity 1+ is Power User territory, and a Codebreaker's Smartdeck sets their ceiling. The B&E Buddy is the exception: its baked-in suite scales to the Buddy's own tier and still works for a Standard User at Complexity 1 or 2. Casting cost (Codebreaker): Complexity 0 free; 1-3 cost 1 Bandwidth; 4-5 cost 2 Bandwidth; Signature ciphers a flat 1 Bandwidth.",
+  cipherComplexityNote: "Complexity 0-5. Standard Users run Complexity 0 on their own; Complexity 1+ is Power User territory, and a Codebreaker's Smartdeck sets their ceiling. The B&E Buddy is the exception: its baked-in suite scales to the Buddy's own tier and still works for a Standard User at Complexity 1 or 2. Casting cost (Codebreaker): Complexity 0 free; 1-3 cost 1 Bandwidth; 4-5 cost 2 Bandwidth; Signature ciphers a flat 1 Bandwidth. A deck with the Quantum Core trait runs Complexity 4 and 5 for 1 Bandwidth instead of 2.",
   cipherDamage: [
     { complexity: "Standard", c: 0, roll: "1d6" },
     { complexity: "Improved", c: 1, roll: "2d6" },
@@ -156,7 +156,11 @@ EN.grid = {
     { name: "Trace-Resistant Signature", text: "Any IC Alert response against you rolls with Snag (+1 Snag Die on a Dice Pool). They still log a trace; it just points somewhere fuzzy." },
     { name: "Encrypted Channel", text: "Immune to passive Alert traces, the deck doesn't register in the slow corporate dragnets. Active hostile code still finds you." },
     { name: "Adaptive Buffer", text: "Stability Check DCs against you are reduced by 2." },
-    { name: "Quantum Core", text: "Once per scene, reroll a failed Cipher Attack." }
+    /* Verbatim, Part 2, 2026-08-19. The Bandwidth discount is THIS TRAIT'S rule, not a
+       property of the Apex tier. An Apex deck gets it because an Apex deck carries Quantum
+       Core, which is a different sentence with the same effect today and a different one the
+       moment anything else grants the trait. */
+    { name: "Quantum Core", text: "The deck holds two timelines for a few seconds and picks the one that worked. Once per scene, reroll a failed Cipher Attack. The core also runs the heavy end of the library cheaply: ciphers of Complexity 4 or 5 cost 1 Bandwidth instead of 2." }
   ],
 
   /* B&E Buddy · the Standard-User rig. System Integrity is listed per tier. */

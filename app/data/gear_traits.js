@@ -32,11 +32,18 @@ EN.gearCatalog.weaponTraits = {
   "Finesse": "When making an in-combat d20 attack or an out-of-combat Dice Pool attack with a Finesse weapon, you may use Body or Agility for the attack and damage calculation. You choose which Attribute each time you make an attack.",
   "Full-Auto": "As an Action once per round, spend 8 rounds to project an Area 3 cone or an Area 6 by 1 line from yourself, then choose Saturate or Suppress. Each Target in the area makes an Agility Save against your Weapon Save DC.\n\nSaturate: on a failure the Target takes the weapon\u0027s normal damage and effects; on a success, half damage and no additional effects.\n\nSuppress: on a failure the Target is Pinned until the start of your next turn, its Speed halved and rolling with Snag on attack rolls. A Pinned Target that stays behind cover and holds its fire takes nothing more. If it attacks, or moves while not behind cover, the stream catches it: it takes the weapon\u0027s damage die without your Attribute modifier, and the Pin ends. On a success, no effect.",
   "Guided": "Attacks ignore the Defense bonuses of Half Cover and do not suffer Snag when firing at long range.",
-  "Heavy": "Dense, reinforced, and it takes your whole body to bring to bear. Adds to encumbrance and interacts with rules that penalize low Body or long-distance movement. Usually unsuitable for off-hand or dual-wield use without a specific feature or powered assistance, and a poor fit for nimble, stealth-focused Freelancers.",
+  /* Verbatim from Part 3, pulled 2026-08-19. The app previously claimed Heavy "adds to
+     encumbrance", which the book never says: no item carries an individual Load value, Load
+     comes from a generic category table, and Bulky is the only trait that touches it. */
+  "Heavy": "Dense, reinforced, and it takes your whole body to bring to bear. Unsuitable for off-hand or dual-wield use without proper training or powered assistance. Weapons with the Heavy trait are a poor fit for nimble Freelancers.",
   "High Recoil": "Multiple attacks with the same weapon in one round apply Snag to later attacks unless Stabilized.",
   "Incendiary": "Deals Fire and leaves fire behind; a struck target may catch Burning, or it may leave a burning zone. Readily ignites fuel, flammable cover, and environmental hazards.",
   "Intrusion": "Against a target with significant cyberware, a drone, or a smart device, the round delivers a digital payload alongside its damage. On a failed save it can leave the target Breached and open a foothold an ally on the #GRID can exploit. Against a purely organic target there is nothing for the payload to reach, and it does nothing.",
-  "Light": "Compact and easy to handle in one hand. Light weapons interact with dual-wield and off-hand fighting rules and contribute minimally to encumbrance. They can be carried discreetly under loose clothing without counting as Concealable.",
+  /* Verbatim from Part 3, pulled 2026-08-19, and NOT to be trimmed back. The old text
+     gestured at "dual-wield and off-hand fighting rules", which names no mechanic; the book
+     calls it a Follow-Up Attack, and the Light trait Effect line is the only place the rule
+     is stated positively at all. The encumbrance clause was invented and is gone. */
+  "Light": "Compact and easy to handle in one hand. Light weapons qualify as off-hand weapons, so you can use one for a Follow-Up Attack. They can be carried discreetly under loose clothing without counting as Concealable.",
   "Marking": "The first hit each round marks the target for a short time. While marked, you and your allies gain Edge on in-combat ranged attack rolls against it, or +1 Edge Die on out-of-combat Dice Pools.",
   "Mutating": "On a hit, the Target gains one stack of the Mutating condition. The Target may attempt a Body Save (DC 12) to resist the infection, taking the damage but no stack on a success. See the Mutating condition for stack effects and treatment.",
   "Nonlethal": "If damage from this weapon reduces a Target to 0 Vitality, that Target is immediately rendered Unconscious.",

@@ -96,6 +96,16 @@ EN.weaponParts = {
       grants: "Edge on follow-up attacks vs same Target", effect: "Your second and any later attacks against the same Target in the same round gain Edge." },
 
     // Utility
+    /* The Two-Handed Melee frame and its three Parts, transcribed from Part 3 on 2026-08-19.
+       The book states Fits as "Two-Handed Melee (Greatsword, Halberd, Maul)"; the parenthetical
+       is the examples, not the gate, so partFits asks for the Two-Handed trait rather than
+       matching those three names. */
+    { key: "inertia-core", name: "Inertia Core", category: "melee", slot: "core", partType: "Mod", fits: "Two-Handed Melee", price: 450, rarity: "Uncommon", legality: "Licensed",
+      grants: "+1d8 on your first attack after a turn without one", effect: "If you did not attack with this weapon during your previous turn, your first attack with it this turn deals an additional 1d8 damage of the weapon's type." },
+    { key: "bracing-spike", name: "Bracing Spike", category: "melee", slot: "utility", partType: "Accessory", fits: "Two-Handed Melee", price: 300, rarity: "Common", legality: "Legal",
+      grants: "Edge vs forced movement and +1 Reach while braced", effect: "Swift Action: drive the spike down and put your weight behind it. Until you move, you gain Edge on Saves and contested checks made to resist being Shoved, pulled, or knocked Prone, and this weapon's Reach increases by 1." },
+    { key: "siege-head", name: "Siege Head", category: "melee", slot: "output", partType: "Mod", fits: "Two-Handed Melee", price: 600, rarity: "Rare", legality: "Restricted",
+      grants: "Siege", effect: "Apply the Siege trait. The head deals double damage to Vehicle armor and Cover Integrity." },
     { key: "breakdown-frame-melee", name: "Breakdown Frame", category: "melee", slot: "utility", partType: "Mod", fits: "Any Melee", price: 250, rarity: "Uncommon", legality: "Licensed",
       grants: "Concealable", effect: "The weapon can be hidden on your person without effort: under a jacket, in a bag, against the body." },
     { key: "quick-release-tether", name: "Quick-Release Tether", category: "melee", slot: "utility", partType: "Accessory", fits: "Any Melee", price: 80, rarity: "Common", legality: "Legal",
@@ -129,7 +139,7 @@ EN.weaponParts = {
        downtime, a bench and a kit. partType drives that distinction everywhere it shows,
        so this one word changes the chip, its tooltip and the install toast together. */
     { key: "shotgun-choke", name: "Shotgun Choke", category: "ranged", slot: "output", partType: "Accessory", fits: "Shotgun", price: 200, rarity: "Common", legality: "Licensed",
-      grants: "Extends Spread range", effect: "Increase the weapon's short range by 50% (round up). The Spread trait's short-range Edge now applies to this extended short range before the long-range penalty takes over." },
+      grants: "Extends Spread range", effect: "Increase the weapon's short range by 50% (round up). The Spread trait's short-range benefit (its Edge) now applies to this extended short range before the long-range penalty takes over, so the tight pattern holds together farther downrange." },
     { key: "heavy-barrel", name: "Heavy Barrel", category: "ranged", slot: "output", partType: "Mod", fits: "Any Firearm", price: 300, rarity: "Uncommon", legality: "Licensed",
       grants: "+1 damage die step; adds Heavy", effect: "Upgrade the weapon's damage die one step. The weapon gains the Heavy trait." },
     { key: "bullpup-conversion", name: "Bullpup Conversion", category: "ranged", slot: "output", partType: "Mod", fits: "Longarm", price: 400, rarity: "Uncommon", legality: "Licensed",
@@ -141,7 +151,10 @@ EN.weaponParts = {
     { key: "full-auto-receiver", name: "Full-Auto Receiver", category: "ranged", slot: "core", partType: "Mod", fits: "Any Firearm", price: 500, rarity: "Rare", legality: "Restricted",
       grants: "Full-Auto (and Burst Fire)", effect: "Grants the Full-Auto firing mode. If the weapon lacks Burst Fire, it gains that too." },
     { key: "match-trigger-group", name: "Match Trigger Group", category: "ranged", slot: "core", partType: "Mod", fits: "Semi-Auto Firearm", price: 600, rarity: "Uncommon", legality: "Licensed",
-      grants: "Precision Frame", effect: "Single Shot and Semi-Auto attacks score a critical hit on a roll of 19 or 20." },
+      grants: "Precision Frame", effect: "Apply Precision Frame. Attacks with this weapon score a critical hit on a roll of 19 or 20." },   /* 2026-08-19: the mode limit is gone. The mod grants Precision Frame in full, matching the
+         trait's own unconditional definition, so a Match-Trigger weapon crits on 19-20 in every fire
+         mode. "fits" stays Semi-Auto Firearm: that is which weapons can take the part, not which
+         modes it works in, and the two were easy to conflate. */
     { key: "anti-jam-action", name: "Anti-Jam Action", category: "ranged", slot: "core", partType: "Mod", fits: "Any Firearm", price: 200, rarity: "Common", legality: "Licensed",
       grants: "Reliable", effect: "Grants the Reliable trait: a reinforced, cleaned-up action that does not choke." },
     { key: "burst-fire-receiver", name: "Burst Fire Receiver", category: "ranged", slot: "core", partType: "Mod", fits: "Any Firearm", price: 350, rarity: "Uncommon", legality: "Restricted",
@@ -159,7 +172,10 @@ EN.weaponParts = {
     // the Breakdown Frame exclusion below mirrors the book; in the app it can
     // never fire, since this Part fits Longarm only and that one fits Any Melee
     { key: "powered-assist-grip", name: "Powered Assist Grip", category: "ranged", slot: "handling", partType: "Mod", fits: "Longarm", price: 600, rarity: "Rare", legality: "Restricted",
-      grants: "Wield a Heavy or Two-Handed weapon one-handed", effect: "Lets you wield a Heavy or Two-Handed weapon effectively in one hand. Requires a power cell, adds bulk, and cannot share a build with a Breakdown Frame.", excludes: ["breakdown-frame-melee"] },
+      grants: "Wield a Heavy or Two-Handed weapon one-handed", effect: "You can wield a Heavy or Two-Handed weapon effectively with one hand. This modification requires a power cell and adds bulk." },
+    /* 2026-08-19: the Breakdown Frame exclusion is gone, prose and the excludes array both. It
+       could never fire: this Grip is Handling / Fits Longarm and the only Breakdown Frame is
+       Utility / Fits Any Melee, so no weapon could ever hold the pair. Vestigial, not protective. */
     { key: "marksman-stock", name: "Marksman Stock", category: "ranged", slot: "handling", partType: "Mod", fits: "Longarm", price: 250, rarity: "Uncommon", legality: "Licensed",
       grants: "Edge on long-range attacks while stationary", effect: "When you have not moved this turn, ranged attacks at long range with this weapon gain Edge." },
 

@@ -549,8 +549,8 @@ EN.gearCatalog.tools = {
          consequence explicitly: it now stacks Resistance and DR on a single type and does
          nothing at all against lasers or plasma. The second clause stops that stacking being
          wasted, trading the redundant Resistance for a second point of DR. */
-      effect: "Resistance to Resonant and +1 DR vs Resonant.",
-      desc: "A dense, metallic-tasting liquid. As an Action, drink: for the next minute or until the encounter ends, gain Resistance to Resonant damage and +1 DR vs Resonant. If you already have Resonant Resistance, instead gain +2 DR vs Resonant." },
+      effect: "Resistance to Resonant and +1 DR vs Resonant damage.",
+      desc: "A dense, metallic-tasting liquid that tunes the body to deflect Resonant damage. As an Action, drink. For the next minute or until the encounter ends, gain Resistance to Resonant damage and +1 DR vs Resonant damage. If you already have Resonant Resistance, instead gain +2 DR vs Resonant damage for the duration." },
     { name: "Flow Surge Ampoule", load: 0, bucket: "flow", group: "Resonance Tonics", price: 150, availability: "Rare", legality: "Restricted",
       effect: "+3d6 damage or healing to your next Invocation. Causes 1 Strain.",
       desc: "A volatile injectable spike that overcharges an Invocation. As a Swift Action before or after declaring an Invocation: it deals +3d6 damage of its type, or grants 3d6 Vigor if it heals. Afterward, you automatically gain 1 Strain, even if the Invocation fails." },

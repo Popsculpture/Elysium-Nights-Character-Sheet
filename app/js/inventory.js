@@ -1434,6 +1434,10 @@ EN.inventoryView = (function () {
       // exactly one Part, the Extended Shaft. Asked of the engine rather than answered here,
       // because the reach talent asks the same question and two answers would drift.
       case "Long-Shafted": return isMeleeGroup(g) && !!(EN.engine.isLongShafted && EN.engine.isLongShafted(it));
+      // Two-Handed Melee arrived as a frame on 2026-08-19 with three Parts. The book names
+      // Greatsword, Halberd and Maul as examples, so this asks for the TRAIT they share
+      // rather than those three names, and a future two-handed weapon fits without an edit.
+      case "Two-Handed Melee": return isMeleeGroup(g) && hasTrait("Two-Handed");
       case "Shotgun": return /shotgun/.test(name) || hasTrait("Spread");
       case "Longarm": return g === "Longarm" || g === "Heavy";
       case "Sidearm": return g === "Sidearm";

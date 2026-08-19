@@ -44,7 +44,7 @@ EN.gearCatalog.armor = {
     "Concealable": "It does not look like armor, worn under a shirt, or cut to pass as an ordinary jacket. Checks to notice you are armored roll with Snag. A pat-down or scanner still finds it.",
     "Streetwear": "Openly armored, but it reads as fashion. Does not count as obvious combat gear; Snag on social checks in high-corporate or formal spaces where street kit is out of place.",
     "Hostile Appearance": "Unmistakably combat gear; the room knows what you are the moment you walk in. Snag on social checks to blend in or de-escalate; Edge when you are openly threatening or intimidating.",
-    "Bulky": "Rigid, layered, overbuilt. Reduces your Speed by 1 and imposes Snag on Mobility. Cannot be Concealable.",
+    "Bulky": "Rigid, layered, overbuilt. Increases the item's Load by 1, reduces your Speed by 1, and imposes Snag on Acrobatics and Stealth checks. Cannot be Concealable.",   // verbatim from Part 3, 2026-08-19: Bulky is the ONE trait that touches Load,
     "Loud": "Plates clack, servos whine, respirators hiss. Snag on Stealth checks that rely on silence. It changes only how easily you are heard, not how you fight.",
     "Plated": "Rigid plates over soft layers, built to eat a serious hit. When you choose Block, add half the armor's DR (rounded down) to the damage prevented. Stacks with the suit's listed Block Bonus and with shield dice; applies only when you Block.",
     "Modular": "Rails, webbing, and slots for upgrades. Can mount Armor Mods up to its listed slot count. Swapping mods takes downtime or focused prep, not a combat action.",
@@ -147,17 +147,17 @@ EN.gearCatalog.armor = {
 
     /* ============================ POWERED EXOFRAMES ============================ */
     { name: "Laborframe Exorig", kind: "armor", group: "Powered Exoframe", type: "Powered Heavy Armor (3 Mod Slots)", price: 1500,
-      slot: ["Torso", "Legs"], dr: 5, blockBonus: 2, slots: 3, traits: ["Powered", "Plated", "Bulky", "Loud"], availability: "Uncommon", legality: "Restricted",
+      slot: ["Torso", "Legs"], dr: 5, blockBonus: 2, slots: 3, traits: ["Powered", "Plated", "Bulky", "Loud", "Modular"], availability: "Uncommon", legality: "Restricted",
       desc: "A civilian heavy-lift frame stripped of its safety governors and bolted full of plate. It was built to move cargo containers. It moves Freelancers, doors, and the occasional unlucky enforcer just as well.",
       effect: "Grants 5 DR and a +2 Block Bonus.",
       poweredBenefits: "While trained and powered, you ignore the Speed reduction from Bulky, treat your Encumbrance threshold as two steps higher, and gain Edge on in-combat d20 checks (or +1 Edge Die out-of-combat) to lift, shove, or force movement." },
     { name: "Bailiff Rig", kind: "armor", group: "Powered Exoframe", type: "Powered Heavy Armor (3 Mod Slots)", price: 430, upkeep: 400, nexus: "◎0.3 buyout", lapsedDR: 3,
-      slot: ["Torso", "Legs"], dr: 5, blockBonus: 2, slots: 3, traits: ["Powered", "Plated", "Bulky", "Loud", "Leased"], availability: "Uncommon", legality: "Restricted",
+      slot: ["Torso", "Legs"], dr: 5, blockBonus: 2, slots: 3, traits: ["Powered", "Plated", "Bulky", "Loud", "Leased", "Modular"], availability: "Uncommon", legality: "Restricted",
       desc: "The repo man's frame. Corporations lease these to enforcement contractors and keep one finger on the off switch the entire time. It carries you through a firefight right up until the morning the lease lapses and the legs simply stop agreeing with you.",
       effect: "Grants 5 DR and a +2 Block Bonus. Lapsed or Locked: the frame seizes; you lose all Powered Benefits, the Powered drawbacks apply in full, and DR drops to 3 until the lease is restored or the lock is cracked.",
       poweredBenefits: "While trained, powered, and on an active lease, you ignore the Speed reduction from Bulky, treat your Encumbrance threshold as two steps higher, and gain Edge on in-combat d20 checks (or +1 Edge Die out-of-combat) to lift, shove, or force movement." },
     { name: "Warframe Shell", kind: "armor", group: "Powered Exoframe", type: "Powered Heavy Armor (3 Mod Slots)", price: 2400, nexus: "◎0.25",
-      slot: ["Torso", "Legs"], dr: 5, blockBonus: 2, slots: 3, traits: ["Powered", "Plated", "Bulky", "Sealed", "Loud"], availability: "Rare", legality: "Restricted",
+      slot: ["Torso", "Legs"], dr: 5, blockBonus: 2, slots: 3, traits: ["Powered", "Plated", "Bulky", "Sealed", "Loud", "Modular"], availability: "Rare", legality: "Restricted",
       // Holds vacuum NATIVELY, which is why its own entry carries the flag. The
       // Sealed trait alone never satisfies a vacuum check (see EN.hazards.breath
       // .vacuumSeal); this suit and a Rebreather Liner on an already-Sealed suit
@@ -169,19 +169,19 @@ EN.gearCatalog.armor = {
 
     /* ============================== MYSTECH ARMOR ============================== */
     { name: "Veilskin", kind: "armor", group: "Mystech Armor", type: "Light Mystech Armor (1 Mod Slot)", price: 700,
-      slot: ["Torso", "Legs"], dr: 2, slots: 1, traits: ["Concealable", "Mystech"], availability: "Iconic", legality: "Contraband",
+      slot: ["Torso", "Legs"], dr: 2, slots: 1, traits: ["Concealable", "Mystech", "Modular"], availability: "Iconic", legality: "Contraband",
       desc: "A second skin of light-reactive weave that drinks ambient Flow and bends light around the wearer's outline. To a scanner it is a faint shimmer. To a guard it is the reason they swear the corridor was empty a second ago.",
       effect: "Grants 2 DR. You gain Edge on in-combat Stealth d20 checks (or +1 Edge Die out-of-combat) in dim light or darkness. When you acquire it, choose one of Fire, Electric, or Cold; you gain Resistance to that type." },
     { name: "Resonant Carapace", kind: "armor", group: "Mystech Armor", type: "Medium Mystech Armor (2 Mod Slots)", price: 1600, nexus: "◎0.5",
-      slot: ["Torso", "Legs"], dr: 3, blockBonus: 1, slots: 2, wardDie: "1d6", traits: ["Plated", "Focus", "Resonant Plating", "Mystech"], availability: "Legendary", legality: "Contraband",
+      slot: ["Torso", "Legs"], dr: 3, blockBonus: 1, slots: 2, wardDie: "1d6", traits: ["Plated", "Focus", "Resonant Plating", "Mystech", "Modular"], availability: "Legendary", legality: "Contraband",
       desc: "Tuned mystech plate that hums against incoming force and feeds a fraction of every hit back into the wearer's Ward. The plating catches Flow as readily as it catches a round. Favored by Shapers who fight on the line instead of behind it.",
       effect: "Grants 3 DR and a +1 Block Bonus. As a Focus, once per round when you use Ward, add +1d6 to the Ward reduction. You can only benefit from one Focus item for Ward at a time." },
     { name: "Aegis Shroud", kind: "armor", group: "Mystech Armor", type: "Heavy Mystech Armor (2 Mod Slots)", price: 2800, nexus: "◎1",
-      slot: ["Torso", "Legs"], dr: 4, blockBonus: 1, slots: 2, wardDie: "1d6", traits: ["Focus", "Sealed", "Mystech"], availability: "Legendary", legality: "Contraband",
+      slot: ["Torso", "Legs"], dr: 4, blockBonus: 1, slots: 2, wardDie: "1d6", traits: ["Focus", "Sealed", "Mystech", "Modular"], availability: "Legendary", legality: "Contraband",
       desc: "A flowing sealed shell of woven mystech filament that surrounds the wearer in a layered current. It barely looks like armor. It behaves like a moving shrine that does not want you harmed.",
       effect: "Grants 4 DR and a +1 Block Bonus. When you acquire it, choose one of Fire, Electric, Cold, or Resonant; you gain Resistance to that type. As a Focus, once per round when you use Ward, add +1d6 to the Ward reduction. You can only benefit from one Focus item for Ward at a time." },
     { name: "Reliquary Shell", kind: "armor", group: "Mystech Armor", type: "Heavy Mystech Armor (2 Mod Slots)", price: 0, nexus: "◎2+", vendor: false,
-      slot: ["Torso", "Legs"], dr: 4, blockBonus: 2, slots: 2, wardDie: "1d6", traits: ["Focus", "Resonant Plating", "Sealed", "Mystech"], availability: "Artifact", legality: "Contraband",
+      slot: ["Torso", "Legs"], dr: 4, blockBonus: 2, slots: 2, wardDie: "1d6", traits: ["Focus", "Resonant Plating", "Sealed", "Mystech", "Modular"], availability: "Artifact", legality: "Contraband",
       desc: "Nobody manufactures one of these. They are found: pulled from a sealed vault, recovered off a dead Shaper, traded for in a currency the broker would not name out loud. The kind of armor a campaign is built around, not bought.",
       effect: "Grants 4 DR and a +2 Block Bonus. When you acquire it, choose two of Fire, Electric, Cold, or Resonant; you gain Resistance to both. As a Focus, once per round when you use Ward, add +1d6 to the Ward reduction. Rarely offered for sale (◎2+)." },
 

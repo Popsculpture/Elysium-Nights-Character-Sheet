@@ -54,7 +54,13 @@ section instead.
   it is a Ripper Hot-Wire a Stitcher installs on an *ally*, and the character record
   has no field for "an ally augmented me." Recorded as a comment in `engine.js`,
   implemented as nothing. Needs a manual toggle on the sheet if it should be live.
-- **RULED 2026-08-16: a wielded body does NOT get the Walking Anvil step-up.** Bodies are
+- **REVERSED 2026-08-19: a wielded body DOES get the Walking Anvil step-up.** The manuscript
+  settled it the other way, so the 2026-08-16 exemption below is dead. A body is an
+  improvised weapon and steps like one: a Juggernaut's Bludgeon and Throw each deal 1d12,
+  not 1d10. **BUILT** in `codex.js`, as a note on the People as Improvised Weapons block
+  rather than a prose rewrite, because the 1d10 is stated in three places and is correct
+  for everyone who is not a Juggernaut. The superseded ruling and its question follow.
+- ~~**RULED 2026-08-16: a wielded body does NOT get the Walking Anvil step-up.**~~ Bodies are
   exempt; that text stands on its own and the Walking Anvil does not reach it. Nothing to
   build, and the current behaviour was already correct. The original question follows.
 - **Juggernaut step-up on a wielded body.** The Walking Anvil steps improvised

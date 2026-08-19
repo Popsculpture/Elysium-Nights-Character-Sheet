@@ -1448,7 +1448,18 @@ The Resonant Shield Elixir is anti-Resonant protection, matching its name. **Thi
   **Needs a ruling** on the Edge Die conversion.
 
 ### M21. The Axe's Load is stated two ways (RULED)
-**Author ruling (2026-08-16): the Axe is 2 Load. Heavy does not add Load.**
+**CLOSED 2026-08-19: there was never a rule to change.** The verification pass found the premise
+false. The Heavy trait does not contribute Load and never did, so the sweep this ruling
+demanded had nothing to sweep. No item in Part 3 carries an individual Load value: Load is
+assigned by a generic category table, and **Bulky** is the only trait that touches it
+numerically (+1). The Encumbrance chapter never names Heavy at all. A numeric Heavy-to-Load
+rule was also rejected on structural grounds: the Heavy TRAIT and the Heavy Weapons
+CATEGORY are disjoint sets, so a crew-served Rotary Cannon at 2,200 Glimmer is not Heavy
+while a 100 Glimmer Axe is. **App status: nothing to remove**, confirmed by sweep; the only
+engine hits on Heavy are the Heavy Payload lineage feat and the heavy loadout tier, neither
+of which is the trait. The superseded ruling follows.
+
+~~**Author ruling (2026-08-16): the Axe is 2 Load. Heavy does not add Load.**~~
 The worked example is right and the two weapons are interchangeable at 2 Load. **This is the widest-reaching ruling in PART C**: it is not an Axe fix, it changes what the Heavy trait does, so it touches EVERY Heavy weapon's Load and the encumbrance maths behind them. Before building, sweep every Heavy item and report the full before-and-after Load table, because some entries may have been priced or balanced assuming Heavy contributed.
 
 - A worked example in Part 1 counts "a Warhammer (or Axe)" as **2 Load**. But the
@@ -1471,8 +1482,30 @@ The chapter states the default; Street Scrapper and the Walking Anvil are delibe
   exception to the chapter rule.
 
 ### M23. Two unrelated mechanics are both named "Meat Shield" (RULED)
-**Author ruling (2026-08-16): rename the Fury Overdrive Impulse to `You'll Do`.**
-Meat Shield stays the generic Improvised Weapons grapple-cover stance, available to anyone. The Fury's Impulse, which redirects an incoming hit onto a grappled target and grants Resistance to the redirected damage, becomes **You'll Do**. Renaming in the app means checking whether the old name is a persisted KEY anywhere, not just a label, the way `cybereyes` was.
+**Author ruling (2026-08-16): rename the Fury Overdrive Impulse to `On Me`.** BUILT.
+Meat Shield stays the generic Improvised Weapons grapple-cover stance, available to anyone.
+
+**This entry's own summary of the Fury ability was wrong, and it produced a wrong first
+ruling.** The bullet below describes the Impulse as redirecting a hit onto a grappled Target.
+It does not. The app carries it at two sites that agree with each other, the ability in
+`class_codebreaker_fury.js` and its brief in `briefs.js`, and both say: an ally within 2 spaces
+is hit, you swap places with them and take the damage yourself, with Resistance. The
+"grappled Target" description is a word-for-word account of the IMPROVISED STANCE, so this
+entry conflated the two abilities, which is precisely the confusion it was written to report.
+The author confirmed on 2026-08-16 that the ally-swap is correct and no mechanic changed.
+
+The first name chosen against the wrong description was `You'll Do`, which points at a victim
+and so named the opposite ability. The correct reading is that the name fits both mechanics
+from OPPOSITE ENDS: in the improvised stance you HOLD a meat shield, in the Fury Impulse you
+ARE one. The stance keeps the name because it describes that one literally.
+
+**The persisted-key check the ruling called for found a live one.** `briefs.js` is keyed on
+the feature NAME, since `briefFor` does `EN.briefs[f.name]`, so renaming only the ability
+would have left the brief silently unresolvable and dropped the sheet back to `autoBrief`.
+Both moved together. `codex.js` lines 244 and 286 were deliberately NOT touched: they render
+the improvised stance, which keeps the name. Verified in the running app: the brief resolves
+under `On Me`, `Meat Shield` is gone from the briefs, the Fury data no longer carries it, and
+the Codex still shows the stance's four bullets under Meat Shield.
 
 - The Fury Overdrive Impulse (redirects a hit to a grappled Target and grants
   Resistance to the redirected damage), and the Improvised Weapons grapple-cover
@@ -1511,7 +1544,13 @@ The Powered Assist Grip's 'cannot share a build with a Breakdown Frame' clause i
   missing from the catalog.
 
 ### M27. "Heavy/Two-Handed" is a Fits frame no Part uses (RULED)
-**Author ruling (2026-08-16): keep the frame and write the Parts for it.**
+**RESOLVED 2026-08-19: done, and the frame was renamed.** The Fits gate is now **Two-Handed
+Melee**, not `Heavy/Two-Handed`, and three Parts were written for it: **Inertia Core**,
+**Bracing Spike**, **Siege Head**. **App status: the frame name is updated; the three Parts
+are NOT in the catalog**, because their stats (price, rarity, legality, slot, effect) were
+not in the handoff and cannot be invented. They need transcribing from Part 3.
+
+~~**Author ruling (2026-08-16): keep the frame and write the Parts for it.**~~
 `Heavy/Two-Handed` stays a valid Fits value and gains the Parts it was meant for. This is the one PART C item that is NEW CONTENT rather than a correction, so it is a design task for the author, not something the app can resolve: the app needs the Part list before it can carry anything. Until those Parts exist the frame stays unused and harmless.
 
 - Core Concepts lists it as a valid Fits value; it appears exactly once in the book

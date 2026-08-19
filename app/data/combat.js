@@ -164,7 +164,8 @@ EN.combat = {
   /* LONG-SHAFTED, which the manuscript made a formal frame category on 2026-08-12.
      Part 3's Weapon Parts glossary: "Fits: a hard frame gate. Most Parts fit a broad
      category, such as Any Melee ... Others require a specific frame: Longarm, Shotgun,
-     Bladed, Long-Shafted, Compound, Crossbow, or Heavy/Two-Handed." It gates two things:
+     Sidearm, Shotgun, Semi-Auto Firearm, Bladed, Long-Shafted, Compound, Crossbow, or
+     Two-Handed Melee." It gates two things:
      the Extended Shaft mod ("Fits: Long-Shafted (Quarterstaff, Spear, Halberd)") and
      Staff & Spear Master, whose every clause reads "long-shafted weapon".
 

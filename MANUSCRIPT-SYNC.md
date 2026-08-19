@@ -1,5 +1,21 @@
 # Manuscript edits owed, to sync the book with the app
 
+> **SUPERSEDED, 19 August 2026. The manuscript sync is CLOSED and every edit below is
+> applied.** All three Parts were verified against a clean `text/plain` pull that day: every
+> must-present count exact, every must-absent count zero, no stray dashes or curly
+> apostrophes, no duplicated paste lines. Kept only as the record of what was asked for and
+> why. **Do not work from it.** Three of its premises turned out to be wrong, and the
+> corrections are in `RULES-SYNC-CHANGELOG.md`:
+>
+> * **M21 was a phantom.** The Heavy trait never contributed Load, so there was no clause to
+>   remove. No item in Part 3 carries an individual Load value at all: Load comes from a
+>   generic category table and Bulky is the only trait that touches it (+1). The Heavy trait
+>   and the Heavy Weapons category are also disjoint sets, which is why a numeric rule was
+>   rejected: a crew-served Rotary Cannon is not Heavy, and a 100 Glimmer Axe is.
+> * **M27 resolved the other way.** The Fits gate is now named **Two-Handed Melee** and has
+>   three Parts written for it: Inertia Core, Bracing Spike, Siege Head.
+> * **The wielded-body exemption was reversed.** Bodies DO get the Walking Anvil step-up.
+
 Every ruling that requires a change to the three live Google Docs. Rulings that only
 moved the app are not listed here; rulings that moved neither are recorded in
 `RULES-SYNC-CHANGELOG.md` and need nothing from you.
@@ -12,7 +28,7 @@ locations to find rather than as strings to paste blind**. A paste-ready punchli
 verified find strings needs a browser signed in to your Google account; ask for it when one
 is available and it becomes a mechanical afternoon instead of a hunt.
 
-**14 items.** Twelve are edits. One is a design task. One is blocked on you.
+**14 items.** Thirteen are edits. One is a design task (M27). Nothing is blocked.
 
 ---
 
@@ -186,23 +202,25 @@ uses it, so it needs Parts written for it.
 This is the one item the app cannot act on. It is new content, and the app needs the Part
 list before it can carry anything. Until then the frame sits unused and harmless.
 
-### M23. BLOCKED, and the block is mine
+### M23. Rename the Fury Overdrive Impulse to On Me
 
-You ruled to rename the Fury's Overdrive Impulse to **You'll Do**, keeping Meat Shield for
-the generic grapple-cover stance. **Do not apply that yet.** The question I asked described
-the ability wrongly.
+**Edit:** the Fury Overdrive Impulse currently called **Meat Shield** becomes **On Me**. The
+Improvised Weapons grapple-cover stance KEEPS the name Meat Shield.
 
-PART C summarised the Fury Impulse as redirecting a hit onto a grappled Target. The app's
-own data says the opposite:
+Nothing about either mechanic changes. The name fits both from opposite ends: in the
+improvised stance you hold a meat shield, in the Fury Impulse you are one. The stance keeps
+it because it describes that one literally, and `On Me` points at the Fury rather than at a
+victim, which is what a sacrifice should do.
 
-> Trigger: An ally within 2 spaces is hit by an attack. You instantly swap places with the
-> ally and take the damage from the attack instead. You have Resistance to the damage taken
-> this way.
+**This was briefly ruled as `You'll Do`, which was my error to unwind.** The PART C note
+described the Fury Impulse as redirecting a hit onto a grappled Target, which is what the
+improvised stance does, so the note had conflated the two abilities. I put that description
+to you as fact and you named it accordingly. Confirmed on 2026-08-16 that the ability is the
+ally-swap, so `You'll Do` named an ability that does not exist. **If you already applied
+`You'll Do` to the manuscript, change it to `On Me`.**
 
-One uses a grappled enemy as cover. The other is a sacrifice to save a teammate. **"You'll
-Do" fits the first and actively misdescribes the second.** Confirm which the ability
-actually is and the name follows; if it is the sacrificial version, it wants a different
-name entirely.
+**App status: BUILT.** The rename moved two sites, because `briefs.js` is keyed on the
+feature name and the brief would otherwise have stopped resolving silently.
 
 ---
 

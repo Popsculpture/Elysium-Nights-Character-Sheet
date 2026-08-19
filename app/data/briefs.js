@@ -58,7 +58,10 @@ EN.briefs = {
   "Maximum Overdrive": "Spend 2 Overdrive; Area-6 Cone Agility-save or 6d10+Body, Deafened, Speed 0; flattens all Cover to 0",
   "Wrecking Ball": "Spend 1 Overdrive; standard melee attack deals +1d8 Bludgeoning and inflicts 1 stack of Bleeding",
   "Clear the Path": "Spend 1 Overdrive; melee attack pushes target up to 3 spaces; obstacle collision deals +Body Bludgeoning",
-  "Meat Shield": "Spend 1 Overdrive to swap places with an ally within 2 and take the hit with Resistance (half)",
+  // Keyed on the feature NAME (briefFor does EN.briefs[f.name]), so this key had to move
+  // with the M23 rename or the brief would silently stop resolving and the sheet would
+  // fall back to autoBrief. Renamed from "Meat Shield".
+  "On Me": "Spend 1 Overdrive to swap places with an ally within 2 and take the hit with Resistance (half)",
   "Linebreaker": "Spend 1 Overdrive to move through enemies this turn; each passed makes Body save or Prone",
   "Seismic Stomp": "Spend 1 Overdrive; enemies within 3 Agility-save or Caliber+Body Bludgeoning and Staggered",
   "Leverage": "Resource pool = Caliber + Charm mod (min 1); know two abilities, costing 1 each",
@@ -229,13 +232,14 @@ EN.briefs = {
   "Speed Freak": "+2 base Speed; Dash ignores Difficult Terrain cost; melee attacks don't provoke that turn. Upgrade: +2 more Speed, ignore Difficult Terrain always.",
   "Crew Commander": "+1 Charm; spend 10 minutes to give up to six allies within 6 spaces Vigor equal to level+Charm mod. Upgrade: they also gain Edge on next attack/save within 10 minutes.",
   "Crowd Reader": "+1 Charm/Wits; on social start, Insight or Intuition (Charm or Wits) DC 12 reveals one fact about a Target; Edge on social Initiative, use Charm for it. Upgrade: two facts, all hostile Targets.",
-  "Cutting Agent": "Ignore Toxic Resistance; Swift Action to coat weapon; medical/chem Proficiency, craft Caliber doses; coated hit forces a Body save (DC 8 + Tech mod + Caliber) or 2d8 Toxic and Poisoned. Upgrade: 3d8, Poisoned 1 minute, double doses.",
+  "Cutting Agent": "Ignore Toxic Resistance; Swift Action to coat weapon; craft Caliber doses; coated hit forces a Body save (DC 8 + Tech mod + Caliber) or 2d8 Toxic and Poisoned. Upgrade: 3d8, Poisoned 1 minute, double doses.",
   "Faceless Persona": "+1 Charm; Edge on Deception/Performance to impersonate; mimic heard voices/sounds, listener needs Intuition vs your Deception. Upgrade: maintain seamless fabricated digital identity.",
   "Fate Bender": "3 Luck Points; spend to roll an extra d20 on your roll or an attack against you (choose result); competing points cancel; regain Long Rest. Upgrade: 5 points, regain one Short Rest.",
   "Field Specialist": "+1 any Attribute; one Skill Proficiency; one proficient Skill gains Expertise (+4 d20 / +4 Edge Dice). Upgrade: Expertise with one more proficient Skill.",
   "Hyper-Aware": "+1 Wits/Tech; read lips; +5 Passive Perception and Investigation. Upgrade: cannot be surprised by anything a Perception/Investigation check would detect.",
   "Hyper-Vigilant": "Cannot be caught off guard or Surprised while conscious; +5 Initiative; Hidden Enemies gain no Edge against you. Upgrade: first round free Swift Action to move, take cover, or draw.",
-  "Kinetic Manipulator": "+1 Tech/Wits/Mystique; manipulate objects to 6 spaces; Swift Action Shove (Body save DC 8+Caliber+mod) moves 1 space. Upgrade: 12 spaces, Shove 2, Swift Action 1d8 Bludgeoning ranged attack.",
+  // Briefs are keyed on the talent NAME, so this moved with the 2026-08-19 rename.
+  "Spooky Action": "+1 Mystique or Tech; handle unattended objects within 6 spaces; Swift Action Shove (Body save DC 8 + that modifier + Caliber) moves 1 space. Upgrade: 12 spaces, Shove 2, once per turn a Swift Action ranged attack for 1d8 Bludgeoning.",
   "Photographic Memory": "+1 Tech/Wits; always know north and time; recall anything seen/heard past month, Edge on related Insight/Investigation. Upgrade: recall extends to a year, DC 15 for exact documents.",
   "Ruin Crawler": "+1 Wits/Agility; Edge to find hidden doors and resist traps/hazards; Resistance to trap damage; search at normal pace. Upgrade: Swift Action disarm, once/Long Rest declare a trap missed.",
   "Shadow Operative": "+1 Agility; hide while lightly obscured; missed Hidden ranged attack doesn't reveal you; no Snag from dim light. Upgrade: Hidden attacks vs unacted Targets gain Edge, crit 19-20.",
