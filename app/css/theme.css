@@ -141,6 +141,20 @@ a{ color:var(--accent); text-decoration:none; }
 .section-title.clickable:hover{ color:var(--text2); }
 .section-title.clickable:hover .collapse-caret{ color:var(--accent); }
 
+/* DEVICE HEADERS (Smartdeck, Trauma Rig) earn more affordance than a plain collapsible
+   section title. They are the two headers a player opens and shuts constantly during play,
+   and the default treatment is a dim caret that only lights on hover, which says nothing at
+   all on a touch screen where there is no hover. So the row reads as a control at rest: a
+   border, a lit caret, and a state word that names what a tap will do. */
+.section-title.device-head{ padding:5px 8px; margin-left:-8px; margin-right:-8px; border-radius:var(--r);
+  border:1px solid var(--border2); background:rgba(255,255,255,.02);
+  transition:border-color .15s, background .15s, color .15s; }
+.section-title.device-head:hover{ border-color:var(--accent); background:rgba(0,229,255,.06); color:var(--text); }
+.section-title.device-head .collapse-caret{ color:var(--accent); font-size:13px; }
+.section-title.device-head .dev-toggle{ font-family:var(--mono); font-size:8.5px; letter-spacing:.14em;
+  color:var(--text4); border:1px solid var(--border2); border-radius:var(--r); padding:1px 5px; flex:0 0 auto; }
+.section-title.device-head:hover .dev-toggle{ color:var(--accent); border-color:var(--accent); }
+
 /* ===== buttons ========================================================== */
 .btn{ font-family:var(--disp); font-weight:600; font-size:13px; letter-spacing:.1em; text-transform:uppercase;
   background:transparent; color:var(--text2); border:1px solid var(--border2); border-radius:var(--r);

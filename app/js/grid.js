@@ -42,6 +42,49 @@ EN.gridView = (function () {
     ]);
   }
   function gset(mut, silent) { store.update(function (c) { c.grid = c.grid || {}; mut(c.grid, c); }, silent ? { silent: true } : undefined); }
+
+  /* What this character could jack into: the Smartdecks and B&E Buddies actually in the
+     stash, resolved to their tier rows. Exported alongside selectDeck because the Freelancer
+     tab offers the same choice and the two lists must not be able to disagree about what is
+     ownable. Trauma Rigs are deliberately absent: they project a #GRID node but are not
+     hacking platforms, so they can never be your rig. */
+  function ownedRigRows(ch) {
+    var G = EN.grid || {};
+    var owned = (ch.equipment || []).filter(function (e) { return e.qty > 0 && (e.name.endsWith(" Smartdeck") || e.name.endsWith(" B&E Buddy")); });
+    function rows(suffix, list) {
+      return owned.filter(function (e) { return e.name.endsWith(suffix); }).map(function (e) {
+        var tier = e.name.replace(suffix, "");
+        return (list || []).find(function (x) { return x.tier === tier; });
+      }).filter(Boolean);
+    }
+    return { smartdecks: rows(" Smartdeck", G.smartdecks), buddies: rows(" B&E Buddy", G.buddies) };
+  }
+
+  /* THE one writer for "which rig is live", exported because the Freelancer tab now shows a
+     Smartdeck card too and a second copy of this would drift. Changing tier is not a field
+     assignment: it zeroes accumulated Integrity damage, and on a DOWNGRADE it drops mods that
+     no longer fit the smaller slot count, which is the part that must not be duplicated.
+     Value is "none", or "<type>:<tier>", the same strings the option values carry. */
+  function selectDeck(v) {
+    var G = EN.grid || {};
+    gset(function (g) {
+      if (v === "none") { g.deckType = null; g.deckTier = null; g.deckMods = []; g.deckHpSpent = 0; return; }
+      var p = v.split(":"); g.deckType = p[0]; g.deckTier = p[1]; g.deckHpSpent = 0;
+      if (p[0] !== "smartdeck") { g.deckMods = []; return; }
+      // keep only mods that still fit the new tier's slots (drop stranded mods on a downgrade)
+      var nd = (G.smartdecks || []).find(function (s) { return s.tier === p[1]; }), cap = nd ? nd.modSlots : 0, u = 0, kept = [];
+      (g.deckMods || []).forEach(function (k) { var m = (G.mods || []).find(function (x) { return x.key === k; }); if (m && u + m.slots <= cap) { u += m.slots; kept.push(k); } });
+      g.deckMods = kept;
+    });
+  }
+
+  /* Adjust the live deck's System Integrity. Also exported for the same reason: the number
+     is stored as damage TAKEN (deckHpSpent), not as remaining, and inverting that by hand in
+     a second place is how the two views end up disagreeing about whether a deck is Bricked. */
+  function shiftDeckIntegrity(delta, maxInt) {
+    gset(function (g) { g.deckHpSpent = eng.clamp((g.deckHpSpent || 0) + delta, 0, maxInt); });
+  }
+  function repairDeckFully() { gset(function (g) { g.deckHpSpent = 0; }); }
   function tableEl(cols, rows, highlightFn) {
     var head = el("tr", null, cols.map(function (c) {
       return el("th", { style: { textAlign: c.align || "left", padding: "4px 8px", fontFamily: "var(--disp)", fontSize: "9px", letterSpacing: ".12em", color: "var(--text3)", borderBottom: "1px solid var(--border2)", textTransform: "uppercase" } }, c.label);
@@ -91,15 +134,7 @@ EN.gridView = (function () {
     // Trauma Rigs are enumerated too, but not here: they are not hacking platforms, so
     // they cannot be your deck. They appear below as the #GRID node each one projects,
     // which is what makes a Rig reachable from this tab at all.
-    var ownedDecks = (ch.equipment || []).filter(function (e) { return e.qty > 0 && (e.name.endsWith(" Smartdeck") || e.name.endsWith(" B&E Buddy")); });
-    var ownedSmartdecks = ownedDecks.filter(function (e) { return e.name.endsWith(" Smartdeck"); }).map(function (e) {
-      var tier = e.name.replace(" Smartdeck", "");
-      return (G.smartdecks || []).find(function (s) { return s.tier === tier; });
-    }).filter(Boolean);
-    var ownedBuddies = ownedDecks.filter(function (e) { return e.name.endsWith(" B&E Buddy"); }).map(function (e) {
-      var tier = e.name.replace(" B&E Buddy", "");
-      return (G.buddies || []).find(function (b) { return b.tier === tier; });
-    }).filter(Boolean);
+    var od = ownedRigRows(ch), ownedSmartdecks = od.smartdecks, ownedBuddies = od.buddies;
 
     var selChildren = [el("option", { value: "none", selected: !grid.deckType, text: "- No rig -" })];
     if (ownedSmartdecks.length) selChildren.push(el("optgroup", { label: "Smartdecks (Power User)" }, ownedSmartdecks.map(function (s) {
@@ -111,18 +146,7 @@ EN.gridView = (function () {
     if (!ownedSmartdecks.length && !ownedBuddies.length) selChildren.push(el("option", { disabled: true, text: "No rigs in stash; buy one in Inventory" }));
 
     var sel = el("select", { style: { fontSize: "12px", width: "auto", minWidth: "220px" },
-      onchange: function () {
-        var v = this.value;
-        gset(function (g) {
-          if (v === "none") { g.deckType = null; g.deckTier = null; g.deckMods = []; g.deckHpSpent = 0; return; }
-          var p = v.split(":"); g.deckType = p[0]; g.deckTier = p[1]; g.deckHpSpent = 0;
-          if (p[0] !== "smartdeck") { g.deckMods = []; return; }
-          // keep only mods that still fit the new tier's slots (drop stranded mods on a downgrade)
-          var nd = (G.smartdecks || []).find(function (s) { return s.tier === p[1]; }), cap = nd ? nd.modSlots : 0, u = 0, kept = [];
-          (g.deckMods || []).forEach(function (k) { var m = (G.mods || []).find(function (x) { return x.key === k; }); if (m && u + m.slots <= cap) { u += m.slots; kept.push(k); } });
-          g.deckMods = kept;
-        });
-      } }, selChildren);
+      onchange: function () { selectDeck(this.value); } }, selChildren);
     rows.push(el("div.row.wrap", { style: { gap: "10px", alignItems: "center" } }, [
       el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".1em", minWidth: "44px" }, text: "RIG" }), sel,
       deck ? el("span.chip", { style: { fontSize: "9.5px", color: "var(--accent)", borderColor: "var(--accent)" }, title: "User Type on the #GRID" }, gd.userType.toUpperCase()) : null,
@@ -193,8 +217,7 @@ EN.gridView = (function () {
     var amtInput = el("input.mono", { type: "number", min: "1", value: "1", title: "Amount of System Integrity to subtract or restore",
       style: { width: "56px", textAlign: "center", padding: "4px 6px" } });
     function shiftIntegrity(sign) {
-      var n = Math.max(1, parseInt(amtInput.value, 10) || 1);
-      gset(function (g) { g.deckHpSpent = eng.clamp((g.deckHpSpent || 0) + sign * n, 0, maxInt); });
+      shiftDeckIntegrity(sign * Math.max(1, parseInt(amtInput.value, 10) || 1), maxInt);
     }
     rows.push(el("div", { style: { marginTop: "10px" } }, [
       el("div.row.between", { style: { alignItems: "baseline" } }, [
@@ -208,7 +231,7 @@ EN.gridView = (function () {
           style: { color: "var(--danger)", borderColor: "var(--danger)" }, onclick: function () { shiftIntegrity(1); } }, "− DAMAGE"),
         el("button.btn.sm", { disabled: spent <= 0, title: "Restore this much System Integrity",
           onclick: function () { shiftIntegrity(-1); } }, "+ REPAIR"),
-        spent > 0 ? el("button.btn.sm", { style: { color: "var(--text2)" }, onclick: function () { gset(function (g) { g.deckHpSpent = 0; }); toast("Rig restored to full Integrity."); } }, "⟳ FULL") : null
+        spent > 0 ? el("button.btn.sm", { style: { color: "var(--text2)" }, onclick: function () { repairDeckFully(); toast("Rig restored to full Integrity."); } }, "⟳ FULL") : null
       ]),
       el("span.help", { style: { margin: "4px 0 0", fontSize: "10.5px", display: "block" },
         text: bricked ? "Bricked; all Links sever (LinkDeath as a forced disconnect). Downtime repair only."
@@ -941,5 +964,7 @@ EN.gridView = (function () {
     applyDamage(root, dmg);
   }
 
-  return { render: render, isDamage: isDamage, setDamage: setDamage, getDmgIntensity: getDmgIntensity, setDmgIntensity: setDmgIntensity };
+  return { render: render, isDamage: isDamage, setDamage: setDamage, getDmgIntensity: getDmgIntensity, setDmgIntensity: setDmgIntensity,
+           selectDeck: selectDeck, shiftDeckIntegrity: shiftDeckIntegrity, repairDeckFully: repairDeckFully,
+           ownedRigRows: ownedRigRows };
 })();

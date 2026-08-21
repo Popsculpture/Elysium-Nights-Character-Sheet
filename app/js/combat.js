@@ -2126,6 +2126,145 @@ EN.combatView = (function () {
      than a second reading of raw storage, so what the picker shows is always the Rig the
      rest of the sheet is using. It takes only the DERIVED record, deliberately: with no
      ch in scope it cannot grow a second reading of raw storage again. */
+  /* Collapsible header for the two device cards, plus the one thing worth keeping visible
+     when they are shut. Of everything on those cards only Integrity moves during play: the
+     picker, the chips, the traits and the next rung are all reference you read once. So the
+     compact state is header + Integrity + bar, and at a glance you can still see a deck or a
+     Rig walking toward Bricked without opening anything.
+
+     Collapsed by default, matching every other collapsible panel in the app. State lives in
+     the same _open map the rest of this view uses, so it survives a re-render and resets on
+     reload like the others. */
+  function deviceHeader(key, title, tierLabel) {
+    var open = !!_open[key];
+    return el("div.section-title.clickable.device-head", {
+      title: open ? "Collapse: keep only the Integrity readout"
+                  : "Expand: picker, chips, traits and upgrade price",
+      style: { margin: "12px 0 4px", cursor: "pointer" },
+      onclick: function () { _open[key] = !open; EN.app.render(); }
+    }, [
+      el("span.collapse-caret", { text: open ? "\u25be" : "\u25b8" }),
+      document.createTextNode(" " + title),
+      el("span.line"),
+      el("span.mono", { style: { fontSize: "10px", color: "var(--text3)" }, text: tierLabel }),
+      // names what a tap will do, because a caret on its own is not an instruction
+      el("span.dev-toggle", { text: open ? "COLLAPSE" : "EXPAND" })
+    ]);
+  }
+  // The Integrity readout shared by both cards' compact and open states, so the two can never
+  // disagree about what "Bricked" looks like. Controls are passed in, and omitted when shut.
+  function integrityBlock(label, cur, maxInt, bricked, controls) {
+    return el("div", { style: { marginTop: "8px" } }, [
+      el("div.row.between", { style: { alignItems: "baseline" } }, [
+        el("span", { style: { fontFamily: "var(--disp)", fontSize: "10px", letterSpacing: ".12em", color: "var(--text3)" }, text: label }),
+        el("span.mono", { style: { fontSize: "13px", color: bricked ? "var(--danger)" : "var(--text2)" },
+                          text: bricked ? "BRICKED" : cur + " / " + maxInt })
+      ]),
+      bar(cur, maxInt, bricked ? "var(--danger)" : "var(--success)"),
+      controls || null
+    ]);
+  }
+
+  /* The Smartdeck's Freelancer-tab card, the exact counterpart to traumaRigKids below, and
+     placed by the same rule: a device that IS your class's hardware belongs inside your class
+     resource card, and a device you merely own stands on its own.
+
+         Codebreaker  -> folded into the Bandwidth resource card (Bandwidth IS the deck's output)
+         anyone else  -> its own block, the way a Trauma Rig sits for a non-Stitcher
+         Stitcher     -> the mirror image: the Rig folds in, the deck stands alone
+
+     Selection and Integrity both delegate to EN.gridView, which owns those writes. Changing
+     tier zeroes damage and prunes mods that no longer fit the smaller slot count, and Integrity
+     is stored as damage TAKEN rather than remaining, so neither is re-implemented here. This
+     card deliberately omits the Bandwidth track, the Links and the cipher list: the first is
+     the resource card it sits inside, and the other two are the #GRID tab's job. */
+  function smartdeckKids(d, ch) {
+    var gd = d.grid || {}, deck = gd.deck, G = EN.grid || {};
+    var gv = EN.gridView || {};
+    var od = gv.ownedRigRows ? gv.ownedRigRows(ch) : { smartdecks: [], buddies: [] };
+    var grid = ch.grid || {};
+    var kids = [];
+
+    var _openKey = "fl-smartdeck", _isOpen = !!_open[_openKey];
+    var _maxInt = deck ? deck.maxIntegrity : 0, _spent = grid.deckHpSpent || 0;
+    var _cur = Math.max(0, _maxInt - _spent), _bricked = !!deck && _cur <= 0;
+
+    kids.push(deviceHeader(_openKey, "Smartdeck", deck ? (deck.tier + " \u00b7 " + (deck.type === "buddy" ? "B&E Buddy" : "Smartdeck")).toUpperCase() : "NONE JACKED IN"));
+
+    // COMPACT: the live number and nothing else. Nothing to show with no rig jacked in.
+    if (!_isOpen) {
+      if (deck) kids.push(integrityBlock("SYSTEM INTEGRITY", _cur, _maxInt, _bricked, null));
+      return kids;
+    }
+
+    var selKids = [el("option", { value: "none", selected: !grid.deckType, text: "- No rig -" })];
+    if (od.smartdecks.length) selKids.push(el("optgroup", { label: "Smartdecks (Power User)" }, od.smartdecks.map(function (sd) {
+      return el("option", { value: "smartdeck:" + sd.tier, selected: grid.deckType === "smartdeck" && grid.deckTier === sd.tier,
+        text: sd.tier + " \u00b7 +" + sd.deviceBonus + " dev \u00b7 CX " + Math.min(5, sd.t + 1) + " \u00b7 " + sd.integrity + " Int" });
+    })));
+    if (od.buddies.length) selKids.push(el("optgroup", { label: "B&E Buddies (Standard User)" }, od.buddies.map(function (b) {
+      return el("option", { value: "buddy:" + b.tier, selected: grid.deckType === "buddy" && grid.deckTier === b.tier,
+        text: b.tier + " \u00b7 +" + b.attack + " atk \u00b7 " + b.integrity + " Int" });
+    })));
+    if (!od.smartdecks.length && !od.buddies.length) selKids.push(el("option", { disabled: true, text: "No rigs in your stash; buy one in Inventory" }));
+
+    kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "2px" } }, [
+      el("select", { style: { fontSize: "12px", width: "auto", minWidth: "230px" },
+        onchange: function () { if (gv.selectDeck) gv.selectDeck(this.value); } }, selKids)
+    ]));
+
+    if (!deck) {
+      kids.push(el("p.help", { style: { margin: "4px 0 0", fontSize: "10.5px" },
+        text: "No rig jacked in. A Codebreaker runs a Smartdeck as a Power User; anyone else can crack low-tier nodes with a B&E Buddy." }));
+      return kids;
+    }
+
+    kids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "6px" } }, [
+      el("span.chip", { style: { fontSize: "9.5px", color: "var(--bw)", borderColor: "var(--bw)" },
+        title: "Device Bonus, added to #GRID checks made through this rig" }, "DEVICE +" + deck.deviceBonus),
+      deck.maxComplexity != null ? el("span.chip", { style: { fontSize: "9.5px", color: "var(--accent)", borderColor: "var(--accent)" },
+        title: "A deck runs ciphers up to (Tier + 1) in Complexity, capped by the library at 5" }, "MAX CX " + deck.maxComplexity) : null,
+      deck.modSlots != null ? el("span.chip", { style: { fontSize: "9.5px", color: "var(--text2)", borderColor: "var(--border2)" },
+        title: "Modification Slots equal the deck's Tier" }, "MOD SLOTS " + deck.modSlots) : null,
+      el("span.chip", { style: { fontSize: "9.5px", color: gd.isCodebreaker ? "var(--gold)" : "var(--text3)", borderColor: gd.isCodebreaker ? "var(--gold)" : "var(--border2)" },
+        title: "Power Users run the full cipher library; Standard Users are limited to a Buddy's baked-in suite" }, String(gd.userType || "").toUpperCase())
+    ]));
+
+    var amt = el("input", { type: "number", value: "1", min: "1",
+      style: { width: "48px", fontSize: "12px", textAlign: "center" } });
+    function shiftDeck(sign) {
+      var n = Math.max(1, parseInt(amt.value, 10) || 1);
+      if (gv.shiftDeckIntegrity) gv.shiftDeckIntegrity(sign * n, _maxInt);
+    }
+    kids.push(integrityBlock("SYSTEM INTEGRITY", _cur, _maxInt, _bricked,
+      el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "6px" } }, [
+        amt,
+        el("button.btn.sm", { disabled: _bricked, title: "Subtract this much Integrity",
+          style: { color: "var(--danger)", borderColor: "var(--danger)" }, onclick: function () { shiftDeck(1); } }, "− DAMAGE"),
+        el("button.btn.sm", { disabled: _spent <= 0, title: "Restore this much Integrity",
+          onclick: function () { shiftDeck(-1); } }, "+ REPAIR"),
+        _spent > 0 ? el("button.btn.sm", { style: { color: "var(--text2)" },
+          onclick: function () { if (gv.repairDeckFully) gv.repairDeckFully(); toast("Smartdeck restored to full Integrity."); } }, "⟳ FULL") : null
+      ])));
+
+    if ((deck.traits || []).length) {
+      kids.push(el("div.row.wrap", { style: { gap: "6px", marginTop: "8px", alignItems: "center" } },
+        [el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em", marginRight: "2px" }, text: "TRAITS" })].concat(
+          deck.traits.map(function (nm) {
+            return el("span.chip", { style: { fontSize: "9.5px", color: "var(--gold)", borderColor: "var(--gold)" } }, nm);
+          }))));
+    }
+
+    // the next rung, so an upgrade is a known price rather than a mystery (mirrors the Rig)
+    if (deck.type === "smartdeck") {
+      var next = (G.smartdecks || []).find(function (x) { return x.t === deck.t + 1; });
+      if (next) kids.push(el("p.help", { style: { margin: "4px 0 0", fontSize: "10.5px", color: "var(--text3)" },
+        text: "Next rung: " + next.tier + ", " + String.fromCodePoint(0x1D4A2) + next.price.toLocaleString() + " \u00b7 +" + next.deviceBonus +
+              " device \u00b7 CX " + Math.min(5, next.t + 1) + " \u00b7 " + next.integrity + " Integrity." }));
+    }
+    return kids;
+  }
+
   function traumaRigKids(d) {
     var t = d.rig, T = EN.traumaRigs || {}, tiers = T.tiers || [];
     var mint = resourceColor("Triage");
@@ -2135,11 +2274,16 @@ EN.combatView = (function () {
     var isStitcher = !!d.triage;
     var kids = [];
 
-    kids.push(el("div.section-title", { style: { margin: "12px 0 4px" } }, [
-      document.createTextNode("Trauma Rig"), el("span.line"),
-      el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", marginLeft: "6px" },
-                        text: t.scrapRig ? "SCRAP RIG" : (t.rigLabel || "NONE EQUIPPED").toUpperCase() })
-    ]));
+    var _openKey = "fl-traumarig", _isOpen = !!_open[_openKey];
+
+    kids.push(deviceHeader(_openKey, "Trauma Rig", t.scrapRig ? "SCRAP RIG" : (t.rigLabel || "NONE EQUIPPED").toUpperCase()));
+
+    // COMPACT: only Integrity moves in play, so that is all the shut card keeps. A Rig with
+    // no tier projects no node, so there is no Integrity to show.
+    if (!_isOpen) {
+      if (t.rigTier) kids.push(integrityBlock("RIG INTEGRITY", t.integrity, t.maxIntegrity, t.bricked, null));
+      return kids;
+    }
 
     // picker: no rig, the Scrap Rig fallback (Stitchers only), or any Rig in the stash.
     // Selection reads the RESOLVED rigKey, so the AUTO fallback shows as the live option
@@ -2214,23 +2358,17 @@ EN.combatView = (function () {
         if (v > 0) c.rig.hp[key] = v; else delete c.rig.hp[key];
       });
     }
-    kids.push(el("div", { style: { marginTop: "8px" } }, [
-      el("div.row.between", { style: { alignItems: "baseline" } }, [
-        el("span", { style: { fontFamily: "var(--disp)", fontSize: "10px", letterSpacing: ".12em", color: "var(--text3)" }, text: "RIG INTEGRITY" }),
-        el("span.mono", { style: { fontSize: "13px", color: bricked ? "var(--danger)" : "var(--text2)" },
-                          text: bricked ? "BRICKED" : cur + " / " + maxInt })
-      ]),
-      bar(cur, maxInt, bricked ? "var(--danger)" : "var(--success)"),
-      el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } }, [
-        amt,
-        el("button.btn.sm", { disabled: bricked, style: { color: "var(--danger)", borderColor: "var(--danger)" },
-          title: "Subtract this much Integrity", onclick: function () { shift(1); } }, "− DAMAGE"),
-        el("button.btn.sm", { disabled: t.integritySpent <= 0, title: "Restore this much Integrity",
-          onclick: function () { shift(-1); } }, "+ REPAIR"),
-        t.integritySpent > 0 ? el("button.btn.sm", { style: { color: "var(--text2)" },
-          onclick: function () { var key = t.rigKey; store.update(function (c) { c.rig = c.rig || {}; if (c.rig.hp) delete c.rig.hp[key]; }); toast("Trauma Rig restored to full Integrity."); } }, "⟳ FULL") : null
-      ])
-    ]));
+    kids.push(integrityBlock("RIG INTEGRITY", cur, maxInt, bricked,
+        el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } }, [
+          amt,
+          el("button.btn.sm", { disabled: bricked, style: { color: "var(--danger)", borderColor: "var(--danger)" },
+            title: "Subtract this much Integrity", onclick: function () { shift(1); } }, "− DAMAGE"),
+          el("button.btn.sm", { disabled: t.integritySpent <= 0, title: "Restore this much Integrity",
+            onclick: function () { shift(-1); } }, "+ REPAIR"),
+          t.integritySpent > 0 ? el("button.btn.sm", { style: { color: "var(--text2)" },
+            onclick: function () { var key = t.rigKey; store.update(function (c) { c.rig = c.rig || {}; if (c.rig.hp) delete c.rig.hp[key]; }); toast("Trauma Rig restored to full Integrity."); } }, "⟳ FULL") : null
+        ])
+    ));
 
     // traits: this tier's own, plus every trait below it
     if (t.traits.length) {
@@ -3619,7 +3757,13 @@ EN.combatView = (function () {
       if (d.resource) {
         var rCur = (ch.resources.current[d.resource.name] != null) ? ch.resources.current[d.resource.name] : d.resource.max;
         rCur = eng.clamp(rCur, 0, d.resource.max);
-        kids.push(el("div.section-title", { style: { margin: "2px 0 2px" } }, [document.createTextNode(d.resource.name), el("span.line")]));
+        /* THE DEVICE LEADS, THEN THE RESOURCE IT PRODUCES. A Codebreaker's Bandwidth is
+           output of the Smartdeck and a Stitcher's Triage runs through the Trauma Rig, so the
+           hardware is read first and the pool second. Only the class whose hardware this is
+           gets it here; everyone else's copy stands alone further down. */
+        if (d.triage) traumaRigKids(d).forEach(function (k) { kids.push(k); });
+        if ((d.grid || {}).isCodebreaker) smartdeckKids(d, ch).forEach(function (k) { kids.push(k); });
+        kids.push(el("div.section-title", { style: { margin: (d.triage || (d.grid || {}).isCodebreaker) ? "14px 0 2px" : "2px 0 2px" } }, [document.createTextNode(d.resource.name), el("span.line")]));
         kids.push(el("div.row.between.wrap", { style: { alignItems: "center" } }, [
           el("div.mono", { style: { fontSize: "22px", color: resourceColor(d.resource.name) }, html: rCur + " <span style='font-size:13px;color:var(--text3)'>/ " + d.resource.max + " · " + d.resource.attributeName + " · refresh on rest</span>" }),
           plusMinus(function () { store.update(function (c) { c.resources.current[d.resource.name] = Math.max(0, rCur - 1); }); },
@@ -3641,7 +3785,6 @@ EN.combatView = (function () {
           ]));
           if (d.triage.scrapRig) kids.push(el("p.help", { style: { margin: "4px 0 0", fontSize: "10.5px" },
             text: "Scrap Rig: Snag on all Triage healing and attack rolls, and every Swift Action Protocol costs an Action." }));
-          traumaRigKids(d).forEach(function (k) { kids.push(k); });
         }
         resourceFeats.forEach(pushFeat);
       }
@@ -3651,6 +3794,18 @@ EN.combatView = (function () {
       // attached: no Triage Save DC, no Triage pool, no Protocols, no Scrap Rig.
       if (!d.triage && d.rig && (d.rig.rigTier || (d.rig.ownedRigs || []).length)) {
         traumaRigKids(d).forEach(function (k) { kids.push(k); });
+      }
+      /* The same rule from the other side: a Smartdeck is ordinary gear anyone can buy, so a
+         non-Codebreaker who owns or is running one gets the object's own block with no class
+         resource attached. A Codebreaker never reaches here, because their deck is already
+         folded into the Bandwidth card above and showing it twice would be worse than not
+         showing it at all. */
+      if (!(d.grid || {}).isCodebreaker) {
+        var _gv = EN.gridView || {};
+        var _od = _gv.ownedRigRows ? _gv.ownedRigRows(ch) : { smartdecks: [], buddies: [] };
+        if ((d.grid || {}).deck || _od.smartdecks.length || _od.buddies.length) {
+          smartdeckKids(d, ch).forEach(function (k) { kids.push(k); });
+        }
       }
       if (otherFeats.length) {
         kids.push(el("div.section-title", { style: { margin: d.resource ? "12px 0 2px" : "2px 0 2px" } }, [document.createTextNode("Abilities"), el("span.line")]));
