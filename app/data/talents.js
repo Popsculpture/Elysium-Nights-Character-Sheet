@@ -413,16 +413,6 @@ EN.talents = [
     text: "Always on the lookout for danger in the sprawl, you gain the following benefits:\n• You cannot be caught off guard or Surprised while you are conscious.\n• You gain a +5 bonus to Initiative rolls.\n• Enemies do not gain Edge on attack rolls against you as a result of being Hidden from you.\n\n**Upgrade (Level 6+):** On the first round of any combat Encounter, you gain a free Swift Action that you may use only to move, take cover, or draw a weapon."
   },
   {
-    /* Renamed 2026-08-19 (manuscript). The KEY is persisted in ch.universalUpgrades and the
-       flat ch.talents list, so store.js migrates it; renaming here alone would silently blank
-       the talent on every saved character that had taken it. */
-    key: "spooky-action",
-    name: "Spooky Action",
-    category: "Skills, Social & Utility",
-    requirements: "",
-    text: "You reach for something on the far side of the room, and the current hands it over. For half a second you and it are one thing in two places, and nobody who watches it happen asks to see it twice. You gain the following benefits:\n• Increase your Mystique or Tech score by 1, to a maximum of 20.\n• You can handle unattended objects within 6 spaces as though you were holding them, provided the task takes no more force than your own hands could manage. The force is silent and leaves nothing to see.\n• As a Swift Action, choose one Target you can see within 6 spaces. The Target must succeed on a Body Saving Throw (DC 8 + your Mystique or Tech modifier, whichever this Talent raised, + your Caliber) or be moved 1 space toward or away from you. A Target can willingly fail this save.\n\n**Upgrade (Level 6+):** Your reach extends to 12 spaces, and a failed save moves the Target up to 2 spaces. Once per turn, you can also spend a Swift Action to make a ranged attack (d20 + your Mystique or Tech modifier, whichever this Talent raised, + your Caliber) against a Target within 6 spaces, dealing 1d8 Bludgeoning damage on a hit."
-  },
-  {
     key: "photographic-memory",
     name: "Photographic Memory",
     category: "Skills, Social & Utility",
@@ -442,6 +432,26 @@ EN.talents = [
     category: "Skills, Social & Utility",
     requirements: "Agility 13 or higher.",
     text: "You are an expert at slinking through neon shadows and industrial ruins. You gain the following benefits:\n• Increase your Agility score by 1, to a maximum of 20.\n• You can try to hide when you are only lightly obscured from the Target from which you are hiding.\n• When you are Hidden from a Target and miss it with a ranged weapon attack, making the attack does not reveal your position.\n• Dim light or heavy shadows do not impose Snag on your Wits (Perception) checks relying on sight.\n\n**Upgrade (Level 6+):** When you are Hidden and make an attack against a Target that has not acted yet in the Encounter, you gain Edge on the attack roll and the attack scores critical hits on a roll of 19 or 20."
+  },
+  {
+    /* Renamed twice in one day: Kinetic Manipulator -> Spooky Action -> Spatial Delivery,
+       verified printed in Part 1 on 2026-08-19. Not a rename either time: this is a third
+       body of text. The base Talent now has NO active ability, levels 1 to 5 are pure
+       utility and the shove arrives at 6, so nothing here should be read as a nerf to a
+       Level 1 pick that never had it.
+
+       Author decisions recorded so they are not "corrected" later: WITS or Mystique is
+       deliberate and was kept twice against the argument that Wits is the only Attribute
+       never used as a Flow Attribute. 3 spaces is deliberate, kept after seeing that a
+       fully blocked shove pays up to 3d6 under Falling & Forced Movement. There is no local
+       damage scale on purpose: Part 2 already prices a cut-short shove at 1d6 per space.
+       "Unattended" is load-bearing, per Part 2's Object Interactions callout. The opening
+       question is the author's and is the only Talent in Part 1 that opens with one. */
+    key: "spatial-delivery",
+    name: "Spatial Delivery",
+    category: "Skills, Social & Utility",
+    requirements: "",
+    text: "Why cross the room when the room can deliver? You reach for what you need, and space quietly handles the rest. You gain the following benefits:\n• Increase your Wits or Mystique score by 1, to a maximum of 20.\n• You can take the Interact with Object Free Action on any unattended object within 6 spaces, as though you were standing beside it. You might open a latch, retrieve something from an open container, or knock keys from a table. The interaction can require no more force than you could exert with your own hands, and the force itself is silent and invisible.\n\n**Upgrade (Level 6+):** Your reach extends to 12 spaces. You can also spend a Swift Action to shove one Target you can see within range. The Target must succeed on a Body Saving Throw (DC 8 + your Wits or Mystique modifier, whichever this Talent raised, + your Caliber) or be moved 3 spaces toward or away from you. A Target can willingly fail this save. If something stops them short, see Falling & Forced Movement."
   },
   {
     key: "street-chef",

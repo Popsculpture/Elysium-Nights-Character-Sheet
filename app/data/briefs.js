@@ -238,11 +238,12 @@ EN.briefs = {
   "Field Specialist": "+1 any Attribute; one Skill Proficiency; one proficient Skill gains Expertise (+4 d20 / +4 Edge Dice). Upgrade: Expertise with one more proficient Skill.",
   "Hyper-Aware": "+1 Wits/Tech; read lips; +5 Passive Perception and Investigation. Upgrade: cannot be surprised by anything a Perception/Investigation check would detect.",
   "Hyper-Vigilant": "Cannot be caught off guard or Surprised while conscious; +5 Initiative; Hidden Enemies gain no Edge against you. Upgrade: first round free Swift Action to move, take cover, or draw.",
-  // Briefs are keyed on the talent NAME, so this moved with the 2026-08-19 rename.
-  "Spooky Action": "+1 Mystique or Tech; handle unattended objects within 6 spaces; Swift Action Shove (Body save DC 8 + that modifier + Caliber) moves 1 space. Upgrade: 12 spaces, Shove 2, once per turn a Swift Action ranged attack for 1d8 Bludgeoning.",
   "Photographic Memory": "+1 Tech/Wits; always know north and time; recall anything seen/heard past month, Edge on related Insight/Investigation. Upgrade: recall extends to a year, DC 15 for exact documents.",
   "Ruin Crawler": "+1 Wits/Agility; Edge to find hidden doors and resist traps/hazards; Resistance to trap damage; search at normal pace. Upgrade: Swift Action disarm, once/Long Rest declare a trap missed.",
   "Shadow Operative": "+1 Agility; hide while lightly obscured; missed Hidden ranged attack doesn't reveal you; no Snag from dim light. Upgrade: Hidden attacks vs unacted Targets gain Edge, crit 19-20.",
+  // Keyed on the talent NAME. Moved with the 2026-08-19 rename and rewritten: the base
+  // Talent has no active ability now, so the shove belongs under Upgrade.
+  "Spatial Delivery": "+1 Wits or Mystique; take the Interact with Object Free Action on any unattended object within 6 spaces. Upgrade: reach 12 spaces, and a Swift Action shove (Body save DC 8 + that modifier + Caliber) moves the Target 3 spaces.",
   "Street Chef": "+1 Body/Wits; cooking Proficiency; Short Rest meal for 4+Caliber adds 1d8 to Resilience Die healing; Caliber rations grant Caliber Vigor. Upgrade: 2d8 meal, rations grant Edge on next Body save.",
   "Trauma Medic": "+1 Wits or Tech; Stabilize also restores 1 Vitality; Action with Medkit in hand heals 2d6 + Caliber + the raised modifier, once per target per rest. Upgrade: Swift Action, 3d6 + Caliber + the raised modifier, and ends Poisoned, Bleeding, or Dazed.",
   "Undercity Survivor": "+1 Wits/Tech/Charm; learn one obscurement/perception Quick Hack or Invocation, free once/Long Rest. Upgrade: twice/Long Rest, Edge on Stealth within its effect.",
