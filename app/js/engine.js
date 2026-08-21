@@ -476,15 +476,18 @@ EN.engine = (function () {
     "Synthetic Musculature": { unarmedStep: 1 },
     "Briar Strike":          { unarmed: { die: "1d6", type: "Piercing or Slashing", traits: "Light, Finesse",
                                  note: "pick the type each turn; Bleeding on a crit" } },
-    /* Two errors lived in this one row. The strike is 1d6 BLUDGEONING; the "or Slashing"
-       choice belongs to the additional 1d4, not to the strike. And that 1d4 sat inside the
-       note as prose, so it never reached the printed damage, while the identically shaped
-       Smelter's Hands and Envenomed Thorns riders below always did. The Size gate is on the
-       PUSH alone in the manuscript; welding it to the 1d4 understated the feature. */
-    "Brutal Frame":          { unarmed: { die: "1d6", type: "Bludgeoning",
-                                 note: "push 1 space against a Target smaller than you" },
-                               unarmedRider: { damage: "1d4 Bludgeoning or Slashing",
-                                 when: "on a hit", note: "pick the type each strike" } },
+    /* The 1d4 used to live inside the note as prose, so it never reached the printed
+       damage while the identically shaped Smelter's Hands and Envenomed Thorns riders
+       below always did. It is a rider, and its Size condition rides with it: unarmedRider
+       carries `when` precisely so a conditional rider can be shown without pretending the
+       sheet knows whether the condition is met. Checked against Part 1 on 2026-08-21: the
+       strike is "Bludgeoning or Slashing, chosen with each strike", and the Size gate
+       covers BOTH the 1d4 and the push. */
+    "Brutal Frame":          { unarmed: { die: "1d6", type: "Bludgeoning or Slashing",
+                                 note: "pick the type with each strike" },
+                               unarmedRider: { damage: "1d4",
+                                 when: "against a Target at least one Size category smaller",
+                                 note: "you may also push the Target 1 space away" } },
     "Butcher Spurs":         { unarmed: { die: "1d6", type: "Slashing", traits: "Finesse",
                                  note: "once per turn on a hit, Target Speed -2 until your next turn" } },
     "Scavenger's Maw":       { unarmed: { die: "1d6", type: "Piercing", note: "bite; +1 Vitality on a hit" } },

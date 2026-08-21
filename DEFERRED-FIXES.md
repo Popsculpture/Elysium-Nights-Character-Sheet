@@ -4442,10 +4442,12 @@ so a player cannot tell which numbers the sheet is already carrying for them.
 
 ### Author rulings wanted
 
-1. **Butcher Spurs ships `traits: "Finesse"` and its manuscript text does not mention it.**
-   Compare Briar Strike one lineage over, which says "possess the Light and Finesse
-   properties" and is transcribed correctly. Finesse decides whether the kick attacks off
-   Agility or Body, so this is not cosmetic. Intended, or a transcription slip?
+1. ~~**Butcher Spurs ships `traits: "Finesse"` and its manuscript text does not mention it.**~~
+   **ANSWERED 2026-08-21 against Part 1, and the answer was the opposite of the question.**
+   The book reads "Your unarmed strikes deal 1d6 Slashing damage and carry the Finesse
+   trait". The engine table was right all along; `species.js` had dropped the clause, so the
+   app granted Finesse while its own displayed text denied it. Transcription corrected, and
+   the discrepancy prompted the full text audit recorded below.
 2. **Climb speed wording**, as above.
 3. **Emergency Boot presentation**, as above.
 4. **Two source-qualified immunities**, deliberately left out of the new table: Frictionless
@@ -4453,6 +4455,41 @@ so a player cannot tell which numbers the sheet is already carrying for them.
    Insight can never be Surprised "by an organic Target". `ch.conditions` records that a
    condition is on you, never what put it there, so the qualifier is unrepresentable. Left as
    prose rather than promoted to blanket immunity, which would grant more than the book does.
+
+## species.js re-checked against Part 1, 2026-08-21
+
+Prompted by the Butcher Spurs question, all 123 lineage feature texts were compared
+mechanically against a fresh export of Part 1. The manuscript was read on disk and searched
+in place; it was never pulled into the working context.
+
+**119 matched the manuscript exactly. Six had drifted. Four could not be compared** because
+their entry runs over several paragraphs while the comparison reads one line per feature
+(Hitscan, Open Architecture, Method Actor, Biometric Spoofing). All four were then checked by
+hand, and in every case the app's longer text is the correct one.
+
+The six, all re-transcribed by copying from the source rather than retyping:
+
+- **Butcher Spurs** was missing "and carry the Finesse trait", which decides whether those
+  kicks attack off Agility or Body.
+- **Brutal Frame** was materially wrong in two ways, and both had been copied INTO the engine
+  earlier the same day on the assumption that `species.js` reflected the book. It does not.
+  The manuscript makes the strike "1d6 Bludgeoning or Slashing damage, chosen with each
+  strike", not Bludgeoning alone, and its Size gate covers BOTH the additional 1d4 and the
+  push rather than the push alone. The engine row now matches the book, with the 1d4 carried
+  as a rider whose `when` states the Size condition instead of being buried in a note.
+- **Canopy Reach** was missing "This bonus can exceed a weapon's normal Reach cap, since the
+  vine is extending the attack rather than the weapon itself." The engine already implements
+  exactly that and quotes the reasoning in its own comment, so only the displayed text lied.
+- **Synthetic Musculature** carried an invented parenthetical, "(a strike with no die gains
+  1d4)". True of the engine, absent from the book.
+- **Hydraulic Throw** stated its Size restriction twice, once in the wrong place.
+- **Pouncing Strike** said "jumping distance" where the book says "jump distance".
+
+**The lesson, recorded because it cost real work.** The Brutal Frame engine row was edited to
+match `species.js`, on the reasonable assumption that a transcribed data file reflects the
+manuscript. It did not, so a correct table was made wrong. **When a data file and an engine
+table disagree about a rule, neither one is authority: the book is.** The comparison script
+is at `scratchpad/lin/diff_text.py` and is worth re-running after any manuscript sync.
 
 ## Environment
 
