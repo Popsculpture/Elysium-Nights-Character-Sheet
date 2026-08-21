@@ -2560,19 +2560,32 @@ EN.combatView = (function () {
   }
   /* Physical mode: spend the round without opening a tray. Same deduction the
      roll tray makes, so the magazine and the recoil kick stay consistent. */
-  function fireWeapon(wname) {
-    var it = findWeapon(wname); if (!it) return;
-    var st = readAmmo(store.active(), it, key), cost = costFor(it, st.mode);
+  /* FIRE takes the weapon's ENTRY KEY, not its name, and that was two separate bugs.
+
+     It used to be handed a name and then reach for a bare `key` that is declared nowhere in
+     this file, so every press threw "ReferenceError: key is not defined" before it could
+     spend a round: the button was inert and silent, with no toast and no console notice a
+     player would ever see. And `_recoil` is documented above as a weapon ENTRY KEY, and is
+     compared against `wKey` at render time, so assigning a name to it meant the recoil kick
+     could never match and never played.
+
+     Both are the same leak from the entry-key refactor. A magazine belongs to an equipped
+     PIECE, so two identical pistols hold two magazines; a name cannot address either one.
+     weaponOfKey() is the resolver that already reads the catalog item off the entry, which
+     is why it is used here rather than findWeapon(). */
+  function fireWeapon(wKey) {
+    var it = weaponOfKey(store.active(), wKey); if (!it) return;
+    var st = readAmmo(store.active(), it, wKey), cost = costFor(it, st.mode);
     if (st.cur < cost) { toast(it.name + " needs " + cost + " round" + (cost > 1 ? "s" : "") + " for " + st.mode + "; reload first."); return; }
     store.update(function (c) {
       c.weaponAmmo = c.weaponAmmo || {};
-      var cur = readAmmo(c, it, key);
-      var a = c.weaponAmmo[key] || { cur: cur.cur, mode: cur.mode, ammoType: cur.ammoType };
+      var cur = readAmmo(c, it, wKey);
+      var a = c.weaponAmmo[wKey] || { cur: cur.cur, mode: cur.mode, ammoType: cur.ammoType };
       if (typeof a.cur !== "number") a.cur = cur.cur;
       a.cur = Math.max(0, a.cur - cost);
-      c.weaponAmmo[key] = a;
+      c.weaponAmmo[wKey] = a;
     });
-    _recoil = wname;
+    _recoil = wKey;
     toast(it.name + ": " + st.mode + ", " + cost + " round" + (cost > 1 ? "s" : "") + " spent.");
     EN.app.render();
   }
@@ -3986,7 +3999,7 @@ EN.combatView = (function () {
           (physicalDice() && isRanged) ? el("button.btn.sm", {
             title: "Spend this weapon's ammo for one use; roll the dice yourself",
             style: { color: "var(--ember)", borderColor: "var(--ember)", flex: "0 0 auto" },
-            onclick: function () { fireWeapon(wname); } }, "FIRE") : null
+            onclick: function () { fireWeapon(wKey); } }, "FIRE") : null
         ]);
 
         var rowKids = [head];

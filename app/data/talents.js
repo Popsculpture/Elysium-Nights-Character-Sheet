@@ -434,11 +434,12 @@ EN.talents = [
     text: "You are an expert at slinking through neon shadows and industrial ruins. You gain the following benefits:\n• Increase your Agility score by 1, to a maximum of 20.\n• You can try to hide when you are only lightly obscured from the Target from which you are hiding.\n• When you are Hidden from a Target and miss it with a ranged weapon attack, making the attack does not reveal your position.\n• Dim light or heavy shadows do not impose Snag on your Wits (Perception) checks relying on sight.\n\n**Upgrade (Level 6+):** When you are Hidden and make an attack against a Target that has not acted yet in the Encounter, you gain Edge on the attack roll and the attack scores critical hits on a roll of 19 or 20."
   },
   {
-    /* Renamed twice in one day: Kinetic Manipulator -> Spooky Action -> Spatial Delivery,
-       verified printed in Part 1 on 2026-08-19. Not a rename either time: this is a third
-       body of text. The base Talent now has NO active ability, levels 1 to 5 are pure
-       utility and the shove arrives at 6, so nothing here should be read as a nerf to a
-       Level 1 pick that never had it.
+    /* Text verified printed in Part 1 on 2026-08-19 and transcribed from the document.
+       Formerly Kinetic Manipulator; store.js migrates the old key.
+
+       The base Talent has NO active ability: levels 1 to 5 are pure utility and the shove
+       arrives at 6, so nothing here should be read as a nerf to a Level 1 pick that never
+       had one.
 
        Author decisions recorded so they are not "corrected" later: WITS or Mystique is
        deliberate and was kept twice against the argument that Wits is the only Attribute

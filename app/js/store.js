@@ -525,11 +525,11 @@ EN.store = (function () {
     var TALENT_RENAMES = Object.create(null);
     TALENT_RENAMES["toxicologist"] = TALENT_RENAMES["Toxicologist"] = "cutting-agent";
     TALENT_RENAMES["dead-eye-sniper"] = TALENT_RENAMES["Dead-Eye Sniper"] = "zeroed-in";
-    /* Renamed twice on 2026-08-19, and BOTH old keys point straight at the final one.
-       This migration applies a single lookup, it does not chase a chain, so leaving
-       kinetic-manipulator pointing at spooky-action would land a legacy record on a key
-       that no longer exists and blank the talent exactly as the un-migrated rename would.
-       spooky-action shipped, so records really can hold it. */
+    /* Both retired keys point STRAIGHT at the current one. This migration applies a single
+       lookup and does not chase a chain, so pointing one retired key at another would land a
+       legacy record on a key that no longer exists and blank the talent silently, which is
+       the failure this table exists to prevent. The second line is not sentiment: that key
+       was live on the site for roughly 46 hours, so saved characters can genuinely hold it. */
     TALENT_RENAMES["kinetic-manipulator"] = TALENT_RENAMES["Kinetic Manipulator"] = "spatial-delivery";
     TALENT_RENAMES["spooky-action"] = TALENT_RENAMES["Spooky Action"] = "spatial-delivery";
     Object.keys(ch.universalUpgrades || {}).forEach(function (lvl) {
