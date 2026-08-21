@@ -672,7 +672,7 @@ EN.printSheet = (function () {
       entries.forEach(function (e) {
         var it = catItem(e.name);
         var key = e.id || e.name;
-        var worn = (ch.equippedWeapons || []).indexOf(key) !== -1 || ch.equippedArmor === key || ch.equippedShield === key || ch.equippedFocus === key;
+        var worn = (ch.equippedWeapons || []).indexOf(key) !== -1 || eng.isSlotEquipped(ch, key);
         var tags = it ? [it.group || it.kind || it.bucket, it.legality, it.availability].filter(Boolean).join(" · ") : "";
         var meta = ["x" + e.qty, worn ? "equipped" : "stash"].concat(tags ? [tags] : []).join(" · ");
         var block = el("div.ps-invitem", null, [
@@ -794,8 +794,9 @@ EN.printSheet = (function () {
       field("Bandwidth", g.bandwidthMax != null ? g.bandwidthMax : "-", { style: { flex: "0 0 70px" } })
     ]));
     if (deck && deck.traits && deck.traits.length) out.push(el("div.ps-chiprow", null, deck.traits.map(function (t) { return chip(t); })));
-    if (ch.grid && (ch.grid.deckMods || []).length) {
-      var mods = (EN.grid.mods || []).filter(function (m) { return ch.grid.deckMods.indexOf(m.key) !== -1; });
+    if (deck && (deck.mods || []).length) {
+      // the live deck's own loadout, derived; deckMods is keyed by entry now
+      var mods = (EN.grid.mods || []).filter(function (m) { return deck.mods.indexOf(m.key) !== -1; });
       out.push(el("div.ps-chiprow", null, mods.map(function (m) { return chip(m.name, ".ps-chip-box"); })));
     }
     out.push(sect("Repertoire", "cipher · CX · cost"));

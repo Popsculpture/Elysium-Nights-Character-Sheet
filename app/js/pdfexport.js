@@ -917,7 +917,7 @@ EN.pdfExport = (function () {
     var invRows = entries.map(function (e) {
       var it = catItem(e.name);
       var key = e.id || e.name;
-      var worn = (ch.equippedWeapons || []).indexOf(key) !== -1 || ch.equippedArmor === key || ch.equippedShield === key || ch.equippedFocus === key;
+      var worn = (ch.equippedWeapons || []).indexOf(key) !== -1 || eng.isSlotEquipped(ch, key);
       return { name: e.name, qty: e.qty, status: worn ? "Equipped" : "Stash",
                notes: it ? gearSummaryLine(it, eng.armorState ? eng.armorState(ch, key) : null,
                                            eng.shieldState ? eng.shieldState(ch, key) : null,

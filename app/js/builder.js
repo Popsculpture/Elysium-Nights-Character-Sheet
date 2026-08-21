@@ -1017,9 +1017,7 @@ EN.builder = (function () {
           c.equipment = c.equipment.filter(function (x) { return x !== e; });
           // clear any equip/carry state pointing at the removed entry
           if (c.equippedWeapons) c.equippedWeapons = c.equippedWeapons.filter(function (n) { return n !== g.key; });
-          if (c.equippedArmor === g.key) c.equippedArmor = null;
-          if (c.equippedShield === g.key) c.equippedShield = null;
-          if (c.equippedFocus === g.key) c.equippedFocus = null;
+          EN.engine.releaseEntry(c, g.key);
           if (c.carry) delete c.carry[g.key];
           if (c.racked) {
             delete c.racked[g.key];

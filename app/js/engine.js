@@ -1690,7 +1690,11 @@ EN.engine = (function () {
       case "consumables": return 0;
       case "carry": return 0;   // Carry Gear never counts against your own Load Budget
       case "flow": return /tonic|draught|philter|salve|vial|dose/i.test(it.name) ? 0 : 1;
-      case "rigs": return 2;
+      /* Trauma Rigs are the only thing left in this bucket: Smartdecks, Buddies and Relays
+         all return 1 further up, before this switch is reachable. A Rig is satchel-sized and
+         built to be worn, so wearing it costs 1 where hauling it in your hands costs 2. This
+         is the ONLY consumer of opts.worn; armor states its own no-discount rule above. */
+      case "rigs": return (opts && opts.worn) ? 1 : 2;
       case "devices": return /drone|mule|case|rack/i.test(it.name) ? 2 : 1;
     }
     return 1;
@@ -1703,7 +1707,7 @@ EN.engine = (function () {
     var key = entryKey(e);
     if (!key) return false;
     if ((ch.equippedWeapons || []).indexOf(key) !== -1) return true;
-    if (ch.equippedArmor === key || ch.equippedShield === key || ch.equippedFocus === key) return true;
+    if (isSlotEquipped(ch, key)) return true;
     var cs = ch.carry && ch.carry[key];
     return cs === "carried" || cs === "worn" || cs === "racked";
   }
@@ -1797,14 +1801,18 @@ EN.engine = (function () {
     var current = 0, items = [];
     // a validly Racked item (stowed in worn Carry Gear) carries 1 less Load,
     // min 0. One rack slot holds ONE item, so a pooled qty stack racked as a
-    // single slot gets the break once, not once per unit. Worn armor gets its
-    // own separate break (itemLoad's { worn } option, -2 min 0): it counts in
-    // full whenever carried, packed, or looted, since supporting its own
-    // weight is what "worn" means for a suit of armor.
+    // single slot gets the break once, not once per unit.
+    //
+    // The { worn } flag was dead until 2026-08-21: three callers passed it and itemLoad
+    // declared `opts` without ever reading it, while an older comment here claimed worn armor
+    // got "-2 min 0". It never did, and armor's own branch says so explicitly: a suit counts
+    // in full whether worn, packed or looted. The flag now has exactly one consumer, the
+    // Trauma Rig, which drops from 2 to 1 when worn.
     var racks = rackState(ch);
     (ch.equipment || []).forEach(function (e) {
       if (!(e.qty > 0) || !onPerson(ch, e)) return;
-      var l = itemLoad(e.name, { worn: ch.equippedArmor === entryKey(e) });
+      var ek = entryKey(e);
+      var l = itemLoad(e.name, { worn: ch.equippedArmor === ek || (ch.rig && ch.rig.key === ek) });
       var rackedGear = racks.byItem[entryKey(e)] || null;
       var total = l * e.qty;
       if (rackedGear) total = Math.max(0, total - 1);
@@ -1865,7 +1873,11 @@ EN.engine = (function () {
     (ch.equipment || []).forEach(function (e) {
       if (!(e.qty > 0)) return;
       var key = entryKey(e);
-      var directlyEquipped = ch.equippedArmor === key || ch.equippedShield === key || ch.equippedFocus === key;
+      // Any single-slot equip counts as worn. Decks and rigs join this list in the registry
+      // but declare no `slot`, so they cannot reach the capacity check below today. The day
+      // a data edit gives one a slot they enrol in Body Slot conflicts automatically, which
+      // is almost certainly right and is written down here so it is not a surprise later.
+      var directlyEquipped = isSlotEquipped(ch, key);
       var isWorn = directlyEquipped || (ch.carry && ch.carry[key] === "worn");
       if (!isWorn) return;
       var slots = itemSlots(loadCatalogItem(e.name));
@@ -1908,19 +1920,37 @@ EN.engine = (function () {
     var unlimitedLinks = isCodebreaker && level >= 9;
     var g = (ch && ch.grid) || {};
     var deck = null, deviceBonus = 0, deckBaseIntegrity = 0, modSlots = 0, deckTraits = [], maxComplexity = null;
-    if (g.deckType === "smartdeck") {
-      deck = (G.smartdecks || []).find(function (t) { return t.tier === g.deckTier; });
-      if (deck) {
-        deviceBonus = deck.deviceBonus; deckBaseIntegrity = deck.integrity; modSlots = deck.modSlots; maxComplexity = Math.min(5, deck.t + 1);
-        deckTraits = (G.smartdecks || []).filter(function (x) { return x.t <= deck.t; }).map(function (x) { return x.trait; });
-      }
-    } else if (g.deckType === "buddy") {
-      deck = (G.buddies || []).find(function (t) { return t.tier === g.deckTier; });
-      if (deck) { deckBaseIntegrity = deck.integrity; }   // buddies have no mod slots → mods never apply
+
+    /* The live deck is the one you JACKED IN, and only that one. There is no best-owned
+       fallback any more: selection is an explicit act on the Stash row, exactly like wearing
+       armor, so a deck you own but have not equipped reads as no deck. The fallback had to go
+       because it disagreed with the row, offering JACK IN on hardware that was already
+       silently live. Existing characters had the fallback's own answer written into storage
+       once by migrate(); see the equipSlots stamp there.
+
+       A recorded pick only counts while that exact entry is still in the stash, so selling a
+       deck makes the recording inert rather than crediting hardware that is gone, and a
+       re-bought deck is a new entry with a new key that never re-locks an abandoned pick. */
+    var ownedDeckList = ownedDecks(ch);
+    var recordedKey = (typeof g.deckKey === "string") ? g.deckKey : null;
+    var deckEntry = recordedKey ? (ownedDeckList.find(function (o) { return o.key === recordedKey; }) || null) : null;
+    var deckKey = deckEntry ? deckEntry.key : null;
+    var deckTypeNow = deckEntry ? deckEntry.type : null;
+
+    if (deckTypeNow === "smartdeck") {
+      deck = deckEntry.row;
+      deviceBonus = deck.deviceBonus; deckBaseIntegrity = deck.integrity; modSlots = deck.modSlots; maxComplexity = Math.min(5, deck.t + 1);
+      deckTraits = (G.smartdecks || []).filter(function (x) { return x.t <= deck.t; }).map(function (x) { return x.trait; });
+    } else if (deckTypeNow === "buddy") {
+      deck = deckEntry.row;
+      deckBaseIntegrity = deck.integrity;   // buddies have no mod slots, so mods never apply
     }
-    // mods apply only up to the deck's mod-slot capacity (0 for buddies / no rig).
-    // This also drops mods left stranded after a deck downgrade, and is safe against stale/imported data.
-    var modKeys = g.deckMods || [], modIntegrity = 0, modLinks = 0, hasRedline = false, usedSlots = 0;
+
+    /* Mods belong to the DECK, not to the character: ch.grid.deckMods is keyed by entry, so
+       kitting out one Advanced Smartdeck leaves the spare one bare. Capacity still clips the
+       list, which also drops mods stranded by a downgrade and is safe against imported data. */
+    var modKeys = (deckKey && g.deckMods && !Array.isArray(g.deckMods)) ? (g.deckMods[deckKey] || []) : [];
+    var modIntegrity = 0, modLinks = 0, hasRedline = false, usedSlots = 0;
     modKeys.forEach(function (k) {
       var m = (G.mods || []).find(function (x) { return x.key === k; });
       if (!m || usedSlots + m.slots > modSlots) return;
@@ -1930,8 +1960,15 @@ EN.engine = (function () {
       if (k === "redline") hasRedline = true;
     });
     var deckMaxIntegrity = deck ? deckBaseIntegrity + modIntegrity : 0;
-    var isSmart = g.deckType === "smartdeck" && !!deck;
-    var isBuddy = g.deckType === "buddy" && !!deck;
+    /* Damage is read under THIS deck's key, so a fresh deck arrives full and hurting one
+       cannot touch another's total. Derived here rather than in each view, because three
+       places each computing "max minus spent" is three places that can disagree on Bricked. */
+    var deckSpent = (deckKey && g.deckHpSpent && typeof g.deckHpSpent === "object") ? (g.deckHpSpent[deckKey] | 0) : 0;
+    deckSpent = clamp(deckSpent, 0, deckMaxIntegrity);
+    var deckIntegrity = Math.max(0, deckMaxIntegrity - deckSpent);
+    var deckBricked = !!deck && deckIntegrity <= 0;
+    var isSmart = deckTypeNow === "smartdeck" && !!deck;
+    var isBuddy = deckTypeNow === "buddy" && !!deck;
     // effective attack/save with the current rig (Buddy uses its baked-in numbers)
     var effectiveAttack = isBuddy ? deck.attack : cipherAttackBonus + deviceBonus;
     var effectiveSaveDC = isBuddy ? deck.saveDc : cipherSaveDC;
@@ -1960,8 +1997,14 @@ EN.engine = (function () {
       bandwidthMax: (isCodebreaker && resource && resource.name === "Bandwidth") ? resource.max : null,
       stabilityDcBase: stabilityDcBase, stabilityDcMod: stabilityDcMod,
       stabilityLastDamage: stabilityLastDamage, stabilityDcFromDamage: stabilityDcFromDamage, stabilityDcLive: stabilityDcLive,
-      deck: deck ? { type: g.deckType, tier: deck.tier, t: deck.t, deviceBonus: deviceBonus, maxIntegrity: deckMaxIntegrity,
-                     modSlots: modSlots, traits: deckTraits, maxComplexity: maxComplexity,
+      // the owned list and the resolved key travel with the record, so a view can offer the
+      // real choices without re-deriving what counts as a deck
+      ownedDecks: ownedDeckList, deckKey: deckKey,
+      deck: deck ? { type: deckTypeNow, tier: deck.tier, t: deck.t, key: deckKey,
+                     deviceBonus: deviceBonus, maxIntegrity: deckMaxIntegrity,
+                     spent: deckSpent, integrity: deckIntegrity, bricked: deckBricked,
+                     modSlots: modSlots, usedSlots: usedSlots, mods: modKeys, traits: deckTraits,
+                     maxComplexity: maxComplexity,
                      attack: deck.attack, saveDc: deck.saveDc, maxNode: deck.maxNode } : null
     };
   }
@@ -2016,6 +2059,127 @@ EN.engine = (function () {
      is the equipment entry's own identity, so two Rigs of the SAME tier are two distinct
      entries here (no dedupe): they are two objects, each pickable and each damageable on
      its own. The Rig picker lists exactly these. */
+  /* THE FIVE SINGLE-SLOT EQUIP SLOTS, DESCRIBED ONCE.
+
+     Armor, shield, focus, Smartdeck and Trauma Rig are all the same mechanic: one at a time,
+     recorded as an ENTRY KEY, resolved from what you actually own. Before this table the five
+     were spelled out by hand in EIGHT places (onPerson, slotState, isEquippedAny, equipLabel,
+     carryCtrl, unequipIfGone, undoKit, and the printed Inventory table in both printsheet.js
+     and pdfexport.js), so adding a slot meant finding all eight or shipping a row that reads
+     ON-PERSON forever and never releases the key when the item is sold.
+
+     Why accessors rather than a field name. The old DEF_SLOT mapped a kind to a flat string
+     ("equippedArmor") and indexed the character with it. That cannot express the two new
+     slots: deckKey is nested under ch.grid, and rig.key sits beside rig.scrap and has to clear
+     it. A get/set pair costs one closure and expresses both.
+
+     Why `owned` is a function and not a predicate on the catalog row. ownedDecks and ownedRigs
+     do more than read a field: they also require a matching tier row in EN.grid / EN.traumaRigs.
+     Gating a button on the raw catalog field would offer EQUIP on hardware the resolver then
+     refuses to resolve. One ownership answer, used by the row, the resolver and the migration. */
+  function ownedByKind(ch, kind) {
+    var out = [];
+    ((ch && ch.equipment) || []).forEach(function (e) {
+      if (!e || (e.qty != null && e.qty <= 0)) return;
+      var it = loadCatalogItem(e.name);
+      if (it && it.kind === kind) out.push({ key: entryKey(e), name: e.name });
+    });
+    return out;
+  }
+  var EQUIP_SLOTS = [
+    { id: "armor", label: "Worn", verbs: { on: "WEAR", off: "✓ WORN", act: "worn" },
+      get: function (ch) { return (ch && ch.equippedArmor) || null; },
+      set: function (c, key) { c.equippedArmor = key || null; },
+      owned: function (ch) { return ownedByKind(ch, "armor"); } },
+    { id: "shield", label: "Wielding", verbs: { on: "RAISE", off: "✓ WIELDING", act: "wielded" },
+      get: function (ch) { return (ch && ch.equippedShield) || null; },
+      set: function (c, key) { c.equippedShield = key || null; },
+      owned: function (ch) { return ownedByKind(ch, "shield"); } },
+    { id: "focus", label: "Attuned", verbs: { on: "ATTUNE", off: "✓ ATTUNED", act: "attuned" },
+      get: function (ch) { return (ch && ch.equippedFocus) || null; },
+      set: function (c, key) { c.equippedFocus = key || null; },
+      owned: function (ch) { return ownedByKind(ch, "focus"); } },
+    /* Jacking in does NOT disturb the deck you leave: each one keeps its own mods and its own
+       Integrity under its own key, so switching back finds the first exactly as you left it.
+       That is why this only writes a key, where the old tier-based picker had to zero damage
+       and prune stranded mods. Under that shape one flat array and one number were shared by
+       every deck the character owned, so a swap had to destroy state to stay coherent.
+       Pruning still happens, but as a READ: mods past the deck's slot count are ignored rather
+       than deleted, so a downgrade and re-upgrade restores the loadout. The book agrees, since
+       mods "can be reseated into the new chassis" rather than being lost on a swap. */
+    { id: "deck", label: "Jacked in", verbs: { on: "JACK IN", off: "✓ JACKED IN", act: "jacked in" },
+      get: function (ch) { return (ch && ch.grid && ch.grid.deckKey) || null; },
+      set: function (c, key) { c.grid = c.grid || {}; c.grid.deckKey = key || null; },
+      owned: ownedDecks },
+    /* Equipping a real Rig clears the Scrap Rig, because you cannot be improvising and running
+       proper hardware at once. Un-equipping deliberately does NOT set scrap: "no Rig" and
+       "improvised Rig" are different states and the Stash cannot know which one was meant, so
+       the Scrap Rig stays a Stitcher toggle on the Freelancer card. */
+    { id: "rig", label: "Worn", verbs: { on: "WEAR", off: "✓ WORN", act: "worn" },
+      get: function (ch) { return (ch && ch.rig && ch.rig.key) || null; },
+      set: function (c, key) { c.rig = c.rig || {}; c.rig.key = key || null; if (key) c.rig.scrap = false; },
+      owned: ownedRigs }
+  ];
+  function equipSlotById(id) {
+    for (var i = 0; i < EQUIP_SLOTS.length; i++) if (EQUIP_SLOTS[i].id === id) return EQUIP_SLOTS[i];
+    return null;
+  }
+  // which slot, if any, this owned entry belongs to. Null for ordinary gear.
+  function equipSlotFor(ch, it, entry) {
+    var key = entryKey(entry);
+    if (!key) return null;
+    for (var i = 0; i < EQUIP_SLOTS.length; i++) {
+      var owned = EQUIP_SLOTS[i].owned(ch);
+      for (var j = 0; j < owned.length; j++) if (owned[j].key === key) return EQUIP_SLOTS[i];
+    }
+    return null;
+  }
+  // every key currently filling a single slot. Weapons are a LIST and stay separate.
+  function slotEquippedKeys(ch) {
+    var out = [];
+    EQUIP_SLOTS.forEach(function (s) { var k = s.get(ch); if (k) out.push(k); });
+    return out;
+  }
+  function equipSlotLabel(ch, key) {
+    for (var i = 0; i < EQUIP_SLOTS.length; i++) if (EQUIP_SLOTS[i].get(ch) === key) return EQUIP_SLOTS[i].label;
+    return null;
+  }
+  function isSlotEquipped(ch, key) { return slotEquippedKeys(ch).indexOf(key) !== -1; }
+  // clear this entry out of whatever slot holds it. Called when gear leaves the stash.
+  function releaseEntry(c, key) {
+    if (!key) return;
+    EQUIP_SLOTS.forEach(function (s) { if (s.get(c) === key) s.set(c, null); });
+  }
+  function setEquipSlot(c, slotId, key) {
+    var s = equipSlotById(slotId);
+    if (s) s.set(c, key || null);
+  }
+
+  /* THE LIVE DECK IS AN OWNED ENTRY, exactly as a Trauma Rig is. ch.grid.deckKey names a
+     specific equipment entry rather than a tier string, so two identical Smartdecks are two
+     decks with two mod loadouts and two Integrity tracks.
+
+     deckType and deckTier are no longer stored anywhere on the character. The catalog row for
+     an owned deck already carries both, so they are read off the thing actually owned and
+     cannot drift from it: selling the deck removes the type, rather than leaving a character
+     claiming an Apex rig they no longer have. */
+  function ownedDecks(ch) {
+    var G = EN.grid || {}, out = [];
+    ((ch && ch.equipment) || []).forEach(function (e) {
+      if (!e || (e.qty != null && e.qty <= 0)) return;
+      var it = loadCatalogItem(e.name);
+      if (!it || !it.deckType || !it.deckTier) return;
+      var list = it.deckType === "smartdeck" ? (G.smartdecks || []) : (G.buddies || []);
+      var row = list.find(function (t) { return t.tier === it.deckTier; });
+      if (row) out.push({ key: entryKey(e), type: it.deckType, tier: it.deckTier, row: row, name: e.name });
+    });
+    // best first: higher tier wins, and a Smartdeck outranks a Buddy of equal tier because it
+    // is a Power User rig. This is the order the AUTO fallback picks from.
+    return out.sort(function (a, b) {
+      return (b.row.t - a.row.t) || ((a.type === "smartdeck" ? 0 : 1) - (b.type === "smartdeck" ? 0 : 1));
+    });
+  }
+
   function ownedRigs(ch) {
     var out = [];
     ((ch && ch.equipment) || []).forEach(function (e) {
@@ -2035,9 +2199,9 @@ EN.engine = (function () {
     // path instead of crediting the character with hardware they no longer have. A
     // re-bought Rig is a new entry with a new key, so it never re-locks an abandoned
     // pick either.
+    // Same rule as the deck: the Rig you WORE, and only that one. No best-owned fallback.
     var recordedKey = (!scrap && typeof r.key === "string") ? r.key : null;
-    var recorded = recordedKey ? (owned.find(function (o) { return o.key === recordedKey; }) || null) : null;
-    var entry = scrap ? null : (recorded || owned[0] || null);
+    var entry = recordedKey ? (owned.find(function (o) { return o.key === recordedKey; }) || null) : null;
     var row = entry ? entry.row : null;
     var key = entry ? entry.key : null;
     var outputBonus = row ? (row.outputBonus || 0) : 0;
@@ -2054,8 +2218,6 @@ EN.engine = (function () {
       rigTier: row ? row.tier : null,
       rigTierIndex: row ? row.t : null,
       rigLabel: row ? row.label : null,
-      // true when the Rig came from the owned-gear fallback rather than a recorded pick
-      fromOwnedGear: !!(entry && !recorded),
       ownedRigs: owned,
       scrapRig: scrap,
       outputBonus: outputBonus,
@@ -3211,7 +3373,11 @@ EN.engine = (function () {
     // is live, and how hurt it is, reads it rather than matching ch.rig against the
     // stash itself. It answers with an ENTRY key, so the answer names one specific Rig.
     rigStats: rigStats,
-    rigTierRow: rigTierRow, ownedRigs: ownedRigs,   // Trauma Rig tier lookup and the owned-entry list
+    rigTierRow: rigTierRow, ownedRigs: ownedRigs, ownedDecks: ownedDecks,
+    // the single-slot equip registry: one description of the five slots, so no view has to
+    // list the field names by hand (see EQUIP_SLOTS for why that mattered)
+    equipSlotFor: equipSlotFor, slotEquippedKeys: slotEquippedKeys, equipSlotLabel: equipSlotLabel,
+    isSlotEquipped: isSlotEquipped, releaseEntry: releaseEntry, setEquipSlot: setEquipSlot,   // Trauma Rig tier lookup and the owned-entry list
     // Environmental Hazards. hazardStats is THE resolver: the Hazards panel, the
     // Long Rest and the Codex chapter all read it rather than raw storage, so
     // "which exposure is live", "does this suit hold vacuum" and "which

@@ -43,48 +43,36 @@ EN.gridView = (function () {
   }
   function gset(mut, silent) { store.update(function (c) { c.grid = c.grid || {}; mut(c.grid, c); }, silent ? { silent: true } : undefined); }
 
-  /* What this character could jack into: the Smartdecks and B&E Buddies actually in the
-     stash, resolved to their tier rows. Exported alongside selectDeck because the Freelancer
-     tab offers the same choice and the two lists must not be able to disagree about what is
-     ownable. Trauma Rigs are deliberately absent: they project a #GRID node but are not
-     hacking platforms, so they can never be your rig. */
+  /* What this character could jack into, resolved to owned ENTRIES rather than tiers. The
+     engine owns the definition of what counts as a deck, so this is a thin pass-through: two
+     identical Advanced Smartdecks are two distinct options here, which is the whole point of
+     the entry rebuild. Trauma Rigs are deliberately absent; they project a #GRID node but are
+     not hacking platforms, so they can never be your rig. */
   function ownedRigRows(ch) {
-    var G = EN.grid || {};
-    var owned = (ch.equipment || []).filter(function (e) { return e.qty > 0 && (e.name.endsWith(" Smartdeck") || e.name.endsWith(" B&E Buddy")); });
-    function rows(suffix, list) {
-      return owned.filter(function (e) { return e.name.endsWith(suffix); }).map(function (e) {
-        var tier = e.name.replace(suffix, "");
-        return (list || []).find(function (x) { return x.tier === tier; });
-      }).filter(Boolean);
-    }
-    return { smartdecks: rows(" Smartdeck", G.smartdecks), buddies: rows(" B&E Buddy", G.buddies) };
+    var all = (eng.ownedDecks ? eng.ownedDecks(ch) : []);
+    return {
+      smartdecks: all.filter(function (o) { return o.type === "smartdeck"; }),
+      buddies: all.filter(function (o) { return o.type === "buddy"; }),
+      all: all
+    };
   }
 
-  /* THE one writer for "which rig is live", exported because the Freelancer tab now shows a
-     Smartdeck card too and a second copy of this would drift. Changing tier is not a field
-     assignment: it zeroes accumulated Integrity damage, and on a DOWNGRADE it drops mods that
-     no longer fit the smaller slot count, which is the part that must not be duplicated.
-     Value is "none", or "<type>:<tier>", the same strings the option values carry. */
-  function selectDeck(v) {
-    var G = EN.grid || {};
+
+  /* Adjust the live deck's System Integrity, under THAT deck's key. Exported because the
+     number is stored as damage TAKEN, not as remaining, and inverting that by hand in a
+     second place is how two views end up disagreeing about whether a deck is Bricked. */
+  function shiftDeckIntegrity(delta, maxInt, key) {
+    if (!key) return;
     gset(function (g) {
-      if (v === "none") { g.deckType = null; g.deckTier = null; g.deckMods = []; g.deckHpSpent = 0; return; }
-      var p = v.split(":"); g.deckType = p[0]; g.deckTier = p[1]; g.deckHpSpent = 0;
-      if (p[0] !== "smartdeck") { g.deckMods = []; return; }
-      // keep only mods that still fit the new tier's slots (drop stranded mods on a downgrade)
-      var nd = (G.smartdecks || []).find(function (s) { return s.tier === p[1]; }), cap = nd ? nd.modSlots : 0, u = 0, kept = [];
-      (g.deckMods || []).forEach(function (k) { var m = (G.mods || []).find(function (x) { return x.key === k; }); if (m && u + m.slots <= cap) { u += m.slots; kept.push(k); } });
-      g.deckMods = kept;
+      if (!g.deckHpSpent || typeof g.deckHpSpent !== "object") g.deckHpSpent = Object.create(null);
+      var v = eng.clamp((g.deckHpSpent[key] | 0) + delta, 0, maxInt);
+      if (v > 0) g.deckHpSpent[key] = v; else delete g.deckHpSpent[key];
     });
   }
-
-  /* Adjust the live deck's System Integrity. Also exported for the same reason: the number
-     is stored as damage TAKEN (deckHpSpent), not as remaining, and inverting that by hand in
-     a second place is how the two views end up disagreeing about whether a deck is Bricked. */
-  function shiftDeckIntegrity(delta, maxInt) {
-    gset(function (g) { g.deckHpSpent = eng.clamp((g.deckHpSpent || 0) + delta, 0, maxInt); });
+  function repairDeckFully(key) {
+    if (!key) return;
+    gset(function (g) { if (g.deckHpSpent) delete g.deckHpSpent[key]; });
   }
-  function repairDeckFully() { gset(function (g) { g.deckHpSpent = 0; }); }
   function tableEl(cols, rows, highlightFn) {
     var head = el("tr", null, cols.map(function (c) {
       return el("th", { style: { textAlign: c.align || "left", padding: "4px 8px", fontFamily: "var(--disp)", fontSize: "9px", letterSpacing: ".12em", color: "var(--text3)", borderBottom: "1px solid var(--border2)", textTransform: "uppercase" } }, c.label);
@@ -136,88 +124,45 @@ EN.gridView = (function () {
     // which is what makes a Rig reachable from this tab at all.
     var od = ownedRigRows(ch), ownedSmartdecks = od.smartdecks, ownedBuddies = od.buddies;
 
-    var selChildren = [el("option", { value: "none", selected: !grid.deckType, text: "- No rig -" })];
-    if (ownedSmartdecks.length) selChildren.push(el("optgroup", { label: "Smartdecks (Power User)" }, ownedSmartdecks.map(function (s) {
-      return el("option", { value: "smartdeck:" + s.tier, selected: grid.deckType === "smartdeck" && grid.deckTier === s.tier, text: s.tier + " · +" + s.deviceBonus + " dev · " + s.integrity + " HP" });
-    })));
-    if (ownedBuddies.length) selChildren.push(el("optgroup", { label: "B&E Buddies (Standard User)" }, ownedBuddies.map(function (b) {
-      return el("option", { value: "buddy:" + b.tier, selected: grid.deckType === "buddy" && grid.deckTier === b.tier, text: b.tier + " · +" + b.attack + " atk · " + b.integrity + " HP" });
-    })));
-    if (!ownedSmartdecks.length && !ownedBuddies.length) selChildren.push(el("option", { disabled: true, text: "No rigs in stash; buy one in Inventory" }));
-
-    var sel = el("select", { style: { fontSize: "12px", width: "auto", minWidth: "220px" },
-      onchange: function () { selectDeck(this.value); } }, selChildren);
+    /* The picker is gone. A deck goes live because you jacked it in on its Stash row, the
+       same way armor goes live from its row, so this tab reports the rig rather than choosing
+       it. Leaving a writer here would mean two places decide what is live. */
     rows.push(el("div.row.wrap", { style: { gap: "10px", alignItems: "center" } }, [
-      el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".1em", minWidth: "44px" }, text: "RIG" }), sel,
+      el("span.mono", { style: { fontSize: "13px", color: deck ? "var(--text)" : "var(--text3)" },
+        text: deck ? (deck.tier + " " + (deck.type === "buddy" ? "B&E Buddy" : "Smartdeck")) : "none jacked in" }),
       deck ? el("span.chip", { style: { fontSize: "9.5px", color: "var(--accent)", borderColor: "var(--accent)" }, title: "User Type on the #GRID" }, gd.userType.toUpperCase()) : null,
-      (deck && deck.type === "smartdeck") ? el("span.chip", { style: { fontSize: "9.5px", color: "var(--flow)", borderColor: "var(--flow)" }, title: "Runs ciphers up to this Complexity" }, "≤ CX " + deck.maxComplexity) : null
+      (deck && deck.type === "smartdeck") ? el("span.chip", { style: { fontSize: "9.5px", color: "var(--flow)", borderColor: "var(--flow)" }, title: "Runs ciphers up to this Complexity" }, "≤ CX " + deck.maxComplexity) : null,
+      /* Only offered when nothing is live. Once a deck is jacked in the panel has nothing left
+         to prompt for, and a permanent button here would read as a control this tab no longer
+         owns: swapping decks is a Stash action, reached the same way as swapping armor. */
+      deck ? null : el("button.btn.sm", { style: { color: "var(--flow)", borderColor: "var(--flow)" },
+        title: od.all.length ? "Open the Stash and jack a deck in" : "Nothing to jack in yet; buy a rig first",
+        onclick: function () { if (EN.inventoryView.openStash) EN.inventoryView.openStash("Smartdecks & B&E Buddies"); EN.app.gotoTab("gear"); } },
+        od.all.length ? "⇒ EQUIP ONE IN STASH" : "⇒ BUY ONE IN THE MARKET")
     ]));
 
-    /* A Trauma Rig is powered gear: it projects a #GRID node at its own Tier and is a
-       valid #GRID target, so it belongs on this tab and not only on the Freelancer tab.
-       Object facts come off d.rig, which the engine resolves for every class, so the
-       node tier and the Integrity total here are the same numbers the Rig block shows.
-       Purely the OBJECT: no Output Bonus, no Triage Save DC, nothing class-flavoured. */
-    function traumaRigRows() {
-      var t = d.rig;
-      if (!t || !t.rigTier) return [];
-      var T = EN.traumaRigs || {};
-      var maxI = t.maxIntegrity, curI = t.integrity, br = t.bricked;
-      var amtR = el("input.mono", { type: "number", min: "1", value: "1", title: "Amount of System Integrity to subtract or restore",
-        style: { width: "56px", textAlign: "center", padding: "4px 6px" } });
-      // damage is written under the live Rig's own entry key and accumulates off the
-      // derived spend, so it lands on this object and no other Rig's total moves
-      function shiftRig(sign) {
-        var n = Math.max(1, parseInt(amtR.value, 10) || 1), key = t.rigKey, base = t.integritySpent;
-        if (!key) return;
-        store.update(function (c) {
-          c.rig = c.rig || {}; c.rig.hp = c.rig.hp || {};
-          var v = eng.clamp(base + sign * n, 0, maxI);
-          if (v > 0) c.rig.hp[key] = v; else delete c.rig.hp[key];
-        });
-      }
-      return [
-        el("div.section-title", { style: { margin: "14px 0 4px" } }, [document.createTextNode("Trauma Rig Node"), el("span.line"),
-          el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", marginLeft: "6px" }, text: (t.rigLabel || "").toUpperCase() })]),
-        el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } }, [
-          t.nodeTier ? el("span.chip", { style: { fontSize: "9.5px", color: "var(--bw)", borderColor: "var(--bw)" },
-            title: T.integrityNote || "" }, "NODE " + t.nodeTier.toUpperCase()) : null,
-          el("span.chip", { style: { fontSize: "9.5px", color: "var(--text2)", borderColor: "var(--border2)" },
-            title: "Modification Slots equal the Rig's Tier" }, "TIER " + t.rigTierIndex)
-        ]),
-        el("div", { style: { marginTop: "8px" } }, [
-          el("div.row.between", { style: { alignItems: "baseline" } }, [
-            el("span", { style: { fontFamily: "var(--disp)", fontSize: "10px", letterSpacing: ".12em", color: "var(--text3)" }, text: "RIG INTEGRITY" }),
-            el("span.mono", { style: { fontSize: "13px", color: br ? "var(--danger)" : "var(--text2)" }, text: br ? "BRICKED" : curI + " / " + maxI })
-          ]),
-          bar(curI, maxI, br ? "var(--danger)" : "var(--success)"),
-          el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "6px" } }, [
-            amtR,
-            el("button.btn.sm", { disabled: br, title: "Subtract this much Integrity",
-              style: { color: "var(--danger)", borderColor: "var(--danger)" }, onclick: function () { shiftRig(1); } }, "− DAMAGE"),
-            el("button.btn.sm", { disabled: t.integritySpent <= 0, title: "Restore this much Integrity",
-              onclick: function () { shiftRig(-1); } }, "+ REPAIR"),
-            t.integritySpent > 0 ? el("button.btn.sm", { style: { color: "var(--text2)" },
-              onclick: function () { var key = t.rigKey; store.update(function (c) { c.rig = c.rig || {}; if (c.rig.hp) delete c.rig.hp[key]; }); toast("Trauma Rig restored to full Integrity."); } }, "⟳ FULL") : null
-          ])
-        ]),
-        noteP(T.integrityNote || "")
-      ];
-    }
+    /* THE TRAUMA RIG IS NOT ON THIS TAB, deliberately, and the rules do make it a #GRID node:
+       "powered gear ... projects a #GRID node at its own Tier and is a valid #GRID target".
+       It lived here with a full Integrity editor that duplicated the one on the Freelancer
+       card, two controls writing the same c.rig.hp key. The clause that settled which copy
+       survives is "physical damage lands at full value": a Rig loses Integrity to gunfire, not
+       only to ciphers, so the number moves in a firefight and belongs where a Stitcher already
+       is. The node rule itself is still stated on the Freelancer card, on the #GRID NODE chip
+       that carries integrityNote as its tooltip. */
 
     if (!deck) {
-      rows.push(noteP("No rig selected. Codebreakers run a Smartdeck (Power User); everyone else can crack low-tier nodes with a B&E Buddy."));
-      traumaRigRows().forEach(function (r) { rows.push(r); });
+      rows.push(noteP("No rig jacked in. Equip a Smartdeck (Power User) or a B&E Buddy (Standard User) in your Stash to bring one live."));
       return EN.ui.panel("Rig", "SMARTDECK / B&E BUDDY", rows, { corners: true });
     }
 
     // System Integrity: damage subtracts (cipher damage after the Firewall, physical
     // damage at full value). Amounts are rolled, so take a typed number, not a +1 tick.
-    var maxInt = deck.maxIntegrity, spent = grid.deckHpSpent || 0, cur = Math.max(0, maxInt - spent), bricked = cur <= 0;
+    // derived once in the engine, under this deck's own key, so no view re-does the sum
+    var maxInt = deck.maxIntegrity, spent = deck.spent, cur = deck.integrity, bricked = deck.bricked;
     var amtInput = el("input.mono", { type: "number", min: "1", value: "1", title: "Amount of System Integrity to subtract or restore",
       style: { width: "56px", textAlign: "center", padding: "4px 6px" } });
     function shiftIntegrity(sign) {
-      shiftDeckIntegrity(sign * Math.max(1, parseInt(amtInput.value, 10) || 1), maxInt);
+      shiftDeckIntegrity(sign * Math.max(1, parseInt(amtInput.value, 10) || 1), maxInt, deck.key);
     }
     rows.push(el("div", { style: { marginTop: "10px" } }, [
       el("div.row.between", { style: { alignItems: "baseline" } }, [
@@ -231,7 +176,7 @@ EN.gridView = (function () {
           style: { color: "var(--danger)", borderColor: "var(--danger)" }, onclick: function () { shiftIntegrity(1); } }, "− DAMAGE"),
         el("button.btn.sm", { disabled: spent <= 0, title: "Restore this much System Integrity",
           onclick: function () { shiftIntegrity(-1); } }, "+ REPAIR"),
-        spent > 0 ? el("button.btn.sm", { style: { color: "var(--text2)" }, onclick: function () { repairDeckFully(); toast("Rig restored to full Integrity."); } }, "⟳ FULL") : null
+        spent > 0 ? el("button.btn.sm", { style: { color: "var(--text2)" }, onclick: function () { repairDeckFully(deck.key); toast("Rig restored to full Integrity."); } }, "⟳ FULL") : null
       ]),
       el("span.help", { style: { margin: "4px 0 0", fontSize: "10.5px", display: "block" },
         text: bricked ? "Bricked; all Links sever (LinkDeath as a forced disconnect). Downtime repair only."
@@ -265,7 +210,7 @@ EN.gridView = (function () {
 
     // Smartdeck mods: read-only on the #GRID. Install and remove live at the Tech Bay (Inventory > Workbench).
     if (deck.type === "smartdeck") {
-      var installed = grid.deckMods || [], used = 0;
+      var installed = deck.mods || [], used = 0;   // this deck's loadout, not the character's
       (G.mods || []).forEach(function (m) { if (installed.indexOf(m.key) !== -1) used += m.slots; });
       var slots = deck.modSlots;
       var installedMods = (G.mods || []).filter(function (m) { return installed.indexOf(m.key) !== -1; });
@@ -280,7 +225,6 @@ EN.gridView = (function () {
         rows.push(noteP("Add or remove hardware mods at the Tech Bay (Inventory > Workbench > Tech Bay)."));
       }
     }
-    traumaRigRows().forEach(function (r) { rows.push(r); });
     return EN.ui.panel("Rig", (deck.type === "smartdeck" ? "SMARTDECK" : "B&E BUDDY") + " · " + deck.tier.toUpperCase(), rows, { corners: true });
   }
 
@@ -871,7 +815,7 @@ EN.gridView = (function () {
     if (_dmgIntensity !== "auto") return Math.max(0, Math.min(4, parseInt(_dmgIntensity, 10) || 0));
     var dk = d.grid && d.grid.deck;
     if (!dk || !(dk.maxIntegrity > 0)) return 0;                    // no rig -> nothing to damage
-    var cur = Math.max(0, dk.maxIntegrity - (((ch.grid || {}).deckHpSpent) || 0));
+    var cur = dk.integrity;
     if (cur <= 0) return 4;                                  // bricked
     var pct = cur / dk.maxIntegrity;
     return pct <= 0.25 ? 3 : pct <= 0.5 ? 2 : pct <= 0.75 ? 1 : 0;   // last quarter = 3 (static)
@@ -965,6 +909,6 @@ EN.gridView = (function () {
   }
 
   return { render: render, isDamage: isDamage, setDamage: setDamage, getDmgIntensity: getDmgIntensity, setDmgIntensity: setDmgIntensity,
-           selectDeck: selectDeck, shiftDeckIntegrity: shiftDeckIntegrity, repairDeckFully: repairDeckFully,
+           shiftDeckIntegrity: shiftDeckIntegrity, repairDeckFully: repairDeckFully,
            ownedRigRows: ownedRigRows };
 })();

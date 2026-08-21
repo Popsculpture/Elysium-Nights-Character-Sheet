@@ -155,6 +155,40 @@ a{ color:var(--accent); text-decoration:none; }
   color:var(--text4); border:1px solid var(--border2); border-radius:var(--r); padding:1px 5px; flex:0 0 auto; }
 .section-title.device-head:hover .dev-toggle{ color:var(--accent); border-color:var(--accent); }
 
+/* A device and the resource it produces are ONE object, so they get one container. Before
+   this the Smartdeck card and the Bandwidth pool were separate stacks with their own spacing,
+   which read as two unrelated things sitting near each other. Inside the card the header drops
+   its own border so there is no box inside a box, and the vertical rhythm tightens: this is the
+   at-a-glance surface, and the #GRID tab is where the full reference lives. */
+.device-card{ border:1px solid var(--border2); border-radius:var(--r); background:rgba(255,255,255,.015);
+  padding:7px 10px 9px; margin:10px 0 4px; }
+.device-card .section-title.device-head{ border-color:transparent; background:none;
+  margin:0 0 5px; padding:0; }
+.device-card .section-title.device-head:hover{ background:none; border-color:transparent; }
+.device-card .dev-line{ display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; margin-bottom:4px; }
+.device-card .dev-name{ font-family:var(--disp); font-size:14px; color:var(--text); letter-spacing:.02em; }
+.device-card .dev-meter{ margin-top:6px; }
+.device-card .dev-meter:first-of-type{ margin-top:2px; }
+
+/* BRICKED: the same dead look the #GRID tab wears at data-dmg 4, scoped to the pieces that
+   actually stopped working. A bricked deck or Rig takes its class resource and every ability
+   that spends it down with it, so those grey out together rather than the card greying out
+   alone while seven live-looking abilities sit under it. */
+.rig-dead{ filter:grayscale(1) brightness(.72) contrast(1.04); }
+.rig-dead .btn, .rig-dead .chip{ animation:none; text-shadow:none; box-shadow:none; }
+
+/* MISSING GEAR: deliberately loud, and deliberately NOT a tidy collapse. The abilities that
+   needed the hardware are gone from the list, and this stands in their place at roughly the
+   size of the hole they left, so the sheet reads as missing something rather than as simply
+   not having it. */
+.gear-gone{ border:1px dashed var(--danger); border-radius:var(--r); background:rgba(255,77,94,.05);
+  padding:14px 16px; margin:10px 0 6px; }
+.gear-gone .gg-title{ font-family:var(--disp); font-size:13px; letter-spacing:.16em; color:var(--danger);
+  text-transform:uppercase; margin-bottom:7px; }
+.gear-gone .gg-say{ font-size:12.5px; line-height:1.55; color:var(--text2); margin:0 0 9px; max-width:52ch; }
+.gear-gone .gg-count{ font-family:var(--mono); font-size:10.5px; letter-spacing:.06em; color:var(--text3);
+  margin:0 0 11px; }
+
 /* ===== buttons ========================================================== */
 .btn{ font-family:var(--disp); font-weight:600; font-size:13px; letter-spacing:.1em; text-transform:uppercase;
   background:transparent; color:var(--text2); border:1px solid var(--border2); border-radius:var(--r);

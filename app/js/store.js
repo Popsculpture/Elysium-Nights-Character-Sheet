@@ -92,10 +92,10 @@ EN.store = (function () {
       cyberware: [],                     // INSTALLED chrome (feeds Static / Chrome Tax + Open Architecture)
       cyberStash: [],                    // purchased-but-uninstalled chrome (install at a clinic to move it to cyberware)
       grid: {                            // #GRID rig + live hacking state (Bandwidth tracks via resources.current)
-        deckType: null,                  // 'smartdeck' (Power User) | 'buddy' (Standard User) | null
-        deckTier: null,                  // tier name from EN.grid.smartdecks / .buddies
-        deckHpSpent: 0,                  // System Integrity lost (deck Bricked at deckHpSpent >= maxIntegrity)
-        deckMods: [],                    // installed Smartdeck mod keys (Codebreaker only)
+        deckKey: null,                   // ENTRY key of the live deck; type and tier are read
+                                         // off that entry's catalog row and never stored here
+        deckHpSpent: {},                 // {entryKey: Integrity lost} - per deck, not per character
+        deckMods: {},                    // {entryKey: [mod keys]} - one loadout per owned deck
         links: []                        // active Links: [{name, tier}]
       },
       rig: {                             // Trauma Rig (anyone can own one); a Stitcher's Triage Save DC reads its Output Bonus
@@ -1353,13 +1353,82 @@ EN.store = (function () {
     if (typeof ch.startingKit.glimmerGranted !== "number" || !isFinite(ch.startingKit.glimmerGranted) || ch.startingKit.glimmerGranted < 0) {
       ch.startingKit.glimmerGranted = 0;
     }
-    if (!ch.grid || typeof ch.grid !== "object") ch.grid = { deckType: null, deckTier: null, deckHpSpent: 0, deckMods: [], links: [] };
+    if (!ch.grid || typeof ch.grid !== "object") ch.grid = { deckKey: null, deckHpSpent: {}, deckMods: {}, links: [] };
     else {
-      if (ch.grid.deckType === undefined) ch.grid.deckType = null;
-      if (ch.grid.deckTier === undefined) ch.grid.deckTier = null;
-      if (typeof ch.grid.deckHpSpent !== "number") ch.grid.deckHpSpent = 0;
-      if (!Array.isArray(ch.grid.deckMods)) ch.grid.deckMods = [];
+      /* THE DECK BECAME AN OWNED ENTRY on 2026-08-20, the shape a Trauma Rig already used.
+         Before this, ch.grid held deckType and deckTier as loose strings with a single flat
+         deckMods array and one deckHpSpent number, so a character owning two identical decks
+         had one loadout and one damage total between them.
+
+         The old state is moved onto whichever OWNED entry matches the recorded type and tier.
+         If no owned deck matches it is DROPPED, not relocated to some other deck: per the
+         standing rule, state that cannot be attributed to a specific piece is discarded rather
+         than credited to the wrong one. A character who recorded an Apex deck they no longer
+         own loses the recording, which is correct, because the engine would refuse to resolve
+         it anyway. Mods and damage are dropped together with it: half-migrated state that
+         survives on a deck nobody selected is worse than a clean slate. */
+      if (ch.grid.deckKey === undefined) ch.grid.deckKey = null;
+      var _oldType = ch.grid.deckType, _oldTier = ch.grid.deckTier;
+      var _flatMods = Array.isArray(ch.grid.deckMods) ? ch.grid.deckMods.slice() : null;
+      var _flatHp = (typeof ch.grid.deckHpSpent === "number") ? ch.grid.deckHpSpent : null;
+
+      if (_flatMods || _flatHp !== null || _oldType || _oldTier) {
+        var _match = null;
+        if (_oldType && _oldTier) {
+          (ch.equipment || []).forEach(function (e) {
+            if (_match || !e || (e.qty != null && e.qty <= 0)) return;
+            var it = (EN.engine && EN.engine.catalogItem) ? EN.engine.catalogItem(e.name) : null;
+            if (it && it.deckType === _oldType && it.deckTier === _oldTier) _match = (e.id || e.name);
+          });
+        }
+        ch.grid.deckMods = Object.create(null);
+        ch.grid.deckHpSpent = Object.create(null);
+        if (_match) {
+          ch.grid.deckKey = _match;
+          if (_flatMods && _flatMods.length) ch.grid.deckMods[_match] = _flatMods;
+          if (_flatHp) ch.grid.deckHpSpent[_match] = _flatHp;
+        } else {
+          ch.grid.deckKey = null;   // unattributable: dropped, never moved
+        }
+        delete ch.grid.deckType;
+        delete ch.grid.deckTier;
+      }
+
+      if (!ch.grid.deckMods || typeof ch.grid.deckMods !== "object" || Array.isArray(ch.grid.deckMods)) ch.grid.deckMods = Object.create(null);
+      if (!ch.grid.deckHpSpent || typeof ch.grid.deckHpSpent !== "object" || Array.isArray(ch.grid.deckHpSpent)) ch.grid.deckHpSpent = Object.create(null);
       if (!Array.isArray(ch.grid.links)) ch.grid.links = [];
+    }
+
+    /* ONE-TIME: materialize the AUTO fallback that used to run on every derive.
+
+       Until 2026-08-21 the engine silently stood in the best owned deck and the best owned
+       Trauma Rig whenever nothing was recorded. Selection now happens by equipping in the
+       Stash and that fallback is gone, so without this pass a Stitcher who never touched the
+       old dropdown would lose their Output Bonus and their Triage Save DC would drop from up
+       to 11 to 8, and a Codebreaker's whole #GRID block would collapse. This writes the
+       fallback's own answer into storage so nobody's numbers move on upgrade.
+
+       THE STAMP IS THE ENTIRE SAFETY OF THIS. Run unstamped and it re-equips on every load,
+       which would make "no deck" and "no Rig" permanently unreachable: the player un-equips,
+       reloads, and it is back. Gate first, act second.
+
+       Ordering is not optional. It runs here, AFTER the instance-id split (keys must be final),
+       AFTER the ch.rig prune that nulls rg.key when its entry is gone, and AFTER the ch.grid
+       block above. A pre-split save with a name-keyed rig.key is pruned to null by that pass;
+       the old fallback used to re-pick the same Rig so nobody noticed, and this is what covers
+       it now. Move this earlier and old saves quietly lose their Rig. */
+    ch.meta = ch.meta || {};
+    if (!ch.meta.equipSlots) {
+      var _eng = EN.engine || {};
+      if (!ch.grid.deckKey && _eng.ownedDecks) {
+        var _od = _eng.ownedDecks(ch);          // already sorted best first
+        if (_od.length) ch.grid.deckKey = _od[0].key;
+      }
+      if (ch.rig && !ch.rig.key && !ch.rig.scrap && _eng.ownedRigs) {
+        var _or = _eng.ownedRigs(ch);
+        if (_or.length) ch.rig.key = _or[0].key;
+      }
+      ch.meta.equipSlots = 1;
     }
     // drop a stored subclass that no longer exists (e.g. after a class rework) so it re-surfaces as a pick
     if (ch.class && ch.subclass && EN.classes && EN.classes[ch.class]) {

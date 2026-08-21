@@ -145,19 +145,21 @@ EN.inventoryView = (function () {
       : aug ? entry.name + " equipped; it augments your unarmed strike on the Freelancer tab rather than listing as a weapon of its own."
             : entry.name + " equipped; it's live in the Attacks list on the Freelancer tab.");
   }
-  // Defensive gear is single-slot per kind: one worn armor, one wielded shield,
-  // one attuned Warding Focus. Equipping another in the same slot replaces it.
-  var DEF_SLOT = { armor: "equippedArmor", shield: "equippedShield", focus: "equippedFocus" };
-  var DEF_VERB = { armor: { on: "WEAR", off: "✓ WORN", act: "worn" }, shield: { on: "RAISE", off: "✓ WIELDING", act: "wielded" }, focus: { on: "ATTUNE", off: "✓ ATTUNED", act: "attuned" } };
-  function isDefEquipped(ch, it, entry) { return !!(it && entry && DEF_SLOT[it.kind] && ch[DEF_SLOT[it.kind]] === entryKey(entry)); }
-  function toggleDefEquip(it, entry) {
-    var slot = DEF_SLOT[it.kind]; if (!slot || !entry) return;
-    var ch = store.active();
+  /* SINGLE-SLOT GEAR EQUIPS FROM ITS OWN ROW: one worn armor, one wielded shield, one
+     attuned Focus, one jacked-in Smartdeck, one worn Trauma Rig. Which slots exist and how
+     each is stored lives in EN.engine's EQUIP_SLOTS, not here, so a Smartdeck activates the
+     same way a breastplate does instead of through a dropdown on another tab.
+
+     Equipping the same slot twice replaces the occupant silently. That is pre-existing
+     behaviour for armor and is kept deliberately: the toast names what went on, and for a
+     deck or Rig nothing is lost by swapping, since mods and Integrity are stored per entry. */
+  function toggleSlotEquip(slot, it, entry) {
+    if (!slot || !entry) return;
     var key = entryKey(entry);
-    var was = ch[slot] === key;
-    store.update(function (c) { c[slot] = was ? null : key; });
-    var v = DEF_VERB[it.kind] || DEF_VERB.armor;
-    toast(was ? it.name + " stowed." : it.name + " " + v.act + "; its DR, Block, Defense, and Ward now read on the Freelancer tab.");
+    var was = slot.get(store.active()) === key;
+    store.update(function (c) { EN.engine.setEquipSlot(c, slot.id, was ? null : key); });
+    toast(was ? it.name + " stowed."
+              : it.name + " " + slot.verbs.act + "; it now reads live on the Freelancer tab.");
   }
   /* ---- Loadout status from the Stash (carried / worn / racked) -----------
      Mirrors the Freelancer tab's Loadout controls so the whole loadout can be
@@ -179,7 +181,7 @@ EN.inventoryView = (function () {
   }
   function carryCtrl(ch, it, entry) {
     var key = entryKey(entry);
-    var equipped = (ch.equippedWeapons || []).indexOf(key) !== -1 || ch.equippedArmor === key || ch.equippedShield === key || ch.equippedFocus === key;
+    var equipped = (ch.equippedWeapons || []).indexOf(key) !== -1 || EN.engine.isSlotEquipped(ch, key);
     var cs = (ch.carry && ch.carry[key]) || "stashed";
     var racks = EN.engine.rackState(ch);
     var rackedGear = racks.byItem[key] || null;
@@ -236,9 +238,7 @@ EN.inventoryView = (function () {
     var still = (c.equipment || []).some(function (x) { return (x.id || x.name) === key && x.qty > 0; });
     if (!still) {
       if (c.equippedWeapons) c.equippedWeapons = c.equippedWeapons.filter(function (n) { return n !== key; });
-      if (c.equippedArmor === key) c.equippedArmor = null;     // a sold/dropped piece can't stay worn
-      if (c.equippedShield === key) c.equippedShield = null;
-      if (c.equippedFocus === key) c.equippedFocus = null;
+      EN.engine.releaseEntry(c, key);                          // a sold/dropped piece can't stay equipped in any slot
       if (c.carry) delete c.carry[key];                        // drop its Loadout carry status too (no orphaned key)
       if (c.racked) {
         delete c.racked[key];                                  // it can't stay racked anywhere
@@ -553,11 +553,10 @@ EN.inventoryView = (function () {
     // always false in market mode. Armor/shield/focus equip through their
     // own dedicated field; everything else (a slot-bearing device) reads
     // its generic Worn carry status instead.
+    // A single-slot item is worn when it fills its slot; everything else reads its generic
+    // carry status. Only the Trauma Rig actually converts this into a Load break.
     var isWorn = mode === "stash" && (
-      it.kind === "armor" ? ch.equippedArmor === ownedKey :
-      it.kind === "shield" ? ch.equippedShield === ownedKey :
-      it.kind === "focus" ? ch.equippedFocus === ownedKey :
-      !!(ch.carry && ch.carry[ownedKey] === "worn"));
+      EN.engine.isSlotEquipped(ch, ownedKey) || !!(ch.carry && ch.carry[ownedKey] === "worn"));
     var ld = EN.engine.itemLoad ? EN.engine.itemLoad(it.name, { worn: isWorn }) : 0;
     // Benched by a Body Slot conflict (ch.slotInert): still worn, still keeps
     // its Load break, it just isn't actively benefiting from (or competing
@@ -666,6 +665,11 @@ EN.inventoryView = (function () {
         style: { color: "var(--flow)", borderColor: "var(--flow)" }, onclick: function () { buyoutLease(ownedKey); } }, "BUYOUT · " + fmtBuyout(bo)));
     }
     // action button(s): a single market button, or the stash loadout/equip/fence/drop group
+    /* Which single slot, if any, this owned entry fills. Asked of the engine so the button
+       appears for exactly the things the resolver will actually accept: ownedDecks and
+       ownedRigs require a matching tier row, so gating on the catalog field alone would offer
+       EQUIP on hardware that then refuses to go live. Market rows never equip. */
+    var equipSlot = (mode !== "mkt" && entry) ? EN.engine.equipSlotFor(ch, it, entry) : null;
     var actionEl = mode === "mkt"
       ? mktBtn
       : el("div.row.wrap", { style: { gap: "6px", justifyContent: "flex-end" } },
@@ -673,10 +677,10 @@ EN.inventoryView = (function () {
             isEquipped(ch, ownedKey)
               ? el("button.btn.sm.primary", { title: "Unequip, remove from the Attacks list on the Freelancer tab", onclick: function () { toggleEquip(entry); } }, "✓ EQUIPPED")
               : el("button.btn.sm", { title: "Equip, add to the Attacks list on the Freelancer tab", style: { color: "var(--accent)", borderColor: "var(--accent)" }, onclick: function () { toggleEquip(entry); } }, "⚔ EQUIP")
-          ] : []).concat(isDefensive(it) ? [
-            isDefEquipped(ch, it, entry)
-              ? el("button.btn.sm.primary", { title: "Stow, it stops applying on the Freelancer tab", onclick: function () { toggleDefEquip(it, entry); } }, (DEF_VERB[it.kind] || {}).off || "✓ EQUIPPED")
-              : el("button.btn.sm", { title: "Equip, its DR / Block / Defense / Ward read on the Freelancer tab (one " + it.kind + " at a time)", style: { color: "var(--accent)", borderColor: "var(--accent)" }, onclick: function () { toggleDefEquip(it, entry); } }, ((DEF_VERB[it.kind] || {}).on || "EQUIP"))
+          ] : []).concat(equipSlot ? [
+            equipSlot.get(ch) === ownedKey
+              ? el("button.btn.sm.primary", { title: "Stow it; it stops applying on the Freelancer tab", onclick: function () { toggleSlotEquip(equipSlot, it, entry); } }, equipSlot.verbs.off)
+              : el("button.btn.sm", { title: "Make this the live one (one at a time)", style: { color: "var(--accent)", borderColor: "var(--accent)" }, onclick: function () { toggleSlotEquip(equipSlot, it, entry); } }, equipSlot.verbs.on)
           ] : []).concat(_mode === "fivefinger" ? [
             el("button.btn.sm", { title: "Give one away", style: { color: "var(--success)", borderColor: "var(--success)" }, onclick: function () { donate(ownedKey); } }, "DONATE"),
             el("button.btn.sm", { title: "Discard one", onclick: function () { drop(ownedKey); } }, "DROP")
@@ -2782,8 +2786,17 @@ EN.inventoryView = (function () {
      EN.grid.mods into ch.grid.deckMods, capped by the deck's modSlots. Cyberware
      mods have no catalog yet, so that half is a work-in-progress placeholder.
      ============================================================================ */
-  function tbSetDeckMods(fn) {
-    store.update(function (c) { c.grid = c.grid || {}; c.grid.deckMods = fn((c.grid.deckMods || []).slice()); });
+  /* Mods belong to the DECK on the bench, not to the character, so this edits the loadout
+     under that deck's own entry key. Kitting out one Advanced Smartdeck leaves a second one
+     bare, and swapping back finds the first exactly as it was built. */
+  function tbSetDeckMods(fn, deckKey) {
+    if (!deckKey) return;
+    store.update(function (c) {
+      c.grid = c.grid || {};
+      if (!c.grid.deckMods || typeof c.grid.deckMods !== "object" || Array.isArray(c.grid.deckMods)) c.grid.deckMods = Object.create(null);
+      var next = fn((c.grid.deckMods[deckKey] || []).slice());
+      if (next && next.length) c.grid.deckMods[deckKey] = next; else delete c.grid.deckMods[deckKey];
+    });
   }
   function tbSmartdeckMods(ch, d) {
     var G = EN.grid || {}, grid = ch.grid || {}, deck = d.grid && d.grid.deck;
@@ -2796,7 +2809,7 @@ EN.inventoryView = (function () {
       ]));
       return EN.ui.panel("Smartdeck Mods", "HARDWARE MOD SLOTS", kids, { corners: true });
     }
-    var installed = grid.deckMods || [], used = 0;
+    var installed = deck.mods || [], used = 0;   // this deck's loadout, resolved by the engine
     (G.mods || []).forEach(function (m) { if (installed.indexOf(m.key) !== -1) used += m.slots; });
     var slots = deck.modSlots;
     function ownsMod(m) { return (ch.equipment || []).some(function (e) { return e.name === m.name && e.qty > 0; }); }
@@ -2816,8 +2829,8 @@ EN.inventoryView = (function () {
             el("span.chip", { style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" } }, m.type),
             el("span.chip", { style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" } }, m.slots + (m.slots === 1 ? " slot" : " slots"))
           ]),
-          on ? el("button.btn.sm.primary", { title: "Remove this mod, freeing its slots", onclick: function () { tbSetDeckMods(function (l) { return l.filter(function (k) { return k !== m.key; }); }); } }, "✓ INSTALLED")
-             : el("button.btn.sm", { disabled: !fits, title: fits ? "Slot this mod (bench work)" : "Not enough mod slots", style: fits ? { color: "var(--accent)", borderColor: "var(--accent)" } : null, onclick: function () { tbSetDeckMods(function (l) { return l.concat([m.key]); }); } }, fits ? "INSTALL" : "NO SLOTS")
+          on ? el("button.btn.sm.primary", { title: "Remove this mod, freeing its slots", onclick: function () { tbSetDeckMods(function (l) { return l.filter(function (k) { return k !== m.key; }); }, deck.key); } }, "✓ INSTALLED")
+             : el("button.btn.sm", { disabled: !fits, title: fits ? "Slot this mod (bench work)" : "Not enough mod slots", style: fits ? { color: "var(--accent)", borderColor: "var(--accent)" } : null, onclick: function () { tbSetDeckMods(function (l) { return l.concat([m.key]); }, deck.key); } }, fits ? "INSTALL" : "NO SLOTS")
         ]),
         el("p.help", { style: { margin: "4px 0 0" }, text: m.text })
       ]));
@@ -3464,6 +3477,14 @@ EN.inventoryView = (function () {
     _sub = "workbench";
     if (BENCHES.some(function (b) { return b.key === key; })) _bench = key;
   }
+  /* Land on the Stash with one category already expanded. The device cards send you here to
+     equip a deck or a Rig, and every stash category is collapsed by default, so without the
+     expand the card tells you to go press a button and then drops you three clicks away from
+     it. Named by category string because that is the key _stashOpen already uses. */
+  function openStash(category) {
+    _sub = "stash";
+    if (category) _stashOpen[category] = true;
+  }
   /* ONE CATALOG. These four sources were visible only from in here, so the engine's
      loadCatalogItem answered null for all 105 of them and isStackableItem then answered
      "pooled" off its unknown-item fallback, while this module resolved the same names and
@@ -3476,5 +3497,6 @@ EN.inventoryView = (function () {
     });
   }
 
-  return { render: render, leaseTick: leaseTick, householdTick: householdTick, hypercareTick: hypercareTick, openBench: openBench };
+  return { render: render, leaseTick: leaseTick, householdTick: householdTick, hypercareTick: hypercareTick,
+           openBench: openBench, openStash: openStash };
 })();

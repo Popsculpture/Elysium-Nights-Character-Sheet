@@ -2178,94 +2178,76 @@ EN.combatView = (function () {
      is stored as damage TAKEN rather than remaining, so neither is re-implemented here. This
      card deliberately omits the Bandwidth track, the Links and the cipher list: the first is
      the resource card it sits inside, and the other two are the #GRID tab's job. */
-  function smartdeckKids(d, ch) {
-    var gd = d.grid || {}, deck = gd.deck, G = EN.grid || {};
+  /* The Smartdeck as it reads on the Freelancer tab: ONE contained card holding the deck and
+     the Bandwidth it produces. Those were two separate stacks with their own spacing, which
+     read as two unrelated things parked next to each other.
+
+     This is deliberately thinner than the #GRID tab's panel. It carries what a Codebreaker
+     touches mid-turn, the two live numbers and their controls, so simple play needs no tab
+     hop. Device Bonus, Mod Slots, traits and the upgrade price are all reference and live on
+     #GRID, which is the tab for when you need the full picture.
+
+     resKids is the class resource's own rows, handed in by the caller so the pool renders
+     INSIDE this card rather than below it. It stays visible when the card is collapsed:
+     Bandwidth is spent every turn, and hiding it behind a toggle would defeat the point. */
+  function smartdeckKids(d, ch, resKids) {
+    var gd = d.grid || {}, deck = gd.deck;
     var gv = EN.gridView || {};
-    var od = gv.ownedRigRows ? gv.ownedRigRows(ch) : { smartdecks: [], buddies: [] };
-    var grid = ch.grid || {};
-    var kids = [];
-
+    var od = gv.ownedRigRows ? gv.ownedRigRows(ch) : { smartdecks: [], buddies: [], all: [] };
     var _openKey = "fl-smartdeck", _isOpen = !!_open[_openKey];
-    var _maxInt = deck ? deck.maxIntegrity : 0, _spent = grid.deckHpSpent || 0;
-    var _cur = Math.max(0, _maxInt - _spent), _bricked = !!deck && _cur <= 0;
+    var body = [];
 
-    kids.push(deviceHeader(_openKey, "Smartdeck", deck ? (deck.tier + " \u00b7 " + (deck.type === "buddy" ? "B&E Buddy" : "Smartdeck")).toUpperCase() : "NONE JACKED IN"));
-
-    // COMPACT: the live number and nothing else. Nothing to show with no rig jacked in.
-    if (!_isOpen) {
-      if (deck) kids.push(integrityBlock("SYSTEM INTEGRITY", _cur, _maxInt, _bricked, null));
-      return kids;
-    }
-
-    var selKids = [el("option", { value: "none", selected: !grid.deckType, text: "- No rig -" })];
-    if (od.smartdecks.length) selKids.push(el("optgroup", { label: "Smartdecks (Power User)" }, od.smartdecks.map(function (sd) {
-      return el("option", { value: "smartdeck:" + sd.tier, selected: grid.deckType === "smartdeck" && grid.deckTier === sd.tier,
-        text: sd.tier + " \u00b7 +" + sd.deviceBonus + " dev \u00b7 CX " + Math.min(5, sd.t + 1) + " \u00b7 " + sd.integrity + " Int" });
-    })));
-    if (od.buddies.length) selKids.push(el("optgroup", { label: "B&E Buddies (Standard User)" }, od.buddies.map(function (b) {
-      return el("option", { value: "buddy:" + b.tier, selected: grid.deckType === "buddy" && grid.deckTier === b.tier,
-        text: b.tier + " \u00b7 +" + b.attack + " atk \u00b7 " + b.integrity + " Int" });
-    })));
-    if (!od.smartdecks.length && !od.buddies.length) selKids.push(el("option", { disabled: true, text: "No rigs in your stash; buy one in Inventory" }));
-
-    kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "2px" } }, [
-      el("select", { style: { fontSize: "12px", width: "auto", minWidth: "230px" },
-        onchange: function () { if (gv.selectDeck) gv.selectDeck(this.value); } }, selKids)
-    ]));
+    body.push(deviceHeader(_openKey, "Smartdeck",
+      deck ? (deck.tier + " \u00b7 " + (deck.type === "buddy" ? "B&E Buddy" : "Smartdeck")).toUpperCase() : "NONE JACKED IN"));
 
     if (!deck) {
-      kids.push(el("p.help", { style: { margin: "4px 0 0", fontSize: "10.5px" },
+      body.push(el("p.help", { style: { margin: "2px 0 6px", fontSize: "10.5px" },
         text: "No rig jacked in. A Codebreaker runs a Smartdeck as a Power User; anyone else can crack low-tier nodes with a B&E Buddy." }));
-      return kids;
+      body.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
+        el("button.btn.sm", { style: { color: "var(--flow)", borderColor: "var(--flow)" },
+          title: (od.all || []).length ? "Open the Stash and jack a deck in" : "Nothing to jack in yet; buy a rig first",
+          onclick: function () { if (EN.inventoryView.openStash) EN.inventoryView.openStash("Smartdecks & B&E Buddies"); EN.app.gotoTab("gear"); } },
+          (od.all || []).length ? "\u21d2 EQUIP ONE IN STASH" : "\u21d2 BUY ONE IN THE MARKET")
+      ]));
+      (resKids || []).forEach(function (k) { body.push(k); });
+      return [el("div.device-card", null, body)];
     }
 
-    kids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "6px" } }, [
-      el("span.chip", { style: { fontSize: "9.5px", color: "var(--bw)", borderColor: "var(--bw)" },
-        title: "Device Bonus, added to #GRID checks made through this rig" }, "DEVICE +" + deck.deviceBonus),
-      deck.maxComplexity != null ? el("span.chip", { style: { fontSize: "9.5px", color: "var(--accent)", borderColor: "var(--accent)" },
-        title: "A deck runs ciphers up to (Tier + 1) in Complexity, capped by the library at 5" }, "MAX CX " + deck.maxComplexity) : null,
-      deck.modSlots != null ? el("span.chip", { style: { fontSize: "9.5px", color: "var(--text2)", borderColor: "var(--border2)" },
-        title: "Modification Slots equal the deck's Tier" }, "MOD SLOTS " + deck.modSlots) : null,
-      el("span.chip", { style: { fontSize: "9.5px", color: gd.isCodebreaker ? "var(--gold)" : "var(--text3)", borderColor: gd.isCodebreaker ? "var(--gold)" : "var(--border2)" },
-        title: "Power Users run the full cipher library; Standard Users are limited to a Buddy's baked-in suite" }, String(gd.userType || "").toUpperCase())
+    // name and the two facts that decide what you can run, mirroring the #GRID header line
+    body.push(el("div.dev-line", null, [
+      el("span.dev-name", { text: deck.tier + " " + (deck.type === "buddy" ? "B&E Buddy" : "Smartdeck") }),
+      el("span.chip", { style: { fontSize: "9.5px", color: "var(--gold)", borderColor: "var(--gold)" },
+        title: "Power Users run the full cipher library; Standard Users are limited to a Buddy's baked-in suite" }, String(gd.userType || "").toUpperCase()),
+      deck.maxComplexity != null ? el("span.chip", { style: { fontSize: "9.5px", color: "var(--flow)", borderColor: "var(--flow)" },
+        title: "Runs ciphers up to this Complexity" }, "\u2264 CX " + deck.maxComplexity) : null
     ]));
 
+    var _maxInt = deck.maxIntegrity, _spent = deck.spent, _cur = deck.integrity, _bricked = deck.bricked;
     var amt = el("input", { type: "number", value: "1", min: "1",
-      style: { width: "48px", fontSize: "12px", textAlign: "center" } });
+      style: { width: "44px", fontSize: "12px", textAlign: "center", padding: "3px 4px" } });
     function shiftDeck(sign) {
       var n = Math.max(1, parseInt(amt.value, 10) || 1);
-      if (gv.shiftDeckIntegrity) gv.shiftDeckIntegrity(sign * n, _maxInt);
+      if (gv.shiftDeckIntegrity) gv.shiftDeckIntegrity(sign * n, _maxInt, deck.key);
     }
-    kids.push(integrityBlock("SYSTEM INTEGRITY", _cur, _maxInt, _bricked,
-      el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "6px" } }, [
-        amt,
-        el("button.btn.sm", { disabled: _bricked, title: "Subtract this much Integrity",
-          style: { color: "var(--danger)", borderColor: "var(--danger)" }, onclick: function () { shiftDeck(1); } }, "− DAMAGE"),
-        el("button.btn.sm", { disabled: _spent <= 0, title: "Restore this much Integrity",
-          onclick: function () { shiftDeck(-1); } }, "+ REPAIR"),
-        _spent > 0 ? el("button.btn.sm", { style: { color: "var(--text2)" },
-          onclick: function () { if (gv.repairDeckFully) gv.repairDeckFully(); toast("Smartdeck restored to full Integrity."); } }, "⟳ FULL") : null
-      ])));
+    var controls = _isOpen ? el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "5px" } }, [
+      amt,
+      el("button.btn.sm", { disabled: _bricked, title: "Subtract this much Integrity",
+        style: { color: "var(--danger)", borderColor: "var(--danger)" }, onclick: function () { shiftDeck(1); } }, "\u2212 DAMAGE"),
+      el("button.btn.sm", { disabled: _spent <= 0, title: "Restore this much Integrity",
+        onclick: function () { shiftDeck(-1); } }, "+ REPAIR"),
+      _spent > 0 ? el("button.btn.sm", { style: { color: "var(--text2)" },
+        onclick: function () { if (gv.repairDeckFully) gv.repairDeckFully(deck.key); toast("Smartdeck restored to full Integrity."); } }, "\u27f3 FULL") : null
+    ]) : null;
+    var meter = integrityBlock("SYSTEM INTEGRITY", _cur, _maxInt, _bricked, controls);
+    meter.className = "dev-meter";
+    body.push(meter);
 
-    if ((deck.traits || []).length) {
-      kids.push(el("div.row.wrap", { style: { gap: "6px", marginTop: "8px", alignItems: "center" } },
-        [el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em", marginRight: "2px" }, text: "TRAITS" })].concat(
-          deck.traits.map(function (nm) {
-            return el("span.chip", { style: { fontSize: "9.5px", color: "var(--gold)", borderColor: "var(--gold)" } }, nm);
-          }))));
-    }
-
-    // the next rung, so an upgrade is a known price rather than a mystery (mirrors the Rig)
-    if (deck.type === "smartdeck") {
-      var next = (G.smartdecks || []).find(function (x) { return x.t === deck.t + 1; });
-      if (next) kids.push(el("p.help", { style: { margin: "4px 0 0", fontSize: "10.5px", color: "var(--text3)" },
-        text: "Next rung: " + next.tier + ", " + String.fromCodePoint(0x1D4A2) + next.price.toLocaleString() + " \u00b7 +" + next.deviceBonus +
-              " device \u00b7 CX " + Math.min(5, next.t + 1) + " \u00b7 " + next.integrity + " Integrity." }));
-    }
-    return kids;
+    // the pool the deck produces, inside the same card
+    (resKids || []).forEach(function (k) { body.push(k); });
+    return [el("div.device-card", null, body)];
   }
 
-  function traumaRigKids(d) {
+  function traumaRigKids(d, resKids) {
     var t = d.rig, T = EN.traumaRigs || {}, tiers = T.tiers || [];
     var mint = resourceColor("Triage");
     var owned = t.ownedRigs || [];
@@ -2282,43 +2264,33 @@ EN.combatView = (function () {
     // no tier projects no node, so there is no Integrity to show.
     if (!_isOpen) {
       if (t.rigTier) kids.push(integrityBlock("RIG INTEGRITY", t.integrity, t.maxIntegrity, t.bricked, null));
-      return kids;
+      (resKids || []).forEach(function (k) { kids.push(k); });
+      return [el("div.device-card", null, kids)];
     }
 
-    // picker: no rig, the Scrap Rig fallback (Stitchers only), or any Rig in the stash.
-    // Selection reads the RESOLVED rigKey, so the AUTO fallback shows as the live option
-    // and a pick the character no longer owns can never leave the picker on index 0.
-    var selKids = [
-      el("option", { value: "none", selected: !t.scrapRig && !t.rigKey, text: "- No Rig -" })
-    ];
-    if (isStitcher) selKids.push(el("option", { value: "scrap", selected: !!t.scrapRig, text: "Scrap Rig (Output Bonus +0, Snag)" }));
-    // two Rigs of one tier read identically in a list, so number the duplicates
-    var tierCount = {}, tierNth = {};
-    owned.forEach(function (o) { tierCount[o.row.tier] = (tierCount[o.row.tier] || 0) + 1; });
-    if (owned.length) selKids.push(el("optgroup", { label: "Trauma Rigs in your stash" }, owned.map(function (o) {
-      var r = o.row;
-      tierNth[r.tier] = (tierNth[r.tier] || 0) + 1;
-      var dup = tierCount[r.tier] > 1 ? " #" + tierNth[r.tier] : "";
-      return el("option", { value: "key:" + o.key, selected: !t.scrapRig && t.rigKey === o.key,
-        text: r.label + dup + " · +" + r.outputBonus + " output · " + r.modSlots + " slot" + (r.modSlots === 1 ? "" : "s") + " · " + r.integrity + " Int" });
-    })));
-    else selKids.push(el("option", { disabled: true, text: "No Trauma Rig in your stash; buy one in Inventory" }));
+    /* No picker here any more: a Rig goes live because you pressed WEAR on its Stash row.
+
+       The SCRAP RIG stays, though, and it is not a picker. It is a Stitcher improvising with
+       no hardware, so it owns no equipment entry and cannot have a Stash row without inventing
+       a fake entry key, which the entry-identity rule forbids. Note the exclusion runs one way
+       only: equipping a real Rig clears scrap (in the engine's EQUIP_SLOTS), but taking a Rig
+       off does NOT set it, because "no Rig" and "improvised Rig" are different states and the
+       Stash cannot know which one was meant. */
     kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "2px" } }, [
-      el("select", { style: { fontSize: "12px", width: "auto", minWidth: "230px" },
-        onchange: function () {
-          var v = this.value;
-          // Swapping Rigs does NOT touch damage any more: each Rig's Integrity lives in
-          // its own slot in c.rig.hp, so switching to another one and back finds the
-          // first one exactly as hurt as you left it.
-          store.update(function (c) {
-            c.rig = c.rig || {};
-            if (v === "scrap") { c.rig.scrap = true; c.rig.key = null; return; }
-            c.rig.scrap = false;
-            c.rig.key = v === "none" ? null : v.slice(4);
-          });
-        } }, selKids),
-      t.fromOwnedGear ? el("span.chip", { style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" },
-        title: "No Rig recorded, so the best Trauma Rig in your stash is standing in. Pick one to lock it." }, "AUTO") : null
+      // Same rule as the deck. The Scrap Rig toggle below is NOT gated: it is a Stitcher state,
+      // not a picker, and staying reachable while a real Rig is worn is the point of it.
+      t.rigTier ? null : el("button.btn.sm", { style: { color: "var(--flow)", borderColor: "var(--flow)" },
+        title: owned.length ? "Open the Stash and wear a Trauma Rig" : "Nothing to wear yet; buy a Rig first",
+        onclick: function () { if (EN.inventoryView.openStash) EN.inventoryView.openStash("Trauma Rigs"); EN.app.gotoTab("gear"); } },
+        owned.length ? "⇒ EQUIP ONE IN STASH" : "⇒ BUY ONE IN THE MARKET"),
+      isStitcher ? el("button.btn.sm" + (t.scrapRig ? ".primary" : ""), {
+        title: t.scrapRig ? "Stop improvising" : "Improvise a Rig from scrap: Output Bonus +0, and Snag on all Triage healing and attack rolls",
+        style: t.scrapRig ? null : { color: "var(--text2)" },
+        onclick: function () {
+          var on = !t.scrapRig;
+          store.update(function (c) { c.rig = c.rig || {}; c.rig.scrap = on; if (on) c.rig.key = null; });
+          toast(on ? "Scrap Rig cobbled together." : "Scrap Rig set aside.");
+        } }, t.scrapRig ? "✓ SCRAP RIG" : "COBBLE A SCRAP RIG") : null
     ]));
 
     if (!t.rigTier) {
@@ -2326,7 +2298,8 @@ EN.combatView = (function () {
         text: t.scrapRig ? (T.scrapRig || "")
           : "No Rig equipped, so Output Bonus is +0. " + (isStitcher ? (T.startingRig || "")
             : "Anyone can buy a Trauma Rig; running Triage Protocols through one is the Stitcher's trade.") }));
-      return kids;
+      (resKids || []).forEach(function (k) { kids.push(k); });
+      return [el("div.device-card", null, kids)];
     }
 
     // the tier's derived numbers: Output Bonus, Mod Slots (= Tier), the node it projects
@@ -2385,7 +2358,9 @@ EN.combatView = (function () {
     if (next) kids.push(el("p.help", { style: { margin: "2px 0 0", fontSize: "10.5px", color: "var(--text3)" },
       text: "Next rung: " + next.label + ", \u{1D4A2}" + next.price.toLocaleString() + " · +" + next.outputBonus +
             " Output · " + next.modSlots + " mod slots · adds " + next.trait + "." }));
-    return kids;
+    // the pool the Rig feeds, inside the same card
+    (resKids || []).forEach(function (k) { kids.push(k); });
+    return [el("div.device-card", null, kids)];
   }
 
   /* a resource chip like "1 MOXIE" tints to the resource named within it */
@@ -2596,14 +2571,11 @@ EN.combatView = (function () {
   }
   // a weapon (equippedWeapons) or the worn armor / wielded shield / attuned focus is on-person by definition
   function isEquippedAny(ch, key) {
-    return (ch.equippedWeapons || []).indexOf(key) !== -1 || ch.equippedArmor === key || ch.equippedShield === key || ch.equippedFocus === key;
+    return (ch.equippedWeapons || []).indexOf(key) !== -1 || eng.isSlotEquipped(ch, key);
   }
   function equipLabel(ch, key) {
     if ((ch.equippedWeapons || []).indexOf(key) !== -1) return "Equipped";
-    if (ch.equippedArmor === key) return "Worn";
-    if (ch.equippedShield === key) return "Wielding";
-    if (ch.equippedFocus === key) return "Attuned";
-    return null;
+    return eng.equipSlotLabel(ch, key);
   }
   function isHeavy(it) { return it.group === "Heavy" || (it.traits || []).some(function (t) { return /^Heavy\b/.test(t); }); }
   function isRestricted(it) { return it.legality === "Restricted" || it.legality === "Contraband"; }
@@ -3727,7 +3699,46 @@ EN.combatView = (function () {
       var resourceFeats = rName ? activeFeats.filter(function (f) { return f.chip && f.chip.toUpperCase().indexOf(rName) !== -1; }) : [];
       var otherFeats = rName ? activeFeats.filter(function (f) { return !f.chip || f.chip.toUpperCase().indexOf(rName) === -1; }) : activeFeats;
 
-      function pushFeat(f) {
+      /* HARDWARE-DEPENDENT ABILITIES.
+
+         A Codebreaker's Bandwidth abilities run through a Smartdeck and a Stitcher's Triage
+         Protocols run through a Trauma Rig. resourceFeats is already exactly that set: the
+         abilities whose cost chip names the class resource. Without the hardware they cannot
+         fire, so listing them ready-to-use is a lie the sheet tells every turn.
+
+         Two different failures, two different treatments:
+
+           MISSING   the abilities come OUT of the list and a loud block stands in their place.
+                     Deliberately not a clean collapse. The hole should be visible, sized like
+                     what is gone, and it says how many went with it.
+           BRICKED   the hardware is present and dead. Everything stays listed and the card,
+                     the pool and the abilities all grey out together, matching the dead look
+                     the #GRID tab already wears at full damage. */
+      var _dep = (function () {
+        if (!d.resource) return null;
+        if (d.triage) {
+          var t = d.rig || {};
+          // a Stitcher improvising on a Scrap Rig is equipped, just badly
+          if (t.scrapRig) return { state: "ok" };
+          if (!t.rigTier) return { state: "missing", what: "Trauma Rig", cat: "Trauma Rigs",
+            title: "No Rig on you",
+            say: "You know exactly what to do and have nothing to do it with. Triage Protocols run through a Trauma Rig; steady hands and good intentions do not close a chest wound." };
+          if (t.bricked) return { state: "bricked", what: "Trauma Rig" };
+          return { state: "ok" };
+        }
+        if ((d.grid || {}).isCodebreaker) {
+          var dk = (d.grid || {}).deck;
+          if (!dk) return { state: "missing", what: "Smartdeck", cat: "Smartdecks & B&E Buddies",
+            title: "Nothing to jack into",
+            say: "Every cipher you know is sitting behind glass. The #GRID does not care how good you are if you turned up without hardware." };
+          if (dk.bricked) return { state: "bricked", what: "Smartdeck" };
+          return { state: "ok" };
+        }
+        return null;
+      })();
+      var _dead = !!(_dep && _dep.state === "bricked");
+
+      function featNode(f) {
         var uses = f.uses ? {
           max: f.uses.max, recharge: f.uses.recharge,
           spent: Math.min((((ch.featureUses || {})[f.name] || {}).n) || 0, f.uses.max),
@@ -3751,30 +3762,34 @@ EN.combatView = (function () {
             };
           })(moxieCost);
         }
-        kids.push(actionEntry(f.id, f.name, f.cost, f.src, f.text, f.limited, f.chip, uses, onUse, canUse));
+        return actionEntry(f.id, f.name, f.cost, f.src, f.text, f.limited, f.chip, uses, onUse, canUse);
       }
+      /* pushFeat stays a one-argument wrapper on purpose. Several call sites are
+         forEach(pushFeat), which would hand a second parameter the array index, so the
+         builder is split out instead of given an optional target. */
+      function pushFeat(f) { kids.push(featNode(f)); }
 
       if (d.resource) {
         var rCur = (ch.resources.current[d.resource.name] != null) ? ch.resources.current[d.resource.name] : d.resource.max;
         rCur = eng.clamp(rCur, 0, d.resource.max);
-        /* THE DEVICE LEADS, THEN THE RESOURCE IT PRODUCES. A Codebreaker's Bandwidth is
-           output of the Smartdeck and a Stitcher's Triage runs through the Trauma Rig, so the
-           hardware is read first and the pool second. Only the class whose hardware this is
-           gets it here; everyone else's copy stands alone further down. */
-        if (d.triage) traumaRigKids(d).forEach(function (k) { kids.push(k); });
-        if ((d.grid || {}).isCodebreaker) smartdeckKids(d, ch).forEach(function (k) { kids.push(k); });
-        kids.push(el("div.section-title", { style: { margin: (d.triage || (d.grid || {}).isCodebreaker) ? "14px 0 2px" : "2px 0 2px" } }, [document.createTextNode(d.resource.name), el("span.line")]));
-        kids.push(el("div.row.between.wrap", { style: { alignItems: "center" } }, [
-          el("div.mono", { style: { fontSize: "22px", color: resourceColor(d.resource.name) }, html: rCur + " <span style='font-size:13px;color:var(--text3)'>/ " + d.resource.max + " · " + d.resource.attributeName + " · refresh on rest</span>" }),
+
+        /* Build the pool's rows ONCE, then decide where they land. A class whose hardware
+           produces the pool gets them rendered INSIDE that device's card, because a Smartdeck
+           and its Bandwidth are one object and two stacks of spacing made them read as two.
+           Everyone else gets them on their own, exactly as before. */
+        var resKids = [];
+        resKids.push(el("div.section-title", { style: { margin: "8px 0 2px" } }, [document.createTextNode(d.resource.name), el("span.line")]));
+        resKids.push(el("div.row.between.wrap", { style: { alignItems: "center" } }, [
+          el("div.mono", { style: { fontSize: "20px", color: resourceColor(d.resource.name) }, html: rCur + " <span style='font-size:12px;color:var(--text3)'>/ " + d.resource.max + " · " + d.resource.attributeName + " · refresh on rest</span>" }),
           plusMinus(function () { store.update(function (c) { c.resources.current[d.resource.name] = Math.max(0, rCur - 1); }); },
                     function () { store.update(function (c) { c.resources.current[d.resource.name] = Math.min(d.resource.max, rCur + 1); }); })
         ]));
-        kids.push(bar(rCur, d.resource.max, resourceColor(d.resource.name)));
-        // Stitcher: the Triage Save DC every Protocol save lands against, plus the Rig
-        // tier feeding its Output Bonus. Both come off the derived record.
+        resKids.push(bar(rCur, d.resource.max, resourceColor(d.resource.name)));
+        // Stitcher: the Triage Save DC every Protocol save lands against, plus the Rig tier
+        // feeding its Output Bonus. Both come off the derived record.
         if (d.triage) {
           var signed = function (n) { return (n >= 0 ? "+" : "") + n; };
-          kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "6px" } }, [
+          resKids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "6px" } }, [
             el("span.chip", { style: { fontSize: "9.5px", color: resourceColor("Triage"), borderColor: resourceColor("Triage") },
                               title: "Triage Save DC: 8 + your Tech Modifier + your Rig's Output Bonus" },
                "TRIAGE SAVE DC " + d.triage.saveDC),
@@ -3783,10 +3798,36 @@ EN.combatView = (function () {
                                     " · Output Bonus " + signed(d.triage.outputBonus) +
                                     " · Tech " + signed(d.triage.techMod) })
           ]));
-          if (d.triage.scrapRig) kids.push(el("p.help", { style: { margin: "4px 0 0", fontSize: "10.5px" },
+          if (d.triage.scrapRig) resKids.push(el("p.help", { style: { margin: "4px 0 0", fontSize: "10.5px" },
             text: "Scrap Rig: Snag on all Triage healing and attack rolls, and every Swift Action Protocol costs an Action." }));
         }
-        resourceFeats.forEach(pushFeat);
+
+        var _cardKids = [];
+        if (d.triage) traumaRigKids(d, resKids).forEach(function (k) { _cardKids.push(k); });
+        else if ((d.grid || {}).isCodebreaker) smartdeckKids(d, ch, resKids).forEach(function (k) { _cardKids.push(k); });
+        else resKids.forEach(function (k) { _cardKids.push(k); });
+        // bricked: the card and the pool inside it go dead together
+        if (_dead) _cardKids.forEach(function (k) { if (k.classList) k.classList.add("rig-dead"); });
+        _cardKids.forEach(function (k) { kids.push(k); });
+
+        if (_dep && _dep.state === "missing" && resourceFeats.length) {
+          kids.push(el("div.gear-gone", null, [
+            el("div.gg-title", { text: "⚠ " + _dep.title }),
+            el("p.gg-say", { text: _dep.say }),
+            el("div.gg-count", { text: resourceFeats.length + " " + d.resource.name + " " +
+              (resourceFeats.length === 1 ? "ability is" : "abilities are") + " unavailable until a " + _dep.what + " is equipped." }),
+            el("button.btn.sm", { style: { color: "var(--danger)", borderColor: "var(--danger)" },
+              title: "Open the Stash and equip one",
+              onclick: function () { if (EN.inventoryView.openStash) EN.inventoryView.openStash(_dep.cat); EN.app.gotoTab("gear"); } },
+              "⇒ EQUIP A " + _dep.what.toUpperCase())
+          ]));
+        } else {
+          // bricked keeps them listed, greyed, so you can see what you have lost
+          resourceFeats.map(featNode).forEach(function (k) {
+            if (_dead && k.classList) k.classList.add("rig-dead");
+            kids.push(k);
+          });
+        }
       }
       // A Trauma Rig is ordinary gear anyone can buy, so a non-Stitcher who owns one
       // gets the object's block (tier, Output Bonus, Mod Slots, traits, Medical
@@ -4559,7 +4600,8 @@ EN.combatView = (function () {
       var wearable = mySlots.length > 0 && it && it.kind !== "armor" && it.kind !== "shield" && it.kind !== "focus";
       var chips = [];
       if (eqLabel) chips.push(el("span.chip", { style: { fontSize: "9px", color: "var(--accent)", borderColor: "var(--accent)" }, text: eqLabel.toUpperCase() }));
-      var wornArmor = ch.equippedArmor === key;
+      // a worn Trauma Rig takes the same break the engine gives it (2 carried, 1 worn)
+      var wornArmor = ch.equippedArmor === key || (ch.rig && ch.rig.key === key);
       var baseLd = eng.itemLoad ? eng.itemLoad(e.name, { worn: wornArmor }) : 0;
       // one rack slot holds one item: a racked entry's TOTAL drops by 1, min 0
       var ldTotal = Math.max(0, baseLd * e.qty - (rackedGear ? 1 : 0));
