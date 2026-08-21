@@ -2422,8 +2422,8 @@ EN.inventoryView = (function () {
   function tbAbandon(id) {
     var ch = store.active(), p = tbFind(ch, id); if (!p) return;
     var back = (p.repairKey && p.materialsSecured) ? (p.materialsPaid || 0) : 0;
-    if (!confirm("Abandon this Project? Its Progress is lost."
-      + (back > 0 ? " The " + fmtG(back) + " you paid for parts comes back." : ""))) return;
+    // confirmation is the caller's two-click arm, not a browser dialog: a suppressed
+    // confirm() returns false instantly and the button silently does nothing.
     var paidBack = 0;
     tbSetProjects(function (list, c) {
       var i = list.map(function (x) { return x.id; }).indexOf(id);
@@ -2541,7 +2541,9 @@ EN.inventoryView = (function () {
         })(),
         p.overEngineered ? tbChip("OVER-ENGINEERED", "var(--danger)", "Pushed past safe capacity: Prototype tier, and the result carries a Mandatory Flaw") : null
       ]),
-      el("button.btn.sm", { title: "Abandon this Project", style: { color: "var(--text3)" }, onclick: function () { tbAbandon(p.id); } }, "✕")
+      EN.ui.armButton("abandon:" + p.id, { label: "✕", armedLabel: "SURE?",
+        title: "Abandon this Project. Its Progress is lost.",
+        onConfirm: function () { tbAbandon(p.id); } })
     ]);
     // Work Interval roll box: Edge (character + kits + toggles) vs Snag (GM-set difficulty)
     var rs = tbRollState(p.id);

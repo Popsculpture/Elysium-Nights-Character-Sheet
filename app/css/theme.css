@@ -189,6 +189,32 @@ a{ color:var(--accent); text-decoration:none; }
 .gear-gone .gg-count{ font-family:var(--mono); font-size:10.5px; letter-spacing:.06em; color:var(--text3);
   margin:0 0 11px; }
 
+/* ===== MANAGE #PRINT RECORDS ==========================================
+   A roster manager, opened from the bottom of the On File dropdown. Built as its own
+   overlay rather than a page because it acts ACROSS characters (batch export, batch
+   delete) while every other surface in the app edits exactly one. */
+#mgr{ position:fixed; inset:0; z-index:90000; display:flex; align-items:center; justify-content:center;
+  background:rgba(3,5,9,.78); backdrop-filter:blur(2px); animation:gate-in .18s ease both; padding:20px; }
+.mgr-card{ width:min(96vw,760px); max-height:86vh; display:flex; flex-direction:column;
+  background:linear-gradient(180deg,var(--bg2),var(--bg1)); border:1px solid var(--accent-dim);
+  border-radius:6px; box-shadow:0 0 0 1px rgba(0,229,255,.08), 0 18px 60px rgba(0,0,0,.6); }
+.mgr-head{ display:flex; align-items:center; gap:10px; padding:13px 16px 11px; border-bottom:1px solid var(--border2); }
+.mgr-head h3{ margin:0; font-family:var(--disp); font-size:15px; letter-spacing:.16em; color:var(--text); text-transform:uppercase; }
+.mgr-head .mgr-count{ font-family:var(--mono); font-size:10px; letter-spacing:.1em; color:var(--text3); }
+.mgr-tools{ display:flex; flex-wrap:wrap; gap:7px; align-items:center; padding:10px 16px; border-bottom:1px solid var(--border2); }
+.mgr-list{ overflow:auto; padding:6px 16px 14px; }
+.mgr-sect{ font-family:var(--disp); font-size:9.5px; letter-spacing:.18em; color:var(--text3);
+  text-transform:uppercase; margin:12px 0 5px; display:flex; align-items:center; gap:8px; }
+.mgr-sect .line{ flex:1; height:1px; background:linear-gradient(90deg,var(--border),transparent); }
+.mgr-row{ display:flex; align-items:center; gap:9px; padding:6px 8px; border:1px solid transparent;
+  border-radius:var(--r); }
+.mgr-row:hover{ border-color:var(--border2); background:rgba(255,255,255,.02); }
+.mgr-row.live{ border-color:var(--accent-dim); background:rgba(0,229,255,.05); }
+.mgr-row .mgr-name{ flex:1 1 auto; min-width:120px; font-size:13px; padding:4px 7px; }
+.mgr-row .mgr-meta{ font-family:var(--mono); font-size:10px; color:var(--text3); letter-spacing:.06em;
+  flex:0 0 auto; min-width:104px; text-align:right; }
+.mgr-row .mgr-fixed{ flex:1 1 auto; min-width:120px; font-size:13px; color:var(--text2); }
+
 /* ===== buttons ========================================================== */
 .btn{ font-family:var(--disp); font-weight:600; font-size:13px; letter-spacing:.1em; text-transform:uppercase;
   background:transparent; color:var(--text2); border:1px solid var(--border2); border-radius:var(--r);
@@ -949,3 +975,21 @@ html.light .pop-btn:hover{ background:rgba(0,0,0,.05) !important; }
   height: .817em;
   vertical-align: -.07em;
 }
+
+/* ---- Pre-made picker on the roster gate ----------------------------------
+   Cards are BUTTONS, not clickable divs: the whole card is the control, so it has to focus and
+   fire from the keyboard like every other route into a character. The grid only ever appears on
+   the gate, where the alternative was that a player with no records could not reach the seven
+   examples at all: the switcher that lists them needs a loaded character to render. */
+.pm-wrap{ max-width:720px; margin:26px auto 0; text-align:left; }
+.pm-sect{ display:flex; align-items:center; gap:10px; font-family:var(--disp); font-size:9.5px;
+  letter-spacing:.18em; text-transform:uppercase; color:var(--text3); margin:0 0 8px; }
+.pm-sect .line{ flex:1; height:1px; background:var(--border); }
+.pm-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(212px,1fr)); gap:8px; }
+.pm-card{ display:flex; flex-direction:column; align-items:flex-start; gap:2px; width:100%;
+  text-align:left; padding:9px 11px; font:inherit; color:inherit; cursor:pointer;
+  background:rgba(255,255,255,.015); border:1px solid var(--border); border-radius:3px; }
+.pm-card:hover{ border-color:var(--accent-dim); background:rgba(0,229,255,.05); }
+.pm-card .pm-class{ font-family:var(--disp); font-size:9px; letter-spacing:.16em; color:var(--accent); }
+.pm-card .pm-name{ font-size:13px; color:var(--text); }
+.pm-card .pm-blurb{ font-size:10.5px; line-height:1.35; color:var(--text3); }

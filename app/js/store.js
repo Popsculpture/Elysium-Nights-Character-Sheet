@@ -9,7 +9,12 @@ EN.store = (function () {
   var KEY_ROSTER = "en_roster_v1";       // {id: character}
   var KEY_ACTIVE = "en_active_id_v1";
   var listeners = [];
-  var state = { roster: {}, activeId: null };
+  /* state.example holds a PRE-MADE EXAMPLE that is live but not owned. Examples are defined
+     in app/data/examples.js and never touch localStorage, so they cannot be deleted, cannot
+     drift, and survive clearing site data. Editing one works normally and the edits evaporate
+     on reload, which is what "example" should mean, and makes them safe to test against
+     without any risk to the roster the player actually built. */
+  var state = { roster: {}, activeId: null, example: null };
 
   /* ---- event bus -------------------------------------------------------- */
   function on(fn) { listeners.push(fn); return function () { listeners = listeners.filter(function (l) { return l !== fn; }); }; }
@@ -85,6 +90,11 @@ EN.store = (function () {
       skillFocuses: [],                  // [{skill, aspect}]
       specializations: [],               // [{skill, aspect}]
       talents: [],                       // talent keys
+      // Which attribute a choose-one Talent raised: {talentKey: "BOD"|"AGI"|"WIT"|"TEC"|"MYS"|"CHA"}.
+      // Absent means unset, which is a real state: 24 of the 36 bump Talents offer a choice, and
+      // an unanswered choice grants no point rather than a guessed one. Null-prototype like every
+      // other map in this app keyed on a string out of a save file. Read through engine.talentAttr.
+      talentAttrPicks: Object.create(null),
       customFeatures: [],                // player/GM manual Features on the Freelancer tab: [{id,name,source,effect,note,category,action,cost,uses,range,duration}]
       featureAnnotations: {},            // per computed-feature notes/flags: {featureName: {note, pinned, important, hidden}}
       universalUpgrades: {},             // {level: {type:'attr'|'talent'|'evolution', ...}}
@@ -518,10 +528,10 @@ EN.store = (function () {
     //   "Toxicologist" -> "Cutting Agent", to stop colliding with the Stitcher
     //     subclass of the same name, which KEEPS its name.
     //   "Dead-Eye Sniper" -> "Zeroed In", the author's rename of 2026-08-10.
-    // Talent keys live in TWO places, not one: the Universal Upgrade slots and the
-    // flat ch.talents list the print sheet and the PDF export read. The
-    // Toxicologist rename only ever covered the first, so a ch.talents entry has
-    // been rendering as nothing since; this table covers both.
+    // Talent keys live in THREE places, not one: the Universal Upgrade slots, the flat
+    // ch.talents list the print sheet and the PDF export read, and the ch.talentAttrPicks
+    // map added below. The Toxicologist rename only ever covered the first, so a
+    // ch.talents entry has been rendering as nothing since; this table covers all three.
     var TALENT_RENAMES = Object.create(null);
     TALENT_RENAMES["toxicologist"] = TALENT_RENAMES["Toxicologist"] = "cutting-agent";
     TALENT_RENAMES["dead-eye-sniper"] = TALENT_RENAMES["Dead-Eye Sniper"] = "zeroed-in";
@@ -542,6 +552,27 @@ EN.store = (function () {
         return (typeof tk === "string" && TALENT_RENAMES[tk]) ? TALENT_RENAMES[tk] : tk;
       });
     }
+    /* The attribute a choose-one Talent raised, keyed by talent key. Rebuilt here rather
+       than merely renamed, for two reasons. The schema fill above deep-copies its template
+       through JSON, which returns a PLAIN object, so the null prototype born in
+       newCharacter does not survive a record that was missing the field; and these keys
+       come straight out of a save file, so a key of "toString" in a plain map reads as
+       present and hands the engine Object.prototype.toString as an attribute.
+       Renames apply the same single lookup as the two passes above, and where two retired
+       keys now collide on one live key the FIRST wins: both describe the same Talent, and
+       picking arbitrarily beats dropping a choice the player made. The engine validates
+       the value on read, so a pick naming an attribute the Talent does not offer is left
+       alone here and simply resolves to null. */
+    var tapIn = (ch.talentAttrPicks && typeof ch.talentAttrPicks === "object" && !Array.isArray(ch.talentAttrPicks))
+      ? ch.talentAttrPicks : {};
+    var tapOut = Object.create(null);
+    Object.keys(tapIn).forEach(function (tk) {
+      var v = tapIn[tk];
+      if (typeof v !== "string" || !v) return;
+      var key = TALENT_RENAMES[tk] || tk;
+      if (tapOut[key] === undefined) tapOut[key] = v;
+    });
+    ch.talentAttrPicks = tapOut;
     // Overclocked Array state (6x6 rolled matrix + picked line + table rule).
     // A hand-edited/imported file can carry anything here, and the matrix
     // render reads every slot, so anything short of exactly 36 well-formed
@@ -1484,18 +1515,75 @@ EN.store = (function () {
   }
 
   /* ---- accessors -------------------------------------------------------- */
-  function active() { return state.activeId ? state.roster[state.activeId] : null; }
+  function active() {
+    if (state.example) return state.example;
+    return state.activeId ? state.roster[state.activeId] : null;
+  }
+  function activeIsExample() { return !!state.example; }
+  /* Examples come from the data file every time rather than from storage, so a fresh copy is
+     minted on each selection and migrate() normalizes it exactly as it would an import. */
+  /* Examples are PATCHES over a real blank character, not full records. A stored 70-field copy
+     would rot the moment a new default field is added: the example would be the one character
+     in the app missing it. Patching means they inherit every future default for free. */
+  function deepPatch(target, patch) {
+    Object.keys(patch || {}).forEach(function (k) {
+      var v = patch[k];
+      if (v && typeof v === "object" && !Array.isArray(v) && target[k] && typeof target[k] === "object" && !Array.isArray(target[k])) {
+        deepPatch(target[k], v);
+      } else {
+        target[k] = (v && typeof v === "object") ? JSON.parse(JSON.stringify(v)) : v;
+      }
+    });
+    return target;
+  }
+  function setExample(key) {
+    var src = (EN.examples || []).find(function (x) { return x.key === key; });
+    if (!src) return null;
+    var ch = deepPatch(newCharacter(src.name || ""), src.patch || {});
+    ch.name = src.name || ch.name;
+    ch.meta = ch.meta || {};
+    ch.meta.id = "ex_" + key;
+    ch.meta.example = key;
+    try { migrate(ch); } catch (e) { console.error("Example " + key + " failed to migrate", e); return null; }
+    state.example = ch;
+    persist(true);   // records only that no roster character is active; the example itself is never written
+    emit();
+    return ch;
+  }
+  function clearExample() { state.example = null; }
+  /* Copy the live example into the roster as a character the player owns. The example itself is
+     untouched, so the pristine version is still in the dropdown afterwards. */
+  /* The copy keeps the example's own name. A "(copy)" suffix was tried and is a lie: migrate()
+     recomposes ch.name from firstName, handle and lastName on every load, so the suffix
+     survives exactly until the next reload and then silently disappears. Rename it in Manage
+     characters, which writes the name fields properly. */
+  function adoptExample() {
+    if (!state.example) return null;
+    var copy = JSON.parse(JSON.stringify(state.example));
+    delete copy.meta.example;
+    copy.meta.id = uid();
+    state.example = null;
+    state.roster[copy.meta.id] = copy;
+    state.activeId = copy.meta.id;
+    persist(true); emit();
+    return copy;
+  }
   function roster() { return state.roster; }
 
   function createAndActivate(name) {
     var ch = newCharacter(name);
+    // Clearing the example is not optional: active() answers with state.example FIRST, so
+    // registering a new record while an example is open used to file it in the roster and
+    // then leave the player looking at the example, with nothing on screen having changed.
+    // setActive and adoptExample both clear it for the same reason.
+    state.example = null;
     state.roster[ch.meta.id] = ch;
     state.activeId = ch.meta.id;
     persist(true); emit();
     return ch;
   }
   function setActive(id) {
-    if (state.roster[id]) { state.activeId = id; persist(true); emit(); }
+    if (state.roster[id]) { state.example = null; state.activeId = id; persist(true); emit(); }
   }
   function remove(id) {
     delete state.roster[id];
@@ -1531,6 +1619,8 @@ EN.store = (function () {
     active: active, roster: roster,
     createAndActivate: createAndActivate,
     setActive: setActive, remove: remove, update: update,
-    importCharacter: importCharacter, composeFullName: composeFullName
+    importCharacter: importCharacter, composeFullName: composeFullName,
+    // pre-made examples: live, editable, never persisted
+    setExample: setExample, clearExample: clearExample, activeIsExample: activeIsExample, adoptExample: adoptExample
   };
 })();

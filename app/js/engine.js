@@ -293,19 +293,20 @@ EN.engine = (function () {
     return overlapGrants(ch).filter(function (o) { return !grantedFocusFor(ch, o.type, o.parent); });
   }
 
-  /* ---- effective attribute scores (base + Universal Upgrade bumps) ------- */
-  function effectiveAttributes(ch) {
+  /* ---- effective attribute scores (base + everything that bumps one) -------
+     Base score plus one point per entry attrBumpSources reports: Universal Upgrade attr
+     picks, and Talents whose opening bullet raises an attribute. The enumeration lives in
+     attrBumpSources so that this summer and the builder's attribute matrix read the same
+     list; the matrix used to re-derive the Universal Upgrade half on its own.
+     opts.excludeTalent passes straight through, for checking a Talent's own attribute
+     requirement without the point that Talent grants. */
+  function effectiveAttributes(ch, opts) {
     var out = {};
     R.attributes.forEach(function (a) { out[a.key] = (ch.attributes && ch.attributes[a.key]) || 10; });
-    var ups = ch.universalUpgrades || {};
-    Object.keys(ups).forEach(function (lvl) {
-      var u = ups[lvl];
-      if (!u || u.type !== "attr") return;
-      // new shape: attrs:[key,key] (+1 each; same key twice = +2). legacy: {attr, amount}
-      var keys = [];
-      if (u.attrs && u.attrs.length) keys = u.attrs.slice();
-      else if (u.attr) { var amt = u.amount || 1; for (var n = 0; n < amt; n++) keys.push(u.attr); }
-      keys.forEach(function (k) { if (out[k] != null) out[k] = clamp(out[k] + 1, 1, R.hardCapMax); });
+    var src = attrBumpSources(ch, opts);
+    Object.keys(src).forEach(function (k) {
+      if (out[k] == null) return;
+      src[k].forEach(function () { out[k] = clamp(out[k] + 1, 1, R.hardCapMax); });
     });
     return out;
   }
@@ -553,6 +554,113 @@ EN.engine = (function () {
     "pain-editor":     { resist: ["Psychic"] },
     "cutting-agent":   { resist: ["Toxic"] }
   };
+  /* ---- Talent attribute bumps --------------------------------------------
+     36 of the 63 Talents open with a bullet reading "Increase your <ATTR> score by 1, to a
+     maximum of 20", in one of three wordings: a named attribute, a choice of two or three,
+     or "one Attribute score of your choice". None of them reached the sheet before this
+     table existed, whether they offered a choice or not.
+
+     A TABLE rather than a parse of the bullet, matching TALENT_RESIST above. A parse was
+     tried against all 63 texts and scored 35 of 36, and the miss was silent: a character
+     would simply have been one point light with nothing on screen to explain it. A table
+     that misses a newly added Talent grants nothing and shows an empty picker the first
+     time anyone selects it, which is visible. Talent text stays pure manuscript.
+
+     Values are the OPTIONS, in the order the bullet prints them, never the grant. Length 1
+     is fixed and needs nothing stored; anything longer is a menu whose answer lives in
+     ch.talentAttrPicks. A row here ALONE never adds a point: see talentAttr.
+     Source values per app/data/talents.js, line numbers in the comments. */
+  var ALL_ATTRS = ["BOD", "AGI", "WIT", "TEC", "MYS", "CHA"];
+  var TALENT_ATTR_BUMP = {
+    "akimbo-specialist":         ["BOD", "AGI"],        // talents.js:16
+    "armor-piercing-specialist": ["BOD", "AGI"],        // 23
+    "arsenal-adept":             ["BOD", "AGI"],        // 30
+    "close-quarters-brawler":    ["BOD"],               // 37
+    "concussive-striker":        ["BOD"],               // 44
+    "laceration-expert":         ["BOD", "AGI"],        // 65
+    "melee-mastery":             ["BOD", "AGI"],        // 72
+    "ricochet-shot":             ["AGI", "WIT"],        // 79
+    "staff-spear-master":        ["BOD", "AGI"],        // 93
+    "street-scrapper":           ["BOD"],               // 100
+    "blade-weaver":              ["AGI"],               // 116
+    "augment-specialist":        ["TEC"],               // 174
+    "gridrunners-reflexes":      ["TEC", "WIT"],        // 181
+    "pain-editor":               ["BOD", "TEC"],        // 209
+    "resonance-dabbler":         ["TEC", "MYS", "CHA"], // 246
+    "cyber-reinforced-vitality": ["BOD"],               // 283
+    "cybernetic-surge":          ["BOD", "AGI"],        // 290
+    "hardened-survivor":         ALL_ATTRS,             // 297, "the chosen Attribute"
+    "siege-plating-expert":      ["BOD"],               // 304
+    "tactical-harness-expert":   ["BOD", "AGI"],        // 311
+    "unbreakable":               ["BOD"],               // 318
+    "asphalt-rider":             ["AGI", "WIT"],        // 327
+    "breach-charger":            ["BOD"],               // 341
+    "parkour-runner":            ["BOD", "AGI"],        // 348
+    "crew-commander":            ["CHA"],               // 364
+    "crowd-reader":              ["CHA", "WIT"],        // 371
+    "faceless-persona":          ["CHA"],               // 385
+    "field-specialist":          ALL_ATTRS,             // 399, "one Attribute of your choice"
+    "hyper-aware":               ["WIT", "TEC"],        // 406
+    "photographic-memory":       ["TEC", "WIT"],        // 420
+    "ruin-crawler":              ["WIT", "AGI"],        // 427
+    "shadow-operative":          ["AGI"],               // 434
+    "spatial-delivery":          ["WIT", "MYS"],        // 455
+    "street-chef":               ["BOD", "WIT"],        // 462
+    "trauma-medic":              ["WIT", "TEC"],        // 469
+    "undercity-survivor":        ["WIT", "TEC", "CHA"]  // 476
+  };
+  function talentAttrOptions(talentKey) {
+    return ownVal(TALENT_ATTR_BUMP, talentKey) || null;
+  }
+  /* THE resolver for "which attribute did this Talent raise". Null on all three ways of
+     not knowing: the Talent grants no bump, the Talent offers a choice nobody has made,
+     or the stored pick is not one of the options THIS Talent offers. A pick that no longer
+     validates is treated as unset rather than corrected, because a stale pick is a claim
+     about a Talent the character may no longer hold and invariant 4 does not guess. */
+  function talentAttr(ch, talentKey) {
+    var opts = talentAttrOptions(talentKey);
+    if (!opts) return null;
+    if (opts.length === 1) return opts[0];
+    var picks = ch && ch.talentAttrPicks;
+    var pick = picks ? picks[talentKey] : null;
+    return (typeof pick === "string" && opts.indexOf(pick) !== -1) ? pick : null;
+  }
+  /* A Talent that offers a choice the player has not made yet. The builder uses this to
+     mark the slot, so a waiting choice is visible rather than a point quietly missing. */
+  function talentAttrPending(ch, talentKey) {
+    var opts = talentAttrOptions(talentKey);
+    return !!(opts && opts.length > 1 && !talentAttr(ch, talentKey));
+  }
+  /* ONE enumeration of everything that raises an attribute after creation, so the summer
+     below and the builder's attribute matrix cannot disagree about what bumped what. The
+     matrix used to re-derive the Universal Upgrade half itself, which was a second answer
+     to one question waiting to drift.
+     Returns {ATTRKEY: [{kind, level, name, key}]}, one entry per +1.
+     opts.excludeTalent omits one Talent's own bump, which is how a Talent's attribute
+     requirement is checked without it propping up its own prerequisite. */
+  function attrBumpSources(ch, opts) {
+    var out = {}, skip = (opts && opts.excludeTalent) || null;
+    var ups = (ch && ch.universalUpgrades) || {};
+    Object.keys(ups).sort(function (a, b) { return (Number(a) || 0) - (Number(b) || 0); }).forEach(function (lvl) {
+      var u = ups[lvl];
+      if (!u || u.type !== "attr") return;
+      // new shape: attrs:[key,key] (+1 each; same key twice = +2). legacy: {attr, amount}
+      var keys = [];
+      if (u.attrs && u.attrs.length) keys = u.attrs.slice();
+      else if (u.attr) { var amt = u.amount || 1; for (var n = 0; n < amt; n++) keys.push(u.attr); }
+      keys.forEach(function (k) {
+        if (!k) return;
+        (out[k] = out[k] || []).push({ kind: "upgrade", level: Number(lvl) || 0, name: "Universal Upgrade", key: null });
+      });
+    });
+    activeTalents(ch).forEach(function (row) {
+      if (skip && row.talent.key === skip) return;
+      var k = talentAttr(ch, row.talent.key);
+      if (!k) return;
+      (out[k] = out[k] || []).push({ kind: "talent", level: row.level, name: row.talent.name, key: row.talent.key });
+    });
+    return out;
+  }
   var CYBER_UNARMED = {
     skeleton: { type: "Bludgeoning", tiers: {
       Streetware: { die: "1d6" },
@@ -1146,6 +1254,19 @@ EN.engine = (function () {
      The EARLIEST slot wins, since that is the level the character actually gained it
      at, and `level` is what the play sheet prints beside the feature. Sorted
      numerically rather than trusting key order, because these are object keys. */
+  /* A Talent slot may name its Talent by KEY or by display NAME: both shapes are in saved
+     records and both resolve. One function does that lookup, because three copies of it
+     had grown and any disagreement between them is a disagreement about what a Talent IS.
+     Returns the canonical key, or null for a name nothing answers to. */
+  function canonTalentKey(keyOrName) {
+    if (!keyOrName) return null;
+    var t = (EN.talents || []).find(function (x) { return x.key === keyOrName || x.name === keyOrName; });
+    return t ? t.key : null;
+  }
+  function talentRow(keyOrName) {
+    var k = canonTalentKey(keyOrName);
+    return k ? (EN.talents || []).find(function (x) { return x.key === k; }) : null;
+  }
   function activeTalents(ch) {
     var ups = (ch && ch.universalUpgrades) || {}, out = [], seen = Object.create(null);
     Object.keys(ups)
@@ -1153,7 +1274,7 @@ EN.engine = (function () {
       .forEach(function (lvl) {
         var u = ups[lvl];
         if (!u || u.type !== "talent" || !u.talent) return;
-        var t = (EN.talents || []).find(function (x) { return x.key === u.talent || x.name === u.talent; });
+        var t = talentRow(u.talent);
         if (!t || seen[t.key]) return;
         seen[t.key] = 1;
         out.push({ level: Number(lvl) || 1, talent: t });
@@ -1172,13 +1293,13 @@ EN.engine = (function () {
       .forEach(function (lvl) {
         var u = ups[lvl];
         if (!u || u.type !== "talent" || !u.talent) return;
-        // Canonicalize exactly the way activeTalents does, or the two disagree about
-        // what a duplicate is. A record can name a Talent by its KEY or by its display
-        // name (activeTalents accepts either), so "Street Scrapper" and
-        // "street-scrapper" in two slots is one Talent twice and has to read as one.
+        // Canonicalized through talentRow, the same function activeTalents uses, so the
+        // two cannot disagree about what a duplicate is. A record can name a Talent by
+        // its KEY or by its display name, so "Street Scrapper" and "street-scrapper" in
+        // two slots is one Talent twice and has to read as one.
         // An unresolvable key is skipped: that slot is wasted too, but for a different
         // reason, and this warning would name a Talent nobody can look up.
-        var t = (EN.talents || []).find(function (x) { return x.key === u.talent || x.name === u.talent; });
+        var t = talentRow(u.talent);
         if (!t) return;
         if (seen[t.key]) dupes.push({ level: Number(lvl) || 1, talent: t.key, name: t.name, firstAt: seen[t.key] });
         else seen[t.key] = Number(lvl) || 1;
@@ -3332,6 +3453,12 @@ EN.engine = (function () {
     gearFloorTier: gearFloorTier, effectiveGearTier: effectiveGearTier,
     sizeFromHeightFt: sizeFromHeightFt, lineageHeightFt: lineageHeightFt,
     activeLineageFeatures: activeLineageFeatures, splitTalentText: splitTalentText, leaseLapsed: leaseLapsed, itemLoad: itemLoad,
+    // THE resolver for which attribute a Talent raised, and the one enumeration of every
+    // post-creation attribute bump. effectiveAttributes sums attrBumpSources rather than
+    // walking the upgrade slots itself, so no surface can disagree about what bumped what.
+    canonTalentKey: canonTalentKey, talentAttr: talentAttr, talentAttrOptions: talentAttrOptions,
+    talentAttrPending: talentAttrPending, attrBumpSources: attrBumpSources,
+    effectiveAttributes: effectiveAttributes,
     // the Universal Upgrade slots holding a Talent an earlier slot already holds, so
     // the builder can say which slot is buying nothing
     duplicateTalentSlots: duplicateTalentSlots,

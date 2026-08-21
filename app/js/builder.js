@@ -228,8 +228,16 @@ EN.builder = (function () {
           el("button", { disabled: !canStep(ch, a.key, 1, method), onclick: function () { stepAttr(ch, a.key, 1, method); } }, "+")
         ]);
       }
-      var bump = (ch.universalUpgrades && Object.keys(ch.universalUpgrades).some(function (l) { var u = ch.universalUpgrades[l]; return u && u.type === "attr" && ((u.attrs && u.attrs.indexOf(a.key) !== -1) || u.attr === a.key); }));
-      return el("div.attr-cell", { title: a.blurb }, [
+      /* The sources of every point added on top of the base score, from the engine's one
+         enumeration. This used to walk ch.universalUpgrades here, which was a second
+         answer to a question effectiveAttributes was already answering, and it went
+         quietly wrong the moment Talents started bumping attributes too. */
+      var srcs = eng.attrBumpSources(ch)[a.key] || [];
+      var bump = srcs.length > 0;
+      var bumpTitle = bump ? srcs.map(function (x) {
+        return "+1 " + (x.kind === "talent" ? x.name : "Universal Upgrade") + " (Level " + x.level + ")";
+      }).join("; ") : "";
+      return el("div.attr-cell", { title: bump ? a.blurb + "  " + bumpTitle : a.blurb }, [
         el("div.abbr", { text: a.abbr }),
         el("div.mod", { text: eng.fmtMod(d.attributes[a.key].mod) }),
         el("div.s.mono", { html: "score " + score + (bump ? " <span class='cyan'>▲</span>" : "") }),
@@ -240,7 +248,7 @@ EN.builder = (function () {
     return el("div", null, [
       EN.ui.panel("Attribute Matrix", "BIOMETRIC PROFILE", [
         methodRow, info, el("div.attr-grid", null, cells),
-        el("p.help", { style: { marginTop: "12px" }, text: "Modifier = ⌊(score − 10) / 2⌋. Level-up attribute increases (▲) are applied on top in the Advance step." }),
+        el("p.help", { style: { marginTop: "12px" }, text: "Modifier = ⌊(score − 10) / 2⌋. Increases from Universal Upgrades and from Talents that raise an Attribute (▲) are applied on top; hover a score to see which. Both are chosen in the Advance step." }),
         method === "manual" ? rollGroupsSection(ch) : method === "overclocked" ? overclockedSection(ch) : null
       ], { corners: true })
     ]);
@@ -1771,7 +1779,7 @@ EN.builder = (function () {
         card("Minor Milestones", "minor", "var(--flow)", "Session goal, key lead, minor alliance")
       ]),
       el("div", { style: { marginTop: "12px" } }, [
-        el("button.btn.sm", { onclick: function () { if (confirm("Reset milestone counters to 0? (Notes are preserved.)")) { store.update(function (c) { c.milestones = c.milestones || {}; c.milestones.major = 0; c.milestones.minor = 0; }); } } }, "RESET MILESTONES")
+        el("button.btn.sm", { onclick: function () { store.update(function (c) { c.milestones = c.milestones || {}; c.milestones.major = 0; c.milestones.minor = 0; }); toast("Milestone counters reset."); } }, "RESET MILESTONES")
       ]),
       el("div", { style: { marginTop: "12px" } }, [
         el("label.fl", { text: "Milestone Notes (preserved on reset)" }),
@@ -1842,11 +1850,13 @@ EN.builder = (function () {
         cur.type === "attr" ? attrUpgradeSummary(cur) :
         cur.type === "evolution" ? (cur.evolution || "Evolution, choose") :
         cur.type === "talentUpgrade" ? (cur.talent ? "Upgrade: " + talentName(cur.talent) : "Talent Upgrade, choose") :
-        (cur.talent ? talentName(cur.talent) : "Talent, choose")
+        (cur.talent ? talentName(cur.talent) + (talentAttrPendingIn(ch, cur) ? " · choose an Attribute" : "") : "Talent, choose")
       ) : "Unspent";
       blocks.push(collapsibleEntry("uu-" + L, {
         title: "Level " + L + " · Universal Upgrade", summary: summary,
-        attention: !cur, dismissKey: "L" + d.level, attentionTitle: "Unspent Universal Upgrade; click to dismiss",
+        attention: !cur || talentAttrPendingIn(ch, cur), dismissKey: "L" + d.level,
+        attentionTitle: !cur ? "Unspent Universal Upgrade; click to dismiss"
+                             : "This Talent raises an Attribute and you have not chosen which; click to dismiss",
         filled: !!cur, body: universalUpgradePicker(ch, L)
       }));
       // Level 4 Awakening Milestone, a free, evolution-only bonus slot
@@ -1874,6 +1884,7 @@ EN.builder = (function () {
       c.level = lvl;
       // clean upgrade choices above the new level
       Object.keys(c.universalUpgrades || {}).forEach(function (k) { if (Number(k) > lvl) delete c.universalUpgrades[k]; });
+      pruneTalentAttrPicks(c);
       if (lvl < 4) c.awakeningEvolution = null;
     });
   }
@@ -1881,10 +1892,10 @@ EN.builder = (function () {
     var cur = (ch.universalUpgrades || {})[L];
     var wrap = el("div", { style: { margin: "0 0 10px 14px", paddingLeft: "10px", borderLeft: "1px dashed var(--border2)" } });
     wrap.appendChild(el("div.row.wrap", { style: { gap: "8px", marginBottom: "8px" } }, [
-      el("button.btn.sm" + (cur && cur.type === "attr" ? ".primary" : ""), { onclick: function () { store.update(function (c) { var p = c.universalUpgrades[L]; var a = (p && p.attrs) || ["", ""]; c.universalUpgrades[L] = { type: "attr", attrs: [a[0] || "", a[1] || ""] }; }); } }, "+2 ATTRIBUTES"),
+      el("button.btn.sm" + (cur && cur.type === "attr" ? ".primary" : ""), { onclick: function () { store.update(function (c) { var p = c.universalUpgrades[L]; var a = (p && p.attrs) || ["", ""]; c.universalUpgrades[L] = { type: "attr", attrs: [a[0] || "", a[1] || ""] }; pruneTalentAttrPicks(c); }); } }, "+2 ATTRIBUTES"),
       el("button.btn.sm" + (cur && cur.type === "talent" ? ".primary" : ""), { onclick: function () { store.update(function (c) { var p = c.universalUpgrades[L]; c.universalUpgrades[L] = { type: "talent", talent: (p && p.talent) || null }; }); } }, "GAIN TALENT"),
-      el("button.btn.sm" + (cur && cur.type === "evolution" ? ".primary" : ""), { onclick: function () { store.update(function (c) { var p = c.universalUpgrades[L]; c.universalUpgrades[L] = { type: "evolution", evolution: (p && p.evolution) || null }; }); } }, "GAIN EVOLUTION"),
-      Number(L) >= 6 ? el("button.btn.sm" + (cur && cur.type === "talentUpgrade" ? ".primary" : ""), { title: "Spend this slot to unlock the Upgrade of a Talent you already have", onclick: function () { store.update(function (c) { var p = c.universalUpgrades[L]; c.universalUpgrades[L] = { type: "talentUpgrade", talent: (p && p.talent) || null }; }); } }, "UPGRADE TALENT") : null
+      el("button.btn.sm" + (cur && cur.type === "evolution" ? ".primary" : ""), { onclick: function () { store.update(function (c) { var p = c.universalUpgrades[L]; c.universalUpgrades[L] = { type: "evolution", evolution: (p && p.evolution) || null }; pruneTalentAttrPicks(c); }); } }, "GAIN EVOLUTION"),
+      Number(L) >= 6 ? el("button.btn.sm" + (cur && cur.type === "talentUpgrade" ? ".primary" : ""), { title: "Spend this slot to unlock the Upgrade of a Talent you already have", onclick: function () { store.update(function (c) { var p = c.universalUpgrades[L]; c.universalUpgrades[L] = { type: "talentUpgrade", talent: (p && p.talent) || null }; pruneTalentAttrPicks(c); }); } }, "UPGRADE TALENT") : null
     ]));
     if (cur && cur.type === "evolution") {
       wrap.appendChild(evolutionSelect(ch, cur.evolution, function (name) { store.update(function (c) { c.universalUpgrades[L] = { type: "evolution", evolution: name }; }); }));
@@ -1916,7 +1927,41 @@ EN.builder = (function () {
     }
     return wrap;
   }
-  function talentName(key) { var t = (EN.talents || []).find(function (x) { return x.key === key; }); return t ? t.name : "Talent"; }
+  /* THE one clearer of Talent attribute picks, written as the invariant rather than as
+     per-site bookkeeping: a pick may exist only for a Talent some slot still holds.
+     Call it after ANY mutation of universalUpgrades and it is correct, which is why it
+     sweeps rather than taking a key. A pick is a statement about a Talent the character
+     HAS, so once no slot holds that Talent the pick is unattributable and is dropped, not
+     carried across to whatever replaced it.
+     The four ways a Talent can leave: swapped out in its own picker, the slot repointed
+     at attributes, an evolution or an upgrade, and the level lowered past the slot. */
+  /* Does this slot hold a Talent whose Attribute choice is still unanswered? A slot-shaped
+     wrapper over the engine's talentAttrPending, so the summary and the attention dot ask
+     the same question the picker answers. */
+  function talentAttrPendingIn(ch, slot) {
+    if (!slot || slot.type !== "talent" || !slot.talent) return false;
+    var k = eng.canonTalentKey(slot.talent);
+    return !!k && eng.talentAttrPending(ch, k);
+  }
+  function pruneTalentAttrPicks(c) {
+    if (!c.talentAttrPicks) return;
+    var held = Object.create(null);
+    Object.keys(c.universalUpgrades || {}).forEach(function (lv) {
+      var u = c.universalUpgrades[lv];
+      if (!u || u.type !== "talent") return;
+      var k = eng.canonTalentKey(u.talent);
+      if (k) held[k] = 1;
+    });
+    Object.keys(c.talentAttrPicks).forEach(function (k) { if (!held[k]) delete c.talentAttrPicks[k]; });
+  }
+  /* A slot can store a Talent by key OR by display name, which activeTalents has always
+     accepted. This resolved by key only, so a name-stored slot summarised as the literal
+     word "Talent". Routed through the engine's one canonicalizer. */
+  function talentName(keyOrName) {
+    var k = eng.canonTalentKey(keyOrName);
+    var t = k ? (EN.talents || []).find(function (x) { return x.key === k; }) : null;
+    return t ? t.name : "Talent";
+  }
 
   // Lineage Evolution picker; works like the Talent picker, gated to your Lineage's
   // pool minus features you already have (the current slot's own pick stays selectable).
@@ -2059,7 +2104,29 @@ EN.builder = (function () {
         var keys = [m[1], m[2]].filter(Boolean).map(function (nm) { return REQ_ATTR[nm]; }).filter(Boolean);
         if (!keys.length) { out.advisory.push(c); return; }
         var need = Number(m[3]);
-        var best = Math.max.apply(null, keys.map(function (k) { return (d.attributes[k] && d.attributes[k].score) || 0; }));
+        /* Scored WITHOUT this Talent's own bump. Seven Talents gate on an attribute their
+           own opening bullet raises (Close-Quarters Brawler, Blade Weaver, Augment
+           Specialist, Crew Commander, Shadow Operative, Crowd Reader, Pain Editor), so
+           counting the point they grant would let a Talent prop up its own prerequisite:
+           qualify because you have it, have it because you qualified.
+           Subtracted from d.attributes rather than recomputed from effectiveAttributes,
+           because d.attributes is the score the whole sheet uses and it also carries
+           cyberware Enhancement Bonuses and the cap at 20. Recomputing would have made
+           the gate quietly stricter for anyone with chrome.
+           attrBumpSources is asked rather than talentAttr, because it counts only Talents
+           the character actually HOLDS: browsing an unheld Talent in the picker must not
+           subtract a point nobody has.
+           Self-exclusion, not level ordering. The picker records an author decision of
+           2026-08-01 not to gate retraining by level, and evaluating slots in level order
+           would reintroduce that gate through the back door. Another Talent's bump still
+           counts, which is correct: Augment Specialist should open a Tech 16 Talent. */
+        var mine = eng.attrBumpSources(ch);
+        var scoreOf = function (k) {
+          var sc = (d.attributes[k] && d.attributes[k].score) || 0;
+          var own = (mine[k] || []).some(function (x) { return x.kind === "talent" && x.key === t.key; });
+          return own ? sc - 1 : sc;
+        };
+        var best = Math.max.apply(null, keys.map(scoreOf));
         if (best < need) {
           out.ok = false;
           out.unmet.push([m[1], m[2]].filter(Boolean).join(" or ") + " " + need);
@@ -2112,6 +2179,7 @@ EN.builder = (function () {
             if (u && u.type === "talentUpgrade" && u.talent === dropped) c.universalUpgrades[k] = null;
           });
         }
+        pruneTalentAttrPicks(c);
       });
     } }, [el("option", { value: "", text: "- choose a Talent -" })]);
     /* A Talent held in ANOTHER slot cannot be taken again. It is not a quantity you
@@ -2148,8 +2216,48 @@ EN.builder = (function () {
     if (t) info = el("div.feature", { style: { marginTop: "8px" } }, [
       el("h4", null, [document.createTextNode(t.name), el("span.src", { text: t.category || "" })]),
       reqLine(ch, d, t),
+      talentAttrPicker(ch, t),
       renderText(t.text)]);
     return el("div", null, [sel, info]);
+  }
+  /* The attribute half of a Talent, which the sheet promised and never delivered: 36 of the
+     63 Talents open with "Increase your <ATTR> score by 1", and until this existed not one
+     of them moved a score, whether it offered a choice or not.
+     Three states, because the bullet has three shapes:
+       one option   the Talent names the attribute, so there is nothing to choose and the
+                    line just says what you got;
+       two or three the bullet's own menu, in the order it prints them;
+       any          "one Attribute score of your choice", so all six.
+     The select imitates the +2 ATTRIBUTES dropdown above rather than inventing a control,
+     and its blank option is a real state: no pick, no point. */
+  function talentAttrPicker(ch, t) {
+    var opts = eng.talentAttrOptions(t.key);
+    if (!opts) return null;
+    var cur = eng.talentAttr(ch, t.key);
+    var names = function (k) { var a = R.attributes.find(function (x) { return x.key === k; }); return a ? a.name : k; };
+    if (opts.length === 1) {
+      return el("p.help", { style: { margin: "0 0 6px", color: "var(--success)" },
+        text: "Raises " + names(opts[0]) + " by 1 (maximum 20). No choice to make." });
+    }
+    var sel = el("select", { style: { maxWidth: "210px" }, onchange: function (e) {
+      var v = e.target.value || null;
+      store.update(function (c) {
+        c.talentAttrPicks = c.talentAttrPicks || Object.create(null);
+        if (v) c.talentAttrPicks[t.key] = v;
+        else delete c.talentAttrPicks[t.key];
+      });
+    } }, [el("option", { value: "", selected: !cur, text: "- choose an Attribute -" })].concat(
+      opts.map(function (k) { return el("option", { value: k, selected: cur === k, text: names(k) + " +1" }); })));
+    return el("div", { style: { margin: "0 0 8px" } }, [
+      el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
+        el("label.fl", { style: { margin: 0 }, text: "Raises" }), sel,
+        cur ? null : el("span.chip", { style: { fontSize: "9px", color: "var(--warn)", borderColor: "var(--warn)" },
+          title: "This Talent grants +1 to an Attribute and you have not said which, so it is granting nothing." }, "UNCHOSEN")
+      ]),
+      el("p.help", { style: { marginTop: "4px" },
+        text: cur ? "Applied to your sheet, to a maximum of 20."
+                  : "This Talent raises one Attribute by 1. Until you choose, it raises none." })
+    ]);
   }
   /* The requirement line reads differently depending on whether it is satisfied:
      green when met, red naming exactly what is short when not, and a neutral
@@ -2303,8 +2411,27 @@ EN.builder = (function () {
     blocks.push(el("div.row.wrap", null, [
       el("button.btn", { onclick: function () { exportChar(ch); } }, "⤓ EXPORT RECORD (.JSON)"),
       el("button.btn", { onclick: function () { EN.printSheet.open(); } }, "⎙ PRINT HARDCOPY"),
-      el("button.btn.danger", { onclick: function () { if (confirm("Revoke and permanently delete this #PRINT record? This cannot be undone.")) { store.remove(ch.meta.id); EN.app.render(); } } }, "✕ REVOKE #PRINT")
+      /* REVOKE only makes sense for a record the player OWNS. An example is not in the roster,
+         so store.remove(ch.meta.id) matched nothing and the button confirmed a permanent
+         deletion and then silently did nothing at all, which reads as "I cannot delete my
+         characters". An example has nothing to revoke, so it is offered adoption instead. */
+      store.activeIsExample && store.activeIsExample()
+        ? el("button.btn", { style: { color: "var(--accent)", borderColor: "var(--accent)" },
+            title: "Copy this example into your own roster as an editable record",
+            onclick: function () {
+              var made = store.adoptExample();
+              if (made) { _step = 0; EN.ui.toast(made.name + " saved to your roster."); EN.app.render(); }
+            } }, "⇒ SAVE AS MY OWN")
+        : EN.ui.armButton("revoke:" + ch.meta.id, {
+            small: false, label: "✕ REVOKE #PRINT", armedLabel: "SURE? REVOKE PERMANENTLY",
+            title: "Revoke and permanently delete this record",
+            onConfirm: function () { store.remove(ch.meta.id); toast("Record revoked."); EN.app.render(); }
+          })
     ]));
+    if (store.activeIsExample && store.activeIsExample()) {
+      blocks.push(el("p.help", { style: { margin: "8px 0 0", fontSize: "11px", color: "var(--gold)" },
+        text: "This is a pre-made example. It is not stored, so there is nothing to revoke: edits are live but reset when you reload. Save it as your own to keep changes." }));
+    }
     return el("div", null, blocks);
   }
   function exportChar(ch) {
@@ -2412,6 +2539,10 @@ EN.builder = (function () {
   function render(mount) {
     var ch = store.active();
     clear(mount);
+    /* The manager mounts BEFORE the early return, so it is reachable with an empty roster.
+       That is exactly when it matters most: no records means no page to open it from, and
+       import is the only way back in. It is fixed-position, so DOM order does not matter. */
+    if (_mgrOpen) mount.appendChild(managerPanel());
     if (!ch || _intake) { mount.appendChild(rosterGate()); return; }
     var d = eng.derive(ch);
 
@@ -2469,7 +2600,12 @@ EN.builder = (function () {
       if (u.type === "attr") {
         if (u.attrs) { if (!(u.attrs[0] && u.attrs[1])) return false; }
         else if (!u.attr) return false;   // legacy single-attr shape
-      } else if (u.type === "talent") { if (!u.talent) return false; }
+      } else if (u.type === "talent") {
+        if (!u.talent) return false;
+        // a Talent whose Attribute is unchosen is a slot still owed an answer, exactly
+        // like an attr slot missing one of its two picks above
+        if (talentAttrPendingIn(ch, u)) return false;
+      }
       else if (u.type === "talentUpgrade") { if (!u.talent) return false; }
       else if (u.type === "evolution") { if (!u.evolution) return false; }
       else return false;
@@ -2505,11 +2641,63 @@ EN.builder = (function () {
       var level = typeof r.level === "number" ? r.level : 1;
       return name + " · L" + level;
     }
+    /* The player's own records first, then the pre-made EXAMPLES. Examples are live but not
+       owned: selecting one makes it active without touching the roster, and any edits die on
+       reload. That is the point of them, and it is why they cannot be lost the way a real
+       record can. */
+    var exActive = store.activeIsExample && store.activeIsExample();
+    var kids = ids.map(function (id) {
+      return el("option", { value: id, selected: !exActive && id === ch.meta.id, text: labelFor(roster[id]) });
+    });
+    kids.push(el("option", { value: "__new", text: "+ Register New #PRINT" }));
+    if ((EN.examples || []).length) {
+      kids.push(el("optgroup", { label: "EXAMPLES (not saved)" }, EN.examples.map(function (x) {
+        return el("option", { value: "__ex:" + x.key, selected: exActive && ch.meta.example === x.key,
+          text: x.label + " · " + x.name });
+      })));
+    }
+    kids.push(el("option", { value: "__manage", text: "⚙ Manage characters..." }));
     var sel = el("select", { style: { width: "auto", minWidth: "160px" }, onchange: function (e) {
-      if (e.target.value === "__new") { _intake = true; EN.app.render(); return; }
-      store.setActive(e.target.value); _step = 0; EN.app.render();
-    } }, ids.map(function (id) { return el("option", { value: id, selected: id === ch.meta.id, text: labelFor(roster[id]) }); }).concat([el("option", { value: "__new", text: "+ Register New #PRINT" })]));
-    return el("div.row", null, [el("label.fl", { style: { margin: 0 }, text: "On File" }), sel]);
+      var v = e.target.value;
+      if (v === "__new") { _intake = true; EN.app.render(); return; }
+      if (v === "__manage") { openManager(); return; }
+      if (v.indexOf("__ex:") === 0) { store.setExample(v.slice(5)); _step = 0; EN.app.render(); return; }
+      store.setActive(v); _step = 0; EN.app.render();
+    } }, kids);
+    return el("div.row", { style: { alignItems: "center", gap: "8px" } }, [
+      el("label.fl", { style: { margin: 0 }, text: "On File" }), sel,
+      exActive ? el("span.chip", { style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" },
+        title: "A pre-made example. Edits are live but are not saved, and reloading restores it." }, "EXAMPLE") : null,
+      exActive ? el("button.btn.sm", { style: { color: "var(--accent)", borderColor: "var(--accent)" },
+        title: "Copy this example into your own roster as an editable character",
+        onclick: function () {
+          var made = store.adoptExample();
+          if (made) { _step = 0; EN.ui.toast(made.name + " saved to your roster."); EN.app.render(); }
+        } }, "⇒ SAVE AS MY OWN") : null
+    ]);
+  }
+  /* The pre-mades are offered on the gate as well as in the switcher, because the switcher needs
+     a loaded character to render: with an empty roster the seven examples were unreachable, which
+     is exactly backwards for the one screen a brand new player sees. Opening one does not touch
+     the roster, so NO #PRINT ON FILE is still true afterwards and this gate comes straight back
+     the moment the example is dropped. */
+  function premadeGrid() {
+    var xs = EN.examples || [];
+    if (!xs.length) return null;
+    return el("div.pm-wrap", null, [
+      el("div.pm-sect", null, [el("span.line"), document.createTextNode("or open a pre-made Freelancer"), el("span.line")]),
+      el("p.help", { style: { margin: "0 0 12px" },
+        text: "Seven finished Level 5 Freelancers, one per class. They open live but are never saved: change whatever you like, and a reload restores the original. Press SAVE AS MY OWN to keep one." }),
+      el("div.pm-grid", null, xs.map(function (x) {
+        return el("button.pm-card", { title: "Open " + x.name, onclick: function () {
+          if (store.setExample(x.key)) { _intake = false; _step = 0; EN.app.render(); }
+        } }, [
+          el("span.pm-class", { text: String(x.label || "").toUpperCase() }),
+          el("span.pm-name", { text: x.name }),
+          el("span.pm-blurb", { text: x.blurb || "" })
+        ]);
+      }))
+    ]);
   }
   function rosterGate() {
     var hasExisting = !!store.active();   // reached via "+ Register" while records already exist
@@ -2519,14 +2707,169 @@ EN.builder = (function () {
       el("button.btn.primary", { onclick: function () { _intake = false; store.createAndActivate(""); _step = 0; EN.app.render(); } }, "+ REGISTER NEW #PRINT"),
       el("div", { style: { height: "12px" } }),
       el("button.btn.ghost", { onclick: function () { importPrompt(); } }, "⤒ IMPORT RECORD (.JSON)"),
+      premadeGrid(),
       hasExisting ? el("div", { style: { height: "20px" } }) : null,
       hasExisting ? el("button.btn.ghost", { style: { color: "var(--text3)", borderColor: "var(--border2)" }, onclick: function () { _intake = false; EN.app.render(); } }, "← BACK TO CURRENT #PRINT") : null
     ]);
   }
+  /* ===== MANAGE #PRINT RECORDS ==========================================
+     Everything that acts ACROSS characters lives here: pick, rename, export, delete, import,
+     and the batch forms of export and delete. Every other surface in the app edits exactly one
+     character, which is why none of this fitted on a page and why it is an overlay.
+
+     Examples are listed but deliberately cannot be renamed, deleted or batch-selected: they are
+     not in the roster, so there is nothing to act on. They are offered adoption instead. That is
+     the same distinction that made REVOKE silently do nothing before this panel existed. */
+  var _mgrOpen = false, _mgrSel = {};
+  function openManager() { _mgrOpen = true; _mgrSel = {}; EN.ui.disarm(); EN.app.render(); }
+  function closeManager() { _mgrOpen = false; _mgrSel = {}; EN.ui.disarm(); EN.app.render(); }
+  function managerOpen() { return _mgrOpen; }
+
+  function mgrSelectedIds() {
+    var roster = store.roster();
+    return Object.keys(_mgrSel).filter(function (id) { return _mgrSel[id] && roster[id]; });
+  }
+  /* Batch export writes ONE file holding an array, not N downloads: browsers throttle or
+     silently drop rapid repeat downloads, and a single bundle re-imports in one action.
+     importPrompt accepts either shape. */
+  function exportMany(ids) {
+    var roster = store.roster();
+    var payload = ids.map(function (id) {
+      var ch = roster[id];
+      if (EN.theme && EN.theme.bundleFor) {
+        var defs = EN.theme.bundleFor(ch);
+        if (defs.length) return Object.assign({}, ch, { customThemes: defs });
+      }
+      return ch;
+    });
+    var blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "elysium_records_" + payload.length + ".json";
+    a.click();
+    toast(payload.length + " records exported.");
+  }
+  /* Rename writes firstName and lastName, never ch.name. migrate() recomposes the display name
+     from those on every load, so a name written directly reverts on the next reload. Splitting
+     on the first space is the same rule newCharacter() already uses to turn a typed name into
+     fields, so this panel and the intake form agree. */
+  function mgrRename(id, raw) {
+    var parts = String(raw || "").trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return;
+    var first = parts[0], last = parts.slice(1).join(" ");
+    var wasEx = !!(store.activeIsExample && store.activeIsExample());
+    var was = store.active() && store.active().meta.id;
+    store.setActive(id);
+    store.update(function (c) {
+      c.firstName = first; c.lastName = last;
+      c.name = store.composeFullName(first, (c.identity && c.identity.handle) || "", last);
+    }, { immediate: true });
+    if (!wasEx && was && was !== id && store.roster()[was]) store.setActive(was);
+  }
+
+  function managerPanel() {
+    var roster = store.roster();
+    var ids = Object.keys(roster);
+    var isEx = !!(store.activeIsExample && store.activeIsExample());
+    var liveId = store.active() && store.active().meta.id;
+    var sel = mgrSelectedIds();
+
+    function metaOf(r) {
+      var lvl = typeof r.level === "number" ? r.level : 1;
+      return "L" + lvl + " · " + (r.class ? String(r.class).toUpperCase() : "NO CLASS");
+    }
+
+    var rows = [];
+    rows.push(el("div.mgr-sect", null, [document.createTextNode("Your records (" + ids.length + ")"), el("span.line")]));
+    if (!ids.length) rows.push(el("p.help", { style: { margin: "2px 0 6px" }, text: "No records yet. Register one, or import a .json file." }));
+    ids.forEach(function (id) {
+      var r = roster[id];
+      var live = !isEx && id === liveId;
+      rows.push(el("div.mgr-row" + (live ? ".live" : ""), null, [
+        el("input", { type: "checkbox", checked: !!_mgrSel[id], title: "Select for batch actions",
+          onchange: function (e) { _mgrSel[id] = e.target.checked; EN.app.render(); } }),
+        el("input.mgr-name", { value: typeof r.name === "string" ? r.name : "",
+          title: "Rename. The first word becomes the first name, the rest the last name.",
+          onchange: function (e) { mgrRename(id, e.target.value); EN.app.render(); } }),
+        el("span.mgr-meta", { text: metaOf(r) }),
+        live ? el("span.chip", { style: { fontSize: "9px", color: "var(--accent)", borderColor: "var(--accent)" } }, "LIVE")
+             : el("button.btn.sm", { title: "Make this the live record", onclick: function () { store.setActive(id); _step = 0; closeManager(); } }, "OPEN"),
+        el("button.btn.sm", { title: "Export this record as .json", onclick: function () { exportChar(roster[id]); } }, "⤓"),
+        EN.ui.armButton("del:" + id, {
+          label: "✕", armedLabel: "SURE?",
+          title: "Delete this record permanently",
+          onConfirm: function () { store.remove(id); delete _mgrSel[id]; toast("Record deleted."); EN.app.render(); }
+        })
+      ]));
+    });
+
+    if ((EN.examples || []).length) {
+      rows.push(el("div.mgr-sect", null, [document.createTextNode("Examples (not saved)"), el("span.line")]));
+      EN.examples.forEach(function (x) {
+        var liveEx = isEx && store.active().meta.example === x.key;
+        rows.push(el("div.mgr-row" + (liveEx ? ".live" : ""), null, [
+          el("span", { style: { width: "13px", flex: "0 0 auto" } }),
+          el("span.mgr-fixed", { text: x.name }),
+          el("span.mgr-meta", { text: "L5 · " + x.label.toUpperCase() }),
+          liveEx ? el("span.chip", { style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" } }, "LIVE")
+                 : el("button.btn.sm", { title: "Open this example", onclick: function () { store.setExample(x.key); _step = 0; closeManager(); } }, "OPEN"),
+          el("button.btn.sm", { style: { color: "var(--accent)", borderColor: "var(--accent)" },
+            title: "Copy this example into your roster as an editable record",
+            onclick: function () {
+              store.setExample(x.key);
+              var made = store.adoptExample();
+              if (made) { toast(made.name + " saved to your roster."); EN.app.render(); }
+            } }, "⇒ ADOPT")
+        ]));
+      });
+    }
+
+    var card = el("div.mgr-card", null, [
+      el("div.mgr-head", null, [
+        el("h3", { text: "Manage #PRINT records" }),
+        el("span.mgr-count", { text: ids.length + " stored · " + (EN.examples || []).length + " examples" }),
+        el("span", { style: { flex: "1 1 auto" } }),
+        el("button.btn.sm", { onclick: closeManager }, "✕ CLOSE")
+      ]),
+      el("div.mgr-tools", null, [
+        el("button.btn.sm", { title: "Import one record, or a bundle of them", onclick: function () { importPrompt(); } }, "⤒ IMPORT"),
+        el("button.btn.sm", { disabled: !sel.length, title: "Export the selected records as one .json bundle",
+          onclick: function () { exportMany(mgrSelectedIds()); } }, "⤓ EXPORT SELECTED" + (sel.length ? " (" + sel.length + ")" : "")),
+        sel.length ? EN.ui.armButton("delbatch", {
+          label: "✕ DELETE SELECTED (" + sel.length + ")",
+          armedLabel: "SURE? DELETE " + sel.length,
+          title: "Delete every selected record",
+          onConfirm: function () {
+            var picked = mgrSelectedIds();
+            picked.forEach(function (id) { store.remove(id); delete _mgrSel[id]; });
+            toast(picked.length + " records deleted."); EN.app.render();
+          }
+        }) : el("button.btn.sm.danger", { disabled: true, title: "Select records first" }, "✕ DELETE SELECTED"),
+        el("span", { style: { flex: "1 1 auto" } }),
+        ids.length ? el("button.btn.sm", { title: "Select or clear every stored record",
+          onclick: function () { var all = sel.length === ids.length; ids.forEach(function (id) { _mgrSel[id] = !all; }); EN.app.render(); } },
+          sel.length === ids.length ? "CLEAR ALL" : "SELECT ALL") : null
+      ]),
+      el("div.mgr-list", null, rows)
+    ]);
+    var ov = el("div", { id: "mgr", onclick: function (e) { if (e.target === ov) closeManager(); } }, [card]);
+    return ov;
+  }
+
   function importPrompt() {
     var inp = el("input", { type: "file", accept: ".json", style: { display: "none" }, onchange: function (e) {
       var f = e.target.files[0]; if (!f) return; var r = new FileReader();
-      r.onload = function () { try { store.importCharacter(JSON.parse(r.result)); _intake = false; _step = 0; EN.app.render(); toast("Imported."); } catch (err) { toast("Invalid file."); } };
+      r.onload = function () {
+        try {
+          var parsed = JSON.parse(r.result);
+          // a bundle from EXPORT SELECTED is an array; a single record is an object
+          var list = Array.isArray(parsed) ? parsed : [parsed];
+          if (!list.length) { toast("That file holds no records."); return; }
+          list.forEach(function (o) { store.importCharacter(o); });
+          _intake = false; _step = 0; EN.app.render();
+          toast(list.length === 1 ? "Imported." : "Imported " + list.length + " records.");
+        } catch (err) { toast("Invalid file."); }
+      };
       r.readAsText(f);
     } });
     document.body.appendChild(inp); inp.click(); setTimeout(function () { inp.remove(); }, 1000);

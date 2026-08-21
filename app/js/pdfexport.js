@@ -826,8 +826,24 @@ EN.pdfExport = (function () {
       uuKeys.sort(function (a, b) { return Number(a) - Number(b); }).forEach(function (lv) {
         var u = uu[lv] || {};
         var talName = function (k) { var t = (EN.talents || []).find(function (x) { return x.key === k || x.name === k; }); return t ? t.name : (k || ""); };
-        var what = u.type === "attr" ? ("+1 " + (u.attr || "Attribute"))
-          : u.type === "talent" ? ("Talent: " + talName(u.talent))
+        /* An attr slot has been {attrs:[key,key]} since the two-pick shape landed; reading
+           only the legacy u.attr printed a bare "+1 Attribute" on every modern record and
+           named nothing. Both shapes are read here, and a Talent that raises an Attribute
+           now says which, so a printed sheet does not leave that argument on the table. */
+        var attrName = function (k) { var a = (EN.rules.attributes || []).find(function (x) { return x.key === k; }); return a ? a.name : k; };
+        var attrWhat = function () {
+          var keys = (u.attrs && u.attrs.length) ? u.attrs.filter(Boolean) : (u.attr ? [u.attr] : []);
+          if (!keys.length) return "+1 Attribute";
+          if (keys.length === 2 && keys[0] === keys[1]) return "+2 " + attrName(keys[0]);
+          return keys.map(function (k) { return "+1 " + attrName(k); }).join(", ");
+        };
+        var talWhat = function (k) {
+          var ck = EN.engine.canonTalentKey ? EN.engine.canonTalentKey(k) : k;
+          var raised = (ck && EN.engine.talentAttr) ? EN.engine.talentAttr(ch, ck) : null;
+          return talName(k) + (raised ? " (+1 " + attrName(raised) + ")" : "");
+        };
+        var what = u.type === "attr" ? attrWhat()
+          : u.type === "talent" ? ("Talent: " + talWhat(u.talent))
           : u.type === "talentUpgrade" ? ("Talent Upgrade: " + talName(u.talent))
           : u.type === "evolution" ? ("Lineage Evolution: " + (u.feature || u.name || ""))
           : (u.name || u.type || "choice");

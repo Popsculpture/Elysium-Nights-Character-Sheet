@@ -275,7 +275,8 @@ EN.settings = (function () {
       if (EN.theme.isCustom(t.key)) {
         kids.push(el("div.set-sw-actions", null, [
           el("button.set-sw-mini", { type: "button", title: "Edit this theme", onclick: function (e) { e.stopPropagation(); editExisting(t); } }, "✎ EDIT"),
-          el("button.set-sw-mini", { type: "button", title: "Delete this theme", onclick: function (e) { e.stopPropagation(); deleteTheme(t.key); } }, "✕")
+          EN.ui.armButton("swatch:" + t.key, { cls: ".set-sw-mini", label: "✕", armedLabel: "✕?",
+            title: "Delete this theme", onConfirm: function () { deleteTheme(t.key); } })
         ]));
       }
       return el("div.set-swatch" + (current === t.key ? ".on" : ""), {
@@ -333,7 +334,9 @@ EN.settings = (function () {
       el("button.btn.sm.primary", { onclick: saveEditing }, _editing.isNew ? "✓ SAVE THEME" : "✓ SAVE CHANGES"),
       el("button.btn.sm", { onclick: cancelEditing }, "CANCEL")
     ].concat(_editing.isNew ? [] : [
-      el("button.btn.sm.danger", { style: { marginLeft: "auto" }, onclick: function () { deleteTheme(_editing.key); } }, "✕ DELETE")
+      el("span", { style: { marginLeft: "auto" } }),
+      EN.ui.armButton("theme:" + _editing.key, { label: "✕ DELETE", armedLabel: "SURE?",
+        title: "Delete this custom theme", onConfirm: function () { deleteTheme(_editing.key); } })
     ]));
     return el("div.set-editor", null, [
       el("div.set-editor-h", { text: _editing.isNew ? "NEW CUSTOM THEME" : "EDIT THEME" }),
@@ -375,8 +378,8 @@ EN.settings = (function () {
     EN.theme.apply(EN.theme.get());   // revert the live preview to the recorded selection
     rebuild();
   }
+  // no browser dialog here either: both callers arm first, see EN.ui.armButton
   function deleteTheme(k) {
-    if (!confirm("Delete this custom theme? This cannot be undone.")) return;
     var wasSelected = EN.theme.get() === k;
     EN.theme.deleteCustom(k);
     _editing = null;

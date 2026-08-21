@@ -4305,6 +4305,64 @@ and fontkit is not vendored beside pdf-lib, so a real glyph there would mean ven
 plus embedding the font. Latin Modern's licence would now permit exactly that, which makes it
 a genuine option rather than a dead end.
 
+## Talent Attribute bumps, 2026-08-21: what was left open
+
+36 of the 63 Talents open with "Increase your <ATTR> score by 1, to a maximum of 20", and
+until this pass not one of them reached the sheet, choice or not. `TALENT_ATTR_BUMP` in
+`engine.js` now declares the options, `ch.talentAttrPicks` stores the answer where there is
+a choice, and `effectiveAttributes` sums `attrBumpSources` so no surface re-derives it.
+Four things were deliberately left alone.
+
+### Hardened Survivor needs a SECOND attribute, and cannot have one yet
+
+`talents.js:297` grants a Saving Throw Focus on the chosen Attribute, and forces a
+*different* Attribute for that benefit when the chosen one is already a class focus. So the
+Talent can need two stored values, and this pass stores one: the Attribute that gets the +1.
+
+Not half-fixed on purpose. **No Talent, background, species or implant can grant a Saving
+Throw Focus at all today**: `engine.js` sources `saveProfKeys` only from `cls.saveFocus`.
+The focus grant is a separate defect and wants its own field (`talentFocusPicks`, one field
+per mechanic, never one polymorphic field), not a second meaning bolted onto this one.
+
+### Four Talents read their own raised Attribute back, and still print as prose
+
+The pick makes these computable for the first time. None of them are wired.
+
+- **Trauma Medic** (`talents.js:469`): healing is `2d6 + Caliber + the modifier this Talent
+  raised`. Now resolvable via `eng.talentAttr(ch, "trauma-medic")`.
+- **Spatial Delivery** (`455`): the Upgrade's shove DC is `8 + your Wits or Mystique
+  modifier, whichever this Talent raised, + Caliber`.
+- **Resonance Dabbler** (`246`) and **Undercity Survivor** (`476`): "The primary attribute
+  for these checks is the Attribute increased by this Talent." Both also grant a learned
+  effect that has no record slot to attach to, so they need more than the attribute.
+
+### `ch.talents` is a dead field with live readers
+
+Born at `store.js` in `newCharacter`, migrated with `TALENT_RENAMES`, read by
+`printsheet.js` and `pdfexport.js`, and **written by nothing in the app**. The live answer
+to "which Talents does this character have" is `engine.activeTalents`, off the Universal
+Upgrade slots. Two answers to one question, which is the invariant this codebase exists to
+keep. Reachable through `importCharacter`, so a hand-built or imported record can carry a
+`ch.talents` the rest of the app disagrees with. Not this change's to fix: the Talent
+attribute work keys every pick off `activeTalents` and never touches `ch.talents`.
+
+### A bump swallowed at 20 says nothing
+
+If a resolved bump lands on an Attribute already at 20 the point is silently lost. The
+codebase has already ruled this class of silence unacceptable once: `duplicateTalentSlots`
+exists purely so the builder can say "this slot is buying nothing". The same note belongs
+here, softer, because the pick is legal and the rest of the Talent still works. Left out to
+keep this pass to the defect. Note the wrinkle if it is picked up: when a Universal Upgrade
+pick and a Talent bump both aim at an Attribute sitting at 20, which one was wasted is
+genuinely undefined, and unattributable state does not get guessed.
+
+### Also fixed in passing, recorded so it is not re-found
+
+`createAndActivate` did not clear `state.example`, and `active()` answers with the example
+first. Registering a new #PRINT while an example was open filed the record in the roster and
+left the player looking at the example with nothing on screen changed. `setActive` and
+`adoptExample` had always cleared it; this was missed when examples landed.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

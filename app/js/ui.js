@@ -475,7 +475,39 @@ EN.ui = (function () {
     });
   }
 
+  /* ===== CONFIRM WITHOUT window.confirm ==================================
+     Every destructive action used to sit behind confirm(). That is not dependable: browsers
+     suppress dialogs once a user ticks "prevent additional dialogs", and some block them
+     outright. A suppressed confirm() returns FALSE INSTANTLY, so the guarded action silently
+     does nothing and the app looks broken with no error anywhere. Measured here returning
+     false in 2ms with no dialog shown, which is exactly what "I cannot delete my characters"
+     looked like from the outside.
+
+     So confirmation is in-app: the first click ARMS the button and it relabels, the second
+     click commits. No dialog, no browser cooperation needed, and the armed state is visible
+     rather than modal. Arming is a single global slot, so arming one button disarms any
+     other; disarm() is called when a panel opens or closes. */
+  var _armedKey = null;
+  function disarm() { _armedKey = null; }
+  function isArmed(key) { return _armedKey === key; }
+  function armButton(key, opts) {
+    opts = opts || {};
+    var armed = _armedKey === key;
+    // opts.cls lets a caller keep its own styling (a swatch mini-button, say) and still arm
+    var cls = opts.cls ? ("button" + opts.cls + (armed ? ".primary" : ""))
+                       : ("button.btn" + (opts.small === false ? "" : ".sm") + ".danger" + (armed ? ".primary" : ""));
+    return el(cls, {
+      title: armed ? (opts.armedTitle || "Click again to confirm. This cannot be undone.") : (opts.title || ""),
+      onclick: function (e) {
+        if (e && e.stopPropagation) e.stopPropagation();
+        if (armed) { _armedKey = null; if (opts.onConfirm) opts.onConfirm(); }
+        else { _armedKey = key; EN.app.render(); }
+      }
+    }, armed ? (opts.armedLabel || "SURE?") : opts.label);
+  }
+
   return { el: el, append: append, clear: clear, panel: panel, sectionTitle: sectionTitle, stat: stat, toast: toast, renderText: renderText, applyInline: applyInline,
            currencyGlyphsOk: currencyGlyphsOk, substituteCurrencyGlyphs: substituteCurrencyGlyphs,
-           dieFace: dieFace, dieFaceSvg: dieFaceSvg, d20Face: d20Face, animatePoolRoll: animatePoolRoll, playFiled: playFiled };
+           dieFace: dieFace, dieFaceSvg: dieFaceSvg, d20Face: d20Face, animatePoolRoll: animatePoolRoll, playFiled: playFiled,
+           armButton: armButton, disarm: disarm, isArmed: isArmed };
 })();
