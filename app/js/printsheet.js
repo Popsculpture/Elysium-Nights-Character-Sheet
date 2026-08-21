@@ -348,18 +348,6 @@ EN.printSheet = (function () {
   }
 
   /* ---- special senses granted by features ---- */
-  var SENSE_GRANTS = {
-    "Lowlight Optics": { sense: "Darkvision", range: "12 sp." },
-    "Predator's Glare": { sense: "Darkvision", range: "6 sp." },
-    "Fungal Network": { sense: "Tremor Sense", range: "6 sp." },
-    "Seismic Sense": { sense: "Tremor Sense", range: "8 sp." },
-    "Warmblood Sense": { sense: "Heat Sense", range: "6 sp." },
-    "Blood-Scent Tracker": { sense: "Blood Scent", range: "6 sp." },
-    "Disturbance Compass": { sense: "Flow Sense", range: "12 sp." },
-    "Scent Marker": { sense: "Scent Tracking", range: "1 mile" },
-    "The Machine Medium": { sense: "Sprite Sight", range: "passive" },
-    "Echo Sighted": { sense: "Resonance Sense", range: "12 sp." }
-  };
   function proficientCats(ch, bucket) {
     return ((EN.rules.gear || {})[bucket] || []).filter(function (cat) { return eng.effectiveGearTier(ch, bucket, cat) !== "untrained"; });
   }
@@ -475,7 +463,10 @@ EN.printSheet = (function () {
       var s = (d.skills || []).find(function (x) { return x.key === k; });
       if (s) L.push(el("div.ps-skrow", null, [el("span.ps-sk-n", { text: "Passive " + s.name }), el("span.ps-sk-b", { text: s.passive })]));
     });
-    var special = (d.features || []).map(function (f) { var g = SENSE_GRANTS[f.name]; return g ? el("div.ps-skrow", null, [el("span.ps-sk-n", { text: g.sense }), el("span.ps-sk-a", { text: f.name }), el("span.ps-sk-b2", { text: g.range })]) : null; }).filter(Boolean);
+    // one table, in the engine; this file's copy had drifted from the app's
+    var special = eng.senseGrants((d.features || []).map(function (f) { return f.name; })).map(function (g) {
+      return el("div.ps-skrow", null, [el("span.ps-sk-n", { text: g.sense }), el("span.ps-sk-a", { text: g.feature }), el("span.ps-sk-b2", { text: g.range })]);
+    });
     if (special.length) { L.push(sect("Special Senses")); special.forEach(function (r) { L.push(r); }); }
 
     /* ===== RIGHT column: Vitality & Wounds, Attacks, Abilities, Proficiencies ===== */

@@ -651,14 +651,8 @@ EN.pdfExport = (function () {
       if (s) passiveRows.push({ name: "Passive " + s.name, val: s.passive });
     });
     ctx.table([{ header: "Sense", key: "name", w: 2, type: "static" }, { header: "Value", key: "val", w: "50px", align: "center" }], "passive", passiveRows);
-    var SENSE_GRANTS = {
-      "Lowlight Optics": { sense: "Darkvision", range: "12 sp." }, "Predator's Glare": { sense: "Darkvision", range: "6 sp." },
-      "Fungal Network": { sense: "Tremor Sense", range: "6 sp." }, "Seismic Sense": { sense: "Tremor Sense", range: "8 sp." },
-      "Warmblood Sense": { sense: "Heat Sense", range: "6 sp." }, "Blood-Scent Tracker": { sense: "Blood Scent", range: "6 sp." },
-      "Disturbance Compass": { sense: "Flow Sense", range: "12 sp." }, "Scent Marker": { sense: "Scent Tracking", range: "1 mile" },
-      "The Machine Medium": { sense: "Sprite Sight", range: "passive" }, "Echo Sighted": { sense: "Resonance Sense", range: "12 sp." }
-    };
-    var special = (d.features || []).map(function (f) { var g = SENSE_GRANTS[f.name]; return g ? { name: g.sense, val: g.range } : null; }).filter(Boolean);
+    // one table, in the engine; this file's copy had drifted from the app's
+    var special = eng.senseGrants((d.features || []).map(function (f) { return f.name; })).map(function (g) { return { name: g.sense, val: g.range }; });
     if (special.length) ctx.table([{ header: "Special Sense", key: "name", w: 2, type: "static" }, { header: "Range", key: "val", w: "60px", align: "center" }], "specialSense", special);
 
     // vitality & wounds

@@ -471,13 +471,20 @@ EN.engine = (function () {
     "Ironhide Tusks":        { dr: 1 },
     "Slipstream Runner":     { speed: 2 },
     "Calibrated Gait":       { speed: 1 },
-    "Static Premonition":    { initCaliber: true },
+    "Static Premonition":    { initCaliber: true, condImmune: ["Surprised"] },
     "Tuned Synapses":        { initEdge: true, speedFirstRound: 2 },
     "Synthetic Musculature": { unarmedStep: 1 },
     "Briar Strike":          { unarmed: { die: "1d6", type: "Piercing or Slashing", traits: "Light, Finesse",
                                  note: "pick the type each turn; Bleeding on a crit" } },
-    "Brutal Frame":          { unarmed: { die: "1d6", type: "Bludgeoning or Slashing",
-                                 note: "pick the type each strike; +1d4 and push 1 space against a Target at least one Size smaller" } },
+    /* Two errors lived in this one row. The strike is 1d6 BLUDGEONING; the "or Slashing"
+       choice belongs to the additional 1d4, not to the strike. And that 1d4 sat inside the
+       note as prose, so it never reached the printed damage, while the identically shaped
+       Smelter's Hands and Envenomed Thorns riders below always did. The Size gate is on the
+       PUSH alone in the manuscript; welding it to the 1d4 understated the feature. */
+    "Brutal Frame":          { unarmed: { die: "1d6", type: "Bludgeoning",
+                                 note: "push 1 space against a Target smaller than you" },
+                               unarmedRider: { damage: "1d4 Bludgeoning or Slashing",
+                                 when: "on a hit", note: "pick the type each strike" } },
     "Butcher Spurs":         { unarmed: { die: "1d6", type: "Slashing", traits: "Finesse",
                                  note: "once per turn on a hit, Target Speed -2 until your next turn" } },
     "Scavenger's Maw":       { unarmed: { die: "1d6", type: "Piercing", note: "bite; +1 Vitality on a hit" } },
@@ -489,6 +496,11 @@ EN.engine = (function () {
     "Canopy Reach":          { unarmedReach: 1, meleeReach: 1 },
     // standing damage-type grants, read by damageResistances()
     "Radiation Callouses":   { resist: ["Radiation"] },
+    // condition immunity, the axis damageResistances deliberately does not carry
+    "Timber Fortitude":      { condImmune: ["Frightened"] },
+    "Axiomatic Mind":        { condImmune: ["Confused"] },
+    "Distributed Anatomy":   { condImmune: ["Bleeding"] },
+    "Hare-Trigger Instinct": { condImmune: ["Surprised"] },
     "Forge-Blooded":         { resist: ["Fire"] }
   };
   function lineageMechanics(ch) {
@@ -760,8 +772,78 @@ EN.engine = (function () {
      Reliquary Shell, Resonance Coil, Saint's Knot, Hex Lattice Projector, Martyr's Halo,
      Ablative Coating, Cyber-Reinforced Vitality), which need a stored pick per item and are
      a state change rather than a lookup; the transient ones (a Ward that reduced damage to
-     0 grants Resistance until your next turn); and CONDITION immunity (Frightened, Bleeding,
-     Confused), which is a different axis from a damage type and wants its own channel. */
+     0 grants Resistance until your next turn). CONDITION immunity (Frightened, Bleeding,
+     Confused) got the separate channel this comment used to ask for: see conditionImmunities
+     right below, which is a different axis from a damage type and reads its own field. */
+  /* ---- Special senses granted by features --------------------------------
+     ONE table. It used to be three: combat.js, printsheet.js and pdfexport.js each carried
+     a copy, and they had drifted. Echo Sighted was in two of them and not the third, so a
+     Shaper with it printed a Resonance Sense line on the hardcopy and on the PDF and got
+     nothing at all on the Freelancer tab. That is the failure this codebase keeps one
+     resolver per mechanic to prevent, so the table moved here and the three readers ask.
+
+     `note` is carried for every row; the print paths simply do not have the room to render
+     it, which is a layout decision at the call site rather than a different table.
+     Source values per app/data/species.js and the class data files. */
+  var SENSE_GRANTS = {
+    "Lowlight Optics":       { sense: "Darkvision",     range: "12 sp.", note: "Blinding flashes and strobes impose no Snag." },
+    "Predator's Glare":      { sense: "Darkvision",     range: "6 sp." },
+    "Fungal Network":        { sense: "Tremor Sense",   range: "6 sp.",  note: "While touching a connected surface; telepathic comms with allies within 12 sp." },
+    "Seismic Sense":         { sense: "Tremor Sense",   range: "8 sp.",  note: "Via ground contact; can't detect anyone flying, climbing, or levitating." },
+    "Warmblood Sense":       { sense: "Heat Sense",     range: "6 sp.",  note: "Ignore Invisible and Hidden for living, heat-producing targets." },
+    "Blood-Scent Tracker":   { sense: "Blood Scent",    range: "6 sp.",  note: "Know the direction of anyone Bleeding or below half Vitality, even hidden or behind cover." },
+    "Disturbance Compass":   { sense: "Flow Sense",     range: "12 sp.", note: "Presence and direction of Flow disturbances and active Invocations, through walls. Always on." },
+    "Scent Marker":          { sense: "Scent Tracking", range: "1 mile", note: "Tagged targets only, for 48 hours." },
+    "The Machine Medium":    { sense: "Sprite Sight",   range: "passive", note: "Passively see and communicate with Nixies and Gremlins, the Flow sprites in complex machinery." },
+    "Echo Sighted":          { sense: "Resonance Sense", range: "12 sp." },
+    /* The Ryn's headline sense, which rendered as a paragraph while both of its siblings on
+       the same species got a row with a range. Its other two clauses stay prose: ignoring
+       visual Snag in darkness is a table call, and the Surprised immunity is a condition,
+       carried by conditionImmunities in engine.js. */
+    "Hare-Trigger Instinct": { sense: "Sound Pinpoint", range: "6 sp.",  note: "Exact location of anything breathing, moving or making sound, even Invisible or Hidden, unless it is in a vacuum or total silence." }
+  };
+  // every special sense this character's active features grant, in feature order
+  function senseGrants(featureNames) {
+    var out = [];
+    (featureNames || []).forEach(function (n) {
+      var g = SENSE_GRANTS[n];
+      if (g) out.push({ feature: n, sense: g.sense, range: g.range, note: g.note || "" });
+    });
+    return out;
+  }
+  /* ---- Condition immunity -------------------------------------------------
+     The channel the comment above damageResistances has been asking for. Condition
+     immunity is a different axis from a damage type: "immune to Frightened" is not a
+     resistance level against a damage type, and folding it into that table would have
+     meant a condition name masquerading as one.
+
+     RENDERED, NEVER ENFORCED. Nothing here stops a condition being applied. A GM can put
+     Frightened on an Arboreal for a reason the sheet cannot see, and a sheet that refused
+     would be wrong more often than the rule is. The player gets a chip on that condition
+     saying which feature says otherwise, and decides at the table. That is the same
+     posture unarmedRider.when takes with its free-text condition.
+
+     Source values per app/data/species.js, condition names per app/data/conditions.js.
+     Deliberately NOT here: the two source-qualified grants. Frictionless Stasis is immune
+     to Grappled "from sticky traps or biological webbing" and Olfactory Insight can never
+     be Surprised "by an organic Target". ch.conditions records that a condition is on you,
+     never what put it there, so the qualifier is unrepresentable and a blanket immunity
+     would be a stronger claim than the manuscript makes. */
+  function conditionImmunities(ch) {
+    var out = [];
+    activeLineageFeatures(ch).forEach(function (fn) {
+      var m = LINEAGE_MECH[fn];
+      (m && m.condImmune ? m.condImmune : []).forEach(function (c) {
+        out.push({ condition: c, source: fn, kind: "lineage" });
+      });
+    });
+    return out;
+  }
+  // THE lookup for "does anything say this character cannot take this condition".
+  // Returns the granting rows, empty when nothing does.
+  function immunitiesFor(ch, conditionName) {
+    return conditionImmunities(ch).filter(function (r) { return r.condition === conditionName; });
+  }
   var RESIST_LEVELS = { immune: 3, vulnerable: 2, resist: 1 };
   function pushResist(acc, level, types, label) {
     (types || []).forEach(function (t) {
@@ -3456,6 +3538,8 @@ EN.engine = (function () {
     // THE resolver for which attribute a Talent raised, and the one enumeration of every
     // post-creation attribute bump. effectiveAttributes sums attrBumpSources rather than
     // walking the upgrade slots itself, so no surface can disagree about what bumped what.
+    conditionImmunities: conditionImmunities, immunitiesFor: immunitiesFor,
+    senseGrants: senseGrants,
     canonTalentKey: canonTalentKey, talentAttr: talentAttr, talentAttrOptions: talentAttrOptions,
     talentAttrPending: talentAttrPending, attrBumpSources: attrBumpSources,
     effectiveAttributes: effectiveAttributes,

@@ -303,7 +303,7 @@ EN.briefs = {
   "Spore Archive": "Once/Long Rest, seed Area 2 for 24h; later touch reveals who entered, one key act, plus tamper alerts",
   "Machine Physiology (Passive)": "Fully inorganic; immune to biological diseases, organic poisons, and toxic gases; need no food, air, or sleep",
   "Resonant Circuitry (Active)": "Vs EMP, digital virus, or Tech damage, gain Edge on the Saving Throw",
-  "Heavy Payload": "Count one Size larger for Encumbrance/grappling; Edge to lift/pry/drag; once per Encounter free an ally within 1 space",
+  "Heavy Payload": "+2 Encumbrance Threshold, and count one Size larger for grappling; Edge to lift/pry/drag; carry an ally your Size or smaller at no Speed cost; once per Encounter free an ally within 1 space",
   "Vice Grip": "Edge to maintain grapples and resist disarm; once per turn crush a Grappled target for 1d6 + Body modifier Bludgeoning",
   "Lockpoint Stance": "Anchor: cannot be forcibly moved or knocked Prone until you unlock joints",
   "Demolition Engine": "Melee deals double damage to structures/cover; or attack worn armor, reducing its DR by 1 until repaired, or mark 1 Durability box on a shield",

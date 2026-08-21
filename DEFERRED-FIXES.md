@@ -4363,6 +4363,97 @@ first. Registering a new #PRINT while an example was open filed the record in th
 left the player looking at the example with nothing on screen changed. `setActive` and
 `adoptExample` had always cleared it; this was missed when examples landed.
 
+## Lineage features audited, 2026-08-21: the number, and what is left
+
+All 123 lineage features were read against their manuscript text, one auditor per species.
+**The headline is that the catalogue is mostly correct.** 77 are correctly prose, because the
+condition they depend on is something only the table can judge: whether you are climbing,
+whether it is dark, whether the person in front of you is lying. 16 more were already being
+delivered by a carrier a keyword sweep cannot see, chiefly `SENSE_GRANTS`, `encumbranceInfo`
+and the hazards layer. **Roughly 13 were genuinely broken**, plus 4 of the wired ones
+delivering only half their text.
+
+### Fixed in this pass
+
+- **Condition immunity, a channel that did not exist.** `damageResistances`'s own comment had
+  been asking for it: condition immunity is a different axis from a damage type. `condImmune`
+  on `LINEAGE_MECH`, resolved by `conditionImmunities(ch)`. Five features now carry it: Static
+  Premonition and Hare-Trigger Instinct (Surprised), Timber Fortitude (Frightened), Axiomatic
+  Mind (Confused), Distributed Anatomy (Bleeding). **Rendered, never enforced**: the condition
+  picker annotates the option and an applied condition gets an IMMUNE chip naming the feature.
+  A GM can still apply it, because the table outranks the sheet.
+- **`SENSE_GRANTS` was three copies and they had drifted.** `combat.js`, `printsheet.js` and
+  `pdfexport.js` each carried one. **Echo Sighted was in two of them and not the third**, so a
+  character with it printed a Resonance Sense line on the hardcopy and in the PDF and rendered
+  nothing at all on the Freelancer tab. One table now, in `engine.js`, read through
+  `senseGrants()`. Hare-Trigger Instinct gained the row it should always have had: the Ryn's
+  headline sense rendered as a paragraph while both of its siblings on the same species got a
+  row with a range.
+- **Brutal Frame carried two errors in one row.** The strike was typed "Bludgeoning or
+  Slashing" when the manuscript makes the strike 1d6 Bludgeoning and gives the choice to the
+  additional 1d4; and that 1d4 sat inside a note string, so it never reached the printed
+  damage, while the identically shaped Smelter's Hands and Envenomed Thorns riders always
+  did. The note also welded the 1d4 to a Size gate the manuscript puts on the push alone.
+- **Heavy Payload's second half.** "Count as one Size larger for grappling" was delivered
+  nowhere. Stated as a row on the SIZE breakdown rather than moved into `d.size`, which would
+  double-count: Size also feeds `sizeEncumbranceAdj`, and the feature already grants its own
+  separate +2 Threshold. Its brief in `briefs.js` also merged the two grants into one and
+  understated +2 as a Size step, which is worth only one point either way.
+
+### Not fixed, and why
+
+- **Hazard Seal is already correct.** It reads "immune to Acid and Toxic damage from chemical
+  spills or weaponized sludge", which is source-qualified, and the next sentence carves out
+  thermal hazards. The environmental half is delivered at `hazards.js` via `immuneCaustic`.
+  A blanket `immune: ["Acid","Toxic"]` row would claim more than the manuscript grants.
+- **Distributed Anatomy's Toxic half** wants species traits wired as a resistance source
+  first. Every Verdine already has Toxic Resistance from the species core trait Ecological
+  Filter, Resistance does not stack, and `damageResistances` reads five sources with species
+  traits among none of them. The same gap hides the Clanker core trait Machine Physiology.
+  One change, two species traits, then the lineage row only changes the source label.
+- **Envenomed Thorns' melee half.** "your unarmed strikes AND melee weapons deal an additional
+  1d4 Toxic" and only the unarmed half exists. No damage-rider channel exists on a weapon row
+  at all. This is the same defect the author already fixed once for Canopy Reach one lineage
+  over, and `meleeRider` wants building the way `meleeReach` was.
+- **Climb speed** (Prey Stalker's Grip, Highground Hunger) needs an author ruling first: the
+  two features say "base walking Speed" and "walking Speed", which may or may not be one
+  grant, and "base" may mean pre-encumbrance. Two non-lineage sources would light up with it,
+  the Parkour Runner talent upgrade and an armor mod.
+- **Emergency Boot.** "You do not fall Unconscious and do not become Dying", and the sheet
+  computes `dying` from Wounds and renders death-save pips and STABILIZE at exactly that
+  moment, so it asserts the opposite of the feature's own text. Both inputs are on the record,
+  including the once-per-Long-Rest budget. Held because whether the sheet should suppress the
+  death-save block outright or offer a trigger is a presentation call for the author.
+- **Spatial Flicker, Hitscan, Cagebreak Instinct, Survivor's Wrath.** One each: an Impulse
+  damage halver that the existing defensive tray could carry, a Priority Target damage rider
+  needing a `ch.bonuses` toggle, a knowable conditional Edge, and a below-half-Vitality
+  trigger. All real, none urgent.
+
+### The conditional Edge and Snag question, answered
+
+Roughly 43 features grant Edge or Snag on a specific kind of check. **They should stay prose.**
+There is no home for a conditional bonus and building one is the wrong trade: `ch.bonuses` is
+reserved by design for what the sheet cannot derive, the condition effects vocabulary is
+entirely negative and has no Edge channel, and the sheet cannot know whether you are lying to
+someone right now. Exactly one, Cagebreak Instinct, keys off conditions the record already
+holds, and even that reads better rendered than applied. The real defect in this area is
+presentational rather than mechanical: an unwired feature card looks identical to a wired one,
+so a player cannot tell which numbers the sheet is already carrying for them.
+
+### Author rulings wanted
+
+1. **Butcher Spurs ships `traits: "Finesse"` and its manuscript text does not mention it.**
+   Compare Briar Strike one lineage over, which says "possess the Light and Finesse
+   properties" and is transcribed correctly. Finesse decides whether the kick attacks off
+   Agility or Body, so this is not cosmetic. Intended, or a transcription slip?
+2. **Climb speed wording**, as above.
+3. **Emergency Boot presentation**, as above.
+4. **Two source-qualified immunities**, deliberately left out of the new table: Frictionless
+   Stasis is immune to Grappled "from sticky traps or biological webbing" and Olfactory
+   Insight can never be Surprised "by an organic Target". `ch.conditions` records that a
+   condition is on you, never what put it there, so the qualifier is unrepresentable. Left as
+   prose rather than promoted to blanket immunity, which would grant more than the book does.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

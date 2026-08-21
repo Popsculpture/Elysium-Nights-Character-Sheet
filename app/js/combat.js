@@ -2997,6 +2997,13 @@ EN.combatView = (function () {
         if (band) rows.push({ label: "Lineage range", val: band.fixed ? band.min + " ft, no variance" : band.min + " to " + band.max + " ft", raw: true });
         if (foot) rows.push({ label: "Footprint", val: foot.square, raw: true });
         if (trait && trait.encumbrance) rows.push(bdRow("Encumbrance Threshold", trait.encumbrance));
+        /* Heavy Payload counts you one Size larger FOR GRAPPLING ONLY. Stated as a row here
+           rather than moved into d.size, which would be wrong twice: Size also feeds
+           sizeEncumbranceAdj, and the feature already grants its own separate +2 Threshold
+           at engine.js, so promoting the Size would pay that bonus a second time. */
+        if (eng.activeLineageFeatures(ch).indexOf("Heavy Payload") !== -1) {
+          rows.push({ label: "Grappling only (Heavy Payload)", val: "counts one Size larger", raw: true });
+        }
         return { title: "Size", total: d.size || "not set", sign: false,
           formula: "derived from height; a boundary height takes the larger category",
           empty: d.size ? null : "Pick a height on the #PRINT tab to set your Size.",
@@ -3390,7 +3397,12 @@ EN.combatView = (function () {
         // a condition, it is offered here, and applying it starts ITS clock.
         .filter(function (c) { return c.name !== "Vacuum"; })
         .map(function (c) {
-          return el("option", { value: c.name, disabled: (ch.conditions || []).indexOf(c.name) !== -1, text: c.name });
+          /* A lineage feature saying "immune to Frightened" annotates the option, it does
+             not remove it. The GM may have a reason the sheet cannot see, and a picker that
+             refused would be wrong more often than the rule is. Say it and let them choose. */
+          var imm = eng.immunitiesFor ? eng.immunitiesFor(ch, c.name) : [];
+          return el("option", { value: c.name, disabled: (ch.conditions || []).indexOf(c.name) !== -1,
+            text: c.name + (imm.length ? "  (immune: " + imm[0].source + ")" : "") });
         })));
     var active = (ch.conditions || []).map(function (name) {
       var info = (EN.conditions || []).find(function (x) { return x.name === name; });
@@ -3409,6 +3421,11 @@ EN.combatView = (function () {
           el("button", { disabled: lvl >= lv.max, onclick: function () { setCondLevel(name, lvl + 1); } }, "+")
         ]));
       }
+      var immune = eng.immunitiesFor ? eng.immunitiesFor(ch, name) : [];
+      if (immune.length) rightKids.unshift(el("span.chip", {
+        style: { fontSize: "9px", color: "var(--success)", borderColor: "var(--success)" },
+        title: immune.map(function (r) { return r.source; }).join(", ") + " says you cannot take this condition. Applied anyway, because the table outranks the sheet." },
+        "IMMUNE"));
       rightKids.push(el("button.btn.sm.danger", { style: { padding: "1px 8px" }, onclick: function (e) { e.stopPropagation(); setCondLevel(name, 0); } }, "✕ Remove"));
       return el("div.feature", { style: { borderLeftColor: severe ? "var(--danger)" : "var(--warn)" } }, [
         el("h4", { style: { cursor: "pointer" }, onclick: function () { _open["cond-" + name] = !open; EN.app.render(); } }, [
@@ -3522,21 +3539,11 @@ EN.combatView = (function () {
       ]) : null;
     });
     /* special senses granted by active features (lineage / class / subclass) */
-    var SENSE_GRANTS = {
-      "Lowlight Optics":     { sense: "Darkvision", range: "12 sp.", note: "Blinding flashes and strobes impose no Snag." },
-      "Predator's Glare":    { sense: "Darkvision", range: "6 sp." },
-      "Fungal Network":      { sense: "Tremor Sense", range: "6 sp.", note: "While touching a connected surface; telepathic comms with allies within 12 sp." },
-      "Seismic Sense":       { sense: "Tremor Sense", range: "8 sp.", note: "Via ground contact; can't detect anyone flying, climbing, or levitating." },
-      "Warmblood Sense":     { sense: "Heat Sense", range: "6 sp.", note: "Ignore Invisible and Hidden for living, heat-producing targets." },
-      "Blood-Scent Tracker": { sense: "Blood Scent", range: "6 sp.", note: "Know the direction of anyone Bleeding or below half Vitality, even hidden or behind cover." },
-      "Disturbance Compass": { sense: "Flow Sense", range: "12 sp.", note: "Presence and direction of Flow disturbances and active Invocations, through walls. Always on." },
-      "Scent Marker":        { sense: "Scent Tracking", range: "1 mile", note: "Tagged targets only, for 48 hours." },
-      "The Machine Medium":  { sense: "Sprite Sight", range: "-", note: "Passively see and communicate with Nixies and Gremlins, the Flow sprites in complex machinery." }
-    };
+    /* Special senses come from engine.senseGrants, the one table. This file used to carry
+       its own copy, as did the print sheet and the PDF, and they had drifted apart. */
     var senseRows = [];
-    (d.features || []).forEach(function (f) {
-      var g = SENSE_GRANTS[f.name];
-      if (!g) return;
+    eng.senseGrants((d.features || []).map(function (f) { return f.name; })).forEach(function (g) {
+      var f = (d.features || []).find(function (x) { return x.name === g.feature; }) || { name: g.feature };
       senseRows.push(el("div", { style: { padding: "6px 4px", borderBottom: "1px solid rgba(35,48,68,.5)" } }, [
         el("div.row.between", null, [
           el("span", null, [document.createTextNode(g.sense),
