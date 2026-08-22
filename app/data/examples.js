@@ -543,12 +543,12 @@ EN.examples = [
     key: "shaper",
     name: "Marisol \"Fold\" Quiroga",
     label: "Shaper",
-    blurb: "A Sourcerer who treats distance as a suggestion and the #GRID as weather.",
+    blurb: "A Harmonist who treats distance as a suggestion and the weather as a conversation.",
     patch: {
       firstName: "Marisol", lastName: "Quiroga",
       level: 5, heightFt: 5.5,
       species: "verdine", lineage: "floral", background: "minimum-wage-mage",
-      class: "shaper", subclass: "sourcerer",
+      class: "shaper", subclass: "harmonist",
       attributes: { MYS: 16, WIT: 14, AGI: 13, BOD: 12, TEC: 11, CHA: 10 },
       identity: {
         handle: "Fold",

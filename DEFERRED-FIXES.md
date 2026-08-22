@@ -4637,6 +4637,71 @@ Running totals across the four passes:
 
 `scratchpad/lin/diff_backgrounds.py` is the check.
 
+## grid.js and flow.js checked against Part 2, 2026-08-21
+
+**These two resist the method, and the honest headline is that only part of them could be
+checked.** The four files done before this are prose: named entries with a name and a
+paragraph. `grid.js` and `flow.js` are mostly TABLES and structured data. Of 94 named text
+entries, only about a fifth live under a heading in the book; the rest are table rows
+("| **Kinetic** | Kinetic Barrier | Yes |") or inline bold runs ("**Alert.** The IC silently
+logs the breach attempt"). A heading-based comparison reports those as differences when they
+are really extraction failures, so its raw output is not a finding list.
+
+### What WAS verified, and what it found
+
+**The formulas, all correct**, and cross-checked against the engine rather than only against
+the book. This mattered because the class files had a formula that disagreed with the app's
+own calculator: `cipherAttackFormula` and `cipherSaveFormula` both read "Tech mod + Systems
+Proficiency Bonus" and match `engine.js`; `flow.saveDcFormula` and `flowAttackFormula` read
+"Flow Modifier + Caliber" and match the book's own table; `reservoirFormula` reads
+"(Caliber x 3) + Flow Modifier" and the engine computes exactly that.
+
+**The ciphers, which are the one clean subset.** They have proper headings, a bold metadata
+line the app stores as separate structured fields, and a body. 36 ciphers and 6 buddy
+ciphers: 17 already exact, **22 re-transcribed**, 3 buddy ciphers not located as sections and
+left unverified (Node Sweeper, Access Spike, Data Probe).
+
+**The drift was the same pattern found everywhere else: the author's opening line stripped.**
+Puppet String had lost "The whole hand on the strings, not one finger on a trigger."
+Backtrace had lost "Someone is working against you in the wire. Work back harder." Live Tap
+had lost "Where Hijack Stream grabs a feed and runs, Live Tap settles in to listen." Deep Sync
+had lost ", runtime braced against the feedback you know is coming", and Dead Zone the
+parenthetical "(an enemy hacker's, a rigged drone's, a smartgun's targeting feed)".
+
+### Not checked, and it would need a different tool
+
+The tables are the larger half of both files and carry the numbers that actually decide
+outcomes: Smartdeck tiers and their Device Bonus, Max Complexity and Integrity; node tiers,
+Security Ratings and Save Bonuses; Firewall thresholds; IC detection and counterattack
+damage; cipher costs by Complexity; the Strain track; the 21-row sustain compatibility
+matrix. **A wrong number there is a wrong rule, and none of it is verified.** That wants a
+table-aware comparison, parsing the book's pipe tables into rows and matching them against
+the app's arrays by key. It is a different script, not a tweak to this one.
+
+
+### A defect the Flow check found in an example character, not in the data
+
+Verifying `flow.reservoirFormula` against the engine meant deriving a real Shaper, and that
+exposed **Marisol "Fold" Quiroga being built wrong**, which was my error when the examples
+were created rather than any drift in the rules.
+
+She was a **Sourcerer**, and Part 1 states "The Sourcerer (Flow Attribute: Tech)". Her Tech
+was 11 (+0) while her Mystique was 16 (+3), so her entire class mechanic ran on her weakest
+relevant stat: Flow Attack bonus +0, Flow Save DC 11, Reservoir 9.
+
+Changed to **Harmonist**, which Part 1 gives as Flow Attribute: Mystique. Nothing about her
+attributes moved. Flow Attack bonus is now +3, Save DC 14, Reservoir 12, and she gains
+Earthcaller and Burden of the Earth in place of The Machine Medium and Hardware Harmonization.
+
+It also fits her far better. Her concept is six years of shift work keeping an arcology's air
+breathable, which is atmospheric, while the Sourcerer's own description opens "You couldn't
+write a line of code to save your life. Routers hate you." The Harmonist is "an urban shaman
+awakening the sleeping earth beneath the asphalt". Her blurb changed with her.
+
+**Worth checking the other six the same way.** The examples were built to be a wide test
+surface, and a subclass whose Flow or resource attribute does not match the character's stat
+line is invisible on the sheet: nothing warns, the numbers are simply small.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from
