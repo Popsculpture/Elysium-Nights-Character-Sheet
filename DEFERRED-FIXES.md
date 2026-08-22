@@ -5693,6 +5693,75 @@ to the outcome, since the refusal gate fails on its own evidence.
 
 **Part 2 is the 2026-08-21 export**, for the reason recorded under the rules.js pass.
 
+## status_changes.js checked, 2026-08-22: CLEAN, and it surfaced a bigger gap
+
+**No defects. Nothing changed in this file.** It is the first file in the whole sweep to come
+back clean on every axis, and the reason is structural rather than lucky.
+
+### Why it holds up
+
+The header declares "This file is a REGISTRY, not a second rules source", and that turns out to
+be true where it matters. The exposure options are `.map()`ed out of `EN.hazards.exposure.types`,
+the deprivation options out of its `tracks`, and the class buffs out of the Stitcher's
+`aftermarketTunings` with `summary: t.text`, the owner's own prose. Consumables name a catalog
+item and take their text from the catalog at render time. **A registry that derives cannot
+drift**, which is exactly what the other eleven files kept failing at.
+
+Verified live: 17 option keys, 3 exposure types, 3 deprivation tracks, 6 class buffs, 3
+consumables, no dangling catalog pointers, and the lookup is null-prototype (it is indexed by
+keys arriving out of a save file).
+
+The few strings it does author were each checked and are accurate:
+
+- The three consumable `endsOn` values against Part 3. Combat Stim Pack's "End of your 3rd
+  turn, then a Body save DC 12 or Dazed 1 round" matches the book's Drawback bullet; Nightwatch
+  Tablets' "4 hours, or extended by a fresh dose at the cost of a Crash Stack" matches its
+  Synergy bullet; Detox Patch's "8 hours" matches its Effect.
+- The class buff `endsOn` is near-verbatim Part 1: "it stays active until you finish your next
+  Short or Long Rest, when you must recalibrate it or it powers down", and `exclusiveGroup`
+  matches "An ally can have only one Hot-Wire at a time."
+- Both environmental summaries match `hazards.js` (held breath and the escalating Body Save;
+  damage inside, lingering residue, and 1 DR per full scene).
+
+### What it surfaced: 68 rules bullets absent from the whole app
+
+Checking those three `endsOn` strings exposed something the registry was quietly compensating
+for. **The gear catalog carries only each item's `Effect` bullet.** Part 3 also gives many
+entries `Activation`, `Limitation`, `Drawback` and `Synergy` bullets, and those have no home.
+
+Measured across Part 3, probing the entire `app/data` and `app/js` tree for each bullet's text:
+
+| label | absent from the app |
+|---|---|
+| Activation | 25 |
+| Limitation | 23 |
+| Drawback | 11 |
+| Synergy | 9 |
+| **total** | **68** |
+
+They are load-bearing, not flavour. A sample:
+
+- **Rubber Rounds**: "Against a target with armor DR 3 or higher, or any vehicle or hardened
+  construct, the rounds bounce." The app carries the Nonlethal, Bludgeoning and Staggered rules
+  and not the limitation, so nothing tells a player the ammo does nothing to a hard target.
+- **Whisper Rounds**: "Halve the weapon's long-range band (round down)."
+- **Spike Rounds**: against a purely organic target "the round deals no damage".
+- **Hollow Point Rounds**: no extra Wound damage from criticals against DR 2 or higher.
+- **Nightwatch Tablets**: the entire Drawback, including the Crash Stack maths and a **Body save
+  DC 25 on the final crash after four consecutive doses; on a failure you suffer heart failure
+  and drop to 0 Wounds**. A death rule that exists nowhere in the app.
+
+This is the same shape as the trap found in the weapon-parts pass, where four entries had no
+bare `Effect` bullet and were skipped: **the app's gear transcription maps `Effect`, `On Hit`,
+`Basic Use` and `Proficient Use`, and silently drops every other rules bullet.** The earlier
+gear prose pass re-transcribed 197 values through exactly that mapping, so it could not have
+caught this.
+
+**Not fixed here.** It is 68 entries across the ammunition, tools and gear catalogs, which is a
+pass of its own comparable in size to the original gear prose sweep, and scoping it is the
+author's call. `gear_traits.js` and `kits.js` are still unchecked and sit in the same catalogs,
+so it may be worth doing them together.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from
