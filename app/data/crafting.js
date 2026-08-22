@@ -135,9 +135,11 @@ EN.crafting = {
                 the plate, so with stock on hand the parts cost nothing; salvage cuts
                 or clears it the ordinary way any Project's materials are cut.
 
-     A suit at 0 DR is not repaired, it is rebuilt: an ordinary Project at the
-     item's own tier and full parts cost (half the listed price, the same ratio
-     materialCost charges).
+     A suit at 0 DR is not repaired, it is rebuilt: a STANDARD Project at full parts
+     cost (half the listed price, the same ratio materialCost charges). The book names
+     that tier outright and it does not float with the suit, which is why the rebuild
+     lane below carries `rebuildTier` rather than asking tierForItem: deriving it made
+     a Rare suit rebuild at Advanced and a Legendary one at Prototype.
 
      Every one of those numbers is a percentage of the suit's LISTED price, which
      for LEASED armor is its Buyout and not its buy-in. See listPrice below.
@@ -163,9 +165,10 @@ EN.crafting = {
     // those as well. Kept as its own name because the rebuild lane means something
     // different from a Blueprint even when the figure matches.
     rebuildCost: function (it) { return EN.crafting.materialCost(it); },
+    rebuildTier: "standard",
     shopText: "Hand it to a shop. One Downtime period and 10 percent of the suit's listed price per point of DR restored. No roll.",
     benchText: "Do it yourself. A Simple Project using Engineering, parts at 5 percent of the listed price per point. A Portable Fabrication Rig prints the plate from stock, so the parts cost nothing.",
-    breachedText: "A suit at 0 DR is past repair. Rebuilding it is an ordinary Project at full parts cost.",
+    breachedText: "A suit at 0 DR is past repair. Rebuilding it is a Standard Project at full parts cost.",
     qualityText: "Clean run: the plate seats true, and the next point of DR this suit would lose is absorbed for free."
   },
 
@@ -181,7 +184,11 @@ EN.crafting = {
 
   skillForItem: function (it) {
     it = it || {};
-    var cat = it.category || "", traits = it.traits || [];
+    // `group` is read alongside `category` because only the KITS carry a category:
+    // the eight Medical Consumables rows carry only group "Medical Consumables", so
+    // testing category alone sent every drug and dose to the Engineering default and
+    // the bench offered "Build Combat Stim Pack" as an Engineering Project.
+    var cat = (it.category || "") + " " + (it.group || ""), traits = it.traits || [];
     if (traits.indexOf("Mystech") !== -1 || it.kind === "focus" || it.wardDie || /Ritual/i.test(cat)) return "Esoterica";
     if (it.cyber || /Systems|Media/i.test(cat)) return "Systems";
     if (/Medical/i.test(cat)) return "Medtech";
@@ -193,7 +200,12 @@ EN.crafting = {
     var t = this._availTier[it.availability] || "standard";
     if (this._isAmmo(it)) t = "simple";
     if (it.cyber && this._tierRank[t] < this._tierRank.advanced) t = "advanced";
-    if ((it.traits || []).indexOf("Mystech") !== -1 && this._tierRank[t] < this._tierRank.prototype) t = "prototype";
+    // No blanket Mystech force. Part 2 names only an "experimental mystech build" at
+    // Prototype, and Part 3 says the crude, repeatedly manufactured Mystech "uses the
+    // regular Common through Rare scale instead". _availTier already lifts the genuinely
+    // rare Mystech (Iconic, Legendary, Mythical, Artifact) to prototype or relic, so the
+    // force only ever hit the cheap end: the Scrap Ward, a 120 Glimmer Common charm, was
+    // opening as a Prototype Project at Target 10 with 4 Snag.
     if (it.signature && this._tierRank[t] < this._tierRank.prototype) t = "prototype";
     return t;
   },

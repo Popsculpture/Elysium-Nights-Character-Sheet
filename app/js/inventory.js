@@ -1913,7 +1913,9 @@ EN.inventoryView = (function () {
       name: "Rebuild " + st.name,
       itemName: st.name,
       skill: CRAFT().skillForItem(it),
-      tier: CRAFT().tierForItem(it),
+      // The book names this tier outright ("Rebuilding it is a Standard Project"), so it
+      // does not float with the suit's availability the way a Blueprint's does.
+      tier: armorRepairRules().rebuildTier || "standard",
       materialCost: armorRepairRules().rebuildCost(it),
       addOnComplete: false,
       repairKey: st.key,
@@ -2182,8 +2184,22 @@ EN.inventoryView = (function () {
       else if (!(e.qty > 0)) return null;
       var cat = it.category || "";
       if (!cats[cat]) return null;
+      /* Tool Category Expertise: "You treat kits in this category as one quality grade
+         higher than listed, up to the +3 Edge Dice maximum." The tier ladder was already
+         stored and already cost Training Points, but nothing spent it: a crafter with
+         Engineering Tools (Expertise) got exactly the catalog's Edge Dice at the bench.
+         Mastery sits above Expertise on the same ladder and so carries the bump too. */
+      var toolTier = ENG().effectiveGearTier(ch, "tools", cat);
+      var listed = it.edgeDice || 0;
+      var bumped = listed;
+      if (listed > 0 && (toolTier === "expertise" || toolTier === "mastery")) bumped = Math.min(3, listed + 1);
       return { name: it.name, category: cat, skill: cats[cat], proficient: !!profs[cat], effect: it.effect || it.desc || "",
-               edgeDice: it.edgeDice || 0, edgeNote: it.edgeNote || null, requiresProficient: !!it.requiresProficient,
+               edgeDice: bumped, listedEdgeDice: listed, toolTier: toolTier,
+               edgeNote: bumped > listed
+                 ? ((it.edgeNote ? it.edgeNote + ", " : "") + "one grade higher for Tool " +
+                    (toolTier === "mastery" ? "Mastery" : "Expertise"))
+                 : (it.edgeNote || null),
+               requiresProficient: !!it.requiresProficient,
                kitEquivalent: it.kitEquivalent || null };
     }).filter(Boolean);
   }

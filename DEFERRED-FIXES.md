@@ -5433,6 +5433,65 @@ knowing it is load-bearing**: it is the reason two thirds of the claims failed.
 Part 3 is today's fresh export. **Part 2 is the 2026-08-21 export**, for the reason recorded
 under the rules.js pass: the re-pull did not land.
 
+## crafting.js checked against Part 2, 2026-08-22
+
+**48 data claims, 48 pass. Four defects in the COMPUTED half, all fixed.**
+
+`scratchpad/lin/diff_crafting.py` covers the data: all five Project Tiers with their Target
+Progress and required Skill Tier, all five outcome-to-Progress values, materials at half market
+price, salvage, the armor repair rates, and the craft skill list. Clean.
+
+The computed half is where this file actually lives, and it went to independent agents with
+adversarial refutation. 24 claims went in, 4 survived. Every one is a case where the app
+*computes* something the book *names*.
+
+### Fixed
+
+- **Tool Category Expertise did nothing.** Part 2: "Expertise: You treat kits in this category
+  as one quality grade higher than listed, up to the +3 Edge Dice maximum." The tier ladder was
+  already stored and already **cost Training Points**, but nothing ever spent it: a crafter who
+  paid for Engineering Tools (Expertise) got exactly the catalog's Edge Dice at the bench.
+  `tbKits` now bumps a kit's dice by one grade at Expertise or Mastery, capped at 3, and says so
+  in the pool breakdown. Verified live: Edge 3 at Tool Proficient, **Edge 4 at Tool Expertise**,
+  with the tooltip reading "Field Repair Case, ..., one grade higher for Tool Expertise".
+- **The breached-armor rebuild floated with the suit.** Part 2 names the tier outright:
+  "Rebuilding it is a **Standard Project** at full parts cost." The app asked `tierForItem`, so
+  a Rare suit rebuilt as Advanced (Target 7) and a Legendary one as Prototype (Target 10), and
+  an Artifact suit landed on `relic`, whose target is null, falling through to Target 10 with 5
+  Snag. Now a named `rebuildTier: "standard"`, and `breachedText` says "Standard Project".
+- **Every medical consumable was an Engineering Project.** `skillForItem` tested
+  `/Medical/i.test(it.category)`, but only the KITS carry a `category`; the eight
+  `group: "Medical Consumables"` rows carry none, so all of them fell through to the Engineering
+  default. The bench offered "Build Combat Stim Pack" as Engineering work. Now reads `group`
+  alongside `category`. Verified: Combat Stim Pack routes to **Medtech**, and the medkits still do.
+- **Cheap Mystech was forced to Prototype.** A blanket line promoted anything with the Mystech
+  trait to at least Prototype, so the **Scrap Ward, a 120 Glimmer Common charm, opened as a
+  Prototype Project**: Target 10, "Ongoing across sessions", 4 Snag. Part 2 names only an
+  "experimental mystech build" at that tier, and Part 3 states the exception directly: "The
+  crude, repeatedly manufactured stuff... uses the regular Common through Rare scale instead."
+  The force is gone. `_availTier` already lifts genuinely rare Mystech, and it still does:
+  Veilskin (Iconic) and Aegis Shroud (Legendary) remain Prototype, Reliquary Shell (Artifact)
+  remains Relic, and only the Scrap Ward and Resonance Coil moved down to Standard.
+
+### Refuted
+
+Twenty claims died, and the reasoning is worth keeping. The strongest pattern was **the rule is
+carried elsewhere**: the Allied Help Action Edge Dice live in `resolution.js`, the mod-slot
+ceilings live in `armor_mods.js` and `weapon_parts.js`, and the half-price craft note lives in
+`grid.js`. Several others died on **GM-facing scope** (the Work Interval's duration and the
+Difficulty are the two things Part 2 explicitly says "The GM sets"), and one died because the
+claim had the direction backwards: the app grants **zero** over-capacity installs, so the book's
+ceiling of one extra Part is unreachable rather than exceeded.
+
+`crafting.js` discloses its own house rulings in comments, and that convention did real work
+here: a labelled ruling was treated as a disclosed choice, while the four fixed above carried
+no such label and stated the substituted rule as if it were the book's.
+
+### Caveat on the source
+
+Part 3 is today's fresh export. **Part 2 is the 2026-08-21 export**, for the reason recorded
+under the rules.js pass: the re-pull did not land.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from
