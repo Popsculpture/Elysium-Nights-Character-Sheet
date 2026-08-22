@@ -62,6 +62,12 @@ EN.hazards = {
     }
   },
 
+  /* The chapter closes on a GM Guidance box, and it is the rule that decides whether any
+     of the above is rolled at all. Carried here because `intro` describes what exposure
+     DOES and this says when to use it; the two are not interchangeable. Same `gmGuidance`
+     convention as kits.js and resolution.js. */
+  gmGuidance: "Exposure is a pacing tool, not a damage source. Roll it when the clock matters: a crew waiting out a patrol in a freezer, a job that runs long above the cloud line, a shuttle with a slow leak. If nobody is making a decision about the environment, do not roll for it. The point is to make the room a problem, not to tax the crew for existing in weather.",
+
   /* ---- 3.2 Vacuum -------------------------------------------------------
      Mirrors the existing Drowning condition exactly. The two share ONE spec so
      they cannot drift: EN.hazards.breath below is the single source, and both

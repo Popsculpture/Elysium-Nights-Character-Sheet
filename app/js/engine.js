@@ -2719,8 +2719,17 @@ EN.engine = (function () {
        corroding: the panel used to print "No damage inside it: Hazmat Suit" and
        "Vanguard Plate is unsealed and will lose 1 DR after a full scene in it"
        in the same block, and MARK FULL SCENE wrote the ledger anyway. This
-       function never received fx, which is exactly why it could not know. */
-    var blockedBy = (fx && (fx.immuneCaustic || fx.blocksCaustic)) || null;
+       function never received fx, which is exactly why it could not know.
+
+       `immuneCaustic` is deliberately NOT in this gate. The reasoning above is about a
+       chemsuit worn OVER the plate, which is `blocksCaustic`. Hazard Seal is the other
+       kind: a Durabody sealing its own internal systems ("prevents internal flooding and
+       chemical burns"). It stops the Acid reaching the CHARACTER and does nothing for the
+       suit strapped on the outside, so folding it in here let a Durabody's unsealed armor
+       sit in the wash forever without losing its DR, and made the panel claim the trait was
+       "worn over" the armor. The book degrades unsealed gear regardless of who is wearing
+       it. The wearer-side immunity is read separately, in the caustic block below. */
+    var blockedBy = (fx && fx.blocksCaustic) || null;
     return {
       armor: w.name,
       armorKey: w.key,

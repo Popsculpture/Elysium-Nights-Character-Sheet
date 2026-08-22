@@ -5287,6 +5287,89 @@ Part 3 is today's fresh export. **Part 2 is the 2026-08-21 export**, for the rea
 under the rules.js pass: the re-pull did not land, with no file and no staging `.tmp`, pointing
 at a native save dialog waiting on a click.
 
+## hazards.js checked against Part 2, 2026-08-22
+
+**51 mechanical claims, 51 pass. Two further defects found by an adversarial pass, both fixed.**
+
+`scratchpad/lin/diff_hazards.py` checks the machinery: exposure clocks, severities, the four
+exposure types, the three deprivation tracks, the held-breath spec that Drowning and Vacuum
+BOTH read from, vacuum sealing, caustic damage and gear degradation. Every value fires on a
+timer during play, so a wrong one is wrong repeatedly and quietly. All 51 pass.
+
+The mitigations were checked separately by a fan-out of independent agents with a two-lens
+adversarial refutation, because they are judgement rather than arithmetic. Five claims went
+in, two came out.
+
+### FIXED: Hazard Seal was protecting the wrong thing
+
+`immuneCaustic: true` was read by the SAME engine gate that decides whether worn armor
+corrodes, so a Durabody in an unsealed suit never lost 1 DR after a full scene in the wash, and
+the panel printed "Hazard Seal is worn over Foundry Shell and keeps the caustic off it too".
+
+The engine's comment gave the reasoning, and the reasoning was sound but only for the other
+case: the **Hazmat Suit** is "a sealed chemsuit worn over your armor", so a suit that nulls the
+damage cannot leave the plate underneath it corroding. **Hazard Seal is the opposite kind of
+thing.** Part 1: "You can completely lock down your **internal systems** against environmental
+intrusion... This seal prevents internal flooding and chemical burns." It seals the Durabody,
+not the armor strapped on the outside, and Part 2 degrades unsealed gear regardless of who is
+wearing it.
+
+The gate now reads `blocksCaustic` only. Verified both ways live:
+
+| character | wearer immune | armor degrades |
+|---|---|---|
+| Hazard Seal, unsealed Foundry Shell | yes, `stoppedBy: "Hazard Seal"` | **yes**, `exposed: true` |
+| Hazmat Suit worn, unsealed Foundry Shell | yes | no, `blockedBy: "Hazmat Suit"` |
+
+The wearer-side immunity is untouched: `stoppedBy` and `lingerStoppedBy` both still name
+Hazard Seal, so the Acid inside and the lingering Acid after exit are still zero.
+
+### FIXED: the chapter's GM Guidance box was not carried
+
+The Environmental Hazards chapter closes on a GM Guidance box, and it is the rule that decides
+whether any of the rest is rolled at all: "Exposure is a pacing tool, not a damage source. Roll
+it when the clock matters... If nobody is making a decision about the environment, do not roll
+for it." `hazards.js` had no `gmGuidance` field even though `kits.js` and `resolution.js`
+already carry one. Added, and rendered in the Codex's Hazards panel, because data nobody sees
+is not carried.
+
+### Refuted, and worth recording
+
+Three claims died under refutation, including **one of mine**. I had noticed that "Getting Out
+of It" names ten things while the `mitigations` array has nine rows, with Sealed armor the one
+with no row, and thought it a gap. It is not:
+
+- Sealed's "Resistance to Toxic damage" is fully wired through `gear_armor.js` `traitResist`
+  and `engine.js`, and really does produce Toxic Resistance on the sheet.
+- Sealed's only mechanical footprint INSIDE the hazards chapter is the caustic degradation
+  clause, and the app implements that too (`appliesTo: "unsealed worn armor"`, and
+  `wornArmor().sealed`).
+- The remaining half, "Edge on saves against gas, disease, and airborne or environmental
+  hazards", maps onto no save the chapter actually rolls: cold is excluded by the very sentence
+  quoted, heat is not air, deprivation is food/water/sleep, vacuum is excluded twice, and
+  caustic rolls no save at all. Writing a Sealed row would have meant inventing which exposure
+  types to put in `edgeOn` with no book support.
+
+Sealed is an armor TRAIT, and the `mitigations` array's `source` vocabulary is gear, armorMod
+and lineageFeature only. It is carried on the trait axis instead.
+
+Two claims that the Rebreather's row should also cover Drowning were refuted the same way: the
+array transcribes Part 2's "Getting Out of It", which says only "A Rebreather buys an hour of
+thin air", and the full Part 3 rule ("you do not begin Drowning in water or low-oxygen air")
+is already carried verbatim in `gear_tools.js`, which is exactly what the row's `source` points
+at. Adding `breathMinutes: 60` would have been actively wrong: the engine reads that key
+kind-agnostically, so it would have granted a face-slot mouthpiece an hour of vacuum immunity,
+credited on screen to Void Lung.
+
+**The remaining honest gap is engine vocabulary, not data**: there is no drowning-only shield,
+so a Rebreather does not stop the Drowning clock in the app. Recorded here rather than fixed,
+because it wants a new effect key and that is its own decision.
+
+### Caveat on the source
+
+Part 3 is today's fresh export. **Part 2 is the 2026-08-21 export**, for the reason recorded
+under the rules.js pass: the re-pull did not land.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

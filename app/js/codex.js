@@ -445,6 +445,7 @@ EN.codexView = (function () {
       H.mitigations.filter(function (m) { return m.note; }).forEach(function (m) {
         kids.push(ruleBlock(m.name, m.note, m.kind));
       });
+      if (H.gmGuidance) kids.push(ruleBlock("GM Guidance", H.gmGuidance));
       blocks.push(refPanel("ref-hazards", "Environmental Hazards", "EXPOSURE · VACUUM · CAUSTIC", kids));
     })();
 
