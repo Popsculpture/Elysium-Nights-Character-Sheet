@@ -303,7 +303,8 @@ EN.codexView = (function () {
       kids.push(ruleBlock("Buying a Vehicle", V.intro
         + "\n\nA vehicle's list price is twenty weeks of its upkeep.\n\n"
         + V.profiles.map(function (v) {
-            return v.name + " | " + g(v.listPrice) + " | " + v.category + " T" + v.tier + " | " + v.availability + " | " + v.legality;
+            return v.name + " | " + g(v.listPrice) + " | " + v.category + " T" + v.tier + " | " + v.availability + " | " + v.legality
+                   + (v.loadout ? " | stock: " + v.loadout : "");
           }).join("\n")
         + "\n\n" + V.unlisted));
       kids.push(ruleBlock("How to Get One", V.acquisition.map(function (a) {

@@ -19,8 +19,8 @@ EN.vehicles = {
     { name: "Armored Sedan", speed: "Standard", handling: 0, structure: 14, integrity: 45, nodeTier: "Improved [1]", cargo: 8, traits: ["Enclosed", "Passenger (4)"],          category: "Ground",             tier: 2, fuel: 300,  reserve: 200,  availability: "Uncommon", legality: "Licensed" },
     { name: "Cargo Hauler", speed: "Slow", handling: -2, structure: 11, integrity: 80, nodeTier: "Standard [0]", cargo: 40, traits: ["Broadframe", "Passenger (6)"],           category: "Ground",             tier: 2, fuel: 500,  reserve: 400,  availability: "Common",   legality: "Licensed" },
     { name: "Hydrofoil", speed: "Fast", handling: 1, structure: 9, integrity: 30, nodeTier: "Standard [0]", cargo: 10, traits: ["Hover", "Agile", "Open-Frame"],              category: "Marine",             tier: 1, fuel: 500,  reserve: 400,  availability: "Uncommon", legality: "Licensed" },
-    { name: "Corporate VTOL", speed: "Very Fast", handling: 1, structure: 14, integrity: 50, nodeTier: "Advanced [2]", cargo: 16, traits: ["Flight", "Hover"],         category: "Aerial",             tier: 3, fuel: 1500, reserve: 1000, availability: "Rare",     legality: "Restricted" },
-    { name: "Riot Suppression Mech", speed: "Slow", handling: -1, structure: 18, integrity: 100, nodeTier: "Advanced [2]", cargo: 4, traits: ["Walker", "Armored"],  category: "Industrial / Mechs", tier: 3, fuel: 2000, reserve: 1500, availability: "Rare",     legality: "Restricted" },
+    { name: "Corporate VTOL", loadout: "Light Machinegun on a fixed door mount", speed: "Very Fast", handling: 1, structure: 14, integrity: 50, nodeTier: "Advanced [2]", cargo: 16, traits: ["Flight", "Hover"],         category: "Aerial",             tier: 3, fuel: 1500, reserve: 1000, availability: "Rare",     legality: "Restricted" },
+    { name: "Riot Suppression Mech", loadout: "Rotary Cannon on a turret ring", speed: "Slow", handling: -1, structure: 18, integrity: 100, nodeTier: "Advanced [2]", cargo: 4, traits: ["Walker", "Armored"],  category: "Industrial / Mechs", tier: 3, fuel: 2000, reserve: 1500, availability: "Rare",     legality: "Restricted" },
     { name: "Light Shuttle", speed: "Very Fast", handling: -1, structure: 11, integrity: 40, nodeTier: "Improved [1]", cargo: 20, traits: ["Flight", "Enclosed"],          category: "Starcraft",          tier: 2, fuel: 2500, reserve: 1500, availability: "Rare",     legality: "Licensed" }
   ],
 
@@ -58,7 +58,11 @@ EN.vehicles = {
     "Firewalls: a vehicle may mount one Firewall from the Firewall table in The #GRID by spending one Mod Slot. A Smartdeck gets its Firewall free because a deck is a hacking tool. A sedan is not.",
     "Fitting or pulling a mod is bench work: downtime, a garage, and Engineering Tools. Never a combat action.",
     "Flat bonuses of the same kind do not stack. If two mods each grant the same flat bonus, the higher applies and the other is dead weight bolted to your frame.",
-    "A mod never lowers a vehicle's Legality, it only raises the heat. The strictest tag among the vehicle and everything mounted on it is what a checkpoint scanner reads."
+    "A mod never lowers a vehicle's Legality, it only raises the heat. The strictest tag among the vehicle and everything mounted on it is what a checkpoint scanner reads.",
+    // The Hardpoint Mount below sells a "Mounted weapon" and this is what that means. Without
+    // it the file named a term it never defined, and the attack formula is not the personal
+    // one: a Mounted weapon rolls Tech, not Agility.
+    "Firing a Mounted weapon rolls d20 + Tech Modifier + the weapon's own Weapon Proficiency Bonus (Heavy Weapons for the Heavy Weapons and Explosive Launchers catalogs). A Mounted weapon counts as being in its Setup state: it ignores High Recoil and its range bands are doubled, and the vehicle's feed system counts as the loader for Crew Served. Attacks made from inside a vehicle moving at Fast or Very Fast take Snag unless the weapon is Mounted."
   ],
 
   mods: [
@@ -67,7 +71,7 @@ EN.vehicles = {
     { name: "Run-Flat Wheels",    price: 400,  fits: "Ground",             availability: "Common",   legality: "Legal",
       effect: "Ignore the first tire System Hit against this vehicle each scene, and spike strips force no Control Check." },
     { name: "Smoke Discharger",   price: 600,  fits: "Any",                availability: "Uncommon", legality: "Restricted",
-      effect: "Swift Action: spend 1 of 3 charges to lay an Area 3 Obscuring cloud, imposing Snag on the pursuer." },
+      effect: "Swift Action: spend 1 of 3 charges to lay an Area 3 Obscuring cloud behind the vehicle. The pursuing pilot takes Snag on their next Chase Check. Recharges cost 𝒢50 per canister." },
     { name: "Ram Bar",            price: 500,  fits: "Ground",             availability: "Common",   legality: "Licensed",
       effect: "Your vehicle takes half damage, rounded down, from rams you initiate." },
     { name: "Cargo Winch",        price: 450,  fits: "Ground, Industrial", availability: "Common",   legality: "Legal",
@@ -76,11 +80,11 @@ EN.vehicles = {
       fits: "Any", availability: "Uncommon", legality: "Restricted",
       effect: "Mounts one Heavy Weapon or Explosive Launcher as a Mounted weapon. A fixed mount fires in a forward arc; a turret ring swings 360 degrees." },
     { name: "Ghost Transponder",  price: 800,  fits: "Any",                availability: "Uncommon", legality: "Contraband",
-      effect: "Edge on checks against scanners, checkpoints, and traffic systems, and Heat is reduced by 1 per scene." },
+      effect: "Edge on checks against scanners, checkpoints, and traffic systems reading the vehicle's identity. Heat generated by this vehicle in a scene drops by 1." },
     { name: "Ejector Seat",       price: 900,  fits: "Any",                availability: "Rare",     legality: "Licensed",
-      effect: "Special: when a crash resolves, one occupant in the rigged seat exits before crash damage, or is launched on demand. Needs open sky above." },
+      effect: "Special: when a crash resolves, one occupant in the rigged seat exits as an Impulse before damage is rolled, thrown 4 spaces up and landing 2 spaces clear, Prone, unharmed; the kit cuts or jettisons the roof as part of firing, and a chute deploys if airborne. One use per installed seat per scene. Launching a passenger is a Swift Action usable at any time, not only on a crash: a willing occupant lands 2 spaces clear and Prone, an unwilling one gets an Agility Save (DC 15) to grab hold and stay put. Under a ceiling the occupant does not clear the vehicle: 1d6 Bludgeoning for every space of the 4 that was cut short, armor applies, and they drop back into their own space Prone. The seat is spent either way, and a crash it was fired to escape still resolves." },
     { name: "Overdrive Injector", price: 1500, fits: "Any",                availability: "Rare",     legality: "Restricted",
-      effect: "Once per scene, for one round, count the vehicle's Speed rating as one step higher. The engine takes 5 Integrity." },
+      effect: "Once per scene, for one round, count the vehicle's Speed rating one step higher, including for the straightaway trigger. The engine then takes 5 Integrity, ignoring Structure. A vehicle already rated Very Fast gains no increase because there is no fifth step, but it still takes the damage." },
     { name: "Chameleon Coat",     price: 2000, fits: "Any",                availability: "Rare",     legality: "Restricted",
       effect: "The vehicle repaints itself between scenes. Checks to spot or identify it while parked roll with Snag, and it gains Edge on Chase Checks at Lead 4." },
     { name: "Node Retrofit",      price: null, priceNote: "the listed cost of the new tier in The #GRID",

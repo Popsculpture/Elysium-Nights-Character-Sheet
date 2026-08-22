@@ -1569,7 +1569,10 @@ EN.inventoryView = (function () {
      price its Buyout, so the lease entry is price 0 with buyout set. */
   function VEH() { return (EN.vehicles && EN.vehicles.profiles) || []; }
   function vehicleDesc(v) {
-    return v.category + ", Tier " + v.tier + ". " + v.modSlots + " Mod Slots (1 + Tier). Weekly upkeep " + fmtG(v.upkeep) + ": " + fmtG(v.fuel) + " Fuel and Routine plus " + fmtG(v.reserve) + " Repair Reserve.";
+    // A stock loadout is a weapon the profile comes armed with, costing neither a Mod Slot
+    // nor a Hardpoint Mount, so it belongs on the line the owner actually reads.
+    return v.category + ", Tier " + v.tier + ". " + v.modSlots + " Mod Slots (1 + Tier). Weekly upkeep " + fmtG(v.upkeep) + ": " + fmtG(v.fuel) + " Fuel and Routine plus " + fmtG(v.reserve) + " Repair Reserve."
+      + (v.loadout ? " Stock loadout: " + v.loadout + "." : "");
   }
   function vehicleAsItem(v) {
     return { name: v.name, kind: "vehicle", group: "Vehicle", price: v.listPrice,

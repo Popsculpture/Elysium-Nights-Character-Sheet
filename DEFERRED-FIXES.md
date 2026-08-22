@@ -5370,6 +5370,69 @@ because it wants a new effect key and that is its own decision.
 Part 3 is today's fresh export. **Part 2 is the 2026-08-21 export**, for the reason recorded
 under the rules.js pass: the re-pull did not land.
 
+## vehicles.js checked against Parts 2 and 3, 2026-08-22
+
+**97 numeric checks, 97 pass. Six prose defects found by an adversarial pass, all fixed.**
+
+`scratchpad/lin/diff_vehicles.py` is table-driven, because both sources really are tables: all
+7 profiles' Category, Tier, Speed, Handling, Structure, Integrity, Node Tier, Cargo and Traits
+against Part 2's Vehicle Profiles, both upkeep figures against Part 3's Vehicle Upkeep Table,
+the derived weekly total, and all 13 mods' price, fits, legality and availability. **Not one
+number is wrong.**
+
+The prose went to a fan-out of independent agents with adversarial refutation. 26 claims went
+in and 6 survived, which is the right ratio for this kind of hunt.
+
+### Fixed
+
+- **Ejector Seat** carried one sentence where the book has three bullets, and its one
+  restriction was wrong. "Needs open sky above" reads as a gate; the book fires the seat anyway
+  under a ceiling and charges for it. Restored: the Impulse on a crash, 4 spaces up and 2
+  clear, Prone and unharmed, the roof cut as part of firing, a chute if airborne, one use per
+  scene, the **Swift Action** to launch a passenger at will, the **Agility Save (DC 15)** an
+  unwilling occupant gets, and the overhead case at **1d6 Bludgeoning per space of the 4 cut
+  short**.
+- **Overdrive Injector** dropped the cap that bites hardest on this file's own data: a vehicle
+  already rated **Very Fast gains no increase**, because there is no fifth step, but still
+  takes the damage. Two of the seven profiles, the Corporate VTOL and the Light Shuttle, are
+  Very Fast. Also restored "including for the straightaway trigger" and "ignoring Structure".
+- **Ghost Transponder** granted Edge on checks against scanners, checkpoints and traffic
+  systems full stop. The book scopes it to those systems **reading the vehicle's identity**,
+  and its own summary line reads "Edge against ID scans".
+- **Smoke Discharger** lost the timing and the price: the Snag lands on the pursuing pilot's
+  **next Chase Check**, and recharges cost **50 Glimmer per canister**. A refill price belongs
+  in the file whose other half is the ownership ledger.
+- **Stock loadouts** were absent. Two profiles come armed out of the book: the Riot Suppression
+  Mech carries a Rotary Cannon on a turret ring, the Corporate VTOL a Light Machinegun on a
+  fixed door mount. That is a weapon the owner has without spending a Mod Slot or a Hardpoint
+  Mount, so it is now a `loadout` field, shown in the Garage line and the Codex table.
+- **Mounted weapons were never defined.** The file sells a Hardpoint Mount that mounts a weapon
+  "as a Mounted weapon" and then never said what one is. It matters because the attack is not
+  the personal one: **d20 + Tech Modifier** plus the weapon's own proficiency, the weapon counts
+  as being in its Setup state (ignores High Recoil, range bands doubled), the feed system is the
+  loader for Crew Served, and attacks from inside a vehicle moving Fast or Very Fast take Snag
+  unless the weapon is Mounted. Added to `modRules`.
+
+### Refuted, including another of mine
+
+Twenty claims died. The one worth recording is **mine again**: I noticed Part 2 defines nine
+Vehicle Traits mechanically while the app carries them only as bare strings, with no glossary,
+even though weapon traits have `EN.gearCatalog.weaponTraits` and armor traits have
+`EN.gearCatalog.armor.traits`. Refuted on two grounds, both checked: the sheet **never displays
+a vehicle's traits at all**, so nothing is unreachable, and `statsNote` names Traits explicitly
+among the things it defers to Part 2. That is a stated boundary, not a gap.
+
+Most of the rest died on the same boundary. `statsNote` defers Speed, Handling, Structure,
+Integrity, Node Tier, Cargo and Traits to Part 2, so the Speed Ratings table, the Impact DC
+table, the mass rows, Category Rules and the Structure damage gate are all outside this file by
+declaration rather than by oversight. **That deferral is doing a lot of work, and it is worth
+knowing it is load-bearing**: it is the reason two thirds of the claims failed.
+
+### Caveat on the source
+
+Part 3 is today's fresh export. **Part 2 is the 2026-08-21 export**, for the reason recorded
+under the rules.js pass: the re-pull did not land.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from
