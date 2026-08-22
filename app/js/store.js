@@ -95,6 +95,9 @@ EN.store = (function () {
       // an unanswered choice grants no point rather than a guessed one. Null-prototype like every
       // other map in this app keyed on a string out of a save file. Read through engine.talentAttr.
       talentAttrPicks: Object.create(null),
+      // Attack-attribute offers the player has switched on, per weapon entry key.
+      // {weaponEntryKey: featureName}. See the engine's attackAttrOffers.
+      attackAttr: Object.create(null),
       customFeatures: [],                // player/GM manual Features on the Freelancer tab: [{id,name,source,effect,note,category,action,cost,uses,range,duration}]
       featureAnnotations: {},            // per computed-feature notes/flags: {featureName: {note, pinned, important, hidden}}
       universalUpgrades: {},             // {level: {type:'attr'|'talent'|'evolution', ...}}
@@ -573,6 +576,22 @@ EN.store = (function () {
       if (tapOut[key] === undefined) tapOut[key] = v;
     });
     ch.talentAttrPicks = tapOut;
+    /* Which "you may" attack-attribute offer the player has switched ON, per weapon entry:
+       {weaponEntryKey: "First Do No Harm"}. Absent means off, which is the honest default:
+       these offers are conditional on something the sheet cannot see (First Do No Harm turns
+       on the target being organic), so the sheet must not assume them.
+       Null-prototype like every other map here keyed on a string out of a save file, and
+       rebuilt rather than merely carried because the schema fill deep-copies its template
+       through JSON, which returns a plain object. Validated on READ by the engine, so a
+       stale entry naming a weapon that is gone, or a feature the character no longer has,
+       simply resolves to nothing. */
+    var aaIn = (ch.attackAttr && typeof ch.attackAttr === "object" && !Array.isArray(ch.attackAttr))
+      ? ch.attackAttr : {};
+    var aaOut = Object.create(null);
+    Object.keys(aaIn).forEach(function (k) {
+      if (typeof aaIn[k] === "string" && aaIn[k]) aaOut[k] = aaIn[k];
+    });
+    ch.attackAttr = aaOut;
     // Overclocked Array state (6x6 rolled matrix + picked line + table rule).
     // A hand-edited/imported file can carry anything here, and the matrix
     // render reads every slot, so anything short of exactly 36 well-formed

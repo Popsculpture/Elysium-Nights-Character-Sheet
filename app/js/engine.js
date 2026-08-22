@@ -814,6 +814,70 @@ EN.engine = (function () {
     });
     return out;
   }
+  /* ---- Alternative attack attributes, offered rather than applied ----------
+     Two features let a qualifying weapon attack off a different attribute. Both are
+     "you may", and First Do No Harm additionally turns on whether the target is organic,
+     which the sheet cannot know. So this RENDERS the option and never applies it, the same
+     posture unarmedRider.when takes and the same ruling made for the conditional lineage
+     features: the sheet states the alternative and the table decides.
+
+     The gap this closes is presentational, and it was worth closing because it is large.
+     A Stitcher's pistol printed HIT +3 and 1d6 +1 off Agility while their Level 1 class
+     feature made it +5 and 1d6 +3 against most targets, with nothing on the weapon row to
+     say so: the feature sat on one sub-tab and the weapon on another.
+
+     Source values per app/data/class_stitcher_resources.js and class_scoundrel_shaper.js,
+     both verified word for word against Part 1 on 2026-08-21. */
+  function itemTrait(it, name) {
+    return (it && it.traits || []).some(function (t) { return new RegExp("^" + name).test(t); });
+  }
+  function isMeleeItem(it) { return !!it && (it.group === "Simple" || it.group === "Martial"); }
+  var ATTACK_ATTR_OFFERS = [
+    { feature: "First Do No Harm", attr: "TEC", when: "against an organic target",
+      fits: function (it) { return itemTrait(it, "Light"); } },
+    /* Resonant Edge is listed for completeness and, as the rules stand, never fires. It
+       offers Body instead of Agility on a Finesse or Light melee weapon, and combat.js
+       already resolves a melee attack to Body UNLESS the weapon is Finesse and Agility is
+       the higher of the two, so the engine has always given the better attribute. The row
+       stays because the next reader will otherwise ask why this feature is unhandled, and
+       because it starts working the day that default changes. */
+    { feature: "Resonant Edge", attr: "BOD", when: "",
+      fits: function (it) { return isMeleeItem(it) && (itemTrait(it, "Finesse") || itemTrait(it, "Light")); } }
+  ];
+  /* THE resolver for "does anything let this weapon attack off a better attribute".
+     Offers only an IMPROVEMENT: an option that ties or loses is noise on the row, and the
+     feature's own text is a sub-tab away for anyone who wants the full rule. */
+  function attackAttrOffers(d, it, currentMod) {
+    if (!d || !it) return [];
+    var names = (d.features || []).map(function (f) { return f.name; });
+    var out = [];
+    ATTACK_ATTR_OFFERS.forEach(function (o) {
+      if (names.indexOf(o.feature) === -1 || !o.fits(it)) return;
+      var a = d.attributes && d.attributes[o.attr];
+      if (!a || a.mod <= currentMod) return;
+      out.push({ feature: o.feature, attr: o.attr, attrName: a.name, mod: a.mod,
+                 delta: a.mod - currentMod, when: o.when });
+    });
+    return out;
+  }
+
+  /* THE resolver for "is an offer switched on for this weapon, and is it still legal".
+     Validated on read rather than pruned on write: a stored pick naming a feature the
+     character has since retrained away, or an attribute that is no longer the better one,
+     resolves to nothing and the row quietly goes back to its default. That keeps one
+     writer (the toggle) and no cleanup path to forget.
+     baseMod is the attribute modifier the weapon would use WITHOUT any offer, so the
+     comparison is always against the honest default. */
+  function activeAttackAttr(ch, d, it, key, baseMod) {
+    var want = (ch && ch.attackAttr && key) ? ch.attackAttr[key] : null;
+    if (typeof want !== "string" || !want) return null;
+    var offers = attackAttrOffers(d, it, baseMod);
+    for (var i = 0; i < offers.length; i++) {
+      if (offers[i].feature === want) return offers[i];
+    }
+    return null;
+  }
+
   /* ---- Condition immunity -------------------------------------------------
      The channel the comment above damageResistances has been asking for. Condition
      immunity is a different axis from a damage type: "immune to Frightened" is not a
@@ -3542,6 +3606,7 @@ EN.engine = (function () {
     // post-creation attribute bump. effectiveAttributes sums attrBumpSources rather than
     // walking the upgrade slots itself, so no surface can disagree about what bumped what.
     conditionImmunities: conditionImmunities, immunitiesFor: immunitiesFor,
+    attackAttrOffers: attackAttrOffers, activeAttackAttr: activeAttackAttr,
     senseGrants: senseGrants,
     canonTalentKey: canonTalentKey, talentAttr: talentAttr, talentAttrOptions: talentAttrOptions,
     talentAttrPending: talentAttrPending, attrBumpSources: attrBumpSources,

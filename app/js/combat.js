@@ -4017,7 +4017,7 @@ EN.combatView = (function () {
       var kids = [];
       var atkSnag = fx.snagAtk ? "Active condition · Snag on all attack rolls" : null;
       // to-hit: governing attribute + weapon-category proficiency bonus
-      function weaponHit(it) {
+      function weaponHit(it, key) {
         var melee = it.group === "Simple" || it.group === "Martial";
         var thrownItem = (it.traits || []).some(function (t) { return /^Thrown/.test(t); });
         var finesse = (it.traits || []).some(function (t) { return /^Finesse/.test(t); });
@@ -4036,9 +4036,18 @@ EN.combatView = (function () {
         var focus = eng.weaponFocus(ch, cat, it.name);
         var focusCal = focus ? (d.caliber || 1) : 0;
         var spec = eng.weaponSpec(ch, cat, it.name);
+        /* Features that OFFER a better attribute on this weapon, and the one the player
+           has switched on, if any. baseMod and baseAttrName keep the untoggled answer so
+           the toggle can show both sides and so the offer is always compared against the
+           honest default rather than against itself. */
+        var baseMod = mod, baseAttrName = attrName;
+        var offers = eng.attackAttrOffers ? eng.attackAttrOffers(d, it, baseMod) : [];
+        var offerOn = eng.activeAttackAttr ? eng.activeAttackAttr(ch, d, it, key, baseMod) : null;
+        if (offerOn) { mod = offerOn.mod; attrName = offerOn.attrName; }
         return { mod: mod, attrName: attrName, cat: cat, tier: tier, prof: prof,
                  focus: focus, focusCal: focusCal, spec: spec, indirect: indirect,
-                 dmgMod: indirect ? 0 : mod,
+                 dmgMod: indirect ? 0 : mod, offers: offers, offerOn: offerOn,
+                 baseMod: baseMod, baseAttrName: baseAttrName,
                  total: mod + prof + focusCal, melee: melee, thrownItem: thrownItem };
       }
       // a plain snapshot the roll tray opens against (no live-scope closures)
@@ -4159,7 +4168,7 @@ EN.combatView = (function () {
         // stepped unarmed strike they are the reason for. The strike row and the
         // STRIKE picker already account for them.
         if (eng.isUnarmedAugmentName(it.name)) return;
-        var h = weaponHit(it), norm = normalizeWeapon(it);
+        var h = weaponHit(it, wKey), norm = normalizeWeapon(it);
         // resolved once per row and used by both the REACH box and the traits line,
         // so the number and the chips cannot disagree. Ranged weapons come back
         // `melee: false` and nothing below touches them.
@@ -4336,9 +4345,47 @@ EN.combatView = (function () {
         var traitChips = norm.traits.filter(function (t) {
           return !(grip.forcedBy && grip.versatile && /^Versatile\s*\(/i.test(String(t)));
         });
+        /* A feature that lets this weapon attack off a better attribute renders HERE, on the
+           weapon, and is a TOGGLE rather than a note. Both offers are "you may", and First
+           Do No Harm also turns on the target being organic, so the sheet cannot decide for
+           you; but once you say it applies, the sheet should do the arithmetic. Off by
+           default, because assuming a conditional benefit is the worse error.
+           Switching it on changes the attack modifier, the damage modifier and the roll
+           tray, because weaponHit resolved them from the same answer. */
+        var offerChips = (h.offers || []).map(function (o) {
+          var on = h.offerOn && h.offerOn.feature === o.feature;
+          var hitOn = o.mod + h.prof + h.focusCal;
+          var hitOff = h.baseMod + h.prof + h.focusCal;
+          return el("button.chip", {
+            title: o.feature + ": you may use your " + o.attrName + " modifier instead of "
+                   + h.baseAttrName + " for the attack and damage rolls"
+                   + (o.when ? ", " + o.when : "") + "."
+                   + "\n" + (on ? "ON: this weapon is using " + o.attrName + ", HIT "
+                                  + eng.fmtMod(hitOn) + " and damage " + eng.fmtMod(o.mod)
+                                  + ". Click to turn it off."
+                              : "OFF: this weapon is using " + h.baseAttrName + ", HIT "
+                                  + eng.fmtMod(hitOff) + " and damage " + eng.fmtMod(h.baseMod)
+                                  + ". Click to apply the feature.")
+                   + "\n" + "The sheet cannot tell"
+                   + (o.when ? " whether " + o.when.replace(/^against /, "the target is ") : " whether this applies")
+                   + ", so this is yours to declare.",
+            style: { cursor: "pointer",
+                     color: on ? "var(--bg)" : "var(--gold)",
+                     background: on ? "var(--gold)" : "transparent",
+                     borderColor: "var(--gold)" },
+            onclick: function () {
+              store.update(function (c) {
+                c.attackAttr = c.attackAttr || Object.create(null);
+                if (c.attackAttr[wKey] === o.feature) delete c.attackAttr[wKey];
+                else c.attackAttr[wKey] = o.feature;
+              });
+            } },
+            (on ? "\u2713 " : "") + o.attrName.toUpperCase() + " " + eng.fmtMod(hitOn)
+              + " / " + eng.fmtMod(o.mod) + " \u00b7 " + o.feature.toUpperCase());
+        });
         rowKids.push(el("div.row.wrap", { style: { gap: "5px", marginTop: "9px", paddingTop: "8px",
           borderTop: "1px solid rgba(35,48,68,.6)" } },
-          traitChips.map(wTraitChip).concat([reachChip, gripEl].filter(Boolean))));
+          traitChips.map(wTraitChip).concat(offerChips).concat([reachChip, gripEl].filter(Boolean))));
 
         // Signature Weapons: On Hit effects and area projections stay locked at
         // any proficiency tier until a Skill Focus names this specific weapon.

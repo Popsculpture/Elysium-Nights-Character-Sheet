@@ -4702,6 +4702,63 @@ awakening the sleeping earth beneath the asphalt". Her blurb changed with her.
 surface, and a subclass whose Flow or resource attribute does not match the character's stat
 line is invisible on the sheet: nothing warns, the numbers are simply small.
 
+### The other six examples checked for the same mismatch: all clean
+
+Every one of the other six has their class resource attribute as their **highest** attribute,
+at +3, with a full pool of 6:
+
+| character | class | resource | keys off | rank in their stat line |
+|---|---|---|---|---|
+| Wren Osei | Codebreaker | Bandwidth | Tech 16 | 1st |
+| Bekh Tarrow | Fury | Overdrive | Body 16 | 1st |
+| Odile Vantz | Hustler | Leverage | Charm 16 | 1st |
+| Sable Ferro | Operator | Execution | Wits 16 | 1st |
+| Pip Ghal | Scoundrel | Moxie | Agility 16 | 1st |
+| Halden Brack | Stitcher | Triage | Tech 16 | 1st |
+
+**The Shaper was structurally the only one that could go wrong.** Every other class declares
+one fixed resource attribute, so choosing a subclass that fights your stat line is not
+possible for them. The Shaper is the only class whose attribute varies BY SUBCLASS
+(Harmonist Mystique, Kensei Body, Sourcerer Tech, Icon Charm), which is exactly where the
+mismatch appeared. Worth remembering when any future class gains a by-subclass attribute.
+
+### What the check DID find: First Do No Harm is invisible on the weapon row
+
+Halden's Pocket Pistol renders **HIT +3, DMG 1d6 +1**, which is Agility +1 plus his
+proficiency bonus. His Level 1 class feature reads: "Whenever you make an attack roll with a
+weapon that has the Light trait against an organic target, you may use your Tech modifier
+instead of Agility or Body for the attack and damage rolls." His pistol IS Light and his Tech
+is +3, so against an organic target he attacks at **+5 for 1d6 +3**.
+
+**The engine is right not to apply it automatically.** It is a "you may", and it is
+conditional on the target being organic, which the sheet cannot know. That is the same ruling
+already made for the 43 conditional lineage features: render, do not apply.
+
+**The presentation is what fails.** The weapon row gives no hint the option exists. The
+feature is on the Features sub-tab and the weapon is on the Weapons sub-tab, and nothing
+connects them, so a player reads Halden as a +3 attacker when against most targets he is a
++5. The swing is +2 to hit and +2 to damage on a Level 1 class-defining feature.
+
+This is the presentational defect already named in the lineage audit: an unwired option looks
+identical to an absent one.
+
+**BUILT, and as a toggle rather than a note.** The weapon row now carries a gold chip reading
+"TECH +5 / +3 . FIRST DO NO HARM". Off by default, because assuming a conditional benefit is
+the worse error, and the chip still shows what you would get so the option is never invisible.
+Switching it on changes the attack modifier, the damage modifier and the roll tray together,
+because `weaponHit` resolves all three from the same answer.
+
+The pick is stored per weapon as `ch.attackAttr = {weaponEntryKey: featureName}` and
+**validated on read rather than pruned on write**: an entry naming a feature since retrained
+away, or a weapon no longer owned, resolves to nothing and the row returns to its default.
+That leaves one writer, the toggle, and no cleanup path to forget.
+
+The search found two such features. The Kensei's **Resonant Edge** offers Body instead of
+Agility on a Finesse or Light melee weapon and can never fire, because `combat.js` already
+resolves melee to Body unless the weapon is Finesse and Agility is higher. Its row stays in
+`ATTACK_ATTR_OFFERS` with a comment saying so, since deleting it only makes the next reader
+ask why the feature is unhandled.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from
