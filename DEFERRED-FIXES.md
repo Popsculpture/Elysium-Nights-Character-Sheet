@@ -5838,6 +5838,50 @@ the description, which is its house style throughout.
 Part 3 is today's fresh export. **Part 1 is the 2026-08-21 export**, which is what the kits
 finding rests on.
 
+## class_picker.js checked against Part 1, 2026-08-22: CLEAN
+
+**60 strings, all verbatim. Nothing changed.** The second clean file of the sweep, and like
+`status_changes.js` it is clean for a structural reason rather than by luck.
+
+### It was held to its own standard
+
+This file is unusual: it makes an EXACTNESS claim where every other data file compresses on
+purpose. Its header says the app carries three distinct layers per class, Choosing (this file),
+Arriving (`EN.classes[key].tagline`) and Playing (`extra.playbook`), and that these Play-if
+lines are "Verbatim from Part 1".
+
+So the test was not the usual "did a mechanic survive the abridgement" but the much sharper
+"is this actually verbatim", which is the only fair way to hold a file to a claim it makes
+itself. `scratchpad/lin/diff_picker.py` normalises only markdown emphasis, the manuscript's
+backslash escapes and curly quotes, then requires every string to appear in Part 1 as a
+substring.
+
+**All 60 pass**: the two intro paragraphs, and a blurb and a Play-if line for each of 7 classes
+and 22 subclasses.
+
+### Complete and correctly assigned
+
+Verbatim alone would not be enough, since a file can quote the book perfectly and still quote
+the wrong thing or miss half of it. Both were checked:
+
+- **Complete.** Part 1 states 29 "Play a X if" lines and the app carries 29, an exact set match
+  in both directions. Nothing in the book is missing and nothing in the app is invented.
+- **Correctly assigned.** Every class blurb was traced back to the manuscript and confirmed to
+  sit under that class's own heading, so no text is attached to the wrong class.
+- **Its own pointers resolve.** All 7 classes have the `tagline` and `extra.playbook` the header
+  promises, and no subclass named in the picker is missing from the class data.
+
+Rendered live to confirm it is not merely correct in the file: the builder's class step prints
+both intro paragraphs and the Codebreaker Play-if line word for word.
+
+### Why the clean files are clean
+
+Both files that came back clean share a trait the twelve that did not were missing. Neither
+restates a rule it does not own. `status_changes.js` derives its options from the files that own
+them, and `class_picker.js` quotes the book exactly and confines itself to one layer, deferring
+the other two by name. **Every file that carried its own paraphrase of a rule eventually drifted
+from it.** That is the single clearest pattern in the whole sweep.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from
