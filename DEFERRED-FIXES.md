@@ -4803,10 +4803,25 @@ Body of 18 or higher, the weight stops mattering: you ignore Slow on this weapon
 has "Slow holds you to one attack each round; with cyberware that raises your Body and a Body
 of 18 or higher, you ignore Slow on this weapon". Two clauses gone, meaning unchanged.
 
-**Not transcribed, deliberately.** 246 entries is a mechanical job of the same size as the
-class files, and the numbers were the part that could actually mis-rule a table. The scripts
-are `diff_gear.py` for the tables and `diff_gear_prose.py` for the sections, and the full
-side-by-side is in `gear-prose-diff.md`.
+**TRANSCRIBED. 197 values re-transcribed from Part 3 across three passes**, and the file now
+matches the book on every description and every effect clause it shares with it.
+
+The tail needed two extra shapes the first pass did not handle. Sixteen entries could not be
+matched uniquely because their text repeats across items: "Grants 1 DR." is the effect string
+of every one-DR suit, so a whole-file replace would have hit the wrong armour. Those were done
+with a scoped replace that finds each item's own object and edits only inside it. Separately,
+the book qualifies some labels, writing "**On Hit (Organic):**" and "**On Hit (Machinery):**"
+as two bullets of one clause, which the app stores as a single string; the label is now kept
+in front of each half so the sheet says which case is which.
+
+**What remains is not drift. 63 values have no counterpart in the book at all**, and every one
+is a kit's `effect`: a one-line summary the app composes for the stash row, like "Treats
+Wounds and Fatigue at full effect." The book has no such line, carrying instead the Basic Use
+and Proficient Use bullets, which the app stores in its own `basic` and `proficient` fields
+and which now match word for word. **Genuine clause differences remaining: zero.**
+
+The scripts are `diff_gear.py` for the tables, `diff_gear_prose.py` for the sections,
+`fix_gear_prose.py` for the transcription and `fix_gear_scoped.py` for the non-unique tail.
 
 ## Environment
 

@@ -33,7 +33,7 @@ EN.gearCatalog.melee = {
     { name: "Knuckles", group: "Simple", price: 15, damage: "Augments unarmed strikes", range: "Melee",
       traits: ["Light", "Concealable"], availability: "Common", legality: "Restricted",
       desc: "Composite or alloy bands that turn a punch into a hospital visit. Easy to hide. Harder to explain when a patrol officer flips your jacket open.",
-      effect: "Augments unarmed strikes. While wearing Knuckles, your unarmed strike damage die steps up one size, and on a strike with no die that first step grants 1d4 Bludgeoning. This stacks with every other increase to your unarmed damage." },
+      effect: "While striking with Knuckles, increase your unarmed strike damage die by one step. If your unarmed strikes do not have a damage die, they deal 1d4 Bludgeoning damage. This increase stacks normally with other effects that increase your unarmed damage die." },
     // shafted: a long-shafted weapon, which is what Staff & Spear Master keys on.
     // NOT the same question as "has Reach": a Whip reaches 2 and is not one.
     // Two-Handed removed 2026-08-11 to match the manuscript. It contradicted Versatile:
