@@ -1133,7 +1133,10 @@ EN.combatView = (function () {
   // Per-condition mechanical riders (straight from the condition texts).
   // fx(e, lvl) mutates the aggregate; everything else surfaces via notes.
   var COND_FX = {
-    "Bleeding": function (e, l) { e.notes.push("Bleeding " + l + ": lose " + l + "d4 Vitality at start of turn and per space moved"); },
+    // "willingly" is load-bearing: being Shoved, pulled or thrown does NOT tick the bleed.
+    // conditions.js carries the qualifier and this note did not, so the prose card and the
+    // mechanical note beside it stated different rules.
+    "Bleeding": function (e, l) { e.notes.push("Bleeding " + l + ": lose " + l + "d4 Vitality at start of turn and per space you willingly move"); },
     "Bloodied": function (e) { e.speedHalved = true; e.notes.push("Bloodied: Speed halved; cannot take Complex Actions"); },
     "Breached": function (e) { e.notes.push("Breached: system actions may suffer Snag / be overridden"); },
     "Breakflow": function (e) { e.notes.push("Breakflow: FP drop to 0; cannot channel, recover FP, or sustain effects"); },

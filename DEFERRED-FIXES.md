@@ -5229,6 +5229,64 @@ appeared, which points at a native save dialog waiting for a click. Nothing sugg
 or 2 have changed, and the eight-cell Part 3 edit was the only one flagged, but this pass
 should be re-run if either was edited since.
 
+## combat.js checked against Parts 2 and 3, 2026-08-22
+
+**57 claims, 57 pass. One fix: a note that stated a different rule from the card beside it.**
+
+combat.js is a 5,293-line view, and most of it has no manuscript counterpart. What does is the
+part that CHANGES NUMBERS: `COND_FX`, the table that turns an active condition into real Speed,
+Snag, Save and action-economy effects, plus the firing-mode ammo costs. `conditions.js` carries
+the prose for those same conditions and was checked on 2026-08-21; this is the other half, the
+code that acts. Only this half is what the sheet actually does to a character.
+
+`scratchpad/lin/diff_combat.py` is the check, written as claims with evidence like
+`diff_rules.py`. Each condition is claimed TWICE: once that combat.js still says what the check
+assumes (reported as STALE CLAIM if not, so a check cannot quietly pass about code that has
+since changed) and once that the manuscript supports it.
+
+Verified clean: twenty conditions including Burning's 1d6 and DC 10, Confused's d8, Drowsy's
+-2 Initiative and DC 15 second-exposure save, Frightened's 10 spaces, Grappled's contested
+Athletics or Acrobatics, Hallucinating's default DC 12, LinkDeath's 2d6 Psychic, Mutating's
+DC 10 plus stacks, Panic's DC 12, Paralyzed's auto-failed Body and Agility saves, Prone's
+Edge and Snag split, Staggered escalating to Stunned, Stunned's one Action OR Swift, and
+Surprised's first-turn lockout. Both ladders check out end to end: **Fatigue 1 to 6** and
+**Strain 1 to 5** by name and effect. Firing modes too, with Burst Fire at 3 rounds and
+Full-Auto at 8.
+
+The Fatigue ladder deserves a specific note because it is the subtlest thing here and it is
+**right**: the book gives level 1 "Lose 1 point of Speed" and level 2 "2 additional points of
+Speed (total -3)", and the app's `speedDelta -= 1` then `-= 2` sums to exactly -3. Confirmed
+live on the sheet, which reads **SPD 3 of 6** for a Speed-6 character at Fatigue 2.
+
+### The one fix: Bleeding dropped "willingly"
+
+The book: "At the start of your turn, and every time you **willingly** move 1 space, you lose
+Vitality based on your current stacks." The note read "at start of turn and per space moved".
+
+That qualifier is load-bearing. Being Shoved, pulled or thrown is not willing movement and does
+not tick the bleed, so the note as written would have a table applying damage the rules do not
+charge. It is also an inconsistency the app had with ITSELF: `conditions.js` carries "willingly"
+and the mechanical note beside it did not, so the condition card and its effect line stated
+different rules. Now reads "per space you willingly move", and renders that way on the sheet.
+
+### Two notes on the sweep
+
+`DC 16` appears once in combat.js and is not a rule: it sits inside a comment describing a
+fixed bug. Every live DC in the file is 10, 12 or 15.
+
+Seven claims first reported NOT FOUND and **all seven were my patterns, not the app**. The book
+writes "every time you willingly move 1 space" rather than "per space", "Speed is reduced by
+50%" rather than "halved", "-2 penalty to Initiative" rather than "-2 to Initiative", "cannot
+take Move Actions" rather than "no Move", and states Fatigue as "Lose 1 point of Speed" and
+"2 additional points of Speed (total -3)" rather than as signed numbers. Same lesson as every
+prior pass: read the pattern before believing the result.
+
+### Caveat on the source
+
+Part 3 is today's fresh export. **Part 2 is the 2026-08-21 export**, for the reason recorded
+under the rules.js pass: the re-pull did not land, with no file and no staging `.tmp`, pointing
+at a native save dialog waiting on a click.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from
