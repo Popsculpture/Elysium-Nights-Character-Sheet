@@ -4956,6 +4956,114 @@ opens that way, so no render site became redundant.
 All seven tabs render, 43 modules load, 63 parts and 25 mods parse, the dash sweep is clean,
 and the console is free of app errors on a fresh load.
 
+## cyberware.js checked against Part 3, 2026-08-22
+
+Read from disk. 20 items, 53 tier rows. **272 values compared across nine fields. Six prose
+defects fixed, one author question raised, and everything else confirmed correct by design.**
+
+`scratchpad/lin/diff_cyber.py` is the check. The prose half was judged by a fan-out of
+independent agents with a two-lens adversarial pass over every claimed defect (does the app
+really lack the rule, and would a table actually play it differently). Twelve claims went in,
+five came out unanimous; a sixth was a split decision I promoted myself, on the reasoning
+below.
+
+### The numbers are perfect
+
+**53 SP values and 53 price values, zero differences.** Every threshold in the Chrome Tax
+matches, and the three quality-tier descriptions match.
+
+### Three groups of apparent differences that are correct by design
+
+- **Enhancement (9) and Zone (2).** Part 3 prints these twice: once in each entry's bullet
+  ("Enhancement: +1 Wits (at Brandware or higher)") and once in the **Cyberware Quick
+  Reference** table ("+1 Wits"). The app follows the table, which is the machine-readable
+  form, exactly as it does with weapon-part `fits`. The tier qualifier is not lost: it is a
+  restatement of the global rule at Part 3's "Enhancement Bonuses" section, and `engine.js`
+  implements that rule directly (Streetware 0, Brandware base, Blackware doubled, "arm only"
+  excluded from the general attribute, highest-wins on a repeated attribute). The book's cap,
+  that an Enhancement cannot raise an attribute above its maximum, is enforced at
+  `engine.js:2984`.
+- **Convergence Engine legality.** App "Restricted", book "Restricted (effectively
+  unavailable)". The app stores the machine value and the parenthetical is commentary.
+
+### The one author question: a rarity word in the Legality column
+
+Eight cyberware tier rows read **Common** in Part 3's **Legality** column, and the app writes
+**Legal** for all eight. The correspondence is exact and systematic:
+
+  Streetware and Brandware Datajack, Streetware Cyberoptics, Streetware and Brandware Toxin
+  Filter, Streetware and Brandware Spring Joints, Brandware Subdermal Comm.
+
+The book's cyberware tables never use the word "Legal" anywhere. "Common" belongs to the
+rarity scale (Common / Uncommon / Rare), not the legality scale (Legal / Licensed / Restricted
+/ Contraband), and the app keeps the two apart: `legality` comes from the data while
+`availability` is derived from the tier (`TIER_AVAIL`). Writing "Common" into the legality
+field would fall out of `LEGAL_MULT` at `inventory.js:84`, so the compliance surcharge would
+silently drop to the 1x fallback. **Left as "Legal". This wants a ruling, not a code change.**
+
+### The six prose fixes
+
+Every one of the 69 prose values differs from the book, because this file is written in a
+deliberately compressed house style. That is not drift, and it was not treated as drift: the
+question asked of each value was only whether the abridgement drops a rule. Six did.
+
+- **Synthetic Heart (black).** Stillness Mode had an upside and no cost whatsoever. Restored:
+  while in it you take no Actions, Move Actions or Swift Actions and cannot use other
+  cyberware, you stay aware of your surroundings, and exiting is a Free Action on your turn.
+- **Disruption Lattice (black).** Targeted suppression had neither an action cost nor a
+  duration. Restored: it costs an Action, and the +2 FP and Snag last until the start of your
+  next turn.
+- **Hand Razors (desc)** and **Spring Joints (desc).** The Cyberarm and Cyberleg Compatibility
+  rules each have two halves, and only the SP-exemption half was carried. Restored: a
+  platform-slotted pair takes no Stealth Snag even at Streetware.
+- **Resonance Crown (effect).** Nothing said when the harmonized pieces are chosen. Restored:
+  chosen at install, and changing the selection takes 1 hour of Downtime meditation with a
+  qualified artificer.
+- **Cyberarm (black).** The app said "cannot be disarmed" where the book says "cannot be
+  disarmed **by mundane means**". This was the split decision. One reviewer refuted it on the
+  grounds that every number was present; the other confirmed it because a non-mundane disarm
+  exists as an at-will rule, the Electromagnetic base effect **Magnetize** in Part 2, which
+  tears metal free of a wielder. Dropping the qualifier makes the arm immune to it. Promoted
+  and fixed.
+
+The fixes are written in the file's own compressed voice rather than pasted from the book,
+because the compression here is the author's choice and mass transcription would fight it.
+
+### A limitation worth knowing: chrome prose is snapshotted at purchase
+
+`inventory.js:433` copies `desc` and `effect` onto the character's own cyberware record when
+the piece is bought, and `migrate()` only converts legacy string entries, so it never refreshes
+them. **Catalog edits to `desc` and `effect` therefore do not reach a character who already
+owns that piece.** Three of the six fixes above are in those two fields.
+
+Nothing shipped is affected: the seven pre-made examples carry no cyberware at all, and the
+builder's own path (`builder.js:2011`) writes records with no `desc` or `effect`. Only a real
+player's save that bought that specific chrome before today keeps the old wording. The other
+three fixes are in `street` and `black`, which are read from the catalog at render time and so
+reach everyone immediately. A refresh pass in `migrate()` keyed on `cw.key` and skipping
+`custom: true` records would close it; not done here because it changes the save-migration
+layer and that is its own decision.
+
+### Two extractor traps in my own script, both caught and fixed
+
+Recorded because both produced silent under-coverage, which reads as a clean result:
+
+- Tier rows can hold a **nested object** (`bonus: { speed: 1, init: 2 }`), and an
+  innermost-brace regex matches that instead of the row. Five items lost their entire numbers
+  check before this surfaced: Reflex Booster, Toxin Filter, Subdermal Armor, Reinforced
+  Skeleton and Cyberlegs. Fixed by walking bracket depth. 38 rows became 53.
+- Four entries have **no bare "Effect" bullet**, only a qualified one: "Effect (Special)",
+  "Effect (Swift)", and the Convergence Engine's pair of "Effect (Attuned Wearers)" and
+  "Effect (Unattuned Wearers)". Looking only for the bare label skipped Synthetic Heart,
+  Biomonitor, Hand Razors and Convergence Engine. This is the same trap the weapon-parts pass
+  hit, and it should be the first thing checked in any future entry-and-bullet comparison.
+
+### Verified
+
+All seven tabs render. 43 modules load, 20 items and 53 tier rows parse. Both fixes to `black`
+were read back off the live gray-market listing, the Chrome tab renders installed pieces with
+their effect and description, the dash sweep is clean, and the console carries no app errors.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

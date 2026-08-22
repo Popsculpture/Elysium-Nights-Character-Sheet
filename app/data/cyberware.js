@@ -78,7 +78,7 @@ EN.cyberware = {
       desc: "Resonance-dampening circuitry through the upper spine and skull. Built to counter Shapers; it does not discriminate; it dampens the Flow for everyone near the wearer, including the wearer.",
       effect: "Passive Area 2 disruption field: all Invocations cost +1 FP, friend or foe, always on. Pulse (Impulse, 1/Short Rest): sustained Invocations within 3 spaces make a Focus Disruption check DC 14 or end.",
       street: "Field shrinks to Area 1, no Pulse; audible static → Snag on Stealth within 2 spaces of anyone.",
-      black: "Area 3 field, Pulse up to 2/Short Rest, plus targeted suppression (3 charges/Long Rest): one Flow-user within 6 spaces casts at +2 FP with Snag.",
+      black: "Area 3 field, Pulse up to 2/Short Rest, plus targeted suppression (Action, 3 charges/Long Rest): one Flow-user within 6 spaces casts at +2 FP with Snag until the start of your next turn.",
       tiers: [
         { tier: "Streetware", sp: 2, price: 4000,  legality: "Restricted" },
         { tier: "Brandware",  sp: 2, price: 13000, legality: "Restricted" },
@@ -86,7 +86,7 @@ EN.cyberware = {
       ] },
     { key: "resonanceCrown", short: "Resonance Crown", name: "Resonance Crown", zone: "Neural", enhancement: "+1 Mystique", mystech: true,
       desc: "A circlet of hand-tuned mystech filaments in the skull's outer surface, visible as silver tracery along the brow. One of the few implants the Flow does not reject; it harmonizes chrome to the wearer's natural frequency.",
-      effect: "Reduces the SP cost of up to 4 SP of your other cyberware by 1 each (min 1) for Threshold purposes. +1 FP at the end of a Short Rest. One Crown only; cannot harmonize itself, the Disruption Lattice, or the Convergence Engine.",
+      effect: "Reduces the SP cost of up to 4 SP of your other cyberware by 1 each (min 1) for Threshold purposes. +1 FP at the end of a Short Rest. Choose the pieces when the Crown is installed; changing the selection takes 1 hour of Downtime meditation with a qualified artificer. One Crown only; cannot harmonize itself, the Disruption Lattice, or the Convergence Engine.",
       tiers: [
         { tier: "Prototype", sp: 1, price: 28000, legality: "Restricted" }
       ] },
@@ -96,7 +96,7 @@ EN.cyberware = {
       desc: "A fully replaced cardiac unit. It doesn't get tired, doesn't panic, and can be revved during combat. Wearers describe feeling calm in firefights.",
       effect: "1/Long Rest, when you'd drop to 0 Vitality, drop to 1 instead (not Bloodied) and gain +2 Speed next turn. Immune to Panic; Edge on Wits Saves vs Frightened and Shaken.",
       street: "Irregular rhythm, medical ID is automatic; Snag on Stealth vs heartbeat detection.",
-      black: "Death-prevention twice/Long Rest, plus Stillness Mode (Action): appear dead to scans for up to 1 minute.",
+      black: "Death-prevention twice/Long Rest, plus Stillness Mode (Action): appear dead to scans for up to 1 minute. While in it you take no Actions, Move Actions or Swift Actions and cannot use other cyberware, though you stay aware of your surroundings; exiting is a Free Action on your turn.",
       tiers: [
         { tier: "Streetware", sp: 2, price: 3500,  legality: "Restricted" },
         { tier: "Brandware",  sp: 2, price: 9500,  legality: "Licensed" },
@@ -162,14 +162,14 @@ EN.cyberware = {
       desc: "A full prosthetic arm, the most \"this is a different person now\" piece of common chrome. A platform: compatible mods slot in without adding SP to your Total Static.",
       effect: "Unarmed strikes with the arm deal 1d6 Bludgeoning. Install compatible mods in its slots without adding their SP to Total Static; the platform already paid it.",
       street: "2 mod slots, no Enhancement; lacks fine calibration → Snag on delicate handwork with that arm.",
-      black: "4 mod slots, +2 Body for arm actions, 1d8 unarmed, cannot be disarmed, Edge on grapples with it.",
+      black: "4 mod slots, +2 Body for arm actions, 1d8 unarmed, cannot be disarmed by mundane means, Edge on grapples with it.",
       tiers: [
         { tier: "Streetware", sp: 2, slots: 2, price: 4500,  legality: "Licensed" },
         { tier: "Brandware",  sp: 3, slots: 3, price: 14000, legality: "Licensed" },
         { tier: "Blackware",  sp: 4, slots: 4, price: 36000, legality: "Restricted" }
       ] },
     { key: "handRazors", short: "Hand Razors", name: "Hand Razors", zone: "Arms", enhancement: "None", platformHost: "cyberarm",
-      desc: "Retractable monoblade claws inside the back of the hand. Always with you, always silent, always lethal at arm's length. Can slot into a Cyberarm without adding SP.",
+      desc: "Retractable monoblade claws inside the back of the hand. Always with you, always silent, always lethal at arm's length. Can slot into a Cyberarm without adding SP, extending from a more concealed mechanism that takes no Stealth Snag even at Streetware.",
       effect: "Swift Action to extend/retract. While extended, unarmed strikes deal 1d6 Slashing damage and carry the Finesse and Armor Piercing 1 traits; silent on deployment and pass standard weapon scans.",
       street: "Audible clack on deploy (Snag on Stealth that turn); no Armor Piercing.",
       black: "1d8 Slashing, Armor Piercing 2; on a crit the target's worn armor loses 1 DR until repaired.",
@@ -191,7 +191,7 @@ EN.cyberware = {
         { tier: "Blackware",  sp: 4, slots: 4, price: 36000, legality: "Restricted", bonus: { speed: 3 } }
       ] },
     { key: "springJoints", short: "Spring Joints", name: "Spring Joints", zone: "Legs", enhancement: "None", platformHost: "cyberlegs",
-      desc: "Leg modifications that store and release kinetic energy explosively. Couriers, parkour operators, and roof-runners consider this essential. Can slot into a Cyberleg without adding SP.",
+      desc: "Leg modifications that store and release kinetic energy explosively. Couriers, parkour operators, and roof-runners consider this essential. Can slot into a Cyberleg without adding SP, operating from a fully integrated mounting that takes no Stealth Snag even at Streetware.",
       effect: "Jump twice your distance; no damage from falls up to 4 spaces. Impulse 1/round: leap up to 3 spaces in any direction without provoking opportunity attacks.",
       street: "Audible clack (Snag on Stealth while moving); after the leap, can't reuse it for 1d4 rounds.",
       black: "Safe fall 8 spaces, leap 5 spaces, and store fall energy: next melee within 1 min of a 2+ space fall deals +1d6 Bludgeoning.",
