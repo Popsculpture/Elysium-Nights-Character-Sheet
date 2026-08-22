@@ -4,7 +4,7 @@ EN.classes = EN.classes || {};
 // Moxie Gambits as structured sub-entries, the single source for the engine, the Class-tab
 // picker, and the print sheet. The Moxie feature's prose (below) is composed from this list,
 // so the displayed text and the machine-readable data can never drift apart.
-var SCOUNDREL_MOXIE_INTRO = "You survive on instinct, audacity, and luck that has no business holding. You have a pool of **Moxie** equal to your **Caliber + your Agility Modifier** (minimum 1). You regain all spent Moxie at the end of a Short or Long Rest.\n\nAt 1st Level you learn three Gambits of your choice from the list below, and you learn two more at 5th Level through Expanded Moxie. Unless otherwise noted, all Gambits cost 1 Moxie to activate.";
+var SCOUNDREL_MOXIE_INTRO = "You survive on instinct, audacity, and luck that has no business holding. You have a pool of **Moxie** equal to your **Caliber + your Agility Modifier** (minimum 1). You regain all spent Moxie at the end of a Short or Long Rest.\n\nAt 1st Level, you learn three Gambits. You learn two additional Gambits at 5th Level through Expanded Moxie. Unless otherwise noted, all Gambits cost 1 Moxie to activate.";
 var SCOUNDREL_MOXIE_GAMBITS = [
   { name: "Lucky Break", action: "Special Action", cost: 1, text: "When you make an attack roll, an ability check, or a saving throw, spend 1 Moxie to roll one additional d20 and choose which die to use, even if you are already rolling with Edge. This deliberately breaks the normal rule that you can never roll more than 2d20. A Lucky Break stacks on top of Edge: Edge plus a Lucky Break is 3d20, and you keep whichever result you like." },
   { name: "Jinx", action: "Impulse Action", cost: 1, text: "When an enemy you can see makes an attack roll or a saving throw, spend 1 Moxie to force them to roll one additional d20 and use the lowest result, even if they are already rolling with Snag. Jinxing a target who already has Snag forces a third d20, and they are stuck with the worst of the three." },
@@ -88,7 +88,7 @@ EN.classes.scoundrel = {
       },
       {
         name: "Universal Upgrade",
-        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
+        text: "Your Freelancer grows in a way that defines them. Choose one: increase one Attribute by 2, increase two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
       }
     ],
     "3": [
@@ -104,7 +104,7 @@ EN.classes.scoundrel = {
     "4": [
       {
         name: "Universal Upgrade",
-        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
+        text: "Your Freelancer grows in a way that defines them. Choose one: increase one Attribute by 2, increase two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
       }
     ],
     "5": [
@@ -128,7 +128,7 @@ EN.classes.scoundrel = {
       },
       {
         name: "Universal Upgrade",
-        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
+        text: "Your Freelancer grows in a way that defines them. Choose one: increase one Attribute by 2, increase two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
       }
     ],
     "7": [
@@ -144,7 +144,7 @@ EN.classes.scoundrel = {
     "8": [
       {
         name: "Universal Upgrade",
-        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
+        text: "Your Freelancer grows in a way that defines them. Choose one: increase one Attribute by 2, increase two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
       }
     ],
     "9": [
@@ -320,7 +320,7 @@ EN.classes.shaper = {
       },
       {
         name: "Flow Subclass",
-        text: "You choose a Shaper subclass, representing your specialization. This subclass grants features at specific Shaper levels. You gain all subclass features for which you meet the required Shaper level, both now and as you continue to advance."
+        text: "You choose a Shaper subclass, representing your specialization. You gain all subclass features for which you meet the required Shaper level, both now and as you advance."
       }
     ],
     "2": [
@@ -330,7 +330,7 @@ EN.classes.shaper = {
       },
       {
         name: "Universal Upgrade",
-        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
+        text: "Your Freelancer grows in a way that defines them. Choose one: increase one Attribute by 2, increase two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
       }
     ],
     "3": [
@@ -346,7 +346,7 @@ EN.classes.shaper = {
     "4": [
       {
         name: "Universal Upgrade",
-        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
+        text: "Your Freelancer grows in a way that defines them. Choose one: increase one Attribute by 2, increase two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
       }
     ],
     "5": [
@@ -366,7 +366,7 @@ EN.classes.shaper = {
       },
       {
         name: "Universal Upgrade",
-        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
+        text: "Your Freelancer grows in a way that defines them. Choose one: increase one Attribute by 2, increase two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
       }
     ],
     "7": [
@@ -382,7 +382,7 @@ EN.classes.shaper = {
     "8": [
       {
         name: "Universal Upgrade",
-        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
+        text: "Your Freelancer grows in a way that defines them. Choose one: increase one Attribute by 2, increase two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
       }
     ],
     "9": [
@@ -500,13 +500,13 @@ EN.classes.shaper = {
     {
       key: "sourcerer",
       name: "The Sourcerer",
-      description: "You couldn't write a line of code to save your life. Routers hate you. None of it matters. The city's machines are crawling with tiny, capricious spirits, the helpful Nixies and the spiteful Gremlins, and for reasons nobody, least of all you, has ever managed to explain, they like you. Where everyone else sees dead metal and cold logic, you see a room full of fickle little personalities waiting for someone to ask them a favor. You do not master the hidden language of machines or fuse magic with circuitry. You just talk to the things living inside them, and more often than not, they listen.",
+      description: "You couldn't write a line of code to save your life. Routers hate you. You've factory-reset the same phone four times this week and you're not sure it helped. None of it matters. The city's machines are crawling with tiny, capricious spirits, the helpful Nixies and the spiteful Gremlins, and for reasons nobody, least of all you, has ever managed to explain, they like you. Where everyone else sees dead metal and cold logic, you see a room full of fickle little personalities waiting for someone to ask them a favor. You don't master the hidden language of machines or fuse magic with circuitry. You just talk to the things living inside them, and more often than not, they listen.",
       flowAttribute: "Tech",
       features: [
         {
           level: 1,
           name: "The Machine Medium",
-          text: "**Flow Attribute:** Tech. For you, Tech measures the strength of your tether to the digital substrate where the sprites live and the depth of your standing with them, not technical skill.\n\n**The Invisible Ecosystem:** You do not use wands or crystals; your \"tools\" are whatever the sprites gather around (button cell batteries, a dead phone you never stop talking to, a wind-up toy, a lucky USB stick). You can passively see and hear the Nixies and Gremlins infesting the city's machinery, and they can see you noticing them.\n\n**Synthetica:** You know **Synthetica**, the Unique Resonance of the invisible ecosystem. It counts as one of the three Base Resonances every Shaper knows at Level 1, so you choose only two more from the standard list. This was never optional. The sprites chose you long before you learned to shape, and what they teach, no other Shaper can learn.\n\n**Sprite Tether:** A Codebreaker needs a deck and a cracked cipher to hold a door open in the #GRID. You need neither. You count as a **Power User**, and the sprites can hold **Links** for you equal to your **Caliber** at a time, with no hardware anywhere in the loop.\n• **Opening a tether:** As an Action, ask a sprite inside a node within 12 spaces to let you in. Make a **Flow Attack** (d20 + your Tech Modifier + your Caliber) against the node's Security Rating. On a success, the sprite holds the Link open until it is severed. No Cipher, no Systems roll, no deck.\n• **Reaching through it:** While you hold a Link to a node, your Invocations and sprite abilities can reach that node and the device it stands for, even past your normal range or line of sight.\n• **No hardware to hide behind:** Feedback a Codebreaker's deck would swallow lands on you instead. When a tether snaps you suffer **LinkDeath through the body**, which your resonance can ground for an Impulse Action and **1 Wound**. By the same logic, the rules written to punish a deck skip you: a Bricked deck cannot trigger your LinkDeath because you have none, and Cascade Failure has no Smartdeck of yours to fry."
+          text: "**Flow Attribute:** Tech. For you, Tech measures the strength of your tether to the digital substrate where the sprites live and the depth of your standing with them, not technical skill.\n\n**The Invisible Ecosystem:** You don't use wands or crystals; your \"tools\" are whatever the sprites gather around (button cell batteries, a dead phone you never stop talking to, a wind-up toy, a lucky USB stick). You can passively see and hear the Nixies and Gremlins infesting the city's machinery, and they can see you noticing them.\n\n**Synthetica:** You know **Synthetica**, the Unique Resonance of the invisible ecosystem. It counts as one of the three Base Resonances every Shaper knows at Level 1, so you choose only two more from the standard list. This was never optional. The sprites chose you long before you learned to shape, and what they teach, no other Shaper can learn. The full Resonance is written out under Unique Resonance: Synthetica below.\n\n**Sprite Tether:** A Codebreaker needs a deck and a cracked cipher to hold a door open in the #GRID. You need neither. A Nixie will keep a line open because you asked; a Gremlin will keep one open because watching you use it is entertainment. You count as a **Power User**, and the sprites can hold **Links** for you equal to your **Caliber** at a time, with no hardware anywhere in the loop.\n• **Opening a tether:** As an Action, ask a sprite inside a node within 12 spaces to let you in. Make a **Flow Attack** (d20 + your Tech modifier + your Caliber) against the node's Security Rating. On a success, the sprite holds the Link open until it is severed. No Cipher, no Systems roll, no deck.\n• **Reaching through it:** While you hold a Link to a node, your Invocations and sprite abilities can reach that node and the device it stands for, even past your normal range or line of sight. The sprites carry your word in and carry back what they find.\n• **No hardware to hide behind:** Feedback a Codebreaker's deck would swallow lands on you instead. When a tether snaps you suffer **LinkDeath through the body**, which is why your resonance can ground it: an Impulse Action and **1 Wound** (see Sourcerers and LinkDeath). By the same logic, the rules written to punish a deck skip you: a Bricked deck can't trigger your LinkDeath because you have none, and Cascade Failure has no Smartdeck of yours to fry. You pay the psychic price and nothing else, which is not the safe road it sounds like: every extra Link is another die of surge, and all of it grounds in your skull."
         },
         {
           level: 3,
@@ -516,7 +516,7 @@ EN.classes.shaper = {
         {
           level: 7,
           name: "Scrap Familiar",
-          text: "Out of combat, spend 10 minutes assembling a Scrap Familiar from loose tech and street debris. In combat, instead spend 2 FP and a **Complex Action** to slap one together on the fly. You can have only one Scrap Familiar active at a time; making a new one causes the old one to fall apart into mundane junk. If you are knocked Unconscious, your active Familiar deactivates until you wake. When you make the Familiar, declare whether a Nixie or a Gremlin moves in; the shape it takes is the sprite's taste, not your blueprint.\n\n**Scrap Familiar Base Stats:**\n• **Defense:** 12 + your Tech Modifier\n• **Vitality:** 15 + (your Caliber × 5)\n• **Speed:** 6 (Hovering)\n• **Size:** Medium Construct\n• **Immunities:** Poison, Psychic, Blinded, Charmed, Frightened\n\n**Nixie Skyhook Familiar:** a mechanical osprey of weathered plating and braided steel cables, with a central winch and electromagnetic talons.\n\n**Out of Combat:**\n• **Vertical Infiltration:** It can fly up to 24 spaces, embed its talons in a surface, and drop a high-tensile cable. Allies using it gain a climbing speed equal to their walking speed and automatically succeed on standard climbing Athletics checks.\n• **Magnetic Anchor:** Anchored to metal or stone, its winch supports 2,000 pounds. Allies using the cable to move heavy obstacles or force doors gain Edge on in-combat Athletics d20 checks (or +1 Edge Die to related out-of-combat Dice Pools).\n• **Beast of Burden:** It can carry up to 200 pounds of gear or an unconscious ally without reducing its 6-space flying speed.\n\n**In Combat:** It acts on your turn, and you can command it to move as a free action. As a **Swift Action**, command a **Magnetic Rescue:** it shoots a line to a willing ally within 6 spaces and reels them to an adjacent unoccupied space, ignoring Difficult Terrain and opportunity attacks.\n\n**Gremlin Scourge Familiar:** a massive mechanical rat of rusted engine blocks, copper wire, and razor-blade whiskers, trailing a cloud of mechanical fleas.\n\n**Out of Combat:**\n• **Comms Jamming:** Scramble all unencrypted hostile radio and digital communications within an Area 20 for up to 1 hour.\n• **Acoustic Dampening:** Project an Area 3 Aura of silence centered on the construct. Allies moving within it make no noise and gain Edge on in-combat Stealth d20 checks (or +1 Edge Die to related out-of-combat Dice Pools).\n• **Auditory Decoy:** Project an auditory illusion (a firefight, alarm, or breaching charge, up to 120 decibels) at any point within 12 spaces for up to 1 minute.\n\n**In Combat:** It acts on your turn, and you can command it to move as a free action. As a **Swift Action**, command a **Sensory Overload:** it sends its fleas onto a target within 3 spaces, which must make a Wits Save against your Flow Save DC. On a failure, they take 2d6 Psychic damage and are Blinded until the start of your next turn. Once an enemy succeeds on this Wits Save, they become immune to Sensory Overload for 24 hours."
+          text: "Out of combat, spend 10 minutes assembling a Scrap Familiar from loose tech and street debris. In combat, instead spend 2 FP and a **Complex Action** to slap one together on the fly. You can have only one Scrap Familiar active at a time; making a new one causes the old one to fall apart into mundane junk. If you are knocked Unconscious, your active Familiar deactivates until you wake. When you make the Familiar, declare whether a Nixie or a Gremlin moves in; the shape it takes is the sprite's taste, not your blueprint.\n\n**Scrap Familiar Base Stats:**\n• **Defense:** 12 + your Tech Modifier\n• **Vitality:** 15 + (your Caliber × 5)\n• **Speed:** 6 (Hovering)\n• **Size:** Medium Construct\n• **Immunities:** Poison, Psychic, Blinded, Charmed, Frightened\n\n**Nixie Skyhook Familiar:** a mechanical osprey of weathered plating and braided steel cables, with a central winch and electromagnetic talons.\n\n**Out of Combat:**\n• **Vertical Infiltration:** It can fly up to 24 spaces, embed its talons in a surface, and drop a high-tensile cable. Allies using it gain a climbing speed equal to their walking speed and automatically succeed on standard climbing Athletics checks.\n• **Magnetic Anchor:** Anchored to metal or stone, its winch supports 2,000 pounds. Allies using the cable to move heavy obstacles or force doors gain Edge on in-combat Athletics d20 checks (or +1 Edge Die to related out-of-combat Dice Pools).\n• **Beast of Burden:** It can carry up to 200 pounds of gear or an unconscious ally without reducing its 6-space flying speed.\n\n**In Combat:** It acts on your turn, and you can command it to move as a free action. As a **Swift Action**, command a **Magnetic Rescue:** it shoots a line to a willing ally within 6 spaces and reels them to an adjacent unoccupied space, ignoring Difficult Terrain and Opportunity Attacks.\n\n**Gremlin Scourge Familiar:** a massive mechanical rat of rusted engine blocks, copper wire, and razor-blade whiskers, trailing a cloud of mechanical fleas.\n\n**Out of Combat:**\n• **Comms Jamming:** Scramble all unencrypted hostile radio and digital communications within an Area 20 for up to 1 hour.\n• **Acoustic Dampening:** Project an Area 3 Aura of silence centered on the construct. Allies moving within it make no noise and gain Edge on in-combat Stealth d20 checks (or +1 Edge Die to related out-of-combat Dice Pools).\n• **Auditory Decoy:** Project an auditory illusion (a firefight, alarm, or breach charge, up to 120 decibels) at any point within 12 spaces for up to 1 minute.\n\n**In Combat:** It acts on your turn, and you can command it to move as a free action. As a **Swift Action**, command a **Sensory Overload:** it sends its fleas onto a target within 3 spaces, which must make a Wits Save against your Flow Save DC. On a failure, they take 2d6 Psychic damage and are Blinded until the start of your next turn. Once an enemy succeeds on this Wits Save, they become immune to Sensory Overload for 24 hours."
         },
         {
           level: 10,

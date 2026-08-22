@@ -4538,6 +4538,75 @@ and the comparison ignores them.
 `scratchpad/lin/diff_talents.py` is the check, and `fix_talents.py` is the transcriber that
 builds the replacement from the source section rather than retyping it.
 
+## The four class data files re-checked against Part 1, 2026-08-21
+
+The third and largest pass. All 219 named class and subclass entries compared against a
+fresh export of Part 1: 134 matched, 59 differed, and 26 have no heading in the book because
+they are app structural conveniences (Cheap Shot at 2d6 through 5d6 where the book has one
+entry with a scaling table, the Subclass Feature and Subclass Capstone placeholder rows, and
+a nested drone profile). **Drift ran at 27 percent here, against 17 percent for talents and
+5 percent for lineage features.**
+
+Seven auditors adjudicated, one per class, sorting each difference into prose drift, a
+change of meaning, a restructure the app is entitled to, content the app has that the book
+does not, or a clause the app dropped. **53 were corrected. Six restructures were left
+alone.** The file now matches 183 of 219, and the ten still differing are the entries the app
+composes at runtime from structured arrays, where it writes action types in full ("Swift
+Action" for the book's "(Swift)") per the author's own stated preference.
+
+### The one that mattered
+
+**The Cipher Save DC was wrong in three places, and the app disagreed with itself.** The
+class text read "8 + your Tech Modifier + your Caliber" in Brownout, Memetic Virus and
+Reality Overwrite, while `engine.js` computes `cipherSaveDC = 8 + techMod + sysProf` and
+`app/data/grid.js` states "8 + Tech mod + Systems Proficiency Bonus". Caliber runs 1 to 5 and
+the Systems Proficiency Bonus is +2/+4/+6 by tier, so **the printed DC was wrong at every
+level** and a player reading the class page computed a different number than the sheet showed.
+This is the old M2 ruling: the book was corrected, the engine had always been right, and the
+class text was never updated.
+
+### Rules that were missing outright
+
+- **The Apex Smartdeck discount.** The book prices Complexity 4-5 Ciphers at "2 Bandwidth, or
+  1 on an Apex Smartdeck, whose Quantum Core runs the top of the library for less". The app
+  stored only "cost 2 Bandwidth", so a Tier 5 deck's entire reason to exist was absent.
+- **Fatigue (all levels)** was missing from the condition list the Stitcher's Not on My Watch
+  clears, between Drowsy and Hallucinating.
+- Three of the author's clauses were dropped from the Fury's Unstoppable Momentum, including
+  "Mass this size does not travel for free:" and "Stopping is the only part that costs nothing."
+
+### The Triage Rig question, answered by the book itself
+
+The app said "Trauma Rig" where one Stitcher passage said "triage rig", which looked like a
+naming inconsistency worth asking about. The book settles it and the app had deleted the
+answer: **"Once it is yours, nobody calls it a Trauma Rig. It is a Triage Rig, and the
+difference is entirely in whose hands it is."** The gear catalog name stays Trauma Rig, which
+is what anyone can buy. The Stitcher's own name for it was a deliberate line, and the app had
+replaced the whole paragraph with a description of the hardware. Restored.
+
+### Also found
+
+The invented parenthetical "(a strike with no die gains 1d4)" turned up a **third** time, in
+the Stitcher's Hot-Wired Implants, having already been found in Synthetic Musculature and
+Street Scrapper. The "utilize" for "use" substitution and the wholesale rewriting of opening
+flavour lines both recurred as well. The Juggernaut subclass description had been rewritten
+end to end while the Reaver and Arsenal descriptions beside it matched the book exactly.
+
+### Questions for the author
+
+1. **"Burst" or "Burst Fire"?** Part 1's Suppressive Counter says "the Burst or Full-Auto
+   firing mode", while Part 2 lists the modes as Single Shot, Semi-Automatic, Burst Fire and
+   Full-Auto, and `gear_traits.js` defines "Burst Fire". The app's spelling was kept.
+2. **Where are Overdrive maneuver costs priced?** The app stores a cost of 1 on all eight
+   Fury maneuvers, and Part 1's Overdrive section never states a per-maneuver cost.
+3. **"Off-Hand" or "Off hand"?** Colossal Grip and Walking Emplacement were the only two
+   places in the entire app spelling it "Off hand"; the gear catalog uses "Off-Hand". Treated
+   as a typo and corrected.
+4. **The Universal Upgrade preamble.** The app opened it "At levels 2, 4, 6, and 8, ..." where
+   the book carries the levels in its heading and the app already prints "Level 2 . Universal
+   Upgrade" as the slot title, so it said the level twice. The preamble was dropped to match
+   the book. Say the word if you want it back.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

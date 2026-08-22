@@ -67,7 +67,7 @@ EN.classes.hustler = {
       },
       {
         name: "Hustler Subclass",
-        text: "You choose a Hustler subclass, representing your specialization. This subclass grants features at specific Hustler levels. You gain all subclass features for which you meet the required Hustler level, both now and as you continue to advance."
+        text: "You choose a Hustler subclass, representing your specialization. You gain all subclass features for which you meet the required Hustler level, both now and as you advance."
       }
     ],
     "2": [
@@ -77,7 +77,7 @@ EN.classes.hustler = {
       },
       {
         name: "Universal Upgrade",
-        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
+        text: "Your Freelancer grows in a way that defines them. Choose one: increase one Attribute by 2, increase two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
       }
     ],
     "3": [
@@ -89,7 +89,7 @@ EN.classes.hustler = {
     "4": [
       {
         name: "Universal Upgrade",
-        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
+        text: "Your Freelancer grows in a way that defines them. Choose one: increase one Attribute by 2, increase two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
       }
     ],
     "5": [
@@ -109,7 +109,7 @@ EN.classes.hustler = {
       },
       {
         name: "Universal Upgrade",
-        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
+        text: "Your Freelancer grows in a way that defines them. Choose one: increase one Attribute by 2, increase two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
       }
     ],
     "7": [
@@ -121,7 +121,7 @@ EN.classes.hustler = {
     "8": [
       {
         name: "Universal Upgrade",
-        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
+        text: "Your Freelancer grows in a way that defines them. Choose one: increase one Attribute by 2, increase two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
       }
     ],
     "9": [
@@ -207,7 +207,7 @@ EN.classes.hustler = {
     {
       key: "the_fixer",
       name: "The Fixer",
-      description: "You are the ultimate underworld shot caller. You ensure your crew never runs out of luck, ammo, or options by leveraging a vast, terrifying network of favors, debts, and street level operatives. You do not just know a guy; you own the guy, and you are always ready to collect.",
+      description: "You are the ultimate underworld shot caller. You make sure your crew never runs out of luck, ammo, or options by leveraging a vast, terrifying network of favors, debts, and street level operatives. You do not just know a guy; you own the guy, and you are always ready to collect.",
       features: [
         {
           level: 1,
@@ -304,7 +304,7 @@ EN.classes.operator = {
       },
       {
         name: "Operator Subclass",
-        text: "You choose a Operator subclass, representing your specialization. This subclass grants features at specific Operator levels. You gain all subclass features for which you meet the required Operator level, both now and as you continue to advance."
+        text: "You choose an Operator subclass, representing your specialization. You gain all subclass features for which you meet the required Operator level, both now and as you advance."
       }
     ],
     "2": [
@@ -314,7 +314,7 @@ EN.classes.operator = {
       },
       {
         name: "Universal Upgrade",
-        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
+        text: "Your Freelancer grows in a way that defines them. Choose one: increase one Attribute by 2, increase two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
       }
     ],
     "3": [
@@ -326,7 +326,7 @@ EN.classes.operator = {
     "4": [
       {
         name: "Universal Upgrade",
-        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
+        text: "Your Freelancer grows in a way that defines them. Choose one: increase one Attribute by 2, increase two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
       }
     ],
     "5": [
@@ -342,7 +342,7 @@ EN.classes.operator = {
       },
       {
         name: "Universal Upgrade",
-        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
+        text: "Your Freelancer grows in a way that defines them. Choose one: increase one Attribute by 2, increase two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
       }
     ],
     "7": [
@@ -354,7 +354,7 @@ EN.classes.operator = {
     "8": [
       {
         name: "Universal Upgrade",
-        text: "At levels 2, 4, 6, and 8, your Freelancer grows in a way that defines them. Choose one of the following: increase one Attribute by 2, or two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
+        text: "Your Freelancer grows in a way that defines them. Choose one: increase one Attribute by 2, increase two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements."
       }
     ],
     "9": [
