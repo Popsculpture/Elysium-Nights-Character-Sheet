@@ -5622,6 +5622,77 @@ and again did not land, with no file and no staging `.tmp` appearing, which cont
 at a native save dialog waiting on a click. This is the file that most wants a fresh Part 2, so
 it is worth re-running once that is cleared.
 
+## versatile.js checked against Part 2, 2026-08-22
+
+**Two invented restrictions removed. The 184 named techniques all stay.**
+
+This file is a 252-cell matrix keyed `ATTR|Skill|type`, 184 cells naming a technique and 68
+holding null. Unlike every other file checked today, the defect was not a wrong number: it was
+**two rules the app asserted that the book does not have**, both stated to the player as fact.
+
+### The refusal gate
+
+The file header read "null = the combination Does Not Work", and `combat.js` acted on it: a
+nulled parent Skill was suffixed **✗** in the dropdown, and selecting one replaced the result
+with a red block reading "This combination does not work; Body cannot apply to Systems for
+Insight."
+
+Part 2's Versatile Skills section contains exactly one prohibition, and it is that **you cannot
+gain Proficiency, Expertise or Mastery in a Versatile Skill itself**. Nothing anywhere refuses
+an Attribute and parent Skill pairing. The opposite is stated: "The core strength of a
+Versatile Skill is flexibility", and the GM Guidance is "Ask players how they are performing an
+action. The method determines which Attribute and parent Skill apply... Reward creativity and
+let Skills flex in context when justified."
+
+**What settles it is the book's own worked example.** Intimidation's Attribute Example row
+lists Body, Wits, Tech, Mystique and Charm. The book then resolves an Intimidation with
+**Agility plus Engineering**. Those rows are examples, not a whitelist.
+
+The nulls also matched no pattern the book could justify. Charm, the headline Attribute for
+Performance, was the most-refused Attribute for Performance at 7 of 14. And **the pairing the
+book teaches the mechanic with, Body plus Systems, was refused for Insight and Intimidation**
+while accepted for Performance, even though the book's Insight row lists "Body (Muscle
+Memory)" and its Kinetic Interface Dance example says Body supplies "the physical endurance and
+muscle memory required".
+
+Now a null means only that the catalog has no NAME for that pairing. The panel rolls it exactly
+as any other and prints "No preset technique for this pairing. Describe how you are doing it;
+the method is what picks the Attribute and the parent Skill."
+
+### The proficiency gate
+
+Untrained skills were filtered out of the parent-Skill dropdown entirely, the column was
+labelled "PARENT SKILL (Prof+)", and both the file header and its `note` stated "requires
+Proficiency in the parent skill".
+
+The book gates nothing on proficiency here. It says which BONUS the tier supplies, and
+Untrained is one of the four tiers: +0, rolled with Snag. Where the book does want a
+proficiency gate it says so plainly, as in the Help Action: "You must be at least Proficient in
+the relevant skill or tool to move the dice at all." No such sentence exists for Versatile
+Skills. The app also disagreed with itself: `builder.js` already described Versatile Skills as
+borrowing "the tier of whatever parent skill you lean on in the moment", with no condition.
+
+Every skill is offered now, and an Untrained parent resolves properly rather than being
+refused: it adds +0 and the panel shows a **SNAG** chip.
+
+### Verified live
+
+Body + Systems for Insight, the pairing the book teaches with and the app used to refuse, now
+reads: **Bonus +3 (Untrained), Roll: Body +3 + Systems +0, SNAG**. The book's own Insight
+example still resolves to its named technique, **Digital Profiling, Bonus +4 (Expertise), Roll:
+Tech +0 + Investigation +4**, so nothing regressed. All 252 cells and all 184 names are intact.
+
+### Refuted
+
+One claim died on the split: that Part 2's Approach table setting Insight's attributes to "Any"
+was itself a rule. The column is headed "Common Attributes" and is non-exhaustive by the same
+argument used above, so it is breadth prose rather than a stated permission. It did not matter
+to the outcome, since the refusal gate fails on its own evidence.
+
+### Caveat on the source
+
+**Part 2 is the 2026-08-21 export**, for the reason recorded under the rules.js pass.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

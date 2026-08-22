@@ -1,9 +1,13 @@
 /* ===========================================================================
    ELYSIUM NIGHTS · Versatile Skills (Insight · Performance · Intimidation)
    Ported from the original character sheet. Each versatile skill is rolled as
-   Attribute modifier + parent-skill tier bonus; requires Proficiency in the
-   parent skill, and the parent's Focus/Specialization carry over.
-   Key format: 'ATTR|Skill|type'. null = the combination Does Not Work.
+   Attribute modifier + parent-skill tier bonus, and the parent's Focus and
+   Specialization carry over.
+   Key format: 'ATTR|Skill|type'. A null is a pairing this catalog has no NAME for,
+   not a pairing the rules forbid: Part 2 gates nothing here, and its own worked
+   example resolves Intimidation with Agility plus Engineering, which its own
+   Attribute Example row for Intimidation does not list. The panel rolls a null
+   pairing the same as any other and simply does not name the technique.
    =========================================================================== */
 window.EN = window.EN || {};
 
@@ -11,7 +15,7 @@ EN.versatile = {
   types: ["insight", "performance", "intimidation"],
   labels: { insight: "Insight", performance: "Performance", intimidation: "Intimidation" },
   colors: { insight: "var(--accent)", performance: "var(--flow)", intimidation: "var(--danger)" },
-  note: "Attr + Skill bonus = Versatile result. Requires proficiency in the parent skill. Focus and Specialization carry over.",
+  note: "Attr + Skill bonus = Versatile result. Any Attribute can pair with any parent Skill; the method you describe is what picks them. You use the parent Skill's tier bonus, so an Untrained parent adds nothing and rolls with Snag. Focus and Specialization carry over.",
 
   db: {
     /* ── INSIGHT ────────────────────────────────────────────── */

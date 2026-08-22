@@ -3200,13 +3200,23 @@ EN.combatView = (function () {
       ]);
     }))];
     sectionEls.matrix = EN.ui.panel("Attribute Matrix", "BIOMETRIC PROFILE", attrBody, { corners: true });
-    /* versatile skills, Insight · Performance · Intimidation (ported from the original sheet):
-       pick an Attribute + a Proficient parent skill; the combo resolves to a named technique
-       (or refuses; some pairings Do Not Work). Roll = attr mod + parent tier bonus. */
+    /* Versatile skills, Insight, Performance and Intimidation. Pick an Attribute and a parent
+       Skill; the pairing resolves to a named technique when the catalog has one, and to a
+       plain roll when it does not. Roll = attr mod + parent tier bonus.
+
+       No gate on either axis, because the book has none. Part 2's only prohibition in this
+       section is that you cannot TRAIN a Versatile Skill, and its GM Guidance is "the method
+       determines which Attribute and parent Skill apply... let Skills flex in context". Two
+       invented restrictions used to live here: 68 of the 252 pairings printed a red "this
+       combination does not work", and untrained parent Skills were filtered out entirely.
+       The book's own worked example resolves Intimidation with Agility plus Engineering, a
+       pairing absent from Intimidation's own Attribute Example row, which is what settles it:
+       those rows are examples, not a whitelist. */
     function versatileBlock() {
       var V = EN.versatile;
       if (!V) return null;
-      var profSkills = d.skills.filter(function (s) { return s.tier !== "untrained"; });
+      // every skill, Untrained included: Untrained is a TIER (+0 and Snag), not a bar to rolling
+      var allSkills = d.skills;
       var attrName = function (k) { var a = R.attributes.find(function (x) { return x.key === k; }); return a ? a.name : k; };
       var infoOpen = !!_open["versatile-info"];
       var kids = [
@@ -3236,27 +3246,23 @@ EN.combatView = (function () {
             return el("option", { value: a.key, selected: a.key === slot.attr, text: a.name });
           })));
         var skillSel = el("select", { style: { width: "100%", fontSize: "12px" }, onchange: function () { setSlot("skill", this.value); } },
-          [el("option", { value: "", text: "- Choose Skill -" })].concat(profSkills.length ? profSkills.map(function (s) {
-            var works = !slot.attr || !!V.db[slot.attr + "|" + s.name + "|" + type];
-            return el("option", { value: s.name, selected: s.name === slot.skill, text: s.name + (works ? "" : " ✗") });
-          }) : [el("option", { disabled: true, text: "No proficient skills yet" })]));
+          [el("option", { value: "", text: "- Choose Skill -" })].concat(allSkills.map(function (s) {
+            return el("option", { value: s.name, selected: s.name === slot.skill, text: s.name });
+          })));
         var resultBlock = null;
         if (slot.attr && slot.skill) {
           var entry = V.db[slot.attr + "|" + slot.skill + "|" + type];
-          var sk = profSkills.find(function (s) { return s.name === slot.skill; });
-          if (!entry) {
-            resultBlock = el("div", { style: { padding: "6px 10px", background: "rgba(239,68,68,.08)", border: "1px solid var(--danger)", borderRadius: "4px", fontSize: "11px", color: "var(--danger)", marginTop: "6px" } },
-              "This combination does not work; " + attrName(slot.attr) + " cannot apply to " + slot.skill + " for " + label + ".");
-          } else if (!sk) {
-            resultBlock = el("p.help", { style: { margin: "6px 0 0", color: "var(--warn)" }, text: "Requires Proficiency in " + slot.skill + "; train it on the #PRINT tab." });
-          } else {
+          var sk = allSkills.find(function (s) { return s.name === slot.skill; });
+          if (sk) {
+            var untrained = sk.tier === "untrained";
             var tierBonus = R.profTiers[sk.tier].d20;
             var mod = d.attributes[slot.attr].mod;
             var focus = eng.focusesFor(ch, "skill", sk.key)[0] || null;
             var spec = eng.specFor(ch, "skill", sk.key);
             resultBlock = el("div", { style: { padding: "8px 10px", background: "rgba(0,0,0,.2)", border: "1px solid " + color, borderLeft: "3px solid " + color, borderRadius: "4px", marginTop: "6px" } }, [
               el("div.row.wrap", { style: { alignItems: "center", gap: "8px", marginBottom: "3px" } }, [
-                el("span", { style: { fontSize: "13px", fontWeight: 700, color: color }, text: entry.name }),
+                el("span", { style: { fontSize: "13px", fontWeight: 700, color: entry ? color : "var(--text2)" },
+                             text: entry ? entry.name : "Your method, your call" }),
                 el("span.chip", { style: { fontSize: "9px", color: color, borderColor: color }, text: label }),
                 el("span", { style: { marginLeft: "auto", fontSize: "12px", color: "var(--text2)" } }, [
                   document.createTextNode("Bonus: "),
@@ -3264,22 +3270,25 @@ EN.combatView = (function () {
                   el("span", { style: { color: "var(--text3)", fontSize: "10px" }, text: " (" + R.profTiers[sk.tier].name + ")" })
                 ])
               ]),
-              el("p.help", { style: { margin: 0, color: "var(--text2)" }, text: entry.desc }),
+              el("p.help", { style: { margin: 0, color: "var(--text2)" },
+                             text: entry ? entry.desc
+                                 : "No preset technique for this pairing. Describe how you are doing it; the method is what picks the Attribute and the parent Skill." }),
               el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "4px" } }, [
                 el("span.help", { style: { margin: 0, fontSize: "10px" }, html: "Roll: <b>" + attrName(slot.attr) + " " + eng.fmtMod(mod) + " + " + sk.name + " " + eng.fmtMod(tierBonus) + "</b>" }),
                 focus ? el("span.chip", { title: "Skill Focus on " + sk.name + " carries over: +Caliber inside the aspect", style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" }, text: "FOCUS +" + (d.caliber || 1) + (focus.aspect ? " (" + focus.aspect + ")" : "") }) : null,
-                spec ? el("span.chip", { title: "Specialization on " + sk.name + " carries over: crit 19-20 inside the aspect", style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" }, text: "CRIT 19-20" + (spec.aspect ? " (" + spec.aspect + ")" : "") }) : null
+                spec ? el("span.chip", { title: "Specialization on " + sk.name + " carries over: crit 19-20 inside the aspect", style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" }, text: "CRIT 19-20" + (spec.aspect ? " (" + spec.aspect + ")" : "") }) : null,
+                untrained ? el("span.chip", { title: "Untrained in " + sk.name + ": the tier adds nothing and the roll takes Snag", style: { fontSize: "9px", color: "var(--danger)", borderColor: "var(--danger)" }, text: "SNAG" }) : null
               ])
             ]);
           }
         } else if (slot.attr || slot.skill) {
-          resultBlock = el("p.help", { style: { margin: "6px 0 0" }, text: "Select both an attribute and a proficient skill to see the result." });
+          resultBlock = el("p.help", { style: { margin: "6px 0 0" }, text: "Select both an attribute and a skill to see the result." });
         }
         kids.push(el("div", { style: { padding: "8px 0", borderBottom: "1px solid rgba(42,52,68,.6)" } }, [
           el("div", { style: { fontSize: "11px", fontWeight: 700, color: color, letterSpacing: ".1em", textTransform: "uppercase", marginBottom: "6px", fontFamily: "var(--disp)" }, text: label }),
           el("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" } }, [
             el("div", null, [el("div", { style: { fontSize: "9px", color: "var(--text3)", marginBottom: "3px" }, text: "ATTRIBUTE" }), attrSel]),
-            el("div", null, [el("div", { style: { fontSize: "9px", color: "var(--text3)", marginBottom: "3px" }, html: "PARENT SKILL <span style='color:var(--accent)'>(Prof+)</span>" }), skillSel])
+            el("div", null, [el("div", { style: { fontSize: "9px", color: "var(--text3)", marginBottom: "3px" }, text: "PARENT SKILL" }), skillSel])
           ]),
           resultBlock
         ]));
