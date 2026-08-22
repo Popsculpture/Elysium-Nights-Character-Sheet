@@ -107,7 +107,7 @@ EN.gearCatalog.ranged = {
     { name: "EMP Grenade", group: "Thrown", price: 175, damage: "2d6 Electric and Tech", ammo: 1, range: "4 / 12",
       traits: ["Explosive (Area 2 Sphere)", "Thrown (4/12)", "Pulse"], availability: "Uncommon", legality: "Restricted",
       desc: "A compact charge tuned to fry circuits instead of flesh. Useless on the people. Devastating on the people's gear. On Hit: living targets without significant cybernetics take half damage, Electric only, no further effect (Pulse). Devices, drones, and augmented targets in the area make a Tech Save vs your Weapon Save DC or gain Bricked (devices) or Breached (augmented) until the end of their next turn, matching the EMP Round and EMP Shell." },
-    { name: "Flashbang", group: "Thrown", price: 100, damage: "1d4 Sonic and Light", ammo: 1, range: "4 / 12",
+    { name: "Flashbang", group: "Thrown", price: 100, damage: "1d4 Sonic", ammo: 1, range: "4 / 12",
       traits: ["Explosive (Area 3 Sphere)", "Nonlethal", "Thrown (4/12)"], availability: "Common", legality: "Licensed",
       desc: "A nonlethal grenade that turns light and sound into weapons. Standard issue for breach teams that want hostages who can still walk to the door." },
     { name: "Frag Grenade Mk I", group: "Thrown", price: 150, damage: "2d6 Ballistic and Force", ammo: 1, range: "4 / 12",

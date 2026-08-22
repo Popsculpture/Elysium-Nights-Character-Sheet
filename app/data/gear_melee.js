@@ -30,7 +30,7 @@ EN.gearCatalog.melee = {
     { name: "Knife", group: "Simple", price: 10, damage: "1d4 Slashing", range: "Melee or thrown 4 / 12",
       traits: ["Light", "Finesse", "Thrown (4/12)", "Concealable"], availability: "Common", legality: "Legal",
       desc: "Every kitchen has one. Every pocket can hold one. The most common weapon in Elysium, and the one most underestimated when it slides out of a sleeve." },
-    { name: "Knuckles", group: "Simple", price: 15, damage: "1d4 Bludgeoning", range: "Melee",
+    { name: "Knuckles", group: "Simple", price: 15, damage: "Augments unarmed strikes", range: "Melee",
       traits: ["Light", "Concealable"], availability: "Common", legality: "Restricted",
       desc: "Composite or alloy bands that turn a punch into a hospital visit. Easy to hide. Harder to explain when a patrol officer flips your jacket open.",
       effect: "Augments unarmed strikes. While wearing Knuckles, your unarmed strike damage die steps up one size, and on a strike with no die that first step grants 1d4 Bludgeoning. This stacks with every other increase to your unarmed damage." },

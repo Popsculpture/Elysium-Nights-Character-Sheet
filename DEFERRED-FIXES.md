@@ -4759,6 +4759,55 @@ resolves melee to Body unless the weapon is Finesse and Agility is higher. Its r
 `ATTACK_ATTR_OFFERS` with a comment saying so, since deleting it only makes the next reader
 ask why the feature is unhandled.
 
+## The gear catalogs checked against Part 3, 2026-08-21
+
+Part 3 lists every item TWICE: a pipe table row carrying the numbers, and a "#### **Name**"
+section carrying the prose. That finally made the numbers checkable, which is the check named
+as missing after the grid and flow pass. **A wrong price or damage die is a wrong rule; a
+reworded description is only embarrassing.** So the numbers went first.
+
+### The numbers: 568 values across 266 items, and the catalog is sound
+
+Price, damage, range, ammunition, Damage Reduction and traits compared cell by cell.
+**Two genuine defects, both fixed. Everything else matched.**
+
+- **Flashbang** was typed "1d4 Sonic **and Light**" where the book says "1d4 Sonic", in both
+  the table row and the detail section. This is not cosmetic: damage TYPES interact with
+  Resistance and Immunity, so a target resistant to Light would have wrongly halved part of a
+  Flashbang. The flavour line does say the grenade "turns light and sound into weapons", and
+  the Blinded effect lives in its On Hit clause, which is presumably where the extra type
+  crept in from.
+- **Knuckles** carried "1d4 Bludgeoning" where the book's damage column reads "Augments
+  unarmed strikes". The book's effect is "increase your unarmed strike damage die by one
+  step. If your unarmed strikes do not have a damage die, they deal 1d4 Bludgeoning damage",
+  so the app was printing the FALLBACK as though it were the weapon's own die. The engine
+  already knew better: `isUnarmedAugmentName` excludes it from the weapon rows and
+  `GEAR_UNARMED_STEP` carries the real mechanic, and the comment there calls the damage
+  string "a legacy of the old replace-the-die model". Verified after the change that Knuckles
+  still reads as an augment and still steps the unarmed die.
+
+Two more differences were examined and are correct as they stand: **Martyr's Halo** and
+**Reliquary Shell** show price 0 against the book's "◎2+ (rarely sold)", because the app
+stores `nexus: "◎2+"` with `vendor: false` in their own fields. The Nexus figure is not lost.
+
+**61 catalog items had no Part 3 table row**, and that is expected: they are Smartdecks, B&E
+Buddies, Trauma Rigs and the Cipher Library, which live in Part 2 and were checked there.
+
+### The prose: 246 differences, not yet transcribed
+
+Every item's description and effect compared against its detail section. 178 matched.
+**246 differ, and the pattern is the one found in every earlier pass: the author's phrasing
+trimmed.** Slab Blade is representative. The book reads "**Slow** holds you to one attack
+each round; unless you're built for it, though, with cyberware that raises your Body and a
+Body of 18 or higher, the weight stops mattering: you ignore Slow on this weapon". The app
+has "Slow holds you to one attack each round; with cyberware that raises your Body and a Body
+of 18 or higher, you ignore Slow on this weapon". Two clauses gone, meaning unchanged.
+
+**Not transcribed, deliberately.** 246 entries is a mechanical job of the same size as the
+class files, and the numbers were the part that could actually mis-rule a table. The scripts
+are `diff_gear.py` for the tables and `diff_gear_prose.py` for the sections, and the full
+side-by-side is in `gear-prose-diff.md`.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from
