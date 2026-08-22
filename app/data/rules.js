@@ -376,7 +376,7 @@ EN.rules = {
     resource: "Maximum Pool = Caliber + key Attribute Modifier (minimum 1)",
     flow:     "Max Flow = (Caliber × 3) + Flow Modifier; Flow DC = 8 + Flow Modifier + Caliber",
     flowAttack: "d20 + Flow Modifier + Caliber",
-    help:     "Assist check d20 + modifier vs DC 15; on a hit +2/+3/+4 by Proficient/Expertise/Mastery (d20), or +1/+2/+3 Edge Dice up to +4 total (Dice Pool)"
+    help:     "Assist check d20 + modifier vs DC 15; on a hit +2/+3/+4 by Proficient/Expertise/Mastery (d20), or +1/+2/+3 Edge Dice up to +3 total (Dice Pool)"
   },
 
   /* Origin / Inner Profile prompts (pure-story, no mechanics) -------------- */

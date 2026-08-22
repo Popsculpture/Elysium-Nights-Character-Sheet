@@ -5555,6 +5555,73 @@ defect rather than a cosmetic one.
 
 Part 3 is today's fresh export, so this pass is against current text throughout.
 
+## resolution.js checked against Part 2, 2026-08-22
+
+**72 claims, 72 pass. Two wrong rules found beyond them, in four places, all fixed.**
+
+This is the file the whole system rests on, so `scratchpad/lin/diff_resolution.py` claims
+everything twice, once that the app still says it and once that the book does: the +15 static
+cap, all six DC bands, the five combat roll formulas, Edge and Snag die reading, Margin and its
+three outcome bands, the Edge pool's 10 dice and 20-point ceiling, Snag's 7 dice and seven-d12
+ceiling, the d12 rule, pool proficiency at 2/4/6, the five Snag risk levels, the situational cap
+of 3, and the three cost tracks. All clean.
+
+### The Help Action cap said +4 in three places. The book says +3.
+
+Part 2's Help Action, Dice Pool half: "These stack across multiple helpers, but the total Edge
+Dice added by all helpers together cannot exceed **+3**." The **+4 belongs to the d20 half**,
+where it is the Mastery assist bonus, and it had been carried across to the pool line.
+
+It was wrong in three places, and it contradicted the app's own rules in two more:
+
+| site | had | now |
+|---|---|---|
+| `resolution.js` `pool.edgeBuild`, the Allied Help Action row | +4 max total | +3 |
+| `rules.js` `formulas.help` | up to +4 total (Dice Pool) | +3 |
+| `resolution.js` `collaborative.help.pool` | cannot exceed +4 | +3 |
+
+The third is the authoritative one: the edgeBuild row literally points the reader at it with
+"see Help Action". **I fixed the first two and missed the third**, because my sweep matched
+"max total" and "up to +4" and that site phrases it "cannot exceed +4". The adversarial pass
+caught it, which is exactly what it is for. The d20 half's "+4 with Mastery" is correct and
+was left alone.
+
+The +4 also broke this file's own `baseNote` and `edgeSnag.pool`, both of which state that no
+more than 3 situational bonus dice may be added to a base pool.
+
+### The d20 Group Check had an invented headcount
+
+The app: "2. If half or more of the group meets or exceeds the DC, the group succeeds.
+3. Calculate the Average Margin ... to determine **outcome quality**."
+
+The book, in terms that leave no room: "The final outcome is determined by the group's Average
+Margin on the Group Outcome Table. **There is no separate headcount to pass; the average is the
+verdict.**"
+
+So the app made success turn on a count the book does not use, and demoted the average to a
+quality rating. The two disagree in both directions: a crew averaging +4 with only two of five
+clearing the DC fails in the app and takes a Strong Success in the book, and a crew averaging
+-2 with three of five clearing succeeds in the app and fails on the table. **The invented step
+also contradicted the Group Outcome Table the app itself prints directly beneath it**, which is
+keyed entirely to the average.
+
+Replaced with the book's three steps: roll, record each Margin (positive for those who met or
+exceeded the DC, negative for those who fell short), average them and read the table.
+
+### Refuted
+
+Two claims died. The Dice Pool cancellation claim failed because the app's cancellation text is
+`d20Stacking`, scoped to the d20 block and opening "You can never roll more than 2d20", so it
+never applied to pools in the first place. The Help Action declaration-timing claim failed as
+table procedure that moves no number.
+
+### Caveat on the source
+
+**Part 2 is the 2026-08-21 export.** A re-pull was attempted again at the start of this pass
+and again did not land, with no file and no staging `.tmp` appearing, which continues to point
+at a native save dialog waiting on a click. This is the file that most wants a fresh Part 2, so
+it is worth re-running once that is cleared.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

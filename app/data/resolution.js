@@ -93,7 +93,11 @@ EN.resolution = {
       { source: "Relevant Attribute Modifier", dice: "+1 per point" },
       { source: "Skill Proficiency Bonus (or Weapon / Vehicle for those pools)", dice: "+2 Proficient, +4 Expertise, +6 Mastery" },
       { source: "Tools or Gear", dice: "+1 to 3 (varies; see tool or gear description)" },
-      { source: "Allied Help Action", dice: "+1 to 3 by helper's tier, +4 max total (see Help Action)" },
+      // +3, not +4. The Help Action's Dice Pool half ends "the total Edge Dice added by all
+      // helpers together cannot exceed +3"; the +4 is the d20 half's MASTERY bonus and had
+      // been carried across to the pool line. It also contradicted this file's own rule that
+      // no more than 3 situational bonus dice may be added to a base pool.
+      { source: "Allied Help Action", dice: "+1 to 3 by helper's tier, +3 max total (see Help Action)" },
       { source: "Special Preparation", dice: "+1" },
       { source: "Narrative Advantage", dice: "+1 (GM discretion)" }
     ],
@@ -232,9 +236,13 @@ EN.resolution = {
       ]
     },
 
+    /* No headcount in the d20 Group Check. The book is explicit: "There is no separate
+       headcount to pass; the average is the verdict." This used to pass or fail the group
+       on half or more beating the DC and demote the Average Margin to a quality rating,
+       which could disagree with the Group Outcome Table printed directly beneath it. */
     group: {
       intro: "When everyone bends toward one objective, the table measures the whole effort, not the loudest roll.",
-      d20Process: "1. Each Freelancer rolls a d20 + relevant modifier against the DC.\n2. If half or more of the group meets or exceeds the DC, the group succeeds.\n3. Calculate the Average Margin of all rolls (positive margins of successes plus negative margins of failures, divided by the number of Freelancers) to determine outcome quality.",
+      d20Process: "1. Each Freelancer rolls a d20 + relevant modifier against the DC.\n2. Record each Freelancer's Margin: positive for those who met or exceeded the DC, negative for those who fell short.\n3. Calculate the Average Margin: add every Margin together and divide by the number of Freelancers. The average, read on the Group Outcome Table, is the group's outcome.",
       poolProcess: "1. Each Freelancer builds their own Dice Pool, including their specific Edge and Snag Dice, and rolls.\n2. Each Freelancer calculates their individual Margin.\n3. Add all individual Margins together to find the Group Net Margin.",
       outcomes: [
         { d20: "+6 or higher", pool: "+4 or more", result: "Flawless Success", desc: "The group performs in perfect rhythm. Gain an ongoing advantage, conserve time, or recover limited resources." },
@@ -251,7 +259,7 @@ EN.resolution = {
       intro: "How much a Help Action is worth depends on how much the helper actually knows. You must be at least Proficient in the relevant skill or tool to move the dice at all. An Untrained Freelancer can lend color and hands but grants no mechanical bonus.",
       timing: "Outside of combat, helping requires spending the necessary time to contribute to the task. In combat you have two ways to execute it: as an Action (spend your standard Action on your turn to assist an ally), or as an Impulse Action (jump in during another Freelancer's turn, which immediately consumes your Impulse Action and forfeits the standard Action on your upcoming turn).",
       d20: "Spend your Action or Impulse and make an assist check: roll d20 plus your modifier for the relevant skill or tool against DC 15. On a success, the assisted Freelancer gains a flat bonus to their roll: +2 if you are Proficient, +3 with Expertise, +4 with Mastery. This bonus applies on top of the static modifier cap and stacks with Edge. On a Natural 1, your help backfires and the assisted Freelancer rolls with Snag. If more than one Freelancer assists the same roll, only the single highest bonus applies; assist bonuses do not stack.",
-      pool: "Add Edge Dice to the assisted Freelancer's pool equal to your tier in the relevant skill or tool: +1 Proficient, +2 Expertise, +3 Mastery. These stack across multiple helpers, but the total Edge Dice added by all helpers together cannot exceed +4.",
+      pool: "Add Edge Dice to the assisted Freelancer's pool equal to your tier in the relevant skill or tool: +1 Proficient, +2 Expertise, +3 Mastery. These stack across multiple helpers, but the total Edge Dice added by all helpers together cannot exceed +3.",
       limits: "You must be conscious, capable, and aware of the situation to assist. The GM may cap how many Freelancers can help when the space is too crowded or the task cannot logically support more hands."
     },
 
