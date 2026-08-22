@@ -36,9 +36,12 @@ EN.rules = {
   hardCapMax: 20,
 
   /* Encumbrance and Load ---------------------------------------------------
-     Load is abstract weight and bulk. Threshold = 6 + Body modifier (min 3);
-     gear that raises it "one step" adds 2. The declared Loadout tier sets the
-     Load Budget; on-person gear spends it. */
+     Load is abstract weight and bulk. Threshold = 6 + Body modifier, then +/- 1
+     for Size, minimum 3; gear that raises it "one step" adds 2. The declared
+     Loadout tier sets the Load Budget; on-person gear spends it.
+     The Size step is not decorative and engine.js:2056 already applies it; this
+     comment used to omit it, which made the canonical reference file disagree
+     with both the book and the code that reads it. */
   encumbrance: {
     loadouts: [
       { key: "light",    name: "Light",    delta: -3, effect: "You read as foot traffic. Edge on in-combat d20 checks to blend into a crowd, conceal your gear, or pass checkpoint scrutiny; +1 Edge Die on related out-of-combat Dice Pools." },

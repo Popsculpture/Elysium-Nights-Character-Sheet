@@ -5177,6 +5177,58 @@ applies to equipment entry names, and a Weapon Part has no tier, so its stored n
 part name and exact match is correct there. Cyberware is the only catalog whose display name
 carries a tier prefix.
 
+## rules.js checked against Parts 1, 2 and 3, 2026-08-22
+
+**70 claims, 70 pass, zero value differences.** One doc comment corrected; no number moved.
+
+`rules.js` is not a catalog, it is the numeric backbone the whole engine reads: point buy,
+Caliber, proficiency bonuses, XP, class Vitality, Encumbrance, Sizes and the derived formulas.
+A wrong value here is wrong on every character at once, so `scratchpad/lin/diff_rules.py` is
+written as explicit CLAIMS with explicit evidence rather than as fuzzy table matching. Each
+claim names the value the app holds and a pattern that must appear in the manuscript, and a
+claim that cannot find its evidence reports **NOT FOUND**, never a pass. That distinction is
+the whole design: a silent miss reads exactly like agreement.
+
+Verified clean, among the 70: point buy (base 10, pool 27, the 1/2/3 cost bands, cumulative
+costs 1/2/3/5/7/10, cap 16, the single-flaw refund of 2), the Standard Array, the hard cap of
+20, the +15 static modifier cap, Caliber as ceil(level/2) across all five bands, all nine XP
+thresholds, proficiency at 2/4/6, all fourteen skills, all seven classes' Vitality dice, the
+Encumbrance threshold and its Size step, the three Loadout deltas, the Encumbered and
+Overloaded effects, and eight derived formulas.
+
+Re-confirmed live in the browser as well, since a literal being right in the file and the
+function being right are two different things: `modifier()` at the boundaries (10 to +0, 8 to
+-1, 16 to +3, 20 to +5, 1 to -5), `dieAverage()` for d6/d8/d10/d12, and the Encumbrance
+threshold derived end to end (base 9 = 6 + 3 Body + 0 Medium, plus a Load-Bearing step to 11,
+bands at 8/11/14, matching the book's Threshold minus 3 and plus 3).
+
+### The one change: a comment that under-described a live rule
+
+The book sets the threshold at "6 + Body Modifier **plus or minus 1 for Size**, minimum 3",
+and names the step: Small subtracts 1, Large adds 1. `engine.js:2056` already applies it
+correctly and `rules.js` already carries the right data (`sizeTraits` Small -1, Medium 0,
+Large +1). Only the comment above `encumbrance:` omitted the Size clause, so the canonical
+reference file read as though the rule were simply 6 + Body modifier. Corrected, with a
+pointer to the line that implements it.
+
+### Two traps in the check itself, both mine
+
+- **Encumbrance and Load live in Part 3, not Part 2.** The chapter sits after Cybernetics,
+  next to the gear it weighs. Searching Part 2 produced three NOT FOUNDs that read exactly
+  like missing rules. Worth remembering: rules.js draws on all three Parts, not just Part 1.
+- **Two patterns were wrong rather than the app**: the book writes "Speed is reduced by 2",
+  not "Speed -2", and it uses a real plus-minus sign in "6 + Body Modifier ± 1 for Size".
+  Both looked like defects until the pattern was read rather than the result. Same lesson
+  already recorded for negative probes: suspect the pattern first.
+
+### Caveat on the source
+
+Part 3 is today's fresh export. **Parts 1 and 2 are the 2026-08-21 exports.** A re-pull was
+attempted and did not land: the browser fired the export but no file and no staging `.tmp`
+appeared, which points at a native save dialog waiting for a click. Nothing suggests Parts 1
+or 2 have changed, and the eight-cell Part 3 edit was the only one flagged, but this pass
+should be re-run if either was edited since.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from
