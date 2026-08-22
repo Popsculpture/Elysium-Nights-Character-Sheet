@@ -4607,6 +4607,36 @@ end to end while the Reaver and Arsenal descriptions beside it matched the book 
    Upgrade" as the slot title, so it said the level twice. The preamble was dropped to match
    the book. Say the word if you want it back.
 
+## backgrounds.js re-checked against Part 1, 2026-08-21
+
+The fourth pass, and the cleanest by a wide margin. **179 of 180 entries matched. One word
+had drifted.** The Outrider's blurb read "contracts, and borders are things you navigate, not
+things you obey" where the book says "things you **bend**". Corrected; the file now matches
+180 of 180.
+
+Backgrounds have a rigidly regular shape in the book, so this check parses each section into
+its parts rather than matching whole sections by name: the blurb, the two proficiency choice
+lines, the named Background Feature and its text, Contacts, three Backstory Hooks each
+compared individually, and the Personal Item. That is 180 separately verified fields across
+20 backgrounds, and it reports which field drifted rather than just which background.
+
+**Why this file held up when the class files did not** is worth noting for whoever reads this
+next. Background entries are short, self-contained, and almost entirely flavour: there is
+very little mechanical text to be tempted into "clarifying". The class files carry formulas,
+DCs and resource rules, and every one of the rewrites found there was someone improving an
+explanation. The drift rate tracks how much a file invites editing, not how big it is.
+
+Running totals across the four passes:
+
+| file | entries | drifted | rate |
+|---|---|---|---|
+| backgrounds.js | 180 | 1 | 0.6% |
+| species.js | 123 | 6 | 5% |
+| talents.js | 63 | 11 | 17% |
+| the four class files | 219 | 59 | 27% |
+
+`scratchpad/lin/diff_backgrounds.py` is the check.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

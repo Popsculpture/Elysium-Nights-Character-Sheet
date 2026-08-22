@@ -255,7 +255,7 @@ EN.backgrounds = [
   {
     key: "outrider",
     name: "Outrider",
-    blurb: "You live outside rules that never served you. Laws, contracts, and borders are things you navigate, not things you obey. You learned to trust your own code because everything else came with strings attached. Whether you ran contraband, dodged warrants, or simply refused to settle, movement kept you alive.",
+    blurb: "You live outside rules that never served you. Laws, contracts, and borders are things you bend, not things you obey. You learned to trust your own code because everything else came with strings attached. Whether you ran contraband, dodged warrants, or simply refused to settle, movement kept you alive.",
     skills: {
       granted: ["Perception"],
       choose: { count: 1, options: ["Stealth", "Athletics"] }
