@@ -102,9 +102,9 @@ EN.economy = {
     { job: "Courier or delivery runner",              pay: "300 to 500",   time: "4 to 6 days",   web: "Dispatcher, recipients, route rivals" },
     { job: "Day labor (construction, dock, salvage)", pay: "400 to 600",   time: "5 days",        web: "Crew bosses, foremen, fellow workers" },
     { job: "Tech repair (street kiosk, drone shop)",  pay: "500 to 800",   time: "4 to 5 days",   web: "Regulars, suppliers, the occasional fence" },
-    { job: "Ritual work for hire (consults, cleansings)", pay: "500 to 1,000", time: "2 to 4 days", web: "Believers, the desperate, the curious" },
-    { job: "Performer at a recurring gig",            pay: "600 to 1,200", time: "3 to 4 nights", web: "Venue owners, fans, scene rivals" },
-    { job: "Low-level fence or black market specialist", pay: "800 to 1,500", time: "3 to 5 days", web: "Buyers, suppliers, dangerous company" }
+    { job: "Ritual work for hire (small consults, cleansings)", pay: "500 to 1,000", time: "2 to 4 days", web: "Believers, the desperate, the curious" },
+    { job: "Performer at a recurring gig (band, drag, residency)",            pay: "600 to 1,200", time: "3 to 4 nights", web: "Venue owners, fans, scene rivals" },
+    { job: "Low-level fence, mod work, or black market specialist", pay: "800 to 1,500", time: "3 to 5 days", web: "Buyers, suppliers, dangerous people" }
   ],
 
   /* ---- rewards ------------------------------------------------------------ */
@@ -159,7 +159,7 @@ EN.economy = {
   ],
 
   /* ---- splitting a payout ------------------------------------------------ */
-  splitNote: "By default a contract payout splits evenly between every Freelancer who participated. A fixer's cut, when there is one, comes off the top before the split. A crew may also vote to dedicate 10 to 30 percent of every payout to a shared Crew Kit.",
+  splitNote: "By default a contract payout splits evenly between every Freelancer who participated. A fixer's cut, when there is one, comes off the top before the split. Typical fixer cuts run 10 to 20 percent, and higher cuts mean better intelligence, more protection, and worse math for the crew. A crew may also vote to dedicate 10 to 30 percent of every payout to a shared Crew Kit.",
   splitExample: "A four-person crew completing a 3,000 contract with a 15 percent fixer cut: the fixer takes 450, and the remaining 2,550 splits four ways at 637 each, with 2 left to argue over.",
   splitNonStandard: [
     "Tagged or watched goods may go to the crew member with the best laundering connections.",
@@ -171,7 +171,7 @@ EN.economy = {
      visible rather than looking like the chapter is fully covered */
   notModelled: [
     "Crew Kit as a tracked shared fund (the split math itself is in the Payout Splitter)",
-    "Debt and Obligation",
+    "Debt escalation, which the book runs as GM pressure rather than paperwork (the debts themselves ARE tracked, in Bills: kind, holder, principal and clock, with no interest calculated)",
     "Captured Goods and Fences",
     "Flow-Touched and Haunted Goods",
     "Identity Theft and Account Compromise",

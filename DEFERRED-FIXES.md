@@ -5492,6 +5492,69 @@ no such label and stated the substituted rule as if it were the book's.
 Part 3 is today's fresh export. **Part 2 is the 2026-08-21 export**, for the reason recorded
 under the rules.js pass: the re-pull did not land.
 
+## economy.js checked against Part 3, 2026-08-22
+
+**61 table checks, 61 pass. Six prose fixes, two of them found by an adversarial pass.**
+
+`scratchpad/lin/diff_economy.py` is table-driven: lifestyle tiers, safehouse rent, safehouse
+upgrades, licences, day jobs and Hypercare tiers, each matched against its own pipe table in
+the Economy and Rewards chapter, plus the Nexus reference value, the Crew Kit band, and the
+worked split example's arithmetic. **Every number is right.**
+
+### Fixed from the table pass
+
+Four day job labels had been abridged. The book calls them "Ritual work for hire (**small**
+consults, cleansings)", "Performer at a recurring gig **(band, drag, residency)**" and
+"Low-level fence, **mod work**, or black market specialist", and gives the last one's social
+web as "dangerous **people**". The dropped "mod work" is the one that matters: it is a third
+kind of work the job covers.
+
+### Fixed from the adversarial pass
+
+13 claims went in and 2 survived.
+
+- **The fixer's cut had no range.** The book's Default Split paragraph reads: "Typical fixer
+  cuts run **10 to 20 percent**. Higher cuts mean better intelligence, more protection, and
+  worse math for the crew." `splitNote` paraphrases that exact paragraph, carried the Crew Kit's
+  10 to 30 percent band, and dropped the fixer's. The app was inconsistent with itself about it
+  too: the Payout Splitter's CREW KIT % tooltip cites its range while FIXER % cited nothing,
+  leaving a player a field to fill with no idea what normal looks like. Both sentences restored.
+
+- **`notModelled` claimed the app does not model Debt, which it does.** The Codex prints that
+  list under "These parts of the chapter are rules the sheet does not model yet", and it named
+  "Debt and Obligation" while `economy.js` carries `debtKinds` (the book's exact five) and
+  `debtNote`, `inventory.js` renders a working debt tracker in Bills (kind, holder, principal,
+  clock, strike when settled) and `face.js` renders a second Debts panel. The app was telling
+  the player it lacked a feature it ships.
+
+  Checked against the book before rewriting rather than just deleting the line: the section is
+  the five kinds, the principal/holder/clock triple, and then GM-facing escalation ("the GM
+  should use the holder as a recurring NPC, add Snag to social rolls in the holder's
+  territory"). The app models everything a SHEET can and omits the escalation, so the entry now
+  says that, following the same convention as the Crew Kit entry beside it, which already names
+  what is modelled in parentheses.
+
+### Refuted
+
+Eleven claims died, and the pattern is worth recording because this file has an unusual
+defence: **`notModelled` is a disclosed-omissions list, and it did most of the refuting.**
+Claims about Captured Goods and Fences, Premium Services, Bribes, Regional Exchange Variation
+and Conversion Scene Complications all failed because the file names them as deliberate gaps.
+
+Two more died on scope: the "Suggested Access Rules for Nexus Conversion" gate is GM scene
+guidance for a mechanic the app deliberately does not implement (it keeps two independent
+purses and never converts between them), and "How Day Jobs Affect Play" is explicit GM
+discretion. One claim that the storefront price multipliers are invented was refuted on the
+grounds that the storefronts themselves are declared app fiction, appearing nowhere in Part 3.
+
+The Debt finding is the interesting inverse of all of those: `notModelled` is load-bearing
+enough to refute most claims against this file, which makes an INACCURATE entry in it a real
+defect rather than a cosmetic one.
+
+### Caveat on the source
+
+Part 3 is today's fresh export, so this pass is against current text throughout.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from
