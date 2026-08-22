@@ -759,8 +759,10 @@ EN.printSheet = (function () {
           el("div.ps-invhead", null, [el("span.ps-invname", { text: cw.name || cw.base || "Chrome" }), el("span.ps-invmeta", { text: meta })])
         ]);
         if (cw.base && cw.base !== cw.name) block.appendChild(el("div.ps-invstat", { text: cw.base }));
-        if (cw.desc) block.appendChild(el("div.ps-invdesc", { text: cw.desc }));
-        if (cw.effect) block.appendChild(el("div.ps-invkv", null, [el("span.ps-fl", { text: "Effect" }), el("span.ps-invkv-v", { text: cw.effect })]));
+        var cwDesc = eng.cyberDesc ? eng.cyberDesc(cw) : cw.desc;
+        var cwEffect = eng.cyberEffect ? eng.cyberEffect(cw) : cw.effect;
+        if (cwDesc) block.appendChild(el("div.ps-invdesc", { text: cwDesc }));
+        if (cwEffect) block.appendChild(el("div.ps-invkv", null, [el("span.ps-fl", { text: "Effect" }), el("span.ps-invkv-v", { text: cwEffect })]));
         if (cw.enhancement && cw.enhancement !== "None") block.appendChild(el("div.ps-invkv", null, [el("span.ps-fl", { text: "Enhance" }), el("span.ps-invkv-v", { text: cw.enhancement })]));
         out.push(block);
       });

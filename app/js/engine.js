@@ -3319,6 +3319,25 @@ EN.engine = (function () {
   }
   function installedCyberBases(ch) { return installedCyberware(ch).map(function (cw) { return cw.base || cw.name; }); }
 
+  /* ---- catalog prose for an owned implant -------------------------------------------
+     `desc` and `effect` are CATALOG text, not player state. The purchase path used to copy
+     both onto the character's own record, so a save made before a catalog correction kept
+     the stale wording forever and no migration refreshed it: the six rules restored to
+     cyberware.js on 2026-08-22 would never have reached anyone who already owned the piece.
+     Resolved live by key instead, here, once, so the Chrome tab and the print sheet cannot
+     drift apart.
+
+     The record's own copy survives only as a FALLBACK, for a piece the catalog no longer
+     lists. A retired or homebrew implant keeps whatever text it was saved with rather than
+     rendering blank, which is the same rule migrate() follows when it declines to touch an
+     entry whose key does not resolve. */
+  function cyberDef(cw) {
+    if (!cw || typeof cw !== "object" || typeof cw.key !== "string") return null;
+    return ((EN.cyberware && EN.cyberware.items) || []).filter(function (i) { return i.key === cw.key; })[0] || null;
+  }
+  function cyberDesc(cw) { var d = cyberDef(cw); return (d && d.desc) || (cw && cw.desc) || ""; }
+  function cyberEffect(cw) { var d = cyberDef(cw); return (d && d.effect) || (cw && cw.effect) || ""; }
+
   // Resource abilities (Scoundrel Gambits, Fury Overdrive Maneuvers, Hustler Leverage
   // Abilities, Operator Tactical Maneuvers, Codebreaker Signature Exploits, Stitcher Triage
   // Protocols): a structured list on the class resource, each {name, action, cost, text}.
@@ -3589,6 +3608,7 @@ EN.engine = (function () {
     buildEdgePool: buildEdgePool, buildSnagPool: buildSnagPool, rollDicePool: rollDicePool, rollD20: rollD20,
     composeRollSpec: composeRollSpec, rollDamage: rollDamage,
     installedCyberware: installedCyberware, installedCyberBases: installedCyberBases,
+    cyberDef: cyberDef, cyberDesc: cyberDesc, cyberEffect: cyberEffect,
     gambitList: gambitList,
     resourceAbilities: resourceAbilities,
     resourcePicksAllowed: resourcePicksAllowed, chosenResourceAbilities: chosenResourceAbilities,

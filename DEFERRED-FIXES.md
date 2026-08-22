@@ -5064,6 +5064,119 @@ All seven tabs render. 43 modules load, 20 items and 53 tier rows parse. Both fi
 were read back off the live gray-market listing, the Chrome tab renders installed pieces with
 their effect and description, the dash sweep is clean, and the console carries no app errors.
 
+## The three cyberware rulings, implemented 2026-08-22
+
+All three items from the author handoff are done. Nothing here re-opens a decision.
+
+### 1. Legality: Common is Legal. No app change, one assertion.
+
+The app's "Legal" was already correct on all eight rows and was left alone. No fifth ladder
+value, no alias.
+
+**The Doc edit has landed and is verified.** A fresh export diffed against the pre-edit copy
+shows **exactly eight changed lines**, all Common to Legal, and they are precisely the eight
+rows the handoff named. Nothing else in the file moved. The byte count fell by exactly 8, one
+per cell, which is the signature of "Common" becoming "Legal" eight times.
+
+The extractor now **asserts the four-value ladder** on every Legality cell it reads from the
+manuscript and exits loudly on anything else, naming the stale-export cause. A trailing
+parenthetical is stripped at read time, so the Convergence Engine's "Restricted (effectively
+unavailable)" passes without the manuscript having to change. The assertion was confirmed to
+FIRE on the pre-edit export before the fresh pull, so it is known to work rather than merely
+known to pass.
+
+Census on the current manuscript: **Legal 8, Licensed 17, Restricted 28, 53 cells.** The
+handoff predicted Restricted 27 plus the Engine's parenthetical; those are the same 28 once the
+parenthetical is normalized. **`tier.legality` now has zero differences against the app.**
+
+One small correction to the handoff: the word "Common" survives **twice** in the Cybernetics
+chapter, not once. The named survivor is the Blackware Skinweave prose; the second is a callout
+header, "GM Guidance: Use Common Sense First". Neither is a table cell and neither was touched.
+
+### 2. Snapshot: owned cyberware now reads its prose live
+
+**2a. The purchase path no longer copies catalog text.** `inventory.js` writes identity, tier
+and player choices only. One resolver was added to `engine.js` beside `installedCyberware`,
+following the one-resolver rule: `cyberDef` / `cyberDesc` / `cyberEffect`, resolving `cw.key`
+against the catalog. Both render sites now go through it, the Chrome tab and the print sheet,
+so the two cannot drift apart.
+
+The record's own copy survives only as a **fallback** for a piece the catalog no longer lists,
+so a retired or homebrew implant keeps its text instead of rendering blank. That is the same
+rule migrate() follows.
+
+**2b. migrate() drops the fields rather than rewriting them**, which the handoff sanctions
+given 2a. Rewriting would only go stale again at the next correction. It runs **after** the
+rename pass, which matters: a pre-rename save still holds the retired key, and resolving before
+the key moved would miss exactly the pieces most likely to be stale.
+
+**No new alias table was needed.** `EN.cyberware.renames` already exists in the catalog and
+`migrate()` already consumes it as `CYBER_RENAMES`, covering Cybereyes to Cyberoptics.
+`cw.key` is a stable slug (`datajack`, `synthHeart`, `springJoints`), not a display name, so
+the join is sound.
+
+**All five tests pass**, plus two more worth having:
+
+| test | result |
+|---|---|
+| stale desc and effect on a resolvable key | refreshed, renders catalog text |
+| save keyed on the retired `cybereyes` | resolves to `cyberoptics`, renders catalog text |
+| key in no catalog | byte-identical |
+| `custom`-flagged piece | byte-identical |
+| fresh purchase after 2a | writes no desc or effect, still renders |
+| migrate run twice | idempotent, byte-identical |
+| `cyberStash` side | refreshed and renders live |
+
+The print sheet was driven for real: a record carrying no snapshot renders both the catalog
+description and the catalog effect.
+
+### 3. Extractor
+
+**3a is confirmed:** 20 tier tables, **53 rows**, and SP and price still show zero differences
+across all 53.
+
+**3b was already fixed** in the previous session's pass, in the same commit that recorded it;
+the handoff lists it as owed because the report described it as a trap rather than as shipped.
+Re-run and confirmed: tagged labels are matched as first-class, `Effect` with an optional
+parenthetical read as one field. All four entries extract and compare, and all four are
+faithful compressions.
+
+  Synthetic Heart      Effect (Special)                                    395 chars extracted
+  Biomonitor           Effect (Special)                                    257 chars extracted
+  Hand Razors          Effect (Swift)                                      255 chars extracted
+  Convergence Engine   Effect (Unattuned Wearers) + Effect (Attuned...)   1274 chars, 2 bullets
+
+### The Cybereyes rename was incomplete, and is now finished
+
+Found while testing the migration, then confirmed by the author: the rename is real, so no save
+should still read "Cybereyes" anywhere.
+
+The rename pass matched display names by **exact string**, but the stored display name EMBEDS
+the short name rather than equalling it. The market builds it as `tier + " " + short`, so a
+real saved record reads `"Brandware Cybereyes"` and only a bare `"Cybereyes"` ever matched.
+`key` and `base` migrated correctly, so the piece worked; it simply kept the retired label on
+the Chrome card forever.
+
+Now matched on **word boundaries**, so the embedded name is rewritten while a name that merely
+contains the word inside a longer one is left alone. Pairs are sorted longest old name first,
+so a rename whose old name is a prefix of another cannot win the race and leave a half-renamed
+label. Four cases verified against the real `migrate()`:
+
+| case | result |
+|---|---|
+| `"Brandware Cybereyes"` | becomes `"Brandware Cyberoptics"`, key and base follow |
+| bare `"Cybereyes"` | becomes `"Cyberoptics"` |
+| `"Blackware CybereyesPlus"` | untouched, no partial-word damage |
+| already `"Brandware Cyberoptics"` | untouched, idempotent |
+
+Driven end to end as well: a legacy save renders on the Chrome card as **Brandware
+Cyberoptics** with live catalog prose, with no trace of the old name or the old text.
+
+**The weapon-part rename does NOT share this bug and was left alone.** `PART_NAME_RENAMES`
+applies to equipment entry names, and a Weapon Part has no tier, so its stored name is the bare
+part name and exact match is correct there. Cyberware is the only catalog whose display name
+carries a tier prefix.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

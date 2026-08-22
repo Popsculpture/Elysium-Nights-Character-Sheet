@@ -429,9 +429,12 @@ EN.inventoryView = (function () {
     store.update(function (c) {
       c.glimmer = (c.glimmer || 0) - sp;
       c.cyberStash = c.cyberStash || [];
+      // No desc or effect. Those are CATALOG text, not player state: copying them here is
+      // what left saves holding prose the catalog had since corrected, with no migration to
+      // refresh it. The record keeps only identity, tier and what the player chose; the
+      // Chrome tab and the print sheet resolve the prose live through engine.cyberDesc.
       c.cyberStash.push({ key: it.cyberKey, base: it.base, name: it.name, tier: it.tier, zone: it.zone,
-        sp: it.sp, slots: it.slots || 0, sided: !!it.sided, side: it.sided ? "R" : null, mystech: !!it.mystech, enhancement: it.enhancement,
-        desc: it.desc, effect: it.effect });
+        sp: it.sp, slots: it.slots || 0, sided: !!it.sided, side: it.sided ? "R" : null, mystech: !!it.mystech, enhancement: it.enhancement });
     });
     toast(it.name + " acquired; it's in your Chrome Stash. Hit a clinic (Chrome tab) to install it.");
   }
@@ -1013,8 +1016,8 @@ EN.inventoryView = (function () {
           el("span", null, [el("span.collapse-caret", { text: open ? "▾" : "▸" }), document.createTextNode(" " + cw.name)].concat(chips)),
           actions
         ]),
-        open && cw.effect ? el("p.help", { style: { margin: "4px 0 0", color: "var(--accent)" }, text: cw.effect }) : null,
-        open && cw.desc ? el("p", { style: { margin: "6px 0 0" }, text: cw.desc }) : null
+        open && ENG().cyberEffect(cw) ? el("p.help", { style: { margin: "4px 0 0", color: "var(--accent)" }, text: ENG().cyberEffect(cw) }) : null,
+        open && ENG().cyberDesc(cw) ? el("p", { style: { margin: "6px 0 0" }, text: ENG().cyberDesc(cw) }) : null
       ]);
     }
     // one list: INSTALLED pieces float to the top, auto-sorted by Zone → Tier; STASHED pieces follow

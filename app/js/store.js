@@ -509,19 +509,60 @@ EN.store = (function () {
        implant is not merely mislabelled: every reader looks it up by key, so it keeps
        charging its Static Points while granting nothing at all. Read from the catalog
        (EN.cyberware.renames) rather than restated here, like the weapon-part table above. */
-    var CYBER_RENAMES = Object.create(null), CYBER_NAME_RENAMES = Object.create(null);
+    var CYBER_RENAMES = Object.create(null), CYBER_NAME_PAIRS = [];
     ((EN.cyberware && EN.cyberware.renames) || []).forEach(function (r) {
       if (r && r.oldKey && r.key) CYBER_RENAMES[r.oldKey] = r.key;
-      if (r && r.oldName && r.name) CYBER_NAME_RENAMES[r.oldName] = r.name;
+      if (r && r.oldName && r.name) CYBER_NAME_PAIRS.push([r.oldName, r.name]);
     });
+    /* The stored display name EMBEDS the short name rather than equalling it. The market
+       builds it as `tier + " " + short` ("Brandware Cybereyes"), or `short + " (Prototype)"`,
+       so an exact-string rename matched a bare "Cybereyes" and left every real saved record
+       reading "Brandware Cybereyes" forever. Matched on word boundaries instead, which
+       rewrites the embedded name and leaves a name that merely contains the word as part of a
+       longer one alone. Longest old name first, so a rename whose old name is a prefix of
+       another cannot win the race and produce a half-renamed label. */
+    CYBER_NAME_PAIRS.sort(function (a, b) { return b[0].length - a[0].length; });
+    function cyberRenameText(t) {
+      CYBER_NAME_PAIRS.forEach(function (pair) {
+        t = t.replace(new RegExp("\\b" + pair[0].replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "g"), pair[1]);
+      });
+      return t;
+    }
     [ch.cyberware, ch.cyberStash].forEach(function (list) {
       if (!Array.isArray(list)) return;
       list.forEach(function (cw) {
         if (!cw || typeof cw !== "object") return;
         if (typeof cw.key === "string" && CYBER_RENAMES[cw.key]) cw.key = CYBER_RENAMES[cw.key];
         ["name", "base", "short"].forEach(function (f) {
-          if (typeof cw[f] === "string" && CYBER_NAME_RENAMES[cw[f]]) cw[f] = CYBER_NAME_RENAMES[cw[f]];
+          if (typeof cw[f] === "string") cw[f] = cyberRenameText(cw[f]);
         });
+      });
+    });
+    /* CATALOG PROSE IS NOT PLAYER STATE. The purchase path used to copy `desc` and `effect`
+       onto the owned record, so a save written before a catalog correction kept the stale
+       wording forever with nothing to refresh it: the six cyberware rules restored on
+       2026-08-22 would never have reached a character who already owned the piece. Both
+       fields are DROPPED here rather than rewritten, because engine.cyberDesc/cyberEffect
+       now resolve them live from the catalog; writing a fresh copy back would only go stale
+       again at the next correction.
+
+       Ordering is not incidental: this runs AFTER the rename pass above. A save written
+       before the Cybereyes to Cyberoptics rename still holds the retired key, and resolving
+       against the catalog before that key moved would miss exactly the pieces most likely
+       to be carrying stale text.
+
+       An entry is left BYTE-IDENTICAL in two cases: its key resolves to nothing, so a
+       retired or homebrew implant keeps whatever text it was saved with rather than
+       rendering blank, and anything flagged `custom`, which is what the builder path and the
+       legacy string conversion produce. Idempotent, so it is safe on every load. */
+    var CYBER_DEFS = (EN.cyberware && EN.cyberware.items) || [];
+    [ch.cyberware, ch.cyberStash].forEach(function (list) {
+      if (!Array.isArray(list)) return;
+      list.forEach(function (cw) {
+        if (!cw || typeof cw !== "object" || cw.custom) return;
+        if (typeof cw.key !== "string") return;
+        if (!CYBER_DEFS.filter(function (i) { return i.key === cw.key; })[0]) return;
+        delete cw.desc; delete cw.effect;
       });
     });
     // Renamed Talents. A record saved before a rename still stores the OLD key and
