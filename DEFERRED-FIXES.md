@@ -4668,15 +4668,29 @@ had lost "Where Hijack Stream grabs a feed and runs, Live Tap settles in to list
 had lost ", runtime braced against the feedback you know is coming", and Dead Zone the
 parenthetical "(an enemy hacker's, a rigged drone's, a smartgun's targeting feed)".
 
-### Not checked, and it would need a different tool
+### The tables, CHECKED, and they are clean
 
-The tables are the larger half of both files and carry the numbers that actually decide
-outcomes: Smartdeck tiers and their Device Bonus, Max Complexity and Integrity; node tiers,
-Security Ratings and Save Bonuses; Firewall thresholds; IC detection and counterattack
-damage; cipher costs by Complexity; the Strain track; the 21-row sustain compatibility
-matrix. **A wrong number there is a wrong rule, and none of it is verified.** That wants a
-table-aware comparison, parsing the book's pipe tables into rows and matching them against
-the app's arrays by key. It is a different script, not a tweak to this one.
+Done with the table-aware comparison built for the gear catalogs, pointed at Part 2's 185
+pipe tables. **120 values compared across ten tables, zero defects, zero unmatched rows.**
+
+Covered: Smartdeck tiers (price, Device Bonus, Mod Slots, Integrity), B&E Buddy tiers (price,
+Attack Bonus, Save DC, Integrity), Relay tiers, node tiers (Security Rating, Cipher Save
+Bonus, Integrity), Firewall tiers (price, Security Bonus, Damage Threshold), IC tiers and
+their Counterattack damage, cipher damage by Complexity, cipher costs (Craft DC, Material,
+Recovery), the nine Hardware Mods (cost, slots, type), Scan DCs, and the Flow delivery bands'
+FP costs.
+
+The single reported difference is not one: the Standard Smartdeck's Mod Slots read 0 in the
+app and "N/A" in the book, which is the same fact about a Tier 0 deck written two ways.
+
+**The mapping from app field to book column is written out by hand in `diff_gf_tables.py`
+rather than guessed from header similarity.** A fuzzy match that silently picked the wrong
+column would report false agreement, which is worse than reporting nothing.
+
+Also confirmed while here: the **M1 ruling is applied on both sides**. The book's Max
+Complexity column now reads 1, 2, 3, 4, 5, 5, which is Tier + 1 capped at 5 by the cipher
+library, and the engine computes exactly that. That ruling was raised when the book's table
+still read 0 through 5, and the pair now agree.
 
 
 ### A defect the Flow check found in an example character, not in the data
