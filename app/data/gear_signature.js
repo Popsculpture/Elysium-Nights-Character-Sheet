@@ -79,7 +79,7 @@ EN.gearCatalog.signature = {
       price: 1000, damage: "2d6 Cold", ammo: 12, ammoUnit: "charges", range: "Line",
       traits: ["Two-Handed", "Area 6 Line", "Continuous"], availability: "Rare", legality: "Restricted",
       desc: "A focused cryo beam that paints a lane of the room in frost. People do not drop. They slow, they stiffen, and if you hold the beam on them long enough, they stop.",
-      effect: "On Hit: Project the Area 6 Line. Everyone in the line must make a Body save vs your Weapon Save DC for half damage. On a failure, their Speed is halved until the end of its next turn." },
+      effect: "On Hit: Project the Area 6 Line. Everyone in the line must make a Body save vs your Weapon Save DC for half damage. On a failure, their Speed is halved until the end of its next turn. Continuous: sustain the beam on later rounds by spending another charge and the same Action. Anyone that fails this save on two consecutive rounds is Restrained, frozen in place, until it breaks free (an Action and a Body check vs your Weapon Save DC) or the ice is shattered." },
     { name: "Flamethrower", signature: true, kind: "ranged", group: "Heavy", proficiency: "Heavy Weapons",
       price: 1200, damage: "2d6 Fire", ammo: 20, ammoUnit: "fuel", range: "Cone",
       traits: ["Heavy", "Two-Handed", "Area 3 Cone", "Incendiary", "Continuous"], availability: "Rare", legality: "Restricted",

@@ -5762,6 +5762,82 @@ pass of its own comparable in size to the original gear prose sweep, and scoping
 author's call. `gear_traits.js` and `kits.js` are still unchecked and sit in the same catalogs,
 so it may be worth doing them together.
 
+## gear_traits.js, kits.js and the 68 missing bullets, 2026-08-22
+
+Done together, because they are the same catalog. **84 rules restored, one whole item added,
+and four wrong rules corrected.**
+
+### The missing bullets: 80 restored, not 68
+
+The gear transcription only ever mapped four bullet labels (Effect, On Hit, Basic Use,
+Proficient Use). Part 3 uses more, and everything else had been dropped. The earlier gear prose
+pass re-transcribed 197 values THROUGH that same mapping, so it could not have seen this.
+
+**71 got their own fields.** Part 3 uses four labels as a shared vocabulary, so they became four
+columns rendered the way Basic Use and Powered Benefits already were, and made searchable:
+
+| field | restored |
+|---|---|
+| Activation | 26 |
+| Limitation | 24 |
+| Drawback | 11 |
+| Synergy | 10 |
+
+**9 more folded into their item's `effect`**, because their labels are used by one item each
+and a one-off label does not earn a column: Smart Rounds (Lock-On, Replay), Resonant Rounds
+(Resonant Armor Bypass, Strain Feedback), Explosive Rounds (Area Effect), Genesis Rounds
+(Mutating), Hex-Etched Rounds, Cryo Lance (Continuous), Bailiff Rig (Lapsed or Locked), Node
+Retrofit (Limit), and Tempest Core (all three modes). Same convention as the weapon-parts and
+cyberware passes.
+
+What was actually missing, as a sample: **Rubber Rounds bounce off armor DR 3 or higher, any
+vehicle, or a hardened construct. Whisper Rounds halve the long-range band. Spike Rounds deal
+no damage to a purely organic target. Resonant Rounds force a Flow save (DC 13) or 1 Strain
+Point.** And Nightwatch Tablets' full Drawback, ending in a **Body save DC 25 after four
+consecutive doses, where a failure is heart failure and a drop to 0 Wounds**: a death rule that
+existed nowhere in the app.
+
+### Breach Charge was not in the catalog at all
+
+A whole priced item, 120 Glimmer, Rare, Restricted, Counted. The Demolition Kit's own Basic Use
+already referred to it ("Enables safe handling of Breach Charges"), so the app knew the item
+existed and simply did not sell it. Added with its Effect and Activation, and verified buyable.
+
+A systematic scan found it is the ONLY missing item: 353 entry headings in Part 3, and every
+other unmatched one resolves (five Chrome Tax thresholds, the #PRINT tag, and three headings
+where the book combines two or three items the app carries separately).
+
+### Four wrong rules
+
+- **Area X** never said what a bare Area means. The book: "An Area with no shape word is a
+  sphere." The app's own data has 21 uses of "Area 3", 17 of "Area 4" and 13 of "Area 2" with
+  no shape word, so the shape of almost every area effect in the app was unresolvable.
+- **Worn** charged a Body Slot outright. The book inverts it: "A worn item only counts against
+  a Body Slot if its entry says so. If a worn item does not mention a Body Slot, it does not
+  count against any slot limit." None of the five Warding Foci name one.
+- **kits.js rewrote the book's worked example.** The book counts a Fury's Warhammer **(or Axe)**
+  at the same 2 Load for a total of 6, still Unencumbered at Body +0. The app dropped the
+  "(or Axe)" and asserted "The Axe's Heavy trait reads as Load 3", landing that build at 7 and
+  over the threshold. **Part 3's Heavy trait assigns no Load value at all**, so the clause was
+  invented. Also restored "adjusted by Size" to the quoted threshold formula.
+- The same entry is recorded twice above because two agents found it independently.
+
+### Refuted
+
+**Crew Served**, where the app bars "Sprint" and the book bars the Dash action. Refuted as a
+terminology nit: the app forbids the same extra-movement burst, and no number, DC, action type
+or condition differs. Worth knowing the app uses a word the ruleset does not define, but it
+changes nothing at a table.
+
+Of 36 trait definitions that differed textually from their book section, **only two were real**.
+The rest were the app trimming a lead-in like "The weapon is" or merging the flavour line into
+the description, which is its house style throughout.
+
+### Caveat on the source
+
+Part 3 is today's fresh export. **Part 1 is the 2026-08-21 export**, which is what the kits
+finding rests on.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

@@ -720,6 +720,15 @@ EN.inventoryView = (function () {
           ])
         : el("p.help", { style: { margin: "4px 0 0", color: "var(--accent)" }, text: (it.signature ? "" : "Effect: ") + it.effect })) : null,
       open && it.poweredBenefits ? el("p.help", { style: { margin: "4px 0 0", color: "var(--gold)" }, html: "<b style='color:var(--gold)'>Powered Benefits:</b> " + it.poweredBenefits }) : null,
+      // Part 3 gives many entries rules bullets past Effect, and the catalog used to carry
+      // only Effect. These four are the rest of them: an Activation says what it costs to
+      // use, a Limitation says when it does nothing, a Drawback says what using it costs
+      // you, and a Synergy says what it combines with. Labelled the same way Basic Use and
+      // Powered Benefits already are.
+      open && it.activation ? el("p.help", { style: { margin: "4px 0 0" }, html: "<b style='color:var(--accent)'>Activation:</b> " + it.activation }) : null,
+      open && it.limitation ? el("p.help", { style: { margin: "4px 0 0" }, html: "<b style='color:var(--warn)'>Limitation:</b> " + it.limitation }) : null,
+      open && it.drawback ? el("p.help", { style: { margin: "4px 0 0" }, html: "<b style='color:var(--danger)'>Drawback:</b> " + it.drawback }) : null,
+      open && it.synergy ? el("p.help", { style: { margin: "4px 0 0" }, html: "<b style='color:var(--flow)'>Synergy:</b> " + it.synergy }) : null,
       open && it.cyber ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: "Install: " + it.zone + " zone · " + it.sp + " SP" + (it.slots ? " · " + it.slots + " mod slots" : "") + " · Enhancement: " + (enhScaled(it) || "None") }) : null,
       open && it.cyber && it.tierNote ? el("p.help", { style: { margin: "4px 0 0" }, text: it.tierNote }) : null,
       open && it.basic ? el("p.help", { style: { margin: "4px 0 0" }, html: "<b style='color:var(--text2)'>Basic Use:</b> " + it.basic }) : null,
@@ -1228,6 +1237,8 @@ EN.inventoryView = (function () {
               zone: it.zone, sp: t.sp, slots: t.slots || 0, sided: !!it.sided, mystech: !!it.mystech,
               enhancement: it.enhancement, price: t.price, legality: t.legality, availability: TIER_AVAIL[t.tier] || "Uncommon",
               desc: it.desc, effect: it.effect,
+              activation: it.activation, limitation: it.limitation,
+              drawback: it.drawback, synergy: it.synergy,
               tierNote: t.tier === "Streetware" && it.street ? "Streetware: " + it.street : t.tier === "Blackware" && it.black ? "Blackware: " + it.black : "" });
           });
         });
@@ -1243,7 +1254,9 @@ EN.inventoryView = (function () {
       if (_mktLegal !== "all" && it.legality !== _mktLegal) return false;
       if (_mktAvail !== "all" && it.availability !== _mktAvail) return false;
       if (q) {
-        var hay = (it.name + " " + (it.desc || "") + " " + (it.effect || "") + " " + (it.group || "") + " " + (it.category || "") + " " + (it.skill || "")).toLowerCase();
+        // the four rules bullets are searchable too: "bounce" should find Rubber Rounds
+        var hay = (it.name + " " + (it.desc || "") + " " + (it.effect || "") + " " + (it.group || "") + " " + (it.category || "") + " " + (it.skill || "")
+                   + " " + (it.activation || "") + " " + (it.limitation || "") + " " + (it.drawback || "") + " " + (it.synergy || "")).toLowerCase();
         if (hay.indexOf(q) === -1) return false;
       }
       return true;

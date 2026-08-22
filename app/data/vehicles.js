@@ -89,7 +89,7 @@ EN.vehicles = {
       effect: "The vehicle repaints itself between scenes. Checks to spot or identify it while parked roll with Snag, and it gains Edge on Chase Checks at Lead 4." },
     { name: "Node Retrofit",      price: null, priceNote: "the listed cost of the new tier in The #GRID",
       fits: "Any", availability: "Uncommon", legality: "Licensed",
-      effect: "Raises the vehicle's Node Tier by one step, using the Node Attributes of the new tier. Each step costs its own Mod Slot and its own price. A vehicle's node may not exceed two steps above the tier its profile lists." },
+      effect: "Raises the vehicle's Node Tier by one step, using the Node Attributes of the new tier. Each step costs its own Mod Slot and its own price. A vehicle's node may not exceed two steps above the tier its profile lists. Limit: A node running two steps above its chassis is a mismatch, and mismatches get noticed. Any corporate sweep that scans the vehicle reads it as a flag worth following." },
     { name: "Cabin Kit",          price: 1000, fits: "Any",                availability: "Uncommon", legality: "Legal",
       effect: "The vehicle gains the Enclosed trait and loses Open-Frame. Handling is reduced by 1." },
     { name: "Cut-Down",           price: 200,  fits: "Any",                availability: "Common",   legality: "Legal",

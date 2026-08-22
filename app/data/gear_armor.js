@@ -56,7 +56,7 @@ EN.gearCatalog.armor = {
     "Focus": "Built to channel, shape, and anchor the Flow. Can empower Ward, as the item describes. You benefit from only one Focus item for Ward at a time.",
     "Resonant Plating": "Plate tuned to catch Flow as well as force. The armor's DR also applies against Resonant damage and is not ignored by Resonant Armor Bypass.",
     "Off-Hand": "Wielded in the off hand; the shield fully occupies that hand while raised. Uses the Block, Full Defense, Stacking, and Shield Durability rules.",
-    "Worn": "Worn on the body rather than held in a hand (uses a Body Slot). Leaves both hands free. A Warding Focus is Worn.",
+    "Worn": "Worn on the body rather than held in a hand, leaving both hands free. Cannot be easily dropped or disarmed, and counts as equipped gear for any effect that checks what you are wearing. A Warding Focus is Worn. Being Worn does not by itself cost a Body Slot: an item only counts against one if its own entry says so.",
     "Light": "A light shield, minimal bulk. Leaves the braced hand free for one-handed weapon use and Invocations.",
     "Heavy": "A heavy shield, planted and braced. Slow to move with, but it carries the largest Defense bonus and Block die.",
     "Leased": "The armor is not yours; it runs on a corporate service plan, and the issuer keeps a finger on the off switch. You pay an Upkeep cost each period. Miss a payment, get flagged, or cross the issuer and the gear drops remotely to its zero state (armor to DR 0, a shield to no Defense bonus and no Block die) until you pay up or crack the lock. The holder can also repossess it outright. Cracked gear keeps working but scans as stolen corporate property."
@@ -154,7 +154,7 @@ EN.gearCatalog.armor = {
     { name: "Bailiff Rig", kind: "armor", group: "Powered Exoframe", type: "Powered Heavy Armor (3 Mod Slots)", price: 430, upkeep: 400, nexus: "◎0.3 buyout", lapsedDR: 3,
       slot: ["Torso", "Legs"], dr: 5, blockBonus: 2, slots: 3, traits: ["Powered", "Plated", "Bulky", "Loud", "Leased", "Modular"], availability: "Uncommon", legality: "Restricted",
       desc: "The repo man's frame. Corporations lease these to enforcement contractors and keep one finger on the off switch the entire time, because a powered frame that turns on its issuer is a very bad quarter. It carries you through a firefight right up until the morning the lease lapses and the legs simply stop agreeing with you.",
-      effect: "Grants 5 Damage Reduction (DR) and a +2 Block Bonus.",
+      effect: "Grants 5 Damage Reduction (DR) and a +2 Block Bonus. Lapsed or Locked: the frame seizes. You lose all Powered Benefits, the Powered drawbacks apply in full, and DR drops to 3 until the lease is restored or the lock is cracked. It locks on lapsed payment, contract breach, or the issuer's call.",
       poweredBenefits: "While trained, powered, and on an active lease, you ignore the Speed reduction from Bulky, treat your Encumbrance threshold as two steps higher, and gain Edge on in-combat d20 checks (or +1 Edge Die out-of-combat) to lift, shove, or force movement." },
     { name: "Warframe Shell", kind: "armor", group: "Powered Exoframe", type: "Powered Heavy Armor (3 Mod Slots)", price: 2400, nexus: "◎0.25",
       slot: ["Torso", "Legs"], dr: 5, blockBonus: 2, slots: 3, traits: ["Powered", "Plated", "Bulky", "Sealed", "Loud", "Modular"], availability: "Rare", legality: "Restricted",
