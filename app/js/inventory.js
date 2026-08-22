@@ -1519,7 +1519,7 @@ EN.inventoryView = (function () {
       case "Powered": return has("Powered") || g === "Powered Exoframe";
       case "Mystech": return has("Mystech") || g === "Mystech Armor";
       case "Loud or Powered": return has("Loud") || has("Powered") || g === "Powered Exoframe";
-      case "Bulky non-Powered": return has("Bulky") && !(has("Powered") || g === "Powered Exoframe");
+      case "Bulky, non-Powered": return has("Bulky") && !(has("Powered") || g === "Powered Exoframe");
       default: return true;
     }
   }

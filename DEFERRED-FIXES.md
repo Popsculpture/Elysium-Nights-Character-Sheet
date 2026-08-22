@@ -4837,6 +4837,125 @@ and which now match word for word. **Genuine clause differences remaining: zero.
 The scripts are `diff_gear.py` for the tables, `diff_gear_prose.py` for the sections,
 `fix_gear_prose.py` for the transcription and `fix_gear_scoped.py` for the non-unique tail.
 
+## conditions.js checked against Part 2, 2026-08-21
+
+First of the five files that the earlier "every data file is verified" claim wrongly covered.
+42 conditions compared against their Part 2 sections. **31 match. Four defects found and
+fixed. Eleven still differ, and all eleven have the app carrying MORE than the book, which is
+the opposite of the drift found everywhere else and wants eyes rather than a script.**
+
+### The one that matters: Breakflow was materially wrong, and generous
+
+The app said Breakflow ends "after Breakflow Recovery: 1 full day in a Flow rich environment
+or equivalent ritual", and that "once recovered, you regain FP normally and all Strain is
+cleared". The book says it ends "only through **Breakflow Restoration** (or **Rough
+Restoration**)", which "takes an 8-hour long rest in a Flow-rich area (Anomaly Severity 0) and
+a **Flow Dice Pool check against 5 Snag Dice**. On a positive Margin, your Reservoir returns
+to half capacity and Strain drops to Stage 2 (Wave). On a failure, you remain in Breakflow and
+take **2d6 Vitality loss**."
+
+Four things were wrong at once: the duration, the absence of any check, the recovery amount
+(full versus half Reservoir, all Strain cleared versus dropped to Stage 2), and the missing
+failure case. **Every one of them in the player's favour.** The app also called the mechanic
+"Breakflow Recovery" while `flow.js` and `class_scoundrel_shaper.js` both call it "Breakflow
+Restoration", so the app disagreed with itself on the name as well.
+
+### The other three
+
+- **Hardwired** said "utilizing" where the book says "tuned to". The fancy-word substitution
+  found in the talents and class passes, and here it also shifts the sense.
+- **Cascade Failure** and **Drowning** spelled it "stabilise" and "stabilised" where the book
+  uses "stabilize" and "stabilized" throughout.
+
+### The eleven that remain, and why they were NOT transcribed
+
+Bloodied, Confused, Critical Wound, Cursed, Drowsy, Fatigue, Hallucinating, LinkDeath,
+Mutating, Strain, Vacuum. In every case the app's text is longer than the section, and the
+extra material is real content: the d10 Critical Wound table, the d12 Curse Effects table, the
+Confusion Table, the note that Bloodied applies to Clankers with sparking joints. Spot checks
+confirmed those passages DO exist in Part 2, stated somewhere other than the condition's own
+section. **Transcribing the section over the app's text would delete them**, which is the
+wrong default when the app has more rather than less.
+
+They also differ in framing rather than content: the app writes a table as prose with its own
+lead-in ("Confusion Table (d8): 1 to 2: do nothing this turn"), where the book has a pipe
+table with a header row. That is a presentation choice, not drift.
+
+**Two extractor traps worth remembering**, both of which produced false findings before being
+fixed: Part 2 uses some names twice, so "Cascade Failure" is both a condition and a #GRID rule
+about Links tearing loose, and keeping the longer section reported a word-perfect condition as
+rewritten. And several conditions write "### How it works" as a heading at the SAME level as
+the condition name, so stopping at the next heading truncated the entry to its first sentence
+and made the app look like it had invented the rest. The script now keeps every candidate
+section and treats a known sub-heading label as part of the entry above it.
+
+`scratchpad/lin/diff_conditions.py` is the check.
+
+## weapon_parts.js and armor_mods.js checked against Part 3, 2026-08-22
+
+Read from disk this time, not dumped through the browser. These records are regular enough to
+parse straight out of the JS source, so nothing left the repo and no save prompt appeared.
+`scratchpad/lin/diff_parts_mods.py` does the numbers, `prose_parts_mods.py` the prose.
+
+**63 parts, 25 mods. 239 table values and 297 prose values compared. 69 changes made.**
+
+### The numbers were already right
+
+One value differed and one looked like it did:
+
+- **Grounding Lattice `price: 0`** is correct, not a defect. The app carries its Nexus price in
+  its own `nexus: "◎1"` field with `vendor: false`, the same pattern already confirmed on
+  Martyr's Halo and Reliquary Shell during the gear pass.
+- **Servo Weave `fits`** read `"Bulky non-Powered"` where the book's table has
+  `"Bulky, non-Powered"`. Fixed, but **not** as a one-line data edit: see below.
+
+### `fits` is a switch key, not prose, and that nearly caused a real defect
+
+`inventory.js:1516` switches on the exact string (`case "Bulky, non-Powered":`), and
+`store.js:909` compares another value against the literal `"Long-Shafted"`. Changing the data
+alone would have dropped Servo Weave through to `default: return true` and let it mount on any
+armor at all. All three sites moved together: the two in `armor_mods.js` and the case label.
+
+Verified live rather than by reading: with Bekh on the bench, Servo Weave is offered on
+**Bastion Plate** (Plated, Bulky, Modular, not Powered) and refused on **Laborframe Exorig**
+(the same suit plus Powered), which is exactly the gate. A stale case label would have offered
+it on both. Fitting it shows `1 / 3 mod slots` and the tooltip carries the new text.
+
+This is also why **13 further `fits` differences were deliberately NOT transcribed.** Part 3
+prints that field twice, once in the table and again as a bullet, and the two disagree by
+design: the table says `Blades`, the bullet says `Bladed weapons only`. The app follows the
+table, which is the machine-readable one, and the table comparison passes clean.
+
+### The prose: 68 effects re-transcribed
+
+The same finding as every earlier pass. The engine was never what drifted; the prose beside it
+had been editorially abridged. Two of these were losing real mechanics:
+
+- **Reactive Countermeasures** had no save DC at all. The book sets the Dazzle save at
+  **DC 13**. A missing DC is a missing rule at the table.
+- **Weapon Light** carried "As a Free Action". The book labels it `Effect (Special)` and names
+  no action cost, so the Free Action was the app's own addition.
+
+Three entries now carry MORE than the book's bare `Effect` bullet, correctly: **Targeting
+Suite** (Combat, Painting, HUD), **Target Spotter** (Spotlight, Rangefinding, Read the target)
+and **Under-Barrel Mount** (its two sub-devices). Their rules live in further bullets that the
+app already folded into the one string, and transcribing only the `Effect` bullet would have
+deleted them. Five more entries have no bare `Effect` bullet at all, only a qualified one such
+as `Effect (Swift Action)`; those fold the qualifier in front of the prose, matching how
+Bracing Spike and Reactive Countermeasures were already written.
+
+`grants` and `blurb` were left alone. `grants` is the trait name that `combat.js:3094` renders
+as `grants + ". " + effect`, and all eight `blurb` values already matched the flavour paragraph
+word for word. Twenty-one weapon parts now open with "Apply the X trait", which duplicates
+`grants`, but weapon parts never render the two together: the chip shows `grants` and the
+tooltip is `name + ": " + effect`. Armor mods do concatenate them, and no armor mod's effect
+opens that way, so no render site became redundant.
+
+### Verified
+
+All seven tabs render, 43 modules load, 63 parts and 25 mods parse, the dash sweep is clean,
+and the console is free of app errors on a fresh load.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

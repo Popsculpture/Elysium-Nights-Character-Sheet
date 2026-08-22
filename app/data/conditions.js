@@ -18,7 +18,7 @@ EN.conditions = [
   {
     name: "Breakflow",
     summary: "Connection to the Flow severed; cannot channel or recover FP",
-    text: "When Strain reaches its limit or a Breakflow Check fails, your connection to the Flow snaps. The current no longer answers you, leaving the world muted and hollow.\n\nHow It Works:\n- Occurs automatically when Strain reaches Stage 5 or when you fail a Breakflow Check as defined in the Flow chapter.\n- Your Flow Points (FP) immediately drop to 0.\n- You cannot channel, recover FP, or sustain effects until Breakflow ends.\n- Attempting to channel during Breakflow automatically fails.\n\nHow to End It:\n- Breakflow ends after Breakflow Recovery: 1 full day in a Flow rich environment or equivalent ritual as described in the Flow and Recovery sections. Short or Long Rest alone cannot end it.\n- Once recovered, you regain FP normally and all Strain is cleared."
+    text: "When Strain reaches its limit or a Breakflow Check fails, your connection to the Flow snaps. The current no longer answers you, leaving the world muted and hollow.\n\nHow It Works:\n- Occurs automatically when Strain reaches Stage 5 or when you fail a Breakflow Check as defined in the Flow chapter.\n- Your Flow Points (FP) immediately drop to 0.\n- You cannot channel, recover FP, or sustain effects until Breakflow ends.\n- Attempting to channel during Breakflow automatically fails.\n\nHow to End It:\n- Breakflow ends only through Breakflow Restoration (or Rough Restoration), described in full in the Flow chapter. A Short or Long Rest alone cannot end it.\n- Breakflow Restoration takes an 8-hour long rest in a Flow-rich area (Anomaly Severity 0) and a Flow Dice Pool check against 5 Snag Dice. On a positive Margin, your Reservoir returns to half capacity and Strain drops to Stage 2 (Wave). On a failure, you remain in Breakflow and take 2d6 Vitality loss."
   },
   {
     name: "Bricked",
@@ -33,7 +33,7 @@ EN.conditions = [
   {
     name: "Cascade Failure",
     summary: "Linked system collapse",
-    text: "A single system failure spreads through linked networks until the entire structure collapses.\n\nHow It Works:\n- Linked devices begin making checks or saves to avoid shutdown or overload, using DCs set by the original effect.\n- Each failed check may deal psychic damage to users (often through LinkDeath), brick devices, or drop entire networks.\n\nHow to End It:\n- Isolate or power down affected systems, remove the corrupting source, or succeed on enough Engineering or Systems checks to stabilise the network."
+    text: "A single system failure spreads through linked networks until the entire structure collapses.\n\nHow It Works:\n- Linked devices begin making checks or saves to avoid shutdown or overload, using DCs set by the original effect.\n- Each failed check may deal psychic damage to users (often through LinkDeath), brick devices, or drop entire networks.\n\nHow to End It:\n- Isolate or power down affected systems, remove the corrupting source, or succeed on enough Engineering or Systems checks to stabilize the network."
   },
   {
     name: "Charmed",
@@ -68,7 +68,7 @@ EN.conditions = [
   {
     name: "Drowning",
     summary: "Wound damage on failed save; risk of Unconsciousness and death",
-    text: "Air runs out and your body begins to shut down.\n\nHow It Works:\n- While submerged and without breathable air, you can hold your breath for a number of rounds equal to your Body score.\n- When this limit is reached, at the start of each of your turns you must make a Body Save DC 10, with the DC increasing by 2 each round you remain without air.\n- On a failure:\n  - You immediately take 1 Wound damage.\n  - If you are already at or below half your total Wounds, you also fall Unconscious and begin to sink.\n- If your Wounds are reduced to 0 while Drowning, you die.\n\nHow to End It:\n- Regain access to breathable air or an equivalent life support source.\n- Being pulled from the water, stabilised, or provided with oxygen ends the Drowning condition, though you may still carry Fatigue or other injuries."
+    text: "Air runs out and your body begins to shut down.\n\nHow It Works:\n- While submerged and without breathable air, you can hold your breath for a number of rounds equal to your Body score.\n- When this limit is reached, at the start of each of your turns you must make a Body Save DC 10, with the DC increasing by 2 each round you remain without air.\n- On a failure:\n  - You immediately take 1 Wound damage.\n  - If you are already at or below half your total Wounds, you also fall Unconscious and begin to sink.\n- If your Wounds are reduced to 0 while Drowning, you die.\n\nHow to End It:\n- Regain access to breathable air or an equivalent life support source.\n- Being pulled from the water, stabilized, or provided with oxygen ends the Drowning condition, though you may still carry Fatigue or other injuries."
   },
   {
     name: "Drowsy",
@@ -98,7 +98,7 @@ EN.conditions = [
   {
     name: "Hardwired",
     summary: "Targetable by hacks; Snag vs EMP and Electromagnetic effects",
-    text: "Your biology incorporates enough integrated technology that you bridge the gap between biological entity and machine. You do not gain the immunities of Machine Physiology, but your internal networks become permanently exposed to digital and electromagnetic interference.\n\nHow It Works:\n- System Exposure: You can be directly targeted by Hacker Quick Hacks and abilities that explicitly target \"systems,\" \"hardware,\" or \"networks.\"\n- Electromagnetic Interference: You suffer Snag on Saving Throws against EMP effects, digital viruses, and Flow Invocations utilizing the Electromagnetic Base Resonance.\n\nHow to End It:\n- Hardwired is a persistent condition tied to your Static Threshold. It does not end with a rest or a saving throw.\n- It ends only if you uninstall enough cyberware to drop your Total Static below Threshold 2 (5 SP), allowing your organic systems to regain dominance."
+    text: "Your biology incorporates enough integrated technology that you bridge the gap between biological entity and machine. You do not gain the immunities of Machine Physiology, but your internal networks become permanently exposed to digital and electromagnetic interference.\n\nHow It Works:\n- System Exposure: You can be directly targeted by Hacker Quick Hacks and abilities that explicitly target \"systems,\" \"hardware,\" or \"networks.\"\n- Electromagnetic Interference: You suffer Snag on Saving Throws against EMP effects, digital viruses, and Flow Invocations tuned to the Electromagnetic Base Resonance.\n\nHow to End It:\n- Hardwired is a persistent condition tied to your Static Threshold. It does not end with a rest or a saving throw.\n- It ends only if you uninstall enough cyberware to drop your Total Static below Threshold 2 (5 SP), allowing your organic systems to regain dominance."
   },
   {
     name: "Incapacitated",
