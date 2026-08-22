@@ -137,7 +137,8 @@ EN.hazards = {
        graceDays: {trackKey: extraDays}    deprivation threshold pushed back
        blocksCaustic / noCausticLinger / immuneCaustic
        thinAirMinutes: n                   n minutes before the clock starts
-       breathMinutes: n                    held breath measured in minutes  */
+       breathMinutes: n                    held breath in minutes, for EVERY breath kind
+       breathMinutes: {kindKey: n}         held breath in minutes, for the named kinds only  */
   mitigations: [
     { key: "thermal-weave", name: "Thermal Regulation Weave", kind: "Armor Mod",
       source: { type: "armorMod", key: "thermal-regulation-weave" },
@@ -153,9 +154,9 @@ EN.hazards = {
 
     { key: "rebreather", name: "Rebreather", kind: "Gear",
       source: { type: "gear", name: "Rebreather" },
-      summary: "1 hour of thin air.",
-      note: "Its own entry gives up to 1 hour of active use, refreshing between scenes. Sixty minutes of a thin-air exposure pass with no save at all; the clock starts when the hour runs out. It does not cover vacuum.",
-      effects: { thinAirMinutes: 60 } },
+      summary: "1 hour of thin air, and 1 hour against Drowning.",
+      note: "Its own entry gives up to 1 hour of active use, refreshing between scenes, and stops you beginning to Drown in water or low-oxygen air. Sixty minutes of a thin-air exposure pass with no save at all; the clock starts when the hour runs out. It does not cover vacuum, which is why the breath grant names its kind: Part 2 allows exactly two vacuum-rated paths and a face-slot mouthpiece is neither.",
+      effects: { thinAirMinutes: 60, breathMinutes: { drowning: 60 } } },
 
     { key: "radiation-callouses", name: "Radiation Callouses", kind: "FreeBorn Trait",
       source: { type: "lineageFeature", name: "Radiation Callouses" },

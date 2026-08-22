@@ -5882,6 +5882,59 @@ them, and `class_picker.js` quotes the book exactly and confines itself to one l
 the other two by name. **Every file that carried its own paraphrase of a rule eventually drifted
 from it.** That is the single clearest pattern in the whole sweep.
 
+## The Rebreather / Drowning gap, closed 2026-08-22
+
+The hazards pass recorded this one as engine vocabulary rather than data, and left it. It is
+now wired, and the wiring is the interesting part.
+
+### Why it could not just be data
+
+The Rebreather's own entry: "you do not begin Drowning in **water or low-oxygen air** for up to
+1 hour of active use". The app already gave it `thinAirMinutes: 60` for the low-oxygen half and
+nothing at all for the water half, so a character wearing one still ran the full Drowning clock
+the moment they went under.
+
+The obvious fix, adding `breathMinutes: 60`, was **actively wrong**. `fx.breathMinutes` was a
+single number applied to every row of `EN.hazards.breath.kinds`, and Vacuum is one of those
+rows. It would have handed a face-slot mouthpiece an hour of vacuum immunity, which Part 2
+forbids twice over: it allows exactly two vacuum-rated paths, a Warframe Shell natively and a
+Rebreather Liner on an already-Sealed suit, and `hazards.js` already encodes that restriction.
+`breathFrom` was hardcoded to Void Lung as well, so the panel would have credited the wrong
+mitigation.
+
+### What changed
+
+`breathMinutes` now accepts either form, and the distinction is exactly the fiction:
+
+- **a number** covers every breath kind, which is Void Lung. You are holding your breath, and
+  the reason you cannot inhale does not matter.
+- **an object keyed by kind** covers only what it names, which is the Rebreather:
+  `breathMinutes: { drowning: 60 }`.
+
+`fx.breathMinutes` became a per-kind map with a matching `fx.breathFrom`, so each kind takes
+the best grant available to it and the panel names the mitigation that actually supplied it
+instead of always saying Void Lung.
+
+### Verified live, all four cases
+
+| character | Drowning | Vacuum |
+|---|---|---|
+| nothing | clock runs | clock runs |
+| Rebreather worn | 60 min, credited to Rebreather | **clock still runs** |
+| Void Lung | 15 min, Void Lung | 15 min, Void Lung |
+| both | 60 min, Rebreather | 15 min, Void Lung |
+
+The last row is the one that proves the design: the two kinds resolve independently and each
+credits its own source. The Drowning condition card now names the Rebreather on screen.
+
+### One simplification worth knowing
+
+The book gives the Rebreather "1 hour of active use" as a single budget covering whatever it is
+protecting you from. The app models thin air and drowning as two separate 60-minute grants. It
+does not bite today, because the app tracks the device as a flag and never counts elapsed
+device time, but a table running a long dive after a long climb is not double-spending an hour
+in the book and is in the app.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

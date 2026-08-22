@@ -2634,7 +2634,15 @@ EN.engine = (function () {
     var active = [], inactive = [];
     // the accumulated effect vocabulary the rest of the file reads
     var fx = { noFatigue: {}, edgeOn: {}, graceDays: {}, blocksCaustic: false,
-               noCausticLinger: false, immuneCaustic: false, thinAirMinutes: 0, breathMinutes: 0 };
+               noCausticLinger: false, immuneCaustic: false, thinAirMinutes: 0,
+               /* Breath protection is PER KIND. It used to be one number applied to every
+                  row of EN.hazards.breath.kinds, which is why the Rebreather could not be
+                  wired up: its own entry stops you Drowning "in water or low-oxygen air" and
+                  explicitly does not cover vacuum, and a single number would have handed a
+                  face-slot mouthpiece an hour of vacuum immunity. Keyed by kind, with the
+                  granting mitigation's name beside it so the panel can say who is doing it
+                  rather than crediting Void Lung for everything. */
+               breathMinutes: Object.create(null), breathFrom: Object.create(null) };
 
     (H.mitigations || []).forEach(function (m) {
       var src = m.source || {}, on = false, why = "", detail = null;
@@ -2692,7 +2700,20 @@ EN.engine = (function () {
       if (e.noCausticLinger) fx.noCausticLinger = m.name;
       if (e.immuneCaustic) fx.immuneCaustic = m.name;
       if (e.thinAirMinutes) fx.thinAirMinutes = Math.max(fx.thinAirMinutes, e.thinAirMinutes);
-      if (e.breathMinutes) fx.breathMinutes = Math.max(fx.breathMinutes, e.breathMinutes);
+      /* A number covers every breath kind, which is Void Lung: you are simply holding your
+         breath and the reason you cannot inhale does not matter. An object covers only the
+         kinds it names, which is the Rebreather. */
+      if (e.breathMinutes) {
+        var bm = e.breathMinutes;
+        var kinds = (typeof bm === "number")
+          ? ((H.breath && H.breath.kinds) || []).map(function (k) { return k.key; })
+          : Object.keys(bm);
+        kinds.forEach(function (kk) {
+          var mins = (typeof bm === "number") ? bm : bm[kk];
+          if (!(mins > 0)) return;
+          if (!(fx.breathMinutes[kk] > mins)) { fx.breathMinutes[kk] = mins; fx.breathFrom[kk] = m.name; }
+        });
+      }
     });
     return { active: active, inactive: inactive, fx: fx };
   }
@@ -2875,12 +2896,12 @@ EN.engine = (function () {
         riders: k.riders || [],
         everyRoundDamage: k.everyRoundDamage || null,
         ends: k.ends,
-        // Void Lung measures held breath in MINUTES, which outlasts any scene,
-        // so the save clock never starts inside one. No minutes-to-rounds
-        // conversion is attempted: nothing in EN states how long a round is.
-        breathMinutes: fx.breathMinutes || 0,
-        clockStarts: !(fx.breathMinutes > 0),
-        breathFrom: fx.breathMinutes > 0 ? (H.mitigationByKey["void-lung"] || {}).name : null,
+        // Held breath measured in MINUTES outlasts any scene, so the save clock never starts
+        // inside one. No minutes-to-rounds conversion is attempted: nothing in EN states how
+        // long a round is. Read per kind, because a Rebreather answers Drowning and not Vacuum.
+        breathMinutes: fx.breathMinutes[k.key] || 0,
+        clockStarts: !(fx.breathMinutes[k.key] > 0),
+        breathFrom: fx.breathMinutes[k.key] > 0 ? (fx.breathFrom[k.key] || null) : null,
         note: EN.hazards.breathNote ? EN.hazards.breathNote(k.key) : ""
       };
     });
