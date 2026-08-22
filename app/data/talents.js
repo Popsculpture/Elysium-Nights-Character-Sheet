@@ -20,7 +20,7 @@ EN.talents = [
     name: "Armor Piercing Specialist",
     category: "Combat & Weapon Mastery",
     requirements: "",
-    text: "You have achieved a penetrating precision in combat, granting you the following benefits:\n• Increase your Body or Agility score by 1, to a maximum of 20.\n• Once per turn, when you hit a Target with an attack that deals Piercing or Ballistic damage, you can re-roll one of the attack's damage dice, and you must use the new roll.\n• When you score a critical hit that deals Piercing or Ballistic damage to a Target, you can roll one additional damage die when determining the extra damage the Target takes.\n\n**Upgrade (Level 6+):** Your Piercing and Ballistic attacks ignore the first 3 points of Armor DR. This does not apply against Resonant Plating or flow-imbued defenses."
+    text: "You have achieved a penetrating precision in combat, granting you the following benefits:\n• Increase your Body or Agility score by 1, to a maximum of 20.\n• Once per turn, when you hit a Target with an attack that deals Piercing or Ballistic damage, you can re-roll one of the attack's damage dice, and you must use the new roll.\n• When you score a critical hit that deals Piercing or Ballistic damage to a Target, you can roll one additional damage die when determining the extra damage the Target takes.\n\n**Upgrade (Level 6+):** Your Piercing and Ballistic attacks ignore the first 3 points of Armor DR, this does not apply against Resonant Plating or flow-imbued defenses."
   },
   {
     key: "arsenal-adept",
@@ -55,7 +55,7 @@ EN.talents = [
     name: "Heavy Weapon Specialist",
     category: "Combat & Weapon Mastery",
     requirements: "",
-    text: "You have learned to put the weight of heavy kinetic and ballistic weaponry to your advantage. You gain the following benefits:\n• On your turn, when you score a critical hit with a melee weapon or reduce a Target to 0 Vitality with one, you can make one additional melee weapon attack as a Swift Action.\n• Before you make a melee attack with a Heavy weapon that you are Proficient with, you can choose to take a -5 penalty to the attack roll. If the attack hits, you add +10 to the attack's damage.\n\n**Upgrade (Level 6+):** When you take the Attack Action on your turn while wielding a Heavy weapon, you may make one additional melee attack with that weapon as part of the same Action. You cannot apply this Talent's minus 5 to hit for plus 10 damage option to that additional attack."
+    text: "You have learned to put the weight of heavy, two-handed melee weapons to your advantage. You gain the following benefits:\n• On your turn, when you score a critical hit with a melee weapon or reduce a Target to 0 Vitality with one, you can make one additional melee weapon attack as a Swift Action.\n• Before you make a melee attack with a Heavy weapon that you are Proficient with, you can choose to take a -5 penalty to the attack roll. If the attack hits, you add +10 to the attack's damage.\n\n**Upgrade (Level 6+):** When you take the Attack Action on your turn while wielding a Heavy weapon, you may make one additional melee attack with that weapon as part of the same Action. You cannot apply this Talent's minus 5 to hit for plus 10 damage option to that additional attack."
   },
   {
     key: "laceration-expert",
@@ -90,14 +90,14 @@ EN.talents = [
     name: "Staff & Spear Master",
     category: "Combat & Weapon Mastery",
     requirements: "",
-    text: "You wield reach weapons with deadly precision, gaining the following benefits:\n• Increase your Body or Agility score by 1, to a maximum of 20.\n• When you take the Attack Action and attack with only a Reach melee weapon or staff, you can use a Swift Action to make a melee attack with the opposite end of the weapon. This attack deals 1d6 Bludgeoning damage and uses your normal attack and damage modifiers.\n• While you are wielding a Reach melee weapon or staff, Enemies provoke an opportunity attack (Impulse Action) from you when they enter the reach you have with that weapon.\n\n**Upgrade (Level 6+):** Your reach with reach weapons extends an additional 1 space, and you gain Edge on opportunity attacks made with reach weapons."
+    text: "You wield long-shafted weapons with deadly precision, gaining the following benefits:\n• Increase your Body or Agility score by 1, to a maximum of 20.\n• When you take the Attack Action and attack with only a long-shafted weapon, such as a staff or spear, you can use a Swift Action to make a melee attack with the opposite end of the weapon. This attack deals 1d6 Bludgeoning damage and uses your normal attack and damage modifiers.\n• While wielding a long-shafted weapon, Enemies provoke an Opportunity Attack (Impulse) from you when they enter the reach you have with that weapon.\n\n**Upgrade (Level 6+):** Your reach with long-shafted weapons extends an additional 1 space, and you gain Edge on Opportunity Attacks made with long-shafted weapons."
   },
   {
     key: "street-scrapper",
     name: "Street Scrapper",
     category: "Combat & Weapon Mastery",
     requirements: "",
-    text: "Accustomed to the rough-and-tumble fighting using whatever weapons happen to be at hand, you gain the following benefits:\n• Increase your Body score by 1, to a maximum of 20.\n• You add your Simple Weapons Proficiency Bonus to attack rolls with improvised weapons, and you do not roll with Snag when wielding or throwing them.\n• Your unarmed strike damage die steps up one size (a strike with no die gains 1d4).\n• When you hit a Target with an unarmed strike or an improvised weapon on your turn, you can use a Swift Action to attempt to Grapple the Target.\n\n**Upgrade (Level 6+):** Your unarmed strike damage die steps up one further size, two steps in total, and you deal an additional 1d4 damage with improvised weapons. You also gain Resistance to Slashing, Bludgeoning, and Piercing damage from improvised weapons used against you."
+    text: "Accustomed to the rough-and-tumble fighting using whatever weapons happen to be at hand, you gain the following benefits:\n• Increase your Body score by 1, to a maximum of 20.\n• You add your Simple Weapons Proficiency Bonus to attack rolls with improvised weapons, and you do not roll with Snag when wielding or throwing them.\n• Your unarmed strike damage die increases by one size.\n• When you hit a Target with an unarmed strike or an improvised weapon on your turn, you can use a Swift Action to attempt to Grapple the Target.\n\n**Upgrade (Level 6+):** Your unarmed strike damage die increases by **one additional size**, and you deal an additional 1d4 damage with improvised weapons. You also gain Resistance to Slashing, Bludgeoning, and Piercing damage from improvised weapons used against you."
   },
   {
     key: "zeroed-in",
@@ -113,14 +113,14 @@ EN.talents = [
     name: "Blade Weaver",
     category: "Tactics & Hybrid Fighting",
     requirements: "Agility 13 or higher.",
-    text: "You weave through enemy strikes with razor-sharp timing, gaining the following benefits:\n• Increase your Agility score by 1, to a maximum of 20.\n• When you are wielding a Light melee weapon with which you are Proficient and another Enemy hits you with a melee attack, you can use your Impulse Action to add your Weapon Proficiency Bonus to your Defense for that attack, potentially causing the attack to miss you.\n\n**Upgrade (Level 6+):** When an attack misses you because of this Talent, you may make a melee attack against the attacker as a Free Action."
+    text: "***Prerequisite:** Agility 13 or higher.* You weave through enemy strikes with razor-sharp timing, gaining the following benefits:\n• Increase your Agility score by 1, to a maximum of 20.\n• When you are wielding a Light melee weapon with which you are Proficient and another Enemy hits you with a melee attack, you can use your Impulse Action to add your Weapon Proficiency Bonus to your Defense for that attack, potentially causing the attack to miss you.\n\n**Upgrade (Level 6+):** When an attack misses you because of this Talent, you may make a retaliatory melee attack against the attacker as a Free Action."
   },
   {
     key: "combat-splicer",
     name: "Combat Splicer",
     category: "Tactics & Hybrid Fighting",
     requirements: "The ability to use Quick Hacks, Ciphers, or Flow Invocations.",
-    text: "You have practiced routing code and shaping the Flow in the midst of combat, learning techniques that grant you the following benefits:\n• You gain Edge on Body or Wits Saving Throws made to maintain your active Links or sustain a Flow effect when you take damage.\n• You can perform the physical inputs for Quick Hacks or Invocations even when you have weapons or a physical shield in one or both hands.\n• When an Enemy's movement provokes an opportunity attack from you, you can use your Impulse Action to execute a Quick Hack or an Invocation against that Enemy, rather than making a standard melee attack. The action must normally cost 1 Action and must target only that Enemy.\n\n**Upgrade (Level 6+):** You no longer need to maintain Focus or Sustain to keep your Links and Flow effects active when you take damage of 20 or less. Damage of 21+ still requires the relevant Saving Throw, with Edge."
+    text: "***Prerequisite:** The ability to use Quick Hacks, Ciphers, or Flow Invocations.* You have practiced routing code and shaping the Flow in the midst of combat, learning techniques that grant you the following benefits:\n• You gain Edge on the Focus Check (the Wits or Body save) made to maintain your active Links or sustain a Flow effect when you take damage.\n• You can perform the physical inputs for Quick Hacks or Invocations even when you have weapons or a physical shield in one or both hands.\n• When an Enemy's movement provokes an Opportunity Attack from you, you can use your Impulse Action to execute a Quick Hack or an Invocation against that Enemy, rather than making a standard melee attack. The action must normally cost 1 Action and must target only that Enemy.\n\n**Upgrade (Level 6+):** You no longer need to maintain Focus or Sustain to keep your Links and Flow effects active when you take damage of 20 or less. Damage of 21+ still requires the relevant Saving Throw, with Edge."
   },
   {
     key: "cross-discipline-tactic",
@@ -141,7 +141,7 @@ EN.talents = [
     name: "Lockdown Specialist",
     category: "Tactics & Hybrid Fighting",
     requirements: "",
-    text: "You have mastered techniques to take advantage of every drop in any Enemy's guard, gaining the following benefits:\n• When you hit a Target with an opportunity attack, the Target's Speed becomes 0 for the rest of the turn.\n• Enemies provoke opportunity attacks from you even if they use the Disengage action before leaving your reach.\n• When an Enemy within 1 space of you makes an attack against a Target other than you (and that Target does not have this Talent), you can use your Impulse Action to make a melee weapon attack against the attacking Enemy.\n\n**Upgrade (Level 6+):** Once per round, when an Enemy provokes an Opportunity Attack from you, you may make that attack without spending your Impulse Action. When you hit a Target with an opportunity attack, that Target also has Snag on its next attack roll before the start of your next turn."
+    text: "You have mastered techniques to take advantage of every drop in any Enemy's guard, gaining the following benefits:\n• When you hit a Target with an Opportunity Attack, the Target's Speed becomes 0 for the rest of the turn.\n• Enemies provoke Opportunity Attacks from you even if they use the Disengage action before leaving your reach.\n• When an Enemy within 1 space of you makes an attack against a Target other than you (and that Target does not have this Talent), you can use your Impulse Action to make a melee weapon attack against the attacking Enemy.\n\n**Upgrade (Level 6+):** Once per round, when an Enemy provokes an Opportunity Attack from you, you may make that attack without spending your Impulse Action. When you hit a Target with an Opportunity Attack, that Target also suffers Snag on the next attack roll it makes before the start of your next turn."
   },
   {
     key: "phalanx-operator",
@@ -155,7 +155,7 @@ EN.talents = [
     name: "Signal Sniper",
     category: "Tactics & Hybrid Fighting",
     requirements: "The ability to use Quick Hacks, Ciphers, or Flow Invocations.",
-    text: "You have learned techniques to physically extend the reach of your network or resonance attacks, gaining the following benefits:\n• When you use a Quick Hack, Cipher Attack, or Flow Attack that requires you to make an attack roll, the effective range is doubled.\n• Your ranged tech and Flow attacks ignore the Defense bonuses provided by Half Cover and Three-Quarter Cover.\n• You learn one Quick Hack or Base Resonance (0 FP Intent) of your choice.\n\n**Upgrade (Level 6+):** Once per Short Rest, you can use a Quick Hack, Cipher, or Invocation as if you were within line of sight of a Target you have personally seen within the past hour, regardless of intervening obstacles, walls, or distance (up to 1 mile)."
+    text: "***Prerequisite:** The ability to use Quick Hacks, Ciphers, or Flow Invocations.* You have learned techniques to physically extend the reach of your network or resonance attacks, gaining the following benefits:\n• When you use a Quick Hack, Cipher Attack, or Flow Attack that requires you to make an attack roll, the effective range is doubled.\n• Your ranged tech and Flow attacks ignore the Defense bonuses provided by Half Cover and Three-Quarter Cover.\n• You learn one Quick Hack, or one Base Resonance usable at a 0 FP Intent, of your choice.\n\n**Upgrade (Level 6+):** Once per Short Rest, you can use a Quick Hack, Cipher, or Invocation as if you were within line of sight of a Target you have personally seen within the past hour, regardless of intervening obstacles, walls, or distance (up to 1 mile)."
   },
   {
     key: "tactical-operative",
@@ -185,7 +185,7 @@ EN.talents = [
     name: "Hardware Harmonizer",
     category: "Tech & #GRID Operations",
     requirements: "Character Level 8, Tech 16+.",
-    text: "You have a preternatural understanding of how mechanical and digital systems want to function. You gain the following benefits:\n• When you utilize a Tool Kit in which you have Proficiency, any Dice Pool margin of 0 (Mixed Result) is treated as a Strong Success instead.\n• The time required for you to repair broken hardware, patch corrupted code, or build localized devices is halved.\n• You gain Edge on Engineering and Systems d20 checks made to repair, build, or harmonize hardware.\n\n**Upgrade (Level 6+):** Your Mixed Result to Strong Success conversion now applies to all your Tech-based Dice Pool checks, not only those made with a Tool Kit."
+    text: "***Prerequisite:** Character Level 8, Tech 16+.* You have a preternatural understanding of how mechanical and digital systems want to function. You gain the following benefits:\n• When you use a Tool Kit in which you have Proficiency, any Dice Pool margin of 0 (Mixed Result) is treated as a Strong Success instead.\n• The time required for you to repair broken hardware, patch corrupted code, or build localized devices is halved.\n• You gain Edge on Engineering and Systems d20 checks made to repair, build, or harmonize hardware.\n\n**Upgrade (Level 6+):** Your Mixed Result to Strong Success conversion now applies to all your Tech-based Dice Pool checks, not only those made with a Tool Kit."
   },
   {
     key: "junk-tinkerer",
@@ -271,7 +271,7 @@ EN.talents = [
     name: "Static Grounding",
     category: "The Flow & Resonance",
     requirements: "Character Level 4, Unattuned Classes.",
-    text: "Your grounded, purely physical nature makes you difficult for the Flow to latch onto. You gain the following benefits:\n• You gain Edge on all Saving Throws against Invocations utilizing the Electromagnetic or Cognitive Base Resonances.\n• You reduce the damage you take from any Invocation or resonant effect that targets you directly by an amount equal to your Caliber.\n\n**Upgrade (Level 6+):** Once per Long Rest, when you succeed on a Saving Throw against a hostile Invocation, you can use your Impulse Action to reflect the effect back at its caster, who must make the same Saving Throw against their own DC."
+    text: "***Prerequisite:** Character Level 4, Unattuned Classes.* Your grounded, purely physical nature makes you difficult for the Flow to latch onto. You gain the following benefits:\n• You gain Edge on all Saving Throws against Invocations using the Electromagnetic or Cognitive Base Resonances.\n• You reduce the damage you take from any Invocation or resonant effect that targets you directly by an amount equal to your Caliber.\n\n**Upgrade (Level 6+):** Once per Long Rest, when you succeed on a Saving Throw against a hostile Invocation, you can use your Impulse Action to reflect the effect back at its caster, who must make the same Saving Throw against their own DC."
   },
 
   // ===== Armor & Resilience =====
@@ -466,7 +466,7 @@ EN.talents = [
     name: "Trauma Medic",
     category: "Skills, Social & Utility",
     requirements: "",
-    text: "You are an able street surgeon, allowing you to mend wounds quickly and get your Allies back in the fight. You gain the following benefits:\n• Increase your Wits or Tech score by 1, to a maximum of 20.\n• When you use a Medkit to Stabilize an Unconscious or dying Character, that Character also regains 1 Vitality.\n• As an Action, with a Medkit in hand, target a Character within your melee reach and restore Vitality equal to **2d6 + your Caliber + the modifier this Talent raised** (whichever of Wits or Tech you chose above). Once per target per Short or Long Rest.\n\n**Upgrade (Level 6+):** Field medicine becomes a **Swift Action**, its healing rises to **3d6 + your Caliber + the modifier this Talent raised**, and you end one of Poisoned, Bleeding, or Dazed on the target as part of the same action."
+    text: "You are an able street surgeon, quick with a kit and quicker with your hands, and you keep people upright who had every reason to go down. You gain the following benefits:\n• Increase your Wits or Tech score by 1, to a maximum of 20.\n• When you use a Medkit to Stabilize an Unconscious or dying Character, that Character also regains 1 Vitality.\n• As an Action, with a Medkit in hand, you can treat a Character within your melee reach. They regain Vitality equal to **2d6 + your Caliber + the modifier this Talent raised**. A Character cannot benefit from this Talent again until they finish a Short Rest or Long Rest.\n\n**Upgrade (Level 6+):** You can work as a Swift Action instead of an Action, and the healing increases to **3d6 + your Caliber + the modifier this Talent raised**. You can also end one of the following conditions on the Character as part of the same action: Poisoned, Bleeding, or Dazed."
   },
   {
     key: "undercity-survivor",

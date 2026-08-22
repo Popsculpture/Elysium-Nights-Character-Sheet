@@ -4491,6 +4491,53 @@ manuscript. It did not, so a correct table was made wrong. **When a data file an
 table disagree about a rule, neither one is authority: the book is.** The comparison script
 is at `scratchpad/lin/diff_text.py` and is worth re-running after any manuscript sync.
 
+## talents.js re-checked against Part 1, 2026-08-21
+
+The same check run on the lineage features, applied to all 63 talents. Talents live in Part 1
+under `### **Name**` headings, so the comparison reads a whole section, from a heading to the
+next heading OF ANY LEVEL. Two structural differences are folded out before comparing, because
+neither is drift: the book opens many talents with "Prerequisite: ...", which the app keeps in
+its own `requirements` field, and a space before punctuation is typography rather than content.
+
+**52 matched. 11 had drifted. All 11 are re-transcribed, and the file now matches the
+manuscript 63 of 63, verified by re-running the comparison against the edited file.**
+
+Two changed meaning rather than wording:
+
+- **Heavy Weapon Specialist** opened "the weight of heavy kinetic and ballistic weaponry",
+  where the book says "heavy, two-handed melee weapons". The rewrite contradicted the talent's
+  own body, every clause of which is about melee: a Swift Action melee attack on a crit, and a
+  minus 5 for plus 10 on a melee attack with a Heavy weapon. The brief was already correct and
+  said melee throughout, so the flavour line was the only thing out of step.
+- **Staff & Spear Master** said "reach weapons" where the book says "long-shafted weapons".
+  Those are different sets, and the engine already knew it: `weaponReach` gates that talent's
+  Upgrade on `isLongShafted(item)`, so the engine followed the book while the displayed text
+  named a different category.
+
+The rest were prose rewrites of the author's voice: **Trauma Medic** lost its opening line
+entirely and had its Action clause and Upgrade reworded, **Street Scrapper** carried the same
+invented parenthetical found in Synthetic Musculature ("a strike with no die gains 1d4") where
+the book says only "increases by one size", **Combat Splicer** renamed the book's "focus check
+(the Wits or Body save)" to "Body or Wits saving throws", **Signal Sniper** compressed "one
+Quick Hack, or one Base Resonance usable at a 0 FP Intent", **Blade Weaver** dropped
+"retaliatory", **Lockdown Specialist** reworded its Snag clause, and **Hardware Harmonizer**,
+**Static Grounding** and **Armor Piercing Specialist** each swapped a word ("utilize" for
+"use", "utilizing" for "using", a full stop for the book's comma).
+
+**Nothing mechanical moved.** `splitTalentText` still separates base from Upgrade on the bold
+marker, every brief still resolves (they are keyed on name, and no name changed), and
+`TALENT_ATTR_BUMP` is keyed on talent key rather than parsed from text, so the attribute
+bumps are unaffected. Checked in the running app.
+
+**Typos noticed in the source, for the author rather than the app.** Part 1 has a stray space
+before punctuation in at least five talents (Cross-Discipline Tactic "ability ,", Cybernetic
+Surge "fatigue .", Breach Charger, Spatial Delivery "spaces ,"), and Armor Piercing
+Specialist's Upgrade joins two sentences with a comma splice. The app tidies these silently
+and the comparison ignores them.
+
+`scratchpad/lin/diff_talents.py` is the check, and `fix_talents.py` is the transcriber that
+builds the replacement from the source section rather than retyping it.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from
