@@ -5935,6 +5935,33 @@ does not bite today, because the app tracks the device as a flag and never count
 device time, but a table running a long dive after a long climb is not double-spending an hour
 in the book and is in the app.
 
+## The stale-source caveat is CLEARED, 2026-08-22
+
+Every pass recorded today carried a caveat that Parts 1 and 2 were the 2026-08-21 exports,
+because the re-pull kept failing on a save dialog. The dialog is cleared and both were pulled
+fresh. **Both are byte-identical to the 08-21 copies.**
+
+| part | fresh pull | verdict |
+|---|---|---|
+| Part 1 | 458,780 bytes | identical, unchanged since 2026-08-21 |
+| Part 2 | 435,394 bytes | identical, unchanged since 2026-08-21 |
+| Part 3 | pulled this morning | current, and its eight legality edits verified |
+
+**Nothing needs re-running.** Every caveat written above is resolved rather than outstanding:
+
+- The six passes that lean on Part 2 (`rules.js`, `combat.js`, `hazards.js`, `resolution.js`,
+  `versatile.js`, and the Rebreather work) were checked against current text all along.
+- The `kits.js` Fury Load finding rests on Part 1 and is likewise current.
+
+Worth recording for the next time: **the Part 1 request initially returned Part 2 again.** Two
+consecutive exports of different Doc ids produced the same 435,394-byte file, and only a
+cache-busting query parameter on the export URL forced the real Part 1 through. A same-size
+result is the tell. Checking the first line of the staged `.tmp` catches it immediately, since
+Part 1 opens "# Welcome to Elysium Nights" and Part 2 opens "# Dicey Situations".
+
+Three staged `.tmp` files from these pulls are left in the Downloads folder rather than deleted,
+since they are the author's own directory.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from
