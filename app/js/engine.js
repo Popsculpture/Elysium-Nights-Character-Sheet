@@ -2873,6 +2873,16 @@ EN.engine = (function () {
       var row = (breathState[k.key] && typeof breathState[k.key] === "object") ? breathState[k.key] : {};
       var n = Math.max(0, row.saves | 0);
       var sealedOut = k.key === "vacuum" && seal.sealed;
+      // A grant measured in MINUTES converts at the book's flat rate, 10 rounds to
+      // the minute (EN.rules.time). Void Lung's fifteen minutes is 150 rounds and a
+      // Rebreather's hour is 600, so the clock starts late rather than never. Read
+      // per kind, because a Rebreather answers Drowning and not Vacuum.
+      //
+      // Whichever hold is LONGER wins, so a grant can never cost a character the
+      // natural hold their Body score already buys them.
+      var mins = fx.breathMinutes[k.key] || 0;
+      var granted = mins * (((EN.rules || {}).time || {}).roundsPerMinute || 10);
+      var holdRounds = Math.max(bodScore, granted);
       return {
         kind: k.key, name: k.name, condition: k.condition,
         active: !!row.active && !sealedOut,
@@ -2884,9 +2894,10 @@ EN.engine = (function () {
           ? appliedSet["environmental:vacuum"] === true
           : ((ch && ch.conditions) || []).indexOf(k.condition || "Drowning") !== -1,
         sealedOut: sealedOut, seal: seal,
-        holdRounds: bodScore,                                    // "rounds equal to your Body score"
+        holdRounds: holdRounds,           // "rounds equal to your Body score", or a grant
+        holdFromGrant: granted > bodScore,
         rounds: Math.max(0, row.rounds | 0),
-        holding: Math.max(0, bodScore - Math.max(0, row.rounds | 0)),
+        holding: Math.max(0, holdRounds - Math.max(0, row.rounds | 0)),
         saves: n,
         dc: (B.dc || 10) + (B.step || 2) * n,
         nextDC: (B.dc || 10) + (B.step || 2) * (n + 1),
@@ -2896,13 +2907,11 @@ EN.engine = (function () {
         riders: k.riders || [],
         everyRoundDamage: k.everyRoundDamage || null,
         ends: k.ends,
-        // Held breath measured in MINUTES outlasts any scene, so the save clock never starts
-        // inside one. No minutes-to-rounds conversion is attempted: nothing in EN states how
-        // long a round is. Read per kind, because a Rebreather answers Drowning and not Vacuum.
-        breathMinutes: fx.breathMinutes[k.key] || 0,
-        clockStarts: !(fx.breathMinutes[k.key] > 0),
-        breathFrom: fx.breathMinutes[k.key] > 0 ? (fx.breathFrom[k.key] || null) : null,
-        note: EN.hazards.breathNote ? EN.hazards.breathNote(k.key) : ""
+        breathMinutes: mins,
+        breathFrom: mins > 0 ? (fx.breathFrom[k.key] || null) : null,
+        note: EN.hazards.breathNote
+          ? EN.hazards.breathNote(k.key, granted > bodScore ? { rounds: holdRounds, from: fx.breathFrom[k.key] } : null)
+          : ""
       };
     });
 

@@ -155,7 +155,7 @@ EN.hazards = {
     { key: "rebreather", name: "Rebreather", kind: "Gear",
       source: { type: "gear", name: "Rebreather" },
       summary: "1 hour of thin air, and 1 hour against Drowning.",
-      note: "Its own entry gives up to 1 hour of active use, refreshing between scenes, and stops you beginning to Drown in water or low-oxygen air. Sixty minutes of a thin-air exposure pass with no save at all; the clock starts when the hour runs out. It does not cover vacuum, which is why the breath grant names its kind: Part 2 allows exactly two vacuum-rated paths and a face-slot mouthpiece is neither.",
+      note: "Its own entry gives up to 1 hour of active use, refreshing between scenes, and stops you beginning to Drown in water or low-oxygen air. Sixty minutes of a thin-air exposure pass with no save at all; the clock starts when the hour runs out. Against Drowning that hour is 600 rounds, at the book's 10 rounds to the minute. It does not cover vacuum, which is why the breath grant names its kind: Part 2 allows exactly two vacuum-rated paths and a face-slot mouthpiece is neither.",
       effects: { thinAirMinutes: 60, breathMinutes: { drowning: 60 } } },
 
     { key: "radiation-callouses", name: "Radiation Callouses", kind: "FreeBorn Trait",
@@ -172,7 +172,7 @@ EN.hazards = {
     { key: "void-lung", name: "Void Lung", kind: "FreeBorn Trait",
       source: { type: "lineageFeature", name: "Void Lung" },
       summary: "15 minutes of held breath. The largest single vacuum mitigation in the game.",
-      note: "Fifteen minutes outlasts any scene, so the save clock never starts on a Vacuum or Drowning exposure inside one. The app deliberately does not convert minutes into rounds: no rule anywhere in EN states how long a round is, and inventing one to divide by would be inventing a rule.",
+      note: "Fifteen minutes is 150 rounds, at the book's flat rate of 10 rounds to the minute, and it covers both Vacuum and Drowning. The save clock starts when those run out rather than never starting, so the tracker stays live and counts down. A Vacuum's 1d6 Cold still lands every round regardless of held breath.",
       effects: { breathMinutes: 15 } },
 
     { key: "hearthglow", name: "Hearthglow", kind: "Cinder-Heart Feature",
@@ -198,11 +198,16 @@ EN.hazards = {
 /* ---- one derived helper the rules own, so the two breath conditions cannot
    drift: the sentence every surface prints for Drowning and for Vacuum is
    generated from the single spec above rather than typed twice. ---------- */
-EN.hazards.breathNote = function (kindKey) {
+EN.hazards.breathNote = function (kindKey, hold) {
   var b = EN.hazards.breath;
   var k = (b.kinds || []).filter(function (x) { return x.key === kindKey; })[0];
   if (!k) return "";
-  var s = k.name + ": breath held " + b.holdRule + ", then Body Save DC " + b.dc
+  // A character carrying a grant states THEIR hold, so a Void Lung wearer is not
+  // told their breath runs out at their Body score while the chip beside it reads
+  // 150 rounds. Called without `hold` the sentence states the base rule, which is
+  // what the condition list wants: that surface describes Drowning, not a person.
+  var held = (hold && hold.rounds && hold.from) ? (hold.rounds + " rounds (" + hold.from + ")") : b.holdRule;
+  var s = k.name + ": breath held " + held + ", then Body Save DC " + b.dc
         + " (+" + b.step + "/round) at " + b.timing + " or take " + b.woundsOnFail
         + " Wound; at ≤half Wounds also fall Unconscious; Wounds at 0 while exposed is death";
   if (k.everyRoundDamage) s += ". Every round regardless of the save: " + k.everyRoundDamage.dice + " " + k.everyRoundDamage.type;

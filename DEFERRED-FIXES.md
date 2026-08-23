@@ -5962,6 +5962,270 @@ Part 1 opens "# Welcome to Elysium Nights" and Part 2 opens "# Dicey Situations"
 Three staged `.tmp` files from these pulls are left in the Downloads folder rather than deleted,
 since they are the author's own directory.
 
+## The open author questions, triaged 2026-08-22
+
+Thirteen questions had accumulated across the sweep, carried in this log as "needs an author
+ruling". They were put to the manuscript one at a time, and each claimed book answer was then
+attacked twice, once on the reading and once on the search. Two of the claimed answers were
+refuted and are recorded below as refuted, because both refutations were right.
+
+**The result is that the pile is smaller than it looked.** Five needed no ruling at all, one
+turned out to be an app defect rather than a question, and five are genuinely his.
+
+### Settled by the book. No ruling needed.
+
+- **"Burst" or "Burst Fire": the app is right.** The mode is named "Burst Fire" at 24 sites in
+  Part 3, including the `### Burst Fire` rules heading and every weapon Traits line, plus once
+  in Part 2. Bare "Burst" as a mode name occurs **once in the whole manuscript**, Part 1 line
+  3739 (Suppressive Counter). It is shorthand, not a second name. Worth knowing what the app
+  dodged: `class_codebreaker_fury.js:300` already expands it to "the Burst Fire or Full-Auto
+  firing mode". Had the transcription copied the book's bare "Burst", Suppressive Counter would
+  have named a trait **no weapon in the catalog carries**, and no gun would ever have qualified.
+- **"Off-Hand" or "Off hand": the correction was right.** "Off-Hand" appears twice in Part 1 and
+  fourteen times in Part 3; "Off hand" as a trait name appears **zero** times in any part.
+  Colossal Grip and Walking Emplacement do not spell it differently in the book. Both read "the
+  Light or Off-Hand trait", so the app's old spelling was a transcription typo and nothing more.
+- **The Nexus rate: there is no contradiction, and the catalog was never mispriced.** The book
+  states the rate **twice, identically** (Part 3 lines 88 and 569). The dual-priced rows that
+  seemed to imply about 3,200 sit inside the book's own printed street band, "Unlicensed or
+  black market exchange ... usually returns 2,000 to 4,000" (Part 3 line 98), and the Warframe
+  Shell's 9,600 sits in the licensed band above it. The two figures measure different things.
+  The app never applies the ledger rate to a row that carries a Glimmer price, so nothing moves.
+  **One small correction to our own comment**: `economy.js:30-39` says "the four unleased items
+  priced in BOTH currencies" and "Three of them sit inside the unlicensed band". It is six and
+  five. Echo Shroud and Ward Amplifier were missed because they live in `armor_mods.js` rather
+  than `gear_armor.js`. The full six, with implied rate: Warframe Shell 9,600, Resonant Carapace
+  3,200, Aegis Shroud 2,800, Echo Shroud 2,667, Hex Lattice Projector 2,400, Ward Amplifier
+  2,400. **None of the six is a lease buyout**; the only true buyout in the book is the Bailiff
+  Rig, and it has no competing Glimmer sale price. Correcting the count strengthens the app's
+  own argument rather than weakening it.
+- **The Universal Upgrade preamble: dropping it was right.** Part 1's heading is
+  `Level 2, 4, 6, 8: Universal Upgrade` (line 3361) and the app already prints "Level 2 .
+  Universal Upgrade" as the slot title, so the preamble said the level twice.
+- **Climb speed is ONE rule.** Five sites grant a climb speed and four grant it at full Speed
+  under four different phrasings: "base walking Speed" (Prey Stalker's Grip), "walking Speed"
+  (Highground Hunger), "normal Speed" (Parkour Runner Upgrade), "walking speed" (the Nixie
+  Skyhook familiar's Vertical Infiltration). No site draws a distinction. Parkour Runner's own
+  base bullet glosses the mechanic plainly, "Climbing does not cost you extra Speed", against a
+  normal climb cost of 2 to 3 per space. `briefs.js:343` and `:350` already normalize both
+  lineage features to one wording. There was never a real question in the "one grant or two"
+  half. The "base" half is a different question and is still open, below.
+
+### NOT a question. An app defect, and a bad one.
+
+**A round is 6 to 10 seconds, and 1 minute is 10 rounds. The book says so six times.**
+
+Part 2 line 1579 ("Six to ten seconds of motion, Flow, and bad decisions per round"), line 1586
+(the Time and Duration glossary row), line 1605 (the Round heading), line 1608 ("A duration of
+**1 minute** is treated as **10 rounds**"), line 1634 ("**1 minute** is roughly **10 rounds**"),
+line 1641 ("you can convert as needed, usually treating 1 minute as 10 rounds"), and Part 1 line
+4386 spells it inline, "until 1 minute (10 rounds) passes".
+
+The app asserts the opposite **in player-visible copy**. `hazards.js:175` reads "no rule anywhere
+in EN states how long a round is, and inventing one to divide by would be inventing a rule", and
+`engine.js:2899-2901` repeats it in a comment before hardcoding the behaviour as
+`clockStarts: !(fx.breathMinutes[k.key] > 0)`.
+
+Three consequences, all wrong:
+
+1. The sheet tells a player the rulebook is silent about something it states six times.
+2. Void Lung is 150 rounds and a Rebreather is 600 rounds against Drowning. Both are computable
+   from the book with no invention at all. The refusal to convert had no basis.
+3. **The breath tracker is inert for exactly the characters most likely to need it.**
+   `combat.js:1494-1495` disables the tick button whenever `clockStarts` is false, so anyone
+   with Void Lung or a Rebreather gets a dead control.
+
+A second, separate error rides along: the note leans on "Fifteen minutes outlasts any scene", but
+Part 2 line 1613 defines a Scene as a narrative unit, "a continuous stretch of play that focuses
+on one situation or problem", which ends on a shift of focus and not on a clock. **A Scene has no
+duration, so nothing can outlast one.** Both claims should go.
+
+`hazards.js:159` already stores the Rebreather's grant in minutes and the data layer needs no
+change. Only the conversion at the engine boundary and the two prose notes.
+
+### Genuinely his, with the options laid out
+
+1. **What does an Overdrive Maneuver cost?** The book never says, for any of the eight. The Fury
+   is **the only resource class whose ability list forgot its cost line**: the Hustler (Part 1
+   line 3823), the Scoundrel (4233) and the Stitcher (4790) all carry "Unless otherwise noted,
+   all X cost 1 Y to activate", and the Operator states it inline (4025). The Fury preamble at
+   3583 is the Hustler's sentence structure verbatim and simply stops where the cost sentence
+   belongs. The app's uniform 1 is implied hard by three separate places: the primer teaches
+   Overdrive with "Spend 1 Overdrive", the resource-budget example calls a 2-point cost the
+   notable exception, and every Fury feature that costs 2 says so. **Recommend: add the missing
+   sentence to the book.** The app needs no change beyond echoing it in the class intro, which
+   currently mirrors the book so faithfully that it never tells the reader the cost at all.
+2. **What Load is a Trauma Rig?** The book assigns none, in a column or in prose, and no
+   equipment entry in Part 3 carries a Load stat line at all. The app ships 2 carried / 1 worn,
+   which **hard-codes a GM option as an always-on rule** ("the GM may reduce its Load by 1",
+   Part 3 line 6444) and grants a courtesy the book explicitly denies to the other worn thing it
+   prices: "Armor counts whether worn or packed". That inconsistency is the real defect, not the
+   number. Options: flat 2 either way; keep 2/1 but label it on the sheet as a discretionary
+   reduction; or tier-scale it, since the book's own Load table prices a compact medkit at 1 and
+   a Rig counts as a Basic Medkit by rule. **A separate live question fell out of this**: Basic
+   Medkit takes the "kits" default of 2 while the only medkit the book prices is "compact
+   medkit" at 1.
+3. **What does "base Speed" mean?** Climb is one rule, but Prey Stalker's Grip says "base
+   walking Speed" and the others do not, and the book never defines the term. Its "base X"
+   convention elsewhere is uniformly pre-modifier: "The vehicle's base Structure is 18 whatever
+   the chassis, and mods that raise Structure apply on top of it", and "You can calculate your
+   base Defense using your Body modifier". Every "base Speed" site in the corpus is a permanent
+   modification (Synaptic Accelerator, Adrenal Tuning, Speed Freak, a Critical Wound), never a
+   situational one. Encumbrance is written as a reduction to Speed itself, so a climb speed
+   keyed to plain Speed inherits it. **Options: (a) delete "base" from Prey Stalker's Grip so
+   all four grants read alike, which is what the app already ships; or (b) keep it and define
+   the term, in which case a Skarn climbs at full rate while Overloaded and Prey Stalker's Grip
+   is genuinely the stronger feature.** Nothing in code moves either way; only prose.
+4. **Does a Long Rest reset the sleep clock?** The book never links the two. A Long Rest is
+   "about 8 hours of uninterrupted rest" with eight listed benefits, none of them food or water,
+   so it plainly does **not** feed and water you and the app is right to leave Hunger and Thirst
+   alone. Sleep is the open half. For a reset: Part 2 line 1637 equates an 8-hour block with "a
+   full sleep cycle". Against: the author was demonstrably thinking about Long Rests while
+   writing that chapter, because he wrote a carve-out for one of the four exposure types,
+   "Fatigue from thin air does not come off during a Long Rest taken at the same altitude",
+   **and wrote none for Deprivation.** Deliberate silence reads stronger than the inference.
+5. **Is the Long Rest Fatigue reduction gated?** A real contradiction, two sites, same mechanic.
+   Part 2 line 2793 (Recovery chapter) states it flat: "Reduce **Fatigue** by 1 level. Severe
+   Fatigue (level 4 or higher) requires professional care or ritual support." Part 2 line 3239
+   (Fatigue chapter) gates it: "**Long Rest (Fatigue 1 to 3):** Reduce Fatigue by **1 level** if
+   you have **safe shelter, food, and water**". The app implements the ungated version. One of
+   the two needs to lose.
+
+### Refuted, and both refutations were right
+
+- **Climb speed.** The first pass claimed the book settles what "base" means, reasoning that the
+  Critical Wound table halves "base Speed" in play so "base" cannot be a protected pre-modifier
+  quantity. Read in context that entry says "The mechanical penalties are permanent", which is
+  entirely compatible with "base" meaning pre-situational. The one piece of positive evidence
+  collapsed. It also **missed a fifth climb grant the question had explicitly asked for**: the
+  Gecko Grips armor mod, Part 3 line 3656, which grants climbing at **half** Speed and is the
+  only grant at a different magnitude. Verified directly.
+- **Long Rest.** The first pass claimed the book states what ends a Deprivation clock and
+  concluded a Long Rest resets the sleep track. The general rule it cited, "Get out and the
+  clock resets, DC and all. The Fatigue stays and comes off the ordinary way", governs
+  Deprivation but never says what getting out of hunger consists of. Part 2 contains no instance
+  of eat, drink, meal or ration anywhere. The inference was presented as a ruling. It also
+  missed the Fatigue contradiction above, which is the more useful finding.
+
+### Dissolved: Emergency Boot was never a presentation call
+
+This log framed it as "should the sheet suppress the death-save block outright or offer a
+trigger". Neither. The feature says you **remain at 1 Wound**, and the sheet computes
+`dying: wounds <= 0 && !ch.stable` (`combat.js:842`). At 1 Wound `dying` is already false and the
+block hides itself. **There is nothing to suppress.** What it needs is a trigger that sets Wounds
+to 1 and spends the use, and the budget channel already exists: `parseUses` (`combat.js:2087`)
+matches "once per Long Rest" and the feature's text opens with exactly that. Ordinary buildable
+work, not a question.
+
+### A punchlist for the manuscript, not the app
+
+Recorded because each is a one-line fix in the Docs, and the app is already correct on all of
+them. **Nothing here was edited; the Docs are his.**
+
+- Part 1 line 3739, Suppressive Counter: "the Burst or Full-Auto firing mode" wants "Burst Fire".
+- Part 1 line 3583, Fury Overdrive Maneuvers: the "Unless otherwise noted" cost sentence is
+  missing, and every sibling class has it.
+- Part 2 line 1920 lists four firing modes; Part 3's Firing Modes section defines five, adding
+  Continuous. The app already carries five (`gear_traits.js:24`).
+- Part 2 lines 2793 and 3239 state the same Fatigue reduction, one gated and one not.
+- Part 2 line 1649's stacking rule says to subtract flat reductions before applying any halving,
+  which is in tension with the Critical Wound entry's own "Your base Speed is halved".
+- Two stray spaces before punctuation in Part 1: line 5216 (Cross-Discipline Tactic,
+  "Ability ,") and line 5602 (Breach Charger, "Prone ."). **A correction to what this log said
+  earlier**: it claimed "at least five talents" and named four, plus a comma splice in Armor
+  Piercing Specialist. Scanning all three parts for space-before-punctuation, including unicode
+  spaces and with markdown and backslash escapes stripped, there are exactly **two**, both
+  above. Cybernetic Surge and Spatial Delivery read cleanly and the Armor Piercing Specialist
+  sentence is an ordinary compound, not a splice. Parts 2 and 3 are clean.
+
+### Also corrected here
+
+This log said the PDF "still transliterates to G and N". It writes `GLM` and `NXT`
+(`pdfexport.js:92-93`), which is less lossy than described.
+
+## The round-length defect, FIXED 2026-08-22
+
+The triage above found the app asserting, in copy a player can read, that the rulebook never
+states how long a round is. The book states it six times. This is the fix.
+
+### The rule now has a home
+
+`EN.rules.time` in `app/data/rules.js` carries `roundSeconds: "6 to 10"` and
+`roundsPerMinute: 10`, cited to all six sites. It goes in `rules.js` rather than beside the
+breath spec because it is a **core timing rule that breath happens to use**, not a breath rule.
+Any future duration written in minutes has one place to convert.
+
+The comment also records the second finding, because it is the kind of thing that gets
+re-invented: **a Scene is not a unit of time.** The book defines it as "a continuous stretch of
+play that focuses on one situation or problem", so it ends on a shift of focus and has no
+duration. Nothing can outlast one, and any rule reaching for "longer than a scene" wants a
+round count.
+
+### One conversion, at the engine boundary
+
+`engine.js` computes `holdRounds` once, per breath kind:
+
+    var mins = fx.breathMinutes[k.key] || 0;
+    var granted = mins * (((EN.rules || {}).time || {}).roundsPerMinute || 10);
+    var holdRounds = Math.max(bodScore, granted);
+
+**`Math.max` rather than replacement** is deliberate. Void Lung reads "you can hold your breath
+for up to 15 minutes", which replaces the Body-score rule, and 150 beats any Body score the game
+can produce, so the two readings never differ in play. Taking the larger means a grant can never
+cost a character the natural hold their Body score already buys, which is the only way this could
+go wrong later.
+
+`clockStarts` is **deleted**, not repaired. It existed only to express "the clock never starts",
+which was the false premise. The clock always starts; it starts late. `holding > 0` already
+distinguishes holding from saving, so nothing replaced it.
+
+### What a player actually sees now
+
+Verified live on one character carrying BOTH grants, which is the sharpest fixture available
+because it exercises the per-kind logic and the `max` in the same render. Odile Vantz, Body 10,
+FreeBorn with Void Lung, wearing a bought Rebreather:
+
+| row | hold | chip | note |
+|---|---|---|---|
+| Drowning | 600 rounds | `REBREATHER · 60 MIN` | "breath held 600 rounds (Rebreather)" |
+| Vacuum | 150 rounds | `VOID LUNG · 15 MIN` | "breath held 150 rounds (Void Lung)" |
+
+The Rebreather correctly beats Void Lung on Drowning and correctly does not touch Vacuum. A
+character with neither still holds Body-score rounds and still reads the generic sentence, which
+was re-checked rather than assumed.
+
+**The tracker is live.** START then the round button gives "Vacuum round 1: still holding (149 of
+150 left). Every round regardless of the save: 1d6 Cold." Before this, the button was disabled
+and read HOLDING, for exactly the characters most likely to be in vacuum.
+
+### Two more defects the fix exposed
+
+- **The grant chip named the wrong source for everyone.** It was hardcoded to
+  `"VOID LUNG · 15 MIN"`, so a Rebreather wearer with no lineage trait was told they had one, and
+  a character with both saw VOID LUNG on the row the Rebreather was actually answering. It now
+  reads `breathFrom` and `breathMinutes`. This was live the moment the Rebreather gained a breath
+  grant earlier the same day.
+- **The Active Condition Effects readout contradicted the row beneath it**, saying "breath held
+  rounds equal to your Body score" directly above `HOLD 150 ROUNDS`. `breathNote(kind, hold)` now
+  takes an optional hold, and `condEffects(ch, d)` threads the derived record through so the two
+  breath conditions state this character's number. Called without it the sentence still states
+  the base rule, which is what a surface describing the condition rather than the person wants.
+
+**Worth recording how that second one was found: by looking at the screen.** Reading the code, the
+condition table looked correctly generic, and leaving it alone was a defensible call written into
+a comment. Rendered, it sat two lines above a number it contradicted. Nothing about the source
+would have shown that.
+
+### Verified
+
+- Void Lung alone: 150 rounds on both kinds, from Void Lung.
+- Rebreather alone on the Drowning kind: 600 rounds, and Vacuum untouched.
+- Both together: the table above.
+- Neither: Body score, generic sentence, unchanged.
+- The tick button runs and the every-round Cold rider still reports.
+- All seven tabs render, no console errors, no em or en dashes.
+- The test character adopted for this was removed; the roster was empty before and is empty again.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

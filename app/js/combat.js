@@ -1151,9 +1151,9 @@ EN.combatView = (function () {
     // sentence: both notes are generated from the one spec in EN.hazards.breath.
     // Change the spec and both conditions change together; there is no second
     // copy of "DC 10, +2 a round, 1 Wound" anywhere to fall out of step.
-    "Drowning": function (e) { e.notes.push(EN.hazards ? EN.hazards.breathNote("drowning") : "Drowning"); },
-    "Vacuum": function (e) {
-      e.notes.push(EN.hazards ? EN.hazards.breathNote("vacuum") : "Vacuum");
+    "Drowning": function (e, l, d) { e.notes.push(EN.hazards ? EN.hazards.breathNote("drowning", breathHold(d, "drowning")) : "Drowning"); },
+    "Vacuum": function (e, l, d) {
+      e.notes.push(EN.hazards ? EN.hazards.breathNote("vacuum", breathHold(d, "vacuum")) : "Vacuum");
       e.notes.push("Vacuum: you cannot speak, and nothing requiring air functions. The Sealed trait alone does NOT hold vacuum");
     },
     "Drowsy": function (e) { e.init -= 2; e.saveDelta -= 1; e.perceptionSnag = true; e.notes.push("Drowsy: −2 Initiative, −1 all Saves, Snag on Perception; second Drowsy effect → Body Save DC 15 or Unconscious"); },
@@ -1198,7 +1198,15 @@ EN.combatView = (function () {
 
   // Aggregate effects across ALL active conditions, recursively including
   // derived conditions' own riders (e.g. Fatigue 4 → Drowsy → −2 Initiative).
-  function condEffects(ch) {
+  /* This character's breath grant for one kind, or null when their hold is just
+     their Body score. The Active Condition Effects readout is a per-character
+     surface, so it has to say 150 rounds when the row beside it says 150; the
+     generic sentence belongs to the condition, not to the person reading it. */
+  function breathHold(d, kind) {
+    var b = ((((d || {}).hazard || {}).breath) || []).filter(function (x) { return x.kind === kind; })[0];
+    return (b && b.holdFromGrant) ? { rounds: b.holdRounds, from: b.breathFrom } : null;
+  }
+  function condEffects(ch, d) {
     var e = { init: 0, saveDelta: 0, speedDelta: 0, speedHalved: false, speedZero: false, speedMin: 0,
               snagAtk: false, snagChk: {}, snagSave: {}, perceptionSnag: false,
               edgeToAttackers: false, cannotAct: false, autoFailBodAgiSaves: false,
@@ -1212,7 +1220,7 @@ EN.combatView = (function () {
       applied[item.name] = true;
       var fn = COND_FX[item.name];
       var before = e.derived.length;
-      if (fn) fn(e, condLevel(ch, item.name));
+      if (fn) fn(e, condLevel(ch, item.name), d);
       // newly derived conditions: queue their riders too, and keep them listed
       e.derived.slice(before).forEach(function (dc) { queue.push({ name: dc.name, from: dc.from }); });
     }
@@ -1476,11 +1484,16 @@ EN.combatView = (function () {
      renderer to drift. */
   function breathRow(b, d, fx) {
       var chips = [];
-      chips.push(hazChip("HOLD " + b.holdRounds + " ROUNDS", "var(--accent)", "Rounds equal to your Body score"));
+      chips.push(hazChip("HOLD " + b.holdRounds + " ROUNDS", "var(--accent)",
+        b.holdFromGrant ? b.breathFrom + ": " + b.breathMinutes + " minutes, at 10 rounds to the minute"
+                        : "Rounds equal to your Body score"));
       chips.push(hazChip("ROUND " + b.rounds, "var(--text3)"));
       chips.push(hazChip("SAVES " + b.saves, "var(--text3)", "This exposure's own save count"));
       if (b.everyRoundDamage) chips.push(hazChip(b.everyRoundDamage.dice + " " + b.everyRoundDamage.type.toUpperCase() + " EVERY ROUND", "var(--ember)", "Regardless of the save"));
-      if (!b.clockStarts) chips.push(hazChip("VOID LUNG · 15 MIN", "var(--success)", b.breathFrom + ": fifteen minutes of held breath outlasts any scene, so the save clock never starts inside one"));
+      // Names its actual source. It read VOID LUNG for everyone, so a Rebreather
+      // wearer was told they had a lineage trait they did not have.
+      if (b.holdFromGrant) chips.push(hazChip(String(b.breathFrom).toUpperCase() + " · " + b.breathMinutes + " MIN", "var(--success)",
+        b.breathFrom + " holds " + b.breathMinutes + " minutes of breath, which is " + b.holdRounds + " rounds at the book's 10 rounds to the minute"));
       if (b.kind === "vacuum") chips.push(hazChip(b.sealedOut ? "SEALED · " + String(b.seal.via).toUpperCase() : "NOT VACUUM-SEALED",
         b.sealedOut ? "var(--success)" : "var(--danger)", b.seal.why));
       var right = [];
@@ -1491,8 +1504,8 @@ EN.combatView = (function () {
       if (b.sealedOut) right.push(hazChip("IMMUNE", "var(--success)", b.seal.why));
       else if (!b.active) right.push(el("button.btn.sm", { style: { padding: "1px 8px" }, onclick: function () { breathStart(b); } }, "START"));
       else {
-        right.push(el("button.btn.sm.primary", { style: { padding: "1px 8px" }, disabled: !b.clockStarts, onclick: function () { breathTick(b, fx, d); } },
-          b.clockStarts ? (b.holding > 0 ? "⏱ ROUND" : "⏱ SAVE") : "HOLDING"));
+        right.push(el("button.btn.sm.primary", { style: { padding: "1px 8px" }, onclick: function () { breathTick(b, fx, d); } },
+          b.holding > 0 ? "⏱ ROUND" : "⏱ SAVE"));
         right.push(el("button.btn.sm", { style: { padding: "1px 8px" }, onclick: function () { breathEnd(b); } }, "END"));
       }
       // Vacuum is applied from the Hazard dropdown, so it gets the same Remove
@@ -1940,7 +1953,8 @@ EN.combatView = (function () {
       var s = ((c.hazards || {}).breath || {})[b.kind];
       if (s) { s.active = true; s.rounds = 0; s.saves = 0; }
     });
-    toast(b.name + " begins. Breath held for " + b.holdRounds + " rounds (your Body score), then Body Save DC "
+    toast(b.name + " begins. Breath held for " + b.holdRounds + " rounds ("
+      + (b.holdFromGrant ? b.breathFrom : "your Body score") + "), then Body Save DC "
       + EN.hazards.breath.dc + ", +" + EN.hazards.breath.step + " each round.");
   }
   function breathEnd(b) {
@@ -2811,7 +2825,7 @@ EN.combatView = (function () {
     }
     var d = eng.derive(ch);
     var s = state(ch, d);
-    var fx = condEffects(ch);
+    var fx = condEffects(ch, d);
     var blocks = [];
 
     /* sticky Active Condition Effects readout, pinned just under the tab rail */

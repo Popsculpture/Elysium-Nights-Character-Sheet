@@ -8,6 +8,23 @@ window.EN = window.EN || {};
 EN.rules = {
   schemaVersion: 1,
 
+  /* Time and Duration (Part 2 - Core Rules) ------------------------------- */
+  // A duration written in minutes converts to rounds at a flat rate, and the book
+  // states it six times: the chapter opener ("Six to ten seconds of motion, Flow,
+  // and bad decisions per round"), the Round heading and its glossary row, "A
+  // duration of 1 minute is treated as 10 rounds of active combat", the Out of
+  // Combat Time bullet, and the closing "usually treating 1 minute as 10 rounds".
+  // Part 1 spells it inline as "1 minute (10 rounds)".
+  //
+  // A Scene is NOT a unit of time. The book defines it as "a continuous stretch of
+  // play that focuses on one situation or problem", so it ends on a shift of focus
+  // and has no duration. Nothing can be said to outlast one, and any rule reaching
+  // for "longer than a scene" wants a round count instead.
+  time: {
+    roundSeconds: "6 to 10",
+    roundsPerMinute: 10
+  },
+
   /* The Six Attributes ---------------------------------------------------- */
   attributes: [
     { key: "BOD", name: "Body",     abbr: "BOD", blurb: "Physical strength, endurance, and resilience." },
