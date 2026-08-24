@@ -78,7 +78,7 @@ EN.rules = {
     loadTable: [
       { load: "0",  items: "Clothes, credsticks, comms, loose ammo, small personal items" },
       { load: "1",  items: "Sidearm, light melee weapon, compact medkit, smartdeck, reagent pouch, small tool" },
-      { load: "2",  items: "Longarm, medium melee weapon, shield, full toolkit, drone, packed armor, bulky pack" },
+      { load: "2",  items: "Longarm, medium melee weapon, shield, full toolkit, trauma rig, drone, packed armor, bulky pack" },
       { load: "3",  items: "Heavy weapon, heavy shield, breaching kit, heavy tool rig, heavy armor, dense duffel" },
       { load: "4+", items: "Unconscious adult, cargo crate, generator, server rack, turret, industrial case (stowed as cargo; carried in the arms it is a Haul instead)" }
     ],

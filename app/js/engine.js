@@ -1920,7 +1920,22 @@ EN.engine = (function () {
     for (var j = 0; j < extra.length; j++) if (extra[j] && extra[j].name === name) return extra[j];
     return null;
   }
-  function itemLoad(name, opts) {
+  /* WORN IS A TRAIT RULE, NOT A RIG RULE. The Worn Gear Trait ends "While actually worn rather
+     than packed or carried, its Load is reduced by 1, to a minimum of 0", so the reduction
+     belongs to every item carrying the trait rather than to the one bucket that used to
+     hard-code it. Seven Part 3 items carry Worn: Claws, the five Warding Foci, and the Trauma
+     Rig. Claws reaching Load 0 worn is intended.
+
+     Armor is deliberately NOT among them. It carries no Worn trait and states its own rule
+     instead: "Armor counts whether worn or packed." Nine further items are labelled Type: Worn
+     Gear (the Rebreather, Backpack, Sheath and so on) with no Traits line at all; those are a
+     category label, not the trait, and get nothing. The Rebreather sits in both lists in a
+     reader's mind and in neither in the data.
+
+     Split in two so the reduction applies once, at the end, however the base was reached. The
+     base function has a dozen early returns and bolting a check onto each is how one gets
+     missed. */
+  function baseItemLoad(name, opts) {
     // installable components weigh nothing on the budget
     if (EN.weaponParts && (EN.weaponParts.parts || []).some(function (p) { return p.name === name; })) return 0;
     if (EN.armorMods && (EN.armorMods.mods || []).some(function (m) { return m.name === name; })) return 0;
@@ -1960,14 +1975,22 @@ EN.engine = (function () {
       case "consumables": return 0;
       case "carry": return 0;   // Carry Gear never counts against your own Load Budget
       case "flow": return /tonic|draught|philter|salve|vial|dose/i.test(it.name) ? 0 : 1;
-      /* Trauma Rigs are the only thing left in this bucket: Smartdecks, Buddies and Relays
-         all return 1 further up, before this switch is reachable. A Rig is satchel-sized and
-         built to be worn, so wearing it costs 1 where hauling it in your hands costs 2. This
-         is the ONLY consumer of opts.worn; armor states its own no-discount rule above. */
-      case "rigs": return (opts && opts.worn) ? 1 : 2;
+      /* Trauma Rigs are the only thing left in this bucket: Smartdecks, Buddies and Relays all
+         return 1 further up, before this switch is reachable. The book never prints a Load on
+         the Rig; it is derived, from the Assigning Load table putting "trauma rig" in the Load 2
+         row. Worn takes it to 1 through the trait rule in itemLoad, not through a branch here. */
+      case "rigs": return 2;
       case "devices": return /drone|mule|case|rack/i.test(it.name) ? 2 : 1;
     }
     return 1;
+  }
+  function itemLoad(name, opts) {
+    var load = baseItemLoad(name, opts);
+    if (!(opts && opts.worn)) return load;
+    var it = loadCatalogItem(name);
+    var tr = (it && it.traits) || [];
+    if (tr.indexOf("Worn") === -1) return load;
+    return Math.max(0, load - 1);
   }
   // on-person = equipped, or carry status "carried" / "worn" / "racked"
   // (Racked = stowed in a worn piece of Carry Gear, still on your person).
@@ -2076,13 +2099,17 @@ EN.engine = (function () {
     // The { worn } flag was dead until 2026-08-21: three callers passed it and itemLoad
     // declared `opts` without ever reading it, while an older comment here claimed worn armor
     // got "-2 min 0". It never did, and armor's own branch says so explicitly: a suit counts
-    // in full whether worn, packed or looted. The flag now has exactly one consumer, the
-    // Trauma Rig, which drops from 2 to 1 when worn.
+    // in full whether worn, packed or looted. Since 2026-08-24 the flag drives the Worn Gear
+    // Trait's own reduction, so it has to mean "this piece is actually worn" for ANY item, not
+    // just the two that used to be asked about. Carry status "worn" is the general answer;
+    // equipped armor and an equipped Rig are worn without carrying that status.
     var racks = rackState(ch);
     (ch.equipment || []).forEach(function (e) {
       if (!(e.qty > 0) || !onPerson(ch, e)) return;
       var ek = entryKey(e);
-      var l = itemLoad(e.name, { worn: ch.equippedArmor === ek || (ch.rig && ch.rig.key === ek) });
+      var wornHere = (ch.carry && ch.carry[ek] === "worn") || ch.equippedArmor === ek
+                     || isSlotEquipped(ch, ek) || (ch.rig && ch.rig.key === ek);
+      var l = itemLoad(e.name, { worn: wornHere });
       var rackedGear = racks.byItem[entryKey(e)] || null;
       var total = l * e.qty;
       if (rackedGear) total = Math.max(0, total - 1);

@@ -352,7 +352,7 @@ EN.talents = [
     name: "Speed Freak",
     category: "Mobility & Traversal",
     requirements: "",
-    text: "You are exceptionally speedy and agile. You gain the following benefits:\n• Your base Speed increases by 2.\n• When you use the Dash Action, Difficult Terrain does not cost you extra Speed on that turn.\n• When you make a melee attack against a Target, you do not provoke opportunity attacks from that Target for the rest of the turn, whether you hit or not.\n\n**Upgrade (Level 6+):** Your base Speed increases by an additional 2 (4 total), and you can move through Difficult Terrain normally even when not Dashing."
+    text: "You are exceptionally speedy and agile. You gain the following benefits:\n• Your Speed increases by 2.\n• When you use the Dash Action, Difficult Terrain does not cost you extra Speed on that turn.\n• When you make a melee attack against a Target, you do not provoke opportunity attacks from that Target for the rest of the turn, whether you hit or not.\n\n**Upgrade (Level 6+):** Your Speed increases by an additional 2 (4 total), and you can move through Difficult Terrain normally even when not Dashing."
   },
 
   // ===== Skills, Social & Utility =====

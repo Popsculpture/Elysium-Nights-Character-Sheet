@@ -210,7 +210,18 @@ EN.codexView = (function () {
       (C.cover || []).map(function (cv) { return ruleBlock(cv.name, cv.effect); })
         .concat(C.lineOfSight ? [ruleBlock("Line of Sight", C.lineOfSight)] : [])
         .concat(C.obscurement ? [ruleBlock("Obscurement", C.obscurement)] : [])
-        .concat(C.overflowDamage ? [ruleBlock("Overflow Damage", C.overflowDamage)] : [])));
+        /* Destructible Cover and its material table were carried in EN.combat but rendered
+           nowhere, so a player could not reach either. They print in this order in the book:
+           Destructible Cover, the table it refers to, Effects and Objects, Overflow Damage,
+           and then the vehicle mapping over in Vehicles and Chases. */
+        .concat(C.destructibleCover ? [ruleBlock("Destructible Cover", C.destructibleCover)] : [])
+        .concat((C.coverMaterials || []).length
+          ? [refTable(["Category", "Structure", "Integrity", "Examples"],
+              C.coverMaterials.map(function (m) { return [m.category, String(m.structure), String(m.integrity), m.examples]; }), [0])]
+          : [])
+        .concat(C.effectsAndObjects ? [ruleBlock("Effects and Objects", C.effectsAndObjects)] : [])
+        .concat(C.overflowDamage ? [ruleBlock("Overflow Damage", C.overflowDamage)] : [])
+        .concat(C.vehiclesAsCover ? [ruleBlock("Vehicles as Cover", C.vehiclesAsCover)] : [])));
     blocks.push(refPanel("ref-attack", "Attack Resolution", "MARGINS & CRITS",
       (C.attackResolution ? [ruleBlock("Resolution", C.attackResolution)] : [])
         .concat((C.attackMargins || []).map(function (m) { return ruleBlock(m.margin + " · " + (m.result || ""), m.outcome); }))));

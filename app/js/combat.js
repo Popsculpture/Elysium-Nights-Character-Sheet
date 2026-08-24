@@ -960,8 +960,17 @@ EN.combatView = (function () {
     var rep = dayReport(t);
     toast(rep ? label + ". " + rep + "." : label + ". Nothing came due.");
   }
-  function longRest(ch, d) {
-    var leaseDue = [], severeFatigue = 0, noNaturalHealing = false, personaExpired = 0, altitudeLocked = 0, altitudeFrom = [];
+  /* `provisioned` is the shelter/food/water gate on the Fatigue reduction, which the book
+     states at BOTH of its sites: "Reduce Fatigue by 1 level if you have safe shelter, food, and
+     water (or equivalent maintenance and charge for Clankers)." The app used to reduce it
+     unconditionally, which quietly undid the Deprivation track: a starving character shed a
+     Fatigue every night while the hazard rules piled it back on. Defaulted ON at the call site,
+     since shelter and rations are the ordinary case and the gate is the exception. */
+  // sticky across renders while the popover is open; the rest itself reads it once
+  var _restProvisioned = true;
+  function longRest(ch, d, provisioned) {
+    if (provisioned === undefined) provisioned = true;
+    var leaseDue = [], severeFatigue = 0, noNaturalHealing = false, personaExpired = 0, altitudeLocked = 0, altitudeFrom = [], unprovisioned = 0;
     store.update(function (c) {
       var s = state(c, d);
       var bodMod = d.attributes.BOD.mod;
@@ -997,6 +1006,10 @@ EN.combatView = (function () {
         // Fatigue keeps the attribution honest from every other direction.
         var locked = (d.hazard && d.hazard.longRestLockedFatigue) || 0;
         if (cur >= 4) severeFatigue = cur;                                  // untouched; player is told why
+        /* The gate applies ONLY to levels 1 to 3. Severe Fatigue is caught above and is
+           unreachable by resting whatever the checkbox says, so an unprovisioned rest must not
+           be reported as the reason a level 4 stayed put. */
+        else if (!provisioned) unprovisioned = cur;
         else if (locked > 0 && cur - 1 < locked) {
           altitudeLocked = locked;
           altitudeFrom = (d.hazard && d.hazard.longRestLockSources) || [];
@@ -1018,12 +1031,31 @@ EN.combatView = (function () {
           }
         }
       }
+      /* "Reset the sleep clock. This is where the sleeping happens, or the maintenance cycle,
+         for Clankers." New Long Rest bullet, 2026-08-24. Only the SLEEP track, and only its
+         clock: days and the escalating save count go back to zero, while any Fatigue the track
+         already handed out stays and comes off the ordinary way, one level per rest under the
+         gate above. That split is why this does not reuse the hazard panel's clear helper,
+         which zeroes fatigue alongside days and would launder the cost of three sleepless
+         nights into nothing. Hunger and Thirst are untouched: a Long Rest is sleep, and the
+         book gives it no food or water. */
+      if (c.hazards && c.hazards.deprivation && c.hazards.deprivation.sleep) {
+        var _sl = c.hazards.deprivation.sleep;
+        _sl.days = 0;
+        _sl.saves = 0;
+      }
       // a Long Rest is one day on the story calendar
       var t = tickDays(c, 1);
       leaseDue = t.leaseDue; personaExpired = t.personaExpired;
     });
     var dayRep = dayReport({ leaseDue: leaseDue, personaExpired: personaExpired });
-    if (altitudeLocked) toast("Long Rest complete. " + altitudeLocked + " level(s) of Fatigue came from thin air ("
+    /* Told before the altitude lock, because an unprovisioned rest is the player's own
+       declaration and the more surprising of the two. A Clanker is told in its own terms. */
+    if (unprovisioned) toast("Long Rest complete, but with no safe shelter, food or water: Fatigue "
+      + unprovisioned + " stays where it is. The book gives the reduction only to a rest that had "
+      + (ch.species === "clankers" ? "maintenance and charge." : "all three.")
+      + (dayRep ? " " + dayRep + "." : ""));
+    else if (altitudeLocked) toast("Long Rest complete. " + altitudeLocked + " level(s) of Fatigue came from thin air ("
       + altitudeFrom.join(", ") + ") and do not come off a Long Rest taken at the same altitude. Descend, or use an ability that clears Fatigue."
       + (dayRep ? " " + dayRep + "." : ""));
     else if (dayRep) toast("Long Rest complete. " + dayRep + ".");
@@ -1146,6 +1178,30 @@ EN.combatView = (function () {
     "Critical Condition": function (e) { e.snagChk.BOD = e.snagChk.AGI = true; e.snagSave.BOD = e.snagSave.AGI = true; e.notes.push("Critical Condition: Focus Checks to stay conscious on Wound damage / strenuous actions / end of turn"); },
     "Critical Wound": function (e) { e.notes.push("Critical Wound: permanent penalties by body part (see entry) until replaced"); },
     "Cursed": function (e) { e.notes.push("Cursed: GM-defined affliction (see Curse Effects table)"); },
+    /* The four sensory conditions added 2026-08-24. Only the halves the accumulator can
+       actually carry are wired; the rest stays prose in the entry, which is where the app has
+       always drawn that line. Note Blinded and Deafened each end on a Body Save DC 12 taken at
+       the END of your turn, which is the save to ESCAPE the condition and is a different roll
+       from whatever Save let you avoid it (Optic Scramble and Arc Lightning both use a Flow
+       Save DC for that). Collapsing the two would break both abilities. */
+    "Blinded": function (e) {
+      e.snagAtk = true; e.perceptionSnag = true; e.edgeToAttackers = true;
+      e.notes.push("Blinded: every space and Target is Obscured to you; Snag on attacks and sight checks; attacks against you gain Edge; abilities needing sight do not work. Low-Light, Thermal and Darkvision do not help, and Cyberoptics go dark. Body Save DC 12 at the end of your turn to end it");
+    },
+    "Deafened": function (e) {
+      e.snagChk.WIT = true;
+      e.notes.push("Deafened: checks relying on hearing fail automatically, and abilities that need you to hear do not reach you; Snag on Wits checks to notice anything you are not already looking at. Body Save DC 12 at the end of your turn to end it");
+    },
+    // No save. It ends when its cause ends, which is why it is harsher than the Critical Wound
+    // Table's Vocal Cords result (that gives Snag on verbal Invocations; this forbids them).
+    "Silenced": function (e) {
+      e.notes.push("Silenced: you cannot speak, shout or be heard, cannot use abilities a Target must hear, cannot run a Cipher listing Voice among its Components, and cannot use Flow Invocations that require verbalization. Ends with its cause or on leaving the area; no save");
+    },
+    // 1d6 Vitality at the start of your turn, unpreventable. There is no per-turn damage channel
+    // on the accumulator, so this is reported rather than applied, the same way Burning is.
+    "Suffocating": function (e) {
+      e.notes.push("Suffocating: lose 1d6 Vitality at the start of each of your turns, and it cannot be reduced or prevented; you cannot speak and anything needing breath fails. Never applies alongside Drowning. Anything that does not breathe is immune, Clankers included. Ends on reaching breathable air or life support; no save");
+    },
     "Dazed": function (e) { e.noImpulse = true; e.notes.push("Dazed: no Impulse Actions; only ONE of Action / Move / Swift this turn"); },
     // Drowning and Vacuum are the SAME machinery, so neither prints a hand-typed
     // sentence: both notes are generated from the one spec in EN.hazards.breath.
@@ -2079,7 +2135,7 @@ EN.combatView = (function () {
     if (!eng.resourceAbilities || !eng.resourceAbilities(ch).length) return out;
     var abil = eng.chosenResourceAbilities ? eng.chosenResourceAbilities(ch) : [];
     out[d.resource.name] = { subs: abil.map(function (a) {
-      return { name: a.name, action: shortAction(a.action), cost: a.cost, text: a.text };
+      return { name: a.name, action: shortAction(a.action), cost: a.cost, costVariable: !!a.costVariable, text: a.text };
     }) };
     return out;
   }
@@ -2900,10 +2956,24 @@ EN.combatView = (function () {
                                             background: "var(--bg2)", border: "1px solid var(--border2)", borderRadius: "4px",
                                             boxShadow: "0 8px 24px rgba(0,0,0,.55)", textAlign: "left" } }, [
             el("p", { style: { margin: 0, fontSize: "12px", lineHeight: "1.5", color: "var(--text2)" },
-                      text: "Take a Long Rest? Restores Vitality, Resilience Dice, Wounds (+Body mod), Flow, and reduces Strain/Fatigue by 1." }),
+                      text: "Take a Long Rest? Restores Vitality, Resilience Dice, Wounds (+Body mod), Flow, reduces Strain by 1, and resets the sleep clock." }),
+            /* The Fatigue reduction is the one benefit the book gates, so it is the one thing
+               this asks about. Defaulted ON: shelter and rations are the ordinary case, and a
+               prompt that defaults to the exception would tax every rest for the rare night.
+               Everything else a Long Rest does happens either way. */
+            (function () {
+              var clanker = ch.species === "clankers";
+              return el("label.row", { style: { gap: "7px", alignItems: "flex-start", cursor: "pointer", margin: 0 } }, [
+                el("input", { type: "checkbox", checked: _restProvisioned !== false, style: { marginTop: "2px", flex: "0 0 auto" },
+                              onchange: function (e) { _restProvisioned = e.target.checked; EN.app.render(); } }),
+                el("span", { style: { fontSize: "11.5px", lineHeight: "1.45", color: "var(--text2)" },
+                             text: clanker ? "Equivalent maintenance and charge (Fatigue 1 to 3 comes down by 1)"
+                                           : "Safe shelter, food, and water (Fatigue 1 to 3 comes down by 1)" })
+              ]);
+            })(),
             el("div.row", { style: { gap: "8px", justifyContent: "flex-end" } }, [
               el("button.btn.sm", { onclick: function () { _pops.rest = false; EN.app.render(); } }, "CANCEL"),
-              el("button.btn.sm.primary", { onclick: function () { _pops.rest = false; longRest(ch, d); } }, "☾ REST")
+              el("button.btn.sm.primary", { onclick: function () { _pops.rest = false; longRest(ch, d, _restProvisioned !== false); } }, "☾ REST")
             ])
           ]) : null
         ]),
@@ -3606,8 +3676,18 @@ EN.combatView = (function () {
       var exp = FEATURE_EXPANSIONS[f.name];
       if (exp) {
         exp.subs.forEach(function (s) {
+          /* A variable spend shows its RANGE, not a flat 1. The ceiling is the general
+             Variable Costs rule (EN.resourceRules.variableCosts): no single activation may
+             spend more than your Caliber. Shown as the smaller of Caliber and the pool,
+             because a cap you cannot afford is not the real limit. A falsy cost renders no
+             chip at all, which is what Gimme Fuel wants: it costs no Overdrive. */
+          var _chip = s.cost ? s.cost + " " + resUp : null;
+          if (s.costVariable) {
+            var _cap = Math.max(s.cost || 1, Math.min(d.caliber || 1, (d.resource && d.resource.max) || (d.caliber || 1)));
+            _chip = (s.cost || 1) + " to " + _cap + " " + resUp;
+          }
           expanded.push({ name: s.name, source: f.source, level: f.level, text: s.text,
-                          _cost: s.action || actionCost(s.text), chip: s.cost ? s.cost + " " + resUp : null });
+                          _cost: s.action || actionCost(s.text), chip: _chip });
         });
       } else expanded.push(f);
     });

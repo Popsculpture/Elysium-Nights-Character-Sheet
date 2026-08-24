@@ -1521,6 +1521,48 @@ EN.store = (function () {
       }
       ch.meta.equipSlots = 1;
     }
+    /* OVERDRIVE MANEUVERS, rewritten 2026-08-24: eight became ten, five were renamed, and one
+       name was REUSED. `ch.gambits` stores chosen abilities by NAME (there are no keys for
+       them), so this is a rename over save data and it has to be exactly right.
+
+       "Wrecking Ball" is the whole problem. It used to be a melee strike, now called Beyond the
+       Bone; the name itself was handed to what used to be Bring the House Down, a structure
+       demolition. A retired name fails loudly. A REUSED one resolves quietly to the wrong
+       ability, and the character ends up holding something they never picked with nothing to
+       show it went wrong.
+
+       WHY A ONE-TIME STAMP AND NOT A DATE. The handoff called for splitting on whether the save
+       predates the 2026-08-23 revision. A stamp is strictly better here, and not because dates
+       are unavailable (ch.meta.createdAt and updatedAt both exist): it is that the app only ever
+       offered the OLD list until this build shipped. Every "Wrecking Ball" sitting in a save at
+       the moment this runs was therefore written by the old list, whatever its timestamps say.
+       updatedAt in particular is refreshed on every write, so a legacy character opened this
+       morning already looks new. The stamp reads the one fact that actually settles it, which is
+       whether this pass has run for this character yet, and it leaves no ambiguous middle for a
+       re-pick prompt to clean up.
+
+       SINGLE PASS, NOT IN PLACE. Each stored name is mapped through the table exactly once and
+       collected into a NEW array. Rewriting in place would send Bring the House Down to Wrecking
+       Ball and then straight on to Beyond the Bone, which is the very corruption this exists to
+       stop. The same reasoning is written on TALENT_RENAMES above, for the same reason. */
+    if (!ch.meta.overdriveNames) {
+      var MAN_RENAMES = Object.create(null);
+      (((EN.classes || {}).fury || {}).resource || {}).abilityRenames &&
+        EN.classes.fury.resource.abilityRenames.forEach(function (r) {
+          if (r && r.oldName && r.name) MAN_RENAMES[r.oldName] = r.name;
+        });
+      if (Array.isArray(ch.gambits) && ch.gambits.length) {
+        var seen = Object.create(null), out = [];
+        ch.gambits.forEach(function (nm) {
+          var to = (typeof nm === "string" && MAN_RENAMES[nm]) ? MAN_RENAMES[nm] : nm;
+          // a rename can collapse two picks onto one name only if the save was already
+          // inconsistent; keep the list a set either way rather than showing a duplicate chip
+          if (typeof to === "string" && !seen[to]) { seen[to] = true; out.push(to); }
+        });
+        ch.gambits = out;
+      }
+      ch.meta.overdriveNames = 1;
+    }
     // drop a stored subclass that no longer exists (e.g. after a class rework) so it re-surfaces as a pick
     if (ch.class && ch.subclass && EN.classes && EN.classes[ch.class]) {
       var subs = EN.classes[ch.class].subclasses || [];

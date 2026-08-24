@@ -297,7 +297,7 @@ EN.classes.stitcher = {
         {
           level: 3,
           name: "Hot-Wired Implants",
-          text: "Whenever you finish a Short or Long Rest, you can apply an Aftermarket Hot-Wire to a number of willing allies up to your Tech Modifier (minimum 1). An ally must possess cybernetics or the Machine Physiology trait, and the tuning must match their installed hardware (for example, you cannot perform an Optical Overclock on organic eyes). An ally can have only one Hot-Wire at a time; it stays active until you finish your next Short or Long Rest, when you must recalibrate it or it powers down. Choose from the following tunings:\n\n• **Optical Overclock** *(requires Cyber-Optics or Synthetic Vision):* They ignore the defensive penalties of partial Cover when making ranged attacks, and they gain Darkvision up to 12 spaces.\n• **Dermal Reinforcement** *(requires Subdermal Plating or Machine Chassis):* They gain a +1 bonus to Defense. The first time they take Wound damage during an encounter, the incoming damage is reduced by an amount equal to your Caliber.\n• **Pneumatic Bypass** *(requires Cyber-Limbs or Joint Servos):* Their unarmed strike damage die increases by one size, and they gain Edge on in-combat Athletics d20 checks (or +1 Edge Die to related out-of-combat Dice Pools) to grapple, shove, or break objects.\n• **Synaptic Accelerator** *(requires a Neural Processor or Synthetic Nervous System):* Their base Speed increases by 1, and they gain a +2 bonus to Initiative.\n• **Recoil Compensator** *(requires Skeletal Bracing or Cyber-Arms):* They ignore the penalties of wielding weapons with the Heavy or Cumbersome trait, and they gain Edge on Body Saves against being knocked Prone.\n• **Adrenal Tuning** *(requires a living, organic ally; cannot be applied to a fully synthetic body such as a Clanker):* Their base Speed increases by 1, they gain a +1 bonus to Body Saves, and the first time each encounter they drop below half their maximum Vitality, they gain Vigor equal to your Caliber."
+          text: "Whenever you finish a Short or Long Rest, you can apply an Aftermarket Hot-Wire to a number of willing allies up to your Tech Modifier (minimum 1). An ally must possess cybernetics or the Machine Physiology trait, and the tuning must match their installed hardware (for example, you cannot perform an Optical Overclock on organic eyes). An ally can have only one Hot-Wire at a time; it stays active until you finish your next Short or Long Rest, when you must recalibrate it or it powers down. Choose from the following tunings:\n\n• **Optical Overclock** *(requires Cyber-Optics or Synthetic Vision):* They ignore the defensive penalties of partial Cover when making ranged attacks, and they gain Darkvision up to 12 spaces.\n• **Dermal Reinforcement** *(requires Subdermal Plating or Machine Chassis):* They gain a +1 bonus to Defense. The first time they take Wound damage during an encounter, the incoming damage is reduced by an amount equal to your Caliber.\n• **Pneumatic Bypass** *(requires Cyber-Limbs or Joint Servos):* Their unarmed strike damage die increases by one size, and they gain Edge on in-combat Athletics d20 checks (or +1 Edge Die to related out-of-combat Dice Pools) to grapple, shove, or break objects.\n• **Synaptic Accelerator** *(requires a Neural Processor or Synthetic Nervous System):* Their Speed increases by 1, and they gain a +2 bonus to Initiative.\n• **Recoil Compensator** *(requires Skeletal Bracing or Cyber-Arms):* They ignore the penalties of wielding weapons with the Heavy or Cumbersome trait, and they gain Edge on Body Saves against being knocked Prone.\n• **Adrenal Tuning** *(requires a living, organic ally; cannot be applied to a fully synthetic body such as a Clanker):* Their Speed increases by 1, they gain a +1 bonus to Body Saves, and the first time each encounter they drop below half their maximum Vitality, they gain Vigor equal to your Caliber."
         },
         {
           level: 7,
@@ -344,7 +344,7 @@ EN.classes.stitcher = {
       {
         name: "Synaptic Accelerator",
         requires: "a Neural Processor or Synthetic Nervous System",
-        text: "You splice a direct override into their reflex pathways. Their base Speed increases by 1, and they gain a +2 bonus to Initiative rolls as their hardware twitches with preemptive adrenaline."
+        text: "You splice a direct override into their reflex pathways. Their Speed increases by 1, and they gain a +2 bonus to Initiative rolls as their hardware twitches with preemptive adrenaline."
       },
       {
         name: "Recoil Compensator",
@@ -354,7 +354,7 @@ EN.classes.stitcher = {
       {
         name: "Adrenal Tuning",
         requires: "a living, organic ally; cannot be applied to a fully synthetic body such as a Clanker",
-        text: "With no hardware to tune, you go to work on the body itself, priming their endocrine and adrenal systems to run hot. Their base Speed increases by 1, they gain a +1 bonus to Body Saves, and the first time each encounter they drop below half their maximum Vitality, they immediately gain Vigor equal to your Caliber as their body floods with combat hormones."
+        text: "With no hardware to tune, you go to work on the body itself, priming their endocrine and adrenal systems to run hot. Their Speed increases by 1, they gain a +1 bonus to Body Saves, and the first time each encounter they drop below half their maximum Vitality, they immediately gain Vigor equal to your Caliber as their body floods with combat hormones."
       }
     ]
   }
@@ -368,6 +368,23 @@ EN.resourceRules = {
   minimumPool: "If a formula would give a class resource a value lower than 1, that pool becomes 1 instead.",
 
   spending: "When a class feature, maneuver, protocol, or exploit lists a cost, reduce your current pool by that amount immediately. If you do not have enough points remaining, you cannot activate that ability.",
+
+  /* NEW 2026-08-24, and it governs every class resource rather than one class: Overdrive,
+     Leverage, Execution, Triage, Moxie and Bandwidth alike. Two readings are easy to get
+     wrong. It is per ACTIVATION, not per turn (the book prints no per-turn spend cap
+     anywhere, and Impulses fire on other people's turns), and it caps the SPEND, not the
+     size of the pool. A Fury with 8 Overdrive and Caliber 4 can put 4 into one Gimme Fire
+     and 4 into another if they have the actions for it.
+
+     IT DOES NOT REACH FLOW POINTS. Author ruling, 2026-08-24: FP is not a class resource in
+     the sense this rule means, so neither the cap nor this rule applies to the Flow. That
+     matters most for Invocation Scaling ("Each +1 FP spent increases one dimension by 1
+     space"), which is a genuine variable spend with no printed ceiling and is deliberately
+     uncapped. Recorded here because the omission looks like an oversight from the outside and
+     invites exactly the wrong fix. Nothing in the app clamps FP by Caliber today: the Flow
+     files reference Caliber nowhere, and `costVariable` exists on one Fury Maneuver, read only
+     by the class-resource expansion the Shaper is already excluded from. Keep it that way. */
+  variableCosts: "Some abilities let you spend more than 1 point at once. However, you can't spend more than your Caliber on a single activation. The pool is what you have. Caliber is how fast you can burn it.",
 
   refreshing: "Unless a class feature says otherwise, class resources refresh at the end of a Short Rest or Long Rest.",
 

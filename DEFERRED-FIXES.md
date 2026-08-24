@@ -6226,6 +6226,139 @@ would have shown that.
 - All seven tabs render, no console errors, no em or en dashes.
 - The test character adopted for this was removed; the roster was empty before and is empty again.
 
+## App Sync Handoff 2026-08-24, all eight sections implemented
+
+Manuscripts re-pulled fresh before a word was transcribed: Part 1 460,768 bytes, Part 2 440,929,
+Part 3 419,287. Hygiene verified and exactly as the handoff claimed, zero em dashes, zero en
+dashes, zero curly apostrophes, zero non-breaking spaces in all three.
+
+### 1. Overdrive Maneuvers: the collision is handled by a STAMP, not a date
+
+The list went 8 to 10, *Cornered* became *I See Red*, and all ten were re-transcribed verbatim
+into `class_codebreaker_fury.js`, in print order, with the book's own short action forms
+("Swift", not "Swift Action"; `shortAction` accepts either and the composed prose now reads
+"(Swift)" exactly as printed).
+
+**The handoff asked for a dated split. A one-time stamp is strictly better, and the reason is
+not that dates are missing.** `ch.meta.createdAt` and `ch.meta.updatedAt` both exist. The reason
+is that **the app only ever offered the OLD list until this build shipped.** Every "Wrecking
+Ball" sitting in a save at the moment the migration first runs was therefore written by the old
+list, whatever its timestamps say. `updatedAt` in particular is rewritten on every save, so a
+legacy character opened this morning already looks new; a date rule would mis-resolve exactly
+the characters most likely to be in play. The stamp reads the one fact that settles it, which is
+whether this pass has run for this character yet, and it leaves no ambiguous middle needing a
+re-pick prompt.
+
+Two further correctness points, both load-bearing:
+
+- **Single pass, not in place.** Each stored name is mapped through the table exactly once into a
+  NEW array. Rewriting in place would send Bring the House Down to Wrecking Ball and then on to
+  Beyond the Bone, landing every structure-demolition pick on a melee strike. That is the very
+  corruption the section exists to prevent, and it is reachable from a two-line implementation.
+- **The table is read from the catalog**, `EN.classes.fury.resource.abilityRenames`, matching how
+  weapon parts and cyberware already do it rather than restating names inside `store.js`.
+
+**Verified live on a forged legacy save.** Given `["Wrecking Ball", "Bring the House Down",
+"Redline", "On Me"]` with the stamp deleted and `updatedAt` set to now, the migration produced
+`["Beyond the Bone", "Wrecking Ball", "Gimme Fuel", "Churning My Direction"]`. A second load left
+it untouched, which is the test that matters: without the stamp the now-legitimate Wrecking Ball
+would be re-mapped to Beyond the Bone on every subsequent load.
+
+Cross-references repaired in the app: The Walking Anvil, Bullet-Storm Protocol and Relentless
+Advance, plus all ten briefs. `Redline Lattice` (a #GRID deck mod) and `Cornered Prey` (an
+Operator subclass feature) are false positives and were deliberately left alone.
+
+### 2. Variable Costs, and the first ability that needs it
+
+`EN.resourceRules.variableCosts` added in the book's own slot, between Spending and Refreshing.
+Gimme Fire carries `costVariable`, and its chip now shows a real derived range rather than a flat
+1: the smaller of Caliber and the pool, because a cap you cannot afford is not the limit. Gimme
+Fuel carries `cost: 0` and correctly renders no resource chip at all.
+
+**What is NOT built, and why.** There is no amount picker anywhere in the app; the cost gate at
+`combat.js` parses a single integer out of the chip text and tests it against the pool. So there
+is currently nothing for a Caliber clamp to clamp. The rule is carried and displayed and the
+range is shown, but a player still spends by hand. Building the picker is a UI job of its own.
+
+### 3. Long Rest Fatigue is gated, and the sleep clock resets
+
+The app reduced Fatigue unconditionally, which quietly undid the Deprivation track: a starving
+character shed a level every night while the hazard rules piled it back on. A single checkbox now
+gates it, defaulted ON because shelter and rations are the ordinary case, and worded for Clankers
+when the character is one.
+
+The new sleep-clock bullet is implemented as a **split**: days and the escalating save count go
+to zero, while Fatigue the track already handed out stays and comes off the ordinary way under
+the gate. This deliberately does NOT reuse the hazard panel's clear helper, which zeroes fatigue
+alongside days and would launder three sleepless nights into nothing.
+
+Verified live: unprovisioned, Fatigue held at 2 and the sleep clock went 3 days to 0 with its
+1 Fatigue preserved, while the food clock was untouched. Provisioned, Fatigue dropped to 1.
+
+### 4. Four conditions, 42 to 46
+
+Blinded, Deafened, Silenced and Suffocating transcribed verbatim into their alphabetical slots.
+The mechanical halves the accumulator can carry are wired (Blinded: Snag on attacks, Snag on
+sight checks, Edge to attackers; Deafened: Snag on Wits); the rest stays prose, which is where
+the app has always drawn that line.
+
+Two traps the handoff flagged, both respected: **the two saves are different rolls** (a Flow Save
+to avoid Blinded, Body DC 12 at the end of your turn to escape it) and are not collapsed; and
+**Silenced is deliberately harsher than the Critical Wound Table's Vocal Cords result**, so the
+two were not normalised toward each other.
+
+### 5 to 8
+
+- **Effects and Objects** added, and `destructibleCover` re-transcribed: it was stale four ways,
+  still calling the rule "(Optional Rule)" and measuring a section in metres rather than spaces.
+  **Both it and the Cover Material Table were dead data**, carried in `EN.combat` but rendered
+  nowhere. The Codex now renders Destructible Cover, the table, Effects and Objects, Overflow
+  Damage and Vehicles as Cover, in print order.
+- **Structural Melt** rewritten to comply; its bespoke -2 Defense penalty is gone.
+- **Vehicles as cover** carried as reference prose. The app models no cover Integrity for
+  anything, so there is nothing live to wire; recorded as deliberately unimplemented.
+- **Trauma Rig Load is now DERIVED.** The hard-coded `case "rigs": return worn ? 1 : 2` is gone.
+  `itemLoad` splits into `baseItemLoad` plus a wrapper applying the Worn Gear Trait's own
+  reduction, so all seven Worn-trait items get it rather than the one bucket that used to
+  hard-code it. Verified: all six Rig tiers 2 carried / 1 worn and no tier variance, Claws and
+  the five Warding Foci 1 to 0, armor unchanged at 1 whether worn or packed, and the nine
+  "Type: Worn Gear" items unaffected.
+- **base Speed swept** from 10 app sites; **Adrenaline Overclock** renamed to Adrenal Overclock;
+  the Conditions chapter's 33 "cannot" swept to "can't" with Suffocating's rules formula kept.
+
+### Two errors in the handoff, both verified against fresh text
+
+1. **"The Walking Anvil and Bullet-Storm Protocol were rewritten and no longer name Maneuvers at
+   all."** They both still name Maneuvers, correctly updated: Walking Anvil reads "the Beyond the
+   Bone or Warhead Overdrive maneuver" and Bullet-Storm reads "(like Beyond the Bone or
+   Warhead)". Had this been taken at face value the app would have stripped two live references.
+2. **The Long Rest bullet count.** Nine, not eight.
+
+### Manuscript defects found, for the author
+
+- **Blinded's heading is a bold paragraph `**Blinded**`, not `### **Blinded**`** like all 44
+  other conditions. A structural outlier that will break any heading-driven extraction.
+- **The Hardwired row of the Conditions Quick Reference Table has its Duration and Save to End
+  cells swapped** relative to every other row (Duration "-", Save to End "Persistent").
+- **The two Severe Fatigue sites disagree**, and neither is a typo: Recovery says "professional
+  care or ritual support", the Fatigue condition says "medical, mystical, or technological
+  treatment". The app quotes the condition wording, so it matches one site and not the other.
+
+### Open, and needing the author
+
+- ~~**The Shaper.**~~ **RULED 2026-08-24: the Caliber cap does NOT reach Flow Points.** FP is
+  not a class resource in the sense the Variable Costs rule means, so neither the cap nor the
+  rule applies to the Flow. Invocation Scaling ("Each +1 FP spent increases one dimension by 1
+  space") is therefore a variable spend that is deliberately uncapped, not an oversight.
+
+  **No code change was needed and none was made**, which was checked rather than assumed: the
+  Flow files reference Caliber nowhere, `variableCosts` is data read by nothing, and
+  `costVariable` exists on exactly one Fury Maneuver and is read only by the class-resource
+  expansion the Shaper is already excluded from. The ruling is recorded as a comment on the rule
+  itself in `class_stitcher_resources.js`, because from the outside the omission reads like a gap
+  and invites exactly the wrong fix.
+- **Whether an interrupted Long Rest resets the sleep clock.** Ruled already for benefits (no
+  partial credit), but the clock bullet is not obviously a "benefit".
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

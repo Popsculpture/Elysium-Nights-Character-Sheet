@@ -44,7 +44,7 @@ EN.briefs = {
   "Expanded Overdrive": "Learn two more Overdrive Maneuvers",
   "Shrug It Off": "Auto-succeed a save vs Stunned/Paralyzed/Confused, taking unresistable Caliber Vitality damage",
   "Adrenaline Engine": "Regain 1 Overdrive on a Natural 20 attack or once per round when you take Wound damage",
-  "The Walking Anvil": "Improvised weapons step up one damage die (max 1d12); in Medium/Heavy/Shield, Edge vs forced movement/Prone; Wrecking Ball/Clear the Path with Heavy/Improvised/Shield shove +1",
+  "The Walking Anvil": "Improvised weapons step up one damage die (max 1d12); in Medium/Heavy/Shield, Edge vs forced movement/Prone; Beyond the Bone/Warhead with Heavy/Improvised/Shield shove +1",
   "Immovable": "Impulse + 1 Overdrive: refuse forced movement or Prone; source in reach takes Body damage; also anchors an adjacent ally, and foes shoved into you stop and eat the full 1d6/space",
   "Unstoppable Momentum": "Spend 2 Overdrive for 1 min: physical Resistance, unslowable; lose Caliber Vigor/Vitality each turn",
   "Earthbreaker": "Leap within 6; enemies within 4 Body-save or 6d8+Body Bludgeoning, pushed 2, Prone; creates Difficult Terrain, wrecks Cover",
@@ -56,14 +56,22 @@ EN.briefs = {
   "Suppressive Counter": "Spend 1 Overdrive to impose Snag; Burst Fire/Full-Auto also cuts attack damage (and Cover) by 1d10 + Body",
   "Bullet-Storm Protocol": "Spend 2 Overdrive, 1 min: no ammo; ranged damage shoves 1, halves Speed; melee Maneuvers fire to 2",
   "Maximum Overdrive": "Spend 2 Overdrive; Area-6 Cone Agility-save or 6d10+Body, Deafened, Speed 0; flattens all Cover to 0",
-  "Wrecking Ball": "Spend 1 Overdrive; standard melee attack deals +1d8 Bludgeoning and inflicts 1 stack of Bleeding",
-  "Clear the Path": "Spend 1 Overdrive; melee attack pushes target up to 3 spaces; obstacle collision deals +Body Bludgeoning",
-  // Keyed on the feature NAME (briefFor does EN.briefs[f.name]), so this key had to move
-  // with the M23 rename or the brief would silently stop resolving and the sheet would
-  // fall back to autoBrief. Renamed from "Meat Shield".
-  "On Me": "Spend 1 Overdrive to swap places with an ally within 2 and take the hit with Resistance (half)",
-  "Linebreaker": "Spend 1 Overdrive to move through enemies this turn; each passed makes Body save or Prone",
-  "Seismic Stomp": "Spend 1 Overdrive; enemies within 3 Agility-save or Caliber+Body Bludgeoning and Staggered",
+  /* The ten Overdrive Maneuvers, rewritten 2026-08-24 with the list. Keyed on the feature NAME
+     (briefFor does EN.briefs[f.name]), so every key had to move with its Maneuver or the brief
+     would silently stop resolving and the sheet would fall back to autoBrief. Note that
+     "Wrecking Ball" is still a key but now describes a DIFFERENT ability: the melee strike it
+     used to summarise is "Beyond the Bone" below. Three Maneuvers had no brief before this
+     (the old Bring the House Down, Redline and Make an Example); all ten have one now. */
+  "Beyond the Bone": "Spend 1 Overdrive; standard melee attack deals +1d8 Bludgeoning and inflicts 1 stack of Bleeding. I See Red: 2 stacks and Prone",
+  "Warhead": "Spend 1 Overdrive; melee attack pushes target up to 3 spaces; obstacle collision deals +Body Bludgeoning to both",
+  "Crash and Crack": "Spend 1 Overdrive; enemies within 3 Agility-save or Caliber+Body Bludgeoning and Staggered",
+  "Wrecking Ball": "Spend 1 Overdrive; tear apart a structure up to Heavy within reach; Difficult Terrain 2 and Cover gone; Agility-save or Prone and Caliber Bludgeoning. Hardened holds",
+  "War Horse": "Swift Action, spend 1 Overdrive; move through enemies this turn; each one passed makes a Body save or is knocked Prone",
+  "Gimme Fuel": "Swift Action, costs no Overdrive; once per turn take Caliber Vitality damage (unpreventable) to regain 1 spent Overdrive",
+  "Gimme Fire": "Swift Action, spend 1 or more Overdrive (never more than your Caliber); +1d10 weapon damage per point until end of turn. I See Red: 2d10 each and ignore Resistance",
+  "My Desire": "Spend 1 Overdrive; melee attack, then the target cannot willingly move away from you until the start of your next turn",
+  "Churning My Direction": "Impulse Action, spend 1 Overdrive to swap places with an ally within 2 and take the hit with Resistance",
+  "On I Burn": "Impulse Action, spend 1 Overdrive; on a melee kill, enemies within 3 who can see you make a Wits save or become Shaken",
   "Leverage": "Resource pool = Caliber + Charm mod (min 1); know two abilities, costing 1 each",
   "Read the Room": "Identify top authority and weakest foe; first social check/attack vs them gains Edge, or first Leverage ability free",
   "Hustler Subclass": "Choose a subclass granting features at set levels",
@@ -154,7 +162,7 @@ EN.briefs = {
   "Absolute Symbiosis": "2 FP, 1 min: 4d6 Electric burst; Area 4 aura 4d4 Electric + Snag, regen 2d6, Synthetica Invocations Swift Action",
   "Triage": "Max Triage = Caliber + Tech mod (min 1); Triage Save DC = 8 + Tech mod + Rig Output Bonus; Protocols cost 1 Triage; refresh on Short/Long Rest; Rig must be equipped",
   "First Do No Harm": "Use Tech for Light/Dart-Gun attack and damage vs organics; Stabilize also wakes target and removes 1 Fatigue",
-  "First Responder": "Edge on Initiative; base Speed +2",
+  "First Responder": "Edge on Initiative; Speed +2",
   "The Good Stuff": "Roll Vitality/Vigor healing dice twice, keep either total",
   "Expanded Triage Protocols": "Learn two more Triage Protocols from the core list",
   "Preventative Care": "Once/round after Action heal/Vigor an ally, Swift Action attack with Sidearm/Dart Gun; hit gives attacker Snag vs that ally",
@@ -180,7 +188,7 @@ EN.briefs = {
   "Optical Overclock": "Ally ignores partial Cover penalties on ranged attacks; Darkvision 12",
   "Dermal Reinforcement": "Ally +1 Defense; first Wound damage each encounter reduced by your Caliber",
   "Pneumatic Bypass": "Ally's unarmed strike die steps up one (no die gains 1d4); Edge on grapple/shove/break checks",
-  "Synaptic Accelerator": "Ally base Speed +1 and +2 Initiative",
+  "Synaptic Accelerator": "Ally Speed +1 and +2 Initiative",
   "Recoil Compensator": "Ally ignores Heavy/Cumbersome penalties; Edge on Body Saves vs Prone",
   "Akimbo Specialist": "+1 Body/Agility; +1 Defense wielding a weapon each hand; two-weapon fighting with non-Light; draw/stow two free. Upgrade: crit grants free off-hand attack.",
   "Armor Piercing Specialist": "+1 Body/Agility; reroll one Piercing/Ballistic damage die once/turn; +1 die on such crits. Upgrade: ignore first 3 Armor DR, not vs Resonant Plating or flow-imbued defenses.",
@@ -229,7 +237,7 @@ EN.briefs = {
   "Blitz Logic": "Movement pool counts Speed +2; once/Encounter free Swift Action without a Move; +2 Initiative. Upgrade: Caliber free Swift Actions/Encounter, +5 Initiative.",
   "Breach Charger": "+1 Body; Dash grants Swift Action melee attack or Shove; 2-space straight line first gives +5 damage or push 2. Upgrade: Dash through enemies, passed foes save vs Prone.",
   "Parkour Runner": "+1 Body/Agility; standing from Prone costs 1 Speed; climbing costs no extra; jump after moving 1 space. Upgrade: climb speed equals Speed, no fall damage from 6 spaces or less.",
-  "Speed Freak": "+2 base Speed; Dash ignores Difficult Terrain cost; melee attacks don't provoke that turn. Upgrade: +2 more Speed, ignore Difficult Terrain always.",
+  "Speed Freak": "+2 Speed; Dash ignores Difficult Terrain cost; melee attacks don't provoke that turn. Upgrade: +2 more Speed, ignore Difficult Terrain always.",
   "Crew Commander": "+1 Charm; spend 10 minutes to give up to six allies within 6 spaces Vigor equal to level+Charm mod. Upgrade: they also gain Edge on next attack/save within 10 minutes.",
   "Crowd Reader": "+1 Charm/Wits; on social start, Insight or Intuition (Charm or Wits) DC 12 reveals one fact about a Target; Edge on social Initiative, use Charm for it. Upgrade: two facts, all hostile Targets.",
   "Cutting Agent": "Ignore Toxic Resistance; Swift Action to coat weapon; craft Caliber doses; coated hit forces a Body save (DC 8 + Tech mod + Caliber) or 2d8 Toxic and Poisoned. Upgrade: 3d8, Poisoned 1 minute, double doses.",

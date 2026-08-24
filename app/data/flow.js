@@ -82,7 +82,7 @@ EN.flow = {
       resolution: "attack",
       base: "Ignite flammable objects (if worn or carried by an unwilling target, they make a Flow Save DC, Agility, to smother it), instantly freeze a small body of liquid, or regulate the ambient temperature of an area.",
       empowered: [
-        { name: "Structural Melt", sustain: true, text: "Melt the integrity of cover or armor. The target suffers a -2 penalty to Defense for the duration." },
+        { name: "Structural Melt", sustain: true, text: "Soften physical cover or armor until it runs. For the duration, cover the target is using counts as one grade lower, and armor the target is wearing has its DR reduced by 1." },
         { name: "Thermal Fog", sustain: true, text: "Flood up to an Area 3 sphere with blinding steam or frost. The area becomes Heavily Obscured, blocking line of sight." }
       ] },
     { key: "electromagnetic", name: "Electromagnetic", unlock: 1, focus: "Light and Currents", damage: "Electric / Energy",
@@ -144,7 +144,7 @@ EN.flow = {
   sustainCompat: [
     { resonance: "Kinetic", effect: "Kinetic Barrier", allowed: true, notes: "Standard sustain rules." },
     { resonance: "Kinetic", effect: "Gravity Pin", allowed: true, notes: "Target saves at the start of each turn (Lockdown)." },
-    { resonance: "Thermal", effect: "Structural Melt", allowed: true, notes: "-2 Defense persists with sustain." },
+    { resonance: "Thermal", effect: "Structural Melt", allowed: true, notes: "Cover grade and DR loss persist with sustain." },
     { resonance: "Thermal", effect: "Thermal Fog", allowed: true, notes: "Area persists with sustain." },
     { resonance: "Electromagnetic", effect: "Optic Scramble", allowed: true, notes: "Standard sustain rules." },
     { resonance: "Electromagnetic", effect: "Overload", allowed: false, notes: "Staggered resolves at the end of the target's next turn." },
@@ -224,7 +224,7 @@ EN.flow = {
     { name: "Dimensional Tear", resonance: "spatial", intent: "damage", deliveryBand: "directed", deliveryOption: "Remote", force: "empowered", duration: "instant", precision: false },
     { name: "Gravity Anchor", resonance: "kinetic", intent: "effect", deliveryBand: "focused", deliveryOption: "Cube (2 spaces)", force: "empowered", duration: "instant", precision: false, empoweredEffect: "Gravity Pin" },
     { name: "Phantom Shroud", resonance: "cognitive", intent: "effect", deliveryBand: "directed", deliveryOption: "Remote", force: "empowered", duration: "instant", precision: false, empoweredEffect: "Blind Spot" },
-    { name: "Adrenaline Overclock", resonance: "visceral", intent: "effect", deliveryBand: "directed", deliveryOption: "Remote", force: "empowered", duration: "instant", precision: false, empoweredEffect: "Adrenal Overclock" },
+    { name: "Adrenal Overclock", resonance: "visceral", intent: "effect", deliveryBand: "directed", deliveryOption: "Remote", force: "empowered", duration: "instant", precision: false, empoweredEffect: "Adrenal Overclock" },
     { name: "Thermal Breach", resonance: "thermal", intent: "effect", deliveryBand: "directed", deliveryOption: "Touch", force: "empowered", duration: "instant", precision: false, empoweredEffect: "Structural Melt" },
     { name: "Fold Space", resonance: "spatial", intent: "effect", deliveryBand: "directed", deliveryOption: "Remote", force: "empowered", duration: "instant", precision: false, empoweredEffect: "Spatial Displacement" }
   ],
