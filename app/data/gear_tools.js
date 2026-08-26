@@ -90,12 +90,12 @@ EN.gearCatalog.tools = {
        Kits whose text only prevents Snag or enables an attempt carry no
        edgeDice; that friction is handled by the Snag side of the pool. */
     /* ---- Medical & Care (Medical Tools · Medtech) ---- */
-    { name: "Basic Medkit", bucket: "kits", group: "Medical & Care", price: 50, availability: "Common", legality: "Legal",
+    { name: "Basic Medkit", bucket: "kits", load: 1, group: "Medical & Care", price: 50, availability: "Common", legality: "Legal",
       category: "Medical Tools", skill: "Medtech", effect: "Treats Wounds and Fatigue at full effect.",
       desc: "Gauze, sealant, a coagulant gun, and a fistful of painkillers in a hard case.",
       basic: "Required to Treat Wounds or Treat Fatigue at full effect. Without it, those in-combat Medtech d20 checks roll with Snag (or add +1 Snag Die to out-of-combat Dice Pools).",
       proficient: "Once per scene, ignore Snag (or a Snag Die) on one Medtech check when the penalty comes only from poor conditions: rain, darkness, cramped quarters, a shaking vehicle. Using this kit also lets you reach a critical success result." },
-    { name: "Advanced Medkit", bucket: "kits", group: "Medical & Care", price: 250, availability: "Uncommon", legality: "Licensed",
+    { name: "Advanced Medkit", bucket: "kits", load: 1, group: "Medical & Care", price: 250, availability: "Uncommon", legality: "Licensed",
       category: "Medical Tools", skill: "Medtech", effect: "+2 (or +1 Edge Die) on Medtech. Enables downtime field surgery.",
       edgeDice: 1, edgeNote: "Treat Wounds / Treat Fatigue and related Medtech work",
       desc: "A full trauma package: vitals tracker, autoinjectors, and a portable surgical field.",

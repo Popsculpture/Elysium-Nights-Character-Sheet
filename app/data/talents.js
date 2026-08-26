@@ -345,7 +345,7 @@ EN.talents = [
     name: "Parkour Runner",
     category: "Mobility & Traversal",
     requirements: "",
-    text: "You have undergone extensive physical training in urban traversal to gain the following benefits:\n• Increase your Body or Agility score by 1, to a maximum of 20.\n• When you are Prone, standing up costs only 1 point of Speed.\n• Climbing does not cost you extra Speed.\n• You can make a running long jump or a running high jump after moving only 1 space, rather than 2 spaces.\n\n**Upgrade (Level 6+):** You gain a climb speed equal to your normal Speed, and you do not take fall damage from falls of 6 spaces or less if you are conscious and not Restrained."
+    text: "You have undergone extensive physical training in urban traversal to gain the following benefits:\n• Increase your Body or Agility score by 1, to a maximum of 20.\n• When you are Prone, standing up costs only 1 point of Speed.\n• Climbing does not cost you extra Speed.\n• You can make a running long jump or a running high jump after moving only 1 space, rather than 2 spaces.\n\n**Upgrade (Level 6+):** You gain a climb speed equal to your walking Speed, and you do not take fall damage from falls of 6 spaces or less if you are conscious and not Restrained."
   },
   {
     key: "speed-freak",

@@ -1139,13 +1139,14 @@ EN.combatView = (function () {
   /* ---------- leveled conditions (severity tracking, per the old sheet) ----- */
   var LEVELED = {
     "Fatigue":  { label: "Level",  max: 6, names: ["Winded", "Tired", "Worn Out", "Exhausted", "Delirious", "Helpless"], severeAt: 4,
+      severeNote: "Severe Fatigue (4 to 6) requires medical, mystical, or technological treatment to reduce. A Long Rest does nothing for it.",
       effects: [
         "Lose 1 Speed Point. Snag on Agility checks.",
         "Lose 3 Speed Points total. Snag on Body & Agility checks and all attack rolls.",
         "Speed pool halved (minimum 3) & Snag on Body and Agility saves.",
         "Speed pool halved (minimum 3) & gain the Drowsy condition.",
         "Speed pool halved (minimum 3) & gain the Hallucinating condition.",
-        "You fall Unconscious and can only be stabilised by medical, mystical, or technological treatment."
+        "You fall Unconscious and can only be stabilized by medical, mystical, or technological treatment."
       ] },
     "Bleeding": { label: "Stacks", max: 3,
       effects: [
@@ -2956,7 +2957,7 @@ EN.combatView = (function () {
                                             background: "var(--bg2)", border: "1px solid var(--border2)", borderRadius: "4px",
                                             boxShadow: "0 8px 24px rgba(0,0,0,.55)", textAlign: "left" } }, [
             el("p", { style: { margin: 0, fontSize: "12px", lineHeight: "1.5", color: "var(--text2)" },
-                      text: "Take a Long Rest? Restores Vitality, Resilience Dice, Wounds (+Body mod), Flow, reduces Strain by 1, and resets the sleep clock." }),
+                      text: "Take a Long Rest? Restores Vitality, Resilience Dice, Wounds (+Body mod), Flow, reduces Strain by 1, and resets the sleep clock. Fatigue 1 to 3 comes down by 1 if you were provisioned." }),
             /* The Fatigue reduction is the one benefit the book gates, so it is the one thing
                this asks about. Defaulted ON: shelter and rations are the ordinary case, and a
                prompt that defaults to the exception would tax every rest for the rare night.
@@ -3535,7 +3536,16 @@ EN.combatView = (function () {
         // the Wound on a failure. Built by the SAME breathRow() that renders
         // Vacuum, off the same shared spec, so the two cannot drift apart.
         drowningClock(name, d, fx),
-        severe ? el("p.help", { style: { margin: "4px 0 0", color: "var(--danger)" }, text: "Severe; level 4+ needs professional care or ritual support to recover." }) : null,
+        /* Each track states its OWN severe sentence, because this banner renders for any
+           LEVELED condition and the two do not agree: Fatigue turns severe at 4 of 6 and
+           needs medical, mystical or technological treatment, while Strain turns severe at
+           5 of 5, which is Collapse. The old copy hardcoded Fatigue's threshold AND its
+           recovery route, so a Strain 5 character was told they were at "level 4+" and
+           pointed at a treatment that has nothing to do with Strain. A track with no
+           severeNote renders nothing rather than inventing one. */
+        severe && lv.severeNote
+          ? el("p.help", { style: { margin: "4px 0 0", color: "var(--danger)" }, text: lv.severeNote })
+          : null,
         info && open ? el("p", { text: info.text || info.summary || "" }) : null
       ]);
     });

@@ -103,7 +103,7 @@ EN.armorMods = {
       grants: "Hides your Flow signature", effect: "Attempts to detect, scry, or track you through the Flow, by Echoes, resonance, or metaphysical sensing, roll with Snag (or add +1 Snag Die to the relevant out-of-combat Dice Pool). Ordinary technological sensors are unaffected." },
     { key: "ward-amplifier", name: "Ward Amplifier", category: "mystech", price: 1200, nexus: "◎0.5", rarity: "Legendary", legality: "Contraband", fits: "Mystech",
       grants: "Empowers Ward as a Focus", effect: "This mod is a Focus. Once per round when you use Ward, add +1d6 to the Ward reduction. You can only benefit from one Focus item for Ward at a time, so the Amplifier does not stack with a Focus suit or a Warding Focus; you choose which one is feeding your Ward." },
-    { key: "grounding-lattice", name: "Grounding Lattice", category: "mystech", price: 0, nexus: "◎1", vendor: false, rarity: "Legendary", legality: "Contraband", fits: "Mystech",
+    { key: "grounding-lattice", name: "Grounding Lattice", category: "mystech", price: 2400, nexus: "◎1", rarity: "Legendary", legality: "Contraband", fits: "Mystech",
       grants: "Edge vs Breakflow and backlash", effect: "You gain Edge on saves against Breakflow, Flow backlash, and the metaphysical effects of Anomalies and Resonant Storms." }
   ],
 

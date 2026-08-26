@@ -6359,6 +6359,86 @@ two were not normalised toward each other.
   and invites exactly the wrong fix.
 - **Whether an interrupted Long Rest resets the sleep clock.** Ruled already for benefits (no
   partial credit), but the clock bullet is not obviously a "benefit".
+## The app caught up to the closed manuscript pass, 2026-08-25
+
+All three Parts re-exported after the author's pass and every claim in the closing note checked
+against them. Part 1 460,762 bytes, Part 2 440,961, Part 3 419,305. The pull went through the
+Drive connector rather than a browser download, so no save dialog was involved.
+
+**Everything the note said reaches the app was real, and two of the four needed no work.**
+
+### Applied
+
+- **Both Medkits are Load 1.** The Load 1 row now names a generic `medkit` where it used to say
+  `compact medkit`, and the book prices no item individually, so the generic word governs both.
+  They were taking the `kits` bucket default of 2. Fixed with an explicit `load: 1` on each,
+  matching the eleven sibling kits that already pin their own. **The bucket default stays 2**,
+  because the Load 2 row still reads "full toolkit" and that is the right default for the bucket.
+- **The Grounding Lattice stopped being guessed at.** It carried `price: 0, nexus: "◎1"`, so
+  `listPrice` fell into the Nexus branch and multiplied by the ledger rate, pricing it at
+  𝒢10,000 with 𝒢5,000 of materials. The book now prints 𝒢2,400. Set, and the Mystech mods column
+  in the app now reads 700, 800, 1,200, 2,400 straight down exactly as the book does.
+- **`base walking Speed` and `normal Speed` are gone from the app**, matching the book driving
+  both to zero. Two sites: Prey Stalker's Grip in `species.js` and the Parkour Runner upgrade in
+  `talents.js`.
+- **Three British spellings corrected** to match the book, which is 39 to 0 for `-ize`. The app
+  was already 24 to 3, so these were outliers rather than a house style.
+
+### Not needed
+
+- **Continuous.** Already complete. `gear_traits.js` carries the trait with all three of the
+  book's bullets, and all three weapons the book gives it (Rip-Saw, Cryo Lance, Flamethrower)
+  already have it. They live in `gear_signature.js`, not the ranged and melee catalogs, which is
+  why a first grep for them came back empty and briefly looked like a gap.
+- **The Fatigue track.** `conditions.js` already had the full severity list, the cumulative note,
+  and `Severe Fatigue (4 to 6): Requires medical, mystical, or technological treatment`. The
+  longRest cutoff at level 4 already matched. Only the banner below was wrong.
+
+### The bug this turned up, which the pass did not ask for
+
+The severe-condition banner read **"Severe; level 4+ needs professional care or ritual support
+to recover."** Both halves were retired by this pass, so it needed the new wording anyway. But
+the banner renders for **any** leveled condition, and the two do not agree: Fatigue turns severe
+at 4 of 6, **Strain turns severe at 5 of 5**, which is Collapse. So a Strain 5 character was told
+they were at "level 4+" and pointed at a treatment that has nothing to do with Strain.
+
+Fixed by moving the sentence onto each track as `severeNote` rather than hardcoding one set of
+numbers in the renderer. Fatigue states the book's line; **Strain deliberately has none, so the
+banner renders nothing rather than inventing a recovery route the book does not print.**
+
+Also added the Fatigue reduction to the Long Rest confirmation blurb, which listed every other
+benefit but not the one the provisioned checkbox actually gates.
+
+### Verified live
+
+Both Medkits 1 and other kits still 2. Grounding Lattice `listPrice` 2,400, down from 10,000,
+while Reliquary Shell and Martyr's Halo still convert at the ledger rate, which is correct since
+the book keeps them Nexus-only on purpose. Fatigue 5 shows the book's sentence; Strain 5 shows
+none. All seven tabs render, no console errors, no em or en dashes.
+
+### Three things the manuscript pass missed, for the author
+
+Each was found by checking the closing note's own claims rather than taking them.
+
+- **"Reliquary Shell and Martyr's Halo are now the only Nexus-only prices in the book" is not
+  true.** The Hypercare Contract Tiers table still prices Blackglass Priority at ◎1.2 a month and
+  Corporate Platinum at ◎2.5+ a month with no Glimmer figure, while Tiers 1 and 2 on the same
+  table are 𝒢300 and 𝒢600. Nothing in the app models those tiers, so no app defect follows, but
+  the statement is wrong as written.
+- **There is a sixth climb grant, and it was not normalised.** Vertical Infiltration on the Nixie
+  Skyhook familiar still reads "a climbing speed equal to their walking speed", lower case and
+  "climbing" rather than "climb". The five that were swept are three distinct features, since
+  Prey Stalker's Grip and Highground Hunger are each printed twice. **The app matches the book
+  here and was deliberately left alone**: correcting the app would desync it from the manuscript,
+  so the book wants fixing first.
+- **The "How to Choose a Mode" table still walks only four firing modes**, never mentioning
+  Continuous, even though the section directly above it now defines it as the fifth. The app has
+  no copy of that table, so nothing to change on this side.
+
+Two smaller notes, neither an app matter. **Nothing states 6 as the ceiling of the Fatigue
+track**; it is implicit in the table ending there, with no prose capping it. And the **Treat
+Fatigue table bands Fatigue as 1-3 Mild, 4-5 Severe, 6 Helpless**, splitting 6 out of the "4 to
+6" Severe band the condition entry defines.
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from
