@@ -1797,7 +1797,19 @@ EN.builder = (function () {
     blocks.push(EN.ui.panel("Advancement", "LVL " + d.level + " · CALIBER " + d.caliber, [
       el("div.row.wrap.between", null, [
         el("div.row", null, [
-          el("button.btn.sm", { disabled: ch.level <= 1, onclick: function () { setLevel(ch, ch.level - 1); } }, "− LEVEL"),
+          (function () {
+            if (ch.level <= 1) return el("button.btn.sm", { disabled: true }, "− LEVEL");
+            var lost = Object.keys(ch.universalUpgrades || {}).filter(function (k) { return Number(k) >= ch.level; }).length;
+            return EN.ui.armButton("lvldown:" + ch.meta.id, {
+              label: "− LEVEL",
+              armedLabel: "DROP TO " + (ch.level - 1) + "?",
+              title: "Levels only rise. This is a correction for a level entered by mistake.",
+              armedTitle: "Drops to " + (ch.level - 1) + " and permanently deletes "
+                + (lost ? lost + " Universal Upgrade pick" + (lost === 1 ? "" : "s") : "no picks")
+                + (ch.level === 4 ? " and your Awakening Evolution" : "") + ". Stepping back up does not restore them.",
+              onConfirm: function () { setLevel(ch, ch.level - 1, true); }
+            });
+          })(),
           el("div.stat", { style: { minWidth: "80px" } }, [el("div.k", { text: "LEVEL" }), el("div.v", { text: ch.level })]),
           el("button.btn.sm", { disabled: ch.level >= R.maxLevel, onclick: function () { setLevel(ch, ch.level + 1); } }, "+ LEVEL")
         ]),
@@ -1878,8 +1890,24 @@ EN.builder = (function () {
 
     return el("div", null, blocks);
   }
-  function setLevel(ch, lvl) {
+  /* LEVELS NEVER GO DOWN. Author ruling, 2026-08-30: levels and Caliber only ever rise, and
+     the fallen-figure archetype runs on lost Cred and standing rather than lost Caliber. Caliber
+     itself needs no guard because it is never stored, only derived from level, so the level is
+     the single place the rule can be enforced.
+
+     The guard lives HERE rather than on the button so that any future caller inherits it. A
+     decrease still has to be reachable, because a mis-set level is a real thing that happens
+     during character creation and the sheet would otherwise trap someone at a level they typed
+     by accident. So it is a correction, not a progression: the caller has to ask for it, and
+     the button arms first and names what it will destroy. That is not decoration. Lowering the
+     level deletes every Universal Upgrade above it, prunes talent attribute picks and clears
+     the Level 4 Awakening Evolution, and stepping back up does NOT restore them. */
+  function setLevel(ch, lvl, correcting) {
     lvl = eng.clamp(lvl, 1, R.maxLevel);
+    if (lvl < (ch.level || 1) && !correcting) {
+      toast("Levels do not go down. Use CORRECT LEVEL if this one was entered by mistake.");
+      return;
+    }
     store.update(function (c) {
       c.level = lvl;
       // clean upgrade choices above the new level

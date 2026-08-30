@@ -87,7 +87,7 @@ EN.printSheet = (function () {
     kids.push(pageHead(title, tag, ch));
     kids.push(el("div.ps-rule"));
     body.forEach(function (b) { if (b) kids.push(b); });
-    kids.push(el("div.ps-foot", { text: "// UNAUTHORIZED EDITS ARE LOGGED AND PROSECUTED · LUSTER INTERCHANGE TREASURY" }));
+    kids.push(el("div.ps-foot", { text: "// UNAUTHORIZED EDITS ARE LOGGED AND PROSECUTED · #MINT" }));
     return el("div.sheet-page", null, kids);
   }
 

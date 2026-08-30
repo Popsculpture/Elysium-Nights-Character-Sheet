@@ -121,7 +121,7 @@ EN.versatile = {
     "BOD|Systems|performance":       { name: "Kinetic Interface Dance", desc: "Driving a haptic rig through endurance." },
     "BOD|Medtech|performance":       null,
     "BOD|Awareness|performance":     null,
-    "BOD|Esoterica|performance":     { name: "Blood Magic Display",     desc: "Fueling rituals with physical strain." },
+    "BOD|Esoterica|performance":     { name: "Blood Rite Display",      desc: "Fueling rituals with physical strain." },
     "BOD|Persuasion|performance":    { name: "Imposing Presence",       desc: "Dominating a space physically." },
     "BOD|Deception|performance":     { name: "Feigned Injury",          desc: "Faking a physical injury." },
 

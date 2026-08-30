@@ -3475,7 +3475,7 @@ EN.inventoryView = (function () {
       // wallets on top, ledger controls beneath, so the bar stays compact
       el("div", { style: { display: "flex", flexDirection: "column", gap: "5px", alignItems: "flex-end" } }, [
         el("div.row.wrap", { style: { gap: "8px", alignItems: "center", justifyContent: "flex-end" } }, [
-          el("span.mono", { title: "Glimmer, issued by the Luster Interchange Treasury. What ordinary life costs.",
+          el("span.mono", { title: "Glimmer, issued by the Monetary Interchange Network Treasury (#MINT). What ordinary life costs.",
             style: { fontSize: "20px", color: "var(--gold)" }, text: fmtG(ch.glimmer || 0) }),
           amtIn,
           // Nexus wallet: the high-scrutiny currency (lease buyouts, brokered commissions)

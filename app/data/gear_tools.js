@@ -218,7 +218,7 @@ EN.gearCatalog.tools = {
     /* ---- Media & Presence ---- */
     { name: "Field Recording Kit", bucket: "kits", group: "Media & Presence", price: 180, availability: "Common", legality: "Legal",
       category: "Media Tools", skill: "Perception, Investigation", effect: "Clean media capture. Snag (or +1 Snag Die) on attempts to fake or discredit it.",
-      desc: "Camera, mic, mounts, power, and an edit pad. The difference between a rumor and a receipt.",
+      desc: "Camera, mic, mounts, power, and an edit pad. The difference between a rumor and a receipt. Proof of a first stake, a salvage award, a Contested verdict: all of it rides on footage nobody can dispute. Live broadcast runs on this kit, and so does the audience it feeds.",
       basic: "Enables clean capture, documentation, and playback without improvising.",
       proficient: "Run verification and capture metadata as you record. Your footage is harder to dispute, and an Enemy's attempts to tamper with it, deepfake it, or discredit it roll with Snag on in-combat d20 checks (or +1 Snag Die on out-of-combat Dice Pools) unless they bring specialized counter tech." },
     { name: "Disguise and Styling Kit", bucket: "kits", group: "Media & Presence", price: 120, availability: "Common", legality: "Legal",
@@ -235,7 +235,7 @@ EN.gearCatalog.tools = {
     /* ---- Bureaucracy & Paper (Bureaucracy Tools) ---- */
     { name: "Document and Contract Kit", load: 1, bucket: "kits", group: "Bureaucracy & Paper", price: 100, availability: "Uncommon", legality: "Licensed",
       category: "Bureaucracy Tools", skill: "Investigation, Systems, Deception", effect: "Edge (or +1 Edge Die) on approvals and records pulls after 10 minutes prep.",
-      desc: "Templates, stamps, secure storage, and lookup routines for making the paperwork look exactly as boring as it should.",
+      desc: "Templates, stamps, secure storage, and lookup routines for making the paperwork look exactly as boring as it should. Stake filings, salvage declarations, and claim disputes all run through it. In a claims race, whoever owns the paperwork owns the site.",
       basic: "Supports forms, tickets, records pulls, and basic paperwork handling.",
       proficient: "With 10 minutes to do it properly, run legitimate compliance workflows and build a clean audit trail. For the next scene, gain Edge on in-combat d20 checks (or +1 Edge Die on out-of-combat Dice Pools) to get something approved, pull a record fast, or make the paperwork look routine. The same setup leaned on in a second scene rolls normally, and a third rolls with Snag (or +1 Snag Die)." },
 

@@ -6439,6 +6439,86 @@ Two smaller notes, neither an app matter. **Nothing states 6 as the ceiling of t
 track**; it is implicit in the table ending there, with no prose capping it. And the **Treat
 Fatigue table bands Fatigue as 1-3 Mild, 4-5 Severe, 6 Helpless**, splitting 6 out of the "4 to
 6" Severe band the condition entry defines.
+## Worldbuilding sync, 2026-08-30: what was buildable, and what is not in the book yet
+
+All three Parts re-exported and every locked item checked against them. The handoff's own rule
+that the manuscript outranks it did most of the deciding here.
+
+### Applied
+
+- **#MINT, and it was five sites, not two.** The handoff named the two I had found. A
+  case-insensitive sweep found three more, all player-visible and all shouting the dead name in
+  capitals: the PDF footer stamped on every exported page, the print-sheet footer, and the login
+  gate kicker. My own first sweep missed them because I grepped `Luster` case-sensitively and
+  the three live copies are `LUSTER`. Renaming only the two would have left the retired issuer on
+  every printed character sheet.
+
+  **"The Mint" was deliberately not used.** The manuscript gives the full name and the ticker and
+  nothing else; there is no street-slang gloss anywhere in the three Parts, so putting one in UI
+  chrome would be inventing canon. Checked `#` is U+0023 and inside the range `isWinAnsiChar`
+  admits, so it survives `sanitizeText` and draws in the PDF, before using it there.
+
+- **Both kit descriptions** re-transcribed with their new clauses.
+
+- **Two copy-rule fixes that carry no desync risk.** The Timber Fortitude brief said "chemically
+  or magically compelled" where the book says "chemically compelled or compelled by the Flow", so
+  the app was simply misquoting. And a Versatile pairing was named "Blood Magic Display" in
+  app-original copy absent from the manuscript; it is now "Blood Rite Display", which sits with
+  its siblings Ritual Exhibition, Somatic Weaving and Technomancy Display.
+
+- **Levels never go down.** The guard is in `setLevel` rather than on the button, so any future
+  caller inherits it. A decrease is still reachable, because a mis-set level during creation is
+  real and trapping someone at a number they typed by accident is worse than the rule is worth.
+  It is now a correction rather than a progression: the button arms first and names the cost.
+  That warning is not decoration. Lowering the level **permanently deletes** every Universal
+  Upgrade above it, prunes talent attribute picks, and clears the Level 4 Awakening Evolution,
+  and stepping back up does not restore any of it. The old button did all of that on one click
+  with no warning.
+
+  Caliber itself needed no guard: it is never stored, only derived from level, so level is the
+  one place the rule can be enforced.
+
+### Not built, and why
+
+**None of the Caliber registry lore is in the manuscript.** This is the finding that matters
+most, and it was checked hard rather than assumed. Across all three Parts: `Incursion` 0 hits,
+`assay` 0, `X-Calibur` 0, `reported Caliber` 0. All 213 Caliber references are mechanical, a
+scaling bonus or a pool term or a save-DC term. As exported today, Caliber has no diegetic
+existence at all.
+
+So the two-value Caliber model was **not** built, despite the handoff's closing paragraph saying
+to build it now. Three reasons, in order of weight. The handoff's own source-of-truth rule puts
+the manuscript first. Section 2 marks the data model **PROPOSED, for the app's judgment**, which
+contradicts the closing paragraph's "build now", and the more specific statement should win.
+And a `reportedCaliber` on the #PRINT would show players a number no rulebook text explains,
+which is the failure mode this project has spent two rounds correcting in the other direction.
+
+The plumbing is a small job the moment the lore lands. Nothing else blocks it.
+
+Also not built: the registry panel, stamp status and jobs-since-assay counter (PROPOSED),
+anything using the four Incursion classification labels (DIRECTED but explicitly working labels,
+not to be hardcoded), and everything in the OPEN list.
+
+**The About-screen copy has no home.** The app has no About or product-description surface at
+all, so the approved short pitch has nowhere to go. Worth building one, but not unasked.
+
+**XP was already right.** `useXp` defaults false so milestone is the assumed default, and nothing
+reads `ch.xp` to change level, so XP cannot back-door an advancement. The book does print an
+optional XP method with per-enemy awards, so the app carrying an opt-in XP mode matches it.
+
+### For the author
+
+- **The "magic" sweep started and stalled.** Part 1's front matter was fixed (the old "streetlights
+  hum with old magic. The network has ghosts in it." is gone, replaced by the approved #GRID line)
+  but four class and talent strings still say it: the Sourcerer blurb twice, the Shaper subclass
+  description, and the Tactics and Hybrid Fighting category intro. **The app matches the book on
+  all four and was deliberately left alone**, because fixing the app would put it ahead of the
+  manuscript. Fix those four and I will re-transcribe in one pass.
+- **The book still says the #GRID has ghosts**, and defines Haunted Property against the #GRID by
+  name. If the retired phrasing is meant to go everywhere, those are the sites. The app's
+  "Flow-Touched and Haunted Goods" market category is the book's own heading and was left alone.
+- **Part 2 states the copy rule internally**, in GM Guidance: describe the Flow not as magic but
+  as a physical sensation. The four surviving sites contradict a rule the book itself prints.
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

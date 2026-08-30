@@ -284,7 +284,7 @@ EN.briefs = {
   "Ecological Filter (Passive)": "Immune to ambient smog; treat all Toxic damage as if you have Resistance",
   "Rooted Stance (Active)": "When forced to move, cancel that movement; can't be knocked Prone until end of next turn",
   "Ironbark Carapace": "Natural DR 2 vs Standard Physical, stacking with worn light/medium armor",
-  "Timber Fortitude": "Immune to Frightened; can't be chemically or magically compelled to act impulsively against your crew",
+  "Timber Fortitude": "Immune to Frightened; can't be chemically compelled or compelled by the Flow to act impulsively against your crew",
   "Canopy Reach": "+1 space reach on unarmed/melee; Edge to grapple or restrain targets",
   "Deep Roots": "Touching earth/concrete/steel: can't be moved or knocked Prone; Short Rest there restores +Caliber Vitality",
   "Sapflow Regrowth": "Restore Resilience Die + Caliber Vitality; Caliber uses per Long Rest",

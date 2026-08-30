@@ -89,7 +89,7 @@ EN.pdfExport = (function () {
      existing space is consumed rather than doubled, which keeps "<N> 500" from becoming
      "NXT  500". */
   var PDF_CURRENCY = Object.create(null);
-  PDF_CURRENCY[String.fromCodePoint(0x1D4A2)] = "GLM";   // Glimmer, issued by the Luster Interchange Treasury
+  PDF_CURRENCY[String.fromCodePoint(0x1D4A2)] = "GLM";   // Glimmer, issued by the Monetary Interchange Network Treasury (#MINT)
   PDF_CURRENCY[String.fromCodePoint(0x25CE)]  = "NXT";   // Nexus Tokens, ledger-only on Data Pillars
   function sanitizeText(s) {
     if (s == null) return s;
@@ -167,7 +167,7 @@ EN.pdfExport = (function () {
       bracket(x0, y0, 1, 1); bracket(x1, y0, -1, 1);
     }
     function drawFooter(page, pageLabel) {
-      page.drawText("UNAUTHORIZED EDITS ARE LOGGED AND PROSECUTED  //  LUSTER INTERCHANGE TREASURY", {
+      page.drawText("UNAUTHORIZED EDITS ARE LOGGED AND PROSECUTED  //  #MINT", {
         x: MARGIN.left, y: 20, size: 6.5, font: fonts.mono, color: hexColor("dim")
       });
       var w = fonts.mono.widthOfTextAtSize(pageLabel, 6.5);
