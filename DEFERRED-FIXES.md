@@ -6673,6 +6673,215 @@ instead of Defense and Vitality, so the statblock renderer was written tolerant 
 physical block). Encounter budgeting, whose tables are already carried in `threats.js` so stage 3
 adds no second data file. Hazards and set pieces. The job board. Paying the crew, which should lift
 `splitPayout` out of inventory.js rather than write a second splitter.
+## GM Toolkit stage 2, 2026-08-31: the bestiary, all 31 entries
+
+`app/data/bestiary.js`, 457 lines, plus a browsable panel on the GM tab with category
+chips, a search that crosses categories, and one click to put any entry into the order.
+
+### Transcribed by parser, and proved rather than asserted
+
+The 31 statblocks are one blockquote line each with a grammar the export makes legible: a STAT
+is `**Label** value` and an ability or note is `**Label:**` or `**Label (Cost):**`. The colon
+inside the bold is the whole discriminator and it holds for every entry.
+
+Nothing was allowed to vanish quietly. The parser collects any bold label it does not recognise
+and reports it, which surfaced three real fields on the first run (`Immune` and `Resistance` on
+the Cascade Orphan, and the four Solos' `Unshakable, Defensive Impulses` block, which runs to the
+end of its clause rather than stopping at a pipe). After handling those: no unrecognised labels.
+
+Then two independent recovery checks: every WORD and every NUMBER of every source line must
+survive into the record. **All 31 entries recover every number**, and 27 recover every word, with
+the four exceptions being the key name `gmNote` losing the space in "GM note". The GM notes
+themselves are intact on all four.
+
+**The first run of that checker said 0 of 31 and was wrong.** It flattened records without their
+dict KEYS, so every field label read as a lost word. A checker that is wrong about the thing it
+checks is worse than no checker, and it took a second look to notice the failure was in the tool.
+
+### The book's numbers are the numbers
+
+Where an entry does not reproduce what the generator would build for it, **the page wins** and the
+card says so. The app does not get to quietly correct the manuscript.
+
+That comparison is computed at render time by asking the real `EN.gmEngine.buildThreat`. The first
+attempt baked a verdict into the data file from a Python re-implementation of the generator, which
+is the second-writer problem this project keeps paying for, and the copy was already wrong: Python
+rounds 62.5 down where JS and the book round it up, so it invented two deviations (Null Hound and
+Warstock Feral) that do not exist.
+
+### What the field set actually is
+
+- **29 of 31 carry the physical block.** The two #GRID threats do not, and the renderer was built
+  tolerant of that rather than printing a row of blanks: Feral Script carries Security Rating,
+  Cipher Save, System Integrity and a Firewall Damage Threshold, and the #GRID Guardian carries a
+  third shape again (Cipher Attack, Cipher Save DC, and a Persona Node).
+- **Resolve is on 11 entries, not 13** as an earlier pass reported. Checked against the source
+  directly: the manuscript has 11. Its absence is meaningful, so it is left out rather than blanked.
+- 12 leave `gear`, 15 leave `salvage`, 5 cryptids carry `signs`, 4 have a `gmNote`, 3 a `variant`,
+  4 a named skill line, and the 4 Solos an economy block. 122 abilities in total.
+
+### Corrected on sight: the deviation note did not belong in the tool
+
+The first build printed the mismatch on each affected card, in warning amber, on eleven of the
+thirty-one entries. Brandon asked what good it was serving and the honest answer is none: it was
+QA output about the manuscript sitting in a working tool, unactionable by its own last three
+words ("The page stands"), coloured to pull the eye, and wedged between a threat's abilities and
+the button that puts it into the fight.
+
+It is gone from the card. The finding is real and is recorded below, which is where a note to the
+author belongs. **The card shows the book's numbers and nothing else.**
+
+The general lesson, since this is the second time in two stages: a check I ran to convince myself
+the work is right is not thereby content. Stage 1 shipped a placeholder word in a Saves line;
+stage 2 shipped an audit trail in a statblock. Both were me leaving my own working notes in a
+surface somebody else has to read.
+
+### For the author: 14 of 31 entries do not reproduce their own generator
+
+Up from the seven already recorded, because this pass checked Vitality, Defense and saves across
+every entry rather than spot-checking. Grouped, because the count alone is not useful:
+
+**A pattern worth ruling on.** Two of the three Controllers were built as though the Role carried
+a 25 percent Vitality reduction, and the arithmetic lands exactly: Gutter Hacker 30 x 0.75 = 22.5
+printed as 22, Cult Cantor 50 x 0.75 = 37.5 printed as 38. **The Roles table gives Controller only
+"-25 percent damage, Save DC +1" and no Vitality adjustment.** Either the table is missing a line
+or those two entries are. The third Controller, Reclamation Bloom, follows neither reading at 55.
+
+**Five entries sit exactly +1 on Defense** (Riot Trooper, Spotter Drone, Combat Drone, Puppeted
+Body, Gremlin) and two sit -1 (Sentry Turret, Reclamation Bloom). Possibly another unlisted
+adjustment, possibly authoring drift.
+
+**Two entries carry no Role at all** in their identity line (Echo, Lantern Shoal), so the generator
+cannot build them and the comparison is not really fair to them. Worth adding a Role, or worth
+saying that a Role is optional.
+
+**One is a rounding tie**: Wiredog at 22 where 30 x 0.75 = 22.5 rounds up to 23. Note the book
+resolves the identical tie the other way elsewhere (Null Hound rounds 62.5 up to 63), so the
+manuscript is not consistent about halves. Not worth a rule, worth knowing.
+
+**The remainder are one-offs**: Sentry Turret +7 Vitality, Puppeted Body -8, Combat Drone -5,
+Vatspill Husk -2, and the Wetwork Operative's +1 strong save recorded in stage 1.
+## The Kettle Dog, added 2026-08-31
+
+A 32nd bestiary entry, author-written, filed under Machines and Proxies.
+
+**It is not in the Part 4 Doc yet, and that is the one thing to remember about it.**
+`bestiary.js` is generated from the manuscript and its own header says not to hand-edit it, so
+pasting the entry straight into the data file would have put it one transcription run from
+deletion. Instead it lives in `scratchpad/lin/p4-additions.md` and the parser reads that file
+alongside the manuscript, which keeps the pipeline reproducible and keeps the divergence
+visible. **Delete it from that file the moment it lands in Part 4, or the next run carries the
+dog twice.**
+
+Ran through the same pipeline as the other 31 and proved the same way: no unrecognised labels,
+and every word and number of the source line recovered into the record. It parsed to 7 abilities,
+a salvage line, a variant and a GM note, with no field the parser had not seen before.
+
+**It is the cleanest entry in the bestiary.** Fourteen of the original 31 fail to reproduce their
+own generator; this one reproduces it exactly on every axis that the generator owns:
+
+| | printed | a fresh G3 Elite Skirmisher |
+|---|---|---|
+| Vitality | 75 | 50 base, Elite x2, Skirmisher -25% = 75 |
+| Defense | 16 | 14 base, Elite +1, Skirmisher +1 = 16 |
+| Saves | +6 / +2 | the G3 array row |
+| XP | 500 | the Elite column at G3 |
+
+The Estate Unit variant is equally clean: 105 Vitality, Defense 17, attacks +9, 700 XP all land
+on the G4 Elite build.
+
+**The one departure is Speed 10 where the Skirmisher Role specifies 7**, and it is plainly
+deliberate rather than drift: the whole design is built on it. Scald Sprint moves 20 spaces,
+Built for the Straightaway counts the dog as Fast or Very Fast in a chase, and the thermal
+penalty exists to price the speed. Recorded so a later audit does not "correct" it.
+
+Hygiene clean: no em dashes, en dashes, curly apostrophes, curly quotes or non-breaking spaces.
+
+### Its GM note became three named job hooks
+
+The author replaced the single paragraph with a titled list: The Recall, The Old Friend, The
+Whistling Watch. That is a new block shape for the bestiary, and it needed three things.
+
+**The parser had to learn that a blockquote is not always an entry.** The hooks header is
+`> **This product can generate three jobs hooks:**`, which is a blockquote containing bold, so
+the old rule parsed it as a 33rd creature named after that whole sentence. The test that actually
+separates them is the ITALIC IDENTITY LINE: a statblock has one, a note about a statblock does
+not. Entries and their trailing blocks are now told apart that way, in the manuscript loop as
+well as the additions loop, so Part 4 can grow one of these without breaking the transcription.
+
+**The verifier had to widen too.** It compared one source LINE per entry, and an entry that now
+spans a statblock plus a hooks block would have had its hooks silently exempted from the recovery
+check. It reads the whole span now. With that fixed, every word and number of the Kettle Dog
+recovers, and the numbers still recover across all 32.
+
+**Hooks are stored structured, not flattened.** `{title, items: [{name, text}]}` rather than one
+paragraph, because each hook has a name and is its own idea, and a GM skimming for tonight's job
+wants to find the one they want instead of reading a block to the end.
+
+**A rendering bug this caught:** the hook prose cross-references an ability in bold
+(`**Remembers** is permanent`), and the card printed the asterisks raw, because it built the text
+with a plain text node. `EN.ui.applyInline` is the existing reader for that markup and is now used
+for hook and ability bodies alike. It was the only inline bold in the whole data file, so nothing
+else was affected, but the same trap was waiting in every ability body.
+
+**One thing for the author, transcribed as written rather than corrected:** the header says
+"three jobs hooks". Left verbatim because editing the author's prose is not the app's job, and
+flagged so it can be fixed in one word.
+
+### Bestiary, stage 3: the Nixie, and a Gremlin revision (2026-08-30)
+
+**The Gremlin was a revision, not an addition.** Its numbers, its identity line and all three of
+its abilities are byte-identical to the entry printed at Part 4 line 382. Two things changed: the
+GM note is rewritten, and a missing pipe between `Speed 7 (...)` and `Initiative` is restored. The
+old note read "A Nixie uses this block", which is to say the Nixie existed only as a sentence
+inside another creature's note. It has its own statblock now and the Gremlin's note points at it.
+
+**So the additions file can now REPLACE, not only append.** An entry whose name matches one
+already in Part 4 takes that entry's place, in its own position and category, instead of standing
+beside it. Without that, a revision to a printed creature would have shown the creature twice with
+two different texts. Name is the identity because the Doc has no ids, which means a rename reads
+as a new entry: the safe direction, since it surfaces as pending rather than quietly overwriting
+something else.
+
+**The parser reads a second shape.** Part 4 writes a statblock as one blockquote line, but these
+arrived as `#### **Name**` with a paragraph per field, and that pastes into the Doc as legal
+markdown. A parser that only knew blockquotes would have walked straight past a real entry and
+reported nothing missing. Joining the paragraphs reproduces the blockquote form exactly, so both
+shapes still converge on one grammar. The verifier reads the wider span to match.
+
+**The banner counts are computed now.** The data file's header comment hand-counted "31
+statblocks" and "Resolve is on 11 entries"; the first addition made it a comment that misdescribes
+the file it sits on. Every count in it is derived, including a standing list of which entries are
+ahead of the book.
+
+## For the author
+
+- **The Nixie is filed under The #GRID Side**, beside the Gremlin, because that is where Part 4
+  already keeps the Gremlin and the two are written as a pair. Both are Flow-Sprites, so if that
+  filing is wrong it is wrong for both of them together. One line to move.
+- **The Nixie joins the +1 Defense group.** Seven entries now print one Defense above what the
+  generator builds: Riot Trooper, Spotter Drone, Combat Drone, Puppeted Body, Gremlin, Nixie, Echo.
+  At seven of thirty-three this reads less like seven slips and more like an unlisted adjustment.
+- **The Nixie is a third sighting of the -25% Vitality pattern.** It prints 15 where the array
+  gives 20, exactly three quarters, matching Vatspill Husk exactly and Gutter Hacker and Cult
+  Cantor closely. The Nixie has no Role at all, so whatever produces that reduction is not the
+  Controller Role, which is what the earlier note assumed.
+- **Still pending in the Doc:** paste the Kettle Dog and the Nixie in, and replace the Gremlin.
+  Until then the app is ahead of the book, and the parser says so on every run.
+
+### A defect the Nixie exposed in the tracker
+
+**Initiative was being reported as the attack bonus** for every bestiary creature added to the
+initiative order: wrong on 26 of the 33 entries. Street Ganger showed "+2 to hit" where the book
+prints +5. It survived because the two numbers are coincidentally equal on the Gremlin, which is
+what it was eyeballed against, and because no creature that has no attack at all had ever been
+added until the Nixie arrived and printed a number it does not have. The row now reads the book's
+own "+6 vs Defense" phrasing, and a Save DC is shown only when the entry prints exactly one, since
+the Warform Chassis forces two and naming either as "the" DC would be a wrong number with nothing
+to give it away. Absent fields print nothing rather than "DC null", the same rule the data file
+already follows for Resolve. No migration was needed: `app/data/bestiary.js` has never been
+committed, so no saved encounter can contain a bestiary-added threat.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

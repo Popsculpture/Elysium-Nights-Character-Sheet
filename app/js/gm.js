@@ -17,6 +17,7 @@ EN.gmView = (function () {
   // Deliberately not persisted; a half-built threat is not worth a save slot.
   var _b = { gauge: 2, designation: "standard", role: "gunhand", size: "Medium", type: "Human", name: "", strong: null };
   var _open = { build: true, saved: false };
+  var _best = { cat: "people", q: "" };   // bestiary filter
   var _preview = null;
 
   // local copies rather than imports, per the house convention that each view
@@ -128,6 +129,48 @@ EN.gmView = (function () {
     return "Well below the crew's Caliber " + avg + ". Fine as texture or numbers, not as a fight.";
   }
 
+  /* ABSENT FIELDS STAY ABSENT, the same rule the bestiary data file follows for
+     Resolve. A creature can have no printed attack and no single Save DC, and
+     "DC null" on a tracker row is worse than a row with no DC on it. */
+  function rowSummary(b) {
+    var bits = [];
+    if (typeof b.defense === "number") bits.push("DEF " + b.defense);
+    if (typeof b.saveDC === "number") bits.push("DC " + b.saveDC);
+    if (typeof b.attackBonus === "number") bits.push(eng.fmtMod(b.attackBonus) + " to hit");
+    return bits.join(" · ");
+  }
+
+  /* What the book PRINTS for a creature's attack and its Save DC, which is not a
+     stat line: both live inside the ability prose, as "+6 vs Defense" and
+     "Tech Save DC 13".
+
+     INITIATIVE IS NOT THE ATTACK BONUS. Reading one as the other was wrong on 26
+     of the 33 entries. It survived because the two are coincidentally equal on
+     the Gremlin, which is the entry this was eyeballed against, and because no
+     creature that has no attack at all had been added to the order until the
+     Nixie arrived and printed a number it does not have.
+
+     A Save DC is reported only when the entry prints exactly ONE. The Warform
+     Chassis forces two different DCs, and naming either as "the" DC would be a
+     wrong number the GM has no way to see past. */
+  function printed(e) {
+    var st = e.stats || {};
+    var body = (e.abilities || []).map(function (a) { return a.text; }).join(" ");
+    var atk = body.match(/([+-]\d+)\s+vs\s+Defense/);
+    var uniq = [];
+    (body.match(/Save\s+DC\s+(\d+)/g) || []).forEach(function (d) {
+      var v = d.replace(/[^0-9]+/g, "");
+      if (uniq.indexOf(v) < 0) uniq.push(v);
+    });
+    var a = atk ? Number(atk[1]) : null;
+    var dc = uniq.length === 1 ? Number(uniq[0]) : null;
+    // a digital threat swings and forces saves under its own names, and states
+    // both outright rather than inside prose, so the row reads them directly
+    if (a === null && st["Cipher Attack"]) a = parseInt(st["Cipher Attack"], 10);
+    if (dc === null && st["Cipher Save DC"]) dc = parseInt(st["Cipher Save DC"], 10);
+    return { attackBonus: isNaN(a) ? null : a, saveDC: isNaN(dc) ? null : dc };
+  }
+
   function fld(k, v) {
     return el("div", { style: { display: "flex", gap: "6px", alignItems: "baseline" } }, [
       el("span.mono", { style: { fontSize: "10px", letterSpacing: ".1em", color: "var(--text3)" }, text: k }),
@@ -230,7 +273,7 @@ EN.gmView = (function () {
           el("span", { style: { fontWeight: 600, textDecoration: down ? "line-through" : "none" }, text: row.name || "Threat" }),
           el("span.chip", { style: { fontSize: "9.5px", color: "var(--danger)", borderColor: "var(--danger)" },
             text: "G" + b.gauge + " " + (b.designationName || "").toUpperCase() }),
-          el("span.help", { text: "DEF " + b.defense + " · DC " + b.saveDC + " · " + eng.fmtMod(b.attackBonus) + " to hit" })
+          el("span.help", { text: rowSummary(b) })
         ]),
         el("div.row", { style: { gap: "6px", alignItems: "center" } }, [
           el("span.mono", { style: { fontSize: "12px" }, text: row.vit + " / " + row.vitMax }),
@@ -352,6 +395,151 @@ EN.gmView = (function () {
     return EN.ui.panel("Initiative", enc.entries.length + (enc.entries.length === 1 ? " ENTRY" : " ENTRIES"), kids, { glow: enc.round > 0 });
   }
 
+
+  /* ---- the bestiary --------------------------------------------------------
+     Renders the book's printed numbers, and only those. Several entries do not
+     reproduce what the generator would build for them; that is a note for the
+     author and it lives in DEFERRED-FIXES, not on a card somebody is reading
+     mid-fight. An earlier version printed the mismatch here in warning amber on
+     eleven of the thirty-one entries, which put QA output in a working tool and
+     told a GM nothing they could act on. */
+  function bestiaryCard(e) {
+    var kids = [];
+    kids.push(el("h4", { style: { margin: "0 0 2px" }, text: e.name }));
+    kids.push(el("p.help", { style: { margin: "0 0 8px", fontStyle: "italic" }, text: e.identity || "" }));
+
+    var st = e.stats || {};
+    // 29 entries carry the physical block. The two #GRID threats do not, and a
+    // renderer that assumed they did would print a row of blanks for them.
+    var physical = ["Defense", "DR", "Vitality", "Speed", "Initiative", "Saves", "Passive Perception"];
+    var node = ["Security Rating", "Cipher Save", "System Integrity", "Firewall Damage Threshold",
+                "Cipher Attack", "Cipher Save DC"];
+    var shown = physical.filter(function (k) { return st[k]; });
+    if (!shown.length) shown = node.filter(function (k) { return st[k]; });
+    if (shown.length) {
+      kids.push(el("div.row.wrap", { style: { gap: "12px" } }, shown.map(function (k) {
+        return fld(k.toUpperCase().replace("PASSIVE PERCEPTION", "PASSIVE PERC"), st[k]);
+      })));
+    }
+    if (e.skills && e.skills.length) {
+      kids.push(el("p.help", { style: { margin: "4px 0 0" },
+        text: e.skills.map(function (k) { return k.name + " " + k.value; }).join(" \u00b7 ") }));
+    }
+    if (st["Unshakable, Defensive Impulses"]) {
+      kids.push(el("p.help", { style: { margin: "5px 0 0", color: "var(--gold)" },
+        text: "Solo: " + st["Unshakable, Defensive Impulses"] }));
+    }
+    ["Immune", "Resistance"].forEach(function (k) {
+      if (st[k]) kids.push(el("p.help", { style: { margin: "3px 0 0" }, text: k + ": " + st[k] }));
+    });
+
+    (e.abilities || []).forEach(function (a) {
+      var ap = el("p", { style: { margin: "6px 0 0", fontSize: "13px" } }, [
+        el("span", { style: { fontWeight: 600 }, text: a.name + (a.cost ? " (" + a.cost + ")" : "") + ": " })
+      ]);
+      EN.ui.applyInline(ap, a.text);
+      kids.push(ap);
+    });
+
+    var tail = [];
+    if (st.XP) tail.push("XP " + st.XP);
+    // Resolve is on 11 entries only, and its ABSENCE means the conversation is
+    // over before it starts, so a blank must not be printed in its place.
+    if (st.Resolve) tail.push("Resolve " + st.Resolve);
+    if (tail.length) kids.push(el("p.help", { style: { margin: "8px 0 0" }, text: tail.join(" \u00b7 ") }));
+    if (e.gear) kids.push(el("p.help", { style: { margin: "3px 0 0" }, text: "Gear: " + e.gear }));
+    if (e.salvage) kids.push(el("p.help", { style: { margin: "3px 0 0" }, text: "Salvage: " + e.salvage }));
+    if (e.signs) kids.push(el("p.help", { style: { margin: "3px 0 0" }, text: "Signs: " + e.signs }));
+    if (e.variant) kids.push(el("p.help", { style: { margin: "5px 0 0", color: "var(--text2)" },
+      text: e.variant.label + ": " + e.variant.text }));
+    if (e.gmNote) kids.push(el("p.help", { style: { margin: "5px 0 0", color: "var(--accent)" },
+      text: "GM: " + e.gmNote }));
+    /* Job hooks are a titled LIST, not a paragraph: each one is its own idea with
+       its own name, and a GM skimming for tonight's job wants to find the one
+       they want rather than read a block to the end. */
+    if (e.hooks) {
+      kids.push(el("p.help", { style: { margin: "8px 0 3px", color: "var(--accent)" }, text: e.hooks.title }));
+      e.hooks.items.forEach(function (h) {
+        var hp = el("p.help", { style: { margin: "0 0 3px 12px" } }, [
+          el("span", { style: { fontWeight: 600, fontStyle: "italic" }, text: h.name + ". " })
+        ]);
+        // the book cross-references an ability by name in bold inside hook prose,
+        // so this text carries inline markup and a plain text node printed the
+        // asterisks raw. EN.ui.applyInline is the existing reader for that.
+        EN.ui.applyInline(hp, h.text);
+        kids.push(hp);
+      });
+    }
+
+    kids.push(el("div.row.wrap", { style: { gap: "8px", marginTop: "10px" } }, [
+      el("button.btn.sm.primary", { onclick: function () {
+        // a bestiary entry enters the order as its PRINTED self, not as a build
+        var st = e.stats || {};
+        // a #GRID threat has no Vitality; System Integrity is the track that depletes
+        var vit = parseInt(st.Vitality, 10);
+        if (isNaN(vit)) vit = parseInt(st["System Integrity"], 10);
+        var def = parseInt(st.Defense, 10);
+        var initM = parseInt((st.Initiative || "0").replace("+", ""), 10) || 0;
+        var p = printed(e);
+        var block = {
+          name: e.name, gauge: e.gauge, designationName: e.designation || "Standard",
+          roleName: e.role || "", defense: isNaN(def) ? null : def,
+          saveDC: p.saveDC, attackBonus: p.attackBonus, vitality: isNaN(vit) ? 1 : vit,
+          fromBestiary: true, stats: st, abilities: e.abilities || []
+        };
+        var r = eng.rollD20({ mods: [{ label: "Initiative", value: initM }] });
+        gm.addThreat(block, null, r.total);
+        toast(e.name + " rolls " + r.total + " for initiative.");
+        EN.app.render();
+      } }, "+ ADD TO INITIATIVE")
+    ]));
+    return el("div.feature", null, kids);
+  }
+
+  function bestiaryPanel() {
+    var B = EN.bestiary;
+    if (!B) return null;
+    var kids = [];
+
+    kids.push(el("div.row.wrap", { style: { gap: "6px", marginBottom: "8px" } },
+      B.categories.map(function (c) {
+        return el("span.chip" + (_best.cat === c.key ? ".on" : ""), {
+          style: { cursor: "pointer", fontSize: "10.5px" },
+          onclick: function () { _best.cat = c.key; EN.app.render(); }
+        }, c.name + " (" + c.count + ")");
+      })));
+
+    kids.push(el("input", { type: "text", value: _best.q, placeholder: "search every entry by name, ability or gear",
+      style: { width: "100%", marginBottom: "10px" },
+      oninput: function (ev) {
+        _best.q = ev.target.value;
+        // a local re-render, because a full one would steal focus mid-word
+        var host = ev.target.parentNode.querySelector(".best-list");
+        if (host) { EN.ui.clear(host); listInto(host); }
+      } }));
+
+    var list = el("div.best-list");
+    kids.push(list);
+    listInto(list);
+
+    function listInto(host) {
+      var q = (_best.q || "").trim().toLowerCase();
+      var rows = B.entries.filter(function (e) {
+        if (q) return JSON.stringify(e).toLowerCase().indexOf(q) !== -1;
+        return e.category === _best.cat;
+      });
+      if (!rows.length) {
+        host.appendChild(el("p.help", { text: "Nothing matches." }));
+        return;
+      }
+      if (q) host.appendChild(el("p.help", { style: { marginBottom: "6px" },
+        text: rows.length + " of " + B.entries.length + " entries match, across every category." }));
+      rows.forEach(function (e) { host.appendChild(bestiaryCard(e)); });
+    }
+
+    return EN.ui.panel("Bestiary", B.entries.length + " STATBLOCKS", kids);
+  }
+
   function savedPanel() {
     var list = gm.savedThreats();
     if (!list.length) return null;
@@ -390,6 +578,8 @@ EN.gmView = (function () {
     blocks.push(builderPanel());
     var saved = savedPanel();
     if (saved) { blocks.push(el("div", { style: { height: "12px" } })); blocks.push(saved); }
+    var best = bestiaryPanel();
+    if (best) { blocks.push(el("div", { style: { height: "12px" } })); blocks.push(best); }
     mount.appendChild(el("div", null, blocks));
   }
 
