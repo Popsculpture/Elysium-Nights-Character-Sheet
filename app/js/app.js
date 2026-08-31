@@ -20,8 +20,19 @@ EN.app = (function () {
     { key: "gear",    label: "Inventory", glyph: "▣", view: function (m) { EN.inventoryView.render(m); } },
     { key: "codex",   label: "Codex",     glyph: "❒", view: function (m) { EN.codexView.render(m); } },
     { key: "print",   label: "Update #PRINT", glyph: "▤", view: function (m) { EN.builder.render(m); },
-      onSelect: function () { if (EN.builder && EN.builder.openAdvance) EN.builder.openAdvance(); } }
+      onSelect: function () { if (EN.builder && EN.builder.openAdvance) EN.builder.openAdvance(); } },
+    /* The GM tab is GATED, and it is the only tab that is. The app is normally a
+       player's own sheet, so bestiary and threat content stays out of their way
+       until they say otherwise. `gated` returns false when the module is missing
+       entirely, so deleting the four GM files leaves a working app. */
+    { key: "gm",      label: "GM",        glyph: "◆", view: function (m) { EN.gmView.render(m); },
+      gated: function () { return !!(EN.gmStore && EN.gmStore.mode()); } }
   ];
+  /* One reader for "which tabs exist right now". Both the rail and the dispatch
+     ask it, so they can never disagree about whether a tab is there. */
+  function visibleTabs() {
+    return TABS.filter(function (t) { return !t.gated || t.gated(); });
+  }
   var activeTab = "print";
 
   function renderTabs() {
@@ -29,7 +40,7 @@ EN.app = (function () {
     EN.ui.clear(nav);
     // tabs live in their own scroller; the gear is a sibling outside it so it never scrolls or drifts
     var scroll = el("div.os-tabs-scroll");
-    TABS.forEach(function (t) {
+    visibleTabs().forEach(function (t) {
       scroll.appendChild(el("div.os-tab" + (t.key === activeTab ? ".active" : ""), {
         onclick: function () { activeTab = t.key; if (t.onSelect) t.onSelect(); render(); }
       }, [el("span", { text: t.glyph }), document.createTextNode(t.label)]));
@@ -52,7 +63,14 @@ EN.app = (function () {
     renderTabs();
     var view = document.getElementById("view");
     EN.ui.clear(view);
-    var tab = TABS.find(function (t) { return t.key === activeTab; });
+    /* Resolve through the VISIBLE list and fall back, writing activeTab back so
+       the rail highlight agrees. Without this, switching GM mode off while
+       standing on the GM tab throws on `tab.view` and blanks the page with the
+       rail still painted. The same hole made gotoTab("nope") throw; it was
+       simply unreachable until a tab could disappear. */
+    var vis = visibleTabs();
+    var tab = vis.filter(function (t) { return t.key === activeTab; })[0];
+    if (!tab) { tab = vis[0]; activeTab = tab.key; }
     if (tab.view) { tab.view(view); }
     else {
       view.appendChild(el("div", null, [
@@ -129,6 +147,9 @@ EN.app = (function () {
 
   function start() {
     store.load();
+    // after store.load, always: the crew prune needs the roster to tell a live
+    // charId from a dead one, and running first would drop every crew entry
+    if (EN.gmStore && EN.gmStore.load) EN.gmStore.load();
     // Any non-silent store change re-renders the active view. (Text fields use
     // silent updates, so typing never triggers a disruptive re-render.)
     store.on(function () { flashSave(); render(); });

@@ -3015,10 +3015,14 @@ EN.combatView = (function () {
        base, attribute mods, gear, chrome, lineage features, and conditions. */
     var dg = d.defenseGear || {};
     var agiMod = d.attributes.AGI.mod;
-    // Initiative rolls d20 + Caliber + Agility OR Wits; use the better of the two
-    var initAttr = d.attributes.WIT.mod > agiMod ? "WIT" : "AGI";
-    var initMod = Math.max(agiMod, d.attributes.WIT.mod);
-    var initVal = initMod + fx.init + ((d.lineageInit && d.lineageInit.caliber) || 0) + (d.cyberInit || 0);
+    /* Initiative rolls d20 + Caliber + Agility OR Wits, better of the two. eng.initiative is
+       THE resolver, and it takes this view's condition delta because conditions are assembled
+       here rather than in the engine. Summing it inline is exactly what let the print sheet and
+       the PDF drift to a shorter sum and under-report a chromed character. */
+    var init = eng.initiative(d, fx.init);
+    var initAttr = init.attr;
+    var initMod = init.mod;
+    var initVal = init.total;
     var spDisplay = adjSpeed(d.speed, fx);
     var lineFeats = (eng.activeLineageFeatures ? eng.activeLineageFeatures(ch) : []) || [];
     var defAttrName = d.defenseAttr === "BOD" ? "Body" : "Agility";

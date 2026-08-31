@@ -465,6 +465,33 @@ EN.settings = (function () {
     return kids;
   }
 
+  /* GM MODE. Device state, not character state, and deliberately its own
+     localStorage key so it can be read without parsing the GM document and so a
+     corrupt document can never strand a GM outside their own tools.
+
+     It must never reach bundleFor() or any character export: GM mode riding a
+     .json into another player's app would hand them the tab on import. */
+  function gmSection() {
+    var on = EN.gmStore.mode();
+    // a section is a FLAT ARRAY of nodes, not a wrapper: rebuild() styles
+    // kids[0] to draw the divider and then appends each node itself
+    return [
+      el("div.set-sectitle", { text: "// GAME MASTER" }),
+      el("label.set-label", { text: "GM Toolkit" }),
+      el("p.set-hint", { text: on
+        ? "The GM tab is on: an initiative tracker that pulls in your saved Freelancers, and a threat builder that turns a Gauge, a Designation and a Role into a full statblock."
+        : "Add a GM tab with an initiative tracker and a threat builder. Off by default, because this app is usually a player's own sheet and they do not need the bestiary in their way." }),
+      el("button.btn.sm" + (on ? ".primary" : ""), {
+        title: "Show or hide the GM tab",
+        onclick: function () {
+          EN.gmStore.setMode(!on);
+          if (!on && EN.gmStore.load) EN.gmStore.load();
+          EN.app.render(); rebuild();
+        }
+      }, on ? "◆ GM TAB: ON" : "◆ GM TAB: OFF")
+    ];
+  }
+
   function gridSection() {
     var gv = EN.gridView;
     var on = gv.isDamage();
@@ -515,6 +542,8 @@ EN.settings = (function () {
     if (EN.app.activeTab() === "combat" && EN.combatView && EN.combatView.diceMode) sections.push(diceSection());
     if (EN.app.activeTab() === "flow" && EN.flowView && EN.flowView.isImmersive) sections.push(flowSection());
     if (EN.app.activeTab() === "grid" && EN.gridView && EN.gridView.isDamage) sections.push(gridSection());
+    // a general section, so it shows whichever tab you opened settings from
+    if (EN.gmStore) sections.push(gmSection());
     sections.push(themeSection());
     sections.forEach(function (kids, i) {
       if (i > 0) Object.assign(kids[0].style, { marginTop: "22px", paddingTop: "18px", borderTop: "1px solid var(--border)" });

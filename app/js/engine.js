@@ -14,6 +14,37 @@ EN.engine = (function () {
   function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
   function fmtMod(n) { return (n >= 0 ? "+" : "") + n; }
 
+  /* THE INITIATIVE RESOLVER. Added 2026-08-31, because the quantity had no owner and the three
+     surfaces that showed it disagreed. The Freelancer tab summed it inline from four parts; the
+     print sheet and the PDF each summed a DIFFERENT, shorter list, dropping the lineage grant,
+     the chrome bonus and the condition delta. A Freelancer with a Reflex Booster read one number
+     on screen and a lower one on their own printed sheet.
+
+     `condInit` is passed in rather than read, because the condition effect is assembled by
+     combat.js and not here. That is also why a printed sheet correctly passes 0: a sheet is a
+     snapshot of the character, and Drowsy's -2 belongs to the moment, not to the record.
+
+     Rule, Part 2 Combat Sequence: "Roll d20 + Caliber + Agility Modifier or Wits Modifier."
+     Caliber is added by the ROLL, not carried here, which is why `total` is the flat bonus a
+     player writes on a sheet and an initiative tracker adds to a d20. */
+  function initiative(d, condInit) {
+    var agi = ((d.attributes || {}).AGI || {}).mod || 0;
+    var wit = ((d.attributes || {}).WIT || {}).mod || 0;
+    var useWit = wit > agi;
+    var lineage = (d.lineageInit && d.lineageInit.caliber) || 0;
+    var cyber = d.cyberInit || 0;
+    var cond = condInit || 0;
+    return {
+      attr: useWit ? "WIT" : "AGI",
+      attrName: useWit ? "Wits" : "Agility",
+      mod: useWit ? wit : agi,
+      lineage: lineage, cyber: cyber, cond: cond,
+      edge: !!(d.lineageInit && d.lineageInit.edge),
+      total: (useWit ? wit : agi) + lineage + cyber + cond
+    };
+  }
+
+
   function getClass(key) { return (EN.classes || {})[key] || null; }
   function getSpecies(key) { return (EN.species || []).find(function (s) { return s.key === key; }) || null; }
   function getLineage(speciesKey, lineageKey) {
@@ -3742,6 +3773,11 @@ EN.engine = (function () {
     // the single-slot equip registry: one description of the five slots, so no view has to
     // list the field names by hand (see EQUIP_SLOTS for why that mattered)
     equipSlotFor: equipSlotFor, slotEquippedKeys: slotEquippedKeys, equipSlotLabel: equipSlotLabel,
+    // initiative is THE resolver for the quantity: every surface showing an Initiative number
+    // asks it, passing its own condition delta (or 0 where conditions do not apply). It is
+    // deliberately NOT a field on the derived record, because a stored value would have to
+    // pick one condition state and the callers want different ones.
+    initiative: initiative,
     isSlotEquipped: isSlotEquipped, releaseEntry: releaseEntry, setEquipSlot: setEquipSlot,   // Trauma Rig tier lookup and the owned-entry list
     // Environmental Hazards. hazardStats is THE resolver: the Hazards panel, the
     // Long Rest and the Codex chapter all read it rather than raw storage, so

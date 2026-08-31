@@ -399,7 +399,10 @@ EN.printSheet = (function () {
       // damage so the sheet does not read as a suit that was always this weak
       stat("DR", d.armorDR || 0, dg.armor ? (dg.armor.name + (dg.armorDRLost ? " · " + dg.armorDR + " of " + dg.armorBaseDR : "")) : "no armor"),
       stat("SPD", d.speed, "spaces"),
-      stat("INIT", sgn(Math.max(d.attributes.AGI.mod, d.attributes.WIT.mod)), d.attributes.WIT.mod > d.attributes.AGI.mod ? "Wits" : "Agility")
+      /* eng.initiative with no condition delta. A printed sheet is a snapshot of the CHARACTER,
+         so Drowsy's -2 does not belong on it, but the lineage grant and the chrome bonus do.
+         This line printed the attribute modifier alone until 2026-08-31. */
+      (function () { var i = EN.engine.initiative(d, 0); return stat("INIT", sgn(i.total), i.attrName); })()
     ]));
 
     // attribute matrix - compact horizontal strip directly under the stat strip

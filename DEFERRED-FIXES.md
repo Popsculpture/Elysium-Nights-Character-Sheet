@@ -6519,6 +6519,160 @@ optional XP method with per-enemy awards, so the app carrying an opt-in XP mode 
   "Flow-Touched and Haunted Goods" market category is the book's own heading and was left alone.
 - **Part 2 states the copy rule internally**, in GM Guidance: describe the Flow not as magic but
   as a physical sensation. The four surviving sites contradict a rule the book itself prints.
+## GM Toolkit stage 1, built 2026-08-31: the tab, the tracker, the threat builder
+
+Part 4 arrived and asked for seven subsystems. Staged on the author's call, tracker first. Four new
+files, 1,007 lines, and one pre-existing defect fixed on the way in because the new work could not
+be built correctly on top of it.
+
+### The defect that had to go first: initiative had no owner
+
+**Three surfaces showed an Initiative number and all three computed it differently.** The
+Freelancer tab summed four parts inline; the print sheet and the PDF each summed a shorter list,
+dropping the lineage grant, the chrome bonus and the condition delta. **A Freelancer with a
+Blackware Reflex Booster read +6 on screen and +2 on their own printed sheet.**
+
+`eng.initiative(d, condInit)` is now THE resolver and all three read it. The condition delta is
+passed IN rather than read, because the condition effect is assembled in combat.js and not the
+engine; that is also why a printed sheet correctly passes 0, since a sheet is a snapshot of the
+character and Drowsy's -2 belongs to the moment. Verified: all three now read +6 for that
+character, where two of them read +2 before.
+
+Deliberately NOT a field on the derived record. A stored value would have to pick one condition
+state and the callers want different ones.
+
+### Where GM state lives, and what it must never share
+
+`EN.gmStore`, its own module, its own keys. **Not inside `EN.store`**, and the reason is worth
+keeping: store.js wraps the whole roster parse in one try and discards EVERY character on
+unreadable JSON. A corrupt encounter blob sharing that failure domain would cost a player their
+entire roster. Separate key, separate parse, separate catch.
+
+Two keys on purpose. `en_gm_mode_v1` holds the toggle alone so it can be read without parsing the
+document and so a corrupt document can never strand a GM outside their own tools; `en_gm_v1` holds
+the state.
+
+The standing invariants, applied before they could be violated:
+
+- **Ids, never names.** Three Minions are three entries with three ids and three independent
+  Vitality numbers, which is exactly why the order is an array and not a map keyed on threat name.
+- **`kind` is STATED, never inferred from shape.** An entry that has lost its discriminant is
+  unattributable and is dropped, not guessed at.
+- **Null-prototype at every creation site including the fallbacks**, with `hasOwnProperty` on every
+  read. A GM will name a threat `__proto__` eventually. Tested: saving one leaves the prototype
+  intact.
+- **Unattributable state is dropped, not moved.** A crew entry whose character was deleted is
+  dropped and named in the console, never converted into a threat row carrying the dead
+  character's name and numbers.
+- **A crew entry holds only a pointer**, `charId` plus initiative. No cached name, no cached
+  health. The player's own sheet stays the one writer for a character's numbers.
+
+**Ordering is not optional**: the crew prune runs after `store.load()`, because it needs the roster
+to tell a live `charId` from a dead one. Run it first and every crew entry looks unattributable,
+gets dropped, and the next persist writes that emptiness back over a good encounter. It also runs
+from the view's render, because `store.remove` does not notify us and a ghost row should not
+survive until reload.
+
+### The generator
+
+`EN.gmEngine.buildThreat` is the one resolver, kept out of engine.js because that file is 3,700
+lines about deriving a CHARACTER and a threat shares no field with one.
+
+**The order of operations is load bearing and the steps do not commute.** Two traps, both
+commented at the site:
+
+1. **Minion Vitality is a REPLACEMENT, not a multiplier.** A G3 Minion is 15 off its own table, not
+   60 percent of the array's 50, and the Role percentage then applies to the 15. Multiply instead
+   and every Minion is wrong by a different amount at every Gauge.
+2. **Deadshot's +50 percent lands on one attack**, not the round's damage budget. Applied globally
+   it inflates a Solo's three attacks into something the book never priced.
+
+A saved threat stores the **resolved block** with its inputs beside it, never inputs alone.
+Re-deriving on read would let a later correction to `threats.js` silently change a statblock a GM
+already used at the table. This is the deliberate inverse of the example-character ruling, where
+inheriting future defaults is the point.
+
+**Verified against the book at every Gauge**, and against three real bestiary entries the generator
+had never seen: Corpsec Officer (G2 Standard Gunhand) reproduces Defense 13, Vitality 30, XP 150;
+Warform Chassis (G4 Elite Bruiser) gives 175; The Smiling Man (G4 Solo Ghost) gives 210. All exact.
+
+### The tracker
+
+Order is **derived, never persisted**: entries keep insertion order and the view asks the resolver,
+because a stored sorted copy would be a second writer for one fact. `activeId` is an entry id and
+never an index, since editing an initiative re-sorts and an index would then point at a different
+creature mid-round.
+
+The final tie-break is the entry id, **not a random draw**. Every keystroke here calls
+`EN.app.render()` and `armButton` re-renders just to arm, so a random tie-break would reshuffle the
+rail while the GM was reading it. A tie that survives both of the book's tie-breaks is surfaced as
+a roll-off rather than silently broken, which is what the book does with it.
+
+**A condition on a threat is a reminder, not an effect.** Threats are deliberately not run through
+combat.js's `fx` resolver, whose entire job is mutating a derived CHARACTER record. A threat has no
+derived record to mutate: it has one Vitality number. This is the line that keeps 5,400 lines of
+combat.js from needing a second, threat-shaped caller, and stage 1 touches that file exactly once.
+
+**Examples are excluded from the crew picker.** `setExample` gives an `ex_` id that never enters
+`roster()`, so an entry pointing at one would be pruned as unattributable on every single reload.
+
+### A latent bug the gate made reachable
+
+`app.js` looked its tab up with `TABS.find(...)` and then read `tab.view` with no guard, so any
+unknown `activeTab` threw and blanked the page with the rail still painted. Unreachable until a tab
+could disappear. Now the lookup resolves through the visible list and falls back, writing
+`activeTab` back so the rail agrees. Verified by turning GM mode off while standing on the GM tab.
+
+### Verified live
+
+GM mode off by default and the tab absent. On, and all nine tabs render. The array reproduced at
+every Gauge and Designation. A full round advanced past the wrap, round 1 to 2, cursor back to the
+top. A threat damaged to zero shows as out of the fight and stays listed. A character deleted while
+in the order is dropped, the active cursor stays valid, and the rest survives a reload. A threat
+named `__proto__` saves without polluting anything. No console errors, no em or en dashes.
+
+### For the author
+
+Part 4 has not been through the house style pass. **One curly apostrophe**, line 15, "What You'll
+Find Here". **277 markdown backslash escapes**, a Docs export artifact that must be stripped before
+any transcription; every signed bonus in the document is written `\\+5`.
+
+**Six bestiary entries do not reproduce their own generator**, against the chapter's stated claim
+that every entry is a legal build: Gutter Hacker and Cult Cantor Vitality (both Controllers, which
+carries no Vitality adjustment), Sentry Turret Vitality and Defense, Combat Drone and Gremlin
+Defense, and Wiredog Speed 8 where Skirmisher specifies 7. Worth a look before stage 2 transcribes
+the bestiary, since the app will otherwise have to carry six exceptions.
+
+Also: the fresh Drive pull of Part 4 is **byte-identical** to the local export, so the newer
+modified time was a touch and not an edit. And Part 4 is a fourth manuscript source that is not yet
+in HANDOFF.md's three-doc table; it should be added before anyone audits `threats.js` against it.
+
+### Corrected same day: the saves line said a word where the book names attributes
+
+The first build rendered Saves as "+7 strong, +2 others". Brandon caught it on the card:
+**strong is not an attribute**, and the line meant nothing at the table.
+
+The book prints the strong half as one or two REAL attributes and varies them per threat:
+"+4 Body, +1 others" on a Street Ganger, "+5 Body and Wits" on a Corpsec Officer, "+7 Agility
+and Wits" on a Wetwork Operative, "+5 Mystique and Body" on a Street Shaper. Which attributes is
+an authoring choice the chapter never derives, so the builder now takes two pickers and the
+resolver formats the real line. The Role only supplies a starting point, and that default is
+labelled in the data as an app suggestion read off the printed bestiary rather than a rule,
+because a default that looks like canon is worse than no default.
+
+**Checking the fix turned up a seventh bestiary deviation.** Every saves line in the bestiary was
+compared against the Standard Threat Array: 29 of 30 sit exactly on it, and only the **Wetwork
+Operative** does not, printing +7 at G3 where the array says +6. It is not an Elite bonus: the
+other two G4 Elites, the X-Calibur Knight and the Warform Chassis, both sit on the array. So it
+joins the six already recorded above as an entry that does not reproduce its own generator.
+
+### Left for stage 2 and beyond
+
+The bestiary (31 statblocks plus 3 variants, including two #GRID entries that carry Node math
+instead of Defense and Vitality, so the statblock renderer was written tolerant of a missing
+physical block). Encounter budgeting, whose tables are already carried in `threats.js` so stage 3
+adds no second data file. Hazards and set pieces. The job board. Paying the crew, which should lift
+`splitPayout` out of inventory.js rather than write a second splitter.
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

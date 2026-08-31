@@ -595,7 +595,7 @@ EN.pdfExport = (function () {
       { label: "DR", name: "dr", value: d.armorDR || 0, w: 1, align: "center", size: 13,
         sub: dg.armor ? (dg.armor.name + (dg.armorDRLost ? " (" + dg.armorDR + "/" + dg.armorBaseDR + ")" : "")) : "no armor" },
       { label: "SPD", name: "spd", value: d.speed, w: 1, align: "center", size: 13, sub: "spaces" },
-      { label: "INIT", name: "init", value: sgn(Math.max(d.attributes.AGI.mod, d.attributes.WIT.mod)), w: 1, align: "center", size: 13, sub: d.attributes.WIT.mod > d.attributes.AGI.mod ? "Wits" : "Agility" }
+      { label: "INIT", name: "init", value: sgn(EN.engine.initiative(d, 0).total), w: 1, align: "center", size: 13, sub: EN.engine.initiative(d, 0).attr === "WIT" ? "Wits" : "Agility" }
     ], { height: 20 });
 
     // attribute matrix
