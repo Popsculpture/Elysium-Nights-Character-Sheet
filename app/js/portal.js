@@ -146,7 +146,7 @@ EN.portal = (function () {
             '<div class="pf-title">Freelancer</div>' +
             '<p class="pf-desc">Your #PRINT, your crew, your gear.</p>' +
             '<div class="pf-list">&#10022; Freelancer &nbsp; &#9681; Social &nbsp; &#9132; #GRID<br>' +
-              '&#10059; Flow &nbsp; &#9635; Inventory &nbsp; &#9618; Codex<br>&#9636; Update #PRINT</div>' +
+              '&#10059; Flow &nbsp; &#9635; Inventory &nbsp; &#9618; Codex<br>&#9636; #PRINT</div>' +
             '<div class="pf-go" style="--pf-on:#04222a">Enter</div>' +
             '<div class="pf-file">' + rosterCount() + ' on file</div>' +
           '</button>' +

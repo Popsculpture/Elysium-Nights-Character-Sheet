@@ -19,20 +19,36 @@ EN.app = (function () {
   // exactly the player-only app it was before the toolkit landed.
   function adminReady() { return !!(EN.gmView && EN.gmStore && EN.gmEngine); }
 
+  /* The Freelancer rail is for REGISTERED Freelancers. Until the active record
+     has been through #PRINT's Submit & File (which stamps meta.filedAt), the
+     rail hides everything but the gear: an unfiled draft gets the wizard and
+     nothing else. #PRINT itself is never gated on this, or a draft could never
+     reach the step that files it. An example counts as registered: it is a
+     finished demo record that cannot be stored, and the tabs are what it is
+     for. Records from before the gate shipped are grandfathered in store.js.
+     The first `gated` that reads character state rather than module presence;
+     it is re-evaluated on every render, which is every store change, so the
+     rail appears the moment a record is filed with no further plumbing. */
+  function registered() {
+    var ch = EN.store.active();
+    if (!ch) return false;
+    if (EN.store.activeIsExample && EN.store.activeIsExample()) return true;
+    return !!(ch.meta && ch.meta.filedAt);
+  }
+
   // Tabs. Only "#PRINT" is built today on the Freelancer side; the rest read
   // the same character record once they're implemented (the foundation is
-  // shared). #PRINT lives last and is framed as "Update #PRINT": you create +
-  // file a record there, then it becomes the place to level up. Tapping it
-  // lands on the Advance step (onSelect), since advancing is the usual reason
-  // to return.
+  // shared). #PRINT lives last: you create + file a record there, then it
+  // becomes the place to level up. Tapping it lands on the Advance step
+  // (onSelect), since advancing is the usual reason to return.
   var TABS = [
-    { key: "combat",  label: "Freelancer", glyph: "✦", portal: "freelancer", view: function (m) { EN.combatView.render(m); } },
-    { key: "face",    label: "Social",    glyph: "◑", portal: "freelancer", view: function (m) { EN.faceView.render(m); } },
-    { key: "grid",    label: "#GRID",     glyph: "⌬", portal: "freelancer", view: function (m) { EN.gridView.render(m); } },
-    { key: "flow",    label: "Flow",      glyph: "❋", portal: "freelancer", view: function (m) { EN.flowView.render(m); } },
-    { key: "gear",    label: "Inventory", glyph: "▣", portal: "freelancer", view: function (m) { EN.inventoryView.render(m); } },
-    { key: "codex",   label: "Codex",     glyph: "❒", portal: "freelancer", view: function (m) { EN.codexView.render(m); } },
-    { key: "print",   label: "Update #PRINT", glyph: "▤", portal: "freelancer", view: function (m) { EN.builder.render(m); },
+    { key: "combat",  label: "Freelancer", glyph: "✦", portal: "freelancer", gated: registered, view: function (m) { EN.combatView.render(m); } },
+    { key: "face",    label: "Social",    glyph: "◑", portal: "freelancer", gated: registered, view: function (m) { EN.faceView.render(m); } },
+    { key: "grid",    label: "#GRID",     glyph: "⌬", portal: "freelancer", gated: registered, view: function (m) { EN.gridView.render(m); } },
+    { key: "flow",    label: "Flow",      glyph: "❋", portal: "freelancer", gated: registered, view: function (m) { EN.flowView.render(m); } },
+    { key: "gear",    label: "Inventory", glyph: "▣", portal: "freelancer", gated: registered, view: function (m) { EN.inventoryView.render(m); } },
+    { key: "codex",   label: "Codex",     glyph: "❒", portal: "freelancer", gated: registered, view: function (m) { EN.codexView.render(m); } },
+    { key: "print",   label: "#PRINT", glyph: "▤", portal: "freelancer", view: function (m) { EN.builder.render(m); },
       onSelect: function () { if (EN.builder && EN.builder.openAdvance) EN.builder.openAdvance(); } },
 
     /* The Admin rail. Every entry is gated on adminReady, so the desktop is
@@ -105,7 +121,11 @@ EN.app = (function () {
         onclick: function () { LAST[portal] = t.key; if (t.onSelect) t.onSelect(); render(); }
       }, [el("span", { text: t.glyph }), document.createTextNode(t.label)]));
     });
-    nav.appendChild(scroll);
+    /* An unregistered Freelancer gets NO rail, only the gear. visibleTabs()
+       still holds #PRINT for them, and render() still dispatches to it; this
+       only decides whether that lone tab is drawn. Admin is untouched: a GM
+       needs no character. */
+    if (!(portal === "freelancer" && !registered())) nav.appendChild(scroll);
     // settings gear, pinned to the right end of the rail
     if (EN.settings && EN.settings.gearTab) nav.appendChild(EN.settings.gearTab());
   }

@@ -2489,6 +2489,14 @@ EN.builder = (function () {
   // the player their live Freelancer sheet.
   function submitRecord(ch) {
     _certifiedFor = null;                        // consumed; a return to #PRINT must re-certify
+    /* THE stamp the nav gate reads (app.js registered()): until this lands the
+       Freelancer rail shows nothing but the gear. Written BEFORE the animation
+       rather than in its onDone, so a reload mid-animation still comes back to
+       a filed record. The store emits on this update, which re-renders the rail
+       behind the overlay, so the tabs are already there when it lifts. On an
+       example this only touches the in-memory copy, which is discarded on
+       reload; harmless, since an example is registered regardless. */
+    store.update(function (c) { c.meta.filedAt = Date.now(); });
     var name = (ch.name || "UNNAMED FREELANCER").toUpperCase();
     if (EN.ui.playFiled) EN.ui.playFiled({ name: name, ref: recordRef(ch), onDone: function () { EN.app.gotoTab("combat"); } });
     else EN.app.gotoTab("combat");
@@ -2903,7 +2911,7 @@ EN.builder = (function () {
     document.body.appendChild(inp); inp.click(); setTimeout(function () { inp.remove(); }, 1000);
   }
 
-  // Jump the wizard to the Advance step (used by the "Update #PRINT" tab).
+  // Jump the wizard to the Advance step (used by the "#PRINT" tab).
   function openAdvance() { for (var i = 0; i < STEPS.length; i++) { if (STEPS[i].key === "advance") { _step = i; return; } } }
 
   return { render: render, openAdvance: openAdvance };

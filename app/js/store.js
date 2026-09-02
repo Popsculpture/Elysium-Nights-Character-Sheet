@@ -45,7 +45,10 @@ EN.store = (function () {
       // wearKeys states which scheme the per-piece wear maps use, so migrate() never
       // has to guess it from a key's shape. A record born here is entry-keyed by
       // definition: its maps are empty and every row it ever gains carries an id.
-      meta: { id: uid(), schemaVersion: EN.rules.schemaVersion, wearKeys: 2, createdAt: Date.now(), updatedAt: Date.now() },
+      // filedGate marks a record born AFTER the nav gate shipped (2026-09), so
+      // migrate() never grandfathers it: only #PRINT's Submit & File can stamp
+      // filedAt on a record that carries this. See registered() in app.js.
+      meta: { id: uid(), schemaVersion: EN.rules.schemaVersion, wearKeys: 2, filedGate: 1, createdAt: Date.now(), updatedAt: Date.now() },
       name: composeFullName(firstName, "", lastName),
       firstName: firstName, lastName: lastName,
       identity: {
@@ -1563,6 +1566,19 @@ EN.store = (function () {
       }
       ch.meta.overdriveNames = 1;
     }
+    /* FILED. The Freelancer rail hides itself until the active record has been
+       through #PRINT's Submit & File, which stamps meta.filedAt. Records from
+       before that gate shipped (2026-09) predate the stamp entirely, so they
+       are GRANDFATHERED: stamped as filed on their first load after it. The
+       alternative is every existing player losing their tabs until they walk
+       back to step 07 and re-certify, for a rule that did not exist when they
+       filed. A record born after the gate carries filedGate from
+       newCharacter() and is left alone, so only Submit & File can ever stamp it.
+       Same one-time-stamp shape as wearKeys and overdriveNames above. */
+    if (!ch.meta.filedGate) {
+      if (!ch.meta.filedAt) ch.meta.filedAt = ch.meta.updatedAt || ch.meta.createdAt || Date.now();
+      ch.meta.filedGate = 1;
+    }
     // drop a stored subclass that no longer exists (e.g. after a class rework) so it re-surfaces as a pick
     if (ch.class && ch.subclass && EN.classes && EN.classes[ch.class]) {
       var subs = EN.classes[ch.class].subclasses || [];
@@ -1664,6 +1680,10 @@ EN.store = (function () {
     var copy = JSON.parse(JSON.stringify(state.example));
     delete copy.meta.example;
     copy.meta.id = uid();
+    // An example counts as registered while it is live (app.js registered()),
+    // so adopting one must not suddenly hide the rail: the copy is stamped
+    // filed here, as a finished record the player chose to keep.
+    copy.meta.filedAt = Date.now();
     state.example = null;
     state.roster[copy.meta.id] = copy;
     state.activeId = copy.meta.id;

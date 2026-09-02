@@ -6980,6 +6980,55 @@ The Doc grew past 1,100 lines with this pass; the new numbers (332/524/646/724/7
 935) came from a fresh structural scan, the same way the original numbers were found, not by
 guessing an offset.
 
+## No rail for the unregistered, 2026-09-02
+
+Author's call: the Freelancer tab rail hides itself, all but the settings gear, until the active
+record has been created as a valid character and taken through #PRINT's SUBMIT & FILE. An
+unfiled draft gets the wizard and nothing else.
+
+**"Filed" did not exist as state.** `submitRecord()` played the envelope animation and jumped to
+the Freelancer tab; it wrote nothing to the record. It now stamps `meta.filedAt` first, before
+the animation rather than in its `onDone`, so a reload mid-animation still comes back to a filed
+record. "Valid" needed no new work: the button was already gated on every wizard step being
+complete plus the certification checkbox (`canFile`), so the gate only had to add "has been
+filed."
+
+**The gate is the existing `gated` mechanism**, the same one the Admin tabs use, on the six
+non-#PRINT Freelancer tabs. #PRINT is never gated on it, or a draft could never reach the step
+that files it. When the active record is unregistered, `renderTabs()` skips the tab scroller and
+paints only the gear. It is the first `gated` that reads character state rather than module
+presence, and it needs no extra plumbing to react: `store.update` already re-renders, so the rail
+appears behind the filing animation and is simply there when the overlay lifts. Admin is
+untouched; a GM needs no character.
+
+Two decisions the author made:
+
+- **Existing records are grandfathered.** A record from before this shipped predates the stamp
+  entirely and is stamped as filed on its first load after, via the same one-time stamp shape as
+  `wearKeys` and `overdriveNames` (`meta.filedGate` marks a record born after the gate, which
+  migrate() then leaves alone). The alternative was every current player, and the app's own live
+  copy of Snikt, losing their tabs until they walked back to step 07 for a rule that did not exist
+  when they filed.
+- **Examples count as registered**, and adopting one stamps the copy filed. They are finished demo
+  records that cannot be stored, and the tabs are what they are for; hiding them would make the
+  seven examples nearly useless.
+
+Verified live, five scenarios: empty roster (gear only, intake screen); example loaded through the
+intake button (full rail); "Save as my own" (copy stamped, rail stays); the real SUBMIT & FILE on
+an unfiled complete record (stamp lands on click, rail appears behind the animation, lands on
+Freelancer, persisted); a legacy-shaped record with no stamp reloaded (grandfathered, rail
+visible); Admin with no character at all (all seven Admin tabs, untouched).
+
+### For the author
+
+- **None of the seven examples is complete by the wizard's own standard.** Each has five pending
+  picks (Class skill and tool, Background skill, tools, and weapon/vehicle), no lineage feature,
+  no awakening evolution, and, once those are filled, four training overlaps between Background
+  and Class that each want a Free Skill Focus claimed. So no example can reach SUBMIT & FILE as
+  shipped; the filing test above had to seed those fields first. Pre-existing, and only visible
+  now because filing finally does something. Whether examples should ship complete is a
+  design call, not a bug report.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from
