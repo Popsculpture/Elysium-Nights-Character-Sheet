@@ -116,16 +116,20 @@ EN.app = (function () {
     EN.ui.clear(nav);
     // tabs live in their own scroller; the gear is a sibling outside it so it never scrolls or drifts
     var scroll = el("div.os-tabs-scroll");
-    visibleTabs().forEach(function (t) {
-      scroll.appendChild(el("div.os-tab" + (t.key === LAST[portal] ? ".active" : ""), {
-        onclick: function () { LAST[portal] = t.key; if (t.onSelect) t.onSelect(); render(); }
-      }, [el("span", { text: t.glyph }), document.createTextNode(t.label)]));
-    });
-    /* An unregistered Freelancer gets NO rail, only the gear. visibleTabs()
+    /* An unregistered Freelancer gets NO tabs, only the gear. visibleTabs()
        still holds #PRINT for them, and render() still dispatches to it; this
-       only decides whether that lone tab is drawn. Admin is untouched: a GM
-       needs no character. */
-    if (!(portal === "freelancer" && !registered())) nav.appendChild(scroll);
+       only decides whether that lone tab is drawn. The scroller itself is
+       always appended, empty when locked: it is the flex spacer that keeps the
+       gear pinned to the right, and dropping it slid the gear to the left edge.
+       Admin is untouched: a GM needs no character. */
+    if (!(portal === "freelancer" && !registered())) {
+      visibleTabs().forEach(function (t) {
+        scroll.appendChild(el("div.os-tab" + (t.key === LAST[portal] ? ".active" : ""), {
+          onclick: function () { LAST[portal] = t.key; if (t.onSelect) t.onSelect(); render(); }
+        }, [el("span", { text: t.glyph }), document.createTextNode(t.label)]));
+      });
+    }
+    nav.appendChild(scroll);
     // settings gear, pinned to the right end of the rail
     if (EN.settings && EN.settings.gearTab) nav.appendChild(EN.settings.gearTab());
   }
