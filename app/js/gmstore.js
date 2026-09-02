@@ -10,14 +10,16 @@
    corrupt encounter blob sharing that failure domain would cost a player their
    entire roster. Separate key, separate parse, separate catch.
 
-   TWO KEYS, deliberately split. The mode flag is its own key so it can be read
-   without parsing the state document, and so a corrupt document can never strand
-   a GM outside their own tools.
+   THE STATE DOCUMENT IS THE ONLY KEY HERE NOW. Through 2026-08 this module also
+   owned en_gm_mode_v1, the flag that showed or hid a GM tab on the player's own
+   rail. The GM toolkit moved to its own Admin desktop (see app.js's `portal`,
+   settings.js's WORKSPACE section) and that flag has no reader left: both
+   desktops are always offered, so a user with it on and a user with it off got
+   an identical app. load() below removes it once, on the way past.
    =========================================================================== */
 window.EN = window.EN || {};
 
 EN.gmStore = (function () {
-  var MODE_KEY = "en_gm_mode_v1";
   var STATE_KEY = "en_gm_v1";
   var SCHEMA = 1;
 
@@ -36,17 +38,6 @@ EN.gmStore = (function () {
       encounters: Object.create(null),   // empty in stage 1; the container exists so stage 3 adds nothing structural
       updatedAt: 0
     };
-  }
-
-  /* ---- mode ---------------------------------------------------------------
-     Device state, not character state. It must never reach EN.theme.bundleFor
-     or any character export: GM mode riding a .json into another player's app
-     would hand them the tab on import. */
-  function mode() {
-    try { return localStorage.getItem(MODE_KEY) === "1"; } catch (e) { return false; }
-  }
-  function setMode(on) {
-    try { localStorage.setItem(MODE_KEY, on ? "1" : "0"); } catch (e) {}
   }
 
   /* ---- load and migrate ---------------------------------------------------
@@ -94,6 +85,11 @@ EN.gmStore = (function () {
     try { raw = JSON.parse(localStorage.getItem(STATE_KEY) || "null"); } catch (e) { raw = null; }
     try { state = migrate(raw); } catch (e) { state = blank(); }
     pruneCrew();
+    // en_gm_mode_v1 held the GM TAB's visibility and retired with that tab
+    // (2026-09). Both desktops are always offered now, so the flag decides
+    // nothing. Removed rather than left behind, so it does not sit in every
+    // player's storage looking like live state.
+    try { localStorage.removeItem("en_gm_mode_v1"); } catch (e) {}
     return state;
   }
 
@@ -226,7 +222,6 @@ EN.gmStore = (function () {
 
   return {
     load: load, get: get, update: update, on: on, uid: uid,
-    mode: mode, setMode: setMode,
     addCrew: addCrew, addThreat: addThreat, removeEntry: removeEntry, entry: entry,
     clearEncounter: clearEncounter, pruneCrew: pruneCrew,
     saveThreat: saveThreat, savedThreats: savedThreats, removeThreat: removeThreat

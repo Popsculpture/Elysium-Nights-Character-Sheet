@@ -1,39 +1,99 @@
 /* ===========================================================================
    ELYSIUM NIGHTS · #GRID Smartdeck OS bootstrap
    Boot sequence, tab routing, OS chrome, autosave indicator.
+
+   TWO DESKTOPS SHARE THIS OS AND NOTHING ELSE. The Freelancer portal is the
+   seven player tabs; the Admin portal is the GM toolkit on its own rail. A
+   tab's `portal` field says which one it belongs to and is never inferred,
+   because which desktop a tab lands on is exactly what a silent default gets
+   wrong. Tab KEYS MUST STAY UNIQUE ACROSS BOTH RAILS: gotoTab's portal
+   resolution and _lastTab's scroll restore both depend on that silently.
    =========================================================================== */
 window.EN = window.EN || {};
 
 EN.app = (function () {
   var el = EN.ui.el, store = EN.store;
 
-  // Tabs. Only "#PRINT" is built today; the rest are stubs that read the same
-  // character record once they're implemented (the foundation is shared).
-  // #PRINT lives last and is framed as "Update #PRINT": you create + file a
-  // record there, then it becomes the place to level up. Tapping it lands on the
-  // Advance step (onSelect), since advancing is the usual reason to return.
+  // The Admin desktop is drawn entirely by the GM modules. If they are deleted
+  // the desktop does not exist, the splash offers one card, and the app is
+  // exactly the player-only app it was before the toolkit landed.
+  function adminReady() { return !!(EN.gmView && EN.gmStore && EN.gmEngine); }
+
+  // Tabs. Only "#PRINT" is built today on the Freelancer side; the rest read
+  // the same character record once they're implemented (the foundation is
+  // shared). #PRINT lives last and is framed as "Update #PRINT": you create +
+  // file a record there, then it becomes the place to level up. Tapping it
+  // lands on the Advance step (onSelect), since advancing is the usual reason
+  // to return.
   var TABS = [
-    { key: "combat",  label: "Freelancer", glyph: "✦", view: function (m) { EN.combatView.render(m); } },
-    { key: "face",    label: "Social",    glyph: "◑", view: function (m) { EN.faceView.render(m); } },
-    { key: "grid",    label: "#GRID",     glyph: "⌬", view: function (m) { EN.gridView.render(m); } },
-    { key: "flow",    label: "Flow",      glyph: "❋", view: function (m) { EN.flowView.render(m); } },
-    { key: "gear",    label: "Inventory", glyph: "▣", view: function (m) { EN.inventoryView.render(m); } },
-    { key: "codex",   label: "Codex",     glyph: "❒", view: function (m) { EN.codexView.render(m); } },
-    { key: "print",   label: "Update #PRINT", glyph: "▤", view: function (m) { EN.builder.render(m); },
+    { key: "combat",  label: "Freelancer", glyph: "✦", portal: "freelancer", view: function (m) { EN.combatView.render(m); } },
+    { key: "face",    label: "Social",    glyph: "◑", portal: "freelancer", view: function (m) { EN.faceView.render(m); } },
+    { key: "grid",    label: "#GRID",     glyph: "⌬", portal: "freelancer", view: function (m) { EN.gridView.render(m); } },
+    { key: "flow",    label: "Flow",      glyph: "❋", portal: "freelancer", view: function (m) { EN.flowView.render(m); } },
+    { key: "gear",    label: "Inventory", glyph: "▣", portal: "freelancer", view: function (m) { EN.inventoryView.render(m); } },
+    { key: "codex",   label: "Codex",     glyph: "❒", portal: "freelancer", view: function (m) { EN.codexView.render(m); } },
+    { key: "print",   label: "Update #PRINT", glyph: "▤", portal: "freelancer", view: function (m) { EN.builder.render(m); },
       onSelect: function () { if (EN.builder && EN.builder.openAdvance) EN.builder.openAdvance(); } },
-    /* The GM tab is GATED, and it is the only tab that is. The app is normally a
-       player's own sheet, so bestiary and threat content stays out of their way
-       until they say otherwise. `gated` returns false when the module is missing
-       entirely, so deleting the four GM files leaves a working app. */
-    { key: "gm",      label: "GM",        glyph: "◆", view: function (m) { EN.gmView.render(m); },
-      gated: function () { return !!(EN.gmStore && EN.gmStore.mode()); } }
+
+    /* The Admin rail. Every entry is gated on adminReady, so the desktop is
+       all-or-nothing rather than degrading to four MODULE PENDING pages with
+       a working Table tab above them. */
+    { key: "table",      label: "Table",      glyph: "◆", portal: "admin", gated: adminReady,
+      view: function (m) { EN.gmView.renderTable(m); } },
+    { key: "threats",    label: "Threats",    glyph: "✦", portal: "admin", gated: adminReady,
+      view: function (m) { EN.gmView.renderThreats(m); } },
+    { key: "bestiary",   label: "Bestiary",   glyph: "▤", portal: "admin", gated: adminReady,
+      view: function (m) { EN.gmView.renderBestiary(m); } },
+    { key: "encounters", label: "Encounters", glyph: "⌗", portal: "admin", gated: adminReady,
+      stub: "Budgeting an encounter: XP shares by crew Caliber, four difficulty bands from Milk Run " +
+            "to Red Work, and the book's own line that past 2x is not an encounter, it is an ambush " +
+            "you are writing on purpose. The tables already live in data/threats.js." },
+    { key: "hazards",    label: "Hazards",    glyph: "⚠", portal: "admin", gated: adminReady,
+      stub: "Set Pieces: the eight pre-written hazards, all authored at Gauge 3, plus the DC ladder " +
+            "and bite tables Part 4 already prices." },
+    { key: "jobs",       label: "Job Board",  glyph: "▣", portal: "admin", gated: adminReady,
+      stub: "The Job Board: five roll tables and twelve postings." },
+    { key: "payroll",    label: "Payroll",    glyph: "◈", portal: "admin", gated: adminReady,
+      stub: "Paying the Crew: contract pay bands, bounties, and salvage values, likely lifting " +
+            "splitPayout out of inventory.js rather than writing a second splitter." }
   ];
-  /* One reader for "which tabs exist right now". Both the rail and the dispatch
-     ask it, so they can never disagree about whether a tab is there. */
-  function visibleTabs() {
-    return TABS.filter(function (t) { return !t.gated || t.gated(); });
+
+  /* Device state: which desktop, persisted; which tab on each desktop, not.
+     Neither an activeTab reset nor a portal choice needs to survive a reload
+     any harder than that, and the splash is deliberately per-first-run. */
+  var PORTAL_KEY = "en_portal_v1";
+  var portal = "freelancer";
+  var LAST = { freelancer: "print", admin: "table" };
+
+  function storedPortal() {
+    try {
+      var v = localStorage.getItem(PORTAL_KEY);
+      return (v === "admin" || v === "freelancer") ? v : null;
+    } catch (e) { return null; }
   }
-  var activeTab = "print";
+  function hasStoredPortal() { return !!storedPortal(); }
+
+  /* One reader for "which tabs exist right now" IN THE CURRENT PORTAL. Both
+     the rail and the dispatch ask it, so they can never disagree about
+     whether a tab is there. */
+  function visibleTabs() {
+    return TABS.filter(function (t) { return t.portal === portal && (!t.gated || t.gated()); });
+  }
+  function hasAdmin() {
+    return TABS.some(function (t) { return t.portal === "admin" && (!t.gated || t.gated()); });
+  }
+
+  /* THE one writer for `portal`. Validates (Admin is meaningless with the GM
+     modules gone; the Freelancer side is never empty, so no symmetric check
+     is needed), persists so a splash pick, a tray flip, and the empty-rail
+     self-heal below can never disagree, and clears any confirm armed on the
+     desktop being left (ui.js's _armedKey is a single global slot). */
+  function usePortal(p) {
+    portal = (p === "admin" && hasAdmin()) ? "admin" : "freelancer";
+    try { localStorage.setItem(PORTAL_KEY, portal); } catch (e) {}
+    EN.ui.disarm();
+  }
+  function setPortal(p) { usePortal(p); render(); }
 
   function renderTabs() {
     var nav = document.getElementById("os-tabs");
@@ -41,8 +101,8 @@ EN.app = (function () {
     // tabs live in their own scroller; the gear is a sibling outside it so it never scrolls or drifts
     var scroll = el("div.os-tabs-scroll");
     visibleTabs().forEach(function (t) {
-      scroll.appendChild(el("div.os-tab" + (t.key === activeTab ? ".active" : ""), {
-        onclick: function () { activeTab = t.key; if (t.onSelect) t.onSelect(); render(); }
+      scroll.appendChild(el("div.os-tab" + (t.key === LAST[portal] ? ".active" : ""), {
+        onclick: function () { LAST[portal] = t.key; if (t.onSelect) t.onSelect(); render(); }
       }, [el("span", { text: t.glyph }), document.createTextNode(t.label)]));
     });
     nav.appendChild(scroll);
@@ -52,7 +112,8 @@ EN.app = (function () {
 
   var _lastTab = null;
   function render() {
-    // per-character theme: repaint to whatever the active Freelancer selected (no-op if unchanged)
+    // per-character theme: repaint to whatever the active Freelancer selected (no-op if unchanged).
+    // In Admin this resolves to the Admin desktop's own device theme instead (see settings.js).
     if (EN.theme && EN.theme.syncToActive) EN.theme.syncToActive();
     // re-renders empty the view, which momentarily collapses the page and lets
     // the browser clamp scroll to the top, capture and restore the position.
@@ -63,14 +124,18 @@ EN.app = (function () {
     renderTabs();
     var view = document.getElementById("view");
     EN.ui.clear(view);
-    /* Resolve through the VISIBLE list and fall back, writing activeTab back so
-       the rail highlight agrees. Without this, switching GM mode off while
-       standing on the GM tab throws on `tab.view` and blanks the page with the
-       rail still painted. The same hole made gotoTab("nope") throw; it was
-       simply unreachable until a tab could disappear. */
     var vis = visibleTabs();
-    var tab = vis.filter(function (t) { return t.key === activeTab; })[0];
-    if (!tab) { tab = vis[0]; activeTab = tab.key; }
+    // Same self-healing shape as the tab fallback below, for the same reason:
+    // the rail and the dispatch must never disagree. Reachable only if the GM
+    // modules vanish while Admin is the current desktop.
+    if (!vis.length) { usePortal("freelancer"); vis = visibleTabs(); }
+    /* Resolve through the VISIBLE list and fall back, writing LAST[portal] back
+       so the rail highlight agrees. Without this, a tab disappearing (GM mode
+       toggling off used to do this) throws on `tab.view` and blanks the page
+       with the rail still painted. The same hole made gotoTab("nope") throw;
+       it was simply unreachable until a tab could disappear. */
+    var tab = vis.filter(function (t) { return t.key === LAST[portal]; })[0];
+    if (!tab) { tab = vis[0]; LAST[portal] = tab.key; }
     if (tab.view) { tab.view(view); }
     else {
       view.appendChild(el("div", null, [
@@ -78,16 +143,24 @@ EN.app = (function () {
         el("div.muted-box", { style: { marginTop: "20px", padding: "40px" }, html: tab.glyph + " &nbsp; MODULE PENDING<br><br>" + tab.stub })
       ]));
     }
-    if (_lastTab === activeTab) {                          // same view → stay put
+    if (_lastTab === LAST[portal]) {                       // same view → stay put
       window.scrollTo(sx, sy);
       Array.prototype.forEach.call(document.querySelectorAll(WELLS), function (w, i) {
         if (wells[i]) w.scrollTop = wells[i];
       });
     } else window.scrollTo(0, 0);                          // tab switch → start at top
-    _lastTab = activeTab;
-    // reflect active name
-    var ch = store.active();
-    document.getElementById("active-name").textContent = ch ? (ch.name || "UNNAMED FREELANCER").toUpperCase() : "NO FREELANCER LOADED";
+    _lastTab = LAST[portal];
+    // top bar's active-name slot: the loaded Freelancer on the player side, the
+    // live encounter on the GM side, since Admin is not about a character
+    var nameEl = document.getElementById("active-name");
+    if (portal === "admin") {
+      var enc = null;
+      try { enc = EN.gmStore && EN.gmStore.get && EN.gmStore.get().encounter; } catch (e) {}
+      nameEl.textContent = (enc && enc.round > 0) ? ("ROUND " + enc.round) : "NO ENCOUNTER";
+    } else {
+      var ch = store.active();
+      nameEl.textContent = ch ? (ch.name || "UNNAMED FREELANCER").toUpperCase() : "NO FREELANCER LOADED";
+    }
     /* Currency marks, last, once the view is fully built. A NO-OP on any device whose fonts
        carry U+1D4A2 and U+25CE, which is the common case and costs one cached measurement;
        on devices that lack them it walks the freshly-rendered text and swaps the tofu box
@@ -139,8 +212,17 @@ EN.app = (function () {
         document.getElementById("os").style.display = "flex";
         setTimeout(function () { b.style.display = "none"; }, 520);
       };
+      /* After the gate: which desktop. Set the portal FIRST, then reveal, so
+         the render inside setPortal happens while #os is still display:none
+         and the (rare, first-run) cyan-to-gold repaint is invisible. Falls
+         back to booting straight into the remembered desktop with no chooser
+         if portal.js is deleted. */
+      var open = function () {
+        if (EN.portal && EN.portal.choose) EN.portal.choose(function (p) { setPortal(p); reveal(); });
+        else reveal();
+      };
       // optional access gate (js/gate.js); falls back to opening directly if removed
-      if (EN.gate && EN.gate.require) EN.gate.require(reveal); else reveal();
+      if (EN.gate && EN.gate.require) EN.gate.require(open); else open();
     }
     step();
   }
@@ -150,6 +232,12 @@ EN.app = (function () {
     // after store.load, always: the crew prune needs the roster to tell a live
     // charId from a dead one, and running first would drop every crew entry
     if (EN.gmStore && EN.gmStore.load) EN.gmStore.load();
+    // Resolve the remembered desktop BEFORE the first render, so a returning
+    // user's first paint is already correct rather than a Freelancer flash.
+    // validated the same way usePortal validates, in case Admin was saved
+    // while the GM modules were present and they are gone now.
+    var sp = storedPortal();
+    if (sp) portal = (sp === "admin" && hasAdmin()) ? "admin" : "freelancer";
     // Any non-silent store change re-renders the active view. (Text fields use
     // silent updates, so typing never triggers a disruptive re-render.)
     store.on(function () { flashSave(); render(); });
@@ -159,7 +247,25 @@ EN.app = (function () {
     boot();
   }
 
-  return { start: start, render: render, activeTab: function () { return activeTab; }, gotoTab: function (k) { activeTab = k; render(); } };
+  return {
+    start: start, render: render,
+    activeTab: function () { return LAST[portal]; },
+    /* Resolves the key's own portal rather than assuming the caller's, so
+       every existing caller (all of which name a Freelancer tab today) stays
+       correct with zero edits, and the function can never strand the app on
+       an unknown key. */
+    gotoTab: function (k) {
+      var t = TABS.filter(function (x) { return x.key === k; })[0];
+      if (!t) return;
+      usePortal(t.portal);
+      LAST[portal] = k;
+      render();
+    },
+    portal: function () { return portal; },
+    setPortal: setPortal,
+    hasAdmin: hasAdmin,
+    hasStoredPortal: hasStoredPortal
+  };
 })();
 
 document.addEventListener("DOMContentLoaded", EN.app.start);

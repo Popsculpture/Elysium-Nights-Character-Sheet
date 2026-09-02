@@ -93,10 +93,24 @@ EN.theme = (function () {
     return null;
   }
 
-  /* ---- selection: per-character when one is loaded, device fallback otherwise ---- */
+  /* ---- selection: per-character when one is loaded, device fallback otherwise.
+          The Admin desktop is neither: it is not about a character, so its
+          selection lives under its own device key and get()/set() branch to it
+          FIRST, before either path below can run. That storage location is the
+          whole guarantee: bundleFor(ch) below reads ch.theme only and has no
+          path to ADMIN_KEY, so an Admin selection can never ride a .json into
+          another player's app, the same promise en_gm_mode_v1 used to need a
+          comment to make. ---- */
+  var ADMIN_KEY = "en_admin_theme_v1";
+  function inAdmin() { try { return !!(EN.app && EN.app.portal && EN.app.portal() === "admin"); } catch (e) { return false; } }
+  function adminGet() { try { return localStorage.getItem(ADMIN_KEY) || "highheavens"; } catch (e) { return "highheavens"; } }
   function activeCh() { try { return (EN.store && EN.store.active) ? EN.store.active() : null; } catch (e) { return null; } }
   function deviceGet() { try { return localStorage.getItem(KEY) || "grid"; } catch (e) { return "grid"; } }
-  function get() { var ch = activeCh(); return (ch && ch.theme) ? ch.theme : deviceGet(); }
+  function get() {
+    if (inAdmin()) return adminGet();
+    var ch = activeCh();
+    return (ch && ch.theme) ? ch.theme : deviceGet();
+  }
 
   /* ---- paint the document from a palette object (no persistence) ---- */
   function applyVars(t) {
@@ -142,12 +156,19 @@ EN.theme = (function () {
           (stored on the record); with none loaded it sets the device default that
           unthemed characters and the intake screen fall back to. ---- */
   function set(k) {
+    // The Admin desktop is not about a character, so its selection can never
+    // reach a record and therefore can never ride a .json into another app.
+    if (inAdmin()) { try { localStorage.setItem(ADMIN_KEY, k); } catch (e) {} apply(k); return; }
     var ch = activeCh();
     if (ch && EN.store && EN.store.update) EN.store.update(function (c) { c.theme = k; });
     else { try { localStorage.setItem(KEY, k); } catch (e) {} }
     apply(k);
   }
-  // repaint whatever the active character (or the device) currently selects; called every render
+  // repaint whatever the active character (or the device) currently selects; called every render.
+  // ch.customThemes only ever exists on an export/import copy (builder.js's
+  // bundleFor callers, store.js's import), never on a stored record, so this
+  // merge is portal-neutral: the Admin picker already lists every custom
+  // palette on the device with no separate path needed for it.
   function syncToActive() {
     var ch = activeCh();
     if (ch && Array.isArray(ch.customThemes)) mergeCustom(ch.customThemes);
@@ -162,7 +183,8 @@ EN.theme = (function () {
   return {
     THEMES: THEMES, find: find, get: get, set: set, apply: apply, preview: preview, init: init, ramp: ramp,
     allThemes: allThemes, isCustom: isCustom, getCustom: getCustom, saveCustom: saveCustom,
-    deleteCustom: deleteCustom, mergeCustom: mergeCustom, bundleFor: bundleFor, syncToActive: syncToActive
+    deleteCustom: deleteCustom, mergeCustom: mergeCustom, bundleFor: bundleFor, syncToActive: syncToActive,
+    inAdmin: inAdmin
   };
 })();
 
@@ -465,31 +487,39 @@ EN.settings = (function () {
     return kids;
   }
 
-  /* GM MODE. Device state, not character state, and deliberately its own
-     localStorage key so it can be read without parsing the GM document and so a
-     corrupt document can never strand a GM outside their own tools.
-
-     It must never reach bundleFor() or any character export: GM mode riding a
-     .json into another player's app would hand them the tab on import. */
-  function gmSection() {
-    var on = EN.gmStore.mode();
-    // a section is a FLAT ARRAY of nodes, not a wrapper: rebuild() styles
-    // kids[0] to draw the divider and then appends each node itself
-    return [
-      el("div.set-sectitle", { text: "// GAME MASTER" }),
-      el("label.set-label", { text: "GM Toolkit" }),
-      el("p.set-hint", { text: on
-        ? "The GM tab is on: an initiative tracker that pulls in your saved Freelancers, and a threat builder that turns a Gauge, a Designation and a Role into a full statblock."
-        : "Add a GM tab with an initiative tracker and a threat builder. Off by default, because this app is usually a player's own sheet and they do not need the bestiary in their way." }),
-      el("button.btn.sm" + (on ? ".primary" : ""), {
-        title: "Show or hide the GM tab",
-        onclick: function () {
-          EN.gmStore.setMode(!on);
-          if (!on && EN.gmStore.load) EN.gmStore.load();
-          EN.app.render(); rebuild();
-        }
-      }, on ? "◆ GM TAB: ON" : "◆ GM TAB: OFF")
+  /* WORKSPACE. Device state, not character state: which desktop you are on.
+     Storage lives entirely in app.js's en_portal_v1, so this section only
+     ever calls EN.app's exported functions rather than touching a key of its
+     own. This is now the ONLY route between desktops (the top bar carries no
+     switcher), so unlike the GM-tab toggle it replaces, it is never gated off
+     when the GM modules are present: hiding it would strand a GM with no way
+     back to Freelancer, or a player with no way to reach Admin. */
+  function portalSection() {
+    var admin = EN.app.portal() === "admin";
+    var kids = [
+      el("div.set-sectitle", { text: "// WORKSPACE" }),
+      el("label.set-label", { text: "Current desktop" }),
+      el("p.set-hint", { text: "Two desktops share one node. Freelancer is a player's own sheet; Admin is the table you run. Switching repaints the app and swaps the tab rail." })
     ];
+    if (!EN.app.hasAdmin()) {
+      kids.push(el("p.set-hint", { style: { color: "var(--text3)" }, text: "The GM toolkit is not installed on this device, so only the Freelancer desktop is available." }));
+      return kids;
+    }
+    kids.push(el("div.row.wrap", { style: { gap: "8px" } }, [
+      el("button.btn.sm" + (!admin ? ".primary" : ""), {
+        title: "Switch to the Freelancer desktop", onclick: function () { EN.app.setPortal("freelancer"); rebuild(); }
+      }, "✦ FREELANCER"),
+      el("button.btn.sm" + (admin ? ".primary" : ""), {
+        title: "Switch to the Admin desktop", onclick: function () { EN.app.setPortal("admin"); rebuild(); }
+      }, "◆ ADMIN")
+    ]));
+    kids.push(el("button.btn.sm", {
+      style: { marginTop: "10px" }, title: "Reopen the portal splash",
+      // `true` forces the splash to paint even though the desktop is already
+      // remembered; a bare choose() would resolve silently and look broken.
+      onclick: function () { close(); EN.portal.choose(EN.app.setPortal, true); }
+    }, "⇄ RETURN TO PORTAL"));
+    return kids;
   }
 
   function gridSection() {
@@ -519,10 +549,13 @@ EN.settings = (function () {
   }
 
   function themeSection() {
+    var admin = EN.theme.inAdmin();
     var kids = [
       el("div.set-sectitle", { text: "// CHANGE SHEET APPEARANCE" }),
-      el("label.set-label", { text: "Color Theme" }),
-      el("p.set-hint", { text: "Each palette recolors the accent, frames, backgrounds, and text. Saved to this Freelancer and bundled into their .JSON export. Pick #GRID for the default." }),
+      el("label.set-label", { text: admin ? "Admin Theme" : "Color Theme" }),
+      el("p.set-hint", { text: admin
+        ? "Each palette recolors the accent, frames, backgrounds, and text. Stored on this device, not on any Freelancer, so whoever is loaded on the player side never repaints your table. Pick #GRID for the default."
+        : "Each palette recolors the accent, frames, backgrounds, and text. Saved to this Freelancer and bundled into their .JSON export. Pick #GRID for the default." }),
       themeSwatches()
     ];
     kids.push(_editing ? editorPanel() : el("button.btn.sm.set-newbtn", { onclick: startNew }, "+ NEW CUSTOM THEME"));
@@ -542,8 +575,8 @@ EN.settings = (function () {
     if (EN.app.activeTab() === "combat" && EN.combatView && EN.combatView.diceMode) sections.push(diceSection());
     if (EN.app.activeTab() === "flow" && EN.flowView && EN.flowView.isImmersive) sections.push(flowSection());
     if (EN.app.activeTab() === "grid" && EN.gridView && EN.gridView.isDamage) sections.push(gridSection());
-    // a general section, so it shows whichever tab you opened settings from
-    if (EN.gmStore) sections.push(gmSection());
+    // general sections, shown regardless of which tab settings was opened from
+    sections.push(portalSection());
     sections.push(themeSection());
     sections.forEach(function (kids, i) {
       if (i > 0) Object.assign(kids[0].style, { marginTop: "22px", paddingTop: "18px", borderTop: "1px solid var(--border)" });

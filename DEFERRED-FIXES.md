@@ -6882,6 +6882,58 @@ to give it away. Absent fields print nothing rather than "DC null", the same rul
 already follows for Resolve. No migration was needed: `app/data/bestiary.js` has never been
 committed, so no saved encounter can contain a bestiary-added threat.
 
+## Two desktops on one OS, 2026-09-02
+
+The GM Toolkit had been a ninth tab on the player's own rail, hidden behind a settings toggle,
+and it was three tools deep in one unbroken scroll roughly 5,000px tall by the time the bestiary
+landed. Four more stages are still coming (encounters, hazards and set pieces, the job board,
+paying the crew), and every one would have made that scroll worse. The fix was not to reorganise
+the GM tab, it was to stop pretending the GM is a player with an extra tab.
+
+**After the access gate, a splash now asks which side of the table you are on.** It routes to one
+of two desktops that share the OS and nothing else: the Freelancer portal (the seven player tabs,
+unchanged) and the Admin portal (the GM toolkit, finally on its own seven-tab rail: Table,
+Threats, Bestiary, plus four stubs for Encounters, Hazards, Job Board and Payroll naming what
+each will carry). The GM tab is gone from the player's rail entirely.
+
+The choice is remembered (`en_portal_v1`), so the splash is a first-run screen, not a toll booth.
+A dismissible note points at the settings cog right after a splash pick, saying the choice is
+remembered and where to swap it, and fires only on that path, never on a silent resume or a tray
+flip. The settings tray's WORKSPACE section is the only route between desktops now: a two-button
+flip plus a "RETURN TO PORTAL" that reopens the splash on demand.
+
+Admin has its own theme, chosen from the same nine palettes, stored under its own device key
+(`en_admin_theme_v1`) and never on a character record, so whoever is loaded on the player side
+never repaints the table. Default is Elysium Nights (gold), so the two sides differ out of the
+box. `en_gm_mode_v1`, the old GM-tab toggle, retired: both desktops are always offered now, so the
+flag decided nothing, and `gmStore.load()` removes it once on the way past.
+
+### Two bugs live verification caught, neither visible from reading the code
+
+**`gate.js`'s `?dev` bypass always force-jumped to the print tab, 0ms after unlock.** That was
+harmless when print was the only destination; it stopped being harmless the moment `gotoTab`
+became portal-aware, because `?dev&portal=admin` would land on Admin and then get yanked straight
+back to Freelancer a tick later. Fixed with one guard: the jump only fires when the resolved
+portal is not Admin, which is knowable by then because `onUnlock()` runs the whole splash chain
+synchronously.
+
+**`inAdmin()` was defined inside `EN.theme`'s closure and called from `EN.settings`'s.** Two
+separate IIFEs in the same file do not share scope just because they share a file, and the
+`themeSection()` call site threw a `ReferenceError` the moment settings opened, leaving the tray
+body blank with no visible error unless the console was open. Fixed by exporting `inAdmin` from
+`EN.theme`'s return object and calling `EN.theme.inAdmin()` from the settings side.
+
+A third gap, caught before it shipped rather than after: the splash offered an Admin card even
+when the GM modules were deleted, so a "desktop" with no tabs behind it was one click away.
+`paint()` now checks `EN.app.hasAdmin()` and draws one centered card, not two, when Admin is not
+installed.
+
+### For the author
+
+- **The `SHEET` button on a crew row became `SET ACTIVE`.** It used to jump you to that
+  Freelancer's own sheet, which would have pulled the GM off the Admin desktop mid-fight under
+  the new split. It now sets the active character and stays put, with a toast saying so.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

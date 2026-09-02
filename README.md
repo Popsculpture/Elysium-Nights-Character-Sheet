@@ -5,13 +5,19 @@ cyberpunk "#GRID" Smartdeck operating system. Build a Freelancer, level them up,
 the table. Attributes, skills, proficiencies, conditions, weapons, ammo, and class features are
 all tracked and derived live.
 
-## Tabs
+## Two desktops
 
-- **#PRINT**: character creation & leveling (the foundation every other tab reads from). Export / import a record as JSON.
-- **Freelancer**: the live play dashboard for vitality/wounds, conditions, saves, senses, attacks (equipped weapons with firing modes & ammo), and class features.
-- **Inventory**: Stash, Chrome, and a gray-market storefront with selectable pricing modes.
-- **Codex**: searchable rules reference (action economy, defenses, cover, damage types, conditions).
-- **#GRID / Flow**: module stubs.
+After the access gate, a splash asks which side of the table you're on. The choice is remembered
+per device (`?portal=admin` overrides it for one load).
+
+- **Freelancer portal**: the player's own sheet. #PRINT (character creation & leveling, the
+  foundation every other tab reads from; export / import a record as JSON), Freelancer (the live
+  play dashboard for vitality/wounds, conditions, saves, senses, attacks, class features), Social,
+  #GRID, Flow, Inventory (Stash, Chrome, a gray-market storefront), Codex (searchable rules
+  reference).
+- **Admin portal**: the GM toolkit, on its own rail. Table (initiative tracker), Threats (statblock
+  builder), Bestiary (33 transcribed Part 4 entries), plus Encounters, Hazards, Job Board, and
+  Payroll, named stubs for stages still to come.
 
 ## Tech
 

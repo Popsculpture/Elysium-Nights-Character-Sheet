@@ -1,11 +1,14 @@
 /* ===========================================================================
-   ELYSIUM NIGHTS · GM tab
-   Stage 1 of the Game Master's Toolkit: the initiative tracker and the threat
-   builder. Later stages add the bestiary, encounter budgeting, hazards and set
-   pieces, the job board, and paying the crew.
+   ELYSIUM NIGHTS · GM toolkit views
+   Three tabs on the Admin desktop: Table (the initiative tracker), Threats
+   (the builder plus saved statblocks), and Bestiary. Later stages add
+   Encounters, Hazards, the Job Board, and Payroll (stubs today, see app.js).
 
-   This is the only view in the app that is not about the active character. It
-   reads the roster as "the crew" and holds its own state through EN.gmStore.
+   None of this is about the active character. It reads the roster as "the
+   crew" and holds its own state through EN.gmStore. The Admin desktop exists
+   entirely because of this module: app.js gates every Admin tab on
+   EN.gmView/EN.gmStore/EN.gmEngine all being present, so deleting the four GM
+   files collapses the app back to the Freelancer-only sheet it was before.
    =========================================================================== */
 window.EN = window.EN || {};
 
@@ -13,12 +16,11 @@ EN.gmView = (function () {
   var el = EN.ui.el, toast = EN.ui.toast;
   var eng = EN.engine, gm = EN.gmStore;
 
-  // transient UI state: the builder's current inputs, and which panels are open.
+  // transient UI state: the builder's current inputs and the bestiary filter.
   // Deliberately not persisted; a half-built threat is not worth a save slot.
+  // Survives a tab switch AND a portal flip, since this is still one module.
   var _b = { gauge: 2, designation: "standard", role: "gunhand", size: "Medium", type: "Human", name: "", strong: null };
-  var _open = { build: true, saved: false };
   var _best = { cat: "people", q: "" };   // bestiary filter
-  var _preview = null;
 
   // local copies rather than imports, per the house convention that each view
   // carries its own small helpers instead of a shared utils file
@@ -38,7 +40,7 @@ EN.gmView = (function () {
   /* ---- the threat builder ------------------------------------------------- */
   function pick(field, options, current, onPick) {
     var s = el("select", {
-      onchange: function (e) { onPick(e.target.value); _preview = null; EN.app.render(); },
+      onchange: function (e) { onPick(e.target.value); EN.app.render(); },
       style: { minWidth: "130px" }
     }, options.map(function (o) {
       return el("option", { value: o.value, selected: String(o.value) === String(current) }, o.label);
@@ -245,8 +247,16 @@ EN.gmView = (function () {
               gm.update(function (s) { var r = s.encounter.entries.filter(function (x) { return x.id === row.id; })[0]; if (r) r.init = v; }, { silent: true });
             },
             onchange: function () { EN.app.render(); } }),
-          el("button.btn.sm", { title: "Open this Freelancer's sheet",
-            onclick: function () { EN.store.setActive(row.charId); EN.app.gotoTab("combat"); } }, "SHEET"),
+          /* Sets the active character and stops there, rather than jumping to
+             their sheet. A jump would cross desktops (gotoTab is portal-aware,
+             so "combat" lives on the Freelancer side) and pull the GM off the
+             Admin desktop mid-fight, which is the thing the two-desktop split
+             exists to stop happening. */
+          el("button.btn.sm", { title: "Make this the active Freelancer",
+            onclick: function () {
+              EN.store.setActive(row.charId);
+              toast((name.trim() || "Freelancer") + " is now the active Freelancer. Open the Freelancer portal to see the sheet.");
+            } }, "SET ACTIVE"),
           el("button.btn.sm", { onclick: function () { gm.removeEntry(row.id); EN.app.render(); } }, "✕")
         ])
       ])
@@ -561,27 +571,42 @@ EN.gmView = (function () {
     return EN.ui.panel("Saved Threats", list.length + " SAVED", kids);
   }
 
-  function render(mount) {
-    EN.ui.clear(mount);
-    // a character deleted since the last render leaves a ghost row, because
-    // store.remove does not notify us. Cheap, idempotent, and it only persists
-    // when something actually changed.
-    gm.pruneCrew();
-
-    var blocks = [];
-    blocks.push(el("div.row.between.wrap", { style: { marginBottom: "14px" } }, [
+  /* ---- the Admin desktop's own tab rail, one renderer per tab -------------
+     Each one writes its own heading block rather than sharing a header
+     helper across views, per the house convention that views carry their own
+     small pieces instead of importing from one another. */
+  function heading(title, sub) {
+    return el("div.row.between.wrap", { style: { marginBottom: "14px" } }, [
       el("h1", { style: { fontSize: "22px", letterSpacing: ".06em" },
-        html: 'GM <span class="dim3" style="font-size:13px">// the other side of the table</span>' })
-    ]));
-    blocks.push(trackerPanel());
-    blocks.push(el("div", { style: { height: "12px" } }));
-    blocks.push(builderPanel());
+        html: title + ' <span class="dim3" style="font-size:13px">' + sub + "</span>" })
+    ]);
+  }
+
+  function renderTable(mount) {
+    EN.ui.clear(mount);
+    // the tracker is the only surface that draws a crew row, so it is the
+    // only place a ghost from a character deleted since the last render
+    // can appear
+    gm.pruneCrew();
+    mount.appendChild(el("div", null, [heading("Table", "// initiative and the order"), trackerPanel()]));
+  }
+
+  function renderThreats(mount) {
+    EN.ui.clear(mount);
+    var blocks = [heading("Threats", "// build a statblock from Gauge, Designation and Role"), builderPanel()];
     var saved = savedPanel();
     if (saved) { blocks.push(el("div", { style: { height: "12px" } })); blocks.push(saved); }
-    var best = bestiaryPanel();
-    if (best) { blocks.push(el("div", { style: { height: "12px" } })); blocks.push(best); }
     mount.appendChild(el("div", null, blocks));
   }
 
-  return { render: render };
+  function renderBestiary(mount) {
+    EN.ui.clear(mount);
+    var best = bestiaryPanel();
+    // bestiaryPanel() returns null when EN.bestiary never loaded. A tab that
+    // is entirely absent reads as broken, so say so rather than showing nothing.
+    var body = best || el("div.muted-box", { text: "Bestiary data did not load. Check app/data/bestiary.js." });
+    mount.appendChild(el("div", null, [heading("Bestiary", "// 33 statblocks, transcribed from Part 4"), body]));
+  }
+
+  return { renderTable: renderTable, renderThreats: renderThreats, renderBestiary: renderBestiary };
 })();

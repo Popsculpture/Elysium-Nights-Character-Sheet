@@ -158,7 +158,13 @@ EN.gate = (function () {
       persist();
       onUnlock();
       setTimeout(function () {
-        try { if (EN.app && EN.app.gotoTab) EN.app.gotoTab("print"); } catch (e) {}
+        // Only when onUnlock() landed us on the Freelancer desktop. onUnlock
+        // is synchronous end to end (through the portal splash, if any), so
+        // EN.app.portal() already reflects the resolved desktop by the time
+        // this fires. Without the guard, ?dev's own "land on Identity" habit
+        // would jump a ?dev&portal=admin tester straight back out of Admin,
+        // since gotoTab resolves a key's own portal and switches to it.
+        try { if (EN.app && EN.app.gotoTab && (!EN.app.portal || EN.app.portal() !== "admin")) EN.app.gotoTab("print"); } catch (e) {}
       }, 0);
       return;
     }

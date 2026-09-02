@@ -78,6 +78,10 @@ Bypass wired into the unarmed engine, and a `migrate()` hardening pass.
   (`?dev&cb=x`). Open `app/index.html` directly, not the repo-root `index.html`, which is
   a redirect stub that races a meta refresh against a JS redirect. Gate password is in
   `app/js/gate.js` if you need it.
+- `?dev` also skips the portal splash and lands you on the Freelancer desktop; add
+  `&portal=admin` to land on Admin/Table instead (`?dev&portal=admin&cb=x`). The desktop
+  choice is otherwise remembered per device (`en_portal_v1`), so the splash only paints
+  on a first run or from the settings tray's "RETURN TO PORTAL".
 - Give parallel agents their own preview origin. Sharing one corrupts the roster.
 - My loaded character is expendable. Do not spend effort preserving it.
 
