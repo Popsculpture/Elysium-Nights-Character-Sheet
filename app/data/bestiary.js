@@ -5,11 +5,6 @@
    generator would build, the page wins. The manuscript is the text of record
    and the app does not get to quietly correct it.
 
-   3 ENTRIES ARE AHEAD OF THE BOOK. New here and not yet in Part 4: Kettle Dog, Nixie.
-   Revised here while Part 4 still prints the older text: Gremlin. The manuscript is
-   the text of record, so this state is temporary by definition and the parser
-   reports it on every run until the Doc catches up.
-
    THE FIELD SET IS NOT UNIFORM, and that is the book's design rather than an
    export artifact:
      - 31 entries carry the physical block (Defense, DR, Vitality, Speed,
@@ -190,7 +185,7 @@ EN.bestiary = {
     {
       name: "X-Calibur Knight", category: "people",
       gauge: 4, designation: "Elite", role: "Gunhand",
-      identity: "Gauge 4 Elite, Gunhand. Medium Human under enough licensed chrome to be a category error. The city's contracted answer to high-Gauge problems. The street calls them XCal, and gets off the street.",
+      identity: "Gauge 4 Elite, Gunhand. Medium Human under enough licensed chrome to be a category error. The city's contracted answer to high-calibur problems.",
       stats: { "Defense": "16", "DR": "4 (knight plate)", "Vitality": "140", "Speed": "6", "Initiative": "+6", "Saves": "+7 Body and Wits, +2 others", "Passive Perception": "15", "XP": "700", "Resolve": "8 (Hardened)" },
       abilities: [
         { name: "Battle Rifle", cost: "Action", text: "Two attacks, +9 vs Defense, Range 16 / 48, 1d12+5 Ballistic (11)." },
@@ -200,7 +195,7 @@ EN.bestiary = {
         { name: "Aegis", cost: "Impulse", text: "Block: reduce incoming physical damage by 1d6+4." }
       ],
       gear: "Battle rifle, shock blade, knight plate, a warrant with a blank space where the collateral goes.",
-      gmNote: "Knights deploy in pairs with a Handler on comms. Two Knights and a Corporate Handler is 1,650 XP: Red Work for a Caliber 4 crew, a message for anyone else."
+      gmNote: "Knights deploy in pairs with a Handler on comms. Two Knights and a Corporate Handler is 1,650 XP: a shade past a Fair Fight for the Caliber 4 crew XCal budgets against, and a wall for anyone below that. When the city wants Red Work, it sends a second pair (difficulty bands: The Budget, Building Encounters)."
     },
     {
       name: "Spotter Drone", category: "machines",
@@ -254,20 +249,6 @@ EN.bestiary = {
       salvage: "The relay rig, and a routing trail worth more than the rig."
     },
     {
-      name: "Warform Chassis", category: "machines",
-      gauge: 4, designation: "Elite", role: "Bruiser",
-      identity: "Gauge 4 Elite, Bruiser. Large military Construct, decommissioned on paper.",
-      stats: { "Defense": "15", "DR": "5 (wartime plate)", "Vitality": "175", "Speed": "5", "Initiative": "+5", "Saves": "+7 Body, +2 others", "Passive Perception": "15", "XP": "700" },
-      abilities: [
-        { name: "Mindless", cost: null, text: "Psychic damage deals 0. Immune to Toxic, Frightened, and to the concept of a warning shot." },
-        { name: "Piston Fist", cost: "Action", text: "Two attacks, +9 vs Defense, melee, 2d10+5 Bludgeoning (16). On a critical hit, the Target makes a Body Save DC 16 or is pushed 2 spaces and knocked Prone." },
-        { name: "Rotary Pod", cost: "Action", text: "+9 vs Defense, Range 24 / 72, 2d8+5 Ballistic (14)." },
-        { name: "Overheat Vents", cost: null, text: "While below half Vitality, at the end of the Warform's turn, each adjacent Target takes 1d6 Fire damage (Body Save DC 15 for none)." },
-        { name: "Hardened Node", cost: null, text: "Advanced [2] (Security Rating 16, System Integrity 30, Firewall Damage Threshold 4). Hijacking one is a Codebreaker's war story. Surviving the attempt is the hard part." }
-      ],
-      salvage: "Plate, actuators, and a fire-control core that is Restricted everywhere worth standing."
-    },
-    {
       name: "Kettle Dog", category: "machines",
       gauge: 3, designation: "Elite", role: "Skirmisher",
       identity: "Gauge 3 Elite, Skirmisher. Small Construct built around a living core. The catalog listing says Resident Guardian Unit. The subscription tier has the word Peace in it somewhere. The manufacturer's position is that the behavioral core is fully synthetic, and the manufacturer's position has never once survived a teardown. The street named it for the sound it makes when it has decided you are leaving.",
@@ -288,6 +269,20 @@ EN.bestiary = {
         { name: "The Old Friend", text: "Years before the campaign, a Freelancer fed a stray unit or cut one free from a wreck. **Remembers** is permanent. That same unit has changed owners twice since, and tonight it is guarding the site the crew came to break into. It will not attack its friend, and its current owner is going to want to know why." },
         { name: "The Whistling Watch", text: "Every night, an estate's unit sits at the property line, running hot and staring toward the Warrens at something the cameras cannot see. The estate hires the crew to find out what has its attention. Maybe the dog's old family is out there in trouble. Maybe something only it can sense is circling the grounds. Either answer is a job." }
       ] }
+    },
+    {
+      name: "Warform Chassis", category: "machines",
+      gauge: 4, designation: "Elite", role: "Bruiser",
+      identity: "Gauge 4 Elite, Bruiser. Large military Construct, decommissioned on paper.",
+      stats: { "Defense": "15", "DR": "5 (wartime plate)", "Vitality": "175", "Speed": "5", "Initiative": "+5", "Saves": "+7 Body, +2 others", "Passive Perception": "15", "XP": "700" },
+      abilities: [
+        { name: "Mindless", cost: null, text: "Psychic damage deals 0. Immune to Toxic, Frightened, and to the concept of a warning shot." },
+        { name: "Piston Fist", cost: "Action", text: "Two attacks, +9 vs Defense, melee, 2d10+5 Bludgeoning (16). On a critical hit, the Target makes a Body Save DC 16 or is pushed 2 spaces and knocked Prone." },
+        { name: "Rotary Pod", cost: "Action", text: "+9 vs Defense, Range 24 / 72, 2d8+5 Ballistic (14)." },
+        { name: "Overheat Vents", cost: null, text: "While below half Vitality, at the end of the Warform's turn, each adjacent Target takes 1d6 Fire damage (Body Save DC 15 for none)." },
+        { name: "Hardened Node", cost: null, text: "Advanced [2] (Security Rating 16, System Integrity 30, Firewall Damage Threshold 4). Hijacking one is a Codebreaker's war story. Surviving the attempt is the hard part." }
+      ],
+      salvage: "Plate, actuators, and a fire-control core that is Restricted everywhere worth standing."
     },
     {
       name: "Feral Script", category: "grid",

@@ -6934,6 +6934,52 @@ installed.
   Freelancer's own sheet, which would have pulled the GM off the Admin desktop mid-fight under
   the new split. It now sets the active character and stays put, with a toast saying so.
 
+## The Kettle Dog, the Nixie, and the Gremlin revision land in the real manuscript, 2026-09-02
+
+The author confirmed Part 4 was already synced, so this was a re-pull-and-verify pass rather
+than a transcription: pull the Doc fresh, prove the three staged entries actually landed with
+nothing lost, then retire their now-redundant copies from `p4-additions.md` per that file's own
+rule. `bestiary.js` regenerated at 33 entries, 0 pending, 0 revised, banner's "AHEAD OF THE BOOK"
+paragraph correctly gone.
+
+Getting there took three real parser fixes, none of them visible from reading the old code, all
+of them found by diffing against the last known-good 33-name list rather than trusting a clean
+first-pass report.
+
+**The Doc's export dropped `#### ` off four entries' headings**, leaving a bare `**Name**` line
+that the parser had never been asked to recognise. Combat Drone, Puppeted Body, Sentry Turret and
+Spotter Drone vanished from the parse with no error, because nothing looked for them. The fix
+broadens the manuscript loop's trigger to also catch a bold-only line, gated on `is_entry()` so it
+still cannot mistake other prose for a statblock.
+
+**That same broadening then swallowed two of the four whole.** A hooks title and the next entry's
+bare name are the identical shape: one bold-only line. Spotter Drone's trailing-hooks check saw
+"**Combat Drone**" right after it, mistook the next entry's name for a hooks title, and attached
+an empty hooks block while skipping past Combat Drone's own heading entirely. Same for Sentry
+Turret and Puppeted Body. The fix is the same discriminator `is_entry()` already uses in the
+opposite direction: a hooks title ends in ":", an entry name never does. Centralized inside
+`take_hooks()` itself rather than duplicated at each of its two call sites, and paired with a
+second fix, only advance past what the function actually consumed, since the first fix alone
+still skipped the next entry's name line even after it stopped attaching bogus hooks to it.
+
+**The Kettle Dog's identity landed as two separate italic paragraphs instead of one continuous
+span**, and `parse()` had only ever needed to read one. It grabbed the first paragraph, then threw
+the second away outright: "The catalog listing says Resident Guardian Unit..." sat in an array
+slot the field-splitting loop never reads, discarded before anything could report it missing. The
+fix folds every consecutive bare-italic paragraph into the identity before the field loop starts,
+safe because nothing else legitimately sits between an identity and the entry's first bold-labeled
+stat.
+
+Word and number recovery: 33/33 clean on numbers, 29/33 clean on words, the remaining four the
+same `GM note` label-tokenization artifact recorded since this file's first bestiary entry and
+accepted then for the same reason now.
+
+Also fixed while re-deriving the parser's line ranges: `CATEGORIES` and the manuscript scan window
+were hardcoded to the old export's line numbers (325-425, thresholds at 332/360/374/384/394/404).
+The Doc grew past 1,100 lines with this pass; the new numbers (332/524/646/724/772/816, window to
+935) came from a fresh structural scan, the same way the original numbers were found, not by
+guessing an offset.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from
