@@ -605,7 +605,7 @@ EN.gmView = (function () {
     // bestiaryPanel() returns null when EN.bestiary never loaded. A tab that
     // is entirely absent reads as broken, so say so rather than showing nothing.
     var body = best || el("div.muted-box", { text: "Bestiary data did not load. Check app/data/bestiary.js." });
-    mount.appendChild(el("div", null, [heading("Bestiary", "// 33 statblocks, transcribed from Part 4"), body]));
+    mount.appendChild(el("div", null, [heading("Bestiary", "// Gangers, Sentries, and Cryptids. Oh my!"), body]));
   }
 
   return { renderTable: renderTable, renderThreats: renderThreats, renderBestiary: renderBestiary };
