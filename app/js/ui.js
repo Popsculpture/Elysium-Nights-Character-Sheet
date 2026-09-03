@@ -56,7 +56,7 @@ EN.ui = (function () {
     if (title) children.push(el("div.panel-h", null, [
       el("h3", { text: title }),
       tag ? el("span.tag", { text: tag }) : null,
-      opts.headerRight ? el("div", { style: { marginLeft: "auto", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" } }, [].concat(opts.headerRight)) : null
+      opts.headerRight ? el("div.panel-hr", { style: { marginLeft: "auto", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" } }, [].concat(opts.headerRight)) : null
     ]));
     children.push(body);
     var p = el("div.panel" + (opts.glow ? ".glow" : ""), null, children);

@@ -591,10 +591,10 @@ html.skin-98.has-wall body::before{
    text-shadow stacks inherited from the main area, so they reach every loose label every tab
    has or will add, and both are reset inside windows and controls, whose backgrounds already
    carry their text (the Explorer's white page most of all). settings.js flips the root classes. */
-html.skin-98.has-wall.wall-shadow .os-main{ text-shadow:-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,.85); }
-html.skin-98.has-wall.wall-glow .os-main{ text-shadow:0 0 5px rgba(255,255,255,.5), 0 0 12px rgba(255,255,255,.28); }
-html.skin-98.has-wall.wall-shadow.wall-glow .os-main{ text-shadow:-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,.85), 0 0 6px rgba(255,255,255,.5), 0 0 14px rgba(255,255,255,.28); }
-html.skin-98.has-wall:is(.wall-shadow, .wall-glow) .os-main :is(.panel, .inv-sub, .wizard-rail, .btn, .chip, input, textarea, select, .stat, .muted-box, .opt-card, .device-card, [style*="sticky"]){ text-shadow:none; }
+html:is(.skin-98, .skin-droid).has-wall.wall-shadow .os-main{ text-shadow:-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,.85); }
+html:is(.skin-98, .skin-droid).has-wall.wall-glow .os-main{ text-shadow:0 0 5px rgba(255,255,255,.5), 0 0 12px rgba(255,255,255,.28); }
+html:is(.skin-98, .skin-droid).has-wall.wall-shadow.wall-glow .os-main{ text-shadow:-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,.85), 0 0 6px rgba(255,255,255,.5), 0 0 14px rgba(255,255,255,.28); }
+html:is(.skin-98, .skin-droid).has-wall:is(.wall-shadow, .wall-glow) .os-main :is(.panel, .inv-sub, .wizard-rail, .btn, .chip, input, textarea, select, .stat, .muted-box, .opt-card, .device-card, [style*="sticky"]){ text-shadow:none; }
 html.skin-98 ::selection{ background:var(--accent); color:#000; }
 
 /* every rounded thing goes square, including radii set inline from JS */
@@ -864,6 +864,470 @@ html.skin-98 .gate-go{ border:2px solid; border-color:var(--bev-hi) var(--bev-lo
 html.skin-98 .gate-inrow{ border-radius:0; border:2px solid; border-color:var(--bev-lo) var(--bev-hi) var(--bev-hi) var(--bev-lo); }
 html.skin-98 #gate-coach, html.skin-98 .gate-bubble{ border-radius:0; }
 html.skin-98 .gate-term{ border-radius:0; }
+
+/* ---------------------------------------------------------------------------
+   #GRIDroid. A cyberpunk phone OS, from the author's mockup: a HUD bezel with
+   chamfered corners around one phone-width screen, bracketed header cells, a
+   status strip, an app list for a rail (folded to the open app, unfolding on a
+   tap), chamfered buttons, a root prompt at the foot of every page. The screen
+   is one column at ANY width: centered and bezelled on a desk, edge to edge on
+   a phone. The palette supplies every color: the two tones are var(--accent)
+   and var(--flow). The bezel is two fixed pseudo-elements behind the page (a
+   ring of accent, a screen of --bg over it), which is also where a wallpaper
+   paints, so body::before / body::after are spoken for on this skin.
+   Layout collapse for the individual tabs follows in its own block below.
+   --------------------------------------------------------------------------- */
+html.skin-droid{
+  --dr-w: 540px;                       /* the screen, bezel included */
+  --dr-cut: 16px;                      /* corner chamfer */
+  /* The device outline, written once: the layer behind (body's pseudos, the screen and its
+     wallpaper) and the layer in front (the root's pseudos, the mask) both trace it, and a
+     mismatch would show as a seam. --dr-oct is the frame's outer edge in viewport coordinates,
+     --dr-oct-in the screen's edge one pixel inside it. */
+  --dr-fw: min(100vw - 12px, var(--dr-w));
+  --dr-l: calc(50% - var(--dr-fw) / 2);
+  --dr-r: calc(50% + var(--dr-fw) / 2);
+  --dr-oct1: calc(var(--dr-l) + var(--dr-cut)) 6px;                       /* where each outline starts, and */
+  --dr-oct-in1: calc(var(--dr-l) + 1px + var(--dr-cut)) 7px;              /* where its seam returns to */
+  --dr-oct:
+    calc(var(--dr-l) + var(--dr-cut)) 6px, calc(var(--dr-r) - var(--dr-cut)) 6px,
+    var(--dr-r) calc(6px + var(--dr-cut)), var(--dr-r) calc(100% - 6px - var(--dr-cut)),
+    calc(var(--dr-r) - var(--dr-cut)) calc(100% - 6px), calc(var(--dr-l) + var(--dr-cut)) calc(100% - 6px),
+    var(--dr-l) calc(100% - 6px - var(--dr-cut)), var(--dr-l) calc(6px + var(--dr-cut));
+  --dr-oct-in:
+    calc(var(--dr-l) + 1px + var(--dr-cut)) 7px, calc(var(--dr-r) - 1px - var(--dr-cut)) 7px,
+    calc(var(--dr-r) - 1px) calc(7px + var(--dr-cut)), calc(var(--dr-r) - 1px) calc(100% - 7px - var(--dr-cut)),
+    calc(var(--dr-r) - 1px - var(--dr-cut)) calc(100% - 7px), calc(var(--dr-l) + 1px + var(--dr-cut)) calc(100% - 7px),
+    calc(var(--dr-l) + 1px) calc(100% - 7px - var(--dr-cut)), calc(var(--dr-l) + 1px) calc(7px + var(--dr-cut));
+  --dr-two: var(--flow);               /* the second tone beside the accent */
+  --sticky-top: 8px;                   /* the header scrolls away; a sticky sub-header clears only the bezel */
+  --r: 0px;
+}
+html.skin-droid body{ background:#000; }
+/* The bezel: an accent octagon, then the screen inset by one pixel over it. Both pseudos are
+   borrowed from elsewhere, so the reset has to undo what those rules left behind:
+   mix-blend-mode comes from the global scanline veil on body::after and would multiply the
+   screen (wallpaper included) against the accent ring behind it, and a light palette hides that
+   same pseudo at equal specificity later in this file, which :root outranks. */
+html.skin-droid:root body::before, html.skin-droid:root body::after{
+  content:""; position:fixed; z-index:-1; pointer-events:none; display:block; opacity:1; animation:none;
+  mix-blend-mode:normal;
+  left:50%; transform:translateX(-50%);
+  clip-path:polygon(var(--dr-cut) 0, calc(100% - var(--dr-cut)) 0, 100% var(--dr-cut), 100% calc(100% - var(--dr-cut)),
+                    calc(100% - var(--dr-cut)) 100%, var(--dr-cut) 100%, 0 calc(100% - var(--dr-cut)), 0 var(--dr-cut));
+}
+html.skin-droid:root body::before{ top:6px; bottom:6px; width:var(--dr-fw); background:var(--accent); }
+html.skin-droid:root body::after{
+  top:7px; bottom:7px; width:calc(var(--dr-fw) - 2px);
+  box-shadow:inset 0 0 30px -6px var(--accent);   /* the bezel reads as lit from inside the screen */
+  background:
+    linear-gradient(rgba(0,0,0,var(--wall-dim,0)), rgba(0,0,0,var(--wall-dim,0))),
+    var(--wall, none) center / cover no-repeat,
+    repeating-linear-gradient(0deg, transparent 0 2px, rgba(255,255,255,.025) 2px 3px),
+    var(--bg);
+}
+/* THE FRAME IN FRONT. A bezel is a physical thing, so the page has to pass behind it: the two
+   rules above paint the screen under the page, and these two paint the device over it, masking
+   whatever the page pushes past the outline. Scrolling content used to cross the chamfered
+   corners, and the docked app list used to poke through the bottom two. Both root pseudos are
+   fixed, take no pointer events, and sit above every overlay in the app, so the device frames
+   the settings tray and the login gate as well. The hole is cut with the even-odd fill rule: one
+   path runs around the viewport and then around the outline, and the region between them fills.
+   The @supports guard matters more than it looks: without it, a browser that rejected the value
+   would drop the clip and paint an opaque sheet over the whole app. */
+@supports (clip-path: polygon(evenodd, 0 0, 1px 0, 0 1px)){
+  html.skin-droid::before, html.skin-droid::after{
+    content:""; position:fixed; inset:0; z-index:100010; pointer-events:none;
+  }
+  html.skin-droid::before{        /* everything outside the device */
+    background:#000;
+    /* the trailing repeats close each loop, so the seam between them is walked twice and
+       cancels; without that the even-odd rule fills a wedge across the page. */
+    clip-path:polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, var(--dr-oct), var(--dr-oct1));
+  }
+  html.skin-droid::after{         /* the outline itself, over the page rather than under it */
+    background:var(--accent);
+    clip-path:polygon(evenodd, var(--dr-oct), var(--dr-oct1), var(--dr-oct-in), var(--dr-oct-in1));
+  }
+}
+/* the column */
+html.skin-droid .os{ max-width:var(--dr-w); margin:0 auto; width:100%; padding:26px 12px 130px; box-sizing:border-box; }
+html.skin-droid .os-main{ padding:14px 0 0; max-width:none; }
+/* the Inventory's sticky sub-nav bar is handled by .inv-bar in the collapse block below; nothing else sticky needs framing */
+
+/* ---- header: [#] label cell, clock, then the status strip and the record card ---- */
+html.skin-droid .os-topbar{
+  position:static; z-index:100; height:auto; flex-wrap:wrap; gap:8px 10px; padding:8px 10px 10px;
+  background:var(--bg); border:1px solid var(--accent-dim); border-bottom-width:2px; backdrop-filter:none;
+  clip-path:polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+}
+html.skin-droid .os-logo{
+  order:1; display:flex; align-items:center; gap:0; font-family:var(--mono); font-weight:400; font-size:13px; letter-spacing:.18em; color:var(--accent); text-shadow:none;
+}
+html.skin-droid .os-logo::before{
+  content:"#"; width:34px; height:34px; margin-right:10px; display:inline-flex; align-items:center; justify-content:center; flex:none;
+  font-family:var(--disp); font-weight:700; font-size:22px; color:var(--accent);
+  border:1px solid var(--accent); box-shadow:inset 0 0 0 3px var(--bg), inset 0 0 0 4px var(--accent-dim);
+}
+html.skin-droid .os-logo b{ color:var(--accent); }
+/* "v1.0" makes way for the skin's name: #GRID + roid */
+html.skin-droid .os-logo b{ display:none; }
+html.skin-droid .os-logo .v{ font-size:0; color:var(--text); }
+html.skin-droid .os-logo .v::after{ content:"roid"; font-size:13px; letter-spacing:.18em; text-transform:lowercase; }
+html.skin-droid .os-spacer{ order:2; }
+html.skin-droid .os-clock{ order:3; font-size:12px; color:var(--accent); border:1px solid var(--accent-dim); padding:6px 9px; }
+/* the status readouts become the SCANNING strip: accent fill, dark ink, the two readouts at its ends */
+html.skin-droid .os-topbar > .os-status:not(#active-name){
+  order:4; flex-basis:100%; justify-content:space-between; gap:0;
+  background:var(--accent); color:#000; font-weight:700; letter-spacing:.16em; font-size:11px; padding:6px 10px;
+  clip-path:polygon(0 0, 100% 0, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+}
+html.skin-droid .os-status .led{ background:#000; box-shadow:none; animation:none; }
+html.skin-droid .os-topbar > .os-status:not(#active-name) > span{ color:#000; }
+/* the active record as the notification card: a numbered box, the name, a subtitle */
+html.skin-droid #active-name{
+  order:5; flex-basis:100%; display:grid; grid-template-columns:40px 1fr; grid-template-rows:auto auto; column-gap:12px; align-items:center;
+  font-family:var(--disp); font-size:15px; font-weight:600; letter-spacing:.1em; color:var(--text); text-transform:uppercase;
+  border:1px solid var(--border2); padding:8px 10px; min-height:52px;
+}
+html.skin-droid #active-name::before{
+  content:"ID"; grid-row:1 / 3; width:40px; height:40px; display:flex; align-items:center; justify-content:center;
+  font-family:var(--mono); font-size:13px; color:var(--accent); border:1px solid var(--accent); background:var(--bg1);
+}
+html.skin-droid #active-name::after{
+  content:"active record"; grid-column:2; font-family:var(--mono); font-weight:400; font-size:10px; letter-spacing:.14em; color:var(--text3); text-transform:uppercase;
+}
+
+/* ---- the rail: a phone's app list, docked at the foot, folded to the open app ---- */
+html.skin-droid .os-tabs{
+  /* Two things this rule has to say out loud. top:auto, because the base rule is sticky with
+     top:50px and leaving that set against a bottom stretched this box over the whole screen,
+     where it ate every tap. And no transform for the centring: a transformed element is the
+     containing block for its own fixed children, which is what left the unfolded list's scrim
+     the size of the list instead of the page. */
+  position:fixed; top:auto; bottom:0; left:0; right:0; width:calc(var(--dr-fw) - 2px);
+  z-index:99; display:grid; grid-template-columns:1fr auto; align-items:end; gap:6px; margin:0 auto;
+  /* The dock is a shelf, not a floating pill: it spans the screen and runs to the bottom edge, so
+     the page disappears behind it instead of showing through the gaps around the rows. The
+     padding is what holds the rows clear of the bottom chamfer, which the old bottom offset did. */
+  padding:8px 8px 26px; background:var(--bg); border:0; border-top:1px solid var(--accent-dim);
+}
+html.skin-droid .os-tabs-scroll{ display:flex; flex-direction:column; gap:6px; overflow:visible; }
+/* seven rows are 399px, taller than a landscape phone, and a fixed list cannot be page-scrolled */
+html.skin-droid.rail-open .os-tabs-scroll{ max-height:calc(100vh - 24px); max-height:calc(100dvh - 24px); overflow-y:auto; }
+html.skin-droid .os-tab{
+  display:none; position:relative; grid-template-columns:38px 1fr 20px; grid-template-rows:auto auto; column-gap:12px; align-items:center;
+  padding:6px 10px 7px 10px; min-height:50px; border:1px solid var(--accent-dim); border-bottom:0; background:var(--bg);
+  color:var(--text); font-family:var(--disp); font-weight:600; font-size:15px; letter-spacing:.12em; text-transform:uppercase; text-shadow:none; white-space:normal;
+  clip-path:polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+}
+html.skin-droid .os-tab > span{
+  grid-row:1 / 3; width:38px; height:38px; display:flex; align-items:center; justify-content:center;
+  font-size:18px; color:var(--accent); border:1px solid var(--accent-dim); background:var(--bg1);
+}
+html.skin-droid .os-tab::after{ content:attr(data-sub); grid-column:2; font-family:var(--mono); font-weight:400; font-size:10px; letter-spacing:.12em; color:var(--text3); text-transform:uppercase; }
+html.skin-droid .os-tab::before{ content:"\25BE"; grid-column:3; grid-row:1 / 3; text-align:center; font-size:14px; color:var(--dr-two); }
+html.skin-droid .os-tab.active{ display:grid; color:var(--accent); border-color:var(--accent); background:var(--bg); }
+html.skin-droid .os-tab.active > span{ border-color:var(--accent); box-shadow:0 0 10px var(--accent-dim); }
+html.skin-droid .os-tab:hover{ background:var(--bg1); color:var(--text); }
+html.skin-droid.rail-open .os-tab{ display:grid; }
+/* the scrim behind the unfolded list. z-index:0 rather than -1 so it takes the tap as well as
+   the dimming: the rows are position:relative and later in the DOM, so they still paint over it. */
+html.skin-droid.rail-open .os-tabs::before{ content:""; position:fixed; inset:0; z-index:0; background:rgba(0,0,0,.6); }
+html.skin-droid.rail-open .os-tab::before{ content:"\25B8"; }
+html.skin-droid.rail-open .os-tab.active::before{ content:"\25B4"; }
+html.skin-droid .os-tabs .os-gear{
+  display:flex; grid-template-columns:none; width:56px; height:56px; min-height:0; padding:0; align-items:center; justify-content:center;
+  border:1px solid var(--accent-dim); border-bottom:0; background:var(--bg); color:var(--accent); font-size:22px; clip-path:none; margin-left:0;
+}
+html.skin-droid .os-tabs .os-gear > span{ width:auto; height:auto; border:0; background:none; box-shadow:none; }
+html.skin-droid .os-tabs .os-gear::before, html.skin-droid .os-tabs .os-gear::after{ content:none; }
+html.skin-droid .os-tray{ display:none; }
+/* the foot of every page: a root prompt with a blinking cursor */
+html.skin-droid .os-main::after{
+  content:"root@gridroid:~# 00100011 01000111 01010010 01001001 01000100"; display:block; margin-top:28px;
+  font-family:var(--mono); font-size:11px; letter-spacing:.1em; color:var(--accent); opacity:.8; white-space:nowrap; overflow:hidden; text-overflow:clip;
+}
+html.skin-droid .os-main::before{ content:""; }
+
+/* ---- windows: rectangular cards with an accent hairline, a chamfered header with the tag cell ---- */
+html.skin-droid .panel{ background:var(--bg1); border:1px solid var(--accent-dim); box-shadow:none; }
+html.skin-droid .panel.glow{ box-shadow:0 0 0 1px var(--accent), 0 0 18px var(--accent-dim); }
+html.skin-droid .corner{ display:none; }
+html.skin-droid .panel-h{
+  padding:9px 12px; gap:10px; min-height:40px; background:var(--bg); border-bottom:1px solid var(--accent-dim);
+  clip-path:polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+}
+html.skin-droid .panel-h::before{ content:"//"; font-family:var(--mono); font-size:11px; color:var(--dr-two); letter-spacing:0; width:auto; height:auto; background:none; box-shadow:none; }
+html.skin-droid .panel-h h3{ font-family:var(--mono); font-weight:400; font-size:12px; letter-spacing:.18em; color:var(--accent); text-shadow:none; }
+html.skin-droid .panel-h .tag{ margin-left:auto; color:var(--text3); border:1px solid var(--border2); padding:2px 7px; font-size:9.5px; letter-spacing:.12em; }
+html.skin-droid .panel-h.clickable:hover h3{ color:var(--text); }
+html.skin-droid .panel-b{ padding:12px; }
+html.skin-droid .section-title{ color:var(--dr-two); }
+html.skin-droid .feature{ background:var(--bg2); border:1px solid var(--border); border-left:2px solid var(--dr-two); }
+html.skin-droid .feature h4{ font-size:15px; }
+
+/* ---- controls: chamfered, finger-sized ---- */
+html.skin-droid .btn{
+  min-height:42px; padding:9px 16px; font-size:13px; letter-spacing:.12em; border:1px solid var(--accent-dim); color:var(--accent); background:var(--bg);
+  box-shadow:none; clip-path:polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+}
+html.skin-droid .btn:hover{ background:var(--bg2); border-color:var(--accent); box-shadow:none; }
+html.skin-droid .btn.sm{ min-height:36px; padding:7px 12px; font-size:12px; }
+html.skin-droid .btn.primary{ background:var(--accent); color:#000; border-color:var(--accent); }
+html.skin-droid .btn.primary:hover{ background:var(--accent); filter:brightness(1.1); }
+html.skin-droid .btn.flow{ color:var(--dr-two); border-color:var(--dr-two); }
+html.skin-droid .btn.ghost{ border-color:transparent; background:transparent; clip-path:none; }
+html.skin-droid .btn:disabled{ color:var(--text3); border-color:var(--border); background:var(--bg1); }
+html.skin-droid input[type=text], html.skin-droid input[type=number], html.skin-droid textarea, html.skin-droid select{
+  min-height:42px; font-size:16px; border:1px solid var(--accent-dim); background:var(--bg2); color:var(--text); border-radius:0;
+}
+html.skin-droid input:focus, html.skin-droid textarea:focus, html.skin-droid select:focus{ border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
+html.skin-droid .chip{ min-height:28px; padding:4px 9px; border:1px solid var(--border2); background:var(--bg1); border-radius:0; }
+html.skin-droid .chip.on{ background:var(--accent); color:#000; border-color:var(--accent); box-shadow:none; }
+html.skin-droid .stat, html.skin-droid .attr-cell, html.skin-droid .roll-slot, html.skin-droid .roll-group{
+  border:1px solid var(--accent-dim); background:var(--bg); clip-path:polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+}
+html.skin-droid .muted-box{ border:1px dashed var(--accent-dim); background:var(--bg); }
+html.skin-droid [style*="border-radius"]{ border-radius:0 !important; }
+html.skin-droid :is(.panel, .btn, .chip, .badge, .stat, .feature, .opt-card, .device-card, .set-card, .set-swatch, .set-wall, .set-close, .set-newbtn, .toast, .gate-card){ border-radius:0 !important; }
+
+/* ---- the overlays: settings tray, gate, toast ---- */
+html.skin-droid .set-card{ width:min(96vw, calc(var(--dr-w) - 24px)); background:var(--bg); border:1px solid var(--accent); box-shadow:0 0 30px var(--accent-dim); clip-path:polygon(var(--dr-cut) 0, calc(100% - var(--dr-cut)) 0, 100% var(--dr-cut), 100% 100%, 0 100%, 0 var(--dr-cut)); }
+html.skin-droid .set-head{ background:var(--bg1); border-bottom:1px solid var(--accent-dim); }
+html.skin-droid .set-title{ font-family:var(--mono); font-weight:400; font-size:14px; letter-spacing:.2em; color:var(--accent); }
+html.skin-droid .gate-card{ border:1px solid var(--accent); box-shadow:0 0 30px var(--accent-dim), 0 18px 60px rgba(0,0,0,.6); clip-path:polygon(var(--dr-cut) 0, calc(100% - var(--dr-cut)) 0, 100% var(--dr-cut), 100% 100%, 0 100%, 0 var(--dr-cut)); }
+html.skin-droid .toast{ bottom:100px; border:1px solid var(--accent); box-shadow:0 0 18px var(--accent-dim); }
+html.skin-droid #gate-coach{ border:1px solid var(--accent); }
+
+/* ---------------------------------------------------------------------------
+   #GRIDroid layout collapse. The chrome above draws the phone; this block makes
+   every layout in the app fit its column, 351px on a phone and 516px on a desk.
+   The existing @media collapses never fire on a desk, so each is restated here
+   at every width. A rule under html.skin-droid outranks any @media rule in this
+   file regardless of order; !important appears only where the property is
+   inline in a module. el() writes inline styles through the CSSOM, so an
+   attribute selector sees "margin-left: auto;" and "gap: 0px;", spaces and px
+   included; the one raw HTML string (the chrome silhouette) keeps its literal
+   spelling. Order matters twice: the generic inputs rule precedes .stepper
+   input (same specificity), and this block follows the chrome so it can revise
+   chrome decisions (the toast lift, the sticky bar).
+   --------------------------------------------------------------------------- */
+/* column, viewport, text */
+html.skin-droid .os{ min-height:100vh; min-height:100dvh; }
+html.skin-droid ::-webkit-scrollbar{ width:4px; height:4px; }
+html.skin-droid ::-webkit-scrollbar-thumb{ border:0; }
+html.skin-droid img{ max-width:100%; height:auto; }
+html.skin-droid .feature p, html.skin-droid .help, html.skin-droid td, html.skin-droid .muted-box{ overflow-wrap:anywhere; }
+html.skin-droid .feature{ padding:10px 10px 10px 11px; }
+html.skin-droid .btn{ max-width:100%; }
+/* the media collapses, restated for every width */
+html.skin-droid .modgrid6{ grid-template-columns:1fr; gap:10px; }
+html.skin-droid .modgrid6 > div{ grid-column:1 / -1 !important; }
+html.skin-droid .modgrid6.compact-heads .panel-h{ padding:9px 12px; }      /* .modgrid6.compact-heads .panel-h (0,3,0) outranks the chrome's .panel-h */
+html.skin-droid .modgrid6.compact-heads .panel-h h3{ font-size:12px; }
+html.skin-droid .grid2, html.skin-droid .grid3{ grid-template-columns:1fr; gap:10px; }
+html.skin-droid .attr-grid{ grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:8px; }   /* two cells at 327, three at 492 */
+html.skin-droid .card-grid{ grid-template-columns:1fr; gap:10px; }
+html.skin-droid .pm-grid{ grid-template-columns:1fr; }
+html.skin-droid .stat{ flex:1 1 calc(33.333% - 7px); min-width:0; padding:8px 4px; }
+html.skin-droid .stat .v{ font-size:22px; }
+html.skin-droid .stat .s, html.skin-droid .gridtab .stat .s{ font-size:10px; line-height:1.3; overflow-wrap:anywhere; }
+/* rows and headers */
+html.skin-droid .row{ flex-wrap:wrap; }
+html.skin-droid .row.between.wrap > .row{ flex:1 1 100%; min-width:0; }
+html.skin-droid .panel-h{ flex-wrap:wrap; row-gap:6px; }
+html.skin-droid .panel-h h3{ min-width:0; overflow-wrap:anywhere; }
+html.skin-droid .panel-h .tag{ white-space:normal; line-height:1.3; max-width:100%; }
+/* combat.js hides a panel's sub-label when its slot is 2/6 or narrower and moves the words into
+   a title tooltip. Every panel is full width here and a phone has no hover, so it stays shown. */
+html.skin-droid .modgrid6 .panel-h .tag{ display:inline-block !important; }
+html.skin-droid .panel-h .panel-hr{ flex:1 1 100%; margin-left:0 !important; justify-content:flex-start !important; }
+html.skin-droid .panel-h select{ flex:1 1 100%; width:100% !important; min-width:0 !important; }
+html.skin-droid .panel-h.clickable{ min-height:44px; }
+html.skin-droid .feature h4{ flex-wrap:wrap; row-gap:4px; align-items:center; }
+html.skin-droid .feature h4 .src{ min-width:0; overflow-wrap:anywhere; text-align:left; }
+html.skin-droid .os-main h1{ font-size:20px !important; line-height:1.15; letter-spacing:.04em !important; }
+html.skin-droid .os-main h1 > span:last-child{ display:block; font-size:11px !important; letter-spacing:.14em; margin-top:3px; }
+html.skin-droid .os-main .muted-box[style*="padding"]{ padding:22px 14px !important; }
+html.skin-droid .row-label{ flex:1 1 100% !important; min-width:0 !important; }             /* a label above its controls; the modules set flex inline */
+html.skin-droid .row.wrap[style*="margin: 4px 0px 0px 44px"]{ margin-left:0 !important; }  /* deep-run indents */
+/* tap floors beyond the chrome's 42px buttons and inputs */
+html.skin-droid select, html.skin-droid input[type=text], html.skin-droid input[type=number], html.skin-droid textarea{ font-size:16px !important; }
+html.skin-droid select[style*="width: auto"]{ max-width:100%; }
+html.skin-droid input[type=number][style*="width"]{ min-width:64px; padding-left:4px; padding-right:4px; text-align:center; }
+html.skin-droid input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); flex:0 0 auto; }
+html.skin-droid .stepper{ gap:6px; }
+html.skin-droid .stepper button{ flex:0 0 36px; width:36px; height:36px; font-size:18px; }
+html.skin-droid .stepper input{ max-width:56px; min-height:36px; font-size:16px; padding:4px 2px; }
+html.skin-droid .chip[style*="cursor: pointer"], html.skin-droid .chip.on{ min-height:36px; padding:6px 12px; font-size:11px !important; }
+html.skin-droid .tier-pill{ display:inline-flex; align-items:center; min-height:36px; padding:6px 12px; font-size:12px; }
+html.skin-droid .btn.sm[style*="padding"]{ min-width:36px !important; padding:6px 10px !important; justify-content:center; }
+html.skin-droid .btn[style*="font-size"]{ font-size:11px !important; }
+html.skin-droid .btn.sm[style*="font-size"]{ min-width:40px; }
+html.skin-droid .row[style*="cursor: pointer"], html.skin-droid h4[style*="cursor: pointer"], html.skin-droid .section-title[style*="cursor: pointer"],
+html.skin-droid .section-title.clickable, html.skin-droid .mkt-sublabel{ min-height:40px; }
+html.skin-droid .section-title.device-head{ min-height:40px; padding:6px 8px; }
+html.skin-droid .section-title.device-head .dev-toggle{ font-size:10px; padding:3px 7px; }
+html.skin-droid span[style*="width: 14px"][style*="cursor: pointer"]{ width:22px !important; height:22px !important; }   /* pips, use boxes */
+html.skin-droid button[style*="width: 18px"]{ width:32px !important; height:32px !important; font-size:13px !important; }
+html.skin-droid .statkey{ display:inline-flex; align-items:center; min-height:40px; padding:8px 14px; font-size:16px; }
+html.skin-droid .statwrap .lbl{ font-size:10px; }
+html.skin-droid .pop-btn{ min-height:38px; font-size:13px !important; }
+html.skin-droid .attn-dot{ position:relative; width:12px; height:12px; }
+html.skin-droid .attn-dot::after{ content:""; position:absolute; inset:-14px; }
+html.skin-droid .opt-card h4{ padding-right:64px; }
+html.skin-droid .row.wrap > .btn:not(.sm){ flex:1 1 auto; justify-content:center; }
+/* nested scrollers become flow: a scroller inside the page scroll traps the finger */
+html.skin-droid .feature-scroll, html.skin-droid .scroll-box{ max-height:none; overflow:visible; padding-right:0; }
+html.skin-droid .panel.fill-col{ display:block; }
+html.skin-droid .actions-frame{ flex:none; min-height:0; position:static; }
+html.skin-droid .actions-scroll{ position:static; inset:auto; overflow:visible; padding-right:0; }
+/* tables tighten and scroll inside their panel rather than restructure */
+html.skin-droid .sktable{ font-size:13px; }
+html.skin-droid .sktable th, html.skin-droid .sktable td{ padding:6px 5px; vertical-align:top; }
+html.skin-droid .sktable td[style*="nowrap"]{ white-space:normal !important; }
+html.skin-droid .gridtab table th, html.skin-droid .gridtab table td{ padding:4px 4px !important; font-size:11px !important; }
+/* toast: the chrome's .toast rule outranks .toast.show, so the lift is restated */
+html.skin-droid .toast{ left:12px; right:12px; width:auto; max-width:calc(var(--dr-w) - 24px); margin:0 auto; transform:none; text-align:center; }
+html.skin-droid .toast.show{ transform:translateY(-4px); }
+
+/* ---- Freelancer ---- */
+/* the rest, downtime and gear popovers are absolute boxes hung right:0 off buttons at the LEFT of their row; on a phone they are bottom sheets, under the rail's z 99 */
+html.skin-droid .pop-anchor > div[style*="position: absolute"]{ position:fixed !important; left:12px !important; right:12px !important; top:auto !important;
+  bottom:calc(env(safe-area-inset-bottom) + 96px) !important; width:auto !important; max-width:calc(var(--dr-w) - 24px); margin:0 auto; z-index:98 !important; max-height:60vh; overflow:auto; }
+html.skin-droid .row.wrap:not(.between) > .pop-anchor{ flex:1 1 30%; }
+html.skin-droid .row.wrap:not(.between) > .pop-anchor > .btn{ width:100%; justify-content:center; }
+/* the roll trays appended to #view: full-width bottom sheets */
+html.skin-droid #view > div[style*="position: fixed"]{ padding:0 !important; align-items:flex-end !important; }
+html.skin-droid #view > div[style*="position: fixed"] > div{ width:100% !important; max-width:var(--dr-w); max-height:calc(100dvh - 8px) !important; margin:0 auto; border-radius:0 !important; }
+html.skin-droid #view > div[style*="position: fixed"] button[style*="font-size: 19px"]{ min-width:44px; min-height:44px; }
+/* the Defense two-pane: saves above defenses */
+html.skin-droid .panel-b > div[style*="display: flex"][style*="gap: 0px"]{ flex-direction:column; align-items:stretch !important; gap:12px !important; }
+html.skin-droid .panel-b > div[style*="gap: 0px"] > div[style*="border-right"]{ border-right:0 !important; padding-right:0 !important; margin-right:0 !important; }
+html.skin-droid [style*="grid-template-columns: 1fr 1fr"]{ grid-template-columns:1fr !important; }   /* the Versatile picker */
+html.skin-droid .fill-body > .row.wrap:first-child{ display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; }   /* the Actions nav, 3 + 2 */
+html.skin-droid .fill-body > .row.wrap:first-child > .btn{ justify-content:center; padding:6px 4px; }
+html.skin-droid .drag-handle{ touch-action:none; padding:6px 8px; font-size:18px !important; }
+
+/* ---- #PRINT ---- */
+/* the wizard rail wraps into rows and scrolls away (the author's call): no pinned band, no scrollIntoView */
+html.skin-droid .wizard-rail{ position:static; display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:4px; margin:0 0 12px; padding:0 0 10px; backdrop-filter:none; }
+html.skin-droid .wstep{ min-width:0; min-height:44px; padding:6px 3px; }
+html.skin-droid .wstep .n{ font-size:10px; }
+html.skin-droid .wstep .t{ font-size:10px; letter-spacing:.05em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+html.skin-droid .wizard-foot{ flex-wrap:wrap; gap:8px 10px; }
+html.skin-droid .wizard-foot > .help{ order:3; flex:1 1 100%; text-align:center; margin:0; }
+html.skin-droid .wizard-foot > .btn{ flex:1 1 40%; justify-content:center; }
+html.skin-droid .row > select[style*="min-width: 160px"]{ flex:1 1 100%; width:100% !important; min-width:0 !important; }   /* the roster switcher */
+html.skin-droid div[data-rg][style*="grid-template-columns"]{ overflow-x:auto; -webkit-overflow-scrolling:touch; max-width:100%; grid-template-columns:auto repeat(6, minmax(76px, 1fr)) auto !important; gap:4px !important; padding-bottom:6px; }   /* the Overclocked 6x6 scrolls sideways */
+html.skin-droid .roll-slot select{ padding:6px 28px 6px 8px !important; }
+html.skin-droid .row > div[style*="min-width: 120px"]{ flex:1 1 100% !important; }   /* skill and gear proficiency rows: the name line, then the cluster */
+html.skin-droid input[style*="width: 220px"]{ width:100% !important; flex:1 1 100%; }
+html.skin-droid div[style*="padding-top: 60px"]{ padding-top:24px !important; }
+html.skin-droid div[style*="padding-top: 60px"] > .btn{ width:100%; max-width:360px; justify-content:center; }
+html.skin-droid .certify-row{ padding:12px; font-size:13.5px; }
+html.skin-droid #mgr{ padding:0; align-items:flex-end; }
+html.skin-droid .mgr-card{ width:100%; max-width:var(--dr-w); max-height:calc(100dvh - 8px); margin:0 auto; border-radius:0; }
+html.skin-droid .mgr-head{ flex-wrap:wrap; padding:12px 14px 10px; }
+html.skin-droid .mgr-head h3{ font-size:13px; }
+html.skin-droid .mgr-head .mgr-count{ flex:1 1 100%; order:5; }
+html.skin-droid .mgr-row{ flex-wrap:wrap; row-gap:6px; padding:8px; }
+html.skin-droid .mgr-row .mgr-name, html.skin-droid .mgr-row .mgr-fixed{ flex:1 1 60%; min-width:0; min-height:40px; }
+html.skin-droid .mgr-row .mgr-meta{ flex:1 1 100%; min-width:0; text-align:left; }
+html.skin-droid .mgr-tools .btn{ flex:1 1 45%; justify-content:center; }
+
+/* ---- Inventory ---- */
+/* the sub-nav and wallet bar: un-stuck (150px pinned is a fifth of a phone), sub-tabs four up, the wallet stretched */
+html.skin-droid .inv-bar{ position:static !important; padding:8px 10px !important; margin:0 0 10px !important; backdrop-filter:none !important; border:1px solid var(--accent-dim) !important; }
+html.skin-droid .inv-bar > .row.wrap{ display:grid; grid-template-columns:repeat(4, 1fr); gap:4px; width:100%; }
+html.skin-droid .inv-bar > .row.wrap > .btn{ padding:6px 2px !important; font-size:10.5px; letter-spacing:.04em; justify-content:center; white-space:normal; line-height:1.1; text-align:center; }
+html.skin-droid .inv-bar > div[style*="flex-direction: column"]{ align-items:stretch !important; width:100%; }
+html.skin-droid .inv-bar > div[style*="flex-direction: column"] > .row.wrap{ justify-content:flex-start !important; }
+html.skin-droid .inv-bar > div[style*="flex-direction: column"] input{ flex:1 1 60px; width:auto !important; min-width:0; }
+html.skin-droid .inv-bar > div[style*="flex-direction: column"] .btn{ flex:1 1 auto; justify-content:center; }
+/* item cards */
+html.skin-droid .mkt-info{ flex-wrap:wrap !important; gap:8px !important; }
+html.skin-droid .mkt-stats{ flex:1 1 100% !important; }
+html.skin-droid .mkt-action{ flex:1 1 100% !important; margin-left:0 !important; justify-content:flex-start !important; }
+html.skin-droid .mkt-action .btn{ flex:1 1 auto; justify-content:center; }
+html.skin-droid .mkt-action .row{ flex:1 1 100%; }
+html.skin-droid .mkt-stats .chip{ font-size:10.5px !important; }
+html.skin-droid .mkt-name{ flex:1 1 auto; min-width:0; }
+html.skin-droid .mkt-name .chip{ margin-left:0 !important; margin-right:6px; }
+html.skin-droid .mkt-side{ flex-basis:100%; justify-content:space-between; }
+/* the Chrome tab: the silhouette over its readout, the impact boxes under the attribute bars */
+html.skin-droid .chrome-frame, html.skin-droid .chrome-stats{ grid-template-columns:1fr !important; gap:12px !important; justify-items:center; }
+html.skin-droid .chrome-frame > div, html.skin-droid .chrome-stats > div{ width:100%; }
+html.skin-droid .inv-sub [style*="max-width:225px"]{ max-width:280px !important; }
+html.skin-droid .row.wrap > span[style*="min-width: 150px"], html.skin-droid .row.wrap > span[style*="min-width: 190px"]{ flex:1 1 100% !important; min-width:0 !important; }
+/* the Gray Market */
+html.skin-droid .mkt-fronts{ display:grid !important; grid-template-columns:1fr 1fr; gap:6px !important; }
+html.skin-droid .mkt-fronts .mkt-label{ grid-column:1 / -1; }
+html.skin-droid .mkt-fronts .btn{ justify-content:center; }
+html.skin-droid .mkt-title{ letter-spacing:.12em !important; }
+html.skin-droid .mkt-sub{ letter-spacing:.03em !important; line-height:1.4; }
+html.skin-droid #mkt-search{ max-width:none !important; flex:1 1 100% !important; }
+html.skin-droid input[style*="width: 200px"], html.skin-droid input[style*="width: 150px"]{ width:100% !important; flex:1 1 100%; }
+
+/* ---- Social ---- */
+html.skin-droid .row > span[style*="min-width: 0px"][style*="flex"]{ flex:1 1 100% !important; }   /* tracker cells, one field per line */
+html.skin-droid .row[style*="padding: 0px 30px 6px 2px"]{ display:none; }                         /* the empty label spacer row */
+html.skin-droid .btn.sm.ghost[style*="width: 26px"]{ width:40px !important; min-height:36px; }
+
+/* ---- #GRID ---- */
+html.skin-droid .feature > .row.between > span[style*="cursor: pointer"]{ flex:1 1 100%; min-height:36px; display:flex; align-items:center; }
+html.skin-droid .gridtab > .row.wrap > .mono, html.skin-droid .gridtab > .row.wrap > .help{ flex:1 1 100%; }
+html.skin-droid .gridtab > .row.wrap > .btn{ flex:1 1 40%; justify-content:center; }
+html.skin-droid .gridtab[data-dmg="3"]::before{ animation-duration:1s; }   /* a full-tab repaint four times a second is phone jank */
+
+/* ---- Flow ---- */
+html.skin-droid .row > button[style*="min-width: 54px"]{ flex:1 1 30% !important; min-height:40px; font-size:10.5px !important; padding:6px 4px !important; }   /* the strain track, 3 + 2 */
+html.skin-droid div[style*="font-size: 30px"]:not(.flow-fp){ font-size:22px !important; }      /* the compliance headline, not the Flow cost readout */
+html.skin-droid span[style*="rotate(-11deg)"]{ position:static !important; transform:rotate(-4deg) !important; display:inline-block; margin-top:10px; font-size:11px !important; }   /* the stamp, off the wrapped headline */
+html.skin-droid .flowtab.immersive .flow-bg, html.skin-droid .flowtab.immersive .flow-glitch{ inset:-24px 0; }
+html.skin-droid .flowtab.immersive .btn.primary{ background:linear-gradient(180deg, rgba(185,139,255,.16), rgba(123,44,255,.06)); color:var(--flow); border-color:var(--flow); }   /* the chrome's primary outranks the immersive purple */
+
+/* ---- Codex ---- */
+html.skin-droid input[style*="max-width: 280px"]{ max-width:none !important; }
+
+/* ---- Admin ---- */
+html.skin-droid .row.wrap > .field[style*="min-width"]{ flex:1 1 calc(50% - 5px); min-width:0 !important; max-width:100%; }
+html.skin-droid .row.wrap > .field:first-child[style*="min-width: 150px"]{ flex:1 1 100%; }
+html.skin-droid .field select[style*="min-width"]{ min-width:0 !important; width:100%; }
+html.skin-droid .row.wrap > p.help[style*="max-width: 320px"]{ flex:1 1 100%; max-width:none !important; }
+html.skin-droid .feature > .row.between.wrap > .row > input[type=number]{ flex:0 0 72px; width:72px !important; }
+html.skin-droid .feature .chip[style*="font-size: 9.5px"]{ font-size:10.5px !important; }
+
+/* ---- the gate (its CSS is injected from gate.js; these win on every layout property) ---- */
+html.skin-droid #gate{ align-items:flex-start; overflow-y:auto; padding:20px 12px calc(20px + env(safe-area-inset-bottom)); }   /* the autofocused input plus a keyboard on a centered box */
+html.skin-droid #gate.hijacking::before{ position:fixed; }
+html.skin-droid .gate-card{ width:100%; max-width:430px; margin:auto 0; padding:22px 18px 16px; }
+html.skin-droid .gate-logo{ font-size:28px; letter-spacing:.1em; }
+html.skin-droid .gate-logo .op{ display:block; margin:2px 0 0; }
+html.skin-droid .gate-pass{ font-size:16px; letter-spacing:.14em; }
+html.skin-droid .gate-go{ min-height:46px; }
+html.skin-droid .gate-sw{ flex-wrap:wrap; gap:8px 10px; }
+html.skin-droid .gate-swb{ min-height:40px; padding:9px 14px; }
+html.skin-droid .gate-prof{ flex-wrap:wrap; gap:6px 12px; padding:12px 14px; min-height:56px; }
+html.skin-droid .gate-prof > span:nth-child(2){ flex:1 1 0; min-width:0; }
+html.skin-droid .gate-prof .st{ flex:1 1 100%; margin-left:32px; white-space:normal; }
+html.skin-droid .gate-skip{ position:fixed; bottom:calc(10px + env(safe-area-inset-bottom)); padding:12px; }
+html.skin-droid .gate-term{ height:auto; min-height:160px; max-height:42vh; max-height:42dvh; overflow-y:auto; }
+html.skin-droid #gate-coach{ width:min(270px, calc(100vw - 20px)); }
+html.skin-droid .gc-go{ min-height:40px; }
+
+/* ---- the settings tray (its CSS is injected from settings.js) ---- */
+html.skin-droid .set-card{ max-height:calc(100dvh - 24px); }
+html.skin-droid .set-head{ padding:14px 16px 10px; }
+html.skin-droid .set-close{ width:40px; height:40px; font-size:16px; }
+html.skin-droid .set-body{ padding:14px 16px calc(20px + env(safe-area-inset-bottom)); }
+html.skin-droid .set-body .row:not(.wrap) > .btn{ flex:1 1 0; min-width:0; justify-content:center; padding-left:6px; padding-right:6px; }
+html.skin-droid .set-body .row.wrap > .btn.sm{ flex:1 0 auto; min-width:44px; justify-content:center; }
+html.skin-droid .set-sw-mini{ font-size:11px; padding:8px 6px; min-height:34px; }
+html.skin-droid .set-col-input{ width:48px; height:36px; }
+html.skin-droid .set-col-row{ min-height:44px; }
+html.skin-droid .set-adv-toggle{ min-height:40px; font-size:13px; }
 
 html.light body{
   background:

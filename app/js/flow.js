@@ -53,7 +53,7 @@ EN.flowView = (function () {
     }));
   }
   function setForm(patch) { Object.keys(patch).forEach(function (k) { _form[k] = patch[k]; }); EN.app.render(); }
-  function fieldLabel(t) { return el("span", { style: { fontFamily: "var(--disp)", fontSize: "9.5px", letterSpacing: ".12em", color: "var(--text3)", minWidth: "72px", display: "inline-block" }, text: t }); }
+  function fieldLabel(t) { return el("span.row-label", { style: { fontFamily: "var(--disp)", fontSize: "9.5px", letterSpacing: ".12em", color: "var(--text3)", minWidth: "72px", display: "inline-block" }, text: t }); }
   function curFP(ch, d) { var c = (ch.flow && ch.flow.current != null) ? ch.flow.current : d.flow.max; return eng.clamp(c, 0, d.flow.max); }
   function collapsible(key, title, build) {
     var open = !!_open[key];

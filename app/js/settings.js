@@ -191,13 +191,14 @@ EN.theme = (function () {
   var SKINS = [
     { key: "classic", name: "Classic",     sub: "the look as shipped",             cls: null },
     { key: "98",      name: "#GRIDOS '98", sub: "bevels, title bars, a taskbar with START", cls: "skin-98" },
-    { key: "droid",   name: "#GRIDroid",   sub: "design pending, author's spec",   cls: "skin-droid" }
+    { key: "droid",   name: "#GRIDroid",   sub: "a cyberpunk phone OS: one column at any width, the rail an app list",   cls: "skin-droid" }
   ];
   function findSkin(k) { for (var i = 0; i < SKINS.length; i++) { if (SKINS[i].key === k) return SKINS[i]; } return SKINS[0]; }
   function getSkin() { try { return findSkin(localStorage.getItem(SKIN_KEY) || "classic").key; } catch (e) { return "classic"; } }
   function applySkin(k) {
     var root = document.documentElement;
     SKINS.forEach(function (s) { if (s.cls) root.classList.remove(s.cls); });
+    root.classList.remove("rail-open");   // #GRIDroid's unfolded app list; no other skin owns it
     var s = findSkin(k);
     if (s.cls) root.classList.add(s.cls);
   }
@@ -736,11 +737,12 @@ EN.settings = (function () {
     ];
   }
 
-  /* Wallpaper picker, '98 only: the other skins have no desktop to hang one on. Presets are
+  /* Wallpaper picker, '98 and #GRIDroid only: Classic has no desktop to hang one on. Presets are
      the author's art (data/wallpapers.js); customs come from the user's own files. Returns a
      flat array like skinSection, so rebuild() can run it into the same section. */
   function wallSection() {
-    if (EN.theme.getSkin() !== "98") return [];
+    var sk = EN.theme.getSkin();
+    if (sk !== "98" && sk !== "droid") return [];   // the two skins with a desktop to hang one on
     var cur = EN.theme.getWall();
     function toggle(key, label, title) {
       var on = EN.theme.wallOpt(key);

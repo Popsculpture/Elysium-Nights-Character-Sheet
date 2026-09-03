@@ -718,7 +718,7 @@ EN.builder = (function () {
     return null;
   }
   function rowLabel(text) {
-    return el("span", { style: { fontFamily: "var(--disp)", fontSize: "10px", letterSpacing: ".14em", textTransform: "uppercase", color: "var(--text3)", minWidth: "62px", flex: "0 0 auto" }, text: text });
+    return el("span.row-label", { style: { fontFamily: "var(--disp)", fontSize: "10px", letterSpacing: ".14em", textTransform: "uppercase", color: "var(--text3)", minWidth: "62px", flex: "0 0 auto" }, text: text });
   }
   function solidChip(text, color) {
     return el("span.chip", { style: { fontSize: "10.5px", color: color, borderColor: color }, text: text });
@@ -1308,7 +1308,7 @@ EN.builder = (function () {
   function profChipRow(label, arr, color, pick) {
     if (!arr || !arr.length) return null;
     var ch = pick && pick.ch, bucket = pick && pick.bucket;
-    var kids = [el("span", { style: { fontFamily: "var(--disp)", fontSize: "10px", letterSpacing: ".14em", textTransform: "uppercase", color: "var(--text3)", minWidth: "62px", flex: "0 0 auto" }, text: label })];
+    var kids = [el("span.row-label", { style: { fontFamily: "var(--disp)", fontSize: "10px", letterSpacing: ".14em", textTransform: "uppercase", color: "var(--text3)", minWidth: "62px", flex: "0 0 auto" }, text: label })];
     var chooseIdx = -1;
     function isPicked(idx, option) {
       if (!ch) return false;

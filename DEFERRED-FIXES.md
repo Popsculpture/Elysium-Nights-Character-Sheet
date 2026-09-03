@@ -7270,6 +7270,142 @@ store's persist() swallows a storage-quota failure with a console line while the
 flashes as if the save landed.
 
 
+## #GRIDroid, the phone skin, 2026-09-03
+
+Author's mockup: a cyberpunk smartphone OS. A HUD bezel with chamfered corners around one screen,
+a `#` badge and a bracketed device label, a status strip in solid accent, a notification card with
+a numbered box, an app list of icon-title-subtitle rows with carets, chamfered cells, binary
+decoration, a root prompt at the foot. "Smartphone optimized", so the skin is one phone-width
+column at ANY width: centered in the bezel on a desk, edge to edge on a phone.
+
+How the chrome is built, all under `html.skin-droid` in theme.css. The bezel is the body's two
+pseudo-elements behind the page: an accent octagon (clip-path polygon, chamfer from a token) and
+the screen inset one pixel over it, which is also where a wallpaper paints, so the wallpaper row
+now shows on this skin too and the '98 wallpaper rule keeps its own pseudo. The header is static
+(three rows would eat a phone), a flex-wrap: the `#` badge is the logo's pseudo, the logo text
+reads #GRIDroid by hiding the OS and printing the tail from the version span, the status readouts
+become the strip (accent fill, dark ink), the active record becomes the card with an ID box and a
+subtitle from pseudo-elements. The rail is a fixed dock: the scroller becomes a column, every tab
+a three-column grid row (glyph box, label over subtitle, caret), folded to the open app; tapping
+that app toggles `html.rail-open`, which shows every row over a dimmed page. Two hooks made that
+possible: each TABS entry carries a `sub` that renderTabs writes as `data-sub`, and the tab's
+onclick toggles rail-open instead of re-rendering when the open tab is tapped on this skin (a
+desktop keeps re-tapping #PRINT as the shortcut to Advance). Panels are hairlined cards with a
+chamfered header and a `//` mark; buttons, stats and inputs are chamfered and finger-sized
+(42px buttons, 16px inputs so a phone does not zoom); the sticky offset token is 8px, the bezel;
+a sticky sub-header drops its desktop bleed and stays in the column; every page ends in a root
+prompt with #GRID in binary. The two tones are the palette's accent and flow, so the Admin theme
+wears it in gold. Classic and '98 are untouched.
+
+### The collapse, same day
+
+The chrome draws a phone; the rest of the work was making every layout in the app fit its column,
+351px on a phone and 516px on a desk. Seven readers inventoried 287 width-dependent layouts and a
+planning pass verified them against the source; what survived is 177 rules in a second droid
+block. The shape of it: every existing @media collapse restated for the skin (they never fire on
+a desk, where the column is 540px inside a 1400px window, which is the case that matters most);
+.row wrapping by default; tap floors on everything the chrome's button and input rules do not
+reach, which is mostly controls whose size is set inline in a module; nested scrollers un-nested,
+because a scroller inside the page scroll traps a thumb; reference tables tightened and left to
+scroll sideways in their panel rather than restructured into stacks; and per-view fixes for the
+two-pane Defense panel, the Chrome tab's silhouette grid (the one confirmed overflow), the
+Inventory bar, the market cards, the wizard rail, the Manage Records sheet, the Social tracker
+rows, the gate and the settings tray. The five rest and downtime popovers, which are absolute
+boxes hung off the right edge of buttons that sit at the LEFT of their row, become bottom sheets.
+
+Most of it is reached with attribute-substring selectors on the inline styles the modules write
+(el() serialises through the CSSOM, so a selector sees "margin-left: auto" and "gap: 0px", spaces
+and px included). Six class hooks were added where that would have been pixel-coupled or
+ambiguous: .chrome-frame, .chrome-stats and .inv-bar in inventory.js, .panel-hr in ui.js, and
+.row-label on the fixed-width label spans in four modules. Nothing reads them. Rejected from the
+inventory: scrollIntoView on the active wizard step (the rail wraps and is un-stuck on this skin,
+at the author's call, so every step is on screen), a horizontal tab strip with scroll snapping
+(the rail is a folded list), per-cell data-th table stacking, and viewport-fit=cover, which is not
+skin-scoped and would push Classic's and '98's sticky bars under a notch.
+
+Two bugs the live pass caught. The dock is fixed at the bottom, but the base rule is sticky with
+top:50px, and leaving that set against bottom:8px stretched the nav into a 754px box over the
+whole screen: invisible, and it would have swallowed every tap on the page (programmatic clicks
+bypass hit-testing, which is why the DOM reads looked fine). It sets top:auto now. And the
+.row-label rule lost to an inline flex:0 0 auto on the very spans it targets, so it carries
+!important like every other inline-defeating rule here.
+
+One shared-file change: print.css now drops body backgrounds and the body pseudo-elements when
+printing. The droid bezel is two fixed pseudo-element backgrounds and would print as black pages
+behind the sheet; the same line drops Classic's scanline veil from print, which is only an
+improvement.
+
+### What the review caught, same day
+
+Three reviewers with two refuters each returned thirteen confirmed findings (eight more were
+refuted), which collapsed to seven distinct defects. All are fixed.
+
+The two that mattered both came from reusing the body's pseudo-elements as the phone. The screen
+is body::after, which is also where the global scanline veil lives, and the reset never cleared
+its mix-blend-mode: every wallpaper would have been multiplied against the accent ring painted
+behind it, losing a whole channel under the default palette. It was invisible until a wallpaper
+was chosen, which is exactly what this change turned on for the skin. The second: a light palette
+hides body::after to drop that same veil, at identical specificity and later in the file, so on
+Daybreak the entire screen layer switched off and the bezel interior became a solid slab of the
+accent. Both are fixed in the reset, which now clears the blend and carries :root to break the
+tie without reaching for !important.
+
+The rest. The unfolded app list's scrim never dimmed anything: the rail centred itself with a
+transform, and a transformed element is the containing block for its own fixed children, so
+inset:0 resolved to the rail rather than the page. The rail centres with auto margins now, which
+also removes that hazard for anything fixed added later, and the scrim sits at z-index 0 so it
+takes the tap as well as the dimming: tapping the dimmed page folds the list, the way a phone's
+app drawer behaves. The list had no height cap and grew off the top of a landscape phone with no
+way to scroll it back, so it caps at the viewport and scrolls. rail-open was only ever cleared by
+opening a different app, so it outlived a portal flip, a gotoTab from a card and a skin change,
+and could strand on a rail with no rows left to tap; one foldRail helper now runs on all three
+routes. The Defense collapse set align-items against an inline value without saying !important.
+And one selector over-matched: the rule that shrinks the compliance headline also caught the Flow
+point cost readout, which wants its size, so it excludes that class now.
+
+One the reviewers found that was never a layout problem: combat.js folds a panel's sub-label into
+a hover tooltip when its slot is two sixths or narrower, and a phone has no hover. Every panel is
+full width on this skin, so the label is simply shown again.
+
+### The frame comes to the front, same day
+
+Author's screenshots: content crossed the bezel. The device was painted entirely behind the page
+(both layers sit at z-index -1), so anything the page pushed past the outline rode over it. The
+chamfered corners were where it showed: scrolling content cut across the top two, and the docked
+app list poked through the bottom two.
+
+A bezel is a physical thing, so the page now passes behind it. The body's two pseudos still paint
+the screen and its wallpaper under the page; the root element's two, which nothing else uses,
+paint the device over it. One fills everything outside the outline, the other draws the outline
+itself, both fixed, both taking no pointer events, both above every overlay in the app so the
+device frames the settings tray and the login gate as well. The outline is written once as a
+custom property and traced by all four layers, because a mismatch between the layer behind and
+the layer in front would show as a seam. Spacing changed to match: the header and the dock had
+been sitting inside the 16px chamfer bands where the frame would now hide them, so the column's
+top padding and the dock's offset both clear them, and the toast and popover sheets follow the
+dock up. The outer glow moved inside the screen, since a halo outside the outline is exactly
+what the mask paints over.
+
+Two things worth writing down. A clip-path polygon is ONE path, so cutting a hole means walking
+the outside, travelling to the inside, and walking that: with the even-odd rule those two travel
+segments count as real edges, and left open they filled a wedge clear across the page, which
+looked like the left margin eating the text. Closing each loop on itself makes the seam get
+walked twice, and it cancels. And the whole block sits behind an @supports test for the value:
+if a browser rejected the clip, the mask would drop it and paint an opaque sheet over the app.
+
+The dock became a shelf in the same pass, at the author's ask: it had been a floating pill inset
+from the screen and lifted off the bottom, so the page stayed visible in the margins around it
+and in the gap between the app row and the gear. It now spans the screen's full width and runs
+to the bottom edge, filled with the screen colour and closed with a hairline along its top, and
+the padding that holds the rows clear of the bottom chamfer does the job the old offset did.
+Unfolded, the same fill backs the whole app list.
+
+While verifying this, the dock turned out to have been quietly falling back to position:sticky
+since the earlier scrim fix, which had left a stray comment fragment inside the rule; the CSS
+parser swallowed the declaration after it, which happened to be position:fixed. Sticky imitates a
+dock while the page is short, which is why it survived a screenshot pass. The comment is one
+block again.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

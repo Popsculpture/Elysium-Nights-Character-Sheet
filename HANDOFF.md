@@ -92,6 +92,16 @@ Bypass wired into the unarmed engine, and a `migrate()` hardening pass.
   wallpaper choice in `en_wall_v1`, custom wallpapers as JPEG data URLs in `en_wall_custom_v1`,
   and the desktop's three toggles in `en_wall_dim_v1`, `en_wall_shadow_v1` and `en_wall_glow_v1`. Presets are listed in `app/data/wallpapers.js` and sit
   in `app/img/wallpapers`. None of it rides a character or an export.
+- Skins are CSS, plus a few HOOKS in the modules: `.mkt-*` and `.inv-sub[data-sub]` in
+  inventory.js for the '98 Explorer, `data-sub` on every tab (each TABS entry's `sub`) for
+  #GRIDroid's app-list subtitles, and `html.rail-open`, which app.js toggles when the open tab is
+  tapped again on #GRIDroid only (so that skin can fold and unfold its app list; every other skin
+  keeps re-tapping #PRINT as the shortcut to Advance).
+- #GRIDroid's layout collapse reaches most elements through attribute-substring selectors on the
+  inline styles the modules write, so it needs few hooks: `.chrome-frame`, `.chrome-stats` and
+  `.inv-bar` in inventory.js, `.panel-hr` on the panel header-right wrapper in ui.js, and
+  `.row-label` on the fixed-width label spans in flow.js, grid.js, inventory.js and builder.js.
+  Nothing reads any of them; they exist so a stylesheet can reach an inline-styled element.
 - Give parallel agents their own preview origin. Sharing one corrupts the roster.
 - My loaded character is expendable. Do not spend effort preserving it.
 

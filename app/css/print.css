@@ -184,3 +184,8 @@
   .ps-attr-strip{ flex-wrap:wrap; }
   .ps-attrc{ flex:1 1 30%; }
 }
+
+/* Skins draw desktops on the body and its pseudo-elements (the '98 dither and wallpaper, the
+   #GRIDroid bezel, Classic's scanline veil); none of it belongs on paper, where it prints as
+   black pages behind the sheet. */
+@media print{ body{ background:#fff !important; } body::before, body::after{ display:none !important; } }

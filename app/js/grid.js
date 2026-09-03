@@ -463,7 +463,7 @@ EN.gridView = (function () {
     var integrity = node.integrity;
     var sel = function (label, opts, val, on) {
       return el("div.row", { style: { gap: "6px", alignItems: "center" } }, [
-        el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".08em", minWidth: "70px" }, text: label }),
+        el("span.mono.row-label", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".08em", minWidth: "70px" }, text: label }),
         el("select", { style: { fontSize: "12px", width: "auto" }, onchange: function () { on(this.value); EN.app.render(); } },
           opts.map(function (o) { return el("option", { value: o.v, selected: o.v === val, text: o.t }); }))
       ]);

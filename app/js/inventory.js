@@ -933,7 +933,7 @@ EN.inventoryView = (function () {
       ])
     ]);
     var taxReadout = el("div", { style: { display: "flex", gap: "16px", alignItems: "flex-start" } }, [gauge, taxText]);
-    var frameGrid = el("div", { style: { display: "grid", gridTemplateColumns: "minmax(150px, 0.85fr) minmax(240px, 1.15fr)", gap: "16px", alignItems: "center" } }, [
+    var frameGrid = el("div.chrome-frame", { style: { display: "grid", gridTemplateColumns: "minmax(150px, 0.85fr) minmax(240px, 1.15fr)", gap: "16px", alignItems: "center" } }, [
       el("div", { html: silhouetteBody(installed, tax) }),
       taxReadout
     ]);
@@ -982,7 +982,7 @@ EN.inventoryView = (function () {
     var resBase = d.resilienceMax + tax.resDiePenalty;
     var boxes = [impactBox("RESILIENCE DICE", d.resilienceMax, resBase, tax.resDiePenalty, taxColor)];
     if (d.flow) boxes.push(impactBox("FLOW RESERVOIR (FP)", d.flow.max, d.flow.max + tax.fpPenalty, tax.fpPenalty, taxColor));
-    var statsRow = el("div", { style: { display: "grid", gridTemplateColumns: "minmax(220px, 1.25fr) minmax(170px, 1fr)", gap: "16px", alignItems: "start", marginTop: "12px", paddingTop: "12px", borderTop: "1px solid var(--border)" } }, [
+    var statsRow = el("div.chrome-stats", { style: { display: "grid", gridTemplateColumns: "minmax(220px, 1.25fr) minmax(170px, 1fr)", gap: "16px", alignItems: "start", marginTop: "12px", paddingTop: "12px", borderTop: "1px solid var(--border)" } }, [
       attrMatrix,
       el("div", { style: { display: "flex", flexDirection: "column", gap: "10px" } }, boxes)
     ]);
@@ -1276,7 +1276,7 @@ EN.inventoryView = (function () {
     var searchIn = el("input", { id: "mkt-search", type: "text", value: _mktQuery, placeholder: "search name, effect, category…",
       style: { maxWidth: "300px", flex: "1 1 200px" },
       oninput: function () { _mktQuery = this.value; var pos = this.selectionStart; EN.app.render(); var n = document.getElementById("mkt-search"); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (e) {} } } });
-    function frow(label, btns) { return el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "8px" } }, [el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".1em", minWidth: "64px" }, text: label })].concat(btns)); }
+    function frow(label, btns) { return el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "8px" } }, [el("span.mono.row-label", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".1em", minWidth: "64px" }, text: label })].concat(btns)); }
     var totalCount = 0, matchCount = 0;
     cats.forEach(function (c) {
       var typeOk = _mktType === "all" || _mktType === c.key;
@@ -1290,7 +1290,7 @@ EN.inventoryView = (function () {
       (_mktFiltersOpen ? "△" : "▽") + " FILTER" + (activeFilters ? " · " + activeFilters : ""));
     var ctrlKids = [
       el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
-        el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".1em", minWidth: "64px" }, text: "SEARCH" }),
+        el("span.mono.row-label", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".1em", minWidth: "64px" }, text: "SEARCH" }),
         searchIn,
         el("span.mono", { style: { fontSize: "11px", color: anyFilter ? "var(--accent)" : "var(--text3)" }, text: anyFilter ? matchCount + " / " + totalCount + " match" : totalCount + " listings" }),
         el("span", { style: { flex: 1 } }),
@@ -3462,7 +3462,7 @@ EN.inventoryView = (function () {
     function subTab(key, label) {
       return el("button.btn.sm" + (_sub === key ? ".primary" : ""), { onclick: function () { _sub = key; EN.app.render(); } }, label);
     }
-    blocks.push(el("div.row.between.wrap", { style: { gap: "10px", marginBottom: "12px", alignItems: "center",
+    blocks.push(el("div.row.between.wrap.inv-bar", { style: { gap: "10px", marginBottom: "12px", alignItems: "center",
         position: "sticky", top: "var(--sticky-top)", zIndex: 60,
         padding: "10px clamp(14px,3vw,40px)",
         marginLeft: "calc(-1 * clamp(14px,3vw,40px))",
