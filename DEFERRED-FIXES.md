@@ -7029,6 +7029,48 @@ visible); Admin with no character at all (all seven Admin tabs, untouched).
   now because filing finally does something. Whether examples should ship complete is a
   design call, not a bug report.
 
+## Two profiles, one gate, 2026-09-02
+
+Author's call: the Freelancer/Admin choice belongs on the login screen, not on a splash after
+it. A SWITCH USER control on the gate flips to a profile picker, and each profile gets its own
+login: Freelancer keeps the classic node front door, byte for byte; Admin is a tunnel to the
+operator console, styled like a corporate VPN, gold, with a live handshake log above the
+prompt and ESTABLISH TUNNEL for a button. The profile you enter as is the desktop you land on.
+
+Two decisions the author made:
+
+- **Admin takes its own passphrase** (`CONFIG.adminPassword`, beside the Freelancer code). The
+  framing only lands if the operator side has a credential the player side doesn't, and it
+  means a player who knows the front door still can't wander into the bestiary. Still
+  atmosphere, not security, as the file has always said of itself.
+- **Each profile remembers its own unlock.** `en_gate_ok_v1` stays the Freelancer flag under its
+  old name, so no device unlocked before Admin existed gets asked again; Admin gets
+  `en_gate_admin_ok_v1`. Reloads land straight on the remembered desktop as before. Switch user
+  from the cog goes to the picker; a profile already unlocked is one click, the other asks.
+
+**What this retired.** `portal.js` and its splash, whole: the gate now answers the question the
+splash asked. Its coachmark moved into the gate and fires after any interactive login or pick,
+never on a silent resume. The settings tray's RETURN TO PORTAL became SWITCH USER, which opens
+the gate on its picker with a Cancel; the two desktop buttons above it stay as the fallback for
+a build without gate.js.
+
+**No hijack on the Admin card.** The three-strike Codebreaker easter egg stays a Freelancer-only
+reward: it walks you in, which is fine for a door that also opens on a maintenance link. On the
+tunnel, three misses trip a trace warning and an eight-second cooldown, because the passphrase
+exists precisely so three guesses is not a way in. The maintenance link is drawn only on the
+Freelancer card and only ever opens Freelancer.
+
+One structural fix while wiring it: the cog note outranks the gate in z-order (it has to sit
+above the tab rail), so a still-open note would have floated over the picker when Switch user
+was pressed. The gate dismisses a live note as it opens.
+
+**Getting the login back.** Once a profile is unlocked the gate never paints for it, which is
+right for players and wrong for anyone testing the screens. Two routes, added the same day at
+the author's ask: `?login` forces the gate to paint even though the profile is unlocked, and
+clears nothing (`?login&portal=admin` for the Admin card); and SIGN OUT in the settings tray,
+beside Switch user, forgets the current profile's unlock and reopens its login card over the
+desktop, which is also the honest way to hand the device to a player.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

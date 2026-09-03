@@ -87,7 +87,6 @@ EN.app = (function () {
       return (v === "admin" || v === "freelancer") ? v : null;
     } catch (e) { return null; }
   }
-  function hasStoredPortal() { return !!storedPortal(); }
 
   /* One reader for "which tabs exist right now" IN THE CURRENT PORTAL. Both
      the rail and the dispatch ask it, so they can never disagree about
@@ -236,17 +235,15 @@ EN.app = (function () {
         document.getElementById("os").style.display = "flex";
         setTimeout(function () { b.style.display = "none"; }, 520);
       };
-      /* After the gate: which desktop. Set the portal FIRST, then reveal, so
-         the render inside setPortal happens while #os is still display:none
-         and the (rare, first-run) cyan-to-gold repaint is invisible. Falls
-         back to booting straight into the remembered desktop with no chooser
-         if portal.js is deleted. */
-      var open = function () {
-        if (EN.portal && EN.portal.choose) EN.portal.choose(function (p) { setPortal(p); reveal(); });
-        else reveal();
-      };
-      // optional access gate (js/gate.js); falls back to opening directly if removed
-      if (EN.gate && EN.gate.require) EN.gate.require(open); else open();
+      /* After the gate: which desktop. The gate answers with the profile the
+         player entered as (or resumed as, silently), and that profile IS the
+         desktop. Set the portal FIRST, then reveal, so the render inside
+         setPortal happens while #os is still display:none and any repaint is
+         invisible. With gate.js deleted the app boots straight into the
+         remembered desktop, and the settings tray's desktop buttons are the
+         only way across. */
+      var land = function (p) { setPortal(p || portal); reveal(); };
+      if (EN.gate && EN.gate.require) EN.gate.require(land); else land(portal);
     }
     step();
   }
@@ -287,8 +284,7 @@ EN.app = (function () {
     },
     portal: function () { return portal; },
     setPortal: setPortal,
-    hasAdmin: hasAdmin,
-    hasStoredPortal: hasStoredPortal
+    hasAdmin: hasAdmin
   };
 })();
 

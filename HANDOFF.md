@@ -78,10 +78,16 @@ Bypass wired into the unarmed engine, and a `migrate()` hardening pass.
   (`?dev&cb=x`). Open `app/index.html` directly, not the repo-root `index.html`, which is
   a redirect stub that races a meta refresh against a JS redirect. Gate password is in
   `app/js/gate.js` if you need it.
-- `?dev` also skips the portal splash and lands you on the Freelancer desktop; add
-  `&portal=admin` to land on Admin/Table instead (`?dev&portal=admin&cb=x`). The desktop
-  choice is otherwise remembered per device (`en_portal_v1`), so the splash only paints
-  on a first run or from the settings tray's "RETURN TO PORTAL".
+- The gate has two profiles, and the one you enter as is the desktop you land on.
+  `?dev` skips the Freelancer login; `?dev&portal=admin` skips the Admin one and lands on
+  Admin/Table. Each profile keeps its own unlock flag (`en_gate_ok_v1`, `en_gate_admin_ok_v1`)
+  and the desktop is remembered in `en_portal_v1`, so the gate only paints for a profile that
+  has not been unlocked on this device, or from the settings tray's "SWITCH USER". The Admin
+  passphrase is `CONFIG.adminPassword` in `app/js/gate.js`, beside the Freelancer code.
+- To get the login screen back for testing: `?login` forces the gate to paint even though the
+  profile is unlocked (`?login&portal=admin` for the Admin card), and clears nothing. The
+  settings tray's "SIGN OUT" is the in-app route: it forgets the current profile's unlock and
+  reopens its login card.
 - Give parallel agents their own preview origin. Sharing one corrupts the roster.
 - My loaded character is expendable. Do not spend effort preserving it.
 

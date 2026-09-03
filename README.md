@@ -7,8 +7,9 @@ all tracked and derived live.
 
 ## Two desktops
 
-After the access gate, a splash asks which side of the table you're on. The choice is remembered
-per device (`?portal=admin` overrides it for one load).
+The login gate has two profiles, Freelancer and Admin, each with its own code and its own look,
+and the one you sign in as is the desktop you land on. Switch user from the gate or from the
+settings cog. The choice is remembered per device (`?portal=admin` overrides it for one load).
 
 - **Freelancer portal**: the player's own sheet. #PRINT (character creation & leveling, the
   foundation every other tab reads from; export / import a record as JSON), Freelancer (the live

@@ -513,12 +513,22 @@ EN.settings = (function () {
         title: "Switch to the Admin desktop", onclick: function () { EN.app.setPortal("admin"); rebuild(); }
       }, "◆ ADMIN")
     ]));
-    kids.push(el("button.btn.sm", {
-      style: { marginTop: "10px" }, title: "Reopen the portal splash",
-      // `true` forces the splash to paint even though the desktop is already
-      // remembered; a bare choose() would resolve silently and look broken.
-      onclick: function () { close(); EN.portal.choose(EN.app.setPortal, true); }
-    }, "⇄ RETURN TO PORTAL"));
+    /* Switch user reopens the gate on its profile picker: a profile already
+       unlocked is one click, the other asks for its code. Only offered while
+       gate.js is present; the two buttons above are the fallback either way. */
+    if (EN.gate && EN.gate.switchUser) kids.push(el("div.row.wrap", { style: { gap: "8px", marginTop: "10px" } }, [
+      el("button.btn.sm", {
+        title: "Sign in as the other profile",
+        onclick: function () { close(); EN.gate.switchUser(EN.app.setPortal); }
+      }, "⇄ SWITCH USER"),
+      /* Forgets this profile's unlock and returns to its login card, so the
+         gate asks again here and on the next reload. Useful for handing the
+         device over, and for testing the login screens (so is ?login). */
+      el("button.btn.sm", {
+        title: "Lock this profile and return to its login",
+        onclick: function () { close(); EN.gate.signOut(EN.app.setPortal); }
+      }, "⊘ SIGN OUT")
+    ]));
     return kids;
   }
 
