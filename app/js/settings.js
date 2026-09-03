@@ -505,20 +505,24 @@ EN.settings = (function () {
       kids.push(el("p.set-hint", { style: { color: "var(--text3)" }, text: "The GM toolkit is not installed on this device, so only the Freelancer desktop is available." }));
       return kids;
     }
+    /* The bare desktop buttons only exist for a build with gate.js deleted,
+       where nothing else could cross. With the gate present, Switch user is
+       the one control: it flips straight to the other profile when that one
+       is already unlocked, and to its login card when it is not. */
+    if (!(EN.gate && EN.gate.switchUser)) {
+      kids.push(el("div.row.wrap", { style: { gap: "8px" } }, [
+        el("button.btn.sm" + (!admin ? ".primary" : ""), {
+          title: "Switch to the Freelancer desktop", onclick: function () { EN.app.setPortal("freelancer"); rebuild(); }
+        }, "✦ FREELANCER"),
+        el("button.btn.sm" + (admin ? ".primary" : ""), {
+          title: "Switch to the Admin desktop", onclick: function () { EN.app.setPortal("admin"); rebuild(); }
+        }, "◆ ADMIN")
+      ]));
+      return kids;
+    }
     kids.push(el("div.row.wrap", { style: { gap: "8px" } }, [
-      el("button.btn.sm" + (!admin ? ".primary" : ""), {
-        title: "Switch to the Freelancer desktop", onclick: function () { EN.app.setPortal("freelancer"); rebuild(); }
-      }, "✦ FREELANCER"),
-      el("button.btn.sm" + (admin ? ".primary" : ""), {
-        title: "Switch to the Admin desktop", onclick: function () { EN.app.setPortal("admin"); rebuild(); }
-      }, "◆ ADMIN")
-    ]));
-    /* Switch user reopens the gate on its profile picker: a profile already
-       unlocked is one click, the other asks for its code. Only offered while
-       gate.js is present; the two buttons above are the fallback either way. */
-    if (EN.gate && EN.gate.switchUser) kids.push(el("div.row.wrap", { style: { gap: "8px", marginTop: "10px" } }, [
       el("button.btn.sm", {
-        title: "Sign in as the other profile",
+        title: admin ? "Switch to the Freelancer profile" : "Switch to the Admin profile",
         onclick: function () { close(); EN.gate.switchUser(EN.app.setPortal); }
       }, "⇄ SWITCH USER"),
       /* Forgets BOTH profiles' unlocks and returns to this profile's login
@@ -606,7 +610,7 @@ EN.settings = (function () {
         el("div.set-head", null, [
           el("div", null, [
             el("div.set-kick", { text: "#GRIDOS // PREFERENCES" }),
-            el("h3.set-title", { text: "Settings" })
+            el("h3.set-title", { text: EN.theme.inAdmin() ? "Admin Settings" : "Settings" })
           ]),
           el("button.set-close", { type: "button", title: "Close (Esc)", onclick: close }, "✕")
         ]),

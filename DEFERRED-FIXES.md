@@ -7050,9 +7050,12 @@ Two decisions the author made:
 
 **What this retired.** `portal.js` and its splash, whole: the gate now answers the question the
 splash asked. Its coachmark moved into the gate and fires after any interactive login or pick,
-never on a silent resume. The settings tray's RETURN TO PORTAL became SWITCH USER, which opens
-the gate on its picker with a Cancel; the two desktop buttons above it stay as the fallback for
-a build without gate.js.
+never on a silent resume. The settings tray's RETURN TO PORTAL became SWITCH USER. Later the
+same day the author dropped the tray's bare Freelancer/Admin buttons as redundant beside it, and
+Switch user became a direct flip: the other profile already unlocked, it swaps with no overlay
+and no cog note; locked, it opens that profile's login card, skipping the picker. The picker
+stays on the login cards themselves. The bare buttons survive only in a build with gate.js
+deleted, where nothing else could cross. On the Admin desktop the tray is titled Admin Settings.
 
 **The Admin card got its own three-strike easter egg after all.** The first cut had three misses
 trip a trace and a cooldown with no way in, on the reasoning that the passphrase exists so three

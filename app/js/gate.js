@@ -695,10 +695,22 @@ EN.gate = (function () {
     open({ profile: target, mode: "login", onDone: onUnlock, cancelable: false });
   }
 
-  /* From the settings tray. Opens straight on the picker; a profile already
-     unlocked is one click, the other asks for its code. Cancel closes it. */
+  /* From the settings tray. With two profiles there is nothing to pick, so
+     this goes straight to the OTHER one: already unlocked, it flips with no
+     overlay at all and no cog note (the cog is what the user just pressed);
+     locked, it opens that profile's login card, whose own Switch user still
+     reaches the picker. The picker only paints here when there is no other
+     profile to flip to (the GM modules are gone), so the one row it shows
+     says why. */
   function switchUser(onPick) {
-    open({ profile: rememberedProfile(), mode: "pick", onDone: onPick, cancelable: true });
+    var cur = rememberedProfile();
+    var other = cur === "admin" ? "freelancer" : "admin";
+    if (other === "admin" && !hasAdmin()) {
+      open({ profile: cur, mode: "pick", onDone: onPick, cancelable: true });
+      return;
+    }
+    if (unlocked(other)) { onPick(other); return; }
+    open({ profile: other, mode: "login", onDone: onPick, cancelable: true });
   }
 
   /* From the settings tray. Forgets BOTH profiles' unlocks (author's call:
