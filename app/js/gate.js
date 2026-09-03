@@ -292,7 +292,7 @@ EN.gate = (function () {
     var i = 0;
     (function tick() {
       if (!span.parentNode) return;
-      if (i < text.length) { span.textContent += text.charAt(i++); setTimeout(tick, 18); }
+      if (i < text.length) { span.textContent += text.charAt(i++); setTimeout(tick, 22); }
       else { span.classList.remove("typing"); done(); }
     })();
   }
@@ -532,7 +532,7 @@ EN.gate = (function () {
       ov.classList.remove("deny"); void ov.offsetWidth; ov.classList.add("deny");
       input.value = "";
       if (tries >= 3) {
-        /* Strike three: the trace lands, the node locks, and about five seconds
+        /* Strike three: the trace lands, the node locks, and about two seconds
            later the #GRID Guardian overrides it. The Guardian is the bestiary's
            corporate counter-hacker with admin authority over the whole cluster,
            so it is the one thing in the setting that can wave a trace away and
@@ -541,7 +541,7 @@ EN.gate = (function () {
         cooling = true; input.disabled = true; go.disabled = true;
         var traceLine = gateLine(term, "gate-bad-line", "> trace initiated. cooling down.");
         err.textContent = "TRACE INITIATED :: NODE LOCKED";
-        setTimeout(function () { if (term.parentNode) guardianOverride(traceLine); }, 5000);
+        setTimeout(function () { if (term.parentNode) guardianOverride(traceLine); }, 2000);
         return;
       }
       input.focus();
@@ -563,6 +563,8 @@ EN.gate = (function () {
         clip.innerHTML = '<div class="gate-bubble"><span class="k">#GRID Guardian // assistive override</span><span class="t" id="gate-bubble"></span></div>' + clipSvg();
         err.parentNode.insertBefore(clip, err);
         var bubble = clip.querySelector("#gate-bubble");
+        // the pauses after each bubble are reading time, not theatre; the
+        // author lengthened them on 2026-09-02 after the first cut read too fast
         setTimeout(function () {
           typeInto(bubble, "It looks like you're trying to gain Admin access. Would you like help with that?", function () {
             setTimeout(function () {
@@ -580,16 +582,16 @@ EN.gate = (function () {
                         setTimeout(function () {
                           gateLine(term, "gate-ok-line", "> tunnel established (guardian override). session audited.");
                           finish("admin", 900);
-                        }, 1300);
+                        }, 2800);
                       });
-                    }, 500);
+                    }, 1100);
                     return;
                   }
                   var s = scan[si++];
                   setTimeout(function () { if (term.parentNode) { gateLine(term, s.cls, s.text); nextScan(); } }, s.t);
                 })();
               });
-            }, 1400);
+            }, 2600);
           });
         }, 450);
       });
@@ -639,6 +641,7 @@ EN.gate = (function () {
      reaches here. Dismisses on its button, on Escape, and on clicking the cog
      itself, since at that point the user has done the thing it points at. */
   function coach(profile) {
+    injectCss();   // callable on its own; without this a note after a silent resume would have no styles at all
     var old = document.getElementById("gate-coach");
     if (old && old.parentNode) old.parentNode.removeChild(old);
     var gear = document.querySelector(".os-gear");
@@ -651,7 +654,6 @@ EN.gate = (function () {
     box.style.setProperty("--cc-glow", hexRgba(accent, 0.3));
     var left = Math.max(10, Math.min(window.innerWidth - 280, r.right - 270));
     box.style.left = left + "px";
-    box.style.top = (r.bottom + 10) + "px";
     box.innerHTML =
       '<div class="gc-kick">' + (profile === "admin" ? "Admin desktop" : "Freelancer desktop") + '</div>' +
       '<div class="gc-title">You are on the ' + (profile === "admin" ? "table" : "player") + ' side</div>' +
@@ -659,9 +661,21 @@ EN.gate = (function () {
       '<button type="button" class="gc-go">Got it</button>';
     var caretLeft = Math.max(10, r.left + r.width / 2 - left - 6);
     var styleTag = document.createElement("style");
-    styleTag.textContent = "#gate-coach::before{ left:" + caretLeft + "px; }";
     document.head.appendChild(styleTag);
     document.body.appendChild(box);
+    /* The gear is normally in the top rail, so the note hangs below it with
+       the caret on top. The '98 skin moves the rail to a bottom taskbar, so
+       when the gear sits in the lower half of the viewport the note goes
+       ABOVE it instead, caret on the bottom edge. Measured after append, so
+       the note's real height decides where its top lands. */
+    var below = r.top < window.innerHeight / 2;
+    if (below) {
+      box.style.top = (r.bottom + 10) + "px";
+      styleTag.textContent = "#gate-coach::before{ left:" + caretLeft + "px; }";
+    } else {
+      box.style.top = Math.max(10, r.top - box.offsetHeight - 10) + "px";
+      styleTag.textContent = "#gate-coach::before{ left:" + caretLeft + "px; top:auto; bottom:-7px; transform:rotate(225deg); }";
+    }
     function dismiss() {
       if (box.parentNode) box.parentNode.removeChild(box);
       if (styleTag.parentNode) styleTag.parentNode.removeChild(styleTag);

@@ -175,7 +175,36 @@ EN.theme = (function () {
     var k = get();
     if (k !== _applied) apply(k);
   }
-  function init() { apply(get()); }
+  function init() { apply(get()); applySkin(getSkin()); }
+
+  /* ---- SKIN: the shape of the interface, independent of the palette --------
+     A second axis beside color: type, corners, chrome, effects. Any palette
+     wears any skin. DEVICE-LEVEL, on purpose: a palette is the character's
+     (it rides in their export), but the skin is the OS this device runs, so
+     it is neither per-character nor per-desktop, and never exported.
+
+     Each skin is a root class (html.skin-98, html.skin-droid) that theme.css
+     overrides against, the same mechanism as html.light. Classic is the
+     absence of any skin class, so it can never be broken by a skin's rules.
+     The '98 and Droid rule blocks land when the author's designs do. ---- */
+  var SKIN_KEY = "en_skin_v1";
+  var SKINS = [
+    { key: "classic", name: "Classic",     sub: "the look as shipped",             cls: null },
+    { key: "98",      name: "#GRIDOS '98", sub: "bevels, title bars, a taskbar with START", cls: "skin-98" },
+    { key: "droid",   name: "#GRIDroid",   sub: "design pending, author's spec",   cls: "skin-droid" }
+  ];
+  function findSkin(k) { for (var i = 0; i < SKINS.length; i++) { if (SKINS[i].key === k) return SKINS[i]; } return SKINS[0]; }
+  function getSkin() { try { return findSkin(localStorage.getItem(SKIN_KEY) || "classic").key; } catch (e) { return "classic"; } }
+  function applySkin(k) {
+    var root = document.documentElement;
+    SKINS.forEach(function (s) { if (s.cls) root.classList.remove(s.cls); });
+    var s = findSkin(k);
+    if (s.cls) root.classList.add(s.cls);
+  }
+  function setSkin(k) {
+    try { localStorage.setItem(SKIN_KEY, findSkin(k).key); } catch (e) {}
+    applySkin(k);
+  }
 
   // colors for a theme's preview strip, dark to bright
   function ramp(t) { return [t.bg2, t.border, t.border2, t.dim, t.accent]; }
@@ -184,7 +213,8 @@ EN.theme = (function () {
     THEMES: THEMES, find: find, get: get, set: set, apply: apply, preview: preview, init: init, ramp: ramp,
     allThemes: allThemes, isCustom: isCustom, getCustom: getCustom, saveCustom: saveCustom,
     deleteCustom: deleteCustom, mergeCustom: mergeCustom, bundleFor: bundleFor, syncToActive: syncToActive,
-    inAdmin: inAdmin
+    inAdmin: inAdmin,
+    SKINS: SKINS, getSkin: getSkin, setSkin: setSkin
   };
 })();
 
@@ -563,11 +593,31 @@ EN.settings = (function () {
     return kids;
   }
 
+  /* The skin picker sits above the palettes in the same section: shape first,
+     color second. Device-level, so it reads the same on both desktops. */
+  function skinSection() {
+    var cur = EN.theme.getSkin();
+    var pending = EN.theme.SKINS.some(function (s) { return s.key === cur && /pending/.test(s.sub); });
+    return [
+      el("div.set-sectitle", { text: "// CHANGE SHEET APPEARANCE" }),
+      el("label.set-label", { text: "OS Skin" }),
+      el("p.set-hint", { text: "The shape of the interface: type, corners, chrome. Independent of the palette below, so any color theme wears any skin. Saved on this device." }),
+      el("div.row.wrap", { style: { gap: "6px" } }, EN.theme.SKINS.map(function (s) {
+        return el("button.btn.sm" + (s.key === cur ? ".primary" : ""), {
+          title: s.sub,
+          onclick: function () { EN.theme.setSkin(s.key); rebuild(); }
+        }, s.name);
+      })),
+      pending
+        ? el("p.set-hint", { style: { color: "var(--warn)", marginTop: "8px" }, text: "This skin is wired but not yet styled: it looks like Classic until its design lands." })
+        : null
+    ];
+  }
+
   function themeSection() {
     var admin = EN.theme.inAdmin();
     var kids = [
-      el("div.set-sectitle", { text: "// CHANGE SHEET APPEARANCE" }),
-      el("label.set-label", { text: admin ? "Admin Theme" : "Color Theme" }),
+      el("label.set-label", { style: { marginTop: "14px" }, text: admin ? "Admin Theme" : "Color Theme" }),
       el("p.set-hint", { text: admin
         ? "Each palette recolors the accent, frames, backgrounds, and text. Stored on this device, not on any Freelancer, so whoever is loaded on the player side never repaints your table. Pick #GRID for the default."
         : "Each palette recolors the accent, frames, backgrounds, and text. Saved to this Freelancer and bundled into their .JSON export. Pick #GRID for the default." }),
@@ -592,8 +642,11 @@ EN.settings = (function () {
     if (EN.app.activeTab() === "grid" && EN.gridView && EN.gridView.isDamage) sections.push(gridSection());
     // general sections, shown regardless of which tab settings was opened from
     sections.push(portalSection());
-    sections.push(themeSection());
+    // skin and palette are one section under one title: skinSection carries
+    // the title, themeSection continues it, so the two are pushed as one
+    sections.push(skinSection().concat(themeSection()));
     sections.forEach(function (kids, i) {
+      kids = kids.filter(function (n) { return n; });
       if (i > 0) Object.assign(kids[0].style, { marginTop: "22px", paddingTop: "18px", borderTop: "1px solid var(--border)" });
       kids.forEach(function (n) { body.appendChild(n); });
     });

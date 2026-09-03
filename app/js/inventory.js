@@ -569,7 +569,7 @@ EN.inventoryView = (function () {
     var traits = Array.isArray(it.traits) ? it.traits : [];
     var traitsId = id + "-traits", traitsOpen = !!_open[traitsId];
     var head = el("h4", { style: { cursor: "pointer" }, onclick: function () { _open[id] = !open; EN.app.render(); } }, [
-      el("span", null, [
+      el("span.mkt-name", null, [
         el("span.collapse-caret", { text: open ? "▾" : "▸" }),
         document.createTextNode(" " + it.name),
         (mode === "mkt" && ownedTotal > 0) ? tagChip("Owned ×" + ownedTotal, "var(--success)") : null,
@@ -584,14 +584,14 @@ EN.inventoryView = (function () {
              : tagChip("LEASE · " + leaseDaysOf(owned) + (leaseDaysOf(owned) === 1 ? " DAY" : " DAYS"), "var(--gold)", "Next installment " + fmtG(it.upkeep) + " in " + leaseDaysOf(owned) + " day(s); each Long Rest marks one day."))
           : tagChip("LEASED", "var(--ember)", "Leased, " + fmtG(it.price || 0) + " buy-in, " + fmtG(it.upkeep) + "/wk Upkeep. Lapse and it drops to its zero state.")) : null
       ]),
-      el("span", { style: { display: "inline-flex", alignItems: "baseline", gap: "10px", flexShrink: 0 } }, [
-        el("span.mono", { style: { fontSize: "10.5px", letterSpacing: ".03em" } }, [
+      el("span.mkt-side", { style: { display: "inline-flex", alignItems: "baseline", gap: "10px", flexShrink: 0 } }, [
+        el("span.mono.mkt-meta", { style: { fontSize: "10.5px", letterSpacing: ".03em" } }, [
           el("span", { style: { color: LEGAL_COLOR[it.legality] || "var(--text3)" }, text: it.legality }),
           document.createTextNode(" · "),
           el("span", { style: { color: AVAIL_COLOR[it.availability] || "var(--text3)" }, text: it.availability }),
           (isDefensive(it) && it.slots) ? document.createTextNode(" · " + it.slots + " mod slots") : null
         ]),
-        el("span.mono", { title: mode === "mkt" ? priceTitle(it) : (_mode === "fivefinger" ? "No provenance, no payout, the fence won't touch it." : "Fence pays " + fmtG(fencePrice(it)) + " (street rate, ~35% of list)"),
+        el("span.mono.mkt-price", { title: mode === "mkt" ? priceTitle(it) : (_mode === "fivefinger" ? "No provenance, no payout, the fence won't touch it." : "Fence pays " + fmtG(fencePrice(it)) + " (street rate, ~35% of list)"),
           style: { color: mode === "mkt" ? (_mode === "fivefinger" ? "var(--success)" : (it.vendor === false ? "var(--flow)" : (it.upkeep ? "var(--ember)" : (afford ? "var(--gold)" : "var(--danger)")))) : "var(--text3)", fontSize: "13px" } },
           mode === "mkt"
             ? (_mode === "fivefinger" ? "FREE" : it.vendor === false ? (it.nexus || "-") : it.upkeep ? fmtG(it.upkeep) + "/wk" : fmtG(sp) + (it.unit ? " " + it.unit : ""))
@@ -692,16 +692,16 @@ EN.inventoryView = (function () {
             el("button.btn.sm", { title: "Discard one", onclick: function () { drop(ownedKey); } }, "DROP")
           ]));
     // chips wrap freely on the left; the action group is always pinned to the right
-    var info = el("div.row", { style: { gap: "10px", alignItems: "flex-start", margin: "4px 0 0", flexWrap: "nowrap" } }, [
-      el("div.row.wrap", { style: { gap: "6px", alignItems: "center", flex: "1 1 auto", minWidth: 0 } }, statChips),
-      el("div.row.wrap", { style: { gap: "6px", flex: "0 0 auto", marginLeft: "auto", justifyContent: "flex-end", alignItems: "center" } }, [actionEl])
+    var info = el("div.row.mkt-info", { style: { gap: "10px", alignItems: "flex-start", margin: "4px 0 0", flexWrap: "nowrap" } }, [
+      el("div.row.wrap.mkt-stats", { style: { gap: "6px", alignItems: "center", flex: "1 1 auto", minWidth: 0 } }, statChips),
+      el("div.row.wrap.mkt-action", { style: { gap: "6px", flex: "0 0 auto", marginLeft: "auto", justifyContent: "flex-end", alignItems: "center" } }, [actionEl])
     ]);
     // the traits chip above only shows a count; tapping it opens this row with the real trait chips
     var traitsExpandRow = (traits.length && traitsOpen)
       ? el("div.row.wrap", { style: { gap: "6px", marginTop: "6px", paddingTop: "6px", borderTop: "1px dashed var(--border)" } },
           traits.map(function (t) { return traitChip(t, defDefs); }))
       : null;
-    return el("div.feature", { style: { borderLeftColor: LEGAL_COLOR[it.legality] || "var(--border2)" } }, [
+    return el("div.feature" + (mode === "mkt" ? ".mkt-card" : ""), { style: { borderLeftColor: LEGAL_COLOR[it.legality] || "var(--border2)" } }, [
       head, info, traitsExpandRow,
       it.benchPart ? partInfoLine(ch, it) : it.armorMod ? armorModInfoLine(ch, it) : (mode !== "mkt" ? installedPartsLine(ch, it, entry) : null),
       open && it.desc ? el("p", { style: { marginTop: "8px" }, text: it.desc }) : null,
@@ -1113,8 +1113,11 @@ EN.inventoryView = (function () {
                "No receipts. No refunds. No snitching."]
       }
     };
-    blocks.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginBottom: "14px" } },
-      [el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".14em" }, text: "MARKET UPLINK" })].concat(
+    /* .mkt-* classes are HOOKS for skins (theme.css), nothing here reads them.
+       The market's chrome is inline-styled, so without a name on each piece a
+       skin could not restyle the storefront without editing this file. */
+    blocks.push(el("div.row.wrap.mkt-fronts", { style: { gap: "8px", alignItems: "center", marginBottom: "14px" } },
+      [el("span.mono.mkt-label", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".14em" }, text: "MARKET UPLINK" })].concat(
       STOREFRONTS.map(function (m) {
         var on = _mode === m.key;
         return el("button.btn.sm" + (on ? ".primary" : ""), {
@@ -1124,10 +1127,10 @@ EN.inventoryView = (function () {
       }))
     ));
     var B = BANNERS[_mode] || BANNERS.undercut;
-    blocks.push(el("div", { style: { marginBottom: "14px", padding: "12px 14px", border: "1px solid var(--border2)", borderRadius: "4px",
+    blocks.push(el("div.mkt-banner", { dataset: { front: _mode }, style: { marginBottom: "14px", padding: "12px 14px", border: "1px solid var(--border2)", borderRadius: "4px",
                                      background: "linear-gradient(180deg, " + B.glow + ", transparent)" } }, [
-      el("div", { style: { fontFamily: "var(--disp)", fontSize: "16px", letterSpacing: ".22em", color: B.color }, text: B.title }),
-      el("div.mono", { style: { fontSize: "10.5px", color: "var(--text3)", letterSpacing: ".1em", marginTop: "2px" }, text: B.sub })
+      el("div.mkt-title", { style: { fontFamily: "var(--disp)", fontSize: "16px", letterSpacing: ".22em", color: B.color }, text: B.title }),
+      el("div.mono.mkt-sub", { style: { fontSize: "10.5px", color: "var(--text3)", letterSpacing: ".1em", marginTop: "2px" }, text: B.sub })
     ].concat(B.body.map(function (p, i) {
       return el("p.help", { style: { margin: (i === 0 ? "8px" : "4px") + " 0 0" }, text: p });
     }))));
@@ -1303,12 +1306,12 @@ EN.inventoryView = (function () {
         frow("TYPE", typeBtns), frow("LEGALITY", legalBtns), frow("AVAIL", availBtns)
       ]));
     }
-    blocks.push(el("div", { style: { marginBottom: "14px", padding: "10px 12px", border: "1px solid var(--border)", borderRadius: "4px", background: "var(--bg2)" } }, ctrlKids));
+    blocks.push(el("div.mkt-controls", { style: { marginBottom: "14px", padding: "10px 12px", border: "1px solid var(--border)", borderRadius: "4px", background: "var(--bg2)" } }, ctrlKids));
 
     /* ---- one collapsible panel per major type ---- */
     var subLabel = function (t) { return el("div", { style: { margin: "10px 0 4px", fontFamily: "var(--disp)", fontSize: "11px", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--text2)" }, text: t }); };
     var collapsibleSubLabel = function (text, key, isOpen, clickable) {
-      return el("div", { style: { margin: "10px 0 4px", fontFamily: "var(--disp)", fontSize: "11px", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--text2)", display: "flex", alignItems: "center", gap: "7px", cursor: clickable ? "pointer" : "default" },
+      return el("div.mkt-sublabel", { style: { margin: "10px 0 4px", fontFamily: "var(--disp)", fontSize: "11px", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--text2)", display: "flex", alignItems: "center", gap: "7px", cursor: clickable ? "pointer" : "default" },
         onclick: clickable ? function () { _open[key] = !isOpen; EN.app.render(); } : null }, [
         el("span.collapse-caret", { text: isOpen ? "▾" : "▸" }),
         el("span", { text: text }),
@@ -1356,6 +1359,7 @@ EN.inventoryView = (function () {
       if (open && c.intro) body.push(introP(c.intro));
       body = body.concat(subBlocks);
       var p = EN.ui.panel(c.title, shown + (shown === 1 ? " LISTING" : " LISTINGS"), body, { corners: true });
+      p.classList.add("mkt-cat");                // skin hook, see marketView's note
       var head = p.querySelector(".panel-h");
       if (head) {
         head.classList.add("clickable");
@@ -3459,7 +3463,7 @@ EN.inventoryView = (function () {
       return el("button.btn.sm" + (_sub === key ? ".primary" : ""), { onclick: function () { _sub = key; EN.app.render(); } }, label);
     }
     blocks.push(el("div.row.between.wrap", { style: { gap: "10px", marginBottom: "12px", alignItems: "center",
-        position: "sticky", top: "92px", zIndex: 60,
+        position: "sticky", top: "var(--sticky-top)", zIndex: 60,
         padding: "10px clamp(14px,3vw,40px)",
         marginLeft: "calc(-1 * clamp(14px,3vw,40px))",
         marginRight: "calc(-1 * clamp(14px,3vw,40px))",
@@ -3502,7 +3506,10 @@ EN.inventoryView = (function () {
     if (_hh.open) blocks.push(billsPanel(ch));
 
     var body = _sub === "market" ? marketView(ch) : _sub === "chrome" ? chromeView(ch) : _sub === "workbench" ? workbenchView(ch) : stashView(ch);
-    body.forEach(function (b) { blocks.push(b); });
+    // One wrapper around the sub-view so a skin can frame it (theme.css draws the '98
+    // browser window off .inv-sub and reads the address line off data-sub). Nothing
+    // else keys on the wrapper; the sub-views' own blocks are untouched inside it.
+    blocks.push(el("div.inv-sub", { dataset: { sub: _sub === "market" ? "market/" + _mode : _sub } }, body));
     mount.appendChild(el("div", null, blocks));
   }
 

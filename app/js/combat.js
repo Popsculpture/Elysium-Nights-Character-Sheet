@@ -2895,7 +2895,7 @@ EN.combatView = (function () {
             style: { background: "transparent", border: "1px solid var(--border2)", color: "var(--text3)", borderRadius: "3px",
                      width: "18px", height: "18px", lineHeight: "1", fontSize: "10px", cursor: "pointer", padding: 0, flex: "0 0 auto" } }, label);
         };
-        blocks.push(el("div", { style: { position: "sticky", top: "96px", zIndex: 60, marginBottom: "12px" } }, [
+        blocks.push(el("div", { style: { position: "sticky", top: "calc(var(--sticky-top) + 4px)", zIndex: 60, marginBottom: "12px" } }, [
           el("div", { style: { padding: fxMin ? "4px 10px" : "8px 10px", background: "var(--bg1)", border: "1px dashed var(--warn)",
                                borderRadius: "4px", boxShadow: "0 6px 18px rgba(0,0,0,.5)" } }, [
             el("div.row.between", { style: { alignItems: "center", gap: "8px" } }, [

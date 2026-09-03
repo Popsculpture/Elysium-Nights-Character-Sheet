@@ -38,6 +38,7 @@
   --glow-cyan: 0 0 18px rgba(0,229,255,0.30);
   --glow-flow: 0 0 18px rgba(185,139,255,0.30);
   --r: 4px;
+  --sticky-top: 92px;   /* what a sticky sub-header clears: the top bar plus the tab rail. A skin that moves the rail sets its own. */
 }
 
 *{ box-sizing:border-box; margin:0; padding:0; }
@@ -335,7 +336,7 @@ select{ appearance:none; background-image:linear-gradient(45deg,transparent 50%,
 
 /* ===== stepper wizard nav =============================================== */
 .wizard-rail{ display:flex; gap:4px; flex-wrap:wrap; margin-bottom:14px;
-  position:sticky; top:92px; z-index:60; padding:10px 0;
+  position:sticky; top:var(--sticky-top); z-index:60; padding:10px 0;
   background:transparent;
   backdrop-filter:blur(6px); border-bottom:1px solid var(--border); }
 .wstep{ flex:1; min-width:84px; padding:8px 6px; border:1px solid var(--border); border-bottom:2px solid var(--border);
@@ -514,6 +515,315 @@ select{ appearance:none; background-image:linear-gradient(45deg,transparent 50%,
    wizard rail, and the white-on-dark hover overlays. Drop a real image at
    url(../img/light-bg.png) into the body rule to use the exact artwork.
    ========================================================================= */
+/* ===========================================================================
+   SKINS. A second axis beside the palette: the SHAPE of the interface (type,
+   corners, chrome, effects), selected in the settings tray and stored per
+   device (settings.js, EN.theme.setSkin). Each skin is a root class and its
+   rules live in one block here, overriding the defaults above exactly the
+   way html.light does below. Classic is the absence of any skin class, so no
+   skin can break it. Palettes still supply every color; a skin should reach
+   for var(--accent) and friends, never a literal hue.
+
+   html.skin-98     #GRIDOS '98   below: Windows 98 chrome, Elysium Nights palette
+
+   html.skin-droid  #GRIDroid     rules land with the author's design
+   =========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   #GRIDOS '98. Homage, not costume: bevels on everything, gradient title bars
+   with window buttons, a bottom TASKBAR with a START button (the gear, which
+   opens Settings, exactly what Start did), sunken status cells, monospace
+   chrome labels, and no corner marks (a window has a frame). Black instead of
+   Win98 grey; the palette supplies every color, so the title bar goes gold on
+   the Admin theme by itself. Square corners are enforced on inline radii too,
+   since the meters and bars set theirs from JS.
+   --------------------------------------------------------------------------- */
+html.skin-98{
+  --bev-hi: var(--border2);
+  --bev-lo: #000;
+  --bev-mid: var(--border);
+  --sticky-top: 44px;         /* the rail is a taskbar at the bottom, so a sticky sub-header clears the top bar alone */
+  /* The three caption buttons (minimize, maximize, close) as one 56x14 drawing: Win98's 16x14
+     buttons, the first two touching and the close set apart, each a bevel of five stacked
+     rects with the glyph drawn from shapes (never text, so no font can change it). One token,
+     read by every title bar that wants the buttons; SVG cannot see var(), so this is the one
+     place the skin uses literal Win98 grey. */
+  --win-btns:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='56' height='14'><defs><g id='b'><rect width='16' height='14' fill='%23000'/><rect width='15' height='13' fill='%23fff'/><rect x='1' y='1' width='14' height='12' fill='%23808080'/><rect x='1' y='1' width='13' height='11' fill='%23dfdfdf'/><rect x='2' y='2' width='12' height='10' fill='%23c0c0c0'/></g></defs><use href='%23b'/><use href='%23b' x='18'/><use href='%23b' x='40'/><rect x='4' y='9' width='6' height='2'/><rect x='21' y='3' width='9' height='8'/><rect x='22' y='5' width='7' height='5' fill='%23c0c0c0'/><path d='M45 4l6 6M51 4l-6 6' stroke='%23000' stroke-width='2'/></svg>");
+}
+html.skin-98 body{
+  background:
+    repeating-linear-gradient(0deg, transparent 0 1px, rgba(255,255,255,.018) 1px 2px),
+    var(--bg);
+}
+html.skin-98 body::after{ display:none; }                 /* no scanline veil; the dither above is the texture */
+html.skin-98 ::selection{ background:var(--accent); color:#000; }
+
+/* every rounded thing goes square, including radii set inline from JS */
+html.skin-98 :is(.panel, .btn, .chip, .badge, .stat, .feature, .opt-card, .roll-slot, .roll-group, .device-card,
+  .muted-box, .set-card, .set-swatch, .tier-pill, .attr-cell, .wstep, .gate-card, .toast, .stepper button, .die,
+  .section-title.device-head, .gear-gone, .statkey, .set-close, .set-newbtn, .os-tab, .mag i),
+html.skin-98 input[type=text], html.skin-98 input[type=number], html.skin-98 textarea, html.skin-98 select{ border-radius:0 !important; }
+html.skin-98 [style*="border-radius"]{ border-radius:0 !important; }
+
+/* ---- bevel primitives ---- */
+html.skin-98 .panel, html.skin-98 .set-card, html.skin-98 .gate-card, html.skin-98 .opt-card, html.skin-98 .device-card{
+  border:2px solid; border-color:var(--bev-hi) var(--bev-lo) var(--bev-lo) var(--bev-hi);
+  background:var(--bg2); box-shadow:1px 1px 0 var(--bev-lo);
+}
+html.skin-98 .panel.glow{ box-shadow:1px 1px 0 var(--bev-lo), 0 0 0 1px var(--accent); }
+html.skin-98 .stat, html.skin-98 .attr-cell, html.skin-98 .roll-slot, html.skin-98 .roll-group, html.skin-98 .muted-box,
+html.skin-98 .gate-term, html.skin-98 .feature-scroll, html.skin-98 .actions-scroll{
+  border:2px solid; border-color:var(--bev-lo) var(--bev-hi) var(--bev-hi) var(--bev-lo); background:var(--bg1); box-shadow:none;
+}
+html.skin-98 .feature{ border:1px solid var(--bev-mid); border-left:4px solid var(--accent); background:var(--bg1); }
+html.skin-98 .feature.flow{ border-left-color:var(--flow); }
+html.skin-98 .feature.species{ border-left-color:var(--ember); }
+html.skin-98 .feature.lineage{ border-left-color:var(--gold); }
+
+/* ---- windows: the panel header is a title bar ---- */
+html.skin-98 .panel-h, html.skin-98 .set-head{
+  padding:4px 6px 4px 8px; min-height:26px; align-items:center; border-bottom:2px solid var(--bev-lo);
+  background:linear-gradient(90deg, var(--accent-dim) 0%, var(--accent-dim) 22%, var(--bg1) 100%);
+}
+html.skin-98 .panel-h h3, html.skin-98 .set-title{
+  font-family:var(--mono); font-weight:400; font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:#fff; text-shadow:none;
+}
+html.skin-98 .set-title{ font-size:13px; }
+html.skin-98 .panel-h .tag{ color:rgba(255,255,255,.7); }
+html.skin-98 .panel-h::before, html.skin-98 .set-head::before{
+  content:""; width:9px; height:9px; flex:0 0 9px; background:var(--accent); box-shadow:inset 1px 1px 0 rgba(255,255,255,.6), inset -1px -1px 0 rgba(0,0,0,.5);
+}
+html.skin-98 .panel-h::after{
+  content:""; margin-left:auto; width:56px; height:14px; flex:0 0 56px;
+  background:var(--win-btns) 0 0 / 56px 14px no-repeat;
+}
+html.skin-98 .panel-h.clickable:hover h3{ color:#fff; text-decoration:underline; }
+html.skin-98 .set-close{
+  width:auto; height:auto; padding:1px 7px 2px; font-family:var(--mono); font-size:13px; color:var(--text); background:var(--bg3);
+  border:2px solid; border-color:var(--bev-hi) var(--bev-lo) var(--bev-lo) var(--bev-hi);
+}
+
+/* ---- no corner marks: a Win98 window has a frame, not brackets. Classic keeps its own. ---- */
+html.skin-98 .corner{ display:none; }
+
+/* ---- controls ---- */
+html.skin-98 .btn{
+  font-family:var(--disp); font-weight:700; font-size:12px; letter-spacing:.06em; color:var(--text); background:var(--bg3);
+  border:2px solid; border-color:var(--bev-hi) var(--bev-lo) var(--bev-lo) var(--bev-hi); box-shadow:1px 1px 0 var(--bev-lo); padding:6px 14px;
+}
+html.skin-98 .btn:hover{ color:var(--text); border-color:var(--bev-hi) var(--bev-lo) var(--bev-lo) var(--bev-hi); box-shadow:1px 1px 0 var(--bev-lo); background:var(--bg4); }
+html.skin-98 .btn:active{ border-color:var(--bev-lo) var(--bev-hi) var(--bev-hi) var(--bev-lo); box-shadow:none; transform:translate(1px,1px); }
+html.skin-98 .btn.primary{ background:var(--accent); color:#000; }
+html.skin-98 .btn.primary:hover{ background:var(--accent); filter:brightness(1.1); }
+html.skin-98 .btn.flow{ background:var(--flow); color:#000; }
+html.skin-98 .btn.ghost{ border-color:transparent; box-shadow:none; background:transparent; }
+html.skin-98 .btn.danger:hover{ background:var(--danger); color:#000; box-shadow:1px 1px 0 var(--bev-lo); border-color:var(--bev-hi) var(--bev-lo) var(--bev-lo) var(--bev-hi); }
+html.skin-98 .btn.sm{ padding:3px 9px; font-size:11px; }
+html.skin-98 .btn:disabled{ color:var(--text3); text-shadow:1px 1px 0 var(--bev-hi); background:var(--bg3); box-shadow:none; }
+html.skin-98 .stepper button{ background:var(--bg3); border:2px solid; border-color:var(--bev-hi) var(--bev-lo) var(--bev-lo) var(--bev-hi); color:var(--text); }
+html.skin-98 .stepper button:active{ border-color:var(--bev-lo) var(--bev-hi) var(--bev-hi) var(--bev-lo); }
+
+html.skin-98 input[type=text], html.skin-98 input[type=number], html.skin-98 textarea, html.skin-98 select{
+  background:var(--bg); border:2px solid; border-color:var(--bev-lo) var(--bev-hi) var(--bev-hi) var(--bev-lo); box-shadow:none; padding:7px 10px;
+}
+html.skin-98 input:focus, html.skin-98 textarea:focus, html.skin-98 select:focus{ border-color:var(--bev-lo) var(--bev-hi) var(--bev-hi) var(--bev-lo); box-shadow:none; outline:1px dotted var(--accent); outline-offset:-4px; }
+
+html.skin-98 .chip{ border:1px solid var(--bev-mid); background:var(--bg1); box-shadow:inset 1px 1px 0 var(--bev-hi); padding:2px 8px; }
+html.skin-98 .chip.on{ background:var(--accent); color:#000; border-color:var(--accent); box-shadow:none; }
+html.skin-98 .badge, html.skin-98 .tier-pill{ border:1px solid var(--bev-mid); box-shadow:inset 1px 1px 0 var(--bev-hi); }
+
+html.skin-98 .stat .k{ font-family:var(--mono); letter-spacing:.12em; }
+html.skin-98 .stat .v{ text-shadow:none; }
+html.skin-98 .attr-cell .mod{ text-shadow:none; }
+html.skin-98 .section-title{ font-family:var(--mono); font-size:11px; }
+html.skin-98 label.fl{ font-family:var(--mono); font-size:10px; }
+html.skin-98 .opt-card.sel{ box-shadow:1px 1px 0 var(--bev-lo), inset 0 0 0 1px var(--accent); background:var(--bg2); }
+html.skin-98 .opt-card.sel::before{ width:4px; }
+
+/* ---- the top bar is a title bar; status readouts are sunken cells ---- */
+html.skin-98 .os-topbar{
+  height:44px; background:linear-gradient(90deg, var(--accent-dim) 0%, var(--accent-dim) 18%, var(--bg1) 70%);
+  border-bottom:2px solid var(--bev-lo); backdrop-filter:none; box-shadow:inset 0 1px 0 var(--bev-hi);
+}
+html.skin-98 .os-logo{ font-family:var(--mono); font-weight:400; font-size:14px; letter-spacing:.2em; color:#fff; text-shadow:none; }
+html.skin-98 .os-logo b{ color:#fff; }
+html.skin-98 .os-logo .v{ color:rgba(255,255,255,.6); }
+html.skin-98 .os-status > span, html.skin-98 #active-name, html.skin-98 .os-clock{
+  padding:2px 8px; background:var(--bg1); border:1px solid; border-color:var(--bev-lo) var(--bev-hi) var(--bev-hi) var(--bev-lo);
+  font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; color:var(--text2);
+}
+html.skin-98 .os-status{ gap:6px; }
+/* no LINK STABLE / SYNC OK readouts on the title bar: the tray glyphs carry that job now.
+   #active-name is its own .os-status and stays. The save flash still writes to the hidden
+   #save-state, harmlessly. */
+html.skin-98 .os-topbar .os-status:not(#active-name){ display:none; }
+
+/* ---- the tab rail is the TASKBAR, and the gear is START ---- */
+html.skin-98 .os-tabs{
+  position:fixed; top:auto; bottom:0; left:0; right:0; z-index:99; height:40px; padding:4px 6px; align-items:center; gap:6px;
+  background:var(--bg2); border-top:2px solid var(--bev-hi); border-bottom:0; box-shadow:0 -1px 0 var(--bev-lo);
+}
+html.skin-98 .os-tabs-scroll{ gap:4px; align-items:stretch; height:30px; }
+html.skin-98 .os-tab{
+  font-family:var(--mono); font-weight:400; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--text2);
+  padding:0 12px; gap:6px; background:var(--bg3); border:2px solid; border-color:var(--bev-hi) var(--bev-lo) var(--bev-lo) var(--bev-hi);
+  box-shadow:1px 1px 0 var(--bev-lo); min-width:112px; justify-content:flex-start;
+}
+html.skin-98 .os-tab:hover{ background:var(--bg4); color:var(--text); }
+html.skin-98 .os-tab.active{
+  color:var(--accent); text-shadow:none; background:var(--bg1); box-shadow:none;
+  border-color:var(--bev-lo) var(--bev-hi) var(--bev-hi) var(--bev-lo);
+  background-image:repeating-linear-gradient(45deg, transparent 0 2px, rgba(255,255,255,.04) 2px 3px);
+}
+html.skin-98 .os-tab span{ color:var(--accent); }
+html.skin-98 .os-gear{ order:-1; height:30px; padding:0 12px 0 10px; background:var(--bg3); min-width:0; }
+html.skin-98 .os-gear span{ display:none; }
+html.skin-98 .os-gear::before{ content:""; width:11px; height:11px; margin-right:8px; background:var(--accent); box-shadow:inset 1px 1px 0 rgba(255,255,255,.6), inset -1px -1px 0 rgba(0,0,0,.5); }
+html.skin-98 .os-gear::after{ content:"START"; font-family:var(--disp); font-weight:700; font-size:13px; letter-spacing:.14em; color:var(--text); }
+html.skin-98 .os-gear:hover{ color:var(--text); }
+html.skin-98 .os-main{ padding-bottom:110px; }                       /* room for the taskbar */
+
+/* ---- the system tray, right end of the taskbar: glyph | glyph | clock ---- */
+.os-tray{ display:none; }                                             /* Classic has no taskbar; the top bar keeps the clock */
+html.skin-98 .os-topbar .os-clock{ display:none; }                    /* the clock moved to the tray */
+html.skin-98 .os-tray{
+  display:flex; align-items:center; margin-left:auto; height:30px; flex:0 0 auto;
+  background:var(--bg1); border:1px solid; border-color:var(--bev-lo) var(--bev-hi) var(--bev-hi) var(--bev-lo);
+  font-family:var(--mono); font-size:11px; letter-spacing:.1em; color:var(--text2);
+}
+html.skin-98 .os-tray > span{ display:flex; align-items:center; height:100%; padding:0 10px; }
+/* etched dividers between cells, the Win98 way: a dark line with a light line beside it */
+html.skin-98 .os-tray > span + span{ border-left:1px solid var(--bev-lo); box-shadow:inset 1px 0 0 var(--bev-hi); }
+html.skin-98 .os-tray-ico{
+  font-size:13px; color:var(--success); text-shadow:0 0 8px currentColor;
+  animation:tray-pulse 2.4s ease-in-out infinite; transition:color .15s;
+}
+html.skin-98 .os-tray-ico + .os-tray-ico{ animation-delay:1.2s; }     /* the two breathe out of phase */
+/* the glow follows currentColor, so the save flash (inline amber on ⬤) recolors glyph and glow together */
+@keyframes tray-pulse{ 0%,100%{ opacity:.55; text-shadow:0 0 4px currentColor; } 50%{ opacity:1; text-shadow:0 0 12px currentColor; } }
+
+/* ---- '98: the Inventory tab is a browser window; the Gray Market inside it is a 1998 auction site ----
+   inventory.js wraps whichever sub-view is up (Stash / Chrome / Workbench / Gray Market) in .inv-sub
+   and writes the sub-view into data-sub. This block turns that wrapper into a "#GRID Explorer"
+   window: title bar, menu bar, address bar, then a white document. Inside the document every
+   palette token is re-declared for a light page, so the inline var(--x) colors the inventory
+   module paints with re-resolve to readable dark inks without a single edit to the module.
+   The window chrome wants the DARK side's accent for its title gradient, and a custom property
+   declared next to its own remap would read the remapped value, so the dark values are captured
+   one level up, on #view, before the remap happens. */
+html.skin-98 #view{ --chrome-a:var(--accent-dim); --chrome-b:var(--bg1); --chrome-font:var(--disp); }
+html.skin-98 .inv-sub{
+  --bg:#ffffff; --bg1:#f4f4ef; --bg2:#fbfbf8; --bg3:#ecece6; --bg4:#e0e0da;
+  --panel:#ffffff; --panel-solid:#ffffff; --grid-line:transparent;
+  --border:#c2c2ba; --border2:#8e8e86;
+  --accent:#0b6f8f; --accent-dim:#0b6f8f; --flow:#5b2fa8; --ember:#b8470f; --gold:#8a6200;
+  --success:#0f7a3a; --warn:#946400; --danger:#b5121f; --wound:#b5121f; --shield:#5b2fa8; --bw:#0b5fa8; --fp:#5b2fa8;
+  --text:#111111; --text2:#333333; --text3:#5e5e5e; --text4:#8c8c8c;
+  --bev-hi:#ffffff; --bev-lo:#808080; --bev-mid:#c0c0c0;
+  --glow-cyan:none; --glow-flow:none;
+  --mono:"Courier New", Courier, monospace;
+  --disp:Arial, Helvetica, sans-serif;
+  --body:"Times New Roman", Times, serif;
+  --link:#0000ee; --link-hot:#551a8b;
+  display:flex; flex-direction:column; position:relative;
+  margin-top:10px; padding:0 12px 12px;
+  background:#fff; color:var(--text); font-family:var(--body);
+  border:2px solid; border-color:#dfdfdf #404040 #404040 #dfdfdf; outline:1px solid #000;
+}
+/* title bar: the window's name left, the _ [] x buttons drawn as an SVG at the right */
+html.skin-98 .inv-sub::before{
+  content:"#GRID Explorer"; order:-2; flex:none; margin:0 -12px;
+  height:26px; line-height:26px; padding:0 8px;
+  font-family:var(--chrome-font); font-size:14px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:#fff;
+  background:var(--win-btns) right 6px center / 56px 14px no-repeat,
+             linear-gradient(90deg, var(--chrome-a) 0%, var(--chrome-a) 22%, var(--chrome-b) 100%);
+}
+/* menu bar + address bar: two lines of one pseudo, the white address field painted as a background layer */
+html.skin-98 .inv-sub::after{
+  content:"File   Edit   View   Favorites   Tools   Help\A Address        grid://www.gridmart.net/" attr(data-sub) "/index.cgi";
+  order:-1; flex:none; margin:0 -12px 12px; padding:0 8px 3px;
+  white-space:pre; font:12px/22px Arial, Helvetica, sans-serif; letter-spacing:0; color:#000;
+  background:
+    linear-gradient(#fff,#fff) 71px 24px / calc(100% - 79px) 19px no-repeat,
+    linear-gradient(#808080,#808080) 70px 23px / calc(100% - 77px) 21px no-repeat,
+    linear-gradient(#c0c0c0,#c0c0c0);
+  border-bottom:1px solid #808080; box-shadow:inset 0 1px 0 #fff;
+}
+/* form controls inside the document: the classic gray Win98 set, the primary button in "Buy It Now" yellow */
+html.skin-98 .inv-sub .btn{
+  font-family:Arial, Helvetica, sans-serif; font-size:12px; font-weight:400; letter-spacing:0; text-transform:none;
+  color:#000; background:#c0c0c0; border:1px solid; border-color:#fff #000 #000 #fff;
+  box-shadow:inset -1px -1px 0 #808080, inset 1px 1px 0 #dfdfdf; padding:2px 10px;
+}
+html.skin-98 .inv-sub .btn.sm{ padding:1px 8px; font-size:11px; }
+html.skin-98 .inv-sub .btn:hover{ color:#000; background:#d4d4d4; border-color:#fff #000 #000 #fff; box-shadow:inset -1px -1px 0 #808080, inset 1px 1px 0 #dfdfdf; }
+html.skin-98 .inv-sub .btn:active{ border-color:#000 #fff #fff #000; box-shadow:inset 1px 1px 0 #808080; }
+html.skin-98 .inv-sub .btn.primary, html.skin-98 .inv-sub .btn.primary:hover{ background:#ffcc00; color:#000; filter:none; }
+html.skin-98 .inv-sub .btn.flow{ background:#c0c0c0; color:#000; }
+html.skin-98 .inv-sub .btn.ghost{ background:transparent; border-color:transparent; box-shadow:none; }
+html.skin-98 .inv-sub .btn:disabled{ color:#808080; text-shadow:1px 1px 0 #fff; background:#c0c0c0; opacity:1; }
+html.skin-98 .inv-sub input[type=text], html.skin-98 .inv-sub input[type=number], html.skin-98 .inv-sub textarea, html.skin-98 .inv-sub select{
+  background:#fff; color:#000; font-family:"Courier New", Courier, monospace; font-size:12px;
+  border:1px solid; border-color:#808080 #fff #fff #808080; box-shadow:inset 1px 1px 0 #000, inset -1px -1px 0 #dfdfdf;
+}
+html.skin-98 .inv-sub input::placeholder{ color:#888; }
+/* panels become listing tables: gray header row, bold blue underlined category link, white body */
+html.skin-98 .inv-sub .panel{ background:#fff; border:1px solid #9a9a92; box-shadow:none; }
+html.skin-98 .inv-sub .panel-h{ background:#e8e8e2; border-bottom:1px solid #9a9a92; padding:4px 8px; box-shadow:none; }
+html.skin-98 .inv-sub .panel-h::before, html.skin-98 .inv-sub .panel-h::after{ display:none; }
+html.skin-98 .inv-sub .panel-h h3{ font-family:Arial, Helvetica, sans-serif; font-size:13px; font-weight:700; letter-spacing:0; text-transform:none; color:var(--link); text-shadow:none; }
+html.skin-98 .inv-sub .panel-h.clickable h3{ text-decoration:underline; }
+html.skin-98 .inv-sub .panel-h.clickable:hover h3{ color:var(--link-hot); }
+html.skin-98 .inv-sub .panel-h .tag{ font-family:Arial, Helvetica, sans-serif; font-size:11px; letter-spacing:0; text-transform:lowercase; color:#666; }
+html.skin-98 .inv-sub .panel-b{ padding:6px 8px 8px; }
+html.skin-98 .inv-sub .collapse-caret{ color:#000; }
+html.skin-98 .inv-sub .mkt-sublabel{ font-family:Arial, Helvetica, sans-serif !important; font-size:12px !important; font-weight:700; letter-spacing:0 !important; text-transform:none !important; color:#000 !important; background:#f3f3ee; border-top:1px solid #d0d0c8; border-bottom:1px solid #d0d0c8; padding:3px 6px; margin:8px 0 0 !important; }
+/* item cards become table rows: striped, no card border, the name a blue link, the price bold */
+html.skin-98 .inv-sub .feature{ background:#fff; border:0 !important; border-bottom:1px solid #d6d6ce !important; padding:5px 8px; margin:0; box-shadow:none; filter:none; }
+html.skin-98 .inv-sub .feature:nth-child(even){ background:#f4f4ef; }
+html.skin-98 .inv-sub .feature h4{ font-family:Arial, Helvetica, sans-serif; font-size:13px; font-weight:400; letter-spacing:0; margin:0; color:#000; }
+html.skin-98 .inv-sub .mkt-name{ color:var(--link); text-decoration:underline; }
+html.skin-98 .inv-sub .mkt-name:hover{ color:var(--link-hot); }
+html.skin-98 .inv-sub .mkt-meta{ font-family:Arial, Helvetica, sans-serif !important; font-size:11px !important; letter-spacing:0 !important; }
+html.skin-98 .inv-sub .mkt-price{ font-family:Arial, Helvetica, sans-serif !important; font-size:13px !important; font-weight:700; }
+html.skin-98 .inv-sub .feature p{ font-family:var(--body); font-size:13px; color:#222; }
+html.skin-98 .inv-sub .chip{ font-family:Arial, Helvetica, sans-serif; font-size:10px !important; letter-spacing:0 !important; border:1px solid #b9b9b1; background:#fafaf6; box-shadow:none; padding:1px 5px; }
+html.skin-98 .inv-sub .chip.on{ background:#ffcc00; color:#000; border-color:#000; }
+/* the Gray Market's own chrome: storefronts as a lowercase text-link nav (craigslist), the banner
+   as a fat lowercase four-color wordmark (eBay), the search bar as the yellow featured band */
+html.skin-98 .mkt-fronts{ gap:0 !important; margin:0 0 6px !important; padding:4px 0; border-bottom:1px solid #000; }
+html.skin-98 .mkt-fronts .mkt-label{ display:none; }
+html.skin-98 .mkt-fronts .btn, html.skin-98 .mkt-fronts .btn:hover{ background:none; border:0; box-shadow:none; padding:0 10px; font-family:Arial, Helvetica, sans-serif; font-size:13px; letter-spacing:0; text-transform:lowercase; color:var(--link); text-decoration:underline; }
+html.skin-98 .mkt-fronts .btn:hover{ color:var(--link-hot); }
+html.skin-98 .mkt-fronts .btn:first-of-type{ padding-left:0; }
+html.skin-98 .mkt-fronts .btn + .btn{ border-left:1px solid #000; }
+html.skin-98 .mkt-fronts .btn:active{ transform:none; }
+html.skin-98 .mkt-fronts .btn.primary, html.skin-98 .mkt-fronts .btn.primary:hover{ background:none; color:#000; text-decoration:none; font-weight:700; filter:none; }
+html.skin-98 .mkt-banner{ background:none !important; border:0 !important; border-bottom:2px solid #000 !important; padding:2px 0 8px !important; margin:0 0 8px !important; display:flex; flex-wrap:wrap; align-items:baseline; column-gap:18px; }
+html.skin-98 .mkt-title{ font-family:"Arial Black", "Arial Rounded MT Bold", Impact, sans-serif !important; font-size:40px !important; line-height:1 !important; letter-spacing:-.06em !important; text-transform:lowercase; color:transparent !important;
+  background:linear-gradient(90deg, #0090b0 0 26%, #d3008f 26% 51%, #e0a300 51% 76%, #1a9a3c 76%); -webkit-background-clip:text; background-clip:text; }
+html.skin-98 .mkt-sub{ font:italic 13px/1.3 "Times New Roman", Times, serif !important; letter-spacing:0 !important; text-transform:lowercase; color:#555 !important; margin:0 !important; }
+html.skin-98 .mkt-banner .help{ flex-basis:100%; font-family:var(--body); font-size:13px; color:#222; margin-top:4px; }
+html.skin-98 .mkt-controls{ background:#ffffcc !important; border:1px solid #d6c96a !important; padding:6px 8px !important; margin:0 0 10px !important; }
+html.skin-98 .mkt-controls .mono{ font-family:Arial, Helvetica, sans-serif !important; font-size:11px !important; letter-spacing:0 !important; color:#333 !important; }
+@media (prefers-reduced-motion: reduce){ html.skin-98 .os-tray-ico{ animation:none; opacity:1; } }
+html.skin-98 .toast{ bottom:56px; border:2px solid; border-color:var(--bev-hi) var(--bev-lo) var(--bev-lo) var(--bev-hi); box-shadow:1px 1px 0 var(--bev-lo); }
+
+/* ---- the gate wears the same chrome ---- */
+html.skin-98 .gate-card{ padding:0; overflow:hidden; box-shadow:1px 1px 0 var(--bev-lo), 0 18px 60px rgba(0,0,0,.6); }
+html.skin-98 .gate-card > *{ margin-left:22px; margin-right:22px; }
+html.skin-98 .gate-card > .gate-kick{
+  margin:0 0 18px; padding:5px 10px; font-size:11px; letter-spacing:.14em; color:#fff; border-bottom:2px solid var(--bev-lo);
+  background:linear-gradient(90deg, var(--accent-dim) 0%, var(--accent-dim) 22%, var(--bg1) 100%);
+}
+html.skin-98 #gate.admin .gate-card > .gate-kick{ background:linear-gradient(90deg, var(--gcd) 0%, var(--gcd) 22%, var(--bg1) 100%); }
+html.skin-98 .gate-card > .gate-foot, html.skin-98 .gate-card > .gate-sw{ margin-bottom:14px; }
+html.skin-98 .gate-go, html.skin-98 .gate-swb, html.skin-98 .gate-prof, html.skin-98 .gc-go, html.skin-98 .pc-go{ border-radius:0; }
+html.skin-98 .gate-go{ border:2px solid; border-color:var(--bev-hi) var(--bev-lo) var(--bev-lo) var(--bev-hi); box-shadow:1px 1px 0 var(--bev-lo); }
+html.skin-98 .gate-inrow{ border-radius:0; border:2px solid; border-color:var(--bev-lo) var(--bev-hi) var(--bev-hi) var(--bev-lo); }
+html.skin-98 #gate-coach, html.skin-98 .gate-bubble{ border-radius:0; }
+html.skin-98 .gate-term{ border-radius:0; }
+
 html.light body{
   background:
     radial-gradient(560px 430px at 0% 0%,    rgba(236,150,200,0.50), transparent 62%),

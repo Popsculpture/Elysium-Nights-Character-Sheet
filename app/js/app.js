@@ -131,6 +131,19 @@ EN.app = (function () {
     nav.appendChild(scroll);
     // settings gear, pinned to the right end of the rail
     if (EN.settings && EN.settings.gearTab) nav.appendChild(EN.settings.gearTab());
+    /* The system tray: two status glyphs and a second clock. Always rendered,
+       because the DOM cannot move the top-bar clock into the rail, and a skin
+       is CSS only. Classic hides it; a skin with a bottom taskbar ('98) shows
+       it and hides the top-bar clock instead, so there is always exactly one
+       clock on screen. Both are ticked by tickClock. */
+    // ⇋ is LINK STABLE and ⬤ is SYNC OK, the two top-bar readouts the '98 title
+    // bar drops; the words survive as hover titles, and ⬤ flashes with the save
+    // pulse exactly as SYNC OK does (see flashSave).
+    nav.appendChild(el("div.os-tray", null, [
+      el("span.os-tray-ico", { text: "⇋", title: "LINK STABLE" }),
+      el("span.os-tray-ico", { id: "os-tray-sync", text: "⬤", title: "SYNC OK" }),
+      el("span.os-tray-clock", { id: "os-tray-clock", text: clockText() })
+    ]));
   }
 
   var _lastTab = null;
@@ -195,16 +208,30 @@ EN.app = (function () {
   /* save indicator pulse */
   function flashSave() {
     var s = document.getElementById("save-state");
-    if (!s) return;
-    s.textContent = "SYNC…"; s.style.color = "var(--warn)";
+    var g = document.getElementById("os-tray-sync");   // the tray's ⬤, which IS SYNC OK on a skin with a taskbar
+    if (!s && !g) return;
+    if (s) { s.textContent = "SYNC…"; s.style.color = "var(--warn)"; }
+    if (g) { g.style.color = "var(--warn)"; g.title = "SYNC…"; }
     clearTimeout(flashSave._t);
-    flashSave._t = setTimeout(function () { s.textContent = "SYNC OK"; s.style.color = "var(--success)"; }, 280);
+    flashSave._t = setTimeout(function () {
+      if (s) { s.textContent = "SYNC OK"; s.style.color = "var(--success)"; }
+      // clear the inline color rather than set it, so the glyph falls back to
+      // the skin's own rule and keeps its pulse
+      if (g) { g.style.color = ""; g.title = "SYNC OK"; }
+    }, 280);
   }
 
   /* clock */
+  function clockText() {
+    var d = new Date();
+    return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0") + ":" + String(d.getSeconds()).padStart(2, "0");
+  }
   function tickClock() {
+    var t = clockText();
     var c = document.getElementById("os-clock");
-    if (c) { var d = new Date(); c.textContent = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0") + ":" + String(d.getSeconds()).padStart(2, "0"); }
+    if (c) c.textContent = t;
+    var tray = document.getElementById("os-tray-clock");   // the taskbar clock, when a skin shows one
+    if (tray) tray.textContent = t;
   }
 
   /* boot sequence */
@@ -261,7 +288,11 @@ EN.app = (function () {
     if (sp) portal = (sp === "admin" && hasAdmin()) ? "admin" : "freelancer";
     // Any non-silent store change re-renders the active view. (Text fields use
     // silent updates, so typing never triggers a disruptive re-render.)
-    store.on(function () { flashSave(); render(); });
+    // render FIRST, then flash: render rebuilds the rail, and the tray's sync
+    // glyph lives in it, so a flash applied before the rebuild would be thrown
+    // away with the old rail a moment later (the top bar's readout is static
+    // HTML and never noticed the difference)
+    store.on(function () { render(); flashSave(); });
     renderTabs();
     render();
     tickClock(); setInterval(tickClock, 1000);

@@ -7060,7 +7060,7 @@ deleted, where nothing else could cross. On the Admin desktop the tray is titled
 **The Admin card got its own three-strike easter egg after all.** The first cut had three misses
 trip a trace and a cooldown with no way in, on the reasoning that the passphrase exists so three
 guesses is not one. The author reversed that the same day for parity with the Freelancer hijack:
-the trace lands and the node locks, then about five seconds later the "trace initiated" line
+the trace lands and the node locks, then about two seconds later the "trace initiated" line
 scrambles glyph by glyph and resolves green as a #GRID Guardian override (the bestiary's corporate
 counter-hacker, the one with admin authority over the whole cluster, so the one thing in the
 setting that can wave a trace away). An off-brand paperclip pops in and types "It looks like
@@ -7081,6 +7081,128 @@ clears nothing (`?login&portal=admin` for the Admin card); and SIGN OUT in the s
 beside Switch user, forgets BOTH profiles' unlocks (author's call, same day: sign out means the
 whole node, not one side of it) and reopens the current profile's login card over the desktop,
 which is also the honest way to hand the device to a player.
+
+## The skin axis, 2026-09-02
+
+Author's call: the appearance section grows a second axis beside the palette. A SKIN is the
+shape of the interface (type, corners, chrome, effects); a palette is still its colors, so any
+palette wears any skin. Three skins: Classic (the look as shipped, the default), #GRIDOS '98,
+and #GRIDroid. The names are the author's; '98 riffs on the Windows of that year and Droid on
+what Google called its phone OS.
+
+Only the axis is built here. The '98 and Droid designs are the author's to share, so the tray
+picks them, the root class flips (html.skin-98, html.skin-droid, the same mechanism as
+html.light), the choice persists, and a warn-colored line under the picker says the skin is
+wired but not yet styled. Classic is the ABSENCE of a skin class, so no skin's rules can ever
+break it. theme.css carries a reserved, commented block where each skin's rules will land.
+
+Device-level on purpose (`en_skin_v1`): a palette belongs to the character and rides in their
+export, but the skin is the OS this device runs, so it is neither per-character nor per-desktop
+and is never exported.
+
+## #GRIDOS '98, the first skin, 2026-09-02
+
+Author's reference was their own site's Win98 treatment: black, not grey, with the palette's
+cyan and magenta doing the work. The skin is one override block in theme.css against
+`html.skin-98`, and it changes shape only: bevels on every surface (raised for windows and
+buttons, sunken for inputs, stats and status cells), gradient title bars with a window-button
+cluster, no corner marks at all (the author cut the crosshairs on sight; a window has a frame),
+monospace chrome labels, square corners enforced on
+inline radii too (the meters set theirs from JS). The tab rail becomes a bottom TASKBAR and the
+gear becomes START, which opens Settings, which is what Start did. Palettes still supply every
+color: the title bars go gold on the Admin theme with no rule written for it. The gate wears the
+same chrome.
+
+**One thing CSS could not know**: the cog note anchors below the gear, and the taskbar puts the
+gear at the bottom of the viewport. The gate now measures the note after appending it and flips
+it above the gear, caret on the bottom edge, whenever the gear sits in the lower half of the
+screen. Testing that surfaced a second, older gap: `coach()` is exported but relied on `open()`
+having injected the gate's CSS first, so a note after a silent resume would have had no styles at
+all. It injects its own now.
+
+#GRIDroid is still wired but unstyled, pending the author's design.
+
+### The '98 system tray, same day
+
+Author's ask: the time moves to the right end of the taskbar behind two status glyphs, in the
+order glyph, glyph, clock, the glyphs in a soft pulsing vibrant green. A skin is CSS only and CSS
+cannot move the top-bar clock into the rail, so the rail now always renders a tray of its own
+(two glyphs and a second clock) and tickClock drives both clocks. Classic hides the tray; '98
+shows it and hides the top-bar clock, so exactly one clock is ever on screen. Cells are divided
+the Win98 way (a dark line with a light line beside it), the glyphs wear var(--success) with a
+2.4s glow pulse offset by half a period so they breathe out of phase, and the pulse drops under
+prefers-reduced-motion like every other animation in the file.
+
+Also cut from the '98 title bar at the author's ask: the LINK STABLE and SYNC OK readouts. The
+tray glyphs carry that job on this skin. #active-name is its own element and stays; the save
+flash still writes to the hidden #save-state, harmlessly. Classic is untouched.
+
+Then the author named the glyphs: on '98, the tray's first glyph IS LINK STABLE and the second IS
+SYNC OK. So they behave like what they replace: the words survive as hover titles, and the second
+glyph flashes amber with the save pulse for the same 280ms the top-bar readout does, glow and
+all (the glow follows currentColor now), then falls back to the skin's green by clearing its
+inline color rather than setting one, so it keeps its pulse. Making that land took one reorder:
+the store listener ran flashSave() then render(), and render() rebuilds the rail, so the freshly
+amber glyph was thrown away with the old rail a moment later while the top bar's static readout
+never noticed. It renders first now, then flashes.
+
+### The Gray Market goes to 1998, same day
+
+Author's ask: on '98, make the Inventory tab, and the Gray Market especially, look like eBay or
+craigslist. The reading that fits a Windows 98 homage is the literal one: on that desktop you
+reached a shop through a browser, and the shop was a white page. So the Inventory tab now opens
+a "#GRID Explorer" window (title bar with the window buttons, a File/Edit/View menu bar, an
+address bar whose URL names the sub-view and storefront), and inside it is a light document.
+The Gray Market fills that document the way a 1998 auction site did: the storefronts are a
+lowercase text-link nav with pipe separators, the storefront name is a fat lowercase wordmark in
+four hard color bands, the tagline is italic serif, the search bar is the yellow featured band,
+each category is a listing table with a gray header row and a bold blue underlined name, and
+the items are striped rows with blue underlined names, bold prices, and a "Buy It Now" yellow
+BUY button. Stash, Chrome, and Workbench sit in the same window as plainer pages of the same
+site. Classic is untouched.
+
+Two things the module had to give the skin. Every piece of the market's chrome was inline-styled
+with no name a stylesheet could reach, so marketView and itemCard now carry `.mkt-*` classes
+(fronts, banner, controls, sublabel, card, name, meta, price, info, action) that nothing in the
+module reads, and the tab wraps whichever sub-view is up in one `.inv-sub` with the sub-view in
+`data-sub`, which is how the address bar knows what to say. The wrapper is a plain block in
+Classic; nothing else keys on it.
+
+How the white page stays readable without touching the module: the wrapper re-declares every
+palette token (backgrounds, inks, the accent set, the bevel trio, the fonts) for a light page, so
+the inline `var(--gold)` and friends the inventory paints with re-resolve to dark inks inside it.
+One trap in that: the window's own title bar wants the DARK side's accent for its gradient, and a
+custom property declared next to its own remap reads the remapped value, so the dark values are
+captured one level up on `#view` before the remap happens. The window buttons are an inline SVG
+drawn from shapes, not text, so they cannot fall back to a tofu glyph.
+
+### The sticky sub-header's gap on '98, same day
+
+Author's screenshot: scrolling the Gray Market on '98 left the Inventory sub-nav (the sticky
+STASH / CHROME / WORKBENCH / GRAY MARKET row with the wallet beside it) hovering 48px below the
+top bar, and the store page showed through the gap. The row stuck at 92px, which is the Classic
+top bar plus the tab rail; on '98 the rail is a taskbar at the bottom, so the top bar ends at 44.
+
+The sweep found the same assumption three times: that row (inline, 92px), the Freelancer tab's
+sticky Active Condition Effects box (inline, 96px), and the wizard rail (theme.css, 92px), which
+the '98 block had already patched with a one-off `top:44px`. Rather than three overrides, one
+token now carries the offset: `--sticky-top` is 92px on the root and 44px inside the '98 block,
+and all three consumers read it (the effects box keeps its 4px of extra room as a calc). The
+one-off override is gone with it. Classic is byte-for-byte the same offsets; a future skin that
+moves the rail sets one variable.
+
+### Three caption buttons, not three glyphs, same day
+
+Author's ask, pointing at a panel title bar: the `_ [] x` accent should look like three separate
+buttons, the way they are supposed to be. It was one pseudo-element holding three characters
+inside a single bevel, so it read as one wide button with a label. A title bar only has the one
+pseudo-element left (the other is the little square icon), so the three buttons are a drawing:
+a 56x14 SVG of Win98's 16x14 caption buttons, minimize and maximize touching and close set apart,
+each a bevel of five stacked rects with the glyph drawn from shapes rather than text, so no font
+can change it. It lives once as `--win-btns` on the '98 root and both the panel title bars and
+the Explorer window's title bar read it, which retired the Explorer's own copy of the drawing.
+SVG cannot see var(), so this is the one place the skin uses literal Win98 grey, and it is the
+same grey the Explorer chrome already wears. Classic never had the buttons and still does not.
 
 ## Environment
 
