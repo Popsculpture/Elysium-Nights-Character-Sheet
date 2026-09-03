@@ -175,7 +175,7 @@ EN.theme = (function () {
     var k = get();
     if (k !== _applied) apply(k);
   }
-  function init() { apply(get()); applySkin(getSkin()); }
+  function init() { apply(get()); applySkin(getSkin()); applyWall(); }
 
   /* ---- SKIN: the shape of the interface, independent of the palette --------
      A second axis beside color: type, corners, chrome, effects. Any palette
@@ -206,6 +206,112 @@ EN.theme = (function () {
     applySkin(k);
   }
 
+  /* ---- wallpaper (the '98 desktop) ----
+     Device-level like the skin: never on a character, never in an export. Presets come from
+     EN.wallpapers (data/wallpapers.js), since file:// cannot list a folder. Customs are the
+     user's own files, drawn through a canvas so they come out as a bounded JPEG data URL,
+     which is what lets six of them sit in localStorage. theme.css paints --wall behind the
+     '98 desktop while html.has-wall is set; every other skin ignores both. */
+  var WALL_KEY = "en_wall_v1", WALL_CUSTOM_KEY = "en_wall_custom_v1";
+  // the desktop's three toggles, each its own device key: DIM scrims the wallpaper, SHADOW gives
+  // the desktop's text a slim outline and drop shadow, GLOW gives it a soft light halo
+  var WALL_OPTS = { dim: "en_wall_dim_v1", shadow: "en_wall_shadow_v1", glow: "en_wall_glow_v1" };
+  var WALL_MAX = 6, WALL_EDGE = 1920;
+  var WALL_BUDGET = 1800000;   // data-URL characters across every custom: three or four photographs, and room to spare on a 5 MB origin (Firefox, Safari)
+  function wallPresets() { return (EN.wallpapers || []).slice(); }
+  function wallCustoms() {
+    try { var v = JSON.parse(localStorage.getItem(WALL_CUSTOM_KEY) || "[]"); return Array.isArray(v) ? v : []; } catch (e) { return []; }
+  }
+  function saveWallCustoms(list) { try { localStorage.setItem(WALL_CUSTOM_KEY, JSON.stringify(list)); return true; } catch (e) { return false; } }
+  function wallUrl(key) {
+    if (!key || key === "none") return null;
+    if (key.slice(0, 7) === "custom:") {
+      var c = wallCustoms().filter(function (w) { return "custom:" + w.id === key; })[0];
+      return c ? c.data : null;
+    }
+    var p = wallPresets().filter(function (w) { return w.key === key; })[0];
+    return p ? "img/wallpapers/" + p.file : null;
+  }
+  // a stored key that is no longer listed (a removed custom, a preset renamed) reads as none
+  function getWall() { var k; try { k = localStorage.getItem(WALL_KEY) || "none"; } catch (e) { k = "none"; } return wallUrl(k) ? k : "none"; }
+  function wallOpt(k) { try { return !!WALL_OPTS[k] && localStorage.getItem(WALL_OPTS[k]) === "1"; } catch (e) { return false; } }
+  function setWallOpt(k, on) { if (!WALL_OPTS[k]) return; try { localStorage.setItem(WALL_OPTS[k], on ? "1" : "0"); } catch (e) {} applyWall(); }
+  function wallDim() { return wallOpt("dim"); }
+  function applyWall() {
+    var root = document.documentElement, url = wallUrl(getWall());
+    var st = document.getElementById("en-wall");
+    ["shadow", "glow"].forEach(function (k) { root.classList[url && wallOpt(k) ? "add" : "remove"]("wall-" + k); });
+    if (!url) { root.classList.remove("has-wall"); if (st) st.parentNode.removeChild(st); return; }
+    if (!st) { st = document.createElement("style"); st.id = "en-wall"; document.head.appendChild(st); }
+    // Absolute, because Chrome resolves a relative url() inside a custom property against the
+    // stylesheet that USES it (css/theme.css), which would send img/ looking under css/.
+    if (url.slice(0, 5) !== "data:") { var a = document.createElement("a"); a.href = url; url = a.href; }
+    st.textContent = ":root{ --wall:url(\"" + url + "\"); --wall-dim:" + (wallDim() ? ".45" : "0") + "; }";
+    root.classList.add("has-wall");
+  }
+  function setWall(key) { try { localStorage.setItem(WALL_KEY, wallUrl(key) ? key : "none"); } catch (e) {} applyWall(); }
+  function setWallDim(on) { setWallOpt("dim", on); }
+  // Room for the records. Customs share this origin's storage with every character on the
+  // device, and a wallpaper that merely squeezes in leaves the roster's next save to fail
+  // silently. So a custom is refused when the customs would pass their budget, and after the
+  // write a probe the size of everything else on the device (doubled, so the records can
+  // grow) has to fit as well, or the write is rolled back.
+  function wallRecordsSize() {
+    var n = 0;
+    try { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k !== WALL_CUSTOM_KEY) n += (localStorage.getItem(k) || "").length; } } catch (e) {}
+    return n;
+  }
+  function wallHeadroomOk() {
+    var need = Math.max(300000, wallRecordsSize() * 2), probe = new Array(need + 1).join("x");
+    try { localStorage.setItem("en_wall_probe", probe); localStorage.removeItem("en_wall_probe"); return true; }
+    catch (e) { try { localStorage.removeItem("en_wall_probe"); } catch (e2) {} return false; }
+  }
+  // done(err) with a sentence for the toast, or done(null) once the new wallpaper is up
+  function addWall(file, done) {
+    var list = wallCustoms();
+    if (list.length >= WALL_MAX) return done("Six custom wallpapers is the limit here. Remove one first.");
+    if (!file || !/^image\//.test(file.type)) return done("That file is not an image.");
+    var isSvg = /svg/.test(file.type);
+    var rd = new FileReader();
+    rd.onerror = function () { done("Could not read that file."); };
+    rd.onload = function () {
+      var img = new Image();
+      img.onerror = function () { done("Could not decode that image."); };
+      img.onload = function () {
+        var w = img.naturalWidth, h = img.naturalHeight;
+        if (!w || !h) return done("Could not size that image.");
+        // a raster only ever shrinks; a vector is drawn at the full edge, so a viewBox-only SVG
+        // (which reports a tiny intrinsic size) does not come out as a blown-up thumbnail
+        var k = WALL_EDGE / Math.max(w, h); if (!isSvg) k = Math.min(1, k);
+        var c = document.createElement("canvas");
+        c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
+        var g = c.getContext("2d");
+        // JPEG has no alpha, so transparent areas land on the desktop color rather than black
+        var bg = ""; try { bg = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim(); } catch (e) {}
+        g.fillStyle = bg || "#07090d"; g.fillRect(0, 0, c.width, c.height);
+        g.drawImage(img, 0, 0, c.width, c.height);
+        var data;
+        try { data = c.toDataURL("image/jpeg", 0.82); } catch (e) { return done("Could not encode that image."); }
+        var used = list.reduce(function (n, x) { return n + (x.data || "").length; }, 0);
+        if (used + data.length > WALL_BUDGET) return done("That wallpaper would crowd out this device's records. Remove a custom wallpaper first.");
+        var entry = { id: Date.now().toString(36), name: String(file.name || "Custom").replace(/\.[^.]+$/, "").slice(0, 40), data: data };
+        list.push(entry);
+        if (!saveWallCustoms(list) || !wallHeadroomOk()) {
+          list.pop(); saveWallCustoms(list);
+          return done("This device's storage has no room for that wallpaper. Remove a custom wallpaper first.");
+        }
+        setWall("custom:" + entry.id);
+        done(null);
+      };
+      img.src = rd.result;
+    };
+    rd.readAsDataURL(file);
+  }
+  function removeWall(id) {
+    saveWallCustoms(wallCustoms().filter(function (w) { return w.id !== id; }));
+    setWall(getWall());   // re-reads: a removed selection resolves to none
+  }
+
   // colors for a theme's preview strip, dark to bright
   function ramp(t) { return [t.bg2, t.border, t.border2, t.dim, t.accent]; }
 
@@ -214,7 +320,10 @@ EN.theme = (function () {
     allThemes: allThemes, isCustom: isCustom, getCustom: getCustom, saveCustom: saveCustom,
     deleteCustom: deleteCustom, mergeCustom: mergeCustom, bundleFor: bundleFor, syncToActive: syncToActive,
     inAdmin: inAdmin,
-    SKINS: SKINS, getSkin: getSkin, setSkin: setSkin
+    SKINS: SKINS, getSkin: getSkin, setSkin: setSkin,
+    wallPresets: wallPresets, wallCustoms: wallCustoms, getWall: getWall, setWall: setWall,
+    wallDim: wallDim, setWallDim: setWallDim, wallOpt: wallOpt, setWallOpt: setWallOpt,
+    addWall: addWall, removeWall: removeWall, wallUrl: wallUrl
   };
 })();
 
@@ -285,6 +394,19 @@ EN.settings = (function () {
     ".set-sw-mini{ flex:1 1 auto; font-family:var(--mono); font-size:9px; letter-spacing:.1em; padding:3px 4px;",
     "  background:transparent; border:1px solid var(--border2); color:var(--text3); border-radius:3px; cursor:pointer; transition:.15s; }",
     ".set-sw-mini:hover{ color:var(--accent); border-color:var(--accent); }",
+    ".set-walls{ display:grid; grid-template-columns:repeat(auto-fill,minmax(118px,1fr)); gap:8px; }",
+    ".set-wall{ position:relative; aspect-ratio:16/9; background:var(--bg1) center/cover no-repeat; border:1px solid var(--border);",
+    "  border-radius:var(--r); cursor:pointer; overflow:hidden; transition:border-color .15s; }",
+    ".set-wall:hover{ border-color:var(--text2); }",
+    ".set-wall.on{ border-color:var(--accent); box-shadow:var(--glow-cyan); }",
+    ".set-wall-none{ background-image:repeating-linear-gradient(0deg, transparent 0 1px, rgba(255,255,255,.07) 1px 2px); }",
+    ".set-wall-name{ position:absolute; left:0; right:0; bottom:0; padding:3px 6px; font-family:var(--mono); font-size:9px; letter-spacing:.1em;",
+    "  text-transform:uppercase; color:#fff; background:rgba(0,0,0,.6); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }",
+    ".set-wall.on .set-wall-name{ color:var(--accent); }",
+    ".set-wall-add{ border-style:dashed; border-color:var(--border2); background-image:none; }",
+    ".set-wall-add .set-wall-name{ position:static; height:100%; background:none; display:flex; align-items:center; justify-content:center; color:var(--text2); }",
+    ".set-wall-x{ position:absolute; top:4px; right:4px; }",
+    ".set-wall-x .set-sw-mini{ flex:none; background:rgba(0,0,0,.6); }",
     ".set-newbtn{ margin-top:12px; }",
     // theme editor
     ".set-editor{ margin-top:16px; padding:15px 16px; border:1px solid var(--accent-dim); border-radius:6px;",
@@ -327,7 +449,7 @@ EN.settings = (function () {
       if (EN.theme.isCustom(t.key)) {
         kids.push(el("div.set-sw-actions", null, [
           el("button.set-sw-mini", { type: "button", title: "Edit this theme", onclick: function (e) { e.stopPropagation(); editExisting(t); } }, "✎ EDIT"),
-          EN.ui.armButton("swatch:" + t.key, { cls: ".set-sw-mini", label: "✕", armedLabel: "✕?",
+          EN.ui.armButton("swatch:" + t.key, { cls: ".set-sw-mini", label: "✕", armedLabel: "✕?", onArm: rebuild,
             title: "Delete this theme", onConfirm: function () { deleteTheme(t.key); } })
         ]));
       }
@@ -387,7 +509,7 @@ EN.settings = (function () {
       el("button.btn.sm", { onclick: cancelEditing }, "CANCEL")
     ].concat(_editing.isNew ? [] : [
       el("span", { style: { marginLeft: "auto" } }),
-      EN.ui.armButton("theme:" + _editing.key, { label: "✕ DELETE", armedLabel: "SURE?",
+      EN.ui.armButton("theme:" + _editing.key, { label: "✕ DELETE", armedLabel: "SURE?", onArm: rebuild,
         title: "Delete this custom theme", onConfirm: function () { deleteTheme(_editing.key); } })
     ]));
     return el("div.set-editor", null, [
@@ -614,6 +736,55 @@ EN.settings = (function () {
     ];
   }
 
+  /* Wallpaper picker, '98 only: the other skins have no desktop to hang one on. Presets are
+     the author's art (data/wallpapers.js); customs come from the user's own files. Returns a
+     flat array like skinSection, so rebuild() can run it into the same section. */
+  function wallSection() {
+    if (EN.theme.getSkin() !== "98") return [];
+    var cur = EN.theme.getWall();
+    function toggle(key, label, title) {
+      var on = EN.theme.wallOpt(key);
+      return el("button.btn.sm" + (on ? ".primary" : ""), { title: title, onclick: function () { EN.theme.setWallOpt(key, !on); rebuild(); } }, label);
+    }
+    var picker = el("input", { type: "file", accept: "image/*", style: { display: "none" },
+      onchange: function (e) {
+        var f = e.target.files && e.target.files[0];
+        if (!f) return;
+        EN.theme.addWall(f, function (err) { if (err) EN.ui.toast(err); rebuild(); });
+      } });
+    function card(key, name, thumb, extra) {
+      return el("div.set-wall" + (key === "none" ? ".set-wall-none" : "") + (cur === key ? ".on" : ""), {
+        title: name, style: thumb ? { backgroundImage: "url(\"" + thumb + "\")" } : null,
+        onclick: function () { EN.theme.setWall(key); rebuild(); }
+      }, [el("div.set-wall-name", { text: name })].concat(extra || []));
+    }
+    var cards = [card("none", "None, the dither", null)];
+    EN.theme.wallPresets().forEach(function (w) { cards.push(card(w.key, w.name, "img/wallpapers/" + w.thumb)); });
+    EN.theme.wallCustoms().forEach(function (w) {
+      cards.push(card("custom:" + w.id, w.name, w.data, [
+        // its own click boundary, so arming the remove never also selects the card
+        el("div.set-wall-x", { onclick: function (e) { e.stopPropagation(); } }, [
+          EN.ui.armButton("wall:" + w.id, { cls: ".set-sw-mini", label: "✕", armedLabel: "✕?", onArm: rebuild,
+            title: "Remove this wallpaper", onConfirm: function () { EN.theme.removeWall(w.id); rebuild(); } })
+        ])
+      ]));
+    });
+    cards.push(el("div.set-wall.set-wall-add", { title: "Add a wallpaper from a file on this device", onclick: function () { picker.click(); } },
+      [el("div.set-wall-name", { text: "+ From file" })]));
+    return [
+      el("label.set-label", { style: { marginTop: "14px" }, text: "Wallpaper" }),
+      el("p.set-hint", { text: "The desktop behind the windows. Presets are the author's art; add your own from a file, kept on this device only (resized to fit; as many as this device's storage has room for, six at most). Saved on this device." }),
+      el("div.set-walls", null, cards),
+      // three independent toggles for reading the desktop over any wallpaper; any mix works
+      el("div.row.wrap", { style: { gap: "6px", marginTop: "8px" } }, [
+        toggle("dim", "◐ DIM WALLPAPER", "Darken the wallpaper behind the windows"),
+        toggle("shadow", "◪ TEXT OUTLINE", "A slim black outline and drop shadow on the desktop's text, for bright wallpapers"),
+        toggle("glow", "✦ TEXT GLOW", "A soft glow on the desktop's text, for dark wallpapers")
+      ]),
+      picker
+    ];
+  }
+
   function themeSection() {
     var admin = EN.theme.inAdmin();
     var kids = [
@@ -644,7 +815,7 @@ EN.settings = (function () {
     sections.push(portalSection());
     // skin and palette are one section under one title: skinSection carries
     // the title, themeSection continues it, so the two are pushed as one
-    sections.push(skinSection().concat(themeSection()));
+    sections.push(skinSection().concat(wallSection(), themeSection()));
     sections.forEach(function (kids, i) {
       kids = kids.filter(function (n) { return n; });
       if (i > 0) Object.assign(kids[0].style, { marginTop: "22px", paddingTop: "18px", borderTop: "1px solid var(--border)" });

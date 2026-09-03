@@ -88,6 +88,10 @@ Bypass wired into the unarmed engine, and a `migrate()` hardening pass.
   profile is unlocked (`?login&portal=admin` for the Admin card), and clears nothing. The
   settings tray's "SIGN OUT" is the in-app route: it forgets BOTH profiles' unlocks and reopens
   the current profile's login card.
+- Looks are device state too: the OS skin in `en_skin_v1` (Classic when absent), and on '98 the
+  wallpaper choice in `en_wall_v1`, custom wallpapers as JPEG data URLs in `en_wall_custom_v1`,
+  and the desktop's three toggles in `en_wall_dim_v1`, `en_wall_shadow_v1` and `en_wall_glow_v1`. Presets are listed in `app/data/wallpapers.js` and sit
+  in `app/img/wallpapers`. None of it rides a character or an export.
 - Give parallel agents their own preview origin. Sharing one corrupts the roster.
 - My loaded character is expendable. Do not spend effort preserving it.
 

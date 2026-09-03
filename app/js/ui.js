@@ -501,7 +501,10 @@ EN.ui = (function () {
       onclick: function (e) {
         if (e && e.stopPropagation) e.stopPropagation();
         if (armed) { _armedKey = null; if (opts.onConfirm) opts.onConfirm(); }
-        else { _armedKey = key; EN.app.render(); }
+        // Arming rebuilds whoever drew the button, so it comes back armed. That is the app's
+        // render for a button in #view; a surface render() never touches (the settings tray)
+        // passes its own rebuild as opts.onArm, or its button re-arms forever and never confirms.
+        else { _armedKey = key; if (opts.onArm) opts.onArm(); else EN.app.render(); }
       }
     }, armed ? (opts.armedLabel || "SURE?") : opts.label);
   }

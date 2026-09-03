@@ -7196,13 +7196,79 @@ moves the rail sets one variable.
 Author's ask, pointing at a panel title bar: the `_ [] x` accent should look like three separate
 buttons, the way they are supposed to be. It was one pseudo-element holding three characters
 inside a single bevel, so it read as one wide button with a label. A title bar only has the one
-pseudo-element left (the other is the little square icon), so the three buttons are a drawing:
-a 56x14 SVG of Win98's 16x14 caption buttons, minimize and maximize touching and close set apart,
-each a bevel of five stacked rects with the glyph drawn from shapes rather than text, so no font
-can change it. It lives once as `--win-btns` on the '98 root and both the panel title bars and
-the Explorer window's title bar read it, which retired the Explorer's own copy of the drawing.
-SVG cannot see var(), so this is the one place the skin uses literal Win98 grey, and it is the
-same grey the Explorer chrome already wears. Classic never had the buttons and still does not.
+pseudo-element left (the other is the little square icon), so the three buttons are painted:
+fourteen background layers on that pseudo, three bevel rects per button plus the glyphs (a bar,
+a box, two diagonal gradient stripes for the close), Win98's 16x14 buttons with minimize and
+maximize touching and close set apart. The first cut drew them as an SVG, which cannot see the
+palette, so it came out in literal Win98 grey; the author asked for them dark like the rest of
+the '98 controls, and gradients can read the bevel, face and ink tokens where an SVG cannot.
+The value lives once as `--win-btns` on the '98 root, resolved there, so the Explorer window's
+title bar (inside a page that remaps the palette to light) still gets the dark set; positions
+run from the right edge and the vertical center so one value fits both a 14px pseudo and a 26px
+title bar. Classic never had the buttons and still does not. One wrinkle from the Explorer: the 6px
+that keeps its buttons off the frame is a border, and left transparent the title gradient tiled
+into it and restarted bright past the close button (author's screenshot); it is painted in the
+gradient's end color now, so the bar reads as one piece.
+
+### '98 wears its year, and gets a desktop, same day
+
+Two closing asks for the '98 skin. The top-left logo read "#GRIDOS v1.0" on every skin; on '98
+it now reads "#GRIDOS '98". CSS only: the version span collapses to zero size and its pseudo
+prints the year, so the markup and every other skin are untouched.
+
+Then a wallpaper. Windows 98 had a desktop behind the windows and the author has six pieces of
+art for it (the Bliss hill by day and by night, the 3D Pipes homage, the flying toasters, the
+rat before the #Start screen, the hashtag over the city), so the '98 desktop is now a
+wallpaper instead of the dither. The presets live in app/img/wallpapers as JPEGs re-encoded
+from the author's PNGs (about 2 MB for all six plus thumbnails, against 14 MB as PNG) and are
+listed in data/wallpapers.js, because file:// cannot read a folder. A settings row under the
+skin buttons, shown only while '98 is on, is a grid of cards: none (the dither), the six
+presets, any customs, and an add card that opens a file picker. Custom files are drawn through
+a canvas (longest edge capped at 1920, JPEG at .82) and stored as data URLs in localStorage,
+six at most, with a plain toast when the device's storage refuses one. A DIM toggle lays a
+45% scrim over the wallpaper for when the desktop's own text needs it.
+
+How it paints: the theme engine writes --wall and --wall-dim onto :root through a style element
+and flags html.has-wall; one rule in the '98 block paints the body from those, fixed
+attachment so the windows scroll over a desktop that stays put. No other skin reads any of it.
+All three keys (choice, customs, dim) are device state like the skin: never on a character,
+never in an export. The '98 panels are opaque, so a wallpaper only ever shows between windows.
+
+One wrinkle from the first live run: a preset 404ed under css/img/. Chrome resolves a relative
+url() inside a custom property against the stylesheet that uses it, not the one that declared
+it, so the engine writes the preset's absolute URL (an anchor element does the resolving, which
+also percent-encodes the spaces in this project's file:// path). Data URLs pass through as is.
+
+Then the author's screenshot of the Advance step over the day hill: everything that is not inside
+a window sits straight on the wallpaper, and over a bright one the tab title, the wizard's loose
+section titles and help lines, and the header's warning line all but vanish. The first cut gave
+the loose blocks Win98's icon-label backplate, a strip of desktop color behind each; the author
+called the blocky plates ugly and asked for toggles instead, so the desktop's text is now two
+toggles beside DIM, each independent, any mix allowed: TEXT OUTLINE, a slim black outline with a
+drop shadow for bright wallpapers, and TEXT GLOW, a soft light halo for dark ones. Both are
+text-shadow stacks inherited from the main area, so they reach every loose label every tab has
+or will add, and both are reset inside windows and controls, whose backgrounds already carry
+their text. Each is a device key like DIM. Without a wallpaper none of the three applies.
+
+An adversarial review of the change (three reviewers, two refuters per finding) confirmed seven
+distinct defects, all fixed the same day. The one that mattered most was older than the
+wallpaper: an armed button inside the settings tray could never confirm, because arming
+re-rendered the app and the tray is not part of the app's render, so the same button node kept
+its unarmed closure and re-armed on every click. The theme swatches' delete had the same shape
+since they were written; it only ever worked if something else happened to rebuild the tray in
+between. armButton now takes an onArm hook, and the tray's three callers pass their own rebuild.
+The rest: customs share the origin's storage with the roster, and a wallpaper that squeezed in
+would have left the next character save to fail silently, so customs now have a byte budget and
+a post-write probe the size of everything else on the device (doubled) that rolls the write back
+if it cannot fit; the picker cards kept 4px corners on the one skin that shows them; the desktop
+painted flat when a listed file was missing (the wallpaper replaced the dither instead of
+sitting over it); a fixed body background is ignored on iOS Safari, so the wallpaper is a fixed
+pseudo-element now; transparent PNG areas came out black (the canvas is filled with the desktop
+color first); and a viewBox-only SVG was stored as a 267px raster and blown up (vectors are drawn
+at the full edge). One follow-up for the author, pre-existing and out of this change's scope: the
+store's persist() swallows a storage-quota failure with a console line while the sync glyph still
+flashes as if the save landed.
+
 
 ## Environment
 

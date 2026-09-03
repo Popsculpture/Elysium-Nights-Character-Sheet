@@ -20,6 +20,17 @@ settings cog. The choice is remembered per device (`?portal=admin` overrides it 
   builder), Bestiary (33 transcribed Part 4 entries), plus Encounters, Hazards, Job Board, and
   Payroll, named stubs for stages still to come.
 
+
+## Skins and wallpapers
+
+Settings has an OS Skin row beside the color themes: Classic (the look as shipped), #GRIDOS '98
+(a Windows 98 homage: bevels, title bars with caption buttons, a taskbar with START, and an
+Inventory tab that opens a "#GRID Explorer" window around a 1998 auction-site Gray Market), and
+#GRIDroid (pending its design). On '98 a Wallpaper row picks the desktop behind the windows: six
+presets from the author's art in `app/img/wallpapers`, or your own image from a file (resized and
+kept on the device). Skins and wallpapers are device settings, never part of a character or its
+export.
+
 ## Tech
 
 Vanilla JS, no build step, no backend. Everything is static HTML/CSS/JS and runs straight from

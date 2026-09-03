@@ -543,12 +543,29 @@ html.skin-98{
   --bev-lo: #000;
   --bev-mid: var(--border);
   --sticky-top: 44px;         /* the rail is a taskbar at the bottom, so a sticky sub-header clears the top bar alone */
-  /* The three caption buttons (minimize, maximize, close) as one 56x14 drawing: Win98's 16x14
-     buttons, the first two touching and the close set apart, each a bevel of five stacked
-     rects with the glyph drawn from shapes (never text, so no font can change it). One token,
-     read by every title bar that wants the buttons; SVG cannot see var(), so this is the one
-     place the skin uses literal Win98 grey. */
-  --win-btns:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='56' height='14'><defs><g id='b'><rect width='16' height='14' fill='%23000'/><rect width='15' height='13' fill='%23fff'/><rect x='1' y='1' width='14' height='12' fill='%23808080'/><rect x='1' y='1' width='13' height='11' fill='%23dfdfdf'/><rect x='2' y='2' width='12' height='10' fill='%23c0c0c0'/></g></defs><use href='%23b'/><use href='%23b' x='18'/><use href='%23b' x='40'/><rect x='4' y='9' width='6' height='2'/><rect x='21' y='3' width='9' height='8'/><rect x='22' y='5' width='7' height='5' fill='%23c0c0c0'/><path d='M45 4l6 6M51 4l-6 6' stroke='%23000' stroke-width='2'/></svg>");
+  /* The three caption buttons (minimize, maximize, close), 56x14 in all, painted as fourteen
+     background layers so every color is the skin's own: three bevel rects per button in the
+     bevel and face tokens, then the glyphs in the ink token (a bar, a box, two diagonal stripes
+     for the close). Win98's 16x14 buttons, the first two touching and the close set apart.
+     Positions run from the RIGHT edge and the vertical center, so the same value sits on a
+     14px-tall panel pseudo and centered on a 26px title bar. Resolved here at the root, so a
+     descendant that remaps the palette (the '98 Explorer's light page) still gets the dark set. */
+  --wb-hi:var(--bev-hi); --wb-lo:var(--bev-lo); --wb-face:var(--bg3); --wb-ink:var(--text);
+  --win-btns:
+    linear-gradient(var(--wb-ink),var(--wb-ink)) right 46px top calc(50% + 3px) / 6px 2px no-repeat,
+    linear-gradient(var(--wb-face),var(--wb-face)) right 27px top calc(50% + .5px) / 7px 5px no-repeat,
+    linear-gradient(var(--wb-ink),var(--wb-ink)) right 26px center / 9px 8px no-repeat,
+    linear-gradient(45deg, transparent calc(50% - 1px), var(--wb-ink) calc(50% - 1px), var(--wb-ink) calc(50% + 1px), transparent calc(50% + 1px)) right 4px center / 8px 8px no-repeat,
+    linear-gradient(135deg, transparent calc(50% - 1px), var(--wb-ink) calc(50% - 1px), var(--wb-ink) calc(50% + 1px), transparent calc(50% + 1px)) right 4px center / 8px 8px no-repeat,
+    linear-gradient(var(--wb-face),var(--wb-face)) right 2px center / 12px 10px no-repeat,
+    linear-gradient(var(--wb-hi),var(--wb-hi)) right 2px top calc(50% - 1px) / 14px 12px no-repeat,
+    linear-gradient(var(--wb-lo),var(--wb-lo)) right 0 center / 16px 14px no-repeat,
+    linear-gradient(var(--wb-face),var(--wb-face)) right 24px center / 12px 10px no-repeat,
+    linear-gradient(var(--wb-hi),var(--wb-hi)) right 24px top calc(50% - 1px) / 14px 12px no-repeat,
+    linear-gradient(var(--wb-lo),var(--wb-lo)) right 22px center / 16px 14px no-repeat,
+    linear-gradient(var(--wb-face),var(--wb-face)) right 42px center / 12px 10px no-repeat,
+    linear-gradient(var(--wb-hi),var(--wb-hi)) right 42px top calc(50% - 1px) / 14px 12px no-repeat,
+    linear-gradient(var(--wb-lo),var(--wb-lo)) right 40px center / 16px 14px no-repeat;
 }
 html.skin-98 body{
   background:
@@ -556,12 +573,34 @@ html.skin-98 body{
     var(--bg);
 }
 html.skin-98 body::after{ display:none; }                 /* no scanline veil; the dither above is the texture */
+/* wallpaper: settings.js writes --wall and --wall-dim onto :root through a <style id="en-wall"> and
+   flags html.has-wall. It paints on a fixed pseudo-element behind the page rather than as a
+   fixed body background, because iOS Safari ignores background-attachment:fixed and would end
+   the picture after one screen. The body keeps its dither underneath, so a listed file that is
+   missing falls back to the dither exactly as the docs say. The dim layer is a flat scrim the
+   tray toggles; the windows scroll over a desktop that stays put. */
+html.skin-98.has-wall body::before{
+  content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
+  background:
+    linear-gradient(rgba(0,0,0,var(--wall-dim,0)), rgba(0,0,0,var(--wall-dim,0))),
+    var(--wall) center / cover no-repeat;
+}
+/* text on the desktop. Anything not inside a window sits straight on the wallpaper, so the tray
+   offers two treatments for it beside DIM, each its own toggle, usable together: a slim black
+   outline with a drop shadow for bright wallpapers, and a soft glow for dark ones. Both are
+   text-shadow stacks inherited from the main area, so they reach every loose label every tab
+   has or will add, and both are reset inside windows and controls, whose backgrounds already
+   carry their text (the Explorer's white page most of all). settings.js flips the root classes. */
+html.skin-98.has-wall.wall-shadow .os-main{ text-shadow:-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,.85); }
+html.skin-98.has-wall.wall-glow .os-main{ text-shadow:0 0 5px rgba(255,255,255,.5), 0 0 12px rgba(255,255,255,.28); }
+html.skin-98.has-wall.wall-shadow.wall-glow .os-main{ text-shadow:-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,.85), 0 0 6px rgba(255,255,255,.5), 0 0 14px rgba(255,255,255,.28); }
+html.skin-98.has-wall:is(.wall-shadow, .wall-glow) .os-main :is(.panel, .inv-sub, .wizard-rail, .btn, .chip, input, textarea, select, .stat, .muted-box, .opt-card, .device-card, [style*="sticky"]){ text-shadow:none; }
 html.skin-98 ::selection{ background:var(--accent); color:#000; }
 
 /* every rounded thing goes square, including radii set inline from JS */
 html.skin-98 :is(.panel, .btn, .chip, .badge, .stat, .feature, .opt-card, .roll-slot, .roll-group, .device-card,
   .muted-box, .set-card, .set-swatch, .tier-pill, .attr-cell, .wstep, .gate-card, .toast, .stepper button, .die,
-  .section-title.device-head, .gear-gone, .statkey, .set-close, .set-newbtn, .os-tab, .mag i),
+  .section-title.device-head, .gear-gone, .statkey, .set-close, .set-newbtn, .set-wall, .os-tab, .mag i),
 html.skin-98 input[type=text], html.skin-98 input[type=number], html.skin-98 textarea, html.skin-98 select{ border-radius:0 !important; }
 html.skin-98 [style*="border-radius"]{ border-radius:0 !important; }
 
@@ -595,7 +634,7 @@ html.skin-98 .panel-h::before, html.skin-98 .set-head::before{
 }
 html.skin-98 .panel-h::after{
   content:""; margin-left:auto; width:56px; height:14px; flex:0 0 56px;
-  background:var(--win-btns) 0 0 / 56px 14px no-repeat;
+  background:var(--win-btns);
 }
 html.skin-98 .panel-h.clickable:hover h3{ color:#fff; text-decoration:underline; }
 html.skin-98 .set-close{
@@ -647,7 +686,8 @@ html.skin-98 .os-topbar{
 }
 html.skin-98 .os-logo{ font-family:var(--mono); font-weight:400; font-size:14px; letter-spacing:.2em; color:#fff; text-shadow:none; }
 html.skin-98 .os-logo b{ color:#fff; }
-html.skin-98 .os-logo .v{ color:rgba(255,255,255,.6); }
+html.skin-98 .os-logo .v{ color:rgba(255,255,255,.6); font-size:0; }          /* "v1.0" makes way for the year */
+html.skin-98 .os-logo .v::after{ content:"'98"; font-size:14px; letter-spacing:.2em; }
 html.skin-98 .os-status > span, html.skin-98 #active-name, html.skin-98 .os-clock{
   padding:2px 8px; background:var(--bg1); border:1px solid; border-color:var(--bev-lo) var(--bev-hi) var(--bev-hi) var(--bev-lo);
   font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; color:var(--text2);
@@ -735,8 +775,9 @@ html.skin-98 .inv-sub::before{
   content:"#GRID Explorer"; order:-2; flex:none; margin:0 -12px;
   height:26px; line-height:26px; padding:0 8px;
   font-family:var(--chrome-font); font-size:14px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:#fff;
-  background:var(--win-btns) right 6px center / 56px 14px no-repeat,
+  background:var(--win-btns),
              linear-gradient(90deg, var(--chrome-a) 0%, var(--chrome-a) 22%, var(--chrome-b) 100%);
+  border-right:6px solid var(--chrome-b);   /* the buttons' inset from the frame, in the gradient's end color so the bar reads as one piece */
 }
 /* menu bar + address bar: two lines of one pseudo, the white address field painted as a background layer */
 html.skin-98 .inv-sub::after{
