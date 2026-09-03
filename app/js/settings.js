@@ -521,11 +521,12 @@ EN.settings = (function () {
         title: "Sign in as the other profile",
         onclick: function () { close(); EN.gate.switchUser(EN.app.setPortal); }
       }, "⇄ SWITCH USER"),
-      /* Forgets this profile's unlock and returns to its login card, so the
-         gate asks again here and on the next reload. Useful for handing the
-         device over, and for testing the login screens (so is ?login). */
+      /* Forgets BOTH profiles' unlocks and returns to this profile's login
+         card, so the gate asks again on every side and on the next reload.
+         Useful for handing the device over, and for testing the login screens
+         (so is ?login). */
       el("button.btn.sm", {
-        title: "Lock this profile and return to its login",
+        title: "Lock both profiles and return to the login",
         onclick: function () { close(); EN.gate.signOut(EN.app.setPortal); }
       }, "⊘ SIGN OUT")
     ]));

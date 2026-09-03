@@ -7054,10 +7054,17 @@ never on a silent resume. The settings tray's RETURN TO PORTAL became SWITCH USE
 the gate on its picker with a Cancel; the two desktop buttons above it stay as the fallback for
 a build without gate.js.
 
-**No hijack on the Admin card.** The three-strike Codebreaker easter egg stays a Freelancer-only
-reward: it walks you in, which is fine for a door that also opens on a maintenance link. On the
-tunnel, three misses trip a trace warning and an eight-second cooldown, because the passphrase
-exists precisely so three guesses is not a way in. The maintenance link is drawn only on the
+**The Admin card got its own three-strike easter egg after all.** The first cut had three misses
+trip a trace and a cooldown with no way in, on the reasoning that the passphrase exists so three
+guesses is not one. The author reversed that the same day for parity with the Freelancer hijack:
+the trace lands and the node locks, then about five seconds later the "trace initiated" line
+scrambles glyph by glyph and resolves green as a #GRID Guardian override (the bestiary's corporate
+counter-hacker, the one with admin authority over the whole cluster, so the one thing in the
+setting that can wave a trace away). An off-brand paperclip pops in and types "It looks like
+you're trying to gain Admin access. Would you like help with that?", borrows your cam for a
+retinal scan while the log ticks ACQUIRED, MATCH, VALID, declares you a valid user, and opens the
+tunnel. Both codes are therefore deterrents, not locks; that was always true of the Freelancer
+door, and it is now true of both by choice. The maintenance link is still drawn only on the
 Freelancer card and only ever opens Freelancer.
 
 One structural fix while wiring it: the cog note outranks the gate in z-order (it has to sit
@@ -7068,8 +7075,9 @@ was pressed. The gate dismisses a live note as it opens.
 right for players and wrong for anyone testing the screens. Two routes, added the same day at
 the author's ask: `?login` forces the gate to paint even though the profile is unlocked, and
 clears nothing (`?login&portal=admin` for the Admin card); and SIGN OUT in the settings tray,
-beside Switch user, forgets the current profile's unlock and reopens its login card over the
-desktop, which is also the honest way to hand the device to a player.
+beside Switch user, forgets BOTH profiles' unlocks (author's call, same day: sign out means the
+whole node, not one side of it) and reopens the current profile's login card over the desktop,
+which is also the honest way to hand the device to a player.
 
 ## Environment
 

@@ -86,8 +86,8 @@ Bypass wired into the unarmed engine, and a `migrate()` hardening pass.
   passphrase is `CONFIG.adminPassword` in `app/js/gate.js`, beside the Freelancer code.
 - To get the login screen back for testing: `?login` forces the gate to paint even though the
   profile is unlocked (`?login&portal=admin` for the Admin card), and clears nothing. The
-  settings tray's "SIGN OUT" is the in-app route: it forgets the current profile's unlock and
-  reopens its login card.
+  settings tray's "SIGN OUT" is the in-app route: it forgets BOTH profiles' unlocks and reopens
+  the current profile's login card.
 - Give parallel agents their own preview origin. Sharing one corrupts the roster.
 - My loaded character is expendable. Do not spend effort preserving it.
 

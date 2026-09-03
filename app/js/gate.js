@@ -25,13 +25,17 @@
    keeps its old name on purpose: no device unlocked before the Admin profile
    existed gets asked again.
 
-   EASTER EGG: three wrong Freelancer codes summons an unseen Codebreaker who
-               hijacks the node and walks the visitor past the gate. Pure
-               flavor, and a reward for fumbling the password. The Admin
-               tunnel has no such door: three misses trip a trace warning and
-               a short cooldown, because the operator passphrase exists so a
-               player who knows the front door still cannot wander into the
-               bestiary.
+   EASTER EGGS: three wrong Freelancer codes summons an unseen Codebreaker who
+               hijacks the node and walks the visitor past the gate. Three
+               wrong Admin passphrases trip a trace and a lockdown, and then
+               the #GRID Guardian (the bestiary's corporate counter-hacker, the
+               one with admin authority over the whole cluster) overrides it
+               through an off-brand paperclip assistant, takes a retinal scan
+               off your cam, declares you valid, and opens the tunnel anyway.
+               Both are pure flavor and a reward for fumbling. Both walk you
+               in, which means neither code is a lock, only a deterrent; that
+               was true of the Freelancer door from the start and the author
+               chose parity on 2026-09-02.
 
    BYPASS:     a deliberately quiet "// maintenance" button in the lower left
                opens the FREELANCER node with no code. It is dim until hovered
@@ -128,7 +132,7 @@ EN.gate = (function () {
     "  color:var(--text4); opacity:.45; cursor:pointer; transition:opacity .18s, color .18s; }",
     ".gate-skip:hover{ opacity:1; color:var(--accent); }",
     ".gate-skip:focus-visible{ opacity:1; color:var(--accent); outline:1px solid var(--accent-dim); outline-offset:2px; }",
-    "/* ----- 3-strikes Codebreaker hijack easter egg (Freelancer only) ----- */",
+    "/* ----- 3-strikes Codebreaker hijack easter egg (Freelancer) ----- */",
     ".gate-card.hijacked{ animation:gate-glitch .5s steps(2) 2; border-color:var(--accent); box-shadow:0 0 0 1px var(--accent), 0 0 44px rgba(0,229,255,.4); }",
     "@keyframes gate-glitch{ 0%,100%{transform:translate(0,0); filter:none} 20%{transform:translate(-3px,1px)} 40%{transform:translate(3px,-2px); filter:hue-rotate(45deg)} 60%{transform:translate(-2px,1px)} 80%{transform:translate(2px,-1px); filter:hue-rotate(-35deg)} }",
     "#gate.hijacking::before{ content:''; position:absolute; inset:0; z-index:0; pointer-events:none; mix-blend-mode:screen; background:repeating-linear-gradient(0deg, rgba(255,70,200,0.06) 0 1px, transparent 1px 4px), repeating-linear-gradient(0deg, rgba(0,229,255,0.05) 0 2px, transparent 2px 6px); animation:gate-bgglitch .85s steps(10) infinite; }",
@@ -149,6 +153,25 @@ EN.gate = (function () {
     "@keyframes gate-blink{ 50%{opacity:0} }",
     ".gate-prog{ margin-top:12px; height:8px; border:1px solid var(--accent-dim); border-radius:3px; overflow:hidden; background:rgba(0,229,255,.06); }",
     ".gate-progfill{ height:100%; width:0; background:linear-gradient(90deg, var(--accent), #ff46c8); box-shadow:0 0 10px var(--accent); transition:width .7s linear; }",
+    "/* ----- 3-strikes #GRID Guardian override easter egg (Admin) ----- */",
+    "#gate.guardian{ background:radial-gradient(1100px 560px at 50% 28%, rgba(46,230,160,0.07), transparent 60%),",
+    "  repeating-linear-gradient(0deg, rgba(46,230,160,0.04) 0 1px, transparent 1px 3px), var(--bg); }",
+    "#gate.guardian .gate-card{ animation:gate-glitch .5s steps(2) 2; border-color:var(--success); box-shadow:0 0 0 1px var(--success), 0 0 44px rgba(46,230,160,.35); }",
+    "#gate.guardian .gate-term.vpn{ border-color:var(--success); }",
+    "#gate.guardian .gate-logo b{ color:var(--success); }",
+    "#gate.guardian .gate-kick, #gate.guardian .gate-warn{ color:var(--success); }",
+    ".gate-hide{ display:none !important; }",
+    ".gate-clip{ display:flex; align-items:flex-end; gap:12px; margin-top:14px; animation:gate-clipin .45s cubic-bezier(.2,.9,.3,1.25) both; }",
+    "@keyframes gate-clipin{ from{opacity:0; transform:translateY(14px) scale(.85)} to{opacity:1; transform:none} }",
+    ".gate-bubble{ flex:1; position:relative; min-height:46px; background:var(--bg); border:1px solid var(--success); border-radius:8px 8px 2px 8px;",
+    "  padding:10px 12px; font-family:var(--body); font-size:13.5px; line-height:1.45; color:var(--text); }",
+    ".gate-bubble::after{ content:''; position:absolute; right:-7px; bottom:10px; width:12px; height:12px; background:var(--bg);",
+    "  border-right:1px solid var(--success); border-bottom:1px solid var(--success); transform:rotate(-45deg); }",
+    ".gate-bubble .k{ display:block; font-family:var(--mono); font-size:8.5px; letter-spacing:.2em; color:var(--success); text-transform:uppercase; margin-bottom:4px; }",
+    ".gate-bubble .t{ white-space:pre-wrap; }",
+    ".gate-bubble .t.typing::after{ content:'█'; color:var(--success); animation:gate-blink .7s steps(2) infinite; }",
+    ".gate-clipsvg{ width:58px; height:78px; flex:0 0 auto; filter:drop-shadow(0 0 10px rgba(46,230,160,.55)); animation:gate-clipwob 2.4s ease-in-out infinite; transform-origin:50% 90%; }",
+    "@keyframes gate-clipwob{ 0%,100%{transform:rotate(-4deg)} 50%{transform:rotate(5deg)} }",
     "/* ----- the settings-cog note, shown once after an interactive login or pick ----- */",
     "#gate-coach{ position:fixed; z-index:100003; width:270px; background:linear-gradient(180deg, var(--bg2), var(--bg1));",
     "  border:1px solid var(--cc); border-radius:5px; padding:13px 14px 11px; font-family:var(--body);",
@@ -237,6 +260,50 @@ EN.gate = (function () {
         next();
       }, s.t);
     })();
+  }
+
+  // ---- 3-strikes #GRID Guardian override easter egg (Admin) ----
+  // progressively resolve a line out of noise: each frame, more characters
+  // settle on the target while the rest keep churning through block glyphs
+  function scramble(node, target, finalCls, done) {
+    var glyphs = "░▒▓█#@%&*<>/|=+_~^:;01";
+    var frames = 16, i = 0;
+    (function tick() {
+      if (!node.parentNode) return;
+      i++;
+      if (i <= frames) {
+        var s = "";
+        for (var k = 0; k < target.length; k++) {
+          s += (target[k] === " " || Math.random() < (i / frames) * (i / frames)) ? target[k] : glyphs[Math.floor(Math.random() * glyphs.length)];
+        }
+        node.textContent = s;
+        setTimeout(tick, 70);
+      } else {
+        node.textContent = target;
+        node.className = "gate-line " + finalCls;
+        done();
+      }
+    })();
+  }
+  // typewriter into a span; the trailing block cursor is CSS while .typing is on
+  function typeInto(span, text, done) {
+    span.textContent = "";
+    span.classList.add("typing");
+    var i = 0;
+    (function tick() {
+      if (!span.parentNode) return;
+      if (i < text.length) { span.textContent += text.charAt(i++); setTimeout(tick, 18); }
+      else { span.classList.remove("typing"); done(); }
+    })();
+  }
+  // the off-brand paperclip: a bent wire with eyes, nothing anyone could sue over
+  function clipSvg() {
+    return '<svg class="gate-clipsvg" viewBox="0 0 64 84" aria-hidden="true">' +
+      '<path d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>' +
+      '<circle cx="27" cy="41" r="4.6" fill="#e9f1fb"/><circle cx="39" cy="41" r="4.6" fill="#e9f1fb"/>' +
+      '<circle cx="28" cy="41.5" r="2" fill="#07090d"/><circle cx="40" cy="41.5" r="2" fill="#07090d"/>' +
+      '<path d="M22 33 l7 -3 M44 30 l-7 3" stroke="#2ee6a0" stroke-width="2.2" stroke-linecap="round"/>' +
+      '</svg>';
   }
 
   /* Dev bypass. This gate is atmosphere, not security: a real unlock writes one
@@ -465,22 +532,67 @@ EN.gate = (function () {
       ov.classList.remove("deny"); void ov.offsetWidth; ov.classList.add("deny");
       input.value = "";
       if (tries >= 3) {
-        /* No hijack here. The operator passphrase is the one thing standing
-           between a player who knows the front door and the GM's bestiary, so
-           three misses cost a cooldown, not a way in. */
+        /* Strike three: the trace lands, the node locks, and about five seconds
+           later the #GRID Guardian overrides it. The Guardian is the bestiary's
+           corporate counter-hacker with admin authority over the whole cluster,
+           so it is the one thing in the setting that can wave a trace away and
+           call you valid. Mirrors the Freelancer hijack: a reward for fumbling,
+           and a walk in. */
         cooling = true; input.disabled = true; go.disabled = true;
-        gateLine(term, "gate-bad-line", "> trace initiated. cooling down.");
-        err.textContent = "TRACE INITIATED :: RETRY IN 8S";
-        setTimeout(function () {
-          if (!term.parentNode) return;
-          cooling = false; tries = 0; input.disabled = false; go.disabled = false;
-          gateLine(term, "gate-au-line", "> challenge: operator passphrase required").classList.add("gate-cur");
-          err.textContent = "";
-          try { input.focus(); } catch (e) {}
-        }, 8000);
+        var traceLine = gateLine(term, "gate-bad-line", "> trace initiated. cooling down.");
+        err.textContent = "TRACE INITIATED :: NODE LOCKED";
+        setTimeout(function () { if (term.parentNode) guardianOverride(traceLine); }, 5000);
         return;
       }
       input.focus();
+    }
+
+    function guardianOverride(traceLine) {
+      var card = ov.querySelector(".gate-card");
+      alive = false;
+      stripCursor();
+      // the trace line itself is what the Guardian rewrites, glyph by glyph
+      scramble(traceLine, "> override :: #GRID GUARDIAN attached", "gate-ok-line", function () {
+        ov.classList.add("guardian");
+        err.style.color = "var(--success)";
+        err.textContent = "OVERRIDE :: GUARDIAN ATTACHED";
+        // the prompt, the button and Switch user all go quiet; the Guardian has the floor
+        Array.prototype.forEach.call(card.querySelectorAll(".gate-inrow, .gate-label, #gate-go, .gate-sw"), function (n) { n.classList.add("gate-hide"); });
+        var clip = document.createElement("div");
+        clip.className = "gate-clip";
+        clip.innerHTML = '<div class="gate-bubble"><span class="k">#GRID Guardian // assistive override</span><span class="t" id="gate-bubble"></span></div>' + clipSvg();
+        err.parentNode.insertBefore(clip, err);
+        var bubble = clip.querySelector("#gate-bubble");
+        setTimeout(function () {
+          typeInto(bubble, "It looks like you're trying to gain Admin access. Would you like help with that?", function () {
+            setTimeout(function () {
+              typeInto(bubble, "Hold still. Borrowing your cam for a quick retinal scan.", function () {
+                var scan = [
+                  { t: 350, cls: "gate-sys",     text: "> cam0 ……… ACQUIRED" },
+                  { t: 550, cls: "gate-sys",     text: "> retinal pattern ……… MATCH" },
+                  { t: 550, cls: "gate-ok-line", text: "> operator identity ……… VALID" }
+                ];
+                var si = 0;
+                (function nextScan() {
+                  if (si >= scan.length) {
+                    setTimeout(function () {
+                      typeInto(bubble, "Yep. Valid user. I ate the trace. Don't make me do this again.", function () {
+                        setTimeout(function () {
+                          gateLine(term, "gate-ok-line", "> tunnel established (guardian override). session audited.");
+                          finish("admin", 900);
+                        }, 1300);
+                      });
+                    }, 500);
+                    return;
+                  }
+                  var s = scan[si++];
+                  setTimeout(function () { if (term.parentNode) { gateLine(term, s.cls, s.text); nextScan(); } }, s.t);
+                })();
+              });
+            }, 1400);
+          });
+        }, 450);
+      });
     }
     go.addEventListener("click", submit);
     input.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); submit(); } });
@@ -589,15 +701,16 @@ EN.gate = (function () {
     open({ profile: rememberedProfile(), mode: "pick", onDone: onPick, cancelable: true });
   }
 
-  /* From the settings tray. Forgets the current profile's unlock and reopens
-     its login card over the desktop, so the next reload asks too. The other
-     profile's unlock is untouched: Switch user from the card still offers it
-     as one click. Backing out through Switch user then Cancel leaves the
-     desktop up but the flag cleared, which is the honest state. */
+  /* From the settings tray. Forgets BOTH profiles' unlocks (author's call:
+     sign out means the whole node, not one side of it) and reopens the
+     current profile's login card over the desktop, so the next reload asks
+     too. Switch user from that card still reaches the other profile, which
+     now asks for its code as well. Backing out through Switch user then
+     Cancel leaves the desktop up but the flags cleared, which is the honest
+     state. */
   function signOut(onDone) {
-    var p = rememberedProfile();
-    try { bin().removeItem(KEYS[p]); } catch (e) {}
-    open({ profile: p, mode: "login", onDone: onDone, cancelable: true });
+    try { bin().removeItem(KEYS.freelancer); bin().removeItem(KEYS.admin); } catch (e) {}
+    open({ profile: rememberedProfile(), mode: "login", onDone: onDone, cancelable: true });
   }
 
   return { require: require, switchUser: switchUser, signOut: signOut, coach: coach };
