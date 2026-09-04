@@ -64,7 +64,12 @@ EN.gearCatalog.armor = {
 
   items: [
     /* ============================== LIGHT ARMOR ============================== */
+    /* The Premium plan the effect line promises. `premium` is the upgraded tier of a LEASED
+       item: subscribe and the contract bills premium.upkeep instead of upkeep, and the suit
+       wears premium.dr instead of dr, for as long as the plan is live. Any leased item can
+       carry one; this is the only entry in the book that does. */
     { name: "SkinPlan Daywear", kind: "armor", group: "Light Armor", type: "Light Armor", price: 70, upkeep: 40, buyout: 500,
+      premium: { upkeep: 80, dr: 2 },
       slot: ["Torso", "Legs"], dr: 1, traits: ["Streetwear", "Leased"], availability: "Common", legality: "Legal",
       desc: "Armor as a service. The cut reads as this season's drop, the impact panels are real, and the whole thing keeps working exactly as long as the autopay clears. Miss one Tuesday and you are wearing a very expensive coat.",
       effect: "Grants 1 Damage Reduction (DR). A Premium plan (double Upkeep) raises this to 2 DR while active." },

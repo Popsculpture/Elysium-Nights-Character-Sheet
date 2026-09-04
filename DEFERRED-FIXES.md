@@ -7406,6 +7406,53 @@ parser swallowed the declaration after it, which happened to be position:fixed. 
 dock while the page is short, which is why it survived a screenshot pass. The comment is one
 block again.
 
+## The Premium plan SkinPlan always advertised, 2026-09-03
+
+SkinPlan Daywear's effect line has always read "A Premium plan (double Upkeep) raises this to 2 DR
+while active", and there was no way to buy one. Now there are two: the Gray Market sells the lease
+on either plan, and a standard contract already in the stash can be upgraded from its card at any
+time. The author's terms: opting in charges the plan's full rate on the spot and restarts the
+seven-day clock, cancelling is immediate and refunds nothing, and re-subscribing is a fresh
+signing that charges in full again. No proration in, no refunds out. Signing premium from the
+market costs the buy-in plus that first installment, which is exactly what leasing standard and
+upgrading a moment later costs, so neither route is the cheaper trick.
+
+It is a general facility, not one item's special case. A catalog entry can carry
+`premium: { upkeep, dr }`; SkinPlan is the only entry in the book that does. The plan rides the
+equipment ENTRY beside leaseDays, leaseDue and leaseOwned, so two copies are two contracts on
+their own plans, which is the rule the stacking logic already enforces for anything with upkeep.
+The ledger gained upkeepOf, and every price it quotes for a lease goes through it: the
+installment, the PAY button, the lease chip, the Bills row, and the line in the expanded card
+that spells the terms out in words.
+
+**The plan is a LAYER, and that took two attempts.** The first cut had a live plan raise the
+suit's DR base, which reads naturally and is wrong, because base is the spine of the armour
+damage model: wear is stored as points LOST and a suit is breached when lost reaches base. An
+adversarial review priced what that bought. Subscribing to an 80 plan un-breached a wrecked suit,
+which reopened the per-point SHOP and BENCH repair lanes that a breach exists to close, turning a
+250 Standard Project into about 105 of parts; cancelling afterwards was free. Cancelling on a
+merely dented suit did the reverse and silently bricked it, while the button's own tooltip
+promised it would "drop to 1 DR". And because two writers clamp stored wear against the current
+base, a cancel plus a reload or an export round trip permanently rewrote the wear map, laundering
+a breach into a scratch. So the plan now adds its points ON TOP of whatever the suit is currently
+worth and touches none of base, lost, damaged or breached. A subscription cannot repair plating,
+a cancellation cannot break it, and the repair lanes answer only to the suit. The Impact Table
+says so in as many words, with a "+1 PLAN" chip beside the suit's own numbers, because that bench
+repairs the suit and the sheet counts both.
+
+Three judgment calls, all reversible if the author disagrees:
+
+- A buyout ends the plan with the contract. Owning a suit outright means there is no Upkeep left
+  to double, so there is no plan to be on.
+- Subscribing while an installment is already due clears that debt, because a full premium
+  payment has just been made for the period. It costs more than simply paying the installment.
+- Cancelling keeps the existing clock running; the next installment bills the standard rate
+  again, so cancelling is not a way to skip a payment.
+
+A breached suit on a live plan is protected by the plan's layer alone, which is the one place the
+layer model is visibly generous: the service keeps shipping panels even though the suit under
+them is past repair. Say the word and the layer can be gated on the suit still being intact.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

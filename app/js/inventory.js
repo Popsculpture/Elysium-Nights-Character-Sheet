@@ -290,27 +290,34 @@ EN.inventoryView = (function () {
   }
 
   /* ---- mutations ---- */
-  function buy(it) {
+  /* `premium` signs a leasable item straight onto its Premium plan. Opting in charges the plan's
+     rate on the spot wherever it happens, so signing premium costs the buy-in AND the first
+     installment now, which is exactly what leasing standard and upgrading a moment later costs.
+     Neither route is the cheaper trick. */
+  function buy(it, premium) {
     if (it.vendor === false && _mode !== "fivefinger") { toast(it.name + " isn't vendor stock; it's found, not bought. (" + (it.nexus || "rarely sold") + ")"); return; }
     var sp = streetPrice(it);
+    var planFee = (premium && it.upkeep && it.premium) ? it.premium.upkeep : 0;
     var ch = store.active();
-    if ((ch.glimmer || 0) < sp) {
+    if ((ch.glimmer || 0) < sp + planFee) {
       toast(_mode === "register" ? "Payment not approved. Please verify your account standing." :
             _mode === "surplus" ? "Dues not current. The Guild remembers." :
             "Account declined. The vendor's smile doesn't move.");
       return;
     }
     store.update(function (c) {
-      c.glimmer = (c.glimmer || 0) - sp;
+      c.glimmer = (c.glimmer || 0) - (sp + planFee);
       // signing a lease starts the 7-day installment clock (one day per Long Rest);
       // leased gear is never pooled, so each contract is its own instance and
       // re-leasing an item already in arrears never clears another one's debt.
       var extra = it.upkeep ? { leaseDays: 7, leaseDue: false, leaseOwned: false } : null;
+      if (extra && planFee) extra.premium = true;
       addToStash(c, it.name, extra);
     });
     toast(_mode === "register" ? it.name + " purchased for " + fmtG(sp) + ". Compliance fees included. All sales final." :
           _mode === "surplus" ? it.name + " claimed from the Guild lot for " + fmtG(sp) + ". Mostly works." :
           _mode === "fivefinger" ? it.name + " taken. You were never here." :
+          (it.upkeep && planFee) ? it.name + " leased on the Premium plan: " + fmtG(it.price || 0) + " buy-in and " + fmtG(planFee) + " charged now, " + fmtG(planFee) + " due in 7 days (Long Rests)." :
           it.upkeep ? it.name + " lease signed: " + fmtG(it.price || 0) + " buy-in, " + fmtG(it.upkeep) + " due in 7 days (Long Rests)." :
           it.name + " acquired for " + fmtG(sp) + ". No receipt. It never happened.");
   }
@@ -321,6 +328,35 @@ EN.inventoryView = (function () {
      leaseOwned (bought out; owned outright, upkeep over). A Long Rest ticks
      every active lease one day via leaseTick (called from the Freelancer tab). */
   function leaseDaysOf(e) { return e.leaseDays == null ? 7 : e.leaseDays; }
+  /* What THIS contract bills: the Premium plan's rate while the plan is live, the printed rate
+     otherwise. Every price the ledger quotes for a lease goes through here. */
+  function onPremium(e, it) { return !!(it && it.premium && e && e.premium && !e.leaseOwned); }
+  function upkeepOf(it, e) { return onPremium(e, it) ? it.premium.upkeep : (it && it.upkeep); }
+  /* Subscribe or cancel, on the author's terms: signing up bills the full premium rate on the
+     spot and restarts the 7-day clock, so there is no proration and no credit for days already
+     paid on the old plan. Cancelling is immediate and refunds nothing; the clock keeps running
+     and the next installment simply bills the standard rate again. Re-subscribing is a fresh
+     signing: charged in full, clock restarted. */
+  function setPremium(key, on) {
+    var ch = store.active(), e0 = findEntry(ch, key), it = e0 && findItem(e0.name);
+    if (!it || !it.premium || !e0 || e0.leaseOwned) return;
+    if (!on) {
+      if (!e0.premium) return;
+      store.update(function (c) { var e = findEntry(c, key); if (e) delete e.premium; });
+      toast(it.name + ": Premium cancelled. It drops to its standard plan now, and nothing is refunded.");
+      return;
+    }
+    if (e0.premium) return;
+    var cost = it.premium.upkeep;
+    if ((ch.glimmer || 0) < cost) { toast("Not enough Glimmer for the Premium plan (" + fmtG(cost) + ")."); return; }
+    store.update(function (c) {
+      var e = findEntry(c, key);
+      if (!e || e.premium || e.leaseOwned) return;   // re-check live: a double-fire cannot double-charge
+      c.glimmer = (c.glimmer || 0) - cost;
+      e.premium = true; e.leaseDue = false; e.leaseDays = 7;
+    });
+    toast(it.name + ": Premium plan active, " + fmtG(cost) + " charged now. Next installment in 7 days at the premium rate.");
+  }
   function leaseTick(c) {
     var due = [];
     (c.equipment || []).forEach(function (e) {
@@ -393,14 +429,15 @@ EN.inventoryView = (function () {
   function payLease(key) {
     var ch = store.active(), e0 = findEntry(ch, key), it = e0 && findItem(e0.name);
     if (!it || !it.upkeep || !e0 || !e0.leaseDue || e0.leaseOwned) return;   // nothing due, nothing to pay
-    if ((ch.glimmer || 0) < it.upkeep) { toast("Not enough Glimmer for the installment (" + fmtG(it.upkeep) + ")."); return; }
+    var rate = upkeepOf(it, e0);   // a Premium contract bills its own rate
+    if ((ch.glimmer || 0) < rate) { toast("Not enough Glimmer for the installment (" + fmtG(rate) + ")."); return; }
     store.update(function (c) {
       var e = findEntry(c, key);
       if (!e || !e.leaseDue || e.leaseOwned) return;   // re-check live: a double-fire cannot double-charge
-      c.glimmer = (c.glimmer || 0) - it.upkeep;
+      c.glimmer = (c.glimmer || 0) - rate;
       e.leaseDue = false; e.leaseDays = 7;
     });
-    toast(it.name + " installment paid (" + fmtG(it.upkeep) + "); next payment in 7 days. Benefits restored.");
+    toast(it.name + " installment paid (" + fmtG(rate) + "); next payment in 7 days. Benefits restored.");
   }
   function buyoutLease(key) {
     var ch = store.active(), e0 = findEntry(ch, key), it = e0 && findItem(e0.name), b = buyoutCost(it);
@@ -413,6 +450,7 @@ EN.inventoryView = (function () {
       if (b.nexus) c.nexus = Math.round(((c.nexus || 0) - b.amt) * 100) / 100;
       else c.glimmer = (c.glimmer || 0) - b.amt;
       e.leaseOwned = true; e.leaseDue = false; delete e.leaseDays;
+      delete e.premium;   // the plan was a subscription on the contract, and the contract is closed
     });
     toast(it.name + " bought out for " + fmtBuyout(b) + ". It's yours outright; no more Upkeep, no off switch.");
   }
@@ -580,8 +618,8 @@ EN.inventoryView = (function () {
         (it.nexus && it.vendor !== false) ? tagChip("◎ " + it.nexus.replace(/^◎/, ""), "var(--flow)", "Nexus alternative: " + it.nexus) : null,
         it.upkeep ? (mode === "stash" && owned
           ? (owned.leaseOwned ? tagChip("OWNED OUTRIGHT", "var(--success)", "Lease bought out; it is yours, no more Upkeep.")
-             : owned.leaseDue ? tagChip("⚠ PAYMENT DUE", "var(--danger)", "Installment due: " + fmtG(it.upkeep) + ". It grants none of its benefits until you pay.")
-             : tagChip("LEASE · " + leaseDaysOf(owned) + (leaseDaysOf(owned) === 1 ? " DAY" : " DAYS"), "var(--gold)", "Next installment " + fmtG(it.upkeep) + " in " + leaseDaysOf(owned) + " day(s); each Long Rest marks one day."))
+             : owned.leaseDue ? tagChip("⚠ PAYMENT DUE", "var(--danger)", "Installment due: " + fmtG(upkeepOf(it, owned)) + ". It grants none of its benefits until you pay.")
+             : tagChip((owned.premium ? "PREMIUM · " : "LEASE · ") + leaseDaysOf(owned) + (leaseDaysOf(owned) === 1 ? " DAY" : " DAYS"), "var(--gold)", "Next installment " + fmtG(upkeepOf(it, owned)) + " in " + leaseDaysOf(owned) + " day(s); each Long Rest marks one day."))
           : tagChip("LEASED", "var(--ember)", "Leased, " + fmtG(it.price || 0) + " buy-in, " + fmtG(it.upkeep) + "/wk Upkeep. Lapse and it drops to its zero state.")) : null
       ]),
       el("span.mkt-side", { style: { display: "inline-flex", alignItems: "baseline", gap: "10px", flexShrink: 0 } }, [
@@ -609,10 +647,12 @@ EN.inventoryView = (function () {
     if (typeof it.dr === "number") {
       var drSt = (mode === "stash" && EN.engine.armorState) ? EN.engine.armorState(ch, ownedKey) : null;
       if (drSt && drSt.base && drSt.lost > 0) {
-        statChips.push(statChip("⛨ " + drSt.current + " / " + drSt.base + " DR", drSt.breached ? "var(--danger)" : "var(--warn)",
+        statChips.push(statChip("⛨ " + (drSt.current + drSt.premiumDR) + " / " + (drSt.base + drSt.premiumDR) + " DR", drSt.breached ? "var(--danger)" : "var(--warn)",
           "Damage Reduction: " + drSt.lost + " point" + (drSt.lost === 1 ? "" : "s") + " lost until repaired (Workbench > Impact Table)"));
       } else {
-        statChips.push(statChip("⛨ " + it.dr + " DR", "var(--success)", "Damage Reduction against physical damage (passive mitigation)"));
+        // the resolved base, not the printed one: a live Premium plan raises it, and the chip
+        // has to agree with the sheet about what the suit is actually stopping
+        statChips.push(statChip("⛨ " + (drSt ? drSt.base + drSt.premiumDR : it.dr) + " DR", "var(--success)", "Damage Reduction against physical damage (passive mitigation)"));
       }
     }
     if (it.blockBonus) statChips.push(statChip("⛊ +" + it.blockBonus + " Block", "var(--gold)", "Flat Block Bonus, improves the Block Defensive Impulse"));
@@ -651,7 +691,15 @@ EN.inventoryView = (function () {
     } else if (it.vendor === false) {
       mktBtn = el("button.btn.sm", { disabled: true, title: "Not vendor stock, found, recovered, or campaign-granted, not bought. It can still turn up in Five-Finger Supply.", style: { color: "var(--flow)", borderColor: "var(--flow)" } }, "FOUND, NOT SOLD");
     } else if (it.upkeep) {
-      mktBtn = el("button.btn.sm.primary", { title: "Sign the lease, " + fmtG(it.price || 0) + " buy-in, " + fmtG(it.upkeep) + "/wk Upkeep. It works until the autopay lapses.", onclick: function () { buy(it); } }, "LEASE · " + fmtG(it.upkeep) + "/wk");
+      var leaseBtn = el("button.btn.sm.primary", { title: "Sign the lease, " + fmtG(it.price || 0) + " buy-in, " + fmtG(it.upkeep) + "/wk Upkeep. It works until the autopay lapses.", onclick: function () { buy(it); } }, "LEASE · " + fmtG(it.upkeep) + "/wk");
+      // an item with a Premium tier can be signed onto it here, or upgraded later from the Stash
+      mktBtn = it.premium
+        ? el("div.row.wrap", { style: { gap: "6px", justifyContent: "flex-end" } }, [leaseBtn,
+            el("button.btn.sm", {
+              title: "Sign straight onto the Premium plan: " + fmtG(it.price || 0) + " buy-in plus " + fmtG(it.premium.upkeep) + " charged now, " + it.premium.dr + " DR while the plan is live, then " + fmtG(it.premium.upkeep) + " every 7 days. Cancel any time; nothing is refunded.",
+              style: { color: "var(--success)", borderColor: "var(--success)" },
+              onclick: function () { buy(it, true); } }, "PREMIUM · " + fmtG(it.premium.upkeep) + "/wk")])
+        : leaseBtn;
     } else {
       mktBtn = el("button.btn.sm" + (afford ? ".primary" : ""), { disabled: !afford, title: it.cyber ? "Buy to your Chrome Stash; install it later at a clinic (Chrome tab)" : priceTitle(it), onclick: function () { it.cyber ? buyCyber(it) : buy(it); } },
         afford ? "BUY · " + fmtG(sp) : "CAN'T AFFORD");
@@ -660,8 +708,16 @@ EN.inventoryView = (function () {
     var leaseBtns = [];
     if (it.upkeep && owned && !owned.leaseOwned) {
       if (owned.leaseDue) leaseBtns.push(el("button.btn.sm", {
-        title: "Pay the installment (" + fmtG(it.upkeep) + "). Until paid, " + it.name + " grants none of its benefits.",
-        style: { color: "var(--danger)", borderColor: "var(--danger)" }, onclick: function () { payLease(ownedKey); } }, "⚠ PAY · " + fmtG(it.upkeep)));
+        title: "Pay the installment (" + fmtG(upkeepOf(it, owned)) + "). Until paid, " + it.name + " grants none of its benefits.",
+        style: { color: "var(--danger)", borderColor: "var(--danger)" }, onclick: function () { payLease(ownedKey); } }, "⚠ PAY · " + fmtG(upkeepOf(it, owned))));
+      if (it.premium) leaseBtns.push(owned.premium
+        ? el("button.btn.sm", {
+            title: "Cancel the Premium plan. It drops to " + it.dr + " DR immediately and nothing is refunded; the clock keeps running and the next installment bills " + fmtG(it.upkeep) + ".",
+            onclick: function () { setPremium(ownedKey, false); } }, "CANCEL PREMIUM")
+        : el("button.btn.sm", {
+            title: "Subscribe to the Premium plan: " + fmtG(it.premium.upkeep) + " charged now, " + it.premium.dr + " DR while it is live, and the 7-day clock restarts. No proration, no refunds.",
+            style: { color: "var(--success)", borderColor: "var(--success)" },
+            onclick: function () { setPremium(ownedKey, true); } }, "+ PREMIUM · " + fmtG(it.premium.upkeep)));
       var bo = buyoutCost(it);
       if (bo) leaseBtns.push(el("button.btn.sm", {
         title: "Buy out the lease for " + fmtBuyout(bo) + ". Separate from Upkeep and never offset by Upkeep already paid; only the Buyout closes the lease.",
@@ -705,7 +761,7 @@ EN.inventoryView = (function () {
       head, info, traitsExpandRow,
       it.benchPart ? partInfoLine(ch, it) : it.armorMod ? armorModInfoLine(ch, it) : (mode !== "mkt" ? installedPartsLine(ch, it, entry) : null),
       open && it.desc ? el("p", { style: { marginTop: "8px" }, text: it.desc }) : null,
-      open && it.type ? el("p.help", { style: { margin: "4px 0 0", color: "var(--text2)" }, text: "Type: " + it.type + (it.upkeep ? " · Leased: " + fmtG(it.price || 0) + " buy-in, " + fmtG(it.upkeep) + "/wk Upkeep" : "") + (it.nexus ? " · Nexus: " + it.nexus : "") }) : null,
+      open && it.type ? el("p.help", { style: { margin: "4px 0 0", color: "var(--text2)" }, text: "Type: " + it.type + (it.upkeep ? " · Leased: " + fmtG(it.price || 0) + " buy-in, " + fmtG(upkeepOf(it, owned)) + "/wk Upkeep" + (owned && owned.premium ? " (Premium plan)" : "") : "") + (it.nexus ? " · Nexus: " + it.nexus : "") }) : null,
       open && it.proficiency ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: "Proficiency: " + it.proficiency + (it.signature ? " · Signature weapon (0 customization slots)" : "") }) : null,
       open && (it.category || it.skill) ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: (it.category ? "Tool Category: " + it.category : "") + (it.category && it.skill ? " · " : "") + (it.skill ? "Governing Skill: " + it.skill : "") }) : null,
       open && it.feeds ? el("p.help", { style: { margin: "4px 0 0", color: "var(--gold)" }, text: "Feeds: " + it.feeds }) : null,
@@ -1997,6 +2053,11 @@ EN.inventoryView = (function () {
             text: st.current + " / " + st.base + " DR" }),
           el("span.mono", { style: { fontSize: "12px", color: "var(--text3)" }, text: "□".repeat(st.current) + "■".repeat(st.lost) }),
           st.breached ? tagChip("BREACHED", "var(--danger)", AR.breachedText) : null,
+          /* This bench repairs the SUIT, so the numbers beside it are the suit's own: a Premium
+             plan's layer is not plating and cannot be hammered back. Saying so here stops the
+             row reading as though it disagrees with the sheet, which counts the layer too. */
+          st.premiumDR ? tagChip("+" + st.premiumDR + " PLAN", "var(--success)",
+            "A live Premium plan adds " + st.premiumDR + " DR on top of this suit. It is a service, not plating: it takes no damage and nothing here repairs it.") : null,
           st.guard ? tagChip("PLATE SEATED", "var(--success)", AR.qualityText) : null
         ]),
         el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } }, [
@@ -3292,11 +3353,12 @@ EN.inventoryView = (function () {
         var it = findItem(e.name), bo = buyoutCost(it);
         return el("div.row.wrap", { style: { gap: "10px", alignItems: "center", marginBottom: "4px" } }, [
           el("span", { style: { fontSize: "12.5px", minWidth: "190px" }, text: e.name }),
-          el("span.mono", { style: { fontSize: "11.5px", color: "var(--ember)" }, text: fmtG(it.upkeep) + "/wk" }),
+          el("span.mono", { style: { fontSize: "11.5px", color: "var(--ember)" },
+            text: fmtG(upkeepOf(it, e)) + "/wk" + (e.premium ? " · premium" : "") }),
           el("span.mono", { style: { fontSize: "10.5px", color: e.leaseDue ? "var(--danger)" : "var(--text3)" },
             text: e.leaseDue ? "DUE NOW" : "due in " + (e.leaseDays == null ? 7 : e.leaseDays) + "d" }),
           e.leaseDue ? el("button.btn.sm", { style: { color: "var(--danger)", borderColor: "var(--danger)" },
-            onclick: function () { payLease(e.id); EN.app.render(); } }, "PAY \u00b7 " + fmtG(it.upkeep)) : null,
+            onclick: function () { payLease(e.id); EN.app.render(); } }, "PAY \u00b7 " + fmtG(upkeepOf(it, e))) : null,
           bo ? el("button.btn.sm", { style: { color: "var(--flow)", borderColor: "var(--flow)" },
             title: "Only the Buyout closes a lease; Upkeep just keeps the plan current.",
             onclick: function () { buyoutLease(e.id); EN.app.render(); } }, "BUYOUT \u00b7 " + fmtBuyout(bo)) : null

@@ -1667,6 +1667,17 @@ EN.engine = (function () {
     var e = findEntry(ch, key);
     return !!(e && e.leaseDue && !e.leaseOwned);
   }
+  /* Is this copy on its catalog item's Premium plan? A plan is a SERVICE on a live lease, so
+     it rides the entry the way leaseDays and leaseDue do (two of the same suit can be on
+     different plans), and a bought-out contract has no plan left to be on: there is no upkeep
+     to double. Lapsing is separate and handled where DR is read; an unpaid premium contract
+     grants what any unpaid contract grants. The ONE reader, so the ledger's price and the
+     sheet's DR cannot disagree about whether the plan is live. */
+  function premiumOn(ch, key, it) {
+    if (!it || !it.premium) return false;
+    var e = key ? findEntry(ch, key) : null;
+    return !!(e && e.premium && !e.leaseOwned);
+  }
   /* ---- Armor Integrity: the ONE resolver for a piece's current DR ----------
      A suit's DR is MUTABLE. The catalog's `dr` is the BASE, which is both where a
      fresh piece starts and the ceiling repair can ever restore it to; ch.armorWear
@@ -1700,6 +1711,17 @@ EN.engine = (function () {
      that was never there. Null-prototype at the creation sites stops the map being
      wrong; this stops the READ being wrong whatever the map is. */
   function ownVal(map, key) { return (map && key != null && Object.prototype.hasOwnProperty.call(map, key)) ? map[key] : undefined; }
+  /* What a live Premium plan adds, in points of DR. It is a SEPARATE LAYER over the piece,
+     never a bigger piece: it does not move base, lost, damaged or breached, because those four
+     describe the physical suit and every repair rule keys off them. The first cut of this raised
+     `base` instead, and that let a subscription un-breach a wrecked suit, reopen the cheap repair
+     lanes a breach is supposed to close, and let a cancellation silently brick a suit that had
+     merely been dented. A layer cannot do any of that: the suit's own integrity is untouched,
+     the plan simply stops adding when it stops being paid for. */
+  function premiumBonus(ch, key, it) {
+    if (!premiumOn(ch, key, it) || typeof it.premium.dr !== "number") return 0;
+    return Math.max(0, Math.floor(it.premium.dr) - armorBaseDR(it));
+  }
   function armorState(ch, key) {
     var name = key ? keyToName(ch, key) : null;
     var it = name ? loadCatalogItem(name) : null;
@@ -1712,6 +1734,7 @@ EN.engine = (function () {
       base: base,
       lost: lost,
       current: Math.max(0, base - lost),
+      premiumDR: premiumBonus(ch, key, it),   // the plan's layer, on top of current; see premiumBonus
       damaged: lost > 0,
       breached: base > 0 && lost >= base,          // 0 DR: past repair, a rebuild Project
       guard: !!(key && ownVal(guardMap, key))
@@ -1862,7 +1885,9 @@ EN.engine = (function () {
       // Either way the number is capped by the suit's CURRENT DR: a lapsed lease
       // does not un-punch a hole in the plating, so a Sentinel Issue that has lost
       // its way to 0 grants 0 rather than falling back up to its lapsedDR of 1.
-      armorDR: armor ? (armorLapsed ? Math.min(armor.lapsedDR || 0, armorSt.current) : armorSt.current) : 0,
+      // the plan's layer rides on top of what the suit is currently worth, and a lapsed lease
+      // grants neither: an unpaid contract is unpaid whichever tier it was on
+      armorDR: armor ? (armorLapsed ? Math.min(armor.lapsedDR || 0, armorSt.current) : armorSt.current + armorSt.premiumDR) : 0,
       // the whole armor-integrity record for the worn suit, so no surface has to
       // reach into ch.armorWear to find out what a piece is missing
       armorBaseDR: armorSt.base,
@@ -3718,7 +3743,7 @@ EN.engine = (function () {
     trainingBudget: trainingBudget,
     gearFloorTier: gearFloorTier, effectiveGearTier: effectiveGearTier,
     sizeFromHeightFt: sizeFromHeightFt, lineageHeightFt: lineageHeightFt,
-    activeLineageFeatures: activeLineageFeatures, splitTalentText: splitTalentText, leaseLapsed: leaseLapsed, itemLoad: itemLoad,
+    activeLineageFeatures: activeLineageFeatures, splitTalentText: splitTalentText, leaseLapsed: leaseLapsed, premiumOn: premiumOn, premiumBonus: premiumBonus, itemLoad: itemLoad,
     // THE resolver for which attribute a Talent raised, and the one enumeration of every
     // post-creation attribute bump. effectiveAttributes sums attrBumpSources rather than
     // walking the upgrade slots itself, so no surface can disagree about what bumped what.
