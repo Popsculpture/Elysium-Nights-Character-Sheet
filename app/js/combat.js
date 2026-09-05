@@ -5409,5 +5409,8 @@ EN.combatView = (function () {
   function isLayoutEditMode() { return _editMode; }
   function resetLayout() { try { localStorage.removeItem(LAYOUT_KEY); localStorage.removeItem(LAYOUT_KEY_V1); } catch (e) {} }
   return { render: render, isLayoutEditMode: isLayoutEditMode, setLayoutEditMode: setEditMode, resetLayout: resetLayout,
-           diceMode: diceMode, setDiceMode: setDiceMode };
+           diceMode: diceMode, setDiceMode: setDiceMode,
+           // state only, no render: a swipe committing to another tab closes the popovers the way
+           // a rail tap would, and the render that follows is the tab change's own
+           closePops: closePops };
 })();

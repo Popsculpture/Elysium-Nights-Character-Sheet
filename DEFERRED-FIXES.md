@@ -7625,6 +7625,100 @@ testing nine points inside the head after a 140px scroll: six returned `btn`. `z
 head in settings.js's own stylesheet, so every skin gets it; the same nine points now all return
 the head.
 
+## Swipe between tabs on #GRIDroid, 2026-09-05
+
+The phone skin folds the rail down to the app you are in, so until now the only way between tabs
+was to unfold the list and tap. It now pages the way a phone does: drag the page sideways and a
+chamfered pill at the edge names the tab you are heading for, brightening and growing as the drag
+nears the commit point and lighting in the accent past it; release there, or flick, and the page
+slides out and the next tab lands; let go short and it eases back. At the first or last tab there
+is no neighbour, so the page only creeps a damped, capped fraction of the finger and no pill
+shows, which is how an edge feels.
+
+It is a port of the author's swipe navigation from the Edge of the Empire sheet, by way of the
+"Swipe Tab Navigation" handoff (an artifact), rewritten into this app's ES5 as `app/js/swipe.js`
+(`EN.swipe.create()`) and wired by app.js for the droid skin alone. The handoff's own corrections
+came with it: the axis lock is cleared on both exits, because the original left it set by a
+finished gesture and silently swallowed every second swipe; a fast flick commits as well as a
+long drag; the finger that started is tracked by identifier rather than as touches[0]; the
+sideways-scroller probe checks the computed overflow and not only the overflow itself; the
+rubber-band is capped; the settle timer is held so an overlapping settle cannot wipe a live
+drag; touchcancel is guarded; preventDefault is skipped on a non-cancelable move; and there is
+a destroy().
+
+What the wiring decides. The container is `#view`, because render() replaces its children and
+never the node, which is the one thing the module requires of it. `enabled()` is the same test
+that folds the rail (`html.skin-droid`) and refuses while the list is unfolded, so the gesture
+and the rail can never disagree about which navigation is live. The order is read live off
+visibleTabs() through a new `tabOrder()` export, so the Admin rail and a filed record's new tabs
+work without a second wiring, and an unregistered draft with only #PRINT simply has no
+neighbours. The exclude list carries the app's own cases: the roll trays and the rest popovers
+are fixed children of #view, which a translated #view would carry along, so a drag that starts
+on one is not a swipe, and neither is one on the Freelancer dashboard's layout-edit drag handle,
+the one that rearranges its panels. A committed swipe runs
+the tab's onSelect exactly as a rail tap does, so swiping into #PRINT lands on Advance the way
+tapping it does; the two ways of reaching a tab land on the same page.
+
+The pill is on <body> and fixed, because the page it previews is the thing being moved, and it
+is pinned inside the phone's screen (off `--dr-l`) rather than at the viewport's edge, so on a
+desk it does not float out beside the bezel. Chamfered like the skin's buttons, and without an
+outer shadow, since a clip-path clips everything the element paints. z-index 80, under the dock at
+99. The page cannot widen the viewport mid-drag because body already hides horizontal overflow,
+and the bezel's mask sits in front of everything at 100010, so what slides past the screen's edge
+disappears under the frame. The pill is on <body> once and outlives a skin change, so an unscoped
+rule keeps it out of Classic and '98.
+
+Verified by driving the real app with synthetic TouchEvents at 375px, the handoff's own matrix:
+three forward swipes with no tap between (the regression) land combat, face, grid, flow; a
+backward swipe returns; a 60px drag snaps back with the tab unchanged and everything cleaned up; a
+vertical drag never claims the page; a 70px flick in 32ms commits while the same 70px over 640ms
+does not; the pill is inside the screen at both ends and turns committed past the threshold; a
+cancel mid-drag restores everything; at #PRINT a forward drag rubber-bands 60px with no pill;
+drags starting in a text field, in a sideways scroller, and on a rest popover are ignored; with
+the list unfolded nothing swipes; on Classic nothing swipes. What the device toolbar cannot
+reproduce and the handoff says to tune on hardware: the deadzone and the axis bias against real
+touch latency, non-cancelable moves with a scroll already in flight, the iOS edge-back gesture,
+and pinch-zoom.
+
+Not done, on purpose, and easy if wanted: swiping on Classic and '98 at phone widths, where the
+rail is on screen anyway, and any mouse or pointer support, which the handoff rules out by design.
+
+A first adversarial review ran only halfway (the session's limit cut it off with the port,
+wiring and interaction readers unrun and most refuters dead), and its seven unrefuted findings
+were judged by hand, all real, all fixed: the pill outlived a skin change as a stray block of
+text at the foot of Classic (an unscoped `display:none` now, with the droid rule outranking it);
+a `body.swiping-tabs` overflow rule that did nothing because body already hides horizontal
+overflow, with a comment pointing at the wrong rule (dropped, comment moved); the pill's shadow
+and committed glow clipped away by its own clip-path (dropped, the committed cue is now a border
+and background the clip cannot take); an open rest sheet, a fixed child of #view, dragged off
+screen with the page and left open afterwards because the claimed drag swallows the click its
+closer listens for (hidden while the page is in hand, and closed on a committed swipe the way a
+rail tap closes it, through a new state-only `closePops` export); and three copy slips, the drag
+handle attributed to the initiative tracker, a header rule describing a poisoning the code
+already guards against, and a rail breakpoint that does not exist.
+
+The second review was cut off the same way (18 of 41 agents ran), so its twelve findings were
+again judged by hand rather than refuted by majority; the port reviewer had confirmed its two with
+live repros, and three readers found the same hole independently. All real, and they collapse to
+eight fixes. A flick is now speed AT RELEASE: the smoothed velocity is only ever written by a
+move, so a fast start held still for a second used to commit as a flick while the pill said it
+would not; past a 100ms pause before release the velocity counts for nothing. The module refuses
+a drag that starts inside anything position:fixed by COMPUTED style, because the roster manager
+is fixed by the stylesheet and the exclude selector on the style attribute could not see it, so a
+drag on the open manager slid the modal off with the page and left it open; that guard also
+covers the trays and the rest sheets, and the attribute selector is gone. neighborId and the
+label never throw, since a throw from the host's order() or current() at release used to strand
+the page half slid with its state half cleared. A move that is no longer cancelable now hands
+the gesture to the browser, because on hardware the browser's own scroll begins at a slop under
+the deadzone; the page also carries touch-action:pan-y pinch-zoom, so a sideways drag stays ours
+in the first place. render() calls a new abort() on the gesture, because a rebuild under a
+finger leaves its touch targeting a removed node whose events never reach the container again,
+and the page sat half slid until the next touch. A committed swipe runs the tab's onSelect as a
+rail tap does, since the earlier claim that Advance was a desktop re-tap gesture was wrong on
+both counts: the rail runs onSelect on every tap, on every skin. The rest sheets hide by
+visibility rather than display, so a scrolled list keeps its place and a focused field its focus
+across a snap-back. And the pill's chamfer now cuts the same corners as the skin's buttons.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

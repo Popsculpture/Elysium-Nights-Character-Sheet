@@ -1175,6 +1175,44 @@ html.skin-droid .os-tabs .os-gear{
 html.skin-droid .os-tabs .os-gear > span{ width:auto; height:auto; border:0; background:none; box-shadow:none; }
 html.skin-droid .os-tabs .os-gear::before, html.skin-droid .os-tabs .os-gear::after{ content:none; }
 html.skin-droid .os-tray{ display:none; }
+/* ---- swipe navigation (swipe.js, wired by app.js for this skin alone) ----
+   The page is translated under the finger, so it must not widen the viewport mid-drag. The pill
+   naming the tab a drag is heading for is fixed and on <body>, since the page it previews is the
+   thing being moved; it is pinned inside the phone's screen rather than at the viewport's edge,
+   so on a desk it does not float out beside the bezel. Opacity and --swipe-scale are driven live
+   from swipe.js as the drag nears the commit point; .committed means release now and it changes.
+   Chamfered like the skin's buttons rather than a rounded pill, and no outer shadow, because a
+   clip-path clips everything the element paints, shadows included. z-index 80: over the page,
+   under the dock at 99 and everything above it. The page cannot widen the viewport mid-drag
+   because body already hides horizontal overflow (the base rule near the top of this file).
+   The pill is appended to <body> once and never removed, and outlives a skin change, so the
+   unscoped rule keeps it out of Classic and '98 entirely; only this skin ever displays it. */
+.swipe-indicator{ display:none; }
+html.skin-droid .swipe-indicator{
+  position:fixed; top:46%; z-index:80; display:flex; align-items:center; gap:8px;
+  padding:9px 14px; background:var(--bg1); border:1px solid var(--accent-dim); color:var(--text3);
+  font-family:var(--disp); font-weight:600; font-size:12px; letter-spacing:.12em; text-transform:uppercase;
+  clip-path:polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));   /* the buttons' corners: top right and bottom left */
+  opacity:0; pointer-events:none; visibility:hidden;
+  transform:translateY(-50%) scale(var(--swipe-scale, .85));
+}
+html.skin-droid .swipe-indicator.visible{ visibility:visible; }
+html.skin-droid .swipe-indicator.committed{ color:var(--accent); border-color:var(--accent); background:var(--bg2); box-shadow:inset 0 0 0 1px var(--accent); }
+/* a rest, downtime or loadout sheet is a fixed child of #view, and a translated #view is the
+   containing block for it, so mid-drag the sheet would resolve its bottom against the page and
+   vanish off screen. Out of sight while the page is in hand; back where it was on a snap-back.
+   visibility rather than display, so the sheet keeps its box: a scrolled loadout list keeps its
+   place and a focused DAYS field keeps its focus through a drag that comes back. */
+html.skin-droid body.swiping-tabs .pop-anchor > div[style*="position: absolute"]{ visibility:hidden !important; pointer-events:none !important; }
+/* the browser may pan the page up and down and pinch it, and nothing else: a sideways drag then
+   stays cancelable and ours, instead of the browser starting its own scroll at a slop smaller
+   than the deadzone and every later move arriving too late to claim */
+html.skin-droid .os-main{ touch-action:pan-y pinch-zoom; }
+html.skin-droid .swipe-indicator-right{ right:calc(var(--dr-l) + 16px); }
+html.skin-droid .swipe-indicator-left{ left:calc(var(--dr-l) + 16px); }
+html.skin-droid .swipe-indicator-arrow{ font-size:15px; line-height:1; }
+html.skin-droid .swipe-indicator-label{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:50vw; }
+@media (prefers-reduced-motion: reduce){ html.skin-droid .swipe-indicator{ transform:translateY(-50%) scale(1); } }
 /* the foot of every page: a root prompt with a blinking cursor */
 html.skin-droid .os-main::after{
   content:"root@gridroid:~# 00100011 01000111 01010010 01001001 01000100"; display:block; margin-top:28px;

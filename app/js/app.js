@@ -99,6 +99,9 @@ EN.app = (function () {
   function hasAdmin() {
     return TABS.some(function (t) { return t.portal === "admin" && (!t.gated || t.gated()); });
   }
+  // the rail in swipe order and a tab's label, for swipe.js (read live, never captured)
+  function tabOrder() { return visibleTabs().map(function (t) { return t.key; }); }
+  function tabLabel(k) { var t = TABS.filter(function (x) { return x.key === k; })[0]; return t ? t.label : k; }
 
   /* THE one writer for `portal`. Validates (Admin is meaningless with the GM
      modules gone; the Freelancer side is never empty, so no symmetric check
@@ -180,7 +183,11 @@ EN.app = (function () {
   }
 
   var _lastTab = null;
+  var _swipe = null;   // the swipe gesture, when the module is present (see start)
   function render() {
+    // a rebuild under a finger strands its touch (the events keep targeting the removed node),
+    // so the gesture is told to snap back first; a no-op unless a drag is in flight
+    if (_swipe) _swipe.abort();
     // per-character theme: repaint to whatever the active Freelancer selected (no-op if unchanged).
     // In Admin this resolves to the Admin desktop's own device theme instead (see settings.js).
     if (EN.theme && EN.theme.syncToActive) EN.theme.syncToActive();
@@ -351,12 +358,39 @@ EN.app = (function () {
     renderTabs();
     render();
     tickClock(); setInterval(tickClock, 1000);
+    /* Swipe between tabs, on the phone skin only: its rail is folded to the app you are in,
+       so a swipe is the way between tabs there. enabled() is the SAME test that folds the
+       rail, so the two can never disagree, and it refuses while the list is unfolded. #view
+       is the container because render() replaces its children and never the node, which is
+       the one thing swipe.js requires of it, and render() tells the gesture when it does so
+       (see _swipe.abort there). The module itself refuses a drag that starts inside anything
+       position:fixed, which covers the roll trays, the rest sheets and the roster manager,
+       overlays a translated #view would otherwise carry off with it; the exclude adds the rest
+       buttons themselves and the Freelancer dashboard's layout-edit drag handle. A committed
+       swipe runs the tab's onSelect exactly as a rail tap does, so swiping into #PRINT lands
+       on Advance like tapping it, and closes any rest popover first, since the claimed drag
+       swallows the click the popovers' own closer listens for. */
+    if (EN.swipe) _swipe = EN.swipe.create({
+      container: document.getElementById("view"),
+      order: tabOrder,
+      current: function () { return LAST[portal]; },
+      onChange: function (k) {
+        if (EN.combatView && EN.combatView.closePops) EN.combatView.closePops();
+        var t = TABS.filter(function (x) { return x.key === k; })[0];
+        if (t && t.onSelect) t.onSelect();
+        EN.app.gotoTab(k);
+      },
+      label: tabLabel,
+      enabled: function () { var c = document.documentElement.classList; return c.contains("skin-droid") && !c.contains("rail-open"); },
+      exclude: "input, textarea, select, [contenteditable], [data-no-swipe], .drag-handle, .pop-anchor"
+    });
     boot();
   }
 
   return {
     start: start, render: render,
     activeTab: function () { return LAST[portal]; },
+    tabOrder: tabOrder,
     /* Resolves the key's own portal rather than assuming the caller's, so
        every existing caller (all of which name a Freelancer tab today) stays
        correct with zero edits, and the function can never strand the app on
