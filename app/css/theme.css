@@ -475,6 +475,17 @@ select{ appearance:none; background-image:linear-gradient(45deg,transparent 50%,
 .toast.show{ opacity:1; transform:translateX(-50%) translateY(-4px); }
 .row{ display:flex; gap:10px; align-items:center; } .wrap{ flex-wrap:wrap; } .between{ justify-content:space-between; }
 .scroll-box{ max-height:340px; overflow:auto; padding-right:6px; }
+/* a #POST row: the unread dot, the sender, the subject, the time it landed, and a caret. The
+   geometry is here rather than inline so a skin can restate it without fighting an inline style,
+   and so #GRIDroid's tracker-cell rule (which keys off an inline min-width:0) cannot claim these
+   cells; face.js sets only the colors, which change with whether the message has been read. */
+.post-row{ gap:8px; cursor:pointer; min-height:30px; }
+.post-cell{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.post-dot{ width:7px; height:7px; border-radius:50%; flex:0 0 auto; }
+.post-from{ flex:1 1 140px; }
+.post-subj{ flex:2 1 200px; }
+.post-when{ flex:0 0 auto; font-size:10.5px; color:var(--text4); }
+.post-caret{ flex:0 0 auto; color:var(--text4); }
 .help{ font-size:12.5px; color:var(--text3); line-height:1.45; margin-top:4px; }
 
 /* boot overlay */
@@ -1029,6 +1040,17 @@ html.skin-droid .os-tab::after{ content:attr(data-sub); grid-column:2; font-fami
 html.skin-droid .os-tab::before{ content:"\25BE"; grid-column:3; grid-row:1 / 3; text-align:center; font-size:14px; color:var(--dr-two); }
 html.skin-droid .os-tab.active{ display:grid; color:var(--accent); border-color:var(--accent); background:var(--bg); }
 html.skin-droid .os-tab.active > span{ border-color:var(--accent); box-shadow:0 0 10px var(--accent-dim); }
+/* An unread badge is not an app icon. Without this the icon-cell rule above hands it the same
+   38px bordered square every app row wears in its first column, and a fourth child pushes the
+   three-column row around; pinned to the row instead, clear of the caret. */
+html.skin-droid .os-tab > span.attn-dot{
+  position:absolute; top:9px; right:34px; width:11px; height:11px;
+  display:block; border:0; background:var(--gold); box-shadow:0 0 9px var(--gold);
+}
+/* Folded, the list shows only the app you are in, so a row nobody can see cannot carry the news.
+   renderTabs sets rail-attn when a row you are NOT on is holding something, and the folded row's
+   caret becomes the notice: tapping it unfolds the list, which is where the reader wants to go. */
+html.skin-droid.rail-attn:not(.rail-open) .os-tab.active::before{ content:"\25CF"; color:var(--gold); text-shadow:0 0 9px var(--gold); }
 html.skin-droid .os-tab:hover{ background:var(--bg1); color:var(--text); }
 html.skin-droid.rail-open .os-tab{ display:grid; }
 /* the scrim behind the unfolded list. z-index:0 rather than -1 so it takes the tap as well as
@@ -1272,6 +1294,18 @@ html.skin-droid input[style*="width: 200px"], html.skin-droid input[style*="widt
 
 /* ---- Social ---- */
 html.skin-droid .row > span[style*="min-width: 0px"][style*="flex"]{ flex:1 1 100% !important; }   /* tracker cells, one field per line */
+/* A mail row is not a tracker row, and one field per line would orphan the unread dot on a line
+   of its own and strand the caret at the left. Two lines: the dot beside the sender over the
+   subject, with the time and the caret held to the right where every other collapse row has it. */
+html.skin-droid .post-row{
+  display:grid; grid-template-columns:auto minmax(0, 1fr) auto auto; column-gap:8px; row-gap:2px;
+  align-items:center; min-height:44px;
+}
+html.skin-droid .post-row > .post-dot { grid-column:1; grid-row:1 / 3; width:9px; height:9px; }
+html.skin-droid .post-row > .post-from{ grid-column:2; grid-row:1; }
+html.skin-droid .post-row > .post-when{ grid-column:3; grid-row:1; }
+html.skin-droid .post-row > .post-caret{ grid-column:4; grid-row:1; }
+html.skin-droid .post-row > .post-subj{ grid-column:2 / -1; grid-row:2; }
 html.skin-droid .row[style*="padding: 0px 30px 6px 2px"]{ display:none; }                         /* the empty label spacer row */
 html.skin-droid .btn.sm.ghost[style*="width: 26px"]{ width:40px !important; min-height:36px; }
 

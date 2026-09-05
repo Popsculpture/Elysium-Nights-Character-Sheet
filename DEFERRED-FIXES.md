@@ -7479,6 +7479,87 @@ repaints a failure after appending a fresh one. Verified by making setItem throw
 red and sticks through repeated re-renders, a second failure does not re-toast, and restoring
 writes clears it back to green with a recovery toast.
 
+## #POST, the mail the Job Board will need, 2026-09-05
+
+The author asked whether mail should be its own rail tab or fold into an existing one, and ruled
+for a sub-tab of Social named #POST. The name joins the fiction's family of hash-prefixed civic
+utilities: #GRID the network, #PRINT the identity registry, #MINT the banking node, #FLAG the
+compliance tip line whose vigilance is important to us. Every one of those is a single English
+verb in caps behind a hash, named like a service with a compliance department, and #POST is the
+mail.
+
+Social was one long page of standing trackers, so it now carries a two-button sub-nav: LEDGER
+holds everything that was already there (Profiles, Faction Standing, Cred, Heat, Debts, Personas,
+Quick Reference) and #POST holds the inbox. That bar is deliberately not sticky like the
+Inventory's, which has to keep the wallets on screen; two buttons do not earn a pinned strip on a
+phone.
+
+**The delivery model is the whole design.** There is no network in this app and there never will
+be, so mail lives on the character record at `ch.face.post` rather than in GM state. That makes
+the record the transport: mail exports and imports with a Freelancer, an Admin sitting at the same
+device can open a player's record and leave a message in it, and a GM running the game remotely
+hands over a file. It also gives the Admin portal's Job Board stub ("five roll tables and twelve
+postings") somewhere for a posting to land.
+
+A message is `{ id, from, subj, when, body, read }`. `when` is free text rather than a clock,
+because this game measures time in Long Rests and a real timestamp would be a lie on the page. A
+message arrives unread, because the common case is that one arrived, and opening it is what marks
+it read. Writing your own opens straight into the editor, though, which would leave it sitting in
+the unread pile with the rail badge lit, so MARK READ and MARK UNREAD is a toggle rather than the
+one-way trip it started as.
+
+**The rail carries the unread count.** A TABS entry can now supply `badge()`, and `renderTabs`
+appends an `.attn-dot` when it returns truthy; Social is the only entry that does. Two things had
+to be right for that to work on the phone skin. #GRIDroid styles every span child of an app row as
+the 38px bordered icon cell, so the dot arrived as a large empty ring and as a fourth item in a
+three-column grid; it is pinned to the row instead. And #GRIDroid folds the rail down to the app
+you are in, so a dot on a row nobody can see announces nothing: `renderTabs` sets a `rail-attn`
+root class when a row you are NOT on is holding something, and the folded row's caret becomes a
+gold dot, which is the only thing a folded list can honestly say. Both are inert on Classic and
+'98, where every row is on screen wearing its own dot.
+
+`store.js` sanitizes `ch.face.post` in `migrate()`, modelled on the personas sanitizer directly
+above it. Mail is the one thing on a record that arrives from OUTSIDE it, so a malformed list is
+not hypothetical, and the inbox is read on every render by the rail's badge, where a throw would
+take the whole rail with it. Verified against a post list corrupted to a bare string and to a
+ragged array of nulls, loose strings and wrong-typed fields: the bad entries are dropped, the good
+one survives verbatim, and a missing id is minted, because the id is what keeps a message's open
+state pinned to the message rather than to its position in the list.
+
+The printed sheet is untouched, which is consistent rather than an omission: `printsheet.js` has
+never printed any part of the social ledger.
+
+An adversarial review (five readers, three refuters per finding, majority kills it) left four
+survivors, all fixed and re-verified:
+
+- **The row header went stale while you typed under it.** The editor writes silently so the caret
+  survives a keystroke, but the header above it renders the same three values, so composing a
+  message meant filling in a From field while the line directly above still read UNKNOWN NODE.
+  The three cells are now held by name and patched on each keystroke, which is the trick
+  builder.js already uses to keep the top bar's name live while you type it.
+- **+ NEW MESSAGE sat at the foot of the list while the message went to the top.** Newest first is
+  right for mail, but on an inbox long enough to scroll it meant clicking a button and seeing
+  nothing happen: the new row and its editor were inserted off screen above, and the re-render
+  restores the scroll position it started at. The button moved above the list, where the message
+  appears. The trackers can keep + ADD at the bottom because they append.
+- **The sanitizer accepted an array as a message.** `typeof [] === "object"`, so a nested array
+  survived the filter and then had `from`, `subj`, `read` and a fresh id written onto it as named
+  properties, which `JSON.stringify` drops. The row rendered blank, counted as unread, and came
+  back unread on every load: a badge that could not be cleared by reading it. The equipment
+  sanitizer thirty lines above already guards the same case, and now this one does too.
+- **On the phone every collapsed row broke into four lines.** The cells carried their geometry
+  inline, which is exactly the shape #GRIDroid's tracker-cell rule keys on
+  (`span[style*="min-width: 0px"][style*="flex"]`), so all three were forced to full width: the
+  unread dot got a line of its own and the caret was stranded at the left, 87px per row. The
+  geometry moved out of the JS and into `.post-row` and `.post-cell` in theme.css, which the
+  tracker rule cannot match, and the skin now lays the row out as a deliberate two-line card:
+  dot and sender over the subject, time and caret held right. 44px, and Classic and '98 keep the
+  single 30px line they had.
+
+Open, if the author wants them: an Admin composer (today a GM switches to the player's record and
+writes there), sent mail beside received, and a '98 mail-client frame for the panel, which
+currently inherits the generic window chrome and already reads as one.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

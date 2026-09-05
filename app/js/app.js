@@ -43,7 +43,9 @@ EN.app = (function () {
   // (onSelect), since advancing is the usual reason to return.
   var TABS = [
     { key: "combat",  label: "Freelancer", glyph: "✦", sub: "live play dashboard", portal: "freelancer", gated: registered, view: function (m) { EN.combatView.render(m); } },
-    { key: "face",    label: "Social",    glyph: "◑", sub: "people and reputation", portal: "freelancer", gated: registered, view: function (m) { EN.faceView.render(m); } },
+    { key: "face",    label: "Social",    glyph: "◑", sub: "people and reputation", portal: "freelancer", gated: registered, view: function (m) { EN.faceView.render(m); },
+      // unread #POST raises the rail's attention dot; renderTabs runs on every render, so it clears itself
+      badge: function () { try { return EN.faceView.unread(store.active()); } catch (e) { return 0; } } },
     { key: "grid",    label: "#GRID",     glyph: "⌬", sub: "the network", portal: "freelancer", gated: registered, view: function (m) { EN.gridView.render(m); } },
     { key: "flow",    label: "Flow",      glyph: "❋", sub: "the current", portal: "freelancer", gated: registered, view: function (m) { EN.flowView.render(m); } },
     { key: "gear",    label: "Inventory", glyph: "▣", sub: "gear, chrome, gray market", portal: "freelancer", gated: registered, view: function (m) { EN.inventoryView.render(m); } },
@@ -126,8 +128,17 @@ EN.app = (function () {
        always appended, empty when locked: it is the flex spacer that keeps the
        gear pinned to the right, and dropping it slid the gear to the left edge.
        Admin is untouched: a GM needs no character. */
+    /* #GRIDroid folds the rail down to the app you are in, so a dot on a row nobody can see
+       announces nothing. This says "one of the rows you are NOT looking at wants you", which is
+       the only thing a folded list can honestly say; the skin draws it on the folded row. Inert
+       on Classic and '98, where every row is on screen wearing its own dot. */
+    var railAttn = false;
     if (!(portal === "freelancer" && !registered())) {
       visibleTabs().forEach(function (t) {
+        // a tab may report something waiting on it; the dot is decorative and the tap
+        // falls through to the tab itself, which is where the reader wants to go anyway
+        var badge = t.badge ? t.badge() : 0;
+        if (badge && t.key !== LAST[portal]) railAttn = true;
         // data-sub is a skin hook: #GRIDroid prints it under the label as the app row's subtitle
         scroll.appendChild(el("div.os-tab" + (t.key === LAST[portal] ? ".active" : ""), {
           dataset: t.sub ? { sub: t.sub } : null,
@@ -140,9 +151,12 @@ EN.app = (function () {
             root.classList.remove("rail-open");
             LAST[portal] = t.key; if (t.onSelect) t.onSelect(); render();
           }
-        }, [el("span", { text: t.glyph }), document.createTextNode(t.label)]));
+        }, [el("span", { text: t.glyph }), document.createTextNode(t.label),
+            badge ? el("span.attn-dot", { title: badge + (badge === 1 ? " unread message" : " unread messages") + " in #POST" }) : null]));
       });
     }
+    if (railAttn) document.documentElement.classList.add("rail-attn");
+    else document.documentElement.classList.remove("rail-attn");
     nav.appendChild(scroll);
     // settings gear, pinned to the right end of the rail
     if (EN.settings && EN.settings.gearTab) nav.appendChild(EN.settings.gearTab());

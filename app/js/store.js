@@ -315,6 +315,25 @@ EN.store = (function () {
         else if (p.isActive) seenActive[p.sourceFeature] = true;
       });
     }
+    /* The #POST inbox (ch.face.post). Mail is the one thing on the record that arrives
+       from OUTSIDE it: a GM writes into a player's record, or a record is handed over as
+       a file. So a malformed list here is not hypothetical, and the inbox is read on
+       every render by the rail's badge, where a throw would take the whole rail with it. */
+    if (ch.face && ch.face.post != null) {
+      if (!Array.isArray(ch.face.post)) ch.face.post = [];
+      // !Array.isArray, because typeof [] is "object" and the named fields written below would
+      // then be set on an array, which JSON.stringify drops: the row would come back blank and
+      // unread on every load, lighting the rail's badge with a message that cannot be read.
+      // The equipment sanitizer above guards the same case for the same reason.
+      ch.face.post = ch.face.post.filter(function (m) { return m && typeof m === "object" && !Array.isArray(m); });
+      ch.face.post.forEach(function (m) {
+        ["from", "subj", "when", "body"].forEach(function (k) { if (typeof m[k] !== "string") m[k] = ""; });
+        m.read = !!m.read;
+        // the id is what keeps a message's open state pinned to the message rather than
+        // to its position, and a hand-written or hand-edited file will not have one
+        if (typeof m.id !== "string" || !m.id) m.id = "pm_" + Math.random().toString(36).slice(2, 9) + Date.now().toString(36);
+      });
+    }
     /* This used to be a bare `if (!ch.proficiencies) return;`, and every migration
        added since sat after it. A record missing that ONE field therefore skipped
        about a hundred and fifty lines of unrelated normalization: the Toxicologist

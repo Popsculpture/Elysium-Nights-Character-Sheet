@@ -13,9 +13,9 @@ settings cog. The choice is remembered per device (`?portal=admin` overrides it 
 
 - **Freelancer portal**: the player's own sheet. #PRINT (character creation & leveling, the
   foundation every other tab reads from; export / import a record as JSON), Freelancer (the live
-  play dashboard for vitality/wounds, conditions, saves, senses, attacks, class features), Social,
-  #GRID, Flow, Inventory (Stash, Chrome, a gray-market storefront), Codex (searchable rules
-  reference).
+  play dashboard for vitality/wounds, conditions, saves, senses, attacks, class features), Social
+  (the standing ledger, plus #POST, an inbox that rides the record), #GRID, Flow, Inventory
+  (Stash, Chrome, a gray-market storefront), Codex (searchable rules reference).
 - **Admin portal**: the GM toolkit, on its own rail. Table (initiative tracker), Threats (statblock
   builder), Bestiary (33 transcribed Part 4 entries), plus Encounters, Hazards, Job Board, and
   Payroll, named stubs for stages still to come.
