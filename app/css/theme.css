@@ -605,7 +605,7 @@ html.skin-98.has-wall body::before{
 html:is(.skin-98, .skin-droid).has-wall.wall-shadow .os-main{ text-shadow:-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,.85); }
 html:is(.skin-98, .skin-droid).has-wall.wall-glow .os-main{ text-shadow:0 0 5px rgba(255,255,255,.5), 0 0 12px rgba(255,255,255,.28); }
 html:is(.skin-98, .skin-droid).has-wall.wall-shadow.wall-glow .os-main{ text-shadow:-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,.85), 0 0 6px rgba(255,255,255,.5), 0 0 14px rgba(255,255,255,.28); }
-html:is(.skin-98, .skin-droid).has-wall:is(.wall-shadow, .wall-glow) .os-main :is(.panel, .inv-sub, .wizard-rail, .btn, .chip, input, textarea, select, .stat, .muted-box, .opt-card, .device-card, [style*="sticky"]){ text-shadow:none; }
+html:is(.skin-98, .skin-droid).has-wall:is(.wall-shadow, .wall-glow) .os-main :is(.panel, .inv-sub, .post-sub, .wizard-rail, .btn, .chip, input, textarea, select, .stat, .muted-box, .opt-card, .device-card, [style*="sticky"]){ text-shadow:none; }
 html.skin-98 ::selection{ background:var(--accent); color:#000; }
 
 /* every rounded thing goes square, including radii set inline from JS */
@@ -754,6 +754,8 @@ html.skin-98 .os-tray-ico + .os-tray-ico{ animation-delay:1.2s; }     /* the two
 @keyframes tray-pulse{ 0%,100%{ opacity:.55; text-shadow:0 0 4px currentColor; } 50%{ opacity:1; text-shadow:0 0 12px currentColor; } }
 
 /* ---- '98: the Inventory tab is a browser window; the Gray Market inside it is a 1998 auction site ----
+   (The palette, frame and Win98 control rules below are shared with the #POST mail client further
+   down, through :is(.inv-sub, .post-sub); the Explorer's own chrome and the auction site stay here.)
    inventory.js wraps whichever sub-view is up (Stash / Chrome / Workbench / Gray Market) in .inv-sub
    and writes the sub-view into data-sub. This block turns that wrapper into a "#GRID Explorer"
    window: title bar, menu bar, address bar, then a white document. Inside the document every
@@ -763,7 +765,7 @@ html.skin-98 .os-tray-ico + .os-tray-ico{ animation-delay:1.2s; }     /* the two
    declared next to its own remap would read the remapped value, so the dark values are captured
    one level up, on #view, before the remap happens. */
 html.skin-98 #view{ --chrome-a:var(--accent-dim); --chrome-b:var(--bg1); --chrome-font:var(--disp); }
-html.skin-98 .inv-sub{
+html.skin-98 :is(.inv-sub, .post-sub){
   --bg:#ffffff; --bg1:#f4f4ef; --bg2:#fbfbf8; --bg3:#ecece6; --bg4:#e0e0da;
   --panel:#ffffff; --panel-solid:#ffffff; --grid-line:transparent;
   --border:#c2c2ba; --border2:#8e8e86;
@@ -802,33 +804,33 @@ html.skin-98 .inv-sub::after{
   border-bottom:1px solid #808080; box-shadow:inset 0 1px 0 #fff;
 }
 /* form controls inside the document: the classic gray Win98 set, the primary button in "Buy It Now" yellow */
-html.skin-98 .inv-sub .btn{
+html.skin-98 :is(.inv-sub, .post-sub) .btn{
   font-family:Arial, Helvetica, sans-serif; font-size:12px; font-weight:400; letter-spacing:0; text-transform:none;
   color:#000; background:#c0c0c0; border:1px solid; border-color:#fff #000 #000 #fff;
   box-shadow:inset -1px -1px 0 #808080, inset 1px 1px 0 #dfdfdf; padding:2px 10px;
 }
-html.skin-98 .inv-sub .btn.sm{ padding:1px 8px; font-size:11px; }
-html.skin-98 .inv-sub .btn:hover{ color:#000; background:#d4d4d4; border-color:#fff #000 #000 #fff; box-shadow:inset -1px -1px 0 #808080, inset 1px 1px 0 #dfdfdf; }
-html.skin-98 .inv-sub .btn:active{ border-color:#000 #fff #fff #000; box-shadow:inset 1px 1px 0 #808080; }
-html.skin-98 .inv-sub .btn.primary, html.skin-98 .inv-sub .btn.primary:hover{ background:#ffcc00; color:#000; filter:none; }
-html.skin-98 .inv-sub .btn.flow{ background:#c0c0c0; color:#000; }
-html.skin-98 .inv-sub .btn.ghost{ background:transparent; border-color:transparent; box-shadow:none; }
-html.skin-98 .inv-sub .btn:disabled{ color:#808080; text-shadow:1px 1px 0 #fff; background:#c0c0c0; opacity:1; }
-html.skin-98 .inv-sub input[type=text], html.skin-98 .inv-sub input[type=number], html.skin-98 .inv-sub textarea, html.skin-98 .inv-sub select{
+html.skin-98 :is(.inv-sub, .post-sub) .btn.sm{ padding:1px 8px; font-size:11px; }
+html.skin-98 :is(.inv-sub, .post-sub) .btn:hover{ color:#000; background:#d4d4d4; border-color:#fff #000 #000 #fff; box-shadow:inset -1px -1px 0 #808080, inset 1px 1px 0 #dfdfdf; }
+html.skin-98 :is(.inv-sub, .post-sub) .btn:active{ border-color:#000 #fff #fff #000; box-shadow:inset 1px 1px 0 #808080; }
+html.skin-98 :is(.inv-sub, .post-sub) .btn.primary, html.skin-98 :is(.inv-sub, .post-sub) .btn.primary:hover{ background:#ffcc00; color:#000; filter:none; }
+html.skin-98 :is(.inv-sub, .post-sub) .btn.flow{ background:#c0c0c0; color:#000; }
+html.skin-98 :is(.inv-sub, .post-sub) .btn.ghost{ background:transparent; border-color:transparent; box-shadow:none; }
+html.skin-98 :is(.inv-sub, .post-sub) .btn:disabled{ color:#808080; text-shadow:1px 1px 0 #fff; background:#c0c0c0; opacity:1; }
+html.skin-98 :is(.inv-sub, .post-sub) input[type=text], html.skin-98 :is(.inv-sub, .post-sub) input[type=number], html.skin-98 :is(.inv-sub, .post-sub) textarea, html.skin-98 :is(.inv-sub, .post-sub) select{
   background:#fff; color:#000; font-family:"Courier New", Courier, monospace; font-size:12px;
   border:1px solid; border-color:#808080 #fff #fff #808080; box-shadow:inset 1px 1px 0 #000, inset -1px -1px 0 #dfdfdf;
 }
-html.skin-98 .inv-sub input::placeholder{ color:#888; }
+html.skin-98 :is(.inv-sub, .post-sub) input::placeholder{ color:#888; }
 /* panels become listing tables: gray header row, bold blue underlined category link, white body */
-html.skin-98 .inv-sub .panel{ background:#fff; border:1px solid #9a9a92; box-shadow:none; }
+html.skin-98 :is(.inv-sub, .post-sub) .panel{ background:#fff; border:1px solid #9a9a92; box-shadow:none; }
 html.skin-98 .inv-sub .panel-h{ background:#e8e8e2; border-bottom:1px solid #9a9a92; padding:4px 8px; box-shadow:none; }
 html.skin-98 .inv-sub .panel-h::before, html.skin-98 .inv-sub .panel-h::after{ display:none; }
 html.skin-98 .inv-sub .panel-h h3{ font-family:Arial, Helvetica, sans-serif; font-size:13px; font-weight:700; letter-spacing:0; text-transform:none; color:var(--link); text-shadow:none; }
 html.skin-98 .inv-sub .panel-h.clickable h3{ text-decoration:underline; }
 html.skin-98 .inv-sub .panel-h.clickable:hover h3{ color:var(--link-hot); }
 html.skin-98 .inv-sub .panel-h .tag{ font-family:Arial, Helvetica, sans-serif; font-size:11px; letter-spacing:0; text-transform:lowercase; color:#666; }
-html.skin-98 .inv-sub .panel-b{ padding:6px 8px 8px; }
-html.skin-98 .inv-sub .collapse-caret{ color:#000; }
+html.skin-98 :is(.inv-sub, .post-sub) .panel-b{ padding:6px 8px 8px; }
+html.skin-98 :is(.inv-sub, .post-sub) .collapse-caret{ color:#000; }
 html.skin-98 .inv-sub .mkt-sublabel{ font-family:Arial, Helvetica, sans-serif !important; font-size:12px !important; font-weight:700; letter-spacing:0 !important; text-transform:none !important; color:#000 !important; background:#f3f3ee; border-top:1px solid #d0d0c8; border-bottom:1px solid #d0d0c8; padding:3px 6px; margin:8px 0 0 !important; }
 /* item cards become table rows: striped, no card border, the name a blue link, the price bold */
 html.skin-98 .inv-sub .feature{ background:#fff; border:0 !important; border-bottom:1px solid #d6d6ce !important; padding:5px 8px; margin:0; box-shadow:none; filter:none; }
@@ -839,8 +841,8 @@ html.skin-98 .inv-sub .mkt-name:hover{ color:var(--link-hot); }
 html.skin-98 .inv-sub .mkt-meta{ font-family:Arial, Helvetica, sans-serif !important; font-size:11px !important; letter-spacing:0 !important; }
 html.skin-98 .inv-sub .mkt-price{ font-family:Arial, Helvetica, sans-serif !important; font-size:13px !important; font-weight:700; }
 html.skin-98 .inv-sub .feature p{ font-family:var(--body); font-size:13px; color:#222; }
-html.skin-98 .inv-sub .chip{ font-family:Arial, Helvetica, sans-serif; font-size:10px !important; letter-spacing:0 !important; border:1px solid #b9b9b1; background:#fafaf6; box-shadow:none; padding:1px 5px; }
-html.skin-98 .inv-sub .chip.on{ background:#ffcc00; color:#000; border-color:#000; }
+html.skin-98 :is(.inv-sub, .post-sub) .chip{ font-family:Arial, Helvetica, sans-serif; font-size:10px !important; letter-spacing:0 !important; border:1px solid #b9b9b1; background:#fafaf6; box-shadow:none; padding:1px 5px; }
+html.skin-98 :is(.inv-sub, .post-sub) .chip.on{ background:#ffcc00; color:#000; border-color:#000; }
 /* the Gray Market's own chrome: storefronts as a lowercase text-link nav (craigslist), the banner
    as a fat lowercase four-color wordmark (eBay), the search bar as the yellow featured band */
 html.skin-98 .mkt-fronts{ gap:0 !important; margin:0 0 6px !important; padding:4px 0; border-bottom:1px solid #000; }
@@ -858,6 +860,114 @@ html.skin-98 .mkt-sub{ font:italic 13px/1.3 "Times New Roman", Times, serif !imp
 html.skin-98 .mkt-banner .help{ flex-basis:100%; font-family:var(--body); font-size:13px; color:#222; margin-top:4px; }
 html.skin-98 .mkt-controls{ background:#ffffcc !important; border:1px solid #d6c96a !important; padding:6px 8px !important; margin:0 0 10px !important; }
 html.skin-98 .mkt-controls .mono{ font-family:Arial, Helvetica, sans-serif !important; font-size:11px !important; letter-spacing:0 !important; color:#333 !important; }
+
+/* ---- '98: the #POST inbox is a mail client, "#POST Express", the Explorer's sibling ----
+   (Author's ruling 2026-09-05: the window carries the service's name, not the OS's.)
+   face.js wraps the inbox in .post-sub and stamps its panel with data-count and data-unread; the
+   frame, light-page palette and Win98 controls come from the shared rules above. This block is
+   the client itself: title bar, menu bar and a flat toolbar, a folder pane, a message list with
+   column headings, the open message as a preview pane, and a status bar. The real compose button
+   is lifted out of the document into the toolbar's first slot, which the toolbar text leaves
+   empty for it; the other toolbar words are just words, as most of a 1998 toolbar was. */
+html.skin-98 .post-sub::before{
+  content:"Inbox - #POST Express"; order:-2; flex:none; margin:0 -12px;
+  height:26px; line-height:26px; padding:0 8px;
+  font-family:var(--chrome-font); font-size:14px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:#fff;
+  background:var(--win-btns),
+             linear-gradient(90deg, var(--chrome-a) 0%, var(--chrome-a) 22%, var(--chrome-b) 100%);
+  border-right:6px solid var(--chrome-b);
+}
+html.skin-98 .post-sub::after{
+  content:"File   Edit   View   Tools   Message   Help\A                                            Reply      Reply All      Forward         Print      Delete         Send/Recv      Addresses      Find";
+  order:-1; flex:none; margin:0 -12px 12px; padding:0 8px 3px; overflow:hidden;
+  white-space:pre; font:12px/22px Arial, Helvetica, sans-serif; letter-spacing:0; color:#000;
+  background:
+    linear-gradient(#ffffff,#ffffff) 0 22px / 100% 1px no-repeat,   /* the coolbar's own highlight and shadow between the two lines */
+    linear-gradient(#808080,#808080) 0 21px / 100% 1px no-repeat,
+    linear-gradient(#c0c0c0,#c0c0c0);
+  border-bottom:1px solid #808080; box-shadow:inset 0 1px 0 #fff;
+}
+/* the compose button becomes New Mail: lifted up into the toolbar line, whose text starts after it */
+html.skin-98 .post-sub .panel-b > .btn.sm{
+  position:absolute; left:8px; top:-37px; z-index:1; box-sizing:border-box; height:20px; margin:0 !important; padding:1px 10px;
+}
+/* the document: a folder pane down the left (a pseudo on the panel, reading the unread count off
+   it), the list to its right, a status bar along the foot */
+html.skin-98 .post-sub .panel{ overflow:visible; }
+html.skin-98 .post-sub .panel-b{ padding:0 0 0 150px; min-height:190px; }
+html.skin-98 .post-sub .panel::before{
+  content:"#POST\A   Inbox (" attr(data-unread) ")\A   Outbox\A   Sent Items\A   Deleted Items\A   Drafts";
+  position:absolute; left:0; top:0; bottom:21px; width:150px; box-sizing:border-box; padding:4px 6px;
+  white-space:pre; font:12px/20px Arial, Helvetica, sans-serif; color:#000;
+  background:#fff; border-right:1px solid #808080; box-shadow:inset -1px 0 0 #dfdfdf;
+}
+html.skin-98 .post-sub .panel[data-unread="0"]::before{ content:"#POST\A   Inbox\A   Outbox\A   Sent Items\A   Deleted Items\A   Drafts"; }
+html.skin-98 .post-sub .panel::after{
+  content:attr(data-count) " message(s), " attr(data-unread) " unread      #POST guarantees delivery. It has never guaranteed privacy.      Working Online";
+  display:block; height:20px; padding:0 6px; white-space:pre; overflow:hidden;
+  font:11px/20px Arial, Helvetica, sans-serif; color:#000; background:#c0c0c0;
+  border-top:1px solid #808080; box-shadow:inset 0 1px 0 #fff;
+}
+/* the panel header is the list's column headings, on the same grid as the rows. The heading's
+   own text is set to zero size and each cell's label drawn in its place; the real words survive
+   for a screen reader. */
+html.skin-98 .post-sub .panel-h{
+  display:grid; grid-template-columns:24px 180px minmax(0, 1fr) 120px; column-gap:6px; align-items:center;
+  margin-left:150px; min-height:0; height:20px; padding:0 6px 0 4px;
+  background:#e8e8e2; border-bottom:1px solid #9a9a92; box-shadow:none;
+  font:700 11px/20px Arial, Helvetica, sans-serif; color:#000;
+}
+html.skin-98 .post-sub .panel-h::before{ content:"\2709"; width:auto; height:auto; flex:none; background:none; box-shadow:none; text-align:center; font-weight:400; font-size:12px; }
+html.skin-98 .post-sub .panel-h::after{ content:"Received"; width:auto; height:auto; flex:none; margin:0; background:none; }
+html.skin-98 .post-sub .panel-h h3, html.skin-98 .post-sub .panel-h .tag{ font-size:0; letter-spacing:0; padding:0; border:0; background:none; color:#000; text-shadow:none; }
+html.skin-98 .post-sub .panel-h h3::before{ content:"From"; font:700 11px/20px Arial, Helvetica, sans-serif; text-transform:none; }
+html.skin-98 .post-sub .panel-h .tag::before{ content:"Subject"; font:700 11px/20px Arial, Helvetica, sans-serif; text-transform:none; }
+html.skin-98 .post-sub .panel-h .panel-hr{ display:none !important; }   /* the count is on the status bar and the folder pane; !important because ui.js sets display inline */
+/* the list: one line per message, unread in bold with a black envelope, read in plain with a gray one */
+html.skin-98 .post-sub .feature{ background:#fff; border:0 !important; border-radius:0; padding:0; margin:0 !important; box-shadow:none; filter:none; }
+html.skin-98 .post-sub .post-row{
+  display:grid; grid-template-columns:24px 180px minmax(0, 1fr) 120px; gap:0 6px; align-items:center;
+  min-height:18px; padding:1px 6px 1px 4px; cursor:default;
+}
+html.skin-98 .post-sub .post-cell{ font-family:Arial, Helvetica, sans-serif !important; font-size:12px !important; letter-spacing:0; color:#000 !important; }
+html.skin-98 .post-sub .post-when{ font-size:11px !important; }
+html.skin-98 .post-sub .post-unread .post-cell{ font-weight:700; }
+html.skin-98 .post-sub .post-dot{ width:auto; height:auto; border-radius:0; text-align:center; background:none !important; box-shadow:none !important; border:0 !important; }
+html.skin-98 .post-sub .post-dot::before{ content:"\2709"; font-size:13px; line-height:1; color:#8a8a8a; }
+html.skin-98 .post-sub .post-unread .post-dot::before{ color:#000; }
+html.skin-98 .post-sub .post-caret{ display:none; }
+/* the open message is the selected row: Win98 navy, white ink, the dotted focus ring */
+html.skin-98 .post-sub .post-open > .post-row{ background:#000080; outline:1px dotted #ffff80; outline-offset:-1px; }
+html.skin-98 .post-sub .post-open > .post-row .post-cell, html.skin-98 .post-sub .post-open > .post-row .post-dot::before{ color:#fff !important; }
+/* and its editor is the preview pane beneath the list: a gray header band holding From, Subject
+   and When, the body in Courier like a plain-text mail, the buttons on a gray foot */
+html.skin-98 .post-sub .post-open > div:last-child{
+  margin:0 !important; padding:0 !important; border-left:0 !important;
+  border-top:1px solid #808080; box-shadow:inset 0 1px 0 #fff; background:#fff;
+}
+html.skin-98 .post-sub .post-open > div:last-child > .row.wrap:first-child{
+  margin:0 !important; padding:6px 8px !important; gap:4px 14px !important;
+  background:#f0f0f0; border-bottom:1px solid #c0c0c0;
+}
+html.skin-98 .post-sub .field label.fl{ font:700 11px/14px Arial, Helvetica, sans-serif !important; letter-spacing:0; text-transform:none; color:#000; }
+html.skin-98 .post-sub .field label.fl::after{ content:":"; }
+html.skin-98 .post-sub textarea{
+  border:0 !important; box-shadow:none !important; padding:8px !important; min-height:130px !important;
+  font:12px/1.45 "Courier New", Courier, monospace !important; color:#000; resize:vertical;
+}
+html.skin-98 .post-sub .post-open > div:last-child > .row.wrap:last-child{
+  margin:0 !important; padding:5px 8px !important; background:#f0f0f0; border-top:1px solid #c0c0c0;
+}
+/* the flavor line moved to the status bar; the empty list says so the way a 1998 list did */
+html.skin-98 .post-sub .panel-b > p.help:first-child{ display:none; }
+html.skin-98 .post-sub .panel-b > p.help:last-child{ margin:0; padding:48px 12px; text-align:center; font:italic 12px Arial, Helvetica, sans-serif; color:#666; }
+/* narrow: no room for a folder pane, and the columns tighten */
+@media (max-width: 760px){
+  html.skin-98 .post-sub .panel::before{ display:none; }
+  html.skin-98 .post-sub .panel-b{ padding-left:0; }
+  html.skin-98 .post-sub .panel-h{ margin-left:0; }
+  html.skin-98 .post-sub .panel-h, html.skin-98 .post-sub .post-row{ grid-template-columns:22px 110px minmax(0, 1fr) 84px; }
+}
 @media (prefers-reduced-motion: reduce){ html.skin-98 .os-tray-ico{ animation:none; opacity:1; } }
 html.skin-98 .toast{ bottom:56px; border:2px solid; border-color:var(--bev-hi) var(--bev-lo) var(--bev-lo) var(--bev-hi); box-shadow:1px 1px 0 var(--bev-lo); }
 

@@ -320,7 +320,10 @@ EN.faceView = (function () {
           onclick: function () { delete _open["post-" + key]; fset(function (f) { f.post.splice(i, 1); }); } }, "✕ DELETE")
       ])
     ]) : null;
-    return el("div.feature", { style: { borderLeftColor: rec.read ? "var(--border)" : "var(--gold)", marginBottom: "7px" } },
+    // .post-unread and .post-open are skin hooks (the '98 mail client bolds the one and paints
+    // the other as the selected row); nothing in here reads them
+    return el("div.feature" + (rec.read ? "" : ".post-unread") + (open ? ".post-open" : ""),
+      { style: { borderLeftColor: rec.read ? "var(--border)" : "var(--gold)", marginBottom: "7px" } },
       [head, body]);
   }
   function postPanel() {
@@ -339,8 +342,11 @@ EN.faceView = (function () {
       } }, "+ NEW MESSAGE"));
     if (list.length) list.forEach(function (rec, i) { kids.push(postRow(rec, i)); });
     else kids.push(help("No traffic. #POST is holding nothing for this handle.", "var(--text4)"));
-    return EN.ui.panel("#POST", "SECURE COMM CHANNEL", kids, { corners: true,
+    var p = EN.ui.panel("#POST", "SECURE COMM CHANNEL", kids, { corners: true,
       headerRight: n ? [el("span.mono", { style: { fontSize: "11px", color: "var(--gold)", letterSpacing: ".08em" }, text: n + " UNREAD" })] : null });
+    // skin hooks: the '98 mail client reads its folder pane and status bar off these
+    p.dataset.count = String(list.length); p.dataset.unread = String(n);
+    return p;
   }
 
   /* ---- quick reference (collapsible) -------------------------------------- */
@@ -475,7 +481,12 @@ EN.faceView = (function () {
       subTab("ledger", "◑ LEDGER"),
       subTab("post", "◧ #POST" + (n ? " · " + n : ""))
     ]));
-    if (onPost) { blocks.push(postPanel()); mount.appendChild(el("div", null, blocks)); return; }
+    if (onPost) {
+      // One wrapper around the inbox so a skin can frame it (theme.css draws the '98 mail
+      // client off .post-sub, the sibling of the Inventory's .inv-sub). Nothing else keys on it.
+      blocks.push(el("div.post-sub", null, [postPanel()]));
+      mount.appendChild(el("div", null, blocks)); return;
+    }
     blocks.push(profilesPanel());
     blocks.push(el("div", { style: { marginTop: "14px" } }, [factionsPanel()]));
     blocks.push(el("div.modgrid6", { style: { marginTop: "14px" } }, [

@@ -7560,6 +7560,44 @@ Open, if the author wants them: an Admin composer (today a GM switches to the pl
 writes there), sent mail beside received, and a '98 mail-client frame for the panel, which
 currently inherits the generic window chrome and already reads as one.
 
+## #POST Express: the '98 mail client, 2026-09-05
+
+The #POST inbox on the '98 skin now opens in a mail client, the sibling of the "#GRID Explorer"
+window the Inventory tab wears, and the two are built the same way. face.js wraps the inbox in a
+`.post-sub` (as inventory.js wraps its sub-views in `.inv-sub`) and stamps the panel with
+`data-count` and `data-unread`; theme.css does the rest. The light-page palette, the window frame
+and the gray Win98 control set are now shared between the two windows through
+`:is(.inv-sub, .post-sub)` selectors, which changes nothing for the Explorer since `:is()` takes
+the specificity of the class it holds. Everything mail-specific is its own block after the Gray
+Market's rules.
+
+What the window is, top to bottom. A title bar reading "Inbox - #POST Express" with the three
+caption buttons. A menu bar (File Edit View Tools Message Help) over a flat toolbar, whose words
+are just words the way most of a 1998 toolbar was, except the first slot: the real compose button
+is lifted out of the document with `position:absolute` into that slot and the toolbar text leaves
+room for it. A folder pane down the left ("#POST / Inbox (N) / Outbox / Sent Items / Deleted
+Items / Drafts", the count read off `data-unread`, and dropped when it is zero the way Outlook
+Express dropped it). The panel header turned into the list's column headings on the same grid the
+rows use, with its own heading text set to zero size and each cell's label drawn in its place, so
+"From", "Subject" and "Received" line up over the columns and a screen reader still hears the real
+words. Rows are one line each: envelope, sender, subject, time; unread in bold with a black
+envelope, read in plain with a gray one. The open message is the selected row, Win98 navy with
+white ink and the dotted focus ring, and its editor beneath is the preview pane: a gray header
+band holding From, Subject and When, the body in Courier New like a plain-text mail, the buttons
+on a gray foot. A status bar closes the window with "N message(s), M unread", the service's
+deadpan line, and Working Online, which is the one claim in the whole app that is a lie.
+
+Three hooks were added for it, all behaviour-neutral: `.post-sub`, and `.post-unread` and
+`.post-open` on a row's `.feature`, because bold-unread and selected-row are states the CSS could
+otherwise only reach through the inline border color, which is exactly the kind of coupling the
+last round of review taught. Below 760px the folder pane goes and the columns tighten; the phone
+skin is not the '98 skin's problem and is untouched.
+
+The name was the one judgment call put to the author. The first cut said "#GRID Express", on the
+logic that Explorer and Express are both #GRID-branded system apps with the service inside them,
+the way gridmart is the site inside the Explorer. The author ruled for "#POST Express": the window
+carries the service's name. The folder pane's root stays "#POST", which now reads as the account.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

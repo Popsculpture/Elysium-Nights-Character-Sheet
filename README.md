@@ -24,8 +24,9 @@ settings cog. The choice is remembered per device (`?portal=admin` overrides it 
 ## Skins and wallpapers
 
 Settings has an OS Skin row beside the color themes: Classic (the look as shipped), #GRIDOS '98
-(a Windows 98 homage: bevels, title bars with caption buttons, a taskbar with START, and an
-Inventory tab that opens a "#GRID Explorer" window around a 1998 auction-site Gray Market), and
+(a Windows 98 homage: bevels, title bars with caption buttons, a taskbar with START, an
+Inventory tab that opens a "#GRID Explorer" window around a 1998 auction-site Gray Market, and a
+#POST inbox that opens in "#POST Express", a mail client with a folder pane and a preview pane), and
 #GRIDroid (a cyberpunk phone OS: one phone-width screen in a HUD bezel at any width, the tab rail
 an app list docked at the foot, folded to the open app and unfolding on a tap). On '98 and
 #GRIDroid a Wallpaper row picks the desktop behind the windows: six presets from the author's art
