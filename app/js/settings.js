@@ -201,6 +201,8 @@ EN.theme = (function () {
     root.classList.remove("rail-open");   // #GRIDroid's unfolded app list; no other skin owns it
     var s = findSkin(k);
     if (s.cls) root.classList.add(s.cls);
+    // the wallpaper resolves per skin (a preset is '98-only), so a skin change re-reads it
+    applyWall();
   }
   function setSkin(k) {
     try { localStorage.setItem(SKIN_KEY, findSkin(k).key); } catch (e) {}
@@ -212,7 +214,9 @@ EN.theme = (function () {
      EN.wallpapers (data/wallpapers.js), since file:// cannot list a folder. Customs are the
      user's own files, drawn through a canvas so they come out as a bounded JPEG data URL,
      which is what lets six of them sit in localStorage. theme.css paints --wall behind the
-     '98 desktop while html.has-wall is set; every other skin ignores both. */
+     '98 and #GRIDroid desktops while html.has-wall is set; Classic ignores both. The presets
+     hang on '98 alone (author's ruling 2026-09-05); #GRIDroid gets the dither, the user's own
+     files, and the three text toggles. */
   var WALL_KEY = "en_wall_v1", WALL_CUSTOM_KEY = "en_wall_custom_v1";
   // the desktop's three toggles, each its own device key: DIM scrims the wallpaper, SHADOW gives
   // the desktop's text a slim outline and drop shadow, GLOW gives it a soft light halo
@@ -230,6 +234,9 @@ EN.theme = (function () {
       var c = wallCustoms().filter(function (w) { return "custom:" + w.id === key; })[0];
       return c ? c.data : null;
     }
+    // A preset resolves on '98 only. On any other skin a stored preset reads as nothing, so the
+    // dither shows there, and the choice itself is left in storage for the next time '98 is up.
+    if (getSkin() !== "98") return null;
     var p = wallPresets().filter(function (w) { return w.key === key; })[0];
     return p ? "img/wallpapers/" + p.file : null;
   }
@@ -737,9 +744,9 @@ EN.settings = (function () {
     ];
   }
 
-  /* Wallpaper picker, '98 and #GRIDroid only: Classic has no desktop to hang one on. Presets are
-     the author's art (data/wallpapers.js); customs come from the user's own files. Returns a
-     flat array like skinSection, so rebuild() can run it into the same section. */
+  /* Wallpaper picker, '98 and #GRIDroid only: Classic has no desktop to hang one on. The presets
+     (data/wallpapers.js) are offered on '98 alone; customs come from the user's own files on
+     either. Returns a flat array like skinSection, so rebuild() can run it into the same section. */
   function wallSection() {
     var sk = EN.theme.getSkin();
     if (sk !== "98" && sk !== "droid") return [];   // the two skins with a desktop to hang one on
@@ -761,7 +768,7 @@ EN.settings = (function () {
       }, [el("div.set-wall-name", { text: name })].concat(extra || []));
     }
     var cards = [card("none", "None, the dither", null)];
-    EN.theme.wallPresets().forEach(function (w) { cards.push(card(w.key, w.name, "img/wallpapers/" + w.thumb)); });
+    if (sk === "98") EN.theme.wallPresets().forEach(function (w) { cards.push(card(w.key, w.name, "img/wallpapers/" + w.thumb)); });
     EN.theme.wallCustoms().forEach(function (w) {
       cards.push(card("custom:" + w.id, w.name, w.data, [
         // its own click boundary, so arming the remove never also selects the card
@@ -775,7 +782,7 @@ EN.settings = (function () {
       [el("div.set-wall-name", { text: "+ From file" })]));
     return [
       el("label.set-label", { style: { marginTop: "14px" }, text: "Wallpaper" }),
-      el("p.set-hint", { text: "The desktop behind the windows. Presets are the author's art; add your own from a file, kept on this device only (resized to fit; as many as this device's storage has room for, six at most). Saved on this device." }),
+      el("p.set-hint", { text: "The desktop behind the windows. Add your own from a file, kept on this device only (resized to fit; as many as this device's storage has room for, six at most). Saved on this device." }),
       el("div.set-walls", null, cards),
       // three independent toggles for reading the desktop over any wallpaper; any mix works
       el("div.row.wrap", { style: { gap: "6px", marginTop: "8px" } }, [

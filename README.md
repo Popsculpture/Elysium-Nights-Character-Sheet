@@ -29,9 +29,9 @@ Inventory tab that opens a "#GRID Explorer" window around a 1998 auction-site Gr
 #POST inbox that opens in "#POST Express", a mail client with a folder pane and a preview pane), and
 #GRIDroid (a cyberpunk phone OS: one phone-width screen in a HUD bezel at any width, the tab rail
 an app list docked at the foot, folded to the open app and unfolding on a tap). On '98 and
-#GRIDroid a Wallpaper row picks the desktop behind the windows: six presets from the author's art
-in `app/img/wallpapers`, or your own image from a file (resized and kept on the device), with
-toggles to dim it and to outline or glow the desktop's text. Skins and wallpapers are device
+#GRIDroid a Wallpaper row picks the desktop behind the windows: your own image from a file
+(resized and kept on the device), or on '98 alone one of the six presets in `app/img/wallpapers`,
+with toggles to dim it and to outline or glow the desktop's text. Skins and wallpapers are device
 settings, never part of a character or its export.
 
 ## Tech

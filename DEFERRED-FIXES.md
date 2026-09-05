@@ -7598,6 +7598,21 @@ logic that Explorer and Express are both #GRID-branded system apps with the serv
 the way gridmart is the site inside the Explorer. The author ruled for "#POST Express": the window
 carries the service's name. The folder pane's root stays "#POST", which now reads as the account.
 
+## Wallpaper presets are '98-only, 2026-09-05
+
+Author's ruling: the six preset wallpapers belong to #GRIDOS '98 and are not offered on #GRIDroid.
+The phone keeps everything else on the Wallpaper row: "None, the dither", the user's own images
+from a file, and the three toggles (Dim Wallpaper, Text Outline, Text Glow). The hint line no
+longer says "Presets are the author's art".
+
+The wallpaper choice is one device key shared by both skins, so the gate is in the resolver rather
+than the picker alone: `wallUrl()` returns nothing for a preset unless '98 is the skin, which means
+a preset chosen on '98 reads as "none" on #GRIDroid (the dither shows, the None card is the one
+lit) while the choice itself stays in storage for the next time '98 is up. A custom image is
+honored on both. Because the resolution now depends on the skin, `applySkin()` re-runs
+`applyWall()`, so flipping skins in the tray repaints the desktop without a reload; before, the
+two were only tied together at boot.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from
