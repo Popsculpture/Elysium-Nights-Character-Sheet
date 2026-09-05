@@ -7613,6 +7613,18 @@ honored on both. Because the resolution now depends on the skin, `applySkin()` r
 `applyWall()`, so flipping skins in the tray repaints the desktop without a reload; before, the
 two were only tied together at boot.
 
+## The settings tray's head rolled under its own body, 2026-09-05
+
+Reported by the author on #GRIDroid with the custom-theme editor open: scroll the tray and the
+SWITCH USER and SIGN OUT buttons slide over the sticky "Settings" head instead of behind it. The
+head is `position:sticky` and had no z-index, and a sticky element with none paints in DOM order
+among the tray's other positioned things, so a chamfered button or a wallpaper card's absolute
+label lower in the body painted over it. It only shows once the body is tall enough to scroll,
+which on a desk means the editor open, and on a phone means almost always. Reproduced by hit
+testing nine points inside the head after a 140px scroll: six returned `btn`. `z-index:2` on the
+head in settings.js's own stylesheet, so every skin gets it; the same nine points now all return
+the head.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

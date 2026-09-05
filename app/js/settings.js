@@ -372,7 +372,10 @@ EN.settings = (function () {
     "  border:1px solid var(--accent-dim); border-radius:6px;",
     "  box-shadow:0 0 0 1px rgba(255,255,255,.03), 0 24px 70px rgba(0,0,0,.65), var(--glow-cyan); }",
     ".set-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:18px 20px 12px;",
-    "  border-bottom:1px solid var(--border); position:sticky; top:0; background:linear-gradient(180deg,var(--bg2),var(--bg1)); }",
+    // z-index, because a sticky element with none paints in DOM order among the tray's other
+    // positioned things, and a chamfered button or a wallpaper card's label lower in the body
+    // then rolls OVER the head as the tray scrolls, where it should roll behind it
+    "  border-bottom:1px solid var(--border); position:sticky; top:0; z-index:2; background:linear-gradient(180deg,var(--bg2),var(--bg1)); }",
     ".set-kick{ font-family:var(--mono); font-size:10px; letter-spacing:.2em; color:var(--text3); }",
     ".set-title{ font-size:22px; letter-spacing:.06em; color:var(--text); margin-top:2px; }",
     ".set-close{ flex:0 0 auto; background:transparent; border:1px solid var(--border2); color:var(--text2);",
