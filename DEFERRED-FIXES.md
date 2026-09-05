@@ -7453,6 +7453,32 @@ A breached suit on a live plan is protected by the plan's layer alone, which is 
 layer model is visibly generous: the service keeps shipping panels even though the suit under
 them is past repair. Say the word and the layer can be gated on the suit still being intact.
 
+## The save readout tells the truth now, 2026-09-03
+
+Flagged while reviewing the wallpaper work, fixed at the author's word. The store writes the
+roster to this device's storage inside a try/catch whose entire failure handler was a console
+line, and the SYNC OK readout was driven by the EDIT rather than by the write that follows it.
+So a refused write (the origin's storage full, Safari in private browsing, a browser set to block
+site data) left the app reporting a healthy save, with the edit visible on screen because it had
+succeeded in memory, and gone on the next reload. A whole session could be played and lost, and
+the only warning was in a console nobody has open mid-game.
+
+The write now reports. persist() tells watchers whether the setItem landed, every time, success
+included, and the store exports onSave and saveOk. The app subscribes and drives the readout from
+that: an edit only ever flashes SYNC, and the watcher settles it to SYNC OK or leaves it reading
+NOT SAVED in danger red with a tooltip saying the changes are not stored and to export the record
+from #PRINT. A failure toasts once, not on every keystroke, and a recovery toasts once too, so a
+player who frees up space knows the record is being written again.
+
+Two details that decide whether it actually works. The settle cannot assume success: it paints
+the LAST REPORTED result, because an immediate write has already landed and reported by the time
+the flash runs, while a debounced one reports right after, and assuming success would paper over
+exactly the case this exists to catch. And a failure has to survive a re-render, since the tab
+rail is rebuilt from scratch on every store change and takes the tray glyph with it, so renderTabs
+repaints a failure after appending a fresh one. Verified by making setItem throw: the readout goes
+red and sticks through repeated re-renders, a second failure does not re-toast, and restoring
+writes clears it back to green with a recovery toast.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

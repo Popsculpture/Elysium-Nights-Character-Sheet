@@ -162,6 +162,7 @@ EN.app = (function () {
       el("span.os-tray-ico", { id: "os-tray-sync", text: "⬤", title: "SYNC OK" }),
       el("span.os-tray-clock", { id: "os-tray-clock", text: clockText() })
     ]));
+    if (_saveKind === "fail") paintSave("fail");   // a fresh tray glyph must not read as healthy
   }
 
   var _lastTab = null;
@@ -224,19 +225,30 @@ EN.app = (function () {
   }
 
   /* save indicator pulse */
-  function flashSave() {
+  /* The save readout, in the top bar and as the tray's ⬤ on a skin with a taskbar. It reports
+     the WRITE, not the edit: an edit only ever flashes it, and the store's own save watcher
+     below settles it to what actually happened. A failure is sticky, because the record on this
+     device really is behind until a later write lands. */
+  var _saveKind = "ok";                                 // "ok" | "saving" | "fail"
+  var SAVE_FAIL_TIP = "This device refused the write, so changes since then are NOT stored here. Export the record from #PRINT to keep them.";
+  function paintSave(kind) {
     var s = document.getElementById("save-state");
     var g = document.getElementById("os-tray-sync");   // the tray's ⬤, which IS SYNC OK on a skin with a taskbar
     if (!s && !g) return;
-    if (s) { s.textContent = "SYNC…"; s.style.color = "var(--warn)"; }
-    if (g) { g.style.color = "var(--warn)"; g.title = "SYNC…"; }
+    var txt = kind === "saving" ? "SYNC…" : kind === "fail" ? "NOT SAVED" : "SYNC OK";
+    var col = kind === "saving" ? "var(--warn)" : kind === "fail" ? "var(--danger)" : "var(--success)";
+    var tip = kind === "fail" ? SAVE_FAIL_TIP : txt;
+    if (s) { s.textContent = txt; s.style.color = col; s.title = tip; }
+    // on a good save the glyph's inline color is CLEARED rather than set, so it falls back to
+    // the skin's own rule and keeps its pulse; a warning has to override that rule to be seen
+    if (g) { g.title = tip; g.style.color = kind === "ok" ? "" : col; }
+  }
+  function flashSave() {
+    paintSave("saving");
     clearTimeout(flashSave._t);
-    flashSave._t = setTimeout(function () {
-      if (s) { s.textContent = "SYNC OK"; s.style.color = "var(--success)"; }
-      // clear the inline color rather than set it, so the glyph falls back to
-      // the skin's own rule and keeps its pulse
-      if (g) { g.style.color = ""; g.title = "SYNC OK"; }
-    }, 280);
+    // settle to whatever the last write reported, NOT to success: an immediate write has
+    // already landed and reported by the time this runs, and a debounced one reports right after
+    flashSave._t = setTimeout(function () { paintSave(_saveKind); }, 300);
   }
 
   /* clock */
@@ -311,6 +323,17 @@ EN.app = (function () {
     // away with the old rail a moment later (the top bar's readout is static
     // HTML and never noticed the difference)
     store.on(function () { render(); flashSave(); });
+    /* The one place that knows whether the record is really on this device. It also has to
+       out-live a re-render, which rebuilds the tray glyph from scratch, so renderTabs repaints
+       a failure after appending it. */
+    store.onSave(function (ok) {
+      var was = _saveKind;
+      _saveKind = ok ? "ok" : "fail";
+      clearTimeout(flashSave._t);
+      paintSave(_saveKind);
+      if (!ok && was !== "fail") EN.ui.toast("NOT SAVED. This device refused the write; export the record from #PRINT to keep your changes.");
+      if (ok && was === "fail") EN.ui.toast("Saved. This device is storing the record again.");
+    });
     renderTabs();
     render();
     tickClock(); setInterval(tickClock, 1000);

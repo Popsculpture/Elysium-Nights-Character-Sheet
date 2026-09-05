@@ -1620,12 +1620,27 @@ EN.store = (function () {
     return state;
   }
   var saveTimer = null;
+  /* Did the write actually land? A refused setItem (the origin's storage full, Safari in
+     private browsing, a browser set to block site data) used to be a console line and nothing
+     more, while the app went on reporting SYNC OK, because the readout was driven by the EDIT
+     rather than by the write that follows it. A whole session could be played and lost that
+     way, with the only warning in a console nobody has open mid-game. Watchers are told the
+     truth after every attempt, success included, so a recovery can clear the warning too. */
+  var saveWatchers = [];
+  var lastSaveOk = true;
+  function onSave(fn) { saveWatchers.push(fn); return function () { saveWatchers = saveWatchers.filter(function (f) { return f !== fn; }); }; }
+  function saveOk() { return lastSaveOk; }
   function persist(immediate) {
     function doWrite() {
+      var ok = true, err = null;
       try {
         localStorage.setItem(KEY_ROSTER, JSON.stringify(state.roster));
         localStorage.setItem(KEY_ACTIVE, state.activeId || "");
-      } catch (e) { console.error("Persist failed", e); }
+      } catch (e) { ok = false; err = e; console.error("Persist failed", e); }
+      lastSaveOk = ok;
+      // a watcher must never be able to stop the next one hearing about a failed save
+      saveWatchers.forEach(function (f) { try { f(ok, err); } catch (e2) { console.error(e2); } });
+      return ok;
     }
     if (immediate) { doWrite(); return; }
     clearTimeout(saveTimer);
@@ -1737,7 +1752,7 @@ EN.store = (function () {
   }
 
   return {
-    load: load, on: on,
+    load: load, on: on, onSave: onSave, saveOk: saveOk,
     active: active, roster: roster,
     createAndActivate: createAndActivate,
     setActive: setActive, remove: remove, update: update,
