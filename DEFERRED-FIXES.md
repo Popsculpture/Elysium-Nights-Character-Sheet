@@ -8262,17 +8262,28 @@ the path as attributes, since the file's own stroke properties paint nothing her
 coordinates run 2..103 on a viewBox that starts at 0. `fill-rule:evenodd` is what cuts the contact
 ridges, the side notch and the `i` itself out of the body.
 
-Raster-checked at true size on all three skins, magnified 24x with smoothing off: 11px on '98,
-13px on Classic, 20px on #GRIDroid. It holds at every one, and the test that mattered was '98's
-11px, where the `i` was the thing likely to mush: its dot and stem stay separate, and the six
-contact ridges stay six strokes.
+The first cut was 101 by 219, and in a square icon cell that reads slim: every other tab icon has
+a viewBox ratio between 0.97 and 1.12 and fills its cell, while a 0.46 ratio fills the height and
+takes under half the width. Measured ink was 5.1px wide on '98, 6.0 on Classic and 9.2 on
+#GRIDroid, against neighbours at the full 11, 13 and 20.
 
-Worth knowing rather than fixing: the art is 101 by 219, so in a square icon cell it fills the
-height and takes under half the width. Every other tab icon is roughly square and fills its cell,
-so the Codex reads slimmer than its neighbours. That is the shape of the object and nothing is
-wrong with the drawing; the `i` gives it enough weight to read as a deliberate object rather than
-a sliver. The only lever, if the author ever wants more presence there, is to let this one icon
-run taller than its cell, which would push the tab row's height.
+The author asked what to change in the file to fix that. The answer was nothing about its size:
+the KB do not matter, `width="100%" height="100%"` is overridden by the app's CSS, and the
+viewBox was already pixel-tight with zero margin on all four sides, so there was nothing to trim.
+Trimming would not have helped anyway, because in a square cell the height is the binding
+constraint and horizontal margin never costs anything. The only file-side lever was the drawing's
+proportion.
+
+The author's answer squares the viewBox at 2599 by 2599 and widens the stick through the group's
+own non-uniform scale, `matrix(19.613046,0,0,12.930176,...)`, roughly 1.52 times more scale across
+than down. Ink is now 76.2% of the cell's width against 100% of its height, a ratio of 0.762 and
+65% wider at every size: 8.4px on '98, 9.9 on Classic, 15.2 on #GRIDroid. That transform IS the
+drawing here, not a stray export artefact, so stripping it would collapse the art into a corner of
+the viewBox.
+
+Raster-checked at true size on all three skins, magnified 24x with smoothing off. The stretch
+helps rather than hurts legibility: the contact ridges are 1.5x wider and stay six separate
+strokes at '98's 11px, and the `i` reads at every size.
 
 
 ## The collapse caret moved behind the name it labels, every skin, 2026-09-06
