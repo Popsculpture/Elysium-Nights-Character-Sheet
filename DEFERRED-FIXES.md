@@ -8010,6 +8010,19 @@ class), so it was never exposed to that collision and needed no fix, confirmed d
 exact theme and skin that broke Garage, Elysium Nights on #GRIDroid. All four Inventory sub-tabs
 now wear the author's own art.
 
+## Freelancer wears the author's icon, closing out the icon pass, 2026-09-06
+
+Author's ask: a single person silhouette for Freelancer, after a first candidate (a shooting
+target) came back borderline, readable at #GRIDroid's 20px cell but softening into an ambiguous
+round shape at the rail's actual 13px on Classic and '98, and was reverted rather than shipped in
+that state. This one has no such ambiguity: a plain head-and-shoulders bust, two solid shapes and
+no linework, and it reads as unmistakably one person at both sizes tested, distinct from #GRID's
+masked figure and Social's cluster of three right beside it on the unfolded #GRIDroid list.
+
+Every rail tab and every sub-tab in the app now wears the author's own art; only Freelancer had
+been left on its glyph since the pass started with Codex. Verified in a fresh browser tab: every
+rail icon present, correct stamp, no tab throws, no console errors.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from
