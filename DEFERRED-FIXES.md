@@ -8246,6 +8246,35 @@ the row evenly, the popover still opens as that skin's bottom sheet through the 
 credit and debit through it still move the balance and hand it back. Classic and '98 measured
 unchanged, content-sized at 27px tall with no clip. No console errors.
 
+## The Codex wears the author's info stick, 2026-09-06
+
+The tab's book-with-a-question-mark is replaced by the author's own art: a memory stick with an
+info mark cut into its body (EN Info Stick.svg, which the author sent as a second cut over a plain
+memory stick). It reads better for what the tab is: the rules are something you carry in a slot on
+this sheet, not something you shelve, and the `i` says which slot.
+
+Copied byte for byte, verified by extracting the `d` attribute programmatically and asserting all
+438 numbers come back in the same order rather than retyping any of them. Three deliberate
+changes, none of them geometry: the root's `style="fill-rule:evenodd;clip-rule:evenodd"` moved onto
+the path as attributes, since the file's own stroke properties paint nothing here; the path takes
+`fill="currentColor"` from the svg so it wears each skin's tab colour; and the export's
+`<g transform="matrix(1,0,0,1,-2,-2)">` is kept, because it is what lands a drawing whose
+coordinates run 2..103 on a viewBox that starts at 0. `fill-rule:evenodd` is what cuts the contact
+ridges, the side notch and the `i` itself out of the body.
+
+Raster-checked at true size on all three skins, magnified 24x with smoothing off: 11px on '98,
+13px on Classic, 20px on #GRIDroid. It holds at every one, and the test that mattered was '98's
+11px, where the `i` was the thing likely to mush: its dot and stem stay separate, and the six
+contact ridges stay six strokes.
+
+Worth knowing rather than fixing: the art is 101 by 219, so in a square icon cell it fills the
+height and takes under half the width. Every other tab icon is roughly square and fills its cell,
+so the Codex reads slimmer than its neighbours. That is the shape of the object and nothing is
+wrong with the drawing; the `i` gives it enough weight to read as a deliberate object rather than
+a sliver. The only lever, if the author ever wants more presence there, is to let this one icon
+run taller than its cell, which would push the tab row's height.
+
+
 ## The collapse caret moved behind the name it labels, every skin, 2026-09-06
 
 Author's ask, on all three skins: `span.collapse-caret` goes after the name instead of before it.
