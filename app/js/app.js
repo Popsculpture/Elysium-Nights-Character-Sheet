@@ -449,7 +449,6 @@ EN.app = (function () {
     paintActiveName: paintActiveName, fitRecordPick: fitRecordPick,   // #PRINT repaints the banner as the name is typed
     activeTab: function () { return LAST[portal]; },
     tabOrder: tabOrder,
-    iconArchive: ICON_ARCHIVE,   // shared with inventory.js's Stash sub-tab, same art at two scales
     /* Resolves the key's own portal rather than assuming the caller's, so
        every existing caller (all of which name a Freelancer tab today) stays
        correct with zero edits, and the function can never strand the app on

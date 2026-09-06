@@ -8085,6 +8085,24 @@ Verified in the browser at 375px on #GRID (cyan) and Elysium Nights (gold): word
 box around it, and the whole header is visibly shorter than before. Confirmed Classic and '98
 untouched, both keep their own separate `#active-name` treatment. Fresh tab, no console errors.
 
+## Stash gets its own mark, 2026-09-06
+
+The Stash sub-tab was borrowing the Inventory rail tab's archive box through an `iconArchive`
+export on `EN.app`, deliberately, so the two would read as the same thing. It now wears the
+author's own safe instead, which is the better split: the rail tab means the whole Inventory,
+while this button means the Stash specifically, and only one of those is a place you lock things
+into. The rail keeps its archive box.
+
+That export existed for this one call site and nothing else, so it is gone with it; `ICON_ARCHIVE`
+itself stays, since the rail tab still draws it. Checked that no reference to `iconArchive` remains
+anywhere in `app/js`.
+
+Checked at the button's real 11px, and 13, 20 and 34: an outer box with a bold dial holds its
+shape all the way down, which is the class of silhouette that survives shrinking. The dial's teeth
+blur into a ring at 11px; the safe still reads as a safe. Verified in all three skins that it takes
+the button's colour, including the dark ink #GRIDroid gives a selected sub-tab, and that the rail
+tab is still drawing the archive box. No console errors.
+
 ## The device headers: caret after the name, and a lit EXPAND, 2026-09-06
 
 Two asks on the Smartdeck and Trauma Rig headers. The caret moves from in front of the name to
@@ -8163,7 +8181,38 @@ that shape.
 Not changed, since nobody asked. If it is ever worth softening, a confirm on the method buttons
 when the current scores are not already baseline would cost little.
 
-## SPLIT wears the author's Glimmer money bag, 2026-09-06
+## SPLIT settles on the cashback mark, 2026-09-06
+
+Three icons in one sitting on this button, worth recording as one entry rather than three, since
+the useful part is what each attempt taught.
+
+The money bag went first. Then the author's open palm, which suits the button better in principle:
+SPLIT divides a payout among the crew, and a palm offering is that, where a bag is just money. It
+was tested before being written in, because the file is 2.3:1 and that ratio is what killed the
+two-cars Garage candidate. It nearly killed this one too, for a different reason: every icon cell
+here is square and sized 1em, so a 2.3:1 shape gets letterboxed to full width and less than half
+the height, and at button size it read as a vertical bar beside a hook. The same art at its own
+proportions, 25 by 11, read immediately as a cuff and an open hand, so the fix was the cell rather
+than the icon, and an `.ico-wide` class carried it.
+
+The author did not like the palm, and the cashback mark replaced it: a hand below, the return arrow
+curling over it, and the Glimmer G inside. Being near square again, it needs no `.ico-wide`, and
+that rule is gone with its only user rather than left as a facility nobody calls. It is one line if
+a wide icon ever turns up again.
+
+Two things this file needed. Its root declares evenodd but both paths override to nonzero, so each
+carries nonzero here rather than inheriting the root's. And the G is stroked to thicken it, in
+black, which would neither recolor with the button nor be visible on a dark ground; the stroke is
+currentColor now, and it was checked per skin that the stroke resolves to the same colour as the
+fill rather than staying black.
+
+On size, honestly: this reads beautifully from 20px up, is fine at #GRIDroid's 13px, and is soft at
+Classic's 11px, where the G does not resolve and the arc and hand merge into a mass that still says
+"money coming back to a hand". That is the same limit BILLS' G hit. If it matters, the answer is to
+raise the whole wallet row's icons together rather than this one alone, since a single larger icon
+beside its neighbours would read as a mistake.
+
+## The Glimmer money bag SPLIT wore before it, 2026-09-06
 
 The ÷ glyph on the wallet bar's SPLIT button becomes the author's money bag, path verbatim. No
 `fill-rule` here, deliberately: the source declares none, so the bag and the G nested inside it are
