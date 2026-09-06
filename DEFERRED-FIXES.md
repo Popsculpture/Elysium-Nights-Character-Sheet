@@ -8085,6 +8085,24 @@ Verified in the browser at 375px on #GRID (cyan) and Elysium Nights (gold): word
 box around it, and the whole header is visibly shorter than before. Confirmed Classic and '98
 untouched, both keep their own separate `#active-name` treatment. Fresh tab, no console errors.
 
+## ROLL GROUP wears the author's dice, 2026-09-06
+
+The ⚄ glyph on Manual/Roll's ROLL GROUP button becomes the author's die, embedded verbatim.
+
+One thing did not survive being inlined: the source carries `fill-rule:evenodd` in a `<style>`
+block on a class, and a `<style>` block does not come along when the markup is pasted into a JS
+string. Without the rule the pips fill solid and the die reads as a blank cube, so it moved onto
+the path as an attribute, the way ICON_LEDGER and the Freelancer icon already carry theirs.
+
+Checked at the button's real 11px with the true-size raster, and at 13 and 20: the cube's
+three-face silhouette carries it, and the pips are true cut-outs at every size, which is also what
+confirms the evenodd rule landed. The pips do soften at 11px; the die still reads as a die, and on
+#GRIDroid at 12px it is crisp. Verified in all three skins that it takes the button's own colour,
+including the dark ink #GRIDroid's solid-fill primary gives it. No console errors.
+
+Left alone: the Overclocked section's own ⚄ ROLL 36 button, which is the same gesture wearing the
+same glyph and would want the same die if the author wants the pair to match.
+
 ## Manual/Roll gets a bank limit and the same best-of mark, 2026-09-06
 
 Author's ask: cap the banked roll groups at six, warn rather than silently refuse when a seventh
