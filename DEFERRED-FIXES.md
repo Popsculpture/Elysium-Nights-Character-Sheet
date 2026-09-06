@@ -7755,6 +7755,27 @@ tray now folds the list, since the tray covers everything and the list would oth
 standing open when it closed; inert on the other skins. The list's unfolded max-height leaves the
 row its place beneath. Classic and '98 keep the gear where it was.
 
+## Section headings own their rhythm, 2026-09-05
+
+Author's report from the #PRINT review page, on every skin: the five section headings (A through
+E) sat at uneven distances from what came before them. Measured: 4px above A, 18px above B, and
+nothing above C, D and E, with a uniform 10px below. The shared `.section-title` rule carried no
+top margin at all, so the gap above a heading was whatever the block before it happened to leave,
+and the page had been patching that by hand (an 18px bottom margin on the vitals strip, a 14px
+spacer div before the warning box). Across the app, 57 of the 75 headings carry their own inline
+top margin for the same reason, in seven different sizes.
+
+The heading now owns its breathing room: 18px above and 10px below in the shared rule, so what it
+introduces sits closer to it than what it follows, and a heading that opens its container keeps
+nothing above it. The inline margins elsewhere still win where set. The review page's own spacers
+are gone, its banner no longer adds its 4px, and the warning box carries its margin itself. The
+device headers keep the top margin they had. Measured after: 18 above and 10 below on all five,
+on Classic, '98 and #GRIDroid; nine headings elsewhere that had never had a margin (three in the
+Codex, six in #PRINT's species, class and advance steps) moved onto the same 18.
+
+Left as found, on purpose: the 57 inline margins. They were tuned in place inside panels where
+the rhythm is tighter, and harmonising them is a separate pass with its own eyes on every tab.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

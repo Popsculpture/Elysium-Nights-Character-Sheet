@@ -134,8 +134,15 @@ a{ color:var(--accent); text-decoration:none; }
 .corner.bl{ bottom:-1px; left:-1px; border-right:0; border-top:0; }
 .corner.br{ bottom:-1px; right:-1px; border-left:0; border-top:0; }
 
+/* A section heading owns its own breathing room: 18px above, 10px below, so what it introduces
+   sits closer to it than what it follows. It used to carry no top margin at all, so the gap
+   above one was whatever the block before it happened to leave (4px, 18px or nothing on the
+   #PRINT review page alone), and most call sites made up their own number inline. Those inline
+   margins still win where they are set; this is the rhythm for every heading that never had one.
+   A heading that opens its container keeps nothing above it. */
 .section-title{ font-family:var(--disp); font-size:12px; letter-spacing:.2em; text-transform:uppercase;
-  color:var(--text3); margin:0 0 10px; display:flex; align-items:center; gap:10px; }
+  color:var(--text3); margin:18px 0 10px; display:flex; align-items:center; gap:10px; }
+.section-title:first-child{ margin-top:0; }
 .section-title::before{ content:"//"; color:var(--accent); }
 .section-title .line{ flex:1; height:1px; background:linear-gradient(90deg,var(--border),transparent); }
 .section-title.clickable{ cursor:pointer; user-select:none; }
@@ -147,7 +154,7 @@ a{ color:var(--accent); text-decoration:none; }
    and the default treatment is a dim caret that only lights on hover, which says nothing at
    all on a touch screen where there is no hover. So the row reads as a control at rest: a
    border, a lit caret, and a state word that names what a tap will do. */
-.section-title.device-head{ padding:5px 8px; margin-left:-8px; margin-right:-8px; border-radius:var(--r);
+.section-title.device-head{ padding:5px 8px; margin:0 -8px 10px; border-radius:var(--r);
   border:1px solid var(--border2); background:rgba(255,255,255,.02);
   transition:border-color .15s, background .15s, color .15s; }
 .section-title.device-head:hover{ border-color:var(--accent); background:rgba(0,229,255,.06); color:var(--text); }
@@ -1971,7 +1978,7 @@ html.light .pop-btn:hover{ background:rgba(0,0,0,.05) !important; }
 
 /* #PRINT confirmation-page framing: an official filing notice + a certify row
    that gates the SUBMIT & FILE control (builder stepDossier). */
-.certify-banner{ border:1px solid var(--border); border-left:3px solid var(--flow); background:var(--bg2); border-radius:8px; padding:12px 16px; margin:14px 0 4px; }
+.certify-banner{ border:1px solid var(--border); border-left:3px solid var(--flow); background:var(--bg2); border-radius:8px; padding:12px 16px; margin:14px 0 0; }   /* the heading after it brings its own 18 */
 .certify-banner .cb-kick{ font-size:10px; letter-spacing:.18em; color:var(--flow); margin-bottom:6px; }
 .certify-banner .cb-body{ margin:0; font-size:12.5px; line-height:1.55; color:var(--text2); }
 .certify-banner .cb-body b{ color:var(--text); }

@@ -102,7 +102,7 @@ EN.builder = (function () {
     ];
     if (d.resource) items.push(EN.ui.stat(d.resource.name.toUpperCase(), d.resource.max, d.resource.attributeName));
     if (d.flow) items.push(EN.ui.stat("FLOW", d.flow.max, "DC " + d.flow.dc, true));
-    return el("div.stat-row", { style: { marginBottom: "18px" } }, items);
+    return el("div.stat-row", null, items);   // the heading after it brings its own gap
   }
 
   /* ---------- STEP 1: IDENTITY ---------- */
@@ -2408,8 +2408,7 @@ EN.builder = (function () {
 
     // warnings
     if (d.warnings.length) {
-      blocks.push(el("div", { style: { height: "14px" } }));
-      blocks.push(el("div.muted-box", { style: { borderColor: "var(--warn)", color: "var(--warn)" }, html: "INCOMPLETE: " + d.warnings.join(" · ") }));
+      blocks.push(el("div.muted-box", { style: { borderColor: "var(--warn)", color: "var(--warn)", marginTop: "14px" }, html: "INCOMPLETE: " + d.warnings.join(" · ") }));
     }
 
     // features
