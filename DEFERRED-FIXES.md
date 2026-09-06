@@ -8246,7 +8246,24 @@ the row evenly, the popover still opens as that skin's bottom sheet through the 
 credit and debit through it still move the balance and hand it back. Classic and '98 measured
 unchanged, content-sized at 27px tall with no clip. No console errors.
 
-## BILLS wears the author's price list, 2026-09-06
+## BILLS, second cut: the G is twice the size and now survives the button, 2026-09-06
+
+The entry below flagged that the Glimmer G on the first price list did not resolve at the button's
+11px, and that raising the icon enough to rescue it would only make it oversized beside its
+neighbours. The author's answer was the right one: redraw the icon rather than the cell. This cut
+scales the G about twice as large and moves it to overlap the sheet's right edge.
+
+It worked. The G reads as a G from roughly 20px, where the first cut needed more than that, and at
+11px it is a deliberate mark rather than the dark blot it used to be. The letter still is not
+legible as a letter at 11px, which is a limit of eleven pixels rather than of the drawing.
+
+The structure differs from the cashback mark, so it is worth being explicit: here the sheet carries
+no rule of its own and inherits the root's evenodd, while the G overrides to nonzero. Both are kept
+exactly as the source has them, and it was verified in the browser that the rendered sheet computes
+evenodd and the G nonzero. The G's stroke, black in the file, is currentColor here so the whole
+mark recolors with the button, checked per skin against the icon's own colour.
+
+## The price list it replaced, 2026-09-06
 
 The ▤ glyph on the wallet bar's BILLS button becomes the author's price list, the one he built by
 swapping the stock icon's dollar sign for the Glimmer script G. Two paths and their transforms are
