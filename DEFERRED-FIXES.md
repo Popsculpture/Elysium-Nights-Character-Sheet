@@ -8246,6 +8246,44 @@ the row evenly, the popover still opens as that skin's bottom sheet through the 
 credit and debit through it still move the balance and hand it back. Classic and '98 measured
 unchanged, content-sized at 27px tall with no clip. No console errors.
 
+## DIGITAL DICE wears the author's wireframe die, in neon green, 2026-09-06
+
+The Settings tray's DIGITAL DICE button carried a text glyph. It now carries the author's own
+wireframe die, coloured #39ff14 so it reads as a vector display rather than a game piece.
+
+The export needed two things doing to it, both of which have bitten this session before. It is a
+CorelDRAW A4 page, 21000 by 29700, with the drawing sitting in the middle and covering roughly
+seven tenths of the width and half the height, so the viewBox windows the ink instead
+(4380.97 6625.75 14883.95 14679.89, measured with getBBox) and a 1em icon draws a full die rather
+than a fraction of one. No coordinate is touched: a viewBox is the window, not the drawing, and
+the ink turns out to be almost exactly square, aspect 1.014. Second, the file's `<style>` block
+does not survive being inlined, so its five classes were resolved onto the elements: fil0 and fil1
+to a fill, fil2 to fill:none, str0 and str1 to a stroke and its width, and fill-rule along with
+them, nonzero on the numerals and evenodd on the cube, which is the root default. black becomes
+currentColor so CSS can colour it.
+
+Then the size, which is the part measurement caught and the eye would not. `.btn span svg` sizes a
+button icon at 1em, and 1em on a `.btn.sm` is 11px. A wireframe is nothing but thin lines, and at
+11px none of them land on a whole pixel: rastered at true size the icon peaked at alpha 223 with
+not one fully opaque pixel, so the neon green never actually reached the screen. At 14px it hits
+255 and both the cube and its pip read. `.btn .dice-neon svg` pins it there, and the selector
+needs the `.btn` in front: bare `.dice-neon svg` is (0,1,1) and loses to `.btn span svg` at (0,1,2),
+which is why the first attempt silently did nothing.
+
+One knock-on. The two dice buttons sit in a `.row`, which centres rather than stretches, so they
+size to their own content; swapping a text glyph for an SVG made DIGITAL 26px against PHYSICAL's
+28 and knocked them out of line. That row now stretches, so both take the taller of the two.
+
+Verified on all three skins: 14px icon at rgb(57,255,20), both buttons the same height and the
+same top, the icon inside its button, no console errors.
+
+Flagged rather than done. PHYSICAL DICE still wears its die-face text character, so the pair is
+now asymmetric; it wants art of its own if the author has some. And this icon is large, about 22KB
+of path data, because the CorelDRAW export carries a stroke-outline duplicate of each numeral
+(one of them 2778 numbers on its own) that contributes nothing at 14px. It is embedded whole
+rather than pruned, because the house rule is that the author's geometry goes in as exported.
+
+
 ## '98's caption buttons take the author's window icons, 2026-09-06
 
 The minimize, maximize and close buttons on the '98 title bars were fourteen `linear-gradient`

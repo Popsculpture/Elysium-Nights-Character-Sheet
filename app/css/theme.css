@@ -117,6 +117,18 @@ a{ color:var(--accent); text-decoration:none; }
 .os-tab span svg{ display:inline-block; width:1em; height:1em; vertical-align:-.15em; transition:transform .25s; }
 .btn span svg{ display:inline-block; width:1em; height:1em; vertical-align:-.15em; }   /* an icon in a button, sized like .os-tab's */
 .warn-line span svg{ display:inline-block; width:1em; height:1em; vertical-align:-.15em; }   /* the same, for an icon sitting in a line of text */
+/* The digital-dice die is drawn as a wireframe, so it wears the neon green of a vector display
+   rather than the button's own colour. The art paints with currentColor, so setting color on
+   the span is the whole of it; this is deliberately not var(--success), which is the palette's
+   mint (#2ee6a0) and reads as a status tick rather than a phosphor line. */
+.dice-neon{ color:#39ff14; }
+/* and 14px rather than the button's 1em, which is 11px on a .btn.sm. A wireframe is all thin
+   lines, and at 11px none of them land on a whole pixel: rastered there the icon peaks at
+   alpha 223 with not one fully opaque pixel, so the neon never actually reaches the screen.
+   At 14px it hits 255 and the cube and its pip both read. The button is 28px tall, so the
+   three extra pixels cost the row nothing. The selector needs .btn in front of it: bare
+   .dice-neon svg is (0,1,1) and loses to .btn span svg at (0,1,2). */
+.btn .dice-neon svg{ width:14px; height:14px; }
 
 .os-main{ flex:1; padding:22px clamp(14px,3vw,40px) 80px; max-width:1320px; margin:0 auto; width:100%; }
 
