@@ -90,6 +90,7 @@ a{ color:var(--accent); text-decoration:none; }
 .os-logo{ font-family:var(--disp); font-weight:700; font-size:18px; letter-spacing:.22em;
   color:var(--accent); text-shadow:var(--glow-cyan); white-space:nowrap; }
 .os-logo b{ color:var(--text); } .os-logo .v{ color:var(--text3); font-weight:400; font-size:12px; letter-spacing:.1em; }
+.os-badge{ display:none; }
 .os-status{ font-family:var(--mono); font-size:11px; color:var(--text3); letter-spacing:.12em; display:flex; gap:14px; align-items:center; }
 .os-status .led{ width:7px; height:7px; border-radius:50%; background:var(--success); box-shadow:0 0 8px var(--success); display:inline-block; margin-right:5px; animation:pulse 2.4s infinite; }
 @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:.35;} }
@@ -658,9 +659,6 @@ html.skin-98 .panel-h h3, html.skin-98 .set-title{
 }
 html.skin-98 .set-title{ font-size:13px; }
 html.skin-98 .panel-h .tag{ color:rgba(255,255,255,.7); }
-html.skin-98 .panel-h::before, html.skin-98 .set-head::before{
-  content:""; width:9px; height:9px; flex:0 0 9px; background:var(--accent); box-shadow:inset 1px 1px 0 rgba(255,255,255,.6), inset -1px -1px 0 rgba(0,0,0,.5);
-}
 html.skin-98 .panel-h::after{
   content:""; margin-left:auto; width:56px; height:14px; flex:0 0 56px;
   background:var(--win-btns);
@@ -1103,16 +1101,10 @@ html.skin-droid .os-topbar{
 html.skin-droid .os-logo{
   order:1; display:flex; align-items:center; gap:0; font-family:var(--mono); font-weight:400; font-size:13px; letter-spacing:.18em; color:var(--accent); text-shadow:none;
 }
-html.skin-droid .os-logo::before{
-  content:"#"; width:34px; height:34px; margin-right:10px; display:inline-flex; align-items:center; justify-content:center; flex:none;
-  font-family:var(--disp); font-weight:700; font-size:22px; color:var(--accent);
-  border:1px solid var(--accent); box-shadow:inset 0 0 0 3px var(--bg), inset 0 0 0 4px var(--accent-dim);
+html.skin-droid .os-badge{
+  width:44px; height:44px; margin-right:10px; display:inline-flex; flex:none; color:var(--accent);
 }
-html.skin-droid .os-logo b{ color:var(--accent); }
-/* "v1.0" makes way for the skin's name: #GRID + roid */
-html.skin-droid .os-logo b{ display:none; }
-html.skin-droid .os-logo .v{ font-size:0; color:var(--text); }
-html.skin-droid .os-logo .v::after{ content:"roid"; font-size:13px; letter-spacing:.18em; text-transform:lowercase; }
+html.skin-droid .os-badge svg{ width:100%; height:100%; display:block; }
 html.skin-droid .os-spacer{ order:2; }
 html.skin-droid .os-clock{ order:3; font-size:12px; color:var(--accent); border:1px solid var(--accent-dim); padding:6px 9px; }
 /* the status readouts become the SCANNING strip: accent fill, dark ink, the two readouts at its ends */
@@ -1123,18 +1115,13 @@ html.skin-droid .os-topbar > .os-status:not(#active-name){
 }
 html.skin-droid .os-status .led{ background:#000; box-shadow:none; animation:none; }
 html.skin-droid .os-topbar > .os-status:not(#active-name) > span{ color:#000; }
-/* the active record as the notification card: a numbered box, the name, a subtitle */
+/* the active record folded into the status area: a quiet line under the SCANNING strip, not its own card */
 html.skin-droid #active-name{
-  order:5; flex-basis:100%; display:grid; grid-template-columns:40px 1fr; grid-template-rows:auto auto; column-gap:12px; align-items:center;
-  font-family:var(--disp); font-size:15px; font-weight:600; letter-spacing:.1em; color:var(--text); text-transform:uppercase;
-  border:1px solid var(--border2); padding:8px 10px; min-height:52px;
+  order:5; flex-basis:100%; display:flex; align-items:center; gap:7px;
+  font-family:var(--mono); font-size:11px; font-weight:400; letter-spacing:.12em; color:var(--text2); text-transform:uppercase;
 }
 html.skin-droid #active-name::before{
-  content:"ID"; grid-row:1 / 3; width:40px; height:40px; display:flex; align-items:center; justify-content:center;
-  font-family:var(--mono); font-size:13px; color:var(--accent); border:1px solid var(--accent); background:var(--bg1);
-}
-html.skin-droid #active-name::after{
-  content:"active record"; grid-column:2; font-family:var(--mono); font-weight:400; font-size:10px; letter-spacing:.14em; color:var(--text3); text-transform:uppercase;
+  content:""; width:6px; height:6px; border-radius:50%; flex:none; background:var(--accent); box-shadow:0 0 6px var(--accent);
 }
 
 /* ---- the rail: a phone's app list, docked at the foot, folded to the open app ---- */

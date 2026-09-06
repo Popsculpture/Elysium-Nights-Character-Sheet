@@ -8038,6 +8038,73 @@ All three read distinctly from one another and from every other icon already in 
 in a fresh browser tab: correct stamp, all five sites carry the icon, the short rest flow still
 reaches its confirm button, no tab throws, no console errors.
 
+## #GRIDroid's header badge wears the app icon, 2026-09-06
+
+Author's ask: the "#" badge in the #GRIDroid header (a CSS pseudo-element drawing a monospace
+"#" character in a bordered box) should look like the app's own installed icon instead, the
+chamfered badge from `img/icon-192.png`/`icon-512.png` (see "Installable" above). That icon was
+drawn to a PNG by a one-off script at the time and no vector source survived, so a first pass
+redrew it by hand as inline SVG; the author then supplied the actual master art,
+`elysium-nights-logo-black.svg`, and that replaced the hand-redrawn version, its frame path and
+octothorpe polygons and rects embedded verbatim.
+
+Because the source file bakes in a fixed black fill for standalone use, it could not be dropped
+in as-is; the badge needs to keep recoloring with the active theme's accent the way the old
+font-glyph badge did. So the fixed fills were dropped in favor of one `fill="currentColor"` on
+the root `<svg>`, geometry otherwise untouched, living as a real inline element in a new
+`.os-badge` span in `index.html`, styled from `.os-logo`'s `color`, in place of the old
+`html.skin-droid .os-logo::before{content:"#"; ...}` rule; `.os-badge` is hidden by default so
+Classic and '98, which never had this badge, are untouched.
+
+Checked against the real 34px badge with the true-size raster test: the chamfer and the leaning
+hashtag both read clearly, no blur. Verified in the browser on both the default #GRID (cyan) and
+Elysium Nights (gold) themes that the badge recolors correctly and matches the reference icon's
+proportions, and that the badge stays hidden on Classic and '98. Fresh tab, no console errors.
+Sized up from 34px to 44px on the author's follow-up ask, checked at 375px against the clock and
+the "#GRIDroid" wordmark for room; the header wraps on its own height so nothing clipped.
+
+## #GRIDroid header: back to #GRIDOS, and the active record folded into the status area, 2026-09-06
+
+Author's call, now that #GRIDroid has become the mobile default rather than a novelty skin: the
+wordmark should read "#GRIDOS v1.0" like Classic and '98, not the skin's own name, and the
+Freelancer's active-record identity is too heavy a card for how often it is glanced at, so it
+should live in the status area as a quiet line instead.
+
+Wordmark: the two droid-only overrides that hid `<b>OS</b>` and swapped `v1.0` for `roid` are
+gone, so `.os-logo` falls back to the shared rule (accent "#GRID", `--text` "OS", muted `--text3`
+"v1.0"), the same two-tone treatment Classic and '98 already use.
+
+Active record: the grid layout, the bordered "ID" square and the "active record" subtitle are
+gone from `#active-name`; it is now one line under the LINK STABLE / SYNC OK strip, small mono
+text at the same weight as that strip's own readouts, with a small accent dot standing in for the
+ID box. No HTML or JS changed, since `#active-name`'s content was always plain text (`textContent`
+from `app.js`/`builder.js`); this was a CSS-only restyle.
+
+Verified in the browser at 375px on #GRID (cyan) and Elysium Nights (gold): wordmark reads
+"#GRIDOS v1.0" in the right colors, the active-record line sits directly under the strip with no
+box around it, and the whole header is visibly shorter than before. Confirmed Classic and '98
+untouched, both keep their own separate `#active-name` treatment. Fresh tab, no console errors.
+
+## '98's panel-header square dropped, 2026-09-06
+
+Author's ask, pointing at a panel titlebar's `::before` in the inspector: the little bevelled
+9x9 square '98 draws in front of every panel and settings-tray header is just decorative and he
+does not like it. Easiest to spot on the Bubblegum Flapjack theme, whose `dim` and `accent`
+colors are deliberately clashing (`#8a0303` crimson, `#7cffb2` mint), so the square reads as a
+bright green chip stapled onto a red titlebar; every other theme has the same square, just less
+loud about it since `dim` and `accent` are close in hue there.
+
+`html.skin-98 .panel-h::before, html.skin-98 .set-head::before` is gone outright. Left alone: the
+`::after` on the same selector (the small block standing in for a window's minimize/maximize/
+close buttons, a different piece of the Win98 affectation, not a decorative square) and the two
+existing overrides that already replace `::before` for special cases, `.inv-sub` (already hides
+it) and `.post-sub` (already swaps it for an envelope glyph); both keep working unchanged since
+they set their own `content` regardless of what the base rule does.
+
+Verified in the browser: Freelancer's Attribute Matrix, Vitality, Skills and Actions panels, and
+the Settings tray header, all lost the square on both Bubblegum Flapjack and the default #GRID
+theme, headers otherwise unchanged. Fresh tab, no console errors.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from
