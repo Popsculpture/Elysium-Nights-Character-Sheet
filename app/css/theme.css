@@ -1461,8 +1461,11 @@ html.skin-droid .inv-bar > .row.wrap > .btn{ padding:6px 2px !important; font-si
 html.skin-droid .inv-bar .btn span svg{ width:13px; height:13px; }   /* the sub-nav's own narrower cell */
 html.skin-droid .inv-bar > div[style*="flex-direction: column"]{ align-items:stretch !important; width:100%; }
 html.skin-droid .inv-bar > div[style*="flex-direction: column"] > .row.wrap{ justify-content:flex-start !important; }
-html.skin-droid .inv-bar > div[style*="flex-direction: column"] input{ flex:1 1 60px; width:auto !important; min-width:0; }
-html.skin-droid .inv-bar > div[style*="flex-direction: column"] .btn{ flex:1 1 auto; justify-content:center; }
+/* Both of these stop at the bar's own rows on purpose. The wallet's credit/debit popovers hang
+   inside this column, and a descendant selector would reach into them: the amount field would
+   take a 60px flex basis down the panel's column axis, and the panel's own buttons would stretch. */
+html.skin-droid .inv-bar > div[style*="flex-direction: column"] > .row.wrap > .btn{ flex:1 1 auto; justify-content:center; }
+html.skin-droid .inv-bar .wallet-pop{ font-size:18px !important; }   /* the totals are the readout; the .pop-btn floor above would shrink them to 13px */
 /* item cards */
 html.skin-droid .mkt-info{ flex-wrap:wrap !important; gap:8px !important; }
 html.skin-droid .mkt-stats{ flex:1 1 100% !important; }

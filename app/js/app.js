@@ -413,6 +413,7 @@ EN.app = (function () {
       current: function () { return LAST[portal]; },
       onChange: function (k) {
         if (EN.combatView && EN.combatView.closePops) EN.combatView.closePops();
+        if (EN.inventoryView && EN.inventoryView.closePops) EN.inventoryView.closePops();
         var t = TABS.filter(function (x) { return x.key === k; })[0];
         if (t && t.onSelect) t.onSelect();
         EN.app.gotoTab(k);

@@ -3297,6 +3297,18 @@ EN.inventoryView = (function () {
   var _hh = { open: false };
   var _newDebt = { kind: "Personal", holder: "", principal: "", clock: "" };
 
+  /* The wallet's credit/debit popovers, one per currency: the total itself is the button, and the
+     amount and both directions live inside it, the same shape the dashboard's VITALITY and WOUNDS
+     controls use. Amounts are remembered across renders, as _amts is there; the ledger fields this
+     replaced started empty every render instead. */
+  var _wal = { open: null, amt: { glimmer: 1, nexus: 1 } };
+  function closePops() { _wal.open = null; }
+  document.addEventListener("click", function (ev) {
+    if (!_wal.open) return;
+    if (ev.target.closest && ev.target.closest(".pop-anchor")) return;
+    closePops(); EN.app.render();
+  });
+
   /* every recurring cost the book defines, in one place: lifestyle and
      safehouse (weekly), gear and vehicle leases (their own 7-day clocks),
      Hypercare (monthly), licences, and debts. Nothing is invented here. */
@@ -3534,18 +3546,41 @@ EN.inventoryView = (function () {
     ]));
 
     /* sub-tab rail + glimmer ledger */
-    // ledger inputs start empty; whichever field you fill is the currency CREDIT/DEBIT
-    // acts on, and both are cleared after (re-render rebuilds them empty).
-    var amtIn = el("input", { type: "number", min: 0, placeholder: "𝒢 amt", style: { width: "80px", textAlign: "center" } });
-    var nxIn = el("input", { type: "number", min: 0, step: 0.05, placeholder: "◎ amt", style: { width: "68px", textAlign: "center" } });
-    function ledgerApply(sign) {
-      var g = parseFloat(amtIn.value), n = parseFloat(nxIn.value);
-      var hasG = !isNaN(g) && g > 0, hasN = !isNaN(n) && n > 0;
-      if (!hasG && !hasN) { toast("Enter an amount in the Glimmer or Nexus field first."); return; }
+    function ledgerApply(cur, sign) {
+      var v = Number(_wal.amt[cur]) || 0;
+      if (v <= 0) return;
       store.update(function (c) {
-        if (hasG) c.glimmer = Math.max(0, (c.glimmer || 0) + sign * g);
-        if (hasN) c.nexus = Math.max(0, Math.round(((c.nexus || 0) + sign * n) * 100) / 100);
+        if (cur === "glimmer") c.glimmer = Math.max(0, (c.glimmer || 0) + sign * v);
+        else c.nexus = Math.max(0, Math.round(((c.nexus || 0) + sign * v) * 100) / 100);
       });
+    }
+    // Nexus is quoted in hundredths, so its field steps the way its total reads.
+    function walletPop(cur, color, tip, text) {
+      var on = _wal.open === cur;
+      return el("div.pop-anchor", { style: { position: "relative" } }, [
+        el("button.pop-btn.wallet-pop", {
+          title: tip,
+          onclick: function () { var was = on; closePops(); _wal.open = was ? null : cur; EN.app.render(); },
+          style: { fontFamily: "var(--mono)", fontSize: "20px", color: color, cursor: "pointer",
+                   background: on ? "rgba(255,255,255,.06)" : "transparent",
+                   border: "1px solid " + color, borderRadius: "3px", padding: "1px 9px",
+                   boxShadow: on ? "0 0 10px " + color : "none" }
+        }, [document.createTextNode(text), el("span", { style: { fontSize: "11px", marginLeft: "7px" }, text: "▾" })]),
+        on ? el("div", { style: { position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 30, width: "132px",
+                                  display: "flex", flexDirection: "column", gap: "6px", padding: "8px",
+                                  background: "var(--bg2)", border: "1px solid var(--border2)", borderRadius: "4px",
+                                  boxShadow: "0 8px 24px rgba(0,0,0,.55)" } }, [
+          el("button.btn.sm", { title: "Money in: payouts, fenced goods, favors called in",
+            style: { color: "var(--success)", borderColor: "var(--success)", width: "100%", justifyContent: "center" },
+            onclick: function () { ledgerApply(cur, 1); } }, "+ CREDIT"),
+          el("input", { type: "number", min: 0, step: cur === "nexus" ? 0.05 : 1, value: _wal.amt[cur],
+            oninput: function () { _wal.amt[cur] = Math.max(0, Number(this.value) || 0); },
+            style: { width: "100%", textAlign: "center" } }),
+          el("button.btn.sm", { title: "Money out: lifestyle, bribes, buyouts, high-scrutiny buys",
+            style: { color: "var(--danger)", borderColor: "var(--danger)", width: "100%", justifyContent: "center" },
+            onclick: function () { ledgerApply(cur, -1); } }, "− DEBIT")
+        ]) : null
+      ]);
     }
     // the author's shopping cart, for the Gray Market sub-tab alone
     var ICON_MARKET = '<svg viewBox="0 0 122.43 122.88" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M22.63,12.6h93.3c6.1,0,5.77,2.47,5.24,8.77l-3.47,44.23c-0.59,7.05-0.09,5.34-7.56,6.41l-68.62,8.73 l3.63,10.53c29.77,0,44.16,0,73.91,0c1,3.74,2.36,9.83,3.36,14h-12.28l-1.18-4.26c-24.8,0-34.25,0-59.06,0 c-13.55-0.23-12.19,3.44-15.44-8.27L11.18,8.11H0V0h19.61C20.52,3.41,21.78,9.15,22.63,12.6L22.63,12.6z M53.69,103.92 c5.23,0,9.48,4.25,9.48,9.48c0,5.24-4.24,9.48-9.48,9.48c-5.24,0-9.48-4.24-9.48-9.48C44.21,108.17,48.45,103.92,53.69,103.92 L53.69,103.92z M92.79,103.92c5.23,0,9.48,4.25,9.48,9.48c0,5.24-4.25,9.48-9.48,9.48c-5.24,0-9.48-4.24-9.48-9.48 C83.31,108.17,87.55,103.92,92.79,103.92L92.79,103.92z M30.8,43.07H45.9l-5.48-22.91c-5.4,0-10.72-0.01-15.93-0.01l1.84,6.86 L26.39,27L30.8,43.07L30.8,43.07L30.8,43.07z M48.31,20.17l5.48,22.9h14.54l-5.5-22.88L48.31,20.17L48.31,20.17L48.31,20.17z M70.74,20.2l5.5,22.87h13.91l-5.48-22.85L70.74,20.2L70.74,20.2L70.74,20.2z M92.58,20.23l5.48,22.85l13.92,0l1.54-18.36 c0.43-5.12,1.33-4.47-3.63-4.47C104.23,20.24,98.44,20.23,92.58,20.23L92.58,20.23L92.58,20.23z M111.49,48.89H99.45l3.97,16.56 l0.98-0.13c6.07-0.87,5.67,0.52,6.15-5.21L111.49,48.89L111.49,48.89z M95.77,66.5l-4.22-17.61h-13.9l4.67,19.44L95.77,66.5 L95.77,66.5L95.77,66.5z M74.66,69.37l-4.93-20.49l-14.55,0l5.37,22.41L74.66,69.37L74.66,69.37L74.66,69.37z M52.9,72.34 l-5.61-23.45H32.4l6.96,25.3L52.9,72.34L52.9,72.34z"/></svg>';
@@ -3576,23 +3611,18 @@ EN.inventoryView = (function () {
         subTab("workbench", [ICON_WORKBENCH_TAB, "WORKBENCH"]),
         subTab("market", [ICON_MARKET, "GRAY MARKET"])
       ]),
-      // wallets on top, ledger controls beneath, so the bar stays compact
+      // wallets on top, the panels they open beneath, so the bar stays compact
       el("div", { style: { display: "flex", flexDirection: "column", gap: "5px", alignItems: "flex-end" } }, [
         el("div.row.wrap", { style: { gap: "8px", alignItems: "center", justifyContent: "flex-end" } }, [
-          el("span.mono", { title: "Glimmer, issued by the Monetary Interchange Network Treasury (#MINT). What ordinary life costs.",
-            style: { fontSize: "20px", color: "var(--gold)" }, text: fmtG(ch.glimmer || 0) }),
-          amtIn,
+          walletPop("glimmer", "var(--gold)",
+            "Glimmer, issued by the Monetary Interchange Network Treasury (#MINT). What ordinary life costs. Tap to credit or debit.",
+            fmtG(ch.glimmer || 0)),
           // Nexus wallet: the high-scrutiny currency (lease buyouts, brokered commissions)
-          el("span.mono", { title: "Nexus tokens, the high-scrutiny currency. Brokered commissions, lease buyouts, favors with a paper trail.",
-            style: { fontSize: "20px", color: "var(--flow)", marginLeft: "6px" }, text: fmtNx(ch.nexus || 0) }),
-          nxIn
+          walletPop("nexus", "var(--flow)",
+            "Nexus tokens, the high-scrutiny currency. Brokered commissions, lease buyouts, favors with a paper trail. Tap to credit or debit.",
+            fmtNx(ch.nexus || 0))
         ]),
         el("div.row.wrap", { style: { gap: "6px", alignItems: "center", justifyContent: "flex-end" } }, [
-          // CREDIT / DEBIT act on whichever field you filled (Glimmer or Nexus), then clear
-          el("button.btn.sm", { title: "Credit whichever field you filled: Glimmer (payouts, fenced goods) or Nexus (brokered payouts, favors called in).", style: { color: "var(--success)", borderColor: "var(--success)" },
-            onclick: function () { ledgerApply(1); } }, "+ CREDIT"),
-          el("button.btn.sm", { title: "Debit whichever field you filled: Glimmer (lifestyle, bribes) or Nexus (buyouts, high-scrutiny buys).", style: { color: "var(--danger)", borderColor: "var(--danger)" },
-            onclick: function () { ledgerApply(-1); } }, "− DEBIT"),
           el("button.btn.sm" + (_split.open ? ".primary" : ""), { title: "Split a contract payout: fixer's cut off the top, then even shares",
             onclick: function () { _split.open = !_split.open; EN.app.render(); } }, "÷ SPLIT"),
           el("button.btn.sm" + (_hh.open ? ".primary" : ""), { title: "Bills: lifestyle, safehouse, leases, Hypercare, licences and debts",
@@ -3642,5 +3672,5 @@ EN.inventoryView = (function () {
   }
 
   return { render: render, leaseTick: leaseTick, householdTick: householdTick, hypercareTick: hypercareTick,
-           openBench: openBench, openStash: openStash };
+           openBench: openBench, openStash: openStash, closePops: closePops };
 })();

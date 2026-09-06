@@ -8085,6 +8085,46 @@ Verified in the browser at 375px on #GRID (cyan) and Elysium Nights (gold): word
 box around it, and the whole header is visibly shorter than before. Confirmed Classic and '98
 untouched, both keep their own separate `#active-name` treatment. Fresh tab, no console errors.
 
+## The wallet's ledger moves into popovers on the totals, 2026-09-06
+
+Author's ask, pointing at the dashboard's WOUNDS control: tapping a currency total should open a
+small panel with an amount and buttons to add or remove funds, which then lets the always-visible
+ledger controls come out of the Inventory bar.
+
+So the totals are the buttons now. `walletPop()` in inventory.js builds a `.pop-anchor` per
+currency in the same shape `popAnchor()` uses in combat.js, down to the caret, the lit border when
+open, the outside-click close and the amount remembered across renders. Out of the bar: the two
+number fields and the + CREDIT / − DEBIT buttons; ÷ SPLIT and ▤ BILLS stay. `ledgerApply` takes
+the currency as an argument rather than reading whichever field happened to be filled.
+
+One behavior deliberately changed. The old controls credited BOTH currencies at once if both
+fields were filled, and both fields started empty every render. A popover belongs to one currency,
+so a credit can only ever touch that one, and the amount persists the way the dashboard's does.
+
+CSS that had to move, all in the #GRIDroid collapse block, all because it reached the bar's
+children with descendant selectors that now also match the popover's insides:
+- `.inv-bar > div[style*="flex-direction: column"] input` is deleted. The only input left under
+  that selector is the popover's own, and the rule would have given it a 60px flex basis down the
+  panel's column axis, i.e. a 60px tall amount field on a phone.
+- the sibling `.btn` rule is now `> .row.wrap > .btn`, so it still stretches SPLIT and BILLS and
+  leaves the panel's buttons alone.
+- `html.skin-droid .pop-btn{font-size:13px !important}` would have shrunk a 20px total to 13px, so
+  the totals carry a `.wallet-pop` class and a rule that holds them at 18px on that skin.
+
+Verified in the browser in all three skins. Classic and '98: panel opens under the total, credit
+and debit both move the number live, the panel stays open across the re-render the way the
+dashboard's does. #GRIDroid: the panel becomes the skin's fixed bottom sheet (it inherits that
+from the shared `[style*="position: absolute"]` rule), the amount field measures 42px not 60px,
+and the totals stay 18px. Behavior: outside click closes, a fractional Nexus credit rounds to
+hundredths, and a debit larger than the balance floors at 0 instead of going negative. Balances
+were restored to their starting values after testing. All four Inventory sub-tabs still draw the
+bar with no stray inputs. No console errors.
+
+Not done, flagged for the author: the bottom sheet on a phone is detached from the total that
+opened it, and carries no label saying which currency it belongs to. The lit border on the tapped
+total is the only cue. The dashboard's popovers have the same property, so this matches the
+pattern rather than fixing it; a one-line label inside the panel would settle it if he wants one.
+
 ## #POST wears the author's icon, 2026-09-06
 
 The last glyph left on a sub-tab. LEDGER took the author's clipboard back when the Social sub-nav
