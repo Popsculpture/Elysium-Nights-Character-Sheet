@@ -109,7 +109,7 @@ a{ color:var(--accent); text-decoration:none; }
 .os-tab.locked{ color:var(--text4); cursor:not-allowed; }
 .os-tab .tk{ font-family:var(--mono); font-size:10px; color:var(--text4); }
 /* a tab's SVG icon sits where its text glyph would: one em square, on the text's baseline, in the tab's colour */
-.os-tab span svg{ display:inline-block; width:1em; height:1em; vertical-align:-.15em; }
+.os-tab span svg{ display:inline-block; width:1em; height:1em; vertical-align:-.15em; transition:transform .25s; }
 .btn span svg{ display:inline-block; width:1em; height:1em; vertical-align:-.15em; }   /* an icon in a button, sized like .os-tab's */
 
 .os-main{ flex:1; padding:22px clamp(14px,3vw,40px) 80px; max-width:1320px; margin:0 auto; width:100%; }
@@ -1201,15 +1201,15 @@ html.skin-droid .os-tabs-scroll:empty + .os-gear{
   border:1px solid var(--accent-dim); border-bottom:0; background:var(--bg); color:var(--accent); font-size:22px; clip-path:none; margin-left:0;
 }
 html.skin-droid .os-tabs-scroll:empty + .os-gear > span{ width:auto; height:auto; border:0; background:none; box-shadow:none; }
-/* The hover turn belongs to the cog, not the cell around it. On this skin the span IS the row's
-   bordered icon cell and the glyph is its text, so the two were one box and turned together; the
-   glyph moves into a pseudo of its own that turns while the cell holds still. Gated on a real
-   hover, since on a touch screen a tap would leave the cog sitting tilted behind the tray. */
-html.skin-droid .os-tabs .os-gear > span{ font-size:0; }
-html.skin-droid .os-tabs .os-gear > span::before{ content:"⚙"; display:inline-block; font-size:18px; line-height:1; transition:transform .25s; }
-html.skin-droid .os-tabs-scroll:empty + .os-gear > span::before{ font-size:22px; }
+/* The hover turn belongs to the cog, not the cell around it. Now that the glyph is a real SVG
+   rather than text, this is direct: the transform targets the svg alone. settings.js's own
+   stylesheet rotates .os-gear span on hover for Classic and '98, where the span carries no
+   border or background of its own; on this skin the span IS the row's bordered icon cell, so
+   that rule is cancelled here and the svg is rotated in its place. Gated on a real hover, since
+   on a touch screen a tap would leave the cog sitting tilted behind the tray. */
+html.skin-droid .os-tabs-scroll:empty + .os-gear > span svg{ width:24px; height:24px; }   /* the larger button-form cell */
 html.skin-droid .os-tabs .os-gear:hover > span{ transform:none; }
-@media (hover: hover){ html.skin-droid .os-tabs .os-gear:hover > span::before{ transform:rotate(60deg); } }
+@media (hover: hover){ html.skin-droid .os-tabs .os-gear:hover > span svg{ transform:rotate(60deg); } }
 html.skin-droid .os-tabs-scroll:empty + .os-gear::before, html.skin-droid .os-tabs-scroll:empty + .os-gear::after{ content:none; }
 html.skin-droid .os-tray{ display:none; }
 /* ---- swipe navigation (swipe.js, wired by app.js for this skin alone) ----

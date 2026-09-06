@@ -7849,6 +7849,48 @@ shared archive icon, already does exactly this. `ICON_CHROME` is local to invent
 nothing else needs this one. The path is the author's art copied unchanged, taking the button's
 current colour on every skin.
 
+## The Gray Market wears the author's icon, 2026-09-05
+
+Author's ask: use cart-line-icon.svg (a shopping cart) for the Gray Market sub-tab, in place of
+the ◉ glyph. Same subTab() [icon, text] path as Chrome; ICON_MARKET is local to inventory.js.
+All four Inventory sub-tabs now carry the author's own art except Workbench.
+
+## Hot Run wears the author's icon, 2026-09-05
+
+Author's ask: use fire-icon.svg (a flame) for the HOT RUN toggle on #GRID, in place of the ⚡
+glyph. `modeBtn()` grew the same `[icon, text]` convention the Inventory sub-nav already uses, so
+DEEP RUN's own ❄ glyph is untouched and any future mode button can opt in the same way.
+
+## Settings wears the author's icon, 2026-09-05
+
+Author's ask: use settings-gear-icon.svg for the Settings tab, in place of the ⚙ glyph.
+gearTab() in settings.js now builds its icon span the same way the Codex, Inventory, Chrome
+and Gray Market icons do. This retired the pseudo-content trick #GRIDroid's hover-turn fix built
+two entries ago: with the glyph now a real SVG element rather than generated text, the turn
+targets the SVG directly instead of a `::before` standing in for it. Simpler, and the settings
+tray's own global hover rule (which rotates `.os-gear span` on Classic and '98, where the span
+carries no border of its own) is cancelled on this skin the same way it always was, just against
+the svg's parent rather than a font-size:0 span. Verified with a real hover (not a synthetic
+event, which does not trigger :hover): the icon cell's own transform stays none throughout, the
+svg alone reports rotate(60deg).
+
+## Flow wears the author's icon, 2026-09-05
+
+Author's ask: use ai-sparkles-icon.svg (a cluster of sparkle bursts) for the Flow tab, in place
+of the ❋ glyph. Same `icon` field on the TABS entry as Codex and Inventory; nothing new to
+wire.
+
+## #GRID and Social wear the author's icons, 2026-09-05
+
+Author's ask on both: try a candidate against the actual rail before committing to it. #GRID went
+through two: a hooded figure at a laptop read well blown up but lost its detail to a blur at the
+rail's real 11-13px, since the art was a detailed illustration rather than a simple silhouette; a
+second try, an anonymous figure in a fedora, is bold and mostly solid and held up at every size
+tried, including #GRIDroid's 20px icon cell. That one shipped. Social's candidate, three linked
+figures, was checked the same way and read clearly at every size on the first try; it also fits
+the tab's own content better than the abstract ◑ glyph did, since Social tracks a WEB of
+contacts (Profiles, Faction Standing, Cred, Heat, Debts) rather than any one person.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

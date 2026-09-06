@@ -784,15 +784,19 @@ EN.gridView = (function () {
 
   // the console switch: which resolution model is this run using?
   function runModeBar() {
+    // the author's flame icon for Hot Run, same [icon, text] convention as the Inventory
+    // sub-nav; label may still be plain text (Deep Run keeps its ❄ glyph)
+    var ICON_HOT = '<svg viewBox="0 0 114.3 122.88" fill="currentColor" aria-hidden="true"><path d="M19.19,34.8c2.3,16.33,5.87,28.71,11.91,33.28a92.1,92.1,0,0,1,1.74-16.32c3.49-17.46,9.1-18.4,14.5-31.3A33.25,33.25,0,0,0,49.11,0C68.46,3.35,86.43,32.52,90.94,69.61a39.51,39.51,0,0,0,8.24-22c8.54,8.73,12.77,19.12,14.35,30.52,3.2,21.83-3.5,36-21.21,41.57,3.94-9,3-16-1.1-25.26A32.7,32.7,0,0,0,84.31,84.3c-1.26,9-3.21,15.75-6.53,18.26a51.28,51.28,0,0,0-1-9c-1.92-9.58-5-10.09-8-17.17a18.24,18.24,0,0,1-1-11.23c-10.61,1.84-20.47,17.85-23,38.2a21.73,21.73,0,0,1-4.52-12.06,28.8,28.8,0,0,0-7.88,16.75c-.88,6-.39,11,1.55,14.79-13.62-1.56-22.75-9.15-28.52-21.4-8.29-17.54-6.81-30.62,1-48.15A59.91,59.91,0,0,1,19.19,34.8Z"/></svg>';
     function modeBtn(key, label, color, title) {
       var on = _runMode === key;
+      var kids = Array.isArray(label) ? [el("span", { html: label[0] }), document.createTextNode(" " + label[1])] : [document.createTextNode(label)];
       return el("button.btn.sm" + (on ? ".primary" : ""), { title: title,
         style: on ? null : { color: color, borderColor: color },
-        onclick: function () { _runMode = key; EN.app.render(); } }, label);
+        onclick: function () { _runMode = key; EN.app.render(); } }, kids);
     }
     return el("div.row.wrap", { style: { gap: "8px", alignItems: "center", margin: "0 0 12px" } }, [
       el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".14em" }, text: "RUN MODE" }),
-      modeBtn("hot", "⚡ HOT RUN · d20", "var(--accent)", "In a combat round or under fire: Quick Hacks, cipher attacks, Saves. One die, right now."),
+      modeBtn("hot", [ICON_HOT, "HOT RUN \u00b7 d20"], "var(--accent)", "In a combat round or under fire: Quick Hacks, cipher attacks, Saves. One die, right now."),
       modeBtn("deep", "❄ DEEP RUN · DICE POOL", "var(--bw)", "Out of combat: extended intrusion, research, tailing a signal. Build the pool, read the Margin."),
       el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "In a combat round? It's d20. Otherwise, build the pool." })
     ]);
