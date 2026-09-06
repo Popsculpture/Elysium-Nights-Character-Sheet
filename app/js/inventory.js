@@ -1431,11 +1431,18 @@ EN.inventoryView = (function () {
 
   /* ---- main render ---- */
   /* ---- Workbench: crafting & modding benches (rules plug in per bench) ---- */
+  // the author's shield, for the Impact Table alone; the other benches keep their own glyphs
+  // the author's pistol, for the Arms Table alone; the other benches keep their own glyphs
+  // the author's car key, for the Garage; a first candidate (two overlapping cars) fell apart
+  // at the rail's actual small size and was replaced with this one before either committed
+  var ICON_GARAGE = '<svg viewBox="0 0 512 505.76" fill="currentColor" aria-hidden="true"><path d="M511.95 165.28c-1.06 24.28-11.24 48.8-29.12 68.96-29.67 33.44-41.67 47.15-80.66 71.49-43 26.84-79.24 35.74-103.85 13.79L187.77 208.97c-13.04-28.56-3.38-63.55 20.76-102.62 23.05-37.31 37.39-48.1 69.27-76.72C297.32 12.11 321.73 1.65 345.92.11c64.94-4.13 168.62 106.14 166.03 165.17zM82.64 505.76H1.45L0 423.69l62.47 1.45 1.44-65.37 65.37-1.44v-63.92l56.15-17.23 20.58-20.58 62.89 62.9L82.64 505.76zM291.67 139.5l80.93 80.93c2.63 2.63 2.62 6.94 0 9.56l-22.4 22.4c-2.62 2.62-6.94 2.62-9.56 0l-80.94-80.93c-2.62-2.62-2.63-6.93 0-9.56l22.41-22.4c2.63-2.64 6.93-2.64 9.56 0zm129.19-48.26c23.89 23.89 35.88 50.63 26.79 59.72-9.1 9.09-35.83-2.9-59.72-26.79-23.89-23.88-35.88-50.62-26.78-59.71 9.09-9.1 35.82 2.89 59.71 26.78z"/></svg>';
+  var ICON_ARMS = '<svg viewBox="0 0 122.88 89.54" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M9.51,5.81l0.03-0.1c1.25-2.88,2.16-4.31,3.91-5.14c2.5-1.18,4.98-0.49,6.62,1.68 c0.78,1.03,1.38,2.24,1.85,3.56h82.67V5.26c0-2.82,2.31-5.13,5.13-5.13h5.39c0.97,0,1.77,0.8,1.77,1.77v3.9h1.29 c2.59,0,4.71,2.12,4.71,4.71v10.93H62.86v-6.3c0-1.1-0.89-1.99-1.99-1.99c-1.1,0-1.99,0.89-1.99,1.99v6.3h-4.78v-6.3 c0-1.1-0.89-1.99-1.99-1.99c-1.1,0-1.99,0.89-1.99,1.99v6.3h-4.78v-6.3c0-1.1-0.89-1.99-1.99-1.99c-1.1,0-1.99,0.89-1.99,1.99v6.3 h-4.78v-6.3c0-1.1-0.89-1.99-1.99-1.99c-1.1,0-1.99,0.89-1.99,1.99v6.3h-4.78v-6.3c0-1.1-0.89-1.99-1.99-1.99 c-1.1,0-1.99,0.89-1.99,1.99v6.3H19v-6.3c0-1.1-0.89-1.99-1.99-1.99c-1.1,0-1.99,0.89-1.99,1.99v6.3h-4.78v-6.3 c0-1.1-0.89-1.99-1.99-1.99c-1.1,0-1.99,0.89-1.99,1.99v6.3H0.27c-0.07,0-0.13,0-0.2,0.01C0.02,20.79,0,20.07,0,19.31v-8.8 c0-2.59,2.12-4.7,4.7-4.7H9.51L9.51,5.81z M122.88,25.44v2.67c0,2.59-2.12,4.71-4.71,4.71l-35.52,3.73V25.44H122.88L122.88,25.44z M78.68,36.96l-4.81,0.51c0.82,8.68-0.39,14.49-5.55,18.1c-4.85,3.39-13.12,4.45-26.6,3.76c-0.12-0.01-0.25-0.02-0.36-0.05 l-2.4,8.8H2.54c0.32-0.76,0.68-1.56,1.08-2.43c1.33-2.94,2.88-5.72,4.66-8.33c4.68-7.91,7.87-14.82,8.2-19.46 c0.77-10.83-12.62-0.46-15.8-12.42h78v11.33C78.67,36.83,78.67,36.9,78.68,36.96L78.68,36.96z M38.12,71.15l-1.43,5.24 c3.01,4.39,3.73,7.91,1.71,10.38c-2.93,3.59-8.13,2.66-12.22,2.66H7.01c-5.17-0.45-7.19-3.9-6.91-9.54c0-3.65,0.38-6.11,1.26-8.75 H38.12L38.12,71.15z M69.92,37.88L58.2,39.11c-1.28,0.04-2.5,0.17-3.66,0.4c0.05,0.16,0.08,0.34,0.08,0.51 c0.05,2.03,0.77,3.69,1.86,4.88c1.17,1.28,2.8,2.03,4.52,2.14c1.1,0.07,1.93,1.01,1.86,2.11c-0.07,1.1-1.01,1.93-2.11,1.86 c-2.74-0.17-5.32-1.38-7.2-3.42c-1.58-1.72-2.65-4.03-2.87-6.8c-3.79,1.91-6.5,5.61-7.57,12.03l-0.69,2.54 c12.26,0.6,19.63-0.27,23.63-3.06C69.76,49.72,70.58,45.04,69.92,37.88L69.92,37.88z"/></svg>';
+  var ICON_IMPACT = '<svg viewBox="0 0 111.811 122.88" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M55.713,0c20.848,13.215,39.682,19.467,55.846,17.989 c2.823,57.098-18.263,90.818-55.63,104.891C19.844,109.708-1.5,77.439,0.083,17.123C19.058,18.116,37.674,14.014,55.713,0L55.713,0 z M56.163,19.543c14.217,9.011,27.061,13.274,38.083,12.268c1.925,38.936-12.454,61.93-37.935,71.526 c-0.161-0.059-0.319-0.12-0.479-0.18V19.796L56.163,19.543L56.163,19.543z M55.735,7.055 c18.454,11.697,35.126,17.232,49.434,15.923c2.498,50.541-16.166,80.39-49.241,92.846C23.986,104.165,5.091,75.603,6.493,22.211 C23.29,23.091,39.768,19.46,55.735,7.055L55.735,7.055z"/></svg>';
   var BENCHES = [
-    { key: "ballistics", label: "Arms Table", icon: "⊚", color: "var(--ember)", tag: "WEAPON CRAFTING & MODDING",
+    { key: "ballistics", label: "Arms Table", icon: "⊚", svg: ICON_ARMS, color: "var(--ember)", tag: "WEAPON CRAFTING & MODDING",
       blurb: "Build, tune, and customize weapons: firearms, blades, bows, and the attachments that ride them.",
       handles: "Ranged Weapons · Melee Weapons · Signature Weapons · Ammunition · weapon mods & attachments" },
-    { key: "armor", label: "Impact Table", icon: "⛨", color: "var(--success)", tag: "ARMOR BENCH · CRAFTING & MODDING",
+    { key: "armor", label: "Impact Table", icon: "⛨", svg: ICON_IMPACT, color: "var(--success)", tag: "ARMOR BENCH · CRAFTING & MODDING",
       blurb: "The Armor Bench. Fit plates, slot Armor Mods, reinforce shells, and keep defensive gear in the fight.",
       handles: "Light / Medium / Heavy Armor · Powered Exoframes · Mystech shells · Shields & Foci · Armor Mods" },
     { key: "tech", label: "Tech Bay", icon: "⌬", color: "var(--flow)", tag: "SMARTDECK & CYBERWARE MODS",
@@ -1444,7 +1451,7 @@ EN.inventoryView = (function () {
     { key: "fab", label: "Fabrication", icon: "⚒", color: "var(--accent)", tag: "FABRICATION · CRAFTING & PROJECTS",
       blurb: "Build, repair, and modify gear as downtime Projects. Recipes, material costs, and live Engineering and Systems checks.",
       handles: "Build from scratch · Repairs · Custom mods · Material costs · Engineering / Systems Projects" },
-    { key: "garage", label: "Garage", icon: "⛭", color: "var(--gold)", tag: "VEHICLE CRAFTING & MODDING",
+    { key: "garage", label: "Garage", icon: "⛭", svg: ICON_GARAGE, color: "var(--gold)", tag: "VEHICLE CRAFTING & MODDING",
       blurb: "Wrench on rides: engines, plating, and weapon mounts for everything from a courier bike to a mech.",
       handles: "Ground / Aerial / Marine Vehicles · Industrial / Mechs · vehicle upgrades & mounts" }
   ];
@@ -2869,8 +2876,8 @@ EN.inventoryView = (function () {
       el("p.help", { style: { margin: "0 0 10px" }, html: "<b style='color:var(--accent)'>Kits.</b> " + (R.kits || "") }),
       el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
         el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em", marginRight: "2px" }, text: "SLOTTED MODS LIVE AT" }),
-        el("button.btn.sm", { style: { color: "var(--ember)", borderColor: "var(--ember)" }, onclick: function () { _bench = "ballistics"; EN.app.render(); } }, "⊚ ARMS TABLE"),
-        el("button.btn.sm", { style: { color: "var(--success)", borderColor: "var(--success)" }, onclick: function () { _bench = "armor"; EN.app.render(); } }, "⛨ IMPACT TABLE")
+        el("button.btn.sm", { style: { color: "var(--ember)", borderColor: "var(--ember)" }, onclick: function () { _bench = "ballistics"; EN.app.render(); } }, [el("span", { html: ICON_ARMS }), document.createTextNode(" ARMS TABLE")]),
+        el("button.btn.sm", { style: { color: "var(--success)", borderColor: "var(--success)" }, onclick: function () { _bench = "armor"; EN.app.render(); } }, [el("span", { html: ICON_IMPACT }), document.createTextNode(" IMPACT TABLE")])
       ])
     ];
     return EN.ui.panel("Modding & Mounts", "ONE MOD PER MOUNT · MAX MODS · OVER-ENGINEERING", kids, { corners: true });
@@ -3453,8 +3460,10 @@ EN.inventoryView = (function () {
     var out = [];
     out.push(el("div.row.wrap", { style: { gap: "6px", marginBottom: "12px" } }, BENCHES.map(function (b) {
       var on = _bench === b.key;
+      // a bench with its own svg (only the Impact Table, today) renders that instead of its text glyph
+      var kids = b.svg ? [el("span", { html: b.svg }), document.createTextNode(" " + b.label)] : b.icon + " " + b.label;
       return el("button.btn.sm" + (on ? ".primary" : ""), { style: on ? { color: b.color, borderColor: b.color } : null,
-        onclick: function () { _bench = b.key; EN.app.render(); } }, b.icon + " " + b.label);
+        onclick: function () { _bench = b.key; EN.app.render(); } }, kids);
     })));
     var b = BENCHES.find(function (x) { return x.key === _bench; }) || BENCHES[0];
     if (_bench === "ballistics") {

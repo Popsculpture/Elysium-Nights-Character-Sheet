@@ -7904,6 +7904,36 @@ Author's ask: use finger-print-icon.svg for #PRINT, in place of the ▤ glyph. A
 Same `icon` field as every other rail tab; nothing new to wire. This was the last rail tab still
 on a text glyph besides Freelancer.
 
+## The Impact Table wears the author's icon, 2026-09-06
+
+Author's ask: use shield-sedo-line-icon.svg for the Impact Table, the Workbench's armor bench, in
+place of the ⛨ glyph. Two sites named it with that glyph: the Workbench's own bench selector,
+and the cross-link from Modding & Mounts that jumps a reader from a slotted mod straight to the
+bench it lives on. Both now share one `ICON_IMPACT` constant. The other four benches (Arms
+Table, Tech Bay, Fabrication, Garage) keep their own text glyphs, and so do the shield's other
+jobs in this tab: the DR stat chips on item cards and the "NO ARMOR ON THE BENCH" empty
+state. Those are a different grammar, an inline damage-reduction symbol rather than a
+navigational icon, and were not part of the ask.
+
+## The Arms Table wears the author's icon, 2026-09-06
+
+Author's ask: use gun-pistol-icon.svg for the Arms Table, the Workbench's weapon bench, in place
+of the ⊙ glyph. Same shape as the Impact Table swap moments earlier: the Workbench's own
+bench selector and the cross-link from Modding & Mounts both named it with that glyph, and both
+now share one `ICON_ARMS` constant. Impact Table, Tech Bay, Fabrication and Garage keep their own
+glyphs, and so does the "NO WEAPONS ON THE BENCH" empty state, which is that shield-chip grammar
+again rather than a navigational icon.
+
+## The Garage wears the author's icon, 2026-09-06
+
+Author's ask, checked against the actual rail before committing, the same way #GRID and Social
+were: a first candidate, two overlapping cars, read fine blown up but fell apart into a smudge
+at the rail's real 11px, since the source art was a wide 2.3:1 shape built from thin linework
+that could not survive the shrink. A second candidate, a car key, is bold and close to square
+and held up clearly at both the rail's size and #GRIDroid's 20px cell; that one shipped as
+`ICON_GARAGE`, on the same `svg` field the Impact Table and Arms Table swaps added to `BENCHES`
+moments earlier. Arms Table, Impact Table, Tech Bay and Fabrication keep their own glyphs.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from
