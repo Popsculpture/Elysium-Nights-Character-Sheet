@@ -42,6 +42,13 @@ Vanilla JS, no build step, no backend. Everything is static HTML/CSS/JS and runs
 the filesystem (`file://`-safe). Character data persists in the browser's `localStorage`; use the
 **⤓ Export Record** button on #PRINT to move a Freelancer between devices.
 
+## Install it on a phone
+
+The app ships a web app manifest, so a phone browser offers **Add to Home screen** (Chrome on
+Android puts it in the three-dot menu; Safari on iOS under Share). Launched from that icon it runs
+as an installed app with no address bar, which is the way #GRIDroid is meant to be used. The icon
+is the `#` badge from the phone skin's header, in gold. Nothing changes for a plain browser tab.
+
 ## Run it locally
 
 Open `app/index.html` in any modern browser. (Fonts load from Google Fonts when online, and fall

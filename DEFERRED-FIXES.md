@@ -7776,6 +7776,25 @@ Codex, six in #PRINT's species, class and advance steps) moved onto the same 18.
 Left as found, on purpose: the 57 inline margins. They were tuned in place inside panels where
 the rhythm is tighter, and harmonising them is a separate pass with its own eyes on every tab.
 
+## Installable, 2026-09-05
+
+Author's report from the Pixel: Chrome's address bar hides and shows with every change of scroll
+direction, and asked whether a page can stop it. It cannot; that bar is browser UI and no CSS or
+script reaches it. What a site can do is leave the browser: with a web app manifest, Chrome
+offers Add to Home screen and the installed app runs with no address bar at all, only the phone's
+status bar, which for a skin pretending to be a phone OS is where it belonged anyway.
+
+So: `app/manifest.webmanifest` (name, start URL and scope of `./` beside it, display standalone,
+the dark ground as theme and background colour) linked from index.html with a theme-color meta
+and an apple-touch-icon for iOS; and two PNG icons, 192 and 512, drawn by `tools`-style script at
+build time rather than by hand: the `#` badge from the #GRIDroid header in the Elysium Nights
+gold on the app's dark ground, chamfered top right and bottom left like the skin's buttons, the
+octothorpe's uprights leaning the way a typeset one does. The badge sits inside the central 80
+percent circle an Android adaptive-icon mask is guaranteed to keep, so one file serves as both the
+plain and the maskable icon. No service worker, since current Chrome no longer requires one for
+the install prompt, and offline is a separate question. The dev server in launch.json learned the
+.webmanifest type so the file can be checked locally; GitHub Pages already serves it right.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from
