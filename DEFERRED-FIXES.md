@@ -8085,6 +8085,25 @@ Verified in the browser at 375px on #GRID (cyan) and Elysium Nights (gold): word
 box around it, and the whole header is visibly shorter than before. Confirmed Classic and '98
 untouched, both keep their own separate `#active-name` treatment. Fresh tab, no console errors.
 
+## BILLS wears the author's price list, 2026-09-06
+
+The ▤ glyph on the wallet bar's BILLS button becomes the author's price list, the one he built by
+swapping the stock icon's dollar sign for the Glimmer script G. Two paths and their transforms are
+embedded verbatim, and only the sheet carries `fill-rule="evenodd"`, exactly as the source does:
+the G is drawn nonzero, and hoisting evenodd onto the root would have filled its own counters. The
+⚠ that appears when a bill is overdue still leads the label.
+
+Flagged for the author, since it concerns the part he made himself. At the button's real 11px the
+sheet and its three bulleted rows read clearly, but the Glimmer G in the corner does not resolve;
+it is a dark blob. The raster series says why: the G starts reading at about 20px, and 20px is
+nearly double the neighbouring text on a `.btn.sm`, so a size bump big enough to rescue it would
+look oversized on this button rather than fixing it. Shipped as it stands, which reads correctly
+as a bills-and-charges icon at every size, with the G as a detail that rewards the larger renders.
+If the G is the point, this button is the wrong home for it.
+
+Verified in all three skins: the icon takes the button's own colour, including the dark ink
+#GRIDroid's solid-fill primary gives it, and the overdue red when a bill is due. No console errors.
+
 ## ROLL GROUP wears the author's dice, 2026-09-06
 
 The ⚄ glyph on Manual/Roll's ROLL GROUP button becomes the author's die, embedded verbatim.
