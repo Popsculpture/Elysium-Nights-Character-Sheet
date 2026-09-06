@@ -8085,6 +8085,50 @@ Verified in the browser at 375px on #GRID (cyan) and Elysium Nights (gold): word
 box around it, and the whole header is visibly shorter than before. Confirmed Classic and '98
 untouched, both keep their own separate `#active-name` treatment. Fresh tab, no console errors.
 
+## #GRIDroid header, second pass: readouts up top, the record in the strip, 2026-09-06
+
+The first pass read the author's "Link status and Sync status across the top" as "keep them in
+their own strip near the top". His mockup corrected it: LINK STABLE and SYNC OK belong on the
+wordmark's own row, the way Classic has them, and the accent strip below belongs to the record.
+The mockup also spelled out what the record line should carry, which is more than the name.
+It first read "FREELANCER // live status" plus name, class, level and caliber; seeing that on the
+strip the author cut it back to "Active Record: [full name] · [class]", which is what shipped and
+what the rest of this entry describes. The level and caliber are a tap away on the dashboard, and
+dropping them is what lets the line hold to a single row at desk width.
+
+Layout: `.os-status:not(#active-name)` loses the strip treatment and goes back to plain inline
+readouts at order 2 (so the LED is green again, not the strip's black), the spacer follows, and
+the clock closes the row. `#active-name` inherits the strip: accent fill, dark ink, the chamfered
+clip, full width. At 375px the row cannot hold badge, wordmark, both readouts and the clock, so
+the clock wraps; `margin-left:auto` parks it at the right on that wrapped line, and does nothing
+at any width where the whole row fits, since the spacer has already eaten the free space there.
+The clock also loses its bordered cell on the author's call, leaving plain accent figures; the
+shared rule never drew a border, so this is a droid-only subtraction and no other skin moves.
+
+Wordmark, same pass: the author asked for a bold #GRID and another space before the version. The
+weight is a one-word change (`.os-logo` goes 400 to 700 on this skin; `<b>OS</b>` resolves to 900
+against it, which is the same synthetic bold since Share Tech Mono ships one weight). The space
+was not: `.os-logo` is a flex container, so the whitespace text node the markup already had
+between `OS` and `v1.0` was never rendered at all, and the two ran together. The gap is drawn
+instead, `margin-left` on `.v` at two spaces of that font at that size, measured in the browser
+at 9.36px each with letter-spacing included, rather than guessed.
+
+Content: the slot is written by a new `paintActiveName()` in app.js as three spans (`.an-role`
+holding the label, `.an-name`, `.an-meta` holding the class) rather than one string, because only
+#GRIDroid has room for more than the name; every other skin hides the label and the class in a
+base rule and shows exactly what it showed before. The class span prints the subclass beside the
+class when one is chosen, matching the wording the dashboard's own title already uses. Admin
+still gets the encounter round, in a single `.an-name`. `builder.js`'s `bannerSync` (which pokes
+the banner on every keystroke while a name is typed) now rewrites just the name span, since a
+full repaint would derive the whole sheet to recompute a class that cannot have changed
+mid-keystroke.
+
+Verified in the browser: the strip reads "ACTIVE RECORD: ODILE "PAPERWORK" VANTZ · OPERATOR" on
+#GRIDroid, one line at desk width and two at 375px with this name; Classic and '98 still show the
+name alone (checked span visibility per skin, not just by eye); Admin shows "ROUND 1" on the
+strip; typing in #PRINT's First Name updates only the name span and leaves the others intact.
+Fresh tab, correct stamp, no console errors.
+
 ## '98's panel-header square dropped, 2026-09-06
 
 Author's ask, pointing at a panel titlebar's `::before` in the inspector: the little bevelled

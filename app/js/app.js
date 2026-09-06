@@ -245,23 +245,41 @@ EN.app = (function () {
       });
     } else window.scrollTo(0, 0);                          // tab switch → start at top
     _lastTab = LAST[portal];
-    // top bar's active-name slot: the loaded Freelancer on the player side, the
-    // live encounter on the GM side, since Admin is not about a character
-    var nameEl = document.getElementById("active-name");
-    if (portal === "admin") {
-      var enc = null;
-      try { enc = EN.gmStore && EN.gmStore.get && EN.gmStore.get().encounter; } catch (e) {}
-      nameEl.textContent = (enc && enc.round > 0) ? ("ROUND " + enc.round) : "NO ENCOUNTER";
-    } else {
-      var ch = store.active();
-      nameEl.textContent = ch ? (ch.name || "UNNAMED FREELANCER").toUpperCase() : "NO FREELANCER LOADED";
-    }
+    paintActiveName();
     /* Currency marks, last, once the view is fully built. A NO-OP on any device whose fonts
        carry U+1D4A2 and U+25CE, which is the common case and costs one cached measurement;
        on devices that lack them it walks the freshly-rendered text and swaps the tofu box
        for a readable letter. Runs here rather than inside el() because most of these marks
        arrive as catalog PROSE, never passing through a builder at all. */
     if (EN.ui.substituteCurrencyGlyphs) EN.ui.substituteCurrencyGlyphs(document.getElementById("os") || document.body);
+  }
+
+  /* The top bar's record slot: the loaded Freelancer on the player side, the live encounter on
+     the GM side, since Admin is not about a character. Written as spans rather than one string
+     because #GRIDroid gives the slot a whole strip and wants a label and the class beside the
+     name, while every other skin shows the name alone and hides the rest in CSS. */
+  function paintActiveName() {
+    var node = document.getElementById("active-name");
+    if (!node) return;
+    EN.ui.clear(node);
+    if (portal === "admin") {
+      var enc = null;
+      try { enc = EN.gmStore && EN.gmStore.get && EN.gmStore.get().encounter; } catch (e) {}
+      node.appendChild(el("span.an-name", { text: (enc && enc.round > 0) ? ("ROUND " + enc.round) : "NO ENCOUNTER" }));
+      return;
+    }
+    var ch = store.active();
+    if (!ch) { node.appendChild(el("span.an-name", { text: "NO FREELANCER LOADED" })); return; }
+    node.appendChild(el("span.an-role", { text: "Active Record:" }));
+    node.appendChild(el("span.an-name", { text: (ch.name || "UNNAMED FREELANCER").toUpperCase() }));
+    var meta = "";
+    try {
+      var d = EN.engine.derive(ch);
+      var cls = (d.classInfo && d.classInfo.name) || "";
+      var sub = (d.subclassInfo && d.subclassInfo.name) || "";
+      meta = cls ? (cls + (sub ? " / " + sub : "")) : "";
+    } catch (e) {}
+    if (meta) node.appendChild(el("span.an-meta", { text: meta }));
   }
 
   /* save indicator pulse */
@@ -408,6 +426,7 @@ EN.app = (function () {
 
   return {
     start: start, render: render,
+    paintActiveName: paintActiveName,   // #PRINT repaints the banner as the name is typed
     activeTab: function () { return LAST[portal]; },
     tabOrder: tabOrder,
     iconArchive: ICON_ARCHIVE,   // shared with inventory.js's Stash sub-tab, same art at two scales

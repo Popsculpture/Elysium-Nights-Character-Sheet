@@ -117,9 +117,13 @@ EN.builder = (function () {
     // First Name, Handle, and Last Name all feed the composed full-display
     // name (First "Handle" Last), so each one recomputes ch.name and pokes
     // the banner directly (store.update runs silent to keep the caret alive).
+    // Only the name span is rewritten while typing; a full repaint would derive the whole
+    // sheet on every keystroke to recompute a class and level that cannot have changed.
     function bannerSync() {
       var c = store.active();
-      document.getElementById("active-name").textContent = (c.name || "NO FREELANCER").toUpperCase();
+      var n = document.querySelector("#active-name .an-name");
+      if (n) n.textContent = (c.name || "NO FREELANCER").toUpperCase();
+      else EN.app.paintActiveName();
     }
     function nameFieldNode(field, ph) {
       return el("input", {
