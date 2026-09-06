@@ -7891,6 +7891,19 @@ figures, was checked the same way and read clearly at every size on the first tr
 the tab's own content better than the abstract ◑ glyph did, since Social tracks a WEB of
 contacts (Profiles, Faction Standing, Cred, Heat, Debts) rather than any one person.
 
+## Ledger wears the author's icon, 2026-09-05
+
+Author's ask: use clipboard-icon.svg for the LEDGER sub-tab on Social, in place of the ◑
+glyph. face.js's subTab() grew the same `[icon, text]` convention the Inventory sub-nav already
+uses; #POST keeps its own icon untouched.
+
+## #PRINT wears the author's icon, 2026-09-05
+
+Author's ask: use finger-print-icon.svg for #PRINT, in place of the ▤ glyph. A first candidate
+(a profile card beside data lines) was tried and replaced with this one before either committed.
+Same `icon` field as every other rail tab; nothing new to wire. This was the last rail tab still
+on a text glyph besides Freelancer.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from
