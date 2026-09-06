@@ -41,6 +41,14 @@ EN.app = (function () {
   // shared). #PRINT lives last: you create + file a record there, then it
   // becomes the place to level up. Tapping it lands on the Advance step
   // (onSelect), since advancing is the usual reason to return.
+  /* A tab may carry an SVG icon instead of a text glyph. The Codex wears the author's own art
+     (a book with a question mark, from book-question-icon.svg, its path copied unchanged); it
+     is inline rather than an <img> so it takes the tab's current colour on every skin, and
+     `glyph` stays beside it for the stub page and anything else that wants a character. */
+  // the author's archive box (a lidded storage crate), used for Inventory's rail tab and its
+  // Stash sub-tab, which is the same idea at two scales: the whole tab and one bucket inside it
+  var ICON_ARCHIVE = '<svg viewBox="0 0 122.878 110.041" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M1.149,0h120.583c0.631,0,1.146,0.518,1.146,1.149v28.383 c0,0.634-0.516,1.149-1.146,1.149H1.149C0.518,30.681,0,30.166,0,29.532V1.149C0,0.518,0.518,0,1.149,0L1.149,0z M7.224,36.787 h108.433c0.526,0,0.962,0.43,0.962,0.961v71.331c0,0.529-0.436,0.962-0.962,0.962H7.224c-0.528,0-0.961-0.433-0.961-0.962V37.749 C6.263,37.217,6.695,36.787,7.224,36.787L7.224,36.787z M45.005,48.526h32.87c3.529,0,6.419,2.888,6.419,6.417l0,0 c0,3.529-2.89,6.416-6.419,6.416h-32.87c-3.532,0-6.419-2.887-6.419-6.416l0,0C38.586,51.414,41.474,48.526,45.005,48.526 L45.005,48.526z"/></svg>';
+  var ICON_CODEX = '<svg viewBox="0 0 442 512.12" fill="currentColor" aria-hidden="true"><path d="M73.5 0h354.32v395.44c-.64 11.05-14.91 11.3-30.32 10.62H68.28c-21.33 0-38.77 17.43-38.77 38.76 0 21.34 17.44 38.77 38.77 38.77h343.39v-41.25H442v52.43c0 9.55-7.8 17.35-17.35 17.35H69.78C22.54 511.76 0 494.94 0 456.56V73.5C0 33.07 33.07 0 73.5 0zm107.17 253.02v-10.73c0-12.59 1-22.66 2.95-30.13 1.97-7.48 4.95-13.5 8.88-18.07 3.87-4.52 8.66-8.66 14.31-12.32 4.89-3.23 9.25-6.29 13.12-9.31 3.88-2.95 6.89-6.13 9.15-9.46 2.26-3.39 3.39-7.21 3.39-11.46 0-3.82-.92-7.21-2.75-10.11-1.82-2.91-4.3-5.17-7.42-6.78-3.17-1.56-6.61-2.37-10.43-2.37-4.15 0-7.96.92-11.41 2.85-3.49 1.88-6.29 4.52-8.39 7.91-2.1 3.34-3.12 7.26-3.12 11.67h-58.69c.11-16.78 3.93-30.44 11.46-40.93 7.48-10.55 17.43-18.24 29.8-23.19 12.37-4.95 25.98-7.37 40.78-7.37 16.35 0 30.93 2.37 43.78 7.16 12.86 4.78 22.97 11.94 30.4 21.51 7.37 9.64 11.08 21.58 11.08 35.94 0 9.25-1.56 17.37-4.74 24.37-3.17 6.99-7.58 13.12-13.17 18.45-5.6 5.32-12.16 10.17-19.64 14.52-5.54 3.17-10.16 6.51-13.88 9.9-3.76 3.39-6.59 7.25-8.5 11.57-1.9 4.29-2.85 9.52-2.85 15.65v10.73h-54.11zm27.97 82.28c-8.88 0-16.48-3.1-22.76-9.3-6.3-6.22-9.36-13.83-9.36-22.76 0-8.71 3.07-16.19 9.36-22.38 6.3-6.18 13.88-9.25 22.76-9.25 8.39 0 15.82 3.07 22.27 9.25 6.45 6.19 9.84 13.67 9.84 22.38 0 5.92-1.66 11.35-4.68 16.2-3.01 4.84-6.94 8.7-11.72 11.56-4.85 2.89-10.06 4.3-15.71 4.3zM68.17 452.81h315.37c3.19 0 5.8 2.62 5.8 5.8v3.53c0 3.18-2.61 5.8-5.8 5.8H68.17c-3.18 0-5.79-2.61-5.79-5.8v-3.53c0-3.19 2.6-5.8 5.79-5.8zm0-29.96h315.37c3.19 0 5.8 2.62 5.8 5.8v3.53c0 3.18-2.61 5.8-5.8 5.8H68.17c-3.18 0-5.79-2.61-5.79-5.8v-3.53c0-3.19 2.6-5.8 5.79-5.8z"/></svg>';
   var TABS = [
     { key: "combat",  label: "Freelancer", glyph: "✦", sub: "live play dashboard", portal: "freelancer", gated: registered, view: function (m) { EN.combatView.render(m); } },
     { key: "face",    label: "Social",    glyph: "◑", sub: "people and reputation", portal: "freelancer", gated: registered, view: function (m) { EN.faceView.render(m); },
@@ -48,8 +56,8 @@ EN.app = (function () {
       badge: function () { try { return EN.faceView.unread(store.active()); } catch (e) { return 0; } } },
     { key: "grid",    label: "#GRID",     glyph: "⌬", sub: "the network", portal: "freelancer", gated: registered, view: function (m) { EN.gridView.render(m); } },
     { key: "flow",    label: "Flow",      glyph: "❋", sub: "the current", portal: "freelancer", gated: registered, view: function (m) { EN.flowView.render(m); } },
-    { key: "gear",    label: "Inventory", glyph: "▣", sub: "gear, chrome, gray market", portal: "freelancer", gated: registered, view: function (m) { EN.inventoryView.render(m); } },
-    { key: "codex",   label: "Codex",     glyph: "❒", sub: "rules on hand", portal: "freelancer", gated: registered, view: function (m) { EN.codexView.render(m); } },
+    { key: "gear",    label: "Inventory", glyph: "▣", icon: ICON_ARCHIVE, sub: "gear, chrome, gray market", portal: "freelancer", gated: registered, view: function (m) { EN.inventoryView.render(m); } },
+    { key: "codex",   label: "Codex",     glyph: "❒", icon: ICON_CODEX, sub: "rules on hand", portal: "freelancer", gated: registered, view: function (m) { EN.codexView.render(m); } },
     { key: "print",   label: "#PRINT", glyph: "▤", sub: "identity record and leveling", portal: "freelancer", view: function (m) { EN.builder.render(m); },
       onSelect: function () { if (EN.builder && EN.builder.openAdvance) EN.builder.openAdvance(); } },
 
@@ -154,7 +162,7 @@ EN.app = (function () {
             root.classList.remove("rail-open");
             LAST[portal] = t.key; if (t.onSelect) t.onSelect(); render();
           }
-        }, [el("span", { text: t.glyph }), document.createTextNode(t.label),
+        }, [t.icon ? el("span", { html: t.icon }) : el("span", { text: t.glyph }), document.createTextNode(t.label),
             badge ? el("span.attn-dot", { title: badge + (badge === 1 ? " unread message" : " unread messages") + " in #POST" }) : null]));
       });
     }
@@ -391,6 +399,7 @@ EN.app = (function () {
     start: start, render: render,
     activeTab: function () { return LAST[portal]; },
     tabOrder: tabOrder,
+    iconArchive: ICON_ARCHIVE,   // shared with inventory.js's Stash sub-tab, same art at two scales
     /* Resolves the key's own portal rather than assuming the caller's, so
        every existing caller (all of which name a Freelancer tab today) stays
        correct with zero edits, and the function can never strand the app on

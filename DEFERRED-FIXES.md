@@ -7817,6 +7817,38 @@ panel 14/6, collapsible 12/4, first-of-container 0, nothing else. The biggest si
 combat's feature panels (2px below a heading became 6) and the stash categories (10 above became
 12); the Admin's "Pull in the crew" heading sits inside a panel and takes 14/6.
 
+## The Codex wears the author's icon, 2026-09-05
+
+Author's ask: use book-question-icon.svg (a book with a question mark) as the Codex tab's icon
+in place of the ❒ glyph. A TABS entry may now carry `icon`, an SVG string, beside `glyph`; the
+rail renders the icon when present and the glyph otherwise, and the stub page keeps reading the
+glyph. The SVG is inline rather than an <img> so it takes the tab's current colour on every skin:
+the rail's dim ink at rest, the accent when active, the '98 taskbar's accent, the #GRIDroid icon
+cell's accent. The path is the author's art copied unchanged; the root carries only the viewBox,
+fill currentColor and aria-hidden. Sized to one em on the text baseline in the rail, 20px in the
+phone's icon cell.
+
+## Inventory and Stash share the author's archive icon, 2026-09-05
+
+Author's ask: use archive-icon.svg (a lidded storage crate) for the Inventory rail tab and its
+Stash sub-tab, the same idea at two scales, the whole tab and one bucket inside it. Inventory's
+TABS entry now carries `icon` alongside `glyph`, exactly as the Codex tab does; the SVG is
+exported off `EN.app.iconArchive` so inventory.js's own Stash button can reuse the identical art
+rather than a second copy of the path. `subTab()` in inventory.js grew a small affordance for
+this: a label may still be a plain string, or an `[icon, text]` pair, in which case the icon
+renders as an inline span before the text. Being inline SVG rather than an `<img>`, it takes the
+button's current colour, so STASH recolors gold on `.primary` the same way its text always did.
+The path is the author's art copied unchanged, sized to one em in the rail and the sub-nav
+buttons alike, 13px in the #GRIDroid sub-nav's own narrower cell.
+
+## Chrome wears the author's icon, 2026-09-05
+
+Author's ask: use Chrome-icon.svg (a cybernetic limb) for the Chrome sub-tab, in place of the ⌖
+glyph. No new plumbing: `subTab()`'s `[icon, text]` form, built moments earlier for Stash's
+shared archive icon, already does exactly this. `ICON_CHROME` is local to inventory.js, since
+nothing else needs this one. The path is the author's art copied unchanged, taking the button's
+current colour on every skin.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

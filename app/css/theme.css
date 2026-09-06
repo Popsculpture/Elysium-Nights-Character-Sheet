@@ -108,6 +108,9 @@ a{ color:var(--accent); text-decoration:none; }
 .os-tab.active{ color:var(--accent); border-bottom-color:var(--accent); text-shadow:var(--glow-cyan); }
 .os-tab.locked{ color:var(--text4); cursor:not-allowed; }
 .os-tab .tk{ font-family:var(--mono); font-size:10px; color:var(--text4); }
+/* a tab's SVG icon sits where its text glyph would: one em square, on the text's baseline, in the tab's colour */
+.os-tab span svg{ display:inline-block; width:1em; height:1em; vertical-align:-.15em; }
+.btn span svg{ display:inline-block; width:1em; height:1em; vertical-align:-.15em; }   /* an icon in a button, sized like .os-tab's */
 
 .os-main{ flex:1; padding:22px clamp(14px,3vw,40px) 80px; max-width:1320px; margin:0 auto; width:100%; }
 
@@ -1157,6 +1160,7 @@ html.skin-droid .os-tab{
   color:var(--text); font-family:var(--disp); font-weight:600; font-size:15px; letter-spacing:.12em; text-transform:uppercase; text-shadow:none; white-space:normal;
   clip-path:polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
 }
+html.skin-droid .os-tab > span svg{ width:20px; height:20px; vertical-align:middle; }   /* the icon cell's glyph size */
 html.skin-droid .os-tab > span{
   grid-row:1 / 3; width:38px; height:38px; display:flex; align-items:center; justify-content:center;
   font-size:18px; color:var(--accent); border:1px solid var(--accent-dim); background:var(--bg1);
@@ -1457,7 +1461,8 @@ html.skin-droid .mgr-tools .btn{ flex:1 1 45%; justify-content:center; }
 /* the sub-nav and wallet bar: un-stuck (150px pinned is a fifth of a phone), sub-tabs four up, the wallet stretched */
 html.skin-droid .inv-bar{ position:static !important; padding:8px 10px !important; margin:0 0 10px !important; backdrop-filter:none !important; border:1px solid var(--accent-dim) !important; }
 html.skin-droid .inv-bar > .row.wrap{ display:grid; grid-template-columns:repeat(4, 1fr); gap:4px; width:100%; }
-html.skin-droid .inv-bar > .row.wrap > .btn{ padding:6px 2px !important; font-size:10.5px; letter-spacing:.04em; justify-content:center; white-space:normal; line-height:1.1; text-align:center; }
+html.skin-droid .inv-bar > .row.wrap > .btn{ padding:6px 2px !important; font-size:10.5px; letter-spacing:.04em; justify-content:center; white-space:normal; line-height:1.1; text-align:center; gap:4px; }
+html.skin-droid .inv-bar .btn span svg{ width:13px; height:13px; }   /* the sub-nav's own narrower cell */
 html.skin-droid .inv-bar > div[style*="flex-direction: column"]{ align-items:stretch !important; width:100%; }
 html.skin-droid .inv-bar > div[style*="flex-direction: column"] > .row.wrap{ justify-content:flex-start !important; }
 html.skin-droid .inv-bar > div[style*="flex-direction: column"] input{ flex:1 1 60px; width:auto !important; min-width:0; }
