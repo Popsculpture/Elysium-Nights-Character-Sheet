@@ -1534,7 +1534,16 @@ html.skin-droid .inv-bar > div[style*="flex-direction: column"] > .row.wrap{ jus
    inside this column, and a descendant selector would reach into them: the amount field would
    take a 60px flex basis down the panel's column axis, and the panel's own buttons would stretch. */
 html.skin-droid .inv-bar > div[style*="flex-direction: column"] > .row.wrap > .btn{ flex:1 1 auto; justify-content:center; }
-html.skin-droid .inv-bar .wallet-pop{ font-size:18px !important; }   /* the totals are the readout; the .pop-btn floor above would shrink them to 13px */
+/* The totals are pop-btns, so they never picked up the frame every other button in this bar wears
+   and sat as two loose pills above SPLIT and BILLS. Here they split their row and take the skin's
+   chamfer and height. Their own border stays: gold and flow are what say which currency is which,
+   and the inline background is left alone so the lit state still reads when a popover is open. */
+html.skin-droid .inv-bar > div[style*="flex-direction: column"] > .row.wrap > .pop-anchor{ flex:1 1 0; min-width:0; }
+html.skin-droid .inv-bar .wallet-pop{
+  font-size:18px !important;   /* the totals are the readout; the .pop-btn floor above would shrink them to 13px */
+  width:100%; min-height:36px; display:flex; align-items:center; justify-content:center;
+  clip-path:polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+}
 /* item cards */
 html.skin-droid .mkt-info{ flex-wrap:wrap !important; gap:8px !important; }
 html.skin-droid .mkt-stats{ flex:1 1 100% !important; }

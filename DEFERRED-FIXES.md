@@ -8085,6 +8085,40 @@ Verified in the browser at 375px on #GRID (cyan) and Elysium Nights (gold): word
 box around it, and the whole header is visibly shorter than before. Confirmed Classic and '98
 untouched, both keep their own separate `#active-name` treatment. Fresh tab, no console errors.
 
+## SPLIT wears the author's Glimmer money bag, 2026-09-06
+
+The ÷ glyph on the wallet bar's SPLIT button becomes the author's money bag, path verbatim. No
+`fill-rule` here, deliberately: the source declares none, so the bag and the G nested inside it are
+drawn nonzero, and forcing evenodd (as BILLS legitimately needs) would punch holes he never drew.
+The raster confirms it, the G reads as a dark cut in a light bag at every size.
+
+Same caveat as BILLS about the G, and a better outcome. At the button's real 11px the G is an
+indistinct blot and only starts reading around 20px. The difference is the silhouette: a tied bag
+with a rounded body is unmistakable at 11px in a way the price list's rectangle is not, so this one
+carries its meaning at button size whether or not the G resolves.
+
+Verified in all three skins: takes the button's colour, 11px on Classic and '98, 13px on
+#GRIDroid, where it now sits in the framed row built in the entry below. No console errors.
+
+## The wallet totals take the bar's frame on #GRIDroid, 2026-09-06
+
+They were the odd ones out: two loose pills sized to their own text, sitting above a row of
+chamfered full-width buttons. The cause is that they are `.pop-btn`, not `.btn`, so none of the
+skin's button rules ever reached them, including the one that makes a `.pop-anchor`'s button fill
+its cell (that rule names `.btn`). Now their anchors split the row at `flex:1 1 0` and the buttons
+take the skin's 8px chamfer and its 36px small-button height, which lands them at 161px beside
+SPLIT at 157 and BILLS at 167, all four the same height.
+
+Left deliberately alone: each button's own border colour, since gold and flow are what say which
+currency is which, and the inline background, so the lit tint still reads while a popover is open.
+Scoped to `.inv-bar` on this skin only, because Classic and '98 lay that bar out as a row with the
+sub-tabs left and the wallet right, where stretching the totals would be wrong.
+
+Verified: on #GRIDroid the two totals and the two buttons below them now match in height and share
+the row evenly, the popover still opens as that skin's bottom sheet through the new clip, and a
+credit and debit through it still move the balance and hand it back. Classic and '98 measured
+unchanged, content-sized at 27px tall with no clip. No console errors.
+
 ## BILLS wears the author's price list, 2026-09-06
 
 The ▤ glyph on the wallet bar's BILLS button becomes the author's price list, the one he built by
