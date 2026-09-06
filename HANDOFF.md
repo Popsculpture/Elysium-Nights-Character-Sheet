@@ -93,8 +93,9 @@ Bypass wired into the unarmed engine, and a `migrate()` hardening pass.
   and the desktop's three toggles in `en_wall_dim_v1`, `en_wall_shadow_v1` and `en_wall_glow_v1`. Presets are listed in `app/data/wallpapers.js` and sit
   in `app/img/wallpapers`. None of it rides a character or an export.
 - Skins are CSS, plus a few HOOKS in the modules: `.mkt-*` and `.inv-sub[data-sub]` in
-  inventory.js for the '98 Explorer, `data-sub` on every tab (each TABS entry's `sub`) for
-  #GRIDroid's app-list subtitles, and `html.rail-open`, which app.js toggles when the open tab is
+  inventory.js for the '98 Explorer, `data-sub` and `data-tab` on every tab (each TABS entry's
+  `sub` and `key`) for #GRIDroid's app-list subtitles and for reaching one named tab without
+  counting children, and `html.rail-open`, which app.js toggles when the open tab is
   tapped again on #GRIDroid only (so that skin can fold and unfold its app list; every other skin
   keeps re-tapping #PRINT as the shortcut to Advance).
 - #GRIDroid's layout collapse reaches most elements through attribute-substring selectors on the

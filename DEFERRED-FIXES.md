@@ -8285,6 +8285,29 @@ Raster-checked at true size on all three skins, magnified 24x with smoothing off
 helps rather than hurts legibility: the contact ridges are 1.5x wider and stay six separate
 strokes at '98's 11px, and the `i` reads at every size.
 
+Widened art was not the whole fix on the phone. Even at 0.762 the stick drew 15.2px across the
+shared 20px glyph box while every neighbour drew the full 20, so in #GRIDroid's app list it was
+still the small one. That skin has room the others do not: the icon cell is a 38px bordered
+square holding a 20px glyph, nine pixels of air on each side. Codex alone goes to 26px there,
+which puts its ink at 19.8px wide, level with the rest, and still leaves six pixels of air.
+Candidates were rendered into the real rail at 20, 24, 26 and 28 and compared against the
+fingerprint and the archive box: 24 was still short, 28 overpowered them.
+
+Classic and '98 are left alone, and not out of caution. Their glyph sits inline in a text line,
+so growing it grows the line box and the whole tab bar: measured headroom is one pixel on Classic
+(13 to 14) and five on '98 (11 to 16, past which it clips the 20px row).
+
+Reaching one tab needed a hook. `renderTabs` now writes `data-tab` with each TABS entry's key
+beside the existing `data-sub`, so the rule is
+`html.skin-droid .os-tab[data-tab="codex"] > span svg`. The alternatives were both worse: an
+`:nth-child` would break the moment the rail's order changed, and matching the icon's own viewBox
+would silently stop working the next time the art is recut. The `sub` stays conditional in that
+dataset object, because `node.dataset[k] = undefined` writes the string "undefined".
+
+Verified at 375px: all eight rail rows still 52px tall with a 38px cell, only Codex's glyph at
+26px, no overflow of its cell, folded and unfolded both correct, Classic still 13px and '98 still
+11px, no console errors.
+
 
 ## The collapse caret moved behind the name it labels, every skin, 2026-09-06
 

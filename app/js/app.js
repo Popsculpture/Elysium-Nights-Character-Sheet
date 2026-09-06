@@ -166,9 +166,11 @@ EN.app = (function () {
         // falls through to the tab itself, which is where the reader wants to go anyway
         var badge = t.badge ? t.badge() : 0;
         if (badge && t.key !== LAST[portal]) railAttn = true;
-        // data-sub is a skin hook: #GRIDroid prints it under the label as the app row's subtitle
+        // data-sub is a skin hook: #GRIDroid prints it under the label as the app row's subtitle.
+        // data-tab names the tab so a skin can reach one row without counting children; the sub
+        // stays conditional, since dataset would otherwise write the string "undefined".
         scroll.appendChild(el("div.os-tab" + (t.key === LAST[portal] ? ".active" : ""), {
-          dataset: t.sub ? { sub: t.sub } : null,
+          dataset: t.sub ? { tab: t.key, sub: t.sub } : { tab: t.key },
           onclick: function () {
             // #GRIDroid draws the rail as a phone's app list, folded to the open app: tapping
             // that app unfolds or folds the list instead of re-opening it (so #PRINT's

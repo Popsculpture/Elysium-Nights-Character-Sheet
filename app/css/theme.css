@@ -1223,6 +1223,13 @@ html.skin-droid .os-tab{
   clip-path:polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
 }
 html.skin-droid .os-tab > span svg{ width:20px; height:20px; vertical-align:middle; }   /* the icon cell's glyph size */
+/* The Codex stick is the one icon that is not roughly square: its art is 0.762 as wide as it
+   is tall, where every other tab icon sits between 0.97 and 1.12. In a square glyph box the
+   height binds and the width follows, so at the shared 20px it drew 15.2px wide against the
+   others' 20 and read as the small one in the list. 26px puts its ink at 19.8px wide, level
+   with them, and still leaves 6px of air on each side inside the 38px cell. The other skins
+   have no room to do the same: Classic's glyph sits in a text line and grows the tab bar. */
+html.skin-droid .os-tab[data-tab="codex"] > span svg{ width:26px; height:26px; }
 html.skin-droid .os-tab > span{
   grid-row:1 / 3; width:38px; height:38px; display:flex; align-items:center; justify-content:center;
   font-size:18px; color:var(--accent); border:1px solid var(--accent-dim); background:var(--bg1);
