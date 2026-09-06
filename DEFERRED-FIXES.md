@@ -7719,6 +7719,16 @@ both counts: the rail runs onSelect on every tap, on every skin. The rest sheets
 visibility rather than display, so a scrolled list keeps its place and a focused field its focus
 across a snap-back. And the pill's chamfer now cuts the same corners as the skin's buttons.
 
+**On hardware, 2026-09-05.** The author's first report from a Pixel 6 Pro: swiping right felt
+less stable than swiping left. The gesture code is mirror-symmetric, so the asymmetry is the
+phone's. Android's gesture navigation owns a strip along both edges for Back, and Chrome on
+Android adds its own swipe-from-the-left-to-go-back overscroll, which is the one that takes a
+drag begun near the left edge halfway through; leftward swipes from the right edge are Forward,
+which does nothing without forward history, so they never fight. Two changes: the phone skin sets
+`overscroll-behavior-x:none` on html and body, which switches Chrome's gesture off (iOS ignores
+it), and the module now refuses to start a gesture within 24px of either screen edge, so a drag
+never begins in the strip the phone owns. Swipes that start in the body of the page are untouched.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

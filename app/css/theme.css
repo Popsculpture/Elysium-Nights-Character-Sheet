@@ -1208,6 +1208,12 @@ html.skin-droid body.swiping-tabs .pop-anchor > div[style*="position: absolute"]
    stays cancelable and ours, instead of the browser starting its own scroll at a slop smaller
    than the deadzone and every later move arriving too late to claim */
 html.skin-droid .os-main{ touch-action:pan-y pinch-zoom; }
+/* Chrome on Android turns a rightward pull at the left of the page into Back through its own
+   overscroll gesture, which is what stole a swipe halfway through on the author's Pixel; this
+   switches that off. It is on both html and body because which one the browser reads the
+   viewport's value from has moved between versions. iOS ignores it, and the module's own edge
+   zone covers what it can there. */
+html.skin-droid, html.skin-droid body{ overscroll-behavior-x:none; }
 html.skin-droid .swipe-indicator-right{ right:calc(var(--dr-l) + 16px); }
 html.skin-droid .swipe-indicator-left{ left:calc(var(--dr-l) + 16px); }
 html.skin-droid .swipe-indicator-arrow{ font-size:15px; line-height:1; }

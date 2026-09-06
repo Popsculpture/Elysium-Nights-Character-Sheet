@@ -56,6 +56,7 @@ EN.swipe = (function () {
       flickVelocity: num(opts.flickVelocity, 0.5),   // px per ms
       flickMinDist: num(opts.flickMinDist, 30),
       holdMs: num(opts.holdMs, 100),                 // a pause this long before release means it was a drag, not a flick
+      edgeZone: num(opts.edgeZone, 24),              // the strip along each screen edge that belongs to the phone (see inEdgeZone)
       edgeResist: num(opts.edgeResist, 0.3),         // rubber-band damping where there is no neighbour
       edgeMax: num(opts.edgeMax, 80),                // and its cap, so it cannot run away
       commitMs: num(opts.commitMs, 180),
@@ -156,6 +157,15 @@ EN.swipe = (function () {
        the containing block for its fixed descendants they would slide off with it, still open.
        Checked by computed style, so an overlay fixed by the stylesheet counts as much as one
        fixed inline, which is the case an exclude selector on the style attribute missed. */
+    /* The strip along each screen edge belongs to the phone. On Android and iOS a swipe inward
+       from it is the system's Back (and Chrome's own swipe-to-go-back on top), which no page can
+       intercept, so a drag begun there was ours for a moment and then the phone's, which felt
+       like a swipe that could not make up its mind. A gesture never starts in it. Measured from
+       the viewport's edge, not the container's, because the phone measures from the glass. */
+    function inEdgeZone(t) {
+      var w = window.innerWidth || 0;
+      return CFG.edgeZone > 0 && (t.clientX < CFG.edgeZone || t.clientX > w - CFG.edgeZone);
+    }
     function insideFixed(node) {
       for (var el = node; el && el !== container && el.nodeType === 1; el = el.parentElement) {
         if (getComputedStyle(el).position === "fixed") return true;
@@ -198,12 +208,12 @@ EN.swipe = (function () {
       axis = null;
       shownDir = 0;
       var ok = false;
+      var t = e.touches.length === 1 ? e.touches[0] : null;
       try {
-        ok = !animating && e.touches.length === 1 && isEnabled() && !(e.target.closest && e.target.closest(CFG.exclude)) && !insideFixed(e.target);
+        ok = !animating && !!t && isEnabled() && !inEdgeZone(t) && !(e.target.closest && e.target.closest(CFG.exclude)) && !insideFixed(e.target);
       } catch (err) { ok = false; }
       active = ok;
       if (!active) return;
-      var t = e.touches[0];
       touchId = t.identifier;
       startX = lastX = t.clientX;
       startY = t.clientY;
