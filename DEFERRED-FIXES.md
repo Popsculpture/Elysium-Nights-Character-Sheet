@@ -7934,6 +7934,26 @@ and held up clearly at both the rail's size and #GRIDroid's 20px cell; that one 
 `ICON_GARAGE`, on the same `svg` field the Impact Table and Arms Table swaps added to `BENCHES`
 moments earlier. Arms Table, Impact Table, Tech Bay and Fabrication keep their own glyphs.
 
+## Fabrication wears the author's icon, and a color bug that predates it, 2026-09-06
+
+Author's ask: use a 3D printer for Fabrication. The game's own copy already calls this bench a
+Portable Fabrication Rig that prints parts from stock, so the art matches the fiction. It was
+checked against the actual rail before committing, the same way #GRID, Social and Garage were:
+the printer's shape is bold enough to survive the shrink, though not as crisp as the pistol or
+key, since it carries more internal linework (ports, feet, small bolt circles); it reads as a
+distinct boxy machine rather than the two-cars icon's smudge.
+
+That review turned up a real bug, unrelated to which icon Fabrication wears. Its selected state
+was invisible on #GRIDroid: `BENCHES` gave Fabrication `color: var(--accent)`, and #GRIDroid's
+`.btn.primary` rule fills a selected button's background with that same `var(--accent)`, so the
+label (and now the icon) painted the exact color of the pill behind it. Confirmed this predates
+the icon swap entirely: it is a pure color-token collision, and would have made the plain text
+"Fabrication" just as invisible. None of the other four benches collide, since each already
+carries its own distinct token (ember, success, flow, gold). Fixed by retinting Fabrication to
+`var(--danger)`, which nothing else in the bench row uses and which reads with good contrast
+against the accent-cyan background; the change is fully scoped to the one `BENCHES` entry; a
+grep for its color used elsewhere found nothing to update.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from
