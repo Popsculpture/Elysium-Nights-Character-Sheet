@@ -242,7 +242,7 @@ EN.gridView = (function () {
     return el("div.feature", { style: { borderLeftColor: castable ? color : "var(--border2)", opacity: castable ? 1 : .6 } }, [
       el("div.row.between", { style: { alignItems: "center", gap: "8px" } }, [
         el("span", { style: { fontWeight: 600, fontSize: "13px", cursor: "pointer" }, onclick: function () { _open[key] = !open; EN.app.render(); } },
-          [el("span.collapse-caret", { text: open ? "▾ " : "▸ " }), document.createTextNode(cy.name)]),
+          EN.ui.nameCaret(cy.name, open)),
         el("div.row.wrap", { style: { gap: "6px", alignItems: "center", justifyContent: "flex-end" } }, [
           el("span.chip", { style: { fontSize: "9px", color: color, borderColor: color }, title: cy.cat + " · " + cy.sub }, "CX " + cx),
           cy.signature ? el("span.chip", { style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" }, title: "Signature cipher: flat 1 Bandwidth" }, "SIG") : null,
@@ -306,7 +306,7 @@ EN.gridView = (function () {
           rows.push(el("div.feature", { style: { borderLeftColor: "var(--accent)" } }, [
             el("div.row.between", { style: { alignItems: "center", gap: "8px" } }, [
               el("span", { style: { fontWeight: 600, fontSize: "13px", cursor: "pointer" }, onclick: function () { _open[k] = !open; EN.app.render(); } },
-                [el("span.collapse-caret", { text: open ? "▾ " : "▸ " }), document.createTextNode(ab.name)]),
+                EN.ui.nameCaret(ab.name, open)),
               el("div.row", { style: { gap: "6px", alignItems: "center" } }, [
                 ab.action ? el("span.chip", { style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" } }, ab.action.replace(/ Action$/, "")) : null,
                 el("span.chip", { style: { fontSize: "9px", color: "var(--accent)", borderColor: "var(--accent)" } }, cost + " BW"),

@@ -107,6 +107,29 @@ EN.ui = (function () {
     return p;
   }
 
+  /* A name followed by its collapse caret, with the caret tied to the last word.
+
+     The caret is an atomic inline box, so the browser keeps a line-break opportunity in front of
+     it whatever precedes it, and at the widths where a name just fills its line the caret drops
+     alone onto the next one, sitting under the words instead of beside them. Measured on the stash
+     cards and the #GRID cipher rows: four to eleven orphans between 300px and 380px, and none in
+     the pre-change order. Binding the final word and the caret inside one nowrap span makes the
+     two wrap together, and leaves every earlier word free to wrap as it did.
+
+     Returns an ARRAY for an el() children list, so call sites concat their chips onto it rather
+     than nesting it (append flattens one level only). `open` picks the glyph. */
+  function nameCaret(name, open) {
+    name = String(name == null ? "" : name);
+    var cut = name.search(/\S+$/);
+    var lead = cut > 0 ? name.slice(0, cut) : "";
+    var tail = cut >= 0 ? name.slice(cut) : name;
+    var tie = el("span", { style: { whiteSpace: "nowrap" } }, [
+      document.createTextNode(tail + "\u00a0"),
+      el("span.collapse-caret", { text: open ? "\u25be" : "\u25b8" })
+    ]);
+    return lead ? [document.createTextNode(lead), tie] : [tie];
+  }
+
   function renderText(text) {
     if (!text) return el("p", { text: "" });
     var blocks = text.split("\n\n");
@@ -521,7 +544,7 @@ EN.ui = (function () {
     }, armed ? (opts.armedLabel || "SURE?") : opts.label);
   }
 
-  return { el: el, append: append, clear: clear, panel: panel, sectionTitle: sectionTitle, stat: stat, toast: toast, renderText: renderText, applyInline: applyInline, proseP: proseP,
+  return { el: el, append: append, clear: clear, panel: panel, sectionTitle: sectionTitle, stat: stat, toast: toast, renderText: renderText, applyInline: applyInline, proseP: proseP, nameCaret: nameCaret,
            currencyGlyphsOk: currencyGlyphsOk, substituteCurrencyGlyphs: substituteCurrencyGlyphs,
            dieFace: dieFace, dieFaceSvg: dieFaceSvg, d20Face: d20Face, animatePoolRoll: animatePoolRoll, playFiled: playFiled,
            armButton: armButton, disarm: disarm, isArmed: isArmed };

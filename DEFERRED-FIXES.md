@@ -8246,6 +8246,100 @@ the row evenly, the popover still opens as that skin's bottom sheet through the 
 credit and debit through it still move the balance and hand it back. Classic and '98 measured
 unchanged, content-sized at 27px tall with no clip. No console errors.
 
+## The collapse caret moved behind the name it labels, every skin, 2026-09-06
+
+Author's ask, on all three skins: `span.collapse-caret` goes after the name instead of before it.
+A caret is a state readout, not a bullet, so it belongs where the eye lands after reading the thing
+it describes. The device head in combat.js had already moved for the same reason; this is the other
+twenty-one sites, across builder.js, codex.js, combat.js, grid.js and inventory.js.
+
+Eight sites were already trailing and were left alone. Five of those put the caret at the FAR RIGHT
+of the row, past a `flex:1` rule line (Actions in Combat, How Active Defenses work, the Flow and
+#GRID section heads, the Workbench project heads). They are after the name, which is what was
+asked, but not snug against it the way the twenty-one now are. That is a consistency question for
+the author, not a defect, and tightening them is a one-line move each.
+
+Two shapes needed more than a swap:
+
+- Inline sites, where caret and name are siblings inside a plain span, separated by a literal space
+  written as either `" " + name` or a caret glyph spelled `"▾ "`. The space had to move to the
+  other side of the name, and the space-padded glyphs are gone.
+- Two rows (builder.js openArchitectureCard, inventory.js the same combos) whose name span carries
+  `flex:1` so the chips are pushed right. Putting the caret after that span would have flung it to
+  the far right of the row, so it is nested INSIDE the span after the text instead. The span went
+  from `text:` to a children array to allow it.
+
+One real regression, found by measuring rather than looking. On #GRIDroid, `.panel-h` wraps so that
+a `.panel-hr` controls block can take a row of its own. A title wide enough to fill the row used to
+wrap its own text with the caret beside it on line one; with the caret trailing, the title took the
+whole line and the 13px caret wrapped underneath, starting to the LEFT of where the title starts.
+Codex's "Social Consequences & Cost Tracks" wants 285px of a 325px row, and the caret plus its gap
+wants 23 more. `html.skin-droid .panel-h.clickable h3{ max-width:calc(100% - 50px); }` caps the
+title so the caret keeps its seat and the title wraps inside itself, which is what it did before.
+Scoped to `.clickable` because those are exactly the heads that carry a caret. That head is now
+45px, down from 52px.
+
+A note on measuring this, because two probes lied in opposite directions. Testing "did the caret
+wrap" as a vertical offset between the caret's box and the name's box reports eleven FALSE
+positives, since a 13px inline-block at 11px and text at 14px simply do not share a box top.
+Tightening it to "below the name's bottom AND left of where the name begins" then reported zero,
+which was a false NEGATIVE: the caret orphans directly under the name's own left edge, so the
+second clause threw away every real case. The test that holds is the caret's box starting at or
+below the bottom of the name's LAST line box (getClientRects, not getBoundingClientRect, so a
+wrapped name is measured by its final line). Everything below was found with that test, run
+against the pre-change DOM order as a control.
+
+A four-lens adversarial review of the diff (twenty-eight agents, four reviewers and their
+refutation panels) surfaced five real defects that the first pass missed. All five are fixed here,
+and each was re-verified by measurement in the running app rather than by reading:
+
+1. The Gray Market's category heads were never in the sweep. They do not build a
+   `span.collapse-caret` at all: `EN.ui.panel` writes the title, then the market overwrites the h3
+   with `h3.textContent = (open ? "▾ " : "▸ ") + c.title`. A glyph inside the h3's own text is
+   invisible to a grep for the class, so sixteen heads still led their title while the sub-labels
+   directly beneath them, which the sweep DID flip, trailed theirs. Now an element after the h3,
+   matching codex.js's `[h3, caret, tag]` order. This also mattered because the new droid
+   `max-width:calc(100% - 50px)` reserves room for a trailing caret on `.panel-h.clickable h3`,
+   and these heads were paying that 50px for a caret that was not a sibling.
+
+2. The caret could wrap onto a line of its own. A caret is an atomic inline box, so the browser
+   keeps a break opportunity in front of it whatever precedes it, and at the widths where a name
+   just fills its line the caret drops alone underneath. Measured on the stash cards and the #GRID
+   cipher rows: eleven orphans at 300px, six at 340, four at 380, against zero in the pre-change
+   order at the same widths. Fixed once rather than per site: `EN.ui.nameCaret(name, open)` ties
+   the final word and the caret inside a nowrap span and returns an array for an `el()` children
+   list. Eleven inline sites use it, so the whole class of bug is closed, not the two that
+   happened to show it.
+
+3. The Open Architecture rows' body text hung 19px off its own head. That paragraph's
+   `padding-left:23px` was tracking the head's old text origin, which the leading caret pushed to
+   4 + 13 + 8 = 25px. With the caret nested in the name span the head's text starts at 4px and the
+   body never moved. Measured before the fix at head 53px against body 72px; both now sit at 35px
+   in the same test. Both copies changed, builder.js and inventory.js, so the two panels agree.
+
+4. The Active Defenses rows put the caret in the wrong company. The name sits in a fixed 52px
+   column, so a caret after that box landed 25.8px past "Dodge" and 30px past "Parry", while
+   staying a constant 9px from the ROLL button: it read as the button's caret, not the name's.
+   Nested into the name span, with the column floored at 66px so the buttons still line up. The
+   widest nested name measures 59.3px (Resurge), which 66 clears with room for a font that loads
+   differently.
+
+5. The house-rule comment in combat.js overstated its reach and undercounted the sweep. Corrected.
+
+Refuted and deliberately not acted on: that the eight far-right `.section-title` carets contradict
+the rule (they trail the name, which is what was asked), that face.js's glyph buttons are in scope
+(face.js is not in the diff and they are not collapse carets), and that the `.section-title` label
+spaces were load-bearing (that container is flex with a gap, so those spaces were inert).
+
+Verified after the fixes on two example records across Classic, '98 and #GRIDroid, at 300px, 340px,
+380px and the natural width: zero carets still leading their name, zero orphaned anywhere, no page
+overflow, no console errors. Sites exercised deliberately rather than assumed: the stash item cards
+and section heads, chrome cards, the Open Architecture combos in both their Inventory and #PRINT
+renderings (reached by granting the codebreaker example the Open Architecture feature in memory),
+the #GRID cipher and ability cards, the Codex reference panels and condition list, all five Actions
+sub-tabs, and #PRINT steps five through seven.
+
+
 ## #GRIDroid drops the panel head's sub-label, 2026-09-06
 
 The head's `.tag` is the small right-hand aside beside a panel title: "BIOMETRIC PROFILE" next to

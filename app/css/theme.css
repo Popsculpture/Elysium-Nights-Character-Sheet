@@ -1425,6 +1425,13 @@ html.skin-droid .row{ flex-wrap:wrap; }
 html.skin-droid .row.between.wrap > .row{ flex:1 1 100%; min-width:0; }
 html.skin-droid .panel-h{ flex-wrap:wrap; row-gap:6px; }
 html.skin-droid .panel-h h3{ min-width:0; overflow-wrap:anywhere; }
+/* The caret trails the title now, and this skin lets .panel-h wrap so a .panel-hr controls
+   block can take a row of its own. A title wide enough to fill the line therefore pushed the
+   13px caret onto a second row, orphaned under the words instead of sitting beside them:
+   Codex's "Social Consequences & Cost Tracks" needs 285px of a 325px row, and the caret plus
+   its gap wants 23 more. Capping the title at the row less that much makes the title wrap
+   inside itself, which is exactly what it did before the caret moved. */
+html.skin-droid .panel-h.clickable h3{ max-width:calc(100% - 50px); }
 html.skin-droid .panel-h .panel-hr{ flex:1 1 100%; margin-left:0 !important; justify-content:flex-start !important; }
 html.skin-droid .panel-h select{ flex:1 1 100%; width:100% !important; min-width:0 !important; }
 html.skin-droid .panel-h.clickable{ min-height:44px; }

@@ -13,7 +13,7 @@ EN.codexView = (function () {
     var open = !!_open[id];
     return el("div.panel", { style: { marginBottom: "12px" } }, [
       el("div.panel-h.clickable", { onclick: function () { _open[id] = !open; EN.app.render(); } }, [
-        el("span.collapse-caret", { text: open ? "▾" : "▸" }), el("h3", { text: title }), tag ? el("span.tag", { text: tag }) : null
+        el("h3", { text: title }), el("span.collapse-caret", { text: open ? "▾" : "▸" }), tag ? el("span.tag", { text: tag }) : null
       ]),
       el("div.panel-b", open ? null : { style: { display: "none" } }, body)
     ]);
@@ -397,7 +397,7 @@ EN.codexView = (function () {
           var id = "cond-" + c.name;
           listBox.appendChild(el("div.feature", { style: { borderLeftColor: "var(--warn)" } }, [
             el("h4", { style: { cursor: "pointer" }, onclick: function () { _open[id] = !_open[id]; renderList(); } }, [
-              el("span", null, [el("span.collapse-caret", { text: _open[id] ? "▾" : "▸" }), document.createTextNode(" " + c.name)]),
+              el("span", null, EN.ui.nameCaret(c.name, _open[id])),
               el("span.src", { text: c.summary ? c.summary.slice(0, 60) : "" })
             ]),
             _open[id] ? el("p", { text: c.text || c.summary || "" }) : null

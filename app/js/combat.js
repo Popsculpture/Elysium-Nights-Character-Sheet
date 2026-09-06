@@ -2224,10 +2224,11 @@ EN.combatView = (function () {
       style: { margin: "12px 0 4px", cursor: "pointer" },
       onclick: function () { _open[key] = !open; EN.app.render(); }
     }, [
-      /* The caret trails the name here rather than leading it. The row already opens with the
-         section mark, and two glyphs ahead of the first word read as clutter; several rows in
-         this app (Actions in Combat, the Flow and #GRID heads) already carry theirs after the
-         title, so this is the house's other convention rather than a new one. */
+      /* The caret trails the name, which is now the rule for every collapse caret in the app: it
+         is a state readout, not a bullet, so it belongs where the eye lands after reading the
+         thing it describes. This head moved first, in the device-header pass; twenty-two
+         followed. The exceptions are the eight .section-title rows whose caret sits at the far
+         right past a flex:1 rule line, which trail the name too, just not snug against it. */
       document.createTextNode(title),
       el("span.collapse-caret", { text: open ? "\u25be" : "\u25b8" }),
       el("span.line"),
@@ -2489,9 +2490,9 @@ EN.combatView = (function () {
     }, "USE") : null;
     return el("div.feature", { style: { borderLeftColor: COST_COLOR[cost] || "var(--border2)" } }, [
       el("h4", { style: { cursor: "pointer" }, onclick: function () { _open[id] = !open; EN.app.render(); } }, [
-        el("span", null, [el("span.collapse-caret", { text: open ? "▾" : "▸" }), document.createTextNode(" " + name),
+        el("span", null, EN.ui.nameCaret(name, open).concat([
           el("span.chip", { style: { marginLeft: "8px", fontSize: "9.5px", color: COST_COLOR[cost], borderColor: COST_COLOR[cost] }, text: cost.toUpperCase() }),
-          chip ? el("span.chip", { title: "Spends the class resource", style: { marginLeft: "4px", fontSize: "9.5px", color: chipResourceColor(chip), borderColor: chipResourceColor(chip) }, text: chip }) : null]),
+          chip ? el("span.chip", { title: "Spends the class resource", style: { marginLeft: "4px", fontSize: "9.5px", color: chipResourceColor(chip), borderColor: chipResourceColor(chip) }, text: chip }) : null])),
         useBtn
       ]),
       open ? el("div", null, [
@@ -3541,7 +3542,7 @@ EN.combatView = (function () {
       rightKids.push(el("button.btn.sm.danger", { style: { padding: "1px 8px" }, onclick: function (e) { e.stopPropagation(); setCondLevel(name, 0); } }, "✕ Remove"));
       return el("div.feature", { style: { borderLeftColor: severe ? "var(--danger)" : "var(--warn)" } }, [
         el("h4", { style: { cursor: "pointer" }, onclick: function () { _open["cond-" + name] = !open; EN.app.render(); } }, [
-          el("span", null, [el("span.collapse-caret", { text: open ? "▾" : "▸" }), document.createTextNode(" " + title)]),
+          el("span", null, EN.ui.nameCaret(title, open)),
           el("span", { style: { display: "flex", alignItems: "center", gap: "8px" } }, rightKids)
         ]),
         !open ? el("p.help", { style: { margin: 0, color: "var(--text2)" }, text: (lv && lv.effects ? lv.effects[lvl - 1] : (info && info.summary) || "") }) : null,
@@ -4026,9 +4027,9 @@ EN.combatView = (function () {
       ]);
       return el("div.feature", { style: { borderLeftColor: a.important ? "var(--gold)" : "var(--border2)" } }, [
         el("h4", { style: { cursor: "pointer", flexWrap: "wrap", gap: "6px" }, onclick: function () { _open[id] = !open; EN.app.render(); } }, [
-          el("span", null, [el("span.collapse-caret", { text: open ? "▾" : "▸" }), document.createTextNode(" " + f.name),
+          el("span", null, EN.ui.nameCaret(f.name, open).concat([
             a.pinned ? el("span.chip", { style: { marginLeft: "8px", fontSize: "9px", color: "var(--accent)", borderColor: "var(--accent)" }, text: "PINNED" }) : null,
-            el("span.chip", { style: { marginLeft: "6px", fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" }, text: "PASSIVE" })]),
+            el("span.chip", { style: { marginLeft: "6px", fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" }, text: "PASSIVE" })])),
           el("span", { style: { display: "flex", alignItems: "center", gap: "8px", marginLeft: "auto" } }, [el("span.src", { text: f.src }), controls])
         ]),
         open ? EN.ui.renderText(f.text || "") : null,
@@ -4081,8 +4082,8 @@ EN.combatView = (function () {
       ch_(cf.uses, "var(--text2)"); ch_(cf.range && "Range " + cf.range, "var(--text2)"); ch_(cf.duration, "var(--text2)");
       return el("div.feature", { style: { borderLeftColor: "var(--gold)" } }, [
         el("h4", { style: { cursor: "pointer", flexWrap: "wrap", gap: "6px" }, onclick: function () { _open[id] = !open; EN.app.render(); } }, [
-          el("span", null, [el("span.collapse-caret", { text: open ? "▾" : "▸" }), document.createTextNode(" " + (cf.name || "Untitled Feature")),
-            el("span.chip", { style: { marginLeft: "6px", fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" }, text: "CUSTOM" })]),
+          el("span", null, EN.ui.nameCaret(cf.name || "Untitled Feature", open).concat([
+            el("span.chip", { style: { marginLeft: "6px", fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" }, text: "CUSTOM" })])),
           el("span.src", { text: cf.source || "" })
         ]),
         open && chips.length ? el("div.row.wrap", { style: { gap: "5px", margin: "2px 0 6px" } }, chips) : null,
@@ -4664,9 +4665,9 @@ EN.combatView = (function () {
         el("div.row.wrap", { style: { gap: "10px", alignItems: "center", cursor: "pointer" },
           title: loadOpen ? "Tap to collapse" : "Tap for the band scale and hauls",
           onclick: function () { _open["load-console"] = !loadOpen; EN.app.render(); } }, [
-          el("span.collapse-caret", { text: loadOpen ? "▾" : "▸" }),
           el("span.mono", { title: thTip, style: { fontSize: "18px", color: "var(--text)" },
             html: "LOAD " + enc.current + " <span style='font-size:12px;color:var(--text3)'>/ " + enc.budget + "</span>" }),
+          el("span.collapse-caret", { text: loadOpen ? "▾" : "▸" }),
           el("span.chip", { title: tierDef ? tierDef.effect : "Past any plausible loadout; this belongs on a cart, dolly, vehicle, or exoframe.",
             style: { fontSize: "9px", color: tierColor, borderColor: tierColor } }, (tierDef ? tierDef.name : enc.tier).toUpperCase() + " LOADOUT"),
           el("span.chip", { title: stateDef.effect || "", style: { fontSize: "9px", color: stateColor, borderColor: stateColor } }, (stateDef.name || enc.state || "").toUpperCase()),
@@ -4749,8 +4750,8 @@ EN.combatView = (function () {
           kids.push(el("div.section-title.clickable", {
             title: open ? "Collapse " + label : "Expand " + label,
             onclick: function () { _open[id] = !open; EN.app.render(); } }, [
+            document.createTextNode(label),
             el("span.collapse-caret", { text: open ? "▾" : "▸" }),
-            document.createTextNode(" " + label + " "),
             el("span.mono", { style: { fontSize: "10px", color: "var(--text3)" }, text: "(" + items.length + ")" }),
             el("span.line")
           ]));
@@ -5227,8 +5228,9 @@ EN.combatView = (function () {
           style: { gap: "9px", alignItems: "center", cursor: "pointer", padding: "7px 4px", borderBottom: "1px solid rgba(35,48,68,.5)" },
           onclick: function () { _open[id] = !open; EN.app.render(); }
         }, [
-          el("span.collapse-caret", { text: open ? "▾" : "▸" }),
-          el("span", { style: { fontWeight: 600, minWidth: "52px" }, text: def.name }),
+          // a 52px name column put the caret 15-32px past the last letter but a constant 9px
+          // from the ROLL button, so it read as the button's. Nested, it belongs to the name again.
+          el("span", { style: { fontWeight: 600, minWidth: "66px" } }, EN.ui.nameCaret(def.name, open)),
           el("button.btn.sm", { title: "Resolve " + def.name + " against an incoming hit",
             style: { flex: "0 0 auto", color: "var(--accent)", borderColor: "var(--accent)" },
             onclick: function (e) { e.stopPropagation(); openDefTray(defSpec(def.name)); } },

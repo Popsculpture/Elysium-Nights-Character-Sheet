@@ -607,9 +607,7 @@ EN.inventoryView = (function () {
     var traits = Array.isArray(it.traits) ? it.traits : [];
     var traitsId = id + "-traits", traitsOpen = !!_open[traitsId];
     var head = el("h4", { style: { cursor: "pointer" }, onclick: function () { _open[id] = !open; EN.app.render(); } }, [
-      el("span.mkt-name", null, [
-        el("span.collapse-caret", { text: open ? "▾" : "▸" }),
-        document.createTextNode(" " + it.name),
+      el("span.mkt-name", null, EN.ui.nameCaret(it.name, open).concat([
         (mode === "mkt" && ownedTotal > 0) ? tagChip("Owned ×" + ownedTotal, "var(--success)") : null,
         it.counted ? tagChip("Counted", "var(--ember)", "Counted, track every unit from purchase to spend") : null,
         it.cyber ? tagChip("◆ " + it.zone, "var(--accent)", "Interface Zone: " + it.zone) : null,
@@ -621,7 +619,7 @@ EN.inventoryView = (function () {
              : owned.leaseDue ? tagChip("⚠ PAYMENT DUE", "var(--danger)", "Installment due: " + fmtG(upkeepOf(it, owned)) + ". It grants none of its benefits until you pay.")
              : tagChip((owned.premium ? "PREMIUM · " : "LEASE · ") + leaseDaysOf(owned) + (leaseDaysOf(owned) === 1 ? " DAY" : " DAYS"), "var(--gold)", "Next installment " + fmtG(upkeepOf(it, owned)) + " in " + leaseDaysOf(owned) + " day(s); each Long Rest marks one day."))
           : tagChip("LEASED", "var(--ember)", "Leased, " + fmtG(it.price || 0) + " buy-in, " + fmtG(it.upkeep) + "/wk Upkeep. Lapse and it drops to its zero state.")) : null
-      ]),
+      ])),
       el("span.mkt-side", { style: { display: "inline-flex", alignItems: "baseline", gap: "10px", flexShrink: 0 } }, [
         el("span.mono.mkt-meta", { style: { fontSize: "10.5px", letterSpacing: ".03em" } }, [
           el("span", { style: { color: LEGAL_COLOR[it.legality] || "var(--text3)" }, text: it.legality }),
@@ -864,8 +862,8 @@ EN.inventoryView = (function () {
       body.push(el("div.section-title.clickable", {
         title: open ? "Collapse " + cat : "Expand " + cat,
         onclick: function () { _stashOpen[cat] = !open; EN.app.render(); } }, [
+        document.createTextNode(cat),
         el("span.collapse-caret", { text: open ? "▾" : "▸" }),
-        document.createTextNode(" " + cat + " "),
         el("span.mono", { style: { fontSize: "10px", color: "var(--text3)" }, text: "(" + list.length + ")" }),
         el("span.line")
       ]));
@@ -1078,7 +1076,7 @@ EN.inventoryView = (function () {
       }
       return el("div.feature", { style: { borderLeftColor: where === "installed" ? heatColor(cw.sp || 0) : "var(--border2)" } }, [
         el("h4", { style: { cursor: "pointer", flexWrap: "wrap", gap: "6px" }, onclick: function () { _open[oid] = !open; EN.app.render(); } }, [
-          el("span", null, [el("span.collapse-caret", { text: open ? "▾" : "▸" }), document.createTextNode(" " + cw.name)].concat(chips)),
+          el("span", null, EN.ui.nameCaret(cw.name, open).concat(chips)),
           actions
         ]),
         open && ENG().cyberEffect(cw) ? el("p.help", { style: { margin: "4px 0 0", color: "var(--accent)" }, text: ENG().cyberEffect(cw) }) : null,
@@ -1118,13 +1116,13 @@ EN.inventoryView = (function () {
       var oid = "coa-" + combo.key, open = !!_open[oid];
       return el("div", { style: { borderBottom: "1px solid rgba(35,48,68,.5)", borderLeft: integrated ? "2px solid var(--gold)" : "2px solid transparent" } }, [
         el("div.row.wrap", { style: { gap: "8px", alignItems: "center", cursor: "pointer", padding: "7px 4px" }, onclick: function () { _open[oid] = !open; EN.app.render(); } }, [
-          el("span.collapse-caret", { text: open ? "▾" : "▸" }),
-          el("span", { style: { flex: 1, minWidth: "150px", fontWeight: 600, color: integrated ? "var(--gold)" : "var(--text)" }, text: combo.feature + " + " + combo.cyberware }),
+          el("span", { style: { flex: 1, minWidth: "150px", fontWeight: 600, color: integrated ? "var(--gold)" : "var(--text)" } },
+            EN.ui.nameCaret(combo.feature + " + " + combo.cyberware, open)),
           tagChip(hasFeat ? "FEATURE ✓" : "NO FEATURE", hasFeat ? "var(--success)" : "var(--text3)"),
           tagChip(hasChrome ? "CHROME ✓" : "NO CHROME", hasChrome ? "var(--accent)" : "var(--text3)"),
           integrated ? tagChip("● INTEGRATED", "var(--gold)") : null
         ]),
-        open ? el("p", { style: { padding: "0 4px 9px 23px", margin: 0, color: "var(--text2)", fontSize: "13px", lineHeight: 1.45 }, text: combo.text }) : null
+        open ? el("p", { style: { padding: "0 4px 9px", margin: 0, color: "var(--text2)", fontSize: "13px", lineHeight: 1.45 }, text: combo.text }) : null
       ]);
     });
     return EN.ui.panel("Open Architecture", hasOA ? "NEXTGEN INTEGRATION · ACTIVE" : "REQUIRES THE OPEN ARCHITECTURE EVOLUTION", [
@@ -1369,8 +1367,8 @@ EN.inventoryView = (function () {
     var collapsibleSubLabel = function (text, key, isOpen, clickable) {
       return el("div.mkt-sublabel", { style: { margin: "10px 0 4px", fontFamily: "var(--disp)", fontSize: "11px", letterSpacing: ".16em", textTransform: "uppercase", color: "var(--text2)", display: "flex", alignItems: "center", gap: "7px", cursor: clickable ? "pointer" : "default" },
         onclick: clickable ? function () { _open[key] = !isOpen; EN.app.render(); } : null }, [
-        el("span.collapse-caret", { text: isOpen ? "▾" : "▸" }),
         el("span", { text: text }),
+        el("span.collapse-caret", { text: isOpen ? "▾" : "▸" }),
         el("span", { style: { flex: 1, height: "1px", background: "linear-gradient(90deg,var(--border),transparent)" } })
       ]);
     };
@@ -1421,7 +1419,10 @@ EN.inventoryView = (function () {
         head.classList.add("clickable");
         if (!anyFilter) head.onclick = function () { _panelOpen[c.key] = !_panelOpen[c.key]; EN.app.render(); };
         var h3 = head.querySelector("h3");
-        if (h3) h3.textContent = (open ? "▾ " : "▸ ") + c.title;
+        // EN.ui.panel already wrote c.title into the h3, so all this line ever added was a leading
+        // glyph. As a real element the caret trails the title and picks up the shared caret rules;
+        // written into the h3 text it was invisible to a sweep looking for span.collapse-caret.
+        if (h3) head.insertBefore(el("span.collapse-caret", { text: open ? "\u25be" : "\u25b8" }), h3.nextSibling);
       }
       if (!open && p.bodyEl) p.bodyEl.style.display = "none";   // tight collapsed panel (no empty body padding)
       blocks.push(p);

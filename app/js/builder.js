@@ -42,7 +42,7 @@ EN.builder = (function () {
   function collapsiblePanel(id, title, tag, bodyChildren, opts) {
     opts = opts || {};
     var collapsed = isCollapsed(id);
-    var head = [el("span.collapse-caret", { text: collapsed ? "▸" : "▾" }), el("h3", { text: title })];
+    var head = [el("h3", { text: title }), el("span.collapse-caret", { text: collapsed ? "▸" : "▾" })];
     if (tag) head.push(el("span.tag", { text: tag }));
     head.push(el("span.attn-spacer"));
     if (attnShown(id, opts.attention, opts.dismissKey)) head.push(attnDot(id, opts.dismissKey, opts.attentionTitle));
@@ -58,7 +58,7 @@ EN.builder = (function () {
   function collapsibleEntry(id, opts) {
     var collapsed = isCollapsed(id);
     var left = el("span", { style: { display: "flex", alignItems: "center", gap: "6px" } }, [
-      el("span.collapse-caret", { text: collapsed ? "▸" : "▾" }), document.createTextNode(opts.title)
+      document.createTextNode(opts.title), el("span.collapse-caret", { text: collapsed ? "▸" : "▾" })
     ]);
     var rightKids = [el("span.src", { text: opts.summary })];
     if (attnShown(id, opts.attention, opts.dismissKey)) rightKids.push(attnDot(id, opts.dismissKey, opts.attentionTitle));
@@ -1461,8 +1461,8 @@ EN.builder = (function () {
             return el("span.chip", { style: { fontSize: "10px", color: "var(--flow)", borderColor: "var(--flow)", opacity: active ? 1 : .7 }, text: f.name });
           }));
           var head = el("div.panel-h.clickable", { style: { flexWrap: "wrap", rowGap: "4px" }, onclick: function () { toggleCollapse(id); } }, [
-            el("span.collapse-caret", { text: collapsed ? "▸" : "▾" }),
-            el("h3", { style: { color: active ? "var(--text)" : "var(--text3)" }, text: "Level " + L })
+            el("h3", { style: { color: active ? "var(--text)" : "var(--text3)" }, text: "Level " + L }),
+            el("span.collapse-caret", { text: collapsed ? "▸" : "▾" })
           ].concat(featChips, [
             R.trainingPointLevels[L] ? el("span.chip", { style: { fontSize: "10px", color: "var(--warn)", borderColor: "var(--warn)" }, text: "+" + R.trainingPointLevels[L] + " Training Points" }) : null,
             el("span.attn-spacer"),
@@ -2023,7 +2023,7 @@ EN.builder = (function () {
       : milestoneTracker(ch);
     var advPanel = el("div.panel", null, [
       el("div.panel-h.clickable", { onclick: function () { toggleCollapse("advType"); } }, [
-        el("span.collapse-caret", { text: advCollapsed ? "▸" : "▾" }), el("h3", { text: "Advancement Type" }), el("span.attn-spacer"), modeToggle
+        el("h3", { text: "Advancement Type" }), el("span.collapse-caret", { text: advCollapsed ? "▸" : "▾" }), el("span.attn-spacer"), modeToggle
       ]),
       el("div.panel-b", advCollapsed ? { style: { display: "none" } } : null, [advBody])
     ]);
@@ -2246,14 +2246,15 @@ EN.builder = (function () {
       var integrated = hasOA && hasFeat && hasChrome;
       var head = el("div.row.wrap", { style: { gap: "8px", alignItems: "center", cursor: "pointer", padding: "7px 4px" },
         onclick: function () { toggleCollapse(id); } }, [
-        el("span.collapse-caret", { text: collapsed ? "▸" : "▾" }),
-        el("span", { style: { flex: 1, minWidth: "150px", fontWeight: 600, color: integrated ? "var(--gold)" : "var(--text)" }, text: combo.feature + " + " + combo.cyberware }),
+        el("span", { style: { flex: 1, minWidth: "150px", fontWeight: 600, color: integrated ? "var(--gold)" : "var(--text)" } },
+          EN.ui.nameCaret(combo.feature + " + " + combo.cyberware, !collapsed)),
         el("span.chip" + (hasFeat ? ".on" : ""), { title: hasFeat ? "You have this Lineage Feature" : "Requires the " + combo.feature + " Lineage Feature", text: hasFeat ? "FEATURE ✓" : "NO FEATURE" }),
         el("button.btn.sm" + (hasChrome ? ".primary" : ""), { title: "Mark whether the matching cyberware is installed (manual until Inventory tracks chrome)",
           onclick: function (e) { e.stopPropagation(); toggleChrome(ch, combo.cyberware); } }, hasChrome ? "✓ CHROME" : "+ CHROME"),
         integrated ? el("span.chip", { style: { color: "var(--gold)", borderColor: "var(--gold)", boxShadow: "0 0 10px rgba(255,207,92,.3)" }, text: "● INTEGRATED" }) : null
       ]);
-      var body = collapsed ? null : el("p", { style: { padding: "0 4px 9px 23px", margin: 0, color: "var(--text2)", fontSize: "13.5px", lineHeight: 1.45 }, text: combo.text });
+      // the 23px hanging indent tracked a LEADING caret; the head's name now starts at 4px
+      var body = collapsed ? null : el("p", { style: { padding: "0 4px 9px", margin: 0, color: "var(--text2)", fontSize: "13.5px", lineHeight: 1.45 }, text: combo.text });
       return el("div", { style: { borderBottom: "1px solid rgba(35,48,68,.5)", borderLeft: integrated ? "2px solid var(--gold)" : "2px solid transparent" } }, [head, body]);
     });
     return el("div.feature.lineage", { style: { marginTop: "8px" } }, [
