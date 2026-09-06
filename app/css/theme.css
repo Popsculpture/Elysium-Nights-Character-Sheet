@@ -605,20 +605,30 @@ html.skin-98{
   --bev-lo: #000;
   --bev-mid: var(--border);
   --sticky-top: 44px;         /* the rail is a taskbar at the bottom, so a sticky sub-header clears the top bar alone */
-  /* The three caption buttons (minimize, maximize, close), 56x14 in all, painted as fourteen
-     background layers so every color is the skin's own: three bevel rects per button in the
-     bevel and face tokens, then the glyphs in the ink token (a bar, a box, two diagonal stripes
-     for the close). Win98's 16x14 buttons, the first two touching and the close set apart.
-     Positions run from the RIGHT edge and the vertical center, so the same value sits on a
-     14px-tall panel pseudo and centered on a 26px title bar. Resolved here at the root, so a
-     descendant that remaps the palette (the '98 Explorer's light page) still gets the dark set. */
+  /* The three caption buttons (minimize, maximize, close), 56x14 in all. The bevel is nine
+     linear-gradient layers in the skin's own tokens, three per button: a lo square behind, a hi
+     square up and left of it, and the 12x10 face inset. Win98's 16x14 buttons, the first two
+     nearly touching and the close set apart, positioned from the RIGHT edge and the vertical
+     centre so one value sits on a 14px panel pseudo and centres on a 26px title bar.
+
+     The glyphs were five more gradient layers faking a bar, a box and two diagonals. They are now
+     the author's own window icons, drawn as one sprite over the three faces in the ink token.
+     Those icons are each a filled button square with the symbol knocked out, so the symbol had to
+     be lifted back out as a positive shape: for minimize and close that is the file's second
+     subpath (the bar, the X), and for maximize it is the whole icon kept as an evenodd knockout
+     and scaled down to glyph size, because that file's hole is the window's interior and filling
+     it would give a solid block rather than a frame. Each is placed by its measured bounding box,
+     scaled uniformly so nothing is stretched, and centred on its face; the minimize bar rides low
+     rather than centred, which is where Win98 put it.
+
+     Only the glyph colour is baked (#e9f1fb), because a data URI cannot resolve a custom property.
+     That one is safe and the others are not: --text is #e9f1fb on both palettes, while --bev-hi
+     and --bg3 do move (#34465f/#151c28 on Freelancer, #5b5480/#2e2a46 on Admin), which is why the
+     bevel and the face are still gradients and the face shows through maximize's window. If
+     --text ever moves, this sprite has to be repainted by hand. */
   --wb-hi:var(--bev-hi); --wb-lo:var(--bev-lo); --wb-face:var(--bg3); --wb-ink:var(--text);
   --win-btns:
-    linear-gradient(var(--wb-ink),var(--wb-ink)) right 46px top calc(50% + 3px) / 6px 2px no-repeat,
-    linear-gradient(var(--wb-face),var(--wb-face)) right 27px top calc(50% + .5px) / 7px 5px no-repeat,
-    linear-gradient(var(--wb-ink),var(--wb-ink)) right 26px center / 9px 8px no-repeat,
-    linear-gradient(45deg, transparent calc(50% - 1px), var(--wb-ink) calc(50% - 1px), var(--wb-ink) calc(50% + 1px), transparent calc(50% + 1px)) right 4px center / 8px 8px no-repeat,
-    linear-gradient(135deg, transparent calc(50% - 1px), var(--wb-ink) calc(50% - 1px), var(--wb-ink) calc(50% + 1px), transparent calc(50% + 1px)) right 4px center / 8px 8px no-repeat,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56 14' fill='%23e9f1fb'%3E%3Cg transform='translate(3.0674,1.7337) scale(0.080284)'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M20.602,78.674h81.675c1.52,0,2.756,1.115,2.756,2.479l0.002,18.713c0,1.36-1.24,2.477-2.758,2.477l-81.675-0.003 c-1.52,0-2.758-1.111-2.758-2.474V81.149C17.844,79.787,19.083,78.676,20.602,78.674L20.602,78.674z'/%3E%3C/g%3E%3Cg transform='translate(22.0000,3.0000) scale(0.065104)'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M12.996,0h96.887c7.148,0,12.997,5.849,12.997,12.997v96.887 c0,7.147-5.849,12.996-12.997,12.996H12.996C5.849,122.88,0,117.031,0,109.884V12.997C0,5.849,5.849,0,12.996,0L12.996,0z M110.555,27.728H12.325v72.436c0,5.717,4.674,10.391,10.391,10.391h77.448c5.717,0,10.391-4.674,10.391-10.391V27.728 L110.555,27.728z'/%3E%3C/g%3E%3Cg transform='translate(43.0812,2.0812) scale(0.080059)'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M12.801,91.163C11.036,92.928 11.036,95.823 12.801,97.588L25.292,110.079C27.057,111.844 29.952,111.844 31.717,110.079L61.44,80.356L91.163,110.079C92.928,111.844 95.823,111.844 97.588,110.079L110.079,97.588C111.844,95.823 111.844,92.928 110.079,91.163L80.356,61.44L110.079,31.717C111.844,29.952 111.844,27.057 110.079,25.292L97.588,12.801C95.823,11.036 92.928,11.036 91.163,12.801L61.44,42.524L31.717,12.801C29.952,11.036 27.057,11.036 25.292,12.801L12.801,25.292C11.036,27.057 11.036,29.952 12.801,31.717L42.524,61.44L12.801,91.163Z'/%3E%3C/g%3E%3C/svg%3E") right center / 56px 14px no-repeat,
     linear-gradient(var(--wb-face),var(--wb-face)) right 2px center / 12px 10px no-repeat,
     linear-gradient(var(--wb-hi),var(--wb-hi)) right 2px top calc(50% - 1px) / 14px 12px no-repeat,
     linear-gradient(var(--wb-lo),var(--wb-lo)) right 0 center / 16px 14px no-repeat,

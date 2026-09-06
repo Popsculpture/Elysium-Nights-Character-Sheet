@@ -8246,6 +8246,49 @@ the row evenly, the popover still opens as that skin's bottom sheet through the 
 credit and debit through it still move the balance and hand it back. Classic and '98 measured
 unchanged, content-sized at 27px tall with no clip. No console errors.
 
+## '98's caption buttons take the author's window icons, 2026-09-06
+
+The minimize, maximize and close buttons on the '98 title bars were fourteen `linear-gradient`
+layers in one `--win-btns` property: three bevel rects per button in the bevel and face tokens,
+then a glyph each faked from gradients (a bar, a box, two diagonals). The glyphs are now the
+author's own window icons; the bevel is unchanged.
+
+The first cut replaced the whole thing, flattening the bevel and painting each icon as a light
+button with the symbol knocked through. The author asked for the bevel back, for the buttons to
+take the palette, and for the spacing to be fixed, and picked a dark face with a light glyph. All
+three complaints were fair and all three were the first cut's doing: it dropped the nine bevel
+layers, it baked a near-white face that no longer followed the theme, and by centring 14px icons
+in the 16px slots it widened the gaps that Win98 keeps tight between minimize and maximize.
+
+The shape of the fix is set by one constraint: a data URI cannot resolve `var()`, so exactly one
+colour in the sprite cannot follow the theme. Measured before choosing which: `--text` is #e9f1fb
+on both palettes, while `--bev-hi` and `--bg3` genuinely move (#34465f and #151c28 on the
+Freelancer palette, #5b5480 and #2e2a46 on Admin's). So the glyph ink is the one thing baked, and
+the bevel and face stay as gradients in tokens, which is also what lets the face show through
+maximize's window.
+
+Lifting the symbols back out took some care, because the author's icons are each a filled button
+square with the symbol knocked OUT, and what was wanted was the symbol as a positive shape. For
+minimize and close that is the file's second subpath, the bar and the X. For maximize it is not:
+that file's hole is the window's interior, so filling it would give a solid block instead of a
+frame. Maximize therefore keeps the whole icon as an evenodd knockout, scaled down to glyph size,
+where the ring of ink around the hole IS the window frame. Each symbol is placed by its measured
+bounding box (87.191x23.669 for the bar, 99.926 square for the X, the full 122.88 box for
+maximize), scaled uniformly so nothing is stretched, and centred on its face; the minimize bar
+rides low rather than centred, which is where Win98 put it.
+
+Spacing is the original rhythm, because the nine bevel layers were restored verbatim from git
+rather than retyped: 16x14 buttons at right offsets 40, 22 and 0 in a 56x14 box, so minimize and
+maximize sit 2px apart and the close is set 6px off. The sprite is positioned from the right edge
+and the vertical centre like the layers under it, so one value still serves both a 14px panel
+pseudo and a 26px title bar.
+
+Verified on all three consumers (panel headers, the '98 Explorer title bar, #POST's), on both
+portals with the token values read back to prove the bevel and face really do follow the palette,
+and magnified 12x at true size to confirm the bar, the window frame and the X each read at 14px.
+`--win-btns` is declared inside `html.skin-98{}`, so Classic and #GRIDroid never see it and their
+panel heads have no ::after at all; confirmed in both.
+
 ## '98 takes the app's mark on START, and its Codex glyph grows, 2026-09-06
 
 Two asks: give the '98 taskbar the same Codex enlargement #GRIDroid got, and put the app's own
