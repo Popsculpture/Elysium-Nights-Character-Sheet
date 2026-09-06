@@ -8138,9 +8138,17 @@ both summing 84, one with three scores above 10 and one with six. The six won, o
 positional order that would otherwise have given it to the first row. His record was restored and
 re-checked afterwards, roll id and all.
 
-Not observed, only reasoned: the case where a diagonal is the highest line. This record's
-diagonals came in at 77 and 79 against a best of 84, and proving that branch would have meant
-rerolling the author's matrix over it.
+The mark waits for the dice. It first appeared in the same render that starts the scramble, which
+is the render where the totals are still spinning, so gold arrived on a line whose numbers had not
+settled and read as a glitch rather than a result. Nothing re-renders while that animation runs,
+because it mutates the cells in place over 700ms, so `animateDiceRoll` took an optional `done` and
+the Overclocked roll passes one that re-renders on settle; the banked groups pass nothing and are
+unchanged. The mark is also suppressed outright while `animating` is true, so the two halves
+cannot disagree. Measured on a rolling board: 144 dice scrambling and no mark at 52ms, still none
+at 692ms with 12 left, mark and six gold cells at 825ms with nothing still rolling.
+
+The diagonal case, listed here for a while as reasoned but never observed, has now been seen: on a
+later matrix the top-right-to-bottom-left diagonal won outright at 85 and took the mark.
 
 ## The Overclocked matrix says which way it scrolls, 2026-09-06
 

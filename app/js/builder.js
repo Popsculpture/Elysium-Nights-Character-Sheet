@@ -409,7 +409,9 @@ EN.builder = (function () {
   }
 
   // brief scramble animation: dice flicker random faces, then settle on the real roll
-  function animateDiceRoll(g) {
+  // `done` fires once the last total has settled. The banked groups do not pass one; the
+  // Overclocked matrix does, because its highest-line mark must not appear over spinning dice.
+  function animateDiceRoll(g, done) {
     var root = document.querySelector('[data-rg="' + g.id + '"]');
     if (!root) return;
     var dice = [].slice.call(root.querySelectorAll("[data-die]"));
@@ -430,6 +432,7 @@ EN.builder = (function () {
       if (t >= dur) {
         clearInterval(timer);
         totals.forEach(function (n) { if (n.isConnected) n.textContent = n.dataset.final; });
+        if (done) done();
       }
     }, 50);
   }
@@ -541,7 +544,10 @@ EN.builder = (function () {
       c.overclocked.pick = null;
       ocClearAssignments(c);
     });
-    animateDiceRoll({ id: id });
+    /* The mark waits for the dice. Nothing re-renders while the scramble runs (it mutates the
+       cells in place), so the settle is the cue: _animGroup is already back to null by then, and
+       the render it asks for is the first one that knows which line won. */
+    animateDiceRoll({ id: id }, function () { EN.app.render(); });
     _animGroup = null;
   }
   /* The live matrix's pip updater, replaced on every render. Registered once here rather than per
@@ -579,7 +585,9 @@ EN.builder = (function () {
       body.push(el("div.muted-box", { text: "No matrix yet; hit ROLL 36 to throw 36 × 4d6 into the grid." }));
       return el("div", null, body);
     }
-    var best = ocBestLine(oc);
+    /* No mark over spinning dice: the answer is not knowable to the player yet, and gold arriving
+       on a line whose numbers are still scrambling reads as a glitch rather than as a result. */
+    var best = animating ? { key: null, sum: 0, above: 0, tied: [], brokeOver: [] } : ocBestLine(oc);
     var bestIdx = {};
     if (best.key) {
       var bk = best.key.split(":");
