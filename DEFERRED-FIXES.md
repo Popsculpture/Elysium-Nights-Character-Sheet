@@ -8085,6 +8085,23 @@ Verified in the browser at 375px on #GRID (cyan) and Elysium Nights (gold): word
 box around it, and the whole header is visibly shorter than before. Confirmed Classic and '98
 untouched, both keep their own separate `#active-name` treatment. Fresh tab, no console errors.
 
+## #POST wears the author's icon, 2026-09-06
+
+The last glyph left on a sub-tab. LEDGER took the author's clipboard back when the Social sub-nav
+first learned the [icon, text] convention; #POST kept its ◧ because there was no art for it yet.
+There is now: an envelope, embedded verbatim beside the clipboard in face.js, the unread count
+still appended to the label exactly as before.
+
+Checked at the button's real 11px with the true-size raster, against the clipboard sitting right
+beside it: the envelope's flap survives the shrink and the two read as different objects at a
+glance. Verified in all three skins, selected and unselected: it recolors with the button the way
+the glyph did, black on the accent fill when '98 and #GRIDroid solid-fill a selected button, and
+the '98 mail client below it (which draws its own envelope on the panel header, from CSS) is
+untouched. No console errors.
+
+Not touched: combat.js still uses ◧ for a body-slot chip, which is a different thing wearing the
+same character and is not a mail mark.
+
 ## #GRIDroid header, second pass: readouts up top, the record in the strip, 2026-09-06
 
 The first pass read the author's "Link status and Sync status across the top" as "keep them in

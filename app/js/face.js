@@ -473,9 +473,10 @@ EN.faceView = (function () {
     /* Two faces of the same tab: the standing ledger, and the mail. Deliberately
        NOT sticky like the Inventory's bar, which has to carry the wallets; two
        buttons do not earn a pinned strip on a phone. */
-    // the author's clipboard, for the LEDGER sub-tab alone; same [icon, text] convention the
-    // Inventory sub-nav uses for Stash, Chrome and Gray Market
+    // the author's clipboard and envelope, one per Social sub-tab; same [icon, text] convention
+    // the Inventory sub-nav uses for Stash, Chrome and Gray Market
     var ICON_LEDGER = '<svg viewBox="0 0 101.83 122.88" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M6.77,12.82h16.25v10.5h-7.01c-3.13,0-5.72,2.59-5.72,5.72v78.43c0,3.13,2.58,5.72,5.72,5.72h69.8 c3.14,0,5.72-2.58,5.72-5.72V29.04c0-3.14-2.59-5.72-5.72-5.72h-7.01v-10.5h16.25c3.73,0,6.77,3.07,6.77,6.77v96.51 c0,3.71-3.06,6.77-6.77,6.77H6.77c-3.71,0-6.77-3.05-6.77-6.77V19.59C0,15.86,3.05,12.82,6.77,12.82L6.77,12.82z M37.79,95.89 c-2.01,0-3.64-1.63-3.64-3.64c0-2.01,1.63-3.64,3.64-3.64h26.24c2.01,0,3.64,1.63,3.64,3.64c0,2.01-1.63,3.64-3.64,3.64H37.79 L37.79,95.89z M30.03,73.91c-2.01,0-3.64-1.63-3.64-3.64c0-2.01,1.63-3.64,3.64-3.64h41.76c2.01,0,3.64,1.63,3.64,3.64 c0,2.01-1.63,3.64-3.64,3.64H30.03L30.03,73.91z M23.2,51.94c-2.01,0-3.64-1.63-3.64-3.64s1.63-3.64,3.64-3.64h55.44 c2.01,0,3.64,1.63,3.64,3.64s-1.63,3.64-3.64,3.64H23.2L23.2,51.94z M32.4,9.46h7.68C40.73,4.13,45.04,0,50.26,0 c5.19,0,9.47,4.07,10.17,9.35l8.99,0.11c0.63,0,1.13,0.5,1.13,1.13v15.33c0,0.63-0.5,1.13-1.13,1.13h-37 c-0.61,0-1.13-0.5-1.13-1.13V10.59C31.27,9.97,31.78,9.46,32.4,9.46L32.4,9.46L32.4,9.46L32.4,9.46z M46.06,14.1 c0.69,0.95,1.69,1.89,2.74,2.37c0.86,0.26,1.8,0.28,2.67,0.04c1.36-0.63,2.62-2.14,3.2-3.4c0.07-0.36,0.11-0.73,0.11-1.13 c0-2.67-2.05-4.84-4.57-4.84c-2.53,0-4.57,2.17-4.57,4.84C45.64,12.8,45.79,13.51,46.06,14.1L46.06,14.1L46.06,14.1L46.06,14.1z"/></svg>';
+    var ICON_POST = '<svg viewBox="0 0 122.88 88.86" fill="currentColor" aria-hidden="true"><path d="M7.05,0H115.83a7.07,7.07,0,0,1,7,7.05V81.81a7,7,0,0,1-1.22,4,2.78,2.78,0,0,1-.66,1,2.62,2.62,0,0,1-.66.46,7,7,0,0,1-4.51,1.65H7.05a7.07,7.07,0,0,1-7-7V7.05A7.07,7.07,0,0,1,7.05,0Zm-.3,78.84L43.53,40.62,6.75,9.54v69.3ZM49.07,45.39,9.77,83.45h103L75.22,45.39l-11,9.21h0a2.7,2.7,0,0,1-3.45,0L49.07,45.39Zm31.6-4.84,35.46,38.6V9.2L80.67,40.55ZM10.21,5.41,62.39,47.7,112.27,5.41Z"/></svg>';
     function subTab(key, label) {
       var kids = Array.isArray(label) ? [el("span", { html: label[0] }), document.createTextNode(" " + label[1])] : [document.createTextNode(label)];
       return el("button.btn.sm" + (_sub === key ? ".primary" : ""),
@@ -483,7 +484,7 @@ EN.faceView = (function () {
     }
     blocks.push(el("div.row.wrap.face-bar", { style: { gap: "6px", marginBottom: "12px" } }, [
       subTab("ledger", [ICON_LEDGER, "LEDGER"]),
-      subTab("post", "◧ #POST" + (n ? " · " + n : ""))
+      subTab("post", [ICON_POST, "#POST" + (n ? " · " + n : "")])
     ]));
     if (onPost) {
       // One wrapper around the inbox so a skin can frame it (theme.css draws the '98 mail
