@@ -8246,6 +8246,40 @@ the row evenly, the popover still opens as that skin's bottom sheet through the 
 credit and debit through it still move the balance and hand it back. Classic and '98 measured
 unchanged, content-sized at 27px tall with no clip. No console errors.
 
+## The ability cards' USE button leads the name, 2026-09-06
+
+Author's ask: on the Freelancer's ability cards, USE moves to the left, ahead of the name. One
+renderer covers every one of them, `actionEntry` in combat.js, called from a single site, so the
+change lands in one place and reaches all of them.
+
+The button was last in the h4 and carried `margin-left:auto` to pin it right. Reordering alone
+does not do it, because `.feature h4` is a flex row with `justify-content:space-between`: two
+children just fly to opposite ends, and the button would have swapped sides with the name rather
+than sitting beside it. The name has to absorb the free space instead, which it now does by
+growing.
+
+The part that took a second pass is the basis. #GRIDroid sets this h4 to `flex-wrap:wrap`, and a
+wrapping flex container assigns items to lines from each item's BASIS, before any shrinking is
+considered. At `flex:1 1 auto` the name's basis is its max-content width, which does not fit
+beside the button, so the whole name dropped to the next row and left the button stranded alone
+above it: five of eight cards at 375px, measured. At `flex:1 1 0` the basis is zero, the name fits
+on the button's line and wraps inside itself instead. This is the same trap as the #GRIDroid panel
+titles, where a wide title pushed the collapse caret onto a second row; worth remembering that on
+this skin `flex-wrap` means basis decides the line, not shrink.
+
+Verified on Classic, '98 and #GRIDroid, on both example characters that actually have resource
+spending abilities (the Operator's eight and the Codebreaker's seven; the other five examples have
+none, because `onUse` is only built when an ability's chip names the class resource): zero orphaned
+buttons, a consistent 8px gap between button and name on all fifteen cards, cards without a USE
+still starting their name flush at the left with no phantom indent, and no page overflow.
+
+Two USE buttons deliberately left where they are, because neither is an ability card. Active
+Defenses (combat.js, the Dodge USE and Parry ROLL row) is a different renderer with its own
+column rhythm, and the #GRID tab's Bandwidth abilities (grid.js) put their button in a right-hand
+cluster with the cost chips. If the author wants the convention to be app-wide, those are the two
+places to follow up.
+
+
 ## DIGITAL DICE wears the author's wireframe die, in neon green, 2026-09-06
 
 The Settings tray's DIGITAL DICE button carried a text glyph. It now carries the author's own

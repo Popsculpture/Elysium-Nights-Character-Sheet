@@ -2481,7 +2481,7 @@ EN.combatView = (function () {
     var useBtn = onUse ? el("button", {
       title: canUse ? ("Spend " + chip + " to activate") : "Not enough " + chip,
       onclick: function (e) { e.stopPropagation(); if (canUse) onUse(); },
-      style: { marginLeft: "auto", marginRight: "8px", padding: "2px 10px", fontSize: "10px",
+      style: { flex: "0 0 auto", padding: "2px 10px", fontSize: "10px",
                fontFamily: "var(--mono)", letterSpacing: ".1em",
                background: canUse ? "rgba(255,45,170,.15)" : "transparent",
                color: canUse ? "var(--flow)" : "var(--text4)",
@@ -2489,11 +2489,20 @@ EN.combatView = (function () {
                borderRadius: "3px", cursor: canUse ? "pointer" : "default" }
     }, "USE") : null;
     return el("div.feature", { style: { borderLeftColor: COST_COLOR[cost] || "var(--border2)" } }, [
+      /* USE leads the row rather than trailing it: the author wants the thing you press before
+         the thing you read. Two details make that hold. .feature h4 is a flex row with
+         justify-content:space-between, so two children would otherwise fly to opposite ends;
+         letting the name grow eats the free space instead and packs the pair left. And the
+         basis has to be 0, not auto: #GRIDroid sets this h4 to flex-wrap:wrap, and a wrapping
+         flex container decides its lines from each item's BASIS before any shrinking happens,
+         so at auto (max-content) the name dropped to the next row whole and stranded the
+         button alone above it, on five of eight cards at 375px. At 0 it fits beside the button
+         and wraps inside itself. Same trap as the droid panel titles. */
       el("h4", { style: { cursor: "pointer" }, onclick: function () { _open[id] = !open; EN.app.render(); } }, [
-        el("span", null, EN.ui.nameCaret(name, open).concat([
+        useBtn,
+        el("span", { style: { flex: "1 1 0", minWidth: 0 } }, EN.ui.nameCaret(name, open).concat([
           el("span.chip", { style: { marginLeft: "8px", fontSize: "9.5px", color: COST_COLOR[cost], borderColor: COST_COLOR[cost] }, text: cost.toUpperCase() }),
-          chip ? el("span.chip", { title: "Spends the class resource", style: { marginLeft: "4px", fontSize: "9.5px", color: chipResourceColor(chip), borderColor: chipResourceColor(chip) }, text: chip }) : null])),
-        useBtn
+          chip ? el("span.chip", { title: "Spends the class resource", style: { marginLeft: "4px", fontSize: "9.5px", color: chipResourceColor(chip), borderColor: chipResourceColor(chip) }, text: chip }) : null]))
       ]),
       open ? el("div", null, [
         // the catalogue writes **bold** in these; plain text: printed the asterisks
