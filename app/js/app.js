@@ -280,6 +280,13 @@ EN.app = (function () {
       meta = cls ? (cls + (sub ? " / " + sub : "")) : "";
     } catch (e) {}
     if (meta) node.appendChild(el("span.an-meta", { text: meta }));
+    /* #PRINT's own roster switcher, so the record can be swapped from whatever tab is open. Only
+       #GRIDroid shows it (the strip has the room); the other skins keep the plain name above and
+       hide this in CSS. Rebuilt with the rest of the slot on every render, which is why the name
+       field's live sync writes to .an-name directly rather than repainting through here. */
+    if (EN.builder && EN.builder.switcherSelect) {
+      node.appendChild(el("span.an-pick", null, [EN.builder.switcherSelect(ch)]));
+    }
   }
 
   /* save indicator pulse */

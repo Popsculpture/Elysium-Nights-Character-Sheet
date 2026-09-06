@@ -8085,6 +8085,57 @@ Verified in the browser at 375px on #GRID (cyan) and Elysium Nights (gold): word
 box around it, and the whole header is visibly shorter than before. Confirmed Classic and '98
 untouched, both keep their own separate `#active-name` treatment. Fresh tab, no console errors.
 
+## #GRIDroid header, third pass: no clock, and the record slot becomes the roster switcher, 2026-09-06
+
+Four asks from the author, all on the phone skin. The clock goes (a phone's own status bar is
+already showing the time an inch above it, which is the same reason '98 keeps its clock in the
+taskbar; the rule is `display:none` on the header clock alone, so `tickClock` still feeds that
+tray). The version sits one space from the wordmark rather than two. The readouts move to the
+right edge, which is just the spacer changing places with them in the flex order. And the record
+slot stops being text: it now carries #PRINT's own roster switcher, so a record can be swapped
+from whatever tab is open.
+
+The switcher was a local function inside builder.js's `rosterSwitcher`, wrapped in a row with the
+On File label, the EXAMPLE chip and SAVE AS MY OWN. The select is split out as `switcherSelect()`
+and exported; `rosterSwitcher` now composes it, so both places are the same control rather than
+two that drift. `paintActiveName` appends it in an `.an-pick` span. Only #GRIDroid shows it, and
+it hides the plain name and class there; Classic and '98 keep exactly what they had, since their
+top bar is one 50px row with no space for a dropdown. Extending it to them is one line if wanted.
+
+Two branches of that select need the #PRINT view mounted to show anything: `__new` only sets an
+intake flag, and `__manage` only flips a flag whose overlay is built inside `builder.render`. From
+the header they would have flipped a flag and shown nothing, so both now route through
+`EN.app.gotoTab("print")`; from #PRINT itself that is the re-render they were already doing.
+
+Two things the CSS fought, both worth recording:
+- the collapse block's anti-zoom floor for form controls (`html.skin-droid select{font-size:16px
+  !important}`) plus a 42px `min-height` would have tripled the height of a 10.5px strip. The
+  header select overrides both, and the font-size override needs `!important` to land.
+- the arrow. The shared `select` rule draws it with two gradients and `background-repeat:no-repeat`,
+  but the collapse block later sets `background:` as a SHORTHAND, which resets repeat. Re-declaring
+  only `background-image` inherited `repeat` and tiled the arrow across the whole control, which
+  rendered as a black hatched bar over the accent fill. Fixed by stating `no-repeat` explicitly.
+  The arrow is also redrawn in the strip's own black ink, since the shared one uses `--text3`.
+
+The name typed on #PRINT still updates the header live: `bannerSync` writes the `.an-name` span as
+before and now also rewrites the selected option's label, rather than repainting the whole slot,
+which would derive the entire sheet on every keystroke.
+
+Verified in the browser. Swapping to an example from the Inventory tab switches the record, leaves
+the player on Inventory, and swapping back restores it; `+ Register New #PRINT` and `⚙ Manage
+characters...` both land on #PRINT with their gate and overlay drawn, and both close cleanly with
+the active record untouched; the in-view switcher still works after the split; typing a first name
+updates the header's label live. Per skin, checked by computed style rather than by eye: Classic
+shows the plain name and keeps its clock, '98 shows the plain name (its clock was already in the
+tray), #GRIDroid shows the switcher and no clock. No console errors, and the record, balances and
+roster were left exactly as found.
+
+Measured, not guessed: the label and the selected record do not fit on one line of the strip at
+375px (the label plus its dot take 115 of 309px, and the record needs 203), so the switcher wraps
+to its own line. Forcing one line would clip longer names. The strip is a line taller than it was,
+and the header is still shorter overall than before this pass, since the clock's own wrapped line
+is gone.
+
 ## The wallet's ledger moves into popovers on the totals, 2026-09-06
 
 Author's ask, pointing at the dashboard's WOUNDS control: tapping a currency total should open a

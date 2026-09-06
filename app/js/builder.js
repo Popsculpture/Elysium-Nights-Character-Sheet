@@ -117,13 +117,17 @@ EN.builder = (function () {
     // First Name, Handle, and Last Name all feed the composed full-display
     // name (First "Handle" Last), so each one recomputes ch.name and pokes
     // the banner directly (store.update runs silent to keep the caret alive).
-    // Only the name span is rewritten while typing; a full repaint would derive the whole
-    // sheet on every keystroke to recompute a class and level that cannot have changed.
+    // Only the name is rewritten while typing; a full repaint would derive the whole sheet on
+    // every keystroke to recompute a class that cannot have changed. The header shows the name
+    // either as a span or, on the skin that has room, as this same switcher, so both are updated.
     function bannerSync() {
       var c = store.active();
       var n = document.querySelector("#active-name .an-name");
       if (n) n.textContent = (c.name || "NO FREELANCER").toUpperCase();
-      else EN.app.paintActiveName();
+      var sel = document.querySelector("#active-name select");
+      var opt = sel && sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex] : null;
+      if (opt && opt.value === c.meta.id) opt.text = (c.name || "Unnamed") + " · L" + (c.level || 1);
+      if (!n && !opt) EN.app.paintActiveName();
     }
     function nameFieldNode(field, ph) {
       return el("input", {
@@ -2669,7 +2673,12 @@ EN.builder = (function () {
   }
 
   /* ---------- roster controls ---------- */
-  function rosterSwitcher(ch) {
+  /* The select on its own, so the OS header's record slot can carry the same control this step
+     does. Both of its view-bound branches route to #PRINT rather than assuming it is mounted:
+     the intake gate and the manager overlay are both drawn by render() below, so from any other
+     tab they would otherwise flip a flag and show nothing. From #PRINT that routing is the
+     re-render the branch was already doing. */
+  function switcherSelect(ch) {
     var roster = store.roster();
     var ids = Object.keys(roster);
     // roster[id].name should always be a string post-migrate, but the switcher
@@ -2696,15 +2705,18 @@ EN.builder = (function () {
       })));
     }
     kids.push(el("option", { value: "__manage", text: "⚙ Manage characters..." }));
-    var sel = el("select", { style: { width: "auto", minWidth: "160px" }, onchange: function (e) {
+    return el("select", { style: { width: "auto", minWidth: "160px" }, onchange: function (e) {
       var v = e.target.value;
-      if (v === "__new") { _intake = true; EN.app.render(); return; }
-      if (v === "__manage") { openManager(); return; }
+      if (v === "__new") { _intake = true; EN.app.gotoTab("print"); return; }
+      if (v === "__manage") { openManager(); EN.app.gotoTab("print"); return; }
       if (v.indexOf("__ex:") === 0) { store.setExample(v.slice(5)); _step = 0; EN.app.render(); return; }
       store.setActive(v); _step = 0; EN.app.render();
     } }, kids);
+  }
+  function rosterSwitcher(ch) {
+    var exActive = store.activeIsExample && store.activeIsExample();
     return el("div.row", { style: { alignItems: "center", gap: "8px" } }, [
-      el("label.fl", { style: { margin: 0 }, text: "On File" }), sel,
+      el("label.fl", { style: { margin: 0 }, text: "On File" }), switcherSelect(ch),
       exActive ? el("span.chip", { style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" },
         title: "A pre-made example. Edits are live but are not saved, and reloading restores it." }, "EXAMPLE") : null,
       exActive ? el("button.btn.sm", { style: { color: "var(--accent)", borderColor: "var(--accent)" },
@@ -2917,5 +2929,5 @@ EN.builder = (function () {
   // Jump the wizard to the Advance step (used by the "#PRINT" tab).
   function openAdvance() { for (var i = 0; i < STEPS.length; i++) { if (STEPS[i].key === "advance") { _step = i; return; } } }
 
-  return { render: render, openAdvance: openAdvance };
+  return { render: render, openAdvance: openAdvance, switcherSelect: switcherSelect };
 })();

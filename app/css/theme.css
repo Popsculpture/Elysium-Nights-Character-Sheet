@@ -91,9 +91,10 @@ a{ color:var(--accent); text-decoration:none; }
   color:var(--accent); text-shadow:var(--glow-cyan); white-space:nowrap; }
 .os-logo b{ color:var(--text); } .os-logo .v{ color:var(--text3); font-weight:400; font-size:12px; letter-spacing:.1em; }
 .os-badge{ display:none; }
-/* the record slot carries a label and the class for the phone skin's strip; every other skin has
-   room for the name alone up there, so the rest stays out of the way */
-#active-name .an-role, #active-name .an-meta{ display:none; }
+/* the record slot carries a label, the class and #PRINT's own roster switcher for the phone
+   skin's strip; every other skin has room for the name alone up there, so the rest stays out of
+   the way */
+#active-name .an-role, #active-name .an-meta, #active-name .an-pick{ display:none; }
 .os-status{ font-family:var(--mono); font-size:11px; color:var(--text3); letter-spacing:.12em; display:flex; gap:14px; align-items:center; }
 .os-status .led{ width:7px; height:7px; border-radius:50%; background:var(--success); box-shadow:0 0 8px var(--success); display:inline-block; margin-right:5px; animation:pulse 2.4s infinite; }
 @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:.35;} }
@@ -1106,18 +1107,19 @@ html.skin-droid .os-logo{
 }
 /* The wordmark's own space before the version never rendered here: .os-logo is a flex container,
    and a whitespace-only text node between two flex items is dropped. So the gap is drawn instead,
-   at two spaces of this font at this size (9.36px each, letter-spacing included). */
-html.skin-droid .os-logo .v{ margin-left:19px; }
+   at one space of this font at this size (9.36px, letter-spacing included). */
+html.skin-droid .os-logo .v{ margin-left:9px; }
 html.skin-droid .os-badge{
   width:44px; height:44px; margin-right:10px; display:inline-flex; flex:none; color:var(--accent);
 }
 html.skin-droid .os-badge svg{ width:100%; height:100%; display:block; }
-/* the readouts ride beside the wordmark, the way Classic has them, and the clock closes the row */
-html.skin-droid .os-topbar > .os-status:not(#active-name){ order:2; font-size:10.5px; gap:10px; }
-html.skin-droid .os-spacer{ order:3; }
-/* margin-left:auto only bites on a phone, where the readouts fill the row and the clock wraps
-   below them; at any width that fits the whole row the spacer has already eaten the free space */
-html.skin-droid .os-clock{ order:4; margin-left:auto; font-size:12px; color:var(--accent); padding:6px 0; }
+/* the spacer splits the row: wordmark and version at the left edge, the readouts at the right */
+html.skin-droid .os-spacer{ order:2; }
+html.skin-droid .os-topbar > .os-status:not(#active-name){ order:3; font-size:10.5px; gap:10px; }
+/* no clock: a phone's own status bar is already showing the time an inch above this one. Same
+   move '98 makes, for the same reason its clock sits in the taskbar instead. tickClock still
+   writes here, harmlessly, because it feeds that tray on the other skin. */
+html.skin-droid .os-topbar .os-clock{ display:none; }
 /* the active record takes the strip: accent fill, dark ink, the whole record on one line */
 html.skin-droid #active-name{
   order:5; flex-basis:100%; display:block;
@@ -1132,6 +1134,24 @@ html.skin-droid #active-name::before{
 html.skin-droid #active-name .an-role, html.skin-droid #active-name .an-meta{ display:inline; font-weight:400; opacity:.72; }
 html.skin-droid #active-name .an-name:not(:first-child){ margin-left:7px; }
 html.skin-droid #active-name .an-meta::before{ content:"\00b7"; margin:0 6px; opacity:.6; }
+/* the switcher replaces the plain name here, so it has to stop reading as a form control: no
+   field chrome, the strip's own ink and type, and an arrow redrawn in that ink (the shared rule
+   draws it in --text3, which is a bruise on this fill). The !important is aimed at the collapse
+   block's 16px anti-zoom floor for form controls, which would triple the strip's height. */
+html.skin-droid #active-name .an-name, html.skin-droid #active-name .an-meta{ display:none; }
+html.skin-droid #active-name .an-pick{ display:inline-block; vertical-align:middle; margin-left:7px; max-width:100%; }
+html.skin-droid #active-name select{
+  width:auto; min-width:0; max-width:100%; min-height:0; height:auto;
+  font-family:var(--mono); font-size:10.5px !important; font-weight:700; letter-spacing:.1em; color:#000;
+  background-color:transparent; border:0; border-bottom:1px dotted rgba(0,0,0,.55); border-radius:0;
+  padding:0 14px 1px 0; box-shadow:none; cursor:pointer;
+  background-image:linear-gradient(45deg,transparent 50%,#000 50%),linear-gradient(135deg,#000 50%,transparent 50%);
+  background-position:calc(100% - 5px) center, calc(100% - 1px) center; background-size:4px 4px,4px 4px;
+  background-repeat:no-repeat;   /* the collapse block's `background:` shorthand resets this to repeat, and the arrow tiles the whole control */
+}
+html.skin-droid #active-name select:focus{ border-bottom-style:solid; box-shadow:none; outline:1px dotted rgba(0,0,0,.7); outline-offset:2px; }
+/* the popup is drawn by the OS against its own ground, so it takes the app's palette, not the strip's */
+html.skin-droid #active-name option, html.skin-droid #active-name optgroup{ background:var(--bg1); color:var(--text); text-transform:none; letter-spacing:0; font-weight:400; }
 
 /* ---- the rail: a phone's app list, docked at the foot, folded to the open app ---- */
 html.skin-droid .os-tabs{
