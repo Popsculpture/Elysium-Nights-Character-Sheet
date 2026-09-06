@@ -368,7 +368,7 @@ EN.gmView = (function () {
     enc.entries.forEach(function (r) { if (r.kind === "crew") already[r.charId] = true; });
     var addable = Object.keys(roster).filter(function (k) { return !already[k]; });
     if (addable.length) {
-      kids.push(el("div.section-title", { style: { margin: "14px 0 6px" } },
+      kids.push(el("div.section-title", null,
         [document.createTextNode("Pull in the crew"), el("span.line")]));
       kids.push(el("div.row.wrap", { style: { gap: "6px" } }, addable.map(function (k) {
         var ch = roster[k], d;

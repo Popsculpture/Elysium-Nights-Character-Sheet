@@ -861,7 +861,7 @@ EN.inventoryView = (function () {
     catNames.forEach(function (cat) {
       var list = groups[cat];
       var open = !!_stashOpen[cat];
-      body.push(el("div.section-title", { style: { margin: "10px 0 4px", cursor: "pointer" },
+      body.push(el("div.section-title.clickable", {
         title: open ? "Collapse " + cat : "Expand " + cat,
         onclick: function () { _stashOpen[cat] = !open; EN.app.render(); } }, [
         el("span.collapse-caret", { text: open ? "▾" : "▸" }),
@@ -2851,7 +2851,7 @@ EN.inventoryView = (function () {
       list.sort(function (a, b) { return a.name.localeCompare(b.name); });
       shown += list.length;
       var key = "tb-recipe-" + cls, open = !!_open[key] || !!q;
-      kids.push(el("div.section-title.clickable", { style: { margin: "8px 0 2px", cursor: "pointer" }, onclick: function () { _open[key] = !open; EN.app.render(); } },
+      kids.push(el("div.section-title.clickable", { onclick: function () { _open[key] = !open; EN.app.render(); } },
         [document.createTextNode(cls + "  (" + list.length + ")"), el("span.line"), el("span.collapse-caret", { style: { marginLeft: "4px" }, text: open ? "▾" : "▸" })]));
       if (open) list.forEach(function (it) { kids.push(tbRecipeRow(ch, it)); });
     });
@@ -2966,7 +2966,7 @@ EN.inventoryView = (function () {
     platforms.forEach(function (plat) {
       var cap = slotsOf(plat);
       var seated = installed.filter(function (cw) { return cw.slottedIn === plat.key && slottedMap[cw.key]; });
-      kids.push(el("div.section-title", { style: { margin: "10px 0 4px" } },
+      kids.push(el("div.section-title", null,
         [document.createTextNode(plat.name + (plat.tier ? " \u00b7 " + plat.tier : "")), el("span.line"),
          el("span.mono", { style: { fontSize: "9.5px", color: seated.length >= cap ? "var(--warn)" : "var(--text3)" },
            text: seated.length + " / " + cap + " SLOTS" })]));
@@ -3068,7 +3068,7 @@ EN.inventoryView = (function () {
       var lo = vehicleLoadout(ch, vKey);
       var legal = aggregateVehicleLegality(prof, lo);
       var full = lo.length >= prof.modSlots;
-      kids.push(el("div.section-title", { style: { margin: "10px 0 4px" } },
+      kids.push(el("div.section-title", null,
         [document.createTextNode(vRow.label), el("span.line"),
          el("span.mono", { style: { fontSize: "9.5px", color: full ? "var(--warn)" : "var(--text3)" },
            text: lo.length + " / " + prof.modSlots + " SLOTS" }),
@@ -3302,7 +3302,7 @@ EN.inventoryView = (function () {
   }
   function billSection(title, kids) {
     return el("div", { style: { marginBottom: "14px" } },
-      [el("div.section-title", { style: { margin: "0 0 6px" } }, [document.createTextNode(title), el("span.line")])].concat(kids));
+      [el("div.section-title", null, [document.createTextNode(title), el("span.line")])].concat(kids));
   }
   function billsPanel(ch) {
     var E = ECON(), hh = ch.household || {}, w = householdWeekly(ch), out = [];

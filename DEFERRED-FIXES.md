@@ -7795,6 +7795,28 @@ plain and the maskable icon. No service worker, since current Chrome no longer r
 the install prompt, and offline is a separate question. The dev server in launch.json learned the
 .webmanifest type so the file can be checked locally; GitHub Pages already serves it right.
 
+## The 33 inline heading margins, 2026-09-05
+
+The pass the previous entry left for later. Every call site that had made up its own number is
+gone: 33 of them across combat, inventory, flow, grid, codex, gm and builder, in seven sizes from
+2px to 16px above and 2px to 6px below, plus two conditional ones (grid's `firstSection`, now
+retired, and combat's `d.resource ? 12 : 2`). The two that remain are the dice headings on the
+Attributes step, whose `margin:0` is layout inside a flex row and not rhythm.
+
+Three contexts, one rule each, in theme.css. Page level, 18 above and 10 below, the base. A
+sub-heading inside a panel body, which introduces a table or a run of cards: 14 above, 6 below. A
+row in a stack of collapsible headers, the caret kind: 12 above, 4 below, since a stack reads as
+a list and wants to sit tighter. A heading that opens its container has nothing above it in any
+of the three, which is what the two conditional sites were doing by hand. The device headers keep
+their own rule and are kept out of these. Two collapsible headers that had a cursor:pointer inline
+but no class (the stash categories and the loadout sections) now carry `.clickable` like the rest,
+which also gives them the hover affordance the others had.
+
+Measured after, every visible heading on every tab and every #PRINT step, Classic: page 18/10,
+panel 14/6, collapsible 12/4, first-of-container 0, nothing else. The biggest single moves were
+combat's feature panels (2px below a heading became 6) and the stash categories (10 above became
+12); the Admin's "Pull in the crew" heading sits inside a panel and takes 14/6.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

@@ -88,7 +88,7 @@ EN.gridView = (function () {
   }
   function collapsible(key, title, buildBody) {
     var open = !!_open[key];
-    var head = el("div.section-title.clickable", { style: { margin: "12px 0 4px" }, onclick: function () { _open[key] = !open; EN.app.render(); } },
+    var head = el("div.section-title.clickable", { onclick: function () { _open[key] = !open; EN.app.render(); } },
       [document.createTextNode(title), el("span.line"), el("span.collapse-caret", { style: { marginLeft: "4px" }, text: open ? "▾" : "▸" })]);
     return open ? [head, buildBody()] : [head];
   }
@@ -214,7 +214,7 @@ EN.gridView = (function () {
       (G.mods || []).forEach(function (m) { if (installed.indexOf(m.key) !== -1) used += m.slots; });
       var slots = deck.modSlots;
       var installedMods = (G.mods || []).filter(function (m) { return installed.indexOf(m.key) !== -1; });
-      rows.push(el("div.section-title", { style: { margin: "14px 0 4px" } }, [document.createTextNode("Hardware Mods"), el("span.line"),
+      rows.push(el("div.section-title", null, [document.createTextNode("Hardware Mods"), el("span.line"),
         el("span.mono", { style: { fontSize: "10px", color: used > slots ? "var(--danger)" : "var(--text3)", marginLeft: "6px" }, text: used + " / " + slots + " slots" })]));
       if (slots === 0) rows.push(noteP("A Standard Smartdeck has no mod slots. Upgrade the deck to install hardware mods."));
       else if (!installedMods.length) rows.push(noteP("No hardware mods installed. Fit them at the Tech Bay (Inventory > Workbench > Tech Bay)."));
@@ -291,13 +291,11 @@ EN.gridView = (function () {
       var bwCur = (ch.resources && ch.resources.current && ch.resources.current.Bandwidth != null) ? ch.resources.current.Bandwidth : bwMax;
       bwCur = eng.clamp(bwCur, 0, bwMax);
       // Bandwidth pool lives in the Rig panel; cipher/exploit costs below still read bwCur.
-      var firstSection = true;   // the first section hugs the panel top (no extra margin)
 
       // ---- Signature #GRID Exploits ----
       var exploits = eng.resourceAbilities(ch) || [];
       if (exploits.length) {
-        rows.push(el("div.section-title", { style: { margin: (firstSection ? "2px" : "14px") + " 0 4px" } }, [document.createTextNode("Signature #GRID Exploits"), el("span.line")]));
-        firstSection = false;
+        rows.push(el("div.section-title", null, [document.createTextNode("Signature #GRID Exploits"), el("span.line")]));
         rows.push(noteP("Each costs 1 Bandwidth; meet its recharge trigger to refund it (use + to restore). USE spends the Bandwidth now."));
         exploits.forEach(function (ab) {
           var k = "exploit-" + ab.name, open = !!_open[k];
@@ -325,7 +323,7 @@ EN.gridView = (function () {
       var cipherByName = {}; (G.ciphers || []).forEach(function (c) { cipherByName[c.name] = c; });
       var owned = (ch.equipment || []).map(function (e) { return (e.qty > 0) ? cipherByName[e.name] : null; })
         .filter(Boolean).sort(function (a, b) { return (a.cx - b.cx) || a.name.localeCompare(b.name); });
-      rows.push(el("div.section-title", { style: { margin: (firstSection ? "2px" : "14px") + " 0 4px" } }, [document.createTextNode("Repertoire"), el("span.line"),
+      rows.push(el("div.section-title", null, [document.createTextNode("Repertoire"), el("span.line"),
         el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", marginLeft: "6px" }, text: owned.length + " acquired" })]));
       rows.push(noteP(deck
         ? (deck.type === "smartdeck"

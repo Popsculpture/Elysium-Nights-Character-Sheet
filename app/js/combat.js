@@ -1413,7 +1413,7 @@ EN.combatView = (function () {
     return el("span.chip", { title: title || "", style: { fontSize: "9px", color: color, borderColor: color }, text: text });
   }
   function hazSub(label) {
-    return el("div.section-title", { style: { margin: "12px 0 4px" } }, [document.createTextNode(label), el("span.line")]);
+    return el("div.section-title", null, [document.createTextNode(label), el("span.line")]);
   }
 
   /* Hazards as BLOCKS rather than as their own panel. The Status Changes panel
@@ -3310,7 +3310,6 @@ EN.combatView = (function () {
       var infoOpen = !!_open["versatile-info"];
       var kids = [
         el("div.section-title.clickable", {
-          style: { margin: "12px 0 2px" },
           title: infoOpen ? "Hide explanation" : "Tap for an explanation of Versatile Skills",
           onclick: function () { _open["versatile-info"] = !infoOpen; EN.app.render(); }
         }, [
@@ -3664,7 +3663,7 @@ EN.combatView = (function () {
       ]));
     });
     if (senseRows.length) {
-      passives.push(el("div.section-title", { style: { margin: "10px 0 2px" } }, [document.createTextNode("Special Senses"), el("span.line")]));
+      passives.push(el("div.section-title", null, [document.createTextNode("Special Senses"), el("span.line")]));
       passives = passives.concat(senseRows);
     }
     sectionEls.senses = EN.ui.panel("Senses", "10 + MOD + PROF + CALIBER IN A FOCUS (±5 EDGE/SNAG)", passives, { corners: true });
@@ -3795,7 +3794,7 @@ EN.combatView = (function () {
       if (d.flow) {
         var fCur = (ch.flow.current != null) ? eng.clamp(ch.flow.current, 0, d.flow.max) : d.flow.max;
         var fStrain = ch.flow.strain || 0;
-        kids.push(el("div.section-title", { style: { margin: "2px 0 2px" } }, [document.createTextNode("Flow Reservoir"), el("span.line"),
+        kids.push(el("div.section-title", null, [document.createTextNode("Flow Reservoir"), el("span.line"),
           el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", marginLeft: "6px" }, text: "DC " + d.flow.dc + " · " + d.flow.attributeName }) ]));
         kids.push(el("div.row.between.wrap", { style: { alignItems: "center" } }, [
           el("div.mono", { style: { fontSize: "22px", color: resourceColor("Flow") }, html: fCur + " <span style='font-size:13px;color:var(--text3)'>/ " + d.flow.max + " FP · Attack " + eng.fmtMod(d.flow.attackBonus) + "</span>" }),
@@ -3809,14 +3808,13 @@ EN.combatView = (function () {
           fStrain >= 5 ? el("span", { style: { color: "var(--danger)", fontFamily: "var(--mono)", fontSize: "12px" }, text: "⚡ BREAKFLOW" })
                        : el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "5 → Breakflow · Overdraw & Free-Shaping in the Flow tab" })
         ]));
-        kids.push(el("div.section-title", { style: { margin: "12px 0 2px" } }, [document.createTextNode("My Patterns"), el("span.line")]));
+        kids.push(el("div.section-title", null, [document.createTextNode("My Patterns"), el("span.line")]));
         kids.push((EN.flowView && EN.flowView.myPatternsInline) ? EN.flowView.myPatternsInline(ch, d) : el("p.help", { style: { margin: 0 }, text: "Saved patterns appear here." }));
       }
       // combat actions reference sits at the top, above the resource tracker
       if ((C.commonActions || []).length) {
         var acOpen = !!_open["actions-in-combat"];
         kids.push(el("div.section-title.clickable", {
-          style: { margin: "2px 0 2px" },
           title: acOpen ? "Hide the action list" : "Tap for the list of combat actions",
           onclick: function () { _open["actions-in-combat"] = !acOpen; EN.app.render(); }
         }, [document.createTextNode("Actions in Combat"), el("span.line"), el("span.collapse-caret", { style: { marginLeft: "4px" }, text: acOpen ? "▾" : "▸" })]));
@@ -3905,7 +3903,7 @@ EN.combatView = (function () {
            and its Bandwidth are one object and two stacks of spacing made them read as two.
            Everyone else gets them on their own, exactly as before. */
         var resKids = [];
-        resKids.push(el("div.section-title", { style: { margin: "8px 0 2px" } }, [document.createTextNode(d.resource.name), el("span.line")]));
+        resKids.push(el("div.section-title", null, [document.createTextNode(d.resource.name), el("span.line")]));
         resKids.push(el("div.row.between.wrap", { style: { alignItems: "center" } }, [
           el("div.mono", { style: { fontSize: "20px", color: resourceColor(d.resource.name) }, html: rCur + " <span style='font-size:12px;color:var(--text3)'>/ " + d.resource.max + " · " + d.resource.attributeName + " · refresh on rest</span>" }),
           plusMinus(function () { store.update(function (c) { c.resources.current[d.resource.name] = Math.max(0, rCur - 1); }); },
@@ -3976,10 +3974,10 @@ EN.combatView = (function () {
         }
       }
       if (otherFeats.length) {
-        kids.push(el("div.section-title", { style: { margin: d.resource ? "12px 0 2px" : "2px 0 2px" } }, [document.createTextNode("Abilities"), el("span.line")]));
+        kids.push(el("div.section-title", null, [document.createTextNode("Abilities"), el("span.line")]));
         otherFeats.forEach(pushFeat);
       } else if (!resourceFeats.length) {
-        kids.push(el("div.section-title", { style: { margin: d.resource ? "12px 0 2px" : "2px 0 2px" } }, [document.createTextNode("Abilities"), el("span.line")]));
+        kids.push(el("div.section-title", null, [document.createTextNode("Abilities"), el("span.line")]));
         kids.push(el("p.help", { style: { margin: 0 }, text: "No active abilities yet. Resource abilities you pick on #PRINT show up here, ready to fire." }));
       }
       return kids;
@@ -4046,7 +4044,7 @@ EN.combatView = (function () {
         fld("source", "Source", "Faction Perk"),
         fld("effect", "Effect", "What it does…", true),
         fld("note", "Player note", "Only works in Warrens districts.", true),
-        el("div.section-title.clickable", { style: { margin: "4px 0 2px" }, onclick: function () { _open["cfadv-" + key] = !adv; EN.app.render(); } },
+        el("div.section-title.clickable", { onclick: function () { _open["cfadv-" + key] = !adv; EN.app.render(); } },
           [document.createTextNode("Ability-like fields (optional)"), el("span.line"), el("span.collapse-caret", { style: { marginLeft: "4px" }, text: adv ? "▾" : "▸" })]),
         adv ? el("div.grid2", null, [
           fld("category", "Category", "Maneuver / Protocol / Boon"),
@@ -4092,17 +4090,17 @@ EN.combatView = (function () {
         var aa = annot(a.name), bb = annot(b.name);
         return ((bb.pinned ? 2 : 0) + (bb.important ? 1 : 0)) - ((aa.pinned ? 2 : 0) + (aa.important ? 1 : 0));
       });
-      kids.push(el("div.section-title", { style: { margin: "2px 0 2px" } }, [document.createTextNode("Class & Build Features"), el("span.line")]));
+      kids.push(el("div.section-title", null, [document.createTextNode("Class & Build Features"), el("span.line")]));
       kids.push(el("p.help", { style: { margin: "0 0 6px" }, text: "Auto-built from your class, subclass, species, lineage, and background. Star, pin, annotate, or hide any of them; the rules text stays as written." }));
       if (visible.length) visible.forEach(function (f) { kids.push(featureRefEntry(f)); });
       else kids.push(el("p.help", { style: { margin: 0 }, text: "No passive features yet." }));
       if (hidden.length) {
-        kids.push(el("div.section-title.clickable", { style: { margin: "10px 0 2px" },
+        kids.push(el("div.section-title.clickable", {
           onclick: function () { _featShowHidden = !_featShowHidden; EN.app.render(); } },
           [document.createTextNode("Hidden (" + hidden.length + ")"), el("span.line"), el("span.collapse-caret", { style: { marginLeft: "4px" }, text: _featShowHidden ? "▾" : "▸" })]));
         if (_featShowHidden) hidden.forEach(function (f) { kids.push(featureRefEntry(f)); });
       }
-      kids.push(el("div.section-title", { style: { margin: "14px 0 2px" } }, [document.createTextNode("Custom Features"), el("span.line")]));
+      kids.push(el("div.section-title", null, [document.createTextNode("Custom Features"), el("span.line")]));
       var customs = ch.customFeatures || [];
       if (customs.length) customs.forEach(function (cf, i) { kids.push(customFeatureCard(cf, i)); });
       else kids.push(el("p.help", { style: { margin: 0 }, text: "Track GM boons, faction perks, story rewards, homebrew traits, and one-off rulings here." }));
@@ -4736,7 +4734,7 @@ EN.combatView = (function () {
           if (!items.length) return;
           var id = "loadout-sec:" + label;
           var open = _open[id] !== false;   // expanded by default; stays collapsed once tapped closed
-          kids.push(el("div.section-title", { style: { margin: "8px 0 4px", cursor: "pointer" },
+          kids.push(el("div.section-title.clickable", {
             title: open ? "Collapse " + label : "Expand " + label,
             onclick: function () { _open[id] = !open; EN.app.render(); } }, [
             el("span.collapse-caret", { text: open ? "▾" : "▸" }),
@@ -5151,7 +5149,6 @@ EN.combatView = (function () {
       // "How Active Defenses work" collapsible spans full width above the columns
       var defOpen = !!_open["defend-rules"];
       kids.push(el("div.section-title.clickable", {
-        style: { margin: "2px 0 4px" },
         title: defOpen ? "Hide the Active Defense rules" : "Tap for how Active Defenses work",
         onclick: function () { _open["defend-rules"] = !defOpen; EN.app.render(); }
       }, [document.createTextNode("How Active Defenses work"), el("span.line"), el("span.collapse-caret", { style: { marginLeft: "4px" }, text: defOpen ? "▾" : "▸" })]));

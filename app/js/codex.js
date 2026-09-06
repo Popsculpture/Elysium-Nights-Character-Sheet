@@ -56,7 +56,7 @@ EN.codexView = (function () {
     return wrap;
   }
   function subTitle(label) {
-    return el("div.section-title", { style: { margin: "14px 0 6px" } }, [document.createTextNode(label), el("span.line")]);
+    return el("div.section-title", null, [document.createTextNode(label), el("span.line")]);
   }
 
   // Build the Core Resolution reference panels from EN.resolution.
@@ -201,7 +201,7 @@ EN.codexView = (function () {
     blocks.push(refPanel("ref-actions", "Action Economy", "TURN STRUCTURE",
       (C.actionTypes || []).map(function (a) { return ruleBlock(a.name, a.text); })
         .concat(C.tradingMove ? [ruleBlock("Trading Your Move", C.tradingMove)] : [])
-        .concat((C.commonActions || []).length ? [el("div.section-title", { style: { margin: "14px 0 6px" } }, [document.createTextNode("Common Actions"), el("span.line")])] : [])
+        .concat((C.commonActions || []).length ? [el("div.section-title", null, [document.createTextNode("Common Actions"), el("span.line")])] : [])
         .concat((C.commonActions || []).map(function (a) { return ruleBlock(a.name, a.text, a.cost); }))));
     blocks.push(refPanel("ref-def", "Active Defenses", "IMPULSE ACTIONS",
       (C.activeDefenses || []).map(function (a) { return ruleBlock(a.name, a.text, a.cost); })

@@ -1627,7 +1627,7 @@ EN.builder = (function () {
     return el("div", { style: { padding: "7px 2px", borderBottom: "1px solid rgba(35,48,68,.5)" } }, [head, subRow]);
   }
   function gearSection(ch, bucket, title, note) {
-    return [el("div.section-title", { style: { margin: "16px 0 2px" } }, [document.createTextNode(title), el("span.line")]),
+    return [el("div.section-title", null, [document.createTextNode(title), el("span.line")]),
       note ? el("p.help", { style: { marginBottom: "4px" }, text: note }) : null
     ].concat(R.gear[bucket].map(function (cat) { return gearRow(ch, bucket, cat); }));
   }
@@ -1727,7 +1727,7 @@ EN.builder = (function () {
             overspent ? el("p.help", { style: { color: "var(--danger)", margin: "4px 0 0" }, text: "Over budget; refund some upgrades (↩)." }) : null
           ])
         ]),
-        el("div.section-title", { style: { margin: "16px 0 2px" } }, [document.createTextNode("Skill Tiers"), el("span.line")]),
+        el("div.section-title", null, [document.createTextNode("Skill Tiers"), el("span.line")]),
         el("p.help", { style: { marginBottom: "6px" }, text: "Background & class grants give a free Proficient floor (GRANTED). Focus & Specialization buttons appear once a skill qualifies." }),
         el("div", null, d.skills.map(function (s) { return skillRow(ch, s); }))
       ], { corners: true, attention: b.remaining > 0, dismissKey: tpKey, attentionTitle: "Unspent Training Points; click to dismiss" }),

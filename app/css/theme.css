@@ -142,7 +142,15 @@ a{ color:var(--accent); text-decoration:none; }
    A heading that opens its container keeps nothing above it. */
 .section-title{ font-family:var(--disp); font-size:12px; letter-spacing:.2em; text-transform:uppercase;
   color:var(--text3); margin:18px 0 10px; display:flex; align-items:center; gap:10px; }
-.section-title:first-child{ margin-top:0; }
+/* Three contexts, one rule each, so no call site has to carry a number of its own. Page level,
+   the base above. A sub-heading inside a panel body, which introduces a table or a run of cards:
+   14 above, 6 below. A row in a stack of collapsible headers (the caret kind): 12 above, 4 below,
+   since a stack reads as a list and wants to sit tighter. The device headers keep their own rule
+   further down and are kept out of these. A heading that opens its container has nothing above
+   it in any of the three. Before this, 33 call sites set their own inline margin in seven sizes. */
+.panel-b .section-title:not(.device-head){ margin:14px 0 6px; }
+.panel-b .section-title.clickable:not(.device-head){ margin:12px 0 4px; }
+.section-title:first-child, .panel-b .section-title:not(.device-head):first-child, .panel-b .section-title.clickable:not(.device-head):first-child{ margin-top:0; }
 .section-title::before{ content:"//"; color:var(--accent); }
 .section-title .line{ flex:1; height:1px; background:linear-gradient(90deg,var(--border),transparent); }
 .section-title.clickable{ cursor:pointer; user-select:none; }

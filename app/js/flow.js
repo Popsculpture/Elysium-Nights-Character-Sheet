@@ -57,7 +57,7 @@ EN.flowView = (function () {
   function curFP(ch, d) { var c = (ch.flow && ch.flow.current != null) ? ch.flow.current : d.flow.max; return eng.clamp(c, 0, d.flow.max); }
   function collapsible(key, title, build) {
     var open = !!_open[key];
-    var head = el("div.section-title.clickable", { style: { margin: "12px 0 4px" }, onclick: function () { _open[key] = !open; EN.app.render(); } },
+    var head = el("div.section-title.clickable", { onclick: function () { _open[key] = !open; EN.app.render(); } },
       [document.createTextNode(title), el("span.line"), el("span.collapse-caret", { style: { marginLeft: "4px" }, text: open ? "▾" : "▸" })]);
     return open ? [head, build()] : [head];
   }
@@ -132,7 +132,7 @@ EN.flowView = (function () {
     kids.push(noteP("Reservoir = (Caliber x 3) + Flow Modifier. Flow Attack " + eng.fmtMod(f.attackBonus) + " vs Defense · Flow Save DC " + f.dc + " (" + f.attributeName + ")."));
 
     // Strain track: 5 stages, click to set (toggles to N-1 if already at N)
-    kids.push(el("div.section-title", { style: { margin: "12px 0 4px" } }, [document.createTextNode("Strain"), el("span.line")]));
+    kids.push(el("div.section-title", null, [document.createTextNode("Strain"), el("span.line")]));
     var STC = ["var(--success)", "var(--warn)", "var(--warn)", "var(--ember)", "var(--danger)", "var(--danger)"];
     var cells = (EN.flow.strainTrack).map(function (s) {
       var on = stage >= s.stage, col = STC[s.stage];
@@ -373,7 +373,7 @@ EN.flowView = (function () {
 
   function patternsPanel(ch, d) {
     var saved = (ch.flow && ch.flow.patterns) || [], rows = [];
-    rows.push(el("div.section-title", { style: { margin: "2px 0 4px" } }, [document.createTextNode("My Patterns"), el("span.line"),
+    rows.push(el("div.section-title", null, [document.createTextNode("My Patterns"), el("span.line"),
       el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", marginLeft: "6px" }, text: saved.length + " saved" })]));
     rows.push(myPatternsInline(ch, d));
     collapsible("flow-premade", "Premade Templates", function () {
@@ -593,7 +593,7 @@ EN.flowView = (function () {
     var notice = EN.ui.panel("Public Notice", "BUREAU OF RESONANCE COMPLIANCE", [
       noteP("The Flow does not respect zoning. One unlicensed resonance event can drop a tenement, brick a block of chrome, or stop a heart from across the room. Registered Shapers file their frequencies with the Bureau. The unregistered file nothing. That is the whole difference between an accident and a crime.", "var(--text2)"),
       noteP("Reporting is fast, anonymous, and rewarded. Flag a verified unregistered Shaper and the Bureau credits your account in Glimmer, no questions logged. Vigilance is its own protection.", "var(--text2)"),
-      el("div.section-title", { style: { margin: "12px 0 6px" } }, [document.createTextNode("Know the Signs"), el("span.line")]),
+      el("div.section-title", null, [document.createTextNode("Know the Signs"), el("span.line")]),
       el("div", null, signs),
       el("div.row.wrap", { style: { gap: "10px", alignItems: "center", marginTop: "12px" } }, [
         el("button.btn.sm", { style: { color: "var(--danger)", borderColor: "var(--danger)" },
