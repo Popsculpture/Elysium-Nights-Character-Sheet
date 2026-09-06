@@ -7988,6 +7988,28 @@ above the accessibility floor for UI text, and every other combination scores as
 Confirmed visually against the exact reported case (Garage, Elysium Nights, #GRIDroid): solid
 black icon and label, clearly legible.
 
+## The Workbench sub-tab wears the author's icon, 2026-09-06
+
+Author's ask: an icon for the Workbench sub-tab, the last of the Inventory sub-nav's four still
+on a glyph. First try was a toolbox; checked against the actual rail, it held up well, a clean
+box-with-a-handle silhouette even at 11px. The author changed course before it shipped and asked
+for a second candidate, a gear with a lightbulb inside, in its place.
+
+That second one carries a real cost the first did not: the lightbulb, the detail meant to
+distinguish it from a plain gear, is exactly the kind of fine internal line that does not survive
+shrinking, and rasterized at the rail's true size next to the actual Settings gear the two read
+as the same family of icon, a toothed ring. A gear is close to a universal symbol for
+settings/preferences, so Workbench wearing one risks reading as a config panel rather than a
+crafting hub, which the toolbox never risked. Shown this side by side; the author chose the gear
+anyway and it shipped as asked.
+
+Also checked the sub-nav's own selected-state color, since the two entries before this found that
+bug on the Workbench BENCH selector: the sub-nav bar's own `subTab()` never sets a per-button
+colour inline at all (Stash, Chrome, Workbench and Gray Market all just toggle the `.primary`
+class), so it was never exposed to that collision and needed no fix, confirmed directly on the
+exact theme and skin that broke Garage, Elysium Nights on #GRIDroid. All four Inventory sub-tabs
+now wear the author's own art.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from
