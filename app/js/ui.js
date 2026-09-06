@@ -95,6 +95,18 @@ EN.ui = (function () {
     });
   }
 
+  /* A paragraph whose prose is read for **bold** and *italic* rather than printed with its
+     asterisks showing. The catalogue writes markdown in its `text` fields, and a call site that
+     passes such a string to el()'s plain `text:` leaks the markers to the screen; this is the
+     one-liner that does not. `lead` is an optional bold run set ahead of the prose, for the rows
+     that print a range or a label first and used to build that with innerHTML. */
+  function proseP(cls, style, text, lead) {
+    var p = el(cls || "p", style ? { style: style } : null);
+    if (lead) { p.appendChild(el("b", { text: lead })); p.appendChild(document.createTextNode(" · ")); }
+    applyInline(p, String(text == null ? "" : text));
+    return p;
+  }
+
   function renderText(text) {
     if (!text) return el("p", { text: "" });
     var blocks = text.split("\n\n");
@@ -509,7 +521,7 @@ EN.ui = (function () {
     }, armed ? (opts.armedLabel || "SURE?") : opts.label);
   }
 
-  return { el: el, append: append, clear: clear, panel: panel, sectionTitle: sectionTitle, stat: stat, toast: toast, renderText: renderText, applyInline: applyInline,
+  return { el: el, append: append, clear: clear, panel: panel, sectionTitle: sectionTitle, stat: stat, toast: toast, renderText: renderText, applyInline: applyInline, proseP: proseP,
            currencyGlyphsOk: currencyGlyphsOk, substituteCurrencyGlyphs: substituteCurrencyGlyphs,
            dieFace: dieFace, dieFaceSvg: dieFaceSvg, d20Face: d20Face, animatePoolRoll: animatePoolRoll, playFiled: playFiled,
            armButton: armButton, disarm: disarm, isArmed: isArmed };

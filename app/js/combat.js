@@ -2495,7 +2495,8 @@ EN.combatView = (function () {
         useBtn
       ]),
       open ? el("div", null, [
-        el("p", { style: { margin: "0 0 4px" }, text: text || "" }),
+        // the catalogue writes **bold** in these; plain text: printed the asterisks
+        EN.ui.proseP("p", { margin: "0 0 4px" }, text || ""),
         src ? el("div", { style: { textAlign: "right", fontSize: "10px", color: "var(--text3)", fontFamily: "var(--mono)", letterSpacing: ".08em", marginTop: "6px" } }, src) : null
       ]) : null,
       usesRow

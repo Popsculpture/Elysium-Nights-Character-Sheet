@@ -92,7 +92,8 @@ EN.gridView = (function () {
       [document.createTextNode(title), el("span.line"), el("span.collapse-caret", { style: { marginLeft: "4px" }, text: open ? "▾" : "▸" })]);
     return open ? [head, buildBody()] : [head];
   }
-  function noteP(t, color) { return el("p.help", { style: { margin: "2px 0 6px", color: color || "var(--text3)", fontSize: "11.5px" }, text: t }); }
+  // the reference notes are catalogue prose too, so they read their own **bold** rather than print it
+  function noteP(t, color) { return EN.ui.proseP("p.help", { margin: "2px 0 6px", color: color || "var(--text3)", fontSize: "11.5px" }, t); }
   // Bandwidth lives on resources.current (not ch.grid), like every other class resource.
   function setBandwidth(n) { store.update(function (c) { c.resources = c.resources || {}; c.resources.current = c.resources.current || {}; c.resources.current.Bandwidth = n; }); }
   // Cipher casting cost: Complexity 0 free, 1-3 = 1 BW, 4-5 = 2 BW, Signature flat 1 BW.
@@ -253,7 +254,7 @@ EN.gridView = (function () {
       ]),
       open ? el("p.help", { style: { margin: "4px 0 1px", color: "var(--text2)", fontFamily: "var(--mono)", fontSize: "10px" },
         text: cy.cat + " (" + cy.sub + ") · " + cy.exec + " · " + cy.range + " · " + cy.runtime + (cy.link ? " · needs Link" : "") }) : null,
-      open ? el("p.help", { style: { margin: "2px 0 0" }, text: cy.text }) : null
+      open ? EN.ui.proseP("p.help", { margin: "2px 0 0" }, cy.text) : null
     ]);
   }
 
@@ -266,7 +267,9 @@ EN.gridView = (function () {
           cy.exec ? el("span.chip", { style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" } }, cy.exec) : null
         ])
       ]),
-      el("p.help", { style: { margin: "4px 0 0" }, html: (cy.range ? "<b>" + cy.range + "</b> · " : "") + cy.text })
+      // was innerHTML, which printed the text's own **bold** markers and passed catalogue prose
+      // through as markup; proseP builds the range as a real <b> and reads the rest inline
+      EN.ui.proseP("p.help", { margin: "4px 0 0" }, cy.text, cy.range || null)
     ]);
   }
   function cipherViewToggle(label, to) {
@@ -311,7 +314,7 @@ EN.gridView = (function () {
                   onclick: function () { if (can) { setBandwidth(Math.max(0, bwCur - cost)); toast(ab.name + " · −" + cost + " Bandwidth"); } } }, "USE")
               ])
             ]),
-            open ? el("p.help", { style: { margin: "4px 0 0" }, text: ab.text }) : null,
+            open ? EN.ui.proseP("p.help", { margin: "4px 0 0" }, ab.text) : null,
             open && ab.recharge ? el("p.help", { style: { margin: "4px 0 0", color: "var(--success)" }, text: "Recharge: " + ab.recharge }) : null
           ]));
         });
@@ -582,7 +585,7 @@ EN.gridView = (function () {
             el("span.chip", { style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" } }, c.exec),
             el("span.chip", { style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" } }, c.range)
           ]),
-          el("p.help", { style: { margin: "4px 0 0" }, text: c.text })
+          EN.ui.proseP("p.help", { margin: "4px 0 0" }, c.text)
         ]);
       });
       list.unshift(noteP(G.buddyNote, "var(--text2)"));

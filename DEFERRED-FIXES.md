@@ -8246,6 +8246,35 @@ the row evenly, the popover still opens as that skin's bottom sheet through the 
 credit and debit through it still move the balance and hand it back. Classic and '98 measured
 unchanged, content-sized at 27px tall with no clip. No console errors.
 
+## Catalogue markdown was printing its own asterisks, 2026-09-06
+
+The author found ability cards showing `**Ranged Care:**` with the markers visible. The catalogue
+writes markdown bold in its prose, roughly 490 runs across seven data files, and the app already
+had the reader for it: `EN.ui.applyInline` handles `**bold**` and `*italic*`, and `renderText`
+wraps it for block prose. Codex, Admin and #PRINT all use one or the other. The sites that did not
+simply passed the string to `el()`'s plain `text:`, which prints exactly what it is given.
+
+Rather than fix the one card the author was looking at, the app was swept for the symptom: every
+tab, then every tab again with its collapsibles opened, collecting any leaf element whose text
+still contained a literal `**`. That found five sites, in two files, and the last of them only
+appeared after expanding a Reference section, which is the part a spot check would have missed:
+
+- `combat.js`, the ability and talent card body, which is the one that was reported
+- `grid.js`, the buddy cipher card, which was building its range with innerHTML and concatenating
+  the raw prose onto it
+- `grid.js`, the same cipher's collapsed detail line, and the #GRID ability body
+- `grid.js`, a second rendering of the buddy ciphers inside the Reference panel
+- `grid.js`'s `noteP`, the reference note helper
+
+`EN.ui.proseP(cls, style, text, lead)` is the new one-liner they all use: a paragraph whose prose
+is read rather than printed, with an optional bold lead for the rows that print a range first. The
+cipher card's `innerHTML` goes with it, so catalogue text is no longer interpreted as markup.
+
+Verified by re-running the same sweep: zero literal markers left anywhere on seven tabs, expanded,
+against two records, with 22 rendered bold runs where there had been none. On the Stitcher, whose
+card the author screenshotted, the bold runs come back as exactly "Ranged Care:", "Trauma Buffer:",
+"Forensic Pathology:", "Beacon Rig:", "Edge" and "Free Action". No console errors.
+
 ## BILLS, second cut: the G is twice the size and now survives the button, 2026-09-06
 
 The entry below flagged that the Glimmer G on the first price list did not resolve at the button's
