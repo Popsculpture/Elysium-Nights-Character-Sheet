@@ -7729,6 +7729,19 @@ which does nothing without forward history, so they never fight. Two changes: th
 it), and the module now refuses to start a gesture within 24px of either screen edge, so a drag
 never begins in the strip the phone owns. Swipes that start in the body of the page are untouched.
 
+The author's screenshots then showed the rest of it. A leftward pull was clean: only the page
+moved. A rightward pull moved the page as it should, but the bezel frame and the pill had shifted
+right by about a hundred pixels, the header was clipped by the frame's black, and the dock was
+gone: fixed layers, so the browser had moved the viewport, not our transform. The sign of the
+translation is the asymmetry. A leftward drag slides the page to negative x, which is never
+scrollable overflow; a rightward drag slides it to positive x, which is, and Android Chrome will
+pan or stretch the viewport into overflow on the root even with body hiding it. So the overflow
+is never allowed to exist: the phone column clips sideways (`overflow-x:clip`, not hidden, so it
+stays no scroll container and the header, the dock and the sticky bars are untouched), and the
+`overscroll-behavior-x:none` above suppresses Chrome's stretch on that axis besides. Emulated:
+a 200px pull either way leaves the dock and header exactly where they were and the document's
+scroll width unchanged.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

@@ -1214,6 +1214,13 @@ html.skin-droid .os-main{ touch-action:pan-y pinch-zoom; }
    viewport's value from has moved between versions. iOS ignores it, and the module's own edge
    zone covers what it can there. */
 html.skin-droid, html.skin-droid body{ overscroll-behavior-x:none; }
+/* A rightward pull slides the page to positive x, which is scrollable overflow, and on the
+   author's Pixel that let Chrome pan and stretch the viewport into it even with body hiding
+   horizontal overflow: the bezel and the pill shifted, the header was clipped by the frame's
+   black, the dock vanished, while a leftward pull (negative x, never overflow) was clean. So the
+   overflow is never allowed to exist: the phone column clips it. clip rather than hidden, so
+   the column stays no scroll container and the header, the dock and the sticky bars are untouched. */
+html.skin-droid .os{ overflow-x:clip; }
 html.skin-droid .swipe-indicator-right{ right:calc(var(--dr-l) + 16px); }
 html.skin-droid .swipe-indicator-left{ left:calc(var(--dr-l) + 16px); }
 html.skin-droid .swipe-indicator-arrow{ font-size:15px; line-height:1; }
