@@ -48,6 +48,13 @@ EN.combatView = (function () {
     try { localStorage.setItem("en_freelancer_edit_v1", on ? "1" : "0"); } catch (e) {}
   }
 
+  // the author's rest and downtime icons, replacing the ⏾/☾/⏳ glyphs everywhere those three
+  // actions are named: the toggle button that opens each popover and its own confirm button inside
+  var ICON_SHORT_REST = '<svg viewBox="0 0 101.5 122.88" fill="currentColor" aria-hidden="true"><path d="M56.84,21.74a50.83,50.83,0,1,1-9.59-.24V13c0-.13,0-.26,0-.39h-9.5a2.83,2.83,0,0,1-2.83-2.83V2.83A2.84,2.84,0,0,1,37.76,0H66.33a2.84,2.84,0,0,1,2.83,2.83V9.77a2.83,2.83,0,0,1-2.83,2.83H56.82c0,.13,0,.26,0,.39v8.75Zm-6.09,86a35.32,35.32,0,0,0,0-70.64v70.64ZM96.33,37.07c2-4.7,1.73-9.62-1.09-12.92-3.38-4-9.49-4.41-15.17-1.63A82.53,82.53,0,0,1,96.33,37.07Zm-91.16,0c-2-4.7-1.74-9.62,1.08-12.92,3.38-4,9.5-4.41,15.18-1.63A82,82,0,0,0,5.17,37.07ZM80.87,42A42.59,42.59,0,1,0,93.35,72.13,42.47,42.47,0,0,0,80.87,42Z"/></svg>';
+  var ICON_LONG_REST = '<svg viewBox="0 0 122.88 122.89" fill="currentColor" aria-hidden="true"><path d="M49.06,1.27c2.17-0.45,4.34-0.77,6.48-0.98c2.2-0.21,4.38-0.31,6.53-0.29c1.21,0.01,2.18,1,2.17,2.21 c-0.01,0.93-0.6,1.72-1.42,2.03c-9.15,3.6-16.47,10.31-20.96,18.62c-4.42,8.17-6.1,17.88-4.09,27.68l0.01,0.07 c2.29,11.06,8.83,20.15,17.58,25.91c8.74,5.76,19.67,8.18,30.73,5.92l0.07-0.01c7.96-1.65,14.89-5.49,20.3-10.78 c5.6-5.47,9.56-12.48,11.33-20.16c0.27-1.18,1.45-1.91,2.62-1.64c0.89,0.21,1.53,0.93,1.67,1.78c2.64,16.2-1.35,32.07-10.06,44.71 c-8.67,12.58-22.03,21.97-38.18,25.29c-16.62,3.42-33.05-0.22-46.18-8.86C14.52,104.1,4.69,90.45,1.27,73.83 C-2.07,57.6,1.32,41.55,9.53,28.58C17.78,15.57,30.88,5.64,46.91,1.75c0.31-0.08,0.67-0.16,1.06-0.25l0.01,0l0,0L49.06,1.27 L49.06,1.27z"/></svg>';
+  var ICON_DOWNTIME = '<svg viewBox="0 0 119.92 122.88" fill="currentColor" aria-hidden="true"><path d="M108.68,122.88H11.24A11.28,11.28,0,0,1,0,111.64V22.55A11.28,11.28,0,0,1,11.24,11.31H21.61V25.14a12.35,12.35,0,0,0,4.67,9.61,14.55,14.55,0,0,0,18.31,0,12.35,12.35,0,0,0,4.67-9.61V11.31H70.2V25.14a12.35,12.35,0,0,0,4.67,9.61,14.55,14.55,0,0,0,18.31,0,12.35,12.35,0,0,0,4.67-9.61V11.31h10.83a11.3,11.3,0,0,1,11.24,11.24v89.09a11.27,11.27,0,0,1-11.24,11.24ZM83.58,56.77h16.1a2.07,2.07,0,0,1,2.06,2v13.4a2.07,2.07,0,0,1-2.06,2H83.58a2.06,2.06,0,0,1-2-2V58.82a2.05,2.05,0,0,1,2-2Zm-31.51,0H68.18a2.06,2.06,0,0,1,2,2v13.4a2.07,2.07,0,0,1-2,2H52.07a2.06,2.06,0,0,1-2-2V58.82a2.06,2.06,0,0,1,2-2Zm-31.84,0H36.34a2.06,2.06,0,0,1,2,2v13.4a2.07,2.07,0,0,1-2,2H20.23a2.06,2.06,0,0,1-2.05-2V58.82a2.05,2.05,0,0,1,2.05-2ZM83.58,85.26h16.1a2.07,2.07,0,0,1,2.06,2v13.4a2.06,2.06,0,0,1-2.06,2.05H83.58a2.06,2.06,0,0,1-2-2.05V87.31a2.06,2.06,0,0,1,2-2Zm-31.51,0H68.18a2.06,2.06,0,0,1,2,2v13.4a2.06,2.06,0,0,1-2,2.05H52.07a2.06,2.06,0,0,1-2-2.05V87.31a2.07,2.07,0,0,1,2-2Zm-31.84,0H36.34a2.06,2.06,0,0,1,2,2v13.4a2.06,2.06,0,0,1-2,2.05H20.23a2.06,2.06,0,0,1-2.05-2.05V87.31a2.06,2.06,0,0,1,2.05-2ZM78.6,4.45C78.6,2,81,0,84,0s5.43,2,5.43,4.45V25.14c0,2.46-2.42,4.45-5.43,4.45s-5.42-2-5.42-4.45V4.45ZM30,4.45C30,2,32.44,0,35.44,0s5.42,2,5.42,4.45V25.14c0,2.46-2.42,4.45-5.42,4.45S30,27.6,30,25.14V4.45ZM3.6,43.86v66.58a8.87,8.87,0,0,0,8.84,8.84h95a8.87,8.87,0,0,0,8.85-8.84V43.86Z"/></svg>';
+  // an icon plus a label, for a button whose third argument used to be a bare glyph+text string
+  function iconLabel(icon, text) { return [el("span", { html: icon }), document.createTextNode(" " + text)]; }
   var _fxBox = { mode: "open", closedKey: null };   // sticky Active Condition Effects box ("open"/"min"; closedKey = content-keyed dismiss)
   var _pops = { vit: false, wound: false, rest: false, short: false, down: false, addgear: false };   // popover state (VITALITY / WOUNDS / LONG REST / SHORT REST / DOWNTIME / ＋ ADD TO LOADOUT)
   var _downDays = 7;   // last downtime span typed, remembered across renders
@@ -2922,7 +2929,7 @@ EN.combatView = (function () {
       })() }),
       el("div.row.wrap", { style: { gap: "8px" } }, [
         el("div.pop-anchor", { style: { position: "relative" } }, [
-          el("button.btn.sm", { onclick: function () { var was = _pops.short; closePops(); _pops.short = !was; EN.app.render(); } }, "⏾ SHORT REST"),
+          el("button.btn.sm", { onclick: function () { var was = _pops.short; closePops(); _pops.short = !was; EN.app.render(); } }, iconLabel(ICON_SHORT_REST, "SHORT REST")),
           _pops.short ? (function () {
             var rdIn = el("input", { type: "number", min: 1, max: Math.max(1, s.rd), value: Math.min(_amts.rd, Math.max(1, s.rd)),
               oninput: function () { _amts.rd = Math.max(1, Number(this.value) || 1); },
@@ -2946,12 +2953,12 @@ EN.combatView = (function () {
                   onclick: function () { spendResilience(ch, d, Math.min(_amts.rd, s.rd)); } },
                   s.rd > 0 ? "⚄ ROLL & HEAL" : "NO DICE LEFT")
               ]),
-              el("button.btn.sm.primary", { style: { justifyContent: "center" }, onclick: function () { shortRest(ch, d); } }, "⏾ TAKE SHORT REST")
+              el("button.btn.sm.primary", { style: { justifyContent: "center" }, onclick: function () { shortRest(ch, d); } }, iconLabel(ICON_SHORT_REST, "TAKE SHORT REST"))
             ]);
           })() : null
         ]),
         el("div.pop-anchor", { style: { position: "relative" } }, [
-          el("button.btn.sm.primary", { onclick: function () { var was = _pops.rest; closePops(); _pops.rest = !was; EN.app.render(); } }, "☾ LONG REST"),
+          el("button.btn.sm.primary", { onclick: function () { var was = _pops.rest; closePops(); _pops.rest = !was; EN.app.render(); } }, iconLabel(ICON_LONG_REST, "LONG REST")),
           _pops.rest ? el("div", { style: { position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 30, width: "240px",
                                             display: "flex", flexDirection: "column", gap: "10px", padding: "12px",
                                             background: "var(--bg2)", border: "1px solid var(--border2)", borderRadius: "4px",
@@ -2974,7 +2981,7 @@ EN.combatView = (function () {
             })(),
             el("div.row", { style: { gap: "8px", justifyContent: "flex-end" } }, [
               el("button.btn.sm", { onclick: function () { _pops.rest = false; EN.app.render(); } }, "CANCEL"),
-              el("button.btn.sm.primary", { onclick: function () { _pops.rest = false; longRest(ch, d, _restProvisioned !== false); } }, "☾ REST")
+              el("button.btn.sm.primary", { onclick: function () { _pops.rest = false; longRest(ch, d, _restProvisioned !== false); } }, iconLabel(ICON_LONG_REST, "REST"))
             ])
           ]) : null
         ]),
@@ -2982,7 +2989,7 @@ EN.combatView = (function () {
            the stretches between jobs. Moves every day-based timer and nothing
            else, so it never hands out recovery the fiction did not include. */
         el("div.pop-anchor", { style: { position: "relative" } }, [
-          el("button.btn.sm", { title: "Advance the story calendar without resting", onclick: function () { var was = _pops.down; closePops(); _pops.down = !was; EN.app.render(); } }, "⏳ DOWNTIME"),
+          el("button.btn.sm", { title: "Advance the story calendar without resting", onclick: function () { var was = _pops.down; closePops(); _pops.down = !was; EN.app.render(); } }, iconLabel(ICON_DOWNTIME, "DOWNTIME")),
           _pops.down ? (function () {
             var inp = el("input.mono", { type: "number", min: "1", max: "365", value: String(_downDays),
               style: { width: "72px", textAlign: "center", padding: "5px" },

@@ -8023,6 +8023,21 @@ Every rail tab and every sub-tab in the app now wears the author's own art; only
 been left on its glyph since the pass started with Codex. Verified in a fresh browser tab: every
 rail icon present, correct stamp, no tab throws, no console errors.
 
+## Short Rest, Long Rest and Downtime wear the author's icons, 2026-09-06
+
+Author's ask: icons for the three rest actions on the Freelancer dashboard, in place of the
+⏾/☾/⏳ glyphs. Each of the three names its action twice, the toggle button that opens
+its popover and the confirm button inside it (Short Rest's own is worded "TAKE SHORT REST", Long
+Rest's "REST"), five sites in all; a small `iconLabel()` helper was added so each site is a
+one-line swap instead of five hand-built children arrays. Downtime's own popover buttons (ADVANCE,
+1/7/30 DAYS, CANCEL) never carried the glyph and are untouched.
+
+Checked against the actual dashboard at the real 11px size: a crescent moon for Long Rest, the
+cleanest of the three; a clear calendar grid for Downtime; a partial-cycle clock for Short Rest.
+All three read distinctly from one another and from every other icon already in the app. Verified
+in a fresh browser tab: correct stamp, all five sites carry the icon, the short rest flow still
+reaches its confirm button, no tab throws, no console errors.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from
