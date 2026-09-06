@@ -152,9 +152,11 @@ a{ color:var(--accent); text-decoration:none; }
   opacity:0; visibility:hidden; transition:opacity .18s;
 }
 .oc-pip-l{ left:1px; } .oc-pip-r{ right:1px; }
-/* edgePulse, not pulse: the LED's pulse bottoms out at .35, which is fine for a status light and
-   wrong for a thing whose whole job is to be seen. This one only halves. */
-.oc-pip.on{ visibility:visible; opacity:1; color:var(--accent); border-color:var(--accent); animation:edgePulse 2.4s ease-in-out infinite; }
+/* Its own keyframe rather than the LED's pulse or the Flow bar's edgePulse, both of which are
+   shared and both of which dip further than a wayfinding hint should: this is a breath, not a
+   blink, so it never drops far enough to make the reader wonder whether the pip is going away. */
+@keyframes ocHintPulse{ 0%,100%{ opacity:.72; } 50%{ opacity:1; } }
+.oc-pip.on{ visibility:visible; opacity:1; color:var(--accent); border-color:var(--accent); animation:ocHintPulse 3.6s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce){
   /* the house rule: kill the movement, keep the affordance at full strength */
   .oc-pip.on{ animation:none; opacity:1; }
@@ -1503,7 +1505,7 @@ html.skin-droid div[data-rg][style*="grid-template-columns"]{ overflow-x:auto; -
    below carry the movement. */
 html.skin-droid div[data-rg][style*="grid-template-columns"]::-webkit-scrollbar{ height:5px; }
 html.skin-droid div[data-rg][style*="grid-template-columns"]::-webkit-scrollbar-track{ background:var(--bg2); }
-html.skin-droid div[data-rg][style*="grid-template-columns"]::-webkit-scrollbar-thumb{ background:var(--accent-dim); border-radius:3px; animation:edgePulse 2.4s ease-in-out infinite; }
+html.skin-droid div[data-rg][style*="grid-template-columns"]::-webkit-scrollbar-thumb{ background:var(--accent-dim); border-radius:3px; animation:ocHintPulse 3.6s ease-in-out infinite; }
 html.skin-droid .roll-slot select{ padding:6px 28px 6px 8px !important; }
 html.skin-droid .row > div[style*="min-width: 120px"]{ flex:1 1 100% !important; }   /* skill and gear proficiency rows: the name line, then the cluster */
 html.skin-droid input[style*="width: 220px"]{ width:100% !important; flex:1 1 100%; }

@@ -348,27 +348,77 @@ EN.builder = (function () {
     };
   }
 
+  var ROLL_GROUP_CAP = 6;
+
+  /* What the table's rule actually compares: the total, and how many of the six beat the 10 every
+     attribute starts at. Shared by the roll groups and the Overclocked matrix so the two can never
+     drift apart on what "best" means. Null for a malformed set, which a hand-edited or imported
+     record can carry and which must not take the render down. */
+  function sixStats(slots) {
+    if (!Array.isArray(slots) || slots.length !== 6) return null;
+    var sum = 0, above = 0;
+    for (var i = 0; i < 6; i++) {
+      var slot = slots[i];
+      if (!slot || !Array.isArray(slot.dice) || slot.dice.length !== 4) return null;
+      var t = slotTotal(slot);
+      sum += t;
+      if (t > 10) above++;
+    }
+    return { sum: sum, above: above };
+  }
+  /* The strongest banked group, or null when there is nothing to choose between. Strictly better
+     only, so the first group wins a tie, and since new groups are unshifted that is the newest;
+     a genuine tie is named on the chip rather than settled silently. */
+  function bestRollGroup(groups) {
+    groups = groups || [];
+    if (groups.length < 2) return null;
+    var scored = [];
+    groups.forEach(function (g) {
+      var st = g && sixStats(g.slots);
+      if (st) scored.push({ id: g.id, sum: st.sum, above: st.above });
+    });
+    if (!scored.length) return null;
+    var top = scored[0];
+    scored.forEach(function (s) { if (s.sum > top.sum || (s.sum === top.sum && s.above > top.above)) top = s; });
+    top.tied = scored.filter(function (s) { return s.id !== top.id && s.sum === top.sum && s.above === top.above; }).length;
+    return top;
+  }
+
   function rollGroupsSection(ch) {
     var style = DICE_STYLES[_diceStyle] || DICE_STYLES.neon;
     var groups = ch.rollGroups || [];
+    var full = groups.length >= ROLL_GROUP_CAP;
     var head = el("div.row.wrap", { style: { gap: "10px", alignItems: "center", margin: "16px 0 4px" } }, [
       el("div.section-title", { style: { margin: 0, flex: 1, minWidth: "200px" } }, [document.createTextNode("Dice Roll Groups (4d6, drop the lowest)"), el("span.line")]),
-      el("button.btn.sm.primary", { onclick: function () {
-        var g = newRollGroup();
-        _animGroup = g.id;
-        store.update(function (c) { c.rollGroups = c.rollGroups || []; c.rollGroups.unshift(g); });
-        animateDiceRoll(g);
-        _animGroup = null;
-      } }, "⚄ ROLL GROUP")
+      el("span.chip", { style: { color: full ? "var(--gold)" : "var(--text3)", borderColor: full ? "var(--gold)" : "var(--border2)" },
+        text: groups.length + " / " + ROLL_GROUP_CAP }),
+      /* The button stays live at the cap rather than going disabled, because a dead button
+         explains nothing: the press is what earns the sentence telling you to delete one. */
+      el("button.btn.sm.primary", { title: full ? "The bank is full; delete a group to roll another" : "Throw 6 × 4d6 into a new banked group",
+        onclick: function () {
+          if ((store.active().rollGroups || []).length >= ROLL_GROUP_CAP) {
+            toast("That is all " + ROLL_GROUP_CAP + " groups. Delete one before rolling another.");
+            return;
+          }
+          var g = newRollGroup();
+          _animGroup = g.id;
+          store.update(function (c) { c.rollGroups = c.rollGroups || []; c.rollGroups.unshift(g); });
+          // the mark compares groups, so it waits for the new one's dice the way the matrix does
+          animateDiceRoll(g, function () { EN.app.render(); });
+          _animGroup = null;
+        } }, "⚄ ROLL GROUP")
     ]);
     var body = [head,
-      el("p.help", { style: { marginBottom: "8px" }, text: "Bank as many roll groups as your GM allows, assign each value to an Attribute, then apply one group to your scores." })];
+      el("p.help", { style: { marginBottom: "8px" }, text: "Bank up to " + ROLL_GROUP_CAP + " roll groups, assign each value to an Attribute, then apply one group to your scores."
+        + (groups.length > 1 ? " ▲ marks the strongest group banked, on the same rule the matrix uses: highest total, ties to the one with more scores above 10." : "") })];
     if (!groups.length) body.push(el("div.muted-box", { text: "No banked rolls yet; hit ROLL GROUP to throw 6 × 4d6." }));
-    groups.forEach(function (g) { body.push(rollGroupBox(ch, g, style)); });
+    // no mark over spinning dice, and none at all until there is something to compare against
+    var top = _animGroup ? null : bestRollGroup(groups);
+    groups.forEach(function (g) { body.push(rollGroupBox(ch, g, style, top && top.id === g.id ? top : null)); });
     return el("div", null, body);
   }
 
-  function rollGroupBox(ch, g, style) {
+  function rollGroupBox(ch, g, style, top) {
     var animating = g.id === _animGroup;
     var assignedKeys = g.assign.filter(Boolean);
     var complete = assignedKeys.length === 6;
@@ -394,9 +444,14 @@ EN.builder = (function () {
         sel
       ]);
     });
-    return el("div.roll-group", { dataset: { rg: g.id } }, [
+    return el("div.roll-group", { dataset: { rg: g.id }, style: top ? { borderColor: "var(--gold)" } : null }, [
       el("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(96px, 1fr))", gap: "8px" } }, slots),
       el("div.row.wrap", { style: { gap: "8px", marginTop: "10px", justifyContent: "flex-end" } }, [
+        top ? el("span.chip", { style: { marginRight: "auto", color: "var(--gold)", borderColor: "var(--gold)" },
+          title: "The strongest group banked: " + top.sum + " total, " + top.above + " of six above 10"
+            + (top.tied ? ". Tied outright with " + top.tied + " other group" + (top.tied > 1 ? "s" : "") : "")
+            + ". The biggest total is not always the array you want, so read the spread before applying it.",
+          text: "▲ HIGHEST · " + top.sum }) : null,
         el("button.btn.sm", { onclick: function () { store.update(function (c) { var gg = (c.rollGroups || []).find(function (x) { return x.id === g.id; }); if (gg) gg.assign = [null, null, null, null, null, null]; }); } }, "RESET"),
         el("button.btn.sm.danger", { onclick: function () { store.update(function (c) { c.rollGroups = (c.rollGroups || []).filter(function (x) { return x.id !== g.id; }); }); } }, "✕ DELETE"),
         el("button.btn.sm" + (complete ? ".primary" : ""), { disabled: !complete, title: complete ? "Set your six scores from this group" : "Assign all six values first",
@@ -496,15 +551,8 @@ EN.builder = (function () {
     var lines = [];
     kinds.forEach(function (k) {
       for (var n = 0; n < k[1]; n++) {
-        var idx = ocLineIndices(k[0], n), sum = 0, above = 0, ok = true;
-        for (var i = 0; i < 6; i++) {
-          var slot = oc.grid[idx[i]];
-          if (!slot || !Array.isArray(slot.dice) || slot.dice.length !== 4) { ok = false; break; }
-          var t = slotTotal(slot);
-          sum += t;
-          if (t > 10) above++;
-        }
-        if (ok) lines.push({ key: k[0] + ":" + n, label: ocLineLabel(k[0], n), sum: sum, above: above });
+        var st = sixStats(ocLineIndices(k[0], n).map(function (i) { return oc.grid[i]; }));
+        if (st) lines.push({ key: k[0] + ":" + n, label: ocLineLabel(k[0], n), sum: st.sum, above: st.above });
       }
     });
     if (!lines.length) return out;

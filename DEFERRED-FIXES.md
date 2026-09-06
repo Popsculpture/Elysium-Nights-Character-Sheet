@@ -8085,6 +8085,37 @@ Verified in the browser at 375px on #GRID (cyan) and Elysium Nights (gold): word
 box around it, and the whole header is visibly shorter than before. Confirmed Classic and '98
 untouched, both keep their own separate `#active-name` treatment. Fresh tab, no console errors.
 
+## Manual/Roll gets a bank limit and the same best-of mark, 2026-09-06
+
+Author's ask: cap the banked roll groups at six, warn rather than silently refuse when a seventh
+is attempted, and mark the strongest group once there is more than one, the way the Overclocked
+matrix does.
+
+The cap is checked against the store rather than the rendered list, since the render it was drawn
+from can be a moment stale. The button deliberately stays live at six instead of going disabled:
+a dead button explains nothing, and the press is what earns the sentence telling you to delete one
+first. A counter chip beside the title reads "6 / 6" and turns gold when full, so the limit is
+visible before anyone hits it.
+
+The mark reuses the matrix's rule rather than a second copy of it. `sixStats()` now owns the pair
+the rule actually compares, the total and how many of the six beat the 10 an attribute starts at,
+and both `ocBestLine` and the new `bestRollGroup` are built on it, so the two features cannot
+drift apart on what "best" means. Same shape as the matrix throughout: nothing marked while there
+is only one group (there is nothing to compare), nothing marked over spinning dice, strictly
+better wins so a tie falls to the first group, which is the newest since groups are unshifted, and
+the tie is named on the chip rather than settled quietly.
+
+Verified on an example record, never the author's: six rolls fill the bank and the counter tracks
+them; the seventh leaves the count at six and raises "That is all 6 groups. Delete one before
+rolling another."; deleting one reopens the bank and rolling refills it. The marked group was
+checked against an independent recomputation over the stored dice, on a set that happened to tie
+at 75, and matched. Two deliberately identical groups confirmed the tie wording, and a lone group
+draws no mark at all.
+
+Caught in that testing: the tie clause never rendered, because `top.tied` is a count and the
+template asked for `top.tied.length`, which is undefined on a number and therefore always falsy.
+It read as "no tie" on every genuine tie. Fixed and re-checked against a guaranteed tie.
+
 ## The Overclocked matrix marks its highest line, 2026-09-06
 
 Author's ask: highlight the row, column or diagonal with the highest rolled total. `ocBestLines()`
@@ -8166,9 +8197,15 @@ reached, both in the middle.
 The scrollbar half needed saying out loud. That bar is 4px of `--bg4` on a near-black track, so a
 pulse there is a pulse nobody sees, and on Firefox it is the OS default and unreachable. It is now
 accent-dim on `--bg2` for this scroller only, which is what makes the pulse land; the pips carry
-most of the message. Both use `edgePulse` rather than the LED's `pulse`, which bottoms out at .35,
-too deep for something whose whole job is to be noticed. `prefers-reduced-motion` kills the
-movement and leaves both at full strength, per the house rule.
+most of the message.
+
+Both pulse on `ocHintPulse`, their own keyframe, at 3.6s between .72 and 1. It started on the
+shared `edgePulse` at 2.4s between .5 and 1, and the author asked for slower and softer, which was
+right: a wayfinding hint should breathe rather than blink, and dipping by half invites the reader
+to wonder whether the thing is on its way out. It needed its own keyframe rather than an edit,
+since `edgePulse` still drives a Flow bar and `pulse` the status LEDs, and neither wants this
+timing. `prefers-reduced-motion` kills the movement and leaves both at full strength, per the
+house rule.
 
 Two things worth knowing for anyone changing this:
 - `data-rg` stays on the grid itself. `animateDiceRoll` finds the grid with a document-wide
