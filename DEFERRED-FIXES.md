@@ -8246,6 +8246,64 @@ the row evenly, the popover still opens as that skin's bottom sheet through the 
 credit and debit through it still move the balance and hand it back. Classic and '98 measured
 unchanged, content-sized at 27px tall with no clip. No console errors.
 
+## '98 takes the app's mark on START, and its Codex glyph grows, 2026-09-06
+
+Two asks: give the '98 taskbar the same Codex enlargement #GRIDroid got, and put the app's own
+logo where START's bevelled square was.
+
+START. The square was `content:""` plus `background:var(--accent)` and an inset bevel. It is now
+a 14px box painted with the logo as a CSS mask from an inline data URI, keeping the accent
+background so the glyph still takes the skin's colour; a data URI cannot resolve currentColor, and
+a mask keeps the theming a background-image would have thrown away. This is the first mask in the
+codebase. Where it is not understood the declaration drops and a plain accent block remains, which
+is not the bevelled square it replaces (the bevel goes with it) but a sane shape in the right
+colour rather than a hole. The art is byte-identical to the copy inlined in index.html as
+.os-badge, verified by comparing both against the author's file element by element.
+
+The mask's viewBox is the one thing that is NOT the author's: it windows the art at
+`117.5 117.5 277 277` instead of the full `0 0 512 512`. A viewBox is the window, not the drawing,
+so no coordinate moves and the verbatim rule holds. It is necessary because `mask-size:contain`
+fits the BOX, and the logo's ink fills only 54% of that box: the padded form painted a 7.6px mark
+inside a 14px slot, thinner than the 11px square it replaced, with the frame stroke at 0.30px and
+the octothorpe bars at 0.66px, both under one device pixel. Rastered at 14 device px the padded
+form reached a maximum alpha of 180/255 with ZERO fully opaque pixels, so the mark never actually
+reached var(--accent). Windowed, the same box paints 14px of ink at full alpha. index.html's badge
+keeps the author's full 512 box on purpose, because #GRIDroid draws it at 26px where the air is
+correct for a header lockup.
+
+Two lessons here, and the first is one this session had already learned and failed to carry over.
+A week of icon work on the Codex stick established that what matters is the INK, not the box, and
+the very next icon was sized by its box. Second: `mask-size:contain` makes that mistake invisible,
+because the mask still looks correct in the file and only fails on the raster.
+
+The Codex glyph on '98 went to 15px first, to match the neighbours' 11px ink width the way droid's
+26px does. That was wrong for this skin, and the reason is structural: droid parks the glyph in a
+fixed 38px grid cell, so extra height is contained and the label cannot move, while a '98 tab is a
+plain flex row where the glyph's box width feeds straight into where the label starts. At 15px the
+stick stood 36% taller than any neighbour and pushed CODEX 4px out of the 31px inset the other six
+share, and in the squeezed row (the strip's own scrollbar takes a third of the 30px button) its
+clearance went negative at -0.17px. 13px matches ink AREA rather than ink width: 9.9 x 13 against
+the peers' ~116px2 mean, two pixels of label drift instead of four, and clearance back to +2.8.
+
+One more defect the review found, and it was mine: `flex:0 0 auto` on the mark stopped the MARK
+shrinking but left the BUTTON shrinkable, so the squeeze moved onto the label and START broke out
+of its own bevel 153px earlier than before. `html.skin-98 .os-gear` now carries `flex-shrink:0`,
+so the squeeze lands on the tab scroller, which is built to scroll. `min-width:0` stays: it is
+there to cancel the 112px tab floor, not to license shrinking below the label. Worth knowing that
+the only other `.os-gear{flex:0 0 auto}` lives in settings.js's injected sheet, which is not in the
+document until the tray has been opened once, so it was never the safety net it looked like.
+
+Verified at 411px and at full width: START holds 96px with its label unclipped, the scroller takes
+the squeeze and still reaches every tab, the mark is 14px of full-alpha ink, the Codex glyph is
+13px with positive clearance, the taskbar is still 40px, Classic and #GRIDroid are untouched
+(their gear keeps flex-shrink:1 and no mask), and there is no page overflow.
+
+Not ours, found while checking the console: every load logs two 404s, for /favicon.ico and
+/apple-touch-icon.png. The app ships img/icon-192.png and img/icon-512.png and declares a manifest
+and an apple-touch-icon, but no `<link rel="icon">`, so the browser probes the root and misses.
+Pre-existing, unrelated to any of this, and left alone.
+
+
 ## The Codex wears the author's info stick, 2026-09-06
 
 The tab's book-with-a-question-mark is replaced by the author's own art: a memory stick with an

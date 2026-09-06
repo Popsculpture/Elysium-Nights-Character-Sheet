@@ -775,9 +775,42 @@ html.skin-98 .os-tab.active{
   background-image:repeating-linear-gradient(45deg, transparent 0 2px, rgba(255,255,255,.04) 2px 3px);
 }
 html.skin-98 .os-tab span{ color:var(--accent); }
-html.skin-98 .os-gear{ order:-1; height:30px; padding:0 12px 0 10px; background:var(--bg3); min-width:0; }
+/* the Codex stick again, 0.762 as wide as it is tall where the rest sit near 1.0: at the shared
+   11px it drew 8.4px across against their 11. Matching that width outright takes 15px, and this
+   skin cannot absorb it the way #GRIDroid does. Droid parks the glyph in a fixed 38px grid cell,
+   so extra height is contained and the label cannot move; a '98 tab is a plain flex row, so the
+   glyph's box width feeds straight into where the label starts, and 15px stood the stick 36%
+   taller than any neighbour while pushing CODEX 4px out of the 31px inset the other six share.
+   13px matches ink AREA rather than ink width: still wider than the 8.4px it began at, about two
+   pixels of label drift instead of four, and it clears the row when the strip is scrolling. */
+html.skin-98 .os-tab[data-tab="codex"] span svg{ width:13px; height:13px; }
+/* flex-shrink:0 so the squeeze lands on the tab scroller, which is built to scroll, rather than
+   on START: min-width:0 here cancels the 112px tab floor, it does not license shrinking below
+   the label, and the only other .os-gear{flex:0 0 auto} lives in settings.js's injected sheet,
+   which is not in the document until the tray has been opened once. */
+html.skin-98 .os-gear{ order:-1; height:30px; padding:0 12px 0 10px; background:var(--bg3); min-width:0; flex-shrink:0; }
 html.skin-98 .os-gear span{ display:none; }
-html.skin-98 .os-gear::before{ content:""; width:11px; height:11px; margin-right:8px; background:var(--accent); box-shadow:inset 1px 1px 0 rgba(255,255,255,.6), inset -1px -1px 0 rgba(0,0,0,.5); }
+/* START wears the app's own mark instead of a bevelled square. It is painted as a mask rather
+   than a background image so the glyph keeps taking var(--accent) the way the square did; a
+   data URI cannot resolve currentColor. Where mask-image is not understood the declaration is
+   dropped and a plain accent block remains: not the bevelled square this replaces, since the
+   bevel goes with it, but a sane 14px shape in the right colour rather than a hole.
+   The mask's viewBox windows the art (117.5 117.5 277 277) instead of using the author's full
+   512 box. The drawing is untouched: a viewBox is the window, not the geometry. It matters
+   because the logo's ink fills only 54% of that 512 box, and mask-size:contain fits the BOX, so
+   the padded form painted a 7.6px mark inside a 14px slot, thinner than the 11px square it
+   replaces and with every stroke under one device pixel. Windowed, 14px of box is 14px of ink.
+   The same drawing is inlined in index.html as .os-badge for #GRIDroid's header and keeps the
+   full 512 box on purpose: a 26px header lockup wants that air, a 14px taskbar glyph cannot
+   afford it. Recut the art and both want a fresh look. */
+html.skin-98 .os-gear::before{
+  /* flex:0 0 auto because the taskbar button is a flex row: without it the mark is a flex item
+     and shrinks to 13.6px, which slides the masked art off its own centre. */
+  content:""; width:14px; height:14px; flex:0 0 auto; margin-right:8px; background:var(--accent); box-shadow:none;
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='117.5 117.5 277 277'%3E%3Cpath fill-rule='evenodd' d='M 117.5 117.5 H 360.5 L 394.5 151.5 V 394.5 H 150.5 L 117.5 361.5 Z M 128.5 128.5 V 355.5 L 156.5 383.5 H 383.5 V 156.5 L 355.5 128.5 Z'/%3E%3Cpolygon points='220.5,178.5 243.5,178.5 219,333.5 195.5,333.5'/%3E%3Cpolygon points='292.5,178.5 315.5,178.5 291,333.5 267.5,333.5'/%3E%3Crect x='178.5' y='216.5' width='155' height='24'/%3E%3Crect x='178.5' y='271.5' width='155' height='24'/%3E%3C/svg%3E"); mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='117.5 117.5 277 277'%3E%3Cpath fill-rule='evenodd' d='M 117.5 117.5 H 360.5 L 394.5 151.5 V 394.5 H 150.5 L 117.5 361.5 Z M 128.5 128.5 V 355.5 L 156.5 383.5 H 383.5 V 156.5 L 355.5 128.5 Z'/%3E%3Cpolygon points='220.5,178.5 243.5,178.5 219,333.5 195.5,333.5'/%3E%3Cpolygon points='292.5,178.5 315.5,178.5 291,333.5 267.5,333.5'/%3E%3Crect x='178.5' y='216.5' width='155' height='24'/%3E%3Crect x='178.5' y='271.5' width='155' height='24'/%3E%3C/svg%3E");
+  -webkit-mask-size:contain; mask-size:contain; -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
+  -webkit-mask-position:center; mask-position:center;
+}
 html.skin-98 .os-gear::after{ content:"START"; font-family:var(--disp); font-weight:700; font-size:13px; letter-spacing:.14em; color:var(--text); }
 html.skin-98 .os-gear:hover{ color:var(--text); }
 html.skin-98 .os-main{ padding-bottom:110px; }                       /* room for the taskbar */
