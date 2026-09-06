@@ -7954,6 +7954,40 @@ carries its own distinct token (ember, success, flow, gold). Fixed by retinting 
 against the accent-cyan background; the change is fully scoped to the one `BENCHES` entry; a
 grep for its color used elsewhere found nothing to update.
 
+## Tech Bay wears the author's icon, 2026-09-06
+
+Author's ask: use a microchip for Tech Bay, the last of the five benches left on a text glyph.
+Checked against the actual rail the same way as every bench before it: at the real 11px size the
+pin legs merge into the outer edge, as thin strokes always do at that size, but what survives is
+a clean nested-square frame with a solid dark center, an unmistakable chip silhouette and one of
+the cleanest results of the whole set. Tech Bay's color, `var(--flow)`, was never `var(--accent)`,
+so it never carried the collision Fabrication did; confirmed no collision on #GRIDroid regardless.
+All five benches now wear the author's own art.
+
+## The bench-color collision was structural, not a Fabrication problem, 2026-09-06
+
+The author caught it directly: Garage's key, gold on gold, unreadable on the Elysium Nights color
+theme. The Fabrication fix two entries back retinted one bench away from one collision on one
+theme, and that was never going to hold: `#98` and `#GRIDroid` both solid-fill a selected
+`.primary` button's background with `var(--accent)` and set `color:#000` on the class rule, which
+is the one thing that guarantees the label reads against that fill no matter which of the nine
+color themes is active. The bench selector's own inline colour was overriding that unconditionally
+for every bench, so whichever bench's fixed hue happened to sit near the ACTIVE theme's accent
+went invisible. Checked against all nine themes: Slime Time's mint green sits on Impact Table's
+green, Flavor Wizard's orange sits on Arms Table's ember, Merlot's pink-red sits on the
+`var(--danger)` Fabrication had just been retinted to. There is no fixed color for five benches
+that stays distinct from nine themes' accents; retinting one bench only relocates the collision.
+
+Fixed at the root: the inline override is now dropped for exactly the skins and the state that
+solid-fill with the theme's own colour (a selected bench on '98 or #GRIDroid), letting `color:#000`
+win there regardless of theme. Unselected keeps every bench's own colour everywhere, and Classic's
+selected state, a faint tint rather than a solid accent fill, was never the skin with the problem
+and is untouched. Checked all 90 combinations by contrast ratio (5 benches, 9 themes, both
+affected skins): the worst case, Daybreak's magenta on #GRIDroid, still scores 4.83:1, comfortably
+above the accessibility floor for UI text, and every other combination scores as well or better.
+Confirmed visually against the exact reported case (Garage, Elysium Nights, #GRIDroid): solid
+black icon and label, clearly legible.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from
