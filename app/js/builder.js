@@ -126,7 +126,10 @@ EN.builder = (function () {
       if (n) n.textContent = (c.name || "NO FREELANCER").toUpperCase();
       var sel = document.querySelector("#active-name select");
       var opt = sel && sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex] : null;
-      if (opt && opt.value === c.meta.id) opt.text = (c.name || "Unnamed") + " · L" + (c.level || 1);
+      if (opt && opt.value === c.meta.id) {
+        opt.text = (c.name || "Unnamed") + " · L" + (c.level || 1);
+        if (EN.app.fitRecordPick) EN.app.fitRecordPick();   // the header sizes that control to its label
+      }
       if (!n && !opt) EN.app.paintActiveName();
     }
     function nameFieldNode(field, ph) {
@@ -461,6 +464,59 @@ EN.builder = (function () {
     }
     return totals;
   }
+  function ocLineLabel(kind, index) {
+    return kind === "row" ? "R" + (index + 1) : kind === "col" ? "C" + (index + 1) : kind === "d1" ? "⤡" : "⤢";
+  }
+  /* The single strongest line on the board, marked on its header so the eye has somewhere to
+     start. Only lines that can actually be TAKEN are weighed, so a diagonal never wins while the
+     table rule is off, and the mark moves the moment that rule is toggled.
+
+     Exactly one line is ever marked, and sums tie often on a board this size. The table's rule
+     breaks them: most scores above 10 takes it, 10 being the baseline every attribute starts at,
+     so the line that raises the most of them wins. Should that tie too, the first line in this
+     order takes it, rows then columns then diagonals, which is arbitrary but fixed, so the mark
+     never wanders on its own between renders.
+
+     Neither tie is swallowed. A line that only won on the tie-break says so in its tooltip, and
+     one that is still tied after both names the line it is level with, because a lone ▲ on R1
+     while C6 is worth exactly as much would be a quiet lie.
+
+     Malformed slots are skipped the way ocPickTotals skips them, since a hand-edited or imported
+     record must not take the render down. */
+  function ocBestLine(oc) {
+    var out = { key: null, sum: 0, above: 0, tied: [], brokeOver: [] };
+    if ((oc.grid || []).length !== 36) return out;
+    var kinds = [["row", 6], ["col", 6]];
+    if (oc.allowDiagonals) { kinds.push(["d1", 1], ["d2", 1]); }
+    // measure every line first, choose second: comparing as we go meant unwinding earlier ties
+    // when a later line broke them, which is exactly the kind of bookkeeping that hides a bug
+    var lines = [];
+    kinds.forEach(function (k) {
+      for (var n = 0; n < k[1]; n++) {
+        var idx = ocLineIndices(k[0], n), sum = 0, above = 0, ok = true;
+        for (var i = 0; i < 6; i++) {
+          var slot = oc.grid[idx[i]];
+          if (!slot || !Array.isArray(slot.dice) || slot.dice.length !== 4) { ok = false; break; }
+          var t = slotTotal(slot);
+          sum += t;
+          if (t > 10) above++;
+        }
+        if (ok) lines.push({ key: k[0] + ":" + n, label: ocLineLabel(k[0], n), sum: sum, above: above });
+      }
+    });
+    if (!lines.length) return out;
+    // strictly better only, so an equal line never displaces the earlier one and the order above
+    // (rows, columns, diagonals) settles anything the table's rule cannot
+    var top = lines[0];
+    lines.forEach(function (l) { if (l.sum > top.sum || (l.sum === top.sum && l.above > top.above)) top = l; });
+    out.key = top.key; out.sum = top.sum; out.above = top.above;
+    lines.forEach(function (l) {
+      if (l.key === top.key || l.sum !== top.sum) return;
+      if (l.above === top.above) out.tied.push(l.label);
+      else out.brokeOver.push(l.label);
+    });
+    return out;
+  }
   // picking a different line (or clearing one) resets any values already
   // assigned to attributes, since the pool of six changes underneath them
   function ocClearAssignments(c) {
@@ -488,6 +544,12 @@ EN.builder = (function () {
     animateDiceRoll({ id: id });
     _animGroup = null;
   }
+  /* The live matrix's pip updater, replaced on every render. Registered once here rather than per
+     render, since turning a phone can take the matrix from overflowing to fitting and back, and a
+     pip pointing at nothing is worse than no pip. A stale reference just measures a detached node. */
+  var _ocFit = null;
+  window.addEventListener("resize", function () { if (_ocFit) _ocFit(); });
+
   function overclockedSection(ch) {
     var style = DICE_STYLES[_diceStyle] || DICE_STYLES.neon;
     var oc = ch.overclocked || { grid: [], pick: null, allowDiagonals: false };
@@ -512,16 +574,31 @@ EN.builder = (function () {
         onclick: ocRoll }, hasGrid ? "⟳ REROLL MATRIX" : "⚄ ROLL 36")
     ]);
     var body = [head,
-      el("p.help", { style: { marginBottom: "8px" }, text: "Choose one COMPLETE line as your final six-score array: click a row (R) or column (C) header" + (oc.allowDiagonals ? ", or a diagonal (⤡ ⤢)" : "") + ". Individual scores can't be cherry-picked. Rows and columns are always valid; diagonals may be enabled by table preference." })];
+      el("p.help", { style: { marginBottom: "8px" }, text: "Choose one COMPLETE line as your final six-score array: click a row (R) or column (C) header" + (oc.allowDiagonals ? ", or a diagonal (⤡ ⤢)" : "") + ". Individual scores can't be cherry-picked. Rows and columns are always valid; diagonals may be enabled by table preference." + (hasGrid ? " ▲ marks the highest-scoring line on offer, ties going to the line with more scores above 10; the biggest total is not always the array you want, so read the spread before taking it." : "") })];
     if (!hasGrid) {
       body.push(el("div.muted-box", { text: "No matrix yet; hit ROLL 36 to throw 36 × 4d6 into the grid." }));
       return el("div", null, body);
     }
+    var best = ocBestLine(oc);
+    var bestIdx = {};
+    if (best.key) {
+      var bk = best.key.split(":");
+      ocLineIndices(bk[0], Number(bk[1])).forEach(function (i) { bestIdx[i] = true; });
+    }
     function lineBtn(kind, index, label, title) {
       var on = oc.pick && oc.pick.kind === kind && oc.pick.index === index;
-      return el("button.btn.sm" + (on ? ".primary" : ""), { title: title + (on ? " (selected; click to clear)" : ""),
-        style: { minWidth: "34px", padding: "3px 6px", fontSize: "10px" },
-        onclick: function () { ocSetPick(ch, kind, index); } }, (on ? "● " : "") + label);
+      var top = best.key === kind + ":" + index;
+      // gold only while unpicked: a selected line already wears .primary, and colouring it twice
+      // would leave the strongest line looking unlike every other selected line
+      var st = { minWidth: "34px", padding: "3px 6px", fontSize: "10px" };
+      if (top && !on) { st.color = "var(--gold)"; st.borderColor = "var(--gold)"; }
+      return el("button.btn.sm" + (on ? ".primary" : ""),
+        { title: title + (top ? " · highest total on the board at " + best.sum
+              + (best.brokeOver.length ? ", level with " + best.brokeOver.join(" and ") + " on total and taken on " + best.above + " scores above 10" : "")
+              + (best.tied.length ? ", tied outright with " + best.tied.join(" and ") : "") : "")
+            + (on ? " (selected; click to clear)" : ""),
+          style: st,
+          onclick: function () { ocSetPick(ch, kind, index); } }, (on ? "● " : "") + (top ? "▲" : "") + label);
     }
     function spacer() { return el("div"); }
     var cells = [];
@@ -535,6 +612,9 @@ EN.builder = (function () {
       if (i % 6 === 0) cells.push(lineBtn("row", r, "R" + (r + 1), "Take row " + (r + 1) + " as your array"));
       var total = slotTotal(slot), drop = droppedIndex(slot.dice);
       var inPick = !!pickedIdx[i];
+      // the strongest line's own cells, but only until something is picked: after that the pick
+      // owns the accent and everything else is dimmed anyway, so a second highlight is just noise
+      var inTop = !oc.pick && !!bestIdx[i];
       var dice = slot.dice.map(function (v, di) {
         return el("span.die" + (animating ? ".rolling" : (di === drop ? ".dropped" : "")), {
           dataset: animating ? { die: "1", final: String(v), dropped: di === drop ? "1" : "" } : null,
@@ -542,14 +622,45 @@ EN.builder = (function () {
           text: animating ? "?" : String(v)
         });
       });
-      cells.push(el("div.roll-slot", { style: { padding: "6px 4px 5px", borderColor: inPick ? "var(--accent)" : "var(--border)", boxShadow: inPick ? "0 0 9px var(--accent)" : "none", opacity: oc.pick && !inPick ? .45 : 1 } }, [
+      cells.push(el("div.roll-slot", { style: { padding: "6px 4px 5px",
+          borderColor: inPick ? "var(--accent)" : inTop ? "var(--gold)" : "var(--border)",
+          boxShadow: inPick ? "0 0 9px var(--accent)" : "none", opacity: oc.pick && !inPick ? .45 : 1 } }, [
         el("div.roll-total", { dataset: animating ? { tot: "1", final: String(total) } : null,
           style: { color: inPick ? "var(--accent)" : style.color, fontSize: "19px" }, text: animating ? "··" : String(total) }),
         el("div", { style: { margin: "3px 0 0" } }, dice)
       ]));
       if (i % 6 === 5) cells.push(spacer());
     });
-    body.push(el("div", { dataset: { rg: oc.rollId || "oc" }, style: { display: "grid", gridTemplateColumns: "auto repeat(6, 1fr) auto", gap: "6px", alignItems: "center", justifyItems: "stretch" } }, cells));
+    /* On a phone the matrix is wider than the screen and scrolls sideways, and nothing about it
+       said so. These two pips do, in the swipe indicator's vocabulary, and they report the
+       scroller's actual position rather than just "this scrolls": no pip at an end already
+       reached. data-rg stays on the scroller itself, since animateDiceRoll looks the grid up by
+       that attribute and then queries its descendants. */
+    var ocGrid = el("div", { dataset: { rg: oc.rollId || "oc" },
+      style: { display: "grid", gridTemplateColumns: "auto repeat(6, 1fr) auto", gap: "6px", alignItems: "center", justifyItems: "stretch" },
+      onscroll: function () { ocFitPips(); } }, cells);
+    var pipL = el("span.oc-pip.oc-pip-l", { text: "«" });
+    var pipR = el("span.oc-pip.oc-pip-r", { text: "»" });
+    /* Overflow alone is not the question, being able to DO anything about it is. Classic and '98
+       let the columns squeeze instead of scrolling, and still measure a few pixels wider than the
+       box from layout rounding, which was enough to light a pip pointing at nothing. So this asks
+       what swipe.js asks before it yields a drag: is this thing actually scrollable, and is there
+       real room left in that direction. */
+    function ocFitPips() {
+      var ox = "";
+      try { ox = window.getComputedStyle(ocGrid).overflowX; } catch (e) {}
+      var scrollable = ox === "auto" || ox === "scroll" || ox === "overlay";
+      var slack = scrollable ? ocGrid.scrollWidth - ocGrid.clientWidth : 0;
+      var at = ocGrid.scrollLeft;
+      pipL.classList.toggle("on", slack > 4 && at > 4);
+      pipR.classList.toggle("on", slack > 4 && at < slack - 4);
+    }
+    /* Measurable only once the view is mounted: el() builds detached nodes, where every width is
+       zero. The grid is rebuilt every render and its scrollLeft starts at 0, so the first answer
+       is always "there is more to the right", if it overflows at all. */
+    _ocFit = ocFitPips;
+    setTimeout(ocFitPips, 0);
+    body.push(el("div.oc-scroll", null, [ocGrid, pipL, pipR]));
     var picked = ocPickTotals(ch);
     if (picked) {
       var pickName = oc.pick.kind === "row" ? "Row " + (oc.pick.index + 1) : oc.pick.kind === "col" ? "Column " + (oc.pick.index + 1) : oc.pick.kind === "d1" ? "Diagonal ⤡" : "Diagonal ⤢";

@@ -286,7 +286,19 @@ EN.app = (function () {
        field's live sync writes to .an-name directly rather than repainting through here. */
     if (EN.builder && EN.builder.switcherSelect) {
       node.appendChild(el("span.an-pick", null, [EN.builder.switcherSelect(ch)]));
+      fitRecordPick();
     }
+  }
+
+  /* A select sizes itself to its WIDEST option, so left to itself the header's switcher fills the
+     strip and strands its arrow at the far edge, nowhere near the name it belongs to. The strip is
+     monospace and the control's tracking is zeroed, so the selected label measures exactly its own
+     length in ch; sizing to that packs the row left with no measuring pass. The stylesheet still
+     caps the width, so a record too long for the strip shrinks and ellipsizes instead of wrapping. */
+  function fitRecordPick() {
+    var sel = document.querySelector("#active-name select");
+    var opt = sel && sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex] : null;
+    if (opt) sel.style.width = "calc(" + opt.text.length + "ch + 14px)";
   }
 
   /* save indicator pulse */
@@ -434,7 +446,7 @@ EN.app = (function () {
 
   return {
     start: start, render: render,
-    paintActiveName: paintActiveName,   // #PRINT repaints the banner as the name is typed
+    paintActiveName: paintActiveName, fitRecordPick: fitRecordPick,   // #PRINT repaints the banner as the name is typed
     activeTab: function () { return LAST[portal]; },
     tabOrder: tabOrder,
     iconArchive: ICON_ARCHIVE,   // shared with inventory.js's Stash sub-tab, same art at two scales

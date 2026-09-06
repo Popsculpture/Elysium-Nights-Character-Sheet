@@ -137,6 +137,29 @@ a{ color:var(--accent); text-decoration:none; }
 .attn-spacer{ flex:1; }
 .panel-b{ padding:14px; }
 .corner{ position:absolute; width:10px; height:10px; border:1px solid var(--accent); opacity:.5; }
+/* The Overclocked matrix's "there is more this way" pips. Built on every skin but shown only when
+   the grid actually overflows, which today is the phone; builder.js decides that by measuring, so
+   no skin is named here. Borrowed from the swipe indicator: --bg1 ground, accent-dim edge, the
+   buttons' 6px chamfer, and visibility paired with opacity so the box is never re-laid-out. */
+.oc-scroll{ position:relative; }
+.oc-pip{
+  position:absolute; top:50%; transform:translateY(-50%); z-index:5; pointer-events:none;
+  display:flex; align-items:center; justify-content:center; width:24px; height:46px;
+  background:var(--bg1); border:1px solid var(--accent-dim); color:var(--text3);
+  font-family:var(--disp); font-weight:700; font-size:19px; line-height:1;
+  clip-path:polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+  box-shadow:0 0 12px rgba(0,0,0,.65);   /* it sits over lit cells, so it needs to lift off them */
+  opacity:0; visibility:hidden; transition:opacity .18s;
+}
+.oc-pip-l{ left:1px; } .oc-pip-r{ right:1px; }
+/* edgePulse, not pulse: the LED's pulse bottoms out at .35, which is fine for a status light and
+   wrong for a thing whose whole job is to be seen. This one only halves. */
+.oc-pip.on{ visibility:visible; opacity:1; color:var(--accent); border-color:var(--accent); animation:edgePulse 2.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce){
+  /* the house rule: kill the movement, keep the affordance at full strength */
+  .oc-pip.on{ animation:none; opacity:1; }
+  html.skin-droid div[data-rg][style*="grid-template-columns"]::-webkit-scrollbar-thumb{ animation:none; }
+}
 .corner.tl{ top:-1px; left:-1px; border-right:0; border-bottom:0; }
 .corner.tr{ top:-1px; right:-1px; border-left:0; border-bottom:0; }
 .corner.bl{ bottom:-1px; left:-1px; border-right:0; border-top:0; }
@@ -1121,17 +1144,24 @@ html.skin-droid .os-topbar > .os-status:not(#active-name){ order:3; font-size:10
    writes here, harmlessly, because it feeds that tray on the other skin. */
 html.skin-droid .os-topbar .os-clock{ display:none; }
 /* the active record takes the strip: accent fill, dark ink, the whole record on one line */
+/* One line, always. A row rather than flowed inline text: the label holds its width, the switcher
+   takes whatever is left and is allowed to shrink under its own content (min-width:0), so a long
+   record clips at the end instead of pushing itself onto a second line. */
 html.skin-droid #active-name{
-  order:5; flex-basis:100%; display:block;
+  /* gap:0 because the shared .os-status rule sets 14px, which is right for two readouts at the ends
+     of a bar and much too loose between a dot, its label and the record they name */
+  order:5; flex-basis:100%; display:flex; align-items:center; flex-wrap:nowrap; gap:0;
   background:var(--accent); color:#000; font-family:var(--mono); font-weight:700; font-size:10.5px;
   letter-spacing:.1em; line-height:1.55; padding:6px 10px; text-transform:uppercase;
   clip-path:polygon(0 0, 100% 0, 100% 100%, 10px 100%, 0 calc(100% - 10px));
 }
 html.skin-droid #active-name::before{
-  content:""; display:inline-block; width:6px; height:6px; border-radius:50%; background:#000; margin-right:8px; vertical-align:middle;
+  content:""; flex:none; width:6px; height:6px; border-radius:50%; background:#000; margin-right:6px;
 }
-/* the label and the class read as annotation; the name is what the line is for */
-html.skin-droid #active-name .an-role, html.skin-droid #active-name .an-meta{ display:inline; font-weight:400; opacity:.72; }
+/* the label carries the weight and the record reads plainly beside it, so the eye lands on the
+   label first and the name stays easy to read at this size */
+html.skin-droid #active-name .an-role{ display:inline; font-weight:700; }
+html.skin-droid #active-name .an-meta{ display:inline; font-weight:400; opacity:.72; }
 html.skin-droid #active-name .an-name:not(:first-child){ margin-left:7px; }
 html.skin-droid #active-name .an-meta::before{ content:"\00b7"; margin:0 6px; opacity:.6; }
 /* the switcher replaces the plain name here, so it has to stop reading as a form control: no
@@ -1139,12 +1169,23 @@ html.skin-droid #active-name .an-meta::before{ content:"\00b7"; margin:0 6px; op
    draws it in --text3, which is a bruise on this fill). The !important is aimed at the collapse
    block's 16px anti-zoom floor for form controls, which would triple the strip's height. */
 html.skin-droid #active-name .an-name, html.skin-droid #active-name .an-meta{ display:none; }
-html.skin-droid #active-name .an-pick{ display:inline-block; vertical-align:middle; margin-left:7px; max-width:100%; }
+/* the label's own tracking is worth about a character of the record's name, so it gives some back */
+html.skin-droid #active-name .an-role{ flex:none; white-space:nowrap; letter-spacing:.05em; }
+/* 0 1 auto, not 1 1 auto: the control is sized to its own label in app.js, and growing it back to
+   fill the strip is exactly the stranded arrow that sizing is there to avoid. It still shrinks. */
+html.skin-droid #active-name .an-pick{ display:block; flex:0 1 auto; min-width:0; margin-left:6px; }
 html.skin-droid #active-name select{
-  width:auto; min-width:0; max-width:100%; min-height:0; height:auto;
-  font-family:var(--mono); font-size:10.5px !important; font-weight:700; letter-spacing:.1em; color:#000;
+  /* min-width is inline on the shared control (160px, sized for #PRINT's own row) and takes
+     !important to beat, or that floor overflows a narrow phone. Width is left to app.js, which
+     sets it from the selected label. Tracking is zeroed both to buy back space and because that
+     sizing counts characters: with letter-spacing on, ch would no longer be the character width. */
+  min-width:0 !important; max-width:100%; min-height:0; height:auto;
+  font-family:var(--mono); font-size:10.5px !important; font-weight:400; letter-spacing:0; color:#000;
   background-color:transparent; border:0; border-bottom:1px dotted rgba(0,0,0,.55); border-radius:0;
-  padding:0 14px 1px 0; box-shadow:none; cursor:pointer;
+  padding:0 12px 1px 0; box-shadow:none; cursor:pointer;
+  /* a record too long for the strip ends in an ellipsis rather than a cut mid-character. Chrome
+     honours this on a select; where it does not, the text simply clips as it would have anyway. */
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   background-image:linear-gradient(45deg,transparent 50%,#000 50%),linear-gradient(135deg,#000 50%,transparent 50%);
   background-position:calc(100% - 5px) center, calc(100% - 1px) center; background-size:4px 4px,4px 4px;
   background-repeat:no-repeat;   /* the collapse block's `background:` shorthand resets this to repeat, and the arrow tiles the whole control */
@@ -1457,6 +1498,12 @@ html.skin-droid .wizard-foot > .help{ order:3; flex:1 1 100%; text-align:center;
 html.skin-droid .wizard-foot > .btn{ flex:1 1 40%; justify-content:center; }
 html.skin-droid .row > select[style*="min-width: 160px"]{ flex:1 1 100%; width:100% !important; min-width:0 !important; }   /* the roster switcher */
 html.skin-droid div[data-rg][style*="grid-template-columns"]{ overflow-x:auto; -webkit-overflow-scrolling:touch; max-width:100%; grid-template-columns:auto repeat(6, minmax(76px, 1fr)) auto !important; gap:4px !important; padding-bottom:6px; }   /* the Overclocked 6x6 scrolls sideways */
+/* That bar is 4px of --bg4 on a near-black track, which is invisible, so pulsing it would have
+   been a pulse nobody sees. It gets the accent here, on its own scroller only, and the pips
+   below carry the movement. */
+html.skin-droid div[data-rg][style*="grid-template-columns"]::-webkit-scrollbar{ height:5px; }
+html.skin-droid div[data-rg][style*="grid-template-columns"]::-webkit-scrollbar-track{ background:var(--bg2); }
+html.skin-droid div[data-rg][style*="grid-template-columns"]::-webkit-scrollbar-thumb{ background:var(--accent-dim); border-radius:3px; animation:edgePulse 2.4s ease-in-out infinite; }
 html.skin-droid .roll-slot select{ padding:6px 28px 6px 8px !important; }
 html.skin-droid .row > div[style*="min-width: 120px"]{ flex:1 1 100% !important; }   /* skill and gear proficiency rows: the name line, then the cluster */
 html.skin-droid input[style*="width: 220px"]{ width:100% !important; flex:1 1 100%; }

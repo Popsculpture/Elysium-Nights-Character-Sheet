@@ -8085,6 +8085,104 @@ Verified in the browser at 375px on #GRID (cyan) and Elysium Nights (gold): word
 box around it, and the whole header is visibly shorter than before. Confirmed Classic and '98
 untouched, both keep their own separate `#active-name` treatment. Fresh tab, no console errors.
 
+## The Overclocked matrix marks its highest line, 2026-09-06
+
+Author's ask: highlight the row, column or diagonal with the highest rolled total. `ocBestLines()`
+sums every line off the raw dice through the same `slotTotal` and `ocLineIndices` the picker
+already uses, and the winners get a gold ▲ on their header, a gold border on their cells, and the
+total in the header's tooltip.
+
+Three judgements worth writing down:
+- Only lines that can actually be TAKEN are weighed. A diagonal cannot win while the table rule is
+  off, and the mark moves the moment that rule is toggled, so the hint never points at something
+  the rules will not let the player pick.
+- Exactly one line is ever marked. The first pass marked every line tied for the top, on the
+  reasoning that choosing between equals would be a lie; the author saw a row and a column both
+  lit and said plainly that he wanted the single highest. He is right that two marks read as a
+  bug rather than as a tie. Ties are common on a board this size: both matrices tested against
+  had one.
+- The tie-break is the author's own table rule, given after seeing the first single-mark version:
+  most scores above 10 takes it. 10 is the baseline every attribute starts at and the value
+  clearing a pick resets them to, so the rule reads as "the line that raises the most of them",
+  which is a better question than the raw total. Anything still level after that falls to a fixed
+  order, rows then columns then diagonals: arbitrary, but stable, so the mark never wanders
+  between renders.
+- Neither tie is swallowed. A line that won only on the tie-break says so ("level with R1 on
+  total and taken on 6 scores above 10"), and one still level after both names what it is level
+  with, because a lone ▲ on R1 while C6 is worth exactly as much would be the quiet lie the first
+  version was trying to avoid.
+- The cell borders show only while nothing is picked. Once a line is taken it owns the accent and
+  everything else dims to .45 anyway, so a second highlight underneath would be noise. The ▲ stays
+  on the header either way, so a player can still see whether they took the biggest line.
+
+The help line says what ▲ means and adds that the biggest total is not always the array you want,
+because it is not: six scores that sum high can still be a worse spread than a flatter line, and a
+marker with no caveat would read as advice.
+
+Verified by recomputing all fourteen line sums independently from the stored dice and comparing
+against what the UI marked: same maximum, same winner, and one mark rather than two. Six gold
+cells, which is one line. Picking the marked row hands the highlight over and clearing it hands
+it back, with no attribute assignments lost; toggling the diagonals rule leaves the record's pick
+and grid untouched. No console errors, and the record, its matrix and its balances were left as
+found.
+
+A note for whoever reads this next to a screenshot that disagrees: the matrix was rerolled by the
+author between the two rounds of testing, so the winning line differs above and below. Checking
+`overclocked.rollId` is what settles which board a given observation belongs to.
+
+The tie-break itself was proved on a crafted board rather than assumed, since the author's own
+matrix ties on the tie-break too (R1 and C6 are level at 84 with all six scores above 10 in each,
+so it is a genuine outright tie and falls through to the fixed order). The probe ran on an EXAMPLE
+record, which is live but never written to the roster, so nothing of his was touched: two rows
+both summing 84, one with three scores above 10 and one with six. The six won, overriding the
+positional order that would otherwise have given it to the first row. His record was restored and
+re-checked afterwards, roll id and all.
+
+Not observed, only reasoned: the case where a diagonal is the highest line. This record's
+diagonals came in at 77 and 79 against a best of 84, and proving that branch would have meant
+rerolling the author's matrix over it.
+
+## The Overclocked matrix says which way it scrolls, 2026-09-06
+
+Author's ask: the 6x6 array runs off the side of a phone and nothing admits it. He asked for a
+pulsing scrollbar and a double arrow pointing whichever way there is more.
+
+The arrow half is a pair of pips in `.oc-scroll`, a wrapper added around the grid (there was no
+element to hang them on: the grid's parents are the section div, shared with the header and the
+FINAL ARRAY row, and `.panel-b`). They borrow the swipe indicator's vocabulary, since that is
+already the app's "there is more that way" object: `--bg1` ground, accent-dim edge going accent
+when lit, the buttons' chamfer, `pointer-events:none`, and visibility paired with opacity so the
+box is never re-laid-out. They report position, not just scrollability: nothing at an end already
+reached, both in the middle.
+
+The scrollbar half needed saying out loud. That bar is 4px of `--bg4` on a near-black track, so a
+pulse there is a pulse nobody sees, and on Firefox it is the OS default and unreachable. It is now
+accent-dim on `--bg2` for this scroller only, which is what makes the pulse land; the pips carry
+most of the message. Both use `edgePulse` rather than the LED's `pulse`, which bottoms out at .35,
+too deep for something whose whole job is to be noticed. `prefers-reduced-motion` kills the
+movement and leaves both at full strength, per the house rule.
+
+Two things worth knowing for anyone changing this:
+- `data-rg` stays on the grid itself. `animateDiceRoll` finds the grid with a document-wide
+  `querySelector` on that attribute and then queries its descendants, so a wrapper outside it is
+  invisible to that, but moving the attribute would not be. Verified the lookup still resolves to
+  the same node.
+- The pips measure on a deferred tick, because `el()` builds detached nodes where every width is
+  zero, and the grid is rebuilt from scratch on every render with `scrollLeft` back at 0. One
+  resize listener is registered at module load rather than per render, since turning a phone can
+  take the matrix from overflowing to fitting.
+
+Caught in testing, and the reason the check is not just "is the content wider than the box":
+Classic and '98 let the columns squeeze rather than scroll, and still measure 2 to 10px wider than
+their box from layout rounding. That was enough to light a pip on skins where nothing scrolls and
+nothing can be scrolled to. The test now asks what swipe.js asks before it yields a drag, whether
+the element is genuinely scrollable and whether real room remains that way.
+
+Verified in all three skins at 375px: no pips on Classic or '98, right pip only at rest on
+#GRIDroid, left pip only at the far end, both in the middle, and the pips re-initialise after a
+re-render. No console errors, and the record, its rolled matrix and its balances were left as
+found.
+
 ## #GRIDroid header, third pass: no clock, and the record slot becomes the roster switcher, 2026-09-06
 
 Four asks from the author, all on the phone skin. The clock goes (a phone's own status bar is
@@ -8130,11 +8228,34 @@ shows the plain name and keeps its clock, '98 shows the plain name (its clock wa
 tray), #GRIDroid shows the switcher and no clock. No console errors, and the record, balances and
 roster were left exactly as found.
 
-Measured, not guessed: the label and the selected record do not fit on one line of the strip at
-375px (the label plus its dot take 115 of 309px, and the record needs 203), so the switcher wraps
-to its own line. Forcing one line would clip longer names. The strip is a line taller than it was,
-and the header is still shorter overall than before this pass, since the clock's own wrapped line
-is gone.
+The strip held one line only by luck at first, and the author asked for that to be guaranteed. It
+now is, structurally rather than by fitting: the strip is a nowrap flex row, the label holds its
+width, and the switcher takes what is left with `min-width:0`, which is what lets a flex item
+shrink under its own content. Without that last part a select cannot shrink at all, because it
+sizes itself to its WIDEST option ("Stitcher · Halden \"Tourniquet\" Brack") rather than the
+selected one, which is why it wrapped in the first place. The inline `width:auto; min-width:160px`
+the shared control carries for #PRINT's row has to be beaten with `!important` here, or that 160px
+floor overflows a narrow phone.
+
+Then the author looked at the result and called the space wasted, which it was. Filling the strip
+is what strands the arrow at the far edge with the name nowhere near it, so the control is now
+sized to the record it is actually showing: `fitRecordPick()` in app.js sets its width from the
+selected label's length in `ch`. That works because the strip is monospace and the control's
+tracking is zeroed, so a character IS a ch and no measuring pass is needed; the same zeroed
+tracking is why the value must not carry the strip's letter-spacing. The flex item is `0 1 auto`,
+not `1 1 auto`, or it would grow back to fill and undo the whole point. `bannerSync` re-fits it as
+a name is typed, since the label it is sized to changes under it.
+
+The two gaps he boxed were both the shared `.os-status` rule's `gap:14px`, right for two readouts
+at the ends of a bar and much too loose between a dot, its label and the record they name. The
+strip sets `gap:0` and spaces those itself, at 6px each.
+
+Weights swapped on his call: the label is bold and the record reads plainly beside it. A record
+too long for the strip ends in an ellipsis rather than a cut mid-character.
+
+Checked at 320px, 375px and desk width, and against the longest name in the examples: one line at
+28px in every case, the arrow always sitting immediately after the name, no horizontal page
+overflow, and Classic and '98 keeping their own spacing and their plain name.
 
 ## The wallet's ledger moves into popovers on the totals, 2026-09-06
 
