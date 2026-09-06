@@ -1127,7 +1127,7 @@ html.skin-droid .os-tabs{
      containing block for its own fixed children, which is what left the unfolded list's scrim
      the size of the list instead of the page. */
   position:fixed; top:auto; bottom:0; left:0; right:0; width:calc(var(--dr-fw) - 2px);
-  z-index:99; display:grid; grid-template-columns:1fr auto; align-items:end; gap:6px; margin:0 auto;
+  z-index:99; display:grid; grid-template-columns:1fr; align-items:end; gap:6px; margin:0 auto;
   /* The dock is a shelf, not a floating pill: it spans the screen and runs to the bottom edge, so
      the page disappears behind it instead of showing through the gaps around the rows. The
      padding is what holds the rows clear of the bottom chamfer, which the old bottom offset did. */
@@ -1135,7 +1135,7 @@ html.skin-droid .os-tabs{
 }
 html.skin-droid .os-tabs-scroll{ display:flex; flex-direction:column; gap:6px; overflow:visible; }
 /* seven rows are 399px, taller than a landscape phone, and a fixed list cannot be page-scrolled */
-html.skin-droid.rail-open .os-tabs-scroll{ max-height:calc(100vh - 24px); max-height:calc(100dvh - 24px); overflow-y:auto; }
+html.skin-droid.rail-open .os-tabs-scroll{ max-height:calc(100vh - 84px); max-height:calc(100dvh - 84px); overflow-y:auto; }   /* the 84 leaves the Settings row its place beneath */
 html.skin-droid .os-tab{
   display:none; position:relative; grid-template-columns:38px 1fr 20px; grid-template-rows:auto auto; column-gap:12px; align-items:center;
   padding:6px 10px 7px 10px; min-height:50px; border:1px solid var(--accent-dim); border-bottom:0; background:var(--bg);
@@ -1168,12 +1168,30 @@ html.skin-droid.rail-open .os-tab{ display:grid; }
 html.skin-droid.rail-open .os-tabs::before{ content:""; position:fixed; inset:0; z-index:0; background:rgba(0,0,0,.6); }
 html.skin-droid.rail-open .os-tab::before{ content:"\25B8"; }
 html.skin-droid.rail-open .os-tab.active::before{ content:"\25B4"; }
-html.skin-droid .os-tabs .os-gear{
-  display:flex; grid-template-columns:none; width:56px; height:56px; min-height:0; padding:0; align-items:center; justify-content:center;
+/* Settings is a row in the app list, not a button beside it (author's ask, 2026-09-05). Folded,
+   the dock is the open app alone, full width. Unfolded, Settings sits at the foot of the list as
+   one more app: the gear carries only its glyph, so the row's label and subtitle are drawn by
+   the pseudos that on the other rows draw the caret and the data-sub line. The one time the gear
+   stays a button is an unregistered draft, whose rail has no rows to unfold from. */
+html.skin-droid .os-tabs .os-gear{ display:none; }
+html.skin-droid.rail-open .os-tabs .os-gear{ display:grid; }
+html.skin-droid.rail-open .os-tabs .os-gear::before{ content:"Settings"; grid-column:2; grid-row:1; text-align:left; font-size:15px; color:inherit; }
+html.skin-droid.rail-open .os-tabs .os-gear::after{ content:"#GRIDOS // preferences"; grid-column:2; grid-row:2; }
+html.skin-droid .os-tabs-scroll:empty + .os-gear{
+  display:flex; grid-template-columns:none; width:56px; height:56px; min-height:0; padding:0; align-items:center; justify-content:center; justify-self:end;
   border:1px solid var(--accent-dim); border-bottom:0; background:var(--bg); color:var(--accent); font-size:22px; clip-path:none; margin-left:0;
 }
-html.skin-droid .os-tabs .os-gear > span{ width:auto; height:auto; border:0; background:none; box-shadow:none; }
-html.skin-droid .os-tabs .os-gear::before, html.skin-droid .os-tabs .os-gear::after{ content:none; }
+html.skin-droid .os-tabs-scroll:empty + .os-gear > span{ width:auto; height:auto; border:0; background:none; box-shadow:none; }
+/* The hover turn belongs to the cog, not the cell around it. On this skin the span IS the row's
+   bordered icon cell and the glyph is its text, so the two were one box and turned together; the
+   glyph moves into a pseudo of its own that turns while the cell holds still. Gated on a real
+   hover, since on a touch screen a tap would leave the cog sitting tilted behind the tray. */
+html.skin-droid .os-tabs .os-gear > span{ font-size:0; }
+html.skin-droid .os-tabs .os-gear > span::before{ content:"⚙"; display:inline-block; font-size:18px; line-height:1; transition:transform .25s; }
+html.skin-droid .os-tabs-scroll:empty + .os-gear > span::before{ font-size:22px; }
+html.skin-droid .os-tabs .os-gear:hover > span{ transform:none; }
+@media (hover: hover){ html.skin-droid .os-tabs .os-gear:hover > span::before{ transform:rotate(60deg); } }
+html.skin-droid .os-tabs-scroll:empty + .os-gear::before, html.skin-droid .os-tabs-scroll:empty + .os-gear::after{ content:none; }
 html.skin-droid .os-tray{ display:none; }
 /* ---- swipe navigation (swipe.js, wired by app.js for this skin alone) ----
    The page is translated under the finger, so it must not widen the viewport mid-drag. The pill

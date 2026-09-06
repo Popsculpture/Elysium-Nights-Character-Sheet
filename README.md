@@ -28,7 +28,8 @@ Settings has an OS Skin row beside the color themes: Classic (the look as shippe
 Inventory tab that opens a "#GRID Explorer" window around a 1998 auction-site Gray Market, and a
 #POST inbox that opens in "#POST Express", a mail client with a folder pane and a preview pane), and
 #GRIDroid (a cyberpunk phone OS: one phone-width screen in a HUD bezel at any width, the tab rail
-an app list docked at the foot, folded to the open app and unfolding on a tap, and a sideways swipe
+an app list docked at the foot, folded to the open app and unfolding on a tap with Settings as its
+last row, and a sideways swipe
 that pages between tabs with a pill naming where you are heading). On '98 and
 #GRIDroid a Wallpaper row picks the desktop behind the windows: your own image from a file
 (resized and kept on the device), or on '98 alone one of the six presets in `app/img/wallpapers`,

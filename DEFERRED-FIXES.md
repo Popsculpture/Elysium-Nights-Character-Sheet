@@ -7742,6 +7742,19 @@ stays no scroll container and the header, the dock and the sticky bars are untou
 a 200px pull either way leaves the dock and header exactly where they were and the document's
 scroll width unchanged.
 
+## Settings joins the app list on #GRIDroid, 2026-09-05
+
+Author's ask: fold the gear into the phone's pop-up list. The dock used to be the open app's row
+with a gear button beside it; now, folded, it is the open app alone at full width, and unfolded,
+Settings sits at the foot of the list as one more app. CSS only. The gear element carries just
+its glyph, so the row's label and subtitle are drawn by the same two pseudos that draw the caret
+and the data-sub line on the other rows, restated for the gear under rail-open. The one time the
+gear stays a button is an unregistered draft, whose rail has no rows to unfold from
+(`.os-tabs-scroll:empty + .os-gear`), or there would be no way into Settings at all. Opening the
+tray now folds the list, since the tray covers everything and the list would otherwise still be
+standing open when it closed; inert on the other skins. The list's unfolded max-height leaves the
+row its place beneath. Classic and '98 keep the gear where it was.
+
 ## Environment
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from

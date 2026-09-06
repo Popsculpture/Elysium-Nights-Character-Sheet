@@ -838,6 +838,9 @@ EN.settings = (function () {
   function open() {
     injectCss();
     if (document.getElementById("set-ov")) return;
+    // #GRIDroid reaches Settings from its unfolded app list; the tray covers everything, so the
+    // list folds now rather than still standing open when the tray closes. Inert elsewhere.
+    try { document.documentElement.classList.remove("rail-open"); } catch (e) {}
     _editing = null;   // always open on the picker, never a stale editor
     var ov = el("div#set-ov", {
       onclick: function (e) { if (e.target === ov) close(); }
