@@ -386,6 +386,11 @@ EN.builder = (function () {
 
   // the author's dice, replacing the ⚄ glyph; inline so it takes the button's own colour,
   // including the dark ink a solid-fill skin gives a .primary button
+  // the author's warning triangle, replacing the ⚠ glyph on the record's own caution line
+  var ICON_WARN = '<svg viewBox="0 0 512 463.43" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" aria-hidden="true"><path d="M189.46 44.02c34.26-58.66 99.16-58.77 133.24.12l.97 1.81 175.27 304.4c33.71 56.4-1.2 113.76-66.17 112.96v.12H73.53c-.9 0-1.78-.04-2.66-.11-58.34-.79-86.64-54.22-61.9-106.84.39-.85.82-1.67 1.28-2.46l-.04-.03 179.3-309.94-.05-.03zm50.32 302.4c4.26-4.13 9.35-6.19 14.45-6.56 3.4-.24 6.8.29 9.94 1.48 3.13 1.19 6.01 3.03 8.39 5.41 6.92 6.91 8.72 17.38 4.64 26.16-2.69 5.8-7.08 9.7-12.11 11.78-3.03 1.27-6.3 1.84-9.56 1.76-3.27-.08-6.49-.82-9.41-2.18-5.02-2.33-9.3-6.43-11.7-12.2-2.65-6.36-2.27-12.96.63-19.15 1.15-2.46 2.75-4.81 4.73-6.5zm33.86-47.07c-.8 19.91-34.51 19.93-35.28-.01-3.41-34.1-12.13-110.53-11.85-142.58.28-9.87 8.47-15.72 18.94-17.95 3.23-.69 6.78-1.03 10.35-1.02 3.6.01 7.16.36 10.39 1.05 10.82 2.3 19.31 8.39 19.31 18.45l-.05 1-11.81 141.06z"/></svg>';
+  // the author's redo arrow, for the reroll: a different gesture from the first throw, so a
+  // different mark. Same style-block caveat as the dice, hence the rules on the path.
+  var ICON_REDO = '<svg viewBox="0 0 122.04 122.88" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M117.31,9.3v39.28H78.03l-4.63,0l3.27-3.28l11.45-11.45c-0.75-0.73-1.54-1.44-2.36-2.11 c-1.08-0.88-2.22-1.72-3.38-2.48l0,0c-6.02-3.93-13.21-6.21-20.94-6.21l-0.01,0v-0.01c-10.59,0-20.18,4.3-27.12,11.24 c-6.94,6.94-11.24,16.53-11.24,27.11h0.01v0.05h-0.01c0,10.59,4.3,20.19,11.24,27.12c6.94,6.94,16.53,11.24,27.11,11.24v-0.01 l0.08,0v0.01c3.7,0,7.39-0.54,10.93-1.59v0c1.95-0.58,3.87-1.33,5.71-2.22c9.39-4.54,16.65-12.8,19.87-22.87l0.43-1.33l23.61,0 l-0.47,2.3l-0.01,0.06v0.01c-0.81,3.84-2.01,7.62-3.54,11.24v0.01c-1.5,3.55-3.37,6.98-5.52,10.19 c-11.02,16.43-29.78,27.26-51.05,27.26h-0.02v-0.01c-16.96,0-32.33-6.88-43.43-17.99v-0.01C6.89,93.77,0.02,78.42,0.01,61.47 l-0.01,0v-0.05l0.01,0c0-16.96,6.88-32.32,18-43.43l0,0C29.11,6.89,44.46,0.02,61.41,0.01V0l0.06,0v0.01 c8.71,0,17.01,1.83,24.51,5.1c1.21,0.53,2.43,1.1,3.6,1.71c5.48,2.83,10.47,6.46,14.83,10.74l9.61-9.61l3.27-3.27V9.3L117.31,9.3 L117.31,9.3z"/></svg>';
   var ICON_DICE = '<svg viewBox="0 0 118.91 122.88" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M6.41,23.43l49.53,20.15c1.57,0.64,4.17,1.04,5.74,0.4l52.42-21.41c1.57-0.64-0.02-3.49-1.62-4.05L59.62,0 c-0.4-0.14-10.33,3.48-11.72,3.97L4.79,19.38C3.12,19.97,4.26,22.55,6.41,23.43L6.41,23.43z M116.87,94.34l-51.73,28.06 c-1.49,0.81-3.56,0.69-3.56-1.01l-0.01-66.03c0-1.7,0.14-3.36,1.7-4.03l51.92-22.12c1.56-0.66,3.73-0.07,3.72,1.62l-0.34,59.48 C118.56,92,118.36,93.53,116.87,94.34L116.87,94.34z M104.99,71.09c3.52,1.5,4.55,6.77,2.28,11.78c-2.26,5-6.96,7.84-10.48,6.34 c-3.52-1.5-4.55-6.77-2.28-11.78C96.78,72.43,101.47,69.59,104.99,71.09L104.99,71.09z M86.22,57.28c3.65,1.55,4.7,7.01,2.36,12.19 c-2.34,5.18-7.2,8.12-10.85,6.57c-3.65-1.55-4.7-7.01-2.36-12.19C77.71,58.66,82.57,55.72,86.22,57.28L86.22,57.28z M1.81,93.89 l51.26,27.75c1.49,0.81,3.56,0.69,3.56-1.01l0.01-65.42c0-1.7-0.14-3.36-1.7-4.03L3.72,29.22C2.16,28.55,0,29.15,0,30.85 l0.11,59.02C0.11,91.56,0.32,93.08,1.81,93.89L1.81,93.89z M6.91,75.74c3.21-2.04,7.99,0.29,10.66,5.2s2.24,10.56-0.97,12.6 c-3.21,2.04-7.99-0.29-10.66-5.2C3.27,83.42,3.7,77.78,6.91,75.74L6.91,75.74z M22.06,64.37c3.4-2.06,8.45,0.29,11.28,5.26 c2.83,4.97,2.38,10.67-1.02,12.73c-3.4,2.06-8.45-0.29-11.28-5.26C18.2,72.14,18.66,66.44,22.06,64.37L22.06,64.37z M38.12,52.37 c3.42-2.07,8.51,0.29,11.36,5.26c2.85,4.97,2.39,10.68-1.03,12.74c-3.42,2.07-8.51-0.29-11.36-5.26 C34.24,60.14,34.7,54.44,38.12,52.37L38.12,52.37z M59.16,15.48c6.04,0,10.93,2.34,10.93,5.22c0,2.88-4.89,5.22-10.93,5.22 c-6.03,0-10.93-2.34-10.93-5.22C48.23,17.82,53.13,15.48,59.16,15.48L59.16,15.48z"/></svg>';
   function iconLabel(icon, text) { return [el("span", { html: icon }), document.createTextNode(" " + text)]; }
 
@@ -630,7 +635,8 @@ EN.builder = (function () {
           });
         } }, (oc.allowDiagonals ? "✓ " : "") + "DIAGONALS: TABLE RULE"),
       el("button.btn.sm.primary", { title: hasGrid ? "Clear this matrix and roll a fresh 36" : "Roll 36 scores (6 × 6, each 4d6 drop the lowest)",
-        onclick: ocRoll }, hasGrid ? "⟳ REROLL MATRIX" : "⚄ ROLL 36")
+        // two gestures, two marks: the dice for the first throw, the redo arrow for doing it again
+        onclick: ocRoll }, hasGrid ? iconLabel(ICON_REDO, "REROLL MATRIX") : iconLabel(ICON_DICE, "ROLL 36"))
     ]);
     var body = [head,
       el("p.help", { style: { marginBottom: "8px" }, text: "Choose one COMPLETE line as your final six-score array: click a row (R) or column (C) header" + (oc.allowDiagonals ? ", or a diagonal (⤡ ⤢)" : "") + ". Individual scores can't be cherry-picked. Rows and columns are always valid; diagonals may be enabled by table preference." + (hasGrid ? " ▲ marks the highest-scoring line on offer, ties going to the line with more scores above 10; the biggest total is not always the array you want, so read the spread before taking it." : "") })];
@@ -2795,7 +2801,13 @@ EN.builder = (function () {
       el("div.row.between.wrap", { style: { marginBottom: "14px" } }, [
         el("div", null, [
           el("h1", { style: { fontSize: "22px", letterSpacing: ".06em" }, html: '#PRINT <span class="dim3" style="font-size:13px">// Personal Record &amp; Identity Network Tag</span>' }),
-          el("div.mono", { style: { fontSize: "10px", letterSpacing: ".1em", color: "var(--warn)", marginTop: "3px" }, text: "⚠ VERIFIED IDENTITY RECORD · UNAUTHORIZED EDITS ARE LOGGED AND PROSECUTED" })
+          el("div.mono.warn-line", { style: { fontSize: "10px", letterSpacing: ".1em", color: "var(--warn)", marginTop: "3px" } }, [
+            el("span", { html: ICON_WARN }), document.createTextNode(" "),
+            /* the phone drops the preamble and keeps the teeth; hidden in CSS rather than branched
+               on here, so it stays right when the skin changes without a re-render */
+            el("span.wl-full", { text: "VERIFIED IDENTITY RECORD · " }),
+            document.createTextNode("UNAUTHORIZED EDITS ARE LOGGED AND PROSECUTED")
+          ])
         ]),
         rosterSwitcher(ch)
       ]),

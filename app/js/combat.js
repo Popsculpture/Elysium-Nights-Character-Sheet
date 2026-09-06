@@ -2224,8 +2224,12 @@ EN.combatView = (function () {
       style: { margin: "12px 0 4px", cursor: "pointer" },
       onclick: function () { _open[key] = !open; EN.app.render(); }
     }, [
+      /* The caret trails the name here rather than leading it. The row already opens with the
+         section mark, and two glyphs ahead of the first word read as clutter; several rows in
+         this app (Actions in Combat, the Flow and #GRID heads) already carry theirs after the
+         title, so this is the house's other convention rather than a new one. */
+      document.createTextNode(title),
       el("span.collapse-caret", { text: open ? "\u25be" : "\u25b8" }),
-      document.createTextNode(" " + title),
       el("span.line"),
       el("span.mono", { style: { fontSize: "10px", color: "var(--text3)" }, text: tierLabel }),
       // names what a tap will do, because a caret on its own is not an instruction

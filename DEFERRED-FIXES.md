@@ -8085,6 +8085,84 @@ Verified in the browser at 375px on #GRID (cyan) and Elysium Nights (gold): word
 box around it, and the whole header is visibly shorter than before. Confirmed Classic and '98
 untouched, both keep their own separate `#active-name` treatment. Fresh tab, no console errors.
 
+## The device headers: caret after the name, and a lit EXPAND, 2026-09-06
+
+Two asks on the Smartdeck and Trauma Rig headers. The caret moves from in front of the name to
+after it, since the row already opens with the section's own `//` mark and two glyphs ahead of the
+first word read as clutter. That is not a new convention either: Actions in Combat, and the Flow
+and #GRID section heads, already carry their caret after the title, so this row now matches the
+other half of the codebase rather than inventing a third arrangement.
+
+The EXPAND tag was `--text4`, the dimmest ink in the palette, and only lit on hover. That reads as
+disabled, and worse on the one surface where there is no hover to discover it with. It is now the
+accent at rest with an accent-dim border, keeping the full-accent border for hover. The comment
+already above that rule said the row should "read as a control at rest"; the toggle was the part
+that did not.
+
+Verified on the Codebreaker example, which is what actually renders a Smartdeck card (the author's
+own Operator renders neither device, which is why this needed an example at all): the child order
+is now name, caret, line, tier, toggle; the row reads "SMARTDECK ▸ ... EXPAND"; clicking flips both
+the caret and the word; and the toggle measures the accent in all three skins, at 8.5px on Classic
+and '98 and 10px on #GRIDroid, which is the size that skin already asked for. No console errors.
+
+## #PRINT's caution line: the author's triangle, and shorter on a phone, 2026-09-06
+
+Two asks. The ⚠ glyph becomes the author's warning triangle everywhere, and #GRIDroid alone drops
+the "VERIFIED IDENTITY RECORD ·" preamble, keeping the part with teeth in it.
+
+The shortening is done by splitting the preamble into its own span and hiding it in CSS rather
+than branching on the skin in JS. That is the pattern the record slot and the roster switcher
+already use here: build the whole line once, let the stylesheet decide what this skin shows, and
+it stays correct if the skin changes without a re-render.
+
+The icon carries `fill-rule` and `clip-rule` on the root, where its source declares them and from
+where they inherit to the path; the three `*-rendering` hints in the source are dropped, since they
+say nothing about the shape and nothing at all at 10px. Sizing reuses the `.btn span svg` idiom,
+1em square with the same `-.15em` baseline nudge, under a `.warn-line` class so an icon in a line
+of text lines up the way an icon in a button does.
+
+Checked with the true-size raster at the line's real 10px: the triangle reads and the exclamation
+survives as a bar and a dot, which is better than a 10px icon usually manages, because the shape is
+solid with one chunky cut-out. Verified per skin by `innerText`, which respects `display:none`, so
+the assertion is about what is actually shown: Classic and '98 read the full line, #GRIDroid reads
+"UNAUTHORIZED EDITS ARE LOGGED AND PROSECUTED". A side benefit on the phone, that line used to wrap
+to two rows and now sits on one. No console errors.
+
+Left alone: the same sentence in `printsheet.js` and `pdfexport.js`. Those are paper, where the
+preamble is worth keeping and an inline SVG has no business.
+
+## The Overclocked roll button wears both marks, 2026-09-06
+
+One button, two states, two gestures, so two icons. ROLL 36 takes the same die ROLL GROUP wears,
+reusing the constant already in this module; REROLL MATRIX takes the author's redo arrow, since
+doing it again is not the same act as throwing for the first time. Both carry `fill-rule` and
+`clip-rule` on the path, because both sources declare them on a class in a `<style>` block and a
+style block does not survive being inlined.
+
+Worth recording, since it looked like a defect and was not: at 11px the redo arrow reads as a bare
+C, and the arrowhead appears to be missing. Rendering the same path at 34px under evenodd, nonzero
+and no rule at all gives three identical, correct arrows, so the shape and the rule are both fine.
+The arrowhead is simply a thin flag that merges into the arc's terminal at button size. The ring
+still says "again" there, which is the job, but the arrow only reads from about 20px up.
+
+Verified in all three skins, both states: each takes the button's own colour, including the dark
+ink a solid-fill primary gives it. No console errors.
+
+## Switching attribute method silently zeroes the attributes, 2026-09-06
+
+Noticed while investigating an unexplained change to the author's record, and worth writing down
+even though it is old behaviour, not a regression. `setMethod()` in builder.js resets every
+attribute to 10 and clears `arrayAssign` whenever the method becomes Point Buy, Standard Array or
+Overclocked Array. That is defensible, since the old scores came from a method no longer in use,
+but it happens on a single click with no warning and no undo, and the scores are simply gone.
+
+It is also a useful fingerprint when reading a record that changed under you: attributes at a flat
+10 with an empty `arrayAssign` means that button was pressed, since nothing else in the app writes
+that shape.
+
+Not changed, since nobody asked. If it is ever worth softening, a confirm on the method buttons
+when the current scores are not already baseline would cost little.
+
 ## SPLIT wears the author's Glimmer money bag, 2026-09-06
 
 The ÷ glyph on the wallet bar's SPLIT button becomes the author's money bag, path verbatim. No
