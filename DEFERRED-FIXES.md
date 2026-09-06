@@ -8246,6 +8246,47 @@ the row evenly, the popover still opens as that skin's bottom sheet through the 
 credit and debit through it still move the balance and hand it back. Classic and '98 measured
 unchanged, content-sized at 27px tall with no clip. No console errors.
 
+## #GRIDroid drops the panel head's sub-label, 2026-09-06
+
+The head's `.tag` is the small right-hand aside beside a panel title: "BIOMETRIC PROFILE" next to
+Identity, "GEAR YOU RUN CLEAN" next to Stash. It is flavor written for a desk, and on a 375px
+phone the longer ones took the head to two lines. Two passes tried to make them fit before the
+author called it: `html.skin-droid .panel-h .tag{ display:none; }`, every tab, one rule.
+
+What the fitting attempts were, and why they are gone: first the box came off (a bordered pill
+reads as a control on a screen where everything else bordered is one, and it handed back about
+16px); then the dashboard heads were told to refuse to wrap and let the hint ellipse. That bought
+the layout at the cost of the words, which is the whole of what the label was for, and it is what
+the author saw and rejected. Removed with it: the `.modgrid6 .panel-h:not(:has(.panel-hr))` nowrap
+block, the `display:inline-block !important` override of combat.js's narrow-slot hiding, and the
+`white-space:normal` wrap rule. `.panel-h h3`, `.panel-hr` and `.panel-h select` are untouched.
+
+Two lessons from those passes worth keeping, because they will come back on any flex row:
+- The element that must not clip needs `flex-shrink:0`, not a heavy weighting. A hundred against
+  one is not enough: flex distributes a deficit proportionally, so the title still gave up its
+  share and read "VITALIT" with the last letter gone.
+- `scrollWidth > clientWidth` misses sub-pixel overflow, because both are integers. It reported
+  that clipped title as fitting. Measuring the text against its box with a hidden probe in the
+  element's own font is what agreed with the screenshot.
+
+Some of these labels carried live counts rather than flavor and go with the rest on this skin:
+Stash "14 ENTRIES", Chrome "3 INSTALLED · 2 STASHED · 12 SP", Status Changes "NOTHING APPLIED",
+Initiative, Bestiary, Saved Threats, Projects. Every one of them is restated in the body directly
+below (Chrome's SP total is the 40px readout on that same tab; Status Changes' empty state says
+"Nothing applied" in words), with one exception: Smartdeck Mods' "3 / 5 SLOTS" was the only place
+the deck's slot total was totalled. The per-mod chips and the "NO SLOTS" button state still carry
+it piecewise. Flagged for the author rather than special-cased.
+
+Verified at 375px on an example record: zero visible head labels across all seven Freelancer tabs,
+all six Inventory sub-tabs, all seven #PRINT wizard steps and the three built Admin tabs; no page
+overflow anywhere; no console errors. Classic and '98 still show theirs, which is the point of
+scoping the rule to the skin.
+
+Left alone on purpose, both now titles wrapping rather than labels: Codex's "Social Consequences
+& Cost Tracks" at 52px and the gray market's "Smartdecks, B&E Buddies & Trauma Rigs" at 64px.
+Those are the panel's own name, and clipping a name to hold a line is the worse trade. #PRINT's
+Level heads run 47-111px because they carry feature chips, which is content and correct.
+
 ## Catalogue markdown was printing its own asterisks, 2026-09-06
 
 The author found ability cards showing `**Ranged Care:**` with the markers visible. The catalogue

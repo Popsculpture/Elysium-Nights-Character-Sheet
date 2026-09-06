@@ -1342,7 +1342,12 @@ html.skin-droid .panel-h{
 }
 html.skin-droid .panel-h::before{ content:"//"; font-family:var(--mono); font-size:11px; color:var(--dr-two); letter-spacing:0; width:auto; height:auto; background:none; box-shadow:none; }
 html.skin-droid .panel-h h3{ font-family:var(--mono); font-weight:400; font-size:12px; letter-spacing:.18em; color:var(--accent); text-shadow:none; }
-html.skin-droid .panel-h .tag{ margin-left:auto; color:var(--text3); border:1px solid var(--border2); padding:2px 7px; font-size:9.5px; letter-spacing:.12em; }
+/* The head's sub-label is dropped here. It is flavor written for a desk, and at 375px the longer
+   ones ran the head to two lines; unboxing them and letting the tail ellipse bought the layout but
+   cost the words, which is the whole of what the label was for. The head keeps its title alone.
+   Every count one of them carried (entries, statblocks, installed chrome) is restated in the body
+   right below it. Classic and '98 have the width and keep theirs. */
+html.skin-droid .panel-h .tag{ display:none; }
 html.skin-droid .panel-h.clickable:hover h3{ color:var(--text); }
 html.skin-droid .panel-b{ padding:12px; }
 html.skin-droid .section-title{ color:var(--dr-two); }
@@ -1420,10 +1425,6 @@ html.skin-droid .row{ flex-wrap:wrap; }
 html.skin-droid .row.between.wrap > .row{ flex:1 1 100%; min-width:0; }
 html.skin-droid .panel-h{ flex-wrap:wrap; row-gap:6px; }
 html.skin-droid .panel-h h3{ min-width:0; overflow-wrap:anywhere; }
-html.skin-droid .panel-h .tag{ white-space:normal; line-height:1.3; max-width:100%; }
-/* combat.js hides a panel's sub-label when its slot is 2/6 or narrower and moves the words into
-   a title tooltip. Every panel is full width here and a phone has no hover, so it stays shown. */
-html.skin-droid .modgrid6 .panel-h .tag{ display:inline-block !important; }
 html.skin-droid .panel-h .panel-hr{ flex:1 1 100%; margin-left:0 !important; justify-content:flex-start !important; }
 html.skin-droid .panel-h select{ flex:1 1 100%; width:100% !important; min-width:0 !important; }
 html.skin-droid .panel-h.clickable{ min-height:44px; }
