@@ -499,8 +499,11 @@ EN.pdfExport = (function () {
     if (/Impulse Action/i.test(text)) return "Impulse";
     if (/Swift Action/i.test(text)) return "Swift";
     if (/Free Action/i.test(text)) return "Free";
-    if (/Complex Action/i.test(text)) return "Action";
+    if (/Complex Action/i.test(text)) return "Complex";
     if (/as an Action|use your Action|spend (?:an|your) Action|standard Action|as a single Action|take the Attack Action/i.test(text)) return "Action";
+    /* Special is tested AFTER the generic Action branch, matching combat.js, so a text
+       naming both resolves the same way in all three renderers. */
+    if (/Special Action/i.test(text)) return "Special";
     return "Passive";
   }
   function costTag(text) {
@@ -805,10 +808,17 @@ EN.pdfExport = (function () {
       ctx.text("No features yet.", { size: 9, color: hexColor("dim") });
     } else {
       var ACT_OVERRIDE = { Bandwidth: "Passive", Overdrive: "Passive", Leverage: "Passive", Moxie: "Passive", Execution: "Passive", Triage: "Passive", Reservoir: "Passive", "Core Channeling": "Passive", "Reality Fracture": "Swift" };
-      var groups = { Passive: [], Action: [], Swift: [], Impulse: [], Free: [] };
+            /* The book prints seven action types and this renderer used to carry five, folding
+         Complex into Action and having no Special branch at all, so a Special Action
+         ability landed in PASSIVE through the `|| groups.Passive` fallback and told the
+         player it costs nothing. Two lineage features reach this: Survivor's Wrath (The
+         Hulsk) and Probability Nudge (Grinlings). The vocabulary now matches combat.js.
+         Empty groups are skipped below, so the two additions cost a reader nothing until
+         a character actually holds one. */
+      var groups = { Passive: [], Action: [], Swift: [], Impulse: [], Free: [], Complex: [], Special: [] };
       feats.forEach(function (f) { var act = ACT_OVERRIDE[f.name] || actionCost(f.text); (groups[act] || groups.Passive).push(Object.assign({}, f, { _act: act })); });
       var featIdx = 0;
-      [["Passive", "PASSIVE"], ["Action", "ACTION"], ["Swift", "SWIFT ACTION"], ["Impulse", "IMPULSE · REACTION"], ["Free", "FREE ACTION"]].forEach(function (g) {
+      [["Passive", "PASSIVE"], ["Action", "ACTION"], ["Swift", "SWIFT ACTION"], ["Impulse", "IMPULSE · REACTION"], ["Free", "FREE ACTION"], ["Complex", "COMPLEX ACTION"], ["Special", "SPECIAL ACTION"]].forEach(function (g) {
         var arr = groups[g[0]];
         if (!arr.length) return;
         ctx.text(g[1] + "  ·  " + arr.length, { size: 7.5, font: fonts.mono, color: hexColor("accent"), h: 12 });

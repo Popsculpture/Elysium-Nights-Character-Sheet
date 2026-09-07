@@ -8521,6 +8521,48 @@ of path data, because the CorelDRAW export carries a stroke-outline duplicate of
 (one of them 2778 numbers on its own) that contributes nothing at 14px. It is embedded whole
 rather than pruned, because the house rule is that the author's geometry goes in as exported.
 
+## The three renderers agree on the book's seven action types, 2026-09-07
+
+The previous entry flagged five abilities that classified differently across the sheet, the print
+sheet and the PDF, and closing it out found the count was wrong in the useful direction: **three
+of the five were not abilities at all.**
+
+The sweep that produced them walked every object in `EN.*` carrying a `name` and a `text`, which
+is far more than the ability catalogue. "Complex Action" is `EN.combat.actionTypes[5]`, the
+glossary entry that DEFINES a Complex Action. "Critical Wound" is `EN.conditions[11]`. "Scrap
+Familiar (Base Stats)" is a companion statblock under `classes.shaper.extra.familiars`, and
+nothing in `app/js` reads `familiars` at all. None of the three ever reaches `actionCost` as a
+feature, so the disagreement was an artifact of the probe rather than anything a player could
+see. Worth recording because the same probe produced the 22 in the previous entry, and those
+were real; the lesson is that a name-plus-text sweep finds the catalogue AND the glossary, so
+its hits need placing before they are counted.
+
+**The two that were real were properly broken.** Survivor's Wrath (Chimera, The Hulsk) and
+Probability Nudge (Outsiders, Grinlings) both say "as a Special Action" outright. The sheet read
+them correctly as SPECIAL. The print sheet and the PDF had no Special branch, so they fell
+through to Passive and then, via `(groups[act] || groups.Passive)`, printed under PASSIVE. A
+player picking either lineage feature was told on the printed sheet that it costs nothing.
+
+Reproduced before fixing, on an example character with the lineage feature selected, since
+`lineageFeatures` is a player choice and the feature does not exist on the record until it is
+picked: the sheet said SPECIAL, and the print sheet put it in PASSIVE · 11.
+
+The book prints seven action types (`EN.combat.actionTypes`): Action, Move, Swift, Impulse,
+Free, Complex and Special. `combat.js` carried six of them, the two print renderers five, and
+those five folded Complex into Action and dropped Special on the floor. All three now carry the
+same vocabulary, and Special is tested after the generic Action branch in every copy so a text
+naming both resolves identically everywhere. The Complex half changes nothing a player can see
+today, since the only three Complex hits are the non-abilities above; it is there so the three
+copies stop drifting, which is what produced this entry in the first place.
+
+Verified by extracting the three shipped `actionCost` functions from the SERVED files and running
+them over all 768 entries rather than over retyped copies: zero disagreements, and identical
+distributions across all three (Passive 556, Impulse 77, Swift 73, Action 45, Free 12, Complex 3,
+Special 2). In the app, both lineage features now render SPECIAL on the sheet and land in a real
+SPECIAL ACTION group in print, with PASSIVE dropping from 11 to 10 as they leave it. Empty groups
+are skipped, so a character holding neither sees no new headings: an Operator example still prints
+exactly PASSIVE, ACTION, SWIFT ACTION and IMPULSE · REACTION.
+
 ## Twenty-two abilities stop calling themselves Passive, 2026-09-07
 
 The book bolds its action types, and a markdown bold is invisible to a plain-text regex:

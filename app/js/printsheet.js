@@ -108,8 +108,11 @@ EN.printSheet = (function () {
     if (/Impulse Action/i.test(text)) return "Impulse";
     if (/Swift Action/i.test(text)) return "Swift";
     if (/Free Action/i.test(text)) return "Free";
-    if (/Complex Action/i.test(text)) return "Action";
+    if (/Complex Action/i.test(text)) return "Complex";
     if (/as an Action|use your Action|spend (?:an|your) Action|standard Action|as a single Action|take the Attack Action/i.test(text)) return "Action";
+    /* Special is tested AFTER the generic Action branch, matching combat.js, so a text
+       naming both resolves the same way in all three renderers. */
+    if (/Special Action/i.test(text)) return "Special";
     return "Passive";
   }
   function parseUses(text, d) {
@@ -585,7 +588,14 @@ EN.printSheet = (function () {
     var feats = gatherFeatures(ch, d);
     if (!feats.length) { out.push(note("No features yet.")); return out; }
     var ACT_OVERRIDE = { Bandwidth: "Passive", Overdrive: "Passive", Leverage: "Passive", Moxie: "Passive", Execution: "Passive", Triage: "Passive", Reservoir: "Passive", "Core Channeling": "Passive", "Reality Fracture": "Swift" };
-    var groups = { Passive: [], Action: [], Swift: [], Impulse: [], Free: [] };
+          /* The book prints seven action types and this renderer used to carry five, folding
+         Complex into Action and having no Special branch at all, so a Special Action
+         ability landed in PASSIVE through the `|| groups.Passive` fallback and told the
+         player it costs nothing. Two lineage features reach this: Survivor's Wrath (The
+         Hulsk) and Probability Nudge (Grinlings). The vocabulary now matches combat.js.
+         Empty groups are skipped below, so the two additions cost a reader nothing until
+         a character actually holds one. */
+      var groups = { Passive: [], Action: [], Swift: [], Impulse: [], Free: [], Complex: [], Special: [] };
     feats.forEach(function (f) { f._act = ACT_OVERRIDE[f.name] || actionCost(f.text); (groups[f._act] || groups.Passive).push(f); });
     function snipRow(f) {
       var cost = f._act !== "Passive" ? costTag(f.text) : null, uses = parseUses(f.text, d);
@@ -598,7 +608,7 @@ EN.printSheet = (function () {
       if (uses) { var u = el("span.ps-snip-uses", { title: uses.max + " / " + uses.recharge }); for (var i = 0; i < Math.min(uses.max, 6); i++) u.appendChild(el("span.ps-pip")); row.appendChild(u); }
       return row;
     }
-    [["Passive", "PASSIVE"], ["Action", "ACTION"], ["Swift", "SWIFT ACTION"], ["Impulse", "IMPULSE · REACTION"], ["Free", "FREE ACTION"]].forEach(function (g) {
+    [["Passive", "PASSIVE"], ["Action", "ACTION"], ["Swift", "SWIFT ACTION"], ["Impulse", "IMPULSE · REACTION"], ["Free", "FREE ACTION"], ["Complex", "COMPLEX ACTION"], ["Special", "SPECIAL ACTION"]].forEach(function (g) {
       var arr = groups[g[0]]; if (!arr.length) return;
       out.push(el("div.ps-snip-gh", { text: g[1] + " · " + arr.length }));
       arr.forEach(function (f) { out.push(snipRow(f)); });
