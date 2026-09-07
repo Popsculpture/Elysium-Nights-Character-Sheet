@@ -8630,13 +8630,27 @@ What it did share with the others is the <style> block, which does not survive b
 
 The size is 14px, and the sizing rule is now shared, `.btn .dice-neon svg, .btn .dice-real svg`,
 so the pair cannot drift apart in a later edit. Honest about what 14px costs this particular
-drawing: it is a solid die with pips and two more dice stacked behind it, and rasterised at true
-size those interior holes do not resolve. Counting enclosed background regions, the art has six
-real ones, which is what you get at 24px and above; at 14px you get ten specks of one to three
-pixels each, which is aliasing noise rather than structure. The silhouette still reads as a die,
-which is what a button icon needs, and going bigger would break the pair's balance, since a
-solid mark already carries more weight than the wireframe at the same size. Flagged, not fixed:
-if the author wants the pips to actually read, the art wants simplifying rather than enlarging.
+drawing: it is a solid isometric die whose pips are holes punched through its faces, and
+rasterised at true size those holes do not resolve. Counting enclosed background regions, the art
+has six real ones, which is what you get at 24px and above; at 14px you get ten specks of one to
+three pixels each, which is aliasing noise rather than structure. The silhouette still reads as a
+die, which is what a button icon needs, and going bigger would break the pair's balance, since a
+solid mark already carries more weight than the wireframe at the same size.
+
+**Correction, later the same day.** This entry and its commit both called the art "three dice".
+It is ONE die in three-quarter view, showing 1 on the top face, 3 on the left and 2 on the right,
+a legal 1/3/2. The mistake came from reading the silhouette instead of splitting the path, which
+takes one line and returns nine subpaths: three faces and six pips.
+
+**Simplifying it was tried the same day and the author rejected it outright**, which replaces the
+"if he wants the pips to read, the art wants simplifying" note this entry used to end on. The
+experiment dropped three of the six pips, kept one per face, and moved each survivor to its face
+centre scaled 2.2x through a mask, every coordinate still his. It took the pips from a best of 3
+rastered pixels at 14px to 12, 12 and 10. It measured better and it looked worse: "i hate it".
+Reverted to this geometry, unaltered. The lesson is not that the measurement was wrong. It is that
+a metric counting holes cannot see what it costs the die to lose half its pips, and I let it drive
+a judgement it was not qualified to make. Do not re-propose it. If the pips ever need to read at
+button size, the answer is different art from the author, not surgery on this drawing.
 
 The comment explaining the row's align-items: stretch was stale the moment this landed. It said
 the two buttons differ because one carries an SVG and the other a text glyph; both carry SVGs
