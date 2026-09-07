@@ -443,13 +443,24 @@ EN.pdfExport = (function () {
     });
     return out;
   }
-  function weaponHit(ch, d, w) {
+  function weaponHit(ch, d, w, key) {
     var melee = w._melee || w.group === "Simple" || w.group === "Martial";
     var thrown = (w.traits || []).some(function (t) { return /^Thrown/.test(t); });
     var finesse = (w.traits || []).some(function (t) { return /^Finesse/.test(t); });
     var bod = d.attributes.BOD.mod, agi = d.attributes.AGI.mod;
     var useAgi = melee ? (finesse && agi > bod) : (thrown ? agi >= bod : true);
     var mod = useAgi ? agi : bod;
+    /* ...and then the attribute a feature lets this weapon attack off, if the player has
+       switched it on. combat.js has always applied this and these two copies never did, so a
+       Stitcher with First Do No Harm who picked Tech for a Light weapon read one number on the
+       Weapons tab and a lower one on every page they printed: +5 on screen, +3 on paper, the
+       gap being Tech minus the weapon's default attribute and widening as Tech grows. The
+       resolver validates the stored pick on read, so a feature since retrained away, or an
+       attribute that is no longer the better one, quietly falls back to the default here just
+       as it does on screen. `mod` is still the honest default at this point, which is exactly
+       the baseMod the resolver wants to compare against. */
+    var offerOn = eng.activeAttackAttr ? eng.activeAttackAttr(ch, d, w, key, mod) : null;
+    if (offerOn) mod = offerOn.mod;
     var cat = GROUP_CAT[w.group], tier = cat ? eng.effectiveGearTier(ch, "weapons", cat) : "untrained";
     var prof = ((EN.rules.profTiers || {})[tier] || {}).d20 || 0;
     var focusCal = cat && eng.weaponFocus && eng.weaponFocus(ch, cat, w.name) ? (d.caliber || 1) : 0;
@@ -728,7 +739,7 @@ EN.pdfExport = (function () {
           notes.push(g.twoHanded ? "held two-handed (" + g.versatile + ")"
                                  : "held one-handed (" + g.baseDice + ")");
         }
-        return { name: r.label, atk: sgn(weaponHit(ch, d, w)), dmg: dmg, notes: notes.join(", ") };
+        return { name: r.label, atk: sgn(weaponHit(ch, d, w, wKey)), dmg: dmg, notes: notes.join(", ") };
       });
     atkRows = atkRows.concat(unarmedAttackRow(ch, d));
     while (atkRows.length < 6) atkRows.push({ name: "", atk: "", dmg: "", notes: "" });

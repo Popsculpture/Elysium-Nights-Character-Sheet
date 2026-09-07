@@ -8560,6 +8560,50 @@ Codebreaker, and Redundant Systems prints five titled "5 / Long Rest" on a Durab
 Both printed nothing before. Testing stayed on example records behind the guard that aborts if
 `setExample` fails to engage.
 
+## The printed sheet stops understating a switched attack attribute, 2026-09-07
+
+After `parseUses` made three separate instances of the same shape in one session, a sweep went
+looking for the rest: every function defined in two or more of `combat.js`, `printsheet.js` and
+`pdfexport.js`, twenty-nine of them, each compared for behavioural drift. **Twenty-five are
+clean.** Four differed, one of them a wrong number on paper.
+
+**`weaponHit`: a feature-granted attack attribute was invisible to both exporters.** Neither
+`printsheet.js` nor `pdfexport.js` contained the string `attackAttr` at all, so a player's stored
+pick could not reach either. `combat.js` has applied it since the feature shipped.
+
+Not latent. The offer renders as a clickable chip on the Weapons sub-tab ("TECH +5 / +3 · FIRST
+DO NO HARM"), a click handler writes `ch.attackAttr[weaponEntryKey]`, and `store.js` persists and
+migrates it. Reproduced on the Stitcher example, who has First Do No Harm, holding a Dagger, Tech
++5 against a default Agility +3: the Weapons tab read **HIT +5** and every printed page read
+**+3**. Toggling it off and on moved the screen and left the paper at +3 both times.
+
+The fix passes the weapon entry key into `weaponHit` and applies `engine.activeAttackAttr`, which
+the call sites already had in scope as `wKey` and were already handing to `weaponReach` and
+`weaponGrip`. The resolver validates the stored pick on read, so a retrained feature or an
+attribute that is no longer the better one falls back to the default on paper exactly as it does
+on screen. After: screen and print agree at +3 with the toggle off and +5 with it on. Regression
+checked across all seven examples with no pick stored anywhere, since that is the common case and
+the path that must not move: every equipped weapon prints the same number it did before.
+
+**And one the sweep called drift that is not.** `autoBrief` truncates at 116 characters in
+`printsheet.js` and 160 in `pdfexport.js`, which reads like a fix applied to one copy and
+forgotten in the other. It is not. The two arrived in different commits for different features,
+the printable hardcopy and the fillable PDF, and `pdfexport.js` never carried 116. They are
+per-medium constants: 10px in a flex column on the sheet, 8pt on its own line in the PDF.
+
+Measured before deciding, because the history alone would not have settled whether 116 was simply
+too mean: the brief column renders 464.9px wide at roughly 5.63px per character, so about 82
+characters fit one line, and 15 of 19 briefs on a Level 10 Codebreaker already wrap past one.
+Raising the sheet to 160 would push most rows to a second line and roughly double the section's
+height, against a budget whose own comment says it is capped to keep the section on one page.
+Unifying them would have been a regression dressed as a consistency fix. Left alone deliberately.
+
+Two more the sweep found, neither touched, both awaiting the author: the exporters apply no
+attribute modifier to weapon damage at all, printing the catalog's "1d4 Piercing" where the screen
+shows "1d4 +3", which is every weapon rather than only switched ones; and `unarmedAttackRow`
+resolves equipped names through `catItem` on the sheet and `findWeapon` in the PDF, so the
+"am I actually armed" gate can disagree when an equipped entry names an armor or a tool.
+
 ## The three renderers agree on the book's seven action types, 2026-09-07
 
 The previous entry flagged five abilities that classified differently across the sheet, the print
