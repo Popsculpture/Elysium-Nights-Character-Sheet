@@ -8595,6 +8595,42 @@ carried a comment about Weapon Focus Caliber that `pdfexport.js` lacked. That is
 discipline `parseUses` got earlier today, and for the same reason, since a plain diff is what
 turns the next drift into something anyone can see.
 
+## The unarmed row comes back when nothing in your hands is a weapon, 2026-09-07
+
+The last of the four sweep findings, and the one where "make the two copies agree" would have
+been the wrong reason to act. There is no `combat.js` version of `unarmedAttackRow` to defer to,
+so which copy was right had to be argued rather than assumed.
+
+The gate asks whether a real weapon is in your hands, and suppresses the unarmed row when one is.
+`printsheet.js` resolved each equipped name through `catItem`, which searches the whole catalog:
+melee, ranged and signature items, but also munitions, ammo, armor and tools. `pdfexport.js` used
+`findWeapon`, which is weapons only.
+
+What settles it is not the PDF. It is `equippedWeaponRows`, twenty lines up in the same file,
+which builds the Attacks table itself and also uses `findWeapon`, dropping anything it cannot
+resolve. So the two disagreed INSIDE one file, and the disagreement had a visible shape:
+equip an armor as a weapon and the printed sheet showed no weapon row, because the Attacks table
+refused it, and no unarmed row either, because this gate had counted it as being armed. An empty
+Attacks section on the sheet a player fights from. Reproduced before the fix, zero rows.
+
+Reachable without hand-authored JSON, and the likelier route is not armor: ammo and munitions sit
+in `catItem`'s reach and not `findWeapon`'s, and the example characters ship carrying rounds.
+
+Fixed by using `findWeapon` in `printsheet.js`. Verified on three states rather than the failing
+one alone, since a gate is as wrong when it fires as when it does not: armor equipped as a weapon
+now prints "Unarmed Strike +3, 1 Bludgeoning +1" where it printed nothing; a Fury holding a Maul
+and a Warhammer still gets no unarmed row and both weapons print; an empty loadout still gets the
+unarmed row it always did.
+
+The two bodies now differ only by this entry's comment and by their return shape, an array of
+arrays for the HTML table against an array of objects for the PDF, which is a real difference
+between the two media rather than drift.
+
+**That closes the sweep.** Twenty-nine helpers duplicated across the three renderers, twenty-five
+identical in behaviour, four differing: `weaponHit` twice over (the switched attack attribute and
+the missing damage modifier), this, and `autoBrief`, whose differing truncation caps were measured
+and deliberately left alone.
+
 ## The printed sheet stops understating a switched attack attribute, 2026-09-07
 
 After `parseUses` made three separate instances of the same shape in one session, a sweep went

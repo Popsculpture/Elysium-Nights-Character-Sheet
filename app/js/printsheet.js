@@ -292,8 +292,17 @@ EN.printSheet = (function () {
   function unarmedAttackRow(ch, d) {
     var u = d.unarmed;
     if (!u) return [];
+    /* findWeapon, NOT catItem. This gate asks "is a real weapon in your hands", and catItem
+       searches the whole catalog: armor, tools, ammo and munitions all resolve through it, so
+       an equipped entry naming any of those counted as being armed and suppressed this row.
+       The decisive argument is not that pdfexport.js does it the other way, it is that
+       equippedWeaponRows twenty lines up ALSO uses findWeapon and drops whatever it cannot
+       resolve. With catItem here the two disagreed inside one file: a character with armor
+       marked as an equipped weapon printed no weapon row, because the Attacks table refused
+       it, and no unarmed row either, because this gate had counted it. An empty Attacks
+       section, on the sheet they play from. */
     var realWeapons = equippedWeaponNames(ch).filter(function (n) {
-      var it = catItem(n);
+      var it = findWeapon(n);
       return !!it && !(eng.isUnarmedAugmentName && eng.isUnarmedAugmentName(it.name));
     });
     if (!(u.replacers.length || u.increases.count || u.riders.length || u.reach.spaces || !realWeapons.length)) return [];
