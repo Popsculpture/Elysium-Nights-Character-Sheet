@@ -8560,6 +8560,41 @@ Codebreaker, and Redundant Systems prints five titled "5 / Long Rest" on a Durab
 Both printed nothing before. Testing stayed on example records behind the guard that aborts if
 `setExample` fails to engage.
 
+## The exported weapon rows print the damage modifier they were leaving off, 2026-09-07
+
+The second finding from the duplicated-helper sweep, and the larger of the two: the print sheet
+and the PDF printed the catalog's damage string bare. A Fury swinging a Maul read "2d6
+Bludgeoning" on paper where the screen read "2d6 +3". Every weapon, on every exported page, was
+missing the one number a player adds to every damage roll. Unlike the attack-attribute bug above
+this needed no toggle to reach: it was every character, every printout, since the exporters
+shipped.
+
+The modifier is the same attribute resolution as the attack, so it is taken from the same place
+rather than recomputed. `weaponHit` now returns an object, `{hit, dmgMod, indirect}`, instead of
+the attack number alone. Splitting it into a second helper would have been the cheaper edit and
+is precisely how these copies drifted from `combat.js` to begin with; one resolution per file is
+the point.
+
+Indirect delivery carries through with it. A weapon with an Explosive trait adds no attribute
+modifier to damage, which `combat.js` encodes as `dmgMod: indirect ? 0 : mod` and explains in the
+row's tooltip. On paper a bare "2d8 Force" beside a neighbour reading "2d6 +3" looks like the same
+omission this entry is fixing, so the exported row now says why: a Grenade Launcher prints "2d8
+Force" and picks up the note "indirect: no attribute modifier".
+
+Placement is after the dice and ahead of the type, which keeps the Versatile rows intact. Those
+are rewritten earlier in the same block to the book's "1d8 (1d10)" form, and the modifier lands
+once after the whole group: a Warhammer prints "1d8 (1d10) +3 Bludgeoning".
+
+Verified across all seven examples, every equipped weapon carrying its modifier, and against the
+screen for agreement rather than merely for presence: the Fury's Maul reads "2d6 +3" in the DMG
+box and "2d6 +3 Bludgeoning" on the printed row. The Explosive case was checked by equipping a
+Grenade Launcher rather than by reading the branch.
+
+The two `weaponHit` bodies are now byte-identical, which they were not before: `printsheet.js`
+carried a comment about Weapon Focus Caliber that `pdfexport.js` lacked. That is the same
+discipline `parseUses` got earlier today, and for the same reason, since a plain diff is what
+turns the next drift into something anyone can see.
+
 ## The printed sheet stops understating a switched attack attribute, 2026-09-07
 
 After `parseUses` made three separate instances of the same shape in one session, a sweep went

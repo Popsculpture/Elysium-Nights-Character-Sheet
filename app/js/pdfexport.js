@@ -463,8 +463,14 @@ EN.pdfExport = (function () {
     if (offerOn) mod = offerOn.mod;
     var cat = GROUP_CAT[w.group], tier = cat ? eng.effectiveGearTier(ch, "weapons", cat) : "untrained";
     var prof = ((EN.rules.profTiers || {})[tier] || {}).d20 || 0;
+    // Caliber from a Weapon Focus naming this weapon type (outside the +15 cap)
     var focusCal = cat && eng.weaponFocus && eng.weaponFocus(ch, cat, w.name) ? (d.caliber || 1) : 0;
-    return mod + prof + focusCal;
+    /* An OBJECT, not the attack number alone, because the damage modifier is the same
+       attribute resolution and splitting it into a second helper is how the copies in this
+       file drifted from combat.js in the first place. Indirect delivery (an Explosive trait)
+       adds no attribute modifier to damage, matching combat.js's dmgMod. */
+    var indirect = (w.traits || []).some(function (t) { return /^Explosive/.test(t); });
+    return { hit: mod + prof + focusCal, dmgMod: indirect ? 0 : mod, indirect: indirect };
   }
 
   /* The unarmed strike as an Attacks-table row, or nothing. Mirrors printsheet.js's
@@ -739,7 +745,16 @@ EN.pdfExport = (function () {
           notes.push(g.twoHanded ? "held two-handed (" + g.versatile + ")"
                                  : "held one-handed (" + g.baseDice + ")");
         }
-        return { name: r.label, atk: sgn(weaponHit(ch, d, w, wKey)), dmg: dmg, notes: notes.join(", ") };
+        /* the attribute modifier the damage roll actually adds. The exported rows used to
+           print the catalog string bare, so a Fury swinging a Maul read "2d6 Bludgeoning" on
+           paper where the screen read "2d6 +5": the sheet you play from omitted the single
+           number you add to every damage roll. Inserted after the dice, ahead of the type, so
+           a Versatile row already rewritten to "1d8 (1d10)" keeps its shape and gains the
+           modifier once. */
+        var wh = weaponHit(ch, d, w, wKey);
+        if (wh.indirect) notes.push("indirect: no attribute modifier");
+        else dmg = dmg.replace(/^(\s*\d+d\d+(?:\s*\([^)]*\))?)/, "$1 " + eng.fmtMod(wh.dmgMod));
+        return { name: r.label, atk: sgn(wh.hit), dmg: dmg, notes: notes.join(", ") };
       });
     atkRows = atkRows.concat(unarmedAttackRow(ch, d));
     while (atkRows.length < 6) atkRows.push({ name: "", atk: "", dmg: "", notes: "" });
