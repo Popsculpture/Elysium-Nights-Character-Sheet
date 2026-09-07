@@ -755,17 +755,30 @@ EN.pdfExport = (function () {
   /* =======================================================================
      SECTION 02 - TALENTS & LINEAGE (abilities at a glance)
      ======================================================================= */
+  /* Identical to combat.js parseUses ON PURPOSE, character for character, so a diff of the two
+     files shows any future drift immediately. This copy had drifted three ways and every one of
+     them cost a printed sheet something: it lacked the optional "combat" before the recharge, so
+     Multi-Thread Processing's "Once per combat encounter" printed no tracker at all; it lacked the
+     "per Long Rest equal to your Caliber" pattern entirely, so Redundant Systems printed none
+     either; and it returned the raw regex match as the recharge, so eleven abilities read "scene"
+     and "encounter" in the pip tooltip where the sheet says "Scene" and "Encounter". */
   function parseUses(text, d) {
     if (!text) return null;
-    var t = text.replace(/\s+/g, " "), m;
-    function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase(); }
-    if ((m = t.match(/number of (?:times|uses)(?:[^.]{0,60}?)equal to your Caliber per (Long|Short) Rest/i))) return { max: d.caliber, recharge: cap(m[1]) + " Rest" };
-    if (/number of (?:times|uses) per Encounter equal to your Caliber/i.test(t)) return { max: d.caliber, recharge: "Encounter" };
-    if ((m = t.match(/\b(once|twice|(\d+) times) per (Long Rest|Short Rest|Encounter|scene)\b/i))) {
+    var t = text.replace(/\s+/g, " ");
+    var m;
+    if ((m = t.match(/number of (?:times|uses)(?:[^.]{0,60}?)equal to your Caliber per (Long|Short) Rest/i)))
+      return { max: d.caliber, recharge: cap(m[1]) + " Rest" };
+    if ((m = t.match(/number of (?:times|uses) per (Long|Short) Rest equal to your Caliber/i)))
+      return { max: d.caliber, recharge: cap(m[1]) + " Rest" };
+    if (/number of (?:times|uses) per Encounter equal to your Caliber/i.test(t))
+      return { max: d.caliber, recharge: "Encounter" };
+    if ((m = t.match(/\b(once|twice|(\d+) times) per (?:combat )?(Long Rest|Short Rest|Encounter|scene)\b/i))) {
       var max = m[2] ? Number(m[2]) : (/twice/i.test(m[1]) ? 2 : 1);
-      return { max: max, recharge: m[3] };
+      var r = m[3].toLowerCase();
+      return { max: max, recharge: r === "scene" ? "Scene" : r === "encounter" ? "Encounter" : cap(r.split(" ")[0]) + " Rest" };
     }
     return null;
+    function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase(); }
   }
   function autoBrief(text) {
     if (!text) return "";

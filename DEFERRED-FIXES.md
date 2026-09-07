@@ -8521,6 +8521,45 @@ of path data, because the CorelDRAW export carries a stroke-outline duplicate of
 (one of them 2778 numbers on its own) that contributes nothing at 14px. It is embedded whole
 rather than pruned, because the house rule is that the author's geometry goes in as exported.
 
+## The print sheet gets the LIMITED fix the sheet got three commits ago, 2026-09-07
+
+Author's ask, and the third instance this session of the same shape: a helper copied into
+`combat.js`, `printsheet.js` and `pdfexport.js`, fixed in one of them, left wrong in the other two.
+`actionCost` was the first, its action-type vocabulary the second, and `parseUses` is this one.
+
+The two LIMITED labels were fixed on the sheet on 2026-09-06 by teaching `parseUses` the long
+spelling "per combat Encounter". The print copies never got it. Measuring all three against the
+768 catalogue entries before touching anything found the drift was wider than the ask, in three
+separate ways, and all three cost a printed sheet something real:
+
+- **The missing optional "combat".** Multi-Thread Processing says "Once per combat encounter" and
+  printed NO tracker at all, where the sheet gives it one box recharging on Encounter.
+- **A whole missing pattern.** The print copies never carried
+  "number of times per Long Rest equal to your Caliber", so Redundant Systems (Clankers,
+  Durabodies) printed no tracker either. This one was not in the ask and is the worse bug of the
+  two: it is a Caliber-scaled pool, five boxes at Caliber 5, and the printed sheet showed none.
+- **An unnormalised return.** The print copies returned the raw regex match as the recharge, so
+  eleven abilities read "scene" and "encounter" in the pip tooltip where the sheet says "Scene"
+  and "Encounter".
+
+Fixed by making the two print copies character-for-character identical to `combat.js`, taken from
+that file programmatically rather than retyped, so no regex passed through a keyboard. They are
+identical on purpose and say so in a comment: a plain diff of the two files now surfaces any
+future drift, which is what none of the three earlier copies allowed.
+
+Second Language, the other of the two LIMITED labels, needed nothing. "Once per turn" returns null
+from `parseUses` in all three copies by design, because a cadence is not a pool and nobody ticks a
+box back every turn; it is read in the sheet's own label instead. The print sheet has no
+action-limit column at all, so there is nothing there to be wrong. Worth stating explicitly since
+the ask named two abilities and only one of them had a print-side defect.
+
+Verified by extracting the three shipped `parseUses` functions from the SERVED files and running
+them over all 768 entries: zero disagreements, 101 abilities carrying trackers. End to end on real
+printed sheets: Multi-Thread Processing prints one pip titled "1 / Encounter" on a Level 10
+Codebreaker, and Redundant Systems prints five titled "5 / Long Rest" on a Durabody at Caliber 5.
+Both printed nothing before. Testing stayed on example records behind the guard that aborts if
+`setExample` fails to engage.
+
 ## The three renderers agree on the book's seven action types, 2026-09-07
 
 The previous entry flagged five abilities that classified differently across the sheet, the print
