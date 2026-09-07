@@ -2161,7 +2161,8 @@ EN.combatView = (function () {
   }
   /* parse "uses per rest" specs out of feature text; covers every phrasing in the data:
      "a number of times/uses equal to your Caliber per Long/Short Rest", "a number of times
-     per X equal to your Caliber", "once/twice/N times per Long Rest/Short Rest/Encounter/scene" */
+     per X equal to your Caliber", "once/twice/N times per Long Rest/Short Rest/Encounter/scene".
+      "combat encounter" is accepted as a spelling of Encounter; one entry writes it long. */
   function parseUses(text, d) {
     if (!text) return null;
     var t = text.replace(/\s+/g, " ");
@@ -2172,7 +2173,7 @@ EN.combatView = (function () {
       return { max: d.caliber, recharge: cap(m[1]) + " Rest" };
     if (/number of (?:times|uses) per Encounter equal to your Caliber/i.test(t))
       return { max: d.caliber, recharge: "Encounter" };
-    if ((m = t.match(/\b(once|twice|(\d+) times) per (Long Rest|Short Rest|Encounter|scene)\b/i))) {
+    if ((m = t.match(/\b(once|twice|(\d+) times) per (?:combat )?(Long Rest|Short Rest|Encounter|scene)\b/i))) {
       var max = m[2] ? Number(m[2]) : (/twice/i.test(m[1]) ? 2 : 1);
       var r = m[3].toLowerCase();
       return { max: max, recharge: r === "scene" ? "Scene" : r === "encounter" ? "Encounter" : cap(r.split(" ")[0]) + " Rest" };
@@ -2480,7 +2481,7 @@ EN.combatView = (function () {
      9px the two differ only by a prefix; mistaking a label for its exact opposite is the worst
      thing this column could do. Not "FREE" either, which is already an action type two cells to
      the right. */
-  function noUseLabel(uses, limited) {
+  function noUseLabel(uses, limited, text) {
     if (uses && uses.max) {
       var r = String(uses.recharge || "").toLowerCase();
       var shortR = r.indexOf("long") === 0 ? "LR" : r.indexOf("short") === 0 ? "SR"
@@ -2488,6 +2489,12 @@ EN.combatView = (function () {
                  : (uses.recharge || "").toUpperCase();
       return uses.max + "/" + shortR;
     }
+    /* A per-turn cadence is deliberately NOT run through parseUses: a pool implies a tracker
+       you tick off and reset, and nobody resets a box every turn. It only wants saying, so it
+       is read here and nowhere else. Safe to match on: of 518 catalogue entries none writes
+       "per turn" except as "once per turn", so a damage-over-time line cannot trip it. */
+    var cadence = /\bonce per (turn|round)\b/i.exec(text || "");
+    if (cadence) return "1/" + cadence[1].toUpperCase();
     return limited ? "LIMITED" : "NO LIMIT";
   }
   function actionEntry(id, name, cost, src, text, limited, chip, uses, onUse, canUse, requirements) {
@@ -2536,7 +2543,7 @@ EN.combatView = (function () {
         /* the USE cell is always filled: el() drops a null child, and a four-child row would
            slide every column one place left in the grid. Without a button it says what the
            ability costs you instead, which is nothing, or its limit where it has one. */
-        useBtn || el("span.ab-nouse", { title: "Costs no class resource", text: noUseLabel(uses, limited) }),
+        useBtn || el("span.ab-nouse", { title: "Costs no class resource", text: noUseLabel(uses, limited, text) }),
         el("span.card-name", null, EN.ui.nameCaret(name, open)),
         el("span.ab-act", null, [cost
           ? el("span.chip", { style: { fontSize: "9.5px", color: COST_COLOR[cost], borderColor: COST_COLOR[cost] }, text: cost.toUpperCase() })

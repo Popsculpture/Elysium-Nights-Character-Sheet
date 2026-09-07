@@ -8246,6 +8246,28 @@ the row evenly, the popover still opens as that skin's bottom sheet through the 
 credit and debit through it still move the balance and hand it back. Classic and '98 measured
 unchanged, content-sized at 27px tall with no clip. No console errors.
 
+## The two LIMITED labels say what they actually are, 2026-09-06
+
+The previous entry flagged them and this closes it. Both were limited in ways the renderer could
+not see, and they were limited differently, which is why the fix is in two places rather than one.
+
+Multi-Thread Processing says "Once per combat encounter". parseUses already reads "once per
+Encounter"; it was only the extra word that dropped it, so the pattern now accepts an optional
+"combat" before the recharge. Checked before changing it: across 518 catalogue entries exactly one
+writes it that way, so the blast radius is that ability and nothing else. It gains what its
+siblings already had, a tickable box and the label 1/ENC.
+
+Second Language says "Once per turn", and that deliberately does NOT go through parseUses. A uses
+spec renders a tracker you tick off and reset, and nobody resets a box every turn; a cadence only
+wants saying. It is read in the label alone and shows 1/TURN, with no tracker. Also checked before
+matching on it: of those 518 entries, none writes "per turn" except as "once per turn", so a
+damage-over-time line saying "2d10 per turn" cannot trip it.
+
+Verified: Multi-Thread Processing now reads 1/ENC with a one-box tracker recharging on Encounter,
+Second Language reads 1/TURN with no tracker, and across the seven examples the column is 16 NO
+LIMIT, 1 1/ENC, 1 1/TURN, 1 3/LR with no LIMITED left and nothing clipped. LIMITED stays in the
+code as the catch-all for phrasings neither pattern reaches.
+
 ## The ability list becomes a row on Classic and '98, 2026-09-06
 
 Author's layout: [Use] | [Name] | [Action Type] | [Effect] | [Cost], with a hyphen anywhere the
