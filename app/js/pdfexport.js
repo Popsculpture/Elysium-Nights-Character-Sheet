@@ -806,6 +806,19 @@ EN.pdfExport = (function () {
     return null;
     function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase(); }
   }
+  /* How much of a brief this medium has room for, and the reason it is a NAMED constant.
+     The PDF draws briefs at 8pt across a 532pt content width, about 122 characters a line, so
+     160 is one line and a third. printsheet.js caps at 116 because its column is 464.9px and
+     fits about 82 characters at 10px, which is one line and two fifths. Same intent, two
+     column widths, and the numbers differ only because the columns do.
+
+     Do NOT unify them. Measured 2026-09-07: 116 here would cut this to 0.95 of a line and
+     truncate briefs the page has room for; 160 on the print sheet would take its column to
+     1.94 lines and roughly double a section capped to keep to one page. It lives here as a
+     name rather than a literal inside autoBrief because, buried in a function duplicated
+     across three renderers, a bare 160 beside a bare 116 read as drift, and a sweep of those
+     duplicates flagged it as a bug it is not. */
+  var BRIEF_CAP = 160;
   function autoBrief(text) {
     if (!text) return "";
     var t = text.replace(/\s+/g, " ").trim();
@@ -813,7 +826,7 @@ EN.pdfExport = (function () {
     var kw = /\b(gain|add|spend|roll|reroll|Edge|Snag|DC|damage|Resist|Immun|Advantage|reduce|deal|ignore|Speed|Defense|Vitality|Wound|Vigor|FP|Bandwidth|d4|d6|d8|d10|d12|d20|once per|\+\d)/i;
     var pick = parts.find(function (s) { return kw.test(s); }) || parts[0] || t;
     pick = pick.trim().replace(/[.]+$/, "");
-    if (pick.length > 160) pick = pick.slice(0, 158).replace(/\s+\S*$/, "") + "...";
+    if (pick.length > BRIEF_CAP) pick = pick.slice(0, BRIEF_CAP - 2).replace(/\s+\S*$/, "") + "...";
     return pick;
   }
   function briefFor(f) { var b = EN.briefs && EN.briefs[f._base || f.name]; return b || autoBrief(f.text); }

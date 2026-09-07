@@ -8595,6 +8595,41 @@ carried a comment about Weapon Focus Caliber that `pdfexport.js` lacked. That is
 discipline `parseUses` got earlier today, and for the same reason, since a plain diff is what
 turns the next drift into something anyone can see.
 
+## The brief caps stop looking like drift without pretending to be the same number, 2026-09-07
+
+Author asked for the two caps to be fixed after I had argued they were fine. Measuring the side I
+had NOT measured changed the shape of the answer rather than the verdict.
+
+Earlier I had only measured the print sheet: 464.9px of column, about 82 characters a line at
+10px, so its cap of 116 is one line and two fifths, and raising it to the PDF's 160 would take it
+to 1.94 lines against a section capped to keep to one page. That was enough to refuse raising it
+and not enough to decide anything else, because it said nothing about whether 160 was right for
+the PDF or whether lowering the PDF to 116 was free.
+
+So the PDF was measured too. Its `ctx.text` wraps at CONTENT_W, 612pt page less two 40pt margins,
+and draws briefs at 8pt: about 122 characters a line, which makes 160 one line and a third.
+
+**The two caps were already saying the same thing in different units**, 1.40 lines against 1.31,
+and they differ only because the columns do. Unifying the number would have broken that
+equivalence in whichever direction it went: 116 everywhere cuts the PDF to 0.95 of a line and
+truncates briefs the page has room for, 160 everywhere takes the sheet to 1.94.
+
+What was genuinely wrong was never the values. It was that each sat as a bare literal inside a
+function duplicated across renderers, where a 116 beside a 160 reads as one copy having been
+fixed and the other forgotten. It fooled the sweep that found it and it fooled me. Both are now
+named `BRIEF_CAP`, declared beside `autoBrief` in their own file, each carrying the measurement
+for its own medium, the other file's number, and an explicit instruction not to unify them.
+
+`autoBrief` is byte-identical across both files as a result, which is the same discipline
+`parseUses` and `weaponHit` got today: a plain diff surfaces real drift, and the one difference
+that is deliberate is a named constant rather than a literal buried in the body.
+
+Behaviour is unchanged and that is the point. The shipped functions were extracted from the
+SERVED files and run against the pre-change implementations over all 835 text strings in the
+data: zero changed outputs in either medium. The two still disagree with each other on 296 of
+those, by design, each keeping its own allowance. On a Level 10 Codebreaker the print sheet
+renders 19 briefs with the longest at 114 characters, inside the 116 it has always had.
+
 ## The unarmed row comes back when nothing in your hands is a weapon, 2026-09-07
 
 The last of the four sweep findings, and the one where "make the two copies agree" would have
