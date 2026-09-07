@@ -128,7 +128,10 @@ a{ color:var(--accent); text-decoration:none; }
    At 14px it hits 255 and the cube and its pip both read. The button is 28px tall, so the
    three extra pixels cost the row nothing. The selector needs .btn in front of it: bare
    .dice-neon svg is (0,1,1) and loses to .btn span svg at (0,1,2). */
-.btn .dice-neon svg{ width:14px; height:14px; }
+.btn .dice-neon svg, .btn .dice-real svg{ width:14px; height:14px; }
+/* .dice-real is the physical die and deliberately sets no colour: it inherits the button's
+   own text colour, so it darkens with .primary exactly as the label does and never needs
+   the outline below. The two selectors share one rule so the pair cannot drift apart. */
 /* ...and a dark edge under it, because the neon has to survive the button it sits on. When
    DIGITAL DICE is the selected option the button fills with the theme accent, and #39ff14 on
    that measures a contrast ratio of 1.13 against the #GRID palette's cyan and 1.06 against the

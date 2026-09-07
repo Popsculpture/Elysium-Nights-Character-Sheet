@@ -8485,6 +8485,45 @@ of path data, because the CorelDRAW export carries a stroke-outline duplicate of
 (one of them 2778 numbers on its own) that contributes nothing at 14px. It is embedded whole
 rather than pruned, because the house rule is that the author's geometry goes in as exported.
 
+## PHYSICAL DICE takes the author's die, closing the pair, 2026-09-07
+
+Author's ask, pointing at the button in the inspector: use this icon for the physical dice. It
+was the last text glyph in the pair, a bare U+2680 DIE FACE-1 sitting beside the digital die's
+real art, and it is now the author's own drawing of three dice in three-quarter view.
+
+Three things this export did NOT need, which is worth recording because the last two both did.
+The ink measures 118.91 x 122.89 inside a 118.91 x 122.88 viewBox, so it fills its box to the
+pixel and needs no windowing; that was checked with getBBox before embedding rather than after
+noticing the icon looked small. It needs no outline either: the die takes currentColor instead
+of a fixed colour, so it is the button's own text colour and flips with .primary. Measured at
+true size that is a contrast ratio of 13.65 on the selected cyan fill, 14.62 on the Admin
+theme's gold and 12.95 on the idle dark button, against the neon green's 1.06 that forced the
+outline one entry above. A colour that tracks its button cannot lose to it.
+
+What it did share with the others is the <style> block, which does not survive being inlined, so
+.st0 is resolved onto the path as fill-rule and clip-rule. Geometry is embedded verbatim.
+
+The size is 14px, and the sizing rule is now shared, `.btn .dice-neon svg, .btn .dice-real svg`,
+so the pair cannot drift apart in a later edit. Honest about what 14px costs this particular
+drawing: it is a solid die with pips and two more dice stacked behind it, and rasterised at true
+size those interior holes do not resolve. Counting enclosed background regions, the art has six
+real ones, which is what you get at 24px and above; at 14px you get ten specks of one to three
+pixels each, which is aliasing noise rather than structure. The silhouette still reads as a die,
+which is what a button icon needs, and going bigger would break the pair's balance, since a
+solid mark already carries more weight than the wireframe at the same size. Flagged, not fixed:
+if the author wants the pips to actually read, the art wants simplifying rather than enlarging.
+
+The comment explaining the row's align-items: stretch was stale the moment this landed. It said
+the two buttons differ because one carries an SVG and the other a text glyph; both carry SVGs
+now, and stretch stays because it keeps the pair reading as one bar regardless.
+
+Verified across all six states, three skins by two dice modes, rebuilding the tray between each
+rather than measuring a tray mid-animation, which on the first pass produced two false readings
+at once (an icon reported outside its button, and a mode toggle that appeared stuck): correct
+button selected every time, both icons 14x14, both inside their buttons, buttons the same height
+and top, and the physical die's colour tracking its button in every case. Fresh tab, no console
+output, no U+2680 left in the tray.
+
 ## The wireframe die gets its dark edge, and the first one was a smudge, 2026-09-06
 
 Author's ask: the neon die "needs a faint black outline to separate it from the background."
