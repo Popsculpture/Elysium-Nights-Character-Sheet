@@ -129,6 +129,19 @@ a{ color:var(--accent); text-decoration:none; }
    three extra pixels cost the row nothing. The selector needs .btn in front of it: bare
    .dice-neon svg is (0,1,1) and loses to .btn span svg at (0,1,2). */
 .btn .dice-neon svg{ width:14px; height:14px; }
+/* ...and a dark edge under it, because the neon has to survive the button it sits on. When
+   DIGITAL DICE is the selected option the button fills with the theme accent, and #39ff14 on
+   that measures a contrast ratio of 1.13 against the #GRID palette's cyan and 1.06 against the
+   Admin theme's gold: the same luminance, so the die all but disappears at the moment it matters.
+   A drop-shadow filter works on alpha, so it traces the wireframe's own strokes rather than
+   boxing the icon. The radius has to be small: the die is 14px across and its strokes sit one to
+   two pixels apart, so anything at 1px or wider bleeds shadow from every stroke into every gap
+   and the icon rasters as a dark plate with green scratches on it (measured: 87 of the 400 pixels
+   pushed below three quarters of the background's luminance, the die's interior included). Half a
+   pixel, laid down twice, deepens that one tight rim instead of widening it: the green keeps all
+   78 of its pixels and the dark stays a line. On the dark inactive background the ratio is already
+   10 to 14 and the shadow is darker than the button, so it costs nothing there. */
+.btn .dice-neon svg{ filter:drop-shadow(0 0 .5px rgba(0,0,0,.9)) drop-shadow(0 0 .5px rgba(0,0,0,.9)); }
 
 .os-main{ flex:1; padding:22px clamp(14px,3vw,40px) 80px; max-width:1320px; margin:0 auto; width:100%; }
 

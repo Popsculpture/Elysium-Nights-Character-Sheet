@@ -8485,6 +8485,44 @@ of path data, because the CorelDRAW export carries a stroke-outline duplicate of
 (one of them 2778 numbers on its own) that contributes nothing at 14px. It is embedded whole
 rather than pruned, because the house rule is that the author's geometry goes in as exported.
 
+## The wireframe die gets its dark edge, and the first one was a smudge, 2026-09-06
+
+Author's ask: the neon die "needs a faint black outline to separate it from the background."
+Measuring it first turned a cosmetic note into a legibility one. DIGITAL DICE is the selected
+option most of the time, and a selected `.btn` fills with the theme accent. #39ff14 against the
+default #GRID palette's cyan is a contrast ratio of **1.13**; against the Admin theme's gold it
+is **1.06**. Those are the same luminance. The die was not merely hard to pick out, it was gone,
+and gone precisely when it was the active choice. On the unselected button the ratio is already
+10 to 14, so an outline there only has to not spoil what works.
+
+The first attempt, `drop-shadow(0 0 1px rgba(0,0,0,.95)) drop-shadow(0 0 2px rgba(0,0,0,.65))`,
+was wrong, and the way it was wrong is worth writing down because the first measurement of it
+looked like a pass. A contrast reading of 7.85 came back, up from 1.13, and that number is real:
+something on that button now contrasts. It just was not the green. Rastering the icon at true
+size and mapping how far each pixel had dropped below the button showed the shadow filling the
+whole 20 by 20 field, the die's interior included, 87 of 400 pixels pushed below three quarters
+of the background's luminance. The 7.85 was the shadow against the button, not the die against
+either. The contrast improved and the icon got harder to read.
+
+The cause is scale. A drop-shadow filter works on alpha, so it traces the wireframe's own strokes
+rather than boxing the icon, which is the right behaviour here. But the die is 14px across and
+its strokes sit one to two pixels apart, so a 1px radius bleeds shadow from every stroke into
+every gap between strokes, and a 2px radius does it twice over. The icon rasters as a dark plate
+with green scratches on it.
+
+`drop-shadow(0 0 .5px rgba(0,0,0,.9))`, laid down twice, deepens one tight rim instead of
+widening it. Measured over the cyan fill: the green keeps all 78 of its pixels, unchanged from no
+filter at all, and the dark stays at 40 pixels against the first attempt's 87. Five candidates
+were rastered and compared side by side at 10x nearest-neighbour on cyan, on the Admin gold and
+on the unselected dark: a single half-pixel shadow separates but is faint enough to be arguable,
+and four hard half-pixel offsets go too far the other way and start darkening the green itself.
+
+On the unselected button the shadow is darker than the button, so it costs nothing there: peak
+green contrast stays at 12.61 with the filter and without it.
+
+Verified on all three skins with the tray open on an example Freelancer: computed filter is the
+two half-pixel shadows, the die reads on the selected cyan button and on the idle dark one,
+no console errors.
 
 ## '98's caption buttons take the author's window icons, 2026-09-06
 
