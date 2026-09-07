@@ -127,7 +127,13 @@ EN.ui = (function () {
       document.createTextNode(tail + "\u00a0"),
       el("span.collapse-caret", { text: open ? "\u25be" : "\u25b8" })
     ]);
-    return lead ? [document.createTextNode(lead), tie] : [tie];
+    /* The lead is an element with white-space:pre-wrap, not a bare text node, because some
+       parents are flex containers: #GRIDroid gives the #GRID row names display:flex for a
+       36px tap target, and a bare text node there becomes an anonymous flex item whose
+       trailing space is stripped, so "Flash Breach" painted as "FlashBreach". Measured: the
+       lead came out 25.67px, the width of "Flash" rather than "Flash " at 28.5px.
+       pre-wrap keeps the space and still lets the name wrap. */
+    return lead ? [el("span", { style: { whiteSpace: "pre-wrap" }, text: lead }), tie] : [tie];
   }
 
   function renderText(text) {

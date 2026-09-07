@@ -8246,6 +8246,50 @@ the row evenly, the popover still opens as that skin's bottom sheet through the 
 credit and debit through it still move the balance and hand it back. Classic and '98 measured
 unchanged, content-sized at 27px tall with no clip. No console errors.
 
+## #GRID's exploits follow, and a space lost to a flex parent, 2026-09-06
+
+USE now leads the name on the Signature #GRID Exploits too, matching the Freelancer ability cards.
+The chips stay in their right-hand cluster, so the row reads button, name, cost. The cipher rows
+above them are untouched: their button is RUN, not USE, and the author asked for the abilities.
+Both `.card-name` spans, here and in combat.js, now share one class rather than each carrying the
+flex inline.
+
+That class exists because of a trap worth writing down. #GRIDroid reaches the Social tracker cells
+with `.row > span[style*="min-width: 0px"][style*="flex"]`, an attribute-substring selector on
+inline styles, and an inline `flex:1 1 0; min-width:0` on a `.row` child matches it by accident;
+its `!important` then beats the inline rule outright, which is exactly how the first attempt here
+came out with a computed basis of 100%. Written as a class there is nothing for it to match.
+
+A second rule needed narrowing rather than dodging. `html.skin-droid .feature > .row.between >
+span[style*="cursor: pointer"]` gives a #GRID row name a full line of its own, which is right for
+the cipher rows and strands the exploit button alone above the name. The override is scoped with
+`.gridtab` in front, making it (0,6,1) against that rule's (0,5,1), so it wins on specificity
+rather than on source order and survives the block being reordered.
+
+Then the real find, which the screenshot caught and two probes had missed. On #GRIDroid every
+multi-word #GRID row name was painting without its internal space: "Flash Breach" as
+"FlashBreach", on the ciphers as well as the exploits. The rule above makes that span
+`display:flex` for a 36px tap target, and `EN.ui.nameCaret` was emitting the name's leading words
+as a BARE TEXT NODE, which in a flex container becomes an anonymous flex item whose trailing
+whitespace is stripped. It predates this change, arriving with the caret split, and nothing had
+noticed.
+
+Worth recording how it was measured, because the obvious checks both lied. `innerText` reported
+"Flash Breach " with the space on every skin, because it normalises across flex items. Measuring
+the gap between the lead's rect and the caret's tie was 0 on Classic too, because in normal flow
+the trailing space sits INSIDE the lead's own rect. The test that settled it measures the lead's
+rendered width against the same string with and without its trailing space in the same font: on
+Classic the lead came out 28.5px, the with-space width; on #GRIDroid 25.67px, the without-space
+width. Fixed in nameCaret rather than in the CSS, so the helper is correct under any parent: the
+lead is now an element with `white-space:pre-wrap`, which keeps the space and still lets the name
+wrap.
+
+Verified on Classic, '98 and #GRIDroid: seven exploits with USE leading, zero orphaned buttons and
+a consistent 8px gap at 375px and at full width, the four cipher rows unchanged with their name
+still taking a full line on the phone, zero broken names anywhere, and the whole caret audit still
+clean at 64 carets with none leading and none orphaned across seven tabs and three widths.
+
+
 ## The ability cards' USE button leads the name, 2026-09-06
 
 Author's ask: on the Freelancer's ability cards, USE moves to the left, ahead of the name. One

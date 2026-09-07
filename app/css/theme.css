@@ -537,6 +537,15 @@ select{ appearance:none; background-image:linear-gradient(45deg,transparent 50%,
   color:var(--text); padding:10px 18px; border-radius:var(--r); font-family:var(--mono); font-size:13px; box-shadow:var(--glow-cyan); z-index:2000; opacity:0; transition:opacity .2s, transform .2s; pointer-events:none; }
 .toast.show{ opacity:1; transform:translateX(-50%) translateY(-4px); }
 .row{ display:flex; gap:10px; align-items:center; } .wrap{ flex-wrap:wrap; } .between{ justify-content:space-between; }
+/* The growing name in a card head whose button leads it. flex-basis 0 rather than auto is the
+   point: #GRIDroid wraps every .row, and a wrapping flex container picks its lines from each
+   item's BASIS before it considers shrinking, so a name at max-content drops to the next row
+   whole and strands the button above it.
+   It is a class and not an inline style on purpose. #GRIDroid reaches the Social trackers with
+   .row > span[style*="min-width: 0px"][style*="flex"], an attribute-substring selector that
+   any inline flex plus min-width:0 matches by accident, and its !important then beats the
+   inline rule outright. Written as a class there is nothing for it to match. */
+.card-name{ flex:1 1 0; min-width:0; }
 .scroll-box{ max-height:340px; overflow:auto; padding-right:6px; }
 /* a #POST row: the unread dot, the sender, the subject, the time it landed, and a caret. The
    geometry is here rather than inline so a skin can restate it without fighting an inline style,
@@ -1662,6 +1671,12 @@ html.skin-droid .btn.sm.ghost[style*="width: 26px"]{ width:40px !important; min-
 
 /* ---- #GRID ---- */
 html.skin-droid .feature > .row.between > span[style*="cursor: pointer"]{ flex:1 1 100%; min-height:36px; display:flex; align-items:center; }
+/* ...except an exploit name, which shares its line with the USE button that now leads it. The
+   rule above gives a #GRID row name a full line of its own, which is right for the cipher rows
+   (name, then the chip cluster beneath) but strands the exploit button alone above the name.
+   .gridtab in front makes this (0,6,1) against that rule's (0,5,1), so it wins on specificity
+   rather than on being written afterwards, and stays correct if the block is ever reordered. */
+html.skin-droid .gridtab .feature > .row.between > span.card-name{ flex:1 1 0; }
 html.skin-droid .gridtab > .row.wrap > .mono, html.skin-droid .gridtab > .row.wrap > .help{ flex:1 1 100%; }
 html.skin-droid .gridtab > .row.wrap > .btn{ flex:1 1 40%; justify-content:center; }
 html.skin-droid .gridtab[data-dmg="3"]::before{ animation-duration:1s; }   /* a full-tab repaint four times a second is phone jank */

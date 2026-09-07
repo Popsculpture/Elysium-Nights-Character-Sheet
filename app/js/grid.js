@@ -303,15 +303,23 @@ EN.gridView = (function () {
         exploits.forEach(function (ab) {
           var k = "exploit-" + ab.name, open = !!_open[k];
           var cost = ab.cost || 1, can = bwCur >= cost;
+          /* USE leads the name here too, matching the Freelancer ability cards. The chips stay in
+             their right-hand cluster, so the row reads button, name, cost. The name carries
+             flex:1 1 0 with min-width:0 for the reason it does there: #GRIDroid sets every .row
+             to flex-wrap:wrap, and a wrapping flex container picks its lines from each item's
+             BASIS before it considers shrinking, so a name at auto (max-content) drops to the
+             next row whole and strands the button above it. At 0 it shares the line. */
+          var useBtn = el("button.btn.sm", { disabled: !can, title: can ? "Spend " + cost + " Bandwidth" : "Not enough Bandwidth",
+            style: can ? { color: "var(--accent)", borderColor: "var(--accent)", flex: "0 0 auto" } : { flex: "0 0 auto" },
+            onclick: function () { if (can) { setBandwidth(Math.max(0, bwCur - cost)); toast(ab.name + " · −" + cost + " Bandwidth"); } } }, "USE");
           rows.push(el("div.feature", { style: { borderLeftColor: "var(--accent)" } }, [
             el("div.row.between", { style: { alignItems: "center", gap: "8px" } }, [
-              el("span", { style: { fontWeight: 600, fontSize: "13px", cursor: "pointer" }, onclick: function () { _open[k] = !open; EN.app.render(); } },
+              useBtn,
+              el("span.card-name", { style: { fontWeight: 600, fontSize: "13px", cursor: "pointer" }, onclick: function () { _open[k] = !open; EN.app.render(); } },
                 EN.ui.nameCaret(ab.name, open)),
-              el("div.row", { style: { gap: "6px", alignItems: "center" } }, [
+              el("div.row", { style: { gap: "6px", alignItems: "center", flex: "0 0 auto" } }, [
                 ab.action ? el("span.chip", { style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" } }, ab.action.replace(/ Action$/, "")) : null,
-                el("span.chip", { style: { fontSize: "9px", color: "var(--accent)", borderColor: "var(--accent)" } }, cost + " BW"),
-                el("button.btn.sm", { disabled: !can, title: can ? "Spend " + cost + " Bandwidth" : "Not enough Bandwidth", style: can ? { color: "var(--accent)", borderColor: "var(--accent)" } : null,
-                  onclick: function () { if (can) { setBandwidth(Math.max(0, bwCur - cost)); toast(ab.name + " · −" + cost + " Bandwidth"); } } }, "USE")
+                el("span.chip", { style: { fontSize: "9px", color: "var(--accent)", borderColor: "var(--accent)" } }, cost + " BW")
               ])
             ]),
             open ? EN.ui.proseP("p.help", { margin: "4px 0 0" }, ab.text) : null,
