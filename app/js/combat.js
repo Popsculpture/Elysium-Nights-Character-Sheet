@@ -2456,7 +2456,41 @@ EN.combatView = (function () {
     for (var i = 0; i < keys.length; i++) { if (up.indexOf(keys[i].toUpperCase()) > -1) return RESOURCE_COLOR[keys[i]]; }
     return "var(--gold)";
   }
-  function actionEntry(id, name, cost, src, text, limited, chip, uses, onUse, canUse) {
+  /* The Classic and '98 ability lists carry an effect column, one word wide. Neither the word nor
+     the damage expression is derivable from a catalogue entry, which holds a name, an action type,
+     a cost and prose and nothing else, so both come from EN.abilityTags keyed on the exact name.
+     A damage expression wins where one is recorded, because "4d6 Psychic" says more than "Combat".
+     Anything unlisted falls back to the hyphen the author asked for. */
+  function effectOf(name) {
+    var t = (EN.abilityTags || {})[name];
+    if (!t) return "-";
+    return t.damage || t.tag || "-";
+  }
+  /* The cost column: what it takes to use the thing. The resource chip carries the spend, and
+     requirements come from the catalogue where an ability has them. Joined with a middot rather
+     than stacked, since this is one cell of a row. */
+  function reqOf(requirements) { return requirements ? String(requirements) : ""; }
+  /* What stands where the USE button would be, when an ability spends no class resource. It is a
+     claim about the rules, so it is not a blanket word: of the eighteen buttonless abilities across
+     the example characters three ARE capped, and those show their cap instead, so the cell never
+     tells a player an ability is unlimited when it is not. The uses tracker under the card still
+     carries the full wording.
+
+     "NO LIMIT" rather than "UNLIMITED" because the sibling label is "LIMITED", and at this cell's
+     9px the two differ only by a prefix; mistaking a label for its exact opposite is the worst
+     thing this column could do. Not "FREE" either, which is already an action type two cells to
+     the right. */
+  function noUseLabel(uses, limited) {
+    if (uses && uses.max) {
+      var r = String(uses.recharge || "").toLowerCase();
+      var shortR = r.indexOf("long") === 0 ? "LR" : r.indexOf("short") === 0 ? "SR"
+                 : r.indexOf("encounter") === 0 ? "ENC" : r.indexOf("scene") === 0 ? "SCENE"
+                 : (uses.recharge || "").toUpperCase();
+      return uses.max + "/" + shortR;
+    }
+    return limited ? "LIMITED" : "NO LIMIT";
+  }
+  function actionEntry(id, name, cost, src, text, limited, chip, uses, onUse, canUse, requirements) {
     var open = !!_open[id];
     var usesRow = null;
     if (uses && uses.max > 0) {
@@ -2488,21 +2522,35 @@ EN.combatView = (function () {
                border: "1px solid " + (canUse ? "var(--flow)" : "var(--border2)"),
                borderRadius: "3px", cursor: canUse ? "pointer" : "default" }
     }, "USE") : null;
-    return el("div.feature", { style: { borderLeftColor: COST_COLOR[cost] || "var(--border2)" } }, [
+    /* .ab-row is the hook for the columned list Classic and '98 wear; it keeps those rules off
+       every other .feature h4 in the app (features, weapons, conditions all share that shape). */
+    return el("div.feature.ab-row", { style: { borderLeftColor: COST_COLOR[cost] || "var(--border2)" } }, [
       /* USE leads the row rather than trailing it: the author wants the thing you press before
          the thing you read. Two details make that hold. .feature h4 is a flex row with
          justify-content:space-between, so two children would otherwise fly to opposite ends;
-         letting the name grow eats the free space instead and packs the pair left. And the
-         basis has to be 0, not auto: #GRIDroid sets this h4 to flex-wrap:wrap, and a wrapping
-         flex container decides its lines from each item's BASIS before any shrinking happens,
-         so at auto (max-content) the name dropped to the next row whole and stranded the
-         button alone above it, on five of eight cards at 375px. At 0 it fits beside the button
-         and wraps inside itself. Same trap as the droid panel titles. */
+         letting the name grow eats the free space instead and packs the pair left. .card-name
+         is what does that growing, and its comment in theme.css carries the reasoning: the
+         basis has to be 0 rather than auto, or on #GRIDroid the name drops to the next row
+         whole and strands the button above it (five of eight cards at 375px, measured). */
       el("h4", { style: { cursor: "pointer" }, onclick: function () { _open[id] = !open; EN.app.render(); } }, [
-        useBtn,
-        el("span", { style: { flex: "1 1 0", minWidth: 0 } }, EN.ui.nameCaret(name, open).concat([
-          el("span.chip", { style: { marginLeft: "8px", fontSize: "9.5px", color: COST_COLOR[cost], borderColor: COST_COLOR[cost] }, text: cost.toUpperCase() }),
-          chip ? el("span.chip", { title: "Spends the class resource", style: { marginLeft: "4px", fontSize: "9.5px", color: chipResourceColor(chip), borderColor: chipResourceColor(chip) }, text: chip }) : null]))
+        /* the USE cell is always filled: el() drops a null child, and a four-child row would
+           slide every column one place left in the grid. Without a button it says what the
+           ability costs you instead, which is nothing, or its limit where it has one. */
+        useBtn || el("span.ab-nouse", { title: "Costs no class resource", text: noUseLabel(uses, limited) }),
+        el("span.card-name", null, EN.ui.nameCaret(name, open)),
+        el("span.ab-act", null, [cost
+          ? el("span.chip", { style: { fontSize: "9.5px", color: COST_COLOR[cost], borderColor: COST_COLOR[cost] }, text: cost.toUpperCase() })
+          : el("span.ab-dash", { text: "-" })]),
+        el("span.ab-eff", null, [(function () {
+          var eff = effectOf(name);
+          return eff === "-" ? el("span.ab-dash", { text: "-" })
+            : el("span.chip", { title: "What the ability does, in a word", style: { fontSize: "9.5px" }, text: eff });
+        })()]),
+        el("span.ab-cost", null, [
+          chip ? el("span.chip", { title: "Spends the class resource", style: { fontSize: "9.5px", color: chipResourceColor(chip), borderColor: chipResourceColor(chip) }, text: chip }) : null,
+          reqOf(requirements) ? el("span.ab-req", { title: "Requirements", text: reqOf(requirements) }) : null,
+          (!chip && !reqOf(requirements)) ? el("span.ab-dash", { text: "-" }) : null
+        ])
       ]),
       open ? el("div", null, [
         // the catalogue writes **bold** in these; plain text: printed the asterisks
@@ -3722,7 +3770,7 @@ EN.combatView = (function () {
             _chip = (s.cost || 1) + " to " + _cap + " " + resUp;
           }
           expanded.push({ name: s.name, source: f.source, level: f.level, text: s.text,
-                          _cost: s.action || actionCost(s.text), chip: _chip });
+                          _cost: s.action || actionCost(s.text), chip: _chip, requirements: s.requirements });
         });
       } else expanded.push(f);
     });
@@ -3734,7 +3782,8 @@ EN.combatView = (function () {
       if (forced === "active" && cost === "Passive") cost = "Active";
       if (forced === "passive") cost = "Passive";
       return { id: "act-" + i, name: f.name.replace(/\s*\((Active|Passive)\)\s*$/i, ""), src: f.source + " · L" + f.level,
-               text: f.text, cost: cost, limited: isLimited(f.text), chip: f.chip, uses: parseUses(f.text, d) };
+               text: f.text, cost: cost, limited: isLimited(f.text), chip: f.chip, uses: parseUses(f.text, d),
+               requirements: f.requirements };
     });
     // active vs passive split of the computed features (markers already folded into cost)
     var activeFeats = feats.filter(function (f) { return f.cost !== "Passive"; });
@@ -3909,7 +3958,7 @@ EN.combatView = (function () {
             };
           })(moxieCost);
         }
-        return actionEntry(f.id, f.name, f.cost, f.src, f.text, f.limited, f.chip, uses, onUse, canUse);
+        return actionEntry(f.id, f.name, f.cost, f.src, f.text, f.limited, f.chip, uses, onUse, canUse, f.requirements);
       }
       /* pushFeat stays a one-argument wrapper on purpose. Several call sites are
          forEach(pushFeat), which would hand a second parameter the array index, so the

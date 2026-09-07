@@ -546,6 +546,37 @@ select{ appearance:none; background-image:linear-gradient(45deg,transparent 50%,
    any inline flex plus min-width:0 matches by accident, and its !important then beats the
    inline rule outright. Written as a class there is nothing for it to match. */
 .card-name{ flex:1 1 0; min-width:0; }
+/* The ability list as a row, which is what Classic and '98 wear:
+     [USE] | name | action type | effect | cost
+   A grid rather than a flex row, because the point is that the columns line up DOWN the list; the
+   two middle columns are fixed so the eye can run down them. Scoped to .ab-row so it never reaches
+   the other cards built on .feature h4 (features, weapons, conditions all share that shape), and
+   held off #GRIDroid, which has no room for five columns and keeps the card it already had. */
+html:not(.skin-droid) .ab-row > h4{
+  /* every track but the name is a fixed width, because each row is its OWN grid: a track sized
+     to content would be a different width on every row and the columns would not line up down
+     the list, which is the entire point. 41px is the USE button's measured width. */
+  display:grid; grid-template-columns:66px minmax(0,1fr) 74px 108px 96px;
+  column-gap:10px; align-items:baseline;
+}
+html:not(.skin-droid) .ab-row > h4 > .ab-act,
+html:not(.skin-droid) .ab-row > h4 > .ab-eff,
+html:not(.skin-droid) .ab-row > h4 > .ab-cost{ display:flex; align-items:baseline; gap:5px; flex-wrap:wrap; }
+/* The effect chip wraps its text rather than the column widening to hold it. Three of the 36
+   distinct values are damage strings naming two types ("3d6 Ballistic or Physical" measures
+   162.5px as a chip); sizing the column for those would take nearly 60px off the name for
+   every row to suit three abilities. A two-line pill on those rows is the cheaper trade. */
+.ab-eff .chip{ white-space:normal; text-align:center; }
+.ab-req{ font-family:var(--mono); font-size:9.5px; letter-spacing:.04em; color:var(--text3); }
+.ab-dash{ font-family:var(--mono); font-size:10.5px; color:var(--text4); }
+/* the USE cell with no button: a state, not a control, so it is quiet type rather than a
+   bordered box. The column is 66px because "AT WILL" needs more than the button's 41px. */
+.ab-nouse{ display:block; font-family:var(--mono); font-size:9px; letter-spacing:.08em; color:var(--text4); white-space:nowrap; }
+/* #GRIDroid keeps its card: the effect word is the column it has no width for, and the two chips
+   sit back beside the name the way they did before the columns existed. */
+html.skin-droid .ab-eff{ display:none; }
+html.skin-droid .ab-row > h4 > .ab-act,
+html.skin-droid .ab-row > h4 > .ab-cost{ display:inline-flex; align-items:baseline; gap:4px; flex-wrap:wrap; }
 .scroll-box{ max-height:340px; overflow:auto; padding-right:6px; }
 /* a #POST row: the unread dot, the sender, the subject, the time it landed, and a caret. The
    geometry is here rather than inline so a skin can restate it without fighting an inline style,
@@ -1524,6 +1555,13 @@ html.skin-droid .stepper{ gap:6px; }
 html.skin-droid .stepper button{ flex:0 0 36px; width:36px; height:36px; font-size:18px; }
 html.skin-droid .stepper input{ max-width:56px; min-height:36px; font-size:16px; padding:4px 2px; }
 html.skin-droid .chip[style*="cursor: pointer"], html.skin-droid .chip.on{ min-height:36px; padding:6px 12px; font-size:11px !important; }
+/* ...but not on an ability row, where the chips are labels rather than anything you press. The
+   28px floor above is a tap target, and spending it on a word the reader only looks at made the
+   chips half again as tall as the USE button beside them (28px against 17px) and pushed six of
+   eleven names onto a second line at 375px. Sized to the button instead, and the name comes down
+   with them so the row is one line of type rather than two. */
+html.skin-droid .ab-row .chip{ min-height:0; padding:2px 7px; font-size:9.5px; }
+html.skin-droid .ab-row > h4{ font-size:12.5px; }
 html.skin-droid .tier-pill{ display:inline-flex; align-items:center; min-height:36px; padding:6px 12px; font-size:12px; }
 html.skin-droid .btn.sm[style*="padding"]{ min-width:36px !important; padding:6px 10px !important; justify-content:center; }
 html.skin-droid .btn[style*="font-size"]{ font-size:11px !important; }

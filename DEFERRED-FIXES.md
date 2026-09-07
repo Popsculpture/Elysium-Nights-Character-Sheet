@@ -8246,6 +8246,96 @@ the row evenly, the popover still opens as that skin's bottom sheet through the 
 credit and debit through it still move the balance and hand it back. Classic and '98 measured
 unchanged, content-sized at 27px tall with no clip. No console errors.
 
+## The ability list becomes a row on Classic and '98, 2026-09-06
+
+Author's layout: [Use] | [Name] | [Action Type] | [Effect] | [Cost], with a hyphen anywhere the
+value would be blank. Classic and '98 only; #GRIDroid keeps the card it already had, which is why
+the columns are held off that skin rather than reflowed for it.
+
+The spec started as six columns and lost two to the data. Counted across all 385 catalogue
+abilities: Range 0, Duration 0, Area of Effect 0. Not sparse, absent: no ability carries those
+fields, and where range matters it is written into the prose ("within your weapon's range", "an
+Area 3 around that point"). Action Type is on 98, Cost on 105, Requirements on 25. The author chose
+to drop the three empty ones rather than ship columns that read "-" on every row forever.
+
+The Effect column could not be the prose. It runs a median of 336 characters, 862 at the 90th
+percentile and 5530 at worst, so the author asked for it distilled to one word, or to the damage
+die and type where damage is the point of the ability. Neither is derivable from a catalogue entry,
+which holds a name, an action type, a cost and prose and nothing else, so it lives in a new lookup:
+`app/data/ability_tags.js`, 478 entries keyed on the exact ability name, a closed vocabulary of
+Combat, Control, Buff, Debuff, Defense, Healing, Movement, Detection, Deception and Utility, with a
+damage expression that wins over the tag where one is recorded. It is a lookup rather than a field
+added to the rules data, so the catalogue stays the author's and this stays presentation; editing a
+value there is the intended way to correct a call.
+
+The tags were produced by reading every ability, one agent per data file, then auditing every
+damage string and every tag the first pass was not confident about; 11 rows changed in that second
+pass, mostly damage strings demoted to null where the dice turned out to be a save-conditional
+rider rather than the ability's point (Primal Eruption's 4d6 came off for exactly that reason).
+A first run missed species.js entirely, which showed up as five abilities rendering "-" (Spliced
+Instinct, Reality Fracture, Rooted Stance, Resonant Circuitry); its 133 entries were classified and
+merged, and the unknown count is now zero across every example.
+
+Two defects found by measuring rather than looking, both about the grid:
+
+- Each row is its OWN grid, so a track sized to content is a different width on every row and the
+  columns do not line up down the list, which is the entire point of the layout. The first cut had
+  `auto` on the USE column and `minmax(64px,auto)` on the cost column, and the action column landed
+  at five different x positions in one character's list. Every track but the name is now a fixed
+  width; 41px is the USE button measured.
+- Rows for abilities that spend nothing were sliding a whole column left, because `el()` drops a
+  null child and those rows emitted four cells instead of five. The USE cell is now always present,
+  empty when there is no button.
+
+The USE column says something when there is no button. It is a claim about the rules, so it is not
+a blanket word: of the eighteen buttonless abilities across the examples three ARE capped, and they
+show their cap instead, "3/LR" where the count parses and "LIMITED" where only the phrasing gives
+it away. Sixteen read NO LIMIT, two LIMITED, one 3/LR.
+
+The wording went "At Will" (the author's first choice, from D&D) to "NO LIMIT", past "UNLIMITED",
+and the reason is the sibling label. At the cell's 9px mono, UNLIMITED renders 50.2px against
+LIMITED's 39.1px and the two differ only by a prefix; mistaking a label for its exact opposite is
+the worst thing this column could do. NO LIMIT is 44.6px, keeps the same limit/no-limit axis, and
+starts with a different letter. "FREE" was never in the running: it is already an action type, and
+the action column sits two cells to the right wearing that exact word. The label is quiet mono
+rather than a bordered box, because it is a state and not a control, and the column went 41px to
+66px to hold it.
+
+Worth a look, not done: the two LIMITED rows are limited in quite different ways, and neither is a
+per-rest pool. Multi-Thread Processing says "Once per combat encounter", which parseUses misses
+only because it expects the word Encounter rather than that phrasing, so it could read 1/ENC. Second
+Language says "Once per turn", which is a cadence rather than a pool at all, and arguably nearer to
+NO LIMIT than to LIMITED. Both would be more use to a player spelled out.
+
+The effect value is a chip, like the action type and the cost either side of it. Left neutral, in
+the base chip colours, because the row already carries a coloured action chip and a coloured
+resource chip and a third colour axis would make it a rainbow; colouring the ten tags is a small
+change if the author wants the extra scanning cue.
+
+Sizing it needed a measurement rather than a guess. As a chip the value gains padding and a border,
+and of the 36 distinct values three are damage strings naming two types: "3d6 Ballistic or
+Physical" measures 162.5px against a 108px column. Widening the column to hold them would take
+nearly 60px off the name on every row to suit three abilities, so the chip wraps instead. Checked
+by putting each long value into a live cell: the chip fills 108px, runs to two lines, takes the row
+from 46px to 57px, and neither overflows its cell nor widens the row.
+
+On #GRIDroid the chips and the title came down to the USE button's scale. The skin puts a 28px
+floor under every chip as a tap target, which is right for the ones you press and wrong for these,
+which are labels the reader only looks at: it made them half again as tall as the button beside
+them, 28px against 17px, and pushed six of eleven names onto a second line at 375px. The floor is
+lifted for `.ab-row` only, so every other droid chip keeps its tap size, and the title goes 15px to
+12.5px so the row reads as one line of type. Chips now measure 17px against the button's 17px.
+
+Classic and '98 were left alone here, because they were already matched: their chips measure 16px
+and 18px against the same 17px button, and no name wraps at their normal width.
+
+Verified on Classic and '98 across all seven examples, 34 ability rows: five cells per row, 34
+effect chips and no hyphens left, no chip overflowing its cell, and the action, effect and cost
+columns each at exactly ONE x position per character's list, with no label clipped. #GRIDroid
+still draws the card, its h4 still flex rather than grid, with the effect word hidden since that is
+the column it has no width for. No console errors.
+
+
 ## #GRID's exploits follow, and a space lost to a flex parent, 2026-09-06
 
 USE now leads the name on the Signature #GRID Exploits too, matching the Freelancer ability cards.
