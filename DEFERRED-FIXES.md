@@ -8246,6 +8246,18 @@ the row evenly, the popover still opens as that skin's bottom sheet through the 
 credit and debit through it still move the balance and hand it back. Classic and '98 measured
 unchanged, content-sized at 27px tall with no clip. No console errors.
 
+## The attribute score loses its capsule, 2026-09-06
+
+The raw score under each attribute's modifier wore a bordered pill with a coloured glow. It is
+a readout, not a control, and on a sheet where nearly everything bordered IS one (chips,
+buttons, the caption buttons, the tab cells) the box read as something to press. It is bold
+type in the tier colour now: the border, the radius, the padding and the glow all come off,
+and the colour stays, because the colour is the thing carrying the tier and the box never was.
+
+One renderer, one place, and no skin overrode it: verified on Classic, '98 and #GRIDroid that
+all six cells come back with border 0, radius 0, padding 0, no shadow, weight 700, and the
+tier colour intact.
+
 ## The two LIMITED labels say what they actually are, 2026-09-06
 
 The previous entry flagged them and this closes it. Both were limited in ways the renderer could

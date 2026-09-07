@@ -3353,7 +3353,10 @@ EN.combatView = (function () {
       ]);
     });
     var sectionEls = {};   // modular sections, placed by the saved layout at the end of render
-    /* compact cells: abbr / big mod / tier-colored score capsule */
+    /* compact cells: abbr, big mod, then the raw score in its tier colour. The score used to
+       wear a bordered capsule with a glow; it is a readout and not a control, and the box
+       made it read as one, so it is bold type in the tier colour instead. The colour is the
+       thing carrying the tier, and it survives. */
     var attrBody = [el("div.attr-grid", null, R.attributes.map(function (a) {
       var sc = d.attributes[a.key].score, mod = d.attributes[a.key].mod;
       var t = attrTier(sc);
@@ -3361,7 +3364,7 @@ EN.combatView = (function () {
         el("div.abbr", { text: a.name.toUpperCase() }),
         el("div.mod", { text: eng.fmtMod(mod) }),
         el("div", { style: { display: "flex", justifyContent: "center", marginTop: "3px" } }, [
-          el("span.mono", { style: { fontSize: "11.5px", padding: "1px 12px", borderRadius: "9px", border: "1px solid " + t.color, color: t.color, boxShadow: "0 0 6px " + t.color + "33" }, text: String(sc) })
+          el("span.mono", { style: { fontSize: "11.5px", fontWeight: 700, color: t.color }, text: String(sc) })
         ])
       ]);
     }))];
