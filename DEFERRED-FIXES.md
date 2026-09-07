@@ -197,6 +197,14 @@ Recorded so nobody re-investigates them.
 - **The Trauma Rig's Load is not printed anywhere.** The manuscript's table has no
   Load column, so the rows take the `rigs` bucket default of 2, matching a Smartdeck
   and a Basic Medkit. Worth an author ruling if a worn gauntlet should cost less.
+  **CLOSED 2026-09-07, and the ruling went further than the question asked.** The Rig
+  still prints no Load, by design. Part 3's Assigning Load bucket table now names
+  "trauma rig" in its Load 2 row, and the Worn trait gained a clause: "While actually
+  worn rather than packed or carried, its Load is reduced by 1, to a minimum of 0." So
+  a packed Rig is 2 and a worn one is 1, both derived, neither printed on the Rig. The
+  app already does exactly this: `engine.js` returns 2 for the `rigs` bucket and
+  `itemLoad` subtracts 1 for a Worn item actually worn, floored at 0, and the trait text
+  in `gear_traits.js` carries the clause verbatim. Nothing to do.
 
 ## Confirmed in step 4, reproduced live, NOW FIXED
 
@@ -767,6 +775,19 @@ Three faces, one block:
 **Brandon's call:** should the pairing add a real second step, or should the note stop
 claiming a step it does not move? **Not tracked** (`DEFERRED-FIXES.md` asks for review
 of the `CYBER_UNARMED` and step tables, which is adjacent but not this).
+
+**CLOSED 2026-09-07: answered, and it is not a bug.** A locked ruling (Open Architecture
+Round 2, reconfirmed 2026-08-17) settles it: the unarmed-die step is Synthetic
+Musculature's own and applies with or without Open Architecture, whose only job in this
+pairing is the Static Point reduction. So "derives identically" is the intended design,
+not a defect, and the answer to the question above is the second option, the note stops
+claiming a step it does not move. Both were already done in the code: the comment at
+`engine.js:1102` now records the ruling, explains the earlier misreading of "the
+Engineered Baseline effect ends" and why reversing it mattered, and states outright that
+the pairing's live benefit is the SP reduction. One caveat carried over from the ruling:
+the manuscript nowhere prints an explicit "applies with or without" sentence, so this is
+structural, read off the two entries side by side. Anything re-deriving it literally
+rather than reading them will flag it as redundant again.
 
 **~~L5. A reach-only character loses the whole unarmed row.~~** **FIRST HALF FIXED
 2026-08-11 in `5340506`. The MELEE-WEAPON half is still open and is now a stated
@@ -4599,6 +4620,12 @@ end to end while the Reaver and Arsenal descriptions beside it matched the book 
    Full-Auto, and `gear_traits.js` defines "Burst Fire". The app's spelling was kept.
 2. **Where are Overdrive maneuver costs priced?** The app stores a cost of 1 on all eight
    Fury maneuvers, and Part 1's Overdrive section never states a per-maneuver cost.
+   **CLOSED 2026-09-07.** Part 1 now prints it in the Level 1 Overdrive paragraph:
+   "Unless otherwise noted, all Overdrive Maneuvers cost **1 Overdrive** to activate."
+   The app is correct and has been since the 2026-08-24 rewrite, which also carries the
+   one exception, Gimme Fuel at `cost: 0`. Note the "all eight" above is itself stale:
+   the list was renamed and expanded to ten in that same rewrite, and the old names
+   survive only in the rename-migration table `store.js` reads.
 3. **"Off-Hand" or "Off hand"?** Colossal Grip and Walking Emplacement were the only two
    places in the entire app spelling it "Off hand"; the gear catalog uses "Off-Hand". Treated
    as a typo and corrected.
@@ -6125,6 +6152,7 @@ them. **Nothing here was edited; the Docs are his.**
 - Part 1 line 3739, Suppressive Counter: "the Burst or Full-Auto firing mode" wants "Burst Fire".
 - Part 1 line 3583, Fury Overdrive Maneuvers: the "Unless otherwise noted" cost sentence is
   missing, and every sibling class has it.
+  **Done in the Docs, confirmed 2026-09-07:** the sentence is printed.
 - Part 2 line 1920 lists four firing modes; Part 3's Firing Modes section defines five, adding
   Continuous. The app already carries five (`gear_traits.js:24`).
 - Part 2 lines 2793 and 3239 state the same Fatigue reduction, one gated and one not.
@@ -6359,6 +6387,14 @@ two were not normalised toward each other.
   and invites exactly the wrong fix.
 - **Whether an interrupted Long Rest resets the sleep clock.** Ruled already for benefits (no
   partial credit), but the clock bullet is not obviously a "benefit".
+  **CLOSED 2026-09-07: ruled, and deliberately never printed.** A failed or interrupted
+  Long Rest gives none of its benefits, the sleep-clock reset included, so three
+  interrupted nights running will start stacking Deprivation Fatigue. That is the rule
+  working as intended. The author chose to keep this off the page, so Part 2 has no
+  printed answer either way and never will; anything reading print alone will flag it as
+  open forever. No app change: there is no interrupted-rest path, and none is wanted,
+  because pressing LONG REST is the player asserting they completed one.
+
 ## The app caught up to the closed manuscript pass, 2026-08-25
 
 All three Parts re-exported after the author's pass and every claim in the closing note checked
@@ -9284,6 +9320,17 @@ the Settings tray header, all lost the square on both Bubblegum Flapjack and the
 theme, headers otherwise unchanged. Fresh tab, no console errors.
 
 ## Environment
+
+- **The rulings ledger is not in this repo.** `claude/locked-rulings.md` lives in Drive
+  beside the rulebook, not on disk here. This file is a CHANGELOG: every entry records
+  what was open the day it was written, and nothing comes back to mark it answered. So an
+  audit scoped to this repo sees the open questions and never the rulings that closed
+  them, and will keep reporting settled items as open. That is exactly how a five-item
+  "waiting on the author" list got raised on 2026-09-07 with four of the five already
+  ruled. Before reporting any rules item as open, check the app's own data and engine
+  first, then the ledger in Drive, then a fresh pull of the relevant Part. The app is
+  frequently the most current of the three. Never cite this file's line numbers as though
+  they were manuscript lines.
 
 - **Parts 2 and 3 are not spilled in full.** Chrome refuses downloads from
   `docs.google.com`, so only Part 1 is on disk (`ms/part1.md`). Targeted extracts of
