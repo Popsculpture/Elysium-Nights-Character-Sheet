@@ -93,7 +93,18 @@ EN.printSheet = (function () {
 
   /* ---- ability snippets: tags (action / cost / uses) + a one-line brief ---- */
   function actionCost(text) {
-    text = text || "";
+    /* The book bolds its action types, and a markdown bold is invisible to a plain-text
+       regex: "as an **Action**" does not contain "as an Action". That silently classified 22
+       abilities as Passive while they cost an Action, Kill Code and Biological Meltdown among
+       them, in all three renderers at once. Emphasis is stripped before matching rather than
+       widening ten alternatives to tolerate asterisks, which would have to be repeated for
+       every future phrasing. Measured over all 768 catalogue entries: this flips exactly those
+       22 from Passive to Action and moves nothing else, in either classifier, so it cannot
+       introduce a false positive. Removing characters can only make more text match, never
+       less. The neighbouring readers of the same prose, isLimited, parseUses, costTag and the
+       per-turn cadence, were measured on the same 768 and are untouched by bolding today; they
+       are deliberately left alone rather than normalised on principle. */
+    text = String(text || "").replace(/\*/g, "");
     if (/Impulse Action/i.test(text)) return "Impulse";
     if (/Swift Action/i.test(text)) return "Swift";
     if (/Free Action/i.test(text)) return "Free";

@@ -8521,6 +8521,53 @@ of path data, because the CorelDRAW export carries a stroke-outline duplicate of
 (one of them 2778 numbers on its own) that contributes nothing at 14px. It is embedded whole
 rather than pruned, because the house rule is that the author's geometry goes in as exported.
 
+## Twenty-two abilities stop calling themselves Passive, 2026-09-07
+
+The book bolds its action types, and a markdown bold is invisible to a plain-text regex:
+"as an **Action**" does not contain the substring "as an Action". So `actionCost` fell through
+every branch and returned Passive for any ability whose action type was emphasised. Kill Code,
+Biological Meltdown, Gaslight, Earthbreaker and eighteen more read PASSIVE on the sheet while
+costing an Action.
+
+This was already logged, and the log understated it twice over. It named three abilities;
+the real count is 22. It named Chemical Warfare, which has since been fixed in the data and
+classifies correctly. And it described one renderer, where in fact `actionCost` is copied into
+three, `combat.js`, `printsheet.js` and `pdfexport.js`, so the sheet, the print sheet and the
+PDF were all wrong in the same way at the same time. Finding that is the argument for checking
+a logged bug against the code before believing its numbers.
+
+The fix strips emphasis before matching rather than widening ten alternatives to tolerate
+asterisks, which would have to be repeated for every phrasing added later. Measured over all
+768 catalogue entries before applying it: it flips exactly those 22 from Passive to Action and
+moves nothing else, in either classifier. That is the safety argument, and it is structural
+rather than empirical, since removing characters can only ever make more text match, never
+less. None of the 22 carries an explicit `action` field, so none was being rescued downstream.
+
+The neighbouring readers of the same prose were measured on the same 768 entries and are
+untouched by bolding today: `isLimited`, `parseUses`, `costTag` and the per-turn cadence all
+classify identically with and without emphasis. They were deliberately left alone rather than
+normalised on principle, so the change stays the size of the bug.
+
+Verified in the running app, not against a reimplementation. Eight of the 22 are reachable
+through the UI on example characters raised to Level 10, spanning six of the seven classes, and
+every one renders ACTION: Memetic Virus and Reality Overwrite (Codebreaker), Earthbreaker
+(Fury), Off-the-Books Asset (Hustler), Ricochet Trajectory (Operator), Primal Eruption and The
+World in Bloom (Shaper), Not on My Watch (Stitcher). On the print sheet the Shaper's two are now
+the whole of the ACTION group, where before they sat in PASSIVE alongside ten genuine passives.
+Testing stayed on example records throughout, with a guard that aborts if `setExample` fails to
+engage rather than risking a write to the author's own record; it fired once, harmlessly, when
+the example keys turned out to be class names rather than indices.
+
+**Flagged, not fixed: the three copies have drifted from each other.** `combat.js` gives Complex
+Action its own label and has a Special Action branch; the other two fold Complex into Action and
+have no Special branch at all, so a Special Action ability is Passive on the print sheet and in
+the PDF. Five abilities disagree across renderers today: Survivor's Wrath and Probability Nudge
+(Special on the sheet, Passive in print) and Scrap Familiar, Complex Action and Critical Wound
+(Complex on the sheet, Action in print). The Complex ones look deliberate, since the print sheet
+carries a coarser vocabulary with no Complex group; the two Special ones look like an omission,
+and would want collapsing to Action rather than falling to Passive. Not touched, because it
+changes print output and is a different defect from the one asked for.
+
 ## PHYSICAL DICE takes the author's die, closing the pair, 2026-09-07
 
 Author's ask, pointing at the button in the inspector: use this icon for the physical dice. It
