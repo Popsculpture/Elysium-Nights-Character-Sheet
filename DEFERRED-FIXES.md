@@ -8595,6 +8595,40 @@ carried a comment about Weapon Focus Caliber that `pdfexport.js` lacked. That is
 discipline `parseUses` got earlier today, and for the same reason, since a plain diff is what
 turns the next drift into something anyone can see.
 
+## Classic's controls follow its panels, 2026-09-08
+
+The second half of the facelift, and the half where #GRIDroid's block cannot be copied.
+
+Its control rules mix two things that look like one: a LOOK (chamfer, hairline in the accent,
+flat grounds, square everything else) and finger SIZING (42px buttons, 36px small ones, 16px
+inputs, 28px chips). Only the look belongs on a desk. Taking the sizing would reflow every
+toolbar in the app, since Classic's button is about 33px tall against #GRIDroid's 42 and its
+inputs are 15px against 16. So every size here is Classic's own and only the surface is borrowed:
+buttons keep 8px by 16px at 13px type, small ones 5 by 10 at 11px, inputs their 15px, chips their
+3 by 9.
+
+The chamfer lands on buttons alone, which is what #GRIDroid does too. Chips and inputs there take
+`border-radius:0` and no `clip-path`, because a cut corner needs height to read and a 19px chip
+has none. Two adjustments the phone did not need: small buttons get a 6px cut rather than 8, or
+it eats a third of a short button, and `.ghost` keeps square corners since its whole job is to
+disappear. Checked rather than assumed: across six tabs plus the wizard, the settings tray and
+all five Admin tabs, no clipped button is small enough for its own cut, and the app's genuinely
+tiny controls are bare `button` elements without `.btn`, so the rule never reaches them.
+
+The square-corner sweep both other skins already run comes across with it, including the
+`[style*="border-radius"]` half. That selector is the shape this log has warned about before, so
+the reason is worth stating: meters, bars and swatches set their radius from JS, and without it
+Classic ends up with square panels and rounded progress bars, which reads as a bug rather than a
+style. It is scoped to Classic and to the one property.
+
+Verified the same way as the panels, by computed style rather than by reading selectors: Classic
+and #GRIDroid now report the same button chamfer, border, ground and radius, and the same square
+chips and inputs, while '98 reports no chamfer and its own bevelled ground. Light checked too,
+since buttons went from a transparent ground to `var(--bg)`: on Daybreak they render light with a
+magenta hairline and magenta type, chamfers intact, and the primary fills solid magenta. The
+PHYSICAL DICE icon added yesterday flips to black on that fill by itself, which is the
+currentColor decision from that entry paying off in a case it was not written for.
+
 ## Classic takes #GRIDroid's panel surface, 2026-09-08
 
 Author's ask: people like how #GRIDroid looks, so give Classic a facelift by bringing its panels
