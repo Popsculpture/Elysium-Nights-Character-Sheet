@@ -35,8 +35,8 @@ EN.flowView = (function () {
   function noteP(t, color) { return el("p.help", { style: { margin: "2px 0 6px", color: color || "var(--text3)", fontSize: "11.5px" }, text: t }); }
   function bar(cur, max, color) {
     var pct = max > 0 ? Math.max(0, Math.min(100, cur / max * 100)) : 0;
-    return el("div.flow-bar", { style: { height: "11px", background: "var(--bg1)", border: "1px solid var(--border)", borderRadius: "6px", overflow: "hidden", margin: "5px 0 2px" } },
-      [el("div.flow-bar-fill", { style: { width: pct + "%", height: "100%", background: color, boxShadow: "0 0 8px " + color, transition: "width .2s" } })]);
+    return el("div.flow-bar.meter", { style: { height: "11px", background: "var(--bg1)", border: "1px solid var(--border)", borderRadius: "6px", overflow: "hidden", margin: "5px 0 2px" } },
+      [el("div.flow-bar-fill.meter-fill", { style: { width: pct + "%", height: "100%", background: color, boxShadow: "0 0 8px " + color, transition: "width .2s" } })]);
   }
   function stepper(onMinus, onPlus, minusOff, plusOff) {
     return el("div.stepper", { style: { marginTop: 0, width: "auto" } }, [

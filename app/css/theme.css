@@ -929,6 +929,52 @@ html.skin-98 .os-main a{ color:var(--link, #0000ee); text-decoration:underline; 
 html.skin-98 .os-main a:visited{ color:var(--link-hot, #551a8b); }
 html.skin-98 .os-main a:active{ color:var(--danger); }
 
+/* ---- 5. THE MENU BAR AND THE STATUS BAR. Built for every panel in EN.ui.panel
+   and shown ONLY here: a Windows 98 window has a menu under its title and a sunken
+   status bar along its foot, and their absence was most of what still read as
+   "modern app wearing a costume" rather than as a window.
+
+   pointer-events:none is the honest part. Neither is wired to anything, so neither
+   highlights under the cursor: a menu that lit up and then did nothing would be a
+   worse lie than one that never invites the click. The status cells carry no text
+   because the app does not know what "20 object(s)" would mean here, and Windows
+   left them empty often enough that empty IS the authentic state. */
+.win-menu, .win-status{ display:none; }
+html.skin-98 .win-menu{
+  display:flex; gap:14px; align-items:center; padding:2px 8px;
+  background:var(--bg2); border-bottom:1px solid var(--bev-mid);
+  font-family:var(--disp); font-size:11px; line-height:1.5; color:var(--text);
+  pointer-events:none; user-select:none;
+}
+html.skin-98 .win-menu u{ text-decoration:underline; text-underline-offset:1px; }
+html.skin-98 .win-status{
+  display:flex; gap:2px; align-items:stretch; padding:2px; min-height:20px;
+  background:var(--bg2); border-top:1px solid var(--bev-hi);
+  pointer-events:none; user-select:none;
+}
+html.skin-98 .win-status .ws-cell{
+  border:1px solid; border-color:var(--bev-lo) var(--bev-hi) var(--bev-hi) var(--bev-lo);
+  background:var(--bg2); flex:0 0 58px;
+}
+html.skin-98 .win-status .ws-wide{ flex:1 1 auto; min-width:0; }
+
+
+/* ---- 6. SEGMENTED METERS. Windows drew a progress bar as a row of discrete
+   blocks with a gap between them, never as a continuous fill. The blocks are a
+   repeating-linear-gradient over the fill's own colour, so every meter in the app
+   keeps whatever colour its caller chose and only the SHAPE changes: Vitality
+   stays green, Wounds stay red, System Integrity stays its own.
+
+   Masked rather than painted, so the gaps show the trough underneath instead of a
+   colour guessed here. The glow each fill carries is dropped, since a bevelled
+   trough with a lit bar in it belongs to a different decade. */
+html.skin-98 .meter{ border:1px solid; border-color:var(--bev-lo) var(--bev-hi) var(--bev-hi) var(--bev-lo); background:var(--bg1); }
+html.skin-98 .meter-fill{
+  box-shadow:none !important;
+  -webkit-mask-image:repeating-linear-gradient(90deg, #000 0 6px, transparent 6px 8px);
+          mask-image:repeating-linear-gradient(90deg, #000 0 6px, transparent 6px 8px);
+}
+
 /* every rounded thing goes square, including radii set inline from JS */
 html.skin-98 :is(.panel, .btn, .chip, .badge, .stat, .feature, .opt-card, .roll-slot, .roll-group, .device-card,
   .muted-box, .set-card, .set-swatch, .tier-pill, .attr-cell, .wstep, .gate-card, .toast, .stepper button, .die,

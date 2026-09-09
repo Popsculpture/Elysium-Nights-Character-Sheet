@@ -1103,8 +1103,8 @@ EN.combatView = (function () {
   }
   function bar(cur, max, color) {
     var pct = max > 0 ? Math.round(cur / max * 100) : 0;
-    return el("div", { style: { height: "10px", background: "var(--bg1)", border: "1px solid var(--border)", borderRadius: "5px", overflow: "hidden", margin: "6px 0" } }, [
-      el("div", { style: { width: pct + "%", height: "100%", background: color, boxShadow: "0 0 10px " + color, transition: "width .25s" } })
+    return el("div.meter", { style: { height: "10px", background: "var(--bg1)", border: "1px solid var(--border)", borderRadius: "5px", overflow: "hidden", margin: "6px 0" } }, [
+      el("div.meter-fill", { style: { width: pct + "%", height: "100%", background: color, boxShadow: "0 0 10px " + color, transition: "width .25s" } })
     ]);
   }
   /* Shared Vitality bar; Vigor renders as a gold hazard-striped overlay on top

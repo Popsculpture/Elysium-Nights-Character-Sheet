@@ -26,8 +26,8 @@ EN.gmView = (function () {
   // carries its own small helpers instead of a shared utils file
   function bar(cur, max, color) {
     var pct = max > 0 ? Math.max(0, Math.min(100, (cur / max) * 100)) : 0;
-    return el("div", { style: { height: "6px", borderRadius: "3px", background: "var(--bg3)", overflow: "hidden" } },
-      [el("div", { style: { height: "100%", width: pct + "%", background: color || "var(--danger)" } })]);
+    return el("div.meter", { style: { height: "6px", borderRadius: "3px", background: "var(--bg3)", overflow: "hidden" } },
+      [el("div.meter-fill", { style: { height: "100%", width: pct + "%", background: color || "var(--danger)" } })]);
   }
   function stepper(onMinus, onPlus) {
     return el("div.row", { style: { gap: "4px" } }, [

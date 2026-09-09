@@ -8595,6 +8595,46 @@ carried a comment about Weapon Focus Caliber that `pdfexport.js` lacked. That is
 discipline `parseUses` got earlier today, and for the same reason, since a plain diff is what
 turns the next drift into something anyone can see.
 
+## '98 gets a menu bar, a status bar and Windows progress blocks, 2026-09-08
+
+The three the author picked off the list, and the first of these passes that needed markup rather
+than CSS alone.
+
+**The furniture is built for EVERY panel and hidden everywhere but '98**, which is the decision
+worth explaining because rendering it only under '98 looks obviously cheaper. `EN.theme.setSkin`
+only toggles a root class; it does not re-render the view. A panel built under Classic and then
+switched to '98 would come up with no menu and no status bar until something else forced a
+rebuild. Fifteen nodes a panel is the price of that always being right, and the alternative was a
+re-render hook that nothing else needs.
+
+**Both are decoration and are marked as such.** `pointer-events:none`, so neither highlights under
+the cursor: a menu that lit up and then did nothing would be a worse lie than one that never
+invites the click. The status cells carry no text for the same reason. An invented "20 object(s)"
+would be a number the app does not know, and Windows left those panes empty often enough that
+empty is the authentic state rather than a shortcut.
+
+One detail earns its line of code: **Favorites underlines its "a"**, not its "F", because F was
+already taken by File. That is what Windows did, and it is the single thing that makes the row
+read as a real menu rather than five words in a strip.
+
+**The meters are the piece that needed the JS.** Windows drew a progress bar as discrete blocks
+with gaps, never as a continuous fill. The blocks are a repeating gradient used as a MASK rather
+than painted on, so the gaps show the trough underneath and every meter keeps whatever colour its
+caller chose: Vitality stays green, Wounds stay red, System Integrity stays its own. Each fill's
+glow is dropped on this skin, since a bevelled trough with a lit bar in it belongs to a different
+decade.
+
+That hook needed a class on four separate `bar()` copies, in combat.js, flow.js, gm.js and grid.js,
+which the previous entry flagged and declined to do as a flourish. They are not identical, so each
+was read before editing rather than pattern-replaced: flow.js already carried `.flow-bar` and
+`.flow-bar-fill` and keeps them alongside the shared ones, gm.js runs a 6px bar with no border,
+and the two others differ in margins. One shared class name, four deliberate edits.
+
+Verified by computed style on all three skins: '98 shows the menu and status bar and masks its
+meter fills, Classic and #GRIDroid report `display:none` on both and an unmasked fill with its
+glow intact, and the furniture is present in the DOM on every skin, which is the property the
+whole always-render decision rests on.
+
 ## '98 grows a scrollbar, a focus rectangle and a resize grip, 2026-09-08
 
 Author, with a wall of the Zyro "modern apps as 90s software" renders: go all out on #GRIDOS '98,

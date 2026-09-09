@@ -32,8 +32,8 @@ EN.gridView = (function () {
   /* ---- small shared bits ---- */
   function bar(cur, max, color) {
     var pct = max > 0 ? Math.max(0, Math.min(100, cur / max * 100)) : 0;
-    return el("div", { style: { height: "10px", background: "var(--bg1)", border: "1px solid var(--border)", borderRadius: "5px", overflow: "hidden", margin: "5px 0 2px" } },
-      [el("div", { style: { width: pct + "%", height: "100%", background: color, boxShadow: "0 0 7px " + color, transition: "width .2s" } })]);
+    return el("div.meter", { style: { height: "10px", background: "var(--bg1)", border: "1px solid var(--border)", borderRadius: "5px", overflow: "hidden", margin: "5px 0 2px" } },
+      [el("div.meter-fill", { style: { width: pct + "%", height: "100%", background: color, boxShadow: "0 0 7px " + color, transition: "width .2s" } })]);
   }
   function stepper(onMinus, onPlus, minusOff, plusOff) {
     return el("div.stepper", { style: { marginTop: 0, width: "auto" } }, [

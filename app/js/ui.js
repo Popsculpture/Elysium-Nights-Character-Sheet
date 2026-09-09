@@ -49,6 +49,31 @@ EN.ui = (function () {
   function clear(node) { while (node && node.firstChild) node.removeChild(node.firstChild); return node; }
   function frag() { return document.createDocumentFragment(); }
 
+  /* A Windows 98 window has a menu bar under its title and a sunken status bar along its foot.
+     Both are built here for EVERY panel and hidden by CSS on every skin but '98, rather than
+     rendered only when '98 is on, because EN.theme.setSkin only toggles a root class: it does not
+     re-render the view, so a panel built under Classic and then switched to '98 would come up
+     without them. Fifteen nodes a panel is the price of that always being right.
+
+     They are DECORATION and are marked as such, pointer-events:none in the CSS, because a menu
+     that highlighted under the cursor and then did nothing would be a worse lie than one that
+     never invites the click. The status cells carry no text for the same reason: an invented
+     "20 object(s)" would be a number the app does not know. Windows left them empty too. */
+  var WIN_MENU = [["F", "ile"], ["E", "dit"], ["V", "iew"], ["Fa", "vorites", 1], ["H", "elp"]];
+  function winMenu() {
+    return el("div.win-menu", { "aria-hidden": "true" }, WIN_MENU.map(function (m) {
+      /* the underline marks the Alt key, so Favorites underlines its "a" and not its "F",
+         which is what Windows did and the one detail that makes the row read as a real menu */
+      return m[2]
+        ? el("span", null, [document.createTextNode("F"), el("u", { text: "a" }), document.createTextNode(m[1])])
+        : el("span", null, [el("u", { text: m[0] }), document.createTextNode(m[1])]);
+    }));
+  }
+  function winStatus() {
+    return el("div.win-status", { "aria-hidden": "true" }, [
+      el("span.ws-cell.ws-wide"), el("span.ws-cell"), el("span.ws-cell")
+    ]);
+  }
   function panel(title, tag, bodyChildren, opts) {
     opts = opts || {};
     var body = el("div.panel-b", null, bodyChildren);
@@ -58,7 +83,9 @@ EN.ui = (function () {
       tag ? el("span.tag", { text: tag }) : null,
       opts.headerRight ? el("div.panel-hr", { style: { marginLeft: "auto", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" } }, [].concat(opts.headerRight)) : null
     ]));
+    if (title) children.push(winMenu());   // under the title bar, where Windows put it
     children.push(body);
+    children.push(winStatus());
     var p = el("div.panel" + (opts.glow ? ".glow" : ""), null, children);
     if (opts.corners) { ["tl", "tr", "bl", "br"].forEach(function (c) { p.appendChild(el("span.corner." + c)); }); }
     p.bodyEl = body;
