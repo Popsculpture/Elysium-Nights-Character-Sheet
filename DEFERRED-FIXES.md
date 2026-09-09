@@ -8610,6 +8610,24 @@ carried a comment about Weapon Focus Caliber that `pdfexport.js` lacked. That is
 discipline `parseUses` got earlier today, and for the same reason, since a plain diff is what
 turns the next drift into something anyone can see.
 
+## The Views button wears the author's gallery grid, 2026-09-09
+
+Author, pointing at the Explorer toolbar: replace the four-square Views mark with his nine-square
+gallery-grid icon.
+
+Embedded as exported, per the house rule. The `d` was read out of the file rather than retyped, so
+the path is his byte for byte: the same viewBox (0 0 512 511.98), one path, nine subpaths, the
+evenodd rule, and its own `shape-rendering="geometricPrecision"`. That last attribute is the one
+place this icon deliberately parts from its nine neighbours, which are square pixel art drawn with
+`crispEdges`: rounded corners at 20px need the antialiasing, and crisp edges would chew them.
+
+One addition. The export carries no `fill`, so it would have defaulted to black; it is set to
+#000582, the Windows navy the mark it replaces was drawn in and the same ink the copy and
+properties icons use. Flagged rather than assumed, in case black was the intent.
+
+Verified in the browser: nine subpaths present, the viewBox intact, the data URI loads as an
+image, and the mark renders at the end of the strip. No console errors.
+
 ## The caption buttons get a second set of glyphs, and five smaller corrections, 2026-09-08
 
 Author asked what was still pending. Re-verifying rather than reciting turned up one real defect,
