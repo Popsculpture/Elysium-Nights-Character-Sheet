@@ -8595,6 +8595,54 @@ carried a comment about Weapon Focus Caliber that `pdfexport.js` lacked. That is
 discipline `parseUses` got earlier today, and for the same reason, since a plain diff is what
 turns the next drift into something anyone can see.
 
+## Classic takes #GRIDroid's panel surface, 2026-09-08
+
+Author's ask: people like how #GRIDroid looks, so give Classic a facelift by bringing its panels
+in line, while Classic goes on functioning exactly as it does.
+
+So this is SURFACE ONLY, and the restraint is the design decision. #GRIDroid's look and
+#GRIDroid's layout are separable, and only one of them was asked for: the phone skin folds
+everything to one column, caps the rail, drops the panel-head sub-labels and grows every control
+to a finger. None of that came across. Classic keeps its multi-column grids, its desk density,
+every control at the size it was, and the sub-labels the phone drops only because 375px has no
+room for them.
+
+What DID come across is the panel treatment: flat `--bg1` ground with an `--accent-dim` hairline
+and no radius; a head bar on `--bg` with a chamfered top-right corner, a mono title in the accent
+at 12px and .18em, and the `//` prefix in the second tone; the same chamfer on the boxes INSIDE a
+panel, `.stat`, `.attr-cell`, `.roll-slot`, `.roll-group`, which is most of why #GRIDroid reads as
+one system rather than a panel with unrelated contents; the feature card's second-tone left edge;
+and the decorative corner brackets dropped, since a bracket sitting on a cut corner is two ideas
+arguing at the same corner.
+
+Three things worth recording about how it is scoped.
+
+**Classic is the absence of a skin class, not a class of its own**, so every rule is
+`html:not(.skin-98):not(.skin-droid) X`. That computes to (0,3,1), which beats the base rule it
+overrides and cannot reach the other two skins. Verified by computed style rather than by reading
+the selector: on the same panel, Classic and #GRIDroid now report the same background, the same
+chamfer, the same mono accent title and the same `//`, while '98 reports no chamfer, no `//` and
+its own white title.
+
+**The chamfer is on the head and the cells, never on `.panel`**, which is what #GRIDroid does too.
+`clip-path` clips everything a box paints, so a clipped panel would cut off any popover opened
+from inside it. Heads were checked for the same hazard before the rule went in and carry only
+plain controls whose native dropdowns render outside the element.
+
+**`--dr-two` could not be reused.** It is declared inside the `html.skin-droid` block and does not
+exist out here, so the second tone is written as `var(--flow)`, which is what that alias resolves
+to. Same purple by value.
+
+Verified across three skins by six tabs: no horizontal overflow, nothing pushed past the viewport,
+no child of a chamfered head crossing its own edge, and identical panel counts, so nothing was
+added or lost. The light theme was the risk worth naming, since the base rule painted panels with
+`--panel` and this paints them with `--bg1`: Daybreak redefines both, so Classic light renders
+white panels with a magenta hairline and the chamfers intact. Admin recolours to gold by itself,
+which is the skin contract holding, since these rules name only tokens.
+
+**Not done, and the obvious next step:** buttons, inputs and chips are still Classic's rounded
+ones. #GRIDroid chamfers those too, and the ask said panels.
+
 ## The brief caps stop looking like drift without pretending to be the same number, 2026-09-07
 
 Author asked for the two caps to be fixed after I had argued they were fine. Measuring the side I

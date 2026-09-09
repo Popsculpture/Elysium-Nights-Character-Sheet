@@ -660,6 +660,60 @@ html.skin-droid .ab-row > h4 > .ab-cost{ display:inline-flex; align-items:baseli
    =========================================================================== */
 
 /* ---------------------------------------------------------------------------
+   CLASSIC, restyled toward #GRIDroid, 2026-09-08.
+
+   Author's ask: people like how #GRIDroid looks, so give Classic's panels that
+   surface while it goes on FUNCTIONING exactly as it does. So this block is
+   surface only. It changes no layout: Classic keeps its multi-column grids, its
+   desk density, every control it has, and the panel-head sub-labels #GRIDroid
+   drops only because a 375px phone has no room for them.
+
+   Scoped with :not() on both other skins because Classic is the ABSENCE of a
+   skin class rather than a class of its own, so `html:not(.skin-98):not(.skin-droid) X`
+   is (0,3,1) and beats the base rule it overrides without reaching the other two.
+
+   The chamfer is on the HEAD and the cells, never on .panel itself, which is
+   what #GRIDroid does too: clip-path clips everything a box paints, so a panel
+   that clipped would cut off any popover opened from inside it. Heads were
+   checked for the same hazard and carry only plain controls, selects, buttons
+   and spans, whose native dropdowns render outside the element.
+   --------------------------------------------------------------------------- */
+html:not(.skin-98):not(.skin-droid) .panel{
+  background:var(--bg1); border:1px solid var(--accent-dim); border-radius:0; box-shadow:none;
+}
+html:not(.skin-98):not(.skin-droid) .panel.glow{ box-shadow:0 0 0 1px var(--accent), 0 0 18px var(--accent-dim); }
+/* The decorative L-brackets go, which is #GRIDroid's one deletion here. The chamfer IS the
+   corner treatment now, and a bracket sitting on a cut corner reads as two ideas arguing. */
+html:not(.skin-98):not(.skin-droid) .corner{ display:none; }
+html:not(.skin-98):not(.skin-droid) .panel-h{
+  min-height:40px; padding:9px 14px; background:var(--bg); border-bottom:1px solid var(--accent-dim);
+  clip-path:polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+}
+/* --flow rather than --dr-two: that alias is declared inside the html.skin-droid block and does
+   not exist out here, but it resolves to var(--flow), so this is the same purple by value. */
+html:not(.skin-98):not(.skin-droid) .panel-h::before{
+  content:"//"; font-family:var(--mono); font-size:11px; color:var(--flow); letter-spacing:0;
+  width:auto; height:auto; background:none; box-shadow:none;
+}
+html:not(.skin-98):not(.skin-droid) .panel-h h3{
+  font-family:var(--mono); font-weight:400; font-size:12px; letter-spacing:.18em;
+  color:var(--accent); text-shadow:none;
+}
+html:not(.skin-98):not(.skin-droid) .panel-h.clickable:hover h3{ color:var(--text); }
+/* The sub-label stays, but it has to stop competing with a title that is now mono and
+   letter-spaced: at the same weight the two read as one run-on string. */
+html:not(.skin-98):not(.skin-droid) .panel-h .tag{ font-size:9.5px; letter-spacing:.1em; color:var(--text4); }
+html:not(.skin-98):not(.skin-droid) .panel-b{ padding:12px 14px 14px; }
+/* The boxes INSIDE a panel take the same cut, which is most of why #GRIDroid reads as one
+   system rather than a panel with unrelated contents. */
+html:not(.skin-98):not(.skin-droid) :is(.stat, .attr-cell, .roll-slot, .roll-group){
+  border:1px solid var(--accent-dim); background:var(--bg); border-radius:0;
+  clip-path:polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+}
+html:not(.skin-98):not(.skin-droid) .feature{ border-left:2px solid var(--flow); border-radius:0; }
+html:not(.skin-98):not(.skin-droid) .muted-box{ border:1px dashed var(--accent-dim); background:var(--bg); border-radius:0; }
+
+/* ---------------------------------------------------------------------------
    #GRIDOS '98. Homage, not costume: bevels on everything, gradient title bars
    with window buttons, a bottom TASKBAR with a START button (the gear, which
    opens Settings, exactly what Start did), sunken status cells, monospace
