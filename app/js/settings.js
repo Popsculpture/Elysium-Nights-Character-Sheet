@@ -31,9 +31,17 @@ EN.theme = (function () {
     { key: "grid",       name: "#GRID",        accent: "#00e5ff", dim: "#0a8aa0", bg: "#07090d", bg2: "#0f141d", border: "#233044", border2: "#34465f" },
     { key: "slimegirl",  name: "Slime Time",   accent: "#4fe6a8", dim: "#1f8f68", bg: "#061611", bg2: "#0c2419", border: "#1f5d44", border2: "#2f8060" },
     { key: "pbandj",     name: "Flavor Wizard",     accent: "#eb9a3e", dim: "#9c5e1e", bg: "#150a1c", bg2: "#221033", border: "#4a2660", border2: "#6b3a86" },
-    // Bubblegum Flapjack: gunmetal base (40%), toxic-mint accent (25%), bubblegum-pink
-    // chrome/frames (18%), bone-white text (12%), blood-red dim punctuation (5%)
-    { key: "bubblegum",  name: "Bubblegum Flapjack", accent: "#7cffb2", dim: "#8a0303", bg: "#18181d", bg2: "#221820", border: "#4e2640", border2: "#85406a", text: "#f2e9e1", text2: "#aea8a2", text3: "#7e7975", text4: "#524f4c" },
+    /* Pastel Smasher, promoted from the author's own custom palette on 2026-09-08 and replacing
+       Bubblegum Flapjack, which is removed outright. Retuned by him the same day, and the retune
+       is two swaps rather than new colours: the grounds trade places so the deepest surface is
+       near-black navy with gunmetal PANELS raised on it, which is the reverse of the first cut,
+       and the frame colours trade so hot pink draws the lines while highlighter yellow is the
+       brighter highlight on top of them. A toxic-mint accent over both.
+
+       The dim slot is bone white rather than a darkened accent, which is unusual enough to say
+       out loud: muted chrome here reads LIGHTER than the accent beside it, not darker, so
+       anything leaning on --accent-dim to recede will instead step forward on this palette. */
+    { key: "pastelsmasher", name: "Pastel Smasher", accent: "#7cffb2", dim: "#f2e9e1", bg: "#0d0d21", bg2: "#18181d", border: "#ff4fa3", border2: "#f3e500", text: "#f2e9e1", text2: "#93a8c0", text3: "#5b7188", text4: "#3a4a5e" },
     { key: "manarift",   name: "Mana Rift",    accent: "#6f8cff", dim: "#2f3f99", bg: "#080c1c", bg2: "#0e1533", border: "#283a72", border2: "#3a4f96" },
     { key: "merlot",     name: "Merlot",       accent: "#e2506e", dim: "#8a2238", bg: "#16040a", bg2: "#270b13", border: "#5a1f2e", border2: "#7e3042" },
     { key: "evilcurse",  name: "Flowstate",    accent: "#a96ce2", dim: "#5e3a99", bg: "#100a1a", bg2: "#1b1232", border: "#3f2a62", border2: "#573a82" },
@@ -92,6 +100,35 @@ EN.theme = (function () {
     return t ? [t] : [];
   }
 
+  /* A custom palette that has since been PROMOTED to a built-in. Matched on the name, because a
+     custom's key is a random per-device id and the built-in cannot know it. Returns the built-in's
+     key, so a record still pointing at the old custom paints the permanent one, highlights the
+     right swatch, and quietly heals itself the next time the picker is touched.
+
+     Nothing is deleted. The orphan stays in the device library where find() can still resolve it,
+     which is what keeps an untouched record working on a device that never ran this migration,
+     and means the promotion can be undone without having destroyed anything. */
+  function canonKey(k) {
+    if (!isCustom(k)) return k;
+    var list = readCustom(), c = null, i;
+    for (i = 0; i < list.length; i++) { if (list[i].key === k) { c = list[i]; break; } }
+    if (!c) return k;
+    var n = String(c.name || "").trim().toLowerCase();
+    for (i = 0; i < THEMES.length; i++) {
+      if (String(THEMES[i].name).trim().toLowerCase() === n) return THEMES[i].key;
+    }
+    return k;
+  }
+  /* What the PICKER lists: a custom is hidden when a built-in of the same name exists, so a
+     promoted palette appears once rather than twice. find() and allThemes() are left alone on
+     purpose; they still resolve the hidden one. */
+  function pickerThemes() {
+    var taken = {};
+    THEMES.forEach(function (t) { taken[String(t.name).trim().toLowerCase()] = 1; });
+    return THEMES.concat(readCustom().filter(function (c) {
+      return !taken[String(c.name || "").trim().toLowerCase()];
+    }));
+  }
   function find(k) {
     var all = allThemes();
     for (var i = 0; i < all.length; i++) { if (all[i].key === k) return all[i]; }
@@ -118,9 +155,9 @@ EN.theme = (function () {
      skin", so a default that moved when you changed skin would break that promise. */
   function deviceGet() { try { return localStorage.getItem(KEY) || "highheavens"; } catch (e) { return "highheavens"; } }
   function get() {
-    if (inAdmin()) return adminGet();
+    if (inAdmin()) return canonKey(adminGet());
     var ch = activeCh();
-    return (ch && ch.theme) ? ch.theme : deviceGet();
+    return canonKey((ch && ch.theme) ? ch.theme : deviceGet());
   }
 
   /* ---- paint the document from a palette object (no persistence) ---- */
@@ -336,6 +373,7 @@ EN.theme = (function () {
 
   return {
     THEMES: THEMES, find: find, get: get, set: set, apply: apply, preview: preview, init: init, ramp: ramp,
+    pickerThemes: pickerThemes,
     allThemes: allThemes, isCustom: isCustom, getCustom: getCustom, saveCustom: saveCustom,
     deleteCustom: deleteCustom, mergeCustom: mergeCustom, bundleFor: bundleFor, syncToActive: syncToActive,
     inAdmin: inAdmin,
@@ -486,7 +524,7 @@ EN.settings = (function () {
   function themeSwatches() {
     var current = EN.theme.get();
     // swatches are divs (not buttons) so the custom edit/delete controls can nest legally
-    return el("div.set-swatches", null, EN.theme.allThemes().map(function (t) {
+    return el("div.set-swatches", null, EN.theme.pickerThemes().map(function (t) {
       var kids = [
         el("div.set-sw-name", { text: t.name }),
         el("div.set-strip", null, EN.theme.ramp(t).map(function (c) { return el("span.set-seg", { style: { background: c } }); }))

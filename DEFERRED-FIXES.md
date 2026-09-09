@@ -8673,6 +8673,80 @@ Accent Dim and Panel driven to test colours on '98 and tracked in the title bar 
 value, the primary fill and the panel ground, then abandoned through CANCEL, leaving no custom
 theme behind and the author's record still carrying no explicit palette.
 
+## Pastel Smasher is promoted to a permanent palette, Bubblegum Flapjack removed, 2026-09-08
+
+Author's ask: replace Bubblegum Flapjack with Pastel Smasher and make Pastel Smasher permanent.
+
+The colours were not in the ask and did not need to be. Pastel Smasher already existed as a CUSTOM
+palette in the device library, `custom_mtth9vo63m1`, so the request was not "design me a theme", it
+was "promote the one I built". Its values are carried across unchanged: mint accent #7cffb2 on
+gunmetal #18181d and near-black #0d0d21, with the frames doing the shouting, highlighter yellow
+#f3e500 on the borders and hot pink #ff4fa3 on the highlights. The `dim` slot is bone white
+#f2e9e1 rather than a darkened accent, which is unusual enough to be worth a comment in the data:
+muted chrome reads LIGHTER than the accent beside it, not darker. It takes Bubblegum Flapjack's
+position in the picker, and Bubblegum Flapjack is gone from the code entirely.
+
+**The catch, and the reason this is not a two-line change.** The author's own record already had
+Pastel Smasher selected, so it stored the CUSTOM key. Adding a built-in and deleting the custom
+would have pointed that record at a key nothing resolves, and `apply()` falls back to `THEMES[0]`,
+so the sheet would have silently repainted itself in Elysium Nights. That is precisely the kind of
+quiet damage to his data this log recorded a version of earlier today.
+
+So nothing is deleted and resolution is made alias-aware instead. `canonKey` maps a custom key to
+a built-in of the same NAME, matched on the name because a custom's key is a random per-device id
+that a built-in cannot know. `get()` runs both the record's key and the device fallback through it,
+so a record still holding the custom paints the permanent palette, highlights the right swatch, and
+heals itself to the built-in key the next time the picker is touched. `find()` and `allThemes()` are
+deliberately untouched and still resolve the orphan, which is what keeps an untouched record working
+on a device that never saw this change, and means the promotion can be reversed without anything
+having been destroyed.
+
+The picker gets its own list, `pickerThemes`, which hides a custom when a built-in of the same name
+exists, so a promoted palette appears once rather than twice.
+
+Verified: the picker lists nine palettes with Pastel Smasher in Bubblegum's old slot and no
+duplicate; `find("bubblegum")` is null and `find("pastelsmasher")` is not; a record still storing
+the custom key resolves to `pastelsmasher` and paints #7cffb2 on #f3e500; the swatch shows as
+current; and clicking it rewrites the record to the permanent key. That last check needed a wait,
+since `store.persist` is debounced and reading localStorage in the same tick shows the old value:
+the second read after the flush confirms it.
+
+The orphaned custom entry is left in the device library, hidden from the picker and no longer
+referenced by anything. It can be deleted whenever the author wants, and nothing depends on it.
+
+## Pastel Smasher retuned, and the scratch palette it was built in, 2026-09-08
+
+Author sent the editor's own six rows as a screenshot: update Pastel Smasher to this.
+
+Read against what had just been baked in, the change is not new colours but **two swaps**, which
+is worth stating because it would be easy to transcribe as six values and miss what moved. The
+grounds trade places, so the deepest surface is near-black navy #0d0d21 with gunmetal #18181d
+raised on it as panels, the reverse of the first cut. And the frame colours trade, so hot pink
+#ff4fa3 draws the lines while highlighter yellow #f3e500 becomes the brighter highlight over them.
+Accent and Accent Dim are untouched. The label-to-field mapping was read off SLOTS rather than
+guessed, since "Background" is `bg` and "Panel" is `bg2`, which is not obvious from the names.
+
+**And the palette came with two loose ends the ask did not mention.** Checking what the record
+actually pointed at, rather than assuming the previous entry's end state still held, turned up a
+second custom theme called **"My Theme"**, byte-identical to the newly retuned built-in: the
+scratch palette the author built the values in. His record was on THAT, not on the permanent one.
+The original "Pastel Smasher" custom is also still there, now holding the superseded colours and
+hidden from the picker by the name-collision rule from the previous entry.
+
+The record has been moved onto `pastelsmasher`. The colours are byte-identical, so nothing
+repaints, verified before and after; what changes is that the sheet stops depending on a scratch
+custom that could be deleted out from under it. That trap is real rather than theoretical:
+`deleteTheme` drops whoever was wearing the deleted palette onto the default, so deleting "My
+Theme" from the picker would have silently repainted the sheet in Elysium Nights.
+
+Both custom entries are left exactly where they are. They are the author's data, one of them is
+still listed in his picker under its own name, and neither is load-bearing now.
+
+Verified: the built-in's six slots match the screenshot exactly, the app paints #7cffb2 on
+#0d0d21 with #ff4fa3 frames, and the record resolves to the permanent key. The write needed a
+wait before reading storage back, `store.persist` being debounced, the same way the promotion
+did.
+
 ## The hex becomes a field you can type into, 2026-09-08
 
 Author's ask: make HEX the default option when clicking the colour selector.
