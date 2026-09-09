@@ -975,7 +975,12 @@ EN.settings = (function () {
       el("div.row.wrap", { style: { gap: "6px" } }, EN.theme.SKINS.map(function (s) {
         return el("button.btn.sm" + (s.key === cur ? ".primary" : ""), {
           title: s.sub,
-          onclick: function () { EN.theme.setSkin(s.key); rebuild(); }
+          /* EN.app.render() so a skin change rebuilds the view, matching the layout, Flow and
+             #GRID toggles above. setSkin alone only swaps a root class, which was fine while every
+             skin difference was CSS; it stopped being fine once EN.ui.panel started placing the
+             header controls differently per skin, since a panel built under one skin would keep
+             the other's arrangement until something else forced a rebuild. */
+          onclick: function () { EN.theme.setSkin(s.key); EN.app.render(); rebuild(); }
         }, s.name);
       })),
       pending

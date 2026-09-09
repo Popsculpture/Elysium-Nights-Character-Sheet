@@ -958,6 +958,15 @@ html.skin-98 .win-status .ws-cell{
 }
 html.skin-98 .win-status .ws-wide{ flex:1 1 auto; min-width:0; }
 
+/* ---- 7. THE TOOLBAR. On '98 the header controls come out of the title bar (see EN.ui.panel)
+   and land here, in a raised strip under the menu, which is where Windows kept a toolbar. The
+   inline marginLeft:auto and flex-end that right-align them inside a title bar are overridden
+   rather than removed from the JS, since every other skin still wants them. */
+html.skin-98 .win-tools{
+  display:flex; align-items:center; padding:3px 6px; gap:6px;
+  background:var(--bg2); border-bottom:1px solid var(--bev-mid);
+}
+html.skin-98 .win-tools .panel-hr{ margin-left:0 !important; justify-content:flex-start !important; flex:1 1 auto; }
 
 /* ---- 6. SEGMENTED METERS. Windows drew a progress bar as a row of discrete
    blocks with a gap between them, never as a continuous fill. The blocks are a

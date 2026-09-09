@@ -8595,6 +8595,42 @@ carried a comment about Weapon Focus Caliber that `pdfexport.js` lacked. That is
 discipline `parseUses` got earlier today, and for the same reason, since a plain diff is what
 turns the next drift into something anyone can see.
 
+## The header controls come out of the '98 title bar, 2026-09-08
+
+Author, pointing at the Status Changes panel's three selects and its APPLY button sitting in the
+gradient: on this profile, move these off the header bar and into the body.
+
+He is right on authenticity grounds and it is the strongest remaining tell. A Windows title bar
+carries a title and its window buttons and nothing else; controls live in the window, usually in a
+toolbar under the menu. Selects in the gradient were the one thing left that read as a modern app
+wearing a costume rather than as a window, and on a narrow panel they were colliding with the
+minimise/maximise/close sprite as well.
+
+**This is the first change here that could not be done in CSS**, and the reason is worth recording.
+`.panel-hr` lives inside `.panel-h`; moving it into the body means reparenting, which CSS cannot
+do. The tricks that come close all cost more than they save: `display:contents` on the header would
+promote its children to grid items of the panel but throws away the title bar's gradient and its
+window-button pseudo-element, and absolute positioning takes the strip out of flow so the menu bar
+underneath has no idea it is there. So `EN.ui.panel` places it, in the header on Classic and
+#GRIDroid and in a `.win-tools` strip under the menu on '98.
+
+**That forced a second change, and it is the interesting one.** `EN.theme.setSkin` only toggled a
+root class: it never re-rendered. That was fine while every skin difference was CSS, and stopped
+being fine the moment a panel's DOM depended on the skin, because a panel built under Classic and
+then switched to '98 would keep Classic's arrangement until something else forced a rebuild. The
+skin picker now calls `EN.app.render()`, which is the pattern the layout, Flow and #GRID toggles in
+the same tray already use, so this adds no new mechanism. It also unlocks skin-conditional
+rendering generally, which was previously impossible.
+
+The inline `marginLeft:auto` and `justifyContent:flex-end` that right-align the strip inside a
+title bar are overridden in the toolbar rather than removed from the JS, since every other skin
+still wants them.
+
+Verified on the path that actually matters, the picker rather than the API: switching Classic to
+'98 through the tray moves the controls from the header to the toolbar, 1 to 0 and 0 to 1, with
+all three selects still present. Measured on all three skins after a render, '98 reports them in
+the toolbar and the other two in the header.
+
 ## '98 gets a menu bar, a status bar and Windows progress blocks, 2026-09-08
 
 The three the author picked off the list, and the first of these passes that needed markup rather

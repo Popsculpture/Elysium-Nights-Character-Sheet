@@ -78,12 +78,23 @@ EN.ui = (function () {
     opts = opts || {};
     var body = el("div.panel-b", null, bodyChildren);
     var children = [];
+    /* A Windows title bar carries a title and its window buttons and nothing else. Selects and
+       buttons sitting in the gradient is the one thing on this skin that still read as a modern
+       app wearing a costume, so on '98 the header controls come out of the title bar and go into
+       a toolbar strip under the menu, which is where Windows put a toolbar. Every other skin
+       keeps them in the header. This is why the skin picker now re-renders. */
+    var is98 = false;
+    try { is98 = EN.theme && EN.theme.getSkin && EN.theme.getSkin() === "98"; } catch (e) {}
+    var hr = opts.headerRight
+      ? el("div.panel-hr", { style: { marginLeft: "auto", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" } }, [].concat(opts.headerRight))
+      : null;
     if (title) children.push(el("div.panel-h", null, [
       el("h3", { text: title }),
       tag ? el("span.tag", { text: tag }) : null,
-      opts.headerRight ? el("div.panel-hr", { style: { marginLeft: "auto", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" } }, [].concat(opts.headerRight)) : null
+      is98 ? null : hr
     ]));
     if (title) children.push(winMenu());   // under the title bar, where Windows put it
+    if (is98 && hr) children.push(el("div.win-tools", null, [hr]));
     children.push(body);
     children.push(winStatus());
     var p = el("div.panel" + (opts.glow ? ".glow" : ""), null, children);
