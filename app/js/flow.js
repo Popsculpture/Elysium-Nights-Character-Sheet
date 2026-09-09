@@ -567,8 +567,16 @@ EN.flowView = (function () {
       border: "2px solid var(--danger)", borderRadius: "4px", padding: "5px 9px", textAlign: "center", lineHeight: 1.05, pointerEvents: "none" },
       html: "COMPLIANCE<br><span style='font-size:8px;letter-spacing:.12em;opacity:.9'>MANDATORY POSTING</span>" });
 
+    /* The wash is two translucent layers over an OPAQUE ground, not a fade to transparent. It
+       used to end at transparent, which was fine while the only thing behind it was the page,
+       and stopped being fine on a '98 desktop wearing a wallpaper: the picture came straight
+       through the poster and the copy sat on it. --panel-solid is the opaque panel material, which
+       on '98 is the Windows button face the windows under it are made of, so the notice reads as
+       posted on the same stock rather than floating over the desktop. (Not --bg1: that is the
+       panel ground on Classic and #GRIDroid but one step too dark on '98, where it dropped the
+       amber kicker to 2.35:1 against 3.14:1 here.) */
     var banner = el("div", { style: { position: "relative", overflow: "hidden", borderRadius: "6px", marginBottom: "14px",
-      border: "1px solid var(--warn)", background: "linear-gradient(180deg, rgba(255,179,64,.10), rgba(255,77,94,.04) 60%, transparent)" } }, [
+      border: "1px solid var(--warn)", background: "linear-gradient(180deg, rgba(255,179,64,.10), rgba(255,77,94,.04) 60%, transparent), var(--panel-solid)" } }, [
       el("div", { style: { height: "8px", background: "repeating-linear-gradient(45deg, var(--warn) 0 12px, #0a0e14 12px 24px)", opacity: .8 } }),
       el("div", { style: { padding: "16px 18px" } }, [
         el("div.mono", { style: { fontSize: "10px", letterSpacing: ".22em", color: "var(--warn)" }, text: "// RESONANCE COMPLIANCE ADVISORY" }),

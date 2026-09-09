@@ -8595,6 +8595,27 @@ carried a comment about Weapon Focus Caliber that `pdfexport.js` lacked. That is
 discipline `parseUses` got earlier today, and for the same reason, since a plain diff is what
 turns the next drift into something anyone can see.
 
+## The compliance poster stops being see-through, 2026-09-08
+
+Author, pointing at the Flow tab on a '98 desktop wearing a tiled wallpaper: the Bureau's
+SEE SOMETHING. SAY SOMETHING. advisory needs a solid ground.
+
+It had none. The banner's background was a wash that faded to `transparent`, which was fine while
+the only thing behind it was the page, and stopped being fine the moment there was a picture back
+there: the rivets came straight through the poster and the copy sat on them. The wash is now two
+translucent layers over an opaque one.
+
+The ground is `--panel-solid` rather than `--bg1`. `--bg1` is the panel ground on Classic and
+#GRIDroid, but on '98 a panel is `--bg2`, the Windows button face, and `--bg1` is one step darker:
+tried first, it left the poster reading as a hole cut in the page and dropped the amber kicker to
+2.35:1. On `--panel-solid` the banner is the same grey as the windows under it, exactly, and the
+kicker is 3.56:1 with the headline at 11.18:1.
+
+Verified on '98 over the Blue Rivets tile (nothing shows through, banner ground and panel ground
+measure identical), and on Classic with both the gridos98 and Elysium Nights palettes, where the
+poster now reads as a notice posted slightly proud of the panels rather than as a translucent
+wash over them. No console errors.
+
 ## The '98 title bar reads the accent, and the accent gets an ink, 2026-09-08
 
 The open call from the last '98 pass, taken. Every window in the skin painted its title bar from
