@@ -365,7 +365,19 @@ EN.theme = (function () {
     // dither shows there, and the choice itself is left in storage for the next time '98 is up.
     if (getSkin() !== "98") return null;
     var p = wallPresets().filter(function (w) { return w.key === key; })[0];
-    return p ? "img/wallpapers/" + p.file : null;
+    if (!p) return null;
+    // A TILE carries its art inline as an SVG data URL instead of naming a file, and paints
+    // repeated at its own size rather than stretched to cover (see wallTileSize).
+    return p.tile ? p.svg : "img/wallpapers/" + p.file;
+  }
+  /* The repeat size, in CSS pixels, or 0 for a wallpaper that covers. Photographs are one
+     picture stretched over the desktop; the pattern tiles are small squares repeated, which
+     is the whole of what made a 90s desktop look like one, so the two need different paint
+     and theme.css keys that off html.wall-tiled. Customs are always photographs. */
+  function wallTileSize(key) {
+    if (!key || key === "none" || key.slice(0, 7) === "custom:") return 0;
+    var p = wallPresets().filter(function (w) { return w.key === key; })[0];
+    return p && p.tile ? (p.size || 64) : 0;
   }
   // a stored key that is no longer listed (a removed custom, a preset renamed) reads as none
   function getWall() { var k; try { k = localStorage.getItem(WALL_KEY) || "none"; } catch (e) { k = "none"; } return wallUrl(k) ? k : "none"; }
@@ -373,15 +385,16 @@ EN.theme = (function () {
   function setWallOpt(k, on) { if (!WALL_OPTS[k]) return; try { localStorage.setItem(WALL_OPTS[k], on ? "1" : "0"); } catch (e) {} applyWall(); }
   function wallDim() { return wallOpt("dim"); }
   function applyWall() {
-    var root = document.documentElement, url = wallUrl(getWall());
+    var root = document.documentElement, url = wallUrl(getWall()), tile = wallTileSize(getWall());
     var st = document.getElementById("en-wall");
     ["shadow", "glow"].forEach(function (k) { root.classList[url && wallOpt(k) ? "add" : "remove"]("wall-" + k); });
+    root.classList[url && tile ? "add" : "remove"]("wall-tiled");
     if (!url) { root.classList.remove("has-wall"); if (st) st.parentNode.removeChild(st); return; }
     if (!st) { st = document.createElement("style"); st.id = "en-wall"; document.head.appendChild(st); }
     // Absolute, because Chrome resolves a relative url() inside a custom property against the
     // stylesheet that USES it (css/theme.css), which would send img/ looking under css/.
     if (url.slice(0, 5) !== "data:") { var a = document.createElement("a"); a.href = url; url = a.href; }
-    st.textContent = ":root{ --wall:url(\"" + url + "\"); --wall-dim:" + (wallDim() ? ".45" : "0") + "; }";
+    st.textContent = ":root{ --wall:url(\"" + url + "\"); --wall-dim:" + (wallDim() ? ".45" : "0") + "; --wall-size:" + (tile ? tile + "px " + tile + "px" : "cover") + "; }";
     root.classList.add("has-wall");
   }
   function setWall(key) { try { localStorage.setItem(WALL_KEY, wallUrl(key) ? key : "none"); } catch (e) {} applyWall(); }
@@ -457,7 +470,7 @@ EN.theme = (function () {
     deleteCustom: deleteCustom, mergeCustom: mergeCustom, bundleFor: bundleFor, syncToActive: syncToActive,
     inAdmin: inAdmin,
     SKINS: SKINS, getSkin: getSkin, setSkin: setSkin,
-    wallPresets: wallPresets, wallCustoms: wallCustoms, getWall: getWall, setWall: setWall,
+    wallPresets: wallPresets, wallCustoms: wallCustoms, wallTileSize: wallTileSize, getWall: getWall, setWall: setWall,
     wallDim: wallDim, setWallDim: setWallDim, wallOpt: wallOpt, setWallOpt: setWallOpt,
     addWall: addWall, removeWall: removeWall, wallUrl: wallUrl
   };
@@ -1036,14 +1049,22 @@ EN.settings = (function () {
         if (!f) return;
         EN.theme.addWall(f, function (err) { if (err) EN.ui.toast(err); rebuild(); });
       } });
-    function card(key, name, thumb, extra) {
+    /* tile: the repeat size in pixels, for the pattern presets. Their card shows the pattern
+       tiled at true size rather than one square blown up to fill the thumbnail, since a tile
+       is chosen for how it reads REPEATED and a magnified single cell tells you nothing. */
+    function card(key, name, thumb, extra, tile) {
+      var st = thumb ? { backgroundImage: "url(" + JSON.stringify(thumb) + ")" } : null;
+      if (st && tile) { st.backgroundSize = tile + "px " + tile + "px"; st.backgroundRepeat = "repeat"; }
       return el("div.set-wall" + (key === "none" ? ".set-wall-none" : "") + (cur === key ? ".on" : ""), {
-        title: name, style: thumb ? { backgroundImage: "url(\"" + thumb + "\")" } : null,
+        title: name, style: st,
         onclick: function () { EN.theme.setWall(key); rebuild(); }
       }, [el("div.set-wall-name", { text: name })].concat(extra || []));
     }
     var cards = [card("none", "None, the dither", null)];
-    if (sk === "98") EN.theme.wallPresets().forEach(function (w) { cards.push(card(w.key, w.name, "img/wallpapers/" + w.thumb)); });
+    if (sk === "98") EN.theme.wallPresets().forEach(function (w) {
+      cards.push(w.tile ? card(w.key, w.name, w.svg, null, EN.theme.wallTileSize(w.key))
+                        : card(w.key, w.name, "img/wallpapers/" + w.thumb));
+    });
     EN.theme.wallCustoms().forEach(function (w) {
       cards.push(card("custom:" + w.id, w.name, w.data, [
         // its own click boundary, so arming the remove never also selects the card

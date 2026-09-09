@@ -144,6 +144,19 @@ EN.app = (function () {
   }
   function setPortal(p) { usePortal(p); render(); }
 
+  /* The '98 skin's address bar (index.html, .win-bar). Explorer's address named the folder you
+     had open, so this one names the view. The toolbar around it is furniture by choice, but a
+     bar reporting nothing at all would have been furniture too, and this is the one field in it
+     the app can fill in truthfully. Written from here because renderTabs runs on every render
+     and already knows which tab won; on every other skin the element is display:none and this
+     writes to something nobody sees, which is cheaper than asking the skin first. */
+  function paintAddr() {
+    var box = document.getElementById("win-addr");
+    if (!box) return;
+    var t = TABS.filter(function (x) { return x.key === LAST[portal]; })[0];
+    box.textContent = "C:\\GRIDOS\\" + (portal === "admin" ? "Admin" : "Freelancer")
+      + "\\" + (t ? t.label : "Desktop");
+  }
   function renderTabs() {
     var nav = document.getElementById("os-tabs");
     EN.ui.clear(nav);
@@ -206,6 +219,7 @@ EN.app = (function () {
       el("span.os-tray-clock", { id: "os-tray-clock", text: clockText() })
     ]));
     if (_saveKind === "fail") paintSave("fail");   // a fresh tray glyph must not read as healthy
+    paintAddr();
   }
 
   var _lastTab = null;

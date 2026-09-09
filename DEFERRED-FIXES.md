@@ -8595,6 +8595,61 @@ carried a comment about Weapon Focus Caliber that `pdfexport.js` lacked. That is
 discipline `parseUses` got earlier today, and for the same reason, since a plain diff is what
 turns the next drift into something anyone can see.
 
+## '98 gets an Explorer toolbar, and the wallpaper list learns to tile, 2026-09-08
+
+Two of the remaining peak-90s items, and the author picked the shape of both: one toolbar strip
+under the tab rail rather than one per panel, and tiles rather than more photographs.
+
+**The toolbar.** `app/index.html` gained a `.win-bar` after the tab rail, and theme.css section 11
+draws it. It sits between the title bar and the page, which is where Windows put a toolbar and
+where the eye goes looking for one. Thirteen buttons in four groups with the two-line groove
+between them, Back, Forward and Up carrying labels the way Explorer labelled its navigation trio,
+then cut/copy/paste/undo, delete/properties, and the view switch. Under 760px only the trio and
+the view switch survive, which is the set Explorer itself kept when the window got short.
+
+The buttons take the same bargain the menu bar took in the last pass: `pointer-events:none`, no
+hover, no press. A Back that lit up under the cursor and then did nothing would be a worse lie
+than one that never invites the click. Wiring it would mean giving the app a view history it does
+not have, which is a feature and not furniture, so it is not smuggled in here.
+
+The address bar is the exception and is the reason the strip is worth having at all. It really
+does name the view you are looking at: `paintAddr()` in `app/js/app.js` writes
+`C:\GRIDOS\Freelancer\#PRINT` and the like into `#win-addr` from `renderTabs`, which already runs
+on every render and already knows which tab won. On any other skin the element is `display:none`
+and the write lands on something nobody sees, which is cheaper than asking the skin first.
+
+The icons are inline SVG data URIs on `.wb-b::before`, one per `data-ico`, rather than glyphs: no
+font can be relied on to carry a pair of scissors, and at 20px these are pixel art, not type. The
+outer div carries `.os-main`'s own `max-width:1320px` and `clamp(14px,3vw,40px)` side padding, so
+the bar lines up with the windows under it instead of running out to the edges of the screen.
+
+One thing was measured and changed. `align-items:flex-end` on the button row put the unlabelled
+icons 13px lower than the labelled ones, level with their neighbours' text, which is not a row of
+tools any more. `flex-start` lines every icon up on one row and lets the labelled buttons hang
+lower, which is what Explorer looked like.
+
+**The tiles.** Every wallpaper until now was one photograph stretched to cover. Six patterns join
+them in `app/data/wallpapers.js`: Stars and Magic, Blue Skies, Have a Nice Day, Teal Weave, Blue
+Rivets and Neon Grid. They are inline SVG rather than six more binaries, so they cost the repo
+nothing and stay crisp at any zoom or DPI, and each is authored to meet itself at the edges.
+
+A tile entry carries `tile: true`, a `size` in CSS pixels and `svg` instead of `file` and `thumb`.
+`wallUrl` hands back the inline art for one; a new `wallTileSize` reports the repeat size, 0 for
+anything that covers; `applyWall` flags `html.wall-tiled` and writes `--wall-size` beside `--wall`
+and `--wall-dim`. theme.css restates the paint layer under that class rather than parameterising
+the existing one, because `cover` and a pixel size cannot both live in one background shorthand
+slot. It starts at `0 0` rather than `center`, which is where Windows started a tiled pattern.
+
+The picker draws a tile as its own thumbnail, repeated at true size, since a tile is chosen for
+how it reads REPEATED and one cell blown up to fill a card tells you nothing. Presets still
+resolve on '98 alone, so the tiles inherit that ruling and #GRIDroid is untouched by all of this.
+
+Verified in the browser at 800 and 700 wide: the bar draws on '98 and is `display:none` on Classic
+and #GRIDroid, the address tracks the open tab, no horizontal overflow at either width, all six
+tiles repeat with no visible seam and paint at their declared size (`background-size: auto, 64px
+64px` and so on, the `auto` being the dim scrim above them), and the four photographs still cover.
+No console errors. The device wallpaper was set back to None afterwards, which is where it started.
+
 ## '98 gets its own palette, a startup screen, a hit counter and inactive windows, 2026-09-08
 
 Five of the seven on the list. The two not done are named at the end rather than left implied.
