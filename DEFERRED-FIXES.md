@@ -8595,6 +8595,118 @@ carried a comment about Weapon Focus Caliber that `pdfexport.js` lacked. That is
 discipline `parseUses` got earlier today, and for the same reason, since a plain diff is what
 turns the next drift into something anyone can see.
 
+## The theme editor gets a live preview, one per skin, 2026-09-08
+
+Author's ask: building a palette with no way to see it is the whole problem, so give the editor a
+worked example the way Windows 98's Display Properties did, and have it show the elements being
+modified. Classic and #GRIDroid should preview their own chrome; '98 should emulate the dialog.
+
+**The editor was already repainting live and that was exactly the trouble.** Every colour wheel
+called `EN.theme.preview`, which paints the in-progress palette straight onto the document root,
+so the whole app behind the tray was already updating on every turn. The tray is a full-screen
+overlay: it was repainting a sheet nobody could see, and the author was looking at a form.
+
+That diagnosis picks the implementation. The mock needs no colour plumbing of its own, because it
+sits inside the same document and inherits the same root variables as everything else, so it
+repaints for free and can never disagree with the thing it is previewing.
+
+**Building it from the app's real classes buys the skins.** `.panel`, `.panel-h`, `.stat`, `.btn`
+and `.chip` are already restyled per skin, so one piece of markup renders as Classic's chamfered
+panel or #GRIDroid's, with no branch between them. The composition is chosen to exercise every
+slot the editor offers rather than to look pretty: a panel head (Accent on Panel), two stat cells
+(Accent again, at display size, where a hue that works small can still fail), body text at two
+levels, a primary button and a plain one, and a chip in both states. Accent Dim shows as the panel
+hairline, Background behind everything, Border and Border 2 on the frames.
+
+'98 is the one branch, and it is drawn rather than borrowed, since the author asked for the
+dialog specifically: an inactive window behind an active one, a menu row carrying Normal,
+Disabled and Selected, a sunken body reading "Window Text", and a nested Message Box with an OK
+button. It is built from '98's own bevel tokens, so it bevels the way the skin does.
+
+Two details worth keeping. The pane is **sticky**, because a preview at the top of a scrolling
+editor leaves the screen exactly when you start turning the wheels below it, which would have
+rebuilt the original complaint in a new place. And it is `pointer-events:none`, because every
+control in it is real app chrome and a click landing on a preview button would be baffling.
+
+One measurement worth recording, because it looked like a bug for a minute. Driving the Accent
+wheel and reading the preview back immediately showed the title updating and the primary button
+NOT updating, from what appeared to be the same variable. The variable was right all the way down
+the tree; `.btn` simply carries `transition:all .15s`, and `getComputedStyle` during a transition
+returns the interpolated value. Reading after the transition settles shows every slot arriving.
+The lesson is the session's own: measure the settled state, not the first frame.
+
+Verified on all three skins: Classic and #GRIDroid render their own chrome from the shared markup,
+'98 renders the dialog with its inactive title bar visible (the first cut overlapped it, which
+just looked like a clipped box). Accent, Accent Dim and Panel were each driven to a test colour
+and the preview tracked all three, in the app mock and in the '98 mock, then restored cleanly. No
+stray custom theme was left behind and the author's record still carries no explicit palette.
+
+## The '98 preview stops being a drawing of someone else's program, 2026-09-08
+
+Author, on the Display Properties emulation he had asked for and had just been given: it looks
+exactly as asked and it does not do the job, "I've sacrificed function for form".
+
+He is right, and the reason is worth naming because the mistake was mine to catch. Classic and
+#GRIDroid preview HIS chrome, his panel head, his stat cells, his buttons, so turning a wheel
+shows what the sheet will look like. The '98 pane previewed an inactive window, a menu row and a
+message box, and none of those exist in this app. It was a picture of a different program wearing
+his colours. Every one of the three panes answered a question, but only two of them answered the
+one being asked.
+
+What makes the fix cheap is that the branch never needed to exist. `html.skin-98` already restyles
+`.panel`, `.panel-h`, `.stat`, `.btn` and `.chip` into Win98 chrome, so the SHARED markup, the one
+Classic and #GRIDroid use, already renders under '98 as a bevelled window with a gradient title
+bar, the real minimize/maximize/close sprite, and sunken cells. The homage survives intact and
+every element in it is now something the author actually looks at. The `prev98` and `win98Buttons`
+builders and about thirty lines of `.s98*` CSS are deleted rather than left dark.
+
+The dialog did have one idea worth keeping, and it is now in the shared mock for all three skins:
+it showed STATES side by side, Normal against Disabled against Selected. The pane already carried
+a primary against a plain button and a chip on against off; it now also carries a real
+`<button disabled>`, which is the only element that puts `--text3` on `--border` and the one state
+a palette can quietly ruin. A live control is safe there because the whole pane is
+`pointer-events:none`.
+
+Verified on all three skins with the shared markup: '98 renders its bevelled window with the fake
+dialog gone, Classic and #GRIDroid unchanged from the versions the author signed off. Accent,
+Accent Dim and Panel driven to test colours on '98 and tracked in the title bar gradient, the stat
+value, the primary fill and the panel ground, then abandoned through CANCEL, leaving no custom
+theme behind and the author's record still carrying no explicit palette.
+
+## The hex becomes a field you can type into, 2026-09-08
+
+Author's ask: make HEX the default option when clicking the colour selector.
+
+**It cannot be answered where it was asked, and saying so is part of the answer.** The picker that
+opens from an `<input type="color">` is drawn by the browser, not by the page. Which format tab it
+lands on, hex against RGBA against HSLA, is user-agent chrome with no attribute, property or CSS
+hook exposed to script. Chrome remembers the last tab you used per profile; nothing a page does
+can set it.
+
+What a page can do is make the trip unnecessary, which is what the ask was really after. The hex
+was already sitting in the row as a read-only `<span>`. It is now a real text field: it selects
+itself on focus, accepts a typed or pasted value with or without the `#`, expands three-digit
+shorthand so `0f8` works, and drives the swatch and the whole live preview without the picker
+opening at all. On blur it rewrites itself to canonical uppercase.
+
+Two details that are the difference between this working and being annoying. A half-typed value is
+LEFT ALONE rather than rejected: only a complete three or six digit hex is pushed, so the colour
+does not thrash while you are still typing it, and the field is never rewritten under your cursor
+by your own keystroke. And the field sits OUTSIDE the row's `<label>`. A label forwards clicks to
+its control, so a hex field inside one would have popped the native picker the instant you clicked
+into the text to edit it, which is the exact opposite of the ask. The label now wraps the swatch
+and the name only, which is also the honest hit area for it.
+
+The field is given geometry and type and nothing else: border, ground and corners are left to
+whichever skin is on, so it matches the inputs around it without being told to. That is why
+#GRIDroid renders it at 16px in a 42px row, which is that skin's finger sizing rather than a bug;
+measured on all three, no value is clipped.
+
+Verified on all three skins: typing `#ff0080` moves the swatch and the preview, `0f8` expands to
+`#00ff88` and does the same, a half-typed `#ff` leaves the last good colour standing, blur
+normalises to `#EAD6A0`, and clicking the field leaves the swatch unfocused, so the native picker
+stays shut. Left through CANCEL with no custom theme saved.
+
 ## Elysium Nights becomes the default palette and leads the picker, 2026-09-08
 
 Author's ask: make Elysium Nights the default for Classic and #GRIDroid, and move it to the front

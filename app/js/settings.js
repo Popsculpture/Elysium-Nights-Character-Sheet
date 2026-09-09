@@ -435,7 +435,8 @@ EN.settings = (function () {
     "  background:var(--bg1); box-shadow:var(--glow-cyan); }",
     ".set-editor-h{ font-family:var(--mono); font-size:10px; letter-spacing:.2em; color:var(--accent); margin-bottom:12px; }",
     ".set-cols{ display:flex; flex-direction:column; gap:4px; }",
-    ".set-col-row{ display:flex; align-items:center; gap:11px; padding:5px 0; cursor:pointer; }",
+    ".set-col-row{ display:flex; align-items:center; gap:11px; padding:5px 0; }",
+    ".set-col-lab{ display:flex; align-items:center; gap:11px; flex:1 1 auto; min-width:0; cursor:pointer; }",
     ".set-col-input{ -webkit-appearance:none; -moz-appearance:none; appearance:none; width:40px; height:28px; padding:0;",
     "  border:1px solid var(--border2); border-radius:4px; background:transparent; cursor:pointer; flex:0 0 auto; }",
     ".set-col-input::-webkit-color-swatch-wrapper{ padding:2px; }",
@@ -444,10 +445,32 @@ EN.settings = (function () {
     ".set-col-meta{ display:flex; flex-direction:column; flex:1 1 auto; min-width:0; }",
     ".set-col-name{ font-family:var(--disp); font-weight:600; font-size:13px; color:var(--text); letter-spacing:.04em; }",
     ".set-col-hint{ font-size:10.5px; color:var(--text3); }",
-    ".set-col-hex{ font-family:var(--mono); font-size:11px; color:var(--text2); flex:0 0 auto; letter-spacing:.04em; }",
+    /* Geometry and type only. Border, ground and corners are deliberately left to whichever
+       skin is on, so the field matches every other input around it without being told to. */
+    "input.set-col-hex{ flex:0 0 auto; width:82px; padding:4px 7px; font-family:var(--mono); font-size:11px;",
+    "  letter-spacing:.04em; text-align:right; text-transform:uppercase; color:var(--text2); }",
+    "input.set-col-hex:focus{ color:var(--text); }",
     ".set-adv{ margin-top:12px; padding-top:12px; border-top:1px solid var(--border); }",
     ".set-adv-toggle{ display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text2); cursor:pointer; margin-bottom:4px; }",
-    ".set-ed-name{ width:100%; margin-bottom:12px; }"
+    ".set-ed-name{ width:100%; margin-bottom:12px; }",
+    /* ---- live preview -------------------------------------------------------
+       Sticky, because the whole point is watching it while the wheels below are
+       being turned; at the top of a scrolling editor it would leave the screen
+       exactly when you started adjusting. pointer-events:none so the mock cannot
+       be clicked: everything in it is real app chrome and a stray click on a
+       preview button would be baffling. */
+    ".set-prev{ position:sticky; top:-2px; z-index:3; margin:0 0 13px; padding:9px 9px 10px;",
+    "  border:1px solid var(--border2); background:var(--bg); pointer-events:none; }",
+    ".set-prev-cap{ font-family:var(--mono); font-size:9px; letter-spacing:.18em; color:var(--text3); margin-bottom:7px; }",
+    ".set-prev .panel{ margin:0; }",
+    ".set-prev .panel-b{ padding:9px 10px 10px; }",
+    ".set-prev .stat{ flex:1 1 0; min-width:0; padding:5px 6px; }",
+    ".set-prev .stat .k{ font-size:8.5px; }",
+    ".set-prev .stat .v{ font-size:17px; }",
+    ".set-prev .stat .s{ font-size:8.5px; }",
+    ".set-prev p{ margin:8px 0 9px; font-size:11px; line-height:1.45; color:var(--text2); }",
+    ".set-prev p b{ color:var(--text); font-weight:600; }",
+    ".set-prev p i{ color:var(--text3); font-style:normal; }",
   ].join("\n");
 
   function injectCss() {
@@ -483,18 +506,49 @@ EN.settings = (function () {
   }
 
   /* ---- theme editor: color-wheel inputs for each slot, live preview, save/delete ---- */
+  /* The hex is a FIELD, not a readout, and that is the answer to "make hex the default when I
+     click the colour selector". It cannot be answered where it was asked: the picker that opens
+     from an <input type="color"> is the browser's own chrome and no page can choose which format
+     tab it lands on. What a page CAN do is make the trip unnecessary. The value sits here, selects
+     itself on focus, and typing or pasting one drives the swatch and the whole live preview
+     without the picker opening at all.
+
+     It sits OUTSIDE the label on purpose. A <label> forwards clicks to its control, so a hex field
+     inside one would pop the native picker the instant you clicked into the text to edit it. The
+     label now wraps only the swatch and the name, which is also the honest hit area for it. */
   function colorRow(slot) {
     var v = normHex(_editing[slot.k]);
-    var hex = el("span.set-col-hex", { text: v.toUpperCase() });
-    var input = el("input.set-col-input", {
-      type: "color", value: v, title: slot.label,
-      oninput: function (e) { _editing[slot.k] = e.target.value; hex.textContent = e.target.value.toUpperCase(); EN.theme.preview(_editing); }
+    var hex, input;
+    function push(val, typed) {
+      _editing[slot.k] = val;
+      input.value = val;
+      if (!typed) hex.value = val.toUpperCase();   // never rewrite the field under the cursor
+      EN.theme.preview(_editing);
+    }
+    hex = el("input.set-col-hex", {
+      type: "text", value: v.toUpperCase(), spellcheck: "false", maxlength: "7",
+      title: "Type or paste a hex value",
+      onfocus: function (e) { e.target.select(); },
+      oninput: function (e) {
+        var t = e.target.value.trim().replace(/^#/, "");
+        /* 3-digit shorthand is expanded so #f0a works; anything else is left alone WHILE it is
+           being typed, because rejecting a half-finished value fights the person typing it. */
+        if (/^[0-9a-fA-F]{3}$/.test(t)) t = t[0] + t[0] + t[1] + t[1] + t[2] + t[2];
+        if (/^[0-9a-fA-F]{6}$/.test(t)) push("#" + t.toLowerCase(), true);
+      },
+      onblur: function (e) { e.target.value = normHex(_editing[slot.k]).toUpperCase(); }
     });
-    return el("label.set-col-row", null, [
-      input,
-      el("span.set-col-meta", null, [
-        el("span.set-col-name", { text: slot.label }),
-        slot.hint ? el("span.set-col-hint", { text: slot.hint }) : null
+    input = el("input.set-col-input", {
+      type: "color", value: v, title: slot.label,
+      oninput: function (e) { push(e.target.value, false); }
+    });
+    return el("div.set-col-row", null, [
+      el("label.set-col-lab", null, [
+        input,
+        el("span.set-col-meta", null, [
+          el("span.set-col-name", { text: slot.label }),
+          slot.hint ? el("span.set-col-hint", { text: slot.hint }) : null
+        ])
       ]),
       hex
     ]);
@@ -521,6 +575,62 @@ EN.settings = (function () {
     ]);
     return el("div.set-adv", null, [toggle].concat(hasText ? el("div.set-cols", null, TEXT_SLOTS.map(colorRow)) : []));
   }
+  /* ---- the live preview -------------------------------------------------
+     The editor already repainted the whole app on every wheel turn, through
+     EN.theme.preview, and that was the trouble: the tray is a full-screen
+     overlay, so the sheet it was repainting sat behind the form nobody could
+     see. Nothing here needs its own colour plumbing for the same reason. The
+     mock is built from the app's REAL classes and inherits the in-progress
+     palette off the document root like everything else, so it repaints itself
+     for free and can never disagree with the thing it is previewing.
+
+     Building it from real classes buys the skins too: .panel, .panel-h, .stat,
+     .btn and .chip are already restyled per skin, so ALL THREE get their own
+     chrome out of one piece of markup. That last one was first built as a
+     drawing of the Windows 98 Display Properties dialog, which is what it was
+     asked for, and which looked right and served nothing: the parts on show, an
+     inactive window and a message box, belong to a different program, so turning
+     a wheel told you what a fake dialog would do rather than what your own
+     panels would. Under html.skin-98 this same markup already renders as a Win98
+     window, gradient title bar and window buttons and sunken cells and all, so
+     the homage survives and every element in it is real. */
+  function prevApp() {
+    return el("div.panel", null, [
+      el("div.panel-h", null, [
+        el("h3", { text: "Vitality" }),
+        el("span.tag", { text: "SAMPLE" })
+      ]),
+      el("div.panel-b", null, [
+        el("div.row", { style: { gap: "8px" } }, [
+          EN.ui.stat("DEF", "12", "Agility"),
+          EN.ui.stat("SPD", "8", "spaces")
+        ]),
+        el("p", null, [
+          el("b", { text: "Body text" }),
+          document.createTextNode(" on the panel surface, with "),
+          el("i", { text: "a quieter second line" }),
+          document.createTextNode(" under it.")
+        ]),
+        el("div.row", { style: { gap: "6px", flexWrap: "wrap" } }, [
+          el("span.btn.sm.primary", { text: "PRIMARY" }),
+          el("span.btn.sm", { text: "BUTTON" }),
+          /* a real <button disabled>, not a span, because :disabled is what styles it. Safe to
+             put a live control here since the whole pane is pointer-events:none. It earns its
+             place: disabled is the only state showing --text3 against --border, and it is the
+             third state Windows 98 own dialog put on show beside Normal and Selected. */
+          el("button.btn.sm", { type: "button", disabled: true, text: "DISABLED" }),
+          el("span.chip", { text: "CHIP" }),
+          el("span.chip.on", { text: "ON" })
+        ])
+      ])
+    ]);
+  }
+  function previewPane() {
+    return el("div.set-prev", null, [
+      el("div.set-prev-cap", { text: "LIVE PREVIEW" }),
+      prevApp()
+    ]);
+  }
   function editorPanel() {
     var nameInput = el("input.set-ed-name", {
       type: "text", value: _editing.name || "", placeholder: "Theme name",
@@ -536,6 +646,7 @@ EN.settings = (function () {
     ]));
     return el("div.set-editor", null, [
       el("div.set-editor-h", { text: _editing.isNew ? "NEW CUSTOM THEME" : "EDIT THEME" }),
+      previewPane(),
       nameInput,
       el("div.set-cols", null, SLOTS.map(colorRow)),
       textSection(),
