@@ -8595,6 +8595,48 @@ carried a comment about Weapon Focus Caliber that `pdfexport.js` lacked. That is
 discipline `parseUses` got earlier today, and for the same reason, since a plain diff is what
 turns the next drift into something anyone can see.
 
+## '98 gets its own palette, a startup screen, a hit counter and inactive windows, 2026-09-08
+
+Five of the seven on the list. The two not done are named at the end rather than left implied.
+
+**The palette is permanent and the skin now seeds it.** #GRIDOS '98 was a custom the author built,
+and it is not a mood: it is the actual Windows scheme, #bdbdbd face, #000582 title, #747474
+desktop, black text throughout. Promoted the same way Pastel Smasher was, so `canonKey` aliases his
+record onto it and the picker shows it once.
+
+Seeding is the new part and the semantics were specified precisely: apply it the first time the
+skin is chosen, and once the palette is changed, remember that. So one flag per skin in
+`en_skin_seeded_v1`, checked in `setSkin` and written before the palette is applied, and the seed
+goes through `set()` so it lands wherever a palette normally lives. Deliberately NOT in `init()`:
+a device already running '98 keeps whatever it is wearing, since the seed is meant to fire on a
+choice rather than on a page load. Verified by clearing the flag and driving the real sequence:
+first activation gives `gridos98`, the user then picks Slime Time, a second activation leaves Slime
+Time alone.
+
+**Inactive windows, and the version of them that survived looking at it.** The first cut greyed
+every panel that did not have the pointer, which is literally what the rule says and is a state
+Windows never showed: with the cursor anywhere else, EVERY title bar went grey at once, and the
+author's navy, the thing the palette is built around, vanished from the screen at rest. It is now
+gated behind `:has()`, so the dimming engages only while some panel actually holds the pointer or
+focus. At rest every bar is lit, which is wrong by one window; mid-interaction exactly one is lit,
+which is the effect worth having. Measured: hovered bar rgb(0,5,130), its sibling rgb(119,120,121).
+
+**The startup screen** is the existing boot sequence rearranged, no new markup and no new timing:
+Windows 95 put its product lockup in a raised box in the middle of a field of colour and its
+"Starting..." text down in the bottom-left corner, so that is where the same typed lines now run.
+
+**The hit counter** sits at the foot of the page in odometer digits, each digit its own sunken cell
+because the GIFs of the era were per-digit images and the seams are most of what makes it read as
+a counter. The number is REAL: times this app has been opened on this device. A fabricated
+"009341 visitors" was the easier joke and the worse one, since everything else on this sheet is
+true. Six digits with leading zeros, rolling over rather than growing a seventh, which is also
+what they did.
+
+**Not done, and not started:** the toolbar strip of chunky icon buttons, and tiled desktop patterns
+as wallpaper presets. The toolbar wants a decision about where it lives, once under the tab rail
+like Explorer's or once per panel, and the tiles want the wallpaper system to learn a repeat mode,
+since every preset today is painted `center / cover no-repeat`.
+
 ## The header controls come out of the '98 title bar, 2026-09-08
 
 Author, pointing at the Status Changes panel's three selects and its APPLY button sitting in the

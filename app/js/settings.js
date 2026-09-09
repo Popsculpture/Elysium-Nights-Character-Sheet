@@ -29,6 +29,14 @@ EN.theme = (function () {
   var THEMES = [
     { key: "highheavens",name: "Elysium Nights", accent: "#ead6a0", dim: "#9c8a55", bg: "#100e1a", bg2: "#1c1930", border: "#403a5c", border2: "#5b5480" },
     { key: "grid",       name: "#GRID",        accent: "#00e5ff", dim: "#0a8aa0", bg: "#07090d", bg2: "#0f141d", border: "#233044", border2: "#34465f" },
+    /* Promoted from the author's own custom palette on 2026-09-08, and the reason the #GRIDOS '98
+       skin now seeds a palette at all: it is not a mood, it is the actual Windows 98 scheme, so
+       the skin looks wrong in anything else until you have chosen otherwise. #bdbdbd is the button
+       face, #000582 the active title bar, #747474 the desktop, and every text slot is black
+       because that is what Windows drew inside a window. --accent holds the light face grey rather
+       than an ink colour, which is faithful and is also why this palette needs the pal-light
+       remap two entries up to stay legible. */
+    { key: "gridos98",   name: "#GRIDOS '98",  accent: "#d9d9d9", dim: "#000582", bg: "#747474", bg2: "#bdbdbd", border: "#777879", border2: "#e7e7e7", text: "#000000", text2: "#000000", text3: "#000000", text4: "#000000" },
     { key: "slimegirl",  name: "Slime Time",   accent: "#4fe6a8", dim: "#1f8f68", bg: "#061611", bg2: "#0c2419", border: "#1f5d44", border2: "#2f8060" },
     { key: "pbandj",     name: "Flavor Wizard",     accent: "#eb9a3e", dim: "#9c5e1e", bg: "#150a1c", bg2: "#221033", border: "#4a2660", border2: "#6b3a86" },
     /* Pastel Smasher, promoted from the author's own custom palette on 2026-09-08 and replacing
@@ -301,9 +309,31 @@ EN.theme = (function () {
     // the wallpaper resolves per skin (a preset is '98-only), so a skin change re-reads it
     applyWall();
   }
+  /* A skin may nominate the palette it was designed for, applied the FIRST time that skin is
+     chosen on this device and never again. #GRIDOS '98 is not a mood board, it is the Windows
+     scheme, so landing on the skin in someone else's neon is the wrong first impression; but a
+     palette is a choice, and re-applying it on every visit would be the app arguing with the
+     person using it. One flag per skin, so the seed fires once and then gets out of the way.
+
+     It is deliberately NOT in init(): a device that has always run '98 should keep whatever
+     palette it is wearing, so this fires only when the skin is actively picked. */
+  var SEED_KEY = "en_skin_seeded_v1";
+  var SKIN_SEED = { "98": "gridos98" };
+  function seedSkinPalette(skin) {
+    var want = SKIN_SEED[skin];
+    if (!want || !find(want)) return;
+    var done;
+    try { done = JSON.parse(localStorage.getItem(SEED_KEY) || "{}"); } catch (e) { done = {}; }
+    if (!done || typeof done !== "object" || done[skin]) return;
+    done[skin] = 1;
+    try { localStorage.setItem(SEED_KEY, JSON.stringify(done)); } catch (e) {}
+    set(want);   // through set(), so it lands wherever a palette normally lives and is remembered
+  }
   function setSkin(k) {
-    try { localStorage.setItem(SKIN_KEY, findSkin(k).key); } catch (e) {}
-    applySkin(k);
+    var key = findSkin(k).key;
+    try { localStorage.setItem(SKIN_KEY, key); } catch (e) {}
+    seedSkinPalette(key);
+    applySkin(key);
   }
 
   /* ---- wallpaper (the '98 desktop) ----

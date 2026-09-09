@@ -369,7 +369,25 @@ EN.app = (function () {
         setTimeout(finish, 420);
       }
     }
+    /* One visit per load, on this device only. Six digits with leading zeros because that is the
+       shape every counter GIF had, and it rolls over rather than growing a seventh, which is also
+       what they did. Wrapped in try/catch like every other storage read here: a blocked
+       localStorage should cost the counter, not the boot. */
+    function countVisit() {
+      var n = 0;
+      try {
+        n = (parseInt(localStorage.getItem("en_visits_v1"), 10) || 0) + 1;
+        localStorage.setItem("en_visits_v1", String(n));
+      } catch (e) { n = 1; }
+      var box = document.getElementById("wc-digits");
+      if (!box) return;
+      var s = String(n % 1000000);
+      while (s.length < 6) s = "0" + s;
+      EN.ui.clear(box);
+      s.split("").forEach(function (d) { box.appendChild(EN.ui.el("span.wc-d", { text: d })); });
+    }
     function finish() {
+      countVisit();
       var reveal = function () {
         var b = document.getElementById("boot");
         b.classList.add("hide");

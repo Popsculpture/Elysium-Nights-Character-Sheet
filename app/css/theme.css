@@ -968,6 +968,59 @@ html.skin-98 .win-tools{
 }
 html.skin-98 .win-tools .panel-hr{ margin-left:0 !important; justify-content:flex-start !important; flex:1 1 auto; }
 
+/* ---- 8. INACTIVE WINDOWS. Windows greyed the title bar of every window that did not have
+   focus, and a screen full of identically-lit bars is one of the louder tells that this is not
+   really a window manager. There is no focus model here, so the pointer stands in for one: the
+   panel under the cursor, or holding focus inside it, wears the active gradient and every other
+   panel wears the inactive grey. Reads as the desktop tracking your attention, which is what the
+   real thing did. The title text dims with it, since Windows drew inactive captions in a lighter
+   ink than active ones. */
+html.skin-98 .os-main:has(.panel:hover, .panel:focus-within) .panel:not(:hover):not(:focus-within) > .panel-h{
+  background:linear-gradient(90deg, var(--bev-mid) 0%, var(--bev-mid) 22%, var(--bg1) 100%);
+}
+html.skin-98 .os-main:has(.panel:hover, .panel:focus-within) .panel:not(:hover):not(:focus-within) > .panel-h :is(h3, .tag){ color:var(--bg2); }
+/* The :has() gate is the whole point and was learned by looking at it. Greying every unhovered
+   panel outright meant that with the pointer anywhere else, EVERY bar was grey at once, which is
+   a state Windows never showed: there was always exactly one active window. So the dimming only
+   engages while some panel actually has the pointer or focus. At rest every bar is lit, which is
+   wrong by one window and right by the palette; mid-interaction exactly one is lit, which is the
+   effect worth having. */
+
+/* ---- 9. THE BOOT SCREEN, as Windows 95 shipped it: a field of colour, the product lockup
+   centred, and the "Starting..." line down in the corner rather than under the logo. Only the
+   arrangement changes; the same typed lines the other skins get still run, they just run where
+   Windows put them. */
+html.skin-98 #boot{
+  background:var(--accent-dim); justify-content:flex-start; align-items:flex-start; gap:0; padding:0;
+}
+html.skin-98 #boot .blogo{
+  position:absolute; top:38%; left:50%; transform:translate(-50%,-50%);
+  font-family:var(--disp); font-size:44px; letter-spacing:.06em; color:#fff; text-shadow:2px 2px 0 rgba(0,0,0,.45);
+  background:var(--bg2); color:var(--text); border:2px solid;
+  border-color:var(--bev-hi) var(--bev-lo) var(--bev-lo) var(--bev-hi);
+  padding:22px 46px; box-shadow:3px 3px 0 rgba(0,0,0,.4);
+}
+html.skin-98 #boot .blines{
+  position:absolute; left:22px; bottom:20px; min-width:0; max-width:70vw;
+  font-family:var(--disp); font-size:13px; color:#fff; text-shadow:1px 1px 0 rgba(0,0,0,.5); line-height:1.5;
+}
+
+/* ---- 10. THE HIT COUNTER. Bottom of the page, odometer digits, exactly where a 1997 site put
+   it. Each digit is its own sunken cell because the GIFs of the era were per-digit images and
+   the seams between them are most of what makes it read as a counter rather than a number. */
+.win-counter{ display:none; }
+html.skin-98 .win-counter{
+  display:flex; align-items:center; justify-content:center; gap:9px;
+  padding:14px 0 20px; font-family:var(--disp); font-size:11px; color:var(--text);
+}
+html.skin-98 .win-counter .wc-digits{ display:inline-flex; gap:1px; padding:2px; background:#000; border:2px solid; border-color:var(--bev-lo) var(--bev-hi) var(--bev-hi) var(--bev-lo); }
+html.skin-98 .win-counter .wc-d{
+  display:inline-block; min-width:13px; padding:1px 2px; text-align:center;
+  font-family:var(--mono); font-size:14px; line-height:1.2; color:#33ff66; background:#0b0b0b;
+}
+html.skin-98.has-wall .win-counter{ color:#fff; text-shadow:1px 1px 0 #000; }
+html.skin-98.pal-light.has-wall .win-counter{ color:#000; text-shadow:1px 1px 0 #fff; }
+
 /* ---- 6. SEGMENTED METERS. Windows drew a progress bar as a row of discrete
    blocks with a gap between them, never as a continuous fill. The blocks are a
    repeating-linear-gradient over the fill's own colour, so every meter in the app
