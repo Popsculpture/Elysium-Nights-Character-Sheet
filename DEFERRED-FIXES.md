@@ -8595,6 +8595,44 @@ carried a comment about Weapon Focus Caliber that `pdfexport.js` lacked. That is
 discipline `parseUses` got earlier today, and for the same reason, since a plain diff is what
 turns the next drift into something anyone can see.
 
+## '98 grows a scrollbar, a focus rectangle and a resize grip, 2026-09-08
+
+Author, with a wall of the Zyro "modern apps as 90s software" renders: go all out on #GRIDOS '98,
+peak 90s computer and internet, keep it contained to that profile.
+
+Contained is the easy half and worth stating first: every rule added is scoped to `html.skin-98`
+and every one is pure CSS. No markup moved, so nothing here can reach Classic, #GRIDroid, or any
+behaviour. Verified by measurement rather than by reading the selectors, the other two skins keep
+the scrollbars they had.
+
+**The scrollbar was the biggest thing missing** and is the single most recognisable widget of the
+era. 16px, the real Windows metric, with a bevelled thumb, square arrow buttons at both ends, and
+a track carrying the 50 percent checker Windows dithered its trough with, built here from two
+offset 2px gradients. The arrows are SVG data URIs rather than CSS triangles because a scrollbar
+part cannot carry a pseudo-element to draw a border triangle on, and they are black on every
+palette because that is what Windows drew regardless of scheme. Chrome renders a second button at
+the far end of each track, which Windows never did and which reads as a rendering fault, so those
+two are hidden. The app's own 8px and 10px scrollbar rules are outranked on specificity, (0,1,1)
+against (0,1,0), rather than by `!important`.
+
+**The dotted focus rectangle** existed on inputs and nothing else. Windows drew it INSIDE the
+control rather than as a ring around it, and it was the only focus affordance the era had, so it
+now reaches buttons, chips, tabs and swatches on `:focus-visible`.
+
+**The resize grip**, the diagonal hatch in a window's bottom right. Cosmetic, since these panels
+do not resize, but it is one of those details the eye notices only by its absence. Put on the
+boxes that scroll, which is where Windows put it.
+
+**And links look like the web shipped them**, blue and underlined, purple once visited. The paper
+sub-views had declared `--link` and `--link-hot` for exactly this since they were built; the rest
+of the skin had never used them.
+
+Considered and NOT done, so the next pass does not rediscover it: segmented Windows progress bars,
+the blocky ones from the reference shots. The app's meters are built inline in four separate
+`bar()` copies, in combat.js, flow.js, gm.js and grid.js, with no class to hook. Styling them
+needs a JS change in four files, which is the exact shape of the drift this log spent two days
+fixing, so it wants doing deliberately rather than as a flourish.
+
 ## A '98 title bar that ends in a colour, and text that survives a light palette, 2026-09-08
 
 Author built a palette specifically for #GRIDOS '98, a faithful Windows set: #000582 navy for the

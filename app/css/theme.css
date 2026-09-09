@@ -850,6 +850,85 @@ html:is(.skin-98, .skin-droid).has-wall.wall-shadow.wall-glow .os-main{ text-sha
 html:is(.skin-98, .skin-droid).has-wall:is(.wall-shadow, .wall-glow) .os-main :is(.panel, .inv-sub, .post-sub, .wizard-rail, .btn, .chip, input, textarea, select, .stat, .muted-box, .opt-card, .device-card, [style*="sticky"]){ text-shadow:none; }
 html.skin-98 ::selection{ background:var(--accent); color:#000; }
 
+/* ---------------------------------------------------------------------------
+   '98, GOING FURTHER. Everything below is scoped to html.skin-98 and is pure CSS:
+   no markup changed, so nothing here can reach Classic, #GRIDroid, or any of the
+   app's behaviour. The brief was peak-90s, so these are the pieces of that era's
+   chrome the skin did not have yet, in descending order of how loudly they say
+   "Windows 98" before you have read a single word on screen.
+   --------------------------------------------------------------------------- */
+
+/* ---- 1. THE SCROLLBAR. The single most recognisable widget of the era and the
+   biggest thing missing: a bevelled track in the 50% dither grey, a raised thumb,
+   and square arrow buttons at both ends. The arrows are SVG data URIs rather than
+   border triangles because a scrollbar part cannot carry a pseudo-element, and
+   they are drawn in black because that is what Windows drew regardless of scheme.
+   16px is the real Win98 metric. */
+html.skin-98 ::-webkit-scrollbar{ width:16px; height:16px; background:var(--bg1); }
+html.skin-98 ::-webkit-scrollbar-track{
+  background-color:var(--bg1);
+  background-image:linear-gradient(45deg, var(--bev-mid) 25%, transparent 25%, transparent 75%, var(--bev-mid) 75%),
+                   linear-gradient(45deg, var(--bev-mid) 25%, transparent 25%, transparent 75%, var(--bev-mid) 75%);
+  background-size:2px 2px; background-position:0 0, 1px 1px;   /* the 50% checker Windows used */
+}
+html.skin-98 ::-webkit-scrollbar-thumb{
+  background:var(--bg3); border:2px solid;
+  border-color:var(--bev-hi) var(--bev-lo) var(--bev-lo) var(--bev-hi);
+  border-radius:0; box-shadow:none; min-height:24px;
+}
+html.skin-98 ::-webkit-scrollbar-thumb:active{ background:var(--bg2); }
+html.skin-98 ::-webkit-scrollbar-corner{ background:var(--bg3); }
+html.skin-98 ::-webkit-scrollbar-button{
+  display:block; width:16px; height:16px; background-color:var(--bg3);
+  border:2px solid; border-color:var(--bev-hi) var(--bev-lo) var(--bev-lo) var(--bev-hi);
+  background-repeat:no-repeat; background-position:center; background-size:7px 7px;
+}
+html.skin-98 ::-webkit-scrollbar-button:active{ border-color:var(--bev-lo) var(--bev-hi) var(--bev-hi) var(--bev-lo); }
+html.skin-98 ::-webkit-scrollbar-button:vertical:decrement{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Cpath d='M4 1 L7 6 H1 Z'/%3E%3C/svg%3E");
+}
+html.skin-98 ::-webkit-scrollbar-button:vertical:increment{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Cpath d='M4 7 L1 2 H7 Z'/%3E%3C/svg%3E");
+}
+html.skin-98 ::-webkit-scrollbar-button:horizontal:decrement{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Cpath d='M1 4 L6 1 V7 Z'/%3E%3C/svg%3E");
+}
+html.skin-98 ::-webkit-scrollbar-button:horizontal:increment{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Cpath d='M7 4 L2 7 V1 Z'/%3E%3C/svg%3E");
+}
+/* the doubled buttons Chrome renders at the far end of a track are hidden, since Windows
+   put one arrow at each end and two in a row reads as a rendering fault */
+html.skin-98 ::-webkit-scrollbar-button:vertical:start:increment,
+html.skin-98 ::-webkit-scrollbar-button:vertical:end:decrement,
+html.skin-98 ::-webkit-scrollbar-button:horizontal:start:increment,
+html.skin-98 ::-webkit-scrollbar-button:horizontal:end:decrement{ display:none; }
+
+/* ---- 2. THE DOTTED FOCUS RECTANGLE. Windows drew a 1px dotted box INSIDE the
+   control, not a ring around it, and it was the only focus affordance there was.
+   Inputs already had one; this gives it to everything else you can tab to. */
+html.skin-98 :is(.btn, .chip, .os-tab, .set-swatch, .set-sw-mini, button):focus-visible{
+  outline:1px dotted var(--text); outline-offset:-4px; box-shadow:none;
+}
+
+/* ---- 3. THE RESIZE GRIP. The diagonal hatch in a window's bottom-right corner.
+   Cosmetic here, since these panels do not resize, but its absence is one of those
+   things the eye notices without being able to name. Only on boxes that scroll,
+   which is where Windows put it. */
+html.skin-98 :is(.feature-scroll, .actions-scroll, .set-body){ position:relative; }
+html.skin-98 :is(.feature-scroll, .actions-scroll, .set-body)::after{
+  content:""; position:absolute; right:2px; bottom:2px; width:12px; height:12px; pointer-events:none;
+  background-image:linear-gradient(135deg, transparent 42%, var(--bev-hi) 42%, var(--bev-hi) 58%, transparent 58%),
+                   linear-gradient(135deg, transparent 67%, var(--bev-hi) 67%, var(--bev-hi) 83%, transparent 83%);
+  opacity:.85;
+}
+
+/* ---- 4. LINKS THE WAY THE WEB SHIPPED THEM. Blue, underlined, purple once
+   visited. The paper sub-views already declared --link and --link-hot for exactly
+   this; the rest of the skin never used them. */
+html.skin-98 .os-main a{ color:var(--link, #0000ee); text-decoration:underline; }
+html.skin-98 .os-main a:visited{ color:var(--link-hot, #551a8b); }
+html.skin-98 .os-main a:active{ color:var(--danger); }
+
 /* every rounded thing goes square, including radii set inline from JS */
 html.skin-98 :is(.panel, .btn, .chip, .badge, .stat, .feature, .opt-card, .roll-slot, .roll-group, .device-card,
   .muted-box, .set-card, .set-swatch, .tier-pill, .attr-cell, .wstep, .gate-card, .toast, .stepper button, .die,
