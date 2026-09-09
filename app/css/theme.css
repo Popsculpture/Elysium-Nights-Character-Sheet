@@ -799,14 +799,25 @@ html.skin-98{
      scaled uniformly so nothing is stretched, and centred on its face; the minimize bar rides low
      rather than centred, which is where Win98 put it.
 
-     Only the glyph colour is baked (#e9f1fb), because a data URI cannot resolve a custom property.
-     That one is safe and the others are not: --text is #e9f1fb on both palettes, while --bev-hi
-     and --bg3 do move (#34465f/#151c28 on Freelancer, #5b5480/#2e2a46 on Admin), which is why the
-     bevel and the face are still gradients and the face shows through maximize's window. If
-     --text ever moves, this sprite has to be repainted by hand. */
-  --wb-hi:var(--bev-hi); --wb-lo:var(--bev-lo); --wb-face:var(--bg3); --wb-ink:var(--text);
+     Only the glyph colour is baked, because a data URI cannot resolve a custom property. The
+     bevel and the face are still gradients in tokens, which is why the face shows through
+     maximize's window and follows the palette for free.
+
+     So the sprite is painted TWICE and the pair is switched by a class. The note that stood here
+     named the wrong danger: it warned about --text moving, but the glyph does not have to equal
+     --text (Pastel Smasher moves --text to #f2e9e1 and reads fine). What breaks it is the FACE
+     going light, since the face is --bg3 and the glyph is fixed. Measured across the ten built-in
+     palettes, #e9f1fb on the face runs 6.6:1 to 15:1 on the eight dark ones and falls to 2.45:1
+     on #GRIDOS '98 and 1.09:1 on Daybreak, where the buttons read as three blank squares.
+     settings.js measures the face it just derived and sets html.face-light when the pale glyph
+     stops carrying. That is a truer gate than pal-light, which reads the PANEL ground: a palette
+     can pair a dark panel with a light border and still mix a light face out of the two.
+     Only the fill token differs between the copies; the geometry is one export, written twice. */
+  --wb-hi:var(--bev-hi); --wb-lo:var(--bev-lo); --wb-face:var(--bg3);
+  --wb-glyph:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56 14' fill='%23e9f1fb'%3E%3Cg transform='translate(3.0674,1.7337) scale(0.080284)'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M20.602,78.674h81.675c1.52,0,2.756,1.115,2.756,2.479l0.002,18.713c0,1.36-1.24,2.477-2.758,2.477l-81.675-0.003 c-1.52,0-2.758-1.111-2.758-2.474V81.149C17.844,79.787,19.083,78.676,20.602,78.674L20.602,78.674z'/%3E%3C/g%3E%3Cg transform='translate(22.0000,3.0000) scale(0.065104)'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M12.996,0h96.887c7.148,0,12.997,5.849,12.997,12.997v96.887 c0,7.147-5.849,12.996-12.997,12.996H12.996C5.849,122.88,0,117.031,0,109.884V12.997C0,5.849,5.849,0,12.996,0L12.996,0z M110.555,27.728H12.325v72.436c0,5.717,4.674,10.391,10.391,10.391h77.448c5.717,0,10.391-4.674,10.391-10.391V27.728 L110.555,27.728z'/%3E%3C/g%3E%3Cg transform='translate(43.0812,2.0812) scale(0.080059)'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M12.801,91.163C11.036,92.928 11.036,95.823 12.801,97.588L25.292,110.079C27.057,111.844 29.952,111.844 31.717,110.079L61.44,80.356L91.163,110.079C92.928,111.844 95.823,111.844 97.588,110.079L110.079,97.588C111.844,95.823 111.844,92.928 110.079,91.163L80.356,61.44L110.079,31.717C111.844,29.952 111.844,27.057 110.079,25.292L97.588,12.801C95.823,11.036 92.928,11.036 91.163,12.801L61.44,42.524L31.717,12.801C29.952,11.036 27.057,11.036 25.292,12.801L12.801,25.292C11.036,27.057 11.036,29.952 12.801,31.717L42.524,61.44L12.801,91.163Z'/%3E%3C/g%3E%3C/svg%3E") right center / 56px 14px no-repeat;
   --win-btns:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56 14' fill='%23e9f1fb'%3E%3Cg transform='translate(3.0674,1.7337) scale(0.080284)'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M20.602,78.674h81.675c1.52,0,2.756,1.115,2.756,2.479l0.002,18.713c0,1.36-1.24,2.477-2.758,2.477l-81.675-0.003 c-1.52,0-2.758-1.111-2.758-2.474V81.149C17.844,79.787,19.083,78.676,20.602,78.674L20.602,78.674z'/%3E%3C/g%3E%3Cg transform='translate(22.0000,3.0000) scale(0.065104)'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M12.996,0h96.887c7.148,0,12.997,5.849,12.997,12.997v96.887 c0,7.147-5.849,12.996-12.997,12.996H12.996C5.849,122.88,0,117.031,0,109.884V12.997C0,5.849,5.849,0,12.996,0L12.996,0z M110.555,27.728H12.325v72.436c0,5.717,4.674,10.391,10.391,10.391h77.448c5.717,0,10.391-4.674,10.391-10.391V27.728 L110.555,27.728z'/%3E%3C/g%3E%3Cg transform='translate(43.0812,2.0812) scale(0.080059)'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M12.801,91.163C11.036,92.928 11.036,95.823 12.801,97.588L25.292,110.079C27.057,111.844 29.952,111.844 31.717,110.079L61.44,80.356L91.163,110.079C92.928,111.844 95.823,111.844 97.588,110.079L110.079,97.588C111.844,95.823 111.844,92.928 110.079,91.163L80.356,61.44L110.079,31.717C111.844,29.952 111.844,27.057 110.079,25.292L97.588,12.801C95.823,11.036 92.928,11.036 91.163,12.801L61.44,42.524L31.717,12.801C29.952,11.036 27.057,11.036 25.292,12.801L12.801,25.292C11.036,27.057 11.036,29.952 12.801,31.717L42.524,61.44L12.801,91.163Z'/%3E%3C/g%3E%3C/svg%3E") right center / 56px 14px no-repeat,
+    var(--wb-glyph),
     linear-gradient(var(--wb-face),var(--wb-face)) right 2px center / 12px 10px no-repeat,
     linear-gradient(var(--wb-hi),var(--wb-hi)) right 2px top calc(50% - 1px) / 14px 12px no-repeat,
     linear-gradient(var(--wb-lo),var(--wb-lo)) right 0 center / 16px 14px no-repeat,
@@ -816,6 +827,12 @@ html.skin-98{
     linear-gradient(var(--wb-face),var(--wb-face)) right 42px center / 12px 10px no-repeat,
     linear-gradient(var(--wb-hi),var(--wb-hi)) right 42px top calc(50% - 1px) / 14px 12px no-repeat,
     linear-gradient(var(--wb-lo),var(--wb-lo)) right 40px center / 16px 14px no-repeat;
+}
+/* The same three icons in black, for a light button face. Black on a pale face is what Windows
+   actually drew, so this is less a fallback than the other half of the original. */
+html.face-light{
+  --wb-glyph:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56 14' fill='%23000000'%3E%3Cg transform='translate(3.0674,1.7337) scale(0.080284)'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M20.602,78.674h81.675c1.52,0,2.756,1.115,2.756,2.479l0.002,18.713c0,1.36-1.24,2.477-2.758,2.477l-81.675-0.003 c-1.52,0-2.758-1.111-2.758-2.474V81.149C17.844,79.787,19.083,78.676,20.602,78.674L20.602,78.674z'/%3E%3C/g%3E%3Cg transform='translate(22.0000,3.0000) scale(0.065104)'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M12.996,0h96.887c7.148,0,12.997,5.849,12.997,12.997v96.887 c0,7.147-5.849,12.996-12.997,12.996H12.996C5.849,122.88,0,117.031,0,109.884V12.997C0,5.849,5.849,0,12.996,0L12.996,0z M110.555,27.728H12.325v72.436c0,5.717,4.674,10.391,10.391,10.391h77.448c5.717,0,10.391-4.674,10.391-10.391V27.728 L110.555,27.728z'/%3E%3C/g%3E%3Cg transform='translate(43.0812,2.0812) scale(0.080059)'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M12.801,91.163C11.036,92.928 11.036,95.823 12.801,97.588L25.292,110.079C27.057,111.844 29.952,111.844 31.717,110.079L61.44,80.356L91.163,110.079C92.928,111.844 95.823,111.844 97.588,110.079L110.079,97.588C111.844,95.823 111.844,92.928 110.079,91.163L80.356,61.44L110.079,31.717C111.844,29.952 111.844,27.057 110.079,25.292L97.588,12.801C95.823,11.036 92.928,11.036 91.163,12.801L61.44,42.524L31.717,12.801C29.952,11.036 27.057,11.036 25.292,12.801L12.801,25.292C11.036,27.057 11.036,29.952 12.801,31.717L42.524,61.44L12.801,91.163Z'/%3E%3C/g%3E%3C/svg%3E") right center / 56px 14px no-repeat;
 }
 html.skin-98 body{
   background:
@@ -866,11 +883,17 @@ html:is(.skin-98, .skin-droid).has-wall:is(.wall-shadow, .wall-glow) .os-main :i
 html.skin-98 ::selection{ background:var(--accent); color:var(--accent-ink); }
 
 /* ---------------------------------------------------------------------------
-   '98, GOING FURTHER. Everything below is scoped to html.skin-98 and is pure CSS:
-   no markup changed, so nothing here can reach Classic, #GRIDroid, or any of the
-   app's behaviour. The brief was peak-90s, so these are the pieces of that era's
-   chrome the skin did not have yet, in descending order of how loudly they say
-   "Windows 98" before you have read a single word on screen.
+   '98, GOING FURTHER. The pieces of the era's chrome the skin did not have yet,
+   in descending order of how loudly they say "Windows 98" before you have read a
+   single word on screen.
+
+   Most of it is CSS scoped to html.skin-98 and reaches nothing else. Two sections
+   are not: the hit counter (10) and the Explorer toolbar (11) each needed a piece
+   of markup in index.html, and each is hidden on the other skins by a bare
+   `display:none` on its class, which is the one kind of rule here that is not
+   skin-scoped. The toolbar also has a thread into app.js: paintAddr() writes the
+   open view into #win-addr on every render, and is a no-op wherever the element
+   is hidden. Everything else below changes appearance only.
    --------------------------------------------------------------------------- */
 
 /* ---- 1. THE SCROLLBAR. The single most recognisable widget of the era and the
@@ -1010,7 +1033,7 @@ html.skin-98 #boot{
 }
 html.skin-98 #boot .blogo{
   position:absolute; top:38%; left:50%; transform:translate(-50%,-50%);
-  font-family:var(--disp); font-size:44px; letter-spacing:.06em; color:#fff; text-shadow:2px 2px 0 rgba(0,0,0,.45);
+  font-family:var(--disp); font-size:44px; letter-spacing:.06em;
   background:var(--bg2); color:var(--text); border:2px solid;
   border-color:var(--bev-hi) var(--bev-lo) var(--bev-lo) var(--bev-hi);
   padding:22px 46px; box-shadow:3px 3px 0 rgba(0,0,0,.4);
@@ -1094,13 +1117,16 @@ html.skin-98 .wb-go{ flex:0 0 auto; padding:2px 9px; font-family:var(--disp); fo
   background:var(--bg3); border:2px solid; border-color:var(--bev-hi) var(--bev-lo) var(--bev-lo) var(--bev-hi); }
 /* narrow desks: the editing cluster goes first, which is the group Windows itself dropped */
 /* narrow desks keep the navigation trio and the view switch, which is the set Explorer itself
-   kept when the window got short; the editing cluster is the part that goes. */
+   kept when the window got short; the editing cluster is the part that goes. The one groove that
+   survives is marked in the markup rather than found by position: :last-of-type is TYPE based,
+   and since every child of the strip is a span, no separator was ever the last span (the views
+   button was), so the first cut of this rule hid all three grooves instead of two. */
 @media (max-width: 760px){
   html.skin-98 .wb-b:not([data-ico="back"]):not([data-ico="fwd"]):not([data-ico="up"]):not([data-ico="views"]),
-  html.skin-98 .wb-sep:not(:last-of-type){ display:none; }
+  html.skin-98 .wb-sep:not(.wb-sep-keep){ display:none; }
 }
 
-/* ---- 6. SEGMENTED METERS. Windows drew a progress bar as a row of discrete
+/* ---- 12. SEGMENTED METERS. Windows drew a progress bar as a row of discrete
    blocks with a gap between them, never as a continuous fill. The blocks are a
    repeating-linear-gradient over the fill's own colour, so every meter in the app
    keeps whatever colour its caller chose and only the SHAPE changes: Vitality

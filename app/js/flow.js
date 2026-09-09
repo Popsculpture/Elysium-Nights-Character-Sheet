@@ -574,7 +574,7 @@ EN.flowView = (function () {
        on '98 is the Windows button face the windows under it are made of, so the notice reads as
        posted on the same stock rather than floating over the desktop. (Not --bg1: that is the
        panel ground on Classic and #GRIDroid but one step too dark on '98, where it dropped the
-       amber kicker to 2.35:1 against 3.14:1 here.) */
+       amber kicker to 2.35:1 against 3.56:1 here.) */
     var banner = el("div", { style: { position: "relative", overflow: "hidden", borderRadius: "6px", marginBottom: "14px",
       border: "1px solid var(--warn)", background: "linear-gradient(180deg, rgba(255,179,64,.10), rgba(255,77,94,.04) 60%, transparent), var(--panel-solid)" } }, [
       el("div", { style: { height: "8px", background: "repeating-linear-gradient(45deg, var(--warn) 0 12px, #0a0e14 12px 24px)", opacity: .8 } }),

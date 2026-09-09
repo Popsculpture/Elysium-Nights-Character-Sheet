@@ -90,14 +90,18 @@ Bypass wired into the unarmed engine, and a `migrate()` hardening pass.
   the current profile's login card.
 - Looks are device state too: the OS skin in `en_skin_v1` (Classic when absent), and on '98 the
   wallpaper choice in `en_wall_v1`, custom wallpapers as JPEG data URLs in `en_wall_custom_v1`,
-  and the desktop's three toggles in `en_wall_dim_v1`, `en_wall_shadow_v1` and `en_wall_glow_v1`. Presets are listed in `app/data/wallpapers.js` and sit
-  in `app/img/wallpapers`. None of it rides a character or an export.
+  and the desktop's three toggles in `en_wall_dim_v1`, `en_wall_shadow_v1` and `en_wall_glow_v1`.
+  Presets are listed in `app/data/wallpapers.js`, in two kinds: a photograph names a `file` and a
+  `thumb` in `app/img/wallpapers`, and a tile carries `tile`, a `size` and its whole art inline as
+  an SVG data URL in `svg`, with no file at all. None of it rides a character or an export.
 - Skins are CSS, plus a few HOOKS in the modules: `.mkt-*` and `.inv-sub[data-sub]` in
   inventory.js for the '98 Explorer, `data-sub` and `data-tab` on every tab (each TABS entry's
   `sub` and `key`) for #GRIDroid's app-list subtitles and for reaching one named tab without
   counting children, and `html.rail-open`, which app.js toggles when the open tab is
   tapped again on #GRIDroid only (so that skin can fold and unfold its app list; every other skin
-  keeps re-tapping #PRINT as the shortcut to Advance).
+  keeps re-tapping #PRINT as the shortcut to Advance). One more belongs to '98: `#win-addr`, the
+  Explorer address field in index.html, written by `paintAddr()` in app.js on every render. The
+  element is `display:none` on the other skins, so the write is a harmless no-op there.
 - #GRIDroid's layout collapse reaches most elements through attribute-substring selectors on the
   inline styles the modules write, so it needs few hooks: `.chrome-frame`, `.chrome-stats` and
   `.inv-bar` in inventory.js, `.panel-hr` on the panel header-right wrapper in ui.js, and

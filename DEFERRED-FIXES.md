@@ -82,6 +82,19 @@ section instead.
 
 ## Confirmed defects, unfixed
 
+- ~~**Pneumatic Bypass prose is a fifth stale unarmed string, in THREE places not two.**~~
+  **STRUCK 2026-09-08, verified against the source rather than against this file.** Neither
+  citation survives: the string "Their unarmed strikes deal 1d6 Bludgeoning damage" appears
+  nowhere in `app/` for this feature, and `briefs.js:179` is a different ability now (the brief
+  sits at line 190). All five sites carry increaser wording that matches the engine:
+  `class_stitcher_resources.js:300` and `:342`, `briefs.js:190`, `ability_tags.js:244` (a tag, no
+  prose) and `engine.js:755-765`, where `BONUS_UNARMED_STEP` gives it `steps: 1` and
+  `unarmedIncreases()` at `:1144` actually applies it. The Status Changes toggle the 2026-08-16
+  ruling asked for exists end to end: the Bonus menu in `status_changes.js`, the dropdown at
+  `combat.js:3666`, `applyStatusChange` writing `ch.bonuses` at `:1760` with the one-Hot-Wire
+  exclusion below it, and `store.js:1179-1201` sanitising it on load. The entry at the bottom of
+  this file dated later ("Pneumatic Bypass finally has a path into the engine") already recorded
+  all of that; this bullet was simply never struck through. The original follows, for context.
 - **Pneumatic Bypass prose is a fifth stale unarmed string, in THREE places not two.**
   `app/data/class_stitcher_resources.js` (two copies) still reads "Their unarmed
   strikes deal 1d6 Bludgeoning damage", which is replacer wording, while
@@ -104,9 +117,11 @@ section instead.
 
 ## Unverified rendering paths (logic verified, screen not seen)
 
-- **Codex Improvised Damage step-up** for a Juggernaut. The panel is collapsed by
-  default and could not be opened programmatically. Ladder math and no-throw
-  confirmed; the stepped dice were never seen rendered.
+- ~~**Codex Improvised Damage step-up** for a Juggernaut.~~ **CLEARED 2026-09-08 by reading the
+  render path end to end.** `codex.js:276` gates the step-up on `c.subclass === "juggernaut"`,
+  which is the stored key (`class_codebreaker_fury.js:302`) and the only subclass carrying it, and
+  the ladder and the People as Improvised Weapons note the 2026-08-19 reversal called for are both
+  present. Nothing is broken; the item only ever recorded that no one had watched it happen.
 
 ## Handoff items that turned out to be no-ops in the app
 
@@ -8595,6 +8610,64 @@ carried a comment about Weapon Focus Caliber that `pdfexport.js` lacked. That is
 discipline `parseUses` got earlier today, and for the same reason, since a plain diff is what
 turns the next drift into something anyone can see.
 
+## The caption buttons get a second set of glyphs, and five smaller corrections, 2026-09-08
+
+Author asked what was still pending. Re-verifying rather than reciting turned up one real defect,
+three things this session got slightly wrong, and a run of documentation the day's work had
+falsified. All of it here.
+
+**The window buttons could not be read on a light palette.** `--win-btns` bakes its three caption
+glyphs at #e9f1fb, because a data URI cannot resolve a custom property, and the note on it warned
+about the wrong thing: it said the danger was --text moving, when the glyph never had to equal
+--text. What breaks it is the FACE going light, since the face is --bg3. Measured across the ten
+built-ins, the pale glyph runs 6.6:1 to 15:1 on the eight dark palettes and falls to 2.45:1 on
+#GRIDOS '98, which is the palette the skin seeds itself with, and 1.09:1 on Daybreak, where the
+buttons are three blank bevelled squares.
+
+Fixed by painting the sprite twice. The glyph layer is now its own token, `--wb-glyph`, so only it
+is duplicated and the nine bevel gradients stay shared; the second copy differs by one token,
+`%23e9f1fb` to `%23000000`, with the author's exported geometry copied rather than redrawn.
+applyVars measures the face it has just mixed and sets `html.face-light` when the pale glyph stops
+carrying. That gate is deliberately not `pal-light`: pal-light reads the PANEL ground, and a
+palette can pair a dark panel with a light border and still mix a light face out of the two.
+Verified across all ten palettes, the class flips on exactly the two that fail and no others, the
+black sprite loads (300x75), and the buttons read on screen. `--wb-ink` was deleted: it was
+declared to hold the ink a data URI cannot read, and nothing anywhere referenced it.
+
+**The toolbar's narrow-width rule hid every groove.** `.wb-sep:not(:last-of-type)` is TYPE based,
+and every child of the strip is a span, so no separator was ever the last span (the views button
+was) and all three vanished under 760px instead of two. The survivor is marked in the markup now,
+`.wb-sep-keep`, which is also more honest about which groove is meant to stay. Measured at 700px:
+one separator shown, between Up and the view switch. Worth naming how this got through: the
+verification that shipped it printed `seps: 0` and I read past it, because zero looked like a
+plausible answer to a question I had not asked precisely.
+
+**A number in a comment was measured against nothing.** `flow.js` justified the poster's ground
+with "2.35:1 against 3.14:1 here". The 3.14 came from a probe that compared the ink against
+`rgba(0,0,0,0)`, a transparent `.panel-b`, so it was never a real ratio. The measured figure on
+--panel-solid is 3.56:1, which is what the commit message and the log entry already said.
+
+**And the smaller ones.** The '98 boot lockup carried a dead `color:#fff` overridden two
+declarations later in the same rule. `--wall-size` was written as `cover` for every non-tiled
+wallpaper and read by nothing in that case, so it is only written when it means something. The
+address bar resolved through `TABS` rather than `visibleTabs()`, so it could in principle name a
+gated tab that is not on the rail. The '98 block's section 6 had been appended after section 11
+and is renumbered 12, which is where it actually sits.
+
+**Documentation the day falsified.** README and HANDOFF both still described six wallpaper presets
+living in `app/img/wallpapers`; there are twelve, and six of them have no file at all. The header
+of `wallpapers.js` described only the photographs. The "'98, GOING FURTHER" header in theme.css
+still claimed the whole block was pure CSS with no markup changed and no reach into behaviour,
+which the Explorer toolbar broke on all three counts. README's "49 local assets" was counted from
+the file rather than guessed again: 60. And settings.js's own header still said "the UI stays dark
+so the light text keeps its contrast", which Daybreak made untrue some time ago and a built-in
+Windows scheme in black on grey makes conspicuous.
+
+Two stale entries above were struck with evidence rather than left to be re-reported: the
+Pneumatic Bypass prose bullet, whose two citations both fail against current source and which a
+later entry in this same file already closed, and the Codex improvised step-up, which was only
+ever unwitnessed rather than unbuilt.
+
 ## The compliance poster stops being see-through, 2026-09-08
 
 Author, pointing at the Flow tab on a '98 desktop wearing a tiled wallpaper: the Bureau's
@@ -8655,9 +8728,12 @@ colour, so the far end is always lighter. Its one caller is --accent-hi.
 soften to a hairline against the light grounds. Under '98 all three are re-framed by bevels, so
 this is a Classic-only trade: an ink that carried information for a frame that is decoration, and
 --border and --border2 still draw most of the frames. Left as is rather than inventing a colour
-for the author's palette. The Admin gate's kick bar is also deliberately untouched: it paints from
+for the author's palette. The Admin gate's kick bar keeps its own BACKGROUND: it paints from
 --gcd, a fixed brand colour gate.js hands it from the Elysium Nights row, and is not the device's
-palette at all.
+palette at all. Its INK does follow the change, since the ink lives on the shared `.gate-kick`
+rule and only the background is overridden for Admin. Measured on the fixed gold: 3.40:1 with a
+white ink and 4.03:1 with a black one, so either way it reads, but the first telling of this said
+the bar was untouched and that was a shade too broad.
 
 **Measured, before and after, same probe, seven Freelancer tabs on the author's record.** Elements
 whose ink is exactly --accent: 15 before, 15 after. Of those, below 3:1 against their own ground:
@@ -10268,8 +10344,14 @@ theme, headers otherwise unchanged. Fresh tab, no console errors.
 
 ## Environment
 
-- **The rulings ledger is not in this repo.** `claude/locked-rulings.md` lives in Drive
-  beside the rulebook, not on disk here. This file is a CHANGELOG: every entry records
+- **The rulings ledger is not in this repo, and may not be reachable at all.** It is recorded
+  here as `claude/locked-rulings.md`, "in Drive beside the rulebook". On 2026-09-08 a search of
+  the author's Drive found no file of that name, by title or by full text, and none for
+  `claude/gm-toolkit-handoff-2026-08-30.md` either, though Drive access itself was working (the
+  rulebook Parts and the style guide all resolve). So either both live somewhere a session cannot
+  reach from here, such as a Claude project's own files, or they have moved. Until that is
+  settled, treat the instruction below as naming a source you may not be able to open, and say so
+  plainly rather than reporting an item as open because you could not check it. This file is a CHANGELOG: every entry records
   what was open the day it was written, and nothing comes back to mark it answered. So an
   audit scoped to this repo sees the open questions and never the rulings that closed
   them, and will keep reporting settled items as open. That is exactly how a five-item

@@ -24,7 +24,8 @@ settings cog. The choice is remembered per device (`?portal=admin` overrides it 
 ## Skins and wallpapers
 
 Settings has an OS Skin row beside the color themes: Classic (the look as shipped), #GRIDOS '98
-(a Windows 98 homage: bevels, title bars with caption buttons, a taskbar with START, an
+(a Windows 98 homage: bevels, title bars with caption buttons, a taskbar with START, an Explorer
+toolbar under the header whose address bar names the view you have open, an
 Inventory tab that opens a "#GRID Explorer" window around a 1998 auction-site Gray Market, and a
 #POST inbox that opens in "#POST Express", a mail client with a folder pane and a preview pane), and
 #GRIDroid (a cyberpunk phone OS: one phone-width screen in a HUD bezel at any width, the tab rail
@@ -32,8 +33,9 @@ an app list docked at the foot, folded to the open app and unfolding on a tap wi
 last row, and a sideways swipe
 that pages between tabs with a pill naming where you are heading). On '98 and
 #GRIDroid a Wallpaper row picks the desktop behind the windows: your own image from a file
-(resized and kept on the device), or on '98 alone one of the six presets in `app/img/wallpapers`,
-with toggles to dim it and to outline or glow the desktop's text. Skins and wallpapers are device
+(resized and kept on the device), or on '98 alone one of the twelve presets: six photographs in
+`app/img/wallpapers`, and six repeating patterns drawn as inline SVG in `app/data/wallpapers.js`
+and tiled at their own size. Toggles dim the wallpaper and outline or glow the desktop's text. Skins and wallpapers are device
 settings, never part of a character or its export.
 
 ## Tech
@@ -86,7 +88,7 @@ Run this whenever anything under `app/` changed, then commit the result with you
 Pages serves every file with `Cache-Control: max-age=600` and that cannot be configured from the
 repo, so without a version on the asset URLs a browser can pair a cached `js/ui.js` with a fresh
 `data/rules.js` and run half of one build against half of another. Stamping makes a deploy atomic:
-all 49 local assets change name together, so the build swaps in one piece. It does not make the
+all 60 local assets change name together, so the build swaps in one piece. It does not make the
 deploy arrive any sooner, because the HTML carries the same ten minute cache. `--strip` undoes it.
 
 The stamped URLs do **not** break opening `app/index.html` straight from disk. Browsers ignore the

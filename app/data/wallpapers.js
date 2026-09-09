@@ -1,11 +1,20 @@
 /* ===========================================================================
    ELYSIUM NIGHTS · Wallpapers  (#GRIDOS '98 skin)
-   The preset desktops behind the windows on the '98 skin: the author's art,
-   sitting in app/img/wallpapers as JPEGs (the full 1672x941 frame and a
-   360px thumb for the picker). Listed here because file:// cannot read a
-   folder, so the settings tray has to be told what exists. A missing file
-   is harmless: the picker shows a blank card and the desktop falls back to
-   the dither. Custom wallpapers are not listed here; they live in
+   The preset desktops behind the windows on the '98 skin, in two kinds.
+
+   PHOTOGRAPHS are the author's art, sitting in app/img/wallpapers as JPEGs
+   (the full 1672x941 frame and a 360px thumb for the picker), named here by
+   `file` and `thumb` and painted stretched to cover. A missing file is
+   harmless: the picker shows a blank card and the desktop falls back to the
+   dither.
+
+   TILES have no file. They carry `tile`, a `size` in CSS pixels and their
+   whole art inline as an SVG data URL in `svg`, and paint repeated at that
+   size; the art is its own thumbnail. Nothing about them can go missing.
+
+   Both are listed here because file:// cannot read a
+   folder, so the settings tray has to be told what exists.
+   Custom wallpapers are not listed here; they live in
    localStorage (settings.js, EN.theme.wallCustoms). Device-level state,
    never on a character, never in an export.
    =========================================================================== */

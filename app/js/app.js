@@ -153,7 +153,9 @@ EN.app = (function () {
   function paintAddr() {
     var box = document.getElementById("win-addr");
     if (!box) return;
-    var t = TABS.filter(function (x) { return x.key === LAST[portal]; })[0];
+    // visibleTabs(), not TABS: the address names what is actually on the rail, so a gated
+    // tab left in LAST by an earlier session cannot be announced as the open folder
+    var t = visibleTabs().filter(function (x) { return x.key === LAST[portal]; })[0];
     box.textContent = "C:\\GRIDOS\\" + (portal === "admin" ? "Admin" : "Freelancer")
       + "\\" + (t ? t.label : "Desktop");
   }
