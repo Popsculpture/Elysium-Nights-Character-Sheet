@@ -8595,6 +8595,70 @@ carried a comment about Weapon Focus Caliber that `pdfexport.js` lacked. That is
 discipline `parseUses` got earlier today, and for the same reason, since a plain diff is what
 turns the next drift into something anyone can see.
 
+## The '98 title bar reads the accent, and the accent gets an ink, 2026-09-08
+
+The open call from the last '98 pass, taken. Every window in the skin painted its title bar from
+--accent-dim, which meant a palette written FOR this skin had to park its title colour in the dim
+slot, which left the accent slot holding something that was never meant to be read. That is why
+the author's own Windows scheme had a light grey accent: #d9d9d9 was the title bar's neighbour,
+not an ink, and every number and label the app draws in --accent was invisible on the window grey.
+
+**The swap.** Five '98 surfaces now read var(--accent): the panel and tray title bars
+(theme.css, .panel-h / .set-head), the app's own top bar, the boot field, --chrome-a on #view
+(which feeds the #GRID Explorer and #POST Express captions), and the gate's kick bar. Two of
+those end at --bg1 rather than --accent-hi, so a sweep that looked only for the accent-hi
+gradient would have walked straight past them. The gridos98 palette's two accent slots trade
+places to match: the navy is the title bar, so the navy is the accent now, and the #d9d9d9 face
+grey it displaces becomes the dim, which is what a Windows scheme's 3D highlight always was.
+No colour in the palette changed, only which slot each sits in.
+
+**The ink.** The swap alone would have broken more than it fixed, because --accent is also a
+FILL, and everything sitting on that fill hardcoded its text: #fff on the title bars (safe while
+the bar was the dimmed accent) and #000 on primary buttons, ON chips, the '98 text selection and
+the gate's ENTER (safe while the accent was the bright one). Neither constant holds once one slot
+serves both, so applyVars now derives --accent-ink and --accent-ink-2 per palette: whichever of
+black or white keeps more contrast, judged against the accent AND its lighter partner, since the
+bar is a gradient and the caption crosses both. This is what Windows 98 actually did. The
+Appearance tab set a scheme's title bar colour and its caption font colour as two separate
+choices, and the light schemes shipped with black captions.
+
+**One derivation bug found on the way.** lighten() raised HSL lightness by a flat .30 with a 0.62
+ceiling, which was safe while it was fed the dimmed accent and wrong the moment it was fed the
+accent: four palettes ship an accent already lighter than 0.62, and Elysium Nights at 0.77 would
+have produced a title bar running pale gold into DARKER gold, the reverse of the Windows reading
+the whole rule exists to protect. It now raises by a fraction of the headroom left above the
+colour, so the far end is always lighter. Its one caller is --accent-hi.
+
+**What it cost.** On Classic and #GRIDroid wearing the gridos98 palette, three frames drawn in
+--accent-dim (the settings card, the colour editor, the gate card) go from navy to #d9d9d9 and
+soften to a hairline against the light grounds. Under '98 all three are re-framed by bevels, so
+this is a Classic-only trade: an ink that carried information for a frame that is decoration, and
+--border and --border2 still draw most of the frames. Left as is rather than inventing a colour
+for the author's palette. The Admin gate's kick bar is also deliberately untouched: it paints from
+--gcd, a fixed brand colour gate.js hands it from the Elysium Nights row, and is not the device's
+palette at all.
+
+**Measured, before and after, same probe, seven Freelancer tabs on the author's record.** Elements
+whose ink is exactly --accent: 15 before, 15 after. Of those, below 3:1 against their own ground:
+8 before, 0 after. The worst offenders were the big .stat .v numbers on #GRID at 2.02:1 and the
+mono readouts at 1.33:1. (An earlier note in this file put the figure at 82; that came from a
+different and looser count, and 8 is what a probe that checks the ink actually painted finds.)
+
+Swept all ten built-in palettes through the live app: --accent-hi is strictly lighter than
+--accent on every one, so no gradient runs backwards, and the caption's contrast at BOTH ends of
+every bar has a floor of 4.83:1 (Daybreak) against a previous floor of 3.40:1 for white on
+Elysium Nights' dim, with the mid-bar .tag worse than that. Checked live: gridos98 on '98 (title
+bars pixel-identical to before, which is the point, since only the slot moved), #GRID on '98
+(bright cyan bars, black captions, where white used to fail at the bar's light end), Elysium
+Nights on '98 (the inversion case, now running lighter to the right), the boot screen, the #GRID
+Explorer caption over its white paper document, the text selection (navy with white, which is
+literally the Windows selection), the settings tray head, the theme picker's swatch names, and
+primary buttons on all three skins with two palettes each. The gate's ENTER button was verified by
+injecting the patched rule text and measuring, since the gate will not open on an unlocked node:
+navy on white at 15.62:1, against 1.04:1 before. Classic and #GRIDroid on every other palette are
+unchanged by measurement, because --accent-ink resolves to the same #000 those rules hardcoded.
+No console errors. The author's record, skin and wallpaper were put back where they started.
+
 ## '98 gets an Explorer toolbar, and the wallpaper list learns to tile, 2026-09-08
 
 Two of the remaining peak-90s items, and the author picked the shape of both: one toolbar strip

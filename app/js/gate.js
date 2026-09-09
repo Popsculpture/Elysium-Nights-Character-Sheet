@@ -100,7 +100,7 @@ EN.gate = (function () {
     ".gate-pass{ flex:1; background:transparent; border:0; outline:0; color:var(--text); font-family:var(--mono); font-size:15px; letter-spacing:.18em; min-width:0; }",
     ".gate-pass::placeholder{ color:var(--text4); letter-spacing:.3em; }",
     ".gate-pass:disabled{ opacity:.4; }",
-    ".gate-go{ width:100%; margin-top:14px; padding:10px; background:var(--accent); color:#04222a; border:0; border-radius:4px;",
+    ".gate-go{ width:100%; margin-top:14px; padding:10px; background:var(--accent); color:var(--accent-ink); border:0; border-radius:4px;",
     "  font-family:var(--disp); font-weight:700; font-size:14px; letter-spacing:.18em; cursor:pointer; transition:filter .15s; }",
     ".gate-go:hover{ filter:brightness(1.12); }",
     ".gate-go:disabled{ opacity:.35; cursor:not-allowed; filter:none; }",

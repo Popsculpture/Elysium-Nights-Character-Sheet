@@ -33,10 +33,16 @@ EN.theme = (function () {
        skin now seeds a palette at all: it is not a mood, it is the actual Windows 98 scheme, so
        the skin looks wrong in anything else until you have chosen otherwise. #bdbdbd is the button
        face, #000582 the active title bar, #747474 the desktop, and every text slot is black
-       because that is what Windows drew inside a window. --accent holds the light face grey rather
-       than an ink colour, which is faithful and is also why this palette needs the pal-light
-       remap two entries up to stay legible. */
-    { key: "gridos98",   name: "#GRIDOS '98",  accent: "#d9d9d9", dim: "#000582", bg: "#747474", bg2: "#bdbdbd", border: "#777879", border2: "#e7e7e7", text: "#000000", text2: "#000000", text3: "#000000", text4: "#000000" },
+       because that is what Windows drew inside a window.
+
+       The two accent slots traded places on 2026-09-08, when the '98 title bar moved from
+       --accent-dim to --accent. The navy is the title bar, so the navy is the accent now; the
+       #d9d9d9 face grey it displaces is the 3D highlight, which is what --accent-dim was always
+       going to be on a Windows scheme. Nothing about the palette's colours changed, only which
+       slot each sits in, and the title bars are pixel-identical before and after: the whole
+       visible difference is that everything drawn in --accent went from invisible light grey on
+       light grey to navy. */
+    { key: "gridos98",   name: "#GRIDOS '98",  accent: "#000582", dim: "#d9d9d9", bg: "#747474", bg2: "#bdbdbd", border: "#777879", border2: "#e7e7e7", text: "#000000", text2: "#000000", text3: "#000000", text4: "#000000" },
     { key: "slimegirl",  name: "Slime Time",   accent: "#4fe6a8", dim: "#1f8f68", bg: "#061611", bg2: "#0c2419", border: "#1f5d44", border2: "#2f8060" },
     { key: "pbandj",     name: "Flavor Wizard",     accent: "#eb9a3e", dim: "#9c5e1e", bg: "#150a1c", bg2: "#221033", border: "#4a2660", border2: "#6b3a86" },
     /* Pastel Smasher, promoted from the author's own custom palette on 2026-09-08 and replacing
@@ -58,7 +64,7 @@ EN.theme = (function () {
   ];
 
   // managed variables: cleared on "#GRID" to fall back to the original :root values
-  var MANAGED = ["--accent", "--accent-dim", "--accent-hi", "--glow-cyan", "--grid-line",
+  var MANAGED = ["--accent", "--accent-dim", "--accent-hi", "--accent-ink", "--accent-ink-2", "--glow-cyan", "--grid-line",
     "--bg", "--bg1", "--bg2", "--bg3", "--bg4", "--border", "--border2", "--panel", "--panel-solid"];
 
   function hexRgb(h) {
@@ -101,14 +107,35 @@ EN.theme = (function () {
     }
     return "#" + h2(r * 255) + h2(g * 255) + h2(b * 255);
   }
+  /* `by` is a fraction of the HEADROOM left above the colour, not a flat step, so the result is
+     ALWAYS lighter than what went in and a title bar can never run backwards. The old flat step
+     carried a 0.62 ceiling, which was safe while this was fed the dimmed accent and wrong the
+     moment it was fed the accent: four palettes ship an accent already lighter than 0.62, and
+     Elysium Nights at 0.77 would have produced a bar running pale gold into darker gold. */
   function lighten(hex, by) {
     var v = rgbHsl(hex);
-    return hslHex(v[0], Math.min(1, v[1] * 1.05), Math.min(0.62, v[2] + by));
+    return hslHex(v[0], Math.min(1, v[1] * 1.05), v[2] + (1 - v[2]) * by);
   }
   function relLum(hex) {
     var c = hexRgb(hex);
     function ch(x) { x /= 255; return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); }
     return 0.2126 * ch(c[0]) + 0.7152 * ch(c[1]) + 0.0722 * ch(c[2]);
+  }
+  function contrast(a, b) {
+    var x = relLum(a), y = relLum(b);
+    return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+  }
+  /* The ink that survives ON TOP of the accent. The accent is a fill in two different places, a
+     '98 title bar and a primary button, and each used to hardcode its own text: white on the bar
+     (safe while the bar was the DIMMED accent) and black on the button (safe while the accent was
+     the bright one). Neither holds once one slot has to serve both, so the ink is chosen per
+     palette instead, which is also how Windows 98 did it: the Appearance tab set a scheme's title
+     bar colour and its font colour as two separate choices. Judged against the accent AND its
+     lighter partner, because the bar is a gradient between them and the caption crosses both. */
+  function inkFor(a, b) {
+    var white = Math.min(contrast("#ffffff", a), contrast("#ffffff", b));
+    var black = Math.min(contrast("#000000", a), contrast("#000000", b));
+    return black >= white ? "#000000" : "#ffffff";
   }
   function mix(a, b, t) { var A = hexRgb(a), B = hexRgb(b); return "#" + h2(A[0] + (B[0] - A[0]) * t) + h2(A[1] + (B[1] - A[1]) * t) + h2(A[2] + (B[2] - A[2]) * t); }
 
@@ -238,9 +265,14 @@ EN.theme = (function () {
     if (t.key === "grid") { MANAGED.forEach(function (v) { s.removeProperty(v); }); return; }
     s.setProperty("--accent", t.accent);
     s.setProperty("--accent-dim", t.dim || t.accent);
-    /* The far end of a '98 title bar. Derived rather than a slot of its own: Windows let you pick
-       both title colours, this app has one accent-dim, so the second is computed from it. */
-    s.setProperty("--accent-hi", lighten(t.dim || t.accent, 0.30));
+    /* The far end of a '98 title bar, and the ink that goes on it. Derived rather than slots of
+       their own: Windows let you pick both title colours and the caption font colour, this app
+       has one accent, so the other two are computed from it. */
+    var hi = lighten(t.accent, 0.30);
+    s.setProperty("--accent-hi", hi);
+    var ink = inkFor(t.accent, hi);
+    s.setProperty("--accent-ink", ink);
+    s.setProperty("--accent-ink-2", ink === "#000000" ? "rgba(0,0,0,.68)" : "rgba(255,255,255,.72)");
     s.setProperty("--glow-cyan", "0 0 18px " + rgba(t.accent, 0.30));
     s.setProperty("--grid-line", rgba(t.accent, 0.05));
     s.setProperty("--bg", t.bg);
@@ -484,7 +516,7 @@ EN.settings = (function () {
   var _editing = null;
   // the six core slots exposed as color wheels, with a plain-language note on what each paints
   var SLOTS = [
-    { k: "accent",  label: "Accent",     hint: "buttons, numbers, active tab, glow" },
+    { k: "accent",  label: "Accent",     hint: "buttons, numbers, active tab, glow, and the '98 title bars" },
     { k: "dim",     label: "Accent Dim", hint: "muted accent, scrollbar, settings frame" },
     { k: "bg",      label: "Background", hint: "the deepest surface behind everything" },
     { k: "bg2",     label: "Panel",      hint: "cards and raised surfaces" },

@@ -15,11 +15,15 @@
 
   --accent:    #00e5ff;   /* GRID cyan       */
   --accent-dim:#0a8aa0;
-  /* the lighter end of a '98 title bar. Every palette derives its own in settings.js applyVars;
-     this static value is what that function returns for the #GRID accent above, and is what the
-     #GRID palette itself uses, since #GRID paints by CLEARING the managed vars rather than setting
-     them, so it never gets a derived one. */
-  --accent-hi:#44def8;
+  /* the lighter end of a '98 title bar, and the ink that survives on top of the accent. Every
+     palette derives its own pair in settings.js applyVars; these static values are what that
+     function returns for the #GRID accent above, and are what the #GRID palette itself uses,
+     since #GRID paints by CLEARING the managed vars rather than setting them, so it never gets
+     a derived one. (The old value here was derived from --accent-dim, back when the title bar
+     was; #4dedff is lighten(#00e5ff, .30), which is what the accent gives.) */
+  --accent-hi:#4dedff;
+  --accent-ink:#000000;
+  --accent-ink-2:rgba(0,0,0,.68);
   --flow:      #b98bff;   /* the Flow purple */
   --ember:     #ff6b35;   /* corp ember      */
   --gold:      #ffcf5c;
@@ -740,8 +744,8 @@ html:not(.skin-98):not(.skin-droid) .btn:hover{ background:var(--bg2); border-co
 html:not(.skin-98):not(.skin-droid) .btn.sm{
   clip-path:polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
 }
-html:not(.skin-98):not(.skin-droid) .btn.primary{ background:var(--accent); color:#000; border-color:var(--accent); }
-html:not(.skin-98):not(.skin-droid) .btn.primary:hover{ background:var(--accent); color:#000; filter:brightness(1.1); }
+html:not(.skin-98):not(.skin-droid) .btn.primary{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+html:not(.skin-98):not(.skin-droid) .btn.primary:hover{ background:var(--accent); color:var(--accent-ink); filter:brightness(1.1); }
 html:not(.skin-98):not(.skin-droid) .btn.flow{ color:var(--flow); border-color:var(--flow); }
 html:not(.skin-98):not(.skin-droid) .btn.flow:hover{ color:var(--flow); border-color:var(--flow); box-shadow:none; }
 html:not(.skin-98):not(.skin-droid) .btn.danger:hover{ color:var(--danger); border-color:var(--danger); box-shadow:none; }
@@ -755,7 +759,7 @@ html:not(.skin-98):not(.skin-droid) :is(input[type=text], input[type=number], te
 html:not(.skin-98):not(.skin-droid) :is(input, textarea, select):focus{ border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
 
 html:not(.skin-98):not(.skin-droid) .chip{ border:1px solid var(--border2); background:var(--bg1); border-radius:0; }
-html:not(.skin-98):not(.skin-droid) .chip.on{ background:var(--accent); color:#000; border-color:var(--accent); box-shadow:none; }
+html:not(.skin-98):not(.skin-droid) .chip.on{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); box-shadow:none; }
 html:not(.skin-98):not(.skin-droid) .chip.flow{ color:var(--flow); border-color:var(--flow); background:var(--bg1); }
 
 /* The square-corner sweep both other skins already run. The class list is explicit and safe; the
@@ -859,7 +863,7 @@ html:is(.skin-98, .skin-droid).pal-light.has-wall.wall-shadow.wall-glow .os-main
 html:is(.skin-98, .skin-droid).has-wall.wall-glow .os-main{ text-shadow:0 0 5px rgba(255,255,255,.5), 0 0 12px rgba(255,255,255,.28); }
 html:is(.skin-98, .skin-droid).has-wall.wall-shadow.wall-glow .os-main{ text-shadow:-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,.85), 0 0 6px rgba(255,255,255,.5), 0 0 14px rgba(255,255,255,.28); }
 html:is(.skin-98, .skin-droid).has-wall:is(.wall-shadow, .wall-glow) .os-main :is(.panel, .inv-sub, .post-sub, .wizard-rail, .btn, .chip, input, textarea, select, .stat, .muted-box, .opt-card, .device-card, [style*="sticky"]){ text-shadow:none; }
-html.skin-98 ::selection{ background:var(--accent); color:#000; }
+html.skin-98 ::selection{ background:var(--accent); color:var(--accent-ink); }
 
 /* ---------------------------------------------------------------------------
    '98, GOING FURTHER. Everything below is scoped to html.skin-98 and is pure CSS:
@@ -1002,7 +1006,7 @@ html.skin-98 .os-main:has(.panel:hover, .panel:focus-within) .panel:not(:hover):
    arrangement changes; the same typed lines the other skins get still run, they just run where
    Windows put them. */
 html.skin-98 #boot{
-  background:var(--accent-dim); justify-content:flex-start; align-items:flex-start; gap:0; padding:0;
+  background:var(--accent); justify-content:flex-start; align-items:flex-start; gap:0; padding:0;
 }
 html.skin-98 #boot .blogo{
   position:absolute; top:38%; left:50%; transform:translate(-50%,-50%);
@@ -1011,9 +1015,11 @@ html.skin-98 #boot .blogo{
   border-color:var(--bev-hi) var(--bev-lo) var(--bev-lo) var(--bev-hi);
   padding:22px 46px; box-shadow:3px 3px 0 rgba(0,0,0,.4);
 }
+html.skin-98 #boot :is(.cyan, .cursor)::after,
+html.skin-98 #boot :is(.cyan, .cursor){ color:var(--accent-ink); }
 html.skin-98 #boot .blines{
   position:absolute; left:22px; bottom:20px; min-width:0; max-width:70vw;
-  font-family:var(--disp); font-size:13px; color:#fff; text-shadow:1px 1px 0 rgba(0,0,0,.5); line-height:1.5;
+  font-family:var(--disp); font-size:13px; color:var(--accent-ink); text-shadow:none; line-height:1.5;
 }
 
 /* ---- 10. THE HIT COUNTER. Bottom of the page, odometer digits, exactly where a 1997 site put
@@ -1136,21 +1142,30 @@ html.skin-98 .feature.lineage{ border-left-color:var(--gold); }
 /* The title bar runs colour to LIGHTER COLOUR, the way Windows 98's own does (#000080 into
    #1084D0), rather than colour into the window grey. --accent-hi is derived per palette in
    applyVars by raising lightness while holding hue and saturation, because mixing toward white
-   would land back on grey and undo the point. */
+   would land back on grey and undo the point.
+
+   IT READS --accent, NOT --accent-dim, as of 2026-09-08. Every window in this skin is painted
+   from the palette's accent, which is the slot a person reaches for when they mean "the colour
+   of this theme". Reading the DIMMED accent instead cost more than a shade: a palette written
+   FOR this skin had to park its title colour in the dim slot, which left the accent slot holding
+   something that was never meant to be read, and --accent is used as INK all over the app. That
+   is why the author's own Windows scheme had a light grey accent and unreadable numbers.
+   The ink on these bars is --accent-ink, chosen per palette by luminance, the way Windows 98's
+   own Appearance tab let a scheme set its title bar colour and its font colour separately. */
 html.skin-98 .panel-h, html.skin-98 .set-head{
   padding:4px 6px 4px 8px; min-height:26px; align-items:center; border-bottom:2px solid var(--bev-lo);
-  background:linear-gradient(90deg, var(--accent-dim) 0%, var(--accent-dim) 22%, var(--accent-hi) 100%);
+  background:linear-gradient(90deg, var(--accent) 0%, var(--accent) 22%, var(--accent-hi) 100%);
 }
 html.skin-98 .panel-h h3, html.skin-98 .set-title{
-  font-family:var(--mono); font-weight:400; font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:#fff; text-shadow:none;
+  font-family:var(--mono); font-weight:400; font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--accent-ink); text-shadow:none;
 }
 html.skin-98 .set-title{ font-size:13px; }
-html.skin-98 .panel-h .tag{ color:rgba(255,255,255,.7); }
+html.skin-98 .panel-h .tag{ color:var(--accent-ink-2); }
 html.skin-98 .panel-h::after{
   content:""; margin-left:auto; width:56px; height:14px; flex:0 0 56px;
   background:var(--win-btns);
 }
-html.skin-98 .panel-h.clickable:hover h3{ color:#fff; text-decoration:underline; }
+html.skin-98 .panel-h.clickable:hover h3{ color:var(--accent-ink); text-decoration:underline; }
 html.skin-98 .set-close{
   width:auto; height:auto; padding:1px 7px 2px; font-family:var(--mono); font-size:13px; color:var(--text); background:var(--bg3);
   border:2px solid; border-color:var(--bev-hi) var(--bev-lo) var(--bev-lo) var(--bev-hi);
@@ -1166,7 +1181,7 @@ html.skin-98 .btn{
 }
 html.skin-98 .btn:hover{ color:var(--text); border-color:var(--bev-hi) var(--bev-lo) var(--bev-lo) var(--bev-hi); box-shadow:1px 1px 0 var(--bev-lo); background:var(--bg4); }
 html.skin-98 .btn:active{ border-color:var(--bev-lo) var(--bev-hi) var(--bev-hi) var(--bev-lo); box-shadow:none; transform:translate(1px,1px); }
-html.skin-98 .btn.primary{ background:var(--accent); color:#000; }
+html.skin-98 .btn.primary{ background:var(--accent); color:var(--accent-ink); }
 html.skin-98 .btn.primary:hover{ background:var(--accent); filter:brightness(1.1); }
 html.skin-98 .btn.flow{ background:var(--flow); color:#000; }
 html.skin-98 .btn.ghost{ border-color:transparent; box-shadow:none; background:transparent; }
@@ -1182,7 +1197,7 @@ html.skin-98 input[type=text], html.skin-98 input[type=number], html.skin-98 tex
 html.skin-98 input:focus, html.skin-98 textarea:focus, html.skin-98 select:focus{ border-color:var(--bev-lo) var(--bev-hi) var(--bev-hi) var(--bev-lo); box-shadow:none; outline:1px dotted var(--accent); outline-offset:-4px; }
 
 html.skin-98 .chip{ border:1px solid var(--bev-mid); background:var(--bg1); box-shadow:inset 1px 1px 0 var(--bev-hi); padding:2px 8px; }
-html.skin-98 .chip.on{ background:var(--accent); color:#000; border-color:var(--accent); box-shadow:none; }
+html.skin-98 .chip.on{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); box-shadow:none; }
 html.skin-98 .badge, html.skin-98 .tier-pill{ border:1px solid var(--bev-mid); box-shadow:inset 1px 1px 0 var(--bev-hi); }
 
 html.skin-98 .stat .k{ font-family:var(--mono); letter-spacing:.12em; }
@@ -1195,12 +1210,12 @@ html.skin-98 .opt-card.sel::before{ width:4px; }
 
 /* ---- the top bar is a title bar; status readouts are sunken cells ---- */
 html.skin-98 .os-topbar{
-  height:44px; background:linear-gradient(90deg, var(--accent-dim) 0%, var(--accent-dim) 18%, var(--bg1) 70%);
+  height:44px; background:linear-gradient(90deg, var(--accent) 0%, var(--accent) 18%, var(--bg1) 70%);
   border-bottom:2px solid var(--bev-lo); backdrop-filter:none; box-shadow:inset 0 1px 0 var(--bev-hi);
 }
-html.skin-98 .os-logo{ font-family:var(--mono); font-weight:400; font-size:14px; letter-spacing:.2em; color:#fff; text-shadow:none; }
-html.skin-98 .os-logo b{ color:#fff; }
-html.skin-98 .os-logo .v{ color:rgba(255,255,255,.6); font-size:0; }          /* "v1.0" makes way for the year */
+html.skin-98 .os-logo{ font-family:var(--mono); font-weight:400; font-size:14px; letter-spacing:.2em; color:var(--accent-ink); text-shadow:none; }
+html.skin-98 .os-logo b{ color:var(--accent-ink); }
+html.skin-98 .os-logo .v{ color:var(--accent-ink-2); font-size:0; }          /* "v1.0" makes way for the year */
 html.skin-98 .os-logo .v::after{ content:"'98"; font-size:14px; letter-spacing:.2em; }
 html.skin-98 .os-status > span, html.skin-98 #active-name, html.skin-98 .os-clock{
   padding:2px 8px; background:var(--bg1); border:1px solid; border-color:var(--bev-lo) var(--bev-hi) var(--bev-hi) var(--bev-lo);
@@ -1300,7 +1315,7 @@ html.skin-98 .os-tray-ico + .os-tray-ico{ animation-delay:1.2s; }     /* the two
    The window chrome wants the DARK side's accent for its title gradient, and a custom property
    declared next to its own remap would read the remapped value, so the dark values are captured
    one level up, on #view, before the remap happens. */
-html.skin-98 #view{ --chrome-a:var(--accent-dim); --chrome-b:var(--accent-hi); --chrome-font:var(--disp); }
+html.skin-98 #view{ --chrome-a:var(--accent); --chrome-b:var(--accent-hi); --chrome-font:var(--disp); }
 /* The fixed semantic colours are tuned for dark grounds and disappear on a light palette:
    measured on the author's own '98 scheme, --ember landed at a contrast ratio of 1.00 against the
    panel, --flow at 1.11, --danger at 1.14, --success at 1.16. These are the SAME values the paper
@@ -1337,7 +1352,7 @@ html.skin-98 :is(.inv-sub, .post-sub){
 html.skin-98 .inv-sub::before{
   content:"#GRID Explorer"; order:-2; flex:none; margin:0 -12px;
   height:26px; line-height:26px; padding:0 8px;
-  font-family:var(--chrome-font); font-size:14px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:#fff;
+  font-family:var(--chrome-font); font-size:14px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--accent-ink);
   background:var(--win-btns),
              linear-gradient(90deg, var(--chrome-a) 0%, var(--chrome-a) 22%, var(--chrome-b) 100%);
   border-right:6px solid var(--chrome-b);   /* the buttons' inset from the frame, in the gradient's end color so the bar reads as one piece */
@@ -1422,7 +1437,7 @@ html.skin-98 .mkt-controls .mono{ font-family:Arial, Helvetica, sans-serif !impo
 html.skin-98 .post-sub::before{
   content:"Inbox - #POST Express"; order:-2; flex:none; margin:0 -12px;
   height:26px; line-height:26px; padding:0 8px;
-  font-family:var(--chrome-font); font-size:14px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:#fff;
+  font-family:var(--chrome-font); font-size:14px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--accent-ink);
   background:var(--win-btns),
              linear-gradient(90deg, var(--chrome-a) 0%, var(--chrome-a) 22%, var(--chrome-b) 100%);
   border-right:6px solid var(--chrome-b);
@@ -1525,8 +1540,8 @@ html.skin-98 .toast{ bottom:56px; border:2px solid; border-color:var(--bev-hi) v
 html.skin-98 .gate-card{ padding:0; overflow:hidden; box-shadow:1px 1px 0 var(--bev-lo), 0 18px 60px rgba(0,0,0,.6); }
 html.skin-98 .gate-card > *{ margin-left:22px; margin-right:22px; }
 html.skin-98 .gate-card > .gate-kick{
-  margin:0 0 18px; padding:5px 10px; font-size:11px; letter-spacing:.14em; color:#fff; border-bottom:2px solid var(--bev-lo);
-  background:linear-gradient(90deg, var(--accent-dim) 0%, var(--accent-dim) 22%, var(--bg1) 100%);
+  margin:0 0 18px; padding:5px 10px; font-size:11px; letter-spacing:.14em; color:var(--accent-ink); border-bottom:2px solid var(--bev-lo);
+  background:linear-gradient(90deg, var(--accent) 0%, var(--accent) 22%, var(--bg1) 100%);
 }
 html.skin-98 #gate.admin .gate-card > .gate-kick{ background:linear-gradient(90deg, var(--gcd) 0%, var(--gcd) 22%, var(--bg1) 100%); }
 html.skin-98 .gate-card > .gate-foot, html.skin-98 .gate-card > .gate-sw{ margin-bottom:14px; }
@@ -1658,7 +1673,7 @@ html.skin-droid #active-name{
   /* gap:0 because the shared .os-status rule sets 14px, which is right for two readouts at the ends
      of a bar and much too loose between a dot, its label and the record they name */
   order:5; flex-basis:100%; display:flex; align-items:center; flex-wrap:nowrap; gap:0;
-  background:var(--accent); color:#000; font-family:var(--mono); font-weight:700; font-size:10.5px;
+  background:var(--accent); color:var(--accent-ink); font-family:var(--mono); font-weight:700; font-size:10.5px;
   letter-spacing:.1em; line-height:1.55; padding:6px 10px; text-transform:uppercase;
   clip-path:polygon(0 0, 100% 0, 100% 100%, 10px 100%, 0 calc(100% - 10px));
 }
@@ -1870,7 +1885,7 @@ html.skin-droid .btn{
 }
 html.skin-droid .btn:hover{ background:var(--bg2); border-color:var(--accent); box-shadow:none; }
 html.skin-droid .btn.sm{ min-height:36px; padding:7px 12px; font-size:12px; }
-html.skin-droid .btn.primary{ background:var(--accent); color:#000; border-color:var(--accent); }
+html.skin-droid .btn.primary{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
 html.skin-droid .btn.primary:hover{ background:var(--accent); filter:brightness(1.1); }
 html.skin-droid .btn.flow{ color:var(--dr-two); border-color:var(--dr-two); }
 html.skin-droid .btn.ghost{ border-color:transparent; background:transparent; clip-path:none; }
@@ -1880,7 +1895,7 @@ html.skin-droid input[type=text], html.skin-droid input[type=number], html.skin-
 }
 html.skin-droid input:focus, html.skin-droid textarea:focus, html.skin-droid select:focus{ border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
 html.skin-droid .chip{ min-height:28px; padding:4px 9px; border:1px solid var(--border2); background:var(--bg1); border-radius:0; }
-html.skin-droid .chip.on{ background:var(--accent); color:#000; border-color:var(--accent); box-shadow:none; }
+html.skin-droid .chip.on{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); box-shadow:none; }
 html.skin-droid .stat, html.skin-droid .attr-cell, html.skin-droid .roll-slot, html.skin-droid .roll-group{
   border:1px solid var(--accent-dim); background:var(--bg); clip-path:polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
 }
