@@ -8595,6 +8595,50 @@ carried a comment about Weapon Focus Caliber that `pdfexport.js` lacked. That is
 discipline `parseUses` got earlier today, and for the same reason, since a plain diff is what
 turns the next drift into something anyone can see.
 
+## Elysium Nights becomes the default palette and leads the picker, 2026-09-08
+
+Author's ask: make Elysium Nights the default for Classic and #GRIDroid, and move it to the front
+of the Color Theme list.
+
+**The ask names two skins and the answer is one default, which is worth explaining rather than
+quietly doing.** There is no per-skin palette default in this app and there should not be: the
+tray's own copy promises that the two are independent axes, "Independent of the palette below, so
+any color theme wears any skin". A default that changed when you switched skin would break that
+promise, and would mean switching to '98 to look at something repainted your sheet. So the device
+fallback moves once, for everything, and '98 is not carved out. That also brings the two halves of
+the app into line: Admin's own fallback has always been Elysium Nights, and only the player side
+was on #GRID.
+
+What changed: Elysium Nights moves to the head of `THEMES`, which is the picker's order;
+`deviceGet` falls back to `highheavens` rather than `grid`; `deleteTheme` lands you on the default
+rather than on #GRID when you delete the custom palette you were wearing; and the tray's two copy
+strings stop telling you to pick #GRID for the default. One quiet improvement falls out of the
+reorder: `apply()`'s unknown-key fallback is `THEMES[0]`, which now lands on the default instead of
+merely beside it.
+
+The default only governs a record that never chose. #GRID is unchanged as a palette, still holds
+the original `:root` values, and is still applied by clearing overrides rather than setting them,
+so nothing about how it paints depends on where it sits in the list.
+
+Verified after a reload rather than only in memory: the picker reads Elysium Nights, #GRID, Slime
+Time and the rest in that order; a character with no palette resolves to `highheavens` and paints
+`#ead6a0`; Admin still resolves to `highheavens`; and the fallback constant now agrees with the
+default. Checked on both facelifted skins, since those were the ones named.
+
+**A correction to the author's own record, recorded because it was my doing.** `EN.theme.set`
+writes `c.theme` onto the active character, and testing the Classic facelift against the light
+palette called it repeatedly. Worse, `clearExample` restores a snapshot taken when `setExample`
+ran, so successive example cycles kept restoring whichever value the field held at each capture:
+across the session the field read `highheavens`, then `bubblegum`, then `grid`, none of them a
+choice the author made. Rather than guess which was his, the field is cleared, so the record
+carries no explicit palette and follows the default he just asked for. One click in the tray sets
+anything else. The rest of the record was checked and untouched: name, level 5, all 34 equipment
+entries, one roster row.
+
+The lesson for next time is the same one the roster already taught: a record's fields are the
+author's data, and `EN.theme.set` is a WRITE to them, not a view setting. Read it before touching
+it, and prefer an example for anything that paints.
+
 ## Classic's controls follow its panels, 2026-09-08
 
 The second half of the facelift, and the half where #GRIDroid's block cannot be copied.

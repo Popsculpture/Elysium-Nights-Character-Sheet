@@ -21,9 +21,14 @@ EN.theme = (function () {
   // accent = the bright signature color; bg/bg2 = deep + panel surfaces; border/border2
   // = frame colors. Backgrounds are kept dark so light text stays readable. #GRID holds the
   // original values for its swatch but is applied by clearing overrides (see apply()).
+  //
+  // ORDER IS THE PICKER'S ORDER, and Elysium Nights leads it because it is the default: the
+  // game's own palette should be the one you land on and the first one you see. #GRID follows
+  // as the neutral it always was. Nothing keys off the position except the picker and apply()'s
+  // unknown-key fallback to THEMES[0], which now lands on the default rather than beside it.
   var THEMES = [
-    { key: "grid",       name: "#GRID",        accent: "#00e5ff", dim: "#0a8aa0", bg: "#07090d", bg2: "#0f141d", border: "#233044", border2: "#34465f" },
     { key: "highheavens",name: "Elysium Nights", accent: "#ead6a0", dim: "#9c8a55", bg: "#100e1a", bg2: "#1c1930", border: "#403a5c", border2: "#5b5480" },
+    { key: "grid",       name: "#GRID",        accent: "#00e5ff", dim: "#0a8aa0", bg: "#07090d", bg2: "#0f141d", border: "#233044", border2: "#34465f" },
     { key: "slimegirl",  name: "Slime Time",   accent: "#4fe6a8", dim: "#1f8f68", bg: "#061611", bg2: "#0c2419", border: "#1f5d44", border2: "#2f8060" },
     { key: "pbandj",     name: "Flavor Wizard",     accent: "#eb9a3e", dim: "#9c5e1e", bg: "#150a1c", bg2: "#221033", border: "#4a2660", border2: "#6b3a86" },
     // Bubblegum Flapjack: gunmetal base (40%), toxic-mint accent (25%), bubblegum-pink
@@ -105,7 +110,13 @@ EN.theme = (function () {
   function inAdmin() { try { return !!(EN.app && EN.app.portal && EN.app.portal() === "admin"); } catch (e) { return false; } }
   function adminGet() { try { return localStorage.getItem(ADMIN_KEY) || "highheavens"; } catch (e) { return "highheavens"; } }
   function activeCh() { try { return (EN.store && EN.store.active) ? EN.store.active() : null; } catch (e) { return null; } }
-  function deviceGet() { try { return localStorage.getItem(KEY) || "grid"; } catch (e) { return "grid"; } }
+  /* The device fallback, used before any character is active and by every character that has
+     not chosen a palette; a stored one on the record always wins. Elysium Nights rather than
+     #GRID since 2026-09-08, which also brings this into line with Admin, whose own fallback has
+     always been Elysium Nights. Note this is ONE default and not one per skin: the tray's own
+     copy promises that a palette and a skin are independent axes, "any color theme wears any
+     skin", so a default that moved when you changed skin would break that promise. */
+  function deviceGet() { try { return localStorage.getItem(KEY) || "highheavens"; } catch (e) { return "highheavens"; } }
   function get() {
     if (inAdmin()) return adminGet();
     var ch = activeCh();
@@ -568,7 +579,7 @@ EN.settings = (function () {
     var wasSelected = EN.theme.get() === k;
     EN.theme.deleteCustom(k);
     _editing = null;
-    if (wasSelected) EN.theme.set("grid");
+    if (wasSelected) EN.theme.set("highheavens");   /* the default, so deleting the palette you are wearing lands you on it */
     else EN.theme.apply(EN.theme.get());
     rebuild();
   }
@@ -830,8 +841,8 @@ EN.settings = (function () {
     var kids = [
       el("label.set-label", { style: { marginTop: "14px" }, text: admin ? "Admin Theme" : "Color Theme" }),
       el("p.set-hint", { text: admin
-        ? "Each palette recolors the accent, frames, backgrounds, and text. Stored on this device, not on any Freelancer, so whoever is loaded on the player side never repaints your table. Pick #GRID for the default."
-        : "Each palette recolors the accent, frames, backgrounds, and text. Saved to this Freelancer and bundled into their .JSON export. Pick #GRID for the default." }),
+        ? "Each palette recolors the accent, frames, backgrounds, and text. Stored on this device, not on any Freelancer, so whoever is loaded on the player side never repaints your table. Pick Elysium Nights for the default."
+        : "Each palette recolors the accent, frames, backgrounds, and text. Saved to this Freelancer and bundled into their .JSON export. Pick Elysium Nights for the default." }),
       themeSwatches()
     ];
     kids.push(_editing ? editorPanel() : el("button.btn.sm.set-newbtn", { onclick: startNew }, "+ NEW CUSTOM THEME"));
