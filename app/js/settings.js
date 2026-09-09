@@ -50,7 +50,7 @@ EN.theme = (function () {
   ];
 
   // managed variables: cleared on "#GRID" to fall back to the original :root values
-  var MANAGED = ["--accent", "--accent-dim", "--glow-cyan", "--grid-line",
+  var MANAGED = ["--accent", "--accent-dim", "--accent-hi", "--glow-cyan", "--grid-line",
     "--bg", "--bg1", "--bg2", "--bg3", "--bg4", "--border", "--border2", "--panel", "--panel-solid"];
 
   function hexRgb(h) {
@@ -61,6 +61,47 @@ EN.theme = (function () {
   function clamp(n) { n = Math.round(n); return n < 0 ? 0 : n > 255 ? 255 : n; }
   function h2(n) { var s = clamp(n).toString(16); return s.length < 2 ? "0" + s : s; }
   function rgba(hex, a) { var c = hexRgb(hex); return "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + a + ")"; }
+  /* Lighten while KEEPING the hue and saturation. A plain mix toward white desaturates, which
+     is exactly what a title bar must not do: Windows 98's own active bar runs #000080 to #1084D0,
+     a lighter blue, not a paler grey. Used for --accent-hi below. */
+  function rgbHsl(hex) {
+    var c = hexRgb(hex), r = c[0] / 255, g = c[1] / 255, b = c[2] / 255;
+    var mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, h = 0, sa = 0;
+    if (mx !== mn) {
+      var d = mx - mn;
+      sa = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+      if (mx === r) h = (g - b) / d + (g < b ? 6 : 0);
+      else if (mx === g) h = (b - r) / d + 2;
+      else h = (r - g) / d + 4;
+      h /= 6;
+    }
+    return [h, sa, l];
+  }
+  function hslHex(h, sa, l) {
+    function hue(p, q, t) {
+      if (t < 0) t += 1; if (t > 1) t -= 1;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+      return p;
+    }
+    var r, g, b;
+    if (sa === 0) { r = g = b = l; }
+    else {
+      var q = l < 0.5 ? l * (1 + sa) : l + sa - l * sa, p = 2 * l - q;
+      r = hue(p, q, h + 1 / 3); g = hue(p, q, h); b = hue(p, q, h - 1 / 3);
+    }
+    return "#" + h2(r * 255) + h2(g * 255) + h2(b * 255);
+  }
+  function lighten(hex, by) {
+    var v = rgbHsl(hex);
+    return hslHex(v[0], Math.min(1, v[1] * 1.05), Math.min(0.62, v[2] + by));
+  }
+  function relLum(hex) {
+    var c = hexRgb(hex);
+    function ch(x) { x /= 255; return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); }
+    return 0.2126 * ch(c[0]) + 0.7152 * ch(c[1]) + 0.0722 * ch(c[2]);
+  }
   function mix(a, b, t) { var A = hexRgb(a), B = hexRgb(b); return "#" + h2(A[0] + (B[0] - A[0]) * t) + h2(A[1] + (B[1] - A[1]) * t) + h2(A[2] + (B[2] - A[2]) * t); }
 
   /* ---- custom-theme library: device-level, editable, listed in the picker ---- */
@@ -181,9 +222,17 @@ EN.theme = (function () {
     } else {
       ["--text", "--text2", "--text3", "--text4"].forEach(function (v) { s.removeProperty(v); });
     }
+    /* Is this palette light enough that the app's fixed dark-theme semantics stop reading on it?
+       Measured on the PANEL ground, since that is what chips and labels actually sit on. The class
+       lets CSS re-tune those colours the same way the '98 paper sub-views already do. */
+    var ground = t.bg2 || t.bg;
+    root.classList.toggle("pal-light", !!ground && relLum(ground) > 0.45);
     if (t.key === "grid") { MANAGED.forEach(function (v) { s.removeProperty(v); }); return; }
     s.setProperty("--accent", t.accent);
     s.setProperty("--accent-dim", t.dim || t.accent);
+    /* The far end of a '98 title bar. Derived rather than a slot of its own: Windows let you pick
+       both title colours, this app has one accent-dim, so the second is computed from it. */
+    s.setProperty("--accent-hi", lighten(t.dim || t.accent, 0.30));
     s.setProperty("--glow-cyan", "0 0 18px " + rgba(t.accent, 0.30));
     s.setProperty("--grid-line", rgba(t.accent, 0.05));
     s.setProperty("--bg", t.bg);

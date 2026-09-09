@@ -15,6 +15,11 @@
 
   --accent:    #00e5ff;   /* GRID cyan       */
   --accent-dim:#0a8aa0;
+  /* the lighter end of a '98 title bar. Every palette derives its own in settings.js applyVars;
+     this static value is what that function returns for the #GRID accent above, and is what the
+     #GRID palette itself uses, since #GRID paints by CLEARING the managed vars rather than setting
+     them, so it never gets a derived one. */
+  --accent-hi:#44def8;
   --flow:      #b98bff;   /* the Flow purple */
   --ember:     #ff6b35;   /* corp ember      */
   --gold:      #ffcf5c;
@@ -833,6 +838,13 @@ html.skin-98.has-wall body::before{
    has or will add, and both are reset inside windows and controls, whose backgrounds already
    carry their text (the Explorer's white page most of all). settings.js flips the root classes. */
 html:is(.skin-98, .skin-droid).has-wall.wall-shadow .os-main{ text-shadow:-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,.85); }
+/* ...and the same outline INVERTED when the palette is a light one. The stack above is built for
+   pale glyphs on a wallpaper, which is the Windows 98 desktop-icon convention and right for every
+   dark palette. A light palette writes those loose labels in near-black, and a black outline round
+   black text is nothing at all: on a bright wallpaper the words simply vanish. White does the same
+   job for dark glyphs. settings.js sets .pal-light off the panel ground's luminance. */
+html:is(.skin-98, .skin-droid).pal-light.has-wall.wall-shadow .os-main{ text-shadow:-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 0 2px 4px rgba(255,255,255,.9); }
+html:is(.skin-98, .skin-droid).pal-light.has-wall.wall-shadow.wall-glow .os-main{ text-shadow:-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 0 2px 4px rgba(255,255,255,.9); }
 html:is(.skin-98, .skin-droid).has-wall.wall-glow .os-main{ text-shadow:0 0 5px rgba(255,255,255,.5), 0 0 12px rgba(255,255,255,.28); }
 html:is(.skin-98, .skin-droid).has-wall.wall-shadow.wall-glow .os-main{ text-shadow:-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,.85), 0 0 6px rgba(255,255,255,.5), 0 0 14px rgba(255,255,255,.28); }
 html:is(.skin-98, .skin-droid).has-wall:is(.wall-shadow, .wall-glow) .os-main :is(.panel, .inv-sub, .post-sub, .wizard-rail, .btn, .chip, input, textarea, select, .stat, .muted-box, .opt-card, .device-card, [style*="sticky"]){ text-shadow:none; }
@@ -861,9 +873,13 @@ html.skin-98 .feature.species{ border-left-color:var(--ember); }
 html.skin-98 .feature.lineage{ border-left-color:var(--gold); }
 
 /* ---- windows: the panel header is a title bar ---- */
+/* The title bar runs colour to LIGHTER COLOUR, the way Windows 98's own does (#000080 into
+   #1084D0), rather than colour into the window grey. --accent-hi is derived per palette in
+   applyVars by raising lightness while holding hue and saturation, because mixing toward white
+   would land back on grey and undo the point. */
 html.skin-98 .panel-h, html.skin-98 .set-head{
   padding:4px 6px 4px 8px; min-height:26px; align-items:center; border-bottom:2px solid var(--bev-lo);
-  background:linear-gradient(90deg, var(--accent-dim) 0%, var(--accent-dim) 22%, var(--bg1) 100%);
+  background:linear-gradient(90deg, var(--accent-dim) 0%, var(--accent-dim) 22%, var(--accent-hi) 100%);
 }
 html.skin-98 .panel-h h3, html.skin-98 .set-title{
   font-family:var(--mono); font-weight:400; font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:#fff; text-shadow:none;
@@ -1024,7 +1040,21 @@ html.skin-98 .os-tray-ico + .os-tray-ico{ animation-delay:1.2s; }     /* the two
    The window chrome wants the DARK side's accent for its title gradient, and a custom property
    declared next to its own remap would read the remapped value, so the dark values are captured
    one level up, on #view, before the remap happens. */
-html.skin-98 #view{ --chrome-a:var(--accent-dim); --chrome-b:var(--bg1); --chrome-font:var(--disp); }
+html.skin-98 #view{ --chrome-a:var(--accent-dim); --chrome-b:var(--accent-hi); --chrome-font:var(--disp); }
+/* The fixed semantic colours are tuned for dark grounds and disappear on a light palette:
+   measured on the author's own '98 scheme, --ember landed at a contrast ratio of 1.00 against the
+   panel, --flow at 1.11, --danger at 1.14, --success at 1.16. These are the SAME values the paper
+   sub-views below already use for exactly this reason, lifted to the whole view whenever the
+   palette is light, so a SNAG chip or a FOCUS badge stays readable on Windows 98 grey. */
+html.skin-98.pal-light #view{
+  --flow:#5b2fa8; --ember:#7a2b06; --gold:#7a5600;
+  --success:#0a5423; --warn:#7d5400; --danger:#a50f1b; --wound:#a50f1b;
+  --glow-cyan:none; --glow-flow:none;
+}
+/* Ember, gold, success and warn run DARKER here than in the paper views below, which is not an
+   oversight. Those sit on white; a Windows 98 window is #bdbdbd grey, roughly half the luminance,
+   so the same ink loses about a third of its contrast. Measured on this ground the paper values
+   gave ember 2.83 and success 2.89, under the 3:1 floor; these clear 4.5. Two grounds, two inks. */
 html.skin-98 :is(.inv-sub, .post-sub){
   --bg:#ffffff; --bg1:#f4f4ef; --bg2:#fbfbf8; --bg3:#ecece6; --bg4:#e0e0da;
   --panel:#ffffff; --panel-solid:#ffffff; --grid-line:transparent;
