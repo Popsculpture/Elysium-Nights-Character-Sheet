@@ -88,6 +88,13 @@ Bypass wired into the unarmed engine, and a `migrate()` hardening pass.
   profile is unlocked (`?login&portal=admin` for the Admin card), and clears nothing. The
   settings tray's "SIGN OUT" is the in-app route: it forgets BOTH profiles' unlocks and reopens
   the current profile's login card.
+- Each skin remembers the palette it last wore, in `en_skin_theme_v1`, a map keyed
+  `<desktop>:<skin>` (`freelancer:98`, `admin:classic`, ...). Switching skins applies that skin's
+  palette THROUGH `set()`, so it lands on the active Freelancer's record and rides their export,
+  which is the cost the author accepted on 2026-09-09 for skins that look like three machines.
+  `SKIN_SEED` in settings.js is what a skin wears before it has remembered anything. The desktop
+  half of the key is what keeps an Admin palette out of the Freelancer side. The older
+  `en_skin_seeded_v1` flag is retired and unread; a device carrying one is not migrated.
 - Looks are device state too: the OS skin in `en_skin_v1` (Classic when absent), and on '98 the
   wallpaper choice in `en_wall_v1`, custom wallpapers as JPEG data URLs in `en_wall_custom_v1`,
   and the desktop's three toggles in `en_wall_dim_v1`, `en_wall_shadow_v1` and `en_wall_glow_v1`.

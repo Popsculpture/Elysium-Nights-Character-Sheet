@@ -228,9 +228,9 @@ EN.theme = (function () {
   /* The device fallback, used before any character is active and by every character that has
      not chosen a palette; a stored one on the record always wins. Elysium Nights rather than
      #GRID since 2026-09-08, which also brings this into line with Admin, whose own fallback has
-     always been Elysium Nights. Note this is ONE default and not one per skin: the tray's own
-     copy promises that a palette and a skin are independent axes, "any color theme wears any
-     skin", so a default that moved when you changed skin would break that promise. */
+     always been Elysium Nights. Still ONE fallback and not one per skin: the per-skin memory
+     below is a different mechanism, a record of what each skin was last wearing rather than a
+     default for anything that has never chosen. */
   function deviceGet() { try { return localStorage.getItem(KEY) || "highheavens"; } catch (e) { return "highheavens"; } }
   function get() {
     if (inAdmin()) return canonKey(adminGet());
@@ -305,10 +305,16 @@ EN.theme = (function () {
   function set(k) {
     // The Admin desktop is not about a character, so its selection can never
     // reach a record and therefore can never ride a .json into another app.
-    if (inAdmin()) { try { localStorage.setItem(ADMIN_KEY, k); } catch (e) {} apply(k); return; }
+    if (inAdmin()) {
+      try { localStorage.setItem(ADMIN_KEY, k); } catch (e) {}
+      rememberSkinTheme(getSkin(), k);
+      apply(k); return;
+    }
     var ch = activeCh();
     if (ch && EN.store && EN.store.update) EN.store.update(function (c) { c.theme = k; });
     else { try { localStorage.setItem(KEY, k); } catch (e) {} }
+    // and the skin you are on keeps it, so coming back to this skin comes back to this palette
+    rememberSkinTheme(getSkin(), k);
     apply(k);
   }
   // repaint whatever the active character (or the device) currently selects; called every render.
@@ -324,11 +330,14 @@ EN.theme = (function () {
   }
   function init() { apply(get()); applySkin(getSkin()); applyWall(); }
 
-  /* ---- SKIN: the shape of the interface, independent of the palette --------
+  /* ---- SKIN: the shape of the interface -----------------------------------
      A second axis beside color: type, corners, chrome, effects. Any palette
-     wears any skin. DEVICE-LEVEL, on purpose: a palette is the character's
-     (it rides in their export), but the skin is the OS this device runs, so
-     it is neither per-character nor per-desktop, and never exported.
+     still WEARS any skin, but the two axes stopped being independent on
+     2026-09-09: each skin now remembers the palette it last wore and applies
+     it when you switch back (see the per-skin memory further down).
+     DEVICE-LEVEL, on purpose: a palette is the character's (it rides in their
+     export), but the skin is the OS this device runs, so it is neither
+     per-character nor per-desktop, and never exported.
 
      Each skin is a root class (html.skin-98, html.skin-droid) that theme.css
      overrides against, the same mechanism as html.light. Classic is the
@@ -351,31 +360,66 @@ EN.theme = (function () {
     // the wallpaper resolves per skin (a preset is '98-only), so a skin change re-reads it
     applyWall();
   }
-  /* A skin may nominate the palette it was designed for, applied the FIRST time that skin is
-     chosen on this device and never again. #GRIDOS '98 is not a mood board, it is the Windows
-     scheme, so landing on the skin in someone else's neon is the wrong first impression; but a
-     palette is a choice, and re-applying it on every visit would be the app arguing with the
-     person using it. One flag per skin, so the seed fires once and then gets out of the way.
+  /* ---- EACH SKIN REMEMBERS ITS OWN PALETTE (author's call, 2026-09-09) ------------------
+     Classic, '98 and #GRIDroid each keep the last palette they wore, so the three desktops can
+     look like three different machines instead of one machine in three shapes. Switching skins
+     applies that skin's palette; picking a palette records it against the skin you are on.
 
-     It is deliberately NOT in init(): a device that has always run '98 should keep whatever
-     palette it is wearing, so this fires only when the skin is actively picked. */
-  var SEED_KEY = "en_skin_seeded_v1";
-  var SKIN_SEED = { "98": "gridos98" };
-  function seedSkinPalette(skin) {
-    var want = SKIN_SEED[skin];
-    if (!want || !find(want)) return;
-    var done;
-    try { done = JSON.parse(localStorage.getItem(SEED_KEY) || "{}"); } catch (e) { done = {}; }
-    if (!done || typeof done !== "object" || done[skin]) return;
-    done[skin] = 1;
-    try { localStorage.setItem(SEED_KEY, JSON.stringify(done)); } catch (e) {}
-    set(want);   // through set(), so it lands wherever a palette normally lives and is remembered
+     WHAT THIS COSTS, stated plainly because it is the part that surprises. A palette is stored
+     on the CHARACTER and rides their .json; a skin is stored on the DEVICE and never leaves it.
+     For the skin to win, the switch has to write the palette where palettes live, so changing
+     skin changes the active Freelancer's recorded palette and therefore what they export. That
+     is not new behaviour so much as generalised: the '98 seed this replaces already did exactly
+     that, once. The author chose it over the alternatives on 2026-09-09.
+
+     The slot is keyed by DESKTOP as well as skin. Admin's palette lives under its own key so it
+     can never ride a .json, and a shared per-skin memory would have leaked it back into the
+     Freelancer side by the back door; two slots per skin keeps that promise intact.
+
+     SKIN_SEED is what a skin wears the first time, before it has remembered anything: #GRIDOS
+     '98 is not a mood board, it is the Windows scheme, and landing on it in someone else's neon
+     is the wrong first impression. It fires once by construction now rather than by a flag,
+     since arriving at a skin always leaves a memory behind. The old en_skin_seeded_v1 flag is
+     retired; a device carrying one simply falls through to the seed on its next '98 switch and
+     lands on the palette it is already wearing. */
+  var SKIN_THEME_KEY = "en_skin_theme_v1";
+  /* One per skin, and each is on the record rather than invented here. Classic's is the game's
+     own palette and the app's default. '98 is the actual Windows scheme. #GRIDroid was designed
+     against #GRID: its brief called for the palette's --flow beside its --accent, and #GRID is
+     the pair that gives the mockup's cyan and magenta. */
+  var SKIN_SEED = { "classic": "highheavens", "98": "gridos98", "droid": "grid" };
+  function skinThemes() {
+    try {
+      var m = JSON.parse(localStorage.getItem(SKIN_THEME_KEY) || "{}");
+      return (m && typeof m === "object" && !Array.isArray(m)) ? m : {};
+    } catch (e) { return {}; }
+  }
+  function skinSlot(skin) { return (inAdmin() ? "admin:" : "freelancer:") + skin; }
+  function rememberSkinTheme(skin, k) {
+    if (!skin || !k) return;
+    var m = skinThemes(), slot = skinSlot(skin);
+    if (m[slot] === k) return;
+    m[slot] = k;
+    try { localStorage.setItem(SKIN_THEME_KEY, JSON.stringify(m)); } catch (e) {}
+  }
+  /* Resolved through canonKey and checked against the library on the way out, so a remembered
+     custom that was later promoted still lands, and one that was deleted reads as no memory at
+     all rather than painting THEMES[0] by surprise. */
+  function recallSkinTheme(skin) {
+    var k = canonKey(skinThemes()[skinSlot(skin)] || "");
+    return (k && find(k)) ? k : null;
   }
   function setSkin(k) {
-    var key = findSkin(k).key;
+    var key = findSkin(k).key, prev = getSkin();
+    // what the outgoing skin was wearing, captured even if it was never explicitly chosen there
+    if (key !== prev) rememberSkinTheme(prev, get());
     try { localStorage.setItem(SKIN_KEY, key); } catch (e) {}
-    seedSkinPalette(key);
     applySkin(key);
+    var want = recallSkinTheme(key) || (find(SKIN_SEED[key] || "") ? SKIN_SEED[key] : null);
+    // set() rather than apply(), so the palette lands wherever palettes live and is recorded
+    // against the new skin on the way through
+    if (want) { if (want !== get()) set(want); else rememberSkinTheme(key, want); }
+    else rememberSkinTheme(key, get());
   }
 
   /* ---- wallpaper (the '98 desktop) ----
@@ -1056,7 +1100,7 @@ EN.settings = (function () {
     return [
       el("div.set-sectitle", { text: "// CHANGE SHEET APPEARANCE" }),
       el("label.set-label", { text: "OS Skin" }),
-      el("p.set-hint", { text: "The shape of the interface: type, corners, chrome. Independent of the palette below, so any color theme wears any skin. Saved on this device." }),
+      el("p.set-hint", { text: "The shape of the interface: type, corners, chrome. Any color theme wears any skin, and each skin remembers the last one you gave it, so the three can look like three different machines. Switching skins repaints the loaded Freelancer and saves that palette to them. Saved on this device." }),
       el("div.row.wrap", { style: { gap: "6px" } }, EN.theme.SKINS.map(function (s) {
         return el("button.btn.sm" + (s.key === cur ? ".primary" : ""), {
           title: s.sub,

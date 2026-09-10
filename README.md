@@ -23,6 +23,11 @@ settings cog. The choice is remembered per device (`?portal=admin` overrides it 
 
 ## Skins and wallpapers
 
+Each skin remembers the last color theme you gave it, so the three can look like three different
+machines: switch to #GRIDOS '98 and it comes back in the Windows scheme, switch to Classic and it
+comes back in whatever you left there. Switching skins repaints the loaded Freelancer and saves
+that palette to them, so a skin change is also a change to what that character exports.
+
 Settings has an OS Skin row beside the color themes: Classic (the look as shipped), #GRIDOS '98
 (a Windows 98 homage: bevels, title bars with caption buttons, a taskbar with START, an Explorer
 toolbar under the header whose address bar names the view you have open, an

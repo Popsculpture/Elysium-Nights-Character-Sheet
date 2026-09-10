@@ -8610,6 +8610,57 @@ carried a comment about Weapon Focus Caliber that `pdfexport.js` lacked. That is
 discipline `parseUses` got earlier today, and for the same reason, since a plain diff is what
 turns the next drift into something anyone can see.
 
+## Each skin keeps its own palette, 2026-09-09
+
+Author's ask: the three OS skins should each remember the colour theme last assigned to them, so
+all three can have their own.
+
+The obstacle was that the two settings live in different places and always have. A palette is the
+CHARACTER's and rides their .json; a skin is the DEVICE's and never leaves it. So "the skin has a
+palette" needs a rule for which one wins when they disagree, and that was a call to put to the
+author rather than guess. Three options went to him: the skin wins and writes to the record, the
+character wins and the skin only fills gaps, or the record grows a palette per skin and carries
+all three in the export. He chose the first, with the cost named on the face of it.
+
+**What it does.** `en_skin_theme_v1` holds a map keyed `<desktop>:<skin>`. Picking a palette
+records it against the skin you are on (`set()` is the single funnel for that, both branches of
+it). Switching skins captures what the OUTGOING skin was wearing, then applies the incoming
+skin's memory through `set()`, so the palette lands where palettes live and is recorded against
+the new skin on the way through. Leaving on the way out is what makes the memory work for a skin
+the person never explicitly assigned anything to.
+
+**The desktop half of the key** is not decoration. Admin's palette lives under its own key
+precisely so it can never ride a .json, and one shared per-skin memory would have leaked it back
+into the Freelancer side by the back door. Two slots per skin keeps that promise.
+
+**Seeds.** `SKIN_SEED` is what a skin wears the first time, before it has remembered anything,
+and it now covers all three rather than '98 alone. None of the three is invented here: Classic's
+is Elysium Nights, the game's own palette and the app's default; '98's is the Windows scheme;
+#GRIDroid's is #GRID, which its design brief named when it called for the palette's --flow beside
+its --accent to get the mockup's cyan and magenta. The old `en_skin_seeded_v1` flag is retired.
+It existed to fire the '98 seed exactly once, which the memory now does by construction, since
+arriving at a skin always leaves a memory behind. A device carrying the old flag is not migrated
+and does not need to be: it simply falls through to the seed on its next switch and lands on the
+palette it is already wearing.
+
+A remembered key is resolved through `canonKey` and checked against the library before it is
+used, so a custom that was later promoted to a built-in still lands, and one that was deleted
+reads as no memory rather than painting THEMES[0] by surprise.
+
+**Copy.** The tray's OS Skin hint said the two axes were independent, "any color theme wears any
+skin", and the comment over the device fallback cited that promise as the reason there was one
+default rather than one per skin. Both are rewritten, along with the SKIN block header, the
+README and the HANDOFF device-state list.
+
+Verified in the live app. From a cold load: switching to a skin for the first time seeds it;
+assigning Merlot on '98, going to Classic (Elysium Nights) and back returns Merlot; a round trip
+through #GRIDroid and back returns it again; the memory survives a reload; and driving it through
+the tray's own buttons rather than the API does the same and leaves the Color Theme picker
+showing the right swatch. The record follows on every switch, which is the behaviour that was
+chosen. The author's device was found on #GRIDroid wearing Elysium Nights, not where the previous
+session left it, so he had been using it; it was put back exactly there, with '98's slot restored
+to #GRIDOS '98 after the Merlot test.
+
 ## The Views button wears the author's gallery grid, 2026-09-09
 
 Author, pointing at the Explorer toolbar: replace the four-square Views mark with his nine-square
