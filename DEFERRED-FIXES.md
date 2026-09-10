@@ -8610,6 +8610,68 @@ carried a comment about Weapon Focus Caliber that `pdfexport.js` lacked. That is
 discipline `parseUses` got earlier today, and for the same reason, since a plain diff is what
 turns the next drift into something anyone can see.
 
+## An Area of Effect template you can turn, 2026-09-09
+
+Author's ask, from the Space, Speed & Area panel: a widget with a grid, square or hex, a dropdown
+for the Area shape and a dropdown or a manual box for its size.
+
+**The rules came first, because a diagram states rules.** Part 2 (Movement & Distance > Area,
+pulled 2026-09-09) settles the five shapes and settles them precisely, and the widget draws them
+literally: Sphere X is a RADIUS around a point you can see; Cone X is the WIDEST POINT of a
+triangle from you or the muzzle, not its length; Line X is a LENGTH, one space wide; Cube X is
+each EDGE of a square zone; Aura X is a radius on you that travels with you. Both grids are the
+book's own: "Combat usually plays out on a grid (1 inch squares or hexagons work)."
+
+**What the book does not settle, the widget says out loud rather than smuggling into a picture.**
+The word "diagonal" never appears in Part 2. There is no hex metric, no cone angle or widening
+rate, and no rule for a space caught only at its corner. So the file documents each choice and the
+panel prints them under the diagram: a diagonal step costs 1, a cone widens one space per space
+and reaches its stated width at the far edge, and a space is in or out by its centre. The Cube has
+no hex form in the book at all, so on hex it is drawn as X rows of X and labelled an
+approximation on screen.
+
+**Engineering.** State lives in module closure vars and the widget redraws only its own box, never
+EN.app.render(), which is the Conditions-search pattern in the same file and the reason the
+controls keep focus. The SVG is built as a string and handed to el(..., {html}), since el() calls
+createElement and cannot make SVG. Every colour is a class resolved in theme.css, so all three
+skins and every palette reach it with no second definition.
+
+**Verified by computation, not by eye.** All 30 combinations of 2 grids x 5 shapes x 3 sizes match
+the closed forms the shapes imply, and a separate reimplementation confirmed the property the book
+actually fixes: on both grids, ring or column d holds exactly d cells and the widest point equals
+X, for sizes 1 to 8, with no duplicates. State survives a full re-render, and the size box takes
+"", "0", "-4", "abc" and "99" without throwing.
+
+**Four defects an adversarial review found, all confirmed by a second agent with measurements, all
+fixed.** Eight further findings were refuted and dropped.
+
+1. The hex field was drawn by walking a fixed axial q window per row. A row's screen x is
+   W * (q + r/2), so a window that does not move with r shifts half a hex right on every row: the
+   field came out a sheared parallelogram inside a rectangular viewBox, with two blank triangles,
+   40 to 60 percent of the width in slack, hexes rendering about 0.64 the size of squares at the
+   same Area, and cone, line and cube sitting off centre in their own frame. Each row now solves
+   its own q range over a pixel window. The n=12 sphere viewBox went from 1092x615 to 702x615.
+   The comment on the old line even promised to "keep whatever lands inside the drawn extent",
+   which nothing did, which is its own evidence the shear was unintended.
+2. The origin marker was painted in --flow, the one semantic token applyVars never manages, so on
+   a light palette it kept the stylesheet's pale violet and dissolved into the panel. It now takes
+   a ring of --text under html.pal-light: measured 7.37:1 against a bare cell on #GRIDOS '98 and
+   14.19:1 on Daybreak, with every dark palette left pixel-identical.
+3. The SQUARE and HEX chips changed size on every toggle on #GRIDroid, 8px of height and 6px of
+   width, because that skin's tap floor puts a clickable chip on a 36px rung keyed off an inline
+   cursor while .chip alone is the 28px label rung, so only the selected chip (which also matches
+   .chip.on) got the tall one. They carry the inline cursor now, and aria-pressed as a string,
+   since el() turns a boolean into an empty attribute and aria-pressed="" reads as no toggle.
+4. The two captions were bare labels tied to nothing, so neither control had an accessible name
+   and clicking a caption focused nothing. Each control now sits inside its label.
+
+Also fixed before review: the size box kept showing 99 beside a diagram of 12. It clamps on blur
+now, so the field and the picture always agree.
+
+Left for the author to call: the cone points east and cannot be rotated, and an even-sized square
+cone leans half a space to one side, which is unavoidable when an even-width row has to sit on a
+grid row. The hex wedge has no such problem.
+
 ## The Basics reaches the Codex, minus what the Codex already had, 2026-09-09
 
 Author pasted the primer chapter and asked for it in the Codex, then narrowed it mid-pass: only

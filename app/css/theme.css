@@ -2566,6 +2566,31 @@ html.light .pop-btn:hover{ background:rgba(0,0,0,.05) !important; }
 .fx-svg .fx-trail{ stroke:#C9A227; stroke-width:9; }
 .fx-svg .fx-streak{ stroke:#AFAFAF; stroke-width:7; }
 .fx-svg .fx-dot{ fill:#AFAFAF; stroke:none; }
+
+/* ---- the Codex's Area of Effect template (app/js/aoegrid.js) --------------
+   Structure in JS, appearance here, which is the .fx-svg arrangement one block
+   up. Every colour is a palette token rather than a literal, so the diagram is
+   correct on all three skins across every palette: the grid takes the frame colour, a caught space takes the accent
+   at low opacity, and the origin marker takes the Flow purple so it never reads
+   as just another filled space. Sized from the viewBox with width:100%, so it
+   fits #GRIDroid's narrow column with no media query. */
+.aoe-svg{ display:block; width:100%; height:auto; max-width:460px; margin:0 auto; }
+.aoe-cell{ fill:none; stroke:var(--border); stroke-width:1; }
+.aoe-cell.aoe-hit{ fill:var(--accent); fill-opacity:.26; stroke:var(--accent); stroke-width:1.5; }
+.aoe-origin{ fill:var(--flow); stroke:var(--bg1); stroke-width:1.5; }
+/* ...except that --flow is the one semantic token applyVars never manages, so on a LIGHT
+   palette it stays the stylesheet's pale violet and the marker dissolves into the panel. The
+   ink the palette guarantees is --text, so on those palettes the marker gets a ring of it.
+   Measured: 7.37:1 against a bare cell and 4.58:1 against a filled one on #GRIDOS '98, 14.19
+   and 9.99 on Daybreak. Every dark palette is untouched, since pal-light is off there. */
+html.pal-light .aoe-origin{ stroke:var(--text); stroke-width:2; }
+.aoe-box{ margin:2px 0 0; }
+.aoe-note{ margin:6px 0 0; }
+/* '98 draws a window's contents on a sunken face, so the diagram sits in one too */
+html.skin-98 .aoe-box{
+  padding:8px; background:var(--bg1);
+  border:2px solid; border-color:var(--bev-lo) var(--bev-hi) var(--bev-hi) var(--bev-lo);
+}
 .fx-svg .fx-env, .fx-svg .fx-ring, .fx-svg .fx-check, .fx-svg .fx-streak{ transform-box:fill-box; transform-origin:center; }
 /* idle (pre-play) state: only the open envelope shows */
 .fx-svg .fx-env, .fx-svg .fx-trail, .fx-svg .fx-streak, .fx-svg .fx-dot{ opacity:0; }

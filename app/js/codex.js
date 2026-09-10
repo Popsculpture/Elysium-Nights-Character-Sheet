@@ -116,7 +116,11 @@ EN.codexView = (function () {
       subTitle("Areas of Effect"),
       proseBlock(B.space.areaIntro),
       el("div", null, B.space.shapes.map(function (sh) { return ruleBlock(sh.name, sh.text); })),
-      proseBlock(B.space.areaNote)
+      proseBlock(B.space.areaNote),
+      /* The interactive template. Its own module, its own local redraw: it never calls
+         EN.app.render(), so its controls are never torn out from under the pointer. */
+      (EN.aoeGrid && EN.aoeGrid.build) ? subTitle("Try It On A Grid") : null,
+      (EN.aoeGrid && EN.aoeGrid.build) ? EN.aoeGrid.build() : null
     ]));
 
     out.push(refPanel("bx-caliber", "Caliber", "THE GROWTH DIAL", [
