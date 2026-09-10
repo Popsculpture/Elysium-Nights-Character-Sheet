@@ -173,12 +173,20 @@ EN.aoeGrid = (function () {
     var w = (b.hi1 - b.lo1 + 1) * SQ, h = (b.hi2 - b.lo2 + 1) * SQ;
     function px(x) { return (x - b.lo1) * SQ; }
     function py(y) { return (y - b.lo2) * SQ; }
+    /* Two passes, because SVG has no z-index: it paints in document order, and neighbouring
+       cells share an edge. Emitted in one pass, the 1px stroke of a plain cell drawn LATER lands
+       on top of the 1.5px highlight of a caught cell drawn earlier, so a caught space came out
+       with pieces of its outline missing along whichever edges its neighbours were drawn after
+       it. The plain field goes down first, every caught space over it, the marker last. */
+    var over = "";
     for (var x = b.lo1; x <= b.hi1; x++) {
       for (var y = b.lo2; y <= b.hi2; y++) {
-        var on = hit[key(x, y)] ? " aoe-hit" : "";
-        s += '<rect class="aoe-cell' + on + '" x="' + px(x) + '" y="' + py(y) + '" width="' + SQ + '" height="' + SQ + '"/>';
+        var on = !!hit[key(x, y)];
+        var rect = '<rect class="aoe-cell' + (on ? " aoe-hit" : "") + '" x="' + px(x) + '" y="' + py(y) + '" width="' + SQ + '" height="' + SQ + '"/>';
+        if (on) over += rect; else s += rect;
       }
     }
+    s += over;
     s += originMark(px(0) + SQ / 2, py(0) + SQ / 2, SQ * 0.30);
     return wrapSvg(s, w, h, cells.length, shape, n);
   }
@@ -216,10 +224,14 @@ EN.aoeGrid = (function () {
     }
     var minX = Math.min.apply(null, xs), maxX = Math.max.apply(null, xs);
     var minY = Math.min.apply(null, ys), maxY = Math.max.apply(null, ys);
+    // the plain field first, then the caught spaces over it: see the note in drawSquare
+    var over = "";
     grid.forEach(function (g) {
-      var on = hit[key(g.q, g.r)] ? " aoe-hit" : "";
-      s += '<polygon class="aoe-cell' + on + '" points="' + hexPoly(g.cx - minX, g.cy - minY, HEXR) + '"/>';
+      var on = !!hit[key(g.q, g.r)];
+      var poly = '<polygon class="aoe-cell' + (on ? " aoe-hit" : "") + '" points="' + hexPoly(g.cx - minX, g.cy - minY, HEXR) + '"/>';
+      if (on) over += poly; else s += poly;
     });
+    s += over;
     s += originMark(0 - minX, 0 - minY, HEXR * 0.42);
     return wrapSvg(s, maxX - minX, maxY - minY, cells.length, shape, n);
   }

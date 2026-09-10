@@ -8610,6 +8610,23 @@ carried a comment about Weapon Focus Caliber that `pdfexport.js` lacked. That is
 discipline `parseUses` got earlier today, and for the same reason, since a plain diff is what
 turns the next drift into something anyone can see.
 
+## The caught spaces stop being drawn over, 2026-09-09
+
+Author, pointing at a hex Line: the highlighted cells should always sit on top of the grid.
+
+They were not, and the cause is that SVG has no z-index. It paints in document order, and the
+diagram emitted its cells in one pass, row by row. Neighbouring cells share an edge, so a plain
+cell's 1px stroke drawn LATER landed on top of a caught cell's 1.5px highlight drawn earlier, and
+a caught space lost pieces of its outline along whichever edges its neighbours happened to follow
+it. Most visible on the diagonal shapes, where every caught cell has plain neighbours after it in
+the emission order.
+
+Two passes now: the plain field goes down first, every caught space over it, the origin marker
+last. No geometry changed, no cell moved, and nothing else in the drawing had to be touched.
+
+Verified across all ten combinations of the two grids and the five shapes: every caught cell comes
+after every plain one in document order, and the marker is the last node in the SVG in each case.
+
 ## The cone can be turned, 2026-09-09
 
 Author's ask: a rotation control for the cone. It applies to the Line too, which is the other
