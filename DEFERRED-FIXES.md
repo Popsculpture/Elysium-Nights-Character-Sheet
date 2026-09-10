@@ -8610,6 +8610,37 @@ carried a comment about Weapon Focus Caliber that `pdfexport.js` lacked. That is
 discipline `parseUses` got earlier today, and for the same reason, since a plain diff is what
 turns the next drift into something anyone can see.
 
+## The cone can be turned, 2026-09-09
+
+Author's ask: a rotation control for the cone. It applies to the Line too, which is the other
+shape the book aims rather than places, and the control hides itself for Sphere, Cube and Aura
+since turning those means nothing.
+
+**Rotation is an exact lattice turn, never an approximation.** A quarter turn on a square grid
+maps (x,y) to (-y,x); a sixth turn on a pointy top hex maps axial (q,r) to (-r,q+r). Both send
+whole cells onto whole cells, so a turned cone keeps every property the unturned one has,
+including the one number the book actually fixes: its widest point is still exactly X. Proved
+rather than assumed, by reimplementation: for sizes 1 to 12, at every facing on both grids, no
+duplicate cells, the cell count unchanged, ring or column d still holding exactly d cells, and a
+full turn returning to the starting set.
+
+**Which is why a square grid stops at four facings and a hex at six.** A diagonal is not a lattice
+rotation of a square grid, and under this diagram's counting convention (a diagonal step costs 1,
+so distance is Chebyshev) the ring at distance d turns a corner on the diagonal: the cells that
+would make a diagonal cone come out as an L bent round that corner rather than a triangle, and its
+widest row stops being X. Offering it would mean drawing a shape the rule does not describe, or
+quietly breaking the book's own number, on a page whose whole job is to be a reference. Four
+honest facings beat eight approximate ones, and the on-screen note now says why in one line.
+
+**The control** is two step buttons and a readout rather than a compass of fixed points, because
+the number of directions is a property of the grid. Stepping wraps, so the same control serves
+four directions or six and cannot go stale when the grid changes under it. The spoken label picks
+the facing up too: "Area 4 cone on a square grid, facing S, 10 spaces".
+
+Verified in the app: the row appears for Cone and Line and is hidden for the other three, a full
+cycle on each grid returns to its starting direction (E S W N on square, E SE SW W NW NE on hex),
+the space count holds at every facing, and no request fails.
+
 ## An Area of Effect template you can turn, 2026-09-09
 
 Author's ask, from the Space, Speed & Area panel: a widget with a grid, square or hex, a dropdown

@@ -67,6 +67,28 @@ EN.aoeGrid = (function () {
   var _grid = "square";     // "square" or "hex"
   var _shape = "sphere";
   var _size = 3;
+  var _facing = 0;          // index into the current grid's DIRS, wrapped on read
+
+  /* WHY THE TWO GRIDS TURN BY DIFFERENT AMOUNTS. Rotation here is an exact lattice turn, never
+     an approximation: a quarter turn on a square grid maps (x,y) to (-y,x), and a sixth turn on
+     a pointy-top hex maps axial (q,r) to (-r,q+r). Both send whole cells onto whole cells, so a
+     rotated cone keeps every property the unrotated one has, including the one number the book
+     actually fixes: its widest point is still exactly X.
+
+     That is also why a square grid stops at four facings rather than eight. A diagonal is not a
+     lattice rotation of a square grid, and with this diagram's counting convention (a diagonal
+     step costs 1, so distance is Chebyshev) the ring at distance d turns a corner on the
+     diagonal: the cells that would make a diagonal cone come out as an L bent round that corner
+     rather than a triangle, and its widest row is no longer X. Offering it would mean either
+     drawing a shape the rule does not describe or quietly breaking the book's own number. Four
+     honest facings beat eight approximate ones on a page whose whole job is to be a reference. */
+  var SQ_DIRS = ["E", "S", "W", "N"];                          // quarter turns, clockwise
+  var HEX_DIRS = ["E", "SE", "SW", "W", "NW", "NE"];           // sixth turns, clockwise
+  function dirs() { return _grid === "hex" ? HEX_DIRS : SQ_DIRS; }
+  function facing() { var d = dirs(); return ((_facing % d.length) + d.length) % d.length; }
+  function facingName() { return dirs()[facing()]; }
+  // Cone and Line are the shapes the book gives a direction; the other three are placed, not aimed
+  function aimed(shape) { return shape === "cone" || shape === "line"; }
 
   var SQ = 24;              // square cell, px
   var HEXR = 15;            // hex circumradius, px
@@ -121,6 +143,16 @@ EN.aoeGrid = (function () {
     return out;
   }
 
+  function rotSq(c, k) {
+    var x = c.x, y = c.y, i, t;
+    for (i = 0; i < k; i++) { t = x; x = -y; y = t; }     // quarter turn clockwise, y down
+    return { x: x, y: y };
+  }
+  function rotHex(c, k) {
+    var q = c.q, r = c.r, i, nq;
+    for (i = 0; i < k; i++) { nq = -r; r = q + r; q = nq; }   // sixth turn clockwise
+    return { q: q, r: r };
+  }
   function bounds(pts, key1, key2, pad) {
     var lo1 = 0, hi1 = 0, lo2 = 0, hi2 = 0;
     pts.forEach(function (p) {
@@ -134,7 +166,8 @@ EN.aoeGrid = (function () {
 
   /* ---- the two drawings ------------------------------------------------- */
   function drawSquare(shape, n) {
-    var cells = sqCells(shape, n), hit = {}, s = "";
+    var cells = sqCells(shape, n), hit = {}, s = "", k = facing();
+    if (k && aimed(shape)) cells = cells.map(function (c) { return rotSq(c, k); });
     cells.forEach(function (c) { hit[key(c.x, c.y)] = 1; });
     var b = bounds(cells.concat([{ x: 0, y: 0 }]), "x", "y", 1);
     var w = (b.hi1 - b.lo1 + 1) * SQ, h = (b.hi2 - b.lo2 + 1) * SQ;
@@ -156,7 +189,8 @@ EN.aoeGrid = (function () {
     return pts.join(" ");
   }
   function drawHex(shape, n) {
-    var cells = hexCells(shape, n), hit = {}, s = "";
+    var cells = hexCells(shape, n), hit = {}, s = "", k = facing();
+    if (k && aimed(shape)) cells = cells.map(function (c) { return rotHex(c, k); });
     cells.forEach(function (c) { hit[key(c.q, c.r)] = 1; });
     var all = cells.concat([{ q: 0, r: 0 }]);
     var b = bounds(all, "q", "r", 1);
@@ -197,7 +231,8 @@ EN.aoeGrid = (function () {
   function wrapSvg(inner, w, h, count, shape, n) {
     var info = shapeInfo(shape);
     var label = "Area " + n + (shape === "sphere" ? "" : " " + shape) + " on a " + _grid
-      + " grid, " + count + (count === 1 ? " space" : " spaces");
+      + " grid" + (aimed(shape) ? ", facing " + facingName() : "")
+      + ", " + count + (count === 1 ? " space" : " spaces");
     return '<svg class="aoe-svg" viewBox="0 0 ' + Math.ceil(w) + " " + Math.ceil(h) + '" xmlns="http://www.w3.org/2000/svg"'
       + ' role="img" aria-label="' + label + '"><title>' + label + ", " + info.name + '</title>' + inner + "</svg>";
   }
@@ -235,6 +270,8 @@ EN.aoeGrid = (function () {
       var n = clampSize(_size);
       var info = shapeInfo(_shape);
       box.appendChild(el("div", { html: _grid === "hex" ? drawHex(_shape, n) : drawSquare(_shape, n) }));
+      facingRow.style.display = aimed(_shape) ? "" : "none";
+      facingOut.textContent = facingName();
       var txt = info.text;
       if (_grid === "hex" && _shape === "cube") {
         txt += " The book calls this a square zone and gives no hex version, so it is drawn here as "
@@ -280,6 +317,22 @@ EN.aoeGrid = (function () {
     }
     var gridRow = el("div.row", { style: { gap: "6px" } }, [gridChip("square", "SQUARE"), gridChip("hex", "HEX")]);
 
+    /* FACING, shown only for the two shapes the book aims rather than places. Two step buttons
+       rather than a compass of fixed points, because the number of directions is a property of
+       the grid: four on square, six on hex. Stepping wraps, so one control fits both without
+       going stale when the grid changes under it. */
+    var facingOut = el("span.mono", { style: { fontSize: "11px", letterSpacing: ".14em", color: "var(--accent)", minWidth: "34px", textAlign: "center" } });
+    function turn(by, label, title) {
+      return el("button.chip", { type: "button", title: title, style: { cursor: "pointer" },
+        onclick: function () { _facing = facing() + by; draw(); } }, label);
+    }
+    var facingRow = el("div.row", { style: { gap: "6px", alignItems: "center", marginBottom: "10px" } }, [
+      el("span", { style: { fontFamily: "var(--mono)", fontSize: "9px", letterSpacing: ".18em", color: "var(--text3)" }, text: "FACING" }),
+      turn(-1, "\u21ba", "Turn left"),
+      facingOut,
+      turn(1, "\u21bb", "Turn right")
+    ]);
+
     var controls = el("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "10px" } }, [
       ctlField("SHAPE", shapeSel),
       ctlField("SIZE IN SPACES", sizeIn)
@@ -292,10 +345,11 @@ EN.aoeGrid = (function () {
         gridRow
       ]),
       controls,
+      facingRow,
       box,
       note,
       el("p.help", { style: { margin: "6px 0 0", fontStyle: "italic" },
-        text: "The shapes and their sizes are the book's. How the grid counts them is this diagram's own convention: a diagonal step costs 1 space, a cone widens one space per space and reaches its stated width at the far edge, and a space is in or out by its center. Cone, Line and Aura start on you; Sphere and Cube are placed on a point you can see." })
+        text: "The shapes and their sizes are the book's. How the grid counts them is this diagram's own convention: a diagonal step costs 1 space, a cone widens one space per space and reaches its stated width at the far edge, and a space is in or out by its center. Cone, Line and Aura start on you; Sphere and Cube are placed on a point you can see. Facing turns in quarters on a square grid and in sixths on a hex one, since those are the turns that land whole spaces on whole spaces and keep a cone exactly its stated width." })
     ]);
   }
 
