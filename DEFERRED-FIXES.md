@@ -8610,6 +8610,51 @@ carried a comment about Weapon Focus Caliber that `pdfexport.js` lacked. That is
 discipline `parseUses` got earlier today, and for the same reason, since a plain diff is what
 turns the next drift into something anyone can see.
 
+## The Basics reaches the Codex, minus what the Codex already had, 2026-09-09
+
+Author pasted the primer chapter and asked for it in the Codex, then narrowed it mid-pass: only
+the parts that are missing.
+
+**What was already there, and is not duplicated.** The chapter opens with How Rolls Work, Edge and
+Snag, and Margin. Core Resolution owns all three in far more detail: the method split, the pool
+build with its d10 ranges and caps, the full margin bands on both methods, the consequence tables.
+Carrying the primer versions would have meant a second set of thresholds to keep in step, which is
+the exact fault dug out of this codebase four times already. Those three sections are dropped and
+Start Here ends with one italic line pointing down the page at the panels that own them.
+
+**What was missing, checked rather than assumed.** The whole Codex was rendered with all eighteen
+panels expanded, 78k characters of text, and searched. The terms were being USED everywhere and
+DEFINED almost nowhere: "five feet", "sphere", "cone", "Reservoir" and "Saving Throw Focus"
+appeared zero times; Caliber appeared nine times, always incidentally ("the Caliber bonus from a
+Skill Focus") and never with its ladder; Speed twenty-four times ("move a distance equal to your
+Speed") and never with its formula; Node, Cipher and Bandwidth only ever in passing, inside a gear
+row or a condition entry.
+
+So six panels lead the tab now, before Core Resolution: Start Here (the vocabulary framing and a
+walkthrough of how to read a class line), Space, Speed & Area, Caliber, Class Resources, The Flow,
+and The #GRID.
+
+**Numbers are derived, not retyped.** The Caliber ladder is folded out of `EN.rules.caliberByLevel`
+at render time, consecutive levels sharing a value collapsing into a range, which is both how the
+book prints it and how it stays correct if the ladder is ever reshaped. The class resource table
+is built from `EN.classes[k].resource` and `.saveFocus`, over a sorted key list rather than a
+hardcoded one, so a class added later appears with no edit here. The only formula stated as prose
+is Speed, because it lives in code rather than data (`engine.js` derive(), Math.max(3, 6 + agiMod)
+plus chrome, loadout and lineage); the data file's header says so, so the pair is findable.
+
+**Two things the derived table surfaced, for the author rather than for me to change.** The pasted
+chapter says every class resource is "Caliber plus a specific Attribute modifier (minimum of 1)",
+and the app disagrees for the Shaper, whose maximum is `(Caliber x 3) + Flow Modifier`. The
+chapter's "unless a feature says otherwise" covers it loosely, but the blanket sentence is wrong
+as written. Separately, the Stitcher's `maxFormula` in `class_stitcher_resources.js` is stored as
+a full sentence ("Your maximum Triage is equal to your Caliber + your Tech Modifier (minimum of
+1).") where its six siblings store a bare formula, so it reads long in the table column. Left
+alone: it is rules data and normalising it is the author's call.
+
+Verified in the live app: six panels in order ahead of Core Resolution, both derived tables
+correct against the class files and the rules ladder, the previously absent terms all present, no
+horizontal overflow and no offending elements even on #GRIDroid at phone width, no console errors.
+
 ## Each skin keeps its own palette, 2026-09-09
 
 Author's ask: the three OS skins should each remember the colour theme last assigned to them, so

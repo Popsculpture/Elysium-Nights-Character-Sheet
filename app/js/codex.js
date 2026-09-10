@@ -59,6 +59,99 @@ EN.codexView = (function () {
     return el("div.section-title", null, [document.createTextNode(label), el("span.line")]);
   }
 
+  /* ---- The Basics ------------------------------------------------------
+     The primer chapter, first because it is what you read first. Every number
+     it quotes is pulled from wherever that number already lives rather than
+     restated here: the Caliber ladder from EN.rules, and every class resource
+     from EN.classes. Rolls, Edge and Snag, and Margin are not here at all,
+     because Core Resolution below already owns them in full. See the header of
+     app/data/basics.js. */
+  function calRows() {
+    var by = (EN.rules || {}).caliberByLevel;
+    if (!by) return [];
+    /* The ladder is stored one entry per level. Printed one row per level it is ten rows of
+       mostly repetition, so consecutive levels sharing a Caliber are folded into a range, which
+       is how the book prints it and how it stays right if the ladder is ever reshaped. */
+    var lv = Object.keys(by).map(Number).sort(function (a, b) { return a - b; });
+    var rows = [], run = null;
+    lv.forEach(function (n) {
+      if (run && by[n] === run.cal) { run.hi = n; return; }
+      if (run) rows.push(run);
+      run = { lo: n, hi: n, cal: by[n] };
+    });
+    if (run) rows.push(run);
+    return rows.map(function (r) {
+      return [r.lo === r.hi ? String(r.lo) : r.lo + " to " + r.hi, String(r.cal)];
+    });
+  }
+  function resourceRows() {
+    var cls = EN.classes || {};
+    // sorted rather than listed, so a class added later shows up here with no edit
+    return Object.keys(cls).sort().map(function (k) {
+      var c = cls[k] || {}, r = c.resource || {};
+      if (!r.name) return null;
+      return [c.name || k, r.name, r.attribute || "", r.maxFormula || "", c.saveFocus || ""];
+    }).filter(Boolean);
+  }
+  function basicsPanels() {
+    var B = EN.basics;
+    if (!B) return [];
+    var out = [];
+
+    out.push(refPanel("bx-start", "Start Here", "THE VOCABULARY", [
+      proseBlock(B.intro),
+      subTitle("Reading a Class Entry"),
+      proseBlock(B.together.intro),
+      el("div.muted-box", { style: { margin: "0 0 10px", padding: "10px 12px" } }, [
+        el("p", { style: { margin: 0, fontSize: "13px", fontStyle: "italic", color: "var(--text2)", lineHeight: "1.5" }, text: B.together.example })
+      ]),
+      proseBlock(B.together.reading),
+      proseBlock(B.together.closing),
+      el("p", { style: { margin: "0", fontSize: "12.5px", fontStyle: "italic", color: "var(--text3)" }, text: B.covered })
+    ]));
+
+    out.push(refPanel("bx-space", "Space, Speed & Area", "FIVE FEET TO A SPACE", [
+      proseBlock(B.space.intro),
+      proseBlock(B.space.speed),
+      subTitle("Areas of Effect"),
+      proseBlock(B.space.areaIntro),
+      el("div", null, B.space.shapes.map(function (sh) { return ruleBlock(sh.name, sh.text); })),
+      proseBlock(B.space.areaNote)
+    ]));
+
+    out.push(refPanel("bx-caliber", "Caliber", "THE GROWTH DIAL", [
+      proseBlock(B.caliber.intro),
+      refTable(["Class Level", "Caliber"], calRows(), [1]),
+      proseBlock(B.caliber.reading),
+      subTitle("Saving Throw Focus"),
+      proseBlock(B.caliber.focus)
+    ]));
+
+    out.push(refPanel("bx-res", "Class Resources", resourceRows().length + " CLASSES", [
+      proseBlock(B.resources.intro),
+      refTable(["Class", "Resource", "Attribute", "Maximum", "Save Focus"], resourceRows(), [1]),
+      proseBlock(B.resources.refresh),
+      proseBlock(B.resources.note)
+    ]));
+
+    out.push(refPanel("bx-flow", "The Flow", "SHAPERS & INVOCATIONS", [
+      proseBlock(B.flow.intro),
+      proseBlock(B.flow.invocation),
+      proseBlock(B.flow.overdraw),
+      subTitle("Unattuned"),
+      proseBlock(B.flow.unattuned)
+    ]));
+
+    out.push(refPanel("bx-grid", "The #GRID", "NODES, LINKS & CIPHERS", [
+      proseBlock(B.grid.intro),
+      proseBlock(B.grid.who),
+      subTitle("Terms"),
+      el("div", null, B.grid.terms.map(function (t) { return ruleBlock(t.name, t.text); }))
+    ]));
+
+    return out;
+  }
+
   // Build the Core Resolution reference panels from EN.resolution.
   function resolutionPanels() {
     var Rz = EN.resolution;
@@ -192,6 +285,15 @@ EN.codexView = (function () {
     blocks.push(el("div.row.between.wrap", { style: { marginBottom: "14px" } }, [
       el("h1", { style: { fontSize: "22px", letterSpacing: ".06em" }, html: 'CODEX <span class="dim3" style="font-size:13px">// rules reference library</span>' })
     ]));
+
+    /* The primer leads, because it is the chapter that teaches the words the rest of this
+       page is written in. It only draws when app/data/basics.js is present. */
+    var bx = basicsPanels();
+    if (bx.length) {
+      blocks.push(EN.ui.sectionTitle("The Basics"));
+      bx.forEach(function (p) { blocks.push(p); });
+      blocks.push(el("div", { style: { height: "10px" } }));
+    }
 
     blocks.push(EN.ui.sectionTitle("Core Resolution"));
     resolutionPanels().forEach(function (p) { blocks.push(p); });
