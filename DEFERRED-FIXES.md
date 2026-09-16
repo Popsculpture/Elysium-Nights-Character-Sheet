@@ -8610,6 +8610,72 @@ carried a comment about Weapon Focus Caliber that `pdfexport.js` lacked. That is
 discipline `parseUses` got earlier today, and for the same reason, since a plain diff is what
 turns the next drift into something anyone can see.
 
+## The Flow Attribute Check lands in the app, 2026-09-16 handoff
+
+The 16 September handoff: the roll a Shaper makes with the current when it is not an attack now
+has a name, a formula and a section of its own. Seven edits, and the answers to the five questions
+the handoff asked of the repo.
+
+**It is not a new number.** engine.js already derives `flow.attackBonus` as Flow Modifier +
+Caliber, which is exactly the Flow Attribute Check, so nothing recomputes it and no second field
+was added. A second name for one number is a second thing to keep in step, and this file has
+caught that fault four times. The comment on the field now says it serves both rolls and why
+neither ever adds a skill tier: Flow has no skill, so Caliber stands in for the Proficiency Bonus.
+
+Where it now shows. The Flow tab prints it beside the attack and the Save DC. The Attacks list
+gloss names both, since one row covers both rolls. The Codex's The Flow panel carries the rule
+itself, between the Invocation paragraph and Overdraw. Hidden for Unattuned classes for free,
+because every one of those surfaces is already inside a `d.flow` guard and engine.js only builds
+`flow` for a Shaper.
+
+**The rename.** Exactly one live string in the app used the extinct term: combat.js's Stabilize
+tooltip, "Medtech/Tech/Flow check DC 10", now the printed line "d20 Medtech, Tech, or Flow
+Attribute Check against DC 10". A case-sensitive sweep was the right instrument: every other hit
+in the repo is "Breakflow Check", which is a Saving Throw and correctly untouched.
+
+**Resonant Recovery.** The extinct "roll 3d20 and keep the highest" bullet is gone from both of
+its homes, talents.js and the brief in briefs.js, replaced by "+2 Edge Dice to the Flow Dice Pool
+check". Lucky Break's 3d20 is a real d20 rule and was left alone.
+
+**Answers to the five questions.**
+
+1. Yes: `d.flow.attackBonus` (engine.js) is the value, already Flow Modifier + Caliber. Everything
+   added reads it.
+2. Two live strings matched "flow check" case-insensitively, both fixed: briefs.js (inside the
+   Resonant Recovery brief) and combat.js (the Stabilize tooltip). Every other hit is either
+   "Breakflow Check" or sits in DEFERRED-FIXES.md and RULES-SYNC-CHANGELOG.md, which are logs, or
+   in "Elysium_Nights_Character_Sheet 5-9-2026.html", which git does not track.
+3. No general dice-pool builder exists. Two domain-specific Edge Dice calculators do, the deep
+   intrusion pool in grid.js and the crafting bench in inventory.js, and neither is a Flow pool.
+   So there was no Flow pool sourcing Edge Dice wrongly; there is simply no Flow pool builder yet.
+4. Yes, talents.js carries the full bullet text and it is now correct. Talent prose follows the
+   same rule as cyberware: read live from the catalog, never copied onto a save. Confirmed by
+   grep: no save path writes talent text, records store the talent KEY.
+5. Not as a per-class formula block. The nearest thing is the derived-stat cards in combat.js,
+   which carry a `formula` string for Defense, DR, Speed and Initiative. Flow's formula lives on
+   the Flow tab instead, which is where the new line went.
+
+**One thing the app cannot do yet, reported rather than guessed.** The handoff scopes the roll to
+"every Shaper; a Clanker whose class sets one". engine.js gates the whole `flow` object on
+`ch.class === "shaper"`, and nothing in the data gives a non-Shaper a Flow Attribute: "Clanker"
+appears in app/data only as prose about synthetic bodies. So a Clanker whose class sets a Flow
+Attribute would get no Flow block at all today. That is a pre-existing limit, not something this
+pass introduced, and it needs a data hook before it can be built.
+
+Verified: the derived numbers on a synthetic level 5 Harmonist with Mystique 16 come out
+attackBonus +6, Save DC 14, Reservoir 12, which is Flow Modifier 3 plus Caliber 3 and the printed
+formulas. The Flow tab was rendered against that synthetic character into a detached node with
+`store.active` and `store.update` both stubbed, so nothing could reach storage, and it prints
+"Flow Attribute Check +6 for work with the current that is not an attack" beside the unchanged
+"Flow Attack +6 vs Defense"; both functions were restored and the active record is still the
+author's own. The Codex panel was checked on screen. The Attacks list gloss was checked by reading
+the line and by the file parsing clean, not on screen: the Attacks panel needs a Shaper in the
+roster and creating one would have written to the author's records.
+
+Not done, because the handoff scoped it out: no pointer sentence under Part 1's Attributes > Dice
+Pool Method formula (declined by the author), and the printed sheet and PDF keep their "FLOW ATK"
+label, whose "d20 + this" gloss is true of both rolls.
+
 ## The caught spaces stop being drawn over, 2026-09-09
 
 Author, pointing at a hex Line: the highlighted cells should always sit on top of the grid.

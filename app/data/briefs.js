@@ -225,7 +225,7 @@ EN.briefs = {
   "Resonance Dabbler": "+1 Tech/Mystique/Charm; learn one Base Resonance plus one 1-FP Empowered Effect (or two Quick Hacks); free Empowered use/Long Rest. Upgrade: +1 Effect, free use on Short Rest.",
   "Resonance Optimizer": "Chosen damage type: your Invocations ignore Resistance and treat damage-die 1s as 2s; repeatable. Upgrade: Immunity becomes Resistance, maximize one such Invocation/Short Rest.",
   "Resonance Weaver": "Learn two Advanced Techniques/Invocation modifications; +2 FP usable only on those, refreshed Long Rest. Upgrade: +1 technique, +2 FP.",
-  "Resonant Recovery": "Ritual Recovery regains +1 Flow Point; in Severity 0 area roll 3d20 keep highest for the Flow check.",
+  "Resonant Recovery": "Ritual Recovery regains +1 Flow Point; in Severity 0 area, +2 Edge Dice to the Flow Dice Pool check.",
   "Static Grounding": "Edge vs Electromagnetic/Cognitive Invocations; reduce Invocation/resonant damage by Caliber. Upgrade: once/Long Rest Impulse Action to reflect a resisted Invocation at caster.",
   "Cyber-Reinforced Vitality": "+1 Body; Vitality max +2x level now, then +2 per level gained. Upgrade: Resistance to one of Ballistic/Piercing/Slashing/Bludgeoning.",
   "Cybernetic Surge": "+1 Body/Agility; once/Encounter Swift Action Surge: double Speed, +1d6 melee, Edge on Body/Agility saves, then 1 Fatigue (clears Short Rest). Upgrade: twice, 2 rounds, clears at Encounter end.",

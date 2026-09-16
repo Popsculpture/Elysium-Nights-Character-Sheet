@@ -264,7 +264,7 @@ EN.talents = [
     name: "Resonant Recovery",
     category: "The Flow & Resonance",
     requirements: "Character Level 8, Shaper.",
-    text: "You are deeply synchronized with the ambient frequencies of the world. You gain the following benefits:\n• When you perform a Ritual Recovery, you regain 1 additional Flow Point beyond your normal amount.\n• If you perform a Ritual Recovery in a Flow-rich area (Anomaly Severity 0), you can roll 3d20 and keep the highest result for the Flow Dice Pool check.\n\n**Upgrade (Level 6+):** Once per Long Rest, when your Flow Points reach 0, you can use an Impulse Action to regain Flow Points equal to your Caliber + your Flow modifier."
+    text: "You are deeply synchronized with the ambient frequencies of the world. You gain the following benefits:\n• When you perform a Ritual Recovery, you regain 1 additional Flow Point beyond your normal amount.\n• If you perform a Ritual Recovery in a Flow-rich area (Anomaly Severity 0), you add +2 Edge Dice to the Flow Dice Pool check.\n\n**Upgrade (Level 6+):** Once per Long Rest, when your Flow Points reach 0, you can use an Impulse Action to regain Flow Points equal to your Caliber + your Flow modifier."
   },
   {
     key: "static-grounding",

@@ -3568,7 +3568,7 @@ EN.combatView = (function () {
           pips(ch.deathSaves.s || 0, 3, "var(--success)", function (n) { store.update(function (c) { c.deathSaves.s = n; if (n >= 3) { c.stable = true; c.deathSaves = { s: 0, f: 0 }; } }); }),
           el("span.help", { style: { margin: 0 }, text: "✗" }),
           pips(ch.deathSaves.f || 0, 3, "var(--danger)", function (n) { store.update(function (c) { c.deathSaves.f = n; }); }),
-          s.dying ? el("button.btn.sm", { title: "Stabilize: Medtech/Tech/Flow check DC 10", onclick: function () { store.update(function (c) { c.stable = true; c.deathSaves = { s: 0, f: 0 }; }); toast("Stabilized, unconscious at 0 Wounds."); } }, "STABILIZE") : null
+          s.dying ? el("button.btn.sm", { title: "Stabilize: d20 Medtech, Tech, or Flow Attribute Check against DC 10", onclick: function () { store.update(function (c) { c.stable = true; c.deathSaves = { s: 0, f: 0 }; }); toast("Stabilized, unconscious at 0 Wounds."); } }, "STABILIZE") : null
         ]),
         (ch.deathSaves.f || 0) >= 3 ? el("p", { style: { color: "var(--danger)", fontFamily: "var(--mono)", marginTop: "6px" }, text: "✝ THREE FAILURES; the body stops keeping score." }) : null
       ]) : null
@@ -4702,7 +4702,8 @@ EN.combatView = (function () {
         kids.push(attackRow("Cipher Attack", eng.fmtMod(cipherBonus), "d20 + Tech Modifier + Systems Proficiency Bonus vs Node · Quick Hacks under fire", "var(--accent)", null,
           function () { openRollTray(simpleAttackCtx("Cipher Attack", "CIPHER · VS NODE DEFENSE", [{ label: "Cipher Attack", value: cipherBonus }], {})); }));
       }
-      if (d.flow) kids.push(attackRow("Flow Attack", eng.fmtMod(d.flow.attackBonus), "d20 + " + d.flow.attributeName + " + Caliber · Invocation Save DC " + d.flow.dc, "var(--flow)", null,
+      // the same bonus covers the Flow Attribute Check, which is why the gloss names both
+      if (d.flow) kids.push(attackRow("Flow Attack", eng.fmtMod(d.flow.attackBonus), "d20 + " + d.flow.attributeName + " + Caliber · also your Flow Attribute Check · Invocation Save DC " + d.flow.dc, "var(--flow)", null,
         function () { openRollTray(simpleAttackCtx("Flow Attack", "FLOW · SAVE DC " + d.flow.dc, [{ label: d.flow.attributeName + " + Caliber", value: d.flow.attackBonus }], {})); }));
       if (ch.class === "scoundrel") {
         var csdie = d.caliber + "d6";

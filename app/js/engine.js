@@ -3277,9 +3277,15 @@ EN.engine = (function () {
       flow = {
         attribute: fAttr, attributeName: flowAttrName,
         max: Math.max(0, cal * 3 + fMod + pactBonus - chromeTax.fpPenalty), dc: 8 + fMod + cal,
-        // `attack` is the bare Flow Modifier (used for FP recovery on a Short Rest
-        // and Resurge rebound damage). `attackBonus` is the d20 Flow Attack roll
-        // bonus, which per the core rules is Flow Modifier + Caliber.
+        /* `attack` is the bare Flow Modifier (used for FP recovery on a Short Rest
+           and Resurge rebound damage). `attackBonus` is Flow Modifier + Caliber,
+           which is the bonus for BOTH d20 rolls a Shaper makes with the current:
+           the Flow Attack, and the Flow Attribute Check added to Part 2 on
+           2026-09-16 (the roll for work that is not an attack, such as stabilizing
+           after Strain, ritual recovery, linking, or sustaining a field). One
+           number, deliberately one field: the book prints them as one line in
+           Building the Sheet, Step 15. Neither ever adds a skill tier, because
+           Flow has no skill; Caliber stands in for the Proficiency Bonus. */
         attack: fMod, attackBonus: fMod + cal,
         // Strain track and the consequences it gates (see EN.flow.strainTrack).
         strainStage: strainStage,

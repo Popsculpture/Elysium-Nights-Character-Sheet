@@ -130,6 +130,9 @@ EN.flowView = (function () {
     ]));
     kids.push(bar(cur, f.max, FP));
     kids.push(noteP("Reservoir = (Caliber x 3) + Flow Modifier. Flow Attack " + eng.fmtMod(f.attackBonus) + " vs Defense · Flow Save DC " + f.dc + " (" + f.attributeName + ")."));
+    /* The second d20 roll with the current, added to Part 2 on 2026-09-16. Same bonus as the
+       attack, so it reads the same derived field rather than recomputing it. */
+    kids.push(noteP("Flow Attribute Check " + eng.fmtMod(f.attackBonus) + " for work with the current that is not an attack: steadying after Strain, ritual recovery, linking, sustaining a field, knitting flesh. Never uses skill proficiency; Caliber stands in for it."));
 
     // Strain track: 5 stages, click to set (toggles to N-1 if already at N)
     kids.push(el("div.section-title", null, [document.createTextNode("Strain"), el("span.line")]));

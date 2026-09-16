@@ -141,6 +141,7 @@ EN.codexView = (function () {
     out.push(refPanel("bx-flow", "The Flow", "SHAPERS & INVOCATIONS", [
       proseBlock(B.flow.intro),
       proseBlock(B.flow.invocation),
+      proseBlock(B.flow.check),
       proseBlock(B.flow.overdraw),
       subTitle("Unattuned"),
       proseBlock(B.flow.unattuned)
