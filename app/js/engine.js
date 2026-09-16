@@ -1577,9 +1577,12 @@ EN.engine = (function () {
      reads now, chosen because they are UNCONDITIONAL on the pieces that carry them and
      because they are what the Open Architecture Integration clauses needed underneath them.
 
-     Still prose, deliberately: damage-type Resistances (Toxin Filter, Convergence Engine),
-     the Convergence Engine's +1 Vitality (its clause is gated on being Unattuned, which the
-     sheet has no state for), and everything conditional, per-encounter or GM-facing. Those
+     Still prose, deliberately: damage-type Resistances (Toxin Filter, Convergence Engine) and
+     everything conditional, per-encounter or GM-facing. The Convergence Engine's +1 Vitality
+     used to be listed here as underivable because its clause is gated on being Unattuned and
+     the sheet had no state for that. It has one now, `d.attuned` (declared beside the flow
+     block), so what that clause still lacks is a channel rather than a fact: this function
+     carries speed, wounds, dr and init, and nothing carries flat Vitality. Those
      want their own channels and their own display surfaces; see DEFERRED-FIXES. */
   function cyberFlatBonuses(ch) {
     var out = { speed: 0, wounds: 0, dr: 0, init: 0 };
@@ -3320,6 +3323,22 @@ EN.engine = (function () {
       };
     }
 
+    /* ATTUNEMENT, as a question rather than an accident. "Does this character have a Flow
+       Attribute" is asked in two places and was answered two different ways: combat.js computed
+       `!!d.flow` locally to gate Resurge, Siphon and Ward, and the cyberware notes below record a
+       Convergence Engine clause that could not be derived at all because the sheet had no state
+       for it. Both were really asking this.
+
+       It is deliberately NOT the same expression inlined again. `d.flow` is the Reservoir object,
+       and every other reader of it wants exactly that: .max, the Strain track, the FP label. Only
+       this one wants the predicate. Naming them apart is what lets a future non-Shaper with a
+       Flow Attribute (see the note at the flow gate above, which today the rules forbid) change
+       one line here instead of triaging fourteen `if (d.flow)` sites by hand.
+
+       Today it is true for exactly the Shaper class, because that is the only Attuned Class the
+       book lists. */
+    var attuned = !!flow;
+
     /* #GRID hacking stats + equipped rig */
     var grid = gridStats(ch, attributes, skills, level, cal, resource);
 
@@ -3446,7 +3465,7 @@ EN.engine = (function () {
       hazard: hazardStats(ch, attributes, saves, woundsMax),
       woundsMax: woundsMax, critThreshold: critThreshold,
       saves: saves, skills: skills,
-      resource: resource, flow: flow,
+      resource: resource, flow: flow, attuned: attuned,
       size: size, heightFt: heightFt,
       classInfo: cls, subclassInfo: sub, speciesInfo: sp, lineageInfo: lin, backgroundInfo: bg,
       features: features,

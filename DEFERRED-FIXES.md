@@ -8610,6 +8610,40 @@ carried a comment about Weapon Focus Caliber that `pdfexport.js` lacked. That is
 discipline `parseUses` got earlier today, and for the same reason, since a plain diff is what
 turns the next drift into something anyone can see.
 
+## Attunement becomes a question the sheet can answer, 2026-09-15
+
+`d.attuned`, one derived boolean meaning "this character has a Flow Attribute". No behaviour
+changes; this is a name for something the app was already deciding twice, two different ways.
+
+**Why it needed a name.** `combat.js` computed `var attuned = !!d.flow` inside one function to gate
+Resurge, Siphon and Ward, each of which prints `req: "Flow attunement"`. Meanwhile the cyberware
+notes in `engine.js` recorded the Convergence Engine's +1 Vitality as underivable because "its
+clause is gated on being Unattuned, which the sheet has no state for". Both were asking the same
+question. `!!d.flow` literally asks "is there a Reservoir object", which is a different question
+that happens to have the same answer, and every other reader of `d.flow` wants the Reservoir
+itself: `.max`, the Strain track, the FP label on the printed sheet.
+
+Declared beside the flow block so the meaning is co-located, exported next to `flow`, and read at
+the one semantic call site. The other five `d.flow` truthiness tests were checked and left alone:
+all of them are reading the Reservoir, not asking about attunement.
+
+**What it buys.** If a non-Shaper ever gains a Flow Attribute (which the rules currently forbid,
+see the note at the flow gate), the definition moves in one place instead of fourteen `if
+(d.flow)` sites being triaged by hand. And the Convergence Engine clause is no longer blocked on a
+missing fact. What it still lacks is a CHANNEL, not a fact: `cyberFlatBonuses` carries speed,
+wounds, dr and init, and nothing carries flat Vitality. Its other half, Resistance to Resonant, is
+closer than the old comment implied, since cyberware tiers already carry `resist` arrays (the
+Toxin Filter does), but the grant is conditional and the resolver reads unconditional flags. Both
+halves are a separate decision and were not taken here. The stale comment is corrected to say so.
+
+Verified across all ten class and subclass combinations: `d.attuned` is a real boolean, agrees
+with `!!d.flow` on every one, and is true for exactly the four Shaper subclasses, so the Active
+Defenses gate is provably unchanged. The Freelancer tab was rendered for a Shaper and for a Fury
+against synthetic characters with the store stubbed: no errors, and Resurge and Siphon appear for
+the Shaper and not the Fury. One thing worth recording for the next person who probes this way:
+a synthetic character needs `resources: { current: {} }` or `abilitiesKids` throws on the class
+resource pool, which is a probe artifact and not a defect.
+
 ## There is no Clanker Flow hook to build, 2026-09-16 handoff, follow-up
 
 I reported last pass that "a Clanker whose class sets a Flow Attribute would get no Flow block at

@@ -5013,7 +5013,9 @@ EN.combatView = (function () {
       var kids = [];
       var resDie = d.resilienceDie ? "d" + d.resilienceDie : "Resilience Die";
       var acro = d.skills.find(function (s) { return s.name === "Acrobatics"; });
-      var attuned = !!d.flow, flowMod = d.flow ? eng.fmtMod(d.flow.attack) : null;
+      // d.attuned is the derived predicate; d.flow stays the Reservoir object, which is what
+      // flowMod actually reads. Two questions, two names, deliberately.
+      var attuned = !!d.attuned, flowMod = d.flow ? eng.fmtMod(d.flow.attack) : null;
       var focusDie = dg.wardDie || null, focusName = dg.focus ? dg.focus.name : (dg.armor && dg.armor.wardDie ? dg.armor.name : null);
       /* A real melee weapon die for the Parry row. Unarmed AUGMENTS (Knuckles,
          Shock Gloves) are deliberately skipped: their catalog `damage` is what they
