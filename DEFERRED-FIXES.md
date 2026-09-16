@@ -8614,6 +8614,45 @@ carried a comment about Weapon Focus Caliber that `pdfexport.js` lacked. That is
 discipline `parseUses` got earlier today, and for the same reason, since a plain diff is what
 turns the next drift into something anyone can see.
 
+## Cyber-Reinforced Vitality stops being the last flat Vitality grant on the floor, 2026-09-16
+
+The talent the Convergence Engine pass left behind. Its Vitality bullet derives now, so both flat
+Vitality grants in the player-facing catalog reach the sheet.
+
+**The ambiguity I flagged was not one.** I said this needed a ruling on what "per level gained"
+counts from. The printed text answers itself: "Your Vitality maximum increases by an amount equal
+to twice your Character level when you gain this Talent. Whenever you gain a level thereafter,
+your Vitality maximum increases by an additional 2 points." The two clauses collapse, because
+2*acquired + 2*(now - acquired) is 2*now at every level. The formula is 2 per level held and
+nothing needs storing.
+
+The acquisition level was not merely dodged: `activeTalents()` knows it, since a Talent is a
+Universal Upgrade filed under the level that bought it and the function returns `{ level, talent }`
+for each. It is genuinely unnecessary rather than unavailable, and the comment says so, so the
+next reader does not go hunting for a bug in the simpler form.
+
+**Shape.** `TALENT_VIT_PER_LEVEL`, a table in the same shape as `TALENT_RESIST` immediately above
+it and consumed through `activeTalents()` exactly as that one is. Points per character level, one
+entry. Talent grants deliberately do not travel through `cyberFlatBonuses`, which is a lookup over
+installed chrome; that function's note now points at the other channel.
+
+**Verified** at levels 1, 2, 4, 6, 8 and 10: the delta is exactly twice the level every time, and
+a character who took the talent at level 1 derives the same Vitality as one who took it at their
+current level, which is the algebra confirmed against running code. The talent's other bullet, the
++1 Body, was already derived through `TALENT_ATTR_BUMP` and still is. Tested at Body 13, where the
+point actually moves the modifier, the two halves compose to +12 at level 4: 8 from the talent and
+4 from the raised modifier. At Body 14 the bump is invisible in the total, because 14 and 15 share
+a modifier, which is worth knowing before anyone probes this and concludes the Body half is dead.
+
+**Still out, and correctly.** The Upgrade's "Resistance to one damage type of your choice" is a
+menu, and a menu needs a stored pick per character. That is the same reason `TALENT_RESIST` holds
+only the three fixed grants, and the comment above it already named this talent as excluded for
+it. Only the Vitality bullet moved.
+
+**A correction to the previous entry**, which named this talent "Resonant Adaptation". No such
+talent exists; the name came from the review agent that raised the item and I carried it without
+checking. That entry is annotated in place rather than rewritten, since it is already pushed.
+
 ## The Convergence Engine's Unattuned half comes off the page, 2026-09-15
 
 The clause splits: "Unattuned: +1 Vitality max and Resistance to Resonant. Attuned: use any one
@@ -8662,7 +8701,10 @@ formula exists, so the +1 flows to every consumer.
    Engine (Unattuned)".
 3. The two bullets above in "Deliberately still prose" were struck; both describe work now done.
 
-**Not done, and worth saying plainly so the new channel is not mistaken for finished.** The
+**Not done, and worth saying plainly so the new channel is not mistaken for finished.**
+(SUPERSEDED 2026-09-16, and the name here is wrong: the talent is **Cyber-Reinforced Vitality**.
+"Resonant Adaptation" came from the review agent that raised the item and was carried here
+unchecked; no talent of that name exists. The work itself is done, see the entry above.) The
 Resonant Adaptation talent grants "+2 Vitality max now, then +2 per level gained", which is the
 only other flat Vitality grant in the player-facing catalog and is larger than this one. It is
 still prose. The channel it needs exists as of today; what it also needs is a decision about what

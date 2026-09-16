@@ -600,6 +600,30 @@ EN.engine = (function () {
     "pain-editor":     { resist: ["Psychic"] },
     "cutting-agent":   { resist: ["Toxic"] }
   };
+  /* Talents granting a standing Vitality bonus, a table in the same shape. The value is points
+     PER CHARACTER LEVEL, and Cyber-Reinforced Vitality is the only entry the catalog has.
+
+     Its bullet reads as two clauses: "Your Vitality maximum increases by an amount equal to twice
+     your Character level when you gain this Talent. Whenever you gain a level thereafter, your
+     Vitality maximum increases by an additional 2 points." Those look like they need the level it
+     was TAKEN at, and activeTalents does know it, since a Talent is a Universal Upgrade filed
+     under the level that bought it. It is not needed, because the two clauses collapse:
+     2*acquired + 2*(now - acquired) is 2*now at every level. So the simpler form is used, and the
+     acquisition level is left out of the arithmetic rather than left unconsidered.
+
+     Its Upgrade's chosen Resistance stays out, for the reason TALENT_RESIST gives above: a menu
+     needs a stored pick. Source: app/data/talents.js:283. */
+  var TALENT_VIT_PER_LEVEL = {
+    "cyber-reinforced-vitality": 2
+  };
+  function talentVitality(ch, level) {
+    var n = 0;
+    activeTalents(ch).forEach(function (t) {
+      var per = ownVal(TALENT_VIT_PER_LEVEL, t.talent.key);
+      if (per) n += per * level;
+    });
+    return n;
+  }
   /* ---- Talent attribute bumps --------------------------------------------
      36 of the 63 Talents open with a bullet reading "Increase your <ATTR> score by 1, to a
      maximum of 20", in one of three wordings: a named attribute, a choice of two or three,
@@ -1586,7 +1610,9 @@ EN.engine = (function () {
      Still prose, deliberately: everything conditional, per-encounter or GM-facing, including
      the Convergence Engine's ATTUNED half. Its UNATTUNED half is derived as of 2026-09-15: it
      needed a fact (`attuned`, hoisted above this function's call site) and a channel (`vit`,
-     added below), and now has both. Those
+     added below), and now has both. Flat Vitality from a TALENT travels separately, through
+     TALENT_VIT_PER_LEVEL near TALENT_RESIST, because a Talent is not installed chrome and this
+     function is a lookup over installed pieces only. Those
      want their own channels and their own display surfaces; see DEFERRED-FIXES. */
   /* `attuned` is read only by the conditional branch below. Passing it rather than deriving it
      keeps this function a pure lookup over installed chrome. */
@@ -3187,7 +3213,8 @@ EN.engine = (function () {
     var vitalityMax = null, resilienceDie = null;
     if (vit) {
       var perLevel = R.dieAverage(vit.die) + bodMod;
-      vitalityMax = (vit.start + bodMod) + (level - 1) * Math.max(1, perLevel) + (cyberFlat.vit || 0);
+      vitalityMax = (vit.start + bodMod) + (level - 1) * Math.max(1, perLevel)
+                   + (cyberFlat.vit || 0) + talentVitality(ch, level);
       vitalityMax = Math.max(1, vitalityMax);
       resilienceDie = vit.resilience;
     }
