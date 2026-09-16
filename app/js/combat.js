@@ -3242,7 +3242,15 @@ EN.combatView = (function () {
           ])
         ]),
         el("p.help", { style: { margin: "0 0 6px", fontSize: "11px" }, text: sbd.formula }),
-        sbd.empty ? el("p.help", { style: { margin: 0, color: "var(--text3)" }, text: sbd.empty }) : el("div", null, bdRows),
+        /* The empty note and the rows, not one OR the other. This used to be a ternary, so a
+           breakdown carrying an `empty` message printed it INSTEAD of its rows. Damage Reduction
+           is the one that suffers: its rows include every damage Resistance, while its `empty`
+           only asks about armor, natural DR and chrome DR, so an unarmored character holding a
+           Resistance from a Talent or from the Convergence Engine was told "No armor equipped"
+           and shown nothing else. titleFor() always printed both into the tooltip, so the two
+           surfaces disagreed; the panel now agrees with the tooltip. */
+        sbd.empty ? el("p.help", { style: { margin: 0, color: "var(--text3)" }, text: sbd.empty }) : null,
+        bdRows.length ? el("div", null, bdRows) : null,
         sbd.foot ? el("p.help", { style: { margin: "6px 0 0", color: "var(--text3)" }, text: sbd.foot }) : null
       ]));
     }

@@ -131,8 +131,15 @@ EN.cyberware = {
     { key: "convergence", short: "Convergence Engine", name: "Convergence Engine", zone: "Core", enhancement: "None", mystech: true,
       desc: "An implant that is, by all measurable standards, both circuit and Flow construct at once. Should not exist; three are documented in Elysium. A campaign-level reward, not a purchase.",
       effect: "Unattuned: +1 Vitality max and Resistance to Resonant. Attuned: use any one implant as a Ritual Implement, route Invocations through your chrome, and once/Long Rest bypass a Static Threshold (Total Static −2 SP for one combat, then gain 1 Stage of Strain). Does not stack with the Resonance Crown.",
+      /* The one split clause in the catalog. `unattuned` is read by cyberFlatBonuses and
+         damageResistances in engine.js and applies only when the wearer has no Flow Attribute;
+         the Attuned half above stays prose, being capabilities and a per-rest resource rather
+         than numbers. "Does not stack with the Resonance Crown" constrains that Attuned half
+         only: the Crown grants an SP reduction and +1 FP at a Short Rest, neither of which the
+         Unattuned branch touches, and an Unattuned wearer has no FP for the Crown to add to. */
       tiers: [
-        { tier: "Prototype", sp: 3, price: 45000, legality: "Restricted" }
+        { tier: "Prototype", sp: 3, price: 45000, legality: "Restricted",
+          bonus: { unattuned: { vit: 1, resist: ["Resonant"] } } }
       ] },
 
     /* ---------------- Integument ---------------- */

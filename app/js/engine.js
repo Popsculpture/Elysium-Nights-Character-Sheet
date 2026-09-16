@@ -949,7 +949,7 @@ EN.engine = (function () {
       acc.push({ type: t, level: level, label: label });
     });
   }
-  function damageResistances(ch, linFeats, worn) {
+  function damageResistances(ch, linFeats, worn, attuned) {
     var acc = [];
     // lineage features
     (linFeats || []).forEach(function (fn) {
@@ -993,6 +993,12 @@ EN.engine = (function () {
       pushResist(acc, "resist", b.resist, def.name);
       pushResist(acc, "vulnerable", b.vulnerable, def.name);
       pushResist(acc, "immune", b.immune, def.name);
+      // the Unattuned half of a split clause; see cyberFlatBonuses for the pair of it
+      if (!attuned && b.unattuned) {
+        pushResist(acc, "resist", b.unattuned.resist, def.name + " (Unattuned)");
+        pushResist(acc, "vulnerable", b.unattuned.vulnerable, def.name + " (Unattuned)");
+        pushResist(acc, "immune", b.unattuned.immune, def.name + " (Unattuned)");
+      }
     });
 
     // resolve per type, applying the book's three rules
@@ -1577,15 +1583,15 @@ EN.engine = (function () {
      reads now, chosen because they are UNCONDITIONAL on the pieces that carry them and
      because they are what the Open Architecture Integration clauses needed underneath them.
 
-     Still prose, deliberately: damage-type Resistances (Toxin Filter, Convergence Engine) and
-     everything conditional, per-encounter or GM-facing. The Convergence Engine's +1 Vitality
-     used to be listed here as underivable because its clause is gated on being Unattuned and
-     the sheet had no state for that. It has one now, `d.attuned` (declared beside the flow
-     block), so what that clause still lacks is a channel rather than a fact: this function
-     carries speed, wounds, dr and init, and nothing carries flat Vitality. Those
+     Still prose, deliberately: everything conditional, per-encounter or GM-facing, including
+     the Convergence Engine's ATTUNED half. Its UNATTUNED half is derived as of 2026-09-15: it
+     needed a fact (`attuned`, hoisted above this function's call site) and a channel (`vit`,
+     added below), and now has both. Those
      want their own channels and their own display surfaces; see DEFERRED-FIXES. */
-  function cyberFlatBonuses(ch) {
-    var out = { speed: 0, wounds: 0, dr: 0, init: 0 };
+  /* `attuned` is read only by the conditional branch below. Passing it rather than deriving it
+     keeps this function a pure lookup over installed chrome. */
+  function cyberFlatBonuses(ch, attuned) {
+    var out = { speed: 0, wounds: 0, dr: 0, init: 0, vit: 0 };
     var items = (EN.cyberware && EN.cyberware.items) || [];
     ((ch && ch.cyberware) || []).forEach(function (cw) {
       if (!cw || typeof cw !== "object") return;
@@ -1597,6 +1603,14 @@ EN.engine = (function () {
       if (b.wounds) out.wounds += b.wounds;
       if (b.dr) out.dr += b.dr;
       if (b.init) out.init += b.init;
+      if (b.vit) out.vit += b.vit;
+      /* A clause that applies only to the Unattuned. The Convergence Engine is the one piece of
+         chrome in the catalog whose printed effect splits on attunement ("Unattuned: +1 Vitality
+         max and Resistance to Resonant. Attuned: ..."), and this is the machine-readable half of
+         it. Its ATTUNED half stays prose on purpose: using an implant as a Ritual Implement,
+         routing Invocations through chrome, and a once-per-Long-Rest Static Threshold bypass are
+         capabilities and per-rest resources, not numbers this function can carry. */
+      if (!attuned && b.unattuned && b.unattuned.vit) out.vit += b.unattuned.vit;
     });
     return out;
   }
@@ -3102,7 +3116,24 @@ EN.engine = (function () {
     /* attributes + modifiers (installed cyberware Enhancement Bonuses fold into the score, capped at 20) */
     var scores = effectiveAttributes(ch);
     var cyberEnh = cyberEnhancements(ch);
-    var cyberFlat = cyberFlatBonuses(ch);
+    /* ATTUNEMENT, hoisted here because two derived values below branch on it: the Convergence
+       Engine's Unattuned clause (a flat Vitality point and Resistance to Resonant) and, further
+       down, the Flow block itself. Declaring it here rather than deriving it from `flow` also
+       puts the dependency the right way round: having a Flow Attribute is the fact, and the
+       Reservoir is a consequence of it, not the other way about.
+
+       It is deliberately not `!!flow` inlined again. `d.flow` is the Reservoir object, and every
+       other reader of it wants exactly that: .max, the Strain track, the FP label. Only this one
+       wants the predicate, which is why combat.js gates Resurge, Siphon and Ward on `d.attuned`
+       rather than recomputing it. Naming them apart is what lets a future non-Shaper with a Flow
+       Attribute change this one line instead of triaging fourteen `if (d.flow)` sites by hand.
+
+       Today this is exactly the Shaper class, because Shaper is the only Attuned Class the book
+       lists (see the note at the flow gate below, which quotes the passages). When a non-Shaper
+       can be attuned, this line is the one that changes. */
+    var attuned = (ch.class === "shaper");
+
+    var cyberFlat = cyberFlatBonuses(ch, attuned);
     var attributes = {};
     R.attributes.forEach(function (a) {
       var bonus = cyberEnh[a.key] || 0;
@@ -3156,7 +3187,7 @@ EN.engine = (function () {
     var vitalityMax = null, resilienceDie = null;
     if (vit) {
       var perLevel = R.dieAverage(vit.die) + bodMod;
-      vitalityMax = (vit.start + bodMod) + (level - 1) * Math.max(1, perLevel);
+      vitalityMax = (vit.start + bodMod) + (level - 1) * Math.max(1, perLevel) + (cyberFlat.vit || 0);
       vitalityMax = Math.max(1, vitalityMax);
       resilienceDie = vit.resilience;
     }
@@ -3286,7 +3317,7 @@ EN.engine = (function () {
        The ambiguity is a manuscript wording nit, not a rules gap: the Clanker section says the
        Flow Attribute is set by "class" where every other passage says subclass. Same mechanic. */
     var flow = null;
-    if (ch.class === "shaper") {
+    if (attuned) {
       var flowAttrName = (sub && sub.extra && sub.extra.flowAttribute) || (sub && sub.flowAttribute) ||
                           R.shaperFlowAttrBySubclass[ch.subclass] || "Mystique";
       var fAttr = R.attrNameToKey[flowAttrName] || "MYS";
@@ -3322,22 +3353,6 @@ EN.engine = (function () {
         note: "Overdraw builds Strain when FP hits 0."
       };
     }
-
-    /* ATTUNEMENT, as a question rather than an accident. "Does this character have a Flow
-       Attribute" is asked in two places and was answered two different ways: combat.js computed
-       `!!d.flow` locally to gate Resurge, Siphon and Ward, and the cyberware notes below record a
-       Convergence Engine clause that could not be derived at all because the sheet had no state
-       for it. Both were really asking this.
-
-       It is deliberately NOT the same expression inlined again. `d.flow` is the Reservoir object,
-       and every other reader of it wants exactly that: .max, the Strain track, the FP label. Only
-       this one wants the predicate. Naming them apart is what lets a future non-Shaper with a
-       Flow Attribute (see the note at the flow gate above, which today the rules forbid) change
-       one line here instead of triaging fourteen `if (d.flow)` sites by hand.
-
-       Today it is true for exactly the Shaper class, because that is the only Attuned Class the
-       book lists. */
-    var attuned = !!flow;
 
     /* #GRID hacking stats + equipped rig */
     var grid = gridStats(ch, attributes, skills, level, cal, resource);
@@ -3433,7 +3448,7 @@ EN.engine = (function () {
       totalDR: (defLoadout.armorDR || 0) + (defLoadout.armorModDR || 0) + linMech.dr + (cyberFlat.dr || 0),
       lineageSpeed: linMech.speed,
       lineageSpeedFirstRound: linMech.speedFirstRound,
-      resistances: damageResistances(ch, linFeats, wornArmor(ch)),
+      resistances: damageResistances(ch, linFeats, wornArmor(ch), attuned),
       lineageInit: { caliber: linMech.initCaliber ? cal : 0, edge: linMech.initEdge },
       cyberInit: (cyberFlat.init || 0),   // Reflex Booster "+2" / "+4" at Blackware
       encumbrance: enc,

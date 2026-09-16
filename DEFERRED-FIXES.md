@@ -3959,13 +3959,17 @@ number came from rather than just showing a bigger figure: "Chrome · Subdermal 
 
 ### Deliberately still prose
 
-* **Damage-type Resistances.** Toxin Filter grants Resistance to Toxic (and Radiation at
-  Blackware); the Convergence Engine grants Resistance to Resonant. There is no resistances
-  channel in `derive()` at all, so this needs a new derived collection AND a display surface,
-  not just a summed number.
-* **The Convergence Engine's "+1 Vitality max".** Its clause reads "Unattuned: +1 Vitality max
-  and Resistance to Resonant", and the sheet has no Unattuned/Attuned state to gate on.
-  Implementing it unconditionally would grant it to exactly the characters the clause excludes.
+* ~~**Damage-type Resistances.**~~ **STRUCK.** The resistances channel this bullet asked for was
+  built some time after it was written: `damageResistances()` in `engine.js` reads five sources
+  and `d.resistances` is displayed on the Freelancer tab's DR breakdown, the printed sheet and the
+  PDF. The Toxin Filter's grant has been derived from its tier `resist` array throughout, and the
+  Convergence Engine's joined it on 2026-09-15.
+* ~~**The Convergence Engine's "+1 Vitality max".**~~ **STRUCK 2026-09-15.** The Unattuned/Attuned
+  state the bullet wanted is `d.attuned`, and the clause now derives through it: a `vit` channel
+  on `cyberFlatBonuses` and a conditional `bonus.unattuned` branch read by both that function and
+  `damageResistances`. The bullet's warning was the right one and was honoured: the grant applies
+  only to a character with no Flow Attribute, verified across all ten class and subclass
+  combinations. Only the clause's ATTUNED half is still prose.
 * **Everything conditional, per-encounter, or GM-facing**: Cybereyes' modes, the Smartlink's
   "+1 to attack with a connected smart-weapon", Synthetic Heart's once-per-Long-Rest save,
   every Edge grant. These are decisions at the table, not standing modifiers.
@@ -8609,6 +8613,60 @@ The two `weaponHit` bodies are now byte-identical, which they were not before: `
 carried a comment about Weapon Focus Caliber that `pdfexport.js` lacked. That is the same
 discipline `parseUses` got earlier today, and for the same reason, since a plain diff is what
 turns the next drift into something anyone can see.
+
+## The Convergence Engine's Unattuned half comes off the page, 2026-09-15
+
+The clause splits: "Unattuned: +1 Vitality max and Resistance to Resonant. Attuned: use any one
+implant as a Ritual Implement, route Invocations through your chrome, and once/Long Rest bypass a
+Static Threshold." The Unattuned half is derived now. The Attuned half stays prose, and correctly:
+a Ritual Implement, a routing capability and a once-per-Long-Rest bypass are not numbers.
+
+**It needed a fact and a channel.** The fact arrived last pass as `d.attuned`, but it was declared
+after the Vitality block, so it is hoisted to above the `cyberFlatBonuses` call and the Flow gate
+now reads it rather than repeating `ch.class === "shaper"`. That also puts the dependency the right
+way round: attunement is the fact, the Reservoir is a consequence. The channel is a `vit` field on
+`cyberFlatBonuses`, which carried speed, wounds, dr and init and nothing for flat Vitality.
+
+**The conditional shape.** `bonus: { unattuned: { vit: 1, resist: ["Resonant"] } }` on the item's
+tier, read by `cyberFlatBonuses` and `damageResistances`, both of which now take `attuned`. Nested
+rather than flat keys because it mirrors how the printed clause reads and leaves room for an
+`attuned:` branch if one ever becomes derivable. The resistance carries the source label
+"Convergence Engine (Unattuned)", matching the existing armor-trait pattern.
+
+"Does not stack with the Resonance Crown" was checked rather than assumed: the Crown grants an SP
+reduction and +1 FP at a Short Rest, neither of which the Unattuned branch touches, and an
+Unattuned wearer has no FP for the Crown to add to. The clause constrains the Attuned half only.
+
+**Verified** across all ten class and subclass combinations: every Unattuned class with the implant
+gains exactly +1 Vitality and Resonant Resistance sourced to the item, every Shaper subclass gains
+neither, and a Toxin Filter control still derives its unconditional Toxic resistance unchanged.
+Both helpers were confirmed to have exactly one call site each, so no caller can omit the new
+parameter and hand the Unattuned grant to everyone. No second implementation of the Vitality
+formula exists, so the +1 flows to every consumer.
+
+**Three things an adversarial review caught, all fixed here. Three more were refuted.**
+
+1. A fourteen-line comment block I wrote last pass was orphaned by this one: I deleted the
+   `var attuned = !!flow;` under it and left the rationale sitting above an unrelated statement,
+   223 lines from the real declaration, still asserting that the Convergence Engine clause "could
+   not be derived at all". Deleted, with its one load-bearing argument (why the predicate is named
+   apart from the Reservoir object) folded into the surviving block. Exactly one block explains
+   `attuned` now.
+2. The DR breakdown swallowed its own resistance rows. `sbd.empty ? message : rows` printed the
+   message INSTEAD of the rows, and DR's `empty` asks only about armor, natural DR and chrome DR,
+   so an unarmored character holding any Resistance was told "No armor equipped" and shown nothing
+   else. The tooltip printed both, so the two surfaces disagreed. Pre-existing, and reachable
+   before today through the Street Scrapper, Pain Editor and Cutting Agent talents, but this
+   change routes a new value straight into it. Now prints both, confirmed on screen: "No armor
+   equipped; WEAR armor in Inventory to Stash." followed by "Resonant, Resistant, Convergence
+   Engine (Unattuned)".
+3. The two bullets above in "Deliberately still prose" were struck; both describe work now done.
+
+**Not done, and worth saying plainly so the new channel is not mistaken for finished.** The
+Resonant Adaptation talent grants "+2 Vitality max now, then +2 per level gained", which is the
+only other flat Vitality grant in the player-facing catalog and is larger than this one. It is
+still prose. The channel it needs exists as of today; what it also needs is a decision about what
+"per level gained" counts from, which is a rules question rather than a plumbing one.
 
 ## Attunement becomes a question the sheet can answer, 2026-09-15
 
