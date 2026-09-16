@@ -8610,6 +8610,56 @@ carried a comment about Weapon Focus Caliber that `pdfexport.js` lacked. That is
 discipline `parseUses` got earlier today, and for the same reason, since a plain diff is what
 turns the next drift into something anyone can see.
 
+## There is no Clanker Flow hook to build, 2026-09-16 handoff, follow-up
+
+I reported last pass that "a Clanker whose class sets a Flow Attribute would get no Flow block at
+all today" and called it a pre-existing limit needing a data hook. That was wrong, and the author
+acted on it by asking for the hook. Correcting it here rather than building the thing.
+
+**A Clanker Shaper already works.** The Flow block is gated on `ch.class === "shaper"`, nothing in
+the app restricts a species from any class (the class picker is a flat list of seven with no
+species filter, and the engine's build warnings check presence, never compatibility), so a Clanker
+Shaper derives a full and correct Flow block today. There is no case the app misses.
+
+**And the book forecloses the other reading.** Part 2's "Clankers and The Flow", under "Who Can
+Channel": "A Clanker can channel the Flow if their Class grants access to Invocations", "Their
+Flow Attribute is set by their class (Mystique, Tech, Body, or Charm)", and the line that settles
+it, "If a Clanker does not have a Flow-using class, they interact with the Flow only as targets,
+exactly like a non-adept being." The section exists to confirm Clankers use the ORDINARY rules
+despite being inorganic: "a Clanker Flow adept runs on the same rules for Flow Points, Reservoir,
+Strain, and Breakflow as anyone else. In the fiction, Clanker channeling looks and feels entirely
+different, but the rules are identical."
+
+Every route to a Flow Attribute in either Part runs through the Shaper class and its subclass.
+Shaper is the only entry under "Attuned Classes". No species, lineage, chassis, trait, talent,
+cyberware or item grants one. The Check's own scope line names no species: "Unattuned Freelancers
+and other beings without a Flow Attribute cannot attempt Flow Attribute Checks." The three Clanker
+lineages were read in full and not one of their twelve features grants FP, a Flow Attribute or an
+Invocation; the one that sounds like it might, Resonant Circuitry, is Edge on a Saving Throw
+against EMP, virus or Tech damage.
+
+**Where the ambiguity came from.** The Clanker section says the Flow Attribute is set by "class"
+where every other passage in the book says subclass. Same mechanic, looser wording, and that one
+word is what produced the handoff's "a Clanker whose class sets one" and then my bad reading of
+it. A one-word manuscript fix would close it permanently; that is the author's call and no code
+depends on it.
+
+Recorded in `engine.js` at the gate itself, with the quotes, so the next reader or the next
+handoff does not re-open it.
+
+**Two real things the investigation turned up, neither a Clanker issue, neither acted on.**
+
+1. The app has no attunement PREDICATE, only `!!d.flow`. `combat.js` already leans on that
+   (`var attuned = !!d.flow` gates Resurge, Siphon and Ward), and a comment at `engine.js:1580`
+   records that the Convergence Engine cyberware clause cannot be derived because "the sheet has
+   no state for" Unattuned. A named `d.attuned` would serve both. Small, and worth doing only if
+   the author wants it.
+2. If a non-Shaper Flow Attribute ever DOES become a rule, the cost is not the engine read. It is
+   roughly fourteen `if (d.flow)` sites across six files that treat the object as a boolean
+   meaning "is a Shaper" and immediately read `.max`. Two of them, the Short Rest and Long Rest
+   handlers in `combat.js`, write to persisted state, so a half-built Flow object would save NaN
+   into the character file rather than merely render wrong.
+
 ## The Flow Attribute Check lands in the app, 2026-09-16 handoff
 
 The 16 September handoff: the roll a Shaper makes with the current when it is not an attack now

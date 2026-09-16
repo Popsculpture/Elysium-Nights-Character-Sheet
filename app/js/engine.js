@@ -3262,7 +3262,26 @@ EN.engine = (function () {
       };
     }
 
-    /* flow (Shaper only) */
+    /* flow (Shaper only)
+
+       AND CLANKERS ARE NOT AN EXCEPTION, checked against Part 2 on 2026-09-16 because a handoff
+       scoped the new Flow Attribute Check to "every Shaper; a Clanker whose class sets one",
+       which reads as though a species could grant one. It cannot. Part 2's "Clankers and The
+       Flow" says the opposite of what that phrase suggests: "A Clanker can channel the Flow if
+       their Class grants access to Invocations", "Their Flow Attribute is set by their class",
+       and, decisively, "If a Clanker does not have a Flow-using class, they interact with the
+       Flow only as targets, exactly like a non-adept being." That section exists to confirm
+       Clankers use the ORDINARY rules despite being inorganic: "a Clanker Flow adept runs on the
+       same rules for Flow Points, Reservoir, Strain, and Breakflow as anyone else."
+
+       So a Clanker Shaper already gets a full, correct Flow block through this gate, and a
+       Clanker of any other class correctly gets none. Shaper is the only entry under Part 2's
+       "Attuned Classes", and the Check's own scope line names no species at all: "Unattuned
+       Freelancers and other beings without a Flow Attribute cannot attempt Flow Attribute
+       Checks." Nothing here needs a species hook; do not add one.
+
+       The ambiguity is a manuscript wording nit, not a rules gap: the Clanker section says the
+       Flow Attribute is set by "class" where every other passage says subclass. Same mechanic. */
     var flow = null;
     if (ch.class === "shaper") {
       var flowAttrName = (sub && sub.extra && sub.extra.flowAttribute) || (sub && sub.flowAttribute) ||
