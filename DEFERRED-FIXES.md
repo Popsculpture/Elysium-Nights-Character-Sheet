@@ -8762,10 +8762,53 @@ forces a Breakflow CHECK, where "Overdrawing at Stage 4" is correct, rather than
 Breakflow. Either way the trailing clause looks like the one being removed. It is data-only and
 rendered nowhere, so nothing is showing a player the wrong rule while it waits for a decision.
 
+  **CLOSED 2026-09-18, and the ambiguity was the answer rather than an obstacle to it.** The two
+  readings this paragraph could not choose between are both true, of different clauses, which is
+  precisely why no single reading worked: Overdrawing at Stage 4 forces a CHECK, reaching Stage 5
+  is Breakflow OUTRIGHT. So the field now states both routes and says which is which, instead of
+  listing them as though they were the same kind of trigger. See the entry below.
+
 **Also noticed.** Hardware Mastery is filed inside the Codebreaker capstone "SysAdmin (Root
 Access)", not in the Rigger subclass the ruling names. The Rigger's four features are Hardware
 Integration, Cybernetic Overclock, Swarm Commander and Iron Reign, and none mentions repair cost. So
 either the app misfiled it or the manuscript moved it, and that is worth one look.
+
+## The third stale Breakflow trigger, and why listing it was the bug, 2026-09-18
+
+One string in `app/data/flow.js`. The 2026-09-18 handoff's section 10 named two sites carrying the
+retired "critical failure" trigger and both were fixed last commit. This was a third it did not
+name, flagged then rather than guessed at.
+
+**IT HAD THREE PROBLEMS, NOT ONE.** The field read "Overdrawing at Stage 4 (Rend), reaching Stage 5
+(Collapse), or a critical failure." The third clause is the retired trigger, and that much was
+already visible. The other two are the part worth recording: they are not the same kind of thing.
+Overdrawing at Stage 4 makes you ROLL a Breakflow Check, which you can pass. Reaching Stage 5 IS
+Breakflow, with nothing to roll. A flat list of three cannot be read correctly either way, which is
+what made the field ambiguous when it was flagged. Read as "what forces a Check", Stage 5 is wrong.
+Read as "what causes Breakflow", Stage 4 is wrong. So the fix is not deleting the third clause, it
+is separating the first two:
+
+> Overdrawing at Stage 4 (Rend) forces a Breakflow Check. Reaching Stage 5 (Collapse) is Breakflow
+> outright, with no check to make.
+
+**NO NEW RULE IS AUTHORED HERE, AND THAT WAS THE CONSTRAINT.** Both halves are already stated twice
+elsewhere and the rewrite only agrees with them. This same file's `strainTrack` says Stage 4 "Must
+roll a Breakflow Check when Overdrawing" and Stage 5 "Immediate Breakflow; you fall Unconscious".
+`conditions.js` says Breakflow "Occurs automatically when Strain reaches Stage 5 or when you fail a
+Breakflow Check". `combat.js` encodes the same split in its Strain rider. Nothing in the app
+disagreed with the corrected text before the correction; only this one field did.
+
+**STILL RENDERED NOWHERE, WHICH IS WHY IT COULD WAIT.** Verified rather than assumed: `js/flow.js`
+reads `F.breakflow.check` and `F.breakflow.onFailure` at line 414 and never touches `triggers`, and
+the engine computes `breakflowDC` itself from the Strain stage rather than parsing `dcFormula`. So
+both `triggers` and `dcFormula` are source truth for the next reader, not display, and no player was
+being shown the wrong rule during the wait. The comment now above the field says so, so the next
+person to find an unrendered field does not have to rediscover it.
+
+**THE FLOW CHAIN IS NOW CLEAN.** `grep "critical failure"` across `app` returns two hits and both
+are unrelated #GRID rules that legitimately use the term: the Relay overload in `grid.js:198` and
+the node-breach mitigation in `grid.js:209`, which are about margin on a Systems check, not about
+Flow. Confirmed in the running app that the file still parses and the field reads back as written.
 
 ## Marking becomes Tracing, and its status becomes Traced, 2026-09-18
 

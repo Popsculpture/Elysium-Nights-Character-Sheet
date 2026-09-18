@@ -180,7 +180,21 @@ EN.flow = {
   },
   breakflow: {
     dcFormula: "12 + Current Strain Stage",
-    triggers: "Overdrawing at Stage 4 (Rend), reaching Stage 5 (Collapse), or a critical failure.",
+    /* This field said three things and two of them were wrong, in different ways. "Or a critical
+       failure" is the retired trigger the 2026-09-18 audit struck from the two sites it knew
+       about; this was a third it did not name. And the other two clauses are not the same kind of
+       thing: Overdrawing at Stage 4 makes you ROLL, while reaching Stage 5 is Breakflow outright
+       with nothing to roll. Blended into one list, either reading of the field left a clause
+       false, so it now states both routes and says which is which.
+
+       No new rule is authored here. Both halves are already stated in this file's own strainTrack
+       (Stage 4 "Must roll a Breakflow Check when Overdrawing", Stage 5 "Immediate Breakflow") and
+       agree with the Breakflow condition entry in conditions.js, which reads "Occurs automatically
+       when Strain reaches Stage 5 or when you fail a Breakflow Check".
+
+       Data-only, as is dcFormula above it: js/flow.js renders `check` and `onFailure`, and the
+       engine computes breakflowDC itself. So this is source truth rather than display. */
+    triggers: "Overdrawing at Stage 4 (Rend) forces a Breakflow Check. Reaching Stage 5 (Collapse) is Breakflow outright, with no check to make.",
     onFailure: "Your FP drops to 0, all sustained effects end, and you cannot channel until you undergo Breakflow Restoration.",
     check: "Roll a Flow Attribute Saving Throw vs DC 12 + your current Strain Stage (Snag at Stage 3+)."
   },
