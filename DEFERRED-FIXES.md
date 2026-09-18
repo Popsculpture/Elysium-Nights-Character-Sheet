@@ -8637,6 +8637,99 @@ carried a comment about Weapon Focus Caliber that `pdfexport.js` lacked. That is
 discipline `parseUses` got earlier today, and for the same reason, since a plain diff is what
 turns the next drift into something anyone can see.
 
+## The 2026-09-18 handoff: conditions, cipher field, action tags, 2026-09-18
+
+An 18-finding manuscript consistency audit arrived as a self-contained handoff. Seven report-back
+questions came first, because three of the answers changed what the work actually was.
+
+**Section 3, the 700 Glimmer creation budget, was billed as the biggest behavioural change and is
+zero.** The budget, the three buckets and leftover-becomes-starting-Glimmer were already shipped in
+builder.js and kits.js, and the shipped kit data reproduces all nine of the author's fixture
+numbers exactly, Toxicologist 695 included. The manuscript was catching up to the code.
+
+**Section 1 needed no migration**, which is the one thing in the handoff that could have corrupted
+saved characters. `Pinned` was never in EN.conditions, and the only writer of ch.conditions is a
+dropdown built from that list, so no save file can carry it. Confirmed against history as well as
+the current file: `git log -S"Pinned" -- app/data/conditions.js` is empty.
+
+**Section 2 did not apply as written.** The book renamed a printed label from "Execution:" to
+"Activation:" because it collided with the Operator's class resource. The app never printed that
+label; its key was `exec` and it rendered bare.
+
+### What shipped
+
+**Suppressed is a condition now**, 47th in the list, between Suffocating and Surprised. The
+mechanical swap is the point and is easy to get backwards: Pinned halved the Target's Speed and left
+the action economy alone, Suppressed does the reverse. So the COND_FX rider sets snagAtk and
+noImpulse and deliberately does NOT set speedHalved, and the Full-Auto trait's Suppress branch was
+rewritten to match. Verified on a live character: the note reads correctly and Speed stays at 6.
+
+The trait's own structure was preserved rather than rewritten, because the handoff quotes the new
+CONDITION verbatim but not the revised Full-Auto text. Only what the ruling requires changed: the
+condition name, the Speed clause out, the Impulse clause in, and "the Pin ends" to "the suppression
+ends".
+
+**The cipher key moved even though the label never existed.** `exec` became `activation` across 42
+data literals and four read sites, which is the repo's call under the handoff and the right one:
+the gear half of the catalog has always called this field `activation` and rendered it under an
+"Activation:" heading, so the two halves now use one name for one idea. Never persisted, so no
+migration. The two bare chips gained a title tooltip, which names the field without adding a word
+to a row whose siblings are also bare.
+
+**The 42 action tags went into a new `action` field, never into `name`.** That was the whole design
+question and the answer is not close. ch.lineageFeatures, ch.awakeningEvolution and
+universalUpgrades[].evolution all persist raw feature-name strings, engine.js resolves stored picks
+by exact string equality, and there is no lineage-feature rename migration. Renaming 39 features
+would have silently orphaned every existing character's picks, with no error. The live proof is
+already in the repo: eight species-trait keys in briefs.js carry a stale (Passive)/(Active) suffix
+and therefore never resolve.
+
+engine.js carries the field through when it builds d.features, and the three copies of actionCost
+prefer it over the prose parse. **That fixes three live misclassifications as a side effect**, and
+they are the interesting part: the parser tests for "Impulse Action" first, so a feature whose
+EFFECT is to deny Impulse Actions was being read as though it COST one. Pollen Haze now groups under
+ACTION rather than IMPULSE, Temporal Snare under SWIFT, Vital Static under ACTION. Static Premonition
+stays untagged, exactly as the handoff instructs, and it is the fourth option in the same Phasebound
+list as three tagged ones, which is why the ruling calls it out by name.
+
+### The review
+
+Three reviewers, three refuters each. Two findings stood.
+
+**One was mine.** The new rider's comment said both flags it uses "are already consumed". Half true:
+snagAtk is read on the attack rows, but noImpulse is write-only across the entire repo, five writes
+and an initializer and zero reads, and the same is true of noSwift. So the action-economy half of
+Suppressed reaches the player through the note, exactly as it does for Dazed, Staggered, Surprised
+and Stunned. That is the file's standing convention rather than a gap in this entry, but the comment
+asserted an enforcement path that does not exist and would have misled the next person to add a
+condition. It says what is true now.
+
+**The second is a question for the author, not a fix.** Riddling Tongue (Grinlings) has the exact
+prose pattern the tagging pass exists to correct: its text says "once per Encounter as a Swift
+Action" and also "unable to take Impulse Actions", so it renders as IMPULSE against its own printed
+brief. It is not among the book's 42, so tagging it here would invent a tag the manuscript did not
+assign, which is precisely the restraint the pass already shows by leaving Static Premonition alone.
+A refuter then found two more of the same shape outside species.js, in class data the tagging pass
+never touched: Hardware Override (Fury) says Swift Action and parses as Impulse, and a Shaper
+broadcast says Action and parses as Impulse. One more manuscript tagging pass would close the whole
+class at once.
+
+Three findings were killed: that the COND_META row swaps its columns, that the tier-collapse copy in
+the two export renderers drops `action`, and that the species core and secondary trait push sites
+drop it too. The last two are true of the code and unreachable, because engine.js:3657 is the only
+push site that ever sets the field and nothing else in the repo carries one.
+
+### Still open from this handoff
+
+Sections 6 and 8 through 10 were not in scope for this pass. Section 7, the Marking to Tracing trait
+rename with its new Traced condition, is four lines in two data files and is genuinely a key rename,
+since gear_ranged.js carries `traits: ["Marking"]`. Section 11, the Part 4 bestiary work, is
+deliberately deferred: bestiary.js says to re-run the transcription rather than hand-edit, two of its
+variant strings are already truncated mid-sentence and are ones the ruling asks to raise damage on,
+Sentry Turret is filed as Deadshot rather than Controller, and the Controller vitalityMult collides
+with Math.round (30 x 0.75 = 22.5 renders 23 against a printed 22). Every Solo damage figure the
+ruling raises to is already what the generator computes, so the cost of waiting is close to zero.
+
 ## Three small things that came out of re-checking the open list, 2026-09-18
 
 Brandon asked what was pending. Rather than reading my own list back, I re-checked every item on it

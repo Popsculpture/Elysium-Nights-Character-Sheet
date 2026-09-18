@@ -206,6 +206,11 @@ EN.conditions = [
     text: "Your lungs are working. Nothing is coming in.\n\nHow It Works:\n- You can't speak, and anything that needs breath fails.\n- At the start of each of your turns, you lose 1d6 Vitality. This loss cannot be reduced or prevented.\n- Suffocating and Drowning never both apply. Drowning is running out of air with time to hold your breath. Suffocating is the air being taken.\n- Anything that does not breathe is immune, Clankers included.\n\nHow to End It:\n- Reach breathable air or an equivalent life support source. There is no save. You can breathe or you can't.\n- A Rebreather, a suit sealed against the hazard, or any effect that supplies air ends it immediately."
   },
   {
+    name: "Suppressed",
+    summary: "Snag on attack rolls; lose Impulse Actions",
+    text: "Rounds are cracking past close enough to feel. You can shoot back, but not well, and not without putting your head somewhere it should not be.\n\nHow It Works:\n- You roll with Snag on attack rolls.\n- You can't take Impulse Actions.\n\nHow to End It:\n- Ends at the start of the suppressor's next turn. Every effect that applies Suppressed currently says so; if a later one sets a different duration, that entry governs.\n- At the GM's discretion it ends early when the fire stops: the shooter drops, breaks line of sight, or swings the stream onto somebody else. Suppression is a volume of fire, not a status that outlives it."
+  },
+  {
     name: "Surprised",
     summary: "Caught off guard; no actions on your first turn",
     text: "Something moved before you did. An ambush, a hidden muzzle, a knife you never heard clear its sheath.\n\nHow It Works:\n- You are Surprised when combat begins and you were unaware of the threat: the attackers beat your side on a Stealth contest against Awareness, or the GM rules you were genuinely caught off guard. A Character aware of at least one hostile is not Surprised.\n- On your first turn of the encounter you can't take an Action, Move Action, Swift Action, or Impulse Action. You may still make Saving Throws.\n- Until the start of your second turn, attacks against you are made with Edge.\n\nHow to End It:\n- Surprised ends automatically at the start of your second turn."

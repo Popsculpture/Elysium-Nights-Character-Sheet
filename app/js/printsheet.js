@@ -661,7 +661,8 @@ EN.printSheet = (function () {
          Empty groups are skipped below, so the two additions cost a reader nothing until
          a character actually holds one. */
       var groups = { Passive: [], Action: [], Swift: [], Impulse: [], Free: [], Complex: [], Special: [] };
-    feats.forEach(function (f) { f._act = ACT_OVERRIDE[f.name] || actionCost(f.text); (groups[f._act] || groups.Passive).push(f); });
+    // f.action is the data's own tag and outranks both the name map and the prose parse
+    feats.forEach(function (f) { f._act = f.action || ACT_OVERRIDE[f.name] || actionCost(f.text); (groups[f._act] || groups.Passive).push(f); });
     function snipRow(f) {
       var cost = f._act !== "Passive" ? costTag(f.text) : null, uses = parseUses(f.text, d);
       var row = el("div.ps-snip", null, [

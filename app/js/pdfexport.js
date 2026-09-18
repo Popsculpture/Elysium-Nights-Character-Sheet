@@ -868,7 +868,8 @@ EN.pdfExport = (function () {
          Empty groups are skipped below, so the two additions cost a reader nothing until
          a character actually holds one. */
       var groups = { Passive: [], Action: [], Swift: [], Impulse: [], Free: [], Complex: [], Special: [] };
-      feats.forEach(function (f) { var act = ACT_OVERRIDE[f.name] || actionCost(f.text); (groups[act] || groups.Passive).push(Object.assign({}, f, { _act: act })); });
+      // f.action is the data's own tag and outranks both the name map and the prose parse
+      feats.forEach(function (f) { var act = f.action || ACT_OVERRIDE[f.name] || actionCost(f.text); (groups[act] || groups.Passive).push(Object.assign({}, f, { _act: act })); });
       var featIdx = 0;
       [["Passive", "PASSIVE"], ["Action", "ACTION"], ["Swift", "SWIFT ACTION"], ["Impulse", "IMPULSE · REACTION"], ["Free", "FREE ACTION"], ["Complex", "COMPLEX ACTION"], ["Special", "SPECIAL ACTION"]].forEach(function (g) {
         var arr = groups[g[0]];

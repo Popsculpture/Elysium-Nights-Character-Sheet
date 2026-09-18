@@ -253,7 +253,7 @@ EN.gridView = (function () {
         ])
       ]),
       open ? el("p.help", { style: { margin: "4px 0 1px", color: "var(--text2)", fontFamily: "var(--mono)", fontSize: "10px" },
-        text: cy.cat + " (" + cy.sub + ") · " + cy.exec + " · " + cy.range + " · " + cy.runtime + (cy.link ? " · needs Link" : "") }) : null,
+        text: cy.cat + " (" + cy.sub + ") · " + cy.activation + " · " + cy.range + " · " + cy.runtime + (cy.link ? " · needs Link" : "") }) : null,
       open ? EN.ui.proseP("p.help", { margin: "2px 0 0" }, cy.text) : null
     ]);
   }
@@ -264,7 +264,7 @@ EN.gridView = (function () {
         el("span", { style: { fontWeight: 600, fontSize: "13px" }, text: cy.name }),
         el("div.row", { style: { gap: "6px", alignItems: "center" } }, [
           cy.type ? el("span.chip", { style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" } }, cy.type) : null,
-          cy.exec ? el("span.chip", { style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" } }, cy.exec) : null
+          cy.activation ? el("span.chip", { title: "Activation", style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" } }, cy.activation) : null
         ])
       ]),
       // was innerHTML, which printed the text's own **bold** markers and passed catalogue prose
@@ -590,7 +590,7 @@ EN.gridView = (function () {
           el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
             el("span", { style: { fontWeight: 600, fontSize: "12.5px" }, text: c.name }),
             el("span.chip", { style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" } }, c.type),
-            el("span.chip", { style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" } }, c.exec),
+            el("span.chip", { title: "Activation", style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" } }, c.activation),
             el("span.chip", { style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" } }, c.range)
           ]),
           EN.ui.proseP("p.help", { margin: "4px 0 0" }, c.text)

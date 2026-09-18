@@ -1244,6 +1244,18 @@ EN.combatView = (function () {
     "Prone": function (e) { e.edgeToAttackers = true; e.notes.push("Prone: melee vs you has Edge, ranged vs you has Snag; stand for half movement or a Swift"); },
     "Restrained": function (e) { e.speedZero = true; e.snagAtk = true; e.snagSave.AGI = true; e.edgeToAttackers = true; },
     "Shaken": function (e) { e.snagAtk = true; e.snagChk.WIT = true; e.notes.push("Shaken: cannot take the Help Action or benefit from Edge from any source"); },
+    /* Promoted from Operator class-local text to a full condition on 2026-09-18, because gear
+       applies it too (Full-Auto in Suppress mode). It REPLACES Pinned, which the book retired,
+       and the two differ on purpose: Pinned halved Speed and did not touch the action economy,
+       Suppressed does the reverse. Do not carry a speedHalved across from the old wording.
+
+       Both flags already existed on the accumulator, but only one of them is READ. snagAtk
+       reaches the attack rows; noImpulse is write-only, here and for Dazed, Staggered,
+       Surprised and Stunned, so the action-economy half of every one of those conditions
+       reaches the player through the note below rather than through a gate. That is the
+       file's standing convention, not an oversight of this entry, and it is why the note
+       spells the restriction out instead of leaning on the flag. */
+    "Suppressed": function (e) { e.snagAtk = true; e.noImpulse = true; e.notes.push("Suppressed: Snag on attack rolls; no Impulse Actions. Ends at the start of the suppressor's next turn, or earlier at the GM's call when the fire stops"); },
     "Signal Jammed": function (e) { e.notes.push("Signal Jammed: no remote devices, drones, or wireless cyberware; wired still works"); },
     "Staggered": function (e) { e.speedHalved = true; e.noSwift = true; e.noImpulse = true; e.notes.push("Staggered: Staggered again → Stunned"); },
     "Strain": function (e, l) {
@@ -1316,7 +1328,7 @@ EN.combatView = (function () {
     "Critical Wound": ["Persistent", "Surgery / Regenerative Tech"], "Cursed": ["Persistent", "Ritual / Rare Relics"],
     "Dazed": ["1 Round", "End of turn Wits DC 12"], "Drowning": ["Special", "Access to breathable air"],
     "Drowsy": ["Persistent", "Body DC 12 (shake off) / Body DC 15 (resist sleep)"], "Fatigue": ["Until Restored", "Long Rest / Treatment / Medtech"],
-    "Surprised": ["1st turn of combat", "-"], "Mutating": ["Until Treated", "Complex Action Medtech DC 12 + stacks"],
+    "Surprised": ["1st turn of combat", "-"], "Suppressed": ["Until suppression ends", "Start of the suppressor's next turn"], "Mutating": ["Until Treated", "Complex Action Medtech DC 12 + stacks"],
     "Immunity": ["Persistent", "-"], "Resistance": ["Persistent", "-"], "Vulnerability": ["Persistent", "-"],
     "Frightened": ["Until Save", "End of turn Wits / Charm DC 15"], "Grappled": ["Until Escaped", "Contested Athletics / Acrobatics"],
     "Hallucinating": ["Persistent", "Purge / Source Expiration"], "Hardwired": ["Permanent", "Uninstall Cyberware"],
@@ -3882,7 +3894,9 @@ EN.combatView = (function () {
       // an explicit "(Active)"/"(Passive)" marker overrides the text-based cost parse,
       // then comes off the displayed title
       var forced = /\(Active\)\s*$/i.test(f.name) ? "active" : (/\(Passive\)\s*$/i.test(f.name) ? "passive" : null);
-      var cost = f._cost || actionCost(f.text);
+      // an explicit `action` on the data row beats the text parse, which guessed from prose and
+      // read "cannot take Impulse Actions" in Pollen Haze as though the feature COST an Impulse
+      var cost = f._cost || f.action || actionCost(f.text);
       if (forced === "active" && cost === "Passive") cost = "Active";
       if (forced === "passive") cost = "Passive";
       return { id: "act-" + i, name: f.name.replace(/\s*\((Active|Passive)\)\s*$/i, ""), src: f.source + " · L" + f.level,
