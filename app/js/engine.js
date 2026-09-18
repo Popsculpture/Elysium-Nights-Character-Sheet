@@ -3556,8 +3556,9 @@ EN.engine = (function () {
        scoped the new Flow Attribute Check to "every Shaper; a Clanker whose class sets one",
        which reads as though a species could grant one. It cannot. Part 2's "Clankers and The
        Flow" says the opposite of what that phrase suggests: "A Clanker can channel the Flow if
-       their Class grants access to Invocations", "Their Flow Attribute is set by their class",
-       and, decisively, "If a Clanker does not have a Flow-using class, they interact with the
+       their Class grants access to Invocations", "Their Flow Attribute is set by their subclass
+       (Mystique, Tech, Body, or Charm)", and, decisively, "If a Clanker does not have a
+       Flow-using class, they interact with the
        Flow only as targets, exactly like a non-adept being." That section exists to confirm
        Clankers use the ORDINARY rules despite being inorganic: "a Clanker Flow adept runs on the
        same rules for Flow Points, Reservoir, Strain, and Breakflow as anyone else."
@@ -3568,8 +3569,15 @@ EN.engine = (function () {
        Freelancers and other beings without a Flow Attribute cannot attempt Flow Attribute
        Checks." Nothing here needs a species hook; do not add one.
 
-       The ambiguity is a manuscript wording nit, not a rules gap: the Clanker section says the
-       Flow Attribute is set by "class" where every other passage says subclass. Same mechanic. */
+       The wording nit that used to sit here has SHRUNK rather than vanished. "Their Flow
+       Attribute is set by their class" was corrected to "subclass" in Part 2 on 2026-09-18, and
+       that was the one hard mechanical statement of it. Two softer restatements still say class:
+       the back half of that same bullet ("a Clanker mystic or brawler can absolutely use Mystique
+       or Body if their class demands it") and the Flow Modifier callout in Common Actions ("Each
+       Flow-using class is tied to one Attribute"). Both are prose rather than rules text, and
+       neither disturbs the mechanic this code implements and the book states canonically under
+       Flow Connection and Unattuned Classes: attunement is CLASS-level, the Attribute is
+       SUBCLASS-level, which is why the line below reads ch.subclass. */
     var flow = null;
     if (attuned) {
       var flowAttrName = (sub && sub.extra && sub.extra.flowAttribute) || (sub && sub.flowAttribute) ||
