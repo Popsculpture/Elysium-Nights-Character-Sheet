@@ -8614,6 +8614,153 @@ carried a comment about Weapon Focus Caliber that `pdfexport.js` lacked. That is
 discipline `parseUses` got earlier today, and for the same reason, since a plain diff is what
 turns the next drift into something anyone can see.
 
+## The four armour suits stop asking a question the sheet could not hear, 2026-09-17
+
+Veilskin, Aegis Shroud, Reliquary Shell and the Warframe Shell all print "when you acquire it,
+choose ..." and the app ignored the clause completely. It does not now. Same channel as the Talent
+picks that landed yesterday, but hung off an equipment ENTRY rather than a talent key, which is the
+whole difference: two Veilskins are two copies and two independent answers, exactly as ch.armorMods
+and ch.hazards.thermalWeave are keyed.
+
+**Four menus, not one.** The Warframe Shell picks one of the four PHYSICAL types; Veilskin one of
+three energy types (no Resonant); Aegis Shroud one of four; the Reliquary Shell the same four but
+picks TWO. A single shared damage-type dropdown would have printed options the book does not offer,
+which is why the options live per entry and why the record stores an ARRAY for all four rather than
+a string that is sometimes a pair. One shape is one reader.
+
+**The options sit on the armour row, not in a table in engine.js**, and that is deliberately the
+opposite of where the Talent menus live. gear_armor.js rows already carry their machine-readable
+flags beside their prose (dr, slots, traits, wardDie, vacuum), so a fifth suit with a menu needs a
+data field and no engine change. talents.js rows are prose and a category, and every Talent grant
+the engine derives is already a table in engine.js. Each side follows its own file's idiom.
+
+**Three readings the manuscript does not actually settle, decided and flagged.**
+
+The WORN gate is an inference. The book never prints "only while worn" as a general rule for item
+Resistances; the only printed switch-off is the Body Slot rule, where items over a group's capacity
+"sit inert until you change your loadout". It does print "You wear one suit of armor at a time", and
+every other benefit a suit carries is already read off the worn piece, so the pick grants only while
+the suit is on. A spare keeps its answer on the record and grants nothing.
+
+The Reliquary Shell's two picks may legally name the SAME type. The clause is "choose two of Fire,
+Electric, Cold, or Resonant" with no "must be different", and Part 1's Resonance Optimizer proves the
+book knows that wording when it wants it: "Each time you do so, you must choose a different damage
+type." So the picker offers all four in both slots and says plainly that two of the same is one
+Resistance, rather than enforcing a distinctness rule nobody printed. It is also silent on a partial
+selection; granting what you have picked so far is a reading, not a quote, and it is the reading that
+never costs a player something they chose.
+
+And the book never says an acquire-time pick can be CHANGED. That silence looks deliberate: two
+cyberware entries in the same Part print an explicit clause ("you can change the selection during
+Downtime"), so the phrasing exists and was not used here. The picker is editable anyway, because the
+sheet is a record and a misclick is a real thing, but nothing in the app presents re-picking as a
+downtime action and no downtime button was built for it. If the intent is that it locks, say so and
+it becomes a one-line gate.
+
+**The record.** ch.armorResistPicks, null-prototype, in the newCharacter template rather than
+materialised on first write: ch.armorMods is not, and a character created in-session therefore runs
+on a prototype-polluted mods map until its first reload. migrate() prunes it against eqKeys, widens a
+bare string to a one-element array, and drops a key that names no equipment row or an array with
+nothing usable in it. It checks SHAPE only. Whether "Resonant" is on a given suit's menu is the
+engine's question, asked on read, so a suit re-optioned later re-validates instead of having been
+quietly rewritten on some earlier load.
+
+That block sits inside the hazards section of migrate() for one reason: eqKeys is built there, and
+sharing it means a suit's weave element and a suit's own tuning can never disagree about which copies
+still exist. It is after the instance-id split, which is mandatory.
+
+**No deletion hook**, following thermalWeave exactly. Nothing sweeps per-entry armour state when a
+suit is sold; migrate() runs only on load, so an orphaned key is live in memory until the page
+reloads. That is why the reader looks the answer up BY KEY rather than walking the map: an orphan
+grants nothing in the meantime. It also avoids the trap that unequipIfGone has two copies, the second
+inlined in builder.js undoKit, which have already drifted once.
+
+**Two fixes that are not about armour, found on the way.**
+
+engine.talentUpgradeKeys returned u.talent raw, and every one of its five callers compares it against
+a key that came out of activeTalents (which canonicalizes) or against a key literal. The builder's
+picker always writes the key, so an in-app record was never affected, but an imported or hand-edited
+one naming the Talent by its display name lost its Upgrade silently, in all five places at once. It
+canonicalizes now. Verified both ways: with "Cyber-Reinforced Vitality" in the slot the Resistance
+now derives identically to the key form, and an unresolvable name grants nothing and does not nag.
+
+engine.resistPickPending shipped yesterday exported with ZERO callers. The UNCHOSEN chip was inside
+the Upgrade slot, so the only player who could see the warning was the one who had already opened the
+slot to read it. It now feeds the slot summary ("Upgrade: Cyber-Reinforced Vitality, choose a damage
+type"), the attention dot, and advanceElectionsComplete, which is what talentAttrPendingIn does one
+branch up for exactly the same reason. Note the consequence: a record whose Upgrade owes a damage type
+now reads as an incomplete Advance step. That is correct, and it is a visible change to an already
+filed character.
+
+Neither pick goes in pendingChoices(), which still walks only Class and Background. An unmade pick is
+a complete record holding an unclaimed benefit, not an incomplete one.
+
+**Those two fixes together nearly shipped a lock-out, and an adversarial review caught it.** Once
+talentUpgradeKeys canonicalized, a slot naming its Talent by display name made the grant LIVE, which
+made its pick pending, which made the new completeness gate block the Advance step and with it the
+certify checkbox and SUBMIT & FILE. But talentUpgradePicker resolves its slot BY KEY, so for that same
+record it rendered no picker at all: the step was blocked with nothing on screen able to answer it,
+and the only way out was to repoint the slot and lose the Upgrade. The record the canonicalization was
+written for was the record that could no longer be filed.
+
+The fix is one normalisation rather than four guards: migrate() now canonicalizes
+universalUpgrades[*].talent through engine.canonTalentKey, right where TALENT_RENAMES is already
+applied to the same field. That serves the engine, uuTalentsOwned and talentUpgradePicker at once,
+instead of each reader carrying its own canonTalentKey and drifting. An unresolvable string is left
+alone rather than nulled: it may name a Talent a later catalog adds back, and clearing the slot would
+destroy a choice to tidy a lookup. Verified end to end on a display-name record through a real save
+and reload: both slots canonicalize, the picker renders, answering it grants
+"Slashing:Resistant <- Cyber-Reinforced Vitality (Upgrade)", and the step flips to done.
+
+**The review, and what it changed.** Five reviewers over the diff, then three refuters per finding with
+distinct lenses (is it true, can anyone reach it, is it already handled), majority refute kills it.
+Fourteen raised, eleven killed, three fixed:
+
+  1. The lock-out above. Raised as a bug, and it was one.
+  2. The picker wrote at an index into a list it did not read from. The selects are drawn from the
+     engine's dense, menu-validated projection; the write indexed the RAW stored array, and those two
+     differ whenever a stored value is off the menu or past the cap. Killed twice by majority vote as
+     unreachable, which is true today, because the only writer stores menu-valid values. Fixed anyway:
+     it stops being unreachable the moment a suit's menu changes, which is the exact case the
+     migration's shape-only check deliberately leaves to the engine. The handler now builds from the
+     same list the selects were drawn from. Verified with a seeded ["Banana", "Fire"]: editing the
+     second slot used to write ["Banana", "Cold"] and destroy the player's Fire, and now writes
+     ["Fire", "Cold"].
+  3. A comment that contradicted the file it sat in. RESIST_PICK's header still told the next reader
+     that the armour menus "belong here next", which this pass answered the other way twice over, 40
+     lines below and again in gear_armor.js. It was also loose about the count ("the four Mystech
+     suits": three Mystech suits carry a clause, the fourth picker is a Powered Exoframe, and the
+     Resonant Carapace has no clause at all).
+
+The eleven killed were killed on their merits, and the most useful thing about them is what they
+confirm: the two-of-the-same pick printing as "Resistance Fire, Fire" is prevented by pushResist's own
+dedupe, the bare-bracket read in the write path is inside a store.update on a key the caller owns and
+not a resolver, the PDF Notes column has room, and an Upgrade slot orphaned by repointing its base
+Talent cannot reach the new gate.
+
+**Verified.** Fifteen engine cases: no pick, valid, off-menu-but-real, bogus, stashed-with-a-pick,
+one of two, two, the same twice, three stored and capped, the physical menu, a suit with no menu at
+all, the bare-string shape, two copies with different answers, and a key of "toString". Then the real
+UI: five selects across four cards with the right menus, the right chips and the right notes, writes
+and clears round-tripping, the Reliquary's second pick sliding up when the first is cleared (the picks
+are a set, not slots), and NO picker on the Gray Market card, which itemCard draws from the same
+function with no copy to tune. Then the exports: the print sheet prints "DR 2, Resistance Fire" for
+the worn suit and "Resistance not chosen" for a stashed one, and the PDF's own form fields carry the
+same line, read back out of the generated bytes. Then migrate() on a real reload, keeping the live
+keys, widening the string, dropping the orphan and the garbage.
+
+**Ablative Coating is still out, and not for want of these rails.** Its pick is the same shape, but
+its clause is not: "The first time each scene a hit of that type would carry through to your Wounds,
+the coating burns away instead: ignore that damage, then the mod is spent and grants no Resistance
+until you re-layer it in downtime." The trigger is the WOUND track, not any hit of that type, so it
+fires long after DR and Resistance have already applied, and once spent the mod loses the ordinary
+Resistance too. Wiring only its pick would make the sheet assert a standing Resistance that the rule
+burns away, which is worse than the silence it replaces. It needs a per-scene spent flag first.
+
+Also documented, untouched: Aegis Shroud, Reliquary Shell and Resonant Carapace all carry "You can
+only benefit from one Focus item for Ward at a time", and the sheet has no single active-Ward-Focus
+selector, so a character holding two reads as though both apply.
+
 ## Stored picks: the machinery, one grant, and one mod that was answering for the player, 2026-09-16
 
 The choose-one-on-acquisition channel, opened at the author's chosen scope: build the machinery,

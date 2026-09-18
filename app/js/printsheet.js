@@ -344,7 +344,7 @@ EN.printSheet = (function () {
   // `grip` is the engine's weaponGrip for this weapon, and it is here for the same
   // reason drState is: which die a Versatile weapon deals is a mutable fact about
   // how it is being held, and the catalog string names two dice without saying which.
-  function gearDetailLines(it, drState, shState, grip) {
+  function gearDetailLines(it, drState, shState, grip, picks) {
     var lines = [], stat = [];
     if (it.damage && grip && grip.versatile && grip.forcedBy) {
       stat.push("Damage " + (it.damage || "").replace(/^\s*\d+d\d+/, grip.dice)
@@ -358,6 +358,11 @@ EN.printSheet = (function () {
     if (it.dr != null) stat.push((drState && drState.base && drState.lost > 0)
       ? "DR " + drState.current + " of " + drState.base + " (" + drState.lost + " lost, until repaired)"
       : "DR " + it.dr);
+    /* The acquire-time damage type, here for the same reason drState is: it is a mutable fact
+       about THIS copy that the catalog string cannot state. It prints for a stashed suit too,
+       because the choice is the copy's and the sheet is the copy that leaves the app; the
+       Resistances section above only ever shows the suit you are wearing. */
+    if (it.resistPick) stat.push((picks && picks.length) ? "Resistance " + picks.join(", ") : "Resistance not chosen");
     // At 0 boxes an EMITTER goes dark rather than being destroyed, and the rules go out
     // of their way to say so: it is not destroyed, it can come back, and it leaves no
     // salvage, where a physical shield is beyond repair and its wreck is salvage. The
@@ -771,7 +776,8 @@ EN.printSheet = (function () {
         ]);
         if (it) gearDetailLines(it, eng.armorState ? eng.armorState(ch, key) : null,
                                 eng.shieldState ? eng.shieldState(ch, key) : null,
-                                eng.weaponGrip ? eng.weaponGrip(ch, it, key) : null).forEach(function (l) { block.appendChild(l); });
+                                eng.weaponGrip ? eng.weaponGrip(ch, it, key) : null,
+                                eng.armorResistPicks ? eng.armorResistPicks(ch, key, it) : null).forEach(function (l) { block.appendChild(l); });
         else block.appendChild(el("div.ps-invdesc.ps-dim", { text: "No catalog entry - note details by hand." }));
         body.push(block);
       });

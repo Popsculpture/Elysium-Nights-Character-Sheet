@@ -610,9 +610,12 @@ EN.engine = (function () {
      only once that Upgrade has actually been bought as a Universal Upgrade. Holding the Talent is
      not enough, and neither is being level 6.
 
-     One entry today. The four Mystech suits and the Ablative Coating mod are the same shape and
-     belong here next, but they hang off an equipment ENTRY rather than a talent key, so they need
-     a per-copy key and a second picker surface in Inventory. Deliberately not in this pass.
+     One entry, and it stays one: this table is for TALENT menus only. The armor menus that
+     landed on 2026-09-17 are deliberately NOT here, because they hang off an equipment entry
+     rather than a talent key and because a gear row can carry its own options; see
+     armorResistOptions below and the note on the Warframe Shell in gear_armor.js. The last
+     unwired menu in this family is the Ablative Coating mod, which follows the armor rails and
+     not these, and needs a per-scene spent flag before its pick means anything.
      Source: app/data/talents.js:283. */
   var RESIST_PICK = {
     "cyber-reinforced-vitality": { options: ["Ballistic", "Piercing", "Slashing", "Bludgeoning"], upgrade: true }
@@ -647,6 +650,56 @@ EN.engine = (function () {
     return !!(opts && opts.length > 1 && resistPickLive(ch, grantKey) && !resistPick(ch, grantKey));
   }
 
+  /* ---- THE SAME CHOICE, MADE ON A PIECE OF GEAR -----------------------------
+     Four armor entries print "when you acquire it, choose ...". Unlike the Talent grants
+     above, the answer belongs to one COPY of the suit: two Veilskins are two equipment
+     entries and two independent answers. That is the same reason ch.armorMods and
+     ch.hazards.thermalWeave are keyed on the entry rather than on the item name, and this
+     map joins them on ch.armorResistPicks.
+
+     The OPTIONS live on the armor row (gear_armor.js `resistPick`), not in a table here.
+     See the note on the Warframe Shell for why the two halves of this feature keep their
+     menus in different files. */
+  function armorResistRow(item) {
+    var r = item && item.resistPick;
+    return (r && r.options && r.options.length) ? r : null;
+  }
+  function armorResistOptions(item) { var r = armorResistRow(item); return r ? r.options : null; }
+  function armorResistCount(item) { var r = armorResistRow(item); return r ? (r.count || 1) : 0; }
+  /* THE resolver, and it looks the answer up BY KEY rather than walking the map, because
+     migrate() runs only on load: between selling a suit and reloading the page its dead
+     key is still sitting there. Every stored value is checked against THIS item's own
+     menu, so a pick naming a type the suit does not offer resolves away rather than being
+     corrected, exactly as resistPick does for a Talent.
+
+     Duplicates are NOT filtered. The Reliquary Shell's clause does not forbid choosing the
+     same type twice, and pushResist collapses the pair into one row anyway; the picker
+     says so rather than the engine quietly rewriting a legal choice. */
+  function armorResistPicks(ch, key, item) {
+    item = item || armorItem(keyToName(ch, key));
+    var opts = armorResistOptions(item);
+    if (!opts) return [];
+    var raw = ownVal((ch && ch.armorResistPicks) || null, key);
+    // a bare string is the one-pick shape written by hand or by an older export; the
+    // migration widens it the same way, so both ends of the record agree about shape
+    if (typeof raw === "string") raw = [raw];
+    if (!Array.isArray(raw)) return [];
+    var n = armorResistCount(item), out = [];
+    raw.forEach(function (t) {
+      if (out.length >= n) return;
+      if (typeof t === "string" && opts.indexOf(t) !== -1) out.push(t);
+    });
+    return out;
+  }
+  /* How many answers this copy still owes: a NUMBER, not a boolean, because the Reliquary
+     Shell picks two and owing one of them is a real state the card has to be able to say.
+     0 for a suit whose entry carries no menu at all. */
+  function armorResistOwed(ch, key, item) {
+    item = item || armorItem(keyToName(ch, key));
+    if (!armorResistOptions(item)) return 0;
+    return Math.max(0, armorResistCount(item) - armorResistPicks(ch, key, item).length);
+  }
+
   /* Talents granting a standing Vitality bonus, a table in the same shape. The value is points
      PER CHARACTER LEVEL, and Cyber-Reinforced Vitality is the only entry the catalog has.
 
@@ -658,8 +711,8 @@ EN.engine = (function () {
      2*acquired + 2*(now - acquired) is 2*now at every level. So the simpler form is used, and the
      acquisition level is left out of the arithmetic rather than left unconsidered.
 
-     Its Upgrade's chosen Resistance stays out, for the reason TALENT_RESIST gives above: a menu
-     needs a stored pick. Source: app/data/talents.js:283. */
+     Its Upgrade's chosen Resistance is NOT here, and no longer for want of a channel: it is a
+     menu, and menus resolve through RESIST_PICK above. Source: app/data/talents.js:283. */
   var TALENT_VIT_PER_LEVEL = {
     "cyber-reinforced-vitality": 2
   };
@@ -1048,6 +1101,16 @@ EN.engine = (function () {
       pushResist(acc, "resist", worn.item.resist, worn.item.name);
       pushResist(acc, "vulnerable", worn.item.vulnerable, worn.item.name);
       pushResist(acc, "immune", worn.item.immune, worn.item.name);
+      /* ...and the type chosen when THIS copy was acquired. Only the WORN suit grants it.
+         The book never prints "only while worn" as a general rule for item Resistances, so
+         that gate is an inference, but it is the one every other benefit a suit carries
+         already runs on: this whole block is inside `if (worn ...)`, and Part 3 prints "You
+         wear one suit of armor at a time". A spare in the stash keeps its answer on the
+         record and grants nothing until you put it on. The label is the suit's own name,
+         because the Resistance is the suit's the way its DR is. */
+      armorResistPicks(ch, worn.key, worn.item).forEach(function (t) {
+        pushResist(acc, "resist", [t], worn.item.name);
+      });
       var TRAIT_RESIST = (EN.gearCatalog && EN.gearCatalog.armor && EN.gearCatalog.armor.traitResist) || {};
       (worn.item.traits || []).forEach(function (tr) {
         pushResist(acc, "resist", TRAIT_RESIST[tr], worn.item.name + " (" + tr + ")");
@@ -1581,10 +1644,24 @@ EN.engine = (function () {
       });
     return dupes;
   }
-  // Talent keys whose Level 6+ Upgrade has been unlocked via a Universal Upgrade slot.
+  /* Talent keys whose Level 6+ Upgrade has been unlocked via a Universal Upgrade slot.
+
+     CANONICALIZED, because every one of the five callers compares these against a key that
+     came out of activeTalents (or against a key literal), and a record can name a Talent by
+     its display name as readily as by its key: the dupe check two functions up exists for
+     exactly that. The builder's picker always writes the key, so an in-app record was never
+     affected, but an imported or hand-edited one carrying "Cyber-Reinforced Vitality" here
+     lost its Upgrade silently, in all five places at once. Found 2026-09-17 while extending
+     the damage-type picks to armor, since resistPickLive is one of the five. An unresolvable
+     name is dropped rather than passed through: it can match nothing downstream either way,
+     and passing it through is how it stayed invisible. */
   function talentUpgradeKeys(ch) {
     var ups = (ch && ch.universalUpgrades) || {}, out = [];
-    Object.keys(ups).forEach(function (k) { var u = ups[k]; if (u && u.type === "talentUpgrade" && u.talent) out.push(u.talent); });
+    Object.keys(ups).forEach(function (k) {
+      var u = ups[k]; if (!u || u.type !== "talentUpgrade" || !u.talent) return;
+      var canon = canonTalentKey(u.talent);
+      if (canon) out.push(canon);
+    });
     return out;
   }
   // Split a Talent's text into its base body and its "Upgrade (Level 6+)" rider.
@@ -3904,6 +3981,8 @@ EN.engine = (function () {
     canonTalentKey: canonTalentKey, talentAttr: talentAttr, talentAttrOptions: talentAttrOptions,
     talentAttrPending: talentAttrPending, attrBumpSources: attrBumpSources,
     resistPick: resistPick, resistPickOptions: resistPickOptions, resistPickPending: resistPickPending,
+    armorResistOptions: armorResistOptions, armorResistCount: armorResistCount,
+    armorResistPicks: armorResistPicks, armorResistOwed: armorResistOwed,
     effectiveAttributes: effectiveAttributes,
     // the Universal Upgrade slots holding a Talent an earlier slot already holds, so
     // the builder can say which slot is buying nothing

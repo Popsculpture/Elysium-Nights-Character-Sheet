@@ -163,6 +163,24 @@ EN.gearCatalog.armor = {
       poweredBenefits: "While trained, powered, and on an active lease, you ignore the Speed reduction from Bulky, treat your Encumbrance threshold as two steps higher, and gain Edge on in-combat d20 checks (or +1 Edge Die out-of-combat) to lift, shove, or force movement." },
     { name: "Warframe Shell", kind: "armor", group: "Powered Exoframe", type: "Powered Heavy Armor (3 Mod Slots)", price: 2400, nexus: "◎0.25",
       slot: ["Torso", "Legs"], dr: 5, blockBonus: 2, slots: 3, traits: ["Powered", "Plated", "Bulky", "Sealed", "Loud", "Modular"], availability: "Rare", legality: "Restricted",
+      /* CHOOSE-ONE-ON-ACQUISITION, the machine-readable half of the clause in `effect`
+         below. Four entries in this catalog carry one (this frame and the three Mystech
+         suits further down) and the field holds the MENU, never the answer: the answer
+         belongs to one COPY of the suit and lives on ch.armorResistPicks keyed by the
+         equipment entry, so two Veilskins are two independent choices. Read only through
+         engine.armorResistPicks; `count` defaults to 1.
+
+         The four menus are deliberately NOT merged. This frame picks from the four
+         PHYSICAL types; Veilskin offers three energy types; Aegis Shroud four; Reliquary
+         Shell the same four but picks TWO. One shared damage-type list would print
+         options the book does not offer.
+
+         It lives on the row rather than in a table in engine.js because these rows already
+         carry their machine-readable flags beside their prose (dr, slots, traits, wardDie,
+         vacuum), so a fifth suit with a menu needs a data field and no engine change. The
+         Talent side of the same feature keeps its table in engine.js for the mirror-image
+         reason: talents.js rows are prose and a category. */
+      resistPick: { options: ["Ballistic", "Piercing", "Slashing", "Bludgeoning"] },
       // Holds vacuum NATIVELY, which is why its own entry carries the flag. The
       // Sealed trait alone never satisfies a vacuum check (see EN.hazards.breath
       // .vacuumSeal); this suit and a Rebreather Liner on an already-Sealed suit
@@ -175,6 +193,8 @@ EN.gearCatalog.armor = {
     /* ============================== MYSTECH ARMOR ============================== */
     { name: "Veilskin", kind: "armor", group: "Mystech Armor", type: "Light Mystech Armor (1 Mod Slot)", price: 700,
       slot: ["Torso", "Legs"], dr: 2, slots: 1, traits: ["Concealable", "Mystech", "Modular"], availability: "Iconic", legality: "Contraband",
+      // three options, not four: this suit's clause omits Resonant. See the Warframe Shell above.
+      resistPick: { options: ["Fire", "Electric", "Cold"] },
       desc: "A second skin of light reactive weave that drinks ambient Flow and bends light around the wearer's outline. To a scanner it is a faint shimmer. To a guard it is the reason they swear the corridor was empty a second ago.",
       effect: "Grants 2 Damage Reduction (DR). You gain Edge on in-combat Stealth d20 checks (or +1 Edge Die on out-of-combat Dice Pools) in dim light or darkness. When you acquire it, choose one of Fire, Electric, or Cold. You gain Resistance to that type." },
     { name: "Resonant Carapace", kind: "armor", group: "Mystech Armor", type: "Medium Mystech Armor (2 Mod Slots)", price: 1600, nexus: "◎0.5",
@@ -183,10 +203,17 @@ EN.gearCatalog.armor = {
       effect: "Grants 3 Damage Reduction (DR) and a +1 Block Bonus. As a Focus, once per round when you use Ward, add +1d6 to the Ward reduction. You can only benefit from one Focus item for Ward at a time." },
     { name: "Aegis Shroud", kind: "armor", group: "Mystech Armor", type: "Heavy Mystech Armor (2 Mod Slots)", price: 2800, nexus: "◎1",
       slot: ["Torso", "Legs"], dr: 4, blockBonus: 1, slots: 2, wardDie: "1d6", traits: ["Focus", "Sealed", "Mystech", "Modular"], availability: "Legendary", legality: "Contraband",
+      resistPick: { options: ["Fire", "Electric", "Cold", "Resonant"] },
       desc: "A flowing sealed shell of woven mystech filament that surrounds the wearer in a layered current. It barely looks like armor. It behaves like a moving shrine that does not want you harmed.",
       effect: "Grants 4 Damage Reduction (DR) and a +1 Block Bonus. When you acquire it, choose one of Fire, Electric, Cold, or Resonant. You gain Resistance to that type. As a Focus, once per round when you use Ward, add +1d6 to the Ward reduction. You can only benefit from one Focus item for Ward at a time." },
     { name: "Reliquary Shell", kind: "armor", group: "Mystech Armor", type: "Heavy Mystech Armor (2 Mod Slots)", price: 0, nexus: "◎2+", vendor: false,
       slot: ["Torso", "Legs"], dr: 4, blockBonus: 2, slots: 2, wardDie: "1d6", traits: ["Focus", "Resonant Plating", "Sealed", "Mystech", "Modular"], availability: "Artifact", legality: "Contraband",
+      /* The only two-pick entry in the game. The book prints "choose two of Fire, Electric,
+         Cold, or Resonant" and, unlike Part 1's Resonance Optimizer ("you must choose a
+         different damage type"), it does NOT say the two must differ. So the picker offers
+         all four in both slots and says plainly that two of the same is one Resistance,
+         rather than enforcing a distinctness rule the book does not print. */
+      resistPick: { options: ["Fire", "Electric", "Cold", "Resonant"], count: 2 },
       desc: "Nobody manufactures one of these. They are found: pulled from a sealed vault, recovered off a dead Shaper, traded for in a currency the broker would not name out loud. A layered current of woven filament and tuned plate that turns force and Flow alike, and behaves less like equipment than like something that agreed to look after you. The kind of armor a campaign is built around, not bought.",
       effect: "Grants 4 Damage Reduction (DR) and a +2 Block Bonus. When you acquire it, choose two of Fire, Electric, Cold, or Resonant. You gain Resistance to both. As a Focus, once per round when you use Ward, add +1d6 to the Ward reduction. You can only benefit from one Focus item for Ward at a time." },
 

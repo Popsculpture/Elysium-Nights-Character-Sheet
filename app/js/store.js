@@ -215,6 +215,14 @@ EN.store = (function () {
       armorWear: Object.create(null),    // Armor Repair: {armorEntryKey: DR points lost}. The catalog dr is the
                                          // BASE and the ceiling; absent means the suit is at full DR
       armorGuard: Object.create(null),   // {armorEntryKey: true}: a clean repair's quality edge, absorbs the next point of DR lost
+      /* The damage type a suit was tuned to when it was acquired, per ARMOR ENTRY:
+         {armorEntryKey: ["Fire"]}, or two of them for the Reliquary Shell. An ARRAY for all
+         four rather than a string that is sometimes a pair, because one shape is one reader.
+         Null-prototype for the reason the three maps above state, and in the TEMPLATE rather
+         than materialised on first write: ch.armorMods is not, so a character created
+         in-session runs on a prototype-polluted mods map until its first reload. Read through
+         engine.armorResistPicks, never directly. */
+      armorResistPicks: Object.create(null),
       loadout: "standard",               // declared Loadout: "light" | "standard" | "heavy", sets the Load Budget
       haul: "none",                      // active Haul: "none" | "lift" (body-sized) | "drag" (oversized/double)
       glimmer: 0,
@@ -615,8 +623,26 @@ EN.store = (function () {
     TALENT_RENAMES["spooky-action"] = TALENT_RENAMES["Spooky Action"] = "spatial-delivery";
     Object.keys(ch.universalUpgrades || {}).forEach(function (lvl) {
       var u = ch.universalUpgrades[lvl];
-      if (u && (u.type === "talent" || u.type === "talentUpgrade") &&
-          typeof u.talent === "string" && TALENT_RENAMES[u.talent]) u.talent = TALENT_RENAMES[u.talent];
+      if (!u || (u.type !== "talent" && u.type !== "talentUpgrade") || typeof u.talent !== "string") return;
+      if (TALENT_RENAMES[u.talent]) u.talent = TALENT_RENAMES[u.talent];
+      /* ...and then to the catalog KEY, because a record can name a Talent by its display name
+         and most of this app compares a slot's value against keys: uuTalentsOwned and
+         talentUpgradePicker in builder.js both do, and so does engine.talentUpgradeKeys.
+         Normalising once here means the record answers the same way everywhere, rather than
+         every reader carrying its own canonTalentKey and drifting.
+
+         It matters more than it reads. Once talentUpgradeKeys canonicalized (2026-09-17), a
+         name-shaped Upgrade slot made its grant LIVE, which made its damage-type pick pending,
+         which blocked the Advance step. But talentUpgradePicker resolves the slot by key, so it
+         rendered no picker for that slot: the step was blocked with nothing on screen able to
+         answer it. Reachable by import and by hand-edit, which is the same door the name shape
+         comes in through.
+
+         An unresolvable string is LEFT ALONE rather than nulled. It may name a Talent a later
+         catalog adds back, and clearing the slot would destroy a player's choice to tidy a
+         lookup; everything downstream already treats an unresolvable slot as granting nothing. */
+      var canon = (EN.engine && EN.engine.canonTalentKey) ? EN.engine.canonTalentKey(u.talent) : null;
+      if (canon) u.talent = canon;
     });
     if (Array.isArray(ch.talents)) {
       ch.talents = ch.talents.map(function (tk) {
@@ -1130,6 +1156,29 @@ EN.store = (function () {
       if (eqKeys[k] && (v === "Fire" || v === "Cold")) twOut[k] = v;
     });
     hz.thermalWeave = twOut;
+    /* The four suits' acquire-time damage type, pruned the same way and against the same
+       eqKeys, which is the whole reason it is normalised here in the hazards block rather
+       than up beside the other equipment maps: one liveness set, so a suit's weave element
+       and a suit's own tuning can never disagree about which copies still exist. Selling a
+       suit leaves its key behind until the next load, exactly as thermalWeave does; the
+       engine reads by key rather than walking the map, so an orphan grants nothing in the
+       meantime. Only the SHAPE is checked here (a non-empty array of non-empty strings).
+       Whether "Resonant" is on a given suit's menu is the engine's question, asked on read,
+       because it is the catalog that answers it and a suit renamed or re-optioned later
+       should re-validate rather than have been quietly rewritten on some earlier load. */
+    var arpIn = (ch.armorResistPicks && typeof ch.armorResistPicks === "object" && !Array.isArray(ch.armorResistPicks))
+      ? ch.armorResistPicks : {};
+    var arpOut = Object.create(null);
+    Object.keys(arpIn).forEach(function (k) {
+      if (!eqKeys[k]) return;
+      var v = arpIn[k];
+      if (typeof v === "string") v = [v];              // a one-pick suit written as a bare string
+      if (!Array.isArray(v)) return;
+      var list = [];
+      v.forEach(function (t) { if (typeof t === "string" && t) list.push(t); });
+      if (list.length) arpOut[k] = list;
+    });
+    ch.armorResistPicks = arpOut;
     hz.hazmatTorn = !!hz.hazmatTorn;
     if (typeof hz.rebreatherMinutes !== "number" || !isFinite(hz.rebreatherMinutes) || hz.rebreatherMinutes < 0) hz.rebreatherMinutes = 60;
     hz.rebreatherMinutes = Math.min(60, Math.floor(hz.rebreatherMinutes));

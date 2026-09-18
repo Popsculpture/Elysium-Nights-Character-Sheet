@@ -2047,14 +2047,16 @@ EN.builder = (function () {
       var summary = cur ? (
         cur.type === "attr" ? attrUpgradeSummary(cur) :
         cur.type === "evolution" ? (cur.evolution || "Evolution, choose") :
-        cur.type === "talentUpgrade" ? (cur.talent ? "Upgrade: " + talentName(cur.talent) : "Talent Upgrade, choose") :
+        cur.type === "talentUpgrade" ? (cur.talent ? "Upgrade: " + talentName(cur.talent) + (resistPendingIn(ch, cur) ? " \u00b7 choose a damage type" : "") : "Talent Upgrade, choose") :
         (cur.talent ? talentName(cur.talent) + (talentAttrPendingIn(ch, cur) ? " · choose an Attribute" : "") : "Talent, choose")
       ) : "Unspent";
       blocks.push(collapsibleEntry("uu-" + L, {
         title: "Level " + L + " · Universal Upgrade", summary: summary,
-        attention: !cur || talentAttrPendingIn(ch, cur), dismissKey: "L" + d.level,
+        attention: !cur || talentAttrPendingIn(ch, cur) || resistPendingIn(ch, cur), dismissKey: "L" + d.level,
         attentionTitle: !cur ? "Unspent Universal Upgrade; click to dismiss"
-                             : "This Talent raises an Attribute and you have not chosen which; click to dismiss",
+                             : resistPendingIn(ch, cur)
+                               ? "This Upgrade grants Resistance to a damage type and you have not chosen which; click to dismiss"
+                               : "This Talent raises an Attribute and you have not chosen which; click to dismiss",
         filled: !!cur, body: universalUpgradePicker(ch, L)
       }));
       // Level 4 Awakening Milestone, a free, evolution-only bonus slot
@@ -2156,6 +2158,15 @@ EN.builder = (function () {
     if (!slot || slot.type !== "talent" || !slot.talent) return false;
     var k = eng.canonTalentKey(slot.talent);
     return !!k && eng.talentAttrPending(ch, k);
+  }
+  /* The same question for an UPGRADE slot whose damage type is unanswered. It should have
+     shipped with the picker on 2026-09-16 and did not, which left engine.resistPickPending
+     exported with no caller in the app: the chip was inside the slot, so the one player who
+     could see the warning was the one who had already opened the slot to read it. */
+  function resistPendingIn(ch, slot) {
+    if (!slot || slot.type !== "talentUpgrade" || !slot.talent) return false;
+    var k = eng.canonTalentKey(slot.talent);
+    return !!k && eng.resistPickPending(ch, k);
   }
   function pruneTalentAttrPicks(c) {
     if (!c.talentAttrPicks) return;
@@ -2866,7 +2877,8 @@ EN.builder = (function () {
         // like an attr slot missing one of its two picks above
         if (talentAttrPendingIn(ch, u)) return false;
       }
-      else if (u.type === "talentUpgrade") { if (!u.talent) return false; }
+      // an Upgrade owed a damage type is a slot still owed an answer, exactly like the Talent above
+      else if (u.type === "talentUpgrade") { if (!u.talent || resistPendingIn(ch, u)) return false; }
       else if (u.type === "evolution") { if (!u.evolution) return false; }
       else return false;
     }

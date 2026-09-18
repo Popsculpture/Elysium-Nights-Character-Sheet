@@ -941,7 +941,7 @@ EN.pdfExport = (function () {
   // mechanic and it used to leave the app on neither export.
   // `grip` is weaponGrip for this weapon, here for the same reason drState is:
   // which die a Versatile weapon deals is mutable and the catalog names two.
-  function gearSummaryLine(it, drState, shState, grip) {
+  function gearSummaryLine(it, drState, shState, grip, picks) {
     var stat = [];
     if (it.damage && grip && grip.versatile && grip.forcedBy) {
       stat.push("Dmg " + (it.damage || "").replace(/^\s*\d+d\d+/, grip.dice)
@@ -955,6 +955,8 @@ EN.pdfExport = (function () {
     if (it.dr != null) stat.push((drState && drState.base && drState.lost > 0)
       ? "DR " + drState.current + " of " + drState.base + " (" + drState.lost + " lost)"
       : "DR " + it.dr);
+    // the acquire-time damage type; see the print sheet's note on why a stashed suit prints it too
+    if (it.resistPick) stat.push((picks && picks.length) ? "Resistance " + picks.join(", ") : "Resistance not chosen");
     // Same distinction the print sheet draws, and the same reason: an emitter at 0 boxes
     // goes dark and is repairable, a physical shield at 0 boxes is destroyed and is not.
     if (shState && shState.boxesMax) stat.push(shState.spent > 0
@@ -1004,7 +1006,8 @@ EN.pdfExport = (function () {
       return { name: e.name, qty: e.qty, status: worn ? "Equipped" : "Stash",
                notes: it ? gearSummaryLine(it, eng.armorState ? eng.armorState(ch, key) : null,
                                            eng.shieldState ? eng.shieldState(ch, key) : null,
-                                           eng.weaponGrip ? eng.weaponGrip(ch, it, key) : null) : "" };
+                                           eng.weaponGrip ? eng.weaponGrip(ch, it, key) : null,
+                                           eng.armorResistPicks ? eng.armorResistPicks(ch, key, it) : null) : "" };
     });
     if (!invRows.length) invRows.push({ name: "", qty: "", status: "", notes: "" });
     ctx.table(

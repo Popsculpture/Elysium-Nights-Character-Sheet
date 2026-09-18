@@ -543,6 +543,73 @@ EN.inventoryView = (function () {
     return el("div.row.wrap", { style: { gap: "5px", marginTop: "6px", alignItems: "center" } },
       [el("span", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "MODS" })].concat(chips));
   }
+  /* WHICH DAMAGE TYPE THIS COPY OF A SUIT WAS TUNED TO. Four armor entries print "when you
+     acquire it, choose ..."; the menu is on the catalog row and the answer is per equipment
+     entry, so a spare suit of the same name holds its own.
+
+     It lives on the Stash card rather than on the Impact Table bench because the clause is
+     about acquiring the suit, not about fitting mods to it: the bench is reached by picking a
+     piece out of a second selector, and it bails out entirely for a suit with no Mod Slots.
+     And it sits in the card's ALWAYS-VISIBLE run rather than under the expand caret, because
+     an unanswered menu is granting nothing and being folded away is how this stayed invisible.
+
+     Returns null without an `entry`: itemCard draws the Gray Market card from the same
+     function, and a suit nobody owns yet has no copy to tune. */
+  function armorResistPicker(ch, it, entry) {
+    if (!entry) return null;
+    var opts = ENG().armorResistOptions ? ENG().armorResistOptions(it) : null;
+    if (!opts) return null;
+    var key = ENG().entryKey(entry);
+    var n = ENG().armorResistCount(it);
+    var cur = ENG().armorResistPicks(ch, key, it);
+    var owed = Math.max(0, n - cur.length);
+    var dupe = n > 1 && cur.length === n && cur[0] === cur[1];
+    /* The picks are a SET, not slots: the book says "choose two of", not "a primary and a
+       secondary". So the stored list is dense and clearing the first select slides the second
+       up into its place, which is the honest rendering of an unordered pair. */
+    var sels = [];
+    for (var i = 0; i < n; i++) {
+      sels.push((function (idx) {
+        return el("select", { style: { width: "auto", fontSize: "11px" }, onchange: function () {
+          var v = this.value;
+          store.update(function (c) {
+            c.armorResistPicks = c.armorResistPicks || Object.create(null);
+            /* built from `cur`, the list the selects were DRAWN from, not from the stored
+               array: those two can differ (an off-menu value is squeezed out on read, and
+               anything past the cap is dropped), and idx is a position in the first. Writing
+               through the second with an index from the first can overwrite the wrong pick. */
+            var list = cur.slice();
+            while (list.length < n) list.push(null);
+            list[idx] = v || null;
+            list = list.filter(function (x) { return typeof x === "string" && x; }).slice(0, n);
+            if (list.length) c.armorResistPicks[key] = list; else delete c.armorResistPicks[key];
+          });
+        } }, [el("option", { value: "", selected: !cur[idx], text: "- choose -" })].concat(
+          opts.map(function (t) { return el("option", { value: t, selected: cur[idx] === t, text: t }); })));
+      })(i));
+    }
+    var note = owed
+      ? (cur.length
+          ? "One still to choose. You have Resistance to the type you have picked."
+          : "This suit grants Resistance to " + (n > 1 ? "two damage types" : "one damage type")
+            + ". Until you choose, it grants none.")
+      : (dupe
+          ? "Both picks name the same type. Resistance does not stack, so the second grants nothing."
+          : "Applied while you are wearing it; it shows in Damage Reduction and on the printed record.");
+    return el("div", { style: { marginTop: "6px" } }, [
+      el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } }, [
+        el("span", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" },
+          text: "RESISTANT TO" })
+      ].concat(sels).concat([
+        owed ? el("span.chip", { style: { fontSize: "8.5px", color: "var(--warn)", borderColor: "var(--warn)" },
+          title: "This suit grants Resistance to a damage type you have not chosen, so it is granting none." },
+          n > 1 && cur.length ? "1 MORE" : "UNCHOSEN") : null,
+        dupe ? el("span.chip", { style: { fontSize: "8.5px", color: "var(--warn)", borderColor: "var(--warn)" },
+          title: "Two sources of Resistance to one type are the same as one." }, "SAME TYPE TWICE") : null
+      ])),
+      el("p.help", { style: { margin: "3px 0 0", fontSize: "10.5px" }, text: note })
+    ]);
+  }
   // info line for a weapon Part item (slot, type, what it grants, install count)
   function partInfoLine(ch, it) {
     if (!it.benchPart || !EN.weaponParts) return null;
@@ -758,6 +825,7 @@ EN.inventoryView = (function () {
     return el("div.feature" + (mode === "mkt" ? ".mkt-card" : ""), { style: { borderLeftColor: LEGAL_COLOR[it.legality] || "var(--border2)" } }, [
       head, info, traitsExpandRow,
       it.benchPart ? partInfoLine(ch, it) : it.armorMod ? armorModInfoLine(ch, it) : (mode !== "mkt" ? installedPartsLine(ch, it, entry) : null),
+      mode === "stash" ? armorResistPicker(ch, it, entry) : null,
       open && it.desc ? el("p", { style: { marginTop: "8px" }, text: it.desc }) : null,
       open && it.type ? el("p.help", { style: { margin: "4px 0 0", color: "var(--text2)" }, text: "Type: " + it.type + (it.upkeep ? " · Leased: " + fmtG(it.price || 0) + " buy-in, " + fmtG(upkeepOf(it, owned)) + "/wk Upkeep" + (owned && owned.premium ? " (Premium plan)" : "") : "") + (it.nexus ? " · Nexus: " + it.nexus : "") }) : null,
       open && it.proficiency ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: "Proficiency: " + it.proficiency + (it.signature ? " · Signature weapon (0 customization slots)" : "") }) : null,
