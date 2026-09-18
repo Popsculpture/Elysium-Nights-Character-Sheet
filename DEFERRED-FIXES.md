@@ -8614,6 +8614,74 @@ carried a comment about Weapon Focus Caliber that `pdfexport.js` lacked. That is
 discipline `parseUses` got earlier today, and for the same reason, since a plain diff is what
 turns the next drift into something anyone can see.
 
+## Stored picks: the machinery, one grant, and one mod that was answering for the player, 2026-09-16
+
+The choose-one-on-acquisition channel, opened at the author's chosen scope: build the machinery,
+wire the one Talent grant through it, and fix the mod that was already lying.
+
+**The deferred note was wrong in two directions, checked against the printed text.** Four of its
+nine (Resonance Coil, Saint's Knot, Hex Lattice Projector, Martyr's Halo) are Warding Foci whose
+text is "When your Ward reduces an attack's damage to 0, you gain Resistance to that damage type
+until the start of your next turn." Nothing is chosen and nothing is stored; the type is whatever
+just hit you. The note contradicts itself on the same screen, filing them under B at line 4024 and
+under C, transient, at 4031. C is right. And it missed one: the Warframe Shell picks a physical
+type on acquisition exactly as Ablative Coating does. So the real set is seven, not nine, across
+FOUR different option lists rather than one, which is why the table stores options per grant.
+
+**The machinery**, cloned from `ch.talentAttrPicks` because that is the same problem already
+solved. `ch.resistPicks` on the record, created in `newCharacter` and rebuilt in the migration
+(both halves: the schema fill deep copies through JSON and returns a plain object, so a save file
+carrying a key of "toString" would otherwise read as present). A `RESIST_PICK` table holding
+OPTIONS in printed order, never the grant. And the trio `resistPickOptions` / `resistPick` /
+`resistPickPending`, exported together so every surface asks one question.
+
+**The gate is the Upgrade, not the level.** Cyber-Reinforced Vitality's Resistance rides its
+"Upgrade (Level 6+)" rider, so the grant is live only once that Upgrade has actually been bought
+as a Universal Upgrade. Holding the Talent is not enough and neither is being level 6, which is
+why `resistPickLive` consults `talentUpgradeKeys` rather than `activeTalents` or `d.level`. It
+also decides where the picker lives: on the Upgrade slot, beside the rider text, rather than on
+the base Talent's slot where there would be nothing to choose.
+
+**The mod that was answering for the player.** Thermal Regulation Weave says "Choose Fire or Cold
+when you install it", and the app has stored that answer per armor entry in
+`ch.hazards.thermalWeave` all along: the hazards channel reads it and says "no element chosen yet"
+when it is unset. The resistance channel did not, because the mod's data row carried a hardcoded
+`resist: ["Fire"]`. So a Cold-tuned weave was reported as Fire with the mod's own name on the row
+asserting it, and two channels gave different answers about one mod. The array is gone from the
+row and the engine reads the stored pick; an untuned weave now resists nothing rather than
+guessing.
+
+A correction to my own reading while chasing that: I thought there were two bugs, the second being
+that the Fire/Cold picker never renders, since `combat.js` matches `"thermal-weave"` while the
+armor mod's key is `"thermal-regulation-weave"`. That was wrong. The loop walks hazard
+MITIGATIONS, and `hazards.js:143` genuinely defines that entry as `"thermal-weave"`. The picker
+works. One bug, not two.
+
+**Verified.** Six talent cases through the real engine: the Talent without its Upgrade grants
+nothing and does not nag, even with a pick already stored; the Upgrade with no pick is pending and
+grants nothing; a valid pick reads "Piercing:Resistant <- Cyber-Reinforced Vitality (Upgrade)"; a
+nonsense value and an off-menu-but-real type ("Fire", which is a damage type but not on this
+menu) both resolve to null and stay pending; an unknown grant key returns null options. Four mod
+cases on a worn Courier Shell: untuned grants nothing, Fire grants Fire, Cold grants COLD, and a
+bogus stored value grants nothing. The migration was checked on the author's own live record,
+which predates the field: it comes back with a null-prototype empty map.
+
+**What is left of the family, and what it needs.** The four Mystech suits (Veilskin, Aegis Shroud,
+Warframe Shell, and Reliquary Shell which picks TWO) plus the Ablative Coating mod. They are the
+same shape but hang off an equipment ENTRY rather than a talent key, so they need a per-copy key
+so a spare suit holds its own build, a second picker surface in Inventory, and for Ablative
+Coating a per-scene spent flag, since its resistance burns away on first use until re-layered in
+downtime.
+
+**Newly documented while inventorying, none of it touched.** Five more standing menus have no
+stored answer: High-Tension Assembly (weapon_parts.js:206) changes a printed damage die, so an
+unstored pick makes the weapon row wrong for half the population; the Resonance Crown is currently
+ANSWERED BY THE ENGINE, which greedily harmonizes the top four pieces by SP, benign for the
+arithmetic but an auto-pick rather than a stored one, and its downtime re-selection rule is
+unrepresentable; plus Reactive Countermeasures, Cyberoptics and the Companion Drone's movement
+mode. Several talent and subclass menus are in the same state, and `pendingChoices()` walks only
+Class and Background, so none of them appears in the "you still owe a choice" list today.
+
 ## Cyber-Reinforced Vitality stops being the last flat Vitality grant on the floor, 2026-09-16
 
 The talent the Convergence Engine pass left behind. Its Vitality bullet derives now, so both flat

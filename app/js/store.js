@@ -98,6 +98,11 @@ EN.store = (function () {
       // an unanswered choice grants no point rather than a guessed one. Null-prototype like every
       // other map in this app keyed on a string out of a save file. Read through engine.talentAttr.
       talentAttrPicks: Object.create(null),
+      // Which damage type a choose-one grant was tuned to: {grantKey: "Piercing"}. Same shape and
+      // same reasoning as talentAttrPicks above: absent means unset, and an unanswered choice
+      // grants nothing rather than a guessed type. Null-prototype, because the keys come out of a
+      // save file. Read through engine.resistPick, never directly.
+      resistPicks: Object.create(null),
       // Attack-attribute offers the player has switched on, per weapon entry key.
       // {weaponEntryKey: featureName}. See the engine's attackAttrOffers.
       attackAttr: Object.create(null),
@@ -639,6 +644,21 @@ EN.store = (function () {
       if (tapOut[key] === undefined) tapOut[key] = v;
     });
     ch.talentAttrPicks = tapOut;
+    /* The damage-type picks, rebuilt the same way and for the same reason: the schema fill deep
+       copies through JSON and hands back a plain object, so a save file carrying a key of
+       "toString" would otherwise read as present and feed the engine a prototype method. Renames
+       are applied here too, and the engine validates the VALUE on read, so a pick naming a type
+       the grant does not offer is left alone and simply resolves to null. */
+    var rpIn = (ch.resistPicks && typeof ch.resistPicks === "object" && !Array.isArray(ch.resistPicks))
+      ? ch.resistPicks : {};
+    var rpOut = Object.create(null);
+    Object.keys(rpIn).forEach(function (gk) {
+      var v = rpIn[gk];
+      if (typeof v !== "string" || !v) return;
+      var key = TALENT_RENAMES[gk] || gk;
+      if (rpOut[key] === undefined) rpOut[key] = v;
+    });
+    ch.resistPicks = rpOut;
     /* Which "you may" attack-attribute offer the player has switched ON, per weapon entry:
        {weaponEntryKey: "First Do No Harm"}. Absent means off, which is the honest default:
        these offers are conditional on something the sheet cannot see (First Do No Harm turns

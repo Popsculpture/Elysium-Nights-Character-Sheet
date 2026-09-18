@@ -51,7 +51,10 @@ EN.armorMods = {
     { key: "rebreather-liner", resist: ["Toxic"], name: "Rebreather Liner", category: "environmental", price: 250, rarity: "Common", legality: "Licensed", fits: "Any",
       grantsSealed: true, sealToVacuum: true,
       grants: "Sealed benefit", effect: "The suit counts as Sealed: Resistance to Toxic damage, and Edge on saves against gas, disease, and airborne or environmental hazards. It does not cover vacuum. If the host suit already has the Sealed trait, the liner instead upgrades that seal to hold against vacuum." },
-    { key: "thermal-regulation-weave", resist: ["Fire"], name: "Thermal Regulation Weave", category: "environmental", price: 400, rarity: "Uncommon", legality: "Licensed", fits: "Any",
+    /* No `resist` array on purpose: this mod is tuned to Fire OR Cold when installed, the pick
+       lives per armor entry in ch.hazards.thermalWeave, and engine.js reads it there. The row used
+       to carry resist:["Fire"], which reported Fire for a Cold-tuned weave. */
+    { key: "thermal-regulation-weave", name: "Thermal Regulation Weave", category: "environmental", price: 400, rarity: "Uncommon", legality: "Licensed", fits: "Any",
       grants: "Resistance to Fire or Cold", effect: "Choose Fire or Cold when you install it. You gain Resistance to that damage type, and you do not gain Fatigue from Exposure to that kind of heat or cold." },
 
     /* ---- Stealth & Signature ---- */

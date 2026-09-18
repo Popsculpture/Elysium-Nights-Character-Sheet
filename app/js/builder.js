@@ -2547,10 +2547,42 @@ EN.builder = (function () {
       info = t ? el("div.feature", { style: { marginTop: "8px" } }, [
         el("h4", null, [document.createTextNode(t.name + " · Upgrade"), el("span.src", { text: t.category || "" })]),
         reqLine(ch, d, t),
-        renderText(upText)
+        renderText(upText),
+        resistPicker(ch, t)
       ]) : null;
     }
     return el("div", null, [sel, info]);
+  }
+
+  /* The damage-type half of a Talent Upgrade, the sibling of talentAttrPicker above and built to
+     the same three rules: the blank option is a real state, an unmade pick is marked rather than
+     silent, and the help line states the CONSEQUENCE rather than the status. It lives here, on the
+     Upgrade slot, rather than on the base Talent's slot, because the grant rides the Upgrade: a
+     character holding Cyber-Reinforced Vitality without having bought its Upgrade has nothing to
+     choose, and engine.resistPickOptions returns null for anything that is not a menu at all. */
+  function resistPicker(ch, t) {
+    var opts = eng.resistPickOptions(t.key);
+    if (!opts || opts.length < 2) return null;
+    var cur = eng.resistPick(ch, t.key);
+    var sel = el("select", { style: { maxWidth: "210px" }, onchange: function (e) {
+      var v = e.target.value || null;
+      store.update(function (c) {
+        c.resistPicks = c.resistPicks || Object.create(null);
+        if (v) c.resistPicks[t.key] = v;
+        else delete c.resistPicks[t.key];
+      });
+    } }, [el("option", { value: "", selected: !cur, text: "- choose a damage type -" })].concat(
+      opts.map(function (dt) { return el("option", { value: dt, selected: cur === dt, text: dt }); })));
+    return el("div", { style: { margin: "8px 0 0" } }, [
+      el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
+        el("label.fl", { style: { margin: 0 }, text: "Resistant to" }), sel,
+        cur ? null : el("span.chip", { style: { fontSize: "9px", color: "var(--warn)", borderColor: "var(--warn)" },
+          title: "This Upgrade grants Resistance to a damage type and you have not said which, so it is granting none." }, "UNCHOSEN")
+      ]),
+      el("p.help", { style: { marginTop: "4px" },
+        text: cur ? "Applied to your sheet; it shows in Damage Reduction and on the printed record."
+                  : "This Upgrade grants Resistance to one damage type. Until you choose, it grants none." })
+    ]);
   }
 
   /* ---------- STEP 8: DOSSIER (review) ---------- */

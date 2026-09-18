@@ -600,6 +600,53 @@ EN.engine = (function () {
     "pain-editor":     { resist: ["Psychic"] },
     "cutting-agent":   { resist: ["Toxic"] }
   };
+  /* ---- Grants that let the PLAYER choose the damage type -------------------
+     TALENT_RESIST above holds the fixed grants. This holds the menus, and the rule is the one
+     TALENT_ATTR_BUMP states for attributes: the value is the OPTIONS, in the order the entry
+     prints them, never the grant. A row here alone resists nothing; the answer lives on the
+     record in ch.resistPicks and is validated on read.
+
+     `upgrade: true` means the grant rides a Talent's "Upgrade (Level 6+)" rider, so it is live
+     only once that Upgrade has actually been bought as a Universal Upgrade. Holding the Talent is
+     not enough, and neither is being level 6.
+
+     One entry today. The four Mystech suits and the Ablative Coating mod are the same shape and
+     belong here next, but they hang off an equipment ENTRY rather than a talent key, so they need
+     a per-copy key and a second picker surface in Inventory. Deliberately not in this pass.
+     Source: app/data/talents.js:283. */
+  var RESIST_PICK = {
+    "cyber-reinforced-vitality": { options: ["Ballistic", "Piercing", "Slashing", "Bludgeoning"], upgrade: true }
+  };
+  function resistPickOptions(grantKey) {
+    var row = ownVal(RESIST_PICK, grantKey);
+    return row ? row.options : null;
+  }
+  /* Is the grant in effect at all? Separate from "has a pick been made", because a Talent whose
+     Upgrade is unbought offers nothing to choose and must not nag. */
+  function resistPickLive(ch, grantKey) {
+    var row = ownVal(RESIST_PICK, grantKey);
+    if (!row) return false;
+    if (!row.upgrade) return true;
+    return talentUpgradeKeys(ch).indexOf(grantKey) !== -1;
+  }
+  /* THE resolver, null on every way of not knowing: no such grant, the grant is not live, nobody
+     has chosen, or the stored pick is not among the options THIS grant offers. A stale pick is
+     left alone rather than corrected, matching talentAttr. */
+  function resistPick(ch, grantKey) {
+    var opts = resistPickOptions(grantKey);
+    if (!opts || !resistPickLive(ch, grantKey)) return null;
+    if (opts.length === 1) return opts[0];
+    var picks = ch && ch.resistPicks;
+    var pick = picks ? picks[grantKey] : null;
+    return (typeof pick === "string" && opts.indexOf(pick) !== -1) ? pick : null;
+  }
+  /* A live grant whose menu nobody has answered. The builder marks the slot with it, so a waiting
+     choice is visible rather than a resistance quietly missing. */
+  function resistPickPending(ch, grantKey) {
+    var opts = resistPickOptions(grantKey);
+    return !!(opts && opts.length > 1 && resistPickLive(ch, grantKey) && !resistPick(ch, grantKey));
+  }
+
   /* Talents granting a standing Vitality bonus, a table in the same shape. The value is points
      PER CHARACTER LEVEL, and Cyber-Reinforced Vitality is the only entry the catalog has.
 
@@ -989,6 +1036,13 @@ EN.engine = (function () {
       pushResist(acc, "vulnerable", spec.vulnerable, t.talent.name);
       pushResist(acc, "immune", spec.immune, t.talent.name);
     });
+    /* ...and the ones whose type the player chose. resistPick returns null for an unbought
+       Upgrade or an unanswered menu, so nothing is guessed. The label takes the parenthetical
+       the worn-trait rows use, since the grant comes from the Upgrade rather than the Talent. */
+    activeTalents(ch).forEach(function (t) {
+      var picked = resistPick(ch, t.talent.key);
+      if (picked) pushResist(acc, "resist", [picked], t.talent.name + " (Upgrade)");
+    });
     // the worn suit: its own flags, and its TRAITS (Sealed grants Toxic)
     if (worn && worn.item && !worn.lapsed) {
       pushResist(acc, "resist", worn.item.resist, worn.item.name);
@@ -1002,6 +1056,17 @@ EN.engine = (function () {
       var amByKey = (EN.armorMods && EN.armorMods.byKey) || {};
       (worn.fitted || []).forEach(function (k) {
         var m = amByKey[k]; if (!m) return;
+        /* The Thermal Regulation Weave is tuned to Fire OR Cold when installed, and that answer
+           has been stored per armor entry in ch.hazards.thermalWeave all along: the hazards
+           channel reads it and says "no element chosen yet" when it is unset. This channel did
+           not, because the mod's data row carried a hardcoded resist:["Fire"], so a Cold-tuned
+           weave was reported as Fire with the mod's own name asserting it, and two channels
+           disagreed about one mod. The array is gone from the row; this is the only reader now,
+           and an untuned weave resists nothing rather than guessing. */
+        if (m.key === "thermal-regulation-weave") {
+          var tuned = ((ch && ch.hazards && ch.hazards.thermalWeave) || {})[worn.key];
+          if (tuned === "Fire" || tuned === "Cold") pushResist(acc, "resist", [tuned], m.name);
+        }
         pushResist(acc, "resist", m.resist, m.name);
         pushResist(acc, "vulnerable", m.vulnerable, m.name);
         pushResist(acc, "immune", m.immune, m.name);
@@ -3838,6 +3903,7 @@ EN.engine = (function () {
     senseGrants: senseGrants,
     canonTalentKey: canonTalentKey, talentAttr: talentAttr, talentAttrOptions: talentAttrOptions,
     talentAttrPending: talentAttrPending, attrBumpSources: attrBumpSources,
+    resistPick: resistPick, resistPickOptions: resistPickOptions, resistPickPending: resistPickPending,
     effectiveAttributes: effectiveAttributes,
     // the Universal Upgrade slots holding a Talent an earlier slot already holds, so
     // the builder can say which slot is buying nothing
