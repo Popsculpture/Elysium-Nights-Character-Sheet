@@ -16,7 +16,7 @@ EN.flow = {
     { term: "Reservoir", text: "The maximum capacity of Flow Points a Shaper can safely contain." },
     { term: "Overdraw", text: "Channeling Flow after the Reservoir is empty, causing bodily harm." },
     { term: "Strain", text: "A tracked condition representing spiritual and physical tension from Overdrawing." },
-    { term: "Breakflow", text: "Total disconnection from the current after a critical failure or Stage 5 Strain." },
+    { term: "Breakflow", text: "A state of total disconnection from the current following Stage 5 Strain or a failed Breakflow Check." },
     { term: "Invocation", text: "The formal process of shaping the Flow into a specific effect." }
   ],
 

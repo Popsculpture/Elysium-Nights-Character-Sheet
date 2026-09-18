@@ -207,6 +207,8 @@ EN.codexView = (function () {
       subTitle("Assigning Snag Dice"),
       proseBlock(Rz.pool.snagIntro),
       refTable(["Risk Level", "Snag Dice", "Description"], Rz.pool.snagAssign.map(function (r) { return [r.risk, r.dice, r.desc]; }), [0, 1]),
+      subTitle("Converting a Flat DC"),
+      proseBlock(Rz.pool.snagFromDcIntro),
       subTitle("Snag Past 5"),
       proseBlock(Rz.pool.snagPast5Intro),
       refTable(["Total Snag", "Pool"], Rz.pool.snagPast5.map(function (r) { return [r.total, r.pool]; }), [1]),

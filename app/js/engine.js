@@ -3948,6 +3948,20 @@ EN.engine = (function () {
     else { d12 = points - 10; d10 = 10 - d12; }
     return poolShape("edge", points, d10, d12);
   }
+  /* A flat DC read as a Risk Level, for the printed effects that give one because they also have
+     an in-combat d20 version. One die per 5 points above DC 5, rounded to nearest: 10 is 1, 15 is
+     2, 20 is 3, 25 is 4, 30 is 5. Clamped to 1 through 5 because that is the whole Risk Level
+     table; Snag past 5 comes from conditions and circumstances, never from the printed number.
+
+     A ladder with its OWN named tiers does not come through here. It assigns one die per tier in
+     the tier's order, which is why the #GRID Concealment table carries a Scan Snag column of its
+     own rather than deriving one: Ghosted is the fourth tier and takes 4, where this function
+     would read its DC 21 as 3. */
+  function snagFromDc(dc) {
+    dc = Number(dc);
+    if (!isFinite(dc)) return 0;
+    return clamp(Math.round((dc - 5) / 5), 1, 5);
+  }
   function buildSnagPool(points) {
     points = Math.max(0, Math.floor(points || 0));
     var d10, d12;
@@ -4077,7 +4091,7 @@ EN.engine = (function () {
 
   return {
     derive: derive, mod: mod, caliber: caliber, fmtMod: fmtMod, clamp: clamp,
-    buildEdgePool: buildEdgePool, buildSnagPool: buildSnagPool, rollDicePool: rollDicePool, rollD20: rollD20,
+    buildEdgePool: buildEdgePool, buildSnagPool: buildSnagPool, snagFromDc: snagFromDc, rollDicePool: rollDicePool, rollD20: rollD20,
     composeRollSpec: composeRollSpec, rollDamage: rollDamage,
     installedCyberware: installedCyberware, installedCyberBases: installedCyberBases,
     cyberDef: cyberDef, cyberDesc: cyberDesc, cyberEffect: cyberEffect, cyberTierNote: cyberTierNote,

@@ -8637,6 +8637,78 @@ carried a comment about Weapon Focus Caliber that `pdfexport.js` lacked. That is
 discipline `parseUses` got earlier today, and for the same reason, since a plain diff is what
 turns the next drift into something anyone can see.
 
+## Handoff sections 6, 8, 9 and 10: branches, a conversion rule, a column, five corrections, 2026-09-18
+
+**Section 6, the out-of-combat branches.** Ten gear entries lost theirs and two kept theirs with the
+DC converted to Snag Dice. The house rewrite is: drop "in-combat", drop "d20", put the DC ahead of
+the attribute.
+
+The trap here is that the twelve do not share a phrase. Three shapes are in play:
+"(or out-of-combat Dice Pool)" on seven of them, the bare "(or Dice Pool)" on three, and a reversed
+"out-of-combat X Dice Pool (or in-combat d20 check)" on the two keepers. Six non-targets use the
+first string, Tuning Prism Focus uses the second, and Scene Scrubber and Fake License Portfolio use
+the third. So every edit anchors on the whole clause rather than on the parenthetical, and the
+result was checked by counting: eighteen lines changed, and every one is a target. The twelve other
+parentheticals the ruling says are correct are all still there.
+
+Two things worth flagging rather than burying. Explosive Rounds' new text changes the MECHANIC, not
+just the phrasing: the area damage was half the bonus and is now the same Fire and Force damage as
+the primary target. And Neurocut Jack keeps its d20, because after the branch goes it is an
+in-combat check rather than a save, so the "drop the d20" half of the pattern does not apply to it.
+
+**The Resonance Core does not exist under that name.** The ruling means the Resonance Feedback Core,
+key `feedbackCore` in cyberware.js; the literal string returns nothing repo-wide. Its charge costs
+moved out of the action tags and into the body, which is what the ruling asks. Its compressed
+one-line shape was preserved rather than expanded to the book's full bullets, because every
+cyberware effect in that file is terse and expanding one would leave it the odd row out.
+
+**Section 8, converting a flat DC.** The rule is in the Codex between Assigning Snag Dice and Snag
+Past 5, and `engine.snagFromDc` implements it: one die per 5 points above DC 5, rounded to nearest,
+clamped to 1 through 5 as the ruling specifies. Verified across the ladder, 10 to 1, 15 to 2, 20 to
+3, 25 to 4, 30 to 5, with the in-between values rounding sensibly and a non-numeric input returning
+0.
+
+It has a caller, deliberately. This session has twice found a helper exported with nothing reading
+it, so rather than add a third, the Toolbox Work Interval row now takes a printed DC and converts
+it. That row was the right home: it already has a clamped setter and a fine-adjust cluster to sit
+beside. The Deep Run picker writes its risk inline with no clamp and was left alone. Verified in the
+UI: DC 20 sets 3, DC 30 sets 5, DC 10 sets 1, the field clears after use and ignores nonsense.
+
+**Section 9, the Scan Snag column.** One premise of the ruling does not hold against the app. It
+describes Active Scanning bullets, a Passive Detection line and a summary sentence saying "Beat the
+DC" as separate things; in the app all three are one paragraph, `scanIntro`, with no bullets and no
+such sentence. So only the out-of-combat clause moved to Scan Snag, and the passive clause and the
+under-fire Quick Hack kept Scan DC because both compare to a d20 total.
+
+The column itself is DATA, not derived, and the comment above the table says why: this is a ladder
+with its own named tiers, so it takes one Snag Die per tier in the tier's order. Ghosted is the
+fourth tier and takes 4, where the general formula would read its DC 21 as 3. That is the carve-out
+the section 8 rule states, and it is the reason `snagFromDc` is not wired to this table.
+
+**Section 10, five corrections, of which three exist here.** The two stale Breakflow triggers are
+fixed. Hardware Mastery had both errors, the per-point rate and the (100 x Tier) formula that yields
+zero at Standard [0], and so did its one-line brief, which also said HP where the deck track is
+System Integrity; both now agree with EN.grid.repair, which was already right. Read the Room's
+orphaned (Special) is gone, asterisks and all, since it was wrapped in markdown bold and removing
+the parenthetical alone would have left "opening ****:".
+
+Two of the five are simply absent and need nothing. The XP range sentence is not in the app at all,
+though the numbers behind it already agree with the corrected 25 to 1,800. The Nexus Token hierarchy
+sentence likewise has no string to correct; the app's currency table already names the formal
+"Nexus Token", and adding the sentence would be a new field plus a render line rather than an edit.
+
+**One flagged, not acted on.** `EN.flow.breakflow.triggers` reads "Overdrawing at Stage 4 (Rend),
+reaching Stage 5 (Collapse), or a critical failure." The ruling names only two stale sites and this
+is a third, but the field is ambiguous: it sits beside dcFormula and check, so it may describe what
+forces a Breakflow CHECK, where "Overdrawing at Stage 4" is correct, rather than what causes
+Breakflow. Either way the trailing clause looks like the one being removed. It is data-only and
+rendered nowhere, so nothing is showing a player the wrong rule while it waits for a decision.
+
+**Also noticed.** Hardware Mastery is filed inside the Codebreaker capstone "SysAdmin (Root
+Access)", not in the Rigger subclass the ruling names. The Rigger's four features are Hardware
+Integration, Cybernetic Overclock, Swarm Commander and Iron Reign, and none mentions repair cost. So
+either the app misfiled it or the manuscript moved it, and that is worth one look.
+
 ## Marking becomes Tracing, and its status becomes Traced, 2026-09-18
 
 Section 7 of the 2026-09-18 handoff. Four lines in two data files, and one of them is a KEY.

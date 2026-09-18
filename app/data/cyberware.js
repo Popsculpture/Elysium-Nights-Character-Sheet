@@ -124,7 +124,7 @@ EN.cyberware = {
       ] },
     { key: "feedbackCore", short: "Resonance Feedback Core", name: "Resonance Feedback Core", zone: "Core", enhancement: "None", mystech: true,
       desc: "A reactive implant in the upper torso that absorbs incoming Flow and re-emits it as kinetic or thermal output. The rare chrome that lets an Unattuned character interact with the Flow, not just resist it.",
-      effect: "Taking Invocation damage grants a Feedback Charge (max 3). Discharge (1, Impulse): +1d6 Resonant on an attack within 6. Surge (2, Action): Area 3, Body Save DC 14 or 2d6 Resonant + push 1. Burst (3, Action): Area 6 Cone, 4d6 Resonant, no save, then 1-hour cooldown. Charges expire in 10 min.",
+      effect: "Taking Invocation damage grants a Feedback Charge (max 3). Discharge (Impulse): spend 1 charge for +1d6 Resonant on a melee or ranged attack within 6, resisted by nothing but specific Resonant-resistant materials. Surge (Action): spend 2 charges for an Area 3 sphere centered on yourself, Body Save DC 14 or 2d6 Resonant and pushed 1 space. Discharge Burst (Action): spend 3 charges for an Area 6 Cone, 4d6 Resonant with no save, then a 1-hour cooldown that generates no new charges. Charges expire in 10 min.",
       tiers: [
         { tier: "Prototype", sp: 2, price: 25000, legality: "Restricted" }
       ] },

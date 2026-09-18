@@ -17,7 +17,7 @@ EN.briefs = {
   "Subclass Feature": "Gain your subclass's feature for this level",
   "Multi-Thread Processing": "Once per encounter, inject two different Ciphers into two linked Nodes at once; each pays full Bandwidth",
   "Tactical Execution": "After Linking or injecting, make a Sidearm/SMG attack; Edge if its Node is linked",
-  "SysAdmin (Root Access)": "No Link cap; regain 3 Bandwidth if Initiative rolled at 0; Downtime repair drops to 5/HP",
+  "SysAdmin (Root Access)": "No Link cap; regain 3 Bandwidth if Initiative rolled at 0; Downtime repair drops to 5 per 5 Integrity",
   "Subclass Capstone": "Gain your level-10 subclass feature",
   "Hardware Integration": "Engineering Tools proficiency; free permanent Link to a Companion Drone, rebuildable for 100 salvage",
   "Cybernetic Overclock": "Drone gains for 1 min: +1d6 damage & Edge, or Caliber+Tech Vigor, or 6-space Recon sense",

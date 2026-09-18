@@ -80,7 +80,7 @@ EN.classes.codebreaker = {
       { name: "Universal Upgrade", text: "Your Freelancer grows in a way that defines them. Choose one: increase one Attribute by 2, increase two Attributes by 1 each (to a maximum of 20), or select one Talent for which you meet the requirements." }
     ],
     "9": [
-      { name: "SysAdmin (Root Access)", text: "You are the absolute authority in #GRID architecture. You gain the following benefits:\n\n• **Unlimited Threading:** You no longer have a maximum cap on concurrent Links. The only limit is how many you can maintain through Stability Checks under fire.\n• **#GRID Initiative:** When you roll Initiative with 0 Bandwidth remaining, immediately regain 3 Bandwidth. You never start a fight empty.\n• **Hardware Mastery:** Your Downtime Repair cost drops from \u{1D4A2}10 per point of System Integrity to \u{1D4A2}5 per point. Bricked deck part costs (\u{1D4A2}100 × Tier) are unchanged." }
+      { name: "SysAdmin (Root Access)", text: "You are the absolute authority in #GRID architecture. You gain the following benefits:\n\n• **Unlimited Threading:** You no longer have a maximum cap on concurrent Links. The only limit is how many you can maintain through Stability Checks under fire.\n• **#GRID Initiative:** When you roll Initiative with 0 Bandwidth remaining, immediately regain 3 Bandwidth. You never start a fight empty.\n• **Hardware Mastery:** Your Downtime Repair cost drops from \u{1D4A2}10 per 5 Integrity restored to \u{1D4A2}5 per 5 Integrity restored. Bricked deck part costs (\u{1D4A2}100 × (Tier + 1)) are unchanged." }
     ],
     "10": [
       { name: "Subclass Capstone", text: "You gain the capstone feature granted by your chosen Codebreaker subclass at this level." }

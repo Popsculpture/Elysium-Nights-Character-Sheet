@@ -559,7 +559,7 @@ EN.gridView = (function () {
     kids = kids.concat(collapsible("ref-scan", "Scanning & Detection", function () {
       return el("div", null, [
         noteP(G.scanIntro, "var(--text2)"),
-        tableEl([{ label: "Concealment", key: "quality" }, { label: "Scan DC", key: "dc", align: "center", mono: true }, { label: "Reads As", key: "reads" }], G.scanning || []),
+        tableEl([{ label: "Concealment", key: "quality" }, { label: "Scan DC", key: "dc", align: "center", mono: true }, { label: "Scan Snag", key: "snag", align: "center", mono: true }, { label: "Reads As", key: "reads" }], G.scanning || []),
         el("div", { style: { height: "6px" } }),
         tableEl([{ label: "Modifier", key: "name" }, { label: "Condition", key: "condition" }, { label: "d20", key: "d20", align: "center", mono: true }, { label: "Dice Pool", key: "pool", align: "center" }], G.scanMods || []),
         noteP(G.scanCapNote, "var(--warn)")

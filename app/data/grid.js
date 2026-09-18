@@ -43,16 +43,23 @@ EN.grid = {
   ],
 
   /* ---- Scanning & Detection ---- */
-  scanIntro: "Finding what to hack is its own skill; half of what's worth hitting hides behind a node disguised as a vending machine. Anything loud enough to broadcast is already on your map, no roll required. For anything quieter, compare your Passive Systems (10 + Tech modifier + Systems Proficiency Bonus, plus always-on scanning gear) against the node's Scan DC; that is the default, and most scenes never need more. When a node hides better than your Passive can reach, stop and sweep: out of combat a Systems (Tech) Dice Pool, under fire a single Systems check or Quick Hack (d20 + Tech modifier + Systems Proficiency Bonus) that costs your Action. You cannot Link, breach, or target a node you have not found.",
-  /* Scan DC measures concealment, not power: a Standard smartwatch can be Ghosted,
-     an Apex server can sit wide open. Only nodes hidden on purpose (or strange by
-     nature) get a Scan DC at all; everything else broadcasts. */
+  scanIntro: "Finding what to hack is its own skill; half of what's worth hitting hides behind a node disguised as a vending machine. Anything loud enough to broadcast is already on your map, no roll required. For anything quieter, compare your Passive Systems (10 + Tech modifier + Systems Proficiency Bonus, plus always-on scanning gear) against the node's Scan DC; that is the default, and most scenes never need more. When a node hides better than your Passive can reach, stop and sweep: out of combat a Systems (Tech) Dice Pool against the node's Scan Snag, under fire a single Systems check or Quick Hack (d20 + Tech modifier + Systems Proficiency Bonus) that costs your Action. You cannot Link, breach, or target a node you have not found.",
+  /* Concealment measures how hidden a node is, not how powerful: a Standard smartwatch can be
+     Ghosted, an Apex server can sit wide open. Only nodes hidden on purpose (or strange by
+     nature) are concealed at all; everything else broadcasts.
+
+     TWO COLUMNS, one per branch, added 2026-09-18. `dc` is what a d20 beats, used by the passive
+     check and by a Quick Hack under fire. `snag` is what an out-of-combat Dice Pool is built
+     against, and it is NOT derived from the DC: this is a ladder with its own named tiers, so it
+     takes one Snag Die per tier in the tier's order, which is the carve-out the Converting a Flat
+     DC rule states. Ghosted is the fourth tier and takes 4, where the general formula would read
+     its DC 21 as 3. Leaving 5 as headroom is deliberate. */
   scanning: [
-    { quality: "Broadcasting",   dc: "none", reads: "Wants to be found: consumer gear, public infrastructure, anything advertising a service. Detected automatically." },
-    { quality: "Obscured",       dc: 12,     reads: "Not hidden on purpose, just lost in the noise. One device in a crowded signal-space." },
-    { quality: "Masked",         dc: 15,     reads: "Wearing another object's face. The camera disguised as a smoke detector." },
-    { quality: "Stealth-Routed", dc: 18,     reads: "Actively dodging: decoy beacons, bounced signals, corporate concealment built to be overlooked." },
-    { quality: "Ghosted",        dc: 21,     reads: "Barely there. Pre-Collapse black boxes, Flow-shrouded nodes, things that went dark on purpose and stayed that way." }
+    { quality: "Broadcasting",   dc: "none", snag: "none", reads: "Wants to be found: consumer gear, public infrastructure, anything advertising a service. Detected automatically." },
+    { quality: "Obscured",       dc: 12,     snag: 1,      reads: "Not hidden on purpose, just lost in the noise. One device in a crowded signal-space." },
+    { quality: "Masked",         dc: 15,     snag: 2,      reads: "Wearing another object's face. The camera disguised as a smoke detector." },
+    { quality: "Stealth-Routed", dc: 18,     snag: 3,      reads: "Actively dodging: decoy beacons, bounced signals, corporate concealment built to be overlooked." },
+    { quality: "Ghosted",        dc: 21,     snag: 4,      reads: "Barely there. Pre-Collapse black boxes, Flow-shrouded nodes, things that went dark on purpose and stayed that way." }
   ],
   /* What helps, what hurts: each grants Edge or Snag on the scan, never a DC shift. */
   scanMods: [

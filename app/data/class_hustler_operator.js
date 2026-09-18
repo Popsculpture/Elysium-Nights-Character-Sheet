@@ -63,7 +63,7 @@ EN.classes.hustler = {
       },
       {
         name: "Read the Room",
-        text: "You always know who holds the most authority in the room, and who is currently suffering the most Fatigue (or has the lowest Vitality).\n\nOnce per encounter, you can spend that read on a single opening **(Special)**: **Edge** on your first in-combat social d20 check against that authority figure (or +1 Edge Die to your first out-of-combat social Dice Pool check against them), **Edge** on your first attack roll against the target with the most Fatigue or lowest Vitality, or the first Leverage ability you direct at them costs 0 Leverage."
+        text: "You always know who holds the most authority in the room, and who is currently suffering the most Fatigue (or has the lowest Vitality).\n\nOnce per encounter, you can spend that read on a single opening: **Edge** on your first in-combat social d20 check against that authority figure (or +1 Edge Die to your first out-of-combat social Dice Pool check against them), **Edge** on your first attack roll against the target with the most Fatigue or lowest Vitality, or the first Leverage ability you direct at them costs 0 Leverage."
       },
       {
         name: "Hustler Subclass",

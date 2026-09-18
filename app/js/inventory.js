@@ -2835,6 +2835,18 @@ EN.inventoryView = (function () {
         .concat([
           el("button.btn.sm", { title: "One less Snag Die", disabled: snag.base <= 0, onclick: function () { rs.result = null; tbSetSnag(p.id, snag.base - 1); } }, "−"),
           el("button.btn.sm", { title: "One more Snag Die: bad conditions, missing kits, rushed work", disabled: snag.base >= 13, onclick: function () { rs.result = null; tbSetSnag(p.id, snag.base + 1); } }, "+"),
+          /* Type a printed DC and get its Risk Level. Some effects give a flat DC because they
+             also have an in-combat d20 version, and a Dice Pool has no DC to beat; the engine
+             owns the conversion so this row and the rules text cannot drift. Sets the base only,
+             which is what the risk buttons beside it set. */
+          el("input", { type: "number", min: "5", max: "40", placeholder: "DC",
+            title: "Convert a printed flat DC to Snag Dice: one die per 5 points above DC 5",
+            style: { width: "52px", fontSize: "11px", textAlign: "center" },
+            onchange: function () {
+              var v = parseInt(this.value, 10);
+              this.value = "";
+              if (isFinite(v)) { rs.result = null; tbSetSnag(p.id, ENG().snagFromDc(v)); }
+            } }),
           el("span.mono", { style: { fontSize: "13px", color: "var(--text)" }, title: "GM-set difficulty per Work Interval (Snag past 5 sharpens into d12s)", text: snag.total + " → " + snagPool.label }),
           snag.untrained ? tbChip("+2 UNTRAINED", "var(--warn)", "Untrained in " + p.skill + ": +2 Snag Dice") : null
         ])));

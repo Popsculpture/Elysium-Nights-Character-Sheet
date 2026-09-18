@@ -441,7 +441,7 @@ EN.gearCatalog.tools = {
     { name: "Neurocut Jack", bucket: "devices", group: "Restraints & Suppression", price: 190, availability: "Rare", legality: "Restricted",
       effect: "On a success, that piece of cyberware is suppressed until removed or destroyed. Its active bonuses are disabled and actions relying on it suffer Snag (or +1 Snag Die).",
       desc: "A compact intrusion plug for cyberware ports and exposed data jacks.",
-      activation: "As an Action against an adjacent Target that is willing, Restrained, or grappled, jack into a visible cyber limb or implant and make an in-combat Systems d20 check (or out-of-combat Dice Pool) vs the Target's Tech save DC.",
+      activation: "As an Action against an adjacent Target that is willing, Restrained, or grappled, jack into a visible cyber limb or implant and make a Systems d20 check vs the Target's Tech save DC.",
       drawback: "On a failure, the jack locks out and cannot affect that Target again this scene." },
     { name: "Flux Gel Sprayer", bucket: "devices", group: "Restraints & Suppression", price: 90, availability: "Rare", legality: "Restricted",
       effect: "On a failure, a Target is Restrained by the gel until it spends an Action to break free or an Ally helps. Any square you coat becomes difficult terrain until cleaned, caught Targets or not.",
@@ -489,7 +489,7 @@ EN.gearCatalog.tools = {
       effect: "Holds power for up to 8 hours of active output per day, tracked in 1-hour charge blocks. Deployed in a stable spot, route that output one of three ways: #GRID Anchor: Power a small site. Cost 1 hour of charge per hour of use. Ignore Snag (or +1 Snag Die) on checks normally penalized by lack of power. Weapon Overcharge: Link one energy weapon. Cost 1 hour of charge per attack resolved. Increase the weapon's damage dice by one step (for example, d6 to d8). Surge Pulse: Vent a controlled surge. 1 Action, cost 3 hours of charge. Every unattended electronic device in an Area 4 Sphere shuts down or reboots. Up to three Targets in that area carrying Tech gear make a Tech Save (DC 13). On a failure, they take 1d6 Electric damage and have one Tech device disabled for 1 round.",
       desc: "A briefcase generator built around a bound micro-storm.",
       limitation: "The Weapon Overcharge damage increase cannot stack with other damage-die increases, and only one weapon can be overcharged at a time.",
-      drawback: "After a day of active use, the GM may call for an out-of-combat Engineering or Esoterica Dice Pool (or in-combat d20 check) at DC 13 to safely vent and re-cage the storm. On a failure, the core lashes out, dealing 1d6 Electric damage to every Target within 2 spaces for each full hour of unused charge remaining, then locks down until serviced in downtime." },
+      drawback: "After a day of active use, the GM may call for an in-combat Engineering or Esoterica d20 check at DC 13 (or an out-of-combat Dice Pool against 2 Snag Dice) to safely vent and re-cage the storm. On a failure, the core lashes out, dealing 1d6 Electric damage to every Target within 2 spaces for each full hour of unused charge remaining, then locks down until serviced in downtime." },
 
     /* ============================= CONSUMABLES ============================= */
     /* ---- Medical Consumables ---- */
@@ -515,7 +515,7 @@ EN.gearCatalog.tools = {
       effect: "While the burst lasts, gain +2 Speed, roll with Edge on in-combat Initiative and Agility saves (or +1 Edge Die on Dice Pools), and once each turn take one extra Swift Action (no more than one extra per turn).",
       desc: "An injector pen of stimulants and combat chems.",
       activation: "As a Swift Action, self-inject for a 3-turn burst.",
-      drawback: "At the end of your 3rd turn, make an in-combat Body save DC 12 (or Dice Pool). On a failure, you are Dazed for 1 round as the crash lands." },
+      drawback: "At the end of your 3rd turn, make a DC 12 Body save. On a failure, you are Dazed for 1 round as the crash lands." },
     { name: "Adrenaline Amp", bucket: "consumables", group: "Medical Consumables", price: 90, availability: "Rare", legality: "Restricted",
       effect: "They stand up with 1 Wound and 1d6 Vitality, Dazed until the end of their next turn.",
       desc: "An emergency heart stim.",
@@ -524,7 +524,7 @@ EN.gearCatalog.tools = {
     { name: "Nightwatch Tablets", bucket: "consumables", group: "Medical Consumables", price: 40, availability: "Common", legality: "Legal",
       effect: "A dose lets you ignore Fatigue 1 for 4 hours and grants Edge on in-combat Wits saves (or +1 Edge Die on Dice Pools) to stay alert.",
       desc: "Legal, intense wake-up pills.",
-      drawback: "When the effect ends, Fatigue returns, and you make an out-of-combat Body Dice Pool (or in-combat d20 check) at DC 10 or gain +1 Fatigue. When your last dose wears off, make one Body save (DC 10 + 2 per Crash Stack); on a failure, gain +1 Fatigue per Crash Stack on top of Fatigue returning. Beyond 4 consecutive doses, also make a Body save (DC 25) on the final crash; on a failure, you suffer heart failure and drop to 0 Wounds.",
+      drawback: "When the effect ends, Fatigue returns, and you make an in-combat Body save at DC 10 (or an out-of-combat Dice Pool against 1 Snag Die) or gain +1 Fatigue. When your last dose wears off, make one Body save (DC 10 + 2 per Crash Stack); on a failure, gain +1 Fatigue per Crash Stack on top of Fatigue returning. Beyond 4 consecutive doses, also make a Body save (DC 25) on the final crash; on a failure, you suffer heart failure and drop to 0 Wounds.",
       synergy: "A fresh dose before the last one ends extends it another 4 hours and builds a Crash Stack." },
     { name: "Emergency Sealant Foam", bucket: "consumables", group: "Medical Consumables", price: 90, availability: "Uncommon", legality: "Licensed",
       effect: "The patch stops gas seepage and vacuum pull through that breach and holds until destroyed.",
@@ -594,7 +594,7 @@ EN.gearCatalog.tools = {
       effect: "Until the end of your turn, gain Edge on Flow-based in-combat attack rolls or d20 checks (or +1 Edge Die on Dice Pools), and your next Invocation this turn costs 1 fewer FP (minimum 1).",
       desc: "A sharp, clarifying draught that speeds mental processing and Flow shaping.",
       activation: "As a Swift Action, drink before an Invocation.",
-      drawback: "Afterward, make an in-combat Wits save DC 12 (or Dice Pool) or gain 1 Strain." },
+      drawback: "Afterward, make a DC 12 Wits save or gain 1 Strain." },
     { name: "Attunement Draught", bucket: "flow", group: "Resonance Tonics", price: 110, availability: "Rare", legality: "Restricted",
       effect: "For 10 minutes, gain Edge on in-combat Awareness or Esoterica d20 checks (or +1 Edge Die on Dice Pools) tied to sensing or interpreting that effect or device.",
       desc: "A mind-expanding infusion that deepens your connection to a single device or working.",
@@ -621,7 +621,7 @@ EN.gearCatalog.tools = {
       desc: "An injector of volatile catalyst and stabilizers that force your channels wide open.",
       activation: "As a Swift Action, inject to enter Overchannel until the encounter ends.",
       limitation: "One Overchannel Amp Shot per long rest.",
-      drawback: "When it ends, gain 2 Strain and make an in-combat Body save DC 12 (or Dice Pool); on a failure, gain 1 level of Fatigue from the crash." },
+      drawback: "When it ends, gain 2 Strain and make a DC 12 Body save; on a failure, gain 1 level of Fatigue from the crash." },
 
     /* ---- Worn Resonant Gear (Body Slot) ---- */
     { name: "Resonant Anchor Charm", load: 0, bucket: "flow", group: "Worn Resonant Gear", price: 180, availability: "Uncommon", legality: "Licensed", slot: "Accessories",

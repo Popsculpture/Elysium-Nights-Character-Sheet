@@ -122,6 +122,11 @@ EN.resolution = {
       { risk: "Daunting", dice: "4", desc: "Extreme pressure or lethal difficulty" },
       { risk: "Nearly Impossible", dice: "5", desc: "Overwhelming odds or near-impossible task" }
     ],
+    /* Added 2026-09-18. The bridge between the two halves of the resolution system: some printed
+       effects give a flat DC because the same effect also has an in-combat d20 version, and a
+       Dice Pool has no DC to beat. The ladder lines up exactly with the dcTable above, 5 through
+       30 mapping to 0 through 5, and with this table's own Easy through Nearly Impossible names. */
+    snagFromDcIntro: "Some printed effects give a flat DC instead of a GM-judged Risk Level, usually because the same effect also has an in-combat d20 version. When you build a Dice Pool against one of these, convert the DC to Snag Dice at one die per 5 points above DC 5, rounding to the nearest whole die: DC 10 is 1 Snag Die, DC 15 is 2, DC 20 is 3, DC 25 is 4, DC 30 is 5.\n\nA ladder with its own named tiers, such as a concealment or security scale, instead assigns one Snag Die per tier, in the tier's own order, since keeping the tiers distinct from each other matters more than matching the DC math exactly.",
     snagPast5Intro: "Total Snag is the risk level plus any Snag added by conditions, modifiers, or hostile circumstances, and it can climb past 5 in two phases. First, difficulty past 5 adds d12s until the pool holds 7 dice. Then, with the count capped at 7, each further point converts one of the five d10s to a d12, 1 for 1, until all seven dice are d12.",
     snagPast5: [
       { total: "1 to 5", pool: "that many d10s" },
