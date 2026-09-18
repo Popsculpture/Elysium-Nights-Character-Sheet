@@ -853,6 +853,9 @@ EN.printSheet = (function () {
         var cwEffect = eng.cyberEffect ? eng.cyberEffect(cw) : cw.effect;
         if (cwDesc) block.appendChild(el("div.ps-invdesc", { text: cwDesc }));
         if (cwEffect) block.appendChild(el("div.ps-invkv", null, [el("span.ps-fl", { text: "Effect" }), el("span.ps-invkv-v", { text: cwEffect })]));
+        // the tier rider amends the effect above, so it prints with it or the sheet states the wrong rule
+        var cwTier = eng.cyberTierNote ? eng.cyberTierNote(cw.key, cw.tier) : "";
+        if (cwTier) block.appendChild(el("div.ps-invkv", null, [el("span.ps-fl", { text: "Tier" }), el("span.ps-invkv-v", { text: cwTier })]));
         if (cw.enhancement && cw.enhancement !== "None") block.appendChild(el("div.ps-invkv", null, [el("span.ps-fl", { text: "Enhance" }), el("span.ps-invkv-v", { text: cw.enhancement })]));
         out.push(block);
       });

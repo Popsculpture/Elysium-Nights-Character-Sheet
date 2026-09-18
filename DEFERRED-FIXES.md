@@ -8614,6 +8614,80 @@ carried a comment about Weapon Focus Caliber that `pdfexport.js` lacked. That is
 discipline `parseUses` got earlier today, and for the same reason, since a plain diff is what
 turns the next drift into something anyone can see.
 
+## Three small things that came out of re-checking the open list, 2026-09-18
+
+Brandon asked what was pending. Rather than reading my own list back, I re-checked every item on it
+against the code as it stands, and most of it did not survive: the #GRIDroid layout collapse had
+shipped a fortnight ago, the "no single active-Ward-Focus selector" note was simply wrong (the app
+has always taken the equipped Focus's die OR the armour's, never both, and the ARMOR chip hides the
+suit's Ward when a Focus is equipped), and four more notes turned out to be misstated rather than
+open. What survived were three things worth an hour, and the re-check turned up two of them itself.
+
+**1. Installed chrome was printing the wrong tier's rule.** Most cyberware prints a base `effect`
+and then AMENDS it per tier. Those riders are rules, not flavour: Cyberoptics reads "Choose two
+modes", its Streetware line reads "One mode only", its Blackware line "Three modes". 16 of the 20
+items carry a Streetware rider and 17 a Blackware one. The Gray Market card has shown them since it
+was built, through a tierNote the shop listing composed inline; the Chrome panel and the printed
+record never did. So anyone not on the middle tier was reading a rule that was not theirs, on their
+own installed piece.
+
+Now one resolver, engine.cyberTierNote(key, tier), read by all three surfaces. Taken by key and tier
+rather than by a record object, because the shop listing and an installed piece are different shapes
+and both have to be able to ask; that is what stops them drifting apart again. cyberDefByKey was
+factored out of cyberDef for it. The PDF prints no chrome effect at all, so it is silent rather than
+wrong and was left alone, though its Notes column for chrome is hardcoded empty and would be the
+place if that ever changes.
+
+**2. The Resonance Crown was discounting pieces that had paid nothing.** Its eligibility filter read
+the raw stored tier SP, which put it out of step with the two reductions immediately above it in the
+same block. A piece sitting in a platform SLOT contributes 0 to Total Static, and the Crown took a
+point off it anyway. A piece already discounted by Open Architecture came out at 0, which breaks the
+Crown's own printed "(min 1)". Both errors ran the same way, dropping Total Static and so lowering
+the Chrome Tax tier in the player's favour. The Open Architecture block directly above already skips
+slotted pieces and explains why; this is the same reasoning applied one line later.
+
+**3. The four armour suits had no play-time marker.** An unmade damage-type pick grants nothing, so
+it has no row in d.resistances, and the ARMOR chip never asked: on the Freelancer tab an unanswered
+menu was simply invisible. The Ablative Coating got its chip when it shipped and the suits did not.
+engine.armorResistOwed was written for exactly this and had been exported with ZERO callers ever
+since. It has one now, and the Stash card calls the same helper instead of recomputing the
+expression locally, so the two cannot disagree about what is owed. That is the third time this
+particular hole has been filled in a week: a marker only the player who had already opened the
+control could see.
+
+**The review caught a regression I introduced, and the old code had been right.** Three reviewers,
+three refuters each. Two findings stood, both real.
+
+The first was mine. To make the Crown respect Open Architecture I recorded the discounted pieces in
+a map keyed by cyberware KEY. But Open Architecture discounts one piece INSTANCE: openArchCombos
+resolves each pairing with inst.filter(...)[0] and the saving is counted once. Keying by name
+charged that single point against every twin sharing the key, including one that had paid its own
+full SP a few lines above, so the twin was refused a Crown discount it was owed and Total Static came
+out one too HIGH, against the player, across a threshold boundary that costs a Resilience Die and an
+FP. Two Cyberoptics is an ordinary character, not a hand-edited one. It is flagged by object identity
+now, which works because `installed` and openArchCombos' own list both filter ch.cyberware and so
+hold the same objects. Measured on the reviewer's own repro: Streetware plus Blackware optics with
+the Crown now derives 2 where the key-keyed map gave 3, and the reversed install order still gives 3,
+which is correct because Open Architecture then takes the Blackware one instead.
+
+The second was the new chip's tooltip, which said the suit "is granting none" unconditionally. False
+for the Reliquary Shell with one of its two picks made: that type IS granting, with a row in the
+Resistances list one panel away. Two sentences now, and the partial state gets its own.
+
+**Verified.** cyberTierNote returns the right rider for Streetware and Blackware, empty for
+Prototype, an unknown key, a null key and a nonsense tier; the Chrome panel and the print sheet both
+render it, and the Gray Market still shows both riders and correctly shows none for Brandware. Crown:
+a slotted Blackware Hand Razors in a Blackware Cyberarm leaves Total Static at 6, an
+Open-Architecture Streetware Subdermal Armor stays at 4, a no-OA control still gets its discount from
+5 to 4, and the four twin cases above. The chip reads "1 unchosen" for a Veilskin, "2 unchosen" then
+"1 unchosen" for a Reliquary Shell, disappears once the picks are made, and its tooltip is true in
+each state.
+
+**One thing observed and deliberately not touched.** openArchCombos resolves a pairing to
+inst.filter(...)[0], so with two installs of one key which twin gets the Open Architecture point
+depends on install order. That is pre-existing engine behaviour, it does not change the total, and
+picking a winner for the player is a rules call rather than a bug fix.
+
 ## The Ablative Coating burns away, and the sheet finally watches it happen, 2026-09-18
 
 The last unwired damage-type menu in the game, and the awkward one, because its clause has a second

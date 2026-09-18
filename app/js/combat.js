@@ -3278,6 +3278,30 @@ EN.combatView = (function () {
       if (dg.armor) {
         if (dg.armorLapsed) chips.push(gchip("ARMOR · LEASE DUE", dg.armor.name, DUE_TIP, "var(--danger)"));
         else { var ap = [dg.armorDRLost ? dg.armorDR + " of " + dg.armorBaseDR + " DR" : dg.armorDR + " DR"]; if (dg.blockBonus) ap.push("+" + dg.blockBonus + " Block"); if (dg.armor.wardDie && !dg.focus) ap.push(dg.armor.wardDie + " Ward"); if (dg.speedPenalty) ap.push(dg.speedPenalty + " SPD"); if (dg.armor.slots) ap.push(dg.armor.slots + " slots"); chips.push(gchip("ARMOR", dg.armor.name, ap.join(" · "), "var(--success)")); }
+        /* An unanswered damage-type menu on the suit you are WEARING. The Resistances list
+           cannot show it, because an unanswered menu grants nothing and so has no row there,
+           and the ARMOR chip beside this one never asks. The Ablative Coating got its own
+           play-time chip when it shipped and the four suits did not, which is the third time
+           this exact hole has been filled: a marker that only the player who had already
+           opened the control could see. engine.armorResistOwed was written for it and had no
+           caller in the app until now. Not drawn for a lapsed suit, which grants nothing
+           either way and says so one chip to the left. */
+        if (!dg.armorLapsed && eng.armorResistOwed) {
+          var resOwed = eng.armorResistOwed(ch, dg.armorKey, dg.armor);
+          if (resOwed > 0) {
+            /* Two sentences rather than one, because the Reliquary Shell picks TWO and owing one
+               of them is a real state: the type already chosen is granting, and a tooltip saying
+               the suit "is granting none" would be flatly false while a row for it sits in the
+               Resistances list one panel away. */
+            var resHave = eng.armorResistPicks ? eng.armorResistPicks(ch, dg.armorKey, dg.armor).length : 0;
+            var resTip = resHave
+              ? dg.armor.name + " grants Resistance to two damage types of your choice. You have chosen one, which applies; the second grants nothing until you choose it."
+              : dg.armor.name + " grants Resistance to " + (resOwed > 1 ? "two damage types" : "a damage type")
+                  + " of your choice. Until you choose, it grants none.";
+            chips.push(gchip("ARMOR · RESISTANCE", resOwed + " unchosen",
+              resTip + " Choose on the suit's card in Inventory > Stash.", "var(--warn)"));
+          }
+        }
       }
       // installed Armor Mods (Impact Table) on the worn suit; a leased mod in arrears is dark
       if (dg.armor && EN.armorMods) {

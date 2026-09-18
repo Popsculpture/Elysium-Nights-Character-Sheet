@@ -3449,21 +3449,44 @@ EN.engine = (function () {
        Skipped for a piece already discounted to nothing by a platform slot, which pays no SP
        at all, so the reduction has nothing to reduce and cannot go negative. */
     var oaSaved = 0;
+    /* The pieces Open Architecture took a point off, BY IDENTITY rather than by key. It has to
+       be identity: openArchCombos resolves each pairing to one record (inst.filter(...)[0]) and
+       oaSaved counts one saving, so marking the key would charge that single point against a
+       twin of the same key which paid its own full SP a few lines above. Two Cyberoptics is an
+       ordinary character, not a hand-edited one. `installed` and openArchCombos' own list both
+       filter ch.cyberware, so these are the same objects and indexOf compares what it should. */
+    var oaPieces = [];
     openArchCombos(ch).forEach(function (m) {
       var cw = m.piece;
       if (!cw || slotted[cw.key]) return;
       if (typeof cw.sp !== "number" || cw.sp <= 0) return;
       oaSaved += 1;
+      oaPieces.push(cw);
     });
     staticTotal -= oaSaved;
     var CROWN_EXEMPT = { resonanceCrown: 1, disruption: 1, convergence: 1 };
     var crownHarmonized = [];
     if (installed.some(function (cw) { return cw.key === "resonanceCrown"; })) {
+      /* EFFECTIVE SP, not the catalog figure. This filter used to read the raw stored tier SP,
+         which made it disagree with the two reductions immediately above it and take a point
+         off twice:
+           a piece in a platform SLOT contributes nothing to staticTotal at all, so the Crown
+           had nothing to reduce and reduced it anyway, and
+           a piece already discounted by Open Architecture came out at 0, which breaks the
+           Crown's own printed "(min 1)".
+         Both errors ran the same way, pushing Total Static too low and the Chrome Tax tier too
+         high in the player's favour. The Open Architecture block above already skips slotted
+         pieces and says why; this is the same reasoning, applied one line later. */
       crownHarmonized = installed
-        .filter(function (cw) { return !CROWN_EXEMPT[cw.key] && cw.sp > 1; })
+        .filter(function (cw) {
+          if (CROWN_EXEMPT[cw.key]) return false;
+          if (slotted[cw.key]) return false;
+          if (typeof cw.sp !== "number") return false;
+          return (cw.sp - (oaPieces.indexOf(cw) !== -1 ? 1 : 0)) > 1;
+        })
         .sort(function (a, b) { return b.sp - a.sp; })
         .slice(0, 4);
-      staticTotal -= crownHarmonized.length;      // 1 SP off each, min 1 guaranteed by the sp > 1 filter
+      staticTotal -= crownHarmonized.length;      // 1 SP off each, and the filter is what holds the min at 1
     }
     var CT = (EN.cyberware && EN.cyberware.thresholds) || [];
     var ctTier = null;
@@ -3743,9 +3766,31 @@ EN.engine = (function () {
      lists. A retired or homebrew implant keeps whatever text it was saved with rather than
      rendering blank, which is the same rule migrate() follows when it declines to touch an
      entry whose key does not resolve. */
+  function cyberDefByKey(key) {
+    if (typeof key !== "string" || !key) return null;
+    return ((EN.cyberware && EN.cyberware.items) || []).filter(function (i) { return i.key === key; })[0] || null;
+  }
   function cyberDef(cw) {
-    if (!cw || typeof cw !== "object" || typeof cw.key !== "string") return null;
-    return ((EN.cyberware && EN.cyberware.items) || []).filter(function (i) { return i.key === cw.key; })[0] || null;
+    if (!cw || typeof cw !== "object") return null;
+    return cyberDefByKey(cw.key);
+  }
+  /* THE TIER RIDER, and it is a rule rather than flavour. Most chrome prints one effect and
+     then AMENDS it per tier: 16 of the 20 items carry a Streetware line and 17 a Blackware
+     one, and they contradict the base text on purpose. Cyberoptics is the clearest case, with
+     effect "Choose two modes", street "One mode only", black "Three modes".
+
+     The Gray Market card has shown these since it was built, through a tierNote the shop
+     listing composed inline. The CHROME panel and the printed record never did, so anyone not
+     on the middle tier was reading a rule that was not theirs, on their own installed piece.
+     Taken by (key, tier) rather than by a record object so the shop listing and the installed
+     piece can ask the same question from their two different shapes, which is what stops the
+     three surfaces drifting again. */
+  function cyberTierNote(key, tier) {
+    var d = cyberDefByKey(key);
+    if (!d) return "";
+    if (tier === "Streetware" && d.street) return "Streetware: " + d.street;
+    if (tier === "Blackware" && d.black) return "Blackware: " + d.black;
+    return "";
   }
   function cyberDesc(cw) { var d = cyberDef(cw); return (d && d.desc) || (cw && cw.desc) || ""; }
   function cyberEffect(cw) { var d = cyberDef(cw); return (d && d.effect) || (cw && cw.effect) || ""; }
@@ -4020,7 +4065,7 @@ EN.engine = (function () {
     buildEdgePool: buildEdgePool, buildSnagPool: buildSnagPool, rollDicePool: rollDicePool, rollD20: rollD20,
     composeRollSpec: composeRollSpec, rollDamage: rollDamage,
     installedCyberware: installedCyberware, installedCyberBases: installedCyberBases,
-    cyberDef: cyberDef, cyberDesc: cyberDesc, cyberEffect: cyberEffect,
+    cyberDef: cyberDef, cyberDesc: cyberDesc, cyberEffect: cyberEffect, cyberTierNote: cyberTierNote,
     gambitList: gambitList,
     resourceAbilities: resourceAbilities,
     resourcePicksAllowed: resourcePicksAllowed, chosenResourceAbilities: chosenResourceAbilities,

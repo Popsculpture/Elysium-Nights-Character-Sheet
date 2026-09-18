@@ -562,7 +562,9 @@ EN.inventoryView = (function () {
     var key = ENG().entryKey(entry);
     var n = ENG().armorResistCount(it);
     var cur = ENG().armorResistPicks(ch, key, it);
-    var owed = Math.max(0, n - cur.length);
+    // asked of the engine rather than recomputed here, so this card and the Defense chip
+    // that reads the same function cannot drift about what is still owed
+    var owed = ENG().armorResistOwed(ch, key, it);
     var dupe = n > 1 && cur.length === n && cur[0] === cur[1];
     /* The picks are a SET, not slots: the book says "choose two of", not "a primary and a
        secondary". So the stored list is dense and clearing the first select slides the second
@@ -1148,6 +1150,9 @@ EN.inventoryView = (function () {
           actions
         ]),
         open && ENG().cyberEffect(cw) ? el("p.help", { style: { margin: "4px 0 0", color: "var(--accent)" }, text: ENG().cyberEffect(cw) }) : null,
+        // ...and what THIS tier changes about it, which the market card has always shown and this panel never did
+        open && ENG().cyberTierNote && ENG().cyberTierNote(cw.key, cw.tier)
+          ? el("p.help", { style: { margin: "3px 0 0", color: "var(--gold)" }, text: ENG().cyberTierNote(cw.key, cw.tier) }) : null,
         open && ENG().cyberDesc(cw) ? el("p", { style: { margin: "6px 0 0" }, text: ENG().cyberDesc(cw) }) : null
       ]);
     }
@@ -1364,7 +1369,7 @@ EN.inventoryView = (function () {
               desc: it.desc, effect: it.effect,
               activation: it.activation, limitation: it.limitation,
               drawback: it.drawback, synergy: it.synergy,
-              tierNote: t.tier === "Streetware" && it.street ? "Streetware: " + it.street : t.tier === "Blackware" && it.black ? "Blackware: " + it.black : "" });
+              tierNote: ENG().cyberTierNote ? ENG().cyberTierNote(it.key, t.tier) : "" });
           });
         });
         return { label: z.label, intro: z.blurb, items: listings, byTier: true };
