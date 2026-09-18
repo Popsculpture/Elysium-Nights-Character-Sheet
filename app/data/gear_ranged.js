@@ -104,9 +104,30 @@ EN.gearCatalog.ranged = {
       desc: "A simple, brutal tube made to fire, hit, and be discarded in a doorway. One shot. One refund on whatever was on the other side." },
 
     /* ---- Thrown Weapons ---- */
+    /* The On Hit clause was missing entirely, which left this the only EMP payload in the book with
+       no save, no DC and no duration: the Pulse trait alone says "on a failed save" without naming
+       the save or how long the result lasts. Ruling M9 (2026-07-28) states the grenade gained the
+       Tech Save and the stated duration, and the manuscript prints them, so this is restoring a
+       recorded ruling the data lost rather than authoring one.
+
+       Deliberately NOT carrying the "living targets take half" sentence its two siblings carry.
+       M9 is explicit that flesh is covered by the Pulse trait's automatic halving, so repeating it
+       here would state the same rule twice. The flat DC 13 on EMP Rounds against the Weapon Save DC
+       here is also M9's, and deliberate: cartridge ammo uses flat DCs, thrown and launched ordnance
+       scales with the user.
+
+       Verbatim but for the first letter, which the book leaves lowercase because it runs on from an
+       "On Hit:" label this field does not have.
+
+       NOTE FOR THE PENDING BRICKED RULING: this is now the sixth site applying Bricked on a timer,
+       joining EMP Rounds, EMP Shell, the Pulse trait and the Gremlin's Break the Toy. If Bricked's
+       timed sense is renamed, all six move together. The gap was fixed rather than held hostage to
+       that ruling because the item is unusable without a save DC whatever the condition ends up
+       called. */
     { name: "EMP Grenade", group: "Thrown", price: 175, damage: "2d6 Electric and Tech", ammo: 1, range: "4 / 12",
       traits: ["Explosive (Area 2 Sphere)", "Thrown (4/12)", "Pulse"], availability: "Uncommon", legality: "Restricted",
-      desc: "A compact charge tuned to fry circuits instead of flesh. Useless on the people. Devastating on the people's gear." },
+      desc: "A compact charge tuned to fry circuits instead of flesh. Useless on the people. Devastating on the people's gear.",
+      effect: "Devices, drones, and augmented targets in the area make a Tech Save vs your Weapon Save DC or gain Bricked (devices) or Breached (augmented) until the end of their next turn, matching the EMP Round and EMP Shell." },
     { name: "Flashbang", group: "Thrown", price: 100, damage: "1d4 Sonic", ammo: 1, range: "4 / 12",
       traits: ["Explosive (Area 3 Sphere)", "Nonlethal", "Thrown (4/12)"], availability: "Common", legality: "Licensed",
       desc: "A nonlethal grenade that turns light and sound into weapons. Standard issue for breach teams that want hostages who can still walk to the door." },

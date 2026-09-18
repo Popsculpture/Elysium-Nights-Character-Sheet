@@ -8778,6 +8778,100 @@ either the app misfiled it or the manuscript moved it, and that is worth one loo
   seed of the confusion: SysAdmin (Root Access) is the LEVEL 9 CLASS feature, and the capstone is
   the separate level 10 Subclass Capstone row. See the entry below.
 
+## Bricked means two different things, and the book is where they diverge, 2026-09-18
+
+Raised in the previous entry as one of two things needing a ruling. It was investigated rather than
+guessed at, and the investigation moved it from "the app contradicts itself" to something more
+precise and less flattering to the manuscript.
+
+**THE SHAPE OF IT.** The Conditions chapter defines Bricked as a device that "ceases to function
+until properly repaired", and its How to End It offers only repair. The quick reference row reads
+"Until repaired" with a dash in the Save to End column, so no timer and no save. The #GRID chapter
+agrees: a device at 0 System Integrity is Bricked, every Link severs, and field repair "cannot
+recover a Bricked device. Only Downtime can do that." Against that, four gear entries and one threat
+apply Bricked on a timer, cause no Integrity loss, and end it in a round.
+
+**THE SPLIT FOLLOWS CHAPTER BOUNDARIES, WHICH IS WHAT SETTLES IT.** Part 1 uses Bricked six times
+and every one is the 0 Integrity state. Part 2 holds both the Conditions chapter and the #GRID
+chapter, uses it persistently throughout, and contains ZERO occurrences of the phrase "until the end
+of its next turn". Part 3, the Equipment Part, uses Bricked exclusively as a timed status and never
+once says "until properly repaired". Part 4 has one timed use, the Gremlin, and eight persistent
+ones. A deliberate two-tier condition does not distribute itself perfectly along chapter lines.
+Vocabulary drift between chapters does.
+
+**THE BOOK ALREADY OWNS THE DISTINCTION, IN ITS OWN VOICE.** Brownout ends "This is a lockout, not a
+burnout. Nothing is permanently damaged." Everywhere else the book disables hardware briefly it
+reaches for different words and pointedly avoids this one: the Pulse Core "goes offline for 1
+round", the Tempest Core's Surge Pulse leaves a device "disabled for 1 round", Hardware Override
+gives Smart-Lockout and Servo Seizure, and the Cold Boot cipher, which does mechanically what an EMP
+Round does, says it "reboots for 1d4 rounds" and never calls itself Bricked. Kill Code shows the
+author's own construction for combining the two: it defines the brick inline as "(the Node's System
+Integrity drops to 0)" and hangs a separately worded timed rider off it in its own sentence.
+
+**AND NO GENERAL RULE LICENSES THE TIMED USES.** This was searched for specifically rather than
+assumed absent: the Conditions chapter's whole preamble is one flavour paragraph, its only general
+callout is a GM Tip about replacing overlapping conditions, and targeted searches for "takes
+precedence", "unless otherwise stated", "specific beats general" and a dozen similar came back
+empty. The affirmative kill is the Suppressed entry, which had to write its own local precedence
+sentence: "if a later one sets a different duration, that entry governs." Nobody writes that into
+one condition if a general rule already covers all of them. Breached's "or as defined by the effect"
+hook does not help either, because it sits in the bullet about what the attacker may do, not in
+Breached's duration bullet.
+
+**THE CONSEQUENCE TEST, which is what makes this more than pedantry.** Read literally, a 175 Glimmer
+EMP Grenade permanently kills every drone in an Area 2 Sphere: field repair cannot touch a Bricked
+device, so each one needs an 8 hour Downtime plus 100 Glimmer x (Tier + 1) in parts, and each
+suffers LinkDeath as a forced disconnect, while a clause in the same sentence says it ends next
+turn.
+
+**NOT PATCHED, AND THE REASON IS THE HOUSE RULE RATHER THAN CAUTION.** The diagnosis is solid; the
+remedy is not available by transcription. The book prints "lockout" as prose in Brownout and as part
+of a feature name in Smart-Lockout, but it never prints a Lockout condition with a definition, and
+it prints no substitute at any of the disputed sites. Any word the app chose would be a word the
+book does not print there. So nothing was renamed, no second tier was added to conditions.js, no
+duration-precedence note was added to the Conditions Library or to the COND_META row in combat.js,
+and Breached's hook was not copied onto Bricked. Every one of those would author rules.
+
+Worth knowing for whichever way it is ruled: engine.js computes Bricked strictly as integrity <= 0,
+for the Smartdeck and the Trauma Rig alike, and the timed effects cause no Integrity loss. So this
+is not a documentation-only fix under any reading. It also renders today: a player who marks Bricked
+after an EMP Round sees the combat tracker's hardcoded "Until Repaired".
+
+**THE SIX SITES, so the sweep lands once.** app/data/gear_ranged.js EMP Rounds, EMP Shell and now
+EMP Grenade; app/data/gear_traits.js Pulse, which states no duration at all and should gain one;
+app/data/bestiary.js the Gremlin's Break the Toy; and app/data/gear_ranged.js Shock Rounds, which
+only references a target "already suffering Bricked or Breached" and follows whatever the others do.
+Leave Breached alone in all of them: its own text already ends on "the device is shut down" and
+carries the effect hook, so a stated one-round duration sits comfortably with it in a way it does
+not with Bricked. While the Gremlin line is open, note that "until the end of its next turn" is
+ambiguous in the manuscript itself, the device's turn or the Gremlin's, and the app inherits the
+ambiguity verbatim.
+
+**ONE THING WAS FIXED, because it was not waiting on the ruling.** The EMP Grenade carried no effect
+clause at all, which made it the only EMP payload in the book with no save, no DC and no duration,
+since the Pulse trait alone says "on a failed save" without naming the save or its length. Ruling M9
+of 2026-07-28 states the grenade gained the Tech Save and the stated duration and records the app as
+updated to match; the data says otherwise, so this restores a recorded ruling rather than authoring
+one. The manuscript's clause is transcribed verbatim but for the first letter, which the book leaves
+lowercase because it runs on from an "On Hit:" label this field does not have. The "living targets
+take half" sentence its two siblings carry is deliberately NOT repeated, because M9 is explicit that
+flesh is covered by the Pulse trait's automatic halving. Verified in the running app: the Gray
+Market card now prints the full Effect line. This does make a sixth site for the pending rename, and
+the comment in the data says so.
+
+**A SECOND, SEPARATE CONTRADICTION ON THE SAME CONDITION, also imported rather than invented.** The
+#GRID chapter says field repair cannot recover a Bricked device and only Downtime can. The
+Conditions chapter says a field repair can restore partial function on an in-combat d20 check. The
+app faithfully carries both halves, at app/data/grid.js and app/js/grid.js on one side and
+app/data/conditions.js and the combat quick table on the other. The #GRID text is the more specific
+rule and probably wins, but the Conditions entry's How to End It needs rewriting in the manuscript
+before the app follows, and any rewrite of that entry collides with the rename above. Both want
+ruling in the same pass.
+
+**ONE PREMISE CORRECTED IN PASSING.** A reader suspected Brownout was misfiled under the Burner
+subclass. It is not: the app has it correctly as a Level 1 Codebreaker Signature #GRID Exploit,
+available to every Codebreaker. No change.
+
 ## Hardware Mastery was filed correctly all along, 2026-09-18
 
 The 2026-09-18 handoff placed Hardware Mastery in the Codebreaker's Rigger subclass. The app has it
