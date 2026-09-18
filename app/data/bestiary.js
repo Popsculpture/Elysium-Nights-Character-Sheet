@@ -146,7 +146,7 @@ EN.bestiary = {
       name: "Street Shaper", category: "people",
       gauge: 2, designation: "Standard", role: "Controller",
       identity: "Gauge 2 Standard, Controller. Medium, any species, marked by the current.",
-      stats: { "Defense": "13", "DR": "1 (layered coats and charms)", "Vitality": "30", "Speed": "6", "Initiative": "+4", "Saves": "+5 Mystique and Body, +1 others", "Passive Perception": "12", "XP": "150", "Resolve": "5 (Standard)" },
+      stats: { "Defense": "13", "DR": "1 (layered coats and charms)", "Vitality": "22", "Speed": "6", "Initiative": "+4", "Saves": "+5 Mystique and Body, +1 others", "Passive Perception": "12", "XP": "150", "Resolve": "5 (Standard)" },
       abilities: [
         { name: "Current Lash", cost: "Action", text: "+6 vs Defense, Range 6, 2d6 Force (7)." },
         { name: "Gravity Pinch", cost: "Action", text: "One Target within 6 spaces makes a Body Save DC 14 or is Restrained until the end of its next turn." },
@@ -227,7 +227,7 @@ EN.bestiary = {
       name: "Sentry Turret", category: "machines",
       gauge: 2, designation: "Standard", role: "Deadshot",
       identity: "Gauge 2 Standard, Deadshot. Small fixed emplacement.",
-      stats: { "Defense": "12", "DR": "3 (housing)", "Vitality": "30", "Speed": "0", "Initiative": "+2", "Saves": "+5 vs Tech effects, +1 others", "Passive Perception": "14 (90 degree arc)", "XP": "150" },
+      stats: { "Defense": "12", "DR": "3 (housing)", "Vitality": "22", "Speed": "0", "Initiative": "+2", "Saves": "+5 vs Tech effects, +1 others", "Passive Perception": "14 (90 degree arc)", "XP": "150" },
       abilities: [
         { name: "Mindless", cost: null, text: "Psychic damage deals 0. Immune to Toxic and to everything a paycheck usually buys." },
         { name: "Mounted Machinegun", cost: "Action", text: "+7 vs Defense, Range 20 / 60, 2d8+4 Ballistic (13)." },
@@ -244,7 +244,7 @@ EN.bestiary = {
       abilities: [
         { name: "Whatever Is In Hand", cost: "Action", text: "+6 vs Defense, melee or Range 6 / 18, 1d8+3 damage by weapon (7)." },
         { name: "Nobody Home", cost: null, text: "Immune to Frightened, Panic, and morale. Pain arrives somewhere else, as a line item." },
-        { name: "Signal Cut", cost: "Special", text: "The body runs on a Standard [0] relay node (Security Rating 12). Brick it, or catch the body in Signal Jammed, and it folds like a marionette with the strings cut. The operator is elsewhere, and now they know the crew's faces." }
+        { name: "Signal Cut", cost: null, text: "The body runs on a Standard [0] relay node (Security Rating 12). Brick it, or catch the body in Signal Jammed, and it folds like a marionette with the strings cut. The operator is elsewhere, and now they know the crew's faces." }
       ],
       salvage: "The relay rig, and a routing trail worth more than the rig."
     },
@@ -260,7 +260,7 @@ EN.bestiary = {
         { name: "Slip Away", cost: "Impulse", text: "When missed by a melee attack, move 2 spaces without provoking Opportunity Attacks." },
         { name: "Built for the Straightaway", cost: null, text: "In a chase (Part 2, Vehicles and Chases), it counts as Fast for the straightaway trigger, or Very Fast while its sprints are still within tolerance." },
         { name: "The Leash Is Not the Dog", cost: null, text: "The subscription runs through an onboard node, Improved [1] (Security Rating 14, System Integrity 20, Firewall Damage Threshold 3). Bricking it does not stop the dog. It deletes the subscriber table: the recall command, the handler override, the customer at all. What is left runs on memory." },
-        { name: "Remembers", cost: "Special", text: "Anyone who has fed it, freed it, or sheltered it is friend-tagged, permanently, above every entry on the subscriber table. It will not attack a friend, it can pick a friend's voice out of a riot, and if a friend screams somewhere in the district, the GM should start counting sprints." }
+        { name: "Remembers", cost: null, text: "Anyone who has fed it, freed it, or sheltered it is friend-tagged, permanently, above every entry on the subscriber table. It will not attack a friend, it can pick a friend's voice out of a riot, and if a friend screams somewhere in the district, the GM should start counting sprints." }
       ],
       salvage: "The chassis parts out at 𝒢800. The core is worth 𝒢2,000 to a licensed lab and more to the other kind, and its dock telemetry, in a file labeled calibration loop, renders a low-resolution field and a thrown ball that never lands. It is still running when you pull the core. What kind of story that makes this is the crew's call.",
       variant: { label: "Variant, Estate Unit (Gauge 4 Elite, 700 XP)", text: "Vitality 105, Defense 17, attacks +9, bites 1d10+5 (10). Premium addresses field two, and the pair covers each other's cooling." },
@@ -279,7 +279,7 @@ EN.bestiary = {
         { name: "Mindless", cost: null, text: "Psychic damage deals 0. Immune to Toxic, Frightened, and to the concept of a warning shot." },
         { name: "Piston Fist", cost: "Action", text: "Two attacks, +9 vs Defense, melee, 2d10+5 Bludgeoning (16). On a critical hit, the Target makes a Body Save DC 16 or is pushed 2 spaces and knocked Prone." },
         { name: "Rotary Pod", cost: "Action", text: "+9 vs Defense, Range 24 / 72, 2d8+5 Ballistic (14)." },
-        { name: "Overheat Vents", cost: null, text: "While below half Vitality, at the end of the Warform's turn, each adjacent Target takes 1d6 Fire damage (Body Save DC 15 for none)." },
+        { name: "Overheat Vents", cost: null, text: "While below half Vitality, at the end of the Warform's turn, each adjacent Target takes 1d6 Fire damage (Body Save DC 16 for none)." },
         { name: "Hardened Node", cost: null, text: "Advanced [2] (Security Rating 16, System Integrity 30, Firewall Damage Threshold 4). Hijacking one is a Codebreaker's war story. Surviving the attempt is the hard part." }
       ],
       salvage: "Plate, actuators, and a fire-control core that is Restricted everywhere worth standing."
@@ -307,7 +307,7 @@ EN.bestiary = {
         { name: "Purge", cost: "Action", text: "4d6 Tech damage against an intruding deck or device, resolved as an IC Counterattack." },
         { name: "Backtrace", cost: "Action", text: "Contested Systems check against one intruder. On a win, the intruder's physical location is burned: the site's response clock jumps to the Black row, and it does not stop when the crew leaves the building." },
         { name: "Slam the Doors", cost: "Swift", text: "One Node in the cluster the Guardian can reach applies Lockdown as Aggressive IC." },
-        { name: "The Chair", cost: "Special", text: "The Guardian's body is elsewhere, statted as a Corpsec Officer if the crew ever finds the room. Finding the room is a campaign event. Corporations bury their Guardians the way banks bury their vaults." }
+        { name: "The Chair", cost: null, text: "The Guardian's body is elsewhere, statted as a Corpsec Officer if the crew ever finds the room. Finding the room is a campaign event. Corporations bury their Guardians the way banks bury their vaults." }
       ],
       gmNote: "A Guardian fight is a race, not a slugging match: what the crew's Codebreaker is buying with every round is time for the rest of the crew to finish the physical job before Backtrace lands."
     },

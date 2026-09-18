@@ -8637,6 +8637,64 @@ carried a comment about Weapon Focus Caliber that `pdfexport.js` lacked. That is
 discipline `parseUses` got earlier today, and for the same reason, since a plain diff is what
 turns the next drift into something anyone can see.
 
+## Section 11, the bestiary: what could be done from the handoff, and what could not, 2026-09-18
+
+Part of this landed. A larger part cannot land from a handoff alone, and the reason is worth
+recording so the next pass does not rediscover it.
+
+**Done, because each one is a specific number the ruling states.**
+
+The Roles table's Controller row gained `vitalityMult: 0.75`, so it now reads -25% damage, -25%
+Vitality, Save DC +1. Street Shaper and Sentry Turret dropped from 30 to 22. Reclamation Bloom keeps
+55 as the stated rooted exception. Warform Chassis' Overheat Vents went from Save DC 15 to 16, which
+closes an inconsistency inside its own statblock, since its Piston Fist already said 16. And The
+Chair, Remembers and Signal Cut lost their (Special) tags, which is `cost: "Special"` becoming
+`cost: null`; gm.js already renders a null cost as a bare name, so no view changed.
+
+**The rounding disagreement is real and was left alone, deliberately.** A Gauge 2 Controller computes
+30 x 0.75 = 22.5, and `vit()` rounds half UP by documented choice: its own comment says the Role
+percentages can drive a G1 Minion's 6 down to 4.5. So the Threats builder now answers 23 where the
+book prints 22, measured rather than predicted, the generator's own working reading "G2 base 30,
+Controller -25% of 30 = 23". Which way a half rounds is a rules call this ruling does not make, and
+flipping it would move every other .5 in the table. The Controller row carries a comment saying so,
+and naming the Reclamation Bloom's 55-against-38 as the other knowing divergence.
+
+**Not done, because the handoff does not contain the text.**
+
+THE TEN DAMAGE RAISES. The ruling gives per-round AVERAGES (Wetwork Operative 23, Kettle Dog 23,
+X-Calibur Knight 32, Estate Unit 32, Rustmaw 30, Angler 45, Smiling Man 63, Cascade Orphan 84). The
+bestiary stores printed DICE: "Two attacks, +7 vs Defense, 1d8+4 Ballistic (8)". Raising the Wetwork
+Operative from 16 to 23 a round means choosing new dice and a new bonus, and 1d8+7 against 2d6+5 is
+an authorial choice, not arithmetic. Inventing them would put numbers on a transcribed page that the
+book does not print, which is the one thing bestiary.js's own header forbids. Six statblocks need
+their revised dice quoted before this can move.
+
+PAINTED SHOT. The ruling says it "was renamed" and does not say to what. One line in threats.js,
+waiting on a name.
+
+THE TWO TRUNCATED VARIANTS, and this is a pre-existing defect the ruling happens to land on. Corpsec
+Sergeant reads `"Vitality 60, Defense 14, Save DC 14. Adds"` and Wiredog Pack Alpha reads
+`"Vitality 45, Defense 15. Adds"`. Both stop mid-sentence with their added abilities missing, and
+neither carries a damage number at all, so there is nothing in them to raise to 17 and 15. They need
+re-transcribing, not patching.
+
+**Two claims in the ruling that the data already satisfies.** Rustmaw and the Sublevel Angler are
+each said to gain a second attack, having printed only one. Both already carry two: Rustmaw has Bite
+and Tail Sweep, the Angler has Jaw and Tongue Lash. And the action-tag expansion from four to seven
+needs no change at all, because `cost` is free text with no enum or validator anywhere, and no
+printed threat uses Move, Free or Complex. Nothing to widen.
+
+**One filing question.** Sentry Turret is `role: "Deadshot"` in the data while the ruling groups it
+with the Controller change. Its Vitality moved to 22 as stated, since that number is explicit, but
+its role was left alone, since the ruling does not say to change it. Worth noting that Deadshot
+already carried `vitalityMult: 0.75`, so the Turret's printed 30 was out of line with its own role
+before any of this.
+
+**Saved threats are untouched, by design.** gmstore.js stores the resolved block rather than the
+inputs, precisely so a later correction to threats.js cannot silently change a statblock a GM
+already used at the table. So the Controller change reaches new builds only. That is intended, not a
+gap, and no migration should be written for it.
+
 ## Handoff sections 6, 8, 9 and 10: branches, a conversion rule, a column, five corrections, 2026-09-18
 
 **Section 6, the out-of-combat branches.** Ten gear entries lost theirs and two kept theirs with the

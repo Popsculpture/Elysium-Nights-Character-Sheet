@@ -83,7 +83,17 @@ EN.threats = {
       text: "One good angle, one heavy hit. Dies fast when found, which is the game." },
     { key: "ghost", name: "Ghost", vitalityMult: 0.75, defense: 1,
       text: "Opens from Stealth against Passive Perception. First hit from hiding gains Edge. Relocates after." },
-    { key: "controller", name: "Controller", damageMult: 0.75, saveDC: 1,
+    /* `vitalityMult` added 2026-09-18: the Roles table gave Controller a Vitality clause to match
+       its damage one, so it now reads -25% damage, -25% Vitality, Save DC +1.
+
+       TWO PRINTED PAGES DISAGREE WITH WHAT THIS GENERATES, both knowingly. A Gauge 2 Controller
+       computes 30 x 0.75 = 22.5, and vit() rounds half UP by documented choice (see gmengine.js,
+       where the reason is that Role percentages can drive a G1 Minion's 6 down to 4.5), so the
+       builder says 23 where the book prints 22 for the Street Shaper and the Sentry Turret. And
+       the Reclamation Bloom is a stated exception at 55 against a computed 38, because it is
+       rooted. The rounding is not changed here: which way a half rounds is a rules call the
+       ruling does not make, and flipping it would move every other .5 in the table. */
+    { key: "controller", name: "Controller", damageMult: 0.75, vitalityMult: 0.75, saveDC: 1,
       text: "Trades damage for conditions and terrain: Restrains, Blinds, herds the crew into worse rooms." },
     { key: "support", name: "Support", damageMult: 0.75,
       text: "Keeps the others standing: restores Vitality equal to twice its Gauge as an Action, or grants an ally Edge. Kill the medic first is a proverb for a reason." }
