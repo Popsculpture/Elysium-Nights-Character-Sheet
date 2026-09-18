@@ -4025,6 +4025,22 @@ Resonance Coil, Saint's Knot, Hex Lattice Projector, Martyr's Halo, the Ablative
 and the Cyber-Reinforced Vitality talent. These need a STORED PICK per item, which is a state
 change of the same kind as the Versatile grip, not a lookup.
 
+(SUPERSEDED 2026-09-18. **This list is wrong in two directions, and it contradicts category C
+in this same four-way split.** The four Warding Foci in it, Resonance Coil, Saint's Knot, Hex Lattice
+Projector and Martyr's Halo, are not acquisition picks at all: nothing is chosen and nothing is
+stored, the type is whatever just hit you, and this same entry files them correctly under C.
+And the list misses one, the Warframe Shell, which picks a physical type on acquisition exactly
+as the Ablative Coating does.
+
+The real set is **six grants and seven picks**, the seventh because the Reliquary Shell picks
+two: Veilskin, Aegis Shroud, Reliquary Shell, Warframe Shell, the Ablative Coating mod, and the
+Cyber-Reinforced Vitality talent's Upgrade. They draw on **three** option lists, not one:
+Fire/Electric/Cold for the Veilskin, those three plus Resonant for the two heavy Mystech suits,
+and the four physical types for the Warframe Shell, the Coating and the talent. All six are
+built now, each through its own resolver and each granting nothing until the player answers.
+See "Stored picks" (2026-09-16), "The four armour suits stop asking a question the sheet could
+not hear" (2026-09-17) and "The Ablative Coating burns away" (2026-09-18).)
+
 **C. Transient.** "When your Ward reduces an attack's damage to 0, you gain Resistance to that
 damage type until the start of your next turn." Four Warding Foci.
 
@@ -4033,6 +4049,13 @@ Axiomatic Mind to Confused, and others. A different axis entirely: a condition i
 type, and it wants its own channel rather than being crammed into this one.
 
 Only **A** is built here. B, C and D are recorded above as the follow-ups they are.
+
+(SUPERSEDED 2026-09-18. **B and D are built too now.** D got its own channel almost immediately,
+`conditionImmunities`, on the grounds this entry gives: a condition is not a damage type. B took
+until 2026-09-18 and is described in the three entries named above. **C is still out, and still
+correctly so**: a Ward that reduced an attack to 0 grants Resistance until the start of your next
+turn, and the sheet models no such window. That is the one of the four that was never a plumbing
+problem.)
 
 ### The arithmetic is the book's
 
@@ -8965,10 +8988,15 @@ wire the one Talent grant through it, and fix the mod that was already lying.
 nine (Resonance Coil, Saint's Knot, Hex Lattice Projector, Martyr's Halo) are Warding Foci whose
 text is "When your Ward reduces an attack's damage to 0, you gain Resistance to that damage type
 until the start of your next turn." Nothing is chosen and nothing is stored; the type is whatever
-just hit you. The note contradicts itself on the same screen, filing them under B at line 4024 and
-under C, transient, at 4031. C is right. And it missed one: the Warframe Shell picks a physical
+just hit you. The note contradicts itself on the same screen, filing them under B at line 4022 and
+under C, transient, at 4044. C is right. And it missed one: the Warframe Shell picks a physical
 type on acquisition exactly as Ablative Coating does. So the real set is seven, not nine, across
 FOUR different option lists rather than one, which is why the table stores options per grant.
+(CORRECTED 2026-09-18: **six grants and seven picks**, not seven grants; the seventh pick is the
+Reliquary Shell's second. And **three** option lists, not four: Fire/Electric/Cold, those three
+plus Resonant, and the four physical types. Counting the Reliquary Shell's arity as a fourth list
+was the slip. The conclusion it supports, that options belong per grant rather than in one shared
+menu, is unaffected and right.)
 
 **The machinery**, cloned from `ch.talentAttrPicks` because that is the same problem already
 solved. `ch.resistPicks` on the record, created in `newCharacter` and rebuilt in the migration
