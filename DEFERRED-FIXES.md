@@ -8637,6 +8637,41 @@ carried a comment about Weapon Focus Caliber that `pdfexport.js` lacked. That is
 discipline `parseUses` got earlier today, and for the same reason, since a plain diff is what
 turns the next drift into something anyone can see.
 
+## Marking becomes Tracing, and its status becomes Traced, 2026-09-18
+
+Section 7 of the 2026-09-18 handoff. Four lines in two data files, and one of them is a KEY.
+
+The weapon trait `Marking` collided with the Hustler's Mark, and the lowercase "marked" status it
+applied collided with it twice over. The trait is `Tracing` now and the status is the capitalized
+`Traced`. Both texts are the book's, verbatim.
+
+**The key rename is the whole risk.** `EN.gearCatalog.weaponTraits` is keyed by trait name and
+Tracer Rounds carries `traits: ["Tracing"]`, so the two have to move together or the trait chip
+renders with a silently blank tooltip. Verified in the running app rather than by reading: the chip
+reads "Tracing" and its title carries the full glossary text.
+
+**A divergence that is deliberate and must not be reconciled.** The Tracer Rounds effect line lost
+its out-of-combat branch under section 6's ruling, which stripped those from the specialty ammo. The
+Tracing glossary entry KEPT its "+1 Edge Die on out-of-combat Dice Pools" clause. The author saw
+that and let it stand, so the two entries now say slightly different things on purpose.
+
+**Left alone, deliberately.** Tracer Rounds' own `desc` says the rounds "tag what they touch". The
+handoff is explicit that "tag" is load-bearing ordinary vocabulary across the book (Reputation Tag,
+Tag Eraser, #PRINT, keyword tags) and must not be promoted to a term, so the flavour line is
+untouched. So is the drawback, which keeps its own out-of-combat branch because nothing in the
+handoff removes it. And `Traced` is not to be confused with `Trace`, the #GRID consequence you
+accrue, which is a different system with its own deck traits; all three of Trace-Resistant
+Signature, Trace Cutter and Trace Evasion are untouched.
+
+**One thing NOT done, and it is a question rather than an omission.** The handoff calls `Traced` "a
+new capitalized condition" but, unlike Suppressed in section 1, quotes neither a summary-table row
+nor a chapter entry for it. Writing one would mean inventing rules text for the app's Conditions
+Library, which is the canonical reference a player reads. The repo already has a precedent for a
+capitalized status with no chapter entry: Pinned never had one either, and the note above the
+Full-Auto trait recorded that its definition travelled with the trait instead. Tracing's glossary
+entry now does the same job. If Traced does have a Conditions chapter entry in the book, it wants
+adding and the text has to come from the author.
+
 ## The 2026-09-18 handoff: conditions, cipher field, action tags, 2026-09-18
 
 An 18-finding manuscript consistency audit arrived as a self-contained handoff. Seven report-back

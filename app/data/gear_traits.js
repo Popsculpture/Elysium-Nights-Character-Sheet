@@ -44,7 +44,13 @@ EN.gearCatalog.weaponTraits = {
      calls it a Follow-Up Attack, and the Light trait Effect line is the only place the rule
      is stated positively at all. The encumbrance clause was invented and is gone. */
   "Light": "Compact and easy to handle in one hand. Light weapons qualify as off-hand weapons, so you can use one for a Follow-Up Attack. They can be carried discreetly under loose clothing without counting as Concealable.",
-  "Marking": "The first hit each round marks the target for a short time. While marked, you and your allies gain Edge on in-combat ranged attack rolls against it, or +1 Edge Die on out-of-combat Dice Pools.",
+  /* `Marking` until 2026-09-18. The old name collided with the Hustler's Mark, and its status was
+     a lowercase "marked" that collided with it twice over. Renamed to Tracing, and the status it
+     applies is now the capitalized condition Traced. Not to be confused with Trace, the #GRID
+     consequence you accrue, which is a different system with its own deck traits. This is an
+     object KEY, so it moves in lockstep with the traits array on Tracer Rounds or the chip's
+     tooltip silently goes blank. */
+  "Tracing": "The round tags whatever it touches so the rest of the crew can find it. The first hit each round applies Traced to the target until the start of your next turn. While Traced, you and your allies gain Edge on in-combat ranged attack rolls against it, or +1 Edge Die on out-of-combat Dice Pools.",
   "Mutating": "On a hit, the Target gains one stack of the Mutating condition. The Target may attempt a Body Save (DC 12) to resist the infection, taking the damage but no stack on a success. See the Mutating condition for stack effects and treatment.",
   "Nonlethal": "If damage from this weapon reduces a Target to 0 Vitality, that Target is immediately rendered Unconscious.",
   "Obscuring": "Areas affected by an Obscuring effect count as heavily obscured for sight-based targeting. Targets in the area are harder to target with attacks that require clear visual contact.",
