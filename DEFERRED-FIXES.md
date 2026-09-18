@@ -8768,10 +8768,75 @@ rendered nowhere, so nothing is showing a player the wrong rule while it waits f
   is Breakflow OUTRIGHT. So the field now states both routes and says which is which, instead of
   listing them as though they were the same kind of trigger. See the entry below.
 
-**Also noticed.** Hardware Mastery is filed inside the Codebreaker capstone "SysAdmin (Root
-Access)", not in the Rigger subclass the ruling names. The Rigger's four features are Hardware
+**Also noticed.** Hardware Mastery is filed inside the level 9 Codebreaker class feature "SysAdmin
+(Root Access)", not in the Rigger subclass the ruling names. The Rigger's four features are Hardware
 Integration, Cybernetic Overclock, Swarm Commander and Iron Reign, and none mentions repair cost. So
 either the app misfiled it or the manuscript moved it, and that is worth one look.
+
+  **CLOSED 2026-09-18 in the app's favour: the manuscript was read and it agrees with the code.**
+  The word "capstone" above was wrong and has been corrected in place, because it is the likeliest
+  seed of the confusion: SysAdmin (Root Access) is the LEVEL 9 CLASS feature, and the capstone is
+  the separate level 10 Subclass Capstone row. See the entry below.
+
+## Hardware Mastery was filed correctly all along, 2026-09-18
+
+The 2026-09-18 handoff placed Hardware Mastery in the Codebreaker's Rigger subclass. The app has it
+as the third bullet of the level 9 CLASS feature SysAdmin (Root Access), where every Codebreaker
+gets it regardless of subclass. Read against the live manuscript, THE APP IS RIGHT AND THE HANDOFF
+MISFILED IT. Nothing in app/data changes.
+
+**HOW IT WAS SETTLED, since "I looked and it seemed fine" is not an answer.** Five readers went into
+the live Parts independently, three at Part 1 from different angles and one each at Parts 2 and 3,
+then three adversarial lenses tried to break the result. The lenses split by job: one judged only
+what was actually quoted, one hunted for disagreement between the readers, one attacked the
+question's own premises. All three returned the same verdict and none refuted it.
+
+**THE DECIDING FACT IS STRUCTURAL, NOT POSITIONAL.** The strongest evidence is not that the bullet
+sits under a class heading, which is the kind of claim a reader can get wrong. It is that the
+manuscript's own subclass preamble says a Codebreaker subclass "grants you features at Levels 1, 3,
+7, and 10". Level 9 is not in that set, so a level 9 subclass feature is impossible whatever the
+headings say. The Features Table row confirms it independently, carrying the feature name directly
+rather than a "Subclass Feature" placeholder. Level 10 is the Subclass Capstone, a separate row.
+
+**THE RIGGER WAS CHECKED DIRECTLY, not merely by absence.** Its four features are exactly the four
+the app has, and the nearest thing to an economic clause in any of them is Iron Reign's "Built to
+Last: Companion Drones rebuilt during Downtime cost no salvage" and Hardware Integration's 𝒢100 in
+salvage to rebuild a drone. Both are a drone economy, neither is a discount on deck Integrity
+repair. "Hardware Mastery" occurs exactly once across all three Parts.
+
+**WHY THE HANDOFF PROBABLY SLIPPED, recorded so it is not re-litigated.** Two genuine features sit
+one name away: the Rigger's level 1 Hardware Integration and the Burner's level 3 Hardware Override.
+The name reads like Rigger material. The filing is not. All three are separate entries in the app
+already.
+
+**AND THE BASELINE IS NOT ORPHANED.** One reader worried that Part 1 never defines the rule Hardware
+Mastery discounts. Part 2 does, under The #GRID, at 𝒢10 per 5 Integrity restored with Bricked parts
+at 𝒢100 x (Tier + 1). Those are the exact numbers the feature halves and leaves alone, and
+app/data/grid.js already carries them verbatim. The feature and its baseline agree across two Parts
+and the app.
+
+**TWO REAL PROBLEMS SURFACED ON THE WAY, both verified against the code rather than taken on the
+readers' word, and both needing a ruling rather than a patch.**
+
+1. **#GRID Initiative pays a different number in two places, and the app has imported the split.**
+   The Codebreaker chapter says "immediately regain 3 Bandwidth"; Part 2's Class Resources chapter
+   says it "restores 2 Bandwidth". The app is faithful to both, which means it now contradicts
+   itself: class_codebreaker_fury.js and briefs.js say 3, class_stitcher_resources.js says 2. A
+   player reading the Bandwidth resource entry and a player reading the level 9 feature get
+   different numbers. The class chapter is the more specific source, so the resources paragraph
+   looks like the stale one, but which number is right is Brandon's call and the fix belongs in the
+   manuscript first.
+
+2. **"Bricked" is two different things, and the Conditions Library only describes one.** The
+   condition entry says a bricked device is out "until properly repaired" and lists repair as the
+   only way to end it. But three gear entries apply it as a one-round status: EMP Rounds and the
+   Pulse trait leave a target "Bricked or Breached until the end of its next turn". Those cannot
+   both be the same condition. Either the gear means a lighter status that wants its own name, or
+   the condition needs a second tier with a duration. This one predates the handoff and is not
+   caused by it.
+
+**NOT ACTED ON, deliberately.** Neither of the two above is patched here. Both are rules decisions,
+and inventing either answer would put text in the app that the book does not print.
 
 ## The third stale Breakflow trigger, and why listing it was the bug, 2026-09-18
 
