@@ -8778,6 +8778,41 @@ either the app misfiled it or the manuscript moved it, and that is worth one loo
   seed of the confusion: SysAdmin (Root Access) is the LEVEL 9 CLASS feature, and the capstone is
   the separate level 10 Subclass Capstone row. See the entry below.
 
+## #GRID Initiative restores 3, and the app stops contradicting itself, 2026-09-18
+
+One number. Raised two entries ago, when settling the Hardware Mastery filing turned up the app
+saying two different things about the same bullet. Brandon ruled 3 and corrected the manuscript, so
+this is the app following rather than deciding.
+
+**WHY THE APP DISAGREED WITH ITSELF, which is worth keeping because the cause will recur.** Neither
+side was a transcription error. The Codebreaker chapter's level 9 feature says "immediately regain
+3 Bandwidth" and Part 2's Class Resources chapter said the same bullet "restores 2 Bandwidth". Both
+were copied faithfully, from two chapters of the book that disagreed. So the app imported a
+manuscript contradiction intact and then printed both halves in different tabs: a player reading
+the level 9 feature got 3, a player reading the Bandwidth resource summary got 2. Faithful
+transcription is the right default and it is exactly what let this through, which is the argument
+for cross-checking a number against its other homes rather than only against its source.
+
+**THE FIX IS ONE STRING.** class_stitcher_resources.js carried the only stale copy. The other two
+sites already said 3: the level 9 feature in class_codebreaker_fury.js and its one-line brief in
+briefs.js. Checked rather than assumed: every other "2 Bandwidth" in the app is an unrelated spend
+cost, Swarm Commander, Memetic Virus, Reality Overwrite, Vector Worm, Kill Code and the Complexity
+4 to 5 cipher price, and none of them is a recovery. Verified live in the running app that all
+three now read 3 and that the file still parses.
+
+**NOTHING COMPUTES IT.** The number is prose in all three places, so there is no engine path to
+keep in step. That is also why the disagreement could sit there quietly: no derived value ever had
+to pick a side and expose the split.
+
+**NOTICED IN THE SAME PARAGRAPH, NOT FIXED.** The Bandwidth entry's "What Bandwidth Fuels" section
+names its examples as "Flash Breach, Overclock Cipher, Spoof IC, Rigger drone support features".
+Flash Breach is real; the other two are not names the app has anywhere. The nearest real abilities
+are Cipher Overdrive and Targeting Spoof, and the whole paragraph is written in draft scaffolding
+voice ("Examples already present in the draft include"), which suggests the Class Resources chapter
+is carrying placeholder names from an earlier pass. That is the same chapter that was just found
+stale on the Bandwidth number, so it may be worth a look as a whole rather than name by name. Left
+alone because renaming abilities in a transcribed chapter is an authorial edit, not a correction.
+
 ## Bricked means two different things, and the book is where they diverge, 2026-09-18
 
 Raised in the previous entry as one of two things needing a ruling. It was investigated rather than
@@ -8920,6 +8955,9 @@ readers' word, and both needing a ruling rather than a patch.**
    different numbers. The class chapter is the more specific source, so the resources paragraph
    looks like the stale one, but which number is right is Brandon's call and the fix belongs in the
    manuscript first.
+
+   **CLOSED 2026-09-18: ruled 3, and the manuscript was corrected first.** The class chapter was
+   the stale-free one, as suspected. See the entry below.
 
 2. **"Bricked" is two different things, and the Conditions Library only describes one.** The
    condition entry says a bricked device is out "until properly repaired" and lists repair as the
