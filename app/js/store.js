@@ -223,6 +223,15 @@ EN.store = (function () {
          in-session runs on a prototype-polluted mods map until its first reload. Read through
          engine.armorResistPicks, never directly. */
       armorResistPicks: Object.create(null),
+      /* The Ablative Coating's install-time damage type AND whether it has burned away, per
+         ARMOR ENTRY: {armorEntryKey: {type: "Ballistic", spent: false}}. An object rather than
+         a bare string because this mod carries two facts where the suits carry one. A second
+         NAMED per-mod map rather than a general one because the catalog has exactly two mods
+         with install-time state (this and the Thermal Regulation Weave, which lives under
+         ch.hazards because it is also a hazard mitigation); a third would be the point to
+         generalise, not the second. Null-prototype, because the keys come out of a save file.
+         Read through engine.ablativeState, never directly. */
+      ablativeCoating: Object.create(null),
       loadout: "standard",               // declared Loadout: "light" | "standard" | "heavy", sets the Load Budget
       haul: "none",                      // active Haul: "none" | "lift" (body-sized) | "drag" (oversized/double)
       glimmer: 0,
@@ -1179,6 +1188,26 @@ EN.store = (function () {
       if (list.length) arpOut[k] = list;
     });
     ch.armorResistPicks = arpOut;
+    /* ...and the Ablative Coating's type and spent flag, against the same eqKeys for the same
+       reason: one liveness set for everything keyed on an armor entry. Shape only again, so
+       whether "Slashing" is on this mod's menu stays the engine's question, asked on read. A row
+       carrying neither a usable type nor a set flag is dropped, so an untouched coating leaves
+       nothing behind. Note what is NOT checked: whether the coating is still fitted to that
+       suit. Pulling a mod does not clear its tuning here any more than it does for the weave,
+       and the engine never looks unless the mod is on the suit, so a re-fitted coating inherits
+       the build the suit remembers. */
+    var abIn = (ch.ablativeCoating && typeof ch.ablativeCoating === "object" && !Array.isArray(ch.ablativeCoating))
+      ? ch.ablativeCoating : {};
+    var abOut = Object.create(null);
+    Object.keys(abIn).forEach(function (k) {
+      if (!eqKeys[k]) return;
+      var v = abIn[k];
+      if (!v || typeof v !== "object" || Array.isArray(v)) return;
+      var t = (typeof v.type === "string" && v.type) ? v.type : null;
+      var sp = !!v.spent;
+      if (t || sp) abOut[k] = { type: t, spent: sp };
+    });
+    ch.ablativeCoating = abOut;
     hz.hazmatTorn = !!hz.hazmatTorn;
     if (typeof hz.rebreatherMinutes !== "number" || !isFinite(hz.rebreatherMinutes) || hz.rebreatherMinutes < 0) hz.rebreatherMinutes = 60;
     hz.rebreatherMinutes = Math.min(60, Math.floor(hz.rebreatherMinutes));

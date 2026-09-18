@@ -8614,6 +8614,127 @@ carried a comment about Weapon Focus Caliber that `pdfexport.js` lacked. That is
 discipline `parseUses` got earlier today, and for the same reason, since a plain diff is what
 turns the next drift into something anyone can see.
 
+## The Ablative Coating burns away, and the sheet finally watches it happen, 2026-09-18
+
+The last unwired damage-type menu in the game, and the awkward one, because its clause has a second
+half nothing else in the resistance pipeline has: "Choose Ballistic, Piercing, Slashing, or
+Bludgeoning when you install it. You gain Resistance to that damage type. The first time each scene
+a hit of that type would carry through to your Wounds, the coating burns away instead: ignore that
+damage, then the mod is spent and grants no Resistance until you re-layer it in downtime."
+
+So the record carries a SPENT flag as well as a type, and this is the first thing in
+damageResistances conditional on a state the player burns rather than a standing fact about the
+record. Everything else in there is a lease that is paid or unpaid, a menu answered or unanswered,
+a class that is Attuned or not.
+
+**THE BURN IS MANUAL, and not as a compromise.** applyDamage takes a bare number the player has
+already reduced by DR and halved for Resistance BY HAND, because the app does not do that
+arithmetic: d.totalDR and d.resistances are display only, and nothing in the app halves, doubles
+or subtracts anything for incoming damage. There is no damage type anywhere in the incoming path
+either, so by the time the sheet sees the hit it cannot tell a halved Ballistic 6 from an unhalved
+Force 6, let alone whether the coating should have eaten it. Automating the trigger would mean
+inventing a typed incoming-hit channel for one mod, and it would be a lie the moment the player
+used the WOUND button instead, which bypasses applyDamage entirely. The player marks it, the way
+they mark a torn hazmat seal.
+
+**"The first time each scene" needs no machinery, and could not have any.** The app has no scene
+clock and says so in its own voice at combat.js:1635: "The app has no scene clock, and a turn is
+not a scene, so a full scene of exposure is something the table declares rather than something a
+turn tick can quietly add up to." The two per-scene values that exist (the Rebreather's minutes,
+caustic scene ticks) are reset by hand-pressed buttons. But it would not help anyway: the mod stays
+spent until it is re-layered, which is bench work and strictly longer than a scene, so nothing can
+restore it within one and the cap can never bind. The frequency clause is vestigial here. ch.featureUses
+would have been the wrong home three times over: it is keyed by feature NAME so two coated suits
+would share one flag, Short Rest wipes it, and nothing in the derive path reads it.
+
+**The record.** ch.ablativeCoating = {armorEntryKey: {type: "Ballistic", spent: false}}, null-prototype,
+in the newCharacter template. An object rather than a bare string because this mod carries two facts
+where the four suits carry one. A second NAMED per-mod map rather than a general one: the catalog has
+exactly two mods with install-time state, this and the Thermal Regulation Weave (which lives under
+ch.hazards because it is also a hazard mitigation), and a third would be the point to generalise,
+not the second.
+
+Keyed on the ARMOUR entry, not on the mod's own inventory row, and that is load-bearing rather than
+convenient. A loose Ablative Coating item is STACKABLE (isStackableItem returns true for anything
+with `armorMod`), so its equipment row can be merged into a pooled row and lose its id; an armour
+suit never pools. Measured, not assumed: a synthetic map keyed on a mod item's entry lost its key
+across one save and reload, while the suit's key survived. Keying on the suit also needs no per-copy
+index, because the bench refuses a second copy of a mod on one suit.
+
+migrate() prunes it beside the thermalWeave and armorResistPicks prunes and against the same eqKeys,
+so one liveness set answers for everything keyed on an armour entry. Shape only, again: whether
+"Slashing" is on this mod's menu is the engine's question, asked on read. Note what is NOT checked,
+deliberately: whether the coating is still fitted. Pulling a mod does not clear its tuning here any
+more than it does for the weave, and the engine never looks unless the mod is on the suit, so a
+re-fitted coating inherits the build the suit remembers.
+
+**Nothing is pushed while it is spent, and deliberately no "(spent)" row either.** d.resistances is
+a list of Resistances you HAVE; `level` is derived purely from which buckets are filled, and there
+is no level meaning "granted but suspended". A "(spent)" label pushed at resist level would render
+"Ballistic RESISTANT (Ablative Coating (spent))", which is false. So it says nothing there, and says
+it where its controls are.
+
+**Two controls, one flag, on purpose.** The type picker is on the Impact Table bench row, because
+"when you install it" IS that bench and because it is the only surface that addresses a mod on a
+specific suit including a spare in the stash. The burn toggle is there too, since re-layering is
+bench work, AND on the Freelancer tab's Defense chip, because burning happens mid-fight and the
+bench is three selections deep on another tab: nobody walks there between a hit and the next attack
+roll. The chip reads the same engine answer the bench does, so the two cannot disagree. gchip grew
+an OPTIONAL onclick rather than becoming clickable for everyone, and the chip keeps its own tag
+rather than gaining the .chip class, so the phone skin's 36px tap rung for .chip[cursor:pointer]
+does not resize the whole loadout row.
+
+**Two stale comments corrected while here.** RESIST_PICK's header still called this the last unwired
+member of the family. And damageResistances' own header still listed nine choose-one grants as
+"Deliberately NOT here", of which six are now in, and the other three were never acquisition picks
+at all: the four Warding Foci grant whatever type just hit you when your Ward reduces an attack to
+0, until the start of your next turn. Transient, not stored, and that comment had been filing them
+with the picks since before any of this shipped.
+
+**Verified.** Twelve engine cases: not fitted with a pick stored, fitted untuned, tuned, tuned and
+SPENT, an off-menu-but-real type, a bogus type, spent with no type, the coating on a spare while
+wearing the other suit, wearing the spare instead, no armour worn at all, a key of "toString", and
+the options list. Then the bench cycle in the real UI, untuned to tuned to burned to re-layered,
+with the Resistance appearing and disappearing from d.resistances at each step and the button and
+note flipping with it. Then the Defense chip in all three states, clicking both ways, cursor pointer
+only when tuned, with a non-ablative mod chip and the ARMOR chip both still non-interactive beside
+it. Then migrate() across a real save and reload: a live valid row keeps its spent flag, and a dead
+key, a bare string, an array and a row with nothing usable are all dropped.
+
+**The review caught a bug I introduced, and it was the interesting kind.** Four reviewers over the
+diff, three refuters per finding with distinct lenses, majority refute kills it. Twelve raised,
+eleven killed, one stood.
+
+The Defense panel's mod-chip loop checked only the MOD's own lease and never the SUIT's. That was
+merely over-generous for twenty commits, because every chip in that loop was a LABEL repeating
+catalog prose: a lapsed Bailiff Rig printed "Trauma Plates, +1 DR" while armorModDR was already
+returning 0 for it. It stopped being harmless the moment one of those chips became a CONTROL. On a
+lapsed suit the coating's chip would have read MOD BALLISTIC, claimed a Resistance
+damageResistances was not granting, since the whole worn-suit block is behind !worn.lapsed, and
+offered to burn it. A player following the chip's own instruction would have spent a
+once-per-downtime resource that was granting nothing at the moment of the click.
+
+Reachable without trying: the Bailiff Rig is the only leased Modular suit in the catalog, leaseTick
+flips leaseDue after seven Long Rests with no player intent, and nothing gates fitting a mod on the
+lease. So the fix is a lapse gate on the whole loop, not just on the coating: every mod on a lapsed
+suit now reads MOD INERT and says why, which is what hazardMitigations has always said in words
+("its lease has lapsed, so its mods grant nothing") and what armorModDR has always said in numbers.
+Verified on that exact repro: paid, the chip reads MOD BALLISTIC and the Resistances list carries
+Ballistic; lapsed, both go, the chip is not clickable and clicking it changes nothing; paid again,
+both come back with the coating unspent.
+
+Worth keeping straight for next time: my comment claimed "the chip reads the same engine answer the
+bench does, so the two can disagree about nothing", which was true and beside the point. The chip
+and the bench genuinely cannot disagree. The chip and the RESISTANCE LIST could, because
+ablativeState is asked about one suit by key and knows nothing about which suit is worn or whether
+its lease is paid. The comment says that now.
+
+**A limit worth knowing.** Armour mods do not appear on the print sheet or in the PDF at all: neither
+file contains the string "armorMod". So a spent coating is not named on the printed record; what the
+record shows is the truth about the Resistance, which is that you do not currently have it. Putting
+this one mod on those sheets when no other mod is there would be the odd choice, so it was left. If
+fitted mods ever do reach the printed record, this is one of the two with state to print.
+
 ## The four armour suits stop asking a question the sheet could not hear, 2026-09-17
 
 Veilskin, Aegis Shroud, Reliquary Shell and the Warframe Shell all print "when you acquire it,

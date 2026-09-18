@@ -36,6 +36,12 @@ EN.armorMods = {
     { key: "trauma-plates", name: "Trauma Plates", dr: 1, category: "plating", price: 400, rarity: "Uncommon", legality: "Legal", fits: "Any",
       grants: "+1 DR", effect: "Grants +1 Damage Reduction (DR). Flat DR from mods does not stack; if you run a second flat-DR mod, only the higher applies." },
     { key: "ablative-coating", name: "Ablative Coating", category: "plating", price: 450, rarity: "Uncommon", legality: "Licensed", fits: "Any",
+      /* The menu from the clause below, in the same field name the four armor rows use in
+         gear_armor.js, so "this row carries a choose-one" is one convention across the catalog.
+         The OPTIONS only: the answer belongs to one fitted copy and lives on ch.ablativeCoating
+         keyed by the armor ENTRY, alongside the spent flag this mod needs and those rows do not.
+         Read through engine.ablativeState. */
+      resistPick: { options: ["Ballistic", "Piercing", "Slashing", "Bludgeoning"] },
       grants: "Resistance to one physical type", effect: "Choose Ballistic, Piercing, Slashing, or Bludgeoning when you install it. You gain Resistance to that damage type. The first time each scene a hit of that type would carry through to your Wounds, the coating burns away instead: ignore that damage, then the mod is spent and grants no Resistance until you re-layer it in downtime." },
     { key: "reactive-plating", name: "Reactive Plating", category: "plating", price: 550, rarity: "Uncommon", legality: "Restricted", fits: "Plated",
       grants: "+1d6 to Block", effect: "When you choose Block, add +1d6 to the damage prevented. This stacks with the Plated trait's Block benefit, the suit's listed Block Bonus, and shield dice. Applies only when you Block." },

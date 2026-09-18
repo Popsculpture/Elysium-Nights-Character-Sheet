@@ -610,12 +610,11 @@ EN.engine = (function () {
      only once that Upgrade has actually been bought as a Universal Upgrade. Holding the Talent is
      not enough, and neither is being level 6.
 
-     One entry, and it stays one: this table is for TALENT menus only. The armor menus that
-     landed on 2026-09-17 are deliberately NOT here, because they hang off an equipment entry
-     rather than a talent key and because a gear row can carry its own options; see
-     armorResistOptions below and the note on the Warframe Shell in gear_armor.js. The last
-     unwired menu in this family is the Ablative Coating mod, which follows the armor rails and
-     not these, and needs a per-scene spent flag before its pick means anything.
+     One entry, and it stays one: this table is for TALENT menus only. The gear menus are not
+     here, because they hang off an equipment entry rather than a talent key and because a gear
+     row can carry its own options; see armorResistOptions and ablativeState below, the note on
+     the Warframe Shell in gear_armor.js, and the Ablative Coating row in armor_mods.js. With
+     that mod wired on 2026-09-18 the family has no unwired member left.
      Source: app/data/talents.js:283. */
   var RESIST_PICK = {
     "cyber-reinforced-vitality": { options: ["Ballistic", "Piercing", "Slashing", "Bludgeoning"], upgrade: true }
@@ -698,6 +697,50 @@ EN.engine = (function () {
     item = item || armorItem(keyToName(ch, key));
     if (!armorResistOptions(item)) return 0;
     return Math.max(0, armorResistCount(item) - armorResistPicks(ch, key, item).length);
+  }
+
+  /* ---- THE ABLATIVE COATING, the one grant in this family that can be SPENT -----
+     Same menu shape as the four suits, on an armor MOD row rather than an armor row, and keyed
+     the same way: per armor ENTRY. That is enough on its own, because the bench refuses a second
+     copy of a mod on one suit, so a suit holds at most one coating and a spare suit carries its
+     own build.
+
+     What makes it different is the second half of its clause: "The first time each scene a hit
+     of that type would carry through to your Wounds, the coating burns away instead: ignore that
+     damage, then the mod is spent and grants no Resistance until you re-layer it in downtime."
+     So the record carries a SPENT flag as well as a type, and while that is set this grants
+     nothing at all. It is the first thing in the resistance pipeline conditional on a state the
+     player burns rather than a standing fact about the record.
+
+     THE BURN IS NOT DERIVED, AND CANNOT BE. applyDamage takes a bare number the player has
+     already reduced by DR and halved for Resistance by hand, with no damage type anywhere in the
+     path, so the sheet cannot tell a halved Ballistic 6 from an unhalved Force 6, let alone
+     whether the coating should have eaten it. The player marks it, the way they mark a torn
+     hazmat seal. "The first time each scene" needs no machinery either: the app has no scene
+     clock, and it would not help, because the mod stays spent until it is re-layered, which is
+     bench work and strictly longer than a scene. Nothing can restore it within a scene, so the
+     cap can never bind. */
+  function ablativeMod() {
+    var m = (EN.armorMods && EN.armorMods.byKey && EN.armorMods.byKey["ablative-coating"]) || null;
+    return (m && m.resistPick && m.resistPick.options && m.resistPick.options.length) ? m : null;
+  }
+  function ablativeOptions() { var m = ablativeMod(); return m ? m.resistPick.options : null; }
+  /* The whole answer for one suit, in one object, so the bench row, the Defense chip and the
+     resistance pipeline cannot disagree about it. `fitted` is the bench's question, `type` and
+     `spent` the record's, and `live` the only one damageResistances asks. The type is validated
+     against the mod's own menu on read, as every other pick in this family is.
+
+     `live` deliberately does NOT fold in the worn gate. This is asked about ONE suit by key, and
+     its only engine reader is already inside `if (worn && worn.item && !worn.lapsed)`. So a
+     tuned, unburned coating on a spare in the stash reads live, which is the bench's question
+     ("is this one ready?") rather than the sheet's ("am I resistant right now?"). */
+  function ablativeState(ch, key) {
+    var opts = ablativeOptions();
+    var fitted = !!key && armorModsOn(ch, key).indexOf("ablative-coating") !== -1;
+    var row = ownVal((ch && ch.ablativeCoating) || null, key);
+    var t = (row && typeof row.type === "string" && opts && opts.indexOf(row.type) !== -1) ? row.type : null;
+    var spent = !!(row && row.spent);
+    return { fitted: fitted, options: opts, type: t, spent: spent, live: fitted && !!t && !spent };
   }
 
   /* Talents granting a standing Vitality bonus, a table in the same shape. The value is points
@@ -926,13 +969,22 @@ EN.engine = (function () {
      its traits (the Sealed trait grants Resistance to Toxic to any suit that has it),
      installed armor Mods, and installed chrome by tier.
 
-     Deliberately NOT here: the choose-one-on-acquisition grants (Veilskin, Aegis Shroud,
-     Reliquary Shell, Resonance Coil, Saint's Knot, Hex Lattice Projector, Martyr's Halo,
-     Ablative Coating, Cyber-Reinforced Vitality), which need a stored pick per item and are
-     a state change rather than a lookup; the transient ones (a Ward that reduced damage to
-     0 grants Resistance until your next turn). CONDITION immunity (Frightened, Bleeding,
-     Confused) got the separate channel this comment used to ask for: see conditionImmunities
-     right below, which is a different axis from a damage type and reads its own field. */
+     The choose-one-on-acquisition grants used to be excluded here for want of a stored pick.
+     They are all in now, each through its own resolver rather than through a data flag, and each
+     granting nothing until the player answers: Cyber-Reinforced Vitality's Upgrade through
+     resistPick (2026-09-16), Veilskin, Aegis Shroud, Reliquary Shell and the Warframe Shell
+     through armorResistPicks (2026-09-17), and the Ablative Coating through ablativeState
+     (2026-09-18), which is the only one that can also be spent.
+
+     Still NOT here, and correctly: the four Warding Foci (Resonance Coil, Saint's Knot, Hex
+     Lattice Projector, Martyr's Halo). This comment used to file them with the acquisition
+     picks, which was wrong twice over. Nothing is chosen and nothing is stored: the type is
+     whatever just hit you, granted when your Ward reduces an attack to 0 and gone at the start
+     of your next turn. They are transient, like the Ward clause they belong to.
+
+     CONDITION immunity (Frightened, Bleeding, Confused) got the separate channel this comment
+     used to ask for: see conditionImmunities right below, which is a different axis from a
+     damage type and reads its own field. */
   /* ---- Special senses granted by features --------------------------------
      ONE table. It used to be three: combat.js, printsheet.js and pdfexport.js each carried
      a copy, and they had drifted. Echo Sighted was in two of them and not the third, so a
@@ -1129,6 +1181,16 @@ EN.engine = (function () {
         if (m.key === "thermal-regulation-weave") {
           var tuned = ((ch && ch.hazards && ch.hazards.thermalWeave) || {})[worn.key];
           if (tuned === "Fire" || tuned === "Cold") pushResist(acc, "resist", [tuned], m.name);
+        }
+        /* The Ablative Coating, whose type is chosen at install and whose Resistance BURNS AWAY
+           on the hit it stops. Nothing is pushed while it is spent, and deliberately no row
+           qualified with "(spent)" either: this list is a list of Resistances you HAVE, `level`
+           is derived purely from which buckets are filled, and there is no level meaning
+           "granted but suspended". A spent coating says so where its two controls are, on the
+           bench row and on the Defense chip, rather than as a row here that contradicts itself. */
+        if (m.key === "ablative-coating") {
+          var ab = ablativeState(ch, worn.key);
+          if (ab.live) pushResist(acc, "resist", [ab.type], m.name);
         }
         pushResist(acc, "resist", m.resist, m.name);
         pushResist(acc, "vulnerable", m.vulnerable, m.name);
@@ -3983,6 +4045,7 @@ EN.engine = (function () {
     resistPick: resistPick, resistPickOptions: resistPickOptions, resistPickPending: resistPickPending,
     armorResistOptions: armorResistOptions, armorResistCount: armorResistCount,
     armorResistPicks: armorResistPicks, armorResistOwed: armorResistOwed,
+    ablativeOptions: ablativeOptions, ablativeState: ablativeState,
     effectiveAttributes: effectiveAttributes,
     // the Universal Upgrade slots holding a Talent an earlier slot already holds, so
     // the builder can say which slot is buying nothing

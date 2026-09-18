@@ -3260,8 +3260,15 @@ EN.combatView = (function () {
        rendered inside the Defend section (Actions panel), above the maneuvers.
        Equip them in Inventory → Stash; one armor, one shield, one focus at a time. */
     function defenseLoadoutEls() {
-      function gchip(label, name, parts, color) {
-        return el("div", { title: parts, style: { display: "inline-flex", alignItems: "center", gap: "6px", padding: "4px 9px", border: "1px solid " + color, borderLeft: "3px solid " + color, borderRadius: "4px", background: "rgba(0,0,0,.18)", cursor: "default" } }, [
+      /* `onclick` is optional and only the Ablative Coating passes one; every other caller of
+         this helper stays display-only, which is why the handler is added rather than the
+         element being made clickable for all of them. The chip keeps its own tag rather than
+         gaining the .chip class, so the phone skin's 36px tap rung for .chip[cursor:pointer]
+         does not resize the whole loadout row. */
+      function gchip(label, name, parts, color, onclick) {
+        var props = { title: parts, style: { display: "inline-flex", alignItems: "center", gap: "6px", padding: "4px 9px", border: "1px solid " + color, borderLeft: "3px solid " + color, borderRadius: "4px", background: "rgba(0,0,0,.18)", cursor: onclick ? "pointer" : "default" } };
+        if (onclick) props.onclick = onclick;
+        return el("div", props, [
           el("span.mono", { style: { fontSize: "8.5px", letterSpacing: ".14em", color: color } }, label),
           el("span", { style: { fontSize: "12px", fontWeight: 600, color: "var(--text)" }, text: name })
         ]);
@@ -3279,8 +3286,51 @@ EN.combatView = (function () {
         (eng.armorModsOn ? eng.armorModsOn(ch, dg.armorKey) : []).forEach(function (k) {
           var m = EN.armorMods.byKey[k]; if (!m) return;
           var mLapsed = eng.leaseLapsed && eng.leaseLapsed(ch, m.name);
-          chips.push(mLapsed ? gchip("MOD · LEASE DUE", m.name, DUE_TIP, "var(--danger)")
-                             : gchip("MOD", m.name, m.grants + ". " + m.effect, "var(--ember)"));
+          if (mLapsed) { chips.push(gchip("MOD · LEASE DUE", m.name, DUE_TIP, "var(--danger)")); return; }
+          /* A lapsed SUIT grants nothing and neither do its mods. The engine has always said so
+             in two places, armorModDR returning 0 and hazardMitigations answering "its lease has
+             lapsed, so its mods grant nothing", but this loop checked only the MOD's own lease
+             and printed the catalog line regardless. That was over-generous while every chip
+             here was a label. It stopped being harmless the moment one of them became a control:
+             an Ablative Coating on a lapsed Bailiff Rig would have read MOD BALLISTIC, claimed a
+             Resistance damageResistances was not granting, and offered to burn it. */
+          if (dg.armorLapsed) {
+            chips.push(gchip("MOD · INERT", m.name,
+              m.name + " is fitted to " + dg.armor.name + ", whose lease installment is due. A lapsed suit's mods grant nothing until you pay (Inventory > Stash).",
+              "var(--text3)"));
+            return;
+          }
+          /* The Ablative Coating is the only mod with live state, so its chip reports it and
+             flips it. The burn happens mid-fight, and the only other control for it is the mod
+             bench, three selections deep on another tab: nobody is walking there between a hit
+             and the next attack roll. Both controls read the same engine answer, so the chip and
+             the bench cannot disagree; the lapse gate above is what keeps the chip and the
+             RESISTANCE LIST in step, since ablativeState is asked about one suit by key and
+             knows nothing about which suit is worn or whether its lease is paid. */
+          if (m.key === "ablative-coating" && eng.ablativeState) {
+            var ab = eng.ablativeState(ch, dg.armorKey);
+            if (ab.options) {
+              if (!ab.type) {
+                chips.push(gchip("MOD · UNTUNED", m.name,
+                  "Choose Ballistic, Piercing, Slashing or Bludgeoning for this coating on the Impact Table bench (Inventory > Workbench). Until you do, it grants nothing.",
+                  "var(--warn)"));
+              } else {
+                chips.push(gchip(ab.spent ? "MOD · SPENT" : "MOD · " + ab.type.toUpperCase(), m.name,
+                  ab.spent
+                    ? "Burned away; it grants no Resistance until you re-layer it in downtime. Click to re-layer."
+                    : "Resistance to " + ab.type + ". Click when it burns away stopping a hit of that type that would have carried through to your Wounds.",
+                  ab.spent ? "var(--text3)" : "var(--ember)",
+                  function () {
+                    store.update(function (c) {
+                      c.ablativeCoating = c.ablativeCoating || Object.create(null);
+                      c.ablativeCoating[dg.armorKey] = { type: ab.type, spent: !ab.spent };
+                    });
+                  }));
+              }
+              return;
+            }
+          }
+          chips.push(gchip("MOD", m.name, m.grants + ". " + m.effect, "var(--ember)"));
         });
       }
       if (dg.shield) {

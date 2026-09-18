@@ -1696,6 +1696,54 @@ EN.inventoryView = (function () {
     });
     return rows;
   }
+  /* THE ABLATIVE COATING, the one fitted mod that carries state of its own: a damage type
+     chosen at install, and a Resistance that burns away on the hit it stops and stays gone
+     until the coating is re-layered.
+
+     The type lives HERE because "when you install it" is this bench, and because this is the
+     only surface that addresses a mod on a specific suit including a spare in the stash. The
+     burn toggle lives here AND on the Freelancer tab's Defense chip, deliberately, because the
+     two halves happen in different places: re-layering is bench work, and burning happens
+     mid-fight two inches from the Block button. One flag, two buttons.
+
+     Writes go through a read-modify-write of the whole row rather than a field poke, so the
+     two facts can never half-update into {type: "Ballistic"} with the flag silently dropped. */
+  function ablativeControls(ch, aKey) {
+    var ab = ENG().ablativeState ? ENG().ablativeState(ch, aKey) : null;
+    if (!ab || !ab.options) return null;
+    function write(type, spent) {
+      store.update(function (c) {
+        c.ablativeCoating = c.ablativeCoating || Object.create(null);
+        if (type || spent) c.ablativeCoating[aKey] = { type: type || null, spent: !!spent };
+        else delete c.ablativeCoating[aKey];
+      });
+    }
+    var sel = el("select", { style: { width: "auto", fontSize: "11px" }, onchange: function () {
+      write(this.value, ab.spent);
+    } }, [el("option", { value: "", selected: !ab.type, text: "- choose -" })].concat(
+      ab.options.map(function (t) { return el("option", { value: t, selected: ab.type === t, text: t }); })));
+    var note = !ab.type
+      ? "Choose a physical damage type. Until you do, this mod grants nothing."
+      : ab.spent
+        ? "Burned away. It grants no Resistance until you re-layer it in downtime."
+        : "Resistance to " + ab.type + " while you wear this suit. It burns away the first time a hit of that type would carry through to your Wounds.";
+    return el("div", { style: { margin: "0 0 6px", paddingLeft: "10px", borderLeft: "1px dashed var(--border2)" } }, [
+      el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } }, [
+        el("span", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" },
+          text: "RESISTANT TO" }),
+        sel,
+        !ab.type ? el("span.chip", { style: { fontSize: "8.5px", color: "var(--warn)", borderColor: "var(--warn)" },
+          title: "This mod grants Resistance to a damage type you have not chosen, so it is granting none." }, "UNCHOSEN") : null,
+        ab.type ? el("button.btn.sm", {
+          title: ab.spent
+            ? "Re-layer the coating. Bench work in downtime, and it grants its Resistance again."
+            : "Mark it burned away: it stopped a hit of its type that would have carried through to your Wounds, and grants nothing until re-layered.",
+          style: { color: ab.spent ? "var(--success)" : "var(--warn)", borderColor: ab.spent ? "var(--success)" : "var(--warn)" },
+          onclick: function () { write(ab.type, !ab.spent); } }, ab.spent ? "RE-LAYER" : "MARK BURNED AWAY") : null
+      ]),
+      el("p.help", { style: { margin: "3px 0 0", fontSize: "10.5px" }, text: note })
+    ]);
+  }
   function isModularArmor(armor) { return (armor.traits || []).indexOf("Modular") !== -1 || (armor.slots || 0) > 0; }
   function armorSlotCount(armor) { return armor.slots || 0; }
   function ownedArmor(ch) { return ownedPieces(ch, isDefensive); }
@@ -2257,6 +2305,7 @@ EN.inventoryView = (function () {
         ]),
         el("button.btn.sm", { title: "Pull " + m.name, style: { color: "var(--text3)" }, onclick: function () { removeArmorMod(aKey, key); } }, "✕")
       ]));
+      if (key === "ablative-coating") kids.push(ablativeControls(ch, aKey));
     });
     var fitting = (AM().mods || []).filter(function (m) { return armorModFits(m, it) && lo.indexOf(m.key) === -1; });
     var ownedOpts = fitting.filter(function (m) { return availableArmorModQty(ch, m) > 0; });
