@@ -8778,6 +8778,62 @@ either the app misfiled it or the manuscript moved it, and that is worth one loo
   seed of the confusion: SysAdmin (Root Access) is the LEVEL 9 CLASS feature, and the capstone is
   the separate level 10 Subclass Capstone row. See the entry below.
 
+## Attacks against you get two lanes and a count, 2026-09-19
+
+The last entry flagged this as optional: Traced sets the app's `edgeToAttackers` flag, whose banner
+reads "attacks against you gain Edge", while Traced is ranged only. Looking properly, the flag was
+wrong about more than Traced, and in a direction that mattered.
+
+**WHAT THE SINGLE BOOLEAN WAS CLAIMING.** Eight conditions set it and one banner spoke for all of
+them. Blinded, Restrained, Surprised and Stunned genuinely do say "attacks against you gain Edge".
+The other four do not. Paralyzed says MELEE attacks. Traced says RANGED attacks. Prone says melee
+Edge and, in the next bullet, RANGED SNAG. Unconscious says nothing about attacks at all; what it
+says is that you fall Prone.
+
+**PRONE IS THE ONE THAT MATTERED.** A player reading "attacks against you gain Edge" would hand a
+shooter Edge on a roll the book gives at Snag. That is a two-step error in the attacker's favour,
+and it also hid the only advantage being knocked down confers on the defender. Unconscious carried
+the same inversion, because what it actually grants is Prone's pair.
+
+**SO: TWO LANES, melee and ranged,** each taken from the condition's own printed text, and a banner
+that names the lane it is talking about.
+
+**THE REVIEW THEN CAUGHT TWO DEFECTS IN THE FIX, AND BOTH ARE WORTH RECORDING.**
+
+The first is the more interesting mistake. Cancelling Edge against Snag inside a lane is the book's
+own rule, and quoting it felt like enough: d20 Stacking says "Cancel opposing modifiers 1 for 1
+before rolling". But 1 for 1 is arithmetic on COUNTS, and the rule works three examples, not one:
+"2 Edge and 1 Snag: roll with Edge", "1 Edge and 3 Snag: roll with Snag", "1 Edge and 1 Snag:
+normal roll". Booleans can only ever produce the third. So a lane holding two Edge sources against
+one Snag reported a normal roll on an attack the book gives at Edge, which is the ORIGINAL defect
+running the other way. It takes three conditions, since none stacks a lane twice on its own, but
+Prone, Stunned and Traced all touch the ranged lane and none is exotic. The lanes are integer
+counters now and the reader resolves by net.
+
+The second is a condition the first audit missed. Invisible says "Attacks against you roll with
+Snag unless the attacker has a reliable way to perceive you", and its handler already said so in a
+note, but it set no lane. That is why `meleeSnag` had no writer anywhere in the repo: Invisible was
+its only one. Alone, Invisible rendered no banner at all while the note below it announced the
+Snag. Worse, Invisible plus Prone printed "melee: Edge" on a roll that cancels. It is wired now,
+with the perceive qualifier kept in the note, since the app cannot know what an attacker can see.
+
+**AND ONE CONDITION IS DELIBERATELY LEFT OUT, which a later audit will otherwise flag.** Cursed's
+"Mark of the Damned" does give every attacker Edge. It is also one roll on a twelve-entry Curse
+Effects table that the GM picks from, and nothing in the app records which curse a character
+carries. A lane would be wrong eleven times out of twelve, so Cursed keeps its note and stays out
+of the arithmetic. The comment in the data says so.
+
+**VERIFIED ACROSS TEN STATES, including every case the review predicted would fail.** Prone plus
+Stunned plus Traced now reads ranged Edge where it read normal; Blinded plus Prone plus Unconscious
+reads ranged Snag where it read normal; Invisible alone reads Snag in both lanes and paints green;
+Invisible plus Prone cancels the melee lane; Prone plus Traced cancels the ranged one; Prone,
+Traced and Paralyzed alone each read correctly; no conditions and Cursed alone both stay silent.
+
+**A NOTE ON THE TONE, since it is a small judgement call.** The banner is red while a lane still
+favours the attacker, green while one still favours you, and neutral when everything live has
+cancelled. Reading it off the raw flags instead of the net would have painted a fully cancelled
+pair red, which would undo the point of computing the net at all.
+
 ## Glitched arrives, and the Bricked timer collision closes, 2026-09-19
 
 The 2026-09-19 handoff, five sections, all applied. The headline is that the Bricked question this

@@ -1193,7 +1193,7 @@ EN.combatView = (function () {
        from whatever Save let you avoid it (Optic Scramble and Arc Lightning both use a Flow
        Save DC for that). Collapsing the two would break both abilities. */
     "Blinded": function (e) {
-      e.snagAtk = true; e.perceptionSnag = true; e.edgeToAttackers = true;
+      e.snagAtk = true; e.perceptionSnag = true; e.vsYou.meleeEdge += 1; e.vsYou.rangedEdge += 1;
       e.notes.push("Blinded: every space and Target is Obscured to you; Snag on attacks and sight checks; attacks against you gain Edge; abilities needing sight do not work. Low-Light, Thermal and Darkvision do not help, and Cyberoptics go dark. Body Save DC 12 at the end of your turn to end it");
     },
     "Deafened": function (e) {
@@ -1234,16 +1234,16 @@ EN.combatView = (function () {
     "Hallucinating": function (e) { e.perceptionSnag = true; e.snagChk.WIT = true; e.notes.push("Hallucinating: treat false stimuli as real; Wits Save DC 12 to ignore them"); },
     "Hardwired": function (e) { e.notes.push("Hardwired: targetable by Quick Hacks; Snag on saves vs EMP / viruses / Electromagnetic"); },
     "Incapacitated": function (e) { e.cannotAct = true; e.notes.push("Incapacitated: no Actions of any kind; minor Free Actions only"); },
-    "Invisible": function (e) { e.notes.push("Invisible: Edge on Stealth; attacks against you have Snag"); },
+    "Invisible": function (e) { e.vsYou.meleeSnag += 1; e.vsYou.rangedSnag += 1; e.notes.push("Invisible: Edge on Stealth; attacks against you have Snag unless the attacker has a reliable way to perceive you"); },
     "Lagged": function (e) { e.notes.push("Lagged: your actions resolve at the END of the round"); },
     "LinkDeath": function (e) { e.notes.push("LinkDeath: 2d6+ Psychic on failed save and Unconscious; Wits Save at end of turn to wake"); },
     "Mutating": function (e, l) { e.notes.push("Mutating " + l + " stack(s): Body Save DC " + (10 + l) + " at start of turn or suffer growth effects"); },
     "Panic": function (e) { e.notes.push("Panic: Wits Save DC 12 at start of turn or roll 1d6: Flight / Fight / Freeze"); },
-    "Paralyzed": function (e) { e.cannotAct = true; e.speedZero = true; e.edgeToAttackers = true; e.autoFailBodAgiSaves = true; e.notes.push("Paralyzed: auto-fail Body & Agility saves; melee vs you may crit"); },
+    "Paralyzed": function (e) { e.cannotAct = true; e.speedZero = true; e.vsYou.meleeEdge += 1; e.autoFailBodAgiSaves = true; e.notes.push("Paralyzed: auto-fail Body & Agility saves; melee vs you has Edge and may crit"); },
     "Poisoned": function (e) { e.snagAtk = true; e.snagChk.ALL = true; e.snagSave.BOD = true; },
-    "Traced": function (e) { e.edgeToAttackers = true; e.notes.push("Traced: the attacker and their allies have Edge on RANGED attacks against you (+1 Edge Die on related out-of-combat pools); ends at the start of the attacker's next turn"); },
-    "Prone": function (e) { e.edgeToAttackers = true; e.notes.push("Prone: melee vs you has Edge, ranged vs you has Snag; stand for half movement or a Swift"); },
-    "Restrained": function (e) { e.speedZero = true; e.snagAtk = true; e.snagSave.AGI = true; e.edgeToAttackers = true; },
+    "Traced": function (e) { e.vsYou.rangedEdge += 1; e.notes.push("Traced: the attacker and their allies have Edge on RANGED attacks against you (+1 Edge Die on related out-of-combat pools); ends at the start of the attacker's next turn"); },
+    "Prone": function (e) { e.vsYou.meleeEdge += 1; e.vsYou.rangedSnag += 1; e.notes.push("Prone: melee vs you has Edge, ranged vs you has Snag; stand for half movement or a Swift"); },
+    "Restrained": function (e) { e.speedZero = true; e.snagAtk = true; e.snagSave.AGI = true; e.vsYou.meleeEdge += 1; e.vsYou.rangedEdge += 1; },
     "Shaken": function (e) { e.snagAtk = true; e.snagChk.WIT = true; e.notes.push("Shaken: cannot take the Help Action or benefit from Edge from any source"); },
     /* Promoted from Operator class-local text to a full condition on 2026-09-18, because gear
        applies it too (Full-Auto in Suppress mode). It REPLACES Pinned, which the book retired,
@@ -1266,11 +1266,11 @@ EN.combatView = (function () {
       if (l >= 4) e.notes.push("Strain · Rend: Breakflow Check whenever you spend FP");
       if (l >= 5) { e.derived.push({ name: "Breakflow", from: "Strain 5 · Collapse" }); e.derived.push({ name: "Unconscious", from: "Strain 5 · Collapse" }); }
     },
-    "Surprised": function (e) { e.cannotAct = true; e.noSwift = true; e.noImpulse = true; e.speedZero = true; e.edgeToAttackers = true;
+    "Surprised": function (e) { e.cannotAct = true; e.noSwift = true; e.noImpulse = true; e.speedZero = true; e.vsYou.meleeEdge += 1; e.vsYou.rangedEdge += 1;
       e.notes.push("Surprised: no Action, Move, Swift, or Impulse on your first turn (Saves still allowed); attacks against you have Edge until the start of your second turn"); },
-    "Stunned": function (e) { e.speedZero = true; e.noImpulse = true; e.snagSave.BOD = e.snagSave.AGI = true; e.edgeToAttackers = true; e.notes.push("Stunned: no Move; only one Action OR Swift this turn"); },
+    "Stunned": function (e) { e.speedZero = true; e.noImpulse = true; e.snagSave.BOD = e.snagSave.AGI = true; e.vsYou.meleeEdge += 1; e.vsYou.rangedEdge += 1; e.notes.push("Stunned: no Move; only one Action OR Swift this turn"); },
     "Soul Shock": function (e) { e.snagChk.MYS = e.snagChk.WIT = true; e.notes.push("Soul Shock: +1d6 damage per repeat instance before resting"); },
-    "Unconscious": function (e) { e.cannotAct = true; e.speedZero = true; e.edgeToAttackers = true; e.autoFailBodAgiSaves = true; e.notes.push("Unconscious: drop items, fall Prone, unaware; lose Focus/Sustains and network links"); }
+    "Unconscious": function (e) { e.cannotAct = true; e.speedZero = true; e.vsYou.meleeEdge += 1; e.vsYou.rangedSnag += 1; e.autoFailBodAgiSaves = true; e.notes.push("Unconscious: drop items, fall Prone, unaware; lose Focus/Sustains and network links. Attacks against you follow Prone, which you fall into: melee has Edge, ranged has Snag"); }
   };
 
   // Aggregate effects across ALL active conditions, recursively including
@@ -1286,7 +1286,36 @@ EN.combatView = (function () {
   function condEffects(ch, d) {
     var e = { init: 0, saveDelta: 0, speedDelta: 0, speedHalved: false, speedZero: false, speedMin: 0,
               snagAtk: false, snagChk: {}, snagSave: {}, perceptionSnag: false,
-              edgeToAttackers: false, cannotAct: false, autoFailBodAgiSaves: false,
+              /* ATTACKS AGAINST YOU, PER LANE. This replaced a single edgeToAttackers boolean
+                 that rendered as "attacks against you gain Edge" for all eight conditions that
+                 set it. Three of the eight do not say that. Paralyzed and Prone grant Edge to
+                 MELEE only, Traced to RANGED only, and worst of all Prone's ranged half is a
+                 SNAG, in the defender's favour, which a flat "attackers have Edge" banner hid
+                 completely. A player reading it would hand a ranged attacker Edge on a roll the
+                 book says they take at Snag.
+
+                 Two lanes resolve independently. Edge against Snag WITHIN one lane is the book's
+                 own arithmetic, not a house call: Core Resolution, Edge and Snag, d20 Stacking
+                 says "Cancel opposing modifiers 1 for 1 before rolling" and gives "1 Edge and 1
+                 Snag: normal roll". So the reader reports a cancellation rather than inventing
+                 one, which matters because Prone plus Traced is a reachable pair.
+
+                 THESE COUNT SOURCES. They were booleans first, and that was wrong for the same
+                 reason the old single flag was wrong: cancelling 1 for 1 is arithmetic, and the
+                 rule works three examples, not one. "2 Edge and 1 Snag: roll with Edge" and "1
+                 Edge and 3 Snag: roll with Snag" sit beside the even case. A flag can only ever
+                 produce the even case, so a lane holding two Edge sources against one Snag would
+                 have reported a normal roll on an attack the book gives at Edge. It takes three
+                 conditions to reach, since no single one stacks a lane twice, but Prone, Stunned
+                 and Traced all touch the ranged lane and none of the three is exotic.
+
+                 CURSED IS DELIBERATELY ABSENT. Its Mark of the Damned result does give every
+                 attacker Edge, but that is one roll on a twelve-entry Curse Effects table the GM
+                 picks from, and nothing records WHICH curse a character carries. A lane here
+                 would be wrong eleven times out of twelve, so the condition says its piece in a
+                 note instead. */
+              vsYou: { meleeEdge: 0, rangedEdge: 0, meleeSnag: 0, rangedSnag: 0 },
+              cannotAct: false, autoFailBodAgiSaves: false,
               noImpulse: false, noSwift: false, derived: [], notes: [] };
     var applied = {};
     var queue = (ch.conditions || []).map(function (n) { return { name: n, from: null }; });
@@ -3592,9 +3621,24 @@ EN.combatView = (function () {
       blocks.push(el("div.muted-box", { style: { borderColor: "var(--danger)", color: "var(--danger)", marginBottom: "12px", textAlign: "left" },
         html: "⛔ <b>CANNOT ACT</b> · an active condition prevents you from taking actions." }));
     }
-    if (fx.edgeToAttackers) {
-      blocks.push(el("div.muted-box", { style: { borderColor: "var(--danger)", color: "var(--danger)", marginBottom: "12px", textAlign: "left" },
-        html: "🎯 <b>EDGE TO ATTACKERS</b> · attacks against you gain Edge from an active condition." }));
+    /* One line per lane, and only for lanes an active condition actually touches. Each lane
+       resolves by NET, cancelling sources 1 for 1 the way d20 Stacking says to, so two Edge
+       against one Snag reads as Edge rather than as a wash. Tone follows the net too: red while a
+       lane still favours the attacker, green while one still favours you, neutral when everything
+       live has cancelled out, because painting a cancelled lane red would undo the point. */
+    var vy = fx.vsYou || {};
+    var netMelee = (vy.meleeEdge || 0) - (vy.meleeSnag || 0);
+    var netRanged = (vy.rangedEdge || 0) - (vy.rangedSnag || 0);
+    var lanes = [];
+    [["melee", vy.meleeEdge, vy.meleeSnag, netMelee], ["ranged", vy.rangedEdge, vy.rangedSnag, netRanged]].forEach(function (L) {
+      if (!L[1] && !L[2]) return;
+      lanes.push(L[0] + ": " + (L[3] > 0 ? "Edge" : L[3] < 0 ? "Snag" : "normal roll (Edge and Snag cancel 1 for 1)"));
+    });
+    if (lanes.length) {
+      var tone = (netMelee > 0 || netRanged > 0) ? "var(--danger)"
+               : (netMelee < 0 || netRanged < 0) ? "var(--success)" : "var(--text2)";
+      blocks.push(el("div.muted-box", { style: { borderColor: tone, color: tone, marginBottom: "12px", textAlign: "left" },
+        html: "🎯 <b>ATTACKS AGAINST YOU</b> · " + lanes.join(" &nbsp;·&nbsp; ") + " &nbsp;·&nbsp; from an active condition." }));
     }
 
     /* vitality + vigor + wounds, compact console; controls live in popovers on the bar labels */
