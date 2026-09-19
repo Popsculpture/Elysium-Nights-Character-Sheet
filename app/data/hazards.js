@@ -155,7 +155,7 @@ EN.hazards = {
     { key: "rebreather", name: "Rebreather", kind: "Gear",
       source: { type: "gear", name: "Rebreather" },
       summary: "1 hour of thin air, and 1 hour against Drowning.",
-      note: "Its own entry gives up to 1 hour of active use, refreshing between scenes, and stops you beginning to Drown in water or low-oxygen air. Sixty minutes of a thin-air exposure pass with no save at all; the clock starts when the hour runs out. Against Drowning that hour is 600 rounds, at the book's 10 rounds to the minute. It does not cover vacuum, which is why the breath grant names its kind: Part 2 allows exactly two vacuum-rated paths and a face-slot mouthpiece is neither.",
+      note: "Its own entry gives up to 1 hour of active use, refreshing between scenes, and stops you beginning to Drown in water or low-oxygen air. Sixty minutes of a thin-air exposure pass with no save at all; the clock starts when the hour runs out. Against Drowning that hour is 600 rounds, at the book's 10 rounds to the minute. It does not cover vacuum, which is why the breath grant names its kind: the rules allow exactly two vacuum-rated paths and a face-slot mouthpiece is neither.",
       effects: { thinAirMinutes: 60, breathMinutes: { drowning: 60 } } },
 
     { key: "radiation-callouses", name: "Radiation Callouses", kind: "FreeBorn Trait",

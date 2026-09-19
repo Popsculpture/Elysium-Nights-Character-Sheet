@@ -92,7 +92,7 @@ EN.app = (function () {
             "you are writing on purpose. The tables already live in data/threats.js." },
     { key: "hazards",    label: "Hazards",    glyph: "⚠", sub: "module pending", portal: "admin", gated: adminReady,
       stub: "Set Pieces: the eight pre-written hazards, all authored at Grade 3, plus the DC ladder " +
-            "and bite tables Part 4 already prices." },
+            "and bite tables the Game Master's Toolkit already prices." },
     { key: "jobs",       label: "Job Board",  glyph: "▣", sub: "module pending", portal: "admin", gated: adminReady,
       stub: "The Job Board: five roll tables and twelve postings." },
     { key: "payroll",    label: "Payroll",    glyph: "◈", sub: "module pending", portal: "admin", gated: adminReady,

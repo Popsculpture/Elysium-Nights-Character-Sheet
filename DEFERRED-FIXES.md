@@ -8810,6 +8810,24 @@ The line that keeps this from becoming a blanket sweep: **source-code comments k
 numbers.** A developer reading a comment needs to know which of the four Docs to open, and there
 is no page to be faithful to inside a comment.
 
+**AND THEN THE THREE PROSE ONES CAME OUT TOO, on the author's call the same evening.** They had
+been left because they matched the shape of the one stated exception, vehicles.js's statsNote:
+the Part is a sentence subject or a possessive rather than a parenthetical citation. Ruled: out.
+These could not be deleted the way a parenthetical can, because the reference is grammatically
+load bearing, so each was rewritten rather than trimmed, and the rule was to substitute a REAL
+name or nothing at all.
+
+Only one of the three had a name available. app.js's Set Pieces stub now says "the Game Master's
+Toolkit", which is Part 4's own title and is already what two file headers call it. The other two
+got no name, deliberately: threats.js's "Dying on Part 2's clock" became "the usual clock" and
+hazards.js's "Part 2 allows exactly two vacuum-rated paths" became "the rules allow", because the
+app carries no Dying or Death Save rules at all and naming the chapter that states either
+constraint would have been a guess dressed as a citation.
+
+Verified by walking every string in EN at runtime rather than by grep, which catches strings a
+file search splits across concatenations: exactly one user-facing Part reference remains in the
+whole app, vehicles.js's statsNote, which is the stated exception.
+
 **AND THE PART WORTH KEEPING: A RENAME CHECKLIST, IN HANDOFF.md.** The lineage-feature rename
 that nearly shipped a data loss had a warning against it sitting three lines above the resolver
 it protected, and the warning did not fire. Not because it was unclear, but because the
