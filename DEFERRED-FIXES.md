@@ -8858,6 +8858,15 @@ went in at the positions the handoff names, which are correct in the app's order
 alphabetically. Reordering the two strays is a separate, cosmetic change and was left out of a diff
 that is otherwise about rules.
 
+  **CLOSED 2026-09-19, and the array now carries the invariant in writing.** Both strays moved:
+  Immunity ahead of Incapacitated, Soul Shock back into the S block between Silenced and Staggered.
+  Done as a verified permutation rather than by hand, asserting that the entry count, the set of
+  names and the total byte length were all unchanged and that no entry other than those two
+  changed relative position. The file gained a header comment stating that the array is sorted
+  case-insensitively and that both readers, the Codex reference and the tracker's picker, render it
+  in order without sorting, which is why an entry appended in the wrong place shows up in two
+  places. That comment is the actual fix; the sort is just this instance of it.
+
 ## #GRID Initiative restores 3, and the app stops contradicting itself, 2026-09-18
 
 One number. Raised two entries ago, when settling the Hardware Mastery filing turned up the app

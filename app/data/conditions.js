@@ -1,4 +1,12 @@
 window.EN = window.EN || {};
+/* ALPHABETICAL BY NAME, and it has to stay that way: js/codex.js renders this array in
+   order as the Conditions reference, and js/combat.js builds the tracker's "add a
+   condition" picker from it in order too. Neither sorts, because the data already is
+   sorted, so an entry appended in the wrong place surfaces in both views.
+
+   Sorted case-insensitively, which is why LinkDeath sits under L rather than between
+   Lagged and Mutating by its capital D. Re-sorted 2026-09-19, when Immunity had drifted
+   behind Incapacitated and Soul Shock had drifted to the end of the S block. */
 EN.conditions = [
   {
     name: "Bleeding",
@@ -125,14 +133,14 @@ EN.conditions = [
     text: "Your biology incorporates enough integrated technology that you bridge the gap between biological entity and machine. You do not gain the immunities of Machine Physiology, but your internal networks become permanently exposed to digital and electromagnetic interference.\n\nHow It Works:\n- System Exposure: You can be directly targeted by Hacker Quick Hacks and abilities that explicitly target \"systems,\" \"hardware,\" or \"networks.\"\n- Electromagnetic Interference: You suffer Snag on Saving Throws against EMP effects, digital viruses, and Flow Invocations tuned to the Electromagnetic Base Resonance.\n\nHow to End It:\n- Hardwired is a persistent condition tied to your Static Threshold. It does not end with a rest or a saving throw.\n- It ends only if you uninstall enough cyberware to drop your Total Static below Threshold 2 (5 SP), allowing your organic systems to regain dominance."
   },
   {
-    name: "Incapacitated",
-    summary: "Conscious but unable to act",
-    text: "You remain conscious but can't take meaningful action.\n\nHow It Works:\n- You can't take Actions, Move Actions, Swift Actions, Impulse Actions, or Complex Actions.\n- You may still speak and take very minor Free Actions, such as blinking a signal or mumbling a few words, if the fiction allows it.\n\nHow to End It:\n- Ends when the disabling effect is removed, such as a restraint being released, a stun field powering down, or a condition ending.\n- Restorative abilities may also remove Incapacitated."
-  },
-  {
     name: "Immunity",
     summary: "Take no damage of specified type",
     text: "You are unaffected by a specific type of harm.\n\nHow It Works:\n- You take no damage of the specified type. Attacks of that type may still carry narrative effects if the GM rules so, but they do not harm you mechanically.\n\nRules:\n- Immunity overrides Resistance and Vulnerability for the same damage type.\n- Multiple sources of Immunity to the same type do not stack."
+  },
+  {
+    name: "Incapacitated",
+    summary: "Conscious but unable to act",
+    text: "You remain conscious but can't take meaningful action.\n\nHow It Works:\n- You can't take Actions, Move Actions, Swift Actions, Impulse Actions, or Complex Actions.\n- You may still speak and take very minor Free Actions, such as blinking a signal or mumbling a few words, if the fiction allows it.\n\nHow to End It:\n- Ends when the disabling effect is removed, such as a restraint being released, a stun field powering down, or a condition ending.\n- Restorative abilities may also remove Incapacitated."
   },
   {
     name: "Invisible",
@@ -200,6 +208,11 @@ EN.conditions = [
     text: "Your mouth moves. Nothing comes out, or nothing carries far enough to matter.\n\nHow It Works:\n- You can't speak, shout, or be heard.\n- You can't use any ability that requires a Target to hear you.\n- A Cipher that lists Voice among its Components can't be run.\n- You are unable to use Flow Invocations that require verbalization.\n\nHow to End It:\n- Ends when the effect that caused it ends, or when you leave the area that caused it.\n- Medical or Flow restoration ends a Silenced condition caused by injury."
   },
   {
+    name: "Soul Shock",
+    summary: "Mystic backlash; take damage and mental penalties",
+    text: "A violent surge of Flow tears through both body and mind, leaving your spirit shaken and unstable.\n\nHow It Works:\n- When Soul Shock is inflicted, you immediately take 1d6 psychic or Flow damage.\n- You roll with Snag on Mystique and Wits checks (or add +1 Snag Die to related Dice Pools) until you complete a Short Rest.\n- Each additional instance of Soul Shock before you rest increases the damage by +1d6.\n\nHow to End It:\n- Ends after a Short Rest or Long Rest, or with targeted Flow healing that restores spiritual stability."
+  },
+  {
     name: "Staggered",
     summary: "Unsteady; slowed",
     text: "The world tilts and sways. Every movement feels unstable.\n\nHow It Works:\n- Your Speed is reduced by half.\n- You can't take Swift Actions or Impulse Actions.\n- If you become Staggered again while already Staggered, you become Stunned instead.\n\nHow to End It:\n- At the end of your turn, make a Wits Save DC 10. On a success, the condition ends.\n- Assistance from an ally, such as bracing or steadying you, may grant Edge on this save."
@@ -228,11 +241,6 @@ EN.conditions = [
     name: "Surprised",
     summary: "Caught off guard; no actions on your first turn",
     text: "Something moved before you did. An ambush, a hidden muzzle, a knife you never heard clear its sheath.\n\nHow It Works:\n- You are Surprised when combat begins and you were unaware of the threat: the attackers beat your side on a Stealth contest against Awareness, or the GM rules you were genuinely caught off guard. A Character aware of at least one hostile is not Surprised.\n- On your first turn of the encounter you can't take an Action, Move Action, Swift Action, or Impulse Action. You may still make Saving Throws.\n- Until the start of your second turn, attacks against you are made with Edge.\n\nHow to End It:\n- Surprised ends automatically at the start of your second turn."
-  },
-  {
-    name: "Soul Shock",
-    summary: "Mystic backlash; take damage and mental penalties",
-    text: "A violent surge of Flow tears through both body and mind, leaving your spirit shaken and unstable.\n\nHow It Works:\n- When Soul Shock is inflicted, you immediately take 1d6 psychic or Flow damage.\n- You roll with Snag on Mystique and Wits checks (or add +1 Snag Die to related Dice Pools) until you complete a Short Rest.\n- Each additional instance of Soul Shock before you rest increases the damage by +1d6.\n\nHow to End It:\n- Ends after a Short Rest or Long Rest, or with targeted Flow healing that restores spiritual stability."
   },
   {
     /* Added 2026-09-19, closing the gap flagged when the Marking trait became Tracing. Traced was
