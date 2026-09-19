@@ -8840,6 +8840,24 @@ Verified by walking every string in EN at runtime rather than by grep, which cat
 file search splits across concatenations: exactly one user-facing Part reference remains in the
 whole app, vehicles.js's statsNote, which is the stated exception.
 
+  **AND THEN TWO OF THE THREE GOT THEIR CHAPTER NAMES AFTER ALL, same evening.** The claim above
+  that naming them "would have been a guess dressed as a citation" was wrong, and wrong in a way
+  worth recording: both names were already in the app. Environmental Hazards is a Codex panel
+  whose own subtitle reads EXPOSURE, VACUUM, CAUSTIC, so vacuum is explicitly filed there. And
+  Vitality and Recovery is already cited by name in user-facing prose in basics.js, "covered in
+  Vitality and Recovery".
+
+  The mistake was in what was searched for. Looking for the RULES TEXT, a Dying clock or a
+  two-vacuum-paths clause, found nothing, and absence of the rule was read as absence of a name.
+  The chapter that would HOLD the rule was never searched for, and the Codex section list naming
+  both had been printed earlier in the same session. The lesson is narrow and reusable: when the
+  question is "what is this chapter called", search the table of contents, not the body.
+
+  Both now name their chapter: "Dying on the Vitality and Recovery clock" and "Environmental
+  Hazards allows exactly two vacuum-rated paths". Written with "and" rather than an ampersand to
+  match basics.js, the app's one existing prose citation of that chapter; the Codex uses "&" in
+  panel TITLES, which are headings rather than sentences.
+
 **AND THE PART WORTH KEEPING: A RENAME CHECKLIST, IN HANDOFF.md.** The lineage-feature rename
 that nearly shipped a data loss had a warning against it sitting three lines above the resolver
 it protected, and the warning did not fire. Not because it was unclear, but because the

@@ -151,7 +151,7 @@ EN.threats = {
     "Threats have Vitality only. No Vigor, no Wounds, no Resilience Dice.",
     "Conditions work normally, using the threat's listed save bonus.",
     "One defensive Impulse per round. Minions get none; Solos have their own economy.",
-    "Threats do not roll Death Saves. A target the crew is bringing in alive becomes Dying on the usual clock instead.",
+    "Threats do not roll Death Saves. A target the crew is bringing in alive becomes Dying on the Vitality and Recovery clock instead.",
     "Flat bonuses only. A threat has no proficiency tier and no Caliber."
   ],
   morale: "Optional. When a threat loses its leader, loses half its number, or sees something out of its Grade, it makes a Wits Save DC 12 or breaks. Fanatics, Constructs and anything without a survival instinct are exempt. Fights that end in morale collapse pay full XP.",
