@@ -8778,6 +8778,86 @@ either the app misfiled it or the manuscript moved it, and that is worth one loo
   seed of the confusion: SysAdmin (Root Access) is the LEVEL 9 CLASS feature, and the capstone is
   the separate level 10 Subclass Capstone row. See the entry below.
 
+## Glitched arrives, and the Bricked timer collision closes, 2026-09-19
+
+The 2026-09-19 handoff, five sections, all applied. The headline is that the Bricked question this
+repo raised on the 18th came back ruled, and the answer was neither of the two the app had guessed
+at: not a second tier on Bricked, not a rename, but a NEW condition built to do what those sites
+were reaching for.
+
+**SECTION 1, TWO CONDITIONS ADDED, taking the library from 47 to 49.** Glitched sits between
+Frightened and Grappled; Traced between Soul Shock and Unconscious. Both verbatim. Glitched exists
+precisely because Bricked does not self-clear, so it is the correct home for six gear and threat
+sites that had been applying Bricked on a timer it never had. Traced closes the gap flagged when
+Marking became Tracing: the app had been inflicting Traced from two gear entries while its own
+canonical conditions reference did not define it.
+
+Neither needed a migration. `ch.conditions` is an array of plain names with no allow-list, so an
+unknown name was never dropped; these two simply had nowhere to be looked up.
+
+**THE QUICK REFERENCE TABLE'S DELETION ORPHANS NOTHING HERE, and it is worth recording why.** The
+manuscript cut its five-column conditions summary. The app never read it. What the app has is its
+own partial equivalent, hand-built across two files: conditions.js carries a one-line `summary`
+(the Effects column) and a hand-maintained COND_META map in combat.js carries duration and
+how-to-end (the Duration and Save to End columns). There is no Action Economy Impact column at all.
+So nothing broke, but the consequence is that the app is now the ONLY place that columnar data
+exists in any form, and it should be treated as app-authored from here rather than as a mirror of
+something.
+
+**SECTION 2, SEVEN SITES, AND THEY DID NOT ALL MOVE THE SAME WAY.** Six became Glitched: EMP
+Grenade, EMP Rounds, EMP Shell, Shock Rounds, the Pulse trait, and the Gremlin's Break the Toy. Four
+of those had also paired a mistimed Breached branch onto augmented targets, and that branch folded
+IN rather than getting a timed variant of its own, so those sites now apply ONE outcome regardless
+of whether the target is a device or an augmented person.
+
+The seventh went the other way, and the distinction is the interesting part. Spike Rounds is not an
+EMP-family physical shock; it is a genuine hacking payload that rides the impact into a target's
+cyberware, with its own Tech Save DC 14 and a follow-up intrusion for an ally on the #GRID. That is
+what Breached actually represents, so it KEPT Breached and lost only the erroneous timer. The
+Intrusion gear trait it carries never stated a duration either way and is untouched.
+
+**SECTION 3, THE CONTRADICTION THIS REPO FLAGGED IS NOW RECONCILED RATHER THAN PICKED.** The app had
+been carrying both halves: the #GRID chapter saying field repair cannot recover a Bricked device,
+the Conditions chapter saying a field repair restores partial function. Neither was wrong. Bricked's
+entry now carves out the exception by name (Smartdecks, B&E Buddies and Nodes cannot be field
+repaired; everything else can), and the Hacking chapter's rule now says it IS that exception. Both
+strings updated to the manuscript's current wording.
+
+**SECTIONS 4 AND 5 were small and one was already flagged here.** Disjointed Anatomy and Predator's
+Glare gained their Swift tags. The Bandwidth example list's two placeholder names became Cipher
+Overdrive and Targeting Spoof, which is the item raised in the #GRID Initiative entry above; the
+lead-in lost its draft-scaffolding phrasing at the same time. The handoff's corrected Part 1 totals
+needed nothing: the app stores no action-tag counts and validates against none.
+
+The app also holds ONE copy of each species feature where the manuscript prints two, since it does
+not duplicate the species chapter into Lineage Evolution. So the handoff's "both copies" instruction
+resolves to one edit each here, not two.
+
+**VERIFIED IN A RUNNING COPY rather than by reading.** Both conditions store and render, the picker
+offers all 48 plus its placeholder, Codex reads 49 ENTRIES, both durations render on the collapsed
+cards, and the Traced rider fires its banner and note. Console clean.
+
+**ONE DEFECT CAUGHT BY REVIEW, AND IT WAS IN A COMMENT I WROTE.** The Traced entry's disambiguation
+note called Trace-Resistant Signature, Trace Cutter and Trace Evasion "deck traits". Only the first
+is one. Trace Cutter is a Complexity 2 cipher that is also a Codebreaker Signature #GRID Exploit,
+and Trace Evasion is a hardware-mod category worn by the Burn Notice Module. A comment whose entire
+job is redirecting a confused reader cannot send them hunting for two things that do not exist, so
+each is now named as what it actually is. Five other findings were raised and all five were refuted
+on the evidence.
+
+**A MODELLING NOTE FOR LATER.** Traced sets the app's existing `edgeToAttackers` flag, which renders
+a banner reading "attacks against you gain Edge". Traced is RANGED only, so the banner is coarser
+than the condition. That matches how Prone already uses the flag, since Prone sets it while its own
+note says ranged attacks against you take Snag: the flag is the coarse signal and the note carries
+the precision. Following the established pattern beat inventing a second flag, but if that banner
+ever needs to be exact, Prone and Traced are the two that would need splitting together.
+
+**AND ONE PRE-EXISTING QUIRK NOTICED, NOT FIXED.** The conditions array is not strictly
+alphabetical: Soul Shock sits after Surprised, and Immunity after Incapacitated. Both new entries
+went in at the positions the handoff names, which are correct in the app's ordering and correct
+alphabetically. Reordering the two strays is a separate, cosmetic change and was left out of a diff
+that is otherwise about rules.
+
 ## #GRID Initiative restores 3, and the app stops contradicting itself, 2026-09-18
 
 One number. Raised two entries ago, when settling the Hardware Mastery filing turned up the app

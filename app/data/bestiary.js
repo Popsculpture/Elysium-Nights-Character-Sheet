@@ -319,7 +319,7 @@ EN.bestiary = {
       abilities: [
         { name: "Static Body", cost: null, text: "Resistance to Ballistic, Piercing, and Slashing damage. Vulnerability to Resonant damage. It is only mostly here." },
         { name: "Arc Bite", cost: "Action", text: "+6 vs Defense, melee, 1d6+2 Electric (5)." },
-        { name: "Break the Toy", cost: "Action", text: "One device the Gremlin touches makes a Tech Save DC 13 or is Bricked until the end of its next turn. Complex machinery it inhabits misbehaves without a save; that is just tenancy." },
+        { name: "Break the Toy", cost: "Action", text: "One device the Gremlin touches makes a Tech Save DC 13 or is Glitched until the end of its next turn. Complex machinery it inhabits misbehaves without a save; that is just tenancy." },
         { name: "Ride the Wire", cost: "Swift", text: "Vanish into powered cabling and reappear within 6 spaces at anything electrified." }
       ],
       gmNote: "A Gremlin is feral-seeming, not stupid. It picks targets. It holds grudges. It plays. Some of them, maybe all of them, were Nixies once: mistreat one long enough and this is what comes back down the wire. Whether the road runs the other way, whether a Gremlin can be soothed back into a Nixie, is a question this book leaves open on purpose. Nobody has proof it works. There is at least one shrine that keeps trying anyway."

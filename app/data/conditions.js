@@ -28,7 +28,7 @@ EN.conditions = [
   {
     name: "Bricked",
     summary: "Device or system inoperative",
-    text: "Your system becomes unresponsive and ceases to function until properly repaired.\n\nHow It Works:\n- A bricked device or system can't operate or accept commands.\n- Any checks to interact with the device automatically fail until partial function is restored.\n\nHow to End It:\n- A field repair (Engineering or Tech) can restore partial function using a d20 check against the GM's chosen DC in combat, or a Dice Pool check against GM-assigned Snag Dice out of combat.\n- Full repair requires tools, parts, and time, usually handled as a Long Rest or downtime task in a workshop or repair facility."
+    text: "Your system becomes unresponsive and ceases to function until properly repaired.\n\nHow It Works:\n- A bricked device or system can't operate or accept commands.\n- Any checks to interact with the device automatically fail until partial function is restored.\n\nHow to End It:\n- A field repair (Engineering or Tech) can restore partial function using a d20 check against the GM's chosen DC in combat, or a Dice Pool check against GM-assigned Snag Dice out of combat. This does not apply to Smartdecks, B&E Buddies, or Nodes: their Field Repair (Partial) rule in the Hacking chapter cannot recover a Bricked device of that kind. Only Downtime can.\n- Full repair requires tools, parts, and time, usually handled as a Long Rest or downtime task in a workshop or repair facility."
   },
   {
     name: "Burning",
@@ -94,6 +94,20 @@ EN.conditions = [
     name: "Frightened",
     summary: "Must retreat; Snag on attacks",
     text: "Fear seizes you, forcing retreat and disrupting focus.\n\nHow It Works:\n- You can't willingly move closer to the source of fear.\n- If within 10 spaces of the source, you must use your movement to retreat to the best available cover or away from it.\n- You roll with Snag on attack rolls and d20 checks (and add +1 Snag Die to Dice Pools) while the source is in sight.\n\nHow to End It:\n- At the end of your turn, make a Wits or Charm Save DC 15. On a success, the condition ends.\n- Effects that remove fear or emotional control also end Frightened."
+  },
+  {
+    /* Added 2026-09-19. This condition exists BECAUSE of the Bricked timer collision recorded in
+       DEFERRED-FIXES: six gear and threat sites applied Bricked with a hard "until the end of their
+       next turn" duration, while Bricked's own entry has never had a self-clearing timer and ends
+       only by repair. Rather than give Bricked a second tier, the author wrote the lookalike that
+       those sites actually wanted. So this is not a new mechanic so much as the correct home for
+       one that was already being used.
+
+       Like Bricked, it targets a DEVICE, so it gets no COND_FX rider: there is no character-side
+       effect to compute. Its COND_META row in combat.js carries the duration. */
+    name: "Glitched",
+    summary: "Device offline for a moment; clears itself",
+    text: "Your system misfires and drops out, but only for a moment.\n\nHow It Works:\n- A Glitched device or system can't operate or accept commands.\n- Any checks to interact with the device automatically fail while Glitched.\n\nHow to End It:\n- Glitched ends on its own at the end of the affected target's next turn. No repair, no purge, nothing to roll."
   },
   {
     name: "Grappled",
@@ -219,6 +233,20 @@ EN.conditions = [
     name: "Soul Shock",
     summary: "Mystic backlash; take damage and mental penalties",
     text: "A violent surge of Flow tears through both body and mind, leaving your spirit shaken and unstable.\n\nHow It Works:\n- When Soul Shock is inflicted, you immediately take 1d6 psychic or Flow damage.\n- You roll with Snag on Mystique and Wits checks (or add +1 Snag Die to related Dice Pools) until you complete a Short Rest.\n- Each additional instance of Soul Shock before you rest increases the damage by +1d6.\n\nHow to End It:\n- Ends after a Short Rest or Long Rest, or with targeted Flow healing that restores spiritual stability."
+  },
+  {
+    /* Added 2026-09-19, closing the gap flagged when the Marking trait became Tracing. Traced was
+       already being applied by the Tracing gear trait and by Tracer Rounds, but it had no entry
+       here, so the app's canonical conditions reference did not define the thing its own gear
+       inflicted. The mechanics are unchanged; they finally have a source.
+
+       Not to be confused with Trace, the #GRID consequence you accrue. That is a different system,
+       reached through the Smartdeck trait Trace-Resistant Signature, the Trace Cutter cipher (which
+       is also a Codebreaker Signature #GRID Exploit), and Trace Evasion hardware mods such as the
+       Burn Notice Module. Only the first of those three is actually a deck trait. */
+    name: "Traced",
+    summary: "Attacker and allies gain Edge on ranged attacks against you",
+    text: "Something has tagged you well enough that the people shooting at you do not have to guess anymore.\n\nHow It Works:\n- The first qualifying hit each round applies Traced to the Target until the start of the attacker's next turn.\n- While Traced, the attacker and their allies gain Edge on ranged attack rolls against the Target in combat, or +1 Edge Die on related out-of-combat Dice Pools.\n\nHow to End It:\n- Traced automatically ends at the start of the attacker's next turn."
   },
   {
     name: "Unconscious",

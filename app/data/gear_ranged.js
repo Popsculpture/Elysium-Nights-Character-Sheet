@@ -119,15 +119,15 @@ EN.gearCatalog.ranged = {
        Verbatim but for the first letter, which the book leaves lowercase because it runs on from an
        "On Hit:" label this field does not have.
 
-       NOTE FOR THE PENDING BRICKED RULING: this is now the sixth site applying Bricked on a timer,
-       joining EMP Rounds, EMP Shell, the Pulse trait and the Gremlin's Break the Toy. If Bricked's
-       timed sense is renamed, all six move together. The gap was fixed rather than held hostage to
-       that ruling because the item is unusable without a save DC whatever the condition ends up
-       called. */
+       RULED 2026-09-19, and the answer was a new condition rather than a rename. All six timed
+       sites now apply Glitched, which self-clears; Bricked keeps its repair-only meaning. This
+       entry also lost its device-or-person branch: it was one of five sites that paired a mistimed
+       Breached onto augmented targets, and that branch folded into Glitched rather than getting a
+       timed variant of its own, so one outcome now covers both. */
     { name: "EMP Grenade", group: "Thrown", price: 175, damage: "2d6 Electric and Tech", ammo: 1, range: "4 / 12",
       traits: ["Explosive (Area 2 Sphere)", "Thrown (4/12)", "Pulse"], availability: "Uncommon", legality: "Restricted",
       desc: "A compact charge tuned to fry circuits instead of flesh. Useless on the people. Devastating on the people's gear.",
-      effect: "Devices, drones, and augmented targets in the area make a Tech Save vs your Weapon Save DC or gain Bricked (devices) or Breached (augmented) until the end of their next turn, matching the EMP Round and EMP Shell." },
+      effect: "Devices, drones, and augmented targets in the area make a Tech Save vs your Weapon Save DC or gain Glitched until the end of their next turn, matching the EMP Round and EMP Shell." },
     { name: "Flashbang", group: "Thrown", price: 100, damage: "1d4 Sonic", ammo: 1, range: "4 / 12",
       traits: ["Explosive (Area 3 Sphere)", "Nonlethal", "Thrown (4/12)"], availability: "Common", legality: "Licensed",
       desc: "A nonlethal grenade that turns light and sound into weapons. Standard issue for breach teams that want hostages who can still walk to the door." },
@@ -206,7 +206,7 @@ EN.gearCatalog.ammo = {
     { name: "EMP Rounds", group: "Specialty", price: 140, unit: "per 10", availability: "Uncommon", legality: "Restricted",
       feeds: "Ballistic Sidearms, Longarms (no Shotguns)", traits: ["Pulse"],
       desc: "Rounds built around a one-shot pulse charge. Useless against someone who is all meat. Brutal against anyone running on chrome.",
-      effect: "Against living targets without significant cybernetics, the damage is halved, counts as Electric only, and carries no additional effect. On Hit (Machinery): Against devices, drones, cyberware, powered armor, and smart weapons, treat the damage as Electric and Tech. If the target takes damage, it makes a Tech Save (DC 13). On a failure, it gains Bricked or Breached until the end of its next turn." },
+      effect: "Against living targets without significant cybernetics, the damage is halved, counts as Electric only, and carries no additional effect. On Hit (Machinery): Against devices, drones, cyberware, powered armor, and smart weapons, treat the damage as Electric and Tech. If the target takes damage, it makes a Tech Save (DC 13). On a failure, it gains Glitched until the end of its next turn." },
     { name: "Explosive Rounds", group: "Specialty", price: 200, unit: "per 5", availability: "Rare", legality: "Restricted",
       feeds: "Longarms (no Full-Auto), Assault Cannons", traits: ["Explosive (Area 1 Sphere)"],
       desc: "Micro-charges that punch in, then detonate. Banned in roughly every district that has a city council. Available in roughly every district that has a war.",
@@ -234,7 +234,7 @@ EN.gearCatalog.ammo = {
     { name: "Shock Rounds", group: "Specialty", price: 120, unit: "per 10", availability: "Uncommon", legality: "Restricted",
       feeds: "Ballistic Sidearms, Longarms, Shotguns", traits: ["Shock"],
       desc: "Conductive rounds that dump a charge into whatever they hit. Built to drop a body without the certainty of a kill, and to make cyberware stutter.",
-      effect: "On Hit (Organic): Damage type becomes Electric. A living or cyber-augmented target makes a DC 12 Body save. On a failure, they are Staggered until the end of their next turn. On Hit (Machinery): A device, drone, or powered armor makes the save with Snag. A drone, vehicle, or heavily cybernetic enemy already suffering Bricked or Breached also makes the save with Snag." },
+      effect: "On Hit (Organic): Damage type becomes Electric. A living or cyber-augmented target makes a DC 12 Body save. On a failure, they are Staggered until the end of their next turn. On Hit (Machinery): A device, drone, or powered armor makes the save with Snag. A drone, vehicle, or heavily cybernetic enemy already suffering Glitched also makes the save with Snag." },
     { name: "Smart Rounds", group: "Specialty", price: 250, unit: "per 5", availability: "Rare", legality: "Restricted",
       feeds: "Ballistic Sidearms, Longarms", traits: ["Guided"],
       desc: "Self-correcting rounds with micro-fins and a lock-and-replay package lifted from guided ordnance ten times their size. Fire one round to tag the target. Every round after bends the air to reach the same place: around the cover, past the dodge, whether or not the gun is still pointed their way.",
@@ -243,7 +243,7 @@ EN.gearCatalog.ammo = {
     { name: "Spike Rounds", group: "Specialty", price: 250, unit: "per 5", availability: "Rare", legality: "Contraband",
       feeds: "Ballistic Sidearms, Longarms", traits: ["Intrusion"],
       desc: "Rounds with a data-fang in the tip: a single-use intrusion package that rides the impact into a target's cyberware or a machine's housing. The bullet is almost an afterthought. The payload is the point.",
-      effect: "On Hit (Cyberware or Machinery): Against a target with significant cyberware, a drone, or a smart device, the round deals its normal Ballistic damage and delivers a digital payload. The target makes a Tech Save (DC 14). On a failure, they gain Breached until the end of their next turn, and any ally currently jacked into the #GRID may immediately attempt a follow-up intrusion against that target's system as if they had already established a Link.",
+      effect: "On Hit (Cyberware or Machinery): Against a target with significant cyberware, a drone, or a smart device, the round deals its normal Ballistic damage and delivers a digital payload. The target makes a Tech Save (DC 14). On a failure, they gain Breached, and any ally currently jacked into the #GRID may immediately attempt a follow-up intrusion against that target's system as if they had already established a Link.",
       limitation: "Against a purely organic target, there is nothing for the payload to talk to. The round deals normal damage and nothing else." },
     { name: "Toxin Rounds", group: "Specialty", price: 120, unit: "per 10", availability: "Uncommon", legality: "Contraband",
       feeds: "Bows, Crossbows, Dart weapons, payload firearms", traits: ["Delivery"],
@@ -281,7 +281,7 @@ EN.gearCatalog.ammo = {
     { name: "EMP Shell", group: "Launcher Shell", price: 80, unit: "each", availability: "Uncommon", legality: "Restricted",
       feeds: "Grenade Launcher", traits: ["Explosive (Area 3 Sphere)", "Pulse"],
       desc: "A pulse charge that leaves the meat alone and ruins everything else.",
-      effect: "Against living targets without significant cybernetics, the damage is halved, counts as Electric only, and carries no further effect. Devices, drones, cyberware, powered armor, and smart weapons in the area take full damage and make a Tech Save vs your Weapon Save DC. On a failure, they gain Bricked or Breached until the end of their next turn." },
+      effect: "Against living targets without significant cybernetics, the damage is halved, counts as Electric only, and carries no further effect. Devices, drones, cyberware, powered armor, and smart weapons in the area take full damage and make a Tech Save vs your Weapon Save DC. On a failure, they gain Glitched until the end of their next turn." },
     { name: "Thermobaric Shell", group: "Launcher Shell", price: 100, unit: "each", availability: "Rare", legality: "Contraband",
       feeds: "Grenade Launcher", traits: ["Explosive (Area 3 Sphere)", "Pressure"],
       desc: "A fuel-air charge that breathes in the room before it breathes out fire. In open ground it is brutal. Behind a closed door it is a war crime with a serial number.",
