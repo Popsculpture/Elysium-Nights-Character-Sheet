@@ -3650,10 +3650,19 @@ EN.engine = (function () {
         /* `action` rides along from 2026-09-18, when the book tagged 42 species and Lineage
            Evolution features with an action type. It is a NEW field rather than a suffix on the
            name, deliberately: ch.lineageFeatures, ch.awakeningEvolution and
-           universalUpgrades[].evolution all persist raw feature-name strings and there is no
-           lineage-feature rename migration, so renaming would have orphaned every stored pick
-           while the engine kept matching on x.name === fname three lines up. Undefined for the
-           features the book leaves untagged, which is what the readers fall back from. */
+           universalUpgrades[].evolution all persist raw feature-name strings, and the lookup
+           three lines up matches on x.name === fname and pushes ONLY on a match, so a stored
+           pick that stops matching is not mislabelled, it disappears. Tagging by field costs
+           nothing and risks nothing; tagging by suffix would have renamed all 42.
+
+           THE MIGRATION NOW EXISTS, added 2026-09-19 when the book renamed two lineage
+           features outright. store.js reads EN.speciesFeatureRenames from beside the species
+           catalog and rewrites all three stores, so a rename is survivable where it was not the
+           day before. That does not make the field choice above wrong, it makes it cheap: a
+           rename is now a table row plus this paragraph, where a suffix would still be 42.
+
+           Undefined for the features the book leaves untagged, which is what the readers fall
+           back from. */
         if (match) features.push({ level: 1, name: match.name, text: match.text, action: match.action || null, source: lin.name + " (Lineage)", kind: "lineage" });
       });
     }

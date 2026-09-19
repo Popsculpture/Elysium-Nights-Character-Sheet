@@ -8778,6 +8778,53 @@ either the app misfiled it or the manuscript moved it, and that is worth one loo
   seed of the confusion: SysAdmin (Root Access) is the LEVEL 9 CLASS feature, and the capstone is
   the separate level 10 Subclass Capstone row. See the entry below.
 
+## The rename checklist, and three small corrections, 2026-09-19 evening
+
+An addendum to the bestiary handoff, raised after it landed. Two of the four items are "change
+nothing, and here is why", which is worth as much as an edit when it stops the next pass
+re-opening them.
+
+**THE SPOTTER DRONE NEEDED NOTHING.** Reported back as missing an attack, and it is not: the SMG
+Pod belongs to the Combat Drone one entry over. Both statblocks already matched the page in every
+character. The outstanding-item note is struck above.
+
+**THE `Math.max(1, ...)` IN vit() STAYS, and it is now ruled rather than merely defended.** The
+question was whether it is reachable. It is not: every input is table-bound, and all 140
+combinations of 5 Grades, 4 Designations and 7 Roles were enumerated. The lowest result is 4, the
+Grade 1 Minion case already accepted; the highest is 475; none reaches 0. So it is dead code, and
+it stays dead code on purpose, because it goes live the day a Level 0 funnel tier lands: give a
+Minion a base of 1 or 2 with a -25 percent Role and the helper computes 0.75, at which point the
+guard starts answering a real question and its answer is the right one. Recorded so nobody
+"cleans up" a correct line.
+
+**CROSS-REFERENCES CARRY NO PART NUMBER IN USER-FACING TEXT.** The five removals were right, and
+the reason is stronger than "the page does not print them here": the string "Part" followed by a
+digit occurs ZERO times across all four Parts. Bare chapter names are how the manuscript does
+cross-references throughout. And the prefix was never doing navigational work anyway, because
+there is no cross-reference resolver in the app: no link builder, no chapter-to-route map, nothing
+that parses these strings. They are prose read by a human eye, and that reader is looking at a
+Codex organised by chapter with no concept of a Part at all. Two stragglers outside the
+re-transcribed statblocks came out: the Dangerous Habits menu entry and the Echo's GM note.
+
+The line that keeps this from becoming a blanket sweep: **source-code comments keep their Part
+numbers.** A developer reading a comment needs to know which of the four Docs to open, and there
+is no page to be faithful to inside a comment.
+
+**AND THE PART WORTH KEEPING: A RENAME CHECKLIST, IN HANDOFF.md.** The lineage-feature rename
+that nearly shipped a data loss had a warning against it sitting three lines above the resolver
+it protected, and the warning did not fire. Not because it was unclear, but because the
+instruction that overrode it, "search the whole repo and update every reference", was scoped to
+a place the problem does not live: a player's picks are in their browser. It reads as exhaustive
+because of the word "whole", so a conscientious reader can follow it completely and still ship
+the bug.
+
+The checklist now sits in HANDOFF.md under "Before you rename anything", inside the section a
+fresh session is told to read before starting work. Its load-bearing question is the third:
+**is the saved name RESOLVED on load, or does the record carry its own text?** Stored by
+reference fails silently and destructively and always needs a migration row; stored by value is
+a stale label and usually needs nothing, but must be said out loud; derived is nothing at all.
+Grep cannot answer that question, which is exactly why it has to be asked explicitly.
+
 ## The bestiary handoff: four conventions, eleven statblocks, and three near-miss data losses, 2026-09-19
 
 The 2026-09-19 handoff, five sections plus a terminology sweep. It closes six of the items that had
@@ -8855,6 +8902,14 @@ in the app, while the handoff's own gear check refers to "Spotter Drone's SMG Po
 invented. Four other entries show no figure and are correct to: Feral Script and the #GRID Guardian
 attack Nodes rather than Defense, the Nixie's Spark Fuss is an Impulse, and the Lantern Shoal's
 Graze is automatic.
+
+  **NOT AN OPEN ITEM. CLOSED 2026-09-19, the same evening: the app was right and the handoff was
+  wrong.** The SMG Pod belongs to the COMBAT Drone, which sits directly beside the Spotter Drone
+  under Machines and Proxies; the handoff read across the gap. The Spotter Drone is a Grade 1
+  Minion in the Support role and has no weapon on the page by design: its job is to see the crew
+  and tell somebody. Both entries were compared field by field against a fresh export and already
+  agreed in every character, so nothing was stored. A blank damage figure on it is the correct
+  render, and it is a FIFTH member of the correctly-blank set above, not an outstanding item.
 
 **INCIDENTAL.** `weaponAmmo` and `weaponGrip` are no longer keyed by weapon name; an earlier
 migration re-keyed them to entry keys. The rename pass over them is harmless but redundant, and is

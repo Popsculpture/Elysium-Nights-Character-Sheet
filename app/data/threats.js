@@ -140,7 +140,7 @@ EN.threats = {
       { name: "Stims", cost: "Action", text: "An allied threat immediately makes a save against one condition affecting it, with Edge." }
     ] },
     { role: "anything", abilities: [
-      { name: "Dangerous Habits", cost: null, text: "Give the threat one weapon rider from the Optional Damage Effects appendix (Part 2, Damage Types): Ignite, Bleed, Knockback, Disrupt, and their siblings. Declare it before the attack resolves, per that appendix." },
+      { name: "Dangerous Habits", cost: null, text: "Give the threat one weapon rider from the Optional Damage Effects appendix (Damage Types): Ignite, Bleed, Knockback, Disrupt, and their siblings. Declare it before the attack resolves, per that appendix." },
       { name: "Dead Man's Price", cost: "Special", text: "When reduced to 0 Vitality, the threat does one last thing: a grenade cooks off, a scream goes out on an open channel, a claw spasms shut. One attack or one complication, then it is done." }
     ] }
   ],

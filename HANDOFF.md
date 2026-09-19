@@ -132,6 +132,48 @@ Five things earned the hard way, and the reason the log is worth reading:
 - **Unattributable state is dropped, never moved.** Losing a number the player can see is
   recoverable; silently relocating it onto the wrong object is not.
 
+## Before you rename anything
+
+Read this before the work, not in review. A rename shipped on 2026-09-19 would have deleted
+a lineage feature from every character who had picked it, and the warning against doing
+exactly that was sitting three lines above the resolver it protected. It did not fire,
+because the handoff that ruled the rename said "search the whole repo and update every
+reference", and a player's picks are in their browser, not in the repo. That instruction is
+retired: it sounds exhaustive and is incapable of surfacing the thing that matters.
+
+Four questions, in order. The third is the one that gets skipped.
+
+1. **What is the definition?** Rename the catalog entry itself.
+2. **What in the repo points at it by name?** Grep the whole repo, not just the catalog.
+   Name references live in kits, examples, briefs, ability tags, the rules index and the
+   bestiary, and each is a separate file from the thing being renamed.
+3. **Can a saved record contain this string, and is it RESOLVED on load or does it carry
+   its own text?** Grep cannot answer this, which is why it has to be asked out loud. The
+   three kinds:
+   - **Stored by reference.** The record holds a name that gets looked up, and every
+     reader drops a miss. These fail silently and destructively: the pick does not render
+     wrong, it vanishes, and nothing looks broken because there is simply less on the
+     sheet. **Always needs a migration row.** Examples: a lineage feature
+     (`x.name === fname`, pushes only on a match), a catalog weapon (`findWeapon(e.name)`
+     returns early), the GM store's `grade` key.
+   - **Stored by value.** The record holds the name and its payload together, so a stale
+     name renders its own old text correctly. A miss is a stale label, not a loss. Usually
+     leave it, and **say so out loud** so the next reader knows it was considered. Example:
+     a banked threat's abilities array, which is why `Painted Shot` can still sit in a
+     GM's saved encounter and that is fine.
+   - **Derived, never stored.** Read fresh from the source record every load. Nothing to
+     migrate, and a row would be noise. Example: a species secondary trait.
+4. **Does a comment anywhere assert the old state?** The 2026-09-18 comment above the
+   lineage resolver was correct when written and false twelve hours later. If a rename
+   changes what a nearby comment claims, **the comment is part of the rename.** A stale
+   warning is worse than no warning: the next reader either trusts it and over-corrects,
+   or catches it out and stops trusting the comments around it.
+
+The migration tables live beside their data, not in `store.js`: `EN.weaponParts.renames`,
+`EN.cyberware.renames`, `EN.speciesFeatureRenames`, `EN.gearCatalog.weaponRenames`. Adding
+a rename should be a row in one of those plus a line in `migrate()`, never a second place
+to remember.
+
 ## Manuscript source of truth
 
 Three live Google Docs. The app is synced against these, never against a local copy.

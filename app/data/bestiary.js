@@ -351,7 +351,7 @@ EN.bestiary = {
         { name: "Replay Wail", cost: "Action", text: "Area 2 sphere on itself: organic Targets make a Wits Save DC 13 or are Shaken until the end of their next turn." },
         { name: "The Loop", cost: null, text: "Until disturbed, an Echo re-enacts its imprint and notices nothing. Interrupt the loop (cross it, alter the scene it died in, channel nearby) and it notices everything." }
       ],
-      gmNote: "An Echo can be cleansed instead of fought: treat it as a Severity 2 Anomaly and run a Cleansing Project (Part 2, Flow Disturbances). Cleansing pays the same XP. The neighbors pay in gratitude, which spends worse but lasts longer."
+      gmNote: "An Echo can be cleansed instead of fought: treat it as a Severity 2 Anomaly and run a Cleansing Project (Flow Disturbances). Cleansing pays the same XP. The neighbors pay in gratitude, which spends worse but lasts longer."
     },
     {
       name: "Lantern Shoal", category: "flow",
