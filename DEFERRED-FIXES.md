@@ -8669,6 +8669,18 @@ an authorial choice, not arithmetic. Inventing them would put numbers on a trans
 book does not print, which is the one thing bestiary.js's own header forbids. Six statblocks need
 their revised dice quoted before this can move.
 
+  **CLOSED 2026-09-19.** The dice arrived in the evening handoff, which quoted eleven statblocks in
+  full rather than listing six sets of dice, and they were transcribed the same night. Verified
+  again today by recomputing every routine from its stored dice: Wetwork Operative 1d8+7 twice for
+  23, Kettle Dog 1d12+5 twice for 23, X-Calibur Knight 2d8+7 twice for 32, Rustmaw 2d8+6 twice for
+  30, Sublevel Angler 3d10+6 twice for 45, the Smiling Man 2d12+8 three times for 63, the Cascade
+  Orphan 4d10+6 three times for 84. All seven hit the ruled target exactly. The three variant lines
+  moved with them: Estate Unit 2d8+7, the Corpsec Sergeant and the Pack Alpha to two attacks.
+
+  Worth recording, since this paragraph was written to refuse the guess: it offered "1d8+7 against
+  2d6+5" as the illustration of a choice only the author could make, and the author chose 1d8+7.
+  Being right about the shape of an answer is still not authority to write it.
+
 PAINTED SHOT. The ruling says it "was renamed" and does not say to what. One line in threats.js,
 waiting on a name.
 
