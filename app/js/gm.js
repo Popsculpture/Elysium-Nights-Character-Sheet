@@ -19,7 +19,7 @@ EN.gmView = (function () {
   // transient UI state: the builder's current inputs and the bestiary filter.
   // Deliberately not persisted; a half-built threat is not worth a save slot.
   // Survives a tab switch AND a portal flip, since this is still one module.
-  var _b = { gauge: 2, designation: "standard", role: "gunhand", size: "Medium", type: "Human", name: "", strong: null };
+  var _b = { grade: 2, designation: "standard", role: "gunhand", size: "Medium", type: "Human", name: "", strong: null };
   var _best = { cat: "people", q: "" };   // bestiary filter
 
   // local copies rather than imports, per the house convention that each view
@@ -59,8 +59,8 @@ EN.gmView = (function () {
         el("input", { type: "text", value: _b.name, placeholder: "Corpsec Officer",
           oninput: function (e) { _b.name = e.target.value; } })
       ]),
-      pick("Gauge", T.gauges.map(function (g) { return { value: g.g, label: "G" + g.g }; }), _b.gauge,
-        function (v) { _b.gauge = Number(v); }),
+      pick("Grade", T.grades.map(function (g) { return { value: g.g, label: "G" + g.g }; }), _b.grade,
+        function (v) { _b.grade = Number(v); }),
       pick("Designation", T.designations.map(function (d) { return { value: d.key, label: d.name }; }), _b.designation,
         function (v) { _b.designation = v; }),
       pick("Role", T.roles.map(function (r) { return { value: r.key, label: r.name }; }), _b.role,
@@ -85,16 +85,16 @@ EN.gmView = (function () {
         text: "The book names these per threat rather than deriving them. The Role only suggests a starting point." })
     ]));
 
-    var gauge = T.gauges.filter(function (g) { return g.g === _b.gauge; })[0];
-    if (gauge) kids.push(el("p.help", { style: { margin: "8px 0 0" }, text: "G" + gauge.g + ". " + gauge.reads + " Matched crew: " + gauge.crew + "." }));
+    var grade = T.grades.filter(function (g) { return g.g === _b.grade; })[0];
+    if (grade) kids.push(el("p.help", { style: { margin: "8px 0 0" }, text: "G" + grade.g + ". " + grade.reads + " Matched crew: " + grade.crew + "." }));
     var rol = T.roles.filter(function (r) { return r.key === _b.role; })[0];
     if (rol) kids.push(el("p.help", { style: { margin: "3px 0 0", color: "var(--text2)" }, text: rol.name + ". " + rol.text }));
 
     kids.push(el("div", { style: { height: "10px" } }));
     kids.push(statblock(block));
 
-    // the working band: a threat more than one Gauge off the crew is worth saying out loud
-    var band = bandNote(_b.gauge);
+    // the working band: a threat more than one Grade off the crew is worth saying out loud
+    var band = bandNote(_b.grade);
     if (band) kids.push(el("p.help", { style: { margin: "8px 0 0", color: "var(--warn)" }, text: band }));
 
     kids.push(el("div.row.wrap", { style: { gap: "8px", marginTop: "12px" } }, [
@@ -112,7 +112,7 @@ EN.gmView = (function () {
       } }, "SAVE STATBLOCK")
     ]));
 
-    return EN.ui.panel("Threat Builder", "GAUGE · DESIGNATION · ROLE", kids);
+    return EN.ui.panel("Threat Builder", "GRADE · DESIGNATION · ROLE", kids);
   }
 
   /* The crew's Caliber is the yardstick, so the warning only fires when there is
@@ -126,8 +126,8 @@ EN.gmView = (function () {
     var avg = Math.round(cals.reduce(function (a, b) { return a + b; }, 0) / cals.length);
     var d = g - avg;
     if (d <= 1 && d >= -1) return null;
-    if (d === 2) return "Two Gauges above the crew's Caliber " + avg + ". That can anchor a climax if it arrives with a plan or an escape route.";
-    if (d > 2) return "Three or more Gauges above the crew's Caliber " + avg + ". The book is blunt about this one: that is not an encounter, it is weather.";
+    if (d === 2) return "Two Grades above the crew's Caliber " + avg + ". That can anchor a climax if it arrives with a plan or an escape route.";
+    if (d > 2) return "Three or more Grades above the crew's Caliber " + avg + ". The book is blunt about this one: that is not an encounter, it is weather.";
     return "Well below the crew's Caliber " + avg + ". Fine as texture or numbers, not as a fight.";
   }
 
@@ -282,7 +282,7 @@ EN.gmView = (function () {
             text: String(row.init) }),
           el("span", { style: { fontWeight: 600, textDecoration: down ? "line-through" : "none" }, text: row.name || "Threat" }),
           el("span.chip", { style: { fontSize: "9.5px", color: "var(--danger)", borderColor: "var(--danger)" },
-            text: "G" + b.gauge + " " + (b.designationName || "").toUpperCase() }),
+            text: "G" + b.grade + " " + (b.designationName || "").toUpperCase() }),
           el("span.help", { text: rowSummary(b) })
         ]),
         el("div.row", { style: { gap: "6px", alignItems: "center" } }, [
@@ -443,6 +443,20 @@ EN.gmView = (function () {
       if (st[k]) kids.push(el("p.help", { style: { margin: "3px 0 0" }, text: k + ": " + st[k] }));
     });
 
+    /* Damage a round, computed from the printed dice rather than read off the
+       page's parenthetical. The parenthetical is floored by house style, so
+       1d8+7 prints "(11)" where the true expectation is 11.5 and two attacks are
+       23, not 22. Ruled 2026-09-19: the app shows the true figure, decimal and
+       all, so a GM comparing a statblock against the Standard Threat Array is
+       comparing like with like. */
+    var rd = EN.gmEngine.roundDamage(e);
+    if (rd) {
+      kids.push(el("p.help", { style: { margin: "5px 0 0", color: "var(--accent)" },
+        text: "Damage a round: " + EN.gmEngine.fmtAvg(rd.total) + " (" + rd.from + ", " +
+              (rd.count > 1 ? rd.count + " attacks at " : "one attack at ") +
+              EN.gmEngine.fmtAvg(rd.perHit) + ")" }));
+    }
+
     (e.abilities || []).forEach(function (a) {
       var ap = el("p", { style: { margin: "6px 0 0", fontSize: "13px" } }, [
         el("span", { style: { fontWeight: 600 }, text: a.name + (a.cost ? " (" + a.cost + ")" : "") + ": " })
@@ -492,7 +506,7 @@ EN.gmView = (function () {
         var initM = parseInt((st.Initiative || "0").replace("+", ""), 10) || 0;
         var p = printed(e);
         var block = {
-          name: e.name, gauge: e.gauge, designationName: e.designation || "Standard",
+          name: e.name, grade: e.grade, designationName: e.designation || "Standard",
           roleName: e.role || "", defense: isNaN(def) ? null : def,
           saveDC: p.saveDC, attackBonus: p.attackBonus, vitality: isNaN(vit) ? 1 : vit,
           fromBestiary: true, stats: st, abilities: e.abilities || []
@@ -559,7 +573,7 @@ EN.gmView = (function () {
                                                    borderBottom: "1px solid var(--border)" } }, [
         el("div.row", { style: { gap: "8px", alignItems: "baseline" } }, [
           el("span", { style: { fontWeight: 600 }, text: b.name || "Unnamed" }),
-          el("span.help", { text: "G" + b.gauge + " " + b.designationName + (b.roleName ? ", " + b.roleName : "") +
+          el("span.help", { text: "G" + b.grade + " " + b.designationName + (b.roleName ? ", " + b.roleName : "") +
             " · DEF " + b.defense + " · " + b.vitality + " Vit · " + b.xp + " XP" })
         ]),
         el("div.row", { style: { gap: "6px" } }, [
@@ -593,7 +607,7 @@ EN.gmView = (function () {
 
   function renderThreats(mount) {
     EN.ui.clear(mount);
-    var blocks = [heading("Threats", "// build a statblock from Gauge, Designation and Role"), builderPanel()];
+    var blocks = [heading("Threats", "// build a statblock from Grade, Designation and Role"), builderPanel()];
     var saved = savedPanel();
     if (saved) { blocks.push(el("div", { style: { height: "12px" } })); blocks.push(saved); }
     mount.appendChild(el("div", null, blocks));

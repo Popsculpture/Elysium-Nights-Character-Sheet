@@ -620,6 +620,57 @@ EN.store = (function () {
     // ch.talents list the print sheet and the PDF export read, and the ch.talentAttrPicks
     // map added below. The Toxicologist rename only ever covered the first, so a
     // ch.talents entry has been rendering as nothing since; this table covers all three.
+    /* RENAMED LINEAGE FEATURES, 2026-09-19. Read from EN.speciesFeatureRenames beside the
+       data, like the Weapon Part and cyberware tables above. This one is not cosmetic and the
+       engine says so in its own words: activeLineageFeatures feeds raw NAME strings to a
+       `x.name === fname` lookup and pushes only on a match, so an unmigrated pick is not
+       mislabelled, it vanishes. The three stores below are every place such a name persists.
+
+       Secondary traits need no entry: they derive from the species record rather than being
+       picked and stored, which is why Primal Reflex is absent from the table. */
+    var LIN_FEAT_RENAMES = Object.create(null);
+    ((EN.speciesFeatureRenames) || []).forEach(function (r) {
+      if (r && r.oldName && r.name) LIN_FEAT_RENAMES[r.oldName] = r.name;
+    });
+    if (Array.isArray(ch.lineageFeatures)) {
+      ch.lineageFeatures = ch.lineageFeatures.map(function (n) {
+        return (typeof n === "string" && LIN_FEAT_RENAMES[n]) ? LIN_FEAT_RENAMES[n] : n;
+      });
+    }
+    if (typeof ch.awakeningEvolution === "string" && LIN_FEAT_RENAMES[ch.awakeningEvolution]) {
+      ch.awakeningEvolution = LIN_FEAT_RENAMES[ch.awakeningEvolution];
+    }
+    Object.keys(ch.universalUpgrades || {}).forEach(function (lvl) {
+      var u = ch.universalUpgrades[lvl];
+      if (u && typeof u.evolution === "string" && LIN_FEAT_RENAMES[u.evolution]) {
+        u.evolution = LIN_FEAT_RENAMES[u.evolution];
+      }
+    });
+
+    /* RENAMED CATALOG WEAPONS, 2026-09-19. Same failure mode one layer out: combat.js resolves
+       an equipped weapon with findWeapon(e.name) and returns early on a miss, so a saved Stun
+       Baton loses its attack row silently. weaponAmmo and weaponGrip are keyed by the same
+       name and move with it. */
+    var WEAPON_RENAMES = Object.create(null);
+    (((EN.gearCatalog && EN.gearCatalog.weaponRenames)) || []).forEach(function (r) {
+      if (r && r.oldName && r.name) WEAPON_RENAMES[r.oldName] = r.name;
+    });
+    if (Array.isArray(ch.equipment)) {
+      ch.equipment.forEach(function (e) {
+        if (e && typeof e.name === "string" && WEAPON_RENAMES[e.name]) e.name = WEAPON_RENAMES[e.name];
+      });
+    }
+    ["weaponAmmo", "weaponGrip"].forEach(function (bag) {
+      var m = ch[bag];
+      if (!m || typeof m !== "object") return;
+      Object.keys(m).forEach(function (k) {
+        var to = WEAPON_RENAMES[k];
+        if (!to || !Object.prototype.hasOwnProperty.call(m, k)) return;
+        if (m[to] === undefined) m[to] = m[k];
+        delete m[k];
+      });
+    });
+
     var TALENT_RENAMES = Object.create(null);
     TALENT_RENAMES["toxicologist"] = TALENT_RENAMES["Toxicologist"] = "cutting-agent";
     TALENT_RENAMES["dead-eye-sniper"] = TALENT_RENAMES["Dead-Eye Sniper"] = "zeroed-in";

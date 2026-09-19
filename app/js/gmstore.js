@@ -43,6 +43,33 @@ EN.gmStore = (function () {
   /* ---- load and migrate ---------------------------------------------------
      Per-entry try, dropping only the entry that fails, mirroring store.js's
      per-record discipline. One malformed entry must not cost the document. */
+  /* "Gauge" was retired from the book in favour of "Grade" (2026-09-19) and the
+     field renamed with it. A GM's banked statblocks and live encounter rows still
+     carry the old key, and gm.js reads `block.grade` to print the G-label, so an
+     unmigrated block would render "G undefined" rather than fail loudly. Translate
+     on load: copy the value across, then drop the old key so this runs once.
+
+     Deliberately not a deep walk. Only the statblock object itself carries it;
+     the abilities and stats hanging off it never did. */
+  function gradeKey(block) {
+    if (!block || typeof block !== "object") return block;
+    if (Object.prototype.hasOwnProperty.call(block, "gauge")) {
+      if (block.grade === undefined) block.grade = block.gauge;
+      try { delete block.gauge; } catch (e) {}
+    }
+    return block;
+  }
+
+  /* A saved threat is a WRAPPER around the statblock, so the key lives one level down, and
+     its `inputs` sidecar carries a second copy that buildThreat() would read back if a
+     regenerate path is ever added. Both move. */
+  function gradeSaved(rec) {
+    if (!rec || typeof rec !== "object") return rec;
+    gradeKey(rec.block);
+    gradeKey(rec.inputs);
+    return rec;
+  }
+
   function migrate(raw) {
     var s = blank();
     if (!raw || typeof raw !== "object") return s;
@@ -58,7 +85,7 @@ EN.gmStore = (function () {
       if (!src || typeof src !== "object") return;
       Object.keys(src).forEach(function (k) {
         if (!Object.prototype.hasOwnProperty.call(src, k)) return;
-        try { s[bag][k] = src[k]; } catch (e) {}
+        try { s[bag][k] = gradeSaved(src[k]); } catch (e) {}
       });
     });
     var e = raw.encounter;
@@ -73,6 +100,7 @@ EN.gmStore = (function () {
           if (row.kind !== "crew" && row.kind !== "threat") return;
           if (row.kind === "threat" && (!row.block || typeof row.block !== "object")) return;
           if (row.kind === "crew" && typeof row.charId !== "string") return;
+          if (row.kind === "threat") gradeKey(row.block);
           s.encounter.entries.push(row);
         } catch (err) {}
       });

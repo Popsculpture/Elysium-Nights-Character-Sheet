@@ -7,6 +7,13 @@
 window.EN = window.EN || {};
 EN.gearCatalog = EN.gearCatalog || {};
 
+/* RENAMED CATALOG WEAPONS. ch.equipment[n].name stores the catalog name verbatim and every
+   resolver matches it exactly, so combat.js drops an equipped weapon it cannot find: no attack
+   row, no damage, no error. weaponAmmo and weaponGrip are keyed by the same name. */
+EN.gearCatalog.weaponRenames = [
+  { oldName: "Stun Baton", name: "Shock Baton" }
+];
+
 EN.gearCatalog.melee = {
   intro: "Some fights end with sirens and a clean exit. More end at arm's length, in a service corridor or a back alley, with one of these in your hand. Melee weapons are what you reach for when distance has already collapsed.",
   saveDcNote: "Weapon Save DC (Melee): whenever a melee weapon forces a saving throw, the DC is 8 + your Body modifier + your Caliber.",
@@ -53,7 +60,7 @@ EN.gearCatalog.melee = {
     { name: "Spear", shafted: true, group: "Simple", price: 40, damage: "1d6 Piercing", range: "Melee (Reach 1) or thrown 4 / 12",
       traits: ["Reach 1", "Thrown (4/12)", "Versatile (1d8)"], availability: "Common", legality: "Legal",
       desc: "A full-length shaft with a reinforced point. As old as war itself, still good at it, and still cheap enough that you can lose three in an alley and not feel it." },
-    { name: "Stun Baton", group: "Simple", price: 120, damage: "1d6 Bludgeoning", range: "Melee",
+    { name: "Shock Baton", group: "Simple", price: 120, damage: "1d6 Electric", range: "Melee",
       traits: ["Nonlethal", "Shock"], availability: "Uncommon", legality: "Restricted",
       desc: "A baton wrapped around a powered shock core. Standard issue for security teams that would rather walk arrests in than carry corpses out. The hum gives it away across a quiet room." },
 

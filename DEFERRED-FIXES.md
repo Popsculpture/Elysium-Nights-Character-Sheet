@@ -8778,6 +8778,88 @@ either the app misfiled it or the manuscript moved it, and that is worth one loo
   seed of the confusion: SysAdmin (Root Access) is the LEVEL 9 CLASS feature, and the capstone is
   the separate level 10 Subclass Capstone row. See the entry below.
 
+## The bestiary handoff: four conventions, eleven statblocks, and three near-miss data losses, 2026-09-19
+
+The 2026-09-19 handoff, five sections plus a terminology sweep. It closes six of the items that had
+been waiting on the author and rules two more.
+
+**THE FOUR CONVENTIONS ARE THE PART THAT CHANGES BEHAVIOUR.**
+
+*Damage a round* is now computed, where before the app never computed it for a printed statblock at
+all. `roundDamage()` takes the attack count of the strongest single Action attack times its true
+average, and excludes three things that had all been overcounted at some point: alternative Actions
+(Rustmaw's figure is the Bite, not Bite plus Tail Sweep), on-hit riders (only the FIRST dice
+expression in a line is read, which drops the Kettle Dog's +1d4 Fire), and Solo Surges (a Surge's
+cost is never "Action", so they fall out of the cost test rather than needing to be parsed around).
+All twelve figures match the handoff's targets exactly.
+
+*True averages.* The page prints a floored per-hit average, so 1d8+7 reads "(11)" where the real
+expectation is 11.5 and two attacks are 23, not 22. The app now computes from the dice and keeps the
+decimal. `damageDice()` also stopped echoing back the requested target and reports the dice it
+actually handed you.
+
+*Vitality floors.* `vit()` was half-up and is now floor, which makes the builder agree with the
+Street Shaper, Gutter Hacker and Sentry Turret at 22 instead of answering 23. The old comment argued
+that a Grade 1 Minion's 4.5 should not become 4; the author has considered that and accepted 4, and
+asked for no compensating floor. The `Math.max(1, ...)` stays and is not that compensation: it
+catches a degenerate build computing to 0, and no printed Grade reaches it. Damage percentages were
+floored too, on the handoff's explicit option.
+
+*Gauge is Grade.* 129 occurrences across five files. Deliberately NOT renamed: inventory.js's Chrome
+Tax gauge, which is a meter, and versatile.js's "gauge comfort levels", which is the verb.
+
+**THE STORED BESTIARY WAS WORSE THAN THE HANDOFF ASSUMED.** Beyond the lines it marked as changed,
+eight fields were stale. Four attack routines were generations behind, the Smiling Man by two
+(`Two attacks, 2d8+5` against the page's `Three attacks, 2d12+8`). Two attack lines were missing
+their attack count entirely, which is exactly what produced the earlier overcounts. And five
+cross-references carried a "Part N" prefix the page does not print.
+
+**TWO STATBLOCKS HAD A VARIANT'S ABILITY PROMOTED INTO THE PARENT.** The Corpsec Officer carried
+Focus Fire and the Wiredog carried Static Howl, both of which belong to their Elite variants. The
+cause is visible in the old data: each variant line was truncated at the word "Adds", and the
+ability that should have followed it had been lifted into the parent's own list instead. So every
+rank and file officer had a sergeant-only ability. Both removed, both variant lines completed.
+
+**THE REVIEW CAUGHT THREE BUGS I INTRODUCED, AND TWO OF THEM WOULD HAVE EATEN SAVED DATA.**
+
+*The rename that the codebase had already warned about.* Cagebreak Instinct becoming Feral Reprisal
+is a LINEAGE FEATURE, and lineage picks persist as raw name strings in three places that engine.js
+resolves with `x.name === fname`, pushing only on a match. An unmigrated pick is not mislabelled, it
+disappears. The galling part: a comment written the day before, three lines above that resolver,
+says the 2026-09-18 pass used a new `action` field rather than a name suffix precisely because
+"there is no lineage-feature rename migration, so renaming would have orphaned every stored pick".
+The rename was ruled, so the missing migration got written rather than the rename reverted.
+
+*The same failure one layer out.* Stun Baton becoming Shock Baton breaks `findWeapon(e.name)`, which
+returns early on a miss, so a saved equipped baton loses its attack row silently. Both renames now
+have tables beside their data, following the EN.weaponParts.renames precedent.
+
+*And my own Grade migration missed half its job.* A banked threat is a wrapper around the statblock,
+so translating the wrapper found no `gauge` key and did nothing. The live encounter half worked,
+because it passed the block rather than the row. A GM's saved threats would have read "Gundefined",
+and pressing ORDER would have copied that into the encounter.
+
+All three were verified by seeding legacy data and reloading, not by reading the code.
+
+**TWO COMMENTS WERE WRONG AND ARE FIXED.** The Roles table comment still said vit() rounds half up
+and that the builder disagrees with three printed 22s, which the same changeset had just made false.
+And the `vs Defense` justification named the wrong mechanism: Gravity Well carries no dice at all,
+Breakpoints are excluded by cost, and Feral Script's Corrupt is a real printed attack line WITHOUT
+the phrase. What the guard actually decides is three Action lines carrying dice: Corrupt and the
+#GRID Guardian's Purge, which are Node math with a Security Rating in place of Defense, and the
+Lantern Shoal's Graze, which rolls nothing to hit.
+
+**ONE THING COULD NOT BE DONE AND NEEDS THE AUTHOR.** The Spotter Drone has no attack ability at all
+in the app, while the handoff's own gear check refers to "Spotter Drone's SMG Pod (1d8, Range 8 /
+24)". The ability is simply absent from the stored entry, so its damage figure renders nothing. Not
+invented. Four other entries show no figure and are correct to: Feral Script and the #GRID Guardian
+attack Nodes rather than Defense, the Nixie's Spark Fuss is an Impulse, and the Lantern Shoal's
+Graze is automatic.
+
+**INCIDENTAL.** `weaponAmmo` and `weaponGrip` are no longer keyed by weapon name; an earlier
+migration re-keyed them to entry keys. The rename pass over them is harmless but redundant, and is
+left in as cheap insurance rather than removed.
+
 ## Attacks against you get two lanes and a count, 2026-09-19
 
 The last entry flagged this as optional: Traced sets the app's `edgeToAttackers` flag, whose banner

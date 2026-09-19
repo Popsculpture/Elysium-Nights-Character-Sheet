@@ -156,7 +156,7 @@ EN.rules = {
     lifelikes: ["Empathy Emulator", "Biometric Spoofing", "Vital Static", "Disarming Cadence"],
     hulsk: ["Hulskpitality", "Brutal Frame", "Slaughterhouse Charge", "Ironhide Tusks"],
     skarn: ["Neon Chameleon", "Warmblood Sense", "Butcher Spurs", "Prey Stalker's Grip"],
-    ryn: ["Rabbitwire Reflex", "Cagebreak Instinct", "Highground Hunger", "Hare-Trigger Instinct"],
+    ryn: ["Rabbitwire Reflex", "Feral Reprisal", "Highground Hunger", "Hare-Trigger Instinct"],
     "cinder-heart": ["Forge-Blooded", "Cauterizing Vitae", "Volcanic Temper", "Fanatical Fervor"],
     harbinger: ["Calculated Execution", "Frictionless Stasis", "Algorithmic Insight", "Uncanny Presence"],
     grinling: ["Hyper-Kinetic Metabolism", "Scavenger's Maw", "Disjointed Anatomy", "Predator's Glare"]

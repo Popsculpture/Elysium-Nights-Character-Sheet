@@ -4,26 +4,26 @@
    number here is computed. Every live statblock comes out of the one resolver,
    EN.gmEngine.buildThreat, so the book and the generator cannot drift.
 
-   The Gauge is the threat side of Caliber, rated 1 to 5 and read against it.
+   The Grade is the threat side of Caliber, rated 1 to 5 and read against it.
    =========================================================================== */
 window.EN = window.EN || {};
 
 EN.threats = {
   schemaVersion: 1,
 
-  /* The Gauge, Part 4. "Reads as" is the fiction; "matched crew" is the pricing
+  /* The Grade, Part 4. "Reads as" is the fiction; "matched crew" is the pricing
      relationship that makes a budget mean anything. */
-  gauges: [
+  grades: [
     { g: 1, reads: "Street trouble. Dangerous to civilians, manageable for professionals.", crew: "Caliber 1 (Levels 1 to 2)" },
     { g: 2, reads: "Professional trouble. Somebody trained it, built it, or fed it.", crew: "Caliber 2 (Levels 3 to 4)" },
     { g: 3, reads: "District trouble. The kind of problem that gets a named file.", crew: "Caliber 3 (Levels 5 to 6)" },
     { g: 4, reads: "Sector trouble. Response teams get briefed. Insurance adjusters get involved.", crew: "Caliber 4 (Levels 7 to 8)" },
     { g: 5, reads: "City trouble. There are recordings. People argue about whether they are real.", crew: "Caliber 5 (Levels 9 to 10)" }
   ],
-  workingBand: "Build encounters from threats within one Gauge of the crew's Caliber. Two Gauges up can anchor a climax. Three up is not an encounter, it is weather.",
+  workingBand: "Build encounters from threats within one Grade of the crew's Caliber. Two Grades up can anchor a climax. Three up is not an encounter, it is weather.",
 
-  /* THE STANDARD THREAT ARRAY. Defense and Save DC are both 11 + Gauge, and the
-     strong save is 3 + Gauge, so those three could be computed. They are tabled
+  /* THE STANDARD THREAT ARRAY. Defense and Save DC are both 11 + Grade, and the
+     strong save is 3 + Grade, so those three could be computed. They are tabled
      anyway: this file's job is to say what the book prints, and a reader
      checking the app against the page should find the page. The resolver is
      where arithmetic lives.
@@ -43,26 +43,26 @@ EN.threats = {
   /* DESIGNATIONS. `standard` is carried as a real row with neutral values so the
      resolver never needs a null branch.
 
-     Minion's `vitalityByGauge` is a REPLACEMENT, not a multiplier, and it is the
+     Minion's `vitalityByGrade` is a REPLACEMENT, not a multiplier, and it is the
      most misreadable line in the chapter. A Minion does not get 60 percent of
      the array's Vitality; it gets the number in its own table, and any Role
      percentage then applies to THAT. Get this backwards and every Minion in the
-     app is wrong by a different amount at every Gauge. */
+     app is wrong by a different amount at every Grade. */
   designations: [
     { key: "minion", name: "Minion", blurb: "Cheap muscle dying in droves. At 0 Vitality it is out of the fight, no lingering, no drama.",
-      vitalityByGauge: { 1: 6, 2: 10, 3: 15, 4: 25, 5: 35 },
+      vitalityByGrade: { 1: 6, 2: 10, 3: 15, 4: 25, 5: 35 },
       damageMult: 0.6, noDefensiveImpulse: true,
-      xpByGauge: { 1: 25, 2: 50, 3: 75, 4: 100, 5: 125 } },
-    { key: "standard", name: "Standard", blurb: "The default. One Standard of matching Gauge is a fair share of a fight for one Freelancer.",
-      xpByGauge: null },
+      xpByGrade: { 1: 25, 2: 50, 3: 75, 4: 100, 5: 125 } },
+    { key: "standard", name: "Standard", blurb: "The default. One Standard of matching Grade is a fair share of a fight for one Freelancer.",
+      xpByGrade: null },
     { key: "elite", name: "Elite", blurb: "A squad leader, a warform, an alpha. Counts as two Standards on the budget and plays like it.",
       vitalityMult: 2, defense: 1, dc: 1, damageMultLow: 1.5, damageMultHigh: 2,
-      xpByGauge: { 1: 200, 2: 300, 3: 500, 4: 700, 5: 900 } },
+      xpByGrade: { 1: 200, 2: 300, 3: 500, 4: 700, 5: 900 } },
     { key: "solo", name: "Solo", blurb: "A specialized killer that takes the whole crew to put down. Priced for four Freelancers by itself.",
       vitalityMult: 4, defense: 1, dc: 2, damageMult: 3,
-      surgesByGauge: { 1: 2, 2: 2, 3: 3, 4: 3, 5: 3 },
+      surgesByGrade: { 1: 2, 2: 2, 3: 3, 4: 3, 5: 3 },
       unshakable: true, breakpoint: true, weakness: true,
-      xpByGauge: { 1: 400, 2: 600, 3: 1000, 4: 1400, 5: 1800 } }
+      xpByGrade: { 1: 400, 2: 600, 3: 1000, 4: 1400, 5: 1800 } }
   ],
 
   /* ROLES. A behavior package: what the threat does with its numbers, plus a
@@ -86,22 +86,26 @@ EN.threats = {
     /* `vitalityMult` added 2026-09-18: the Roles table gave Controller a Vitality clause to match
        its damage one, so it now reads -25% damage, -25% Vitality, Save DC +1.
 
-       TWO PRINTED PAGES DISAGREE WITH WHAT THIS GENERATES, both knowingly. A Gauge 2 Controller
-       computes 30 x 0.75 = 22.5, and vit() rounds half UP by documented choice (see gmengine.js,
-       where the reason is that Role percentages can drive a G1 Minion's 6 down to 4.5), so the
-       builder says 23 where the book prints 22 for the Street Shaper and the Sentry Turret. And
-       the Reclamation Bloom is a stated exception at 55 against a computed 38, because it is
-       rooted. The rounding is not changed here: which way a half rounds is a rules call the
-       ruling does not make, and flipping it would move every other .5 in the table. */
+       THE HALVES ROUND DOWN, ruled 2026-09-19, and this paragraph used to say the opposite. A
+       Grade 2 Controller computes 30 x 0.75 = 22.5 and vit() floors it to 22, which is what the
+       book prints for the Street Shaper, the Gutter Hacker and the Sentry Turret. Those three
+       used to disagree with the builder by one and no longer do.
+
+       ONE STATED EXCEPTION SURVIVES. The Reclamation Bloom prints 55 against a computed 37,
+       because it is rooted. That is an authored exception, not a rounding artifact, and it must
+       not be "corrected" to match the generator.
+
+       The rounding itself lives in vit() in gmengine.js, which carries the reasoning and the
+       consequence the author accepted: a Grade 1 Minion on a -25 percent Role now reads 4. */
     { key: "controller", name: "Controller", damageMult: 0.75, vitalityMult: 0.75, saveDC: 1,
       text: "Trades damage for conditions and terrain: Restrains, Blinds, herds the crew into worse rooms." },
     { key: "support", name: "Support", damageMult: 0.75,
-      text: "Keeps the others standing: restores Vitality equal to twice its Gauge as an Action, or grants an ally Edge. Kill the medic first is a proverb for a reason." }
+      text: "Keeps the others standing: restores Vitality equal to twice its Grade as an Action, or grants an ally Edge. Kill the medic first is a proverb for a reason." }
   ],
 
   /* THE ABILITY MENU. Two abilities make a threat feel authored instead of
      extruded. They are free picks keyed to Role, not a point spend, and they are
-     tuned to work at any Gauge because they key off the threat's own Save DC.
+     tuned to work at any Grade because they key off the threat's own Save DC.
      `anything` is the book's own group name and is offered to every Role. */
   abilityGroups: [
     { role: "bruiser", abilities: [
@@ -118,7 +122,7 @@ EN.threats = {
       { name: "Bounding Retreat", cost: "Impulse", text: "When an ally within 6 spaces drops, move half Speed toward cover." }
     ] },
     { role: "deadshot", abilities: [
-      { name: "Painted Shot", cost: null, text: "This threat's first attack each round against a Target that has not moved since its last turn gains Edge." },
+      { name: "Angle Found", cost: null, text: "This threat's first attack each round against a Target that has not moved since its last turn gains Edge." },
       { name: "Displace", cost: "Swift", text: "After attacking from hiding, move 2 spaces. The shot's origin is obvious; the shooter is not." }
     ] },
     { role: "ghost", abilities: [
@@ -131,7 +135,7 @@ EN.threats = {
       { name: "Static Howl", cost: "Action", text: "Area 3 cone. Targets save or are Staggered until the end of their next turn." }
     ] },
     { role: "support", abilities: [
-      { name: "Patch In", cost: "Action", text: "Touch an allied threat: it regains Vitality equal to twice its Gauge." },
+      { name: "Patch In", cost: "Action", text: "Touch an allied threat: it regains Vitality equal to twice its Grade." },
       { name: "Spotter", cost: "Swift", text: "One allied threat gains Edge on its next attack against a Target this threat can see." },
       { name: "Stims", cost: "Action", text: "An allied threat immediately makes a save against one condition affecting it, with Edge." }
     ] },
@@ -150,7 +154,7 @@ EN.threats = {
     "Threats do not roll Death Saves. A target the crew is bringing in alive becomes Dying on Part 2's clock instead.",
     "Flat bonuses only. A threat has no proficiency tier and no Caliber."
   ],
-  morale: "Optional. When a threat loses its leader, loses half its number, or sees something out of its Gauge, it makes a Wits Save DC 12 or breaks. Fanatics, Constructs and anything without a survival instinct are exempt. Fights that end in morale collapse pay full XP.",
+  morale: "Optional. When a threat loses its leader, loses half its number, or sees something out of its Grade, it makes a Wits Save DC 12 or breaks. Fanatics, Constructs and anything without a survival instinct are exempt. Fights that end in morale collapse pay full XP.",
 
   /* Size is the character-side vocabulary, reused rather than restated, so a
      Large threat and a Large Freelancer mean the same thing. Type is Part 4's
@@ -182,7 +186,7 @@ EN.threats = {
   types: ["Human", "Chimera", "Verdine", "Clanker", "Outsider", "Construct", "Drone", "Beast", "Bioform", "Flow Being", "Cryptid", "#GRID Entity"],
 
   /* Encounter budgeting, carried now so stage 3 adds no second data file.
-     Share per Freelancer is the matching Gauge's Standard XP. */
+     Share per Freelancer is the matching Grade's Standard XP. */
   budget: {
     shareByCaliber: { 1: 100, 2: 150, 3: 250, 4: 350, 5: 450 },
     difficulties: [
@@ -191,14 +195,14 @@ EN.threats = {
       { key: "hard", name: "Hard Contract", mult: 1.5 },
       { key: "red", name: "Red Work", mult: 2 }
     ],
-    note: "Past 2x is not an encounter, it is an ambush you are writing on purpose. A matched-Gauge Solo alone is a Fair Fight for four."
+    note: "Past 2x is not an encounter, it is an ambush you are writing on purpose. A matched-Grade Solo alone is a Fair Fight for four."
   },
 
   /* Hazard authoring, Part 4's GM-facing layer over Part 2's Environmental
      Hazards. Note the DC ladder DIVERGES from the Standard Threat Array's Save
      DC at G3 and above (15/16/18 against the array's 14/15/16). That is the
      book's own number and not a transcription slip. */
-  hazardDCByGauge: { 1: 12, 2: 13, 3: 15, 4: 16, 5: 18 },
+  hazardDCByGrade: { 1: 12, 2: 13, 3: 15, 4: 16, 5: 18 },
   hazardBite: [
     { key: "nuisance",  name: "Nuisance",  dice: "1d6" },
     { key: "dangerous", name: "Dangerous", dice: "2d6" },
@@ -210,7 +214,7 @@ EN.threats = {
      absence is an oversight. Stages 2 to 6 land these in order. */
   notModelled: [
     "The Bestiary: 31 statblocks plus 3 variants, including two #GRID entries that carry Node math instead of Defense and Vitality.",
-    "Set Pieces: the eight pre-written hazards, all authored at Gauge 3.",
+    "Set Pieces: the eight pre-written hazards, all authored at Grade 3.",
     "The Job Board: five roll tables and twelve postings.",
     "Paying the Crew: contract pay bands, bounties, salvage values.",
     "Security response clocks and the encounter composition rules."

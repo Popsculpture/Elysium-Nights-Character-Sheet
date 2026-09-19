@@ -20,6 +20,11 @@ EN.gearCatalog.signature = {
   items: [
     /* ---- Melee ---- */
     // shafted: "a polearm haft that projects a blade", so Staff & Spear Master applies
+    { name: "Afterbite Katana", signature: true, kind: "melee", group: "Martial", proficiency: "Martial Weapons",
+      price: 900, damage: "1d8 Slashing", range: "Melee",
+      traits: ["Finesse", "Quick Draw", "Versatile (1d10)", "Armor Piercing 1"], availability: "Rare", legality: "Restricted",
+      desc: "A katana ground to a single molecule and then, because somebody wanted the wound to keep working after the cut, serrated behind the edge. The workbench says one blade cannot hold both. The workbench has not met whoever made this one.",
+      effect: "On Hit: On a critical hit, the Target gains 1 stack of Bleeding." },
     { name: "Arc Glaive", shafted: true, signature: true, kind: "melee", group: "Martial", proficiency: "Martial Weapons",
       price: 800, damage: "1d10 Energy", range: "Melee (Reach 1)",
       traits: ["Reach 1", "Two-Handed", "Armor Piercing 1"], availability: "Rare", legality: "Contraband",
@@ -99,7 +104,15 @@ EN.gearCatalog.signature = {
       price: 1200, damage: "1d10 Energy", ammo: 20, range: "16 / 48",
       traits: ["Two-Handed", "Semi-Automatic"], availability: "Rare", legality: "Restricted",
       desc: "A directed-energy carbine that fires bolts of coherent light. No muzzle climb, no recoil, no brass on the floor. Just a clean line from barrel to target and a scorch where it lands.",
-      effect: "On Hit: the beam ignores the Defense bonus granted by Half Cover." }
+      effect: "On Hit: the beam ignores the Defense bonus granted by Half Cover." },
+    /* Ammo is 20 rounds of the Longarms category's ordinary ammunition, on the author's
+       instruction: the rifle has no row in the Munitions table, so whether it feeds a
+       bespoke Counted munition is undecided on the page. Revisit if a row appears. */
+    { name: "X-Calibur Rifle", signature: true, kind: "ranged", group: "Longarm", proficiency: "Longarms",
+      price: 1400, damage: "2d8 Ballistic", ammo: 20, range: "16 / 48",
+      traits: ["Two-Handed", "Semi-Automatic", "High Recoil"], availability: "Rare", legality: "Restricted",
+      desc: "Issued with the plate and the warrant. Chambered for a round no storefront stocks, and built heavy enough that the recoil goes into the chrome instead of the shoulder. The serial number is the only part of it that reads as licensed.",
+      effect: "On Hit: The first Target you hit each round is Traced until the start of your next turn. Knights deploy in pairs. The rifle assumes you did too." }
   ],
 
   /* Munitions: bespoke consumables; all Counted (track each unit). The melee
