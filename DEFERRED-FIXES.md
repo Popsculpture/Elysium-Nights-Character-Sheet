@@ -8853,10 +8853,22 @@ whole app, vehicles.js's statsNote, which is the stated exception.
   both had been printed earlier in the same session. The lesson is narrow and reusable: when the
   question is "what is this chapter called", search the table of contents, not the body.
 
-  Both now name their chapter: "Dying on the Vitality and Recovery clock" and "Environmental
-  Hazards allows exactly two vacuum-rated paths". Written with "and" rather than an ampersand to
-  match basics.js, the app's one existing prose citation of that chapter; the Codex uses "&" in
-  panel TITLES, which are headings rather than sentences.
+  Both now name their chapter: "Dying on the Vitality & Recovery clock" and "Environmental Hazards
+  allows exactly two vacuum-rated paths".
+
+  **THE AMPERSAND, ruled the same evening.** These were written with "and" first, to match
+  basics.js, the app's one existing prose citation of that chapter. The author's call is that the
+  book's chapter title carries an ampersand and the app follows the book, so both moved: the new
+  citation in threats.js AND the pre-existing one in basics.js. Changing only the new one would
+  have left the app spelling a single chapter two ways, which is the half-rename this session has
+  already been bitten by twice.
+
+  Checked before writing a bare "&" into data: both sinks are text, not HTML. basics.js renders
+  through proseBlock into EN.ui.applyInline, which builds document.createTextNode and el(...,
+  {text}) and never touches innerHTML, so the character renders literally and needs no entity.
+  Confirmed live, and confirmed it is NOT double-escaped. threats.js needs no check at all for a
+  different reason: EN.threats.conventions has no renderer anywhere in app/js. Like the Breakflow
+  triggers field, it is source truth for the next reader rather than display.
 
 **AND THE PART WORTH KEEPING: A RENAME CHECKLIST, IN HANDOFF.md.** The lineage-feature rename
 that nearly shipped a data loss had a warning against it sitting three lines above the resolver

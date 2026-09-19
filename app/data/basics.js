@@ -94,7 +94,7 @@ EN.basics = {
   together: {
     intro: "When you read a class entry, you will see lines like this:",
     example: "Spend 1 Overdrive as an Impulse Action to gain Edge on your next melee attack and ignore the first Wound die from the next hit you take.",
-    reading: "You now have the vocabulary for that sentence. **Overdrive** is the Fury's resource. **Impulse Action** is a trigger based reaction, covered in Action Economy below. **Edge** is mechanical advantage on the roll. **Wound** is the heavier of Elysium's two damage tracks, covered in Vitality and Recovery.",
+    reading: "You now have the vocabulary for that sentence. **Overdrive** is the Fury's resource. **Impulse Action** is a trigger based reaction, covered in Action Economy below. **Edge** is mechanical advantage on the roll. **Wound** is the heavier of Elysium's two damage tracks, covered in Vitality & Recovery.",
     closing: "All of it gets the full treatment in its own chapter. For now, just keep these shapes in mind while you choose a class and start building a Freelancer."
   }
 };
