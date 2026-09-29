@@ -17,7 +17,7 @@ EN.traumaRigs = {
   saveDcFormula: "Triage Save DC: 8 + your Tech Modifier + your Rig's Output Bonus",
   outputBonusNote: "A Rig's Output Bonus adds to any healing roll the Rig delivers, and it sets the Triage Save DC.",
   modSlotNote: "Modification Slots equal the Rig's Tier, so a Field Kit [0] has none and a Black Clinic [5] has five. The printed dash on the Field Kit row means zero.",
-  integrityNote: "A Trauma Rig is powered gear, so it projects a #GRID Node at its own Tier and is a valid #GRID target. Its Integrity is the node's System Integrity: cipher damage tests the Firewall first and the remainder comes off Integrity, physical damage lands at full value, and at 0 the Rig is Bricked until it is repaired.",
+  integrityNote: "A Trauma Rig is powered gear, so it projects a #GRID Node at its own Tier and is a valid #GRID target. Its Integrity is the Node's System Integrity: cipher damage tests the Firewall first and the remainder comes off Integrity, physical damage lands at full value, and at 0 the Rig is Bricked until it is repaired.",
   // Trauma Grade [2] is the rung where the Rig stops being a first aid box.
   advancedMedkitTier: 2,
   medicalBaseline: "A Trauma Rig counts as a Basic Medkit for Treat Wounds and Treat Fatigue. At Trauma Grade [2] or higher it counts as an Advanced Medkit instead.",
@@ -36,7 +36,7 @@ EN.traumaRigs = {
     { tier: "Combat Grade",  t: 3, outputBonus: 2, price: 5500,  integrity: 30, availability: "Uncommon", legality: "Restricted",
       trait: "Redundant Injector",      traitText: "Once per scene, reroll a healing roll made through the rig. Take the second result." },
     { tier: "Ward Response", t: 4, outputBonus: 2, price: 9500,  integrity: 35, availability: "Rare",     legality: "Restricted",
-      trait: "Contraindication Filter", traitText: "Allies are not affected by area compounds you release." },
+      trait: "Contraindication Filter", traitText: "Allies aren't affected by area compounds you release." },
     { tier: "Black Clinic",  t: 5, outputBonus: 3, price: 16000, integrity: 40, availability: "Rare",     legality: "Contraband",
       trait: "Autonomous Loop",         traitText: "Once per scene, while you are Unconscious or Incapacitated, the rig delivers Failsafe to the nearest dying ally in range on its own." }
   ],
@@ -292,7 +292,7 @@ EN.classes.stitcher = {
         {
           level: 1,
           name: "Black Market Butcher",
-          text: "You gain Proficiency with Engineering Tools. If you spend 10 minutes extracting tech from a defeated enemy with cybernetics or the Machine Physiology trait, you harvest Cyber-Scrap. You also harvest organic salvage from defeated biological enemies (adrenal tissue, bio-gel), which is stored and used identically to Cyber-Scrap (including for Rig Fuel and Pawn It). You can hold Cyber-Scrap up to your Tech Modifier, and use it in two ways:\n\n• **Rig Fuel:** As an **Action**, break down a piece of Cyber-Scrap into your Triage Rig to regain 1 spent Triage.\n• **Pawn It:** Sell Cyber-Scrap to fixers, merchants, or underground clinics for a modest payout (the exact \u{1D4A2} value is set by the GM based on the tier of the enemy it was harvested from).\n• **Chop Rig:** Surgical arms on one side, a hopper on the other. It holds a body open and it eats what comes out. Harvesting Cyber-Scrap takes 1 minute instead of 10, and your you can hold Cyber-Scrap up to **twice your Tech Modifier**. As an **Action**, spend 1 Cyber-Scrap to apply an Aftermarket Hot-Wire to a willing ally within your melee reach; it lasts until the end of the encounter and doesn't count against your usual number of Hot-Wires."
+          text: "You gain Proficiency with Engineering Tools. If you spend 10 minutes extracting tech from a defeated enemy with cybernetics or the Machine Physiology trait, you harvest Cyber-Scrap. You also harvest organic salvage from defeated biological enemies (adrenal tissue, bio-gel), which is stored and used identically to Cyber-Scrap (including for Rig Fuel and Pawn It). You can hold Cyber-Scrap up to your Tech Modifier, and use it in two ways:\n\n• **Rig Fuel:** As an **Action**, break down a piece of Cyber-Scrap into your Triage Rig to regain 1 spent Triage.\n• **Pawn It:** Sell Cyber-Scrap to fixers, merchants, or underground clinics for a modest payout (the exact \u{1D4A2} value is set by the GM based on the tier of the enemy it was harvested from).\n• **Chop Rig:** Surgical arms on one side, a hopper on the other. It holds a body open and it eats what comes out. Harvesting Cyber-Scrap takes 1 minute instead of 10, and you can hold Cyber-Scrap up to **twice your Tech Modifier**. As an **Action**, spend 1 Cyber-Scrap to apply an Aftermarket Hot-Wire to a willing ally within your melee reach; it lasts until the end of the encounter and doesn't count against your usual number of Hot-Wires."
         },
         {
           level: 3,
@@ -353,7 +353,7 @@ EN.classes.stitcher = {
       },
       {
         name: "Adrenal Tuning",
-        requires: "a living, organic ally; cannot be applied to a fully synthetic body such as a Clanker",
+        requires: "a living, organic ally; can't be applied to a fully synthetic body such as a Clanker",
         text: "With no hardware to tune, you go to work on the body itself, priming their endocrine and adrenal systems to run hot. Their Speed increases by 1, they gain a +1 bonus to Body Saves, and the first time each encounter they drop below half their maximum Vitality, they immediately gain Vigor equal to your Caliber as their body floods with combat hormones."
       }
     ]

@@ -36,7 +36,7 @@ EN.combat = {
     {
       name: "Special Action",
       summary: "Feature-driven: passive, triggered, resource-based, or embedded. Cost and timing set by the feature.",
-      text: "Most features fit one of the six action types. Some don't. A Special Action is the catch-all for features, traits, resources, and triggered effects that sit outside the normal action types. A Special Action may be passive, limited-use, resource-based, triggered by a specific event, or resolved as part of another action.\n\nA Special Action doesn't, on its own, grant an extra action. Its rules text decides when it can be used, what it costs, and whether it replaces or modifies an Action, Move Action, Swift Action, Impulse Action, Free Action, or Complex Action. When the feature text and these general rules disagree, the feature text wins.\n\nCommon Uses\n- Passive Special: Always active, or checked automatically when its trigger is relevant. No action required.\n- Resource Special: Tracks or spends a class resource such as Moxie, Flow Points, Bandwidth, or Triage. The cost comes out of that pool when the feature is used.\n- Triggered Special: Fires when a specific event occurs, such as failing a check, taking damage, becoming Bloodied, or landing an attack.\n- Limited Use Special: Can be used a set number of times before a Short Rest, Long Rest, or other listed reset.\n- Embedded Special: Modifies another action, such as adding an effect to an attack, a hack, a save, or a Flow Invocation. It resolves as part of that action, not as a separate one."
+      text: "Most features fit one of the six action types. Some don't. A Special Action is the catch-all for features, traits, resources, and triggered effects that sit outside the normal action types. A Special Action may be limited-use, resource-based, triggered by a specific event, or resolved as part of another action.\n\nA Special Action doesn't, on its own, grant an extra action. Its rules text decides when it can be used, what it costs, and whether it replaces or modifies an Action, Move Action, Swift Action, Impulse Action, Free Action, or Complex Action. When the feature text and these general rules disagree, the feature text wins.\n\nCommon Uses\n- Passive Special: Always active, or checked automatically when its trigger is relevant. No action required.\n- Resource Special: Tracks or spends a class resource such as Moxie, Flow Points, Bandwidth, or Triage. The cost comes out of that pool when the feature is used.\n- Triggered Special: Fires when a specific event occurs, such as failing a check, taking damage, becoming Bloodied, or landing an attack.\n- Limited Use Special: Can be used a set number of times before a Short Rest, Long Rest, or other listed reset.\n- Embedded Special: Modifies another action, such as adding an effect to an attack, a hack, a save, or a Flow Invocation. It resolves as part of that action, not as a separate one."
     }
   ],
 
@@ -121,12 +121,12 @@ EN.combat = {
       effect: "You are roughly half hidden behind solid objects such as crates, railings, desks, or door frames.\n- You gain +2 Defense against attacks that must pass through that cover."
     },
     {
-      name: "Three Quarter Cover",
+      name: "Three-Quarter Cover",
       effect: "Most of your body is hidden behind sturdy objects such as large machinery, pillars, reinforced furniture, or vehicle frames.\n- You gain +5 Defense against attacks that must pass through that cover."
     },
     {
       name: "Total Cover",
-      effect: "You are fully hidden and cannot be targeted directly by attacks that require line of sight.\n- You can't attack targets you can't see, unless an effect explicitly allows blind targeting or ignores line of sight.\n- Effects that ignore line of sight also ignore Total Cover."
+      effect: "You are fully hidden and can't be targeted directly by attacks that require line of sight.\n- You can't attack targets you can't see, unless an effect explicitly allows blind targeting or ignores line of sight.\n- Effects that ignore line of sight also ignore Total Cover."
     }
   ],
 

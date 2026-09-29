@@ -3,7 +3,7 @@
    Extracted verbatim from "Gear and Equipment → Signature Weapons" (Part 3).
    Prices in Glimmer (𝒢). Each Signature weapon is handled under a conventional
    weapon category (its Proficiency); untrained in that category you attack with
-   Snag and cannot use its On Hit effects or area projections. `group` is the
+   Snag and cannot trigger its On Hit riders (the base area projection still works). `group` is the
    conventional category so the equip/attack logic treats them like any weapon.
    =========================================================================== */
 window.EN = window.EN || {};
@@ -11,7 +11,7 @@ EN.gearCatalog = EN.gearCatalog || {};
 
 EN.gearCatalog.signature = {
   intro: "Some weapons do a job and vanish back into the work. These do not. A Signature weapon is loud, strange, or unconventional enough that it becomes the thing people remember you by. You trade anonymity for presence. Some nights, presence is the most useful thing in your hands. Other nights it is a description on every screen in the district.",
-  usingNote: "Each Signature Weapon is handled under a conventional weapon category (its Proficiency) and used exactly like any other weapon in that family. Untrained in that category, you attack with Snag and cannot use the weapon's On Hit effects or area projections. Proficient or better, you add your Weapon Proficiency Bonus. A Signature weapon has 0 customization slots; it arrives complete; its power lives in the wielder.",
+  usingNote: "Each Signature Weapon is handled under a conventional weapon category (its Proficiency) and used exactly like any other weapon in that family. Untrained in that category, you attack with Snag. You can still fire the weapon in its basic mode, including any area projection that is simply how it delivers its attack, but you can't trigger its special On Hit riders. Proficient or better, you add your Weapon Proficiency Bonus. A Signature weapon has 0 customization slots; it arrives complete; its power lives in the wielder.",
   groupIntros: {
     melee: "Howling edges, kinetic mauls, and worn talons. Loud, strange, and unforgettable, the detail a witness leads with.",
     ranged: "Arc casters, chem spewers, coil drivers. Presence you can point down a hallway. The collateral is the receipt."

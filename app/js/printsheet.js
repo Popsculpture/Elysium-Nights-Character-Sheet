@@ -109,11 +109,26 @@ EN.printSheet = (function () {
     if (/Swift Action/i.test(text)) return "Swift";
     if (/Free Action/i.test(text)) return "Free";
     if (/Complex Action/i.test(text)) return "Complex";
-    if (/as an Action|use your Action|spend (?:an|your) Action|standard Action|as a single Action|take the Attack Action/i.test(text)) return "Action";
+    /* "takes an Action" is Close-Quarters Brawler's pin (28 September wording); measured over the catalogue it flips that one talent and nothing else. */
+    if (/as an Action|use your Action|takes an Action|spend (?:an|your) Action|standard Action|as a single Action|take the Attack Action/i.test(text)) return "Action";
     /* Special is tested AFTER the generic Action branch, matching combat.js, so a text
        naming both resolves the same way in all three renderers. */
     if (/Special Action/i.test(text)) return "Special";
     return "Passive";
+  }
+  /* An unlocked Talent Upgrade restates or moves the limit ("twice per Long Rest" over the
+     base "once per Long Rest"; "now refreshes on a Short Rest"), so the Upgrade is read first
+     and the base text is the fallback. A text with no unlocked Upgrade reads exactly as before.
+     The same wrapper sits in combat.js, printsheet.js and pdfexport.js. */
+  function parseUses(text, d) {
+    var ui = String(text || "").indexOf("**Upgrade (unlocked):**");
+    if (ui < 0) return parseUsesIn(text, d);
+    var base = parseUsesIn(text.slice(0, ui), d), up = text.slice(ui);
+    var direct = parseUsesIn(up, d);
+    if (direct) return direct;
+    var m = base && up.match(/refreshes on a (Long|Short) Rest/i);
+    if (m) return { max: base.max, recharge: m[1].charAt(0).toUpperCase() + m[1].slice(1).toLowerCase() + " Rest" };
+    return base;
   }
   /* Identical to combat.js parseUses ON PURPOSE, character for character, so a diff of the two
      files shows any future drift immediately. This copy had drifted three ways and every one of
@@ -122,7 +137,7 @@ EN.printSheet = (function () {
      "per Long Rest equal to your Caliber" pattern entirely, so Redundant Systems printed none
      either; and it returned the raw regex match as the recharge, so eleven abilities read "scene"
      and "encounter" in the pip tooltip where the sheet says "Scene" and "Encounter". */
-  function parseUses(text, d) {
+  function parseUsesIn(text, d) {
     if (!text) return null;
     var t = text.replace(/\s+/g, " ");
     var m;
@@ -870,7 +885,7 @@ EN.printSheet = (function () {
     var out = [sect("Flow Reservoir", f.attributeName + " · Overdraw at 0 FP")];
     out.push(el("div.ps-statrow", null, [
       stat("FP MAX", f.max, "(Cal x3) + mod"),
-      stat("FLOW DC", f.dc, "enemy saves"),
+      stat("FLOW SAVE DC", f.dc, "enemy saves"),
       stat("FLOW ATK", sgn(f.attackBonus), "d20 + this"),
       stat("STRAIN", "0 to 6", "track in play")
     ]));

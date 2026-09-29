@@ -53,7 +53,7 @@ EN.economy = {
   ],
 
   /* ---- lifestyle -------------------------------------------------------- */
-  lifestyleNote: "Lifestyle is what it takes to live between jobs: lodging, food, water, hygiene, transit, comms, the small steady tax of staying alive. It is usually paid per week; in campaigns with longer downtime the GM may charge per month instead.",
+  lifestyleNote: "Lifestyle is what it takes to live between jobs: lodging, food, water, hygiene, transit, comms, the small steady tax of staying alive. It is usually paid per week; in campaigns with longer Downtime the GM may charge per month instead.",
   lifestyleTiers: [
     { tier: "Bare Survival", weekly: 200,   monthly: 800,   living: "Shared floor space, cheap food, public wash access, unreliable safety" },
     { tier: "Scraper",       weekly: 500,   monthly: 2000,  living: "Capsule room or shared bunk, local transit, minimal privacy" },
@@ -139,12 +139,12 @@ EN.economy = {
   glimmerRewards: [
     { roll: 1, reward: "Street payout", value: "100 to 300" },
     { roll: 2, reward: "Small job", value: "500 to 1,000" },
-    { roll: 3, reward: "Mid tier contract", value: "1,500 to 3,000" },
+    { roll: 3, reward: "Mid-tier contract", value: "1,500 to 3,000" },
     { roll: 4, reward: "Faction favor", value: "about 5,000" },
     { roll: 5, reward: "Captured goods or liquidated assets", value: "about 7,500" },
     { roll: 6, reward: "Major property retrieval or escort", value: "10,000 to 20,000" },
-    { roll: 7, reward: "Corporate operation or high risk job", value: "30,000 to 50,000" },
-    { roll: 8, reward: "Campaign defining world change", value: "about 100,000, once per campaign" }
+    { roll: 7, reward: "Corporate operation or high-risk job", value: "30,000 to 50,000" },
+    { roll: 8, reward: "Campaign-defining world change", value: "about 100,000, once per campaign" }
   ],
   nexusRewardsNote: "Nexus should feel rare and meaningful.",
   nexusRewards: [

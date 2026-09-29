@@ -136,6 +136,8 @@ will take their listed counts once the trait is added.
 
 ### M18. Match Trigger Group grants Precision Frame in full
 
+**Superseded 2026-09-28: the book restored the mode limit on both the mod and the trait, so this edit is undone. See DEFERRED-FIXES, "The 28 September manuscript sync", decision 2.**
+
 The mod reads:
 
 > Apply Precision Frame. **Single Shot and Semi-Auto** attacks with this weapon score a

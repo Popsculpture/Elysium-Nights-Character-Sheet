@@ -12,7 +12,7 @@ EN.species = [
       flowConnection: "Humans can learn to shape the Flow like anyone else. Phasebound inherit a stronger connection, leaving their nerves slightly out of sync with normal reality and alert to shifts in the current before others notice them.",
       commonLineages: "FreeBorn, NextGen, Phasebound"
     },
-    blurb: "Humans built Elysium because they were afraid of being forgotten. They are fragile by comparison to many of the beings that now share the sprawl, but fragility never made humanity gentle. It made them urgent.",
+    blurb: "Humans built Elysium because they were afraid of being forgotten. They're fragile by comparison to many of the beings that now share the sprawl, but fragility never made humanity gentle. It made them urgent.",
     traits: {
       size: "Small to Medium: 3 to 7 feet tall, whatever the lineage.",
       languages: "Common Trade and one additional language of your choice, usually reflecting your home district or corporate affiliation.",
@@ -488,7 +488,7 @@ EN.species = [
       flowConnection: "Their emergence coincided with the awakening of the Flow, which fractured the boundary between realities and dragged them into Elysium.",
       commonLineages: "Cinder-Hearts, Harbingers, Grinlings"
     },
-    blurb: "Outsiders don't belong here, which hasn't stopped them from making rent. They come from adjacent realities: mythic pressure zones, impossible stasis realms, predatory wonderlands, and stranger places that do not translate cleanly into local physics.",
+    blurb: "Outsiders don't belong here, which hasn't stopped them from making rent. They come from adjacent realities: mythic pressure zones, impossible stasis realms, predatory wonderlands, and stranger places that don't translate cleanly into local physics.",
     traits: {
       size: "Small to Medium: Grinlings stand 3 to 5 feet tall, Cinder-Hearts range from 3 to 7 feet, and every Harbinger is exactly 6 feet.",
       languages: "Common Trade and one native, otherworldly dialect that relies on impossible frequencies, shifting colors, or non-vocal resonance that baseline humans can't accurately replicate.",

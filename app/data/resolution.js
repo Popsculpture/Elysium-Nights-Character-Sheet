@@ -81,7 +81,7 @@ EN.resolution = {
 
   /* ---- the Dice Pool Method --------------------------------------------- */
   pool: {
-    intro: "When one die cannot hold all the moving parts, you build a pool. Edge Dice and Snag Dice are built, capped, and read as two separate colors. Each has a d10 range and a maximum number of dice, and those two numbers aren't always the same.",
+    intro: "When one die can't hold all the moving parts, you build a pool. Edge Dice and Snag Dice are built, capped, and read as two separate colors. Each has a d10 range and a maximum number of dice, and those two numbers aren't always the same.",
     colorTable: [
       { color: "Edge", d10Range: "10", diceCap: "10" },
       { color: "Snag", d10Range: "5", diceCap: "7" }
@@ -226,7 +226,7 @@ EN.resolution = {
   /* ---- collaborative and opposed checks --------------------------------- */
   collaborative: {
     intro: "Two operators wrestle for the same console; a whole crew leans on one gate; a steady hand steadies someone else's. Opposed rolls, shared efforts, and direct assistance all run on the same margin and consequence framework.",
-    methodChoice: "If the contest or group effort happens during a combat Encounter or directly affects attacks, Saves, or Flow Invocations, resolve it with the d20 Method. If it is a long-form or out of combat challenge (heists, hacking races, extended negotiations, ritual work, or vehicle chases not framed as combat rounds), you may use Dice Pools.",
+    methodChoice: "If the contest or group effort happens during a combat Encounter or directly affects attacks, Saves, or Flow Invocations, resolve it with the d20 Method. If it is a long-form or out-of-combat challenge (heists, hacking races, extended negotiations, ritual work, or vehicle chases not framed as combat rounds), you may use Dice Pools.",
 
     contested: {
       intro: "When two forces want opposite things at the same instant, both throw and the margin between them decides who walks away holding the outcome.",

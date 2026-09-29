@@ -2211,18 +2211,33 @@ EN.combatView = (function () {
     if (/Swift Action/i.test(text)) return "Swift";
     if (/Free Action/i.test(text)) return "Free";
     if (/Complex Action/i.test(text)) return "Complex";
-    if (/as an Action|use your Action|spend (an|your) Action|standard Action|as a single Action|take the Attack Action/i.test(text)) return "Action";
+    /* "takes an Action" is Close-Quarters Brawler's pin (28 September wording); measured over the catalogue it flips that one talent and nothing else. */
+    if (/as an Action|use your Action|takes an Action|spend (an|your) Action|standard Action|as a single Action|take the Attack Action/i.test(text)) return "Action";
     if (/Special Action/i.test(text)) return "Special";
     return "Passive";
   }
   function isLimited(text) {
     return /once per|per Long Rest|per Short Rest|per Encounter|number of times equal|per scene|per turn/i.test(text || "");
   }
+  /* An unlocked Talent Upgrade restates or moves the limit ("twice per Long Rest" over the
+     base "once per Long Rest"; "now refreshes on a Short Rest"), so the Upgrade is read first
+     and the base text is the fallback. A text with no unlocked Upgrade reads exactly as before.
+     The same wrapper sits in combat.js, printsheet.js and pdfexport.js. */
+  function parseUses(text, d) {
+    var ui = String(text || "").indexOf("**Upgrade (unlocked):**");
+    if (ui < 0) return parseUsesIn(text, d);
+    var base = parseUsesIn(text.slice(0, ui), d), up = text.slice(ui);
+    var direct = parseUsesIn(up, d);
+    if (direct) return direct;
+    var m = base && up.match(/refreshes on a (Long|Short) Rest/i);
+    if (m) return { max: base.max, recharge: m[1].charAt(0).toUpperCase() + m[1].slice(1).toLowerCase() + " Rest" };
+    return base;
+  }
   /* parse "uses per rest" specs out of feature text; covers every phrasing in the data:
      "a number of times/uses equal to your Caliber per Long/Short Rest", "a number of times
      per X equal to your Caliber", "once/twice/N times per Long Rest/Short Rest/Encounter/scene".
       "combat encounter" is accepted as a spelling of Encounter; one entry writes it long. */
-  function parseUses(text, d) {
+  function parseUsesIn(text, d) {
     if (!text) return null;
     var t = text.replace(/\s+/g, " ");
     var m;
@@ -3388,7 +3403,7 @@ EN.combatView = (function () {
               } else {
                 chips.push(gchip(ab.spent ? "MOD · SPENT" : "MOD · " + ab.type.toUpperCase(), m.name,
                   ab.spent
-                    ? "Burned away; it grants no Resistance until you re-layer it in downtime. Click to re-layer."
+                    ? "Burned away; it grants no Resistance until you re-layer it in Downtime. Click to re-layer."
                     : "Resistance to " + ab.type + ". Click when it burns away stopping a hit of that type that would have carried through to your Wounds.",
                   ab.spent ? "var(--text3)" : "var(--ember)",
                   function () {
@@ -4744,15 +4759,16 @@ EN.combatView = (function () {
           borderTop: "1px solid rgba(35,48,68,.6)" } },
           traitChips.map(wTraitChip).concat(offerChips).concat([reachChip, gripEl].filter(Boolean))));
 
-        // Signature Weapons: On Hit effects and area projections stay locked at
-        // any proficiency tier until a Skill Focus names this specific weapon.
+        // Signature Weapons: the On Hit riders stay locked at any proficiency tier until a
+        // Skill Focus names this specific weapon. The book keeps the base area projection
+        // working; the sheet hides the whole effect text while locked (a coarser reading).
         if (it.signature && it.effect) {
           var sigOpen = eng.signatureUnlocked(ch, it);
           rowKids.push(sigOpen
             ? el("p.help", { style: { margin: "6px 0 0", fontSize: "11px", color: "var(--accent)" },
                 text: it.effect })
             : el("div", { style: { marginTop: "6px", padding: "6px 9px", border: "1px dashed var(--border2)", borderRadius: "4px", opacity: .6 },
-                title: "Weapon Proficiency alone keeps a Signature Weapon's On Hit effects and area projections locked." }, [
+                title: "Weapon Proficiency alone keeps a Signature Weapon's On Hit riders locked." }, [
                 el("span.mono", { style: { fontSize: "10px", color: "var(--warn)", letterSpacing: ".08em" }, text: "🔒 ON HIT LOCKED · " }),
                 el("span", { style: { fontSize: "11px", color: "var(--text3)" },
                   text: "Requires a Skill Focus naming this weapon: " + h.cat + " (" + it.name + "). Base attacks still work" + (h.prof ? " with your Weapon Proficiency Bonus." : ", untrained, with Snag." ) })
@@ -5163,8 +5179,10 @@ EN.combatView = (function () {
       var resDie = d.resilienceDie ? "d" + d.resilienceDie : "Resilience Die";
       var acro = d.skills.find(function (s) { return s.name === "Acrobatics"; });
       // d.attuned is the derived predicate; d.flow stays the Reservoir object, which is what
-      // flowMod actually reads. Two questions, two names, deliberately.
-      var attuned = !!d.attuned, flowMod = d.flow ? eng.fmtMod(d.flow.attack) : null;
+      // rebound actually reads. Two questions, two names, deliberately.
+      var attuned = !!d.attuned;
+      // Resurge rebounds your Flow Modifier with a floor of 1 (28 September rule text).
+      var rebound = d.flow ? Math.max(1, d.flow.attack) : null;
       var focusDie = dg.wardDie || null, focusName = dg.focus ? dg.focus.name : (dg.armor && dg.armor.wardDie ? dg.armor.name : null);
       /* A real melee weapon die for the Parry row. Unarmed AUGMENTS (Knuckles,
          Shock Gloves) are deliberately skipped: their catalog `damage` is what they
@@ -5323,7 +5341,7 @@ EN.combatView = (function () {
         }
         if (name === "Resurge") {
           base.dice.push({ n: 1, sides: d.resilienceDie || 6, label: "d" + (d.resilienceDie || 6) });
-          base.onZero = "Reduced to 0: the Flow attack rebounds for +3 Resonant damage.";
+          base.onZero = "Reduced to 0: the Flow attack rebounds for " + (rebound != null ? rebound : "your Flow Modifier (minimum 1)") + " Resonant damage.";
           base.note = "Against a Flow attack. Roll your Resilience Die and subtract it; if the damage drops to 0, it rebounds.";
           return base;
         }
@@ -5384,7 +5402,7 @@ EN.combatView = (function () {
         Parry:   { avail: true, req: "a melee weapon, a shield, or bare hands",
                    summary: parryText(pBest) + (pSources.length > 1 ? " · " + pSources.length + " to choose from" : "") },
         Resurge: { avail: attuned, req: "Flow attunement",
-                   summary: "Roll " + resDie + " vs Flow attacks; reduce to 0 → rebound " + (flowMod || "your Flow Mod") + " Resonant" },
+                   summary: "Roll " + resDie + " vs Flow attacks; reduce to 0 → rebound " + (rebound != null ? rebound : "your Flow Modifier (minimum 1)") + " Resonant" },
         Siphon:  { avail: attuned, req: "Flow attunement",
                    summary: "Roll " + resDie + " vs elemental/Flow damage; restore that much Vigor" },
         Ward:    { avail: !!focusDie || attuned, req: "a Warding Focus or class feature",

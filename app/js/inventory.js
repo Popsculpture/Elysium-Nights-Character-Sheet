@@ -833,11 +833,13 @@ EN.inventoryView = (function () {
       open && it.proficiency ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: "Proficiency: " + it.proficiency + (it.signature ? " · Signature weapon (0 customization slots)" : "") }) : null,
       open && (it.category || it.skill) ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: (it.category ? "Tool Category: " + it.category + (it.categoryAlt ? " or " + it.categoryAlt : "") : "") + (it.category && it.skill ? " · " : "") + (it.skill ? "Governing Skill: " + it.skill : "") }) : null,
       open && it.feeds ? el("p.help", { style: { margin: "4px 0 0", color: "var(--gold)" }, text: "Feeds: " + it.feeds }) : null,
-      // Signature Weapons: On Hit effects and area projections stay locked at
-      // any proficiency tier until a Skill Focus names this specific weapon
+      // Signature Weapons: the On Hit riders stay locked at any proficiency tier until a
+      // Skill Focus names this specific weapon. The book keeps the base area projection
+      // working; the sheet hides the whole effect text while locked (a coarser reading,
+      // logged in DEFERRED-FIXES as an author call)
       open && it.effect ? (it.signature && !EN.engine.signatureUnlocked(ch, it)
         ? el("div", { style: { marginTop: "6px", padding: "6px 9px", border: "1px dashed var(--border2)", borderRadius: "4px", opacity: .6 },
-            title: "Weapon Proficiency alone keeps a Signature Weapon's On Hit effects and area projections locked." }, [
+            title: "Weapon Proficiency alone keeps a Signature Weapon's On Hit riders locked." }, [
             el("span.mono", { style: { fontSize: "10px", color: "var(--warn)", letterSpacing: ".08em" }, text: "🔒 ON HIT LOCKED · " }),
             el("span", { style: { fontSize: "11px", color: "var(--text3)" },
               text: "Requires a Skill Focus naming this weapon: " + (it.proficiency || "its weapon category") + " (" + it.name + "). Buy it on the #PRINT Advance tab (L3+), or claim it as a Free overlap Focus at level 1." })
@@ -1726,7 +1728,7 @@ EN.inventoryView = (function () {
     var note = !ab.type
       ? "Choose a physical damage type. Until you do, this mod grants nothing."
       : ab.spent
-        ? "Burned away. It grants no Resistance until you re-layer it in downtime."
+        ? "Burned away. It grants no Resistance until you re-layer it in Downtime."
         : "Resistance to " + ab.type + " while you wear this suit. It burns away the first time a hit of that type would carry through to your Wounds.";
     return el("div", { style: { margin: "0 0 6px", paddingLeft: "10px", borderLeft: "1px dashed var(--border2)" } }, [
       el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } }, [
@@ -1737,7 +1739,7 @@ EN.inventoryView = (function () {
           title: "This mod grants Resistance to a damage type you have not chosen, so it is granting none." }, "UNCHOSEN") : null,
         ab.type ? el("button.btn.sm", {
           title: ab.spent
-            ? "Re-layer the coating. Bench work in downtime, and it grants its Resistance again."
+            ? "Re-layer the coating. Bench work in Downtime, and it grants its Resistance again."
             : "Mark it burned away: it stopped a hit of its type that would have carried through to your Wounds, and grants nothing until re-layered.",
           style: { color: ab.spent ? "var(--success)" : "var(--warn)", borderColor: ab.spent ? "var(--success)" : "var(--warn)" },
           onclick: function () { write(ab.type, !ab.spent); } }, ab.spent ? "RE-LAYER" : "MARK BURNED AWAY") : null
@@ -1788,7 +1790,7 @@ EN.inventoryView = (function () {
              upkeep: v.upkeep, buyout: v.listPrice,
              availability: v.availability, legality: v.legality, vehicle: true,
              desc: vehicleDesc(v) + " A corporate fleet lease: no buy-in, and the list price is the Buyout.",
-             effect: "Runs the Leased trait. Lapsed or Locked is a dead ignition: the engine will not turn over, installed mods sit inert, and the doors open for whoever holds the note. Miss a payment and the repo arrives as people, not paperwork." };
+             effect: "Runs the Leased trait. Lapsed or Locked is a dead ignition: the engine won't turn over, installed mods sit inert, and the doors open for whoever holds the note. Miss a payment and the repo arrives as people, not paperwork." };
   }
   function vehicleItems() { return VEH().map(vehicleAsItem).concat(VEH().map(vehicleLeaseAsItem)); }
   function VMODS() { return (EN.vehicles && EN.vehicles.mods) || []; }

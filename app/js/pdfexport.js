@@ -517,7 +517,8 @@ EN.pdfExport = (function () {
     if (/Swift Action/i.test(text)) return "Swift";
     if (/Free Action/i.test(text)) return "Free";
     if (/Complex Action/i.test(text)) return "Complex";
-    if (/as an Action|use your Action|spend (?:an|your) Action|standard Action|as a single Action|take the Attack Action/i.test(text)) return "Action";
+    /* "takes an Action" is Close-Quarters Brawler's pin (28 September wording); measured over the catalogue it flips that one talent and nothing else. */
+    if (/as an Action|use your Action|takes an Action|spend (?:an|your) Action|standard Action|as a single Action|take the Attack Action/i.test(text)) return "Action";
     /* Special is tested AFTER the generic Action branch, matching combat.js, so a text
        naming both resolves the same way in all three renderers. */
     if (/Special Action/i.test(text)) return "Special";
@@ -781,6 +782,20 @@ EN.pdfExport = (function () {
   /* =======================================================================
      SECTION 02 - TALENTS & LINEAGE (abilities at a glance)
      ======================================================================= */
+  /* An unlocked Talent Upgrade restates or moves the limit ("twice per Long Rest" over the
+     base "once per Long Rest"; "now refreshes on a Short Rest"), so the Upgrade is read first
+     and the base text is the fallback. A text with no unlocked Upgrade reads exactly as before.
+     The same wrapper sits in combat.js, printsheet.js and pdfexport.js. */
+  function parseUses(text, d) {
+    var ui = String(text || "").indexOf("**Upgrade (unlocked):**");
+    if (ui < 0) return parseUsesIn(text, d);
+    var base = parseUsesIn(text.slice(0, ui), d), up = text.slice(ui);
+    var direct = parseUsesIn(up, d);
+    if (direct) return direct;
+    var m = base && up.match(/refreshes on a (Long|Short) Rest/i);
+    if (m) return { max: base.max, recharge: m[1].charAt(0).toUpperCase() + m[1].slice(1).toLowerCase() + " Rest" };
+    return base;
+  }
   /* Identical to combat.js parseUses ON PURPOSE, character for character, so a diff of the two
      files shows any future drift immediately. This copy had drifted three ways and every one of
      them cost a printed sheet something: it lacked the optional "combat" before the recharge, so
@@ -788,7 +803,7 @@ EN.pdfExport = (function () {
      "per Long Rest equal to your Caliber" pattern entirely, so Redundant Systems printed none
      either; and it returned the raw regex match as the recharge, so eleven abilities read "scene"
      and "encounter" in the pip tooltip where the sheet says "Scene" and "Encounter". */
-  function parseUses(text, d) {
+  function parseUsesIn(text, d) {
     if (!text) return null;
     var t = text.replace(/\s+/g, " ");
     var m;
@@ -1084,7 +1099,7 @@ EN.pdfExport = (function () {
       ctx.sectionTitle("Flow Reservoir", f.attributeName + " · Overdraw at 0 FP");
       ctx.row([
         { label: "FP Max", name: "flow.fpMax", value: f.max, w: 1, align: "center" },
-        { label: "Flow DC", name: "flow.dc", value: f.dc, w: 1, align: "center" },
+        { label: "Flow Save DC", name: "flow.dc", value: f.dc, w: 1, align: "center" },
         { label: "Flow Atk", name: "flow.atk", value: sgn(f.attackBonus), w: 1, align: "center" },
         { label: "FP Now", name: "flow.fpNow", value: "", w: 1, align: "center" }
       ]);

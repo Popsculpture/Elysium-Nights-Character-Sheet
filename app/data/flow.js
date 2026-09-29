@@ -117,7 +117,7 @@ EN.flow = {
       resolution: "save", saveAttr: "Wits", armorNote: "Bypasses physical armor (Stability Factor).",
       base: "Project thoughts telepathically to a visible target, induce a minor sensory hallucination, or alter a single short-term memory (an unwilling target makes a Flow Save DC, Wits, to resist).",
       empowered: [
-        { name: "Neural Override", sustain: false, text: "Target makes a Flow Save DC (Wits) or you dictate their movement and Action on their next turn. You cannot force direct lethal self-harm." },
+        { name: "Neural Override", sustain: false, text: "Target makes a Flow Save DC (Wits) or you dictate their movement and Action on their next turn. You can't force direct lethal self-harm." },
         { name: "Sensory Collapse", sustain: true, text: "Target makes a Flow Save DC (Wits) or suffers Frightened or Charmed (your choice) for the duration." },
         { name: "Blind Spot", sustain: false, text: "A target you choose slips beneath notice, gaining the Invisible condition. Ends immediately if that target makes an attack or forces a saving throw." }
       ] },
@@ -134,7 +134,7 @@ EN.flow = {
       ] },
     { key: "temporal", name: "Temporal", unlock: 5, focus: "Chronological Flow", damage: "Entropy",
       resolution: "attack", noSustain: true,
-      stabilityNote: "The timeline resists alteration: Temporal Empowered Effects are strictly Instant and resolve at the end of the target's next turn. They cannot be sustained.",
+      stabilityNote: "The timeline resists alteration: Temporal Empowered Effects are strictly Instant and resolve at the end of the target's next turn. They can't be sustained.",
       base: "Age a small mundane object (rusting a lock or rotting a beam), glimpse the immediate future for Edge on your next Initiative roll, or perfectly recall an event from the past 24 hours.",
       empowered: [
         { name: "Chronal Acceleration", sustain: false, text: "Bend time around a willing ally. On their next turn their Speed is doubled and they gain one additional Action." },
@@ -221,7 +221,7 @@ EN.flow = {
     cooperative: "Up to three assistants may each grant +2 Edge Dice to the Lead Shaper's pool, or instead make their own check to remove 1 Stage of Strain from a different participant."
   },
   breakflowRestoration: {
-    full: "Full Restoration: in a Flow-rich area (Anomaly Severity 0) during an 8 hour long rest, a Positive Margin on a Flow Dice Pool check vs 5 Snag Dice restores the Reservoir to half capacity and reduces Strain to Stage 2. On failure, you stay in Breakflow and take 2d6 Vitality loss.",
+    full: "Full Restoration: in a Flow-rich area (Anomaly Severity 0) during an 8-hour Long Rest, a Positive Margin on a Flow Dice Pool check vs 5 Snag Dice restores the Reservoir to half capacity and reduces Strain to Stage 2. On failure, you stay in Breakflow and take 2d6 Vitality loss.",
     rough: "Rough Restoration: in a Severity 1 or lower area during a 4 hour rest, a Positive Margin vs 6 Snag Dice restores the Reservoir to one-quarter capacity and reduces Strain to Stage 3. On failure, you stay in Breakflow and take 2d6 Vitality loss."
   },
 

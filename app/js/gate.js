@@ -231,7 +231,7 @@ EN.gate = (function () {
       { t: 0,   cls: "gate-sys",     text: "// INTRUSION DETECTED on NODE 763" },
       { t: 520, cls: "gate-sys",     text: "// foreign process has attached to this terminal" },
       { t: 720, cls: "gate-cb",      text: "three misses. that was never your door." },
-      { t: 950, cls: "gate-cb",      text: "relax. i have been camped inside this Node the whole time. i will walk you in." },
+      { t: 950, cls: "gate-cb",      text: "relax. i have been camped inside this node the whole time. i will walk you in." },
       { t: 820, cls: "gate-sys",     text: "injecting cipher  ::  ACCESS_SPIKE", prog: 20 },
       { t: 620, cls: "gate-sys",     text: "spoofing credential handshake .........", prog: 48 },
       { t: 640, cls: "gate-sys",     text: "rotating session token ................", prog: 72 },

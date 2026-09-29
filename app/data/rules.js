@@ -330,8 +330,8 @@ EN.rules = {
       "You keep the grapple up the whole time, and one arm is full of person, so the other can only manage One-Handed gear.",
       "A shield does nothing against an attacker who can see around it (a flank), and less than nothing against Area effects, which cook you both."
     ],
-    bludgeon: "Spend an Action to swing your grappled Target at another Target within reach as an improvised melee attack. On a hit, deal 1d10 Bludgeoning to the Target and the same to the body. On a Critical or a wide Margin, the Target also makes a Body Save or is knocked Prone.",
-    throw: "Spend an Action to lob your grappled Target at a Target. Treat it as a Heavy improvised throw, range 2 / 6, and attack rolls carry Snag (the same Snag the Unwieldy body already imposes, which changes nothing, since Snag doesn't stack past rolling two dice). On a hit, deal 1d10 Bludgeoning to both, and the thrown Target lands Prone in the nearest open space to the Target, who makes a Body Save or is knocked Prone alongside it. On a miss, your projectile still finds the floor: it lands Prone and takes 1d6 from the arrival."
+    bludgeon: "Spend an Action to swing your Grappled Target at another Target within reach as an improvised melee attack. On a hit, deal 1d10 Bludgeoning to the Target and the same to the body. On a Critical or a wide Margin, the Target also makes a Body Save or is knocked Prone.",
+    throw: "Spend an Action to lob your Grappled Target at a Target. Treat it as a Heavy improvised throw, range 2 / 6, and attack rolls carry Snag (the same Snag the Unwieldy body already imposes, which changes nothing, since Snag doesn't stack past rolling two dice). On a hit, deal 1d10 Bludgeoning to both, and the thrown Target lands Prone in the nearest open space to the Target, who makes a Body Save or is knocked Prone alongside it. On a miss, your projectile still finds the floor: it lands Prone and takes 1d6 from the arrival."
   },
   // Features that shift EFFECTIVE Size for one purpose only. None changes the
   // character's actual Size, footprint, or Encumbrance beyond what it states.

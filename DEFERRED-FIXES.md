@@ -8929,6 +8929,138 @@ Callouses" in four places. Those are archaeological records, struck and annotate
 rewritten, so they stay as they were written. A reader searching the logs for the new spelling
 will not find the old entries, which is the cost of that convention and is worth knowing.
 
+## The 28 September manuscript sync: 2,136 records, six commits, 2026-09-28
+
+The source was a JSON changeset (2,136 records) comparing the manuscript exports of 19 September
+against 28 September. The handoff prose that normally travels with it was not supplied, so the
+`cited_in` numbers are read as: 1 terminology and renames, 2 action labels, 3 attributes and
+Proficiency, 4 conditions, 5 talents, 6 mechanics, 7 statblocks. That reading is inference, and
+nothing below depends on it being right.
+
+**How it went in.** Data files are transcriptions, so no rules text was invented. Every edit is
+either a word-level patch of a string literal (only the differing words change, so `**` bold
+markup, quoting and layout survive) or a verdict on a record.
+
+1. `5e0b274`: 1,670 word-level edits, patched in place by a literal scanner that decodes each
+   string, diffs tokens and splices only the changed words back into the raw source.
+2. `d0efaba`: 133 reworded passages the app words slightly differently, placed under a guard that
+   the result must reproduce the new wording exactly. Identifier-like literals (`name`, `trait`,
+   `type`, `coverOnFullDefense`, `nodeTier`) are never rewritten by the mechanical passes.
+3. `820d667`: ten package passes (foundations, species, classes and talents, core rules,
+   conditions, Flow and #GRID, craft and vehicles and economy, weapons, armor and kits,
+   cyberware). Verdicts across all 10: 251 not carried (the app never held that text), 137
+   applied as text, 133 already current, 18 applied as logic, 4 decisions, 3 rename deferred.
+4. `4c65076`: the rename migration (below), cleanups and a terminology sweep.
+5. The review fixes, in this entry's commit.
+
+**Review.** Two adversarial workflows: reviewers diffed every changed file against the changeset,
+skeptics tried to disprove every not-carried verdict, and each candidate finding went to three
+refuters for a majority vote. 45 findings survived, 7 were killed. Almost all were second copies
+or paraphrases of a changed sentence that the mechanical pass could not match (a contraction
+here, a capital there), plus these real defects, all fixed:
+
+- `data/grid.js` cipher damage note said a roll reduced to "-1 or less" is discarded. That is the
+  Miss margin; the Firewall rule is "0 or less".
+- `js/grid.js` B&E Buddy lockout said "takes 1 HP". The book says 5 System Integrity damage.
+- Cornered Prey and Off-the-Books Asset effect column still named the retired damage types.
+- Volcanic Temper brief still said "Area 2 Sphere" (the feature is now an aura).
+- Flow-Etched Limbs grant lost the word "Flow" that its sibling chip got.
+- Signature Weapon note said an untrained wielder cannot use area projections. The book says only
+  the On Hit riders are locked. **Text corrected; the sheet still hides the whole effect text
+  while locked, which is coarser than the book (see decision 12).**
+- A crafting project's display name kept the old item name after a rename (see renames).
+
+**Code changes the sync required** (none of it is in the transcribed data):
+
+- `actionCost` (three copies: combat.js, printsheet.js, pdfexport.js) gained "takes an Action".
+  Close-Quarters Brawler's pin bullet is now "takes an Action" and would have dropped from Action
+  to Passive on the play sheet, print sheet and PDF. Measured over the catalogue, it flips that
+  one talent and nothing else.
+- `parseUses` (same three copies) reads an unlocked Upgrade first, then falls back to the base
+  text. The new base wording puts "once per" limits ahead of the Upgrade's, so an upgraded
+  character's tracker stayed at the base value. Six talents change when the Upgrade is unlocked:
+  Neural Backup, Script Kiddie and Undercity Survivor go from 1 to 2 per Long Rest, Pain Editor
+  and Cybernetic Surge from 1 to 2 per Encounter, and Resonance Dabbler's free use now refreshes
+  on a Short Rest ("now refreshes on a Short Rest" is matched by its own clause). A talent with
+  no unlocked Upgrade reads exactly as before.
+- Resurge rebound is your Flow Modifier with a minimum of 1 (the tray hard-coded +3).
+- Cyberware enhancement scales by tier in one resolver (`cyberEnhLabel`): Streetware 0,
+  Blackware doubled, otherwise as listed. The print sheet used to show a bare +1 at every tier.
+- `R.standardArray` is 16, 16, 14, 12, 12, 8. Its only reader is the builder.
+- Powered Frames joined `EN.rules.gear.armor` (additive, reads Untrained on a saved record).
+- Hidden and Suppressed conditions have COND_FX and COND_META rows. Hidden's "Edge on attack
+  rolls against it" is a note only: the accumulator has no attacker-Edge channel.
+- Attack margins: a tie on Defense is a Standard Hit ("0 to +4"); "-1 or less" is the Miss
+  margin. Nothing in the app compares an attack roll to Defense, so this is display only.
+- Species feature action labels: the book dropped them from Heavy Payload, Vice Grip,
+  Disarming Cadence, Apex Bearing, Feral Reprisal, Light-Fingered Relay, Disjointed Anatomy and
+  Predator's Glare, so their `action` field is gone and the chip reads from the text. Calculated
+  Execution, Algorithmic Insight and Uncanny Presence carry "Special".
+- Spacer's skill choice is Perception or Systems (Awareness is gone from the option list).
+
+**Renames, under the HANDOFF checklist.** Hardlight Barrier is Hard-Light Barrier, Gridline
+Cable is #GRIDline Cable, Gridline Lumen Cable is #GRIDline Lumen Cable. All three are catalog
+names that saved records store and resolve by name, so `EN.gearCatalog.itemRenames` (beside
+`weaponRenames`, in gear_melee.js) feeds the same table in `store.js` `migrate()`. The pass runs
+BEFORE the id split so a legacy row is renamed everywhere at once: equipment rows, equipped
+slots, the racked map (keys and values), and the name-keyed maps `weaponAmmo`, `weaponGrip`,
+`weaponParts`, `armorMods`, `vehicleMods`, `carry`, `slotInert`, `shieldWear`, `armorWear`,
+`armorGuard`. A crafting project's `itemName` moves and so does the old name inside its display
+name. Checked with a legacy fixture (unsplit rows carrying all of the above) and a current
+id-bearing record; the renamed pieces keep their parts, ammo, mods and wear.
+
+**Decisions that need the author** (each was left as the app had it, or done the narrow way):
+
+1. **Point Buy cap.** The book dropped "(Max starting score is 16)" and the Cap bullet. The code
+   still enforces 16 (`maxStart`, and the cost table ends at 16) and the help line says cap 16.
+   Drop the cap, or keep 16 as a house limit?
+2. **Precision Frame.** The 28 September book restores the mode limit on the Match Trigger Group
+   AND on the trait itself (Single Shot and Semi-Auto only). That reverses M18 (ruled 2026-08-16:
+   unconditional). The app text now follows the book. Display only: no code computes a crit range
+   for this trait in any mode. Is the reversal intended?
+3. **Bowfire slot counts.** The book renames the Light bow profile to "Light frame" and adds
+   "Full frame (compound bow, standard or heavy crossbow, arbalest)" at 5 slots. The manual
+   profile picker carries both. The catalog weapons those profiles name still take the Bowfire
+   group default of 5.
+4. **Downtime Healing.** The book now says one uninterrupted week restores all Wounds, removes
+   all Strain and clears lingering Fatigue, and the Downtime list says "Restore all Wounds". The
+   DOWNTIME button restores nothing by author ruling (RULES-SYNC-CHANGELOG A19). Not applied.
+5. **Action chips** (species features above). If a feature the book no longer labels should read
+   Passive rather than by the action its text mentions, say so. Riddling Tongue lost its "(Swift)"
+   label; its text still says "Once per Encounter as a Swift Action", so it still reads Swift.
+6. **Targeting Suite plus Smart-Sight.** The book lets the pair share the Targeting slot as two
+   Parts, an exception to one Part per slot. The text is carried; the bench still holds one key
+   per slot. Either implement the pair (the slot holds two keys for that pair only; installed
+   counts and remove-part handle the array) or keep it a note the player tracks by hand.
+7. **Trigger Cache.** Text now says temporary Bandwidth can exceed the normal maximum. The app
+   has no temporary-Bandwidth tracking.
+8. **Powered Frames.** Added as an armor proficiency line, and the Powered trait text now names
+   it. The engine still leaves that proficiency to the table (engine.js, the Powered step-up),
+   so nothing gates on it. Should it gate?
+9. **Spacer saved records.** A saved Spacer whose `backgroundSkillChoice` is "awareness" is not
+   validated against the option list, so Awareness proficiency keeps applying with no chip
+   selected and no attention flag. A one-line migration would clear it.
+10. **Standard Array on saved records.** A character saved with the old array (attribute method
+    "array", assignments containing 10s) shows a blank dropdown for each attribute assigned 10.
+    The scores themselves are intact. There is no honest mapping from the old values, so no
+    migration was written.
+11. **Security Rating.** L0010 says a fixed target number, Security Rating included, is met with
+    "equal or higher". The #GRID header says "meet or beat with d20". That is a reading of L0010,
+    not a rule the book states for Cipher Attacks specifically.
+12. **Signature Weapons while locked.** The book keeps the base area projection working and locks
+    only the On Hit riders. The sheet hides the whole effect text while locked (inventory.js and
+    combat.js). Changing `signatureUnlocked` or what is hidden is an author call.
+
+**Not fixed, deliberately.** Gate dialogue stays lowercase ("this node"): it is app fiction and
+no changeset record touches it. The terminology sweep had capitalised one word in it; that is
+reverted.
+
+**Verification.** A differential harness ran the pre-sync app and the synced app in same-origin
+frames over seven example characters at four levels: 28 of 1,484 derived sections differ, every
+one an intended change from the list above, and 0 of 35 rendered chip views differ. After the
+review fixes: all seven examples render all seven tabs with no console error, syntax scan of 60
+files clean, dash sweep clean.
+
 ## The bestiary handoff: four conventions, eleven statblocks, and three near-miss data losses, 2026-09-19
 
 The 2026-09-19 handoff, five sections plus a terminology sweep. It closes six of the items that had

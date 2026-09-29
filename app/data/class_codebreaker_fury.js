@@ -36,7 +36,7 @@ EN.classes.codebreaker = {
     attribute: "Tech",
     maxFormula: "Caliber + Tech Modifier (minimum of 1)",
     refresh: "You regain all spent Bandwidth at the end of a Short or Long Rest.",
-    fuels: "Bandwidth represents your ability to force your will upon a Node, overclock your Smartdeck, and execute the exploits that define the Codebreaker class. Bandwidth fuels every Cipher you cast above the most basic tier and powers Signature #GRID Exploits.",
+    fuels: "Bandwidth represents your ability to force your will upon a Node, overclock your Smartdeck, and run your #GRID Exploits. Bandwidth fuels every Cipher you cast above the most basic tier and powers Signature #GRID Exploits.",
     abilityNoun: "Signature #GRID Exploit",
     abilityNounPlural: "Signature #GRID Exploits",
     learn: { knowsAll: true, picks: [] },
@@ -148,7 +148,7 @@ EN.classes.codebreaker = {
     gridExploits: CODEBREAKER_GRID_EXPLOITS,
     companionDrone: {
       title: "The Companion Drone (Base Profile)",
-      size: "Small (a rotor-drone, mechanical hound, treaded scout, or similar).",
+      size: "Small (a rotor drone, mechanical hound, treaded scout, or similar).",
       speed: "6. Choose one of Flying, Climbing, or Ground movement at the time of build.",
       defense: "12 + your Tech Modifier.",
       vitality: "10 + (Codebreaker Level x 4).",

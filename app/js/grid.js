@@ -433,7 +433,7 @@ EN.gridView = (function () {
       el("span.mono", { style: { fontSize: "20px", color: atMax ? "var(--warn)" : "var(--accent)" }, html: links.length + " <span style='font-size:12px;color:var(--text3)'>/ " + (gd.unlimitedLinks ? "∞" : gd.maxLinks) + " active Links</span>" }),
       el("button.btn.sm" + (atMax ? "" : ".primary"), { disabled: atMax, title: atMax ? "At your Link cap" : "Open a new Link", onclick: function () { gset(function (g) { g.links = (g.links || []).concat([{ name: "Node", tier: "Standard" }]); }); } }, "+ LINK")
     ]));
-    if (!links.length) rows.push(noteP("No active Links. Establish one with a Cipher Attack vs the node's Security Rating (Access Spike / Hardline Tap)."));
+    if (!links.length) rows.push(noteP("No active Links. Establish one with a Cipher Attack vs the Node's Security Rating (Access Spike / Hardline Tap)."));
     links.forEach(function (lk, i) {
       rows.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", padding: "6px 4px", borderBottom: "1px solid rgba(35,48,68,.4)" } }, [
         el("span.mono", { style: { color: "var(--accent)", fontSize: "12px" }, text: "⇋" }),
@@ -500,7 +500,7 @@ EN.gridView = (function () {
     ]);
     var verdict = noteP(
       (node.t <= 1 ? "Rudimentary/Standard Node, Minion Rule: any successful cipher bricks it outright (Firewall threshold ignored). " : "") +
-      "You hit on a roll of " + Math.max(2, security - gd.effectiveAttack) + "+ on the d20" + (gd.deck && gd.deck.type === "buddy" && node.t >= 4 ? ", but a B&E Buddy LOCKS OUT of Premium+ Nodes (sparks, takes 1 HP, fails)." : "") + ".",
+      "You hit on a roll of " + Math.max(2, security - gd.effectiveAttack) + "+ on the d20" + (gd.deck && gd.deck.type === "buddy" && node.t >= 4 ? ", but a B&E Buddy LOCKS OUT of Premium+ Nodes (sparks, takes 5 System Integrity damage, fails)." : "") + ".",
       (gd.deck && gd.deck.type === "buddy" && node.t >= 4) ? "var(--danger)" : "var(--text2)");
     return EN.ui.panel("Target Node", "WHAT YOU'RE UP AGAINST", [controls, grids, verdict], { corners: true });
   }

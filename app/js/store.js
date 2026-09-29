@@ -672,7 +672,7 @@ EN.store = (function () {
         if (e && typeof e.name === "string" && WEAPON_RENAMES[e.name]) e.name = WEAPON_RENAMES[e.name];
       });
     }
-    ["weaponAmmo", "weaponGrip", "carry", "slotInert", "shieldWear", "armorWear", "armorGuard", "racked"].forEach(function (bag) {
+    ["weaponAmmo", "weaponGrip", "weaponParts", "armorMods", "vehicleMods", "carry", "slotInert", "shieldWear", "armorWear", "armorGuard", "racked"].forEach(function (bag) {
       var m = ch[bag];
       if (!m || typeof m !== "object") return;
       Object.keys(m).forEach(function (k) {
@@ -689,13 +689,15 @@ EN.store = (function () {
     ["equippedArmor", "equippedShield", "equippedFocus"].forEach(function (slot) {
       if (typeof ch[slot] === "string") ch[slot] = renameName(ch[slot]);
     });
-    if (ch.classGearChoices && typeof ch.classGearChoices === "object") {
-      Object.keys(ch.classGearChoices).forEach(function (b) {
-        if (Array.isArray(ch.classGearChoices[b])) ch.classGearChoices[b] = ch.classGearChoices[b].map(renameName);
-      });
-    }
     if (Array.isArray(ch.projects)) {
-      ch.projects.forEach(function (pj) { if (pj && typeof pj.itemName === "string") pj.itemName = renameName(pj.itemName); });   // a Tech Bay build adds the item BY NAME on completion
+      ch.projects.forEach(function (pj) {
+        // a Tech Bay build adds the item BY NAME on completion; its display name embeds the item name
+        if (!pj || typeof pj.itemName !== "string") return;
+        var to = renameName(pj.itemName);
+        if (to === pj.itemName) return;
+        if (typeof pj.name === "string") pj.name = pj.name.split(pj.itemName).join(to);
+        pj.itemName = to;
+      });
     }
 
     var TALENT_RENAMES = Object.create(null);

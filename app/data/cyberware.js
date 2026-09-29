@@ -38,7 +38,7 @@ EN.cyberware = {
     Streetware: "Unlicensed clinics, harvested parts, refurbished junk. Cheap, visible welds and scars; no Enhancement Bonus.",
     Brandware:  "Licensed retailers and corp clinics. Reliable, registered, warrantied. Grants the listed Enhancement (+1).",
     Blackware:  "Stolen, prototype, military, experimental. Higher SP and price, extra capabilities. Enhancement doubled (+2).",
-    Prototype:  "One-off mystech builds. Singular tier; rarely for sale."
+    Prototype:  "One-off Mystech builds. Singular tier; rarely for sale."
   },
 
   /* base pieces, `short` drives the market listing name "<Tier> <short>" */
@@ -85,7 +85,7 @@ EN.cyberware = {
         { tier: "Blackware",  sp: 3, price: 32000, legality: "Restricted" }
       ] },
     { key: "resonanceCrown", short: "Resonance Crown", name: "Resonance Crown", zone: "Neural", enhancement: "+1 Mystique", mystech: true,
-      desc: "A circlet of hand-tuned mystech filaments in the skull's outer surface, visible as silver tracery along the brow. One of the few implants the Flow does not reject; it harmonizes chrome to the wearer's natural frequency.",
+      desc: "A circlet of hand-tuned Mystech filaments in the skull's outer surface, visible as silver tracery along the brow. One of the few implants the Flow does not reject; it harmonizes chrome to the wearer's natural frequency.",
       effect: "Reduces the SP cost of up to 4 SP of your other cyberware by 1 each (min 1) for Threshold purposes. +1 FP at the end of a Short Rest. Choose the pieces when the Crown is installed; changing the selection takes 1 hour of Downtime meditation with a qualified artificer. One Crown only; cannot harmonize itself, the Disruption Lattice, or the Convergence Engine.",
       tiers: [
         { tier: "Prototype", sp: 1, price: 28000, legality: "Restricted" }

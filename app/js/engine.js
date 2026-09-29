@@ -746,9 +746,8 @@ EN.engine = (function () {
   /* Talents granting a standing Vitality bonus, a table in the same shape. The value is points
      PER CHARACTER LEVEL, and Cyber-Reinforced Vitality is the only entry the catalog has.
 
-     Its bullet reads as two clauses: "Your Vitality maximum increases by an amount equal to twice
-     your Character level when you gain this Talent. Whenever you gain a level thereafter, your
-     Vitality maximum increases by an additional 2 points." Those look like they need the level it
+     Its bullet reads as two clauses: "Vitality maximum jumps by twice your Character level; every
+     level you gain after that adds 2 more." Those look like they need the level it
      was TAKEN at, and activeTalents does know it, since a Talent is a Universal Upgrade filed
      under the level that bought it. It is not needed, because the two clauses collapse:
      2*acquired + 2*(now - acquired) is 2*now at every level. So the simpler form is used, and the

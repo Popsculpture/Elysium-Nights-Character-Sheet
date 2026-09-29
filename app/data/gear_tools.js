@@ -278,7 +278,7 @@ EN.gearCatalog.tools = {
       desc: "A solid steel bar built for leverage. Doubles as an argument.",
       synergy: "Counts as an improvised melee weapon." },
     { name: "Fire Extinguisher", bucket: "devices", group: "Everyday Utility", price: 20, availability: "Common", legality: "Legal",
-      effect: "As an Action, puts out small fires or stops an adjacent Target's ongoing fire damage. Can be vented for brief, smoky concealment.",
+      effect: "As an Action, puts out small fires or stops an adjacent Target's ongoing Fire damage. Can be vented for brief, smoky concealment.",
       desc: "A pressurized canister of suppressant foam.",
       activation: "As an Action, put out small fires in a room, vehicle, or corridor, or stop an adjacent Target from taking further ongoing Fire damage, at GM discretion.",
       synergy: "Can be vented for brief, smoky concealment." },
@@ -538,7 +538,7 @@ EN.gearCatalog.tools = {
     /* ---- Breaching & Demolition (Counted) ---- */
     { name: "Breaching Charge", load: 1, bucket: "consumables", group: "Breaching & Demolition", price: 120, availability: "Rare", legality: "Restricted", counted: true,
       effect: "One-use charge. Opens most doors and weaker cover, blasts the doorway.",
-      desc: "A pre-shaped adhesive charge. As an Action, place it on a door, panel, or section of cover within reach and detonate it (a Demolition Kit places it cleanly). It destroys a 1-space section of Average or weaker cover, or a standard door, outright; against Heavy or better, roll 4d6 against its Integrity. Every Target adjacent to the breach makes an Agility save (DC 8 + your Tech Modifier + your Engineering Proficiency Bonus) or takes 2d6 Force damage, half on a success." },
+      desc: "A pre-shaped adhesive charge. As an Action, place it on a door, panel, or section of cover within reach and detonate it (a Demolition Kit places it cleanly). It destroys a 1-space section of Average or weaker cover, or a standard door, outright; against Heavy or better, roll 4d6 against its Integrity. Every Target adjacent to the breach makes an Agility Save (DC 8 + your Tech Modifier + your Engineering Proficiency Bonus) or takes 2d6 Force damage, half on a success." },
     /* The catalog never carried this one at all, though the Demolition Kit's own Basic Use
        already referred to it ("Enables safe handling of Breach Charges"). Table row and
        entry both from Part 3's Breaching & Demolition section. */

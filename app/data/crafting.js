@@ -17,7 +17,7 @@ EN.crafting = {
     { key: "simple",    name: "Simple",    target: 3,   skillTier: "proficient", time: "A scene or a few hours",         difficulty: "Routine DC or easy pool",          examples: "Patch armor, routine repairs, a standard dose, basic disguise touch-ups" },
     { key: "standard",  name: "Standard",  target: 5,   skillTier: "proficient", time: "One downtime period",            difficulty: "Moderate DC or standard pool",     examples: "New sidearm, upgraded plate, sensor add-on, clean paperwork" },
     { key: "advanced",  name: "Advanced",  target: 7,   skillTier: "expertise",  time: "Several downtime periods",       difficulty: "Hard DC or increased successes",   examples: "Custom weapon mod, surgical implant, hardened software suite" },
-    { key: "prototype", name: "Prototype", target: 10,  skillTier: "expertise",  time: "Ongoing across sessions",        difficulty: "Very hard, complications likely",  examples: "New device pattern, experimental mystech, unstable systems" },
+    { key: "prototype", name: "Prototype", target: 10,  skillTier: "expertise",  time: "Ongoing across sessions",        difficulty: "Very hard, complications likely",  examples: "New device pattern, experimental Mystech, unstable systems" },
     { key: "relic",     name: "Relic or Breakthrough", target: null, skillTier: "mastery", time: "Long-term campaign project", difficulty: "GM-defined requirements", examples: "Setting-altering tech, legendary Flow artifact" }
   ],
 
