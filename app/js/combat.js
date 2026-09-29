@@ -3127,7 +3127,7 @@ EN.combatView = (function () {
       })() }),
       el("div.row.wrap", { style: { gap: "8px" } }, [
         el("div.pop-anchor", { style: { position: "relative" } }, [
-          el("button.btn.sm", { onclick: function () { var was = _pops.short; closePops(); _pops.short = !was; EN.app.render(); } }, iconLabel(ICON_SHORT_REST, "SHORT REST")),
+          el("button.btn.sm" + (_pops.short ? ".primary" : ""), { onclick: function () { var was = _pops.short; closePops(); _pops.short = !was; EN.app.render(); } }, iconLabel(ICON_SHORT_REST, "SHORT REST")),
           _pops.short ? (function () {
             var rdIn = el("input", { type: "number", min: 1, max: Math.max(1, s.rd), value: Math.min(_amts.rd, Math.max(1, s.rd)),
               oninput: function () { _amts.rd = Math.max(1, Number(this.value) || 1); },
@@ -3156,7 +3156,7 @@ EN.combatView = (function () {
           })() : null
         ]),
         el("div.pop-anchor", { style: { position: "relative" } }, [
-          el("button.btn.sm.primary", { onclick: function () { var was = _pops.rest; closePops(); _pops.rest = !was; EN.app.render(); } }, iconLabel(ICON_LONG_REST, "LONG REST")),
+          el("button.btn.sm" + (_pops.rest ? ".primary" : ""), { onclick: function () { var was = _pops.rest; closePops(); _pops.rest = !was; EN.app.render(); } }, iconLabel(ICON_LONG_REST, "LONG REST")),
           _pops.rest ? el("div", { style: { position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 30, width: "240px",
                                             display: "flex", flexDirection: "column", gap: "10px", padding: "12px",
                                             background: "var(--bg2)", border: "1px solid var(--border2)", borderRadius: "4px",
@@ -3189,7 +3189,7 @@ EN.combatView = (function () {
            The popover also hosts DOWNTIME REST (1 WEEK), the recovery half, under its own
            heading (the author asked for it nested here rather than on a second button). */
         el("div.pop-anchor", { style: { position: "relative" } }, [
-          el("button.btn.sm", { title: "Advance the story calendar without resting", onclick: function () { var was = _pops.down; closePops(); _pops.down = !was; EN.app.render(); } }, iconLabel(ICON_DOWNTIME, "DOWNTIME")),
+          el("button.btn.sm" + (_pops.down ? ".primary" : ""), { title: "Advance the story calendar without resting", onclick: function () { var was = _pops.down; closePops(); _pops.down = !was; EN.app.render(); } }, iconLabel(ICON_DOWNTIME, "DOWNTIME")),
           _pops.down ? (function () {
             var inp = el("input.mono", { type: "number", min: "1", max: "365", value: String(_downDays),
               style: { width: "72px", textAlign: "center", padding: "5px" },
