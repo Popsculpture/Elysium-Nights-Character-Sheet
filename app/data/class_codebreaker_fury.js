@@ -136,8 +136,8 @@ EN.classes.codebreaker = {
   extra: {
     playbook: {
       turnToTurn: "Balance meatspace awareness with #GRID operations. You'll spend most rounds either establishing Links, injecting Ciphers, or spending Bandwidth on #GRID Exploits to enhance both. As you level, your action economy expands and your Bandwidth pool grows, allowing you to maintain pressure on multiple fronts at once.",
-      winningEncounters: "You win by controlling what your enemies can do. Lock down their smart weapons. Hijack their automated defenses. Rewrite what their cyber-optics show them. An optimal digital breach neutralizes the heaviest threats before a single bullet leaves a chamber.",
-      whatToAvoid: "Avoid being shot. Your d6 Resilience makes you fragile, and physical damage in meatspace triggers Stability Checks while you maintain Links. Avoid exhausting Bandwidth early. A Codebreaker with an empty pool is a person holding an expensive paperweight."
+      winningEncounters: "You win by controlling what your enemies can do. Lock down their smart weapons. Hijack their automated defenses. Rewrite what their Cyberoptics show them. A clean breach takes the heaviest threats out of the fight before a single bullet leaves a chamber.",
+      whatToAvoid: "Avoid being shot. Your d6 Resilience makes you fragile, and physical damage in meatspace triggers Stability Checks while you maintain Links. Avoid exhausting Bandwidth early. A Codebreaker with an empty pool is a thief holding an expensive lockpick."
     },
     smartdeck: "You begin play with a Tier 0 (Standard) Smartdeck. Your Smartdeck's tier determines which Ciphers you can actually cast. A Smartdeck can run Ciphers up to (Smartdeck Tier + 1) in Complexity. A Tier 0 (Standard) deck can run Complexity 0-1 Ciphers; a Tier 5 (Apex) deck can run the entire Cipher library.",
     repertoire: "You are a Power User on the #GRID. You begin play with a custom Repertoire of Ciphers: your personal library of code. You start with four Ciphers of your choice from the Complexity 0 or Complexity 1 tiers. Throughout your career, you can integrate additional Ciphers into your Repertoire by spending the required Material Cost and one uninterrupted Downtime period (8 hours). There is no upper limit on how many Ciphers you can know; the only limit is what you can afford and what your Smartdeck can run.",
@@ -334,7 +334,7 @@ EN.classes.fury = {
   ],
   extra: {
     playbook: {
-      turnToTurn: "You are the ultimate frontline breaker. You use your imposing physical presence, martial weapons, and Overdrive maneuvers to violently close the gap, smash through barricades, and physically lock down high value targets. You lead the charge, forcing the Enemy to deal with you first.",
+      turnToTurn: "You're the crew's frontline breaker. You use your imposing physical presence, martial weapons, and Overdrive maneuvers to violently close the gap, smash through barricades, and physically lock down high-value targets. You lead the charge, forcing the Enemy to deal with you first.",
       winningEncounters: "You win by shattering the Enemy formation through sheer momentum and close-quarters devastation. Whether you're using a physical shield to breach a chokepoint or a massive blade to clear a room, you brutally punish anyone foolish enough to stand their ground or target your support Allies.",
       whatToAvoid: "Getting pinned down in a ranged firefight or playing it safe behind cover. If you aren't actively closing the distance, dictating the physical space, or throwing yourself into the chaos to protect a fellow Freelancer, your massive d12 Resilience is going to waste."
     },

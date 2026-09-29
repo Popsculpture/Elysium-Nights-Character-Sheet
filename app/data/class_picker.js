@@ -18,7 +18,7 @@ EN.classPicker = {
       playIf: "Play a Codebreaker if: You want to control the battlefield through screens, dismantle security systems, and outsmart the digital defenses of the city.",
       subs: {
         rigger: { blurb: "A master of hardware and mechanical coordination. Riggers build, maintain, and command customized drones and combat vehicles.", playIf: "Play a Rigger if: You want to command a swarm of mechanical allies, dominate the action economy, and bring heavy autonomous backup to a firefight." },
-        gridweaver: { blurb: "A specialist in pure network control and matrix manipulation. They dive deeper into the digital infrastructure than anyone else, reshaping virtual space.", playIf: "Play a #GRID Weaver if: You want to be the ultimate digital operative, altering camera feeds, opening secured paths, and bending the network to your will." },
+        gridweaver: { blurb: "A specialist in pure network control. They dive deeper into the #GRID than anyone else, reshaping virtual space.", playIf: "Play a #GRID Weaver if: You want to be the ultimate digital operative, altering camera feeds, opening secured paths, and bending the network to your will." },
         burner: { blurb: "An aggressive offensive hacker who focuses on destroying hardware and frying circuits rather than quietly stealing data.", playIf: "Play a Burner if: You want to turn enemy cyberware into an explosive liability and deal massive damage through aggressive digital attacks." }
       }
     },
@@ -45,7 +45,7 @@ EN.classPicker = {
       playIf: "Play an Operator if: You want to be a highly trained tactical specialist who relies on sharp positioning, discipline, and weapon mastery.",
       subs: {
         the_vanguard: { blurb: "A frontline tactician who specializes in breach-and-clear maneuvers, leading the charge into hostile territory.", playIf: "Play a Vanguard if: You want to set the pace of the engagement, coordinating your allies in tight quarters and maintaining aggressive momentum." },
-        the_deadeye: { blurb: "A sniper and long range specialist who controls the battlefield through threat of immediate, lethal precision.", playIf: "Play a Deadeye if: You want to eliminate a high-value target from a mile away and provide overwatch." },
+        the_deadeye: { blurb: "A sniper and long-range specialist who controls the battlefield through the threat of immediate, lethal precision.", playIf: "Play a Deadeye if: You want to eliminate a high-value target from a mile away and provide overwatch." },
         the_headhunter: { blurb: "A single-target elimination expert, tracking bounties and isolating specific threats amid the chaos of a wider skirmish.", playIf: "Play a Headhunter if: You want to lock onto a specific enemy, exploit their weaknesses, and make sure they don't leave the battlefield alive." }
       }
     },

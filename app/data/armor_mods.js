@@ -73,7 +73,7 @@ EN.armorMods = {
 
     /* ---- Sensors & Targeting ---- */
     { key: "threat-detection-hud", name: "Threat-Detection HUD", category: "sensors", price: 500, rarity: "Uncommon", legality: "Licensed", fits: "Any",
-      grants: "Edge on Initiative; ambush warning", effect: "You gain Edge on Initiative checks. You cannot be Surprised by a hostile your sensors can detect, and you gain Edge on Awareness checks to notice hidden threats, traps, and stalkers." },
+      grants: "Edge on Initiative; ambush warning", effect: "You gain Edge on Initiative checks. You can't be Surprised by a hostile your sensors can detect, and you gain Edge on Perception checks to notice hidden threats, traps, and stalkers." },
     { key: "smartlink-relay", name: "Smartlink Relay", category: "sensors", price: 600, rarity: "Uncommon", legality: "Restricted", fits: "Any",
       grants: "Counts as a Smartlink", effect: "The suit counts as a Smartlink (see Cybernetics) for any weapon part or system that requires one. If you already have a Smartlink implant, the relay grants no additional benefit." },
 
@@ -97,9 +97,9 @@ EN.armorMods = {
 
     /* ---- Power & Countermeasures ---- */
     { key: "faraday-lining", name: "Faraday Lining", category: "power", price: 450, rarity: "Uncommon", legality: "Licensed", fits: "Any",
-      grants: "Edge vs hacking and EMP", effect: "You gain Edge on saves to resist hacking, EMP, and electronic intrusion targeting your worn gear or cyberware while the suit is sealed against you." },
+      grants: "Edge vs hacking and EMP", effect: "You gain Edge on saves to resist hacking, EMP, and electronic intrusion targeting your worn gear or cyberware while the suit is Sealed." },
     { key: "self-seal-nanopaste", name: "Self-Seal Nanopaste", category: "power", price: 500, rarity: "Uncommon", legality: "Licensed", fits: "Any",
-      grants: "Self-repairing shell", effect: "The suit never requires routine maintenance, and at the end of each scene it self-repairs cosmetic and minor functional damage at no cost. It does not restore your Damage Reduction mid-fight, and it does not settle Upkeep on Leased gear." },
+      grants: "Self-repairing shell", effect: "The suit never requires routine maintenance, and at the end of each scene it self-repairs cosmetic and minor functional damage at no cost. It doesn't restore lost Damage Reduction (that takes Armor Repair in Downtime), and it doesn't settle Upkeep on Leased gear." },
     { key: "reactive-countermeasures", name: "Reactive Countermeasures", category: "power", price: 650, rarity: "Rare", legality: "Restricted", fits: "Any",
       grants: "Vents smoke or dazzle on a hit", effect: "Impulse: Choose smoke or dazzle when you install the mod. Once per scene, when you are hit by an attack, you may immediately vent the charge. Smoke: You and adjacent allies gain concealment until the start of your next turn. Dazzle: The attacker makes a Body or Wits Save (your choice at install), DC 13, or attacks with Snag until the end of its next turn." },
     { key: "sentinel-active-defense", name: "Sentinel Active Defense", category: "power", price: 120, upkeep: 90, buyout: 800, rarity: "Uncommon", legality: "Licensed", fits: "Any",

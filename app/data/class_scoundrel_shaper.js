@@ -266,7 +266,7 @@ EN.classes.scoundrel = {
     playbook: {
       turnToTurn: "You bet on yourself. You spend Moxie to bend your own dice, sour the enemy's at the worst possible moment, and reposition through openings no one else can use, then cash a single clean hit with Cheap Shot. You're rarely where the enemy wants you, and never pinned.",
       winningEncounters: "You win by being untouchable and improbably lucky. You do not stand in the open trading shots with a heavy gunner; you slip the killing blows, twist the enemy's luck against them, and capitalize on every opening your crew tears open.",
-      whatToAvoid: "Running your Moxie dry while surrounded. With a d8 Resilience Die and Light Armor, your survival is your luck and your footwork, not your hit points. An empty pool with no exits is the moment the odds finally catch up with you."
+      whatToAvoid: "Running your Moxie dry while surrounded. With a d8 Resilience Die and Light Armor, your survival is your luck and your footwork, not your Vitality. An empty pool with no exits is the moment the odds finally catch up with you."
     }
   }
 };
@@ -530,8 +530,8 @@ EN.classes.shaper = {
   extra: {
     playbook: {
       turnToTurn: "You improvise. Because you build Invocations on the fly rather than relying on static spells, you adapt to the exact needs of the moment. You manage your Reservoir carefully, deciding when to unleash a massive area effect and when to rely on precise, low-cost manipulations.",
-      winningEncounters: "You win by dictating the terms of reality. You shift the battlefield environment, exploit enemy elemental vulnerabilities, and use your subclass abilities to violently disrupt the opposition. When a fight gets desperate, you win by being willing to push your body into Overdraw to secure a victory.",
-      whatToAvoid: "Reckless Overdraw and ignoring your physical limits. Burning through your Flow Points too early leaves you entirely reliant on Overdraw. Accumulating too much Strain will quickly tear your body apart from the inside out before the enemy even touches you."
+      winningEncounters: "You win by dictating the terms of reality. You shift the battlefield environment, exploit enemy elemental vulnerabilities, and use your subclass abilities to violently disrupt the opposition. When a fight gets desperate, Overdraw lets you keep shaping after your Reservoir runs dry, at a cost to your body.",
+      whatToAvoid: "Reckless Overdraw and ignoring your physical limits. Burning through your Flow Points too early leaves you reliant on Overdraw. Accumulating too much Strain will quickly tear your body apart from the inside out before the enemy even touches you."
     },
     flowDC: "Flow Save DC and Flow Attack are driven by your subclass Flow Attribute (Charm, Mystique, Body, or Tech). Subclass-stated saves use DC = 8 + your [Flow Attribute] Modifier + your Caliber (e.g., The Icon: DC = 8 + your Charm Modifier + your Caliber).",
     maxFlow: "Your maximum FP is equal to (Caliber x 3) + your Flow Modifier.",

@@ -77,7 +77,7 @@ EN.grid = {
 
   /* ---- Ciphers ---- */
   cipherAttackFormula: "Cipher Attack: d20 + Tech Modifier + Systems Proficiency Bonus vs. Node's Security Rating.",
-  cipherSaveFormula: "Cipher Save DC: 8 + Tech mod + Systems Proficiency Bonus. Nodes resist save-based ciphers with d20 + Cipher Save Bonus.",
+  cipherSaveFormula: "Cipher Save DC: 8 + Tech Modifier + Systems Proficiency Bonus. Nodes resist save-based ciphers with d20 + Cipher Save Bonus.",
   cipherOutcomes: "Node fails its save: cipher takes full effect. Node succeeds: cipher is resisted, and IC automatically retaliates.",
   cipherComplexityNote: "Complexity 0-5. Standard Users run Complexity 0 on their own; Complexity 1+ is Power User territory, and a Codebreaker's Smartdeck sets their ceiling. The B&E Buddy is the exception: its baked-in suite scales to the Buddy's own tier and still works for a Standard User at Complexity 1 or 2. Casting cost (Codebreaker): Complexity 0 free; 1-3 cost 1 Bandwidth; 4-5 cost 2 Bandwidth; Signature ciphers a flat 1 Bandwidth. A deck with the Quantum Core trait runs Complexity 4 and 5 for 1 Bandwidth instead of 2.",
   cipherDamage: [
@@ -88,7 +88,7 @@ EN.grid = {
     { complexity: "Elite",    c: 4, roll: "5d6" },
     { complexity: "Apex",     c: 5, roll: "6d6" }
   ],
-  cipherDamageNote: "Combat ciphers roll damage by Complexity. Subtract the target Node's Firewall Damage Threshold (if any) from the roll; whatever remains comes off the Node's System Integrity. A roll reduced to 0 or less is discarded entirely and the Firewall holds. At 0 System Integrity the node is bricked. Even an Apex cipher can be turned aside by an Elite Firewall on a low roll; the way through is layered (bypasses, drains, ciphers that target Cipher Saves instead of slamming the Firewall).",
+  cipherDamageNote: "Combat ciphers roll damage by Complexity. Subtract the target Node's Firewall Damage Threshold (if any) from the roll; whatever remains comes off the Node's System Integrity. A roll reduced to -1 or less is discarded entirely and the Firewall holds. At 0 System Integrity the node is bricked. Even an Apex cipher can be turned aside by an Elite Firewall on a low roll; the way through is layered (bypasses, drains, ciphers that target Cipher Saves instead of slamming the Firewall).",
   minionRule: "Rudimentary and Standard Nodes ignore the Firewall-threshold rule: they have no Integrity to whittle down, so any successful cipher hit bricks them outright (Minion Rule).",
 
   /* ---- Firewalls (node armor) ---- */

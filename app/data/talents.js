@@ -177,7 +177,7 @@ EN.talents = [
     key: "gridrunners-reflexes",
     name: "#GRIDrunner's Reflexes",
     category: "Tech & #GRID Operations",
-    requirements: "The ability to jack into the grid or operate a Smartdeck.",
+    requirements: "The ability to jack into the #GRID or operate a Smartdeck.",
     text: "Your nervous system is wired to react in the #GRID as quickly as it does in meatspace. You gain the following benefits:\n• Increase your Tech or Wits score by 1, to a maximum of 20.\n• While you are jacked into the #GRID (or otherwise operating in a virtual environment), you gain a +2 bonus to your Defense and Edge on Initiative checks within that environment.\n• When an Enemy targets you with a Quick Hack or Cipher, you can use your Impulse Action to gain Resistance to the damage and Edge on the Saving Throw against that effect.\n\n**Upgrade (Level 6+):** Once per Long Rest, when you would suffer LinkDeath, you can choose to be safely ejected from the #GRID instead, taking damage equal to half your remaining Vitality (rounded down) but suffering no other consequences."
   },
   {

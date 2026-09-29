@@ -317,7 +317,7 @@ EN.classes.stitcher = {
     playbook: {
       turnToTurn: "You dictate survival. You manage the physical condition of your team by cleansing debuffs, applying temporary health through Vigor, and keeping the front line in the fight.",
       winningEncounters: "You win by turning the war of attrition in your favor. You outpace the enemy by repairing your squad's damage on the fly, or you cripple the opposition's biology with targeted toxins and chemical warfare.",
-      whatToAvoid: "Getting isolated. You are resilient, but your abilities are force multipliers. If you are not near your team to buff them, heal them, or pull them back from the brink, your impact drops significantly."
+      whatToAvoid: "Getting isolated. You're resilient, but your crew needs you within reach. Stay close enough to reinforce them, treat their injuries, or pull them out of danger."
     },
     triageProtocols: STITCHER_TRIAGE_PROTOCOLS.map(function (p) {
       return {

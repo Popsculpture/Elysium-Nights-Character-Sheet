@@ -215,7 +215,7 @@ EN.resolution = {
     pool: "In a pool, momentum is not a reroll. It is more dice, dropped straight into the count.\n- Roll with Edge Dice: add +1 Edge Die to your pool for each source of Edge. You can't add more than 3 situational bonus dice to your base pool. An Edge pool holds 10 dice; advantage past 10 sharpens d10s into d12s rather than adding more.\n- Roll with Snag Dice: add +1 Snag Die to your pool for each source of Snag. A Snag pool holds at most 7 dice. Difficulty past that point sharpens those dice to d12 rather than adding more.",
     sources: [
       { area: "Combat (d20 Method)", edge: "High ground, flanking, ally suppression, or enemy distraction", snag: "Restrained, Prone, Blinded, or under suppression" },
-      { area: "Social (Dice Pool Method)", edge: "Useful leverage, correct information, active support, or favorable standing", snag: "Hostile audience, no leverage, bad timing, social stigma, or visible desperation" },
+      { area: "Social (Dice Pool Method)", edge: "Sway, correct information, active support, or favorable standing", snag: "Hostile audience, no sway, bad timing, social stigma, or visible desperation" },
       { area: "Hacking (method varies by pace)", edge: "Superior code, stolen credentials, hidden backdoors, or local access", snag: "ICE resistance, unstable access, trace lock, or degraded hardware" },
       { area: "Flow (method varies by pace)", edge: "Harmonized environment, focused current, or resonance alignment", snag: "Chaotic zone, corrupted resonance, or unaligned channeling" }
     ],

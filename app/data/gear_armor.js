@@ -42,13 +42,13 @@ EN.gearCatalog.armor = {
   traits: {
     "Wear X": "X is the shield's Wear Threshold, equal to twice the maximum result of its Block die (8 for 1d4, 12 for 1d6, 16 for 1d8). When you Block an attack whose RAW damage is X or more, or any critical hit you Block, mark off 1 of the shield's Durability boxes. See Shield Durability in the Combat chapter.",
     "Concealable": "It does not look like armor, worn under a shirt, or cut to pass as an ordinary jacket. Checks to notice you are armored roll with Snag. A pat-down or scanner still finds it.",
-    "Streetwear": "Openly armored, but it reads as fashion. Does not count as obvious combat gear; Snag on social checks in high-corporate or formal spaces where street kit is out of place.",
+    "Streetwear": "Openly armored, but it reads as fashion. Doesn't count as obvious combat gear; Snag on social checks in high-corporate or formal spaces where street kit is out of place.",
     "Hostile Appearance": "Unmistakably combat gear; the room knows what you are the moment you walk in. Snag on social checks to blend in or de-escalate; Edge when you are openly threatening or intimidating.",
     "Bulky": "Rigid, layered, overbuilt. Increases the item's Load by 1, reduces your Speed by 1, and imposes Snag on Acrobatics and Stealth checks. Cannot be Concealable.",   // verbatim from Part 3, 2026-08-19: Bulky is the ONE trait that touches Load,
     "Loud": "Plates clack, servos whine, respirators hiss. Snag on Stealth checks that rely on silence. It changes only how easily you are heard, not how you fight.",
     "Plated": "Rigid plates over soft layers, built to eat a serious hit. When you choose Block, add half the armor's DR (rounded down) to the damage prevented. Stacks with the suit's listed Block Bonus and with shield dice; applies only when you Block.",
-    "Modular": "Rails, webbing, and slots for upgrades. Can mount Armor Mods up to its listed slot count. Swapping mods takes downtime or focused prep, not a combat action.",
-    "Integrated": "Worn as one complete suit, not separable plates. Cannot be stripped into parts on the fly. If the armor is also Modular, it gains 1 extra Mod Slot. Some Integrated suits also pass as uniform or formalwear.",
+    "Modular": "Rails, webbing, and slots for upgrades. Can mount Armor Mods up to its listed Mod Slot Count. Swapping mods takes Downtime, not a combat action.",
+    "Integrated": "Worn as one complete suit, not separable plates. Can't be stripped into parts on the fly. If the armor is also Modular, it gains 1 extra Mod Slot. Some Integrated suits also pass as uniform or formalwear.",
     "Load-Bearing": "Reinforced webbing, hardpoints, and frame support. Your Encumbrance threshold counts as one step higher.",
     "Powered": "The armor carries its own power source and active systems. Running one takes Heavy Armor proficiency and Powered Frames proficiency. Trained, you gain the suit's listed Powered Benefits; untrained, your Speed is reduced and you roll Agility checks with Snag.",
     "Sealed": "A closed shell of sealed joints, filters, and respirators. Resistance to Toxic damage, and Edge on saves against gas, disease, and airborne or environmental hazards. Some Sealed suits also cover vacuum.",
@@ -111,7 +111,7 @@ EN.gearCatalog.armor = {
       slot: ["Torso", "Legs"], dr: 3, blockBonus: 1, traits: ["Plated", "Hostile Appearance"], availability: "Common", legality: "Licensed",
       desc: "Heavy front and back plates over dense padding, cut to read as a threat in any room. The uniform of people whose job is to walk toward the problem.",
       effect: "Grants 3 Damage Reduction (DR) and a +1 Block Bonus." },
-    { name: "Operator Suit", kind: "armor", group: "Medium Armor", type: "Medium Armor (4 Mod Slots)", price: 520,
+    { name: "Operator Suit", kind: "armor", group: "Medium Armor", type: "Medium Armor (3 Mod Slots)", price: 520,
       slot: ["Torso", "Legs"], dr: 3, blockBonus: 1, slots: 4, traits: ["Plated", "Modular", "Integrated"], availability: "Uncommon", legality: "Restricted",
       desc: "Full-coverage tactical armor with integrated comms routing, gear mounts, and a clean professional silhouette. The serious answer for the Freelancer who treats a firefight like a job.",
       effect: "Grants 3 Damage Reduction (DR) and a +1 Block Bonus. As an Integrated and Modular armor, it carries 1 additional Mod Slot beyond its listed slots, for 4 total." },
@@ -263,6 +263,6 @@ EN.gearCatalog.armor = {
     { name: "Martyr's Halo", kind: "focus", group: "Warding Focus", type: "Warding Focus (+1d8 Ward)", price: 0, nexus: "◎2+", vendor: false,
       slot: "Accessories", wardDie: "1d8", traits: ["Worn", "Focus", "Mystech"], availability: "Artifact", legality: "Contraband",
       desc: "A ring of suspended Flow that hangs unsupported at the shoulders and won't explain itself. Nobody manufactured it. It was left behind by something that no longer needed it. It guards whoever wears it, and it remembers whoever tried not to let them.",
-      effect: "Once per round, add +1d8 to your Ward reduction. When your Ward reduces an attack's damage to 0, you gain Resistance to that damage type until the start of your next turn (unlimited uses per scene), and the attacker takes Resonant damage equal to your Flow Modifier." }
+      effect: "Once per round, add +1d8 to your Ward reduction. When your Ward reduces an attack's damage to 0, you gain Resistance to that damage type until the start of your next turn (unlimited uses per scene), and the attacker takes Resonant damage equal to your Flow Modifier (minimum 1)." }
   ]
 };

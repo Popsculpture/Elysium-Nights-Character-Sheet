@@ -277,7 +277,7 @@ EN.gearCatalog.ammo = {
     { name: "Smoke Shell", group: "Launcher Shell", price: 40, unit: "each", availability: "Common", legality: "Licensed",
       feeds: "Grenade Launcher", traits: ["Explosive (Area 4 Sphere)", "Obscuring", "Cover"],
       desc: "The cleanest tool in the bandolier. Puts a wall of gray exactly where you need it, two blocks further than you could throw it.",
-      effect: "The area becomes heavily Obscuring and grants Cover until the end of the encounter or until dispersed by wind or force." },
+      effect: "The area becomes heavily Obscuring until the end of the encounter or until dispersed by wind or force." },
     { name: "EMP Shell", group: "Launcher Shell", price: 80, unit: "each", availability: "Uncommon", legality: "Restricted",
       feeds: "Grenade Launcher", traits: ["Explosive (Area 3 Sphere)", "Pulse"],
       desc: "A pulse charge that barely touches the meat and ruins everything else.",
@@ -285,7 +285,7 @@ EN.gearCatalog.ammo = {
     { name: "Thermobaric Shell", group: "Launcher Shell", price: 100, unit: "each", availability: "Rare", legality: "Contraband",
       feeds: "Grenade Launcher", traits: ["Explosive (Area 3 Sphere)", "Pressure"],
       desc: "A fuel-air charge that breathes in the room before it breathes out fire. In open ground it is brutal. Behind a closed door it is a war crime with a serial number.",
-      effect: "Agility save vs your Weapon Save DC for half damage. Out in the open it is brutal. In a sealed room the Pressure trait turns the walls against everyone inside." },
+      effect: "Agility Save vs your Weapon Save DC for half damage. In a sealed room the Pressure trait turns the walls against everyone inside." },
 
     /* ---- Mystech ----
        Never inert. Runs on the Mystech Availability scale, always Counted, and

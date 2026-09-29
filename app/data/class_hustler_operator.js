@@ -235,8 +235,8 @@ EN.classes.hustler = {
   extra: {
     playbook: {
       turnToTurn: "You manipulate the action economy. You observe enemy positioning and spend your Leverage to make sure your allies strike with Edge while your enemies stumble blindly into your traps with Snag.",
-      winningEncounters: "You win by amplifying your team's damage output and crippling the opposition's options before they can even draw their weapons. You talk your way out of ambushes, buy critical time, and turn the environment itself into a psychological weapon.",
-      whatToAvoid: "Direct frontline combat. With a d6 Resilience die, you cannot afford to trade blows with heavy hitters. If you find yourself cornered without Leverage or an exit strategy, your brilliant plans will end very quickly."
+      winningEncounters: "You win by amplifying your team's damage output and crippling the opposition's options before they can draw their weapons. You talk your way out of ambushes, buy critical time, and turn the environment itself into a psychological weapon.",
+      whatToAvoid: "Direct frontline combat. With a d6 Resilience die, you can't afford to trade blows with heavy hitters. If you find yourself cornered without Leverage or an exit strategy, your brilliant plans end fast."
     },
     leverageAbilities: HUSTLER_LEVERAGE_ABILITIES
   }
@@ -467,9 +467,9 @@ EN.classes.operator = {
   ],
   extra: {
     playbook: {
-      turnToTurn: "Act as a tactical anchor. Use longarms or heavy weapons to secure cover and punishing fire. Use Execution to pace engagements, grant Ally movement, or set up flanking.",
-      winningEncounters: "Dominate via superior discipline and zone control. Use ranged damage, explosives, and Overwatch to flush enemies and lock lanes, directing your squad as a single unit.",
-      whatToAvoid: "Avoid tunnel vision or letting enemies close in. Your strength is amplifying the team from vantage points; isolation, poor communication, or hoarding Execution leads to swift death."
+      turnToTurn: "Act as a tactical anchor. Use Longarms or Heavy Weapons to hold cover and lay punishing fire. Use Execution to pace engagements, grant Ally movement, or set up flanking.",
+      winningEncounters: "Dominate through discipline and zone control. Use ranged damage, explosives, and Overwatch to flush enemies and lock lanes, directing your squad as a single unit.",
+      whatToAvoid: "Avoid tunnel vision or letting enemies close in. Your strength is amplifying the team from vantage points; isolation, poor communication, or hoarding Execution kills you fast."
     },
     tacticalManeuvers: OPERATOR_TACTICAL_MANEUVERS
   }
