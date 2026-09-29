@@ -258,7 +258,7 @@ EN.briefs = {
   "Relentless Will (Passive)": "Roll Saves to end ongoing conditions with Edge, Caliber times per Long Rest",
   "Human Ingenuity (Active)": "Ignore Snag penalty on Untrained Skill checks, Caliber times per Short Rest",
   "Void Lung": "Hold breath 15 minutes; immune to inhaled toxins, smog, and weaponized gases",
-  "Radiation Callouses": "Resistance to Radiation; no Fatigue from freezing environments",
+  "Radiation Calluses": "Resistance to Radiation; no Fatigue from freezing environments",
   "Lowlight Optics": "Darkvision 12 spaces; blinding flashes and strobes impose no Snag on attacks or visual checks",
   "Spinward Bones": "Half damage from falling or forced impacts; immune to zero-g sickness and disorientation",
   "Network Instinct": "Know if a clearly seen, heard person is honest about their core motivation, gut-feeling only",

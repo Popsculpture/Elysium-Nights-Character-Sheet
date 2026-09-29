@@ -32,7 +32,7 @@ EN.species = [
         description: "Resilient survivors of deep void stations and tight undercity corridors who rely on grit and mutual aid.",
         features: [
           { name: "Void Lung", text: "Your respiratory system has brutally adapted to recycled, thin air. You can hold your breath for up to 15 minutes, and you are entirely immune to inhaled toxins, smog, and weaponized gases." },
-          { name: "Radiation Callouses", text: "Your skin is exceptionally tough, a generational response to cosmic radiation and failing station shielding. You possess a natural Resistance to Radiation damage, and you do not suffer the usual Fatigue from exposure to freezing environments." },
+          { name: "Radiation Calluses", text: "Your skin is exceptionally tough, a generational response to cosmic radiation and failing station shielding. You possess a natural Resistance to Radiation damage, and you do not suffer the usual Fatigue from exposure to freezing environments." },
           { name: "Lowlight Optics", text: "Born under flickering fluorescents and emergency bioluminescence, your eyes are hypersensitive to low light. You possess perfect Darkvision up to 12 spaces, and your pupils adjust instantly, meaning sudden blinding flashes or strobe effects do not impose Snag on your attacks or visual checks." },
           { name: "Spinward Bones", text: "Generations of living in shifting artificial gravity have fundamentally altered your bone density and joint flexibility. You take half damage from falling or being forcefully thrown into solid objects, and you can safely operate in zero-gravity environments without suffering motion sickness or disorientation." },
           { name: "Network Instinct", text: "A lifetime of reading dangerous strangers has tuned your gut to truth and lies. You always know whether a person you are speaking with is being honest about their core motivation. You do not learn the details, just whether their stated reason is the real one. This is a gut feeling, not proof, and it does not work on Targets you cannot see and hear clearly." },
@@ -609,5 +609,11 @@ EN.species = [
    Secondary traits are NOT listed: they derive from the species record and are never
    persisted, which is why Spliced Instinct becoming Primal Reflex needs nothing. */
 EN.speciesFeatureRenames = [
-  { oldName: "Cagebreak Instinct", name: "Feral Reprisal" }
+  { oldName: "Cagebreak Instinct", name: "Feral Reprisal" },
+  /* A spelling fix, 2026-09-20, and it needs a row exactly as much as a real rename does:
+     "callous" is the adjective, "calluses" the plural noun. THREE resolvers match this
+     feature by name, so a saved FreeBorn without this row loses the pick, its Radiation
+     Resistance (engine.js LINEAGE_MECH) and its refusal of cold Fatigue (the hazard
+     mitigation in hazards.js, matched on source.name). */
+  { oldName: "Radiation Callouses", name: "Radiation Calluses" }
 ];

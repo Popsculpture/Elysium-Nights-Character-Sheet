@@ -8885,6 +8885,50 @@ reference fails silently and destructively and always needs a migration row; sto
 a stale label and usually needs nothing, but must be said out loud; derived is nothing at all.
 Grep cannot answer that question, which is exactly why it has to be asked explicitly.
 
+## Radiation Calluses, and the first run of the rename checklist, 2026-09-20
+
+A spelling fix: "callous" is the adjective, "calluses" the plural noun. The FreeBorn lineage
+feature was "Radiation Callouses" and is now "Radiation Calluses". Seven strings and a migration
+row.
+
+**IT IS THE CHECKLIST'S FIRST REAL TEST, and the checklist earned its place.** A one-word spelling
+fix looks like the safest edit in the repo, and it is exactly the shape that deleted a lineage
+pick the day before. Question three is what matters: is the saved name RESOLVED on load? This one
+is, three separate times.
+
+1. **The catalog lookup.** ch.lineageFeatures persists the raw name and engine.js resolves it with
+   `x.name === fname`, pushing only on a match.
+2. **The damage grant.** LINEAGE_MECH in engine.js is a map keyed by the feature NAME, and its
+   entry is what makes a FreeBorn Resistant to Radiation. A stale key grants nothing, silently.
+3. **The hazard mitigation.** hazards.js carries `source: { type: "lineageFeature", name: ... }`
+   and hazardMitigations matches it with `linFeats.indexOf(src.name)`. That is the clause that
+   refuses Fatigue from cold.
+
+So an unmigrated FreeBorn would not have read "Radiation Callouses" somewhere harmless. The pick
+would have vanished from the sheet, the Radiation Resistance with it, and the cold-Fatigue refusal
+with that. A row in EN.speciesFeatureRenames covers all three, because all three resolve from the
+same stored string.
+
+**THE MITIGATION KEY MOVED TOO, after checking that it could.** hazards.js also carried
+`key: "radiation-callouses"`, a slug derived from the display name. Mitigation keys ARE matched in
+code elsewhere (thermal-weave, hazmat, rebreather, ablative-coating each have an `m.key === ...`
+test) and a live key must not move without its readers. This one has no reader anywhere in app/js,
+and ch.hazards stores exposures and deprivation clocks rather than mitigation keys, so nothing
+persists it. Renamed on that evidence rather than on the assumption that slugs are internal.
+
+**VERIFIED AGAINST A SEEDED LEGACY SAVE, and the first attempt was a false pass in the making.**
+Seeding the old spelling into localStorage while the app was running got silently clobbered by a
+debounced save, so the reload read an empty pick and every check failed. That looked like a broken
+migration and was a broken TEST. Writing the record and calling location.reload() in the same
+execution, so no save can intervene, gave the real result: all three stores migrated, the feature
+resolves, damageResistances reports Radiation with `sources: ["Radiation Calluses"]`, and the
+mitigation is live with cold Fatigue refused.
+
+**THE LOGS KEEP THE OLD SPELLING.** DEFERRED-FIXES and RULES-SYNC-CHANGELOG carry "Radiation
+Callouses" in four places. Those are archaeological records, struck and annotated rather than
+rewritten, so they stay as they were written. A reader searching the logs for the new spelling
+will not find the old entries, which is the cost of that convention and is worth knowing.
+
 ## The bestiary handoff: four conventions, eleven statblocks, and three near-miss data losses, 2026-09-19
 
 The 2026-09-19 handoff, five sections plus a terminology sweep. It closes six of the items that had

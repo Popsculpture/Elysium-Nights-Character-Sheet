@@ -145,7 +145,7 @@ EN.rules = {
   // Lineage Additive Features available AT CHARACTER CREATION (by lineage key).
   // Any feature NOT in this list is unlocked only later via Lineage Evolution.
   lineageCreationFeatures: {
-    freeborn: ["Void Lung", "Radiation Callouses", "Lowlight Optics", "Spinward Bones"],
+    freeborn: ["Void Lung", "Radiation Calluses", "Lowlight Optics", "Spinward Bones"],
     nextgen: ["Dermal Plating", "Synthetic Musculature", "Dermal Induction", "Living Relay"],
     phasebound: ["Spatial Flicker", "Static Premonition", "Entropic Lash", "Temporal Snare"],
     arboreal: ["Ironbark Carapace", "Timber Fortitude", "Canopy Reach", "Deep Roots"],

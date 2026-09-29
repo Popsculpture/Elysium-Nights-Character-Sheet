@@ -529,7 +529,7 @@ EN.engine = (function () {
     // with no engine path, so an Arboreal's Longsword read the same reach as anyone's.
     "Canopy Reach":          { unarmedReach: 1, meleeReach: 1 },
     // standing damage-type grants, read by damageResistances()
-    "Radiation Callouses":   { resist: ["Radiation"] },
+    "Radiation Calluses":   { resist: ["Radiation"] },
     // condition immunity, the axis damageResistances deliberately does not carry
     "Timber Fortitude":      { condImmune: ["Frightened"] },
     "Axiomatic Mind":        { condImmune: ["Confused"] },

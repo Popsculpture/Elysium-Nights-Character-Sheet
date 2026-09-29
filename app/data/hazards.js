@@ -158,8 +158,8 @@ EN.hazards = {
       note: "Its own entry gives up to 1 hour of active use, refreshing between scenes, and stops you beginning to Drown in water or low-oxygen air. Sixty minutes of a thin-air exposure pass with no save at all; the clock starts when the hour runs out. Against Drowning that hour is 600 rounds, at the book's 10 rounds to the minute. It does not cover vacuum, which is why the breath grant names its kind: Environmental Hazards allows exactly two vacuum-rated paths and a face-slot mouthpiece is neither.",
       effects: { thinAirMinutes: 60, breathMinutes: { drowning: 60 } } },
 
-    { key: "radiation-callouses", name: "Radiation Callouses", kind: "FreeBorn Trait",
-      source: { type: "lineageFeature", name: "Radiation Callouses" },
+    { key: "radiation-calluses", name: "Radiation Calluses", kind: "FreeBorn Trait",
+      source: { type: "lineageFeature", name: "Radiation Calluses" },
       summary: "Never gains Fatigue from cold.",
       note: "A failed Cold save still deals the Lethal rider's 1d6 Cold; only the Fatigue is refused.",
       effects: { noFatigue: ["cold"] } },

@@ -454,7 +454,7 @@ EN.abilityTags = {
   "Prey Stalker's Grip": { tag: "Movement" },
   "Probability Nudge": { tag: "Debuff" },
   "Rabbitwire Reflex": { tag: "Movement" },
-  "Radiation Callouses": { tag: "Defense" },
+  "Radiation Calluses": { tag: "Defense" },
   "Ration Discipline": { tag: "Utility" },
   "Reality Fracture": { tag: "Movement" },
   "Redundant Systems": { tag: "Defense" },
