@@ -57,7 +57,7 @@ EN.versatile = {
     "WIT|Investigation|insight": { name: "Forensic Deduction",      desc: "Piecing together a crime scene." },
     "WIT|Intuition|insight":     { name: "Behavioral Profiling",    desc: "Predicting a conversational response." },
     "WIT|Engineering|insight":   { name: "Structural Weakness",     desc: "Deducing structural collapse points." },
-    "WIT|Systems|insight":       { name: "Network Mapping",         desc: "Finding hidden node architecture." },
+    "WIT|Systems|insight":       { name: "Network Mapping",         desc: "Finding hidden Node architecture." },
     "WIT|Medtech|insight":       { name: "Diagnostic Analysis",     desc: "Deducing poison from symptoms." },
     "WIT|Awareness|insight":     { name: "Residue Profiling",       desc: "Piecing together timelines from spiritual footprints." },
     "WIT|Esoterica|insight":     { name: "Ritual Deciphering",      desc: "Translating arcane symbols." },

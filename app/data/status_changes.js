@@ -128,7 +128,7 @@ EN.statusChanges = (function () {
      catalog at render time, so this list carries no duplicated rules text.
      Growing it is one entry per item. */
   var CONSUMABLE_STATUSES = [
-    { item: "Combat Stim Pack",   endsOn: "End of your 3rd turn, then a Body save DC 12 or Dazed 1 round." },
+    { item: "Combat Stim Pack",   endsOn: "End of your 3rd turn, then a Body Save DC 12 or Dazed 1 round." },
     { item: "Nightwatch Tablets", endsOn: "4 hours, or extended by a fresh dose at the cost of a Crash Stack." },
     { item: "Detox Patch",        endsOn: "8 hours." }
   ];

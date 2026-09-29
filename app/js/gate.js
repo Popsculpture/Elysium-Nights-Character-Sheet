@@ -231,7 +231,7 @@ EN.gate = (function () {
       { t: 0,   cls: "gate-sys",     text: "// INTRUSION DETECTED on NODE 763" },
       { t: 520, cls: "gate-sys",     text: "// foreign process has attached to this terminal" },
       { t: 720, cls: "gate-cb",      text: "three misses. that was never your door." },
-      { t: 950, cls: "gate-cb",      text: "relax. i have been camped inside this node the whole time. i will walk you in." },
+      { t: 950, cls: "gate-cb",      text: "relax. i have been camped inside this Node the whole time. i will walk you in." },
       { t: 820, cls: "gate-sys",     text: "injecting cipher  ::  ACCESS_SPIKE", prog: 20 },
       { t: 620, cls: "gate-sys",     text: "spoofing credential handshake .........", prog: 48 },
       { t: 640, cls: "gate-sys",     text: "rotating session token ................", prog: 72 },
@@ -402,7 +402,7 @@ EN.gate = (function () {
         '<div class="gate-kick">#MINT // SECURE NODE</div>' +
         '<div class="gate-logo">#GRID<b>OS</b></div>' +
         '<div class="gate-warn">&#9888; RESTRICTED ACCESS</div>' +
-        '<p class="gate-body">This node is credential-locked. Unauthorized access is logged and prosecuted.</p>' +
+        '<p class="gate-body">This Node is credential-locked. Unauthorized access is logged and prosecuted.</p>' +
         '<label class="gate-label" for="gate-pass">ACCESS CODE</label>' +
         '<div class="gate-inrow"><span class="gate-prompt">&gt;</span>' +
           '<input id="gate-pass" class="gate-pass" type="password" autocomplete="off" spellcheck="false" placeholder="............"></div>' +
@@ -413,7 +413,7 @@ EN.gate = (function () {
       '</div>' +
       /* Sits in the corner of the NODE, not on the card, so it reads as part of the
          terminal furniture rather than an option the login screen is offering. */
-      '<button id="gate-skip" class="gate-skip" type="button" title="Open the node without a code">// maintenance</button>';
+      '<button id="gate-skip" class="gate-skip" type="button" title="Open the Node without a code">// maintenance</button>';
     var input = ov.querySelector("#gate-pass");
     var err = ov.querySelector("#gate-err");
     setTimeout(function () { try { input.focus(); } catch (e) {} }, 60);
@@ -619,7 +619,7 @@ EN.gate = (function () {
         '<div class="gate-logo">#GRID<b>OS</b></div>' +
         '<div class="gate-pick">Select profile</div>' +
         rows +
-        '<div class="gate-sw"><span class="who">The node remembers your pick</span>' +
+        '<div class="gate-sw"><span class="who">The Node remembers your pick</span>' +
           '<button type="button" class="gate-swb" id="gate-back">' + (st.cancelable ? "&#10005; Cancel" : "&#8592; Back") + '</button></div>' +
         '<div class="gate-foot">NODE 763 // ELYSIUM NIGHTS</div>' +
       '</div>';
@@ -657,7 +657,7 @@ EN.gate = (function () {
     box.innerHTML =
       '<div class="gc-kick">' + (profile === "admin" ? "Admin desktop" : "Freelancer desktop") + '</div>' +
       '<div class="gc-title">You are on the ' + (profile === "admin" ? "table" : "player") + ' side</div>' +
-      '<div class="gc-body">The node remembers this profile, so the gate will not ask again. Switch user any time from the cog.</div>' +
+      '<div class="gc-body">The Node remembers this profile, so the gate will not ask again. Switch user any time from the cog.</div>' +
       '<button type="button" class="gc-go">Got it</button>';
     var caretLeft = Math.max(10, r.left + r.width / 2 - left - 6);
     var styleTag = document.createElement("style");

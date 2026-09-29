@@ -639,7 +639,7 @@ EN.inventoryView = (function () {
     if (!it.armorMod || !EN.armorMods) return null;
     var installedN = installedArmorModCount(ch, it.modKey);
     return el("div.row.wrap", { style: { gap: "6px", marginTop: "5px", alignItems: "center" } }, [
-      el("span.chip", { title: "Bench work: a rest with a kit, on Modular armor", style: { fontSize: "9px", color: "var(--ember)", borderColor: "var(--ember)" } }, "Armor Mod"),
+      el("span.chip", { title: "Bench work: Downtime with a kit, on Modular armor", style: { fontSize: "9px", color: "var(--ember)", borderColor: "var(--ember)" } }, "Armor Mod"),
       (it.fits && it.fits !== "Any") ? el("span.chip", { title: "Only fits " + it.fits + " armor", style: { fontSize: "9px", color: "var(--warn)", borderColor: "var(--warn)" } }, "fits " + it.fits) : null,
       el("span.help", { style: { margin: 0, fontSize: "11px", color: "var(--text2)" }, text: it.grants }),
       installedN ? el("span.chip", { style: { fontSize: "9px", color: "var(--success)", borderColor: "var(--success)" } }, "installed ×" + installedN) : null
@@ -1813,7 +1813,7 @@ EN.inventoryView = (function () {
     if (lo.indexOf(key) !== -1) { toast(mod.name + " is already fitted to this suit."); return; }
     if (lo.length >= armorSlotCount(armor)) { toast("No open Mod Slots. Only Modular armor carries slots, up to its listed count."); return; }
     setArmorMods(aKey, function (l) { l.push(key); return l; });
-    toast(mod.name + " worked into " + armor.name + " (bench work: a rest with a kit).");
+    toast(mod.name + " worked into " + armor.name + " (bench work: Downtime with a kit).");
   }
   function removeArmorMod(aKey, key) { setArmorMods(aKey, function (l) { return l.filter(function (k) { return k !== key; }); }); }
 

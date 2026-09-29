@@ -651,16 +651,28 @@ EN.store = (function () {
        an equipped weapon with findWeapon(e.name) and returns early on a miss, so a saved Stun
        Baton loses its attack row silently. weaponAmmo and weaponGrip are keyed by the same
        name and move with it. */
+    /* RENAMED CATALOG ITEMS THAT ARE NOT WEAPONS, 2026-09-28. Hardlight Barrier (a shield), Gridline
+       Cable and Gridline Lumen Cable (devices) are the same failure: armorItem() and findItem()
+       match ch.equipment[n].name exactly, so a saved shield lost its Defense bonus and Block die and
+       the stash row read as an unresolved item. Their rows live in EN.gearCatalog.itemRenames, and
+       BOTH tables feed one map here because the row shape, the fields it rewrites and the failure
+       are identical. The other name-keyed places below matter only to a legacy save that predates
+       entry ids (a current record keys on ids, which a rename never touches), but this block runs
+       BEFORE the id split, so a legacy row must be renamed everywhere at once or the split mints
+       ids from a name that no longer matches its carry, rack and wear keys. */
     var WEAPON_RENAMES = Object.create(null);
-    (((EN.gearCatalog && EN.gearCatalog.weaponRenames)) || []).forEach(function (r) {
-      if (r && r.oldName && r.name) WEAPON_RENAMES[r.oldName] = r.name;
+    [EN.gearCatalog && EN.gearCatalog.weaponRenames, EN.gearCatalog && EN.gearCatalog.itemRenames].forEach(function (tbl) {
+      (tbl || []).forEach(function (r) {
+        if (r && r.oldName && r.name) WEAPON_RENAMES[r.oldName] = r.name;
+      });
     });
+    function renameName(n) { return (typeof n === "string" && WEAPON_RENAMES[n]) ? WEAPON_RENAMES[n] : n; }
     if (Array.isArray(ch.equipment)) {
       ch.equipment.forEach(function (e) {
         if (e && typeof e.name === "string" && WEAPON_RENAMES[e.name]) e.name = WEAPON_RENAMES[e.name];
       });
     }
-    ["weaponAmmo", "weaponGrip"].forEach(function (bag) {
+    ["weaponAmmo", "weaponGrip", "carry", "slotInert", "shieldWear", "armorWear", "armorGuard", "racked"].forEach(function (bag) {
       var m = ch[bag];
       if (!m || typeof m !== "object") return;
       Object.keys(m).forEach(function (k) {
@@ -670,6 +682,21 @@ EN.store = (function () {
         delete m[k];
       });
     });
+    if (ch.racked && typeof ch.racked === "object") {
+      Object.keys(ch.racked).forEach(function (k) { ch.racked[k] = renameName(ch.racked[k]); });   // the rack maps an entry to ANOTHER entry: both sides
+    }
+    if (Array.isArray(ch.equippedWeapons)) ch.equippedWeapons = ch.equippedWeapons.map(renameName);
+    ["equippedArmor", "equippedShield", "equippedFocus"].forEach(function (slot) {
+      if (typeof ch[slot] === "string") ch[slot] = renameName(ch[slot]);
+    });
+    if (ch.classGearChoices && typeof ch.classGearChoices === "object") {
+      Object.keys(ch.classGearChoices).forEach(function (b) {
+        if (Array.isArray(ch.classGearChoices[b])) ch.classGearChoices[b] = ch.classGearChoices[b].map(renameName);
+      });
+    }
+    if (Array.isArray(ch.projects)) {
+      ch.projects.forEach(function (pj) { if (pj && typeof pj.itemName === "string") pj.itemName = renameName(pj.itemName); });   // a Tech Bay build adds the item BY NAME on completion
+    }
 
     var TALENT_RENAMES = Object.create(null);
     TALENT_RENAMES["toxicologist"] = TALENT_RENAMES["Toxicologist"] = "cutting-agent";

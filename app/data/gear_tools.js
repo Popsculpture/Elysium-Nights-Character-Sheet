@@ -64,10 +64,10 @@ EN.gearCatalog.tools = {
         { name: "Handheld Resonant Tools", intro: "Drawn and activated when needed. None use a Body Slot." }
       ] },
     { key: "rigs", title: "Smartdecks, B&E Buddies & Trauma Rigs",
-      intro: "Powered personal hardware, every piece of it a #GRID node in its own right. Smartdecks are Power User rigs for Codebreakers and serious grid runners; B&E Buddies are handheld, civilian-grade cracker boxes that anyone can operate; Trauma Rigs are the Stitcher's chemistry, and anyone can buy one of those too. Equip one from your stash to activate it: a Smartdeck or Buddy on the #GRID tab, a Trauma Rig on the Freelancer tab under Actions, Abilities.",
+      intro: "Powered personal hardware, every piece of it a #GRID Node in its own right. Smartdecks are Power User rigs for Codebreakers and serious grid runners; B&E Buddies are handheld, civilian-grade cracker boxes that anyone can operate; Trauma Rigs are the Stitcher's chemistry, and anyone can buy one of those too. Equip one from your stash to activate it: a Smartdeck or Buddy on the #GRID tab, a Trauma Rig on the Freelancer tab under Actions, Abilities.",
       groups: [
         { name: "Smartdecks", intro: "Power User hardware. Governs Cipher complexity ceiling, Device Bonus, and mod slots. Restricted citywide; Contraband in corporate sectors." },
-        { name: "B&E Buddies", intro: "Standard User rigs. No Bandwidth, no multi-Link, and locked out of Premium+ nodes. Restricted." },
+        { name: "B&E Buddies", intro: "Standard User rigs. No Bandwidth, no multi-Link, and locked out of Premium+ Nodes. Restricted." },
         { name: "Hardware Mods", intro: "Smartdeck plug-ins. Buy them here, then slot them into a Smartdeck's mod slots on the #GRID tab. B&E Buddies cannot take mods." },
         { name: "Trauma Rigs", intro: "Governing Skill: Medtech (Tech). Worn. Output Bonus adds to any healing roll the Rig delivers and sets the Triage Save DC; Mod Slots equal the Tier; every Rig counts as a Basic Medkit, and Trauma Grade [2] and up counts as an Advanced Medkit. Each Trauma Rig has the trait named for its tier and keeps every trait below it. A Black Clinic rig carries all six." }
       ] },
@@ -365,10 +365,10 @@ EN.gearCatalog.tools = {
       activation: "Once per scene, when the GM calls for a roll to keep your comm traffic from being traced or flagged, gain Edge on the relevant in-combat Systems or Deception d20 check (or +1 Edge Die on an out-of-combat Dice Pool) while the Whisperlink is in place and powered." },
 
     /* ---- Traversal & Cable ---- */
-    { name: "Gridline Cable", bucket: "devices", group: "Traversal & Cable", price: 10, availability: "Common", legality: "Legal",
+    { name: "#GRIDline Cable", bucket: "devices", group: "Traversal & Cable", price: 10, availability: "Common", legality: "Legal",
       effect: "Data and power conduit. Holds 1,000 lbs for climbing or towing.",
       desc: "High-strength shielded cable with smart clamps. Plugged into compatible ports it is a data and power conduit; it also serves as a climbing line, tie-down, or emergency tow, rated to 1,000 pounds in normal conditions." },
-    { name: "Gridline Lumen Cable", bucket: "devices", group: "Traversal & Cable", price: 20, availability: "Common", legality: "Legal",
+    { name: "#GRIDline Lumen Cable", bucket: "devices", group: "Traversal & Cable", price: 20, availability: "Common", legality: "Legal",
       effect: "As #GRIDline Cable, plus an Area 2 light radius.",
       desc: "A #GRIDline Cable with embedded LEDs that shed bright light in an Area 2 radius and dim light for another 2 spaces wherever it hangs." },
     { name: "Titan Tether", bucket: "devices", group: "Traversal & Cable", price: 40, availability: "Uncommon", legality: "Licensed",
@@ -538,7 +538,7 @@ EN.gearCatalog.tools = {
     /* ---- Breaching & Demolition (Counted) ---- */
     { name: "Breaching Charge", load: 1, bucket: "consumables", group: "Breaching & Demolition", price: 120, availability: "Rare", legality: "Restricted", counted: true,
       effect: "One-use charge. Opens most doors and weaker cover, blasts the doorway.",
-      desc: "A pre-shaped adhesive charge. As an Action, place it on a door, panel, or section of cover within reach and detonate it (a Demolition Kit places it cleanly). It destroys a 1-space section of Average or weaker cover, or a standard door, outright; against Heavy or better, roll 4d6 against its Integrity. Every Target adjacent to the breach makes an Agility save (DC 8 + your Tech modifier + your Engineering Proficiency Bonus) or takes 2d6 Force damage, half on a success." },
+      desc: "A pre-shaped adhesive charge. As an Action, place it on a door, panel, or section of cover within reach and detonate it (a Demolition Kit places it cleanly). It destroys a 1-space section of Average or weaker cover, or a standard door, outright; against Heavy or better, roll 4d6 against its Integrity. Every Target adjacent to the breach makes an Agility save (DC 8 + your Tech Modifier + your Engineering Proficiency Bonus) or takes 2d6 Force damage, half on a success." },
     /* The catalog never carried this one at all, though the Demolition Kit's own Basic Use
        already referred to it ("Enables safe handling of Breach Charges"). Table row and
        entry both from Part 3's Breaching & Demolition section. */
@@ -684,16 +684,16 @@ EN.gearCatalog.tools = {
     /* ---- B&E Buddies (Standard User) ---- */
     { name: "Standard B&E Buddy", bucket: "rigs", group: "B&E Buddies", deckType: "buddy", deckTier: "Standard",
       price: 250, availability: "Common", legality: "Restricted",
-      effect: "+3 atk · DC 11 · 2 HP · max Tier 1 nodes.",
-      desc: "Ugly, handheld, dependable. Locks out of Premium+ nodes with an audible spark." },
+      effect: "+3 atk · DC 11 · 2 HP · max Tier 1 Nodes.",
+      desc: "Ugly, handheld, dependable. Locks out of Premium+ Nodes with an audible spark." },
     { name: "Improved B&E Buddy", bucket: "rigs", group: "B&E Buddies", deckType: "buddy", deckTier: "Improved",
       price: 500, availability: "Uncommon", legality: "Restricted",
-      effect: "+5 atk · DC 13 · 3 HP · max Tier 2 nodes.",
-      desc: "Better antenna, tighter code. Still a Standard User tool, still hates Premium nodes." },
+      effect: "+5 atk · DC 13 · 3 HP · max Tier 2 Nodes.",
+      desc: "Better antenna, tighter code. Still a Standard User tool, still hates Premium Nodes." },
     { name: "Advanced B&E Buddy", bucket: "rigs", group: "B&E Buddies", deckType: "buddy", deckTier: "Advanced",
       price: 900, availability: "Rare", legality: "Restricted",
-      effect: "+7 atk · DC 15 · 4 HP · max Tier 3 nodes.",
-      desc: "As good as a B&E Buddy gets. Hits hard, holds up, still locks out of the top tier nodes." }
+      effect: "+7 atk · DC 15 · 4 HP · max Tier 3 Nodes.",
+      desc: "As good as a B&E Buddy gets. Hits hard, holds up, still locks out of the top tier Nodes." }
   ]
 };
 
@@ -740,7 +740,7 @@ EN.gearCatalog.tools = {
               ". Trait: " + r.trait + ".",
       desc: "Worn medical hardware: a cybernetic auto-injector gauntlet, an alchemical synthesizer harness, " +
             "a smart-medic backpack, or something functionally equivalent. The Output Bonus adds to any healing " +
-            "roll the Rig delivers and sets the Triage Save DC. Powered gear, so it projects a #GRID node at its " +
+            "roll the Rig delivers and sets the Triage Save DC. Powered gear, so it projects a #GRID Node at its " +
             "own tier [" + r.t + "] with " + r.integrity + " System Integrity and is a valid #GRID target. " +
             "Carries every trait at or below its tier: " + r.traits.join(", ") + ".",
       basic: "Medical Baseline: counts as " + (/^[AEIOU]/.test(r.medkitGrade) ? "an " : "a ") + r.medkitGrade +

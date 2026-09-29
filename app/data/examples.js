@@ -482,7 +482,7 @@ EN.examples = [
         { name: "Wireless Transceiver", qty: 1 },
         { name: "Lighter", qty: 1 },
         { name: "Walkie Talkie", qty: 1 },
-        { name: "Gridline Lumen Cable", qty: 1 },
+        { name: "#GRIDline Lumen Cable", qty: 1 },
         { name: "Covert Ziprunner", qty: 1 },
         /* Carry gear */
         { id: "ex_sc_holster", name: "Swift Draw Holster", qty: 1 },

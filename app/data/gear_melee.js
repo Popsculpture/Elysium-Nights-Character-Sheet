@@ -14,11 +14,20 @@ EN.gearCatalog.weaponRenames = [
   { oldName: "Stun Baton", name: "Shock Baton" }
 ];
 
+/* RENAMED CATALOG ITEMS THAT ARE NOT WEAPONS, 2026-09-28: a shield and two devices whose names
+   the book respelled. Same failure and same fix as the table above, and store.js reads both
+   tables into one map. Each row also needs the definition itself renamed, in this commit. */
+EN.gearCatalog.itemRenames = [
+  { oldName: "Hardlight Barrier", name: "Hard-Light Barrier" },
+  { oldName: "Gridline Cable", name: "#GRIDline Cable" },
+  { oldName: "Gridline Lumen Cable", name: "#GRIDline Lumen Cable" }
+];
+
 EN.gearCatalog.melee = {
   intro: "Some fights end with sirens and a clean exit. More end at arm's length, in a service corridor or a back alley, with one of these in your hand. Melee weapons are what you reach for when distance has already collapsed.",
   saveDcNote: "Weapon Save DC (Melee): whenever a melee weapon forces a saving throw, the DC is 8 + your Body Modifier + your Caliber.",
   simpleIntro: "Clubs, kitchen blades, hatchets, short spears. The gear that ends up in a fight because it was already in the room, in the toolbelt, or in the kitchen drawer.",
-  martialIntro: "The weapons that ask for training before they answer back. Swords, axes, polearms, the heavier melee work that rewards a few years of drill over a few minutes of swinging.",
+  martialIntro: "Swords, axes, polearms, the heavier melee work that rewards a few years of drill over a few minutes of swinging.",
 
   items: [
     /* ---- Simple ---- */

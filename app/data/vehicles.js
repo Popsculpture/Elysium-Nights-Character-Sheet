@@ -8,7 +8,7 @@
 window.EN = window.EN || {};
 
 EN.vehicles = {
-  statsNote: "Speed, Handling, Structure, Integrity, Node Tier, Cargo and Traits come from the Vehicles and Chases table in Part 2. The Piloting Check is d20 + Agility modifier + Vehicle Proficiency Bonus + the vehicle's Handling.",
+  statsNote: "Speed, Handling, Structure, Integrity, Node Tier, Cargo and Traits come from the Vehicles and Chases table in Part 2. The Piloting Check is d20 + Agility Modifier + Vehicle Proficiency Bonus + the vehicle's Handling.",
   intro: "The title says the vehicle is yours. The garage, the fuel line, and whoever holds the note all have opinions about that. Buying is the easy part. Then the machine moves in: it wants power and fluids every week, somewhere to sit overnight where nobody strips it or tows it, and money set aside against the afternoon something shears loose in traffic.",
 
   /* ---- the seven printed profiles -------------------------------------

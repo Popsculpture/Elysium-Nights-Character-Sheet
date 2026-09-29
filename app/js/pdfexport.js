@@ -752,7 +752,7 @@ EN.pdfExport = (function () {
            a Versatile row already rewritten to "1d8 (1d10)" keeps its shape and gains the
            modifier once. */
         var wh = weaponHit(ch, d, w, wKey);
-        if (wh.indirect) notes.push("indirect: no attribute modifier");
+        if (wh.indirect) notes.push("indirect: no attribute Modifier");
         else dmg = dmg.replace(/^(\s*\d+d\d+(?:\s*\([^)]*\))?)/, "$1 " + eng.fmtMod(wh.dmgMod));
         return { name: r.label, atk: sgn(wh.hit), dmg: dmg, notes: notes.join(", ") };
       });

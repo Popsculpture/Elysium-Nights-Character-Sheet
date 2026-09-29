@@ -2348,7 +2348,7 @@ EN.combatView = (function () {
 
     if (!deck) {
       body.push(el("p.help", { style: { margin: "2px 0 6px", fontSize: "10.5px" },
-        text: "No rig jacked in. A Codebreaker runs a Smartdeck as a Power User; anyone else can crack low-tier nodes with a B&E Buddy." }));
+        text: "No rig jacked in. A Codebreaker runs a Smartdeck as a Power User; anyone else can crack low-tier Nodes with a B&E Buddy." }));
       body.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
         el("button.btn.sm", { style: { color: "var(--flow)", borderColor: "var(--flow)" },
           title: (od.all || []).length ? "Open the Stash and jack a deck in" : "Nothing to jack in yet; buy a rig first",
@@ -3070,7 +3070,7 @@ EN.combatView = (function () {
               el("p", { style: { margin: 0, fontSize: "12px", lineHeight: "1.5", color: "var(--text2)" },
                         html: "A <b>Short Rest</b> is at least 1 hour of downtime, where a character keeps their head low and does nothing more strenuous than eating, drinking, checking gear, reading feeds, patching wounds, or letting their system come down from the last hit of adrenaline. Taking one refreshes "
                               + (d.resource ? d.resource.name : "your class resource pool")
-                              + (d.flow ? " and regains Flow Points (Flow modifier, min 1)" : "")
+                              + (d.flow ? " and regains Flow Points (Flow Modifier, min 1)" : "")
                               + ". You may also spend Resilience Dice to heal Vitality." }),
               el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
                 el("span.help", { style: { margin: 0 }, text: "Resilience Dice:" }),
@@ -3197,7 +3197,7 @@ EN.combatView = (function () {
         foot: (dg.armorDRLost ? "Damaged plating: " + dg.armorDRLost + " point" + (dg.armorDRLost === 1 ? "" : "s") + " of DR gone until repaired, on the Impact Table. " : "") +
               (dg.armor && (dg.armor.traits || []).indexOf("Plated") !== -1 ? "Plated: when you Block, add half this DR (rounded down) on top." : "") || null },
       SPD: { title: "Speed", total: spDisplay, sign: false,
-        formula: "max(3, 6 + Agility modifier) + chrome + lineage − Bulky − load − conditions",
+        formula: "max(3, 6 + Agility Modifier) + chrome + lineage − Bulky − load − conditions",
         rows: (spdFloored ? [bdRow("Base move (Agility floored to min 3)", baseMove, null, true)]
                           : [bdRow("Base move", 6, null, true), bdRow("Agility modifier", agiMod, chromeNote("AGI"))])
           .concat(cyberSpeedRows.map(function (r) { return bdRow("Chrome · " + r.label, r.val); }))
@@ -3207,7 +3207,7 @@ EN.combatView = (function () {
           .concat(spCond ? [bdRow("Conditions", spCond)] : []),
         foot: d.lineageSpeedFirstRound ? "+" + d.lineageSpeedFirstRound + " Speed during the first round of any combat (Tuned Synapses)." : null },
       INIT: { title: "Initiative", total: initVal, sign: true,
-        formula: "Agility or Wits modifier (best)" + (d.lineageInit && d.lineageInit.caliber ? " + lineage" : "") + (d.cyberInit ? " + chrome" : "") + (fx.init ? " + conditions" : ""),
+        formula: "Agility or Wits Modifier (best)" + (d.lineageInit && d.lineageInit.caliber ? " + lineage" : "") + (d.cyberInit ? " + chrome" : "") + (fx.init ? " + conditions" : ""),
         rows: [bdRow((initAttr === "WIT" ? "Wits" : "Agility") + " modifier (best of Agility/Wits)", initMod, chromeNote(initAttr))]
           .concat(d.lineageInit && d.lineageInit.caliber ? [bdRow("Lineage · Static Premonition", d.lineageInit.caliber)] : [])
           .concat(d.cyberInit ? [bdRow("Chrome · Reflex Booster", d.cyberInit)] : [])
@@ -4460,7 +4460,7 @@ EN.combatView = (function () {
           weaponKey: wk || null,
           subtype: (h.melee ? "Melee" : h.thrownItem ? "Thrown" : "Ranged") + " Weapon · " + h.cat,
           dice: p.dice, types: p.types,
-          flat: h.dmgMod, flatLabel: h.indirect ? "Indirect: no attribute modifier" : (h.attrName + " Modifier"),
+          flat: h.dmgMod, flatLabel: h.indirect ? "Indirect: no attribute Modifier" : (h.attrName + " Modifier"),
           /* `dice` stays the BASE and `versatile` stays the alternate, because the
              tray's own arithmetic picks between them off its twoHand flag. What
              changes is where that flag STARTS and whether it can be moved: the tray
@@ -4540,7 +4540,7 @@ EN.combatView = (function () {
           ? norm.damageDisplay.replace(/^\s*\d+d\d+(\s*\(\d+d\d+\))?/, grip.dice)
           : norm.damageDisplay;
         var dmgTip = (h.indirect
-          ? dmgActive + " on hit · indirect delivery adds no attribute modifier · Tap to roll damage"
+          ? dmgActive + " on hit · indirect delivery adds no attribute Modifier · Tap to roll damage"
           : dmgActive + " " + eng.fmtMod(h.mod) + " (" + h.attrName + ") on hit · Tap to roll damage")
           + (grip.why ? "\n" + grip.why : "");
         // DMG box shows the dice plus the attribute modifier the roll adds (e.g. "1d4 +3");

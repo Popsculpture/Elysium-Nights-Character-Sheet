@@ -418,8 +418,8 @@ EN.gridView = (function () {
     if (gd.quickHackBonus != null) stats.splice(1, 0, EN.ui.stat("QUICK HACK", fmt(gd.quickHackBonus), "+ Device Bonus"));
     var body = [el("div.stat-row", null, stats)];
     if (_stabilityOpen) body.push(stabilityDamageControl(gd));
-    body.push(noteP("Cipher Attack: d20 " + fmt(gd.cipherAttackBonus) + " vs node Security Rating" + (gd.deck && gd.deck.type === "smartdeck" && gd.deck.deviceBonus ? " (+" + gd.deck.deviceBonus + " Device Bonus = " + fmt(gd.effectiveAttack) + " on a Quick Hack)" : "") + ". Node resists save-ciphers with d20 + its Cipher Save Bonus vs your Save DC " + gd.effectiveSaveDC + ".", "var(--text2)"));
-    if (!gd.isCodebreaker) body.push(noteP("You're a Standard User: 1 Link at a time, no Bandwidth, and a B&E Buddy locks out of Premium+ nodes. Deep #GRID play is the Codebreaker's domain.", "var(--warn)"));
+    body.push(noteP("Cipher Attack: d20 " + fmt(gd.cipherAttackBonus) + " vs Node Security Rating" + (gd.deck && gd.deck.type === "smartdeck" && gd.deck.deviceBonus ? " (+" + gd.deck.deviceBonus + " Device Bonus = " + fmt(gd.effectiveAttack) + " on a Quick Hack)" : "") + ". Node resists save-ciphers with d20 + its Cipher Save Bonus vs your Save DC " + gd.effectiveSaveDC + ".", "var(--text2)"));
+    if (!gd.isCodebreaker) body.push(noteP("You're a Standard User: 1 Link at a time, no Bandwidth, and a B&E Buddy locks out of Premium+ Nodes. Deep #GRID play is the Codebreaker's domain.", "var(--warn)"));
     return EN.ui.panel("Hacking", "CIPHER MATH", body, { corners: true });
   }
 
@@ -494,13 +494,13 @@ EN.gridView = (function () {
     };
     var grids = el("div.row.wrap", { style: { gap: "8px" } }, [
       box("SECURITY RATING", security, "var(--accent)", "meet or beat with d20 " + eng.fmtMod(gd.effectiveAttack)),
-      box("CIPHER SAVE", "+" + saveBonus, "var(--gold)", "node rolls d20 vs your DC " + gd.effectiveSaveDC),
+      box("CIPHER SAVE", "+" + saveBonus, "var(--gold)", "Node rolls d20 vs your DC " + gd.effectiveSaveDC),
       box("INTEGRITY", integrity == null ? "-" : integrity, integrity == null ? "var(--text3)" : "var(--flow)", integrity == null ? "Minion (1 hit bricks)" : "hits to brick"),
       box("FIREWALL THR", fw ? fw.threshold : "-", fw ? "var(--danger)" : "var(--text3)", fw ? "dmg must exceed" : "no firewall")
     ]);
     var verdict = noteP(
-      (node.t <= 1 ? "Rudimentary/Standard node, Minion Rule: any successful cipher bricks it outright (Firewall threshold ignored). " : "") +
-      "You hit on a roll of " + Math.max(2, security - gd.effectiveAttack) + "+ on the d20" + (gd.deck && gd.deck.type === "buddy" && node.t >= 4 ? ", but a B&E Buddy LOCKS OUT of Premium+ nodes (sparks, takes 1 HP, fails)." : "") + ".",
+      (node.t <= 1 ? "Rudimentary/Standard Node, Minion Rule: any successful cipher bricks it outright (Firewall threshold ignored). " : "") +
+      "You hit on a roll of " + Math.max(2, security - gd.effectiveAttack) + "+ on the d20" + (gd.deck && gd.deck.type === "buddy" && node.t >= 4 ? ", but a B&E Buddy LOCKS OUT of Premium+ Nodes (sparks, takes 1 HP, fails)." : "") + ".",
       (gd.deck && gd.deck.type === "buddy" && node.t >= 4) ? "var(--danger)" : "var(--text2)");
     return EN.ui.panel("Target Node", "WHAT YOU'RE UP AGAINST", [controls, grids, verdict], { corners: true });
   }
@@ -611,7 +611,7 @@ EN.gridView = (function () {
      Edge/Snag sources, then rolls it with the shared animated dice. */
   var DEEP_EDGES = [
     { key: "code",   name: "Superior code",      hint: "Custom intrusion software beyond your stock suite" },
-    { key: "creds",  name: "Stolen credentials", hint: "A legitimate login the node trusts" },
+    { key: "creds",  name: "Stolen credentials", hint: "A legitimate login the Node trusts" },
     { key: "back",   name: "Hidden backdoor",    hint: "A way in someone left open" },
     { key: "local",  name: "Local access",       hint: "You are on-site, jacked into the hardware" }
   ];

@@ -36,7 +36,7 @@ EN.classes.codebreaker = {
     attribute: "Tech",
     maxFormula: "Caliber + Tech Modifier (minimum of 1)",
     refresh: "You regain all spent Bandwidth at the end of a Short or Long Rest.",
-    fuels: "Bandwidth represents your ability to force your will upon a node, overclock your Smartdeck, and execute the exploits that define the Codebreaker class. Bandwidth fuels every Cipher you cast above the most basic tier and powers Signature #GRID Exploits.",
+    fuels: "Bandwidth represents your ability to force your will upon a Node, overclock your Smartdeck, and execute the exploits that define the Codebreaker class. Bandwidth fuels every Cipher you cast above the most basic tier and powers Signature #GRID Exploits.",
     abilityNoun: "Signature #GRID Exploit",
     abilityNounPlural: "Signature #GRID Exploits",
     learn: { knowsAll: true, picks: [] },
@@ -140,7 +140,7 @@ EN.classes.codebreaker = {
       whatToAvoid: "Avoid being shot. Your d6 Resilience makes you fragile, and physical damage in meatspace triggers Stability Checks while you maintain Links. Avoid exhausting Bandwidth early. A Codebreaker with an empty pool is a thief holding an expensive lockpick."
     },
     smartdeck: "You begin play with a Tier 0 (Standard) Smartdeck. Your Smartdeck's tier determines which Ciphers you can actually cast. A Smartdeck can run Ciphers up to (Smartdeck Tier + 1) in Complexity. A Tier 0 (Standard) deck can run Complexity 0-1 Ciphers; a Tier 5 (Apex) deck can run the entire Cipher library.",
-    repertoire: "You are a Power User on the #GRID. You begin play with a custom Repertoire of Ciphers: your personal library of code. You start with four Ciphers of your choice from the Complexity 0 or Complexity 1 tiers. Throughout your career, you can integrate additional Ciphers into your Repertoire by spending the required Material Cost and one uninterrupted Downtime period (8 hours). There is no upper limit on how many Ciphers you can know; the only limit is what you can afford and what your Smartdeck can run.",
+    repertoire: "You are a Power User on the #GRID. You begin play with a custom Repertoire of Ciphers: your personal library of code. You start with four Ciphers of your choice from the Complexity 0 or Complexity 1 tiers. Throughout your career, you can integrate additional Ciphers into your Repertoire by spending the required Material Cost and 8 uninterrupted hours of Downtime. There is no upper limit on how many Ciphers you can know; the only limit is what you can afford and what your Smartdeck can run.",
     ciphers: "Ciphers above your deck's capacity can be integrated into your Repertoire, but they will not execute until you upgrade your hardware. Signature Ciphers include: Logic Bomb, Daisy Chain, Puppet String, System Cascade, Black Sun.",
     bandwidth: "Your maximum Bandwidth is equal to your Caliber + your Tech Modifier (minimum of 1). You regain all spent Bandwidth at the end of a Short or Long Rest.",
     multiLink: "You possess the unique ability to sustain numerous simultaneous Links, a sharp contrast to Standard Users who are limited to just one. The upper limit for your active Links is calculated as twice your Caliber. While this multi-linking capability serves as the core mechanic of the class, it functions as a high-stakes balancing act: as your total number of active Links increases, the consequences of failing a Stability Check become significantly more severe.",

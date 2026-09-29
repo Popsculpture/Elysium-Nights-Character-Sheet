@@ -536,7 +536,7 @@ EN.classes.shaper = {
     flowDC: "Flow Save DC and Flow Attack are driven by your subclass Flow Attribute (Charm, Mystique, Body, or Tech). Subclass-stated saves use DC = 8 + your [Flow Attribute] Modifier + your Caliber (e.g., The Icon: DC = 8 + your Charm Modifier + your Caliber).",
     maxFlow: "Your maximum FP is equal to (Caliber x 3) + your Flow Modifier.",
     flowAttributeBySubclass: {
-      icon: "Charm (The Icon may also add half Mystique modifier, rounded up, minimum 0, to maximum FP via The Parasocial Pact)",
+      icon: "Charm (The Icon may also add half Mystique Modifier, rounded up, minimum 0, to maximum FP via The Parasocial Pact)",
       harmonist: "Mystique",
       kensei: "Body",
       sourcerer: "Tech"

@@ -117,7 +117,7 @@ EN.kits = {
      glimmer: cash straight onto the Glimmer Stick instead of gear.
      replacesSlot: this extra supplants that Class Kit slot (Toxicologist). */
   subclassExtras: {
-    rigger:           { items: [{ name: "Wireless Transceiver" }, { name: "Gridline Cable" }] },
+    rigger:           { items: [{ name: "Wireless Transceiver" }, { name: "#GRIDline Cable" }] },
     gridweaver:       { items: [{ name: "Disguise and Styling Kit" }] },
     burner:           { items: [{ name: "Thermite Slug" }, { name: "Fire Extinguisher" }] },
     juggernaut:       { items: [{ name: "Scrap Shield" }] },

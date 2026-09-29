@@ -17,7 +17,7 @@ EN.traumaRigs = {
   saveDcFormula: "Triage Save DC: 8 + your Tech Modifier + your Rig's Output Bonus",
   outputBonusNote: "A Rig's Output Bonus adds to any healing roll the Rig delivers, and it sets the Triage Save DC.",
   modSlotNote: "Modification Slots equal the Rig's Tier, so a Field Kit [0] has none and a Black Clinic [5] has five. The printed dash on the Field Kit row means zero.",
-  integrityNote: "A Trauma Rig is powered gear, so it projects a #GRID node at its own Tier and is a valid #GRID target. Its Integrity is the node's System Integrity: cipher damage tests the Firewall first and the remainder comes off Integrity, physical damage lands at full value, and at 0 the Rig is Bricked until it is repaired.",
+  integrityNote: "A Trauma Rig is powered gear, so it projects a #GRID Node at its own Tier and is a valid #GRID target. Its Integrity is the node's System Integrity: cipher damage tests the Firewall first and the remainder comes off Integrity, physical damage lands at full value, and at 0 the Rig is Bricked until it is repaired.",
   // Trauma Grade [2] is the rung where the Rig stops being a first aid box.
   advancedMedkitTier: 2,
   medicalBaseline: "A Trauma Rig counts as a Basic Medkit for Treat Wounds and Treat Fatigue. At Trauma Grade [2] or higher it counts as an Advanced Medkit instead.",
