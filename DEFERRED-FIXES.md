@@ -9023,11 +9023,13 @@ after. Each line says what the ruling was and what was done.
    standard or heavy crossbow, arbalest) 5. So Recurve Bow states `slots: 2`, Hand Crossbow 4,
    Compound Bow 5 and Crossbow 5, and `Bowfire: 5` is gone from `slotCountByGroup`, because
    nothing may fall back to a default of 5 (the old table already gave Light bow 2 and Hand
-   crossbow 4, so that default was wrong before this sync too). The Slingshot sits in the Bowfire
-   table but in no profile: it carries `noSlotCount`, shows 0 slots and a "Pick a PROFILE to set
-   one" note, and waits for a ruling. **Saved records:** a Recurve Bow or Slingshot that already
-   holds more Parts than its new count keeps them (nothing is removed), shows the count in red and
-   accepts no more installs.
+   crossbow 4, so that default was wrong before this sync too). The Slingshot sat in the Bowfire
+   table but in no profile, so it was left without a count until the author ruled (2026-09-29):
+   **Holdout profile, 1 slot**, stated as `slots: 1` on its catalog entry. It counts as a Bow for
+   "Fits: Any bow" Parts, since it is in the Bowfire group and `isBowGroup` reads the group, and its
+   bands are the Output slot. The temporary `noSlotCount` flag and its "Pick a PROFILE" note are
+   gone. **Saved records:** a Recurve Bow or Slingshot that already holds more Parts than its new
+   count keeps them (nothing is removed), shows the count in red and accepts no more installs.
 4. **Downtime rest (1 week).** Added as its own section inside the DOWNTIME popover, under its
    own heading and with its own REST A WEEK button (first built as a second button beside
    DOWNTIME; the author asked for it nested). **Corrected the same day (ruled 2026-09-29, second pass):** it includes everything

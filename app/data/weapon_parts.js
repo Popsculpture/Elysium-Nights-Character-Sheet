@@ -24,10 +24,10 @@ EN.weaponParts = {
      Full frame 5) stored as _profile on its loadout, by KEY: the labels below are
      display only, so "Light bow" became "Light frame" without touching `lightbow`.
      Signature weapons carry 0. Bowfire has NO group default, on purpose: the book gives each
-     profile its own count (Recurve Bow 2, Hand Crossbow 4, Compound Bow and Crossbow 5), so
-     each of those catalog entries states its own `slots`. The Slingshot sits in the Bowfire
-     table but in no profile, so it carries `noSlotCount` and stays at 0 until the profile
-     picker is used, by the author's ruling of 2026-09-29 (no default). */
+     profile its own count (Recurve Bow 2, Hand Crossbow 4, Compound Bow and Crossbow 5, and the
+     Slingshot 1, the Holdout profile, by the author's ruling of 2026-09-29), so each of those
+     catalog entries states its own `slots`. The Slingshot counts as a Bow for "Fits: Any bow"
+     Parts, and its bands are the Output slot. */
   slotCountByGroup: { Sidearm: 4, Longarm: 5, Heavy: 5, Launcher: 5, Simple: 4, Martial: 4 },
   // manual profiles for the per-weapon override picker
   profiles: [

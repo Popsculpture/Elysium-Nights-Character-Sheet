@@ -1573,7 +1573,6 @@ EN.inventoryView = (function () {
     if (it.signature) return 0;
     var prof = (WP().profiles || []).find(function (p) { return p.key === lo._profile; });
     if (prof && prof.count != null) return prof.count;
-    if (it.noSlotCount) return 0;   // no profile in the book covers it (the Slingshot): none until the picker sets one
     // an entry may state its own Slot Count (a Revolver is a Sidearm that
     // carries 2, per the Slot Count by Profile table)
     if (typeof it.slots === "number") return it.slots;
@@ -1987,9 +1986,6 @@ EN.inventoryView = (function () {
       ]),
       el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } }, [el("span.help", { style: { margin: 0, fontSize: "10px" }, text: "PROFILE" }), profSel])
     ]);
-    if (it.noSlotCount && (!lo._profile || lo._profile === "auto")) {
-      header.appendChild(el("p.help", { style: { margin: 0, flex: "1 1 100%", fontSize: "10.5px", color: "var(--warn)" }, text: "The book gives the " + it.name + " no Slot Count. Pick a PROFILE to set one." }));
-    }
     var grid = el("div.grid2", { style: { gap: "10px" } }, (WP().slots || []).map(function (sd) { return slotCard(ch, it, wKey, lo, sd); }));
     out.push(EN.ui.panel(row.label, it.group.toUpperCase() + " · " + (it.damage || ""), [
       el("p.help", { style: { margin: "0 0 8px", fontSize: "11.5px" }, text: "One Part per slot (Utility holds two). Accessories snap on anytime; Mods are bench work in Downtime with a kit. The strictest legality on the build is what a scanner reports." }),
