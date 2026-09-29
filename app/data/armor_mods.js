@@ -34,7 +34,7 @@ EN.armorMods = {
 
     /* ---- Plating & Protection ---- */
     { key: "trauma-plates", name: "Trauma Plates", dr: 1, category: "plating", price: 400, rarity: "Uncommon", legality: "Legal", fits: "Any",
-      grants: "+1 DR", effect: "Grants +1 Damage Reduction (DR). Flat DR from mods does not stack; if you run a second flat-DR mod, only the higher applies." },
+      grants: "+1 DR", effect: "Grants +1 Damage Reduction (DR). Flat DR from mods doesn't stack; if you run a second flat-DR mod, only the higher applies." },
     { key: "ablative-coating", name: "Ablative Coating", category: "plating", price: 450, rarity: "Uncommon", legality: "Licensed", fits: "Any",
       /* The menu from the clause below, in the same field name the four armor rows use in
          gear_armor.js, so "this row carries a choose-one" is one convention across the catalog.
@@ -42,7 +42,7 @@ EN.armorMods = {
          keyed by the armor ENTRY, alongside the spent flag this mod needs and those rows do not.
          Read through engine.ablativeState. */
       resistPick: { options: ["Ballistic", "Piercing", "Slashing", "Bludgeoning"] },
-      grants: "Resistance to one physical type", effect: "Choose Ballistic, Piercing, Slashing, or Bludgeoning when you install it. You gain Resistance to that damage type. The first time each scene a hit of that type would carry through to your Wounds, the coating burns away instead: ignore that damage, then the mod is spent and grants no Resistance until you re-layer it in downtime." },
+      grants: "Resistance to one physical type", effect: "Choose Ballistic, Piercing, Slashing, or Bludgeoning when you install it. You gain Resistance to that damage type. The first time each scene a hit of that type would carry through to your Wounds, the coating burns away instead: ignore that damage, then the mod is spent and grants no Resistance until you re-layer it in Downtime." },
     { key: "reactive-plating", name: "Reactive Plating", category: "plating", price: 550, rarity: "Uncommon", legality: "Restricted", fits: "Plated",
       grants: "+1d6 to Block", effect: "When you choose Block, add +1d6 to the damage prevented. This stacks with the Plated trait's Block benefit, the suit's listed Block Bonus, and shield dice. Applies only when you Block." },
 
@@ -56,16 +56,16 @@ EN.armorMods = {
     //                  only the Sealed benefit, which does not cover vacuum.
     { key: "rebreather-liner", resist: ["Toxic"], name: "Rebreather Liner", category: "environmental", price: 250, rarity: "Common", legality: "Licensed", fits: "Any",
       grantsSealed: true, sealToVacuum: true,
-      grants: "Sealed benefit", effect: "The suit counts as Sealed: Resistance to Toxic damage, and Edge on saves against gas, disease, and airborne or environmental hazards. It does not cover vacuum. If the host suit already has the Sealed trait, the liner instead upgrades that seal to hold against vacuum." },
+      grants: "Sealed benefit", effect: "The suit counts as Sealed: Resistance to Toxic damage, and Edge on saves against gas, disease, and airborne or environmental hazards. It doesn't cover vacuum. If the host suit already has the Sealed trait, the liner instead upgrades that seal to hold against vacuum." },
     /* No `resist` array on purpose: this mod is tuned to Fire OR Cold when installed, the pick
        lives per armor entry in ch.hazards.thermalWeave, and engine.js reads it there. The row used
        to carry resist:["Fire"], which reported Fire for a Cold-tuned weave. */
     { key: "thermal-regulation-weave", name: "Thermal Regulation Weave", category: "environmental", price: 400, rarity: "Uncommon", legality: "Licensed", fits: "Any",
-      grants: "Resistance to Fire or Cold", effect: "Choose Fire or Cold when you install it. You gain Resistance to that damage type, and you do not gain Fatigue from Exposure to that kind of heat or cold." },
+      grants: "Resistance to Fire or Cold", effect: "Choose Fire or Cold when you install it. You gain Resistance to that damage type, and you don't gain Fatigue from Exposure to that kind of heat or cold." },
 
     /* ---- Stealth & Signature ---- */
     { key: "acoustic-baffles", name: "Acoustic Baffles", category: "stealth", price: 200, rarity: "Common", legality: "Legal", fits: "Loud or Powered",
-      grants: "Removes Loud", effect: "The suit loses the Loud trait. On Powered armor, which cannot shed the noise of its own frame entirely, it instead ignores the Loud Stealth penalty so long as you move at half your Speed or less." },
+      grants: "Removes Loud", effect: "The suit loses the Loud trait. On Powered armor, which can't shed the noise of its own frame entirely, it instead ignores the Loud Stealth penalty so long as you move at half your Speed or less." },
     { key: "signature-damper", name: "Signature Damper", category: "stealth", price: 600, rarity: "Uncommon", legality: "Restricted", fits: "Any",
       grants: "Snag on scans of your gear", effect: "Scanners, sensors, and tag readers checking for your armor, weapons, or cyberware roll with Snag (or you add +1 Snag Die against out-of-combat detection Dice Pools). A physical pat-down still finds anything it can touch." },
     { key: "chameleon-weave", name: "Chameleon Weave", category: "stealth", price: 900, rarity: "Rare", legality: "Restricted", fits: "Any",
@@ -79,7 +79,7 @@ EN.armorMods = {
 
     /* ---- Mobility & Frame ---- */
     { key: "load-distributor", name: "Load Distributor", category: "mobility", price: 200, rarity: "Common", legality: "Legal", fits: "Any",
-      grants: "Encumbrance threshold +1 step", effect: "Your Encumbrance threshold is one step higher. It does not stack with the Load-Bearing trait; if the suit already has it, take the single step." },
+      grants: "Encumbrance Threshold +1 step", effect: "Your Encumbrance Threshold is one step higher. It doesn't stack with the Load-Bearing trait; if the suit already has it, take the single step." },
     { key: "drop-dampeners", name: "Drop Dampeners", category: "mobility", price: 250, rarity: "Common", legality: "Legal", fits: "Any",
       grants: "Reduced fall damage", effect: "You take half damage from falling, and you ignore the first 2 spaces of any fall when calculating that damage." },
     { key: "gecko-grips", name: "Gecko Grips", category: "mobility", price: 350, rarity: "Uncommon", legality: "Licensed", fits: "Any",
@@ -91,9 +91,9 @@ EN.armorMods = {
     { key: "vitals-beacon", name: "Vitals Beacon", category: "survival", price: 150, rarity: "Common", legality: "Legal", fits: "Any",
       grants: "Crew location and status link", effect: "Allies with a compatible link always know your location and a coarse status (active, wounded, down) within the same district. If you are reduced to 0 Vitality, the beacon broadcasts your last position. The signal can be detected, traced, or intercepted by anyone with the means and the reason." },
     { key: "coagulant-mesh", name: "Coagulant Mesh", category: "survival", price: 300, rarity: "Common", legality: "Licensed", fits: "Any",
-      grants: "One Bleeding negate per scene", effect: "The first time each scene you would gain the Bleeding condition, you do not. After that the mesh is spent, and Bleeding affects you normally until you re-pack it in downtime." },
+      grants: "One Bleeding negate per scene", effect: "The first time each scene you would gain the Bleeding condition, you don't. After that the mesh is spent, and Bleeding affects you normally until you re-pack it in Downtime." },
     { key: "trauma-stim-injector", name: "Trauma Stim Injector", category: "survival", price: 550, rarity: "Uncommon", legality: "Restricted", fits: "Any",
-      grants: "Auto-stim at 0 Vigor", effect: "Special: Once per scene, the instant you are reduced to 0 Vigor, the injector fires automatically: regain 1d6+2 Vigor and ignore Snag from pain and injury until the end of your next turn. The cartridge is then spent until you refill it in downtime." },
+      grants: "Auto-stim at 0 Vigor", effect: "Special: Once per scene, the instant you are reduced to 0 Vigor, the injector fires automatically: regain 1d6+2 Vigor and ignore Snag from pain and injury until the end of your next turn. The cartridge is then spent until you refill it in Downtime." },
 
     /* ---- Power & Countermeasures ---- */
     { key: "faraday-lining", name: "Faraday Lining", category: "power", price: 450, rarity: "Uncommon", legality: "Licensed", fits: "Any",
@@ -101,9 +101,9 @@ EN.armorMods = {
     { key: "self-seal-nanopaste", name: "Self-Seal Nanopaste", category: "power", price: 500, rarity: "Uncommon", legality: "Licensed", fits: "Any",
       grants: "Self-repairing shell", effect: "The suit never requires routine maintenance, and at the end of each scene it self-repairs cosmetic and minor functional damage at no cost. It does not restore your Damage Reduction mid-fight, and it does not settle Upkeep on Leased gear." },
     { key: "reactive-countermeasures", name: "Reactive Countermeasures", category: "power", price: 650, rarity: "Rare", legality: "Restricted", fits: "Any",
-      grants: "Vents smoke or dazzle on a hit", effect: "Impulse: Choose smoke or dazzle when you install the mod. Once per scene, when you are hit by an attack, you may immediately vent the charge. Smoke: you and adjacent allies gain concealment until the start of your next turn. Dazzle: the attacker makes a Body or Wits save (your choice at install), DC 13, or attacks with Snag until the end of its next turn." },
+      grants: "Vents smoke or dazzle on a hit", effect: "Impulse: Choose smoke or dazzle when you install the mod. Once per scene, when you are hit by an attack, you may immediately vent the charge. Smoke: You and adjacent allies gain concealment until the start of your next turn. Dazzle: The attacker makes a Body or Wits Save (your choice at install), DC 13, or attacks with Snag until the end of its next turn." },
     { key: "sentinel-active-defense", name: "Sentinel Active Defense", category: "power", price: 120, upkeep: 90, buyout: 800, rarity: "Uncommon", legality: "Licensed", fits: "Any",
-      grants: "Leased point-defense", effect: "While the plan is current, once per round when you are hit by a Ranged attack, reduce that attack's damage by 1d6 as the system intercepts. Lapsed or Locked: the rig goes dark and grants nothing until you settle the account or crack the lock. It can be locked on lapsed payment, a flagged Persona, or revoked corporate credentials." },
+      grants: "Leased point-defense", effect: "While the plan is current, once per round when you are hit by a Ranged attack, reduce that attack's damage by 1d6 as the system intercepts. Lapsed or Locked: The rig goes dark and grants nothing until you settle the account or crack the lock. It can be locked on lapsed payment, a flagged Persona, or revoked corporate credentials." },
 
     /* ---- Mystech Augments (Mystech armor only) ---- */
     { key: "resonance-dampener", resist: ["Resonant"], name: "Resonance Dampener", category: "mystech", price: 700, rarity: "Iconic", legality: "Contraband", fits: "Mystech",
@@ -111,7 +111,7 @@ EN.armorMods = {
     { key: "echo-shroud", name: "Echo Shroud", category: "mystech", price: 800, nexus: "◎0.3", rarity: "Legendary", legality: "Contraband", fits: "Mystech",
       grants: "Hides your Flow signature", effect: "Attempts to detect, scry, or track you through the Flow, by Echoes, resonance, or metaphysical sensing, roll with Snag (or add +1 Snag Die to the relevant out-of-combat Dice Pool). Ordinary technological sensors are unaffected." },
     { key: "ward-amplifier", name: "Ward Amplifier", category: "mystech", price: 1200, nexus: "◎0.5", rarity: "Legendary", legality: "Contraband", fits: "Mystech",
-      grants: "Empowers Ward as a Focus", effect: "This mod is a Focus. Once per round when you use Ward, add +1d6 to the Ward reduction. You can only benefit from one Focus item for Ward at a time, so the Amplifier does not stack with a Focus suit or a Warding Focus; you choose which one is feeding your Ward." },
+      grants: "Empowers Ward as a Focus", effect: "This mod is a Focus. Once per round when you use Ward, add +1d6 to the Ward reduction. You can only benefit from one Focus item for Ward at a time, so the Amplifier doesn't stack with a Focus suit or a Warding Focus; you choose which one is feeding your Ward." },
     { key: "grounding-lattice", name: "Grounding Lattice", category: "mystech", price: 2400, nexus: "◎1", rarity: "Legendary", legality: "Contraband", fits: "Mystech",
       grants: "Edge vs Breakflow and backlash", effect: "You gain Edge on saves against Breakflow, Flow backlash, and the metaphysical effects of Anomalies and Resonant Storms." }
   ],

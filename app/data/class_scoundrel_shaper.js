@@ -9,10 +9,10 @@ var SCOUNDREL_MOXIE_GAMBITS = [
   { name: "Lucky Break", action: "Special Action", cost: 1, text: "When you make an attack roll, an ability check, or a saving throw, spend 1 Moxie to roll one additional d20 and choose which die to use, even if you are already rolling with Edge. This deliberately breaks the normal rule that you can never roll more than 2d20. A Lucky Break stacks on top of Edge: Edge plus a Lucky Break is 3d20, and you keep whichever result you like." },
   { name: "Jinx", action: "Impulse Action", cost: 1, text: "When an enemy you can see makes an attack roll or a saving throw, spend 1 Moxie to force them to roll one additional d20 and use the lowest result, even if they are already rolling with Snag. Jinxing a target who already has Snag forces a third d20, and they are stuck with the worst of the three." },
   { name: "Slip the Blow", action: "Impulse Action", cost: 1, text: "When you are hit by an attack you can see, spend 1 Moxie to roll with it at the last instant. You gain Resistance to that attack's damage and may immediately move 1 space without provoking opportunity attacks." },
-  { name: "Smash and Grab", action: "Action", cost: 1, text: "Spend 1 Moxie. Your Speed is doubled this turn and your movement does not provoke opportunity attacks for the rest of your turn (you cannot end your turn in an enemy's space). Make a single weapon attack at any point during the move. On a hit, choose one: shove the target 1 space, or snatch one small unsecured item they are carrying (a keycard, a grenade, a spare clip, a data shard). The GM may call for a contested Sleight check to lift anything secured or actively guarded." },
+  { name: "Smash and Grab", action: "Action", cost: 1, text: "Spend 1 Moxie. Your Speed is doubled this turn and your movement doesn't provoke opportunity attacks for the rest of your turn (you can't end your turn in an enemy's space). Make a single weapon attack at any point during the move. On a hit, choose one: shove the target 1 space, or snatch one small unsecured item they are carrying (a keycard, a grenade, a spare clip, a data shard). The GM may call for a contested Sleight check to lift anything secured or actively guarded." },
   { name: "Bad Feeling", action: "Impulse Action", cost: 1, text: "When an enemy you can see moves within your reach, or when you become the target of an attack you can see, spend 1 Moxie to move up to half your Speed without provoking opportunity attacks. Because you move as the trigger happens, you can break away before it lands. If that move puts you out of the attacker's reach or behind total cover, the attack finds empty space." },
   { name: "Shake It Off", action: "Swift Action", cost: 1, text: "Spend 1 Moxie to end one condition affecting you that is clouding your senses or your footing, such as Staggered, Shaken, or Dazed." },
-  { name: "Ace Up the Sleeve", action: "Special Action", cost: 1, text: "Spend 1 Moxie to reveal you saw this coming. Subject to GM approval, you produce a useful but mundane item you could plausibly have stashed, call in a minor favor from a local contact, or point out a small environmental out: a loose grate, an unlatched window, a maintenance ladder. It never conjures gear you could not have carried and it never rewrites the scene." },
+  { name: "Ace Up the Sleeve", action: "Special Action", cost: 1, text: "Spend 1 Moxie to reveal you saw this coming. Subject to GM approval, you produce a useful but mundane item you could plausibly have stashed, call in a minor favor from a local contact, or point out a small environmental out: a loose grate, an unlatched window, a maintenance ladder. It never conjures gear you couldn't have carried and it never rewrites the scene." },
   { name: "Kick Them While They're Down", action: "Impulse Action", cost: 1, text: "When an enemy within your reach misses you with a melee attack, or an ally scores a Critical Hit on an enemy within your reach, spend 1 Moxie to make a single weapon attack against that enemy. On a hit, it automatically qualifies for your Cheap Shot damage with no other condition required." },
   { name: "Quick Hands", action: "Impulse Action", cost: 1, text: "Trigger: An enemy within your reach misses you with an attack, or you move out of an enemy's reach. Spend 1 Moxie. Choose one: take one small unsecured item the enemy is carrying (a keycard, a grenade, a spare clip, a data shard), or foul one piece of their gear so the next attack roll they make with it is rolled with Snag." },
   { name: "Pure Luck", action: "Special Action", cost: 1, text: "Trigger: You fail an attack roll, an ability check, or a saving throw. Spend 1 Moxie to insist, against all reason, that it went your way. Treat the d20 as if it had rolled a 10, then apply your modifiers normally. Where Lucky Break buys you another die before you know how it lands, Pure Luck rescues a roll that already came up short." }
@@ -24,7 +24,7 @@ var SCOUNDREL_MOXIE_TEXT = SCOUNDREL_MOXIE_INTRO + "\n\n" + SCOUNDREL_MOXIE_GAMB
 EN.classes.scoundrel = {
   key: "scoundrel",
   name: "Scoundrel",
-  tagline: "The odds were never in your favor, so you stopped playing fair and started playing to win. You have nerve, footwork, and a kind of luck that should have run out years ago and somehow keeps holding. When the shooting starts you are already moving, already gone, already standing behind the one person who thought they had you; you slip the killing shot, palm the prize, and stroll out the back. You are training to become the one thing a rigged city can never quite get its hands on: untouchable.",
+  tagline: "The odds were never in your favor, so you stopped playing fair and started playing to win. You have nerve, footwork, and a kind of luck that should have run out years ago and somehow keeps holding. When the shooting starts you're already moving, already gone, already standing behind the one person who thought they had you; you slip the killing shot, palm the prize, and stroll out the back. You are training to become the one thing a rigged city can never quite get its hands on: untouchable.",
 
   vitality: {
     text: "Resilience Die: d8\nStarting Vitality: 8 + Body Modifier\nVitality Per Level: 1d8 + Body Modifier"
@@ -38,7 +38,7 @@ EN.classes.scoundrel = {
   attributePriorities: [
     "1. Agility (Primary): Powers your Stealth, Sleight, finesse melee and ranged attacks, your Speed and Defense, and the size of your Moxie pool.",
     "2. Wits (Secondary): Drives your Perception and instinct for trouble, your Initiative, and your Wits saves.",
-    "3. Tech or Charm (Tertiary): Tech bypasses locks and security systems on a job; Charm talks you clear when footwork alone will not cut it."
+    "3. Tech or Charm (Tertiary): Tech bypasses locks and security systems on a job; Charm talks you clear when footwork alone won't cut it."
   ],
 
   resource: {
@@ -74,7 +74,7 @@ EN.classes.scoundrel = {
       },
       {
         name: "Cheap Shot",
-        text: "Once per turn, you can deal an extra **1d6 damage** to one target you hit with an attack, as long as the attack uses a Sidearm, a Simple Weapon, or a Melee Weapon with the *Light* trait, and at least one of the following is true:\n\n• You have **Edge** on the attack roll.\n• Another conscious enemy of the target is within 1 space of it, and you do not have **Snag** on the roll.\n• You have spent at least 1 Moxie this round.\n\nThis extra damage increases to **2d6 at 3rd Level, 3d6 at 5th Level, 4d6 at 7th Level, and 5d6 at 9th Level**."
+        text: "Once per turn, you can deal an extra **1d6 damage** to one target you hit with an attack, as long as the attack uses a Sidearm, a Simple Weapon, or a Melee Weapon with the *Light* trait, and at least one of the following is true:\n\n• You have **Edge** on the attack roll.\n• Another conscious enemy of the target is within 1 space of it, and you don't have **Snag** on the roll.\n• You have spent at least 1 Moxie this round.\n\nThis extra damage increases to **2d6 at 3rd Level, 3d6 at 5th Level, 4d6 at 7th Level, and 5d6 at 9th Level**."
       },
       {
         name: "Scoundrel Subclass",
@@ -124,7 +124,7 @@ EN.classes.scoundrel = {
     "6": [
       {
         name: "Cheat the Clock",
-        text: "You can take **two Impulse Actions** each round instead of one. You still cannot take more than one Impulse Action in response to the same trigger."
+        text: "You can take **two Impulse Actions** each round instead of one. You still can't take more than one Impulse Action in response to the same trigger."
       },
       {
         name: "Universal Upgrade",
@@ -154,7 +154,7 @@ EN.classes.scoundrel = {
       },
       {
         name: "Devil's Own Luck",
-        text: "Once per round, when you score a **Critical Success (Natural 20)** on a d20 roll, or when an enemy misses you with an attack, you regain 1 spent Moxie (this cannot exceed your maximum). In addition, attacks against you cannot score **Critical Hits**."
+        text: "Once per round, when you score a **Critical Success (Natural 20)** on a d20 roll, or when an enemy misses you with an attack, you regain 1 spent Moxie (this can't exceed your maximum). In addition, attacks against you can't score **Critical Hits**."
       }
     ],
     "10": [
@@ -182,7 +182,7 @@ EN.classes.scoundrel = {
     {
       key: "smuggler",
       name: "The Smuggler",
-      description: "You get things, and people, where they are not supposed to be. You are a master of evasion, logistics, and slipping through checkpoints undetected. To you, a locked border or a corporate blockade is just a puzzle waiting to be solved. You always get the job done, even when you have a bad feeling about it, and you win by outsmarting the system, making sure the crew always has a clean way out when things go sideways.",
+      description: "You get things, and people, where they aren't supposed to be. You know evasion, logistics, and how to walk through a checkpoint like you belong there. You always get the job done, even when you have a bad feeling about it, and you win by outsmarting the system, making sure the crew always has a clean way out when things go sideways.",
       features: [
         {
           level: 1,
@@ -197,19 +197,19 @@ EN.classes.scoundrel = {
         {
           level: 7,
           name: "Never Saw It Coming",
-          text: "You have Edge on attack rolls against any enemy that has not yet been damaged by you this combat. The first time you hit each enemy, it is Staggered until the end of its next turn."
+          text: "You have Edge on attack rolls against any enemy that hasn't yet been damaged by you this combat. The first time you hit each enemy, it is Staggered until the end of its next turn."
         },
         {
           level: 10,
           name: "Leaf on the Wind",
-          text: "Once per Long Rest, as a **Swift Action**, drop into total focus for 1 minute. While it lasts, you gain Resistance to all damage, attacks against you cannot score Critical Hits, you gain an additional **Impulse Action** each round, and you regain 1 Moxie at the start of each of your turns."
+          text: "Once per Long Rest, as a **Swift Action**, drop into total focus for 1 minute. While it lasts, you gain Resistance to all damage, attacks against you can't score Critical Hits, you gain an additional **Impulse Action** each round, and you regain 1 Moxie at the start of each of your turns."
         }
       ]
     },
     {
       key: "wildcard",
       name: "The Wildcard",
-      description: "The deck is always stacked against you, so you learned to cheat fate itself. You do not hope for a lucky break, you bet on it, push the odds, and dare the universe to call your bluff. Where other Scoundrels play it careful, you go all in, because the only way to beat a rigged game is to wager more than anyone sane ever would.",
+      description: "The deck is always stacked against you, so you learned to cheat fate itself. You don't hope for a lucky break, you bet on it, push the odds, and dare the universe to call your bluff. Where other Scoundrels play it careful, you go all in, because the only way to beat a rigged game is to wager more than anyone sane ever would.",
       features: [
         {
           level: 1,
@@ -229,19 +229,19 @@ EN.classes.scoundrel = {
         {
           level: 10,
           name: "All In",
-          text: "Once per Long Rest, as a **Free Action**, bet everything for 1 minute:\n\n• Your Press Your Luck bets cannot bust. Treat any d6 result of **1** as a safe **4**, and a **6** still pays the jackpot.\n• You can place a Press Your Luck bet, on yourself or an ally, without spending Moxie.\n• Once on each of your turns, you can hand one ally within 12 spaces a free Lucky Break.\n\nWhen the minute ends, you cannot use Press Your Luck again until you finish a Short or Long Rest."
+          text: "Once per Long Rest, as a **Free Action**, bet everything for 1 minute:\n\n• Your Press Your Luck bets can't bust. Treat any d6 result of **1** as a safe **4**, and a **6** still pays the jackpot.\n• You can place a Press Your Luck bet, on yourself or an ally, without spending Moxie.\n• Once on each of your turns, you can hand one ally within 12 spaces a free Lucky Break.\n\nWhen the minute ends, you can't use Press Your Luck again until you finish a Short or Long Rest."
         }
       ]
     },
     {
       key: "shiv",
       name: "The Shiv",
-      description: "Everyone else is fighting a duel. You are fighting in a gutter, with a broken bottle in one hand and a fistful of grit in the other. You do not need to be stronger or faster, you need them blind, off balance, bleeding, and unable to run, which is exactly where you put them. By the time anyone realizes you never fight fair, they are already on the ground.",
+      description: "Everyone else is fighting a duel. You're fighting in a gutter, with a broken bottle in one hand and a fistful of grit in the other. You don't need to be stronger or faster, you need them blind, off-balance, bleeding, and unable to run, which is exactly where you put them. By the time anyone realizes you never fight fair, they're already on the ground.",
       features: [
         {
           level: 1,
           name: "Fight Dirty",
-          text: "When you hit a target with a melee attack, spend 1 Moxie to add a dirty trick. (Whenever you deal Cheap Shot damage with a melee attack, you can apply one of these tricks.) Choose one:\n\n• **Dirt in the Eyes:** The target rolls with Snag on its attacks until the end of its next turn.\n• **Sweep the Leg:** The target must succeed on an Agility Save (DC = 8 + your Agility Modifier + your Caliber) or be knocked Prone.\n• **Squirrel Tap:** The target cannot take Impulse Actions until the start of your next turn."
+          text: "When you hit a target with a melee attack, spend 1 Moxie to add a dirty trick. (Whenever you deal Cheap Shot damage with a melee attack, you can apply one of these tricks.) Choose one:\n\n• **Dirt in the Eyes:** The target rolls with Snag on its attacks until the end of its next turn.\n• **Sweep the Leg:** The target must succeed on an Agility Save (DC = 8 + your Agility Modifier + your Caliber) or be knocked Prone.\n• **Squirrel Tap:** The target can't take Impulse Actions until the start of your next turn."
         },
         {
           level: 3,
@@ -264,7 +264,7 @@ EN.classes.scoundrel = {
 
   extra: {
     playbook: {
-      turnToTurn: "You bet on yourself. You spend Moxie to bend your own dice, sour the enemy's at the worst possible moment, and reposition through openings no one else can use, then cash a single clean hit with Cheap Shot. You are rarely where the enemy wants you, and never pinned.",
+      turnToTurn: "You bet on yourself. You spend Moxie to bend your own dice, sour the enemy's at the worst possible moment, and reposition through openings no one else can use, then cash a single clean hit with Cheap Shot. You're rarely where the enemy wants you, and never pinned.",
       winningEncounters: "You win by being untouchable and improbably lucky. You do not stand in the open trading shots with a heavy gunner; you slip the killing blows, twist the enemy's luck against them, and capitalize on every opening your crew tears open.",
       whatToAvoid: "Running your Moxie dry while surrounded. With a d8 Resilience Die and Light Armor, your survival is your luck and your footwork, not your hit points. An empty pool with no exits is the moment the odds finally catch up with you."
     }
@@ -286,8 +286,8 @@ EN.classes.shaper = {
   saveFocus: "Mystique and Body",
 
   attributePriorities: [
-    "1. Your Flow Attribute (Primary): Your subclass dictates if your Flow Attribute is Charm, Mystique, Body, or Tech. It drives your maximum Flow pool, Flow Attack, and Flow Save DC.",
-    "2. Body or Agility (Secondary): If Body isn't already your Flow Attribute, it increases your Wounds to survive the physical toll of combat. Agility keeps your Defense high to avoid taking hits while channeling.",
+    "1. Your Flow Attribute (Primary): Your subclass dictates whether your Flow Attribute is Charm, Mystique, Body, or Tech. It drives your maximum Flow pool, Flow Attack, and Flow Save DC.",
+    "2. Body or Agility (Secondary): Body increases your Vitality and maximum Wounds, helping you survive the physical toll of combat. Agility keeps your Defense high to avoid taking hits while channeling.",
     "3. Wits (Tertiary): Powers Intuition and Perception, allowing you to read the battlefield and react to sudden threats before they disrupt your resonance."
   ],
 
@@ -320,7 +320,7 @@ EN.classes.shaper = {
       },
       {
         name: "Flow Subclass",
-        text: "You choose a Shaper subclass, representing your specialization. You gain all subclass features for which you meet the required Shaper level, both now and as you advance."
+        text: "You choose a Shaper subclass, representing your specialization. You gain all subclass features for which you meet the required Shaper level, both now and as you advance. You may only select one subclass."
       }
     ],
     "2": [
@@ -416,13 +416,13 @@ EN.classes.shaper = {
     {
       key: "icon",
       name: "The Icon",
-      description: "You are a localized demigod of the digital age, drawing your metaphysical weight from the collective obsession of an unseen audience. It does not matter if you built your following as a charismatic provocateur, a relentless truth seeker, a digital instigator, or an absolute menace. You demanded the spotlight, and the Flow answered. Just as ancient spirits starved without worship, your ultimate resonance relies entirely on viewership. You have forged a parasocial pact with the masses, but remember that an audience is a hungry, fickle beast that will gladly consume you the moment you stop being entertaining. The face you show the world is built from Charm; the self beneath it is held together by Mystique. Lose your grip on either, and the show ends.",
+      description: "You're a localized demigod of the digital age, drawing your metaphysical weight from the collective obsession of an unseen audience. It doesn't matter whether you built your following as a charismatic provocateur, a relentless truth seeker, a digital instigator, or an absolute menace. You demanded the spotlight, and the Flow answered. Just as ancient spirits starved without worship, your resonance runs on viewership. You have forged a parasocial pact with the masses, but remember that an audience is a hungry, fickle beast that will gladly consume you the moment you stop being entertaining. The face you show the world is built from Charm; the self beneath it is held together by Mystique. Lose your grip on either, and the show ends.",
       flowAttribute: "Charm",
       features: [
         {
           level: 1,
           name: "Center of Attention",
-          text: "**Flow Attribute:** Charm. This drives your Flow Attack rolls, Flow Save DCs, and your Reservoir's Flow Modifier component as normal.\n\n**The Parasocial Pact:** When calculating the size of your Reservoir, add half your Mystique modifier (rounded up, minimum 0) to your maximum FP, on top of the standard formula.\n\n**Metaphysical Live Feed:** You gain Edge on in-combat Charm d20 checks (or +1 Edge Die to related out-of-combat Dice Pools) when dealing with crowds or fans. Once per combat, if you hit an enemy with a Flow Attack after taking a deliberate risk (such as moving out of Cover to expose yourself or taking a dangerous leap), you regain 1d4 FP."
+          text: "**Flow Attribute:** Charm. This drives your Flow Attack rolls, Flow Save DCs, and your Reservoir's Flow Modifier component as normal.\n\n**The Parasocial Pact:** When calculating the size of your Reservoir, add half your Mystique Modifier (rounded up, minimum 0) to your maximum FP, on top of the standard formula.\n\n**Metaphysical Live Feed:** You gain Edge on in-combat Charm d20 checks (or +1 Edge Die to related out-of-combat Dice Pools) when dealing with crowds or fans. Once per combat, if you hit an enemy with a Flow Attack after taking a deliberate risk (such as moving out of Cover to expose yourself or taking a dangerous leap), you regain 1d4 FP."
         },
         {
           level: 3,
@@ -432,19 +432,19 @@ EN.classes.shaper = {
         {
           level: 7,
           name: "The Show Must Go On",
-          text: "**Plot Armor:** Once per Long Rest, when an attack would reduce you to 0 Wounds, you do not fall Unconscious and do not become Dying. Instead, you remain at 1 Wound and gain 1 Stage of Strain. In the same instant, you emit a pulse of resonance: every enemy within 6 spaces must make a Saving Throw of your choice (DC = 8 + your Charm Modifier + your Caliber).\n\n• **The Spectacle (Charm Save):** On a failure, targets are knocked Prone and Blinded until the end of their next turn.\n• **The Reckoning (Mystique Save):** On a failure, targets are Charmed until the end of their next turn and cannot willingly attack you.\n\n**Authentic Self:** Once per Short Rest, when you would take 1 Stage of Strain from any Icon subclass feature, you may make a Mystique Save (DC 10 + your current Stages of Strain). On a success, you take no Strain and regain 1 FP."
+          text: "**Plot Armor:** Once per Long Rest, when an attack would reduce you to 0 Wounds, you don't fall Unconscious and don't become Dying. Instead, you remain at 1 Wound and gain 1 Stage of Strain. In the same instant, you emit a pulse of resonance: every enemy within 6 spaces must make a Saving Throw of your choice (DC = 8 + your Charm Modifier + your Caliber).\n\n• **The Spectacle (Charm Save):** On a failure, targets are knocked Prone and Blinded until the end of their next turn.\n• **The Reckoning (Mystique Save):** On a failure, targets are Charmed until the end of their next turn and can't willingly attack you.\n\n**Authentic Self:** Once per Short Rest, when you would take 1 Stage of Strain from any Icon subclass feature, you may make a Mystique Save (DC 10 + your current Stages of Strain). On a success, you take no Strain and regain 1 FP."
         },
         {
           level: 10,
           name: "Do Not Look Away",
-          text: "Once per Long Rest, as an **Action**, spend 2 FP to broadcast your feed into the ambient Flow.\n\n**Audience Capture:** Every enemy within 20 spaces must make a Saving Throw (DC = 8 + your Charm OR Mystique modifier (your choice) + your Caliber). The type depends on which face you project:\n\n• **Project the Icon (Charm Save):** Enemies are captivated by the spectacle. Your broadcast is overwhelming, hypnotic, total.\n• **Project the Self (Mystique Save):** Enemies are captivated by the truth underneath the persona, the raw, unfiltered weight of who you actually are, broadcast at metaphysical volume.\n\nOn a failure, they are completely captivated: they drop their weapons, their Speed becomes 0, and they cannot take Actions or Impulse Actions, only stare. The effect lasts up to 1 minute and ends immediately for any individual target that takes damage."
+          text: "Once per Long Rest, as an **Action**, spend 2 FP to broadcast your feed into the ambient Flow.\n\n**Audience Capture:** Every enemy within 20 spaces must make a Saving Throw (DC = 8 + your Charm OR Mystique Modifier (your choice) + your Caliber). The type depends on which face you project:\n\n• **Project the Icon (Charm Save):** Enemies are captivated by the spectacle. Your broadcast is overwhelming, hypnotic, total.\n• **Project the Self (Mystique Save):** Enemies are captivated by the truth underneath the persona, the raw, unfiltered weight of who you actually are, broadcast at metaphysical volume.\n\nOn a failure, they are completely captivated: they drop their weapons, their Speed becomes 0, and they can't take Actions or Impulse Actions, only stare. The effect lasts up to 1 minute and ends immediately for any individual target that takes damage."
         }
       ]
     },
     {
       key: "harmonist",
       name: "The Harmonist",
-      description: "You coax the Flow through emotional resonance and spiritual empathy. You are the spiritual anchor of the pack and the immune system of the concrete jungle, an urban shaman awakening the sleeping earth beneath the asphalt. You listen to the ancient rhythm of the current, wielding the memories of the earth and the primal cycle of life to protect your people and tear down anything that threatens them.",
+      description: "You coax the Flow through emotional resonance and empathy. You're the spiritual anchor of the pack and the immune system of a city that paved over its own roots, an urban shaman awakening the sleeping earth beneath the asphalt. You listen to the ancient rhythm of the current, wielding the memories of the earth and the primal cycle of life to protect your people and tear down anything that threatens them.",
       flowAttribute: "Mystique",
       features: [
         {
@@ -455,7 +455,7 @@ EN.classes.shaper = {
         {
           level: 3,
           name: "Burden of the Earth",
-          text: "As a **Swift Action**, spend 1 FP to target a willing ally within 6 spaces. You can purge one elemental or psychic status effect (such as Burning, Poisoned, or Blinded) from them, or transfer 1 Stage of their Strain onto yourself. Strain transferred this way is treated as if caused by Overdraw and cannot be ignored by the Absolute Conduit feature's Strain Resistance."
+          text: "As a **Swift Action**, spend 1 FP to target a willing ally within 6 spaces. You can purge one elemental or psychic status effect (such as Burning, Poisoned, or Blinded) from them, or transfer 1 Stage of their Strain onto yourself. Strain transferred this way is treated as if caused by Overdraw and can't be ignored by the Absolute Conduit feature's Strain Resistance."
         },
         {
           level: 7,
@@ -465,25 +465,25 @@ EN.classes.shaper = {
         {
           level: 10,
           name: "The World in Bloom",
-          text: "Once per Long Rest, as an **Action**, spend 2 FP to infuse the ground in Area 12 with blooming life for 1 minute.\n\n**Womb of the World:** If an ally would be reduced to 0 Wounds while inside the zone, they do not fall Unconscious and do not become Dying. The earth swallows them into a cocoon, restoring Wounds equal to 2d4 + their Body Modifier. While cocooned, they cannot be targeted by attacks and cannot act. At the start of any of their turns, they may burst free; if they have not emerged before the zone ends, the earth ejects them. Each ally can be saved this way once per activation of the zone.\n\n**The Reaper's Bloom:** Whenever an enemy is killed inside the zone, the closest ally to the fallen enemy immediately heals 2d6 Vitality or regains 1d4 FP."
+          text: "Once per Long Rest, as an **Action**, spend 2 FP to infuse the ground in Area 12 with blooming life for 1 minute.\n\n**Womb of the World:** If an ally would be reduced to 0 Wounds while inside the zone, they don't fall Unconscious and don't become Dying. The earth swallows them into a cocoon, restoring Wounds equal to 2d4 + their Body Modifier. While cocooned, they can't be targeted by attacks and can't act. At the start of any of their turns, they may burst free; if they haven't emerged before the zone ends, the earth ejects them. Each ally can be saved this way once per activation of the zone.\n\n**The Reaper's Bloom:** Whenever an enemy is killed inside the zone, the closest ally to the fallen enemy immediately heals 2d6 Vitality or regains 1d4 FP."
         }
       ]
     },
     {
       key: "kensei",
       name: "The Kensei",
-      description: "You are a sword saint of the neon age. You do not force the Flow; you move with it. You are a martial artist of the highest caliber, treating the universal current as a direct extension of your own nervous system and the steel in your hands. You slip through the spaces between reality, turning momentum, gravity, and kinetic energy into a deadly, flawless kata. You are a blur of motion, a frictionless phantom on the battlefield, redirecting the attacks of your enemies before cutting them down with impossible precision.",
+      description: "You are a sword saint of the neon age. You don't force the Flow; you move with it. You are a martial artist, treating the universal current as a direct extension of your own nervous system and the steel in your hands. You slip through the spaces between reality, turning momentum, gravity, and kinetic energy into a deadly, flawless kata. You are a blur of motion, a frictionless phantom on the battlefield, redirecting the attacks of your enemies before cutting them down with impossible precision.",
       flowAttribute: "Body",
       features: [
         {
           level: 1,
           name: "Resonant Edge",
-          text: "**Flow Attribute:** Body.\n\n**Edge of Oneness:** Any melee weapon you are proficient with acts as your Ritual Implement. You can use your Body modifier instead of Agility for the attack and damage rolls of any melee weapon with the Finesse or Light trait. When you cast an Invocation with a Directed (Touch) Delivery, you can deliver the effect through your weapon's strike."
+          text: "**Flow Attribute:** Body.\n\n**Edge of Oneness:** Any melee weapon you are proficient with acts as your Ritual Implement. You can use your Body Modifier instead of Agility for the attack and damage rolls of any melee weapon with the Finesse or Light trait. When you cast an Invocation with a Directed (Touch) Delivery, you can deliver the effect through your weapon's strike."
         },
         {
           level: 3,
           name: "Flowstride",
-          text: "As a **Swift Action**, spend 1 FP to become frictionless for the rest of your turn. Your Speed increases by 3, you ignore Difficult Terrain, you do not provoke opportunity attacks, and you can run along vertical surfaces, up walls, or across water, so long as you end your turn on solid ground."
+          text: "As a **Swift Action**, spend 1 FP to become frictionless for the rest of your turn. Your Speed increases by 3, you ignore Difficult Terrain, you don't provoke opportunity attacks, and you can run along vertical surfaces, up walls, or across water, so long as you end your turn on solid ground."
         },
         {
           level: 7,
@@ -506,22 +506,22 @@ EN.classes.shaper = {
         {
           level: 1,
           name: "The Machine Medium",
-          text: "**Flow Attribute:** Tech. For you, Tech measures the strength of your tether to the digital substrate where the sprites live and the depth of your standing with them, not technical skill.\n\n**The Invisible Ecosystem:** You don't use wands or crystals; your \"tools\" are whatever the sprites gather around (button cell batteries, a dead phone you never stop talking to, a wind-up toy, a lucky USB stick). You can passively see and hear the Nixies and Gremlins infesting the city's machinery, and they can see you noticing them.\n\n**Synthetica:** You know **Synthetica**, the Unique Resonance of the invisible ecosystem. It counts as one of the three Base Resonances every Shaper knows at Level 1, so you choose only two more from the standard list. This was never optional. The sprites chose you long before you learned to shape, and what they teach, no other Shaper can learn. The full Resonance is written out under Unique Resonance: Synthetica below.\n\n**Sprite Tether:** A Codebreaker needs a deck and a cracked cipher to hold a door open in the #GRID. You need neither. A Nixie will keep a line open because you asked; a Gremlin will keep one open because watching you use it is entertainment. You count as a **Power User**, and the sprites can hold **Links** for you equal to your **Caliber** at a time, with no hardware anywhere in the loop.\n• **Opening a tether:** As an Action, ask a sprite inside a node within 12 spaces to let you in. Make a **Flow Attack** (d20 + your Tech modifier + your Caliber) against the node's Security Rating. On a success, the sprite holds the Link open until it is severed. No Cipher, no Systems roll, no deck.\n• **Reaching through it:** While you hold a Link to a node, your Invocations and sprite abilities can reach that node and the device it stands for, even past your normal range or line of sight. The sprites carry your word in and carry back what they find.\n• **No hardware to hide behind:** Feedback a Codebreaker's deck would swallow lands on you instead. When a tether snaps you suffer **LinkDeath through the body**, which is why your resonance can ground it: an Impulse Action and **1 Wound** (see Sourcerers and LinkDeath). By the same logic, the rules written to punish a deck skip you: a Bricked deck can't trigger your LinkDeath because you have none, and Cascade Failure has no Smartdeck of yours to fry. You pay the psychic price and nothing else, which is not the safe road it sounds like: every extra Link is another die of surge, and all of it grounds in your skull."
+          text: "**Flow Attribute:** Tech. For you, Tech measures the strength of your tether to the digital substrate where the sprites live and the depth of your standing with them, not technical skill.\n\n**The Invisible Ecosystem:** You don't use wands or crystals; your \"tools\" are whatever the sprites gather around (button cell batteries, a dead phone you never stop talking to, a wind-up toy, a lucky USB stick). You can passively see and hear the Nixies and Gremlins infesting the city's machinery, and they can see you noticing them.\n\n**Synthetica:** You know **Synthetica**, the Unique Resonance of the invisible ecosystem. It counts as one of the three Base Resonances every Shaper knows at Level 1, so you choose only two more from the standard list. This was never optional. The sprites chose you long before you learned to shape, and what they teach, no other Shaper can learn. The full Resonance is written out under Unique Resonance: Synthetica below.\n\n**Sprite Tether:** A Codebreaker needs a deck and a cracked cipher to hold a door open in the #GRID. You need neither. A Nixie will keep a line open because you asked; a Gremlin will keep one open because watching you use it is entertainment. You count as a **Power User**, and the sprites can hold **Links** for you equal to your **Caliber** at a time, with no hardware anywhere in the loop.\n• **Opening a tether:** As an Action, ask a sprite inside a Node within 12 spaces to let you in. Make a **Flow Attack** (d20 + your Tech Modifier + your Caliber) against the Node's Security Rating. On a success, the sprite holds the Link open until it is severed. No Cipher, no Systems roll, no deck.\n• **Reaching through it:** While you hold a Link to a Node, your Invocations and sprite abilities can reach that Node and the device it stands for, even past your normal range or line of sight. The sprites carry your word in and carry back what they find.\n• **No hardware to hide behind:** Feedback a Codebreaker's deck would swallow lands on you instead. When a tether snaps you suffer **LinkDeath through the body**, which is why your resonance can ground it: an Impulse Action and **1 Wound** (see Sourcerers and LinkDeath). By the same logic, the rules written to punish a deck skip you: a Bricked deck can't trigger your LinkDeath because you have none, and Cascade Failure has no Smartdeck of yours to fry. You pay the psychic price and nothing else, which is not the safe road it sounds like: every extra Link is another die of surge, and all of it grounds in your skull."
         },
         {
           level: 3,
           name: "Hardware Harmonization",
-          text: "Your standing in the invisible ecosystem deepens from stranger to regular. The sprites stop auditing your requests and start anticipating them.\n\n**Quick Favors:** Once per turn, when you shape a Synthetica Invocation with **Directed** delivery, you may shape it as a **Swift Action** instead of an Action. You are not casting so much as nodding to the room.\n\n**Deeper Standing:** You unlock **Poltergeist**, Synthetica's third Empowered Effect."
+          text: "Your standing in the invisible ecosystem deepens from stranger to regular. The sprites stop auditing your requests and start anticipating them.\n\n**Quick Favors:** Once per turn, when you shape a Synthetica Invocation with **Directed** delivery, you may shape it as a **Swift Action** instead of an Action. You're not casting so much as nodding to the room.\n\n**Deeper Standing:** You unlock **Poltergeist**, Synthetica's third Empowered Effect."
         },
         {
           level: 7,
           name: "Scrap Familiar",
-          text: "Out of combat, spend 10 minutes assembling a Scrap Familiar from loose tech and street debris. In combat, instead spend 2 FP and a **Complex Action** to slap one together on the fly. You can have only one Scrap Familiar active at a time; making a new one causes the old one to fall apart into mundane junk. If you are knocked Unconscious, your active Familiar deactivates until you wake. When you make the Familiar, declare whether a Nixie or a Gremlin moves in; the shape it takes is the sprite's taste, not your blueprint.\n\n**Scrap Familiar Base Stats:**\n• **Defense:** 12 + your Tech Modifier\n• **Vitality:** 15 + (your Caliber × 5)\n• **Speed:** 6 (Hovering)\n• **Size:** Medium Construct\n• **Immunities:** Poison, Psychic, Blinded, Charmed, Frightened\n\n**Nixie Skyhook Familiar:** a mechanical osprey of weathered plating and braided steel cables, with a central winch and electromagnetic talons.\n\n**Out of Combat:**\n• **Vertical Infiltration:** It can fly up to 24 spaces, embed its talons in a surface, and drop a high-tensile cable. Allies using it gain a climbing speed equal to their walking speed and automatically succeed on standard climbing Athletics checks.\n• **Magnetic Anchor:** Anchored to metal or stone, its winch supports 2,000 pounds. Allies using the cable to move heavy obstacles or force doors gain Edge on in-combat Athletics d20 checks (or +1 Edge Die to related out-of-combat Dice Pools).\n• **Beast of Burden:** It can carry up to 200 pounds of gear or an unconscious ally without reducing its 6-space flying speed.\n\n**In Combat:** It acts on your turn, and you can command it to move as a free action. As a **Swift Action**, command a **Magnetic Rescue:** it shoots a line to a willing ally within 6 spaces and reels them to an adjacent unoccupied space, ignoring Difficult Terrain and Opportunity Attacks.\n\n**Gremlin Scourge Familiar:** a massive mechanical rat of rusted engine blocks, copper wire, and razor-blade whiskers, trailing a cloud of mechanical fleas.\n\n**Out of Combat:**\n• **Comms Jamming:** Scramble all unencrypted hostile radio and digital communications within an Area 20 for up to 1 hour.\n• **Acoustic Dampening:** Project an Area 3 Aura of silence centered on the construct. Allies moving within it make no noise and gain Edge on in-combat Stealth d20 checks (or +1 Edge Die to related out-of-combat Dice Pools).\n• **Auditory Decoy:** Project an auditory illusion (a firefight, alarm, or breach charge, up to 120 decibels) at any point within 12 spaces for up to 1 minute.\n\n**In Combat:** It acts on your turn, and you can command it to move as a free action. As a **Swift Action**, command a **Sensory Overload:** it sends its fleas onto a target within 3 spaces, which must make a Wits Save against your Flow Save DC. On a failure, they take 2d6 Psychic damage and are Blinded until the start of your next turn. Once an enemy succeeds on this Wits Save, they become immune to Sensory Overload for 24 hours."
+          text: "Out of combat, spend 10 minutes assembling a Scrap Familiar from loose tech and street debris. In combat, instead spend 2 FP and a **Complex Action** to slap one together on the fly. You can have only one Scrap Familiar active at a time; making a new one causes the old one to fall apart into mundane junk. If you are knocked Unconscious, your active Familiar deactivates until you wake. When you make the Familiar, declare whether a Nixie or a Gremlin moves in; the shape it takes is the sprite's taste, not your blueprint.\n\n**Scrap Familiar Base Stats:**\n• **Defense:** 12 + your Tech Modifier\n• **Vitality:** 15 + (your Caliber × 5)\n• **Speed:** 6 (Hovering)\n• **Size:** Medium Construct\n• **Immunities:** Poison, Psychic, Blinded, Charmed, Frightened\n\n**Nixie Skyhook Familiar:** a mechanical osprey of weathered plating and braided steel cables, with a central winch and electromagnetic talons.\n\n**Out of Combat:**\n• **Vertical Infiltration:** It can fly up to 24 spaces, embed its talons in a surface, and drop a high-tensile cable. Allies using it gain a climbing speed equal to their walking speed and automatically succeed on standard climbing Athletics checks.\n• **Magnetic Anchor:** Anchored to metal or stone, its winch supports 2,000 pounds. Allies using the cable to move heavy obstacles or force doors gain Edge on in-combat Athletics d20 checks (or +1 Edge Die to related out-of-combat Dice Pools).\n• **Beast of Burden:** It can carry up to 200 pounds of gear or an unconscious ally without reducing its 6-space flying speed.\n\n**In Combat:** It acts on your turn, and you can command it to move as a Free Action. As a **Swift Action**, command a **Magnetic Rescue:** it shoots a line to a willing ally within 6 spaces and reels them to an adjacent unoccupied space, ignoring Difficult Terrain and Opportunity Attacks.\n\n**Gremlin Scourge Familiar:** a massive mechanical rat of rusted engine blocks, copper wire, and razor-blade whiskers, trailing a cloud of mechanical fleas.\n\n**Out of Combat:**\n• **Comms Jamming:** Scramble all unencrypted hostile radio and digital communications within an Area 20 for up to 1 hour.\n• **Acoustic Dampening:** Project an Area 3 Aura of silence centered on the construct. Allies moving within it make no noise and gain Edge on in-combat Stealth d20 checks (or +1 Edge Die to related out-of-combat Dice Pools).\n• **Auditory Decoy:** Project an auditory illusion (a firefight, alarm, or breach charge, up to 120 decibels) at any point within 12 spaces for up to 1 minute.\n\n**In Combat:** It acts on your turn, and you can command it to move as a Free Action. As a **Swift Action**, command a **Sensory Overload:** it sends its fleas onto a target within 3 spaces, which must make a Wits Save against your Flow Save DC. On a failure, they take 2d6 Psychic damage and are Blinded until the start of your next turn. Once an enemy succeeds on this Wits Save, they become immune to Sensory Overload for 24 hours."
         },
         {
           level: 10,
           name: "Absolute Symbiosis",
-          text: "Once per Long Rest, as an **Action**, spend 2 FP to host both kinds of sprite for 1 minute. On activation, all enemies within 4 spaces must make a Tech Save against your Flow Save DC or take 4d6 Electric damage and be pushed 2 spaces away from you. For the duration, you project an Area 4 Aura:\n\n**The Gremlin Storm:** Any enemy that starts its turn within the aura takes 4d4 Electric damage. Enemies inside the aura suffer Snag on all attack rolls, and the swarm denies them any Defense bonus from physical Cover.\n\n**The Nixie Optimization:** At the start of your turn, you regain 2d6 Vitality (if your Vitality is full, you gain it as Vigor instead). You can cast any Synthetica Invocation as a **Swift Action** instead of an Action, and your movement does not provoke opportunity attacks."
+          text: "Once per Long Rest, as an **Action**, spend 2 FP to host both kinds of sprite for 1 minute. On activation, all enemies within 4 spaces must make a Tech Save against your Flow Save DC or take 4d6 Electric damage and be pushed 2 spaces away from you. For the duration, you project an Area 4 Aura:\n\n**The Gremlin Storm:** Any enemy that starts its turn within the aura takes 4d4 Electric damage. Enemies inside the aura suffer Snag on all attack rolls, and the swarm denies them any Defense bonus from physical Cover.\n\n**The Nixie Optimization:** At the start of your turn, you regain 2d6 Vitality (if your Vitality is full, you gain it as Vigor instead). You can cast any Synthetica Invocation as a **Swift Action** instead of an Action, and your movement doesn't provoke opportunity attacks."
         }
       ]
     }
@@ -529,7 +529,7 @@ EN.classes.shaper = {
 
   extra: {
     playbook: {
-      turnToTurn: "You improvise. Because you build Invocations on the fly rather than relying on static spells, you adapt to the exact needs of the moment. You manage your Reservoir carefully, deciding when to unleash a massive area effect and when to rely on precise, low cost manipulations.",
+      turnToTurn: "You improvise. Because you build Invocations on the fly rather than relying on static spells, you adapt to the exact needs of the moment. You manage your Reservoir carefully, deciding when to unleash a massive area effect and when to rely on precise, low-cost manipulations.",
       winningEncounters: "You win by dictating the terms of reality. You shift the battlefield environment, exploit enemy elemental vulnerabilities, and use your subclass abilities to violently disrupt the opposition. When a fight gets desperate, you win by being willing to push your body into Overdraw to secure a victory.",
       whatToAvoid: "Reckless Overdraw and ignoring your physical limits. Burning through your Flow Points too early leaves you entirely reliant on Overdraw. Accumulating too much Strain will quickly tear your body apart from the inside out before the enemy even touches you."
     },

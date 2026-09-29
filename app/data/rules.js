@@ -78,7 +78,7 @@ EN.rules = {
     loadTable: [
       { load: "0",  items: "Clothes, credsticks, comms, loose ammo, small personal items" },
       { load: "1",  items: "Sidearm, light melee weapon, compact medkit, smartdeck, reagent pouch, small tool" },
-      { load: "2",  items: "Longarm, medium melee weapon, shield, full toolkit, trauma rig, drone, packed armor, bulky pack" },
+      { load: "2",  items: "Longarm, medium melee weapon, shield, full toolkit, Trauma Rig, drone, medium armor, bulky pack" },
       { load: "3",  items: "Heavy weapon, heavy shield, breaching kit, heavy tool rig, heavy armor, dense duffel" },
       { load: "4+", items: "Unconscious adult, cargo crate, generator, server rack, turret, industrial case (stowed as cargo; carried in the arms it is a Haul instead)" }
     ],
@@ -194,16 +194,16 @@ EN.rules = {
         // keeps its own range and encryption. Conditional on the character being up.
         cadence: "passive", cost: "passive", requiresConscious: true },
       { key: "hitscan-optics", name: "Hitscan Optics", feature: "Hitscan", cyberware: "Cyberoptics",
-        text: "Your Hitscan subroutine feeds its Priority Target data directly into your Cyberoptics.\n\u2022 While you have a Priority Target, Threat Targeting is automatically active against it and does not occupy one of your Cyberoptic modes.\n\u2022 Once per round when you hit your Priority Target, choose one ally who can see it. That ally gains Edge on their next attack against it before the start of your next turn.",
+        text: "Your Hitscan subroutine feeds its Priority Target data directly into your Cyberoptics.\n\u2022 While you have a Priority Target, Threat Targeting is automatically active against it and doesn't occupy one of your Cyberoptic modes.\n\u2022 Once per round when you hit your Priority Target, choose one ally who can see it. That ally gains Edge on their next attack against it before the start of your next turn.",
         // the mode rides FREE, on top of the tier budget (1/2/3), and must not decrement it
         cadence: "round", cost: "free", grantsFreeMode: "Threat Targeting" },
       { key: "synaptic-reflex", name: "Synaptic Reflex", feature: "Tuned Synapses", cyberware: "Reflex Booster",
-        text: "Your nervous system stays ahead of the booster instead of struggling to keep up.\n\u2022 The Reflex Booster's extra Move or Swift Action can be used a number of times equal to your Caliber per Encounter instead of once. You cannot use it more than once per turn.",
+        text: "Your nervous system stays ahead of the booster instead of struggling to keep up.\n\u2022 The Reflex Booster's extra Move or Swift Action can be used a number of times equal to your Caliber per Encounter instead of once. You can't use it more than once per turn.",
         // MUTATES an existing implant counter rather than adding an ability: max goes from
         // 1 to Caliber, and the per-turn cap closes a spend-Swift-gain-Swift churn loop.
         cadence: "encounter", cost: "mutates", mutates: { implant: "reflex", maxUses: "caliber", perTurnCap: 1 } },
       { key: "springstep", name: "Springstep", feature: "Calibrated Gait", cyberware: "Spring Joints",
-        text: "Your gait calibration turns every landing into a controlled impact.\n\u2022 When you land from a leap, jump, or fall of 2 or more spaces, each Target of your choice within 1 space of your landing space must succeed on a Body Save (DC 8 + your Body modifier + your Caliber) or be knocked Prone.",
+        text: "Your gait calibration turns every landing into a controlled impact.\n\u2022 When you land from a leap, jump, or fall of 2 or more spaces, each Target of your choice within 1 space of your landing space must succeed on a Body Save (DC 8 + your Body Modifier + your Caliber) or be knocked Prone.",
         // Caliber DC, not a proficiency DC: no trainable proficiency sits behind leg chrome.
         // Targets are player-selected, so allies are never forced into the save. No cap.
         cadence: "trigger", cost: "free", saveDC: { base: 8, attr: "BOD", caliber: true } }
@@ -300,7 +300,7 @@ EN.rules = {
     intro: "Improvised weapons are everything you pick up that was never built to be swung, which in Elysium is most things, and on a bad enough day, most people.",
     using: [
       "Action Economy: attacking costs an Action. Grabbing an obvious item within reach costs a Swift Action.",
-      "No Proficiency: nobody trains on a fire extinguisher. You do not add a Weapon Proficiency Bonus to an improvised attack roll.",
+      "No Proficiency: nobody trains on a fire extinguisher. You don't add a Weapon Proficiency Bonus to an improvised attack roll.",
       "Melee: roll an in-combat d20 (or out-of-combat Dice Pool) + your Body modifier + any relevant Skill.",
       "Thrown: roll an in-combat d20 (or out-of-combat Dice Pool) + your Body or Agility modifier + any relevant Skill."
     ],
@@ -308,7 +308,7 @@ EN.rules = {
     damage: [
       { size: "Tiny",       examples: "Bottle, mug, wrench, brick",          die: "1d4" },
       { size: "One-Handed", examples: "Pipe, chair leg, crowbar, laptop",    die: "1d6" },
-      { size: "Two-Handed", examples: "Barstool, small sign, tool box",      die: "1d8" },
+      { size: "Two-Handed", examples: "Barstool, small sign, toolbox",      die: "1d8" },
       { size: "Heavy",      examples: "Cinder block, street sign, engine block", die: "1d10 (gains Heavy)" }
     ],
     thrownNote: "When you throw something that was never meant to fly, set its range by weight.",
@@ -319,19 +319,19 @@ EN.rules = {
     ],
     desperation: [
       "Throwing a Melee Weapon: when you hurl a melee weapon that lacks the Thrown trait, it gains a range of 2 / 6. Use your Athletics skill for the Weapon Attack. The attack gains no Weapon Proficiency Bonus and ignores all of the weapon's normal melee traits, including Reach and Finesse.",
-      "Using a Ranged Weapon as a Club: swinging something delicate, like a rifle, as a crude bludgeon deals 1d4 or 1d6 Bludgeoning by size. The weapon's own damage die and traits do not apply, and you should expect to need a gunsmith afterward."
+      "Using a Ranged Weapon as a Club: swinging something delicate, like a rifle, as a crude bludgeon deals 1d4 or 1d6 Bludgeoning by size. The weapon's own damage die and traits don't apply, and you should expect to need a gunsmith afterward."
     ],
-    specialEffects: "On a Critical hit or a high Margin of success, the GM may rule that an improvised weapon inflicts a fitting condition: Bleeding from a shattered bottle, Staggered from a slab of concrete. When this happens, the Target makes a relevant Body or Wits save to resist it.",
+    specialEffects: "On a Critical hit or a high Margin of success, the GM may rule that an improvised weapon inflicts a fitting condition: Bleeding from a shattered bottle, Staggered from a slab of concrete. When this happens, the Target makes a relevant Body or Wits Save to resist it.",
     peopleIntro: "First you have to grapple them. An Unconscious, Restrained, or willing Target can automatically be grappled as a Swift Action, the same as grabbing any heavy object. A conscious, unwilling Target has to be Grappled by force first, and on a success they are yours to misuse until they manage to break free.",
-    wieldedBody: "A wielded body is a Heavy improvised weapon: 1d10 Bludgeoning, Heavy. It is Unwieldy too, since people are heavy, badly balanced, and rarely cooperative. Unwieldy means every attack with them carries Snag; swinging a person is not precision work. Both the Target and the body you swung take the rolled damage. Using a person as a weapon is extremely hard on the person.",
+    wieldedBody: "A wielded body is a Heavy improvised weapon: 1d10 Bludgeoning, Heavy. It is Unwieldy too, since people are heavy, badly balanced, and rarely cooperative. Unwieldy means every attack with them carries Snag; swinging a person isn't precision work. Both the Target and the body you swung take the rolled damage. Using a person as a weapon is extremely hard on the person.",
     meatShield: [
       "A shield smaller than you grants Half Cover (+2 Defense). One your Size or larger grants Three-Quarter Cover (+5 Defense), against attacks that have to pass through them.",
       "Any attack the cover turns from a hit into a miss strikes the shield instead. Roll that attack's full damage against the meat shield you are holding.",
       "You keep the grapple up the whole time, and one arm is full of person, so the other can only manage One-Handed gear.",
       "A shield does nothing against an attacker who can see around it (a flank), and less than nothing against Area effects, which cook you both."
     ],
-    bludgeon: "Spend an Action to swing your grappled Target at another Target within reach as an improvised melee attack. On a hit, deal 1d10 Bludgeoning to the Target and the same to the body. On a Critical or a wide Margin, the Target also makes a Body save or is knocked Prone.",
-    throw: "Spend an Action to lob your grappled Target at a Target. Treat it as a Heavy improvised throw, range 2 / 6, and attack rolls carry Snag (the same Snag the Unwieldy body already imposes, which changes nothing, since Snag does not stack past rolling two dice). On a hit, deal 1d10 Bludgeoning to both, and the thrown Target lands Prone in the nearest open space to the Target, who makes a Body save or is knocked Prone alongside it. On a miss, your projectile still finds the floor: it lands Prone and takes 1d6 from the arrival."
+    bludgeon: "Spend an Action to swing your grappled Target at another Target within reach as an improvised melee attack. On a hit, deal 1d10 Bludgeoning to the Target and the same to the body. On a Critical or a wide Margin, the Target also makes a Body Save or is knocked Prone.",
+    throw: "Spend an Action to lob your grappled Target at a Target. Treat it as a Heavy improvised throw, range 2 / 6, and attack rolls carry Snag (the same Snag the Unwieldy body already imposes, which changes nothing, since Snag doesn't stack past rolling two dice). On a hit, deal 1d10 Bludgeoning to both, and the thrown Target lands Prone in the nearest open space to the Target, who makes a Body Save or is knocked Prone alongside it. On a miss, your projectile still finds the floor: it lands Prone and takes 1d6 from the arrival."
   },
   // Features that shift EFFECTIVE Size for one purpose only. None changes the
   // character's actual Size, footprint, or Encumbrance beyond what it states.

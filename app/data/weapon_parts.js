@@ -58,7 +58,7 @@ EN.weaponParts = {
     { key: "serrated-edge", name: "Serrated Edge", category: "melee", slot: "output", partType: "Mod", fits: "Blades", price: 350, rarity: "Uncommon", legality: "Restricted",
       grants: "1 stack Bleeding on critical hit", effect: "On a critical hit, the Target gains 1 stack of Bleeding." },
     { key: "flanged-head", name: "Flanged Head", category: "melee", slot: "output", partType: "Mod", fits: "Any Melee", price: 250, rarity: "Uncommon", legality: "Licensed",
-      grants: "Staggers on a failed save", effect: "On a hit, the Target makes a Body save (DC 12) or is Staggered until the end of their next turn." },
+      grants: "Staggers on a failed save", effect: "On a hit, the Target makes a Body Save (DC 12) or is Staggered until the end of their next turn." },
 
     // Core
     { key: "shock-core", name: "Shock Core", category: "melee", slot: "core", partType: "Mod", fits: "Any Melee", price: 300, rarity: "Uncommon", legality: "Restricted",
@@ -66,7 +66,7 @@ EN.weaponParts = {
     { key: "plasma-core", name: "Plasma Core", category: "melee", slot: "core", partType: "Mod", fits: "Any Melee", price: 400, rarity: "Uncommon", legality: "Restricted",
       grants: "+1d6 Electric damage", effect: "On a hit, the weapon deals an additional 1d6 Electric damage." },
     { key: "cryo-core", name: "Cryo Core", category: "melee", slot: "core", partType: "Mod", fits: "Any Melee", price: 350, rarity: "Uncommon", legality: "Restricted",
-      grants: "Body save or Snag on next attack", effect: "On a hit, the Target makes a Body save (DC 12) or their next attack is made with Snag." },
+      grants: "Body Save or Snag on next attack", effect: "On a hit, the Target makes a Body Save (DC 12) or their next attack is made with Snag." },
     { key: "pulse-core", name: "Pulse Core", category: "melee", slot: "core", partType: "Mod", fits: "Any Melee", price: 400, rarity: "Rare", legality: "Restricted",
       grants: "Disables one cyberware system on hit", effect: "On a hit against a Synthetic, Construct, or Cyberaugmented Target, the Target makes a Body save (DC 12) or one of their cyberware systems goes offline for 1 round. The GM selects the system." },
     { key: "flow-core", name: "Flow Core", category: "melee", slot: "core", partType: "Mod", fits: "Any Melee", price: 500, rarity: "Rare", legality: "Restricted",
@@ -89,9 +89,9 @@ EN.weaponParts = {
       grantsTwoHanded: true,
       grants: "+1 Reach, adds Two-Handed", effect: "Increases Reach by 1 (a Reach 1 weapon becomes Reach 2) and grants the Two-Handed trait." },
     { key: "counterweight-pommel", name: "Counterweight Pommel", category: "melee", slot: "handling", partType: "Mod", fits: "Any Melee", price: 200, rarity: "Common", legality: "Licensed",
-      grants: "Edge on first attack per Target per round", effect: "Your first attack each round against a Target you have not yet attacked this round gains Edge." },
+      grants: "Edge on first attack per Target per round", effect: "Your first attack each round against a Target you haven't yet attacked this round gains Edge." },
     { key: "pared-hilt", name: "Pared Hilt", category: "melee", slot: "handling", partType: "Mod", fits: "Any Melee", price: 150, rarity: "Common", legality: "Legal",
-      grants: "Removes Heavy or grants Light", effect: "Remove the Heavy trait if the weapon has it. Otherwise, apply the Light trait. This modification cannot share a build with Weighted Head.", excludes: ["weighted-head"] },
+      grants: "Removes Heavy or grants Light", effect: "Remove the Heavy trait if the weapon has it. Otherwise, apply the Light trait. This modification can't share a build with Weighted Head.", excludes: ["weighted-head"] },
     { key: "tactical-wrap", name: "Tactical Wrap", category: "melee", slot: "handling", partType: "Mod", fits: "Any Melee", price: 180, rarity: "Common", legality: "Licensed",
       grants: "Edge on follow-up attacks vs same Target", effect: "Your second and any later attacks against the same Target in the same round gain Edge." },
 
@@ -101,7 +101,7 @@ EN.weaponParts = {
        is the examples, not the gate, so partFits asks for the Two-Handed trait rather than
        matching those three names. */
     { key: "inertia-core", name: "Inertia Core", category: "melee", slot: "core", partType: "Mod", fits: "Two-Handed Melee", price: 450, rarity: "Uncommon", legality: "Licensed",
-      grants: "+1d8 on your first attack after a turn without one", effect: "If you did not attack with this weapon during your previous turn, your first attack with it this turn deals an additional 1d8 damage of the weapon's type." },
+      grants: "+1d8 on your first attack after a turn without one", effect: "If you didn't attack with this weapon during your previous turn, your first attack with it this turn deals an additional 1d8 damage of the weapon's type." },
     { key: "bracing-spike", name: "Bracing Spike", category: "melee", slot: "utility", partType: "Accessory", fits: "Two-Handed Melee", price: 300, rarity: "Common", legality: "Legal",
       grants: "Edge vs forced movement and +1 Reach while braced", effect: "Swift Action: drive the spike down and put your weight behind it. Until you move, you gain Edge on Saves and contested checks made to resist being Shoved, pulled, or knocked Prone, and this weapon's Reach increases by 1." },
     { key: "siege-head", name: "Siege Head", category: "melee", slot: "output", partType: "Mod", fits: "Two-Handed Melee", price: 600, rarity: "Rare", legality: "Restricted",
@@ -109,18 +109,18 @@ EN.weaponParts = {
     { key: "breakdown-frame-melee", name: "Breakdown Frame", category: "melee", slot: "utility", partType: "Mod", fits: "Any Melee", price: 250, rarity: "Uncommon", legality: "Licensed",
       grants: "Concealable", effect: "Apply the Concealable trait. The weapon can be hidden on your person without effort, whether under a jacket, inside a bag, or against the body." },
     { key: "quick-release-tether", name: "Quick-Release Tether", category: "melee", slot: "utility", partType: "Accessory", fits: "Any Melee", price: 80, rarity: "Common", legality: "Legal",
-      grants: "Quick Draw, cannot be disarmed", effect: "Apply the Quick Draw trait. Drawing or stowing the weapon does not cost an action, and you cannot be disarmed of it unless an effect explicitly cuts or destroys the tether." },
+      grants: "Quick Draw, can't be disarmed", effect: "Apply the Quick Draw trait. Drawing or stowing the weapon doesn't cost an action, and you can't be disarmed of it unless an effect explicitly cuts or destroys the tether." },
     { key: "anti-theft-module", name: "Anti-Theft Module", category: "melee", slot: "utility", partType: "Mod", fits: "Any Melee", price: 200, rarity: "Uncommon", legality: "Licensed",
-      grants: "Anti-theft hand-trap", effect: "Hidden spines snap out of the grip and clamp into the wielder's hand, dealing 1d6 Piercing damage. While the wielder keeps hold of the weapon, they attack with Snag. At the start of each of their turns, they take 1d6 Electric damage and must make a Body save (DC 12) or become Staggered until the end of their next turn." },
+      grants: "Anti-theft hand-trap", effect: "Hidden spines snap out of the grip and clamp into the wielder's hand, dealing 1d6 Piercing damage. While the wielder keeps hold of the weapon, they attack with Snag. At the start of each of their turns, they take 1d6 Electric damage and must make a Body Save (DC 12) or become Staggered until the end of their next turn." },
     { key: "defensive-guard", name: "Defensive Guard", category: "melee", slot: "utility", partType: "Mod", fits: "Any Melee", price: 250, rarity: "Uncommon", legality: "Licensed",
-      grants: "Defensive", effect: "Impulse: Apply the Defensive trait. While wielding this weapon, when you are targeted by a melee attack, you may spend an Impulse Action to impose Snag on the attack, provided you are not Surprised, Restrained, or Incapacitated." },
+      grants: "Defensive", effect: "Impulse: Apply the Defensive trait. While wielding this weapon, when you are targeted by a melee attack, you may spend an Impulse Action to impose Snag on the attack, provided you aren't Surprised, Restrained, or Incapacitated." },
     { key: "anti-scanner-coating", name: "Anti-Scanner Coating", category: "melee", slot: "utility", partType: "Accessory", fits: "Any Melee", price: 300, rarity: "Uncommon", legality: "Restricted",
-      grants: "Defeats sensor-based detection", effect: "The weapon does not register on thermal, magnetic, or millimeter-wave scanners. Sensor-based checks to detect the weapon automatically fail. Visual detection (eyeballs, cameras, ordinary search) is unaffected." },
+      grants: "Defeats sensor-based detection", effect: "The weapon doesn't register on thermal, magnetic, or millimeter-wave scanners. Sensor-based checks to detect the weapon automatically fail. Visual detection (eyeballs, cameras, ordinary search) is unaffected." },
 
     /* ============================ RANGED ============================ */
     // Targeting
     { key: "reflex-sight", name: "Reflex Sight", category: "ranged", slot: "targeting", partType: "Accessory", fits: "Any Ranged", price: 120, rarity: "Common", legality: "Legal",
-      grants: "+1 to attack rolls within short range", effect: "+1 to ranged attack rolls within the weapon's short range. Flat bonus, does not stack." },
+      grants: "+1 to attack rolls within short range", effect: "+1 to ranged attack rolls within the weapon's short range. Flat bonus, doesn't stack." },
     { key: "combat-scope", name: "Combat Scope", category: "ranged", slot: "targeting", partType: "Accessory", fits: "Any Ranged", price: 250, rarity: "Common", legality: "Licensed",
       grants: "Scoped", effect: "Apply the Scoped trait. When you Take Aim (Swift) before attacking with this weapon, the attack ignores Snag from long range and treats the Target's Half or Three-Quarter Cover as one step lower: Three-Quarter Cover becomes Half Cover, and Half Cover becomes no cover." },
     { key: "thermal-optic", name: "Thermal Optic", category: "ranged", slot: "targeting", partType: "Accessory", fits: "Any Ranged", price: 350, rarity: "Uncommon", legality: "Restricted",
@@ -156,7 +156,7 @@ EN.weaponParts = {
          mode. "fits" stays Semi-Auto Firearm: that is which weapons can take the part, not which
          modes it works in, and the two were easy to conflate. */
     { key: "anti-jam-action", name: "Anti-Jam Action", category: "ranged", slot: "core", partType: "Mod", fits: "Any Firearm", price: 200, rarity: "Common", legality: "Licensed",
-      grants: "Reliable", effect: "Apply the Reliable trait. Its reinforced, cleaned-up action does not choke." },
+      grants: "Reliable", effect: "Apply the Reliable trait. Its reinforced, cleaned-up action doesn't choke." },
     { key: "burst-fire-receiver", name: "Burst Fire Receiver", category: "ranged", slot: "core", partType: "Mod", fits: "Any Firearm", price: 350, rarity: "Uncommon", legality: "Restricted",
       grants: "Burst Fire", effect: "The weapon gains the Burst Fire firing mode, but not Full-Auto." },
     { key: "hair-trigger", name: "Hair Trigger", category: "ranged", slot: "core", partType: "Mod", fits: "Any Firearm", price: 500, rarity: "Uncommon", legality: "Licensed",
@@ -177,11 +177,11 @@ EN.weaponParts = {
        could never fire: this Grip is Handling / Fits Longarm and the only Breakdown Frame is
        Utility / Fits Any Melee, so no weapon could ever hold the pair. Vestigial, not protective. */
     { key: "marksman-stock", name: "Marksman Stock", category: "ranged", slot: "handling", partType: "Mod", fits: "Longarm", price: 250, rarity: "Uncommon", legality: "Licensed",
-      grants: "Edge on long-range attacks while stationary", effect: "If you have not moved this turn, ranged attacks made with this weapon at long range gain Edge." },
+      grants: "Edge on long-range attacks while stationary", effect: "If you haven't moved this turn, ranged attacks made with this weapon at long range gain Edge." },
 
     // Utility
     { key: "suppressor", name: "Suppressor", category: "ranged", slot: "utility", partType: "Accessory", fits: "Any Firearm", price: 300, rarity: "Uncommon", legality: "Restricted",
-      grants: "Silent", effect: "Apply the Silent trait. Attacks with this weapon do not automatically trigger sound-based alerts in the area, making it well suited to stealth and infiltration." },
+      grants: "Silent", effect: "Apply the Silent trait. Attacks with this weapon don't automatically trigger sound-based alerts in the area, making it well suited to stealth and infiltration." },
     { key: "compensator", name: "Compensator", category: "ranged", slot: "utility", partType: "Accessory", fits: "Any Firearm", price: 150, rarity: "Common", legality: "Licensed",
       grants: "Stabilized", effect: "Apply the Stabilized trait. You count as Stabilized when resolving the High Recoil trait, negating its Snag." },
     { key: "weapon-light", name: "Weapon Light", category: "ranged", slot: "utility", partType: "Accessory", fits: "Any Ranged", price: 40, rarity: "Common", legality: "Legal",
@@ -189,11 +189,11 @@ EN.weaponParts = {
     { key: "case-catcher", name: "Case Catcher", category: "ranged", slot: "utility", partType: "Accessory", fits: "Any Firearm", price: 30, rarity: "Common", legality: "Legal",
       grants: "Leaves no brass", effect: "The weapon catches its ejected casings, leaving no spent brass at the scene. Investigations relying on recovered casings to trace the weapon find nothing." },
     { key: "target-spotter", name: "Target Spotter", category: "ranged", slot: "utility", partType: "Accessory", fits: "Any Ranged", price: 300, rarity: "Uncommon", legality: "Restricted",
-      grants: "Spotlight target; rangefinding; read targets", effect: "Mount a side-mounted spotter's head combining laser rangefinding, a reconnaissance optic, and a designator. It functions as standalone glass, allowing you to study a Target without shouldering the weapon to fire. It requires no Smartlink and does not interact with the painted or Replay loop. Spotlight (Action): Choose one Target you can see. The Target remains illuminated until the start of your next turn. The next attack an ally makes against it ignores the Defense bonus from Half Cover. Rangefinding: You always know the exact distance to anything you can see and whether it is within your weapon's short range, long range, or beyond its reach. Read the target: Gain Edge on Perception checks to study a Target you can see, or +1 Edge Die out of combat and +5 to Passive Perception. You can identify drawn weapons, visible cyberware, and the Target's rough wound state. This is a detection effect. It never modifies an attack roll or grants combat Edge." },
+      grants: "Spotlight target; rangefinding; read targets", effect: "Mount a side-mounted spotter's head combining laser rangefinding, a reconnaissance optic, and a designator. It functions as standalone glass, allowing you to study a Target without shouldering the weapon to fire. It requires no Smartlink and doesn't interact with the painted or Replay loop. Spotlight (Action): Choose one Target you can see. The Target remains illuminated until the start of your next turn. The next attack an ally makes against it ignores the Defense bonus from Half Cover. Rangefinding: You always know the exact distance to anything you can see and whether it is within your weapon's short range, long range, or beyond its reach. Read the target: Gain Edge on Perception checks to study a Target you can see, or +1 Edge Die out of combat and +5 to Passive Perception. You can identify drawn weapons, visible cyberware, and the Target's rough wound state. This is a detection effect. It never modifies an attack roll or grants combat Edge." },
     { key: "foregrip", name: "Foregrip", category: "ranged", slot: "utility", partType: "Accessory", fits: "Longarm", price: 60, rarity: "Common", legality: "Legal",
       grants: "Stabilized", effect: "Apply the Stabilized trait. You count as Stabilized when resolving the High Recoil trait, negating its Snag." },
     { key: "bipod", name: "Bipod", category: "ranged", slot: "utility", partType: "Accessory", fits: "Longarm", price: 80, rarity: "Common", legality: "Legal",
-      grants: "Stabilized and +25% range while deployed", effect: "Apply the Stabilized trait. While the bipod is deployed and you have not moved this turn, the weapon ignores High Recoil and its range bands increase by 25%, rounded up. Moving ends these benefits until the bipod is deployed again." },
+      grants: "Stabilized and +25% range while deployed", effect: "Apply the Stabilized trait. While the bipod is deployed and you haven't moved this turn, the weapon ignores High Recoil and its range bands increase by 25%, rounded up. Moving ends these benefits until the bipod is deployed again." },
     { key: "bayonet", name: "Bayonet", category: "ranged", slot: "utility", partType: "Accessory", fits: "Longarm", price: 40, rarity: "Common", legality: "Legal",
       grants: "Adds a melee attack (Reach 1, 1d4 Piercing)", effect: "The weapon gains a melee profile of 1d4 Piercing with Reach 1. Long arms only." },
     { key: "under-barrel-mount", name: "Under-Barrel Mount", category: "ranged", slot: "utility", partType: "Accessory", fits: "Longarm", price: 400, rarity: "Uncommon", legality: "Restricted",
@@ -220,7 +220,7 @@ EN.weaponParts = {
     { key: "cocking-aid", name: "Cocking Aid", category: "bowfire", slot: "core", partType: "Mod", fits: "Crossbow", price: 200, rarity: "Uncommon", legality: "Licensed",
       grants: "Negates Slow reload", effect: "Reloading no longer consumes your action. The Slow trait's limit of one attack per round is lifted for this weapon." },
     { key: "magazine-cradle", name: "Magazine Cradle", category: "bowfire", slot: "core", partType: "Mod", fits: "Crossbow", price: 250, rarity: "Uncommon", legality: "Licensed",
-      grants: "Holds 3 bolts; skips manual reload between shots", effect: "The crossbow holds three bolts in an internal cradle. Consecutive shots during the same round do not require a manual reload. Once the cradle is empty, it must be reloaded manually." },
+      grants: "Holds 3 bolts; skips manual reload between shots", effect: "The crossbow holds three bolts in an internal cradle. Consecutive shots during the same round don't require a manual reload. Once the cradle is empty, it must be reloaded manually." },
     { key: "reinforced-cam", name: "Reinforced Cam", category: "bowfire", slot: "core", partType: "Mod", fits: "Compound", price: 200, rarity: "Common", legality: "Licensed",
       grants: "Reliable", effect: "Apply the Reliable trait." },
     { key: "tracker-cam", name: "Tracker Cam", category: "bowfire", slot: "core", partType: "Mod", fits: "Compound", price: 300, rarity: "Uncommon", legality: "Restricted",

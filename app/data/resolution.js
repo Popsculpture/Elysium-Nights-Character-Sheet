@@ -14,7 +14,7 @@ EN.resolution = {
   coreConcepts: [
     { term: "d20 Method", text: "A single roll for fast, high-pressure actions: attacks, saves, snap checks." },
     { term: "Dice Pool Method", text: "A multi-die roll used for complex actions where success, cost, and consequence are intertwined." },
-    { term: "Edge and Snag", text: "Modifiers that represent advantage or disadvantage, adding tension and rhythm to rolls." },
+    { term: "Edge and Snag", text: "Modifiers that swing a roll your way or against it." },
     { term: "Success Margin", text: "The difference between the roll result and the difficulty, showing how well or poorly an action succeeds." },
     { term: "Consequence", text: "The narrative or mechanical result that follows from the margin, representing cost, risk, or reward." },
     { term: "Scene Type", text: "The nature of the action being resolved: physical, social, technical, investigatory, or resonant. Scene Type determines what kinds of consequences make sense." }
@@ -29,14 +29,14 @@ EN.resolution = {
       "All Flow attacks and Flow Invocations",
       "Any Skill check made under stress, during combat, or as part of a combat round"
     ],
-    poolIntro: "Use the Dice Pool Method only for extended, out of combat tasks:",
+    poolIntro: "Use the Dice Pool Method only for extended, out-of-combat tasks:",
     poolUses: [
-      "Out of combat Skill checks and Tool use",
+      "Out-of-combat Skill checks and Tool use",
       "Investigations, research, crafting, social and legwork scenes",
       "Flow rituals, cooperative Flow workings, and anomaly cleansing",
-      "Vehicle checks that are not part of a combat round"
+      "Vehicle checks that aren't part of a combat round"
     ],
-    rule: "Once a combat Encounter has started, do not switch to Dice Pools. If you are in a combat round, it is d20. Skills, Flow, Vehicles, all of it.",
+    rule: "Once a combat Encounter has started, don't switch to Dice Pools. If you are in a combat round, it is d20. Skills, Flow, Vehicles, all of it.",
     lookup: [
       { situation: "Initiative, Attacks, opportunity attacks, and Impulse shots", method: "d20" },
       { situation: "Flow attacks and Flow Invocations", method: "d20" },
@@ -50,7 +50,7 @@ EN.resolution = {
       { situation: "Flow rituals, anomaly cleansing, and Flow maintenance", method: "Dice Pool" },
       { situation: "Vehicle checks and piloting outside of combat rounds", method: "Dice Pool" }
     ],
-    tiebreaker: "If you are not sure which method to use, ask one question: are we in a combat round or facing an immediate Save or attack? If yes, use the d20 Method. Otherwise, use Dice Pools."
+    tiebreaker: "If you aren't sure which method to use, ask one question: are we in a combat round or facing an immediate Save or attack? If yes, use the d20 Method. Otherwise, use Dice Pools."
   },
 
   /* ---- the d20 Method --------------------------------------------------- */
@@ -81,7 +81,7 @@ EN.resolution = {
 
   /* ---- the Dice Pool Method --------------------------------------------- */
   pool: {
-    intro: "When one die cannot hold all the moving parts, you build a pool. Edge Dice and Snag Dice are built, capped, and read as two separate colors. Each has a d10 range and a maximum number of dice, and those two numbers are not always the same.",
+    intro: "When one die cannot hold all the moving parts, you build a pool. Edge Dice and Snag Dice are built, capped, and read as two separate colors. Each has a d10 range and a maximum number of dice, and those two numbers aren't always the same.",
     colorTable: [
       { color: "Edge", d10Range: "10", diceCap: "10" },
       { color: "Snag", d10Range: "5", diceCap: "7" }
@@ -102,7 +102,7 @@ EN.resolution = {
       { source: "Narrative Advantage", dice: "+1 (GM discretion)" }
     ],
     baseNote: "Your Base Pool is your Attribute Modifier, your Skill Proficiency Bonus (or the Weapon / Vehicle Proficiency Bonus for those pools), and any bonuses from Tools or Gear. Allies, Special Preparation, and Narrative Advantage count as situational bonus dice, capped at +3 added to the base pool.",
-    edgePast10Intro: "An Edge pool holds 10 dice. When your build would push past 10, do not add more dice. Convert one d10 to a d12 for every point of Edge past 10, 1 for 1, until you reach a ceiling of ten d12 dice.",
+    edgePast10Intro: "An Edge pool holds 10 dice. When your build would push past 10, don't add more dice. Convert one d10 to a d12 for every point of Edge past 10, 1 for 1, until you reach a ceiling of ten d12 dice.",
     edgePast10: [
       { built: "10 or fewer", pool: "that many d10s" },
       { built: "11", pool: "9d10 + 1d12" },
@@ -139,7 +139,7 @@ EN.resolution = {
       { total: "12", pool: "7d12" },
       { total: "13 or more", pool: "7d12" }
     ],
-    snagCeiling: "Seven d12 dice is the hard ceiling and the mechanical face of Nearly Impossible. It averages close to 6 failures, which an unprepared crew cannot beat and a well prepared one only barely can. If a task is genuinely impossible, the GM calls for no roll at all.",
+    snagCeiling: "Seven d12 dice is the hard ceiling and the mechanical face of Nearly Impossible. It averages close to 6 failures, which an unprepared crew can't beat and a well prepared one only barely can. If a task is genuinely impossible, the GM calls for no roll at all.",
 
     procedure: "Roll all Edge and Snag Dice together.\n\nRead the dice:\n- Edge Die: 6 to 9 is 1 success, 10 or higher is 2 successes\n- Snag Die: 6 to 9 is 1 failure, 10 or higher is 2 failures\n- 1 to 5 is no effect\n\nCalculate your Margin: count your total successes from Edge Dice and subtract your total failures from Snag Dice. This final number is your Margin.\n\nDetermine the outcome:\n- Positive margin (+1 or more): Strong or Flawless Success\n- Zero margin (0): Mixed Result, success with a consequence\n- Negative margin (-1 or worse): Failure",
     example: "A Freelancer rolls 4 Edge Dice and gets an 8, 10, 4, and 2 for 3 Successes. The GM rolls 2 Snag Dice and gets a 7 and a 3 for 1 Failure. The player subtracts the 1 Failure from their 3 Successes, resulting in a Margin of +2, a Strong Success."
@@ -150,7 +150,7 @@ EN.resolution = {
     d20Intro: "Margin = Roll Total - DC",
     d20: [
       { margin: "10+", result: "Flawless Success", desc: "Perfect execution. Gain a narrative advantage, grant yourself Edge or +1 Edge Die on a follow-up, recover 1 FP, or seize a strong position." },
-      { margin: "5 to 9", result: "Strong Success", desc: "You hit the goal, but spend something to do it: time, material, leverage, influence, or attention." },
+      { margin: "5 to 9", result: "Strong Success", desc: "You hit the goal, but spend something to do it: time, material, a favor you were owed, influence, or attention." },
       { margin: "0 to 4", result: "Standard Success", desc: "Clean success. No side effects." },
       { margin: "-1 to -4", result: "Failure", desc: "The attempt fails. Lose ground, spend resources, worsen your position, or alert opposition." },
       { margin: "-5 or worse", result: "Critical Failure", desc: "The action backfires: immediate danger, injury, exposure, digital retaliation, or resonance backlash. The GM sets the fallout." }
@@ -158,7 +158,7 @@ EN.resolution = {
     poolIntro: "Margin = Total Successes - Total Failures",
     pool: [
       { margin: "+3 or more", result: "Flawless Success", desc: "Cinematic or resonant. Gain a narrative advantage, grant Edge or +1 Edge Die on a follow-up, or recover 1 FP." },
-      { margin: "+1 to +2", result: "Strong Success", desc: "Effective, but with a minor cost: delay, spent material, leverage, or attention." },
+      { margin: "+1 to +2", result: "Strong Success", desc: "Effective, but with a minor cost: delay, spent material, a favor you were owed, or attention." },
       { margin: "0", result: "Mixed Result", desc: "Success with a consequence. Take one cost that fits the scene: 1 Fatigue, 1 Strain, a Debt, a Reputation Tag, a Trace, or concede terms." },
       { margin: "-1 to -2", result: "Failure", desc: "The action falters and costs resources, position, or attention." },
       { margin: "-3 or worse", result: "Critical Failure", desc: "The attempt collapses, causes harm, or invites backlash. Immediate escalation." }
@@ -168,7 +168,7 @@ EN.resolution = {
 
   consequenceByScene: [
     { scene: "Physical / Exploration", consequences: "Lose time, make noise, spend gear, suffer 1 Fatigue from exertion, lose position, trigger a hazard" },
-    { scene: "Social / Negotiation", consequences: "Owe a favor, concede terms, reveal leverage, gain scrutiny, take a Reputation tag, worsen faction posture" },
+    { scene: "Social / Negotiation", consequences: "Owe a favor, concede terms, reveal what gives you sway, gain scrutiny, take a Reputation tag, worsen faction posture" },
     { scene: "Hacking / #GRID", consequences: "Gain Trace, alert ICE, lose access, burn a tool, expose your location, trigger a counter-intrusion" },
     { scene: "Flow / Resonance", consequences: "Gain 1 Strain, distort the environment, destabilize the effect, attract attention, reveal your resonance signature" },
     { scene: "Crafting / Technical", consequences: "Waste materials, reduce quality, increase time, require a replacement part, create instability" }
@@ -177,7 +177,7 @@ EN.resolution = {
   social: {
     intro: "Social scenes do not leave bruises. They leave debts, doubts, and a face the room remembers. When a social Dice Pool roll ends in a Mixed Result or a Strong Success with a cost, reach for these before you reach for Fatigue.",
     costs: [
-      { cost: "Concession", effect: "You get what you want, but must give up a term, price, timeline, favor, or piece of leverage." },
+      { cost: "Concession", effect: "You get what you want, but must give up a term, price, timeline, favor, or sway." },
       { cost: "Debt", effect: "You now owe the Target a favor, payment, introduction, future service, or operational support." },
       { cost: "Tipped Hand", effect: "You reveal more than intended: your motive, urgency, affiliation, weakness, or relationship." },
       { cost: "Scrutiny", effect: "The scene attracts attention from witnesses, rivals, handlers, security, or faction observers." },
@@ -186,7 +186,7 @@ EN.resolution = {
       { cost: "Complication Clause", effect: "The deal holds, but carries a hidden obligation, audit trigger, exclusivity term, or future claim." },
       { cost: "Lost Face", effect: "You succeed, but your standing slips. Future social checks with this Target or audience suffer Snag until the situation changes." }
     ],
-    falloutRule: "Social scenes should create obligation, visibility, leverage, damaged trust, worsened terms, or changing relationships, not default physical penalties. Use Fatigue in a social scene only when the fiction genuinely involves exhaustion, deprivation, mental overload, prolonged interrogation, sleeplessness, or another form of real wear."
+    falloutRule: "Social scenes should create obligation, visibility, a hold over someone, damaged trust, worsened terms, or changing relationships, not default physical penalties. Use Fatigue in a social scene only when the fiction genuinely involves exhaustion, deprivation, mental overload, prolonged interrogation, sleeplessness, or another form of real wear."
   },
 
   costTracks: {
@@ -201,10 +201,10 @@ EN.resolution = {
   autoResolve: [
     { name: "Natural 20", text: "Always succeeds in stress checks using the d20 Method." },
     { name: "Natural 1", text: "Always fails in stress checks using the d20 Method." },
-    { name: "Margin Mastery", text: "If your Attribute modifier + the relevant Skill, Weapon, Systems, or Vehicle Proficiency Bonus is 10 or more above the DC, you succeed automatically without rolling." },
+    { name: "Margin Mastery", text: "If your Attribute Modifier + the relevant Skill, Weapon, Systems, or Vehicle Proficiency Bonus is 10 or more above the DC, you succeed automatically without rolling." },
     { name: "Margin Failure", text: "If the DC is 10 or more above your maximum possible total, the attempt automatically fails." },
     { name: "Dice Pool Method", text: "Automatic success occurs if your total Edge Dice pool is at least double the GM's Snag Dice, unless extraordinary risk or opposition is present." },
-    { name: "Flow Mastery", text: "If your Flow Attribute modifier + Caliber + relevant bonuses is 10 or more above the DC for a Flow-related check, you succeed automatically without rolling, unless the scene's tension or a special rule says otherwise." }
+    { name: "Flow Mastery", text: "If your Flow Attribute Modifier + Caliber + relevant bonuses is 10 or more above the DC for a Flow-related check, you succeed automatically without rolling, unless the scene's tension or a special rule says otherwise." }
   ],
 
   /* ---- Edge and Snag ---------------------------------------------------- */
@@ -212,15 +212,15 @@ EN.resolution = {
     intro: "Edge is the moment tilting your way; Snag is the friction dragging against it. The same two forces drive both methods, so a single dramatic curve holds across the entire system.",
     d20: "On a single die, momentum means a second chance at the same throw.\n- Roll with Edge: roll 2d20 and take the higher result.\n- Roll with Snag: roll 2d20 and take the lower result.",
     d20Stacking: "You can never roll more than 2d20, regardless of how many sources of Edge or Snag apply. Cancel opposing modifiers 1 for 1 before rolling.\n\nExamples:\n- 2 Edge and 1 Snag: roll with Edge\n- 1 Edge and 3 Snag: roll with Snag\n- 1 Edge and 1 Snag: normal roll",
-    pool: "In a pool, momentum is not a reroll. It is more dice, dropped straight into the count.\n- Roll with Edge Dice: add +1 Edge Die to your pool for each source of Edge. You cannot add more than 3 situational bonus dice to your base pool. An Edge pool holds 10 dice; advantage past 10 sharpens d10s into d12s rather than adding more.\n- Roll with Snag Dice: add +1 Snag Die to your pool for each source of Snag. A Snag pool holds at most 7 dice. Difficulty past that point sharpens those dice to d12 rather than adding more.",
+    pool: "In a pool, momentum is not a reroll. It is more dice, dropped straight into the count.\n- Roll with Edge Dice: add +1 Edge Die to your pool for each source of Edge. You can't add more than 3 situational bonus dice to your base pool. An Edge pool holds 10 dice; advantage past 10 sharpens d10s into d12s rather than adding more.\n- Roll with Snag Dice: add +1 Snag Die to your pool for each source of Snag. A Snag pool holds at most 7 dice. Difficulty past that point sharpens those dice to d12 rather than adding more.",
     sources: [
-      { area: "Combat (d20 Method)", edge: "High ground, flanking, ally suppression, or enemy distraction", snag: "Restrained, prone, blinded, or under suppression" },
+      { area: "Combat (d20 Method)", edge: "High ground, flanking, ally suppression, or enemy distraction", snag: "Restrained, Prone, Blinded, or under suppression" },
       { area: "Social (Dice Pool Method)", edge: "Useful leverage, correct information, active support, or favorable standing", snag: "Hostile audience, no leverage, bad timing, social stigma, or visible desperation" },
       { area: "Hacking (method varies by pace)", edge: "Superior code, stolen credentials, hidden backdoors, or local access", snag: "ICE resistance, unstable access, trace lock, or degraded hardware" },
       { area: "Flow (method varies by pace)", edge: "Harmonized environment, focused current, or resonance alignment", snag: "Chaotic zone, corrupted resonance, or unaligned channeling" }
     ],
     sourcesNote: "The triggers above work in either method. In combat they grant Edge or Snag on your d20 roll. Out of combat they grant +1 Edge Die or +1 Snag Die to your pool.",
-    gmGuidance: "Use Edge and Snag sparingly to emphasize key moments. Cancel them cleanly. Always lead with the fiction. Avoid double-counting: if a challenge's difficulty is already reflected in the DC or Snag Dice, do not apply a second penalty for the same reason."
+    gmGuidance: "Use Edge and Snag sparingly to emphasize key moments. Cancel them cleanly. Always lead with the fiction. Avoid double-counting: if a challenge's difficulty is already reflected in the DC or Snag Dice, don't apply a second penalty for the same reason."
   },
 
   /* ---- collaborative and opposed checks --------------------------------- */
@@ -263,9 +263,9 @@ EN.resolution = {
     help: {
       intro: "How much a Help Action is worth depends on how much the helper actually knows. You must be at least Proficient in the relevant skill or tool to move the dice at all. An Untrained Freelancer can lend color and hands but grants no mechanical bonus.",
       timing: "Outside of combat, helping requires spending the necessary time to contribute to the task. In combat you have two ways to execute it: as an Action (spend your standard Action on your turn to assist an ally), or as an Impulse Action (jump in during another Freelancer's turn, which immediately consumes your Impulse Action and forfeits the standard Action on your upcoming turn).",
-      d20: "Spend your Action or Impulse and make an assist check: roll d20 plus your modifier for the relevant skill or tool against DC 15. On a success, the assisted Freelancer gains a flat bonus to their roll: +2 if you are Proficient, +3 with Expertise, +4 with Mastery. This bonus applies on top of the static modifier cap and stacks with Edge. On a Natural 1, your help backfires and the assisted Freelancer rolls with Snag. If more than one Freelancer assists the same roll, only the single highest bonus applies; assist bonuses do not stack.",
-      pool: "Add Edge Dice to the assisted Freelancer's pool equal to your tier in the relevant skill or tool: +1 Proficient, +2 Expertise, +3 Mastery. These stack across multiple helpers, but the total Edge Dice added by all helpers together cannot exceed +3.",
-      limits: "You must be conscious, capable, and aware of the situation to assist. The GM may cap how many Freelancers can help when the space is too crowded or the task cannot logically support more hands."
+      d20: "Spend your Action or Impulse and make an assist check: roll d20 plus your modifier for the relevant skill or tool against DC 15. On a success, the assisted Freelancer gains a flat bonus to their roll: +2 if you are Proficient, +3 with Expertise, +4 with Mastery. This bonus applies on top of the static modifier cap and stacks with Edge. On a Natural 1, your help backfires and the assisted Freelancer rolls with Snag. If more than one Freelancer assists the same roll, only the single highest bonus applies; assist bonuses don't stack.",
+      pool: "Add Edge Dice to the assisted Freelancer's pool equal to your tier in the relevant skill or tool: +1 Proficient, +2 Expertise, +3 Mastery. These stack across multiple helpers, but the total Edge Dice added by all helpers together can't exceed +3.",
+      limits: "You must be conscious, capable, and aware of the situation to assist. The GM may cap how many Freelancers can help when the space is too crowded or the task can't logically support more hands."
     },
 
     passive: "Some capability needs no roll at all. A Passive Check uses a flat 10 plus your relevant modifiers and answers a question without the dice on the table. It is covered in full under Skills and Proficiencies."

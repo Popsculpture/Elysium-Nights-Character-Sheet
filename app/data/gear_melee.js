@@ -16,8 +16,8 @@ EN.gearCatalog.weaponRenames = [
 
 EN.gearCatalog.melee = {
   intro: "Some fights end with sirens and a clean exit. More end at arm's length, in a service corridor or a back alley, with one of these in your hand. Melee weapons are what you reach for when distance has already collapsed.",
-  saveDcNote: "Weapon Save DC (Melee): whenever a melee weapon forces a saving throw, the DC is 8 + your Body modifier + your Caliber.",
-  simpleIntro: "Clubs, kitchen blades, hatchets, short spears. The gear that ends up in a fight because it was already in the room, in the toolbelt, or in the kitchen drawer. No manual, no specialist training, just weight and intent.",
+  saveDcNote: "Weapon Save DC (Melee): whenever a melee weapon forces a saving throw, the DC is 8 + your Body Modifier + your Caliber.",
+  simpleIntro: "Clubs, kitchen blades, hatchets, short spears. The gear that ends up in a fight because it was already in the room, in the toolbelt, or in the kitchen drawer.",
   martialIntro: "The weapons that ask for training before they answer back. Swords, axes, polearms, the heavier melee work that rewards a few years of drill over a few minutes of swinging.",
 
   items: [
@@ -40,7 +40,7 @@ EN.gearCatalog.melee = {
     { name: "Knuckles", group: "Simple", price: 15, damage: "Augments unarmed strikes", range: "Melee",
       traits: ["Light", "Concealable"], availability: "Common", legality: "Restricted",
       desc: "Composite or alloy bands that turn a punch into a hospital visit. Easy to hide. Harder to explain when a patrol officer flips your jacket open.",
-      effect: "While striking with Knuckles, increase your unarmed strike damage die by one step. If your unarmed strikes do not have a damage die, they deal 1d4 Bludgeoning damage. This increase stacks normally with other effects that increase your unarmed damage die." },
+      effect: "While striking with Knuckles, increase your unarmed strike damage die by one step. If your unarmed strikes don't have a damage die, they deal 1d4 Bludgeoning damage. This increase stacks normally with other effects that increase your unarmed damage die." },
     // shafted: a long-shafted weapon, which is what Staff & Spear Master keys on.
     // NOT the same question as "has Reach": a Whip reaches 2 and is not one.
     // Two-Handed removed 2026-08-11 to match the manuscript. It contradicted Versatile:
@@ -70,7 +70,7 @@ EN.gearCatalog.melee = {
       desc: "A combat axe, head-heavy and built to bite. One-handed when you need a free hand for a sidearm or a doorframe. Two-handed when you need the bite to count." },
     { name: "Greatsword", group: "Martial", price: 180, damage: "2d6 Slashing", range: "Melee",
       traits: ["Heavy", "Two-Handed"], availability: "Uncommon", legality: "Licensed",
-      desc: "A long two-handed blade meant for open spaces and decisive swings. The kind of weapon people step back from before the swing even starts." },
+      desc: "A long two-handed blade meant for open spaces and decisive swings. People step back from it before the swing even starts." },
     { name: "Halberd", shafted: true, group: "Martial", price: 120, damage: "1d10 Slashing", range: "Melee (Reach 1)",
       traits: ["Heavy", "Reach 1", "Two-Handed"], availability: "Common", legality: "Licensed",
       desc: "A two-handed polearm with a chopping head, a spike, and a hook. Designed in another century for breaking armor. Redesigned in this one for breaking exosuits." },

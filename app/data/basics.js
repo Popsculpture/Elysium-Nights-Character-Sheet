@@ -43,7 +43,7 @@ EN.basics = {
   space: {
     intro: "Distance is counted in **spaces**. One space is about five feet, or one meter: a single stride, a grid square, the gap between you and the next pillar. Every range, reach and blast in the book is measured this way, so you never have to stop and convert anything.",
     speed: "Your **Speed** is how many spaces you can cover on your turn, equal to **6 plus your Agility modifier**, minimum 3. Most Freelancers move five or six spaces before they have to choose between shooting, climbing, or just getting out of the light. Your sheet works this out for you, including chrome, armor and lineage adjustments.",
-    areaIntro: "Some effects do not pick one Target. They fill a zone and catch whatever is standing in it: a thrown grenade, a sprayed cone of gel, a pulse of raw Flow. These are written **Area X**, where the number is the size in spaces and the word after it names the shape.",
+    areaIntro: "Some effects don't pick one Target. They fill a zone and catch whatever is standing in it: a thrown grenade, a sprayed cone of gel, a pulse of raw Flow. These are written **Area X**, where the number is the size in spaces and the word after it names the shape.",
     shapes: [
       { name: "Sphere", x: "radius", text: "A burst around a point. An Area with no shape word is a sphere, so Area 3 and Area 3 sphere mean the same thing." },
       { name: "Cone", x: "widest point", text: "Fans out from you in a direction you pick." },
@@ -51,14 +51,14 @@ EN.basics = {
       { name: "Cube", x: "edge", text: "A boxed off zone, equal on every edge." },
       { name: "Aura", x: "radius", text: "Stays centered on you and travels with you." }
     ],
-    areaNote: "Anyone caught inside usually gets a Saving Throw to soften or dodge the worst of it. Combat Rules below has the details, including how a blast behaves when there is cover in the way."
+    areaNote: "Anyone caught inside usually gets a Saving Throw to soften or dodge the worst of it. Combat Rules below has the details, including how a blast behaves when there's cover in the way."
   },
 
   /* ---- caliber: the table is derived from EN.rules.caliberByLevel -------- */
   caliber: {
-    intro: "**Caliber** is your class's growth dial. It is a small number tied directly to your level, and it gets used everywhere: as a scaling bonus, as a multiplier for resource pools, as a counter for how many times per rest you can fire off a signature feature.",
+    intro: "**Caliber** is a number determined by your class level. Features use it to calculate scaling bonuses, multiply resource pools, or determine how many times you can use an ability per rest.",
     reading: "When a class feature reads a number of times equal to your Caliber per Long Rest, or your maximum pool equals Caliber plus Tech Modifier, this is the number it means.",
-    focus: "Every class also has a **Saving Throw Focus**. When you make a Saving Throw that matches your Focus, you add your Caliber to the roll alongside the Attribute modifier. This is how seasoned Freelancers shrug off threats that would drop a rookie."
+    focus: "Every class also has a **Saving Throw Focus**. When you make a Saving Throw that matches your Focus, you add your Caliber to the roll alongside the Attribute Modifier. This is how seasoned Freelancers shrug off threats that would drop a rookie."
   },
 
   /* ---- class resources: the list is derived from EN.classes -------------- */
@@ -86,7 +86,7 @@ EN.basics = {
       { name: "Link", text: "An active connection between your gear and a Node. You need one to push most Ciphers." },
       { name: "Cipher", text: "An illegal hardware module that lets you breach or weaponize a Node." },
       { name: "Bandwidth", text: "The Codebreaker's resource. See Class Resources above." },
-      { name: "Quick Hack", text: "A single action d20 hack made under fire, as opposed to a longer Dice Pool intrusion." }
+      { name: "Quick Hack", text: "A single-action d20 hack made under fire, as opposed to a longer Dice Pool intrusion." }
     ]
   },
 

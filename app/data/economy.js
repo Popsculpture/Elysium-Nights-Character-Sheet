@@ -49,7 +49,7 @@ EN.economy = {
 
   currencies: [
     { name: "Glimmer",     symbol: "\u{1D4A2}", use: "Everyday purchases, gear, services, upkeep" },
-    { name: "Nexus Token", symbol: "◎",    use: "Major contracts, institutional exchange, off world and corporate deals" }
+    { name: "Nexus Token", symbol: "◎",    use: "Major contracts, institutional exchange, off-world and corporate deals" }
   ],
 
   /* ---- lifestyle -------------------------------------------------------- */
@@ -104,7 +104,7 @@ EN.economy = {
     { job: "Tech repair (street kiosk, drone shop)",  pay: "500 to 800",   time: "4 to 5 days",   web: "Regulars, suppliers, the occasional fence" },
     { job: "Ritual work for hire (small consults, cleansings)", pay: "500 to 1,000", time: "2 to 4 days", web: "Believers, the desperate, the curious" },
     { job: "Performer at a recurring gig (band, drag, residency)",            pay: "600 to 1,200", time: "3 to 4 nights", web: "Venue owners, fans, scene rivals" },
-    { job: "Low-level fence, mod work, or black market specialist", pay: "800 to 1,500", time: "3 to 5 days", web: "Buyers, suppliers, dangerous people" }
+    { job: "Low-level fence, mod work, or black-market specialist", pay: "800 to 1,500", time: "3 to 5 days", web: "Buyers, suppliers, dangerous people" }
   ],
 
   /* ---- rewards ------------------------------------------------------------ */
@@ -123,8 +123,8 @@ EN.economy = {
   hypercareTiers: [
     { tier: "Patchline",           rank: 1, cost: 300, currency: "glimmer", coverage: "Single district or defined zone",        response: "Dispatch only if conditions are safe enough" },
     { tier: "Rapid Extract",       rank: 2, cost: 600, currency: "glimmer", coverage: "Most major districts in one metro",      response: "Faster dispatch, will push into yellow conditions" },
-    { tier: "Blackglass Priority", rank: 3, cost: 1.2, currency: "nexus",   coverage: "Metro wide, including fringe routes",    response: "Aggressive dispatch with security escort" },
-    { tier: "Corporate Platinum",  rank: 4, cost: 2.5, currency: "nexus",   coverage: "Multi city network and travel corridors", response: "Best available dispatch, favors contracted clients" }
+    { tier: "Blackglass Priority", rank: 3, cost: 1.2, currency: "nexus",   coverage: "Metro-wide, including fringe routes",    response: "Aggressive dispatch with security escort" },
+    { tier: "Corporate Platinum",  rank: 4, cost: 2.5, currency: "nexus",   coverage: "Multi-city network and travel corridors", response: "Best available dispatch, favors contracted clients" }
   ],
 
   /* ---- debt: shape only, deliberately not an accounting tool ------------

@@ -31,14 +31,14 @@ EN.vehicles = {
     { mode: "New",         cost: "List price",           note: "Restricted purchases route through brokers, and per the high-scrutiny commissions rule those transactions may bill in Nexus at the GM's discretion." },
     { mode: "Used/salvage", cost: "40 to 60% of list",   note: "It runs. It also arrives with a quirk the GM writes down, drawn from the same menu as lapsed upkeep: the starter that grinds, the signature loud enough to track." },
     { mode: "Hot",         cost: "25% of list",          note: "Unregistered, and worth Heat with whoever it was stolen from the moment a scanner reads it." },
-    { mode: "Leased",      cost: "Upkeep, list as Buyout", note: "Corporate fleets run the Leased trait exactly as written in Gear Traits, with the vehicle's list price as the Buyout. Its Locked state is a dead ignition: the engine will not turn over, installed mods sit inert, and the doors open for whoever holds the note." }
+    { mode: "Leased",      cost: "Upkeep, list as Buyout", note: "Corporate fleets run the Leased trait exactly as written in Gear Traits, with the vehicle's list price as the Buyout. Its Locked state is a dead ignition: the engine won't turn over, installed mods sit inert, and the doors open for whoever holds the note." }
   ],
 
   /* ---- upkeep ----------------------------------------------------------- */
   upkeepNote: "Pay vehicle upkeep once per week of active use or once per major travel leg, whichever better matches the campaign. Weekly upkeep is Fuel and Routine plus Repair Reserve. If the crew stops paying, respond through the fiction first: a starter that grinds, a signature loud enough to track, a brake line that gives at the wrong moment, a repair bill that doubled overnight.",
 
   storage: [
-    { service: "Street parking or low security rack",   cost: "20 to 100 / day" },
+    { service: "Street parking or low-security rack",   cost: "20 to 100 / day" },
     { service: "Secured lot or garage",                 cost: "100 to 250 / day" },
     { service: "Hidden chop garage or off-books storage", cost: "250 to 600 / day" },
     { service: "Protected hangar or private docking",   cost: "750+ / day" }
@@ -46,16 +46,16 @@ EN.vehicles = {
 
   /* ---- repair ----------------------------------------------------------- */
   repair: [
-    "Garage repair (Downtime): with upkeep current and access to a garage, one week's Repair Reserve value in parts and labor restores up to half the vehicle's maximum Integrity. A full restore from 0 costs two weeks' Reserve paid at once and a full Downtime of work.",
-    "Field repair (Short Rest): a Tech (Engineering) Dice Pool with an Engineering Toolkit restores 5 Integrity per success, once per vehicle per day, and cannot raise the vehicle above half its maximum. Field work also clears the Disabled state.",
-    "Wrecked (0 Integrity): no field repair. Garage lane only, and the GM may rule a burned or crushed frame is past saving, worth only its salvage."
+    "Garage repair (Downtime): With upkeep current and access to a garage, one week's Repair Reserve value in parts and labor restores up to half the vehicle's maximum Integrity. A full restore from 0 costs two weeks' Reserve paid at once and a full Downtime of work.",
+    "Field repair (Short Rest): A Tech (Engineering) Dice Pool with an Engineering Toolkit restores 5 Integrity per success, once per vehicle per day, and can't raise the vehicle above half its maximum. Field work also clears the Disabled state.",
+    "Wrecked (0 Integrity): No field repair. Garage lane only, and the GM may rule a burned or crushed frame is past saving, worth only its salvage."
   ],
 
   /* ---- customization ----------------------------------------------------- */
   modRules: [
     "Mod Slot Count = 1 + the vehicle's Tier. The Street Bike and Hydrofoil carry 2, the Sedan, Hauler, and Shuttle carry 3, the VTOL and Mech carry 4.",
     "A vehicle holds at most one mod per slot.",
-    "Firewalls: a vehicle may mount one Firewall from the Firewall table in The #GRID by spending one Mod Slot. A Smartdeck gets its Firewall free because a deck is a hacking tool. A sedan is not.",
+    "Firewalls: A vehicle may mount one Firewall from the Firewall table in The #GRID by spending one Mod Slot. A Smartdeck gets its Firewall free because a deck is a hacking tool. A sedan is not.",
     "Fitting or pulling a mod is bench work: downtime, a garage, and Engineering Tools. Never a combat action.",
     "Flat bonuses of the same kind do not stack. If two mods each grant the same flat bonus, the higher applies and the other is dead weight bolted to your frame.",
     "A mod never lowers a vehicle's Legality, it only raises the heat. The strictest tag among the vehicle and everything mounted on it is what a checkpoint scanner reads.",
@@ -89,7 +89,7 @@ EN.vehicles = {
       effect: "The vehicle repaints itself between scenes. Checks to spot or identify it while parked roll with Snag, and it gains Edge on Chase Checks at Lead 4." },
     { name: "Node Retrofit",      price: null, priceNote: "the listed cost of the new tier in The #GRID",
       fits: "Any", availability: "Uncommon", legality: "Licensed",
-      effect: "Raises the vehicle's Node Tier by one step, using the Node Attributes of the new tier. Each step costs its own Mod Slot and its own price. A vehicle's node may not exceed two steps above the tier its profile lists. Limit: A node running two steps above its chassis is a mismatch, and mismatches get noticed. Any corporate sweep that scans the vehicle reads it as a flag worth following." },
+      effect: "Raises the vehicle's Node Tier by one step, using the Node Attributes of the new tier. Each step costs its own Mod Slot and its own price. A vehicle's node may not exceed two steps above the tier its profile lists. Limit: A Node running two steps above its factory Node is a mismatch, and mismatches get noticed. Any corporate sweep that scans the vehicle reads it as a flag worth following." },
     { name: "Cabin Kit",          price: 1000, fits: "Any",                availability: "Uncommon", legality: "Legal",
       effect: "The vehicle gains the Enclosed trait and loses Open-Frame. Handling is reduced by 1." },
     { name: "Cut-Down",           price: 200,  fits: "Any",                availability: "Common",   legality: "Legal",

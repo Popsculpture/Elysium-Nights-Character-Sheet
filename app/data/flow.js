@@ -91,7 +91,7 @@ EN.flow = {
       empowered: [
         { name: "Optic Scramble", sustain: true, text: "A blaze of light and current overloads everything watching. Cameras, drone eyes, and cybernetic optics in the area go dark for the duration. Organic targets make a Flow Save DC (Body) or are Blinded." },
         { name: "Overload", sustain: false, text: "Drive raw current through a target. They make a Flow Save DC (Body) or are Staggered until the end of their next turn. A target in metal armor or running cyberware rolls this save with Snag; the metal carries the charge." },
-        { name: "Magnetic Seize", sustain: true, text: "Twist the local field until metal turns traitor. Each target in the area makes a Flow Save DC (Body) or has any metal weapon wrenched from their grip, and cannot draw, aim, or fire a metal weapon while the effect lasts." }
+        { name: "Magnetic Seize", sustain: true, text: "Twist the local field until metal turns traitor. Each target in the area makes a Flow Save DC (Body) or has any metal weapon wrenched from their grip, and can't draw, aim, or fire a metal weapon while the effect lasts." }
       ] },
     { key: "visceral", name: "Visceral", unlock: 1, focus: "Biology and Decay", damage: "Toxic / Entropy",
       resolution: "attack",
@@ -100,7 +100,7 @@ EN.flow = {
       empowered: [
         { name: "Adrenal Overclock", sustain: false, text: "Grant a willing target Edge on physical checks and a +2 bonus to Speed." },
         { name: "Forceful Sedation", sustain: false, text: "Target makes a Flow Save DC (Body) or falls Unconscious. They wake on taking damage or being shaken awake by an adjacent ally's Action." },
-        { name: "Cellular Crash", sustain: false, text: "Target makes a Flow Save DC (Body) or is Poisoned until the end of their next turn and cannot benefit from Resilience Dice or self-healing." }
+        { name: "Cellular Crash", sustain: false, text: "Target makes a Flow Save DC (Body) or is Poisoned until the end of their next turn and can't benefit from Resilience Dice or self-healing." }
       ] },
     { key: "spatial", name: "Spatial", unlock: 1, focus: "Dimensions and Void", damage: "Force (Spatial)",
       resolution: "save", saveAttr: "varies", armorNote: "Ignores standard physical armor.",
@@ -120,14 +120,14 @@ EN.flow = {
       ] },
     { key: "synthetica", name: "Synthetica", unlock: 1, unique: "sourcerer", focus: "Favor and Malfunction", damage: "Electric / Fire",
       resolution: "save", saveAttr: "Tech", noSustain: true,
-      stabilityNote: "Short Attention Spans: Synthetica Empowered Effects cannot use the Sustain duration. A favor is a transaction; the sprite does the work, collects the amusement, and wanders off. Effects last exactly as long as their entries say and not a round longer.",
+      stabilityNote: "Short Attention Spans: Synthetica Empowered Effects can't use the Sustain duration. A favor is a transaction; the sprite does the work, collects the amusement, and wanders off. Effects last exactly as long as their entries say and not a round longer.",
       targeting: "Synthetica works through machines, never around them. A valid target carries, wears, or is installed with powered tech, or is itself a device, drone, Proxy, or Construct. A target with nothing electronic on or in them is beyond the sprites' reach.",
       special: "Favors Travel Light: when you shape an Invocation of any other Resonance, you may spend an additional 1 FP to fold a Nixie Favor or a Gremlin Jinx into it. A favor folded this way allows no save. One folded favor per Invocation.",
       base: "Choose one: Ask Around (interview the sprites in a device you can see or touch; you learn what the machine is, what it does, and what it has noticed recently, as impressions rather than records); Nixie Favor (a Nixie settles into a willing target's weapon or cybernetics; they gain a 1d4 bonus on their next attack roll or Saving Throw); Gremlin Jinx (a Gremlin crawls into an unwilling target's weapon or cybernetics; they make a Flow Save DC, Tech, or suffer a 1d4 penalty on their next attack roll or Saving Throw).",
       empowered: [
         { name: "Nixie Synchronization", sustain: false, text: "A Nixie tunes a willing target's weapon or cybernetic implant to its wielder's pulse. For the next turn, the target gains Edge on their next attack roll with that weapon, and the weapon deals an additional 1d6 Force damage on its next hit." },
         { name: "Gremlin Tantrum", sustain: false, text: "Point the local Gremlins at a target's firearm, smart tech, or cyberlimb. The target makes a Flow Save DC (Tech). On a failure, they take 1d6 Fire damage as the device cooks against them, and that weapon or cyberlimb seizes up, preventing its use until the end of their next turn." },
-        { name: "Poltergeist", sustain: false, unlock: 3, text: "Unlocked at Level 3 (Hardware Harmonization). Ask the sprites riding a device, drone, or Construct to take the wheel. The target makes a Flow Save DC (Tech). On a failure, you dictate its movement and its Action on its next turn. The sprites will not drive a machine into its own obvious destruction, and they cannot drive a mind: a Clanker, a Synthetic, or any target that is someone rather than something is immune." }
+        { name: "Poltergeist", sustain: false, unlock: 3, text: "Unlocked at Level 3 (Hardware Harmonization). Ask the sprites riding a device, drone, or Construct to take the wheel. The target makes a Flow Save DC (Tech). On a failure, you dictate its movement and its Action on its next turn. The sprites won't drive a machine into its own obvious destruction, and they can't drive a mind: a Clanker, a Synthetic, or any target that is someone rather than something is immune." }
       ] },
     { key: "temporal", name: "Temporal", unlock: 5, focus: "Chronological Flow", damage: "Entropy",
       resolution: "attack", noSustain: true,
@@ -195,7 +195,7 @@ EN.flow = {
        Data-only, as is dcFormula above it: js/flow.js renders `check` and `onFailure`, and the
        engine computes breakflowDC itself. So this is source truth rather than display. */
     triggers: "Overdrawing at Stage 4 (Rend) forces a Breakflow Check. Reaching Stage 5 (Collapse) is Breakflow outright, with no check to make.",
-    onFailure: "Your FP drops to 0, all sustained effects end, and you cannot channel until you undergo Breakflow Restoration.",
+    onFailure: "Your FP drops to 0, all sustained effects end, and you can't channel until you undergo Breakflow Restoration.",
     check: "Roll a Flow Attribute Saving Throw vs DC 12 + your current Strain Stage (Snag at Stage 3+)."
   },
 

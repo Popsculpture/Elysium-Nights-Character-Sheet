@@ -5,14 +5,14 @@ EN.classes = EN.classes || {};
 // picker, and the print sheet. The Leverage feature's prose (below) is composed from this list,
 // so the displayed text and the machine-readable data can never drift apart. The Hustler learns
 // two at Level 1 and two more at Level 5 via Expanded Leverage; unless noted each costs 1 Leverage.
-var HUSTLER_LEVERAGE_INTRO = "The Hustler does not rely on the Flow or brute strength. They rely on **Leverage**: tactical callouts, psychological pressure, and split-second openings.\n\n**Your Leverage Pool**\n\nYour maximum Leverage equals your **Caliber + your Charm Modifier** (minimum 1). You regain all spent Leverage at the end of a Short or Long Rest.\n\n**Leverage Abilities**\n\nAt 1st Level, you learn two Leverage Abilities. You learn two additional Leverage Abilities at 5th Level through Expanded Leverage. Unless otherwise noted, all Leverage abilities cost 1 Leverage to activate.";
+var HUSTLER_LEVERAGE_INTRO = "The Flow and brute strength are someone else's job. The Hustler runs on **Leverage**: tactical callouts, psychological pressure, and split-second openings.\n\n**Your Leverage Pool**\n\nYour maximum Leverage equals your **Caliber + your Charm Modifier** (minimum 1). You regain all spent Leverage at the end of a Short or Long Rest.\n\n**Leverage Abilities**\n\nAt 1st Level, you learn two Leverage Abilities. You learn two additional Leverage Abilities at 5th Level through Expanded Leverage. Unless otherwise noted, all Leverage abilities cost 1 Leverage to activate.";
 var HUSTLER_LEVERAGE_ABILITIES = [
   { name: "Pressure Play", action: "Action", cost: 1, text: "Target one enemy you can see within 12 spaces. The next attack made against that enemy before the start of your next turn gains **Edge**. If the attack hits, it deals additional damage equal to your Caliber." },
   { name: "Backchannel", action: "Impulse Action", cost: 1, text: "Trigger: An ally within 6 spaces fails a d20 check. That ally may immediately reroll the d20 but must keep the new result." },
-  { name: "Exit Strategy", action: "Swift Action", cost: 1, text: "Target yourself or one ally within 12 spaces who can hear or see you. The target immediately moves up to their Speed as a free action without provoking Opportunity Attacks." },
+  { name: "Exit Strategy", action: "Swift Action", cost: 1, text: "Target yourself or one ally within 12 spaces who can hear or see you. The target immediately moves up to their Speed as a Free Action without provoking Opportunity Attacks." },
   { name: "The Shell Game", action: "Impulse Action", cost: 1, text: "Trigger: An enemy targets you with an attack. Force the attacking enemy to target another Target of your choice (friend or foe) within the attack's range or reach. The attacker rolls that attack with **Snag**." },
   { name: "Eye on the Prize", action: "Swift Action", cost: 1, text: "Target yourself or one ally within 12 spaces. The target may immediately roll a Save to end one negative condition currently affecting them (such as Dazed, Staggered, or Bleeding)." },
-  { name: "Dirty Laundry", action: "Action", cost: 1, text: "Target one enemy within 12 spaces. Until the start of your next turn, that enemy's Defense is reduced by your Charm Modifier (minimum 1) and they cannot benefit from Cover." },
+  { name: "Dirty Laundry", action: "Action", cost: 1, text: "Target one enemy within 12 spaces. Until the start of your next turn, that enemy's Defense is reduced by your Charm Modifier (minimum 1) and they can't benefit from Cover." },
   { name: "Cause a Scene", action: "Action", cost: 1, text: "Choose a point you can see within 12 spaces. Every enemy within 2 spaces of that point must make a Wits Save (DC = 8 + your Charm Modifier + your Caliber). On a failure, they roll with Snag on attack rolls until the start of your next turn." },
   { name: "Vanishing Act", action: "Swift Action", cost: 1, text: "You immediately move up to half your Speed without provoking Opportunity Attacks. Until the start of your next turn, attacks against you roll with Snag." }
 ];
@@ -23,7 +23,7 @@ var HUSTLER_LEVERAGE_TEXT = HUSTLER_LEVERAGE_INTRO + "\n\n" + HUSTLER_LEVERAGE_A
 EN.classes.hustler = {
   key: "hustler",
   name: "Hustler",
-  tagline: "You are the tactical pulse of the crew, dictating the reality of every engagement. You thrive in the spaces between words and bullets, manipulating the battlefield by weaponizing psychology, leveraging black market assets, and exploiting the predictable flaws of your enemies. You do not fight fair; your goal is to orchestrate the conflict so completely that the opposition defeats themselves before the first shot is even fired. You are the voice on the comms making sure every risk pays out.",
+  tagline: "You're the tactical pulse of the crew, and every engagement runs on your terms. You thrive in the spaces between words and bullets, working the battlefield with psychology, black-market assets, and the flaws your enemies can't stop showing. A fight you haven't already rigged isn't worth starting: set it up well enough, and the opposition beats itself before the first shot. You're the voice on the comms making sure every risk pays out.",
   vitality: {
     text: "Resilience Die: d6\nStarting Vitality: 6 + Body Modifier\nVitality Per Level: 1d6 + Body Modifier"
   },
@@ -67,7 +67,7 @@ EN.classes.hustler = {
       },
       {
         name: "Hustler Subclass",
-        text: "You choose a Hustler subclass, representing your specialization. You gain all subclass features for which you meet the required Hustler level, both now and as you advance."
+        text: "You choose a Hustler subclass, representing your specialization. You gain all subclass features for which you meet the required Hustler level, both now and as you advance. You may only select one subclass."
       }
     ],
     "2": [
@@ -95,7 +95,7 @@ EN.classes.hustler = {
     "5": [
       {
         name: "Compound Interest",
-        text: "When you activate a Leverage ability that targets a single target, you may spend **1 additional Leverage** to extend that exact ability to a second valid target within range. If the original ability targeted an ally, the second target must also be an ally; if it targeted an enemy, the second target must also be an enemy. This feature only duplicates the specific Leverage ability you just activated. You cannot use it to activate two different abilities simultaneously."
+        text: "When you activate a Leverage ability that targets a single target, you may spend **1 additional Leverage** to extend that exact ability to a second valid target within range. If the original ability targeted an ally, the second target must also be an ally; if it targeted an enemy, the second target must also be an enemy. This feature only duplicates the specific Leverage ability you just activated. You can't use it to activate two different abilities simultaneously."
       },
       {
         name: "Expanded Leverage",
@@ -127,7 +127,7 @@ EN.classes.hustler = {
     "9": [
       {
         name: "Return on Investment (ROI)",
-        text: "Whenever you or an ally within 6 spaces rolls a Critical Success (Natural 20) on a d20 roll, you immediately regain 1 spent Leverage (this cannot exceed your maximum)."
+        text: "Whenever you or an ally within 6 spaces rolls a Critical Success (Natural 20) on a d20 roll, you immediately regain 1 spent Leverage (this can't exceed your maximum)."
       }
     ],
     "10": [
@@ -153,39 +153,39 @@ EN.classes.hustler = {
     {
       key: "the_suit",
       name: "The Suit",
-      description: "You do not see a battlefield; you see a market waiting to be cornered. To you, people are not threats; they are simply depreciating assets. Impeccably dressed and dangerously calm, you orchestrate violence with the terrifying precision of a hostile takeover, liquidating the opposition before they even realize the deal has been struck.",
+      description: "You see a conflict as a market waiting to be cornered, and people as depreciating assets, not threats. Impeccably dressed and dangerously calm, you orchestrate violence with the precision of a hostile takeover, liquidating the opposition before they realize the deal has been struck.",
       features: [
         {
           level: 1,
           name: "Risk Assessment",
-          text: "You gain Proficiency with Security Tools, and you may use your Wits modifier instead of Agility when rolling Initiative. If you spend 10 minutes observing a location or studying its blueprints, you cannot get lost in it, and you gain Edge on in-combat Wits-based d20 checks (or +1 Edge Die to related out-of-combat Dice Pools) to identify security blind-spots, structural weaknesses, or hidden routes there."
+          text: "You gain Proficiency with Security Tools, and you may use your Wits Modifier instead of Agility when rolling Initiative. If you spend 10 minutes observing a location or studying its blueprints, you can't get lost in it, and you gain Edge on in-combat Wits-based d20 checks (or +1 Edge Die to related out-of-combat Dice Pools) to identify security blind spots, structural weaknesses, or hidden routes there."
         },
         {
           level: 3,
           name: "Asset Reallocation",
-          text: "Immediately after Initiative is rolled, but before the first turn, spend 1 Leverage to reposition the crew. Choose a number of allies up to your Wits Modifier (minimum 1); each may immediately move up to half their Speed. This movement happens outside the turn order and does not provoke Opportunity Attacks."
+          text: "Immediately after Initiative is rolled, but before the first turn, spend 1 Leverage to reposition the crew. Choose a number of allies up to your Wits Modifier (minimum 1); each may immediately move up to half their Speed. This movement happens outside the turn order and doesn't provoke Opportunity Attacks."
         },
         {
           level: 7,
           name: "Mandatory Overtime",
-          text: "As a **Swift Action**, spend 2 Leverage to drive one ally within 12 spaces who can hear you. That ally may immediately use their **Impulse Action** to make a standard weapon attack (or cast a 1-Action Invocation). The attack is made with Edge, and if it hits, it deals maximum damage on the dice instead of rolling. Immediately after the attack resolves, the ally takes unavoidable physical damage equal to your Caliber + your Wits Modifier.\n\n**Fine, I'll Do It Myself:** If the targeted ally refuses or cannot take the Impulse Action, your Swift Action and Leverage are not wasted; apply the mandate to yourself instead. The next standard weapon attack you make before the end of your turn gains Edge and deals maximum damage on a hit, and you take no strain damage."
+          text: "As a **Swift Action**, spend 2 Leverage to drive one ally within 12 spaces who can hear you. That ally may immediately use their **Impulse Action** to make a standard weapon attack (or cast a 1-Action Invocation). The attack is made with Edge, and if it hits, it deals maximum damage on the dice instead of rolling. Immediately after the attack resolves, the ally takes unavoidable damage equal to your Caliber + your Wits Modifier.\n\n**Fine, I'll Do It Myself:** If the targeted ally refuses or can't take the Impulse Action, your Swift Action and Leverage aren't wasted; apply the mandate to yourself instead. The next standard weapon attack you make before the end of your turn gains Edge and deals maximum damage on a hit, and you don't take the damage Mandatory Overtime would deal an ally."
         },
         {
           level: 10,
           name: "Company-Wide Liquidation",
-          text: "Once per Long Rest, as an **Action**, declare a kill-order on one enemy you can see. Every willing ally within 12 spaces may immediately move up to their Speed and make one standard weapon attack against that enemy. This movement and attack occur outside the turn order and cost the allies none of their own Actions, Swift Actions, or Impulse Actions.\n\n**Severance Package:** If the enemy is reduced to 0 Vitality by this barrage, you and all participating allies immediately gain Vigor equal to your Caliber + your Charm Modifier."
+          text: "Once per Long Rest, as an **Action**, declare a kill order on one enemy you can see. Every willing ally within 12 spaces may immediately move up to their Speed and make one standard weapon attack against that enemy. This movement and attack occur outside the turn order and cost the allies none of their own Actions, Swift Actions, or Impulse Actions.\n\n**Severance Package:** If the enemy is reduced to 0 Vitality by this barrage, you and all participating allies immediately gain Vigor equal to your Caliber + your Charm Modifier."
         }
       ]
     },
     {
       key: "the_grifter",
       name: "The Grifter",
-      description: "You do not just lie; you construct entirely alternate realities. You are a master of deception, turning every missed shot by your enemy into a psychological victory, and every strike against you into a self-inflicted wound. By the time a mark realizes they have been played, you have already spent their money and vanished.",
+      description: "Lying is the easy part. You build whole alternate realities, where every shot your enemy misses is profit and every strike against you is a self-inflicted wound. By the time a mark realizes they've been played, you've already spent their money and vanished.",
       features: [
         {
           level: 1,
           name: "Social Chameleon",
-          text: "You gain Proficiency with Infiltration Tools and Forgery Tools. If you spend one minute observing a target or listening to them speak, you can perfectly mimic their voice, cadence, and mannerisms. When using this mimicry, presenting fake credentials, or wearing a disguise, you gain Edge on in-combat Deception d20 checks (or +1 Edge Die to related out-of-combat Dice Pools) to pass as someone else or bluff past security."
+          text: "You gain Proficiency with Infiltration Tools and Bureaucracy Tools. If you spend one minute observing a target or listening to them speak, you can perfectly mimic their voice, cadence, and mannerisms. When using this mimicry, presenting fake credentials, or wearing a disguise, you gain Edge on in-combat Deception d20 checks (or +1 Edge Die to related out-of-combat Dice Pools) to pass as someone else or bluff past security."
         },
         {
           level: 3,
@@ -200,34 +200,34 @@ EN.classes.hustler = {
         {
           level: 10,
           name: "Character Assassination",
-          text: "Once per Long Rest, as an **Action**, deliver a devastating lie (a forged termination order, proof a boss sold them out, the \"activation phrase\" of a sleeper program that does not exist). Choose a number of enemies up to your Charm Modifier within 12 spaces who can hear and understand you. They must make a Wits Save (DC = 8 + your Charm Modifier + your Caliber).\n\n• **On a failure:** Their morale collapses. The GM chooses how they break: they drop their weapons and flee the encounter, or they turn on their own side for the rest of the encounter.\n• **On a success:** They are Confused until the end of their next turn."
+          text: "Once per Long Rest, as an **Action**, deliver a devastating lie (a forged termination order, proof a boss sold them out, the \"activation phrase\" of a sleeper program that doesn't exist). Choose a number of enemies up to your Charm Modifier within 12 spaces who can hear and understand you. They must make a Wits Save (DC = 8 + your Charm Modifier + your Caliber).\n\n• **On a failure:** Their morale collapses. The GM chooses how they break: they drop their weapons and flee the encounter, or they turn on their own side for the rest of the encounter.\n• **On a success:** They are Confused until the end of their next turn."
         }
       ]
     },
     {
       key: "the_fixer",
       name: "The Fixer",
-      description: "You are the ultimate underworld shot caller. You make sure your crew never runs out of luck, ammo, or options by leveraging a vast, terrifying network of favors, debts, and street level operatives. You do not just know a guy; you own the guy, and you are always ready to collect.",
+      description: "You're the underworld's shot caller. You make sure your crew never runs out of luck, ammo, or options by working a vast network of favors, debts, and street-level operatives. You don't just know a guy; you own the guy, and you're always ready to collect.",
       features: [
         {
           level: 1,
           name: "Street Broker",
-          text: "You gain Proficiency with Engineering Tools and +1 Edge Die on all out-of-combat Dice Pool checks made to locate restricted gear, secure black-market Nexus Token exchanges, or find a safehouse. By spending one minute examining a weapon, vehicle, or piece of cyber-tech, you determine its exact black-market value, its origin (manufacturer or previous owner's faction), and whether it is counterfeit, bugged with a tracker, or malfunctioning."
+          text: "You gain Proficiency with Engineering Tools and +1 Edge Die on all out-of-combat Dice Pool checks made to locate restricted gear, secure black-market Nexus Token exchanges, or find a safehouse. By spending one minute examining a weapon, vehicle, or piece of cybertech, you determine its exact black-market value, its origin (manufacturer or previous owner's faction), and whether it is counterfeit, bugged with a tracker, or malfunctioning."
         },
         {
           level: 3,
           name: "The Fix Is In",
-          text: "As an **Impulse Action** when an ally within 6 spaces takes damage from an attack, spend 1 Leverage to cash in a micro-favor (a bribed grid-worker cutting the lights, a street kid dropping an obstacle). Reduce the incoming damage by 1d6 + your Charm Modifier + your Caliber. If this reduces the damage to 0, the ally may immediately move up to 2 spaces without provoking Opportunity Attacks."
+          text: "As an **Impulse Action** when an ally within 6 spaces takes damage from an attack, spend 1 Leverage to cash in a micro-favor (a bribed grid worker cutting the lights, a street kid dropping an obstacle). Reduce the incoming damage by 1d6 + your Charm Modifier + your Caliber. If this reduces the damage to 0, the ally may immediately move up to 2 spaces without provoking Opportunity Attacks."
         },
         {
           level: 7,
           name: "Off-the-Books Asset",
-          text: "Once per encounter, as an **Action**, spend 2 Leverage to ping a heavy-hitter on standby. Target an Area 2 you can see within 24 spaces. All enemies in the area must make an Agility Save (DC = 8 + your Charm Modifier + your Caliber). On a failure, they take 3d8 + your Charm Modifier physical or energy damage (your choice) and are knocked Prone. On a success, they take half damage and are not knocked Prone."
+          text: "Once per encounter, as an **Action**, spend 2 Leverage to ping a heavy hitter on standby. Target an Area 2 you can see within 24 spaces. All enemies in the area must make an Agility Save (DC = 8 + your Charm Modifier + your Caliber). On a failure, they take 3d8 + your Charm Modifier Ballistic or Energy damage (your choice) and are knocked Prone. On a success, they take half damage and aren't knocked Prone."
         },
         {
           level: 10,
           name: "Corner the Market",
-          text: "Once per Long Rest, when you roll Initiative, choose a number of enemies up to your Charm Modifier. Those enemies begin the encounter with their logistics compromised:\n\n• **Bad Ammo/Corrupted Cybernetics:** They must spend a **Swift Action** on their first turn clearing a weapon jam or rebooting before they can attack.\n• **Tampered Gear:** They cannot use consumable items, explosives, or healing tech for the encounter.\n\n**The Setup:** You start the encounter with 2 temporary Leverage. This can exceed your normal maximum, but it must be spent before the end of the first round or it is lost."
+          text: "Once per Long Rest, when you roll Initiative, choose a number of enemies up to your Charm Modifier. Those enemies begin the encounter with their logistics compromised:\n\n• **Bad Ammo/Corrupted Cybernetics:** They must spend a **Swift Action** on their first turn clearing a weapon jam or rebooting before they can attack.\n• **Tampered Gear:** They can't use consumable items, explosives, or healing tech for the encounter.\n\n**The Setup:** You start the encounter with 2 temporary Leverage. This can exceed your normal maximum, but it must be spent before the end of the first round or it is lost."
         }
       ]
     }
@@ -249,7 +249,7 @@ EN.classes.hustler = {
 var OPERATOR_TACTICAL_INTRO = "You thrive in the chaos of a firefight: directing traffic, creating openings, keeping your crew alive. You have a pool of **Execution (EX)** equal to your **Caliber + your Wits Modifier**. You regain all spent Execution at the end of a Short or Long Rest. You know every Call below and may spend 1 EX to make any of them.\n\n**Suppression.** Several of your Calls leave a target *Suppressed*. A Suppressed target rolls with **Snag** on attack rolls and cannot take **Impulse Actions** until the suppression ends. You do not merely hurt the enemy. You strip away their ability to fight back cleanly, pin them in place, and hand your crew a target that cannot punish them for moving in.";
 var OPERATOR_TACTICAL_MANEUVERS = [
   { name: "Suppressing Fire", action: "Action", cost: 1, text: "Choose a point within your weapon's range, then an Area 3 around that point. Each Enemy in the area must succeed on an Agility Save (DC = 8 + your Wits Modifier + your Caliber) or become *Suppressed* until the start of your next turn. This Call deals no damage." },
-  { name: "Take the Angle", action: "Swift Action", cost: 1, text: "You move up to your Speed without provoking opportunity attacks. If you end this movement with Line of Sight to an Enemy you did not have Line of Sight to at the start of your turn, your next weapon attack this turn ignores the Defense bonus of their Cover." },
+  { name: "Take the Angle", action: "Swift Action", cost: 1, text: "You move up to your Speed without provoking opportunity attacks. If you end this movement with Line of Sight to an Enemy you didn't have Line of Sight to at the start of your turn, your next weapon attack this turn ignores the Defense bonus of their Cover." },
   { name: "Call the Angle", action: "Swift Action", cost: 1, text: "Designate an Enemy you can see. Until the start of your next turn, attacks against that Enemy made by you or your allies ignore the Defense bonus of Half and Three-Quarter Cover." },
   { name: "Reposition", action: "Swift Action", cost: 1, text: "Target one Ally within 12 spaces who can hear you. That Ally may immediately move up to half their Speed as a Free Action without provoking opportunity attacks." },
   { name: "Focus Fire", action: "Special", cost: 1, text: "When you hit an Enemy with a weapon attack, you may spend 1 EX to mark them. The next attack made against that Enemy by you or an Ally before the start of your next turn gains **Edge**." },
@@ -304,13 +304,13 @@ EN.classes.operator = {
       },
       {
         name: "Operator Subclass",
-        text: "You choose an Operator subclass, representing your specialization. You gain all subclass features for which you meet the required Operator level, both now and as you advance."
+        text: "You choose an Operator subclass, representing your specialization. You gain all subclass features for which you meet the required Operator level, both now and as you advance. You may only select one subclass."
       }
     ],
     "2": [
       {
         name: "Overwatch",
-        text: "As an Action, you establish an Overwatch zone covering an Area 6 Cone or Area 12 Line. Until the start of your next turn, the first Enemy to move, attack, or cast an Invocation within that zone triggers your trap, provided you have Line of Sight to the target. You may immediately make a weapon attack against them as an Impulse Action. On a hit, their Speed is reduced to 0 for the remainder of their turn.\n\nYou must expose yourself to track the zone. You cannot use this feature while benefiting from Full Cover, though Half or Three-Quarter Cover still applies."
+        text: "As an Action, you establish an Overwatch zone covering an Area 6 Cone or Area 12 Line. Until the start of your next turn, the first Enemy to move, attack, or cast an Invocation within that zone triggers your trap, provided you have Line of Sight to the target. You may immediately make a weapon attack against them as an Impulse Action. On a hit, their Speed is reduced to 0 for the remainder of their turn.\n\nYou must expose yourself to track the zone. You can't use this feature while benefiting from Full Cover, though Half or Three-Quarter Cover still applies."
       },
       {
         name: "Universal Upgrade",
@@ -360,7 +360,7 @@ EN.classes.operator = {
     "9": [
       {
         name: "Absolute Discipline",
-        text: "You gain the following benefits:\n\n• **Veteran Instincts:** You cannot be Surprised, and you gain **Edge** on all Initiative rolls.\n• **Rallying Cry:** When you roll Initiative with 0 Execution remaining, you immediately regain 2 Execution."
+        text: "You gain the following benefits:\n\n• **Veteran Instincts:** You can't be Surprised, and you gain **Edge** on all Initiative rolls.\n• **Rallying Cry:** When you roll Initiative with 0 Execution remaining, you immediately regain 2 Execution."
       }
     ],
     "10": [
@@ -386,12 +386,12 @@ EN.classes.operator = {
     {
       key: "the_vanguard",
       name: "The Vanguard",
-      description: "You are built for the fatal funnel, learning to dismantle enemy lines with surgical precision. Specializing in close quarters battle, physical shields, and rapid neutralization, your goal is to turn tight hallways and breached doors into your personal domain. You do not need to scream or charge to be terrifying; you simply raise your shield, check your corners, and advance relentlessly. After all, slow is smooth, and smooth is fast.",
+      description: "You're built for the fatal funnel, taking enemy lines apart a doorway at a time. Close-quarters battle, physical shields, enemies put down fast: tight hallways and breached doors are your ground. You don't need to scream or charge to be terrifying; you simply raise your shield, check your corners, and advance relentlessly. Slow is smooth, and smooth is fast.",
       features: [
         {
           level: 1,
           name: "CQB Tactics",
-          text: "You gain Proficiency with Physical Shields. While wielding a Physical Shield in one hand and a Sidearm, Simple Weapon, or Martial Weapon (without the Heavy or Two Handed trait) in the other, you gain:\n\n• **Close Quarters Supremacy:** If you are wielding a Sidearm, your ranged attacks do not suffer Snag when fired at an enemy within melee range.\n• **Active Shielding:** Your Physical Shield works as a melee weapon dealing 1d6 Bludgeoning damage. Whenever you successfully Shove an enemy, you automatically deal this damage.\n• **Breacher's Step:** When you roll Initiative, you and up to one ally of your choice can immediately move up to 3 spaces as a free action."
+          text: "You gain Proficiency with Physical Shields. While wielding a Physical Shield in one hand and a Sidearm, Simple Weapon, or Martial Weapon (without the Heavy or Two-Handed trait) in the other, you gain:\n\n• **Close Quarters Supremacy:** If you are wielding a Sidearm, your ranged attacks don't suffer Snag when fired at an enemy within melee range.\n• **Active Shielding:** Your Physical Shield works as a melee weapon dealing 1d6 Bludgeoning damage. Whenever you successfully Shove an enemy, you automatically deal this damage.\n• **Breacher's Step:** When you roll Initiative, you and up to one ally of your choice can immediately move up to 3 spaces as a Free Action."
         },
         {
           level: 3,
@@ -401,7 +401,7 @@ EN.classes.operator = {
         {
           level: 7,
           name: "CQC Takedown",
-          text: "You gain two abilities:\n\n• **CQC Takedown:** As an **Action**, spend 2 Execution to drive a close-quarters combination into an adjacent enemy. The target must make a Body Save (DC = 8 + your Body Modifier + your Caliber). On a failure, they take 3d6 Bludgeoning damage, are knocked Prone, and are Stunned until the end of your next turn. On a success, they take half damage and are not Stunned.\n• **Double Tap:** Whenever an enemy within 2 spaces is knocked Prone by any source, you may use your **Impulse Action** to make a single retaliatory attack against them. If you use a melee weapon or shield bash, you may step up to 1 space as part of this reaction to reach them."
+          text: "You gain two abilities:\n\n• **CQC Takedown:** As an **Action**, spend 2 Execution to drive a close-quarters combination into an adjacent enemy. The target must make a Body Save (DC = 8 + your Body Modifier + your Caliber). On a failure, they take 3d6 Bludgeoning damage, are knocked Prone, and are Stunned until the end of your next turn. On a success, they take half damage and aren't Stunned.\n• **Double Tap:** Whenever an enemy within 2 spaces is knocked Prone by any source, you may use your **Impulse Action** to make a single retaliatory attack against them. If you use a melee weapon or shield bash, you may step up to 1 space as part of this Impulse Action to reach them."
         },
         {
           level: 10,
@@ -413,39 +413,39 @@ EN.classes.operator = {
     {
       key: "the_deadeye",
       name: "The Deadeye",
-      description: "Your training means priority targets never even get a chance to draw their weapons. You specialize in ballistic trajectory and pinpoint accuracy, reading the geometry of a firefight before the first shot rings out. You do not need a massive sniper rifle to be a lethal threat; in your hands, a heavy revolver or a standard carbine becomes an instrument of deadly efficiency. You win by finding the angles your enemies overlook and putting a bullet exactly where it belongs.",
+      description: "Your training means priority targets never get their hands to a holster. You specialize in ballistic trajectory and pinpoint accuracy, reading the geometry of a firefight before the first shot. The rifle is optional: in your hands a heavy revolver or a standard carbine kills just as reliably. You win by finding the angles your enemies overlook and putting a bullet exactly where it belongs.",
       features: [
         {
           level: 1,
           name: "Calculated Marksmanship",
-          text: "You gain Proficiency in the Stealth or Acrobatics skill (your choice). When making a ranged weapon attack, you do not suffer Snag for firing beyond your weapon's standard range, up to its maximum. As long as you have not moved during your turn, you ignore the Defense bonuses provided by Half Cover."
+          text: "You gain Proficiency in the Stealth or Acrobatics skill (your choice). When making a ranged weapon attack, you don't suffer Snag for firing beyond your weapon's standard range, up to its maximum. As long as you haven't moved during your turn, you ignore the Defense bonuses provided by Half Cover."
         },
         {
           level: 3,
           name: "Hair Trigger",
-          text: "Spend 1 Execution to overcharge your Overwatch Protocol. When you take the Action to establish an Overwatch zone, you double its size (creating either an Area 12 Cone or Area 24 Line). If an enemy triggers this Overwatch, you gain Edge on the resulting attack roll."
+          text: "Spend 1 Execution to overcharge your Overwatch. When you take the Action to establish an Overwatch zone, you double its size (creating either an Area 12 Cone or Area 24 Line). If an enemy triggers this Overwatch, you gain Edge on the resulting attack roll."
         },
         {
           level: 7,
           name: "Ricochet Trajectory",
-          text: "As an **Action**, spend 2 Execution to bounce a shot off the environment and hit a target you cannot see. Make a ranged attack roll against a target within 6 spaces of a solid surface you can see. On a hit, they take normal weapon damage plus an additional 2d6 Ballistic damage and are Staggered until the end of their next turn."
+          text: "As an **Action**, spend 2 Execution to bounce a shot off the environment and hit a target you can't see. Make a ranged attack roll against a target within 6 spaces of a solid surface you can see. On a hit, they take normal weapon damage plus an additional 2d6 Ballistic damage and are Staggered until the end of their next turn."
         },
         {
           level: 10,
           name: "The Killing Floor",
-          text: "Once per Long Rest, as an **Action**, declare an Area 20 you can see as your kill zone for 1 minute. Any enemy that moves, attacks, or casts an Invocation within the area triggers an Overwatch shot from you, provided you have Line of Sight. You may take an unlimited number of **Impulse Actions** to make these shots, but you can fire at each enemy only once per round. You cannot use this feature while benefiting from Full Cover, though you may still benefit from Half or Three Quarter Cover."
+          text: "Once per Long Rest, as an **Action**, declare an Area 20 you can see as your kill zone for 1 minute. Any enemy that moves, attacks, or casts an Invocation within the area triggers an Overwatch shot from you, provided you have Line of Sight. You may take an unlimited number of **Impulse Actions** to make these shots, but you can fire at each enemy only once per round. You can't use this feature while benefiting from Full Cover, though you may still benefit from Half or Three-Quarter Cover."
         }
       ]
     },
     {
       key: "the_headhunter",
       name: "The Headhunter",
-      description: "You are a dedicated tracker in the urban sprawl. When a high-value target tries to run, you run them down. You focus on isolating a single enemy, systematically stripping away their escape routes, and bringing them in dead or alive. To your prey, you are not just a mercenary; your arrival is a terrifying inevitability.",
+      description: "You track people through a city built to lose them in. When a high-value target runs, you run them down: one enemy isolated, every exit closed behind them, brought in dead or alive. Your prey stops thinking of you as a mercenary somewhere around the third closed door. After that, you're just the thing that's coming.",
       features: [
         {
           level: 1,
           name: "Prey Drive",
-          text: "You gain Proficiency in the Survival skill, and you permanently upgrade your Focus Fire maneuver. When you spend 1 EX to mark a target with Focus Fire, the tracking benefits last 1 full minute (the Edge from Focus Fire still applies only to the first attack made by an ally). For that minute, the target cannot benefit from the Hidden or Invisible conditions against you, and you always know its exact location while it stays within 24 spaces."
+          text: "You gain Proficiency in the Survival skill, and you permanently upgrade your Focus Fire maneuver. When you spend 1 EX to mark a target with Focus Fire, the tracking benefits last 1 full minute (the Edge from Focus Fire still applies only to the first attack, made by you or an Ally). For that minute, the target can't benefit from the Hidden or Invisible conditions against you, and you always know its exact location while it stays within 24 spaces."
         },
         {
           level: 3,
@@ -455,12 +455,12 @@ EN.classes.operator = {
         {
           level: 7,
           name: "Cornered Prey",
-          text: "As an **Action**, spend 2 Execution to unleash a sequence of shots or strikes against an enemy within your weapon's range, ignoring the Defense bonuses from Half or Three Quarter Cover. The target must make an Agility Save (DC = 8 + your Wits Modifier + your Caliber).\n\n• **On a failure:** They take 3d6 Ballistic or Physical damage and are Staggered until the end of your next turn. If their cover is Average or weaker (standard doors, drywall, shipping crates), it is instantly reduced to 0 Integrity. If their cover is Heavy, Fortified, or Hardened, it stays intact, but they still take the damage and condition.\n• **On a success:** They take half damage, are not Staggered, and their cover takes no damage."
+          text: "As an **Action**, spend 2 Execution to unleash a sequence of shots or strikes against an enemy within your weapon's range, ignoring the Defense bonuses from Half or Three-Quarter Cover. The target must make an Agility Save (DC = 8 + your Wits Modifier + your Caliber).\n\n• **On a failure:** They take 3d6 damage of one type the weapon normally deals (your choice if it deals more than one) and are Staggered until the end of your next turn. If their cover is Average or weaker (standard doors, drywall, shipping crates), it is instantly reduced to 0 Integrity. If their cover is Heavy, Fortified, or Hardened, it stays intact, but they still take the damage and condition.\n• **On a success:** They take half damage, aren't Staggered, and their cover takes no damage."
         },
         {
           level: 10,
           name: "Dead or Alive",
-          text: "Once per Long Rest, as an **Action**, declare an execution order on a target within 12 spaces. For 1 minute, your weapon attacks against it bypass superficial endurance.\n\n**Systemic Trauma:** Half of all damage you deal to the target (rounded up) is dealt as direct Wound damage, reducing its maximum Vitality and forcing the standard Body Save against Fatigue and crippling conditions.\n\n**Precision Targeting:** Whenever you hit the target with a weapon attack, you may spend 2 Execution to apply one effect:\n\n• **Dead (Arterial Strike):** Inflict 2 stacks of Bleeding on the target.\n• **Alive (Tendon Shot):** The target must make a Body Save (DC = 8 + your Agility or Body Modifier + your Caliber). On a failure, it is knocked Prone and its Speed is reduced to 0; it cannot stand or walk until it receives medical attention or Flow healing.\n\nIf this assault reduces the target to 50 percent or less of its total Wounds, it is knocked Unconscious and stabilized, letting you collect the bounty dead or alive."
+          text: "Once per Long Rest, as an **Action**, declare an execution order on a target within 12 spaces. For 1 minute, your weapon attacks against it go straight past whatever is keeping it upright.\n\n**Systemic Trauma:** Half of all damage you deal to the target (rounded up) is dealt as direct Wound damage, reducing its maximum Vitality and forcing the standard Body Save against Fatigue and crippling conditions.\n\n**Precision Targeting:** Whenever you hit the target with a weapon attack, you may spend 2 Execution to apply one effect:\n\n• **Dead (Arterial Strike):** Inflict 2 stacks of Bleeding on the target.\n• **Alive (Tendon Shot):** The target must make a Body Save (DC = 8 + your Agility or Body Modifier + your Caliber). On a failure, it is knocked Prone and its Speed is reduced to 0; it can't stand or walk until it receives medical attention or Flow healing.\n\nIf this assault reduces the target to 50 percent or less of its total Wounds, it is knocked Unconscious and stabilized, letting you collect the bounty dead or alive."
         }
       ]
     }
