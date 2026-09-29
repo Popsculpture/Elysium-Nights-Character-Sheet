@@ -968,40 +968,54 @@ EN.combatView = (function () {
     toast(rep ? label + ". " + rep + "." : label + ". Nothing came due.");
   }
   /* DOWNTIME REST (1 WEEK): the book's Downtime Healing, "One uninterrupted week restores all
-     Wounds, removes all Strain, and clears lingering Fatigue", with Vitality and FP full and the
-     temporary conditions gone. A separate action from DOWNTIME on purpose: that button advances
-     the calendar and restores nothing (RULES-SYNC-CHANGELOG A19, still true), this one restores
-     and does not touch the calendar, the Resilience Dice, the limited-use features or the class
-     resource. "Temporary" is read off the tracker's own duration line (COND_META): a condition
-     whose card says Persistent or Permanent stays, and every other one comes off. */
-  function isTemporaryCondition(name) {
-    var m = COND_META[name];
-    return !(m && /^(Persistent|Permanent)$/i.test(m[0]));
-  }
+     Wounds, removes all Strain, and clears lingering Fatigue", and it includes everything a Long
+     Rest gives (rulings of 2026-09-29): full Vitality, all Resilience Dice, the class resource, every
+     limited-use feature, the sleep clock and FP. A separate action from DOWNTIME on purpose: that
+     button advances the calendar and restores nothing (RULES-SYNC-CHANGELOG A19, still true), this
+     one restores and does not touch the calendar.
+     Two things a week does NOT fix. Breakflow ends only through Breakflow Restoration, so the flag
+     stays and FP is not refilled while the character is in it (Strain and the Overdraw points still
+     go to 0). And a status stays if its own text says it persists or needs a specific removal:
+     Critical Wound, Cursed, Hardwired, Mutating (its manifestations come off its stacks, so they
+     stay with it) and Bricked. Immunity, Resistance and Vulnerability are traits, not statuses, and
+     are left alone. Every other condition is temporary and comes off, Hidden and Suppressed included. */
+  var DOWNTIME_KEEPS = { "Critical Wound": 1, "Cursed": 1, "Hardwired": 1, "Mutating": 1, "Bricked": 1,
+                         "Breakflow": 1, "Immunity": 1, "Resistance": 1, "Vulnerability": 1 };
+  function isTemporaryCondition(name) { return !DOWNTIME_KEEPS[name]; }
   function downtimeRest(ch, d) {
-    var cleared = [], kept = [], hadFatigue = false;
+    var cleared = [], kept = [], hadFatigue = false, inBreakflow = false;
     store.update(function (c) {
       var s = state(c, d);
       c.wounds.current = s.woundsMax;                                       // all Wounds
       if (s.woundsMax > 0) { c.stable = false; c.deathSaves = { s: 0, f: 0 }; }
       c.vitality.current = d.vitalityMax || 0;                              // full Vitality
-      if (d.flow) c.flow.current = d.flow.max;                              // full Reservoir
-      // all Strain: the stage, the Overdraw points toward the next one, and the Breakflow flag that
-      // stage 5 sets, which is what every other Strain reset on the Flow tab clears together
-      c.flow.strain = 0; c.flow.strainPoints = 0; c.flow.breakflow = false;
+      c.resilience.spent = 0;                                               // all Resilience Dice
+      c.featureUses = {};                                                   // every limited-use feature refreshes
+      if (d.resource) c.resources.current[d.resource.name] = d.resource.max;
       c.conditions = c.conditions || [];
       c.conditionLevels = c.conditionLevels || {};
+      // "Breakflow ends only through Breakflow Restoration": the flag and the condition both count
+      inBreakflow = !!c.flow.breakflow || c.conditions.indexOf("Breakflow") !== -1;
+      if (d.flow && !inBreakflow) c.flow.current = d.flow.max;              // full Reservoir, unless the current is severed
+      // all Strain: the stage and the Overdraw points toward the next one. The Breakflow flag is left alone.
+      c.flow.strain = 0; c.flow.strainPoints = 0;
       hadFatigue = c.conditions.indexOf("Fatigue") !== -1;
       c.conditions = c.conditions.filter(function (n) {
-        if (n !== "Fatigue" && !isTemporaryCondition(n)) { kept.push(n); return true; }
+        if (!isTemporaryCondition(n)) { kept.push(n); return true; }
         if (n !== "Fatigue") cleared.push(n);
         delete c.conditionLevels[n];
         return false;
       });
       // Fatigue is gone whatever its level, so the thin-air attribution has nothing left to describe
       if (hadFatigue) { c.hazards = c.hazards || {}; c.hazards.thinAirFatigue = 0; }
+      // the Long Rest's "reset the sleep clock": the sleep track only, hunger and thirst are untouched
+      if (c.hazards && c.hazards.deprivation && c.hazards.deprivation.sleep) {
+        c.hazards.deprivation.sleep.days = 0;
+        c.hazards.deprivation.sleep.saves = 0;
+      }
     });
-    toast("Downtime rest (1 week): Vitality and FP full, all Wounds restored, Strain removed"
+    toast("Downtime rest (1 week): Vitality, all Wounds, Resilience Dice and abilities restored, Strain removed"
+      + (d.flow ? (inBreakflow ? ", FP unchanged (still in Breakflow)" : ", FP full") : "")
       + (hadFatigue ? ", Fatigue cleared" : "")
       + (cleared.length ? ", " + cleared.join(", ") + " cleared" : "")
       + "." + (kept.length ? " Still on you: " + kept.join(", ") + "." : "")
@@ -3207,7 +3221,7 @@ EN.combatView = (function () {
                                             background: "var(--bg2)", border: "1px solid var(--border2)", borderRadius: "4px",
                                             boxShadow: "0 8px 24px rgba(0,0,0,.55)", textAlign: "left" } }, [
             el("p", { style: { margin: 0, fontSize: "12px", lineHeight: "1.5", color: "var(--text2)" },
-                      text: "One uninterrupted week. Fully restores Vitality and FP, restores all Wounds, removes all Strain, and clears Fatigue and temporary conditions. Conditions marked Persistent or Permanent stay. Does not advance the calendar or refresh Resilience Dice or abilities." }),
+                      text: "One uninterrupted week. Gives everything a Long Rest gives (Vitality, FP, Resilience Dice, abilities, the sleep clock) and more: restores all Wounds, removes all Strain, clears Fatigue and temporary conditions. In Breakflow, FP stays down: that ends only through Breakflow Restoration. Critical Wound, Cursed, Hardwired, Mutating, Bricked and Breakflow stay. Does not advance the calendar." }),
             el("div.row", { style: { gap: "8px", justifyContent: "flex-end" } }, [
               el("button.btn.sm", { onclick: function () { _pops.week = false; EN.app.render(); } }, "CANCEL"),
               el("button.btn.sm.primary", { onclick: function () { _pops.week = false; downtimeRest(ch, d); } }, iconLabel(ICON_DOWNTIME, "REST A WEEK"))

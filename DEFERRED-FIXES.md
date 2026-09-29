@@ -9029,16 +9029,20 @@ after. Each line says what the ruling was and what was done.
    holds more Parts than its new count keeps them (nothing is removed), shows the count in red and
    accepts no more installs.
 4. **Downtime rest (1 week).** Added as its own button beside DOWNTIME, in a popover that says
-   what it does. It fully restores Vitality and FP, restores all Wounds, removes all Strain (the stage, the
-   Overdraw points toward the next one, and the Breakflow flag, as every Flow tab reset does), clears
-   Fatigue at any level (and the thin-air attribution with it) and clears temporary conditions,
-   and touches nothing else: no calendar tick, no Resilience Dice, no limited-use features, no
-   class resource. The DOWNTIME button stays inert (A19), and its popover now points at the new
-   one. "Temporary" is read off the tracker's own duration line: a condition whose card says
-   Persistent or Permanent stays (Critical Wound, Cursed, Drowsy, Hallucinating, Hardwired,
-   Immunity, Lagged, Resistance, Vulnerability), every other one comes off. That mapping is my
-   reading, and it is one predicate (`isTemporaryCondition`) if the author wants it drawn
-   differently.
+   what it does. **Corrected the same day (ruled 2026-09-29, second pass):** it includes everything
+   a Long Rest gives, and it does not end Breakflow. So it fully restores Vitality, restores all
+   Wounds, restores all Resilience Dice, refreshes every limited-use feature and the class
+   resource, resets the sleep clock, and refills FP; it removes all Strain (the stage and the
+   Overdraw points) and clears Fatigue at any level (and the thin-air attribution with it) and every
+   temporary condition. **Breakflow ends only through Breakflow Restoration:** the flag and the
+   Breakflow condition stay, and FP is not refilled while the character is in it. It does not touch
+   the calendar. The DOWNTIME button stays inert (A19), and its popover points at the new one.
+   "Temporary" is now an explicit keep list, `DOWNTIME_KEEPS`, and not the tracker's duration
+   line: Critical Wound, Cursed, Hardwired, Mutating and Bricked stay because their own text says
+   they persist or need a specific removal (Mutating's manifestations come off its stacks, so they
+   stay with it); Immunity, Resistance and Vulnerability are traits and are left alone; Breakflow
+   stays per the above. Drowsy, Lagged and Hallucinating come off ("Persistent" on their cards means
+   not end-of-turn, not a week), and so do Hidden and Suppressed.
 5. **Action chips.** None reads Passive. The nine features carry their tags again, which are the
    ones they held before this sync: Heavy Payload Action; Vice Grip, Disarming Cadence, Apex
    Bearing, Disjointed Anatomy, Predator's Glare and Riddling Tongue Swift; Feral Reprisal and
@@ -9108,13 +9112,15 @@ files clean, dash sweep clean.
 
 **Review of the rulings batch (2026-09-29).** Four reviewers and three skeptics per finding
 (34 agents): 5 findings survived and were fixed, 5 were killed. The Downtime rest left the Overdraw
-points and the Breakflow flag standing after zeroing Strain (fixed, as above); the combined Part's
+points standing after zeroing Strain (fixed; the Breakflow flag half of that finding was then overruled, see ruling 4); the combined Part's
 refusal said "Slot Count is full" when the weapon still had one slot free (fixed); one comment
 still said the author had not ruled on the Slingshot; and this log's decisions list was stale.
 Browser checks: the bench shows 2, 4, 5, 5 and 0 slots for the five Bowfire weapons and prompts
 for a profile on the Slingshot; the pair installs as 2 Parts and is refused with 1 slot free;
-Downtime rest leaves Cursed and Hardwired and clears Stunned, Bleeding, Bloodied and Fatigue with
-Resilience Dice and limited-use features untouched; a legacy Spacer's "awareness" is cleared and
+Downtime rest (second pass) keeps Mutating, Bricked, Critical Wound, Cursed, Hardwired and the
+three traits, clears Fatigue, Drowsy, Lagged, Hallucinating, Hidden, Suppressed and Stunned,
+refills FP, Resilience Dice, features and the sleep clock, and in Breakflow leaves FP, the flag and
+the condition alone while Strain and Overdraw points go to 0; a legacy Spacer's "awareness" is cleared and
 "systems" kept; a legacy array shows two "(old array)" options; a Signature weapon shows its full
 effect and the right status line untrained and proficient.
 
