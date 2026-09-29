@@ -906,8 +906,8 @@ silently, and both flagged in the panel text:**
   handing out recovery the fiction did not include. Verified that Vitality, Wounds and Flow
   were untouched across a downtime advance, and that a Long Rest still advances exactly one
   day and still restores normally.
-- **Added 2026-09-29:** recovery for a quiet week lives on a SEPARATE button, DOWNTIME REST
-  (1 WEEK), so this control stays inert. See DEFERRED-FIXES, "The 28 September manuscript
+- **Added 2026-09-29:** recovery for a quiet week lives inside the DOWNTIME popover as its own
+  section, DOWNTIME REST (1 WEEK), so the calendar controls stay inert. See DEFERRED-FIXES, "The 28 September manuscript
   sync", ruling 4.
 
 ---

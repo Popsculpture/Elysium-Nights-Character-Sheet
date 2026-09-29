@@ -56,7 +56,7 @@ EN.combatView = (function () {
   // an icon plus a label, for a button whose third argument used to be a bare glyph+text string
   function iconLabel(icon, text) { return [el("span", { html: icon }), document.createTextNode(" " + text)]; }
   var _fxBox = { mode: "open", closedKey: null };   // sticky Active Condition Effects box ("open"/"min"; closedKey = content-keyed dismiss)
-  var _pops = { vit: false, wound: false, rest: false, short: false, down: false, week: false, addgear: false };   // popover state (VITALITY / WOUNDS / LONG REST / SHORT REST / DOWNTIME / DOWNTIME REST / ＋ ADD TO LOADOUT)
+  var _pops = { vit: false, wound: false, rest: false, short: false, down: false, addgear: false };   // popover state (VITALITY / WOUNDS / LONG REST / SHORT REST / DOWNTIME / ＋ ADD TO LOADOUT)
   var _downDays = 7;   // last downtime span typed, remembered across renders
   var _amts = { vit: 1, wound: 1, rd: 1 };                 // remembered amounts per popover
   function closePops() { Object.keys(_pops).forEach(function (k) { _pops[k] = false; }); }
@@ -970,9 +970,9 @@ EN.combatView = (function () {
   /* DOWNTIME REST (1 WEEK): the book's Downtime Healing, "One uninterrupted week restores all
      Wounds, removes all Strain, and clears lingering Fatigue", and it includes everything a Long
      Rest gives (rulings of 2026-09-29): full Vitality, all Resilience Dice, the class resource, every
-     limited-use feature, the sleep clock and FP. A separate action from DOWNTIME on purpose: that
-     button advances the calendar and restores nothing (RULES-SYNC-CHANGELOG A19, still true), this
-     one restores and does not touch the calendar.
+     limited-use feature, the sleep clock and FP. Its own action inside the DOWNTIME popover: the
+     calendar controls there still advance the calendar and restore nothing (RULES-SYNC-CHANGELOG
+     A19, still true), and this one restores and does not touch the calendar.
      Two things a week does NOT fix. Breakflow ends only through Breakflow Restoration, so the flag
      stays and FP is not refilled while the character is in it (Strain and the Overdraw points still
      go to 0). And a status stays if its own text says it persists or needs a specific removal:
@@ -3184,8 +3184,10 @@ EN.combatView = (function () {
           ]) : null
         ]),
         /* Downtime: advance the story calendar without taking a Long Rest, for
-           the stretches between jobs. Moves every day-based timer and nothing
-           else, so it never hands out recovery the fiction did not include. */
+           the stretches between jobs. The calendar controls move every day-based timer
+           and nothing else, so they never hand out recovery the fiction did not include.
+           The popover also hosts DOWNTIME REST (1 WEEK), the recovery half, under its own
+           heading (the author asked for it nested here rather than on a second button). */
         el("div.pop-anchor", { style: { position: "relative" } }, [
           el("button.btn.sm", { title: "Advance the story calendar without resting", onclick: function () { var was = _pops.down; closePops(); _pops.down = !was; EN.app.render(); } }, iconLabel(ICON_DOWNTIME, "DOWNTIME")),
           _pops.down ? (function () {
@@ -3193,12 +3195,12 @@ EN.combatView = (function () {
               style: { width: "72px", textAlign: "center", padding: "5px" },
               oninput: function () { _downDays = Math.max(1, Math.min(365, parseInt(this.value, 10) || 1)); } });
             function go(n) { _pops.down = false; advanceDowntime(ch, n); }
-            return el("div", { style: { position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 30, width: "260px",
+            return el("div", { style: { position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 30, width: "290px",
                                         display: "flex", flexDirection: "column", gap: "10px", padding: "12px",
                                         background: "var(--bg2)", border: "1px solid var(--border2)", borderRadius: "4px",
                                         boxShadow: "0 8px 24px rgba(0,0,0,.55)", textAlign: "left" } }, [
               el("p", { style: { margin: 0, fontSize: "12px", lineHeight: "1.5", color: "var(--text2)" },
-                        text: "Advance the calendar without resting. Marks lease installments and ages saved Personas. Restores nothing; for a week of recovery use DOWNTIME REST (1 WEEK)." }),
+                        text: "Advance the calendar without resting. Marks lease installments and ages saved Personas. Restores nothing." }),
               el("div.row", { style: { gap: "6px", alignItems: "center" } }, [
                 el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".1em" }, text: "DAYS" }), inp,
                 el("button.btn.sm.primary", { style: { marginLeft: "auto" }, onclick: function () { go(_downDays); } }, "ADVANCE")
@@ -3206,27 +3208,20 @@ EN.combatView = (function () {
               el("div.row", { style: { gap: "6px", flexWrap: "wrap" } }, [1, 7, 30].map(function (n) {
                 return el("button.btn.sm", { style: { flex: 1 }, onclick: function () { go(n); } }, n === 1 ? "1 DAY" : n + " DAYS");
               })),
+              /* DOWNTIME REST (1 WEEK): the recovery half of Downtime, nested here under DOWNTIME
+                 (author's call) and set apart by its own heading, so it is not mistaken for the calendar
+                 controls above it. See downtimeRest(). */
+              el("div", { style: { display: "flex", flexDirection: "column", gap: "8px", paddingTop: "10px", borderTop: "1px solid var(--border2)" } }, [
+                el("span.mono", { style: { fontSize: "10px", color: "var(--gold)", letterSpacing: ".1em" }, text: "DOWNTIME REST (1 WEEK)" }),
+                el("p", { style: { margin: 0, fontSize: "12px", lineHeight: "1.5", color: "var(--text2)" },
+                          text: "One uninterrupted week. Gives everything a Long Rest gives (Vitality, FP, Resilience Dice, abilities, the sleep clock) and more: restores all Wounds, removes all Strain, clears Fatigue and temporary conditions. In Breakflow, FP stays down: that ends only through Breakflow Restoration. Critical Wound, Cursed, Hardwired, Mutating, Bricked and Breakflow stay. Does not advance the calendar." }),
+                el("button.btn.sm.primary", { style: { justifyContent: "center" }, onclick: function () { _pops.down = false; downtimeRest(ch, d); } }, iconLabel(ICON_DOWNTIME, "REST A WEEK"))
+              ]),
               el("div.row", { style: { gap: "8px", justifyContent: "flex-end" } }, [
                 el("button.btn.sm", { onclick: function () { _pops.down = false; EN.app.render(); } }, "CANCEL")
               ])
             ]);
           })() : null
-        ]),
-        /* DOWNTIME REST (1 WEEK): the recovery half of Downtime, on its own button so it cannot be
-           mistaken for the calendar button above. See downtimeRest(). */
-        el("div.pop-anchor", { style: { position: "relative" } }, [
-          el("button.btn.sm", { title: "One uninterrupted week of recovery. Does not move the calendar.", onclick: function () { var was = _pops.week; closePops(); _pops.week = !was; EN.app.render(); } }, iconLabel(ICON_DOWNTIME, "DOWNTIME REST (1 WEEK)")),
-          _pops.week ? el("div", { style: { position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 30, width: "260px",
-                                            display: "flex", flexDirection: "column", gap: "10px", padding: "12px",
-                                            background: "var(--bg2)", border: "1px solid var(--border2)", borderRadius: "4px",
-                                            boxShadow: "0 8px 24px rgba(0,0,0,.55)", textAlign: "left" } }, [
-            el("p", { style: { margin: 0, fontSize: "12px", lineHeight: "1.5", color: "var(--text2)" },
-                      text: "One uninterrupted week. Gives everything a Long Rest gives (Vitality, FP, Resilience Dice, abilities, the sleep clock) and more: restores all Wounds, removes all Strain, clears Fatigue and temporary conditions. In Breakflow, FP stays down: that ends only through Breakflow Restoration. Critical Wound, Cursed, Hardwired, Mutating, Bricked and Breakflow stay. Does not advance the calendar." }),
-            el("div.row", { style: { gap: "8px", justifyContent: "flex-end" } }, [
-              el("button.btn.sm", { onclick: function () { _pops.week = false; EN.app.render(); } }, "CANCEL"),
-              el("button.btn.sm.primary", { onclick: function () { _pops.week = false; downtimeRest(ch, d); } }, iconLabel(ICON_DOWNTIME, "REST A WEEK"))
-            ])
-          ]) : null
         ])
       ])
     ]));

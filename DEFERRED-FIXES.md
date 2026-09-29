@@ -9028,15 +9028,16 @@ after. Each line says what the ruling was and what was done.
    one" note, and waits for a ruling. **Saved records:** a Recurve Bow or Slingshot that already
    holds more Parts than its new count keeps them (nothing is removed), shows the count in red and
    accepts no more installs.
-4. **Downtime rest (1 week).** Added as its own button beside DOWNTIME, in a popover that says
-   what it does. **Corrected the same day (ruled 2026-09-29, second pass):** it includes everything
+4. **Downtime rest (1 week).** Added as its own section inside the DOWNTIME popover, under its
+   own heading and with its own REST A WEEK button (first built as a second button beside
+   DOWNTIME; the author asked for it nested). **Corrected the same day (ruled 2026-09-29, second pass):** it includes everything
    a Long Rest gives, and it does not end Breakflow. So it fully restores Vitality, restores all
    Wounds, restores all Resilience Dice, refreshes every limited-use feature and the class
    resource, resets the sleep clock, and refills FP; it removes all Strain (the stage and the
    Overdraw points) and clears Fatigue at any level (and the thin-air attribution with it) and every
    temporary condition. **Breakflow ends only through Breakflow Restoration:** the flag and the
    Breakflow condition stay, and FP is not refilled while the character is in it. It does not touch
-   the calendar. The DOWNTIME button stays inert (A19), and its popover points at the new one.
+   the calendar. The calendar controls in that popover stay inert (A19).
    "Temporary" is now an explicit keep list, `DOWNTIME_KEEPS`, and not the tracker's duration
    line: Critical Wound, Cursed, Hardwired, Mutating and Bricked stay because their own text says
    they persist or need a specific removal (Mutating's manifestations come off its stacks, so they
