@@ -906,6 +906,9 @@ silently, and both flagged in the panel text:**
   handing out recovery the fiction did not include. Verified that Vitality, Wounds and Flow
   were untouched across a downtime advance, and that a Long Rest still advances exactly one
   day and still restores normally.
+- **Added 2026-09-29:** recovery for a quiet week lives on a SEPARATE button, DOWNTIME REST
+  (1 WEEK), so this control stays inert. See DEFERRED-FIXES, "The 28 September manuscript
+  sync", ruling 4.
 
 ---
 
@@ -1413,7 +1416,7 @@ Their printed slot counts are correct and the trait was simply omitted. Laborfra
   Until then the app gates on the trait, so those suits take no mods.
 
 ### M18. Precision Frame vs the Match Trigger Group that grants it (RULED)
-**Superseded 2026-09-28: the book restored the mode limit, on the mod and on the trait (Single Shot and Semi-Auto only). The app text follows the book; see DEFERRED-FIXES, "The 28 September manuscript sync", decision 2.**
+**Superseded 2026-09-28: the book restored the mode limit, on the mod and on the trait (Single Shot and Semi-Auto only). The author confirmed on 2026-09-29 that the reversal is intended. The app text follows the book; see DEFERRED-FIXES, "The 28 September manuscript sync", ruling 2.**
 **Author ruling (2026-08-16): unconditional, like the trait.**
 Granting Precision Frame grants all of it, in any fire mode. The Match Trigger Group's 'Single Shot and Semi-Auto' clause is struck from the book. A Match-Trigger rifle firing Burst crits on 19 or 20. App status: check whether the mod's grant is mode-gated in data; if it is, remove the gate.
 

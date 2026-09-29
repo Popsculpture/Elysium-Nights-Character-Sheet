@@ -136,7 +136,7 @@ will take their listed counts once the trait is added.
 
 ### M18. Match Trigger Group grants Precision Frame in full
 
-**Superseded 2026-09-28: the book restored the mode limit on both the mod and the trait, so this edit is undone. See DEFERRED-FIXES, "The 28 September manuscript sync", decision 2.**
+**Superseded 2026-09-28: the book restored the mode limit on both the mod and the trait, so this edit is undone. The author confirmed on 2026-09-29 that this is intended. See DEFERRED-FIXES, "The 28 September manuscript sync", ruling 2.**
 
 The mod reads:
 

@@ -8929,7 +8929,7 @@ Callouses" in four places. Those are archaeological records, struck and annotate
 rewritten, so they stay as they were written. A reader searching the logs for the new spelling
 will not find the old entries, which is the cost of that convention and is worth knowing.
 
-## The 28 September manuscript sync: 2,136 records, six commits, 2026-09-28
+## The 28 September manuscript sync: 2,136 records, seven commits, 2026-09-28
 
 The source was a JSON changeset (2,136 records) comparing the manuscript exports of 19 September
 against 28 September. The handoff prose that normally travels with it was not supplied, so the
@@ -8966,8 +8966,8 @@ here, a capital there), plus these real defects, all fixed:
 - Volcanic Temper brief still said "Area 2 Sphere" (the feature is now an aura).
 - Flow-Etched Limbs grant lost the word "Flow" that its sibling chip got.
 - Signature Weapon note said an untrained wielder cannot use area projections. The book says only
-  the On Hit riders are locked. **Text corrected; the sheet still hides the whole effect text
-  while locked, which is coarser than the book (see decision 12).**
+  the On Hit riders are locked. Text corrected, and the sheet no longer hides the effect while it
+  is locked (ruling 12 below).
 - A crafting project's display name kept the old item name after a rename (see renames).
 
 **Code changes the sync required** (none of it is in the transcribed data):
@@ -8992,10 +8992,10 @@ here, a capital there), plus these real defects, all fixed:
   rolls against it" is a note only: the accumulator has no attacker-Edge channel.
 - Attack margins: a tie on Defense is a Standard Hit ("0 to +4"); "-1 or less" is the Miss
   margin. Nothing in the app compares an attack roll to Defense, so this is display only.
-- Species feature action labels: the book dropped them from Heavy Payload, Vice Grip,
-  Disarming Cadence, Apex Bearing, Feral Reprisal, Light-Fingered Relay, Disjointed Anatomy and
-  Predator's Glare, so their `action` field is gone and the chip reads from the text. Calculated
-  Execution, Algorithmic Insight and Uncanny Presence carry "Special".
+- Species feature action labels: the book dropped the printed labels from nine features. The
+  first pass removed their `action` tags and let the chips read from the text; the author ruled
+  the other way (ruling 5 below), so the tags are back. Calculated Execution, Algorithmic Insight
+  and Uncanny Presence carry "Special".
 - Spacer's skill choice is Perception or Systems (Awareness is gone from the option list).
 
 **Renames, under the HANDOFF checklist.** Hardlight Barrier is Hard-Light Barrier, Gridline
@@ -9009,47 +9009,92 @@ slots, the racked map (keys and values), and the name-keyed maps `weaponAmmo`, `
 name. Checked with a legacy fixture (unsplit rows carrying all of the above) and a current
 id-bearing record; the renamed pieces keep their parts, ammo, mods and wear.
 
-**Decisions that need the author** (each was left as the app had it, or done the narrow way):
+**Rulings, 2026-09-29.** The twelve decisions this sync raised were answered by the author the day
+after. Each line says what the ruling was and what was done.
 
-1. **Point Buy cap.** The book dropped "(Max starting score is 16)" and the Cap bullet. The code
-   still enforces 16 (`maxStart`, and the cost table ends at 16) and the help line says cap 16.
-   Drop the cap, or keep 16 as a house limit?
-2. **Precision Frame.** The 28 September book restores the mode limit on the Match Trigger Group
-   AND on the trait itself (Single Shot and Semi-Auto only). That reverses M18 (ruled 2026-08-16:
-   unconditional). The app text now follows the book. Display only: no code computes a crit range
-   for this trait in any mode. Is the reversal intended?
-3. **Bowfire slot counts.** The book renames the Light bow profile to "Light frame" and adds
-   "Full frame (compound bow, standard or heavy crossbow, arbalest)" at 5 slots. The manual
-   profile picker carries both. The catalog weapons those profiles name still take the Bowfire
-   group default of 5.
-4. **Downtime Healing.** The book now says one uninterrupted week restores all Wounds, removes
-   all Strain and clears lingering Fatigue, and the Downtime list says "Restore all Wounds". The
-   DOWNTIME button restores nothing by author ruling (RULES-SYNC-CHANGELOG A19). Not applied.
-5. **Action chips** (species features above). If a feature the book no longer labels should read
-   Passive rather than by the action its text mentions, say so. Riddling Tongue lost its "(Swift)"
-   label; its text still says "Once per Encounter as a Swift Action", so it still reads Swift.
-6. **Targeting Suite plus Smart-Sight.** The book lets the pair share the Targeting slot as two
-   Parts, an exception to one Part per slot. The text is carried; the bench still holds one key
-   per slot. Either implement the pair (the slot holds two keys for that pair only; installed
-   counts and remove-part handle the array) or keep it a note the player tracks by hand.
-7. **Trigger Cache.** Text now says temporary Bandwidth can exceed the normal maximum. The app
-   has no temporary-Bandwidth tracking.
-8. **Powered Frames.** Added as an armor proficiency line, and the Powered trait text now names
-   it. The engine still leaves that proficiency to the table (engine.js, the Powered step-up),
-   so nothing gates on it. Should it gate?
-9. **Spacer saved records.** A saved Spacer whose `backgroundSkillChoice` is "awareness" is not
-   validated against the option list, so Awareness proficiency keeps applying with no chip
-   selected and no attention flag. A one-line migration would clear it.
-10. **Standard Array on saved records.** A character saved with the old array (attribute method
-    "array", assignments containing 10s) shows a blank dropdown for each attribute assigned 10.
-    The scores themselves are intact. There is no honest mapping from the old values, so no
-    migration was written.
-11. **Security Rating.** L0010 says a fixed target number, Security Rating included, is met with
-    "equal or higher". The #GRID header says "meet or beat with d20". That is a reading of L0010,
-    not a rule the book states for Cipher Attacks specifically.
-12. **Signature Weapons while locked.** The book keeps the base area projection working and locks
-    only the On Hit riders. The sheet hides the whole effect text while locked (inventory.js and
-    combat.js). Changing `signatureUnlocked` or what is hidden is an author call.
+1. **Point Buy cap.** Stays at 16, because its costs stop there. The rolled and manual path has no
+   cap below the hard cap of 20: typed entry, the steppers and APPLY SCORES from a banked roll
+   group all accept 17 and 18 (4d6 drop lowest reaches 18). `R.pointBuy.maxStart` is read only on
+   the Point Buy branch. Nothing changed.
+2. **Precision Frame.** The reversal is intended. The printed text stays: 19 or 20 on Single Shot
+   and Semi-Auto attacks only. M18 is superseded (annotated in both sync logs).
+3. **Bowfire slot counts.** The book gives the counts, and only the row label changed. Slot Count
+   by Profile: Hand crossbow 4, Light frame (recurve, folding bow) 2, Full frame (compound bow,
+   standard or heavy crossbow, arbalest) 5. So Recurve Bow states `slots: 2`, Hand Crossbow 4,
+   Compound Bow 5 and Crossbow 5, and `Bowfire: 5` is gone from `slotCountByGroup`, because
+   nothing may fall back to a default of 5 (the old table already gave Light bow 2 and Hand
+   crossbow 4, so that default was wrong before this sync too). The Slingshot sits in the Bowfire
+   table but in no profile: it carries `noSlotCount`, shows 0 slots and a "Pick a PROFILE to set
+   one" note, and waits for a ruling. **Saved records:** a Recurve Bow or Slingshot that already
+   holds more Parts than its new count keeps them (nothing is removed), shows the count in red and
+   accepts no more installs.
+4. **Downtime rest (1 week).** Added as its own button beside DOWNTIME, in a popover that says
+   what it does. It fully restores Vitality and FP, restores all Wounds, removes all Strain (the stage, the
+   Overdraw points toward the next one, and the Breakflow flag, as every Flow tab reset does), clears
+   Fatigue at any level (and the thin-air attribution with it) and clears temporary conditions,
+   and touches nothing else: no calendar tick, no Resilience Dice, no limited-use features, no
+   class resource. The DOWNTIME button stays inert (A19), and its popover now points at the new
+   one. "Temporary" is read off the tracker's own duration line: a condition whose card says
+   Persistent or Permanent stays (Critical Wound, Cursed, Drowsy, Hallucinating, Hardwired,
+   Immunity, Lagged, Resistance, Vulnerability), every other one comes off. That mapping is my
+   reading, and it is one predicate (`isTemporaryCondition`) if the author wants it drawn
+   differently.
+5. **Action chips.** None reads Passive. The nine features carry their tags again, which are the
+   ones they held before this sync: Heavy Payload Action; Vice Grip, Disarming Cadence, Apex
+   Bearing, Disjointed Anatomy, Predator's Glare and Riddling Tongue Swift; Feral Reprisal and
+   Light-Fingered Relay Free. Living Bulwark keeps its printed Impulse. Riddling Tongue had no tag
+   before; it has one now.
+6. **Targeting Suite plus Smart-Sight.** Built as one combined catalog Part, "Smart-Sight +
+   Targeting Suite": Targeting slot, `parts: 2`, price the two prices added (950), chip summary and
+   effect built at load from the two entries so they cannot drift from the book. Both singles stay,
+   since a natively smart gun needs no Smart-Sight. `installedCount` adds each Part's `parts`, and
+   `tryInstall` refuses a Part that needs more room than the weapon has, saying how many slots
+   are free, and the picker labels it "2 Parts". No array handling.
+7. **Trigger Cache.** Agreed: text only.
+8. **Powered Frames.** Agreed: a proficiency line, not gated.
+9. **Spacer saved records.** A saved backgroundSkillChoice that the background no longer offers is
+   cleared in `migrate()`, which puts the "Skill choice" attention flag back and lets the player
+   re-pick. Written against the option list rather than the one name, so the next edit to a choose
+   list is covered; a choice that is still offered is left alone.
+10. **Old Standard Array.** Scores untouched. A saved value that the current array does not hold
+    now shows as a selected, read-only "10 (old array)" option instead of a blank, with one help
+    line saying how many scores came from the earlier array. The "remaining values" chips can
+    still list values that were never assigned; the help line explains it.
+11. **Security Rating.** Confirmed. Part 1's primer names Security Rating among the fixed target
+    numbers where equal or higher succeeds (L0010), and Part 2 defines it: "Security Rating: The
+    DC of your Cipher Attack or Quick Hack." The label stays.
+12. **Signature Weapons while locked.** The whole effect is no longer hidden. The full effect text
+    always shows, with one status line from one engine resolver (`signatureStatus`): untrained,
+    "Untrained: attacks with Snag. On Hit riders locked."; proficient without the Weapon Focus,
+    "On Hit riders locked until Weapon Focus (this weapon)." Both the play sheet and the stash card
+    read it. `signatureUnlocked` is unchanged.
+
+**The handoff's report-back items.**
+
+- **Radiation Calluses.** A lineage feature name persisted by value in `ch.lineageFeatures`,
+  `ch.awakeningEvolution` and `universalUpgrades[].evolution`, and RESOLVED by name on load in
+  three places (the catalog lookup, the LINEAGE_MECH resist map, the hazard mitigation match).
+  Migration row in `EN.speciesFeatureRenames`.
+- **Hard-Light Barrier, #GRIDline Cable, #GRIDline Lumen Cable.** Catalog item names persisted in
+  `ch.equipment[n].name`, `equippedShield` and the equipped slots, and RESOLVED by exact name
+  (`armorItem`, `findItem`), so an unmigrated shield lost its Defense bonus and Block die. Three
+  rows in `EN.gearCatalog.itemRenames`, read by the same pass as `weaponRenames`. A legacy row that
+  predates entry ids also has its name-keyed maps renamed (`weaponAmmo`, `weaponGrip`,
+  `weaponParts`, `armorMods`, `vehicleMods`, `carry`, `slotInert`, `shieldWear`, `armorWear`,
+  `armorGuard`, `racked` keys and values) BEFORE the id split; a current record keys on ids, which a
+  rename never touches. A crafting project's `itemName` and the old name inside its display name
+  move too.
+- **The Grifter's Bureaucracy Tools (L0427).** Social Chameleon's grant reads "Infiltration Tools and
+  Bureaucracy Tools" where it read "Forgery Tools". CARRIED BY VALUE, in feature text only, so no
+  migration row. Tool proficiency is stored by CATEGORY in `ch.proficiencies.tools`, "Forgery Tools"
+  was never a category, "Bureaucracy Tools" already was, and no reader grants a tool proficiency
+  from feature text. Nothing in a saved record ever held the old name. The Social Chameleon brief
+  was updated with the text.
+- **1e: can a saved Adaptive Soft Suit or Operator Suit carry more mods than it has slots?** No.
+  Their Type lines changed (2 Mod Slots to 1, and 4 to 3), but the bench enforces `slots`, which is
+  the TOTAL and is 2 and 4 both before and after, because `armorSlotCount()` reads it as-is and the
+  Integrated bonus is already inside it. The book's totals are unchanged (2 and 4), so no saved
+  loadout can exceed them.
 
 **Not fixed, deliberately.** Gate dialogue stays lowercase ("this node"): it is app fiction and
 no changeset record touches it. The terminology sweep had capitalised one word in it; that is
@@ -9060,6 +9105,18 @@ frames over seven example characters at four levels: 28 of 1,484 derived section
 one an intended change from the list above, and 0 of 35 rendered chip views differ. After the
 review fixes: all seven examples render all seven tabs with no console error, syntax scan of 60
 files clean, dash sweep clean.
+
+**Review of the rulings batch (2026-09-29).** Four reviewers and three skeptics per finding
+(34 agents): 5 findings survived and were fixed, 5 were killed. The Downtime rest left the Overdraw
+points and the Breakflow flag standing after zeroing Strain (fixed, as above); the combined Part's
+refusal said "Slot Count is full" when the weapon still had one slot free (fixed); one comment
+still said the author had not ruled on the Slingshot; and this log's decisions list was stale.
+Browser checks: the bench shows 2, 4, 5, 5 and 0 slots for the five Bowfire weapons and prompts
+for a profile on the Slingshot; the pair installs as 2 Parts and is refused with 1 slot free;
+Downtime rest leaves Cursed and Hardwired and clears Stunned, Bleeding, Bloodied and Fatigue with
+Resilience Dice and limited-use features untouched; a legacy Spacer's "awareness" is cleared and
+"systems" kept; a legacy array shows two "(old array)" options; a Signature weapon shows its full
+effect and the right status line untrained and proficient.
 
 ## The bestiary handoff: four conventions, eleven statblocks, and three near-miss data losses, 2026-09-19
 

@@ -23,8 +23,12 @@ EN.weaponParts = {
      with a manual profile (Holdout 1, Revolver 2, Light frame 2, Hand crossbow 4,
      Full frame 5) stored as _profile on its loadout, by KEY: the labels below are
      display only, so "Light bow" became "Light frame" without touching `lightbow`.
-     Signature weapons carry 0. */
-  slotCountByGroup: { Sidearm: 4, Longarm: 5, Heavy: 5, Launcher: 5, Bowfire: 5, Simple: 4, Martial: 4 },
+     Signature weapons carry 0. Bowfire has NO group default, on purpose: the book gives each
+     profile its own count (Recurve Bow 2, Hand Crossbow 4, Compound Bow and Crossbow 5), so
+     each of those catalog entries states its own `slots`. The Slingshot sits in the Bowfire
+     table but in no profile, so it carries `noSlotCount` and stays at 0 until the profile
+     picker is used, by the author's ruling of 2026-09-29 (no default). */
+  slotCountByGroup: { Sidearm: 4, Longarm: 5, Heavy: 5, Launcher: 5, Simple: 4, Martial: 4 },
   // manual profiles for the per-weapon override picker
   profiles: [
     { key: "auto",         name: "By weapon type", count: null },
@@ -132,6 +136,13 @@ EN.weaponParts = {
       grants: "Smart-capable (requires Smartlink)", effect: "Bolts an onboard targeting computer onto a weapon that lacks one, marking it smart-capable. Grants no bonus on its own. Its only job is to bridge a Smartlink to a weapon that was never built for one. Installed on a firearm with a Smartlink in the wielder, every Smartlink feature the wielder has works through the gun." },
     { key: "targeting-suite", name: "Targeting Suite", category: "ranged", slot: "targeting", partType: "Accessory", fits: "Any Ranged", price: 700, rarity: "Rare", legality: "Restricted",
       grants: "Guided at long range; paint targets; HUD (requires Smartlink)", effect: "The high-end option for a weapon with an integrated smart system, whether natively smart or made smart-capable by a Smart-Sight. As an exception to the one-Part-per-slot rule, the two share the Targeting slot and count as two Parts. This modification functions only for a wielder with a Smartlink. On a weapon that isn't smart-capable, or for a wielder without a Smartlink, it has no effect. Combat: The weapon's attacks no longer suffer Snag at long range, as with a Guided weapon. Painting: As a Swift Action, mark one Target you can see as painted without firing a shot. This uses the same painted status as Smart Rounds: you may have only one painted Target at a time, the mark lasts until the end of your next turn, and you may refresh it. This bypasses the Smart Rounds lock shot, allowing you to mark the Target covertly, without an attack or noise. Your Smart Round attacks against that Target gain Replay from the first trigger pull instead of requiring the initial hit. HUD: Provides a live ammunition count, rangefinding, threat highlighting, and target handoff, allowing you to share the painted Target with an ally's HUD." },
+    /* The pair as ONE entry, by ruling (2026-09-29). The book: "As an exception to the
+       one-Part-per-slot rule, the two share the Targeting slot and count as two Parts."
+       The single Parts stay, because a natively smart gun needs no Smart-Sight. Price, chip
+       summary and effect are BUILT from the two entries by the block at the foot of this file,
+       so they cannot drift from the book's text; `parts: 2` is what installedCount() adds. */
+    { key: "smart-sight-targeting-suite", name: "Smart-Sight + Targeting Suite", category: "ranged", slot: "targeting", partType: "Accessory", fits: "Any Ranged", rarity: "Rare", legality: "Restricted",
+      parts: 2, combines: ["smart-sight", "targeting-suite"], price: 0, grants: "", effect: "" },
 
     // Output
     { key: "match-barrel", name: "Match Barrel", category: "ranged", slot: "output", partType: "Mod", fits: "Any Firearm", price: 350, rarity: "Uncommon", legality: "Licensed",
@@ -260,3 +271,14 @@ EN.weaponParts.renames = [
 /* index by key (built once at load) */
 EN.weaponParts.byKey = {};
 EN.weaponParts.parts.forEach(function (p) { EN.weaponParts.byKey[p.key] = p; });
+
+/* A combined Part takes its price, chip summary and effect from the Parts it combines: the
+   two prices added, the two summaries and the two effects in order. Nothing is reworded. */
+EN.weaponParts.parts.forEach(function (p) {
+  if (!p.combines) return;
+  var a = EN.weaponParts.byKey[p.combines[0]], b = EN.weaponParts.byKey[p.combines[1]];
+  if (!a || !b) return;
+  p.price = a.price + b.price;
+  p.grants = a.grants + "; " + b.grants;
+  p.effect = a.name + ": " + a.effect + " " + b.name + ": " + b.effect;
+});

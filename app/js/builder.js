@@ -201,9 +201,11 @@ EN.builder = (function () {
         el("span.help", { text: "Costs: 11-13 = 1 ea · 14-15 = 2 ea · 16 = 3 · the Flaw: drop ONE attribute to 8 for +2 points · cap 16." })
       ]);
     } else if (method === "array") {
+      var legacyN = arrayLegacyCount(ch);
       info = el("div.row.wrap", { style: { gap: "8px", marginBottom: "12px" } },
         [el("span.help", { text: "Assign each value once:" })].concat(
-          arrayRemaining(ch).map(function (v) { return el("span.chip", { text: String(v) }); })
+          arrayRemaining(ch).map(function (v) { return el("span.chip", { text: String(v) }); }),
+          legacyN ? [el("span.help", { style: { flex: "1 1 100%" }, text: legacyN + " score" + (legacyN > 1 ? "s were" : " was") + " assigned from the earlier array and read \"(old array)\". The scores are unchanged; pick from the current array to replace them." })] : []
         ));
     } else if (method === "overclocked") {
       info = ocPickTotals(ch)
@@ -228,7 +230,7 @@ EN.builder = (function () {
         ctrl = el("select", {
           onchange: function (e) { assignArray(ch, a.key, e.target.value === "" ? null : Number(e.target.value)); }
         }, [el("option", { value: "", text: "-" })].concat(arrayOptions(ch, a.key).map(function (o) {
-          return el("option", { value: o.v, text: String(o.v), selected: o.sel, disabled: o.disabled });
+          return el("option", { value: o.v, text: o.legacy ? o.v + " (old array)" : String(o.v), selected: o.sel, disabled: o.disabled });
         })));
       } else {
         var lo = method === "pointbuy" ? R.pointBuy.minStart : 1;
@@ -314,10 +316,22 @@ EN.builder = (function () {
     var counts = {}; pool.forEach(function (v) { counts[v] = (counts[v] || 0) + 1; });
     var used = {}; Object.keys(ch.arrayAssign || {}).forEach(function (k) { var v = ch.arrayAssign[k]; used[v] = (used[v] || 0) + 1; });
     var uniq = Array.from(new Set(pool)).sort(function (a, b) { return b - a; });
-    return uniq.map(function (v) {
+    var opts = uniq.map(function (v) {
       var avail = (counts[v] || 0) - (used[v] || 0) + (current === v ? 1 : 0);
       return { v: v, sel: current === v, disabled: avail <= 0 };
     });
+    /* A record saved under an earlier Standard Array can hold a value the current pool does not
+       (the old array had two 10s). It used to render as a blank "-" although the score was intact.
+       Shown as a selected, read-only "(old array)" option instead; choosing anything else replaces it. */
+    if (typeof current === "number" && uniq.indexOf(current) === -1) {
+      opts.push({ v: current, sel: true, disabled: true, legacy: true });
+    }
+    return opts;
+  }
+  // attributes whose saved assignment came from an earlier array
+  function arrayLegacyCount(ch) {
+    var pool = attrValuePool(ch);
+    return Object.keys(ch.arrayAssign || {}).filter(function (k) { var v = ch.arrayAssign[k]; return typeof v === "number" && pool.indexOf(v) === -1; }).length;
   }
   function assignArray(ch, key, val) {
     store.update(function (c) {

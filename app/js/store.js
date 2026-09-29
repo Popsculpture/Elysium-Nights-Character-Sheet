@@ -647,6 +647,22 @@ EN.store = (function () {
       }
     });
 
+    /* A SAVED BACKGROUND SKILL CHOICE THAT IS NO LONGER OFFERED, 2026-09-29. The Spacer's pick was
+       Awareness or Systems and is now Perception or Systems (28 September book). The stored value
+       is a skill KEY that the engine adds as a proficiency without checking it against the option
+       list, so a saved Spacer kept Awareness proficiency with no chip selected and no flag. Cleared
+       here, which puts the "Skill choice" attention flag back and lets the player re-pick. Written
+       against the option list and not the one name, so the next edit to a choose list is covered.
+       A choice that is still offered, or a background with no choose list, is left alone. */
+    if (typeof ch.backgroundSkillChoice === "string" && ch.backgroundSkillChoice && EN.backgrounds && EN.engine && EN.engine.skillKeyOf) {
+      var bgList = Array.isArray(EN.backgrounds) ? EN.backgrounds : (EN.backgrounds.list || []);
+      var bgRec = bgList.find(function (b) { return b && b.key === ch.background; });
+      var offered = bgRec && bgRec.skills && bgRec.skills.choose && bgRec.skills.choose.options;
+      if (offered && offered.map(function (o) { return EN.engine.skillKeyOf(o) || o; }).indexOf(ch.backgroundSkillChoice) === -1) {
+        ch.backgroundSkillChoice = null;
+      }
+    }
+
     /* RENAMED CATALOG WEAPONS, 2026-09-19. Same failure mode one layer out: combat.js resolves
        an equipped weapon with findWeapon(e.name) and returns early on a miss, so a saved Stun
        Baton loses its attack row silently. weaponAmmo and weaponGrip are keyed by the same

@@ -833,18 +833,13 @@ EN.inventoryView = (function () {
       open && it.proficiency ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: "Proficiency: " + it.proficiency + (it.signature ? " · Signature weapon (0 customization slots)" : "") }) : null,
       open && (it.category || it.skill) ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: (it.category ? "Tool Category: " + it.category + (it.categoryAlt ? " or " + it.categoryAlt : "") : "") + (it.category && it.skill ? " · " : "") + (it.skill ? "Governing Skill: " + it.skill : "") }) : null,
       open && it.feeds ? el("p.help", { style: { margin: "4px 0 0", color: "var(--gold)" }, text: "Feeds: " + it.feeds }) : null,
-      // Signature Weapons: the On Hit riders stay locked at any proficiency tier until a
-      // Skill Focus names this specific weapon. The book keeps the base area projection
-      // working; the sheet hides the whole effect text while locked (a coarser reading,
-      // logged in DEFERRED-FIXES as an author call)
-      open && it.effect ? (it.signature && !EN.engine.signatureUnlocked(ch, it)
-        ? el("div", { style: { marginTop: "6px", padding: "6px 9px", border: "1px dashed var(--border2)", borderRadius: "4px", opacity: .6 },
-            title: "Weapon Proficiency alone keeps a Signature Weapon's On Hit riders locked." }, [
-            el("span.mono", { style: { fontSize: "10px", color: "var(--warn)", letterSpacing: ".08em" }, text: "🔒 ON HIT LOCKED · " }),
-            el("span", { style: { fontSize: "11px", color: "var(--text3)" },
-              text: "Requires a Skill Focus naming this weapon: " + (it.proficiency || "its weapon category") + " (" + it.name + "). Buy it on the #PRINT Advance tab (L3+), or claim it as a Free overlap Focus at level 1." })
-          ])
-        : el("p.help", { style: { margin: "4px 0 0", color: "var(--accent)" }, text: (it.signature || /^Effect \(/.test(it.effect) ? "" : "Effect: ") + it.effect })) : null,
+      // Signature Weapons: the FULL effect always shows, because the base attack works at any tier.
+      // Only the On Hit riders are locked until a Weapon Focus names this specific weapon, and
+      // that is one status line from the engine's resolver, not a hidden effect.
+      open && it.effect ? el("p.help", { style: { margin: "4px 0 0", color: "var(--accent)" }, text: (it.signature || /^Effect \(/.test(it.effect) ? "" : "Effect: ") + it.effect }) : null,
+      open && it.signature && EN.engine.signatureStatus(ch, it)
+        ? el("p.help", { style: { margin: "4px 0 0", color: "var(--warn)" }, title: "Weapon Proficiency alone keeps a Signature Weapon's On Hit riders locked. A Weapon Focus naming this weapon unlocks them (#PRINT Advance tab, L3+, or a Free overlap Focus at level 1).",
+            text: "🔒 " + EN.engine.signatureStatus(ch, it) }) : null,
       open && it.poweredBenefits ? el("p.help", { style: { margin: "4px 0 0", color: "var(--gold)" }, html: "<b style='color:var(--gold)'>Powered Benefits:</b> " + it.poweredBenefits }) : null,
       // Part 3 gives many entries rules bullets past Effect, and the catalog used to carry
       // only Effect. These four are the rest of them: an Activation says what it costs to
@@ -1578,6 +1573,7 @@ EN.inventoryView = (function () {
     if (it.signature) return 0;
     var prof = (WP().profiles || []).find(function (p) { return p.key === lo._profile; });
     if (prof && prof.count != null) return prof.count;
+    if (it.noSlotCount) return 0;   // no profile in the book covers it (the Slingshot): none until the picker sets one
     // an entry may state its own Slot Count (a Revolver is a Sidearm that
     // carries 2, per the Slot Count by Profile table)
     if (typeof it.slots === "number") return it.slots;
@@ -1614,7 +1610,10 @@ EN.inventoryView = (function () {
   function allInstalledKeys(lo) {
     return ["targeting", "output", "core", "handling"].map(function (s) { return lo[s]; }).filter(Boolean).concat(lo.utility || []);
   }
-  function installedCount(lo) { return allInstalledKeys(lo).length; }
+  // a combined Part (Smart-Sight + Targeting Suite) counts as the number of Parts it is
+  function installedCount(lo) {
+    return allInstalledKeys(lo).reduce(function (n, k) { var p = WP().byKey[k]; return n + ((p && p.parts) || 1); }, 0);
+  }
   function aggregateLegality(it, lo) {
     var order = WP().legalityOrder || ["Legal", "Licensed", "Restricted", "Contraband"];
     var worst = it.legality || "Legal";
@@ -1866,7 +1865,14 @@ EN.inventoryView = (function () {
     // (see installVehicleMod). Cheap, and it keeps the rule in the same place as the rule.
     if (!partFits(part, it)) { toast(part.name + " fits " + part.fits + "; the " + it.name + " is not."); return; }
     if (availablePartQty(store.active(), part) <= 0) { toast("You do not own a free " + part.name + ". Buy it in the gray market first."); return; }
-    if (installedCount(lo) >= slotCountFor(it, lo)) { toast("Slot Count is full. Over-Engineering past it makes this a Prototype-tier Project with a Mandatory Flaw; track it as a Project."); return; }
+    var need = part.parts || 1;
+    var room = slotCountFor(it, lo) - installedCount(lo);
+    if (need > room) {
+      toast(need > 1 && room > 0
+        ? part.name + " counts as " + need + " Parts and this weapon has room for " + room + " more. Over-Engineering past the Slot Count makes it a Prototype-tier Project with a Mandatory Flaw."
+        : "Slot Count is full. Over-Engineering past it makes this a Prototype-tier Project with a Mandatory Flaw; track it as a Project.");
+      return;
+    }
     var installed = allInstalledKeys(lo);
     var conflictKey = installed.find(function (k) { var ip = WP().byKey[k]; return (part.excludes || []).indexOf(k) !== -1 || (ip && (ip.excludes || []).indexOf(key) !== -1); });
     if (conflictKey) { toast(part.name + " cannot share a build with " + (WP().byKey[conflictKey] || {}).name + "."); return; }
@@ -1918,7 +1924,7 @@ EN.inventoryView = (function () {
       kids.push(el("select", { style: { marginTop: "5px", fontSize: "11px", width: "auto", maxWidth: "100%" }, onchange: function (e) { var k = e.target.value; e.target.value = ""; if (k) tryInstall(it, wKey, lo, slotKey, k); } },
         [el("option", { value: "", text: "+ install from stash" })].concat(ownedOpts.map(function (p) {
           var av = availablePartQty(ch, p);
-          return el("option", { value: p.key, text: p.name + " · " + p.partType + (av > 1 ? " ×" + av : "") });
+          return el("option", { value: p.key, text: p.name + " · " + p.partType + (p.parts > 1 ? " · " + p.parts + " Parts" : "") + (av > 1 ? " ×" + av : "") });
         }))));
     } else if (fitting.length) {
       kids.push(el("p.help", { style: { margin: "5px 0 0", fontSize: "10.5px", color: "var(--text3)" }, text: "You own no Parts for this slot. Buy Mods & Accessories in the gray market." }));
@@ -1981,6 +1987,9 @@ EN.inventoryView = (function () {
       ]),
       el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } }, [el("span.help", { style: { margin: 0, fontSize: "10px" }, text: "PROFILE" }), profSel])
     ]);
+    if (it.noSlotCount && (!lo._profile || lo._profile === "auto")) {
+      header.appendChild(el("p.help", { style: { margin: 0, flex: "1 1 100%", fontSize: "10.5px", color: "var(--warn)" }, text: "The book gives the " + it.name + " no Slot Count. Pick a PROFILE to set one." }));
+    }
     var grid = el("div.grid2", { style: { gap: "10px" } }, (WP().slots || []).map(function (sd) { return slotCard(ch, it, wKey, lo, sd); }));
     out.push(EN.ui.panel(row.label, it.group.toUpperCase() + " · " + (it.damage || ""), [
       el("p.help", { style: { margin: "0 0 8px", fontSize: "11.5px" }, text: "One Part per slot (Utility holds two). Accessories snap on anytime; Mods are bench work in Downtime with a kit. The strictest legality on the build is what a scanner reports." }),

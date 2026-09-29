@@ -286,11 +286,21 @@ EN.engine = (function () {
     var sp = specFor(ch, "weapons", cat);
     return sp && aspectMatches(sp.aspect, itemName) ? sp : null;
   }
-  // Signature Weapons: On Hit effects and area projections stay locked at any
-  // proficiency tier until a Skill Focus names the specific weapon.
+  // Signature Weapons: the On Hit riders stay locked at any proficiency tier until a
+  // Weapon Focus names the specific weapon. The base attack, area projection included, works.
   function signatureUnlocked(ch, it) {
     if (!it || !it.signature) return true;
     return activeFocusList(ch).some(function (f) { return f.type === "weapons" && aspectMatches(f.aspect, it.name); });
+  }
+  /* The one-line status a locked Signature Weapon shows BESIDE its full effect text (ruling of
+     2026-09-29: hiding the effect told the player the base attack did not work, and the book says
+     it does). Empty when the weapon is unlocked or is not a Signature Weapon. The play sheet and
+     the stash card both read it, so the two cannot word the lock differently. */
+  function signatureStatus(ch, it) {
+    if (!it || !it.signature || signatureUnlocked(ch, it)) return "";
+    var tier = R.profTiers[effectiveGearTier(ch, "weapons", it.proficiency)];
+    return tier && tier.snag ? "Untrained: attacks with Snag. On Hit riders locked."
+                             : "On Hit riders locked until Weapon Focus (this weapon).";
   }
 
   /* ---- Overlapping Starting Proficiencies --------------------------------
@@ -4206,7 +4216,7 @@ EN.engine = (function () {
     hazardStats: hazardStats, hazardMitigations: hazardMitigations,
     vacuumSeal: vacuumSeal, causticArmorDR: causticArmorDR, gearOnPerson: gearOnPerson,
     focusesFor: focusesFor, specFor: specFor,
-    aspectMatches: aspectMatches, weaponFocus: weaponFocus, weaponSpec: weaponSpec, signatureUnlocked: signatureUnlocked,
+    aspectMatches: aspectMatches, weaponFocus: weaponFocus, weaponSpec: weaponSpec, signatureUnlocked: signatureUnlocked, signatureStatus: signatureStatus,
     overlapGrants: overlapGrants, unresolvedOverlaps: unresolvedOverlaps,
     grantSourceMap: grantSourceMap, duplicateGrants: duplicateGrants, pendingChoices: pendingChoices,
     tp: { STEP_COST: STEP_COST, TIER_LEVEL_REQ: TIER_LEVEL_REQ, FOCUS_COST: FOCUS_COST, FOCUS_LEVEL_REQ: FOCUS_LEVEL_REQ, SPEC_COST: SPEC_COST, SPEC_LEVEL_REQ: SPEC_LEVEL_REQ }

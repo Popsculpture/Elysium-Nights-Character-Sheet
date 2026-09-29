@@ -56,7 +56,7 @@ EN.combatView = (function () {
   // an icon plus a label, for a button whose third argument used to be a bare glyph+text string
   function iconLabel(icon, text) { return [el("span", { html: icon }), document.createTextNode(" " + text)]; }
   var _fxBox = { mode: "open", closedKey: null };   // sticky Active Condition Effects box ("open"/"min"; closedKey = content-keyed dismiss)
-  var _pops = { vit: false, wound: false, rest: false, short: false, down: false, addgear: false };   // popover state (VITALITY / WOUNDS / LONG REST / SHORT REST / DOWNTIME / ＋ ADD TO LOADOUT)
+  var _pops = { vit: false, wound: false, rest: false, short: false, down: false, week: false, addgear: false };   // popover state (VITALITY / WOUNDS / LONG REST / SHORT REST / DOWNTIME / DOWNTIME REST / ＋ ADD TO LOADOUT)
   var _downDays = 7;   // last downtime span typed, remembered across renders
   var _amts = { vit: 1, wound: 1, rd: 1 };                 // remembered amounts per popover
   function closePops() { Object.keys(_pops).forEach(function (k) { _pops[k] = false; }); }
@@ -966,6 +966,46 @@ EN.combatView = (function () {
     var label = days + (days === 1 ? " day" : " days") + " of downtime passes";
     var rep = dayReport(t);
     toast(rep ? label + ". " + rep + "." : label + ". Nothing came due.");
+  }
+  /* DOWNTIME REST (1 WEEK): the book's Downtime Healing, "One uninterrupted week restores all
+     Wounds, removes all Strain, and clears lingering Fatigue", with Vitality and FP full and the
+     temporary conditions gone. A separate action from DOWNTIME on purpose: that button advances
+     the calendar and restores nothing (RULES-SYNC-CHANGELOG A19, still true), this one restores
+     and does not touch the calendar, the Resilience Dice, the limited-use features or the class
+     resource. "Temporary" is read off the tracker's own duration line (COND_META): a condition
+     whose card says Persistent or Permanent stays, and every other one comes off. */
+  function isTemporaryCondition(name) {
+    var m = COND_META[name];
+    return !(m && /^(Persistent|Permanent)$/i.test(m[0]));
+  }
+  function downtimeRest(ch, d) {
+    var cleared = [], kept = [], hadFatigue = false;
+    store.update(function (c) {
+      var s = state(c, d);
+      c.wounds.current = s.woundsMax;                                       // all Wounds
+      if (s.woundsMax > 0) { c.stable = false; c.deathSaves = { s: 0, f: 0 }; }
+      c.vitality.current = d.vitalityMax || 0;                              // full Vitality
+      if (d.flow) c.flow.current = d.flow.max;                              // full Reservoir
+      // all Strain: the stage, the Overdraw points toward the next one, and the Breakflow flag that
+      // stage 5 sets, which is what every other Strain reset on the Flow tab clears together
+      c.flow.strain = 0; c.flow.strainPoints = 0; c.flow.breakflow = false;
+      c.conditions = c.conditions || [];
+      c.conditionLevels = c.conditionLevels || {};
+      hadFatigue = c.conditions.indexOf("Fatigue") !== -1;
+      c.conditions = c.conditions.filter(function (n) {
+        if (n !== "Fatigue" && !isTemporaryCondition(n)) { kept.push(n); return true; }
+        if (n !== "Fatigue") cleared.push(n);
+        delete c.conditionLevels[n];
+        return false;
+      });
+      // Fatigue is gone whatever its level, so the thin-air attribution has nothing left to describe
+      if (hadFatigue) { c.hazards = c.hazards || {}; c.hazards.thinAirFatigue = 0; }
+    });
+    toast("Downtime rest (1 week): Vitality and FP full, all Wounds restored, Strain removed"
+      + (hadFatigue ? ", Fatigue cleared" : "")
+      + (cleared.length ? ", " + cleared.join(", ") + " cleared" : "")
+      + "." + (kept.length ? " Still on you: " + kept.join(", ") + "." : "")
+      + " The calendar did not move; use DOWNTIME for that.");
   }
   /* `provisioned` is the shelter/food/water gate on the Fatigue reduction, which the book
      states at BOTH of its sites: "Reduce Fatigue by 1 level if you have safe shelter, food, and
@@ -3144,7 +3184,7 @@ EN.combatView = (function () {
                                         background: "var(--bg2)", border: "1px solid var(--border2)", borderRadius: "4px",
                                         boxShadow: "0 8px 24px rgba(0,0,0,.55)", textAlign: "left" } }, [
               el("p", { style: { margin: 0, fontSize: "12px", lineHeight: "1.5", color: "var(--text2)" },
-                        text: "Advance the calendar without resting. Marks lease installments and ages saved Personas. Restores nothing." }),
+                        text: "Advance the calendar without resting. Marks lease installments and ages saved Personas. Restores nothing; for a week of recovery use DOWNTIME REST (1 WEEK)." }),
               el("div.row", { style: { gap: "6px", alignItems: "center" } }, [
                 el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".1em" }, text: "DAYS" }), inp,
                 el("button.btn.sm.primary", { style: { marginLeft: "auto" }, onclick: function () { go(_downDays); } }, "ADVANCE")
@@ -3157,6 +3197,22 @@ EN.combatView = (function () {
               ])
             ]);
           })() : null
+        ]),
+        /* DOWNTIME REST (1 WEEK): the recovery half of Downtime, on its own button so it cannot be
+           mistaken for the calendar button above. See downtimeRest(). */
+        el("div.pop-anchor", { style: { position: "relative" } }, [
+          el("button.btn.sm", { title: "One uninterrupted week of recovery. Does not move the calendar.", onclick: function () { var was = _pops.week; closePops(); _pops.week = !was; EN.app.render(); } }, iconLabel(ICON_DOWNTIME, "DOWNTIME REST (1 WEEK)")),
+          _pops.week ? el("div", { style: { position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 30, width: "260px",
+                                            display: "flex", flexDirection: "column", gap: "10px", padding: "12px",
+                                            background: "var(--bg2)", border: "1px solid var(--border2)", borderRadius: "4px",
+                                            boxShadow: "0 8px 24px rgba(0,0,0,.55)", textAlign: "left" } }, [
+            el("p", { style: { margin: 0, fontSize: "12px", lineHeight: "1.5", color: "var(--text2)" },
+                      text: "One uninterrupted week. Fully restores Vitality and FP, restores all Wounds, removes all Strain, and clears Fatigue and temporary conditions. Conditions marked Persistent or Permanent stay. Does not advance the calendar or refresh Resilience Dice or abilities." }),
+            el("div.row", { style: { gap: "8px", justifyContent: "flex-end" } }, [
+              el("button.btn.sm", { onclick: function () { _pops.week = false; EN.app.render(); } }, "CANCEL"),
+              el("button.btn.sm.primary", { onclick: function () { _pops.week = false; downtimeRest(ch, d); } }, iconLabel(ICON_DOWNTIME, "REST A WEEK"))
+            ])
+          ]) : null
         ])
       ])
     ]));
@@ -4759,20 +4815,15 @@ EN.combatView = (function () {
           borderTop: "1px solid rgba(35,48,68,.6)" } },
           traitChips.map(wTraitChip).concat(offerChips).concat([reachChip, gripEl].filter(Boolean))));
 
-        // Signature Weapons: the On Hit riders stay locked at any proficiency tier until a
-        // Skill Focus names this specific weapon. The book keeps the base area projection
-        // working; the sheet hides the whole effect text while locked (a coarser reading).
+        // Signature Weapons: the FULL effect always shows (the base attack works at any tier), and
+        // a locked one adds a single status line from the engine. Only the On Hit riders are locked
+        // until a Weapon Focus names this specific weapon.
         if (it.signature && it.effect) {
-          var sigOpen = eng.signatureUnlocked(ch, it);
-          rowKids.push(sigOpen
-            ? el("p.help", { style: { margin: "6px 0 0", fontSize: "11px", color: "var(--accent)" },
-                text: it.effect })
-            : el("div", { style: { marginTop: "6px", padding: "6px 9px", border: "1px dashed var(--border2)", borderRadius: "4px", opacity: .6 },
-                title: "Weapon Proficiency alone keeps a Signature Weapon's On Hit riders locked." }, [
-                el("span.mono", { style: { fontSize: "10px", color: "var(--warn)", letterSpacing: ".08em" }, text: "🔒 ON HIT LOCKED · " }),
-                el("span", { style: { fontSize: "11px", color: "var(--text3)" },
-                  text: "Requires a Skill Focus naming this weapon: " + h.cat + " (" + it.name + "). Base attacks still work" + (h.prof ? " with your Weapon Proficiency Bonus." : ", untrained, with Snag." ) })
-              ]));
+          var sigStatus = eng.signatureStatus(ch, it);
+          rowKids.push(el("p.help", { style: { margin: "6px 0 0", fontSize: "11px", color: "var(--accent)" }, text: it.effect }));
+          if (sigStatus) rowKids.push(el("p.help", { style: { margin: "3px 0 0", fontSize: "11px", color: "var(--warn)" },
+            title: "Weapon Proficiency alone keeps a Signature Weapon's On Hit riders locked. A Weapon Focus naming this weapon unlocks them.",
+            text: "🔒 " + sigStatus }));
         }
 
         // installed Workbench Parts (Mods + Accessories) for this weapon
