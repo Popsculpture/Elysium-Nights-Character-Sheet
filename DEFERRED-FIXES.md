@@ -9101,6 +9101,14 @@ after. Each line says what the ruling was and what was done.
   Integrated bonus is already inside it. The book's totals are unchanged (2 and 4), so no saved
   loadout can exceed them.
 
+**Final stale-wording scan (2026-09-29).** After the rulings landed, every changeset record's old
+sentence (6 or more words) was searched for verbatim in every app string literal. 17 of 2,136
+records still matched, and 15 were false positives (a sentence that moved but did not change, or a
+text the app already carries with the new ending). Two were real and are fixed: the Quick Hack note's
+"Attack bonus" and the flat-DR mod note's "does not stack". This catches old wording the app carries
+verbatim. It cannot catch an app paraphrase that differs from the book in its own words, which is
+what the review passes were for.
+
 **Not fixed, deliberately.** Gate dialogue stays lowercase ("this node"): it is app fiction and
 no changeset record touches it. The terminology sweep had capitalised one word in it; that is
 reverted.

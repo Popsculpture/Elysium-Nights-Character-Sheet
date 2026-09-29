@@ -34,7 +34,7 @@ EN.grid = {
   ],
   hardenedNote: "A Hardened Node adds its Tier as a flat bonus to its Cipher Save Bonus, on the shared tier scale (Standard 0 → Apex 5): a Hardened Apex Node has +9 + 5 = +14 to saves. Reserve for genuinely high-stakes targets: corporate vaults, military mainframes, Pre-Collapse black boxes.",
   lowSecurityNote: "Rudimentary Nodes are the floor of the #GRID, cameras, cheap smartlocks, disposable consumer devices. No Integrity, no Firewall: a single successful Cipher Attack or Quick Hack bricks them. Standard Nodes (civilian vehicles, commercial smartguns) still lack Integrity, but a Firewall might stand in the way; flip a coin on whether the owner paid for one.",
-  quickHackNote: "A Quick Hack is the same roll as a Cipher Attack, plus your Smartdeck's Device Bonus. Burner Relays and B&E Buddies use their own baked-in Attack bonus instead of yours.",
+  quickHackNote: "A Quick Hack is the same roll as a Cipher Attack, plus your Smartdeck's Device Bonus. Burner Relays and B&E Buddies use their own baked-in Attack Bonus instead of yours.",
 
   elements: [
     { kind: "Personas", text: "Player avatars and NPC user presence, Standard Users; Power Users like Codebreakers, Sourcerers, #GRID Guardians." },
