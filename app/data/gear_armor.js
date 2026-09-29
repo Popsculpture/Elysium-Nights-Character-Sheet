@@ -1,7 +1,7 @@
 /* ===========================================================================
    ELYSIUM NIGHTS - Gear catalog: Armor and Defensive Gear
    Transcribed from "Part 3 - Armor and Defensive Gear" (the three Drive docs).
-   Body armor, powered exoframes, and mystech shells provide Damage Reduction
+   Body armor, powered exoframes, and Mystech shells provide Damage Reduction
    (DR) against the physical damage types; medium/heavy plate adds a flat Block
    Bonus. Physical Shields add Defense and a Block die; Warding Foci feed the
    Ward defense with a die. Prices in Glimmer (𝒢); some high-end gear also lists
@@ -12,7 +12,8 @@
    Powered training) live in the entry's Effect line, not as auto-applied stats.
 
    Item kinds:
-     kind:"armor"  → dr (number), blockBonus (flat, medium/heavy), slots
+     kind:"armor"  → dr (number), blockBonus (flat, medium/heavy), slots (TOTAL Mod Slots: the
+                     Type line's count, plus 1 on an Integrated and Modular suit)
      kind:"shield" → defense (number), blockDie (string)
      kind:"focus"  → wardDie (string)
    =========================================================================== */
@@ -20,14 +21,14 @@ window.EN = window.EN || {};
 EN.gearCatalog = EN.gearCatalog || {};
 
 EN.gearCatalog.armor = {
-  intro: "Armor is the difference between a bad night and a body bag. It does not make you invincible; it makes you survivable, which in Elysium is worth more. Most armor provides Damage Reduction (DR) against the physical types (Ballistic, Piercing, Slashing, Bludgeoning), applied as the passive mitigation step before damage reaches your Vigor, Vitality, and Wounds.",
+  intro: "Armor is the difference between a bad night and a body bag. It doesn't make you invincible. It makes you survivable, which in Elysium is worth more. Most armor provides Damage Reduction (DR) against the physical types (Ballistic, Piercing, Slashing, Bludgeoning), applied as the passive mitigation step before damage reaches your Vigor, Vitality, and Wounds.",
 
   groupIntros: {
     "Light Armor": "Light armor hides. It passes as a jacket, a work shirt, a fashion choice that happened to stop a knife. It won't hold against a rifle, but it turns a lucky shank or a thrown punch into a bruise instead of a hole.",
     "Medium Armor": "Medium armor stops pretending. Real protection with real mobility and zero interest in hiding what it is. The gear that tells a room you came expecting a fight while still letting you walk through it.",
     "Heavy Armor": "Heavy armor is a commitment. You trade subtlety and the easy step for the right to stand somewhere and refuse to move. For the Freelancer who intends to hold ground rather than slip away from it.",
-    "Powered Exoframe": "An exoframe is not armor you wear; it is armor you climb into. Servos carry the weight, the plating, and increasingly the person. Wearing one requires Heavy Armor proficiency; running it at full effect requires dedicated training. Untrained, the Powered trait imposes its drawbacks: reduced Speed and Snag on Agility checks.",
-    "Mystech Armor": "Some armor doesn't stop the hit; it convinces the hit to stop. Mystech shells are woven through with Flow-conductive thread and tuned plate. Rarer than anything in the standard catalog, almost always Contraband, and they read as Flow-touched to anyone watching for it. Mystech armor interacts with the Ward defense and the Focus trait.",
+    "Powered Exoframe": "An exoframe isn't armor you wear. It is armor you climb into. Servos carry the weight, the plating, and increasingly the person. Exoframes use the Powered trait. Wearing one requires Heavy Armor proficiency. Operating one at full effect requires Powered Frames proficiency. This is the training referred to by the Powered trait and the frames' Powered Benefits. Without that training, the Powered trait imposes its usual drawbacks: reduced Speed and Snag on Agility checks.",
+    "Mystech Armor": "Some armor doesn't stop the hit; it convinces the hit to stop. Mystech shells are woven through with Flow-conductive thread and tuned plate. Rarer than anything in the standard catalog, almost always Contraband, and they read as Flow-touched to anyone watching for it. Mystech armor uses the Mystech trait and the four-tier Mystech Availability scale (Iconic through Artifact). A Shaper can choose a Focus suit for its Ward support as well as its plate.",
     "Physical Shield": "A shield costs you a hand. In return you get a wall you can move. While wielded, a shield adds a flat Defense bonus and a Block die that sharpens your Block. Uses the Block, Full Defense, Stacking, and Shield Durability rules.",
     "Warding Focus": "A Warding Focus channels Flow into a shaped barrier, reinforcing the Ward defense instead of your armor, for the people who refuse to wear armor at all. Foci are Worn, carry the Focus and Mystech traits, and read as Flow-touched. You benefit from only one Warding Focus at a time, and foci do not use Shield Durability."
   },
@@ -44,12 +45,12 @@ EN.gearCatalog.armor = {
     "Concealable": "It does not look like armor, worn under a shirt, or cut to pass as an ordinary jacket. Checks to notice you are armored roll with Snag. A pat-down or scanner still finds it.",
     "Streetwear": "Openly armored, but it reads as fashion. Doesn't count as obvious combat gear; Snag on social checks in high-corporate or formal spaces where street kit is out of place.",
     "Hostile Appearance": "Unmistakably combat gear; the room knows what you are the moment you walk in. Snag on social checks to blend in or de-escalate; Edge when you are openly threatening or intimidating.",
-    "Bulky": "Rigid, layered, overbuilt. Increases the item's Load by 1, reduces your Speed by 1, and imposes Snag on Acrobatics and Stealth checks. Cannot be Concealable.",   // verbatim from Part 3, 2026-08-19: Bulky is the ONE trait that touches Load,
+    "Bulky": "Rigid, layered, overbuilt. Increases the item's Load by 1, reduces your Speed by 1, and imposes Snag on Acrobatics and Stealth checks. Can't be Concealable.",   // verbatim from Part 3, 2026-08-19: Bulky is the ONE trait that touches Load,
     "Loud": "Plates clack, servos whine, respirators hiss. Snag on Stealth checks that rely on silence. It changes only how easily you are heard, not how you fight.",
     "Plated": "Rigid plates over soft layers, built to eat a serious hit. When you choose Block, add half the armor's DR (rounded down) to the damage prevented. Stacks with the suit's listed Block Bonus and with shield dice; applies only when you Block.",
     "Modular": "Rails, webbing, and slots for upgrades. Can mount Armor Mods up to its listed Mod Slot Count. Swapping mods takes Downtime, not a combat action.",
     "Integrated": "Worn as one complete suit, not separable plates. Can't be stripped into parts on the fly. If the armor is also Modular, it gains 1 extra Mod Slot. Some Integrated suits also pass as uniform or formalwear.",
-    "Load-Bearing": "Reinforced webbing, hardpoints, and frame support. Your Encumbrance threshold counts as one step higher.",
+    "Load-Bearing": "Reinforced webbing, hardpoints, and frame support. Your Encumbrance Threshold counts as one step higher.",
     "Powered": "The armor carries its own power source and active systems. Running one takes Heavy Armor proficiency and Powered Frames proficiency. Trained, you gain the suit's listed Powered Benefits; untrained, your Speed is reduced and you roll Agility checks with Snag.",
     "Sealed": "A closed shell of sealed joints, filters, and respirators. Resistance to Toxic damage, and Edge on saves against gas, disease, and airborne or environmental hazards. Some Sealed suits also cover vacuum.",
     "Mystech": "A fusion of synthetic engineering and the Flow. Counts as both technological and metaphysical gear for anything that targets either, and can be detected, disrupted, or overloaded as Flow gear. Needs specialist tools or contacts to repair and recharge.",
@@ -59,7 +60,7 @@ EN.gearCatalog.armor = {
     "Worn": "Worn on the body rather than held in a hand, leaving both hands free. Cannot be easily dropped or disarmed, and counts as equipped gear for any effect that checks what you are wearing. A Warding Focus is Worn. Being Worn does not by itself cost a Body Slot: an item only counts against one if its own entry says so.",
     "Light": "A light shield, minimal bulk. Leaves the braced hand free for one-handed weapon use and Invocations.",
     "Heavy": "A heavy shield, planted and braced. Slow to move with, but it carries the largest Defense bonus and Block die.",
-    "Leased": "The armor is not yours; it runs on a corporate service plan, and the issuer keeps a finger on the off switch. You pay an Upkeep cost each period. Miss a payment, get flagged, or cross the issuer and the gear drops remotely to its zero state (armor to DR 0, a shield to no Defense bonus and no Block die) until you pay up or crack the lock. The holder can also repossess it outright. Cracked gear keeps working but scans as stolen corporate property."
+    "Leased": "The gear isn't yours. It runs on a corporate service plan, and the issuer can switch it off whenever the plan says so. You pay an Upkeep cost each period. Miss a payment, get flagged, or cross the issuer and the gear drops remotely to its zero state (armor to DR 0, a shield to no Defense bonus and no Block die) until you pay up or crack the lock. The holder can also repossess it outright. Cracked gear keeps working but scans as stolen corporate property."
   },
 
   items: [
@@ -89,7 +90,11 @@ EN.gearCatalog.armor = {
       slot: ["Torso", "Legs"], dr: 2, traits: ["Concealable"], availability: "Common", legality: "Licensed",
       desc: "A thin corporate ballistic layer designed to vanish under a shirt and a badge. Standard issue for executives who don't want their security detail to be the obvious one.",
       effect: "Grants 2 Damage Reduction (DR)." },
-    { name: "Adaptive Soft Suit", kind: "armor", group: "Light Armor", type: "Light Armor (2 Mod Slots)", price: 260,
+    /* `slots` is the TOTAL the bench enforces: the count printed in the Type line PLUS the one an
+       Integrated and Modular suit carries beyond it. The book lists 1 here and 3 on the Operator
+       Suit; slots stays 2 and 4 because armorSlotCount() reads it as-is and nothing adds the bonus
+       a second time. */
+    { name: "Adaptive Soft Suit", kind: "armor", group: "Light Armor", type: "Light Armor (1 Mod Slot)", price: 260,
       slot: ["Torso", "Legs"], dr: 2, slots: 2, traits: ["Concealable", "Integrated", "Modular"], availability: "Uncommon", legality: "Restricted",
       desc: "A close-fitting smart fabric worn as a complete garment, with reactive panels that stiffen on impact. Reads as a sharp outfit until something tries to put a hole in it.",
       effect: "Grants 2 Damage Reduction (DR). As an Integrated and Modular armor, it carries 1 additional Mod Slot beyond its listed slot, for 2 total." },
@@ -188,7 +193,7 @@ EN.gearCatalog.armor = {
       vacuum: true,
       desc: "A sealed military combat frame, the kind a corporation deploys when it has decided a problem is worth the optics. Air recycled, joints armored, every system tuned to keep one operator standing through a crossfire.",
       effect: "Grants 5 Damage Reduction (DR) and a +2 Block Bonus. Its seals also hold against vacuum. When you acquire the frame, choose one physical damage type (Ballistic, Piercing, Slashing, or Bludgeoning). You gain Resistance to that type.",
-      poweredBenefits: "While trained and powered, you ignore the Speed reduction from Bulky, treat your Encumbrance threshold as two steps higher, and gain Edge on in-combat d20 checks (or +1 Edge Die out-of-combat) to lift, shove, or force movement." },
+      poweredBenefits: "While trained and powered, you ignore the Speed reduction from Bulky, treat your Encumbrance Threshold as two steps higher, and gain Edge on in-combat d20 checks (or +1 Edge Die out-of-combat) to lift, shove, or force movement." },
 
     /* ============================== MYSTECH ARMOR ============================== */
     { name: "Veilskin", kind: "armor", group: "Mystech Armor", type: "Light Mystech Armor (1 Mod Slot)", price: 700,

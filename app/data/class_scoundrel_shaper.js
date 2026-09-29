@@ -78,13 +78,13 @@ EN.classes.scoundrel = {
       },
       {
         name: "Scoundrel Subclass",
-        text: "You choose the specialization that suits your particular brand of getting away with it. Whether you run blockades as a Smuggler, beat a rigged game as a Wildcard, or carve people up in close as a Shiv, your subclass grants features at Levels 1, 3, 7, and 10."
+        text: "You choose a Scoundrel subclass, representing your specialization. You gain all subclass features for which you meet the required Scoundrel level, both now and as you advance. You may only select one subclass."
       }
     ],
     "2": [
       {
         name: "Watch How I Soar",
-        text: "You can take the **Dash** or **Disengage** action as a **Swift Action** at no Moxie cost. In addition, opportunity attacks against you are made with **Snag**, and Difficult Terrain costs you no extra movement."
+        text: "You can take the **Dash** or **Disengage** action as a **Swift Action**. In addition, Opportunity Attacks against you are made with **Snag**, and Difficult Terrain costs you no extra movement."
       },
       {
         name: "Universal Upgrade",
@@ -265,7 +265,7 @@ EN.classes.scoundrel = {
   extra: {
     playbook: {
       turnToTurn: "You bet on yourself. You spend Moxie to bend your own dice, sour the enemy's at the worst possible moment, and reposition through openings no one else can use, then cash a single clean hit with Cheap Shot. You're rarely where the enemy wants you, and never pinned.",
-      winningEncounters: "You win by being untouchable and improbably lucky. You do not stand in the open trading shots with a heavy gunner; you slip the killing blows, twist the enemy's luck against them, and capitalize on every opening your crew tears open.",
+      winningEncounters: "You win by being untouchable and improbably lucky. You don't stand in the open trading shots with a heavy gunner. You slip the killing blows, twist the enemy's luck against them, and take every opening your crew makes.",
       whatToAvoid: "Running your Moxie dry while surrounded. With a d8 Resilience Die and Light Armor, your survival is your luck and your footwork, not your Vitality. An empty pool with no exits is the moment the odds finally catch up with you."
     }
   }

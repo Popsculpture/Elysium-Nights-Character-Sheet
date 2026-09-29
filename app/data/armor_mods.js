@@ -1,9 +1,10 @@
 /* ===========================================================================
    ELYSIUM NIGHTS · Armor Customization (Armor Mods catalog)
-   The Impact Table data: after-market Armor Mods for Modular armor. Armor Mods
+   The Impact Table data: aftermarket Armor Mods for Modular armor. Armor Mods
    have no named slots (slots are generic) and are all bench work. Only Modular
    armor takes them, up to its Mod Slot count; Integrated + Modular carries +1
-   slot (already folded into each suit's `slots` value in gear_armor.js).
+   slot (already folded into each suit's `slots` value in gear_armor.js, which is
+   therefore the TOTAL: the Type line lists one fewer on the two Integrated suits).
    Prices in Glimmer. Legality is the strictest tag among the suit and its mods.
    No em or en dashes anywhere in this file (house style).
    =========================================================================== */
@@ -11,7 +12,7 @@ window.EN = window.EN || {};
 
 EN.armorMods = {
 
-  intro: "A suit off the rack keeps you alive once. After that you pay someone to make it personal. Armor Mods are the after-market: trauma plates, camo weave, a stim rig wired to fire the moment your Vigor runs out.",
+  intro: "A suit off the rack keeps you alive once. After that you pay someone to make it personal. Armor Mods are the aftermarket: trauma plates, camo weave, a stim rig wired to fire the moment your Vigor runs out.",
 
   /* ---- mod groups (for the market + bench sections) --------------------- */
   categories: [
@@ -65,7 +66,7 @@ EN.armorMods = {
 
     /* ---- Stealth & Signature ---- */
     { key: "acoustic-baffles", name: "Acoustic Baffles", category: "stealth", price: 200, rarity: "Common", legality: "Legal", fits: "Loud or Powered",
-      grants: "Removes Loud", effect: "The suit loses the Loud trait. On Powered armor, which can't shed the noise of its own frame entirely, it instead ignores the Loud Stealth penalty so long as you move at half your Speed or less." },
+      grants: "Removes Loud; Powered: ignores Loud penalty at half Speed or less", effect: "The suit loses the Loud trait. On Powered armor, which can't shed the noise of its own frame entirely, it instead ignores the Loud Stealth penalty so long as you move at half your Speed or less." },
     { key: "signature-damper", name: "Signature Damper", category: "stealth", price: 600, rarity: "Uncommon", legality: "Restricted", fits: "Any",
       grants: "Snag on scans of your gear", effect: "Scanners, sensors, and tag readers checking for your armor, weapons, or cyberware roll with Snag (or you add +1 Snag Die against out-of-combat detection Dice Pools). A physical pat-down still finds anything it can touch." },
     { key: "chameleon-weave", name: "Chameleon Weave", category: "stealth", price: 900, rarity: "Rare", legality: "Restricted", fits: "Any",

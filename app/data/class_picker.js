@@ -9,8 +9,7 @@ window.EN = window.EN || {};
    what a collapsed picker card shows. Verbatim from Part 1. */
 EN.classPicker = {
   intro: [
-    "Your Species and Lineage say who you are. Your Class says what you do when the shooting starts, and what people pay you for. Everyone in Elysium has an angle. This is yours: the thing you're better at than the person trying to kill you.",
-    "Whether you hack the digital infrastructure, channel the metaphysical current, or dominate the physical battlefield, your class provides the tools you need to shift the odds in your favor."
+    "Your Species and Lineage say who you are. Your Class says what you do when the shooting starts, and what people pay you for. Everyone in Elysium has an angle. This is yours: the thing you're better at than the person trying to kill you."
   ],
   classes: {
     codebreaker: {
@@ -65,7 +64,7 @@ EN.classPicker = {
         harmonist: { blurb: "The purest practitioner of Flow channeling, focusing on mastering elemental and metaphysical balance.", playIf: "Play a Harmonist if: You want to push raw resonance further than anyone else and master multiple Base Resonances.", flowAttribute: "Mystique" },
         kensei: { blurb: "A martial artist who infuses their physical strikes and weaponry with kinetic and spatial energy.", playIf: "Play a Kensei if: You want to fight on the frontline, using the Flow to enhance your physical attributes and deliver devastating melee Invocations.", flowAttribute: "Body" },
         icon: { blurb: "A radiant conduit who shapes reality through sheer force of personality, inspiring those around them.", playIf: "Play an Icon if: You want to lead by example, using the Flow to steady an ally's nerve and command the attention of a room.", flowAttribute: "Charm" },
-        sourcerer: { blurb: "A techno-mage who bridges the gap between digital code and metaphysical current, hacking the Flow itself.", playIf: "Play a Sourcerer if: You want to blend arcane theory with digital infrastructure, creating bizarre and powerful synergies between magic and machines.", flowAttribute: "Tech" }
+        sourcerer: { blurb: "A techno-mage who can't write code and doesn't need to: the Nixies and Gremlins inside the city's machines like them.", playIf: "Play a Sourcerer if: You want to bring the Flow into machines that were never built to carry it, ask sprites to jinx a Target's gear, bless an ally's, or hold a #GRID door open without a deck.", flowAttribute: "Tech" }
       }
     },
     stitcher: {

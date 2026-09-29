@@ -493,7 +493,7 @@ EN.gridView = (function () {
       ]);
     };
     var grids = el("div.row.wrap", { style: { gap: "8px" } }, [
-      box("SECURITY RATING", security, "var(--accent)", "beat with d20 " + eng.fmtMod(gd.effectiveAttack)),
+      box("SECURITY RATING", security, "var(--accent)", "meet or beat with d20 " + eng.fmtMod(gd.effectiveAttack)),
       box("CIPHER SAVE", "+" + saveBonus, "var(--gold)", "node rolls d20 vs your DC " + gd.effectiveSaveDC),
       box("INTEGRITY", integrity == null ? "-" : integrity, integrity == null ? "var(--text3)" : "var(--flow)", integrity == null ? "Minion (1 hit bricks)" : "hits to brick"),
       box("FIREWALL THR", fw ? fw.threshold : "-", fw ? "var(--danger)" : "var(--text3)", fw ? "dmg must exceed" : "no firewall")
@@ -688,10 +688,12 @@ EN.gridView = (function () {
     var tip = edge.parts.length ? edge.parts.map(function (p) { return "+" + p.value + "  " + p.label; }).join("\n") : "No Edge sources yet";
     var kids = [];
     kids.push(noteP("Extended, out-of-combat intrusion runs the Dice Pool Method: your pool against the GM's Snag. The moment a combat round starts, flip back to Hot Run and the d20.", "var(--text2)"));
-    // Codebreaker Suite gate
+    // Codebreaker Suite chip. Advisory only: nothing below reads hasSuite, so it gates no roll. The
+    // book (28 Sep) no longer makes the suite a requirement for Hacks and Quick Hacks; its Basic Use
+    // now only enables decrypt, deleted-data recovery, and hostile-code analysis at full effect.
     var hasSuite = deepOwned(ch, "Codebreaker Suite");
     kids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center", margin: "0 0 6px" } }, [
-      el("span.chip", { title: hasSuite ? "Core hacking software installed; hacks and executables run at full effect." : "Required for most hacks; without it, hacking procedures are usually impossible at GM discretion. Buy it in the gray market.",
+      el("span.chip", { title: hasSuite ? "Core hacking software installed. Enables decrypt, deleted-data recovery, and hostile-code analysis at full effect." : "Enables decrypt, deleted-data recovery, and hostile-code analysis at full effect. Buy it in the gray market.",
         style: { fontSize: "9px", color: hasSuite ? "var(--success)" : "var(--danger)", borderColor: hasSuite ? "var(--success)" : "var(--danger)" } },
         hasSuite ? "✓ CODEBREAKER SUITE" : "⚠ NO CODEBREAKER SUITE"),
       edge.skill && edge.skill.untrained ? el("span.chip", { title: "Untrained in Systems: +2 Snag Dice on the pool", style: { fontSize: "9px", color: "var(--warn)", borderColor: "var(--warn)" } }, "UNTRAINED +2 SNAG") : null,

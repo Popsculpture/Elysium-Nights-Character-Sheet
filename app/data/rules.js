@@ -12,8 +12,8 @@ EN.rules = {
   // A duration written in minutes converts to rounds at a flat rate, and the book
   // states it six times: the chapter opener ("Six to ten seconds of motion, Flow,
   // and bad decisions per round"), the Round heading and its glossary row, "A
-  // duration of 1 minute is treated as 10 rounds of active combat", the Out of
-  // Combat Time bullet, and the closing "usually treating 1 minute as 10 rounds".
+  // duration of 1 minute is treated as 10 rounds of active combat", the Out-of-Combat
+  // Time bullet, and the closing "usually treating 1 minute as 10 rounds".
   // Part 1 spells it inline as "1 minute (10 rounds)".
   //
   // A Scene is NOT a unit of time. The book defines it as "a continuous stretch of
@@ -49,7 +49,7 @@ EN.rules = {
     costToReach: { 8:-2, 10:0, 11:1, 12:2, 13:3, 14:5, 15:7, 16:10 },
     maxFlaws: 1
   },
-  standardArray: [16, 14, 12, 10, 10, 8],
+  standardArray: [16, 16, 14, 12, 12, 8],
   hardCapMax: 20,
 
   /* Encumbrance and Load ---------------------------------------------------
@@ -66,8 +66,8 @@ EN.rules = {
       { key: "heavy",    name: "Heavy",    delta: 3,  effect: "You are Encumbered for the run. Nobody asks the walking armory for a lunch order." }
     ],
     states: {
-      unencumbered: { name: "Unencumbered", effect: "Move and act normally; no penalties from carried weight." },
-      encumbered:   { name: "Encumbered",   effect: "Speed -2. Snag on in-combat Agility or Body d20 checks that rely on nimble movement, balance, climbing, swimming, squeezing, or sudden repositioning; +1 Snag Die on related out-of-combat Dice Pools." },
+      unencumbered: { name: "Unencumbered", when: "You are at or below your Load Budget, and your Loadout isn't Heavy.", effect: "Move and act normally; no penalties from carried weight." },
+      encumbered:   { name: "Encumbered",   when: "You are on a Heavy Loadout, carrying more Load than your Load Budget, or hauling something that is clearly heavy but still plausible.", effect: "Speed -2. Snag on in-combat Agility or Body d20 checks that rely on nimble movement, balance, climbing, swimming, squeezing, or sudden repositioning; +1 Snag Die on related out-of-combat Dice Pools." },
       overloaded:   { name: "Overloaded",   effect: "Speed halved (round down) and no Dash. Snag on all Agility d20 checks and most Body checks (pure bracing or holding excepted); +1 Snag Die on related out-of-combat Dice Pools. No Complex Actions that need careful movement until you drop part of the load. Staying Overloaded through an extended physical scene can cost 1 Fatigue." }
     },
     hauls: [
@@ -77,7 +77,7 @@ EN.rules = {
     ],
     loadTable: [
       { load: "0",  items: "Clothes, credsticks, comms, loose ammo, small personal items" },
-      { load: "1",  items: "Sidearm, light melee weapon, compact medkit, smartdeck, reagent pouch, small tool" },
+      { load: "1",  items: "Sidearm, light melee weapon, light armor, medkit, Smartdeck, reagent pouch, small tool" },
       { load: "2",  items: "Longarm, medium melee weapon, shield, full toolkit, Trauma Rig, drone, medium armor, bulky pack" },
       { load: "3",  items: "Heavy weapon, heavy shield, breaching kit, heavy tool rig, heavy armor, dense duffel" },
       { load: "4+", items: "Unconscious adult, cargo crate, generator, server rack, turret, industrial case (stowed as cargo; carried in the arms it is a Haul instead)" }
@@ -301,8 +301,8 @@ EN.rules = {
     using: [
       "Action Economy: attacking costs an Action. Grabbing an obvious item within reach costs a Swift Action.",
       "No Proficiency: nobody trains on a fire extinguisher. You don't add a Weapon Proficiency Bonus to an improvised attack roll.",
-      "Melee: roll an in-combat d20 (or out-of-combat Dice Pool) + your Body modifier + any relevant Skill.",
-      "Thrown: roll an in-combat d20 (or out-of-combat Dice Pool) + your Body or Agility modifier + any relevant Skill."
+      "Melee: roll a d20 + your Body Modifier + any relevant Skill Proficiency Bonus.",
+      "Thrown: roll a d20 + your Body or Agility Modifier + any relevant Skill Proficiency Bonus."
     ],
     damageNote: "Size sets the die. Balance sets the trait: anything that sloshes, sags, squirms, or carries its weight at the wrong end is Unwieldy at any size. Pick a base die and a damage type (Bludgeoning, Slashing, or Piercing) from the object's shape and heft. The GM may shift the die one step either way for exceptionally dense or soft materials.",
     damage: [
@@ -348,7 +348,12 @@ EN.rules = {
   // Gear proficiency categories (acquired/upgraded with Training Points).
   gear: {
     weapons: ["Simple Weapons", "Martial Weapons", "Sidearms", "Longarms", "Heavy Weapons", "Explosive Launchers", "Thrown Weapons", "Bowfire Weapons"],
-    armor: ["Light Armor", "Medium Armor", "Heavy Armor", "Physical Shields", "Warding Foci"],
+    /* Powered Frames added 2026-09-28, between Physical Shields and Warding Foci as the book
+       lists them. Saved records keep armor proficiency as a { category name: tier } map, so a
+       character saved before this has no entry and reads Untrained; nothing needs migrating.
+       Heavy Armor proficiency is still what lets you WEAR a frame. This one is the training
+       the Powered trait refers to (its Powered Benefits). No class or background grants it. */
+    armor: ["Light Armor", "Medium Armor", "Heavy Armor", "Physical Shields", "Powered Frames", "Warding Foci"],
     tools: ["Medical Tools", "Engineering Tools", "Systems Tools", "Investigation Tools", "Infiltration Tools", "Security Tools", "Fieldcraft Tools", "Media Tools", "Glamour Tools", "Bureaucracy Tools", "Ritual Implements"],
     vehicles: ["Ground Vehicles", "Aerial Vehicles", "Marine Vehicles", "Industrial / Mechs", "Starcraft"]
   },
@@ -391,7 +396,7 @@ EN.rules = {
     ranged:   "d20 + Agility Modifier + Weapon Proficiency Bonus",
     check:    "d20 + Attribute Modifier + Skill Proficiency Bonus + Situational (static modifiers cap at +15; Focus Caliber rides outside the cap)",
     resource: "Maximum Pool = Caliber + key Attribute Modifier (minimum 1)",
-    flow:     "Max Flow = (Caliber × 3) + Flow Modifier; Flow DC = 8 + Flow Modifier + Caliber",
+    flow:     "Reservoir = (Caliber × 3) + Flow Modifier; Flow Save DC = 8 + Flow Modifier + Caliber",
     flowAttack: "d20 + Flow Modifier + Caliber",
     help:     "Assist check d20 + modifier vs DC 15; on a hit +2/+3/+4 by Proficient/Expertise/Mastery (d20), or +1/+2/+3 Edge Dice up to +3 total (Dice Pool)"
   },

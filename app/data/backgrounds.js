@@ -300,7 +300,7 @@ EN.backgrounds = [
     blurb: "You learned how fragile everything is when there's nothing beneath your feet. Vacuum, microgravity, and long stretches of isolation teach habits that never fully go away. You learned to trust tethers, check seals twice, and fix things where failure means drifting forever.",
     skills: {
       granted: ["Engineering"],
-      choose: { count: 1, options: ["Awareness", "Systems"] }
+      choose: { count: 1, options: ["Perception", "Systems"] }
     },
     proficiencies: [
       "Tools: Choose one (Engineering Tools, Fieldcraft Tools)",

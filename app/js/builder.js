@@ -1387,7 +1387,7 @@ EN.builder = (function () {
         var gp = resourcePicker(ch); if (gp) corePb.push(gp);
       }
       if (ch.class === "shaper" && d.flow) {
-        corePb.push(feature("Flow Points (Reservoir)", "Max Flow = (Caliber × 3) + " + d.flow.attributeName + " Modifier = " + d.flow.max + "\nFlow Save DC = 8 + " + d.flow.attributeName + " Mod + Caliber = " + d.flow.dc, "flow", "Flow " + d.flow.max));
+        corePb.push(feature("Flow Points (Reservoir)", "Reservoir = (Caliber × 3) + " + d.flow.attributeName + " Modifier = " + d.flow.max + "\nFlow Save DC = 8 + " + d.flow.attributeName + " Mod + Caliber = " + d.flow.dc, "flow", "Flow " + d.flow.max));
         var rp = resonancePicker(ch); if (rp) corePb.push(rp);
       }
       // starting proficiencies, color-coded chip rows

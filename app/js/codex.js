@@ -319,6 +319,7 @@ EN.codexView = (function () {
       (C.cover || []).map(function (cv) { return ruleBlock(cv.name, cv.effect); })
         .concat(C.lineOfSight ? [ruleBlock("Line of Sight", C.lineOfSight)] : [])
         .concat(C.obscurement ? [ruleBlock("Obscurement", C.obscurement)] : [])
+        .concat(C.tremorSense ? [ruleBlock("Tremor Sense", C.tremorSense)] : [])
         /* Destructible Cover and its material table were carried in EN.combat but rendered
            nowhere, so a player could not reach either. They print in this order in the book:
            Destructible Cover, the table it refers to, Effects and Objects, Overflow Damage,

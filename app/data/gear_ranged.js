@@ -11,11 +11,11 @@ EN.gearCatalog.ranged = {
   intro: "In Elysium, the gap between you and trouble is the only currency that buys you time. Ranged weapons are what you spend to keep that gap honest.",
   saveDcNote: "Weapon Save DC (Range): whenever a firing mode or shell forces a saving throw, the DC is 8 + your Agility Modifier + your Caliber. A Thrown weapon uses the higher of your Body or Agility modifier instead.",
   groupIntros: {
-    "Sidearm": "Compact firearms built for the quick draw, the close hallway, the backup tucked under a jacket. Less range and less raw output than a longarm, but they fit where longarms cannot, and they decide whether you make it to the door.",
+    "Sidearm": "Compact firearms built for the quick draw. Pistols, revolvers, machine pistols, tasers. Less range and less raw output than a longarm, but they fit where longarms can't, and they decide whether you make it to the door.",
     "Longarm": "Two hands, two points of stability, two reasons the bullet goes where you wanted it to. Rifles, carbines, shotguns. Longarms own the open ground, where distance is the best armor you have.",
     "Heavy": "The platforms that win ground through sheer volume, or punch through walls a rifle bounces off. You give up mobility and you give up subtlety. What you get back is the kind of fire that ends arguments about whether a position can be held.",
     "Launcher": "Grenade launchers, rocket tubes, missile launchers. The hardware that lets you clear a fortified position from somewhere the people inside can't easily shoot back. The ammunition is the cost. The collateral is the receipt.",
-    "Thrown": "Balanced canisters, fused charges, throwable payloads tuned so the next throw lands like the last one. A problem you can put on the other side of a door before opening it.",
+    "Thrown": "Balanced canisters, fused charges, throwable payloads tuned so the next throw lands like the last one. Grenades, flashbangs, EMP packs, smoke. Silent delivery instead of a report that brings half the building down on you.",
     "Bowfire": "Tension instead of powder. No flash, no thunder, no muzzle signature. They reward the patient and the precise, and they are quiet enough that the second body never knows the first one fell."
   },
 
@@ -138,7 +138,7 @@ EN.gearCatalog.ranged = {
       traits: ["Explosive (Area 3 Sphere)", "Thrown (4/12)"], availability: "Uncommon", legality: "Restricted",
       desc: "An upgraded frag with more shrapnel and a wider kill zone. Costs more, kills more, leaves less to identify afterward." },
     { name: "Smoke Grenade", group: "Thrown", price: 75, damage: "0", ammo: 1, range: "4 / 12",
-      traits: ["Explosive (Area 3 Sphere)", "Obscuring", "Cover", "Thrown (4/12)"], availability: "Common", legality: "Licensed",
+      traits: ["Explosive (Area 3 Sphere)", "Obscuring", "Thrown (4/12)"], availability: "Common", legality: "Licensed",
       desc: "A canister that trades damage for cover and confusion. The cleanest extraction tool nobody talks about until they need it." },
 
     /* ---- Bowfire ---- */
@@ -169,7 +169,7 @@ EN.gearCatalog.ranged = {
 EN.gearCatalog.ammo = {
   intro: "Talk is cheap in Elysium. Lead is not. The right round seated in the right chamber at the right second: that is the thin margin between finishing the contract and bleeding out behind a dumpster while the city bills your estate for the cleanup.",
   mystechNote: "Most rounds are inert until the primer goes. Mystech rounds are never inert. They are etched, tuned, or quenched in something that was alive in the metaphysical sense, and they carry that current all the way down the barrel and out the other side. You don't buy these at a gun store.\n\nMystech ammunition uses the Mystech Availability scale (Iconic through Artifact) and is almost always Contraband. All of it is Counted, tracked one round at a time, and it comes in small lots because nobody makes it in volume.\n\nBacklash (all Mystech rounds): a Mystech round leaves a resonance signature when it fires. Until the end of the scene you read as Flow-touched to shrines, Shapers, Flow-sensitive trackers, and any #GRID system tuned to watch for it. Beyond that, the round only bites when the channel slips: on a Natural 1 on the attack roll, the discharge flares back through the weapon. You take 1d4 Resonant damage, or, if you have a Flow Reservoir, you lose 1d4 Flow Points instead. If that loss takes your Reservoir below 0, standard Overdraw rules apply.",
-  trackingNote: "Plentiful ammo (sidearms, longarms, bowfire): track only the loaded magazine and restock between contracts. Counted ammo (heavy weapons, launchers, all Specialty): track every unit. A missile is a decision, not a refill.",
+  trackingNote: "Plentiful ammo (sidearms, longarms, bowfire): track only the loaded magazine and restock between contracts. Counted ammo (heavy weapons, launchers, all Specialty): track every unit.",
 
   items: [
     /* ---- Standard · Plentiful ---- */
@@ -275,7 +275,7 @@ EN.gearCatalog.ammo = {
       desc: "A canister payload that bursts into a cloud nobody wants to breathe.",
       effect: "The area fills with a lingering cloud (Persistent, lightly Obscuring) until the end of the encounter or until dispersed. Anyone that enters or starts its turn in the cloud makes a Body Save vs your Weapon Save DC or gains Poisoned until it leaves and saves at the start of its next turn." },
     { name: "Smoke Shell", group: "Launcher Shell", price: 40, unit: "each", availability: "Common", legality: "Licensed",
-      feeds: "Grenade Launcher", traits: ["Explosive (Area 4 Sphere)", "Obscuring", "Cover"],
+      feeds: "Grenade Launcher", traits: ["Explosive (Area 4 Sphere)", "Obscuring"],
       desc: "The cleanest tool in the bandolier. Puts a wall of gray exactly where you need it, two blocks further than you could throw it.",
       effect: "The area becomes heavily Obscuring until the end of the encounter or until dispersed by wind or force." },
     { name: "EMP Shell", group: "Launcher Shell", price: 80, unit: "each", availability: "Uncommon", legality: "Restricted",

@@ -20,19 +20,22 @@ EN.weaponParts = {
 
   /* ---- Slot Count: how many total Parts a weapon can carry --------------
      Keyed by the catalog's weapon `group`. A specific weapon can override this
-     with a manual profile (Holdout 1, Revolver 2, Light bow 2, Hand crossbow 4)
-     stored as _profile on its loadout. Signature weapons carry 0. */
+     with a manual profile (Holdout 1, Revolver 2, Light frame 2, Hand crossbow 4,
+     Full frame 5) stored as _profile on its loadout, by KEY: the labels below are
+     display only, so "Light bow" became "Light frame" without touching `lightbow`.
+     Signature weapons carry 0. */
   slotCountByGroup: { Sidearm: 4, Longarm: 5, Heavy: 5, Launcher: 5, Bowfire: 5, Simple: 4, Martial: 4 },
   // manual profiles for the per-weapon override picker
   profiles: [
     { key: "auto",         name: "By weapon type", count: null },
     { key: "holdout",      name: "Holdout / tiny frame", count: 1 },
     { key: "revolver",     name: "Revolver", count: 2 },
-    { key: "lightbow",     name: "Light bow (recurve, folding)", count: 2 },
+    { key: "lightbow",     name: "Light frame (recurve, folding bow)", count: 2 },
     { key: "sidearm",      name: "Sidearm", count: 4 },
     { key: "handcrossbow", name: "Hand crossbow", count: 4 },
     { key: "melee",        name: "Melee", count: 4 },
     { key: "longarm",      name: "Longarm / full frame", count: 5 },
+    { key: "fullframe",    name: "Full frame (compound bow, standard or heavy crossbow, arbalest)", count: 5 },
     { key: "signature",    name: "Signature (no slots)", count: 0 }
   ],
 
@@ -151,9 +154,12 @@ EN.weaponParts = {
     { key: "full-auto-receiver", name: "Full-Auto Receiver", category: "ranged", slot: "core", partType: "Mod", fits: "Any Firearm", price: 500, rarity: "Rare", legality: "Restricted",
       grants: "Full-Auto (and Burst Fire)", effect: "The weapon gains the Full-Auto firing mode. If it lacks Burst Fire, it gains that firing mode as well." },
     { key: "match-trigger-group", name: "Match Trigger Group", category: "ranged", slot: "core", partType: "Mod", fits: "Semi-Auto Firearm", price: 600, rarity: "Uncommon", legality: "Licensed",
-      grants: "Precision Frame", effect: "Apply Precision Frame. The weapon's Single Shot and Semi-Auto attacks score a critical hit on a roll of 19 or 20." },   /* 2026-08-19: the mode limit is gone. The mod grants Precision Frame in full, matching the
-         trait's own unconditional definition, so a Match-Trigger weapon crits on 19-20 in every fire
-         mode. "fits" stays Semi-Auto Firearm: that is which weapons can take the part, not which
+      grants: "Precision Frame", effect: "Apply Precision Frame. The weapon's Single Shot and Semi-Auto attacks score a critical hit on a roll of 19 or 20." },   /* 2026-09-28: the mode limit is back, in the book. The 2026-08-19 ruling struck it so the mod
+         granted Precision Frame in full; the 28 Sep manuscript states it on the mod AND on the trait
+         itself: Precision Frame scores 19-20 on Single Shot and Semi-Auto attacks only, so a
+         Match-Trigger weapon firing Burst or Full-Auto does not. Display text only: combat.js sets
+         critMin from Specialization alone, so no crit range is computed for this trait in any mode.
+         "fits" stays Semi-Auto Firearm: that is which weapons can take the part, not which
          modes it works in, and the two were easy to conflate. */
     { key: "anti-jam-action", name: "Anti-Jam Action", category: "ranged", slot: "core", partType: "Mod", fits: "Any Firearm", price: 200, rarity: "Common", legality: "Licensed",
       grants: "Reliable", effect: "Apply the Reliable trait. Its reinforced, cleaned-up action doesn't choke." },
@@ -185,7 +191,7 @@ EN.weaponParts = {
     { key: "compensator", name: "Compensator", category: "ranged", slot: "utility", partType: "Accessory", fits: "Any Firearm", price: 150, rarity: "Common", legality: "Licensed",
       grants: "Stabilized", effect: "Apply the Stabilized trait. You count as Stabilized when resolving the High Recoil trait, negating its Snag." },
     { key: "weapon-light", name: "Weapon Light", category: "ranged", slot: "utility", partType: "Accessory", fits: "Any Ranged", price: 40, rarity: "Common", legality: "Legal",
-      grants: "Project a light cone; reveals your position", effect: "Special: Project a beam in a cone you choose. For you and adjacent allies, the beam negates darkness for vision within that cone. Anything that can see the light can identify your position." },
+      grants: "Project a light cone; reveals your position", effect: "Free: Project a beam in a cone you choose. For you and adjacent allies, the beam negates darkness for vision within that cone. Anything that can see the light can identify your position. Switching it on or off is a Free Action." },
     { key: "case-catcher", name: "Case Catcher", category: "ranged", slot: "utility", partType: "Accessory", fits: "Any Firearm", price: 30, rarity: "Common", legality: "Legal",
       grants: "Leaves no brass", effect: "The weapon catches its ejected casings, leaving no spent brass at the scene. Investigations relying on recovered casings to trace the weapon find nothing." },
     { key: "target-spotter", name: "Target Spotter", category: "ranged", slot: "utility", partType: "Accessory", fits: "Any Ranged", price: 300, rarity: "Uncommon", legality: "Restricted",
@@ -233,7 +239,7 @@ EN.weaponParts = {
     stabilized: "Stabilized sources do not stack: multiple Parts negate the High Recoil Snag only once.",
     dieStep: "A weapon gains at most one damage die step from aftermarket Parts. It still stacks with steps from class features, cyberware, or the Flow.",
     legality: "A Part never lowers a weapon's legality, only raises the heat. The strictest tag among the weapon and everything on it is what a scanner reports.",
-    install: "Accessories snap on anytime out of initiative, no roll. Mods are bench work: a Short or Long Rest with a relevant tool kit and Proficiency, occasionally a single Engineering check or a short crafting Project."
+    install: "Accessories snap on anytime out of initiative, no roll. Mods are bench work: Downtime with a relevant tool kit and Proficiency, occasionally a single Engineering check or a short crafting Project."
   }
 };
 

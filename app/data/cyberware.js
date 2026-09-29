@@ -65,7 +65,7 @@ EN.cyberware = {
         { tier: "Blackware",  sp: 2, price: 22000, legality: "Restricted" }
       ] },
     { key: "reflex", short: "Reflex Booster", name: "Reflex Booster", zone: "Neural", enhancement: "+1 Agility",
-      desc: "A neural co-processor woven through the brainstem that accelerates the speed of thought between perception and action. Combat freelancers consider this the essential investment.",
+      desc: "A neural co-processor woven through the brainstem and upper spinal cord that cuts the lag between perception and action. Combat-focused Freelancers consider this the essential investment.",
       effect: "+2 Initiative and +1 Speed. Once per Encounter, spend a Swift Action to gain an additional Move or Swift Action this turn.",
       street: "No Enhancement; jittery, first time you take combat damage each session, Body Save DC 12 or take 1d4 Vitality as it misfires.",
       black: "+4 Initiative, +2 Speed, and once per Encounter (Impulse) fully evade one ranged hit.",
@@ -76,7 +76,7 @@ EN.cyberware = {
       ] },
     { key: "disruption", short: "Disruption Lattice", name: "Disruption Lattice", zone: "Neural", enhancement: "None", mystech: true,
       desc: "Resonance-dampening circuitry through the upper spine and skull. Built to counter Shapers; it does not discriminate; it dampens the Flow for everyone near the wearer, including the wearer.",
-      effect: "Passive Area 2 disruption field: all Invocations cost +1 FP, friend or foe, always on. Pulse (Impulse, 1/Short Rest): sustained Invocations within 3 spaces make a Focus Disruption check DC 14 or end.",
+      effect: "Passive Area 2 disruption field: all Invocations cost +1 FP, friend or foe, always on. Pulse (Impulse, 1/Short Rest, at any point outside your turn): sustained Invocations within 3 spaces must succeed on a Focus Check (a Wits or Body Save, DC 14) or end immediately.",
       street: "Field shrinks to Area 1, no Pulse; audible static → Snag on Stealth within 2 spaces of anyone.",
       black: "Area 3 field, Pulse up to 2/Short Rest, plus targeted suppression (Action, 3 charges/Long Rest): one Flow-user within 6 spaces casts at +2 FP with Snag until the start of your next turn.",
       tiers: [
@@ -104,7 +104,7 @@ EN.cyberware = {
       ] },
     { key: "biomonitor", short: "Biomonitor", name: "Biomonitor", zone: "Core", enhancement: "None",
       desc: "An internal pharmacy and diagnostic suite in your torso, releasing precise doses of stims, painkillers, or stabilizers on trauma or command. The exec's daily chrome and the operator's emergency reserve.",
-      effect: "1/Short Rest (Special Action): regain 1d6 Vitality; OR remove one stack of Bleeding/Burning/Poisoned; OR Edge on your next Body Save this round.",
+      effect: "1/Short Rest (Swift Action, on your turn): regain 1d6 Vitality; OR remove one stack of Bleeding or end the Burning or Poisoned condition; OR Edge on your next Body Save this round.",
       street: "Imprecise, each use roll 1d6; on a 1 the effect fails (use still spent).",
       black: "Twice/Short Rest, any combination of effects, and +2 Speed automatically on round 1 of any combat.",
       tiers: [
@@ -123,8 +123,8 @@ EN.cyberware = {
         { tier: "Blackware",  sp: 2, price: 15000, legality: "Licensed", bonus: { resist: ["Toxic", "Radiation"] } }
       ] },
     { key: "feedbackCore", short: "Resonance Feedback Core", name: "Resonance Feedback Core", zone: "Core", enhancement: "None", mystech: true,
-      desc: "A reactive implant in the upper torso that absorbs incoming Flow and re-emits it as kinetic or thermal output. The rare chrome that lets an Unattuned character interact with the Flow, not just resist it.",
-      effect: "Taking Invocation damage grants a Feedback Charge (max 3). Discharge (Impulse): spend 1 charge for +1d6 Resonant on a melee or ranged attack within 6, resisted by nothing but specific Resonant-resistant materials. Surge (Action): spend 2 charges for an Area 3 sphere centered on yourself, Body Save DC 14 or 2d6 Resonant and pushed 1 space. Discharge Burst (Action): spend 3 charges for an Area 6 Cone, 4d6 Resonant with no save, then a 1-hour cooldown that generates no new charges. Charges expire in 10 min.",
+      desc: "An implant in the upper torso that absorbs incoming Flow and re-emits it as raw resonance. The rare chrome that lets an Unattuned character interact with the Flow, not just resist it.",
+      effect: "Taking Invocation damage grants a Feedback Charge (max 3). Discharge (Impulse): at any point outside your turn, spend 1 charge to make a melee or ranged attack within 6 that deals +1d6 Resonant on hit, resisted by nothing but specific Resonant-resistant materials. Surge (Action): spend 2 charges for an Area 3 sphere centered on yourself, Body Save DC 14 or 2d6 Resonant and pushed 1 space. Discharge Burst (Action): spend 3 charges for an Area 6 Cone, 4d6 Resonant with no save, then a 1-hour cooldown that generates no new charges. Charges expire in 10 min.",
       tiers: [
         { tier: "Prototype", sp: 2, price: 25000, legality: "Restricted" }
       ] },
@@ -144,7 +144,7 @@ EN.cyberware = {
 
     /* ---------------- Integument ---------------- */
     { key: "subdermal", short: "Subdermal Armor", name: "Subdermal Armor", zone: "Integument", enhancement: "+1 Body",
-      desc: "Plates of ballistic-grade composite under the skin. The signature chrome of street samurai and corp guards. It doesn't make you bulletproof; it turns lethal hits into survivable ones.",
+      desc: "Plates of ballistic-grade composite under the skin. The signature chrome of gangers and corp guards. It doesn't make you bulletproof; it turns lethal hits into survivable ones.",
       effect: "+1 DR against Ballistic, Piercing, Bludgeoning, and Slashing. Stacks with worn armor.",
       street: "No Enhancement; rough alignment, close inspection (DC 12) spots the bulges and scar lines through clothing.",
       black: "+2 DR vs all physical, plus a reactive surface: first melee hit each combat reflects 1d4 of the same type back.",
@@ -157,7 +157,7 @@ EN.cyberware = {
       desc: "Composite woven through your bones. It doesn't make you stronger by itself, but it makes you durable enough to use strength you couldn't otherwise survive.",
       effect: "+1 Wound max; half damage from falls; Edge on Body Saves vs prone/grapple/forced movement; unarmed strikes deal 1d6 Bludgeoning.",
       street: "No Enhancement; 25% heavier, matters for vehicles, climbing, and weight sensors.",
-      black: "+2 Wound max, 1d8 unarmed (one as a Swift Action 1/round), resist fall damage up to 12 spaces.",
+      black: "+2 Wound max, 1d8 unarmed (one as a Swift Action 1/round), one-quarter damage from falls of up to 12 spaces (rounded down), replacing the Brandware reduction for those falls.",
       tiers: [
         { tier: "Streetware", sp: 2, price: 3000,  legality: "Licensed", bonus: { wounds: 1 } },
         { tier: "Brandware",  sp: 2, price: 9000,  legality: "Licensed", bonus: { wounds: 1 } },
@@ -191,7 +191,7 @@ EN.cyberware = {
       desc: "Full prosthetic legs. Most people got them involuntarily and upgraded after. A platform with mod slots, like Cyberarms.",
       effect: "+2 Speed and Edge on Athletics for jumping, climbing, balance. Install compatible mods in its slots without adding their SP to Total Static; the platform already paid it.",
       street: "+1 Speed only, 2 slots, no Enhancement; audible servos → Snag on Stealth while moving >half Speed.",
-      black: "+3 Speed, 4 slots, plus Burst Sprint (Impulse, 1/Encounter): triple Speed for one Move, ignoring opportunity attacks.",
+      black: "+3 Speed, 4 slots, plus Burst Sprint (Impulse, 1/Encounter, on your turn when you take a Move Action): triple Speed for that Move Action, ignoring opportunity attacks.",
       tiers: [
         { tier: "Streetware", sp: 2, slots: 2, price: 4500,  legality: "Licensed", bonus: { speed: 1 } },
         { tier: "Brandware",  sp: 3, slots: 3, price: 14000, legality: "Licensed", bonus: { speed: 2 } },
@@ -199,7 +199,7 @@ EN.cyberware = {
       ] },
     { key: "springJoints", short: "Spring Joints", name: "Spring Joints", zone: "Legs", enhancement: "None", platformHost: "cyberlegs",
       desc: "Leg modifications that store and release kinetic energy explosively. Couriers, parkour operators, and roof-runners consider this essential. Can slot into a Cyberleg without adding SP, operating from a fully integrated mounting that takes no Stealth Snag even at Streetware.",
-      effect: "Jump twice your distance; no damage from falls up to 4 spaces. Impulse 1/round: leap up to 3 spaces in any direction without provoking opportunity attacks.",
+      effect: "Jump twice your distance; no damage from falls up to 4 spaces. Impulse 1/round, at any point outside your turn: leap up to 3 spaces in any direction without provoking opportunity attacks.",
       street: "Audible clack (Snag on Stealth while moving); after the leap, can't reuse it for 1d4 rounds.",
       black: "Safe fall 8 spaces, leap 5 spaces, and store fall energy: next melee within 1 min of a 2+ space fall deals +1d6 Bludgeoning.",
       tiers: [
@@ -212,7 +212,7 @@ EN.cyberware = {
     { key: "smartlink", short: "Smartlink", name: "Smartlink", zone: "Hardware", enhancement: "+1 Tech",
       desc: "A neural-to-weapon interface, usually paired with a Datajack. Your firearms aim with your eyes and fire with your thoughts. The gunslinger's signature chrome. Requires a neural port.",
       effect: "+1 to attack rolls with a connected smart-weapon, and ignore Snag from cover/prone/partial visibility on your first attack each round.",
-      street: "No Enhancement; firmware quirks, 1d6 on first connect, on a 1 it can't interface until a clinic patch.",
+      street: "No Enhancement; the firmware runs a few patches behind. Roll 1d6 the first time you connect to a new weapon: on a 1, the Smartlink can't interface with that weapon model and you can't use the bonus until you visit a clinic for a calibration patch.",
       black: "+2 to attacks, Snag-ignoring on every attack, plus tag a target (Swift, 1/Encounter) for Edge on all attacks vs it until end of next turn.",
       tiers: [
         { tier: "Streetware", sp: 1, price: 2200,  legality: "Licensed" },
@@ -241,7 +241,7 @@ EN.cyberware = {
       desc: "Micro-sensors across the inner ear, temples, and base of the spine that detect Flow Disturbances. Gives an Unattuned operator technical data the Shaper reads by intuition.",
       effect: "Passively detect Flow Disturbances within 6 spaces (classification + approximate Severity) and active Invocations within 3 spaces. Focused scan (Free, 1/turn): Edge on your next Awareness/Esoterica check about it.",
       street: "No Enhancement; 3-space / 1-space radius; may return false data on a silent GM 1d6=1.",
-      black: "12-space / 6-space radius, exact Severity, and a threat-prediction warning granting Edge on your next Save/Reaction vs an approaching Anomaly.",
+      black: "12-space / 6-space radius, exact Severity, and a threat-prediction warning granting Edge on your next Save vs an approaching Anomaly.",
       tiers: [
         { tier: "Streetware", sp: 1, price: 3200,  legality: "Licensed" },
         { tier: "Brandware",  sp: 1, price: 8500,  legality: "Licensed" },

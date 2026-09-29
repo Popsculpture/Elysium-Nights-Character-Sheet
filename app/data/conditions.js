@@ -51,7 +51,7 @@ EN.conditions = [
   {
     name: "Charmed",
     summary: "Treat charmer as ally; can't harm them",
-    text: "Your loyalty has been rewritten, and the charmer's safety now takes precedence over all else.\n\nHow It Works:\n- You treat the charmer as a trusted ally.\n- You can't directly harm the charmer.\n- The charmer gains Edge on social checks made against you.\n- The condition automatically ends if the charmer or their allies cause clear harm to you.\n\nHow to End It:\n- A Wits or Charm Save (DC set by the effect) at the end of your turn, or an effect that explicitly removes charm, mind control, or similar influence."
+    text: "The charmer feels like someone you can trust.\n\nHow It Works:\n- You treat the charmer as a trusted ally.\n- You can't directly harm the charmer.\n- The charmer gains Edge on social checks made against you.\n- The condition automatically ends if the charmer or their allies cause clear harm to you.\n\nHow to End It:\n- A Wits or Charm Save (DC set by the effect) at the end of your turn, or an effect that explicitly removes charm, mind control, or similar influence."
   },
   {
     name: "Confused",
@@ -101,7 +101,7 @@ EN.conditions = [
   {
     name: "Frightened",
     summary: "Must retreat; Snag on attacks",
-    text: "Fear seizes you, forcing retreat and disrupting focus.\n\nHow It Works:\n- You can't willingly move closer to the source of fear.\n- If within 10 spaces of the source, you must use your movement to retreat to the best available cover or away from it.\n- You roll with Snag on attack rolls and d20 checks (and add +1 Snag Die to Dice Pools) while the source is in sight.\n\nHow to End It:\n- At the end of your turn, make a Wits or Charm Save DC 15. On a success, the condition ends.\n- Effects that remove fear or emotional control also end Frightened."
+    text: "Your legs want distance, and your hands won't hold still.\n\nHow It Works:\n- You can't willingly move closer to the source of fear.\n- If within 10 spaces of the source, you must use your movement to retreat to the best available cover or away from it.\n- You roll with Snag on attack rolls and d20 checks (and add +1 Snag Die to Dice Pools) while the source is in sight.\n\nHow to End It:\n- At the end of your turn, make a Wits or Charm Save DC 15. On a success, the condition ends.\n- Effects that remove fear or emotional control also end Frightened."
   },
   {
     /* Added 2026-09-19. This condition exists BECAUSE of the Bricked timer collision recorded in
@@ -133,9 +133,18 @@ EN.conditions = [
     text: "Your biology incorporates enough integrated technology that you bridge the gap between organism and machine. You don't gain the immunities of Machine Physiology, but your internal networks become permanently exposed to digital and electromagnetic interference.\n\nHow It Works:\n- System Exposure: You can be directly targeted by Quick Hacks and abilities that explicitly target \"systems,\" \"hardware,\" or \"networks.\"\n- Electromagnetic Interference: You suffer Snag on Saving Throws against EMP effects, digital viruses, and Flow Invocations tuned to the Electromagnetic Base Resonance.\n\nHow to End It:\n- Hardwired is a persistent condition tied to your Static Threshold. It doesn't end with a rest or a saving throw.\n- It ends only if you uninstall enough cyberware to drop your Total Static below Threshold 2 (5 SP), allowing your organic systems to regain dominance."
   },
   {
+    /* Added 2026-09-28, when the manuscript gave Hidden its own entry. Hyper-Vigilant, Fox-Feint,
+       Warmblood Sense and Hare-Trigger Instinct already name Hidden as a condition, so it was
+       being referred to without being defined. Unlike Invisible it is a relation to ONE Target,
+       not a state everyone sees, so its COND_FX rider is a note and sets no vsYou lane. */
+    name: "Hidden",
+    summary: "Unseen by one Target; it can't target you, Edge on your attacks",
+    text: "They might know you're in the room. They don't know where to point the gun.\n\nHow It Works:\n- You're Hidden from a specific Target. You need to be out of its sight (behind cover it can't see past, or in a heavily obscured area) and make a d20 Stealth check (your Action in combat) that equals or beats its Passive Perception.\n- It can't target you, and you gain Edge on attack rolls against it.\n\nHow to End It:\n- You attack, or it finds you: a Perception check that equals or beats your Stealth result, or you're in its clear view."
+  },
+  {
     name: "Immunity",
     summary: "Take no damage of specified type",
-    text: "You are unaffected by a specific type of harm.\n\nHow It Works:\n- You take no damage of the specified type. Attacks of that type may still carry narrative effects if the GM rules so, but they do not harm you mechanically.\n\nRules:\n- Immunity overrides Resistance and Vulnerability for the same damage type.\n- Multiple sources of Immunity to the same type do not stack."
+    text: "You are unaffected by a specific type of harm.\n\nHow It Works:\n- You take no damage of the specified type. Attacks of that type may still carry narrative effects if the GM rules so, but they don't harm you mechanically.\n\nRules:\n- Immunity overrides Resistance and Vulnerability for the same damage type.\n- Multiple sources of Immunity to the same type don't stack."
   },
   {
     name: "Incapacitated",
@@ -210,7 +219,7 @@ EN.conditions = [
   {
     name: "Soul Shock",
     summary: "Mystic backlash; take damage and mental penalties",
-    text: "A violent surge of Flow tears through both body and mind, leaving your spirit shaken and unstable.\n\nHow It Works:\n- When Soul Shock is inflicted, you immediately take 1d6 psychic or Flow damage.\n- You roll with Snag on Mystique and Wits checks (or add +1 Snag Die to related Dice Pools) until you complete a Short Rest.\n- Each additional instance of Soul Shock before you rest increases the damage by +1d6.\n\nHow to End It:\n- Ends after a Short Rest or Long Rest, or with targeted Flow healing that restores spiritual stability."
+    text: "The Flow goes through you like current through a bad wire. Body and mind both take the hit, and neither sits right until you've rested.\n\nHow It Works:\n- When Soul Shock is inflicted, you immediately take 1d6 Psychic or Resonant damage.\n- You roll with Snag on Mystique and Wits checks (or add +1 Snag Die to related Dice Pools) until you complete a Short Rest.\n- Each additional instance of Soul Shock before you rest increases the damage by +1d6.\n\nHow to End It:\n- Ends after a Short Rest or Long Rest, or with targeted Flow healing that restores spiritual stability."
   },
   {
     name: "Staggered",
@@ -235,7 +244,7 @@ EN.conditions = [
   {
     name: "Suppressed",
     summary: "Snag on attack rolls; lose Impulse Actions",
-    text: "Rounds are cracking past close enough to feel. You can shoot back, but not well, and not without putting your head somewhere it should not be.\n\nHow It Works:\n- You roll with Snag on attack rolls.\n- You can't take Impulse Actions.\n\nHow to End It:\n- Ends at the start of the suppressor's next turn. Every effect that applies Suppressed currently says so; if a later one sets a different duration, that entry governs.\n- At the GM's discretion it ends early when the fire stops: the shooter drops, breaks line of sight, or swings the stream onto somebody else. Suppression is a volume of fire, not a status that outlives it."
+    text: "Rounds are cracking past close enough to feel. You can shoot back, but not well, and not without putting your head somewhere it shouldn't be.\n\nHow It Works:\n- You roll with Snag on attack rolls.\n- You can't take Impulse Actions.\n\nHow to End It:\n- Ends at the start of the suppressor's next turn, unless the effect that applied it sets a different duration.\n- At the GM's discretion it ends early when the fire stops: the shooter drops, breaks line of sight, or swings the stream onto somebody else. Suppression is a volume of fire, not a status that outlives it."
   },
   {
     name: "Surprised",
@@ -264,7 +273,7 @@ EN.conditions = [
   {
     name: "Vacuum",
     summary: "Mirrors Drowning; plus 1d6 Cold every round and you can't speak",
-    text: "Pressure is gone. Your lungs empty into nothing and the cold arrives before the panic does.\n\nHow It Works:\n- Vacuum mirrors the Drowning condition exactly. You can hold your breath for a number of rounds equal to your Body score.\n- When this limit is reached, at the start of each of your turns you must make a Body Save DC 10, with the DC increasing by 2 each round you remain exposed.\n- On a failure:\n  - You immediately take 1 Wound damage.\n  - If you are already at or below half your total Wounds, you also fall Unconscious.\n- If your Wounds are reduced to 0 while exposed, you die.\n- Every round, regardless of the save, you take 1d6 Cold damage to exposed skin.\n- You can't speak, and nothing requiring air functions.\n\nSealing Against Vacuum:\n- The Sealed trait alone does NOT hold vacuum. A suit holds vacuum only if its own entry says so.\n- Exactly two paths exist. A Warframe Shell holds vacuum natively. A Rebreather Liner fitted to a suit that is ALREADY Sealed upgrades that seal to hold vacuum; fitted to an unsealed suit it grants only the Sealed benefit, which does not cover vacuum.\n\nHow to End It:\n- Regain pressure and breathable air, or seal into a suit that holds vacuum. You may still carry Fatigue, Cold damage, or other injuries."
+    text: "Pressure is gone. Your lungs empty into nothing and the cold arrives before the panic does.\n\nHow It Works:\n- Vacuum mirrors the Drowning condition exactly. You can hold your breath for a number of rounds equal to your Body score.\n- When this limit is reached, at the start of each of your turns you must make a Body Save DC 10, with the DC increasing by 2 each round you remain exposed.\n- On a failure:\n  - You immediately take 1 Wound damage.\n  - If you are already at or below half your total Wounds, you also fall Unconscious.\n- If your Wounds are reduced to 0 while exposed, you die.\n- Every round, regardless of the save, you take 1d6 Cold damage to exposed skin.\n- You can't speak, and nothing that needs air works.\n\nSealing Against Vacuum:\n- The Sealed trait alone does NOT hold vacuum. A suit holds vacuum only if its own entry says so.\n- Exactly two paths exist. A Warframe Shell holds vacuum natively. A Rebreather Liner fitted to a suit that is ALREADY Sealed upgrades that seal to hold vacuum; fitted to an unsealed suit it grants only the Sealed benefit, which does not cover vacuum.\n\nHow to End It:\n- Regain pressure and breathable air, or seal into a suit that holds vacuum. You may still carry Fatigue, Cold damage, or other injuries."
   },
   {
     name: "Vulnerability",

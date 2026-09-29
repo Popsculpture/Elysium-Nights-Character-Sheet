@@ -6,7 +6,9 @@
    Restricted/Contraband); the strictest tag on anything you carry is what a
    checkpoint scanner cares about. Worn gear that uses a Body Slot calls it out.
    Skill Kits list a Tool Category (the Gear Proficiency that gates Proficient
-   Use) and a Governing Skill. Counted consumables track every unit.
+   Use) and a Governing Skill. A kit the book lets a second category unlock
+   (the Disguise and Styling Kit) names it in categoryAlt: proficiency in either
+   one opens Proficient Use. Counted consumables track every unit.
    =========================================================================== */
 window.EN = window.EN || {};
 EN.gearCatalog = EN.gearCatalog || {};
@@ -24,7 +26,7 @@ EN.gearCatalog.tools = {
         { name: "Investigation & Forensics", intro: "Tool Category: Investigation Tools." },
         { name: "Fieldcraft & Survival", intro: "Tool Category: Fieldcraft Tools." },
         { name: "Security & Custody", intro: "Tool Category: Security Tools." },
-        { name: "Media & Presence", intro: "Media Tools and Glamour Tools." },
+        { name: "Media & Presence", intro: "Tool Category: Media Tools (Field Recording Kit) and Glamour Tools (Disguise and Styling Kit, Venue Kit); the Disguise and Styling Kit also answers to Infiltration Tools." },
         { name: "Bureaucracy & Paper", intro: "Tool Category: Bureaucracy Tools." },
         { name: "Ritual Implements", intro: "Tool Category: Ritual Implements. Governing Skill varies." }
       ] },
@@ -55,7 +57,7 @@ EN.gearCatalog.tools = {
         { name: "Survival, Logistics & Identity", intro: "" }
       ] },
     { key: "flow", title: "Flow Tonics & Resonant Devices",
-      intro: "Drinkable and injectable Flow infusions plus the mystech gear tuned to carry resonance, restoring Flow Points or sharpening Invocations at the usual cost: Strain, Fatigue, and the spike of pushing the current too far.",
+      intro: "Drinkable and injectable Flow infusions, plus the Mystech gear tuned to carry resonance. The tonics twist and amplify the current directly inside the body, restoring Flow Points or sharpening Invocations at the usual cost: Strain, Fatigue, and the sudden spike of pushing the current past where the body wants it.",
       groups: [
         { name: "Resonance Tonics", intro: "" },
         { name: "Worn Resonant Gear", intro: "Each calls out a Body Slot." },
@@ -67,10 +69,10 @@ EN.gearCatalog.tools = {
         { name: "Smartdecks", intro: "Power User hardware. Governs Cipher complexity ceiling, Device Bonus, and mod slots. Restricted citywide; Contraband in corporate sectors." },
         { name: "B&E Buddies", intro: "Standard User rigs. No Bandwidth, no multi-Link, and locked out of Premium+ nodes. Restricted." },
         { name: "Hardware Mods", intro: "Smartdeck plug-ins. Buy them here, then slot them into a Smartdeck's mod slots on the #GRID tab. B&E Buddies cannot take mods." },
-        { name: "Trauma Rigs", intro: "Governing Skill: Medtech (Tech). Worn. Output Bonus adds to any healing roll the Rig delivers and sets the Triage Save DC; Mod Slots equal the Tier; every Rig counts as a Basic Medkit, and Trauma Grade [2] and up counts as an Advanced Medkit. A Rig carries the trait on its own Tier row and every trait below it." }
+        { name: "Trauma Rigs", intro: "Governing Skill: Medtech (Tech). Worn. Output Bonus adds to any healing roll the Rig delivers and sets the Triage Save DC; Mod Slots equal the Tier; every Rig counts as a Basic Medkit, and Trauma Grade [2] and up counts as an Advanced Medkit. Each Trauma Rig has the trait named for its tier and keeps every trait below it. A Black Clinic rig carries all six." }
       ] },
     { key: "ciphers", title: "Cipher Library",
-      intro: "Power-User ciphers, the exploits a Smartdeck runs against a node that would rather it didn't. Buy them here at the Acquire-Clean price (no roll, one Downtime period), then cast them from your Repertoire on the #GRID tab. A deck runs ciphers up to (Tier + 1) in Complexity. Complexity 0 ships free with every rig as the B&E Buddy Cipher Suite, so it is not sold here.",
+      intro: "Power-User ciphers, the exploits a Smartdeck runs against a Node that would rather it didn't. Buy them here at the Acquire-Clean price (no roll, 8 uninterrupted hours of Downtime), then cast them from your Repertoire on the #GRID tab. A deck runs ciphers up to (Tier + 1) in Complexity. Complexity 0 ships free with every rig as the B&E Buddy Cipher Suite, so it is not sold here.",
       groups: [
         { name: "Improved (Complexity 1)", intro: "The first rung that means anything. Signature: Logic Bomb." },
         { name: "Advanced (Complexity 2)", intro: "The working tier of the professional intruder. Signature: Daisy Chain." },
@@ -222,7 +224,7 @@ EN.gearCatalog.tools = {
       basic: "Enables clean capture, documentation, and playback without improvising.",
       proficient: "Run verification and capture metadata as you record. Your footage is harder to dispute, and an Enemy's attempts to tamper with it, deepfake it, or discredit it roll with Snag on in-combat d20 checks (or +1 Snag Die on out-of-combat Dice Pools) unless they bring specialized counter tech." },
     { name: "Disguise and Styling Kit", bucket: "kits", group: "Media & Presence", price: 120, availability: "Common", legality: "Legal",
-      category: "Glamour Tools", skill: "Persuasion, Deception, Performance", effect: "Edge (or +1 Edge Die) to hold a persona for the next scene after 10 minutes prep.",
+      category: "Glamour Tools", categoryAlt: "Infiltration Tools", skill: "Persuasion, Deception, Performance", effect: "Edge (or +1 Edge Die) to hold a persona for the next scene after 10 minutes prep.",
       desc: "Wardrobe pieces, cosmetics, adhesives, and quick silhouette tools for becoming somebody nobody is looking for.",
       basic: "Supports building a plausible look quickly.",
       proficient: "With 10 minutes of prep, gain Edge on in-combat d20 checks (or +1 Edge Die on out-of-combat Dice Pools) for the next scene to hold a persona. A second scene without re-prepping rolls normally. A third scene rolls with Snag (or +1 Snag Die) as the seams start to show." },
@@ -254,7 +256,7 @@ EN.gearCatalog.tools = {
       proficient: "Classify what you find. After a successful sweep, ask the GM for one additional practical detail: directionality, age, intensity, or likely trigger conditions." },
     { name: "Flow Artificer Kit", bucket: "kits", group: "Ritual Implements", price: 200, availability: "Rare", legality: "Restricted",
       category: "Ritual Implements", skill: "Engineering, Esoterica", effect: "Tunes and repairs Mystech. Edge (or +1 Edge Die), and avoids messy side effects.",
-      edgeDice: 1, requiresProficient: true, edgeNote: "tuning or repairing a mystech device",
+      edgeDice: 1, requiresProficient: true, edgeNote: "tuning or repairing a Mystech device",
       desc: "The instruments required to tune and maintain Mystech without making the resonance angry.",
       basic: "Required to repair or meaningfully modify Mystech devices in the field. Without it, those in-combat d20 checks (or out-of-combat Dice Pools) roll with Snag (or +1 Snag Die), and some tasks are impossible.",
       proficient: "With Proficiency in Ritual Implements, run true tuning work. After at least 10 minutes, gain Edge on one in-combat Engineering or Esoterica d20 check (or +1 Edge Die on an out-of-combat Dice Pool) tied to that device, and on a success avoid the usual messy-resonance complication unless the GM flags the device as unstable." },
@@ -300,7 +302,7 @@ EN.gearCatalog.tools = {
       effect: "As long as the weapon is sheathed here, draw it as part of your first attack with it in an encounter, rather than spending a separate action. Doesn't stack with the Quick Draw weapon trait. The weapon's Load is also reduced by 1 (minimum 0) while sheathed here.",
       desc: "A dedicated rig for one blade, worn at the hip, the thigh, or across the back. The melee counterpart to a Swift Draw Holster." },
     { name: "Swift Draw Holster", bucket: "carry", group: "Carry Gear", price: 35, availability: "Common", legality: "Legal", slot: "Carry", rack: 1, rackFits: "sidearm",
-      effect: "As long as the weapon is sheathed there, draw it as part of your first attack with it in an encounter, rather than spending a separate Action. Does not stack with the Quick Draw weapon trait. The weapon's Load is also reduced by 1 (minimum 0) while sheathed there.",
+      effect: "As long as the weapon is holstered there, draw it as part of your first attack with it in an encounter, rather than spending a separate action. Doesn't stack with the Quick Draw weapon trait. The weapon's Load is also reduced by 1 (minimum 0) while holstered there.",
       desc: "A custom rig tuned to one specific sidearm." },
     { name: "Utility Belt", bucket: "carry", group: "Carry Gear", price: 25, availability: "Common", legality: "Legal", slot: "Carry", rack: 2,
       effect: "Rack 2 items. Each item's Load is reduced by 1 (minimum 0).",
@@ -318,7 +320,7 @@ EN.gearCatalog.tools = {
       effect: "Burns through thin ties, lights fuses, and triggers existing flammable hazards.",
       desc: "A cheap flame for cigarettes, fuses, and small fires." },
     { name: "Echolight Baton", bucket: "devices", group: "Light & Illumination", price: 120, availability: "Uncommon", legality: "Licensed",
-      effect: "With a brief focus, shift it into echo mode: chosen Allies still read the area as bright, clear light, while everyone else sees a faint emergency glow that barely counts as dim. Switch echo mode on or off while the baton is active.",
+      effect: "Effect (Free): With a brief focus, shift it into echo mode: chosen Allies still read the area as bright, clear light, while everyone else sees a faint emergency glow that barely counts as dim. Switch echo mode on or off while the baton is active.",
       desc: "A slender Mystech baton that draws light up out of the Flow.",
       activation: "As an Action, extend and ignite it, shedding bright light in an Area 4 Aura and dim light for another 4 spaces.",
       limitation: "It doesn't make you invisible. It lets your crew work in useful light without broadcasting it." },
@@ -368,7 +370,7 @@ EN.gearCatalog.tools = {
       desc: "High-strength shielded cable with smart clamps. Plugged into compatible ports it is a data and power conduit; it also serves as a climbing line, tie-down, or emergency tow, rated to 1,000 pounds in normal conditions." },
     { name: "Gridline Lumen Cable", bucket: "devices", group: "Traversal & Cable", price: 20, availability: "Common", legality: "Legal",
       effect: "As #GRIDline Cable, plus an Area 2 light radius.",
-      desc: "A #GRIDline Cable with embedded LEDs that shed bright light in an Area 2 Aura and dim light for another 2 spaces wherever it hangs." },
+      desc: "A #GRIDline Cable with embedded LEDs that shed bright light in an Area 2 radius and dim light for another 2 spaces wherever it hangs." },
     { name: "Titan Tether", bucket: "devices", group: "Traversal & Cable", price: 40, availability: "Uncommon", legality: "Licensed",
       effect: "Heavy towing cable. Holds 3,000 to 5,000 lbs.",
       desc: "Reinforced multi-strand cable that holds 3,000 pounds under steady load and up to 5,000 pounds for brief towing or winching at GM discretion. Suitable rigging for most vehicle-scale pulls if you can anchor it." },
@@ -476,7 +478,7 @@ EN.gearCatalog.tools = {
     { name: "Vital Sync Bracer", load: 0, bucket: "devices", group: "Worn Tech", price: 230, availability: "Rare", legality: "Restricted", slot: "Arms",
       effect: "Effect (Special): The first time each day you drop to 0 Wounds, the bracer auto-fires. You are treated as Stabilized as if a successful Stabilize check had been made, and you fall Unconscious instead of spiraling into immediate worsening. It pings Allies with your status and location if they have linked comms or monitors.",
       desc: "A woven bracer that maps your vitals and Flow rhythm, riding the line between medical device and guardian charm.",
-      synergy: "Guided Treatment: Once per day, when an Ally or Freelancer attempts to Treat Wounds, Treat Fatigue, or Stabilize a Target wearing the bracer, they roll that in-combat d20 check with Edge (or gain +1 Edge Die on a Dice Pool). On a success, the Target also regains 1d4 Vitality in addition to the normal effects." },
+      synergy: "Guided Treatment: Once per day, when an Ally or Freelancer attempts to Treat Wounds, Treat Fatigue, or Stabilize a Target wearing the bracer, they roll that check with Edge (or gain +1 Edge Die on a Dice Pool). On a success, the Target also regains 1d4 Vitality in addition to the normal effects." },
     { name: "Hazmat Suit", bucket: "devices", group: "Worn Tech", price: 220, availability: "Uncommon", legality: "Licensed",
       effect: "Immunity to contact and inhaled toxins while sealed.",
       desc: "A sealed chemsuit worn over your armor. While sealed and intact, it grants Immunity to many contact and inhaled toxic hazards. Take damage that can tear or slice it, and the seal fails until the suit is repaired and resealed." },
@@ -524,7 +526,8 @@ EN.gearCatalog.tools = {
     { name: "Nightwatch Tablets", bucket: "consumables", group: "Medical Consumables", price: 40, availability: "Common", legality: "Legal",
       effect: "A dose lets you ignore Fatigue 1 for 4 hours and grants Edge on Wits Saves to stay alert.",
       desc: "Legal, intense wake-up pills.",
-      drawback: "When the effect ends, Fatigue returns, and you make an in-combat Body save at DC 10 (or an out-of-combat Dice Pool against 1 Snag Die) or gain +1 Fatigue. When your last dose wears off, Fatigue returns. Make a Body Save at DC 10; on a failure, gain +1 Fatigue. If you have one or more Crash Stacks, also make a Body Save (DC 10 + 2 per Crash Stack); on a failure, gain +1 Fatigue per Crash Stack. Beyond 4 consecutive doses, also make a Body Save (DC 25) on the final crash; on a failure, you suffer heart failure and drop to 0 Wounds.",
+      activation: "As an Action, swallow one dose.",
+      drawback: "When your last dose wears off, Fatigue returns. Make a Body Save at DC 10; on a failure, gain +1 Fatigue. If you have one or more Crash Stacks, also make a Body Save (DC 10 + 2 per Crash Stack); on a failure, gain +1 Fatigue per Crash Stack. Beyond 4 consecutive doses, also make a Body Save (DC 25) on the final crash; on a failure, you suffer heart failure and drop to 0 Wounds.",
       synergy: "A fresh dose before the last one ends extends it another 4 hours and builds a Crash Stack." },
     { name: "Emergency Sealant Foam", bucket: "consumables", group: "Medical Consumables", price: 90, availability: "Uncommon", legality: "Licensed",
       effect: "The patch stops gas seepage and vacuum pull through that breach and holds until destroyed.",
@@ -648,7 +651,7 @@ EN.gearCatalog.tools = {
     { name: "Scripted Invocation Tab", load: 0, bucket: "flow", group: "Handheld Resonant Tools", price: 60, unit: "+", availability: "Rare", legality: "Restricted",
       effect: "Effect (Special): You don't spend FP. Resolve the Invocation using the crafter's Attack Modifier and Save DC recorded on the tab, plus any notes on range, Targets, and limits. The tab goes inert and crumbles after use.",
       desc: "A disposable Mystech strip of layered polymer and etched foil carrying one locked Invocation.",
-      activation: "Snap the tab along its scored seam and wet the etch (a drop of water, saliva, or a damp glove), dissolving the seal and letting the script flow out into the air.",
+      activation: "Snap the tab along its scored seam and wet the etch (a drop of water, saliva, or a damp glove), dissolving the seal and letting the script flow out into the air. Snapping it takes the Invocation's normal action.",
       limitation: "Carrying too many is unstable and attention-grabbing. Most crews keep it to 3 to 5 tabs before it becomes a problem in the fiction." },
 
     /* ============================== RIGS ============================== */

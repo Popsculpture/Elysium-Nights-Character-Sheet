@@ -24,6 +24,9 @@ EN.flow = {
   flowAttackFormula: "d20 + Flow Modifier + Caliber",
   saveDcFormula: "8 + Flow Modifier + Caliber",
   checkNote: "You only roll an Invocation Check (Flow Attack) against an unwilling target. Willing targets and objects are affected automatically. Flow Invocations never use the Dice Pool Method.",
+  /* How to read the "Flow Save DC (Body)" notation the Resonance entries use. Part 2, Invocation
+     Checks. Shown above the Resonances list in the Flow tab's reference panel. */
+  saveNotation: "When an entry says a target makes a Flow Save DC (Body), it makes a Body Save against your Flow Save DC.",
 
   /* ---- the Order of Shaping: cost bands ---------------------------------- */
   intent: [
@@ -47,7 +50,7 @@ EN.flow = {
     { key: "empowered", name: "Empowered Force", fp: 1, desc: "Add damage dice equal to your Caliber, OR apply the Resonance's Empowered Effect." }
   ],
   duration: [
-    { key: "instant", name: "Instant", desc: "Resolves immediately. Effects last until the start of your next turn unless sustained." },
+    { key: "instant", name: "Instant", desc: "Damage is applied and conditions are inflicted immediately. Unless an effect specifies otherwise, it lasts until the start of your next turn. Instant effects require no further input or maintenance." },
     { key: "sustain", name: "Sustain", desc: "Spend 1 FP at the start of your turn to maintain it. Only one sustained effect at a time." }
   ],
   /* Stability Factor: sustained resonance is fragile. Taking damage while sustaining
@@ -75,7 +78,7 @@ EN.flow = {
       resolution: "attack",
       base: "Push or pull a target up to 2 spaces (an unwilling target makes a Flow Save DC, Body or Agility, to resist), or cushion a fall to negate impact damage.",
       empowered: [
-        { name: "Kinetic Barrier", sustain: true, text: "Solidify the air into an Area 2x1 line as a physical barrier, granting Half Cover (+2 Defense) to targets behind it." },
+        { name: "Kinetic Barrier", sustain: true, text: "Solidify the air into an Area 2 line as a physical barrier, granting Half Cover (+2 Defense) to targets behind it." },
         { name: "Gravity Pin", sustain: true, text: "Target makes a Flow Save DC (Body or Agility) or is Restrained. They can use an Action to make a physical check vs your Flow Save DC to break free, or repeat the save at the start of each turn." }
       ] },
     { key: "thermal", name: "Thermal", unlock: 1, focus: "Molecular Speed", damage: "Fire / Cold",

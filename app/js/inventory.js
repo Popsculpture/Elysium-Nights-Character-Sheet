@@ -620,7 +620,7 @@ EN.inventoryView = (function () {
     var installedN = installedPartCount(ch, it.partKey);
     return el("div.row.wrap", { style: { gap: "6px", marginTop: "5px", alignItems: "center" } }, [
       el("span.chip", { title: "Installs in the " + slotName + " slot", style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" } }, slotName + " slot"),
-      el("span.chip", { title: it.partType === "Mod" ? "Bench work: a rest with a kit" : "Snap-on, no tools, no roll", style: { fontSize: "9px", color: it.partType === "Mod" ? "var(--ember)" : "var(--text2)", borderColor: it.partType === "Mod" ? "var(--ember)" : "var(--text2)" } }, it.partType),
+      el("span.chip", { title: it.partType === "Mod" ? "Bench work: Downtime with a kit" : "Snap-on, no tools, no roll", style: { fontSize: "9px", color: it.partType === "Mod" ? "var(--ember)" : "var(--text2)", borderColor: it.partType === "Mod" ? "var(--ember)" : "var(--text2)" } }, it.partType),
       /* The frame gate, on the card you buy from. The Armor Mod line beside this one has
          drawn its "fits" chip all along; the Part line never did, because for melee the
          gate was Any Melee or Blades and effectively always passed. Long-Shafted made it
@@ -831,7 +831,7 @@ EN.inventoryView = (function () {
       open && it.desc ? el("p", { style: { marginTop: "8px" }, text: it.desc }) : null,
       open && it.type ? el("p.help", { style: { margin: "4px 0 0", color: "var(--text2)" }, text: "Type: " + it.type + (it.upkeep ? " · Leased: " + fmtG(it.price || 0) + " buy-in, " + fmtG(upkeepOf(it, owned)) + "/wk Upkeep" + (owned && owned.premium ? " (Premium plan)" : "") : "") + (it.nexus ? " · Nexus: " + it.nexus : "") }) : null,
       open && it.proficiency ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: "Proficiency: " + it.proficiency + (it.signature ? " · Signature weapon (0 customization slots)" : "") }) : null,
-      open && (it.category || it.skill) ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: (it.category ? "Tool Category: " + it.category : "") + (it.category && it.skill ? " · " : "") + (it.skill ? "Governing Skill: " + it.skill : "") }) : null,
+      open && (it.category || it.skill) ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: (it.category ? "Tool Category: " + it.category + (it.categoryAlt ? " or " + it.categoryAlt : "") : "") + (it.category && it.skill ? " · " : "") + (it.skill ? "Governing Skill: " + it.skill : "") }) : null,
       open && it.feeds ? el("p.help", { style: { margin: "4px 0 0", color: "var(--gold)" }, text: "Feeds: " + it.feeds }) : null,
       // Signature Weapons: On Hit effects and area projections stay locked at
       // any proficiency tier until a Skill Focus names this specific weapon
@@ -842,7 +842,7 @@ EN.inventoryView = (function () {
             el("span", { style: { fontSize: "11px", color: "var(--text3)" },
               text: "Requires a Skill Focus naming this weapon: " + (it.proficiency || "its weapon category") + " (" + it.name + "). Buy it on the #PRINT Advance tab (L3+), or claim it as a Free overlap Focus at level 1." })
           ])
-        : el("p.help", { style: { margin: "4px 0 0", color: "var(--accent)" }, text: (it.signature ? "" : "Effect: ") + it.effect })) : null,
+        : el("p.help", { style: { margin: "4px 0 0", color: "var(--accent)" }, text: (it.signature || /^Effect \(/.test(it.effect) ? "" : "Effect: ") + it.effect })) : null,
       open && it.poweredBenefits ? el("p.help", { style: { margin: "4px 0 0", color: "var(--gold)" }, html: "<b style='color:var(--gold)'>Powered Benefits:</b> " + it.poweredBenefits }) : null,
       // Part 3 gives many entries rules bullets past Effect, and the catalog used to carry
       // only Effect. These four are the rest of them: an Activation says what it costs to
@@ -895,13 +895,15 @@ EN.inventoryView = (function () {
     var enc = (EN.engine.derive(ch) || {}).encumbrance || {};
     var encBands = enc.bands || {};
     var encStates = (EN.rules.encumbrance || {}).states || {};
+    // the book's own state definitions (Encumbrance States); Overloaded is a Haul, not a band
+    var encWhen = function (k) { var sd = encStates[k]; return sd && sd.when ? "\n" + sd.name + ": " + sd.when : ""; };
     var stateColor = enc.state === "overloaded" ? "var(--danger)" : enc.state === "encumbered" ? "var(--warn)" : "var(--success)";
     var tierColor = enc.tier === "light" ? "var(--success)" : enc.tier === "standard" ? "var(--accent)" : enc.tier === "heavy" ? "var(--warn)" : "var(--danger)";
     var loadBar = el("div.row.wrap", { style: { gap: "10px", alignItems: "center", padding: "7px 10px", border: "1px solid var(--border)", borderRadius: "4px", background: "rgba(0,0,0,.15)", marginBottom: "10px" } }, [
-      el("span.mono", { title: "On-person Load (equipped + carried + worn + racked gear). Each item's ⚖ chip is its Load; 0-Load gear rides free, and a Racked item carries 1 less.\nLight ≤ " + encBands.light + " · Standard ≤ " + encBands.standard + " · Heavy ≤ " + encBands.heavy + " · beyond = Overloaded",
+      el("span.mono", { title: "On-person Load (equipped + carried + worn + racked gear). Each item's ⚖ chip is its Load; 0-Load gear rides free, and a Racked item carries 1 less.\nLight ≤ " + encBands.light + " · Standard ≤ " + encBands.standard + " · Heavy ≤ " + encBands.heavy + encWhen("unencumbered") + encWhen("encumbered"),
         style: { fontSize: "16px", color: "var(--text)" },
         html: "LOAD " + enc.current + " <span style='font-size:11px;color:var(--text3)'>/ " + enc.budget + "</span>" }),
-      el("span.chip", { title: "Your Loadout tier, calculated from what you carry", style: { fontSize: "9px", color: tierColor, borderColor: tierColor } },
+      el("span.chip", { title: "Your declared Loadout, which sets your Load Budget (a Heavy Loadout is Encumbered for the run)", style: { fontSize: "9px", color: tierColor, borderColor: tierColor } },
         String(enc.tier || "").toUpperCase() + " LOADOUT"),
       el("span.chip", { title: (encStates[enc.state] || {}).effect || "", style: { fontSize: "9px", color: stateColor, borderColor: stateColor } },
         String((encStates[enc.state] || {}).name || enc.state || "").toUpperCase()),
@@ -959,15 +961,9 @@ EN.inventoryView = (function () {
   /* ---- Chrome tab: body silhouette + Chrome-Tax heat map, installed list, Open Architecture ---- */
   function heatColor(spv) { return spv <= 0 ? "#2a3446" : spv <= 2 ? "#00e5ff" : spv <= 4 ? "#ffcf5c" : spv <= 6 ? "#ff6b35" : "#ff4d5e"; }
   var THRESH_COLOR = ["#34465f", "#ffcf5c", "#ff6b35", "#ff6b35", "#ff4d5e", "#ff4d5e"];
-  // Enhancement Bonus scaled by tier (Streetware grants none; Blackware doubles); null = no bonus shown
-  function enhScaled(cw) {
-    if (!cw || !cw.enhancement || cw.enhancement === "None") return null;
-    var m = cw.enhancement.match(/\+(\d+)\s+(.+)/);
-    if (!m) return cw.enhancement;
-    var base = parseInt(m[1], 10), rest = m[2];
-    var amt = cw.tier === "Streetware" ? 0 : cw.tier === "Blackware" ? base * 2 : base;
-    return amt === 0 ? null : "+" + amt + " " + rest;
-  }
+  // Enhancement Bonus scaled by tier (+1 Brandware, +2 Blackware, none at Streetware); null = no bonus shown.
+  // The tier rule lives in the engine (cyberEnhAmount), where the attribute fold reads it too.
+  function enhScaled(cw) { return ENG().cyberEnhLabel(cw); }
 
   // The silhouette SVG sits in the BACKGROUND; the heat markers ride on a
   // transparent SVG overlay in the FOREGROUND, aligned to the same 854x1972 space.
@@ -1286,7 +1282,7 @@ EN.inventoryView = (function () {
         { label: "Signature Munitions", intro: g.signature && g.signature.munitionsIntro, items: sigMun }
       ] },
       { key: "ammo", title: "Ammunition", short: "AMMO", intro: g.ranged && g.ranged.saveDcNote, subs: [
-        { label: "Standard · Plentiful", intro: "Track only the loaded magazine; restock to full between contracts. Prices buy one reload.", items: byGroup(ammo, "Plentiful") },
+        { label: "Standard · Plentiful", intro: "Track only the loaded magazine; restock to full between contracts. Prices are for the listed quantities.", items: byGroup(ammo, "Plentiful") },
         { label: "Standard · Counted", intro: "Heavy, expensive, watched, and scarce. Track each unit from purchase to spend.", items: byGroup(ammo, "Counted") },
         { label: "Specialty", intro: "All Counted: Load it, Declare it before the attack, Apply it on resolution.", items: byGroup(ammo, "Specialty") },
         { label: "Launcher Shells", intro: "Fired from a Grenade Launcher. Targets save Agility vs your Weapon Save DC.", items: byGroup(ammo, "Launcher Shell") },
@@ -1328,7 +1324,7 @@ EN.inventoryView = (function () {
         intro: (WP().rules ? WP().rules.install + " " + WP().rules.legality : "") + " Buy a Part here, then install it from the Workbench (Arms Table).",
         subs: [
           { label: "Melee Parts", intro: "Edges, heads, cores, hilts, and locks worked into a melee weapon.", items: partsByCat("melee") },
-          { label: "Firearm Parts", intro: "Optics, barrels, receivers, stocks, and muzzle gear. Bows also draw Targeting, Handling, and Utility from here.", items: partsByCat("ranged") },
+          { label: "Firearm Parts", intro: "Optics, barrels, receivers, stocks, and muzzle gear. Bows also draw Targeting and Utility from here.", items: partsByCat("ranged") },
           { label: "Bowfire Parts", intro: "Limbs and cams for bows and crossbows.", items: partsByCat("bowfire") }
         ] });
     }
@@ -1385,7 +1381,7 @@ EN.inventoryView = (function () {
       if (_mktAvail !== "all" && it.availability !== _mktAvail) return false;
       if (q) {
         // the four rules bullets are searchable too: "bounce" should find Rubber Rounds
-        var hay = (it.name + " " + (it.desc || "") + " " + (it.effect || "") + " " + (it.group || "") + " " + (it.category || "") + " " + (it.skill || "")
+        var hay = (it.name + " " + (it.desc || "") + " " + (it.effect || "") + " " + (it.group || "") + " " + (it.category || "") + " " + (it.categoryAlt || "") + " " + (it.skill || "")
                    + " " + (it.activation || "") + " " + (it.limitation || "") + " " + (it.drawback || "") + " " + (it.synergy || "")).toLowerCase();
         if (hay.indexOf(q) === -1) return false;
       }
@@ -1876,7 +1872,7 @@ EN.inventoryView = (function () {
       if (slotKey === "utility") { wp.utility = wp.utility || []; if (wp.utility.length < 2) wp.utility.push(key); }
       else wp[slotKey] = key;
     });
-    toast(part.name + (part.partType === "Mod" ? " worked in (Mod: needs a rest + kit)" : " snapped on") + " · " + it.name);
+    toast(part.name + (part.partType === "Mod" ? " worked in (Mod: needs Downtime + kit)" : " snapped on") + " · " + it.name);
   }
   function removePart(wKey, slotKey, key) {
     setLoadout(wKey, function (wp) {
@@ -1985,7 +1981,7 @@ EN.inventoryView = (function () {
     ]);
     var grid = el("div.grid2", { style: { gap: "10px" } }, (WP().slots || []).map(function (sd) { return slotCard(ch, it, wKey, lo, sd); }));
     out.push(EN.ui.panel(row.label, it.group.toUpperCase() + " · " + (it.damage || ""), [
-      el("p.help", { style: { margin: "0 0 8px", fontSize: "11.5px" }, text: "One Part per slot (Utility holds two). Accessories snap on anytime; Mods are bench work on a rest with a kit. The strictest legality on the build is what a scanner reports." }),
+      el("p.help", { style: { margin: "0 0 8px", fontSize: "11.5px" }, text: "One Part per slot (Utility holds two). Accessories snap on anytime; Mods are bench work in Downtime with a kit. The strictest legality on the build is what a scanner reports." }),
       header, grid,
       el("p.help", { style: { margin: "10px 0 0", fontSize: "10.5px", color: "var(--text3)" }, text: WP().rules ? WP().rules.dieStep + " " + WP().rules.stabilized : "" })
     ], { corners: true }));

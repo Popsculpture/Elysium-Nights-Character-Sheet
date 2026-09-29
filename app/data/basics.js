@@ -34,7 +34,7 @@ window.EN = window.EN || {};
 
 EN.basics = {
 
-  intro: "Elysium has its own vocabulary. This is enough of it to read the rest without getting lost. Everything here is explained in full later, in its own chapter. The goal right now is that when a class entry tells you to spend 1 Bandwidth to overclock your Cipher, you already know what those words mean.\nNew to tabletop games: read this once before you pick a class. Veteran: skim for the terms that look unfamiliar.",
+  intro: "This chapter introduces the terms you'll need to build your Freelancer and read the rules. When a class entry tells you to \"spend 1 Bandwidth to overclock your Cipher,\" you'll know what it's asking. Later chapters explain each system in full.\nNew to tabletop games: read this once before you pick a class. Veteran: skim for the terms that look unfamiliar.",
 
   // Rolls, Edge and Snag, and Margin live in Core Resolution, not here. This is the pointer.
   covered: "How rolls work, Edge and Snag, and reading a Margin all have their own panels under Core Resolution below.",
@@ -63,8 +63,8 @@ EN.basics = {
 
   /* ---- class resources: the list is derived from EN.classes -------------- */
   resources: {
-    intro: "Most classes do not just attack on their turn. They draw from a personal resource pool that fuels their signature plays. Each class has its own named resource, sized from Caliber and one Attribute.",
-    refresh: "Unless a feature says otherwise, a class resource refreshes fully at the end of a Short Rest or a Long Rest. The Shaper is the standing exception: read the Reservoir line on the Flow tab.",
+    intro: "Besides attacking, most classes have a resource pool they spend to use their signature abilities. Each class has its own named resource, calculated as Caliber plus a specific Attribute Modifier (minimum of 1), with one exception: the Shaper's Flow Points use their own formula (see The Flow, below).",
+    refresh: "Unless a feature says otherwise, all class resources refresh fully at the end of a Short Rest or Long Rest. The Shaper is the standing exception: read the Reservoir line on the Flow tab.",
     note: "Triage is gated through a physical Triage Rig. If the rig is lost, the resource goes with it."
   },
 
@@ -73,13 +73,13 @@ EN.basics = {
     intro: "The **Flow** is the universal metaphysical current that runs through everything in Elysium. People who can tune their bodies and minds to that current are called **Shapers**, and what they do is called shaping.",
     invocation: "A Shaper spends **Flow Points (FP)** out of their **Reservoir** to perform an **Invocation**, the formal act of bending reality into a specific effect. Their Flow Attribute (Mystique, Body, Charm or Tech, depending on subclass) drives both how much FP they have and how hard those Invocations land.",
     check: "Not every use of the current is an attack. Steadying your frequency after Strain, forcing a severed link open, joining resonances, sustaining a field, or knitting flesh with raw energy calls for a **Flow Attribute Check**: d20 plus your Flow Modifier plus your Caliber against a DC, or Edge Dice from the same two sources on the Dice Pool Method. It never uses skill proficiency. The current is no sidearm, and drilling alone cannot teach your body to carry it, so Caliber stands in for the Proficiency Bonus.",
-    overdraw: "Pushing past your limits has a cost. Channeling Flow on an empty Reservoir is **Overdraw**, and it builds **Strain** on the Shaper's body and spirit. Five stages of Strain, or a failed Breakflow Check, can trigger **Breakflow**: a total disconnection from the current.",
+    overdraw: "Pushing past your limits has a cost. Channeling Flow on an empty Reservoir is **Overdraw**, and it builds **Strain** on the Shaper's body and spirit. Five stages of Strain, or a failed Breakflow Check, will trigger **Breakflow**: a total disconnection from the current.",
     unattuned: "Most classes do not touch the Flow this way. Codebreakers, Furies, Hustlers, Operators, Scoundrels and Stitchers are **Unattuned**: zero FP, no Invocations, and no Overdraw to risk. They still defend against Flow effects with ordinary Saving Throws, and they still use Mystique for Awareness checks."
   },
 
   /* ---- the #GRID --------------------------------------------------------- */
   grid: {
-    intro: "The **#GRID** is the city's shared nervous system: a sprawling mesh of devices, vehicles, sensors, servers and ghostware, all talking at once. Every connected object projects a digital reflection of itself called a **Node**.",
+    intro: "The **#GRID** is the city's shared nervous system: a sprawling mesh of devices, vehicles, sensors, servers, and cyberware, all talking at once. Every connected object projects a digital reflection of itself called a **Node**.",
     who: "For most people the #GRID is background noise. For Codebreakers and Sourcerers (a Shaper subclass) it is a second battlefield. Codebreakers operate inside it directly, running illegal hardware modules called **Ciphers** through a customized **Smartdeck**. They breach Nodes, dismantle security, and weaponize hostile networks before the shooting starts.",
     terms: [
       { name: "Node", text: "The digital representation of a device or system." },
@@ -93,8 +93,8 @@ EN.basics = {
   /* ---- reading a class line ---------------------------------------------- */
   together: {
     intro: "When you read a class entry, you will see lines like this:",
-    example: "Spend 1 Overdrive as an Impulse Action to gain Edge on your next melee attack and ignore the first Wound die from the next hit you take.",
-    reading: "You now have the vocabulary for that sentence. **Overdrive** is the Fury's resource. **Impulse Action** is a trigger based reaction, covered in Action Economy below. **Edge** is mechanical advantage on the roll. **Wound** is the heavier of Elysium's two damage tracks, covered in Vitality & Recovery.",
-    closing: "All of it gets the full treatment in its own chapter. For now, just keep these shapes in mind while you choose a class and start building a Freelancer."
+    example: "As an Impulse Action when an ally within 6 spaces takes damage from an attack, spend 1 Leverage to cash in a micro-favor (a bribed grid worker cutting the lights, a street kid dropping an obstacle). Reduce the incoming damage by 1d6 + your Charm Modifier + your Caliber.",
+    reading: "You now have the vocabulary to read that sentence. **Impulse Action** is a trigger-based reaction, covered in Action Economy below. Six spaces is about thirty feet. **Leverage** is the Hustler's resource. Your Charm Modifier comes from your Attributes, and Caliber climbs with your level, so the same favor pays out more as your Freelancer grows.",
+    closing: "Refer back to this chapter if you encounter an unfamiliar term while building your Freelancer."
   }
 };

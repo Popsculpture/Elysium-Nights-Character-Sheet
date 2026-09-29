@@ -1233,6 +1233,10 @@ EN.combatView = (function () {
     "Grappled": function (e) { e.speedZero = true; e.notes.push("Grappled: Speed 0; Action + contested Athletics (Body) or Acrobatics (Agility) vs the grappler's Athletics to escape"); },
     "Hallucinating": function (e) { e.perceptionSnag = true; e.snagChk.WIT = true; e.notes.push("Hallucinating: treat false stimuli as real; Wits Save DC 12 to ignore them"); },
     "Hardwired": function (e) { e.notes.push("Hardwired: targetable by Quick Hacks; Snag on saves vs EMP / viruses / Electromagnetic"); },
+    /* No lane and no flag on purpose. Hidden is a relation to ONE Target: it cannot target you and
+       you have Edge attacking it, but the accumulator has no attacker-Edge channel and cannot tell
+       which Target a given attack row is aimed at, so a flag would hand the Edge to every attack. */
+    "Hidden": function (e) { e.notes.push("Hidden: from a specific Target only. It can't target you, and you gain Edge on attack rolls against it. Ends when you attack, or it finds you (a Perception check that equals or beats your Stealth result) or has you in clear view"); },
     "Incapacitated": function (e) { e.cannotAct = true; e.notes.push("Incapacitated: no Actions of any kind; minor Free Actions only"); },
     "Invisible": function (e) { e.vsYou.meleeSnag += 1; e.vsYou.rangedSnag += 1; e.notes.push("Invisible: Edge on Stealth; attacks against you have Snag unless the attacker has a reliable way to perceive you"); },
     "Lagged": function (e) { e.notes.push("Lagged: your actions resolve at the END of the round"); },
@@ -1256,7 +1260,7 @@ EN.combatView = (function () {
        reaches the player through the note below rather than through a gate. That is the
        file's standing convention, not an oversight of this entry, and it is why the note
        spells the restriction out instead of leaning on the flag. */
-    "Suppressed": function (e) { e.snagAtk = true; e.noImpulse = true; e.notes.push("Suppressed: Snag on attack rolls; no Impulse Actions. Ends at the start of the suppressor's next turn, or earlier at the GM's call when the fire stops"); },
+    "Suppressed": function (e) { e.snagAtk = true; e.noImpulse = true; e.notes.push("Suppressed: Snag on attack rolls; no Impulse Actions. Ends at the start of the suppressor's next turn unless the effect that applied it sets a different duration, or earlier at the GM's call when the fire stops"); },
     "Signal Jammed": function (e) { e.notes.push("Signal Jammed: no remote devices, drones, or wireless cyberware; wired still works"); },
     "Staggered": function (e) { e.speedHalved = true; e.noSwift = true; e.noImpulse = true; e.notes.push("Staggered: Staggered again → Stunned"); },
     "Strain": function (e, l) {
@@ -1359,10 +1363,10 @@ EN.combatView = (function () {
     "Critical Wound": ["Persistent", "Surgery / Regenerative Tech"], "Cursed": ["Persistent", "Ritual / Rare Relics"],
     "Dazed": ["1 Round", "End of turn Wits DC 12"], "Drowning": ["Special", "Access to breathable air"],
     "Drowsy": ["Persistent", "Body DC 12 (shake off) / Body DC 15 (resist sleep)"], "Fatigue": ["Until Restored", "Long Rest / Treatment / Medtech"],
-    "Surprised": ["1st turn of combat", "-"], "Suppressed": ["Until suppression ends", "Start of the suppressor's next turn"], "Mutating": ["Until Treated", "Complex Action Medtech DC 12 + stacks"],
+    "Surprised": ["1st turn of combat", "-"], "Suppressed": ["Until suppression ends", "Start of the suppressor's next turn, unless the effect sets a different duration"], "Mutating": ["Until Treated", "Complex Action Medtech DC 12 + stacks"],
     "Immunity": ["Persistent", "-"], "Resistance": ["Persistent", "-"], "Vulnerability": ["Persistent", "-"],
     "Frightened": ["Until Save", "End of turn Wits / Charm DC 15"], "Grappled": ["Until Escaped", "Contested Athletics / Acrobatics"],
-    "Hallucinating": ["Persistent", "Purge / Source Expiration"], "Hardwired": ["Permanent", "Uninstall Cyberware"],
+    "Hallucinating": ["Persistent", "Purge / Source Expiration"], "Hardwired": ["Permanent", "Uninstall Cyberware"], "Hidden": ["Until You Attack or It Finds You", "Its Perception check meets your Stealth result, or clear view"],
     "Incapacitated": ["Until Freed", "Removal of source"], "Invisible": ["Until Revealed", "Narrative / Tech Reveal"],
     "Lagged": ["Persistent", "Exit Zone / Purge"], "LinkDeath": ["Until Save", "End of turn Wits Save"],
     "Panic": ["Special", "End of turn Wits DC 12"], "Paralyzed": ["Until Save", "Body Save (varies)"],
@@ -4870,7 +4874,7 @@ EN.combatView = (function () {
     /* ---- LOADOUT tab: a filtered view of Inventory (what's on you for the scene) ---- */
     function loadoutKids() {
       var kids = [];
-      // Load console: the Loadout tier is DERIVED from carried Load (never picked)
+      // Load console: the Loadout tier is DECLARED (the chips below set it) and picks the Load Budget
       var enc = d.encumbrance || {};
       var EE = R.encumbrance || {};
       var bands = enc.bands || {};
@@ -4878,9 +4882,12 @@ EN.combatView = (function () {
       var stateColor = enc.state === "overloaded" ? "var(--danger)" : enc.state === "encumbered" ? "var(--warn)" : "var(--success)";
       var tierDef = (EE.loadouts || []).find(function (t) { return t.key === enc.tier; });
       var tierColor = enc.tier === "light" ? "var(--success)" : enc.tier === "standard" ? "var(--accent)" : enc.tier === "heavy" ? "var(--warn)" : "var(--danger)";
-      var thTip = "Encumbrance Threshold = 6 + Body modifier (min 3) = " + enc.base
+      // the two state definitions are the book's own wording (Encumbrance States); Overloaded is a Haul, not a band
+      var whenLine = function (k) { var sd = (EE.states || {})[k]; return sd && sd.when ? "\n" + sd.name + ": " + sd.when : ""; };
+      var thTip = "Encumbrance Threshold = 6 + Body Modifier, adjusted by Size, minimum 3 = " + enc.base
         + ((enc.steps || []).map(function (s) { return "\n+" + s.value + "  " + s.label; }).join(""))
-        + "\nThreshold " + enc.threshold + " → Light ≤ " + bands.light + " · Standard ≤ " + bands.standard + " · Heavy ≤ " + bands.heavy + " · beyond = Overloaded"
+        + "\nThreshold " + enc.threshold + " → Light ≤ " + bands.light + " · Standard ≤ " + bands.standard + " · Heavy ≤ " + bands.heavy
+        + whenLine("unencumbered") + whenLine("encumbered")
         + "\n\nLoad guide:\n" + ((EE.loadTable || []).map(function (r) { return r.load + "  " + r.items; }).join("\n"))
         + "\n\n" + (EE.notes || "");
       var loadOpen = !!_open["load-console"];

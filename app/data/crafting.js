@@ -56,7 +56,7 @@ EN.crafting = {
     materials: "Building from scratch, raw materials and components cost half the item's market price. Salvaging parts from similar broken gear can reduce or eliminate that cost.",
     kits: "A kit's Basic Use is open to anyone. Its Proficient Use needs the matching Tool Proficiency; without it you own the kit but not its edge. Missing suitable kits can raise the Target or add Snag.",
     oneProjectPerMod: "Each modification is its own Project. You cannot batch several upgrades into a single roll.",
-    overEngineering: "Every weapon has a Slot Count and every suit of armor a Mod Slot count, one Part or mod per slot. Pushing an item past its safe capacity instantly elevates the work to a Prototype Project, and the finished piece carries a Mandatory Flaw: a permanent quirk, a heavy maintenance burden, or an obvious tell."
+    overEngineering: "Every weapon has a Slot Count and every suit of armor a Mod Slot count, one Part or mod per slot. Pushing an item past its safe capacity instantly elevates the work to a Prototype Project, and the finished item carries a Mandatory Flaw: a permanent quirk, a heavy maintenance burden, or a glaringly obvious visual tell."
   },
 
   /* ---- Dice Pool assembly (Dicey Situations, Dice Pool Method) -------------

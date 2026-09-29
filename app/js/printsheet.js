@@ -857,7 +857,9 @@ EN.printSheet = (function () {
         // the tier rider amends the effect above, so it prints with it or the sheet states the wrong rule
         var cwTier = eng.cyberTierNote ? eng.cyberTierNote(cw.key, cw.tier) : "";
         if (cwTier) block.appendChild(el("div.ps-invkv", null, [el("span.ps-fl", { text: "Tier" }), el("span.ps-invkv-v", { text: cwTier })]));
-        if (cw.enhancement && cw.enhancement !== "None") block.appendChild(el("div.ps-invkv", null, [el("span.ps-fl", { text: "Enhance" }), el("span.ps-invkv-v", { text: cw.enhancement })]));
+        // scaled to the piece's tier (+1 Brandware, +2 Blackware, none at Streetware), the same figure the attributes carry
+        var cwEnh = eng.cyberEnhLabel ? eng.cyberEnhLabel(cw) : cw.enhancement;
+        if (cwEnh && cwEnh !== "None") block.appendChild(el("div.ps-invkv", null, [el("span.ps-fl", { text: "Enhance" }), el("span.ps-invkv-v", { text: cwEnh })]));
         out.push(block);
       });
     });

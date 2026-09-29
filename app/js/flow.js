@@ -396,13 +396,13 @@ EN.flowView = (function () {
   function referencePanel(ch, d) {
     var F = EN.flow, kids = [];
     kids = kids.concat(collapsible("ref-res", "Resonances", function () {
-      return el("div", null, ownResonances(ch).map(function (r) {
+      return el("div", null, [noteP(F.saveNotation, "var(--text2)")].concat(ownResonances(ch).map(function (r) {
         return el("div.feature", { style: { borderLeftColor: VIO } }, [
           el("h4", null, [document.createTextNode(r.name), el("span.src", { text: "L" + r.unlock + " · " + r.damage })]),
           el("p", { text: r.base }),
           el("div", null, (r.empowered || []).map(function (e) { return el("p.help", { style: { margin: "2px 0" }, text: "◆ " + e.name + (e.sustain ? " (sustainable)" : "") + ": " + e.text }); }))
         ]);
-      }));
+      })));
     }));
     kids = kids.concat(collapsible("ref-sustain", "Sustain Compatibility", function () {
       return refTable(["Resonance", "Empowered Effect", "Sustain", "Notes"], F.sustainCompat.map(function (s) { return [s.resonance, s.effect, s.allowed ? "Yes" : "No", s.notes]; }), [1, 2]);

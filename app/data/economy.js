@@ -63,7 +63,7 @@ EN.economy = {
     { tier: "Luxury",        weekly: 15000, monthly: 60000, living: "Elite living, layered security, image management, privileged access" }
   ],
   lifestyleRules: [
-    "A Character who does not pay at least Bare Survival is assumed to be couch surfing, squatting, sleeping rough, or living on favors. That should create fiction, not just a missing line item.",
+    "A Character who doesn't pay at least Bare Survival is assumed to be couch surfing, squatting, sleeping rough, or living on favors. That should leave them exposed: a stolen bag, a favor called in at the wrong moment.",
     "A Character living at Stable or better is assumed to have enough legitimacy and presentation to function comfortably in ordinary legal environments.",
     "A Character living at High Profile or better is no longer invisible. Their money becomes part of their reputation."
   ],

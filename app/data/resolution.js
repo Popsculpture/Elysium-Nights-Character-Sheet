@@ -55,7 +55,7 @@ EN.resolution = {
 
   /* ---- the d20 Method --------------------------------------------------- */
   d20: {
-    process: "1. Roll a d20.\n2. Add the relevant modifiers: Attribute modifier; your Skill, Weapon, Systems, or Vehicle Proficiency Bonus, if one applies; situational modifiers from tools, conditions, or Edge and Snag.\n3. Compare the total to the DC. Equal or higher is a success; lower is a failure.",
+    process: "1. Roll a d20.\n2. Add the relevant modifiers: Attribute Modifier; your Skill, Weapon, Systems, or Vehicle Proficiency Bonus, if one applies; situational modifiers from tools, conditions, or Edge and Snag.\n3. Compare the total to the DC. Equal or higher is a success; lower is a failure.",
     modCap: "Static modifiers are capped at +15. If external buffs, advanced gear, or Flow effects would raise this total above +15, any excess is ignored. The Caliber bonus from a Skill Focus, advantage states like Edge, or an expanded critical threat range (such as from a Specialization) operate completely outside of this static cap.",
     dcTable: [
       { task: "Very Easy", dc: "5", example: "Spot an obvious clue" },

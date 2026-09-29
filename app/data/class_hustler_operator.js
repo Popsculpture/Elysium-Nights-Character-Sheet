@@ -105,7 +105,7 @@ EN.classes.hustler = {
     "6": [
       {
         name: "Two Steps Ahead",
-        text: "Once per encounter, when an enemy declares an Action, you can use your Impulse Action to get ahead of it. This imposes **Snag** on their d20 roll. If their attack roll misses or their contested check fails, they are immediately inflicted with the *Staggered* condition (Speed halved, lose Swift and Impulse Actions) until the end of their next turn."
+        text: "Once per encounter, when an enemy declares an Action, you can use your Impulse Action to get ahead of it. This imposes **Snag** on their d20 roll. If their attack roll misses or their contested check fails, they immediately gain the *Staggered* condition (Speed halved, lose Swift and Impulse Actions) until the end of their next turn."
       },
       {
         name: "Universal Upgrade",
@@ -246,7 +246,7 @@ EN.classes.hustler = {
 // engine, the Class-tab picker, and the print sheet. The Execution feature's prose (below) is
 // composed from this list, so the displayed text and the machine-readable data can never drift
 // apart. The Operator knows every Call; each costs 1 EX to make.
-var OPERATOR_TACTICAL_INTRO = "You thrive in the chaos of a firefight: directing traffic, creating openings, keeping your crew alive. You have a pool of **Execution (EX)** equal to your **Caliber + your Wits Modifier**. You regain all spent Execution at the end of a Short or Long Rest. You know every Call below and may spend 1 EX to make any of them.\n\n**Suppression.** Several of your Calls leave a target *Suppressed*. A Suppressed target rolls with **Snag** on attack rolls and cannot take **Impulse Actions** until the suppression ends. You do not merely hurt the enemy. You strip away their ability to fight back cleanly, pin them in place, and hand your crew a target that cannot punish them for moving in.";
+var OPERATOR_TACTICAL_INTRO = "The chaos of a firefight is where you work: directing traffic, creating openings, keeping your crew alive. You have a pool of **Execution (EX)** equal to your **Caliber + your Wits Modifier**. You regain all spent Execution at the end of a Short or Long Rest. You know every Call below and unless otherwise noted, all Calls cost 1 EX to activate.\n\n**Suppression.** Several of your Calls leave a target *Suppressed*. A Suppressed target rolls with **Snag** on attack rolls and can't take **Impulse Actions** until the suppression ends. Hurting the enemy is the least of what this does. You strip away their ability to fight back cleanly, pin them in place, and hand your crew a target that can't punish them for moving in.";
 var OPERATOR_TACTICAL_MANEUVERS = [
   { name: "Suppressing Fire", action: "Action", cost: 1, text: "Choose a point within your weapon's range, then an Area 3 around that point. Each Enemy in the area must succeed on an Agility Save (DC = 8 + your Wits Modifier + your Caliber) or become *Suppressed* until the start of your next turn. This Call deals no damage." },
   { name: "Take the Angle", action: "Swift Action", cost: 1, text: "You move up to your Speed without provoking opportunity attacks. If you end this movement with Line of Sight to an Enemy you didn't have Line of Sight to at the start of your turn, your next weapon attack this turn ignores the Defense bonus of their Cover." },
@@ -264,7 +264,7 @@ var OPERATOR_TACTICAL_TEXT = OPERATOR_TACTICAL_INTRO + "\n\n" + OPERATOR_TACTICA
 EN.classes.operator = {
   key: "operator",
   name: "Operator",
-  tagline: "You hold the line with iron discipline, secure comms, and a tactical plan built to survive contact with the enemy. You do not win by being the strongest body in the room. You win by deciding where the fight happens, who gets to move, and who keeps their head down while your crew does the work. A plan is only intent until someone executes it on time and on target. That is the job.",
+  tagline: "Someone has to cross the hallway, and the gun at the far end hasn't stopped firing. You catch the reload, put rounds through the doorway, and wave your crew across. By the time the gunner leans out again, you've changed positions. This is work you know: reading a fight while you're inside it, giving orders people can follow with their ears ringing. Your crew trusts you when you say move. You've spent a lot of practice and ammunition earning that.",
   vitality: {
     text: "Resilience Die: d10\nStarting Vitality: 10 + Body Modifier\nVitality Per Level: 1d10 + Body Modifier"
   },
@@ -272,7 +272,7 @@ EN.classes.operator = {
     text: "Resilience Die: d10\nStarting Vitality: 10 + Body Modifier\nVitality Per Level: 1d10 + Body Modifier"
   },
   attributePriorities: [
-    "Wits (Primary): Drives your Execution pool and powers critical situational awareness through Perception.",
+    "Wits (Primary): Drives your Execution pool, and powers the Perception that shows you the fight before it reaches you.",
     "Agility (Secondary): Key for landing ranged attacks with Longarms or Heavy Weapons, and keeps your Defense high during a firefight.",
     "Body (Tertiary): Increases your Vitality and maximum Wounds, so you can survive return fire while holding a tactical anchor point."
   ],
@@ -338,7 +338,7 @@ EN.classes.operator = {
     "6": [
       {
         name: "Breacher's Momentum",
-        text: "Whenever you drop an enemy to 0 Vitality or score a critical hit, you immediately regain **1 Execution** and may move up to 3 spaces as a free action. This movement does not provoke opportunity attacks."
+        text: "Whenever you drop a Target to 0 Vitality or score a critical hit, you immediately regain **1 Execution** and may move up to 3 spaces as a Free Action. This movement doesn't provoke Opportunity Attacks."
       },
       {
         name: "Universal Upgrade",

@@ -1003,7 +1003,7 @@ EN.engine = (function () {
     "Warmblood Sense":       { sense: "Heat Sense",     range: "6 sp.",  note: "Ignore Invisible and Hidden for living, heat-producing targets." },
     "Blood-Scent Tracker":   { sense: "Blood Scent",    range: "6 sp.",  note: "Know the direction of anyone Bleeding or below half Vitality, even hidden or behind cover." },
     "Disturbance Compass":   { sense: "Flow Sense",     range: "12 sp.", note: "Presence and direction of Flow disturbances and active Invocations, through walls. Always on." },
-    "Scent Marker":          { sense: "Scent Tracking", range: "1 mile", note: "Tagged targets only, for 48 hours." },
+    "Scent Marker":          { sense: "Scent Tracking", range: "1 mile", note: "Tagged targets only, for 48 hours. Automatic within range, no check; Edge to hunt them beyond it." },
     "The Machine Medium":    { sense: "Sprite Sight",   range: "passive", note: "Passively see and communicate with Nixies and Gremlins, the Flow sprites in complex machinery." },
     "Echo Sighted":          { sense: "Resonance Sense", range: "12 sp." },
     /* The Ryn's headline sense, which rendered as a paragraph while both of its siblings on
@@ -1786,6 +1786,22 @@ EN.engine = (function () {
     });
     return out;
   }
+  /* THE tier rule for an Enhancement Bonus. The book (Enhancement Bonuses, and the footnote to the
+     Cyberware Quick Reference): the listed +1 applies at Brandware, +2 at Blackware, none at
+     Streetware; a one-off Prototype applies as listed. Asked by the attribute fold below, by the
+     Chrome and Undercut chips in inventory.js and by the printed sheet, so the three cannot
+     drift: the printed sheet used to print the catalog's bare "+1" whatever the tier. */
+  function cyberEnhAmount(tier, base) {
+    return tier === "Streetware" ? 0 : tier === "Blackware" ? base * 2 : base;
+  }
+  // The Enhancement a piece grants AT ITS TIER as "+N Attribute" text, or null when it grants none.
+  function cyberEnhLabel(cw) {
+    if (!cw || !cw.enhancement || cw.enhancement === "None") return null;
+    var m = cw.enhancement.match(/\+(\d+)\s+(.+)/);
+    if (!m) return cw.enhancement;
+    var amt = cyberEnhAmount(cw.tier, parseInt(m[1], 10));
+    return amt === 0 ? null : "+" + amt + " " + m[2];
+  }
   /* ---- installed cyberware: Enhancement Bonuses (attribute) + flat sheet bonuses ----
      Enhancement scales by tier: Streetware 0, Brandware/Prototype = listed, Blackware ×2.
      'arm only' (Cyberarm) is a focused bonus and does NOT touch the general attribute. */
@@ -1798,7 +1814,7 @@ EN.engine = (function () {
       var m = cw.enhancement.match(/\+(\d+)\s+([A-Za-z]+)/);
       if (!m) return;
       var base = parseInt(m[1], 10), key = NAME2KEY[m[2]];
-      var amt = cw.tier === "Streetware" ? 0 : cw.tier === "Blackware" ? base * 2 : base;
+      var amt = cyberEnhAmount(cw.tier, base);
       // Same-attribute Enhancement Bonuses do not stack; the highest one applies.
       if (key && amt) out[key] = Math.max(out[key] || 0, amt);
     });
@@ -2108,7 +2124,8 @@ EN.engine = (function () {
     var focusLapsed = !!focus && leaseLapsed(ch, focusKey);
     var wardDie = (focus && !focusLapsed && focus.wardDie) || (armor && !armorLapsed && armor.wardDie) || null;
     // Bulky armor slows you by 1. Powered frames are the exception (trained + powered
-    // ignores it), but training isn't modeled, so we leave Powered Speed to the player.
+    // ignores it). The training is now the Powered Frames armor proficiency (rules.js,
+    // 2026-09-28), but nothing here reads it, so we leave Powered Speed to the player.
     // A lapsed Powered frame seizes, so Bulky bites it too.
     var speedPenalty = (hasTrait(armor, "Bulky") && (!hasTrait(armor, "Powered") || armorLapsed)) ? -1 : 0;
     // Shield Durability boxes, tracked per shield ENTRY on the record. Keyed the
@@ -2166,11 +2183,12 @@ EN.engine = (function () {
   }
 
   /* ---- Encumbrance and Load ----------------------------------------------
-     Load is abstract weight/bulk. Threshold = 6 + Body modifier (min 3), plus
-     +2 per "step" from gear (Load-Bearing OR Load Distributor, non-stacking;
-     Powered frames two steps) and Size-larger effects. The declared Loadout
-     tier is DERIVED from carried Load against the threshold bands. Hauls
-     (ch.haul) bypass the budget and set the state directly. */
+     Load is abstract weight/bulk. Threshold = 6 + Body Modifier, adjusted by
+     Size, minimum 3, plus +2 per "step" from gear (Load-Bearing OR Load
+     Distributor, non-stacking; Powered frames two steps) and Size-larger
+     effects. The Loadout tier is DECLARED (ch.loadout) and picks the Load
+     Budget from the threshold bands; it is not derived from carried Load.
+     Hauls (ch.haul) bypass the budget and set the state directly. */
   /* ---- the catalog, and the four pools it used to be blind to ---------------
      loadCatalogItem searched seven pools while inventory.js's own catalog() searched
      those seven PLUS weapon Parts, armor Mods, vehicles and vehicle Mods. Measured in
@@ -2386,7 +2404,7 @@ EN.engine = (function () {
     var hasLB = !!armor && !lapsed && hasTrait(armor, "Load-Bearing");
     var hasLD = !!armor && !lapsed && armorModsOn(ch, dl.armorKey).indexOf("load-distributor") !== -1;
     if (hasLB || hasLD) steps.push({ label: (hasLB ? "Load-Bearing" : "Load Distributor") + " (" + armor.name + ")", value: 2 });
-    // Powered frames: two steps while powered (training left to the table; a lapsed lease grants nothing)
+    // Powered frames: two steps while powered (Powered Frames proficiency is left to the table; a lapsed lease grants nothing)
     if (armor && !lapsed && hasTrait(armor, "Powered")) steps.push({ label: "Powered frame (" + armor.name + ")", value: 4 });
     // Lineage features that raise the Threshold outright ("+2 Threshold, and one
     // Size larger for grappling"). Both are lineage Additive Features, never Talents.
@@ -2427,8 +2445,9 @@ EN.engine = (function () {
     var tier = (ch.loadout === "light" || ch.loadout === "heavy") ? ch.loadout : "standard";
     var budget = bands[tier];
     var haul = (ch.haul === "lift" || ch.haul === "drag") ? ch.haul : "none";
-    // Encumbered: "carrying more Load than your Load Budget, or hauling something
-    // that is clearly heavy but still plausible." Overloaded is defined by the haul
+    // Unencumbered: "at or below your Load Budget, and your Loadout isn't Heavy."
+    // Encumbered: "on a Heavy Loadout, carrying more Load than your Load Budget, or
+    // hauling something that is clearly heavy but still plausible." Overloaded is defined by the haul
     // ("something that clearly belongs on a dolly, cart, vehicle, forklift, or
     // exoframe"), not by a numeric band.
     var state = "unencumbered";
@@ -4103,7 +4122,7 @@ EN.engine = (function () {
     buildEdgePool: buildEdgePool, buildSnagPool: buildSnagPool, snagFromDc: snagFromDc, rollDicePool: rollDicePool, rollD20: rollD20,
     composeRollSpec: composeRollSpec, rollDamage: rollDamage,
     installedCyberware: installedCyberware, installedCyberBases: installedCyberBases,
-    cyberDef: cyberDef, cyberDesc: cyberDesc, cyberEffect: cyberEffect, cyberTierNote: cyberTierNote,
+    cyberDef: cyberDef, cyberDesc: cyberDesc, cyberEffect: cyberEffect, cyberTierNote: cyberTierNote, cyberEnhLabel: cyberEnhLabel,
     gambitList: gambitList,
     resourceAbilities: resourceAbilities,
     resourcePicksAllowed: resourcePicksAllowed, chosenResourceAbilities: chosenResourceAbilities,
