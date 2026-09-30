@@ -258,9 +258,10 @@ EN.conditions = [
        inflicted. The mechanics are unchanged; they finally have a source.
 
        Not to be confused with Trace, the #GRID consequence you accrue. That is a different system,
-       reached through the Smartdeck trait Trace-Resistant Signature, the Trace Cutter cipher (which
-       is also a Codebreaker Signature #GRID Exploit), and Trace Evasion hardware mods such as the
-       Burn Notice Module. Only the first of those three is actually a deck trait. */
+       reached through the Smartdeck trait Trace-Resistant Signature, the Codebreaker's Trace Cutter
+       Signature #GRID Exploit (there is no Trace Cutter cipher any more, it was cut from the book on
+       2026-09-30), and Trace Evasion hardware mods such as the Burn Notice Module. Only the first of
+       those three is actually a deck trait. */
     name: "Traced",
     summary: "Attacker and allies gain Edge on ranged attacks against you",
     text: "Something has tagged you well enough that the people shooting at you don't have to guess anymore.\n\nHow It Works:\n- The first qualifying hit each round applies Traced to the Target until the start of the attacker's next turn.\n- While Traced, the attacker and their allies gain Edge on ranged attack rolls against the Target in combat, or +1 Edge Die on related out-of-combat Dice Pools.\n\nHow to End It:\n- Traced automatically ends at the start of the attacker's next turn."

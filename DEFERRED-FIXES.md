@@ -9135,6 +9135,26 @@ the condition alone while Strain and Overdraw points go to 0; a legacy Spacer's 
 "systems" kept; a legacy array shows two "(old array)" options; a Signature weapon shows its full
 effect and the right status line untrained and proficient.
 
+## Trace Cutter the cipher is cut, and the Weaver's Feedback Spike is Screen Burn, 2026-09-30
+
+Two author rulings on top of the 28 September sync.
+
+1. **The Trace Cutter cipher is cut; the Codebreaker's Trace Cutter Signature move stays.** The
+   Complexity 2 Protection entry is gone from `EN.grid.ciphers` (35 ciphers now), which is also the
+   source of the Cipher Library in the gray market, so it stops being sold. The Codebreaker ability
+   (`class_codebreaker_fury.js`, its brief and its tag) is untouched. The one place that called the
+   two "the same thing", a comment above the Traced condition, now says there is no cipher.
+   **Storage kind:** a cipher a character bought is an equipment row carrying its NAME, resolved
+   against the catalog. A saved record that owns the cut cipher keeps that row, and it now reads as
+   an unresolved item that weighs 1 Load (an unknown item is hand-sized) and does nothing. Nothing
+   was deleted, because a purchase is not ours to discard silently; the player can drop it from the
+   stash. If the author would rather it be removed on load, or weigh nothing, that is one row in the
+   migration. Checked: a Codebreaker with such a row renders every tab with no error.
+2. **Feedback Spike, the #GRID Weaver's version, is Screen Burn.** The bullet in Ghost Persona
+   Protocol, "The attacker suffers Snag on their next attack roll." The Burner's Feedback Spike, the
+   Electric damage bullet in Scorched Earth Policy, is unchanged. The name appears only inside feature
+   text, so it is carried by value and needs no migration.
+
 ## The bestiary handoff: four conventions, eleven statblocks, and three near-miss data losses, 2026-09-19
 
 The 2026-09-19 handoff, five sections plus a terminology sweep. It closes six of the items that had
