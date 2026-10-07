@@ -517,22 +517,73 @@ EN.gmEngine = (function () {
 
   /* Advance the cursor. `activeId` is an ENTRY ID and never an index: editing an
      initiative re-sorts the list, and an index would then point at a different
-     creature mid-round. Returns {activeId, round, wrapped}. */
-  function advance(enc) {
+     creature mid-round. Returns {activeId, round, wrapped, skipped}.
+
+     opts.skip(entry), optional, names entries to pass over (the Table passes
+     threats at 0 Vitality, which have no turn left to take). Passing over the
+     end of the order still turns the round. When EVERY entry would be skipped
+     the skip is dropped and the cursor moves one place as it always did, so a
+     Table of nothing but downed threats can still be stepped through and the
+     cursor can never spin. `skipped` counts the entries passed over. */
+  function cursorAt(o, id) {
+    for (var i = 0; i < o.length; i++) { if (o[i].id === id) return i; }
+    return -1;
+  }
+  function skipper(opts) {
+    var fn = opts && typeof opts.skip === "function" ? opts.skip : null;
+    return function (e) { if (!fn) return false; try { return !!fn(e); } catch (x) { return false; } };
+  }
+  function advance(enc, opts) {
     var o = order((enc && enc.entries) || []);
-    if (!o.length) return { activeId: null, round: enc ? enc.round : 0, wrapped: false };
-    var idx = -1;
-    for (var i = 0; i < o.length; i++) { if (o[i].id === enc.activeId) { idx = i; break; } }
-    if (idx === -1) return { activeId: o[0].id, round: Math.max(1, enc.round || 0), wrapped: false };
-    var next = idx + 1;
-    if (next >= o.length) return { activeId: o[0].id, round: (enc.round || 0) + 1, wrapped: true };
-    return { activeId: o[next].id, round: enc.round || 1, wrapped: false };
+    if (!o.length) return { activeId: null, round: enc ? enc.round : 0, wrapped: false, skipped: 0 };
+    var skip = skipper(opts);
+    var live = o.filter(function (e) { return !skip(e); });
+    if (!live.length) { skip = skipper(null); live = o; }
+    var idx = cursorAt(o, enc.activeId);
+    if (idx === -1) return { activeId: live[0].id, round: Math.max(1, enc.round || 0), wrapped: false, skipped: 0 };
+    var wrapped = false;
+    for (var step = 1; step <= o.length; step++) {
+      var j = idx + step;
+      if (j >= o.length) { j -= o.length; wrapped = true; }
+      if (!skip(o[j])) {
+        return { activeId: o[j].id, round: wrapped ? (enc.round || 0) + 1 : (enc.round || 1),
+                 wrapped: wrapped, skipped: step - 1 };
+      }
+    }
+    return { activeId: o[idx].id, round: (enc.round || 0) + 1, wrapped: true, skipped: o.length - 1 };
+  }
+
+  /* PREVIOUS TURN: the cursor one place back, the same skip rule as advance.
+     Stepping back past the top of the order goes back a round, onto the last
+     entry that could act. It never goes behind the first turn of round 1:
+     there `atStart` is true and the cursor stays where it is. Returns
+     {activeId, round, wrapped, atStart}. */
+  function retreat(enc, opts) {
+    var o = order((enc && enc.entries) || []);
+    if (!o.length) return { activeId: null, round: enc ? enc.round : 0, wrapped: false, atStart: true };
+    var skip = skipper(opts);
+    var live = o.filter(function (e) { return !skip(e); });
+    if (!live.length) { skip = skipper(null); live = o; }
+    var round = enc.round || 0;
+    var idx = cursorAt(o, enc.activeId);
+    if (idx === -1) return { activeId: live[0].id, round: Math.max(1, round), wrapped: false, atStart: true };
+    var wrapped = false;
+    for (var step = 1; step <= o.length; step++) {
+      var j = idx - step;
+      if (j < 0) {
+        if (round <= 1) break;          // nothing comes before the first turn of round 1
+        j += o.length;
+        wrapped = true;
+      }
+      if (!skip(o[j])) return { activeId: o[j].id, round: wrapped ? round - 1 : Math.max(1, round), wrapped: wrapped, atStart: false };
+    }
+    return { activeId: o[idx].id, round: Math.max(1, round), wrapped: false, atStart: true };
   }
 
   return {
     buildThreat: buildThreat, damageDice: damageDice,
     attackAvg: attackAvg, roundDamage: roundDamage, fmtAvg: fmtAvg,
-    order: order, tied: tied, advance: advance,
+    order: order, tied: tied, advance: advance, retreat: retreat,
     // threat initiative from the book's formula, and the one roll for it
     threatInit: threatInit, rollInit: rollInit,
     // XP, the crew, and the encounter budget

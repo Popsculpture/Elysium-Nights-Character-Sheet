@@ -22,10 +22,13 @@
      { v: 2, stamps, updatedAt,
        encounter: { round, activeId, entries, name, sourceId, room, clock },
        threats, encounters, hazards, jobs, ledger,   the record bags, keyed by id
+       heat, contacts, scenes,                       (the Heat, People and Scenes tabs')
        lastEncounter }                                what clearEncounter() cleared
 
    The record bags share one API (list, rec, put, drop) so a new module adds a bag
-   name here and nothing else. `encounter` is not a bag: it is the one live fight.
+   name here and nothing else. A document from before a bag existed loads with
+   that bag empty, the same as any other missing bag, so adding one needs no
+   schema bump. `encounter` is not a bag: it is the one live fight.
    A v1 document migrates losslessly: its threats, its live encounter and that
    encounter's entries come through untouched, and everything new arrives empty.
 
@@ -47,8 +50,10 @@ EN.gmStore = (function () {
   var STATE_KEY = "en_gm_v1";
   var SCHEMA = 2;
   // the record bags: every collection of saved things in the document. The live
-  // encounter is deliberately not one of them.
-  var BAGS = ["threats", "encounters", "hazards", "jobs", "ledger"];
+  // encounter is deliberately not one of them. heat is the Heat tab's Downtime
+  // log, contacts the People tab's contact cards, scenes the Scenes tab's saved
+  // Sit-Downs, chases and Incursions.
+  var BAGS = ["threats", "encounters", "hazards", "jobs", "ledger", "heat", "contacts", "scenes"];
 
   var state = null;
   var listeners = [];
@@ -206,7 +211,7 @@ EN.gmStore = (function () {
     if (raw.stamps && typeof raw.stamps === "object") {
       Object.keys(raw.stamps).forEach(function (k) { s.stamps[k] = raw.stamps[k]; });
     }
-    /* Every bag, v1's two and schema 2's three new ones, through one loop. A record
+    /* Every bag, v1's two and every one added since, through one loop. A record
        is an object or it is not a record: a stray string or null in a bag used to
        survive here and then throw in the sort that reads `savedAt` off it. The KEY
        is the record's identity, so `id` is written from it: a hand-edited file whose
@@ -462,17 +467,31 @@ EN.gmStore = (function () {
     if (renamed) persist(false);
     return renamed;
   }
-  function removeEntry(id) {
+  /* `turnOpts` is the Table's turn rule ({skip}, see gmEngine.advance), so the
+     cursor leaving a removed row passes the downed exactly as NEXT TURN would.
+     When that move runs off the bottom of the order, the round ends the way
+     NEXT TURN ends it: the counter turns and every acted mark clears, so the
+     row now acting does not read as having acted, a Solo's Surges refill (they
+     are read by round) and a clock following the round ticks. Returns true
+     when the round turned. */
+  function removeEntry(id, turnOpts) {
+    var turned = false;
     update(function (s) {
       // resolve the successor BEFORE the removal, or advancing off the removed
       // entry lands on whatever happens to sort into its place
       if (s.encounter.activeId === id) {
-        var next = EN.gmEngine.advance(s.encounter);
+        var next = EN.gmEngine.advance(s.encounter, turnOpts || null);
         s.encounter.activeId = next.activeId === id ? null : next.activeId;
+        if (next.wrapped && s.encounter.activeId !== null && (s.encounter.round | 0) > 0) {
+          s.encounter.round = next.round;
+          s.encounter.entries.forEach(function (r) { if (r) r.acted = false; });
+          turned = true;
+        }
       }
       s.encounter.entries = s.encounter.entries.filter(function (r) { return r.id !== id; });
-      if (!s.encounter.entries.length) { s.encounter.activeId = null; s.encounter.round = 0; }
+      if (!s.encounter.entries.length) { s.encounter.activeId = null; s.encounter.round = 0; turned = false; }
     });
+    return turned;
   }
   function entry(id) {
     return get().encounter.entries.filter(function (r) { return r.id === id; })[0] || null;
@@ -590,11 +609,32 @@ EN.gmStore = (function () {
      Ops vocabulary, an array (a single op object is accepted too):
        {op: "glimmer", amount}  {op: "nexus", amount}  {op: "xp", amount}
        {op: "post", mail: {from, subj, when, body}}
+       {op: "milestone", kind: "major"|"minor", amount}
+       {op: "heat", source, delta}
      Amounts are applied as given, positive or negative, and are not clamped:
      clamping would make the inverse inexact. Nexus is rounded to hundredths, the
      way the Inventory's wallet rounds it. A posting is filed at the top of the
      record's #POST inbox, unread, under a minted id that is kept in the ledger's
-     copy of the op (mail.id) so undo removes that one message and no other. */
+     copy of the op (mail.id) so undo removes that one message and no other.
+
+     A MILESTONE adds a whole number to ch.milestones.major or .minor, the two
+     counters the #PRINT tab's Milestone tracker keeps (builder.js), and undo
+     subtracts it again. Not clamped, like the amounts above.
+
+     HEAT is the one op that IS clamped, because the Social tab's Heat is a 0 to
+     10 track per source (face.js heatPanel: ch.face.heat, a list of {source,
+     value} rows). The delta is a whole number and lands on the row whose source
+     matches after trimming, ignoring case: the highest of them when the player
+     keeps two, since that is the one a Heat board reads. With no such row, a
+     rise creates one under the source as given, and a cut is not an op at all:
+     there is nothing to cut, and a row at 0 would be clutter on the Social tab.
+     Since a clamp cannot be subtracted back out, applying records what it did
+     on the ledger's copy of the op (`applied`, below), and undo restores the
+     row's exact previous value, or removes the row the write created. */
+  function whole(v) {
+    var n = Number(v);
+    return (isFinite(n) && n !== 0 && Math.floor(n) === n) ? n : null;
+  }
   function cleanOps(ops) {
     var out = [];
     (Array.isArray(ops) ? ops : [ops]).forEach(function (o) {
@@ -611,6 +651,15 @@ EN.gmStore = (function () {
         });
         m.id = postId();
         out.push({ op: "post", mail: m });
+      } else if (o.op === "milestone") {
+        var a = whole(o.amount);
+        if ((o.kind !== "major" && o.kind !== "minor") || a === null) return;
+        out.push({ op: "milestone", kind: o.kind, amount: a });
+      } else if (o.op === "heat") {
+        var src = typeof o.source === "string" ? o.source.trim() : "";
+        var d = whole(o.delta);
+        if (!src || d === null) return;
+        out.push({ op: "heat", source: src, delta: d });
       }
     });
     return out;
@@ -619,10 +668,156 @@ EN.gmStore = (function () {
   function invertible(o) {
     if (!isObj(o)) return false;
     if (o.op === "glimmer" || o.op === "nexus" || o.op === "xp") return isFinite(Number(o.amount));
+    if (o.op === "milestone") return (o.kind === "major" || o.kind === "minor") && isFinite(Number(o.amount));
+    // a heat op is undone from what applying it recorded, never from its delta
+    if (o.op === "heat") return typeof o.source === "string" && isObj(o.applied);
     return o.op === "post" && isObj(o.mail) && typeof o.mail.id === "string" && !!o.mail.id;
   }
+
+  /* ---- Heat rows ------------------------------------------------------------
+     A Heat row is the Social tab's {source, value}. heatKey is how two sources
+     are compared (trimmed, case ignored), heatNum how a value is read (the
+     Social tab reads a missing one as 0), heatClamp the track's 0 to 10. */
+  var HEAT_MAX = 10;
+  function heatKey(s) { return typeof s === "string" ? s.trim().toLowerCase() : ""; }
+  function heatNum(v) { var n = Number(v); return isFinite(n) ? n : 0; }
+  function heatClamp(n) { return Math.max(0, Math.min(HEAT_MAX, n)); }
+  function heatList(ch) { return (isObj(ch) && isObj(ch.face) && Array.isArray(ch.face.heat)) ? ch.face.heat : []; }
+  // the index of the source's highest row (the earliest of equals), or -1
+  function heatRow(list, key) {
+    var best = -1;
+    list.forEach(function (r, i) {
+      if (!isObj(r) || heatKey(r.source) !== key) return;
+      if (best === -1 || heatNum(r.value) > heatNum(list[best].value)) best = i;
+    });
+    return best;
+  }
+  /* Drops the cuts to a source the record holds no row for, as above. A rise
+     earlier in the same write creates that row, so a cut after it stays. */
+  function heatHeld(ch, ops) {
+    var held = Object.create(null);
+    heatList(ch).forEach(function (r) { if (isObj(r)) held[heatKey(r.source)] = true; });
+    return ops.filter(function (o) {
+      if (o.op !== "heat") return true;
+      var k = heatKey(o.source);
+      if (o.delta > 0) { held[k] = true; return true; }
+      return own(held, k);
+    });
+  }
+  /* Applies a heat op and records on it, as `applied`, what undo needs:
+       { created, index, next, prev, newFace, newList, len, spell }
+     created (this write made the row), index (where the row was), next (the
+     value it left), prev (the exact value it found, absent when the row had
+     none), newFace and newList (the write also made ch.face or ch.face.heat,
+     which a fresh record does not have yet), len (how many rows the list held
+     after it) and spell (the row's source exactly as written), which let undo
+     tell the row apart from another row of the same source after rows were
+     removed. */
+  function heatUp(ch, o) {
+    var key = heatKey(o.source);
+    var i = heatRow(heatList(ch), key);
+    if (i === -1 && o.delta < 0) { o.applied = { skipped: true }; return; }   // heatHeld already dropped these
+    var a = { created: false, newFace: false, newList: false };
+    if (!isObj(ch.face)) { ch.face = {}; a.newFace = true; }
+    if (ch.face.heat == null) { ch.face.heat = []; a.newList = true; }
+    // a value that is not a list cannot take a row; throwing makes EN.store put the record back
+    if (!Array.isArray(ch.face.heat)) throw new Error("ch.face.heat is not a list");
+    var list = ch.face.heat;
+    if (i === -1) {
+      list.push({ source: o.source, value: heatClamp(o.delta) });
+      a.created = true;
+      a.index = list.length - 1;
+    } else {
+      var r = list[i];
+      if (own(r, "value") && r.value !== undefined) a.prev = r.value;
+      r.value = heatClamp(heatNum(r.value) + o.delta);
+      a.index = i;
+    }
+    a.next = list[a.index].value;
+    a.len = list.length;
+    a.spell = list[a.index].source;
+    o.applied = a;
+  }
+  /* The inverse. The row is found again, in this order:
+     - where it can still be: its index, or as many rows above it as rows have
+       been removed since (a removal above shifts it up), naming the source AND
+       holding what the write left, its own spelling first;
+     - else the first row of the source holding what the write left, its own
+       spelling first;
+     - else at its index while that names the source (edited by hand in place);
+     - else the source's highest row.
+     So with two rows of one source, a row removed above the written one no
+     longer sends the undo to the other row (the index now points one row on).
+     A write from before `len` and `spell` were kept looks at its index alone
+     in the first step.
+     A row this write created is removed, and with it a list or a ch.face the
+     write made, when nothing else has been put in them since. A row it changed
+     goes back to its exact previous value; if the player has changed that row
+     by hand since, only this write's own step is taken back, so the player's
+     edit is not thrown away. A row that is gone took the write with it. */
+  function heatBack(ch, o) {
+    var a = o.applied;
+    if (!isObj(a) || a.skipped) return;
+    var list = heatList(ch);
+    var key = heatKey(o.source), i = -1;
+    var idx = typeof a.index === "number" ? a.index : -1;
+    var atIdx = idx >= 0 && isObj(list[idx]) && heatKey(list[idx].source) === key;
+    function holds(j) { return isObj(list[j]) && heatKey(list[j].source) === key && list[j].value === a.next; }
+    function spelt(j) { return typeof a.spell !== "string" || list[j].source === a.spell; }
+    // the spelled-alike first, else the first of them
+    function best(js) { var s = js.filter(spelt); return s.length ? s[0] : (js.length ? js[0] : -1); }
+    var gone = typeof a.len === "number" ? Math.max(0, a.len - list.length) : 0;
+    var near = [];
+    for (var j = idx; idx >= 0 && j >= Math.max(0, idx - gone); j--) if (holds(j)) near.push(j);
+    i = best(near);
+    if (i === -1) {
+      var all = [];
+      list.forEach(function (r, k) { if (holds(k)) all.push(k); });
+      i = best(all);
+    }
+    if (i === -1 && atIdx) i = idx;
+    if (i === -1) i = heatRow(list, key);
+    if (i === -1) return;
+    var r = list[i];
+    if (a.created) {
+      list.splice(i, 1);
+      if (a.newList && !list.length) delete ch.face.heat;
+      if (a.newFace && isObj(ch.face) && !Object.keys(ch.face).length) delete ch.face;
+    } else if (r.value === a.next) {
+      if (own(a, "prev")) r.value = a.prev; else delete r.value;
+    } else {
+      r.value = heatClamp(heatNum(r.value) - (heatNum(a.next) - heatNum(a.prev)));
+    }
+  }
+
+  /* A milestone op. Applying notes on the op (`applied`) whether it had to make
+     ch.milestones (a record from before the tracker) or the counter's key, so
+     undo can take those away again once the count is back to nothing. */
+  function milestoneOp(ch, o, sign) {
+    var m;
+    if (sign > 0) {
+      var a = {};
+      if (!isObj(ch.milestones)) { ch.milestones = { major: 0, minor: 0, notes: "" }; a.made = true; }
+      else if (!own(ch.milestones, o.kind)) a.added = true;
+      m = ch.milestones;
+      var cur = Number(m[o.kind]);
+      m[o.kind] = (isFinite(cur) ? cur : 0) + Number(o.amount);
+      o.applied = a;
+      return;
+    }
+    m = ch.milestones;
+    if (!isObj(m)) return;   // cleared since: nothing left to take back
+    var was = Number(m[o.kind]);
+    m[o.kind] = (isFinite(was) ? was : 0) - Number(o.amount);
+    var done = isObj(o.applied) ? o.applied : {};
+    if (done.added && m[o.kind] === 0) delete m[o.kind];
+    if (done.made && !m.major && !m.minor && !m.notes) delete ch.milestones;
+  }
+
   // sign 1 applies the op, -1 inverts it
   function applyOp(ch, o, sign) {
+    if (o.op === "milestone") { milestoneOp(ch, o, sign); return; }
+    if (o.op === "heat") { if (sign > 0) heatUp(ch, o); else heatBack(ch, o); return; }
     if (o.op === "post") {
       if (!isObj(ch.face)) ch.face = {};
       if (!Array.isArray(ch.face.post)) ch.face.post = [];
@@ -675,12 +870,14 @@ EN.gmStore = (function () {
      liveWrites() after a reload:
        {source: "award", encounterAt, sourceId, jobId}
        {source: "posting", jobId}
-       {source: "payday", paydayId, encounterAt, jobId} */
+       {source: "payday", paydayId, encounterAt, jobId}
+       {source: "milestone"}   (Payroll's AWARD MILESTONE) */
   function writeCrew(charId, label, ops, meta) {
     var roster = rosterNow();
     if (typeof charId !== "string" || !own(roster, charId) || !isObj(roster[charId])) return false;
     if (!EN.store.updateById) return false;
-    var clean = cleanOps(ops);
+    // a Heat cut to a source the record does not hold is no op (see the vocabulary above)
+    var clean = heatHeld(roster[charId], cleanOps(ops));
     if (!clean.length) return false;
     var tag = null;
     if (isObj(meta)) { try { tag = copy(meta); } catch (e) { tag = null; } }

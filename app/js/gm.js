@@ -5,7 +5,14 @@
    Job Board and Payroll are their own files (js/gm_encounters.js and its
    siblings) and reach this one through three hooks at the bottom: a handoff
    that carries a payload to another tab, and Table extras that hang their own
-   panels under the initiative order.
+   panels under the initiative order. Every Admin tab also takes two things from
+   here for under and beside its heading: the undo strip and the GM's Card
+   drawer.
+
+   A Table row is a working surface, not a readout: damage and heal by an
+   amount, rename, max Vitality, its full statblock, conditions and a note, a
+   Hostile Vehicle under its pilot, and the Solo helper (see "the Table's row
+   tools"). Turn flow passes downed threats and marks who has acted.
 
    None of this is about the active character. It reads the roster as "the
    crew" and holds its own state through EN.gmStore. The Admin desktop exists
@@ -26,9 +33,15 @@ EN.gmView = (function () {
   // bestiary filter. `cat` is a category key, or one of the two reference views
   // ("templates", "vehicles"), which no category key collides with
   var _best = { cat: "people", q: "" };
+  // the Species Template laid over a People card, by entry name ("" or absent: as printed).
+  // A view choice like the filter above, so it survives a tab switch and not a reload.
+  var _species = Object.create(null);
+  // which saved threats have their statblock open, by saved id
+  var _savedOpen = Object.create(null);
 
   // local copies rather than imports, per the house convention that each view
   // carries its own small helpers instead of a shared utils file
+  function own(o, k) { return !!o && Object.prototype.hasOwnProperty.call(o, k); }
   function bar(cur, max, color) {
     var pct = max > 0 ? Math.max(0, Math.min(100, (cur / max) * 100)) : 0;
     return el("div.meter", { style: { height: "6px", borderRadius: "3px", background: "var(--bg3)", overflow: "hidden" } },
@@ -255,6 +268,15 @@ EN.gmView = (function () {
       text: "Solo: " + b.surges + " Surges a round, one defensive Impulse per Freelancer turn, Unshakable, a Breakpoint below half Vitality, and one findable weakness. The weakness is not optional." }));
     if (b.noDefensiveImpulse) kids.push(el("p.help", { style: { margin: "6px 0 0" }, text: "Minion: no defensive Impulse." }));
 
+    /* The blank threat's other lines (Trait, Impulse, Resolve, Gear), printed
+       only when the block carries them. The builder leaves them empty, so its
+       card is unchanged; a block that arrives with them filled in shows them. */
+    [["Trait", b.trait], ["Impulse", b.impulse], ["Resolve", b.resolve], ["Gear", b.gear]].forEach(function (f) {
+      if (f[1] !== null && f[1] !== undefined && String(f[1]).replace(/\s+/g, "")) {
+        kids.push(el("p.help", { style: { margin: "4px 0 0" }, text: f[0] + ": " + f[1] }));
+      }
+    });
+
     // the attribution. A GM wants to know where 45 Vitality came from, and one
     // shared explanation stops the card, the row and any later print wording it
     // three different ways.
@@ -268,6 +290,14 @@ EN.gmView = (function () {
   }
 
   /* ---- the initiative tracker --------------------------------------------- */
+  // the mark NEXT TURN leaves on the row whose turn just ended; clicking it clears it
+  function actedChip(row) {
+    if (!row.acted) return null;
+    return el("span.chip", { dataset: { gm: "acted" }, title: "Took its turn this round. Click to clear the mark.",
+      style: { fontSize: "9.5px", cursor: "pointer" },
+      onclick: function () { editRow(row.id, function (r) { r.acted = false; }); EN.app.render(); } }, "✓ ACTED");
+  }
+
   function crewRow(row, isNow) {
     var roster = EN.store.roster() || {};
     var ch = roster[row.charId];
@@ -275,14 +305,15 @@ EN.gmView = (function () {
     var d;
     try { d = eng.derive(ch); } catch (e) { return null; }
     var name = (ch.firstName || "") + " " + (ch.lastName || "");
-    return el("div.feature", { style: { borderLeftColor: isNow ? "var(--accent)" : "var(--border2)",
+    return el("div.feature", { dataset: { gmRow: row.id }, style: { borderLeftColor: isNow ? "var(--accent)" : "var(--border2)",
                                         background: isNow ? "var(--sunk, rgba(255,255,255,.03))" : "transparent" } }, [
       el("div.row.between.wrap", { style: { alignItems: "center", gap: "8px" } }, [
-        el("div.row", { style: { gap: "10px", alignItems: "baseline" } }, [
+        el("div.row", { style: { gap: "10px", alignItems: "baseline", flexWrap: "wrap" } }, [
           el("span.mono", { style: { fontSize: "17px", minWidth: "34px", color: isNow ? "var(--accent)" : "var(--text)" },
             text: String(row.init) }),
           el("span", { style: { fontWeight: 600 }, text: name.trim() || "Freelancer" }),
           el("span.chip", { style: { fontSize: "9.5px" }, text: "CREW" }),
+          actedChip(row),
           // a record with no class yet derives no Vitality, and "null Vitality" is worse than nothing
           el("span.help", { text: "Caliber " + d.caliber + (typeof d.vitalityMax === "number" ? " · " + d.vitalityMax + " Vitality" : "") })
         ]),
@@ -303,36 +334,584 @@ EN.gmView = (function () {
               EN.store.setActive(row.charId);
               toast((name.trim() || "Freelancer") + " is now the active Freelancer. Open the Freelancer portal to see the sheet.");
             } }, "SET ACTIVE"),
-          el("button.btn.sm", { onclick: function () { gm.removeEntry(row.id); EN.app.render(); } }, "✕")
+          el("button.btn.sm", { onclick: function () { removeRow(row.id); } }, "✕")
         ])
       ])
     ]);
   }
 
-  function threatRow(row, isNow) {
+  /* ---- the Table's row tools -----------------------------------------------
+     What a GM does to a threat row mid-fight: damage or heal it by an amount,
+     rename it, change its max Vitality, open its full statblock, mark its
+     conditions and a note, put it behind the wheel of a Hostile Vehicle, and
+     (on a Solo) count its Surges and catch its Breakpoint. Everything the GM
+     decides is saved ON THE ROW through gmStore.update, so it rides the
+     encounter through a reload and into the lastEncounter snapshot.
+
+     The transient half (which rows are opened up, an amount or a name typed
+     but not yet applied) lives here and is not persisted, like the builder's
+     inputs above. A typed field never re-renders the tab on change: a render
+     under a blur swallows the click that caused the blur (F19), so what is
+     typed is held here and applied by its own button, or by Enter. Keyed by
+     row id, null-prototype, since the ids ride in the GM's own data. */
+  var _rows = Object.create(null);
+  function rowUi(id) {
+    if (!own(_rows, id)) _rows[id] = { amt: "", vamt: "", block: false, edit: false, name: null, max: null };
+    return _rows[id];
+  }
+  /* NEXT and PREVIOUS TURN pass over threats at 0 Vitality: a downed threat has
+     no turn left to take. The SKIP THE DOWNED chip turns that off. A view
+     choice, like the Bestiary filter, so it survives a tab switch and not a
+     reload. Crew rows are never passed over: a Freelancer at 0 is still in the
+     fight, making Death Saves. */
+  var _turn = { skipDown: true, round: null, set: null };   // `set`: a SET ROUND not yet passed to the Table extras
+  function downed(r) { return !!r && r.kind === "threat" && Number(r.vit) <= 0; }
+  function turnOpts() { return _turn.skipDown ? { skip: downed } : null; }
+  /* A row's X. Removing the row that is acting moves the cursor on as NEXT
+     TURN would, and when that runs off the bottom of the order gmStore ends
+     the round as NEXT TURN does (the counter, the marks); a round typed and
+     never set gives way to the new one, and the GM is told. */
+  function removeRow(id) {
+    if (gm.removeEntry(id, turnOpts())) {
+      _turn.round = null;
+      toast("Round " + gm.get().encounter.round + ".");
+    }
+    EN.app.render();
+  }
+
+  function editRow(id, fn, opts) {
+    gm.update(function (s) {
+      var r = s.encounter.entries.filter(function (x) { return x.id === id; })[0];
+      if (r) fn(r, s.encounter);
+    }, opts);
+  }
+  // a typed amount as a whole number of 1 or more, else 0 (a sign typed in is ignored: the button says which way)
+  function wholeAmt(v) {
+    var n = Math.floor(Math.abs(Number(v)));
+    return isFinite(n) && n > 0 ? n : 0;
+  }
+  function isSolo(b) { return !!b && String(b.designation || "").toLowerCase() === "solo"; }
+
+  /* EVERY VITALITY CHANGE ON A THREAT ROW comes through here: the stepper, the
+     amount, DAMAGE and HEAL. Clamped to 0 and the row's max. It is also where a
+     Solo's Breakpoint is caught, because "the first time a Solo drops below half
+     Vitality" is a property of the change, not of any one button: the first
+     drop below half that this row sees leaves `bp` on the row (the round it
+     fired in), and it never fires again, healed or not. */
+  function setVit(id, fn, what) {
+    var fired = null, landed = null;
+    editRow(id, function (r, enc) {
+      var max = Math.max(1, Number(r.vitMax) || 1);
+      var was = Math.max(0, Number(r.vit) || 0);
+      var next = Math.round(Number(fn(was, max)));
+      if (!isFinite(next)) next = was;
+      next = Math.max(0, Math.min(max, next));
+      r.vit = next;
+      if (isSolo(r.block) && !r.bp && next < was && next < max / 2) {
+        r.bp = { round: enc.round | 0, seen: false };
+        fired = r.name || "The Solo";
+      }
+      landed = (r.name || "Threat") + (what || "") + ": " + next + " / " + max + ".";
+    });
+    if (fired) toast("Breakpoint: " + fired + " just dropped below half Vitality.");
+    else if (what && landed) toast(landed);
+    EN.app.render();
+  }
+
+  /* ---- the Solo helper -------------------------------------------------------
+     Running Solos (EN.threats.runningSolos, the book's text) on the row of any
+     threat whose Designation is Solo: the Surges it has left this round, the
+     Unshakable reminder with its once-a-round Surge spend, its Defensive
+     Impulse, and the Breakpoint. */
+  function soloRule(key) {
+    var R = EN.threats && EN.threats.runningSolos;
+    return ((R && R.rules) || []).filter(function (r) { return r && r.key === key; })[0] || null;
+  }
+  function abilityNamed(b, name) {
+    return ((b && b.abilities) || []).filter(function (a) { return a && a.name === name; })[0] || null;
+  }
+  /* How many Surges a Solo has a round. The block's own number first: a built
+     Solo carries `surges`, a Bestiary Solo prints it on its Surges line ("3 per
+     round"). Else the book's count by Grade, from the Solo row of
+     EN.threats.designations (two at Grade 1 and 2, three at 3 and up). */
+  function surgesOf(b) {
+    if (typeof b.surges === "number" && b.surges > 0) return b.surges;
+    var s = abilityNamed(b, "Surges"), m = s && String(s.cost || "").match(/(\d+)\s+per\s+round/i);
+    if (m) return Number(m[1]);
+    var g = Math.max(1, Math.min(5, Number(b.grade) || 1));
+    var sd = ((EN.threats && EN.threats.designations) || []).filter(function (d) { return d && d.key === "solo"; })[0];
+    if (sd && sd.surgesByGrade && typeof sd.surgesByGrade[g] === "number") return sd.surgesByGrade[g];
+    return g >= 3 ? 3 : 2;
+  }
+  /* The Surges a Bestiary Solo lists, split the way the page prints them,
+     "*Lunge* (move half Speed); *Spray* (...)". Only a semicolon followed by a
+     new italic name starts a new Surge, since one description carries its own
+     semicolon ("...; once per round"). A built Solo lists none and counts. */
+  function surgeList(b) {
+    var s = abilityNamed(b, "Surges");
+    if (!s || !s.text) return [];
+    var out = [];
+    String(s.text).split(/;\s*(?=\*)/).forEach(function (part) {
+      var m = part.match(/^\s*\*([^*]+)\*\s*([\s\S]*?)\.?\s*$/);
+      if (m) out.push({ name: m[1], text: m[2].replace(/^\(/, "").replace(/\)$/, "") });
+    });
+    return out;
+  }
+  /* The Surges spent THIS round. Read lazily: the list on the row names the
+     round it was spent in, and a list from any other round is spent no longer.
+     So the Surges refill whenever the round changes, however it changed (NEXT
+     TURN, PREVIOUS TURN, SET ROUND, a reroll), with nothing to reset. The
+     Unshakable spend is in the same list, under "Unshakable". */
+  function surgesSpent(row, enc) {
+    var s = row.surge;
+    return (s && s.round === (enc.round | 0) && Array.isArray(s.used)) ? s.used : [];
+  }
+  function spendSurge(id, label, give) {
+    editRow(id, function (r, enc) {
+      var used = surgesSpent(r, enc).slice();
+      if (give) { var i = used.lastIndexOf(label); if (i !== -1) used.splice(i, 1); }
+      else used.push(label);
+      r.surge = { round: enc.round | 0, used: used };
+    });
+    EN.app.render();
+  }
+  // one Defensive Impulse per Freelancer turn, so it is spent for the turn the cursor is on
+  function turnKey(enc) { return (enc.round | 0) + ":" + (enc.activeId || ""); }
+  /* The Impulse a Bestiary Solo's entry lists, read out of its "Unshakable,
+     Defensive Impulses" line: "as a Solo (listed Impulse: Submerge: gain Half
+     Cover ...)" or "(its listed Impulse is Brace: ...)". A built block's own
+     `impulse` otherwise; "" when neither says. */
+  function listedImpulse(b) {
+    var st = (b && b.stats) || {};
+    var m = String(st["Unshakable, Defensive Impulses"] || "").match(/listed Impulse(?: is|:)\s*([\s\S]+?)\)\.?\s*$/);
+    if (m) return m[1];
+    return (b && b.impulse) ? String(b.impulse) : "";
+  }
+  // the block's own Breakpoint when it prints one, else the book's rule
+  function breakpointText(b) {
+    var a = abilityNamed(b, "Breakpoint");
+    if (a && a.text) return String(a.text);
+    var r = soloRule("breakpoint");
+    return r ? r.text : "";
+  }
+  function ruleP(rule, extra, color) {
+    var p = el("p.help", { style: { margin: "5px 0 0", color: color || "var(--text2)" } }, [
+      el("span", { style: { fontWeight: 600, color: "var(--text)" }, text: rule.name + ". " })
+    ]);
+    EN.ui.applyInline(p, String(rule.text || ""));
+    if (extra) p.appendChild(extra);
+    return p;
+  }
+  function soloPanel(row, enc) {
     var b = row.block || {};
-    var pctColor = row.vit / (row.vitMax || 1) <= 0.5 ? "var(--danger)" : "var(--ember, var(--danger))";
-    function hit(n) {
-      gm.update(function (s) {
-        var r = s.encounter.entries.filter(function (x) { return x.id === row.id; })[0];
-        if (r) r.vit = Math.max(0, Math.min(r.vitMax, r.vit + n));
+    var total = surgesOf(b), used = surgesSpent(row, enc), left = Math.max(0, total - used.length);
+    var list = surgeList(b);
+    var kids = [];
+
+    // the Surges rule rides on the counter's title: the counter and the chips already say what it means
+    var sr = soloRule("surges");
+    var top = [
+      el("span.mono", { style: { fontSize: "11px", letterSpacing: ".12em", color: "var(--gold)" }, text: "SOLO" }),
+      el("span.mono", { dataset: { gm: "surgesleft" }, title: sr ? sr.name + ". " + sr.text : "", style: { fontSize: "12px", cursor: "help" },
+        text: "SURGES LEFT THIS ROUND " + left + " / " + total })
+    ];
+    if (list.length) {
+      // each listed Surge once a round: a chip per Surge, struck through once spent
+      list.forEach(function (s) {
+        var spent = used.indexOf(s.name) !== -1;
+        top.push(el("span.chip", { dataset: { gm: "surge", surge: s.name },
+          title: s.text + (spent ? ". Spent this round: click to take it back." : left ? ". Click to spend it." : ". No Surges left this round."),
+          style: { cursor: "pointer", fontSize: "10px", textDecoration: spent ? "line-through" : "none", opacity: (spent || left) ? 1 : 0.45 },
+          onclick: function () {
+            if (spent) spendSurge(row.id, s.name, true);
+            else if (left) spendSurge(row.id, s.name, false);
+            else toast("No Surges left this round.");
+          } }, s.name.toUpperCase()));
       });
-      EN.app.render();
+    } else {
+      top.push(el("button.btn.sm", { dataset: { gm: "surgespend" }, disabled: !left,
+        onclick: function () { spendSurge(row.id, "Surge", false); } }, "SPEND A SURGE"));
+      if (used.indexOf("Surge") !== -1) {
+        top.push(el("button.btn.sm.ghost", { dataset: { gm: "surgegive" },
+          onclick: function () { spendSurge(row.id, "Surge", true); } }, "GIVE ONE BACK"));
+      }
+    }
+    kids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } }, top));
+
+    // Unshakable: a failed save can be turned with one of the remaining Surges, once a round
+    var un = soloRule("unshakable");
+    if (un) {
+      var turned = used.indexOf("Unshakable") !== -1;
+      var act = turned
+        ? el("span.chip.on", { dataset: { gm: "unshaken" }, title: "Click to take the Surge back.",
+            style: { cursor: "pointer", fontSize: "9.5px", marginLeft: "6px" },
+            onclick: function () { spendSurge(row.id, "Unshakable", true); } }, "SAVE TURNED THIS ROUND")
+        : el("button.btn.sm", { dataset: { gm: "unshake" }, disabled: !left, style: { marginLeft: "6px" },
+            title: left ? "Spend one of the Surges left this round to succeed on the save it just failed" : "No Surges left this round",
+            onclick: function () { spendSurge(row.id, "Unshakable", false); toast((row.name || "The Solo") + " spends a Surge and succeeds on the save."); } },
+            "FAILED A SAVE: SPEND A SURGE");
+      kids.push(ruleP(un, act));
+    }
+
+    // its Defensive Impulse, one per Freelancer turn
+    var im = soloRule("impulses");
+    if (im) {
+      var listed = listedImpulse(b);
+      var spentNow = row.impulse === turnKey(enc);
+      var extra = el("span", null, [
+        listed ? el("span", { style: { color: "var(--accent)" }, text: " Its listed Impulse: " + listed + "." }) : null,
+        el("span.chip" + (spentNow ? ".on" : ""), { dataset: { gm: "impulse" },
+          title: spentNow ? "Spent on this turn. Click to take it back." : "Mark it spent for this turn. It comes back on the next turn.",
+          style: { cursor: "pointer", fontSize: "9.5px", marginLeft: "6px" },
+          onclick: function () {
+            editRow(row.id, function (r, e) { r.impulse = (r.impulse === turnKey(e)) ? null : turnKey(e); });
+            EN.app.render();
+          } }, spentNow ? "IMPULSE SPENT THIS TURN" : "SPEND THE IMPULSE")
+      ]);
+      kids.push(ruleP(im, extra));
+    }
+
+    // the Breakpoint: an alert the turn it fires, then a line saying when it did
+    var bpText = breakpointText(b);
+    var max = Math.max(1, Number(row.vitMax) || 1);
+    if (row.bp && !row.bp.seen) {
+      var alertP = el("p", { style: { margin: "4px 0 0", fontSize: "13px" } });
+      EN.ui.applyInline(alertP, bpText);
+      kids.push(el("div", { dataset: { gm: "breakpoint" }, style: { margin: "8px 0 0", padding: "8px 10px",
+          border: "1px solid var(--gold)", borderLeft: "3px solid var(--gold)", background: "rgba(255,200,80,.06)" } }, [
+        el("div.row.between.wrap", { style: { gap: "8px", alignItems: "center" } }, [
+          el("span.mono", { style: { fontSize: "12px", letterSpacing: ".1em", color: "var(--gold)" },
+            text: "BREAKPOINT" + (row.bp.round ? " · ROUND " + row.bp.round : "") }),
+          el("button.btn.sm", { dataset: { gm: "bpseen" },
+            onclick: function () { editRow(row.id, function (r) { if (r.bp) r.bp.seen = true; }); EN.app.render(); } }, "GOT IT")
+        ]),
+        alertP
+      ]));
+    } else {
+      var bpLine = el("p.help", { dataset: { gm: "bpline" }, style: { margin: "5px 0 0", color: "var(--text2)" } }, [
+        el("span", { style: { fontWeight: 600, color: "var(--text)" },
+          text: row.bp ? "Breakpoint fired" + (row.bp.round ? " in round " + row.bp.round : "") + ". "
+                       : "Breakpoint, below " + (Math.round(max / 2 * 10) / 10) + " Vitality. " })
+      ]);
+      EN.ui.applyInline(bpLine, bpText);
+      kids.push(bpLine);
+    }
+    return el("div", { dataset: { gm: "solo" }, style: { marginTop: "8px", paddingTop: "8px", borderTop: "1px dashed var(--border2)" } }, kids);
+  }
+
+  /* ---- vehicles on the Table -------------------------------------------------
+     ATTACH VEHICLE puts a threat row behind the wheel of one of the Bestiary's
+     Hostile Vehicles. The row then shows the vehicle's Defense while moving
+     (10 + Handling + 2, 4 or 6 by the PILOT's Grade, read out of the book's
+     Threat pilots rule by movingDefenseRule below), the pilot's check (its Attack
+     bonus + Handling), and the vehicle's Integrity with its own damage controls.
+     The vehicle is COPIED onto the row, so a later data change cannot move a
+     number mid-chase, the same rule a threat's block follows.
+
+     THE PRINTED PAIRINGS are offered first to the pilots they name. Each is a
+     sentence in the vehicle's own description, and it is read from there, never
+     restated: `cue` is a fragment of that sentence and the picker shows the
+     whole sentence that holds it. A pairing whose sentence the data no longer
+     carries is simply not suggested. The pilot test is the statblock's own
+     name, so a renamed or numbered row still finds its vehicle. */
+  var PAIRINGS = [
+    // GMH p98: "Ashriders ride them in packs." (War Bike; the Outrider's gear names it too)
+    { vehicle: "Ashrider War Bike", pilot: /^Ashrider\b/, cue: "Ashriders ride them" },
+    // GMH p98: "Homeward runs them in pairs, ..." (Interceptor)
+    { vehicle: "Homeward Interceptor", pilot: /^Homeward\b/, cue: "Homeward runs them" },
+    // GMH p98: "Kindred's, mostly, ..." (Recovery Van)
+    { vehicle: "Recovery Van", pilot: /^Kindred\b/, cue: "Kindred's, mostly" },
+    // GMH p99: "The Ferrymen's workhorse." (Ferry Skiff)
+    { vehicle: "Ferry Skiff", pilot: /^Ferryman\b/, cue: "The Ferrymen's workhorse" }
+  ];
+  function vehicleProfiles() { return (EN.bestiary && EN.bestiary.vehicles && EN.bestiary.vehicles.profiles) || []; }
+  function vehicleByName(n) { return vehicleProfiles().filter(function (p) { return p && p.name === n; })[0] || null; }
+  function sentenceWith(p, cue) {
+    var body = [String(p.text || "")].concat((p.rules || []).map(function (r) { return r.name + ": " + r.text; })).join(" ");
+    var sents = body.match(/[^.!?]+[.!?]+/g) || [body];
+    for (var i = 0; i < sents.length; i++) { if (sents[i].indexOf(cue) !== -1) return sents[i].replace(/^\s+|\s+$/g, ""); }
+    return "";
+  }
+  function pairingsFor(b) {
+    var nm = String((b && b.name) || ""), out = [];
+    PAIRINGS.forEach(function (pr) {
+      if (!pr.pilot.test(nm)) return;
+      var p = vehicleByName(pr.vehicle);
+      var why = p ? sentenceWith(p, pr.cue) : "";
+      if (why) out.push({ profile: p, why: why });
+    });
+    return out;
+  }
+  // the moving Defense for a pilot of this Grade, or null when the rule or the Handling is missing
+  function movingDefense(handling, grade) {
+    var md = movingDefenseRule();
+    if (!md || typeof handling !== "number") return null;
+    var g = Math.max(1, Math.min(5, Number(grade) || 1));
+    var band = md.bands.filter(function (x) { return g >= x.lo && g <= x.hi; })[0];
+    if (!band) return null;
+    return { value: md.base + handling + band.bonus, base: md.base, bonus: band.bonus, lo: band.lo, hi: band.hi };
+  }
+  function attachVehicle(row, name) {
+    var p = vehicleByName(name);
+    if (!p) return;
+    editRow(row.id, function (r) {
+      r.vehicle = { name: p.name, tier: p.tier, category: p.category, speed: p.speed, handling: p.handling,
+                    structure: p.structure, integrity: p.integrity, int: p.integrity, nodeTier: p.nodeTier,
+                    traits: (p.traits || []).slice() };
+    });
+    toast((row.name || "Threat") + " is at the wheel of the " + p.name + ".");
+    EN.app.render();
+  }
+  function setInt(id, fn, what) {
+    var landed = null;
+    editRow(id, function (r) {
+      var v = r.vehicle;
+      if (!v) return;
+      var max = Math.max(0, Number(v.integrity) || 0);
+      var next = Math.round(Number(fn(Math.max(0, Number(v.int) || 0), max)));
+      if (!isFinite(next)) return;
+      v.int = Math.max(0, Math.min(max, next));
+      landed = v.name + what + ": " + v.int + " / " + max + " Integrity.";
+    });
+    if (what && landed) toast(landed);
+    EN.app.render();
+  }
+  // the vehicle rules' own line for a vehicle at 0 Integrity (EN.vehicles.repair), when the data carries it
+  function wreckedLine() {
+    return ((EN.vehicles && EN.vehicles.repair) || []).filter(function (t) { return /^Wrecked\b/.test(String(t)); })[0] || "";
+  }
+  function vehiclePicker(row) {
+    var b = row.block || {};
+    var pairs = pairingsFor(b), first = Object.create(null);
+    pairs.forEach(function (x) { first[x.profile.name] = true; });
+    var opts = [el("option", { value: "" }, row.vehicle ? "Swap for..." : "Pick a vehicle...")];
+    if (pairs.length) {
+      opts.push(el("optgroup", { label: "The book pairs these with this pilot" }, pairs.map(function (x) {
+        return el("option", { value: x.profile.name, title: x.why }, x.profile.name);
+      })));
+    }
+    var rest = vehicleProfiles().filter(function (p) { return p && !own(first, p.name); });
+    opts.push(el("optgroup", { label: pairs.length ? "Every Hostile Vehicle" : "Hostile Vehicles" }, rest.map(function (p) {
+      return el("option", { value: p.name }, p.name);
+    })));
+    var kids = [
+      lbl("Attach vehicle"),
+      el("select", { dataset: { gm: "vehpick" }, style: { maxWidth: "220px" },
+        onchange: function (e) { if (e.target.value) attachVehicle(row, e.target.value); } }, opts)
+    ];
+    pairs.forEach(function (x) {
+      kids.push(el("p.help", { style: { margin: "4px 0 0", color: "var(--accent)" }, text: x.profile.name + ": " + x.why }));
+    });
+    return el("div.field", { style: { margin: 0, minWidth: "170px", flex: "1 1 200px" } }, kids);
+  }
+  function vehiclePanel(row) {
+    var v = row.vehicle, b = row.block || {}, ui = rowUi(row.id);
+    var max = Math.max(0, Number(v.integrity) || 0), cur = Math.max(0, Number(v.int) || 0);
+    var kids = [];
+    var prof = [];
+    if (v.speed) prof.push("Speed " + v.speed);
+    if (typeof v.handling === "number") prof.push("Handling " + eng.fmtMod(v.handling));
+    if (v.structure !== undefined && v.structure !== null) prof.push("Structure " + v.structure);
+    kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "baseline" } }, [
+      el("span.chip", { dataset: { gm: "vehicle" }, style: { fontSize: "9.5px", color: "var(--accent)", borderColor: "var(--accent)" },
+        text: String(v.name || "Vehicle").toUpperCase() }),
+      el("span.help", { text: prof.join(" · ") })
+    ]));
+    var md = movingDefense(v.handling, b.grade);
+    if (md) {
+      kids.push(el("p.help", { dataset: { gm: "movingdef" }, style: { margin: "5px 0 0", color: "var(--accent)" },
+        text: "Defense while moving " + md.value + ": " + md.base + " + Handling " + eng.fmtMod(v.handling) + " + " + md.bonus +
+              " for a Grade " + (Number(b.grade) || 1) + " pilot." }));
+    }
+    if (typeof b.attackBonus === "number" && typeof v.handling === "number") {
+      kids.push(el("p.help", { dataset: { gm: "pilotcheck" }, style: { margin: "3px 0 0" },
+        text: "Pilots at " + eng.fmtMod(b.attackBonus + v.handling) + " (Attack " + eng.fmtMod(b.attackBonus) +
+              " + Handling " + eng.fmtMod(v.handling) + ") on every piloting check, the Chase Check and the Control Check included." }));
+    }
+    kids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "6px" } }, [
+      el("span.mono", { dataset: { gm: "integrity" }, style: { fontSize: "12px" }, text: "INTEGRITY " + cur + " / " + max }),
+      stepper(function () { setInt(row.id, function (n) { return n - 1; }); }, function () { setInt(row.id, function (n) { return n + 1; }); }),
+      el("input", { type: "number", min: "0", value: ui.vamt, placeholder: "amount", title: "An amount of Integrity",
+        dataset: { gm: "vamt" }, style: { width: "72px" },
+        oninput: function (e) { ui.vamt = e.target.value; },
+        onkeydown: function (e) { if (e.key === "Enter") vDamage(-1); } }),
+      el("button.btn.sm", { dataset: { gm: "vdmg" }, onclick: function () { vDamage(-1); } }, "DAMAGE"),
+      el("button.btn.sm", { dataset: { gm: "vrepair" }, onclick: function () { vDamage(1); } }, "REPAIR"),
+      el("button.btn.sm.ghost", { dataset: { gm: "vdetach" }, title: "Take the vehicle off this row",
+        onclick: function () {
+          editRow(row.id, function (r) { delete r.vehicle; });
+          toast((row.name || "Threat") + " is out of the " + (v.name || "vehicle") + ".");
+          EN.app.render();
+        } }, "DETACH")
+    ]));
+    function vDamage(sign) {
+      var n = wholeAmt(ui.vamt);
+      if (!n) { toast("Type an amount first."); return; }
+      setInt(row.id, function (x) { return x + sign * n; }, sign < 0 ? " takes " + n : " gets " + n + " back");
+    }
+    kids.push(el("div", { style: { marginTop: "6px" } }, [bar(cur, max || 1, "var(--accent)")]));
+    if (cur <= 0 && max > 0) {
+      var w = wreckedLine();
+      kids.push(el("p.help", { dataset: { gm: "wrecked" }, style: { margin: "5px 0 0", color: "var(--danger)" }, text: w || "0 Integrity." }));
+    }
+    return el("div", { dataset: { gm: "vehiclepanel" }, style: { marginTop: "8px", paddingTop: "8px", borderTop: "1px dashed var(--border2)" } }, kids);
+  }
+
+  /* ---- conditions and notes ----------------------------------------------------
+     Chips from EN.conditions, the player side's own list, as REMINDERS: a threat
+     does not run combat.js's condition effects (the Threat Conventions: "When a
+     condition's save comes due, use the threat's listed save bonus"). Saved on the
+     row as a list of condition names, with a one-line note beside them. */
+  function condList() { return Array.isArray(EN.conditions) ? EN.conditions : []; }
+  function condInfo(name) { return condList().filter(function (c) { return c && c.name === name; })[0] || null; }
+  function rowConds(r) {
+    return (Array.isArray(r.conditions) ? r.conditions : []).map(function (c) {
+      return (c && typeof c === "object") ? c.name : c;
+    }).filter(function (c) { return typeof c === "string" && c; });
+  }
+  function setConds(id, fn) {
+    editRow(id, function (r) { r.conditions = fn(rowConds(r)); });
+    EN.app.render();
+  }
+  function conditionsLine(row) {
+    var have = rowConds(row);
+    var chips = have.map(function (name) {
+      var c = condInfo(name);
+      return el("span.chip", { dataset: { gm: "cond", cond: name }, title: c ? c.summary : name,
+        style: { fontSize: "10px", color: "var(--warn)", borderColor: "var(--warn)" } }, [
+        document.createTextNode(name.toUpperCase()),
+        el("button", { title: "Remove " + name, dataset: { gm: "conddrop" },
+          style: { background: "none", border: "0", color: "inherit", cursor: "pointer", padding: "0 0 0 2px", font: "inherit" },
+          onclick: function () { setConds(row.id, function (l) { return l.filter(function (x) { return x !== name; }); }); } }, "✕")
+      ]);
+    });
+    var conv = ((EN.threats && EN.threats.conventions) || [])[1] || "";
+    var picker = el("select", { dataset: { gm: "addcond" }, title: conv, style: { maxWidth: "160px" },
+      onchange: function (e) {
+        var v = e.target.value;
+        if (v) setConds(row.id, function (l) { if (l.indexOf(v) === -1) l.push(v); return l; });
+      } }, [el("option", { value: "" }, "+ CONDITION")].concat(condList().filter(function (c) {
+        return c && have.indexOf(c.name) === -1;
+      }).map(function (c) { return el("option", { value: c.name, title: c.summary || "" }, c.name); })));
+    var notes = el("input", { type: "text", value: typeof row.notes === "string" ? row.notes : "", placeholder: "notes",
+      dataset: { gm: "rownotes" }, style: { flex: "1 1 150px", minWidth: "0" },
+      // saved as it is typed and never re-rendered, so a click after typing lands (F19)
+      oninput: function (e) { var t = e.target.value; editRow(row.id, function (r) { r.notes = t; }, { silent: true }); } });
+    return el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "6px" } }, chips.concat([picker, notes]));
+  }
+
+  /* ---- rename, max Vitality and the vehicle picker -------------------------- */
+  function renameRow(row) {
+    var ui = rowUi(row.id);
+    var want = String(ui.name === null ? row.name : ui.name).replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
+    if (!want) { toast("A row needs a name."); return; }
+    /* Two rows never share a name (gmstore's rule), so the typed name goes
+       through the same numbering every other path does, measured against
+       every row but this one. */
+    var blockName = row.block && typeof row.block.name === "string" ? row.block.name : "";
+    var name = gm.freeName(gm.get().encounter.entries, want, row.id, blockName);
+    editRow(row.id, function (r) { r.name = name; });
+    ui.name = null;
+    toast(name === want ? "Renamed to " + name + "." : want + " is taken on the Table, so this row is " + name + ".");
+    EN.app.render();
+  }
+  /* A new max Vitality. An undamaged row comes up to the new max with it (a
+     re-statted threat starts fresh); a damaged one keeps its Vitality, cut to
+     the new max if that is lower. */
+  function setMaxVit(row) {
+    var ui = rowUi(row.id);
+    var n = Math.floor(Number(ui.max === null ? row.vitMax : ui.max));
+    if (!isFinite(n) || n < 1) { toast("Max Vitality is a whole number of 1 or more."); return; }
+    editRow(row.id, function (r) {
+      var was = Math.max(1, Number(r.vitMax) || 1);
+      var full = (Number(r.vit) || 0) >= was;
+      r.vitMax = n;
+      r.vit = full ? n : Math.min(Math.max(0, Number(r.vit) || 0), n);
+    });
+    ui.max = null;
+    toast((row.name || "Threat") + ": max Vitality " + n + ".");
+    EN.app.render();
+  }
+  function editPanel(row) {
+    var ui = rowUi(row.id);
+    return el("div.row.wrap", { dataset: { gm: "editpanel" },
+        style: { gap: "10px", alignItems: "flex-end", marginTop: "8px", paddingTop: "8px", borderTop: "1px dashed var(--border2)" } }, [
+      el("div.field", { style: { margin: 0, flex: "1 1 170px", minWidth: "0" } }, [
+        lbl("Name"),
+        el("div.row", { style: { gap: "6px" } }, [
+          el("input", { type: "text", value: ui.name === null ? (row.name || "") : ui.name, dataset: { gm: "renamein" },
+            style: { flex: "1 1 auto", minWidth: "0" },
+            oninput: function (e) { ui.name = e.target.value; },
+            onkeydown: function (e) { if (e.key === "Enter") renameRow(row); } }),
+          el("button.btn.sm", { dataset: { gm: "rename" }, onclick: function () { renameRow(row); } }, "RENAME")
+        ])
+      ]),
+      el("div.field", { style: { margin: 0 } }, [
+        lbl("Max Vitality"),
+        el("div.row", { style: { gap: "6px" } }, [
+          el("input", { type: "number", min: "1", value: ui.max === null ? row.vitMax : ui.max, dataset: { gm: "maxin" },
+            style: { width: "72px" },
+            oninput: function (e) { ui.max = e.target.value; },
+            onkeydown: function (e) { if (e.key === "Enter") setMaxVit(row); } }),
+          el("button.btn.sm", { dataset: { gm: "setmax" }, onclick: function () { setMaxVit(row); } }, "SET MAX")
+        ])
+      ]),
+      vehiclePicker(row)
+    ]);
+  }
+
+  /* ---- the full statblock, opened on a row or a saved threat ----------------
+     The SAME renderers the Threats and Bestiary tabs use: a Bestiary block
+     (fromBestiary, carrying the entry's stats and abilities) draws as its
+     Bestiary card, with the entry's identity and gear filled in from the
+     Bestiary by name and its own stats and abilities (a Species Template
+     included) winning; a built block draws as the builder's statblock. A row
+     whose block is neither (a hand-made row from another path) shows what it
+     has rather than failing. */
+  function fullBlock(b) {
+    b = b || {};
+    try {
+      if (b.fromBestiary || b.stats) return el("div.feature", { dataset: { gm: "fullblock" } }, entryBody(entryOf(b), { table: true }));
+      if (b.dr && b.saves && Array.isArray(b.attacks) && b.why) {
+        var sb = statblock(b);
+        sb.setAttribute("data-gm", "fullblock");
+        return sb;
+      }
+    } catch (e) { try { console.warn("GM: a statblock failed to draw.", e); } catch (e2) {} }
+    var bits = [];
+    if (typeof b.vitality === "number") bits.push("VIT " + b.vitality);
+    var sum = rowSummary(b);
+    return el("div.feature", { dataset: { gm: "fullblock" } }, [
+      el("h4", { style: { margin: "0 0 4px" }, text: b.name || "Threat" }),
+      el("p.help", { style: { margin: 0 }, text: [sum].concat(bits).filter(Boolean).join(" · ") || "This row carries no statblock beyond its numbers." })
+    ]);
+  }
+
+  function threatRow(row, isNow, enc) {
+    var b = row.block || {};
+    var ui = rowUi(row.id);
+    var max = Math.max(1, Number(row.vitMax) || 1);
+    var pctColor = row.vit / max <= 0.5 ? "var(--danger)" : "var(--ember, var(--danger))";
+    function hit(n) { setVit(row.id, function (v) { return v + n; }); }
+    function byAmount(sign) {
+      var n = wholeAmt(ui.amt);
+      if (!n) { toast("Type an amount first."); return; }
+      setVit(row.id, function (v) { return v + sign * n; }, sign < 0 ? " takes " + n : " heals " + n);
     }
     var down = row.vit <= 0;
-    return el("div.feature", { style: { borderLeftColor: isNow ? "var(--accent)" : down ? "var(--text4)" : "var(--danger)",
-                                        opacity: down ? 0.55 : 1 } }, [
+    var tag = "G" + b.grade + " " + (b.designationName || "").toUpperCase() + (b.species ? " · " + String(b.species).toUpperCase() : "");
+    var kids = [
       el("div.row.between.wrap", { style: { alignItems: "center", gap: "8px" } }, [
         el("div.row", { style: { gap: "10px", alignItems: "baseline", flexWrap: "wrap" } }, [
           el("span.mono", { style: { fontSize: "17px", minWidth: "34px", color: isNow ? "var(--accent)" : "var(--text)" },
             text: String(row.init) }),
-          el("span", { style: { fontWeight: 600, textDecoration: down ? "line-through" : "none" }, text: row.name || "Threat" }),
-          el("span.chip", { style: { fontSize: "9.5px", color: "var(--danger)", borderColor: "var(--danger)" },
-            text: "G" + b.grade + " " + (b.designationName || "").toUpperCase() }),
+          el("span", { dataset: { gm: "rowname" }, style: { fontWeight: 600, textDecoration: down ? "line-through" : "none" }, text: row.name || "Threat" }),
+          el("span.chip", { style: { fontSize: "9.5px", color: "var(--danger)", borderColor: "var(--danger)" }, text: tag }),
+          actedChip(row),
           el("span.help", { text: rowSummary(b) })
         ]),
         el("div.row", { style: { gap: "6px", alignItems: "center" } }, [
-          el("span.mono", { style: { fontSize: "12px" }, text: row.vit + " / " + row.vitMax }),
+          el("span.mono", { dataset: { gm: "vit" }, style: { fontSize: "12px" }, text: row.vit + " / " + row.vitMax }),
           stepper(function () { hit(-1); }, function () { hit(1); }),
           el("input", { type: "number", value: row.init, style: { width: "58px" }, title: "Initiative",
             oninput: function (e) {
@@ -340,12 +919,89 @@ EN.gmView = (function () {
               gm.update(function (s) { var r = s.encounter.entries.filter(function (x) { return x.id === row.id; })[0]; if (r) r.init = v; }, { silent: true });
             },
             onchange: function () { EN.app.render(); } }),
-          el("button.btn.sm", { onclick: function () { gm.removeEntry(row.id); EN.app.render(); } }, "✕")
+          el("button.btn.sm", { onclick: function () { removeRow(row.id); } }, "✕")
         ])
       ]),
-      el("div", { style: { marginTop: "6px" } }, [bar(row.vit, row.vitMax, pctColor)]),
-      down ? el("p.help", { style: { margin: "5px 0 0" }, text: "Out of the fight." }) : null
-    ]);
+      el("div", { style: { marginTop: "6px" } }, [bar(row.vit, max, pctColor)]),
+      down ? el("p.help", { style: { margin: "5px 0 0" },
+        text: "Out of the fight." + (_turn.skipDown ? " NEXT TURN passes it by." : "") }) : null,
+      // damage or heal by an amount, and the two panels that open under the row
+      el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "8px" } }, [
+        el("input", { type: "number", min: "0", value: ui.amt, placeholder: "amount", title: "An amount of Vitality",
+          dataset: { gm: "amt" }, style: { width: "76px" },
+          oninput: function (e) { ui.amt = e.target.value; },
+          onkeydown: function (e) { if (e.key === "Enter") byAmount(-1); } }),
+        el("button.btn.sm", { dataset: { gm: "dmg" }, onclick: function () { byAmount(-1); } }, "DAMAGE"),
+        el("button.btn.sm", { dataset: { gm: "heal" }, onclick: function () { byAmount(1); } }, "HEAL"),
+        el("button.btn.sm.ghost", { dataset: { gm: "expand" }, title: "The full statblock",
+          onclick: function () { ui.block = !ui.block; EN.app.render(); } }, (ui.block ? "▾" : "▸") + " STATBLOCK"),
+        el("button.btn.sm.ghost", { dataset: { gm: "edit" }, title: "Rename, max Vitality, and the vehicle",
+          onclick: function () { ui.edit = !ui.edit; EN.app.render(); } }, (ui.edit ? "▾" : "▸") + " EDIT")
+      ]),
+      conditionsLine(row),
+      ui.edit ? editPanel(row) : null,
+      row.vehicle ? vehiclePanel(row) : null,
+      isSolo(b) ? soloPanel(row, enc) : null,
+      ui.block ? el("div", { style: { marginTop: "8px" } }, [fullBlock(b)]) : null
+    ];
+    return el("div.feature", { dataset: { gmRow: row.id },
+      style: { borderLeftColor: isNow ? "var(--accent)" : down ? "var(--text4)" : "var(--danger)", opacity: down ? 0.55 : 1 } }, kids);
+  }
+
+  /* ---- turn flow -------------------------------------------------------------
+     NEXT TURN marks the row whose turn just ended as acted and moves the cursor
+     on, past threats at 0 Vitality while SKIP THE DOWNED is on. A new round
+     clears every mark. PREVIOUS TURN is its inverse: the row it lands on is
+     about to act again, so its mark goes, and stepping back over the top of
+     the order (into the round before) leaves every other row marked, since
+     they had all acted by then. It stops at the first turn of round 1. SET
+     ROUND corrects the counter alone: the cursor and the marks stay put. */
+  function nextTurn() {
+    var passed = 0;
+    gm.update(function (st) {
+      var e = st.encounter;
+      var cur = e.entries.filter(function (r) { return r.id === e.activeId; })[0];
+      var n = EN.gmEngine.advance(e, turnOpts());
+      if (cur) cur.acted = true;
+      e.activeId = n.activeId;
+      e.round = n.round;
+      // end of round: the marks clear and the defensive Impulse comes back. A
+      // Solo's Surges refill on their own (surgesSpent reads them by round).
+      if (n.wrapped) e.entries.forEach(function (r) { r.acted = false; });
+      passed = n.skipped || 0;
+    });
+    _turn.round = null;   // a round typed and never set gives way to the live one
+    if (passed) toast("Passed over " + passed + (passed === 1 ? " threat" : " threats") + " at 0 Vitality.");
+    EN.app.render();
+  }
+  function previousTurn() {
+    var enc = gm.get().encounter;
+    var p = EN.gmEngine.retreat(enc, turnOpts());
+    if (p.atStart) { toast("This is the first turn of round 1. Nothing comes before it."); return; }
+    gm.update(function (st) {
+      var e = st.encounter;
+      if (p.wrapped) e.entries.forEach(function (r) { r.acted = r.id !== p.activeId; });
+      else e.entries.forEach(function (r) { if (r.id === p.activeId) r.acted = false; });
+      e.activeId = p.activeId;
+      e.round = p.round;
+    });
+    _turn.round = null;
+    EN.app.render();
+  }
+  function setRound() {
+    var cur = gm.get().encounter.round;
+    var n = Math.floor(Number(_turn.round === null ? cur : _turn.round));
+    if (!isFinite(n) || n < 1) { toast("A round is a whole number of 1 or more."); return; }
+    /* The Table extras hear that the GM SET this round (ctx.roundSet), once,
+       on the next draw: a clock following the round gives back what it
+       counted past a round set lower (a typo corrected), where a round
+       stepped back by PREVIOUS TURN is only not counted twice. Set before the
+       write, since the write's own redraw can be the one that reads it. */
+    _turn.set = { from: cur | 0, to: n };
+    gm.update(function (st) { st.encounter.round = n; });
+    _turn.round = null;
+    toast("Round " + n + ".");
+    EN.app.render();
   }
 
   function trackerPanel() {
@@ -356,7 +1012,7 @@ EN.gmView = (function () {
     var kids = [];
 
     var head = [
-      el("span.mono", { style: { fontSize: "13px", letterSpacing: ".08em" },
+      el("span.mono", { dataset: { gm: "round" }, style: { fontSize: "13px", letterSpacing: ".08em" },
         text: enc.round > 0 ? "ROUND " + enc.round : "NOT STARTED" })
     ];
     if (enc.entries.length) {
@@ -364,22 +1020,14 @@ EN.gmView = (function () {
         head.push(el("button.btn.sm.primary", { onclick: function () {
           gm.update(function (st) {
             st.encounter.round = 1;
-            st.encounter.activeId = EN.gmEngine.order(st.encounter.entries)[0].id;
+            // the first entry that can act, so a fight that opens with a downed row skips it too
+            st.encounter.activeId = EN.gmEngine.advance({ entries: st.encounter.entries, activeId: null, round: 0 }, turnOpts()).activeId;
           });
           EN.app.render();
         } }, "▶ START ROUND 1"));
       } else {
-        head.push(el("button.btn.sm.primary", { onclick: function () {
-          gm.update(function (st) {
-            var n = EN.gmEngine.advance(st.encounter);
-            st.encounter.activeId = n.activeId;
-            st.encounter.round = n.round;
-            // end of round: the defensive Impulse comes back and a Solo's
-            // Surges reset. Part 2 puts conditions and ongoing effects here too.
-            if (n.wrapped) st.encounter.entries.forEach(function (r) { r.acted = false; });
-          });
-          EN.app.render();
-        } }, "NEXT TURN ›"));
+        head.push(el("button.btn.sm", { dataset: { gm: "prevturn" }, onclick: previousTurn }, "‹ PREVIOUS TURN"));
+        head.push(el("button.btn.sm.primary", { dataset: { gm: "nextturn" }, onclick: nextTurn }, "NEXT TURN ›"));
         head.push(EN.ui.armButton("gm:endenc", {
           label: "END", armedLabel: "END IT?", title: "Clear the encounter",
           armedTitle: "Clears every entry and resets the round counter. This cannot be undone.",
@@ -388,7 +1036,25 @@ EN.gmView = (function () {
       }
     }
 
-    kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginBottom: "10px" } }, head));
+    kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginBottom: enc.round > 0 ? "6px" : "10px" } }, head));
+    if (enc.entries.length && enc.round > 0) {
+      kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginBottom: "10px" } }, [
+        el("span.chip" + (_turn.skipDown ? ".on" : ""), { dataset: { gm: "skipdown" },
+          title: _turn.skipDown ? "NEXT and PREVIOUS TURN pass over threats at 0 Vitality. Click to stop." : "Click to pass over threats at 0 Vitality.",
+          style: { cursor: "pointer", fontSize: "10px" },
+          onclick: function () { _turn.skipDown = !_turn.skipDown; EN.app.render(); } }, "SKIP THE DOWNED"),
+        el("input", { type: "number", min: "1", value: _turn.round === null ? enc.round : _turn.round, title: "Round",
+          dataset: { gm: "roundin" }, style: { width: "62px" },
+          oninput: function (e) { _turn.round = e.target.value; },
+          onkeydown: function (e) { if (e.key === "Enter") setRound(); } }),
+        el("button.btn.sm", { dataset: { gm: "setround" }, onclick: setRound }, "SET ROUND")
+      ]));
+    }
+
+    // the transient half of a row that has left the Table goes with it
+    var live = Object.create(null);
+    enc.entries.forEach(function (r) { live[r.id] = true; });
+    Object.keys(_rows).forEach(function (id) { if (!own(live, id)) delete _rows[id]; });
 
     if (!enc.entries.length) {
       kids.push(el("div.muted-box", { style: { padding: "26px" },
@@ -396,7 +1062,7 @@ EN.gmView = (function () {
     } else {
       ordered.forEach(function (row) {
         var isNow = row.id === enc.activeId;
-        var node = row.kind === "crew" ? crewRow(row, isNow) : threatRow(row, isNow);
+        var node = row.kind === "crew" ? crewRow(row, isNow) : threatRow(row, isNow, enc);
         if (node) kids.push(node);
       });
     }
@@ -433,13 +1099,16 @@ EN.gmView = (function () {
 
     if (enc.entries.length) {
       kids.push(el("div.row.wrap", { style: { gap: "8px", marginTop: "12px" } }, [
-        el("button.btn.sm", { onclick: function () {
+        el("button.btn.sm", { dataset: { gm: "rerollall" }, onclick: function () {
           gm.update(function (st) {
             st.encounter.entries.forEach(function (r) {
               var mod = r.initMod || 0;
               r.init = EN.engine.rollD20({ mods: [{ label: "Initiative", value: mod }] }).total;
+              // a new order starts from its top: nobody in it has acted yet
+              r.acted = false;
             });
-            st.encounter.activeId = EN.gmEngine.order(st.encounter.entries)[0].id;
+            // the first entry that can act, as START ROUND 1 picks it, so a downed row is passed over
+            st.encounter.activeId = EN.gmEngine.advance({ entries: st.encounter.entries, activeId: null, round: 0 }, turnOpts()).activeId;
             if (!st.encounter.round) st.encounter.round = 1;
           });
           toast("Initiative rolled for everyone.");
@@ -483,7 +1152,12 @@ EN.gmView = (function () {
     return isNaN(v) ? 1 : v;
   }
 
-  function bestiaryCard(e) {
+  /* A Bestiary entry's card body, without its buttons: the Bestiary tab draws it
+     with them, and the Table draws it as an opened row's full statblock. One
+     renderer, so a threat reads the same in both places. `opts.table` leaves
+     out the job hooks, which are prep, not play. */
+  function entryBody(e, opts) {
+    opts = opts || {};
     var kids = [];
     kids.push(el("h4", { style: { margin: "0 0 2px" }, text: e.name }));
     kids.push(el("p.help", { style: { margin: "0 0 8px", fontStyle: "italic" }, text: e.identity || "" }));
@@ -504,7 +1178,7 @@ EN.gmView = (function () {
     }
     if (e.skills && e.skills.length) {
       kids.push(el("p.help", { style: { margin: "4px 0 0" },
-        text: e.skills.map(function (k) { return k.name + " " + k.value; }).join(" \u00b7 ") }));
+        text: e.skills.map(function (k) { return k.name + " " + k.value; }).join(" · ") }));
     }
     if (st["Unshakable, Defensive Impulses"]) {
       kids.push(el("p.help", { style: { margin: "5px 0 0", color: "var(--gold)" },
@@ -528,11 +1202,18 @@ EN.gmView = (function () {
               EN.gmEngine.fmtAvg(rd.perHit) + ")" }));
     }
 
+    // a Species Template's traits come after the printed abilities, under one line naming it
+    var tplSaid = false;
     (e.abilities || []).forEach(function (a) {
+      if (a.template && !tplSaid) {
+        tplSaid = true;
+        kids.push(el("p.help", { dataset: { gm: "template" }, style: { margin: "8px 0 0", color: "var(--gold)" },
+          text: "Species Template: " + a.template + (e.speciesClass ? " (" + e.speciesClass + ")" : "") + "." }));
+      }
       var ap = el("p", { style: { margin: "6px 0 0", fontSize: "13px" } }, [
         el("span", { style: { fontWeight: 600 }, text: a.name + (a.cost ? " (" + a.cost + ")" : "") + ": " })
       ]);
-      EN.ui.applyInline(ap, a.text);
+      EN.ui.applyInline(ap, String(a.text || ""));
       kids.push(ap);
     });
 
@@ -542,7 +1223,7 @@ EN.gmView = (function () {
     // conversation is over before it starts, so a blank must not be printed in
     // its place.
     if (st.Resolve) tail.push("Resolve " + st.Resolve);
-    if (tail.length) kids.push(el("p.help", { style: { margin: "8px 0 0" }, text: tail.join(" \u00b7 ") }));
+    if (tail.length) kids.push(el("p.help", { style: { margin: "8px 0 0" }, text: tail.join(" · ") }));
     if (e.gear) kids.push(el("p.help", { style: { margin: "3px 0 0" }, text: "Gear: " + e.gear }));
     if (e.salvage) kids.push(el("p.help", { style: { margin: "3px 0 0" }, text: "Salvage: " + e.salvage }));
     if (e.signs) kids.push(el("p.help", { style: { margin: "3px 0 0" }, text: "Signs: " + e.signs }));
@@ -553,7 +1234,7 @@ EN.gmView = (function () {
     /* Job hooks are a titled LIST, not a paragraph: each one is its own idea with
        its own name, and a GM skimming for tonight's job wants to find the one
        they want rather than read a block to the end. */
-    if (e.hooks) {
+    if (e.hooks && !opts.table) {
       kids.push(el("p.help", { style: { margin: "8px 0 3px", color: "var(--accent)" }, text: e.hooks.title }));
       e.hooks.items.forEach(function (h) {
         var hp = el("p.help", { style: { margin: "0 0 3px 12px" } }, [
@@ -566,40 +1247,142 @@ EN.gmView = (function () {
         kids.push(hp);
       });
     }
+    return kids;
+  }
 
+  /* ---- Species Templates on People cards --------------------------------------
+     The page: "When the species matters, lay one of these over the block: add
+     the traits, change nothing else. The XP, the Grade, and the Resolve stay as
+     printed." and "One template per threat. Templates don't apply to machines,
+     programs, or anything Mindless." (EN.bestiary.speciesTemplates.)
+
+     WHO CAN TAKE ONE is read off the entry: a People entry whose identity line
+     names a person, "Human" (the default the blocks were written for) or "any
+     species", and nothing Mindless. That leaves out the Chained Watchdog, a
+     spliced guard-hound. Machines, programs and the rest are other categories.
+
+     WHAT IT CHANGES on the card and on the block it sends: the template's traits
+     are added after the printed abilities, the identity line's "Human" reads as
+     the species, and the one trait that moves a printed number (Chimera's Keen
+     Senses, "+2 Passive Perception") moves it. The XP, the Grade and the Resolve
+     are untouched, as the page says. The block keeps the entry's own name, so the
+     Bestiary lookups by name (Payroll's salvage, the Encounters plan) still find
+     it; the species rides on the block as `species` and the Table row is named
+     "Verdine Corpsec Officer", the book's own phrasing. */
+  function templateList() {
+    return (EN.bestiary && EN.bestiary.speciesTemplates && EN.bestiary.speciesTemplates.templates) || [];
+  }
+  function templateOf(sp) { return templateList().filter(function (t) { return t && t.species === sp; })[0] || null; }
+  function overlayable(e) {
+    if (!e || e.category !== "people" || !templateList().length) return false;
+    if (!/\bHuman\b|any species/i.test(String(e.identity || ""))) return false;
+    var body = [JSON.stringify(e.stats || {})].concat((e.abilities || []).map(function (a) { return a.text; })).join(" ");
+    return !/\bMindless\b/.test(body);
+  }
+  function withTemplate(e, sp) {
+    var t = templateOf(sp);
+    if (!t) return e;
+    var out = {};
+    Object.keys(e).forEach(function (k) { out[k] = e[k]; });
+    out.identity = String(e.identity || "").replace(/\bHuman\b/, t.species);
+    out.stats = {};
+    Object.keys(e.stats || {}).forEach(function (k) { out.stats[k] = e.stats[k]; });
+    (t.traits || []).forEach(function (tr) {
+      var m = String(tr.text || "").match(/^([+-]\d+) Passive Perception\b/);
+      var pp = out.stats["Passive Perception"];
+      if (!m || pp === undefined || pp === null) return;
+      out.stats["Passive Perception"] = String(pp).replace(/^\s*(\d+)/, function (all, n) { return String(Number(n) + Number(m[1])); });
+    });
+    out.abilities = (e.abilities || []).concat((t.traits || []).map(function (tr) {
+      return { name: tr.name, cost: tr.cost || null, text: tr.text, template: t.species };
+    }));
+    out.species = t.species;
+    out.speciesClass = t.classification || "";
+    return out;
+  }
+  function overlaid(e) {
+    var sp = own(_species, e.name) ? _species[e.name] : "";
+    return (sp && overlayable(e)) ? withTemplate(e, sp) : e;
+  }
+
+  /* A Bestiary entry as a Table block: its PRINTED self, not a build. The
+     Encounters tab builds the same block for its Bestiary lines. */
+  function entryBlock(e) {
+    var st = e.stats || {};
+    // a #GRID threat has no Vitality; System Integrity is the track that depletes (trackOf)
+    var vit = trackOf(e);
+    var def = parseInt(st.Defense, 10);
+    var initM = parseInt(String(st.Initiative || "0").replace("+", ""), 10) || 0;
+    var p = printed(e);
+    /* The PRINTED Initiative rides on the block as initMod, which is the field
+       REROLL ALL and the tie-break read. It used to be rolled once and then
+       dropped, so every Bestiary threat rerolled at +0. `init` carries the same
+       number because on a built block `init` IS the Initiative bonus, and a
+       reader of either field should find the page's number. `designation` and
+       `role` are the lowercase keys a built block carries, so a reader can ask
+       either kind of row the same question (the Encounters plan reads `role`
+       on a threat line, which is how a templated Bestiary block arrives). */
+    var block = {
+      name: e.name, grade: e.grade, designation: String(e.designation || "Standard").toLowerCase(),
+      designationName: e.designation || "Standard",
+      role: e.role ? String(e.role).toLowerCase() : null,
+      roleName: e.role || "", defense: isNaN(def) ? null : def,
+      saveDC: p.saveDC, attackBonus: p.attackBonus, vitality: vit,
+      init: initM, initMod: initM,
+      fromBestiary: true, stats: st, abilities: e.abilities || []
+    };
+    if (e.species) { block.species = e.species; block.speciesClass = e.speciesClass || ""; block.identity = e.identity; }
+    return block;
+  }
+  /* The other way: what a Table row's Bestiary block draws as. The entry is
+     found by the block's name for the parts a block does not carry (identity,
+     gear, salvage, variant), and the block's own stats and abilities win, so a
+     Species Template on the block shows. */
+  function entryOf(b) {
+    var B = EN.bestiary, base = null, e = {};
+    if (B && Array.isArray(B.entries)) base = B.entries.filter(function (x) { return x && x.name === b.name; })[0] || null;
+    if (base) Object.keys(base).forEach(function (k) { e[k] = base[k]; });
+    e.name = b.name || e.name || "Threat";
+    if (b.stats) e.stats = b.stats;
+    if (Array.isArray(b.abilities)) e.abilities = b.abilities;
+    if (b.identity) e.identity = b.identity;
+    if (b.species) { e.species = b.species; e.speciesClass = b.speciesClass || ""; }
+    return e;
+  }
+
+  function speciesPick(e) {
+    var S = EN.bestiary.speciesTemplates || {};
+    var cur = own(_species, e.name) ? _species[e.name] : "";
+    return el("div.field", { style: { margin: "8px 0 0", maxWidth: "260px" } }, [
+      lbl("Species"),
+      el("select", { dataset: { gm: "species" }, title: S.footer || "",
+        onchange: function (ev) { _species[e.name] = ev.target.value; EN.app.render(); } },
+        [el("option", { value: "", selected: !cur }, "As printed")].concat(templateList().map(function (t) {
+          return el("option", { value: t.species, selected: cur === t.species }, t.species);
+        })))
+    ]);
+  }
+
+  function bestiaryCard(raw) {
+    var e = overlaid(raw);
+    var kids = entryBody(e);
+    if (overlayable(raw)) kids.push(speciesPick(raw));
     kids.push(el("div.row.wrap", { style: { gap: "8px", marginTop: "10px" } }, [
       el("button.btn.sm.primary", { onclick: function () {
-        // a bestiary entry enters the order as its PRINTED self, not as a build
-        var st = e.stats || {};
-        // a #GRID threat has no Vitality; System Integrity is the track that depletes (trackOf)
-        var vit = trackOf(e);
-        var def = parseInt(st.Defense, 10);
-        var initM = parseInt(String(st.Initiative || "0").replace("+", ""), 10) || 0;
-        var p = printed(e);
-        /* The PRINTED Initiative rides on the block as initMod, which is the field
-           REROLL ALL and the tie-break read. It used to be rolled once and then
-           dropped, so every Bestiary threat rerolled at +0. `init` carries the same
-           number because on a built block `init` IS the Initiative bonus, and a
-           reader of either field should find the page's number. */
-        // `designation` is the lowercase key a built block carries, so a reader
-        // can ask either kind of row the same question (the Encounters tab's run
-        // builds this same block for its Bestiary lines)
-        var block = {
-          name: e.name, grade: e.grade, designation: String(e.designation || "Standard").toLowerCase(),
-          designationName: e.designation || "Standard",
-          roleName: e.role || "", defense: isNaN(def) ? null : def,
-          saveDC: p.saveDC, attackBonus: p.attackBonus, vitality: vit,
-          init: initM, initMod: initM,
-          fromBestiary: true, stats: st, abilities: e.abilities || []
-        };
-        var r = EN.gmEngine.rollInit(initM);
-        gm.addThreat(block, null, r.total);
-        toast(e.name + " rolls " + r.total + " for initiative.");
+        var block = entryBlock(e);
+        var r = EN.gmEngine.rollInit(block.initMod);
+        // a templated threat's ROW says which species it is; its block keeps the entry's name
+        var rowName = e.species ? e.species + " " + e.name : null;
+        gm.addThreat(block, null, r.total, rowName);
+        toast((rowName || e.name) + " rolls " + r.total + " for initiative.");
         EN.app.render();
       } }, "+ ADD TO INITIATIVE"),
-      // the plan prices and runs a Bestiary line by its name, so the name is all it carries
+      /* The plan prices and runs a Bestiary line by its name, so a plain entry
+         sends its name. A templated one sends its resolved block instead, since
+         a name alone would arrive on the plan without the template. */
       el("button.btn.sm", { title: "Add this entry as a line on an encounter plan", onclick: function () {
-        toPlan([{ kind: "bestiary", name: e.name, count: 1 }], "");
+        if (e.species) toPlan([{ kind: "threat", block: entryBlock(e), count: 1 }], "");
+        else toPlan([{ kind: "bestiary", name: e.name, count: 1 }], "");
       } }, "+ ADD TO ENCOUNTER PLAN")
     ]));
     return el("div.feature", null, kids);
@@ -822,9 +1605,9 @@ EN.gmView = (function () {
     if (!list.length) return null;
     var kids = list.map(function (t) {
       var b = t.block;
-      return el("div.row.between.wrap", { style: { gap: "8px", alignItems: "center", padding: "5px 0",
-                                                   borderBottom: "1px solid var(--border)" } }, [
-        el("div.row", { style: { gap: "8px", alignItems: "baseline" } }, [
+      var open = own(_savedOpen, t.id) && _savedOpen[t.id];
+      var head = el("div.row.between.wrap", { style: { gap: "8px", alignItems: "center", padding: "5px 0" } }, [
+        el("div.row", { style: { gap: "8px", alignItems: "baseline", flexWrap: "wrap" } }, [
           el("span", { style: { fontWeight: 600 }, text: b.name || "Unnamed" }),
           el("span.help", { text: "G" + b.grade + " " + b.designationName + (b.roleName ? ", " + b.roleName : "") +
             " · DEF " + b.defense + " · " + b.vitality + " Vit · " + b.xp + " XP" })
@@ -843,9 +1626,14 @@ EN.gmView = (function () {
           el("button.btn.sm", { title: "Add this statblock as a line on an encounter plan", onclick: function () {
             toPlan([threatLine(b)], "");
           } }, "+ ENCOUNTER PLAN"),
+          // the stored block in full, through the same renderer the Table's rows open
+          el("button.btn.sm.ghost", { dataset: { gm: "savedexpand" }, title: "The full statblock",
+            onclick: function () { _savedOpen[t.id] = !open; EN.app.render(); } }, (open ? "▾" : "▸") + " STATBLOCK"),
           el("button.btn.sm", { onclick: function () { gm.removeThreat(t.id); EN.app.render(); } }, "✕")
         ])
       ]);
+      return el("div", { dataset: { gmSaved: t.id }, style: { borderBottom: "1px solid var(--border)", paddingBottom: open ? "8px" : "0" } },
+        [head, open ? fullBlock(b) : null]);
     });
     return EN.ui.panel("Saved Threats", list.length + " SAVED", kids);
   }
@@ -855,10 +1643,181 @@ EN.gmView = (function () {
      helper across views, per the house convention that views carry their own
      small pieces instead of importing from one another. */
   function heading(title, sub) {
-    return el("div.row.between.wrap", { style: { marginBottom: "14px" } }, [
+    return el("div.row.between.wrap", { style: { marginBottom: "14px", gap: "8px", alignItems: "center" } }, [
       el("h1", { style: { fontSize: "22px", letterSpacing: ".06em" },
-        html: title + ' <span class="dim3" style="font-size:13px">' + sub + "</span>" })
+        html: title + ' <span class="dim3" style="font-size:13px">' + sub + "</span>" }),
+      cardDrawer()
     ]);
+  }
+
+  /* ---- the GM's Card ----------------------------------------------------------
+     EN.gmBook.card, both sides, in a printable overlay. cardDrawer() is the
+     GM'S CARD button every Admin tab puts beside its heading: this file's three
+     tabs draw it in heading() above, and app.js adds it to a module tab that
+     did not draw its own (modules call it the way they call undoStrip).
+
+     It REUSES THE HARDCOPY OVERLAY the #PRINT sheet prints through (print.css:
+     #print-overlay, .print-bar, .sheet-page). Its print rules already hide the
+     desktop and give every .sheet-page a Letter page of its own, so the two
+     sides print as two pages, a card to fold or print double-sided, with no new
+     stylesheet. The paper palette is that sheet's own: ink, teal and rule. The
+     Front is the page's one box of run-in paragraphs; the Back is set in
+     columns of about three inches, which is two on paper and one on a phone.
+     Headings and column names are stored in title case (gm_card.js) and set in
+     capitals here, as the page prints them. */
+  var INK = "#18222c", TEAL = "#0c6f81", RULE = "#cfc8b7", DIM = "#6a747b", PAPER = "#f1ede1";
+  /* Two type scales: the boxed Front has a page to itself and sets its six
+     paragraphs large; the Back sets twelve tables, seven lines and the blank
+     threat on one sheet, so it is denser. */
+  function scale(front) {
+    return front
+      ? { text: "12.5px", textGap: "0 0 10px", cell: "10.5px", head: "9px", pad: "2px 6px 2px 0" }
+      : { text: "10px", textGap: "0 0 5px", cell: "10px", head: "8.5px", pad: "1px 6px 1px 0" };
+  }
+  function cardText(b, S) {
+    var p = el("p", { style: { margin: S.textGap, fontSize: S.text, lineHeight: "1.45", color: INK } });
+    EN.ui.applyInline(p, String(b.md || b.text || ""));
+    return p;
+  }
+  /* The first column (the row's name, printed bold) never breaks inside a word;
+     the other columns wrap between words, which is what keeps the IC table's
+     long Responses inside a phone's width. */
+  function cardTable(b, S) {
+    var cols = b.columns || [];
+    var cell = { padding: S.pad, verticalAlign: "top", textAlign: "left" };
+    var head = el("tr", null, cols.map(function (c) {
+      return el("th", { style: Object.assign({}, cell, { fontSize: S.head, letterSpacing: ".08em", textTransform: "uppercase",
+        color: TEAL, borderBottom: "1px solid " + TEAL, fontWeight: 600 }) }, c.name);
+    }));
+    var rows = (b.rows || []).map(function (r) {
+      return el("tr", null, (r.cells || []).map(function (c, i) {
+        return el("td", { style: Object.assign({}, cell, { fontSize: S.cell, borderBottom: ".5px solid #e2dccb",
+          fontWeight: i === 0 ? 700 : 400, whiteSpace: i === 0 ? "nowrap" : "normal" }) }, c);
+      }));
+    });
+    return el("table", { dataset: { card: b.key || "table" },
+      style: { width: "100%", borderCollapse: "collapse", margin: "0 0 6px", color: INK, breakInside: "avoid" } },
+      [el("thead", null, head), el("tbody", null, rows)]);
+  }
+  // the blank threat: a header bar, the bold italic line under it, and a write-in line per row of pairs
+  function cardTemplate(b, S) {
+    var kids = [
+      el("div", { style: { background: INK, color: PAPER, padding: "2px 8px", fontSize: "10.5px", fontWeight: 700,
+        letterSpacing: ".1em", textTransform: "uppercase" } }, b.head),
+      el("div", { style: { padding: "2px 8px", fontSize: S.cell, fontWeight: 700, fontStyle: "italic", color: INK,
+        borderBottom: "1px solid " + RULE } }, b.sub)
+    ];
+    (b.rows || []).forEach(function (cells) {
+      kids.push(el("div", { style: { display: "flex", flexWrap: "wrap", gap: "1px 12px", padding: "2px 8px 6px",
+          borderBottom: ".5px solid " + RULE } }, cells.map(function (c) {
+        return el("div", { style: { flex: "1 1 0", minWidth: "80px", fontSize: S.cell, color: INK } }, [
+          el("strong", { text: c.label + " " }), el("em", { style: { color: DIM }, text: c.hint })
+        ]);
+      })));
+    });
+    return el("div", { dataset: { card: b.key || "template" }, style: { border: "1px solid " + INK, margin: "3px 0 5px", breakInside: "avoid" } }, kids);
+  }
+  function cardSection(sec, S) {
+    var kids = [];
+    // a run-in section opens on its own bold words, so it prints no heading of its own
+    if (!sec.runIn) {
+      kids.push(el("div", { style: { borderLeft: "3px solid " + TEAL, paddingLeft: "7px", margin: "0 0 4px", fontSize: "10.5px",
+        letterSpacing: ".14em", textTransform: "uppercase", color: TEAL, fontWeight: 600 } }, sec.name));
+    }
+    (sec.blocks || []).forEach(function (b) {
+      if (b.kind === "table") kids.push(cardTable(b, S));
+      else if (b.kind === "template") kids.push(cardTemplate(b, S));
+      else kids.push(cardText(b, S));
+    });
+    return el("div", { dataset: { cardSection: sec.key || "" }, style: { margin: "0 0 9px", breakInside: "avoid" } }, kids);
+  }
+  /* WHERE THE BACK BREAKS INTO ITS SECOND COLUMN. Two explicit columns, not
+     CSS columns: Chrome will not split a multi-column block across a printed
+     page and moves the whole of it onto the next sheet instead. The sections
+     keep page order, and the right column starts at the section that leaves
+     the two closest in height, measured roughly in lines: a table row is a line
+     (a long cell more), a text block is its length at a column's width, and a
+     row of the blank threat is a line and a half. */
+  function sectionLines(sec) {
+    var n = sec.runIn ? 0 : 1.5;
+    (sec.blocks || []).forEach(function (b) {
+      if (b.kind === "table") {
+        n += 1.5;
+        (b.rows || []).forEach(function (r) {
+          var longest = 0;
+          (r.cells || []).forEach(function (c) { longest = Math.max(longest, String(c).length); });
+          n += Math.max(1, Math.ceil(longest / 40));
+        });
+      } else if (b.kind === "template") n += 2 + (b.rows || []).length * 1.6;
+      else n += Math.max(1, Math.ceil(String(b.text || "").length / 55));
+    });
+    return n;
+  }
+  function splitAt(sections) {
+    var ws = sections.map(sectionLines), total = 0, run = 0, best = 1, bestGap = Infinity;
+    ws.forEach(function (w) { total += w; });
+    for (var i = 0; i < ws.length - 1; i++) {
+      run += ws[i];
+      var gap = Math.abs(total - 2 * run);
+      if (gap < bestGap) { bestGap = gap; best = i + 1; }
+    }
+    return best;
+  }
+  function cardSide(C, side) {
+    var S = scale(!!side.boxed);
+    var secs = side.sections || [];
+    var inner;
+    if (side.boxed) {
+      inner = el("div", { style: { border: "1.4px solid " + TEAL, padding: "12px 14px" } }, secs.map(function (s) { return cardSection(s, S); }));
+    } else {
+      var cut = secs.length > 1 ? splitAt(secs) : secs.length;
+      var col = function (part) {
+        return el("div", { dataset: { cardCol: "1" }, style: { flex: "1 1 3in", minWidth: "0" } }, part.map(function (s) { return cardSection(s, S); }));
+      };
+      // at phone width the two columns wrap into one, in page order
+      inner = el("div", { style: { display: "flex", flexWrap: "wrap", gap: "0 .3in", alignItems: "flex-start" } },
+        [col(secs.slice(0, cut)), secs.length > cut ? col(secs.slice(cut)) : null]);
+    }
+    return el("div.sheet-page", { dataset: { cardSide: side.key || "" } }, [
+      el("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "10px", flexWrap: "wrap" } }, [
+        el("div", { style: { fontFamily: "var(--disp)", fontWeight: 700, fontSize: "21px", letterSpacing: ".14em",
+          color: INK, textTransform: "uppercase" } }, C.title || "The GM's Card"),
+        el("div", { style: { fontSize: "10px", letterSpacing: ".22em", color: DIM, textTransform: "uppercase" } }, side.name || "")
+      ]),
+      el("div", { style: { height: "1px", background: TEAL, margin: "6px 0 10px" } }),
+      inner
+    ]);
+  }
+  function cardKey(e) { if (e.key === "Escape") closeCard(); }
+  function closeCard() {
+    var o = document.getElementById("print-overlay");
+    if (o && o.getAttribute("data-gm") === "card") o.parentNode.removeChild(o);
+    document.removeEventListener("keydown", cardKey);
+  }
+  function openCard() {
+    var C = EN.gmBook && EN.gmBook.card;
+    if (!C || !Array.isArray(C.sides) || !C.sides.length) { toast("The GM's Card did not load. Check app/data/gm_card.js."); return; }
+    // one overlay at a time, whoever opened the last one
+    var old = document.getElementById("print-overlay");
+    if (old) old.parentNode.removeChild(old);
+    var bar = el("div.print-bar", { style: { flexWrap: "wrap" } }, [
+      el("span.print-bar-t", { text: "THE GM'S CARD" }),
+      el("span.print-bar-s", { text: C.sides.length + (C.sides.length === 1 ? " side" : " sides") + " · Letter" }),
+      el("span", { style: { flex: 1 } }),
+      el("button.btn.sm.primary", { dataset: { gm: "cardprint" }, onclick: function () { window.print(); } }, "⎙ PRINT"),
+      el("button.btn.sm", { dataset: { gm: "cardclose" }, onclick: closeCard }, "✕ CLOSE")
+    ]);
+    var ov = el("div#print-overlay", { dataset: { gm: "card" }, role: "dialog", "aria-label": C.title || "The GM's Card" }, [
+      bar, el("div.print-scroll", null, C.sides.map(function (s) { return cardSide(C, s); }))
+    ]);
+    document.body.appendChild(ov);
+    document.addEventListener("keydown", cardKey);
+  }
+  // the button, or null when the card's data is missing (a heading then simply has no button)
+  function cardDrawer() {
+    if (!EN.gmBook || !EN.gmBook.card) return null;
+    return el("button.btn.sm", { dataset: { gm: "cardbtn" }, title: "The GM's Card, both sides, ready to print",
+      onclick: function () { openCard(); } }, "GM'S CARD");
   }
 
   /* ---- the undo strip ------------------------------------------------------
@@ -947,8 +1906,9 @@ EN.gmView = (function () {
   /* TABLE EXTRAS. A module hangs its own live panel under the initiative order
      (Encounters: the running plan with its waves and Security Response clock,
      and the XP award; Hazards: the Room tray) without this file knowing what it
-     draws. Each fn is called on every Table render with {encounter, crew} and
-     returns a DOM node or null.
+     draws. Each fn is called on every Table render with {encounter, crew,
+     roundSet} and returns a DOM node or null. `roundSet` is {from, to} on the
+     one draw right after the GM's SET ROUND, else null.
 
      DRAWN BY `order`, then registration order. The slots in use are the
      running plan (10), the Room (20) and the XP award (30): the fight being
@@ -983,10 +1943,13 @@ EN.gmView = (function () {
     var enc = gm.get().encounter;
     var crew = null;
     try { crew = EN.gmEngine.crew({ encounter: enc }); } catch (e) { crew = null; }
+    // a SET ROUND is passed on once, to the draw right after it (see setRound)
+    var set = _turn.set;
+    _turn.set = null;
     var out = [];
     drawOrder().forEach(function (x) {
       var node = null;
-      try { node = x.fn({ encounter: enc, crew: crew }); }
+      try { node = x.fn({ encounter: enc, crew: crew, roundSet: set }); }
       catch (e) { try { console.warn("GM: the Table extra '" + x.key + "' failed to draw.", e); } catch (e2) {} node = null; }
       if (node && node.nodeType) {
         out.push(el("div", { style: { height: "12px" } }));
@@ -1035,6 +1998,8 @@ EN.gmView = (function () {
     // the module tabs' hooks (see "hooks for the module tabs" above)
     handoff: handoff, takeHandoff: takeHandoff, registerTableExtra: registerTableExtra,
     // the newest standing GM write with its armed UNDO, for the top of every Admin tab
-    undoStrip: undoStrip
+    undoStrip: undoStrip,
+    // the GM'S CARD button for beside every Admin tab's heading, and the card it opens
+    cardDrawer: cardDrawer, openCard: openCard, closeCard: closeCard
   };
 })();

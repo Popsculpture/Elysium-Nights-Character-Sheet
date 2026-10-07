@@ -22,9 +22,15 @@ settings cog. The choice is remembered per device (`?portal=admin` overrides it 
   (all 48 statblocks with subgroups, Species Templates and Hostile Vehicles), Encounters (the XP
   budget, waves, objectives, saved plans, and RUN ON THE TABLE), Hazards (the eight Set Pieces at any
   Grade, custom hazards, stalemate and falling tools), Job Board (the five roll tables and the Twelve
-  Postings, a job log, sending a posting to #POST), and Payroll (contract pay, bounties, salvage, the
-  split, and crediting the crew). Every write the GM makes to a Freelancer's record is confirmed,
-  logged and undoable, and GM data can be exported and imported from the Admin settings tray.
+  Postings, a job log, sending a posting to #POST), Payroll (contract pay, bounties, salvage, the
+  split, milestones, and crediting the crew), Heat (the Downtime Heat check across the crew, events,
+  Bounties and cooling off), People (contact cards with Resolve by Role, and the name and street
+  handle roller), and Scenes (Sit-Down, chase and Incursion trackers). Table rows take damage by an
+  amount, expand to their full statblock, carry conditions and notes, track a Solo's Surges and
+  Breakpoint, and can have a Hostile Vehicle attached; Bestiary People cards take Species Templates. A
+  GM'S CARD drawer on every Admin tab prints the book's quick reference. Every write the GM makes to a
+  Freelancer's record is confirmed, logged and undoable, and GM data can be exported and imported from
+  the Admin settings tray.
 
 
 ## Skins and wallpapers

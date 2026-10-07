@@ -9135,6 +9135,43 @@ the condition alone while Strain and Overdraw points go to 0; a legacy Spacer's 
 "systems" kept; a legacy array shows two "(old array)" options; a Signature weapon shows its full
 effect and the right status line untrained and proficient.
 
+## GM quality of life pass: Table upgrades, Heat, People, Scenes, the GM's Card, 2026-10-07
+
+The author picked 15 of 16 candidates (all but The Fifth Flavor as a one-click load). Built on branch
+`gm-modules` from further Game Master's Handbook chapters, each string checked against the book.
+
+**Table.** Threat rows take damage or healing by an amount, can be renamed, and can have their max
+Vitality edited; any row or saved threat expands to its full statblock. Turn flow: NEXT TURN can skip
+downed threats, PREVIOUS TURN, SET ROUND (a following Security Response clock gives back the rounds a
+mistyped jump took), acted marks. Threat rows carry condition chips and notes (reminders only; threats
+never run the player condition engine). Solo rows track Surges left this round, alert the first time
+Vitality drops below half with the block's Breakpoint text, and remind the Unshakable save. A Hostile
+Vehicle can be attached to a pilot threat: moving Defense by the pilot's Grade, Integrity tracking, and
+the book's printed pairings suggested first. Removing the acting last row now turns the round as NEXT
+TURN would.
+
+**Bestiary and every tab.** People cards take a Species Template, which carries to the Table and to
+plans. A GM'S CARD drawer beside every Admin heading shows and prints the book's two-sided quick
+reference (`data/gm_card.js`, pp127 to 131).
+
+**New tabs.** Heat runs the Downtime Heat check across the crew's own Heat rows (d10 per source against
+the highest, Heat 10 always triggers, one event per source), rolls the event on its band, holds events,
+tracks Bounties and cooling off (lying low once a month), and sends a fight to Encounters with the
+source's Bestiary names; Heat changes to records are a new undoable write op, and the GM-only Watchfire
+rule never reaches a player record (`data/gm_heat.js`, pp113 to 118). People keeps contact cards with
+Resolve by Role and Their Profile of You, promotes a contact to a threat, and rolls names and street
+handles from the book's tables (`data/gm_people.js`, pp43 to 51). Scenes tracks a Sit-Down (Resolve,
+Pressure, weak spots, the clock in the room, fallout), a chase (Lead bands, chase checks with their own
+Dominant Victory thresholds, the district stalemate roll with the Impact DC picker), and an Incursion
+(rating against crew Caliber, Local Rules d12, the dive and its collapse, the Breach DC, and PAY THIS
+INCURSION into Payroll at the Caliber it was priced at) (`data/gm_scenes.js`). Payroll gains a
+Milestones panel from the p11 lists, a new undoable write op.
+
+**Review.** Two lenses, three skeptics a finding: 9 confirmed, all fixed with a regression test each
+(Incursion Caliber, lie low twice, heat undo with duplicate rows, Bounty targets who left the crew,
+Resolve qualifiers, removing the acting last row, REROLL ALL ignoring skip-downed, a templated block's
+role, SET ROUND against a following clock). Final run: 101 test runs, 3,219 checks, no page errors.
+
 ## The Admin desktop is finished from the Game Master's Handbook: Encounters, Hazards, Job Board, Payroll, 2026-10-07
 
 Built on branch `gm-modules` from the standalone Elysium Nights Game Master's Handbook (136 pages),

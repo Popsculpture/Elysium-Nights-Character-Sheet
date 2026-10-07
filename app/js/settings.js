@@ -1086,6 +1086,9 @@ EN.settings = (function () {
     if (c.hazards) parts.push(gmPlural(c.hazards, "custom hazard", "custom hazards"));
     if (c.jobs) parts.push(gmPlural(c.jobs, "logged job", "logged jobs"));
     if (c.ledger) parts.push(gmPlural(c.ledger, "ledger record", "ledger records"));
+    if (c.heat) parts.push(gmPlural(c.heat, "Heat record", "Heat records"));
+    if (c.contacts) parts.push(gmPlural(c.contacts, "contact card", "contact cards"));
+    if (c.scenes) parts.push(gmPlural(c.scenes, "saved scene", "saved scenes"));
     if (c.entries) parts.push(gmPlural(c.entries, "initiative row", "initiative rows"));
     if (c.room) parts.push(gmPlural(c.room, "Room hazard", "Room hazards"));
     return parts.length ? parts.join(", ") : "nothing saved yet";
@@ -1141,7 +1144,7 @@ EN.settings = (function () {
     var kids = [
       el("div.set-sectitle", { text: "// GM DATA" }),
       el("label.set-label", { text: "Back up and restore" }),
-      el("p.set-hint", { text: "Everything the Admin desktop keeps: saved threats and encounters, custom hazards, the job log, the ledger, and the live encounter. It is stored on this device only. Export it to keep a copy or to move it to another device. Importing replaces all of it." }),
+      el("p.set-hint", { text: "Everything the Admin desktop keeps: saved threats and encounters, custom hazards, the job log, the ledger, the Heat log, contact cards, saved scenes, and the live encounter. It is stored on this device only. Export it to keep a copy or to move it to another device. Importing replaces all of it." }),
       el("div.row.wrap", { style: { gap: "8px" } }, [
         el("button.btn.sm", { title: "Download all GM data as a .json file", onclick: exportGmData }, "⤓ EXPORT GM DATA"),
         el("button.btn.sm", { title: "Pick a GM data file to import; nothing is replaced until you confirm",

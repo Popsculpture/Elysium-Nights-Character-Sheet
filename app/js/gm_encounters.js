@@ -335,7 +335,8 @@ EN.gmEncounters = (function () {
       var b = line.block;
       if (b) {
         i.grade = b.grade; i.des = b.designation || null; i.desName = b.designationName || "";
-        i.role = b.role || null; i.roleName = b.roleName || "";
+        // a block saved before Bestiary blocks carried `role` has only its printed name
+        i.role = b.role || (b.roleName ? String(b.roleName).toLowerCase() : null); i.roleName = b.roleName || "";
         i.xpEach = EN.gmEngine.xpOf(b);
       } else i.missing = true;
     } else {
@@ -498,10 +499,10 @@ EN.gmEncounters = (function () {
   }
 
   /* A handoff from another tab (the Bestiary, the Threats tab, the Job Board,
-     Hazards): {addLines: [line, ...], note, jobId}. Its lines join the plan
-     being edited, a note with something in it joins the plan's notes, and a
-     banner says what arrived. The payload is taken once by render(), per
-     gm.js's handoff.
+     Hazards, People, Heat): {addLines: [line, ...], note, jobId, difficulty}.
+     Its lines join the plan being edited, a note with something in it joins
+     the plan's notes, and a banner says what arrived. The payload is taken
+     once by render(), per gm.js's handoff.
 
      A NOTE THAT ONLY SAYS WHERE A LINE CAME FROM ("Street Ganger, from the
      Bestiary.") is the banner's business, not the plan's (F21): the GM's
@@ -512,7 +513,12 @@ EN.gmEncounters = (function () {
      A JOB'S LINES NEVER MOVE ANOTHER JOB'S PLAN (F12). When the plan that is
      open already belongs to a different job, the incoming job gets a plan of
      its own, and the open one is saved first if it has unsaved changes, so
-     nothing the GM made is lost and the first job's link still points at it. */
+     nothing the GM made is lost and the first job's link still points at it.
+
+     A FIGHT'S DIFFICULTY (`difficulty`, a key of DIFFS: the Heat tab's fight
+     card sends one) sets the plan's when the plan held no lines before the
+     handoff. A plan the GM already started keeps its own, and the banner names
+     the one the fight called for. */
   var PROVENANCE = /^[^\n]*, from (the Bestiary|the Threat Builder|Saved Threats)\.$/;
   function realNote(note) { return !!note && !PROVENANCE.test(note); }
   function jobTitle(id) {
@@ -554,6 +560,8 @@ EN.gmEncounters = (function () {
         pre = "The plan that is open is for " + jobTitle(oldJob) + " and could not be saved, so it stays open and keeps that job. ";
       }
     }
+    var dk = (typeof h.difficulty === "string" && DIFFS.indexOf(h.difficulty) !== -1) ? h.difficulty : null;
+    var wasEmpty = !_s.plan.lines.length;
     var added = 0, skipped = 0;
     (Array.isArray(h.addLines) ? h.addLines : []).forEach(function (raw) {
       var line = isObj(raw) ? lineFromHandoff(raw) : null;
@@ -562,9 +570,15 @@ EN.gmEncounters = (function () {
     if (link) _s.plan.jobId = jid;
     var note = typeof h.note === "string" ? h.note.replace(/^\s+|\s+$/g, "") : "";
     if (realNote(note) && _s.plan.notes.indexOf(note) === -1) _s.plan.notes = _s.plan.notes ? _s.plan.notes + "\n\n" + note : note;
+    var diffSaid = "";
+    if (dk && dk !== _s.plan.difficulty) {
+      if (wasEmpty) { _s.plan.difficulty = dk; diffSaid = " The plan is set to " + diffName(dk) + "."; }
+      else diffSaid = " The fight calls for " + diffName(dk) + ". The plan keeps its own, " + diffName(_s.plan.difficulty) + ".";
+    }
     _s.banner = pre + (added ? plural(added, "line") + " added to the plan below" : "Nothing was added to the plan") +
                 (note ? ": " + note : ".") +
-                (skipped ? " " + plural(skipped, "line") + " could not be read and " + (skipped === 1 ? "was" : "were") + " skipped." : "");
+                (skipped ? " " + plural(skipped, "line") + " could not be read and " + (skipped === 1 ? "was" : "were") + " skipped." : "") +
+                diffSaid;
   }
 
   /* ---- running a plan on the Table ------------------------------------------
@@ -604,6 +618,7 @@ EN.gmEncounters = (function () {
     return {
       name: e.name, grade: e.grade,
       designation: String(e.designation || "Standard").toLowerCase(), designationName: e.designation || "Standard",
+      role: e.role ? String(e.role).toLowerCase() : null,
       roleName: e.role || "", defense: isNaN(def) ? null : def,
       saveDC: p.saveDC, attackBonus: p.attackBonus, vitality: isNaN(vit) ? 1 : vit,
       init: initM, initMod: initM,
@@ -785,6 +800,7 @@ EN.gmEncounters = (function () {
       plan.lines.filter(function (l) { return l.wave === w; }).forEach(function (l) {
         var i = lineInfo(l);
         var what = l.kind === "hazard" ? "hazard, G" + i.grade : "G" + i.grade + " " + i.desName + (i.roleName ? " " + i.roleName : "");
+        if (l.kind === "threat" && isObj(l.block) && l.block.species) what += ", " + l.block.species + " template";
         lines.push("Round " + w + ": " + l.count + " x " + l.name + " (" + what + ", " + fmtXp(i.xpEach) + " XP each) = " + fmtXp(l.count * i.xpEach) +
                    (l.note ? ". " + l.note : ""));
       });
@@ -1080,6 +1096,8 @@ EN.gmEncounters = (function () {
       left.push(chip(bd.label, bd.color, bd.tip));
     }
     if (line.kind === "threat") left.push(chip("BUILT"));
+    // a Species Template laid over the block (the Bestiary's People cards, People's PROMOTE): the Table chip names it too
+    if (line.kind === "threat" && isObj(line.block) && line.block.species) left.push(chip(String(line.block.species).toUpperCase() + " TEMPLATE"));
     var sl = statLine(line, i);
     if (sl) left.push(el("span.help", { text: sl }));
 
@@ -1740,17 +1758,63 @@ EN.gmEncounters = (function () {
      passing. Counted as one, a clock started (and set to follow) before round
      1 lost a round the moment the fight began, so it arrived a round sooner
      than the same clock started during round 1. clockSeat() is the round a
-     clock is synced to when it starts or starts following. */
+     clock is synced to when it starts or starts following.
+
+     A ROUND STEPPED BACK IS NOT COUNTED TWICE. The Table's PREVIOUS TURN can
+     step back over the wrap; the clock keeps the highest round it has counted
+     and ticks again only past it, so stepping back a round and forward again
+     costs the crew no extra round. A Table back at round 0 (its last row
+     removed) is a fight starting over, and the clock reseats there.
+
+     A ROUND THE GM SETS BACK IS GIVEN BACK. SET ROUND is the GM correcting the
+     counter (a typed 33 that meant 3), and keeping the highest round would
+     leave the clock ARRIVED and frozen at the typo. So when the Table says the
+     GM set the round (ctx.roundSet) below what the clock counted, the rounds
+     it counted past the new round come back. Each follow is kept as a span
+     ({from, to, took, loud}: the rounds, what it took off the count, whether
+     noise was counting), so exactly what those rounds took returns, the noise
+     with it, and the clock reseats at the new round. A clock from before the
+     spans were kept just reseats, so it can tick again. */
   function clockSeat(round) { return Math.max(1, round | 0); }
-  function syncClock(enc) {
+  function spansOf(c) { return Array.isArray(c.spans) ? c.spans.filter(isObj) : []; }
+  function giveBack(n, to) {
+    var spans = spansOf(n), back = 0, loudBack = 0;
+    for (var i = spans.length - 1; i >= 0; i--) {
+      var s = spans[i], sf = Number(s.from) || 0, st = Number(s.to) || 0, took = Math.max(0, Number(s.took) || 0);
+      if (st <= to) break;
+      var cut = Math.max(sf, to), kept = cut - sf, past = st - cut;
+      // a span's ticks take from the count first, so its last `past` rounds took what its first `kept` did not
+      var b = Math.max(0, took - kept);
+      back += b;
+      if (s.loud) loudBack += past;
+      if (kept > 0) { s.to = cut; s.took = took - b; } else spans.splice(i, 1);
+    }
+    n.spans = spans;
+    var left = (Number(n.roundsLeft) || 0) + back;
+    n.roundsLeft = Number(n.roundsTotal) > 0 ? Math.min(Number(n.roundsTotal), left) : left;
+    n.loudRounds = Math.max(0, (n.loudRounds | 0) - loudBack);
+    n.syncedRound = to;
+    hist(n, to, "Round set back to " + to + (back ? ": " + plural(back, "round") + " given back." : "."));
+  }
+  function syncClock(enc, set) {
     var c = enc && enc.clock;
     if (!c || !c.started || !c.followRound) return;
     // a clock synced to round 0 before this rule reads as synced to round 1 too
     var r = clockSeat(enc.round), from = clockSeat(c.syncedRound);
     if (r === from) return;
     var n = copy(c);
-    if (r > from) tick(n, r - from, r);
-    n.syncedRound = r;
+    if (r < from && (enc.round | 0) > 0) {
+      // PREVIOUS TURN: already counted, nothing to do. SET ROUND to this round: given back.
+      if (!isObj(set) || (set.to | 0) !== (enc.round | 0)) return;
+      giveBack(n, r);
+    } else {
+      if (r > from) {
+        var left = Number(n.roundsLeft) || 0;
+        tick(n, r - from, r);
+        n.spans = spansOf(n).concat([{ from: from, to: r, took: left - (Number(n.roundsLeft) || 0), loud: !!n.loud }]).slice(-20);
+      } else n.spans = [];   // back at round 0: the fight starts over
+      n.syncedRound = r;
+    }
     gm.setClock(n, { silent: true });
   }
 
@@ -1772,6 +1836,7 @@ EN.gmEncounters = (function () {
           clockOp(function (k, round) {
             k.started = true;
             k.syncedRound = clockSeat(round);
+            k.spans = [];
             hist(k, round, "Started at " + (tierOf(k.tier) || t).name + ": " + plural(k.roundsLeft, "round") + ".");
           });
           toast("The clock is running. Tell the players you started it.");
@@ -1809,7 +1874,7 @@ EN.gmEncounters = (function () {
       kids.push(el("div.row.wrap", { style: { gap: "6px", marginTop: "8px" } }, [
         el("span.chip" + (c.followRound ? ".on" : ""), { style: { cursor: "pointer", fontSize: "10.5px" },
           title: "Each new Table round ticks the clock once",
-          onclick: function () { clockOp(function (k, round) { k.followRound = !k.followRound; k.syncedRound = clockSeat(round); }); } }, "FOLLOW THE TABLE ROUND"),
+          onclick: function () { clockOp(function (k, round) { k.followRound = !k.followRound; k.syncedRound = clockSeat(round); k.spans = []; }); } }, "FOLLOW THE TABLE ROUND"),
         el("span.chip" + (c.loud ? ".on" : ""), { style: { cursor: "pointer", fontSize: "10.5px" },
           title: "Rounds count toward escalation while the noise continues",
           onclick: function () { clockOp(function (k) { k.loud = !k.loud; }); } }, "NOISE CONTINUES")
@@ -2231,7 +2296,7 @@ EN.gmEncounters = (function () {
   function tableExtra(ctx) {
     if (!book()) return null;
     var enc = (ctx && ctx.encounter) || gm.get().encounter;
-    syncClock(enc);
+    syncClock(enc, ctx && ctx.roundSet);
     enc = gm.get().encounter;
     var rec = enc.sourceId ? gm.rec("encounters", enc.sourceId) : null;
     return planCard(enc, rec);

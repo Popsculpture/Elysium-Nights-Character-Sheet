@@ -27,6 +27,12 @@
      double for alive; the Crew Kit comes off the post-fixer remainder (that
      is splitPayout's own order); the payday checklist is the book's order.
 
+   MILESTONES (the author's quality of life pick, 2026-10). Milestone tables
+   level on the book's Major and Minor Milestones, not XP, so the Milestones
+   panel awards one: the two lists from Milestones and Pacing
+   (EN.gmBook.payroll.milestones) or the GM's own reason, to any crew member,
+   through writeCrew's milestone op. See section 8.
+
    AN APP READING, not book text: the fixer's cut comes off the CLIENT'S money,
    the contract and any bounties, because the page prices those as "totals,
    before the fixer's 10 to 20 percent". Salvage is the crew's own sale to a
@@ -541,10 +547,23 @@ EN.gmPayroll = (function () {
   }
 
   /* ---- small view pieces (local, per the house convention) --------------- */
+  // the GM'S CARD button beside the heading, when gm.js offers one (EN.gmView.cardDrawer, like the undo strip)
+  function cardButton() {
+    try {
+      if (EN.gmView && typeof EN.gmView.cardDrawer === "function") {
+        var n = EN.gmView.cardDrawer();
+        return (n && n.nodeType) ? n : null;
+      }
+    } catch (e) {
+      try { console.warn("Payroll: the GM's Card button failed to draw.", e); } catch (e2) {}
+    }
+    return null;
+  }
   function heading(title, sub) {
-    return el("div.row.between.wrap", { style: { marginBottom: "14px" } }, [
+    return el("div.row.between.wrap", { style: { marginBottom: "14px", gap: "8px", alignItems: "center" } }, [
       el("h1", { style: { fontSize: "22px", letterSpacing: ".06em" },
-        html: title + ' <span class="dim3" style="font-size:13px">' + sub + "</span>" })
+        html: title + ' <span class="dim3" style="font-size:13px">' + sub + "</span>" }),
+      cardButton()
     ]);
   }
   function gap() { return el("div", { style: { height: "12px" } }); }
@@ -1179,7 +1198,373 @@ EN.gmPayroll = (function () {
     return EN.ui.panel(L.name, "ONE LINE EACH", kids);
   }
 
-  /* ---- 8. the payday: summary, save, credit, undo ----------------------- */
+  /* ---- 8. milestones ---------------------------------------------------- */
+  /* AWARD MILESTONE (D1). The book's two lists from Milestones and Pacing to
+     pick from, or the GM's own reason, for any crew member: the records on
+     Milestone advancement are ticked first, and a record on XP can be ticked
+     too. One writeCrew per Freelancer through the milestone op, which adds to
+     ch.milestones.major or .minor, the counters the #PRINT tab's Milestone
+     tracker keeps. Behind an armed confirm, logged in the ledger, tagged
+     {source: "milestone", awardId, ...}, undoable, and on offer as copyable
+     text for the crews whose records live on other devices.
+
+     The pick is its own transient state (_ms), outside the payday form: an
+     award is a write of its own, so it never makes the form read as unsaved
+     and is never saved with a payday. What the form is paying only SUGGESTS a
+     pick: an Incursion being priced suggests clearing one, and a job or a fight
+     being paid suggests the item whose words name its difficulty column (the
+     base column: a clause moves the price, not the job), through the book's
+     byDifficulty. A Milk Run suggests nothing, because the page calls it rent.
+     The last award and its UNDO MILESTONE are read off the ledger (liveWrites,
+     by meta.awardId), so they survive a reload like every other undo here. */
+  function freshMs() {
+    return { key: null,                  // the picked item's key, "other" for the GM's own reason, or null
+             kind: "major",             // the kind of the GM's own reason
+             reason: "",                // the GM's own reason, as typed
+             amount: "",                // how many, as typed; blank is one
+             who: Object.create(null) };  // charId -> true or false, the GM's own ticks over the default
+  }
+  var _ms = freshMs();
+  function MS() { return (P() && P().milestones) || null; }
+  function msItems() { var M = MS(); return M ? (M.major || []).concat(M.minor || []) : []; }
+  function msItem(key) {
+    if (typeof key !== "string" || !key) return null;
+    return msItems().filter(function (it) { return it && it.key === key; })[0] || null;
+  }
+  function kindName(k) { return k === "major" ? "Major" : "Minor"; }
+  function msCount(v) { var n = Number(v); return isFinite(n) ? n : 0; }
+  // the PHB's pace as the page restates it: a Freelancer is ready when any one levelUp pair is reached
+  function msReady(c) {
+    return (MS().levelUp || []).some(function (p) { return c.major >= p.major && c.minor >= p.minor; });
+  }
+  function paceText() {
+    return (MS().levelUp || []).map(function (p) {
+      return p.minor ? p.major + " Major and " + p.minor + " Minor" : p.major + " Major";
+    }).join(", or ");
+  }
+  function msNote(key) { return (MS().notes || []).filter(function (n) { return n && n.key === key; })[0] || null; }
+
+  function msSuggest() {
+    var M = MS();
+    if (!M) return null;
+    if (parseInt(_p.inc, 10) > 0) {
+      var inc = msItem("incursion");
+      return inc ? { key: inc.key, why: "This payday prices an Incursion." } : null;
+    }
+    if (!(_p.jobId || _p.enc || _p.paydayId)) return null;
+    var d = _p.diff, by = isObj(M.byDifficulty) ? M.byDifficulty : {};
+    if (!own(by, d)) return null;
+    var why = "This payday is priced in the " + colName(d) + " column.";
+    if (by[d] === null) return { key: null, rent: true, why: why };
+    var hit = (M[by[d]] || []).filter(function (it) { return Array.isArray(it.difficulties) && it.difficulties.indexOf(d) !== -1; })[0];
+    return hit ? { key: hit.key, why: why } : null;
+  }
+
+  /* Everything the panel shows, from _ms and the records. `amount` is null
+     when what is typed is not a whole number of 1 or more (blank is one).
+     A person's `next` is what their counters will read after the award. */
+  function msModel(m) {
+    var M = MS(), roster = (EN.store.roster && EN.store.roster()) || {};
+    var item = msItem(_ms.key), other = _ms.key === "other";
+    var kind = item ? item.kind : other ? (_ms.kind === "minor" ? "minor" : "major") : null;
+    var reason = item ? item.text : other ? String(_ms.reason || "").trim() : "";
+    var raw = String(_ms.amount == null ? "" : _ms.amount).trim();
+    var n = raw === "" ? 1 : Number(raw);
+    var amount = (isFinite(n) && n >= 1 && Math.floor(n) === n) ? n : null;
+    var above = Number(M.majorOnlyAbove);
+    var people = m.crew.members.filter(function (x) { return own(roster, x.charId) && isObj(roster[x.charId]); }).map(function (x) {
+      var ch = roster[x.charId], ms = isObj(ch.milestones) ? ch.milestones : {};
+      var useXp = ch.useXp === true;
+      var on = own(_ms.who, x.charId) ? !!_ms.who[x.charId] : !useXp;
+      var cur = { major: msCount(ms.major), minor: msCount(ms.minor) };
+      var next = { major: cur.major, minor: cur.minor };
+      if (on && kind && amount) next[kind] += amount;
+      return { charId: x.charId, name: x.name, caliber: x.caliber, level: Number(ch.level) || 0, useXp: useXp, on: on,
+               cur: cur, next: next, readyNow: msReady(cur), readyNext: msReady(next),
+               pastCal: isFinite(above) && typeof x.caliber === "number" && x.caliber > above };
+    });
+    return { kind: kind, reason: reason, amount: amount, item: item, other: other, people: people,
+             to: people.filter(function (p) { return p.on; }), ok: !!kind && !!reason && amount !== null, sugg: msSuggest() };
+  }
+
+  function msLabel(kind, amount, reason) {
+    return "Milestone: " + (amount > 1 ? amount + " " : "") + kindName(kind) + (reason ? ", " + reason : "");
+  }
+  function stop(s) { s = String(s || ""); return /[.!?]$/.test(s) ? s : s + "."; }
+  function joinNames(a) { return a.length > 1 ? a.slice(0, -1).join(", ") + " and " + a[a.length - 1] : (a[0] || ""); }
+  function msHead(kind, amount) {
+    return "MILESTONE: " + (amount > 1 ? amount + " " : "") + kindName(kind).toUpperCase() + (amount > 1 ? " MILESTONES" : "");
+  }
+  // the award as text, before it is made: each ticked Freelancer's counter, from and to
+  function msText(mm) {
+    var other = mm.kind === "major" ? "minor" : "major";
+    var L = [msHead(mm.kind, mm.amount), "For: " + stop(mm.reason)];
+    mm.to.forEach(function (p) {
+      L.push(p.name + ": " + kindName(mm.kind) + " " + p.cur[mm.kind] + " to " + p.next[mm.kind] + ", " +
+        kindName(other) + " " + p.cur[other] + "." + (p.readyNext ? " Ready to level." : ""));
+    });
+    L.push("A Freelancer levels up after " + paceText() + ".");
+    return L.join("\n");
+  }
+
+  /* THE AWARDS STILL STANDING, read off the ledger. An award is the writes
+     sharing one awardId; its kind and amount are read from the ops written,
+     and its reason from the tag. */
+  function msOp(w) { return (Array.isArray(w.ops) ? w.ops : []).filter(function (o) { return o && o.op === "milestone"; })[0] || null; }
+  function msGroups(ws) {
+    var by = Object.create(null), out = [];
+    ws.forEach(function (w) {
+      var mt = metaOf(w), op = msOp(w);
+      if (mt.source !== "milestone" || typeof mt.awardId !== "string" || !op) return;
+      if (!own(by, mt.awardId)) {
+        by[mt.awardId] = { id: mt.awardId, kind: op.kind, amount: Number(op.amount) || 1, reason: String(mt.reason || ""),
+                           jobId: mt.jobId || null, at: w.at, writes: [] };
+        out.push(by[mt.awardId]);
+      }
+      by[mt.awardId].writes.push(w);
+    });
+    // each award's writes in the order written (the lists come newest first)
+    out.forEach(function (g) { g.writes.reverse(); g.names = g.writes.map(function (w) { return w.charName || "a Freelancer"; }); });
+    return out;
+  }
+  function lastAward() { return msGroups(liveWrites())[0] || null; }
+  function canUndoAward(id) {
+    var u = gm.undoable(), mt = metaOf(u);
+    return !!(u && mt.source === "milestone" && mt.awardId === id);
+  }
+  function awardText(g) {
+    var roster = (EN.store.roster && EN.store.roster()) || {};
+    var L = [msHead(g.kind, g.amount), "For: " + stop(g.reason)];
+    g.writes.forEach(function (w) {
+      var ch = roster[w.charId], ms = (ch && isObj(ch.milestones)) ? ch.milestones : {};
+      var now = { major: msCount(ms.major), minor: msCount(ms.minor) };
+      L.push((w.charName || "a Freelancer") + ": now Major " + now.major + ", Minor " + now.minor + "." + (msReady(now) ? " Ready to level." : ""));
+    });
+    L.push("A Freelancer levels up after " + paceText() + ".");
+    return L.join("\n");
+  }
+
+  function awardMilestone() {
+    var mm = msModel(model());
+    if (!mm.ok || !mm.to.length) { toast("Pick a milestone and tick who it is for first."); refresh(); return; }
+    var meta = { source: "milestone", awardId: gm.uid(), kind: mm.kind, amount: mm.amount,
+                 key: mm.item ? mm.item.key : "other", reason: mm.reason,
+                 jobId: _p.jobId || null, paydayId: _p.paydayId || null };
+    var label = msLabel(mm.kind, mm.amount, mm.reason), done = [], refused = [];
+    mm.to.forEach(function (p) {
+      var id = gm.writeCrew(p.charId, label, { op: "milestone", kind: mm.kind, amount: mm.amount }, meta);
+      if (id) done.push(p.name); else refused.push(p.name);
+    });
+    if (!done.length) {
+      toast(refused.length ? "Nothing was written: the records refused it." : "Nothing to award.");
+      EN.app.render();
+      return;
+    }
+    // the pick is spent; who is ticked stays for the next award
+    var who = _ms.who;
+    _ms = freshMs();
+    _ms.who = who;
+    toast("Milestone awarded: " + (mm.amount > 1 ? mm.amount + " " : "") + kindName(mm.kind) + " to " + joinNames(done) + "." +
+      (refused.length ? " Refused: " + refused.join(", ") + "." : "") + " UNDO MILESTONE takes it back.");
+    EN.app.render();
+  }
+
+  /* UNDO MILESTONE walks the award's writes back newest first, while the
+     newest undoable write is one of them; a newer write on top stops it, the
+     same rule UNDO PAYDAY keeps. */
+  function undoAward(id) {
+    if (!canUndoAward(id)) { toast("A newer write sits on top of this award. Undo that first."); EN.app.render(); return; }
+    var n = 0, guard = 0, refused = false;
+    while (canUndoAward(id) && guard < 500) {
+      guard += 1;
+      var r = gm.undoLast();
+      if (!r) { refused = r === false; break; }
+      n += 1;
+    }
+    var left = liveWrites(function (w) { return metaOf(w).awardId === id; }).length;
+    toast(!left ? "Milestone undone: " + n + " " + plural(n, "record") + " put back as they were."
+      : refused ? (n ? "Undid " + n + " of the award's writes. " : "") + "This device refused to save the next undo, so the rest of the award stands."
+      : "Undid " + n + " of the award's writes. A newer write sits on top of the rest.");
+    EN.app.render();
+  }
+
+  function msRow(it, suggested) {
+    var on = _ms.key === it.key;
+    return el("label", { style: { display: "flex", gap: "8px", alignItems: "flex-start", padding: "4px 0", cursor: "pointer",
+                                  borderBottom: "1px solid var(--border)" } }, [
+      el("input", { type: "radio", name: "pay-ms-pick", checked: on, dataset: { pay: "ms-pick-" + it.key }, style: { marginTop: "3px" },
+        onchange: function () { _ms.key = it.key; refresh(); } }),
+      el("span", { style: { flex: "1 1 auto", minWidth: 0, color: on ? "var(--accent)" : "var(--text)", fontWeight: on ? 600 : 400 }, text: it.text }),
+      suggested ? el("span.chip", { dataset: { pay: "ms-suggested" },
+        style: { fontSize: "9.5px", color: "var(--gold)", borderColor: "var(--gold)", flex: "0 0 auto" }, text: "SUGGESTED" }) : null
+    ]);
+  }
+
+  function msPersonRow(p, mm) {
+    var counts = "Major " + p.cur.major + DOT + "Minor " + p.cur.minor;
+    var moves = p.on && mm.kind && mm.amount !== null;
+    var ready = moves ? p.readyNext : p.readyNow;
+    return el("label", { style: { display: "flex", gap: "8px", alignItems: "center", padding: "3px 0", cursor: "pointer", flexWrap: "wrap" } }, [
+      el("input", { type: "checkbox", checked: p.on, dataset: { pay: "ms-who-" + p.charId }, onchange: function () {
+        _ms.who[p.charId] = !p.on;
+        refresh();
+      } }),
+      el("span", { style: { fontWeight: 600, color: p.on ? "var(--text)" : "var(--text3)" }, text: p.name }),
+      el("span.chip", { style: { fontSize: "9.5px" }, text: (p.useXp ? "XP" : "MILESTONES") + DOT + (p.caliber ? "C" + p.caliber : "C?") + DOT + "L" + (p.level || "?") }),
+      el("span.help", { dataset: { pay: "ms-count-" + p.charId }, style: { margin: 0 },
+        text: counts + (moves ? " → " + kindName(mm.kind) + " " + p.next[mm.kind] : "") }),
+      ready ? el("span.chip.on", { dataset: { pay: "ms-ready-" + p.charId }, style: { fontSize: "9.5px" }, text: "READY TO LEVEL" }) : null
+    ]);
+  }
+
+  function msPanel(m) {
+    var M = MS();
+    if (!M) return null;
+    var mm = msModel(m), sg = mm.sugg, kids = [];
+    kids.push(help(M.lead, { margin: "0 0 10px" }));
+
+    // what this payday suggests
+    if (sg && sg.key) {
+      var si = msItem(sg.key);
+      kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginBottom: "8px" } }, [
+        el("span.help", { dataset: { pay: "ms-suggest" }, style: { margin: 0, color: "var(--gold)", flex: "1 1 220px", minWidth: 0 },
+          text: sg.why + " Suggested from the " + kindName(si.kind) + " list: \"" + si.text + "\"." }),
+        _ms.key !== si.key ? el("button.btn.sm", { dataset: { pay: "ms-use-suggest" }, onclick: function () { _ms.key = si.key; refresh(); } }, "PICK IT") : null
+      ]));
+    }
+
+    // the two lists, the table's columns top to bottom
+    kids.push(el("div.row.wrap", { style: { gap: "14px", alignItems: "flex-start" } }, (M.columns || []).map(function (c) {
+      return el("div", { style: { flex: "1 1 260px", minWidth: 0 } }, [el("div", { style: { marginBottom: "2px" } }, [label(c.name)])].concat((M[c.kind] || []).map(function (it) {
+        return msRow(it, !!(sg && sg.key === it.key));
+      })));
+    })));
+    if (M.notMilestone) {
+      var rent = !!(sg && sg.rent);
+      kids.push(el("p.help", { dataset: { pay: "ms-rent" }, style: { margin: "6px 0 0", color: rent ? "var(--gold)" : "var(--text3)" },
+        text: (rent ? sg.why + " " : "") + M.notMilestone.text }));
+    }
+
+    // the GM's own reason
+    var otherOn = mm.other;
+    kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "8px" } }, [
+      el("label", { style: { display: "flex", gap: "6px", alignItems: "center", cursor: "pointer", flex: "0 0 auto" } }, [
+        el("input", { type: "radio", name: "pay-ms-pick", checked: otherOn, dataset: { pay: "ms-pick-other" },
+          onchange: function () { _ms.key = "other"; refresh(); } }),
+        el("span", { text: "Something else" })
+      ]),
+      el("div", { style: { flex: "1 1 200px", minWidth: 0 } }, [
+        textIn("msReason", _ms.reason, "What the milestone was for", function (v) { _ms.reason = v; _ms.key = "other"; })
+      ]),
+      chip("MAJOR", otherOn && _ms.kind !== "minor", "ms-kind-major", function () { _ms.kind = "major"; _ms.key = "other"; refresh(); }),
+      chip("MINOR", otherOn && _ms.kind === "minor", "ms-kind-minor", function () { _ms.kind = "minor"; _ms.key = "other"; refresh(); })
+    ]));
+
+    // who it is for
+    kids.push(EN.ui.sectionTitle("Who it is for"));
+    if (!mm.people.length) kids.push(help("No Freelancer records on this device. Copy the milestone to the crew instead.", { margin: 0 }));
+    mm.people.forEach(function (p) { kids.push(msPersonRow(p, mm)); });
+    var onXp = mm.to.filter(function (p) { return p.useXp; });
+    if (onXp.length) {
+      kids.push(el("p.help", { dataset: { pay: "ms-onxp" }, style: { margin: "4px 0 0", color: "var(--text2)" },
+        text: "On XP, so their #PRINT tab shows milestone counts only once the record is switched to Milestone mode: " +
+              joinNames(onXp.map(function (p) { return p.name; })) + "." }));
+    }
+    var slow = msNote("slowDown"), past = mm.to.filter(function (p) { return p.pastCal; });
+    if (slow && mm.kind === "minor" && past.length) {
+      kids.push(el("p.help", { dataset: { pay: "ms-slow" }, style: { margin: "4px 0 0", color: "var(--warn)" },
+        text: joinNames(past.map(function (p) { return p.name; })) + " " + plural(past.length, "is", "are") + " past Caliber " +
+              M.majorOnlyAbove + ". " + slow.text }));
+    }
+    var awk = msNote("awakening");
+    var awkTo = mm.to.filter(function (p) { return awk && p.readyNext && mm.kind && mm.amount !== null && p.level === Number(awk.level) - 1; });
+    if (awkTo.length) {
+      kids.push(el("p.help", { dataset: { pay: "ms-awakening" }, style: { margin: "4px 0 0", color: "var(--accent)" },
+        text: joinNames(awkTo.map(function (p) { return p.name; })) + " will be ready for Level " + awk.level + ". " +
+              awk.name + " " + awk.text }));
+    }
+    // earlier awards for the job this payday pays, still standing (imported ones included: they are paid)
+    if (_p.jobId) {
+      msGroups(paidWrites()).filter(function (g) { return g.jobId === _p.jobId; }).forEach(function (g) {
+        kids.push(el("p.help", { dataset: { pay: "ms-job-" + g.id }, style: { margin: "4px 0 0", color: "var(--warn)" },
+          text: "Already awarded for this job: " + (g.amount > 1 ? g.amount + " " : "") + kindName(g.kind) + ", " + g.reason +
+                ", to " + joinNames(g.names) + " (" + stamp(g.at) + ")." }));
+      });
+    }
+
+    // how many, the award, and the same award as text
+    var text = mm.ok ? msText(mm) : "";
+    var awardBtn;
+    if (mm.ok && mm.to.length) {
+      // keyed on the whole award, so changing any part of it disarms the button instead of confirming the new one
+      var key = "pay:ms-award:" + mm.kind + ":" + _ms.key + ":" + mm.amount + ":" + mm.to.map(function (p) { return p.charId; }).join(",") + ":" + mm.reason;
+      var many = mm.amount > 1 ? mm.amount + " " + kindName(mm.kind) + " Milestones" : "1 " + kindName(mm.kind) + " Milestone";
+      awardBtn = EN.ui.armButton(key, {
+        cls: ".btn.sm", label: "AWARD MILESTONE", armedLabel: "AWARD TO " + mm.to.length + "?",
+        title: "Add this milestone to each ticked record",
+        armedTitle: "Adds " + many + " to " + joinNames(mm.to.map(function (p) { return p.name; })) + ". UNDO MILESTONE takes it back.",
+        onConfirm: awardMilestone
+      });
+      awardBtn.setAttribute("data-pay", "ms-award");
+      if (!EN.ui.isArmed(key)) { awardBtn.style.color = "var(--accent)"; awardBtn.style.borderColor = "var(--accent)"; }
+    } else {
+      awardBtn = el("button.btn.sm", { disabled: true, dataset: { pay: "ms-award" },
+        title: !mm.kind ? "Pick a milestone first" : !mm.reason ? "Say what the milestone was for" : mm.amount === null ? "How many is a whole number, 1 or more"
+          : "Tick who it is for" }, "AWARD MILESTONE");
+    }
+    kids.push(el("div.row.wrap", { style: { gap: "10px", alignItems: "flex-end", marginTop: "10px" } }, [
+      field("How many", numIn("msAmt", _ms.amount, "70px", function (v) { _ms.amount = v; }, { min: "1", step: "1", placeholder: "1" })),
+      awardBtn,
+      el("button.btn.sm", { dataset: { pay: "ms-copy" }, disabled: !mm.ok, title: mm.ok ? "Copy this milestone as text" : "Pick a milestone first",
+        onclick: function () { copyText(text, "The milestone"); } }, "COPY")
+    ]));
+    if (mm.amount === null) kids.push(help("How many is a whole number, 1 or more.", { color: "var(--warn)" }));
+    if (mm.ok) {
+      kids.push(el("div.mono", { dataset: { pay: "ms-text" },
+        style: { whiteSpace: "pre-wrap", fontSize: "12px", lineHeight: "1.5", background: "var(--bg2)", border: "1px solid var(--border2)",
+                 borderRadius: "4px", padding: "10px 12px", marginTop: "8px", userSelect: "text", overflowWrap: "anywhere" }, text: text }));
+    } else if (mm.other && !mm.reason) {
+      kids.push(help("Type what the milestone was for to award it."));
+    } else if (!mm.kind) {
+      kids.push(help("Pick a milestone from the lists, or type your own, to award it."));
+    }
+
+    // the last award still standing, with its own undo
+    var la = lastAward();
+    if (la) {
+      var lt = awardText(la), lbl = msLabel(la.kind, la.amount, la.reason);
+      var undo = canUndoAward(la.id)
+        ? EN.ui.armButton("pay:ms-undo:" + la.id, { cls: ".btn.sm.danger", label: "↶ UNDO MILESTONE", armedLabel: "UNDO IT?",
+            title: "Take this milestone back off the records it was written to",
+            armedTitle: "Takes " + lbl + " back off " + joinNames(la.names) + "'s " + plural(la.names.length, "record") + ".",
+            onConfirm: function () { undoAward(la.id); } })
+        : el("span.help", { style: { margin: 0 }, text: "A newer write sits on top, so this award can no longer be undone from here." });
+      if (undo.tagName === "BUTTON") undo.setAttribute("data-pay", "ms-undo");
+      kids.push(el("div.feature", { dataset: { pay: "ms-last" }, style: { borderLeftColor: "var(--success)", marginTop: "10px" } }, [
+        el("p", { style: { margin: 0, color: "var(--success)", fontWeight: 600 },
+          text: "Last milestone award: " + (la.amount > 1 ? la.amount + " " : "") + kindName(la.kind) + ", " + la.reason + ", to " +
+                joinNames(la.names) + ", " + stamp(la.at) + "." }),
+        el("div.row.wrap", { style: { gap: "8px", marginTop: "6px", alignItems: "center" } }, [
+          el("button.btn.sm", { dataset: { pay: "ms-last-copy" }, onclick: function () { copyText(lt, "The milestone"); } }, "COPY"),
+          undo
+        ])
+      ]));
+    }
+
+    // the book on pacing
+    var ref = [help(M.pace, { margin: 0 })];
+    if (M.notesLead) ref.push(help(M.notesLead));
+    (M.notes || []).forEach(function (nt) {
+      var p = el("p.help", { style: { margin: "4px 0 0" } });
+      p.appendChild(el("span", { style: { fontWeight: 600 }, text: nt.name + " " }));
+      p.appendChild(document.createTextNode(nt.text));
+      ref.push(p);
+    });
+    kids.push(fold("milestones", "The book on pacing", ref));
+    return EN.ui.panel(M.name, "MAJOR" + DOT + "MINOR" + DOT + "PACING", kids);
+  }
+
+  /* ---- 9. the payday: summary, save, credit, undo ----------------------- */
   function signed(n) { return n > 0 ? "+" + n : String(n); }
   function summaryText(m) {
     var L = [], q = m.q, sp = m.split, ss = m.sSplit;
@@ -1529,7 +1914,7 @@ EN.gmPayroll = (function () {
     return EN.ui.panel("Payday", m.paid ? "CREDITED" : (rec ? "SAVED" : "NOT SAVED"), kids, { glow: m.paid });
   }
 
-  /* ---- 9. past paydays -------------------------------------------------- */
+  /* ---- 10. past paydays ------------------------------------------------- */
   function pastPanel() {
     var list = gm.list("ledger").filter(function (r) { return r && r.kind === "payday"; });
     if (!list.length) return null;
@@ -1574,9 +1959,57 @@ EN.gmPayroll = (function () {
      takeEncounter; `paydayId`, when present, names a payday to open). A handoff
      starts a fresh payday (the GM's fixer and Crew Kit percentages and the stub
      choice carry over), except that a job or a fight already paid opens the
-     payday that paid it instead of starting a second one (F8). */
+     payday that paid it instead of starting a second one (F8).
+     Three optional fields more, for the Scenes tab's PAY THIS INCURSION and
+     anything else that prices one: `incursion` (or `inc`), the Incursion's
+     rating as a number, a numeric string or {rating}, which sets the pricer
+     ({rating, caliber, column} also carries the crew Caliber and the column
+     the sender priced it with);
+     `title`, the payday's title when no job names one; and `milestone`, an
+     item key from the book's lists (or {key}), which picks it in the
+     Milestones panel without touching the form. */
   function payloadJob(h) { return (typeof h.jobId === "string" && h.jobId) ? h.jobId : null; }
   function payloadEnc(h) { return (isObj(h.encounter) && Array.isArray(h.encounter.entries)) ? h.encounter : null; }
+  // only a rating the pay grid has a row for, so the pricer's select can show it
+  function payloadInc(h) {
+    var v = own(h, "incursion") ? h.incursion : own(h, "inc") ? h.inc : null;
+    if (isObj(v)) v = v.rating;
+    var r = parseInt(v, 10);
+    return (r > 0 && P() && rowAt(r)) ? String(r) : null;
+  }
+  /* The crew Caliber the sender priced the Incursion with ({caliber}: the
+     Scenes tab's Crew Caliber, typed or followed) and the column it named
+     ({column}). Each only when the grid has it, and only beside a rating. */
+  function payloadIncCal(h) {
+    var v = own(h, "incursion") ? h.incursion : own(h, "inc") ? h.inc : null;
+    if (!payloadInc(h) || !isObj(v) || typeof v.caliber !== "number") return null;
+    var c = v.caliber;
+    return (c === Math.floor(c) && rowAt(c)) ? c : null;
+  }
+  function payloadIncCol(h) {
+    var v = own(h, "incursion") ? h.incursion : own(h, "inc") ? h.inc : null;
+    if (!payloadInc(h) || !isObj(v) || typeof v.column !== "string") return null;
+    return colIndex(v.column) >= 0 ? v.column : null;
+  }
+  /* Take the sender's Caliber into the form's Caliber field when the crew
+     Payroll reads has another, so the Incursion prices at the row and column
+     the sender showed (a Caliber typed on the Scenes tab, say). A form with a
+     Caliber already typed keeps it. */
+  function takeIncCal(h) {
+    var cal = payloadIncCal(h);
+    if (cal === null || _p.cal !== "") return;
+    if (crewNow().caliber !== cal) { _p.cal = String(cal); _p.total = null; }
+  }
+  function payloadTitle(h) { return (typeof h.title === "string" && h.title.trim()) ? h.title.trim() : ""; }
+  function payloadMs(h) {
+    var v = own(h, "milestone") ? h.milestone : null;
+    if (isObj(v)) v = v.key;
+    return msItem(v) ? v : null;
+  }
+  // a payload that carries something for the form, not only a milestone pick
+  function payloadForm(h) {
+    return !!(payloadJob(h) || payloadEnc(h) || payloadInc(h) || payloadTitle(h) || (typeof h.paydayId === "string" && h.paydayId));
+  }
   /* the payday a handoff opens rather than starting a new one, or null. A
      job's own paydayId is honoured when that payday is credited and came in
      with an imported backup: its records may live on another device, so no
@@ -1608,8 +2041,25 @@ EN.gmPayroll = (function () {
     _p.fixer = keep.fixer; _p.kit = keep.kit; _p.stub = keep.stub;
     if (jid) _p.jobId = jid;
     if (j && typeof j.title === "string") _p.title = j.title;
+    if (!_p.title && payloadTitle(h)) _p.title = payloadTitle(h);
+    if (payloadInc(h)) _p.inc = payloadInc(h);
     if (enc) takeEncounter(enc, isObj(h.xp) ? h.xp : null);
+    if (_p.inc && !jid) { takeIncCal(h); priceIncursion(payloadIncCol(h)); }
     settle();
+  }
+  /* An Incursion handed in with no job (the Scenes tab's PAY THIS INCURSION)
+     starts priced: the base column moves to the one its rating maps to for
+     this crew, the move the pricer's PRICE AS button makes. A column the
+     sender named wins, so Payroll opens the column the sender showed. A rating
+     the book names no column for leaves the column alone, and the pricer says
+     so. */
+  function priceIncursion(col) {
+    var I = P() && P().incursion, r = parseInt(_p.inc, 10);
+    if (!I || !r) return;
+    if (col && colIndex(col) >= 0) { _p.diff = col; _p.total = null; return; }
+    var cal = quote(crewNow().caliber, _p.diff, {}).caliber;
+    var map = (I.ratingToColumn || []).filter(function (x) { return x.offset === r - cal; })[0];
+    if (map && colIndex(map.col) >= 0) { _p.diff = map.col; _p.total = null; }
   }
 
   /* A HANDOFF OVER UNSAVED WORK (F18). A handoff used to replace the form
@@ -1620,10 +2070,11 @@ EN.gmPayroll = (function () {
      and fight the form already holds changes nothing and asks nothing. */
   function receive(h) {
     if (!dirty()) { _pend = null; takePayload(h); return; }
-    var jid = payloadJob(h), enc = payloadEnc(h);
+    var jid = payloadJob(h), enc = payloadEnc(h), inc = payloadInc(h);
     var sameJob = !jid || jid === _p.jobId;
     var sameEnc = !enc || !!(_p.enc && _p.enc.at === enc.at);
-    if ((jid || enc) && sameJob && sameEnc && !(typeof h.paydayId === "string" && h.paydayId && h.paydayId !== _p.paydayId)) {
+    var sameInc = !inc || inc === String(_p.inc);
+    if ((jid || enc) && sameJob && sameEnc && sameInc && !(typeof h.paydayId === "string" && h.paydayId && h.paydayId !== _p.paydayId)) {
       _pend = null;
       toast("This payday is already open here, with its changes kept.");
       return;
@@ -1631,17 +2082,22 @@ EN.gmPayroll = (function () {
     _pend = h;
   }
   function keepWith(h) {
-    var jid = payloadJob(h), enc = payloadEnc(h);
+    var jid = payloadJob(h), enc = payloadEnc(h), inc = payloadInc(h);
     if (jid) _p.jobId = jid;
     if (enc) takeEncounter(enc, isObj(h.xp) ? h.xp : null);
+    // the Caliber comes with the rating, so the pricer reads as the sender did
+    if (inc) { _p.inc = inc; takeIncCal(h); }
     _pend = null;
-    toast("The form is kept" + (jid || enc ? ", now for " + pendWhat(h) : "") + ".");
+    toast("The form is kept" + (jid || enc || inc ? ", now for " + pendWhat(h) : "") + ".");
     refresh();
   }
   function pendWhat(h) {
-    var jid = payloadJob(h), enc = payloadEnc(h), j = jid ? gm.rec("jobs", jid) : null, bits = [];
+    var jid = payloadJob(h), enc = payloadEnc(h), inc = payloadInc(h), j = jid ? gm.rec("jobs", jid) : null, bits = [];
     if (jid) bits.push("the job " + ((j && j.title) || "no longer in the log"));
     if (enc) bits.push("the fight " + (enc.name || "just cleared"));
+    var ical = inc ? payloadIncCal(h) : null;
+    if (inc) bits.push("an Incursion at rating " + inc + (ical !== null ? " for a Caliber " + ical + " crew" : "") +
+      (!jid && payloadTitle(h) ? ", " + payloadTitle(h) : ""));
     return bits.join(" and ");
   }
   function pendPanel() {
@@ -1659,8 +2115,9 @@ EN.gmPayroll = (function () {
     } else {
       takeBtn = el("button.btn.sm", { dataset: { pay: "pend-take" }, onclick: take }, takeLabel);
     }
-    var keepLabel = jid && enc ? "KEEP THE FORM, TAKE ITS JOB AND FIGHT" : jid ? "KEEP THE FORM, TAKE ITS JOB"
-      : enc ? "KEEP THE FORM, TAKE ITS FIGHT" : null;
+    var parts = [jid ? "JOB" : null, enc ? "FIGHT" : null, payloadInc(h) ? "INCURSION" : null].filter(Boolean);
+    var keepLabel = !parts.length ? null : "KEEP THE FORM, TAKE ITS " +
+      (parts.length > 1 ? parts.slice(0, -1).join(", ") + " AND " + parts[parts.length - 1] : parts[0]);
     return EN.ui.panel("Sent to Payroll", "WAITING", [
       el("p", { dataset: { pay: "pend" }, style: { margin: 0, fontWeight: 600 }, text: "Sent here: " + (what || "a new payday") + "." }),
       help((opens ? "It is already paid with " + titled("Payday", opens.title) + ". " : "") +
@@ -1766,7 +2223,7 @@ EN.gmPayroll = (function () {
         el("div", { style: { flex: "1 1 300px", minWidth: 0 } }, [xpPanel(m)]),
         el("div", { style: { flex: "1 1 300px", minWidth: 0 } }, [ledgerPanel()])
       ]),
-      gap(), summaryPanel(m)]);
+      gap(), msPanel(m), gap(), summaryPanel(m)]);
     var past = pastPanel();
     if (past) { blocks.push(gap()); blocks.push(past); }
     return el("div", null, blocks);
@@ -1810,7 +2267,12 @@ EN.gmPayroll = (function () {
     try { reconcile(); } catch (e) { try { console.warn("Payroll: could not reconcile the paydays.", e); } catch (e2) {} }
     var h = null;
     try { h = (EN.gmView && EN.gmView.takeHandoff) ? EN.gmView.takeHandoff("payroll") : null; } catch (e) { h = null; }
-    if (isObj(h)) receive(h);
+    if (isObj(h)) {
+      // a payload that carries only a milestone pick is for the Milestones panel and leaves the form as it is
+      var hm = payloadMs(h);
+      if (!own(h, "milestone") || payloadForm(h)) receive(h);
+      if (hm) _ms.key = hm;
+    }
     if (!P() || !EN.gmEngine || !EN.engine.splitPayout) {
       mount.appendChild(el("div", null, [heading("Payroll", "// paying the crew"),
         el("div.muted-box", { style: { padding: "26px" }, text: "Payroll data did not load. Check app/data/gm_payroll.js." })]));

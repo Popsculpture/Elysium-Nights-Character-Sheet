@@ -2,10 +2,11 @@
    ELYSIUM NIGHTS · Paying the Crew  (GM Toolkit)
    A transcription of the Game Master's Handbook, Paying the Crew (PDF pages
    109 to 111), with the money rules from How the City Works: paying for an
-   Incursion and Claims and Salvage (PDF pages 31 to 33), and the after-dive
-   payday order (p30). RULES ONLY: nothing here is computed. The split itself
-   is EN.engine.splitPayout; the player-side reward tables (glimmerRewards,
-   the fixer note, debts) stay in EN.economy.
+   Incursion and Claims and Salvage (PDF pages 31 to 33), the after-dive
+   payday order (p30), and Milestones and Pacing from Running the Game (p11),
+   for the milestone award. RULES ONLY: nothing here is computed. The split
+   itself is EN.engine.splitPayout; the player-side reward tables
+   (glimmerRewards, the fixer note, debts) stay in EN.economy.
 
    Every `text` is the book's wording with PDF line breaks rejoined, and the
    currency glyphs are the book's own: Glimmer U+1D4A2, Nexus U+25CE. Numbers
@@ -187,6 +188,57 @@ EN.gmBook.payroll = {
       { grade: 4, minion: 100, standard: 350, elite: 700, solo: 1400 },
       { grade: 5, minion: 125, standard: 450, elite: 900, solo: 1800 }
     ]
+  },
+
+  /* MILESTONES AND PACING (from Running the Game). What counts as a Major or a
+     Minor Milestone, for milestone tables. `levelUp` is the PHB's pace as this
+     page restates it: either combination levels a Freelancer. The two lists
+     are the table's columns top to bottom; `difficulties` on a list item (and
+     on `notMilestone`) are APP LINKS, the EN.threats.budget difficulty keys the
+     item's own words name, and `byDifficulty` collects them so a finished job
+     can suggest its milestone. Each character keeps its count in
+     ch.milestones.major and ch.milestones.minor, the same two keys as `kind`
+     here. `majorOnlyAbove` is the third pacing note, which is advice ("consider
+     requiring"), not a rule: past Caliber 3 a table may count Major only. */
+  // GMH p11
+  milestones: {
+    name: "Milestones and Pacing",
+    lead: "The PHB sets the pace: a Freelancer levels up after 2 Major Milestones, or 1 Major and 2 Minor. Here's what counts as which.",
+    levelUp: [
+      { major: 2, minor: 0 },
+      { major: 1, minor: 2 }
+    ],
+    columns: [
+      { kind: "major", name: "MAJOR MILESTONE" },
+      { kind: "minor", name: "MINOR MILESTONE" }
+    ],
+    major: [
+      { key: "incursion", kind: "major", text: "Clearing an Incursion: a controlled collapse" },
+      { key: "bigJob",    kind: "major", text: "A Hard Contract or Red Work job finished", difficulties: ["hard", "red"] },
+      { key: "faction",   kind: "major", text: "A faction's power shifted: a gang broken, a corp exposed, a shrine saved" },
+      { key: "arc",       kind: "major", text: "A story arc closed, for better or worse" },
+      { key: "goal",      kind: "major", text: "A Freelancer's personal goal met, or lost for good" }
+    ],
+    minor: [
+      { key: "fairJob",     kind: "minor", text: "A Fair Fight job finished", difficulties: ["fair"] },
+      { key: "sitDown",     kind: "minor", text: "A Sit-Down won when it mattered" },
+      { key: "hunt",        kind: "minor", text: "A cryptid hunt closed" },
+      { key: "heatCleared", kind: "minor", text: "A source of Heat cleared to 0" },
+      { key: "rival",       kind: "minor", text: "A rival crew beaten, bought, or befriended" }
+    ],
+    notMilestone: { text: "A Milk Run isn't a milestone. It's rent.", difficulties: ["milk"] },
+    byDifficulty: { milk: null, fair: "minor", hard: "major", red: "major" },
+    pace: "This pace puts a level roughly every two or three jobs, and it fits the registry's rule of thumb (How the City Works): three to five Incursions between assays is a campaign arc, and a Freelancer's real Caliber rises by roughly one step in that time. When the crew's real Caliber has quietly outrun the number on their #PRINT, you have a story.",
+    notesLead: "A few notes on pacing:",
+    notes: [
+      { key: "between", name: "Level between beats, never inside one.",
+        text: "The PHB says Downtime, a Long Rest, or between arcs. Fallout is the natural place." },
+      { key: "awakening", name: "The Awakening Milestone lands at Level 4.", level: 4,
+        text: "It's a good moment to make the Fallout scene about the Freelancer, not the job." },
+      { key: "slowDown", name: "Slow down past Caliber 3.", aboveCaliber: 3,
+        text: "Above the celebrity line, consider requiring Major Milestones only. The work is bigger and the city is watching. Every level should feel like it cost something." }
+    ],
+    majorOnlyAbove: 3
   },
 
   /* THE OTHER LEDGER. One Cred line and one Heat line at job's end, handed out

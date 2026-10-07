@@ -79,9 +79,9 @@ EN.app = (function () {
 
     /* The Admin rail. Every entry is gated on adminReady, so the desktop is
        all-or-nothing: with the core GM files gone there is no Admin desktop at
-       all. The four module tabs each live in their own file (js/gm_*.js); one of
-       those missing degrades only its own tab to the MODULE PENDING page below,
-       which is what `stub` is still kept for. */
+       all. The module tabs from Encounters on each live in their own file
+       (js/gm_*.js); one of those missing degrades only its own tab to the
+       MODULE PENDING page below, which is what `stub` is still kept for. */
     { key: "table",      label: "Table",      glyph: "◆", sub: "initiative and the crew", portal: "admin", gated: adminReady,
       view: function (m) { EN.gmView.renderTable(m); } },
     { key: "threats",    label: "Threats",    glyph: "✦", sub: "build a threat", portal: "admin", gated: adminReady,
@@ -103,7 +103,19 @@ EN.app = (function () {
     { key: "payroll",    label: "Payroll",    glyph: "◈", sub: "paying the crew", portal: "admin", gated: adminReady,
       view: gmModule("payroll", "gmPayroll"),
       stub: "Paying the Crew: contract pay bands, bounties, and salvage values, split by the same " +
-            "splitter the player's SPLIT panel uses." }
+            "splitter the player's SPLIT panel uses." },
+    { key: "heat",       label: "Heat",       glyph: "◉", sub: "the downtime check", portal: "admin", gated: adminReady,
+      view: gmModule("heat", "gmHeat"),
+      stub: "The Downtime Heat check: a d10 for each source against the crew's highest Heat with it, " +
+            "the events each source sends, Bounties, and Cooling Off." },
+    { key: "people",     label: "People",     glyph: "◐", sub: "contacts and names", portal: "admin", gated: adminReady,
+      view: gmModule("people", "gmPeople"),
+      stub: "People who aren't in initiative: contact cards, Resolve by role, their profile of you, " +
+            "and the name and street handle tables." },
+    { key: "scenes",     label: "Scenes",     glyph: "◧", sub: "sit-downs, chases, incursions", portal: "admin", gated: adminReady,
+      view: gmModule("scenes", "gmScenes"),
+      stub: "Scenes that aren't a fight: the Sit-Down with its Resolve and Pressure, the chase with " +
+            "its Lead and Chase Checks, and the Incursion from briefing to the return." }
   ];
 
   /* A GM module tab's view: the module draws it when its file loaded, and the
@@ -115,7 +127,7 @@ EN.app = (function () {
   function gmModule(key, ns) {
     return function (mount) {
       var mod = EN[ns];
-      if (mod && typeof mod.render === "function") { mod.render(mount); return; }
+      if (mod && typeof mod.render === "function") { mod.render(mount); cardButton(mount); return; }
       var tab = TABS.filter(function (t) { return t.key === key; })[0];
       if (!tab) return;
       mount.appendChild(el("div", null, [
@@ -123,6 +135,19 @@ EN.app = (function () {
         el("div.muted-box", { style: { marginTop: "20px", padding: "40px" }, html: tab.glyph + " &nbsp; MODULE PENDING<br><br>" + tab.stub })
       ]));
     };
+  }
+  /* THE GM'S CARD on every Admin tab. gm.js draws its button (EN.gmView.cardDrawer)
+     beside its own three headings, and a module may draw it beside its own the
+     same way it draws the undo strip. A module tab that drew none gets it here,
+     after the module rendered, in the row that holds the tab's h1, so every tab
+     offers the card whether or not its file knows about it. Never a second one. */
+  function cardButton(mount) {
+    if (!EN.gmView || typeof EN.gmView.cardDrawer !== "function") return;
+    if (mount.querySelector('[data-gm="cardbtn"]')) return;
+    var h1 = mount.querySelector("h1");
+    var btn = null;
+    try { btn = EN.gmView.cardDrawer(); } catch (e) { btn = null; }
+    if (h1 && h1.parentNode && btn) h1.parentNode.appendChild(btn);
   }
 
   /* Device state: which desktop, persisted; which tab on each desktop, not.

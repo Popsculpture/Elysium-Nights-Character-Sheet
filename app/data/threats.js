@@ -250,17 +250,16 @@ EN.threats = {
 
   /* Game Master's Handbook content the GM side does NOT carry, named so nobody
      assumes the absence is an oversight. The Bestiary, Set Pieces, the Job
-     Board, Paying the Crew, the security response clock and the composition
-     rules all have homes now and are off this list. Pages, for the reader of
-     this file: Heat Response GMH pp113 to 118, NPC Quick-Build pp43 to 52,
-     Prep Templates pp13 to 20, The Fifth Flavor pp119 to 126, the GM's Card
-     pp127 to 132. */
+     Board, Paying the Crew, the security response clock, the composition
+     rules and the GM's Card (data/gm_card.js, the drawer in js/gm.js) all have
+     homes now and are off this list. Pages, for the reader of this file: Heat
+     Response GMH pp113 to 118, NPC Quick-Build pp43 to 52, Prep Templates pp13
+     to 20, The Fifth Flavor pp119 to 126. */
   notModelled: [
     "Heat Response: the Heat Check, the Ladder, Heat Events by band, By Source, the Bounty a source posts at Heat 9, and Cooling Off. Nothing on the GM side reads or writes a crew's Heat.",
     "NPC Quick-Build: contact cards, Resolve by role, and names for the people who never roll Initiative.",
     "Prep Templates: the checklists for a wired site, a Sit-Down, and a chase.",
-    "The Fifth Flavor: the complete starter job for a new crew of four.",
-    "The GM's Card: the two-sided table reference."
+    "The Fifth Flavor: the complete starter job for a new crew of four."
   ]
 };
 
@@ -291,3 +290,26 @@ EN.threats.initiative = (function () {
     note: "Nudge it a point either way for the fiction. A turret bolted to a wall can sit lower, and anything that's been waiting for you can sit higher."
   };
 })();
+
+/* RUNNING SOLOS, GMH p59: what every Solo carries beside its stat block. The
+   Table's Solo helper (js/gm.js) reads these rather than restating them: the
+   Surges left this round, the Defensive Impulse, the Unshakable reminder and
+   the Breakpoint alert. `tag` is the parenthetical the page prints after the
+   rule's name ("Surges (Special)"), null where it prints none. The numbers the
+   helper counts with stay in EN.threats.designations (solo surgesByGrade),
+   where the builder already reads them. */
+// GMH p59
+EN.threats.runningSolos = {
+  title: "Running Solos",
+  intro: "Four against one is a scheduling problem. A Solo solves it by cheating in the open. Every Solo carries the following, in addition to its stat block:",
+  rules: [
+    { key: "surges", name: "Surges", tag: "Special",
+      text: "After each Freelancer's turn, the Solo may take one Surge from its list. Each Surge can be used once per round. A Solo has two Surges per round at Grade 1 and 2, three at Grade 3 and up. Surges are short moves: a half-Speed reposition, a single attack at the bottom of its damage range, a condition push, a call for reinforcements. The Solo's own turn stays its turn. The Surges are the reason the crew never gets to plan in peace." },
+    { key: "impulses", name: "Defensive Impulses", tag: null,
+      text: "A Solo gets one Impulse Action per Freelancer turn, spent on the defensive options its entry lists. It can still only use one defense against any single attack." },
+    { key: "unshakable", name: "Unshakable", tag: "Special",
+      text: "A Solo makes its condition saves at the end of every turn, not only its own. Once per round, when it fails a save, it may spend one of its remaining Surges to succeed instead. Restraints work on a Solo. They just don't work for long." },
+    { key: "breakpoint", name: "Breakpoint", tag: "Special",
+      text: "The first time a Solo drops below half Vitality, its Breakpoint fires: a new attack pattern, a shed skin, a called-in favor, a change of venue. The fight before the Breakpoint is the crew learning the rules. The fight after is the Solo breaking them." }
+  ]
+};
