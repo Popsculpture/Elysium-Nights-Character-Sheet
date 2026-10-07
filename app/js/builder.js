@@ -44,6 +44,8 @@ EN.builder = (function () {
     var collapsed = isCollapsed(id);
     var head = [el("h3", { text: title }), el("span.collapse-caret", { text: collapsed ? "▸" : "▾" })];
     if (tag) head.push(el("span.tag", { text: tag }));
+    // opts.rule: a Codex anchor; its "?" chip peeks the rule without toggling the panel
+    if (opts.rule) head.push(EN.ui.ruleChip(opts.rule));
     head.push(el("span.attn-spacer"));
     if (attnShown(id, opts.attention, opts.dismissKey)) head.push(attnDot(id, opts.dismissKey, opts.attentionTitle));
     var node = el("div.panel", null, [
@@ -93,16 +95,34 @@ EN.builder = (function () {
   /* ---------- vitals strip (live readout) ---------- */
   function vitalsStrip(d) {
     var items = [
-      EN.ui.stat("LVL", d.level, "CAL " + d.caliber),
+      ruleStat(EN.ui.stat("LVL", d.level, "CAL " + d.caliber), ".s", "bx-caliber", "CAL"),
       EN.ui.stat("DEF", d.defense, d.defenseAttr === "BOD" ? "BODY" : "AGI"),
-      EN.ui.stat("SPD", d.speed, "spaces"),
+      ruleStat(EN.ui.stat("SPD", d.speed, "spaces"), ".k", "bx-space", "SPD"),
       EN.ui.stat("VIT", d.vitalityMax != null ? d.vitalityMax : "-", d.classInfo ? "max" : "pick class"),
       EN.ui.stat("WND", d.woundsMax, "= Body"),
       EN.ui.stat("RES", d.resilienceDie ? "d" + d.resilienceDie : "-", "dice")
     ];
-    if (d.resource) items.push(EN.ui.stat(d.resource.name.toUpperCase(), d.resource.max, d.resource.attributeName));
-    if (d.flow) items.push(EN.ui.stat("FLOW", d.flow.max, "DC " + d.flow.dc, true));
+    if (d.resource) items.push(ruleStat(EN.ui.stat(d.resource.name.toUpperCase(), d.resource.max, d.resource.attributeName),
+      ".k", resourceAnchor(d.resource.name), d.resource.name.toUpperCase()));
+    if (d.flow) items.push(ruleStat(EN.ui.stat("FLOW", d.flow.max, "DC " + d.flow.dc, true), ".k", "fl-core", "FLOW"));
     return el("div.stat-row", null, items);   // the heading after it brings its own gap
+  }
+  /* The word `word` inside a stat's label (sel ".k") or caption (".s") becomes a Codex link,
+     so the strip's own numbers lead to the rule behind them. A label whose rule does not
+     resolve stays plain text (EN.ui.ruleLink falls back), so nothing else changes. */
+  // a class resource's entry in the Codex's Class Resource Rules: "sk-resources/leverage"
+  function resourceAnchor(name) {
+    return "sk-resources/" + String(name || "").toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  }
+  function ruleStat(node, sel, anchor, word) {
+    var part = node.querySelector(sel), txt = part ? part.textContent : "";
+    var at = txt.indexOf(word);
+    if (at < 0) return node;
+    EN.ui.clear(part);
+    if (at) part.appendChild(document.createTextNode(txt.slice(0, at)));
+    part.appendChild(EN.ui.ruleLink(anchor, word));
+    if (at + word.length < txt.length) part.appendChild(document.createTextNode(txt.slice(at + word.length)));
+    return node;
   }
 
   /* ---------- STEP 1: IDENTITY ---------- */
@@ -261,7 +281,7 @@ EN.builder = (function () {
     return el("div", null, [
       EN.ui.panel("Attribute Matrix", "BIOMETRIC PROFILE", [
         methodRow, info, el("div.attr-grid", null, cells),
-        el("p.help", { style: { marginTop: "12px" }, text: "Modifier = ⌊(score − 10) / 2⌋. Increases from Universal Upgrades and from Talents that raise an Attribute (▲) are applied on top; hover a score to see which. Both are chosen in the Advance step." }),
+        EN.ui.ruleText(el("p.help", { style: { marginTop: "12px" } }), "Modifier = ⌊(score − 10) / 2⌋. Increases from Universal Upgrades and from Talents that raise an Attribute (▲) are applied on top; hover a score to see which. Both are chosen in the Advance step."),
         method === "manual" ? rollGroupsSection(ch) : method === "overclocked" ? overclockedSection(ch) : null
       ], { corners: true })
     ]);
@@ -840,7 +860,7 @@ EN.builder = (function () {
     if (!lin) return traitLine("Size", speciesDesc);   // species-level flavor before a lineage is picked
     var band = (R.lineageHeight || {})[lin.key];
     var current = effectiveSize(ch);
-    var kids = [el("span.chip", { text: "Size" }), solidChip(current || "choose a height", "var(--accent)")];
+    var kids = [el("span.chip", { text: "Size" }), solidChip(current || "choose a height", "var(--accent)"), EN.ui.ruleChip("ref-size")];
     if (!band) return el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginBottom: "8px" } }, kids);
 
     if (band.fixed) {
@@ -987,9 +1007,9 @@ EN.builder = (function () {
     var overlaps = eng.overlapGrants(ch);
     if (!overlaps.length) return null;
     var open = eng.unresolvedOverlaps(ch);
-    var kids = [el("div", { html: "⚠ <b>OVERLAPPING TRAINING:</b> your Background and Class both trained you in <b>" +
-      overlaps.map(function (o) { return o.label; }).join(", ") +
-      "</b>. The proficiency applies once (Proficient + Proficient = Proficient, never Expertise), and each overlap grants a <b>Free Skill Focus</b>: 0 Training Points, valid from level 1." })];
+    // the rule half is EN.rules.training.overlap.rule, the one copy the Codex prints too
+    var kids = [EN.ui.ruleText(el("div"), "⚠ **OVERLAPPING TRAINING:** your Background and Class both trained you in **" +
+      overlaps.map(function (o) { return o.label; }).join(", ") + "**. " + (((R.training || {}).overlap || {}).rule || ""))];
     open.forEach(function (o) {
       var k = o.type + "|" + o.parent;
       var input = el("input", { type: "text", value: _overlapAspect[k] || "", placeholder: "narrow aspect: " + focusAspectHint(o.type, o.parent),
@@ -1373,7 +1393,9 @@ EN.builder = (function () {
         el("span.chip.on", { text: "VIT " + (R.classVitality[ch.class].start) + " + Body" }),
         el("span.chip", { text: "RES d" + R.classVitality[ch.class].resilience }),
         prio.short.length ? el("span.chip", { text: "PRIORITY: " + prio.short.join(" › ") }) : null,
-        cls.saveFocus ? el("span.chip.flow", { text: "SAVE FOCUS: " + cls.saveFocus }) : null
+        cls.saveFocus ? el("span.chip.flow", { text: "SAVE FOCUS: " + cls.saveFocus }) : null,
+        // Saving Throw Focus is read in the Basics' Caliber primer
+        cls.saveFocus ? EN.ui.ruleChip("bx-caliber", { title: "Caliber and Saving Throw Focus" }) : null
       ]));
       if (prio.notes.length) {
         corePb.push(el("div", { style: { marginBottom: "6px" } }, [el("label.fl", { text: "Attribute Priorities" })].concat(
@@ -1397,11 +1419,13 @@ EN.builder = (function () {
               "\nTraits: " + d.triage.traits.join(", ") + "\n\n";
           }
         }
-        corePb.push(feature(cls.resource.name + " (Resource)", resBody + (cls.resource.fuels || ""), "class", "Pool " + (d.resource ? d.resource.max : "")));
+        corePb.push(ruleHead(feature(cls.resource.name + " (Resource)", resBody + (cls.resource.fuels || ""), "class", "Pool " + (d.resource ? d.resource.max : "")),
+          resourceAnchor(cls.resource.name)));
         var gp = resourcePicker(ch); if (gp) corePb.push(gp);
       }
       if (ch.class === "shaper" && d.flow) {
-        corePb.push(feature("Flow Points (Reservoir)", "Reservoir = (Caliber × 3) + " + d.flow.attributeName + " Modifier = " + d.flow.max + "\nFlow Save DC = 8 + " + d.flow.attributeName + " Mod + Caliber = " + d.flow.dc, "flow", "Flow " + d.flow.max));
+        corePb.push(ruleHead(feature("Flow Points (Reservoir)", "Reservoir = (Caliber × 3) + " + d.flow.attributeName + " Modifier = " + d.flow.max + "\nFlow Save DC = 8 + " + d.flow.attributeName + " Mod + Caliber = " + d.flow.dc, "flow", "Flow " + d.flow.max),
+          "fl-core"));
         var rp = resonancePicker(ch); if (rp) corePb.push(rp);
       }
       // starting proficiencies, color-coded chip rows
@@ -1478,7 +1502,8 @@ EN.builder = (function () {
             el("h3", { style: { color: active ? "var(--text)" : "var(--text3)" }, text: "Level " + L }),
             el("span.collapse-caret", { text: collapsed ? "▸" : "▾" })
           ].concat(featChips, [
-            R.trainingPointLevels[L] ? el("span.chip", { style: { fontSize: "10px", color: "var(--warn)", borderColor: "var(--warn)" }, text: "+" + R.trainingPointLevels[L] + " Training Points" }) : null,
+            R.trainingPointLevels[L] ? el("span.chip", { style: { fontSize: "10px", color: "var(--warn)", borderColor: "var(--warn)" } },
+              [document.createTextNode("+" + R.trainingPointLevels[L] + " "), EN.ui.ruleLink("sk-skills/training-points", "Training Points")]) : null,
             el("span.attn-spacer"),
             L === ch.level ? el("span.chip.on", { text: "● CURRENT" }) : (active ? null : el("span.chip", { text: "LOCKED" }))
           ]));
@@ -1912,45 +1937,86 @@ EN.builder = (function () {
 
   // Skills + gear + purchase log + versatile, as an array of blocks (merged
   // into the Advance step beneath Advancement Type).
+  /* The price strip under TRAINING PTS, read from EN.rules.training.costs: the one copy of
+     what a Training Point buys, which the Codex's Skills & Proficiencies prints in full. */
+  function tpCostLine(color) {
+    var costs = (R.training || {}).costs || [];
+    var p = el("p.help", { style: { margin: 0, color: color } });
+    costs.forEach(function (c, i) {
+      if (i) p.appendChild(document.createTextNode("\u00a0|\u00a0 "));
+      p.appendChild(el("b", { text: c.short }));
+      p.appendChild(document.createTextNode(" " + c.tp + "TP \u00b7 " + (c.level > 1 ? "L" + c.level + "+" : "any")));
+    });
+    return p;
+  }
+  // "your first 5 arrive at level 3", from EN.rules.trainingPointLevels
+  function firstTpText() {
+    var lv = Object.keys(R.trainingPointLevels || {}).map(Number).sort(function (a, b) { return a - b; });
+    return lv.length ? "No Training Points yet; your first " + R.trainingPointLevels[lv[0]] + " arrive at level " + lv[0] + "." : "No Training Points yet.";
+  }
   function skillsBlocks(ch, d) {
     var b = d.trainingPoints;
     var overspent = b.remaining < 0;
     var tpKey = "L" + d.level;
+    var T = R.training || {};
     return [
       collapsiblePanel("skillLoadout", "Skill Loadout", "PROFICIENCY MATRIX", [
         el("div.row.wrap", { style: { gap: "16px", alignItems: "center" } }, [
           EN.ui.stat("TRAINING PTS", b.remaining, "of " + b.total, false),
           el("div", { style: { flex: 1, minWidth: "220px" } }, [
-            el("p.help", { style: { margin: 0, color: overspent ? "var(--danger)" : "var(--text3)" }, html:
-              "<b>Acquire</b> 1TP · any &nbsp;|&nbsp; <b>Expert</b> 2TP · L6+ &nbsp;|&nbsp; <b>Mastery</b> 2TP · L10+ &nbsp;|&nbsp; <b>Focus</b> 1TP · L3+ &nbsp;|&nbsp; <b>Spec</b> 1TP · L6+" }),
-            b.total === 0 ? el("p.help", { style: { color: "var(--warn)", margin: "4px 0 0" }, text: "No Training Points yet; your first 5 arrive at level 3." }) : null,
+            tpCostLine(overspent ? "var(--danger)" : "var(--text3)"),
+            b.total === 0 ? el("p.help", { style: { color: "var(--warn)", margin: "4px 0 0" }, text: firstTpText() }) : null,
             overspent ? el("p.help", { style: { color: "var(--danger)", margin: "4px 0 0" }, text: "Over budget; refund some upgrades (↩)." }) : null
           ])
         ]),
-        el("div.section-title", null, [document.createTextNode("Skill Tiers"), el("span.line")]),
-        el("p.help", { style: { marginBottom: "6px" }, text: "Background & class grants give a free Proficient floor (GRANTED). Focus & Specialization buttons appear once a skill qualifies." }),
+        el("div.section-title", null, [document.createTextNode("Skill Tiers"), EN.ui.ruleChip("sk-skills/proficiency-tiers"), el("span.line")]),
+        EN.ui.ruleText(el("p.help", { style: { marginBottom: "6px" } }), (T.grants ? T.grants + " " : "") + "Focus & Specialization buttons appear once a skill qualifies."),
         el("div", null, d.skills.map(function (s) { return skillRow(ch, s); }))
-      ], { corners: true, attention: b.remaining > 0, dismissKey: tpKey, attentionTitle: "Unspent Training Points; click to dismiss" }),
+      ], { corners: true, attention: b.remaining > 0, dismissKey: tpKey, attentionTitle: "Unspent Training Points; click to dismiss", rule: "sk-skills/training-points" }),
       el("div", { style: { height: "14px" } }),
       collapsiblePanel("gearProficiencies", "Gear Proficiencies", "WEAPONS · ARMOR · TOOLS · VEHICLES", [].concat(
-        [el("p.help", { text: "Acquire a category for 1 TP. Weapons, Tools, and Vehicles upgrade to Expert (L6+) and Mastery (L10+) for 2 TP each, and can carry a Focus (1 TP, L3+) or Specialization (1 TP, L6+) on a narrow aspect. Armor can be acquired but never upgraded, and never takes a Focus or Specialization." })],
+        // "Vehicles" here is a proficiency bucket, not the Vehicles rules panel, so that one link is held back
+        T.gearRule ? [EN.ui.ruleText(el("p.help"), T.gearRule, { self: ["ref-vehicles"] })] : [],
         gearSection(ch, "weapons", "Weapon Proficiencies", null),
-        gearSection(ch, "armor", "Armor Proficiencies", "Acquire only; cannot be raised to higher tiers."),
+        gearSection(ch, "armor", "Armor Proficiencies", T.armorNote || null),
         gearSection(ch, "tools", "Tool Proficiencies", null),
         gearSection(ch, "vehicles", "Vehicle Proficiencies", null)
-      ), { corners: true, attention: b.remaining > 0, dismissKey: tpKey, attentionTitle: "Unspent Training Points; click to dismiss" }),
+      ), { corners: true, attention: b.remaining > 0, dismissKey: tpKey, attentionTitle: "Unspent Training Points; click to dismiss", rule: "sk-skills/gear-proficiencies" }),
       el("div", { style: { height: "14px" } }),
       purchaseLogPanel(ch),
       el("div", { style: { height: "14px" } }),
       collapsiblePanel("versatileSkills", "Versatile Skills", "DERIVED · NOT TRAINED DIRECTLY", [
-        el("p.help", { text: "Insight, Performance, and Intimidation borrow the tier of whatever parent skill you lean on in the moment; you can't buy them with Training Points." }),
+        (EN.versatile || {}).rule ? EN.ui.ruleText(el("p.help"), EN.versatile.rule) : null,
         el("div.row.wrap", { style: { marginTop: "8px" } }, R.versatileSkills.map(function (v) { return el("span.chip", { title: v.desc, text: v.name }); }))
-      ], { corners: true })
+      ], { corners: true, rule: "sk-skills/versatile-skills" })
     ];
   }
   var TIER_LABEL = { untrained: "Untrained", proficient: "Proficient", expertise: "Expert", mastery: "Mastery" };
   var UP_VERB = { proficient: "ACQUIRE", expertise: "→ EXPERT", mastery: "→ MASTERY" };
   var TIER_COLOR = { untrained: "var(--text3)", proficient: "var(--text)", expertise: "var(--accent)", mastery: "var(--gold)" };
+
+  /* The milestone pace is read, not retyped: EN.rules.milestonePace() reads the PHB pace the
+     GM's Payroll keeps (EN.gmBook.payroll.milestones.levelUp), and the timing line is
+     EN.rules.advancement.when. The words "Milestones" link to the Codex's Milestones entry. */
+  function milestoneLine(p, lead, tail) {
+    var pace = R.milestonePace ? R.milestonePace() : null;
+    if (pace) EN.ui.ruleText(p, lead + pace + tail);
+    EN.ui.ruleText(p, ((R.advancement || {}).when) || "");
+    var chip = EN.ui.ruleChip("sk-advance/milestones");
+    if (chip) { chip.style.marginLeft = "6px"; p.appendChild(chip); }
+    return p;
+  }
+  // "Milestone default: ... +5 Training Points arrive at L3, L6, and L10. Update during downtime, never mid-firefight."
+  function advanceHelp(p) {
+    var pace = R.milestonePace ? R.milestonePace() : null;
+    var by = R.trainingPointLevels || {};
+    var lv = Object.keys(by).map(Number).sort(function (a, b) { return a - b; });
+    var same = lv.every(function (l) { return by[l] === by[lv[0]]; });
+    var tp = !lv.length ? "" : same
+      ? "+" + by[lv[0]] + " Training Points arrive at " + lv.map(function (l) { return "L" + l; }).join(", ").replace(/, (L\d+)$/, ", and $1") + ". "
+      : lv.map(function (l) { return "+" + by[l] + " Training Points at L" + l; }).join(", ") + ". ";
+    return EN.ui.ruleText(p, (pace ? "Milestone default: level after " + pace + ". " : "") + tp + "Update during downtime, never mid-firefight.");
+  }
 
   // Milestone tracker (shown in Milestone advancement mode)
   function milestoneTracker(ch) {
@@ -1973,7 +2039,7 @@ EN.builder = (function () {
       ]);
     }
     return el("div", null, [
-      el("p.help", { style: { marginTop: 0, marginBottom: "12px" }, html: "Standard pacing: level up after <b>2 Major Milestones</b>, or <b>1 Major + 2 Minor Milestones</b>. Level during downtime, after a Long Rest, or between story arcs." }),
+      milestoneLine(el("p.help", { style: { marginTop: 0, marginBottom: "12px" } }), "Standard pacing: level up after **", "**. "),
       el("div.row.wrap", { style: { gap: "12px" } }, [
         card("Major Milestones", "major", "var(--accent)", "Major contract, vital asset secured, faction shift"),
         card("Minor Milestones", "minor", "var(--flow)", "Session goal, key lead, minor alliance")
@@ -2018,7 +2084,7 @@ EN.builder = (function () {
           el("span.chip" + (d.flow ? ".flow" : ".on"), { text: d.resource ? d.resource.name + " " + d.resource.max : (d.flow ? "FLOW " + d.flow.max : "") })
         ])
       ]),
-      el("p.help", { style: { marginTop: "10px" }, text: "Milestone default: level after ~2 Major Milestones (or 1 Major + 2 Minor). +5 Training Points arrive at L3, L6, and L10. Update during downtime, never mid-firefight." })
+      advanceHelp(el("p.help", { style: { marginTop: "10px" } }))
     ], { corners: true }));
 
     // Advancement Type, mode toggle lives in the header (XP MODE / MILESTONE)
@@ -2037,7 +2103,7 @@ EN.builder = (function () {
       : milestoneTracker(ch);
     var advPanel = el("div.panel", null, [
       el("div.panel-h.clickable", { onclick: function () { toggleCollapse("advType"); } }, [
-        el("h3", { text: "Advancement Type" }), el("span.collapse-caret", { text: advCollapsed ? "▸" : "▾" }), el("span.attn-spacer"), modeToggle
+        el("h3", { text: "Advancement Type" }), el("span.collapse-caret", { text: advCollapsed ? "▸" : "▾" }), EN.ui.ruleChip("sk-advance/levels-and-xp"), el("span.attn-spacer"), modeToggle
       ]),
       el("div.panel-b", advCollapsed ? { style: { display: "none" } } : null, [advBody])
     ]);
@@ -2050,8 +2116,11 @@ EN.builder = (function () {
 
     // Talents, awarded as Universal Upgrades at levels 2, 4, 6, and 8
     blocks.push(el("div", { style: { height: "14px" } }));
-    blocks.push(EN.ui.sectionTitle("Universal Upgrade"));
-    blocks.push(el("p.help", { html: "At <b>levels 2, 4, 6, and 8</b> you gain a <b>Universal Upgrade</b>. Choose <b>+2 Attributes</b> (one by 2, or two by 1, max 20), <b>Gain Talent</b>, or <b>Gain Evolution</b> (unlock an Additive Feature from your Lineage). At <b>Level 4</b>, the <b>Awakening Milestone</b> grants one Lineage Evolution for free, on top of your Universal Upgrade. At Level 6+ a slot may instead upgrade a Talent you already have. You may retrain one choice whenever you level." }));
+    var uuHead = EN.ui.sectionTitle("Universal Upgrade"), uuChip = EN.ui.ruleChip("sk-advance/progression");
+    if (uuChip) uuHead.insertBefore(uuChip, uuHead.lastChild);
+    blocks.push(uuHead);
+    // the picker's hint; its rule names (Universal Upgrade, Awakening Milestone) link to Advancement
+    blocks.push(EN.ui.ruleText(el("p.help"), "At **levels 2, 4, 6, and 8** you gain a **Universal Upgrade**. Choose **+2 Attributes** (one by 2, or two by 1, max 20), **Gain Talent**, or **Gain Evolution** (unlock an Additive Feature from your Lineage). At **Level 4**, the **Awakening Milestone** grants one Lineage Evolution for free, on top of your Universal Upgrade. At Level 6+ a slot may instead upgrade a Talent you already have. You may retrain one choice whenever you level."));
     var uuLevels = [2, 4, 6, 8];
     var anyUU = false;
     uuLevels.forEach(function (L) {
@@ -2081,7 +2150,7 @@ EN.builder = (function () {
           attention: !awk, dismissKey: "L" + d.level, attentionTitle: "Free Lineage Evolution unclaimed; click to dismiss",
           filled: !!awk, gold: true,
           body: el("div", null, [
-            el("p.help", { style: { margin: "2px 0 8px" }, text: "Total mastery of your nature; gain one Lineage Evolution for free, in addition to your Level 4 Universal Upgrade." }),
+            EN.ui.ruleText(el("p.help", { style: { margin: "2px 0 8px" } }), "Total mastery of your nature; gain one Lineage Evolution for free, in addition to your Level 4 Universal Upgrade."),
             evolutionSelect(ch, awk, function (name) { store.update(function (c) { c.awakeningEvolution = name; }); })
           ])
         }));
@@ -2754,6 +2823,19 @@ EN.builder = (function () {
       el("h4", null, [document.createTextNode(name), src ? el("span.src", { text: src }) : null]),
       renderText(text)
     ]);
+  }
+
+  // a feature card whose heading carries the Codex's "?" for the rule behind it (before
+  // the source tag); with no Codex, or an anchor that does not resolve, it is left as it was
+  function ruleHead(node, anchor) {
+    var chip = EN.ui.ruleChip(anchor), h4 = node.querySelector("h4");
+    if (!chip || !h4 || !h4.firstChild) return node;
+    // the name and its chip travel together, so a heading that spreads name and source apart keeps them side by side
+    var name = el("span", { style: { display: "inline-flex", alignItems: "center", gap: "8px" } });
+    h4.insertBefore(name, h4.firstChild);
+    name.appendChild(name.nextSibling);
+    name.appendChild(chip);
+    return node;
   }
 
   // Class Progression feature block, cyan for base class, purple for subclass

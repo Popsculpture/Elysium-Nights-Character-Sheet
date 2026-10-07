@@ -56,7 +56,12 @@ EN.crafting = {
     materials: "Building from scratch, raw materials and components cost half the item's market price. Salvaging parts from similar broken gear can reduce or eliminate that cost.",
     kits: "A kit's Basic Use is open to anyone. Its Proficient Use needs the matching Tool Proficiency; without it you own the kit but not its edge. Missing suitable kits can raise the Target or add Snag.",
     oneProjectPerMod: "Each modification is its own Project. You cannot batch several upgrades into a single roll.",
-    overEngineering: "Every weapon has a Slot Count and every suit of armor a Mod Slot count, one Part or mod per slot. Pushing an item past its safe capacity instantly elevates the work to a Prototype Project, and the finished item carries a Mandatory Flaw: a permanent quirk, a heavy maintenance burden, or a glaringly obvious visual tell."
+    overEngineering: "Every weapon has a Slot Count and every suit of armor a Mod Slot count, one Part or mod per slot. Pushing an item past its safe capacity instantly elevates the work to a Prototype Project, and the finished item carries a Mandatory Flaw: a permanent quirk, a heavy maintenance burden, or a glaringly obvious visual tell.",
+    /* These two were typed inline on the Fabrication bench (its intro line and its UNTRAINED
+       chip); they live here now so the bench and the Codex read one copy. See the advisory note
+       further down for why the tier's skill expectation is never a hard gate. */
+    workInterval: "Work Intervals roll the Dice Pool Method: Edge Dice from a Skill and its Attribute, its Skill Proficiency Bonus, kits, Focus, and Specialization, against the GM's Snag Dice.",
+    untrained: "A Project tier's expected Skill tier is a guide, not a bar. Untrained, you can still do the work; every Work Interval adds +2 Snag Dice."
   },
 
   /* ---- Dice Pool assembly (Dicey Situations, Dice Pool Method) -------------
@@ -166,6 +171,9 @@ EN.crafting = {
     // different from a Blueprint even when the figure matches.
     rebuildCost: function (it) { return EN.crafting.materialCost(it); },
     rebuildTier: "standard",
+    // the first two were typed inline on the Impact Table's Armor Integrity panel
+    intro: "Damage lowers a suit's DR; repair raises it back toward the printed value and never past it.",
+    leasedText: "A leased suit is priced off what it is worth, its Buyout, not off the deposit.",
     shopText: "Hand it to a shop. One Downtime period and 10 percent of the suit's listed price per point of DR restored. No roll.",
     benchText: "Do it yourself. A Simple Project using Engineering, parts at 5 percent of the listed price per point. A Portable Fabrication Rig prints the plate from stock, so the parts cost nothing.",
     breachedText: "A suit at 0 DR is past repair. Rebuilding it is a Standard Project at full parts cost.",

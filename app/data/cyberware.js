@@ -34,6 +34,11 @@ EN.cyberware = {
     { index: 5, min: 11, max: Infinity, name: "The Ghost Fades",       effects: ["−5 max Resilience Dice", "−5 max FP", "Dead Battery: lose the free Resilience Die at 0 dice on a Short Rest"] }
   ],
 
+  /* Two rules the Chrome tab stated only in its own UI (the gauge's caption and tooltip, and the
+     Tech Bay's platform panel); they live here so the tab and the Codex read one copy. */
+  taxNote: "Every installed piece adds its Static Points (SP) to your Total Static. The Chrome Tax is that one whole-body total, never counted per zone, and the Threshold it reaches sets your penalties.",
+  platformNote: "A platform piece (a Cyberarm or Cyberleg) carries mod slots. A compatible mod seated in a platform adds no SP to Total Static; the platform already paid it. A mod that is not compatible cannot occupy a slot and pays its full SP.",
+
   qualityTiers: {
     Streetware: "Unlicensed clinics, harvested parts, refurbished junk. Cheap, visible welds and scars; no Enhancement Bonus.",
     Brandware:  "Licensed retailers and corp clinics. Reliable, registered, warrantied. Grants the listed Enhancement (+1).",

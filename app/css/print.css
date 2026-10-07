@@ -108,7 +108,7 @@
 
 @media print{
   @page{ size:Letter portrait; margin:0; }
-  #boot,#os,#toast{ display:none !important; }
+  #boot,#os,#toast,#codex-peek{ display:none !important; }   /* the Codex peek drawer is a screen aid, never paper */
   #print-overlay{ position:static; inset:auto; background:#fff; display:block; }
   .print-bar{ display:none; }
   .print-scroll{ display:block; padding:0; gap:0; overflow:visible; }

@@ -154,8 +154,7 @@ EN.gmScenes = (function () {
     anchorDmg: "",
     lrPick: "", lrText: "",
     addHostile: "", addCrew: "",
-    open: Object.create(null),    // which reference folds are open
-    pend: null                    // a handoff waiting on the GM's word over unsaved work
+    pend: null                   // a handoff waiting on the GM's word over unsaved work
   };
   var _mount = null;
   var _keepT = null, _keepKind = null;
@@ -548,15 +547,24 @@ EN.gmScenes = (function () {
     } catch (e) { return null; }
   }
 
-  // a folding reference block; folds stay open across redraws
-  function fold(key, title, kids) {
-    var open = own(_v.open, key) && _v.open[key];
-    return el("div", { dataset: { sc: "fold-" + key }, style: { marginTop: "8px" } }, [
-      el("button.btn.sm.ghost", { onclick: function () { _v.open[key] = !open; EN.app.render(); } },
-        (open ? "▾ " : "▸ ") + title.toUpperCase()),
-      open ? el("div", { style: { margin: "6px 0 0 4px" } }, kids) : null
-    ]);
+  /* The rules a scene runs on are Codex chapters (js/codex_gm_play.js, the
+     gms- panels and the People and Heat ones they cite). These two draw the
+     links; through EN.ui they print plain text when codex.js is missing. */
+  // a help line whose rule names link into the Codex
+  function rhelp(t, style) {
+    return EN.ui.ruleText(el("p.help", { style: Object.assign({ margin: "4px 0 0" }, style || {}) }), t);
   }
+  // a pointer into the Codex: a lead, then one link per [anchor, label]
+  function codexLinks(lead, list) {
+    var p = el("p.help", { dataset: { sc: "codex" }, style: { margin: "6px 0 0" } }, [document.createTextNode(lead + " ")]);
+    list.forEach(function (it, i) {
+      if (i) p.appendChild(document.createTextNode(DOT));
+      p.appendChild(EN.ui.ruleLink(it[0], it[1]));
+    });
+    return p;
+  }
+  // a small "?" beside a working control, for the rule it runs on (null when the rule is not in reach)
+  function ruleChip(anchor, title) { return EN.ui.ruleChip(anchor, title ? { title: title } : null); }
 
   /* ---- the sub-page bar and the open scene's controls ---------------------- */
   function pageBar() {
@@ -837,7 +845,7 @@ EN.gmScenes = (function () {
     var B = SD(), C = B.checklist, kids = [help(B.intro, { margin: "0 0 4px" })];
     function step(n) { return C.filter(function (s) { return s.n === n; })[0]; }
     function stepBlock(s, body) {
-      return el("div", { dataset: { sc: "step-" + s.key } }, [stepHead(s.n, s.name), help(s.text, { margin: "0 0 2px" })].concat(body));
+      return el("div", { dataset: { sc: "step-" + s.key } }, [stepHead(s.n, s.name), rhelp(s.text, { margin: "0 0 2px" })].concat(body));
     }
     function lab(s, k) { var f = (s.fields || []).filter(function (x) { return x.key === k; })[0]; return f ? upperFirst(f.label) : k; }
 
@@ -894,8 +902,8 @@ EN.gmScenes = (function () {
     ]), row([
       field("Second Posture", textIn("sd.posture2", d.postures.second, "Compose", function (v) { d.postures.second = v; }, { list: "sc-postures" }), "0 1 170px"),
       field("How they do it", textIn("sd.posture2note", d.postures.secondNote, "", function (v) { d.postures.secondNote = v; }))
-    ]), help("The book names " + Po.named.map(function (p) { return p.name; }).join(", ") +
-      "; the PHB's full list of Postures is not in the app, so type any other.", { color: "var(--text3)" })]));
+    ]), help("The book names " + Po.named.map(function (p) { return p.name; }).join(", ") + ". " +
+      (Po.notCarried ? Po.notCarried.replace(/\.$/, ", so type any other.") : "Type any other."), { color: "var(--text3)" })]));
 
     // 5. the Floor
     var s5 = step(5), F = B.floor;
@@ -935,7 +943,8 @@ EN.gmScenes = (function () {
     ]), row([
       field("On a Mixed Result", textIn("sd.mixed", d.fallout.mixed, "", function (v) { d.fallout.mixed = v; }, { area: true })),
       field("On a Critical Failure", textIn("sd.critical", d.fallout.critical, "", function (v) { d.fallout.critical = v; }, { area: true }))
-    ]), help(CF.domain + ": " + CF.text, { color: "var(--text3)" })]));
+    ]), help(CF.domain + ": " + CF.text, { color: "var(--text3)" }),
+      codexLinks("Social Fallout, as near as the app carries it:", [["rz-social", "Social Consequences & Cost Tracks"]])]));
 
     kids.push(row([field("Notes", textIn("sd.notes", d.notes, "", function (v) { d.notes = v; }, { area: true }))], { marginTop: "14px" }));
 
@@ -1029,7 +1038,11 @@ EN.gmScenes = (function () {
     if (m.why) kids.push(help(upperFirst(m.why) + ".", { color: m.mult > 1 ? "var(--success)" : "var(--warn)" }));
 
     /* The card's RESULT, PRESSURE and ALSO columns, one row per result, set as
-       wrapping rows rather than a table so a phone never scrolls sideways. */
+       wrapping rows rather than a table so a phone never scrolls sideways. Each
+       result is a Dice Pool margin (`margin`), whose rule the "?" opens. */
+    var mchip = ruleChip("rz-margin", "Dice Pool Success Margin");
+    if (mchip) kids.push(el("div.row.wrap", { dataset: { sc: "results-head" }, style: { gap: "6px", alignItems: "center", marginTop: "10px" } },
+      [label("RESULT, AS ITS DICE POOL MARGIN"), mchip]));
     kids.push(el("div", { dataset: { sc: "results" }, style: { marginTop: "8px" } }, B.results.map(function (r) {
       var p = r.pressure * m.mult;
       return el("div.row.between.wrap", { dataset: { sc: "res-row-" + r.key },
@@ -1112,24 +1125,18 @@ EN.gmScenes = (function () {
     return EN.ui.panel("Across the Table", broke ? "BROKEN" : "ROUND " + d.track.round, kids, { glow: !broke && d.track.log.length > 0 });
   }
 
+  /* The reference the Sit-Down runs on is the Codex's Sit-Down Rules, with
+     Resolve by Role and Their Profile of You (one copy, which People links to
+     as well) and Cooling Off's legal scrub. The home line stays: it says the
+     PHB's own rules are not in the app. */
   function sitdownRef(d) {
     var B = SD(), kids = [];
     kids.push(help(B.home, { margin: 0 }));
-    kids.push(help(B.bestiaryResolve));
-    var R = ref(B.refs.resolveByRole);
-    if (R && R.tiers) {
-      kids.push(fold("roles", "Resolve by Role", [help(R.intro, { margin: 0 })].concat(R.tiers.map(function (t) {
-        return help(t.tier + " (" + t.resolve + "): " + t.who, { margin: "4px 0 0" });
-      })).concat(R.moving ? [help(R.moving)] : [])));
-    }
-    var P = ref(B.refs.theirProfile);
-    if (P && P.rows) {
-      kids.push(fold("profiles", P.title || "Their Profile of You", [help(P.intro, { margin: 0 })].concat(P.rows.map(function (r) {
-        return help(r.n + ". " + r.name + ": " + r.heard, { margin: "3px 0 0" });
-      })).concat(P.earned ? [help(P.earned.text)] : [])));
-    }
-    var scrub = rowAt(B.legalScrub);
-    if (scrub) kids.push(fold("scrub", "A Sit-Down that clears Heat", [help(scrub.name + ". " + scrub.costs + ". " + scrub.does + ".", { margin: 0 })]));
+    var R = ref(B.refs.resolveByRole), P = ref(B.refs.theirProfile), scrub = rowAt(B.legalScrub);
+    kids.push(codexLinks("In the Codex:", [["gms-sitdown", "Sit-Down Rules"]]
+      .concat(R ? [["gmp-resolve", R.title || "Resolve by Role"]] : [])
+      .concat(P ? [["gmp-profiles", P.title || "Their Profile of You"]] : [])
+      .concat(scrub ? [["gmx-cooling/legal-scrub", "A Sit-Down that clears Heat"]] : [])));
     return EN.ui.panel("Reference", "SIT-DOWN RULES", kids);
   }
 
@@ -1279,7 +1286,7 @@ EN.gmScenes = (function () {
     if (srow) esc.push(el("p.help", { dataset: { sc: "heat-sends", source: srow.key }, style: { margin: "4px 0 0", color: "var(--text2)" },
       text: "Who " + srow.name + " sends: " + said(srow.sends) }));
     esc.push(row([field("Which row of Pursuit Escalation shows up", textIn("ch.row", d.esc.row, "a Homeward Patrol Drone joins as a new pursuer", function (v) { d.esc.row = v; }))]));
-    esc.push(help("The PHB's Pursuit Escalation table is not in the app.", { color: "var(--text3)" }));
+    if (B.notCarried && B.notCarried.escalation) esc.push(help(B.notCarried.escalation, { color: "var(--text3)" }));
     kids.push(stepBlock(s5, esc));
 
     // 6. the two endings
@@ -1291,9 +1298,9 @@ EN.gmScenes = (function () {
 
     // 7. the method
     var s7 = step(7);
-    kids.push(stepBlock(s7, [el("div.row.wrap", { style: { gap: "6px", marginTop: "6px" } }, (s7.options || []).map(function (o) {
+    kids.push(stepBlock(s7, [el("div.row.wrap", { style: { gap: "6px", marginTop: "6px", alignItems: "center" } }, (s7.options || []).map(function (o) {
       return toggle(o.name + ", " + o.when, d.method === o.key, "method-" + o.key, function () { d.method = o.key; });
-    }))]));
+    }).concat([ruleChip("rz-collab/method-choice", "Method Choice")]))]));
 
     // 8. stalemates
     kids.push(stepBlock(step(8), []));
@@ -1554,7 +1561,7 @@ EN.gmScenes = (function () {
       out.push(el("div.feature", { dataset: { sc: "chk-out", result: last.tie ? "stalemate" : last.dominant ? "dominant" : "win", margin: last.tie ? "0" : String(last.margin) },
         style: { marginTop: "8px", borderLeftColor: last.tie ? "var(--warn)" : last.dominant ? "var(--gold)" : "var(--accent)" } }, [
         el("span", { style: { fontWeight: 600 }, text: last.text }),
-        last.tie ? null : help("Move Lead below as the PHB's Vehicles and Chases has it; the app does not carry what each margin does to Lead.", { color: "var(--text3)" })
+        last.tie || !(CH().notCarried && CH().notCarried.leadMargins) ? null : help(CH().notCarried.leadMargins, { color: "var(--text3)" })
       ]));
     }
     return el("div", null, out);
@@ -1617,17 +1624,12 @@ EN.gmScenes = (function () {
     return el("div", null, out);
   }
 
+  // the chase's reference is the Codex's Chase Rules; the home line says Lead itself is the PHB's
   function chaseRef(d) {
     var B = CH(), kids = [help(B.home, { margin: 0 })];
-    kids.push(help(B.firstResponse.checklistText));
-    kids.push(fold("lead", "Lead and its bands", (B.lead.bands || []).map(function (b) {
-      return help(b.name + ": Lead " + b.text + (b.gapText ? ", " + b.gapText : "") + ".", { margin: "3px 0 0" });
-    }).concat([help(B.lead.startText)])));
-    var sp = speeds();
-    if (sp.length) kids.push(fold("impact", "Impact DC by speed", [help(sp.map(function (x) { return x.speed + " " + x.dc; }).join(", ") + ".", { margin: 0 })]));
-    kids.push(fold("pilots", "Threat pilots", [help(B.threatPilot.piloting, { margin: 0 })].concat(B.threatPilot.movingDefense.map(function (r) {
-      return help("Grade " + r.gradeLow + (r.gradeHigh !== r.gradeLow ? " to " + r.gradeHigh : "") + ": moving Defense " + r.text + ".", { margin: "3px 0 0" });
-    }))));
+    kids.push(codexLinks("In the Codex:", [
+      ["gms-chase", "Chase Rules"], ["gms-chase/lead-and-its-bands", "Lead and its bands"], ["gms-chase/the-chase-check", "The Chase Check"],
+      ["gms-chase/impact-dc-by-speed", "Impact DC by speed"], ["gms-chase/threat-pilots", "Threat pilots"]]));
     return EN.ui.panel("Reference", "CHASE RULES", kids);
   }
 
@@ -2051,31 +2053,14 @@ EN.gmScenes = (function () {
     EN.gmView.handoff("payroll", payload);
   }
 
+  // the Incursion's reference is the Codex's Incursion Rules, Claims and Salvage among them
   function incRef(d) {
-    var I = IN(), kids = [help(I.intro, { margin: 0 })];
-    kids.push(fold("calibers", "Threat Calibers", [help(I.calibers.intro, { margin: 0 })].concat(I.calibers.rows.map(function (r) {
-      return help(r.shorthand + ". " + r.expect, { margin: "3px 0 0" });
-    })).concat([help(I.calibers.note)])));
-    kids.push(fold("classes", "Classification", I.classification.rows.map(function (r) {
-      return help(r.name + ". " + r.text, { margin: "3px 0 0" });
-    }).concat([help(I.classification.ratingStays), help(I.classification.disclosure)])));
-    kids.push(fold("anchor", "The anchor", [help(I.anchor.text, { margin: 0 })]));
-    kids.push(fold("dives", "Dive profiles", [help(I.profiles.intro, { margin: 0 })].concat(I.profiles.rows.map(function (r) {
-      return help(r.name + ". " + r.text, { margin: "3px 0 0" });
-    }))));
-    var C = ref(I.claims.ref);
-    if (C) {
-      var ck = [help(C.intro, { margin: 0 })];
-      (I.claims.parts || []).forEach(function (p) {
-        var t = ref(p.ref);
-        if (!t) return;
-        var body = typeof t === "string" ? t : t.paragraphs ? t.paragraphs.join(" ") : (t.text || "");
-        ck.push(help(p.name + ". " + body, { margin: "5px 0 0" }));
-        (t.jobs || []).forEach(function (j) { ck.push(help(j.name + ". " + j.text, { margin: "2px 0 0 10px" })); });
-      });
-      kids.push(fold("claims", C.name || "Claims and Salvage", ck));
-    }
-    return EN.ui.panel("Reference", "INCURSION RULES", kids);
+    var I = IN(), C = ref(I.claims && I.claims.ref);
+    return EN.ui.panel("Reference", "INCURSION RULES", [codexLinks("In the Codex:", [
+      ["gms-incursion", "Incursion Rules"], ["gms-incursion/threat-calibers", "Threat Calibers"],
+      ["gms-incursion/classification", "Classification"], ["gms-incursion/the-anchor", "The anchor"],
+      ["gms-incursion/dive-profiles", "Dive profiles"]]
+      .concat(C ? [["gms-incursion/claims-and-salvage", C.name || "Claims and Salvage"]] : []))]);
   }
 
   /* ---- the book's worked examples, as scenes ------------------------------ */

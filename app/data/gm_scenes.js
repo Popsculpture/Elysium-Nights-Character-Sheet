@@ -193,7 +193,9 @@ EN.gmBook.scenes = {
         { key: "stonewall", name: "Stonewall" },
         { key: "compose", name: "Compose" },
         { key: "veil", name: "Veil", text: "Veil is for Mystique-aligned targets only." }
-      ]
+      ],
+      // APP TEXT, not book text: the honest line the tab and the Codex print
+      notCarried: "The PHB's full list of Postures is not in the app."
     },
 
     /* THE FLOOR. The six Environmental Pressures in the page's order. What
@@ -456,6 +458,14 @@ EN.gmBook.scenes = {
     // GMH p130
     stalemate: {
       text: "Stalemate: each pilot makes a Control Check against the Impact DC for their speed; a failure is Snag on the next Chase Check."
+    },
+
+    /* APP TEXT, not book text: the honest lines the Scenes tab and the Codex
+       print where a chase rule is the PHB's Vehicles and Chases, which the
+       app does not carry (see the header). */
+    notCarried: {
+      escalation: "The PHB's Pursuit Escalation table is not in the app.",
+      leadMargins: "Move Lead as the PHB's Vehicles and Chases has it; the app does not carry what each margin does to Lead."
     },
 
     /* FIRST RESPONSE. 5 minus half the crew's Heat with the source, half

@@ -85,8 +85,12 @@ EN.ui = (function () {
        keeps them in the header. This is why the skin picker now re-renders. */
     var is98 = false;
     try { is98 = EN.theme && EN.theme.getSkin && EN.theme.getSkin() === "98"; } catch (e) {}
+    /* chip-only: the right block is one Codex "?" chip and nothing else, which #GRIDroid keeps on
+       the title row rather than giving it a row of its own as it does real controls */
+    var hrKids = [].concat(opts.headerRight || []).filter(Boolean);
+    var chipOnly = hrKids.length === 1 && !!(hrKids[0].classList && hrKids[0].classList.contains("codex-chip"));
     var hr = opts.headerRight
-      ? el("div.panel-hr", { style: { marginLeft: "auto", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" } }, [].concat(opts.headerRight))
+      ? el("div.panel-hr" + (chipOnly ? ".chip-only" : ""), { style: { marginLeft: "auto", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" } }, [].concat(opts.headerRight))
       : null;
     if (title) children.push(el("div.panel-h", null, [
       el("h3", { text: title }),
@@ -143,6 +147,48 @@ EN.ui = (function () {
     if (lead) { p.appendChild(el("b", { text: lead })); p.appendChild(document.createTextNode(" · ")); }
     applyInline(p, String(text == null ? "" : text));
     return p;
+  }
+
+  /* ---- links into the Codex, for every tab that is not the Codex ----------
+     The Codex (js/codex.js) owns the anchors, the peek drawer and the term index. Every
+     link site OUTSIDE the codex files goes through these three, so a missing or broken
+     codex.js costs the links and nothing else: the label still prints as plain text.
+       ruleLink(anchor, label, opts)  an inline link that peeks the rule, or a text node
+       ruleChip(anchor, opts)         a small "?" rule button, or null (append() skips null)
+       ruleText(parent, text, opts)   applyInline with the Codex's pointer terms linked;
+                                      opts.conditions links condition names too; a null
+                                      parent gets a new span, as codexView.linkify does
+     An anchor that does not resolve on the current desktop gives the same fallback, so a
+     link is never dead.
+     With no label and no Codex, the rule's name still has to stay in the sentence: the entry
+     slug as words ("ref-conds/prone" reads "Prone"), or the panel id after its prefix
+     ("rz-edge" reads "Edge"). codex.js prints the same stand-in for an anchor that does not
+     resolve. Pass a label wherever you can; this is the floor, not the wording. */
+  function ruleStandIn(anchor) {
+    var a = String(anchor == null ? "" : anchor), i = a.indexOf("/"), s;
+    if (i >= 0) s = a.slice(i + 1);
+    else { var bits = a.split("-"); s = bits.length > 1 ? bits.slice(1).join("-") : a; }
+    return s.split("-").filter(Boolean).map(function (w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join(" ");
+  }
+  function ruleLink(anchor, label, opts) {
+    try { if (window.EN && EN.codexView && EN.codexView.link) return EN.codexView.link(anchor, label, opts); } catch (e) {}
+    return document.createTextNode(label == null ? ruleStandIn(anchor) : String(label));
+  }
+  function ruleChip(anchor, opts) {
+    try { if (window.EN && EN.codexView && EN.codexView.chip) return EN.codexView.chip(anchor, opts); } catch (e) {}
+    return null;
+  }
+  function ruleText(parent, text, opts) {
+    if (!parent) parent = el("span");
+    var n = parent.childNodes.length;
+    try {
+      if (window.EN && EN.codexView && EN.codexView.linkify) { EN.codexView.linkify(parent, text, opts); return parent; }
+    } catch (e) {
+      // drop whatever a failed pass left behind, then print it plain
+      while (parent.childNodes.length > n) parent.removeChild(parent.lastChild);
+    }
+    applyInline(parent, String(text == null ? "" : text));
+    return parent;
   }
 
   /* A name followed by its collapse caret, with the caret tied to the last word.
@@ -589,6 +635,7 @@ EN.ui = (function () {
   }
 
   return { el: el, append: append, clear: clear, panel: panel, sectionTitle: sectionTitle, stat: stat, toast: toast, renderText: renderText, applyInline: applyInline, proseP: proseP, nameCaret: nameCaret,
+           ruleLink: ruleLink, ruleChip: ruleChip, ruleText: ruleText,
            currencyGlyphsOk: currencyGlyphsOk, substituteCurrencyGlyphs: substituteCurrencyGlyphs,
            dieFace: dieFace, dieFaceSvg: dieFaceSvg, d20Face: d20Face, animatePoolRoll: animatePoolRoll, playFiled: playFiled,
            armButton: armButton, disarm: disarm, isArmed: isArmed };

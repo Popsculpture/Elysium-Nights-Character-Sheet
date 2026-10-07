@@ -270,20 +270,35 @@ EN.inventoryView = (function () {
     );
   }
   function findItem(name) { return catalog().find(function (i) { return i.name === name; }); }
-  // one canonical weapon glossary (app/data/gear_traits.js); armor keeps its own,
-  // because Heavy, Light, Loud and Concealable mean different things on armor
-  function traitDefs() { return (EN.gearCatalog && EN.gearCatalog.weaponTraits) || {}; }
-  // Armor/defensive traits live in their own table; several keys (Heavy, Light,
-  // Loud, Concealable) mean different things on armor than on weapons, so a
-  // defensive item resolves its chips against this set first.
-  function armorTraitDefs() { return (EN.gearCatalog && EN.gearCatalog.armor && EN.gearCatalog.armor.traits) || {}; }
+  // One canonical weapon glossary (app/data/gear_traits.js); armor keeps its own, because
+  // Heavy, Light, Concealable, Wear X and Worn mean different things on armor, so a defensive
+  // item resolves its chips against that set first. Both are read through
+  // EN.gearCatalog.traitLookup, the one printed-trait matcher (see traitChip).
   function isDefensive(it) { return !!(it && (it.kind === "armor" || it.kind === "shield" || it.kind === "focus")); }
 
-  function traitChip(t, defsOverride) {
-    var defs = defsOverride || traitDefs();
-    var base = t.replace(/\s*\(.*\)$/, "").trim();
-    var def = defs[base] || defs[base.replace(/\s+\d+$/, " X")] || (/^Area /.test(base) ? defs["Area X"] : "") || (defsOverride ? traitDefs()[base] : "") || "";
-    return el("span.chip", { title: def, style: { fontSize: "9.5px", color: "var(--text2)", borderColor: "var(--border2)" } }, t);
+  /* A trait chip keeps its definition as a hover title, and its name is a Codex link as well,
+     because a title never shows on touch: tapping the name peeks the trait's glossary entry.
+     The printed trait ("Armor Piercing 2", "Thrown (4/12)") is matched to its glossary key by
+     the one matcher in data/gear_traits.js, and armor answers first on a defensive item. With
+     no Codex, or no entry for it, the name prints as plain text, exactly as it did. */
+  function traitChip(t, armorFirst) {
+    var look = (EN.gearCatalog && EN.gearCatalog.traitLookup) ? EN.gearCatalog.traitLookup(t, armorFirst) : null;
+    var anchor = (look && EN.gearCodex && EN.gearCodex.traitAnchor) ? EN.gearCodex.traitAnchor(t, armorFirst) : null;
+    return el("span.chip", { title: look ? look.def : "", style: { fontSize: "9.5px", color: "var(--text2)", borderColor: "var(--border2)" } },
+      [anchor ? tipLink(anchor, t, look.def) : document.createTextNode(t)]);
+  }
+  /* A Codex link inside a chip whose definition is its hover title. The link's own title
+     ("Rules: ...") would cover the chip's, so the link carries the definition instead: hover
+     still reads the rule, and a tap peeks it. Plain text when the anchor does not resolve. */
+  function tipLink(anchor, label, tip) {
+    var a = EN.ui.ruleLink(anchor, label);
+    if (a && a.nodeType === 1 && tip) a.setAttribute("title", tip);
+    return a;
+  }
+  // a Codex entry slug (the Codex's own rule, or the same rule written out when it is missing)
+  function slugOf(s) {
+    if (EN.codexView && EN.codexView.slug) return EN.codexView.slug(s);
+    return String(s).toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
   }
   function tagChip(text, color, title) {
     return el("span.chip", { title: title || "", style: { fontSize: "9px", color: color, borderColor: color, marginLeft: "8px" } }, text.toUpperCase());
@@ -705,7 +720,10 @@ EN.inventoryView = (function () {
     ]);
     var statChips = [];
     if (it.damage && it.damage !== "0") statChips.push(el("span.mono", { style: { fontSize: "11.5px", color: "var(--accent)", marginRight: "4px" }, text: it.damage }));
-    if (it.range && !/^Melee/.test(it.range)) statChips.push(el("span.chip", { title: "Range (normal / long, long range rolls with Snag)", style: { fontSize: "9.5px", color: "var(--gold)", borderColor: "var(--gold)" } }, "RNG " + it.range.replace(/\s/g, "")));
+    // the range bands are a rule (data/gear_ranged.js rangeNote), so the chip peeks it on a tap as well as on hover
+    var rangeTip = (EN.gearCatalog.ranged && EN.gearCatalog.ranged.rangeNote) || "Range: normal / long";
+    if (it.range && !/^Melee/.test(it.range)) statChips.push(el("span.chip", { title: rangeTip, style: { fontSize: "9.5px", color: "var(--gold)", borderColor: "var(--gold)" } },
+      [tipLink("gr-weapons/range", "RNG " + it.range.replace(/\s/g, ""), rangeTip)]));
     if (typeof it.ammo === "number" && it.ammo > 1) statChips.push(el("span.chip", { title: "Magazine / capacity", style: { fontSize: "9.5px", color: "var(--gold)", borderColor: "var(--gold)" } }, "MAG " + it.ammo));
     /* defensive-gear stat chips: DR / Block / Defense / Ward (mod slots moved into the caption line) */
     function statChip(text, color, title) { return el("span.chip", { title: title || "", style: { fontSize: "9.5px", color: color, borderColor: color, fontWeight: 600 } }, text); }
@@ -749,7 +767,7 @@ EN.inventoryView = (function () {
       style: { fontSize: "9.5px", cursor: "pointer", color: traitsOpen ? "var(--accent)" : "var(--text2)", borderColor: traitsOpen ? "var(--accent)" : "var(--border2)" },
       onclick: function () { _open[traitsId] = !traitsOpen; EN.app.render(); }
     }, traits.length + (traits.length === 1 ? " trait " : " traits ") + (traitsOpen ? "▾" : "▸")));
-    var defDefs = isDefensive(it) ? armorTraitDefs() : null;
+    var armorFirst = isDefensive(it);
     var mktBtn;
     if (_mode === "fivefinger") {
       // Five-Finger is the looted / recovered / pulled-from-a-body channel, the
@@ -822,7 +840,7 @@ EN.inventoryView = (function () {
     // the traits chip above only shows a count; tapping it opens this row with the real trait chips
     var traitsExpandRow = (traits.length && traitsOpen)
       ? el("div.row.wrap", { style: { gap: "6px", marginTop: "6px", paddingTop: "6px", borderTop: "1px dashed var(--border)" } },
-          traits.map(function (t) { return traitChip(t, defDefs); }))
+          traits.map(function (t) { return traitChip(t, armorFirst); }))
       : null;
     return el("div.feature" + (mode === "mkt" ? ".mkt-card" : ""), { style: { borderLeftColor: LEGAL_COLOR[it.legality] || "var(--border2)" } }, [
       head, info, traitsExpandRow,
@@ -904,7 +922,9 @@ EN.inventoryView = (function () {
         String(enc.tier || "").toUpperCase() + " LOADOUT"),
       el("span.chip", { title: (encStates[enc.state] || {}).effect || "", style: { fontSize: "9px", color: stateColor, borderColor: stateColor } },
         String((encStates[enc.state] || {}).name || enc.state || "").toUpperCase()),
-      el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "Calculated from on-person gear; hauls live on the Freelancer tab's Loadout sub-tab." })
+      el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "Calculated from on-person gear; hauls live on the Freelancer tab's Loadout sub-tab." }),
+      // the Encumbrance rules sit only in this bar's hover titles, so a "?" peeks them on touch
+      EN.ui.ruleChip("sk-load", { title: "Encumbrance & Load" })
     ]);
     if (!entries.length) {
       return [EN.ui.panel("Stash", "0 ENTRIES", [el("p.help", { style: { margin: 0 }, text: "Empty. The Undercut is open; it's always open." })], { corners: true })];
@@ -1107,7 +1127,11 @@ EN.inventoryView = (function () {
     var framePanel = EN.ui.panel("Cybernetic Frame", "BIOMETRIC OVERLAY · CHROME TAX", [
       frameGrid,
       statsRow,
-      el("p.help", { style: { margin: "10px 0 0", color: "var(--text4)" }, text: "The gauge is your whole-body Chrome Tax (Total Static → Threshold). Silhouette dots mark where each implant sits; species / gender / lineage variants come later." })
+      el("p.help", { style: { margin: "10px 0 0", color: "var(--text4)" } }, [
+        document.createTextNode("The gauge is your whole-body "),
+        EN.ui.ruleLink("gr-chrome/the-chrome-tax", "Chrome Tax"),
+        document.createTextNode(" (Total Static → Threshold). Silhouette dots mark where each implant sits; species / gender / lineage variants come later.")
+      ])
     ], { corners: true });
 
     /* --- Chrome panel: Chrome Stash (owned, uninstalled) | Installed Chrome --- */
@@ -1116,7 +1140,12 @@ EN.inventoryView = (function () {
       var sided = !!cw.sided, oid = where + "-cw-" + idx, open = !!_open[oid];
       var chips = [
         where === "installed" ? tagChip("● INSTALLED", "var(--success)", "Installed, counts toward your Static") : tagChip("STASHED", "var(--text3)", "In your stash, not yet installed"),
-        cw.tier ? tagChip(cw.tier, tierChipColor(cw.tier), ((EN.cyberware || {}).qualityTiers || {})[cw.tier] || "") : null,
+        // the quality tier is a rule, so its chip peeks the Codex entry on a tap (the title stays for hover)
+        cw.tier ? (function () {
+          var tip = ((EN.cyberware || {}).qualityTiers || {})[cw.tier] || "", col = tierChipColor(cw.tier);
+          return el("span.chip", { title: tip, style: { fontSize: "9px", color: col, borderColor: col, marginLeft: "8px" } },
+            [tipLink("gr-chrome/" + slugOf(cw.tier), String(cw.tier).toUpperCase(), tip)]);
+        })() : null,
         tagChip((cw.sp || 0) + " SP", heatColor(cw.sp || 0)),
         tagChip("◆ " + cw.zone, "var(--accent)", "Interface Zone"),
         (function () { var e = enhScaled(cw); return e ? tagChip("✦ " + e, "var(--gold)", where === "installed" ? "Enhancement Bonus, applied to your attributes" : "Enhancement Bonus, applies once installed") : null; })()
@@ -1260,12 +1289,15 @@ EN.inventoryView = (function () {
     var si = (g.signature && g.signature.groupIntros) || {};
     var byGroup = function (list, grp) { return list.filter(function (i) { return i.group === grp; }); };
     var byKind = function (list, k) { return list.filter(function (i) { return i.kind === k; }); };
+    var ai0 = (g.ammo && g.ammo.groupIntros) || {};
+    /* `codex` is the rules entry each category is played by: its header carries a "?" chip that
+       peeks it (nothing when the Codex is missing). */
     var cats = [
-      { key: "melee", title: "Melee Weapons", short: "MELEE", intro: g.melee && g.melee.saveDcNote, subs: [
+      { key: "melee", title: "Melee Weapons", short: "MELEE", codex: "gr-weapons/weapon-save-dc-melee", intro: g.melee && g.melee.saveDcNote, subs: [
         { label: "Simple", intro: g.melee && g.melee.simpleIntro, items: byGroup(melee, "Simple") },
         { label: "Martial", intro: g.melee && g.melee.martialIntro, items: byGroup(melee, "Martial") }
       ] },
-      { key: "ranged", title: "Ranged Weapons", short: "RANGED", subs: [
+      { key: "ranged", title: "Ranged Weapons", short: "RANGED", codex: "gr-weapons", subs: [
         { label: "Sidearms", intro: ri["Sidearm"], items: byGroup(ranged, "Sidearm") },
         { label: "Longarms", intro: ri["Longarm"], items: byGroup(ranged, "Longarm") },
         { label: "Heavy Weapons", intro: ri["Heavy"], items: byGroup(ranged, "Heavy") },
@@ -1273,22 +1305,23 @@ EN.inventoryView = (function () {
         { label: "Thrown Weapons", intro: ri["Thrown"], items: byGroup(ranged, "Thrown") },
         { label: "Bowfire", intro: ri["Bowfire"], items: byGroup(ranged, "Bowfire") }
       ] },
-      { key: "signature", title: "Signature Weapons", short: "SIGNATURE", intro: g.signature && g.signature.intro, subs: [
+      { key: "signature", title: "Signature Weapons", short: "SIGNATURE", codex: "gr-weapons/using-a-signature-weapon", intro: g.signature && g.signature.intro, subs: [
         { label: "Signature · Melee", intro: si.melee, items: byKind(sig, "melee") },
         { label: "Signature · Ranged", intro: si.ranged, items: byKind(sig, "ranged") },
         { label: "Signature Munitions", intro: g.signature && g.signature.munitionsIntro, items: sigMun }
       ] },
-      { key: "ammo", title: "Ammunition", short: "AMMO", intro: g.ranged && g.ranged.saveDcNote, subs: [
-        { label: "Standard · Plentiful", intro: "Track only the loaded magazine; restock to full between contracts. Prices are for the listed quantities.", items: byGroup(ammo, "Plentiful") },
-        { label: "Standard · Counted", intro: "Heavy, expensive, watched, and scarce. Track each unit from purchase to spend.", items: byGroup(ammo, "Counted") },
-        { label: "Specialty", intro: "All Counted: Load it, Declare it before the attack, Apply it on resolution.", items: byGroup(ammo, "Specialty") },
-        { label: "Launcher Shells", intro: "Fired from a Grenade Launcher. Targets save Agility vs your Weapon Save DC.", items: byGroup(ammo, "Launcher Shell") },
+      { key: "ammo", title: "Ammunition", short: "AMMO", codex: "gr-weapons/tracking-ammunition", intro: g.ranged && g.ranged.saveDcNote, subs: [
+        // the group lines live in data/gear_ranged.js (ammo.groupIntros), where the Codex reads them too
+        { label: "Standard · Plentiful", intro: ai0["Plentiful"], items: byGroup(ammo, "Plentiful") },
+        { label: "Standard · Counted", intro: ai0["Counted"], items: byGroup(ammo, "Counted") },
+        { label: "Specialty", intro: ai0["Specialty"], items: byGroup(ammo, "Specialty") },
+        { label: "Launcher Shells", intro: ai0["Launcher Shell"], items: byGroup(ammo, "Launcher Shell") },
         { label: "Mystech", intro: (EN.gearCatalog.ammo && EN.gearCatalog.ammo.mystechNote) || "", items: byGroup(ammo, "Mystech") }
       ] }
     ];
     if (VEH().length) {
       var V = EN.vehicles;
-      cats.push({ key: "vehicles", title: "Vehicles", short: "VEHICLES", intro: V.intro, subs: [
+      cats.push({ key: "vehicles", title: "Vehicles", short: "VEHICLES", codex: "ref-vehicles", intro: V.intro, subs: [
         { label: "Buy Outright", intro: "List price is twenty weeks of upkeep. " + (V.unlisted || ""),
           items: VEH().map(vehicleAsItem) },
         { label: "Corporate Lease", intro: (V.acquisition || []).filter(function (a) { return a.mode === "Leased"; })
@@ -1299,7 +1332,7 @@ EN.inventoryView = (function () {
     }
     if (g.armor && armorItems.length) {
       var ai = g.armor.groupIntros || {};
-      cats.push({ key: "armor", title: "Armor & Defensive Gear", short: "ARMOR", intro: g.armor.intro, subs: [
+      cats.push({ key: "armor", title: "Armor & Defensive Gear", short: "ARMOR", codex: "gr-armor", intro: g.armor.intro, subs: [
         { label: "Light Armor", intro: ai["Light Armor"], items: byGroup(armorItems, "Light Armor") },
         { label: "Medium Armor", intro: ai["Medium Armor"], items: byGroup(armorItems, "Medium Armor") },
         { label: "Heavy Armor", intro: ai["Heavy Armor"], items: byGroup(armorItems, "Heavy Armor") },
@@ -1317,7 +1350,7 @@ EN.inventoryView = (function () {
         return allParts.filter(function (p) { return p.partCategory === catKey; })
           .sort(function (a, b) { return (slotOrder.indexOf(a.partSlot) - slotOrder.indexOf(b.partSlot)) || a.name.localeCompare(b.name); });
       };
-      cats.push({ key: "parts", title: "Mods & Accessories", short: "PARTS",
+      cats.push({ key: "parts", title: "Mods & Accessories", short: "PARTS", codex: "gr-custom",
         intro: (WP().rules ? WP().rules.install + " " + WP().rules.legality : "") + " Buy a Part here, then install it from the Workbench (Arms Table).",
         subs: [
           { label: "Melee Parts", intro: "Edges, heads, cores, hilts, and locks worked into a melee weapon.", items: partsByCat("melee") },
@@ -1329,7 +1362,7 @@ EN.inventoryView = (function () {
     if (AM().mods && AM().mods.length) {
       var allMods = armorModItems();
       var modsByCat = function (catKey) { return allMods.filter(function (m) { return m.modCategory === catKey; }); };
-      cats.push({ key: "armormods", title: "Armor Mods", short: "ARMOR MODS",
+      cats.push({ key: "armormods", title: "Armor Mods", short: "ARMOR MODS", codex: "gr-custom/hosting-armor-mods",
         intro: (AM().intro ? AM().intro + " " : "") + (AM().rules ? AM().rules.host + " " + AM().rules.legality : "") + " Buy a mod here, then fit it from the Workbench (Impact Table).",
         subs: (AM().categories || []).map(function (cg) { return { label: cg.name, intro: cg.blurb, items: modsByCat(cg.key) }; })
       });
@@ -1367,7 +1400,7 @@ EN.inventoryView = (function () {
         });
         return { label: z.label, intro: z.blurb, items: listings, byTier: true };
       });
-      cats.push({ key: "cybernetics", title: "Cybernetics", short: "CHROME", intro: CW.intro, subs: cyberSubs });
+      cats.push({ key: "cybernetics", title: "Cybernetics", short: "CHROME", codex: "gr-chrome", intro: CW.intro, subs: cyberSubs });
     }
 
     /* ---- filter predicate ---- */
@@ -1441,7 +1474,8 @@ EN.inventoryView = (function () {
     // the quality tier decides price, SP and whether you get an Enhancement at all,
     // so hang the book's own description of each one off its market header
     var tierBlurb = function (t) { return ((EN.cyberware || {}).qualityTiers || {})[t] || ""; };
-    var tierLabel = function (t) { var col = { Streetware: "var(--text3)", Brandware: "var(--accent)", Blackware: "var(--danger)", Prototype: "var(--flow)" }[t] || "var(--text3)"; return el("div", { title: tierBlurb(t), style: { margin: "6px 0 3px 12px", fontFamily: "var(--mono)", fontSize: "10px", letterSpacing: ".14em", textTransform: "uppercase", color: col } }, "› " + t); };
+    // the tier's name peeks its Codex entry on a tap; the hover title stays
+    var tierLabel = function (t) { var col = { Streetware: "var(--text3)", Brandware: "var(--accent)", Blackware: "var(--danger)", Prototype: "var(--flow)" }[t] || "var(--text3)"; return el("div", { title: tierBlurb(t), style: { margin: "6px 0 3px 12px", fontFamily: "var(--mono)", fontSize: "10px", letterSpacing: ".14em", textTransform: "uppercase", color: col } }, ["› ", tipLink("gr-chrome/" + slugOf(t), t, tierBlurb(t))]); };
     var introP = function (t) { return el("p.help", { style: { margin: "0 0 6px", fontSize: "11.5px" }, text: t }); };
     var TIER_ORDER = ["Streetware", "Brandware", "Blackware", "Prototype"];
     cats.forEach(function (c) {
@@ -1489,6 +1523,9 @@ EN.inventoryView = (function () {
         // glyph. As a real element the caret trails the title and picks up the shared caret rules;
         // written into the h3 text it was invisible to a sweep looking for span.collapse-caret.
         if (h3) head.insertBefore(el("span.collapse-caret", { text: open ? "\u25be" : "\u25b8" }), h3.nextSibling);
+        // the rules this category is played by; the chip stops its own click, so it never folds the panel
+        var rc = c.codex ? EN.ui.ruleChip(c.codex) : null;
+        if (h3 && rc) { rc.style.marginLeft = "6px"; head.insertBefore(rc, h3.nextSibling.nextSibling); }
       }
       if (!open && p.bodyEl) p.bodyEl.style.display = "none";   // tight collapsed panel (no empty body padding)
       blocks.push(p);
@@ -1510,20 +1547,21 @@ EN.inventoryView = (function () {
   var ICON_GARAGE = '<svg viewBox="0 0 512 505.76" fill="currentColor" aria-hidden="true"><path d="M511.95 165.28c-1.06 24.28-11.24 48.8-29.12 68.96-29.67 33.44-41.67 47.15-80.66 71.49-43 26.84-79.24 35.74-103.85 13.79L187.77 208.97c-13.04-28.56-3.38-63.55 20.76-102.62 23.05-37.31 37.39-48.1 69.27-76.72C297.32 12.11 321.73 1.65 345.92.11c64.94-4.13 168.62 106.14 166.03 165.17zM82.64 505.76H1.45L0 423.69l62.47 1.45 1.44-65.37 65.37-1.44v-63.92l56.15-17.23 20.58-20.58 62.89 62.9L82.64 505.76zM291.67 139.5l80.93 80.93c2.63 2.63 2.62 6.94 0 9.56l-22.4 22.4c-2.62 2.62-6.94 2.62-9.56 0l-80.94-80.93c-2.62-2.62-2.63-6.93 0-9.56l22.41-22.4c2.63-2.64 6.93-2.64 9.56 0zm129.19-48.26c23.89 23.89 35.88 50.63 26.79 59.72-9.1 9.09-35.83-2.9-59.72-26.79-23.89-23.88-35.88-50.62-26.78-59.71 9.09-9.1 35.82 2.89 59.71 26.78z"/></svg>';
   var ICON_ARMS = '<svg viewBox="0 0 122.88 89.54" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M9.51,5.81l0.03-0.1c1.25-2.88,2.16-4.31,3.91-5.14c2.5-1.18,4.98-0.49,6.62,1.68 c0.78,1.03,1.38,2.24,1.85,3.56h82.67V5.26c0-2.82,2.31-5.13,5.13-5.13h5.39c0.97,0,1.77,0.8,1.77,1.77v3.9h1.29 c2.59,0,4.71,2.12,4.71,4.71v10.93H62.86v-6.3c0-1.1-0.89-1.99-1.99-1.99c-1.1,0-1.99,0.89-1.99,1.99v6.3h-4.78v-6.3 c0-1.1-0.89-1.99-1.99-1.99c-1.1,0-1.99,0.89-1.99,1.99v6.3h-4.78v-6.3c0-1.1-0.89-1.99-1.99-1.99c-1.1,0-1.99,0.89-1.99,1.99v6.3 h-4.78v-6.3c0-1.1-0.89-1.99-1.99-1.99c-1.1,0-1.99,0.89-1.99,1.99v6.3h-4.78v-6.3c0-1.1-0.89-1.99-1.99-1.99 c-1.1,0-1.99,0.89-1.99,1.99v6.3H19v-6.3c0-1.1-0.89-1.99-1.99-1.99c-1.1,0-1.99,0.89-1.99,1.99v6.3h-4.78v-6.3 c0-1.1-0.89-1.99-1.99-1.99c-1.1,0-1.99,0.89-1.99,1.99v6.3H0.27c-0.07,0-0.13,0-0.2,0.01C0.02,20.79,0,20.07,0,19.31v-8.8 c0-2.59,2.12-4.7,4.7-4.7H9.51L9.51,5.81z M122.88,25.44v2.67c0,2.59-2.12,4.71-4.71,4.71l-35.52,3.73V25.44H122.88L122.88,25.44z M78.68,36.96l-4.81,0.51c0.82,8.68-0.39,14.49-5.55,18.1c-4.85,3.39-13.12,4.45-26.6,3.76c-0.12-0.01-0.25-0.02-0.36-0.05 l-2.4,8.8H2.54c0.32-0.76,0.68-1.56,1.08-2.43c1.33-2.94,2.88-5.72,4.66-8.33c4.68-7.91,7.87-14.82,8.2-19.46 c0.77-10.83-12.62-0.46-15.8-12.42h78v11.33C78.67,36.83,78.67,36.9,78.68,36.96L78.68,36.96z M38.12,71.15l-1.43,5.24 c3.01,4.39,3.73,7.91,1.71,10.38c-2.93,3.59-8.13,2.66-12.22,2.66H7.01c-5.17-0.45-7.19-3.9-6.91-9.54c0-3.65,0.38-6.11,1.26-8.75 H38.12L38.12,71.15z M69.92,37.88L58.2,39.11c-1.28,0.04-2.5,0.17-3.66,0.4c0.05,0.16,0.08,0.34,0.08,0.51 c0.05,2.03,0.77,3.69,1.86,4.88c1.17,1.28,2.8,2.03,4.52,2.14c1.1,0.07,1.93,1.01,1.86,2.11c-0.07,1.1-1.01,1.93-2.11,1.86 c-2.74-0.17-5.32-1.38-7.2-3.42c-1.58-1.72-2.65-4.03-2.87-6.8c-3.79,1.91-6.5,5.61-7.57,12.03l-0.69,2.54 c12.26,0.6,19.63-0.27,23.63-3.06C69.76,49.72,70.58,45.04,69.92,37.88L69.92,37.88z"/></svg>';
   var ICON_IMPACT = '<svg viewBox="0 0 111.811 122.88" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M55.713,0c20.848,13.215,39.682,19.467,55.846,17.989 c2.823,57.098-18.263,90.818-55.63,104.891C19.844,109.708-1.5,77.439,0.083,17.123C19.058,18.116,37.674,14.014,55.713,0L55.713,0 z M56.163,19.543c14.217,9.011,27.061,13.274,38.083,12.268c1.925,38.936-12.454,61.93-37.935,71.526 c-0.161-0.059-0.319-0.12-0.479-0.18V19.796L56.163,19.543L56.163,19.543z M55.735,7.055 c18.454,11.697,35.126,17.232,49.434,15.923c2.498,50.541-16.166,80.39-49.241,92.846C23.986,104.165,5.091,75.603,6.493,22.211 C23.29,23.091,39.768,19.46,55.735,7.055L55.735,7.055z"/></svg>';
+  // `codex` is the Codex entry each bench's intro links to (benchIntro)
   var BENCHES = [
-    { key: "ballistics", label: "Arms Table", icon: "⊚", svg: ICON_ARMS, color: "var(--ember)", tag: "WEAPON CRAFTING & MODDING",
+    { key: "ballistics", label: "Arms Table", icon: "⊚", svg: ICON_ARMS, color: "var(--ember)", tag: "WEAPON CRAFTING & MODDING", codex: "gr-custom",
       blurb: "Build, tune, and customize weapons: firearms, blades, bows, and the attachments that ride them.",
       handles: "Ranged Weapons · Melee Weapons · Signature Weapons · Ammunition · weapon mods & attachments" },
-    { key: "armor", label: "Impact Table", icon: "⛨", svg: ICON_IMPACT, color: "var(--success)", tag: "ARMOR BENCH · CRAFTING & MODDING",
+    { key: "armor", label: "Impact Table", icon: "⛨", svg: ICON_IMPACT, color: "var(--success)", tag: "ARMOR BENCH · CRAFTING & MODDING", codex: "gr-craft/armor-repair",
       blurb: "The Armor Bench. Fit plates, slot Armor Mods, reinforce shells, and keep defensive gear in the fight.",
       handles: "Light / Medium / Heavy Armor · Powered Exoframes · Mystech shells · Shields & Foci · Armor Mods" },
-    { key: "tech", label: "Tech Bay", icon: "⌬", svg: ICON_TECH, color: "var(--flow)", tag: "SMARTDECK & CYBERWARE MODS",
+    { key: "tech", label: "Tech Bay", icon: "⌬", svg: ICON_TECH, color: "var(--flow)", tag: "SMARTDECK & CYBERWARE MODS", codex: "gr-chrome/platform-mod-slots",
       blurb: "Integrate hardware: slot mods into Smartdecks and platform chrome. This is the only bench that installs Smartdeck mods.",
       handles: "Smartdeck Hardware Mods · Cyberware Platform Mods" },
-    { key: "fab", label: "Fabrication", icon: "⚒", svg: ICON_FAB, color: "var(--danger)", tag: "FABRICATION · CRAFTING & PROJECTS",
+    { key: "fab", label: "Fabrication", icon: "⚒", svg: ICON_FAB, color: "var(--danger)", tag: "FABRICATION · CRAFTING & PROJECTS", codex: "gr-craft",
       blurb: "Build, repair, and modify gear as downtime Projects. Recipes, material costs, and live Engineering and Systems checks.",
       handles: "Build from scratch · Repairs · Custom mods · Material costs · Engineering / Systems Projects" },
-    { key: "garage", label: "Garage", icon: "⛭", svg: ICON_GARAGE, color: "var(--gold)", tag: "VEHICLE CRAFTING & MODDING",
+    { key: "garage", label: "Garage", icon: "⛭", svg: ICON_GARAGE, color: "var(--gold)", tag: "VEHICLE CRAFTING & MODDING", codex: "ref-vehicles",
       blurb: "Wrench on rides: engines, plating, and weapon mounts for everything from a courier bike to a mech.",
       handles: "Ground / Aerial / Marine Vehicles · Industrial / Mechs · vehicle upgrades & mounts" }
   ];
@@ -1970,7 +2008,10 @@ EN.inventoryView = (function () {
 
     if (it.signature) {
       out.push(EN.ui.panel(row.label, it.group.toUpperCase() + " · SIGNATURE", [
-        el("p.help", { style: { margin: 0 }, text: "Signature weapon: 0 customization slots. It arrives complete, with fixed Parts and a built-in property you cannot replicate with bolt-ons. Its power lives in the wielder, not the rails." })
+        el("p.help", { style: { margin: 0 } }, [
+          document.createTextNode("Signature weapon: 0 customization slots. It arrives complete, with fixed Parts and a built-in property you cannot replicate with bolt-ons. Its power lives in the wielder, not the rails. "),
+          EN.ui.ruleChip("gr-weapons/using-a-signature-weapon")
+        ])
       ], { corners: true }));
       return out;
     }
@@ -1988,7 +2029,10 @@ EN.inventoryView = (function () {
     ]);
     var grid = el("div.grid2", { style: { gap: "10px" } }, (WP().slots || []).map(function (sd) { return slotCard(ch, it, wKey, lo, sd); }));
     out.push(EN.ui.panel(row.label, it.group.toUpperCase() + " · " + (it.damage || ""), [
-      el("p.help", { style: { margin: "0 0 8px", fontSize: "11.5px" }, text: "One Part per slot (Utility holds two). Accessories snap on anytime; Mods are bench work in Downtime with a kit. The strictest legality on the build is what a scanner reports." }),
+      el("p.help", { style: { margin: "0 0 8px", fontSize: "11.5px" } }, [
+        document.createTextNode("One Part per slot (Utility holds two). Accessories snap on anytime; Mods are bench work in Downtime with a kit. The strictest legality on the build is what a scanner reports. "),
+        EN.ui.ruleChip("gr-custom/installing-parts")
+      ]),
       header, grid,
       el("p.help", { style: { margin: "10px 0 0", fontSize: "10.5px", color: "var(--text3)" }, text: WP().rules ? WP().rules.dieStep + " " + WP().rules.stabilized : "" })
     ], { corners: true }));
@@ -2162,8 +2206,11 @@ EN.inventoryView = (function () {
       return tagChip("UNTRAINED +2 SNAG", "var(--warn)",
         "A " + tn + " Project expects " + skillName + " " + needNm + ". Untrained you can still do the work; every Work Interval adds +2 Snag Dice, the same as any other Project.");
     }
-    var kids = [el("p.help", { style: { margin: "0 0 8px", fontSize: "11.5px" },
-      text: "Damage lowers a suit's DR; repair raises it back toward the printed value and never past it. " + (AR.shopText || "") + " " + (AR.benchText || "") })];
+    // the lanes' one-line hint stays (the buttons need it); the full rule is the Codex's Armor Repair entry
+    var kids = [el("p.help", { style: { margin: "0 0 8px", fontSize: "11.5px" } }, [
+      EN.ui.ruleLink("gr-craft/armor-repair", "Armor Repair"),
+      document.createTextNode(": " + (AR.intro || "") + " " + (AR.shopText || "") + " " + (AR.benchText || ""))
+    ])];
     if (!pieces.length) {
       kids.push(el("p.help", { style: { margin: "6px 0 0", fontSize: "11px", color: "var(--text3)" }, text: "No armor in your Stash to keep in the fight." }));
       return EN.ui.panel("Armor Integrity", "DR TRACK · REPAIR LANES", kids, { corners: true });
@@ -2226,7 +2273,7 @@ EN.inventoryView = (function () {
         var shop = AR.shopCost(st.item, pts), bench = hasRig ? 0 : AR.benchCost(st.item, pts);
         var perPoint = AR.shopCost(st.item, 1);
         var priceNote = fmtG(perPoint) + " per point at this suit's " + fmtG(price) + priceLabel
-          + (leased ? " (a leased suit is priced off what it is worth, not off the deposit)"
+          + (leased ? " (" + String(AR.leasedText || "").replace(/\.$/, "").replace(/^A /, "a ") + ")"
                     : (nexusOnly ? " (this suit has no Glimmer price; the figure is its Nexus asking value at the ledger rate)" : "")) + ".";
         lanes = el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "7px" } }, [
           el("div.row", { style: { gap: "4px", alignItems: "center" } }, [
@@ -2286,7 +2333,10 @@ EN.inventoryView = (function () {
       ? (aSt.lost > 0 ? " · " + aSt.current + " OF " + aSt.base + " DR" : " · " + aSt.base + " DR")
       : (typeof it.dr === "number" ? " · " + it.dr + " BASE DR" : "");
     var tag = (it.group || "").toUpperCase() + drTag;
-    var kids = [el("p.help", { style: { margin: "0 0 8px", fontSize: "11.5px" }, text: "One mod per slot; only Modular armor carries slots (Integrated adds one). Every Armor Mod is bench work. The strictest legality on the suit is what a scanner reports." })];
+    var kids = [el("p.help", { style: { margin: "0 0 8px", fontSize: "11.5px" } }, [
+      document.createTextNode("One mod per slot; only Modular armor carries slots (Integrated adds one). Every Armor Mod is bench work. The strictest legality on the suit is what a scanner reports. "),
+      EN.ui.ruleChip("gr-custom/hosting-armor-mods")
+    ])];
 
     if (!isModularArmor(it) || armorSlotCount(it) === 0) {
       kids.push(el("div.muted-box", { style: { padding: "18px", textAlign: "center", borderColor: "var(--border2)" },
@@ -2693,7 +2743,11 @@ EN.inventoryView = (function () {
       ]);
     }
     var kids = [
-      el("p.help", { style: { margin: "0 0 6px", fontSize: "11.5px" }, text: "Work Intervals roll the Dice Pool Method: Edge Dice from a Skill and its Attribute, its Skill Proficiency Bonus, kits, Focus, and Specialization, against the GM's Snag Dice. Engineering and Systems drive most of the bench." }),
+      // the rule half of this line is data (crafting.rules.workInterval), which the Codex reads too
+      el("p.help", { style: { margin: "0 0 6px", fontSize: "11.5px" } }, [
+        document.createTextNode((CRAFT().rules.workInterval || "") + " Engineering and Systems drive most of the bench. "),
+        EN.ui.ruleChip("gr-craft/work-intervals")
+      ]),
       skillRow("Engineering", true),
       skillRow("Systems", true)
     ];
@@ -3009,14 +3063,24 @@ EN.inventoryView = (function () {
     return EN.ui.panel("Blueprints", "RECIPES · TIER · SKILL · MATERIALS", kids, { corners: true });
   }
 
-  /* ---- Panel 4: Modding & Mounts reference ---- */
+  /* ---- Panel 4: Modding & Mounts reference ----
+     The four crafting rules this panel used to print in full live in the Codex (Gear & Chrome,
+     Crafting & Repair), read from the same EN.crafting.rules, so this is a pointer to each and
+     the two jump buttons. Each link carries its rule as a hover title as well; with no Codex
+     the names print as plain text. */
   function tbModding() {
     var R = CRAFT().rules || {};
+    var names = [["One Project per Mod", "gr-craft/one-project-per-mod", R.oneProjectPerMod],
+                 ["Over-Engineering", "gr-craft/over-engineering", R.overEngineering],
+                 ["Materials", "gr-craft/materials", R.materials],
+                 ["Kits", "gr-craft/kits", R.kits]].filter(function (n) { return n[2]; });
+    var pointer = [document.createTextNode("The modding rules, in the Codex: ")];
+    names.forEach(function (n, i) {
+      if (i) pointer.push(document.createTextNode(" · "));
+      pointer.push(tipLink(n[1], n[0], n[2]));
+    });
     var kids = [
-      el("p.help", { style: { margin: "0 0 6px" }, html: "<b style='color:var(--text2)'>One Project per Mod.</b> " + (R.oneProjectPerMod || "") }),
-      el("p.help", { style: { margin: "0 0 6px" }, html: "<b style='color:var(--ember)'>Over-Engineering.</b> " + (R.overEngineering || "") }),
-      el("p.help", { style: { margin: "0 0 6px" }, html: "<b style='color:var(--gold)'>Materials.</b> " + (R.materials || "") }),
-      el("p.help", { style: { margin: "0 0 10px" }, html: "<b style='color:var(--accent)'>Kits.</b> " + (R.kits || "") }),
+      el("p.help", { style: { margin: "0 0 10px" } }, pointer),
       el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
         el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em", marginRight: "2px" }, text: "SLOTTED MODS LIVE AT" }),
         el("button.btn.sm", { style: { color: "var(--ember)", borderColor: "var(--ember)" }, onclick: function () { _bench = "ballistics"; EN.app.render(); } }, [el("span", { html: ICON_ARMS }), document.createTextNode(" ARMS TABLE")]),
@@ -3163,10 +3227,12 @@ EN.inventoryView = (function () {
 
     var saved = installed.filter(function (cw) { return slottedMap[cw.key]; })
       .reduce(function (t, cw) { return t + (cw.sp || 0); }, 0);
-    kids.push(el("p.help", { style: { margin: "6px 0 0", fontSize: "11px" },
-      text: "A compatible mod seated in a platform adds no SP to Total Static; the platform already paid it. "
-        + (saved ? "You are currently saving " + saved + " SP." : "Nothing is seated yet.")
-        + " A mod that is not compatible cannot occupy a slot and pays its full SP." }));
+    // the rule is data (cyberware.platformNote), which the Codex reads too; the count is this sheet's
+    kids.push(el("p.help", { style: { margin: "6px 0 0", fontSize: "11px" } }, [
+      document.createTextNode((saved ? "You are currently saving " + saved + " SP." : "Nothing is seated yet.") + " "),
+      EN.ui.ruleLink("gr-chrome/platform-mod-slots", "Platform Mod Slots"),
+      document.createTextNode(": " + (((EN.cyberware || {}).platformNote) || ""))
+    ]));
     return EN.ui.panel("Cyberware Mods", "PLATFORM SLOTS", kids, { corners: true });
   }
   function techBay(ch) {
@@ -3256,8 +3322,12 @@ EN.inventoryView = (function () {
           text: "Owned but will not mount on a " + prof.category + " chassis: " + misfit.map(function (m) { return m.name + " (" + m.fits + ")"; }).join(", ") + "." }));
       }
     });
-    kids.push(el("p.help", { style: { margin: "6px 0 0", fontSize: "11px" },
-      text: "Mod Slots are 1 + the vehicle's Tier. One mod per slot, fitting or pulling is bench work in downtime, and a mod never lowers a vehicle's Legality, it only raises the heat." }));
+    // the mod rules this line used to restate are EN.vehicles.modRules, rendered in full in the Codex
+    kids.push(el("p.help", { style: { margin: "6px 0 0", fontSize: "11px" } }, [
+      document.createTextNode("Mod Slots, bench work, stacking and Legality: "),
+      EN.ui.ruleLink("ref-vehicles/how-vehicle-mods-work", "How Vehicle Mods Work"),
+      document.createTextNode(", in the Codex.")
+    ]));
     return EN.ui.panel("Vehicle Mods", "FIT & PULL \u00b7 BENCH WORK", kids, { corners: true });
   }
 
@@ -3420,8 +3490,12 @@ EN.inventoryView = (function () {
             EN.app.render();
           } }, "+ MY SHARE") : null
       ]),
-      el("p.help", { style: { margin: "10px 0 0", fontSize: "11px" },
-        text: (EN.economy && EN.economy.splitNote) || "" }),
+      // EN.economy.splitNote used to print here in full; it is the Codex's Splitting a Payout entry
+      el("p.help", { style: { margin: "10px 0 0", fontSize: "11px" } }, [
+        document.createTextNode("The default split, fixer cuts and the Crew Kit: "),
+        EN.ui.ruleLink("ref-economy/splitting-a-payout", "Splitting a Payout"),
+        document.createTextNode(", in the Codex.")
+      ]),
       r.over ? el("p.help", { style: { margin: "4px 0 0", fontSize: "11px", color: "var(--gold)" },
         text: fmtG(r.over) + " does not divide evenly. Somebody always notices." }) : null
     ];
@@ -3458,9 +3532,12 @@ EN.inventoryView = (function () {
     if (hh.due || hh.hypercareDue) return true;
     return activeLeases(ch).some(function (e) { return e.leaseDue; });
   }
-  function billSection(title, kids) {
+  // `anchor`, optional: the Codex entry for this bill, a "?" chip beside its title
+  function billSection(title, kids, anchor) {
+    var rc = anchor ? EN.ui.ruleChip(anchor) : null;
+    if (rc) rc.style.marginLeft = "6px";
     return el("div", { style: { marginBottom: "14px" } },
-      [el("div.section-title", null, [document.createTextNode(title), el("span.line")])].concat(kids));
+      [el("div.section-title", null, [document.createTextNode(title), rc, el("span.line")])].concat(kids));
   }
   function billsPanel(ch) {
     var E = ECON(), hh = ch.household || {}, w = householdWeekly(ch), out = [];
@@ -3483,7 +3560,8 @@ EN.inventoryView = (function () {
           "A base costs rent whether you sleep in it or not", function (h, v) { h.safehouse = v; })
       ]),
       el("div.row.wrap", { style: { gap: "6px", marginBottom: "8px", alignItems: "center" } },
-        [el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em", marginRight: "2px" }, text: "UPGRADES" })].concat(
+        [el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em", marginRight: "2px" }, text: "UPGRADES" }),
+         EN.ui.ruleChip("ref-economy/safehouse-upgrades")].concat(
           (E.safehouseUpgrades || []).map(function (u) {
             var on = (hh.upgrades || []).indexOf(u.name) !== -1;
             return el("button.btn.sm" + (on ? ".primary" : ""), {
@@ -3502,7 +3580,7 @@ EN.inventoryView = (function () {
         (w.total && hh.due) ? el("button.btn.sm", { style: { color: "var(--danger)", borderColor: "var(--danger)" },
           title: w.lines.join(", "), onclick: payHousehold }, "PAY \u00b7 " + fmtG(w.total)) : null
       ])
-    ]));
+    ], "ref-economy/lifestyle-costs"));
 
     /* --- leases already tracked elsewhere in the app --- */
     var leases = activeLeases(ch);
@@ -3546,7 +3624,7 @@ EN.inventoryView = (function () {
         hh.hypercareDue ? el("button.btn.sm", { style: { color: "var(--danger)", borderColor: "var(--danger)" },
           onclick: payHypercare }, "PAY \u00b7 " + (hc.currency === "nexus" ? fmtNx(hc.cost) : fmtG(hc.cost))) : null
       ]) : el("p.help", { style: { margin: 0, fontSize: "11px", color: "var(--text3)" }, text: E.hypercareNote || "" })
-    ]));
+    ], "ref-economy/hypercare"));
 
     /* --- licences: the book gives ranges, so the app tracks what you hold --- */
     out.push(billSection("Licences & Papers", [
@@ -3563,7 +3641,7 @@ EN.inventoryView = (function () {
         })),
       el("p.help", { style: { margin: 0, fontSize: "11px", color: "var(--text3)" },
         text: "The book prices these as ranges renewed monthly, quarterly, or as needed, so the exact number and cadence are the GM's call. Held papers are tracked here as a checklist." })
-    ]));
+    ], "ref-economy/licenses-papers-and-legitimacy"));
 
     /* --- debts: holder and clock, no interest math --- */
     var debts = ch.debts || [];
@@ -3602,11 +3680,16 @@ EN.inventoryView = (function () {
       ]),
       el("p.help", { style: { margin: "6px 0 0", fontSize: "11px", color: "var(--text4)" },
         text: "Principal, holder, and a clock. No interest is calculated: debt here escalates through pressure, not paperwork." })
-    ]));
+    ], "ref-economy/debt"));
 
     return EN.ui.panel("Bills", "RECURRING COSTS \u00b7 LEASES \u00b7 DEBTS", out, { corners: true });
   }
 
+  // a bench's one-line intro, with a "?" that peeks the rules the bench runs on (BENCHES codex)
+  function benchIntro(b) {
+    return el("p.help", { style: { margin: "0 0 10px", maxWidth: "720px" } },
+      [document.createTextNode(b.blurb + " "), b.codex ? EN.ui.ruleChip(b.codex) : null]);
+  }
   function workbenchView(ch) {
     var out = [];
     /* '98 and #GRIDroid solid-fill a selected (.primary) button's background with var(--accent)
@@ -3630,32 +3713,36 @@ EN.inventoryView = (function () {
     })));
     var b = BENCHES.find(function (x) { return x.key === _bench; }) || BENCHES[0];
     if (_bench === "ballistics") {
-      out.push(el("p.help", { style: { margin: "0 0 10px", maxWidth: "720px" }, text: b.blurb }));
+      out.push(benchIntro(b));
       ballisticsBench(ch).forEach(function (n) { out.push(n); });
       return out;
     }
     if (_bench === "armor") {
-      out.push(el("p.help", { style: { margin: "0 0 10px", maxWidth: "720px" }, text: b.blurb }));
+      out.push(benchIntro(b));
       impactTable(ch).forEach(function (n) { out.push(n); });
       return out;
     }
     if (_bench === "tech") {
-      out.push(el("p.help", { style: { margin: "0 0 10px", maxWidth: "720px" }, text: b.blurb }));
+      out.push(benchIntro(b));
       techBay(ch).forEach(function (n) { out.push(n); });
       return out;
     }
     if (_bench === "fab") {
-      out.push(el("p.help", { style: { margin: "0 0 10px", maxWidth: "720px" }, text: b.blurb }));
+      out.push(benchIntro(b));
       fabricationBench(ch).forEach(function (n) { out.push(n); });
       return out;
     }
     if (_bench === "garage") {
-      out.push(el("p.help", { style: { margin: "0 0 10px", maxWidth: "720px" }, text: "Vehicle Ops: the live operating math for the ride you are in. Pick a chassis to pull its category, type and Handling from the catalog, or leave it on Custom and enter your own. Vehicle Mods are fitted in the panel below; the full catalog of thirteen is in the Codex under Vehicles." }));
+      out.push(el("p.help", { style: { margin: "0 0 10px", maxWidth: "720px" } }, [
+        document.createTextNode("Vehicle Ops: the live operating math for the ride you are in. Pick a chassis to pull its category, type and Handling from the catalog, or leave it on Custom and enter your own. Vehicle Mods are fitted in the panel below; the full catalog of thirteen is in the Codex under "),
+        EN.ui.ruleLink("ref-vehicles/vehicle-mods", "Vehicles"),
+        document.createTextNode(".")
+      ]));
       garageBench(ch).forEach(function (n) { out.push(n); });
       return out;
     }
     var body = [
-      el("p.help", { style: { margin: "0 0 10px", maxWidth: "720px" }, text: b.blurb }),
+      benchIntro(b),
       el("div.row.wrap", { style: { gap: "6px", marginBottom: "4px", alignItems: "center" } },
         [el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".1em", marginRight: "4px" }, text: "HANDLES" })]
           .concat(b.handles.split(" · ").map(function (h) { return el("span.chip", { style: { fontSize: "9.5px", color: "var(--text2)", borderColor: "var(--border2)" } }, h); }))),

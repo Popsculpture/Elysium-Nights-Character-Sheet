@@ -58,8 +58,15 @@ EN.rules = {
      Loadout tier sets the Load Budget; on-person gear spends it.
      The Size step is not decorative and engine.js:2056 already applies it; this
      comment used to omit it, which made the canonical reference file disagree
-     with both the book and the code that reads it. */
+     with both the book and the code that reads it.
+     `threshold` and `budget` are that formula and the Loadout rule as prose, for
+     the Codex (Skills & Advancement, Encumbrance & Load). Before them the only
+     player-facing statement of the Threshold was a hover title on the Loadout
+     console (combat.js), which does not show on touch. engine.js:2403 computes
+     it; these say the same thing in words. */
   encumbrance: {
+    threshold: "Encumbrance Threshold = 6 + Body Modifier, adjusted by Size, minimum 3. The minimum applies after the Size adjustment, so a Small character on Body -3 lands at 3, not 2. Gear, mods, frames, cyberware and Flow effects that raise it speak in steps of +2; the Size adjustment is a raw 1 and is not a step.",
+    budget: "When a job starts, each Freelancer declares one Loadout; if nobody declares, assume Standard. The declared Loadout sets your Load Budget (your Threshold moved by the Loadout's offset), and the gear on your person spends it.",
     loadouts: [
       { key: "light",    name: "Light",    delta: -3, effect: "You read as foot traffic. Edge on in-combat d20 checks to blend into a crowd, conceal your gear, or pass checkpoint scrutiny; +1 Edge Die on related out-of-combat Dice Pools." },
       { key: "standard", name: "Standard", delta: 0,  effect: "You look like a Freelancer on a job. No perk, no penalty." },
@@ -360,6 +367,57 @@ EN.rules = {
   // Armor can be ACQUIRED with TP but not upgraded to higher tiers (per rules).
   gearUpgradable: { weapons: true, armor: false, tools: true, vehicles: true },
 
+  /* Training Points (Training & Advancement) --------------------------------
+     What a Training Point buys, at what level, as data. Until 2026-10-07 these
+     lived only as inline help text and button titles on the #PRINT Advance step
+     (builder.js); it now reads them from here, and so does the Codex (Skills &
+     Advancement, sk-skills), so the tab and the rules hub print one copy.
+     engine.js builds the numbers it CHARGES (eng.tp) from these rows too, so
+     an edit here changes the price and the charge together. `key` is the tier
+     a step buys (eng.tp.STEP_COST's keys) or "focus" / "spec".
+     A Free Skill Focus from overlapping training costs 0 and ignores the level 3
+     gate (see `overlap`). */
+  training: {
+    costs: [
+      { key: "proficient", name: "Acquire",        short: "Acquire", tp: 1, level: 1,  what: "Untrained to Proficient, in a Skill or a gear category" },
+      { key: "expertise",  name: "Expertise",      short: "Expert",  tp: 2, level: 6,  what: "Proficient to Expertise (never Armor)" },
+      { key: "mastery",    name: "Mastery",        short: "Mastery", tp: 2, level: 10, what: "Expertise to Mastery (never Armor)" },
+      { key: "focus",      name: "Skill Focus",    short: "Focus",   tp: 1, level: 3,  what: "A narrow aspect of a parent you are at least Proficient in" },
+      { key: "spec",       name: "Specialization", short: "Spec",    tp: 1, level: 6,  what: "A narrow aspect of a parent you have Expertise in; one per parent" }
+    ],
+    grants: "Background and Class grants give a free Proficient floor, marked GRANTED on the sheet. Training Points are spent above that floor.",
+    focus: "A Skill Focus adds your Caliber to rolls inside one narrow aspect of its parent. A parent is a Skill, a Weapon category, a Vehicle category or a Tool category, never Armor, and you must be at least Proficient in it. A parent can carry more than one Focus as long as each names a clearly distinct aspect. The Caliber from a Focus rides outside the +15 static modifier cap.",
+    specialization: "A Specialization marks one narrow aspect of a parent you have Expertise in. Inside that aspect your critical range is 19 to 20 and you gain +2 Edge Dice. Each parent takes exactly one Specialization, and Armor never takes one.",
+    overlap: {
+      when: "Your Background and Class both train you in the same Skill or gear category.",
+      rule: "The proficiency applies once (Proficient + Proficient = Proficient, never Expertise), and each overlap grants a **Free Skill Focus**: 0 Training Points, valid from level 1."
+    },
+    gearRule: "Acquire a category for 1 TP. Weapons, Tools, and Vehicles upgrade to Expert (L6+) and Mastery (L10+) for 2 TP each, and can carry a Focus (1 TP, L3+) or Specialization (1 TP, L6+) on a narrow aspect. Armor can be acquired but never upgraded, and never takes a Focus or Specialization.",
+    armorNote: "Acquire only; cannot be raised to higher tiers."
+  },
+
+  /* Advancement, the player half of the milestone pace -----------------------
+     The pace itself (2 Major, or 1 Major and 2 Minor) is NOT retyped here: it is
+     read from the one copy the GM's Payroll keeps, EN.gmBook.payroll.milestones
+     .levelUp (data/gm_payroll.js), by milestonePace() below, at call time (that
+     file loads after this one). `when` is the #PRINT Advance step's own line,
+     moved here so it and the Codex read one copy. */
+  advancement: {
+    when: "Level during downtime, after a Long Rest, or between story arcs."
+  },
+  // "2 Major Milestones, or 1 Major and 2 Minor Milestones", or null if that data is absent
+  milestonePace: function () {
+    var M = (((window.EN || {}).gmBook || {}).payroll || {}).milestones;
+    var list = (M && M.levelUp) || [];
+    var parts = list.map(function (o) {
+      var bits = [];
+      if (o.major) bits.push(o.major + " Major");
+      if (o.minor) bits.push(o.minor + " Minor");
+      return bits.length ? bits.join(" and ") + " Milestone" + ((o.major || 0) + (o.minor || 0) === 1 ? "" : "s") : null;
+    }).filter(Boolean);
+    return parts.length ? parts.join(", or ") : null;
+  },
+
   // Versatile skills: NOT directly trainable; borrow the parent skill's tier.
   versatileSkills: [
     { key:"insight",      name:"Insight",      desc:"Apply learned understanding or pattern recognition to recall, interpret, or deduce." },
@@ -388,7 +446,7 @@ EN.rules = {
   /* Derived formula helpers (documented for the UI) ----------------------- */
   formulas: {
     speed:    "6 + Agility Modifier (minimum 3)",
-    defense:  "10 + Agility Modifier (+ armor & cover)",
+    defense:  "10 + Agility Modifier + Cover + Active Defense Bonuses",
     wounds:   "Maximum Wounds = Body score; Critical Condition at 50% or less of maximum Wounds",
     passive:  "10 + Attribute Modifier + Skill Proficiency Bonus + Caliber inside a Skill Focus (+5 Edge / -5 Snag)",
     save:     "d20 + Attribute Modifier + Caliber (if Saving Throw Focus, no proficiency required)",

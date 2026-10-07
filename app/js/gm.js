@@ -55,6 +55,33 @@ EN.gmView = (function () {
   }
   function lbl(t) { return el("label.fl", { text: t }); }
 
+  /* ---- links into the Codex ---------------------------------------------------
+     The rules these tabs work with live in the Admin Codex (the Running Threats
+     chapter, js/codex_gm_threats.js, and the player chapters). A rule NAME links
+     through EN.ui's guarded helpers: ruleLink is plain text, and ruleChip null,
+     when js/codex.js is missing or the anchor does not resolve here, so a tab
+     never shows a dead link. cxSlug is the Codex's own slug rule
+     (EN.codexView.slug), a local copy per the house convention. Chips sit BESIDE
+     the hooked elements (data-gm="surgesleft", "movingdef", a field's label),
+     never inside them, so the text those carry is unchanged. */
+  function cxSlug(s) {
+    return String(s == null ? "" : s).toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  }
+  function ruleChip(anchor, title) {
+    try { return EN.ui.ruleChip ? EN.ui.ruleChip(anchor, title ? { title: title } : null) : null; } catch (e) { return null; }
+  }
+  // a chip with a little air before it, for the end of a line of text
+  function tailChip(anchor, title) {
+    var c = ruleChip(anchor, title);
+    if (c) { c.style.marginLeft = "6px"; c.style.verticalAlign = "middle"; }
+    return c;
+  }
+  // the entry a convention opens on is the slug of its first sentence ("Conditions work normally.")
+  function conventionAnchor(text) {
+    var m = String(text || "").match(/^([^.]+)\./);
+    return m ? "gmt-conventions/" + cxSlug(m[1]) : "gmt-conventions";
+  }
+
   /* Sends lines to the Encounters tab's plan through the shared handoff. The
      block is a copy, so a builder that keeps changing its preview after the
      click cannot change the line it just sent. An unnamed build travels under
@@ -77,16 +104,24 @@ EN.gmView = (function () {
   }
 
   /* ---- the threat builder ------------------------------------------------- */
-  function pick(field, options, current, onPick) {
+  /* `anchor`, when given, is the Codex entry for the current choice: a "?" chip
+     beside the label (not inside it, so the label still reads the field's name). */
+  function pick(field, options, current, onPick, anchor) {
     var s = el("select", {
       onchange: function (e) { onPick(e.target.value); EN.app.render(); },
       style: { minWidth: "130px" }
     }, options.map(function (o) {
       return el("option", { value: o.value, selected: String(o.value) === String(current) }, o.label);
     }));
-    return el("div.field", { style: { margin: 0 } }, [lbl(field), s]);
+    var c = anchor ? ruleChip(anchor) : null;
+    var head = c ? el("div.row", { style: { gap: "6px", alignItems: "center", justifyContent: "space-between" } }, [lbl(field), c]) : lbl(field);
+    return el("div.field", { style: { margin: 0 } }, [head, s]);
   }
 
+  function nameIn(list, key) {
+    var x = (list || []).filter(function (d) { return d && d.key === key; })[0];
+    return x ? x.name : key;
+  }
   function builderPanel() {
     var T = EN.threats;
     var block = EN.gmEngine.buildThreat(_b);
@@ -98,14 +133,15 @@ EN.gmView = (function () {
         el("input", { type: "text", value: _b.name, placeholder: "Corpsec Officer",
           oninput: function (e) { _b.name = e.target.value; } })
       ]),
+      // each picker's chip opens the Codex entry for what is picked now
       pick("Grade", T.grades.map(function (g) { return { value: g.g, label: "G" + g.g }; }), _b.grade,
-        function (v) { _b.grade = Number(v); }),
+        function (v) { _b.grade = Number(v); }, "gmt-grades/grade-" + _b.grade),
       pick("Designation", T.designations.map(function (d) { return { value: d.key, label: d.name }; }), _b.designation,
-        function (v) { _b.designation = v; }),
+        function (v) { _b.designation = v; }, "gmt-designations/" + cxSlug(nameIn(T.designations, _b.designation))),
       pick("Role", T.roles.map(function (r) { return { value: r.key, label: r.name }; }), _b.role,
-        function (v) { _b.role = v; _b.strong = null; }),
+        function (v) { _b.role = v; _b.strong = null; }, "gmt-roles/" + cxSlug(nameIn(T.roles, _b.role))),
       pick("Size", (EN.rules.sizes || ["Medium"]).map(function (s) { return { value: s, label: s }; }), _b.size,
-        function (v) { _b.size = v; }),
+        function (v) { _b.size = v; }, "ref-size"),
       pick("Type", T.types.map(function (t) { return { value: t, label: t }; }), _b.type,
         function (v) { _b.type = v; })
     ]));
@@ -136,7 +172,8 @@ EN.gmView = (function () {
     var band = bandNote(_b.grade);
     if (band) {
       kids.push(el("p.help", { style: { margin: "8px 0 0", color: "var(--warn)" }, text: band.lead }));
-      if (band.book) kids.push(el("p.help", { style: { margin: "3px 0 0", color: "var(--text2)" }, text: band.book }));
+      if (band.book) kids.push(el("p.help", { style: { margin: "3px 0 0", color: "var(--text2)" } },
+        [document.createTextNode(band.book), tailChip("gmt-grades/working-band", "Working Band")]));
     }
 
     kids.push(el("div.row.wrap", { style: { gap: "8px", marginTop: "12px" } }, [
@@ -264,9 +301,11 @@ EN.gmView = (function () {
     kids.push(el("p.help", { style: { margin: "4px 0 0" },
       text: "About " + b.damagePerRound + " damage a round before the crew's DR, spent as " + b.attacksNote + "." }));
 
-    if (b.surges) kids.push(el("p.help", { style: { margin: "6px 0 0", color: "var(--gold)" },
-      text: "Solo: " + b.surges + " Surges a round, one defensive Impulse per Freelancer turn, Unshakable, a Breakpoint below half Vitality, and one findable weakness. The weakness is not optional." }));
-    if (b.noDefensiveImpulse) kids.push(el("p.help", { style: { margin: "6px 0 0" }, text: "Minion: no defensive Impulse." }));
+    if (b.surges) kids.push(el("p.help", { style: { margin: "6px 0 0", color: "var(--gold)" } }, [
+      document.createTextNode("Solo: " + b.surges + " Surges a round, one defensive Impulse per Freelancer turn, Unshakable, a Breakpoint below half Vitality, and one findable weakness. The weakness is not optional."),
+      tailChip("gmt-solos", "Running Solos")]));
+    if (b.noDefensiveImpulse) kids.push(el("p.help", { style: { margin: "6px 0 0" } },
+      [document.createTextNode("Minion: no defensive Impulse."), tailChip("gmt-designations/minion", "Minion")]));
 
     /* The blank threat's other lines (Trait, Impulse, Resolve, Gear), printed
        only when the block carries them. The builder leaves them empty, so its
@@ -500,6 +539,9 @@ EN.gmView = (function () {
     ]);
     EN.ui.applyInline(p, String(rule.text || ""));
     if (extra) p.appendChild(extra);
+    // the rule in full in Running Solos, at the end of the line so its text reads as before
+    var c = tailChip("gmt-solos/" + cxSlug(rule.name), rule.name);
+    if (c) p.appendChild(c);
     return p;
   }
   function soloPanel(row, enc) {
@@ -513,7 +555,9 @@ EN.gmView = (function () {
     var top = [
       el("span.mono", { style: { fontSize: "11px", letterSpacing: ".12em", color: "var(--gold)" }, text: "SOLO" }),
       el("span.mono", { dataset: { gm: "surgesleft" }, title: sr ? sr.name + ". " + sr.text : "", style: { fontSize: "12px", cursor: "help" },
-        text: "SURGES LEFT THIS ROUND " + left + " / " + total })
+        text: "SURGES LEFT THIS ROUND " + left + " / " + total }),
+      // beside the counter, not in it: the counter's text is what it counts
+      ruleChip("gmt-solos/surges", sr ? sr.name : "Surges")
     ];
     if (list.length) {
       // each listed Surge once a round: a chip per Surge, struck through once spent
@@ -594,6 +638,8 @@ EN.gmView = (function () {
                        : "Breakpoint, below " + (Math.round(max / 2 * 10) / 10) + " Vitality. " })
       ]);
       EN.ui.applyInline(bpLine, bpText);
+      var bc = tailChip("gmt-solos/breakpoint", "Breakpoint");
+      if (bc) bpLine.appendChild(bc);
       kids.push(bpLine);
     }
     return el("div", { dataset: { gm: "solo" }, style: { marginTop: "8px", paddingTop: "8px", borderTop: "1px dashed var(--border2)" } }, kids);
@@ -718,6 +764,10 @@ EN.gmView = (function () {
       el("span.help", { text: prof.join(" · ") })
     ]));
     var md = movingDefense(v.handling, b.grade);
+    // the Threat pilots rule the two lines below compute from, in the Codex (beside the
+    // profile, so the movingdef and pilotcheck lines read as before)
+    var pc = tailChip("gmt-bestiary/threat-pilots", "Threat pilots");
+    if (pc) kids[0].appendChild(pc);
     if (md) {
       kids.push(el("p.help", { dataset: { gm: "movingdef" }, style: { margin: "5px 0 0", color: "var(--accent)" },
         text: "Defense while moving " + md.value + ": " + md.base + " + Handling " + eng.fmtMod(v.handling) + " + " + md.bonus +
@@ -777,16 +827,31 @@ EN.gmView = (function () {
     var have = rowConds(row);
     var chips = have.map(function (name) {
       var c = condInfo(name);
+      /* the name peeks its Conditions Library entry. The link's own title ("Rules: ...")
+         would cover the chip's, so the link carries the summary too; the chip keeps it
+         for the plain-text fallback. */
+      var nm = EN.ui.ruleLink ? EN.ui.ruleLink("ref-conds/" + cxSlug(name), name.toUpperCase()) : document.createTextNode(name.toUpperCase());
+      if (nm && nm.nodeType === 1) {
+        nm.style.color = "inherit"; nm.setAttribute("data-gm", "condlink");
+        if (c && c.summary) nm.setAttribute("title", c.summary + "\n(tap for the rule)");
+      }
       return el("span.chip", { dataset: { gm: "cond", cond: name }, title: c ? c.summary : name,
         style: { fontSize: "10px", color: "var(--warn)", borderColor: "var(--warn)" } }, [
-        document.createTextNode(name.toUpperCase()),
+        nm,
         el("button", { title: "Remove " + name, dataset: { gm: "conddrop" },
           style: { background: "none", border: "0", color: "inherit", cursor: "pointer", padding: "0 0 0 2px", font: "inherit" },
           onclick: function () { setConds(row.id, function (l) { return l.filter(function (x) { return x !== name; }); }); } }, "✕")
       ]);
     });
+    /* The Threat Conventions' conditions rule ("When a condition's save comes due,
+       use the threat's listed save bonus") used to ride on the picker as a tooltip,
+       which no touch screen shows. It is a chip beside the picker now, opening the
+       convention in the Codex, whose text links the conditions it names. The
+       tooltip stays only when there is no chip to carry it. */
     var conv = ((EN.threats && EN.threats.conventions) || [])[1] || "";
-    var picker = el("select", { dataset: { gm: "addcond" }, title: conv, style: { maxWidth: "160px" },
+    var convChip = conv ? ruleChip(conventionAnchor(conv), "Threat Conventions: " + (conv.match(/^[^.]+/) || [""])[0]) : null;
+    if (convChip) convChip.setAttribute("data-gm", "condrule");
+    var picker = el("select", { dataset: { gm: "addcond" }, title: convChip ? "" : conv, style: { maxWidth: "160px" },
       onchange: function (e) {
         var v = e.target.value;
         if (v) setConds(row.id, function (l) { if (l.indexOf(v) === -1) l.push(v); return l; });
@@ -797,7 +862,7 @@ EN.gmView = (function () {
       dataset: { gm: "rownotes" }, style: { flex: "1 1 150px", minWidth: "0" },
       // saved as it is typed and never re-rendered, so a click after typing lands (F19)
       oninput: function (e) { var t = e.target.value; editRow(row.id, function (r) { r.notes = t; }, { silent: true }); } });
-    return el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "6px" } }, chips.concat([picker, notes]));
+    return el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "6px" } }, chips.concat([picker, convChip, notes]));
   }
 
   /* ---- rename, max Vitality and the vehicle picker -------------------------- */
@@ -1152,6 +1217,37 @@ EN.gmView = (function () {
     return isNaN(v) ? 1 : v;
   }
 
+  /* An Immune or Resistance line (the Cascade Orphan prints both). Its word peeks
+     the Codex's Resistance, Vulnerability and Immunity rule, or the Conditions
+     Library entry of the same name where that panel is not there, and every damage
+     type the line names peeks that type. The words print exactly as before. */
+  function firstAnchor(list) {
+    for (var i = 0; i < list.length; i++) {
+      try { if (EN.codexView && EN.codexView.has(list[i])) return list[i]; } catch (e) {}
+    }
+    return null;
+  }
+  function dmgLine(k, v) {
+    var p = el("p.help", { dataset: { gm: "dmgline" }, style: { margin: "3px 0 0" } });
+    var a = firstAnchor(["ref-damage/resistance-vulnerability-and-immunity", "ref-conds/" + (k === "Immune" ? "immunity" : "resistance")]);
+    p.appendChild(a ? EN.ui.ruleLink(a, k) : document.createTextNode(k));
+    p.appendChild(document.createTextNode(": "));
+    var s = String(v == null ? "" : v);
+    var types = ((EN.combat && EN.combat.damageTypes) || []).map(function (t) { return t && t.name; })
+      .filter(function (n) { return typeof n === "string" && /^[A-Za-z ]+$/.test(n); });
+    if (!types.length) { p.appendChild(document.createTextNode(s)); return p; }
+    var re = new RegExp("\\b(" + types.join("|") + ")\\b", "g"), last = 0, seen = {}, m;
+    while ((m = re.exec(s))) {
+      if (own(seen, m[1])) continue;
+      seen[m[1]] = true;
+      if (m.index > last) p.appendChild(document.createTextNode(s.slice(last, m.index)));
+      p.appendChild(EN.ui.ruleLink("ref-dmg/" + cxSlug(m[1]), m[1]));
+      last = m.index + m[1].length;
+    }
+    if (last < s.length) p.appendChild(document.createTextNode(s.slice(last)));
+    return p;
+  }
+
   /* A Bestiary entry's card body, without its buttons: the Bestiary tab draws it
      with them, and the Table draws it as an opened row's full statblock. One
      renderer, so a threat reads the same in both places. `opts.table` leaves
@@ -1181,11 +1277,11 @@ EN.gmView = (function () {
         text: e.skills.map(function (k) { return k.name + " " + k.value; }).join(" · ") }));
     }
     if (st["Unshakable, Defensive Impulses"]) {
-      kids.push(el("p.help", { style: { margin: "5px 0 0", color: "var(--gold)" },
-        text: "Solo: " + st["Unshakable, Defensive Impulses"] }));
+      kids.push(el("p.help", { style: { margin: "5px 0 0", color: "var(--gold)" } }, [
+        document.createTextNode("Solo: " + st["Unshakable, Defensive Impulses"]), tailChip("gmt-solos", "Running Solos")]));
     }
     ["Immune", "Resistance"].forEach(function (k) {
-      if (st[k]) kids.push(el("p.help", { style: { margin: "3px 0 0" }, text: k + ": " + st[k] }));
+      if (st[k]) kids.push(dmgLine(k, st[k]));
     });
 
     /* Damage a round, computed from the printed dice rather than read off the
@@ -1213,7 +1309,8 @@ EN.gmView = (function () {
       var ap = el("p", { style: { margin: "6px 0 0", fontSize: "13px" } }, [
         el("span", { style: { fontWeight: 600 }, text: a.name + (a.cost ? " (" + a.cost + ")" : "") + ": " })
       ]);
-      EN.ui.applyInline(ap, String(a.text || ""));
+      // the same **bold** and *italic* as applyInline, with the conditions and rule names it cites linked
+      EN.ui.ruleText(ap, String(a.text || ""), { conditions: true });
       kids.push(ap);
     });
 
@@ -1729,7 +1826,63 @@ EN.gmView = (function () {
       else if (b.kind === "template") kids.push(cardTemplate(b, S));
       else kids.push(cardText(b, S));
     });
+    kids.push(cardCodex(sec.key));
     return el("div", { dataset: { cardSection: sec.key || "" }, style: { margin: "0 0 9px", breakInside: "avoid" } }, kids);
+  }
+  /* WHERE EACH SECTION'S RULES LIVE IN THE CODEX, after data/gm_card.js's sameAs
+     notes: the panel (or entry) holding what the section summarises. A section
+     whose target is not on this desktop's Codex yet simply gets no line. */
+  var CARD_CODEX = {
+    array: ["gmt-array"],
+    designations: ["gmt-designations"],
+    budgets: ["gme-budget"],
+    dcs: ["rz-d20", "gmh-dc"],
+    room: ["ref-cover"],
+    response: ["gme-security"],
+    pools: ["rz-pool"],
+    nodes: ["gd-nodes"],
+    sitdowns: ["gms-sitdown"],
+    chases: ["gms-chase"],
+    heat: ["gmx-check", "gmx-ladder"],
+    threat: ["gmt-solos/threat-initiative", "gmt-bestiary/threat-pilots"]
+  };
+  /* A SCREEN-ONLY line under a section: "In the Codex:" and a link per target.
+     data-card-codex marks it, and the overlay's own print rule (openCard) hides
+     it, so nothing on the printed card is a link. A link peeks over the card
+     (raiseOverCard). */
+  function cardCodex(key) {
+    var list = own(CARD_CODEX, key) ? CARD_CODEX[key] : null;
+    if (!list || !EN.codexView || !EN.codexView.has) return null;
+    var live = list.filter(function (a) { try { return EN.codexView.has(a); } catch (e) { return false; } });
+    if (!live.length) return null;
+    var line = el("div", { dataset: { cardCodex: key }, style: { margin: "0 0 4px", fontSize: "10px", letterSpacing: ".04em", color: DIM } },
+      [document.createTextNode("In the Codex: ")]);
+    live.forEach(function (a, i) {
+      if (i) line.appendChild(document.createTextNode(" · "));
+      var ln = EN.ui.ruleLink(a);
+      if (ln && ln.nodeType === 1) {
+        ln.style.color = TEAL;
+        ln.addEventListener("click", raiseOverCard);
+        ln.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") raiseOverCard(); });
+      }
+      line.appendChild(ln);
+    });
+    return line;
+  }
+  /* The peek drawer stacks under the card overlay by default (print.css puts
+     #print-overlay at 9999), so a drawer opened FROM the card is lifted above it.
+     OPEN IN CODEX leaves the card for the Codex tab, so it closes the card first;
+     Esc closes the drawer before the card (cardKey). Read after the link's own
+     click has opened the drawer. */
+  function raiseOverCard() {
+    var pk = document.getElementById("codex-peek");
+    if (!pk || pk.getAttribute("data-over-card")) return;
+    pk.setAttribute("data-over-card", "1");
+    pk.style.zIndex = "10000";
+    pk.addEventListener("click", function (e) {
+      var t = e.target;
+      if (t && t.closest && t.closest('[data-cxp="open"]')) closeCard();
+    }, true);
   }
   /* WHERE THE BACK BREAKS INTO ITS SECOND COLUMN. Two explicit columns, not
      CSS columns: Chrome will not split a multi-column block across a printed
@@ -1788,7 +1941,14 @@ EN.gmView = (function () {
       inner
     ]);
   }
-  function cardKey(e) { if (e.key === "Escape") closeCard(); }
+  function cardKey(e) {
+    if (e.key !== "Escape") return;
+    // a rule peeked FROM the card sits above it (raiseOverCard), and goes first; a drawer
+    // that was open before the card is under it, and waits for the next Escape
+    var pk = document.getElementById("codex-peek");
+    if (pk && pk.getAttribute("data-over-card") && EN.codexView && EN.codexView.closePeek) { EN.codexView.closePeek(); return; }
+    closeCard();
+  }
   function closeCard() {
     var o = document.getElementById("print-overlay");
     if (o && o.getAttribute("data-gm") === "card") o.parentNode.removeChild(o);
@@ -1808,6 +1968,8 @@ EN.gmView = (function () {
       el("button.btn.sm", { dataset: { gm: "cardclose" }, onclick: closeCard }, "✕ CLOSE")
     ]);
     var ov = el("div#print-overlay", { dataset: { gm: "card" }, role: "dialog", "aria-label": C.title || "The GM's Card" }, [
+      // the Codex lines are a screen aid: the card prints as the page prints it
+      el("style", { text: "@media print{ [data-card-codex]{ display:none !important; } }" }),
       bar, el("div.print-scroll", null, C.sides.map(function (s) { return cardSide(C, s); }))
     ]);
     document.body.appendChild(ov);

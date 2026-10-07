@@ -135,7 +135,6 @@ EN.gmPayroll = (function () {
     };
   }
   var _p = fresh();
-  var _open = Object.create(null);   // which reference folds are open
   var _mount = null;
   var _pend = null;                  // a handoff waiting on the GM's word, because the form had unsaved changes (F18)
 
@@ -567,6 +566,10 @@ EN.gmPayroll = (function () {
     ]);
   }
   function gap() { return el("div", { style: { height: "12px" } }); }
+  // an entry's anchor slug, the Codex's own rule (EN.codexView.slug)
+  function cxSlug(s) {
+    return String(s).toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  }
   function lbl(t) { return el("label.fl", { text: t }); }
   function label(t) { return el("span.mono", { style: { fontSize: "10px", letterSpacing: ".1em", color: "var(--text3)" }, text: t }); }
   function help(t, style) {
@@ -609,16 +612,24 @@ EN.gmPayroll = (function () {
         style: { fontSize: "19px", color: color || "var(--text)" }, text: text })
     ]);
   }
-  // a reference fold, closed by default: the book's prose is there when wanted and out of the way when not
-  function fold(key, title, kids) {
-    var open = !!_open[key];
-    return el("div", { style: { marginTop: "10px" } }, [
-      el("div", { dataset: { pay: "fold-" + key },
-        style: { cursor: "pointer", fontFamily: "var(--disp)", fontSize: "10px", letterSpacing: ".12em",
-                 color: "var(--text3)", textTransform: "uppercase" },
-        onclick: function () { _open[key] = !open; refresh(); } }, EN.ui.nameCaret(title, open)),
-      open ? el("div", { style: { marginTop: "6px" } }, kids) : null
-    ]);
+  /* The book's prose beside each tool is the Codex's Paying the Crew
+     (js/codex_gm_play.js, panel gmy-pay); the split is the player rule,
+     Splitting a Payout. These draw the links, plain text through EN.ui when
+     codex.js is missing. */
+  // a line of Codex links: "Lead A · B", each [anchor, label]
+  function codexLine(key, lead, list) {
+    var p = el("p.help", { dataset: { pay: "codex-" + key }, style: { margin: "10px 0 0" } }, [document.createTextNode(lead + " ")]);
+    list.forEach(function (it, i) {
+      if (i) p.appendChild(document.createTextNode(DOT));
+      p.appendChild(EN.ui.ruleLink(it[0], it[1]));
+    });
+    return p;
+  }
+  // a help line whose rule names link into the Codex ("Economy and Rewards", "Incursion Briefings")
+  function rhelp(t, style) {
+    var s = { margin: "4px 0 0" };
+    if (style) Object.keys(style).forEach(function (k) { s[k] = style[k]; });
+    return EN.ui.ruleText(el("p.help", { style: s }), t);
   }
 
   /* COPY. The clipboard API where the page may use it, else the old select and
@@ -796,13 +807,13 @@ EN.gmPayroll = (function () {
           { color: "var(--warn)" }));
       }
     }
-    kids.push(fold("incursion", I.name, [help(I.text, { margin: 0 })]));
+    kids.push(codexLine("incursion", "The rule:", [["gmy-pay/" + cxSlug(I.name), I.name]]));
     return el("div", { style: { marginTop: "12px", paddingTop: "10px", borderTop: "1px solid var(--border2)" } }, kids);
   }
 
   function contractPanel(m) {
     var C = P().contract, q = m.q, kids = [];
-    kids.push(help(C.lead, { margin: "0 0 10px" }));
+    kids.push(rhelp(C.lead, { margin: "0 0 10px" }));
     kids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginBottom: "6px" } },
       [label("DIFFICULTY")].concat(C.columns.map(function (c) {
         return chip(c.name, _p.diff === c.key, "diff-" + c.key, function () { _p.diff = c.key; _p.total = null; refresh(); });
@@ -818,7 +829,7 @@ EN.gmPayroll = (function () {
         text: "The clauses run " + o + " " + plural(o, "column") + " past the " + q.name + " edge of the grid, so the quote holds at " + q.name + "." }));
     }
     kids.push(gridTable(q));
-    kids.push(help(C.after, { margin: "0 0 10px" }));
+    kids.push(rhelp(C.after, { margin: "0 0 10px" }));
 
     // the quote: the printed band, its midpoint prefilled, and the total the GM settles on
     var cell = q.cell, midText;
@@ -947,8 +958,7 @@ EN.gmPayroll = (function () {
         el("span.mono", { dataset: { pay: "bounty-total", v: String(m.bTotal) }, style: { fontSize: "16px" }, text: fmtG(m.bTotal) })
       ]));
     }
-    kids.push(fold("bounties", "The book on bounties", [help(B.paragraphs[1], { margin: 0 })].concat(
-      (B.examples || []).map(function (x) { return help(x.text); }))));
+    kids.push(codexLine("bounties", "The book on bounties:", [["gmy-pay/bounties", "Bounties"]]));
     return EN.ui.panel("Bounties", "PRICED OFF THE TARGET'S XP", kids);
   }
 
@@ -980,7 +990,7 @@ EN.gmPayroll = (function () {
 
   function salvagePanel(m) {
     var S = P().salvage, A = P().claims && P().claims.salvage, kids = [];
-    kids.push(help(S.lead, { margin: "0 0 8px" }));
+    kids.push(rhelp(S.lead, { margin: "0 0 8px" }));
 
     // the Grade bands; a Grade a Flow-side or cryptid kill in this encounter reached is lit
     var lit = Object.create(null);
@@ -1054,15 +1064,10 @@ EN.gmPayroll = (function () {
       label("SALVAGE"),
       el("span.mono", { dataset: { pay: "salv-total", v: String(m.sTotal) }, style: { fontSize: "16px" }, text: fmtG(m.sTotal) })
     ]));
-    var ref = (S.sources || []).map(function (s) {
-      var p = el("p.help", { style: { margin: "0 0 6px" } });
-      p.appendChild(el("span", { style: { fontWeight: 600 }, text: s.name + ". " }));
-      p.appendChild(document.createTextNode(s.text));
-      return p;
-    });
-    if (S.guidance) ref.push(help(S.guidance.label + ": " + S.guidance.text, { color: "var(--accent)" }));
-    if (A && A.paragraphs) A.paragraphs.forEach(function (t) { ref.push(help(t)); });
-    kids.push(fold("salvage", "What threats leave", ref));
+    kids.push(codexLine("salvage", "What threats leave:", [["gmy-pay/salvage-and-parts", "Salvage and Parts"]]
+      .concat((S.sources || []).map(function (x) { return ["gmy-pay/" + cxSlug(x.name), x.name]; }))
+      .concat(S.guidance ? [["gmy-pay/" + cxSlug(S.guidance.label), S.guidance.label]] : [])
+      .concat(A && A.paragraphs ? [["gms-incursion/" + cxSlug(A.name || "Salvage"), (A.name || "Salvage") + " from an Incursion"]] : [])));
     return EN.ui.panel("Salvage and Parts", "BY THE GRADE OF THE KILL", kids);
   }
 
@@ -1107,7 +1112,8 @@ EN.gmPayroll = (function () {
     if (!m.crew.headcount) kids.push(help("No crew yet, so the split is for one. Set a headcount above.", { color: "var(--warn)" }));
     if (sp.over) kids.push(help(fmtG(sp.over) + " does not divide evenly.", { color: "var(--gold)" }));
     kids.push(help("The fixer's cut comes off the client's money, the contract and any bounties. Salvage is the crew's own sale and splits without it; the Crew Kit's percent applies to both."));
-    if (EN.economy && EN.economy.splitNote) kids.push(help(EN.economy.splitNote));
+    // the split rule itself is the player chapter's, not reprinted here
+    if (EN.economy && EN.economy.splitNote) kids.push(codexLine("split", "The rule:", [["ref-economy/splitting-a-payout", "Splitting a Payout"]]));
 
     // the payday checklist, the book's own order
     var D = P().payday;
@@ -1182,7 +1188,7 @@ EN.gmPayroll = (function () {
       if (ms.length) kids.push(el("p.help", { dataset: { pay: "xp-skip" }, style: { margin: "4px 0 0", color: "var(--text2)" },
         text: "On milestones, so no XP is written: " + ms.map(function (x) { return x.name; }).join(", ") + "." }));
     }
-    kids.push(fold("xp", "The book on XP", [help(X.text, { margin: 0 }), help(X.milestone)]));
+    kids.push(codexLine("xp", "The book on XP:", [["gmy-pay/experience", "Experience"]]));
     return EN.ui.panel("Experience", "EVERY FREELANCER, THE FULL TOTAL", kids);
   }
 
@@ -1551,16 +1557,9 @@ EN.gmPayroll = (function () {
       ]));
     }
 
-    // the book on pacing
-    var ref = [help(M.pace, { margin: 0 })];
-    if (M.notesLead) ref.push(help(M.notesLead));
-    (M.notes || []).forEach(function (nt) {
-      var p = el("p.help", { style: { margin: "4px 0 0" } });
-      p.appendChild(el("span", { style: { fontWeight: 600 }, text: nt.name + " " }));
-      p.appendChild(document.createTextNode(nt.text));
-      ref.push(p);
-    });
-    kids.push(fold("milestones", "The book on pacing", ref));
+    // the book on pacing, in the Codex
+    kids.push(codexLine("milestones", "The book on pacing:", [["gmy-pay/milestones-and-pacing", M.name]]
+      .concat((M.notes || []).map(function (nt) { return ["gmy-pay/" + cxSlug(nt.name), nt.name.replace(/\.$/, "")]; }))));
     return EN.ui.panel(M.name, "MAJOR" + DOT + "MINOR" + DOT + "PACING", kids);
   }
 

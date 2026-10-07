@@ -13,7 +13,9 @@ EN.briefs = {
   "Second Language": "Study a Node; next Cipher Attack on it gains +2 hit and ignores 1 Firewall",
   "Codebreaker Subclass": "Choose a subclass granting features at set levels",
   "Wireless Root Access": "Scan, Breach, and Link any Node within 24 spaces through walls, no line of sight",
-  "Universal Upgrade": "Raise one Attribute by 1 (max 20) or take a qualifying Talent",
+  // agrees with the class data's own Universal Upgrade and EN.talentRules.progression
+  // (it used to read "Raise one Attribute by 1", which neither says)
+  "Universal Upgrade": "Raise one Attribute by 2 or two by 1 each (max 20), or take a qualifying Talent",
   "Subclass Feature": "Gain your subclass's feature for this level",
   "Multi-Thread Processing": "Once per encounter, inject two different Ciphers into two linked Nodes at once; each pays full Bandwidth",
   "Tactical Execution": "After Linking or injecting, make a Sidearm/SMG attack; Edge if its Node is linked",

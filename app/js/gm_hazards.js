@@ -7,9 +7,10 @@
 
    FOUR VIEWS on the tab, picked from a chip row the way the Bestiary picks a
    category: the Library (the eight Set Pieces and the GM's own hazards), the
-   Composer (write a hazard in the book's four lines), the Reference (the
-   chapter's tables) and the Tools (the chase stalemate roller, falling damage
-   and an object damage check).
+   Composer (write a hazard in the book's four lines), the Reference (a
+   pointer into the Codex, where the chapter's rules and tables now live as
+   Hazards & Set Pieces) and the Tools (the chase stalemate roller, falling
+   damage and an object damage check).
 
    THE ROOM TRAY. A hazard never takes an initiative slot. The book's whole
    rule is "Not an initiative slot: a presence", and it prints no initiative
@@ -73,7 +74,7 @@ EN.gmHazards = (function () {
   var _rolls = Object.create(null);   // Room row id -> the last bite rolled
   var _fall = Object.create(null);    // Room row id -> spaces typed for a fall
   var _tools = { district: null, stalemate: null, speed: "", impact: "", spaces: "", fall: null,
-                 mat: "average", integ: "", dmg: "", hit: null, ruleOpen: false };
+                 mat: "average", integ: "", dmg: "", hit: null };
 
   /* ---- the book's numbers, read where they live ---------------------------- */
   function grades() {
@@ -368,6 +369,37 @@ EN.gmHazards = (function () {
   }
   function gap(h) { return el("div", { style: { height: (h || 12) + "px" } }); }
 
+  /* ---- links into the Codex ------------------------------------------------
+     The chapter itself (the anatomy, the DC ladder, the Bite bands, pricing,
+     objects, how a hazard acts, how many, falling) is the Codex's Hazards &
+     Set Pieces (js/codex_gm_build.js); this tab keeps the tools and links to
+     it. The phrase table and its linker come from EN.codexGmBuild, and every
+     link degrades to plain text through EN.ui when the Codex is not loaded. */
+  function codexLinks() { return (EN.codexGmBuild && EN.codexGmBuild.links) || {}; }
+  // text into parent with its rule names linked; plain (EN.ui.ruleText) without the Codex
+  function ruled(parent, text, pairs, opts) {
+    var X = EN.codexGmBuild, n = parent.childNodes.length;
+    if (X && typeof X.phrased === "function") {
+      try { return X.phrased(parent, text, pairs, opts); }
+      catch (e) { while (parent.childNodes.length > n) parent.removeChild(parent.lastChild); }
+    }
+    return EN.ui.ruleText(parent, text, opts);
+  }
+  // a section title with a small "?" that peeks its Codex panel (no chip without the Codex)
+  function ruleTitle(label, anchor) {
+    var t = EN.ui.sectionTitle(label);
+    var c = EN.ui.ruleChip(anchor);
+    if (c) { c.style.marginLeft = "6px"; t.insertBefore(c, t.lastChild); }
+    return t;
+  }
+  // a "?" for a panel header (headerRight), or nothing without the Codex
+  function headChip(anchor) { var c = EN.ui.ruleChip(anchor); return c ? [c] : null; }
+  // the raw Set Piece entry, for what its paragraph names (bite.type, exposure); never copied into a hazard
+  function setPieceItem(key) {
+    var H = book();
+    return ((H && H.setPieces && H.setPieces.items) || []).filter(function (s) { return s.key === key; })[0] || null;
+  }
+
   /* ---- the words a card prints -------------------------------------------- */
   function saveText(h, none) {
     return h.save ? h.save + " Save DC " + h.dc : none;
@@ -648,7 +680,12 @@ EN.gmHazards = (function () {
     var reads = readsAs(live);
     var kids = rows;
     var H = book();
-    if (H && H.acts && H.acts.text) kids.push(help(H.acts.text + " Hazards act from this tray, not from the order above.", { margin: "6px 0 0" }));
+    if (H && H.acts && H.acts.text) {
+      var actsP = help(H.acts.text + " Hazards act from this tray, not from the order above. ", { margin: "6px 0 0" });
+      var actsChip = EN.ui.ruleChip("gmh-acts");
+      if (actsChip) actsP.appendChild(actsChip);
+      kids.push(actsP);
+    }
     var tag = live + " LIVE" + (reads ? " · " + reads.toUpperCase() : "");
     return EN.ui.panel("The Room", tag, kids, { glow: anyNow });
   }
@@ -689,8 +726,14 @@ EN.gmHazards = (function () {
          fragments ("everyone in it"), so neither happens any more. */
       kids.push(el("div.mono", { style: { fontSize: "10px", letterSpacing: ".1em", color: "var(--text3)", margin: "2px 0 2px" },
         text: "AS WRITTEN AT G" + h.printedGrade }));
-      kids.push(el("p", { "data-hook": "as-written", style: { margin: "0 0 8px", fontSize: "13.5px", lineHeight: "1.5", color: "var(--text)" },
-        text: h.printed }));
+      /* The paragraph links the rules it names: its damage type and Exposure (read off the
+         Set Piece's own bite.type and exposure), the conditions it names (Prone,
+         Suffocating), and Difficult Terrain, heavy obscurement, Snag and Dashes. The words
+         stay exactly as printed. */
+      var spi = setPieceItem(h.key);
+      var spLinks = (EN.codexGmBuild && EN.codexGmBuild.setPieceLinks) ? EN.codexGmBuild.setPieceLinks(spi) : [];
+      kids.push(ruled(el("p", { "data-hook": "as-written", style: { margin: "0 0 8px", fontSize: "13.5px", lineHeight: "1.5", color: "var(--text)" } }),
+        h.printed, spLinks, { conditions: true }));
       var anomalyRun = !!(hz.anomalies && hz.anomalies.length);
       var biteLine = biteText(hz.bite);
       if (hz.trigger) kids.push(line(fieldName("trigger", "Trigger"), hz.trigger, "trigger"));
@@ -932,12 +975,12 @@ EN.gmHazards = (function () {
 
     // 1. Trigger
     var trig = (H.anatomy.fields.filter(function (f) { return f.key === "trigger"; })[0] || {}).examples || [];
-    kids.push(EN.ui.sectionTitle(fieldName("trigger", "Trigger")));
+    kids.push(ruleTitle(fieldName("trigger", "Trigger"), "gmh-anatomy/trigger"));
     // the field label and placeholder are the book's own line, so no help line repeats it
     kids.push(textField("What sets it off", d.trigger, trig.join(", "), function (v) { d.trigger = v; }, { hook: "c-trigger", flex: "1 1 100%" }));
 
     // 2. Save and DC
-    kids.push(EN.ui.sectionTitle(fieldName("save", "Save and DC")));
+    kids.push(ruleTitle(fieldName("save", "Save and DC"), "gmh-dc"));
     var usual = ((H.anatomy.fields.filter(function (f) { return f.key === "save"; })[0] || {}).usual) || [];
     var attrs = (EN.rules && EN.rules.attributes || []).map(function (a) { return a.name; });
     var order = usual.concat(attrs.filter(function (a) { return usual.indexOf(a) === -1; }));
@@ -959,7 +1002,7 @@ EN.gmHazards = (function () {
     if (d.save) kids.push(help("The DC follows the Grade ladder unless you override it. " + (H.dcLegalText || "")));
 
     // 3. Bite
-    kids.push(EN.ui.sectionTitle(fieldName("bite", "Bite")));
+    kids.push(ruleTitle(fieldName("bite", "Bite"), "gmh-bites"));
     var bandOpts = [{ value: "", label: "No damage" }].concat((H.bites || []).map(function (b) {
       return { value: b.key, label: b.name + " (" + b.dice + ")" };
     }));
@@ -979,13 +1022,13 @@ EN.gmHazards = (function () {
       { hook: "c-bitetext", flex: "1 1 100%" }));
 
     // 4. Counter
-    kids.push(EN.ui.sectionTitle(fieldName("counter", "Counter") + " (required)"));
+    kids.push(ruleTitle(fieldName("counter", "Counter") + " (required)", "gmh-anatomy/counter"));
     kids.push(textField("How the crew shuts it off", d.counter, "a valve, a breaker, a Node", function (v) { d.counter = v; },
       { hook: "c-counter", flex: "1 1 100%" }));
     kids.push(help(fieldText("counter")));
 
     // timing
-    kids.push(EN.ui.sectionTitle("Timing"));
+    kids.push(ruleTitle("Timing", "gmh-acts"));
     var k = kindOf(d.kind);
     var tRow = [pick("When it acts", KINDS.map(function (x) { return { value: x.key, label: x.label }; }), d.kind,
       function (v) { d.kind = v; }, { hook: "c-kind" })];
@@ -998,7 +1041,7 @@ EN.gmHazards = (function () {
     if (H.acts && H.acts.text) kids.push(help(H.acts.text + " In play it sits in the Room tray under the Table."));
 
     // flavor or opposition, and its price
-    kids.push(EN.ui.sectionTitle("Flavor or opposition"));
+    kids.push(ruleTitle("Flavor or opposition", "gmh-pricing"));
     var draftH = draftHazard(d);
     var bookPrice = priceXp((function () { var c = copy(draftH); c.xp = null; return c; })(), g);
     kids.push(el("div.row.wrap", { style: { gap: "10px", alignItems: "flex-end" } }, [
@@ -1060,79 +1103,35 @@ EN.gmHazards = (function () {
     composerActs(_c).forEach(function (n) { if (n) _cActs.appendChild(n); });
   }
 
-  /* ---- the Reference ------------------------------------------------------- */
-  function leadP(name, text) {
-    return el("p", { style: { margin: "6px 0 0", fontSize: "13px", color: "var(--text2)" } }, [
-      el("span", { style: { fontWeight: 600, color: "var(--text)" }, text: name + ". " }),
-      document.createTextNode(text)
-    ]);
-  }
+  /* ---- the Reference -------------------------------------------------------
+     The chapter's reading (the four lines, the DC ladder, the Bite bands,
+     pricing, objects, how a hazard acts, how many, falling) moved to the
+     Codex's Hazards & Set Pieces, so it is written once and the GM can peek it
+     from any tab. The REFERENCE chip stays, as a pointer: one link per Codex
+     panel, read off the Codex's own registry, and OPEN THE CHAPTER. */
   function para(text) {
     return el("p", { style: { margin: "6px 0 0", fontSize: "13px", color: "var(--text2)" }, text: text });
   }
-  // a small table as rows of cells, so it wraps on a phone instead of scrolling
-  function miniTable(head, rows, widths) {
-    function rowEl(cells, isHead) {
-      return el("div", { style: { display: "flex", gap: "8px", flexWrap: "wrap", padding: "4px 0",
-        borderBottom: "1px solid var(--border)" } }, cells.map(function (c, i) {
-        var w = widths && widths[i] ? widths[i] : (i === 0 ? "1 1 110px" : "0 0 52px");
-        return el("span" + (isHead ? ".mono" : ""), { style: { flex: w, minWidth: 0,
-          fontSize: isHead ? "10px" : "13px", letterSpacing: isHead ? ".1em" : "normal",
-          color: isHead ? "var(--text3)" : "var(--text2)" }, text: String(c) });
-      }));
-    }
-    return el("div", { style: { marginTop: "6px" } }, [rowEl(head, true)].concat(rows.map(function (r) { return rowEl(r, false); })));
+  function chapterPanels(id) {
+    try {
+      var ch = (EN.codexView && EN.codexView.chapters) ? EN.codexView.chapters().filter(function (c) { return c.id === id; })[0] : null;
+      return ch ? ch.panels.filter(function (p) { return EN.codexView.has(p.id); }) : [];
+    } catch (e) { return []; }
   }
   function referenceView() {
-    var H = book();
-    var gs = grades();
-    var kids = [];
-    kids.push(para(H.intro));
-
-    kids.push(EN.ui.sectionTitle("Hazard anatomy"));
-    kids.push(para(H.anatomy.lead));
-    H.anatomy.fields.forEach(function (f) { kids.push(leadP(f.name, f.text)); });
-
-    kids.push(EN.ui.sectionTitle("DC by Grade"));
-    kids.push(el("div.stat-row", { "data-hook": "ladder", style: { marginTop: "6px" } },
-      gs.map(function (g) { return EN.ui.stat("G" + g, String(ladderDc(g)), "DC"); })));
-    kids.push(help(H.dcLegalText));
-
-    kids.push(EN.ui.sectionTitle("Bite"));
-    kids.push(miniTable(["BAND", "DICE", "READS AS"], (H.bites || []).map(function (b) {
-      return [b.name, b.dice, b.readsAs];
-    }), ["0 0 84px", "0 0 84px", "1 1 180px"]));
-
-    kids.push(EN.ui.sectionTitle("Pricing"));
-    kids.push(para(H.pricing.text));
-    kids.push(miniTable(["RECURRING, PRICED AS"].concat(gs.map(function (g) { return "G" + g; })),
-      (H.pricing.equivalents || []).map(function (e) {
-        var b = bandOf(e.bite);
-        return [(b ? b.name : upperFirst(e.bite)) + " as " + designationName(e.designation)].concat(gs.map(function (g) {
-          return own(e.xpByGrade, g) ? e.xpByGrade[g] : "";
-        }));
-      }), ["1 1 90px"].concat(gs.map(function () { return "0 0 38px"; }))));
-    kids.push(help("The book prints no price for a recurring Nuisance or Dangerous hazard. This app treats one as free unless you enter XP."));
-
-    kids.push(EN.ui.sectionTitle("Objects and materials"));
-    kids.push(para(H.objects.text));
-    kids.push(miniTable(["MATERIAL", "STRUCT", "INTEG"], (H.objects.materials || []).map(function (m) {
-      return [m.name, m.structure, m.integrity];
-    })));
-
-    kids.push(EN.ui.sectionTitle("How a hazard acts"));
-    kids.push(para(H.acts.text));
-    kids.push(leadP(fieldName("trigger", "Trigger"), H.acts.trigger));
-    kids.push(help("This app keeps live hazards in the Room tray under the Table's initiative order, with each one's timing worked out from the round."));
-
-    kids.push(EN.ui.sectionTitle("How many"));
-    var gd = H.setPieces && H.setPieces.guidance;
-    if (gd) kids.push(leadP(gd.label, gd.text));
-
-    if (H.falling) {
-      kids.push(EN.ui.sectionTitle("Falling"));
-      kids.push(para(H.falling.text));
+    var panels = chapterPanels("gm-hazards");
+    if (!panels.length) {
+      return [EN.ui.panel("Reference", "THE HAZARDS CHAPTER", [el("div.muted-box", { style: { padding: "18px" },
+        text: "The hazards chapter lives in the Codex, which did not load here." })])];
     }
+    var kids = [help("The hazards chapter is in the Codex, under Hazards & Set Pieces. Tap a rule to read it here without leaving the tab.", { margin: "0 0 8px" })];
+    kids.push(el("div", { "data-hook": "ref-links" }, panels.map(function (p) {
+      return el("div", { style: { padding: "5px 0", borderBottom: "1px solid var(--border)", fontSize: "13.5px" } }, [EN.ui.ruleLink(p.id, p.title)]);
+    })));
+    kids.push(el("div.row.wrap", { style: { gap: "8px", marginTop: "10px" } }, [
+      el("button.btn.sm", { "data-hook": "open-codex", title: "Go to the chapter on the Codex tab",
+        onclick: function () { EN.codexView.open(panels[0].id); } }, "OPEN THE CHAPTER ›")
+    ]));
     return [EN.ui.panel("Reference", "THE HAZARDS CHAPTER", kids)];
   }
 
@@ -1246,14 +1245,14 @@ EN.gmHazards = (function () {
       kids.push(el("p.mono", { "data-hook": "fall-result", style: { margin: "8px 0 0", fontSize: "13px", color: "var(--accent)" },
         text: _tools.fall.n ? rollText(_tools.fall) + " " + (F.type || "") : "Under " + per + " spaces: no dice by this count." }));
     }
-    return EN.ui.panel("Falling", count + "d" + sides + " PER " + per + " SPACES", kids);
+    return EN.ui.panel("Falling", count + "d" + sides + " PER " + per + " SPACES", kids, { headerRight: headChip("gmh-falling") });
   }
 
   function objectPanel() {
     var O = book().objects;
     if (!O || !O.materials || !O.materials.length) return null;
     var mat = O.materials.filter(function (m) { return m.key === _tools.mat; })[0] || O.materials[0];
-    var kids = [para(O.text)];
+    var kids = [ruled(el("p", { style: { margin: "6px 0 0", fontSize: "13px", color: "var(--text2)" } }), O.text, codexLinks().objects || [])];
     kids.push(el("div.row.wrap", { style: { gap: "10px", alignItems: "flex-end", marginTop: "6px" } }, [
       pick("Material", O.materials.map(function (m) {
         return { value: m.key, label: m.name + " " + m.structure + "/" + m.integrity };
@@ -1283,19 +1282,18 @@ EN.gmHazards = (function () {
     ]));
     if (_tools.hit) kids.push(el("p", { "data-hook": "obj-result", style: { margin: "8px 0 0", fontSize: "13px", color: "var(--accent)" }, text: _tools.hit }));
 
-    // the rule itself, from the player-side combat data, for when the table argues
-    var C = EN.combat || {};
-    if (C.destructibleCover) {
-      kids.push(el("button.btn.sm.ghost", { style: { marginTop: "8px" }, onclick: function () {
-        _tools.ruleOpen = !_tools.ruleOpen; EN.app.render();
-      } }, (_tools.ruleOpen ? "▾ " : "▸ ") + "THE RULE"));
-      if (_tools.ruleOpen) {
-        var rk = el("div", { style: { marginTop: "6px", fontSize: "12.5px", color: "var(--text2)", whiteSpace: "pre-wrap" } });
-        EN.ui.applyInline(rk, C.destructibleCover + (C.overflowDamage ? "\n\n" + C.overflowDamage : ""));
-        kids.push(rk);
-      }
-    }
-    return EN.ui.panel("Object Damage", "STRUCTURE TO MATTER · INTEGRITY TO DIE", kids);
+    /* The rule itself, for when the table argues, is the player-side Destructible Cover and
+       Overflow Damage in the Codex: one tap peeks it, where a THE RULE toggle used to reprint
+       EN.combat here. Plain names without the Codex. */
+    var rl = el("p.help", { "data-hook": "obj-rule", style: { margin: "8px 0 0" } }, [
+      document.createTextNode("The rule: "),
+      EN.ui.ruleLink("ref-cover/destructible-cover", "Destructible Cover"),
+      document.createTextNode(" and "),
+      EN.ui.ruleLink("ref-cover/overflow-damage", "Overflow Damage"),
+      document.createTextNode(".")
+    ]);
+    kids.push(rl);
+    return EN.ui.panel("Object Damage", "STRUCTURE TO MATTER · INTEGRITY TO DIE", kids, { headerRight: headChip("gmh-objects") });
   }
 
   function toolsView() {

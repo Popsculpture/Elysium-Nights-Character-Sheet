@@ -2,7 +2,8 @@
    ELYSIUM NIGHTS · The Flow data
    Resonances, the Order of Shaping (Intent / Delivery / Force / Duration), the
    Sustain compatibility table, the Strain track, Overdraw and Breakflow, Ritual
-   Recovery, and premade Resonant Patterns. Drives the Flow tab calculator.
+   Recovery, and premade Resonant Patterns. Drives the Flow tab calculator, and the
+   Codex's chapter The Flow (js/codex_flow.js) renders the rules from this same copy.
    Resonant Patterns are stored as FORMULATIONS (the component choices) so the
    FP cost and damage recompute from the character's live Caliber / Flow Modifier.
    No em or en dashes anywhere in this file (house style).
@@ -25,7 +26,8 @@ EN.flow = {
   saveDcFormula: "8 + Flow Modifier + Caliber",
   checkNote: "You only roll an Invocation Check (Flow Attack) against an unwilling target. Willing targets and objects are affected automatically. Flow Invocations never use the Dice Pool Method.",
   /* How to read the "Flow Save DC (Body)" notation the Resonance entries use. Part 2, Invocation
-     Checks. Shown above the Resonances list in the Flow tab's reference panel. */
+     Checks. Shown above the Resonances list in the Codex (js/codex_flow.js) and beside the Flow
+     Save DC there. */
   saveNotation: "When an entry says a target makes a Flow Save DC (Body), it makes a Body Save against your Flow Save DC.",
 
   /* ---- the Order of Shaping: cost bands ---------------------------------- */
@@ -53,6 +55,10 @@ EN.flow = {
     { key: "instant", name: "Instant", desc: "Damage is applied and conditions are inflicted immediately. Unless an effect specifies otherwise, it lasts until the start of your next turn. Instant effects require no further input or maintenance." },
     { key: "sustain", name: "Sustain", desc: "Spend 1 FP at the start of your turn to maintain it. Only one sustained effect at a time." }
   ],
+  /* What ends a sustained effect besides choosing to. This sentence lived only inline in the
+     Flow tab's Sustain panel (js/flow.js); it moved here so the tab and the Codex's Sustained
+     Effects panel read one copy. */
+  sustainCapacity: "One sustained effect at a time. It ends if you are Incapacitated, Unconscious, or enter Breakflow. Starting a new sustain replaces the current one.",
   /* Stability Factor: sustained resonance is fragile. Taking damage while sustaining
      forces a Focus Check or the effect collapses. */
   focusDisruption: {

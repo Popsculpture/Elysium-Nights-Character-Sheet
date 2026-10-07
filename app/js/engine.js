@@ -133,11 +133,29 @@ EN.engine = (function () {
      category, a Vehicle category, or a Tool Category (never Armor). A Free
      Skill Focus granted by an Overlapping Starting Proficiency costs 0 TP and
      ignores the level 3+ gate.
-     Background/class grants form a free 'proficient' floor (not paid with TP). */
+     Background/class grants form a free 'proficient' floor (not paid with TP).
+     The numbers are READ from EN.rules.training.costs (data/rules.js), the same
+     copy the #PRINT price strip and the Codex print, so the sheet can never
+     advertise one price and charge another. The literals below are only the
+     fallback for a missing or partial data row. */
   var STEP_COST = { proficient: 1, expertise: 2, mastery: 2 };  // cost to step INTO a tier
   var TIER_LEVEL_REQ = { proficient: 1, expertise: 6, mastery: 10 };
   var FOCUS_COST = 1, FOCUS_LEVEL_REQ = 3;
   var SPEC_COST = 1, SPEC_LEVEL_REQ = 6;
+  ((R.training && R.training.costs) || []).forEach(function (c) {
+    if (!c) return;
+    var tp = typeof c.tp === "number" ? c.tp : null, lv = typeof c.level === "number" ? c.level : null;
+    if (c.key === "focus") {
+      if (tp !== null) FOCUS_COST = tp;
+      if (lv !== null) FOCUS_LEVEL_REQ = lv;
+    } else if (c.key === "spec") {
+      if (tp !== null) SPEC_COST = tp;
+      if (lv !== null) SPEC_LEVEL_REQ = lv;
+    } else if (STEP_COST.hasOwnProperty(c.key)) {
+      if (tp !== null) STEP_COST[c.key] = tp;
+      if (lv !== null) TIER_LEVEL_REQ[c.key] = lv;
+    }
+  });
 
   function tierIdx(t) { return R.profOrder.indexOf(t); }
   function skillFloorTier(ch, key) { return grantedSkills(ch)[key] ? "proficient" : "untrained"; }

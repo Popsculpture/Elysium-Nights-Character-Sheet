@@ -84,3 +84,37 @@ EN.gearCatalog.weaponTraits = {
   "Wear X": "The threshold where a hit starts costing the shield instead of just testing it. X is the shield's Wear Threshold, equal to twice the size of its Block die. When you Block an attack whose raw damage is X or more, or any critical hit you Block, mark off 1 of the shield's Durability boxes. Full rules under Shield Durability in the Combat chapter.",
   "Worn": "Built to attach to the body, clothing, or armor rather than be held. Can't be easily dropped or disarmed; may take time, tools, or a specific action to equip or remove. Counts as equipped gear for any effect that checks what you are wearing or bearing. While actually worn rather than packed or carried, its Load is reduced by 1, to a minimum of 0.",
 };
+
+/* The four traits that are FIRING MODES, in the order a weapon falls back through them. The
+   same list combat.js keeps as FIRING_MODES (its attack selector and ammo costs read that copy);
+   this one is what the Codex reads, so "see Firing Modes" in the combat data has somewhere to
+   point. Each mode's ammo cost is in its own trait text above. */
+EN.gearCatalog.firingModes = ["Single Shot", "Semi-Automatic", "Burst Fire", "Full-Auto"];
+
+/* PRINTED TRAIT TO GLOSSARY KEY. A catalog prints a trait the way the book does ("Armor
+   Piercing 2", "Area 3 cone", "Thrown (4/12)", "Wear 12"); the glossary keys it once
+   ("Armor Piercing X", "Area X", "Thrown", "Wear X"). This is the one matcher, so the
+   Inventory chip's tooltip and its Codex link can never land on two different definitions.
+     armorFirst  the item is armor, a shield or a focus: Heavy, Light, Concealable, Wear X and
+                 Worn mean different things there, so the armor glossary answers first and the
+                 weapon glossary is the fallback.
+   Returns { key, def, armor } (armor true when the armor glossary answered), or null. */
+EN.gearCatalog.traitLookup = function (printed, armorFirst) {
+  var W = EN.gearCatalog.weaponTraits || {};
+  var A = (EN.gearCatalog.armor && EN.gearCatalog.armor.traits) || {};
+  var base = String(printed == null ? "" : printed).replace(/\s*\(.*\)$/, "").trim();
+  function own(defs, k) { return Object.prototype.hasOwnProperty.call(defs, k); }
+  function find(defs) {
+    if (own(defs, base)) return base;
+    var x = base.replace(/\s+\d+$/, " X");
+    if (own(defs, x)) return x;
+    if (/^Area /.test(base) && own(defs, "Area X")) return "Area X";
+    return null;
+  }
+  var order = armorFirst ? [[A, true], [W, false]] : [[W, false]];
+  for (var i = 0; i < order.length; i++) {
+    var k = find(order[i][0]);
+    if (k) return { key: k, def: order[i][0][k], armor: order[i][1] };
+  }
+  return null;
+};

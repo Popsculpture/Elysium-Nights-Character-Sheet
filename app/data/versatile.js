@@ -15,6 +15,9 @@ EN.versatile = {
   types: ["insight", "performance", "intimidation"],
   labels: { insight: "Insight", performance: "Performance", intimidation: "Intimidation" },
   colors: { insight: "var(--accent)", performance: "var(--flow)", intimidation: "var(--danger)" },
+  // the #PRINT Advance step's Versatile Skills line, moved here 2026-10-07 so the step and
+  // the Codex (sk-skills/versatile-skills) read one copy
+  rule: "Insight, Performance, and Intimidation borrow the tier of whatever parent skill you lean on in the moment; you can't buy them with Training Points.",
   note: "Attr + Skill bonus = Versatile result. Any Attribute can pair with any parent Skill; the method you describe is what picks them. You use the parent Skill's tier bonus, so an Untrained parent adds nothing and rolls with Snag. Focus and Specialization carry over.",
 
   db: {

@@ -10,6 +10,8 @@ EN.gearCatalog = EN.gearCatalog || {};
 EN.gearCatalog.ranged = {
   intro: "In Elysium, the gap between you and trouble is the only currency that buys you time. Ranged weapons are what you spend to keep that gap honest.",
   saveDcNote: "Weapon Save DC (Range): whenever a firing mode or shell forces a saving throw, the DC is 8 + your Agility Modifier + your Caliber. A Thrown weapon uses the higher of your Body or Agility Modifier instead.",
+  // The range bands, which the Inventory's RNG chip used to state only as a hover title.
+  rangeNote: "A weapon's range is printed as normal / long. An attack at long range rolls with Snag.",
   groupIntros: {
     "Sidearm": "Compact firearms built for the quick draw. Pistols, revolvers, machine pistols, tasers. Less range and less raw output than a longarm, but they fit where longarms can't, and they decide whether you make it to the door.",
     "Longarm": "Two hands, two points of stability, two reasons the bullet goes where you wanted it to. Rifles, carbines, shotguns. Longarms own the open ground, where distance is the best armor you have.",
@@ -170,6 +172,15 @@ EN.gearCatalog.ammo = {
   intro: "Talk is cheap in Elysium. Lead is not. The right round seated in the right chamber at the right second: that is the thin margin between finishing the contract and bleeding out behind a dumpster while the city bills your estate for the cleanup.",
   mystechNote: "Most rounds are inert until the primer goes. Mystech rounds are never inert. They are etched, tuned, or quenched in something that was alive in the metaphysical sense, and they carry that current all the way down the barrel and out the other side. You don't buy these at a gun store.\n\nMystech ammunition uses the Mystech Availability scale (Iconic through Artifact) and is almost always Contraband. All of it is Counted, tracked one round at a time, and it comes in small lots because nobody makes it in volume.\n\nBacklash (all Mystech rounds): a Mystech round leaves a resonance signature when it fires. Until the end of the scene you read as Flow-touched to shrines, Shapers, Flow-sensitive trackers, and any #GRID system tuned to watch for it. Beyond that, the round only bites when the channel slips: on a Natural 1 on the attack roll, the discharge flares back through the weapon. You take 1d4 Resonant damage, or, if you have a Flow Reservoir, you lose 1d4 Flow Points instead. If that loss takes your Reservoir below 0, standard Overdraw rules apply.",
   trackingNote: "Plentiful ammo (sidearms, longarms, bowfire): track only the loaded magazine and restock between contracts. Counted ammo (heavy weapons, launchers, all Specialty): track every unit.",
+  /* One line per ammo group, keyed by the items' `group`. These were typed inline in the
+     Inventory market; they live here now so the market and the Codex read one copy. Mystech
+     ammunition's own note is mystechNote above. */
+  groupIntros: {
+    "Plentiful": "Track only the loaded magazine; restock to full between contracts. Prices are for the listed quantities.",
+    "Counted": "Heavy, expensive, watched, and scarce. Track each unit from purchase to spend.",
+    "Specialty": "All Counted: Load it, Declare it before the attack, Apply it on resolution.",
+    "Launcher Shell": "Fired from a Grenade Launcher. Targets save Agility vs your Weapon Save DC."
+  },
 
   items: [
     /* ---- Standard · Plentiful ---- */

@@ -84,7 +84,12 @@ EN.threats = {
      Ghost's text is the Handbook's short line. The older wording ("Opens from
      Stealth against Passive Perception. First hit from hiding gains Edge.")
      granted an Edge the book no longer prints, so it is gone here and from the
-     From Nowhere ability below. */
+     From Nowhere ability below.
+
+     `rolesIntro` is the Roles intro's own sentence, the one the halves-round-down
+     ruling below quotes, carried as data so the Codex's Roles panel
+     (js/codex_gm_threats.js) prints it instead of restating it. */
+  rolesIntro: "A Role is a behavior package: what the threat does with its numbers, plus a small adjustment to them, rounded down.",
   roles: [
     { key: "bruiser", name: "Bruiser", vitalityMult: 1.25, defense: -1,
       text: "Walks in. Stands there. Makes standing there your problem. Melee, Shoves, holds doorways." },

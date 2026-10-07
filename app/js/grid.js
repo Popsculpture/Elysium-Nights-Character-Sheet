@@ -2,8 +2,10 @@
    ELYSIUM NIGHTS · The #GRID tab
    Play-time hacking console: your rig (Smartdeck / B&E Buddy) with System Integrity +
    Bandwidth, live Cipher Attack / Save DC / Link math, an active-Link tracker, a
-   target-node calculator, and the full #GRID rules reference. Reads the same
-   #PRINT record; rig + links persist on ch.grid, Bandwidth on resources.current.
+   target-node calculator, and the B&E Buddy Cipher Suite. The #GRID rules live in
+   the Codex chapter The #GRID (js/codex_grid.js); this tab links into it through
+   EN.ui.ruleLink / ruleChip / ruleText. Reads the same #PRINT record; rig + links
+   persist on ch.grid, Bandwidth on resources.current.
    =========================================================================== */
 window.EN = window.EN || {};
 
@@ -73,19 +75,6 @@ EN.gridView = (function () {
     if (!key) return;
     gset(function (g) { if (g.deckHpSpent) delete g.deckHpSpent[key]; });
   }
-  function tableEl(cols, rows, highlightFn) {
-    var head = el("tr", null, cols.map(function (c) {
-      return el("th", { style: { textAlign: c.align || "left", padding: "4px 8px", fontFamily: "var(--disp)", fontSize: "9px", letterSpacing: ".12em", color: "var(--text3)", borderBottom: "1px solid var(--border2)", textTransform: "uppercase" } }, c.label);
-    }));
-    var body = rows.map(function (r) {
-      var hot = highlightFn && highlightFn(r);
-      return el("tr", { style: hot ? { background: "rgba(0,229,255,.07)" } : null }, cols.map(function (c) {
-        var v = typeof c.get === "function" ? c.get(r) : r[c.key];
-        return el("td", { style: { textAlign: c.align || "left", padding: "4px 8px", fontSize: "11.5px", color: c.mono ? "var(--text)" : "var(--text2)", fontFamily: c.mono ? "var(--mono)" : "inherit", borderBottom: "1px solid rgba(35,48,68,.4)" } }, String(v == null ? "-" : v));
-      }));
-    });
-    return el("table", { style: { width: "100%", borderCollapse: "collapse" } }, [el("thead", null, [head]), el("tbody", null, body)]);
-  }
   function collapsible(key, title, buildBody) {
     var open = !!_open[key];
     var head = el("div.section-title.clickable", { onclick: function () { _open[key] = !open; EN.app.render(); } },
@@ -94,6 +83,24 @@ EN.gridView = (function () {
   }
   // the reference notes are catalogue prose too, so they read their own **bold** rather than print it
   function noteP(t, color) { return EN.ui.proseP("p.help", { margin: "2px 0 6px", color: color || "var(--text3)", fontSize: "11.5px" }, t); }
+  /* The same note with the Codex's rule names linked (Stability Check, Cipher Attack, B&E
+     Buddy...), and condition names too when opts.conditions is set. EN.ui.ruleText falls back
+     to noteP's plain reading when the Codex is missing, so the words never change. */
+  function ruleNote(t, color, opts) {
+    var p = el("p.help", { style: { margin: "2px 0 6px", color: color || "var(--text3)", fontSize: "11.5px" } });
+    return EN.ui.ruleText(p, String(t == null ? "" : t), opts);
+  }
+  /* A link that sits inside a coloured chip takes the chip's colour, so a gold trait chip
+     stays gold; the dotted underline is what says it opens a rule. */
+  function chipLink(anchor, label) {
+    var n = EN.ui.ruleLink(anchor, label);
+    if (n && n.nodeType === 1) n.style.color = "inherit";
+    return n;
+  }
+  // the Codex anchor slug rule (EN.codexView.slug), kept here so a missing Codex costs nothing
+  function cxSlug(s) {
+    return String(s).toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  }
   // Bandwidth lives on resources.current (not ch.grid), like every other class resource.
   function setBandwidth(n) { store.update(function (c) { c.resources = c.resources || {}; c.resources.current = c.resources.current || {}; c.resources.current.Bandwidth = n; }); }
   // Cipher casting cost: Complexity 0 free, 1-3 = 1 BW, 4-5 = 2 BW, Signature flat 1 BW.
@@ -167,8 +174,12 @@ EN.gridView = (function () {
     }
     rows.push(el("div", { style: { marginTop: "10px" } }, [
       el("div.row.between", { style: { alignItems: "baseline" } }, [
-        el("span", { style: { fontFamily: "var(--disp)", fontSize: "10px", letterSpacing: ".12em", color: "var(--text3)" }, text: "SYSTEM INTEGRITY" }),
-        el("span.mono", { style: { fontSize: "13px", color: bricked ? "var(--danger)" : "var(--text2)" }, text: bricked ? "BRICKED" : cur + " / " + maxInt })
+        el("span.row", { style: { gap: "6px", alignItems: "center" } }, [
+          el("span", { style: { fontFamily: "var(--disp)", fontSize: "10px", letterSpacing: ".12em", color: "var(--text3)" }, text: "SYSTEM INTEGRITY" }),
+          EN.ui.ruleChip("gd-repair", { title: "Device Integrity & Repair" })
+        ]),
+        el("span.mono", { style: { fontSize: "13px", color: bricked ? "var(--danger)" : "var(--text2)" } },
+          [bricked ? chipLink("ref-conds/bricked", "BRICKED") : cur + " / " + maxInt])
       ]),
       bar(cur, maxInt, bricked ? "var(--danger)" : "var(--success)"),
       el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "6px" } }, [
@@ -179,9 +190,9 @@ EN.gridView = (function () {
           onclick: function () { shiftIntegrity(-1); } }, "+ REPAIR"),
         spent > 0 ? el("button.btn.sm", { style: { color: "var(--text2)" }, onclick: function () { repairDeckFully(deck.key); toast("Rig restored to full Integrity."); } }, "⟳ FULL") : null
       ]),
-      el("span.help", { style: { margin: "4px 0 0", fontSize: "10.5px", display: "block" },
-        text: bricked ? "Bricked; all Links sever (LinkDeath as a forced disconnect). Downtime repair only."
-                      : "Cipher damage subtracts after the Firewall Threshold; physical damage lands at full value." })
+      EN.ui.ruleText(el("span.help", { style: { margin: "4px 0 0", fontSize: "10.5px", display: "block" } }),
+        bricked ? "Bricked; all Links sever (LinkDeath as a forced disconnect). Downtime repair only."
+                : "Cipher damage subtracts after the Firewall Threshold; physical damage lands at full value.", { conditions: true })
     ]));
 
     // Bandwidth (Codebreaker)
@@ -196,7 +207,11 @@ EN.gridView = (function () {
         el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "4px" } }, [
           stepper(function () { store.update(function (c) { c.resources = c.resources || { current: {} }; c.resources.current.Bandwidth = Math.max(0, bwCur - 1); }); },
                   function () { store.update(function (c) { c.resources = c.resources || { current: {} }; c.resources.current.Bandwidth = Math.min(bwMax, bwCur + 1); }); }, bwCur <= 0, bwCur >= bwMax),
-          el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "CX 0 free · CX 1-3 = 1 · CX 4-5 = 2 · Signature = 1. Refreshes on a rest." }),
+          /* the CX 4-5 price is cipherCost's, so the Quantum Core discount shows on the deck that has it */
+          el("span.help", { style: { margin: 0, fontSize: "10.5px" } }, [
+            "CX 0 free · CX 1-3 = 1 · CX 4-5 = " + cipherCost({ cx: 4 }, deck.tier) + (cipherCost({ cx: 4 }, deck.tier) === 1 ? " (Quantum Core)" : "") + " · Signature = 1. Refreshes on a rest. ",
+            EN.ui.ruleChip("gd-ciphers/complexity-and-casting-cost", { title: "Complexity and Casting Cost" })
+          ]),
           bwCur < bwMax ? el("button.btn.sm", { style: { color: "var(--text2)" }, onclick: function () { store.update(function (c) { c.resources = c.resources || { current: {} }; c.resources.current.Bandwidth = bwMax; }); } }, "⟳ REST") : null
         ])
       ]));
@@ -206,7 +221,8 @@ EN.gridView = (function () {
     if (deck.traits && deck.traits.length) {
       var traitDefs = {}; (G.smartdeckTraits || []).forEach(function (t) { traitDefs[t.name] = t.text; });
       rows.push(el("div.row.wrap", { style: { gap: "6px", marginTop: "12px" } }, [el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em", marginRight: "4px" }, text: "TRAITS" })].concat(
-        deck.traits.map(function (t) { return el("span.chip", { title: traitDefs[t] || "", style: { fontSize: "9.5px", color: "var(--gold)", borderColor: "var(--gold)" } }, t); }))));
+        // the trait's rule used to live only in this tooltip; the name now peeks its Codex entry
+        deck.traits.map(function (t) { return el("span.chip", { title: traitDefs[t] || "", style: { fontSize: "9.5px", color: "var(--gold)", borderColor: "var(--gold)" } }, [chipLink("gd-devices/" + cxSlug(t), t)]); }))));
     }
 
     // Smartdeck mods: read-only on the #GRID. Install and remove live at the Tech Bay (Inventory > Workbench).
@@ -283,7 +299,7 @@ EN.gridView = (function () {
     // flip the panel to the Standard-User cipher suite that rig actually runs.
     var buddyEquipped = gd.isCodebreaker && gd.deck && gd.deck.type === "buddy";
     if (buddyEquipped && _cipherView === "buddy") {
-      rows.push(noteP("You're running a B&E Buddy: this rig executes the Standard-User cipher suite only (Complexity 0). Switch back to a Smartdeck in the Rig panel to use your Repertoire and Bandwidth."));
+      rows.push(ruleNote("You're running a B&E Buddy: this rig executes the Standard-User cipher suite only (Complexity 0). Switch back to a Smartdeck in the Rig panel to use your Repertoire and Bandwidth."));
       (G.buddyCiphers || []).forEach(function (cy) { rows.push(buddyCipherCard(cy)); });
       return EN.ui.panel("Ciphers", "B&E BUDDY CIPHER SUITE", rows, { corners: true, headerRight: cipherViewToggle("Repertoire", "power") });
     }
@@ -298,7 +314,8 @@ EN.gridView = (function () {
       // ---- Signature #GRID Exploits ----
       var exploits = eng.resourceAbilities(ch) || [];
       if (exploits.length) {
-        rows.push(el("div.section-title", null, [document.createTextNode("Signature #GRID Exploits"), el("span.line")]));
+        rows.push(el("div.section-title", null, [document.createTextNode("Signature #GRID Exploits"),
+          EN.ui.ruleChip("gd-ciphers/signature-grid-exploits", { title: "Signature #GRID Exploits" }), el("span.line")]));
         rows.push(noteP("Each costs 1 Bandwidth; meet its recharge trigger to refund it (use + to restore). USE spends the Bandwidth now."));
         exploits.forEach(function (ab) {
           var k = "exploit-" + ab.name, open = !!_open[k];
@@ -334,7 +351,8 @@ EN.gridView = (function () {
       var cipherByName = {}; (G.ciphers || []).forEach(function (c) { cipherByName[c.name] = c; });
       var owned = (ch.equipment || []).map(function (e) { return (e.qty > 0) ? cipherByName[e.name] : null; })
         .filter(Boolean).sort(function (a, b) { return (a.cx - b.cx) || a.name.localeCompare(b.name); });
-      rows.push(el("div.section-title", null, [document.createTextNode("Repertoire"), el("span.line"),
+      rows.push(el("div.section-title", null, [document.createTextNode("Repertoire"),
+        EN.ui.ruleChip("gd-repertoire", { title: "Repertoire & Cipher Costs" }), el("span.line"),
         el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", marginLeft: "6px" }, text: owned.length + " acquired" })]));
       rows.push(noteP(deck
         ? (deck.type === "smartdeck"
@@ -346,13 +364,17 @@ EN.gridView = (function () {
       } else {
         owned.forEach(function (cy) { rows.push(cipherCard(cy, runCx, bwCur, deck && deck.tier)); });
       }
-      rows.push(noteP("Casting costs: Complexity 0 free · 1-3 = 1 BW · 4-5 = 2 BW · Signature Ciphers a flat 1 BW.", "var(--text2)"));
+      // the 4-5 price reads cipherCost, so an Apex (Quantum Core) deck sees what RUN will charge
+      var costNote = noteP("Casting costs: Complexity 0 free · 1-3 = 1 BW · 4-5 = " + cipherCost({ cx: 4 }, deck && deck.tier) + " BW"
+        + (cipherCost({ cx: 4 }, deck && deck.tier) === 1 ? " (Quantum Core)" : "") + " · Signature Ciphers a flat 1 BW. ", "var(--text2)");
+      costNote.appendChild(EN.ui.ruleChip("gd-ciphers/complexity-and-casting-cost", { title: "Complexity and Casting Cost" }) || document.createTextNode(""));
+      rows.push(costNote);
       return EN.ui.panel("Ciphers", "EXPLOITS · REPERTOIRE", rows,
         { corners: true, headerRight: buddyEquipped ? cipherViewToggle("B&E Buddy Cipher Suite", "buddy") : null });
     }
 
     // ---- Standard User: the universal B&E Buddy / Burner Relay cipher set ----
-    rows.push(noteP("Standard Users run this universal cipher set off any B&E Buddy or Burner Relay (Complexity 0 only). Bandwidth, higher-Complexity ciphers, and a custom Repertoire are the Codebreaker's domain."));
+    rows.push(ruleNote("Standard Users run this universal cipher set off any B&E Buddy or Burner Relay (Complexity 0 only). Bandwidth, higher-Complexity ciphers, and a custom Repertoire are the Codebreaker's domain."));
     (G.buddyCiphers || []).forEach(function (cy) { rows.push(buddyCipherCard(cy)); });
     return EN.ui.panel("Ciphers", "STANDARD USER CIPHER LIST", rows, { corners: true });
   }
@@ -385,7 +407,8 @@ EN.gridView = (function () {
       input,
       el("span.mono", { style: { fontSize: "12px", color: "var(--text3)" }, text: "→ STABILITY" }),
       dcSpan, explSpan,
-      el("button.btn.sm", { title: "Clear for a new turn", style: { color: "var(--text3)" }, onclick: function () { gset(function (g, c) { c.lastDamage = 0; }); } }, "NEW TURN")
+      el("button.btn.sm", { title: "Clear for a new turn", style: { color: "var(--text3)" }, onclick: function () { gset(function (g, c) { c.lastDamage = 0; }); } }, "NEW TURN"),
+      EN.ui.ruleChip("gd-links/stability-check", { title: "Stability Check" })
     ]);
   }
 
@@ -418,9 +441,9 @@ EN.gridView = (function () {
     if (gd.quickHackBonus != null) stats.splice(1, 0, EN.ui.stat("QUICK HACK", fmt(gd.quickHackBonus), "+ Device Bonus"));
     var body = [el("div.stat-row", null, stats)];
     if (_stabilityOpen) body.push(stabilityDamageControl(gd));
-    body.push(noteP("Cipher Attack: d20 " + fmt(gd.cipherAttackBonus) + " vs Node Security Rating" + (gd.deck && gd.deck.type === "smartdeck" && gd.deck.deviceBonus ? " (+" + gd.deck.deviceBonus + " Device Bonus = " + fmt(gd.effectiveAttack) + " on a Quick Hack)" : "") + ". Node resists save-ciphers with d20 + its Cipher Save Bonus vs your Save DC " + gd.effectiveSaveDC + ".", "var(--text2)"));
-    if (!gd.isCodebreaker) body.push(noteP("You're a Standard User: 1 Link at a time, no Bandwidth, and a B&E Buddy locks out of Premium+ Nodes. Deep #GRID play is the Codebreaker's domain.", "var(--warn)"));
-    return EN.ui.panel("Hacking", "CIPHER MATH", body, { corners: true });
+    body.push(ruleNote("Cipher Attack: d20 " + fmt(gd.cipherAttackBonus) + " vs Node Security Rating" + (gd.deck && gd.deck.type === "smartdeck" && gd.deck.deviceBonus ? " (+" + gd.deck.deviceBonus + " Device Bonus = " + fmt(gd.effectiveAttack) + " on a Quick Hack)" : "") + ". Node resists save-ciphers with d20 + its Cipher Save Bonus vs your Save DC " + gd.effectiveSaveDC + ".", "var(--text2)"));
+    if (!gd.isCodebreaker) body.push(ruleNote("You're a Standard User: 1 Link at a time, no Bandwidth, and a B&E Buddy locks out of Premium+ Nodes. Deep #GRID play is the Codebreaker's domain.", "var(--warn)"));
+    return EN.ui.panel("Hacking", "CIPHER MATH", body, { corners: true, headerRight: EN.ui.ruleChip("gd-ciphers", { title: "Running Ciphers" }) });
   }
 
   /* ============================ LINKS ============================ */
@@ -433,7 +456,7 @@ EN.gridView = (function () {
       el("span.mono", { style: { fontSize: "20px", color: atMax ? "var(--warn)" : "var(--accent)" }, html: links.length + " <span style='font-size:12px;color:var(--text3)'>/ " + (gd.unlimitedLinks ? "∞" : gd.maxLinks) + " active Links</span>" }),
       el("button.btn.sm" + (atMax ? "" : ".primary"), { disabled: atMax, title: atMax ? "At your Link cap" : "Open a new Link", onclick: function () { gset(function (g) { g.links = (g.links || []).concat([{ name: "Node", tier: "Standard" }]); }); } }, "+ LINK")
     ]));
-    if (!links.length) rows.push(noteP("No active Links. Establish one with a Cipher Attack vs the Node's Security Rating (Access Spike / Hardline Tap)."));
+    if (!links.length) rows.push(ruleNote("No active Links. Establish one with a Cipher Attack vs the Node's Security Rating (Access Spike / Hardline Tap)."));
     links.forEach(function (lk, i) {
       rows.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", padding: "6px 4px", borderBottom: "1px solid rgba(35,48,68,.4)" } }, [
         el("span.mono", { style: { color: "var(--accent)", fontSize: "12px" }, text: "⇋" }),
@@ -446,17 +469,24 @@ EN.gridView = (function () {
     });
     // LinkDeath risk. Feedback is 2d6 PER severed Link, and the failed Stability
     // Check's margin decides how hard it lands (soft landing vs hard landing).
+    // A working readout with this character's own numbers in it; the rule in full is the
+    // LinkDeath condition and the Codex's Links & LinkDeath panel, linked from its head.
     var n = Math.max(1, links.length);
     var poolAll = (2 * n) + "d6";
+    var cond = { conditions: true };
     rows.push(el("div", { style: { marginTop: "8px", padding: "8px 10px", border: "1px solid " + (links.length >= 2 ? "var(--danger)" : "var(--border2)"), borderRadius: "4px", background: "rgba(0,0,0,.18)" } }, [
-      el("div.row.between", { style: { alignItems: "baseline" } }, [
-        el("span", { style: { fontFamily: "var(--disp)", fontSize: "10px", letterSpacing: ".12em", color: "var(--danger)" }, text: "LINKDEATH RISK" }) ]),
-      noteP("Fail a Stability Check (Body or Wits, vs the higher of DC " + gd.stabilityDcBase + " or ½ the damage taken this turn, set in the Hacking panel) and one Link of your choice tears away. Every Link severed involuntarily deals 2d6 Psychic feedback.", "var(--text3)"),
-      noteP("Failed by 4 or less: half the feedback, Dazed until the end of your next turn. Failed by 5 or more: full feedback and Unconscious (Wits Save vs the same DC at the end of each of your turns to wake, Dazed).", links.length >= 2 ? "var(--danger)" : "var(--text3)"),
-      noteP("Falling Unconscious severs every Link you hold: roll 2d6 per Link as one pool (" + poolAll + " at " + n + " Link" + (n === 1 ? "" : "s") + "). Your Smartdeck absorbs it first, subtracting from its remaining System Integrity with no Firewall applied; if the deck hits 0 it is Bricked and every point beyond spills into you as Psychic damage in full. A deckless user has no hardware in the way.", "var(--text3)"),
-      links.length >= 2 ? noteP("Cascade Failure: losing a Link while holding others forces a fresh Stability Check for the rest, at a DC that now counts that feedback in the turn's damage total.", "var(--danger)") : null
+      el("div.row.between.wrap", { style: { alignItems: "baseline", gap: "6px" } }, [
+        el("span", { style: { fontFamily: "var(--disp)", fontSize: "10px", letterSpacing: ".12em", color: "var(--danger)" }, text: "LINKDEATH RISK" }),
+        el("span.help", { style: { margin: 0, fontSize: "10.5px" } }, [
+          EN.ui.ruleLink("ref-conds/linkdeath", "LinkDeath"), " · ", EN.ui.ruleLink("gd-links/linkdeath", "the full rules")
+        ]) ]),
+      ruleNote("Fail a Stability Check (Body or Wits, vs the higher of DC " + gd.stabilityDcBase + " or ½ the damage taken this turn, set in the Hacking panel) and one Link of your choice tears away. Every Link severed involuntarily deals 2d6 Psychic feedback.", "var(--text3)", cond),
+      ruleNote("Failed by 4 or less: half the feedback, Dazed until the end of your next turn. Failed by 5 or more: full feedback and Unconscious (Wits Save vs the same DC at the end of each of your turns to wake, Dazed).", links.length >= 2 ? "var(--danger)" : "var(--text3)", cond),
+      ruleNote("Falling Unconscious severs every Link you hold: roll 2d6 per Link as one pool (" + poolAll + " at " + n + " Link" + (n === 1 ? "" : "s") + "). Your Smartdeck absorbs it first, subtracting from its remaining System Integrity with no Firewall applied; if the deck hits 0 it is Bricked and every point beyond spills into you as Psychic damage in full. A deckless user has no hardware in the way.", "var(--text3)", cond),
+      links.length >= 2 ? ruleNote("Cascade Failure: losing a Link while holding others forces a fresh Stability Check for the rest, at a DC that now counts that feedback in the turn's damage total.", "var(--danger)", cond) : null
     ]));
-    return EN.ui.panel("Links", gd.unlimitedLinks ? "UNLIMITED THREADING" : "MULTI-LINK", rows, { corners: true });
+    return EN.ui.panel("Links", gd.unlimitedLinks ? "UNLIMITED THREADING" : "MULTI-LINK", rows,
+      { corners: true, headerRight: EN.ui.ruleChip("gd-links", { title: "Links & LinkDeath" }) });
   }
 
   /* ============================ TARGET NODE CALCULATOR ============================ */
@@ -483,7 +513,9 @@ EN.gridView = (function () {
       el("label.row", { style: { gap: "5px", alignItems: "center", cursor: "pointer", fontSize: "11.5px", color: "var(--text2)" } }, [
         el("input", { type: "checkbox", checked: _calc.hardened, onchange: function () { _calc.hardened = this.checked; EN.app.render(); } }),
         document.createTextNode("Hardened")
-      ])
+      ]),
+      // outside the label, so tapping the chip peeks the rule without ticking the box
+      EN.ui.ruleChip("gd-nodes/hardened-nodes", { title: "Hardened Nodes" })
     ]);
     var box = function (label, val, color, sub) {
       return el("div", { style: { flex: "1 1 120px", padding: "8px 10px", border: "1px solid var(--border2)", borderRadius: "4px", textAlign: "center" } }, [
@@ -498,91 +530,39 @@ EN.gridView = (function () {
       box("INTEGRITY", integrity == null ? "-" : integrity, integrity == null ? "var(--text3)" : "var(--flow)", integrity == null ? "Minion (1 hit bricks)" : "hits to brick"),
       box("FIREWALL THR", fw ? fw.threshold : "-", fw ? "var(--danger)" : "var(--text3)", fw ? "dmg must exceed" : "no firewall")
     ]);
-    var verdict = noteP(
+    var verdict = ruleNote(
       (node.t <= 1 ? "Rudimentary/Standard Node, Minion Rule: any successful cipher bricks it outright (Firewall threshold ignored). " : "") +
       "You hit on a roll of " + Math.max(2, security - gd.effectiveAttack) + "+ on the d20" + (gd.deck && gd.deck.type === "buddy" && node.t >= 4 ? ", but a B&E Buddy LOCKS OUT of Premium+ Nodes (sparks, takes 5 System Integrity damage, fails)." : "") + ".",
       (gd.deck && gd.deck.type === "buddy" && node.t >= 4) ? "var(--danger)" : "var(--text2)");
-    return EN.ui.panel("Target Node", "WHAT YOU'RE UP AGAINST", [controls, grids, verdict], { corners: true });
+    return EN.ui.panel("Target Node", "WHAT YOU'RE UP AGAINST", [controls, grids, verdict],
+      { corners: true, headerRight: EN.ui.ruleChip("gd-nodes", { title: "Nodes & Firewalls" }) });
   }
 
-  /* ============================ REFERENCE ============================ */
+  /* ============================ REFERENCE ============================
+     The #GRID rules (Node Tiers, Cipher Damage, Firewalls, IC, Scanning, LinkDeath, the
+     Repertoire costs, the Signature #GRID Exploits) moved to the Codex chapter The #GRID
+     (js/codex_grid.js), where the Admin desktop can read them too and the Bricked and
+     LinkDeath conditions can point at them. What stays is a pointer to each panel and the
+     one catalog this tab owns, the B&E Buddy Cipher Suite, which the Repertoire note above
+     points at ("see B&E Buddy Cipher Suite"). */
+  var CODEX_PANELS = [
+    ["gd-core", "#GRID Fundamentals"], ["gd-nodes", "Nodes & Firewalls"], ["gd-scan", "Scanning & Detection"],
+    ["gd-links", "Links & LinkDeath"], ["gd-ciphers", "Running Ciphers"], ["gd-ic", "Intrusion Countermeasures"],
+    ["gd-repertoire", "Repertoire & Cipher Costs"], ["gd-devices", "Smartdecks, Buddies & Relays"], ["gd-repair", "Device Integrity & Repair"]
+  ];
   function referencePanel(ch, d, G) {
-    var kids = [];
-    var cb = ch.class === "codebreaker";
-
-    if (cb) {
-      var cbx = (EN.classes && EN.classes.codebreaker && EN.classes.codebreaker.extra) || {};
-      kids = kids.concat(collapsible("ref-exploits", "Signature #GRID Exploits", function () {
-        var list = (cbx.gridExploits || []).map(function (x) {
-          return el("div.feature", null, [
-            el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
-              el("span", { style: { fontWeight: 600, fontSize: "13px" }, text: x.name }),
-              el("span.chip", { style: { fontSize: "9px", color: "var(--accent)", borderColor: "var(--accent)" } }, x.action.toUpperCase()),
-              el("span.chip", { style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" } }, "1 BW")
-            ]),
-            el("p.help", { style: { margin: "4px 0 0", whiteSpace: "pre-wrap" }, text: x.text })
-          ]);
-        });
-        if (cbx.cipherCastingCosts) list.unshift(noteP(cbx.cipherCastingCosts, "var(--text2)"));
-        return el("div", null, list);
-      }));
-    }
-
-    kids = kids.concat(collapsible("ref-nodes", "Node Tiers", function () {
-      return el("div", null, [
-        tableEl([{ label: "Tier", key: "tier" }, { label: "Security", key: "security", align: "center", mono: true }, { label: "Save Bonus", get: function (r) { return "+" + r.saveBonus; }, align: "center", mono: true }, { label: "Integrity", get: function (r) { return r.integrity == null ? "-" : r.integrity; }, align: "center", mono: true }], G.nodeTiers || []),
-        noteP(G.hardenedNote), noteP(G.lowSecurityNote), noteP(G.quickHackNote)
-      ]);
-    }));
-
-    kids = kids.concat(collapsible("ref-cipher", "Cipher Damage by Complexity", function () {
-      return el("div", null, [
-        tableEl([{ label: "Complexity", get: function (r) { return r.complexity + " (CX " + r.c + ")"; } }, { label: "Damage", key: "roll", align: "center", mono: true }], G.cipherDamage || []),
-        noteP(G.cipherDamageNote), noteP(G.minionRule, "var(--warn)")
-      ]);
-    }));
-
-    kids = kids.concat(collapsible("ref-firewall", "Firewalls", function () {
-      return el("div", null, [
-        tableEl([{ label: "Tier", key: "tier" }, { label: "Price", get: function (r) { return "𝒢" + r.price.toLocaleString(); }, align: "right", mono: true }, { label: "+Security", get: function (r) { return "+" + r.securityBonus; }, align: "center", mono: true }, { label: "Threshold", key: "threshold", align: "center", mono: true }], G.firewalls || []),
-        noteP(G.firewallNote)
-      ]);
-    }));
-
-    kids = kids.concat(collapsible("ref-ic", "Intrusion Countermeasures", function () {
-      var counter = {}; (G.icCounter || []).forEach(function (c) { counter[c.tier] = c.dmg; });
-      var t = tableEl([{ label: "IC Tier", key: "tier" }, { label: "Price", get: function (r) { return "𝒢" + r.price.toLocaleString(); }, align: "right", mono: true }, { label: "Detect", get: function (r) { return "+" + r.detection; }, align: "center", mono: true }, { label: "Counter", get: function (r) { return counter[r.tier] || "-"; }, align: "center", mono: true }, { label: "Responses", get: function (r) { return r.responses.join(", "); } }], G.ic || []);
-      var resp = (G.icResponses || []).map(function (r) { return el("p.help", { style: { margin: "2px 0" }, html: "<b style='color:var(--accent)'>" + r.name + ".</b> " + r.text }); });
-      return el("div", null, [t, noteP(G.icIntro)].concat(resp).concat([noteP(G.interceptionNote, "var(--gold)"), noteP(G.icDetectionNote)]));
-    }));
-
-    kids = kids.concat(collapsible("ref-scan", "Scanning & Detection", function () {
-      return el("div", null, [
-        noteP(G.scanIntro, "var(--text2)"),
-        tableEl([{ label: "Concealment", key: "quality" }, { label: "Scan DC", key: "dc", align: "center", mono: true }, { label: "Scan Snag", key: "snag", align: "center", mono: true }, { label: "Reads As", key: "reads" }], G.scanning || []),
-        el("div", { style: { height: "6px" } }),
-        tableEl([{ label: "Modifier", key: "name" }, { label: "Condition", key: "condition" }, { label: "d20", key: "d20", align: "center", mono: true }, { label: "Dice Pool", key: "pool", align: "center" }], G.scanMods || []),
-        noteP(G.scanCapNote, "var(--warn)")
-      ]);
-    }));
-
-    kids = kids.concat(collapsible("ref-linkdeath", "LinkDeath & Cascade", function () {
-      return el("div", null, [
-        noteP(G.linkDeathIntro, "var(--text2)"), noteP(G.linkDeathResolution),
-        noteP(G.cascadeFailure, "var(--danger)"), noteP(G.standardUserLinkDeath), noteP(G.sourcererLinkDeath), noteP(G.guardians, "var(--warn)")
-      ]);
-    }));
-
-    kids = kids.concat(collapsible("ref-repertoire", "Repertoire & Ciphers", function () {
-      return el("div", null, [
-        noteP(G.repertoireNote, "var(--text2)"),
-        tableEl([{ label: "Cipher Tier", key: "tier" },
-                 { label: "CX", key: "cx", align: "center", mono: true },
-                 { label: "Craft (half)", get: function (r) { return r.craft != null ? "𝒢" + r.craft : "-"; }, align: "right", mono: true },
-                 { label: "Acquire Clean", get: function (r) { return "𝒢" + r.material; }, align: "right", mono: true },
-                 { label: "Recovery", get: function (r) { return "𝒢" + r.recovery; }, align: "right", mono: true }], G.cipherCosts || [])
-      ]);
-    }));
+    var kids = [], live = 0;
+    var links = el("p.help", { style: { margin: "2px 0 8px", fontSize: "11.5px", lineHeight: "1.7" } });
+    CODEX_PANELS.forEach(function (pr, i) {
+      if (i) links.appendChild(document.createTextNode(" · "));
+      var a = EN.ui.ruleLink(pr[0], pr[1]);
+      if (a && a.nodeType === 1) live++;   /* a text node means codex.js did not load */
+      links.appendChild(a);
+    });
+    kids.push(noteP(live
+      ? "The #GRID rules live in the Codex, on both desktops: tap one to read it here, then OPEN IN CODEX for the full chapter."
+      : "The #GRID rules live in the Codex, on both desktops. The Codex did not load, so they cannot open here.", "var(--text2)"));
+    kids.push(links);
 
     kids = kids.concat(collapsible("ref-buddy", "B&E Buddy Cipher Suite", function () {
       var list = (G.buddyCiphers || []).map(function (c) {
@@ -596,11 +576,16 @@ EN.gridView = (function () {
           EN.ui.proseP("p.help", { margin: "4px 0 0" }, c.text)
         ]);
       });
-      list.unshift(noteP(G.buddyNote, "var(--text2)"));
+      // the suite's rules (Standard User, suite only, Complexity by tier, Hardware Lockout) are the Codex's B&E Buddy entry
+      var lead = el("p.help", { style: { margin: "2px 0 6px", color: "var(--text2)", fontSize: "11.5px" } }, [
+        "The six ciphers every rig ships with. Who runs them and at what Complexity: ",
+        EN.ui.ruleLink("gd-devices/b-and-e-buddy", "B&E Buddy"), "."
+      ]);
+      list.unshift(lead);
       return el("div", null, list);
     }));
 
-    return EN.ui.panel("Reference", "THE #GRID · RULES & GEAR", kids, { corners: true });
+    return EN.ui.panel("Reference", "THE #GRID · RULES IN THE CODEX", kids, { corners: true });
   }
 
   /* ============================ DEEP RUN (Dice Pool) ============================
@@ -674,6 +659,11 @@ EN.gridView = (function () {
     var untrained = (s && s.untrained) ? 2 : 0;
     return { risk: _deep.risk, togs: togs, untrained: untrained, total: _deep.risk + togs + untrained };
   }
+  // the Dice Pool automatic-success rule, EN.resolution.autoResolve's own words
+  function autoPoolRule() {
+    var r = ((EN.resolution && EN.resolution.autoResolve) || []).filter(function (a) { return a.name === "Dice Pool Method"; })[0];
+    return r ? r.text : "";
+  }
   // Dice Pool Success Margin row + color for a rolled margin
   function deepMarginRow(margin) {
     var rows = (EN.resolution && EN.resolution.margins && EN.resolution.margins.pool) || [];
@@ -687,7 +677,9 @@ EN.gridView = (function () {
     var snagPool = eng.buildSnagPool(snag.total);
     var tip = edge.parts.length ? edge.parts.map(function (p) { return "+" + p.value + "  " + p.label; }).join("\n") : "No Edge sources yet";
     var kids = [];
-    kids.push(noteP("Extended, out-of-combat intrusion runs the Dice Pool Method: your pool against the GM's Snag. The moment a combat round starts, flip back to Hot Run and the d20.", "var(--text2)"));
+    var introNote = noteP("Extended, out-of-combat intrusion runs the Dice Pool Method: your pool against the GM's Snag. The moment a combat round starts, flip back to Hot Run and the d20. ", "var(--text2)");
+    introNote.appendChild(EN.ui.ruleChip("rz-pool", { title: "Dice Pools" }) || document.createTextNode(""));
+    kids.push(introNote);
     // Codebreaker Suite chip. Advisory only: nothing below reads hasSuite, so it gates no roll. The
     // book (28 Sep) no longer makes the suite a requirement for Hacks and Quick Hacks; its Basic Use
     // now only enables decrypt, deleted-data recovery, and hostile-code analysis at full effect.
@@ -696,9 +688,12 @@ EN.gridView = (function () {
       el("span.chip", { title: hasSuite ? "Core hacking software installed. Enables decrypt, deleted-data recovery, and hostile-code analysis at full effect." : "Enables decrypt, deleted-data recovery, and hostile-code analysis at full effect. Buy it in the gray market.",
         style: { fontSize: "9px", color: hasSuite ? "var(--success)" : "var(--danger)", borderColor: hasSuite ? "var(--success)" : "var(--danger)" } },
         hasSuite ? "✓ CODEBREAKER SUITE" : "⚠ NO CODEBREAKER SUITE"),
-      edge.skill && edge.skill.untrained ? el("span.chip", { title: "Untrained in Systems: +2 Snag Dice on the pool", style: { fontSize: "9px", color: "var(--warn)", borderColor: "var(--warn)" } }, "UNTRAINED +2 SNAG") : null,
-      (snag.total > 0 && edge.points >= snag.total * 2) ? el("span.chip", { title: "Automatic success occurs if your total Edge Dice pool is at least double the GM's Snag Dice, unless extraordinary risk or opposition is present.",
-        style: { fontSize: "9px", color: "var(--success)", borderColor: "var(--success)" } }, "◎ AUTO-SUCCESS RANGE") : null
+      edge.skill && edge.skill.untrained ? el("span.chip", { title: "Untrained in Systems: +2 Snag Dice on the pool", style: { fontSize: "9px", color: "var(--warn)", borderColor: "var(--warn)" } },
+        [chipLink("rz-edge", "UNTRAINED +2 SNAG")]) : null,
+      /* the tooltip is the Core Resolution rule itself, read from EN.resolution rather than
+         typed twice, and the chip peeks that entry */
+      (snag.total > 0 && edge.points >= snag.total * 2) ? el("span.chip", { title: autoPoolRule(),
+        style: { fontSize: "9px", color: "var(--success)", borderColor: "var(--success)" } }, [chipLink("rz-social/dice-pool-method", "◎ AUTO-SUCCESS RANGE")]) : null
     ]));
     // EDGE row: total + composition + situational toggles
     function sitToggle(list, state, color) {
@@ -721,7 +716,7 @@ EN.gridView = (function () {
       ].concat(kitToggles)));
     // situational Edge sources sit on their own line, aligned under the value
     kids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center", margin: "4px 0 0 44px" } },
-      sitToggle(DEEP_EDGES, _deep.edges, "var(--gold)")));
+      sitToggle(DEEP_EDGES, _deep.edges, "var(--gold)").concat([EN.ui.ruleChip("rz-edge", { title: "Edge & Snag" })])));
     // one Focus per roll: when both a Systems Skill Focus and a Systems Tools
     // Focus cover this intrusion, pick which one fires (never both)
     if (edge.focusCands.length > 1) {
@@ -785,7 +780,8 @@ EN.gridView = (function () {
         kids.push(el("div", { style: { marginTop: "6px" } }, [
           el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
             el("span.mono", { style: { fontSize: "13px", color: mr.color }, text: "MARGIN " + (res.margin >= 0 ? "+" : "") + res.margin + " · " + (mr.row ? mr.row.result : "") }),
-            el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: mr.row ? mr.row.desc : "" })
+            el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: mr.row ? mr.row.desc : "" }),
+            EN.ui.ruleChip("rz-margin", { title: "Success Margin & Consequence" })
           ]),
           mr.costly && scene ? noteP("Hacking-scene costs: " + scene.consequences + ".", "var(--warn)") : null
         ]));
@@ -811,7 +807,8 @@ EN.gridView = (function () {
       el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".14em" }, text: "RUN MODE" }),
       modeBtn("hot", [ICON_HOT, "HOT RUN \u00b7 d20"], "var(--accent)", "In a combat round or under fire: Quick Hacks, cipher attacks, Saves. One die, right now."),
       modeBtn("deep", "❄ DEEP RUN · DICE POOL", "var(--bw)", "Out of combat: extended intrusion, research, tailing a signal. Build the pool, read the Margin."),
-      el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "In a combat round? It's d20. Otherwise, build the pool." })
+      el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "In a combat round? It's d20. Otherwise, build the pool." }),
+      EN.ui.ruleChip("rz-basics", { title: "Resolution Basics: choosing a method" })
     ]);
   }
 

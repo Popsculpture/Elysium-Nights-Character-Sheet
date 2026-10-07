@@ -38,7 +38,6 @@ EN.gmEncounters = (function () {
     q: "", cat: "all", inBand: true,     // the Bestiary picker's filter
     b: { name: "", grade: null, designation: "standard", role: "gunhand" },   // the quick build
     hz: { key: "", grade: null },        // the hazard picker
-    open: Object.create(null),           // reference sections the GM has opened
     banner: null,                        // one line about lines that arrived from another tab
     award: { at: null, skip: Object.create(null), objXp: null }   // XP award choices, per snapshot
   };
@@ -149,13 +148,44 @@ EN.gmEncounters = (function () {
         return el("div", { style: { flex: "1 1 340px", minWidth: "0" } }, [n]);
       }));
   }
-  // a reference section that opens on a click, for book text the GM reads once
-  function fold(key, title, build) {
-    var isOpen = !!_s.open[key];
-    var head = el("div.section-title.clickable", {
-      onclick: function () { _s.open[key] = !isOpen; EN.app.render(); }
-    }, EN.ui.nameCaret(title, isOpen).concat([el("span.line")]));
-    return el("div", null, [head, isOpen ? el("div", { style: { margin: "0 0 10px" } }, build()) : null]);
+  /* ---- links into the Codex --------------------------------------------------
+     The chapter's reading (the budget, composition, objectives, the room,
+     openings, the Security Response, ending fights, XP) is the Codex's
+     Building Encounters (js/codex_gm_build.js). The folds that reprinted it
+     here are pointers now: "In the Codex:" and a link per rule, each of which
+     peeks the rule in place. The room dressing keeps its text (it is the
+     checklist) with its rule names linked. Every link degrades to plain text
+     through EN.ui when the Codex is not loaded. */
+  function codexLinks() { return (EN.codexGmBuild && EN.codexGmBuild.links) || {}; }
+  // the Codex's slug rule (codex.js), for an entry anchor built from a book name
+  function codexSlug(s) {
+    return String(s).toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  }
+  // text into parent with its rule names linked; plain (EN.ui.ruleText) without the Codex
+  function ruled(parent, text, pairs, opts) {
+    var X = EN.codexGmBuild, n = parent.childNodes.length;
+    if (X && typeof X.phrased === "function") {
+      try { return X.phrased(parent, text, pairs, opts); }
+      catch (e) { while (parent.childNodes.length > n) parent.removeChild(parent.lastChild); }
+    }
+    return EN.ui.ruleText(parent, text, opts);
+  }
+  // "In the Codex: A, B and C." from [anchor, label] pairs; hook names it for tests
+  function codexPointer(items, hook, style) {
+    var kids = [document.createTextNode("In the Codex: ")];
+    items.forEach(function (it, i) {
+      if (i) kids.push(document.createTextNode(i === items.length - 1 ? " and " : ", "));
+      kids.push(EN.ui.ruleLink(it[0], it[1]));
+    });
+    kids.push(document.createTextNode("."));
+    return el("p.help", { "data-hook": hook || null, style: style || { margin: "8px 0 0" } }, kids);
+  }
+  // a section title with a small "?" that peeks its Codex panel (no chip without the Codex)
+  function ruleTitle(label, anchor) {
+    var t = EN.ui.sectionTitle(label);
+    var c = EN.ui.ruleChip(anchor);
+    if (c) { c.style.marginLeft = "6px"; t.insertBefore(c, t.lastChild); }
+    return t;
   }
   function heading(title, sub) {
     return el("div.row.between.wrap", { style: { marginBottom: "14px" } }, [
@@ -1043,7 +1073,8 @@ EN.gmEncounters = (function () {
           el("span.mono", { style: { fontSize: "12px" }, text: fmtXp(Math.min(spent, b)) + " / " + fmtXp(b) + " XP" })
         ]),
         el("div", { style: { margin: "4px 0 2px" } }, [bar(spent, b, isT ? "var(--accent)" : "var(--text3)")]),
-        help(d.costs, { margin: "2px 0 0" })
+        // the costs name conditions (Bloodied): linked, the book's words as printed
+        EN.ui.ruleText(el("p.help", { style: { margin: "2px 0 0" } }), d.costs, { conditions: true })
       ]));
     });
     if (!hc) kids.push(help("No headcount, so no budget. Set the crew first.", { color: "var(--warn)" }));
@@ -1058,12 +1089,7 @@ EN.gmEncounters = (function () {
     if (hasSolo && EN.threats.budget && EN.threats.budget.soloNote) {
       kids.push(help("Solo: " + EN.threats.budget.soloNote, { color: "var(--gold)" }));
     }
-    kids.push(fold("budget-how", "How the budget works", function () {
-      var out = [help(B.intro, { margin: "0 0 6px" })];
-      (B.steps || []).forEach(function (s) { out.push(help(s.n + ". " + s.text, { margin: "0 0 3px" })); });
-      if (B.example) out.push(help(B.example.text, { margin: "6px 0 0", fontStyle: "italic" }));
-      return out;
-    }));
+    kids.push(codexPointer([["gme-budget/how-the-budget-works", "How the budget works"], ["gme-budget/example", "the book's example"]], "budget-ref"));
     return EN.ui.panel("Budget", diffName(plan.difficulty).toUpperCase() + " · " + fmtXp(target) + " XP", kids);
   }
 
@@ -1349,7 +1375,13 @@ EN.gmEncounters = (function () {
       } }, "+ ADD LINE")
     ]));
     var HB = EN.gmBook && EN.gmBook.hazards;
-    if (HB && HB.pricing) kids.push(help(HB.pricing.text));
+    if (HB && HB.pricing) {
+      var prP = el("p.help");
+      EN.ui.ruleText(prP, HB.pricing.text);
+      var prChip = EN.ui.ruleChip("gmh-pricing");
+      if (prChip) { prP.appendChild(document.createTextNode(" ")); prP.appendChild(prChip); }
+      kids.push(prP);
+    }
     return el("div", null, kids);
   }
 
@@ -1442,9 +1474,8 @@ EN.gmEncounters = (function () {
       var reads = (seasoning.perFight || []).filter(function (x) { return x.count === nHz; })[0];
       kids.push(help(plural(nHz, "hazard") + ": " + (reads ? "the book reads that as " + reads.reads + "." : seasoning.text), { margin: "8px 0 0" }));
     }
-    if (C.guidance) {
-      kids.push(fold("comp-guidance", C.guidance.name, function () { return [help(C.guidance.text, { margin: 0 })]; }));
-    }
+    kids.push(codexPointer([["gme-composition", "Composition Rules"]].concat(C.guidance
+      ? [["gme-composition/" + codexSlug(C.guidance.name), C.guidance.name]] : []), "comp-ref"));
     kids.push(help("Warnings only. Nothing here stops a plan from running.", { margin: "6px 0 0", fontStyle: "italic" }));
     return EN.ui.panel("Composition", warns.length ? plural(warns.length, "WARNING") : "NO WARNINGS", kids);
   }
@@ -1488,13 +1519,8 @@ EN.gmEncounters = (function () {
         oninput: function (e) { _s.plan.objective.note = e.target.value; paintPlan(); } }), { margin: 0, flex: "1 1 180px", minWidth: "0" })
     ]));
     if (aw) kids.push(help("On top of the defeated threats: " + aw.minText + ", " + aw.maxText + "."));
-    kids.push(fold("obj-ref", "Objectives, payout and bounties", function () {
-      var out = [help(O.intro, { margin: "0 0 6px" }), help(O.payout, { margin: "0 0 6px" })];
-      if (O.bounties) out.push(el("p.help", { style: { margin: 0 } }, [
-        el("span", { style: { fontWeight: 600, color: "var(--text2)" }, text: O.bounties.name + ". " }),
-        document.createTextNode(O.bounties.text)]));
-      return out;
-    }));
+    kids.push(codexPointer([["gme-objectives", "Objectives & Payout"]].concat(O.bounties
+      ? [["gme-objectives/" + codexSlug(O.bounties.name), "Bounties"]] : []), "obj-ref"));
     return EN.ui.panel("Objective", cur ? cur.name.toUpperCase() + (ob.aliveOnly ? " · ALIVE" : "") : "NONE", kids);
   }
 
@@ -1520,8 +1546,9 @@ EN.gmEncounters = (function () {
     }
     kids.push(help(S.intro, { margin: "8px 0 0" }));
 
-    kids.push(EN.ui.sectionTitle("Dress the room"));
-    if (B.room.intro) kids.push(help(B.room.intro, { margin: "0 0 6px" }));
+    kids.push(ruleTitle("Dress the room", "gme-room"));
+    var RL = codexLinks();
+    if (B.room.intro) kids.push(ruled(el("p.help", { "data-hook": "room-intro", style: { margin: "0 0 6px" } }), B.room.intro, RL.roomIntro || []));
     roomRules().forEach(function (r) {
       var on = own(plan.room, r.key);
       kids.push(el("label", { style: { display: "flex", gap: "8px", alignItems: "flex-start", margin: "6px 0 0", cursor: "pointer" } }, [
@@ -1530,23 +1557,19 @@ EN.gmEncounters = (function () {
             if (e.target.checked) _s.plan.room[r.key] = true; else delete _s.plan.room[r.key];
             EN.app.render();
           } }),
-        el("span", { style: { fontSize: "13px", color: on ? "var(--text)" : "var(--text2)" } }, [
-          el("span", { style: { fontWeight: 600 }, text: r.name + ": " }), document.createTextNode(r.text)
-        ])
+        // a link inside the label peeks its rule without ticking the box (the link cancels the click)
+        ruled(el("span", { "data-room-rule": r.key, style: { fontSize: "13px", color: on ? "var(--text)" : "var(--text2)" } }, [
+          el("span", { style: { fontWeight: 600 }, text: r.name + ": " })
+        ]), r.text, (RL.room && RL.room[r.key]) || [])
       ]));
     });
     kids.push(spacer(8));
-    if (B.openings) {
-      kids.push(fold("openings", B.openings.name, function () {
-        return (B.openings.paragraphs || []).map(function (p) { return help(p, { margin: "0 0 6px" }); });
-      }));
-    }
-    if (B.ending) kids.push(fold("ending", B.ending.name, function () { return [help(B.ending.text, { margin: 0 })]; }));
-    kids.push(fold("security-more", "When the clock runs", function () {
-      var out = [help(S.closing, { margin: "0 0 6px" })];
-      ((S.escalation && S.escalation.other) || []).forEach(function (x) { out.push(help("On a Critical Failure: " + x, { margin: 0 })); });
-      return out;
-    }));
+    var refs = [];
+    if (B.openings) refs.push(["gme-openings", B.openings.name]);
+    if (B.ending) refs.push(["gme-ending", B.ending.name]);
+    refs.push(["gmt-conventions/morale", "Morale"]);
+    refs.push(["gme-security/when-the-clock-runs", "when the clock runs"]);
+    kids.push(codexPointer(refs, "site-ref", { margin: 0 }));
     var ticked = roomRules().filter(function (r) { return own(plan.room, r.key); }).length;
     return EN.ui.panel("Site and Room", (t ? t.name.toUpperCase() + " SITE" : "NO RESPONSE") + " · " + ticked + " / " + roomRules().length + " DRESSED", kids);
   }
@@ -1848,7 +1871,7 @@ EN.gmEncounters = (function () {
     var t = tierOf(c.tier) || tiers()[0];
     var every = (S.escalation && S.escalation.everyRounds) || 3;
     var ts = tiers(), top = ts.length && ts[ts.length - 1].key === c.tier;
-    var kids = [EN.ui.sectionTitle("Security Response")];
+    var kids = [ruleTitle("Security Response", "gme-security")];
     kids.push(el("div.row.wrap", { style: { gap: "10px", alignItems: "baseline" } }, [
       chip(t.name.toUpperCase() + " · SITE G" + (c.grade || 1), t.follows ? "var(--danger)" : "var(--accent)"),
       el("span.mono", { style: { fontSize: "15px", color: !c.started ? "var(--text3)" : c.roundsLeft <= 0 ? "var(--danger)" : "var(--text)" },
@@ -2183,7 +2206,12 @@ EN.gmEncounters = (function () {
         totalEl
       ])
     ]));
-    if (X && X.text) kids.push(help(X.text, { margin: "6px 0 0" }));
+    if (X && X.text) {
+      var xpP = help(X.text + " ", { margin: "6px 0 0" });
+      var xpChip = EN.ui.ruleChip("gme-xp");
+      if (xpChip) xpP.appendChild(xpChip);
+      kids.push(xpP);
+    }
     if (members.length) {
       kids.push(el("div.row.wrap", { style: { gap: "6px", marginTop: "8px" } }, members.map(function (m) {
         return chip(m.name + (m.useXp ? " · XP" : " · MILESTONES"), m.useXp ? "var(--success)" : "var(--text3)");

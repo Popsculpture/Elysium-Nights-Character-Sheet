@@ -395,8 +395,9 @@ EN.combatView = (function () {
       });
       aspRow = ctrlRow("ASPECT", [el("div.row.wrap", { style: { gap: "6px", flex: "1 1 auto", alignItems: "center" } }, aspPills)]);
     }
+    // the two rules a player sets here, one "?" each: Edge & Snag, and the Help Action's bonus ladder
     var ctrls = el("div", { style: { padding: "16px", display: "flex", flexDirection: "column", gap: "13px", borderTop: "1px solid var(--border)", marginTop: "14px" } },
-      [ctrlRow("ROLL", [seg]), ctrlRow("HELP", [helpPills]), ctrlRow("OTHER", [otherRow])].concat(aspRow ? [aspRow] : []).concat(moxRow ? [moxRow] : []));
+      [ctrlRow("ROLL", [seg, cxTrayChip("rz-edge", "Edge & Snag")]), ctrlRow("HELP", [helpPills, cxTrayChip("ref-actions/help-action", "Help Action")]), ctrlRow("OTHER", [otherRow])].concat(aspRow ? [aspRow] : []).concat(moxRow ? [moxRow] : []));
 
     var foot = el("div.row.between", { style: { padding: "11px 16px", borderTop: "1px solid var(--border)", alignItems: "baseline" } }, [
       el("span.mono", { style: { fontSize: "11px", color: modeColor }, text: modeLabel }),
@@ -1197,6 +1198,80 @@ EN.combatView = (function () {
     }
     return row;
   }
+  /* ---------- links into the Codex -----------------------------------------
+     Every rule NAME this tab prints and the Codex defines peeks that rule in the
+     drawer, so a player mid-fight reads it in place and keeps their spot. All of it
+     goes through EN.ui.ruleLink / ruleChip / ruleText, which print plain text when
+     the Codex is missing or an anchor does not resolve on this desktop, so a link
+     here is never dead. Anchors are held in code only, never in the record.
+
+     cxHas() is for the few places that REPLACE prose with a pointer: the pointer
+     is drawn only when its entry actually resolves, and the old inline text stays
+     otherwise, so moving a rule into the Codex can never lose it from this tab. */
+  function cxSlug(s) {   // the Codex's own slug rule (EN.codexView.slug), restated so a missing codex.js costs nothing
+    return String(s).toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  }
+  function cxHas(a) { try { return !!(EN.codexView && EN.codexView.has && EN.codexView.has(a)); } catch (e) { return false; } }
+  function cxCond(name) { return "ref-conds/" + cxSlug(name); }
+  function cxLink(a, label) { return EN.ui.ruleLink(a, label); }
+  /* A chip that IS the link: the chip keeps its colours and its own tooltip (a trait's
+     glossary line, a Snag reason), and a tap peeks the rule. Without a resolving anchor
+     it is the plain chip it always was. */
+  function cxChip(a, text, color, title, style) {
+    var st = { fontSize: "9px", color: color || "var(--text2)", borderColor: color || "var(--border2)" };
+    Object.keys(style || {}).forEach(function (k) { st[k] = style[k]; });
+    var n = a && cxHas(a) ? cxLink(a, text) : null;
+    if (n && n.nodeType === 1) {
+      n.classList.add("chip");
+      Object.keys(st).forEach(function (k) { n.style[k] = st[k]; });
+      if (title) n.title = title + "\n(tap for the rule)";
+      return n;
+    }
+    return el("span.chip", { title: title || null, style: st }, text);
+  }
+  // a name that links and keeps the collapse caret beside it, for headers that toggle
+  function cxCaret(a, name, open) {
+    return [el("span", { style: { whiteSpace: "nowrap" } }, [cxLink(a, name), document.createTextNode(" "),
+      el("span.collapse-caret", { text: open ? "▾" : "▸" })])];
+  }
+  // "Rules: A · B": the closing line of a breakdown, listing only the entries that resolve
+  function cxRulesLine(pairs, style) {
+    var live = (pairs || []).filter(function (p) { return p && cxHas(p[0]); });
+    if (!live.length) return null;
+    var kids = [document.createTextNode("Rules: ")];
+    live.forEach(function (p, i) { if (i) kids.push(document.createTextNode(" · ")); kids.push(cxLink(p[0], p[1])); });
+    return el("p.help", { style: style || { margin: "6px 0 0", color: "var(--text3)" } }, kids);
+  }
+  /* The roll tray sits above the drawer's layer, so a rule opened from inside the tray
+     would land behind it. Capture listeners on the tray chip lift the drawer one layer
+     above the tray once the chip has opened it. Enter and Space open the drawer from
+     keydown (codex.js wire), which cancels the click, so the keyboard path lifts it too. */
+  function cxTrayChip(a, title) {
+    var c = EN.ui.ruleChip(a, { title: title });
+    if (!c) return null;
+    var lift = function () {
+      setTimeout(function () { var p = document.getElementById("codex-peek"); if (p) p.style.zIndex = "4100"; }, 0);
+    };
+    c.addEventListener("click", lift, true);
+    c.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") lift(); }, true);
+    return c;
+  }
+
+  /* Strain's five stages, read from the data rather than typed here. This file used to
+     carry its own copy, and stages 3 and 4 had drifted from both sources (it said Surge
+     forces a Breakflow Check on any Overdraw and Rend on any FP spent). EN.flow.strainTrack
+     is the structured copy; the Strain entry in data/conditions.js is the fallback. */
+  function strainStages() {
+    var t = (EN.flow && EN.flow.strainTrack) || [];
+    if (t.length) return t.map(function (s) { return { name: s.name, effect: String(s.penalty || "").replace(/\.\s*$/, "") }; });
+    var c = (EN.conditions || []).filter(function (x) { return x.name === "Strain"; })[0], out = [];
+    String((c && c.text) || "").split("\n").forEach(function (line) {
+      var m = /^-\s*Stage\s+(\d+)\s*-\s*([^:]+):.*?Effect:\s*(.+)$/.exec(line);
+      if (m) out[Number(m[1]) - 1] = { name: m[2].trim(), effect: m[3].trim().replace(/\.\s*$/, "") };
+    });
+    return out.filter(Boolean);
+  }
+
   /* ---------- leveled conditions (severity tracking, per the old sheet) ----- */
   var LEVELED = {
     "Fatigue":  { label: "Level",  max: 6, names: ["Winded", "Tired", "Worn Out", "Exhausted", "Delirious", "Helpless"], severeAt: 4,
@@ -1209,20 +1284,17 @@ EN.combatView = (function () {
         "Speed pool halved (minimum 3) & gain the Hallucinating condition.",
         "You fall Unconscious and can only be stabilized by medical, mystical, or technological treatment."
       ] },
+    // "willingly", as in COND_FX below: being Shoved, pulled or thrown does not tick the bleed
     "Bleeding": { label: "Stacks", max: 3,
       effects: [
-        "Lose 1d4 Vitality at the start of your turn and every time you move 1 space.",
-        "Lose 2d4 Vitality at the start of your turn and every time you move 1 space.",
-        "Lose 3d4 Vitality at the start of your turn and every time you move 1 space."
+        "Lose 1d4 Vitality at the start of your turn and every time you willingly move 1 space.",
+        "Lose 2d4 Vitality at the start of your turn and every time you willingly move 1 space.",
+        "Lose 3d4 Vitality at the start of your turn and every time you willingly move 1 space."
       ] },
-    "Strain":   { label: "Stage",  max: 5, names: ["Ripple", "Wave", "Surge", "Rend", "Collapse"], severeAt: 5,
-      effects: [
-        "Ripple: You roll with Snag on Invocation rolls.",
-        "Wave: All Invocations cost +1 FP.",
-        "Surge: You must roll a Breakflow Check whenever you Overdraw.",
-        "Rend: You must roll a Breakflow Check whenever you spend FP.",
-        "Collapse: Immediate Breakflow; you fall Unconscious."
-      ] }
+    // names and effects come off the data (strainStages), never a copy kept here
+    "Strain":   { label: "Stage",  max: 5, severeAt: 5,
+      names: strainStages().map(function (s) { return s.name; }),
+      effects: strainStages().map(function (s) { return s.name + ": " + s.effect + "."; }) }
   };
   // Per-condition mechanical riders (straight from the condition texts).
   // fx(e, lvl) mutates the aggregate; everything else surfaces via notes.
@@ -1250,8 +1322,10 @@ EN.combatView = (function () {
       e.snagAtk = true; e.perceptionSnag = true; e.vsYou.meleeEdge += 1; e.vsYou.rangedEdge += 1;
       e.notes.push("Blinded: every space and Target is Obscured to you; Snag on attacks and sight checks; attacks against you gain Edge; abilities needing sight do not work. Low-Light, Thermal and Darkvision do not help, and Cyberoptics go dark. Body Save DC 12 at the end of your turn to end it");
     },
+    /* perceptionSnag, not snagChk.WIT. The entry's Snag is on Wits checks TO NOTICE something,
+       which is Perception; the Wits flag put a SNAG chip on every Wits skill row. */
     "Deafened": function (e) {
-      e.snagChk.WIT = true;
+      e.perceptionSnag = true;
       e.notes.push("Deafened: checks relying on hearing fail automatically, and abilities that need you to hear do not reach you; Snag on Wits checks to notice anything you are not already looking at. Body Save DC 12 at the end of your turn to end it");
     },
     // No save. It ends when its cause ends, which is why it is harsher than the Critical Wound
@@ -1283,9 +1357,9 @@ EN.combatView = (function () {
       if (l >= 5) e.derived.push({ name: "Hallucinating", from: "Fatigue " + l });
       if (l >= 6) e.derived.push({ name: "Unconscious", from: "Fatigue 6 · Helpless" });
     },
-    "Frightened": function (e) { e.snagAtk = true; e.snagChk.ALL = true; e.notes.push("Frightened: can't approach the source; must retreat to cover within 10 spaces"); },
+    "Frightened": function (e) { e.snagAtk = true; e.snagChk.ALL = true; e.notes.push("Frightened: can't willingly move closer to the source; while within 10 spaces of it, use your movement to retreat to the best cover or away; Snag on attacks and d20 checks while the source is in sight"); },
     "Grappled": function (e) { e.speedZero = true; e.notes.push("Grappled: Speed 0; Action + contested Athletics (Body) or Acrobatics (Agility) vs the grappler's Athletics to escape"); },
-    "Hallucinating": function (e) { e.perceptionSnag = true; e.snagChk.WIT = true; e.notes.push("Hallucinating: treat false stimuli as real; Wits Save DC 12 to ignore them"); },
+    "Hallucinating": function (e) { e.perceptionSnag = true; e.snagChk.WIT = true; e.notes.push("Hallucinating: treat false stimuli as real; a Wits Save (DC set by the source, default 12) to ignore one"); },
     "Hardwired": function (e) { e.notes.push("Hardwired: targetable by Quick Hacks; Snag on saves vs EMP / viruses / Electromagnetic"); },
     /* No lane and no flag on purpose. Hidden is a relation to ONE Target: it cannot target you and
        you have Edge attacking it, but the accumulator has no attacker-Edge channel and cannot tell
@@ -1294,7 +1368,8 @@ EN.combatView = (function () {
     "Incapacitated": function (e) { e.cannotAct = true; e.notes.push("Incapacitated: no Actions of any kind; minor Free Actions only"); },
     "Invisible": function (e) { e.vsYou.meleeSnag += 1; e.vsYou.rangedSnag += 1; e.notes.push("Invisible: Edge on Stealth; attacks against you have Snag unless the attacker has a reliable way to perceive you"); },
     "Lagged": function (e) { e.notes.push("Lagged: your actions resolve at the END of the round"); },
-    "LinkDeath": function (e) { e.notes.push("LinkDeath: 2d6+ Psychic on failed save and Unconscious; Wits Save at end of turn to wake"); },
+    // Unconscious only on the hard landing: a soft one (failed by 4 or less) is half the feedback and Dazed
+    "LinkDeath": function (e) { e.notes.push("LinkDeath: 2d6 Psychic per Link severed against your will. Failed by 4 or less: half, and Dazed until the end of your next turn. Failed by 5 or more: full, and Unconscious, with a Wits Save at the end of each turn to wake"); },
     "Mutating": function (e, l) { e.notes.push("Mutating " + l + " stack(s): Body Save DC " + (10 + l) + " at start of turn or suffer growth effects"); },
     "Panic": function (e) { e.notes.push("Panic: Wits Save DC 12 at start of turn or roll 1d6: Flight / Fight / Freeze"); },
     "Paralyzed": function (e) { e.cannotAct = true; e.speedZero = true; e.vsYou.meleeEdge += 1; e.autoFailBodAgiSaves = true; e.notes.push("Paralyzed: auto-fail Body & Agility saves; melee vs you has Edge and may crit"); },
@@ -1317,11 +1392,10 @@ EN.combatView = (function () {
     "Suppressed": function (e) { e.snagAtk = true; e.noImpulse = true; e.notes.push("Suppressed: Snag on attack rolls; no Impulse Actions. Ends at the start of the suppressor's next turn unless the effect that applied it sets a different duration, or earlier at the GM's call when the fire stops"); },
     "Signal Jammed": function (e) { e.notes.push("Signal Jammed: no remote devices, drones, or wireless cyberware; wired still works"); },
     "Staggered": function (e) { e.speedHalved = true; e.noSwift = true; e.noImpulse = true; e.notes.push("Staggered: Staggered again → Stunned"); },
+    /* Stages 1 to 4 read their effect off the data (strainStages). Stage 5 says nothing of
+       its own: it becomes Breakflow and Unconscious, whose own riders then speak. */
     "Strain": function (e, l) {
-      if (l >= 1) e.notes.push("Strain · Ripple: Snag on Invocation rolls");
-      if (l >= 2) e.notes.push("Strain · Wave: all Invocations cost +1 FP");
-      if (l >= 3) e.notes.push("Strain · Surge: Breakflow Check whenever you Overdraw");
-      if (l >= 4) e.notes.push("Strain · Rend: Breakflow Check whenever you spend FP");
+      strainStages().slice(0, 4).forEach(function (s, i) { if (l >= i + 1) e.notes.push("Strain · " + s.name + ": " + s.effect); });
       if (l >= 5) { e.derived.push({ name: "Breakflow", from: "Strain 5 · Collapse" }); e.derived.push({ name: "Unconscious", from: "Strain 5 · Collapse" }); }
     },
     "Surprised": function (e) { e.cannotAct = true; e.noSwift = true; e.noImpulse = true; e.speedZero = true; e.vsYou.meleeEdge += 1; e.vsYou.rangedEdge += 1;
@@ -1402,33 +1476,40 @@ EN.combatView = (function () {
     if (e.speedHalved) s = Math.floor(s / 2);
     return Math.max(e.speedMin || 0, s);
   }
+  // the reason stays in the tooltip; a tap peeks Edge & Snag
   function snagChip(why) {
-    return el("span.chip", { title: why, style: { fontSize: "9px", color: "var(--danger)", borderColor: "var(--danger)" }, text: "SNAG" });
+    return cxChip("rz-edge", "SNAG", "var(--danger)", why);
   }
 
-  // Duration + how-to-end metadata for the collapsed condition cards
+  /* Duration + how-to-end metadata for the collapsed condition cards. A short rider, and it
+     must agree with the condition's own "How to End It" in data/conditions.js, which the card
+     links to. Checked against it 2026-10-07: Breakflow had "24 Hours" and "Flow Ritual / 1 Day
+     Rest", but it ends ONLY through Breakflow Restoration and a rest alone can't end it; the
+     save-ended conditions (Dazed, Shaken, Staggered, Stunned) carried round counts the data
+     never states, so they read "Until Save"; and Critical Condition, Drowsy, Paralyzed and Soul
+     Shock named a roll that does not end them, or left out a route that does. */
   var COND_META = {
     "Bleeding": ["Until Healed", "Medtech DC 10 / 15 / 20"], "Bloodied": ["Until Vit > 0", "Regain any Vitality"],
-    "Breached": ["Until Purged", "Engineering / Tech Check"], "Breakflow": ["24 Hours", "Flow Ritual / 1 Day Rest"],
+    "Breached": ["Until Purged", "Engineering / Tech Check"], "Breakflow": ["Until Restored", "Breakflow Restoration only; a rest alone can't end it"],
     "Bricked": ["Until Repaired", "Engineering / Tech Check"], "Burning": ["Until Out", "End of turn Body DC 10"],
     "Glitched": ["End of target's next turn", "Ends on its own"], "Traced": ["Start of attacker's next turn", "Ends on its own"],
     "Cascade Failure": ["Until Resolved", "Engineering / Systems Check"], "Charmed": ["Until Broken", "End of turn Wits / Charm Save"],
-    "Confused": ["Special", "End of turn Wits DC 15"], "Critical Condition": ["Until Healed", "Body DC (Varies)"],
+    "Confused": ["Special", "End of turn Wits DC 15"], "Critical Condition": ["Until Healed", "Heal above half your Wounds / medical or Flow treatment"],
     "Critical Wound": ["Persistent", "Surgery / Regenerative Tech"], "Cursed": ["Persistent", "Ritual / Rare Relics"],
-    "Dazed": ["1 Round", "End of turn Wits DC 12"], "Drowning": ["Special", "Access to breathable air"],
-    "Drowsy": ["Persistent", "Body DC 12 (shake off) / Body DC 15 (resist sleep)"], "Fatigue": ["Until Restored", "Long Rest / Treatment / Medtech"],
+    "Dazed": ["Until Save", "End of turn Wits DC 12"], "Drowning": ["Special", "Access to breathable air"],
+    "Drowsy": ["Persistent", "An ally's Action + Body DC 12 / stimulants out of combat"], "Fatigue": ["Until Restored", "Long Rest / Treatment / Medtech"],
     "Surprised": ["1st turn of combat", "-"], "Suppressed": ["Until suppression ends", "Start of the suppressor's next turn, unless the effect sets a different duration"], "Mutating": ["Until Treated", "Complex Action Medtech DC 12 + stacks"],
     "Immunity": ["Persistent", "-"], "Resistance": ["Persistent", "-"], "Vulnerability": ["Persistent", "-"],
     "Frightened": ["Until Save", "End of turn Wits / Charm DC 15"], "Grappled": ["Until Escaped", "Contested Athletics / Acrobatics"],
     "Hallucinating": ["Persistent", "Purge / Source Expiration"], "Hardwired": ["Permanent", "Uninstall Cyberware"], "Hidden": ["Until You Attack or It Finds You", "Its Perception check meets your Stealth result, or clear view"],
     "Incapacitated": ["Until Freed", "Removal of source"], "Invisible": ["Until Revealed", "Narrative / Tech Reveal"],
     "Lagged": ["Persistent", "Exit Zone / Purge"], "LinkDeath": ["Until Save", "End of turn Wits Save"],
-    "Panic": ["Special", "End of turn Wits DC 12"], "Paralyzed": ["Until Save", "Body Save (varies)"],
+    "Panic": ["Special", "End of turn Wits DC 12"], "Paralyzed": ["Until Save", "The effect's own save / remove the agent"],
     "Poisoned": ["Varies", "Antitoxin / Medtech Check"], "Prone": ["Until Stand", "Half Move or Swift Action"],
-    "Restrained": ["Until Freed", "Athletics Check / Destroy Restraint"], "Shaken": ["1-3 Rounds", "End of turn Wits DC 12"],
-    "Signal Jammed": ["Until Jam Ends", "Move / Disable Jammer"], "Soul Shock": ["Until Short Rest", "Short Rest"],
-    "Staggered": ["1-2 Rounds", "End of turn Wits DC 10"], "Strain": ["Until Restored", "Long Rest / Ritual"],
-    "Stunned": ["1 Round", "End of turn Body DC 15"], "Unconscious": ["Until Revived", "Healing / Allied Action"],
+    "Restrained": ["Until Freed", "Athletics Check / Destroy Restraint"], "Shaken": ["Until Save", "End of turn Wits DC 12"],
+    "Signal Jammed": ["Until Jam Ends", "Move / Disable Jammer"], "Soul Shock": ["Until Rested", "Short or Long Rest / Flow healing"],
+    "Staggered": ["Until Save", "End of turn Wits DC 10"], "Strain": ["Until Restored", "Long Rest / Ritual"],
+    "Stunned": ["Until Save", "End of turn Body DC 15"], "Unconscious": ["Until Revived", "Healing / Allied Action"],
     "Vacuum": ["Special", "Pressure and air, or a suit that holds vacuum"]
   };
   function condLevel(ch, name) { return (ch.conditionLevels || {})[name] || 1; }
@@ -1520,8 +1601,13 @@ EN.combatView = (function () {
   function hazChip(text, color, title) {
     return el("span.chip", { title: title || "", style: { fontSize: "9px", color: color, borderColor: color }, text: text });
   }
-  function hazSub(label) {
-    return el("div.section-title", null, [document.createTextNode(label), el("span.line")]);
+  /* A hazard subsection's title, which peeks its Environmental Hazards entry when given one.
+     The blocks under these titles used to restate that entry's prose (the exposure intro, the
+     deprivation rider, a typed Vacuum sentence, the degradation rule, each mitigation's note).
+     The linked title now carries the rule and the block keeps only its live numbers; the prose
+     stays only while its entry does not resolve, so it can never vanish from both places. */
+  function hazSub(label, anchor) {
+    return el("div.section-title", null, [anchor ? cxLink(anchor, label) : document.createTextNode(label), el("span.line")]);
   }
 
   /* Hazards as BLOCKS rather than as their own panel. The Status Changes panel
@@ -1539,8 +1625,8 @@ EN.combatView = (function () {
 
     /* ---- 3.1 Exposure -------------------------------------------------- */
     if (hzd.exposures.length) {
-    kids.push(hazSub("Exposure"));
-    kids.push(el("p.help", { style: { margin: "0 0 8px" }, text: H.exposure.intro }));
+    kids.push(hazSub("Exposure", "ref-hazards/exposure"));
+    if (!cxHas("ref-hazards/exposure")) kids.push(el("p.help", { style: { margin: "0 0 8px" }, text: H.exposure.intro }));
     hzd.exposures.forEach(function (row) {
       var right = [];
       right.push(el("span.mono", { style: { fontSize: "17px", color: row.shielded ? "var(--text3)" : "var(--warn)" }, text: "DC " + row.dc }));
@@ -1590,8 +1676,9 @@ EN.combatView = (function () {
        own DC and its own Fatigue; applying one says nothing about the others. */
     var depOn = hzd.deprivation.filter(function (r) { return r.applied; });
     if (depOn.length) {
-    kids.push(hazSub("Deprivation"));
-    kids.push(el("p.help", { style: { margin: "0 0 8px" }, text: (H.typeByKey.deprivation || {}).rider || "" }));
+    // Deprivation has no entry of its own: its rider and its three clocks are tables in the panel
+    kids.push(hazSub("Deprivation", "ref-hazards"));
+    if (!cxHas("ref-hazards")) kids.push(el("p.help", { style: { margin: "0 0 8px" }, text: (H.typeByKey.deprivation || {}).rider || "" }));
     depOn.forEach(function (row) {
       var chips = [];
       chips.push(hazChip(row.days + " " + row.unit + (row.days === 1 ? "" : "s"), row.crossed ? "var(--danger)" : "var(--text3)",
@@ -1631,8 +1718,8 @@ EN.combatView = (function () {
        the SAME EN.hazards.breath spec, so the two still cannot drift. */
     var vacOn = hzd.breath.filter(function (b) { return b.kind === "vacuum" && b.applied; });
     if (vacOn.length) {
-    kids.push(hazSub("Vacuum"));
-    kids.push(el("p.help", { style: { margin: "0 0 8px" },
+    kids.push(hazSub("Vacuum", "ref-hazards/vacuum-mirrors-drowning-exactly"));
+    if (!cxHas("ref-hazards/vacuum-mirrors-drowning-exactly")) kids.push(el("p.help", { style: { margin: "0 0 8px" },
       text: "Vacuum mirrors Drowning exactly, and both are built from one spec, so the two cannot drift: breath held " + (H.breath || {}).holdRule
           + ", then a Body Save at the start of each of your turns, DC " + (H.breath || {}).dc + " and +" + (H.breath || {}).step + " each round." }));
     vacOn.forEach(function (b) { kids.push(breathRow(b, d, fx)); });
@@ -1698,10 +1785,12 @@ EN.combatView = (function () {
        Caustic block or not at all. */
     var cz = hzd.caustic;
     if (cz.applied) {
-    kids.push(hazSub("Caustic Environments"));
+    kids.push(hazSub("Caustic Environments", "ref-hazards/in-it-and-after-it"));
     var cChips = [];
     cChips.push(hazChip(cz.inside ? "STANDING IN IT" : "OUT", cz.inside ? "var(--danger)" : "var(--text3)"));
-    if (cz.lingering) cChips.push(hazChip("RESIDUE CLINGING", "var(--ember)", "1d6 Acid at the end of each of your turns until washed off"));
+    // the residue's dice off the data (EN.hazards.caustic.lingering), not typed here
+    var lingerSpec = cz.lingerDamage || ((H.caustic || {}).lingering) || null;
+    if (cz.lingering) cChips.push(hazChip("RESIDUE CLINGING", "var(--ember)", lingerSpec ? lingerSpec.dice + " " + lingerSpec.type + " " + lingerSpec.when : null));
     if (cz.stoppedBy) cChips.push(hazChip("STOPPED · " + String(cz.stoppedBy).toUpperCase(), "var(--success)"));
     else if (cz.lingerStoppedBy) cChips.push(hazChip("NO RESIDUE · " + String(cz.lingerStoppedBy).toUpperCase(), "var(--success)"));
     cChips.push(hazChip(cz.sceneTicks + " TURN" + (cz.sceneTicks === 1 ? "" : "S") + " IN IT", cz.sceneTicks ? "var(--warn)" : "var(--text3)", "Turns spent in it so far this scene"));
@@ -1724,7 +1813,7 @@ EN.combatView = (function () {
     var dg = cz.degradation;
     kids.push(el("div.feature", { style: { borderLeftColor: dg.breached ? "var(--danger)" : (dg.lost ? "var(--warn)" : "var(--border2)") } }, [
       el("h4", null, [
-        el("span", { text: "Gear Degradation" }),
+        el("span", null, [cxLink("ref-hazards/gear-degradation", "Gear Degradation")]),
         el("span", { style: { display: "flex", alignItems: "center", gap: "8px" } }, [
           // the suit's real current DR, from the one resolver, so this reads the
           // same as the Defenses row rather than quoting the catalog at it
@@ -1746,7 +1835,8 @@ EN.combatView = (function () {
             title: "Open the Impact Table and repair this suit", onclick: causticOpenRepair }, "→ REPAIR") : null
         ])
       ]),
-      el("p.help", { style: { margin: 0 }, text: cz.degradationRule.text || "" }),
+      // the rule itself is the linked title's entry; the lines below are this suit's live state
+      cxHas("ref-hazards/gear-degradation") ? null : el("p.help", { style: { margin: 0 }, text: cz.degradationRule.text || "" }),
       el("p.help", { style: { margin: "3px 0 0", color: dg.exposed ? "var(--warn)" : "var(--success)" },
         text: !dg.armor ? "No armor worn, so there is nothing to degrade."
             : dg.blockedBy ? (dg.blockedBy + " is worn over " + dg.armor + " and keeps the caustic off it too, so it does not degrade.")
@@ -1780,9 +1870,11 @@ EN.combatView = (function () {
     if (!owned.length) return;
     kids.push(hazSub("Mitigations (" + owned.filter(function (m) { return m.active; }).length + " of " + owned.length + " live)"));
     owned.forEach(function (m) {
+      // a mitigation with a note is its own entry in Environmental Hazards; its name peeks it
+      var mA = "ref-hazards/" + cxSlug(m.name), mLive = !!m.note && cxHas(mA);
       var row = [
         el("h4", null, [
-          el("span", null, [document.createTextNode(m.name + " "), hazChip(m.kind.toUpperCase(), "var(--text3)")]),
+          el("span", null, [mLive ? cxLink(mA, m.name) : document.createTextNode(m.name), document.createTextNode(" "), hazChip(m.kind.toUpperCase(), "var(--text3)")]),
           el("span", { style: { display: "flex", alignItems: "center", gap: "8px" } }, [
             m.detail ? el("span.help", { style: { margin: 0 }, text: m.detail }) : null,
             hazChip(m.active ? "ACTIVE" : "OFF", m.active ? "var(--success)" : "var(--text3)", m.why)
@@ -1791,7 +1883,7 @@ EN.combatView = (function () {
         el("p.help", { style: { margin: 0, color: m.active ? "var(--text2)" : "var(--text3)" }, text: m.summary }),
         el("p.help", { style: { margin: "3px 0 0" }, text: m.why })
       ];
-      if (m.note) row.push(el("p.help", { style: { margin: "3px 0 0", fontStyle: "italic" }, text: m.note }));
+      if (m.note && !mLive) row.push(el("p.help", { style: { margin: "3px 0 0", fontStyle: "italic" }, text: m.note }));
       if (m.key === "thermal-weave" && hzd.thermalWeaveKey) {
         var tuned = ((ch.hazards || {}).thermalWeave || {})[hzd.thermalWeaveKey] || "";
         row.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "5px" } }, [
@@ -2310,6 +2402,11 @@ EN.combatView = (function () {
     function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase(); }
   }
   var COST_COLOR = { Action: "var(--accent)", Swift: "var(--gold)", Impulse: "var(--flow)", Free: "var(--success)", Active: "var(--accent)", Passive: "var(--text3)", Complex: "var(--ember)", Special: "var(--gold)" };
+  /* each action-type chip peeks its Action Economy entry. Passive is one of the Special
+     Action's kinds (its "Passive Special" line); Active names no action type, so it stays a plain chip. */
+  var COST_ANCHOR = { Action: "ref-actions/action", Swift: "ref-actions/swift-action", Impulse: "ref-actions/impulse-action",
+                      Free: "ref-actions/free-action", Complex: "ref-actions/complex-action", Special: "ref-actions/special-action",
+                      Passive: "ref-actions/passive-special" };
   /* class-resource identity colors; the resource bar + count tint to match its fuel */
   var RESOURCE_COLOR = {
     Bandwidth: "var(--bw)",   // electric blue, data / signal / system capacity (shared with #GRID)
@@ -2674,7 +2771,7 @@ EN.combatView = (function () {
         useBtn || el("span.ab-nouse", { title: "Costs no class resource", text: noUseLabel(uses, limited, text) }),
         el("span.card-name", null, EN.ui.nameCaret(name, open)),
         el("span.ab-act", null, [cost
-          ? el("span.chip", { style: { fontSize: "9.5px", color: COST_COLOR[cost], borderColor: COST_COLOR[cost] }, text: cost.toUpperCase() })
+          ? cxChip(COST_ANCHOR[cost], cost.toUpperCase(), COST_COLOR[cost], null, { fontSize: "9.5px" })
           : el("span.ab-dash", { text: "-" })]),
         el("span.ab-eff", null, [(function () {
           var eff = effectOf(name);
@@ -2782,7 +2879,9 @@ EN.combatView = (function () {
      Normalization spec validated against the rulebook reference tables (72/73 weapons;
      the lone flag, Harmonic Edge range, is a known reference inconsistency the
      consistent reach rule resolves correctly). */
-  var FIRING_MODES = ["Single Shot", "Semi-Automatic", "Burst Fire", "Full-Auto"];
+  // One list: data/gear_traits.js (loaded before this file) holds it, and the Codex's Firing
+  // Modes page prints the same copy. The literal is only a fallback if the data is missing.
+  var FIRING_MODES = (EN.gearCatalog && EN.gearCatalog.firingModes) || ["Single Shot", "Semi-Automatic", "Burst Fire", "Full-Auto"];
   // per-shot ammo cost. Single Shot & Semi-Automatic each spend 1 round per shot;
   // Semi-Auto differs by allowing a second shot via a Swift Action (fire it again), so
   // each tap here deducts 1. Burst Fire (3) and Full-Auto (8) spend their full volley per use.
@@ -3061,20 +3160,29 @@ EN.combatView = (function () {
   }
 
   /* trait + damage-type tooltips for the attack-row chips */
-  function weaponTraitTip(t) {
+  /* traitInfo matches a printed trait to its glossary entry: { tip, key } for a trait (key is
+     the EN.gearCatalog.weaponTraits key, "Reach X" for "Reach 2"), { tip, dmgType } for a
+     "<Type> Damage" chip. The key is also the Codex anchor, gr-traits/<slug(key)>. */
+  function traitInfo(t) {
     var g = EN.gearCatalog || {}, defs = g.weaponTraits || {};
     var REVERSE = { "Nonlethal Damage": "Nonlethal" };   // renamed mechanical traits → real trait def
-    if (REVERSE[t] && defs[REVERSE[t]]) return defs[REVERSE[t]];
+    if (REVERSE[t] && defs[REVERSE[t]]) return { tip: defs[REVERSE[t]], key: REVERSE[t] };
     var base = t.replace(/\s*\(.*\)$/, "").trim();
-    var tip = defs[base] || defs[base.replace(/\s+\d+$/, " X")] || (/^Area /.test(base) ? defs["Area X"] : "") || "";
-    if (!tip) {
-      var dm = t.match(/^(\w+) Damage$/);
-      if (dm) { var dt = ((EN.combat && EN.combat.damageTypes) || []).find(function (x) { return x.name === dm[1]; }); tip = dt ? dt.text : dm[1] + " damage type."; }
+    var keys = [base, base.replace(/\s+\d+$/, " X")].concat(/^Area /.test(base) ? ["Area X"] : []);
+    for (var i = 0; i < keys.length; i++) if (defs[keys[i]]) return { tip: defs[keys[i]], key: keys[i] };
+    var dm = t.match(/^(\w+) Damage$/);
+    if (dm) {
+      var dt = ((EN.combat && EN.combat.damageTypes) || []).filter(function (x) { return x.name === dm[1]; })[0];
+      return { tip: dt ? dt.text : dm[1] + " damage type.", dmgType: dt ? dt.name : null };
     }
-    return tip;
+    return { tip: "" };
   }
+  function weaponTraitTip(t) { return traitInfo(t).tip; }
+  // the glossary line stays the tooltip; a tap peeks the trait (or the damage type) in the Codex
   function wTraitChip(t) {
-    return el("span.chip", { title: weaponTraitTip(t), style: { fontSize: "9px", color: "var(--text2)", borderColor: "var(--border2)" } }, t);
+    var inf = traitInfo(t);
+    var a = inf.key ? "gr-traits/" + cxSlug(inf.key) : inf.dmgType ? "ref-dmg/" + cxSlug(inf.dmgType) : null;
+    return cxChip(a, t, "var(--text2)", inf.tip, { borderColor: "var(--border2)" });
   }
 
   /* ---------- main render ---------- */
@@ -3110,7 +3218,8 @@ EN.combatView = (function () {
                 fxBtn("✕", "Close, reappears when active effects change", function () { _fxBox.closedKey = fxKey; EN.app.render(); })
               ])
             ])
-          ].concat(fxMin ? [] : fx.notes.map(function (n) { return el("p.help", { style: { margin: "2px 0" }, text: "• " + n }); })))
+          // each note leads with its condition's name, and every condition named links to its entry
+          ].concat(fxMin ? [] : fx.notes.map(function (n) { return EN.ui.ruleText(el("p.help", { style: { margin: "2px 0" } }), "• " + n, { conditions: true }); })))
         ]));
       }
     }
@@ -3256,6 +3365,12 @@ EN.combatView = (function () {
     });
     var baseMove = Math.max(3, 6 + agiMod), spdFloored = (6 + agiMod) < 3, spCond = spDisplay - d.speed;
     function bdRow(label, val, note, raw) { return { label: label, val: val, note: note || null, raw: !!raw }; }
+    /* The cover bonuses come off EN.combat.cover ("+2 Defense"), not typed here, so the
+       breakdown and Cover & Sight cannot disagree. */
+    var coverFoot = ((EN.combat || {}).cover || []).map(function (cv) {
+      var m = /\+(\d+) Defense/.exec(cv.effect || "");
+      return m ? "+" + m[1] + " " + String(cv.name).replace(/ Cover$/, "").replace(/^Three-Quarter$/, "¾") : null;
+    }).filter(Boolean).join(" / ");
     function chromeNote(k) { var cb = d.attributes[k].cyberBonus; return cb ? "score includes +" + cb + " from chrome" : null; }
     var BD = {
       DEF: { title: "Defense", total: d.defense, sign: false,
@@ -3263,7 +3378,8 @@ EN.combatView = (function () {
         rows: [bdRow("Base", 10, null, true),
                bdRow(defAttrName + " modifier" + (defAttrReason ? " (" + defAttrReason + ")" : ""), d.attributes[d.defenseAttr].mod, chromeNote(d.defenseAttr))]
           .concat(dg.shield ? [bdRow("Shield · " + dg.shield.name, dg.shieldDef)] : []),
-        foot: "Cover (+2 Half / +5 ¾) and a declared Active Defense add more against a specific attack, see Defend." },
+        foot: "Cover" + (coverFoot ? " (" + coverFoot + ")" : "") + " and a declared Active Defense add more against a specific attack, see Defend.",
+        rules: [["ref-def/defense", "Defense"], ["ref-cover", "Cover & Sight"], ["ref-def", "Active Defenses"]] },
       DR: { title: "Damage Reduction", total: d.totalDR || 0, sign: false,
         formula: "Worn armor + armor mods + natural lineage DR vs physical damage",
         rows: (dg.armor ? [bdRow("Armor · " + dg.armor.name + (dg.armorLapsed ? " (LEASE DUE)" : "") + (dg.armorDRLost ? " (" + dg.armorDR + " of " + dg.armorBaseDR + ", " + dg.armorDRLost + " lost)" : ""), dg.armorDR, null, true)] : [])
@@ -3275,7 +3391,10 @@ EN.combatView = (function () {
           })),
         empty: (dg.armor || d.naturalDR || d.cyberDR) ? null : "No armor equipped; WEAR armor in Inventory → Stash.",
         foot: (dg.armorDRLost ? "Damaged plating: " + dg.armorDRLost + " point" + (dg.armorDRLost === 1 ? "" : "s") + " of DR gone until repaired, on the Impact Table. " : "") +
-              (dg.armor && (dg.armor.traits || []).indexOf("Plated") !== -1 ? "Plated: when you Block, add half this DR (rounded down) on top." : "") || null },
+              (dg.armor && (dg.armor.traits || []).indexOf("Plated") !== -1 ? "Plated: when you Block, add half this DR (rounded down) on top." : "") || null,
+        rules: [["ref-damage/damage-order", "Damage Order"]]
+          .concat((d.resistances || []).length ? [["ref-damage/resistance-vulnerability-and-immunity", "Resistance, Vulnerability & Immunity"]] : [])
+          .concat([["ref-dmg", "Damage Types"]]) },
       SPD: { title: "Speed", total: spDisplay, sign: false,
         formula: "max(3, 6 + Agility Modifier) + chrome + lineage − Bulky − load − conditions",
         rows: (spdFloored ? [bdRow("Base move (Agility floored to min 3)", baseMove, null, true)]
@@ -3285,14 +3404,16 @@ EN.combatView = (function () {
           .concat(dg.speedPenalty ? [bdRow("Bulky · " + dg.armor.name, dg.speedPenalty)] : [])
           .concat(d.encumbrance && d.encumbrance.speedDelta ? [bdRow(d.encumbrance.state === "overloaded" ? "Overloaded (Speed halved)" : "Encumbered", d.encumbrance.speedDelta)] : [])
           .concat(spCond ? [bdRow("Conditions", spCond)] : []),
-        foot: d.lineageSpeedFirstRound ? "+" + d.lineageSpeedFirstRound + " Speed during the first round of any combat (Tuned Synapses)." : null },
+        foot: d.lineageSpeedFirstRound ? "+" + d.lineageSpeedFirstRound + " Speed during the first round of any combat (Tuned Synapses)." : null,
+        rules: [["bx-space", "Space, Speed & Area"]].concat(d.encumbrance && d.encumbrance.speedDelta ? [["sk-load", "Encumbrance & Load"]] : []) },
       INIT: { title: "Initiative", total: initVal, sign: true,
         formula: "Agility or Wits Modifier (best)" + (d.lineageInit && d.lineageInit.caliber ? " + lineage" : "") + (d.cyberInit ? " + chrome" : "") + (fx.init ? " + conditions" : ""),
         rows: [bdRow((initAttr === "WIT" ? "Wits" : "Agility") + " modifier (best of Agility/Wits)", initMod, chromeNote(initAttr))]
           .concat(d.lineageInit && d.lineageInit.caliber ? [bdRow("Lineage · Static Premonition", d.lineageInit.caliber)] : [])
           .concat(d.cyberInit ? [bdRow("Chrome · Reflex Booster", d.cyberInit)] : [])
           .concat(fx.init ? [bdRow("Conditions", fx.init)] : []),
-        foot: "Initiative roll = d20 + Caliber (" + d.caliber + ") + this." + (d.lineageInit && d.lineageInit.edge ? " Roll with Edge (Tuned Synapses)." : "") },
+        foot: "Initiative roll = d20 + Caliber (" + d.caliber + ") + this." + (d.lineageInit && d.lineageInit.edge ? " Roll with Edge (Tuned Synapses)." : ""),
+        rules: [["ref-round", "Initiative & the Round"]] },
       // Size is derived from height, and its only mechanical reach is the
       // Encumbrance Threshold and comparison (grappling, moving through a
       // space, the Body Gate). It never touches a d20 roll, Defense, or Speed.
@@ -3316,7 +3437,8 @@ EN.combatView = (function () {
           formula: "derived from height; a boundary height takes the larger category",
           empty: d.size ? null : "Pick a height on the #PRINT tab to set your Size.",
           rows: rows,
-          foot: trait ? trait.text : null };
+          foot: trait ? trait.text : null,
+          rules: [["ref-size", "Size"], ["sk-load", "Encumbrance & Load"]] };
       })()
     };
     function fmtVal(r) { return r.raw ? String(r.val) : (r.val >= 0 ? "+" : "") + r.val; }
@@ -3378,7 +3500,8 @@ EN.combatView = (function () {
            surfaces disagreed; the panel now agrees with the tooltip. */
         sbd.empty ? el("p.help", { style: { margin: 0, color: "var(--text3)" }, text: sbd.empty }) : null,
         bdRows.length ? el("div", null, bdRows) : null,
-        sbd.foot ? el("p.help", { style: { margin: "6px 0 0", color: "var(--text3)" }, text: sbd.foot }) : null
+        sbd.foot ? el("p.help", { style: { margin: "6px 0 0", color: "var(--text3)" }, text: sbd.foot }) : null,
+        cxRulesLine(sbd.rules)
       ]));
     }
 
@@ -3686,20 +3809,26 @@ EN.combatView = (function () {
     }
     sectionEls.skills = EN.ui.panel("Skills", "TAP TO ROLL · DOT = TIER", [el("div", { style: { columnCount: 1 } }, skillRows), versatileBlock()], { corners: true });
 
-    /* state banners */
+    /* state banners. The conditions they name link to their entries; Dying, Death Saves and
+       Stable have no Codex entry yet (they wait on the manuscript), so they stay plain. */
+    function bannerKids(icon, head, headAnchor, parts) {
+      var kids = [document.createTextNode(icon + " "), el("b", null, [headAnchor ? cxLink(headAnchor, head) : document.createTextNode(head)]), document.createTextNode(" · ")];
+      parts.forEach(function (p) { kids.push(typeof p === "string" ? document.createTextNode(p) : p); });
+      return kids;
+    }
     if (s.dying) {
-      blocks.push(el("div.muted-box", { style: { borderColor: "var(--danger)", color: "var(--danger)", marginBottom: "12px", textAlign: "left" },
-        html: "☠ <b>DYING</b> · Unconscious at 0 Wounds. Each turn: Death Save (Body, DC 10). Three successes = Stable, three failures = dead. Any damage = one failure." }));
+      blocks.push(el("div.muted-box", { style: { borderColor: "var(--danger)", color: "var(--danger)", marginBottom: "12px", textAlign: "left" } },
+        bannerKids("☠", "DYING", null, [cxLink(cxCond("Unconscious"), "Unconscious"), " at 0 Wounds. Each turn: Death Save (Body, DC 10). Three successes = Stable, three failures = dead. Any damage = one failure."])));
     } else if (s.stable) {
-      blocks.push(el("div.muted-box", { style: { borderColor: "var(--warn)", color: "var(--warn)", marginBottom: "12px", textAlign: "left" },
-        html: "◌ <b>STABLE</b> · Unconscious at 0 Wounds, no longer Dying. Restoring even 1 Wound wakes you with that many Wounds." }));
+      blocks.push(el("div.muted-box", { style: { borderColor: "var(--warn)", color: "var(--warn)", marginBottom: "12px", textAlign: "left" } },
+        bannerKids("◌", "STABLE", null, [cxLink(cxCond("Unconscious"), "Unconscious"), " at 0 Wounds, no longer Dying. Restoring even 1 Wound wakes you with that many Wounds."])));
     } else if (s.critical) {
-      blocks.push(el("div.muted-box", { style: { borderColor: "var(--warn)", color: "var(--warn)", marginBottom: "12px", textAlign: "left" },
-        html: "⚠ <b>CRITICAL CONDITION</b> · at 50% or less of total Wounds." }));
+      blocks.push(el("div.muted-box", { style: { borderColor: "var(--warn)", color: "var(--warn)", marginBottom: "12px", textAlign: "left" } },
+        bannerKids("⚠", "CRITICAL CONDITION", cxCond("Critical Condition"), ["at 50% or less of total Wounds."])));
     }
     if (s.bloodied) {
-      blocks.push(el("div.muted-box", { style: { borderColor: "var(--ember)", color: "var(--ember)", marginBottom: "12px", textAlign: "left" },
-        html: "🩸 <b>BLOODIED</b> · Vitality is 0. You stay conscious; further damage becomes Wound damage." }));
+      blocks.push(el("div.muted-box", { style: { borderColor: "var(--ember)", color: "var(--ember)", marginBottom: "12px", textAlign: "left" } },
+        bannerKids("🩸", "BLOODIED", cxCond("Bloodied"), ["Vitality is 0. You stay conscious; further damage becomes Wound damage."])));
     }
     if (fx.cannotAct) {
       blocks.push(el("div.muted-box", { style: { borderColor: "var(--danger)", color: "var(--danger)", marginBottom: "12px", textAlign: "left" },
@@ -3721,8 +3850,10 @@ EN.combatView = (function () {
     if (lanes.length) {
       var tone = (netMelee > 0 || netRanged > 0) ? "var(--danger)"
                : (netMelee < 0 || netRanged < 0) ? "var(--success)" : "var(--text2)";
-      blocks.push(el("div.muted-box", { style: { borderColor: tone, color: tone, marginBottom: "12px", textAlign: "left" },
-        html: "🎯 <b>ATTACKS AGAINST YOU</b> · " + lanes.join(" &nbsp;·&nbsp; ") + " &nbsp;·&nbsp; from an active condition." }));
+      // the 1 for 1 arithmetic is Edge & Snag's d20 Stacking, so that is what the "?" opens
+      blocks.push(el("div.muted-box", { style: { borderColor: tone, color: tone, marginBottom: "12px", textAlign: "left" } },
+        bannerKids("🎯", "ATTACKS AGAINST YOU", null, [lanes.join("  ·  ") + "  ·  from an active condition. ",
+          EN.ui.ruleChip("rz-edge/stacking-d20", { title: "Edge & Snag, d20 Stacking" })].filter(Boolean))));
     }
 
     /* vitality + vigor + wounds, compact console; controls live in popovers on the bar labels */
@@ -3796,7 +3927,11 @@ EN.combatView = (function () {
         ]),
         (ch.deathSaves.f || 0) >= 3 ? el("p", { style: { color: "var(--danger)", fontFamily: "var(--mono)", marginTop: "6px" }, text: "✝ THREE FAILURES; the body stops keeping score." }) : null
       ]) : null
-    ], { corners: true });
+    ], { corners: true, headerRight: (function () {
+      // the tag states the damage order; the "?" opens it in full (Damage & Mitigation)
+      var c = EN.ui.ruleChip("ref-damage/damage-order", { title: "Damage Order" });
+      return c ? [c] : null;
+    })() });
 
     /* Flow Reservoir + saved Patterns live inside the Actions panel (Abilities
        tab) for Shapers, mirroring how every other class shows its resource there.
@@ -3820,6 +3955,17 @@ EN.combatView = (function () {
           return el("option", { value: c.name, disabled: (ch.conditions || []).indexOf(c.name) !== -1,
             text: c.name + (imm.length ? "  (immune: " + imm[0].source + ")" : "") });
         })));
+    /* A "?" beside the picker that follows the selection: with a condition picked it peeks that
+       entry before you apply it, with none it peeks the whole Conditions Library. */
+    var condChipBox = el("span", { style: { display: "inline-flex" } });
+    function paintCondChip() {
+      clear(condChipBox);
+      var v = condSel.value;
+      var c = EN.ui.ruleChip(v ? cxCond(v) : "ref-conds", { title: v || "Conditions" });
+      if (c) condChipBox.appendChild(c);
+    }
+    condSel.addEventListener("change", paintCondChip);
+    paintCondChip();
     var active = (ch.conditions || []).map(function (name) {
       var info = (EN.conditions || []).find(function (x) { return x.name === name; });
       var lv = LEVELED[name];
@@ -3843,12 +3989,15 @@ EN.combatView = (function () {
         title: immune.map(function (r) { return r.source; }).join(", ") + " says you cannot take this condition. Applied anyway, because the table outranks the sheet." },
         "IMMUNE"));
       rightKids.push(el("button.btn.sm.danger", { style: { padding: "1px 8px" }, onclick: function (e) { e.stopPropagation(); setCondLevel(name, 0); } }, "✕ Remove"));
+      // the name peeks its Conditions Library entry; the rest of the header still toggles the card
+      var titleKids = [cxLink(cxCond(name), name)].concat(title.length > name.length ? [document.createTextNode(title.slice(name.length))] : [])
+        .concat([document.createTextNode(" "), el("span.collapse-caret", { text: open ? "▾" : "▸" })]);
       return el("div.feature", { style: { borderLeftColor: severe ? "var(--danger)" : "var(--warn)" } }, [
         el("h4", { style: { cursor: "pointer" }, onclick: function () { _open["cond-" + name] = !open; EN.app.render(); } }, [
-          el("span", null, EN.ui.nameCaret(title, open)),
+          el("span", null, titleKids),
           el("span", { style: { display: "flex", alignItems: "center", gap: "8px" } }, rightKids)
         ]),
-        !open ? el("p.help", { style: { margin: 0, color: "var(--text2)" }, text: (lv && lv.effects ? lv.effects[lvl - 1] : (info && info.summary) || "") }) : null,
+        !open ? el("p.help", { style: { margin: 0, color: "var(--text2)" }, text: (lv && lv.effects && lv.effects[lvl - 1]) || (info && info.summary) || "" }) : null,
         !open && COND_META[name] ? el("p.help", { style: { margin: "4px 0 0" }, html: "⏱ " + COND_META[name][0] + " &nbsp;·&nbsp; <span style='color:var(--success)'>✓ End:</span> " + COND_META[name][1] }) : null,
         // Drowning moved here from the hazards panel, so it brings its breath
         // clock with it: the held-breath rounds, the escalating Body Save, and
@@ -3865,7 +4014,8 @@ EN.combatView = (function () {
         severe && lv.severeNote
           ? el("p.help", { style: { margin: "4px 0 0", color: "var(--danger)" }, text: lv.severeNote })
           : null,
-        info && open ? el("p", { text: info.text || info.summary || "" }) : null
+        // the entry in full, the other conditions it names linked to theirs
+        info && open ? EN.ui.ruleText(el("p"), info.text || info.summary || "", { conditions: true, self: [cxCond(name), "ref-conds"] }) : null
       ]);
     });
     /* The two Status Change dropdowns that sit beside the conditions one. Both
@@ -3902,6 +4052,7 @@ EN.combatView = (function () {
           if (LEVELED[v]) { c.conditionLevels = c.conditionLevels || {}; c.conditionLevels[v] = c.conditionLevels[v] || 1; }
         });
         condSel.value = "";
+        paintCondChip();
         applied++;
       }
       [hazSel, bonusSel].forEach(function (sel) {
@@ -3932,14 +4083,14 @@ EN.combatView = (function () {
         var info = (EN.conditions || []).find(function (x) { return x.name === dc.name; });
         return el("div.feature", { style: { borderLeftColor: "var(--danger)" } }, [
           el("h4", null, [
-            el("span", null, [document.createTextNode(dc.name + " "),
+            el("span", null, [cxLink(cxCond(dc.name), dc.name), document.createTextNode(" "),
               el("span.chip", { style: { fontSize: "9px", color: "var(--danger)", borderColor: "var(--danger)" }, text: "AUTO · " + dc.from })]),
             el("span.src", { text: "clears when the source drops" })
           ]),
           info ? el("p.help", { style: { margin: 0 }, text: info.summary || "" }) : null
         ]);
       })).concat(hazBlocks.kids).concat(bonusKids),
-      { corners: true, headerRight: [condSel, hazSel, bonusSel, applyBtn].filter(Boolean) });
+      { corners: true, headerRight: [condSel, condChipBox, hazSel, bonusSel, applyBtn].filter(Boolean) });
 
     /* ---------- Environmental Hazards ----------------------------------------
        Every number rendered here comes off d.hazard (EN.engine.hazardStats),
@@ -4122,10 +4273,12 @@ EN.combatView = (function () {
         ]));
         kids.push(bar(fCur, d.flow.max, resourceColor("Flow")));
         kids.push(el("div.row.wrap", { style: { gap: "10px", marginTop: "8px", alignItems: "center" } }, [
-          el("span.help", { style: { margin: 0 }, text: "Strain:" }),
+          // Strain and Breakflow peek their condition entries, Overdraw and Free-Shaping The Flow's panels
+          el("span.help", { style: { margin: 0 } }, [cxLink(cxCond("Strain"), "Strain"), document.createTextNode(":")]),
           pips(fStrain, 5, resourceColor("Flow"), function (n) { store.update(function (c) { c.flow.strain = n; }); }),
-          fStrain >= 5 ? el("span", { style: { color: "var(--danger)", fontFamily: "var(--mono)", fontSize: "12px" }, text: "⚡ BREAKFLOW" })
-                       : el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "5 → Breakflow · Overdraw & Free-Shaping in the Flow tab" })
+          fStrain >= 5 ? el("span", { style: { color: "var(--danger)", fontFamily: "var(--mono)", fontSize: "12px" } }, ["⚡ ", cxLink(cxCond("Breakflow"), "BREAKFLOW")])
+                       : el("span.help", { style: { margin: 0, fontSize: "10.5px" } }, ["5 → ", cxLink(cxCond("Breakflow"), "Breakflow"), " · ",
+                           cxLink("fl-overdraw", "Overdraw"), " & ", cxLink("fl-shaping", "Free-Shaping"), " in the Flow tab"])
         ]));
         kids.push(el("div.section-title", null, [document.createTextNode("My Patterns"), el("span.line")]));
         kids.push((EN.flowView && EN.flowView.myPatternsInline) ? EN.flowView.myPatternsInline(ch, d) : el("p.help", { style: { margin: 0 }, text: "Saved patterns appear here." }));
@@ -4137,7 +4290,12 @@ EN.combatView = (function () {
           title: acOpen ? "Hide the action list" : "Tap for the list of combat actions",
           onclick: function () { _open["actions-in-combat"] = !acOpen; EN.app.render(); }
         }, [document.createTextNode("Actions in Combat"), el("span.line"), el("span.collapse-caret", { style: { marginLeft: "4px" }, text: acOpen ? "▾" : "▸" })]));
-        if (acOpen) kids.push(el("p.help", { style: { marginBottom: "6px" }, text: (C.commonActions || []).map(function (a) { return a.name; }).join(", ") + ", full rules in the Codex tab." }));
+        // one link per action, each peeking its own Action Economy entry
+        if (acOpen) kids.push(el("p.help", { style: { marginBottom: "6px" } }, (C.commonActions || []).reduce(function (acc, a, i) {
+          if (i) acc.push(", ");
+          acc.push(cxLink("ref-actions/" + cxSlug(a.name), a.name));
+          return acc;
+        }, []).concat([cxHas("ref-actions") ? ". Tap one for its rule." : ", full rules in the Codex tab."])));
       }
       var rName = d.resource ? d.resource.name.toUpperCase() : null;
       var resourceFeats = rName ? activeFeats.filter(function (f) { return f.chip && f.chip.toUpperCase().indexOf(rName) !== -1; }) : [];
@@ -4768,12 +4926,15 @@ EN.combatView = (function () {
               ? el("span.chip", { title: grip.why, style: { color: "var(--warn)", borderColor: "var(--warn)" } },
                   "TWO-HANDED ONLY · " + grip.versatile)
               : null);
+        // at the cap, the chip peeks Reach Caps (Attack Resolution); the tooltip keeps the sources
         var reachChip = (wr.melee && (wr.bonus || wr.capped))
-          ? el("span.chip", { title: wr.sources.map(function (s) { return "+" + s.spaces + " " + s.label; }).join("\n")
+          ? cxChip(wr.capped ? "ref-attack/reach-caps" : null,
+              wr.bonus ? ("+" + wr.bonus + " reach" + (wr.capped ? " · AT CAP" : "")) : "REACH AT CAP",
+              wr.capped ? "var(--warn)" : "var(--flow)",
+              wr.sources.map(function (s) { return "+" + s.spaces + " " + s.label; }).join("\n")
                 + (wr.capped ? "\n\n" + ((EN.combat || {}).reachCapText || "") : "")
                 + "\nReaches " + wr.total + " spaces in total.",
-              style: { color: wr.capped ? "var(--warn)" : "var(--flow)", borderColor: wr.capped ? "var(--warn)" : "var(--flow)" } },
-              wr.bonus ? ("+" + wr.bonus + " reach" + (wr.capped ? " · AT CAP" : "")) : "REACH AT CAP")
+              { fontSize: "" })
           : null;
         /* A weapon forced into two hands has lost its Versatile trait, not just the
            use of it, so the trait chip goes too and the warn chip stands in its place.
@@ -4960,7 +5121,10 @@ EN.combatView = (function () {
       var tierColor = enc.tier === "light" ? "var(--success)" : enc.tier === "standard" ? "var(--accent)" : enc.tier === "heavy" ? "var(--warn)" : "var(--danger)";
       // the two state definitions are the book's own wording (Encumbrance States); Overloaded is a Haul, not a band
       var whenLine = function (k) { var sd = (EE.states || {})[k]; return sd && sd.when ? "\n" + sd.name + ": " + sd.when : ""; };
-      var thTip = "Encumbrance Threshold = 6 + Body Modifier, adjusted by Size, minimum 3 = " + enc.base
+      // the formula is read from the rule data (EN.rules.encumbrance), the copy the Codex shows;
+      // its first sentence is the formula itself. The literal is only a fallback.
+      var thFormula = EE.formula || String(EE.threshold || "").split(/\.\s/)[0] || "Encumbrance Threshold = 6 + Body Modifier, adjusted by Size, minimum 3";
+      var thTip = thFormula + " = " + enc.base
         + ((enc.steps || []).map(function (s) { return "\n+" + s.value + "  " + s.label; }).join(""))
         + "\nThreshold " + enc.threshold + " → Light ≤ " + bands.light + " · Standard ≤ " + bands.standard + " · Heavy ≤ " + bands.heavy
         + whenLine("unencumbered") + whenLine("encumbered")
@@ -4974,6 +5138,8 @@ EN.combatView = (function () {
           el("span.mono", { title: thTip, style: { fontSize: "18px", color: "var(--text)" },
             html: "LOAD " + enc.current + " <span style='font-size:12px;color:var(--text3)'>/ " + enc.budget + "</span>" }),
           el("span.collapse-caret", { text: loadOpen ? "▾" : "▸" }),
+          // the Threshold, bands and hauls live in a tooltip here, which a phone never shows; the "?" peeks them
+          EN.ui.ruleChip("sk-load", { title: "Encumbrance & Load" }),
           el("span.chip", { title: tierDef ? tierDef.effect : "Past any plausible loadout; this belongs on a cart, dolly, vehicle, or exoframe.",
             style: { fontSize: "9px", color: tierColor, borderColor: tierColor } }, (tierDef ? tierDef.name : enc.tier).toUpperCase() + " LOADOUT"),
           el("span.chip", { title: stateDef.effect || "", style: { fontSize: "9px", color: stateColor, borderColor: stateColor } }, (stateDef.name || enc.state || "").toUpperCase()),
@@ -5415,7 +5581,8 @@ EN.combatView = (function () {
           base.dice.push({ n: 1, sides: d.resilienceDie || 6, label: "d" + (d.resilienceDie || 6) });
           var wd = parseDie(dg.wardDie);
           if (wd) { wd.label = (dg.focus && dg.focus.name) || "Ward"; base.dice.push(wd); }
-          base.note = "Roll d6" + (wd ? " plus your Focus die" : "") + " and subtract the total from the incoming damage.";
+          // the die it names is the one pushed above, the Resilience Die, not a fixed d6
+          base.note = "Roll your Resilience Die (d" + (d.resilienceDie || 6) + ")" + (wd ? " plus your Focus die" : "") + " and subtract the total from the incoming damage.";
           return base;
         }
         base.note = "";
@@ -5431,7 +5598,8 @@ EN.combatView = (function () {
                      : "Reinforce your Armor DR against this hit") + wearNote,
                    extra: (dg.shield || (dg.armor && dg.armorBaseDR)) ? el("div", null, [
                      dg.shield ? el("div.row.wrap", { style: { gap: "6px", marginTop: "6px", alignItems: "center" } }, [
-                       el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".1em" }, text: "DURABILITY" }),
+                       // the Wear Threshold and what 0 boxes means are Shield Durability, under Active Defenses
+                       el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".1em" } }, [cxLink("ref-def/shield-durability", "DURABILITY")]),
                        el("span.mono", { style: { fontSize: "12px", color: dg.shieldAlive ? "var(--text2)" : "var(--danger)" },
                          text: "□".repeat(dg.shieldBoxesLeft) + "■".repeat(dg.shieldSpent) }),
                        el("button.btn.sm", { disabled: !dg.shieldAlive, title: "Mark 1 Durability box (a Blocked hit at or above the Wear Threshold, or a Blocked critical)",
@@ -5469,16 +5637,28 @@ EN.combatView = (function () {
                    summary: "Roll " + resDie + (focusDie ? " + " + focusDie + " (" + focusName + ")" : "") + ", subtract from incoming damage" }
       };
 
-      // "How Active Defenses work" collapsible spans full width above the columns
+      /* "How Active Defenses work" collapsible spans full width above the columns. Its three
+         blocks are Active Defenses' entries in the Codex (Defense, Active Defense Rules,
+         Conditions and Defense), so once those resolve it is one line of links rather than a
+         second copy of the prose. Any block whose entry does not resolve still prints here. */
       var defOpen = !!_open["defend-rules"];
       kids.push(el("div.section-title.clickable", {
         title: defOpen ? "Hide the Active Defense rules" : "Tap for how Active Defenses work",
         onclick: function () { _open["defend-rules"] = !defOpen; EN.app.render(); }
       }, [document.createTextNode("How Active Defenses work"), el("span.line"), el("span.collapse-caret", { style: { marginLeft: "4px" }, text: defOpen ? "▾" : "▸" })]));
       if (defOpen) {
-        if (C.defense) kids.push(el("p.help", { style: { margin: "0 0 4px", color: "var(--text2)", whiteSpace: "pre-wrap" }, text: C.defense }));
-        if (C.activeDefenseRules) kids.push(el("p.help", { style: { margin: "0 0 4px", whiteSpace: "pre-wrap" }, text: C.activeDefenseRules }));
-        if (C.defenseNotes) kids.push(el("p.help", { style: { margin: "0 0 6px", color: "var(--warn)" }, text: "Conditions: " + C.defenseNotes }));
+        var DEF_RULES = [
+          { a: "ref-def/defense", label: "Defense", text: C.defense, style: { margin: "0 0 4px", color: "var(--text2)", whiteSpace: "pre-wrap" } },
+          { a: "ref-def/active-defense-rules", label: "Active Defense Rules", text: C.activeDefenseRules, style: { margin: "0 0 4px", whiteSpace: "pre-wrap" } },
+          { a: "ref-def/conditions-and-defense", label: "Conditions and Defense", text: C.defenseNotes ? "Conditions: " + C.defenseNotes : "", style: { margin: "0 0 6px", color: "var(--warn)" } }
+        ].filter(function (r) { return r.text; });
+        var defLinks = DEF_RULES.filter(function (r) { return cxHas(r.a); });
+        if (defLinks.length) kids.push(el("p.help", { style: { margin: "0 0 6px" } }, ["The rules in full: "].concat(defLinks.reduce(function (acc, r, i) {
+          if (i) acc.push(" · ");
+          acc.push(cxLink(r.a, r.label));
+          return acc;
+        }, []))));
+        DEF_RULES.forEach(function (r) { if (!cxHas(r.a)) kids.push(el("p.help", { style: r.style, text: r.text })); });
       }
 
       // LEFT column: saving throws. Each row is a button that opens the roll tray,
@@ -5540,7 +5720,8 @@ EN.combatView = (function () {
         }, [
           // a 52px name column put the caret 15-32px past the last letter but a constant 9px
           // from the ROLL button, so it read as the button's. Nested, it belongs to the name again.
-          el("span", { style: { fontWeight: 600, minWidth: "66px" } }, EN.ui.nameCaret(def.name, open)),
+          // the name peeks the maneuver's Active Defenses entry; the rest of the row toggles it
+          el("span", { style: { fontWeight: 600, minWidth: "66px" } }, cxCaret("ref-def/" + cxSlug(def.name), def.name, open)),
           el("button.btn.sm", { title: "Resolve " + def.name + " against an incoming hit",
             style: { flex: "0 0 auto", color: "var(--accent)", borderColor: "var(--accent)" },
             onclick: function (e) { e.stopPropagation(); openDefTray(defSpec(def.name)); } },

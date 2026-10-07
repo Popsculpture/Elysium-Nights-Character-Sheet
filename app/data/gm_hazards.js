@@ -95,7 +95,11 @@ EN.gmBook.hazards = {
       { bite: "lethal", recurring: true, designation: "elite",
         text: "a Lethal one, an Elite",
         xpByGrade: { 1: 200, 2: 300, 3: 500, 4: 700, 5: 900 } }
-    ]
+    ],
+    /* APP RULING, not book text: the gap the equivalents leave, as the Hazards
+       tab has always said it. Moved here from js/gm_hazards.js so the Codex
+       (Hazards & Set Pieces) and the tab read one copy. */
+    unpricedNote: "The book prints no price for a recurring Nuisance or Dangerous hazard. This app treats one as free unless you enter XP."
   },
 
   /* OBJECTS. Structure is the damage threshold, Integrity the pool. The six
@@ -138,7 +142,10 @@ EN.gmBook.hazards = {
   acts: {
     text: "The room gets a turn. Not an initiative slot: a presence.",
     trigger: "What sets it off: pressure, proximity, a timer, a bullet that missed.",
-    timingKinds: ["entry", "cycle", "trigger", "countdown", "while", "round", "anomaly"]
+    timingKinds: ["entry", "cycle", "trigger", "countdown", "while", "round", "anomaly"],
+    /* APP NOTE, not book text: how this app seats the book's "presence".
+       Moved here from js/gm_hazards.js for the same one-copy reason. */
+    appNote: "This app keeps live hazards in the Room tray under the Table's initiative order, with each one's timing worked out from the round."
   },
 
   /* SET PIECES. Eight drop-in hazards, all authored at Grade 3. The book's only

@@ -16,7 +16,7 @@ EN.flowView = (function () {
   var _form = { name: null, resonance: "kinetic", intent: "damage", deliveryBand: "directed",
                 deliveryOption: "Remote", force: "base", duration: "instant", precision: false,
                 extraTargets: 0, extraSpaces: 0, empoweredEffect: null, unwilling: true };
-  var _open = {};              // collapse state for reference sections
+  var _open = {};              // collapse state for folds (Premade Templates)
   var _od = 1;                 // overdraw amount input
   /* Immersive Flow tab: opt-in cosmetic layer (see theme.css ".flowtab.immersive").
      Device-level preference; intensity "auto" follows the live Strain stage, or a
@@ -53,7 +53,26 @@ EN.flowView = (function () {
     }));
   }
   function setForm(patch) { Object.keys(patch).forEach(function (k) { _form[k] = patch[k]; }); EN.app.render(); }
-  function fieldLabel(t) { return el("span.row-label", { style: { fontFamily: "var(--disp)", fontSize: "9.5px", letterSpacing: ".12em", color: "var(--text3)", minWidth: "72px", display: "inline-block" }, text: t }); }
+  // a builder row's label; with an anchor the label itself peeks that rule in the Codex
+  function fieldLabel(t, anchor) {
+    return el("span.row-label", { style: { fontFamily: "var(--disp)", fontSize: "9.5px", letterSpacing: ".12em", color: "var(--text3)", minWidth: "72px", display: "inline-block" } },
+      [anchor && t ? EN.ui.ruleLink(anchor, t) : t]);
+  }
+
+  /* ---- links into the Codex ----
+     The Flow rules live in the Codex's chapter The Flow (js/codex_flow.js), read from the
+     same EN.flow this tab's tools read. These go through EN.ui's guarded helpers, so with
+     no Codex every label still prints as plain text. */
+  function slug(s) { return String(s).toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""); }
+  // a small note like noteP whose rule names (Overdraw, Breakflow Check, Layered Force...) link
+  function ruleNote(t, color, opts) {
+    var p = el("p.help", { style: { margin: "2px 0 6px", color: color || "var(--text3)", fontSize: "11.5px" } });
+    EN.ui.ruleText(p, t, opts);
+    return p;
+  }
+  // the "?" chip for a panel header; headerRight only when the Codex is there to answer it
+  function headChip(anchor, title) { var c = EN.ui.ruleChip(anchor, { title: title }); return c ? { headerRight: c } : {}; }
+  function withCorners(o) { o.corners = true; return o; }
   function curFP(ch, d) { var c = (ch.flow && ch.flow.current != null) ? ch.flow.current : d.flow.max; return eng.clamp(c, 0, d.flow.max); }
   function collapsible(key, title, build) {
     var open = !!_open[key];
@@ -129,13 +148,21 @@ EN.flowView = (function () {
       ])
     ]));
     kids.push(bar(cur, f.max, FP));
-    kids.push(noteP("Reservoir = (Caliber x 3) + Flow Modifier. Flow Attack " + eng.fmtMod(f.attackBonus) + " vs Defense · Flow Save DC " + f.dc + " (" + f.attributeName + ")."));
+    // the live numbers, each named by its rule; the formulas are EN.flow's own
+    kids.push(el("p.help", { style: { margin: "2px 0 6px", color: "var(--text3)", fontSize: "11.5px" } }, [
+      EN.ui.ruleLink("fl-core/reservoir", "Reservoir"), " = " + EN.flow.reservoirFormula + ". ",
+      EN.ui.ruleLink("fl-core/flow-attack", "Flow Attack"), " " + eng.fmtMod(f.attackBonus) + " vs Defense · ",
+      EN.ui.ruleLink("fl-core/flow-save-dc", "Flow Save DC"), " " + f.dc + " (" + f.attributeName + ")."
+    ]));
     /* The second d20 roll with the current, added to Part 2 on 2026-09-16. Same bonus as the
-       attack, so it reads the same derived field rather than recomputing it. */
-    kids.push(noteP("Flow Attribute Check " + eng.fmtMod(f.attackBonus) + " for work with the current that is not an attack: steadying after Strain, ritual recovery, linking, sustaining a field, knitting flesh. Never uses skill proficiency; Caliber stands in for it."));
+       attack, so it reads the same derived field rather than recomputing it. What it covers
+       is the Codex's (one copy, EN.basics.flow.check); the tab keeps the number and a hint. */
+    kids.push(el("p.help", { style: { margin: "2px 0 6px", color: "var(--text3)", fontSize: "11.5px" } }, [
+      EN.ui.ruleLink("fl-core/flow-attribute-check", "Flow Attribute Check"), " " + eng.fmtMod(f.attackBonus) + " for work with the current that is not an attack."
+    ]));
 
     // Strain track: 5 stages, click to set (toggles to N-1 if already at N)
-    kids.push(el("div.section-title", null, [document.createTextNode("Strain"), el("span.line")]));
+    kids.push(el("div.section-title", null, [EN.ui.ruleLink("ref-conds/strain", "Strain"), EN.ui.ruleChip("fl-strain", { title: "The Strain Track" }), el("span.line")]));
     var STC = ["var(--success)", "var(--warn)", "var(--warn)", "var(--ember)", "var(--danger)", "var(--danger)"];
     var cells = (EN.flow.strainTrack).map(function (s) {
       var on = stage >= s.stage, col = STC[s.stage];
@@ -150,13 +177,13 @@ EN.flowView = (function () {
     kids.push(el("div.row", { style: { gap: "5px" } }, cells));
     kids.push(stage > 0
       ? noteP("Stage " + stage + " (" + f.strainName + "): " + f.strainPenalty, "var(--warn)")
-      : noteP("No Strain. Overdraw and failed Flow rituals build it."));
+      : ruleNote("No Strain. Overdraw and failed Flow rituals build it."));
 
     // Overdraw logger
     var odIn = el("input", { type: "number", min: "1", value: _od, style: { width: "54px", textAlign: "center", fontFamily: "var(--mono)" },
       oninput: function () { _od = Math.max(1, parseInt(this.value, 10) || 1); }, onchange: function () { EN.app.render(); } });
     kids.push(el("div.row.wrap.flow-overdraw", { style: { gap: "8px", alignItems: "center", marginTop: "10px", padding: "8px 10px", border: "1px solid var(--border2)", borderRadius: "4px", background: "rgba(0,0,0,.18)" } }, [
-      el("span", { style: { fontFamily: "var(--disp)", fontSize: "9.5px", letterSpacing: ".12em", color: "var(--danger)" }, text: "OVERDRAW" }),
+      el("span", { style: { fontFamily: "var(--disp)", fontSize: "9.5px", letterSpacing: ".12em", color: "var(--danger)" } }, [EN.ui.ruleLink("fl-overdraw", "OVERDRAW")]),
       odIn, el("span.mono", { style: { fontSize: "11px", color: "var(--text3)" }, text: "FP past empty" }),
       el("span.help", { style: { margin: 0, flex: "1 1 120px", fontSize: "10.5px" }, text: "→ lose " + _od + "d" + f.overdrawDie + " Vitality, +" + _od + " Strain point" + (_od === 1 ? "" : "s") }),
       el("button.btn.sm", { title: "Log an Overdraw: builds Strain and zeroes FP (apply the Vitality loss on the Freelancer tab)",
@@ -168,17 +195,19 @@ EN.flowView = (function () {
     if (f.inBreakflow || stage >= 5) {
       kids.push(el("div", { style: { marginTop: "10px", padding: "10px", border: "1px solid var(--danger)", borderRadius: "4px", background: "rgba(255,77,94,.06)" } }, [
         el("div.row.between", { style: { alignItems: "baseline" } }, [
-          el("span", { style: { fontFamily: "var(--disp)", fontSize: "11px", letterSpacing: ".14em", color: "var(--danger)" }, text: "⚡ BREAKFLOW" }),
+          el("span", { style: { fontFamily: "var(--disp)", fontSize: "11px", letterSpacing: ".14em", color: "var(--danger)" } },
+            ["⚡ ", EN.ui.ruleLink("ref-conds/breakflow", "BREAKFLOW"), EN.ui.ruleChip("fl-breakflow", { title: "Breakflow & Restoration" })]),
           el("span.mono", { style: { fontSize: "12px", color: "var(--text2)" }, text: "Check DC " + f.breakflowDC })
         ]),
-        noteP("FP is severed and you cannot channel until restored. Breakflow Check: Flow Attribute Save vs DC 12 + Strain Stage" + (stage >= 3 ? " (Snag at Stage 3+)" : "") + ".", "var(--text2)"),
+        // read from EN.flow.breakflow, so the banner cannot drift from the rule it summarises
+        ruleNote(EN.flow.breakflow.onFailure + " Breakflow Check: " + EN.flow.breakflow.check, "var(--text2)"),
         el("div.row.wrap", { style: { gap: "8px", marginTop: "4px" } }, [
           el("button.btn.sm", { title: "Ritual Restoration success: Reservoir to half, Strain to Stage 2", onclick: function () { fset(function (fl) { fl.current = Math.floor(f.max / 2); fl.strain = 2; fl.strainPoints = 0; fl.breakflow = false; }); toast("Restored: half Reservoir, Strain → Wave"); } }, "RITUAL (½ · Stage 2)"),
           el("button.btn.sm", { title: "Rough Restoration success: Reservoir to one-quarter, Strain to Stage 3", onclick: function () { fset(function (fl) { fl.current = Math.floor(f.max / 4); fl.strain = 3; fl.strainPoints = 0; fl.breakflow = false; }); toast("Rough restore: ¼ Reservoir, Strain → Surge"); } }, "ROUGH (¼ · Stage 3)")
         ])
       ]));
     }
-    var rp = EN.ui.panel("Reservoir", "DC " + f.dc + " · " + f.attributeName.toUpperCase(), kids, { corners: true });
+    var rp = EN.ui.panel("Reservoir", "DC " + f.dc + " · " + f.attributeName.toUpperCase(), kids, withCorners(headChip("fl-core", "Core Concepts & Formulas")));
     rp.classList.add("res-panel"); return rp;
   }
 
@@ -199,14 +228,16 @@ EN.flowView = (function () {
           onclick: function () { fset(function (fl) { fl.current = Math.max(0, cur - 1); }); toast("Sustain upkeep · −1 FP"); } }, "UPKEEP −1 FP"),
         el("button.btn.sm", { title: "End the sustained effect", style: { color: "var(--text3)" }, onclick: function () { fset(function (fl) { fl.sustained = null; }); toast("Sustained effect ended"); } }, "END")
       ]));
-      kids.push(noteP("Capacity: one sustained effect at a time. Ends if you are Incapacitated, Unconscious, or enter Breakflow. Starting a new sustain replaces this one."));
+      // the capacity rule is EN.flow's (it used to be typed here), so the Codex reads the same words
+      var cap = EN.flow.sustainCapacity;
+      if (cap) kids.push(ruleNote("Capacity: " + cap.charAt(0).toLowerCase() + cap.slice(1), null, { conditions: true }));
       // Stability Factor: taking damage while sustaining threatens the effect.
       var fdz = (EN.flow && EN.flow.focusDisruption) || null;
-      if (fdz) kids.push(noteP("Focus Disruption: take damage while sustaining and you must succeed on a " + fdz.save + ". " + fdz.dcNote + " " + fdz.failure, "var(--warn)"));
+      if (fdz) kids.push(ruleNote("Focus Disruption: take damage while sustaining and you must succeed on a " + fdz.save + ". " + fdz.dcNote + " " + fdz.failure, "var(--warn)"));
     } else {
       kids.push(noteP("No sustained effect. Build a Sustain Invocation and Channel it to anchor one here. Only one runs at a time."));
     }
-    var sp = EN.ui.panel("Sustain", "MAINTENANCE · CAPACITY", kids, { corners: true });
+    var sp = EN.ui.panel("Sustain", "MAINTENANCE · CAPACITY", kids, withCorners(headChip("fl-sustain", "Sustained Effects")));
     sp.classList.add("sustain-panel"); if (s) sp.classList.add("occupied"); return sp;
   }
 
@@ -220,7 +251,7 @@ EN.flowView = (function () {
     // Resonance (only the ones this Shaper knows are selectable). A Unique
     // Resonance belongs to one subclass and no other Shaper can learn, buy, or
     // steal it, so it is not listed at all for anyone else.
-    rows.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginBottom: "6px" } }, [fieldLabel("RESONANCE"),
+    rows.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginBottom: "6px" } }, [fieldLabel("RESONANCE", "fl-resonances/" + slug(R.name)),
       seg(ownResonances(ch).map(function (r) {
         var isKnown = known.indexOf(r.key) !== -1;
         return { key: r.key, label: r.name, disabled: !isKnown,
@@ -229,12 +260,12 @@ EN.flowView = (function () {
     rows.push(noteP(R.focus + " · " + R.damage + (R.resolution === "save" ? " · resolves with a Flow Save DC" : " · Flow Attack vs Defense") + ". " + (R.base || ""), "var(--text2)"));
 
     // Intent
-    rows.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "8px" } }, [fieldLabel("INTENT"),
+    rows.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "8px" } }, [fieldLabel("INTENT", "fl-shaping/intent"),
       seg(F.intent.map(function (i) { return { key: i.key, label: i.name + (i.fp ? " (+" + i.fp + ")" : ""), title: i.desc }; }),
         function (k) { return _form.intent === k; }, function (k) { setForm({ intent: k }); })]));
 
     // Delivery band + option
-    rows.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "8px" } }, [fieldLabel("DELIVERY"),
+    rows.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "8px" } }, [fieldLabel("DELIVERY", "fl-shaping/delivery"),
       seg(F.delivery.map(function (b) { return { key: b.key, label: b.band + (b.fp ? " (+" + b.fp + ")" : ""), title: b.desc }; }),
         function (k) { return _form.deliveryBand === k; }, function (k) { var b = F.delivery.find(function (x) { return x.key === k; }); setForm({ deliveryBand: k, deliveryOption: b.options[0], precision: false, extraTargets: 0, extraSpaces: 0 }); })]));
     var band = F.delivery.find(function (b) { return b.key === _form.deliveryBand; });
@@ -242,7 +273,7 @@ EN.flowView = (function () {
       seg(band.options.map(function (o) { return { key: o, label: o }; }), function (k) { return _form.deliveryOption === k; }, function (k) { setForm({ deliveryOption: k }); })]));
 
     // Scaling + Precision
-    var scaleRow = [fieldLabel("SCALING")];
+    var scaleRow = [fieldLabel("SCALING", "fl-shaping/delivery")];
     if (_form.deliveryBand === "directed") {
       scaleRow.push(el("span.help", { style: { margin: 0, fontSize: "11px" }, text: "Extra targets:" }));
       scaleRow.push(stepper(function () { setForm({ extraTargets: Math.max(0, _form.extraTargets - 1) }); }, function () { setForm({ extraTargets: _form.extraTargets + 1 }); }, _form.extraTargets <= 0));
@@ -253,21 +284,22 @@ EN.flowView = (function () {
       scaleRow.push(el("span.mono", { style: { fontSize: "13px", color: "var(--text2)" }, text: String(_form.extraSpaces) }));
       scaleRow.push(el("button.btn.sm" + (_form.precision ? ".primary" : ""), { title: F.precisionShaping.desc, style: { marginLeft: "8px" }, onclick: function () { setForm({ precision: !_form.precision }); } },
         "PRECISION" + (_form.precision ? " (+" + d.flow.precisionFp + ")" : "")));
+      scaleRow.push(EN.ui.ruleChip("fl-shaping/precision-shaping", { title: "Precision Shaping" }));
     }
     rows.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "8px" } }, scaleRow));
 
     // Force
-    rows.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "8px" } }, [fieldLabel("FORCE"),
+    rows.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "8px" } }, [fieldLabel("FORCE", "fl-shaping/force"),
       seg(F.force.map(function (fo) { return { key: fo.key, label: fo.name + (fo.fp ? " (+" + fo.fp + ")" : ""), title: fo.desc }; }),
         function (k) { return _form.force === k; }, function (k) { setForm({ force: k }); })]));
     // Empowered effect picker (when Empowered + an effect is carried)
     if (_form.force === "empowered" && inv.hasEffect && (R.empowered || []).length) {
-      rows.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "4px" } }, [fieldLabel("EFFECT"),
+      rows.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "4px" } }, [fieldLabel("EFFECT", _form.empoweredEffect ? "fl-resonances/" + slug(_form.empoweredEffect) : null),
         seg(R.empowered.map(function (e) { return { key: e.name, label: e.name, title: e.text }; }), function (k) { return _form.empoweredEffect === k; }, function (k) { setForm({ empoweredEffect: k }); })]));
     }
 
     // Duration + target willingness
-    rows.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "8px" } }, [fieldLabel("DURATION"),
+    rows.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "8px" } }, [fieldLabel("DURATION", "fl-shaping/duration"),
       seg(F.duration.map(function (du) { return { key: du.key, label: du.name, title: du.desc }; }), function (k) { return _form.duration === k; }, function (k) { setForm({ duration: k }); }),
       el("span", { style: { width: "10px" } }),
       seg([{ key: true, label: "Unwilling" }, { key: false, label: "Willing / Object" }], function (k) { return _form.unwilling === k; }, function (k) { setForm({ unwilling: k }); })]));
@@ -284,9 +316,11 @@ EN.flowView = (function () {
     ]));
     summary.push(noteP(_form.unwilling ? inv.resolutionText : "Automatic (willing target or object); no roll.", _form.unwilling ? "var(--text2)" : "var(--success)"));
     if (inv.empoweredEffect) summary.push(noteP("Empowered: " + inv.empoweredEffect.name + " · " + inv.empoweredEffect.text, VIO));
-    if (_form.duration === "sustain") summary.push(noteP(inv.sustainable ? "Sustain: 1 FP at the start of each turn; replaces any current sustain." : "This effect cannot be Sustained.", inv.sustainable ? "var(--text2)" : "var(--warn)"));
+    if (_form.duration === "sustain") summary.push(inv.sustainable
+      ? noteP("Sustain: 1 FP at the start of each turn; replaces any current sustain.", "var(--text2)")
+      : ruleNote("This effect cannot be Sustained (see Sustain Compatibility).", "var(--warn)"));
     if (d.flow.snagInvoke) summary.push(noteP("Strain (Ripple+): roll this Invocation with Snag.", "var(--warn)"));
-    (inv.warnings || []).forEach(function (w) { summary.push(noteP("⚠ " + w, "var(--warn)")); });
+    (inv.warnings || []).forEach(function (w) { summary.push(ruleNote("⚠ " + w, "var(--warn)")); });
     summary.push(el("div.row.wrap", { style: { gap: "8px", marginTop: "8px" } }, [
       el("button.btn.sm.primary", { title: over > 0 ? "Not enough FP; channeling will Overdraw " + over + " FP" : "Spend " + cost + " FP",
         onclick: function () { doChannel(ch, d, inv, defaultName(R)); } }, over > 0 ? "CHANNEL · OVERDRAW " + over : "CHANNEL · " + cost + " FP"),
@@ -294,7 +328,7 @@ EN.flowView = (function () {
     ]));
     rows.push(el("div.flow-result", { style: { marginTop: "12px", padding: "10px 12px", border: "1px solid var(--border2)", borderRadius: "4px", background: "rgba(123,44,255,.05)" } }, summary));
 
-    var bp = EN.ui.panel("Free-Shaping", "ORDER OF SHAPING", rows, { corners: true });
+    var bp = EN.ui.panel("Free-Shaping", "ORDER OF SHAPING", rows, withCorners(headChip("fl-shaping", "The Order of Shaping")));
     bp.classList.add("builder"); return bp;
   }
 
@@ -386,44 +420,38 @@ EN.flowView = (function () {
     pp.classList.add("flow-patterns"); return pp;
   }
 
-  /* ============================== REFERENCE ============================== */
-  function refTable(cols, data, strongCols) {
-    strongCols = strongCols || [];
-    var head = el("tr", null, cols.map(function (c) { return el("th", { text: c }); }));
-    var body = data.map(function (r) { return el("tr", null, r.map(function (cell, i) { return el("td", strongCols.indexOf(i) !== -1 ? { style: { color: "var(--text)", fontWeight: 600 } } : null, [document.createTextNode(cell)]); })); });
-    return el("table.sktable", { style: { marginBottom: "10px" } }, [el("thead", null, [head]), el("tbody", null, body)]);
+  /* ============================== REFERENCE ==============================
+     The Flow rules moved to the Codex's chapter The Flow (js/codex_flow.js). This panel
+     used to carry them, and it draws for an attuned Shaper alone, so a GM or an Unattuned
+     player could never read them; the Codex reads to everyone, from the same EN.flow. What
+     stays here is a pointer, one link per Codex panel, each of which peeks the rule in
+     place without leaving the tab. */
+  var REF_LINKS = [
+    ["fl-core", "Core Concepts & Formulas"], ["fl-shaping", "The Order of Shaping"], ["fl-resonances", "Resonances"],
+    ["fl-sustain", "Sustained Effects"], ["fl-strain", "The Strain Track"], ["fl-overdraw", "Overdraw"],
+    ["fl-breakflow", "Breakflow & Restoration"], ["fl-recovery", "Ritual Recovery"]
+  ];
+  /* ruleLink falls back to a text node when codex.js did not load or an anchor does not
+     resolve; `live` counts the ones that came back as real links, so the note above them
+     only says "tap one" when there is something to tap. */
+  function refLinks() {
+    var row = el("div.row.wrap.flow-ref-links", { style: { gap: "6px 14px", fontSize: "12.5px" } });
+    row.live = 0;
+    REF_LINKS.forEach(function (r) {
+      var a = EN.ui.ruleLink(r[0], r[1]);
+      if (a && a.nodeType === 1) row.live++;
+      row.appendChild(el("span", null, [a]));
+    });
+    return row;
   }
-  function referencePanel(ch, d) {
-    var F = EN.flow, kids = [];
-    kids = kids.concat(collapsible("ref-res", "Resonances", function () {
-      return el("div", null, [noteP(F.saveNotation, "var(--text2)")].concat(ownResonances(ch).map(function (r) {
-        return el("div.feature", { style: { borderLeftColor: VIO } }, [
-          el("h4", null, [document.createTextNode(r.name), el("span.src", { text: "L" + r.unlock + " · " + r.damage })]),
-          el("p", { text: r.base }),
-          el("div", null, (r.empowered || []).map(function (e) { return el("p.help", { style: { margin: "2px 0" }, text: "◆ " + e.name + (e.sustain ? " (sustainable)" : "") + ": " + e.text }); }))
-        ]);
-      })));
-    }));
-    kids = kids.concat(collapsible("ref-sustain", "Sustain Compatibility", function () {
-      return refTable(["Resonance", "Empowered Effect", "Sustain", "Notes"], F.sustainCompat.map(function (s) { return [s.resonance, s.effect, s.allowed ? "Yes" : "No", s.notes]; }), [1, 2]);
-    }));
-    kids = kids.concat(collapsible("ref-strain", "Strain · Overdraw · Breakflow", function () {
-      return el("div", null, [
-        refTable(["Stage", "Name", "Consequence"], F.strainTrack.map(function (s) { return [String(s.stage), s.name, s.penalty]; }), [0, 1]),
-        noteP("Overdraw: " + F.overdraw.vitalityLoss + " " + F.overdraw.strain, "var(--text2)"),
-        noteP("Breakflow: " + F.breakflow.check + " " + F.breakflow.onFailure, "var(--text2)")
-      ]);
-    }));
-    kids = kids.concat(collapsible("ref-ritual", "Ritual Recovery", function () {
-      return el("div", null, [
-        noteP(F.ritualRecovery.note, "var(--text2)"),
-        refTable(["Stage", "Time per Stage", "Snag Dice"], F.ritualRecovery.byStage.map(function (s) { return [s.stage + " · " + s.name, s.time, String(s.snag)]; }), [0]),
-        el("div", null, F.ritualRecovery.outcomes.map(function (o) { return noteP(o.margin + " (" + o.result + "): " + o.text, "var(--text2)"); })),
-        noteP(F.breakflowRestoration.full, "var(--text2)"),
-        noteP(F.breakflowRestoration.rough, "var(--text2)")
-      ]);
-    }));
-    var fp = EN.ui.panel("Flow Reference", "RULES", kids, { corners: true });
+  function referencePanel() {
+    var links = refLinks();
+    var fp = EN.ui.panel("Flow Reference", "RULES · IN THE CODEX", [
+      noteP(links.live
+        ? "The Flow rules live in the Codex, chapter The Flow. Tap one to read it here."
+        : "The Flow rules live in the Codex, chapter The Flow. The Codex did not load, so they cannot open here.", "var(--text2)"),
+      links
+    ], { corners: true });
     fp.classList.add("flow-reference"); return fp;
   }
 
@@ -617,6 +645,9 @@ EN.flowView = (function () {
     var status = EN.ui.panel("Unattuned", "NO FLOW CONNECTION", [
       noteP("Your class runs on grit, chrome, and gunpowder, not resonance. You have 0 Flow Points and cannot cast Invocations, join cooperative channeling, or spend FP. You also never risk Overdraw."),
       noteP("Defending against the Flow: when targeted by an Enemy Invocation, roll the saving throw attribute it dictates (for example an Agility Save to dodge a Kinetic blast)."),
+      // the Unattuned rule is the Basics primer's; the whole Flow chapter reads to every player
+      el("p.help", { style: { margin: "2px 0 6px", color: "var(--text3)", fontSize: "11.5px" } },
+        ["In the Codex: ", EN.ui.ruleLink("bx-flow", "The Flow primer"), " · ", EN.ui.ruleLink("fl-core", "the Flow chapter")]),
       awareness ? el("div.row.wrap", { style: { gap: "10px", alignItems: "center", marginTop: "6px" } }, [
         el("span", { style: { fontFamily: "var(--disp)", fontSize: "9.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "AWARENESS" }),
         el("span.mono", { style: { fontSize: "16px", color: "var(--accent)" }, text: eng.fmtMod(awareness.total) }),
@@ -647,7 +678,7 @@ EN.flowView = (function () {
       el("div", { style: { gridColumn: "span 3", minWidth: 0 } }, [builderPanel(ch, d)])
     ]));
     blocks.push(el("div", { style: { marginTop: "14px" } }, [patternsPanel(ch, d)]));
-    blocks.push(el("div", { style: { marginTop: "14px" } }, [referencePanel(ch, d)]));
+    blocks.push(el("div", { style: { marginTop: "14px" } }, [referencePanel()]));
 
     // Immersive layer: wrap in .flowtab(.immersive) and set the escalation level.
     // fx follows the live Strain stage on "auto", or a pinned 1-5 from the setting.

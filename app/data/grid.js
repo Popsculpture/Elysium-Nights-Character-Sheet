@@ -3,7 +3,10 @@
    Nodes, scanning, ciphers, firewalls, IC, devices, LinkDeath, and the gear
    a Codebreaker / Standard User runs. Transcribed from "The #GRID" (Part 2).
    Prices in Glimmer (𝒢). The #GRID tab reads these tables; the engine derives
-   the live Cipher Attack / Save DC / Link math from the character.
+   the live Cipher Attack / Save DC / Link math from the character. The rules
+   prose renders in the Codex chapter The #GRID (js/codex_grid.js), on both
+   desktops; the catalogs (ciphers, rigs, relays, mods) stay on the tab and in
+   the gray market.
    =========================================================================== */
 window.EN = window.EN || {};
 
@@ -122,7 +125,13 @@ EN.grid = {
 
   /* ---- Devices & System Integrity ---- */
   durabilityNote: "Carried gear always has an Integrity track: Smartdecks and B&E Buddies track System Integrity like any Node, and damage subtracts from it. Cipher damage tests the device's Firewall first and the remainder comes off Integrity; physical damage ignores Firewalls and lands at full value. Unlike Rudimentary and Standard infrastructure, a device never bricks on a single hit; it dies by the numbers. At 0 Integrity the device is Bricked, completely inoperative; all active Links sever, triggering LinkDeath as a forced disconnect, and it must be repaired before reuse.",
-  repair: "Downtime Repair (full restore): during 8 hours of Downtime, restore a device to full System Integrity at 𝒢10 per 5 Integrity restored (round up); a Bricked device also needs replacement parts at 𝒢100 × (Tier+1). Field Repair (Partial): With 1 hour of work and a successful Engineering Dice Pool check, restore 5 System Integrity per successful Edge die, up to the device's missing total. Field repair can't recover a Bricked device. Only Downtime can do that. This is the one exception to the general Bricked condition, which allows partial field repair everywhere else.",
+  /* The two repair paths, one row each, so the Codex can address each by name (the Bricked
+     condition cites "Field Repair (Partial)" in The #GRID, which is gd-repair/field-repair-partial).
+     It was one string, `repair`, that nothing rendered; the words are unchanged. */
+  repairs: [
+    { name: "Downtime Repair (full restore)", text: "During 8 hours of Downtime, restore a device to full System Integrity at 𝒢10 per 5 Integrity restored (round up); a Bricked device also needs replacement parts at 𝒢100 × (Tier+1)." },
+    { name: "Field Repair (Partial)", text: "With 1 hour of work and a successful Engineering Dice Pool check, restore 5 System Integrity per successful Edge die, up to the device's missing total. Field repair can't recover a Bricked device. Only Downtime can do that. This is the one exception to the general Bricked condition, which allows partial field repair everywhere else." }
+  ],
 
   /* ---- LinkDeath ---- */
   linkDeathIntro: "LinkDeath is what happens when a Link is torn out of your skull instead of closed cleanly. A Link severs involuntarily in one of two ways: a failed Stability Check tears away one Link of your choice, or a forced disconnect rips away every Link involved at once (your deck is Bricked while you hold Links, a device you are Linked to is physically destroyed, or you 'cut bait and run' to escape a Lockdown). Either way, the price is paid per Link.",

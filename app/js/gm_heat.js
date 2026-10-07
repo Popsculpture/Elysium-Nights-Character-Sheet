@@ -151,6 +151,24 @@ EN.gmHeat = (function () {
     }, EN.ui.nameCaret(title, isOpen).concat([el("span.line")]));
     return el("div", null, [head, isOpen ? el("div", { style: { margin: "0 0 10px" } }, build()) : null]);
   }
+  /* The chapter's rules are Codex chapters (js/codex_gm_play.js, the gmx-
+     panels): this tab keeps the tools and links there. Through EN.ui a link
+     is plain text, and a chip nothing, when codex.js is missing. */
+  // a line of Codex links: "Lead: A · B · C", each [anchor, label]
+  function codexLine(hook, lead, list, style) {
+    var p = el("p.help", { dataset: { heat: hook }, style: style || { margin: "8px 0 0" } }, [document.createTextNode(lead + " ")]);
+    list.forEach(function (it, i) {
+      if (i) p.appendChild(document.createTextNode(DOT));
+      p.appendChild(EN.ui.ruleLink(it[0], it[1]));
+    });
+    return p;
+  }
+  function ruleChip(anchor, title) { return EN.ui.ruleChip(anchor, title ? { title: title } : null); }
+  // an entry's anchor slug, the Codex's own rule (EN.codexView.slug)
+  function cxSlug(s) {
+    return String(s).toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  }
+
   // the text a COPY puts on the clipboard, on screen beside the button so a blocked copy is never lost
   function textBox(kind, text) {
     return el("div", { dataset: { copy: kind },
@@ -483,6 +501,7 @@ EN.gmHeat = (function () {
       el("span.mono", { style: { fontSize: "20px", minWidth: "28px", color: color }, text: String(s.highest) }),
       el("span", { style: { fontWeight: 600, overflowWrap: "anywhere" }, text: s.name }),
       band ? chip((ev ? ev.name : band.heat).toUpperCase() + DOT + band.phbSays.toUpperCase(), color) : chip("NO HEAT", "var(--text4)"),
+      band ? ruleChip("gmx-ladder/" + band.key, B.ladder.name + ": " + band.phbSays) : null,
       s.carry ? chip("+" + s.carry + " NEXT CHECK", "var(--warn)", "The File's row 6: next Downtime this source rolls at +" + s.carry + " Heat") : null,
       s.bounty ? chip("BOUNTY UP", "var(--danger)") : null,
       s.hidden !== null ? chip(s.gmOnly ? "GM ONLY" : "GM ONLY HEAT " + s.hidden, "var(--danger)", "Hidden Heat the crew never learns about") : null
@@ -499,7 +518,10 @@ EN.gmHeat = (function () {
     } else {
       kids.push(help("What it sends: " + band.sends, { margin: "4px 0 0", color: "var(--text2)" }));
       if (s.row) {
-        kids.push(help(s.row.name + ": " + s.row.how, { margin: "3px 0 0", fontStyle: "italic" }));
+        var srcHow = help(s.row.name + ": " + s.row.how + " ", { margin: "3px 0 0", fontStyle: "italic" });
+        var srcChip = ruleChip("gmx-sources/" + s.row.key, B.sources.name + ": " + s.row.name);
+        if (srcChip) srcHow.appendChild(srcChip);
+        kids.push(srcHow);
         kids.push(help("Who it sends: " + s.row.sends + ".", { margin: "3px 0 0" }));
       } else {
         kids.push(help("No By Source notes for this source. The ladder and the events still apply.", { margin: "3px 0 0", color: "var(--text3)" }));
@@ -1059,13 +1081,10 @@ EN.gmHeat = (function () {
         kids.push(help("Nothing acted.", { margin: "8px 0 0" }));
       }
     }
-    kids.push(fold("guidelines", B.check.guidelinesLead.replace(/:$/, ""), function () {
-      return B.check.guidelines.map(function (g) {
-        return el("p.help", { style: { margin: "0 0 6px" } }, [
-          el("span", { style: { fontWeight: 600, color: "var(--text)" }, text: g.name + " " }), document.createTextNode(g.text)
-        ]);
-      });
-    }));
+    // the book's guidelines, each its own entry in the Codex's Heat Check
+    kids.push(codexLine("guidelines", B.check.guidelinesLead, B.check.guidelines.map(function (g) {
+      return ["gmx-check/" + cxSlug(g.name), g.name.replace(/\.$/, "")];
+    })));
     var tag = cur ? "DOWNTIME " + cur.n + DOT + (cur.checks || []).filter(function (c) { return c && c.triggered; }).length + " ACTED"
                   : B.check.die.toUpperCase() + " PER SOURCE";
     return EN.ui.panel(B.check.name, tag, kids, { glow: !!cur && !cur.quiet });
@@ -1315,15 +1334,11 @@ EN.gmHeat = (function () {
         ]));
       });
     }
-    kids.push(fold("bounty-table", "The price by Caliber", function () {
-      return B.rows.map(function (row) {
-        return el("div.row.between.wrap", { style: { gap: "8px", padding: "4px 0", borderBottom: "1px solid var(--border)" } }, [
-          el("span", { style: { fontSize: "13px" }, text: "Caliber " + row.caliber + DOT + row.countsAs }),
-          el("span.mono", { style: { fontSize: "12px" }, text: row.kill + " kill" + DOT + row.alive + " alive" })
-        ]);
-      }).concat(B.after.map(function (t) { return help(t, { margin: "6px 0 0" }); }));
-    }));
-    kids.push(fold("bounty-down", B.takingItDown.name.replace(/\.$/, ""), function () { return [help(B.takingItDown.text, { margin: 0 })]; }));
+    kids.push(codexLine("bounty-rules", "In the Codex:", [
+      ["gmx-bounty/the-price-by-caliber", "The price by Caliber"],
+      ["gmx-bounty/" + cxSlug(B.whoTakesIt.name), B.whoTakesIt.name.replace(/\.$/, "")],
+      ["gmx-bounty/" + cxSlug(B.takingItDown.name), B.takingItDown.name.replace(/\.$/, "")]
+    ]));
     return EN.ui.panel(B.name, up.length + " UP", kids);
   }
 
@@ -1502,7 +1517,8 @@ EN.gmHeat = (function () {
         onclick: function () { coolReset(); _h.cool.method = r.key; EN.app.render(); } }, r.name);
     })));
     kids.push(el("div.row.wrap", { style: { gap: "12px", alignItems: "flex-start" } }, [
-      el("div", { style: { flex: "1 1 220px", minWidth: "0" } }, [fieldHead(C.columns[1]), help(m.costs, { margin: 0 })]),
+      el("div", { style: { flex: "1 1 220px", minWidth: "0" } }, [fieldHead(C.columns[1]),
+        EN.ui.ruleText(el("p.help", { dataset: { heat: "cool-costs" }, style: { margin: 0 } }), m.costs)]),
       el("div", { style: { flex: "1 1 220px", minWidth: "0" } }, [fieldHead(C.columns[2]), help(m.does, { margin: 0 })])
     ]));
     var plan = coolPlan(b);
@@ -1576,14 +1592,9 @@ EN.gmHeat = (function () {
     }
     var ub = undoBar(["cooling", "lielow"]);
     if (ub) kids.push(ub);
-    kids.push(fold("cooling-ref", "Every way down", function () {
-      return C.rows.map(function (r) {
-        return el("p.help", { style: { margin: "0 0 6px" } }, [
-          el("span", { style: { fontWeight: 600, color: "var(--text)" }, text: r.name + ". " }),
-          document.createTextNode(r.costs + ". " + r.does + ".")
-        ]);
-      }).concat(C.after.map(function (t) { return help(t, { margin: "6px 0 0" }); }));
-    }));
+    kids.push(codexLine("cooling-rules", "Every way down, in the Codex:", C.rows.map(function (r) {
+      return ["gmx-cooling/" + cxSlug(r.name), r.name];
+    })));
     return EN.ui.panel(C.name, C.rows.length + " WAYS DOWN", kids);
   }
 
@@ -1769,52 +1780,18 @@ EN.gmHeat = (function () {
     return EN.ui.panel("Downtime Log", plural(recs.length, "ENTRY", "ENTRIES"), kids);
   }
 
-  /* ---- the chapter, for reference ------------------------------------------- */
+  /* ---- the chapter, for reference -------------------------------------------
+     The Heat Response chapter is the Codex's Heat chapter (the gmx- panels);
+     this panel points at each part. The GM-only notes never go there: they
+     stay in the board's GM ONLY box above. */
   function referencePanel() {
-    var B = H(), kids = [];
-    kids.push(fold("ref-ladder", B.ladder.name, function () {
-      var out = [help(B.ladder.intro, { margin: "0 0 8px" })];
-      B.ladder.rows.forEach(function (r) {
-        out.push(el("div.feature", { style: { borderLeftColor: bandColor(r.key) } }, [
-          el("div.row.wrap", { style: { gap: "8px", alignItems: "baseline" } }, [
-            el("span.mono", { style: { fontSize: "13px", color: bandColor(r.key) }, text: B.ladder.columns[0] + " " + r.heat }),
-            el("span", { style: { fontWeight: 600 }, text: r.phbSays })
-          ]),
-          help(r.sends, { margin: "4px 0 0" }),
-          help(B.ladder.columns[3] + ": " + r.fight, { margin: "3px 0 0", color: "var(--accent)" })
-        ]));
-      });
-      B.ladder.after.forEach(function (t) { out.push(help(t, { margin: "6px 0 0" })); });
-      return out;
-    }));
-    kids.push(fold("ref-events", B.events.name, function () {
-      var out = [help(B.events.intro, { margin: "0 0 8px" })];
-      B.events.bands.forEach(function (band) {
-        out.push(el("div.feature", { style: { borderLeftColor: bandColor(band.key) } }, [
-          el("div", { style: { fontWeight: 600, marginBottom: "4px" }, text: band.title })
-        ].concat(band.rows.map(function (r) {
-          return el("div.row", { style: { gap: "8px", alignItems: "baseline", margin: "3px 0" } }, [
-            el("span.mono", { style: { fontSize: "12px", color: "var(--text3)", minWidth: "14px" }, text: String(r.n) }),
-            el("span", { style: { fontSize: "13px", minWidth: "0" }, text: r.text })
-          ]);
-        }))));
-      });
-      return out;
-    }));
-    kids.push(fold("ref-sources", B.sources.name, function () {
-      return [help(B.sources.intro, { margin: "0 0 8px" })].concat(B.sources.rows.map(function (r) {
-        return el("div.feature", null, [
-          el("div", { style: { fontWeight: 600 }, text: r.name }),
-          help(B.sources.columns[1] + ": " + r.how, { margin: "4px 0 0" }),
-          help(B.sources.columns[2] + ": " + r.sends, { margin: "3px 0 0", color: "var(--text2)" })
-        ]);
-      }));
-    }));
-    kids.push(fold("ref-intro", B.name, function () {
-      return B.intro.map(function (t) { return help(t, { margin: "0 0 6px" }); })
-        .concat([help(B.check.guidelines.filter(function (g) { return g.key === "territory"; }).map(function (g) { return g.name + " " + g.text; })[0] || "", { margin: 0 })]);
-    }));
-    return EN.ui.panel("The Chapter", "HEAT RESPONSE", kids);
+    var B = H();
+    return EN.ui.panel("The Chapter", String(B.name || "Heat Response").toUpperCase(), [
+      codexLine("chapter", "In the Codex:", [
+        ["gmx-check", B.check.name], ["gmx-ladder", B.ladder.name], ["gmx-events", B.events.name],
+        ["gmx-sources", B.sources.name], ["gmx-bounty", B.bounty.name], ["gmx-cooling", B.cooling.name]
+      ], { margin: 0 })
+    ]);
   }
 
   /* ---- the tab ---------------------------------------------------------------- */

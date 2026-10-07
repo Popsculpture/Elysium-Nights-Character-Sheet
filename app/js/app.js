@@ -115,7 +115,13 @@ EN.app = (function () {
     { key: "scenes",     label: "Scenes",     glyph: "◧", sub: "sit-downs, chases, incursions", portal: "admin", gated: adminReady,
       view: gmModule("scenes", "gmScenes"),
       stub: "Scenes that aren't a fight: the Sit-Down with its Resolve and Pressure, the chase with " +
-            "its Lead and Chase Checks, and the Incursion from briefing to the return." }
+            "its Lead and Chase Checks, and the Incursion from briefing to the return." },
+    /* The same Codex the Freelancer desktop reads, plus the Game Master's chapters, which
+       exist on this desktop only. codex.js draws both; gmModule gives it the GM's Card and
+       the MODULE PENDING page should that file ever be missing. */
+    { key: "gmcodex",    label: "Codex",      glyph: "❒", sub: "rules on hand", portal: "admin", gated: adminReady,
+      view: gmModule("gmcodex", "codexView"),
+      stub: "The rules reference library: every chapter a player reads, and the Game Master's own." }
   ];
 
   /* A GM module tab's view: the module draws it when its file loaded, and the
@@ -273,6 +279,21 @@ EN.app = (function () {
     if (_saveKind === "fail") paintSave("fail");   // a fresh tray glyph must not read as healthy
     paintAddr();
   }
+  /* A rail wider than its scroller (a narrow window, or '98's taskbar) is rebuilt at scroll 0 on
+     every render, which can leave the open tab hidden past the gear. Scroll just far enough to show
+     it. A rail that fits (and #GRIDroid's list, which never scrolls sideways) is left alone. render()
+     calls this after the view is drawn, since a long view brings the page scrollbar that narrows
+     the rail. */
+  function revealActive() {
+    var scroll = document.querySelector("#os-tabs .os-tabs-scroll");
+    var act = scroll && scroll.querySelector(".os-tab.active");
+    if (!act || scroll.scrollWidth <= scroll.clientWidth + 1) return;
+    // the client box, not the border box: '98's taskbar carries a scrollbar inside its right edge
+    var sr = scroll.getBoundingClientRect(), ar = act.getBoundingClientRect();
+    var left = sr.left + scroll.clientLeft, right = left + scroll.clientWidth;
+    if (ar.right > right) scroll.scrollLeft += Math.ceil(ar.right - right);
+    else if (ar.left < left) scroll.scrollLeft -= Math.ceil(left - ar.left);
+  }
 
   var _lastTab = null;
   var _swipe = null;   // the swipe gesture, when the module is present (see start)
@@ -319,6 +340,7 @@ EN.app = (function () {
     } else window.scrollTo(0, 0);                          // tab switch → start at top
     _lastTab = LAST[portal];
     paintActiveName();
+    revealActive();
     /* Currency marks, last, once the view is fully built. A NO-OP on any device whose fonts
        carry U+1D4A2 and U+25CE, which is the common case and costs one cached measurement;
        on devices that lack them it walks the freshly-rendered text and swaps the tofu box

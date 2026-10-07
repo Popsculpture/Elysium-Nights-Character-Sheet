@@ -349,12 +349,26 @@ EN.faceView = (function () {
     return p;
   }
 
-  /* ---- quick reference (collapsible) -------------------------------------- */
+  /* ---- quick reference (collapsible) --------------------------------------
+     The Sit-Down and the social Approaches have no Codex chapter yet (Social Pressure
+     and Faction Standing waits on the manuscript), so this reference stays here. What
+     the Codex DOES hold is linked: the skills behind each Approach, Help, Edge, and the
+     margin and cost tables the Outcomes compress. */
+  // a cell is a string, or an array of strings and nodes (a Codex link inside the text)
   function refTable(headers, rows) {
     return el("table.sktable", { style: { width: "100%", fontSize: "11.5px" } }, [
       el("thead", null, [el("tr", null, headers.map(function (h) { return el("th", { style: { textAlign: "left" }, text: h }); }))]),
-      el("tbody", null, rows.map(function (r) { return el("tr", null, r.map(function (cell, ci) { return el("td", { style: ci === 0 ? { color: "var(--text)", whiteSpace: "nowrap" } : null, text: cell }); })); }))
+      el("tbody", null, rows.map(function (r) { return el("tr", null, r.map(function (cell, ci) {
+        return el("td", { style: ci === 0 ? { color: "var(--text)", whiteSpace: "nowrap" } : null }, cell);
+      })); }))
     ]);
+  }
+  function rl(anchor, label) { return EN.ui.ruleLink(anchor, label); }
+  // "Codex: A · B · C", one line of pointers into the rules hub
+  function codexLine(pairs) {
+    var kids = [document.createTextNode("Codex: ")];
+    pairs.forEach(function (pr, i) { if (i) kids.push(document.createTextNode(" \u00b7 ")); kids.push(rl(pr[0], pr[1])); });
+    return el("p.help", { style: { margin: "8px 0 0", color: "var(--text3)" } }, kids);
   }
   function refSection(key, title, node) {
     var open = !!_open[key];
@@ -366,19 +380,25 @@ EN.faceView = (function () {
   }
   function referencePanel() {
     return EN.ui.panel("Quick Reference", "APPROACHES · OUTCOMES · SIT-DOWN", [
-      refSection("appr", "Approaches", refTable(["Approach", "Skill", "Attributes", "What it does"], [
-        ["Persuasion", "Persuasion", "Charm, Wits", "Warmth, reason, rapport, mutual interest. The long game."],
-        ["Intimidation", "Intimidation", "Body, Wits, Tech, Mystique, Charm", "Threat, weight, presence. Make them flinch first."],
-        ["Performance", "Performance", "Charm, Agility, Body, Mystique", "Theater, distraction, rallying an audience, controlling tone."],
-        ["Deception", "Deception", "Charm, Wits", "Misdirection, false flags, slipping past their guard."],
-        ["Insight", "Insight", "Any", "Read the room, find the lever. Social Help: grants Edge, no Pressure."]
+      refSection("appr", "Approaches", el("div", null, [
+        refTable(["Approach", "Skill", "Attributes", "What it does"], [
+          ["Persuasion", [rl("sk-skills/persuasion", "Persuasion")], "Charm, Wits", "Warmth, reason, rapport, mutual interest. The long game."],
+          ["Intimidation", [rl("sk-skills/intimidation", "Intimidation")], "Body, Wits, Tech, Mystique, Charm", "Threat, weight, presence. Make them flinch first."],
+          ["Performance", [rl("sk-skills/performance", "Performance")], "Charm, Agility, Body, Mystique", "Theater, distraction, rallying an audience, controlling tone."],
+          ["Deception", [rl("sk-skills/deception", "Deception")], "Charm, Wits", "Misdirection, false flags, slipping past their guard."],
+          ["Insight", [rl("sk-skills/insight", "Insight")], "Any", ["Read the room, find the lever. Social ", rl("rz-collab/help-action", "Help"), ": grants ", rl("rz-edge", "Edge"), ", no Pressure."]]
+        ]),
+        codexLine([["sk-skills/versatile-skills", "Versatile Skills"], ["rz-collab", "Collaborative & Opposed Checks"]])
       ])),
-      refSection("marg", "Margins and Outcomes", refTable(["Margin", "Result", "What happens"], [
-        ["Flawless", "Total Win", "Get what you want and gain ground (Profile, Standing, future Edge)."],
-        ["Strong", "Solid Win", "Get what you want at a minor cost (Concession, Scrutiny, Debt)."],
-        ["Mixed", "Yes, But", "Succeed with a real social cost. One benefit, one Social Fallout."],
-        ["Failure", "No, And", "Miss. Lose position, alienate the room, or worsen terms."],
-        ["Critical", "Hard Burn", "The scene turns against you. A Tipped Hand, a Profile, a posture shift."]
+      refSection("marg", "Margins and Outcomes", el("div", null, [
+        refTable(["Margin", "Result", "What happens"], [
+          ["Flawless", "Total Win", "Get what you want and gain ground (Profile, Standing, future Edge)."],
+          ["Strong", "Solid Win", "Get what you want at a minor cost (Concession, Scrutiny, Debt)."],
+          ["Mixed", "Yes, But", "Succeed with a real social cost. One benefit, one Social Fallout."],
+          ["Failure", "No, And", "Miss. Lose position, alienate the room, or worsen terms."],
+          ["Critical", "Hard Burn", "The scene turns against you. A Tipped Hand, a Profile, a posture shift."]
+        ]),
+        codexLine([["rz-margin", "Success Margin & Consequence"], ["rz-social", "Social Consequences & Cost Tracks"]])
       ])),
       refSection("sit", "The Sit-Down (Resolve)", el("div", null, [
         help("A big negotiation run like a combat encounter: the Opposition has Resolve, the crew has Rounds to break it. Each successful Approach deals Pressure equal to its success tier (Flawless 3, Strong 2, Mixed 1). At 0 Resolve, the target breaks."),

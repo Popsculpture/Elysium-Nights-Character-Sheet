@@ -112,8 +112,7 @@ EN.gmPeople = (function () {
     roll: { table: "humans", count: 3, results: [], showTable: false },
     promote: { grade: null, designation: "standard", role: "gunhand", type: null, template: null },
     fromThreat: "",
-    q: "",
-    ref: Object.create(null)
+    q: ""
   };
   var _crew = null;       // EN.gmEngine.crew(), read once per render
   /* What follows the GM's typing without a re-render (F19): the card's header
@@ -716,6 +715,9 @@ EN.gmPeople = (function () {
         d.resolveValue = T ? (T.orMore ? Math.max(T.value, Number(d.resolveValue) || 0) : T.value) : null;
       }), "1 1 150px")
     ];
+    // the tier's row in Resolve by Role, in the Codex
+    var rc = EN.ui.ruleChip(t ? "gmp-resolve/" + t.key : "gmp-resolve", { title: t ? (R.title || "Resolve by Role") + ": " + t.tier : (R.title || "Resolve by Role") });
+    if (rc) row.push(el("div", { dataset: { people: "resolve-rule" }, style: { alignSelf: "flex-end", paddingBottom: "6px" } }, [rc]));
     if (t && t.orMore) {
       row.push(field("Number", el("input", { type: "number", min: String(t.value), step: "1", value: String(resolveNum(d)),
         dataset: { pf: "resolveValue" }, style: { width: "90px" }, title: t.tier + " is " + t.resolve,
@@ -783,6 +785,8 @@ EN.gmPeople = (function () {
         EN.app.render();
       } }, "ROLL " + String(P.die || "d12").toUpperCase())
     ];
+    var pc = EN.ui.ruleChip("gmp-profiles", { title: P.title || "Their Profile of You" });
+    if (pc) line.push(el("div", { dataset: { people: "profile-rule" }, style: { alignSelf: "center" } }, [pc]));
     if (row) {
       line.push(el("span", { title: P.die + ": " + row.n, style: { display: "inline-flex", alignItems: "center" },
         html: EN.ui.dieFaceSvg(12, { size: 30, value: row.n, edge: "var(--accent)", num: "var(--accent)" }) }));
@@ -806,7 +810,7 @@ EN.gmPeople = (function () {
       return selectEl("weak." + kind, opts, d.weak[kind] || "", function (v) { d.weak[kind] = approachName(v) ? v : ""; });
     }
     var kids = [fieldHead("WEAK SPOTS")];
-    kids.push(el("p.help", { style: { margin: "0 0 2px" }, text: (R.weakSpots && R.weakSpots.text) || "" }));
+    kids.push(EN.ui.ruleText(el("p.help", { style: { margin: "0 0 2px" } }), (R.weakSpots && R.weakSpots.text) || ""));
     kids.push(fieldRow([
       field("Takes double Pressure from", sel("double"), "1 1 170px"),
       field("Why", input("weak.doubleWhy", (S && S.reason) || "The reason, in a few words"), "2 1 220px")
@@ -1193,58 +1197,22 @@ EN.gmPeople = (function () {
     return p;
   }
 
-  /* ---- the book, for reference ------------------------------------------------------- */
-  function refTable(headers, rows) {
-    return el("table.sktable", { style: { width: "100%", fontSize: "11.5px" } }, [
-      el("thead", null, [el("tr", null, headers.map(function (h) { return el("th", { style: { textAlign: "left" }, text: h }); }))]),
-      el("tbody", null, rows.map(function (r) {
-        return el("tr", null, r.map(function (cell, ci) {
-          return el("td", { style: ci === 0 ? { color: "var(--text)", whiteSpace: "nowrap" } : null, text: cell });
-        }));
-      }))
-    ]);
-  }
-  function refSection(key, title, nodes) {
-    var open = !!_p.ref[key];
-    return el("div", { dataset: { ref: key }, style: { marginBottom: "6px", borderBottom: "1px solid var(--border)", paddingBottom: "6px" } }, [
-      el("button.btn.sm.ghost", { style: { width: "100%", justifyContent: "flex-start", fontFamily: "var(--disp)", letterSpacing: ".1em" },
-        onclick: function () { _p.ref[key] = !open; EN.app.render(); } }, (open ? "▾  " : "▸  ") + title),
-      open ? el("div", { style: { padding: "10px 2px 4px", overflowX: "auto" } }, nodes) : null
-    ]);
-  }
-  function para(t, color) { return t ? el("p.help", { style: { margin: "0 0 8px", color: color || "var(--text2)" }, text: t }) : null; }
+  /* ---- the book, for reference -------------------------------------------------------
+     The NPC Quick-Build chapter is in the Codex (js/codex_gm_play.js): the
+     Contact Card and the book's example (gmp-quickbuild), Resolve by Role
+     (gmp-resolve, which the Scenes tab's Sit-Down links to as well) and Their
+     Profile of You (gmp-profiles). This panel points there; through EN.ui
+     each link is plain text when codex.js is missing. */
   function referencePanel() {
-    var B = book(), C = B.card || {}, R = B.resolveByRole || {}, P = B.profiles || {}, E = B.example;
-    var kids = [];
-    var card = [para(C.intro), refTable(C.columns || ["Line", "What It Holds"], (C.lines || []).map(function (l) { return [l.line, l.holds]; }))];
-    card.push(el("div", { style: { height: "8px" } }));
-    card.push(para(C.promote));
-    card.push(para(C.fromThreat));
-    if (E) {
-      card.push(el("div.feature", { style: { margin: "4px 0 0" } }, [
-        el("div.mono", { style: { fontSize: "10px", letterSpacing: ".14em", color: "var(--gold)", marginBottom: "4px" }, text: "EXAMPLE" }),
-        el("p", { style: { margin: 0, fontSize: "13px", whiteSpace: "pre-wrap" }, text: cardText(draftOf({
-          name: E.name, print: E.print, work: E.work, want: E.want, fear: E.fear,
-          resolveTier: E.resolveTier, resolveValue: E.resolveValue, profile: E.profile, profileN: E.profileN, tell: E.tell })) })
-      ]));
-    }
-    kids.push(refSection("card", C.title || "The Contact Card", card));
-    kids.push(refSection("resolve", R.title || "Resolve by Role", [
-      para(R.intro),
-      refTable(R.columns || ["Tier", "Resolve", "Who Sits Here"], (R.tiers || []).map(function (t) { return [t.tier, t.resolve, t.who]; })),
-      el("div", { style: { height: "8px" } }),
-      para(R.moving),
-      para(R.weakSpots && R.weakSpots.text)
-    ]));
-    kids.push(refSection("profiles", P.title || "Their Profile of You", [
-      para(P.intro),
-      para(P.prompt, "var(--text)"),
-      refTable(P.columns || ["d12", "Profile", "What They've Heard"], (P.rows || []).map(function (r) { return [String(r.n), r.name, r.heard]; })),
-      el("div", { style: { height: "8px" } }),
-      para(P.earned && P.earned.text),
-      para(P.howItWorks)
-    ]));
-    var p = EN.ui.panel("From the Book", String(B.title || "NPC Quick-Build").toUpperCase(), kids);
+    var B = book(), C = B.card || {}, R = B.resolveByRole || {}, P = B.profiles || {};
+    var list = [["gmp-quickbuild/the-contact-card", C.title || "The Contact Card"], ["gmp-quickbuild/the-book-s-example", "The Book's Example"],
+                ["gmp-resolve", R.title || "Resolve by Role"], ["gmp-profiles", P.title || "Their Profile of You"]];
+    var line = el("p.help", { dataset: { people: "codex" }, style: { margin: 0 } }, [document.createTextNode("In the Codex: ")]);
+    list.forEach(function (it, i) {
+      if (i) line.appendChild(document.createTextNode(" · "));
+      line.appendChild(EN.ui.ruleLink(it[0], it[1]));
+    });
+    var p = EN.ui.panel("From the Book", String(B.title || "NPC Quick-Build").toUpperCase(), [line]);
     p.dataset.people = "reference";
     return p;
   }
