@@ -1,34 +1,1394 @@
 /* ===========================================================================
    ELYSIUM NIGHTS · GM Payroll (Admin tab)
-   STUB. The module phase replaces this whole file. It exists so the tab and
-   its script tag are wired before the module lands: render() draws the
-   heading and a holding box.
+   Paying the crew, top to bottom in the order a payday runs: the contract
+   quote off the book's Caliber by difficulty grid, bounties priced off a
+   Target's XP, salvage and parts by the Grade of the kill, the split, the XP
+   award and the Other Ledger, ending in a payday the GM can copy as text,
+   save to the ledger, and credit to the crew's own records.
 
-   The finished module quotes contract pay, bounties and salvage (book data in
-   EN.gmBook.payroll) and splits a payout through EN.engine.splitPayout, the
-   same splitter the player's SPLIT panel uses.
+   THE BOOK IS DATA. Every band, rate, percentage and sentence of rules text
+   is read from EN.gmBook.payroll (data/gm_payroll.js), and the split note from
+   EN.economy; nothing here restates a number the page prints. The arithmetic
+   of the split is EN.engine.splitPayout, the helper the player's SPLIT panel
+   uses, so the two can never quote one payout as different shares. The crew is
+   EN.gmEngine.crew() (ruling D4), so Payroll, the Encounters budget and the
+   Job Board agree on who the crew is and what their Caliber is.
+
+   RULINGS this file carries out (author, 2026-10):
+     D1  a write to a player record goes through EN.gmStore.writeCrew only,
+         behind an armed confirm, logged in the ledger and undoable, and the
+         same content is always on offer as copyable text for the crews whose
+         records live on other devices.
+     D5  every Freelancer gets the full encounter XP; only records with
+         useXp take it, and the milestone ones are named and skipped.
+     D6  the printed band is shown and its midpoint prefilled as an editable
+         total; clause shifts stack and clamp at the grid edges, with a note.
+     And the defaults: bounties show the 3 to 5 range with a rate picker and
+     double for alive; the Crew Kit comes off the post-fixer remainder (that
+     is splitPayout's own order); the payday checklist is the book's order.
+
+   AN APP READING, not book text: the fixer's cut comes off the CLIENT'S money,
+   the contract and any bounties, because the page prices those as "totals,
+   before the fixer's 10 to 20 percent". Salvage is the crew's own sale to a
+   fence, so it splits through the same helper with no fixer, and the Crew
+   Kit's percentage applies to both, since the crew votes it "of every payout".
+
+   STATE. The form is transient (module scope), like the Threats builder's
+   inputs: a half-priced payday is not worth a save slot until the GM says so.
+   SAVE PAYDAY files it in the GM ledger (bag `ledger`, kind "payday") with a
+   copy of the form, so OPEN can bring it back. Typing re-renders this tab
+   locally and puts the caret back (refresh), because a full app render on
+   every keystroke would rebuild the field being typed into.
    =========================================================================== */
 window.EN = window.EN || {};
 
 EN.gmPayroll = (function () {
-  var el = EN.ui.el;
+  var el = EN.ui.el, toast = EN.ui.toast;
+  var gm = EN.gmStore;
+  // the currency marks the book prints: Glimmer U+1D4A2, Nexus U+25CE
+  var G = "𝒢", NX = "◎", DOT = " · ";
 
-  // each view carries its own heading, per the house convention (see gm.js)
+  function P() { return (EN.gmBook && EN.gmBook.payroll) || null; }
+  function own(o, k) { return !!o && Object.prototype.hasOwnProperty.call(o, k); }
+  function isObj(v) { return !!v && typeof v === "object" && !Array.isArray(v); }
+  function copy(v) { return v === undefined ? undefined : JSON.parse(JSON.stringify(v)); }
+
+  /* ---- numbers and their print forms ----------------------------------- */
+  // Glimmer is whole and never negative here; a blank or a typo reads as 0
+  function glim(v) {
+    var n = Number(String(v == null ? "" : v).replace(/,/g, ""));
+    return isFinite(n) && n > 0 ? Math.floor(n) : 0;
+  }
+  // Nexus is kept to hundredths, the way the Inventory's wallet rounds it
+  function nex(v) {
+    var n = Number(String(v == null ? "" : v).replace(/,/g, ""));
+    return isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : 0;
+  }
+  function commas(n) {
+    n = Math.floor(Number(n) || 0);
+    return (n < 0 ? "-" : "") + String(Math.abs(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  }
+  function fmtG(n) { return G + commas(n); }
+  function fmtNx(n) { return NX + (Math.round((Number(n) || 0) * 100) / 100); }
+  function plural(n, one, many) { return n === 1 ? one : (many || one + "s"); }
+  function cap(s) { s = String(s || ""); return s.charAt(0).toUpperCase() + s.slice(1); }
+  function two(n) { return (n < 10 ? "0" : "") + n; }
+  var DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  // the #POST "when" field's own shape ("03:14, Tuesday", the Social tab's placeholder)
+  function clock(t) { var d = new Date(t); return two(d.getHours()) + ":" + two(d.getMinutes()) + ", " + DAYS[d.getDay()]; }
+  function stamp(t) {
+    var d = new Date(t);
+    return d.getFullYear() + "-" + two(d.getMonth() + 1) + "-" + two(d.getDate()) + " " + two(d.getHours()) + ":" + two(d.getMinutes());
+  }
+  function midOf(lo, hi) { return Math.round(((Number(lo) || 0) + (Number(hi) || 0)) / 2); }
+
+  /* ---- the form ---------------------------------------------------------
+     Every typed number is kept as the string typed, so a half-typed "30" is
+     not rewritten to 3 under the caret; the model parses it. Maps keyed by an
+     id are null-prototype; lists of ids are plain arrays, which survive the
+     JSON round trip into a saved payday unchanged. */
+  var _n = 0;
+  function lid(p) { _n += 1; return p + _n + Date.now().toString(36); }
+  function defFixer() { var C = P() && P().contract; return C ? midOf(C.fixerPctLow, C.fixerPctHigh) : 15; }
+  function defRate() { var B = P() && P().bounties; return B ? midOf(B.perXpLow, B.perXpHigh) : 4; }
+
+  function fresh() {
+    return {
+      paydayId: null,              // the ledger record this form was saved to or opened from
+      jobId: null, title: "",
+      enc: null,                   // the encounter being paid: a lastEncounter-shaped snapshot
+      hc: "", cal: "",             // crew overrides, as typed
+      diff: "fair",                // the base difficulty column, before clauses
+      shifts: Object.create(null), // clause key -> the step picked; absent is off
+      total: null,                 // the contract total as typed, or null for the band's midpoint
+      nexus: "",                   // Nexus terms, as typed
+      inc: "",                     // an Incursion's rating, for the pricer
+      bounties: [],                // {id, name, xp, rate, alive}
+      bSrc: "encounter", bEnc: "", bBest: "", bName: "", bXp: "",
+      salv: Object.create(null),   // encounter entry id -> salvage value, as typed
+      salvage: [],                 // hand-entered salvage lines {id, name, value}
+      sName: "", sValue: "", awValue: "", awPct: "",
+      fixer: defFixer(), kit: 0,
+      noXp: [],                    // encounter entry ids NOT counted as defeated
+      objXp: "",
+      xpAgain: false,              // write XP even though the Table already awarded this fight's (tableAward)
+      cred: "", heat: "",
+      stub: true,                  // send a #POST pay stub with the credit
+      noCredit: [],                // charIds left out of the credit
+      steps: []                    // ticked payday checklist steps, by index
+    };
+  }
+  var _p = fresh();
+  var _open = Object.create(null);   // which reference folds are open
+  var _mount = null;
+
+  // a saved form comes back from storage, which an import can write, so each
+  // field is taken only when it has the type this file wrote
+  function restoreForm(f) {
+    var p = fresh();
+    if (!isObj(f)) return p;
+    ["title", "hc", "cal", "diff", "nexus", "inc", "bSrc", "bEnc", "bBest", "bName", "bXp",
+     "sName", "sValue", "awValue", "awPct", "objXp", "cred", "heat"].forEach(function (k) {
+      if (typeof f[k] === "string") p[k] = f[k];
+    });
+    if (typeof f.jobId === "string" && f.jobId) p.jobId = f.jobId;
+    if (typeof f.total === "string" || typeof f.total === "number") p.total = String(f.total);
+    if (typeof f.fixer === "string" || typeof f.fixer === "number") p.fixer = f.fixer;
+    if (typeof f.kit === "string" || typeof f.kit === "number") p.kit = f.kit;
+    p.stub = f.stub !== false;
+    p.xpAgain = f.xpAgain === true;
+    if (isObj(f.enc) && Array.isArray(f.enc.entries)) p.enc = f.enc;
+    if (isObj(f.shifts)) Object.keys(f.shifts).forEach(function (k) {
+      var v = Number(f.shifts[k]);
+      if (own(f.shifts, k) && isFinite(v) && v) p.shifts[k] = v;
+    });
+    if (isObj(f.salv)) Object.keys(f.salv).forEach(function (k) {
+      if (own(f.salv, k) && typeof f.salv[k] === "string") p.salv[k] = f.salv[k];
+    });
+    (Array.isArray(f.bounties) ? f.bounties : []).forEach(function (b) {
+      if (!isObj(b) || typeof b.id !== "string") return;
+      p.bounties.push({ id: b.id, name: String(b.name || "Target"), xp: String(b.xp == null ? "" : b.xp),
+                        rate: Number(b.rate) || defRate(), alive: !!b.alive });
+    });
+    (Array.isArray(f.salvage) ? f.salvage : []).forEach(function (s) {
+      if (!isObj(s) || typeof s.id !== "string") return;
+      p.salvage.push({ id: s.id, name: String(s.name || ""), value: String(s.value == null ? "" : s.value) });
+    });
+    ["noXp", "noCredit"].forEach(function (k) {
+      (Array.isArray(f[k]) ? f[k] : []).forEach(function (v) { if (typeof v === "string") p[k].push(v); });
+    });
+    (Array.isArray(f.steps) ? f.steps : []).forEach(function (v) { if (typeof v === "number") p.steps.push(v); });
+    return p;
+  }
+
+  /* ---- reading the book ------------------------------------------------- */
+  function colList() { return P().contract.columns; }
+  function colIndex(key) {
+    var cs = colList();
+    for (var i = 0; i < cs.length; i++) if (cs[i].key === key) return i;
+    return -1;
+  }
+  function colName(key) { var i = colIndex(key); return i < 0 ? key : colList()[i].name; }
+  function rowAt(cal) { return P().contract.rows.filter(function (r) { return r.caliber === cal; })[0] || null; }
+  // by the cell's own column key, so a reordered row could not misquote; the index is the fallback
+  function cellOf(row, i) {
+    if (!row) return null;
+    var key = colList()[i].key;
+    return (row.cells || []).filter(function (c) { return c && c.col === key; })[0] || row.cells[i] || null;
+  }
+  function stepsOf(clause) { return Array.isArray(clause.steps) ? clause.steps : []; }
+  function clauses() { var S = P().contract.shifts; return (S && S.clauses) || []; }
+
+  // the clause shifts STACK (D6): their sum, counting only a step the clause allows
+  function shiftOf(shifts) {
+    var n = 0;
+    clauses().forEach(function (cl) {
+      if (!own(shifts, cl.key)) return;
+      var v = Number(shifts[cl.key]) || 0;
+      if (v && stepsOf(cl).indexOf(v) !== -1) n += v;
+    });
+    return n;
+  }
+
+  /* THE QUOTE. The crew's Caliber picks the row, the base difficulty plus the
+     clause shifts picks the column, and the column CLAMPS at either edge of the
+     grid (D6): the book says nothing about running off it, so the quote holds
+     at the last column and `over` says by how much it tried to go past. `mid`
+     is the band's midpoint, the prefilled total; an "about" cell carries the
+     one figure as both ends, and the Nexus-only cell has none (null). */
+  function quote(caliber, baseKey, shifts) {
+    var C = P().contract, cs = C.columns;
+    var cals = C.rows.map(function (r) { return r.caliber; });
+    var lo = Math.min.apply(null, cals), hi = Math.max.apply(null, cals);
+    var cal = Math.max(lo, Math.min(hi, Math.round(Number(caliber)) || lo));
+    var base = colIndex(baseKey);
+    if (base < 0) base = Math.max(0, colIndex("fair"));
+    var shift = shiftOf(shifts || {});
+    var raw = base + shift, idx = Math.max(0, Math.min(cs.length - 1, raw));
+    var cell = cellOf(rowAt(cal), idx);
+    var mid = (cell && typeof cell.low === "number" && typeof cell.high === "number") ? midOf(cell.low, cell.high) : null;
+    return { caliber: cal, base: cs[base].key, baseName: cs[base].name, shift: shift, raw: raw, over: raw - idx,
+             index: idx, key: cs[idx].key, name: cs[idx].name, clamped: raw !== idx, cell: cell,
+             band: cell ? cell.text : "", mid: mid, nexus: cell ? cell.nexus : null };
+  }
+
+  /* A bounty: the Target's XP times the rate, times aliveMult for breathing
+     delivery. The rate is held to the book's perXpLow to perXpHigh. */
+  function bountyValue(xp, rate, alive) {
+    var B = P().bounties;
+    var r = Math.max(B.perXpLow, Math.min(B.perXpHigh, Math.round(Number(rate)) || B.perXpLow));
+    return glim(xp) * r * (alive ? (Number(B.aliveMult) || 1) : 1);
+  }
+
+  /* ---- the encounter being paid ----------------------------------------- */
+  function encThreats(enc) {
+    return ((enc && Array.isArray(enc.entries)) ? enc.entries : []).filter(function (r) {
+      return r && r.kind === "threat" && typeof r.id === "string" && isObj(r.block);
+    });
+  }
+  function encCrew(enc) {
+    return ((enc && Array.isArray(enc.entries)) ? enc.entries : []).filter(function (r) { return r && r.kind === "crew"; });
+  }
+  /* XP THE TABLE ALREADY WROTE for this fight. The Encounters tab's AWARD XP
+     writes an encounter's XP from the Table, and its SEND TO PAYROLL hands the
+     same fight here, so crediting the XP again would pay it twice. The live
+     snapshot is read when it is still this fight (the two share `at`), so an
+     award made or undone after the handoff shows; otherwise the copy that came
+     with the handoff. An award counts while one of its writes still stands.
+     Returns {total, names} or null. */
+  function tableAward(enc) {
+    if (!isObj(enc)) return null;
+    var last = gm.get().lastEncounter;
+    var src = (isObj(last) && enc.at && last.at === enc.at) ? last : enc;
+    var aw = isObj(src.xpAward) ? src.xpAward : null;
+    if (!aw) return null;
+    var live = (Array.isArray(aw.writeIds) ? aw.writeIds : []).some(function (id) {
+      var w = gm.rec("ledger", id);
+      return !!(w && !w.undone);
+    });
+    return live ? { total: Number(aw.total) || 0, names: Array.isArray(aw.names) ? aw.names.slice() : [] } : null;
+  }
+  /* THE FIGHT BEING PAID, taken into the form with the same XP the Table's award
+     card counts. That card adds the plan's objective award on top of the
+     defeated threats and lets the GM untick a threat that got away; without
+     them here the two tabs priced one fight's XP differently. `xp` is what the
+     award card hands over with SEND TO PAYROLL ({objective, skip}); without it
+     (USE THE LAST ENCOUNTER, or an older caller) the objective comes from the
+     plan the fight was run from. A figure the GM already typed is kept. */
+  function takeEncounter(enc, xp) {
+    _p.enc = copy(enc);
+    _p.salv = Object.create(null);
+    _p.noXp = [];
+    var ids = encThreats(_p.enc).map(function (r) { return r.id; });
+    var obj = null;
+    if (isObj(xp)) {
+      obj = Math.max(0, Math.floor(Number(xp.objective)) || 0);
+      (Array.isArray(xp.skip) ? xp.skip : []).forEach(function (id) {
+        if (typeof id === "string" && ids.indexOf(id) !== -1) _p.noXp.push(id);
+      });
+    } else {
+      var plan = (typeof _p.enc.sourceId === "string" && _p.enc.sourceId) ? gm.rec("encounters", _p.enc.sourceId) : null;
+      if (plan && isObj(plan.objective)) obj = Math.max(0, Math.floor(Number(plan.objective.awardXp)) || 0);
+    }
+    if (obj && !String(_p.objXp || "").replace(/\s+/g, "")) _p.objXp = String(obj);
+  }
+  /* A Table row is named after its statblock, numbered when it arrived as one
+     of several ("Street Ganger 2"), so the block's own name is tried first and
+     the row name without its number second. */
+  function bestEntry(row) {
+    var B = EN.bestiary, b = row.block || {};
+    if (!B || !Array.isArray(B.entries)) return null;
+    var names = [b.name, String(row.name || "").replace(/\s+\d+$/, "")];
+    for (var i = 0; i < names.length; i++) {
+      var n = names[i];
+      if (!n) continue;
+      var hit = B.entries.filter(function (e) { return e && e.name === n; })[0];
+      if (hit) return hit;
+    }
+    return null;
+  }
+  /* Which of the book's four salvage sources a Bestiary category falls under.
+     The page names people, machines, #GRID kills, and "Flow-side and cryptid
+     kills" (the one the Grade bands price). Bioforms are read as that fourth
+     source: an app reading, since the page names no fifth and a Bioform's
+     printed salvage is parts, like a cryptid's. */
+  var SOURCE_OF = { people: "people", machines: "machines", grid: "grid", flow: "flow", cryptids: "flow", bioforms: "flow" };
+  function sourceDef(key) {
+    return key ? (P().salvage.sources || []).filter(function (s) { return s.key === key; })[0] || null : null;
+  }
+  function bandOf(grade) { return (P().salvage.bands || []).filter(function (b) { return b.grade === grade; })[0] || null; }
+  function threatInfo(row) {
+    var b = row.block || {}, e = bestEntry(row);
+    var cat = e ? e.category : null;
+    var xp = EN.gmEngine.xpOf(row) || (e ? EN.gmEngine.xpOf(e) : 0);
+    return { id: row.id, name: row.name || b.name || "Threat", grade: Number(b.grade) || (e ? Number(e.grade) || 0 : 0),
+             xp: xp, entry: e, source: (cat && own(SOURCE_OF, cat)) ? SOURCE_OF[cat] : null };
+  }
+
+  /* ---- the crew --------------------------------------------------------- */
+  /* D4 through gmEngine.crew, with one payroll touch: when the encounter being
+     paid carries crew rows, THOSE are the crew, because they are who fought.
+     Otherwise crew() answers as it does everywhere (the Table, then the filed
+     roster). The overrides apply either way. */
+  function crewNow() {
+    var opts = { headcount: _p.hc, caliber: _p.cal };
+    var fromEnc = encCrew(_p.enc).length > 0;
+    if (fromEnc) opts.encounter = _p.enc;
+    var c = null;
+    try { c = EN.gmEngine.crew(opts); } catch (e) { c = null; }
+    if (!c) c = { members: [], headcount: 0, caliber: 1, source: "none", overridden: { headcount: false, caliber: false } };
+    c.fromEncounter = fromEnc && c.source === "table";
+    return c;
+  }
+
+  /* ---- the model: every number on the page, computed once a render ------ */
+  function job() { return _p.jobId ? gm.rec("jobs", _p.jobId) : null; }
+  function defaultTitle() { var j = job(); return (j && j.title) ? String(j.title) : "Payday"; }
+
+  function model() {
+    var c = crewNow();
+    var q = quote(c.caliber, _p.diff, _p.shifts);
+    var typed = _p.total !== null;
+    var contract = typed ? glim(_p.total) : (q.mid || 0);
+    var nexus = nex(_p.nexus);
+
+    var bl = _p.bounties.map(function (b) {
+      return { id: b.id, name: b.name, xp: glim(b.xp), rate: Number(b.rate) || defRate(), alive: !!b.alive,
+               value: bountyValue(b.xp, b.rate, b.alive) };
+    });
+    var bTotal = bl.reduce(function (a, b) { return a + b.value; }, 0);
+
+    var threats = encThreats(_p.enc).map(threatInfo);
+    var sl = [];
+    threats.forEach(function (t) {
+      var v = glim(own(_p.salv, t.id) ? _p.salv[t.id] : "");
+      if (v > 0) sl.push({ name: t.name, value: v });
+    });
+    _p.salvage.forEach(function (s) {
+      var v = glim(s.value);
+      if (v > 0) sl.push({ name: (s.name || "").trim() || "Salvage", value: v });
+    });
+    var sTotal = sl.reduce(function (a, s) { return a + s.value; }, 0);
+
+    // the one splitter, twice: the client's money through the fixer, the salvage without
+    var split = EN.engine.splitPayout(contract + bTotal, c.headcount, _p.fixer, _p.kit);
+    var sSplit = EN.engine.splitPayout(sTotal, c.headcount, 0, _p.kit);
+
+    // Nexus splits evenly in hundredths; what will not divide is left over, like Glimmer's
+    var hc = Math.max(1, Math.floor(Number(c.headcount) || 0));
+    var cents = Math.round(nexus * 100), eachC = Math.floor(cents / hc);
+
+    var xpRows = threats.filter(function (t) { return _p.noXp.indexOf(t.id) === -1; });
+    var xpObj = glim(_p.objXp);
+    var xpTotal = xpRows.reduce(function (a, t) { return a + t.xp; }, 0) + xpObj;
+    // what CREDIT THE CREW writes: nothing when the Table already awarded this fight, unless the GM says again
+    var tAward = tableAward(_p.enc);
+    var xpWrite = (tAward && !_p.xpAgain) ? 0 : xpTotal;
+
+    var roster = (EN.store && EN.store.roster && EN.store.roster()) || {};
+    var credit = c.members.filter(function (x) {
+      return _p.noCredit.indexOf(x.charId) === -1 && own(roster, x.charId);
+    }).map(function (x) {
+      var ch = roster[x.charId];
+      return { charId: x.charId, name: x.name, caliber: x.caliber, useXp: !!(ch && ch.useXp === true) };
+    });
+
+    var rec = _p.paydayId ? gm.rec("ledger", _p.paydayId) : null;
+    return {
+      crew: c, q: q, typed: typed, contract: contract, nexus: nexus,
+      bounties: bl, bTotal: bTotal, threats: threats, salvage: sl, sTotal: sTotal,
+      split: split, sSplit: sSplit, eachG: split.each + sSplit.each,
+      nexEach: eachC / 100, nexOver: (cents - eachC * hc) / 100,
+      xpRows: xpRows, xpObj: xpObj, xpTotal: xpTotal, tAward: tAward, xpWrite: xpWrite,
+      credit: credit, title: (_p.title || "").trim() || defaultTitle(),
+      rec: rec, paid: !!(rec && rec.credited && !rec.undone)
+    };
+  }
+
+  /* ---- small view pieces (local, per the house convention) --------------- */
   function heading(title, sub) {
     return el("div.row.between.wrap", { style: { marginBottom: "14px" } }, [
       el("h1", { style: { fontSize: "22px", letterSpacing: ".06em" },
         html: title + ' <span class="dim3" style="font-size:13px">' + sub + "</span>" })
     ]);
   }
-
-  function render(mount) {
-    EN.ui.clear(mount);
-    mount.appendChild(el("div", null, [
-      heading("Payroll", "// paying the crew"),
-      el("div.muted-box", { style: { padding: "26px" },
-        text: "The Payroll module is being built. The pay grid, bounties, salvage and the payday land here." })
-    ]));
+  function gap() { return el("div", { style: { height: "12px" } }); }
+  function lbl(t) { return el("label.fl", { text: t }); }
+  function label(t) { return el("span.mono", { style: { fontSize: "10px", letterSpacing: ".1em", color: "var(--text3)" }, text: t }); }
+  function help(t, style) {
+    var s = { margin: "4px 0 0" };
+    if (style) Object.keys(style).forEach(function (k) { s[k] = style[k]; });
+    return el("p.help", { style: s, text: t });
+  }
+  function field(t, input) { return el("div.field", { style: { margin: 0 } }, [lbl(t), input]); }
+  function chip(text, on, pay, onclick, title) {
+    return el("span.chip" + (on ? ".on" : ""), { dataset: pay ? { pay: pay } : null, title: title || null,
+      style: { cursor: "pointer", fontSize: "10.5px" }, onclick: onclick }, text);
+  }
+  // a typed field: the value lands in the form and the tab refreshes in place
+  function numIn(key, value, width, onval, attrs) {
+    var a = { type: "number", value: value == null ? "" : String(value), dataset: { pf: key },
+      style: { width: width || "90px" },
+      oninput: function (e) { onval(e.target.value); refresh(); } };
+    if (attrs) Object.keys(attrs).forEach(function (k) { a[k] = attrs[k]; });
+    return el("input", a);
+  }
+  function textIn(key, value, placeholder, onval, style) {
+    var s = { width: "100%" };
+    if (style) Object.keys(style).forEach(function (k) { s[k] = style[k]; });
+    return el("input", { type: "text", value: value || "", placeholder: placeholder || "", dataset: { pf: key }, style: s,
+      oninput: function (e) { onval(e.target.value); refresh(); } });
+  }
+  // a money readout; data-v carries the raw number for anything that reads the page
+  function money(lab, n, text, color, pay) {
+    return el("div", { style: { textAlign: "center", minWidth: "92px" } }, [
+      el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: lab }),
+      el("span.mono", { dataset: pay ? { pay: pay, v: String(n) } : null,
+        style: { fontSize: "19px", color: color || "var(--text)" }, text: text })
+    ]);
+  }
+  // a reference fold, closed by default: the book's prose is there when wanted and out of the way when not
+  function fold(key, title, kids) {
+    var open = !!_open[key];
+    return el("div", { style: { marginTop: "10px" } }, [
+      el("div", { dataset: { pay: "fold-" + key },
+        style: { cursor: "pointer", fontFamily: "var(--disp)", fontSize: "10px", letterSpacing: ".12em",
+                 color: "var(--text3)", textTransform: "uppercase" },
+        onclick: function () { _open[key] = !open; refresh(); } }, EN.ui.nameCaret(title, open)),
+      open ? el("div", { style: { marginTop: "6px" } }, kids) : null
+    ]);
   }
 
-  return { render: render };
+  /* COPY. The clipboard API where the page may use it, else the old select and
+     execCommand route, which file:// pages still get. Either way the same text
+     is on screen to select by hand. */
+  function copyText(text, what) {
+    function fallback() {
+      var ta = el("textarea", { style: { position: "fixed", left: "-9999px", top: "0" } });
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = false;
+      try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+      document.body.removeChild(ta);
+      toast(ok ? what + " copied." : "The clipboard is not reachable here. Select the text and copy it by hand.");
+    }
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () { toast(what + " copied."); }, fallback);
+        return;
+      }
+    } catch (e) {}
+    fallback();
+  }
+
+  /* ---- 1. this payday: the job, the encounter, the crew ----------------- */
+  function headPanel(m) {
+    var kids = [], j = job(), c = m.crew;
+    kids.push(el("div.row.wrap", { style: { gap: "10px", alignItems: "flex-end" } }, [
+      el("div", { style: { flex: "1 1 220px", minWidth: 0 } }, [
+        field("Payday title", textIn("title", _p.title, defaultTitle(), function (v) { _p.title = v; }))
+      ])
+    ]));
+    if (_p.jobId) {
+      kids.push(help(j ? "For the job " + (j.title || "untitled") + DOT + "status " + String(j.status || "draft") + "."
+                       : "The job this payday was opened for is no longer in the log.", { color: "var(--text2)" }));
+    }
+
+    // the encounter being paid
+    var last = gm.get().lastEncounter;
+    if (_p.enc) {
+      var ts = encThreats(_p.enc);
+      kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "8px" } }, [
+        label("ENCOUNTER"),
+        el("span", { dataset: { pay: "enc-name" }, style: { fontWeight: 600 }, text: _p.enc.name || "The last encounter" }),
+        el("span.help", { style: { margin: 0 }, text: ts.length + " " + plural(ts.length, "threat") +
+          (_p.enc.at ? DOT + "cleared " + stamp(_p.enc.at) : "") }),
+        el("button.btn.sm", { dataset: { pay: "enc-drop" }, title: "Stop paying from this encounter",
+          onclick: function () { _p.enc = null; _p.salv = Object.create(null); _p.noXp = []; refresh(); } }, "✕ DROP")
+      ]));
+    } else if (last && encThreats(last).length) {
+      kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "8px" } }, [
+        label("ENCOUNTER"),
+        el("button.btn.sm", { dataset: { pay: "enc-last" }, onclick: function () { takeEncounter(last, null); refresh(); } },
+          "+ USE THE LAST ENCOUNTER"),
+        el("span.help", { style: { margin: 0 }, text: (last.name || "Unnamed") + DOT + encThreats(last).length + " " +
+          plural(encThreats(last).length, "threat") + (last.at ? DOT + "cleared " + stamp(last.at) : "") })
+      ]));
+    } else {
+      kids.push(help("No finished encounter to pay from yet. Bounties, salvage and XP can be typed in by hand."));
+    }
+
+    // the crew
+    var src = c.fromEncounter ? "the crew rows of the encounter being paid"
+      : c.source === "table" ? "the crew on the Table"
+      : c.source === "roster" ? "the filed roster" : null;
+    kids.push(el("div", { style: { height: "10px" } }));
+    kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "baseline" } }, [
+      label("CREW"),
+      el("span", { dataset: { pay: "crew-line" }, style: { fontWeight: 600 },
+        text: c.headcount + " " + plural(c.headcount, "Freelancer") + DOT + "Caliber " + c.caliber }),
+      el("span.help", { style: { margin: 0 }, text: src ? "from " + src : "no crew yet: set a headcount and a Caliber" })
+    ]));
+    var roster = (EN.store.roster && EN.store.roster()) || {};
+    if (c.members.length) {
+      kids.push(el("div.row.wrap", { style: { gap: "6px", marginTop: "6px" } }, c.members.map(function (x) {
+        var ch = roster[x.charId];
+        var onXp = !!(ch && ch.useXp === true);
+        return el("span.chip", { style: { fontSize: "10px" },
+          text: x.name + DOT + (x.caliber ? "C" + x.caliber : "C?") + DOT + (onXp ? "XP" : "MILESTONE") });
+      })));
+    }
+    kids.push(el("div.row.wrap", { style: { gap: "10px", alignItems: "flex-end", marginTop: "8px" } }, [
+      field("Headcount", numIn("hc", _p.hc, "80px", function (v) { _p.hc = v; }, { min: "1", placeholder: String(c.members.length || "") })),
+      field("Caliber", numIn("cal", _p.cal, "70px", function (v) { _p.cal = v; _p.total = null; }, { min: "1", max: "5" })),
+      (_p.hc !== "" || _p.cal !== "") ? el("button.btn.sm", { dataset: { pay: "crew-clear" },
+        onclick: function () { _p.hc = ""; _p.cal = ""; _p.total = null; refresh(); } }, "CLEAR OVERRIDES") : null
+    ]));
+    if (c.overridden && (c.overridden.headcount || c.overridden.caliber)) {
+      kids.push(help("Set by hand: " + [c.overridden.headcount ? "headcount" : null, c.overridden.caliber ? "Caliber" : null]
+        .filter(Boolean).join(" and ") + ". The book prices one Caliber for the whole crew, so a mixed crew is the GM's call."));
+    }
+    return EN.ui.panel("This Payday", "JOB" + DOT + "ENCOUNTER" + DOT + "CREW", kids);
+  }
+
+  /* ---- 2. contract pay -------------------------------------------------- */
+  function setShift(k, v) {
+    if (v) _p.shifts[k] = v; else delete _p.shifts[k];
+    _p.total = null;
+    refresh();
+  }
+  function stepWord(s) { return Math.abs(s) + (s < 0 ? " LEFT" : " RIGHT"); }
+  function clauseRow(cl) {
+    var steps = stepsOf(cl);
+    var cur = own(_p.shifts, cl.key) ? Number(_p.shifts[cl.key]) || 0 : 0;
+    var chips = steps.length === 1
+      ? [chip(stepWord(steps[0]), cur === steps[0], "clause-" + cl.key, function () { setShift(cl.key, cur ? 0 : steps[0]); })]
+      : [chip("OFF", !cur, "clause-" + cl.key + "-0", function () { setShift(cl.key, 0); })].concat(steps.map(function (s) {
+          return chip(stepWord(s), cur === s, "clause-" + cl.key + "-" + s, function () { setShift(cl.key, s); });
+        }));
+    return el("div.row.wrap", { style: { gap: "8px", alignItems: "flex-start", padding: "5px 0", borderBottom: "1px solid var(--border)" } }, [
+      el("div.row", { style: { gap: "4px", flex: "0 0 auto" } }, chips),
+      el("span.help", { style: { margin: 0, flex: "1 1 200px", minWidth: 0 }, text: cl.text })
+    ]);
+  }
+
+  function gridTable(q) {
+    var C = P().contract;
+    var head = el("tr", null, [el("th", { text: "Caliber" })].concat(C.columns.map(function (c) { return el("th", { text: c.name }); })));
+    var body = C.rows.map(function (r) {
+      var mine = r.caliber === q.caliber;
+      return el("tr", null, [el("td.mono", { style: { color: mine ? "var(--accent)" : "var(--text3)" }, text: String(r.caliber) })]
+        .concat(C.columns.map(function (c, i) {
+          var cell = cellOf(r, i);
+          var sel = mine && i === q.index, base = mine && q.shift !== 0 && c.key === q.base;
+          return el("td", {
+            dataset: { pay: "cell-" + r.caliber + "-" + c.key, sel: sel ? "1" : "0" },
+            title: "Quote Caliber " + r.caliber + ", " + c.name,
+            style: { cursor: "pointer", color: sel ? "var(--accent)" : mine ? "var(--text)" : "var(--text3)",
+                     fontWeight: sel ? 600 : 400, background: sel ? "rgba(255,255,255,.05)" : "transparent",
+                     outline: sel ? "1px solid var(--accent)" : base ? "1px dashed var(--border2)" : "none", outlineOffset: "-2px" },
+            // a click picks the base column; the clauses still shift it from there
+            onclick: function () {
+              _p.diff = c.key; _p.total = null;
+              if (r.caliber !== q.caliber) _p.cal = String(r.caliber);
+              refresh();
+            }
+          }, cell ? cell.text : "");
+        })));
+    });
+    return el("div", { style: { overflowX: "auto", margin: "10px 0 4px" } }, [
+      el("table.sktable", { style: { fontSize: "12.5px" } }, [el("thead", null, [head]), el("tbody", null, body)])
+    ]);
+  }
+
+  function incursionBox(m) {
+    var I = P().incursion;
+    if (!I) return null;
+    var q = m.q, r = parseInt(_p.inc, 10), kids = [];
+    var opts = [el("option", { value: "", selected: !r }, "Not an Incursion")];
+    P().contract.rows.forEach(function (row) {
+      opts.push(el("option", { value: String(row.caliber), selected: r === row.caliber }, "Rating " + row.caliber));
+    });
+    kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
+      label("INCURSION"),
+      el("select", { dataset: { pay: "inc-rating" }, style: { width: "auto", maxWidth: "100%" },
+        onchange: function (e) { _p.inc = e.target.value; refresh(); } }, opts)
+    ]));
+    if (r) {
+      var map = (I.ratingToColumn || []).filter(function (x) { return x.offset === r - q.caliber; })[0];
+      if (map && colIndex(map.col) >= 0) {
+        var cell = cellOf(rowAt(q.caliber), colIndex(map.col));
+        kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "6px" } }, [
+          el("span.help", { dataset: { pay: "inc-out" }, style: { margin: 0 },
+            text: "A rating " + r + " Incursion for a Caliber " + q.caliber + " crew prices as " + colName(map.col) +
+                  ": " + (cell ? cell.text : "no cell") + "." }),
+          q.base !== map.col ? el("button.btn.sm", { dataset: { pay: "inc-use" },
+            onclick: function () { _p.diff = map.col; _p.total = null; refresh(); } }, "PRICE AS " + colName(map.col).toUpperCase()) : null
+        ]));
+      } else {
+        var named = (I.ratingToColumn || []).map(function (x) {
+          return (x.offset === 0 ? "at the crew's Caliber" : x.offset + " " + plural(x.offset, "step") + " above it") + " (" + colName(x.col) + ")";
+        }).join(" or ");
+        kids.push(help("The book names a column only for a rating " + named + ". Price this one by hand.",
+          { color: "var(--warn)" }));
+      }
+    }
+    kids.push(fold("incursion", I.name, [help(I.text, { margin: 0 })]));
+    return el("div", { style: { marginTop: "12px", paddingTop: "10px", borderTop: "1px solid var(--border2)" } }, kids);
+  }
+
+  function contractPanel(m) {
+    var C = P().contract, q = m.q, kids = [];
+    kids.push(help(C.lead, { margin: "0 0 10px" }));
+    kids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginBottom: "6px" } },
+      [label("DIFFICULTY")].concat(C.columns.map(function (c) {
+        return chip(c.name, _p.diff === c.key, "diff-" + c.key, function () { _p.diff = c.key; _p.total = null; refresh(); });
+      }))));
+    kids.push(el("div", null, clauses().map(clauseRow)));
+    if (q.shift) {
+      kids.push(help("Clauses: " + Math.abs(q.shift) + " " + plural(Math.abs(q.shift), "column") + " " +
+        (q.shift > 0 ? "right" : "left") + " from " + q.baseName + ".", { color: "var(--text2)" }));
+    }
+    if (q.clamped) {
+      var o = Math.abs(q.over);
+      kids.push(el("p.help", { dataset: { pay: "clamp-note" }, style: { margin: "4px 0 0", color: "var(--warn)" },
+        text: "The clauses run " + o + " " + plural(o, "column") + " past the " + q.name + " edge of the grid, so the quote holds at " + q.name + "." }));
+    }
+    kids.push(gridTable(q));
+    kids.push(help(C.after, { margin: "0 0 10px" }));
+
+    // the quote: the printed band, its midpoint prefilled, and the total the GM settles on
+    var cell = q.cell, midText;
+    if (q.mid === null) midText = "This cell prints no Glimmer figure, so nothing is prefilled.";
+    else if (cell && cell.about) midText = "The page prints about " + fmtG(q.mid) + ", prefilled as the total.";
+    else midText = "The band's midpoint, " + fmtG(q.mid) + ", is prefilled as the total.";
+    var box = [
+      label("CALIBER " + q.caliber + DOT + q.name.toUpperCase()),
+      el("div", { dataset: { pay: "band" }, style: { fontSize: "18px", fontFamily: "var(--mono)", color: "var(--accent)", margin: "2px 0 8px" },
+        text: q.band || "No cell" }),
+      el("div.row.wrap", { style: { gap: "10px", alignItems: "flex-end" } }, [
+        field("Contract total " + G, numIn("total", m.typed ? _p.total : (q.mid === null ? "" : q.mid), "130px",
+          function (v) { _p.total = v; }, { min: "0" })),
+        field("Nexus " + NX, numIn("nexus", _p.nexus, "90px", function (v) { _p.nexus = v; }, { min: "0", step: "0.01" })),
+        m.typed ? el("button.btn.sm", { dataset: { pay: "total-reset" }, onclick: function () { _p.total = null; refresh(); } },
+          "BACK TO THE BAND") : null
+      ]),
+      help(midText)
+    ];
+    if (m.typed && cell && !cell.about && typeof cell.low === "number" && typeof cell.high === "number" &&
+        (m.contract < cell.low || m.contract > cell.high)) {
+      box.push(help("Outside the printed band of " + cell.text + ".", { color: "var(--warn)" }));
+    }
+    if (q.nexus === "or") box.push(el("p.help", { dataset: { pay: "nexus-note" }, style: { margin: "4px 0 0", color: "var(--gold)" },
+      text: "This cell prints a Glimmer figure or Nexus terms. If the client pays in Nexus, enter it under Nexus and set the Glimmer total to what is left." }));
+    if (q.nexus === "only") box.push(el("p.help", { dataset: { pay: "nexus-note" }, style: { margin: "4px 0 0", color: "var(--gold)" },
+      text: "This cell prints Nexus terms and no Glimmer figure. Enter the Nexus the client offers, and any Glimmer by hand." }));
+    kids.push(el("div.feature", { style: { borderLeftColor: "var(--accent)" } }, box));
+    kids.push(incursionBox(m));
+    return EN.ui.panel("Contract Pay", "CALIBER × DIFFICULTY", kids);
+  }
+
+  /* ---- 3. bounties ------------------------------------------------------ */
+  function addBounty(name, xp) {
+    _p.bounties.push({ id: lid("b"), name: String(name || "Target"), xp: String(glim(xp)), rate: defRate(), alive: false });
+    refresh();
+  }
+  function bountyLine(b, mb) {
+    var B = P().bounties, rates = [];
+    for (var r = B.perXpLow; r <= B.perXpHigh; r++) rates.push(r);
+    var mult = b.alive ? (Number(B.aliveMult) || 1) : 1;
+    return el("div.feature", { dataset: { bid: b.id }, style: { padding: "8px 10px" } }, [
+      el("div.row.between.wrap", { style: { gap: "8px", alignItems: "center" } }, [
+        el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
+          el("span", { style: { fontWeight: 600 }, text: b.name }),
+          numIn("bx-" + b.id, b.xp, "80px", function (v) { b.xp = v; }, { min: "0", title: "The Target's XP" }),
+          label("XP")
+        ]),
+        el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } }, rates.map(function (rt) {
+          return chip(G + rt + " / XP", Number(b.rate) === rt, "rate-" + b.id + "-" + rt, function () { b.rate = rt; refresh(); });
+        }).concat([
+          chip("ALIVE ×" + B.aliveMult, !!b.alive, "alive-" + b.id, function () { b.alive = !b.alive; refresh(); },
+            "Breathing delivery"),
+          el("span.mono", { dataset: { pay: "bval-" + b.id, v: String(mb.value) },
+            style: { fontSize: "16px", color: "var(--success)", minWidth: "76px", textAlign: "right" }, text: fmtG(mb.value) }),
+          el("button.btn.sm", { dataset: { pay: "bdel-" + b.id }, title: "Remove this bounty",
+            onclick: function () { _p.bounties = _p.bounties.filter(function (x) { return x.id !== b.id; }); refresh(); } }, "✕")
+        ]))
+      ]),
+      help("The range: " + fmtG(mb.xp * B.perXpLow * mult) + " to " + fmtG(mb.xp * B.perXpHigh * mult) +
+        (b.alive ? ", alive." : ", a kill.")),
+      mb.value > B.nexusAbove ? el("p.help", { dataset: { pay: "bnexus-" + b.id }, style: { margin: "4px 0 0", color: "var(--gold)" },
+        text: "Past " + fmtG(B.nexusAbove) + ". " + B.nexusText }) : null
+    ]);
+  }
+
+  function bountyPanel(m) {
+    var B = P().bounties, kids = [];
+    kids.push(help(B.paragraphs[0], { margin: "0 0 10px" }));
+    var srcs = [["encounter", "FROM THE ENCOUNTER"], ["bestiary", "FROM THE BESTIARY"], ["xp", "BY XP"]];
+    kids.push(el("div.row.wrap", { style: { gap: "6px", marginBottom: "8px" } }, srcs.map(function (s) {
+      return chip(s[1], _p.bSrc === s[0], "bsrc-" + s[0], function () { _p.bSrc = s[0]; refresh(); });
+    })));
+
+    var pick = [];
+    if (_p.bSrc === "encounter") {
+      // the encounter being paid, else the last one cleared, so a bounty can be priced before the rest
+      var src = _p.enc || gm.get().lastEncounter;
+      var ts = encThreats(src).map(threatInfo);
+      if (!ts.length) pick.push(help("No finished encounter with threats in it. Pick from the Bestiary or type the XP.", { margin: 0 }));
+      else {
+        var curE = ts.filter(function (t) { return t.id === _p.bEnc; })[0] || ts[0];
+        pick.push(el("select", { dataset: { pay: "bpick-enc" }, style: { width: "auto", maxWidth: "100%" },
+          onchange: function (e) { _p.bEnc = e.target.value; refresh(); } }, ts.map(function (t) {
+            return el("option", { value: t.id, selected: t.id === curE.id }, t.name + DOT + "G" + t.grade + DOT + commas(t.xp) + " XP");
+          })));
+        pick.push(el("button.btn.sm", { dataset: { pay: "badd-enc" }, onclick: function () { addBounty(curE.name, curE.xp); } }, "+ BOUNTY"));
+      }
+    } else if (_p.bSrc === "bestiary") {
+      var Bst = EN.bestiary, all = (Bst && Array.isArray(Bst.entries)) ? Bst.entries : [];
+      if (!all.length) pick.push(help("Bestiary data did not load.", { margin: 0 }));
+      else {
+        var curB = all.filter(function (e) { return e.name === _p.bBest; })[0] || all[0];
+        var groups = (Bst.categories || []).map(function (cat) {
+          return el("optgroup", { label: cat.name }, all.filter(function (e) { return e.category === cat.key; }).map(function (e) {
+            return el("option", { value: e.name, selected: e === curB },
+              e.name + DOT + "G" + e.grade + DOT + commas(EN.gmEngine.xpOf(e)) + " XP");
+          }));
+        });
+        pick.push(el("select", { dataset: { pay: "bpick-best" }, style: { width: "auto", maxWidth: "100%" },
+          onchange: function (e) { _p.bBest = e.target.value; refresh(); } }, groups));
+        pick.push(el("button.btn.sm", { dataset: { pay: "badd-best" },
+          onclick: function () { addBounty(curB.name, EN.gmEngine.xpOf(curB)); } }, "+ BOUNTY"));
+      }
+    } else {
+      pick.push(el("div", { style: { flex: "1 1 160px", minWidth: 0 } }, [
+        field("Target", textIn("bName", _p.bName, "Target", function (v) { _p.bName = v; }))]));
+      pick.push(field("XP", numIn("bXp", _p.bXp, "90px", function (v) { _p.bXp = v; }, { min: "0" })));
+      pick.push(el("button.btn.sm", { dataset: { pay: "badd-xp" }, onclick: function () {
+        if (!glim(_p.bXp)) { toast("Type the Target's XP first."); return; }
+        var n = (_p.bName || "").trim() || "Target", x = _p.bXp;
+        _p.bName = ""; _p.bXp = "";
+        addBounty(n, x);
+      } }, "+ BOUNTY"));
+    }
+    kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "flex-end", marginBottom: "8px" } }, pick));
+
+    if (!_p.bounties.length) kids.push(help("No bounties on this payday.", { margin: 0 }));
+    _p.bounties.forEach(function (b) {
+      var mb = m.bounties.filter(function (x) { return x.id === b.id; })[0];
+      if (mb) kids.push(bountyLine(b, mb));
+    });
+    if (_p.bounties.length) {
+      kids.push(el("div.row", { style: { justifyContent: "flex-end", gap: "8px", alignItems: "baseline", marginTop: "6px" } }, [
+        label("BOUNTIES"),
+        el("span.mono", { dataset: { pay: "bounty-total", v: String(m.bTotal) }, style: { fontSize: "16px" }, text: fmtG(m.bTotal) })
+      ]));
+    }
+    kids.push(fold("bounties", "The book on bounties", [help(B.paragraphs[1], { margin: 0 })].concat(
+      (B.examples || []).map(function (x) { return help(x.text); }))));
+    return EN.ui.panel("Bounties", "PRICED OFF THE TARGET'S XP", kids);
+  }
+
+  /* ---- 4. salvage and parts --------------------------------------------- */
+  function killRow(t) {
+    var src = sourceDef(t.source), band = bandOf(t.grade), e = t.entry, bits = [];
+    if (e && e.salvage) bits.push("Salvage: " + e.salvage);
+    if (t.source === "people" && e && e.gear) {
+      bits.push("Gear: " + e.gear + (src && src.fencePctLow ? " Fences pay " + src.fencePctLow + " to " + src.fencePctHigh + " percent for street kit." : ""));
+    }
+    if (t.source === "grid" && src && src.glimmerPerXp) bits.push("Code worth about " + fmtG(t.xp * src.glimmerPerXp) + " to the right buyer.");
+    if (t.source === "flow" && band) bits.push("Clean parts at G" + band.grade + ": " + band.text + DOT + band.buyers + ".");
+    if (!e) bits.push("A built threat: the Bestiary prints no salvage for it.");
+    return el("div", { style: { padding: "7px 0", borderBottom: "1px solid var(--border)" } }, [
+      el("div.row.between.wrap", { style: { gap: "8px", alignItems: "center" } }, [
+        el("div.row.wrap", { style: { gap: "8px", alignItems: "baseline" } }, [
+          el("span", { style: { fontWeight: 600 }, text: t.name }),
+          el("span.chip", { style: { fontSize: "9.5px" }, text: "G" + t.grade }),
+          src ? el("span.help", { style: { margin: 0 }, text: src.name }) : null
+        ]),
+        el("div.row", { style: { gap: "6px", alignItems: "center" } }, [
+          label(G),
+          numIn("sv-" + t.id, own(_p.salv, t.id) ? _p.salv[t.id] : "", "100px", function (v) { _p.salv[t.id] = v; },
+            { min: "0", placeholder: "value", title: "What it sold for, or will" })
+        ])
+      ])
+    ].concat(bits.map(function (b) { return help(b); })));
+  }
+
+  function salvagePanel(m) {
+    var S = P().salvage, A = P().claims && P().claims.salvage, kids = [];
+    kids.push(help(S.lead, { margin: "0 0 8px" }));
+
+    // the Grade bands; a Grade a Flow-side or cryptid kill in this encounter reached is lit
+    var lit = Object.create(null);
+    m.threats.forEach(function (t) { if (t.source === "flow") lit[t.grade] = true; });
+    var head = el("tr", null, [el("th", { text: "Grade of the kill" }), el("th", { text: "Clean parts value" }), el("th", { text: "The buyers" })]);
+    var rows = (S.bands || []).map(function (b) {
+      var on = !!lit[b.grade];
+      return el("tr", { dataset: { pay: "band-" + b.grade } }, [
+        el("td.mono", { style: { color: on ? "var(--accent)" : "var(--text3)" }, text: "G" + b.grade }),
+        el("td", { style: { color: on ? "var(--accent)" : "var(--text)" }, text: b.text }),
+        el("td", { style: { color: "var(--text2)" }, text: b.buyers })
+      ]);
+    });
+    kids.push(el("div", { style: { overflowX: "auto" } }, [
+      el("table.sktable", { style: { fontSize: "12.5px" } }, [el("thead", null, [head]), el("tbody", null, rows)])
+    ]));
+
+    if (m.threats.length) {
+      kids.push(EN.ui.sectionTitle("From the encounter"));
+      m.threats.forEach(function (t) { kids.push(killRow(t)); });
+    }
+
+    kids.push(EN.ui.sectionTitle("Other salvage"));
+    _p.salvage.forEach(function (s) {
+      kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", padding: "4px 0", borderBottom: "1px solid var(--border)" } }, [
+        el("span", { style: { flex: "1 1 160px", minWidth: 0 }, text: s.name || "Salvage" }),
+        label(G),
+        numIn("sl-" + s.id, s.value, "100px", function (v) { s.value = v; }, { min: "0" }),
+        el("button.btn.sm", { dataset: { pay: "sdel-" + s.id },
+          onclick: function () { _p.salvage = _p.salvage.filter(function (x) { return x.id !== s.id; }); refresh(); } }, "✕")
+      ]));
+    });
+    kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "flex-end", marginTop: "6px" } }, [
+      el("div", { style: { flex: "1 1 160px", minWidth: 0 } }, [
+        field("Item", textIn("sName", _p.sName, "A cryptid's gland, a drone's sensor suite", function (v) { _p.sName = v; }))]),
+      field("Value " + G, numIn("sValue", _p.sValue, "100px", function (v) { _p.sValue = v; }, { min: "0" })),
+      el("button.btn.sm", { dataset: { pay: "sadd" }, onclick: function () {
+        if (!glim(_p.sValue)) { toast("Type what it is worth first."); return; }
+        _p.salvage.push({ id: lid("s"), name: (_p.sName || "").trim() || "Salvage", value: String(glim(_p.sValue)) });
+        _p.sName = ""; _p.sValue = "";
+        refresh();
+      } }, "+ ADD")
+    ]));
+
+    // the salvage award: an owner's property recovered from an Incursion
+    if (A) {
+      var lo = Number(A.awardPctLow) || 0, hi = Number(A.awardPctHigh) || 100;
+      var typedPct = _p.awPct === "" ? midOf(lo, hi) : Number(_p.awPct);
+      var pct = Math.max(lo, Math.min(hi, isFinite(typedPct) ? typedPct : lo));
+      var award = Math.floor(glim(_p.awValue) * pct / 100);
+      kids.push(EN.ui.sectionTitle(A.name + " award"));
+      kids.push(help(cap(A.awardText) + ".", { margin: "0 0 6px" }));
+      kids.push(el("div.row.wrap", { style: { gap: "10px", alignItems: "flex-end" } }, [
+        field("Item value " + G, numIn("awValue", _p.awValue, "110px", function (v) { _p.awValue = v; }, { min: "0" })),
+        field("Percent", numIn("awPct", _p.awPct, "70px", function (v) { _p.awPct = v; },
+          { min: String(lo), max: String(hi), placeholder: String(midOf(lo, hi)) })),
+        money("AWARD", award, fmtG(award), "var(--success)", "award"),
+        el("button.btn.sm", { dataset: { pay: "award-add" }, onclick: function () {
+          if (!award) { toast("Type the item's value first."); return; }
+          _p.salvage.push({ id: lid("s"), name: A.name + " award, " + pct + " percent of " + fmtG(glim(_p.awValue)), value: String(award) });
+          _p.awValue = ""; _p.awPct = "";
+          refresh();
+        } }, "+ ADD AS SALVAGE")
+      ]));
+      if (_p.awPct !== "" && pct !== typedPct) {
+        kids.push(help("Held to the book's " + lo + " to " + hi + " percent.", { color: "var(--warn)" }));
+      }
+    }
+
+    kids.push(el("div.row", { style: { justifyContent: "flex-end", gap: "8px", alignItems: "baseline", marginTop: "10px" } }, [
+      label("SALVAGE"),
+      el("span.mono", { dataset: { pay: "salv-total", v: String(m.sTotal) }, style: { fontSize: "16px" }, text: fmtG(m.sTotal) })
+    ]));
+    var ref = (S.sources || []).map(function (s) {
+      var p = el("p.help", { style: { margin: "0 0 6px" } });
+      p.appendChild(el("span", { style: { fontWeight: 600 }, text: s.name + ". " }));
+      p.appendChild(document.createTextNode(s.text));
+      return p;
+    });
+    if (S.guidance) ref.push(help(S.guidance.label + ": " + S.guidance.text, { color: "var(--accent)" }));
+    if (A && A.paragraphs) A.paragraphs.forEach(function (t) { ref.push(help(t)); });
+    kids.push(fold("salvage", "What threats leave", ref));
+    return EN.ui.panel("Salvage and Parts", "BY THE GRADE OF THE KILL", kids);
+  }
+
+  /* ---- 5. the split ----------------------------------------------------- */
+  function splitPanel(m) {
+    var C = P().contract, sp = m.split, ss = m.sSplit, kids = [];
+    var flo = Number(C.fixerPctLow), fhi = Number(C.fixerPctHigh);
+    kids.push(el("div.row.wrap", { style: { gap: "10px", alignItems: "flex-end", marginBottom: "10px" } }, [
+      field("Fixer %", numIn("fixer", _p.fixer, "70px", function (v) { _p.fixer = v; }, { min: "0", max: "100" })),
+      field("Crew Kit %", numIn("kit", _p.kit, "70px", function (v) { _p.kit = v; }, { min: "0", max: "100" })),
+      el("div", { style: { paddingBottom: "7px" } }, [
+        label("HEADCOUNT "),
+        el("span.mono", { dataset: { pay: "split-hc", v: String(m.crew.headcount) }, text: String(m.crew.headcount) })
+      ])
+    ]));
+    if (sp.fixerPct < flo || sp.fixerPct > fhi) {
+      kids.push(help("Outside the book's " + flo + " to " + fhi + " percent for a fixer.", { color: "var(--warn)", margin: "0 0 8px" }));
+    }
+    kids.push(el("div.row.wrap", { style: { gap: "14px", alignItems: "center" } }, [
+      money("THROUGH THE FIXER", sp.total, fmtG(sp.total), "var(--text)", "split-total"),
+      money("FIXER", sp.fixer, fmtG(sp.fixer), "var(--ember, var(--danger))", "split-fixer"),
+      money("CREW KIT", sp.kit, fmtG(sp.kit), "var(--flow, var(--accent))", "split-kit"),
+      money("EACH SHARE", sp.each, fmtG(sp.each), "var(--success)", "split-each"),
+      money("LEFT OVER", sp.over, fmtG(sp.over), sp.over ? "var(--gold)" : "var(--text3)", "split-over")
+    ]));
+    if (m.sTotal > 0) {
+      kids.push(el("div.row.wrap", { style: { gap: "14px", alignItems: "center", marginTop: "10px" } }, [
+        money("SALVAGE", ss.total, fmtG(ss.total), "var(--text)", "ssplit-total"),
+        money("CREW KIT", ss.kit, fmtG(ss.kit), "var(--flow, var(--accent))", "ssplit-kit"),
+        money("EACH SHARE", ss.each, fmtG(ss.each), "var(--success)", "ssplit-each"),
+        money("LEFT OVER", ss.over, fmtG(ss.over), ss.over ? "var(--gold)" : "var(--text3)", "ssplit-over")
+      ]));
+    }
+    var per = [money("EACH FREELANCER", m.eachG, fmtG(m.eachG), "var(--success)", "each-g")];
+    if (m.nexus > 0) {
+      per.push(money("NEXUS EACH", m.nexEach, fmtNx(m.nexEach), "var(--gold)", "each-nx"));
+      if (m.nexOver > 0) per.push(money("NEXUS LEFT OVER", m.nexOver, fmtNx(m.nexOver), "var(--gold)", "nx-over"));
+    }
+    kids.push(el("div.row.wrap", { style: { gap: "14px", alignItems: "center", marginTop: "12px", paddingTop: "10px",
+                                            borderTop: "1px solid var(--border2)" } }, per));
+    if (sp.clamped) kids.push(help("A percentage past 0 to 100 was held at the edge, so no share can go below nothing.", { color: "var(--warn)" }));
+    if (!m.crew.headcount) kids.push(help("No crew yet, so the split is for one. Set a headcount above.", { color: "var(--warn)" }));
+    if (sp.over) kids.push(help(fmtG(sp.over) + " does not divide evenly.", { color: "var(--gold)" }));
+    kids.push(help("The fixer's cut comes off the client's money, the contract and any bounties. Salvage is the crew's own sale and splits without it; the Crew Kit's percent applies to both."));
+    if (EN.economy && EN.economy.splitNote) kids.push(help(EN.economy.splitNote));
+
+    // the payday checklist, the book's own order
+    var D = P().payday;
+    if (D && Array.isArray(D.steps)) {
+      kids.push(EN.ui.sectionTitle("Payday, in the book's order"));
+      D.steps.forEach(function (s, i) {
+        var on = _p.steps.indexOf(i) !== -1;
+        kids.push(el("label", { style: { display: "flex", gap: "8px", alignItems: "flex-start", padding: "3px 0", cursor: "pointer",
+                                         color: on ? "var(--text3)" : "var(--text)", textDecoration: on ? "line-through" : "none" } }, [
+          el("input", { type: "checkbox", checked: on, dataset: { pay: "step-" + i }, onchange: function () {
+            if (on) _p.steps = _p.steps.filter(function (x) { return x !== i; }); else _p.steps.push(i);
+            refresh();
+          } }),
+          el("span", { text: (i + 1) + ". " + cap(s) })
+        ]));
+      });
+    }
+    return EN.ui.panel("The Split", "FIXER" + DOT + "CREW KIT" + DOT + "SHARES", kids);
+  }
+
+  /* ---- 6. experience ---------------------------------------------------- */
+  function xpPanel(m) {
+    var X = P().xp, kids = [];
+    if (!_p.enc) kids.push(help("No encounter is being paid. Use the last encounter above, or enter an objective award.", { margin: "0 0 8px" }));
+    m.threats.forEach(function (t) {
+      var on = _p.noXp.indexOf(t.id) === -1;
+      kids.push(el("label", { style: { display: "flex", gap: "8px", alignItems: "center", padding: "3px 0", cursor: "pointer" } }, [
+        el("input", { type: "checkbox", checked: on, dataset: { pay: "xp-" + t.id }, onchange: function () {
+          if (on) _p.noXp.push(t.id); else _p.noXp = _p.noXp.filter(function (x) { return x !== t.id; });
+          refresh();
+        } }),
+        el("span", { style: { flex: "1 1 auto", textDecoration: on ? "none" : "line-through", color: on ? "var(--text)" : "var(--text3)" },
+          text: t.name }),
+        el("span.mono", { style: { fontSize: "12px" }, text: commas(t.xp) + " XP" })
+      ]));
+    });
+    var OA = X.objectiveAward || {};
+    kids.push(el("div.row.wrap", { style: { gap: "10px", alignItems: "flex-end", marginTop: "8px" } }, [
+      field("Objective award", numIn("objXp", _p.objXp, "100px", function (v) { _p.objXp = v; },
+        { min: "0", placeholder: commas(OA.min) + " to " + commas(OA.max) })),
+      money("EACH FREELANCER", m.xpTotal, commas(m.xpTotal) + " XP", "var(--accent)", "xp-total")
+    ]));
+    if (OA.minText) kids.push(help(cap(OA.minText) + ", " + OA.maxText + "."));
+    // the Table's AWARD XP already paid this fight's XP: say so, and write it again only on the GM's word
+    if (m.tAward) {
+      kids.push(el("div.feature", { dataset: { pay: "xp-awarded" }, style: { borderLeftColor: "var(--warn)", marginTop: "8px" } }, [
+        el("p", { style: { margin: 0, color: "var(--warn)", fontWeight: 600 },
+          text: "The Table already awarded " + commas(m.tAward.total) + " XP for this fight" +
+                (m.tAward.names.length ? " to " + m.tAward.names.join(", ") : "") + "." }),
+        help(_p.xpAgain ? "CREDIT THE CREW writes the XP again, on top of that award."
+                        : "CREDIT THE CREW leaves XP out, so it is not paid twice.", { margin: "3px 0 0" }),
+        el("div.row.wrap", { style: { gap: "6px", marginTop: "6px" } }, [
+          chip("WRITE XP HERE TOO", _p.xpAgain, "xp-again", function () { _p.xpAgain = !_p.xpAgain; refresh(); },
+            "Credit this XP as well as the Table's award")
+        ])
+      ]));
+    }
+    var onXp = m.credit.filter(function (x) { return x.useXp; }), ms = m.credit.filter(function (x) { return !x.useXp; });
+    if (m.credit.length) {
+      kids.push(help(onXp.length ? "On XP, each takes the full total: " + onXp.map(function (x) { return x.name; }).join(", ") + "."
+                                 : "Nobody here is on XP.", { color: "var(--text2)" }));
+      if (ms.length) kids.push(el("p.help", { dataset: { pay: "xp-skip" }, style: { margin: "4px 0 0", color: "var(--text2)" },
+        text: "On milestones, so no XP is written: " + ms.map(function (x) { return x.name; }).join(", ") + "." }));
+    }
+    kids.push(fold("xp", "The book on XP", [help(X.text, { margin: 0 }), help(X.milestone)]));
+    return EN.ui.panel("Experience", "EVERY FREELANCER, THE FULL TOTAL", kids);
+  }
+
+  /* ---- 7. the Other Ledger ---------------------------------------------- */
+  function ledgerPanel() {
+    var L = P().ledger, kids = [help(L.text, { margin: "0 0 8px" })];
+    (L.lines || []).forEach(function (line) {
+      if (line.key !== "cred" && line.key !== "heat") return;
+      kids.push(el("div", { style: { marginTop: "6px" } }, [
+        field(line.name, textIn(line.key, _p[line.key], line.example, function (v) { _p[line.key] = v; }))
+      ]));
+    });
+    return EN.ui.panel(L.name, "ONE LINE EACH", kids);
+  }
+
+  /* ---- 8. the payday: summary, save, credit, undo ----------------------- */
+  function signed(n) { return n > 0 ? "+" + n : String(n); }
+  function summaryText(m) {
+    var L = [], q = m.q, sp = m.split, ss = m.sSplit;
+    L.push("PAYDAY: " + m.title);
+    var names = m.crew.members.map(function (x) { return x.name; });
+    L.push("Crew: " + m.crew.headcount + " at Caliber " + m.crew.caliber + (names.length ? " (" + names.join(", ") + ")" : "") + ".");
+    L.push("Contract: " + q.name + " at Caliber " + q.caliber +
+      (q.shift ? " (from " + q.baseName + ", clauses " + signed(q.shift) + (q.clamped ? ", held at the grid's edge" : "") + ")" : "") +
+      ", printed " + q.band + ". Total " + fmtG(m.contract) + ".");
+    if (m.nexus > 0) L.push("Nexus: " + fmtNx(m.nexus) + ".");
+    m.bounties.forEach(function (b) {
+      L.push("Bounty: " + b.name + ", " + commas(b.xp) + " XP at " + fmtG(b.rate) + " per XP" + (b.alive ? ", alive" : "") + ": " + fmtG(b.value) + ".");
+    });
+    m.salvage.forEach(function (s) { L.push("Salvage: " + s.name + ": " + fmtG(s.value) + "."); });
+    L.push("Split: " + fmtG(sp.total) + " through the fixer. Fixer " + sp.fixerPct + " percent, " + fmtG(sp.fixer) +
+      ". Crew Kit " + sp.kitPct + " percent, " + fmtG(sp.kit) + ". " + fmtG(sp.each) + " each, " + fmtG(sp.over) + " left over.");
+    if (m.sTotal > 0) {
+      L.push("Salvage split: " + fmtG(ss.total) + (ss.kit ? ", Crew Kit " + fmtG(ss.kit) : "") + ". " +
+        fmtG(ss.each) + " each, " + fmtG(ss.over) + " left over.");
+    }
+    L.push("Each Freelancer: " + fmtG(m.eachG) + (m.nexEach > 0 ? " and " + fmtNx(m.nexEach) : "") + ".");
+    if (m.xpTotal > 0) {
+      L.push("XP: " + commas(m.xpTotal) + " to every Freelancer on XP" +
+        (m.tAward && !m.xpWrite ? ", already awarded at the Table." : ". Milestone tables skip it."));
+    }
+    if ((_p.cred || "").trim()) L.push("Cred: " + _p.cred.trim());
+    if ((_p.heat || "").trim()) L.push("Heat: " + _p.heat.trim());
+    return L.join("\n");
+  }
+  // the #POST pay stub: what this one Freelancer got, in their own inbox
+  function stubText(m, x) {
+    var L = ["Payday: " + m.title, "Your share: " + fmtG(m.eachG)];
+    if (m.nexEach > 0) L.push("Nexus: " + fmtNx(m.nexEach));
+    if (m.xpTotal > 0) {
+      L.push(!x.useXp ? "XP: none, you level on milestones"
+        : m.xpWrite > 0 ? "XP: " + commas(m.xpWrite) : "XP: " + commas(m.xpTotal) + ", awarded at the Table");
+    }
+    if ((_p.cred || "").trim()) L.push("Cred: " + _p.cred.trim());
+    if ((_p.heat || "").trim()) L.push("Heat: " + _p.heat.trim());
+    return L.join("\n");
+  }
+  function opsFor(m, x, now) {
+    var ops = [];
+    if (m.eachG > 0) ops.push({ op: "glimmer", amount: m.eachG });
+    if (m.nexEach > 0) ops.push({ op: "nexus", amount: m.nexEach });
+    // D5, and only on an XP table: a milestone record never takes XP. xpWrite is
+    // 0 when the Table's AWARD XP already paid this fight's (see tableAward)
+    if (x.useXp && m.xpWrite > 0) ops.push({ op: "xp", amount: m.xpWrite });
+    if (_p.stub) ops.push({ op: "post", mail: { from: "Payroll", subj: "Payday: " + m.title, when: clock(now), body: stubText(m, x) } });
+    return ops;
+  }
+  function recordFrom(m) {
+    return {
+      kind: "payday", at: Date.now(), jobId: _p.jobId || null, title: m.title,
+      // the fight this payday paid, by its snapshot's stamp: the Table's XP award reads it to avoid paying XP twice
+      encounterAt: (_p.enc && typeof _p.enc.at === "number") ? _p.enc.at : null,
+      crew: m.credit.map(function (x) { return { charId: x.charId, name: x.name }; }),
+      headcount: m.crew.headcount,
+      contract: { caliber: m.q.caliber, difficulty: m.q.key, base: m.q.base, shifts: copy(_p.shifts) || {}, shift: m.q.shift,
+                  clamped: m.q.clamped, band: m.q.band, total: m.contract, nexus: m.nexus },
+      bounties: { lines: copy(m.bounties), total: m.bTotal },
+      salvage: { lines: copy(m.salvage), total: m.sTotal, split: copy(m.sSplit) },
+      fixerPct: m.split.fixerPct, kitPct: m.split.kitPct,
+      split: copy(m.split),
+      nexus: { total: m.nexus, each: m.nexEach, over: m.nexOver },
+      each: { glimmer: m.eachG, nexus: m.nexEach },
+      xp: { total: m.xpTotal, each: m.xpTotal, objective: m.xpObj, written: m.xpWrite,
+            tableAward: m.tAward ? m.tAward.total : 0 },
+      ledgerLines: { cred: (_p.cred || "").trim(), heat: (_p.heat || "").trim() },
+      writeIds: [], credited: false, undone: false,
+      summary: summaryText(m),
+      form: copy(_p)
+    };
+  }
+
+  function savePayday() {
+    var m = model(), prev = m.rec;
+    if (m.paid) { toast("This payday is credited. Undo it, or start a new payday."); return; }
+    var r = recordFrom(m);
+    if (prev) r.id = prev.id;
+    _p.paydayId = gm.put("ledger", r, { silent: true });
+    toast("Payday saved: " + m.title + ".");
+    EN.app.render();
+  }
+
+  /* A paid job is marked paid with this payday's id; what it said before is
+     kept on the payday, so UNDO PAYDAY can put it back exactly. */
+  function markJobPaid(pdId) {
+    var j = job();
+    if (!j) return null;
+    var prev = { status: typeof j.status === "string" ? j.status : "", paydayId: typeof j.paydayId === "string" ? j.paydayId : null };
+    var next = copy(j);
+    next.status = "paid";
+    next.paydayId = pdId;
+    gm.put("jobs", next, { silent: true });
+    return prev;
+  }
+  function unmarkJob(pd) {
+    if (typeof pd.jobId !== "string" || !pd.jobId) return;
+    var j = gm.rec("jobs", pd.jobId);
+    if (!j || j.paydayId !== pd.id) return;
+    var prev = isObj(pd.jobPrev) ? pd.jobPrev : null, next = copy(j);
+    next.status = (prev && prev.status) ? prev.status : "done";
+    next.paydayId = (prev && prev.paydayId) ? prev.paydayId : null;
+    gm.put("jobs", next, { silent: true });
+  }
+
+  /* CREDIT THE CREW (D1). One writeCrew per Freelancer: their share of Glimmer,
+     their share of Nexus, the full XP if their record is on XP, and the pay
+     stub. Each write is its own ledger record, and the payday keeps their ids,
+     which is what UNDO PAYDAY walks back. */
+  function credit() {
+    var m = model();
+    if (m.paid) { toast("This payday is already credited."); return; }
+    if (!m.credit.length) { toast("Nobody on this device to credit. Copy the summary instead."); return; }
+    var label = "Payday: " + m.title, now = Date.now(), ids = [], paid = [], refused = [];
+    m.credit.forEach(function (x) {
+      var ops = opsFor(m, x, now);
+      if (!ops.length) return;
+      var id = gm.writeCrew(x.charId, label, ops);
+      if (id) { ids.push(id); paid.push(x); } else refused.push(x.name);
+    });
+    if (!ids.length) {
+      toast(refused.length ? "Nothing was written: the records refused it." : "Nothing to credit on this payday.");
+      EN.app.render();
+      return;
+    }
+    var pdId = m.rec ? m.rec.id : gm.uid();
+    _p.paydayId = pdId;
+    var jobPrev = markJobPaid(pdId);
+    var r = recordFrom(m);
+    r.id = pdId;
+    r.crew = paid.map(function (x) { return { charId: x.charId, name: x.name }; });
+    r.writeIds = ids;
+    r.credited = true;
+    r.creditedAt = now;
+    r.jobPrev = jobPrev;
+    gm.put("ledger", r, { silent: true });
+    var xpN = paid.filter(function (x) { return x.useXp; }).length;
+    toast("Credited " + paid.length + " " + plural(paid.length, "Freelancer") + ": " + fmtG(m.eachG) + " each" +
+      (m.nexEach > 0 ? ", " + fmtNx(m.nexEach) + " Nexus" : "") +
+      (m.xpWrite > 0 && xpN ? ", " + commas(m.xpWrite) + " XP to " + xpN + " on XP" : "") +
+      (_p.stub ? ", and a pay stub" : "") + (refused.length ? ". Refused: " + refused.join(", ") : "") + ".");
+    EN.app.render();
+  }
+
+  // UNDO PAYDAY is live while the newest undoable write is one of this payday's
+  function canUndo(pd) {
+    if (!pd || !Array.isArray(pd.writeIds) || !pd.writeIds.length) return false;
+    var u = gm.undoable();
+    return !!(u && pd.writeIds.indexOf(u.id) !== -1);
+  }
+  function undoPayday(pdId) {
+    var pd = gm.rec("ledger", pdId);
+    if (!canUndo(pd)) { toast("A newer write sits on top of this payday. Undo that first."); return; }
+    var n = 0, guard = 0;
+    while (canUndo(pd) && guard < 500) {
+      guard += 1;
+      if (!gm.undoLast()) break;
+      n += 1;
+    }
+    // a write to a record deleted since went with the record; it is not left to undo
+    var roster = (EN.store.roster && EN.store.roster()) || {};
+    var left = pd.writeIds.filter(function (id) {
+      var w = gm.rec("ledger", id);
+      return w && !w.undone && own(roster, w.charId);
+    });
+    var next = copy(pd);
+    if (!left.length) {
+      next.undone = true;
+      next.undoneAt = Date.now();
+      next.credited = false;
+      unmarkJob(pd);
+    }
+    gm.put("ledger", next, { silent: true });
+    toast(left.length ? "Undid " + n + " of " + pd.writeIds.length + " writes. A newer write sits on top of the rest."
+                      : "Payday undone: " + n + " " + plural(n, "record") + " put back as they were.");
+    EN.app.render();
+  }
+
+  function openPayday(pd) {
+    _p = restoreForm(pd.form);
+    if (!isObj(pd.form)) { _p.title = String(pd.title || ""); _p.jobId = typeof pd.jobId === "string" ? pd.jobId : null; }
+    _p.paydayId = pd.id;
+  }
+
+  function summaryPanel(m) {
+    var kids = [], rec = m.rec, text = summaryText(m);
+    if (rec && rec.credited && !rec.undone) {
+      kids.push(el("div.feature", { dataset: { pay: "credited" }, style: { borderLeftColor: "var(--success)" } }, [
+        el("div.row.between.wrap", { style: { gap: "8px", alignItems: "center" } }, [
+          el("span", { style: { color: "var(--success)", fontWeight: 600 },
+            text: "Credited " + stamp(rec.creditedAt || rec.at) + " to " + (rec.crew || []).length + " " + plural((rec.crew || []).length, "Freelancer") + "." }),
+          canUndo(rec) ? el("button.btn.sm.danger", { dataset: { pay: "undo-payday" }, onclick: function () { undoPayday(rec.id); } }, "↶ UNDO PAYDAY")
+                       : el("span.help", { style: { margin: 0 }, text: "A newer write sits on top, so this payday can no longer be undone from here." })
+        ]),
+        help("Changes made below now are not paid. Undo the payday to change it, or start a new one.")
+      ]));
+    } else if (rec && rec.undone) {
+      kids.push(help("This payday was credited and then undone. Credit it again when it is right.", { color: "var(--text2)", margin: "0 0 8px" }));
+    }
+
+    kids.push(el("div.mono", { dataset: { pay: "summary" },
+      style: { whiteSpace: "pre-wrap", fontSize: "12px", lineHeight: "1.5", background: "var(--bg2)", border: "1px solid var(--border2)",
+               borderRadius: "4px", padding: "10px 12px", userSelect: "text", overflowWrap: "anywhere" }, text: text }));
+    kids.push(el("div.row.wrap", { style: { gap: "8px", marginTop: "8px" } }, [
+      el("button.btn.sm", { dataset: { pay: "copy" }, onclick: function () { copyText(text, "The payday summary"); } }, "COPY")
+    ]));
+
+    // who gets credited on this device
+    kids.push(EN.ui.sectionTitle("Credit the crew"));
+    var all = m.crew.members, roster = (EN.store.roster && EN.store.roster()) || {};
+    if (!all.length) kids.push(help("No Freelancer records on this device. Copy the summary to the crew instead.", { margin: 0 }));
+    all.forEach(function (x) {
+      var on = _p.noCredit.indexOf(x.charId) === -1;
+      var ch = roster[x.charId], onXp = !!(ch && ch.useXp === true);
+      var gets = fmtG(m.eachG) + (m.nexEach > 0 ? DOT + fmtNx(m.nexEach) : "") +
+        (m.xpTotal > 0 ? DOT + (!onXp ? "milestones, no XP" : m.xpWrite > 0 ? commas(m.xpWrite) + " XP" : "XP already awarded") : "");
+      kids.push(el("label", { style: { display: "flex", gap: "8px", alignItems: "center", padding: "3px 0", cursor: "pointer", flexWrap: "wrap" } }, [
+        el("input", { type: "checkbox", checked: on, dataset: { pay: "cc-" + x.charId }, onchange: function () {
+          if (on) _p.noCredit.push(x.charId); else _p.noCredit = _p.noCredit.filter(function (k) { return k !== x.charId; });
+          refresh();
+        } }),
+        el("span", { style: { fontWeight: 600, color: on ? "var(--text)" : "var(--text3)" }, text: x.name }),
+        el("span.help", { style: { margin: 0 }, text: on ? gets : "not credited here" })
+      ]));
+    });
+    if (m.credit.length && m.credit.length !== m.crew.headcount) {
+      kids.push(help("The split is for " + m.crew.headcount + "; " + m.credit.length + " " + plural(m.credit.length, "is", "are") +
+        " credited here. Copy the summary for the rest.", { color: "var(--warn)" }));
+    }
+    kids.push(el("div.row.wrap", { style: { gap: "6px", marginTop: "8px", alignItems: "center" } }, [
+      chip("#POST PAY STUB " + (_p.stub ? "ON" : "OFF"), _p.stub, "stub", function () { _p.stub = !_p.stub; refresh(); },
+        "Also file a pay stub in each credited Freelancer's #POST")
+    ]));
+
+    var canCredit = !m.paid && m.credit.length > 0;
+    var creditBtn;
+    if (canCredit) {
+      creditBtn = EN.ui.armButton("pay:credit", {
+        cls: ".btn.sm", label: "CREDIT THE CREW", armedLabel: "CREDIT " + m.credit.length + "?",
+        title: "Write each share to the crew's records", armedTitle: "Writes Glimmer, Nexus, XP and the pay stub to " + m.credit.length +
+          " " + plural(m.credit.length, "record") + ". UNDO PAYDAY puts them back.",
+        onConfirm: credit
+      });
+      creditBtn.setAttribute("data-pay", "credit");
+      if (!EN.ui.isArmed("pay:credit")) { creditBtn.style.color = "var(--success)"; creditBtn.style.borderColor = "var(--success)"; }
+    } else {
+      creditBtn = el("button.btn.sm", { disabled: true, dataset: { pay: "credit" },
+        title: m.paid ? "Already credited" : "Nobody on this device to credit" }, m.paid ? "CREDITED" : "CREDIT THE CREW");
+    }
+    // a new payday keeps the GM's fixer and Crew Kit percentages and the stub choice
+    var newBtn = EN.ui.armButton("pay:new", { label: "NEW PAYDAY", armedLabel: "CLEAR THE FORM?",
+      armedTitle: "Clears this form. Saved and credited paydays stay in the list below.",
+      onConfirm: function () {
+        var keep = { fixer: _p.fixer, kit: _p.kit, stub: _p.stub };
+        _p = fresh();
+        _p.fixer = keep.fixer; _p.kit = keep.kit; _p.stub = keep.stub;
+        EN.app.render();
+      } });
+    newBtn.setAttribute("data-pay", "new-payday");
+    kids.push(el("div.row.wrap", { style: { gap: "8px", marginTop: "10px" } }, [
+      el("button.btn.sm.primary", { dataset: { pay: "save-payday" }, disabled: m.paid,
+        title: m.paid ? "Already credited" : "File this payday in the ledger without writing to anyone",
+        onclick: savePayday }, rec ? "SAVE CHANGES" : "SAVE PAYDAY"),
+      creditBtn,
+      newBtn
+    ]));
+    return EN.ui.panel("Payday", m.paid ? "CREDITED" : (rec ? "SAVED" : "NOT SAVED"), kids, { glow: m.paid });
+  }
+
+  /* ---- 9. past paydays -------------------------------------------------- */
+  function pastPanel() {
+    var list = gm.list("ledger").filter(function (r) { return r && r.kind === "payday"; });
+    if (!list.length) return null;
+    var kids = list.map(function (pd) {
+      var live = pd.credited && !pd.undone;
+      var st = live ? ["CREDITED", "var(--success)"] : pd.undone ? ["UNDONE", "var(--text3)"] : ["SAVED", "var(--accent)"];
+      var c = pd.contract || {}, each = pd.each || {};
+      var current = pd.id === _p.paydayId;
+      var del = live ? null : EN.ui.armButton("pay:del:" + pd.id, { label: "✕", armedLabel: "DELETE?",
+        title: "Delete this payday record", armedTitle: "Deletes the record only. Nothing on the crew's records changes.",
+        onConfirm: function () {
+          gm.drop("ledger", pd.id, { silent: true });
+          if (_p.paydayId === pd.id) _p.paydayId = null;
+          EN.app.render();
+        } });
+      if (del) del.setAttribute("data-pay", "pd-del-" + pd.id);
+      return el("div.row.between.wrap", { dataset: { pay: "pd-" + pd.id },
+        style: { gap: "8px", alignItems: "center", padding: "6px 0", borderBottom: "1px solid var(--border)" } }, [
+        el("div.row.wrap", { style: { gap: "8px", alignItems: "baseline" } }, [
+          el("span", { style: { fontWeight: 600 }, text: pd.title || "Payday" }),
+          el("span.chip", { style: { fontSize: "9.5px", color: st[1], borderColor: st[1] }, text: st[0] }),
+          current ? el("span.chip", { style: { fontSize: "9.5px" }, text: "OPEN" }) : null,
+          el("span.help", { style: { margin: 0 }, text: stamp(pd.at) + DOT + "contract " + fmtG(c.total) + DOT +
+            fmtG(each.glimmer) + " each" + DOT + (pd.crew || []).length + " credited" })
+        ]),
+        el("div.row", { style: { gap: "6px" } }, [
+          current ? null : el("button.btn.sm", { dataset: { pay: "pd-open-" + pd.id },
+            onclick: function () { openPayday(pd); EN.app.render(); } }, "OPEN"),
+          el("button.btn.sm", { onclick: function () { copyText(pd.summary || "", "The payday summary"); } }, "COPY"),
+          canUndo(pd) ? el("button.btn.sm.danger", { dataset: { pay: "pd-undo-" + pd.id },
+            onclick: function () { undoPayday(pd.id); } }, "↶ UNDO") : null,
+          del
+        ])
+      ]);
+    });
+    return EN.ui.panel("Past Paydays", list.length + " IN THE LEDGER", kids);
+  }
+
+  /* ---- handoff and render ----------------------------------------------- */
+  /* { jobId, encounter, xp } from the Job Board's PAY THIS JOB or the Encounters
+     XP award (`xp` is that card's {objective, skip}, see takeEncounter). A
+     handoff starts a fresh payday (the GM's fixer and Crew Kit percentages and
+     the stub choice carry over), except that a job already paid opens its own
+     payday instead of starting a second one. */
+  function takePayload(h) {
+    var keep = { fixer: _p.fixer, kit: _p.kit, stub: _p.stub };
+    var jid = (typeof h.jobId === "string" && h.jobId) ? h.jobId : null;
+    var j = jid ? gm.rec("jobs", jid) : null;
+    if (j && typeof j.paydayId === "string" && j.paydayId) {
+      var pd = gm.rec("ledger", j.paydayId);
+      if (pd && pd.kind === "payday" && pd.credited && !pd.undone) {
+        openPayday(pd);
+        toast("This job is already paid. Its payday is open.");
+        return;
+      }
+    }
+    _p = fresh();
+    _p.fixer = keep.fixer; _p.kit = keep.kit; _p.stub = keep.stub;
+    if (jid) _p.jobId = jid;
+    if (j && typeof j.title === "string") _p.title = j.title;
+    if (isObj(h.encounter) && Array.isArray(h.encounter.entries)) takeEncounter(h.encounter, isObj(h.xp) ? h.xp : null);
+  }
+
+  /* Typing refreshes THIS tab in place and puts the caret back where it was:
+     the form is module state, not the store, so nothing else needs to redraw. */
+  function refresh() {
+    if (!_mount || !document.body.contains(_mount)) { EN.app.render(); return; }
+    var a = document.activeElement, key = (a && a.getAttribute) ? a.getAttribute("data-pf") : null, s0 = null, s1 = null;
+    if (key) { try { s0 = a.selectionStart; s1 = a.selectionEnd; } catch (e) { s0 = null; } }
+    var sx = window.scrollX, sy = window.scrollY;
+    render(_mount);
+    window.scrollTo(sx, sy);
+    if (key) {
+      var n = _mount.querySelector('[data-pf="' + key + '"]');
+      if (n) {
+        try { n.focus({ preventScroll: true }); } catch (e) { n.focus(); }
+        if (typeof s0 === "number") { try { n.setSelectionRange(s0, s1); } catch (e) {} }
+      }
+    }
+    if (EN.ui.substituteCurrencyGlyphs) EN.ui.substituteCurrencyGlyphs(_mount);
+  }
+
+  function render(mount) {
+    _mount = mount;
+    EN.ui.clear(mount);
+    var h = null;
+    try { h = (EN.gmView && EN.gmView.takeHandoff) ? EN.gmView.takeHandoff("payroll") : null; } catch (e) { h = null; }
+    if (isObj(h)) takePayload(h);
+    if (!P() || !EN.gmEngine || !EN.engine.splitPayout) {
+      mount.appendChild(el("div", null, [heading("Payroll", "// paying the crew"),
+        el("div.muted-box", { style: { padding: "26px" }, text: "Payroll data did not load. Check app/data/gm_payroll.js." })]));
+      return;
+    }
+    var m = model();
+    var blocks = [heading("Payroll", "// paying the crew"),
+      headPanel(m), gap(), contractPanel(m), gap(), bountyPanel(m), gap(), salvagePanel(m), gap(), splitPanel(m), gap(),
+      el("div.row.wrap", { style: { gap: "12px", alignItems: "stretch" } }, [
+        el("div", { style: { flex: "1 1 300px", minWidth: 0 } }, [xpPanel(m)]),
+        el("div", { style: { flex: "1 1 300px", minWidth: 0 } }, [ledgerPanel()])
+      ]),
+      gap(), summaryPanel(m)];
+    var past = pastPanel();
+    if (past) { blocks.push(gap()); blocks.push(past); }
+    mount.appendChild(el("div", null, blocks));
+  }
+
+  return {
+    render: render,
+    // pure helpers, for anything else that wants to quote pay the same way
+    quote: function (caliber, diffKey, shifts) { return P() ? quote(caliber, diffKey, shifts || {}) : null; },
+    bountyValue: function (xp, rate, alive) { return P() ? bountyValue(xp, rate, alive) : 0; }
+  };
 })();

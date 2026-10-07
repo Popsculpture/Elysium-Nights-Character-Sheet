@@ -108,6 +108,40 @@ EN.gmStore = (function () {
     return rec;
   }
 
+  /* INITIATIVE FOR A BLOCK BUILT BEFORE THE BOOK'S FORMULA. Until 2026-10 the
+     builder had no Initiative rule and gave every block init 0 and no initMod, so
+     a saved statblock or a live row from then rolled at +0 forever, and the GM had
+     to rebuild it to pick the formula up (GMH p55: Grade + 2, the Designation and
+     Role steps, read through EN.gmEngine.threatInit as the builder reads it).
+
+     This FILLS THE ONE MISSING FIELD and nothing else. The standing rule above
+     addThreat still holds: a resolved block is never re-derived on read, because
+     a later correction to threats.js must not quietly change a statblock a GM
+     already used. A missing initMod is not a number the block prints, so filling
+     it changes nothing the GM has seen; `init` (the INIT the statblock card
+     prints) is left exactly as it was. A block that already carries a numeric
+     initMod is never touched, and neither is one without `inputs`: a Bestiary
+     block has none, and its Initiative is the page's printed number, not the
+     formula's. Skipped when the formula's data is absent, so a missing
+     EN.threats.initiative cannot fill in a wrong "Grade + 0".
+
+     A live row's own initMod (what REROLL ALL and the tie-break read) was copied
+     from the block's `init | 0` when it was added, so it follows the filled block.
+     Returns true when it filled something. */
+  function fillInitMod(block, inputs, row) {
+    if (!isObj(block) || !isObj(inputs)) return false;
+    if (typeof block.initMod === "number" && isFinite(block.initMod)) return false;
+    var E = EN.gmEngine, T = EN.threats;
+    if (!E || typeof E.threatInit !== "function" || !T || !isObj(T.initiative)) return false;
+    var g = Number(inputs.grade !== undefined ? inputs.grade : block.grade);
+    g = Math.max(1, Math.min(5, isFinite(g) && g ? g : 1));   // buildThreat's own clamp
+    var mod = g + E.threatInit(inputs.designation || "standard", inputs.role || "gunhand");
+    if (!isFinite(mod)) return false;
+    block.initMod = mod;
+    if (row) row.initMod = mod;
+    return true;
+  }
+
   /* One initiative row, or null when it cannot be attributed. `kind` is STATED,
      never inferred from shape. An entry that has lost its discriminant is
      unattributable and is dropped, not guessed at. */
@@ -179,6 +213,7 @@ EN.gmStore = (function () {
           var rec = src[k];
           if (!isObj(rec)) return;
           if (bag === "threats" || bag === "encounters") gradeSaved(rec);
+          if (bag === "threats") fillInitMod(rec.block, rec.inputs, null);
           rec.id = k;
           s[bag][k] = rec;
         } catch (e) {}
@@ -189,6 +224,9 @@ EN.gmStore = (function () {
       s.encounter.round = Math.max(0, e.round | 0);
       s.encounter.activeId = typeof e.activeId === "string" ? e.activeId : null;
       s.encounter.entries = cleanEntries(e.entries);
+      s.encounter.entries.forEach(function (r) {
+        if (r.kind === "threat") { try { fillInitMod(r.block, r.inputs, r); } catch (err) {} }
+      });
       s.encounter.name = typeof e.name === "string" ? e.name : "";
       s.encounter.sourceId = typeof e.sourceId === "string" && e.sourceId ? e.sourceId : null;
       try { s.encounter.room = cleanRoom(e.room); } catch (err) { s.encounter.room = []; }
@@ -315,19 +353,76 @@ EN.gmStore = (function () {
      on the second, and a builder that kept editing its preview after ADD edited
      the live row too. The initiative modifier is the block's own initMod when it
      states one (the builder's Grade plus designation and role adjustments), else
-     the older `init` field every pre-2026-10 block carries. */
-  function addThreat(block, inputs, init) {
+     the older `init` field every pre-2026-10 block carries.
+
+     `rowName` (optional) is the name the ROW should carry when the caller has
+     already numbered it (the Encounters tab's "Street Ganger 1"), so the block
+     keeps the statblock's own name underneath, as the rule below says. */
+  function addThreat(block, inputs, init, rowName) {
     var id = uid();
     var b = copy(block && typeof block === "object" ? block : {});
     var mod = (typeof b.initMod === "number" && isFinite(b.initMod)) ? b.initMod : (b.init | 0);
+    var want = (typeof rowName === "string" && rowName) ? rowName : (b.name || "Threat");
     update(function (s) {
-      s.encounter.entries.push({ id: id, kind: "threat", name: b.name || "Threat",
+      s.encounter.entries.push({ id: id, kind: "threat", name: freeName(s.encounter.entries, want, null),
                                  block: b, inputs: inputs ? copy(inputs) : null,
                                  init: init | 0, initMod: mod, acted: false,
                                  vit: b.vitality, vitMax: b.vitality,
                                  conditions: [], notes: "" });
     });
     return id;
+  }
+
+  /* TWO ROWS NEVER SHARE A NAME. "Corpsec Officer" twice in the order is two
+     creatures the GM cannot tell apart when the crew says "I shoot the Corpsec
+     Officer", so a second one arrives as "Corpsec Officer 2", a third as
+     "Corpsec Officer 3". The first keeps its name. Only the ROW is named; the
+     block underneath keeps the statblock's own name.
+
+     A name that already ends in a number is counted from its stem, so a plan run
+     twice onto one Table (Encounters numbers its rows "Street Ganger 1", "Street
+     Ganger 2") goes on to 3 and 4 rather than becoming "Street Ganger 1 2". The
+     lowest free number is used. `skipId` leaves one row out of the taken set, so
+     a row can be checked against everyone but itself.
+
+     A PLAIN name joining numbered twins is numbered too. The Encounters tab runs
+     a plan's gangers in as "Street Ganger 1" and "Street Ganger 2", and one more
+     added from the Bestiary used to arrive as a bare "Street Ganger" beside
+     them: no two rows shared a name, but "the Street Ganger" no longer named one
+     creature. It arrives as "Street Ganger 3" instead. */
+  function freeName(entries, name, skipId) {
+    var taken = Object.create(null);
+    (entries || []).forEach(function (r) {
+      if (r && r.kind === "threat" && r.id !== skipId && typeof r.name === "string") taken[r.name] = true;
+    });
+    var m = String(name).match(/^(.*\S)\s+\d+$/);
+    var stem = m ? m[1] : name;
+    var twins = !m && Object.keys(taken).some(function (k) {
+      return k.length > stem.length + 1 && k.indexOf(stem + " ") === 0 && /^\d+$/.test(k.slice(stem.length + 1));
+    });
+    if (!own(taken, name) && !twins) return name;
+    var n = 2;
+    while (own(taken, stem + " " + n)) n++;
+    return stem + " " + n;
+  }
+
+  /* The same rule for rows that did NOT arrive through addThreat: a module that
+     writes entries through update(), an imported file, a document from before the
+     rule. Walks the order in insertion order, so the earliest row keeps its name
+     and later twins are numbered. Runs from the Table's render, like pruneCrew,
+     and persists only when it renamed something. Returns how many it renamed. */
+  function numberThreats() {
+    if (!state) return 0;
+    var seen = [], renamed = 0;
+    state.encounter.entries.forEach(function (r) {
+      if (!r || r.kind !== "threat") return;
+      var base = (typeof r.name === "string" && r.name) ? r.name : ((r.block && r.block.name) || "Threat");
+      var name = freeName(seen, base, null);
+      if (name !== r.name) { r.name = name; renamed++; }
+      seen.push(r);
+    });
+    if (renamed) persist(false);
+    return renamed;
   }
   function removeEntry(id) {
     update(function (s) {
@@ -634,6 +729,8 @@ EN.gmStore = (function () {
     load: load, get: get, update: update, on: on, uid: uid,
     addCrew: addCrew, addThreat: addThreat, removeEntry: removeEntry, entry: entry,
     clearEncounter: clearEncounter, pruneCrew: pruneCrew,
+    // one name per threat row: the numbering addThreat applies, for rows from any other path
+    numberThreats: numberThreats, freeName: freeName,
     saveThreat: saveThreat, savedThreats: savedThreats, removeThreat: removeThreat,
     // the record bags
     list: list, rec: rec, put: put, drop: drop,

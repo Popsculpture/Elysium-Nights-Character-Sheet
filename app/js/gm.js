@@ -23,7 +23,9 @@ EN.gmView = (function () {
   // Deliberately not persisted; a half-built threat is not worth a save slot.
   // Survives a tab switch AND a portal flip, since this is still one module.
   var _b = { grade: 2, designation: "standard", role: "gunhand", size: "Medium", type: "Human", name: "", strong: null };
-  var _best = { cat: "people", q: "" };   // bestiary filter
+  // bestiary filter. `cat` is a category key, or one of the two reference views
+  // ("templates", "vehicles"), which no category key collides with
+  var _best = { cat: "people", q: "" };
 
   // local copies rather than imports, per the house convention that each view
   // carries its own small helpers instead of a shared utils file
@@ -39,6 +41,20 @@ EN.gmView = (function () {
     ]);
   }
   function lbl(t) { return el("label.fl", { text: t }); }
+
+  /* Sends lines to the Encounters tab's plan through the shared handoff. The
+     block is a copy, so a builder that keeps changing its preview after the
+     click cannot change the line it just sent. An unnamed build travels under
+     the name its own inputs give it, since a plan of three lines all called
+     "Threat" tells the GM nothing. */
+  function toPlan(lines, note) {
+    handoff("encounters", { addLines: lines, note: note || "" });
+  }
+  function threatLine(block) {
+    var b = JSON.parse(JSON.stringify(block || {}));
+    if (!b.name) b.name = "G" + b.grade + " " + (b.designationName || "Standard") + (b.roleName ? " " + b.roleName : "");
+    return { kind: "threat", block: b, count: 1 };
+  }
 
   /* ---- the threat builder ------------------------------------------------- */
   function pick(field, options, current, onPick) {
@@ -98,7 +114,10 @@ EN.gmView = (function () {
 
     // the working band: a threat more than one Grade off the crew is worth saying out loud
     var band = bandNote(_b.grade);
-    if (band) kids.push(el("p.help", { style: { margin: "8px 0 0", color: "var(--warn)" }, text: band }));
+    if (band) {
+      kids.push(el("p.help", { style: { margin: "8px 0 0", color: "var(--warn)" }, text: band.lead }));
+      if (band.book) kids.push(el("p.help", { style: { margin: "3px 0 0", color: "var(--text2)" }, text: band.book }));
+    }
 
     kids.push(el("div.row.wrap", { style: { gap: "8px", marginTop: "12px" } }, [
       el("button.btn.sm.primary", { onclick: function () {
@@ -114,26 +133,39 @@ EN.gmView = (function () {
         gm.saveThreat(b, JSON.parse(JSON.stringify(_b)));
         toast((b.name || "Threat") + " saved.");
         EN.app.render();
-      } }, "SAVE STATBLOCK")
+      } }, "SAVE STATBLOCK"),
+      el("button.btn.sm", { title: "Add this build as a line on an encounter plan", onclick: function () {
+        var line = threatLine(EN.gmEngine.buildThreat(_b));
+        toPlan([line], line.block.name + ", from the Threat Builder.");
+      } }, "+ ADD TO ENCOUNTER PLAN")
     ]));
 
     return EN.ui.panel("Threat Builder", "GRADE · DESIGNATION · ROLE", kids);
   }
 
   /* The crew's Caliber is the yardstick, so the warning only fires when there is
-     a crew to compare against. Silence is correct with an empty roster. */
+     a crew to compare against. Silence is correct with no crew.
+
+     THE CREW IS EN.gmEngine.crew(), the one reader Encounters, the Job Board and
+     Payroll also ask (the Table's crew rows, else the filed roster). This used to
+     average the whole roster, unfiled drafts included, so the Threats tab could
+     warn about a crew the Encounters budget did not think existed.
+
+     Returns { lead, book } or null. `lead` is the app's own sentence placing this
+     Grade against the crew; `book` is the working band as the Handbook prints it,
+     read from EN.threats.workingBand and never paraphrased here, which is how the
+     third reason a two-up threat can work stopped going missing. */
   function bandNote(g) {
-    var roster = (EN.store.roster && EN.store.roster()) || {};
-    var cals = Object.keys(roster).map(function (k) {
-      try { return eng.derive(roster[k]).caliber; } catch (e) { return null; }
-    }).filter(function (c) { return c; });
-    if (!cals.length) return null;
-    var avg = Math.round(cals.reduce(function (a, b) { return a + b; }, 0) / cals.length);
-    var d = g - avg;
+    var c = null;
+    try { c = EN.gmEngine.crew(); } catch (e) { c = null; }
+    if (!c || c.source === "none") return null;
+    var d = g - c.caliber;
     if (d <= 1 && d >= -1) return null;
-    if (d === 2) return "Two Grades above the crew's Caliber " + avg + ". That can anchor a climax if it arrives with a plan or an escape route.";
-    if (d > 2) return "Three or more Grades above the crew's Caliber " + avg + ". The book is blunt about this one: that is not an encounter, it is weather.";
-    return "Well below the crew's Caliber " + avg + ". Fine as texture or numbers, not as a fight.";
+    var whose = (c.source === "table" ? "the crew on the Table" : "the filed crew") + " (Caliber " + c.caliber + ")";
+    var lead = d >= 3 ? "Three or more Grades above " + whose + "."
+      : d === 2 ? "Two Grades above " + whose + "."
+      : "Two or more Grades below " + whose + ".";
+    return { lead: lead, book: (EN.threats && EN.threats.workingBand) || "" };
   }
 
   /* ABSENT FIELDS STAY ABSENT, the same rule the bestiary data file follows for
@@ -151,9 +183,10 @@ EN.gmView = (function () {
      stat line: both live inside the ability prose, as "+6 vs Defense" and
      "Tech Save DC 13".
 
-     INITIATIVE IS NOT THE ATTACK BONUS. Reading one as the other was wrong on 26
-     of the 33 entries. It survived because the two are coincidentally equal on
-     the Gremlin, which is the entry this was eyeballed against, and because no
+     INITIATIVE IS NOT THE ATTACK BONUS. Reading one as the other is wrong on 44
+     of the 46 entries that print an Initiative. It survived because the two are
+     coincidentally equal on the Gremlin (and the Wetwork Operative), the Gremlin
+     being the entry this was eyeballed against, and because no
      creature that has no attack at all had been added to the order until the
      Nixie arrived and printed a number it does not have.
 
@@ -244,7 +277,8 @@ EN.gmView = (function () {
             text: String(row.init) }),
           el("span", { style: { fontWeight: 600 }, text: name.trim() || "Freelancer" }),
           el("span.chip", { style: { fontSize: "9.5px" }, text: "CREW" }),
-          el("span.help", { text: "Caliber " + d.caliber + " · " + d.vitalityMax + " Vitality" })
+          // a record with no class yet derives no Vitality, and "null Vitality" is worse than nothing
+          el("span.help", { text: "Caliber " + d.caliber + (typeof d.vitalityMax === "number" ? " · " + d.vitalityMax + " Vitality" : "") })
         ]),
         el("div.row", { style: { gap: "6px", alignItems: "center" } }, [
           el("input", { type: "number", value: row.init, style: { width: "58px" },
@@ -408,7 +442,11 @@ EN.gmView = (function () {
       ]));
     }
 
-    return EN.ui.panel("Initiative", enc.entries.length + (enc.entries.length === 1 ? " ENTRY" : " ENTRIES"), kids, { glow: enc.round > 0 });
+    // an encounter run from a plan carries its name, and the tag is where the
+    // panel says which fight this is
+    var tag = enc.entries.length + (enc.entries.length === 1 ? " ENTRY" : " ENTRIES");
+    if (enc.name) tag = String(enc.name).toUpperCase() + " · " + tag;
+    return EN.ui.panel("Initiative", tag, kids, { glow: enc.round > 0 });
   }
 
 
@@ -417,16 +455,37 @@ EN.gmView = (function () {
      reproduce what the generator would build for them; that is a note for the
      author and it lives in DEFERRED-FIXES, not on a card somebody is reading
      mid-fight. An earlier version printed the mismatch here in warning amber on
-     eleven of the thirty-one entries, which put QA output in a working tool and
-     told a GM nothing they could act on. */
+     about a third of the cards, which put QA output in a working tool and told a
+     GM nothing they could act on. */
+
+  /* The track a Bestiary threat's damage comes off when it enters the order. A
+     #GRID threat has no Vitality; System Integrity is the track that depletes.
+     Feral Script prints it as a stat, but the #GRID Guardian prints it only inside
+     its Persona Node ability ("Security Rating 23, System Integrity 45, ..."), so
+     the ability text is read before giving up. 1 only when the entry prints none
+     of the three, so a row is never a 0 Vitality ghost. An entry with Vitality
+     keeps it even when an ability also names a Node's System Integrity (the
+     Gutter Hacker's deck): that Node is a second target, not the body. */
+  function trackOf(e) {
+    var st = e.stats || {};
+    var v = parseInt(st.Vitality, 10);
+    if (isNaN(v)) v = parseInt(st["System Integrity"], 10);
+    if (isNaN(v)) {
+      var m = (e.abilities || []).map(function (a) { return a.text; }).join(" ").match(/System Integrity\s+(\d+)/);
+      if (m) v = parseInt(m[1], 10);
+    }
+    return isNaN(v) ? 1 : v;
+  }
+
   function bestiaryCard(e) {
     var kids = [];
     kids.push(el("h4", { style: { margin: "0 0 2px" }, text: e.name }));
     kids.push(el("p.help", { style: { margin: "0 0 8px", fontStyle: "italic" }, text: e.identity || "" }));
 
     var st = e.stats || {};
-    // 29 entries carry the physical block. The two #GRID threats do not, and a
-    // renderer that assumed they did would print a row of blanks for them.
+    // 46 entries carry the physical block. Two #GRID threats (Feral Script and the
+    // #GRID Guardian) do not, and a renderer that assumed they did would print a
+    // row of blanks for them.
     var physical = ["Defense", "DR", "Vitality", "Speed", "Initiative", "Saves", "Passive Perception"];
     var node = ["Security Rating", "Cipher Save", "System Integrity", "Firewall Damage Threshold",
                 "Cipher Attack", "Cipher Save DC"];
@@ -473,8 +532,9 @@ EN.gmView = (function () {
 
     var tail = [];
     if (st.XP) tail.push("XP " + st.XP);
-    // Resolve is on 11 entries only, and its ABSENCE means the conversation is
-    // over before it starts, so a blank must not be printed in its place.
+    // Resolve is on 23 of the 48 entries only, and its ABSENCE means the
+    // conversation is over before it starts, so a blank must not be printed in
+    // its place.
     if (st.Resolve) tail.push("Resolve " + st.Resolve);
     if (tail.length) kids.push(el("p.help", { style: { margin: "8px 0 0" }, text: tail.join(" \u00b7 ") }));
     if (e.gear) kids.push(el("p.help", { style: { margin: "3px 0 0" }, text: "Gear: " + e.gear }));
@@ -505,9 +565,8 @@ EN.gmView = (function () {
       el("button.btn.sm.primary", { onclick: function () {
         // a bestiary entry enters the order as its PRINTED self, not as a build
         var st = e.stats || {};
-        // a #GRID threat has no Vitality; System Integrity is the track that depletes
-        var vit = parseInt(st.Vitality, 10);
-        if (isNaN(vit)) vit = parseInt(st["System Integrity"], 10);
+        // a #GRID threat has no Vitality; System Integrity is the track that depletes (trackOf)
+        var vit = trackOf(e);
         var def = parseInt(st.Defense, 10);
         var initM = parseInt(String(st.Initiative || "0").replace("+", ""), 10) || 0;
         var p = printed(e);
@@ -516,10 +575,14 @@ EN.gmView = (function () {
            dropped, so every Bestiary threat rerolled at +0. `init` carries the same
            number because on a built block `init` IS the Initiative bonus, and a
            reader of either field should find the page's number. */
+        // `designation` is the lowercase key a built block carries, so a reader
+        // can ask either kind of row the same question (the Encounters tab's run
+        // builds this same block for its Bestiary lines)
         var block = {
-          name: e.name, grade: e.grade, designationName: e.designation || "Standard",
+          name: e.name, grade: e.grade, designation: String(e.designation || "Standard").toLowerCase(),
+          designationName: e.designation || "Standard",
           roleName: e.role || "", defense: isNaN(def) ? null : def,
-          saveDC: p.saveDC, attackBonus: p.attackBonus, vitality: isNaN(vit) ? 1 : vit,
+          saveDC: p.saveDC, attackBonus: p.attackBonus, vitality: vit,
           init: initM, initMod: initM,
           fromBestiary: true, stats: st, abilities: e.abilities || []
         };
@@ -527,9 +590,137 @@ EN.gmView = (function () {
         gm.addThreat(block, null, r.total);
         toast(e.name + " rolls " + r.total + " for initiative.");
         EN.app.render();
-      } }, "+ ADD TO INITIATIVE")
+      } }, "+ ADD TO INITIATIVE"),
+      // the plan prices and runs a Bestiary line by its name, so the name is all it carries
+      el("button.btn.sm", { title: "Add this entry as a line on an encounter plan", onclick: function () {
+        toPlan([{ kind: "bestiary", name: e.name, count: 1 }], e.name + ", from the Bestiary.");
+      } }, "+ ADD TO ENCOUNTER PLAN")
     ]));
     return el("div.feature", null, kids);
+  }
+
+  /* ---- the Bestiary's reference matter -------------------------------------
+     The chapter prints more than statblocks: a hunt procedure inside the
+     cryptid intro, the Species Templates table and the Hostile Vehicles. All of
+     it is read from EN.bestiary as printed; the cards below only lay it out. */
+
+  // an ability-shaped line ({name, cost, text}), bold head and inline-marked prose
+  function abilityP(a, style) {
+    var p = el("p", { style: style || { margin: "6px 0 0", fontSize: "13px" } }, [
+      el("span", { style: { fontWeight: 600 }, text: a.name + (a.cost ? " (" + a.cost + ")" : "") + ": " })
+    ]);
+    EN.ui.applyInline(p, String(a.text || ""));
+    return p;
+  }
+
+  // the hunt's three beats, numbered as the page boxes them (01 to 03)
+  function huntCard(H) {
+    var kids = [el("h4", { style: { margin: "0 0 4px" }, text: H.title })];
+    if (H.lead) kids.push(el("p.help", { style: { margin: "0 0 6px", color: "var(--text2)" }, text: H.lead }));
+    (H.beats || []).forEach(function (b) {
+      kids.push(el("div", { style: { display: "flex", gap: "10px", alignItems: "baseline", margin: "6px 0 0" } }, [
+        el("span.mono", { style: { fontSize: "13px", color: "var(--accent)", minWidth: "22px" },
+          text: (b.n < 10 ? "0" : "") + b.n }),
+        el("p", { style: { margin: 0, fontSize: "13px" } }, [
+          el("span", { style: { fontWeight: 600 }, text: b.name + ". " }),
+          document.createTextNode(b.text)
+        ])
+      ]));
+    });
+    if (H.closing) kids.push(el("p.help", { style: { margin: "8px 0 0", fontStyle: "italic" }, text: H.closing }));
+    return el("div.feature", { style: { borderLeftColor: "var(--accent)" } }, kids);
+  }
+
+  function referenceIntro(host, paras) {
+    (paras || []).forEach(function (t) {
+      host.appendChild(el("p.help", { style: { margin: "0 0 8px", color: "var(--text2)" }, text: t }));
+    });
+  }
+
+  /* SPECIES TEMPLATES: one card per species, its traits printed the way a
+     statblock prints an ability, and the Corporate Classification column under
+     the column's own printed heading. */
+  function templatesInto(host) {
+    var S = EN.bestiary.speciesTemplates;
+    if (!S) { host.appendChild(el("p.help", { text: "No Species Templates in the Bestiary data." })); return; }
+    referenceIntro(host, S.intro);
+    var classLabel = (S.columns && S.columns[2]) || "Classification";
+    (S.templates || []).forEach(function (t) {
+      var kids = [el("h4", { style: { margin: "0 0 2px" }, text: t.species })];
+      if (t.classification) kids.push(el("p.help", { style: { margin: "0 0 4px", fontStyle: "italic" },
+        text: classLabel + ": " + t.classification }));
+      (t.traits || []).forEach(function (a) { kids.push(abilityP(a)); });
+      host.appendChild(el("div.feature", null, kids));
+    });
+    if (S.footer) host.appendChild(el("p.help", { style: { margin: "4px 0 0" }, text: S.footer }));
+  }
+
+  /* A vehicle's Defense while moving depends on its pilot's Grade. The numbers
+     are READ out of the book's own Threat pilots sentence ("10 + Handling + 2 at
+     Grade 1 to 2, + 4 at Grade 3 to 4, or + 6 at Grade 5") rather than restated
+     here, so the data file stays the one place they are written. Looks in the
+     Bestiary's vehicle rules, then EN.vehicles.rules if that ever exists. Null
+     when no rule parses, and the card then shows the rule's text alone. */
+  function movingDefenseRule() {
+    var pools = [(EN.bestiary.vehicles && EN.bestiary.vehicles.rules) || [], (EN.vehicles && EN.vehicles.rules) || []];
+    for (var i = 0; i < pools.length; i++) {
+      for (var j = 0; j < pools[i].length; j++) {
+        var t = String((pools[i][j] && pools[i][j].text) || "");
+        var base = t.match(/(\d+)\s*\+\s*Handling/i);
+        if (!base) continue;
+        var bands = [], re = /\+\s*(\d+)\s+at\s+Grade\s+(\d+)(?:\s+to\s+(\d+))?/gi, m;
+        while ((m = re.exec(t))) bands.push({ bonus: Number(m[1]), lo: Number(m[2]), hi: m[3] ? Number(m[3]) : Number(m[2]) });
+        if (bands.length) return { base: Number(base[1]), bands: bands };
+      }
+    }
+    return null;
+  }
+
+  /* HOSTILE VEHICLES: their own card, not a statblock. A vehicle has no XP and no
+     Grade; it has a profile (the PHB's vehicle fields) and a Defense that comes
+     from whoever is driving. */
+  function vehiclesInto(host) {
+    var V = EN.bestiary.vehicles;
+    if (!V) { host.appendChild(el("p.help", { text: "No Hostile Vehicles in the Bestiary data." })); return; }
+    referenceIntro(host, V.intro);
+    (V.rules || []).forEach(function (r) {
+      host.appendChild(el("p.help", { style: { margin: "0 0 10px" } }, [
+        el("span", { style: { fontWeight: 600, color: "var(--text)" }, text: r.name + ". " }),
+        document.createTextNode(r.text)
+      ]));
+    });
+    var md = movingDefenseRule();
+    (V.profiles || []).forEach(function (p) {
+      var kids = [el("h4", { style: { margin: "0 0 2px" }, text: p.name })];
+      if (p.identity) kids.push(el("p.help", { style: { margin: "0 0 8px", fontStyle: "italic" }, text: p.identity }));
+      // absent fields stay absent, as on a statblock
+      var prof = [["SPEED", p.speed],
+                  ["HANDLING", typeof p.handling === "number" ? eng.fmtMod(p.handling) : p.handling],
+                  ["STRUCTURE", p.structure], ["INTEGRITY", p.integrity],
+                  ["NODE", p.nodeTier], ["CARGO", p.cargo]];
+      kids.push(el("div.row.wrap", { style: { gap: "12px" } }, prof.filter(function (f) {
+        return f[1] !== undefined && f[1] !== null && f[1] !== "";
+      }).map(function (f) { return fld(f[0], f[1]); })));
+      if (md && typeof p.handling === "number") {
+        kids.push(el("p.help", { style: { margin: "5px 0 0", color: "var(--accent)" },
+          text: "Defense while moving: " + md.bands.map(function (b) {
+            return (md.base + p.handling + b.bonus) + " with a Grade " + b.lo + (b.hi !== b.lo ? " to " + b.hi : "") + " pilot";
+          }).join(", ") + "." }));
+      }
+      (p.rules || []).forEach(function (r) { kids.push(abilityP({ name: r.name, cost: null, text: r.text })); });
+      if (p.text) kids.push(el("p.help", { style: { margin: "6px 0 0" }, text: p.text }));
+      host.appendChild(el("div.feature", null, kids));
+    });
+  }
+
+  /* SEARCH reads what a GM would type to find a threat: its name, identity,
+     abilities, gear, salvage and signs. Not the whole entry serialized, which also
+     matched its PDF page ("77" found every entry on that page) and its keys. The
+     inline italics and bold markers are dropped so a search can span them. */
+  function searchText(e) {
+    var bits = [e.name, e.identity, e.gear, e.salvage, e.signs];
+    (e.abilities || []).forEach(function (a) { bits.push(a.name); bits.push(a.text); });
+    return bits.filter(function (b) { return b; }).join(" \n ").replace(/\*/g, "").toLowerCase();
   }
 
   function bestiaryPanel() {
@@ -537,15 +728,31 @@ EN.gmView = (function () {
     if (!B) return null;
     var kids = [];
 
-    kids.push(el("div.row.wrap", { style: { gap: "6px", marginBottom: "8px" } },
-      B.categories.map(function (c) {
-        return el("span.chip" + (_best.cat === c.key ? ".on" : ""), {
-          style: { cursor: "pointer", fontSize: "10.5px" },
-          onclick: function () { _best.cat = c.key; EN.app.render(); }
-        }, c.name + " (" + c.count + ")");
-      })));
+    /* Chip counts are COUNTED from the entries, not read off the Index's printed
+       `count`, so a chip can never promise a number of cards the list does not
+       draw. The two reference views sit after the categories, set apart by a
+       dashed border: they hold no statblocks and no search reaches them. */
+    function countIn(key) {
+      if (typeof B.countOf === "function") return B.countOf(key);
+      return B.entries.filter(function (e) { return e.category === key; }).length;
+    }
+    function chip(key, label, ref) {
+      var st = { cursor: "pointer", fontSize: "10.5px" };
+      if (ref) st.borderStyle = "dashed";
+      return el("span.chip" + (_best.cat === key ? ".on" : ""), {
+        style: st, title: ref ? "Reference, not statblocks" : null,
+        onclick: function () { _best.cat = key; EN.app.render(); }
+      }, label);
+    }
+    var chips = B.categories.map(function (c) { return chip(c.key, c.name + " (" + countIn(c.key) + ")", false); });
+    if (B.speciesTemplates) chips.push(chip("templates", (B.speciesTemplates.title || "Species Templates") +
+      " (" + (B.speciesTemplates.templates || []).length + ")", true));
+    if (B.vehicles) chips.push(chip("vehicles", (B.vehicles.title || "Hostile Vehicles") +
+      " (" + (B.vehicles.profiles || []).length + ")", true));
+    kids.push(el("div.row.wrap", { style: { gap: "6px", marginBottom: "8px" } }, chips));
 
-    kids.push(el("input", { type: "text", value: _best.q, placeholder: "search every entry by name, ability or gear",
+    kids.push(el("input", { type: "text", value: _best.q,
+      placeholder: "search every entry by name, identity, ability, gear, salvage or signs",
       style: { width: "100%", marginBottom: "10px" },
       oninput: function (ev) {
         _best.q = ev.target.value;
@@ -560,17 +767,45 @@ EN.gmView = (function () {
 
     function listInto(host) {
       var q = (_best.q || "").trim().toLowerCase();
-      var rows = B.entries.filter(function (e) {
-        if (q) return JSON.stringify(e).toLowerCase().indexOf(q) !== -1;
-        return e.category === _best.cat;
-      });
-      if (!rows.length) {
-        host.appendChild(el("p.help", { text: "Nothing matches." }));
+      if (q) {
+        var rows = B.entries.filter(function (e) { return searchText(e).indexOf(q) !== -1; });
+        host.appendChild(el("div.row.between.wrap", { style: { gap: "8px", alignItems: "center", marginBottom: "6px" } }, [
+          el("p.help", { style: { margin: 0 },
+            text: rows.length ? rows.length + " of " + B.entries.length + " entries match, across every category." : "Nothing matches." }),
+          el("button.btn.sm.ghost", { onclick: function () { _best.q = ""; EN.app.render(); } }, "CLEAR SEARCH")
+        ]));
+        rows.forEach(function (e) { host.appendChild(bestiaryCard(e)); });
         return;
       }
-      if (q) host.appendChild(el("p.help", { style: { marginBottom: "6px" },
-        text: rows.length + " of " + B.entries.length + " entries match, across every category." }));
-      rows.forEach(function (e) { host.appendChild(bestiaryCard(e)); });
+      if (_best.cat === "templates") { templatesInto(host); return; }
+      if (_best.cat === "vehicles") { vehiclesInto(host); return; }
+      var cat = B.categories.filter(function (c) { return c.key === _best.cat; })[0];
+      if (!cat) { _best.cat = (B.categories[0] || {}).key; cat = B.categories[0]; }
+      if (!cat) { host.appendChild(el("p.help", { text: "Nothing matches." })); return; }
+      categoryInto(host, cat);
+    }
+
+    /* One category as the book lays it out: its intro, then the entries printed
+       before any run-in, then each subgroup in the order of `subgroups[]` under
+       its own heading and intro. An entry naming a subgroup this category does not
+       list is drawn with the ungrouped ones rather than dropped. */
+    function categoryInto(host, cat) {
+      if (cat.intro) host.appendChild(el("p.help", { style: { margin: "0 0 10px", color: "var(--text2)" }, text: cat.intro }));
+      if (cat.key === "cryptids" && B.huntProcedure) host.appendChild(huntCard(B.huntProcedure));
+      var ents = B.entries.filter(function (e) { return e.category === cat.key; });
+      var groups = (B.subgroups || []).filter(function (g) { return g.category === cat.key; });
+      var known = Object.create(null);
+      groups.forEach(function (g) { known[g.key] = true; });
+      var loose = ents.filter(function (e) { return !e.subgroup || !Object.prototype.hasOwnProperty.call(known, e.subgroup); });
+      if (!ents.length) { host.appendChild(el("p.help", { text: "Nothing matches." })); return; }
+      loose.forEach(function (e) { host.appendChild(bestiaryCard(e)); });
+      groups.forEach(function (g) {
+        var members = ents.filter(function (e) { return e.subgroup === g.key; });
+        if (!members.length) return;
+        host.appendChild(EN.ui.sectionTitle(g.name + " (" + members.length + ")"));
+        if (g.intro) host.appendChild(el("p.help", { style: { margin: "0 0 8px", color: "var(--text2)" }, text: g.intro }));
+        members.forEach(function (e) { host.appendChild(bestiaryCard(e)); });
+      });
     }
 
     return EN.ui.panel("Bestiary", B.entries.length + " STATBLOCKS", kids);
@@ -588,17 +823,21 @@ EN.gmView = (function () {
           el("span.help", { text: "G" + b.grade + " " + b.designationName + (b.roleName ? ", " + b.roleName : "") +
             " · DEF " + b.defense + " · " + b.vitality + " Vit · " + b.xp + " XP" })
         ]),
-        el("div.row", { style: { gap: "6px" } }, [
+        el("div.row.wrap", { style: { gap: "6px" } }, [
           el("button.btn.sm", { onclick: function () {
             /* rolled at the block's own bonus. A statblock saved before the book's
-               formula reached the builder carries no initMod and an init of 0, and
-               keeps it: a saved block is not re-derived on read (see gmstore.js),
-               so the GM rebuilds it to pick the formula up. */
+               formula reached the builder arrived with no initMod; gmstore.js fills
+               that one missing field from its saved inputs on load, so it rolls at
+               the formula too. The init 0 it prints is left as printed. */
             var r = EN.gmEngine.rollInit(typeof b.initMod === "number" ? b.initMod : (b.init | 0));
             gm.addThreat(b, t.inputs, r.total);
             toast((b.name || "Threat") + " rolls " + r.total + " for initiative.");
             EN.app.render();
           } }, "+ ORDER"),
+          el("button.btn.sm", { title: "Add this statblock as a line on an encounter plan", onclick: function () {
+            var line = threatLine(b);
+            toPlan([line], line.block.name + ", from Saved Threats.");
+          } }, "+ ENCOUNTER PLAN"),
           el("button.btn.sm", { onclick: function () { gm.removeThreat(t.id); EN.app.render(); } }, "✕")
         ])
       ]);
@@ -639,21 +878,38 @@ EN.gmView = (function () {
   }
 
   /* TABLE EXTRAS. A module hangs its own live panel under the initiative order
-     (Encounters: the Security Response clock and the XP award; Hazards: the
-     Room tray) without this file knowing what it draws. Each fn is called on
-     every Table render with {encounter, crew} and returns a DOM node or null.
-     Drawn in registration order, which is script order in index.html.
-     Registering a key again replaces its fn IN PLACE, so a module that
-     re-registers keeps its slot rather than moving to the end. One extra that
-     throws is skipped and logged; it must not take the initiative order down
-     with it in the middle of a fight. */
+     (Encounters: the running plan with its waves and Security Response clock,
+     and the XP award; Hazards: the Room tray) without this file knowing what it
+     draws. Each fn is called on every Table render with {encounter, crew} and
+     returns a DOM node or null.
+
+     DRAWN BY `order`, then registration order. The slots in use are the
+     running plan (10), the Room (20) and the XP award (30): the fight being
+     run, what is live in the room it is run in, and only then the bill for the
+     fight that just ended. Script order alone could not give that, because one
+     file draws both the first and the last. An extra registered without an
+     order goes after the numbered ones, in script order. Registering a key
+     again replaces its fn IN PLACE (and its order, when one is given), so a
+     module that re-registers keeps its slot. One extra that throws is skipped
+     and logged; it must not take the initiative order down with it in the
+     middle of a fight. */
   var _extras = [];
-  function registerTableExtra(key, fn) {
+  function registerTableExtra(key, fn, order) {
     if (typeof fn !== "function") return;
+    var ord = (typeof order === "number" && isFinite(order)) ? order : null;
     for (var i = 0; i < _extras.length; i++) {
-      if (_extras[i].key === key) { _extras[i].fn = fn; return; }
+      if (_extras[i].key === key) {
+        _extras[i].fn = fn;
+        if (ord !== null) _extras[i].order = ord;
+        return;
+      }
     }
-    _extras.push({ key: key, fn: fn });
+    _extras.push({ key: key, fn: fn, order: ord, seq: _extras.length });
+  }
+  // an unnumbered extra sorts after every numbered slot
+  function drawOrder() {
+    function rank(x) { return x.order === null ? 1e6 : x.order; }
+    return _extras.slice().sort(function (a, b) { return (rank(a) - rank(b)) || (a.seq - b.seq); });
   }
   function tableExtras() {
     if (!_extras.length) return [];
@@ -661,7 +917,7 @@ EN.gmView = (function () {
     var crew = null;
     try { crew = EN.gmEngine.crew({ encounter: enc }); } catch (e) { crew = null; }
     var out = [];
-    _extras.forEach(function (x) {
+    drawOrder().forEach(function (x) {
       var node = null;
       try { node = x.fn({ encounter: enc, crew: crew }); }
       catch (e) { try { console.warn("GM: the Table extra '" + x.key + "' failed to draw.", e); } catch (e2) {} node = null; }
@@ -679,6 +935,9 @@ EN.gmView = (function () {
     // only place a ghost from a character deleted since the last render
     // can appear
     gm.pruneCrew();
+    // two rows sharing a name are numbered however they arrived (addThreat
+    // numbers on the way in; this catches a row written by any other path)
+    if (gm.numberThreats) gm.numberThreats();
     var blocks = [heading("Table", "// initiative and the order"), trackerPanel()];
     mount.appendChild(el("div", null, blocks.concat(tableExtras())));
   }
@@ -693,6 +952,10 @@ EN.gmView = (function () {
 
   function renderBestiary(mount) {
     EN.ui.clear(mount);
+    // another tab sent a name to look up (the Job Board's VIEW): it becomes the
+    // search, taken once, and stays editable like any typed search
+    var h = takeHandoff("bestiary");
+    if (h && typeof h.query === "string") _best.q = h.query;
     var best = bestiaryPanel();
     // bestiaryPanel() returns null when EN.bestiary never loaded. A tab that
     // is entirely absent reads as broken, so say so rather than showing nothing.

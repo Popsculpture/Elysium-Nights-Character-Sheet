@@ -271,12 +271,18 @@ EN.gmEngine = (function () {
      because the cost test above has already done most of the filtering. Surges and
      Breakpoints are out on cost, not on this. Gravity Well carries no dice at all.
 
-     What this test actually excludes is three Action lines that carry dice without
-     the phrase: Feral Script's Corrupt and the #GRID Guardian's Purge, which are
-     Node math with a Security Rating and System Integrity in place of Defense and
-     Vitality, so a Vitality-budget figure would be a category error for them; and
-     the Lantern Shoal's Graze, which is automatic area damage with nothing rolled
-     to hit. All 35 lines that DO carry the phrase are real attacks. */
+     What this test actually excludes, across the 48 entries, is five Action lines
+     that carry dice without the phrase: Feral Script's Corrupt and the #GRID
+     Guardian's Purge, which are Node math with a Security Rating and System
+     Integrity in place of Defense and Vitality, so a Vitality-budget figure would
+     be a category error for them; the Lantern Shoal's Graze, which is automatic
+     area damage with nothing rolled to hit; the Watchfire Master's Lamplight, a
+     save whose dice land only on Entities and Manifestations; and the Ashrider
+     Road Boss's Haymaker, which is one Maul attack at extra dice. Haymaker is a
+     real attack that names its weapon instead of repeating the phrase, and
+     leaving it out changes nothing: at 4d6+4 once it is below the Maul's two
+     attacks at 2d6+4, so the Road Boss's figure is the Maul either way. All 56
+     lines that DO carry the phrase are real attacks. */
   var ATK_COUNT = { one: 1, two: 2, three: 3, four: 4, five: 5 };
 
   function attackAvg(text) {
