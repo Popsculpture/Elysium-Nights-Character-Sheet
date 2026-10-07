@@ -316,8 +316,11 @@ EN.gmBook.hazards = {
   /* STALEMATE HAZARDS BY DISTRICT. Rolled on a d6 whenever a Chase Check ties.
      Every row runs the default rule unless its own text says otherwise;
      `rider` quotes the clause that adds to or changes it, and a row with no
-     rider is the default rule only. The Impact DC by speed is a player-side
-     vehicle table this handbook does not print; the GM types it. */
+     rider is the default rule only. The Impact DC by speed is not printed
+     beside these tables, but the GM's Card in the appendix prints it (its
+     Chases block): `impactBySpeed` below. Each pilot checks against the DC
+     for their own speed, so the Tools roller offers a speed picker that
+     fills the DC and still takes a typed one. */
   // GMH p18 (when), p19 to p20 (rule and tables)
   stalemate: {
     when: "Roll on the district's table below whenever the Chase Check ties.",
@@ -328,6 +331,14 @@ EN.gmBook.hazards = {
       against: "the Impact DC for their current speed",
       onFail: "Snag on the next Chase Check"
     },
+    // GMH p129 (the GM's Card, Chases: SPEED and IMPACT DC)
+    impactBySpeed: [
+      { key: "stopped",  speed: "Stopped",   dc: 10 },
+      { key: "slow",     speed: "Slow",      dc: 12 },
+      { key: "standard", speed: "Standard",  dc: 14 },
+      { key: "fast",     speed: "Fast",      dc: 16 },
+      { key: "veryfast", speed: "Very Fast", dc: 18 }
+    ],
     die: "d6", sides: 6,
     districts: [
       // GMH p19

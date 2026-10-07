@@ -28,13 +28,20 @@
    A job record (bag `jobs`, the shared shape every GM module reads):
      { id, title, grade, picks: {client, job, job2, site, opposition,
        complication}, postingId, hook, gmNotes, status, sentTo: [charId],
-       encounterId, paydayId }
+       encounterId, paydayId, sends }
    Each pick is {n, text} as the row printed it, plus `name` on a Job row and
    `cryptid` (a Bestiary name) on Opposition 06. A saved job is a snapshot: it
-   keeps the text it was saved with.
+   keeps the text it was saved with. `sends` is this file's own bookkeeping,
+   one entry per SEND TO #POST still standing:
+     { at, writes: [{id, charId}], added: [charId], setPosted, prevStatus }
+   so a withdrawn posting takes its names back out of sentTo and its status
+   back to what it was, however it was withdrawn.
 
    Writes to a Freelancer's record (a posting) go through EN.gmStore.writeCrew
-   and nowhere else, behind an armed confirm, with an UNDO (ruling D1).
+   and nowhere else, behind an armed confirm, with an UNDO (ruling D1). Each
+   write is tagged {source: "posting", jobId} in the ledger, and UNDO POSTING
+   is worked out from the ledger on every render, never from memory, so it
+   survives a reload and a trip to another job (F4, F15).
    =========================================================================== */
 window.EN = window.EN || {};
 
@@ -77,11 +84,14 @@ EN.gmJobs = (function () {
     pick: Object.create(null),
     from: "JOB BOARD",
     when: "",             // blank follows the clock
-    filter: "all",
-    lastSend: null        // {jobId, ids, names, added, setPosted, prevStatus} for UNDO POSTING
+    filter: "all"
   };
   var _crew = null;       // EN.gmEngine.crew(), read once per render
-  var _paint = null;      // the two text previews, repainted while the GM types
+  /* What follows the GM's typing without a re-render (F19): the two text
+     previews, the card's subtitle, header tags and buttons, the #POST buttons
+     and the job log. A re-render on change used to swap out the button under
+     the pointer, so the first click after typing never landed. */
+  var _paint = null;
 
   /* ---- small helpers, local per the house convention ----------------------- */
   function own(o, k) { return !!o && Object.prototype.hasOwnProperty.call(o, k); }
@@ -468,51 +478,119 @@ EN.gmJobs = (function () {
     var title = titleOf(d);
     var mail = { from: String(_j.from || "").trim() || "JOB BOARD", subj: title,
                  when: String(_j.when || "").trim() || nowWhen(), body: crewBody(d) };
-    var ids = [], names = [], sentIds = [], failed = [];
+    var writes = [], names = [], failed = [];
     to.forEach(function (m) {
-      var w = gm.writeCrew(m.charId, "Job posting: " + title, [{ op: "post", mail: mail }]);
-      if (w) { ids.push(w); names.push(m.name); sentIds.push(m.charId); }
+      // the tag lets the ledger itself say which job a posting belongs to (F4, F15)
+      var w = gm.writeCrew(m.charId, "Job posting: " + title, [{ op: "post", mail: mail }], { source: "posting", jobId: id });
+      if (w) { writes.push({ id: w, charId: m.charId }); names.push(m.name); }
       else failed.push(m.name);
     });
-    if (ids.length) {
+    if (writes.length) {
       var c = copy(gm.rec("jobs", id));
       var had = Array.isArray(c.sentTo) ? c.sentTo : [];
-      var added = sentIds.filter(function (x) { return had.indexOf(x) === -1; });
+      var added = writes.map(function (w) { return w.charId; }).filter(function (x) { return had.indexOf(x) === -1; });
       // a job already Taken, Done or Paid keeps its status; one still on the board is now Posted
       var setPosted = (c.status || "draft") === "draft";
       if (setPosted) c.status = "posted";
       c.sentTo = had.concat(added);
-      gm.put("jobs", c);
-      _j.lastSend = { jobId: id, ids: ids, names: names, added: added, setPosted: setPosted, prevStatus: prevStatus };
+      // kept on the job, so a withdrawal after a reload still puts sentTo and the status back
+      c.sends = (Array.isArray(c.sends) ? c.sends : []).concat([{ at: Date.now(), writes: writes, added: added,
+                                                                  setPosted: setPosted, prevStatus: prevStatus }]);
+      gm.put("jobs", c, { immediate: true });
     }
-    toast((ids.length ? "Posted to " + names.join(", ") + "." : "Nothing was sent.") +
+    toast((writes.length ? "Posted to " + names.join(", ") + "." : "Nothing was sent.") +
           (failed.length ? " Not delivered: " + failed.join(", ") + "." : ""));
     EN.app.render();
   }
-  // UNDO POSTING is offered while the newest undoable GM write is one of this send's
-  function canUndo() {
-    var L = _j.lastSend;
-    if (!L || L.jobId !== _j.draft.id) return false;
-    var u = gm.undoable ? gm.undoable() : null;
-    return !!(u && L.ids.indexOf(u.id) !== -1);
+
+  /* ---- withdrawing a posting --------------------------------------------------
+     Everything here is read from the ledger and the job record, never from
+     memory, so neither a reload nor a trip to another job can strand a
+     posting (F4, F15). */
+  // the send on job record r that filed ledger write `wid`, or null
+  function sendOf(r, wid) {
+    var S = (r && Array.isArray(r.sends)) ? r.sends : [];
+    for (var i = S.length - 1; i >= 0; i--) {
+      var ws = (S[i] && Array.isArray(S[i].writes)) ? S[i].writes : [];
+      for (var k = 0; k < ws.length; k++) if (ws[k] && ws[k].id === wid) return S[i];
+    }
+    return null;
+  }
+  /* Whether ledger write w is a posting of job `jobId`: its tag says so, or,
+     for a store that does not keep tags, the job's own send list names it. */
+  function isPostingOf(w, jobId) {
+    if (!w || !jobId) return false;
+    var m = w.meta;
+    if (m && typeof m === "object" && m.source) return m.source === "posting" && m.jobId === jobId;
+    return !!sendOf(gm.rec("jobs", jobId), w.id);
+  }
+  // the write UNDO POSTING takes back: the newest undoable GM write, when it is a posting of the job on the card
+  function undoTarget() {
+    var d = _j.draft;
+    if (!d.id || !gm.undoable) return null;
+    var u = gm.undoable();
+    return isPostingOf(u, d.id) ? u : null;
+  }
+  // a write taken back; a ledger record that is gone (or never was) is left alone
+  function withdrawn(wid) {
+    var w = gm.rec("ledger", wid);
+    return !!(w && w.undone === true);
+  }
+  /* Brings every job's sentTo and status in line with its sends. A posting
+     can be withdrawn by UNDO POSTING or by the undo strip on any Admin tab, so
+     this runs on every render rather than only after this file's own undo.
+     Only a withdrawal (a write marked undone) sets it off. A send whose other
+     postings still stand keeps them and drops the withdrawn names; once no
+     posting of the send stands (each one withdrawn, or its record deleted
+     since, which took the posting with it), the send leaves the list and the
+     status goes back, if it is still the Posted the send set. An imported
+     write is history and never undone here, so an import changes nothing.
+     Returns how many jobs it changed. */
+  function reconcileSends() {
+    var changed = 0;
+    var roster = (EN.store.roster && EN.store.roster()) || {};
+    gm.list("jobs").forEach(function (r) {
+      if (!r || !Array.isArray(r.sends) || !r.sends.length) return;
+      var c = copy(r), dirty = false;
+      c.sentTo = Array.isArray(c.sentTo) ? c.sentTo.slice() : [];
+      c.sends = c.sends.filter(function (s) {
+        var ws = (s && Array.isArray(s.writes)) ? s.writes.filter(Boolean) : [];
+        var back = ws.filter(function (w) { return withdrawn(w.id); });
+        if (!back.length) return true;
+        dirty = true;
+        var added = Array.isArray(s.added) ? s.added : [];
+        var left = ws.filter(function (w) { return !withdrawn(w.id); });
+        var standing = left.filter(function (w) { return own(roster, w.charId); });
+        (standing.length ? back : ws).forEach(function (w) {
+          if (added.indexOf(w.charId) !== -1) c.sentTo = c.sentTo.filter(function (x) { return x !== w.charId; });
+        });
+        if (standing.length) {
+          s.writes = left;
+          s.added = added.filter(function (x) { return !back.some(function (w) { return w.charId === x; }); });
+          return true;
+        }
+        if (s.setPosted && c.status === "posted") c.status = s.prevStatus || "draft";
+        return false;
+      });
+      if (dirty) { gm.put("jobs", c, { silent: true }); changed++; }
+    });
+    return changed;
   }
   function undoSend() {
-    var L = _j.lastSend;
-    if (!L) return;
-    var n = 0, u;
-    while ((u = gm.undoable()) && L.ids.indexOf(u.id) !== -1) {
-      if (!gm.undoLast()) break;
-      n++;
+    var jobId = _j.draft.id, u = undoTarget();
+    if (!u) { toast("Nothing left to undo."); EN.app.render(); return; }
+    // the whole send the top write belongs to; one write at a time when no send was kept for it
+    var send = sendOf(gm.rec("jobs", jobId), u.id);
+    var ids = send ? send.writes.map(function (w) { return w && w.id; }) : [u.id];
+    var names = [], stuck = false;
+    while ((u = gm.undoable()) && ids.indexOf(u.id) !== -1) {
+      var r = gm.undoLast();
+      if (!r) { stuck = true; break; }
+      names.push(crewNames([r.charId])[0]);
     }
-    var r = gm.rec("jobs", L.jobId);
-    if (r) {
-      var c = copy(r);
-      c.sentTo = (Array.isArray(c.sentTo) ? c.sentTo : []).filter(function (x) { return L.added.indexOf(x) === -1; });
-      if (L.setPosted && c.status === "posted") c.status = L.prevStatus;
-      gm.put("jobs", c);
-    }
-    _j.lastSend = null;
-    toast(n ? "Posting withdrawn from " + n + (n === 1 ? " inbox." : " inboxes.") : "Nothing left to undo.");
+    reconcileSends();
+    toast((names.length ? "Posting withdrawn from " + names.join(", ") + "." : "Nothing was withdrawn.") +
+          (stuck ? " The browser refused a save, so the rest is still in place." : ""));
     EN.app.render();
   }
 
@@ -746,19 +824,44 @@ EN.gmJobs = (function () {
         EN.app.render();
       } }, [el("option", { value: "", selected: true }, "Tie it to the crew: their Heat, Debts or Cred...")].concat(groups));
   }
+  // no re-render on change: the state is kept on input and what depends on it is repainted in place (F19)
   function textArea(val, ph, onInput) {
     return el("textarea", { value: val || "", placeholder: ph,
       style: { width: "100%", minHeight: "72px", fontSize: "13px" },
-      oninput: function (e) { onInput(e.target.value); paintText(); },
-      onchange: function () { EN.app.render(); } });
+      oninput: function (e) { onInput(e.target.value); paintLive(); } });
   }
   function partLine(head, node, color) {
     return el("div", null, [fieldHead(head, color), node]);
   }
 
+  /* The card's parts that follow the typing, each built from the draft as it
+     stands, so render() and paintLive() draw them the same way. */
+  function cardSub(d) { return (titleOf(d) + " · G" + gradeOf(d)).toUpperCase(); }
+  function cardHead(d) {
+    var head = [];
+    if (d.postingId) head.push(tag("SEED " + pad2(d.postingId), "var(--accent)"));
+    head.push(isDirty(d) ? tag(d.id ? "UNSAVED CHANGES" : "NOT SAVED", "var(--warn)") : tag("IN THE LOG", "var(--success)"));
+    return head;
+  }
+  function cardActs(d) {
+    var newBtn = isDirty(d)
+      ? EN.ui.armButton("gmjobs:new", { label: "NEW JOB", armedLabel: "DISCARD THE CARD?", cls: ".btn.sm",
+          armedTitle: "The card has unsaved changes. Click again to clear it.",
+          onConfirm: function () { _j.draft = blankDraft(); _j.locks = Object.create(null); EN.app.render(); } })
+      : el("button.btn.sm", { onclick: function () { _j.draft = blankDraft(); _j.locks = Object.create(null); EN.app.render(); } }, "NEW JOB");
+    return [
+      el("button.btn.sm.primary", { disabled: !hasContent(d), onclick: function () { save(d); EN.app.render(); } },
+        d.id ? "SAVE CHANGES" : "SAVE TO THE LOG"),
+      el("button.btn.sm", { disabled: !hasContent(d), title: "Open Payroll with this job",
+        onclick: function () { payJob(d); } }, "PAY THIS JOB"),
+      newBtn,
+      d.paydayId ? tag("PAID OUT", "var(--flow)") : null,
+      d.encounterId ? tag("PLAN LINKED", "var(--accent)") : null
+    ];
+  }
+
   function cardPanel() {
     var d = _j.draft, P = d.picks, crew = crewNow(), g = gradeOf(d), B = book();
-    var dirty = isDirty(d);
     var kids = [];
 
     // title, Grade, status
@@ -766,8 +869,7 @@ EN.gmJobs = (function () {
       el("div.field", { style: { margin: 0, flex: "2 1 220px", minWidth: "0" } }, [
         lbl("Title"),
         el("input", { type: "text", value: d.title || "", placeholder: titleOf({ title: "", picks: P, postingId: d.postingId }),
-          oninput: function (e) { d.title = e.target.value; paintText(); },
-          onchange: function () { EN.app.render(); } })
+          oninput: function (e) { d.title = e.target.value; paintLive(); } })
       ]),
       el("div.field", { style: { margin: 0, flex: "0 1 150px" } }, [
         lbl("Grade"),
@@ -877,26 +979,17 @@ EN.gmJobs = (function () {
         borderRadius: "3px", padding: "10px 12px", background: "var(--bg1)" } }, gmSide)
     ]));
 
-    // the job's own actions
-    var newBtn = dirty
-      ? EN.ui.armButton("gmjobs:new", { label: "NEW JOB", armedLabel: "DISCARD THE CARD?", cls: ".btn.sm",
-          armedTitle: "The card has unsaved changes. Click again to clear it.",
-          onConfirm: function () { _j.draft = blankDraft(); _j.locks = Object.create(null); EN.app.render(); } })
-      : el("button.btn.sm", { onclick: function () { _j.draft = blankDraft(); _j.locks = Object.create(null); EN.app.render(); } }, "NEW JOB");
-    kids.push(el("div.row.wrap", { style: { gap: "8px", marginTop: "12px", alignItems: "center" } }, [
-      el("button.btn.sm.primary", { disabled: !hasContent(d), onclick: function () { save(d); EN.app.render(); } },
-        d.id ? "SAVE CHANGES" : "SAVE TO THE LOG"),
-      el("button.btn.sm", { disabled: !hasContent(d), title: "Open Payroll with this job",
-        onclick: function () { payJob(d); } }, "PAY THIS JOB"),
-      newBtn,
-      d.paydayId ? tag("PAID OUT", "var(--flow)") : null,
-      d.encounterId ? tag("PLAN LINKED", "var(--accent)") : null
-    ]));
-
-    var head = [];
-    if (d.postingId) head.push(tag("SEED " + pad2(d.postingId), "var(--accent)"));
-    head.push(dirty ? tag(d.id ? "UNSAVED CHANGES" : "NOT SAVED", "var(--warn)") : tag("IN THE LOG", "var(--success)"));
-    return EN.ui.panel("Job Card", (titleOf(d) + " · G" + g).toUpperCase(), kids, { headerRight: head });
+    // the job's own actions, and the header tags, repainted in place while the GM types
+    var acts = el("div.row.wrap", { dataset: { live: "card-acts" }, style: { gap: "8px", marginTop: "12px", alignItems: "center" } }, cardActs(d));
+    kids.push(acts);
+    var head = el("span", { dataset: { live: "card-head" }, style: { display: "inline-flex", gap: "8px", alignItems: "center", flexWrap: "wrap" } }, cardHead(d));
+    var p = EN.ui.panel("Job Card", cardSub(d), kids, { headerRight: [head] });
+    if (_paint) {
+      _paint.cardActs = acts;
+      _paint.cardHead = head;
+      _paint.cardTag = p.querySelector(".panel-h .tag");
+    }
+    return p;
   }
 
   /* ---- handing it out ------------------------------------------------------------ */
@@ -906,17 +999,85 @@ EN.gmJobs = (function () {
                border: "1px solid var(--border)", borderRadius: "3px", padding: "8px 10px", maxHeight: "240px",
                overflowY: "auto", color: "var(--text2)", userSelect: "text" }, text: text });
   }
-  function paintText() {
+  function refill(node, kids) {
+    if (!node || !node.isConnected) return;
+    EN.ui.clear(node);
+    kids.forEach(function (k) { if (k) node.appendChild(k); });
+  }
+  /* What each live part is drawn from, as a string. A part is rebuilt only
+     when its string changes, so typing inside an already unsaved card swaps
+     no button at all: only the keystroke that flips a state (the first one,
+     usually) rebuilds the buttons that state draws. */
+  function liveSig(d) {
+    var dirty = isDirty(d);
+    var to = recipients().filter(function (m) { return picked(m.charId); }).map(function (m) { return m.charId; });
+    var u = undoTarget();
+    return {
+      head: JSON.stringify([d.postingId || 0, dirty, !!d.id]),
+      acts: JSON.stringify([dirty, hasContent(d), !!d.id, d.paydayId || 0, d.encounterId || 0]),
+      send: JSON.stringify([!!crewBody(d), to, u ? u.id : 0, d.sentTo || []]),
+      log: JSON.stringify([dirty, d.id || 0, gm.list("jobs").length])
+    };
+  }
+  /* Called on every keystroke in the title, hook and GM notes (F19). Nothing
+     the GM is typing into is rebuilt, so focus and the caret stay put, and a
+     button pressed right after typing is the same node the click lands on. */
+  function paintLive() {
     if (!_paint) return;
     var d = _j.draft;
     if (_paint.crew && _paint.crew.isConnected) _paint.crew.textContent = crewCopy(d);
     if (_paint.gm && _paint.gm.isConnected) _paint.gm.textContent = gmCopy(d);
+    if (_paint.cardTag && _paint.cardTag.isConnected) _paint.cardTag.textContent = cardSub(d);
+    var s = liveSig(d), was = _paint.sig || {};
+    if (s.head !== was.head) refill(_paint.cardHead, cardHead(d));
+    if (s.acts !== was.acts) refill(_paint.cardActs, cardActs(d));
+    if (s.send !== was.send) refill(_paint.sendActs, sendActs(d));
+    // the log's OPEN buttons ask first while the card is unsaved, so the log follows too
+    if (s.log !== was.log && _paint.log && _paint.log.isConnected && _paint.log.parentNode) {
+      var fresh = logPanel();
+      _paint.log.parentNode.replaceChild(fresh, _paint.log);
+      _paint.log = fresh;
+    }
+    _paint.sig = s;
+  }
+  // SEND TO #POST, UNDO POSTING and who it went to: they follow the hook as it is typed
+  function sendActs(d) {
+    var list = recipients();
+    var to = list.filter(function (m) { return picked(m.charId); });
+    var body = crewBody(d);
+    var acts = [];
+    if (to.length && body) {
+      acts.push(EN.ui.armButton("gmjobs:send", { label: "SEND TO #POST", cls: ".btn.sm",
+        armedLabel: "SEND TO " + to.length + (to.length === 1 ? " RECORD?" : " RECORDS?"),
+        title: "Post the crew's text to the chosen records",
+        armedTitle: "Writes a #POST message into " + to.map(function (m) { return m.name; }).join(", ") + ". UNDO takes it back.",
+        onConfirm: sendPost }));
+    } else {
+      acts.push(el("button.btn.sm", { disabled: true, title: body ? "Choose who receives it" : "Roll or write the job first" }, "SEND TO #POST"));
+    }
+    var u = undoTarget();
+    if (u) {
+      // who still has this send's posting: the ledger's standing writes (liveWrites), not this file's memory
+      var send = sendOf(gm.rec("jobs", d.id), u.id);
+      var live = (typeof gm.liveWrites === "function") ? gm.liveWrites(function (r) { return isPostingOf(r, d.id); }) : null;
+      var stands = function (w) {
+        return !!w && (live ? live.some(function (r) { return r.id === w.id; }) : !withdrawn(w.id));
+      };
+      var who = send ? send.writes.filter(stands).map(function (w) { return w.charId; }) : [u.charId];
+      acts.push(el("button.btn.sm", { dataset: { undo: "posting" },
+        title: "Take the posting back out of " + crewNames(who).join(", ") + (who.length === 1 ? "'s inbox" : "'s inboxes"),
+        onclick: undoSend }, "UNDO POSTING"));
+    }
+    if (d.sentTo.length) {
+      acts.push(el("span.help", { style: { margin: 0 }, text: "Posted to " + crewNames(d.sentTo).join(", ") + "." }));
+    }
+    return acts;
   }
 
   function handOutPanel() {
     var d = _j.draft, kids = [];
     var crewBox = textBox("crew", crewCopy(d)), gmBox = textBox("gm", gmCopy(d));
-    _paint = { crew: crewBox, gm: gmBox };
+    if (_paint) { _paint.crew = crewBox; _paint.gm = gmBox; }
     kids.push(el("div.row.wrap", { style: { gap: "12px", alignItems: "flex-start" } }, [
       el("div", { style: { flex: "1 1 260px", minWidth: "0" } }, [
         fieldHead("FOR THE CREW: CLIENT, JOB, SITE AND HOOK", "var(--accent)"), crewBox,
@@ -956,26 +1117,9 @@ EN.gmJobs = (function () {
           oninput: function (e) { _j.when = e.target.value; } })
       ])
     ]));
-    var to = list.filter(function (m) { return picked(m.charId); });
-    var body = crewBody(d);
-    var acts = [];
-    if (to.length && body) {
-      acts.push(EN.ui.armButton("gmjobs:send", { label: "SEND TO #POST", cls: ".btn.sm",
-        armedLabel: "SEND TO " + to.length + (to.length === 1 ? " RECORD?" : " RECORDS?"),
-        title: "Post the crew's text to the chosen records",
-        armedTitle: "Writes a #POST message into " + to.map(function (m) { return m.name; }).join(", ") + ". UNDO takes it back.",
-        onConfirm: sendPost }));
-    } else {
-      acts.push(el("button.btn.sm", { disabled: true, title: body ? "Choose who receives it" : "Roll or write the job first" }, "SEND TO #POST"));
-    }
-    if (canUndo()) {
-      acts.push(el("button.btn.sm", { title: "Take the posting back out of " + _j.lastSend.names.join(", ") + "'s inbox",
-        onclick: undoSend }, "UNDO POSTING"));
-    }
-    if (d.sentTo.length) {
-      acts.push(el("span.help", { style: { margin: 0 }, text: "Posted to " + crewNames(d.sentTo).join(", ") + "." }));
-    }
-    kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "10px" } }, acts));
+    var acts = el("div.row.wrap", { dataset: { live: "send-acts" }, style: { gap: "8px", alignItems: "center", marginTop: "10px" } }, sendActs(d));
+    if (_paint) _paint.sendActs = acts;
+    kids.push(acts);
     return EN.ui.panel("Hand It Out", "COPY · #POST", kids);
   }
 
@@ -1081,16 +1225,33 @@ EN.gmJobs = (function () {
   }
 
   /* ---- the tab --------------------------------------------------------------------- */
+  /* The shared "last write to a Freelancer record" strip (gm.js) under the
+     heading, so the newest GM write can always be undone from here, whatever
+     job is on the card (F4). Null while gm.js has no strip or nothing is
+     undoable. */
+  function undoStrip() {
+    try {
+      return (EN.gmView && typeof EN.gmView.undoStrip === "function") ? (EN.gmView.undoStrip() || null) : null;
+    } catch (e) {
+      try { console.error("GM Job Board: the undo strip failed", e); } catch (e2) {}
+      return null;
+    }
+  }
+
   function render(mount) {
     EN.ui.clear(mount);
     _crew = null;
-    _paint = null;
+    _paint = {};
     var B = book();
     if (!B) {
-      mount.appendChild(el("div", null, [heading("Job Board", "// roll a job"),
+      mount.appendChild(el("div", null, [heading("Job Board", "// roll a job"), undoStrip(),
         el("div.muted-box", { text: "Job Board data did not load. Check app/data/gm_jobs.js." })]));
       return;
     }
+    // a posting withdrawn anywhere (UNDO POSTING, or the undo strip on any tab) takes its names off the job
+    reconcileSends();
+    // and a payday the strip took back on another tab frees its job here, before Payroll is next opened
+    if (EN.gmPayroll && typeof EN.gmPayroll.reconcile === "function") EN.gmPayroll.reconcile();
     // nothing hands a job here yet; a {jobId} opens it, so a later link back from Payroll costs nothing
     var h = EN.gmView && EN.gmView.takeHandoff ? EN.gmView.takeHandoff("jobs") : null;
     if (h && h.jobId) openJob(h.jobId);
@@ -1098,15 +1259,19 @@ EN.gmJobs = (function () {
     // a Grade that follows the crew moves when the crew does, and the cryptid pull follows it
     if (_j.draft.grade == null) recheckCryptid(_j.draft);
     var gap = function () { return el("div", { style: { height: "12px" } }); };
+    var log = logPanel();
+    _paint.log = log;
     mount.appendChild(el("div", null, [
       heading("Job Board", "// roll a job"),
+      undoStrip(),
       el("p.help", { style: { margin: "-6px 0 14px", maxWidth: "860px" }, text: B.intro }),
       generatorPanel(), gap(),
       cardPanel(), gap(),
       handOutPanel(), gap(),
       postingsPanel(), gap(),
-      logPanel()
+      log
     ]));
+    _paint.sig = liveSig(_j.draft);
   }
 
   return { render: render };

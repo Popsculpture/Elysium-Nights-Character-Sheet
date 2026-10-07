@@ -46,7 +46,14 @@ EN.gmView = (function () {
      block is a copy, so a builder that keeps changing its preview after the
      click cannot change the line it just sent. An unnamed build travels under
      the name its own inputs give it, since a plan of three lines all called
-     "Threat" tells the GM nothing. */
+     "Threat" tells the GM nothing.
+
+     NO PROVENANCE NOTE (F21). Each button here used to send "Street Ganger, from
+     the Bestiary." as the note, and the plan's intake files every note in the
+     plan's own Notes, so a GM's prep notes collected one such line per line
+     added and printed them in the plan's COPY. The Encounters banner already
+     says what arrived, so these send an empty note, as the handoff's payload
+     shape has it. */
   function toPlan(lines, note) {
     handoff("encounters", { addLines: lines, note: note || "" });
   }
@@ -135,8 +142,7 @@ EN.gmView = (function () {
         EN.app.render();
       } }, "SAVE STATBLOCK"),
       el("button.btn.sm", { title: "Add this build as a line on an encounter plan", onclick: function () {
-        var line = threatLine(EN.gmEngine.buildThreat(_b));
-        toPlan([line], line.block.name + ", from the Threat Builder.");
+        toPlan([threatLine(EN.gmEngine.buildThreat(_b))], "");
       } }, "+ ADD TO ENCOUNTER PLAN")
     ]));
 
@@ -593,7 +599,7 @@ EN.gmView = (function () {
       } }, "+ ADD TO INITIATIVE"),
       // the plan prices and runs a Bestiary line by its name, so the name is all it carries
       el("button.btn.sm", { title: "Add this entry as a line on an encounter plan", onclick: function () {
-        toPlan([{ kind: "bestiary", name: e.name, count: 1 }], e.name + ", from the Bestiary.");
+        toPlan([{ kind: "bestiary", name: e.name, count: 1 }], "");
       } }, "+ ADD TO ENCOUNTER PLAN")
     ]));
     return el("div.feature", null, kids);
@@ -835,8 +841,7 @@ EN.gmView = (function () {
             EN.app.render();
           } }, "+ ORDER"),
           el("button.btn.sm", { title: "Add this statblock as a line on an encounter plan", onclick: function () {
-            var line = threatLine(b);
-            toPlan([line], line.block.name + ", from Saved Threats.");
+            toPlan([threatLine(b)], "");
           } }, "+ ENCOUNTER PLAN"),
           el("button.btn.sm", { onclick: function () { gm.removeThreat(t.id); EN.app.render(); } }, "✕")
         ])
@@ -854,6 +859,68 @@ EN.gmView = (function () {
       el("h1", { style: { fontSize: "22px", letterSpacing: ".06em" },
         html: title + ' <span class="dim3" style="font-size:13px">' + sub + "</span>" })
     ]);
+  }
+
+  /* ---- the undo strip ------------------------------------------------------
+     THE ALWAYS-AVAILABLE WAY TO POP THE STACK (F4). Undo of GM writes to player
+     records is newest first, and each module offers its own UNDO only while the
+     newest write is one of its own. A write whose module had lost track of it (a
+     posting after a reload, an award after HIDE or the next fight) used to be
+     unreachable, and it blocked the undo of every older payday and award under
+     it for good. This strip names the newest write that still stands, whichever
+     module made it, and undoes it. Every Admin tab draws it under its heading:
+     this file for the Table, Threats and Bestiary, each module file for its own.
+
+     Armed, because it changes a player's record, and keyed on the write's id, so
+     a newer write arriving between the two clicks disarms it instead of the
+     second click undoing something the GM never saw named. It also says NOT
+     SAVED while the last write of the GM data was refused (gmStore.saveOk).
+     Returns null when there is nothing to say. */
+  function ago(at) {
+    var mins = Math.floor(Math.max(0, Date.now() - (Number(at) || 0)) / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return mins + (mins === 1 ? " minute ago" : " minutes ago");
+    var hrs = Math.floor(mins / 60);
+    if (hrs < 24) return hrs + (hrs === 1 ? " hour ago" : " hours ago");
+    var days = Math.floor(hrs / 24);
+    return days + (days === 1 ? " day ago" : " days ago");
+  }
+  function undoStrip() {
+    if (!gm || typeof gm.undoable !== "function") return null;
+    var u = null;
+    try { u = gm.undoable(); } catch (e) { u = null; }
+    var unsaved = typeof gm.saveOk === "function" && gm.saveOk() === false;
+    if (!u && !unsaved) return null;
+    var kids = [];
+    if (unsaved) {
+      kids.push(el("p.help", { style: { margin: u ? "0 0 6px" : 0, color: "var(--danger)" },
+        text: "NOT SAVED. This device refused the last write of the GM data. Export it from Settings, under GM DATA, to keep a copy." }));
+    }
+    if (u) {
+      var label = u.label || "A GM write";
+      var who = u.charName || "a Freelancer";
+      kids.push(el("div.row.between.wrap", { style: { gap: "8px", alignItems: "center" } }, [
+        el("span.help", { style: { margin: 0 },
+          text: "Last write to a Freelancer record: " + label + " (" + who + "), " + ago(u.at) + "." }),
+        EN.ui.armButton("gm:undostrip:" + u.id, {
+          label: "UNDO", armedLabel: "UNDO IT?",
+          title: "Take this write back off " + who + "'s record",
+          armedTitle: "Takes " + label + " back off " + who + "'s record. Click again to confirm.",
+          onConfirm: function () {
+            var now = null;
+            try { now = gm.undoable(); } catch (e) { now = null; }
+            if (!now || now.id !== u.id) { toast("A newer write arrived. Check the strip again."); EN.app.render(); return; }
+            var r = gm.undoLast();
+            if (r) toast("Undone: " + (r.label || "a GM write") + " on " + (r.charName || "a Freelancer") + "'s record.");
+            else if (r === false) toast("Not undone: this device refused the write, so nothing changed.");
+            else toast("Nothing left to undo.");
+            EN.app.render();
+          }
+        })
+      ]));
+    }
+    return el("div.feature", { dataset: { gm: "undostrip" },
+      style: { borderLeftColor: unsaved ? "var(--danger)" : "var(--warn)", marginBottom: "12px" } }, kids);
   }
 
   /* ---- hooks for the module tabs ------------------------------------------
@@ -938,13 +1005,13 @@ EN.gmView = (function () {
     // two rows sharing a name are numbered however they arrived (addThreat
     // numbers on the way in; this catches a row written by any other path)
     if (gm.numberThreats) gm.numberThreats();
-    var blocks = [heading("Table", "// initiative and the order"), trackerPanel()];
+    var blocks = [heading("Table", "// initiative and the order"), undoStrip(), trackerPanel()].filter(Boolean);
     mount.appendChild(el("div", null, blocks.concat(tableExtras())));
   }
 
   function renderThreats(mount) {
     EN.ui.clear(mount);
-    var blocks = [heading("Threats", "// build a statblock from Grade, Designation and Role"), builderPanel()];
+    var blocks = [heading("Threats", "// build a statblock from Grade, Designation and Role"), undoStrip(), builderPanel()].filter(Boolean);
     var saved = savedPanel();
     if (saved) { blocks.push(el("div", { style: { height: "12px" } })); blocks.push(saved); }
     mount.appendChild(el("div", null, blocks));
@@ -960,12 +1027,14 @@ EN.gmView = (function () {
     // bestiaryPanel() returns null when EN.bestiary never loaded. A tab that
     // is entirely absent reads as broken, so say so rather than showing nothing.
     var body = best || el("div.muted-box", { text: "Bestiary data did not load. Check app/data/bestiary.js." });
-    mount.appendChild(el("div", null, [heading("Bestiary", "// Gangers, Sentries, and Cryptids. Oh my!"), body]));
+    mount.appendChild(el("div", null, [heading("Bestiary", "// Gangers, Sentries, and Cryptids. Oh my!"), undoStrip(), body].filter(Boolean)));
   }
 
   return {
     renderTable: renderTable, renderThreats: renderThreats, renderBestiary: renderBestiary,
     // the module tabs' hooks (see "hooks for the module tabs" above)
-    handoff: handoff, takeHandoff: takeHandoff, registerTableExtra: registerTableExtra
+    handoff: handoff, takeHandoff: takeHandoff, registerTableExtra: registerTableExtra,
+    // the newest standing GM write with its armed UNDO, for the top of every Admin tab
+    undoStrip: undoStrip
   };
 })();

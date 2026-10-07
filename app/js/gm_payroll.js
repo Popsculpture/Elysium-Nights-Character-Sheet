@@ -36,9 +36,19 @@
    STATE. The form is transient (module scope), like the Threats builder's
    inputs: a half-priced payday is not worth a save slot until the GM says so.
    SAVE PAYDAY files it in the GM ledger (bag `ledger`, kind "payday") with a
-   copy of the form, so OPEN can bring it back. Typing re-renders this tab
-   locally and puts the caret back (refresh), because a full app render on
-   every keystroke would rebuild the field being typed into.
+   copy of the form, so OPEN can bring it back. Typing never rebuilds the
+   field being typed into (retype): everything around it is redrawn and the
+   field itself stays, so a half-typed "1." or a phone keyboard's composing
+   word survives. A click redraws this tab locally (refresh). Because the form
+   is not saved as it is typed, OPEN and a handoff from another tab ask before
+   they replace changes that are not saved (dirty).
+
+   WHAT STILL STANDS is read off the ledger's write records, never from a copy
+   this tab or a snapshot holds: gmStore.paidWrites (not undone, to a record
+   still on this device, imported or not) for what is already paid, the
+   Table's XP award for the fight being paid and an earlier payday for the
+   same fight or job, which hold CREDIT THE CREW back so nothing is paid
+   twice; gmStore.liveWrites (the same, imported ones left out) for UNDO.
    =========================================================================== */
 window.EN = window.EN || {};
 
@@ -121,6 +131,31 @@ EN.gmPayroll = (function () {
   var _p = fresh();
   var _open = Object.create(null);   // which reference folds are open
   var _mount = null;
+  var _pend = null;                  // a handoff waiting on the GM's word, because the form had unsaved changes (F18)
+
+  /* UNSAVED CHANGES (F18). The form is compared with how it stood when it was
+     last started, opened, handed in, saved or credited (_base). The picker
+     selections are left out (they choose, they do not hold work), keys are
+     sorted (a null-prototype map keeps insertion order), and a number and the
+     same number typed as a string compare equal (a typed "15" over the default
+     15 is no change). */
+  var SIG_SKIP = { paydayId: true, bSrc: true, bEnc: true, bBest: true };
+  function stable(v) {
+    if (Array.isArray(v)) return "[" + v.map(stable).join(",") + "]";
+    if (v && typeof v === "object") {
+      return "{" + Object.keys(v).sort().map(function (k) { return JSON.stringify(k) + ":" + stable(v[k]); }).join(",") + "}";
+    }
+    if (typeof v === "number") return JSON.stringify(String(v));
+    return JSON.stringify(v === undefined ? null : v);
+  }
+  function sigOf(p) {
+    var o = Object.create(null);
+    Object.keys(p).forEach(function (k) { if (!own(SIG_SKIP, k)) o[k] = p[k]; });
+    return stable(o);
+  }
+  var _base = sigOf(_p);
+  function settle() { _base = sigOf(_p); }
+  function dirty() { return sigOf(_p) !== _base; }
 
   // a saved form comes back from storage, which an import can write, so each
   // field is taken only when it has the type this file wrote
@@ -229,24 +264,120 @@ EN.gmPayroll = (function () {
   function encCrew(enc) {
     return ((enc && Array.isArray(enc.entries)) ? enc.entries : []).filter(function (r) { return r && r.kind === "crew"; });
   }
-  /* XP THE TABLE ALREADY WROTE for this fight. The Encounters tab's AWARD XP
-     writes an encounter's XP from the Table, and its SEND TO PAYROLL hands the
-     same fight here, so crediting the XP again would pay it twice. The live
-     snapshot is read when it is still this fight (the two share `at`), so an
-     award made or undone after the handoff shows; otherwise the copy that came
-     with the handoff. An award counts while one of its writes still stands.
-     Returns {total, names} or null. */
+  /* THE WRITES STILL STANDING (F4, F9, F10). gmStore.liveWrites answers what
+     UNDO can take back: write records not undone, not imported from a backup
+     (history only on this device), and to a Freelancer still in the roster,
+     newest first. A write to a deleted record went with the record, so it no
+     longer counts as paid.
+     gmStore.paidWrites answers what is ALREADY PAID: the same, with the
+     imported writes kept in. Restoring a backup brings back records that
+     really hold those writes, so the Table's award, an earlier payday and a
+     job's own payday all hold CREDIT THE CREW back whether or not they came
+     in with an import. The fallbacks are the same rules, for a store that
+     predates them. */
+  function standingWrites(filter, withImported) {
+    var roster = (EN.store && EN.store.roster && EN.store.roster()) || {};
+    return gm.list("ledger").filter(function (r) {
+      return isObj(r) && r.kind === "write" && !r.undone && (withImported || !r.imported) && typeof r.charId === "string" &&
+        own(roster, r.charId) && (!filter || filter(r));
+    }).sort(function (a, b) { return (b.at || 0) - (a.at || 0); });
+  }
+  function liveWrites(filter) {
+    if (typeof gm.liveWrites === "function") return gm.liveWrites(filter) || [];
+    return standingWrites(filter, false);
+  }
+  function paidWrites(filter) {
+    if (typeof gm.paidWrites === "function") return gm.paidWrites(filter) || [];
+    return standingWrites(filter, true);
+  }
+  function metaOf(w) { return (w && isObj(w.meta)) ? w.meta : {}; }
+  // the XP a write carries (the whole fight's total under D5), or 0
+  function xpOfWrite(w) {
+    var n = 0;
+    (Array.isArray(w.ops) ? w.ops : []).forEach(function (o) { if (o && o.op === "xp") n = Number(o.amount) || 0; });
+    return n;
+  }
+
+  /* XP THE TABLE ALREADY WROTE for this fight (F9, F10). The Encounters tab's
+     AWARD XP writes an encounter's XP from the Table, and its SEND TO PAYROLL
+     hands the same fight here, so crediting the XP again would pay it twice.
+     The award is found in the ledger, by the writes Encounters tags
+     {source: "award", encounterAt}, matched to the `at` of the fight being
+     paid. The form's own copy of the snapshot is never read for it: that copy
+     is as old as the handoff, so an award made after it was missed and paid
+     again. An award written before writes carried a tag is still found on the
+     live lastEncounter while that is this fight, counting only its writes that
+     still stand. An award that came in with an imported backup counts: it is
+     paid, even though it cannot be undone here. Returns {total, names} or null. */
   function tableAward(enc) {
-    if (!isObj(enc)) return null;
-    var last = gm.get().lastEncounter;
-    var src = (isObj(last) && enc.at && last.at === enc.at) ? last : enc;
-    var aw = isObj(src.xpAward) ? src.xpAward : null;
-    if (!aw) return null;
-    var live = (Array.isArray(aw.writeIds) ? aw.writeIds : []).some(function (id) {
-      var w = gm.rec("ledger", id);
-      return !!(w && !w.undone);
+    if (!isObj(enc) || typeof enc.at !== "number") return null;
+    var at = enc.at, seen = Object.create(null), hits = [];
+    var live = paidWrites();
+    live.forEach(function (w) {
+      var mt = metaOf(w);
+      if (mt.source === "award" && mt.encounterAt === at) { seen[w.id] = true; hits.push(w); }
     });
-    return live ? { total: Number(aw.total) || 0, names: Array.isArray(aw.names) ? aw.names.slice() : [] } : null;
+    var last = gm.get().lastEncounter;
+    var aw = (isObj(last) && last.at === at && isObj(last.xpAward)) ? last.xpAward : null;
+    if (aw && Array.isArray(aw.writeIds)) {
+      live.forEach(function (w) {
+        if (aw.writeIds.indexOf(w.id) !== -1 && !own(seen, w.id)) { seen[w.id] = true; hits.push(w); }
+      });
+    }
+    if (!hits.length) return null;
+    var total = 0, names = [];
+    hits.slice().reverse().forEach(function (w) {
+      total = Math.max(total, xpOfWrite(w));
+      names.push(w.charName || "a Freelancer");
+    });
+    return { total: total, names: names };
+  }
+
+  /* AN EARLIER PAYDAY FOR THE SAME FIGHT OR THE SAME JOB (F8). A credited
+     payday with a write still standing that paid the fight this form pays (the
+     same encounterAt) or the job it pays. CREDIT THE CREW waits for the GM's
+     armed word when there is one, and the fight's XP is never written twice.
+     A payday's writes are the ones tagged with its id, or (credited before
+     writes carried a tag) the ones its writeIds list, counted by paidWrites, so
+     a payday that came in with an imported backup still holds the credit.
+
+     EVERY MATCH IS READ, not only the newest. A newer payday for the job alone
+     used to hide an older one that wrote this fight's XP, and the fight's XP
+     was then written a second time. Returns the newest match as {pd, fight,
+     job, xpNames, imported, xp, others}, or null: `xp` is the newest match
+     that wrote this fight's XP (the same object when that is the newest; null
+     when none did), and `others` the older matches. selfId is the form's own
+     payday. */
+  function paydayAt(pd) {
+    if (typeof pd.encounterAt === "number") return pd.encounterAt;
+    return (isObj(pd.form) && isObj(pd.form.enc) && typeof pd.form.enc.at === "number") ? pd.form.enc.at : null;
+  }
+  function earlierPayday(encAt, jobId, selfId) {
+    var hasAt = typeof encAt === "number", paid = null, hits = [];
+    if (!hasAt && !jobId) return null;
+    gm.list("ledger").forEach(function (pd) {
+      if (!isObj(pd) || pd.kind !== "payday" || pd.id === selfId || !pd.credited || pd.undone) return;
+      var fight = hasAt && paydayAt(pd) === encAt;
+      var jobHit = !!jobId && pd.jobId === jobId;
+      if (!fight && !jobHit) return;
+      if (!paid) paid = paidWrites();
+      var ids = Array.isArray(pd.writeIds) ? pd.writeIds : [];
+      var ws = paid.filter(function (w) {
+        var mt = metaOf(w);
+        return (mt.source === "payday" && mt.paydayId === pd.id) || ids.indexOf(w.id) !== -1;
+      });
+      if (!ws.length) return;
+      // in the order written (paidWrites is newest first)
+      var xpNames = ws.filter(function (w) { return xpOfWrite(w) > 0; }).reverse().map(function (w) { return w.charName || "a Freelancer"; });
+      // `imported`: none of its writes can be undone here, so the hold cannot say "undo that payday"
+      hits.push({ pd: pd, fight: fight, job: jobHit, xpNames: xpNames,
+                  imported: !ws.some(function (w) { return !w.imported; }) });
+    });
+    if (!hits.length) return null;
+    var hit = hits[0];
+    hit.xp = hits.filter(function (h) { return h.fight && h.xpNames.length; })[0] || null;
+    hit.others = hits.slice(1);
+    return hit;
   }
   /* THE FIGHT BEING PAID, taken into the form with the same XP the Table's award
      card counts. That card adds the plan's objective award on top of the
@@ -323,7 +454,23 @@ EN.gmPayroll = (function () {
 
   /* ---- the model: every number on the page, computed once a render ------ */
   function job() { return _p.jobId ? gm.rec("jobs", _p.jobId) : null; }
-  function defaultTitle() { var j = job(); return (j && j.title) ? String(j.title) : "Payday"; }
+  /* The title when none is typed (F20): the job's, else the name of the fight
+     being paid, else plain "Payday". A payday from the Table's award for a plan
+     with no job used to be called "Payday", and its stub read "Payday: Payday". */
+  function defaultTitle() {
+    var j = job();
+    if (j && typeof j.title === "string" && j.title.trim()) return j.title.trim();
+    if (_p.enc && typeof _p.enc.name === "string" && _p.enc.name.trim()) return _p.enc.name.trim();
+    return "Payday";
+  }
+  /* "Payday: The Toll", the stub's subject and the summary's first line, but
+     never the word twice: a title that already starts with it stands alone
+     ("Payday", "Payday at the docks"). `word` is "Payday" or "PAYDAY". */
+  function titled(word, title) {
+    var t = String(title || "").trim();
+    if (!t) return word;
+    return /^payday\b/i.test(t) ? word + t.slice(6) : word + ": " + t;
+  }
 
   function model() {
     var c = crewNow();
@@ -361,9 +508,16 @@ EN.gmPayroll = (function () {
     var xpRows = threats.filter(function (t) { return _p.noXp.indexOf(t.id) === -1; });
     var xpObj = glim(_p.objXp);
     var xpTotal = xpRows.reduce(function (a, t) { return a + t.xp; }, 0) + xpObj;
-    // what CREDIT THE CREW writes: nothing when the Table already awarded this fight, unless the GM says again
+    // an earlier payday still standing for this fight or this job holds the credit back (F8)
+    var encAt = (_p.enc && typeof _p.enc.at === "number") ? _p.enc.at : null;
+    var dup = earlierPayday(encAt, _p.jobId, _p.paydayId);
+    // any earlier payday that wrote this fight's XP, not only the newest match
+    var xpPaid = dup ? dup.xp : null;
+    /* what CREDIT THE CREW writes: nothing when an earlier payday already wrote
+       this fight's XP (never twice, override or not), and nothing when the Table
+       already awarded it, unless the GM says to write it again */
     var tAward = tableAward(_p.enc);
-    var xpWrite = (tAward && !_p.xpAgain) ? 0 : xpTotal;
+    var xpWrite = xpPaid ? 0 : (tAward && !_p.xpAgain) ? 0 : xpTotal;
 
     var roster = (EN.store && EN.store.roster && EN.store.roster()) || {};
     var credit = c.members.filter(function (x) {
@@ -379,8 +533,9 @@ EN.gmPayroll = (function () {
       bounties: bl, bTotal: bTotal, threats: threats, salvage: sl, sTotal: sTotal,
       split: split, sSplit: sSplit, eachG: split.each + sSplit.each,
       nexEach: eachC / 100, nexOver: (cents - eachC * hc) / 100,
-      xpRows: xpRows, xpObj: xpObj, xpTotal: xpTotal, tAward: tAward, xpWrite: xpWrite,
+      xpRows: xpRows, xpObj: xpObj, xpTotal: xpTotal, tAward: tAward, xpPaid: xpPaid, xpWrite: xpWrite,
       credit: credit, title: (_p.title || "").trim() || defaultTitle(),
+      encAt: encAt, dup: dup,
       rec: rec, paid: !!(rec && rec.credited && !rec.undone)
     };
   }
@@ -405,11 +560,19 @@ EN.gmPayroll = (function () {
     return el("span.chip" + (on ? ".on" : ""), { dataset: pay ? { pay: pay } : null, title: title || null,
       style: { cursor: "pointer", fontSize: "10.5px" }, onclick: onclick }, text);
   }
-  // a typed field: the value lands in the form and the tab refreshes in place
+  /* A typed field: the value lands in the form and everything around the field
+     is redrawn while the field itself is left alone (retype, F13). A number
+     field the browser cannot read yet (a lone "-") changes nothing until it can;
+     the typed string stays on screen either way. */
   function numIn(key, value, width, onval, attrs) {
     var a = { type: "number", value: value == null ? "" : String(value), dataset: { pf: key },
       style: { width: width || "90px" },
-      oninput: function (e) { onval(e.target.value); refresh(); } };
+      oninput: function (e) {
+        var t = e.target;
+        if (t.validity && t.validity.badInput) return;
+        onval(t.value);
+        retype(t);
+      } };
     if (attrs) Object.keys(attrs).forEach(function (k) { a[k] = attrs[k]; });
     return el("input", a);
   }
@@ -417,7 +580,7 @@ EN.gmPayroll = (function () {
     var s = { width: "100%" };
     if (style) Object.keys(style).forEach(function (k) { s[k] = style[k]; });
     return el("input", { type: "text", value: value || "", placeholder: placeholder || "", dataset: { pf: key }, style: s,
-      oninput: function (e) { onval(e.target.value); refresh(); } });
+      oninput: function (e) { onval(e.target.value); retype(e.target); } });
   }
   // a money readout; data-v carries the raw number for anything that reads the page
   function money(lab, n, text, color, pay) {
@@ -969,8 +1132,18 @@ EN.gmPayroll = (function () {
       money("EACH FREELANCER", m.xpTotal, commas(m.xpTotal) + " XP", "var(--accent)", "xp-total")
     ]));
     if (OA.minText) kids.push(help(cap(OA.minText) + ", " + OA.maxText + "."));
+    // an earlier payday already wrote this fight's XP: it is not written again, override or not (F8)
+    if (m.xpPaid && !m.paid) {
+      kids.push(el("div.feature", { dataset: { pay: "xp-paid" }, style: { borderLeftColor: "var(--warn)", marginTop: "8px" } }, [
+        el("p", { style: { margin: 0, color: "var(--warn)", fontWeight: 600 },
+          text: titled("Payday", m.xpPaid.pd.title) + " already wrote this fight's XP to " + m.xpPaid.xpNames.join(", ") + "." }),
+        help("CREDIT THE CREW leaves XP out, so one fight's XP is never paid twice. " + (m.xpPaid.imported
+          ? "That payday came in with an imported GM backup, so it cannot be undone here."
+          : "Undo that payday to pay the XP here instead."), { margin: "3px 0 0" })
+      ]));
+    }
     // the Table's AWARD XP already paid this fight's XP: say so, and write it again only on the GM's word
-    if (m.tAward) {
+    if (m.tAward && !m.xpPaid) {
       kids.push(el("div.feature", { dataset: { pay: "xp-awarded" }, style: { borderLeftColor: "var(--warn)", marginTop: "8px" } }, [
         el("p", { style: { margin: 0, color: "var(--warn)", fontWeight: 600 },
           text: "The Table already awarded " + commas(m.tAward.total) + " XP for this fight" +
@@ -1010,7 +1183,7 @@ EN.gmPayroll = (function () {
   function signed(n) { return n > 0 ? "+" + n : String(n); }
   function summaryText(m) {
     var L = [], q = m.q, sp = m.split, ss = m.sSplit;
-    L.push("PAYDAY: " + m.title);
+    L.push(titled("PAYDAY", m.title));
     var names = m.crew.members.map(function (x) { return x.name; });
     L.push("Crew: " + m.crew.headcount + " at Caliber " + m.crew.caliber + (names.length ? " (" + names.join(", ") + ")" : "") + ".");
     L.push("Contract: " + q.name + " at Caliber " + q.caliber +
@@ -1030,7 +1203,8 @@ EN.gmPayroll = (function () {
     L.push("Each Freelancer: " + fmtG(m.eachG) + (m.nexEach > 0 ? " and " + fmtNx(m.nexEach) : "") + ".");
     if (m.xpTotal > 0) {
       L.push("XP: " + commas(m.xpTotal) + " to every Freelancer on XP" +
-        (m.tAward && !m.xpWrite ? ", already awarded at the Table." : ". Milestone tables skip it."));
+        (m.xpPaid && !m.xpWrite ? ", already paid with " + titled("Payday", m.xpPaid.pd.title) + "."
+          : m.tAward && !m.xpWrite ? ", already awarded at the Table." : ". Milestone tables skip it."));
     }
     if ((_p.cred || "").trim()) L.push("Cred: " + _p.cred.trim());
     if ((_p.heat || "").trim()) L.push("Heat: " + _p.heat.trim());
@@ -1038,11 +1212,13 @@ EN.gmPayroll = (function () {
   }
   // the #POST pay stub: what this one Freelancer got, in their own inbox
   function stubText(m, x) {
-    var L = ["Payday: " + m.title, "Your share: " + fmtG(m.eachG)];
+    var L = [titled("Payday", m.title), "Your share: " + fmtG(m.eachG)];
     if (m.nexEach > 0) L.push("Nexus: " + fmtNx(m.nexEach));
     if (m.xpTotal > 0) {
       L.push(!x.useXp ? "XP: none, you level on milestones"
-        : m.xpWrite > 0 ? "XP: " + commas(m.xpWrite) : "XP: " + commas(m.xpTotal) + ", awarded at the Table");
+        : m.xpWrite > 0 ? "XP: " + commas(m.xpWrite)
+        : m.xpPaid ? "XP: " + commas(m.xpTotal) + ", paid with an earlier payday"
+        : "XP: " + commas(m.xpTotal) + ", awarded at the Table");
     }
     if ((_p.cred || "").trim()) L.push("Cred: " + _p.cred.trim());
     if ((_p.heat || "").trim()) L.push("Heat: " + _p.heat.trim());
@@ -1055,7 +1231,7 @@ EN.gmPayroll = (function () {
     // D5, and only on an XP table: a milestone record never takes XP. xpWrite is
     // 0 when the Table's AWARD XP already paid this fight's (see tableAward)
     if (x.useXp && m.xpWrite > 0) ops.push({ op: "xp", amount: m.xpWrite });
-    if (_p.stub) ops.push({ op: "post", mail: { from: "Payroll", subj: "Payday: " + m.title, when: clock(now), body: stubText(m, x) } });
+    if (_p.stub) ops.push({ op: "post", mail: { from: "Payroll", subj: titled("Payday", m.title), when: clock(now), body: stubText(m, x) } });
     return ops;
   }
   function recordFrom(m) {
@@ -1088,6 +1264,7 @@ EN.gmPayroll = (function () {
     var r = recordFrom(m);
     if (prev) r.id = prev.id;
     _p.paydayId = gm.put("ledger", r, { silent: true });
+    settle();
     toast("Payday saved: " + m.title + ".");
     EN.app.render();
   }
@@ -1116,17 +1293,28 @@ EN.gmPayroll = (function () {
 
   /* CREDIT THE CREW (D1). One writeCrew per Freelancer: their share of Glimmer,
      their share of Nexus, the full XP if their record is on XP, and the pay
-     stub. Each write is its own ledger record, and the payday keeps their ids,
-     which is what UNDO PAYDAY walks back. */
-  function credit() {
+     stub. Each write is its own ledger record, tagged with this payday's id,
+     the fight and the job (meta), and the payday keeps their ids, which is what
+     UNDO PAYDAY walks back. With an earlier payday still standing for the same
+     fight or job (F8) it writes nothing unless `again` is the GM's armed
+     CREDIT ANYWAY. */
+  function credit(again) {
     var m = model();
     if (m.paid) { toast("This payday is already credited."); return; }
     if (!m.credit.length) { toast("Nobody on this device to credit. Copy the summary instead."); return; }
-    var label = "Payday: " + m.title, now = Date.now(), ids = [], paid = [], refused = [];
+    if (m.dup && again !== true) {
+      toast("Held: " + titled("Payday", m.dup.pd.title) + " already paid this " + (m.dup.fight ? "fight" : "job") + ". CREDIT ANYWAY pays it again.");
+      EN.app.render();
+      return;
+    }
+    // the id is minted before the writes, so every write can carry it
+    var pdId = m.rec ? m.rec.id : gm.uid();
+    var meta = { source: "payday", paydayId: pdId, encounterAt: m.encAt, jobId: _p.jobId || null };
+    var label = titled("Payday", m.title), now = Date.now(), ids = [], paid = [], refused = [];
     m.credit.forEach(function (x) {
       var ops = opsFor(m, x, now);
       if (!ops.length) return;
-      var id = gm.writeCrew(x.charId, label, ops);
+      var id = gm.writeCrew(x.charId, label, ops, meta);
       if (id) { ids.push(id); paid.push(x); } else refused.push(x.name);
     });
     if (!ids.length) {
@@ -1134,7 +1322,6 @@ EN.gmPayroll = (function () {
       EN.app.render();
       return;
     }
-    var pdId = m.rec ? m.rec.id : gm.uid();
     _p.paydayId = pdId;
     var jobPrev = markJobPaid(pdId);
     var r = recordFrom(m);
@@ -1145,6 +1332,7 @@ EN.gmPayroll = (function () {
     r.creditedAt = now;
     r.jobPrev = jobPrev;
     gm.put("ledger", r, { silent: true });
+    settle();
     var xpN = paid.filter(function (x) { return x.useXp; }).length;
     toast("Credited " + paid.length + " " + plural(paid.length, "Freelancer") + ": " + fmtG(m.eachG) + " each" +
       (m.nexEach > 0 ? ", " + fmtNx(m.nexEach) + " Nexus" : "") +
@@ -1159,21 +1347,29 @@ EN.gmPayroll = (function () {
     var u = gm.undoable();
     return !!(u && pd.writeIds.indexOf(u.id) !== -1);
   }
+  // a payday whose writes all came in with an imported backup: paid, but never undoable here (F6)
+  function importedPayday(pd) {
+    var ids = (pd && Array.isArray(pd.writeIds)) ? pd.writeIds : [];
+    return ids.length > 0 && ids.every(function (id) { var w = gm.rec("ledger", id); return !!(w && w.imported); });
+  }
   function undoPayday(pdId) {
     var pd = gm.rec("ledger", pdId);
     if (!canUndo(pd)) { toast("A newer write sits on top of this payday. Undo that first."); return; }
-    var n = 0, guard = 0;
+    var n = 0, guard = 0, refused = false;
     while (canUndo(pd) && guard < 500) {
       guard += 1;
-      if (!gm.undoLast()) break;
+      // false (not null) is this device refusing to save the undo (F5): nothing changed
+      var r = gm.undoLast();
+      if (!r) { refused = r === false; break; }
       n += 1;
     }
-    // a write to a record deleted since went with the record; it is not left to undo
-    var roster = (EN.store.roster && EN.store.roster()) || {};
-    var left = pd.writeIds.filter(function (id) {
-      var w = gm.rec("ledger", id);
-      return w && !w.undone && own(roster, w.charId);
-    });
+    /* what still stands, by the ledger (F10): a write to a record deleted since
+       went with the record, so it is not left; an imported one cannot be undone
+       here but is still paid, so the payday stays credited while one stands
+       (the same rule reconcile() keeps) */
+    var standing = Object.create(null);
+    paidWrites().forEach(function (w) { standing[w.id] = true; });
+    var left = pd.writeIds.filter(function (id) { return own(standing, id); });
     var next = copy(pd);
     if (!left.length) {
       next.undone = true;
@@ -1182,8 +1378,9 @@ EN.gmPayroll = (function () {
       unmarkJob(pd);
     }
     gm.put("ledger", next, { silent: true });
-    toast(left.length ? "Undid " + n + " of " + pd.writeIds.length + " writes. A newer write sits on top of the rest."
-                      : "Payday undone: " + n + " " + plural(n, "record") + " put back as they were.");
+    toast(!left.length ? "Payday undone: " + n + " " + plural(n, "record") + " put back as they were."
+      : refused ? (n ? "Undid " + n + " of " + pd.writeIds.length + " writes. " : "") + "This device refused to save the next undo, so the rest of the payday stands."
+      : "Undid " + n + " of " + pd.writeIds.length + " writes. A newer write sits on top of the rest.");
     EN.app.render();
   }
 
@@ -1191,6 +1388,18 @@ EN.gmPayroll = (function () {
     _p = restoreForm(pd.form);
     if (!isObj(pd.form)) { _p.title = String(pd.title || ""); _p.jobId = typeof pd.jobId === "string" ? pd.jobId : null; }
     _p.paydayId = pd.id;
+    settle();
+  }
+  /* OPEN, armed while the form has changes that are not saved (F18): one click
+     used to replace typed bounties, salvage and a typed total with no word. */
+  function openButton(pd, pay, label) {
+    function go() { openPayday(pd); EN.app.render(); }
+    if (!dirty()) return el("button.btn.sm", { dataset: { pay: pay }, title: "Open this payday in the form", onclick: go }, label);
+    var b = EN.ui.armButton("pay:open:" + pay, { cls: ".btn.sm", label: label, armedLabel: "DISCARD THE FORM?",
+      title: "Open this payday in the form",
+      armedTitle: "The form has changes that are not saved. Opening this payday replaces them.", onConfirm: go });
+    b.setAttribute("data-pay", pay);
+    return b;
   }
 
   function summaryPanel(m) {
@@ -1201,7 +1410,9 @@ EN.gmPayroll = (function () {
           el("span", { style: { color: "var(--success)", fontWeight: 600 },
             text: "Credited " + stamp(rec.creditedAt || rec.at) + " to " + (rec.crew || []).length + " " + plural((rec.crew || []).length, "Freelancer") + "." }),
           canUndo(rec) ? el("button.btn.sm.danger", { dataset: { pay: "undo-payday" }, onclick: function () { undoPayday(rec.id); } }, "↶ UNDO PAYDAY")
-                       : el("span.help", { style: { margin: 0 }, text: "A newer write sits on top, so this payday can no longer be undone from here." })
+                       : el("span.help", { style: { margin: 0 }, text: importedPayday(rec)
+                           ? "It came in with an imported GM backup, so it cannot be undone here."
+                           : "A newer write sits on top, so this payday can no longer be undone from here." })
         ]),
         help("Changes made below now are not paid. Undo the payday to change it, or start a new one.")
       ]));
@@ -1224,7 +1435,8 @@ EN.gmPayroll = (function () {
       var on = _p.noCredit.indexOf(x.charId) === -1;
       var ch = roster[x.charId], onXp = !!(ch && ch.useXp === true);
       var gets = fmtG(m.eachG) + (m.nexEach > 0 ? DOT + fmtNx(m.nexEach) : "") +
-        (m.xpTotal > 0 ? DOT + (!onXp ? "milestones, no XP" : m.xpWrite > 0 ? commas(m.xpWrite) + " XP" : "XP already awarded") : "");
+        (m.xpTotal > 0 ? DOT + (!onXp ? "milestones, no XP" : m.xpWrite > 0 ? commas(m.xpWrite) + " XP"
+          : m.xpPaid ? "XP already paid" : "XP already awarded") : "");
       kids.push(el("label", { style: { display: "flex", gap: "8px", alignItems: "center", padding: "3px 0", cursor: "pointer", flexWrap: "wrap" } }, [
         el("input", { type: "checkbox", checked: on, dataset: { pay: "cc-" + x.charId }, onchange: function () {
           if (on) _p.noCredit.push(x.charId); else _p.noCredit = _p.noCredit.filter(function (k) { return k !== x.charId; });
@@ -1243,20 +1455,58 @@ EN.gmPayroll = (function () {
         "Also file a pay stub in each credited Freelancer's #POST")
     ]));
 
+    /* AN EARLIER PAYDAY STILL STANDS for this fight or job (F8): it is named,
+       CREDIT THE CREW is held, and paying again takes the GM's own armed CREDIT
+       ANYWAY, a separate button, so the usual two clicks cannot pay twice. */
     var canCredit = !m.paid && m.credit.length > 0;
+    var held = canCredit && !!m.dup;
+    if (held) {
+      /* every earlier payday that matches is named, the newest first, so an
+         older one that paid the fight is not hidden behind a newer one that
+         paid only the job */
+      var d = m.dup, all = [d].concat(d.others || []);
+      var whatOf = function (h) { return h.fight && h.job ? "this fight and this job" : h.fight ? "this fight" : "this job"; };
+      var lineOf = function (h) { return titled("Payday", h.pd.title) + ", credited " + stamp(h.pd.creditedAt || h.pd.at) + ", paid " + whatOf(h) + "."; };
+      var titles = all.map(function (h) { return titled("Payday", h.pd.title); });
+      var onTop = titles.length > 1 ? titles.slice(0, -1).join(", ") + " and " + titles[titles.length - 1] : titles[0];
+      var many = all.length > 1;
+      var allImported = !all.some(function (h) { return !h.imported; });
+      var xpBy = !m.xpPaid ? "" : (m.xpPaid === d && !many) ? "that payday" : titled("Payday", m.xpPaid.pd.title);
+      var again = EN.ui.armButton("pay:credit-anyway", {
+        cls: ".btn.sm", label: "CREDIT ANYWAY", armedLabel: "PAY " + m.credit.length + " AGAIN?",
+        title: "Credit this payday as well as the earlier " + (many ? "ones" : "one"),
+        armedTitle: "Writes this payday to " + m.credit.length + " " + plural(m.credit.length, "record") + " on top of " +
+          onTop + (m.xpPaid ? ", without the fight's XP" : "") + ". UNDO PAYDAY puts them back.",
+        onConfirm: function () { credit(true); }
+      });
+      again.setAttribute("data-pay", "credit-anyway");
+      var dupKids = [el("p", { style: { margin: 0, color: "var(--warn)", fontWeight: 600 }, text: "Already paid: " + lineOf(d) })];
+      (d.others || []).forEach(function (h) {
+        dupKids.push(el("p", { style: { margin: "2px 0 0", color: "var(--warn)", fontWeight: 600 }, text: "Also paid: " + lineOf(h) }));
+      });
+      dupKids.push(help("CREDIT THE CREW is held so the crew is not paid twice. " +
+        (allImported
+          ? (many ? "Those paydays" : "That payday") + " came in with an imported GM backup, so " + (many ? "they" : "it") +
+            " cannot be undone here. Credit anyway"
+          : "Undo " + (many ? "those paydays" : "that payday") + " to pay this one instead, or credit anyway") +
+        (m.xpPaid ? " (the fight's XP stays out: " + xpBy + " wrote it)." : "."), { margin: "3px 0 0" }));
+      dupKids.push(el("div.row.wrap", { style: { gap: "8px", marginTop: "6px" } }, [openButton(d.pd, "dup-open", "OPEN IT"), again]));
+      kids.push(el("div.feature", { dataset: { pay: "dup" }, style: { borderLeftColor: "var(--warn)", marginTop: "10px" } }, dupKids));
+    }
     var creditBtn;
-    if (canCredit) {
+    if (canCredit && !held) {
       creditBtn = EN.ui.armButton("pay:credit", {
         cls: ".btn.sm", label: "CREDIT THE CREW", armedLabel: "CREDIT " + m.credit.length + "?",
         title: "Write each share to the crew's records", armedTitle: "Writes Glimmer, Nexus, XP and the pay stub to " + m.credit.length +
           " " + plural(m.credit.length, "record") + ". UNDO PAYDAY puts them back.",
-        onConfirm: credit
+        onConfirm: function () { credit(false); }
       });
       creditBtn.setAttribute("data-pay", "credit");
       if (!EN.ui.isArmed("pay:credit")) { creditBtn.style.color = "var(--success)"; creditBtn.style.borderColor = "var(--success)"; }
     } else {
       creditBtn = el("button.btn.sm", { disabled: true, dataset: { pay: "credit" },
-        title: m.paid ? "Already credited" : "Nobody on this device to credit" }, m.paid ? "CREDITED" : "CREDIT THE CREW");
+        title: m.paid ? "Already credited" : held ? "Held: an earlier payday already paid this" : "Nobody on this device to credit" },
+        m.paid ? "CREDITED" : "CREDIT THE CREW");
     }
     // a new payday keeps the GM's fixer and Crew Kit percentages and the stub choice
     var newBtn = EN.ui.armButton("pay:new", { label: "NEW PAYDAY", armedLabel: "CLEAR THE FORM?",
@@ -1265,6 +1515,7 @@ EN.gmPayroll = (function () {
         var keep = { fixer: _p.fixer, kit: _p.kit, stub: _p.stub };
         _p = fresh();
         _p.fixer = keep.fixer; _p.kit = keep.kit; _p.stub = keep.stub;
+        settle();
         EN.app.render();
       } });
     newBtn.setAttribute("data-pay", "new-payday");
@@ -1291,7 +1542,8 @@ EN.gmPayroll = (function () {
         title: "Delete this payday record", armedTitle: "Deletes the record only. Nothing on the crew's records changes.",
         onConfirm: function () {
           gm.drop("ledger", pd.id, { silent: true });
-          if (_p.paydayId === pd.id) _p.paydayId = null;
+          // the open form is now saved nowhere, so replacing it asks first (F18)
+          if (_p.paydayId === pd.id) { _p.paydayId = null; _base = null; }
           EN.app.render();
         } });
       if (del) del.setAttribute("data-pay", "pd-del-" + pd.id);
@@ -1305,8 +1557,7 @@ EN.gmPayroll = (function () {
             fmtG(each.glimmer) + " each" + DOT + (pd.crew || []).length + " credited" })
         ]),
         el("div.row", { style: { gap: "6px" } }, [
-          current ? null : el("button.btn.sm", { dataset: { pay: "pd-open-" + pd.id },
-            onclick: function () { openPayday(pd); EN.app.render(); } }, "OPEN"),
+          current ? null : openButton(pd, "pd-open-" + pd.id, "OPEN"),
           el("button.btn.sm", { onclick: function () { copyText(pd.summary || "", "The payday summary"); } }, "COPY"),
           canUndo(pd) ? el("button.btn.sm.danger", { dataset: { pay: "pd-undo-" + pd.id },
             onclick: function () { undoPayday(pd.id); } }, "↶ UNDO") : null,
@@ -1318,31 +1569,111 @@ EN.gmPayroll = (function () {
   }
 
   /* ---- handoff and render ----------------------------------------------- */
-  /* { jobId, encounter, xp } from the Job Board's PAY THIS JOB or the Encounters
-     XP award (`xp` is that card's {objective, skip}, see takeEncounter). A
-     handoff starts a fresh payday (the GM's fixer and Crew Kit percentages and
-     the stub choice carry over), except that a job already paid opens its own
-     payday instead of starting a second one. */
+  /* { jobId, encounter, xp, paydayId } from the Job Board's PAY THIS JOB or
+     the Encounters XP award (`xp` is that card's {objective, skip}, see
+     takeEncounter; `paydayId`, when present, names a payday to open). A handoff
+     starts a fresh payday (the GM's fixer and Crew Kit percentages and the stub
+     choice carry over), except that a job or a fight already paid opens the
+     payday that paid it instead of starting a second one (F8). */
+  function payloadJob(h) { return (typeof h.jobId === "string" && h.jobId) ? h.jobId : null; }
+  function payloadEnc(h) { return (isObj(h.encounter) && Array.isArray(h.encounter.entries)) ? h.encounter : null; }
+  /* the payday a handoff opens rather than starting a new one, or null. A
+     job's own paydayId is honoured when that payday is credited and came in
+     with an imported backup: its records may live on another device, so no
+     write of it counts here, but the job was paid all the same and PAY THIS
+     JOB must open that payday, not a second one. */
+  function payloadPayday(h) {
+    var named = (typeof h.paydayId === "string" && h.paydayId) ? gm.rec("ledger", h.paydayId) : null;
+    if (isObj(named) && named.kind === "payday") return named;
+    var jid = payloadJob(h), j = jid ? gm.rec("jobs", jid) : null;
+    var held = (j && typeof j.paydayId === "string" && j.paydayId) ? gm.rec("ledger", j.paydayId) : null;
+    if (isObj(held) && held.kind === "payday" && held.credited && !held.undone && importedPayday(held)) return held;
+    var enc = payloadEnc(h);
+    var d = earlierPayday(enc && typeof enc.at === "number" ? enc.at : null, jid, null);
+    return d ? d.pd : null;
+  }
   function takePayload(h) {
     var keep = { fixer: _p.fixer, kit: _p.kit, stub: _p.stub };
-    var jid = (typeof h.jobId === "string" && h.jobId) ? h.jobId : null;
+    var jid = payloadJob(h), enc = payloadEnc(h);
     var j = jid ? gm.rec("jobs", jid) : null;
-    if (j && typeof j.paydayId === "string" && j.paydayId) {
-      var pd = gm.rec("ledger", j.paydayId);
-      if (pd && pd.kind === "payday" && pd.credited && !pd.undone) {
-        openPayday(pd);
-        toast("This job is already paid. Its payday is open.");
-        return;
+    var pd = payloadPayday(h);
+    if (pd) {
+      openPayday(pd);
+      if (typeof h.paydayId !== "string" || h.paydayId !== pd.id) {
+        toast("Already paid with " + titled("Payday", pd.title) + ". Its payday is open.");
       }
+      return;
     }
     _p = fresh();
     _p.fixer = keep.fixer; _p.kit = keep.kit; _p.stub = keep.stub;
     if (jid) _p.jobId = jid;
     if (j && typeof j.title === "string") _p.title = j.title;
-    if (isObj(h.encounter) && Array.isArray(h.encounter.entries)) takeEncounter(h.encounter, isObj(h.xp) ? h.xp : null);
+    if (enc) takeEncounter(enc, isObj(h.xp) ? h.xp : null);
+    settle();
   }
 
-  /* Typing refreshes THIS tab in place and puts the caret back where it was:
+  /* A HANDOFF OVER UNSAVED WORK (F18). A handoff used to replace the form
+     outright, typed bounties, salvage and totals with it. When the form has
+     changes that are not saved, the payload waits in a panel at the top and the
+     GM says what happens: take it (armed, since it discards the form), keep the
+     form and take only its job and fight, or let it go. A handoff for the job
+     and fight the form already holds changes nothing and asks nothing. */
+  function receive(h) {
+    if (!dirty()) { _pend = null; takePayload(h); return; }
+    var jid = payloadJob(h), enc = payloadEnc(h);
+    var sameJob = !jid || jid === _p.jobId;
+    var sameEnc = !enc || !!(_p.enc && _p.enc.at === enc.at);
+    if ((jid || enc) && sameJob && sameEnc && !(typeof h.paydayId === "string" && h.paydayId && h.paydayId !== _p.paydayId)) {
+      _pend = null;
+      toast("This payday is already open here, with its changes kept.");
+      return;
+    }
+    _pend = h;
+  }
+  function keepWith(h) {
+    var jid = payloadJob(h), enc = payloadEnc(h);
+    if (jid) _p.jobId = jid;
+    if (enc) takeEncounter(enc, isObj(h.xp) ? h.xp : null);
+    _pend = null;
+    toast("The form is kept" + (jid || enc ? ", now for " + pendWhat(h) : "") + ".");
+    refresh();
+  }
+  function pendWhat(h) {
+    var jid = payloadJob(h), enc = payloadEnc(h), j = jid ? gm.rec("jobs", jid) : null, bits = [];
+    if (jid) bits.push("the job " + ((j && j.title) || "no longer in the log"));
+    if (enc) bits.push("the fight " + (enc.name || "just cleared"));
+    return bits.join(" and ");
+  }
+  function pendPanel() {
+    var h = _pend;
+    if (!isObj(h)) return null;
+    var jid = payloadJob(h), enc = payloadEnc(h), what = pendWhat(h), opens = payloadPayday(h);
+    var takeLabel = opens ? "OPEN ITS PAYDAY" : "START A NEW PAYDAY FROM IT";
+    function take() { _pend = null; takePayload(h); EN.app.render(); }
+    var takeBtn;
+    if (dirty()) {
+      takeBtn = EN.ui.armButton("pay:pend-take", { cls: ".btn.sm", label: takeLabel, armedLabel: "DISCARD THE FORM?",
+        title: "Replace this form with what was sent",
+        armedTitle: "The form has changes that are not saved. This replaces them.", onConfirm: take });
+      takeBtn.setAttribute("data-pay", "pend-take");
+    } else {
+      takeBtn = el("button.btn.sm", { dataset: { pay: "pend-take" }, onclick: take }, takeLabel);
+    }
+    var keepLabel = jid && enc ? "KEEP THE FORM, TAKE ITS JOB AND FIGHT" : jid ? "KEEP THE FORM, TAKE ITS JOB"
+      : enc ? "KEEP THE FORM, TAKE ITS FIGHT" : null;
+    return EN.ui.panel("Sent to Payroll", "WAITING", [
+      el("p", { dataset: { pay: "pend" }, style: { margin: 0, fontWeight: 600 }, text: "Sent here: " + (what || "a new payday") + "." }),
+      help((opens ? "It is already paid with " + titled("Payday", opens.title) + ". " : "") +
+        "This form has changes that are not saved, so nothing was replaced."),
+      el("div.row.wrap", { style: { gap: "8px", marginTop: "8px" } }, [
+        takeBtn,
+        keepLabel ? el("button.btn.sm", { dataset: { pay: "pend-keep" }, onclick: function () { keepWith(h); } }, keepLabel) : null,
+        el("button.btn.sm.ghost", { dataset: { pay: "pend-drop" }, onclick: function () { _pend = null; refresh(); } }, "IGNORE IT")
+      ])
+    ]);
+  }
+
+  /* A click redraws THIS tab in place and puts the caret back where it was:
      the form is module state, not the store, so nothing else needs to redraw. */
   function refresh() {
     if (!_mount || !document.body.contains(_mount)) { EN.app.render(); return; }
@@ -1361,32 +1692,139 @@ EN.gmPayroll = (function () {
     if (EN.ui.substituteCurrencyGlyphs) EN.ui.substituteCurrencyGlyphs(_mount);
   }
 
-  function render(mount) {
-    _mount = mount;
-    EN.ui.clear(mount);
-    var h = null;
-    try { h = (EN.gmView && EN.gmView.takeHandoff) ? EN.gmView.takeHandoff("payroll") : null; } catch (e) { h = null; }
-    if (isObj(h)) takePayload(h);
-    if (!P() || !EN.gmEngine || !EN.engine.splitPayout) {
-      mount.appendChild(el("div", null, [heading("Payroll", "// paying the crew"),
-        el("div.muted-box", { style: { padding: "26px" }, text: "Payroll data did not load. Check app/data/gm_payroll.js." })]));
-      return;
+  /* A KEYSTROKE (F13). The tab used to be rebuilt on every keystroke and the
+     rebuilt number field refilled from the parsed value, so a trailing "." was
+     lost under the caret: Nexus 1.5 typed as 15, and 0.25 as 25, and that went
+     to every record on CREDIT THE CREW. Now the tab is built afresh off-screen
+     and swapped in around the field being typed into: every node is replaced
+     except that field and the ancestors that hold it, which keep their place
+     (their attributes are brought up to date). So the typed string, the caret
+     and a phone keyboard's composing word are never touched, and every readout
+     still follows the keystroke. When the fresh tree does not line up with the
+     live one (the field is gone, or its ancestors changed shape) the whole tab
+     is redrawn instead, as a click redraws it. */
+  function chainOf(node, top) {
+    var out = [], n = node;
+    while (n && n !== top) { out.unshift(n); n = n.parentNode; }
+    return n === top ? out : null;
+  }
+  function syncAttrs(live, next) {
+    var i, a;
+    for (i = live.attributes.length - 1; i >= 0; i--) {
+      a = live.attributes[i];
+      if (!next.hasAttribute(a.name)) live.removeAttribute(a.name);
     }
+    for (i = 0; i < next.attributes.length; i++) {
+      a = next.attributes[i];
+      if (live.getAttribute(a.name) !== a.value) live.setAttribute(a.name, a.value);
+    }
+  }
+  // every child of `lp` but `keep` is replaced by every child of `np` but `twin`, in order
+  function graft(lp, np, keep, twin) {
+    var before = [], after = [], past = false;
+    [].slice.call(np.childNodes).forEach(function (c) {
+      if (c === twin) past = true; else if (past) after.push(c); else before.push(c);
+    });
+    [].slice.call(lp.childNodes).forEach(function (c) { if (c !== keep) lp.removeChild(c); });
+    before.forEach(function (c) { lp.insertBefore(c, keep); });
+    after.forEach(function (c) { lp.appendChild(c); });
+  }
+  function retype(input) {
+    if (!_mount || !document.body.contains(_mount) || !input || !_mount.contains(input) || !P()) { refresh(); return; }
+    var key = input.getAttribute("data-pf");
+    var holder = el("div");
+    holder.appendChild(build());
+    var twin = key ? holder.querySelector('[data-pf="' + key + '"]') : null;
+    var live = chainOf(input, _mount), next = twin ? chainOf(twin, holder) : null;
+    var fits = !!(live && next && live.length === next.length);
+    for (var i = 0; fits && i < live.length; i++) if (live[i].nodeName !== next[i].nodeName) fits = false;
+    if (!fits) { refresh(); return; }
+    var sx = window.scrollX, sy = window.scrollY;
+    var lp = _mount, np = holder;
+    for (var k = 0; k < live.length; k++) {
+      graft(lp, np, live[k], next[k]);
+      syncAttrs(live[k], next[k]);
+      lp = live[k]; np = next[k];
+    }
+    window.scrollTo(sx, sy);
+    if (EN.ui.substituteCurrencyGlyphs) EN.ui.substituteCurrencyGlyphs(_mount);
+  }
+
+  // the tab's content, built from the form and the store: render() mounts it, retype() grafts it
+  function build() {
     var m = model();
-    var blocks = [heading("Payroll", "// paying the crew"),
+    var blocks = [heading("Payroll", "// paying the crew")];
+    // the last write to a Freelancer record, with its UNDO, on every Admin tab (gm.js, F4)
+    var strip = null;
+    try { strip = (EN.gmView && typeof EN.gmView.undoStrip === "function") ? EN.gmView.undoStrip() : null; } catch (e) { strip = null; }
+    if (strip && strip.nodeType) blocks.push(strip);
+    var pend = pendPanel();
+    if (pend) { blocks.push(pend); blocks.push(gap()); }
+    blocks = blocks.concat([
       headPanel(m), gap(), contractPanel(m), gap(), bountyPanel(m), gap(), salvagePanel(m), gap(), splitPanel(m), gap(),
       el("div.row.wrap", { style: { gap: "12px", alignItems: "stretch" } }, [
         el("div", { style: { flex: "1 1 300px", minWidth: 0 } }, [xpPanel(m)]),
         el("div", { style: { flex: "1 1 300px", minWidth: 0 } }, [ledgerPanel()])
       ]),
-      gap(), summaryPanel(m)];
+      gap(), summaryPanel(m)]);
     var past = pastPanel();
     if (past) { blocks.push(gap()); blocks.push(past); }
-    mount.appendChild(el("div", null, blocks));
+    return el("div", null, blocks);
+  }
+
+  /* A PAYDAY UNDONE ELSEWHERE. The undo strip every Admin tab carries (F4) can
+     take a payday's writes back one by one without UNDO PAYDAY. When none of
+     its writes stands any more and at least one was undone (none imported:
+     those are history from a GM file), the payday is marked undone and its job
+     put back, exactly as UNDO PAYDAY would have left them. Silent, and a no-op
+     once done, so it is safe on every render. */
+  function reconcile() {
+    var standing = null;
+    gm.list("ledger").forEach(function (pd) {
+      if (!isObj(pd) || pd.kind !== "payday" || !pd.credited || pd.undone) return;
+      var ids = Array.isArray(pd.writeIds) ? pd.writeIds : [];
+      if (!ids.length) return;
+      if (!standing) {
+        standing = Object.create(null);
+        liveWrites().forEach(function (w) { standing[w.id] = true; });
+      }
+      var undone = 0, keep = false;
+      ids.forEach(function (id) {
+        var w = gm.rec("ledger", id);
+        if (own(standing, id) || (w && w.imported)) keep = true;
+        else if (w && w.undone) undone += 1;
+      });
+      if (keep || !undone) return;
+      var next = copy(pd);
+      next.undone = true;
+      next.undoneAt = Date.now();
+      next.credited = false;
+      unmarkJob(pd);
+      gm.put("ledger", next, { silent: true });
+    });
+  }
+
+  function render(mount) {
+    _mount = mount;
+    EN.ui.clear(mount);
+    try { reconcile(); } catch (e) { try { console.warn("Payroll: could not reconcile the paydays.", e); } catch (e2) {} }
+    var h = null;
+    try { h = (EN.gmView && EN.gmView.takeHandoff) ? EN.gmView.takeHandoff("payroll") : null; } catch (e) { h = null; }
+    if (isObj(h)) receive(h);
+    if (!P() || !EN.gmEngine || !EN.engine.splitPayout) {
+      mount.appendChild(el("div", null, [heading("Payroll", "// paying the crew"),
+        el("div.muted-box", { style: { padding: "26px" }, text: "Payroll data did not load. Check app/data/gm_payroll.js." })]));
+      return;
+    }
+    mount.appendChild(build());
   }
 
   return {
     render: render,
+    /* a payday the undo strip took back on another tab, marked undone with its
+       job put back; the Job Board calls it before drawing a job's status, so a
+       job never reads PAID OUT for a payday that no longer stands */
+    reconcile: function () { try { reconcile(); } catch (e) { try { console.warn("Payroll: could not reconcile the paydays.", e); } catch (e2) {} } },
     // pure helpers, for anything else that wants to quote pay the same way
     quote: function (caliber, diffKey, shifts) { return P() ? quote(caliber, diffKey, shifts || {}) : null; },
     bountyValue: function (xp, rate, alive) { return P() ? bountyValue(xp, rate, alive) : 0; }

@@ -16,9 +16,15 @@ settings cog. The choice is remembered per device (`?portal=admin` overrides it 
   play dashboard for vitality/wounds, conditions, saves, senses, attacks, class features), Social
   (the standing ledger, plus #POST, an inbox that rides the record), #GRID, Flow, Inventory
   (Stash, Chrome, a gray-market storefront), Codex (searchable rules reference).
-- **Admin portal**: the GM toolkit, on its own rail. Table (initiative tracker), Threats (statblock
-  builder), Bestiary (33 transcribed Part 4 entries), plus Encounters, Hazards, Job Board, and
-  Payroll, named stubs for stages still to come.
+- **Admin portal**: the GM toolkit, on its own rail, built from the Elysium Nights Game Master's
+  Handbook. Table (initiative tracker, with the running plan, the Security Response clock, the Room's
+  hazards and the XP award), Threats (statblock builder, initiative by the book's formula), Bestiary
+  (all 48 statblocks with subgroups, Species Templates and Hostile Vehicles), Encounters (the XP
+  budget, waves, objectives, saved plans, and RUN ON THE TABLE), Hazards (the eight Set Pieces at any
+  Grade, custom hazards, stalemate and falling tools), Job Board (the five roll tables and the Twelve
+  Postings, a job log, sending a posting to #POST), and Payroll (contract pay, bounties, salvage, the
+  split, and crediting the crew). Every write the GM makes to a Freelancer's record is confirmed,
+  logged and undoable, and GM data can be exported and imported from the Admin settings tray.
 
 
 ## Skins and wallpapers

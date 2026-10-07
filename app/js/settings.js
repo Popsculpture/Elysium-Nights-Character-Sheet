@@ -1116,6 +1116,8 @@ EN.settings = (function () {
     rebuild();
     var msg = "GM data imported: " + gmCountText(c) + ".";
     if (c.droppedCrew) msg += " " + gmPlural(c.droppedCrew, "crew row was", "crew rows were") + " dropped, for Freelancers not on this device.";
+    // imported writes are history only: they were made to records on the device that exported them
+    if (c.importedWrites) msg += " " + gmPlural(c.importedWrites, "write to a Freelancer record is", "writes to Freelancer records are") + " kept as history and cannot be undone here.";
     if (!c.saved) msg += " NOT SAVED: this device refused the write, so it lasts until reload.";
     EN.ui.toast(msg);
   }

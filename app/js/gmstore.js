@@ -33,6 +33,13 @@
    ruling, 2026-10). Each one is confirmed by the view before it is called, lands
    through EN.store.updateById, and leaves a ledger record that undoLast() can
    invert. Nothing on the GM side calls EN.store.setActive to reach a record.
+
+   WHETHER A WRITE STILL STANDS is read from the ledger and nowhere else
+   (liveWrites below, for what UNDO can take back, and paidWrites, which also
+   counts the imported ones, for what is already paid). A write record carries
+   a `meta` tag saying what made it (an award, a posting, a payday), so a view
+   can rebuild its own UNDO after a reload instead of keeping the ids in
+   memory, where a reload, a HIDE or the next fight used to strand them (F4).
    =========================================================================== */
 window.EN = window.EN || {};
 
@@ -290,11 +297,21 @@ EN.gmStore = (function () {
   /* ---- persistence --------------------------------------------------------
      write() is the one place that touches storage, and it answers whether the
      write landed. persist() stamps the document and either writes now or arms
-     the debounce; flush() lands a write the debounce is still holding. */
+     the debounce; flush() lands a write the debounce is still holding.
+
+     saveOk() is what the last attempt said (F5). A refused write used to vanish
+     without a word: nothing on the GM side read the answer, so a full or blocked
+     storage lost the GM's work until the next reload showed it gone. The Admin
+     tabs' undo strip (gm.js) shows NOT SAVED while it is false. */
+  var lastSaveOk = true;
   function write() {
     if (!state) return false;
-    try { localStorage.setItem(STATE_KEY, JSON.stringify(state)); return true; } catch (e) { return false; }
+    var ok = true;
+    try { localStorage.setItem(STATE_KEY, JSON.stringify(state)); } catch (e) { ok = false; }
+    lastSaveOk = ok;
+    return ok;
   }
+  function saveOk() { return lastSaveOk; }
   function persist(immediate) {
     if (!state) return false;
     state.updatedAt = Date.now();
@@ -364,7 +381,7 @@ EN.gmStore = (function () {
     var mod = (typeof b.initMod === "number" && isFinite(b.initMod)) ? b.initMod : (b.init | 0);
     var want = (typeof rowName === "string" && rowName) ? rowName : (b.name || "Threat");
     update(function (s) {
-      s.encounter.entries.push({ id: id, kind: "threat", name: freeName(s.encounter.entries, want, null),
+      s.encounter.entries.push({ id: id, kind: "threat", name: freeName(s.encounter.entries, want, null, typeof b.name === "string" ? b.name : ""),
                                  block: b, inputs: inputs ? copy(inputs) : null,
                                  init: init | 0, initMod: mod, acted: false,
                                  vit: b.vitality, vitMax: b.vitality,
@@ -379,25 +396,46 @@ EN.gmStore = (function () {
      "Corpsec Officer 3". The first keeps its name. Only the ROW is named; the
      block underneath keeps the statblock's own name.
 
-     A name that already ends in a number is counted from its stem, so a plan run
-     twice onto one Table (Encounters numbers its rows "Street Ganger 1", "Street
-     Ganger 2") goes on to 3 and 4 rather than becoming "Street Ganger 1 2". The
-     lowest free number is used. `skipId` leaves one row out of the taken set, so
-     a row can be checked against everyone but itself.
+     A NUMBER THIS NUMBERING ADDED is counted from its stem, so a plan run twice
+     onto one Table (Encounters numbers its rows "Street Ganger 1", "Street Ganger
+     2") goes on to 3 and 4 rather than becoming "Street Ganger 1 2". The lowest
+     free number is used. `skipId` leaves one row out of the taken set, so a row
+     can be checked against everyone but itself.
+
+     A NUMBER IN THE STATBLOCK'S OWN NAME is part of the name, never a counter
+     (F7). "Unit 7" twice used to become "Unit 7" and "Unit 2", and three of an
+     "Enforcer Mk 2" read as a Mk 2, a Mk 3 and a Mk 4, three different machines.
+     The tell is the block: a row is numbered by this code exactly when its name
+     differs from its block's name, so `blockName` (the statblock's own name)
+     decides. When the candidate IS the block's name, or no block name is given,
+     a duplicate is numbered by appending to the FULL name: "Unit 7 2",
+     "Enforcer Mk 2 2". Next render that row's name differs from its block's, so
+     it reads as numbered and is left alone, which keeps numberThreats idempotent.
 
      A PLAIN name joining numbered twins is numbered too. The Encounters tab runs
      a plan's gangers in as "Street Ganger 1" and "Street Ganger 2", and one more
      added from the Bestiary used to arrive as a bare "Street Ganger" beside
      them: no two rows shared a name, but "the Street Ganger" no longer named one
-     creature. It arrives as "Street Ganger 3" instead. */
-  function freeName(entries, name, skipId) {
-    var taken = Object.create(null);
+     creature. It arrives as "Street Ganger 3" instead. Only rows this numbering
+     named count as twins, so a real "Enforcer Mk 2" does not make an "Enforcer
+     Mk" arrive as "Enforcer Mk 3". */
+  function numberedRow(r) {
+    var bn = r && r.block && typeof r.block.name === "string" ? r.block.name : null;
+    return bn === null || r.name !== bn;
+  }
+  function freeName(entries, name, skipId, blockName) {
+    var taken = Object.create(null), counted = Object.create(null);
+    name = String(name);
     (entries || []).forEach(function (r) {
-      if (r && r.kind === "threat" && r.id !== skipId && typeof r.name === "string") taken[r.name] = true;
+      if (!r || r.kind !== "threat" || r.id === skipId || typeof r.name !== "string") return;
+      taken[r.name] = true;
+      if (numberedRow(r)) counted[r.name] = true;
     });
-    var m = String(name).match(/^(.*\S)\s+\d+$/);
-    var stem = m ? m[1] : name;
-    var twins = !m && Object.keys(taken).some(function (k) {
+    var m = name.match(/^(.*\S)\s+\d+$/);
+    // the trailing number is this numbering's own only on a row named apart from its block
+    var ours = !!m && typeof blockName === "string" && name !== blockName;
+    var stem = ours ? m[1] : name;
+    var twins = !ours && Object.keys(counted).some(function (k) {
       return k.length > stem.length + 1 && k.indexOf(stem + " ") === 0 && /^\d+$/.test(k.slice(stem.length + 1));
     });
     if (!own(taken, name) && !twins) return name;
@@ -417,7 +455,7 @@ EN.gmStore = (function () {
     state.encounter.entries.forEach(function (r) {
       if (!r || r.kind !== "threat") return;
       var base = (typeof r.name === "string" && r.name) ? r.name : ((r.block && r.block.name) || "Threat");
-      var name = freeName(seen, base, null);
+      var name = freeName(seen, base, null, r.block && typeof r.block.name === "string" ? r.block.name : "");
       if (name !== r.name) { r.name = name; renamed++; }
       seen.push(r);
     });
@@ -441,13 +479,15 @@ EN.gmStore = (function () {
   }
   /* Clearing snapshots the fight first, so the XP award and anything else that
      wants "the encounter we just finished" can still read it after the Table is
-     empty. Only a fight with rows in it is snapshotted: clearing an already
-     empty Table must not overwrite the last real encounter with nothing. The
-     whole encounter resets, its Room tray and clock with it. */
+     empty. Only a FIGHT is snapshotted, meaning at least one threat row (F16):
+     clearing an empty Table, or one holding only the crew pulled in for the next
+     fight, must not overwrite the last real encounter, and its pending XP Award,
+     with a snapshot that has nothing to award. The whole encounter resets, its
+     Room tray and clock with it. */
   function clearEncounter() {
     update(function (s) {
       var e = s.encounter;
-      if (e.entries.length) {
+      if (e.entries.some(function (r) { return r && r.kind === "threat"; })) {
         s.lastEncounter = { at: Date.now(), name: e.name || "", sourceId: e.sourceId || null,
                             round: e.round | 0, entries: copy(e.entries) };
       }
@@ -598,16 +638,52 @@ EN.gmStore = (function () {
     var next = (isFinite(cur) ? cur : 0) + sign * Number(o.amount);
     ch[o.op] = o.op === "nexus" ? Math.round(next * 100) / 100 : next;
   }
+  function rosterNow() { return (EN.store && EN.store.roster && EN.store.roster()) || {}; }
+  // the record write, caught: true only when EN.store says it landed
+  function recordWrite(charId, mutator, what) {
+    try { return EN.store.updateById(charId, mutator) === true; }
+    catch (e) {
+      try { console.error("GM: " + what + " on " + charId + " failed", e); } catch (e2) {}
+      return false;
+    }
+  }
+  // puts a record back to a JSON copy taken earlier, in place, through the same writer
+  function restoreRecord(charId, snap) {
+    return recordWrite(charId, function (ch) {
+      Object.keys(ch).forEach(function (k) { delete ch[k]; });
+      Object.keys(snap).forEach(function (k) { ch[k] = snap[k]; });
+    }, "rollback");
+  }
+
   /* Returns the ledger record's id, or false when it refuses: a charId that is not
-     in the roster (a deleted record, or an example, which is never stored), or no
-     usable op. The ledger record is filed BEFORE the record write so the render the
-     write triggers already shows it, and is withdrawn if the write does not land. */
-  function writeCrew(charId, label, ops) {
-    var roster = (EN.store && EN.store.roster && EN.store.roster()) || {};
+     in the roster (a deleted record, or an example, which is never stored), no
+     usable op, or a write this device would not store. The ledger record is filed
+     BEFORE the record write so the render the write triggers already shows it.
+
+     BOTH WRITES LAND OR NEITHER DOES (F5). The record write and the GM document
+     write are two localStorage keys, and either can be refused (storage full,
+     site data blocked). A refused record write is rolled back by EN.store itself
+     and the ledger record withdrawn. A refused document write withdraws the
+     ledger record and puts the player record back as it was before (a copy taken
+     first), in memory and in storage, so the ledger and the record never
+     disagree after a reload. Only if even that rollback is refused does the
+     write stand: then the record really has it, so its ledger record is kept,
+     undoable for this session, and saveOk() reports the document unsaved.
+
+     `meta` (optional) is a plain JSON object kept on the ledger record as
+     `rec.meta`, saying what made the write, so a view finds it again through
+     liveWrites() after a reload:
+       {source: "award", encounterAt, sourceId, jobId}
+       {source: "posting", jobId}
+       {source: "payday", paydayId, encounterAt, jobId} */
+  function writeCrew(charId, label, ops, meta) {
+    var roster = rosterNow();
     if (typeof charId !== "string" || !own(roster, charId) || !isObj(roster[charId])) return false;
     if (!EN.store.updateById) return false;
     var clean = cleanOps(ops);
     if (!clean.length) return false;
+    var tag = null;
+    if (isObj(meta)) { try { tag = copy(meta); } catch (e) { tag = null; } }
     var s = get(), id = uid(), newest = 0;
     /* `at` is kept strictly increasing across write records. A payday credits a whole
        crew in one click, so several writes land in the same millisecond, and with equal
@@ -617,57 +693,104 @@ EN.gmStore = (function () {
       if (r && typeof r.at === "number" && r.at > newest) newest = r.at;
     });
     var at = Math.max(Date.now(), newest + 1);
-    s.ledger[id] = { id: id, kind: "write", at: at, label: String(label == null ? "" : label),
-                     charId: charId, charName: roster[charId].name || "", ops: clean, undone: false,
-                     createdAt: at, updatedAt: at };
-    var ok = false;
-    try {
-      ok = EN.store.updateById(charId, function (ch) {
-        clean.forEach(function (o) { applyOp(ch, o, 1); });
-      });
-    } catch (e) {
-      ok = false;
-      try { console.error("GM: write to " + charId + " failed", e); } catch (e2) {}
+    var before = copy(roster[charId]);
+    var r = { id: id, kind: "write", at: at, label: String(label == null ? "" : label),
+              charId: charId, charName: roster[charId].name || "", ops: clean, undone: false,
+              createdAt: at, updatedAt: at };
+    if (tag) r.meta = tag;
+    s.ledger[id] = r;
+    var ok = recordWrite(charId, function (ch) {
+      clean.forEach(function (o) { applyOp(ch, o, 1); });
+    }, "write");
+    if (!ok) { delete s.ledger[id]; emit(); return false; }
+    if (!persist(true)) {
+      /* The ledger record is withdrawn before the rollback, so the render the rollback
+         triggers no longer shows it. persist(true) dropped any debounced write it was
+         holding, so a retry is re-armed either way; storage keeps the document from
+         before this call meanwhile. */
+      delete s.ledger[id];
+      if (restoreRecord(charId, before)) {
+        persist(false);
+        emit();
+        return false;
+      }
+      s.ledger[id] = r;
+      try { console.error("GM: the ledger for " + charId + " is not saved and the record kept the write."); } catch (e) {}
+      persist(false);
     }
-    if (!ok) { delete s.ledger[id]; return false; }
-    persist(true);
     emit();
     return id;
   }
 
-  /* The write undoLast() would invert, or null: the newest write not yet undone
-     whose Freelancer is still in the roster. A write to a record that has since
-     been deleted is passed over, because its effect was deleted with the record
-     and there is nothing left to invert. Exposed so a view can name what UNDO
-     will do before the GM presses it. */
-  function undoable() {
-    var roster = (EN.store && EN.store.roster && EN.store.roster()) || {};
-    var cands = list("ledger").filter(function (r) {
-      return r && r.kind === "write" && !r.undone && Array.isArray(r.ops) &&
-             typeof r.charId === "string" && own(roster, r.charId);
+  /* THE WRITES THAT STILL STAND, newest first: write records not undone, not
+     imported (history from a GM file, never applied on this device's records,
+     F6), and whose Freelancer is still in the roster (a deleted record took the
+     write's effect with it). `filter(rec)` narrows them, usually by rec.meta.
+     This is the reading for UNDO: every view decides whether its award,
+     posting or payday can still be taken back from this and nothing else (F4,
+     F10). The records are the live ones: read them, never change them. */
+  function isLive(r, roster, withImported) {
+    return isObj(r) && r.kind === "write" && !r.undone && (withImported || !r.imported) && Array.isArray(r.ops) &&
+           typeof r.charId === "string" && own(roster, r.charId);
+  }
+  function standing(filter, withImported) {
+    var roster = rosterNow();
+    var out = list("ledger").filter(function (r) {
+      if (!isLive(r, roster, withImported)) return false;
+      if (typeof filter !== "function") return true;
+      try { return !!filter(r); } catch (e) { return false; }
     });
-    cands.sort(function (a, b) { return (b.at || 0) - (a.at || 0); });
-    return cands[0] || null;
+    out.sort(function (a, b) { return (b.at || 0) - (a.at || 0); });
+    return out;
+  }
+  function liveWrites(filter) { return standing(filter, false); }
+  /* THE WRITES THAT COUNT AS PAID, newest first: liveWrites plus the imported
+     ones. An imported write cannot be undone here (F6), but it is still a
+     payment: restoring a backup on the device that made it, after lost browser
+     data, brings back records that really hold those writes. So every "already
+     paid" guard (an award made, a payday credited) reads this, and only UNDO
+     reads liveWrites; otherwise an import made every award and payday it held
+     payable a second time. A write to a record no longer in the roster still
+     does not count, the same as in liveWrites. */
+  function paidWrites(filter) { return standing(filter, true); }
+
+  /* The write undoLast() would invert, or null: the newest write that still
+     stands (liveWrites). A write to a record deleted since is passed over, since
+     its effect went with the record, and so is an imported one, since this
+     device never applied it. Exposed so a view can name what UNDO will do before
+     the GM presses it. */
+  function undoable() {
+    return liveWrites()[0] || null;
   }
   /* Inverts the newest write, ops in reverse order, and marks its ledger record
-     undone. Returns that record, or null when there is nothing to undo. The record
-     keeps its updatedAt, so undoing does not move it to the top of the ledger. */
+     undone. Returns that record, null when there is nothing to undo, or false
+     when this device refused one of the two writes (F5): then nothing changed,
+     the record and the ledger both stay as they were. The record keeps its
+     updatedAt, so undoing does not move it to the top of the ledger. */
   function undoLast() {
     var r = undoable();
     if (!r) return null;
+    var before = copy(rosterNow()[r.charId]);
     r.undone = true;
     r.undoneAt = Date.now();
-    var ok = false;
-    try {
-      ok = EN.store.updateById(r.charId, function (ch) {
-        r.ops.slice().reverse().forEach(function (o) { if (invertible(o)) applyOp(ch, o, -1); });
-      });
-    } catch (e) {
-      ok = false;
-      try { console.error("GM: undo on " + r.charId + " failed", e); } catch (e2) {}
+    var ok = recordWrite(r.charId, function (ch) {
+      r.ops.slice().reverse().forEach(function (o) { if (invertible(o)) applyOp(ch, o, -1); });
+    }, "undo");
+    if (!ok) { r.undone = false; delete r.undoneAt; emit(); return false; }
+    if (!persist(true)) {
+      var undoneAt = r.undoneAt;
+      r.undone = false;
+      delete r.undoneAt;
+      if (restoreRecord(r.charId, before)) {
+        persist(false);
+        emit();
+        return false;
+      }
+      r.undone = true;
+      r.undoneAt = undoneAt;
+      try { console.error("GM: the ledger for " + r.charId + " is not saved and the record kept the undo."); } catch (e) {}
+      persist(false);
     }
-    if (!ok) { r.undone = false; delete r.undoneAt; return null; }
-    persist(true);
     emit();
     return r;
   }
@@ -708,9 +831,23 @@ EN.gmStore = (function () {
   /* Replaces the whole document and persists at once. Crew rows naming Freelancers
      this device does not have are dropped on the way in, by the same standing rule
      as a load; the count comes back as droppedCrew. `saved` is false when this
-     device refused the write, in which case the import holds only until reload. */
+     device refused the write, in which case the import holds only until reload.
+
+     AN IMPORTED WRITE IS HISTORY, NEVER UNDOABLE HERE (F6). The file's ledger says
+     what was written to the records on the device that made it, at the time it
+     was made. This device's records may never have had those writes (another
+     device), or have had them undone since (an older backup), so inverting one
+     would take away what was never paid. Every incoming write record is marked
+     `imported: true`, which undoable(), undoLast() and liveWrites() all skip; the
+     count comes back as importedWrites. paidWrites() still counts them, so what
+     the file says was paid is never offered for payment again. */
   function importDoc(text) {
     var next = parseDoc(text);
+    var importedWrites = 0;
+    Object.keys(next.ledger).forEach(function (k) {
+      var r = next.ledger[k];
+      if (isObj(r) && r.kind === "write") { r.imported = true; importedWrites++; }
+    });
     // a debounced write of the OLD document must not land over the new one
     clearTimeout(saveTimer);
     saveTimer = null;
@@ -718,6 +855,7 @@ EN.gmStore = (function () {
     var droppedCrew = pruneCrew();
     var c = counts(state);
     c.droppedCrew = droppedCrew;
+    c.importedWrites = importedWrites;
     c.saved = persist(true);
     emit();
     return c;
@@ -736,9 +874,9 @@ EN.gmStore = (function () {
     list: list, rec: rec, put: put, drop: drop,
     // the live encounter's other parts
     setRoom: setRoom, setClock: setClock, setEncounterMeta: setEncounterMeta,
-    // GM writes to player records
-    writeCrew: writeCrew, undoLast: undoLast, undoable: undoable,
-    // the document as a file
-    exportDoc: exportDoc, importDoc: importDoc, inspectDoc: inspectDoc, flush: flush
+    // GM writes to player records, and the ones that still stand
+    writeCrew: writeCrew, undoLast: undoLast, undoable: undoable, liveWrites: liveWrites, paidWrites: paidWrites,
+    // the document as a file, and whether the last write of it landed
+    exportDoc: exportDoc, importDoc: importDoc, inspectDoc: inspectDoc, flush: flush, saveOk: saveOk
   };
 })();

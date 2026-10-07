@@ -1843,6 +1843,9 @@ EN.store = (function () {
   var lastSaveOk = true;
   function onSave(fn) { saveWatchers.push(fn); return function () { saveWatchers = saveWatchers.filter(function (f) { return f !== fn; }); }; }
   function saveOk() { return lastSaveOk; }
+  /* An immediate write answers whether it landed (F5), because a caller that logs the write
+     as done (the GM side's writeCrew) has to know. A debounced one answers true: nothing has
+     been refused yet, and the watchers hear the truth when it fires. */
   function persist(immediate) {
     function doWrite() {
       var ok = true, err = null;
@@ -1855,9 +1858,10 @@ EN.store = (function () {
       saveWatchers.forEach(function (f) { try { f(ok, err); } catch (e2) { console.error(e2); } });
       return ok;
     }
-    if (immediate) { doWrite(); return; }
+    if (immediate) return doWrite();
     clearTimeout(saveTimer);
     saveTimer = setTimeout(doWrite, 350);
+    return true;
   }
 
   /* ---- accessors -------------------------------------------------------- */
@@ -1961,15 +1965,33 @@ EN.store = (function () {
      write to it would evaporate on reload while the ledger said it happened) and never active(),
      which answers with the example first. activeId is not touched. The write is persisted at once
      rather than debounced, because the GM side logs it as done the moment this returns.
-     Returns false for an id that is not in the roster, so the caller can refuse and say so. */
+     Returns false for an id that is not in the roster, so the caller can refuse and say so.
+
+     A REFUSED WRITE IS NOT A WRITE (F5). This used to return true whatever storage said, so a
+     full or blocked localStorage left the GM's ledger recording a credit the stored record
+     never got, and a later UNDO took away money that was never paid. Now it answers whether
+     the write landed, and when it did not, the record goes back to exactly what it was before
+     the mutator ran (a JSON copy taken first, restored IN PLACE so anything holding the record
+     object still holds the live one). Memory then matches storage again, which still has the
+     old record because the refused setItem changed nothing. */
+  function restoreInPlace(target, snap) {
+    Object.keys(target).forEach(function (k) { delete target[k]; });
+    Object.keys(snap).forEach(function (k) { target[k] = snap[k]; });
+  }
   function updateById(id, mutator, opts) {
     if (typeof id !== "string" || !Object.prototype.hasOwnProperty.call(state.roster, id)) return false;
     var ch = state.roster[id];
     if (!ch || typeof ch !== "object") return false;
-    mutator(ch);
+    var before = JSON.parse(JSON.stringify(ch));
+    // a mutator that throws halfway must not leave half its change on the record either
+    try { mutator(ch); } catch (e) { restoreInPlace(ch, before); throw e; }
     if (!ch.meta || typeof ch.meta !== "object") ch.meta = {};
     ch.meta.updatedAt = Date.now();
-    persist(true);
+    var ok = persist(true);
+    if (!ok) {
+      restoreInPlace(ch, before);
+      return false;
+    }
     if (!opts || opts.silent !== true) emit();
     return true;
   }

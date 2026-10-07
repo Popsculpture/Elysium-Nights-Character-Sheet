@@ -65,6 +65,49 @@ EN.gmEncounters = (function () {
   }
   function book() { return (EN.gmBook && EN.gmBook.encounters) || null; }
 
+  /* THE LEDGER'S LIVE WRITES (F4, F10). Whether an award or a payday still
+     stands is read from the ledger every time, never from this module's memory
+     or from a snapshot that HIDE or the next cleared fight can take away. A
+     write can be undone while it is not undone, did not arrive in an imported
+     backup, and its Freelancer's record still exists: a write to a deleted
+     record went with the record. gmstore's liveWrites is that reading; the
+     fallback is the same reading for a gmstore that predates it. Newest first. */
+  function liveWrites(filter) {
+    if (typeof gm.liveWrites === "function") {
+      try { return gm.liveWrites(filter) || []; } catch (e) {}
+    }
+    return standingWrites(filter, false);
+  }
+  /* WHAT COUNTS AS PAID is the same reading with the imported writes kept in.
+     An imported write cannot be undone here, but restoring a backup brings
+     back records that really hold it, so an award or a payday that came in
+     with a backup is never offered for payment a second time. The guards
+     (AWARD XP, the Payroll XP note) read this; UNDO AWARD reads liveWrites. */
+  function paidWrites(filter) {
+    if (typeof gm.paidWrites === "function") {
+      try { return gm.paidWrites(filter) || []; } catch (e) {}
+    }
+    return standingWrites(filter, true);
+  }
+  // the fallback for a gmstore that predates liveWrites and paidWrites
+  function standingWrites(filter, withImported) {
+    var roster = (EN.store && EN.store.roster && EN.store.roster()) || {};
+    return gm.list("ledger").filter(function (r) {
+      return isObj(r) && r.kind === "write" && !r.undone && (withImported || !r.imported) &&
+             typeof r.charId === "string" && own(roster, r.charId) && (!filter || !!filter(r));
+    }).sort(function (a, b) { return (b.at || 0) - (a.at || 0); });
+  }
+  // a write record's tag (writeCrew's meta), or an empty object for an untagged one
+  function metaOf(r) { return isObj(r) && isObj(r.meta) ? r.meta : {}; }
+
+  /* gm.js's strip naming the newest GM write to a Freelancer record, with its
+     armed UNDO: the one control that can always pop the stack. Drawn under the
+     heading when gm.js offers it. */
+  function undoStrip() {
+    if (!EN.gmView || typeof EN.gmView.undoStrip !== "function") return null;
+    try { return EN.gmView.undoStrip() || null; } catch (e) { return null; }
+  }
+
   function lbl(t) { return el("label.fl", { text: t }); }
   function help(text, style) { return el("p.help", { style: style || null, text: text }); }
   function spacer(h) { return el("div", { style: { height: (h || 12) + "px" } }); }
@@ -194,8 +237,11 @@ EN.gmEncounters = (function () {
          lines: [{lineId, kind, name, count, wave, block | hazard + grade, xpEach, note?}],
          objective: {key, aliveOnly, note, awardXp}, site: {tier, grade, rounds},
          room: {ruleKey: true}, notes, jobId }
-     plus `run` ({at, waves}) once it has been run, which only the Table side
-     writes. `kind` is "bestiary" (priced from the entry, looked up by name),
+     plus `run` ({at, waves, startRound}) once it has been run, which only the
+     Table side writes. `startRound` is the Table round the plan's round 1 fell
+     on: 1 for a fresh fight, the live round for a plan added to a fight already
+     running, so its later waves come due counted from when it joined (F1).
+     `kind` is "bestiary" (priced from the entry, looked up by name),
      "threat" (a resolved statblock) or "hazard". `wave` is the arrival round,
      1 being the start. normPlan builds every plan in one fixed key order, so
      two plans compare equal as JSON exactly when they say the same thing. */
@@ -453,8 +499,26 @@ EN.gmEncounters = (function () {
 
   /* A handoff from another tab (the Bestiary, the Threats tab, the Job Board,
      Hazards): {addLines: [line, ...], note, jobId}. Its lines join the plan
-     being edited, the note joins the plan's notes, and a banner says what
-     arrived. The payload is taken once by render(), per gm.js's handoff. */
+     being edited, a note with something in it joins the plan's notes, and a
+     banner says what arrived. The payload is taken once by render(), per
+     gm.js's handoff.
+
+     A NOTE THAT ONLY SAYS WHERE A LINE CAME FROM ("Street Ganger, from the
+     Bestiary.") is the banner's business, not the plan's (F21): the GM's
+     notes are prep, and one provenance line per added entry used to pile up
+     in them and print in the plan's COPY. The senders now send an empty note;
+     the pattern below catches the phrasing older senders used.
+
+     A JOB'S LINES NEVER MOVE ANOTHER JOB'S PLAN (F12). When the plan that is
+     open already belongs to a different job, the incoming job gets a plan of
+     its own, and the open one is saved first if it has unsaved changes, so
+     nothing the GM made is lost and the first job's link still points at it. */
+  var PROVENANCE = /^[^\n]*, from (the Bestiary|the Threat Builder|Saved Threats)\.$/;
+  function realNote(note) { return !!note && !PROVENANCE.test(note); }
+  function jobTitle(id) {
+    var j = id ? gm.rec("jobs", id) : null;
+    return j ? "the job " + (j.title || "untitled job") : "another job";
+  }
   function lineFromHandoff(raw) {
     var cnt = int(raw.count, 1, 1);
     if (raw.kind === "bestiary") {
@@ -474,15 +538,31 @@ EN.gmEncounters = (function () {
   }
   function intake(h) {
     if (!isObj(h)) return;
+    var pre = "";
+    var jid = (typeof h.jobId === "string" && h.jobId) ? h.jobId : null;
+    var link = !!jid;
+    if (jid && _s.plan.jobId && _s.plan.jobId !== jid) {
+      var oldJob = _s.plan.jobId, savedFirst = false, ok = true;
+      if (unsaved(_s.plan)) { savedFirst = !!savePlan(); ok = savedFirst; }
+      if (ok) {
+        _s.plan = blankPlan();
+        pre = "A new plan for " + jobTitle(jid) + ": the plan that was open is for " + jobTitle(oldJob) +
+              (savedFirst ? ", and it was saved first." : ".") + " ";
+      } else {
+        // it could not be saved, so it stays open, and keeps its own job
+        link = false;
+        pre = "The plan that is open is for " + jobTitle(oldJob) + " and could not be saved, so it stays open and keeps that job. ";
+      }
+    }
     var added = 0, skipped = 0;
     (Array.isArray(h.addLines) ? h.addLines : []).forEach(function (raw) {
       var line = isObj(raw) ? lineFromHandoff(raw) : null;
       if (line) { addLine(line); added++; } else skipped++;
     });
-    if (typeof h.jobId === "string" && h.jobId) _s.plan.jobId = h.jobId;
+    if (link) _s.plan.jobId = jid;
     var note = typeof h.note === "string" ? h.note.replace(/^\s+|\s+$/g, "") : "";
-    if (note && _s.plan.notes.indexOf(note) === -1) _s.plan.notes = _s.plan.notes ? _s.plan.notes + "\n\n" + note : note;
-    _s.banner = (added ? plural(added, "line") + " added to the plan below" : "Nothing was added to the plan") +
+    if (realNote(note) && _s.plan.notes.indexOf(note) === -1) _s.plan.notes = _s.plan.notes ? _s.plan.notes + "\n\n" + note : note;
+    _s.banner = pre + (added ? plural(added, "line") + " added to the plan below" : "Nothing was added to the plan") +
                 (note ? ": " + note : ".") +
                 (skipped ? " " + plural(skipped, "line") + " could not be read and " + (skipped === 1 ? "was" : "were") + " skipped." : "");
   }
@@ -626,6 +706,12 @@ EN.gmEncounters = (function () {
   }
 
   function rollIn(t) { return t.roundsMin + Math.floor(Math.random() * (t.roundsMax - t.roundsMin + 1)); }
+  // a live clock in a few words, for the armed titles that say what becomes of it
+  function clockWords(c) {
+    var t = tierOf(c.tier);
+    return (t ? t.name : "the clock") + ", " +
+      (!c.started ? "not started" : c.roundsLeft <= 0 ? "arrived" : plural(c.roundsLeft, "round") + " left");
+  }
   /* The Security Response clock, written into the live encounter. It starts
      STOPPED: the book starts it "when a fight goes loud", which is the GM's
      call, so the Table panel carries the START button. `roundsLeft` is the
@@ -641,8 +727,17 @@ EN.gmEncounters = (function () {
   /* RUN ON THE TABLE. "new" on an empty Table; "replace" clears the Table
      first (the old fight is snapshotted for its XP award, as the Table's END
      does) and keeps the crew's rows and their rolls; "append" adds to whatever
-     is there. The plan is saved first, so the Table can find it. */
-  function run(mode) {
+     is there. The plan is saved first, so the Table can find it.
+
+     APPENDED MID-FIGHT (F1, F2). The plan's round 1 is the round it joins, so
+     its first-wave hazards start on the live round (a 2-round countdown that
+     joins in round 4 reaches zero in round 6, not "already at zero"), and its
+     later waves come due counted from there (run.startRound). A Security
+     Response clock already on the Table is KEPT: its rounds counted down and
+     its noise toward escalation are the fight's, and the book's clock only
+     ever closes on the crew. The plan's own clock replaces it only through the
+     explicit "+ ADD AND RESET THE CLOCK" (opts.newClock). */
+  function run(mode, opts) {
     if (!_s.plan.lines.length) { toast("Add a line to the plan first."); return; }
     var crew = crewNow(_s.plan);
     var id = savePlan();
@@ -654,19 +749,23 @@ EN.gmEncounters = (function () {
       gm.clearEncounter();
       keep.forEach(function (r) { gm.addCrew(r.charId, r.init, r.initMod); });
     }
-    var res = addWave(plan, 1, 1);
-    var clock = newClock(plan, crew);
+    var live = gm.get().encounter;
+    var startR = mode === "append" ? Math.max(1, live.round | 0) : 1;
+    var keptClock = mode === "append" && !!live.clock && !(opts && opts.newClock);
+    var res = addWave(plan, 1, startR);
+    var clock = keptClock ? null : newClock(plan, crew);
     if (clock) gm.setClock(clock);
     gm.setEncounterMeta({ name: plan.name, sourceId: id });
     var rec = copy(gm.rec("encounters", id));
-    rec.run = { at: Date.now(), waves: [1] };
+    rec.run = { at: Date.now(), waves: [1], startRound: startR };
     gm.put("encounters", rec, { silent: true });
 
     var later = plan.lines.filter(function (l) { return l.wave > 1; }).length;
     var msg = "On the Table: " + plural(res.threats, "threat") + " rolled for initiative";
     if (res.hazards) msg += ", " + plural(res.hazards, "hazard") + " in the Room";
     msg += ".";
-    if (later) msg += " Later waves wait under the order.";
+    if (later) msg += startR > 1 ? " Later waves wait under the order, counted from round " + startR + "." : " Later waves wait under the order.";
+    if (keptClock && tierOf(plan.site.tier)) msg += " The Security Response clock already running is kept.";
     if (res.skippedHz) msg += " " + plural(res.skippedHz, "hazard") + " skipped: the Hazards module is not loaded.";
     if (res.missing.length) msg += " Not found in the Bestiary: " + res.missing.join(", ") + ".";
     toast(msg);
@@ -710,14 +809,55 @@ EN.gmEncounters = (function () {
     }));
   }
 
+  /* TYPING NEVER RE-RENDERS THE TAB (F19). A text field that re-rendered on
+     `change` did it at the mousedown of the GM's next click (that is when the
+     field blurs), so the button under the pointer was swapped out before the
+     mouseup and Chrome never delivered the click: the first press after typing
+     did nothing. The plan's typed fields (name, notes, objective XP and note)
+     keep their state on `input` and repaint only what reads from them, in
+     place, while the GM is still typing: the plan's SAVED tag and glow, and,
+     when the plan turns unsaved or saved, the NEW PLAN button and the Plans
+     panel, whose LOAD buttons arm over unsaved work. None of them holds the
+     field being typed in. The fields whose figures run through the whole tab
+     (a line's COUNT, ROUND and XP EACH, the crew Headcount, the quick build's
+     Name) redraw it around themselves instead, as they are typed: see
+     retype() by the tab's render. */
+  var _paint = { plan: null, newBtn: null, plans: null, dirty: null };
+  function planTag(plan, st) {
+    return st === "saved" ? "SAVED" : st === "dirty" ? "UNSAVED CHANGES" : st === "gone" ? "DELETED, NOT SAVED" : (unsaved(plan) ? "NOT SAVED" : "NEW");
+  }
+  function swapNode(old, next) {
+    if (old && old.parentNode && next) old.parentNode.replaceChild(next, old);
+    return next;
+  }
+  function paintPlan() {
+    var plan = _s.plan, pp = _paint.plan;
+    if (!plan || !pp || !pp.parentNode) return;
+    var st = status(plan);
+    var tagEl = pp.querySelector(".panel-h .tag");
+    if (tagEl) tagEl.textContent = planTag(plan, st);
+    if (st === "dirty") pp.classList.add("glow"); else pp.classList.remove("glow");
+    var dirty = unsaved(plan);
+    if (dirty === _paint.dirty) return;
+    _paint.dirty = dirty;
+    _paint.newBtn = swapNode(_paint.newBtn, newPlanButton(plan));
+    if (_paint.plans) _paint.plans = swapNode(_paint.plans, plansPanel(plan));
+  }
+  function newPlanButton(plan) {
+    return unsaved(plan)
+      ? EN.ui.armButton("enc:new", { label: "NEW PLAN", armedLabel: "DISCARD CHANGES?",
+          armedTitle: "Starts an empty plan. Unsaved changes to this one are lost.",
+          onConfirm: function () { loadPlan(blankPlan(), "A new, empty plan."); } })
+      : el("button.btn.sm", { onclick: function () { loadPlan(blankPlan(), "A new, empty plan."); } }, "NEW PLAN");
+  }
+
   function planPanel(plan, crew) {
     var st = status(plan);
     var kids = [];
     kids.push(el("div.row.wrap", { style: { gap: "12px", alignItems: "flex-end" } }, [
       field("Name", el("input", { type: "text", value: plan.name, placeholder: "Name this fight",
         style: { width: "100%" },
-        oninput: function (e) { _s.plan.name = e.target.value; },
-        onchange: function () { EN.app.render(); } }), { margin: 0, flex: "1 1 220px", minWidth: "0" }),
+        oninput: function (e) { _s.plan.name = e.target.value; paintPlan(); } }), { margin: 0, flex: "1 1 220px", minWidth: "0" }),
       field("Difficulty", diffChips(plan))
     ]));
     if (plan.jobId) {
@@ -728,8 +868,7 @@ EN.gmEncounters = (function () {
     kids.push(el("div.field", { style: { margin: "10px 0 0" } }, [lbl("Notes"),
       el("textarea", { value: plan.notes, placeholder: "The room, the hook, the weakness the crew can find in advance.",
         style: { width: "100%", minHeight: "56px" },
-        oninput: function (e) { _s.plan.notes = e.target.value; },
-        onchange: function () { EN.app.render(); } })]));
+        oninput: function (e) { _s.plan.notes = e.target.value; paintPlan(); } })]));
 
     var enc = gm.get().encounter;
     var can = plan.lines.length > 0;
@@ -740,12 +879,11 @@ EN.gmEncounters = (function () {
         EN.app.render();
       } }, "SAVE PLAN")
     ];
-    btns.push(unsaved(plan)
-      ? EN.ui.armButton("enc:new", { label: "NEW PLAN", armedLabel: "DISCARD CHANGES?",
-          armedTitle: "Starts an empty plan. Unsaved changes to this one are lost.",
-          onConfirm: function () { loadPlan(blankPlan(), "A new, empty plan."); } })
-      : el("button.btn.sm", { onclick: function () { loadPlan(blankPlan(), "A new, empty plan."); } }, "NEW PLAN"));
+    _paint.newBtn = newPlanButton(plan);
+    _paint.dirty = unsaved(plan);
+    btns.push(_paint.newBtn);
     btns.push(el("button.btn.sm", { onclick: function () { copyText(planText(_s.plan, crewNow(_s.plan)), "The plan"); } }, "COPY"));
+    var planT = tierOf(plan.site.tier);
     if (!can) {
       btns.push(el("button.btn.sm", { disabled: true, title: "Add a line first" }, "▶ RUN ON THE TABLE"));
     } else if (!enc.entries.length) {
@@ -756,16 +894,37 @@ EN.gmEncounters = (function () {
         armedTitle: "Clears the live fight and runs this plan. The crew's rows stay. Award the old fight's XP first: " +
                     "its award card needs an empty Table, and this fight takes its place when it ends.",
         onConfirm: function () { run("replace"); } }));
+      // what becomes of the Security Response clock, said before the GM confirms (F2)
+      var startAt = Math.max(1, enc.round | 0);
+      var addTitle = "Adds this plan's first wave to the live fight and makes this the running plan" +
+        (startAt > 1 ? ", counting its rounds from round " + startAt + "." : ".");
+      if (enc.clock) {
+        addTitle += " The Security Response clock on the Table (" + clockWords(enc.clock) + ") is kept" +
+          (planT ? "; this plan's " + planT.name + " clock is not set." : ".");
+      } else if (planT) {
+        addTitle += " It sets this plan's " + planT.name + " Security Response clock, not started.";
+      }
       btns.push(EN.ui.armButton("enc:append", { label: "+ ADD TO THE TABLE", armedLabel: "ADD TO IT?",
         title: "Add this plan's first wave to the fight already running.",
-        armedTitle: "Adds this plan's first wave to the live fight and makes this the running plan.",
+        armedTitle: addTitle,
         onConfirm: function () { run("append"); } }));
+      if (enc.clock && planT) {
+        btns.push(EN.ui.armButton("enc:append-clock", { label: "+ ADD AND RESET THE CLOCK", armedLabel: "RESET THE CLOCK?",
+          title: "Add this plan's first wave and replace the running clock with this plan's.",
+          armedTitle: "Adds this plan's first wave to the live fight and replaces the Security Response clock on the Table (" +
+                      clockWords(enc.clock) + ") with this plan's " + planT.name + " clock, not started. The rounds it counted " +
+                      "and its noise toward escalation are lost.",
+          onConfirm: function () { run("append", { newClock: true }); } }));
+      }
     }
     kids.push(el("div.row.wrap", { style: { gap: "8px", marginTop: "12px" } }, btns));
-    if (can) kids.push(help("Running saves the plan, puts the first wave on the Table, sets the Security Response clock, and leaves later waves under the order to bring in."));
+    if (can) {
+      kids.push(help("Running saves the plan, puts the first wave on the Table, sets the Security Response clock, and leaves later waves under the order to bring in." +
+        (enc.entries.length && enc.clock ? " Adding to the fight keeps the clock already on the Table." : "")));
+    }
 
-    var tag = st === "saved" ? "SAVED" : st === "dirty" ? "UNSAVED CHANGES" : st === "gone" ? "DELETED, NOT SAVED" : (unsaved(plan) ? "NOT SAVED" : "NEW");
-    return EN.ui.panel("Encounter Plan", tag, kids, { glow: st === "dirty" });
+    _paint.plan = EN.ui.panel("Encounter Plan", planTag(plan, st), kids, { glow: st === "dirty" });
+    return _paint.plan;
   }
 
   /* ---- crew and budget ------------------------------------------------------- */
@@ -788,10 +947,19 @@ EN.gmEncounters = (function () {
     }
     var calOpts = [{ value: "", label: "From the crew" }].concat([1, 2, 3, 4, 5].map(function (n) { return { value: n, label: "Caliber " + n }; }));
     kids.push(el("div.row.wrap", { style: { gap: "10px", alignItems: "flex-end", marginTop: "10px" } }, [
+      // redraws the tab around itself as it is typed, never at the blur (F19, see retype)
       field("Headcount", el("input", { type: "number", min: "1", value: co.headcount === null || co.headcount === undefined ? "" : String(co.headcount),
-        placeholder: String(crew.members.length), style: { width: "80px" },
-        oninput: function (e) { setOverride("headcount", int(e.target.value, 1, null)); },
-        onchange: function () { EN.app.render(); } })),
+        placeholder: String(crew.members.length), style: { width: "80px" }, dataset: { enc: "headcount" },
+        oninput: function (e) {
+          if (e.target.validity && e.target.validity.badInput) return;
+          setOverride("headcount", int(e.target.value, 1, null));
+          retype(e.target);
+        },
+        // what was kept, shown when the GM leaves the field: set in place, which moves no button
+        onchange: function (e) {
+          var now = _s.plan.crewOverride ? _s.plan.crewOverride.headcount : null;
+          e.target.value = now === null || now === undefined ? "" : String(now);
+        } })),
       field("Caliber", select(calOpts, co.caliber || "", function (v) { setOverride("caliber", clampGrade(v)); })),
       plan.crewOverride ? el("button.btn.sm", { onclick: function () { _s.plan.crewOverride = null; EN.app.render(); } }, "USE THE CREW") : null
     ]));
@@ -859,10 +1027,20 @@ EN.gmEncounters = (function () {
   }
 
   /* ---- the lines ---------------------------------------------------------------- */
-  function numIn(value, min, title, onSet) {
+  /* A line's number field. A whole number at or above `min` lands in the plan
+     and the tab is redrawn around the field as it is typed (retype), so the
+     line's TOTAL, its wave, the Lines and Budget panels and the plan's SAVED
+     tag follow the keystroke. It never redraws at the blur: that is the
+     mousedown of the GM's next click, and a redraw there swallowed the click
+     (F19). Leaving the field shows what was kept (`now()`), set in place. */
+  function numIn(value, min, title, key, onSet, now) {
     return el("input", { type: "number", min: String(min), value: String(value), title: title, style: { width: "62px" },
-      oninput: function (e) { var v = Math.floor(Number(e.target.value)); if (e.target.value !== "" && isFinite(v) && v >= min) onSet(v); },
-      onchange: function () { EN.app.render(); } });
+      dataset: { enc: key },
+      oninput: function (e) {
+        var t = e.target, v = Math.floor(Number(t.value));
+        if (t.value !== "" && isFinite(v) && v >= min) { onSet(v); retype(t); }
+      },
+      onchange: function (e) { var v = now(); if (v !== null && v !== undefined) e.target.value = String(v); } });
   }
   function statLine(line, info) {
     if (line.kind === "bestiary" && info.entry) {
@@ -905,12 +1083,15 @@ EN.gmEncounters = (function () {
     var sl = statLine(line, i);
     if (sl) left.push(el("span.help", { text: sl }));
 
+    // each field reads and writes its line by id, so a redraw around it finds the same line
+    function setter(k) { return function (v) { var l = lineById(line.lineId); if (l) l[k] = v; }; }
+    function getter(k) { return function () { var l = lineById(line.lineId); return l ? l[k] : null; }; }
     var xpNode = line.kind === "hazard"
-      ? numIn(line.xpEach, 0, "XP for one", function (v) { var l = lineById(line.lineId); if (l) l.xpEach = v; })
+      ? numIn(line.xpEach, 0, "XP for one", "xp:" + line.lineId, setter("xpEach"), getter("xpEach"))
       : el("span.mono", { style: { fontSize: "13px", lineHeight: "38px" }, text: fmtXp(i.xpEach) });
     var right = [
-      mini("COUNT", numIn(line.count, 1, "How many", function (v) { var l = lineById(line.lineId); if (l) l.count = v; })),
-      mini("ROUND", numIn(line.wave, 1, "Arrival round (1 is the start)", function (v) { var l = lineById(line.lineId); if (l) l.wave = v; })),
+      mini("COUNT", numIn(line.count, 1, "How many", "count:" + line.lineId, setter("count"), getter("count"))),
+      mini("ROUND", numIn(line.wave, 1, "Arrival round (1 is the start)", "wave:" + line.lineId, setter("wave"), getter("wave"))),
       mini("XP EACH", xpNode),
       mini("TOTAL", el("span.mono", { style: { fontSize: "13px", lineHeight: "38px", color: "var(--accent)" }, text: fmtXp(line.count * i.xpEach) }))
     ];
@@ -1075,9 +1256,10 @@ EN.gmEncounters = (function () {
     var block = EN.gmEngine.buildThreat(inputs);
     var kids = [];
     kids.push(el("div.row.wrap", { style: { gap: "10px", alignItems: "flex-end" } }, [
+      // redrawn around as it is typed, so + ADD carries the name; never at the blur (F19, see retype)
       field("Name", el("input", { type: "text", value: _s.b.name, placeholder: inputs.name, style: { width: "160px" },
-        oninput: function (e) { _s.b.name = e.target.value; },
-        onchange: function () { EN.app.render(); } })),
+        dataset: { enc: "b-name" },
+        oninput: function (e) { _s.b.name = e.target.value; retype(e.target); } })),
       field("Grade", select(T.grades.map(function (x) { return { value: x.g, label: "G" + x.g }; }), g, function (v) { _s.b.grade = Number(v); })),
       field("Designation", select(T.designations.map(function (d) { return { value: d.key, label: d.name }; }), des, function (v) { _s.b.designation = v; })),
       field("Role", select(T.roles.map(function (r) { return { value: r.key, label: r.name }; }), rol, function (v) { _s.b.role = v; }))
@@ -1254,14 +1436,13 @@ EN.gmEncounters = (function () {
     }
     var aw = X && X.objectiveAward;
     kids.push(el("div.row.wrap", { style: { gap: "10px", alignItems: "flex-end", marginTop: "10px" } }, [
+      // typed fields repaint in place, never re-render (F19, see paintPlan)
       field("Objective XP", el("input", { type: "number", min: "0", value: ob.awardXp ? String(ob.awardXp) : "", placeholder: "0",
         style: { width: "90px" },
-        oninput: function (e) { _s.plan.objective.awardXp = Math.max(0, Math.floor(Number(e.target.value)) || 0); },
-        onchange: function () { EN.app.render(); } })),
+        oninput: function (e) { _s.plan.objective.awardXp = Math.max(0, Math.floor(Number(e.target.value)) || 0); paintPlan(); } })),
       field("Note", el("input", { type: "text", value: ob.note, placeholder: "what winning looks like tonight",
         style: { width: "100%" },
-        oninput: function (e) { _s.plan.objective.note = e.target.value; },
-        onchange: function () { EN.app.render(); } }), { margin: 0, flex: "1 1 180px", minWidth: "0" })
+        oninput: function (e) { _s.plan.objective.note = e.target.value; paintPlan(); } }), { margin: 0, flex: "1 1 180px", minWidth: "0" })
     ]));
     if (aw) kids.push(help("On top of the defeated threats: " + aw.minText + ", " + aw.maxText + "."));
     kids.push(fold("obj-ref", "Objectives, payout and bounties", function () {
@@ -1389,21 +1570,91 @@ EN.gmEncounters = (function () {
   }
 
   /* ---- the tab -------------------------------------------------------------------- */
+  var _mount = null;   // where render() last drew the tab, for retype()
   function render(mount) {
+    _mount = mount;
     EN.ui.clear(mount);
     if (!_s.plan) _s.plan = blankPlan();
     var h = null;
     try { h = (EN.gmView && EN.gmView.takeHandoff) ? EN.gmView.takeHandoff("encounters") : null; } catch (e) { h = null; }
-    var B = book();
-    if (!B || !EN.threats || !EN.threats.budget || !EN.gmEngine) {
+    if (!ready()) {
       mount.appendChild(el("div", null, [heading("Encounters", "// budget and build a fight"),
         muted("Encounter data did not load. Check app/data/gm_encounters.js and app/data/threats.js.")]));
       return;
     }
     if (h) intake(h);
+    mount.appendChild(build());
+  }
+  function ready() { return !!(book() && EN.threats && EN.threats.budget && EN.gmEngine); }
+
+  /* A KEYSTROKE IN A FIELD THE WHOLE TAB READS (F19). A line's COUNT, ROUND
+     and XP EACH, the crew Headcount and the quick build's Name used to redraw
+     the tab on `change`, which fires when the field blurs, at the mousedown of
+     the GM's next click: the button under the pointer was swapped out before
+     the mouseup and the click was lost (type a COUNT, press SAVE PLAN, nothing
+     saved). Now they redraw on `input`, while the GM is still typing, and
+     around the field: the tab is built afresh off-screen and swapped in node
+     by node, except the field itself and the ancestors that hold it, which
+     keep their place (their attributes brought up to date). So the caret and
+     the typed text are untouched, a line moved to another wave by its ROUND
+     moves with its field, and nothing is redrawn at the blur. When the fresh
+     tree does not line up with the live one, the tab is redrawn whole, which
+     is safe on a keystroke. The same helpers as Payroll's, carried here per
+     the house convention. */
+  function chainOf(node, top) {
+    var out = [], n = node;
+    while (n && n !== top) { out.unshift(n); n = n.parentNode; }
+    return n === top ? out : null;
+  }
+  function syncAttrs(live, next) {
+    var i, a;
+    for (i = live.attributes.length - 1; i >= 0; i--) {
+      a = live.attributes[i];
+      if (!next.hasAttribute(a.name)) live.removeAttribute(a.name);
+    }
+    for (i = 0; i < next.attributes.length; i++) {
+      a = next.attributes[i];
+      if (live.getAttribute(a.name) !== a.value) live.setAttribute(a.name, a.value);
+    }
+  }
+  // every child of `lp` but `keep` is replaced by every child of `np` but `twin`, in order
+  function graft(lp, np, keep, twin) {
+    var before = [], after = [], past = false;
+    [].slice.call(np.childNodes).forEach(function (c) {
+      if (c === twin) past = true; else if (past) after.push(c); else before.push(c);
+    });
+    [].slice.call(lp.childNodes).forEach(function (c) { if (c !== keep) lp.removeChild(c); });
+    before.forEach(function (c) { lp.insertBefore(c, keep); });
+    after.forEach(function (c) { lp.appendChild(c); });
+  }
+  function retype(input) {
+    var key = (input && input.getAttribute) ? input.getAttribute("data-enc") : null;
+    if (!key || !_mount || !document.body.contains(_mount) || !_mount.contains(input) || !ready()) { EN.app.render(); return; }
+    var holder = el("div");
+    holder.appendChild(build());
+    // matched by comparing the attribute, so no id has to be escaped into a selector
+    var twin = [].slice.call(holder.querySelectorAll("[data-enc]")).filter(function (n) { return n.getAttribute("data-enc") === key; })[0] || null;
+    var live = chainOf(input, _mount), next = twin ? chainOf(twin, holder) : null;
+    var fits = !!(live && next && live.length === next.length);
+    for (var i = 0; fits && i < live.length; i++) if (live[i].nodeName !== next[i].nodeName) fits = false;
+    if (!fits) { EN.app.render(); return; }
+    var sx = window.scrollX, sy = window.scrollY;
+    var lp = _mount, np = holder;
+    for (var k = 0; k < live.length; k++) {
+      graft(lp, np, live[k], next[k]);
+      syncAttrs(live[k], next[k]);
+      lp = live[k]; np = next[k];
+    }
+    window.scrollTo(sx, sy);
+  }
+
+  // the tab's content, built from the plan and the store: render() mounts it, retype() grafts it
+  function build() {
     var plan = _s.plan;
     var crew = crewNow(plan);
     var blocks = [heading("Encounters", "// budget and build a fight")];
+    var strip = undoStrip();
+    if (strip) blocks.push(strip);
     if (_s.banner) {
       blocks.push(el("div.feature", { style: { borderLeftColor: "var(--accent)" } }, [
         el("div.row.between", { style: { gap: "8px", alignItems: "flex-start" } }, [
@@ -1422,8 +1673,9 @@ EN.gmEncounters = (function () {
     blocks.push(spacer());
     blocks.push(sitePanel(plan, crew));
     blocks.push(spacer());
-    blocks.push(plansPanel(plan));
-    mount.appendChild(el("div", null, blocks));
+    _paint.plans = plansPanel(plan);
+    blocks.push(_paint.plans);
+    return el("div", null, blocks);
   }
 
   /* ==== THE TABLE EXTRA ==================================================
@@ -1481,11 +1733,20 @@ EN.gmEncounters = (function () {
   }
   /* Following the Table round: each round the Table has moved on since the
      clock last looked is one tick. Written silently from inside the Table's
-     render, because the Table is already drawing the result. */
+     render, because the Table is already drawing the result.
+
+     ROUND 0 COUNTS AS ROUND 1 (F11). Before START ROUND 1 the Table sits at
+     round 0, and the move from 0 to 1 is the fight starting, not a round
+     passing. Counted as one, a clock started (and set to follow) before round
+     1 lost a round the moment the fight began, so it arrived a round sooner
+     than the same clock started during round 1. clockSeat() is the round a
+     clock is synced to when it starts or starts following. */
+  function clockSeat(round) { return Math.max(1, round | 0); }
   function syncClock(enc) {
     var c = enc && enc.clock;
     if (!c || !c.started || !c.followRound) return;
-    var r = enc.round | 0, from = c.syncedRound | 0;
+    // a clock synced to round 0 before this rule reads as synced to round 1 too
+    var r = clockSeat(enc.round), from = clockSeat(c.syncedRound);
     if (r === from) return;
     var n = copy(c);
     if (r > from) tick(n, r - from, r);
@@ -1510,7 +1771,7 @@ EN.gmEncounters = (function () {
         el("button.btn.sm.primary", { onclick: function () {
           clockOp(function (k, round) {
             k.started = true;
-            k.syncedRound = round;
+            k.syncedRound = clockSeat(round);
             hist(k, round, "Started at " + (tierOf(k.tier) || t).name + ": " + plural(k.roundsLeft, "round") + ".");
           });
           toast("The clock is running. Tell the players you started it.");
@@ -1548,7 +1809,7 @@ EN.gmEncounters = (function () {
       kids.push(el("div.row.wrap", { style: { gap: "6px", marginTop: "8px" } }, [
         el("span.chip" + (c.followRound ? ".on" : ""), { style: { cursor: "pointer", fontSize: "10.5px" },
           title: "Each new Table round ticks the clock once",
-          onclick: function () { clockOp(function (k, round) { k.followRound = !k.followRound; k.syncedRound = round; }); } }, "FOLLOW THE TABLE ROUND"),
+          onclick: function () { clockOp(function (k, round) { k.followRound = !k.followRound; k.syncedRound = clockSeat(round); }); } }, "FOLLOW THE TABLE ROUND"),
         el("span.chip" + (c.loud ? ".on" : ""), { style: { cursor: "pointer", fontSize: "10.5px" },
           title: "Rounds count toward escalation while the noise continues",
           onclick: function () { clockOp(function (k) { k.loud = !k.loud; }); } }, "NOISE CONTINUES")
@@ -1572,6 +1833,15 @@ EN.gmEncounters = (function () {
     return el("div", null, kids);
   }
 
+  /* The Table round a plan's round 1 fell on (run.startRound, F1): 1 for a
+     plan that started the fight, or for one run before this was recorded. */
+  function runStart(rec) {
+    var s = (rec && isObj(rec.run)) ? Math.floor(Number(rec.run.startRound)) : 1;
+    return isFinite(s) && s >= 1 ? s : 1;
+  }
+  // the Table round a plan's arrival round `wave` falls on
+  function tableRoundOf(rec, wave) { return runStart(rec) + wave - 1; }
+
   /* BRING IN: one later wave of the running plan onto the Table, numbered on
      from what is already there, with its hazards starting this round. The plan
      remembers which waves are in (its `run`), so the button becomes a mark. */
@@ -1581,11 +1851,11 @@ EN.gmEncounters = (function () {
     var enc = gm.get().encounter;
     var res = addWave(normPlan(copy(rec)), wave, Math.max(1, enc.round | 0));
     var p2 = copy(gm.rec("encounters", planId));
-    p2.run = isObj(p2.run) ? p2.run : { at: Date.now(), waves: [1] };
+    p2.run = isObj(p2.run) ? p2.run : { at: Date.now(), waves: [1], startRound: 1 };
     if (!Array.isArray(p2.run.waves)) p2.run.waves = [1];
     if (p2.run.waves.indexOf(wave) === -1) p2.run.waves.push(wave);
     gm.put("encounters", p2, { silent: true });
-    var msg = "Round " + wave + " is in: " + plural(res.threats, "threat") + (res.hazards ? ", " + plural(res.hazards, "hazard") : "") + ".";
+    var msg = "Round " + tableRoundOf(rec, wave) + " is in: " + plural(res.threats, "threat") + (res.hazards ? ", " + plural(res.hazards, "hazard") : "") + ".";
     if (res.skippedHz) msg += " " + plural(res.skippedHz, "hazard") + " skipped: the Hazards module is not loaded.";
     if (res.missing.length) msg += " Not found in the Bestiary: " + res.missing.join(", ") + ".";
     toast(msg);
@@ -1605,12 +1875,18 @@ EN.gmEncounters = (function () {
       waves.sort(function (a, b) { return a - b; });
       if (waves.length) {
         kids.push(EN.ui.sectionTitle("Later waves"));
+        // rounds are the Table's: a plan that joined in round 4 has its round 2 wave due in round 5 (F1)
+        var joined = runStart(rec);
         waves.forEach(function (w) {
           var ls = p.lines.filter(function (l) { return l.wave === w; });
-          var isIn = inWaves.indexOf(w) !== -1, due = (enc.round | 0) >= w;
+          var at = tableRoundOf(rec, w);
+          var isIn = inWaves.indexOf(w) !== -1, due = (enc.round | 0) >= at;
           kids.push(el("div.row.between.wrap", { style: { gap: "8px", alignItems: "center", padding: "5px 0", borderBottom: "1px solid var(--border)" } }, [
             el("div.row.wrap", { style: { gap: "8px", alignItems: "baseline", flex: "1 1 220px", minWidth: "0" } }, [
-              el("span.mono", { style: { fontSize: "12px", color: due && !isIn ? "var(--warn)" : "var(--text2)" }, text: "ROUND " + w }),
+              el("span.mono", { style: { fontSize: "12px", color: due && !isIn ? "var(--warn)" : "var(--text2)" },
+                title: joined > 1 ? "Round " + w + " of the plan, which joined the fight in round " + joined + "." : null,
+                text: "ROUND " + at }),
+              joined > 1 ? el("span.help", { style: { margin: 0 }, text: "plan round " + w }) : null,
               el("span", { text: ls.map(function (l) { return l.count + " x " + l.name; }).join(", ") }),
               due && !isIn ? chip("DUE", "var(--warn)") : null
             ]),
@@ -1649,35 +1925,101 @@ EN.gmEncounters = (function () {
      XP is written only to records that run XP (useXp); a milestone record is
      named and skipped. */
 
+  /* THIS FIGHT'S AWARD, READ FROM THE LEDGER (F4, F10). AWARD XP tags each of
+     its writes {source: "award", encounterAt, sourceId, jobId}, so whether the
+     award stands, what it paid and to whom are read from the live writes
+     tagged with this snapshot's `at`. Nothing hangs on a copy that HIDE or the
+     next cleared fight can take away, and a write to a record deleted since no
+     longer counts as outstanding, so UNDO AWARD can finish and AWARD XP comes
+     back. An award written before writes carried a tag is still found through
+     the ids its snapshot kept (xpAward.writeIds). Newest first.
+
+     `paid` true counts the writes that came in with an imported backup too:
+     that is whether the award is MADE (the card reads "Awarded" and offers no
+     second AWARD XP). Without it, only the writes UNDO AWARD can take back. */
+  function awardWrites(last, paid) {
+    if (!isObj(last)) return [];
+    var legacy = (isObj(last.xpAward) && Array.isArray(last.xpAward.writeIds)) ? last.xpAward.writeIds : [];
+    return (paid ? paidWrites : liveWrites)(function (r) {
+      var m = metaOf(r);
+      return (m.source === "award" && !!last.at && m.encounterAt === last.at) || legacy.indexOf(r.id) !== -1;
+    });
+  }
+  // what a standing award paid, {total, names} with the names in the order written; null when none stands
+  function awardSummary(ws) {
+    if (!ws.length) return null;
+    var total = 0, names = [];
+    ws.slice().reverse().forEach(function (w) {
+      (w.ops || []).forEach(function (o) { if (o && o.op === "xp") total = Number(o.amount) || 0; });
+      names.push(w.charName || "a Freelancer");
+    });
+    return { total: total, names: names };
+  }
+
   /* XP PAYROLL ALREADY WROTE for this fight. SEND TO PAYROLL hands the same
      snapshot to the Payroll tab, whose CREDIT THE CREW writes the encounter's
-     XP with the pay, so awarding it here as well would pay it twice. A payday
-     names its fight by the snapshot's `at` (encounterAt, or the copy of the
-     form it keeps); it counts while one of its XP writes still stands, so an
-     undone payday frees the award again. Null when nothing was written. */
+     XP with the pay, so awarding it here as well would pay it twice. A payday's
+     writes name their fight by the snapshot's `at` (meta.encounterAt; an older
+     payday by its own encounterAt, or the copy of the form it keeps, and its
+     writeIds). It counts while one of its XP writes is paid, by the same
+     reading as the award (F10, and an imported one counts): an undone payday,
+     or one whose records are all gone, frees the award again. Returns the
+     newest such payday as {title, total, names, imported}, or null; `imported`
+     says none of its writes can be undone here (it came in with a backup). */
   function payrollXpFor(last) {
-    var hit = null;
+    if (!isObj(last) || !last.at) return null;
+    var pds = [];
     gm.list("ledger").forEach(function (pd) {
-      if (hit || !isObj(pd) || pd.kind !== "payday" || !pd.credited || pd.undone) return;
+      if (!isObj(pd) || pd.kind !== "payday" || !pd.credited || pd.undone) return;
       var at = typeof pd.encounterAt === "number" ? pd.encounterAt
         : (isObj(pd.form) && isObj(pd.form.enc) ? pd.form.enc.at : null);
-      if (!last.at || at !== last.at) return;
-      var xp = 0, names = [];
-      (Array.isArray(pd.writeIds) ? pd.writeIds : []).forEach(function (id) {
-        var w = gm.rec("ledger", id);
-        if (!w || w.undone) return;
-        (w.ops || []).forEach(function (o) {
-          if (o && o.op === "xp") { xp = Number(o.amount) || 0; names.push(w.charName || "a Freelancer"); }
-        });
-      });
-      if (names.length) hit = { title: pd.title || "Payday", total: xp, names: names };
+      if (at === last.at) pds.push(pd);
     });
-    return hit;
+    // the payday a write belongs to: its tag, else the older payday that kept its id
+    function paydayOf(w) {
+      var m = metaOf(w);
+      if (typeof m.paydayId === "string" && m.paydayId) return m.paydayId;
+      var pd = pds.filter(function (x) { return Array.isArray(x.writeIds) && x.writeIds.indexOf(w.id) !== -1; })[0];
+      return pd ? pd.id : "";
+    }
+    var groups = Object.create(null), order = [];
+    paidWrites(function (w) {
+      var m = metaOf(w);
+      if (m.source === "payday") return m.encounterAt === last.at;
+      return !!paydayOf(w);
+    }).forEach(function (w) {
+      var xp = null;
+      (w.ops || []).forEach(function (o) { if (o && o.op === "xp") xp = Number(o.amount) || 0; });
+      if (xp === null) return;
+      var key = paydayOf(w) || "?";
+      if (!own(groups, key)) { groups[key] = { total: xp, names: [], imported: true }; order.push(key); }
+      // newest first in, so each name goes in front: the names read in the order written
+      groups[key].names.unshift(w.charName || "a Freelancer");
+      if (!w.imported) groups[key].imported = false;
+    });
+    if (!order.length) return null;
+    var g = groups[order[0]], rec = order[0] !== "?" ? gm.rec("ledger", order[0]) : null;
+    return { title: (rec && rec.title) || "Payday", total: g.total, names: g.names, imported: g.imported };
+  }
+
+  /* HIDE IS A WAY BACK, NOT A WAY OUT (F14). A hidden card leaves this small
+     line on the empty Table, and SHOW LAST FIGHT brings the card back. HIDE
+     itself is armed and only offered while no award write can be undone here,
+     so it can never put away the card's UNDO AWARD. */
+  function showLastFight(last) {
+    return el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
+      el("span.help", { style: { margin: 0 }, text: "The XP award for " + (last.name || "the last fight") + " is hidden." }),
+      el("button.btn.sm.ghost", { title: "Show the XP award card again", onclick: function () {
+        gm.update(function (st) { if (st.lastEncounter) delete st.lastEncounter.hidden; });
+        EN.app.render();
+      } }, "SHOW LAST FIGHT")
+    ]);
   }
 
   function awardCard(enc) {
     var s = gm.get(), last = s.lastEncounter;
-    if (!last || (enc.entries && enc.entries.length) || last.hidden) return null;
+    if (!last || (enc.entries && enc.entries.length)) return null;
+    if (last.hidden) return showLastFight(last);
     if (_s.award.at !== last.at) {
       // an award already made comes back with the choices it was made with, after a reload too
       var made = isObj(last.xpAward) ? last.xpAward : null;
@@ -1691,9 +2033,13 @@ EN.gmEncounters = (function () {
       return { id: r.id, name: r.name || (r.block && r.block.name) || "Threat", xp: EN.gmEngine.xpOf(r.block) };
     });
     var objDefault = p ? p.objective.awardXp : 0;
-    var objXp = _s.award.objXp === null ? objDefault : _s.award.objXp;
-    var defeated = rows.reduce(function (a, r) { return a + (own(_s.award.skip, r.id) ? 0 : r.xp); }, 0);
-    var total = defeated + objXp;
+    /* Read when they are needed, never kept from the render: the Objective XP
+       field repaints this card in place rather than re-rendering it (F19), so a
+       click writes, copies and sends the figure the GM typed last. */
+    function objNow() { return _s.award.objXp === null ? objDefault : _s.award.objXp; }
+    function totalNow() {
+      return rows.reduce(function (a, r) { return a + (own(_s.award.skip, r.id) ? 0 : r.xp); }, 0) + objNow();
+    }
     var crew = { members: [] };
     try { crew = EN.gmEngine.crew({ encounter: last }); } catch (e) { crew = { members: [] }; }
     var roster = (EN.store.roster && EN.store.roster()) || {};
@@ -1703,14 +2049,19 @@ EN.gmEncounters = (function () {
     });
     var xpCrew = members.filter(function (m) { return m.useXp; });
     var label = "XP award: " + (last.name || "the last encounter");
-    var done = isObj(last.xpAward) ? last.xpAward : null;
+    /* the award as it stands in the ledger (F4): null when nothing of it is
+       paid. An award that came in with an imported backup is made all the same
+       (no second AWARD XP), but only one written here can be undone here. */
+    var done = awardSummary(awardWrites(last, true));
+    var canUndoAward = !!done && awardWrites(last).length > 0;
+    function shown() { return done ? done.total : totalNow(); }
 
     function text() {
-      var out = [label];
+      var objXp = objNow(), out = [label];
       out.push("Defeated (" + ((X && X.defeatedIncludes) || []).join(", ") + " all count):");
       rows.forEach(function (r) { if (!own(_s.award.skip, r.id)) out.push("  " + r.name + ": " + fmtXp(r.xp)); });
       if (objXp) out.push("Objective: " + fmtXp(objXp));
-      out.push("Total: " + fmtXp(total) + " XP to every Freelancer.");
+      out.push("Total: " + fmtXp(totalNow()) + " XP to every Freelancer.");
       if (members.length) out.push("Crew: " + members.map(function (m) { return m.name + (m.useXp ? "" : " (milestones)"); }).join(", "));
       return out.join("\n");
     }
@@ -1731,14 +2082,15 @@ EN.gmEncounters = (function () {
       ]));
     });
     if (X && X.defeated) kids.push(help(X.defeated, { margin: "6px 0 0" }));
+    var objNowXp = objNow();
+    var totalEl = el("div.mono", { style: { fontSize: "22px", color: "var(--accent)" }, text: fmtXp(shown()) + " XP" });
     kids.push(el("div.row.wrap", { style: { gap: "12px", alignItems: "flex-end", marginTop: "10px" } }, [
-      field("Objective XP", el("input", { type: "number", min: "0", value: objXp ? String(objXp) : "", placeholder: "0", style: { width: "90px" },
+      field("Objective XP", el("input", { type: "number", min: "0", value: objNowXp ? String(objNowXp) : "", placeholder: "0", style: { width: "90px" },
         disabled: !!done,
-        oninput: function (e) { _s.award.objXp = Math.max(0, Math.floor(Number(e.target.value)) || 0); },
-        onchange: function () { EN.app.render(); } })),
+        oninput: function (e) { _s.award.objXp = Math.max(0, Math.floor(Number(e.target.value)) || 0); paint(); } })),
       el("div", null, [
         el("span.mono", { style: { fontSize: "10px", letterSpacing: ".1em", color: "var(--text3)" }, text: "EACH FREELANCER GETS" }),
-        el("div.mono", { style: { fontSize: "22px", color: "var(--accent)" }, text: fmtXp(total) + " XP" })
+        totalEl
       ])
     ]));
     if (X && X.text) kids.push(help(X.text, { margin: "6px 0 0" }));
@@ -1753,71 +2105,120 @@ EN.gmEncounters = (function () {
       kids.push(help("No crew found: file Freelancers or pull them onto the Table to award XP."));
     }
 
-    var btns = [el("button.btn.sm", { onclick: function () { copyText(text(), "The XP award"); } }, "COPY")];
     var paidXp = done ? null : payrollXpFor(last);
     if (done) {
-      var pending = (done.writeIds || []).filter(function (id) { var r = gm.rec("ledger", id); return r && !r.undone; });
-      kids.push(help("Awarded " + fmtXp(done.total) + " XP to " + (done.names || []).join(", ") + ".", { color: "var(--success)", margin: "8px 0 0" }));
-      if (pending.length) btns.push(el("button.btn.sm", { onclick: function () { undoAward(); } }, "UNDO AWARD"));
+      kids.push(help("Awarded " + fmtXp(done.total) + " XP to " + done.names.join(", ") + "." +
+        (canUndoAward ? "" : " It came in with an imported GM backup, so it cannot be undone here."),
+        { color: "var(--success)", margin: "8px 0 0" }));
     } else if (paidXp) {
       // the payday already carried this fight's XP; a second award would pay it twice
       kids.push(help("Payroll already wrote " + fmtXp(paidXp.total) + " XP for this fight to " + paidXp.names.join(", ") +
-        " with the payday " + paidXp.title + ". Undo that payday to award the XP here instead.", { color: "var(--warn)", margin: "8px 0 0" }));
-    } else if (total > 0 && xpCrew.length) {
-      btns.push(EN.ui.armButton("enc:award", { label: "AWARD XP", armedLabel: "AWARD " + fmtXp(total) + " TO " + xpCrew.length + "?",
-        armedTitle: "Writes " + fmtXp(total) + " XP to each Freelancer who runs XP. UNDO AWARD reverses it.",
-        onConfirm: function () {
-          var ids = [], names = [];
-          xpCrew.forEach(function (m) {
-            var id = gm.writeCrew(m.charId, label, [{ op: "xp", amount: total }]);
-            if (id) { ids.push(id); names.push(m.name); }
-          });
-          if (ids.length) {
-            gm.update(function (st) {
-              if (st.lastEncounter) st.lastEncounter.xpAward = { at: Date.now(), total: total, writeIds: ids, names: names,
-                                                                 objXp: objXp, skip: Object.keys(_s.award.skip) };
-            });
+        " with the payday " + paidXp.title + "." + (paidXp.imported
+          ? " That payday came in with an imported GM backup, so the XP stands as paid."
+          : " Undo that payday to award the XP here instead."), { color: "var(--warn)", margin: "8px 0 0" }));
+    }
+
+    // the buttons are drawn from what the card says NOW, so a typed Objective XP redraws them in place
+    var btnRow = el("div.row.wrap", { style: { gap: "8px", marginTop: "10px" } });
+    function fillButtons() {
+      EN.ui.clear(btnRow);
+      var total = totalNow();
+      var btns = [el("button.btn.sm", { onclick: function () { copyText(text(), "The XP award"); } }, "COPY")];
+      if (done) {
+        if (canUndoAward) btns.push(el("button.btn.sm", { onclick: function () { undoAward(); } }, "UNDO AWARD"));
+      } else if (!paidXp && total > 0 && xpCrew.length) {
+        btns.push(EN.ui.armButton("enc:award", { label: "AWARD XP", armedLabel: "AWARD " + fmtXp(total) + " TO " + xpCrew.length + "?",
+          armedTitle: "Writes " + fmtXp(total) + " XP to each Freelancer who runs XP. UNDO AWARD reverses it.",
+          onConfirm: function () { awardNow(); } }));
+      }
+      if (EN.gmView && EN.gmView.handoff) {
+        btns.push(el("button.btn.sm", { onclick: function () {
+          /* `xp` carries this card's own choices (the objective award, the threats
+             unticked as not defeated), so Payroll prices the fight's XP exactly as
+             this card does rather than from the bare snapshot */
+          var payload = { encounter: copy(gm.get().lastEncounter),
+                          xp: { objective: objNow(), skip: Object.keys(_s.award.skip) } };
+          if (p && p.jobId) payload.jobId = p.jobId;
+          EN.gmView.handoff("payroll", payload);
+        } }, "SEND TO PAYROLL"));
+      }
+      // never over an UNDO AWARD (F14); an imported award has none to put away
+      if (!canUndoAward) {
+        btns.push(EN.ui.armButton("enc:hide", { cls: ".btn.sm.ghost", label: "HIDE", armedLabel: "HIDE IT?",
+          title: "Hide this card until the next fight is cleared",
+          armedTitle: "Hides this card. SHOW LAST FIGHT, left in its place on the Table, brings it back.",
+          onConfirm: function () {
+            gm.update(function (st) { if (st.lastEncounter) st.lastEncounter.hidden = true; });
+            EN.app.render();
+          } }));
+      }
+      btns.forEach(function (b) { btnRow.appendChild(b); });
+    }
+    /* AWARD XP: one tagged write per Freelancer who runs XP, at the total the
+       card shows at the moment of the click. The snapshot keeps the choices it
+       was made with (and, for older readers, the ids), but whether the award
+       stands is always read back from the ledger. */
+    function awardNow() {
+      var total = totalNow(), objXp = objNow();
+      var meta = { source: "award", encounterAt: last.at, sourceId: last.sourceId || null, jobId: (p && p.jobId) || null };
+      var ids = [], names = [];
+      xpCrew.forEach(function (m) {
+        var id = gm.writeCrew(m.charId, label, [{ op: "xp", amount: total }], copy(meta));
+        if (id) { ids.push(id); names.push(m.name); }
+      });
+      if (ids.length) {
+        gm.update(function (st) {
+          if (st.lastEncounter && st.lastEncounter.at === last.at) {
+            st.lastEncounter.xpAward = { at: Date.now(), total: total, writeIds: ids, names: names,
+                                         objXp: objXp, skip: Object.keys(_s.award.skip) };
           }
-          toast(ids.length ? "Wrote " + fmtXp(total) + " XP to " + names.join(", ") + "." : "Nothing was written: no record would take it.");
-          EN.app.render();
-        } }));
+        });
+      }
+      var missed = xpCrew.length - ids.length;
+      toast(ids.length
+        ? "Wrote " + fmtXp(total) + " XP to " + names.join(", ") + "." + (missed ? " " + plural(missed, "record") + " could not be written." : "")
+        : "Nothing was written: no record would take it.");
+      EN.app.render();
     }
-    if (EN.gmView && EN.gmView.handoff) {
-      btns.push(el("button.btn.sm", { onclick: function () {
-        /* `xp` carries this card's own choices (the objective award, the threats
-           unticked as not defeated), so Payroll prices the fight's XP exactly as
-           this card does rather than from the bare snapshot */
-        var payload = { encounter: copy(gm.get().lastEncounter),
-                        xp: { objective: objXp, skip: Object.keys(_s.award.skip) } };
-        if (p && p.jobId) payload.jobId = p.jobId;
-        EN.gmView.handoff("payroll", payload);
-      } }, "SEND TO PAYROLL"));
+    fillButtons();
+    kids.push(btnRow);
+    function tagText() { return (last.name ? last.name.toUpperCase() + " · " : "") + fmtXp(shown()) + " XP EACH"; }
+    var card = EN.ui.panel("XP Award", tagText(), kids);
+    // F19: what reads the Objective XP, repainted where it stands while the GM types
+    function paint() {
+      totalEl.textContent = fmtXp(shown()) + " XP";
+      var t = card.querySelector(".panel-h .tag");
+      if (t) t.textContent = tagText();
+      fillButtons();
     }
-    btns.push(el("button.btn.sm.ghost", { title: "Hide this card until the next fight is cleared",
-      onclick: function () { gm.update(function (st) { if (st.lastEncounter) st.lastEncounter.hidden = true; }); EN.app.render(); } }, "HIDE"));
-    kids.push(el("div.row.wrap", { style: { gap: "8px", marginTop: "10px" } }, btns));
-    return EN.ui.panel("XP Award", (last.name ? last.name.toUpperCase() + " · " : "") + fmtXp(total) + " XP EACH", kids);
+    return card;
   }
 
-  /* UNDO AWARD inverts this award's writes, newest first, for as long as the
-     newest undoable write is one of them. A later write (a payday) sitting on
-     top stops it, and the GM is told to undo that first. */
+  /* UNDO AWARD inverts this award's live writes, newest first, for as long as
+     the newest undoable write is one of them. A later write (a payday) sitting
+     on top stops it, and the toast names it so the GM knows what to undo
+     first. Which writes are this award's, and whether any are left, is read
+     from the ledger (F4), where a write to a deleted record no longer counts
+     (F10), so an award whose other records are gone finishes undoing. */
   function undoAward() {
-    var last = gm.get().lastEncounter;
-    var done = last && isObj(last.xpAward) ? last.xpAward : null;
-    if (!done) return;
-    var ids = done.writeIds || [], n = 0, u;
+    var mine = awardWrites(gm.get().lastEncounter);
+    if (!mine.length) { toast("Nothing of this award is left to undo."); EN.app.render(); return; }
+    var ids = mine.map(function (w) { return w.id; }), n = 0, u = null, failed = false;
     while ((u = gm.undoable()) && ids.indexOf(u.id) !== -1) {
-      if (!gm.undoLast()) break;
+      if (!gm.undoLast()) { failed = true; break; }
       n++;
     }
-    var left = ids.filter(function (id) { var r = gm.rec("ledger", id); return r && !r.undone; });
+    var left = awardWrites(gm.get().lastEncounter);
     if (!left.length) {
       gm.update(function (st) { if (st.lastEncounter) delete st.lastEncounter.xpAward; });
       toast("Award undone: " + plural(n, "write") + " reversed.");
+    } else if (failed) {
+      toast((n ? "Partly undone: " + plural(n, "write") + " reversed. " : "") + "This device refused to save the next undo, so the rest of the award stands.");
     } else {
-      toast(n ? "Partly undone. A later write sits on top of the rest; undo that first."
-              : "A later write sits on top of this award. Undo that first.");
+      var top = gm.undoable();
+      var named = top ? " (" + (top.label || "a later write") + ")" : "";
+      toast(n ? "Partly undone. A later write sits on top of the rest" + named + "; undo that first."
+              : "A later write sits on top of this award" + named + ". Undo that first.");
     }
     EN.app.render();
   }

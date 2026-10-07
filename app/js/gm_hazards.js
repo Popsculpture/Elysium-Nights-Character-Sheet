@@ -39,7 +39,9 @@
    a Set Piece at another Grade takes that Grade's DC off the ladder and keeps
    its printed dice and counter DCs; a recurring Nuisance or Dangerous hazard
    is free unless the GM enters XP; the stalemate roller rolls the row and the
-   GM types the Impact DC (the handbook does not print that table); Flow
+   GM sets the Impact DC, either by picking a speed off the GM's Card table
+   (stalemate.impactBySpeed in the data, printed in the appendix, not beside
+   the district tables) or by typing a number, and a typed number wins; Flow
    Disturbances anomalies stay free text in the Room's notes.
    =========================================================================== */
 window.EN = window.EN || {};
@@ -65,9 +67,12 @@ EN.gmHazards = (function () {
   var _ui = { view: "library", focus: null, scroll: false };
   var _lib = Object.create(null);     // hazard key -> {grade, pricing, open}
   var _c = null;                      // the Composer's draft
+  var _cBase = null;                  // the draft as it was opened, to tell an unsaved change (F17)
+  var _cActs = null;                  // the Composer's button row, repainted while the GM types
+  var _cSig = null;                   // what that row says, so it is rebuilt only when that changes
   var _rolls = Object.create(null);   // Room row id -> the last bite rolled
   var _fall = Object.create(null);    // Room row id -> spaces typed for a fall
-  var _tools = { district: null, stalemate: null, impact: "", spaces: "", fall: null,
+  var _tools = { district: null, stalemate: null, speed: "", impact: "", spaces: "", fall: null,
                  mat: "average", integ: "", dmg: "", hit: null, ruleOpen: false };
 
   /* ---- the book's numbers, read where they live ---------------------------- */
@@ -310,6 +315,17 @@ EN.gmHazards = (function () {
       el("h1", { style: { fontSize: "22px", letterSpacing: ".06em" },
         html: title + ' <span class="dim3" style="font-size:13px">' + sub + "</span>" })
     ]);
+  }
+  /* The shared "last write to a Freelancer record" strip (gm.js) under the
+     heading, so the newest GM write can always be undone from any Admin tab
+     (F4). Null while gm.js has no strip or nothing is undoable. */
+  function undoStrip() {
+    try {
+      return (EN.gmView && typeof EN.gmView.undoStrip === "function") ? (EN.gmView.undoStrip() || null) : null;
+    } catch (e) {
+      try { console.error("GM Hazards: the undo strip failed", e); } catch (e2) {}
+      return null;
+    }
   }
   function lbl(t) { return el("label.fl", { text: t }); }
   function mono(t, color) {
@@ -708,19 +724,25 @@ EN.gmHazards = (function () {
     if (isSet) {
       btns.push(el("button.btn.sm.ghost", { "data-hook": "printed",
         onclick: function () { st.open = !st.open; EN.app.render(); } }, (st.open ? "▾ " : "▸ ") + "AS WRITTEN"));
+    } else if (_c && _c.id === h.key) {
+      // this hazard is already open in the Composer: EDIT goes back to that work, never resets it
+      btns.push(el("button.btn.sm", { "data-hook": "edit", title: "Back to the Composer, where it is open",
+        onclick: function () { _ui.view = "composer"; EN.app.render(); } }, draftDirty() ? "EDIT (UNSAVED)" : "EDIT"));
     } else {
-      btns.push(el("button.btn.sm", { "data-hook": "edit", onclick: function () {
-        _c = draftFrom(h);
-        _ui.view = "composer";
-        EN.app.render();
-      } }, "EDIT"));
+      btns.push(discardButton({ key: "hz:edit:" + h.key, hook: "edit", label: "EDIT",
+        armedLabel: "DISCARD THE DRAFT?", title: "Open it in the Composer",
+        onGo: function () {
+          startDraft(draftFrom(h));
+          _ui.view = "composer";
+          EN.app.render();
+        } }));
       btns.push(EN.ui.armButton("hz:del:" + h.key, {
         label: "DELETE", armedLabel: "DELETE IT?", title: "Delete this hazard from the library",
         armedTitle: "Removes it from the library. Copies already in the Room or a plan stay. This cannot be undone.",
         onConfirm: function () {
           gm.drop("hazards", h.key);
           delete _lib[h.key];
-          if (_c && _c.id === h.key) _c = null;
+          if (_c && _c.id === h.key) startDraft(null);
           toast(h.name + " deleted.");
           EN.app.render();
         }
@@ -759,7 +781,8 @@ EN.gmHazards = (function () {
     }
     out.push(gap());
     out.push(EN.ui.panel("Your Hazards", mine.length + " SAVED", myKids, {
-      headerRight: [el("button.btn.sm", { onclick: function () { _c = blankDraft(); _ui.view = "composer"; EN.app.render(); } }, "+ NEW HAZARD")]
+      headerRight: [discardButton({ key: "hz:new", hook: "new-hazard", label: "+ NEW HAZARD", title: "Start a blank hazard in the Composer",
+        onGo: function () { startDraft(blankDraft()); _ui.view = "composer"; EN.app.render(); } })]
     }));
     return out;
   }
@@ -790,6 +813,35 @@ EN.gmHazards = (function () {
              counter: h.counter || "", kind: t.kind || "onEntry", n: t.n == null ? "" : String(t.n),
              timingText: t.text || "", pricing: h.pricing || "opposition",
              xp: typeof h.xp === "number" ? String(h.xp) : "", notes: h.notes || "" };
+  }
+  /* F17. The Composer's draft is opened from a baseline (a blank draft, or a
+     saved hazard for EDIT) and is unsaved while it differs from that baseline.
+     Every path that would replace an unsaved draft (+ NEW HAZARD, another
+     card's EDIT, CLEAR, STOP EDITING) arms first, the way the Job Board's NEW
+     JOB and the Encounters tab's NEW PLAN do. */
+  function startDraft(d) {
+    _c = d;
+    _cBase = d ? JSON.stringify(d) : null;
+    return d;
+  }
+  function draftDirty() { return !!_c && JSON.stringify(_c) !== _cBase; }
+  function draftName() { return trim(_c && _c.name) || "the draft"; }
+  /* A button that replaces the draft: plain while nothing would be lost, armed
+     while something would. o is {key, hook, label, title, armedLabel,
+     armedTitle, onGo}. */
+  function discardButton(o) {
+    var b;
+    if (!draftDirty()) {
+      b = el("button.btn.sm", { title: o.title || "", onclick: o.onGo }, o.label);
+    } else {
+      b = EN.ui.armButton(o.key, { label: o.label, cls: ".btn.sm", armedLabel: o.armedLabel || "DISCARD THE DRAFT?", title: o.title || "",
+        armedTitle: o.armedTitle || ("The Composer holds unsaved work on " + draftName() +
+          ". Click again to let it go; the COMPOSER chip goes back to it instead."),
+        onConfirm: o.onGo });
+      b.setAttribute("data-guard", "1");   // the first click asks
+    }
+    if (o.hook) b.setAttribute("data-hook", o.hook);
+    return b;
   }
   // the draft as a hazard object; the same shape the Library and the Room read
   function draftHazard(d) {
@@ -824,7 +876,7 @@ EN.gmHazards = (function () {
     h.key = id;
     gm.put("hazards", h);
     delete _lib[id];   // the card picks up the saved Grade and price, not a stale pick
-    _c = null;
+    startDraft(null);
     _ui.view = "library";
     _ui.focus = id;
     _ui.scroll = true;
@@ -834,7 +886,7 @@ EN.gmHazards = (function () {
 
   function composerView() {
     var H = book();
-    if (!_c) _c = blankDraft();
+    if (!_c) startDraft(blankDraft());
     var d = _c;
     var g = gradeOf(d.grade);
     var kids = [];
@@ -932,14 +984,48 @@ EN.gmHazards = (function () {
     kids.push(el("textarea", { rows: 3, value: d.notes, "data-hook": "c-notes", placeholder: "where it sits, what it looks like, who knows about it",
       style: { width: "100%" }, oninput: function (e) { d.notes = e.target.value; } }));
 
-    kids.push(el("div.row.wrap", { style: { gap: "8px", marginTop: "12px" } }, [
-      el("button.btn.sm.primary", { "data-hook": "c-save-btn", onclick: saveDraft }, d.id ? "SAVE CHANGES" : "SAVE TO THE LIBRARY"),
-      el("button.btn.sm", { onclick: function () { _c = blankDraft(); EN.app.render(); } }, d.id ? "STOP EDITING" : "CLEAR")
-    ]));
+    /* The fields keep the draft on input and never re-render the tab, so the
+       CLEAR / STOP EDITING button is repainted in place whenever the draft
+       changes: it arms the moment there is something to lose. */
+    _cActs = el("div.row.wrap", { "data-hook": "c-acts", style: { gap: "8px", marginTop: "12px" } }, composerActs(d));
+    _cSig = actsSig(d);
+    kids.push(_cActs);
 
     var lead = H.anatomy && H.anatomy.lead ? H.anatomy.lead.replace(/:$/, "") : "";
-    return [EN.ui.panel("Hazard Composer", "TRIGGER · SAVE · BITE · COUNTER",
-      [help(lead ? lead + ": Trigger, Save and DC, Bite, Counter." : "", { margin: "0 0 4px" })].concat(kids))];
+    var panel = EN.ui.panel("Hazard Composer", "TRIGGER · SAVE · BITE · COUNTER",
+      [help(lead ? lead + ": Trigger, Save and DC, Bite, Counter." : "", { margin: "0 0 4px" })].concat(kids));
+    panel.addEventListener("input", paintComposerActs);
+    panel.addEventListener("change", paintComposerActs);
+    return [panel];
+  }
+  function composerActs(d) {
+    return [
+      el("button.btn.sm.primary", { "data-hook": "c-save-btn", onclick: saveDraft }, d.id ? "SAVE CHANGES" : "SAVE TO THE LIBRARY"),
+      discardButton({ key: "hz:clear", hook: "c-clear", label: d.id ? "STOP EDITING" : "CLEAR",
+        armedLabel: d.id ? "DISCARD THE CHANGES?" : "DISCARD THE DRAFT?",
+        armedTitle: d.id ? "Click again to drop the unsaved changes to " + draftName() + ". The saved copy stays as it was."
+                         : "Click again to throw away " + draftName() + ". It was never saved.",
+        onGo: function () { startDraft(blankDraft()); EN.app.render(); } }),
+      draftDirty() ? el("span.help", { "data-hook": "c-unsaved", style: { margin: 0, color: "var(--warn)" }, text: "Unsaved." }) : null
+    ];
+  }
+  /* What the button row says: whether there is anything to lose, whether it
+     edits a saved hazard, and the draft's name its armed title uses. */
+  function actsSig(d) { return (draftDirty() ? "1" : "0") + "|" + (d.id || "") + "|" + draftName(); }
+  /* REBUILT ONLY WHEN IT WOULD READ DIFFERENTLY (re-review of F17). A text or
+     number field fires `change` when it blurs, and it blurs at the mousedown
+     of the GM's next click: rebuilding the row there swapped SAVE TO THE
+     LIBRARY out from under the pointer before the mouseup, and Chrome never
+     delivered the click, so the first SAVE after typing did nothing. By the
+     time a field blurs its `input` has already painted the row, so the
+     signature is unchanged and the row, and the button being clicked, stay. */
+  function paintComposerActs() {
+    if (!_c || !_cActs || !_cActs.isConnected) return;
+    var sig = actsSig(_c);
+    if (sig === _cSig) return;
+    _cSig = sig;
+    EN.ui.clear(_cActs);
+    composerActs(_c).forEach(function (n) { if (n) _cActs.appendChild(n); });
   }
 
   /* ---- the Reference ------------------------------------------------------- */
@@ -1045,22 +1131,46 @@ EN.gmHazards = (function () {
       kids.push(el("div.feature", { "data-hook": "stalemate-result", style: { marginTop: "10px" } }, rk));
     }
 
-    // the default rule, as printed, and the Impact DC the GM types
+    /* The default rule, as printed, and its Impact DC. Picking a speed off the
+       GM's Card table fills the DC field; a number typed into the field wins,
+       and a cleared field falls back to the picked speed's DC. (F3) */
     kids.push(para(S.rule));
     var dr = S.defaultRule || {};
+    var speeds = (S.impactBySpeed || []).filter(function (x) { return x && typeof x.dc === "number"; });
+    var spd = speeds.filter(function (x) { return x.key === _tools.speed; })[0] || null;
     var out = el("p.help", { "data-hook": "impact-line", style: { margin: "4px 0 0", color: "var(--accent)" } });
     function impactLine() {
-      var dc = parseInt(_tools.impact, 10);
-      out.textContent = isNaN(dc) ? "Type the Impact DC for the pilots' speed." :
-        upperFirst(dr.who || "each pilot") + " makes a " + (dr.check || "Control Check") + " against DC " + dc +
-        "; a failure gives " + (dr.onFail || "Snag on the next Chase Check") + ".";
+      var typed = parseInt(_tools.impact, 10);
+      var dc = isNaN(typed) ? (spd ? spd.dc : NaN) : typed;
+      if (isNaN(dc)) {
+        out.textContent = speeds.length ? "Pick the pilots' speed or type the Impact DC." : "Type the Impact DC for the pilots' speed.";
+        return;
+      }
+      var tail = !spd ? "" : (isNaN(typed) || typed === spd.dc) ? " That is the Impact DC at " + spd.speed + " speed."
+        : " Typed over the " + spd.speed + " Impact DC of " + spd.dc + ".";
+      out.textContent = upperFirst(dr.who || "each pilot") + " makes a " + (dr.check || "Control Check") + " against DC " + dc +
+        "; a failure gives " + (dr.onFail || "Snag on the next Chase Check") + "." + tail;
     }
     impactLine();
-    kids.push(el("div.row.wrap", { style: { gap: "10px", alignItems: "flex-end", marginTop: "6px" } }, [
-      textField("Impact DC", _tools.impact, "DC", function (v) { _tools.impact = v; impactLine(); },
-        { type: "number", hook: "impact", flex: "0 1 110px" })
-    ]));
+    var dcRow = [];
+    if (speeds.length) {
+      dcRow.push(pick("Speed", [{ value: "", label: "Pick a speed..." }].concat(speeds.map(function (x) {
+        return { value: x.key, label: x.speed + " (DC " + x.dc + ")" };
+      })), _tools.speed, function (v) {
+        var hit = speeds.filter(function (x) { return x.key === v; })[0] || null;
+        _tools.speed = hit ? hit.key : "";
+        if (hit) _tools.impact = String(hit.dc);
+      }, { hook: "speed", minWidth: "150px" }));
+    }
+    dcRow.push(textField("Impact DC", _tools.impact, spd ? String(spd.dc) : "DC", function (v) { _tools.impact = v; impactLine(); },
+      { type: "number", hook: "impact", flex: "0 1 110px" }));
+    kids.push(el("div.row.wrap", { style: { gap: "10px", alignItems: "flex-end", marginTop: "6px" } }, dcRow));
     kids.push(out);
+    if (speeds.length) {
+      kids.push(el("p.help", { "data-hook": "impact-table", style: { margin: "4px 0 0" },
+        text: "Impact DC by speed: " + speeds.map(function (x) { return x.speed + " " + x.dc; }).join(", ") +
+              ". Pilots at different speeds each check against their own." }));
+    }
 
     // the whole table, the rolled row lit
     kids.push(el("div", { style: { marginTop: "10px" } }, dist.rows.map(function (x) {
@@ -1177,7 +1287,11 @@ EN.gmHazards = (function () {
     return el("div.row.wrap", { style: { gap: "6px", marginBottom: "10px" } }, VIEWS.map(function (v) {
       return el("span.chip" + (_ui.view === v.key ? ".on" : ""), { "data-view": v.key,
         style: { cursor: "pointer", fontSize: "10.5px" },
-        onclick: function () { _ui.view = v.key; _ui.focus = null; EN.app.render(); }
+        onclick: function () {
+          // a discard armed in one view is not left armed for a later single click in another
+          if (EN.ui.disarm) EN.ui.disarm();
+          _ui.view = v.key; _ui.focus = null; EN.app.render();
+        }
       }, v.label + (v.key === "library" ? " (" + libCount + ")" : ""));
     }));
   }
@@ -1204,12 +1318,12 @@ EN.gmHazards = (function () {
     }
     var H = book();
     if (!H) {
-      mount.appendChild(el("div", null, [heading("Hazards", "// set pieces and the room"),
+      mount.appendChild(el("div", null, [heading("Hazards", "// set pieces and the room"), undoStrip(),
         el("div.muted-box", { text: "Hazard data did not load. Check app/data/gm_hazards.js." })]));
       return;
     }
     var libCount = ((H.setPieces && H.setPieces.items) || []).length + gm.list("hazards").length;
-    var blocks = [heading("Hazards", "// set pieces and the room"), viewChips(libCount), roomStrip()];
+    var blocks = [heading("Hazards", "// set pieces and the room"), undoStrip(), viewChips(libCount), roomStrip()];
     var body;
     if (_ui.view === "composer") body = composerView();
     else if (_ui.view === "reference") body = referenceView();

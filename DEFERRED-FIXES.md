@@ -9135,6 +9135,58 @@ the condition alone while Strain and Overdraw points go to 0; a legacy Spacer's 
 "systems" kept; a legacy array shows two "(old array)" options; a Signature weapon shows its full
 effect and the right status line untrained and proficient.
 
+## The Admin desktop is finished from the Game Master's Handbook: Encounters, Hazards, Job Board, Payroll, 2026-10-07
+
+Built on branch `gm-modules` from the standalone Elysium Nights Game Master's Handbook (136 pages),
+which seven readers transcribed into data before any code was written. The author's rulings for the
+build (2026-10-06): the GM side may write to player records only through confirmed, logged, undoable
+writes, each with a copyable text version; GM data stays in one key (`en_gm_v1`, now schema 2) with
+export and import; the Bestiary is regenerated from the handbook; the crew for budgets and pay is the
+Table's crew, else the filed roster, at the rounded-average Caliber, both overridable; the XP award gives
+every Freelancer the full total (p65); Payroll shows the printed band with its midpoint prefilled.
+
+**Groundwork.** `EN.store.updateById` changes a record that is not the active one, and returns false and
+restores the record when the device refuses the write. `EN.gmStore` gains saved encounters, custom
+hazards, a job log and a ledger; the live encounter carries the Room and the Security Response clock;
+`writeCrew(charId, label, ops, meta)` and `undoLast()` make every GM write to a player record logged and
+undoable, tagged with where it came from; `liveWrites()` is the one answer to "does that write still
+stand"; an import marks incoming writes as history only. An undo strip under every Admin tab's heading
+always offers the newest standing write. The pay splitter moved into the engine with clamped percentages
+(the player SPLIT uses it too). Threats take the book's initiative (Grade + 2, Minion and Bruiser -1,
+Skirmisher +1, Ghost +2), and Bestiary threats keep their printed Initiative on a reroll.
+
+**Data.** The Bestiary is 48 statblocks (People 23 in three new subgroups, Flow 7 with The Scar Line),
+with category intros, Species Templates, Hostile Vehicles and the cryptid hunt procedure; nine printed
+numbers changed (four Vitality values now round down, five Security Ratings include the Firewall bonus),
+and the book's wording, contractions and capitals are kept. `data/threats.js` carries the initiative
+block and the current Ability Menu, Ghost, conventions (six), morale and budget text. New transcriptions:
+`gm_encounters.js`, `gm_hazards.js` (with the Impact DC by speed from the GM's Card), `gm_jobs.js`,
+`gm_payroll.js`, each string checked against the handbook text.
+
+**The four tabs.** Encounters: the budget meter, lines from the Bestiary, saved threats, a quick builder
+and hazards, waves, composition warnings, objectives, the site's response tier, saved plans and the
+book's worked examples, and RUN ON THE TABLE (replace or append; an appended plan starts its hazards and
+waves on the live round and keeps a running clock). Hazards: the eight Set Pieces at any Grade, a
+composer, reference tables, the stalemate roller with a speed picker, falling damage, and the Room tray
+on the Table. Job Board: the five tables with roll, pick and lock, the double bill, the cryptid pull,
+the Twelve Postings, a job log, COPY, and SEND TO #POST with an undo that survives a reload. Payroll:
+the contract grid with clause shifts, bounties, salvage and the salvage award, the split, the XP award
+without ever paying a fight twice, and CREDIT THE CREW with one undo for the whole payday.
+
+**Review.** An adversarial review (five lenses, three skeptics a finding) confirmed 22 defects, all
+fixed with a regression test each. The worst were stranded undos after a reload, a fight or job that
+Payroll could pay twice, a refused save reported as landed, and a restored backup that could be undone
+twice. A re-review of the fixes found four more (double pay after an import, a newer job payday hiding a
+fight's XP, and two fields that swallowed the next click), also fixed and tested. Final run: end to end
+88 of 88, Encounters 120, Hazards 89, Job Board 80, Payroll 79, Bestiary and shell 109, plus every
+regression test, all with no page errors. Testing ran in headless Chrome against the worktree with
+scratch profiles, so no real record was touched.
+
+**Not modelled, deliberately.** Heat Response, contact cards, name tables, Sit-Down and chase trackers,
+the GM's Card drawer and the sample adventure are candidates for the quality of life pass. Hazards
+overcome are not paid as XP (the book prices opposition hazards but never says they pay; the GM can add
+objective XP). Flow-touched salvage multipliers stay reference text.
+
 ## Trace Cutter the cipher is cut, and the Weaver's Feedback Spike is Screen Burn, 2026-09-30
 
 Two author rulings on top of the 28 September sync.
