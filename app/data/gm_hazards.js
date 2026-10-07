@@ -203,7 +203,7 @@ EN.gmBook.hazards = {
          how many spaces a two-story drop is. The fall is the bite. */
       { key: "catwalk", name: "Collapsing Catwalk", grade: 3,
         text: "Average material (Structure 9, Integrity 12) over a two-story drop. Falling is 1d6 Bludgeoning per 2 spaces fallen, per Falling & Forced Movement. The catwalk announces itself: one groan per crossing, dice silent until somebody Dashes, fights, or lands on it.",
-        trigger: "somebody Dashes, fights, or lands on it",
+        trigger: "Somebody Dashes, fights, or lands on it",
         timing: { kind: "trigger", text: "dice silent until somebody Dashes, fights, or lands on it" },
         save: null,
         bite: { band: null, dice: "1d6", perSpaces: 2, type: "Bludgeoning", onSuccess: null,
@@ -215,7 +215,7 @@ EN.gmBook.hazards = {
 
       { key: "lockdown", name: "Lockdown Doors", grade: 3,
         text: "Blast partitions drop on an alarm: Fortified (Structure 14, Integrity 24), sealing the room in 2 rounds. Counter: the override Node (Improved [1]), the manual crank behind the paint, or being on the correct side.",
-        trigger: "an alarm",
+        trigger: "Blast partitions drop on an alarm",
         timing: { kind: "countdown", rounds: 2, text: "sealing the room in 2 rounds" },
         save: null,
         bite: null,
@@ -256,7 +256,7 @@ EN.gmBook.hazards = {
          Harsh), not on the Grade ladder; Suffocating is EN.conditions. */
       { key: "inferno", name: "Server Inferno", grade: 3,
         text: "A burning stack floods the row with heat and halon. The row has Harsh heat Exposure and is heavily obscured. Suppression gas triggers Suffocating in 3 rounds for anyone still inside without sealed air. Counter: the fire, or the schedule.",
-        trigger: "A burning stack",
+        trigger: "A burning stack floods the row with heat and halon",
         timing: { kind: "countdown", rounds: 3,
                   text: "Suppression gas triggers Suffocating in 3 rounds for anyone still inside without sealed air" },
         save: null,
@@ -290,7 +290,7 @@ EN.gmBook.hazards = {
          read as the Bestiary's Sublevel Angler (an app link). */
       { key: "sluice", name: "The Black Sluice", grade: 3,
         text: "Waist-deep runoff, moving. The channel is Difficult Terrain; at the end of each round, everyone in it makes a Body Save DC 15 or is carried 2 spaces downstream (toward the grates, the dark, the Angler). Dropped items are gone. Counter: lines, rigging, or high ground and the humility to use it.",
-        trigger: "everyone in it",
+        trigger: "Anyone in the channel",
         timing: { kind: "round", at: "end", text: "at the end of each round" },
         save: { attr: "Body", dc: 15 },
         bite: { band: null, dice: null, type: null, onSuccess: null, moveSpaces: 2,

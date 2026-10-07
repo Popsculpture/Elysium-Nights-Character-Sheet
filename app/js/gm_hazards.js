@@ -666,7 +666,7 @@ EN.gmHazards = (function () {
     var hz = atGrade(h, g);
     hz.pricing = st.pricing;
     var xp = priceXp(hz, g);
-    var none = isSet ? "None printed" : "None";
+    var none = "None";
     var kids = [];
 
     kids.push(el("h4", null, [
@@ -679,16 +679,51 @@ EN.gmHazards = (function () {
     if (isSet && hz.save && hz.dcByGrade && g !== h.printedGrade && h.printedDc != null) {
       dcNote = " (printed DC " + h.printedDc + " at G" + h.printedGrade + ")";
     }
-    kids.push(line(fieldName("trigger", "Trigger"), hz.trigger || none, "trigger"));
-    kids.push(line(fieldName("save", "Save and DC"), saveText(hz, none) + dcNote, "save"));
-    kids.push(line(fieldName("bite", "Bite"), biteText(hz.bite) || none, "bite"));
-    kids.push(line(fieldName("counter", "Counter"), hz.counter || none, "counter"));
-    kids.push(line("Timing", timingLabel(hz.timing) + (hz.timing && hz.timing.text ? ": " + hz.timing.text : ""), "timing"));
-    if (hz.area) kids.push(line("Area", hz.area));
-    if (hz.material) kids.push(line("Material", hz.material.name + ", Structure " + hz.material.structure + ", Integrity " + hz.material.integrity));
-    var also = extraEffects(hz);
-    if (also.length) kids.push(line("Also", also.map(noStop).join("; ") + "."));
-    if (hz.anomalies && hz.anomalies.length) kids.push(line("Anomalies", hz.anomalies.join(", ")));
+    if (isSet) {
+      /* THE BOOK'S PARAGRAPH IS THE CARD (author's call, 2026-10-07). A Set Piece is
+         written as prose, and only some of them break into the anatomy's four lines;
+         Breakflow Bleed is a paragraph and nothing else. So the paragraph leads, as
+         printed, and a labelled line shows only where the book actually prints that
+         piece. Rows of "None printed" read as missing data rather than as a hazard
+         built differently, and lifting phrases out of a sentence into rows left
+         fragments ("everyone in it"), so neither happens any more. */
+      kids.push(el("div.mono", { style: { fontSize: "10px", letterSpacing: ".1em", color: "var(--text3)", margin: "2px 0 2px" },
+        text: "AS WRITTEN AT G" + h.printedGrade }));
+      kids.push(el("p", { "data-hook": "as-written", style: { margin: "0 0 8px", fontSize: "13.5px", lineHeight: "1.5", color: "var(--text)" },
+        text: h.printed }));
+      var anomalyRun = !!(hz.anomalies && hz.anomalies.length);
+      var biteLine = biteText(hz.bite);
+      if (hz.trigger) kids.push(line(fieldName("trigger", "Trigger"), hz.trigger, "trigger"));
+      if (hz.save) kids.push(line(fieldName("save", "Save and DC"), saveText(hz, "") + dcNote, "save"));
+      if (biteLine) kids.push(line(fieldName("bite", "Bite"), biteLine, "bite"));
+      if (hz.counter) kids.push(line(fieldName("counter", "Counter"), hz.counter, "counter"));
+      if (anomalyRun) kids.push(line("Runs off", "The Anomaly you pick from Flow Disturbances", "timing"));
+      else kids.push(line("Timing", timingLabel(hz.timing) + (hz.timing && hz.timing.text ? ": " + hz.timing.text : ""), "timing"));
+      if (hz.area) kids.push(line("Area", hz.area));
+      if (hz.material) kids.push(line("Material", hz.material.name + ", Structure " + hz.material.structure + ", Integrity " + hz.material.integrity));
+      if (anomalyRun) kids.push(line("Anomalies", hz.anomalies.join(", ")));
+      var unprinted = [];
+      if (!hz.save) unprinted.push("save");
+      if (!biteLine) unprinted.push("bite");
+      if (!hz.counter) unprinted.push("counter");
+      if (unprinted.length) {
+        var said = unprinted.length === 1 ? unprinted[0]
+          : unprinted.slice(0, -1).join(", ") + " or " + unprinted[unprinted.length - 1];
+        kids.push(help("The book prints no separate " + said + " for this one" +
+          (anomalyRun ? ": the Anomaly you pick supplies the rules." : ". The paragraph above is the whole rule.")));
+      }
+    } else {
+      kids.push(line(fieldName("trigger", "Trigger"), hz.trigger || none, "trigger"));
+      kids.push(line(fieldName("save", "Save and DC"), saveText(hz, none) + dcNote, "save"));
+      kids.push(line(fieldName("bite", "Bite"), biteText(hz.bite) || none, "bite"));
+      kids.push(line(fieldName("counter", "Counter"), hz.counter || none, "counter"));
+      kids.push(line("Timing", timingLabel(hz.timing) + (hz.timing && hz.timing.text ? ": " + hz.timing.text : ""), "timing"));
+      if (hz.area) kids.push(line("Area", hz.area));
+      if (hz.material) kids.push(line("Material", hz.material.name + ", Structure " + hz.material.structure + ", Integrity " + hz.material.integrity));
+      var also = extraEffects(hz);
+      if (also.length) kids.push(line("Also", also.map(noStop).join("; ") + "."));
+      if (hz.anomalies && hz.anomalies.length) kids.push(line("Anomalies", hz.anomalies.join(", ")));
+    }
     if (hz.notes) kids.push(line("Notes", hz.notes));
     if (hz.bestiary && hz.bestiary.length) {
       kids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "4px" } },
@@ -699,7 +734,9 @@ EN.gmHazards = (function () {
           }))));
     }
     if (isSet && g !== h.printedGrade) {
-      kids.push(help("At G" + g + " the save takes that Grade's DC. The dice and any counter DC stay as printed; move them with the scene if you want.",
+      kids.push(help(hz.save
+        ? "At G" + g + " the save takes that Grade's DC. The dice and any counter DC stay as printed; move them with the scene if you want."
+        : "No save is printed, so nothing on this one moves with the Grade on its own. Scale it with the scene if you want.",
         { color: "var(--warn)" }));
     }
 
@@ -722,8 +759,7 @@ EN.gmHazards = (function () {
       } }, "+ ADD TO AN ENCOUNTER PLAN")
     ];
     if (isSet) {
-      btns.push(el("button.btn.sm.ghost", { "data-hook": "printed",
-        onclick: function () { st.open = !st.open; EN.app.render(); } }, (st.open ? "▾ " : "▸ ") + "AS WRITTEN"));
+      // no AS WRITTEN toggle: the book's paragraph already leads the card
     } else if (_c && _c.id === h.key) {
       // this hazard is already open in the Composer: EDIT goes back to that work, never resets it
       btns.push(el("button.btn.sm", { "data-hook": "edit", title: "Back to the Composer, where it is open",
@@ -749,10 +785,6 @@ EN.gmHazards = (function () {
       }));
     }
     kids.push(el("div.row.wrap", { style: { gap: "8px", marginTop: "10px" } }, btns));
-    if (isSet && st.open) {
-      kids.push(el("p", { style: { margin: "8px 0 0", fontSize: "13px", fontStyle: "italic" },
-        text: "As written at G" + h.printedGrade + ". " + h.printed }));
-    }
 
     var focus = _ui.focus === h.key;
     return el("div.feature.hz-card", { "data-hz": h.key,
