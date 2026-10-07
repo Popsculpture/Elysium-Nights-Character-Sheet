@@ -78,27 +78,52 @@ EN.app = (function () {
       onSelect: function () { if (EN.builder && EN.builder.openAdvance) EN.builder.openAdvance(); } },
 
     /* The Admin rail. Every entry is gated on adminReady, so the desktop is
-       all-or-nothing rather than degrading to four MODULE PENDING pages with
-       a working Table tab above them. */
+       all-or-nothing: with the core GM files gone there is no Admin desktop at
+       all. The four module tabs each live in their own file (js/gm_*.js); one of
+       those missing degrades only its own tab to the MODULE PENDING page below,
+       which is what `stub` is still kept for. */
     { key: "table",      label: "Table",      glyph: "◆", sub: "initiative and the crew", portal: "admin", gated: adminReady,
       view: function (m) { EN.gmView.renderTable(m); } },
     { key: "threats",    label: "Threats",    glyph: "✦", sub: "build a threat", portal: "admin", gated: adminReady,
       view: function (m) { EN.gmView.renderThreats(m); } },
     { key: "bestiary",   label: "Bestiary",   glyph: "▤", sub: "gangers, sentries, cryptids", portal: "admin", gated: adminReady,
       view: function (m) { EN.gmView.renderBestiary(m); } },
-    { key: "encounters", label: "Encounters", glyph: "⌗", sub: "module pending", portal: "admin", gated: adminReady,
+    { key: "encounters", label: "Encounters", glyph: "⌗", sub: "budget and build a fight", portal: "admin", gated: adminReady,
+      view: gmModule("encounters", "gmEncounters"),
       stub: "Budgeting an encounter: XP shares by crew Caliber, four difficulty bands from Milk Run " +
             "to Red Work, and the book's own line that past 2x is not an encounter, it is an ambush " +
-            "you are writing on purpose. The tables already live in data/threats.js." },
-    { key: "hazards",    label: "Hazards",    glyph: "⚠", sub: "module pending", portal: "admin", gated: adminReady,
+            "you are writing on purpose." },
+    { key: "hazards",    label: "Hazards",    glyph: "⚠", sub: "set pieces and the room", portal: "admin", gated: adminReady,
+      view: gmModule("hazards", "gmHazards"),
       stub: "Set Pieces: the eight pre-written hazards, all authored at Grade 3, plus the DC ladder " +
-            "and bite tables the Game Master's Toolkit already prices." },
-    { key: "jobs",       label: "Job Board",  glyph: "▣", sub: "module pending", portal: "admin", gated: adminReady,
+            "and the Bite table the Game Master's Handbook prices them by." },
+    { key: "jobs",       label: "Job Board",  glyph: "▣", sub: "roll a job", portal: "admin", gated: adminReady,
+      view: gmModule("jobs", "gmJobs"),
       stub: "The Job Board: five roll tables and twelve postings." },
-    { key: "payroll",    label: "Payroll",    glyph: "◈", sub: "module pending", portal: "admin", gated: adminReady,
-      stub: "Paying the Crew: contract pay bands, bounties, and salvage values, likely lifting " +
-            "splitPayout out of inventory.js rather than writing a second splitter." }
+    { key: "payroll",    label: "Payroll",    glyph: "◈", sub: "paying the crew", portal: "admin", gated: adminReady,
+      view: gmModule("payroll", "gmPayroll"),
+      stub: "Paying the Crew: contract pay bands, bounties, and salvage values, split by the same " +
+            "splitter the player's SPLIT panel uses." }
   ];
+
+  /* A GM module tab's view: the module draws it when its file loaded, and the
+     tab falls back to the same MODULE PENDING page render() draws for a tab
+     with no view, built from the tab's own glyph and stub. The module is
+     looked up live on every render rather than captured, since this table is
+     built before the module scripts run. A hoisted declaration, so the TABS
+     entries above can call it. */
+  function gmModule(key, ns) {
+    return function (mount) {
+      var mod = EN[ns];
+      if (mod && typeof mod.render === "function") { mod.render(mount); return; }
+      var tab = TABS.filter(function (t) { return t.key === key; })[0];
+      if (!tab) return;
+      mount.appendChild(el("div", null, [
+        el("h1", { style: { fontSize: "22px", marginBottom: "6px" }, text: tab.label.toUpperCase() }),
+        el("div.muted-box", { style: { marginTop: "20px", padding: "40px" }, html: tab.glyph + " &nbsp; MODULE PENDING<br><br>" + tab.stub })
+      ]));
+    };
+  }
 
   /* Device state: which desktop, persisted; which tab on each desktop, not.
      Neither an activeTab reset nor a portal choice needs to survive a reload

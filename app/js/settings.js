@@ -568,6 +568,8 @@ EN.settings = (function () {
 
   // theme-editor state: the palette currently being authored/edited, or null when just picking
   var _editing = null;
+  // a GM data file read and checked but not yet imported: {name, text, counts}, or null
+  var _gmImport = null;
   // the six core slots exposed as color wheels, with a plain-language note on what each paints
   var SLOTS = [
     { k: "accent",  label: "Accent",     hint: "buttons, numbers, active tab, glow, and the '98 title bars" },
@@ -1066,6 +1068,98 @@ EN.settings = (function () {
     return kids;
   }
 
+  /* GM DATA, Admin desktop only. Everything the GM side keeps lives in one key on
+     this device (en_gm_v1, owned by EN.gmStore), and until this section there was
+     no copy of it anywhere else: clearing site data or changing device started
+     the GM empty. Export downloads the document the same way #PRINT downloads a
+     Freelancer; import replaces it whole.
+
+     Import is two steps on purpose. Picking a file only READS it and checks it
+     (EN.gmStore.inspectDoc), then the tray names the file and what it holds next
+     to an armed REPLACE button. Nothing is replaced until that second click, so a
+     wrong file costs a cancel, not a campaign. */
+  function gmPlural(n, one, many) { return n + " " + (n === 1 ? one : many); }
+  function gmCountText(c) {
+    var parts = [];
+    if (c.threats) parts.push(gmPlural(c.threats, "saved threat", "saved threats"));
+    if (c.encounters) parts.push(gmPlural(c.encounters, "saved encounter", "saved encounters"));
+    if (c.hazards) parts.push(gmPlural(c.hazards, "custom hazard", "custom hazards"));
+    if (c.jobs) parts.push(gmPlural(c.jobs, "logged job", "logged jobs"));
+    if (c.ledger) parts.push(gmPlural(c.ledger, "ledger record", "ledger records"));
+    if (c.entries) parts.push(gmPlural(c.entries, "initiative row", "initiative rows"));
+    if (c.room) parts.push(gmPlural(c.room, "Room hazard", "Room hazards"));
+    return parts.length ? parts.join(", ") : "nothing saved yet";
+  }
+  function gmDateStamp() {
+    var d = new Date();
+    function p(n) { return (n < 10 ? "0" : "") + n; }
+    return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
+  }
+  function exportGmData() {
+    var text;
+    try { text = EN.gmStore.exportDoc(); } catch (e) { EN.ui.toast("GM data could not be exported."); return; }
+    var blob = new Blob([text], { type: "application/json" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "elysium-gm-" + gmDateStamp() + ".json";
+    a.click();
+    EN.ui.toast("GM data exported.");
+  }
+  function importGmData() {
+    var pending = _gmImport;
+    if (!pending) return;
+    _gmImport = null;
+    var c;
+    try { c = EN.gmStore.importDoc(pending.text); }
+    catch (err) { EN.ui.toast((err && err.message) || "That file could not be imported."); rebuild(); return; }
+    EN.app.render();
+    rebuild();
+    var msg = "GM data imported: " + gmCountText(c) + ".";
+    if (c.droppedCrew) msg += " " + gmPlural(c.droppedCrew, "crew row was", "crew rows were") + " dropped, for Freelancers not on this device.";
+    if (!c.saved) msg += " NOT SAVED: this device refused the write, so it lasts until reload.";
+    EN.ui.toast(msg);
+  }
+  function gmDataSection() {
+    var picker = el("input", { type: "file", accept: ".json,application/json", style: { display: "none" },
+      onchange: function (e) {
+        var f = e.target.files && e.target.files[0];
+        e.target.value = "";   // the same file can be picked again after a cancel
+        if (!f) return;
+        var r = new FileReader();
+        r.onerror = function () { EN.ui.toast("Could not read that file."); };
+        r.onload = function () {
+          var text = String(r.result || "");
+          try { _gmImport = { name: f.name, text: text, counts: EN.gmStore.inspectDoc(text) }; }
+          catch (err) { _gmImport = null; EN.ui.toast((err && err.message) || "That file is not GM data."); }
+          if (EN.ui.disarm) EN.ui.disarm();
+          rebuild();
+        };
+        r.readAsText(f);
+      } });
+    var kids = [
+      el("div.set-sectitle", { text: "// GM DATA" }),
+      el("label.set-label", { text: "Back up and restore" }),
+      el("p.set-hint", { text: "Everything the Admin desktop keeps: saved threats and encounters, custom hazards, the job log, the ledger, and the live encounter. It is stored on this device only. Export it to keep a copy or to move it to another device. Importing replaces all of it." }),
+      el("div.row.wrap", { style: { gap: "8px" } }, [
+        el("button.btn.sm", { title: "Download all GM data as a .json file", onclick: exportGmData }, "⤓ EXPORT GM DATA"),
+        el("button.btn.sm", { title: "Pick a GM data file to import; nothing is replaced until you confirm",
+          onclick: function () { picker.click(); } }, "⤒ IMPORT GM DATA")
+      ]),
+      picker
+    ];
+    if (_gmImport) {
+      kids.push(el("p.set-hint", { style: { marginTop: "12px", color: "var(--text2)" },
+        text: "Ready to import " + _gmImport.name + ": " + gmCountText(_gmImport.counts) + ". This replaces all GM data on this device." }));
+      kids.push(el("div.row.wrap", { style: { gap: "8px" } }, [
+        EN.ui.armButton("gmimport", { label: "⤒ REPLACE GM DATA", armedLabel: "SURE? REPLACES ALL GM DATA", onArm: rebuild,
+          title: "Replace this device's GM data with the file", armedTitle: "Click again to replace all GM data on this device with the file.",
+          onConfirm: importGmData }),
+        el("button.btn.sm", { title: "Forget the picked file", onclick: function () { _gmImport = null; if (EN.ui.disarm) EN.ui.disarm(); rebuild(); } }, "CANCEL")
+      ]));
+    }
+    return kids;
+  }
+
   function gridSection() {
     var gv = EN.gridView;
     var on = gv.isDamage();
@@ -1204,6 +1298,8 @@ EN.settings = (function () {
     if (EN.app.activeTab() === "grid" && EN.gridView && EN.gridView.isDamage) sections.push(gridSection());
     // general sections, shown regardless of which tab settings was opened from
     sections.push(portalSection());
+    // the GM document's backup, on the Admin desktop only: a Freelancer's tray never shows it
+    if (EN.theme.inAdmin() && EN.gmStore && EN.gmStore.exportDoc) sections.push(gmDataSection());
     // skin and palette are one section under one title: skinSection carries
     // the title, themeSection continues it, so the two are pushed as one
     sections.push(skinSection().concat(wallSection(), themeSection()));
@@ -1221,6 +1317,7 @@ EN.settings = (function () {
     // list folds now rather than still standing open when the tray closes. Inert elsewhere.
     try { document.documentElement.classList.remove("rail-open"); } catch (e) {}
     _editing = null;   // always open on the picker, never a stale editor
+    _gmImport = null;  // and never on a GM import picked in an earlier visit
     var ov = el("div#set-ov", {
       onclick: function (e) { if (e.target === ov) close(); }
     }, [
@@ -1243,6 +1340,7 @@ EN.settings = (function () {
   function close() {
     // if closed mid-edit, drop the unsaved live preview back to the recorded selection
     if (_editing) { _editing = null; EN.theme.apply(EN.theme.get()); }
+    _gmImport = null;   // a picked GM file is dropped with the tray, so its text is not held
     var ov = document.getElementById("set-ov");
     if (ov && ov.parentNode) ov.parentNode.removeChild(ov);
     document.removeEventListener("keydown", onKey);

@@ -1,8 +1,11 @@
 /* ===========================================================================
    ELYSIUM NIGHTS · GM toolkit views
    Three tabs on the Admin desktop: Table (the initiative tracker), Threats
-   (the builder plus saved statblocks), and Bestiary. Later stages add
-   Encounters, Hazards, the Job Board, and Payroll (stubs today, see app.js).
+   (the builder plus saved statblocks), and Bestiary. Encounters, Hazards, the
+   Job Board and Payroll are their own files (js/gm_encounters.js and its
+   siblings) and reach this one through three hooks at the bottom: a handoff
+   that carries a payload to another tab, and Table extras that hang their own
+   panels under the initiative order.
 
    None of this is about the active character. It reads the roster as "the
    crew" and holds its own state through EN.gmStore. The Admin desktop exists
@@ -100,8 +103,10 @@ EN.gmView = (function () {
     kids.push(el("div.row.wrap", { style: { gap: "8px", marginTop: "12px" } }, [
       el("button.btn.sm.primary", { onclick: function () {
         var b = EN.gmEngine.buildThreat(_b);
-        gm.addThreat(b, JSON.parse(JSON.stringify(_b)), 0);
-        toast((b.name || "Threat") + " added to the order. Set its initiative.");
+        // a real roll off the book's formula, rather than arriving at 0 for the GM to type over
+        var r = EN.gmEngine.rollInit(b.initMod);
+        gm.addThreat(b, JSON.parse(JSON.stringify(_b)), r.total);
+        toast((b.name || "Threat") + " rolls " + r.total + " for initiative.");
         EN.app.render();
       } }, "+ ADD TO INITIATIVE"),
       el("button.btn.sm", { onclick: function () {
@@ -217,6 +222,7 @@ EN.gmView = (function () {
     kids.push(el("div", { style: { marginTop: "10px", paddingTop: "8px", borderTop: "1px solid var(--border2)" } }, [
       el("p.help", { style: { margin: 0 }, text: "Vitality: " + b.why.vitality }),
       el("p.help", { style: { margin: 0 }, text: "Defense: " + b.why.defense }),
+      b.why.init ? el("p.help", { style: { margin: 0 }, text: "Initiative: " + b.why.init }) : null,
       el("p.help", { style: { margin: 0 }, text: "Damage: " + b.why.damage })
     ]));
     return el("div.feature", null, kids);
@@ -503,15 +509,21 @@ EN.gmView = (function () {
         var vit = parseInt(st.Vitality, 10);
         if (isNaN(vit)) vit = parseInt(st["System Integrity"], 10);
         var def = parseInt(st.Defense, 10);
-        var initM = parseInt((st.Initiative || "0").replace("+", ""), 10) || 0;
+        var initM = parseInt(String(st.Initiative || "0").replace("+", ""), 10) || 0;
         var p = printed(e);
+        /* The PRINTED Initiative rides on the block as initMod, which is the field
+           REROLL ALL and the tie-break read. It used to be rolled once and then
+           dropped, so every Bestiary threat rerolled at +0. `init` carries the same
+           number because on a built block `init` IS the Initiative bonus, and a
+           reader of either field should find the page's number. */
         var block = {
           name: e.name, grade: e.grade, designationName: e.designation || "Standard",
           roleName: e.role || "", defense: isNaN(def) ? null : def,
           saveDC: p.saveDC, attackBonus: p.attackBonus, vitality: isNaN(vit) ? 1 : vit,
+          init: initM, initMod: initM,
           fromBestiary: true, stats: st, abilities: e.abilities || []
         };
-        var r = eng.rollD20({ mods: [{ label: "Initiative", value: initM }] });
+        var r = EN.gmEngine.rollInit(initM);
         gm.addThreat(block, null, r.total);
         toast(e.name + " rolls " + r.total + " for initiative.");
         EN.app.render();
@@ -577,7 +589,16 @@ EN.gmView = (function () {
             " · DEF " + b.defense + " · " + b.vitality + " Vit · " + b.xp + " XP" })
         ]),
         el("div.row", { style: { gap: "6px" } }, [
-          el("button.btn.sm", { onclick: function () { gm.addThreat(b, t.inputs, 0); toast(b.name + " added."); EN.app.render(); } }, "+ ORDER"),
+          el("button.btn.sm", { onclick: function () {
+            /* rolled at the block's own bonus. A statblock saved before the book's
+               formula reached the builder carries no initMod and an init of 0, and
+               keeps it: a saved block is not re-derived on read (see gmstore.js),
+               so the GM rebuilds it to pick the formula up. */
+            var r = EN.gmEngine.rollInit(typeof b.initMod === "number" ? b.initMod : (b.init | 0));
+            gm.addThreat(b, t.inputs, r.total);
+            toast((b.name || "Threat") + " rolls " + r.total + " for initiative.");
+            EN.app.render();
+          } }, "+ ORDER"),
           el("button.btn.sm", { onclick: function () { gm.removeThreat(t.id); EN.app.render(); } }, "✕")
         ])
       ]);
@@ -596,13 +617,70 @@ EN.gmView = (function () {
     ]);
   }
 
+  /* ---- hooks for the module tabs ------------------------------------------
+     HANDOFF. One tab sending a payload to another ("run this encounter on the
+     Table", "pay this job") stores it here and switches tabs; the receiving
+     tab's render takes it ONCE. Once, because every store change re-renders
+     the open tab, and a payload read on every render would re-apply itself
+     on every keystroke. The receiver copies it into its own transient state
+     on first sight. Not persisted: a reload drops an untaken handoff, which is
+     the same as the GM never having clicked. Keyed by tab key, null-prototype
+     because the key arrives from a caller. */
+  var _handoff = Object.create(null);
+  function handoff(tabKey, payload) {
+    _handoff[tabKey] = payload;
+    EN.app.gotoTab(tabKey);
+  }
+  function takeHandoff(tabKey) {
+    if (!Object.prototype.hasOwnProperty.call(_handoff, tabKey)) return null;
+    var p = _handoff[tabKey];
+    delete _handoff[tabKey];
+    return p === undefined ? null : p;
+  }
+
+  /* TABLE EXTRAS. A module hangs its own live panel under the initiative order
+     (Encounters: the Security Response clock and the XP award; Hazards: the
+     Room tray) without this file knowing what it draws. Each fn is called on
+     every Table render with {encounter, crew} and returns a DOM node or null.
+     Drawn in registration order, which is script order in index.html.
+     Registering a key again replaces its fn IN PLACE, so a module that
+     re-registers keeps its slot rather than moving to the end. One extra that
+     throws is skipped and logged; it must not take the initiative order down
+     with it in the middle of a fight. */
+  var _extras = [];
+  function registerTableExtra(key, fn) {
+    if (typeof fn !== "function") return;
+    for (var i = 0; i < _extras.length; i++) {
+      if (_extras[i].key === key) { _extras[i].fn = fn; return; }
+    }
+    _extras.push({ key: key, fn: fn });
+  }
+  function tableExtras() {
+    if (!_extras.length) return [];
+    var enc = gm.get().encounter;
+    var crew = null;
+    try { crew = EN.gmEngine.crew({ encounter: enc }); } catch (e) { crew = null; }
+    var out = [];
+    _extras.forEach(function (x) {
+      var node = null;
+      try { node = x.fn({ encounter: enc, crew: crew }); }
+      catch (e) { try { console.warn("GM: the Table extra '" + x.key + "' failed to draw.", e); } catch (e2) {} node = null; }
+      if (node && node.nodeType) {
+        out.push(el("div", { style: { height: "12px" } }));
+        out.push(node);
+      }
+    });
+    return out;
+  }
+
   function renderTable(mount) {
     EN.ui.clear(mount);
     // the tracker is the only surface that draws a crew row, so it is the
     // only place a ghost from a character deleted since the last render
     // can appear
     gm.pruneCrew();
-    mount.appendChild(el("div", null, [heading("Table", "// initiative and the order"), trackerPanel()]));
+    var blocks = [heading("Table", "// initiative and the order"), trackerPanel()];
+    mount.appendChild(el("div", null, blocks.concat(tableExtras())));
   }
 
   function renderThreats(mount) {
@@ -622,5 +700,9 @@ EN.gmView = (function () {
     mount.appendChild(el("div", null, [heading("Bestiary", "// Gangers, Sentries, and Cryptids. Oh my!"), body]));
   }
 
-  return { renderTable: renderTable, renderThreats: renderThreats, renderBestiary: renderBestiary };
+  return {
+    renderTable: renderTable, renderThreats: renderThreats, renderBestiary: renderBestiary,
+    // the module tabs' hooks (see "hooks for the module tabs" above)
+    handoff: handoff, takeHandoff: takeHandoff, registerTableExtra: registerTableExtra
+  };
 })();

@@ -3372,21 +3372,17 @@ EN.inventoryView = (function () {
      The book's default: a fixer's cut comes off the top, then the rest splits
      evenly, and the remainder is left "to argue over" rather than rounded away.
      A crew may also vote 10 to 30 percent into a shared Crew Kit; that share is
-     computed here but not tracked, because the Crew Kit is a table-level fund
-     the sheet has no notion of. */
+     computed but not tracked here, because the Crew Kit is a table-level fund
+     the sheet has no notion of.
+
+     The arithmetic is EN.engine.splitPayout, shared with the GM's Payroll tab so
+     the two can never quote different shares. It clamps both percentages to 0
+     to 100, so a typed 150 percent fixer cut no longer drives the shares
+     negative; inside that range it is the same arithmetic this file used to
+     carry. */
   var _split = { total: "", crew: 4, fixer: 15, kit: 0, open: false };
-  function splitPayout(total, crew, fixerPct, kitPct) {
-    total = Math.max(0, Math.floor(Number(total) || 0));
-    crew = Math.max(1, Math.floor(Number(crew) || 1));
-    var fixer = Math.floor(total * (Number(fixerPct) || 0) / 100);
-    var afterFixer = total - fixer;
-    var kit = Math.floor(afterFixer * (Number(kitPct) || 0) / 100);
-    var pool = afterFixer - kit;
-    var each = Math.floor(pool / crew);
-    return { total: total, fixer: fixer, kit: kit, pool: pool, each: each, over: pool - each * crew };
-  }
   function splitterPanel() {
-    var r = splitPayout(_split.total, _split.crew, _split.fixer, _split.kit);
+    var r = EN.engine.splitPayout(_split.total, _split.crew, _split.fixer, _split.kit);
     function num(label, key, min, max, w, tip) {
       return el("div.row", { style: { gap: "4px", alignItems: "center" } }, [
         el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em" }, text: label }),

@@ -4126,10 +4126,45 @@ EN.engine = (function () {
     return { groups: groups, flat: flat, total: diceTotal + flat, crit: !!spec.crit, types: spec.types || [] };
   }
 
+  /* ---- payout splitter ---------------------------------------------------
+     THE one splitter. It lived in inventory.js for the player's SPLIT panel and
+     moved here when the GM's Payroll tab needed the same arithmetic, so the two
+     can never quote a crew different shares off one payout.
+
+     The book's default: a fixer's cut comes off the top, then the rest splits
+     evenly, and the remainder is left "to argue over" rather than rounded away.
+     A crew may also vote a share into a Crew Kit, and that share comes off the
+     POST-FIXER remainder, which is the order the player panel has always used.
+     Book check: 3000 at a 15 percent fixer for four crew is 450 to the fixer,
+     637 each, and 2 over.
+
+     Both percentages clamp to 0 to 100. Neither input was ever bounded before,
+     so a typed 150 percent fixer cut produced a negative pool and negative
+     shares. Clamped, the fixer can take at most the whole payout and the kit at
+     most the whole remainder, so fixer plus kit never exceeds the total and no
+     share can go below 0. `clamped` says a percentage was pulled back, for a
+     view that wants to explain why its number differs from what was typed.
+     Inside the range the arithmetic is unchanged. */
+  function splitPayout(total, crew, fixerPct, kitPct) {
+    total = Math.max(0, Math.floor(Number(total) || 0));
+    crew = Math.max(1, Math.floor(Number(crew) || 1));
+    var fRaw = Number(fixerPct) || 0, kRaw = Number(kitPct) || 0;
+    var fPct = clamp(fRaw, 0, 100), kPct = clamp(kRaw, 0, 100);
+    var fixer = Math.min(total, Math.floor(total * fPct / 100));
+    var afterFixer = total - fixer;
+    var kit = Math.min(afterFixer, Math.floor(afterFixer * kPct / 100));
+    var pool = afterFixer - kit;
+    var each = Math.floor(pool / crew);
+    return { total: total, fixer: fixer, kit: kit, pool: pool, each: each, over: pool - each * crew,
+             fixerPct: fPct, kitPct: kPct, clamped: fPct !== fRaw || kPct !== kRaw };
+  }
+
   return {
     derive: derive, mod: mod, caliber: caliber, fmtMod: fmtMod, clamp: clamp,
     buildEdgePool: buildEdgePool, buildSnagPool: buildSnagPool, snagFromDc: snagFromDc, rollDicePool: rollDicePool, rollD20: rollD20,
     composeRollSpec: composeRollSpec, rollDamage: rollDamage,
+    // the one payout splitter, shared by the player's SPLIT panel and the GM's Payroll
+    splitPayout: splitPayout,
     installedCyberware: installedCyberware, installedCyberBases: installedCyberBases,
     cyberDef: cyberDef, cyberDesc: cyberDesc, cyberEffect: cyberEffect, cyberTierNote: cyberTierNote, cyberEnhLabel: cyberEnhLabel,
     gambitList: gambitList,

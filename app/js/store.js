@@ -1951,6 +1951,29 @@ EN.store = (function () {
     if (!opts || opts.silent !== true) emit();
   }
 
+  /* Mutate ONE filed record by its id, whichever character happens to be active. This exists for
+     the GM side's confirmed writes (EN.gmStore.writeCrew: a payday, an XP award, a #POST posting),
+     which land on a player's record from the Admin desktop. The only other route to a record that
+     is not loaded was setActive, update and setActive back, which repaints the player side, can
+     strand an open example, and leaves the wrong Freelancer loaded if anything throws in between.
+
+     It reads state.roster and nothing else: never state.example (an example is not stored, so a
+     write to it would evaporate on reload while the ledger said it happened) and never active(),
+     which answers with the example first. activeId is not touched. The write is persisted at once
+     rather than debounced, because the GM side logs it as done the moment this returns.
+     Returns false for an id that is not in the roster, so the caller can refuse and say so. */
+  function updateById(id, mutator, opts) {
+    if (typeof id !== "string" || !Object.prototype.hasOwnProperty.call(state.roster, id)) return false;
+    var ch = state.roster[id];
+    if (!ch || typeof ch !== "object") return false;
+    mutator(ch);
+    if (!ch.meta || typeof ch.meta !== "object") ch.meta = {};
+    ch.meta.updatedAt = Date.now();
+    persist(true);
+    if (!opts || opts.silent !== true) emit();
+    return true;
+  }
+
   function importCharacter(obj) {
     if (!obj || !obj.meta) throw new Error("Invalid character file.");
     if (!obj.meta.id || state.roster[obj.meta.id]) obj.meta.id = uid();
@@ -1969,6 +1992,8 @@ EN.store = (function () {
     active: active, roster: roster,
     createAndActivate: createAndActivate,
     setActive: setActive, remove: remove, update: update,
+    // a write to one filed record by id, for the GM side's confirmed writes; see updateById
+    updateById: updateById,
     importCharacter: importCharacter, composeFullName: composeFullName,
     // pre-made examples: live, editable, never persisted
     setExample: setExample, clearExample: clearExample, activeIsExample: activeIsExample, adoptExample: adoptExample

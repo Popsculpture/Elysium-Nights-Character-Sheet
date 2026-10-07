@@ -1,12 +1,19 @@
 /* ===========================================================================
    ELYSIUM NIGHTS · GM Engine
-   THE resolver for threat statblocks and initiative order. Pure: no DOM, no
-   storage, no character. Nothing else in the app computes a threat number.
+   THE resolver for threat statblocks, threat initiative, initiative order, XP
+   and the encounter budget. No DOM and no writes. Nothing else in the app
+   computes a threat number.
 
-   Kept out of engine.js deliberately. That file is 3,700 lines about deriving a
-   CHARACTER, and a threat shares no field with one: no Vigor, no Wounds, no
-   Resilience, no proficiency tier, no Caliber. A player build should not pay to
-   load the GM's math, and the bestiary in stage 2 has an obvious home here.
+   ONE READER BREAKS "NO CHARACTER", ON PURPOSE: crew() reads the roster and the
+   Table's crew rows to answer "who is the crew and what is their Caliber". It
+   only reads, through EN.store and EN.gmStore, and it lives here so the
+   Encounters budget, the Job Board's Grade and Payroll's pay grid all ask one
+   function and cannot disagree about the crew.
+
+   Kept out of engine.js deliberately. That file is over 4,000 lines about
+   deriving a CHARACTER, and a threat shares no field with one: no Vigor, no
+   Wounds, no Resilience, no proficiency tier, no Caliber. A player build should
+   not pay to load the GM's math.
    =========================================================================== */
 window.EN = window.EN || {};
 
@@ -38,6 +45,199 @@ EN.gmEngine = (function () {
      a threat at 0 Vitality is not a threat. Nothing in the printed table reaches
      it, so it never fires on a real Grade. */
   function vit(n) { return Math.max(1, Math.floor(n)); }
+
+  function own(o, k) { return !!o && typeof o === "object" && Object.prototype.hasOwnProperty.call(o, k); }
+
+  /* ---- THREAT INITIATIVE ---------------------------------------------------
+     The book's formula, GMH p55 (and the GM's Card, p130): a threat's
+     Initiative is its whole bonus, rolled as d20 plus the number. Start at
+     Grade + 2; Minions take 1 off, Bruisers take 1 off, Skirmishers add 1,
+     Ghosts add 2. The numbers live in EN.threats.initiative and are READ here,
+     never restated, so the data file stays the one place they are written.
+
+     The adjustments STACK. The page lists them without saying so, and stacking
+     is the only reading that uses every line: a Minion Bruiser is Grade + 0.
+     The book's "nudge it a point either way for the fiction" is the GM's call
+     and is left to the GM.
+
+     Read defensively. With the initiative block absent this returns 0 and
+     buildThreat falls back to an initiative of 0, which is what it did before
+     the book printed a formula. */
+  function initRule() {
+    var I = EN.threats && EN.threats.initiative;
+    return (I && typeof I === "object") ? I : null;
+  }
+  function initAdj(map, key) {
+    return own(map, key) ? (Number(map[key]) || 0) : 0;
+  }
+  /* The modifier WITHOUT the Grade: base plus the Designation and Role
+     adjustments. The caller adds the Grade, which is how buildThreat uses it. */
+  function threatInit(designationKey, roleKey) {
+    var I = initRule();
+    if (!I) return 0;
+    return (Number(I.base) || 0) + initAdj(I.byDesignation, designationKey) + initAdj(I.byRole, roleKey);
+  }
+
+  /* One initiative roll: d20 plus the threat's whole bonus, through the same
+     d20 the rest of the app rolls. Returns the natural die, the modifier used and
+     the total, so a toast can show where the number came from. */
+  function rollInit(mod) {
+    var m = Number(mod) || 0;
+    var r = EN.engine.rollD20({ mods: [{ label: "Initiative", value: m }] });
+    return { roll: r.nat, mod: m, total: r.total };
+  }
+
+  /* ---- XP ------------------------------------------------------------------
+     What a threat is worth, GMH p55: "its price in the encounter budget and its
+     award when defeated". A built block carries `xp` as a number. A Bestiary
+     entry, or a Bestiary block on the Table (which carries the entry's `stats`),
+     prints XP as a string, sometimes with commas ("1,000") and once with a
+     sentence after it ("100, paid for a Nixie rehomed, never for a body."). The
+     LEADING NUMBER is the price, commas removed, so the Nixie counts as 100. An
+     initiative entry is unwrapped to its block. Anything else is worth 0. */
+  function xpOf(x) {
+    if (typeof x === "number") return isFinite(x) ? x : 0;
+    if (!x || typeof x !== "object") return 0;
+    if (typeof x.xp === "number" && isFinite(x.xp)) return x.xp;
+    var st = x.stats;
+    if (st && typeof st === "object" && own(st, "XP")) {
+      var m = String(st.XP).match(/^\s*(\d[\d,]*)/);
+      if (m) return parseInt(m[1].replace(/,/g, ""), 10) || 0;
+    }
+    if (x.block && typeof x.block === "object") return xpOf(x.block);
+    return 0;
+  }
+
+  /* ---- THE CREW ------------------------------------------------------------
+     Who the crew is and what their Caliber is, for budgets, Grades and pay.
+     Ruled for this build (D4): the crew is whoever is on the Table if anyone is,
+     else the FILED roster (records carrying meta.filedAt, the same test the
+     Freelancer rail uses for a registered record); Caliber is the rounded
+     average, half up, the same rounding the Threats tab's band warning uses.
+     Both headcount and Caliber can be overridden.
+
+     The book prices one crew Caliber times headcount (GMH p61) and does not say
+     what to do with a mixed crew, which is why the average is a ruling and the
+     override exists.
+
+     opts (all optional):
+       encounter  the encounter to read crew rows from; defaults to the live one
+       headcount  an override, used when it is a whole number of 1 or more
+       caliber    an override, used when it is a number; clamped to 1 to 5
+
+     Returns { members: [{charId, name, caliber}], headcount, caliber, source,
+     overridden: {headcount, caliber} }. `source` is "table", "roster" or "none".
+     Caliber is ALWAYS a number from 1 to 5 so a budget never multiplies by
+     nothing; with nobody found and no override it is 1 and source is "none",
+     which a view should read as "no crew yet, ask the GM". A member whose
+     record will not derive keeps its row with caliber null and is left out of
+     the average. */
+  function crewName(ch) {
+    var n = ((ch.firstName || "") + " " + (ch.lastName || "")).trim();
+    return n || ch.name || "Freelancer";
+  }
+  function crew(opts) {
+    opts = opts || {};
+    var roster = (EN.store && EN.store.roster && EN.store.roster()) || {};
+    var enc = opts.encounter;
+    if (!enc) { try { enc = EN.gmStore && EN.gmStore.get && EN.gmStore.get().encounter; } catch (e) { enc = null; } }
+
+    var ids = [], seen = Object.create(null);
+    function take(id) {
+      if (typeof id !== "string" || seen[id] || !own(roster, id)) return;
+      seen[id] = true;
+      ids.push(id);
+    }
+    ((enc && enc.entries) || []).forEach(function (r) { if (r && r.kind === "crew") take(r.charId); });
+    var source = ids.length ? "table" : "none";
+    if (!ids.length) {
+      Object.keys(roster).forEach(function (k) {
+        var ch = roster[k];
+        if (ch && ch.meta && ch.meta.filedAt) take(k);
+      });
+      if (ids.length) source = "roster";
+    }
+
+    var members = ids.map(function (id) {
+      var ch = roster[id], cal = null;
+      try { cal = EN.engine.derive(ch).caliber; } catch (e) { cal = null; }
+      return { charId: id, name: crewName(ch), caliber: typeof cal === "number" ? cal : null };
+    });
+    var cals = members.filter(function (m) { return m.caliber !== null; }).map(function (m) { return m.caliber; });
+    var avg = cals.length ? Math.round(cals.reduce(function (a, b) { return a + b; }, 0) / cals.length) : 1;
+
+    var hcOver = Math.floor(Number(opts.headcount));
+    var useHc = opts.headcount !== null && opts.headcount !== undefined && opts.headcount !== "" && isFinite(hcOver) && hcOver >= 1;
+    var calOver = Math.round(Number(opts.caliber));
+    var useCal = opts.caliber !== null && opts.caliber !== undefined && opts.caliber !== "" && isFinite(calOver);
+
+    return {
+      members: members,
+      headcount: useHc ? hcOver : members.length,
+      caliber: Math.max(1, Math.min(5, useCal ? calOver : avg)),
+      source: source,
+      overridden: { headcount: useHc, caliber: useCal }
+    };
+  }
+
+  /* ---- THE BUDGET ----------------------------------------------------------
+     GMH p61: a Freelancer's share is the Standard XP of the matching Grade, the
+     share times the headcount is the Fair Fight budget, and the four
+     difficulties scale it (Milk Run, Fair Fight, Hard Contract, Red Work). The
+     shares and multipliers are EN.threats.budget's, read here and not restated.
+     Worked example from the page: four Caliber 2 Freelancers, share 150, Fair
+     Fight 600. */
+  function budgetData() {
+    var B = EN.threats && EN.threats.budget;
+    return (B && typeof B === "object") ? B : { shareByCaliber: {}, difficulties: [] };
+  }
+  function clampCal(c) { return Math.max(1, Math.min(5, Math.round(Number(c)) || 1)); }
+  // One Freelancer's share at a Caliber, clamped to the table's 1 to 5.
+  function share(caliber) {
+    var B = budgetData(), c = clampCal(caliber);
+    return own(B.shareByCaliber, c) ? (Number(B.shareByCaliber[c]) || 0) : 0;
+  }
+  function difficulty(key) {
+    return (budgetData().difficulties || []).filter(function (d) { return d && d.key === key; })[0] || null;
+  }
+  /* The XP budget as a number. An unknown or missing difficulty key prices as a
+     Fair Fight (x1), the budget the book defines first and scales from. */
+  function budget(caliber, headcount, diffKey) {
+    var d = difficulty(diffKey || "fair");
+    var mult = d ? (Number(d.mult) || 0) : 1;
+    var hc = Math.max(0, Math.floor(Number(headcount) || 0));
+    return Math.round(share(caliber) * hc * mult);
+  }
+  /* Which difficulty an XP spend has reached: the HIGHEST one whose budget it
+     meets or beats, or null when it is under even a Milk Run. `past2x` is the
+     book's line, "Past 2x, you're writing an ambush on purpose", read against
+     the top multiplier in the data rather than a literal 2. `next` is the next
+     difficulty up and the spend that reaches it, or null at the top.
+
+     Returns { key, name, mult, base, spent, ratio, past2x, next }, where `base`
+     is the Fair Fight budget and `ratio` is spent over base (0 with no base). */
+  function tierFor(spent, caliber, headcount) {
+    var s = Math.max(0, Number(spent) || 0);
+    var base = budget(caliber, headcount, "fair");
+    var diffs = (budgetData().difficulties || []).slice().sort(function (a, b) { return (a.mult || 0) - (b.mult || 0); });
+    var reached = null, next = null, top = 0;
+    diffs.forEach(function (d) {
+      var at = Math.round(base * (Number(d.mult) || 0));
+      if (base > 0 && s >= at) reached = d;
+      else if (!next) next = { key: d.key, name: d.name, mult: d.mult, at: at };
+      if ((Number(d.mult) || 0) > top) top = Number(d.mult) || 0;
+    });
+    return {
+      key: reached ? reached.key : null,
+      name: reached ? reached.name : null,
+      mult: reached ? reached.mult : 0,
+      base: base,
+      spent: s,
+      ratio: base > 0 ? s / base : 0,
+      past2x: base > 0 && top > 0 && s > base * top,
+      next: base > 0 ? next : null
+    };
+  }
 
   /* "BOD" and "WIT" become "Body and Wits", which is how the book prints them. */
   function attrNames(keys) {
@@ -201,6 +401,19 @@ EN.gmEngine = (function () {
     // --- Speed: 6 unless the Role says otherwise
     var speed = (rol && rol.speed) || 6;
 
+    // --- Initiative: Grade + 2, then the Designation and Role steps (see threatInit)
+    var IR = initRule();
+    var init = 0;
+    if (IR) {
+      var desKey = des ? des.key : "standard", rolKey = rol ? rol.key : "";
+      var dAdj = initAdj(IR.byDesignation, desKey), rAdj = initAdj(IR.byRole, rolKey);
+      init = g + threatInit(desKey, rolKey);
+      why.init = "G" + g + " + " + (Number(IR.base) || 0) +
+                 (dAdj ? ", " + (des ? des.name : desKey) + " " + EN.engine.fmtMod(dAdj) : "") +
+                 (rAdj ? ", " + (rol ? rol.name : rolKey) + " " + EN.engine.fmtMod(rAdj) : "") +
+                 " = " + EN.engine.fmtMod(init);
+    }
+
     /* SAVES NAME REAL ATTRIBUTES. The book prints "+5 Body and Wits, +1 others",
        never a placeholder word: the strong save is a two-speed split and the strong
        half has to say WHICH attributes it covers or the line means nothing at the
@@ -235,7 +448,11 @@ EN.gmEngine = (function () {
       dr: { low: base.drLow, high: base.drHigh },
       vitality: vit(v),
       speed: speed,
-      init: 0,                                  // the GM sets this; the book gives no formula for threats
+      /* The whole Initiative bonus from the book's formula (GMH p55), and the
+         same number again as initMod, which is the field the Table rerolls from
+         and breaks ties on. 0 only when EN.threats.initiative is missing. */
+      init: init,
+      initMod: init,
       passivePerception: 10 + base.weak,
       saves: { strong: base.strong, weak: base.weak, attrs: strongAttrs, text: savesText },
       saveDC: dc,
@@ -309,6 +526,10 @@ EN.gmEngine = (function () {
   return {
     buildThreat: buildThreat, damageDice: damageDice,
     attackAvg: attackAvg, roundDamage: roundDamage, fmtAvg: fmtAvg,
-    order: order, tied: tied, advance: advance
+    order: order, tied: tied, advance: advance,
+    // threat initiative from the book's formula, and the one roll for it
+    threatInit: threatInit, rollInit: rollInit,
+    // XP, the crew, and the encounter budget
+    xpOf: xpOf, crew: crew, share: share, budget: budget, tierFor: tierFor
   };
 })();
