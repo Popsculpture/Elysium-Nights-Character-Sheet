@@ -790,19 +790,17 @@ EN.gmHeat = (function () {
   }
   function lineUid() { return "ln_" + Math.random().toString(36).slice(2, 9) + Date.now().toString(36); }
   /* SEND TO ENCOUNTERS: a saved plan in the shared plan shape (SPEC_B), its
-     difficulty set from the fight and the team as Bestiary lines, so it opens
-     with LOAD on the Encounters tab exactly as built. + ADD TO OPEN PLAN is the
+     difficulty set from the fight and the team as Bestiary lines, and the GM is
+     taken straight to it: the handoff's openPlanId opens it in the Encounters
+     editor (gm_encounters.js intake), so it is never left waiting under Plans
+     (author's call, 2026-10-07). + ADD TO OPEN PLAN is the
      handoff instead: its lines join whatever plan is open, and its difficulty
      sets that plan's only when the plan held no lines yet (gm_encounters.js
      intake), so a plan the GM already started keeps its own. */
   function sendToEncounters(dt, c) {
     var f = fightOf(c);
     if (!f) return;
-    if (c.planId && gm.rec("encounters", c.planId)) {
-      toast("Already saved: LOAD it from Plans on the Encounters tab.");
-      EN.app.gotoTab("encounters");
-      return;
-    }
+    if (c.planId && gm.rec("encounters", c.planId)) { openPlan(c.planId); return; }
     var name = "Heat: " + c.source + ", " + ((eventsBand(c.band) || {}).name || "the check");
     var plan = {
       name: name, difficulty: f.difficulty, crewOverride: null,
@@ -816,8 +814,13 @@ EN.gmHeat = (function () {
     var id = gm.put("encounters", plan);
     if (!id) { toast("The plan could not be saved."); return; }
     mutateCheck(dt.id, c.id, function (ck) { ck.planId = id; });
-    toast("Saved to Encounters as a " + diffName(f.difficulty) + " plan: " + name + ". LOAD it from Plans.");
-    EN.app.gotoTab("encounters");
+    toast("Saved to Encounters as a " + diffName(f.difficulty) + " plan: " + name + ".");
+    openPlan(id);
+  }
+  // opens a saved plan in the Encounters editor, or just the tab if the handoff is missing
+  function openPlan(id) {
+    if (EN.gmView && EN.gmView.handoff) EN.gmView.handoff("encounters", { openPlanId: id });
+    else EN.app.gotoTab("encounters");
   }
   function addToOpenPlan(c) {
     var f = fightOf(c);
@@ -979,7 +982,7 @@ EN.gmHeat = (function () {
     if (bt) kids.push(help(takersLine(bt), { margin: "6px 0 0", color: "var(--danger)" }));
     var lines = planLines(c), saved = c.planId && gm.rec("encounters", c.planId);
     kids.push(el("div.row.wrap", { style: { gap: "8px", marginTop: "8px", alignItems: "center" } }, [
-      btn(saved ? "OPEN ENCOUNTERS" : "SEND TO ENCOUNTERS", "send-enc", function () { sendToEncounters(dt, c); }, { primary: !saved,
+      btn(saved ? "OPEN THE PLAN" : "SEND TO ENCOUNTERS", "send-enc", function () { sendToEncounters(dt, c); }, { primary: !saved,
         title: "Saves a " + diffName(f.difficulty) + " plan with " + plural(lines.length, "Bestiary line") + " on the Encounters tab" }),
       btn("+ ADD TO OPEN PLAN", "add-plan", function () { addToOpenPlan(c); },
         { disabled: !lines.length, title: lines.length ? "Adds the team to the plan open on the Encounters tab, with a note naming the fight"

@@ -544,6 +544,7 @@ EN.gmEncounters = (function () {
   }
   function intake(h) {
     if (!isObj(h)) return;
+    if (typeof h.openPlanId === "string" && h.openPlanId) { openSaved(h.openPlanId); return; }
     var pre = "";
     var jid = (typeof h.jobId === "string" && h.jobId) ? h.jobId : null;
     var link = !!jid;
@@ -579,6 +580,30 @@ EN.gmEncounters = (function () {
                 (note ? ": " + note : ".") +
                 (skipped ? " " + plural(skipped, "line") + " could not be read and " + (skipped === 1 ? "was" : "were") + " skipped." : "") +
                 diffSaid;
+  }
+
+  /* OPEN A SAVED PLAN (a handoff's openPlanId: the Heat tab's SEND TO ENCOUNTERS
+     saves a plan and lands the GM on it). The plan opens in the editor in place of
+     whatever was open. Nothing the GM made is lost: an open plan with unsaved
+     changes is saved first, as a job handoff does (F12), and if it cannot be saved
+     it stays open and the banner says where the new plan is. The same plan already
+     open is left exactly as it is, unsaved edits included. */
+  function openSaved(id) {
+    var rec = gm.rec("encounters", id);
+    if (!rec) { _s.banner = "The plan that was sent is no longer saved."; return; }
+    var name = rec.name || "Untitled encounter";
+    if (_s.plan.id === rec.id) { _s.banner = "This is the plan: " + name + "."; return; }
+    var savedFirst = false;
+    if (unsaved(_s.plan)) {
+      if (!savePlan()) {
+        _s.banner = "The plan that was open has unsaved changes and could not be saved, so it stays open. " +
+                    "The new plan is under Plans: " + name + ".";
+        return;
+      }
+      savedFirst = true;
+    }
+    _s.plan = normPlan(copy(gm.rec("encounters", id)));
+    _s.banner = "Opened the saved plan: " + name + "." + (savedFirst ? " The plan that was open was saved first." : "");
   }
 
   /* ---- running a plan on the Table ------------------------------------------
