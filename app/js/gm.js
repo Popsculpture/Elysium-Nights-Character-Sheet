@@ -1489,7 +1489,24 @@ EN.gmView = (function () {
   /* ---- the Bestiary's reference matter -------------------------------------
      The chapter prints more than statblocks: a hunt procedure inside the
      cryptid intro, the Species Templates table and the Hostile Vehicles. All of
-     it is read from EN.bestiary as printed; the cards below only lay it out. */
+     it is read from EN.bestiary as printed; the cards below only lay it out.
+     The hunt's three beats and the Species Templates intro and footer print
+     once, in the Admin Codex's gmt-bestiary panel, and this tab points at them
+     with one line of links (author's call, 2026-10-07): a hunt is read once per
+     hunt, so a tap is fine. The Hostile Vehicles intro and the Threat pilots
+     rule stay inline, because a GM needs the pilot rule on every piloting roll
+     in a chase and it is only two lines. */
+
+  /* A pointer line: the topic in words, then links that peek its Codex entries.
+     `bits` mixes plain strings and [anchor, label] pairs. ruleLink prints the
+     label as plain text when the Codex is missing, so the line still reads. */
+  function codexPointer(bits) {
+    var p = el("p.help", { style: { margin: "0 0 10px", color: "var(--text2)" } });
+    bits.forEach(function (b) {
+      p.appendChild(typeof b === "string" ? document.createTextNode(b) : EN.ui.ruleLink(b[0], b[1]));
+    });
+    return p;
+  }
 
   // an ability-shaped line ({name, cost, text}), bold head and inline-marked prose
   function abilityP(a, style) {
@@ -1500,22 +1517,16 @@ EN.gmView = (function () {
     return p;
   }
 
-  // the hunt's three beats, numbered as the page boxes them (01 to 03)
-  function huntCard(H) {
-    var kids = [el("h4", { style: { margin: "0 0 4px" }, text: H.title })];
-    if (H.lead) kids.push(el("p.help", { style: { margin: "0 0 6px", color: "var(--text2)" }, text: H.lead }));
-    (H.beats || []).forEach(function (b) {
-      kids.push(el("div", { style: { display: "flex", gap: "10px", alignItems: "baseline", margin: "6px 0 0" } }, [
-        el("span.mono", { style: { fontSize: "13px", color: "var(--accent)", minWidth: "22px" },
-          text: (b.n < 10 ? "0" : "") + b.n }),
-        el("p", { style: { margin: 0, fontSize: "13px" } }, [
-          el("span", { style: { fontWeight: 600 }, text: b.name + ". " }),
-          document.createTextNode(b.text)
-        ])
-      ]));
+  /* The hunt procedure, as a pointer: its three beats by name, each peeking its
+     own line of the Codex's "Running a hunt" (gmt-bestiary/signs and so on). */
+  function huntPointer(H) {
+    var bits = ["Cryptid hunts run in three beats: "];
+    (H.beats || []).forEach(function (b, i, all) {
+      if (i) bits.push(i === all.length - 1 ? ", then " : ", ");
+      bits.push(["gmt-bestiary/" + cxSlug(b.name), b.name]);
     });
-    if (H.closing) kids.push(el("p.help", { style: { margin: "8px 0 0", fontStyle: "italic" }, text: H.closing }));
-    return el("div.feature", { style: { borderLeftColor: "var(--accent)" } }, kids);
+    bits.push(". Full procedure: ", ["gmt-bestiary/" + cxSlug(H.title || "Running a hunt"), H.title || "Running a hunt"], ".");
+    return codexPointer(bits);
   }
 
   // a reference view's opening paragraphs, with the PHB rules they cite linked (Hostile Vehicles: Vehicles and Chases)
@@ -1531,7 +1542,8 @@ EN.gmView = (function () {
   function templatesInto(host) {
     var S = EN.bestiary.speciesTemplates;
     if (!S) { host.appendChild(el("p.help", { text: "No Species Templates in the Bestiary data." })); return; }
-    referenceIntro(host, S.intro);
+    host.appendChild(codexPointer(["How a template lays over a statblock, and who takes none: ",
+      ["gmt-bestiary/species-templates", S.title || "Species Templates"], "."]));
     var classLabel = (S.columns && S.columns[2]) || "Classification";
     (S.templates || []).forEach(function (t) {
       var kids = [el("h4", { style: { margin: "0 0 2px" }, text: t.species })];
@@ -1540,7 +1552,6 @@ EN.gmView = (function () {
       (t.traits || []).forEach(function (a) { kids.push(abilityP(a)); });
       host.appendChild(el("div.feature", null, kids));
     });
-    if (S.footer) host.appendChild(el("p.help", { style: { margin: "4px 0 0" }, text: S.footer }));
   }
 
   /* A vehicle's Defense while moving depends on its pilot's Grade. The numbers
@@ -1681,7 +1692,7 @@ EN.gmView = (function () {
        list is drawn with the ungrouped ones rather than dropped. */
     function categoryInto(host, cat) {
       if (cat.intro) host.appendChild(el("p.help", { style: { margin: "0 0 10px", color: "var(--text2)" }, text: cat.intro }));
-      if (cat.key === "cryptids" && B.huntProcedure) host.appendChild(huntCard(B.huntProcedure));
+      if (cat.key === "cryptids" && B.huntProcedure) host.appendChild(huntPointer(B.huntProcedure));
       var ents = B.entries.filter(function (e) { return e.category === cat.key; });
       var groups = (B.subgroups || []).filter(function (g) { return g.category === cat.key; });
       var known = Object.create(null);

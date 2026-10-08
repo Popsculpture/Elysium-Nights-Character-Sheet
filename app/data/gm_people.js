@@ -136,7 +136,7 @@ EN.gmBook.people = {
           "A Void Port baggage handler."
         ] },
       { key: "standard", tier: "Standard", resolve: "5", value: 5, orMore: false,
-        who: "A bartender who owns the bar. A claims agent. A Guild steward. A precinct desk sergeant. A Ferryman with a full boat. A Neon Market stall boss. An assayer at a public orb.",
+        who: "A bartender who owns the bar. A claims agent. A Guild steward. A precinct desk sergeant. A Ferryman with a full boat. A Neon Market stall boss. An appraiser at a public orb.",
         roles: [
           "A bartender who owns the bar.",
           "A claims agent.",
@@ -144,7 +144,7 @@ EN.gmBook.people = {
           "A precinct desk sergeant.",
           "A Ferryman with a full boat.",
           "A Neon Market stall boss.",
-          "An assayer at a public orb."
+          "An appraiser at a public orb."
         ] },
       { key: "hardened", tier: "Hardened", resolve: "8", value: 8, orMore: false,
         who: "A Guild dispatcher. A Ringer lieutenant. A Homeward shift supervisor. The keeper of a founding lamp. A fence with three crews on retainer. A Kindred recovery lead.",

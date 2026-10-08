@@ -228,7 +228,7 @@ EN.gmBook.payroll = {
     ],
     notMilestone: { text: "A Milk Run isn't a milestone. It's rent.", difficulties: ["milk"] },
     byDifficulty: { milk: null, fair: "minor", hard: "major", red: "major" },
-    pace: "This pace puts a level roughly every two or three jobs, and it fits the registry's rule of thumb (How the City Works): three to five Incursions between assays is a campaign arc, and a Freelancer's real Caliber rises by roughly one step in that time. When the crew's real Caliber has quietly outrun the number on their #PRINT, you have a story.",
+    pace: "This pace puts a level roughly every two or three jobs, and it fits the registry's rule of thumb (How the City Works): three to five Incursions between appraisals is a campaign arc, and a Freelancer's real Caliber rises by roughly one step in that time. When the crew's real Caliber has quietly outrun the number on their #PRINT, you have a story.",
     notesLead: "A few notes on pacing:",
     notes: [
       { key: "between", name: "Level between beats, never inside one.",
