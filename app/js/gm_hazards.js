@@ -333,12 +333,40 @@ EN.gmHazards = (function () {
     return el("span.mono", { style: { fontSize: "10px", letterSpacing: ".1em", color: color || "var(--text3)" }, text: t });
   }
   // one labeled line of a card: a mono label and the book's words beside it
+  // (value may be a node, for a line whose rule names link into the Codex)
   function line(label, value, hook) {
+    var vs = { style: { fontSize: "13px", color: "var(--text2)", flex: "1 1 180px", minWidth: 0 } };
+    if (typeof value === "string") vs.text = value;
     return el("div", { "data-hook": hook, style: { display: "flex", gap: "8px", alignItems: "baseline", flexWrap: "wrap", margin: "3px 0 0" } }, [
       el("span.mono", { style: { fontSize: "10px", letterSpacing: ".1em", color: "var(--text3)", minWidth: "84px", textTransform: "uppercase" },
         text: label }),
-      el("span", { style: { fontSize: "13px", color: "var(--text2)", flex: "1 1 180px", minWidth: 0 }, text: value })
+      el("span", vs, typeof value === "string" ? null : value)
     ]);
+  }
+  /* Phase 2 rules a hazard card names (the PHB's Falling & Forced Movement and Flow
+     Disturbances, in the Codex's Combat Rules and The Flow): the Codex's term table
+     links each name as written. */
+  function p2Text(text) { return EN.ui.ruleText(el("span"), text); }
+  /* How long an Anomaly-run hazard lasts. The PHB gives an Anomaly no scene limit:
+     it is cleansed by a Cleansing Project, suppressed for the rest of the Encounter
+     by Counter Flow, or, in a Null Scar, collapsed for 1d4 + the Lead Shaper's Flow
+     Modifier rounds by destroying its Focal Anchor, after which the Scar reforms
+     unless a Cleansing Project finished in the window. The window and the reform
+     read from EN.flow.disturbances.focalAnchor.falls; the literals are the fallback
+     when the Flow data is missing. The Room still runs it as the "scene" kind,
+     which only means the tray never ticks it. */
+  function anomalyLastsText() {
+    var D = (EN.flow && EN.flow.disturbances) || {}, F = (D.focalAnchor && D.focalAnchor.falls) || {};
+    var m = /\*\*([^*]+)\*\*/.exec(String(F.text || ""));
+    var win = m ? m[1] : "1d4 + Lead Shaper's Flow Modifier rounds";
+    var back = (F.effects || []).filter(function (x) { return /reforms/.test(String(x)); })[0] ||
+      "Once the window closes, the Scar reforms at the same Severity unless a proper Cleansing Project has been completed in the interim.";
+    back = String(back).replace(/\.\s*$/, "");
+    return "Until the Anomaly is cleansed, fully suppressed for the rest of the Encounter by Counter Flow, or, in a Null Scar, collapsed for " +
+      win + " by destroying its Focal Anchor (" + back.charAt(0).toLowerCase() + back.slice(1) + ").";
+  }
+  function anomalyLasts() {
+    return EN.ui.ruleText(el("span"), anomalyLastsText(), { terms: { "cleansed": "fl-dist-cleanse/the-cleansing-project" } });
   }
   function help(text, style) {
     return el("p.help", { style: Object.assign({ margin: "4px 0 0" }, style || {}), text: text });
@@ -520,6 +548,8 @@ EN.gmHazards = (function () {
       return { state: "now", text: "Acts at the end of this round." };
     }
     var k = kindOf(t.kind);
+    // an Anomaly-run hazard is not "the whole scene": it lasts as the PHB's Flow Disturbances say
+    if (r && r.anomalies && r.anomalies.length && t.kind === "scene") return { state: R < 1 ? "idle" : "watch", text: anomalyLastsText(), anomaly: true };
     var what = text || (t.kind === "onTrigger" && r && r.trigger ? r.trigger : "");
     return { state: R < 1 ? "idle" : "watch", text: k.label + (what ? ": " + lowerFirst(noStop(what)) : "") + "." };
   }
@@ -571,13 +601,17 @@ EN.gmHazards = (function () {
     ]));
 
     kids.push(el("p.hz-prompt", { "data-hook": "prompt", style: { margin: "6px 0 0", fontSize: "13px",
-      fontWeight: now ? 600 : 400, color: now ? "var(--danger)" : r.cleared ? "var(--text3)" : "var(--text2)" },
-      text: (now ? "▶ " : "") + p.text }));
+      fontWeight: now ? 600 : 400, color: now ? "var(--danger)" : r.cleared ? "var(--text3)" : "var(--text2)" } },
+      p.anomaly ? [anomalyLasts()] : (now ? "▶ " : "") + p.text));
 
     if (!r.cleared) {
       var bt = biteText(b);
-      if (bt) kids.push(line(fieldName("bite", "Bite"), bt));
+      if (bt) kids.push(line(fieldName("bite", "Bite"), p2Text(bt)));
       if (r.counter) kids.push(line(fieldName("counter", "Counter"), r.counter));
+      // one Anomaly is the one running; several are the Set Piece's examples, still to pick from
+      if (r.anomalies && r.anomalies.length) kids.push(r.anomalies.length > 1
+        ? line("Pick one", p2Text(r.anomalies.join(" or ")), "anomalies")
+        : line("Anomaly", p2Text(r.anomalies[0]), "anomalies"));
       var also = (r.effects || []).filter(function (e) {
         var seen = (noStop(b.text) + " | " + noStop(r.timing && r.timing.text)).toLowerCase();
         return seen.indexOf(noStop(e).toLowerCase()) === -1;
@@ -732,19 +766,23 @@ EN.gmHazards = (function () {
          stay exactly as printed. */
       var spi = setPieceItem(h.key);
       var spLinks = (EN.codexGmBuild && EN.codexGmBuild.setPieceLinks) ? EN.codexGmBuild.setPieceLinks(spi) : [];
+      // the PHB chapters a paragraph cites by name (the Catwalk's fall, the Bleed's Anomaly) link through the term table
       kids.push(ruled(el("p", { "data-hook": "as-written", style: { margin: "0 0 8px", fontSize: "13.5px", lineHeight: "1.5", color: "var(--text)" } }),
         h.printed, spLinks, { conditions: true }));
       var anomalyRun = !!(hz.anomalies && hz.anomalies.length);
       var biteLine = biteText(hz.bite);
       if (hz.trigger) kids.push(line(fieldName("trigger", "Trigger"), hz.trigger, "trigger"));
       if (hz.save) kids.push(line(fieldName("save", "Save and DC"), saveText(hz, "") + dcNote, "save"));
-      if (biteLine) kids.push(line(fieldName("bite", "Bite"), biteLine, "bite"));
+      if (biteLine) kids.push(line(fieldName("bite", "Bite"), p2Text(biteLine), "bite"));
       if (hz.counter) kids.push(line(fieldName("counter", "Counter"), hz.counter, "counter"));
-      if (anomalyRun) kids.push(line("Runs off", "The Anomaly you pick from Flow Disturbances", "timing"));
+      if (anomalyRun) {
+        kids.push(line("Runs off", p2Text("The Anomaly you pick from Flow Disturbances"), "timing"));
+        kids.push(line("Lasts", anomalyLasts(), "lasts"));
+      }
       else kids.push(line("Timing", timingLabel(hz.timing) + (hz.timing && hz.timing.text ? ": " + hz.timing.text : ""), "timing"));
       if (hz.area) kids.push(line("Area", hz.area));
       if (hz.material) kids.push(line("Material", hz.material.name + ", Structure " + hz.material.structure + ", Integrity " + hz.material.integrity));
-      if (anomalyRun) kids.push(line("Anomalies", hz.anomalies.join(", ")));
+      if (anomalyRun) kids.push(line("Anomalies", p2Text(hz.anomalies.join(", ")), "anomalies"));
       var unprinted = [];
       if (!hz.save) unprinted.push("save");
       if (!biteLine) unprinted.push("bite");
@@ -752,8 +790,11 @@ EN.gmHazards = (function () {
       if (unprinted.length) {
         var said = unprinted.length === 1 ? unprinted[0]
           : unprinted.slice(0, -1).join(", ") + " or " + unprinted[unprinted.length - 1];
-        kids.push(help("The book prints no separate " + said + " for this one" +
-          (anomalyRun ? ": the Anomaly you pick supplies the rules." : ". The paragraph above is the whole rule.")));
+        // an Anomaly's counters are the PHB's: Counter Flow, and a Null Scar's Focal Anchor
+        kids.push(anomalyRun
+          ? EN.ui.ruleText(el("p.help", { "data-hook": "unprinted", style: { margin: "4px 0 0" } }),
+              "The book prints no separate " + said + " for this one: the Anomaly you pick supplies the rules. Its counters are Counter Flow and, in a Null Scar, the Focal Anchor.")
+          : help("The book prints no separate " + said + " for this one. The paragraph above is the whole rule."));
       }
     } else {
       kids.push(line(fieldName("trigger", "Trigger"), hz.trigger || none, "trigger"));
@@ -1198,9 +1239,10 @@ EN.gmHazards = (function () {
     kids.push(el("div.row.wrap", { style: { gap: "10px", alignItems: "flex-end", marginTop: "6px" } }, dcRow));
     kids.push(out);
     if (speeds.length) {
-      kids.push(el("p.help", { "data-hook": "impact-table", style: { margin: "4px 0 0" },
-        text: "Impact DC by speed: " + speeds.map(function (x) { return x.speed + " " + x.dc; }).join(", ") +
-              ". Pilots at different speeds each check against their own." }));
+      // "Impact DC" peeks the PHB's rule (vc-damage/the-impact-dc); the words are unchanged
+      kids.push(EN.ui.ruleText(el("p.help", { "data-hook": "impact-table", style: { margin: "4px 0 0" } }),
+        "Impact DC by speed: " + speeds.map(function (x) { return x.speed + " " + x.dc; }).join(", ") +
+              ". Pilots at different speeds each check against their own."));
     }
 
     // the whole table, the rolled row lit
@@ -1219,7 +1261,9 @@ EN.gmHazards = (function () {
     var F = book().falling;
     if (!F) return null;
     var per = F.perSpaces || 2, count = F.count || 1, sides = F.sides || 6;
-    var kids = [para(F.text)];
+    // the falling rule itself is the PHB's Falling & Forced Movement (mv-fall): the sentence links it
+    var kids = [ruled(el("p", { "data-hook": "fall-text", style: { margin: "6px 0 0", fontSize: "13px", color: "var(--text2)" } }), F.text,
+      [["Falling & Forced Movement", "mv-fall"]])];
     var show = el("span.mono", { "data-hook": "fall-dice", style: { fontSize: "13px", color: "var(--text2)", paddingBottom: "6px" } });
     function diceFor() {
       var sp = parseInt(_tools.spaces, 10);
@@ -1245,6 +1289,7 @@ EN.gmHazards = (function () {
       kids.push(el("p.mono", { "data-hook": "fall-result", style: { margin: "8px 0 0", fontSize: "13px", color: "var(--accent)" },
         text: _tools.fall.n ? rollText(_tools.fall) + " " + (F.type || "") : "Under " + per + " spaces: no dice by this count." }));
     }
+    // the chip is the GM chapter's Falling Damage; the sentence above already links the player-side rule (mv-fall)
     return EN.ui.panel("Falling", count + "d" + sides + " PER " + per + " SPACES", kids, { headerRight: headChip("gmh-falling") });
   }
 

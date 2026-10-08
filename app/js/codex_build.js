@@ -186,7 +186,9 @@ window.EN = window.EN || {};
         + Object.keys(BUCKET).filter(function (b) { return (R.gear[b] || []).length; }).map(function (b) {
           return BUCKET[b] + ": " + R.gear[b].join(", ") + ((R.gearUpgradable || {})[b] === false && T.armorNote ? " (" + T.armorNote + ")" : "");
         }).join("\n"), { self: ["sk-skills/gear-proficiencies", "ref-vehicles"] });
-      kids.push(K.entry("gear-proficiencies", "Gear Proficiencies", [el("h4", { text: "Gear Proficiencies" }), gp], { tag: "div.feature" }));
+      // what each vehicle category covers, and what an untrained pilot rolls, are the chase panels' Vehicle Proficiencies
+      var vp = (R.gear.vehicles || []).length ? K.seeAlso("Vehicle categories and untrained pilots:", [["vc-piloting/vehicle-proficiencies", "Vehicle Proficiencies"]]) : null;
+      kids.push(K.entry("gear-proficiencies", "Gear Proficiencies", [el("h4", { text: "Gear Proficiencies" }), gp, vp], { tag: "div.feature" }));
     }
     return kids;
   }
@@ -259,7 +261,9 @@ window.EN = window.EN || {};
     if ((E.hauls || []).length) {
       kids.push(K.entry("hauls", "Hauls", [
         el("h4", { text: "Hauls" }),
-        K.refTable(["Haul", "Effect"], E.hauls.map(function (h) { return [h.name, h.hint]; }), [0])
+        K.refTable(["Haul", "Effect"], E.hauls.map(function (h) { return [h.name, h.hint]; }), [0]),
+        // the book's full rule for moving a load, and its Speed, is in Combat Rules (mv-move)
+        K.seeAlso("Moving with a load:", [["mv-move/dragging-pushing-and-pulling", "Dragging, Pushing, and Pulling"]])
       ], { tag: "div.feature" }));
     }
     if ((E.loadTable || []).length) {

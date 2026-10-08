@@ -649,20 +649,24 @@ EN.gmJobs = (function () {
       })));
   }
   /* The rule an instruction sends the GM to, in the Codex: the hunt procedure
-     (Cryptids of Elysium, in Running Threats' Bestiary panel) and the Sit-Down.
-     "reference" is Flow Disturbances, which the app does not carry yet, so it
-     has none. A "?" chip only where the anchor resolves (EN.ui.ruleChip). */
-  var INSTR_RULE = { beats: ["gmt-bestiary/running-a-hunt", "Running a hunt"], sitdown: ["gms-sitdown", "Sit-Down Rules"] };
+     (Cryptids of Elysium, in Running Threats' Bestiary panel), the Sit-Down,
+     and for "reference" (posting 8, Anomaly response) the PHB's Flow
+     Disturbances (the Codex's fl-dist). A "?" chip only where the anchor
+     resolves (EN.ui.ruleChip). The instruction's own words link the rules
+     they name (the PHB's Sit-Down, Flow Disturbances), except the chip's. */
+  var INSTR_RULE = { beats: ["gmt-bestiary/running-a-hunt", "Running a hunt"], sitdown: ["gms-sitdown", "Sit-Down Rules"],
+                     reference: ["fl-dist", "Flow Disturbances"] };
   function instrLine(ins) {
     if (!ins) return null;
     var rule = INSTR_RULE[ins.kind] || null;
     var rc = rule ? EN.ui.ruleChip(rule[0], { title: rule[1] }) : null;
-    return el("p.help", { style: { margin: "6px 0 0", color: "var(--gold)" } }, [
+    var p = el("p.help", { style: { margin: "6px 0 0", color: "var(--gold)" } }, [
       el("span.chip", { style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)", marginRight: "6px" },
-        text: INSTR[ins.kind] || "NOTE" }),
-      document.createTextNode(ins.text + (rc ? " " : "")),
-      rc
+        text: INSTR[ins.kind] || "NOTE" })
     ]);
+    EN.ui.ruleText(p, ins.text + (rc ? " " : ""), { self: rule ? rule[0] : null });
+    if (rc) p.appendChild(rc);
+    return p;
   }
   /* A row in its column. With `key`, an instruction the row ends on is left off
      here, because instrLine() prints it right under the row on its own chip and

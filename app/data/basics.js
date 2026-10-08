@@ -42,7 +42,7 @@ EN.basics = {
   /* ---- the battlefield, measured ---------------------------------------- */
   space: {
     intro: "Distance is counted in **spaces**. One space is about five feet, or one meter: a single stride, a grid square, the gap between you and the next pillar. Every range, reach and blast in the book is measured this way, so you never have to stop and convert anything.",
-    speed: "Your **Speed** is how many spaces you can cover on your turn, equal to **6 plus your Agility Modifier**, minimum 3. Most Freelancers move five or six spaces before they have to choose between shooting, climbing, or just getting out of the light. Your sheet works this out for you, including chrome, armor and lineage adjustments.",
+    speed: "Your **Speed** is how many spaces you can cover on your turn, equal to **6 plus your Agility Modifier**, minimum 3. Most Freelancers move five or six spaces before they have to choose between shooting, climbing, or just getting out of the light. Your sheet works this out for you, including chrome, armor and lineage adjustments. The Combat chapter handles the rest: difficult terrain, falling, and what happens when something shoves you into a wall.",
     areaIntro: "Some effects don't pick one Target. They fill a zone and catch whatever is standing in it: a thrown grenade, a sprayed cone of gel, a pulse of raw Flow. These are written **Area X**, where the number is the size in spaces and the word after it names the shape.",
     shapes: [
       { name: "Sphere", x: "radius", text: "A burst around a point. An Area with no shape word is a sphere, so Area 3 and Area 3 sphere mean the same thing." },

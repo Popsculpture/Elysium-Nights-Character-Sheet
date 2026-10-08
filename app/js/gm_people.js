@@ -798,7 +798,9 @@ EN.gmPeople = (function () {
       }), "1 1 100%")]));
     }
     if (row) kids.push(el("p.help", { style: { margin: "5px 0 0", color: "var(--text2)" }, text: "What they've heard: " + row.heard }));
-    else if (earned && P.earned) kids.push(el("p.help", { style: { margin: "5px 0 0" }, text: P.earned.text }));
+    // "The PHB's other examples" are Profiles & Debt's Profile Examples (so-profiles/profile-examples)
+    else if (earned && P.earned) kids.push(EN.ui.ruleText(el("p.help", { dataset: { people: "earned-text" }, style: { margin: "5px 0 0" } }), P.earned.text,
+      { terms: { "The PHB's other examples": "so-profiles/profile-examples" } }));
     return el("div", { dataset: { block: "profile" } }, kids);
   }
 

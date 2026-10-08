@@ -193,7 +193,7 @@ EN.resolution = {
     tracks: [
       { term: "Fatigue", meaning: "Physical or mental wear caused by exertion, deprivation, overwork, or extended pressure." },
       { term: "Strain", meaning: "Resonance instability caused by Overdraw, Flow misuse, or unstable channeling." },
-      { term: "Social Fallout", meaning: "Damaged trust, worsened terms, a tipped hand, debt, scrutiny, or changes in faction posture." }
+      { term: "Social Fallout", meaning: "Damaged trust, worsened terms, exposure, debt, scrutiny, or changes in faction posture." }
     ],
     guidance: "Use Fatigue as the default cost for physical wear and overexertion. Use Strain only when the consequence directly involves Overdraw or instability with the Flow. Use Social Fallout for persuasion, deception, bargaining, contract work, faction pressure, and other social negotiation scenes."
   },

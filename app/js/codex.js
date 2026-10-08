@@ -156,9 +156,10 @@
                 one call, matched as written and ahead of every other term
                 (ruleBlock, proseBlock, note and refTable pass it through), for
                 a sentence that names a chapter but means one entry of it.
-                A Phase 2 chapter name (PLAIN, below: Vehicles and Chases and
-                the rest) is matched and printed as plain text, so it never
-                links a shorter title inside it. Returns parent.
+                A chapter name the book has and the Codex does not (PLAIN,
+                below; empty since the Phase 2 chapters landed) is matched
+                and printed as plain text, so it never links a shorter title
+                inside it. Returns parent.
      terms({ "Edge and Snag": "rz-edge", ... })  add aliases. Each chapter
                 file may add aliases for its own panels and entries.
 
@@ -359,7 +360,7 @@ EN.codexView = (function () {
     var by = {};
     res.entries.forEach(function (e) { by[e.slug] = e; });
     hit = { empty: !res.nodes.length, entries: res.entries, bySlug: by,
-            text: res.nodes.map(function (n) { return n.textContent || ""; }).join(" ").replace(/\s+/g, " ").trim() };
+            text: res.nodes.map(readText).join(" ").replace(/\s+/g, " ").trim() };
     _idx.panels[p.id] = hit;
     return hit;
   }
@@ -484,11 +485,14 @@ EN.codexView = (function () {
      that chapter, so the Basics primers never shadow The Flow or The #GRID
      once those chapters have panels. */
   var _termCache = {};
-  /* Chapters the book has and the Codex does not yet (Phase 2: their rules need the
-     manuscript first). A citation of one stays plain text rather than linking whichever
-     shorter title it happens to contain. Drop a name here when its chapter lands. */
-  var PLAIN = ["Vehicles and Chases", "Vitality & Recovery", "Dying and Death Saves", "Social Pressure and Faction Standing",
-               "Falling & Forced Movement", "Flow Disturbances"];
+  /* Chapters the book has and the Codex does not yet. A citation of one stays plain text
+     rather than linking whichever shorter title it happens to contain. Drop a name here
+     when its chapter lands. Empty since Phase 2 (2026-10-07): the six names it held now
+     link through their own chapters, panels and aliases (Vitality & Recovery and Dying
+     and Death Saves to rc-, Social Pressure and Faction Standing to so-, Vehicles and
+     Chases to vc-stats, Falling & Forced Movement to mv-fall, Flow Disturbances to
+     fl-dist). */
+  var PLAIN = [];
   /* Feature names that hold a rule word. Matched whole and printed plain, so the Codebreaker's
      "#GRID Initiative" is not read as a link to Initiative, and the "roll Initiative" after it
      in the same sentence keeps that link. */
@@ -533,8 +537,8 @@ EN.codexView = (function () {
     });
     layer(pts, 3, false);
     layer(Object.keys(_aliases).map(function (k) { return [k, _aliases[k]]; }), 4, true);
-    // the Phase 2 chapter names: matched (so "Vehicles and Chases" is never read as the
-    // Vehicles panel plus two words) and printed as plain text, since no chapter holds them yet
+    // a chapter name with no chapter yet (PLAIN), and the feature names (NAMES): matched, so
+    // a longer name is never read as a shorter title plus words, and printed as plain text
     PLAIN.concat(NAMES).forEach(function (ph) {
       [ph, ph.indexOf("&") !== -1 ? ph.replace(/\s*&\s*/g, " and ") : null].forEach(function (v) {
         if (v) loose[v.toLowerCase()] = { anchor: null, phrase: v, rank: 6 };
@@ -679,8 +683,22 @@ EN.codexView = (function () {
     var node = el((opts.tag || "div") + ".cx-entry", attrs, children);
     // the children were built before this anchor existed, so a link of theirs may point here
     if (anchor) unlinkSelf(node, anchor);
-    record(s, title, opts.text != null ? opts.text : node.textContent);
+    record(s, title, opts.text != null ? opts.text : readText(node));
     return node;
+  }
+  /* A node's words for the index. textContent runs a table's cells together ("rest.VigorTemporary
+     protection"), so a snippet misreads and a query can match across a cell edge: a row's cells
+     join with " · " and block elements with a space. */
+  var BLOCKS = /^(DIV|P|UL|OL|LI|H[1-6]|TABLE|THEAD|TBODY|TD|TH|SECTION|DETAILS|SUMMARY|BR)$/;
+  function readText(n) {
+    function walk(x) {
+      if (x.nodeType === 3) return x.nodeValue;
+      if (x.nodeType !== 1) return "";
+      if (x.tagName === "TR") return " " + [].map.call(x.children, function (c) { return walk(c).replace(/\s+/g, " ").trim(); }).filter(Boolean).join(" · ") + " ";
+      var t = [].map.call(x.childNodes, walk).join("");
+      return BLOCKS.test(x.tagName) ? " " + t + " " : t;
+    }
+    return n ? walk(n).replace(/\s+/g, " ").trim() : "";
   }
   // Compact rule table built on the existing .sktable styling. `strongCols`
   // is an optional list of column indices to render emphasized. Cells go
@@ -982,7 +1000,11 @@ EN.codexView = (function () {
      middle of a word, and a query under three letters takes word starts only ("xp" is not
      Expanding). Ranked: a title that IS the query (or its plural), a title with it at a word
      start, a title with it mid-word, then text at a word start, then text mid-word; titles first,
-     as before, and book order within a rank. */
+     as before, and book order within a rank. Inside a title rank a panel comes a step ahead of an
+     entry and a named line a step behind one, so the one-line "Vigor: Subtract damage from Vigor
+     first." never outranks the Vigor panel; hits sharing a rank and a title sit together at the
+     first one's place, led by the one the name's registered term points at (Difficult Terrain's
+     Movement line before the Move action's cost row), then book order. */
   function matcher(q) {
     var words = String(q || "").trim().split(/[\s\-]+/).filter(Boolean);
     if (!words.length) return null;
@@ -1017,12 +1039,14 @@ EN.codexView = (function () {
         // a chapter and its only panel can share a title ("Paying the Crew"): said once
         var crumb = p.title.toLowerCase() === ch.title.toLowerCase() ? ch.title : ch.title + " / " + p.title, any = false;
         var pf = M.find(p.title);
-        if (pf) { any = true; add(titleScore(p.title, pf), { anchor: p.id, title: p.title, crumb: ch.title, snip: null }); }
+        if (pf) { any = true; add(titleScore(p.title, pf) - 0.25, { anchor: p.id, title: p.title, crumb: ch.title, snip: null }); }
         ix.entries.forEach(function (e) {
           var tf = M.find(e.title), xf = M.find(bare(e));
           // a named line carries its entry's name, so six "The Effect" lines read Block, Dodge, Ward...
           var ec = e.sub && e.parent && e.parent !== e.title ? crumb + " / " + e.parent : crumb;
-          if (tf) { any = true; add(titleScore(e.title, tf), { anchor: e.anchor, title: e.title, crumb: ec, snip: snippet(bare(e), xf) }); }
+          // a panel's first entry can share its title ("Medical Treatment"): the panel hit says it once
+          if (tf && pf && !e.sub && e.title.toLowerCase() === p.title.toLowerCase()) return;
+          if (tf) { any = true; add(titleScore(e.title, tf) + (e.sub ? 0.25 : 0), { anchor: e.anchor, title: e.title, crumb: ec, snip: snippet(bare(e), xf) }); }
           // a sub-entry's text is already its parent entry's text, so only its name is a hit of its own
           else if (!e.sub && xf) { any = true; add(xf.word ? 3 : 4, { anchor: e.anchor, title: e.title, crumb: ec, snip: snippet(bare(e), xf) }); }
         });
@@ -1030,7 +1054,15 @@ EN.codexView = (function () {
         if (pt2) add(pt2.word ? 3 : 4, { anchor: p.id, title: p.title, crumb: ch.title, snip: snippet(ix.text, pt2) });
       });
     });
-    hits.sort(function (a, b) { return a.score - b.score || a.seq - b.seq; });
+    var first = {}, home = {};
+    Object.keys(_aliases).forEach(function (k) { home[k.toLowerCase()] = _aliases[k]; });
+    hits.forEach(function (h) {
+      var k = h.score + "|" + h.title.toLowerCase();
+      if (first[k] == null) first[k] = h.seq;
+      h.gseq = first[k];
+      h.home = home[h.title.toLowerCase()] === h.anchor ? 0 : 1;
+    });
+    hits.sort(function (a, b) { return a.score - b.score || a.gseq - b.gseq || a.home - b.home || a.seq - b.seq; });
     return hits.map(function (h) { return { anchor: h.anchor, title: h.title, crumb: h.crumb, snip: h.snip }; });
   }
   var MAX_HITS = 40;
@@ -1191,7 +1223,11 @@ EN.codexView = (function () {
       var aoe = !ctx.inPeek && !ctx.indexing && EN.aoeGrid && EN.aoeGrid.build;
       return [
         K.proseBlock(B.space.intro),
-        K.proseBlock(B.space.speed),
+        /* the book's closing pointer (Part 1, Speed): "The Combat chapter handles the rest:
+           difficult terrain, falling, and what happens when something shoves you into a wall."
+           Each of the three links its own entry in Combat Rules ("difficult terrain" through
+           its alias); the Shove entry ends on a pointer to where a shoved body lands */
+        K.proseBlock(B.space.speed, { terms: { "falling": "mv-fall/falling-and-forced-movement", "shoves": "mv-maneuvers/shove" } }),
         K.subTitle("Areas of Effect"),
         K.proseBlock(B.space.areaIntro),
         el("div", null, B.space.shapes.map(function (sh) { return K.ruleBlock(sh.name, sh.text); })),
@@ -1333,6 +1369,8 @@ EN.codexView = (function () {
         K.proseBlock(Rz.social.intro),
         K.refTable(["Social Cost", "Effect"], Rz.social.costs.map(function (r) { return [r.cost, r.effect]; }), [0]),
         K.ruleBlock("Social Fallout Rule", Rz.social.falloutRule),
+        // the social chapter's own ten-row table is the menu a Mixed Result picks from
+        K.seeAlso("The full menu, and where it is spent:", [["so-fallout", "Social Fallout Table"], ["so-outcomes", "Social Margins & Outcomes"], ["so-sitdown", "The Sit-Down"]]),
         K.subTitle("Fatigue vs Strain vs Social Fallout"),
         K.refTable(["Track", "Meaning"], Rz.costTracks.tracks.map(function (r) { return [r.term, r.meaning]; }), [0]),
         guide,
@@ -1402,6 +1440,9 @@ EN.codexView = (function () {
   // the Opportunity Attacks rules close the Impulse Action entry in the data; drawn as an
   // entry of their own so "See Opportunity Attacks below" has somewhere to land
   var OPP = "\n\nOpportunity Attacks\n\n";
+  /* rows of the Move cost table whose full rules sit in the movement panels (Difficult
+     terrain and Through a body link through their own aliases) */
+  var MOVE_TERMS = { "Jump or leap": "mv-jump/jump-cost", "Climb or vault": "mv-move/vault-climb" };
   var combatChapter = { id: "combat", title: "Combat Rules", order: 40, audience: "both", panels: [
     { id: "ref-round", title: "Initiative & the Round", tag: "THE COMBAT SEQUENCE", order: 5, when: hasCombat, build: function (ctx, K) {
       var C = EN.combat, T = (EN.rules || {}).time;
@@ -1420,7 +1461,7 @@ EN.codexView = (function () {
       var kids = [];
       (C.actionTypes || []).forEach(function (a) {
         var text = String(a.text || ""), i = text.indexOf(OPP);
-        if (i < 0) { kids.push(K.ruleBlock(a.name, text)); return; }
+        if (i < 0) { kids.push(K.ruleBlock(a.name, text, null, a.name === "Move" ? { terms: MOVE_TERMS } : null)); return; }
         kids.push(K.ruleBlock(a.name, text.slice(0, i)));
         kids.push(K.ruleBlock("Opportunity Attacks", text.slice(i + OPP.length)));
       });
@@ -1509,7 +1550,9 @@ EN.codexView = (function () {
         if (R.tightGeometry) kids.push(ruleBlock("Tight Geometry", R.tightGeometry));
         var SC = R.sizeComparison || {};
         if (SC.maneuvers) kids.push(ruleBlock("Shove, Trip and Grapple", SC.maneuvers));
+        if (SC.maneuvers) kids.push(K.seeAlso("The maneuvers themselves:", [["mv-maneuvers", "Shove, Trip & Grapple"]]));
         if (SC.dragLift) kids.push(ruleBlock("Dragging and Lifting", SC.dragLift));
+        if (SC.dragLift) kids.push(K.seeAlso("Speed while hauling a load:", [["mv-move/dragging-pushing-and-pulling", "Dragging, Pushing, and Pulling"]]));
         if (SC.occupiedSpace) kids.push(ruleBlock("Moving Through an Occupied Space", SC.occupiedSpace));
         if ((SC.bodyGate || []).length) kids.push(ruleBlock("The Body Gate", SC.bodyGate.map(function (r) {
           return r.theirSize + " | Body " + r.body + " | " + r.holding;
@@ -1779,9 +1822,12 @@ EN.codexView = (function () {
      The names the data, the class text and the GM text actually cite, where
      they differ from a panel title (titles are terms already) or point at one
      entry of a panel. A phrase here matches in any case; a single word only
-     as written. Nothing here names a Phase 2 chapter (Vitality & Recovery,
-     Vehicles and Chases, Falling & Forced Movement and the rest stay plain
-     text until their chapters exist). */
+     as written. The Phase 2 chapters (Vitality & Recovery, Social Pressure &
+     Faction Standing, and the panels for chases, movement and Flow
+     Disturbances) register their own names in their own files.
+     "Social Fallout" on its own is the book's menu of social consequences, the
+     Social Fallout table of the social chapter (so-fallout); Core Resolution's
+     usage rule keeps its full name, "Social Fallout Rule". */
   terms({
     // The Basics
     "Saving Throw Focus": "bx-caliber",
@@ -1792,7 +1838,8 @@ EN.codexView = (function () {
     "Static Modifier Cap": "rz-d20/static-modifier-cap-15",
     "Dice Pool Method": "rz-pool",
     "Success Margin": "rz-margin",
-    "Social Fallout": "rz-social/social-fallout-rule",
+    "Social Fallout": "so-fallout",
+    "Social Fallout Rule": "rz-social/social-fallout-rule",
     "Help Action": "rz-collab/help-action",
     // Combat Rules
     "Timing, Action Economy & Combat": "ref-actions",

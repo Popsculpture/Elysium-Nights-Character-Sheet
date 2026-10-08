@@ -26,17 +26,19 @@
    written. What a scene produces (fallout, Heat, Wounds, pay) leaves this tab
    as copyable text, or as a handoff to the tab that does the writing.
 
-   App readings this file makes (the book is silent, or the rule is the PHB's,
-   which the app does not carry):
+   App readings this file makes (the handbook is silent, or the rule is the
+   PHB's and the tracker shows it rather than applies it):
      - Weak spots multiply a result's Pressure by 2 ("double") or 0 ("none"),
        per the data's pressureMult. Insight deals no Pressure.
      - The Resolve meter is the starting Resolve plus any hand adjustment, less
        each logged Pressure, plus each Critical's +1, never below 0. The card
-       prints no cap on the +1, so none is applied.
-     - A chase's Lead is moved by hand: what each margin does to Lead is the
-       PHB's Vehicles and Chases. A check reports the winner, the margin,
+       prints no cap on the +1, so none is applied. A Posture is not taken off
+       the logged Pressure; the PHB's Postures (EN.social.sitDown.postures) are
+       linked beside the toggle and the hand adjustment covers them.
+     - A chase's Lead is moved by hand. A check reports the winner, the margin,
        whether it reaches the chase's own Dominant Victory threshold, and a
-       tie as a Stalemate.
+       tie as a Stalemate, then prints what the PHB says that result does to
+       Lead (EN.chases.chase.outcomes) for the GM to apply.
      - First response: N = 5 minus half the Heat rounded down, minimum 1, and
        the response is due once N rounds of the chase have passed. A round
        passes when the GM presses NEXT ROUND.
@@ -565,6 +567,22 @@ EN.gmScenes = (function () {
   }
   // a small "?" beside a working control, for the rule it runs on (null when the rule is not in reach)
   function ruleChip(anchor, title) { return EN.ui.ruleChip(anchor, title ? { title: title } : null); }
+  /* A help line built from pieces: a string is text, an [anchor, label] pair is
+     a link (plain text without the Codex). For a sentence that names a PHB rule
+     the tracker shows but does not apply. */
+  function linkHelp(parts, style, hook) {
+    var at = { style: Object.assign({ margin: "4px 0 0" }, style || {}) };
+    if (hook) at.dataset = { sc: hook };
+    var p = el("p.help", at);
+    parts.forEach(function (x) {
+      if (!x) return;
+      p.appendChild(typeof x === "string" ? document.createTextNode(x) : EN.ui.ruleLink(x[0], x[1]));
+    });
+    return p;
+  }
+  // the PHB rules a scene's tracker shows from EN.social and EN.chases (data/social.js, data/chases.js)
+  // without the Codex, ruleLink prints its label and never reads the anchor, so no slug is needed
+  function slugOf(s) { return (EN.codexView && EN.codexView.slug) ? EN.codexView.slug(s) : ""; }
 
   /* ---- the sub-page bar and the open scene's controls ---------------------- */
   function pageBar() {
@@ -896,14 +914,17 @@ EN.gmScenes = (function () {
 
     // 4. postures
     var s4 = step(4), Po = B.postures;
+    var PB = ref(B.refs.postures), bookPostures = (PB && Array.isArray(PB.rows)) ? PB.rows : [];
     kids.push(stepBlock(s4, [row([
       field("First Posture", textIn("sd.posture1", d.postures.first, "Stonewall", function (v) { d.postures.first = v; }, { list: "sc-postures" }), "0 1 170px"),
       field("How they do it", textIn("sd.posture1note", d.postures.firstNote, "she reads the contract aloud, slowly", function (v) { d.postures.firstNote = v; }))
     ]), row([
       field("Second Posture", textIn("sd.posture2", d.postures.second, "Compose", function (v) { d.postures.second = v; }, { list: "sc-postures" }), "0 1 170px"),
       field("How they do it", textIn("sd.posture2note", d.postures.secondNote, "", function (v) { d.postures.secondNote = v; }))
-    ]), help("The book names " + Po.named.map(function (p) { return p.name; }).join(", ") + ". " +
-      (Po.notCarried ? Po.notCarried.replace(/\.$/, ", so type any other.") : "Type any other."), { color: "var(--text3)" })]));
+    ]), linkHelp(["The book names " + Po.named.map(function (p) { return p.name; }).join(", ") + ". " +
+      (bookPostures.length ? "The PHB's full list is " + bookPostures.map(function (p) { return p.name; }).join(", ") +
+        ", with what each does in " : "The PHB's full list, with what each does, is in "),
+      ["so-postures/posture-table", "Postures"], ". Type any of them, or any other."], { color: "var(--text3)" }, "postures-book")]));
 
     // 5. the Floor
     var s5 = step(5), F = B.floor;
@@ -912,14 +933,19 @@ EN.gmScenes = (function () {
       return toggle(p ? p.name : f.key, f.live, "floor-live-" + f.key, function () { f.live = !f.live; if (!f.live) f.flipped = false; },
         { title: "Is this pressure live in the room?" });
     }))];
+    // what each pressure does is the PHB's (EN.social.sitDown.floor, same keys): its name peeks it,
+    // and its first sentence is the hint in "What it does here"
+    var bookFloor = ref(B.refs.floor);
     d.floor.forEach(function (f) {
       if (!f.live) return;
-      var p = byKey(F.pressures, f.key);
+      var p = byKey(F.pressures, f.key), bp = byKey(bookFloor, f.key);
+      var nm = p ? p.name : f.key;
+      var hint = bp && bp.text ? (String(bp.text).match(/^[^.]*\./) || [bp.text])[0] : "Snag for the crew";
       floorKids.push(el("div.feature", { dataset: { sc: "floor-" + f.key }, style: { marginTop: "8px" } }, [
-        el("span", { style: { fontWeight: 600 }, text: p ? p.name : f.key }),
+        el("span", { dataset: { sc: "floor-name-" + f.key }, style: { fontWeight: 600 } }, [bp ? EN.ui.ruleLink("so-floor/" + slugOf(bp.name), nm) : document.createTextNode(nm)]),
         row([
           field("Where", textIn("sd.floor." + f.key + ".where", f.where, "a Kindred clinic waiting room", function (v) { f.where = v; })),
-          field("What it does here", textIn("sd.floor." + f.key + ".effect", f.effect, "Snag for the crew", function (v) { f.effect = v; }))
+          field("What it does here", textIn("sd.floor." + f.key + ".effect", f.effect, hint, function (v) { f.effect = v; }))
         ]),
         row([field("The legwork that flips it", textIn("sd.floor." + f.key + ".flip", f.flip, "", function (v) { f.flip = v; }))])
       ]));
@@ -943,14 +969,15 @@ EN.gmScenes = (function () {
     ]), row([
       field("On a Mixed Result", textIn("sd.mixed", d.fallout.mixed, "", function (v) { d.fallout.mixed = v; }, { area: true })),
       field("On a Critical Failure", textIn("sd.critical", d.fallout.critical, "", function (v) { d.fallout.critical = v; }, { area: true }))
-    ]), help(CF.domain + ": " + CF.text, { color: "var(--text3)" }),
-      codexLinks("Social Fallout, as near as the app carries it:", [["rz-social", "Social Consequences & Cost Tracks"]])]));
+    ]), EN.ui.ruleText(el("p.help", { style: { margin: "4px 0 0", color: "var(--text3)" } }), CF.domain + ": " + CF.text,
+        { terms: { "the PHB's Critical Failure row": "so-outcomes/margins-and-outcomes" } }),
+      codexLinks("Social Fallout:", [["so-fallout", "Social Fallout Table"]])]));
 
     kids.push(row([field("Notes", textIn("sd.notes", d.notes, "", function (v) { d.notes = v; }, { area: true }))], { marginTop: "14px" }));
 
     // the suggestion lists the Posture and Profile fields offer
     var prof = ref(B.refs.theirProfile);
-    kids.push(el("datalist#sc-postures", null, Po.named.map(function (p) { return el("option", { value: p.name }); })));
+    kids.push(el("datalist#sc-postures", null, (bookPostures.length ? bookPostures : Po.named).map(function (p) { return el("option", { value: p.name }); })));
     kids.push(el("datalist#sc-profiles", null, ((prof && prof.rows) || []).map(function (r) { return el("option", { value: r.name }); })
       .concat(((prof && prof.earned && prof.earned.names) || []).map(function (n) { return el("option", { value: n }); }))));
     return EN.ui.panel("Prepping a Sit-Down", "THE PREP CARD", kids);
@@ -1008,7 +1035,9 @@ EN.gmScenes = (function () {
         text: "ROUND " + d.track.round + (rounds ? " OF " + rounds : "") }),
       btn("NEXT ROUND ›", "sd-next", function () { d.track.round += 1; d.track.posture = false; }, { primary: true }),
       toggle("POSTURE USED THIS ROUND", d.track.posture, "sd-posture", function () { d.track.posture = !d.track.posture; },
-        { title: B.postures.rule })
+        { title: B.postures.rule }),
+      // what a Posture takes off the Pressure is the PHB's; the tracker leaves it to the hand adjustment
+      ruleChip("so-postures/posture-table", "Postures")
     ]));
     kids.push(help(B.postures.rule + (d.postures.first || d.postures.second ? " They reach for " +
       [d.postures.first, d.postures.second].filter(function (x) { return str(x).trim(); }).join(" and ") + " first." : ""), { color: "var(--text3)" }));
@@ -1054,7 +1083,7 @@ EN.gmScenes = (function () {
             el("span.mono", { style: { fontSize: "12px", color: p !== r.pressure ? "var(--accent)" : "var(--text3)" },
               text: "THIS APPROACH: " + (p ? p : "none") + (r.resolveGain ? ", +" + r.resolveGain + " RESOLVE" : "") })
           ]),
-          r.also ? help(r.also, { margin: "2px 0 0" }) : null
+          r.also ? rhelp(r.also, { margin: "2px 0 0" }) : null
         ]),
         btn("LOG", "res-" + r.key, function () {
           if (broke) { toast("Resolve is already at 0: the Opposition has broken."); return false; }
@@ -1078,13 +1107,13 @@ EN.gmScenes = (function () {
     } else if (last && last.result === "mixed") {
       var Rm = byKey(B.results, "mixed");
       kids.push(el("div.feature", { dataset: { sc: "sd-mixed" }, style: { borderLeftColor: "var(--warn)", marginTop: "10px" } }, [
-        el("span", { style: { fontWeight: 600 }, text: "Mixed Result: " + Rm.also + "." }),
+        EN.ui.ruleText(el("span", { style: { fontWeight: 600 } }), "Mixed Result: " + Rm.also + "."),
         help("Written for a Mixed Result: " + said(d.fallout.mixed))
       ]));
     } else if (last && last.result === "critical") {
       var Rc = byKey(B.results, "critical"), CF = B.criticalFailure;
       kids.push(el("div.feature", { dataset: { sc: "sd-critical" }, style: { borderLeftColor: "var(--danger)", marginTop: "10px" } }, [
-        el("span", { style: { fontWeight: 600, color: "var(--danger)" }, text: "Critical: " + Rc.also + "." }),
+        EN.ui.ruleText(el("span", { style: { fontWeight: 600, color: "var(--danger)" } }), "Critical: " + Rc.also + "."),
         help("Written for a Critical Failure: " + said(d.fallout.critical)),
         help(CF.heatText, { color: "var(--text3)" })
       ]));
@@ -1127,16 +1156,20 @@ EN.gmScenes = (function () {
 
   /* The reference the Sit-Down runs on is the Codex's Sit-Down Rules, with
      Resolve by Role and Their Profile of You (one copy, which People links to
-     as well) and Cooling Off's legal scrub. The home line stays: it says the
-     PHB's own rules are not in the app. */
+     as well) and Cooling Off's legal scrub. The home line names where the
+     PHB's own rules live, and the second line links them: the Codex's Social
+     Pressure & Faction Standing chapter (js/codex_social.js). */
   function sitdownRef(d) {
     var B = SD(), kids = [];
-    kids.push(help(B.home, { margin: 0 }));
+    kids.push(EN.ui.ruleText(el("p.help", { style: { margin: 0 } }), B.home,
+      { terms: { "Sit-Down rules": "so-sitdown" } }));
     var R = ref(B.refs.resolveByRole), P = ref(B.refs.theirProfile), scrub = rowAt(B.legalScrub);
     kids.push(codexLinks("In the Codex:", [["gms-sitdown", "Sit-Down Rules"]]
       .concat(R ? [["gmp-resolve", R.title || "Resolve by Role"]] : [])
       .concat(P ? [["gmp-profiles", P.title || "Their Profile of You"]] : [])
       .concat(scrub ? [["gmx-cooling/legal-scrub", "A Sit-Down that clears Heat"]] : [])));
+    kids.push(codexLinks("The PHB's rules:", [["so-sitdown", "The Sit-Down"], ["so-plays", "Rounds & Plays"], ["so-postures", "Postures"],
+      ["so-floor", "The Floor"], ["so-conditions", "Sit-Down Conditions"], ["so-fallout", "Social Fallout Table"]]));
     return EN.ui.panel("Reference", "SIT-DOWN RULES", kids);
   }
 
@@ -1286,7 +1319,15 @@ EN.gmScenes = (function () {
     if (srow) esc.push(el("p.help", { dataset: { sc: "heat-sends", source: srow.key }, style: { margin: "4px 0 0", color: "var(--text2)" },
       text: "Who " + srow.name + " sends: " + said(srow.sends) }));
     esc.push(row([field("Which row of Pursuit Escalation shows up", textIn("ch.row", d.esc.row, "a Homeward Patrol Drone joins as a new pursuer", function (v) { d.esc.row = v; }))]));
-    if (B.notCarried && B.notCarried.escalation) esc.push(help(B.notCarried.escalation, { color: "var(--text3)" }));
+    // the PHB's Pursuit Escalation row for the Heat typed above (EN.chases.chase.escalation.rows), shown, never written
+    var escRows = ref(B.refs.escalation), escHeat = int(d.esc.heat);
+    var escRow = (Array.isArray(escRows) && escHeat !== null) ? escRows.filter(function (r) {
+      return clamp(escHeat, 0, 10) >= r.heatMin && clamp(escHeat, 0, 10) <= r.heatMax;
+    })[0] : null;
+    esc.push(escRow
+      ? linkHelp([["vc-chase/pursuit-escalation", "Pursuit Escalation"], " at Heat " + escRow.heat + ": " + escRow.shows], { color: "var(--text2)" }, "esc-row")
+      : linkHelp(["The rows are the PHB's ", ["vc-chase/pursuit-escalation", "Pursuit Escalation"], " table, by the crew's Heat with the source."],
+        { color: "var(--text3)" }, "esc-row"));
     kids.push(stepBlock(s5, esc));
 
     // 6. the two endings
@@ -1483,6 +1524,9 @@ EN.gmScenes = (function () {
     if (now === L.capture) {
       kids.push(el("div.feature", { dataset: { sc: "ch-capture" }, style: { borderLeftColor: "var(--danger)", marginTop: "8px" } }, [
         el("span", { style: { fontWeight: 600, color: "var(--danger)" }, text: "Lead " + L.capture + ": capture." }),
+        // the PHB: at Contact the pursuer wins by resolving the capture on their turn (vc-chase/lead)
+        linkHelp(["The pursuer captures by resolving a ram, a board, or a force-stop on their turn. See ", ["vc-chase/lead", "Lead"],
+          " and ", ["vc-damage/lead-consequence", "crashes and Lead"], "."], { color: "var(--text3)" }, "capture-rule"),
         help(str(d.endings.capture).trim() || "Nothing written for capture yet.")
       ]));
     } else if (now === L.escape) {
@@ -1561,10 +1605,24 @@ EN.gmScenes = (function () {
       out.push(el("div.feature", { dataset: { sc: "chk-out", result: last.tie ? "stalemate" : last.dominant ? "dominant" : "win", margin: last.tie ? "0" : String(last.margin) },
         style: { marginTop: "8px", borderLeftColor: last.tie ? "var(--warn)" : last.dominant ? "var(--gold)" : "var(--accent)" } }, [
         el("span", { style: { fontWeight: 600 }, text: last.text }),
-        last.tie || !(CH().notCarried && CH().notCarried.leadMargins) ? null : help(CH().notCarried.leadMargins, { color: "var(--text3)" })
+        leadOutcome(last)
       ]));
     }
     return el("div", null, out);
+  }
+
+  /* What the PHB says a called check does to Lead (EN.chases.chase.outcomes:
+     the fleeing pilot's row, the pursuing pilot's, or Stalemate), printed under
+     the result for the GM to apply with the Lead buttons. The running side is
+     the fleeing one. Nothing here moves Lead. */
+  function leadOutcome(last) {
+    var rows = ref(CH().refs.outcomes);
+    if (!Array.isArray(rows) || !rows.length) return null;
+    var lead = last.tie ? /^stalemate/i : last.winner === "running" ? /^fleeing/i : /^pursuing/i;
+    var o = rows.filter(function (r) { return r && lead.test(str(r.name)); })[0];
+    if (!o) return null;
+    return linkHelp([["vc-chase/" + slugOf(o.name), o.name], ": " + o.text + (last.tie ? "" : " Move Lead with the buttons above.")],
+      { color: "var(--text2)" }, "lead-outcome");
   }
 
   /* The district's stalemate table and its default rule, read from the
@@ -1576,6 +1634,10 @@ EN.gmScenes = (function () {
     if (!St || !St.districts) return help("The stalemate tables did not load.");
     var dist = byKey(St.districts, d.route.district);
     out.push(help(CH().stalemate.text, { margin: "0 0 6px", color: "var(--text2)" }));
+    var cl = codexLinks("The PHB's rules:", [["vc-chase/stalemate", "Stalemate"], ["vc-damage/control-check", "Control Check"],
+      ["vc-damage/the-impact-dc", "The Impact DC"]]);
+    cl.style.margin = "6px 0 8px";   // the District row below sets marginTop 0
+    out.push(cl);
     var dists = St.districts.map(function (x) { return { value: x.key, label: x.name }; });
     out.push(row([
       field("District", selectIn("ch.staleDistrict", [{ value: "", label: "Pick a district..." }].concat(dists), d.route.district,
@@ -1624,12 +1686,17 @@ EN.gmScenes = (function () {
     return el("div", null, out);
   }
 
-  // the chase's reference is the Codex's Chase Rules; the home line says Lead itself is the PHB's
+  /* the chase's reference is the Codex's Chase Rules; the home line says Lead itself is the PHB's,
+     and the second line links the PHB's Vehicles and Chases (js/codex_chases.js) */
   function chaseRef(d) {
-    var B = CH(), kids = [help(B.home, { margin: 0 })];
+    var B = CH(), kids = [EN.ui.ruleText(el("p.help", { style: { margin: 0 } }), B.home,
+      { terms: { "Lead": "vc-chase/lead" } })];
     kids.push(codexLinks("In the Codex:", [
       ["gms-chase", "Chase Rules"], ["gms-chase/lead-and-its-bands", "Lead and its bands"], ["gms-chase/the-chase-check", "The Chase Check"],
       ["gms-chase/impact-dc-by-speed", "Impact DC by speed"], ["gms-chase/threat-pilots", "Threat pilots"]]));
+    kids.push(codexLinks("The PHB's rules:", [
+      ["vc-chase/lead", "Lead"], ["vc-chase/resolving-the-chase", "Resolving the Chase"], ["vc-chase/system-hits", "System Hits"],
+      ["vc-chase/pursuit-escalation", "Pursuit Escalation"], ["vc-damage/the-impact-dc", "The Impact DC"], ["vc-damage/crashes", "Crashes"]]));
     return EN.ui.panel("Reference", "CHASE RULES", kids);
   }
 
@@ -1812,8 +1879,10 @@ EN.gmScenes = (function () {
     if (d.anchor.kind === "thing") {
       var Fo = A.focal, max = Fo.vitalityPerRating * d.rating, now = Math.max(0, max - (d.anchor.hit | 0));
       kids.push(el("div.feature", { dataset: { sc: "focal", vit: String(now), max: String(max), def: String(Fo.defense) }, style: { marginTop: "8px", borderLeftColor: "var(--accent)" } }, [
-        el("span", { style: { fontWeight: 600 }, text: "Focal Anchor, Severity " + d.rating + ": Defense " + Fo.defense + ", Vitality " + max }),
-        help(Fo.when + ": " + Fo.text + ".", { color: "var(--text3)" }),
+        el("span", { dataset: { sc: "focal-name" }, style: { fontWeight: 600 } }, [EN.ui.ruleLink("fl-dist-anchor", "Focal Anchor"),
+          document.createTextNode(", Severity " + d.rating + ": Defense " + Fo.defense + ", Vitality " + max)]),
+        EN.ui.ruleText(el("p.help", { style: { margin: "4px 0 0", color: "var(--text3)" } }), Fo.when + ": " + Fo.text + ".",
+          { self: "fl-dist-anchor" }),
         el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "6px" } }, [
           el("span.mono", { style: { fontSize: "13px", color: now === 0 ? "var(--success)" : "var(--text)" }, text: "VITALITY " + now + " / " + max }),
           el("div", { style: { flex: "1 1 120px", minWidth: "80px" } }, [bar(now, max, "var(--danger)")]),

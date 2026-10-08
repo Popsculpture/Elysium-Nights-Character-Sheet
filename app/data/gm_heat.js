@@ -37,10 +37,11 @@
    the GM; nothing may write them to a player record, a #POST, or any text
    meant to be copied to the players.
 
-   The player sheet's Heat labels (HEAT_LADDER in js/face.js) are the PHB's:
-   they read "A file in an inbox" for 1 to 2, where this chapter's THE PHB
-   SAYS column prints "A file with your name on it". Both are kept as their
-   own books print them.
+   The PHB's own Heat ladder is EN.social.credHeat.heat.ladder (data/social.js,
+   the Codex's so-credheat/heat-ladder). Its 1 to 2 row reads "A file with your
+   name on it sits in someone's inbox."; this chapter's THE PHB SAYS column
+   prints the handbook's short form, "A file with your name on it", and adds
+   what the source sends. The two ladders stay separate on purpose.
 
    Page references (// GMH pNN) are PDF page numbers of the handbook; the folio
    printed on each page runs 4 lower. User-facing text carries no page numbers.
@@ -354,8 +355,9 @@ EN.gmBook.heat = {
      low works on every source (`allSources`) and only after a month whose
      Heat check came up empty (`ifQuiet`). The bribe tiers between Petty Grease
      and Career-Ending Money, the data scrub service, and legal help are
-     priced in the PHB's Economy and Rewards, which the app does not carry
-     (EN.economy lists Bribes as not modelled). */
+     priced in the PHB's Economy and Rewards, whose Services and Bribes prices
+     the app does not carry (EN.economy lists them as not modelled; the Codex's
+     Economy & Rewards, ref-economy, holds the rest of the chapter). */
   // GMH p118
   cooling: {
     name: "Cooling Off",

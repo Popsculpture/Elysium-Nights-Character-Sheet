@@ -1,11 +1,14 @@
 /* ===========================================================================
    ELYSIUM NIGHTS - Face tab
-   The social sheet: Social Pressure and Faction Standing. This is a FRAMEWORK
-   scaffold. It holds the persistent, sheet-level social ledger a Face carries
-   between scenes (Profiles others hold of you, Faction Standing, Cred, Heat,
-   Debts) plus a compact quick-reference. The heavier runtime machinery (the
-   Sit-Down: rounds, Plays, Pressure vs Resolve, Postures) and the full Social
-   Fallout tables are stubbed here and get fleshed out in a later pass.
+   The social sheet: Social Pressure and Faction Standing. It holds the
+   persistent, sheet-level social ledger a Face carries between scenes (Profiles
+   others hold of you, Faction Standing, Cred, Heat, Debts) plus a compact quick
+   reference. The rules are EN.social (data/social.js), the one copy the Codex
+   chapter Social Pressure & Faction Standing (the so- panels) renders in full:
+   the quick reference reads that data and links into the chapter, and the
+   ledger's names (standings, pressure states, the Cred and Heat ladders) come
+   from it. The Sit-Down itself is run at the table; the rest of its rules
+   (Plays, Postures, the Floor, Sit-Down Conditions) are linked, not repeated.
    State persists on ch.face; reference collapse state is transient.
    =========================================================================== */
 window.EN = window.EN || {};
@@ -34,7 +37,20 @@ EN.faceView = (function () {
     { k: "owing", label: "You owe",     color: "var(--danger)" },
     { k: "owed",  label: "Owed to you", color: "var(--success)" }
   ];
-  function pick(list, k) { return list.find(function (o) { return o.k === k; }) || list[0]; }
+  // The names are the book's (EN.social uses the same keys); the colors are the app's.
+  // The literals above stay as the fallback when the data file did not load.
+  (function () {
+    var S = EN.social || {};
+    function relabel(rows, src) {
+      (src || []).forEach(function (r) { rows.forEach(function (o) { if (o.k === r.key && r.name) o.label = r.name; }); });
+    }
+    relabel(STANDINGS, S.factionStanding && S.factionStanding.ladder);
+    relabel(STATES, S.pressureStates && S.pressureStates.states);
+  })();
+  function pick(list, k) {
+    for (var i = 0; i < list.length; i++) if (list[i].k === k) return list[i];
+    return list[0];
+  }
 
   // ch.face is the social ledger. Mutating accessor (used on writes) establishes
   // the shape so old characters upgrade in place; faceRead() is the render-time
@@ -65,7 +81,8 @@ EN.faceView = (function () {
   function help(t, color) { return el("p.help", { style: { margin: "0 0 10px", color: color || "var(--text3)" }, text: t }); }
 
   /* ---- generic editable tracker list --------------------------------------
-     opts: { title, tag, key, cols, blank, empty }. Each col:
+     opts: { title, tag, key, cols, blank, empty, rule, ruleTitle }. rule is a Codex
+     anchor for the panel's "?" chip (the rule the tracker keeps). Each col:
        { k, label, type:"text"|"select"|"num", options, ladder, tone, placeholder, flex } */
   function tracker(opts) {
     var rows = faceRead(store.active())[opts.key];
@@ -78,7 +95,8 @@ EN.faceView = (function () {
       kids.push(help(opts.empty || "None yet."));
     }
     kids.push(el("button.btn.sm", { style: { marginTop: "8px" }, onclick: function () { fset(function (f) { f[opts.key].push(Object.assign({}, opts.blank)); }); } }, "+ ADD"));
-    return EN.ui.panel(opts.title, opts.tag, kids, { corners: true });
+    var chip = opts.rule ? EN.ui.ruleChip(opts.rule, { title: opts.ruleTitle || opts.title }) : null;
+    return EN.ui.panel(opts.title, opts.tag, kids, { corners: true, headerRight: chip });
   }
   function trackerRow(opts, rec, i) {
     var cells = opts.cols.map(function (c) {
@@ -350,10 +368,11 @@ EN.faceView = (function () {
   }
 
   /* ---- quick reference (collapsible) --------------------------------------
-     The Sit-Down and the social Approaches have no Codex chapter yet (Social Pressure
-     and Faction Standing waits on the manuscript), so this reference stays here. What
-     the Codex DOES hold is linked: the skills behind each Approach, Help, Edge, and the
-     margin and cost tables the Outcomes compress. */
+     A pocket copy of the three tables a Face reaches for mid-scene (Approaches, Margins
+     and Outcomes, the Sit-Down's Pressure and Resolve), read from EN.social, the same
+     copy the Codex chapter Social Pressure & Faction Standing renders in full. Every
+     section ends in links to the full rules: the so- panels, and the Skills and Core
+     Resolution entries behind them (each Approach's skill, Help, Edge, margins, costs). */
   // a cell is a string, or an array of strings and nodes (a Codex link inside the text)
   function refTable(headers, rows) {
     return el("table.sktable", { style: { width: "100%", fontSize: "11.5px" } }, [
@@ -378,46 +397,58 @@ EN.faceView = (function () {
       open ? el("div", { style: { padding: "10px 2px 4px", overflowX: "auto" } }, [node]) : null
     ]);
   }
+  // a cell through the Codex linker, so a rule name inside the book's text peeks
+  function rt(text) { return [EN.ui.ruleText(el("span"), String(text == null ? "" : text))]; }
+  function ruleP(text, color) {
+    return EN.ui.ruleText(el("p.help", { style: { margin: "0 0 10px", color: color || "var(--text3)" } }), text);
+  }
+  // "Intimidation (Versatile)": the skill name links its Skills entry, the tag stays text
+  function skillCell(r) {
+    var m = /^(.*?)(\s*\(Versatile\))?$/.exec(r.skill || r.name);
+    return [rl("sk-skills/" + r.key, m[1]), m[2] || ""];
+  }
   function referencePanel() {
+    var S = EN.social || {};
+    var A = S.approach || {}, M = S.margins || {}, SD = S.sitDown || {};
+    var P = SD.pressure || {}, RV = SD.resolve || {};
+    var appr = (A.rows || []).map(function (r) { return [r.name, skillCell(r), r.attributes, r.text]; });
+    // Insight's Social Help rule (Insight as the Social Help Action), a line under the table so the cell stays short
+    // ("Help" stays on the Core Resolution Help Action, as the rv1 fix ruled; the book's own entry follows)
+    var socialHelp = !(A.rows || []).some(function (r) { return r.key === "insight"; }) ? null : el("p.help", { style: { margin: "8px 0 0", color: "var(--text3)" } }, ["Social ",
+      rl("rz-collab/help-action", "Help"), ": on a success, grant ",
+      rl("rz-edge", "Edge"), " (or +1 Edge Die) to one ally's next social roll in the same scene, and move no Resolve (",
+      rl("so-friction/insight-as-the-social-help-action", "Insight as the Social Help Action"), ")."]);
+    var marg = (M.rows || []).map(function (r) { return [r.margin, r.result, rt(r.text)]; });
+    var press = (P.results || []).map(function (r) { return [r.result + " (" + r.margin + ")", rt(r.text)]; });
+    var tiers = (RV.tiers || []).map(function (t) { return [t.name, t.text, t.examples]; });
+    var chip = EN.ui.ruleChip("so-summary", { title: "Social Play Summary" });
     return EN.ui.panel("Quick Reference", "APPROACHES · OUTCOMES · SIT-DOWN", [
       refSection("appr", "Approaches", el("div", null, [
-        refTable(["Approach", "Skill", "Attributes", "What it does"], [
-          ["Persuasion", [rl("sk-skills/persuasion", "Persuasion")], "Charm, Wits", "Warmth, reason, rapport, mutual interest. The long game."],
-          ["Intimidation", [rl("sk-skills/intimidation", "Intimidation")], "Body, Wits, Tech, Mystique, Charm", "Threat, weight, presence. Make them flinch first."],
-          ["Performance", [rl("sk-skills/performance", "Performance")], "Charm, Agility, Body, Mystique", "Theater, distraction, rallying an audience, controlling tone."],
-          ["Deception", [rl("sk-skills/deception", "Deception")], "Charm, Wits", "Misdirection, false flags, slipping past their guard."],
-          ["Insight", [rl("sk-skills/insight", "Insight")], "Any", ["Read the room, find the lever. Social ", rl("rz-collab/help-action", "Help"), ": grants ", rl("rz-edge", "Edge"), ", no Pressure."]]
-        ]),
-        codexLine([["sk-skills/versatile-skills", "Versatile Skills"], ["rz-collab", "Collaborative & Opposed Checks"]])
+        appr.length ? refTable(["Approach", "Skill", "Attributes", "What it does"], appr) : null,
+        socialHelp,
+        codexLine([["so-friction/approach", "Approach"], ["sk-skills/versatile-skills", "Versatile Skills"], ["rz-collab", "Collaborative & Opposed Checks"]])
       ])),
       refSection("marg", "Margins and Outcomes", el("div", null, [
-        refTable(["Margin", "Result", "What happens"], [
-          ["Flawless", "Total Win", "Get what you want and gain ground (Profile, Standing, future Edge)."],
-          ["Strong", "Solid Win", "Get what you want at a minor cost (Concession, Scrutiny, Debt)."],
-          ["Mixed", "Yes, But", "Succeed with a real social cost. One benefit, one Social Fallout."],
-          ["Failure", "No, And", "Miss. Lose position, alienate the room, or worsen terms."],
-          ["Critical", "Hard Burn", "The scene turns against you. A Tipped Hand, a Profile, a posture shift."]
-        ]),
-        codexLine([["rz-margin", "Success Margin & Consequence"], ["rz-social", "Social Consequences & Cost Tracks"]])
+        marg.length ? refTable(["Margin", "Result", "What happens"], marg) : null,
+        codexLine([["so-outcomes", "Social Margins & Outcomes"], ["so-fallout", "Social Fallout Table"],
+                   ["rz-margin", "Success Margin & Consequence"], ["rz-social", "Social Consequences & Cost Tracks"]])
       ])),
       refSection("sit", "The Sit-Down (Resolve)", el("div", null, [
-        help("A big negotiation run like a combat encounter: the Opposition has Resolve, the crew has Rounds to break it. Each successful Approach deals Pressure equal to its success tier (Flawless 3, Strong 2, Mixed 1). At 0 Resolve, the target breaks."),
-        refTable(["Tier", "Resolve", "Example"], [
-          ["Pushover", "3", "A low-level clerk, a desperate informant"],
-          ["Standard", "5", "A mid-tier fixer, a competent guard captain"],
-          ["Hardened", "8", "A faction lieutenant, a senior compliance officer"],
-          ["Iron", "12", "A corporate executive, a faction patron, a scripted lawyer"],
-          ["Apex", "16+", "A faction head, an Icon, an Apex executive who will not bend"]
-        ]),
-        help("Rounds, Plays (Press / Support / Read / Disrupt / Hold), Postures, Environmental Pressure, and the full Social Fallout table are the next detailing pass.", "var(--text4)")
+        help("A big negotiation run like a combat encounter: the Opposition has Resolve, the crew has Rounds to break it."),
+        P.intro ? ruleP(P.intro, "var(--text2)") : null,
+        press.length ? refTable(["Result", "Pressure dealt"], press) : null,
+        RV.intro ? ruleP(RV.intro, "var(--text2)") : null,
+        tiers.length ? refTable(["Tier", "Resolve", "Examples"], tiers) : null,
+        codexLine([["so-sitdown", "The Sit-Down"], ["so-sitdown/setting-resolve", "Setting Resolve"], ["so-plays", "Rounds & Plays"],
+                   ["so-postures", "Postures"], ["so-floor", "The Floor"], ["so-conditions", "Sit-Down Conditions"]])
       ]))
-    ], { corners: true });
+    ], { corners: true, headerRight: chip });
   }
 
   /* ---- tracker configs ---------------------------------------------------- */
   function profilesPanel() {
     return tracker({
-      title: "Profiles", tag: "HOW EACH ROOM READS YOU", key: "profiles",
+      title: "Profiles", tag: "HOW EACH ROOM READS YOU", key: "profiles", rule: "so-profiles/profiles",
       blank: { label: "", source: "", note: "" },
       empty: "No Profiles yet. Every fixer, gang, precinct, and shrine builds its own out of what it has seen.",
       cols: [
@@ -429,7 +460,8 @@ EN.faceView = (function () {
   }
   function factionsPanel() {
     return tracker({
-      title: "Faction Standing", tag: "POSTURE · PRESSURE STATE", key: "factions",
+      title: "Faction Standing", tag: "POSTURE · PRESSURE STATE", key: "factions", rule: "so-standing",
+      ruleTitle: "Faction Standing & Pressure States",
       blank: { name: "", standing: "neutral", state: "open" },
       empty: "No factions tracked. Most start Neutral; standing shifts through contracts, betrayal, debts, and major scenes.",
       cols: [
@@ -439,11 +471,20 @@ EN.faceView = (function () {
       ]
     });
   }
-  var CRED_LADDER = ["Unknown", "New face", "New face", "Known quantity", "Known quantity", "Established", "Established", "Legend", "Legend", "Mythic", "Mythic"];
-  var HEAT_LADDER = ["Off the radar", "A file in an inbox", "A file in an inbox", "Active interest", "Active interest", "Targeted", "Targeted", "Hunted", "Hunted", "Marked", "Marked"];
+  /* What each value 0 to 10 means, for the tracker's hover title: the book's own line
+     from the Cred or Heat ladder (EN.social.credHeat), one per rung of its range. These
+     are the player's ladders; the GM's Heat ladder (EN.gmBook.heat) is a different track. */
+  function ladderFor(track) {
+    var T = EN.social && EN.social.credHeat && EN.social.credHeat[track];
+    var out = [];
+    ((T && T.ladder) || []).forEach(function (r) { for (var v = r.min; v <= r.max; v++) out[v] = r.text; });
+    return out.length ? out : null;
+  }
+  var CRED_LADDER = ladderFor("cred");
+  var HEAT_LADDER = ladderFor("heat");
   function credPanel() {
     return tracker({
-      title: "Cred", tag: "STANDING PER SCENE", key: "cred",
+      title: "Cred", tag: "STANDING PER SCENE", key: "cred", rule: "so-credheat/cred-ladder", ruleTitle: "Cred ladder",
       blank: { scene: "", value: 0 },
       empty: "No scenes tracked. Cred is contextual: what a specific community thinks when your name comes up.",
       cols: [
@@ -454,9 +495,9 @@ EN.faceView = (function () {
   }
   function heatPanel() {
     return tracker({
-      title: "Heat", tag: "HOSTILE ATTENTION PER SOURCE", key: "heat",
+      title: "Heat", tag: "HOSTILE ATTENTION PER SOURCE", key: "heat", rule: "so-credheat/heat-ladder", ruleTitle: "Heat ladder",
       blank: { source: "", value: 0 },
-      empty: "No Heat tracked. Heat is who is actively looking for you, watching you, or willing to move against you.",
+      empty: "No Heat tracked. Heat is who is actively looking for you, watching you, or willing to act against you.",
       cols: [
         { k: "source", flex: "1.6", placeholder: "Corp X, South precinct, a rival crew..." },
         { k: "value", type: "num", ladder: HEAT_LADDER, tone: "var(--danger)", flex: "0 0 auto" }
@@ -465,7 +506,7 @@ EN.faceView = (function () {
   }
   function debtsPanel() {
     return tracker({
-      title: "Debts", tag: "FAVORS, OBLIGATIONS, FUTURE HOOKS", key: "debts",
+      title: "Debts", tag: "FAVORS, OBLIGATIONS, FUTURE HOOKS", key: "debts", rule: "so-profiles/debt",
       blank: { dir: "owing", who: "", terms: "" },
       empty: "No Debts on the books. Specify them: not \"you owe me one\" but \"you owe me one, collected before month's end.\"",
       cols: [

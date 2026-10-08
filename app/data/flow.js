@@ -257,3 +257,210 @@ EN.flow = {
 /* Convenience index by resonance key (built once at load). */
 EN.flow.resonanceByKey = {};
 EN.flow.resonances.forEach(function (r) { EN.flow.resonanceByKey[r.key] = r; });
+
+/* ===========================================================================
+   FLOW DISTURBANCES (Codex Phase 2). The Anomalies, their Severity, detecting
+   them, the Cleansing Project, Counter Flow, the Ritual Chorus, the Focal Anchor
+   inside a Null Scar, and repairing a Null Scar. Rendered by the Codex's chapter
+   The Flow (js/codex_flow.js, panels fl-dist to fl-dist-gm).
+   Transcribed from the rulebook, Part 2 "Core Rules, Combat, Survival, &
+   Specialized Systems" (Drive modifiedTime 2026-10-04T07:31:16.171Z):
+     # Flow Disturbances > ## Flow Disturbances (lines 4604 to 4632):
+       intro, ### Core Concepts, ### Anomaly Classifications
+     ## Detecting and Analyzing (4633 to 4641)
+     ### Cleansing and Repair, ### Counter Flow, ### Ritual Chorus, and the
+       GM Guidance and Gameplay Summary boxes (4643 to 4697)
+     ## Inside a Null Scar: The Focal Anchor, with ### Identifying the Anchor,
+       ### Destroying the Anchor, ### When the Anchor Falls (4699 to 4733)
+     ## Repairing a Null Scar, with ### Establishing Anchors, ### The
+       Reconstruction Ritual, ### Outcome and Aftermath and its GM Guidance
+       box (4735 to 4801)
+   Three sentences live elsewhere in Part 2 and are carried here because they are
+   anomaly rules no other panel shows:
+     nullScarGuidance  ## Overdraw, Strain, and Breakflow > ### Breakflow Check,
+                       the GM Guidance box, its "Anomalies" item (line 4444)
+     ritualImpact      ## Breakflow Restoration > ### Rough Restoration, the GM
+                       Guidance box, its "Environmental Impact" and "Failure
+                       Margin" items (line 4520)
+     clankers          ## Clankers and The Flow > #### Targeting Clankers With
+                       Flow, its last bullet (line 3894)
+   The text is the book's, unescaped, with its **bold** kept. Labels and margins
+   are split into fields so the Codex can table them; the words are unchanged.
+   No em or en dashes anywhere in this block (house style).
+   =========================================================================== */
+EN.flow.disturbances = {
+  intro: "When the Flow gets bent, blocked, or torn, the world flinches. The disruptions left behind are called anomalies: feedback loops, knots in the current, places where the Flow keeps running into itself. They scramble shaping, throw off resonance, and spread if nobody puts a hand on them.",
+
+  coreConcepts: [
+    { term: "Severity Rating", text: "A scale from 1 to 5 measuring the instability and danger of an Anomaly." },
+    { term: "Cleansing Project", text: "The structured process of reducing an Anomaly's Severity using the Dice Pool Method." },
+    { term: "Target Progress", text: "The total number of successful milestones required to complete a Cleansing Project." },
+    { term: "Counter Progress", text: "A cumulative tracker used to suppress an Anomaly in combat via Counter Flow." },
+    { term: "Focal Anchor", text: "The structural point where a Null Scar crystallized: the only way to temporarily collapse a Scar in combat." }
+  ],
+
+  /* ### Anomaly Classifications: Type and Mechanical Impact, in the book's order */
+  classifications: [
+    { key: "echo", name: "Echo Field", effect: "Characters suffer **Snag** (or **+1 Snag Die** in Dice Pools) on Perception checks, and **Snag** on Invocation checks." },
+    { key: "static", name: "Static Zone", effect: "Invocations cost **+1 FP**; damage dice and effect magnitudes are **halved**; targets of Empowered Effects gain **Edge** on saves; FP can't be recovered while inside; sustained effects require a **Focus Check** every round." },
+    { key: "storm", name: "Resonant Storm", effect: "Invocations cost **+1 FP**. Failed checks deal **1d4 Vitality damage**." },
+    { key: "corrupted", name: "Corrupted Signature", effect: "Every Invocation performed in the zone that costs **2 or more FP** causes **1 Stage of Strain**." },
+    { key: "parasite", name: "Flow Parasite", effect: "Characters attuned to the Flow within 2 spaces lose **1 FP per round**." },
+    { key: "scar", name: "Null Scar", effect: "Total vacuum. FP is suppressed to 0. Attempts to shape cause **Automatic Overdraw**. The Scar may be temporarily collapsed by destroying its **Focal Anchor**." }
+  ],
+
+  /* Part 2, Clankers and The Flow > Targeting Clankers With Flow (line 3894) */
+  clankers: "Flow Disturbances like **Static Zones**, **Resonant Storms**, and **Null Scars** interfere with Clanker channeling normally.",
+
+  /* Part 2, Breakflow Restoration's GM Guidance box (line 4520): the two items about a
+     disturbance. Its third item, Narrative Tension, is about the ritual's length and stays out. */
+  ritualImpact: [
+    { label: "Environmental Impact", text: "If a ritual is performed in an area with a **Flow Disturbance**, the **Snag Dice** of the ritual increase by the Anomaly's **Severity Rating**." },
+    { label: "Failure Margin", text: "If a Shaper fails a ritual check with a **Margin of -3 or worse** (Critical Failure), they don't just fail to recover; the ritual site becomes a temporary **Echo Field (Severity 1)** due to the released harmonic static." }
+  ],
+
+  /* ## Detecting and Analyzing */
+  detection: {
+    intro: "Shapers possess a natural sensitivity to the Flow's rhythm. Detection occurs through three primary methods:",
+    methods: [
+      { name: "Resonance Sense", mode: "Passive", text: "You automatically detect strong disturbances within **6 spaces**. The GM describes the sensation (e.g., a high-pitched ringing or a sudden drop in temperature)." },
+      { name: "Focused Tuning", mode: "Active", text: "Make a **d20 Flow Attribute Check (DC 10 + Anomaly Severity)** to identify its exact type, Severity, and the required Target Progress to cleanse it." },
+      { name: "Echo Listening", mode: "Meditation", text: "Spend 1 minute in silence to gain **Edge** (or **+1 Edge Die**) on your next analysis check. On a failure, the sensory overload inflicts **1 Stage of Strain**." }
+    ]
+  },
+
+  /* ### Cleansing and Repair: the Harmonic Realignment Project */
+  cleansing: {
+    intro: "Purifying a disturbance requires precision and harmony. Because anomaly cleansing is typically a deliberate, out-of-combat process, it is handled mechanically as a **Project**, using the **Dice Pool Method** exactly like repairing a drone or crafting a weapon.",
+    project: "To cleanse an Anomaly, a Freelancer (or crew of Freelancers) must complete a Harmonic Realignment Project.",
+    rules: [
+      { name: "Target Progress", text: "Equal to the Anomaly's current Severity x 2." },
+      { name: "Cleansing Interval", text: "1 Hour of focused meditation and channeling per roll." },
+      { name: "Primary Skill", text: "Awareness or Esoterica (using the Mystique or Flow Attribute)." },
+      { name: "The Snag", text: "The GM's Snag Dice pool is equal to the Anomaly's current Severity, plus any environmental complications." }
+    ],
+    intervals: "For each 1-Hour Cleansing Interval, build your Dice Pool and roll. Convert the Success Margin into Progress:",
+    outcomes: [
+      { margin: "+3 or more", result: "Flawless Success", text: "2 Progress, and participating Shapers regain 1 FP." },
+      { margin: "+1 to +2", result: "Strong Success", text: "1 Progress." },
+      { margin: "0", result: "Mixed Result", text: "1 Progress, but the Lead Shaper suffers **1 Stage of Strain** from turbulent energy." },
+      { margin: "-1 to -2", result: "Failure", text: "0 Progress, and the Lead Shaper suffers **1 Stage of Strain**." },
+      { margin: "-3 or worse", result: "Critical Failure", text: "0 Progress. The Anomaly violently rejects the alignment; Severity **increases** by 1, and all participating Shapers suffer **1 Stage of Strain**." }
+    ],
+    complete: "When the accrued Progress meets the Target Progress, the Anomaly is completely cleansed."
+  },
+
+  /* ### Counter Flow */
+  counterFlow: {
+    intro: "Because Dice Pools are never used in combat, emergency stabilization under fire uses the **d20 Method**. It can't permanently cleanse an Anomaly, but it can suppress it round-by-round and, with enough effort, for the entire Encounter.",
+    rules: [
+      { name: "The Mechanic", text: "As an Action, spend **1 FP** and make a d20 Flow Attribute Check." },
+      { name: "The DC", text: "10 + (Anomaly Severity x 2)." },
+      { name: "On Success", text: "Accumulate **1 Counter Progress**. The Anomaly's mechanical effects are **suppressed for 1 round within an Area 3 radius** of you." },
+      { name: "At 3 Cumulative Successes", text: "The Anomaly is fully suppressed for the remainder of the Encounter." },
+      { name: "Cooperative Suppression", text: "Multiple Shapers may contribute to the same Counter Progress pool, with each contributing checks on their own turns." }
+    ],
+    note: "Every successful Counter Flow check pays out twice: an immediate one-round suppression, plus progress toward locking down the Anomaly for the whole fight. A successful Counter Flow check gives a solo Shaper immediate suppression, even before they secure it for the whole Encounter."
+  },
+
+  /* ### Ritual Chorus */
+  ritualChorus: "Multiple Shapers can join a Harmonic Realignment Project to speed up the process. The Lead Shaper rolls the primary Dice Pool, and each assisting Shaper grants +2 Edge Dice to the pool. This is a fixed benefit of the ritual itself, separate from the Help Action and not bound by its cap. Remember that if the pool results in a Critical Failure, *all* participants suffer the resulting Strain.",
+
+  /* the GM Guidance box after Ritual Chorus */
+  gmGuidance: [
+    { label: "Environmental Storytelling", text: "An Anomaly should change the tone of a scene. A Static Zone might be eerily silent with Shapers feeling like they're shouting through wet cloth, while a Resonant Storm could cause glass to shatter or metal to hum." },
+    { label: "Escalation", text: "The threat of a Critical Failure (-3 Margin) on a Dice Pool makes Severity 4 and 5 Anomalies terrifying. Freelancers should heavily rely on *Ritual Chorus* or Flow-infused tools (like a Rite Calibration Kit) to generate enough Edge Dice to safely attempt high-level cleansing." }
+  ],
+
+  /* the Gameplay Summary box */
+  summary: [
+    { label: "Detect", text: "Use Resonance Sense or Focused Tuning to find the Anomaly and determine its Severity." },
+    { label: "Choose Method", text: "Decide between a deliberate Harmonic Realignment Project (Dice Pool) or a desperate, mid-combat Counter Flow (d20)." },
+    { label: "Work the Project", text: "Add Snag Dice equal to the Severity. Roll your intervals to accrue Progress until the Target Progress is met." },
+    { label: "Manage Strain", text: "Be prepared to halt the Project and use Ritual Recovery if the Lead Shaper accrues too much Strain from failed intervals." }
+  ],
+
+  /* ## Inside a Null Scar: The Focal Anchor */
+  focalAnchor: {
+    intro: [
+      "A Null Scar fully suppresses FP within its bounds. No shaping is possible. Attempts to shape cause Automatic Overdraw, which (with FP suppressed to 0) immediately inflicts Vitality damage and Strain.",
+      "A Shaper benched inside a Null Scar isn't benched for the encounter, however. Every Null Scar has a **Focal Anchor**: the point where the Scar's structure crystallized when it first formed. Identifying and destroying the Anchor gives the crew a window to act."
+    ],
+    identify: {
+      text: "A Shaper inside or adjacent to a Scar may spend an Action on an **Awareness or Esoterica** check (using Mystique or their Flow Attribute) to identify the Anchor's location.",
+      dc: "12 + Scar Severity.",
+      onSuccess: "The Anchor's position becomes visible to all allies. The Anchor manifests as a small physical artifact: a fused metal node, a frozen lattice of light, a shard of crystallized space. The exact form varies; the rules do not."
+    },
+    destroy: {
+      text: "Once revealed, the Anchor can be physically destroyed by non-Flow attacks. Unattuned characters can engage it directly.",
+      defense: 14,
+      vitalityPerSeverity: 15,
+      vitality: "15 × Scar Severity",
+      immunities: "Flow damage and effects (Invocations can't harm the Anchor; it exists *because* the Flow is suppressed there)."
+    },
+    falls: {
+      text: "When the Anchor is destroyed, the Null Scar collapses for **1d4 + Lead Shaper's Flow Modifier rounds**. Within this window:",
+      effects: [
+        "All shaping functions normally inside the former Scar.",
+        "Shapers can attempt Counter Flow, perform standard Invocations, and even regain FP (Short Rest refreshes resume).",
+        "Once the window closes, the Scar reforms at the same Severity unless a proper Cleansing Project has been completed in the interim."
+      ]
+    },
+    closing: "Inside a Scar, a Shaper stops being artillery and starts being a spotter, a tactician, the one who knows where to hit. Their shaping is still gone. And the Anchor is an objective the crew's Unattuned can take down themselves."
+  },
+
+  /* Part 2, the Breakflow Check's GM Guidance box, its "Anomalies" item (line 4444) */
+  nullScarGuidance: "Treat **Null Scars** as environmental hazards. They are tactical \"dead zones\" where Shapers are stripped of their primary utility, forcing them to rely on physical backup weapons and the Null Scar Anchor mechanic to support the team.",
+
+  /* ## Repairing a Null Scar */
+  repair: {
+    intro: [
+      "A **Null Scar** is the most severe classification of Flow disturbance: a complete collapse of local resonance. Within these zones, the Flow is inert, leaving a vacuum that rejects all shaping.",
+      "Repairing a Null Scar means building the current back from nothing. It runs as an extreme-tier **Cleansing Project** requiring a Lead Shaper and preferably multiple assistants.",
+      "Destroying a Focal Anchor only opens a temporary window; it doesn't repair the Scar. Permanent repair requires the Reconstruction Ritual below."
+    ],
+    anchors: {
+      text: "The team must first place a minimum of four Anchor Nodes around the perimeter of the Scar. These nodes bridge the gap between the stable Flow and the vacuum.",
+      mechanics: "Setting each node requires **1 FP** and an immediate **d20 Flow Attribute Check (DC 15)**. Since this is physical placement and tuning under the immediate crushing weight of the Scar border, it uses the d20 Method.",
+      failure: "The node fails to hold the charge, wasting the FP and requiring a new attempt."
+    },
+    ritual: {
+      text: "Once the perimeter is secure, the Lead Shaper begins the long process of drawing Flow from the anchors toward the dead center.",
+      rules: [
+        { name: "Cleansing Interval", text: "1 Hour per roll." },
+        { name: "Interval Cost", text: "The Lead Shaper must spend **2 FP** at the start of each interval to maintain the pulse." },
+        { name: "Primary Skill", text: "Esoterica or Awareness." },
+        { name: "The Snag", text: "The GM's Snag pool starts at **5 Snag Dice** (representing the absolute resistance of the vacuum) but may increase based on environmental hazards." }
+      ]
+    },
+    /* Scar Size / Target Progress / Residual Severity (on Completion) */
+    sizes: [
+      { size: "Small", scale: "Room", target: 6, residual: "1 (Echo Field)" },
+      { size: "Medium", scale: "Building", target: 10, residual: "2 (Instability, treated as a Static Zone)" },
+      { size: "Large", scale: "District", target: 15, residual: "4 (Resonant Collapse, treated as a Resonant Storm)" }
+    ],
+    intervals: "Convert the Success Margin into Progress. Because of the hostile environment, the failure penalties are exceptionally severe:",
+    outcomes: [
+      { margin: "+3 or more", result: "Flawless Success", text: "2 Progress." },
+      { margin: "+1 to +2", result: "Strong Success", text: "1 Progress." },
+      { margin: "0", result: "Mixed Result", text: "1 Progress, but the Lead Shaper suffers **1 Stage of Strain**." },
+      { margin: "-1 to -2", result: "Failure", text: "0 Progress. The Lead Shaper suffers **1 Stage of Strain** and **1d4 Vitality loss** from the backlash." },
+      { margin: "-3 or worse", result: "Critical Failure", text: "0 Progress. The ritual violently collapses in a **Resonant Surge**." }
+    ],
+    completion: [
+      "The group must spend a final combined **5 FP** to permanently rebind the core.",
+      "The Null Scar is instantly downgraded to a lower Severity Anomaly (see table above). It will naturally dissipate over 1d4 weeks as the local current stabilizes.",
+      "All participating Characters experience a **Resonant Kickback**, immediately regaining **2d4 FP**."
+    ],
+    collapse: [
+      "The ritual fails completely. All accrued Progress is lost.",
+      "All attuned Characters within 6 spaces suffer **2d6 Vitality damage**.",
+      "The Scar becomes highly volatile; no further repair attempts can be made for **1d4 days** while the static clears."
+    ],
+    gmGuidance: [
+      { label: "Atmosphere", text: "Emphasize the sensory deprivation of the Scar. Sounds are muffled, colors are muted, and the air feels unnaturally still." },
+      { label: "The Stakes", text: "A Null Scar repair is rarely just a roll. Let it land as one of the big moments of the campaign." },
+      { label: "Under Fire", text: "If the Reconstruction Ritual is interrupted by combat, the Project is paused. The Lead Shaper must make a **d20 Flow Attribute Saving Throw (DC 15)** each round they take damage to maintain the anchored connection. The connection only drops (inflicting a **Critical Failure** on the Project) if the Lead Shaper fails this check on **two consecutive rounds**." }
+    ]
+  }
+};

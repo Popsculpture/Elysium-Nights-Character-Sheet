@@ -1106,9 +1106,11 @@ EN.inventoryView = (function () {
       el("div.mono", { style: { fontSize: "9.5px", letterSpacing: ".12em", color: "var(--text3)", marginBottom: "5px" }, text: "ATTRIBUTE MATRIX" }),
       el("div", null, attrRows)
     ]);
-    function impactBox(label, current, total, penalty, col) {
+    // rule: an optional Codex anchor for a "?" chip beside the label
+    function impactBox(label, current, total, penalty, col, rule) {
+      var chip = rule ? EN.ui.ruleChip(rule.anchor, { title: rule.title }) : null;
       return el("div", { style: { padding: "9px 12px", border: "1px solid var(--border)", borderRadius: "4px", background: "var(--bg1)" } }, [
-        el("div.mono", { style: { fontSize: "9.5px", letterSpacing: ".1em", color: "var(--text3)" }, text: label }),
+        el("div.mono", { style: { fontSize: "9.5px", letterSpacing: ".1em", color: "var(--text3)" } }, [document.createTextNode(label), chip]),
         el("div", { style: { display: "flex", alignItems: "baseline", gap: "5px", marginTop: "3px" } }, [
           el("div.mono", { style: { fontSize: "26px", lineHeight: 1, color: penalty > 0 ? col : "var(--text)" }, text: String(current) }),
           el("div.mono", { style: { fontSize: "13px", color: "var(--text3)" }, text: "/ " + total })
@@ -1117,11 +1119,14 @@ EN.inventoryView = (function () {
       ]);
     }
     var resBase = d.resilienceMax + tax.resDiePenalty;
-    var boxes = [impactBox("RESILIENCE DICE", d.resilienceMax, resBase, tax.resDiePenalty, taxColor)];
+    var boxes = [impactBox("RESILIENCE DICE", d.resilienceMax, resBase, tax.resDiePenalty, taxColor, { anchor: "rc-resilience", title: "Resilience Dice" })];
     if (d.flow) boxes.push(impactBox("FLOW RESERVOIR (FP)", d.flow.max, d.flow.max + tax.fpPenalty, tax.fpPenalty, taxColor));
-    var statsRow = el("div.chrome-stats", { style: { display: "grid", gridTemplateColumns: "minmax(220px, 1.25fr) minmax(170px, 1fr)", gap: "16px", alignItems: "start", marginTop: "12px", paddingTop: "12px", borderTop: "1px solid var(--border)" } }, [
-      attrMatrix,
-      el("div", { style: { display: "flex", flexDirection: "column", gap: "10px" } }, boxes)
+    /* A wrapping row in the old grid's 1.25 : 1 proportions. The fixed two-column grid was
+       406px at its narrowest, wider than a phone, so the impact boxes (and the Resilience
+       chip on them) ran off the right edge; this wraps the boxes under the matrix instead. */
+    var statsRow = el("div.chrome-stats", { style: { display: "flex", flexWrap: "wrap", gap: "16px", alignItems: "flex-start", marginTop: "12px", paddingTop: "12px", borderTop: "1px solid var(--border)" } }, [
+      el("div", { style: { flex: "1.25 1 220px", minWidth: 0 } }, [attrMatrix]),
+      el("div", { style: { flex: "1 1 170px", minWidth: 0, display: "flex", flexDirection: "column", gap: "10px" } }, boxes)
     ]);
 
     var framePanel = EN.ui.panel("Cybernetic Frame", "BIOMETRIC OVERLAY · CHROME TAX", [
@@ -3244,13 +3249,20 @@ EN.inventoryView = (function () {
      The Garage runs Vehicle Ops: live math for operating a ride. Picking a
      chassis from the catalog (EN.vehicles) fills in its category, type and
      Handling from the Part 2 table; "Custom" leaves all three free for a
-     ride the story invented. Category proficiency reads off the sheet. Chase Check, d20 Method: Agility or Tech Modifier
-     + Vehicle Proficiency Bonus (if proficient) + Handling. Dice Pool Method:
-     Edge Dice from the same sources. A Vehicle Focus naming the specific
+     ride the story invented. Category proficiency reads off the sheet. The
+     book's Piloting Check (EN.chases.operating, Codex vc-piloting): d20 +
+     Agility Modifier + Vehicle Proficiency Bonus (if proficient) + Handling;
+     Dice Pool Method, Edge Dice from the same sources. The Chase Check and the
+     Control Check both use it. The TECH button swaps in the Tech Modifier for
+     any pilot; the book allows that only through Direct Drive (a Rigger or a
+     Neural Interface, hardwired in). The button and the VEHICLE ATTACK readout
+     work as they always have while the author rules on both, and the button's
+     title states the book rule. A Vehicle Focus naming the specific
      type adds Caliber to attack rolls, vehicle checks, AND damage rolls;
      a matching Specialization adds crit 19-20 (d20) and +2 Edge Dice (pools).
      Untrained: the check is allowed but rolls with Snag, and the GM can bar
-     operation entirely for complex, restricted, or specialized vehicles. */
+     operation entirely for complex, restricted, or specialized vehicles. The
+     on-screen rule text links the Codex's vc- panels rather than restating more. */
   var _garage = { chassis: "", cat: "Ground Vehicles", type: "", handling: 0, attr: "AGI", bar: false };
   // a catalog chassis carries its own category, type and Handling; selecting one
   // fills all three, and the fields stay editable for a custom ride
@@ -3366,17 +3378,18 @@ EN.inventoryView = (function () {
         title: "The specific vehicle type you are operating; a Vehicle Focus naming it adds Caliber",
         style: { width: "200px", padding: "4px 9px", fontSize: "12.5px" },
         oninput: function () { _garage.type = this.value; reRender(); } }),
-      el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em" }, text: "HANDLING" }),
+      el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em" } }, [EN.ui.ruleLink("vc-stats/handling", "HANDLING")]),
       el("input", { type: "number", value: String(handling), min: "-3", max: "5",
-        title: "The vehicle's Handling stat (GM-supplied); adds to Chase Checks",
+        title: "Handling: a modifier applied to any piloting check (d20 or Dice Pool), the Chase Check and the Control Check included. It also sets the vehicle's Defense: 10 + Handling + the pilot's Vehicle Proficiency Bonus. A catalog chassis prints its own.",
         style: { width: "58px", padding: "4px 6px", fontSize: "12.5px" },
         oninput: function () { _garage.handling = this.value; reRender(); } }),
       el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em" }, text: "VIA" }),
-      el("button.btn.sm" + (_garage.attr === "AGI" ? ".primary" : ""), { title: "Drive it by reflex", onclick: function () { _garage.attr = "AGI"; reRender(); } }, "AGILITY"),
-      el("button.btn.sm" + (_garage.attr === "TEC" ? ".primary" : ""), { title: "Drive it by interface", onclick: function () { _garage.attr = "TEC"; reRender(); } }, "TECH")
+      el("button.btn.sm" + (_garage.attr === "AGI" ? ".primary" : ""), { title: "The Piloting Check uses your Agility Modifier", onclick: function () { _garage.attr = "AGI"; reRender(); } }, "AGILITY"),
+      el("button.btn.sm" + (_garage.attr === "TEC" ? ".primary" : ""), { title: "Direct Drive: while hardwired into the chassis (a Rigger, or any Freelancer carrying a Neural Interface (Datajack)), you use your Tech Modifier instead of your Agility Modifier for all piloting checks", onclick: function () { _garage.attr = "TEC"; reRender(); } }, "TECH"),
+      EN.ui.ruleChip("vc-piloting/direct-drive", { title: "Direct Drive" })
     ]);
     var chips = el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginBottom: "8px" } }, [
-      el("span.chip", { title: "Vehicle Proficiency in " + cat + (untrained ? "" : "; adds your Vehicle Proficiency Bonus to vehicle checks"),
+      el("span.chip", { title: "Vehicle Proficiency in " + cat + (untrained ? "" : "; adds your Vehicle Proficiency Bonus to checks made to control the vehicle"),
         style: { fontSize: "9px", color: untrained ? "var(--warn)" : "var(--success)", borderColor: untrained ? "var(--warn)" : "var(--success)" } },
         cat.toUpperCase() + " · " + tierInfo.name.toUpperCase()),
       untrained ? el("span.chip", { title: "Untrained: the check is allowed but rolls with Snag", style: { fontSize: "9px", color: "var(--warn)", borderColor: "var(--warn)" } }, "UNTRAINED · SNAG") : null,
@@ -3390,8 +3403,11 @@ EN.inventoryView = (function () {
     ]);
     var body = [controls, chips];
     if (barred) {
-      body.push(el("div.muted-box", { style: { borderColor: "var(--danger)", color: "var(--danger)", textAlign: "left" },
-        html: "⛔ <b>OPERATION BARRED.</b> The GM has barred untrained operation of this vehicle (complex, restricted, or specialized). Train " + cat + " on the #PRINT Advance tab to take the controls." }));
+      body.push(el("div.muted-box", { style: { borderColor: "var(--danger)", color: "var(--danger)", textAlign: "left" } }, [
+        document.createTextNode("⛔ "), el("b", { text: "OPERATION BARRED." }),
+        document.createTextNode(" The GM has barred untrained operation of this vehicle (complex, restricted, or specialized). Train " + cat + " on the #PRINT Advance tab to take the controls. "),
+        EN.ui.ruleLink("vc-piloting/proficient-and-untrained-pilots", "Proficient and Untrained Pilots")
+      ]));
     } else {
       var d20Total = mod + tierInfo.d20 + handling + cal;
       var d20Tip = "d20 + " + attrName + " Modifier (" + eng.fmtMod(mod) + ")"
@@ -3408,15 +3424,14 @@ EN.inventoryView = (function () {
       var edgePts = edgeParts.reduce(function (a, p) { return a + p.value; }, 0);
       var edgePool = eng.buildEdgePool(edgePts);
       var edgeTip = edgeParts.length ? edgeParts.map(function (p) { return "+" + p.value + "  " + p.label; }).join("\n") : "No Edge sources yet";
-      if (handling < 0) edgeTip += "\nNegative Handling (" + handling + ") reads as Snag Dice at the table.";
       body.push(el("div.row.wrap", { style: { gap: "16px", alignItems: "center", margin: "2px 0 8px" } }, [
         el("div", { title: d20Tip, style: { textAlign: "center", minWidth: "110px" } }, [
-          el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "CHASE CHECK · D20" }),
+          el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" } }, [EN.ui.ruleLink("vc-chase/resolving-the-chase", "CHASE CHECK"), document.createTextNode(" · D20")]),
           el("span.mono", { style: { fontSize: "22px", color: untrained ? "var(--warn)" : "var(--accent)" }, text: eng.fmtMod(d20Total) }),
           untrained ? el("div.mono", { style: { fontSize: "9px", color: "var(--warn)" }, text: "with Snag" }) : null
         ]),
         el("div", { title: edgeTip, style: { textAlign: "center", minWidth: "130px" } }, [
-          el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "CHASE CHECK · DICE POOL" }),
+          el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" } }, [EN.ui.ruleLink("vc-chase/resolving-the-chase", "CHASE CHECK"), document.createTextNode(" · DICE POOL")]),
           el("span.mono", { style: { fontSize: "22px", color: "var(--success)" }, text: edgePts + " → " + edgePool.label }),
           untrained ? el("div.mono", { style: { fontSize: "9px", color: "var(--warn)" }, text: "+2 Snag Dice untrained" }) : null
         ]),
@@ -3429,12 +3444,19 @@ EN.inventoryView = (function () {
           el("span.mono", { style: { fontSize: "22px", color: "var(--gold)" }, text: eng.fmtMod(cal) })
         ]) : null
       ]));
-      body.push(el("p.help", { style: { margin: "0", fontSize: "11px" },
-        text: untrained
-          ? "Untrained operation is allowed but rolls with Snag. The GM may bar operation entirely for complex, restricted, or specialized vehicles (toggle above)."
-          : "Vehicle checks add your Vehicle Proficiency Bonus. A Vehicle Focus naming this type adds Caliber to attack rolls, vehicle checks, and damage rolls; a Specialization adds crit 19-20 and +2 Edge Dice." }));
+      // the book's Piloting Check, then the untrained rule or the Focus and Specialization riders
+      body.push(EN.ui.ruleText(el("p.help", { style: { margin: "0 0 6px", fontSize: "11px" } }, [
+        EN.ui.ruleLink("vc-piloting/the-piloting-check", "The Piloting Check")]),
+        ": d20 + Agility Modifier + Vehicle Proficiency Bonus + the vehicle's Handling. On the Dice Pool Method, build Edge Dice from the same sources. The Chase Check and the Control Check both use this formula."));
+      body.push(untrained
+        ? EN.ui.ruleText(el("p.help", { style: { margin: "0", fontSize: "11px" } }, [
+            EN.ui.ruleLink("vc-piloting/proficient-and-untrained-pilots", "Untrained")]),
+            ": you can still attempt to operate it, but you roll with Snag on all related checks, and failures escalate quickly into catastrophic crashes (see Crashes). The GM may decide that especially complex, restricted, or specialized vehicles can't be operated without proper Vehicle Proficiency (the GM toggle above).")
+        : el("p.help", { style: { margin: "0", fontSize: "11px" },
+            text: "A Vehicle Focus naming this type adds Caliber to attack rolls, vehicle checks, and damage rolls; a Specialization adds crit 19-20 and +2 Edge Dice." }));
     }
-    return [EN.ui.panel("Garage · Vehicle Ops", cat.toUpperCase() + (typeName ? " · " + typeName.toUpperCase() : ""), body, { corners: true }),
+    return [EN.ui.panel("Garage · Vehicle Ops", cat.toUpperCase() + (typeName ? " · " + typeName.toUpperCase() : ""), body,
+              { corners: true, headerRight: EN.ui.ruleChip("vc-piloting", { title: "Piloting a Vehicle" }) }),
             garageMods(ch)];
   }
 
@@ -3736,6 +3758,8 @@ EN.inventoryView = (function () {
       out.push(el("p.help", { style: { margin: "0 0 10px", maxWidth: "720px" } }, [
         document.createTextNode("Vehicle Ops: the live operating math for the ride you are in. Pick a chassis to pull its category, type and Handling from the catalog, or leave it on Custom and enter your own. Vehicle Mods are fitted in the panel below; the full catalog of thirteen is in the Codex under "),
         EN.ui.ruleLink("ref-vehicles/vehicle-mods", "Vehicles"),
+        document.createTextNode(". Chases, Lead and crashes: "),
+        EN.ui.ruleLink("vc-chase", "Chases & Lead"),
         document.createTextNode(".")
       ]));
       garageBench(ch).forEach(function (n) { out.push(n); });

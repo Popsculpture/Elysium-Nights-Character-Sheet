@@ -98,9 +98,9 @@ EN.builder = (function () {
       ruleStat(EN.ui.stat("LVL", d.level, "CAL " + d.caliber), ".s", "bx-caliber", "CAL"),
       EN.ui.stat("DEF", d.defense, d.defenseAttr === "BOD" ? "BODY" : "AGI"),
       ruleStat(EN.ui.stat("SPD", d.speed, "spaces"), ".k", "bx-space", "SPD"),
-      EN.ui.stat("VIT", d.vitalityMax != null ? d.vitalityMax : "-", d.classInfo ? "max" : "pick class"),
-      EN.ui.stat("WND", d.woundsMax, "= Body"),
-      EN.ui.stat("RES", d.resilienceDie ? "d" + d.resilienceDie : "-", "dice")
+      ruleStat(EN.ui.stat("VIT", d.vitalityMax != null ? d.vitalityMax : "-", d.classInfo ? "max" : "pick class"), ".k", "rc-vitality/calculating-vitality", "VIT"),
+      ruleStat(EN.ui.stat("WND", d.woundsMax, "= Body"), ".k", "rc-vitality/calculating-wounds", "WND"),
+      ruleStat(EN.ui.stat("RES", d.resilienceDie ? "d" + d.resilienceDie : "-", "dice"), ".k", "rc-resilience", "RES")
     ];
     if (d.resource) items.push(ruleStat(EN.ui.stat(d.resource.name.toUpperCase(), d.resource.max, d.resource.attributeName),
       ".k", resourceAnchor(d.resource.name), d.resource.name.toUpperCase()));
@@ -1851,8 +1851,9 @@ EN.builder = (function () {
     var subRow = bucket === "armor" ? null : focusSpecSub(ch, bucket, cat);
     return el("div", { style: { padding: "7px 2px", borderBottom: "1px solid rgba(35,48,68,.5)" } }, [head, subRow]);
   }
-  function gearSection(ch, bucket, title, note) {
-    return [el("div.section-title", null, [document.createTextNode(title), el("span.line")]),
+  // rule: an optional Codex anchor for a "?" chip on the heading
+  function gearSection(ch, bucket, title, note, rule) {
+    return [el("div.section-title", null, [document.createTextNode(title), rule ? EN.ui.ruleChip(rule, { title: title }) : null, el("span.line")]),
       note ? el("p.help", { style: { marginBottom: "4px" }, text: note }) : null
     ].concat(R.gear[bucket].map(function (cat) { return gearRow(ch, bucket, cat); }));
   }
@@ -1980,7 +1981,7 @@ EN.builder = (function () {
         gearSection(ch, "weapons", "Weapon Proficiencies", null),
         gearSection(ch, "armor", "Armor Proficiencies", T.armorNote || null),
         gearSection(ch, "tools", "Tool Proficiencies", null),
-        gearSection(ch, "vehicles", "Vehicle Proficiencies", null)
+        gearSection(ch, "vehicles", "Vehicle Proficiencies", null, "vc-piloting/vehicle-proficiencies")
       ), { corners: true, attention: b.remaining > 0, dismissKey: tpKey, attentionTitle: "Unspent Training Points; click to dismiss", rule: "sk-skills/gear-proficiencies" }),
       el("div", { style: { height: "14px" } }),
       purchaseLogPanel(ch),

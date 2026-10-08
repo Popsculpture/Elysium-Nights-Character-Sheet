@@ -774,9 +774,10 @@ EN.gmView = (function () {
               " for a Grade " + (Number(b.grade) || 1) + " pilot." }));
     }
     if (typeof b.attackBonus === "number" && typeof v.handling === "number") {
-      kids.push(el("p.help", { dataset: { gm: "pilotcheck" }, style: { margin: "3px 0 0" },
-        text: "Pilots at " + eng.fmtMod(b.attackBonus + v.handling) + " (Attack " + eng.fmtMod(b.attackBonus) +
-              " + Handling " + eng.fmtMod(v.handling) + ") on every piloting check, the Chase Check and the Control Check included." }));
+      // the Chase Check and the Control Check peek the PHB's Vehicles and Chases (vc-chase, vc-damage)
+      kids.push(EN.ui.ruleText(el("p.help", { dataset: { gm: "pilotcheck" }, style: { margin: "3px 0 0" } }),
+        "Pilots at " + eng.fmtMod(b.attackBonus + v.handling) + " (Attack " + eng.fmtMod(b.attackBonus) +
+              " + Handling " + eng.fmtMod(v.handling) + ") on every piloting check, the Chase Check and the Control Check included."));
     }
     kids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "6px" } }, [
       el("span.mono", { dataset: { gm: "integrity" }, style: { fontSize: "12px" }, text: "INTEGRITY " + cur + " / " + max }),
@@ -1326,8 +1327,8 @@ EN.gmView = (function () {
     if (e.signs) kids.push(el("p.help", { style: { margin: "3px 0 0" }, text: "Signs: " + e.signs }));
     if (e.variant) kids.push(el("p.help", { style: { margin: "5px 0 0", color: "var(--text2)" },
       text: e.variant.label + ": " + e.variant.text }));
-    if (e.gmNote) kids.push(el("p.help", { style: { margin: "5px 0 0", color: "var(--accent)" },
-      text: "GM: " + e.gmNote }));
+    // a GM note may cite a PHB rule (an Echo's Cleansing Project in Flow Disturbances): it links
+    if (e.gmNote) kids.push(EN.ui.ruleText(el("p.help", { style: { margin: "5px 0 0", color: "var(--accent)" } }), "GM: " + e.gmNote));
     /* Job hooks are a titled LIST, not a paragraph: each one is its own idea with
        its own name, and a GM skimming for tonight's job wants to find the one
        they want rather than read a block to the end. */
@@ -1517,9 +1518,10 @@ EN.gmView = (function () {
     return el("div.feature", { style: { borderLeftColor: "var(--accent)" } }, kids);
   }
 
+  // a reference view's opening paragraphs, with the PHB rules they cite linked (Hostile Vehicles: Vehicles and Chases)
   function referenceIntro(host, paras) {
     (paras || []).forEach(function (t) {
-      host.appendChild(el("p.help", { style: { margin: "0 0 8px", color: "var(--text2)" }, text: t }));
+      host.appendChild(EN.ui.ruleText(el("p.help", { style: { margin: "0 0 8px", color: "var(--text2)" } }), t));
     });
   }
 
@@ -1570,10 +1572,10 @@ EN.gmView = (function () {
     if (!V) { host.appendChild(el("p.help", { text: "No Hostile Vehicles in the Bestiary data." })); return; }
     referenceIntro(host, V.intro);
     (V.rules || []).forEach(function (r) {
-      host.appendChild(el("p.help", { style: { margin: "0 0 10px" } }, [
-        el("span", { style: { fontWeight: 600, color: "var(--text)" }, text: r.name + ". " }),
-        document.createTextNode(r.text)
-      ]));
+      // "the Chase Check and the Control Check" peek the PHB's rules for them
+      host.appendChild(EN.ui.ruleText(el("p.help", { style: { margin: "0 0 10px" } }, [
+        el("span", { style: { fontWeight: 600, color: "var(--text)" }, text: r.name + ". " })
+      ]), r.text));
     });
     var md = movingDefenseRule();
     (V.profiles || []).forEach(function (p) {
@@ -1594,7 +1596,9 @@ EN.gmView = (function () {
           }).join(", ") + "." }));
       }
       (p.rules || []).forEach(function (r) { kids.push(abilityP({ name: r.name, cost: null, text: r.text })); });
-      if (p.text) kids.push(el("p.help", { style: { margin: "6px 0 0" }, text: p.text }));
+      // "the PHB's pursuit table" is Vehicles and Chases' Pursuit Escalation
+      if (p.text) kids.push(EN.ui.ruleText(el("p.help", { style: { margin: "6px 0 0" } }), p.text,
+        { terms: { "the PHB's pursuit table": "vc-chase/pursuit-escalation" } }));
       host.appendChild(el("div.feature", null, kids));
     });
   }

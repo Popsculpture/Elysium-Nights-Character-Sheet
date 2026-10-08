@@ -63,8 +63,33 @@ EN.combatView = (function () {
   document.addEventListener("click", function (ev) {
     if (!Object.keys(_pops).some(function (k) { return _pops[k]; })) return;
     if (ev.target.closest && ev.target.closest(".pop-anchor")) return;
+    /* a click in the rule drawer (its CLOSE, BACK, scrim, or a tap on the card) belongs to the
+       rule the player opened from a popover, so the popover is still there when they come back.
+       The path is read as dispatched: CLOSE and BACK may have detached the clicked node. */
+    var path = ev.composedPath ? ev.composedPath() : [];
+    for (var i = 0; i < path.length; i++) { if (path[i] && path[i].id === "codex-peek") return; }
+    if (ev.target.closest && ev.target.closest("#codex-peek")) return;
     closePops(); EN.app.render();
   });
+  /* Keep an absolute popover on screen. Each hangs right:0 (or left:0) off its button, and on a
+     narrow window a button mid-row pushes the box past the screen's edge, where nothing scrolls
+     to it. Once the box is laid out it is measured and slid back inside an 8px margin (narrowed
+     first if the window is narrower than the box). A popover a skin turns into a fixed bottom
+     sheet (GRIDroid) is left to the skin. */
+  function popFit(box) {
+    if (!box || box.nodeType !== 1) return box;
+    var raf = window.requestAnimationFrame || function (f) { return setTimeout(f, 0); };
+    raf(function () {
+      if (!document.body.contains(box) || getComputedStyle(box).position !== "absolute") return;
+      var vw = document.documentElement.clientWidth || window.innerWidth, m = 8;
+      if (box.getBoundingClientRect().width > vw - 2 * m) box.style.maxWidth = (vw - 2 * m) + "px";
+      var r = box.getBoundingClientRect(), dx = 0;
+      if (r.right > vw - m) dx = vw - m - r.right;
+      if (r.left + dx < m) dx = m - r.left;
+      if (dx) box.style.transform = "translateX(" + Math.round(dx) + "px)";
+    });
+    return box;
+  }
 
   /* ---------- Roll tray: the interactive d20 roll modal ------------------
      Transient, rebuilt from _rollTray on every render (the same state->render
@@ -1256,6 +1281,46 @@ EN.combatView = (function () {
     c.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") lift(); }, true);
     return c;
   }
+  /* Vitality & Recovery. The book's chapter is data (EN.recovery, data/recovery.js) with its own
+     Codex chapter (rc-*), so the banners, popovers and tooltips below read the rule text from it
+     and say what the book says. Where the app does not apply a rule itself (the Wound damage
+     Body Save, the Fatigue level at 0 Vitality), the text states the book's rule for the player
+     to apply; it never claims a button does more than it does. With the data missing each site
+     keeps the short wording it always had. */
+  function rcPlain(s) { return String(s == null ? "" : s).replace(/\*\*/g, ""); }
+  function rcRest(key) { return ((EN.recovery && EN.recovery.rests) || []).filter(function (r) { return r && r.key === key; })[0] || null; }
+  // a book list as small bullets; a nested array holds the sub-bullets of the line before it
+  function rcList(lines, opts) {
+    var ul = el("ul", { style: { margin: 0, paddingLeft: "16px", fontSize: "11.5px", lineHeight: "1.45", color: "var(--text2)" } });
+    (lines || []).forEach(function (ln) {
+      if (Array.isArray(ln)) {
+        if (!ul.lastChild) return;
+        var sub = el("ul", { style: { margin: "2px 0 0", paddingLeft: "14px" } });
+        ln.forEach(function (x) { sub.appendChild(EN.ui.ruleText(el("li"), x, opts)); });
+        ul.lastChild.appendChild(sub);
+      } else ul.appendChild(EN.ui.ruleText(el("li", { style: { marginBottom: "2px" } }), ln, opts));
+    });
+    return ul;
+  }
+  // the Wound Effects save, as the book words it: the bullet naming the Body Save and its Failure line
+  function rcWoundSave() {
+    var fx = (EN.recovery && EN.recovery.wounds && EN.recovery.wounds.effects) || [], out = [];
+    fx.forEach(function (ln, i) {
+      if (typeof ln === "string" && /Body Save/.test(ln)) {
+        out.push(rcPlain(ln));
+        if (Array.isArray(fx[i + 1])) fx[i + 1].forEach(function (x) { out.push(rcPlain(x)); });
+      }
+    });
+    return out.join(" ");
+  }
+  // the Stabilize treatment's two checks, then what a success does (Stabilizing Someone)
+  function rcStabilizeTitle() {
+    var R = EN.recovery || {}, md = R.medical && R.medical.stabilize, st = R.dying && R.dying.stabilizing;
+    if (!md || !md.lines || md.lines.length < 2) return "Stabilize: d20 Medtech, Tech, or Flow Attribute Check against DC 10";
+    return ["Stabilize."].concat(md.lines.slice(0, 2).map(rcPlain)).concat(st && st.rules ? st.rules.map(rcPlain) : []).join("\n");
+  }
+  // "Rules: A · B" sized for the narrow Vitality and Wounds popovers
+  function rcPopRules(pairs) { return cxRulesLine(pairs, { margin: "2px 0 0", fontSize: "10px", lineHeight: "1.4", color: "var(--text3)" }); }
 
   /* Strain's five stages, read from the data rather than typed here. This file used to
      carry its own copy, and stages 3 and 4 had drifted from both sources (it said Surge
@@ -2785,8 +2850,9 @@ EN.combatView = (function () {
         ])
       ]),
       open ? el("div", null, [
-        // the catalogue writes **bold** in these; plain text: printed the asterisks
-        EN.ui.proseP("p", { margin: "0 0 4px" }, text || ""),
+        // the catalogue writes **bold** in these; plain text: printed the asterisks. ruleText keeps
+        // that markup and links the rules the ability cites (Difficult Terrain, Shove, Short Rest...)
+        EN.ui.ruleText(el("p", { style: { margin: "0 0 4px" } }), text || ""),
         src ? el("div", { style: { textAlign: "right", fontSize: "10px", color: "var(--text3)", fontFamily: "var(--mono)", letterSpacing: ".08em", marginTop: "6px" } }, src) : null
       ]) : null,
       usesRow
@@ -3241,17 +3307,29 @@ EN.combatView = (function () {
             var rdIn = el("input", { type: "number", min: 1, max: Math.max(1, s.rd), value: Math.min(_amts.rd, Math.max(1, s.rd)),
               oninput: function () { _amts.rd = Math.max(1, Number(this.value) || 1); },
               style: { width: "56px", textAlign: "center" } });
-            return el("div", { style: { position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 30, width: "262px",
+            return popFit(el("div", { style: { position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 30, width: "262px",
                                         display: "flex", flexDirection: "column", gap: "10px", padding: "12px",
                                         background: "var(--bg2)", border: "1px solid var(--border2)", borderRadius: "4px",
                                         boxShadow: "0 8px 24px rgba(0,0,0,.55)", textAlign: "left" } }, [
-              el("p", { style: { margin: 0, fontSize: "12px", lineHeight: "1.5", color: "var(--text2)" },
-                        html: "A <b>Short Rest</b> is at least 1 hour of downtime, where a character keeps their head low and does nothing more strenuous than eating, drinking, checking gear, reading feeds, patching wounds, or letting their system come down from the last hit of adrenaline. Taking one refreshes "
-                              + (d.resource ? d.resource.name : "your class resource pool")
-                              + (d.flow ? " and regains Flow Points (Flow Modifier, min 1)" : "")
-                              + ". You may also spend Resilience Dice to heal Vitality." }),
+              /* The book's Short Rest (Vitality & Recovery > Recovery): its duration and its list,
+                 read from EN.recovery. The line after it is what TAKE SHORT REST itself does here. */
+              (function () {
+                var R = rcRest("short");
+                if (!R) return el("p", { style: { margin: 0, fontSize: "12px", lineHeight: "1.5", color: "var(--text2)" },
+                  html: "A <b>Short Rest</b> is about 1 hour of downtime. Taking one refreshes "
+                        + (d.resource ? d.resource.name : "your class resource pool")
+                        + (d.flow ? " and regains Flow Points (Flow Modifier, min 1)" : "")
+                        + ". You may also spend Resilience Dice to heal Vitality." });
+                return el("div", { style: { display: "flex", flexDirection: "column", gap: "6px" } }, [
+                  el("p", { style: { margin: 0, fontSize: "12px", lineHeight: "1.5", color: "var(--text2)" } },
+                    [el("b", null, [cxLink("rc-rests/short-rest", R.name)]), " · " + R.duration]),
+                  rcList(R.lines, { conditions: true, self: ["rc-rests/short-rest"] }),
+                  d.resource ? el("p", { style: { margin: 0, fontSize: "11.5px", lineHeight: "1.45", color: "var(--text3)" },
+                    text: "TAKE SHORT REST refreshes " + d.resource.name + "." }) : null
+                ]);
+              })(),
               el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
-                el("span.help", { style: { margin: 0 }, text: "Resilience Dice:" }),
+                el("span.help", { style: { margin: 0 } }, [cxLink("rc-resilience/spending-resilience-dice", "Resilience Dice"), ":"]),
                 el("span.mono", { style: { color: "var(--accent)" }, text: s.rd + " / " + s.rdMax + " (d" + d.resilienceDie + " " + eng.fmtMod(d.attributes.BOD.mod) + " BOD each)" })
               ]),
               el("div.row", { style: { gap: "8px", alignItems: "center" } }, [
@@ -3261,17 +3339,27 @@ EN.combatView = (function () {
                   s.rd > 0 ? "⚄ ROLL & HEAL" : "NO DICE LEFT")
               ]),
               el("button.btn.sm.primary", { style: { justifyContent: "center" }, onclick: function () { shortRest(ch, d); } }, iconLabel(ICON_SHORT_REST, "TAKE SHORT REST"))
-            ]);
+            ]));
           })() : null
         ]),
         el("div.pop-anchor", { style: { position: "relative" } }, [
           el("button.btn.sm" + (_pops.rest ? ".primary" : ""), { onclick: function () { var was = _pops.rest; closePops(); _pops.rest = !was; EN.app.render(); } }, iconLabel(ICON_LONG_REST, "LONG REST")),
-          _pops.rest ? el("div", { style: { position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 30, width: "240px",
+          _pops.rest ? popFit(el("div", { style: { position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 30, width: "280px",
                                             display: "flex", flexDirection: "column", gap: "10px", padding: "12px",
                                             background: "var(--bg2)", border: "1px solid var(--border2)", borderRadius: "4px",
                                             boxShadow: "0 8px 24px rgba(0,0,0,.55)", textAlign: "left" } }, [
-            el("p", { style: { margin: 0, fontSize: "12px", lineHeight: "1.5", color: "var(--text2)" },
-                      text: "Take a Long Rest? Restores Vitality, Resilience Dice, Wounds (+Body mod), Flow, reduces Strain by 1, and resets the sleep clock. Fatigue 1 to 3 comes down by 1 if you were provisioned." }),
+            /* The book's Long Rest, its duration and its list, read from EN.recovery. Without the
+               data, the short summary it replaced, with the book's minimum of 1 Wound restored. */
+            (function () {
+              var R = rcRest("long");
+              if (!R) return el("p", { style: { margin: 0, fontSize: "12px", lineHeight: "1.5", color: "var(--text2)" },
+                text: "Take a Long Rest? Restores Vitality, Resilience Dice, Wounds equal to your Body Modifier (minimum 1), Flow, reduces Strain by 1, and resets the sleep clock. Fatigue 1 to 3 comes down by 1 if you were provisioned." });
+              return el("div", { style: { display: "flex", flexDirection: "column", gap: "6px" } }, [
+                el("p", { style: { margin: 0, fontSize: "12px", lineHeight: "1.5", color: "var(--text2)" } },
+                  ["Take a ", el("b", null, [cxLink("rc-rests/long-rest", R.name)]), "? " + R.duration.charAt(0).toUpperCase() + R.duration.slice(1) + "."]),
+                rcList(R.lines, { conditions: true, self: ["rc-rests/long-rest"] })
+              ]);
+            })(),
             /* The Fatigue reduction is the one benefit the book gates, so it is the one thing
                this asks about. Defaulted ON: shelter and rations are the ordinary case, and a
                prompt that defaults to the exception would tax every rest for the rare night.
@@ -3290,7 +3378,7 @@ EN.combatView = (function () {
               el("button.btn.sm", { onclick: function () { _pops.rest = false; EN.app.render(); } }, "CANCEL"),
               el("button.btn.sm.primary", { onclick: function () { _pops.rest = false; longRest(ch, d, _restProvisioned !== false); } }, iconLabel(ICON_LONG_REST, "REST"))
             ])
-          ]) : null
+          ])) : null
         ]),
         /* Downtime: advance the story calendar without taking a Long Rest, for
            the stretches between jobs. The calendar controls move every day-based timer
@@ -3304,7 +3392,7 @@ EN.combatView = (function () {
               style: { width: "72px", textAlign: "center", padding: "5px" },
               oninput: function () { _downDays = Math.max(1, Math.min(365, parseInt(this.value, 10) || 1)); } });
             function go(n) { _pops.down = false; advanceDowntime(ch, n); }
-            return el("div", { style: { position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 30, width: "290px",
+            return popFit(el("div", { style: { position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 30, width: "290px",
                                         display: "flex", flexDirection: "column", gap: "10px", padding: "12px",
                                         background: "var(--bg2)", border: "1px solid var(--border2)", borderRadius: "4px",
                                         boxShadow: "0 8px 24px rgba(0,0,0,.55)", textAlign: "left" } }, [
@@ -3321,15 +3409,22 @@ EN.combatView = (function () {
                  (author's call) and set apart by its own heading, so it is not mistaken for the calendar
                  controls above it. See downtimeRest(). */
               el("div", { style: { display: "flex", flexDirection: "column", gap: "8px", paddingTop: "10px", borderTop: "1px solid var(--border2)" } }, [
-                el("span.mono", { style: { fontSize: "10px", color: "var(--gold)", letterSpacing: ".1em" }, text: "DOWNTIME REST (1 WEEK)" }),
-                el("p", { style: { margin: 0, fontSize: "12px", lineHeight: "1.5", color: "var(--text2)" },
-                          text: "One uninterrupted week. Gives everything a Long Rest gives (Vitality, FP, Resilience Dice, abilities, the sleep clock) and more: restores all Wounds, removes all Strain, clears Fatigue and temporary conditions. In Breakflow, FP stays down: that ends only through Breakflow Restoration. Critical Wound, Cursed, Hardwired, Mutating, Bricked and Breakflow stay. Does not advance the calendar." }),
+                /* The wording below is the 2026-09-29 rulings, kept exactly. Only the links are new:
+                   the heading's "?" opens the book's Downtime rest, "One uninterrupted week" its
+                   Downtime Healing line, and the rule names link through the Codex's terms. */
+                el("div.row", { style: { gap: "6px", alignItems: "center" } }, [
+                  el("span.mono", { style: { fontSize: "10px", color: "var(--gold)", letterSpacing: ".1em" }, text: "DOWNTIME REST (1 WEEK)" }),
+                  EN.ui.ruleChip("rc-rests/downtime", { title: "Downtime (rest)" })
+                ]),
+                EN.ui.ruleText(el("p", { style: { margin: 0, fontSize: "12px", lineHeight: "1.5", color: "var(--text2)" } }),
+                  "One uninterrupted week. Gives everything a Long Rest gives (Vitality, FP, Resilience Dice, abilities, the sleep clock) and more: restores all Wounds, removes all Strain, clears Fatigue and temporary conditions. In Breakflow, FP stays down: that ends only through Breakflow Restoration. Critical Wound, Cursed, Hardwired, Mutating, Bricked and Breakflow stay. Does not advance the calendar.",
+                  { terms: { "One uninterrupted week": "rc-other/downtime-healing" } }),
                 el("button.btn.sm.primary", { style: { justifyContent: "center" }, onclick: function () { _pops.down = false; downtimeRest(ch, d); } }, iconLabel(ICON_DOWNTIME, "REST A WEEK"))
               ]),
               el("div.row", { style: { gap: "8px", justifyContent: "flex-end" } }, [
                 el("button.btn.sm", { onclick: function () { _pops.down = false; EN.app.render(); } }, "CANCEL")
               ])
-            ]);
+            ]));
           })() : null
         ])
       ])
@@ -3368,7 +3463,7 @@ EN.combatView = (function () {
     /* The cover bonuses come off EN.combat.cover ("+2 Defense"), not typed here, so the
        breakdown and Cover & Sight cannot disagree. */
     var coverFoot = ((EN.combat || {}).cover || []).map(function (cv) {
-      var m = /\+(\d+) Defense/.exec(cv.effect || "");
+      var m = /\+(\d+) (?:bonus to )?Defense/.exec(cv.effect || "");
       return m ? "+" + m[1] + " " + String(cv.name).replace(/ Cover$/, "").replace(/^Three-Quarter$/, "¾") : null;
     }).filter(Boolean).join(" / ");
     function chromeNote(k) { var cb = d.attributes[k].cyberBonus; return cb ? "score includes +" + cb + " from chrome" : null; }
@@ -3405,7 +3500,11 @@ EN.combatView = (function () {
           .concat(d.encumbrance && d.encumbrance.speedDelta ? [bdRow(d.encumbrance.state === "overloaded" ? "Overloaded (Speed halved)" : "Encumbered", d.encumbrance.speedDelta)] : [])
           .concat(spCond ? [bdRow("Conditions", spCond)] : []),
         foot: d.lineageSpeedFirstRound ? "+" + d.lineageSpeedFirstRound + " Speed during the first round of any combat (Tuned Synapses)." : null,
-        rules: [["bx-space", "Space, Speed & Area"]].concat(d.encumbrance && d.encumbrance.speedDelta ? [["sk-load", "Encumbrance & Load"]] : []) },
+        // Movement & Terrain holds what Speed buys (costs, Difficult Terrain); its Speed reductions
+        // entry is listed while something here is reducing it
+        rules: [["bx-space", "Space, Speed & Area"], ["mv-move", "Movement & Terrain"]]
+          .concat(spCond || dg.speedPenalty || (d.encumbrance && d.encumbrance.speedDelta) ? [["mv-move/speed-reductions", "Speed reductions"]] : [])
+          .concat(d.encumbrance && d.encumbrance.speedDelta ? [["sk-load", "Encumbrance & Load"]] : []) },
       INIT: { title: "Initiative", total: initVal, sign: true,
         formula: "Agility or Wits Modifier (best)" + (d.lineageInit && d.lineageInit.caliber ? " + lineage" : "") + (d.cyberInit ? " + chrome" : "") + (fx.init ? " + conditions" : ""),
         rows: [bdRow((initAttr === "WIT" ? "Wits" : "Agility") + " modifier (best of Agility/Wits)", initMod, chromeNote(initAttr))]
@@ -3809,26 +3908,49 @@ EN.combatView = (function () {
     }
     sectionEls.skills = EN.ui.panel("Skills", "TAP TO ROLL · DOT = TIER", [el("div", { style: { columnCount: 1 } }, skillRows), versatileBlock()], { corners: true });
 
-    /* state banners. The conditions they name link to their entries; Dying, Death Saves and
-       Stable have no Codex entry yet (they wait on the manuscript), so they stay plain. */
+    /* state banners. The conditions they name link to their entries, and Dying, Death Saves,
+       Stable and the thresholds link to Vitality & Recovery (rc-dying). */
     function bannerKids(icon, head, headAnchor, parts) {
       var kids = [document.createTextNode(icon + " "), el("b", null, [headAnchor ? cxLink(headAnchor, head) : document.createTextNode(head)]), document.createTextNode(" · ")];
       parts.forEach(function (p) { kids.push(typeof p === "string" ? document.createTextNode(p) : p); });
       return kids;
     }
+    /* The DYING and STABLE lines are the book's Death Saves, Stable and Coming Back text from
+       EN.recovery.dying, flattened to one paragraph; without the data, the short wording they had. */
+    var rcDy = (EN.recovery && EN.recovery.dying) || {};
+    function rcFlat(lines) {
+      var out = [];
+      (lines || []).forEach(function (ln) { [].concat(ln).forEach(function (x) { if (x) out.push(rcPlain(x)); }); });
+      return out.join(" ");
+    }
+    function rcBanner(text, self, terms) { return EN.ui.ruleText(el("span"), text, { conditions: true, self: self, terms: terms }); }
     if (s.dying) {
       blocks.push(el("div.muted-box", { style: { borderColor: "var(--danger)", color: "var(--danger)", marginBottom: "12px", textAlign: "left" } },
-        bannerKids("☠", "DYING", null, [cxLink(cxCond("Unconscious"), "Unconscious"), " at 0 Wounds. Each turn: Death Save (Body, DC 10). Three successes = Stable, three failures = dead. Any damage = one failure."])));
+        bannerKids("☠", "DYING", "rc-dying/dying", (rcDy.deathSaves && rcDy.deathSaves.length)
+          ? [cxLink(cxCond("Unconscious"), "Unconscious"), " at 0 Wounds. ",
+             rcBanner(rcFlat(rcDy.deathSaves), ["rc-dying/dying", cxCond("Unconscious")], { "Death Save": "rc-dying/death-saves", "Stable": "rc-dying/stable" })]
+          : [cxLink(cxCond("Unconscious"), "Unconscious"), " at 0 Wounds. At the start of each of your turns: ",
+             cxLink("rc-dying/death-saves", "Death Save"), " (Body, DC 10). Three successes = ", cxLink("rc-dying/stable", "Stable"), ", three failures = dead. Any damage = one failure."])));
     } else if (s.stable) {
       blocks.push(el("div.muted-box", { style: { borderColor: "var(--warn)", color: "var(--warn)", marginBottom: "12px", textAlign: "left" } },
-        bannerKids("◌", "STABLE", null, [cxLink(cxCond("Unconscious"), "Unconscious"), " at 0 Wounds, no longer Dying. Restoring even 1 Wound wakes you with that many Wounds."])));
+        bannerKids("◌", "STABLE", "rc-dying/stable", (rcDy.stable && rcDy.stable.text && rcDy.comingBack && rcDy.comingBack.text)
+          ? [rcBanner(rcFlat([rcDy.stable.text, rcDy.stable.rules, rcDy.comingBack.text]), ["rc-dying/stable"],
+               { "Death Saves": "rc-dying/death-saves", "Dying": "rc-dying/dying", "Restoring even 1 Wound": "rc-dying/coming-back" })]
+          : [cxLink(cxCond("Unconscious"), "Unconscious"), " at 0 Wounds, no longer Dying. ",
+             cxLink("rc-dying/coming-back", "Restoring even 1 Wound"), " wakes you with that many Wounds."])));
     } else if (s.critical) {
       blocks.push(el("div.muted-box", { style: { borderColor: "var(--warn)", color: "var(--warn)", marginBottom: "12px", textAlign: "left" } },
-        bannerKids("⚠", "CRITICAL CONDITION", cxCond("Critical Condition"), ["at 50% or less of total Wounds."])));
+        bannerKids("⚠", "CRITICAL CONDITION", cxCond("Critical Condition"), ["at ", cxLink("rc-dying/50-percent-or-less-of-total-wounds", "50% or less of total Wounds"), "."])));
     }
     if (s.bloodied) {
+      /* The book's 0 Vitality threshold, read from EN.recovery: it adds the level of Fatigue,
+         which this sheet does not add for you, so the banner says it for you to apply. */
+      var th0 = ((EN.recovery && EN.recovery.dying && EN.recovery.dying.thresholds) || [])[0] || "";
+      var m0 = /^\*\*0 Vitality:\*\*\s*(.+)$/.exec(th0);
       blocks.push(el("div.muted-box", { style: { borderColor: "var(--ember)", color: "var(--ember)", marginBottom: "12px", textAlign: "left" } },
-        bannerKids("🩸", "BLOODIED", cxCond("Bloodied"), ["Vitality is 0. You stay conscious; further damage becomes Wound damage."])));
+        bannerKids("🩸", "BLOODIED", cxCond("Bloodied"), m0
+          ? [cxLink("rc-dying/0-vitality", "0 Vitality"), ": ", EN.ui.ruleText(el("span"), m0[1], { conditions: true, self: [cxCond("Bloodied")] })]
+          : ["Vitality is 0: gain 1 level of Fatigue. You stay conscious; further damage becomes Wound damage."])));
     }
     if (fx.cannotAct) {
       blocks.push(el("div.muted-box", { style: { borderColor: "var(--danger)", color: "var(--danger)", marginBottom: "12px", textAlign: "left" },
@@ -3870,10 +3992,10 @@ EN.combatView = (function () {
                    border: "1px solid " + color, borderRadius: "3px", padding: "3px 10px",
                    boxShadow: _pops[key] ? "0 0 10px " + color : "none" }
         }, [el("span", { style: { marginRight: "6px", fontSize: "11px" }, text: "±" })].concat(labelChildren).concat([document.createTextNode(" ▾")])),
-        _pops[key] ? el("div", { style: { position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 30, width: "112px",
+        _pops[key] ? popFit(el("div", { style: { position: "absolute", right: 0, top: "calc(100% + 6px)", zIndex: 30, width: "112px",
                                           display: "flex", flexDirection: "column", gap: "6px", padding: "8px",
                                           background: "var(--bg2)", border: "1px solid var(--border2)", borderRadius: "4px",
-                                          boxShadow: "0 8px 24px rgba(0,0,0,.55)" } }, controls) : null
+                                          boxShadow: "0 8px 24px rgba(0,0,0,.55)" } }, controls)) : null
       ]);
     }
     function amtInput(key) {
@@ -3894,12 +4016,16 @@ EN.combatView = (function () {
               document.createTextNode("VITALITY")
             ].filter(Boolean),
             [
-              railBtn("VIGOR", "var(--accent)", "Gain Vigor equal to the amount below (non-stacking, keeps the higher value; expires end of encounter)", function () {
+              // the book's two Vigor rules, read from EN.recovery: the button keeps the higher value; clearing it is yours to do
+              railBtn("VIGOR", "var(--accent)", (EN.recovery && EN.recovery.vigor && EN.recovery.vigor.noStack)
+                ? "Gain Vigor equal to the amount below.\n" + EN.recovery.vigor.noStack + "\n" + EN.recovery.vigor.expiration
+                : "Gain Vigor equal to the amount below (non-stacking, keeps the higher value; expires end of encounter)", function () {
                 store.update(function (c) { c.vitality.temp = Math.max(c.vitality.temp || 0, _amts.vit); });
               }),
               railBtn("HEAL", "var(--success)", "Restore Vitality", function () { applyHeal(ch, d, _amts.vit); }),
               amtInput("vit"),
-              railBtn("DAMAGE", "var(--danger)", "Apply damage: Vigor absorbs first, then Vitality; overflow becomes Wound damage", function () { applyDamage(ch, d, _amts.vit); })
+              railBtn("DAMAGE", "var(--danger)", "Apply damage: Vigor absorbs first, then Vitality; overflow becomes Wound damage" + (rcWoundSave() ? ".\n" + rcWoundSave() : ""), function () { applyDamage(ch, d, _amts.vit); }),
+              rcPopRules([["rc-vigor", "Vigor"], ["rc-vitality/vitality", "Vitality"], ["ref-damage/damage-order", "Damage Order"]])
             ])
         ]),
         vitalityBar(s.vit, s.vitMax, s.vigor),
@@ -3910,28 +4036,40 @@ EN.combatView = (function () {
             [
               railBtn("HEAL", "var(--success)", "Heal Wounds (restores max Vitality)", function () { healWounds(ch, d, _amts.wound); }),
               amtInput("wound"),
-              railBtn("WOUND", "var(--danger)", "Take Wounds (also lowers current & max Vitality)", function () { healWounds(ch, d, -_amts.wound); })
+              railBtn("WOUND", "var(--danger)", "Take Wounds (also lowers current & max Vitality)" + (rcWoundSave() ? "\n" + rcWoundSave() : ""), function () { healWounds(ch, d, -_amts.wound); }),
+              rcPopRules([["rc-vitality/wound-effects", "Wound Effects"], ["rc-dying/thresholds", "Thresholds"]])
             ])
         ]),
-        el("div", { title: "Countdown from Body (" + s.woundsMax + "). Wound damage also lowers current & max Vitality. Critical Condition at " + d.critThreshold + " or less. 0 = Unconscious & Dying.", style: { margin: "5px 0 0" } }, [
+        el("div", { title: "Countdown from Body (" + s.woundsMax + "). Wound damage also lowers current & max Vitality. Critical Condition at " + d.critThreshold + " or less. 0 = Unconscious & Dying." + (rcWoundSave() ? "\n" + rcWoundSave() : ""), style: { margin: "5px 0 0" } }, [
           bar(s.wounds, s.woundsMax, s.critical ? "var(--danger)" : "var(--wound)")
         ])
       ]),
       (s.dying || s.stable) ? el("div", { style: { marginTop: "8px" } }, [
         el("div.row.wrap", { style: { gap: "12px", alignItems: "center" } }, [
-          el("span.help", { style: { margin: 0 }, text: "Death Saves · ✓" }),
+          el("span.help", { style: { margin: 0 } }, [cxLink("rc-dying/death-saves", "Death Saves"), " · ✓"]),
           pips(ch.deathSaves.s || 0, 3, "var(--success)", function (n) { store.update(function (c) { c.deathSaves.s = n; if (n >= 3) { c.stable = true; c.deathSaves = { s: 0, f: 0 }; } }); }),
           el("span.help", { style: { margin: 0 }, text: "✗" }),
           pips(ch.deathSaves.f || 0, 3, "var(--danger)", function (n) { store.update(function (c) { c.deathSaves.f = n; }); }),
-          s.dying ? el("button.btn.sm", { title: "Stabilize: d20 Medtech, Tech, or Flow Attribute Check against DC 10", onclick: function () { store.update(function (c) { c.stable = true; c.deathSaves = { s: 0, f: 0 }; }); toast("Stabilized, unconscious at 0 Wounds."); } }, "STABILIZE") : null
+          // the title is the book's Stabilize treatment (both checks); the button records a success
+          s.dying ? el("button.btn.sm", { title: rcStabilizeTitle(), onclick: function () { store.update(function (c) { c.stable = true; c.deathSaves = { s: 0, f: 0 }; }); toast("Stabilized, unconscious at 0 Wounds."); } }, "STABILIZE") : null,
+          s.dying ? EN.ui.ruleChip("rc-medical/stabilize", { title: "Stabilize" }) : null
         ]),
-        (ch.deathSaves.f || 0) >= 3 ? el("p", { style: { color: "var(--danger)", fontFamily: "var(--mono)", marginTop: "6px" }, text: "✝ THREE FAILURES; the body stops keeping score." }) : null
+        (ch.deathSaves.f || 0) >= 3 ? el("p", { style: { color: "var(--danger)", fontFamily: "var(--mono)", marginTop: "6px" } },
+          ["✝ ", cxLink("rc-dying/three-failures", "THREE FAILURES"), "; the body stops keeping score."]) : null
       ]) : null
-    ], { corners: true, headerRight: (function () {
-      // the tag states the damage order; the "?" opens it in full (Damage & Mitigation)
-      var c = EN.ui.ruleChip("ref-damage/damage-order", { title: "Damage Order" });
-      return c ? [c] : null;
-    })() });
+    ], { corners: true, headerRight: EN.ui.ruleChip("rc-vitality", { title: "Vitality & Wounds" }) });
+    /* One "?" in the header, for the pools themselves (Vitality & Recovery). The damage order
+       links from its own words instead: the tag's "DAMAGE ORDER" (a tag is plain text from
+       EN.ui.panel, so the words are swapped for the link here), and the VITALITY popover's
+       "Rules:" line, which also covers GRIDroid, where tags are hidden. */
+    (function () {
+      var tag = sectionEls.vitality && sectionEls.vitality.querySelector(".panel-h .tag");
+      if (!tag || !cxHas("ref-damage/damage-order") || tag.textContent.indexOf("DAMAGE ORDER") !== 0) return;
+      var rest = tag.textContent.slice("DAMAGE ORDER".length);
+      tag.textContent = "";
+      tag.appendChild(cxLink("ref-damage/damage-order", "DAMAGE ORDER"));
+      tag.appendChild(document.createTextNode(rest));
+    })();
 
     /* Flow Reservoir + saved Patterns live inside the Actions panel (Abilities
        tab) for Shapers, mirroring how every other class shows its resource there.
@@ -4496,7 +4634,7 @@ EN.combatView = (function () {
             el("span.chip", { style: { marginLeft: "6px", fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" }, text: "PASSIVE" })])),
           el("span", { style: { display: "flex", alignItems: "center", gap: "8px", marginLeft: "auto" } }, [el("span.src", { text: f.src }), controls])
         ]),
-        open ? EN.ui.renderText(f.text || "") : null,
+        open ? EN.ui.renderText(f.text || "", {}) : null,
         (!noteOpen && a.note) ? el("p.help", { style: { margin: "4px 0 0", color: "var(--accent)" }, text: "✎ " + a.note }) : null,
         noteOpen ? el("div", { style: { margin: "6px 0 2px" } }, [
           el("textarea", { value: a.note || "", placeholder: "Your note on this feature…",

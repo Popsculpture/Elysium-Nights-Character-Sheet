@@ -1,4 +1,10 @@
 // Combat rules data, extracted verbatim from the Elysium Nights rulebook (part2.txt).
+// Re-checked 2026-10-07 against the manuscript pull (Part 2, modifiedTime 2026-10-04): the Action
+// examples (l.1778-1793), the Move cost table (l.1799-1806), the Impulse examples (l.1840-1846),
+// Charge / Rush (Common Actions, l.2033) and Cover and Defense (l.2192-2198) now read as the book does,
+// and so do the whole Common Actions table with its Flow Modifier box (l.2019-2040) and the three
+// cover grades (l.2177-2189).
+// Speed and its costs in full are EN.movement (data/movement.js), rendered beside these in the Codex.
 window.EN = window.EN || {};
 EN.combat = {
 
@@ -6,12 +12,12 @@ EN.combat = {
     {
       name: "Action",
       summary: "The main effort or task you perform during your turn.",
-      text: "Your Action is the primary effort of your turn.\n\nExamples\n- Melee Attack: Strike with a weapon or unarmed.\n- Ranged Attack: Fire or throw a weapon.\n- Channel Flow: Focus or project resonance energy using an Invocation.\n- Hack System: Access, override, or disrupt a device or terminal.\n- Use Device: Activate or operate an item or tool.\n- Reload (Action): Reload complex or Heavy Weapons such as tube-fed shotguns, belt-fed guns, launchers, or heavy energy weapons.\n- Dash: Move an additional distance equal to your Speed.\n- Disengage: Break contact. Safely move for the rest of your turn without provoking Opportunity Attacks.\n- Skill or Ability Check: Attempt a challenging task that requires full focus."
+      text: "Your Action is the primary effort of your turn.\n\nExamples\n- Melee Attack: Swing or thrust with a melee weapon.\n- Unarmed Strike: Strike with fists, elbows, knees, or feet.\n- Ranged Attack: Fire a weapon at a Target.\n- Throw: Hurl a weapon or grenade at a Target.\n- Shove: Drive a Target back and out of position.\n- Trip: Sweep a Target's legs and knock it Prone.\n- Grapple: Seize a Target and hold it in place.\n- Disengage: Break contact. Safely move for the rest of your turn without provoking Opportunity Attacks.\n- Channel Flow: Focus or project resonance energy using an Invocation.\n- Hack System: Access, override, or disrupt a device or terminal.\n- Use Device: Activate or operate an item or tool.\n- Reload (Action): Reload complex or Heavy Weapons such as tube-fed shotguns, belt-fed guns, launchers, or heavy energy weapons.\n- Dash: Move an additional distance equal to your Speed.\n- Skill or Ability Check: Attempt a challenging task that requires full focus."
     },
     {
       name: "Move",
       summary: "Movement or repositioning, often traded for other options.",
-      text: "Movement uses your Speed, equal to 6 + Agility Modifier (minimum 3). Each point of Speed moves you 1 space.\n\nMovement Type · Speed Cost\n- Normal movement: 1 per space\n- Difficult terrain: 2 per space\n- Climb, vault, or leap: 2-3 per space depending on difficulty\n- Dash: Spend your Action to gain a new movement pool equal to your Speed\n\nAttribute Influence: Your Agility Modifier adds directly to your Speed each turn. Even with a negative modifier, total Speed can't drop below 3 due to Agility alone. Environmental effects, injuries, or abilities can still reduce Speed to 0."
+      text: "Movement uses your Speed, equal to 6 + Agility Modifier (minimum 3). Each point of Speed moves you 1 space.\n\nMovement Type · Speed Cost\n- Normal movement: 1 per space\n- Difficult terrain: 2 per space\n- Through a body: 2 per space (ally or smaller enemy only)\n- Climb or vault: 2-3 per space depending on difficulty\n- Jump or leap: 1 per space crossed\n- Dash: Spend your Action to gain a new movement pool equal to your Speed\n\nAttribute Influence: Your Agility Modifier adds directly to your Speed each turn. Even with a negative modifier, total Speed can't drop below 3 due to Agility alone. Environmental effects, injuries, or abilities can still reduce Speed to 0."
     },
     {
       name: "Swift Action",
@@ -21,7 +27,7 @@ EN.combat = {
     {
       name: "Impulse Action",
       summary: "A minor action triggered outside your turn (parry, dodge, intercept, or Help).",
-      text: "Impulse Actions occur outside your turn, triggered by events or enemy actions. Unless you traded your Move Action, you may only perform one Impulse Action per round.\n\nExamples\n- Opportunity Attack: Strike a Hostile that leaves your reach. See Opportunity Attacks below.\n- Dodge: Gain a brief defensive boost against a single attack you can see.\n- Parry: Contest a melee or thrown attack with your weapon to block or counter.\n- Brace: Reduce incoming damage by 1d10 + Body Modifier from impact.\n- Intercept: Move up to half your Speed to protect an ally within 2 spaces.\n- Trip or Shove: Disrupt an enemy moving through your reach.\n- Help Action: When an ally makes a save or check, you may jump in to assist them, consuming your Impulse Action and your upcoming turn's Action.\n\nOpportunity Attacks\n\nWhen a Hostile you can see leaves your reach using its own movement, you can spend your Impulse Action to make one melee attack against it. The attack resolves from the last space it occupied within your reach, before the movement carries it clear.\n- You need a melee weapon in hand, or your bare hands.\n- It costs your Impulse Action, so the one-per-round limit applies. You can't also Dodge, Parry, Brace, or Intercept that round unless you traded your Move Action for a second Impulse.\n- Movement that isn't the Hostile's own doesn't provoke. A shove, a pull, a teleport, or any other forced movement takes them out of reach without giving you the shot.\n- Disengage denies the attack entirely.\n- The GM may also allow an Opportunity Attack when a Hostile does something careless inside your reach."
+      text: "Impulse Actions occur outside your turn, triggered by events or enemy actions. Unless you traded your Move Action, you may only perform one Impulse Action per round.\n\nExamples\n- Opportunity Attack: Strike a Hostile that leaves your reach. See Opportunity Attacks below.\n- Dodge: Gain a brief defensive boost against a single attack you can see.\n- Parry: Contest a melee or thrown attack with your weapon to block or counter.\n- Brace: Reduce incoming damage by 1d10 + Body Modifier from impact.\n- Intercept: Move up to half your Speed to an ally within 2 spaces who is about to be hit; you become the target of that attack instead. This uses your one defensive Impulse for the round.\n- Help Action: When an ally makes a save or check, you may jump in to assist them, consuming your Impulse Action and your upcoming turn's Action.\n\nOpportunity Attacks\n\nWhen a Hostile you can see leaves your reach using its own movement, you can spend your Impulse Action to make one melee attack against it. The attack resolves from the last space it occupied within your reach, before the movement carries it clear.\n- You need a melee weapon in hand, or your bare hands.\n- It costs your Impulse Action, so the one-per-round limit applies. You can't also Dodge, Parry, Brace, or Intercept that round unless you traded your Move Action for a second Impulse.\n- Movement that isn't the Hostile's own doesn't provoke. A shove, a pull, a teleport, or any other forced movement takes them out of reach without giving you the shot.\n- Disengage denies the attack entirely.\n- The GM may also allow an Opportunity Attack when a Hostile does something careless inside your reach."
     },
     {
       name: "Free Action",
@@ -45,22 +51,23 @@ EN.combat = {
   combatSequence: "1. Initiative: Roll d20 + Caliber + Agility Modifier or Wits Modifier. Highest acts first.\n2. Declare Intent: Choose your main Action and any Flow or tactical choices.\n3. Resolve Actions: Roll using the d20 Method.\n4. Apply Damage and Effects: Vigor → Vitality → Wounds.\n5. End of Round: Apply conditions and ongoing effects.",
 
   commonActions: [
-    { name: "Melee Attack", cost: "Action", text: "d20 + Body Modifier + Weapon Proficiency Bonus, Close-range weapon or unarmed attack." },
+    { name: "Melee Attack", cost: "Action", text: "d20 + Body Modifier + Weapon Proficiency Bonus, Close-range weapon attack." },
+    { name: "Unarmed Strike", cost: "Action", text: "d20 + Body Modifier + Simple Weapons Proficiency Bonus, Fists, elbows, knees, or feet." },
     { name: "Ranged Attack", cost: "Action", text: "d20 + Agility Modifier + Weapon Proficiency Bonus, Apply Snag if firing while engaged in melee." },
-    { name: "Weapon Save DC (Melee)", cost: "-", text: "8 + Body Modifier + Caliber, Sets the DC for enemies to resist your melee weapon effects." },
-    { name: "Weapon Save DC (Range)", cost: "-", text: "8 + Agility Modifier + Caliber, Sets the DC for enemies to resist your ranged weapon effects." },
-    { name: "Weapon Save DC (Thrown)", cost: "-", text: "8 + the higher of your Body or Agility Modifier + Caliber, Sets the DC for enemies to resist thrown weapon effects." },
+    { name: "Weapon Save DC (Melee)", cost: "-", text: "8 + Body Modifier + Caliber, Sets DC to resist weapon effects." },
+    { name: "Weapon Save DC (Range)", cost: "-", text: "8 + Agility Modifier + Caliber, Sets DC to resist weapon effects." },
+    { name: "Weapon Save DC (Thrown)", cost: "-", text: "8 + the higher of your Body or Agility Modifier + Caliber, Sets DC to resist thrown-weapon effects." },
     { name: "Flow Attack", cost: "Action", text: "d20 + Flow Modifier + Caliber, Consumes FP as defined by the Invocation; effect varies." },
-    { name: "Flow Save DC", cost: "Action", text: "8 + Flow Modifier + Caliber, Sets the DC for enemies to resist your Flow Invocations and effects." },
+    { name: "Flow Save DC", cost: "-", text: "8 + Flow Modifier + Caliber, Sets the DC for enemies to resist your Flow Invocations and effects." },
     { name: "Quick Hack", cost: "Action", text: "d20 + Tech Modifier + Systems Proficiency Bonus, Disrupt, override, or support allied systems in combat." },
     { name: "Use Device / Item", cost: "Action", text: "d20 (see description), Activate or manipulate gear, doors, or terminals." },
-    { name: "Charge / Rush", cost: "Action", text: "Double Speed; gain Edge on your next melee attack. Must move at least 2 spaces in a straight line toward the target." },
+    { name: "Charge / Rush", cost: "Complex", text: "Move up to double your Speed in a straight line toward a Target, then make one melee attack against it with Edge. Must cover at least 2 spaces before you strike. As a Complex Action it spends your Action and Move; you keep your Swift, Free, and one Impulse." },
     { name: "Suppressive Fire", cost: "-", text: "See Full-Auto firing mode. Use Full-Auto in Suppress mode (see Firing Modes)." },
     { name: "Full Defense", cost: "Complex", text: "Auto +2 Defense; gain Edge on all Saves until next turn. No other actions this turn." },
-    { name: "Help Action", cost: "Action / Impulse", text: "Make an assist check: d20 + your modifier for the relevant skill or tool vs DC 15. On a success the ally gains a flat bonus: +2 if you are Proficient, +3 with Expertise, +4 with Mastery. The bonus applies on top of the static modifier cap and stacks with Edge. On a Natural 1 your help backfires and the ally rolls with Snag. Only the single highest assist bonus applies; they do not stack. You must be at least Proficient to grant any bonus. As an Impulse it forfeits your upcoming Action." }
+    { name: "Help Action", cost: "Action / Impulse", text: "Assist check vs DC 15; on a success grant +2 (Proficient), +3 (Expertise), or +4 (Mastery). See Help Action. Must have plausible positioning and relevant skill or tool. If used as an Impulse, it forfeits your upcoming Action." }
   ],
 
-  flowModifierNote: "Each Flow-using class is tied to one Attribute: Mystique, Tech, Body, or Charm. That Attribute is your Flow Attribute, and its modifier is your Flow Modifier. You use your Flow Modifier for all Flow Attacks and to set your Flow Save DC.",
+  flowModifierNote: "Each Flow-using class is tied to one Attribute: Mystique, Tech, Body, or Charm. That Attribute is your Flow Attribute, and its modifier is your Flow Modifier. You use your Flow Modifier for all Flow Attacks and Flow Attribute Checks, and to set your Flow Save DC.",
 
   defense: "Your Defense measures your ability to avoid, deflect, or absorb incoming harm. It blends agility, awareness, protective gear, and the advantages of cover.\n\nDefense = 10 + Agility Modifier + Cover + Active Defense Bonuses",
 
@@ -118,19 +125,19 @@ EN.combat = {
   cover: [
     {
       name: "Half Cover",
-      effect: "You are roughly half hidden behind solid objects such as crates, railings, desks, or door frames.\n- You gain +2 Defense against attacks that must pass through that cover."
+      effect: "You are roughly half hidden behind solid objects such as crates, railings, desks, or door frames.\n- You gain a +2 bonus to Defense against attacks coming from the far side of the cover, and a +2 bonus to Agility saving throws against area effects from that same side. The cover only helps when it stands between you and the source."
     },
     {
       name: "Three-Quarter Cover",
-      effect: "Most of your body is hidden behind sturdy objects such as large machinery, pillars, reinforced furniture, or vehicle frames.\n- You gain +5 Defense against attacks that must pass through that cover."
+      effect: "Most of your body is hidden behind sturdy objects such as large machinery, pillars, reinforced furniture, or vehicle frames.\n- You gain a +5 bonus to Defense against attacks coming from the far side of the cover, and a +5 bonus to Agility saving throws against area effects from that same side. The cover only helps when it stands between you and the source."
     },
     {
       name: "Total Cover",
-      effect: "You are fully hidden and can't be targeted directly by attacks that require line of sight.\n- You can't attack targets you can't see, unless an effect explicitly allows blind targeting or ignores line of sight.\n- Effects that ignore line of sight also ignore Total Cover."
+      effect: "You are fully hidden and can't be targeted directly by attacks that require line of sight. An area effect that can't reach around the cover doesn't affect you at all. As with Half and Three-Quarter Cover, this protection holds only while the cover stands between you and the source. A source that has moved around it to a clear line on you is no longer blocked. See Cover and Defense.\n- You can't attack targets you can't see, unless an effect explicitly allows blind targeting or ignores line of sight.\n- Effects that ignore line of sight also ignore Total Cover."
     }
   ],
 
-  coverAndDefense: "- Cover bonuses apply to Defense before any Defensive Impulse (Dodge, Block, Parry, Ward, etc.) is declared.\n- If you leave cover during your turn, you lose its benefits until you are back behind cover.\n- Attacks with Area, Explosive, or certain elemental effects may still affect characters behind cover if the blast or effect reasonably reaches them.",
+  coverAndDefense: "Cover shields you from an area effect only when it stands between you and where the effect comes from. For a blast, that is the space where it detonates. When the cover sits in that line, its bonus applies to your Agility saving throw just as it applies to your Defense: +2 for Half Cover, +5 for Three-Quarter. When the blast reaches you by any other path, an airburst from overhead or a Wall-to-Wall rebound that fills the room from every side, the cover isn't in its path and grants nothing.\n\n- Cover bonuses apply to Defense before any Defensive Impulse (Dodge, Block, Parry, Ward, etc.) is declared.\n- If you leave cover during your turn, you lose its benefits until you are back behind cover.\n- Attacks with Area, Explosive, or certain elemental effects may still affect a character behind cover if the blast or effect reasonably reaches them.",
 
   lineOfSight: "You have line of sight if you can trace a reasonable line from your space to the target without passing through a solid, opaque obstacle.\n- If there is no clear line, the target effectively has Total Cover from that attacker.",
 

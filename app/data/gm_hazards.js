@@ -137,7 +137,10 @@ EN.gmBook.hazards = {
        countdown  `rounds` rounds after its trigger
        while      for as long as a state holds
        round      at the end of each round
-       anomaly    as the chosen Flow Disturbances anomaly says */
+       anomaly    as the chosen Flow Disturbances anomaly says: it lasts
+                  until cleansed, suppressed for the Encounter by Counter
+                  Flow, or (a Null Scar) collapsed by destroying its Focal
+                  Anchor (EN.flow.disturbances) */
   // GMH p101
   acts: {
     text: "The room gets a turn. Not an initiative slot: a presence.",
@@ -280,7 +283,9 @@ EN.gmBook.hazards = {
         bestiary: [] },
 
       /* Every mechanic comes from the chosen anomaly, which the app keeps as
-         free text. No DC, dice or counter are printed here. */
+         free text. No DC, dice or counter are printed here: the counters are
+         the PHB's Flow Disturbances (EN.flow.disturbances), Counter Flow and,
+         in a Null Scar, the Focal Anchor, which the Hazards tab links. */
       { key: "bleed", name: "Breakflow Bleed", grade: 3,
         text: "A wounded current. Pick an Anomaly from Flow Disturbances (a Static Zone strips the crew's Shaper; a Resonant Storm taxes everyone) and give it a footprint in the fight. Pair it with a threat that exploits it: a Null Hound in a Static Zone is the classic double bill, and the reason Shapers read maintenance manifests.",
         trigger: null,

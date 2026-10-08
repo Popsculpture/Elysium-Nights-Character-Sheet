@@ -439,6 +439,11 @@ EN.gmEncounters = (function () {
     hz.name = l.name;
     hz.xp = l.xpEach;
     if (l.note) hz.notes = l.note;
+    // the Bleed's Anomalies are the book's examples to pick from; a line named for one ("Static Zone (Severity 2)") runs that one
+    if (Array.isArray(hz.anomalies)) {
+      var picked = hz.anomalies.filter(function (a) { return String(l.name || "").indexOf(a) === 0; });
+      if (picked.length) hz.anomalies = picked.slice(0, 1);
+    }
     return normLine({ kind: "hazard", name: l.name, hazard: hz, grade: g, count: l.count, xpEach: l.xpEach, note: l.note });
   }
   function templateThreatLine(l) {

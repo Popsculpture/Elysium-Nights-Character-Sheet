@@ -1194,7 +1194,7 @@ EN.gmPayroll = (function () {
 
   /* ---- 7. the Other Ledger ---------------------------------------------- */
   function ledgerPanel() {
-    var L = P().ledger, kids = [help(L.text, { margin: "0 0 8px" })];
+    var L = P().ledger, kids = [rhelp(L.text, { margin: "0 0 8px" })];
     (L.lines || []).forEach(function (line) {
       if (line.key !== "cred" && line.key !== "heat") return;
       kids.push(el("div", { style: { marginTop: "6px" } }, [

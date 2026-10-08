@@ -37,10 +37,12 @@
    Watchfire's hidden hashtag Heat, Octothorpe) is never read here; it stays
    on the Heat tab, behind its own GM ONLY box.
 
-   PHASE 2 STAYS PLAIN. The PHB chapters the data cites but the app does not
-   carry (Social Pressure and Faction Standing, Vehicles and Chases, Flow
-   Disturbances) get no alias here, and each panel keeps the data's own
-   honest line about what the app does not carry.
+   THE PLAYER RULES THESE PANELS LEAN ON are Codex chapters of their own since
+   Phase 2 (Social Pressure & Faction Standing, so-; the chase panels of
+   Vehicles & Economy, vc-; Flow Disturbances, fl-dist). Their names link
+   through the aliases those files register, and the Sit-Down and Chase panels
+   end on links to the exact entries (Postures, the Floor, the Social Fallout
+   table, Lead and its margins, Pursuit Escalation).
    =========================================================================== */
 window.EN = window.EN || {};
 
@@ -181,19 +183,20 @@ window.EN = window.EN || {};
     { id: "gms-sitdown", title: "Sit-Down Rules", tag: "RESOLVE · PRESSURE · THE FLOOR", order: 10, when: hasScenes, build: function (ctx, K) {
       var B = S().sitdown, kids = [];
       kids.push(K.proseBlock(B.intro));
-      // where the rules live: the PHB's Social Pressure and Faction Standing, which the app does not carry
+      // where the rules live: Social Pressure and Faction Standing, the social chapter (so-), linked by its title
       kids.push(K.note(B.home));
       kids.push(K.entry("results", "Results", [
         K.subTitle("Results"),
         K.refTable(["Result", "Pressure", "Also"], (B.results || []).map(function (r) { return [r.name, String(r.pressure), r.also || ""]; }), [0]),
         linkLine(K, "Each result is its Dice Pool margin in", [["rz-margin", "Success Margin & Consequence"]]),
-        linkLine(K, "Social Fallout, as near as the app carries it:", [["rz-social", "Social Consequences & Cost Tracks"]])
+        linkLine(K, "Social Fallout:", [["so-fallout", "Social Fallout Table"], ["rz-social/social-fallout-rule", "Social Fallout Rule"]])
       ]));
       if (B.postures) {
+        // the full list of Postures is the social chapter's (so-postures)
         var Po = B.postures;
-        kids.push(K.ruleBlock("Postures", Po.rule + "\nThe book names " + (Po.named || []).map(function (p) { return p.name; }).join(", ") + "." +
-          (Po.named || []).filter(function (p) { return p.text; }).map(function (p) { return " " + p.text; }).join("") +
-          (Po.notCarried ? "\n" + Po.notCarried : "")));
+        kids.push(addLinks(K.ruleBlock("Postures", Po.rule + "\nThe book names " + (Po.named || []).map(function (p) { return p.name; }).join(", ") + "." +
+          (Po.named || []).filter(function (p) { return p.text; }).map(function (p) { return " " + p.text; }).join("")),
+          K, "Every Posture:", [["so-postures", "Postures"]]));
       }
       kids.push(addLinks(K.ruleBlock("Resolve", B.bestiaryResolve), K, "Who sits at each tier:",
         [["gmp-resolve", "Resolve by Role"], ["gmp-profiles", "Their Profile of You"]]));
@@ -208,18 +211,24 @@ window.EN = window.EN || {};
         kids.push(addLinks(K.ruleBlock("A Sit-Down won", stop(won.text) + " A " + (won.kind === "major" ? "Major" : "Minor") + " Milestone."),
           K, "See", [["gmy-pay/milestones-and-pacing", "Milestones and Pacing"]]));
       }
+      // the player-facing rules this panel runs, entry by entry, in the social chapter
+      kids.push(K.seeAlso("The book's Sit-Down:", [["so-sitdown", "The Sit-Down"], ["so-plays", "Rounds & Plays"],
+        ["so-floor", "The Floor"], ["so-conditions", "Sit-Down Conditions"]]));
       return kids;
     } },
     { id: "gms-chase", title: "Chase Rules", tag: "LEAD · CHASE CHECKS · STALEMATES", order: 20, when: hasScenes, build: function (ctx, K) {
-      var B = S().chase, kids = [], NC = B.notCarried || {};
+      var B = S().chase, kids = [];
       kids.push(K.proseBlock(B.intro));
-      // Lead and the margins are the PHB's Vehicles and Chases, which the app does not carry
-      kids.push(K.note(B.home));
+      // Lead is the book's Vehicles and Chases, now the chase panels of Vehicles & Economy:
+      // "Lead from Vehicles and Chases" peeks the Lead entry itself
+      kids.push(K.note(B.home, { terms: { "Vehicles and Chases": "vc-chase/lead" } }));
       kids.push(K.ruleBlock("Lead and its bands", (B.lead.bands || []).map(function (b) {
         return b.name + ": Lead " + b.text + (b.gapText ? ", " + b.gapText : "") + ".";
       }).join("\n") + "\n" + B.lead.startText));
-      kids.push(addLinks(K.ruleBlock("The Chase Check", B.check.dominant.text + "\n" + B.stalemate.text +
-        (NC.leadMargins ? "\n" + NC.leadMargins : "")), K, "Picking d20 or Dice Pools:", [["rz-collab/method-choice", "Method Choice"]]));
+      // what each margin does to Lead is the book's Resolving the Chase
+      var check = addLinks(K.ruleBlock("The Chase Check", B.check.dominant.text + "\n" + B.stalemate.text),
+        K, "What each margin does to Lead:", [["vc-chase/resolving-the-chase", "Resolving the Chase"]]);
+      kids.push(addLinks(check, K, "Picking d20 or Dice Pools:", [["rz-collab/method-choice", "Method Choice"]]));
       kids.push(K.ruleBlock("First response", B.firstResponse.checklistText));
       var sp = ref(B.refs.impactBySpeed);
       if (Array.isArray(sp) && sp.length) {
@@ -228,7 +237,8 @@ window.EN = window.EN || {};
       kids.push(K.ruleBlock("Threat pilots", B.threatPilot.piloting + "\n" + (B.threatPilot.movingDefense || []).map(function (r) {
         return "Grade " + r.gradeLow + (r.gradeHigh !== r.gradeLow ? " to " + r.gradeHigh : "") + ": moving Defense " + r.text + ".";
       }).join("\n")));
-      if (NC.escalation) kids.push(K.note(NC.escalation));
+      // the book's Pursuit Escalation table, and the crash rules a stalemate or a failed check leads to
+      kids.push(K.seeAlso("Also in the book's chase:", [["vc-chase/pursuit-escalation", "Pursuit Escalation"], ["vc-damage/control-check", "Control Check"], ["vc-damage/crashes", "Crashes"]]));
       return kids;
     } },
     { id: "gms-incursion", title: "Incursion Rules", tag: "RATING · THE DIVE · THE RETURN", order: 30, when: hasScenes, build: function (ctx, K) {
@@ -390,7 +400,8 @@ window.EN = window.EN || {};
   /* Pointer terms: the handbook's own names for these panels, as the GM data
      cites them ("see Resolve by Role", "(see Incursion Briefings)", "per
      Claims and Salvage"). Panel titles are terms already; these add the book's
-     other names. None for a Phase 2 PHB chapter. */
+     other names. The player chapters' names (Sit-Down, Lead track, Flow
+     Disturbances) are registered by their own files, not here. */
   EN.codexView.terms({
     "Heat Response": "gmx-check",
     "Heat check": "gmx-check",

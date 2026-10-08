@@ -32,9 +32,21 @@
      EN.resolution.collaborative        contested checks: the general Dominant
                                         Victory row (+10 on d20), which a chase
                                         does NOT use, and the method choice
-     EN.resolution.social.costs         the nearest player-side social cost
-                                        menu (the PHB's full Social Fallout
-                                        table is not carried in the app)
+     EN.resolution.social.costs         Core Resolution's shorter Social Cost
+                                        Options (rz-social)
+     EN.social                          the PHB's Social Pressure and Faction
+                                        Standing (data/social.js): the full
+                                        Social Fallout table (fallout), the
+                                        five Postures (sitDown.postures), what
+                                        each Environmental Pressure does
+                                        (sitDown.floor), the Resolve tiers and
+                                        Pressure per result (sitDown.resolve,
+                                        sitDown.pressure)
+     EN.chases                          the PHB's Vehicles and Chases
+                                        (data/chases.js): what each Chase
+                                        Check result does to Lead
+                                        (chase.outcomes) and the Pursuit
+                                        Escalation table (chase.escalation)
      EN.gmBook.payroll.incursion        Paying for It, rating to pay column
      EN.gmBook.payroll.payday           the after-collapse order (p30)
      EN.gmBook.payroll.claims           Claims and Salvage (pp31 to 33)
@@ -52,18 +64,17 @@
                                         Sit-Downs and Chases blocks print the
                                         same numbers as this file's, which a
                                         test checks against each other
-   The player Face tab prints the Sit-Down too, inline in its view rather than
-   as data (js/face.js referencePanel, section "sit"): the same five Resolve
-   tiers and numbers as the GM's Card below, with the PHB's examples, and the
-   Pressure per success tier (Flawless 3, Strong 2, Mixed 1). It has no data
-   key to point at, so the card's numbers are carried here and the two agree.
-   The chase check formula a player rolls (d20 + Agility or Tech Modifier +
-   Vehicle Proficiency Bonus + Handling) is the Inventory Garage's math
-   (js/inventory.js garageBench), also inline.
-   Not carried anywhere in the app, so not pointed at: the PHB's Pursuit
-   Escalation table, its full Postures list, what each Environmental Pressure
-   does, and what each chase margin does to Lead. The tracker leaves those to
-   the GM as text.
+   The PHB's own Resolve tiers (with its examples) and Pressure per result are
+   EN.social.sitDown.resolve.tiers and EN.social.sitDown.pressure.results, keyed
+   like resolveTiers and results below; the GM's Card carries the same numbers
+   here, and a test checks that the two agree.
+   The Piloting Check a player rolls is the Inventory Garage's math
+   (js/inventory.js garageBench); the book's formula is
+   EN.chases.operating.pilotingCheck.
+   The trackers point at the PHB's rules rather than apply them: the Postures,
+   what each Environmental Pressure does, what each Chase Check result does to
+   Lead, and the Pursuit Escalation row are shown from EN.social and EN.chases
+   (refs below) with links into the Codex, and the GM applies them by hand.
 
    SHAPES
    A checklist item: { n, key, name (the bold run-in, as printed), text (the
@@ -99,7 +110,12 @@ EN.gmBook.scenes = {
 
     refs: {
       poolMargins: "resolution.margins.pool",          // `margin` on each result row names one of these
-      socialCosts: "resolution.social.costs",          // nearest carried menu for "Social Fallout"
+      socialCosts: "resolution.social.costs",          // Core Resolution's Social Cost Options
+      socialFallout: "social.fallout",                 // the PHB's full Social Fallout table
+      postures: "social.sitDown.postures",             // the PHB's five Postures, with their effects
+      floor: "social.sitDown.floor.pressures",         // what each Environmental Pressure does (same keys as floor below)
+      bookResolve: "social.sitDown.resolve.tiers",     // the PHB's Resolve tiers (same keys as resolveTiers)
+      bookResults: "social.sitDown.pressure.results",  // the PHB's Pressure per result (same keys as results)
       consequenceByScene: "resolution.consequenceByScene",
       bestiary: "bestiary.entries",                    // stats.Resolve, on 23 of 48 entries
       resolveByRole: "gmBook.people.resolveByRole",    // who sits at each tier, and moving a contact
@@ -182,8 +198,10 @@ EN.gmBook.scenes = {
       reason: "Write the reason in a few words. It's what a good Read reveals."
     },
 
-    /* POSTURES. The page names three; the PHB's full list is not carried in
-       the app, so a screen offers these as suggestions beside free text. */
+    /* POSTURES. The page names three. The PHB's full list of five, with what
+       each one does, is EN.social.sitDown.postures (refs.postures); a screen
+       offers those names as suggestions beside free text and links the
+       Codex's Postures. */
     // GMH p16 (Veil), p17 (Stonewall, Compose), p129 (one a Round)
     postures: {
       reachFor: 2,
@@ -193,14 +211,13 @@ EN.gmBook.scenes = {
         { key: "stonewall", name: "Stonewall" },
         { key: "compose", name: "Compose" },
         { key: "veil", name: "Veil", text: "Veil is for Mystique-aligned targets only." }
-      ],
-      // APP TEXT, not book text: the honest line the tab and the Codex print
-      notCarried: "The PHB's full list of Postures is not in the app."
+      ]
     },
 
-    /* THE FLOOR. The six Environmental Pressures in the page's order. What
-       each one does is a PHB rule the app does not carry; the example writes
-       the effect per scene ("Snag for the crew", "Snag on Deception"). */
+    /* THE FLOOR. The six Environmental Pressures in the page's order, keyed
+       like EN.social.sitDown.floor.pressures (refs.floor), which carries what
+       each one does. The example writes the effect per scene ("Snag for the
+       crew", "Snag on Deception"). */
     // GMH p16
     floor: {
       pressures: [
@@ -349,6 +366,8 @@ EN.gmBook.scenes = {
     home: "Chases use Lead from Vehicles and Chases.",
 
     refs: {
+      outcomes: "chases.chase.outcomes",                         // the PHB's Chase Check results and what each does to Lead
+      escalation: "chases.chase.escalation.rows",                // the PHB's Pursuit Escalation table, by Heat
       stalemate: "gmBook.hazards.stalemate",                     // districts, default rule, rows
       impactBySpeed: "gmBook.hazards.stalemate.impactBySpeed",   // Stopped 10 to Very Fast 18
       hostileVehicles: "bestiary.vehicles.profiles",
@@ -444,9 +463,9 @@ EN.gmBook.scenes = {
     /* THE CHASE CHECK. Chase-only Dominant Victory thresholds: +5 on d20, +3
        in Dice Pools. The general contested table (refs.contest) puts Dominant
        Victory at +10 on d20, so a chase must not read that row. A tie is a
-       Stalemate: roll the district table. The book prints nothing here on
-       what other margins do to Lead (that is the PHB's Vehicles and Chases,
-       which the app does not carry). */
+       Stalemate: roll the district table. The handbook prints nothing here on
+       what other margins do to Lead; that is the PHB's Vehicles and Chases,
+       EN.chases.chase.outcomes (refs.outcomes). */
     // GMH p130
     check: {
       dominant: { d20: 5, pool: 3, text: "Dominant Victory at +5 on d20, +3 in Dice Pools." },
@@ -458,14 +477,6 @@ EN.gmBook.scenes = {
     // GMH p130
     stalemate: {
       text: "Stalemate: each pilot makes a Control Check against the Impact DC for their speed; a failure is Snag on the next Chase Check."
-    },
-
-    /* APP TEXT, not book text: the honest lines the Scenes tab and the Codex
-       print where a chase rule is the PHB's Vehicles and Chases, which the
-       app does not carry (see the header). */
-    notCarried: {
-      escalation: "The PHB's Pursuit Escalation table is not in the app.",
-      leadMargins: "Move Lead as the PHB's Vehicles and Chases has it; the app does not carry what each margin does to Lead."
     },
 
     /* FIRST RESPONSE. 5 minus half the crew's Heat with the source, half
@@ -630,7 +641,8 @@ EN.gmBook.scenes = {
     /* THE ANCHOR. Three kinds. An object anchor runs as a Focal Anchor with
        the rating as its Severity: Defense 14, Vitality 15 x the rating (the
        Cascade Orphan's G3 Focal Anchor prints Vitality 45, p96). The Focal
-       Anchor rules themselves are Flow Disturbances (PHB), not carried. */
+       Anchor rules themselves are the PHB's Flow Disturbances,
+       EN.flow.disturbances (the Codex's fl-dist-anchor). */
     // GMH p28
     anchor: {
       text: "The anchor is whatever holds the overwrite in place, and it isn't always an object. It can be a thing (a fused jukebox, a clock stopped at 3:11), a resident, usually the site's boss, that has to die or leave, or a condition that has to be met (every light in the building on at once). When the anchor is an object, run it as a Focal Anchor (Flow Disturbances), reading the rating as its Severity: Defense 14, Vitality 15 x the rating. Several uncontrolled collapses at once is a Cascade. The city has had one.",

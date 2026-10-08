@@ -256,14 +256,14 @@ EN.threats = {
   /* Game Master's Handbook content the GM side does NOT carry, named so nobody
      assumes the absence is an oversight. The Bestiary, Set Pieces, the Job
      Board, Paying the Crew, the security response clock, the composition
-     rules and the GM's Card (data/gm_card.js, the drawer in js/gm.js) all have
-     homes now and are off this list. Pages, for the reader of this file: Heat
-     Response GMH pp113 to 118, NPC Quick-Build pp43 to 52, Prep Templates pp13
-     to 20, The Fifth Flavor pp119 to 126. */
+     rules, the GM's Card (data/gm_card.js, the drawer in js/gm.js), Heat
+     Response (the Heat tab, data/gm_heat.js), NPC Quick-Build (the People tab,
+     data/gm_people.js) and the Sit-Down and chase Prep Templates (the Scenes
+     tab, data/gm_scenes.js) all have homes now and are off this list. Pages,
+     for the reader of this file: Prep Templates pp13 to 20, The Fifth Flavor
+     pp119 to 126. */
   notModelled: [
-    "Heat Response: the Heat Check, the Ladder, Heat Events by band, By Source, the Bounty a source posts at Heat 9, and Cooling Off. Nothing on the GM side reads or writes a crew's Heat.",
-    "NPC Quick-Build: contact cards, Resolve by role, and names for the people who never roll Initiative.",
-    "Prep Templates: the checklists for a wired site, a Sit-Down, and a chase.",
+    "Prep Templates: Wiring a Site, its checklist, Picking Tiers, and the Fullwell Bottling example.",
     "The Fifth Flavor: the complete starter job for a new crew of four."
   ]
 };

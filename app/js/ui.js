@@ -220,7 +220,7 @@ EN.ui = (function () {
     return lead ? [el("span", { style: { whiteSpace: "pre-wrap" }, text: lead }), tie] : [tie];
   }
 
-  function renderText(text) {
+  function renderText(text, linkOpts) {
     if (!text) return el("p", { text: "" });
     var blocks = text.split("\n\n");
     var nodes = [];
@@ -233,19 +233,19 @@ EN.ui = (function () {
       }
       if (bulletStart === -1) {
         var p = el("p", { style: { margin: nodes.length ? "6px 0 0" : "0" } });
-        applyInline(p, block.trim());
+        if (linkOpts) ruleText(p, block.trim(), linkOpts); else applyInline(p, block.trim());
         nodes.push(p);
       } else {
         if (bulletStart > 0) {
           var p2 = el("p", { style: { margin: nodes.length ? "6px 0 0" : "0" } });
-          applyInline(p2, lines.slice(0, bulletStart).join(" "));
+          if (linkOpts) ruleText(p2, lines.slice(0, bulletStart).join(" "), linkOpts); else applyInline(p2, lines.slice(0, bulletStart).join(" "));
           nodes.push(p2);
         }
         var ul = el("ul", { style: { margin: "4px 0 0", paddingLeft: "16px", fontSize: "13.5px", color: "rgb(147, 168, 192)", lineHeight: "1.45" } });
         lines.slice(bulletStart).forEach(function (line) {
           if (line.charAt(0) === "•") {
             var li = el("li", { style: { marginBottom: "3px" } });
-            applyInline(li, line.slice(1).trim());
+            if (linkOpts) ruleText(li, line.slice(1).trim(), linkOpts); else applyInline(li, line.slice(1).trim());
             ul.appendChild(li);
           }
         });

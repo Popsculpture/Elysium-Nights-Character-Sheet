@@ -57,7 +57,7 @@ window.EN = window.EN || {};
     objects: [["Cover Material Table", "ref-cover/cover-material-table"], ["Structure", "ref-cover/structure"],
               ["Integrity", "ref-cover/integrity"]],
     // words every Set Piece paragraph may print, for the Hazards tab's cards
-    setPiece: [["Difficult Terrain", "ref-actions/difficult-terrain"], ["heavily obscured", "ref-cover/obscurement"],
+    setPiece: [["Difficult Terrain", "mv-move/difficult-terrain"], ["heavily obscured", "ref-cover/obscurement"],
                ["Snag", "rz-edge"], ["Dashes", "ref-actions/dash"]]
   };
   /* A Set Piece's own link words, read off its data: the bite's damage type
@@ -314,7 +314,9 @@ window.EN = window.EN || {};
         return kids;
       } },
 
-    // "Falling" alone is no title: it would link the Phase 2 name "Falling & Forced Movement"
+    /* "Falling" alone is no title: a one word panel title links every "Falling" in the GM
+       text. The book's own section, Falling & Forced Movement, is the player chapter's
+       mv-fall, which the data's "per Falling & Forced Movement" links by its title. */
     { id: "gmh-falling", title: "Falling Damage", tag: "PER 2 SPACES", order: 80,
       when: function () { return !!(hz() && hz().falling); },
       build: function (ctx, K) {
@@ -322,9 +324,9 @@ window.EN = window.EN || {};
       } }
   ] });
 
-  /* The book's own names for these chapters, matched in any case. A phrase that
-     names a Phase 2 chapter (Falling & Forced Movement, Flow Disturbances) is
-     deliberately absent. */
+  /* The book's own names for these chapters, matched in any case. Falling & Forced
+     Movement and Flow Disturbances are player rules (mv-fall, fl-dist) whose own files
+     register them, so they are not aliased here. */
   EN.codexView.terms({
     "Hazards and Set Pieces": "gmh-anatomy",
     "encounter budget": "gme-budget"

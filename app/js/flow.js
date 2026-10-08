@@ -429,7 +429,8 @@ EN.flowView = (function () {
   var REF_LINKS = [
     ["fl-core", "Core Concepts & Formulas"], ["fl-shaping", "The Order of Shaping"], ["fl-resonances", "Resonances"],
     ["fl-sustain", "Sustained Effects"], ["fl-strain", "The Strain Track"], ["fl-overdraw", "Overdraw"],
-    ["fl-breakflow", "Breakflow & Restoration"], ["fl-recovery", "Ritual Recovery"]
+    ["fl-breakflow", "Breakflow & Restoration"], ["fl-recovery", "Ritual Recovery"],
+    ["fl-dist", "Flow Disturbances"]
   ];
   /* ruleLink falls back to a text node when codex.js did not load or an anchor does not
      resolve; `live` counts the ones that came back as real links, so the note above them
@@ -651,7 +652,12 @@ EN.flowView = (function () {
       awareness ? el("div.row.wrap", { style: { gap: "10px", alignItems: "center", marginTop: "6px" } }, [
         el("span", { style: { fontFamily: "var(--disp)", fontSize: "9.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "AWARENESS" }),
         el("span.mono", { style: { fontSize: "16px", color: "var(--accent)" }, text: eng.fmtMod(awareness.total) }),
-        el("span.help", { style: { margin: 0 }, text: "Mystique-based: sense unseen forces, detect an Enemy shaping the Flow, and read resonance anomalies before you walk into them." })
+        // the anomalies are the Flow chapter's Flow Disturbances; reading them is Detecting and Analyzing
+        el("span.help", { style: { margin: 0 } }, [
+          document.createTextNode("Mystique-based: sense unseen forces, detect an Enemy shaping the Flow, and "),
+          EN.ui.ruleLink("fl-dist-detect", "read resonance anomalies"),
+          document.createTextNode(" before you walk into them.")
+        ])
       ]) : null
     ], { corners: true });
 
