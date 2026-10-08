@@ -129,6 +129,28 @@ a{ color:var(--accent); text-decoration:none; }
   html:not(.skin-98):not(.skin-droid) .os-tabs-scroll > .os-tab:first-child:nth-last-child(n+11),
   html:not(.skin-98):not(.skin-droid) .os-tabs-scroll > .os-tab:first-child:nth-last-child(n+11) ~ .os-tab{ padding-left:12px; padding-right:12px; }
 }
+/* Classic's top bar on a phone, 2026-10-07. The bar is one flex row that never wraps, and none of
+   its items will shrink below its own longest word: the wordmark is nowrap (124px), LINK STABLE
+   and SYNC OK fold onto two lines and stop at 87px, the record slot stops at its longest word and
+   the clock is one 60px token. With four 16px gaps and 32px of padding that is a floor of about
+   415px with NO ENCOUNTER in the slot and more with a name in it, so at 360 the clock was shoved
+   55px past the bar's right edge and the page widened to carry it. The rail plays no part: its
+   tabs scroll inside .os-tabs-scroll and the gear holds its place. Below 560px, the width where
+   the readouts have already folded onto two lines, the bar drops the clock the way '98 and
+   #GRIDroid do (a phone shows the time just above it), tightens to the rail's 12px edge, and makes
+   the record slot the one item that gives: a single line cut with an ellipsis, so no name can
+   push the bar wide again. The readouts are pinned at their folded width because flex shrinks
+   them in proportion to their one-line width, which left them 30px of blank box while the name
+   beside them was being cut; pinned, and at #GRIDroid's 10px gap for the same pair, they hand
+   that room to the slot, and NO ENCOUNTER reads whole at 360. Classic only; nothing above 560px
+   changes. */
+@media (max-width:560px){
+  html:not(.skin-98):not(.skin-droid) .os-topbar{ gap:10px; padding:0 12px; }
+  html:not(.skin-98):not(.skin-droid) .os-topbar .os-clock{ display:none; }
+  html:not(.skin-98):not(.skin-droid) .os-topbar > .os-status:not(#active-name){ flex:none; width:min-content; gap:10px; }
+  html:not(.skin-98):not(.skin-droid) #active-name{ min-width:0; }
+  html:not(.skin-98):not(.skin-droid) #active-name .an-name{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+}
 /* a tab's SVG icon sits where its text glyph would: one em square, on the text's baseline, in the tab's colour */
 .os-tab span svg{ display:inline-block; width:1em; height:1em; vertical-align:-.15em; transition:transform .25s; }
 .btn span svg{ display:inline-block; width:1em; height:1em; vertical-align:-.15em; }   /* an icon in a button, sized like .os-tab's */
