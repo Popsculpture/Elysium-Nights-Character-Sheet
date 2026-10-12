@@ -611,6 +611,7 @@ EN.gmStore = (function () {
        {op: "post", mail: {from, subj, when, body}}
        {op: "milestone", kind: "major"|"minor", amount}
        {op: "heat", source, delta}
+       {op: "vigor"}
      Amounts are applied as given, positive or negative, and are not clamped:
      clamping would make the inverse inexact. Nexus is rounded to hundredths, the
      way the Inventory's wallet rounds it. A posting is filed at the top of the
@@ -630,7 +631,16 @@ EN.gmStore = (function () {
      there is nothing to cut, and a row at 0 would be clutter on the Social tab.
      Since a clamp cannot be subtracted back out, applying records what it did
      on the ledger's copy of the op (`applied`, below), and undo restores the
-     row's exact previous value, or removes the row the write created. */
+     row's exact previous value, or removes the row the write created.
+
+     VIGOR clears the record's Vigor (ch.vitality.temp, store.js) to 0: unspent
+     Vigor dissipates at the end of a combat encounter (PHB, Vigor), and the
+     Table's END is where an encounter ends. It takes no amount. Applying keeps
+     the Vigor it found on the ledger's copy of the op (`applied.prev`), and undo
+     puts it back. Vigor never stacks (the higher value is kept), so undo keeps
+     any higher Vigor the record has gained since. A record holding no Vigor
+     gets no vigor op at all (vigorHeld below), so an END never files a write
+     that changed nothing. */
   function whole(v) {
     var n = Number(v);
     return (isFinite(n) && n !== 0 && Math.floor(n) === n) ? n : null;
@@ -660,6 +670,8 @@ EN.gmStore = (function () {
         var d = whole(o.delta);
         if (!src || d === null) return;
         out.push({ op: "heat", source: src, delta: d });
+      } else if (o.op === "vigor") {
+        out.push({ op: "vigor" });
       }
     });
     return out;
@@ -671,6 +683,8 @@ EN.gmStore = (function () {
     if (o.op === "milestone") return (o.kind === "major" || o.kind === "minor") && isFinite(Number(o.amount));
     // a heat op is undone from what applying it recorded, never from its delta
     if (o.op === "heat") return typeof o.source === "string" && isObj(o.applied);
+    // so is a vigor op, from the Vigor it found
+    if (o.op === "vigor") return isObj(o.applied) && isFinite(Number(o.applied.prev));
     return o.op === "post" && isObj(o.mail) && typeof o.mail.id === "string" && !!o.mail.id;
   }
 
@@ -704,6 +718,30 @@ EN.gmStore = (function () {
       return own(held, k);
     });
   }
+  /* ---- Vigor -------------------------------------------------------------------
+     A record's Vigor is ch.vitality.temp (store.js; 0 or missing is none).
+     vigorHeld drops a vigor op for a record that holds none, as heatHeld drops
+     a cut to a source it does not hold. */
+  function vigorOf(ch) {
+    var n = (isObj(ch) && isObj(ch.vitality)) ? Number(ch.vitality.temp) : 0;
+    return isFinite(n) && n > 0 ? n : 0;
+  }
+  function vigorHeld(ch, ops) {
+    var has = vigorOf(ch) > 0;
+    return ops.filter(function (o) { return o.op !== "vigor" || has; });
+  }
+  function vigorOp(ch, o, sign) {
+    if (sign > 0) {
+      o.applied = { prev: vigorOf(ch) };
+      if (isObj(ch.vitality)) ch.vitality.temp = 0;
+      return;
+    }
+    var a = o.applied;
+    if (!isObj(a) || !(Number(a.prev) > 0)) return;
+    if (!isObj(ch.vitality)) ch.vitality = { current: null, temp: 0 };
+    ch.vitality.temp = Math.max(vigorOf(ch), Number(a.prev));
+  }
+
   /* Applies a heat op and records on it, as `applied`, what undo needs:
        { created, index, next, prev, newFace, newList, len, spell }
      created (this write made the row), index (where the row was), next (the
@@ -818,6 +856,7 @@ EN.gmStore = (function () {
   function applyOp(ch, o, sign) {
     if (o.op === "milestone") { milestoneOp(ch, o, sign); return; }
     if (o.op === "heat") { if (sign > 0) heatUp(ch, o); else heatBack(ch, o); return; }
+    if (o.op === "vigor") { vigorOp(ch, o, sign); return; }
     if (o.op === "post") {
       if (!isObj(ch.face)) ch.face = {};
       if (!Array.isArray(ch.face.post)) ch.face.post = [];
@@ -871,13 +910,14 @@ EN.gmStore = (function () {
        {source: "award", encounterAt, sourceId, jobId}
        {source: "posting", jobId}
        {source: "payday", paydayId, encounterAt, jobId}
-       {source: "milestone"}   (Payroll's AWARD MILESTONE) */
+       {source: "milestone"}   (Payroll's AWARD MILESTONE)
+       {source: "vigor"}       (the Table's END, clearing the crew's Vigor) */
   function writeCrew(charId, label, ops, meta) {
     var roster = rosterNow();
     if (typeof charId !== "string" || !own(roster, charId) || !isObj(roster[charId])) return false;
     if (!EN.store.updateById) return false;
-    // a Heat cut to a source the record does not hold is no op (see the vocabulary above)
-    var clean = heatHeld(roster[charId], cleanOps(ops));
+    // a Heat cut to a source the record does not hold is no op, nor is clearing Vigor it does not hold (see the vocabulary above)
+    var clean = vigorHeld(roster[charId], heatHeld(roster[charId], cleanOps(ops)));
     if (!clean.length) return false;
     var tag = null;
     if (isObj(meta)) { try { tag = copy(meta); } catch (e) { tag = null; } }

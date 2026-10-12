@@ -17,7 +17,9 @@
    The book's words as written: the export's backslash escapes are removed and
    its **bold** is kept, since the Codex renders it. A list is an array of the
    book's bullets in order; a nested array holds the sub-bullets of the bullet
-   before it. Nothing here is the app's own wording.
+   before it. Nothing here is the app's own wording, except the one field
+   marked APP NOTE (vitality.appNote), which says where the app departs from
+   the book and is rendered as a note, never as rule text.
 
    Read by app/js/codex_recovery.js (the Codex chapter "Vitality & Recovery").
    The damage order itself (Vigor, then Vitality, then Wounds) is Combat's
@@ -63,6 +65,12 @@ EN.recovery = {
       { cls: "Scoundrel",   die: "d8",  start: "8 + Body Modifier",  perLevel: "1d8 + Body Modifier" },
       { cls: "Shaper",      die: "d6",  start: "6 + Body Modifier",  perLevel: "1d6 + Body Modifier" }
     ],
+    /* APP NOTE, not book text (author ruling #1, 2026-10-12): the book rolls the
+       per level gain; the engine (js/engine.js, derive) takes a fixed average,
+       EN.rules.dieAverage(die) + Body Modifier, at least 1 a level. The Codex adds
+       each die's average from EN.rules.dieAverage after this line, so the figures
+       follow the engine rather than being typed here. */
+    appNote: "App note, not book text: the book rolls 1dX + Body Modifier for each level after 1st. This app takes the fixed average instead (half the die, plus 1, plus Body Modifier, at least 1 a level), so a character's Vitality comes out the same every time the sheet works it out.",
     example: "A Codebreaker with **12 Vitality** takes **14 damage**. The first 12 reduces their Vitality to **0**, triggering **1 Fatigue** and **Bloodied**. The remaining **2 damage** becomes **Wound damage**, reducing both current and maximum Vitality by 2."
   },
 

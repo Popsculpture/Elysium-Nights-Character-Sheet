@@ -177,6 +177,8 @@ EN.combatView = (function () {
       c.log.unshift(entry);
       if (c.log.length > 30) c.log.length = 30;
     }, { silent: true });
+    // a Wound damage Body Save rolled from its prompt settles that prompt (see settleWoundSave)
+    if (ctx.woundSave) settleWoundSave(ctx.woundSave, res.total);
     _rollTray.roll = res;
     _rollTray.animating = true;
     var myAnim = ++_rollAnimId;
@@ -204,6 +206,7 @@ EN.combatView = (function () {
       }
       if (Array.isArray(c.log) && c.log.length) { c.log[0].nat = 10; c.log[0].total = next.total; c.log[0].crit = next.crit; c.log[0].fumble = false; c.log[0].pure = true; }
     }, { silent: true });
+    if (ctx.woundSave) settleWoundSave(ctx.woundSave, next.total);   // the rescued total is the one that stands
     _rollTray.roll = next;
     EN.app.render();
   }
@@ -291,6 +294,10 @@ EN.combatView = (function () {
             crit ? el("div.mono", { title: ctx.critNote || null, style: { fontWeight: 700, letterSpacing: ".14em", fontSize: "12px", color: "var(--gold)", marginTop: "7px" }, text: ctx.critLabel || "◆ CRITICAL HIT" })
               : fumble ? el("div.mono", { style: { fontWeight: 700, letterSpacing: ".14em", fontSize: "12px", color: "var(--danger)", marginTop: "7px" }, text: ctx.fumbleLabel || "✖ FUMBLE (NAT 1)" }) : null,
             crit && ctx.critNote ? el("div.mono", { style: { fontSize: "9.5px", color: "var(--text3)", marginTop: "5px", padding: "0 14px", lineHeight: 1.5 }, text: ctx.critNote }) : null,
+            // a roll opened against a known DC (the Wound damage Body Save) says how it went
+            typeof ctx.dc === "number" ? el("div.mono", { dataset: { traydc: total >= ctx.dc ? "pass" : "fail" },
+              style: { fontWeight: 700, letterSpacing: ".14em", fontSize: "12px", marginTop: "7px", color: total >= ctx.dc ? "var(--success)" : "var(--danger)" },
+              text: "VS DC " + ctx.dc + " · " + (total >= ctx.dc ? "SAVED" : "FAILED") }) : null,
             luckLine
           ]);
     } else {
@@ -879,8 +886,30 @@ EN.combatView = (function () {
   }
 
   /* ---------- damage / heal application (per the damage pipeline) ---------- */
+  /* Two of the book's damage consequences the sheet now applies or raises itself (rulings of
+     2026-10-12; they used to be banner text for the player to apply by hand):
+       0 VITALITY  "When Vitality reaches 0, you immediately gain 1 level of Fatigue and the
+                   Bloodied condition." Bloodied is derived from the pools (state() above); the
+                   Fatigue level is added here, on the TRANSITION from above 0 to 0 only, so a
+                   hit taken while already at 0 adds nothing. It is an ordinary Fatigue level,
+                   so the Fatigue controls under Status Changes undo it, and a toast says so.
+       WOUND HIT   "When taking Wound damage, make a Body Save (DC 10 or half the Wound damage
+                   taken, whichever is higher)." Not rolled for you: it queues the save prompt
+                   (queueWoundSave below). "Taken" is the Wounds actually lost, so a hit on an
+                   empty Wound pool raises no save. */
+  function zeroVitalityFatigue(c, before, after) {
+    if (!(before > 0) || after !== 0) return null;
+    var had = (c.conditions || []).indexOf("Fatigue") !== -1 ? ((c.conditionLevels || {})["Fatigue"] || 1) : 0;
+    return { gained: gainFatigue(c, 1), level: had };
+  }
+  function zeroVitalityToast(z) {
+    if (!z) return "";
+    return z.gained ? "Vitality 0: +1 Fatigue (now level " + (z.level + 1) + ") and Bloodied. Undo it with the Fatigue control under Status Changes."
+                    : "Vitality 0: Bloodied. Fatigue is already at 6, so the level the book adds has nowhere to go.";
+  }
   function applyDamage(ch, d, amount) {
     if (!amount || amount <= 0) return;
+    var z = null, woundsLost = 0;
     store.update(function (c) {
       var s = state(c, d);
       c.lastDamage = amount;   // record the hit so the #GRID Stability DC auto-pulls it
@@ -895,16 +924,20 @@ EN.combatView = (function () {
       var hit = Math.min(s.vit, left);
       var newVit = s.vit - hit; left -= hit;
       c.vitality.current = newVit;
+      z = zeroVitalityFatigue(c, s.vit, newVit);
       // overflow becomes Wound damage (also lowers max vitality via woundsLost)
       if (left > 0) {
         var newWounds = Math.max(0, s.wounds - left);
         c.wounds.current = newWounds;
+        woundsLost = s.wounds - newWounds;
       } else {
         c.wounds.current = s.wounds;
       }
       // dying: any damage counts as one failed Death Save
       if (s.dying) { c.deathSaves.f = Math.min(3, (c.deathSaves.f || 0) + 1); }
     });
+    if (woundsLost > 0) { queueWoundSave(store.active(), woundsLost); EN.app.render(); }
+    if (z) toast(zeroVitalityToast(z) + (woundsLost > 0 ? " Wound damage " + woundsLost + ": Body Save prompt on the sheet." : ""));
   }
   function applyHeal(ch, d, amount) {
     if (!amount || amount <= 0) return;
@@ -913,34 +946,136 @@ EN.combatView = (function () {
       c.vitality.current = Math.min(s.vitMax, s.vit + amount);
     });
   }
+  /* A negative amount is the WOUND button: direct Wound damage, which raises the same Body Save
+     prompt. "Taking Wound damage reduces both current and maximum Vitality by the same amount",
+     so the Wounds lost come off current Vitality too (floor 0), and reaching 0 that way adds the
+     0 Vitality Fatigue level like any other hit. Healing Wounds raises the maximum back and
+     leaves current where it is (clamped to the maximum). */
   function healWounds(ch, d, amount) {
     if (!amount) return;
+    var z = null, woundsLost = 0;
     store.update(function (c) {
       var s = state(c, d);
       var nw = eng.clamp(s.wounds + amount, 0, s.woundsMax);
       c.wounds.current = nw;
       if (nw > 0 && s.wounds <= 0) { c.stable = false; c.deathSaves = { s: 0, f: 0 }; }  // restoring a Wound ends Dying/Stable
-      // wound healing raises max vitality back; clamp current
       var vitMax = Math.max(0, (d.vitalityMax || 0) - (s.woundsMax - nw));
-      c.vitality.current = Math.min(s.vit, vitMax);
+      if (nw < s.wounds) {
+        woundsLost = s.wounds - nw;
+        c.vitality.current = Math.max(0, Math.min(vitMax, s.vit - woundsLost));
+        z = zeroVitalityFatigue(c, s.vit, c.vitality.current);
+      } else {
+        // wound healing raises max vitality back; clamp current
+        c.vitality.current = Math.min(s.vit, vitMax);
+      }
     });
+    if (woundsLost > 0) { queueWoundSave(store.active(), woundsLost); EN.app.render(); }
+    if (z) toast(zeroVitalityToast(z) + " Wound damage " + woundsLost + ": Body Save prompt on the sheet.");
+  }
+
+  /* ---------- the Wound damage Body Save prompt (ruling of 2026-10-12) ----------
+     "When taking Wound damage, make a Body Save (DC 10 or half the Wound damage taken,
+     whichever is higher). Failure: Gain 1 Fatigue and suffer a Critical Wound (roll on the
+     Critical Wound Table)." Each Wound hit queues one prompt on the sheet with its DC and a ROLL
+     that is the SAVES column's own Body Save (rollSave). A failure adds the Fatigue level and
+     points at the Critical Wound Table, which the player rolls (the app has no roller for it);
+     a pass does nothing. Dismissible and never blocking. Transient view state, like the
+     popovers: it is kept against the record object it was raised for, never written to it. */
+  var _woundSaves = [];   // [{ id, rec, dmg, dc, result: null | "pass" | "fail", total, fatigued }]
+  var _woundSaveSeq = 0;
+  function queueWoundSave(rec, dmg) {
+    if (!rec || !(dmg > 0)) return;
+    _woundSaves.push({ id: ++_woundSaveSeq, rec: rec, dmg: dmg, dc: Math.max(10, Math.floor(dmg / 2)),
+                       result: null, total: null, fatigued: false });
+  }
+  function woundSavesFor(rec) { return _woundSaves.filter(function (w) { return w.rec === rec; }); }
+  function dismissWoundSave(id) {
+    _woundSaves = _woundSaves.filter(function (w) { return w.id !== id; });
+    EN.app.render();
+  }
+  /* Settle one prompt against a roll total (total null: an automatic failure, from a condition
+     that fails Body saves outright). Every roll the tray makes for the prompt lands here, Pure
+     Luck's rescue included, so the LAST result stands: a reroll that turns a failure into a
+     pass takes back the Fatigue level this prompt added, and the reverse adds it. */
+  function settleWoundSave(id, total) {
+    var w = _woundSaves.filter(function (x) { return x.id === id; })[0];
+    if (!w || store.active() !== w.rec) return;
+    var pass = total != null && total >= w.dc;
+    w.result = pass ? "pass" : "fail"; w.total = total;
+    if (!pass && !w.fatigued) {
+      store.update(function (c) { w.fatigued = gainFatigue(c, 1) > 0; }, { silent: true });
+    } else if (pass && w.fatigued) {
+      store.update(function (c) {
+        var lv = (c.conditionLevels || {})["Fatigue"] || 0;
+        if ((c.conditions || []).indexOf("Fatigue") === -1 || lv <= 0) return;
+        if (lv <= 1) { c.conditions = c.conditions.filter(function (n) { return n !== "Fatigue"; }); delete c.conditionLevels["Fatigue"]; }
+        else c.conditionLevels["Fatigue"] = lv - 1;
+        if (c.hazards) c.hazards.thinAirFatigue = Math.min(c.hazards.thinAirFatigue | 0, lv - 1);
+      }, { silent: true });
+      w.fatigued = false;
+    }
   }
 
   /* ---------- rests ---------- */
   function hasCyber(c, key) {
     return ((c && c.cyberware) || []).some(function (cw) { return cw && typeof cw === "object" && cw.key === key; });
   }
+  /* Breakflow: "You can't channel, recover FP, or sustain effects until Breakflow ends", and
+     "A Short or Long Rest alone can't end it." So no rest refills FP while it holds (ruling of
+     2026-10-12 for the Short and Long Rest; the Downtime rest has worked this way since the
+     2026-09-29 rulings). The flag and the condition both count, as they do for Downtime. */
+  function inBreakflow(c) {
+    return !!(c.flow && c.flow.breakflow) || (c.conditions || []).indexOf("Breakflow") !== -1;
+  }
+  /* "If you begin a Short Rest with 0 dice, regain 1 Resilience Die, which may be spent during
+     that rest." BEGIN is the moment the SHORT REST popover opens: its button records the dice
+     left then (beginShortRest), and TAKE SHORT REST reads that record, not the dice left when
+     it is pressed. Spending the last die with ROLL & HEAL inside the open popover therefore no
+     longer earns the free one. Taking the rest starts the next one from the dice left after it,
+     so pressing TAKE SHORT REST twice cannot mint a second free die. Transient view state, kept
+     against the record object; with no record (a rest started some other way) the dice left
+     now are the dice at the start.
+     A rest that was opened and NOT taken is still the same rest when the popover reopens
+     (openShortRest), so closing it with an outside click and reopening cannot turn a spent last
+     die into a fresh start at 0. It counts as a new rest only once the last one was taken, or
+     once the dice went up (a Long Rest or Downtime regained them; both also clear it). The
+     record is mirrored in sessionStorage by record id, so a reload mid-rest keeps it too; that
+     is per tab and never written to the saved record. */
+  var _shortBegin = null;   // { rec, rd, taken }
+  function shortKey(rec) { var id = rec && rec.meta && rec.meta.id; return id ? "en.shortRestBegin." + id : null; }
+  function beginShortRest(rec, rd, taken) {
+    _shortBegin = { rec: rec, rd: rd, taken: !!taken };
+    try { var k = shortKey(rec); if (k) window.sessionStorage.setItem(k, JSON.stringify({ rd: rd, taken: !!taken })); } catch (x) {}
+  }
+  function clearShortRest(rec) {
+    if (_shortBegin && _shortBegin.rec === rec) _shortBegin = null;
+    try { var k = shortKey(rec); if (k) window.sessionStorage.removeItem(k); } catch (x) {}
+  }
+  function openShortRest(rec, rd) {
+    var cur = (_shortBegin && _shortBegin.rec === rec) ? _shortBegin : null;
+    if (!cur) {
+      try {
+        var k = shortKey(rec), v = k ? JSON.parse(window.sessionStorage.getItem(k) || "null") : null;
+        if (v && typeof v.rd === "number") cur = { rec: rec, rd: v.rd, taken: !!v.taken };
+      } catch (x) {}
+    }
+    if (cur && !cur.taken && rd <= cur.rd) { _shortBegin = cur; return; }   // the same, untaken rest resumes
+    beginShortRest(rec, rd, false);
+  }
   function shortRest(ch, d) {
+    var fpBlocked = false, freeDie = false;
     store.update(function (c) {
       var s = state(c, d);
+      var began = (_shortBegin && _shortBegin.rec === c) ? _shortBegin.rd : s.rd;
       // Static Threshold 5 ("Dead Battery") removes the free die you would otherwise
       // get for starting a Short Rest with none left.
       var deadBattery = !!(d.chromeTax && d.chromeTax.deadBattery);
-      if (s.rd <= 0 && !deadBattery) { c.resilience.spent = Math.max(0, d.resilienceMax - 1); }
+      if (began <= 0 && s.rd <= 0 && !deadBattery) { c.resilience.spent = Math.max(0, d.resilienceMax - 1); freeDie = true; }
       // refresh class resource pool
       if (d.resource) c.resources.current[d.resource.name] = d.resource.max;
-      // Shaper: regain FP equal to Flow modifier (min 1), plus 1 from a Resonance Crown
-      if (d.flow) {
+      // Shaper: regain FP equal to Flow modifier (min 1), plus 1 from a Resonance Crown; none in Breakflow
+      if (d.flow && inBreakflow(c)) fpBlocked = true;
+      else if (d.flow) {
         var cur = (c.flow.current != null) ? c.flow.current : d.flow.max;
         var crownFp = hasCyber(c, "resonanceCrown") ? 1 : 0;
         c.flow.current = Math.min(d.flow.max, cur + Math.max(1, d.flow.attack) + crownFp);
@@ -949,8 +1084,10 @@ EN.combatView = (function () {
       if (c.featureUses) Object.keys(c.featureUses).forEach(function (k) {
         if ((c.featureUses[k] || {}).r !== "Long Rest") delete c.featureUses[k];
       });
+      beginShortRest(c, state(c, d).rd, true);
     });
-    toast("Short Rest taken; resource refreshed. Spend Resilience Dice to heal.");
+    toast("Short Rest taken; resource refreshed." + (freeDie ? " You began it with no Resilience Dice: 1 regained." : "")
+      + (fpBlocked ? " No FP: you can't recover FP until Breakflow ends." : "") + " Spend Resilience Dice to heal.");
   }
   /* ---- the story calendar -------------------------------------------------
      Everything in the app that counts down "one day per Long Rest" advances
@@ -998,7 +1135,8 @@ EN.combatView = (function () {
      Rest gives (rulings of 2026-09-29): full Vitality, all Resilience Dice, the class resource, every
      limited-use feature, the sleep clock and FP. Its own action inside the DOWNTIME popover: the
      calendar controls there still advance the calendar and restore nothing (RULES-SYNC-CHANGELOG
-     A19, still true), and this one restores and does not touch the calendar.
+     A19, still true), and this one restores and does not touch the calendar. It clears Vigor too
+     (ruling of 2026-10-12): a Long Rest zeroes it, and this gives everything a Long Rest gives.
      Two things a week does NOT fix. Breakflow ends only through Breakflow Restoration, so the flag
      stays and FP is not refilled while the character is in it (Strain and the Overdraw points still
      go to 0). And a status stays if its own text says it persists or needs a specific removal:
@@ -1009,20 +1147,22 @@ EN.combatView = (function () {
                          "Breakflow": 1, "Immunity": 1, "Resistance": 1, "Vulnerability": 1 };
   function isTemporaryCondition(name) { return !DOWNTIME_KEEPS[name]; }
   function downtimeRest(ch, d) {
-    var cleared = [], kept = [], hadFatigue = false, inBreakflow = false;
+    var cleared = [], kept = [], hadFatigue = false, hadVigor = false, breakflowOn = false;
     store.update(function (c) {
       var s = state(c, d);
       c.wounds.current = s.woundsMax;                                       // all Wounds
       if (s.woundsMax > 0) { c.stable = false; c.deathSaves = { s: 0, f: 0 }; }
       c.vitality.current = d.vitalityMax || 0;                              // full Vitality
-      c.resilience.spent = 0;                                               // all Resilience Dice
+      hadVigor = (c.vitality.temp || 0) > 0;
+      c.vitality.temp = 0;                                                  // Vigor, as a Long Rest clears it
+      c.resilience.spent = 0; clearShortRest(c);                            // all Resilience Dice; the next Short Rest starts fresh
       c.featureUses = {};                                                   // every limited-use feature refreshes
       if (d.resource) c.resources.current[d.resource.name] = d.resource.max;
       c.conditions = c.conditions || [];
       c.conditionLevels = c.conditionLevels || {};
       // "Breakflow ends only through Breakflow Restoration": the flag and the condition both count
-      inBreakflow = !!c.flow.breakflow || c.conditions.indexOf("Breakflow") !== -1;
-      if (d.flow && !inBreakflow) c.flow.current = d.flow.max;              // full Reservoir, unless the current is severed
+      breakflowOn = inBreakflow(c);
+      if (d.flow && !breakflowOn) c.flow.current = d.flow.max;              // full Reservoir, unless the current is severed
       // all Strain: the stage and the Overdraw points toward the next one. The Breakflow flag is left alone.
       c.flow.strain = 0; c.flow.strainPoints = 0;
       hadFatigue = c.conditions.indexOf("Fatigue") !== -1;
@@ -1041,7 +1181,8 @@ EN.combatView = (function () {
       }
     });
     toast("Downtime rest (1 week): Vitality, all Wounds, Resilience Dice and abilities restored, Strain removed"
-      + (d.flow ? (inBreakflow ? ", FP unchanged (still in Breakflow)" : ", FP full") : "")
+      + (d.flow ? (breakflowOn ? ", FP unchanged (still in Breakflow)" : ", FP full") : "")
+      + (hadVigor ? ", Vigor cleared" : "")
       + (hadFatigue ? ", Fatigue cleared" : "")
       + (cleared.length ? ", " + cleared.join(", ") + " cleared" : "")
       + "." + (kept.length ? " Still on you: " + kept.join(", ") + "." : "")
@@ -1057,7 +1198,7 @@ EN.combatView = (function () {
   var _restProvisioned = true;
   function longRest(ch, d, provisioned) {
     if (provisioned === undefined) provisioned = true;
-    var leaseDue = [], severeFatigue = 0, noNaturalHealing = false, personaExpired = 0, altitudeLocked = 0, altitudeFrom = [], unprovisioned = 0;
+    var leaseDue = [], severeFatigue = 0, noNaturalHealing = false, personaExpired = 0, altitudeLocked = 0, altitudeFrom = [], unprovisioned = 0, fpBlocked = false;
     store.update(function (c) {
       var s = state(c, d);
       var bodMod = d.attributes.BOD.mod;
@@ -1070,10 +1211,11 @@ EN.combatView = (function () {
       if (nw > 0) { c.stable = false; c.deathSaves = { s: 0, f: 0 }; }
       c.vitality.current = Math.max(0, (d.vitalityMax || 0) - (s.woundsMax - nw));  // full Vitality (wound-adjusted)
       c.vitality.temp = 0;
-      c.resilience.spent = 0;                                               // all Resilience Dice
+      c.resilience.spent = 0; clearShortRest(c);                            // all Resilience Dice; the next Short Rest starts fresh
       c.featureUses = {};                                                   // all limited-use features refresh
       if (d.resource) c.resources.current[d.resource.name] = d.resource.max;
-      if (d.flow) c.flow.current = d.flow.max;                              // full Reservoir
+      if (d.flow && inBreakflow(c)) fpBlocked = true;                       // no FP while Breakflow holds
+      else if (d.flow) c.flow.current = d.flow.max;                         // full Reservoir
       c.flow.strain = Math.max(0, (c.flow.strain || 0) - 1);                // Strain −1
       // Fatigue −1, but only up to level 3. Severe Fatigue (4 to 6) "requires
       // medical, mystical, or technological treatment to reduce", so a night's
@@ -1136,30 +1278,36 @@ EN.combatView = (function () {
       leaseDue = t.leaseDue; personaExpired = t.personaExpired;
     });
     var dayRep = dayReport({ leaseDue: leaseDue, personaExpired: personaExpired });
+    // Breakflow rides at the end of whichever message below is shown, so it is never the one dropped
+    var bfNote = fpBlocked ? " No FP: you can't recover FP until Breakflow ends, and a rest alone can't end it." : "";
     /* Told before the altitude lock, because an unprovisioned rest is the player's own
        declaration and the more surprising of the two. A Clanker is told in its own terms. */
     if (unprovisioned) toast("Long Rest complete, but with no safe shelter, food or water: Fatigue "
       + unprovisioned + " stays where it is. The book gives the reduction only to a rest that had "
       + (ch.species === "clankers" ? "maintenance and charge." : "all three.")
-      + (dayRep ? " " + dayRep + "." : ""));
+      + (dayRep ? " " + dayRep + "." : "") + bfNote);
     else if (altitudeLocked) toast("Long Rest complete. " + altitudeLocked + " level(s) of Fatigue came from thin air ("
       + altitudeFrom.join(", ") + ") and do not come off a Long Rest taken at the same altitude. Descend, or use an ability that clears Fatigue."
-      + (dayRep ? " " + dayRep + "." : ""));
-    else if (dayRep) toast("Long Rest complete. " + dayRep + ".");
-    else if (noNaturalHealing) toast("Long Rest complete. Static Threshold 4: no natural Wound recovery. Wounds need medical or engineering treatment.");
-    else if (severeFatigue) toast("Long Rest complete. Fatigue " + severeFatigue + " is Severe: it needs medical, mystical, or technological treatment, not sleep.");
-    else toast("Long Rest complete, restored and refreshed.");
+      + (dayRep ? " " + dayRep + "." : "") + bfNote);
+    else if (dayRep) toast("Long Rest complete. " + dayRep + "." + bfNote);
+    else if (noNaturalHealing) toast("Long Rest complete. Static Threshold 4: no natural Wound recovery. Wounds need medical or engineering treatment." + bfNote);
+    else if (severeFatigue) toast("Long Rest complete. Fatigue " + severeFatigue + " is Severe: it needs medical, mystical, or technological treatment, not sleep." + bfNote);
+    else toast(fpBlocked ? "Long Rest complete." + bfNote : "Long Rest complete, restored and refreshed.");
   }
   function spendResilience(ch, d, count) {
     var s = state(ch, d);
     var n = Math.min(count || 1, s.rd);
     if (n <= 0) { toast("No Resilience Dice left; they refresh on a Long Rest."); return; }
+    /* "Roll each die and add your Body Modifier to each. Recover the total as Vitality." The
+       floor is on the TOTAL (healing is never negative), not on each die: with a negative Body
+       Modifier a low die drags the sum down, as the book's arithmetic says. Ruling of 2026-10-12. */
     var rolls = [], heal = 0;
     for (var i = 0; i < n; i++) {
       var roll = 1 + Math.floor(Math.random() * d.resilienceDie);
       rolls.push(roll);
-      heal += Math.max(0, roll + d.attributes.BOD.mod);
+      heal += roll + d.attributes.BOD.mod;
     }
+    heal = Math.max(0, heal);
     store.update(function (c) {
       c.resilience.spent = (c.resilience.spent || 0) + n;
       var st = state(c, d);
@@ -1283,10 +1431,11 @@ EN.combatView = (function () {
   }
   /* Vitality & Recovery. The book's chapter is data (EN.recovery, data/recovery.js) with its own
      Codex chapter (rc-*), so the banners, popovers and tooltips below read the rule text from it
-     and say what the book says. Where the app does not apply a rule itself (the Wound damage
-     Body Save, the Fatigue level at 0 Vitality), the text states the book's rule for the player
-     to apply; it never claims a button does more than it does. With the data missing each site
-     keeps the short wording it always had. */
+     and say what the book says. Since the rulings of 2026-10-12 the sheet applies the Fatigue
+     level at 0 Vitality itself and raises the Wound damage Body Save as a prompt to roll (see
+     applyDamage); where it still does not apply a rule, the text states the book's rule for the
+     player to apply, and it never claims a button does more than it does. With the data missing
+     each site keeps the short wording it always had. */
   function rcPlain(s) { return String(s == null ? "" : s).replace(/\*\*/g, ""); }
   function rcRest(key) { return ((EN.recovery && EN.recovery.rests) || []).filter(function (r) { return r && r.key === key; })[0] || null; }
   // a book list as small bullets; a nested array holds the sub-bullets of the line before it
@@ -1368,7 +1517,7 @@ EN.combatView = (function () {
     // conditions.js carries the qualifier and this note did not, so the prose card and the
     // mechanical note beside it stated different rules.
     "Bleeding": function (e, l) { e.notes.push("Bleeding " + l + ": lose " + l + "d4 Vitality at start of turn and per space you willingly move"); },
-    "Bloodied": function (e) { e.speedHalved = true; e.notes.push("Bloodied: Speed halved; cannot take Complex Actions"); },
+    "Bloodied": function (e) { e.speedHalved = true; e.speedHalvings += 1; e.notes.push("Bloodied: Speed halved; cannot take Complex Actions"); },
     "Breached": function (e) { e.notes.push("Breached: system actions may suffer Snag / be overridden"); },
     "Breakflow": function (e) { e.notes.push("Breakflow: FP drop to 0; cannot channel, recover FP, or sustain effects"); },
     "Burning": function (e) { e.notes.push("Burning: 1d6 Fire at start of turn; Body Save DC 10 at end of turn to extinguish"); },
@@ -1417,7 +1566,7 @@ EN.combatView = (function () {
     "Fatigue": function (e, l) {
       if (l >= 1) { e.speedDelta -= 1; e.snagChk.AGI = true; }
       if (l >= 2) { e.speedDelta -= 2; e.snagChk.BOD = true; e.snagAtk = true; }
-      if (l >= 3) { e.speedHalved = true; e.speedMin = 3; e.snagSave.BOD = e.snagSave.AGI = true; }   // "halved (rounded down, minimum 3)"
+      if (l >= 3) { e.speedHalved = true; e.speedHalvings += 1; e.speedMin = 3; e.snagSave.BOD = e.snagSave.AGI = true; }   // "halved (rounded down, minimum 3)"
       if (l >= 4) e.derived.push({ name: "Drowsy", from: "Fatigue " + l });
       if (l >= 5) e.derived.push({ name: "Hallucinating", from: "Fatigue " + l });
       if (l >= 6) e.derived.push({ name: "Unconscious", from: "Fatigue 6 · Helpless" });
@@ -1456,7 +1605,7 @@ EN.combatView = (function () {
        spells the restriction out instead of leaning on the flag. */
     "Suppressed": function (e) { e.snagAtk = true; e.noImpulse = true; e.notes.push("Suppressed: Snag on attack rolls; no Impulse Actions. Ends at the start of the suppressor's next turn unless the effect that applied it sets a different duration, or earlier at the GM's call when the fire stops"); },
     "Signal Jammed": function (e) { e.notes.push("Signal Jammed: no remote devices, drones, or wireless cyberware; wired still works"); },
-    "Staggered": function (e) { e.speedHalved = true; e.noSwift = true; e.noImpulse = true; e.notes.push("Staggered: Staggered again → Stunned"); },
+    "Staggered": function (e) { e.speedHalved = true; e.speedHalvings += 1; e.noSwift = true; e.noImpulse = true; e.notes.push("Staggered: Staggered again → Stunned"); },
     /* Stages 1 to 4 read their effect off the data (strainStages). Stage 5 says nothing of
        its own: it becomes Breakflow and Unconscious, whose own riders then speak. */
     "Strain": function (e, l) {
@@ -1481,7 +1630,7 @@ EN.combatView = (function () {
     return (b && b.holdFromGrant) ? { rounds: b.holdRounds, from: b.breathFrom } : null;
   }
   function condEffects(ch, d) {
-    var e = { init: 0, saveDelta: 0, speedDelta: 0, speedHalved: false, speedZero: false, speedMin: 0,
+    var e = { init: 0, saveDelta: 0, speedDelta: 0, speedHalved: false, speedHalvings: 0, speedZero: false, speedMin: 0,
               snagAtk: false, snagChk: {}, snagSave: {}, perceptionSnag: false,
               /* ATTACKS AGAINST YOU, PER LANE. This replaced a single edgeToAttackers boolean
                  that rendered as "attacks against you gain Edge" for all eight conditions that
@@ -1531,15 +1680,22 @@ EN.combatView = (function () {
     e.derived = e.derived.filter(function (dc) { return (ch.conditions || []).indexOf(dc.name) === -1; });
     return e;
   }
-  // Order matters: subtract every flat reduction first, THEN halve, rounding down.
-  // The minimum-3 floor belongs to the Agility-derived base only ("total Speed cannot
-  // drop below 3 due to Agility alone"); conditions and injuries may drive it to 0,
-  // except where a condition states its own minimum (Fatigue 3 states minimum 3).
-  function adjSpeed(base, e) {
-    if (e.speedZero) return 0;
-    var s = base + e.speedDelta;
-    if (e.speedHalved) s = Math.floor(s / 2);
-    return Math.max(e.speedMin || 0, s);
+  // Order matters: subtract every flat reduction first, THEN halve, rounding down. That order
+  // now covers the Load state too: this starts from d.speedBase (Speed before Load) and hands
+  // the Load state's own -2 or halving to eng.speedSteps alongside the conditions', so
+  // Overloaded is no longer halved before Fatigue comes off. The minimum-3 floor belongs to the
+  // Agility-derived base only ("total Speed cannot drop below 3 due to Agility alone");
+  // conditions and injuries may drive it to 0, except where a condition states its own minimum
+  // (Fatigue 3 states minimum 3). Every halving applies, each rounding down: the book says
+  // "apply any halving or percentage reductions" and states no rule that halvings from
+  // different sources don't stack, so two halving conditions halve twice, exactly as a
+  // condition and the Load state's halving already did.
+  function speedPath(d, e) {
+    var m = (d.encumbrance && d.encumbrance.speedMods) || {};
+    var base = typeof d.speedBase === "number" ? d.speedBase : d.speed;
+    return eng.speedSteps(base, { flat: (m.flat || 0) + (e.speedDelta || 0),
+      halve: (m.halve || 0) + (e.speedHalvings || 0), halveInstead: m.halveInstead || 0,
+      min: e.speedMin || 0, zero: !!e.speedZero });
   }
   // the reason stays in the tooltip; a tap peeks Edge & Snag
   function snagChip(why) {
@@ -3302,7 +3458,8 @@ EN.combatView = (function () {
       })() }),
       el("div.row.wrap", { style: { gap: "8px" } }, [
         el("div.pop-anchor", { style: { position: "relative" } }, [
-          el("button.btn.sm" + (_pops.short ? ".primary" : ""), { onclick: function () { var was = _pops.short; closePops(); _pops.short = !was; EN.app.render(); } }, iconLabel(ICON_SHORT_REST, "SHORT REST")),
+          // opening the popover BEGINS the Short Rest: the dice left now decide the free die
+          el("button.btn.sm" + (_pops.short ? ".primary" : ""), { onclick: function () { var was = _pops.short; closePops(); _pops.short = !was; if (!was) openShortRest(ch, s.rd); EN.app.render(); } }, iconLabel(ICON_SHORT_REST, "SHORT REST")),
           _pops.short ? (function () {
             var rdIn = el("input", { type: "number", min: 1, max: Math.max(1, s.rd), value: Math.min(_amts.rd, Math.max(1, s.rd)),
               oninput: function () { _amts.rd = Math.max(1, Number(this.value) || 1); },
@@ -3328,6 +3485,10 @@ EN.combatView = (function () {
                     text: "TAKE SHORT REST refreshes " + d.resource.name + "." }) : null
                 ]);
               })(),
+              restBreakflowLine(),
+              (_shortBegin && _shortBegin.rec === ch && _shortBegin.rd <= 0 && !(d.chromeTax && d.chromeTax.deadBattery))
+                ? el("p", { dataset: { shortFree: "1" }, style: { margin: 0, fontSize: "11.5px", lineHeight: "1.45", color: "var(--accent)" },
+                    text: "You began this rest with 0 Resilience Dice: TAKE SHORT REST regains 1, and you may spend it before you close this." }) : null,
               el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
                 el("span.help", { style: { margin: 0 } }, [cxLink("rc-resilience/spending-resilience-dice", "Resilience Dice"), ":"]),
                 el("span.mono", { style: { color: "var(--accent)" }, text: s.rd + " / " + s.rdMax + " (d" + d.resilienceDie + " " + eng.fmtMod(d.attributes.BOD.mod) + " BOD each)" })
@@ -3360,6 +3521,7 @@ EN.combatView = (function () {
                 rcList(R.lines, { conditions: true, self: ["rc-rests/long-rest"] })
               ]);
             })(),
+            restBreakflowLine(),
             /* The Fatigue reduction is the one benefit the book gates, so it is the one thing
                this asks about. Defaulted ON: shelter and rations are the ordinary case, and a
                prompt that defaults to the exception would tax every rest for the rare night.
@@ -3443,7 +3605,7 @@ EN.combatView = (function () {
     var initAttr = init.attr;
     var initMod = init.mod;
     var initVal = init.total;
-    var spDisplay = adjSpeed(d.speed, fx);
+    var spPath = speedPath(d, fx), spDisplay = spPath.total;
     var lineFeats = (eng.activeLineageFeatures ? eng.activeLineageFeatures(ch) : []) || [];
     var defAttrName = d.defenseAttr === "BOD" ? "Body" : "Agility";
     var defAttrReason = d.defenseAttr === "BOD"
@@ -3458,7 +3620,19 @@ EN.combatView = (function () {
       var ctier = cdef && (cdef.tiers || []).find(function (t) { return t.tier === cw.tier; });
       if (ctier && ctier.bonus && ctier.bonus.speed) cyberSpeedRows.push({ label: cw.name || cw.base || "chrome", val: ctier.bonus.speed });
     });
-    var baseMove = Math.max(3, 6 + agiMod), spdFloored = (6 + agiMod) < 3, spCond = spDisplay - d.speed;
+    var baseMove = Math.max(3, 6 + agiMod), spdFloored = (6 + agiMod) < 3;
+    /* The SPD breakdown follows speedSteps' own path, so its rows add up to the total in the
+       book's order: the flat Load and condition reductions, then ONE row for whatever the
+       halvings (and a stated minimum, or a Speed 0 condition) did after them. */
+    var spBase = typeof d.speedBase === "number" ? d.speedBase : d.speed;
+    var spEnc = d.encumbrance || {}, spLoadFlat = ((spEnc.speedMods || {}).flat || 0) + (spPath.swapped ? (spEnc.speedMods || {}).halveInstead || 0 : 0);
+    var spCondFlat = fx.speedZero ? 0 : (fx.speedDelta || 0);
+    var spRest = spDisplay - (spBase + spLoadFlat + spCondFlat);
+    var spWhy = fx.speedZero ? [] : [spEnc.state === "overloaded" ? "Overloaded" : null, spPath.swapped ? "dragging" : null, fx.speedHalvings > 1 ? fx.speedHalvings + " conditions" : fx.speedHalvings ? "a condition" : null].filter(Boolean);
+    var spRestLabel = fx.speedZero ? "Conditions (Speed 0)"
+      : spWhy.length ? "Halved, round down (" + spWhy.join(", ") + ")" + (fx.speedMin && spDisplay === fx.speedMin ? ", minimum " + fx.speedMin : "")
+      : "Can't fall below " + (fx.speedMin || 0);
+    var spReduced = spDisplay !== spBase;
     function bdRow(label, val, note, raw) { return { label: label, val: val, note: note || null, raw: !!raw }; }
     /* The cover bonuses come off EN.combat.cover ("+2 Defense"), not typed here, so the
        breakdown and Cover & Sight cannot disagree. */
@@ -3491,19 +3665,21 @@ EN.combatView = (function () {
           .concat((d.resistances || []).length ? [["ref-damage/resistance-vulnerability-and-immunity", "Resistance, Vulnerability & Immunity"]] : [])
           .concat([["ref-dmg", "Damage Types"]]) },
       SPD: { title: "Speed", total: spDisplay, sign: false,
-        formula: "max(3, 6 + Agility Modifier) + chrome + lineage − Bulky − load − conditions",
+        formula: "max(3, 6 + Agility Modifier) + chrome + lineage − Bulky − flat load and condition reductions, then any halving (round down)",
         rows: (spdFloored ? [bdRow("Base move (Agility floored to min 3)", baseMove, null, true)]
                           : [bdRow("Base move", 6, null, true), bdRow("Agility modifier", agiMod, chromeNote("AGI"))])
           .concat(cyberSpeedRows.map(function (r) { return bdRow("Chrome · " + r.label, r.val); }))
           .concat(d.lineageSpeed ? [bdRow("Lineage", d.lineageSpeed)] : [])
           .concat(dg.speedPenalty ? [bdRow("Bulky · " + dg.armor.name, dg.speedPenalty)] : [])
-          .concat(d.encumbrance && d.encumbrance.speedDelta ? [bdRow(d.encumbrance.state === "overloaded" ? "Overloaded (Speed halved)" : "Encumbered", d.encumbrance.speedDelta)] : [])
-          .concat(spCond ? [bdRow("Conditions", spCond)] : []),
-        foot: d.lineageSpeedFirstRound ? "+" + d.lineageSpeedFirstRound + " Speed during the first round of any combat (Tuned Synapses)." : null,
+          .concat(spLoadFlat ? [bdRow("Encumbered", spLoadFlat)] : [])
+          .concat(spCondFlat ? [bdRow("Conditions", spCondFlat)] : [])
+          .concat(spRest ? [bdRow(spRestLabel, spRest)] : []),
+        foot: [d.lineageSpeedFirstRound ? "+" + d.lineageSpeedFirstRound + " Speed during the first round of any combat (Tuned Synapses)." : null,
+               spEnc.noDash ? (spEnc.dragging ? "Dragging: no Dash." : "Overloaded: no Dash.") : null].filter(Boolean).join(" ") || null,
         // Movement & Terrain holds what Speed buys (costs, Difficult Terrain); its Speed reductions
         // entry is listed while something here is reducing it
         rules: [["bx-space", "Space, Speed & Area"], ["mv-move", "Movement & Terrain"]]
-          .concat(spCond || dg.speedPenalty || (d.encumbrance && d.encumbrance.speedDelta) ? [["mv-move/speed-reductions", "Speed reductions"]] : [])
+          .concat(spReduced || dg.speedPenalty ? [["mv-move/speed-reductions", "Speed reductions"]] : [])
           .concat(d.encumbrance && d.encumbrance.speedDelta ? [["sk-load", "Encumbrance & Load"]] : []) },
       INIT: { title: "Initiative", total: initVal, sign: true,
         formula: "Agility or Wits Modifier (best)" + (d.lineageInit && d.lineageInit.caliber ? " + lineage" : "") + (d.cyberInit ? " + chrome" : "") + (fx.init ? " + conditions" : ""),
@@ -3943,14 +4119,51 @@ EN.combatView = (function () {
         bannerKids("⚠", "CRITICAL CONDITION", cxCond("Critical Condition"), ["at ", cxLink("rc-dying/50-percent-or-less-of-total-wounds", "50% or less of total Wounds"), "."])));
     }
     if (s.bloodied) {
-      /* The book's 0 Vitality threshold, read from EN.recovery: it adds the level of Fatigue,
-         which this sheet does not add for you, so the banner says it for you to apply. */
+      /* The book's 0 Vitality threshold, read from EN.recovery. The level of Fatigue it names is
+         added by the sheet on the way down to 0 (applyDamage), so the banner states the rule. */
       var th0 = ((EN.recovery && EN.recovery.dying && EN.recovery.dying.thresholds) || [])[0] || "";
       var m0 = /^\*\*0 Vitality:\*\*\s*(.+)$/.exec(th0);
       blocks.push(el("div.muted-box", { style: { borderColor: "var(--ember)", color: "var(--ember)", marginBottom: "12px", textAlign: "left" } },
         bannerKids("🩸", "BLOODIED", cxCond("Bloodied"), m0
           ? [cxLink("rc-dying/0-vitality", "0 Vitality"), ": ", EN.ui.ruleText(el("span"), m0[1], { conditions: true, self: [cxCond("Bloodied")] })]
           : ["Vitality is 0: gain 1 level of Fatigue. You stay conscious; further damage becomes Wound damage."])));
+    }
+    /* The Wound damage Body Save prompt (queueWoundSave): the oldest one for this record, with
+       its DC, the book's rule from EN.recovery, and a ROLL that is the SAVES column's Body Save.
+       Settled prompts say what happened and wait to be dismissed; DISMISS drops one unrolled.
+       It renders INSIDE the Vitality panel, under the Wounds bar, not with the banners above the
+       panels: the hit that raises it comes from the VITALITY or WOUNDS popover, and a box added
+       above the panel pushed that open popover (and its DAMAGE button) down under the player's
+       thumb on a phone. */
+    var wsAll = woundSavesFor(ch), wsBox = null;
+    if (wsAll.length) {
+      var ws = wsAll[0];
+      var wsBod = R.attributes.filter(function (a) { return a.key === "BOD"; })[0];
+      var wsRule = rcWoundSave() || "When taking Wound damage, make a Body Save (DC 10 or half the Wound damage taken, whichever is higher). Failure: Gain 1 Fatigue and suffer a Critical Wound (roll on the Critical Wound Table).";
+      var wsCw = cxCond("Critical Wound");
+      var wsParts = !ws.result
+        ? ["You took " + ws.dmg + " Wound damage: ", el("b", { text: "Body Save DC " + ws.dc }), ". ",
+           EN.ui.ruleText(el("span"), wsRule, { conditions: true, terms: { "Critical Wound Table": wsCw } })]
+        : ws.result === "fail"
+        ? [el("b", { text: "FAILED" }), " (" + (ws.total != null ? ws.total + " vs DC " + ws.dc : "an automatic failure") + "). "
+             + (ws.fatigued ? "+1 Fatigue added. " : "Fatigue is already at 6. ") + "Suffer a Critical Wound: roll on the ",
+           cxLink(wsCw, "Critical Wound Table"), " and add the condition it gives."]
+        : [el("b", { text: "SAVED" }), " (" + ws.total + " vs DC " + ws.dc + "). No effect."];
+      if (wsAll.length > 1) wsParts.push(" " + (wsAll.length - 1) + " more waiting.");
+      var wsBtns = [];
+      if (!ws.result && fx.autoFailBodAgiSaves) {
+        wsBtns.push(el("button.btn.sm", { title: "Body saves fail automatically while this condition holds", style: { color: "var(--danger)", borderColor: "var(--danger)" },
+          onclick: function () { settleWoundSave(ws.id, null); EN.app.render(); } }, "AUTO-FAIL · APPLY"));
+      } else if (!ws.result && wsBod) {
+        wsBtns.push(el("button.btn.sm", { dataset: { woundsave: "roll" }, style: { color: "var(--wound)", borderColor: "var(--wound)" },
+          onclick: function () { rollSave(wsBod, { dc: ws.dc, woundSave: ws.id }); } }, "ROLL BODY SAVE"));
+      }
+      wsBtns.push(el("button.btn.sm", { dataset: { woundsave: "dismiss" }, onclick: function () { dismissWoundSave(ws.id); } }, ws.result ? "OK" : "DISMISS"));
+      var wsColor = ws.result === "pass" ? "var(--success)" : ws.result === "fail" ? "var(--danger)" : "var(--wound)";
+      wsBox = el("div.muted-box", { dataset: { woundsavePrompt: ws.result || "open" }, style: { borderColor: wsColor, color: wsColor, marginTop: "10px", textAlign: "left" } }, [
+        el("div", null, bannerKids("✚", "BODY SAVE · WOUND DAMAGE", "rc-vitality/wound-effects", wsParts)),
+        el("div.row.wrap", { style: { gap: "8px", marginTop: "7px" } }, wsBtns)
+      ]);
     }
     if (fx.cannotAct) {
       blocks.push(el("div.muted-box", { style: { borderColor: "var(--danger)", color: "var(--danger)", marginBottom: "12px", textAlign: "left" },
@@ -4044,6 +4257,7 @@ EN.combatView = (function () {
           bar(s.wounds, s.woundsMax, s.critical ? "var(--danger)" : "var(--wound)")
         ])
       ]),
+      wsBox,
       (s.dying || s.stable) ? el("div", { style: { marginTop: "8px" } }, [
         el("div.row.wrap", { style: { gap: "12px", alignItems: "center" } }, [
           el("span.help", { style: { margin: 0 } }, [cxLink("rc-dying/death-saves", "Death Saves"), " · ✓"]),
@@ -4746,6 +4960,31 @@ EN.combatView = (function () {
         countingCards: featNames.indexOf("Counting Cards") !== -1
       };
     }
+    /* Saving throws open the roll tray pre-loaded with the attribute modifier, the class Save
+       Focus Caliber, and any condition delta, so a save is one tap rather than mental
+       arithmetic. The SAVES column and the Wound damage Body Save prompt both roll through
+       this; `extra` lets the prompt add its DC and its own id to the tray context. */
+    /* A Short or Long Rest in Breakflow restores no FP (inBreakflow, shortRest, longRest). The
+       book's rest lists say "Regain FP", so while it holds the popover says why this one won't. */
+    function restBreakflowLine() {
+      if (!d.flow || !inBreakflow(ch)) return null;
+      return el("p", { dataset: { restBreakflow: "1" }, style: { margin: 0, fontSize: "11.5px", lineHeight: "1.45", color: "var(--warn)" } }, [
+        "In ", cxLink(cxCond("Breakflow"), "Breakflow"), ": this rest restores no FP. You can't recover FP until Breakflow ends, and a rest alone can't end it."]);
+    }
+    function rollSave(a, extra) {
+      var sv = d.saves[a.key];
+      var mods = [{ label: a.name + " Modifier", value: d.attributes[a.key].mod }];
+      if (sv.focus) mods.push({ label: "Caliber (Save Focus)", value: d.caliber || 0 });
+      if (fx.saveDelta) mods.push({ label: "Conditions", value: fx.saveDelta });
+      var why = fx.snagSave[a.key] ? "Condition: Snag on " + a.name + " saves" : null;
+      openRollTray(Object.assign({
+        weaponName: a.name + " Save", subtype: "SAVING THROW",
+        melee: false, thrownItem: false, ranged: false, usesAmmo: false,
+        traits: [], baseMods: mods, critMin: 20,
+        autoSnag: why ? [why] : [], autoEdge: [], baseSnag: why ? 1 : 0, baseEdge: 0,
+        shaken: (ch.conditions || []).indexOf("Shaken") !== -1, dmg: null
+      }, moxieFlags(), extra || {}));
+    }
     function weaponsKids() {
       var kids = [];
       var atkSnag = fx.snagAtk ? "Active condition · Snag on all attack rolls" : null;
@@ -5282,6 +5521,9 @@ EN.combatView = (function () {
             style: { fontSize: "9px", color: tierColor, borderColor: tierColor } }, (tierDef ? tierDef.name : enc.tier).toUpperCase() + " LOADOUT"),
           el("span.chip", { title: stateDef.effect || "", style: { fontSize: "9px", color: stateColor, borderColor: stateColor } }, (stateDef.name || enc.state || "").toUpperCase()),
           enc.speedDelta ? el("span.mono", { style: { fontSize: "11px", color: stateColor }, text: "SPD " + enc.speedDelta }) : null,
+          // Overloaded and any drag both bar Dash; the app has no Dash button to grey out, so it is said here
+          enc.noDash ? el("span.chip", { title: enc.dragging ? "While dragging, pushing, or pulling you can't Dash." : "While Overloaded you can't use Dash.",
+            style: { fontSize: "9px", color: "var(--danger)", borderColor: "var(--danger)" } }, "NO DASH") : null,
           enc.haul !== "none" ? el("span.chip", { title: "Active Haul; expand to change it", style: { fontSize: "9px", color: "var(--warn)", borderColor: "var(--warn)" } }, "HAULING") : null
         ]),
         // the Loadout you declared for the run; it sets the Load Budget
@@ -5303,7 +5545,10 @@ EN.combatView = (function () {
             (EE.hauls || []).map(function (h) { return el("option", { value: h.key, selected: enc.haul === h.key, text: h.name, title: h.hint }); }))
         ]) : null,
         loadOpen && enc.tier === "light" && enc.state === "unencumbered" ? el("p.help", { style: { margin: "7px 0 0", fontSize: "10.5px", color: "var(--success)" }, text: (tierDef && tierDef.effect) || "" }) : null,
-        loadOpen && enc.state !== "unencumbered" ? el("p.help", { style: { margin: "7px 0 0", fontSize: "10.5px", color: stateColor }, text: stateDef.effect || "" }) : null
+        loadOpen && enc.state !== "unencumbered" ? el("p.help", { style: { margin: "7px 0 0", fontSize: "10.5px", color: stateColor }, text: stateDef.effect || "" }) : null,
+        // dragging one body is Encumbered with a different Speed rule, so the state's "Speed -2" needs its rider
+        loadOpen && enc.haul === "dragone" ? el("p.help", { style: { margin: "4px 0 0", fontSize: "10.5px", color: stateColor },
+          text: ((EE.hauls || []).filter(function (h) { return h.key === "dragone"; })[0] || {}).hint || "" }) : null
       ]));
       var owned = (ch.equipment || []).filter(function (e) { return e.qty > 0; });
       var inScene = owned.filter(function (e) { return isEquippedAny(ch, entryKey(e)) || carryStatus(ch, entryKey(e)) !== "stashed"; });
@@ -5799,23 +6044,8 @@ EN.combatView = (function () {
         DEF_RULES.forEach(function (r) { if (!cxHas(r.a)) kids.push(el("p.help", { style: r.style, text: r.text })); });
       }
 
-      // LEFT column: saving throws. Each row is a button that opens the roll tray,
-      // pre-loaded with the attribute modifier, the class Save Focus Caliber, and any
-      // condition delta, so a save is one tap rather than mental arithmetic.
-      function rollSave(a) {
-        var sv = d.saves[a.key];
-        var mods = [{ label: a.name + " Modifier", value: d.attributes[a.key].mod }];
-        if (sv.focus) mods.push({ label: "Caliber (Save Focus)", value: d.caliber || 0 });
-        if (fx.saveDelta) mods.push({ label: "Conditions", value: fx.saveDelta });
-        var why = fx.snagSave[a.key] ? "Condition: Snag on " + a.name + " saves" : null;
-        openRollTray(Object.assign({
-          weaponName: a.name + " Save", subtype: "SAVING THROW",
-          melee: false, thrownItem: false, ranged: false, usesAmmo: false,
-          traits: [], baseMods: mods, critMin: 20,
-          autoSnag: why ? [why] : [], autoEdge: [], baseSnag: why ? 1 : 0, baseEdge: 0,
-          shaken: (ch.conditions || []).indexOf("Shaken") !== -1, dmg: null
-        }, moxieFlags()));
-      }
+      // LEFT column: saving throws. Each row is a button that opens the roll tray (rollSave,
+      // at render scope so the Wound damage save prompt rolls through the same one).
       var savesCol = el("div", { style: { flex: "0 0 auto", borderRight: "1px solid rgba(35,48,68,.6)", paddingRight: "12px", marginRight: "4px" } }, [
         el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".14em", color: "var(--text3)", fontWeight: 700, marginBottom: "3px" } }, "SAVES"),
         el("div", { style: { fontSize: "9.5px", color: "var(--text4)", marginBottom: "5px" } }, "tap to roll"),

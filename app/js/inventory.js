@@ -3253,11 +3253,17 @@ EN.inventoryView = (function () {
      book's Piloting Check (EN.chases.operating, Codex vc-piloting): d20 +
      Agility Modifier + Vehicle Proficiency Bonus (if proficient) + Handling;
      Dice Pool Method, Edge Dice from the same sources. The Chase Check and the
-     Control Check both use it. The TECH button swaps in the Tech Modifier for
-     any pilot; the book allows that only through Direct Drive (a Rigger or a
-     Neural Interface, hardwired in). The button and the VEHICLE ATTACK readout
-     work as they always have while the author rules on both, and the button's
-     title states the book rule. A Vehicle Focus naming the specific
+     Control Check both use it. Direct Drive (Part 2, Rigging and Cyberware;
+     author's ruling of 2026-10-12): only a Rigger, or a Freelancer carrying a
+     Neural Interface (Datajack), may pilot with the Tech Modifier, so the TECH
+     button shows only for that pilot (garageDirectDrive). Everyone else pilots
+     with Agility, and a TECH choice left over from a pilot who had Direct Drive
+     falls back to Agility. Vehicle attacks (same ruling) take the book's two
+     routes instead of one invented formula: a Mounted weapon rolls d20 + Tech
+     Modifier + the Weapon Proficiency Bonus for the weapon's own category
+     (Heavy Weapons, for the Heavy Weapons and Explosive Launchers catalogs the
+     guns come from), whoever is driving; a ram is an opposed piloting check, so
+     its readout is the piloting total itself. A Vehicle Focus naming the specific
      type adds Caliber to attack rolls, vehicle checks, AND damage rolls;
      a matching Specialization adds crit 19-20 (d20) and +2 Edge Dice (pools).
      Untrained: the check is allowed but rolls with Snag, and the GM can bar
@@ -3278,6 +3284,21 @@ EN.inventoryView = (function () {
     _garage.cat = garageCatFor(v.category);
     _garage.type = v.name;
     _garage.handling = v.handling;
+  }
+  /* Direct Drive: "A Rigger, or any Freelancer carrying a Neural Interface
+     (Datajack)" (Part 2, Rigging and Cyberware). A Rigger is the Codebreaker
+     subclass keyed "rigger" (its Hardware Integration lands at level 1, so the
+     subclass alone qualifies). The Datajack counts once it is INSTALLED, i.e. in
+     ch.cyberware, not waiting in the Chrome Stash: by catalog key, or by its base
+     name for a keyless record or a legacy string entry (installedCyberware
+     normalizes those). Returns the reason as the book names it, or "" for none. */
+  var DATAJACK_NAME = "Neural Interface (Datajack)";
+  function garageDirectDrive(ch, d) {
+    if (ch && ch.class === "codebreaker" && d && d.subclassInfo && d.subclassInfo.key === "rigger") return "Rigger";
+    var jack = EN.engine.installedCyberware(ch).some(function (cw) {
+      return cw && (cw.key === "datajack" || (cw.base || cw.name) === DATAJACK_NAME);
+    });
+    return jack ? DATAJACK_NAME : "";
   }
 
   /* ---- Garage panel 2: fit Vehicle Mods to an owned vehicle -------------- */
@@ -3355,6 +3376,9 @@ EN.inventoryView = (function () {
     var specRec = eng.specFor(ch, "vehicles", cat);
     var spec = typeName && specRec && eng.aspectMatches(specRec.aspect, typeName) ? specRec : null;
     var cal = focus ? (d.caliber || 1) : 0;
+    // Direct Drive gates the Tech Modifier; without it a leftover TECH choice falls back to Agility
+    var directDrive = garageDirectDrive(ch, d);
+    if (!directDrive && _garage.attr !== "AGI") _garage.attr = "AGI";
     var mod = d.attributes[_garage.attr].mod;
     var attrName = d.attributes[_garage.attr].name;
     var handling = Number(_garage.handling) || 0;
@@ -3385,8 +3409,9 @@ EN.inventoryView = (function () {
         oninput: function () { _garage.handling = this.value; reRender(); } }),
       el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em" }, text: "VIA" }),
       el("button.btn.sm" + (_garage.attr === "AGI" ? ".primary" : ""), { title: "The Piloting Check uses your Agility Modifier", onclick: function () { _garage.attr = "AGI"; reRender(); } }, "AGILITY"),
-      el("button.btn.sm" + (_garage.attr === "TEC" ? ".primary" : ""), { title: "Direct Drive: while hardwired into the chassis (a Rigger, or any Freelancer carrying a Neural Interface (Datajack)), you use your Tech Modifier instead of your Agility Modifier for all piloting checks", onclick: function () { _garage.attr = "TEC"; reRender(); } }, "TECH"),
-      EN.ui.ruleChip("vc-piloting/direct-drive", { title: "Direct Drive" })
+      // TECH only for a pilot with Direct Drive; the chip stays for everyone so the rule is one tap away
+      directDrive ? el("button.btn.sm" + (_garage.attr === "TEC" ? ".primary" : ""), { title: "Direct Drive (you qualify: " + directDrive + "): while hardwired into the chassis (a Rigger, or any Freelancer carrying a Neural Interface (Datajack)), you use your Tech Modifier instead of your Agility Modifier for all piloting checks", onclick: function () { _garage.attr = "TEC"; reRender(); } }, "TECH") : null,
+      EN.ui.ruleChip("vc-piloting/direct-drive", { title: directDrive ? "Direct Drive" : "Direct Drive: piloting with Tech takes a Rigger or a Neural Interface (Datajack)" })
     ]);
     var chips = el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginBottom: "8px" } }, [
       el("span.chip", { title: "Vehicle Proficiency in " + cat + (untrained ? "" : "; adds your Vehicle Proficiency Bonus to checks made to control the vehicle"),
@@ -3424,6 +3449,21 @@ EN.inventoryView = (function () {
       var edgePts = edgeParts.reduce(function (a, p) { return a + p.value; }, 0);
       var edgePool = eng.buildEdgePool(edgePts);
       var edgeTip = edgeParts.length ? edgeParts.map(function (p) { return "+" + p.value + "  " + p.label; }).join("\n") : "No Edge sources yet";
+      /* Mounted Weapons (Part 2): d20 + Tech Modifier + Weapon Proficiency Bonus, the proficiency
+         being the gun's own category, Heavy Weapons for the Heavy Weapons and Explosive Launchers
+         catalogs. Tech whoever drives, since the onboard targeting fires it, so this ignores the
+         AGILITY / TECH piloting choice. A Vehicle Focus for this type still adds Caliber (it covers
+         attack rolls made using the vehicle). Untrained in the category: Snag, as for any weapon. */
+      var MOUNT_CAT = "Heavy Weapons";
+      var mountInfo = R.profTiers[eng.effectiveGearTier(ch, "weapons", MOUNT_CAT)] || R.profTiers.untrained;
+      var tecMod = d.attributes.TEC.mod;
+      var mountTotal = tecMod + mountInfo.d20 + cal;
+      var mountTip = "Mounted weapon: d20 + Tech Modifier (" + eng.fmtMod(tecMod) + ")"
+        + " + Weapon Proficiency Bonus for the weapon's own category (" + MOUNT_CAT + ", " + mountInfo.name
+        + (mountInfo.d20 ? " " + eng.fmtMod(mountInfo.d20) : ", Snag") + ")"
+        + (focus ? " + Caliber from " + cat + " (" + focus.aspect + ") Focus (" + eng.fmtMod(cal) + ")" : "")
+        + (spec ? " · Specialization: crit 19-20" : "")
+        + "\nThe guns are the Heavy Weapons and Explosive Launchers on a Hardpoint Mount or in a stock loadout.";
       body.push(el("div.row.wrap", { style: { gap: "16px", alignItems: "center", margin: "2px 0 8px" } }, [
         el("div", { title: d20Tip, style: { textAlign: "center", minWidth: "110px" } }, [
           el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" } }, [EN.ui.ruleLink("vc-chase/resolving-the-chase", "CHASE CHECK"), document.createTextNode(" · D20")]),
@@ -3435,9 +3475,17 @@ EN.inventoryView = (function () {
           el("span.mono", { style: { fontSize: "22px", color: "var(--success)" }, text: edgePts + " → " + edgePool.label }),
           untrained ? el("div.mono", { style: { fontSize: "9px", color: "var(--warn)" }, text: "+2 Snag Dice untrained" }) : null
         ]),
-        el("div", { title: "Vehicle attack rolls: d20 + " + attrName + " Modifier" + (tierInfo.d20 ? " + Vehicle Proficiency Bonus" : "") + (focus ? " + Caliber from the Focus" : ""), style: { textAlign: "center", minWidth: "90px" } }, [
-          el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "VEHICLE ATTACK" }),
-          el("span.mono", { style: { fontSize: "22px", color: "var(--ember)" }, text: eng.fmtMod(mod + tierInfo.d20 + cal) })
+        // Mounted weapon: always the Tech Modifier (the onboard targeting), plus the gun's own Weapon Proficiency
+        el("div", { title: mountTip, style: { textAlign: "center", minWidth: "110px" } }, [
+          el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" } }, [EN.ui.ruleLink("vc-piloting/mounted-weapons", "MOUNTED WEAPON"), document.createTextNode(" · D20")]),
+          el("span.mono", { style: { fontSize: "22px", color: mountInfo.snag ? "var(--warn)" : "var(--ember)" }, text: eng.fmtMod(mountTotal) }),
+          mountInfo.snag ? el("div.mono", { style: { fontSize: "9px", color: "var(--warn)" }, text: "with Snag" }) : null
+        ]),
+        // Ram: an opposed piloting check, so the readout is the piloting total above
+        el("div", { title: "Ram: an opposed piloting check against the defender's piloting check; an unpiloted or parked vehicle presents a static Defense of 10 + its Handling.\n" + d20Tip, style: { textAlign: "center", minWidth: "90px" } }, [
+          el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" } }, [EN.ui.ruleLink("vc-damage/collisions-and-ramming", "RAM"), document.createTextNode(" · OPPOSED")]),
+          el("span.mono", { style: { fontSize: "22px", color: untrained ? "var(--warn)" : "var(--ember)" }, text: eng.fmtMod(d20Total) }),
+          untrained ? el("div.mono", { style: { fontSize: "9px", color: "var(--warn)" }, text: "with Snag" }) : null
         ]),
         focus ? el("div", { title: "A Vehicle Focus adds Caliber to damage rolls with this vehicle type as well", style: { textAlign: "center", minWidth: "90px" } }, [
           el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "DAMAGE RIDER" }),

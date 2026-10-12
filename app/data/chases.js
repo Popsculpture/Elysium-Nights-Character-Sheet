@@ -20,6 +20,9 @@
        Gameplay Summary box "Running a Chase".
      # Saving Throws > ## Vehicle Proficiencies (the proficiency chapter of
        the same part, export lines 1052 to 1064): `proficiencies`.
+   One field is not the book's: `proficiencies.tableRuling`, the author's
+   ruling of 2026-10-12 on where the two untrained pilot passages disagree,
+   marked as a table ruling wherever the Codex shows it.
    Ownership, upkeep, repair, mods and the profile stat lines are Part 3 and
    live in EN.vehicles (app/data/vehicles.js); this file does not repeat them.
 
@@ -109,6 +112,11 @@ EN.chases = {
   proficiencies: {
     intro: "Vehicle Proficiencies tell you what you are actually trained to drive or pilot.",
     rule: "If you have the right Vehicle Proficiency, you can operate that vehicle class normally. If you don't, you usually can't operate it at all. For simpler vehicles, the GM might let you try anyway. When they do, you roll with **Snag**, and a failure tends to create bigger problems, especially while piloting under stress.",
+    /* TABLE RULING, not book text (author, 2026-10-12, ruling #11). `rule` above (export
+       l.1056) bars an untrained pilot except from simpler vehicles; operating.proficiency
+       (l.6061) lets one try any vehicle at Snag unless the GM bars it. Both stay as written;
+       the author ruled that l.6061 wins, and the Garage already works that way. */
+    tableRuling: "Table ruling, not book text: where this passage and Proficient and Untrained Pilots disagree, play by Proficient and Untrained Pilots. An untrained pilot can still attempt to operate a vehicle, rolling with Snag, and the GM may decide that especially complex, restricted, or specialized vehicles can't be operated without the proficiency.",
     rows: [
       { category: "Ground Vehicles", covers: "Wheeled, tracked, or hovering transport built for streets and off-road terrain.", examples: "Street bikes, armored sedans, scavenged buggies, cargo haulers",
         inPlay: "The standard for urban getaways and wasteland smuggling. High availability, but heavily restricted by traffic, barricades, and physical terrain." },

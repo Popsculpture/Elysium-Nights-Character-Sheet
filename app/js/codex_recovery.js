@@ -12,7 +12,10 @@
    Critical Condition, Critical Wound, Fatigue, Unconscious), and the full rules
    of Ritual Recovery and Breakflow Restoration (the Flow chapter). Every rule
    line is a field of EN.recovery; this file's own words are entry labels, the
-   "Example in Play" kicker and the small pointers between panels.
+   "Example in Play" kicker, the small pointers between panels, and the tail of
+   the Calculating Vitality app note (EN.recovery.vitality.appNote, the app's
+   fixed average per level, marked as not book text), whose per die figures
+   come from EN.rules.dieAverage.
    The API is documented in the header of app/js/codex.js.
    =========================================================================== */
 window.EN = window.EN || {};
@@ -54,6 +57,23 @@ window.EN = window.EN || {};
     ]);
   }
 
+  /* The tail of the Calculating Vitality app note: each die's fixed per level figure, from
+     the engine's own EN.rules.dieAverage, so the note cannot drift from what the sheet adds.
+     Each die once, smallest first ("4 on a d6, 5 on a d8, ..."); empty without rules. */
+  function averages(rows) {
+    var R = EN.rules, seen = {}, dice = [], parts;
+    if (!R || typeof R.dieAverage !== "function") return "";
+    (rows || []).forEach(function (c) {
+      var n = parseInt(String(c.die).replace(/^d/, ""), 10);
+      if (n && !seen[n]) { seen[n] = true; dice.push(n); }
+    });
+    if (!dice.length) return "";
+    dice.sort(function (a, b) { return a - b; });
+    parts = dice.map(function (n) { return R.dieAverage(n) + " on a d" + n; });
+    var tail = parts.length > 1 ? parts.slice(0, -1).join(", ") + " and " + parts[parts.length - 1] : parts[0];
+    return " Before Body Modifier, that is " + tail + ".";
+  }
+
   EN.codexView.register({ id: "recovery", title: "Vitality & Recovery", order: 45, audience: "both", panels: [
 
     /* ---- 1 · the words ------------------------------------------------------ */
@@ -78,7 +98,8 @@ window.EN = window.EN || {};
         K.entry("calculating-vitality", "Calculating Vitality", [
           K.subTitle("Calculating Vitality"),
           K.refTable(["Class", "Resilience Die", "Vitality at 1st Level", "Vitality Gain Per Level"],
-            v.byClass.map(function (c) { return [c.cls, c.die, c.start, c.perLevel]; }), [0])
+            v.byClass.map(function (c) { return [c.cls, c.die, c.start, c.perLevel]; }), [0]),
+          v.appNote ? K.note(v.appNote + averages(v.byClass)) : null
         ]),
         example(K, v.example)
       ];

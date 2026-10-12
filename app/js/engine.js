@@ -2471,7 +2471,7 @@ EN.engine = (function () {
     // inferred from what you happen to be carrying.
     var tier = (ch.loadout === "light" || ch.loadout === "heavy") ? ch.loadout : "standard";
     var budget = bands[tier];
-    var haul = (ch.haul === "lift" || ch.haul === "drag") ? ch.haul : "none";
+    var haul = (ch.haul === "lift" || ch.haul === "dragone" || ch.haul === "drag") ? ch.haul : "none";
     // Unencumbered: "at or below your Load Budget, and your Loadout isn't Heavy."
     // Encumbered: "on a Heavy Loadout, carrying more Load than your Load Budget, or
     // hauling something that is clearly heavy but still plausible." Overloaded is defined by the haul
@@ -2481,10 +2481,60 @@ EN.engine = (function () {
     if (current > budget) state = "encumbered";
     if (tier === "heavy") state = "encumbered";           // a Heavy loadout is Encumbered for the run
     if (haul === "lift") state = (state === "unencumbered") ? "encumbered" : "overloaded";
+    /* Dragging, Pushing, and Pulling (Part 3): one body-sized load "treats you as Encumbered".
+       Unlike the Short Lift and Carry above, that section says nothing about stepping up to
+       Overloaded when you already were, so an Encumbered character stays Encumbered here. */
+    if (haul === "dragone" && state === "unencumbered") state = "encumbered";
     if (haul === "drag") state = "overloaded";
+    /* What the state does to Speed, as inputs to speedSteps rather than a finished number, so
+       the Freelancer tab can add its conditions and still run the book's order (every flat
+       reduction, then the halvings). Encumbered is a flat -2; Overloaded halves.
+       While dragging, pushing or pulling, "Your Speed is usually halved, round down. Don't stack
+       this with the Encumbered Speed penalty. Use the worse movement limit": dragging one body
+       offers a halving in place of the -2, and speedSteps keeps whichever ends lower. The
+       oversized or double haul is Overloaded, which already halves. Neither may Dash ("You can't
+       Dash" while dragging; "You can't use Dash" while Overloaded). */
+    var dragging = haul === "dragone" || haul === "drag";
+    var speedMods = { flat: state === "encumbered" ? -2 : 0, halve: state === "overloaded" ? 1 : 0,
+                      halveInstead: (haul === "dragone" && state === "encumbered") ? 2 : 0 };
     return { base: base, size: size || null,
              steps: steps, threshold: threshold, bands: bands, tier: tier, budget: budget,
-             current: current, items: items, haul: haul, state: state };
+             current: current, items: items, haul: haul, state: state,
+             dragging: dragging, noDash: dragging || state === "overloaded", speedMods: speedMods };
+  }
+
+  /* SPEED REDUCTIONS, in the book's order (Part 2, Movement & Distance, Speed): "When multiple
+     Speed reductions apply, subtract all flat reductions first, then apply any halving or
+     percentage reductions, rounding down. Speed can't fall below 0 (or its stated minimum)."
+     The ONE place a reduction is applied. derive() runs it with the Load state alone (d.speed);
+     the Freelancer tab runs it again from d.speedBase with the conditions added, so the two can
+     never take the steps in different orders. It used to be split across both: derive() halved
+     for Overloaded first (with a floor of 1 the book never states) and combat.js then took the
+     Fatigue reductions off the halved number, so base 8, Overloaded, Fatigue 2 read 1, not
+     (8 - 3) / 2 = 2.
+       m.flat          every flat change summed (reductions negative)
+       m.halve         how many halvings apply, each rounding down
+       m.halveInstead  dragging one body: this much of m.flat (the Encumbered -2) may be swapped
+                       for one more halving, and the worse (lower) result is the one kept
+       m.min           a stated minimum (Fatigue 3: "halved (rounded down, minimum 3)"), else 0
+       m.zero          a condition that sets Speed to 0 outright (Grappled, Restrained ...)
+     Returns { total, afterFlat, halvings, swapped }: afterFlat and halvings are the path that
+     produced total, so a breakdown can show the steps. */
+  function speedSteps(base, m) {
+    m = m || {};
+    function run(flat, halve) {
+      var s = base + flat;
+      for (var i = 0; i < halve; i++) s = Math.floor(s / 2);
+      return s;
+    }
+    if (m.zero) return { total: 0, afterFlat: base + (m.flat || 0), halvings: 0, swapped: false, zero: true };
+    var flat = m.flat || 0, halve = m.halve || 0, swapped = false;
+    var s = run(flat, halve);
+    if (m.halveInstead) {
+      var alt = run(flat + m.halveInstead, halve + 1);
+      if (alt < s) { s = alt; flat += m.halveInstead; halve += 1; swapped = true; }
+    }
+    return { total: Math.max(m.min || 0, 0, s), afterFlat: base + flat, halvings: halve, swapped: swapped };
   }
 
   /* ---- Body Slots & Worn Gear ---------------------------------------------
@@ -3452,11 +3502,14 @@ EN.engine = (function () {
     var speed = Math.max(3, 6 + agiMod) + (cyberFlat.speed || 0) + (defLoadout.speedPenalty || 0) + linMech.speed;
 
     /* encumbrance: state from the declared Loadout, on-person Load, and hauls;
-       Encumbered = Speed -2, Overloaded = Speed halved (round down, min 1) */
+       Encumbered = Speed -2, Overloaded = Speed halved (round down), dragging one body = halved
+       or -2, whichever is worse. speedBase is every flat piece above, before the Load state;
+       speedSteps applies the state in the book's order, and the Freelancer tab re-runs it from
+       speedBase with conditions added. No floor of 1: "Speed can't fall below 0". */
     var enc = encumbranceInfo(ch, attributes, defLoadout, linFeats, size);
-    enc.speedDelta = enc.state === "encumbered" ? -2
-                   : enc.state === "overloaded" ? (Math.floor(speed / 2) - speed) : 0;
-    if (enc.speedDelta) speed = Math.max(1, speed + enc.speedDelta);
+    var speedBase = speed;
+    speed = speedSteps(speedBase, enc.speedMods).total;
+    enc.speedDelta = speed - speedBase;
 
     /* vitality / wounds / resilience */
     var vit = R.classVitality[ch.class];
@@ -3764,6 +3817,8 @@ EN.engine = (function () {
       level: level, caliber: cal, xp: ch.xp || 0,
       attributes: attributes,
       defense: defense, defenseAttr: defenseAttr, speed: speed,
+      // Speed before any Load state or condition; feed it back through speedSteps to add more
+      speedBase: speedBase,
       vitalityMax: vitalityMax, resilienceDie: resilienceDie, resilienceMax: resilienceMax,
       armorDR: defLoadout.armorDR, blockBonus: defLoadout.blockBonus,
       // cyberDR is chrome worn UNDER the skin, so it stacks with worn armor exactly as
@@ -4261,6 +4316,9 @@ EN.engine = (function () {
     // deliberately NOT a field on the derived record, because a stored value would have to
     // pick one condition state and the callers want different ones.
     initiative: initiative,
+    // THE Speed reducer: flat reductions first, then halvings, floor 0 (or a stated minimum).
+    // derive() uses it for the Load state; the Freelancer tab adds its conditions through it.
+    speedSteps: speedSteps,
     isSlotEquipped: isSlotEquipped, releaseEntry: releaseEntry, setEquipSlot: setEquipSlot,   // Trauma Rig tier lookup and the owned-entry list
     // Environmental Hazards. hazardStats is THE resolver: the Hazards panel, the
     // Long Rest and the Codex chapter all read it rather than raw storage, so

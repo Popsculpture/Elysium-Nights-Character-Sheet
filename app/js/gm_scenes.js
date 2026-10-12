@@ -32,9 +32,17 @@
        per the data's pressureMult. Insight deals no Pressure.
      - The Resolve meter is the starting Resolve plus any hand adjustment, less
        each logged Pressure, plus each Critical's +1, never below 0. The card
-       prints no cap on the +1, so none is applied. A Posture is not taken off
-       the logged Pressure; the PHB's Postures (EN.social.sitDown.postures) are
-       linked beside the toggle and the hand adjustment covers them.
+       prints no cap on the +1, so none is applied.
+     - A Posture comes off the logged Pressure (author ruling, 2026-10-12): the
+       GM picks the one the Opposition meets the next result with, and LOG
+       takes its `reduce` (EN.social.sitDown.postures) off that result's
+       Pressure, never below 0. Veil's 1d4 is rolled then; Counter takes
+       nothing, since it is a contested roll. A Posture is spent only on a
+       result that deals Pressure (it deflects a successful Press), once a
+       Round, and Stonewall puts Cornered on the target. The Sit-Down
+       Conditions (EN.social.sitDown.conditions) the tracker marks, Rattled,
+       Cornered and Exposed, are reminders: Exposed's extra Resolve a Round is
+       taken BY HAND, and nothing is rolled for Rattled's Snag.
      - A chase's Lead is moved by hand. A check reports the winner, the margin,
        whether it reaches the chase's own Dominant Victory threshold, and a
        tie as a Stalemate, then prints what the PHB says that result does to
@@ -153,6 +161,8 @@ EN.gmScenes = (function () {
     approach: "",                 // the Approach the next Sit-Down result is logged under
     chk: { a: "", b: "", rollA: "", rollB: "", last: null },
     dmg: Object.create(null),     // vehicle line id -> damage amount, as typed
+    dmgKind: Object.create(null), // vehicle line id -> "siege", "crash" or absent: what the next DAMAGE is
+    posture: "",                  // the Posture the Opposition meets the next logged result with
     anchorDmg: "",
     lrPick: "", lrText: "",
     addHostile: "", addCrew: "",
@@ -176,8 +186,16 @@ EN.gmScenes = (function () {
       floor: floorBlank(),
       clock: { round: "", rounds: "", runsLong: "" },
       fallout: { win: "", mixed: "", critical: "" },
-      track: { round: 1, posture: false, adj: 0, log: [] },
+      track: blankSdTrack(),
       notes: "" };
+  }
+  /* A Sit-Down's live track. `posture` is whether the Opposition has spent its
+     one Posture this Round; `conds` the Sit-Down Conditions on the target. A
+     log line is { id, round, approach, result, pressure (what it took off
+     Resolve, after any Posture), gain, why, posture (the Posture's key, or ""),
+     cut (what that Posture took off), roll (Veil's 1d4, or 0) }. */
+  function blankSdTrack() {
+    return { round: 1, posture: false, adj: 0, log: [], conds: { rattled: false, cornered: false, exposed: false } };
   }
   function blankChase() {
     return { id: null, name: "",
@@ -269,7 +287,9 @@ EN.gmScenes = (function () {
       d.track.log = (isObj(rec.track) && Array.isArray(rec.track.log) ? rec.track.log : []).filter(isObj).map(function (x) {
         return { id: typeof x.id === "string" ? x.id : lid("sl"), round: Math.max(1, int(x.round) || 1),
                  approach: typeof x.approach === "string" ? x.approach : "", result: typeof x.result === "string" ? x.result : "",
-                 pressure: Math.max(0, int(x.pressure) || 0), gain: Math.max(0, int(x.gain) || 0), why: typeof x.why === "string" ? x.why : "" };
+                 pressure: Math.max(0, int(x.pressure) || 0), gain: Math.max(0, int(x.gain) || 0), why: typeof x.why === "string" ? x.why : "",
+                 posture: typeof x.posture === "string" ? x.posture : "", cut: Math.max(0, int(x.cut) || 0), roll: Math.max(0, int(x.roll) || 0),
+                 gave: (typeof x.gave === "string" && SD_CONDS.indexOf(x.gave) !== -1) ? x.gave : "" };
       });
       d.track.adj = int(d.track.adj) || 0;
       d.track.round = Math.max(1, int(d.track.round) || 1);
@@ -678,12 +698,14 @@ EN.gmScenes = (function () {
     btns.push(discarding("new:" + kind, "+ NEW", "new", "Start a blank " + pageOf(kind).label.toLowerCase(), function () {
       setDraft(kind, fresh(kind));
       _v.chk = { a: "", b: "", rollA: "", rollB: "", last: null };
+      if (kind === "sitdown") _v.posture = "";
     }));
     if (exampleOf(kind)) {
       btns.push(discarding("example:" + kind, "LOAD THE BOOK'S EXAMPLE", "example",
         "Open the book's worked example: " + exampleName(kind), function () {
           setDraft(kind, exampleDraft(kind));
           _v.chk = { a: "", b: "", rollA: "", rollB: "", last: null };
+          if (kind === "sitdown") _v.posture = "";
           toast("The book's example is open: " + exampleName(kind) + ".");
         }));
     }
@@ -721,6 +743,8 @@ EN.gmScenes = (function () {
             isOpen ? null : discarding("open:" + r.id, "OPEN", "open-" + r.id, "Open this scene", function () {
               flushKeep();
               setDraft(kind, restore(kind, gm.rec("scenes", r.id)));
+              // a Posture picked for another Opposition is not this one's
+              if (kind === "sitdown") _v.posture = "";
             }),
             del
           ])
@@ -738,7 +762,7 @@ EN.gmScenes = (function () {
     return "A rating " + d.rating + " Incursion";
   }
   function resetTrack(kind, d) {
-    if (kind === "sitdown") d.track = { round: 1, posture: false, adj: 0, log: [] };
+    if (kind === "sitdown") { d.track = blankSdTrack(); _v.posture = ""; }
     else if (kind === "chase") { d.track = { round: 0, log: [], stale: null, speed: "", impact: "" }; d.lead.now = d.lead.start; d.vehicles.forEach(function (v) { v.hit = 0; }); _v.chk.last = null; }
     else { d.dive = { stage: 0, pushes: [], collapse: "" }; d.anchor.hit = 0; d.steps = []; if (d.chromatic.met) { d.chromatic.met = false; d.base = d.chromatic.from === "sealed" ? "sealed" : "open"; } }
   }
@@ -771,6 +795,49 @@ EN.gmScenes = (function () {
     return { mult: 1, why: "" };
   }
   function lastResult(d) { var L = d.track.log; return L.length ? L[L.length - 1] : null; }
+
+  /* THE POSTURES AND CONDITIONS the tracker applies, read from the PHB's
+     EN.social.sitDown (refs.postures, refs.conditions), never retyped here. */
+  function postureRows() {
+    var P = ref(SD().refs.postures);
+    return (P && Array.isArray(P.rows)) ? P.rows : [];
+  }
+  function condRows() {
+    var C = ref(SD().refs.conditions);
+    return (C && Array.isArray(C.rows)) ? C.rows : [];
+  }
+  // the Sit-Down Conditions the tracker marks on the target
+  var SD_CONDS = ["rattled", "cornered", "exposed"];
+  /* Whether Cornered bars the Posture `key`: its rule names the Postures the
+     target can't take ("can't Counter or Stonewall"), read off the PHB row. */
+  function cornerBars(key) {
+    var c = byKey(condRows(), "cornered"), p = key ? byKey(postureRows(), key) : null;
+    return !!(c && p && p.name && new RegExp("\\b" + p.name + "\\b", "i").test(str(c.text)));
+  }
+  /* What a Posture takes off `p` Pressure: its `reduce`, a number, or dice
+     ("1d4") rolled now. Returns { cut, roll }; cut never takes more than p. */
+  function postureCut(row, p) {
+    var r = row ? row.reduce : 0, roll = 0, n = 0;
+    if (typeof r === "number") n = r;
+    else {
+      var m = /^(\d*)d(\d+)$/i.exec(str(r).trim());
+      if (m) { for (var i = 0; i < (int(m[1]) || 1); i++) roll += die(int(m[2])); n = roll; }
+    }
+    return { cut: Math.max(0, Math.min(p, n)), roll: roll };
+  }
+  // what a log line's Posture did, as words: "Stonewall took 2", "Veil rolled 3, took 2", "Counter took nothing"
+  function postureSaid(x) {
+    if (!x || !x.posture) return "";
+    var row = byKey(postureRows(), x.posture), name = row ? row.name : x.posture;
+    return name + (x.roll ? " rolled " + x.roll + "," : "") + " took " + (x.cut ? x.cut : "nothing");
+  }
+  // a log line as the Pressure log and COPY print it
+  function logSaid(x) {
+    var r = byKey(SD().results, x.result), ps = postureSaid(x), before = (x.pressure | 0) + (x.cut | 0);
+    return (x.approach ? approachName(x.approach) + DOT : "") + (r ? r.name : x.result) + ": " +
+      (ps ? before + " Pressure, " + ps + ", so " : "") +
+      (x.pressure ? x.pressure + " Pressure" : "no Pressure") + (x.gain ? ", +" + x.gain + " Resolve" : "") + (x.why ? " (" + x.why + ")" : "");
+  }
 
   // where the person in the chair can come from: a Bestiary entry that prints Resolve, or a saved contact
   /* A contact is the People tab's card (bag `contacts`): its Resolve line
@@ -1033,14 +1100,63 @@ EN.gmScenes = (function () {
     kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "12px" } }, [
       el("span.mono", { dataset: { sc: "sd-round" }, style: { fontSize: "14px", letterSpacing: ".08em" },
         text: "ROUND " + d.track.round + (rounds ? " OF " + rounds : "") }),
-      btn("NEXT ROUND ›", "sd-next", function () { d.track.round += 1; d.track.posture = false; }, { primary: true }),
+      btn("NEXT ROUND ›", "sd-next", function () {
+        d.track.round += 1; d.track.posture = false;
+        // Exposed costs the target a Resolve at the start of each later Round: a reminder, taken BY HAND
+        var ex = d.track.conds.exposed ? byKey(condRows(), "exposed") : null;
+        if (ex) toast("Round " + d.track.round + ". " + ex.name + ": take 1 Resolve off BY HAND.");
+      }, { primary: true }),
+      // set by LOG when a Posture is spent, and by hand for one the tracker did not see
       toggle("POSTURE USED THIS ROUND", d.track.posture, "sd-posture", function () { d.track.posture = !d.track.posture; },
         { title: B.postures.rule }),
-      // what a Posture takes off the Pressure is the PHB's; the tracker leaves it to the hand adjustment
       ruleChip("so-postures/posture-table", "Postures")
     ]));
     kids.push(help(B.postures.rule + (d.postures.first || d.postures.second ? " They reach for " +
       [d.postures.first, d.postures.second].filter(function (x) { return str(x).trim(); }).join(" and ") + " first." : ""), { color: "var(--text3)" }));
+
+    /* Their Posture: the one the Opposition meets the next result with, off the
+       PHB's table. LOG takes it off that result's Pressure (postureCut). */
+    var PR = postureRows(), PD = ref(B.refs.postures) || {};
+    var cn = d.track.conds.cornered ? byKey(condRows(), "cornered") : null;
+    if (PR.length) {
+      kids.push(el("div.row.wrap", { dataset: { sc: "sd-posture-pick" }, style: { gap: "6px", alignItems: "center", marginTop: "8px" } },
+        [label("THEIR POSTURE")].concat([{ key: "", name: "None" }].concat(PR).map(function (p) {
+          // Cornered bars Counter and Stonewall (cornerBars): those two grey out while it is on
+          var barred = !!cn && cornerBars(p.key);
+          return el("span.chip" + (_v.posture === p.key ? ".on" : ""), { dataset: { sc: "po-" + (p.key || "none"), barred: barred ? "1" : "" },
+            title: barred ? cn.name + ": " + str(cn.text).replace(/\*/g, "") : p.key ? p.name + ": " + str(p.text).replace(/\*/g, "") : "No Posture on the next result",
+            style: { cursor: barred ? "not-allowed" : "pointer", fontSize: "10.5px", opacity: barred ? ".4" : "" },
+            onclick: function () {
+              if (barred) { toast(cn.name + ": " + str(cn.text).replace(/\*/g, "")); return; }
+              _v.posture = p.key; EN.app.render();
+            } }, p.name.toUpperCase());
+        }))));
+      var pk = byKey(PR, _v.posture);
+      if (d.track.posture) {
+        kids.push(help("Their Posture is spent this Round, so the next result logs in full." + (PD.recharge ? " " + PD.recharge : ""),
+          { color: "var(--text3)" }));
+      } else if (pk) {
+        kids.push(el("div", { dataset: { sc: "sd-posture-note" } }, [rhelp(pk.name + ": " + pk.text + (/[.!?]$/.test(str(pk.text)) ? "" : ".") +
+          " LOG takes it off the next result that deals Pressure.", { color: "var(--text2)" })]));
+        if (cn && cornerBars(pk.key)) kids.push(el("div", { dataset: { sc: "sd-posture-barred" } }, [help(cn.name + ": " + cn.text +
+          " LOG will not take " + pk.name + " off, and logs the result in full.", { color: "var(--warn)" })]));
+      }
+    }
+
+    // the Sit-Down Conditions on the target, each with its rule while it is on
+    var CR = condRows().filter(function (c) { return SD_CONDS.indexOf(c.key) !== -1; });
+    if (CR.length) {
+      kids.push(el("div.row.wrap", { dataset: { sc: "sd-conds" }, style: { gap: "6px", alignItems: "center", marginTop: "8px" } },
+        [label("ON THE TARGET")].concat(CR.map(function (c) {
+          return toggle(c.name.toUpperCase(), !!d.track.conds[c.key], "sd-cond-" + c.key, function () { d.track.conds[c.key] = !d.track.conds[c.key]; },
+            { title: c.text });
+        })).concat([ruleChip("so-conditions", "Sit-Down Conditions")])));
+      CR.forEach(function (c) {
+        if (!d.track.conds[c.key]) return;
+        kids.push(el("div", { dataset: { sc: "sd-cond-note-" + c.key } }, [help(c.name + ": " + c.text +
+          (c.key === "exposed" ? " Take it BY HAND at the start of each Round." : ""), { color: "var(--warn)" })]));
+      });
+    }
     if (d.clock.round) kids.push(help(d.clock.round, { color: "var(--text2)" }));
     if (rounds && d.track.round > rounds) {
       kids.push(el("div.feature", { dataset: { sc: "sd-clock" }, style: { borderLeftColor: "var(--warn)", marginTop: "8px" } }, [
@@ -1087,9 +1203,29 @@ EN.gmScenes = (function () {
         ]),
         btn("LOG", "res-" + r.key, function () {
           if (broke) { toast("Resolve is already at 0: the Opposition has broken."); return false; }
-          var mm = multOf(d, _v.approach);
-          d.track.log.push({ id: lid("sl"), round: d.track.round, approach: _v.approach, result: r.key,
-            pressure: r.pressure * mm.mult, gain: r.resolveGain || 0, why: mm.why });
+          var mm = multOf(d, _v.approach), p = r.pressure * mm.mult;
+          var line = { id: lid("sl"), round: d.track.round, approach: _v.approach, result: r.key,
+            pressure: p, gain: r.resolveGain || 0, why: mm.why, posture: "", cut: 0, roll: 0, gave: "" };
+          // their Posture deflects a result that deals Pressure, once a Round
+          var po = byKey(postureRows(), _v.posture);
+          // a Cornered target can't take the Postures its rule names: nothing off, the Posture stays unspent
+          var cr = (po && p > 0 && !d.track.posture && d.track.conds.cornered && cornerBars(po.key)) ? byKey(condRows(), "cornered") : null;
+          if (cr) {
+            _v.posture = "";
+            toast(cr.name + ": " + str(cr.text).replace(/\*/g, "") + " Logged in full.");
+          } else if (po && p > 0 && !d.track.posture) {
+            var c = postureCut(po, p);
+            line.posture = po.key; line.cut = c.cut; line.roll = c.roll; line.pressure = p - c.cut;
+            d.track.posture = true;
+            _v.posture = "";
+            // a Posture whose effect gives the target a condition ("takes the *Cornered* condition")
+            var gm2 = /takes the \*?([A-Za-z]+)\*? condition/.exec(str(po.text));
+            var gc = gm2 ? condRows().filter(function (x) { return x.name.toLowerCase() === gm2[1].toLowerCase(); })[0] : null;
+            if (gc && SD_CONDS.indexOf(gc.key) !== -1 && !d.track.conds[gc.key]) { d.track.conds[gc.key] = true; line.gave = gc.key; }
+          } else if (po && p > 0) {
+            toast("Their Posture is already spent this Round: logged in full.");
+          }
+          d.track.log.push(line);
         }, { disabled: !max })
       ]);
     })));
@@ -1142,13 +1278,15 @@ EN.gmScenes = (function () {
       kids.push(el("div", { dataset: { sc: "sd-log" }, style: { marginTop: "12px" } }, [
         el("div.row.between.wrap", { style: { gap: "8px", alignItems: "center" } }, [
           label("PRESSURE LOG"),
-          btn("UNDO THE LAST", "sd-undo", function () { d.track.log.pop(); }, { ghost: true })
+          btn("UNDO THE LAST", "sd-undo", function () {
+            // a line that spent this Round's Posture gives it back, with the condition it gave
+            var x = d.track.log.pop();
+            if (x && x.posture && x.round === d.track.round) d.track.posture = false;
+            if (x && x.gave && own(d.track.conds, x.gave)) d.track.conds[x.gave] = false;
+          }, { ghost: true })
         ])
       ].concat(d.track.log.map(function (x) {
-        var r = byKey(B.results, x.result);
-        return help("Round " + x.round + DOT + (x.approach ? approachName(x.approach) + DOT : "") + (r ? r.name : x.result) + ": " +
-          (x.pressure ? x.pressure + " Pressure" : "no Pressure") + (x.gain ? ", +" + x.gain + " Resolve" : "") + (x.why ? " (" + x.why + ")" : ""),
-          { margin: "2px 0 0" });
+        return help("Round " + x.round + DOT + logSaid(x), { margin: "2px 0 0" });
       }))));
     }
     return EN.ui.panel("Across the Table", broke ? "BROKEN" : "ROUND " + d.track.round, kids, { glow: !broke && d.track.log.length > 0 });
@@ -1210,6 +1348,23 @@ EN.gmScenes = (function () {
   function integrityNow(v) {
     var m = int(v.integrity);
     return m === null ? null : Math.max(0, m - (v.hit | 0));
+  }
+  /* THE STRUCTURE GATE (the PHB's Shooting a Vehicle and Crashes,
+     EN.chases.shooting.structure and EN.chases.crashes): damage below the
+     vehicle's Structure takes no Integrity; damage at or above it comes off in
+     full. Siege doubles the damage before the comparison, and the doubled
+     amount is what lands. Crash damage ignores Structure. `kind` is "siege",
+     "crash" or "". A line with no Structure typed has no gate to apply, so the
+     damage lands in full and the result says why. Returns { lands, said, why }:
+     the Integrity it takes, the damage as the log says it, and the gate's
+     verdict. */
+  function damageGate(v, n, kind) {
+    var st = int(v.structure), amt = kind === "siege" ? n * 2 : n;
+    var said = kind === "siege" ? n + " Siege damage, doubled to " + amt : kind === "crash" ? amt + " crash damage" : amt + " damage";
+    if (kind === "crash") return { lands: amt, said: said, why: "crash damage ignores Structure" };
+    if (st === null) return { lands: amt, said: said, why: "no Structure typed" };
+    if (amt < st) return { lands: 0, said: said, why: "below Structure " + st + ": no effect" };
+    return { lands: amt, said: said, why: "at or above Structure " + st + ": full damage" };
   }
   function firstResponse(heat) {
     var F = CH().firstResponse, h = int(heat);
@@ -1404,7 +1559,7 @@ EN.gmScenes = (function () {
         btn(v.side === "running" ? "MAKE IT A PURSUER" : "MAKE IT THE RUNNER", "veh-side-" + v.lid, function () {
           v.side = v.side === "running" ? "chasing" : "running";
         }, { ghost: true }),
-        btn("✕", "veh-del-" + v.lid, function () { d.vehicles = d.vehicles.filter(function (x) { return x.lid !== v.lid; }); delete _v.dmg[v.lid]; },
+        btn("✕", "veh-del-" + v.lid, function () { d.vehicles = d.vehicles.filter(function (x) { return x.lid !== v.lid; }); delete _v.dmg[v.lid]; delete _v.dmgKind[v.lid]; },
           { title: "Remove this vehicle" })
       ])
     ]));
@@ -1434,26 +1589,36 @@ EN.gmScenes = (function () {
       impact: sp ? String(sp.dc) : "" }, style: { margin: "6px 0 0", color: "var(--accent)" }, text: upperFirst(reads.join(DOT)) + "." }));
     if (v.from === "crew" && v.side === "running") kids.push(help("The driver rolls their own Chase Check off the Inventory's Garage.", { color: "var(--text3)" }));
 
-    // Integrity, as it takes damage
+    // Integrity, as it takes damage, through the Structure gate (damageGate)
     if (max !== null) {
-      var amt = own(_v.dmg, v.lid) ? _v.dmg[v.lid] : "";
+      var amt = own(_v.dmg, v.lid) ? _v.dmg[v.lid] : "", dk = own(_v.dmgKind, v.lid) ? _v.dmgKind[v.lid] : "";
       kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "8px" } }, [
         el("span.mono", { dataset: { sc: "veh-int-" + v.lid, now: String(itg) }, style: { fontSize: "13px", color: itg === 0 ? "var(--danger)" : "var(--text)" },
           text: "INTEGRITY " + itg + " / " + max }),
         el("div", { style: { flex: "1 1 120px", minWidth: "80px" } }, [bar(itg, max, itg <= max / 2 ? "var(--danger)" : "var(--success)")]),
         textIn("veh." + v.lid + ".dmg", amt, "amount", function (x) { _v.dmg[v.lid] = x; }, { type: "number", style: { width: "84px" }, min: 0 }),
+        // what the damage is: a Siege weapon's (doubled first) or a crash's (no gate); one or neither
+        toggle("SIEGE", dk === "siege", "veh-siege-" + v.lid, function () { _v.dmgKind[v.lid] = dk === "siege" ? "" : "siege"; },
+          { title: "A weapon with Siege doubles its damage before the comparison against Structure" }),
+        toggle("CRASH", dk === "crash", "veh-crash-" + v.lid, function () { _v.dmgKind[v.lid] = dk === "crash" ? "" : "crash"; },
+          { title: "Crash damage ignores Structure" }),
         btn("DAMAGE", "veh-hit-" + v.lid, function () {
           var n = int(_v.dmg[v.lid]);
           if (!n || n < 0) { toast("Type the damage first."); return false; }
-          v.hit = Math.min(max, (v.hit | 0) + n);
-          chaseLog(d, (str(v.name).trim() || "A vehicle") + " takes " + n + " damage, Integrity " + integrityNow(v) + ".");
+          var g = damageGate(v, n, own(_v.dmgKind, v.lid) ? _v.dmgKind[v.lid] : "");
+          v.hit = Math.min(max, (v.hit | 0) + g.lands);
+          var line = (str(v.name).trim() || "A vehicle") + " takes " + g.said + (g.why ? " (" + g.why + ")" : "") +
+            (g.lands ? ", Integrity " + integrityNow(v) + "." : ".");
+          chaseLog(d, line);
+          toast(line);
         }),
         btn("REPAIR", "veh-fix-" + v.lid, function () {
           var n = int(_v.dmg[v.lid]);
           if (!n || n < 0) { toast("Type the amount first."); return false; }
           v.hit = Math.max(0, (v.hit | 0) - n);
         }, { ghost: true }),
-        itg === 0 ? chipTag("0 INTEGRITY", "var(--danger)") : null
+        itg === 0 ? chipTag("0 INTEGRITY", "var(--danger)") : null,
+        ruleChip("vc-damage/structure-and-integrity", "Structure and Integrity")
       ]));
     }
     var be = bestEntry(v.bestiary);
@@ -2218,11 +2383,9 @@ EN.gmScenes = (function () {
     if (d.clock.round || d.clock.runsLong) out.push("The clock: " + [d.clock.round, d.clock.rounds ? "After " + d.clock.rounds + " Rounds: " + d.clock.runsLong : d.clock.runsLong].filter(Boolean).join(" "));
     out.push("Fallout. Win: " + (d.fallout.win || "-") + " Mixed: " + (d.fallout.mixed || "-") + " Critical: " + (d.fallout.critical || "-"));
     out.push("Round " + d.track.round + ", Resolve " + resolveNow(d) + " of " + max + ".");
-    d.track.log.forEach(function (x) {
-      var r = byKey(B.results, x.result);
-      out.push("  Round " + x.round + ": " + (x.approach ? approachName(x.approach) + ", " : "") + (r ? r.name : x.result) + ", " +
-        (x.pressure ? x.pressure + " Pressure" : "no Pressure") + (x.gain ? ", +" + x.gain + " Resolve" : ""));
-    });
+    var on = condRows().filter(function (c) { return SD_CONDS.indexOf(c.key) !== -1 && d.track.conds[c.key]; });
+    if (on.length) out.push("On the target: " + on.map(function (c) { return c.name; }).join(", ") + ".");
+    d.track.log.forEach(function (x) { out.push("  Round " + x.round + ": " + logSaid(x)); });
     if (d.notes) out.push("Notes: " + d.notes);
     return lines(out);
   }

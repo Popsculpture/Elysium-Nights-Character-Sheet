@@ -233,7 +233,7 @@ EN.store = (function () {
          Read through engine.ablativeState, never directly. */
       ablativeCoating: Object.create(null),
       loadout: "standard",               // declared Loadout: "light" | "standard" | "heavy", sets the Load Budget
-      haul: "none",                      // active Haul: "none" | "lift" (body-sized) | "drag" (oversized/double)
+      haul: "none",                      // active Haul: "none" | "lift" (body-sized) | "dragone" (dragging one body) | "drag" (oversized/double)
       glimmer: 0,
       nexus: 0,                          // Nexus tokens (◎), the high-scrutiny currency; fractional
       log: []
@@ -455,7 +455,7 @@ EN.store = (function () {
     // The Loadout is declared at the start of a job and sets the Load Budget;
     // "If nobody declares, assume Standard."
     if (["light", "standard", "heavy"].indexOf(ch.loadout) === -1) ch.loadout = "standard";
-    if (["none", "lift", "drag"].indexOf(ch.haul) === -1) ch.haul = "none";  // active Haul
+    if (["none", "lift", "dragone", "drag"].indexOf(ch.haul) === -1) ch.haul = "none";  // active Haul ("dragone": dragging one body, 2026-10-12)
     if (ch.identity && ch.identity.notes === undefined) ch.identity.notes = "";  // freeform notes, shared with the #PRINT Identity step
     // First/Last Name split: a legacy single ch.name seeds them once (best
     // effort, split on the first space), then ch.name is recomputed as the

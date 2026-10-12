@@ -818,9 +818,14 @@ EN.gmEncounters = (function () {
     var id = savePlan();
     if (!id) { toast("The plan could not be saved, so it was not run."); return; }
     var plan = normPlan(copy(gm.rec("encounters", id)));
+    var vigorNote = "";
     if (mode === "replace") {
       var keep = gm.get().encounter.entries.filter(function (r) { return r.kind === "crew"; })
         .map(function (r) { return { charId: r.charId, init: r.init, initMod: r.initMod }; });
+      // replacing the Table ends the old fight, so its unspent crew Vigor goes as END clears it
+      if (EN.gmView && typeof EN.gmView.clearCrewVigor === "function") {
+        try { vigorNote = EN.gmView.crewVigorNote(EN.gmView.clearCrewVigor()); } catch (e) { vigorNote = ""; }
+      }
       gm.clearEncounter();
       keep.forEach(function (r) { gm.addCrew(r.charId, r.init, r.initMod); });
     }
@@ -843,6 +848,7 @@ EN.gmEncounters = (function () {
     if (keptClock && tierOf(plan.site.tier)) msg += " The Security Response clock already running is kept.";
     if (res.skippedHz) msg += " " + plural(res.skippedHz, "hazard") + " skipped: the Hazards module is not loaded.";
     if (res.missing.length) msg += " Not found in the Bestiary: " + res.missing.join(", ") + ".";
+    msg += vigorNote;
     toast(msg);
     EN.app.gotoTab("table");
   }
@@ -968,7 +974,8 @@ EN.gmEncounters = (function () {
       btns.push(EN.ui.armButton("enc:replace", { label: "▶ REPLACE THE TABLE", armedLabel: "REPLACE IT?",
         title: "Clear the Table's threats and run this plan. The crew's rows stay.",
         armedTitle: "Clears the live fight and runs this plan. The crew's rows stay. Award the old fight's XP first: " +
-                    "its award card needs an empty Table, and this fight takes its place when it ends.",
+                    "its award card needs an empty Table, and this fight takes its place when it ends. " +
+                    "The crew's unspent Vigor clears, as END clears it.",
         onConfirm: function () { run("replace"); } }));
       // what becomes of the Security Response clock, said before the GM confirms (F2)
       var startAt = Math.max(1, enc.round | 0);

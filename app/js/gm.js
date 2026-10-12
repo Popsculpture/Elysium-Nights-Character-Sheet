@@ -1070,6 +1070,47 @@ EN.gmView = (function () {
     EN.app.render();
   }
 
+  /* END. Unspent Vigor dissipates at the end of a combat encounter (PHB,
+     Vigor), so ending one on the Table clears the Vigor on each crew row's
+     record first: one gmStore.writeCrew op "vigor" per Freelancer, so the undo
+     strip names each and can put it back. A crew row whose record is not on
+     this device (not in EN.store.roster) is passed over, and so is one holding
+     no Vigor (writeCrew files nothing for it). Then the Table clears, and the
+     toast says whose Vigor went, and whose this device refused to write (F5:
+     writeCrew rolled it back, so that Freelancer still holds it). */
+  /* The crew Vigor clear, shared by END here and by the Encounters tab's
+     REPLACE THE TABLE (which also ends the fight on the Table). Returns the
+     names cleared and the names this device refused to write. */
+  function clearCrewVigor() {
+    var roster = EN.store.roster() || {}, seen = Object.create(null), cleared = [], refused = [];
+    gm.get().encounter.entries.forEach(function (r) {
+      if (!r || r.kind !== "crew" || typeof r.charId !== "string" || seen[r.charId] || !own(roster, r.charId)) return;
+      seen[r.charId] = true;
+      var ch = roster[r.charId], vig = (ch && ch.vitality) ? Number(ch.vitality.temp) || 0 : 0;
+      if (vig <= 0) return;
+      var name = ((ch.firstName || "") + " " + (ch.lastName || "")).trim() || ch.name || "A Freelancer";
+      if (gm.writeCrew(r.charId, "Vigor cleared at the end of the encounter", [{ op: "vigor" }], { source: "vigor" })) {
+        cleared.push(name + " (" + vig + ")");
+      } else {
+        refused.push(name + " (" + vig + ")");
+      }
+    });
+    return { cleared: cleared, refused: refused };
+  }
+
+  // the toast wording for clearCrewVigor()'s result, empty when nothing was cleared or refused
+  function crewVigorNote(res) {
+    return (res.cleared.length ? " Vigor cleared on " + res.cleared.join(", ") + ": unspent Vigor ends with the encounter. UNDO puts it back, one Freelancer at a time." : "") +
+      (res.refused.length ? " Vigor NOT cleared on " + res.refused.join(", ") + ": this device did not save the write, so clear it on the sheet." : "");
+  }
+
+  function endEncounter() {
+    var res = clearCrewVigor();
+    gm.clearEncounter();
+    toast("Encounter ended." + crewVigorNote(res));
+    EN.app.render();
+  }
+
   function trackerPanel() {
     var s = gm.get();
     var enc = s.encounter;
@@ -1096,8 +1137,8 @@ EN.gmView = (function () {
         head.push(el("button.btn.sm.primary", { dataset: { gm: "nextturn" }, onclick: nextTurn }, "NEXT TURN ›"));
         head.push(EN.ui.armButton("gm:endenc", {
           label: "END", armedLabel: "END IT?", title: "Clear the encounter",
-          armedTitle: "Clears every entry and resets the round counter. This cannot be undone.",
-          onConfirm: function () { gm.clearEncounter(); EN.app.render(); }
+          armedTitle: "Clears every entry and resets the round counter, and clears the crew's Vigor. The Vigor can be undone; the Table cannot.",
+          onConfirm: endEncounter
         }));
       }
     }
@@ -2177,6 +2218,8 @@ EN.gmView = (function () {
     // the newest standing GM write with its armed UNDO, for the top of every Admin tab
     undoStrip: undoStrip,
     // the GM'S CARD button for beside every Admin tab's heading, and the card it opens
-    cardDrawer: cardDrawer, openCard: openCard, closeCard: closeCard
+    cardDrawer: cardDrawer, openCard: openCard, closeCard: closeCard,
+    // the crew Vigor clear that ending a fight on the Table runs, and its toast wording
+    clearCrewVigor: clearCrewVigor, crewVigorNote: crewVigorNote
   };
 })();

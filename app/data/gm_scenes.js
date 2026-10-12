@@ -71,10 +71,14 @@
    The Piloting Check a player rolls is the Inventory Garage's math
    (js/inventory.js garageBench); the book's formula is
    EN.chases.operating.pilotingCheck.
-   The trackers point at the PHB's rules rather than apply them: the Postures,
-   what each Environmental Pressure does, what each Chase Check result does to
-   Lead, and the Pursuit Escalation row are shown from EN.social and EN.chases
-   (refs below) with links into the Codex, and the GM applies them by hand.
+   The trackers point at the PHB's rules rather than apply them: what each
+   Environmental Pressure does, what each Chase Check result does to Lead, and
+   the Pursuit Escalation row are shown from EN.social and EN.chases (refs
+   below) with links into the Codex, and the GM applies them by hand. Two are
+   applied (author ruling, 2026-10-12): a Posture's `reduce` comes off a logged
+   result's Pressure (EN.social.sitDown.postures), with the Sit-Down Conditions
+   (EN.social.sitDown.conditions) shown as reminders, and a chase's DAMAGE goes
+   through the vehicle's Structure (EN.chases.shooting.structure).
 
    SHAPES
    A checklist item: { n, key, name (the bold run-in, as printed), text (the
@@ -113,6 +117,7 @@ EN.gmBook.scenes = {
       socialCosts: "resolution.social.costs",          // Core Resolution's Social Cost Options
       socialFallout: "social.fallout",                 // the PHB's full Social Fallout table
       postures: "social.sitDown.postures",             // the PHB's five Postures, with their effects
+      conditions: "social.sitDown.conditions",         // the PHB's Sit-Down Conditions (Rattled, Cornered, Exposed)
       floor: "social.sitDown.floor.pressures",         // what each Environmental Pressure does (same keys as floor below)
       bookResolve: "social.sitDown.resolve.tiers",     // the PHB's Resolve tiers (same keys as resolveTiers)
       bookResults: "social.sitDown.pressure.results",  // the PHB's Pressure per result (same keys as results)

@@ -80,6 +80,7 @@ EN.rules = {
     hauls: [
       { key: "none", name: "No haul",                    hint: "Nothing in your arms. Hauls do not spend Load Budget; they set your state directly." },
       { key: "lift", name: "Hauling: body-sized",        hint: "Short lift and carry of something roughly your Size: treated as Encumbered (Overloaded if you already were). Smaller loads may stay free at GM call." },
+      { key: "dragone", name: "Dragging: one body",      hint: "Dragging or pushing one unconscious person, body-sized object, or similar heavy load: treated as Encumbered, but Speed is halved (round down) instead of the Encumbered -2, whichever is worse, and you can't Dash. Wheels, sleds, carts, or help can step it down, at GM call." },
       { key: "drag", name: "Hauling: oversized / double", hint: "Something larger than you, or two body-sized loads at once: treated as Overloaded. Wheels, sleds, carts, or help can step it down, at GM call." }
     ],
     loadTable: [
