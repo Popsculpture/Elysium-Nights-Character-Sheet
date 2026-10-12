@@ -816,6 +816,23 @@ EN.printSheet = (function () {
   /* =======================================================================
      SECTION 04 - PROFILE
      ======================================================================= */
+  // the contacts the sheet prints: every one not Burned, in the order the record holds them,
+  // with the disposition and state named as the Social tab names them: from the book's data
+  // (EN.social), the literals only a fallback
+  function ctLabels() {
+    var L = { allied: "Allied", friendly: "Friendly", neutral: "Neutral", wary: "Wary", hostile: "Hostile",
+              open: "Open", strained: "Strained", locked: "Locked" }, S = EN.social || {};
+    ((S.factionStanding && S.factionStanding.ladder) || []).concat((S.pressureStates && S.pressureStates.states) || [])
+      .forEach(function (r) { if (r && r.key && r.name) L[r.key] = r.name; });
+    return L;
+  }
+  function contactRows(ch) {
+    var list = (ch.face && Array.isArray(ch.face.contacts)) ? ch.face.contacts : [], CT_LABEL = ctLabels();
+    return list.filter(function (c) { return c && c.state !== "burned"; }).map(function (c) {
+      return { name: txt(c.name) || "Unnamed contact", work: txt(c.work), why: txt(c.why),
+               standing: (CT_LABEL[c.disposition] || "Neutral") + " / " + (CT_LABEL[c.state] || "Open") };
+    });
+  }
   function profile(ch, d) {
     var id = ch.identity || {}, body = [];
     body.push(el("div.ps-grid2", null, [
@@ -827,8 +844,20 @@ EN.printSheet = (function () {
     body.push(sect("Inner Profile", "pure story"));
     body.push(el("div.ps-grid2", null, [pblock("Facets", id.facets, true), pblock("Core Sparks", id.coreSparks, true)]));
     body.push(el("div.ps-grid2", null, [pblock("Tethers", id.tethers, true), pblock("Fault Lines", id.faultLines, true)]));
+    /* The Social tab's Contacts (ch.face.contacts): one row per contact the Freelancer can
+       still reach, so a Burned one is left off. Name and work, disposition and state, and why
+       they pick up; then two blank lines to write in the ones made at the table. The PDF's
+       contactList table is the same list (pdfexport.js); change one, change the other. */
     body.push(sect("Contacts & Crews"));
-    body.push(pblock("", null, true));
+    contactRows(ch).forEach(function (c) {
+      body.push(el("div.ps-skrow.ps-ctrow", null, [
+        el("span.ps-sk-n", { text: c.name + (c.work ? " · " + c.work : "") }),
+        el("span.ps-sk-b2.ps-ct-st", { text: c.standing })
+      ]));
+      if (c.why) body.push(el("div.ps-ct-why", { text: c.why }));
+    });
+    body.push(writeLine(""));
+    body.push(writeLine(""));
     body.push(sect("Backstory & Notes"));
     body.push(pblock("", id.notes, true));
     // Cred / Heat standing tracks (table-tracked; write-in)

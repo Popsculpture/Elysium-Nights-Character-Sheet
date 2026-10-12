@@ -28,6 +28,9 @@
    on the Cred and Heat ladder rows (the lead words of the book's own meaning,
    for a tracker that needs a short name per value); `orMore` on Apex's "16+".
 
+   ONE BLOCK FROM ANOTHER PART: `contacts` is Part 1's (the Backgrounds chapter), carried
+   for the Social tab's Contacts sub-tab; its own comment names the source.
+
    The Core Resolution chapter's Social Consequences (Social Cost Options, the
    Social Fallout Rule, Fatigue vs Strain vs Social Fallout) are EN.resolution.social
    and EN.resolution.costTracks, not repeated here. The GM Heat ladder
@@ -143,6 +146,20 @@ EN.social = {
       "A **Debt** is an obligation created through negotiation, rescue, payment delay, or personal intervention. Debt is one of Elysium's primary currencies. The Economy chapter covers what debt looks like across a campaign and how it bites; this chapter covers how social scenes generate it.",
       "If a Character accepts a Debt as the cost of a social success, the success stands. The Debt becomes a future hook. Specify it. \"You owe me one\" is flavor. \"You owe me one, and I collect before the end of the month\" is the start of a scene."
     ]
+  },
+
+  /* ---- Contacts (NOT this chapter: Part 1, the Backgrounds chapter) -------------------------
+     SOURCE: Part 1 - Welcome & Building a Character (modifiedTime 2026-10-08T03:05:04.679Z),
+     the Backgrounds chapter's opening list ("A Background gives you three things"), its "Make
+     it Yours" section and the GM Guidance box after it. Carried here because the Social tab's
+     Contacts sub-tab (js/face.js) records the people this grant names, and the Codex panel
+     so-contacts renders it beside the Fence rule (EN.economy.fences, Part 3). Each Background's
+     own "Choose two ... contacts" line stays in data/backgrounds.js (`contacts`). */
+  contacts: {
+    grant: { name: "Contacts, Hooks, and a Personal Item", text: "Two people you can reach, the trouble that still follows you, and one purely sentimental object you keep close because it reminds you who you were." },
+    makeItYoursLead: "Use the Background as a starting point. Two Freelancers can share a Background and feel nothing alike. Use the Contacts and Backstory Hooks to make your version specific:",
+    makeItYours: "Give your contacts names, roles, and a reason they still pick up when you call. All contacts start neutral or slightly friendly until you develop a better rapport or the fiction says otherwise.",
+    gmGuidance: "Backgrounds are a promise to the table. If a player chooses one, the world should occasionally respond like it matters. Contacts should appear. Hooks should bite. Background features should bypass obstacles that would stop an ordinary citizen in their tracks."
   },
 
   /* ---- Faction Standing -------------------------------------------------------------------- */

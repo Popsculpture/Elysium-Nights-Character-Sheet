@@ -167,12 +167,30 @@ EN.economy = {
     "Single high-value items can be sold and split, kept by one member with the others taking IOU equivalents, or held in trust by the Crew Kit until needed."
   ],
 
+  /* ---- Choosing a Fence (Captured Goods and Fences) ------------------------
+     Part 3 (modifiedTime 2026-10-04T03:05:35.328Z), the section of that name, word for word.
+     Each type is the book's bold lead (`name`) and the rest of its line (`text`). APP FIELDS:
+     `key`, the stored key a contact's fence tag uses (ch.face.contacts[].fence, a stored key:
+     renaming one needs a migration row), and `label`, the short name the tag shows. The fence
+     rates and the rest of Captured Goods are still in notModelled below. The Codex renders this
+     in the Social chapter's Contacts & Fences panel (so-contacts), beside the Background grant. */
+  fences: {
+    intro: "Different fences specialize. The crew that has cultivated the right contact moves faster and cleaner. A short directory worth seeding into the setting:",
+    types: [
+      { key: "relic",  label: "Relic broker",    name: "The pre-Cascade relic broker", text: "who only takes antiques and refuses anything still warm." },
+      { key: "cyber",  label: "Cyberware fence", name: "The cyberware fence",          text: "who refuses to deal with anything pulled out of a person who was still alive." },
+      { key: "data",   label: "Data broker",     name: "The data broker",              text: "who launders through a noodle shop and pays in Nexus when they like the source." },
+      { key: "street", label: "Street fence",    name: "The street fence",             text: "who buys anything, pays street rates, and asks no questions." }
+    ],
+    rule: "A Freelancer who has the right Fence Contact (acquired through Background or earned in play) skips the search phase and goes straight to negotiation. Without one, finding a buyer is its own scene."
+  },
+
   /* sections of the chapter this file does NOT carry yet, so the gap is
      visible rather than looking like the chapter is fully covered */
   notModelled: [
     "Crew Kit as a tracked shared fund (the split math itself is in the Payout Splitter)",
     "Debt escalation, which the book runs as GM pressure rather than paperwork (the debts themselves ARE tracked, in Bills: kind, holder, principal and clock, with no interest calculated)",
-    "Captured Goods and Fences",
+    "Captured Goods and Typical Fence Rates (Choosing a Fence is carried, in the Social chapter's Contacts & Fences)",
     "Flow-Touched and Haunted Goods",
     "Identity Theft and Account Compromise",
     "Services and Daily Spending, Premium Services, Bribes",

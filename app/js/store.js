@@ -356,6 +356,35 @@ EN.store = (function () {
         if (typeof m.id !== "string" || !m.id) m.id = "pm_" + Math.random().toString(36).slice(2, 9) + Date.now().toString(36);
       });
     }
+    /* The player's Contacts (ch.face.contacts), the Social tab's third sub-tab. NOT the GM's
+       People cards, which live in EN.gmStore's own "contacts" bag on the Admin desktop; the two
+       share a word and nothing else. Sanitized only when present, like the inbox above, so a
+       record that never opened the sub-tab is left exactly as it was (no face is created).
+       The five select fields are STORED KEYS, whitelisted against the same lists face.js
+       offers: a renamed key needs a row here, not a silent fallback. gmShared and gmContactId
+       are reserved for a later GM share and are coerced only when a record carries them; the
+       player's sheet never writes either. Idempotent: it runs on every load, import and example. */
+    if (ch.face && ch.face.contacts != null) {
+      if (!Array.isArray(ch.face.contacts)) ch.face.contacts = [];
+      ch.face.contacts = ch.face.contacts.filter(function (k) { return k && typeof k === "object" && !Array.isArray(k); });
+      var CT_KEYS = { kind: ["professional", "personal"], fence: ["", "relic", "cyber", "data", "street"],
+                      origin: ["play", "background", "dayjob"], disposition: ["neutral", "allied", "friendly", "wary", "hostile"],
+                      state: ["open", "strained", "locked", "burned"] };
+      // every write on the tab finds its card by id, so a repeat (a contact block copied inside
+      // a hand-edited .json) gets a fresh id; the first keeps its own
+      var seenCt = {};
+      ch.face.contacts.forEach(function (k) {
+        ["name", "print", "handle", "work", "why", "offers", "faction", "tell", "notes"].forEach(function (f) {
+          if (typeof k[f] !== "string") k[f] = (typeof k[f] === "number") ? String(k[f]) : "";
+        });
+        // the first key of each list is the default: Professional, no fence, earned in play, Neutral, Open
+        Object.keys(CT_KEYS).forEach(function (f) { if (CT_KEYS[f].indexOf(k[f]) === -1) k[f] = CT_KEYS[f][0]; });
+        if (k.gmShared != null) k.gmShared = !!k.gmShared;
+        if (k.gmContactId != null && typeof k.gmContactId !== "string") k.gmContactId = String(k.gmContactId);
+        if (typeof k.id !== "string" || !k.id || seenCt[k.id]) k.id = "ct_" + Math.random().toString(36).slice(2, 9) + Date.now().toString(36);
+        seenCt[k.id] = true;
+      });
+    }
     /* This used to be a bare `if (!ch.proficiencies) return;`, and every migration
        added since sat after it. A record missing that ONE field therefore skipped
        about a hundred and fifty lines of unrelated normalization: the Toxicologist

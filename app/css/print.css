@@ -126,6 +126,10 @@
 .ps-sk2{ column-count:2; column-gap:16px; }
 .ps-sk2 .ps-skrow{ break-inside:avoid; }
 .ps-sk-b2{ flex:1 1 0; text-align:right; font-size:9px; color:#6a747b; }
+/* Contacts & Crews: one row per contact (name and work, disposition / state), why they pick up beneath */
+.ps-ctrow .ps-sk-n{ flex:2 1 0; }
+.ps-ct-st{ flex:0 0 auto; }
+.ps-ct-why{ font-size:9px; color:#4a545b; padding:1px 0 3px 10px; font-style:italic; }
 .ps-chip-snag{ color:#b1481f; border-color:#d8b3a3; font-size:8px; padding:0 4px; }
 
 .ps-atk{ padding:3px 0; border-bottom:.5px solid #efe9da; }

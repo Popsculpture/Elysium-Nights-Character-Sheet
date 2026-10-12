@@ -9,14 +9,18 @@
    ledger's names (standings, pressure states, the Cred and Heat ladders) come
    from it. The Sit-Down itself is run at the table; the rest of its rules
    (Plays, Postures, the Floor, Sit-Down Conditions) are linked, not repeated.
-   State persists on ch.face; reference collapse state is transient.
+   Three sub-tabs: the LEDGER (all of the above, and the default), CONTACTS (the
+   people the Freelancer can reach, ch.face.contacts; see the CONTACTS block) and
+   #POST (the mail, ch.face.post).
+   State persists on ch.face; reference collapse state, the sub-tab and the
+   Contacts search, filters and sort are transient.
    =========================================================================== */
 window.EN = window.EN || {};
 
 EN.faceView = (function () {
   var el = EN.ui.el, store = EN.store;
-  var _open = {};   // collapse state for reference sections and open messages
-  var _sub = "ledger";   // 'ledger' | 'post'; transient, like the Inventory's
+  var _open = {};   // collapse state for reference sections, open messages and open contact cards
+  var _sub = "ledger";   // 'ledger' | 'contacts' | 'post'; transient, like the Inventory's
 
   // a faction's posture toward the crew
   var STANDINGS = [
@@ -69,12 +73,13 @@ EN.faceView = (function () {
     // the word, so this list stays in the social ledger and out of ch.grid.
     f.personas = f.personas || [];
     f.post = f.post || [];   // the #POST inbox; see the POST block below
+    f.contacts = f.contacts || [];   // the people you can reach; see the CONTACTS block below
     return f;
   }
   function faceRead(ch) {
     var f = ch.face || {};
     return { profiles: f.profiles || [], factions: f.factions || [], cred: f.cred || [], heat: f.heat || [], debts: f.debts || [],
-             personas: f.personas || [], post: f.post || [] };
+             personas: f.personas || [], post: f.post || [], contacts: f.contacts || [] };
   }
   function fset(mut, silent) { store.update(function (c) { mut(face(c)); }, silent ? { silent: true } : undefined); }
 
@@ -96,7 +101,9 @@ EN.faceView = (function () {
     }
     kids.push(el("button.btn.sm", { style: { marginTop: "8px" }, onclick: function () { fset(function (f) { f[opts.key].push(Object.assign({}, opts.blank)); }); } }, "+ ADD"));
     var chip = opts.rule ? EN.ui.ruleChip(opts.rule, { title: opts.ruleTitle || opts.title }) : null;
-    return EN.ui.panel(opts.title, opts.tag, kids, { corners: true, headerRight: chip });
+    var p = EN.ui.panel(opts.title, opts.tag, kids, { corners: true, headerRight: chip });
+    p.dataset.facePanel = opts.key;   // where a contact card's "see it in the ledger" lands
+    return p;
   }
   function trackerRow(opts, rec, i) {
     var cells = opts.cols.map(function (c) {
@@ -367,6 +374,374 @@ EN.faceView = (function () {
     return p;
   }
 
+  /* ---- CONTACTS (the people you can reach) ----------------------------------
+     Every Background grants "Two people you can reach", and the book asks for names, roles
+     and a reason they still pick up; they start neutral or slightly friendly (Part 1, the
+     Backgrounds chapter; the Codex panel so-contacts carries it). The one hard benefit is the
+     right Fence Contact skipping the search phase (Part 3, Choosing a Fence). The rest of a
+     contact's mechanics already live in the ledger, so a card LINKS them rather than holding
+     a copy: their Profile of you is a Profiles row, a favor is a Debts row (or a Bills debt),
+     their faction is a Faction Standing row. Those links are found at render time by name and
+     never stored, so renaming or deleting a row breaks nothing and no third debt list appears.
+     Stored on ch.face.contacts, cards with ids, modelled on #POST's rows: _open keyed by id,
+     text written silently with the closed header patched by hand, + NEW above the list.
+     NOT the GM's People cards (EN.gmStore's "contacts" bag), which this never reads or writes;
+     gmShared and gmContactId are reserved on the record for a later GM share and this sheet
+     never sets them. The select keys below are STORED KEYS, whitelisted in store.js migrate().
+     [APP] Personal or Professional, the disposition ladder (the Faction Standing steps, borrowed
+     for people), Burned as a fourth state (the Burned Bridge result), offers and notes: the
+     book has none of these for contacts; they are bookkeeping, not rules. */
+  var KINDS = [
+    { k: "professional", label: "Professional", color: "var(--accent)" },
+    { k: "personal",     label: "Personal",     color: "var(--flow)" }
+  ];
+  var ORIGINS = [
+    { k: "play",       label: "Earned in play" },
+    { k: "background", label: "Background" },
+    { k: "dayjob",     label: "Day job" }
+  ];
+  // the pressure states plus Burned; it shares STATES' rows, so the book's names reach it too
+  var CSTATES = STATES.concat([{ k: "burned", label: "Burned", color: "var(--text4)" }]);
+  // the book's four fence types (EN.economy.fences); the literals are the fallback
+  var FENCES = [{ k: "", label: "Not a fence", color: "var(--text4)" }].concat(
+    ((EN.economy && EN.economy.fences && EN.economy.fences.types) || [
+      { key: "relic", label: "Relic broker" }, { key: "cyber", label: "Cyberware fence" },
+      { key: "data", label: "Data broker" }, { key: "street", label: "Street fence" }
+    ]).map(function (t) { return { k: t.key, label: t.label, color: "var(--gold)" }; }));
+  var CT_TEXT = ["name", "print", "handle", "work", "why", "offers", "faction", "tell", "notes"];
+  // the two small filter selects sit in the chip row at their own width, not the form's 100%
+  var CT_SEL = { width: "auto", maxWidth: "100%", fontSize: "11px", padding: "4px 28px 4px 8px" };
+  var BG_CONTACTS = 2;   // "Two people you can reach": a nudge on the banner, never a cap
+  // the search, filters and sort; transient like _sub, never saved
+  var _ct = { q: "", kind: "all", burned: false, faction: "", sort: "name" };
+  /* Open cards whose own Kind or Faction was edited: kept in view through the kind and faction
+     filters until they close or the filter changes, so an edit never vanishes the card you are
+     in, while a filter you pick still filters. Transient, keyed as _open is. */
+  var _ctHeld = {};
+  function ctid() { return "ct_" + Math.random().toString(36).slice(2, 9) + Date.now().toString(36); }
+  // pick() falls back to a list's FIRST row, which on STANDINGS is Allied; a contact's default is not
+  function pickOr(list, k, dflt) {
+    for (var i = 0; i < list.length; i++) if (list[i].k === k) return list[i];
+    return pick(list, dflt);
+  }
+  function trimL(s) { return String(s == null ? "" : s).replace(/^\s+|\s+$/g, "").toLowerCase(); }
+  // writes go by id, not position: the list is shown sorted and filtered
+  function ctOf(f, id) {
+    for (var i = 0; i < f.contacts.length; i++) if (f.contacts[i].id === id) return f.contacts[i];
+    return null;
+  }
+  /* Open state and the armed delete are keyed by record and contact: an adopted example and a
+     record imported back as a copy share contact ids, and the switcher does not disarm. */
+  function ctKey(ch, id) { return ((ch && ch.meta && ch.meta.id) || "") + ":" + id; }
+  function ctSet(id, k, v, silent) { fset(function (f) { var c = ctOf(f, id); if (c) c[k] = v; }, silent); }
+  function blankContact(over) {
+    var c = { id: ctid(), name: "", print: "", handle: "", kind: "professional", work: "", why: "", offers: "",
+              fence: "", origin: "play", disposition: "neutral", state: "open", faction: "", tell: "", notes: "" };
+    Object.keys(over || {}).forEach(function (k) { c[k] = over[k]; });
+    return c;
+  }
+  function bgOf(ch) { return EN.engine && EN.engine.getBackground ? EN.engine.getBackground(ch.background) : null; }
+  // the Background's own example roles ("such as a former partner, ..."), for a placeholder
+  function bgRoles(bg) {
+    var m = bg && bg.contacts ? /such as (.*?)\.?$/.exec(bg.contacts) : null;
+    return m ? m[1] : "";
+  }
+  function ctSearchText(c) {
+    return CT_TEXT.map(function (k) { return c[k]; }).filter(Boolean).join(" \n ").toLowerCase();
+  }
+  /* The ties to the rest of the ledger, by name. A row belongs to a contact when its own name
+     field contains the contact's name, handle or #PRINT name (three letters or more, so a
+     one-letter handle does not claim every row). The faction tie is an exact name match. */
+  function ctLinks(ch, c) {
+    var F = faceRead(ch);
+    var names = [c.name, c.handle, c.print].map(trimL).filter(function (s) { return s.length >= 3; });
+    function hit(s) { var h = trimL(s); return !!h && names.some(function (n) { return h.indexOf(n) !== -1; }); }
+    var fac = trimL(c.faction), facRow = null;
+    F.factions.forEach(function (r) { if (fac && trimL(r.name) === fac) facRow = r; });
+    function facHit(s) { var h = trimL(s); return !!fac && !!h && (h.indexOf(fac) !== -1 || fac.indexOf(h) !== -1); }
+    return {
+      profiles: F.profiles.filter(function (r) { return hit(r.source); }),
+      debts: F.debts.filter(function (r) { return hit(r.who); }),
+      bills: (ch.debts || []).filter(function (r) { return r && hit(r.holder); }),
+      faction: facRow,
+      cred: F.cred.filter(function (r) { return facHit(r.scene); }),
+      heat: F.heat.filter(function (r) { return facHit(r.source) || hit(r.source); })
+    };
+  }
+  function tagChip(t, color, title) {
+    return el("span.chip.contact-chip", { title: title || "", style: { color: color, borderColor: color }, text: t });
+  }
+  // a jump to where a linked row is edited: the ledger panel, or the Inventory's Bills
+  function toLedger(panelKey) {
+    _sub = "ledger"; EN.app.render();
+    setTimeout(function () {
+      var p = document.querySelector("#view [data-face-panel='" + panelKey + "']");
+      if (p && p.scrollIntoView) p.scrollIntoView({ block: "start" });
+    }, 0);
+  }
+  function toBills() {
+    if (EN.inventoryView && EN.inventoryView.openBills) EN.inventoryView.openBills();
+    EN.app.gotoTab("gear");
+  }
+  function jumpBtn(label, title, fn) {
+    return el("button.btn.sm.ghost.contact-jump", { title: title, onclick: fn }, label);
+  }
+  function linkLine(kids) { return el("div.row.wrap.contact-link", null, kids); }
+  function linksBlock(ch, c) {
+    var L = ctLinks(ch, c), out = [];
+    // Their Profile of you: held by them, kept in Profiles (one copy)
+    out.push(el("div.contact-lh", null, [rl("so-profiles/profiles", "Their Profile of you")]));
+    if (L.profiles.length) L.profiles.forEach(function (r) {
+      out.push(linkLine([el("span", { style: { fontWeight: 600 }, text: r.label || "(no label yet)" }),
+        r.note ? el("span.contact-dim", { text: r.note }) : null,
+        jumpBtn("PROFILES ›", "Edit it in the ledger's Profiles", function () { toLedger("profiles"); })]));
+    });
+    else out.push(el("p.help.contact-none", { text: c.name ? "No Profiles row names " + c.name + " as its source." : "Name them to find their Profile of you." }));
+    out.push(el("button.btn.sm", { style: { marginTop: "4px" }, disabled: !trimL(c.name),
+      title: "Adds a Profiles row held by this contact. You write the label in the ledger.",
+      onclick: function () { var src = c.name; if (!trimL(src)) return; fset(function (f) { f.profiles.push({ label: "", source: src, note: "" }); }); } }, "+ PROFILE"));
+    // Debts both ways, from the ledger and from the Inventory's Bills
+    out.push(el("div.contact-lh", null, [rl("so-profiles/debt", "Debts")]));
+    L.debts.forEach(function (r) {
+      var d = pick(DEBTDIRS, r.dir);
+      out.push(linkLine([tagChip(d.label.toUpperCase(), d.color), el("span", { text: r.terms || "(terms not written)" }),
+        jumpBtn("DEBTS ›", "Edit it in the ledger's Debts", function () { toLedger("debts"); })]));
+    });
+    L.bills.forEach(function (r) {
+      var bits = [r.kind, r.principal != null && r.principal !== "" ? String(r.principal) : "", r.clock != null && r.clock !== "" ? "clock " + r.clock : ""].filter(Boolean);
+      out.push(linkLine([tagChip("BILLS", "var(--danger)", "A debt in the Inventory's Bills, held by " + (r.holder || "them")),
+        el("span", { text: bits.join(" · ") || "a debt" }),
+        jumpBtn("BILLS ›", "Edit it in the Inventory's Bills", toBills)]));
+    });
+    if (!L.debts.length && !L.bills.length) out.push(el("p.help.contact-none", { text: "No Debts or Bills name them." }));
+    // their faction's Standing with the crew: separate from their own Profile of you
+    if (c.faction) {
+      out.push(el("div.contact-lh", null, [rl("so-standing/faction-standing", "Faction Standing")]));
+      if (L.faction) {
+        var fs = pickOr(STANDINGS, L.faction.standing, "neutral"), fst = pick(STATES, L.faction.state);
+        out.push(linkLine([el("span", { style: { fontWeight: 600 }, text: L.faction.name }),
+          tagChip(fs.label.toUpperCase(), fs.color), tagChip(fst.label.toUpperCase(), fst.color),
+          jumpBtn("STANDING ›", "Edit it in the ledger's Faction Standing", function () { toLedger("factions"); })]));
+      } else out.push(el("p.help.contact-none", { text: "No Faction Standing row is called " + c.faction + "." }));
+    }
+    var ch2 = L.cred.map(function (r) { return "Cred " + (r.value || 0) + " in " + (r.scene || "a scene"); })
+      .concat(L.heat.map(function (r) { return "Heat " + (r.value || 0) + " from " + (r.source || "a source"); }));
+    if (ch2.length) out.push(linkLine([el("span.contact-dim", { text: ch2.join(" · ") }),
+      jumpBtn("CRED & HEAT ›", "Edit them in the ledger", function () { toLedger("cred"); })]));
+    // the two book lines that touch a contact's Cred and Heat, linked rather than restated
+    out.push(el("p.help", { style: { margin: "8px 0 0", color: "var(--text4)" } }, [
+      "Burning a contact costs Cred (", rl("so-credheat/cred-decreases", "Cred decreases"),
+      "); one who steps in can clear Heat (", rl("so-credheat/heat-decreases", "Heat decreases"), ")."]));
+    return el("div.contact-links", null, out);
+  }
+  var LINK_KEYS = { name: 1, print: 1, handle: 1, faction: 1 };
+  function contactRow(rec, ch) {
+    var key = rec.id, okey = ctKey(ch, key), open = !!_open["contact-" + okey];
+    var burned = rec.state === "burned";
+    var disp = pickOr(STANDINGS, rec.disposition, "neutral"), st = pickOr(CSTATES, rec.state, "open");
+    var S = EN.social || {}, PS = (S.pressureStates && S.pressureStates.states) || [];
+    function stateText(k) { var t = ""; PS.forEach(function (r) { if (r.key === k) t = r.text; }); return t; }
+    var burnedText = "";
+    ((S.fallout && S.fallout.rows) || []).forEach(function (r) { if (r.key === "burnedBridge") burnedText = r.name + ": " + r.text; });
+    /* Geometry is in theme.css off .contact-row and .contact-cell, never inline, for the reason
+       #POST's row gives: #GRIDroid's tracker rule claims any inline flex plus min-width:0 span.
+       Name and work are held by name so a silent keystroke can patch them, as #POST does. */
+    var nameEl = el("span.contact-cell.contact-name", { text: rec.name || "Unnamed contact" });
+    var workEl = el("span.contact-cell.contact-work", { text: rec.work || "" });
+    var chips = [tagChip(disp.label.toUpperCase(), disp.color, "Disposition: how they lean toward you")];
+    chips.push(tagChip(st.label.toUpperCase(), st.color, burned ? burnedText : stateText(st.k)));
+    if (rec.state === "strained") chips.push(tagChip("+1 SNAG DIE", "var(--warn)", stateText("strained")));
+    if (rec.fence) chips.push(tagChip("FENCE", "var(--gold)", pickOr(FENCES, rec.fence, "").label + ". Skips the search phase (Choosing a Fence)."));
+    var head = el("div.row.contact-row", {
+      onclick: function () { _open["contact-" + okey] = !open; delete _ctHeld[okey]; EN.ui.disarm(); EN.app.render(); } },
+      [nameEl, workEl, el("span.contact-chips", null, chips), el("span.contact-caret", { text: open ? "▾" : "▸" })]);
+    var body = null, linksEl = null;
+    if (open) {
+      var bg = bgOf(ch), roles = rec.origin === "background" ? bgRoles(bg) : "";
+      var txt = function (k, label, ph, flex) {
+        var inp = el("input", { type: "text", value: rec[k] || "", placeholder: ph, dataset: { faceContactField: k },
+          oninput: function () {
+            var v = inp.value;
+            if (k === "faction") _ctHeld[okey] = true;
+            ctSet(key, k, v, true);
+            if (k === "name") nameEl.textContent = v || "Unnamed contact";
+            else if (k === "work") workEl.textContent = v;
+            if (LINK_KEYS[k] && linksEl && linksEl.parentNode) {
+              var nl = linksBlock(ch, rec);
+              linksEl.parentNode.replaceChild(nl, linksEl); linksEl = nl;
+            }
+          },
+          style: { width: "100%", fontSize: "12px" } });
+        return el("div.field", { style: { flex: flex, minWidth: 0, margin: 0 } },
+          [el("label.fl", { style: { margin: "0 0 2px" }, text: label }), inp]);
+      };
+      var sel = function (k, label, list, dflt, flex, rule) {
+        var cur = pickOr(list, rec[k], dflt);
+        var s = el("select", { dataset: { faceContactField: k }, style: { width: "100%", fontSize: "12px", color: cur.color || "", borderColor: cur.color || "" },
+          onchange: function () { if (k === "kind") _ctHeld[okey] = true; ctSet(key, k, s.value); } },
+          list.map(function (o) { return el("option", { value: o.k, text: o.label, selected: cur.k === o.k }); }));
+        return el("div.field", { style: { flex: flex, minWidth: 0, margin: 0 } },
+          [el("label.fl", { style: { margin: "0 0 2px" } }, rule ? [rl(rule, label)] : [label]), s]);
+      };
+      var notes = el("textarea", { value: rec.notes || "", placeholder: "Anything else: where to find them, what they cost, what they know", dataset: { faceContactField: "notes" },
+        oninput: function () { ctSet(key, "notes", notes.value, true); },
+        style: { width: "100%", minHeight: "70px", fontSize: "12px" } });
+      var stateHelp = burned ? burnedText : rec.state === "open" ? "" : stateText(rec.state);
+      body = el("div.contact-body", null, [
+        el("div.row.wrap.contact-fields", null, [
+          txt("name", "Name", "Their name", "2 1 160px"),
+          txt("print", "#PRINT name", "If it differs", "1 1 130px"),
+          txt("handle", "Handle", "What the street calls them", "1 1 130px")
+        ]),
+        el("div.row.wrap.contact-fields", null, [
+          txt("work", "Work", roles ? "Their role, such as " + roles : "Their role", "2 1 200px"),
+          sel("kind", "Kind", KINDS, "professional", "1 1 120px"),
+          sel("origin", "Met through", ORIGINS, "play", "1 1 130px")
+        ]),
+        el("div.row.wrap.contact-fields", null, [
+          txt("why", "Why they pick up", "Why they still pick up when you call", "1 1 100%")
+        ]),
+        el("div.row.wrap.contact-fields", null, [
+          sel("disposition", "Disposition", STANDINGS, "neutral", "1 1 110px", "so-standing/faction-standing"),
+          sel("state", "State", CSTATES, "open", "1 1 110px", "so-standing/social-pressure-states"),
+          sel("fence", "Fence", FENCES, "", "1 1 130px", "so-contacts/choosing-a-fence"),
+          txt("faction", "Faction", "Who they answer to", "1 1 140px")
+        ]),
+        stateHelp ? el("p.help", { style: { margin: "0 0 7px", color: burned ? "var(--text3)" : "var(--warn)" }, text: stateHelp }) : null,
+        rec.fence ? el("p.help", { style: { margin: "0 0 7px", color: "var(--gold)" } }, [
+          "The right Fence Contact skips the search phase and goes straight to negotiation (",
+          rl("so-contacts/choosing-a-fence", "Choosing a Fence"), ")."]) : null,
+        el("div.row.wrap.contact-fields", null, [
+          txt("offers", "What they can do for you", "A safehouse door, a ride, a buyer", "2 1 200px"),
+          txt("tell", "Tell", "One habit you would recognize", "1 1 160px")
+        ]),
+        el("div.field", { style: { margin: "0 0 7px" } }, [el("label.fl", { style: { margin: "0 0 2px" }, text: "Notes" }), notes]),
+        linksEl = linksBlock(ch, rec),
+        el("div.row.wrap", { style: { gap: "6px", marginTop: "10px" } }, [
+          EN.ui.armButton("face:contact:del:" + okey, { label: "✕ DELETE", armedLabel: "DELETE THIS CONTACT?",
+            title: "Delete this contact card. Profiles and Debts rows that name them stay in the ledger.",
+            armedTitle: "Click again to delete. It is not kept anywhere else.",
+            onConfirm: function () { delete _open["contact-" + okey]; fset(function (f) { f.contacts = f.contacts.filter(function (c) { return c.id !== key; }); }); } })
+        ])
+      ]);
+    }
+    return el("div.feature.contact-card" + (burned ? ".contact-burned" : "") + (open ? ".contact-open" : ""),
+      { dataset: { faceContact: key }, style: { borderLeftColor: burned ? "var(--border)" : disp.color } }, [head, body]);
+  }
+  function contactsShown(all, ch) {
+    var q = trimL(_ct.q), idx = {};
+    STANDINGS.forEach(function (s, i) { idx[s.k] = i; });
+    var rows = all.filter(function (c) {
+      var ck = ctKey(ch, c.id), held = !!_open["contact-" + ck] && !!_ctHeld[ck];
+      if (_ct.kind !== "all" && (c.kind || "professional") !== _ct.kind && !held) return false;
+      // a burned card stays in view while it is open, so burning one does not vanish it mid-edit
+      if (c.state === "burned" && !_ct.burned && !_open["contact-" + ck]) return false;
+      if (_ct.faction && trimL(c.faction) !== _ct.faction && !held) return false;
+      return !q || ctSearchText(c).indexOf(q) !== -1;
+    });
+    rows.sort(function (a, b) {
+      var ba = a.state === "burned" ? 1 : 0, bb = b.state === "burned" ? 1 : 0;
+      if (ba !== bb) return ba - bb;   // Burned always last
+      // an unnamed card is one being written, so it leads
+      var na = trimL(a.name), nb = trimL(b.name);
+      if (!na !== !nb) return na ? 1 : -1;
+      if (_ct.sort === "standing") {
+        var sa = idx[a.disposition] != null ? idx[a.disposition] : 2, sb = idx[b.disposition] != null ? idx[b.disposition] : 2;
+        if (sa !== sb) return sa - sb;
+      }
+      return na < nb ? -1 : na > nb ? 1 : 0;
+    });
+    return rows;
+  }
+  // the list alone, refilled in place on a search keystroke (a full render would steal focus)
+  function contactsInto(host) {
+    var ch = store.active(), all = faceRead(ch).contacts, rows = contactsShown(all, ch);
+    var hiddenBurned = _ct.burned ? 0 : all.filter(function (c) { return c.state === "burned" && !_open["contact-" + ctKey(ch, c.id)]; }).length;
+    var filtered = !!trimL(_ct.q) || _ct.kind !== "all" || !!_ct.faction;
+    if (filtered || hiddenBurned) {
+      host.appendChild(el("div.row.between.wrap", { style: { gap: "8px", alignItems: "center", marginBottom: "6px" } }, [
+        el("p.help", { style: { margin: 0 }, dataset: { faceContact: "count" },
+          text: (filtered ? (rows.length ? rows.length + " of " + all.length + " match." : "Nothing matches.") : rows.length + " shown.")
+            + (hiddenBurned ? " " + hiddenBurned + " burned, hidden." : "") }),
+        trimL(_ct.q) ? el("button.btn.sm.ghost", { onclick: function () { _ct.q = ""; EN.app.render(); } }, "CLEAR SEARCH") : null
+      ]));
+    }
+    rows.forEach(function (c) { host.appendChild(contactRow(c, ch)); });
+  }
+  function bgBanner(ch, all) {
+    var bg = bgOf(ch);
+    if (!bg || !bg.contacts) return null;
+    var n = all.filter(function (c) { return c.origin === "background"; }).length;
+    return el("div.contact-bg", null, [
+      el("div.row.wrap", { style: { gap: "8px", alignItems: "baseline" } }, [
+        el("span", { style: { fontWeight: 600 }, text: bg.name }),
+        el("span.mono", { dataset: { faceContact: "bgcount" }, style: { fontSize: "10.5px", color: n >= BG_CONTACTS ? "var(--success)" : "var(--text3)" },
+          text: "Background contacts: " + n + " of " + BG_CONTACTS }),
+        rl("so-contacts/background-grant", "Two people you can reach")
+      ]),
+      el("p.help", { style: { margin: "4px 0 0" }, text: bg.contacts }),
+      n < BG_CONTACTS ? el("button.btn.sm", { style: { marginTop: "8px" }, dataset: { faceContact: "new-bg" },
+        title: "A card marked as one of your Background's two. Nothing is filled in for you.",
+        onclick: function () { newContact({ origin: "background" }); } }, "+ BACKGROUND CONTACT") : null
+    ]);
+  }
+  function newContact(over) {
+    var c = blankContact(over);
+    // a filter that would hide the new card is cleared, or it opens somewhere you cannot see
+    if (_ct.kind !== "all") c.kind = _ct.kind;
+    _ct.q = ""; _ct.faction = "";
+    _open["contact-" + ctKey(store.active(), c.id)] = true;   // a new card opens straight into its editor
+    fset(function (f) { f.contacts.unshift(c); });
+  }
+  function contactsPanel() {
+    var ch = store.active(), all = faceRead(ch).contacts, kids = [];
+    var banner = bgBanner(ch, all);
+    if (banner) kids.push(banner);
+    kids.push(el("p.help", { style: { margin: "0 0 10px", color: "var(--text3)" } }, [
+      "Give each one a name, a role, and a reason they still pick up when you call. They start Neutral or Friendly until rapport or the fiction moves them (",
+      rl("so-contacts/make-it-yours", "Make it Yours"), ")."]));
+    // above the list, as on #POST: a new card goes to the top
+    kids.push(el("button.btn.sm", { style: { marginBottom: "10px" }, dataset: { faceContact: "new" },
+      onclick: function () { newContact(); } }, "+ NEW CONTACT"));
+    if (all.length) {
+      var host = el("div", { dataset: { live: "face-contacts" } });
+      kids.push(el("input", { type: "text", value: _ct.q, dataset: { faceContact: "search" },
+        placeholder: "search names, work, why they pick up, factions and notes",
+        style: { width: "100%", marginBottom: "8px" },
+        oninput: function (e) { _ct.q = e.target.value; EN.ui.clear(host); contactsInto(host); } }));
+      var kindChip = function (k, label) {
+        return el("button.chip" + (_ct.kind === k ? ".on" : ""), { dataset: { faceContactKind: k },
+          onclick: function () { _ct.kind = k; _ctHeld = {}; EN.app.render(); } }, label);
+      };
+      var facs = {}, facList = [];
+      all.forEach(function (c) { var f = trimL(c.faction); if (f && !facs[f]) { facs[f] = c.faction.replace(/^\s+|\s+$/g, ""); facList.push(f); } });
+      if (_ct.faction && !facs[_ct.faction]) _ct.faction = "";
+      var nBurned = all.filter(function (c) { return c.state === "burned"; }).length;
+      var facSel = facList.length >= 2 ? el("select", { dataset: { faceContact: "faction" }, style: CT_SEL,
+        onchange: function (e) { _ct.faction = e.target.value; _ctHeld = {}; EN.app.render(); } },
+        [el("option", { value: "", text: "Every faction", selected: !_ct.faction })].concat(facList.sort().map(function (f) {
+          return el("option", { value: f, text: facs[f], selected: _ct.faction === f }); }))) : null;
+      var sortSel = el("select", { dataset: { faceContact: "sort" }, style: CT_SEL,
+        onchange: function (e) { _ct.sort = e.target.value; EN.app.render(); } }, [
+        el("option", { value: "name", text: "Sort by name", selected: _ct.sort !== "standing" }),
+        el("option", { value: "standing", text: "Sort by disposition", selected: _ct.sort === "standing" })]);
+      kids.push(el("div.row.wrap.contact-filters", null, [
+        kindChip("all", "ALL"), kindChip("personal", "PERSONAL"), kindChip("professional", "PROFESSIONAL"),
+        el("button.chip" + (_ct.burned ? ".on" : ""), { dataset: { faceContact: "burned" }, title: "Burned contacts are hidden unless this is on.",
+          onclick: function () { _ct.burned = !_ct.burned; EN.app.render(); } }, "SHOW BURNED" + (nBurned ? " · " + nBurned : "")),
+        facSel, sortSel
+      ]));
+      contactsInto(host);
+      kids.push(host);
+    } else {
+      kids.push(help("No contacts yet. Your Background names the kind of people you start with; the rest you earn in play.", "var(--text4)"));
+    }
+    var p = EN.ui.panel("Contacts", all.length + (all.length === 1 ? " CONTACT" : " CONTACTS"), kids, { corners: true,
+      headerRight: EN.ui.ruleChip("so-contacts", { title: "Contacts & Fences" }) });
+    p.dataset.count = String(all.length);
+    return p;
+  }
+
   /* ---- quick reference (collapsible) --------------------------------------
      A pocket copy of the three tables a Face reaches for mid-scene (Approaches, Margins
      and Outcomes, the Sit-Down's Pressure and Resolve), read from EN.social, the same
@@ -522,22 +897,26 @@ EN.faceView = (function () {
     EN.ui.clear(mount);
     if (!ch) { mount.appendChild(el("p.help", { text: "No Freelancer loaded." })); return; }
     var blocks = [];
-    var onPost = _sub === "post", n = unread(ch);
+    var onPost = _sub === "post", onContacts = _sub === "contacts", n = unread(ch);
     blocks.push(el("div", { style: { marginBottom: "14px" } }, [
       el("h1", { style: { fontSize: "22px", margin: "0 0 2px", letterSpacing: ".04em" },
         html: "MY <span style='color:var(--accent)'>SOCIALS</span> <span style='font-family:var(--disp);font-size:12px;color:var(--text3);letter-spacing:.18em'>// " +
-              (onPost ? "SECURE COMM CHANNEL" : "SOCIAL PRESSURE · FACTION STANDING") + "</span>" }),
+              (onPost ? "SECURE COMM CHANNEL" : onContacts ? "PEOPLE YOU CAN REACH" : "SOCIAL PRESSURE · FACTION STANDING") + "</span>" }),
       el("p.help", { style: { margin: 0, maxWidth: "820px" }, text: onPost
         ? "Every handle gets an address whether it wants one or not. What lands here is work, warnings, and the occasional person who knows too much about where you sleep."
+        : onContacts ? "The people who still pick up when you call, and the reasons they do. Half of what a Freelancer can do is who a Freelancer can reach."
         : "Some jobs end in gunfire. More end in a room: two chairs, two people working the same problem until one gives ground. This is the ledger that room leaves behind." })
     ]));
-    /* Two faces of the same tab: the standing ledger, and the mail. Deliberately
-       NOT sticky like the Inventory's bar, which has to carry the wallets; two
-       buttons do not earn a pinned strip on a phone. */
-    // the author's clipboard and envelope, one per Social sub-tab; same [icon, text] convention
-    // the Inventory sub-nav uses for Stash, Chrome and Gray Market
+    /* Three faces of the same tab: the standing ledger, the people, and the mail.
+       Deliberately NOT sticky like the Inventory's bar, which has to carry the wallets;
+       three buttons do not earn a pinned strip on a phone (#GRIDroid lays them out as
+       three equal cells, theme.css .face-bar). */
+    // the author's clipboard, linked figures and envelope, one per Social sub-tab; same [icon,
+    // text] convention the Inventory sub-nav uses for Stash, Chrome and Gray Market
     var ICON_LEDGER = '<svg viewBox="0 0 101.83 122.88" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M6.77,12.82h16.25v10.5h-7.01c-3.13,0-5.72,2.59-5.72,5.72v78.43c0,3.13,2.58,5.72,5.72,5.72h69.8 c3.14,0,5.72-2.58,5.72-5.72V29.04c0-3.14-2.59-5.72-5.72-5.72h-7.01v-10.5h16.25c3.73,0,6.77,3.07,6.77,6.77v96.51 c0,3.71-3.06,6.77-6.77,6.77H6.77c-3.71,0-6.77-3.05-6.77-6.77V19.59C0,15.86,3.05,12.82,6.77,12.82L6.77,12.82z M37.79,95.89 c-2.01,0-3.64-1.63-3.64-3.64c0-2.01,1.63-3.64,3.64-3.64h26.24c2.01,0,3.64,1.63,3.64,3.64c0,2.01-1.63,3.64-3.64,3.64H37.79 L37.79,95.89z M30.03,73.91c-2.01,0-3.64-1.63-3.64-3.64c0-2.01,1.63-3.64,3.64-3.64h41.76c2.01,0,3.64,1.63,3.64,3.64 c0,2.01-1.63,3.64-3.64,3.64H30.03L30.03,73.91z M23.2,51.94c-2.01,0-3.64-1.63-3.64-3.64s1.63-3.64,3.64-3.64h55.44 c2.01,0,3.64,1.63,3.64,3.64s-1.63,3.64-3.64,3.64H23.2L23.2,51.94z M32.4,9.46h7.68C40.73,4.13,45.04,0,50.26,0 c5.19,0,9.47,4.07,10.17,9.35l8.99,0.11c0.63,0,1.13,0.5,1.13,1.13v15.33c0,0.63-0.5,1.13-1.13,1.13h-37 c-0.61,0-1.13-0.5-1.13-1.13V10.59C31.27,9.97,31.78,9.46,32.4,9.46L32.4,9.46L32.4,9.46L32.4,9.46z M46.06,14.1 c0.69,0.95,1.69,1.89,2.74,2.37c0.86,0.26,1.8,0.28,2.67,0.04c1.36-0.63,2.62-2.14,3.2-3.4c0.07-0.36,0.11-0.73,0.11-1.13 c0-2.67-2.05-4.84-4.57-4.84c-2.53,0-4.57,2.17-4.57,4.84C45.64,12.8,45.79,13.51,46.06,14.1L46.06,14.1L46.06,14.1L46.06,14.1z"/></svg>';
     var ICON_POST = '<svg viewBox="0 0 122.88 88.86" fill="currentColor" aria-hidden="true"><path d="M7.05,0H115.83a7.07,7.07,0,0,1,7,7.05V81.81a7,7,0,0,1-1.22,4,2.78,2.78,0,0,1-.66,1,2.62,2.62,0,0,1-.66.46,7,7,0,0,1-4.51,1.65H7.05a7.07,7.07,0,0,1-7-7V7.05A7.07,7.07,0,0,1,7.05,0Zm-.3,78.84L43.53,40.62,6.75,9.54v69.3ZM49.07,45.39,9.77,83.45h103L75.22,45.39l-11,9.21h0a2.7,2.7,0,0,1-3.45,0L49.07,45.39Zm31.6-4.84,35.46,38.6V9.2L80.67,40.55ZM10.21,5.41,62.39,47.7,112.27,5.41Z"/></svg>';
+    // the author's own Social tab mark (ICON_SOCIAL in app.js), copied verbatim, never redrawn
+    var ICON_CONTACTS = '<svg viewBox="0 0 122.88 119.91" fill="currentColor" aria-hidden="true"><path d="M20,52a4.32,4.32,0,0,1-7.79-3.73A52.4,52.4,0,0,1,15,43.09a54.42,54.42,0,0,1,3.4-4.83l.06-.08a55.27,55.27,0,0,1,3.83-4.33,54.44,54.44,0,0,1,4.36-4l0,0a4.33,4.33,0,0,1,3.15-.93,4.27,4.27,0,0,1,2.89,1.56l0,0a4.33,4.33,0,0,1,.93,3.15,4.27,4.27,0,0,1-1.56,2.89h0a44.87,44.87,0,0,0-3.68,3.34A44.45,44.45,0,0,0,20,52ZM8.91,95.49l.25-.19c2.57-1.53,6.46-1.13,9-2.9a5.41,5.41,0,0,0,.47-.91c.24-.54.45-1.13.59-1.53a18.83,18.83,0,0,1-1.54-2.2l-1.56-2.48A4.54,4.54,0,0,1,15.23,83a1.79,1.79,0,0,1,.15-.82,1.44,1.44,0,0,1,.53-.62,1.93,1.93,0,0,1,.38-.19,41.2,41.2,0,0,1-.07-4.46,5.64,5.64,0,0,1,2.83-4.37,8.36,8.36,0,0,1,2.2-1c.5-.14-.42-1.72.09-1.77,2.48-.26,6.49,2,8.21,3.87a6,6,0,0,1,1.53,3.83l-.09,4h0a1.13,1.13,0,0,1,.82.85,3.54,3.54,0,0,1-.43,2.13h0l0,0-1.77,2.93a15.8,15.8,0,0,1-2.18,3,4,4,0,0,0,.23.34,10.37,10.37,0,0,0,1.16,1.5s0,0,0,0c2,1.45,7,1.8,8.94,2.86l.07,0,.24.19a19.11,19.11,0,0,0-1-25.74L37,69.64A19.11,19.11,0,0,0,8.91,95.49ZM23.5,59.65a23.41,23.41,0,0,1,16.61,6.88l.13.14a23.49,23.49,0,0,1-.13,33.09l-.14.13A23.49,23.49,0,1,1,23.5,59.65ZM85.56,96.11c1.91-1.68,6-2.1,8.51-3.58,2.2-1.32,1.82-2.65,1.81-4.83H92.39c-9.06,0-3.09.71-1.86-9.13,1.84-13.9,15.84-13.91,17.91,0,1.32,9.47,7,9.13-1.87,9.13H103c0,2.41-.39,3.64,2.11,5,1.86,1,6.09,1.65,8.12,3.33A19.12,19.12,0,0,0,113,69.5l-.12-.1A19.11,19.11,0,0,0,86,69.28l-.11.12a19.13,19.13,0,0,0-.31,26.71Zm13.82-36.7A23.44,23.44,0,0,1,116,66.29l.12.14A23.48,23.48,0,0,1,116,99.52l-.14.13a23.47,23.47,0,0,1-33.09-.13l-.13-.13a23.48,23.48,0,0,1,.13-33.1l.13-.13a23.44,23.44,0,0,1,16.48-6.75ZM48.72,35.84l.25-.2c2.58-1.52,6.46-1.12,9-2.89a7.53,7.53,0,0,0,.47-.91c.23-.54.45-1.13.58-1.53a20.12,20.12,0,0,1-1.54-2.2l-1.56-2.48A4.54,4.54,0,0,1,55,23.36a1.78,1.78,0,0,1,.15-.81,1.46,1.46,0,0,1,.54-.62,1.5,1.5,0,0,1,.38-.19A38.76,38.76,0,0,1,56,17.28a5.8,5.8,0,0,1,.19-1,6,6,0,0,1,2.64-3.36,8.42,8.42,0,0,1,2.21-1c.49-.14-.42-1.72.09-1.78,2.47-.25,6.48,2,8.21,3.88a6.11,6.11,0,0,1,1.53,3.82l-.1,4h0a1.13,1.13,0,0,1,.82.85,3.54,3.54,0,0,1-.43,2.13h0a.17.17,0,0,1,0,.05l-1.78,2.93a15.38,15.38,0,0,1-2.18,3l.23.34a10.29,10.29,0,0,0,1.16,1.49l0,.05c2,1.45,7,1.8,8.94,2.86l.07,0,.24.19a19.13,19.13,0,0,0-1-25.74L76.82,10a19.11,19.11,0,0,0-28.1,25.85ZM63.31,0A23.41,23.41,0,0,1,79.92,6.88l.13.14a23.47,23.47,0,0,1-.13,33.09l-.13.13A23.49,23.49,0,1,1,63.31,0Zm29,37.29a4.32,4.32,0,0,1,2.4-7.6,4.34,4.34,0,0,1,3.14,1L99.37,32l1.49,1.42c1,1,2,2,2.86,3s1.73,2.06,2.52,3.12,1.59,2.22,2.32,3.38,1.42,2.34,2,3.52l0,.12a4.31,4.31,0,0,1-5.15,6A4.23,4.23,0,0,1,103,50.51c-.52-1-1.1-2-1.71-2.94s-1.27-1.92-1.94-2.81S97.9,42.94,97.12,42s-1.52-1.68-2.3-2.45-1.65-1.55-2.53-2.3ZM76.05,109a4.27,4.27,0,0,1,3.28.23l.08,0a4.33,4.33,0,0,1,2.1,2.45v0a4.31,4.31,0,0,1-2.73,5.42c-1.37.46-2.75.86-4.15,1.21s-2.76.62-4.19.85-2.86.41-4.27.52-2.89.18-4.32.18-2.92-.06-4.38-.18-2.9-.3-4.36-.54-2.92-.55-4.31-.9-2.83-.78-4.19-1.24a4.33,4.33,0,0,1-2.48-2.2,4.28,4.28,0,0,1-.21-3.3,4.34,4.34,0,0,1,2.19-2.48,4.28,4.28,0,0,1,3.3-.21l0,0c1.13.38,2.3.73,3.49,1l0,0c1.16.29,2.33.54,3.49.73h0c1.16.19,2.37.34,3.61.44s2.43.15,3.7.15,2.46-.05,3.64-.15,2.42-.24,3.56-.43h.07c1.16-.19,2.33-.43,3.49-.72s2.32-.62,3.44-1Z"/></svg>';
     function subTab(key, label) {
       var kids = Array.isArray(label) ? [el("span", { html: label[0] }), document.createTextNode(" " + label[1])] : [document.createTextNode(label)];
       return el("button.btn.sm" + (_sub === key ? ".primary" : ""),
@@ -545,12 +924,19 @@ EN.faceView = (function () {
     }
     blocks.push(el("div.row.wrap.face-bar", { style: { gap: "6px", marginBottom: "12px" } }, [
       subTab("ledger", [ICON_LEDGER, "LEDGER"]),
+      subTab("contacts", [ICON_CONTACTS, "CONTACTS"]),
       subTab("post", [ICON_POST, "#POST" + (n ? " · " + n : "")])
     ]));
     if (onPost) {
       // One wrapper around the inbox so a skin can frame it (theme.css draws the '98 mail
       // client off .post-sub, the sibling of the Inventory's .inv-sub). Nothing else keys on it.
       blocks.push(el("div.post-sub", null, [postPanel()]));
+      mount.appendChild(el("div", null, blocks)); return;
+    }
+    if (onContacts) {
+      // its own wrapper, NEVER .post-sub: the '98 mail-client rules there would rebuild it as
+      // an inbox. '98 shares only the light-document palette and controls (theme.css).
+      blocks.push(el("div.contact-sub", null, [contactsPanel()]));
       mount.appendChild(el("div", null, blocks)); return;
     }
     blocks.push(profilesPanel());

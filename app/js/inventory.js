@@ -3911,6 +3911,8 @@ EN.inventoryView = (function () {
     _sub = "workbench";
     if (BENCHES.some(function (b) { return b.key === key; })) _bench = key;
   }
+  // openBills: land on the Inventory with Bills open (a Social contact card sends a debt here)
+  function openBills() { _hh.open = true; }
   /* Land on the Stash with one category already expanded. The device cards send you here to
      equip a deck or a Rig, and every stash category is collapsed by default, so without the
      expand the card tells you to go press a button and then drops you three clicks away from
@@ -3932,5 +3934,5 @@ EN.inventoryView = (function () {
   }
 
   return { render: render, leaseTick: leaseTick, householdTick: householdTick, hypercareTick: hypercareTick,
-           openBench: openBench, openStash: openStash, closePops: closePops };
+           openBench: openBench, openStash: openStash, openBills: openBills, closePops: closePops };
 })();

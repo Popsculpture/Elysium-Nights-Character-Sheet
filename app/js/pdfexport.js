@@ -1068,8 +1068,27 @@ EN.pdfExport = (function () {
     ctx.multiline("Core Sparks", "coreSparks", { value: id.coreSparks, height: 40 });
     ctx.multiline("Tethers", "tethers", { value: id.tethers, height: 40 });
     ctx.multiline("Fault Lines", "faultLines", { value: id.faultLines, height: 40 });
+    /* The Social tab's Contacts, the same list the print sheet draws (printsheet.js
+       contactRows): every contact not Burned, then two blank rows to write in. The table is
+       "contactList", never "contacts": the multiline that used to be here was a field named
+       profile.contacts, and pdf-lib reads dotted names as a tree, so a field and a table under
+       one name clash. */
     ctx.sectionTitle("Contacts & Crews");
-    ctx.multiline(null, "contacts", { height: 40 });
+    // disposition and state names from the book's data (EN.social), the literals only a fallback
+    var CT_LABEL = { allied: "Allied", friendly: "Friendly", neutral: "Neutral", wary: "Wary", hostile: "Hostile",
+                     open: "Open", strained: "Strained", locked: "Locked" }, CS = EN.social || {};
+    ((CS.factionStanding && CS.factionStanding.ladder) || []).concat((CS.pressureStates && CS.pressureStates.states) || [])
+      .forEach(function (r) { if (r && r.key && r.name) CT_LABEL[r.key] = r.name; });
+    var cts = ((ch.face && Array.isArray(ch.face.contacts)) ? ch.face.contacts : [])
+      .filter(function (c) { return c && c.state !== "burned"; })
+      .map(function (c) {
+        return { name: c.name || "Unnamed contact", work: c.work || "",
+                 standing: (CT_LABEL[c.disposition] || "Neutral") + " / " + (CT_LABEL[c.state] || "Open"), why: c.why || "" };
+      });
+    ctx.table([
+      { header: "Name", key: "name", w: 1.3 }, { header: "Work", key: "work", w: 1.3 },
+      { header: "Standing / State", key: "standing", w: "92px" }, { header: "Why they pick up", key: "why", w: 2 }
+    ], "contactList", cts.concat([null, null]));
     ctx.sectionTitle("Backstory & Notes");
     ctx.multiline(null, "backstory", { value: id.notes, height: 80 });
 

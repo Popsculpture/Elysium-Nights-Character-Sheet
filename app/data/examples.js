@@ -254,6 +254,21 @@ EN.examples = [
         concept: "Was very good at a very bad job, then took the contact list with her on the way out.",
         whereFrom: "Twelve floors up, until the day the badge stopped opening the lift."
       },
+      /* Her Background's two contacts (Boardroom Exile: "a mid-level manager, an assistant who
+         actually runs the place, or legal counsel who owes you"), on the Social tab's CONTACTS.
+         Fixed ids, so an open card stays open when the example is picked again. */
+      face: {
+        contacts: [
+          { id: "ex_hu_c1", name: "Marcus Ilve", print: "", handle: "", kind: "professional", origin: "background",
+            work: "Mid-level manager, Accounts Receivable", why: "She buried his worst quarter in a footnote. He has been grateful, and nervous, ever since.",
+            offers: "Badge-in times, and who is getting cut next", fence: "", disposition: "friendly", state: "open",
+            faction: "", tell: "Straightens his tie before he lies", notes: "" },
+          { id: "ex_hu_c2", name: "Juno Achterberg", print: "", handle: "", kind: "professional", origin: "background",
+            work: "Executive assistant who actually runs the floor", why: "Odile never once took credit for her work.",
+            offers: "Calendars, door codes, a quiet word in the right ear", fence: "", disposition: "neutral", state: "open",
+            faction: "", tell: "Answers every call on the second ring", notes: "" }
+        ]
+      },
       equipment: [
         /* Weapons */
         { id: "ex_hu_wep", name: "Pocket Pistol", qty: 1 },

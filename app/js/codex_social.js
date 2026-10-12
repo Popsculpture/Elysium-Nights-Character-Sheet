@@ -12,6 +12,10 @@
    Nothing is written here that the data does not say: every rule line is a field
    of EN.social, and the only words of this file's own are headings, the labels of
    a few entries, and the small pointers between panels.
+   One panel carries rules from other parts of the book: so-contacts (Contacts & Fences),
+   the Background contact grant from Part 1 and Choosing a Fence from Part 3, for the
+   Social tab's Contacts sub-tab. "Contacts" is NOT registered as a pointer term: every
+   Background's text and half this chapter use the word, and it would link them all.
    Core Resolution keeps the Social Cost Options, the Social Fallout Rule and the
    cost tracks (rz-social); this chapter links there and does not repeat them.
    The API is documented in the header of app/js/codex.js.
@@ -120,6 +124,29 @@ window.EN = window.EN || {};
         K.ruleBlock("Debt", s.debt.paragraphs.join("\n\n"), null, lo()),
         K.seeAlso("Debt across a campaign:", [["ref-economy", "Economy & Rewards"]]),
         gmSee(ctx, K, "For the GM:", [["gmp-profiles", "Their Profile of You"]])
+      ];
+    } },
+
+    /* ---- 5b · Contacts and Fences --------------------------------------------------------
+       Not this chapter's text: the Background grant and "Make it Yours" are Part 1's
+       (EN.social.contacts), Choosing a Fence is Part 3's (EN.economy.fences). They sit here
+       because the Social tab's Contacts sub-tab records these people and links this panel
+       rather than restating it. On the Freelancer desktop the panel adds that record's own
+       Background line (data/backgrounds.js), the book's words for which two to choose. */
+    { id: "so-contacts", title: "Contacts & Fences", tag: "TWO PEOPLE YOU CAN REACH · CHOOSING A FENCE", order: 45, when: has("contacts"), build: function (ctx, K) {
+      var c = S().contacts, F = EN.economy && EN.economy.fences;
+      var bgKey = ctx.active && ctx.active.background;
+      var bg = bgKey && EN.engine && EN.engine.getBackground ? EN.engine.getBackground(bgKey) : null;
+      var grant = lo(); grant.slug = "background-grant";
+      return [
+        K.ruleBlock(c.grant.name, c.grant.text, "BACKGROUND", grant),
+        bg && bg.contacts ? K.note("Your Background, " + bg.name + ": " + bg.contacts, lo()) : null,
+        K.ruleBlock("Make it Yours", c.makeItYoursLead + "\n\n" + K.bullets([c.makeItYours]), null, lo()),
+        K.ruleBlock("GM Guidance", c.gmGuidance, "GM GUIDANCE", lo()),
+        F ? K.ruleBlock("Choosing a Fence", F.intro + "\n\n"
+          + K.bullets(F.types.map(runIn)) + "\n\n" + F.rule, "CAPTURED GOODS", lo()) : null,
+        K.seeAlso("Keeping track of them:", [["so-profiles", "Profiles & Debt"], ["so-standing", "Faction Standing & Pressure States"], ["so-credheat", "Cred & Heat"]]),
+        F ? K.seeAlso("The rest of the market:", [["ref-economy", "Economy & Rewards"]]) : null
       ];
     } },
 
