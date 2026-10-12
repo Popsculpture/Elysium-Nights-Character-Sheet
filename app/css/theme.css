@@ -2306,11 +2306,20 @@ html.light body{
   background-attachment:fixed;
 }
 html.light body::after{ display:none; }                 /* drop the dark scanline veil */
-/* --gold and --warn are tuned for dark grounds: on a light panel they measured 1.47 and 1.78
-   against white (a Contact's fence and Strained lines, FENCE and WARY chips). These are the
-   '98 paper views' inks, 5.49 and 5.14 on white. Scoped to the Contacts sub-tab only, so no
-   other tab changes colour; the '98 rule above still wins on Windows 98 grey. */
-html.pal-light .contact-sub{ --gold:#8a6200; --warn:#946400; }
+/* --gold and --warn are tuned for dark grounds: on a light theme they measured 1.47 and 1.78
+   against white (wallet and prices, SOLO and Breakpoint, XP and budget lines, a Contact's fence
+   and Strained lines, the top bar's SYNC flash at 1.58). Light themes only (html.light: Daybreak
+   and any theme marked light), every tab in #view plus the light top bar. Gold is the '98 paper
+   ink, 5.49 on white. Warn runs redder than the paper's #946400 so the two stay apart side by
+   side instead of reading as one amber, and #9c4f00 also clears 4.5 on #PRINT's gradient wash.
+   Scoped to html.light, not pal-light: the '98 palette worn on another skin lights its panels but
+   keeps a dark desktop and top bar, where these inks would read worse, so that combination keeps
+   the inks it had. The '98 skin's own rule above still wins on Windows 98 grey, and its navy title
+   bar keeps the bright inks (the top bar half skips it); dark themes are untouched. */
+html.light #view, html.light:not(.skin-98) .os-topbar{ --gold:#8a6200; --warn:#9c4f00; }
+/* The Contacts sub-tab carried its own inks on pale-paneled palettes before the rule above went
+   app-wide, and keeps them where that rule does not reach (the '98 palette on another skin). */
+html.pal-light:not(.light) .contact-sub{ --gold:#8a6200; --warn:#946400; }
 html.light .os-topbar{ background:linear-gradient(180deg, rgba(255,255,255,.92), rgba(240,243,249,.82)); }
 html.light .wizard-rail{ background:transparent; }
 html.light .os-tab:hover{ background:rgba(0,0,0,.045); }
