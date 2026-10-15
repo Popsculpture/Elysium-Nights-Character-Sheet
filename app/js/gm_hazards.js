@@ -347,6 +347,20 @@ EN.gmHazards = (function () {
      Disturbances, in the Codex's Combat Rules and The Flow): the Codex's term table
      links each name as written. */
   function p2Text(text) { return EN.ui.ruleText(el("span"), text); }
+  /* A Bite line is a damage readout: its rule names link as p2Text links them, and
+     each type that follows its dice ("4d6 Electric", "Severe 4d6: Fire") is the
+     type's icon (EN.gmView.dmgDice, the statblocks' reader). The paragraph a Set
+     Piece prints keeps its words; only this line changes. */
+  function biteNode(text) {
+    var n = p2Text(text);
+    try { if (EN.gmView && typeof EN.gmView.dmgDice === "function") EN.gmView.dmgDice(n); } catch (e) {}
+    return n;
+  }
+  // a known type as its icon, or its word where the icons are not there
+  function typeNode(type) {
+    try { if (EN.ui && typeof EN.ui.damageIcon === "function") return EN.ui.damageIcon(type); } catch (e) {}
+    return document.createTextNode(String(type == null ? "" : type));
+  }
   /* How long an Anomaly-run hazard lasts. The PHB gives an Anomaly no scene limit:
      it is cleansed by a Cleansing Project, suppressed for the rest of the Encounter
      by Counter Flow, or, in a Null Scar, collapsed for 1d4 + the Lead Shaper's Flow
@@ -606,7 +620,7 @@ EN.gmHazards = (function () {
 
     if (!r.cleared) {
       var bt = biteText(b);
-      if (bt) kids.push(line(fieldName("bite", "Bite"), p2Text(bt)));
+      if (bt) kids.push(line(fieldName("bite", "Bite"), biteNode(bt), "room-bite"));
       if (r.counter) kids.push(line(fieldName("counter", "Counter"), r.counter));
       // one Anomaly is the one running; several are the Set Piece's examples, still to pick from
       if (r.anomalies && r.anomalies.length) kids.push(r.anomalies.length > 1
@@ -773,7 +787,7 @@ EN.gmHazards = (function () {
       var biteLine = biteText(hz.bite);
       if (hz.trigger) kids.push(line(fieldName("trigger", "Trigger"), hz.trigger, "trigger"));
       if (hz.save) kids.push(line(fieldName("save", "Save and DC"), saveText(hz, "") + dcNote, "save"));
-      if (biteLine) kids.push(line(fieldName("bite", "Bite"), p2Text(biteLine), "bite"));
+      if (biteLine) kids.push(line(fieldName("bite", "Bite"), biteNode(biteLine), "bite"));
       if (hz.counter) kids.push(line(fieldName("counter", "Counter"), hz.counter, "counter"));
       if (anomalyRun) {
         kids.push(line("Runs off", p2Text("The Anomaly you pick from Flow Disturbances"), "timing"));
@@ -799,7 +813,7 @@ EN.gmHazards = (function () {
     } else {
       kids.push(line(fieldName("trigger", "Trigger"), hz.trigger || none, "trigger"));
       kids.push(line(fieldName("save", "Save and DC"), saveText(hz, none) + dcNote, "save"));
-      kids.push(line(fieldName("bite", "Bite"), biteText(hz.bite) || none, "bite"));
+      kids.push(line(fieldName("bite", "Bite"), biteText(hz.bite) ? biteNode(biteText(hz.bite)) : none, "bite"));
       kids.push(line(fieldName("counter", "Counter"), hz.counter || none, "counter"));
       kids.push(line("Timing", timingLabel(hz.timing) + (hz.timing && hz.timing.text ? ": " + hz.timing.text : ""), "timing"));
       if (hz.area) kids.push(line("Area", hz.area));
@@ -1272,7 +1286,11 @@ EN.gmHazards = (function () {
     }
     function label() {
       var n = diceFor();
-      show.textContent = n === null ? "" : n + "d" + sides + " " + (F.type || "");
+      // the dice and the type's icon ("2d6 [Bludgeoning]")
+      show.textContent = "";
+      if (n === null) return;
+      show.appendChild(document.createTextNode(n + "d" + sides + (F.type ? " " : "")));
+      if (F.type) show.appendChild(typeNode(F.type));
     }
     label();
     kids.push(el("div.row.wrap", { style: { gap: "10px", alignItems: "flex-end", marginTop: "6px" } }, [
@@ -1286,8 +1304,10 @@ EN.gmHazards = (function () {
       } }, "ROLL THE FALL")
     ]));
     if (_tools.fall) {
-      kids.push(el("p.mono", { "data-hook": "fall-result", style: { margin: "8px 0 0", fontSize: "13px", color: "var(--accent)" },
-        text: _tools.fall.n ? rollText(_tools.fall) + " " + (F.type || "") : "Under " + per + " spaces: no dice by this count." }));
+      kids.push(el("p.mono", { "data-hook": "fall-result", style: { margin: "8px 0 0", fontSize: "13px", color: "var(--accent)" } },
+        _tools.fall.n
+          ? [document.createTextNode(rollText(_tools.fall) + (F.type ? " " : "")), F.type ? typeNode(F.type) : null]
+          : "Under " + per + " spaces: no dice by this count."));
     }
     // the chip is the GM chapter's Falling Damage; the sentence above already links the player-side rule (mv-fall)
     return EN.ui.panel("Falling", count + "d" + sides + " PER " + per + " SPACES", kids, { headerRight: headChip("gmh-falling") });

@@ -295,8 +295,9 @@ EN.gmView = (function () {
     ]));
     kids.push(el("div", { style: { height: "8px" } }));
     b.attacks.forEach(function (a) {
-      kids.push(el("p", { style: { margin: "0 0 3px", fontSize: "13px" },
-        text: a.label + ": " + eng.fmtMod(a.toHit) + " vs " + a.vs + ", " + a.range + ", " + a.dice }));
+      // the builder's dice carry no type; a block that arrives with one typed shows its icon
+      kids.push(dmgDice(el("p", { style: { margin: "0 0 3px", fontSize: "13px" },
+        text: a.label + ": " + eng.fmtMod(a.toHit) + " vs " + a.vs + ", " + a.range + ", " + a.dice })));
     });
     kids.push(el("p.help", { style: { margin: "4px 0 0" },
       text: "About " + b.damagePerRound + " damage a round before the crew's DR, spent as " + b.attacksNote + "." }));
@@ -603,7 +604,7 @@ EN.gmView = (function () {
       var listed = listedImpulse(b);
       var spentNow = row.impulse === turnKey(enc);
       var extra = el("span", null, [
-        listed ? el("span", { style: { color: "var(--accent)" }, text: " Its listed Impulse: " + listed + "." }) : null,
+        listed ? dmgDice(el("span", { style: { color: "var(--accent)" }, text: " Its listed Impulse: " + listed + "." })) : null,
         el("span.chip" + (spentNow ? ".on" : ""), { dataset: { gm: "impulse" },
           title: spentNow ? "Spent on this turn. Click to take it back." : "Mark it spent for this turn. It comes back on the next turn.",
           style: { cursor: "pointer", fontSize: "9.5px", marginLeft: "6px" },
@@ -621,6 +622,7 @@ EN.gmView = (function () {
     if (row.bp && !row.bp.seen) {
       var alertP = el("p", { style: { margin: "4px 0 0", fontSize: "13px" } });
       EN.ui.applyInline(alertP, bpText);
+      dmgDice(alertP);
       kids.push(el("div", { dataset: { gm: "breakpoint" }, style: { margin: "8px 0 0", padding: "8px 10px",
           border: "1px solid var(--gold)", borderLeft: "3px solid var(--gold)", background: "rgba(255,200,80,.06)" } }, [
         el("div.row.between.wrap", { style: { gap: "8px", alignItems: "center" } }, [
@@ -638,6 +640,7 @@ EN.gmView = (function () {
                        : "Breakpoint, below " + (Math.round(max / 2 * 10) / 10) + " Vitality. " })
       ]);
       EN.ui.applyInline(bpLine, bpText);
+      dmgDice(bpLine);
       var bc = tailChip("gmt-solos/breakpoint", "Breakpoint");
       if (bc) bpLine.appendChild(bc);
       kids.push(bpLine);
@@ -1290,6 +1293,53 @@ EN.gmView = (function () {
     return p;
   }
 
+  /* DAMAGE READOUTS AS ICONS (author's call, 2026-10-14). Wherever a statblock
+     shows a damage roll, dice and then a type ("1d8+3 Slashing (7)", "+1d4 Fire",
+     "2d6 Tech damage"), the type is the author's icon (EN.ui.damageIcon): its name
+     on hover and to a screen reader, its Codex entry on a tap. Only a type word that
+     directly follows a dice expression changes, so the prose around a readout keeps
+     its words ("Vulnerability to Fire damage", an Immune line, the paragraph a Set
+     Piece prints). Runs over a node already written, after ruleText has linked its
+     rule names, and never reaches inside a link, a button or a field. A dice
+     expression may close with a colon ("Severe 4d6: Fire on a failure"), which is
+     how a hazard's Bite line reads when its dice lead. Returns the node. */
+  var DMG_DICE = "\\d+d\\d+(?:\\s*[+-]\\s*\\d+)?:?\\s+";
+  function dmgDiceRx() {
+    var names = ((EN.combat && EN.combat.damageTypes) || []).map(function (t) { return t && t.name; })
+      .filter(function (n) { return typeof n === "string" && /^[A-Za-z]+$/.test(n); });
+    return names.length ? new RegExp("(" + DMG_DICE + ")(" + names.join("|") + ")\\b", "g") : null;
+  }
+  function dmgDice(node) {
+    if (!node || !(EN.ui && typeof EN.ui.damageIcon === "function")) return node;
+    var rx = dmgDiceRx();
+    if (!rx) return node;
+    var texts = [];
+    (function walk(n) {
+      for (var c = n.firstChild; c; c = c.nextSibling) {
+        if (c.nodeType === 3) texts.push(c);
+        else if (c.nodeType === 1 && !/^(a|button|input|textarea|select|svg)$/i.test(c.tagName) &&
+                 !(c.classList && c.classList.contains("dmg-icon"))) walk(c);
+      }
+    })(node);
+    texts.forEach(function (t) {
+      var s = t.nodeValue, last = 0, frag = null, m;
+      rx.lastIndex = 0;
+      while ((m = rx.exec(s))) {
+        if (!frag) frag = document.createDocumentFragment();
+        var cut = m.index + m[1].length;
+        // the dice and the icon wrap together (EN.ui.damageTie), never a lone glyph at a line's start
+        var icon = EN.ui.damageIcon(m[2]), pre = s.slice(last, cut);
+        if (typeof EN.ui.damageTie === "function") frag.appendChild(EN.ui.damageTie(pre, icon, t.parentNode));
+        else { frag.appendChild(document.createTextNode(pre)); frag.appendChild(icon); }
+        last = cut + m[2].length;
+      }
+      if (!frag) return;
+      if (last < s.length) frag.appendChild(document.createTextNode(s.slice(last)));
+      t.parentNode.replaceChild(frag, t);
+    });
+    return node;
+  }
+
   /* A Bestiary entry's card body, without its buttons: the Bestiary tab draws it
      with them, and the Table draws it as an opened row's full statblock. One
      renderer, so a threat reads the same in both places. `opts.table` leaves
@@ -1319,8 +1369,9 @@ EN.gmView = (function () {
         text: e.skills.map(function (k) { return k.name + " " + k.value; }).join(" · ") }));
     }
     if (st["Unshakable, Defensive Impulses"]) {
-      kids.push(el("p.help", { style: { margin: "5px 0 0", color: "var(--gold)" } }, [
-        document.createTextNode("Solo: " + st["Unshakable, Defensive Impulses"]), tailChip("gmt-solos", "Running Solos")]));
+      // a Solo's Impulse may deal damage (the Cascade Orphan's Unravel rebounds "1d6 Resonant")
+      kids.push(dmgDice(el("p.help", { style: { margin: "5px 0 0", color: "var(--gold)" } }, [
+        document.createTextNode("Solo: " + st["Unshakable, Defensive Impulses"]), tailChip("gmt-solos", "Running Solos")])));
     }
     ["Immune", "Resistance"].forEach(function (k) {
       if (st[k]) kids.push(dmgLine(k, st[k]));
@@ -1353,7 +1404,8 @@ EN.gmView = (function () {
       ]);
       // the same **bold** and *italic* as applyInline, with the conditions and rule names it cites linked
       EN.ui.ruleText(ap, String(a.text || ""), { conditions: true });
-      kids.push(ap);
+      // an attack's or a damage line's type is its icon ("1d8+3 [Slashing] (7)")
+      kids.push(dmgDice(ap));
     });
 
     var tail = [];
@@ -1363,8 +1415,9 @@ EN.gmView = (function () {
     // its place.
     if (st.Resolve) tail.push("Resolve " + st.Resolve);
     if (tail.length) kids.push(el("p.help", { style: { margin: "8px 0 0" }, text: tail.join(" · ") }));
-    if (e.gear) kids.push(el("p.help", { style: { margin: "3px 0 0" }, text: "Gear: " + e.gear }));
-    if (e.salvage) kids.push(el("p.help", { style: { margin: "3px 0 0" }, text: "Salvage: " + e.salvage }));
+    // a Signature weapon's damage in the gear line ("2d8 Ballistic") is a readout too
+    if (e.gear) kids.push(dmgDice(el("p.help", { style: { margin: "3px 0 0" }, text: "Gear: " + e.gear })));
+    if (e.salvage) kids.push(dmgDice(el("p.help", { style: { margin: "3px 0 0" }, text: "Salvage: " + e.salvage })));
     if (e.signs) kids.push(el("p.help", { style: { margin: "3px 0 0" }, text: "Signs: " + e.signs }));
     if (e.variant) kids.push(el("p.help", { style: { margin: "5px 0 0", color: "var(--text2)" },
       text: e.variant.label + ": " + e.variant.text }));
@@ -1555,7 +1608,8 @@ EN.gmView = (function () {
       el("span", { style: { fontWeight: 600 }, text: a.name + (a.cost ? " (" + a.cost + ")" : "") + ": " })
     ]);
     EN.ui.applyInline(p, String(a.text || ""));
-    return p;
+    // a Hostile Vehicle's Mounted Weapon ("1d10 Ballistic") shows its type as the icon
+    return dmgDice(p);
   }
 
   /* The hunt procedure, as a pointer: its three beats by name, each peeking its
@@ -2220,6 +2274,8 @@ EN.gmView = (function () {
     // the GM'S CARD button for beside every Admin tab's heading, and the card it opens
     cardDrawer: cardDrawer, openCard: openCard, closeCard: closeCard,
     // the crew Vigor clear that ending a fight on the Table runs, and its toast wording
-    clearCrewVigor: clearCrewVigor, crewVigorNote: crewVigorNote
+    clearCrewVigor: clearCrewVigor, crewVigorNote: crewVigorNote,
+    // a written readout's "dice Type" as dice and the type's icon (gm_hazards' Bite lines use it)
+    dmgDice: dmgDice
   };
 })();

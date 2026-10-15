@@ -191,6 +191,109 @@ EN.ui = (function () {
     return parent;
   }
 
+  /* ---- damage type icons ---------------------------------------------------
+     Every on-screen damage READOUT ("1d6 Bludgeoning", "Unarmed + 1d4 Electric", "2d6+3 Fire")
+     shows the type as the author's icon (data/damage_icons.js, EN.damageIcons, his own SVGs
+     embedded verbatim) instead of the word. Rule prose and everything printed keep the words.
+       damageIcon(type, opts)        span.dmg-icon (role img, title and aria-label the type's
+                                     name) holding the SVG, sized to the text by css/theme.css.
+                                     With the Codex present and ref-dmg/<slug> resolving, it sits
+                                     in an a.codex-link.dmg-link that peeks the type's entry and
+                                     stops propagation, exactly as ruleLink does; while the Codex
+                                     is indexing, the type's name as text, so a search reads what
+                                     the page shows. opts.link === false gives the bare icon.
+                                     An unknown type, or no icon data, is a text node of the word.
+       damageText(parent, text, opts)  writes a readout string into parent with each damage type
+                                     name (whole word, the 19 names, case as printed) replaced by
+                                     damageIcon and every other character kept. A null parent
+                                     gets a new span, as ruleText does. Returns parent. */
+  function dmgNames() {
+    var icons = (window.EN && EN.damageIcons) || {};
+    var list = ((window.EN && EN.combat && EN.combat.damageTypes) || []).map(function (t) { return t && t.name; })
+      .filter(function (n) { return n && icons[String(n).toLowerCase()]; });
+    if (!list.length) list = Object.keys(icons).map(function (k) { return k.charAt(0).toUpperCase() + k.slice(1); });
+    return list;
+  }
+  var _dmgRx = null, _dmgRxKey = "";
+  function dmgRx() {
+    var names = dmgNames(), key = names.join("|");
+    if (!names.length) return null;
+    if (key !== _dmgRxKey) { _dmgRxKey = key; _dmgRx = new RegExp("\\b(" + key + ")\\b", "g"); }
+    return _dmgRx;
+  }
+  /* Each SVG is parsed once and cloned after. The whitespace text nodes between its elements
+     (the exports' line breaks) are dropped from the parsed copy, never from the data: they draw
+     nothing, but left in they would put "\n  " into a readout's textContent and its copy/paste.
+     The exports' id attributes ("artwork", "core-left") go from the copy too, for the same kind
+     of reason: nothing references them, and a market list of forty icons would otherwise put
+     forty id="artwork" in one document. */
+  var _dmgTpl = {};
+  function dmgSvg(lc) {
+    if (!_dmgTpl[lc]) {
+      var box = document.createElement("div");
+      box.innerHTML = EN.damageIcons[lc];
+      (function strip(n) {
+        for (var c = n.firstChild, next; c; c = next) {
+          next = c.nextSibling;
+          if (c.nodeType === 3 && !/\S/.test(c.nodeValue)) n.removeChild(c);
+          else if (c.nodeType === 1) { c.removeAttribute("id"); strip(c); }
+        }
+      })(box);
+      _dmgTpl[lc] = box.firstChild;
+    }
+    return _dmgTpl[lc].cloneNode(true);
+  }
+  function damageIcon(type, opts) {
+    opts = opts || {};
+    var word = type == null ? "" : String(type);
+    var lc = word.toLowerCase(), name = null;
+    dmgNames().forEach(function (n) { if (n.toLowerCase() === lc) name = n; });
+    var svg = name && EN.damageIcons && EN.damageIcons[lc];
+    if (!svg) return document.createTextNode(word);
+    var icon = el("span.dmg-icon", { role: "img", "aria-label": name, title: name, dataset: { dmg: lc } });
+    icon.appendChild(dmgSvg(lc));
+    if (opts.link === false) return icon;
+    var cv = window.EN && EN.codexView, slug = (cv && cv.slug) ? cv.slug(name) : lc, anchor = "ref-dmg/" + slug;
+    var has = false;
+    try { has = !!(cv && cv.has && cv.has(anchor)); } catch (e) { has = false; }
+    if (!has) return icon;
+    var a = ruleLink(anchor, "", opts);
+    if (!a || a.nodeType !== 1) return document.createTextNode(name);   // the Codex is indexing: the words
+    a.textContent = "";
+    a.className += " dmg-link";
+    a.setAttribute("title", name);
+    a.setAttribute("aria-label", name);
+    a.appendChild(icon);
+    return a;
+  }
+  /* damageTie(pre, icon, parent): the text before an icon and the icon, as a fragment for
+     parent. The word just before the icon ("1d6 ", "4d6: ") and the icon share one
+     span.dmg-tie (white-space:nowrap), so a line never ends on "1d6" with the glyph alone at
+     the start of the next (measured at 360px on the Stash readouts and the Room's Bite lines).
+     Every character stays as printed. A chip is left as it was: it is a flex row, where the
+     icon is its own item and cannot wrap away, and a wrapper there would trade the chip's
+     gap for a space. */
+  function damageTie(pre, icon, parent) {
+    var frag = document.createDocumentFragment(), s = pre == null ? "" : String(pre), m = /\S+ $/.exec(s);
+    var chip = !!(parent && parent.classList && parent.classList.contains("chip"));
+    if (!m || chip) { if (s) frag.appendChild(document.createTextNode(s)); frag.appendChild(icon); return frag; }
+    if (m.index) frag.appendChild(document.createTextNode(s.slice(0, m.index)));
+    frag.appendChild(el("span.dmg-tie", null, [document.createTextNode(m[0]), icon]));
+    return frag;
+  }
+  function damageText(parent, text, opts) {
+    if (!parent) parent = el("span");
+    var s = String(text == null ? "" : text), rx = dmgRx(), last = 0, m;
+    if (!rx) { if (s) parent.appendChild(document.createTextNode(s)); return parent; }
+    rx.lastIndex = 0;
+    while ((m = rx.exec(s))) {
+      parent.appendChild(damageTie(s.slice(last, m.index), damageIcon(m[1], opts), parent));
+      last = m.index + m[0].length;
+    }
+    if (last < s.length) parent.appendChild(document.createTextNode(s.slice(last)));
+    return parent;
+  }
+
   /* A name followed by its collapse caret, with the caret tied to the last word.
 
      The caret is an atomic inline box, so the browser keeps a line-break opportunity in front of
@@ -635,7 +738,7 @@ EN.ui = (function () {
   }
 
   return { el: el, append: append, clear: clear, panel: panel, sectionTitle: sectionTitle, stat: stat, toast: toast, renderText: renderText, applyInline: applyInline, proseP: proseP, nameCaret: nameCaret,
-           ruleLink: ruleLink, ruleChip: ruleChip, ruleText: ruleText,
+           ruleLink: ruleLink, ruleChip: ruleChip, ruleText: ruleText, damageIcon: damageIcon, damageText: damageText, damageTie: damageTie,
            currencyGlyphsOk: currencyGlyphsOk, substituteCurrencyGlyphs: substituteCurrencyGlyphs,
            dieFace: dieFace, dieFaceSvg: dieFaceSvg, d20Face: d20Face, animatePoolRoll: animatePoolRoll, playFiled: playFiled,
            armButton: armButton, disarm: disarm, isArmed: isArmed };

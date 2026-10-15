@@ -708,6 +708,12 @@ EN.combatView = (function () {
     ]);
   }
 
+  /* A damage readout in a tray: each type word becomes the author's icon (EN.ui.damageText).
+     Here the icon is the bare one, named on hover and to a screen reader but not a peek link:
+     the trays mount inside #os at z-index 4001, the peek drawer opens at 3000 and makes #os
+     inert, so a peek from inside a tray would open out of sight behind a tray that no longer
+     takes a tap. The attack row the tray opened from carries the linked icon. */
+  function trayDmg(node, text) { return EN.ui.damageText(node, text, { link: false }); }
   function dmgTrayModal() {
     if (!_dmgTray.open || !_dmgTray.ctx) return null;
     var ctx = _dmgTray.ctx, roll = _dmgTray.roll, anim = _dmgTray.animating;
@@ -725,7 +731,7 @@ EN.combatView = (function () {
       prompt = anim ? el("div.mono", { style: { fontSize: "11px", letterSpacing: ".22em", color: "var(--text3)", marginTop: "12px", textTransform: "uppercase" }, text: "rolling…" })
         : el("div", { style: { marginTop: "10px" } }, [
             el("div.mono", { style: { fontSize: "46px", fontWeight: 700, lineHeight: "1", color: roll.crit ? "var(--gold)" : "var(--ember)", textShadow: "0 0 20px currentColor" }, text: String(roll.total) }),
-            el("div.mono", { style: { fontSize: "9px", letterSpacing: ".18em", color: "var(--text3)", marginTop: "5px" }, text: "DAMAGE" + (typeStr ? " · " + typeStr.toUpperCase() : "") + " · TAP TO ROLL AGAIN" }),
+            trayDmg(el("div.mono.dmg-tray-result", { style: { fontSize: "9px", letterSpacing: ".18em", color: "var(--text3)", marginTop: "5px" } }), "DAMAGE" + (typeStr ? " · " + typeStr : "") + " · TAP TO ROLL AGAIN"),
             roll.crit ? el("div.mono", { style: { fontWeight: 700, letterSpacing: ".14em", fontSize: "12px", color: "var(--gold)", marginTop: "7px" }, text: "◆ DOUBLED ON CRIT" }) : null
           ]);
     } else {
@@ -742,7 +748,7 @@ EN.combatView = (function () {
 
     var autoParts = [];
     if (ctx.flat) { autoParts.push(el("span", { style: { color: "var(--text2)" }, text: ctx.flatLabel })); autoParts.push(document.createTextNode(" " + eng.fmtMod(ctx.flat) + " on hit")); }
-    if (typeStr) { if (autoParts.length) autoParts.push(el("span", { style: { color: "var(--text4)", margin: "0 5px" }, text: "·" })); autoParts.push(document.createTextNode(typeStr)); }
+    if (typeStr) { if (autoParts.length) autoParts.push(el("span", { style: { color: "var(--text4)", margin: "0 5px" }, text: "·" })); autoParts.push(trayDmg(el("span.dmg-tray-type"), typeStr)); }
     var autoLine = autoParts.length ? el("div.mono", { style: { fontSize: "11px", color: "var(--text3)", textAlign: "center", padding: "12px 16px 0" } }, autoParts) : null;
 
     var breakdown = null;
@@ -771,7 +777,8 @@ EN.combatView = (function () {
 
     var foot = el("div.row.between", { style: { padding: "11px 16px", borderTop: "1px solid var(--border)", alignItems: "baseline" } }, [
       el("span.mono", { style: { fontSize: "11px", color: "var(--text2)" }, text: dmgFormula(ctx, _dmgTray) }),
-      el("span.mono", { style: { fontSize: "11px", color: typeStr ? "var(--ember)" : "var(--text3)" }, text: typeStr || "no type" })
+      typeStr ? trayDmg(el("span.mono.dmg-tray-foot", { style: { fontSize: "11px", color: "var(--ember)" } }), typeStr)
+        : el("span.mono", { style: { fontSize: "11px", color: "var(--text3)" }, text: "no type" })
     ]);
 
     var actv = store.active();
@@ -789,7 +796,9 @@ EN.combatView = (function () {
     var header = el("div.row.between", { style: { alignItems: "center", padding: "13px 16px", borderBottom: "1px solid var(--border)", background: "linear-gradient(180deg, rgba(255,107,53,.05), transparent)" } }, [
       el("div", null, [
         el("div", { style: { fontFamily: "var(--disp)", fontWeight: 700, fontSize: "15.5px", letterSpacing: ".02em", color: "var(--text)" }, text: ctx.weaponName }),
-        el("div.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".08em", marginTop: "2px" }, text: ("DAMAGE · " + activeDice + (typeStr ? " " + typeStr : "")).toUpperCase() })
+        // upper-cased around the type, never through it: the type names are matched as printed
+        trayDmg(el("div.mono.dmg-tray-head", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".08em", marginTop: "2px" } }),
+          ("DAMAGE · " + activeDice).toUpperCase() + (typeStr ? " " + typeStr : ""))
       ]),
       el("button", { title: "Close (Esc)", onclick: closeDmgTray, style: { background: "transparent", border: "none", color: "var(--text4)", fontSize: "19px", cursor: "pointer", lineHeight: "1", padding: "2px 5px" } }, "✕")
     ]);
@@ -1822,6 +1831,14 @@ EN.combatView = (function () {
   function hazChip(text, color, title) {
     return el("span.chip", { title: title || "", style: { fontSize: "9px", color: color, borderColor: color }, text: text });
   }
+  /* A hazard's bite as a chip: dice, the type as its icon (a tap peeks the type), then the rest
+     upper-cased as the other chips are. The type stays as printed so damageText can find it. */
+  function hazDmgChip(dice, type, tail, color, title) {
+    var c = el("span.chip.dmg-haz", { title: title || "", style: { fontSize: "9px", color: color, borderColor: color } });
+    EN.ui.damageText(c, dice + " " + type);
+    c.appendChild(document.createTextNode(" " + tail));
+    return c;
+  }
   /* A hazard subsection's title, which peeks its Environmental Hazards entry when given one.
      The blocks under these titles used to restate that entry's prose (the exposure intro, the
      deprivation rider, a typed Vacuum sentence, the degradation rule, each mitigation's note).
@@ -1878,7 +1895,7 @@ EN.combatView = (function () {
       if (row.edge) chips.push(hazChip("EDGE · " + row.edgeFrom.toUpperCase(), "var(--success)", row.edgeFrom + " grants Edge on this save"));
       if (row.shielded) chips.push(hazChip(row.shieldFrom.toUpperCase() + " " + row.shieldMinutesLeft + " MIN", "var(--success)",
         "The clock does not start while the " + row.shieldFrom + " is covering you"));
-      if (row.lethalDamage) chips.push(hazChip("+" + row.lethalDamage.dice + " " + row.lethalDamage.type.toUpperCase() + " ON FAIL", "var(--ember)", "Lethal severity rider"));
+      if (row.lethalDamage) chips.push(hazDmgChip("+" + row.lethalDamage.dice, row.lethalDamage.type, "ON FAIL", "var(--ember)", "Lethal severity rider"));
       if (row.lockedFatigue) chips.push(hazChip("LOCKED " + row.lockedFatigue, "var(--gold)", "Thin air: this Fatigue does not come off a Long Rest taken at the same altitude"));
       kids.push(el("div.feature", { style: { borderLeftColor: row.shielded ? "var(--success)" : "var(--warn)" } }, [
         el("h4", null, [
@@ -1962,7 +1979,7 @@ EN.combatView = (function () {
                         : "Rounds equal to your Body score"));
       chips.push(hazChip("ROUND " + b.rounds, "var(--text3)"));
       chips.push(hazChip("SAVES " + b.saves, "var(--text3)", "This exposure's own save count"));
-      if (b.everyRoundDamage) chips.push(hazChip(b.everyRoundDamage.dice + " " + b.everyRoundDamage.type.toUpperCase() + " EVERY ROUND", "var(--ember)", "Regardless of the save"));
+      if (b.everyRoundDamage) chips.push(hazDmgChip(b.everyRoundDamage.dice, b.everyRoundDamage.type, "EVERY ROUND", "var(--ember)", "Regardless of the save"));
       // Names its actual source. It read VOID LUNG for everyone, so a Rebreather
       // wearer was told they had a lineage trait they did not have.
       if (b.holdFromGrant) chips.push(hazChip(String(b.breathFrom).toUpperCase() + " · " + b.breathMinutes + " MIN", "var(--success)",
@@ -2997,7 +3014,8 @@ EN.combatView = (function () {
         el("span.ab-eff", null, [(function () {
           var eff = effectOf(name);
           return eff === "-" ? el("span.ab-dash", { text: "-" })
-            : el("span.chip", { title: "What the ability does, in a word", style: { fontSize: "9.5px" }, text: eff });
+            // a damage expression ("4d6 Psychic") shows its type as the icon; a one-word tag is untouched
+            : EN.ui.damageText(el("span.chip", { title: "What the ability does, in a word", style: { fontSize: "9.5px" } }), eff);
         })()]),
         el("span.ab-cost", null, [
           chip ? el("span.chip", { title: "Spends the class resource", style: { fontSize: "9.5px", color: chipResourceColor(chip), borderColor: chipResourceColor(chip) }, text: chip }) : null,
@@ -3023,7 +3041,9 @@ EN.combatView = (function () {
       el("span.mono", { onclick: onClick || null, title: onClick ? "Tap to roll to hit" : "",
         style: { fontSize: "18px", color: color || "var(--accent)", minWidth: "48px", textAlign: "center",
           cursor: onClick ? "pointer" : "default", borderBottom: onClick ? "1px dotted currentColor" : "none" }, text: hit }),
-      el("span.help", { style: { margin: 0, flex: 2 }, text: note }),
+      // a string note is plain text; an array is nodes (the unarmed strike's damage readout)
+      typeof note === "string" ? el("span.help", { style: { margin: 0, flex: 2 }, text: note })
+        : el("span.help", { style: { margin: 0, flex: 2 } }, note),
       extra || null
     ]);
   }
@@ -3063,11 +3083,13 @@ EN.combatView = (function () {
             dmg: eng.stepDie(o.die, steps) + " " + o.type + (o.traits ? " (" + o.traits + ")" : "") };
         }));
       rows.push(unarmedRow("STRIKE", entries.map(function (e) {
-        return el("span.chip" + (e.on ? ".on" : ""), {
+        // the label stays words; only the damage after the dot shows its type as the icon
+        var chip = el("span.chip" + (e.on ? ".on" : ""), {
           title: e.dmg + (e.note ? " · " + e.note : "") + (e.on ? "" : " · tap to strike with this instead"),
           style: { fontSize: "8.5px", cursor: "pointer" },
           onclick: function () { store.update(function (c) { c.unarmedPick = e.pick; }); }
-        }, e.label + " · " + e.dmg);
+        }, e.label + " · ");
+        return EN.ui.damageText(chip, e.dmg);
       })));
     }
     // STEPS: why the die is what it is. The last chip walks the ladder from the
@@ -3086,9 +3108,10 @@ EN.combatView = (function () {
     }
     // PLUS: dice that ride alongside, and reach, which is not damage at all
     var plus = riders.map(function (r) {
-      return el("span.chip", { title: r.label + (r.when ? " · " + r.when : "") + (r.note ? " · " + r.note : ""),
-        style: { fontSize: "8.5px", color: "var(--ember)", borderColor: "var(--ember)" } },
-        "+" + r.damage + " · " + r.label);
+      var rc = EN.ui.damageText(el("span.chip", { title: r.label + (r.when ? " · " + r.when : "") + (r.note ? " · " + r.note : ""),
+        style: { fontSize: "8.5px", color: "var(--ember)", borderColor: "var(--ember)" } }), "+" + r.damage);
+      rc.appendChild(document.createTextNode(" · " + r.label));
+      return rc;
     });
     if (strike.reach.spaces) plus.push(el("span.chip", { title: strike.reach.sources.join(" + ") + ": extra reach, not extra damage",
       style: { fontSize: "8.5px", color: "var(--accent)", borderColor: "var(--accent)" } },
@@ -5117,18 +5140,31 @@ EN.combatView = (function () {
       }
       /* A stat that rolls something renders as a pressable key; a stat that is
          just a number (Reach, Range) stays plain text. */
-      function statBox(label, value, color, title, onClick, kind) {
+      /* `types` (the DMG box only) are the weapon's damage types, drawn as the author's icons
+         BESIDE the key rather than inside it, so a tap on the dice still rolls damage and a tap
+         on an icon peeks that type's Codex entry. The icons carry no text, so the box reads
+         exactly as it did ("DMG" over "1d8 +3"). */
+      function statBox(label, value, color, title, onClick, kind, types) {
         if (physicalDice()) onClick = null;   // real dice: the number is just a number
+        var typeEl = null;
+        if (types && types.length) {
+          typeEl = el("span.dmg-types", { style: { fontSize: "15px", color: color || "var(--text)", marginLeft: "3px" } });
+          // one at a time, so two types sit side by side with nothing between them, and an
+          // "X or Y" keeps its "or"
+          types.forEach(function (t) { EN.ui.damageText(typeEl, String(t).trim()); });
+        }
         if (!onClick) {
           return el("div", { title: title || "",
             style: { textAlign: "center", flex: "0 0 auto", minWidth: "44px" } }, [
             el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: label }),
-            el("span.mono", { style: { fontSize: "15px", color: color || "var(--text)" }, text: value })
+            el("span.mono", { style: { fontSize: "15px", color: color || "var(--text)" }, text: value }),
+            typeEl
           ]);
         }
         return el("div.statwrap", { title: title || "" }, [
           el("div.lbl", { text: label }),
-          el("span.mono.statkey", { style: { color: color || "var(--text)" }, onclick: onClick, text: value })
+          el("span.mono.statkey", { style: { color: color || "var(--text)" }, onclick: onClick, text: value }),
+          typeEl
         ]);
       }
       realWeaponRows.forEach(function (row, wi) {
@@ -5161,6 +5197,8 @@ EN.combatView = (function () {
         // DMG box shows the dice plus the attribute modifier the roll adds (e.g. "1d4 +3");
         // indirect weapons (thrown explosives) show the dice alone.
         var dmgDisplay = dmgActive + (h.indirect ? "" : " " + eng.fmtMod(h.mod));
+        // the types the DMG box draws as icons beside its key (the tray opens with the same list)
+        var dmgTypes = parseDamage(it.damage).types;
         var hitTip = "d20 + " + h.attrName + " Modifier (" + eng.fmtMod(h.mod) + ")"
           + (h.prof ? " + Weapon Proficiency Bonus (" + eng.fmtMod(h.prof) + ")" : " (untrained, Snag)")
           + (h.focus ? " + Caliber from " + h.cat + " (" + h.focus.aspect + ") Focus (" + eng.fmtMod(h.focusCal) + ", outside the +15 static cap)" : "");
@@ -5220,7 +5258,7 @@ EN.combatView = (function () {
           rowKids.push(el("div.row.wrap", { style: { gap: "12px", alignItems: "center", marginTop: "6px" } }, [
             statBox("RANGE", norm.rangeDisplay, "var(--gold)", it.range || ""),
             hitCell,
-            statBox("DMG", dmgDisplay, "var(--accent)", dmgTip, function () { openDmgTray(damageCtx(it, h, wKey)); }, "dmg"),
+            statBox("DMG", dmgDisplay, "var(--accent)", dmgTip, function () { openDmgTray(damageCtx(it, h, wKey)); }, "dmg", dmgTypes),
             ammoCell
           ]));
 
@@ -5274,7 +5312,7 @@ EN.combatView = (function () {
                   el("span.mono.statkey", { style: { color: "var(--ember)" },
                     onclick: function () { openRollTray(attackCtx(it, h, wKey)); }, text: eng.fmtMod(h.total) })
                 ]),
-            statBox("DMG", dmgDisplay, "var(--accent)", dmgTip, function () { openDmgTray(damageCtx(it, h, wKey)); }, "dmg")
+            statBox("DMG", dmgDisplay, "var(--accent)", dmgTip, function () { openDmgTray(damageCtx(it, h, wKey)); }, "dmg", dmgTypes)
           ]));
         }
 
@@ -5379,7 +5417,11 @@ EN.combatView = (function () {
           var wpKeys = ["targeting", "output", "core", "handling"].map(function (s) { return wpLo[s]; }).filter(Boolean).concat(wpLo.utility || []);
           var wpChips = wpKeys.map(function (k) {
             var p = EN.weaponParts.byKey[k]; if (!p) return null;
-            return el("span.chip", { title: p.name + ": " + p.effect, style: { fontSize: "8.5px", color: "var(--ember)", borderColor: "var(--ember)" } }, p.grants || p.name);
+            // a grant that rolls dice is a damage readout, its type the icon, as Inventory's MODS chip shows it
+            var chip = el("span.chip", { title: p.name + ": " + p.effect, style: { fontSize: "8.5px", color: "var(--ember)", borderColor: "var(--ember)" } });
+            var g = p.grants || p.name;
+            if (EN.ui.damageText && /\d+d\d+/.test(g)) EN.ui.damageText(chip, g); else chip.appendChild(document.createTextNode(g));
+            return chip;
           }).filter(Boolean);
           if (wpChips.length) rowKids.push(el("div.row.wrap", { style: { gap: "5px", marginTop: "4px", alignItems: "center" } },
             [el("span", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "MODS" })].concat(wpChips)));
@@ -5439,7 +5481,11 @@ EN.combatView = (function () {
           + (uStrike.traits ? " (" + uStrike.traits + ")" : "") + " + " + (luFin ? "mod" : "Body mod");
         uStrike.riders.forEach(function (r) { luDmgText += " + " + r.damage + (r.when ? " " + r.when : ""); });
         var luSubtype = (lu ? luKind + " · " + uStrike.type : "UNARMED STRIKE").toUpperCase();
-        kids.push(attackRow(luName, eng.fmtMod(luMod), "d20 + " + luAttrLabel + " + Simple Weapons Proficiency Bonus · " + luDmgText + (uStrike.note ? " · " + uStrike.note : "") + (swUntrained ? " · Untrained (Simple Weapons): Snag" : ""), "var(--ember)", luSnag,
+        // the damage readout shows its types as icons; the formula and the strike's note stay words
+        var luNote = [document.createTextNode("d20 + " + luAttrLabel + " + Simple Weapons Proficiency Bonus · "),
+          EN.ui.damageText(el("span.dmg-readout"), luDmgText),
+          document.createTextNode((uStrike.note ? " · " + uStrike.note : "") + (swUntrained ? " · Untrained (Simple Weapons): Snag" : ""))];
+        kids.push(attackRow(luName, eng.fmtMod(luMod), luNote, "var(--ember)", luSnag,
           (function (nm, dmg) { return function () { openRollTray(simpleAttackCtx(nm, luSubtype,
             [{ label: luAttrLabel, value: luAttr }].concat(swProf ? [{ label: "Simple Weapons Proficiency Bonus", value: swProf }] : []),
             { snag: luSnag, dmg: dmg })); }; })(luName, luDmg),

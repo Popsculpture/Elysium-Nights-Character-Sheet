@@ -542,6 +542,17 @@ EN.inventoryView = (function () {
     toast(name + " donated. Somebody eats tonight.");
   }
 
+  /* A damage READOUT ("1d6 Bludgeoning", "Unarmed + 1d4 Electric", a Part's "+1d6 Electric
+     damage") shows each damage type as the author's icon, through EN.ui.damageText: hover names
+     it, a tap peeks its Codex entry. A line that rolls no dice ("Nonlethal" as a Part's grant,
+     "Augments unarmed strikes") is a trait or a rule, not a readout, and keeps its words. */
+  function dmgReadout(node, text) {
+    var s = String(text == null ? "" : text);
+    if (EN.ui.damageText && /\d+d\d+/.test(s)) return EN.ui.damageText(node, s);
+    node.appendChild(document.createTextNode(s));
+    return node;
+  }
+
   /* ---- shared item card (market + stash render through this) ---- */
   // MODS chip line for a customized weapon, mirroring the Freelancer weapon row.
   function installedPartsLine(ch, it, entry) {
@@ -552,7 +563,7 @@ EN.inventoryView = (function () {
     var keys = ["targeting", "output", "core", "handling"].map(function (s) { return lo[s]; }).filter(Boolean).concat(lo.utility || []);
     var chips = keys.map(function (k) {
       var p = EN.weaponParts.byKey[k]; if (!p) return null;
-      return el("span.chip", { title: p.name + ": " + p.effect, style: { fontSize: "8.5px", color: "var(--ember)", borderColor: "var(--ember)" } }, p.grants || p.name);
+      return dmgReadout(el("span.chip", { title: p.name + ": " + p.effect, style: { fontSize: "8.5px", color: "var(--ember)", borderColor: "var(--ember)" } }), p.grants || p.name);
     }).filter(Boolean);
     if (!chips.length) return null;
     return el("div.row.wrap", { style: { gap: "5px", marginTop: "6px", alignItems: "center" } },
@@ -645,7 +656,7 @@ EN.inventoryView = (function () {
          stays a warning about a narrow frame and not noise on every card. */
       (it.fits && !/^Any\b/i.test(String(it.fits)))
         ? el("span.chip", { title: "Only fits " + it.fits + " weapons", style: { fontSize: "9px", color: "var(--warn)", borderColor: "var(--warn)" } }, "fits " + it.fits) : null,
-      el("span.help", { style: { margin: 0, fontSize: "11px", color: "var(--text2)" }, text: it.grants }),
+      dmgReadout(el("span.help", { style: { margin: 0, fontSize: "11px", color: "var(--text2)" } }), it.grants),
       installedN ? el("span.chip", { style: { fontSize: "9px", color: "var(--success)", borderColor: "var(--success)" } }, "installed ×" + installedN) : null
     ]);
   }
@@ -719,7 +730,7 @@ EN.inventoryView = (function () {
       ])
     ]);
     var statChips = [];
-    if (it.damage && it.damage !== "0") statChips.push(el("span.mono", { style: { fontSize: "11.5px", color: "var(--accent)", marginRight: "4px" }, text: it.damage }));
+    if (it.damage && it.damage !== "0") statChips.push(dmgReadout(el("span.mono.dmg-readout", { style: { fontSize: "11.5px", color: "var(--accent)", marginRight: "4px" } }), it.damage));
     // the range bands are a rule (data/gear_ranged.js rangeNote), so the chip peeks it on a tap as well as on hover
     var rangeTip = (EN.gearCatalog.ranged && EN.gearCatalog.ranged.rangeNote) || "Range: normal / long";
     if (it.range && !/^Melee/.test(it.range)) statChips.push(el("span.chip", { title: rangeTip, style: { fontSize: "9.5px", color: "var(--gold)", borderColor: "var(--gold)" } },
@@ -1949,7 +1960,7 @@ EN.inventoryView = (function () {
             partChip(p.partType, p.partType === "Mod" ? "var(--ember)" : "var(--text2)"),
             partChip(p.legality, LEGAL_COLOR[p.legality]), partChip(p.rarity, AVAIL_COLOR[p.rarity] || "var(--text3)")
           ]),
-          el("p.help", { style: { margin: "2px 0 0", fontSize: "11px" }, text: p.grants })
+          dmgReadout(el("p.help", { style: { margin: "2px 0 0", fontSize: "11px" } }), p.grants)
         ]),
         el("button.btn.sm", { title: "Remove " + p.name, style: { color: "var(--text3)" }, onclick: function () { removePart(wKey, slotKey, key); } }, "✕")
       ]));
@@ -2033,14 +2044,18 @@ EN.inventoryView = (function () {
       el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } }, [el("span.help", { style: { margin: 0, fontSize: "10px" }, text: "PROFILE" }), profSel])
     ]);
     var grid = el("div.grid2", { style: { gap: "10px" } }, (WP().slots || []).map(function (sd) { return slotCard(ch, it, wKey, lo, sd); }));
-    out.push(EN.ui.panel(row.label, it.group.toUpperCase() + " · " + (it.damage || ""), [
+    var benchPanel = EN.ui.panel(row.label, it.group.toUpperCase() + " · " + (it.damage || ""), [
       el("p.help", { style: { margin: "0 0 8px", fontSize: "11.5px" } }, [
         document.createTextNode("One Part per slot (Utility holds two). Accessories snap on anytime; Mods are bench work in Downtime with a kit. The strictest legality on the build is what a scanner reports. "),
         EN.ui.ruleChip("gr-custom/installing-parts")
       ]),
       header, grid,
       el("p.help", { style: { margin: "10px 0 0", fontSize: "10.5px", color: "var(--text3)" }, text: WP().rules ? WP().rules.dieStep + " " + WP().rules.stabilized : "" })
-    ], { corners: true }));
+    ], { corners: true });
+    // the header tag is the weapon's damage readout: panel() prints it as text, so its type words become icons here
+    var benchTag = benchPanel.querySelector(".panel-h > .tag");
+    if (benchTag && it.damage) { EN.ui.clear(benchTag); dmgReadout(benchTag, it.group.toUpperCase() + " · " + it.damage); }
+    out.push(benchPanel);
     return out;
   }
 

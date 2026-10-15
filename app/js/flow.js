@@ -311,7 +311,7 @@ EN.flowView = (function () {
       el("div.mono.flow-fp", { style: { fontSize: "30px", color: over > 0 ? "var(--danger)" : FP }, html: cost + " <span style='font-size:13px;color:var(--text3)'>FP" + (inv.baseFp !== cost ? " · base " + inv.baseFp : "") + "</span>" }),
       inv.damageText ? el("div", { style: { textAlign: "right" } }, [
         el("div", { style: { fontFamily: "var(--disp)", fontSize: "9px", letterSpacing: ".12em", color: "var(--text3)" }, text: "DAMAGE" }),
-        el("span.mono", { style: { fontSize: "18px", color: "var(--accent)" }, text: inv.damageText })
+        EN.ui.damageText(el("span.mono.dmg-readout", { style: { fontSize: "18px", color: "var(--accent)" } }), inv.damageText)   // the Resonance's types as icons
       ]) : null
     ]));
     summary.push(noteP(_form.unwilling ? inv.resolutionText : "Automatic (willing target or object); no roll.", _form.unwilling ? "var(--text2)" : "var(--success)"));
@@ -379,7 +379,7 @@ EN.flowView = (function () {
         style: { fontSize: "9px", color: gated ? "var(--danger)" : "var(--text3)", borderColor: gated ? "var(--danger)" : "var(--border2)" },
         text: "LVL " + p.minLevel + (gated ? " ✕" : "") }) : null,
       el("span.chip", { style: { fontSize: "9px", color: over > 0 ? "var(--danger)" : FP, borderColor: over > 0 ? "var(--danger)" : VIO }, text: inv.fp + " FP" }),
-      inv.damageText ? el("span.chip", { style: { fontSize: "9px", color: "var(--accent)", borderColor: "var(--accent)" }, text: inv.damageText } ) : null,
+      inv.damageText ? EN.ui.damageText(el("span.chip.dmg-readout", { style: { fontSize: "9px", color: "var(--accent)", borderColor: "var(--accent)" } }), inv.damageText) : null,
       el("button.btn.sm", { title: "Load this formulation into the builder", style: { color: "var(--text2)" }, onclick: function () { loadForm(p); toast("Loaded " + p.name + " into Free-Shaping"); } }, "LOAD"),
       premade
         ? el("button.btn.sm", { title: "Copy to your saved patterns", style: { color: VIO, borderColor: VIO }, onclick: function () { var e = {}; Object.keys(p).forEach(function (k) { e[k] = p[k]; }); fset(function (fl) { fl.patterns = (fl.patterns || []).concat([e]); }); toast("Saved " + p.name); } }, "✚ SAVE")

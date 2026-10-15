@@ -1437,6 +1437,26 @@ EN.codexView = (function () {
      reach cap) were carried in EN.combat and rendered nowhere, or only on the
      Freelancer tab, so the GM could not read them at all. */
   function hasCombat() { return !!EN.combat; }
+  /* A Damage Types entry, its heading the type's icon and then its name (author's call,
+     2026-10-14): every damage readout off the Codex shows the type as its icon, and this
+     is where a player learns which is which. The word stays, the icon is not a link (it
+     is the entry it would open), and the entry's text, slug and search are the
+     ruleBlock's own. Icon and name share one span, so the heading's flex row keeps them
+     together on the left. */
+  function dmgTypeBlock(K, t) {
+    var node = K.ruleBlock(t.name, t.text);
+    try {
+      var h = node.querySelector("h4"), first = h && h.firstChild;
+      var icon = EN.ui && typeof EN.ui.damageIcon === "function" ? EN.ui.damageIcon(t.name, { link: false }) : null;
+      if (first && first.nodeType === 3 && icon && icon.nodeType === 1) {
+        icon.style.marginRight = ".4em";
+        var pair = el("span", { dataset: { cxDmg: String(t.name).toLowerCase() }, style: { display: "inline-flex", alignItems: "center" } }, [icon]);
+        h.replaceChild(pair, first);
+        pair.appendChild(first);
+      }
+    } catch (e) {}
+    return node;
+  }
   // the Opportunity Attacks rules close the Impulse Action entry in the data; drawn as an
   // entry of their own so "See Opportunity Attacks below" has somewhere to land
   var OPP = "\n\nOpportunity Attacks\n\n";
@@ -1528,7 +1548,7 @@ EN.codexView = (function () {
         var C = EN.combat;
         // a pointer, not a copy: the type rules themselves live in Damage & Mitigation
         return (C.damageTypeRules ? [K.note("What Resistance, Vulnerability and Immunity do to each type is under Damage & Mitigation.")] : [])
-          .concat((C.damageTypes || []).map(function (t) { return K.ruleBlock(t.name, t.text); }));
+          .concat((C.damageTypes || []).map(function (t) { return dmgTypeBlock(K, t); }));
       } },
 
     /* Size: comparative, derived from height, and its whole mechanical reach is
