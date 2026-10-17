@@ -3,6 +3,11 @@
    The d20 Method, the Dice Pool Method, Edge and Snag, Success Margins and
    Consequence, and Collaborative and Opposed Checks. Extracted from the core
    resolution chapter. Rendered read-only by the Codex tab.
+   2026-10-16 handoff: the Contested +1 to +4 band is Narrow Victory, and Profile
+   is the term (Reputation Tag is retired). The book's Dicey Situations line
+   still reads "take a Reputation tag" (the handoff's open item 2); this file
+   does not mirror the old word. The Critical Failure bands already read -5 or
+   worse on a d20 and -3 or worse on a Dice Pool.
    No em or en dashes anywhere in this file (house style).
    =========================================================================== */
 window.EN = window.EN || {};
@@ -159,7 +164,7 @@ EN.resolution = {
     pool: [
       { margin: "+3 or more", result: "Flawless Success", desc: "Cinematic or resonant. Gain a narrative advantage, grant Edge or +1 Edge Die on a follow-up, or recover 1 FP." },
       { margin: "+1 to +2", result: "Strong Success", desc: "Effective, but with a minor cost: delay, spent material, a favor you were owed, or attention." },
-      { margin: "0", result: "Mixed Result", desc: "Success with a consequence. Take one cost that fits the scene: 1 Fatigue, 1 Strain, a Debt, a Reputation Tag, a Trace, or concede terms." },
+      { margin: "0", result: "Mixed Result", desc: "Success with a consequence. Take one cost that fits the scene: 1 Fatigue, 1 Strain, a Debt, a Profile, a Trace, or concede terms." },
       { margin: "-1 to -2", result: "Failure", desc: "The action falters and costs resources, position, or attention." },
       { margin: "-3 or worse", result: "Critical Failure", desc: "The attempt collapses, causes harm, or invites backlash. Immediate escalation." }
     ],
@@ -168,7 +173,7 @@ EN.resolution = {
 
   consequenceByScene: [
     { scene: "Physical / Exploration", consequences: "Lose time, make noise, spend gear, suffer 1 Fatigue from exertion, lose position, trigger a hazard" },
-    { scene: "Social / Negotiation", consequences: "Owe a favor, concede terms, reveal what gives you sway, gain scrutiny, take a Reputation tag, worsen faction posture" },
+    { scene: "Social / Negotiation", consequences: "Owe a favor, concede terms, reveal what gives you sway, gain scrutiny, take a Profile, worsen faction posture" },
     { scene: "Hacking / #GRID", consequences: "Gain Trace, alert ICE, lose access, burn a tool, expose your location, trigger a counter-intrusion" },
     { scene: "Flow / Resonance", consequences: "Gain 1 Strain, distort the environment, destabilize the effect, attract attention, reveal your resonance signature" },
     { scene: "Crafting / Technical", consequences: "Waste materials, reduce quality, increase time, require a replacement part, create instability" }
@@ -181,7 +186,7 @@ EN.resolution = {
       { cost: "Debt", effect: "You now owe the Target a favor, payment, introduction, future service, or operational support." },
       { cost: "Tipped Hand", effect: "You reveal more than intended: your motive, urgency, affiliation, weakness, or relationship." },
       { cost: "Scrutiny", effect: "The scene attracts attention from witnesses, rivals, handlers, security, or faction observers." },
-      { cost: "Reputation Tag", effect: "You gain a temporary narrative tag such as Pushy, Desperate, Unreliable, Bought, or Difficult." },
+      { cost: "Profile", effect: "You gain a temporary Profile such as Pushy, Desperate, Unreliable, Bought, or Difficult." },
       { cost: "Faction Shift", effect: "One faction, office, or social circle shifts colder, more suspicious, or more transactional toward you." },
       { cost: "Complication Clause", effect: "The deal holds, but carries a hidden obligation, audit trigger, exclusivity term, or future claim." },
       { cost: "Lost Face", effect: "You succeed, but your standing slips. Future social checks with this Target or audience suffer Snag until the situation changes." }
@@ -235,7 +240,7 @@ EN.resolution = {
       outcomes: [
         { d20: "+10 or higher", pool: "+3 or more", result: "Dominant Victory", desc: "You seize complete control or overpower the opponent. Gain a decisive advantage, disable them, or impose a major condition." },
         { d20: "+5 to +9", pool: "+2", result: "Clear Victory", desc: "You win cleanly and assert control, though your opponent may still recover or respond." },
-        { d20: "+1 to +4", pool: "+1", result: "Narrow Success", desc: "You succeed but at a cost. You might take harm, lose time, trigger a complication, or concede position." },
+        { d20: "+1 to +4", pool: "+1", result: "Narrow Victory", desc: "You succeed but at a cost. You might take harm, lose time, trigger a complication, or concede position." },
         { d20: "0", pool: "0", result: "Stalemate", desc: "Neither side gains ground. The situation remains locked or unresolved until conditions change." },
         { d20: "-1 or worse", pool: "-1 or worse", result: "Failure", desc: "Your opponent gains control and may inflict consequences equal to your margin of loss." }
       ]
@@ -274,7 +279,7 @@ EN.resolution = {
   examples: [
     "An expert operator rolls 22 vs DC 12, a margin of +10. That is a Flawless Success. They finish the job early and gain an advantage in the next encounter.",
     "A field medic rolls a +2 margin in a Dice Pool. That is a Strong Success. The repair works, but consumes rare materials.",
-    "A negotiator rolls a Mixed Result while persuading a guard. The guard agrees, but the negotiator takes the Reputation Tag Pressured the Gate, and the office remembers their face.",
+    "A negotiator rolls a Mixed Result while persuading a guard. The guard agrees, but the negotiator takes the Profile Pressured the Gate, and the office remembers their face.",
     "A Flow adept rolls a -3 margin. That is a Critical Failure. The Flow surges, adding 1 Strain and destabilizing nearby energy.",
     "Two rival hackers race to breach a server. One rolls 8 net successes, the other 5. The winner holds a +3 margin: a Dominant Victory that locks out their rival."
   ]

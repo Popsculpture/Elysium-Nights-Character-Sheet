@@ -232,24 +232,24 @@ EN.flow = {
   },
 
   /* ---- Premade Resonant Patterns (formulations) ------------------------- */
+  // The four the book prints (2026-10-16 handoff). Six were cut because they copied
+  // their Empowered Effect entries: Triage Pulse, Arc Lightning, Phantom Shroud,
+  // Adrenal Overclock, Thermal Breach, Fold Space. The Empowered Effects themselves
+  // stay in resonances[]; a character who saved a cut premade keeps it, because SAVE
+  // copies the pattern by value into ch.flow.patterns.
   // Stored as the component choices so the FP cost and damage recompute from the
   // character's live Caliber and Flow Modifier. extraTargets / extraSpaces are
   // additional scaling steps (+1 FP each). empoweredEffect names the chosen
   // Empowered Effect when the force is empowered and the intent carries an effect.
   premadePatterns: [
     { name: "Kinetic Slam", resonance: "kinetic", intent: "damage", deliveryBand: "directed", deliveryOption: "Remote", force: "empowered", duration: "instant", precision: false },
-    { name: "Flash-Freeze Zone", resonance: "thermal", intent: "effect", deliveryBand: "wide", deliveryOption: "Sphere (3 spaces)", force: "base", duration: "instant", precision: true },
-    { name: "Triage Pulse", resonance: "visceral", intent: "effect", deliveryBand: "directed", deliveryOption: "Touch", force: "base", duration: "instant", precision: false, baseChoice: "Patch" },
-    // Hybrid + Empowered Force on one Invocation is Layered Force, which unlocks at
-    // Level 5 (Expanded Frequency), so this pattern is a Level 5 showcase rather than
-    // a starting build.
-    { name: "Arc Lightning", resonance: "electromagnetic", intent: "hybrid", deliveryBand: "wide", deliveryOption: "Line (6 spaces)", force: "empowered", duration: "instant", precision: false, empoweredEffect: "Optic Scramble", minLevel: 5, gateNote: "Layered Force: needs Level 5 (Expanded Frequency)" },
+    // The book prints "Resolution: No roll." (2026-10-16 handoff): unwilling false reads
+    // "Automatic" on the row and loads into the builder as Willing / Object; `note` is the
+    // book's Resolution line, shown under the row.
+    { name: "Flash-Freeze Zone", resonance: "thermal", intent: "effect", deliveryBand: "wide", deliveryOption: "Sphere (3 spaces)", force: "base", duration: "instant", precision: true, unwilling: false,
+      note: "Resolution: No roll. Liquids in an Area 3 sphere freeze automatically, sparing 4 chosen Allies." },
     { name: "Dimensional Tear", resonance: "spatial", intent: "damage", deliveryBand: "directed", deliveryOption: "Remote", force: "empowered", duration: "instant", precision: false },
-    { name: "Gravity Anchor", resonance: "kinetic", intent: "effect", deliveryBand: "focused", deliveryOption: "Cube (2 spaces)", force: "empowered", duration: "instant", precision: false, empoweredEffect: "Gravity Pin" },
-    { name: "Phantom Shroud", resonance: "cognitive", intent: "effect", deliveryBand: "directed", deliveryOption: "Remote", force: "empowered", duration: "instant", precision: false, empoweredEffect: "Blind Spot" },
-    { name: "Adrenal Overclock", resonance: "visceral", intent: "effect", deliveryBand: "directed", deliveryOption: "Remote", force: "empowered", duration: "instant", precision: false, empoweredEffect: "Adrenal Overclock" },
-    { name: "Thermal Breach", resonance: "thermal", intent: "effect", deliveryBand: "directed", deliveryOption: "Touch", force: "empowered", duration: "instant", precision: false, empoweredEffect: "Structural Melt" },
-    { name: "Fold Space", resonance: "spatial", intent: "effect", deliveryBand: "directed", deliveryOption: "Remote", force: "empowered", duration: "instant", precision: false, empoweredEffect: "Spatial Displacement" }
+    { name: "Gravity Anchor", resonance: "kinetic", intent: "effect", deliveryBand: "focused", deliveryOption: "Cube (2 spaces)", force: "empowered", duration: "instant", precision: false, empoweredEffect: "Gravity Pin" }
   ],
   premadeNote: "Premade patterns assume an initiate Shaper. Channel one to load it into the builder, then Save your own tuned versions. Costs and damage shown use your live Caliber and Flow Modifier."
 };

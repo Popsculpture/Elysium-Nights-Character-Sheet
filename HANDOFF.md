@@ -114,6 +114,14 @@ Bypass wired into the unarmed engine, and a `migrate()` hardening pass.
   `.inv-bar` in inventory.js, `.panel-hr` on the panel header-right wrapper in ui.js, and
   `.row-label` on the fixed-width label spans in flow.js, grid.js, inventory.js and builder.js.
   Nothing reads any of them; they exist so a stylesheet can reach an inline-styled element.
+- Held content lives in ONE place: `app/data/launch.js` (`EN.launch`, since 2026-10-16). It
+  has three switches, `holds.lineup` (held lineages, subclasses, Talents, Backgrounds),
+  `holds.availability` (rarity) and `holds.toolkit` (gear and rules that moved to the Game
+  Master's Toolkit), and each flips back in one line. Gate at the listing layer only: pickers,
+  the market, Blueprints, the install pickers and the Codex read `offer()`, `isHeld()`,
+  `isToolkit()` and `showAvailability()`. Never filter or splice EN.species, the subclass
+  arrays, EN.talents, EN.backgrounds or the gear catalogs, because a saved character resolves
+  against them. inventory.js gates Toolkit gear and the Availability display through it too.
 - Give parallel agents their own preview origin. Sharing one corrupts the roster.
 - My loaded character is expendable. Do not spend effort preserving it.
 
@@ -172,7 +180,10 @@ Four questions, in order. The third is the one that gets skipped.
 The migration tables live beside their data, not in `store.js`: `EN.weaponParts.renames`,
 `EN.cyberware.renames`, `EN.speciesFeatureRenames`, `EN.gearCatalog.weaponRenames`. Adding
 a rename should be a row in one of those plus a line in `migrate()`, never a second place
-to remember.
+to remember. One exception: `TALENT_RENAMES` is inline in `store.js`, and since 2026-10-16
+it carries `crowd-reader` / `Crowd Reader` to `cold-reader`. The Codebreaker's Quick Scan
+(was Cold Read) needs no row: the Codebreaker knows every exploit, so the name is derived
+and never stored.
 
 ## Manuscript source of truth
 

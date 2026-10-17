@@ -59,7 +59,11 @@ EN.weaponParts = {
     { key: "monoedge", name: "Monoedge", category: "melee", slot: "output", partType: "Mod", fits: "Blades", price: 400, rarity: "Uncommon", legality: "Restricted",
       grants: "Armor Piercing 1", effect: "Apply the Armor Piercing 1 trait." },
     { key: "weighted-head", name: "Weighted Head", category: "melee", slot: "output", partType: "Mod", fits: "Any Melee", price: 250, rarity: "Common", legality: "Licensed",
-      grants: "+1 damage die step; adds Heavy, removes Light", effect: "Upgrade the damage die one step. Apply the Heavy trait and remove the Light trait, if present.", excludes: ["pared-hilt"] },
+      // oomph: the Part's Oomph, as a number the engine adds (oomphFor, engine.js). The book
+      // row, 16 October handoff: "Oomph +1. Apply the Heavy trait and remove the Light trait,
+      // if present." The Heavy and Light changes are text only; nothing applies them yet.
+      oomph: 1,
+      grants: "Oomph +1; adds Heavy, removes Light", effect: "Oomph +1. Apply the Heavy trait and remove the Light trait, if present.", excludes: ["pared-hilt"] },
     { key: "nonlethal-conversion", name: "Nonlethal Conversion", category: "melee", slot: "output", partType: "Mod", fits: "Any Melee", price: 150, rarity: "Common", legality: "Legal",
       grants: "Nonlethal", effect: "Apply the Nonlethal trait. When this weapon reduces a Target to 0 Vitality, the damage imposes the Unconscious condition instead of killing them." },
     { key: "serrated-edge", name: "Serrated Edge", category: "melee", slot: "output", partType: "Mod", fits: "Blades", price: 350, rarity: "Uncommon", legality: "Restricted",
@@ -116,7 +120,9 @@ EN.weaponParts = {
     { key: "breakdown-frame-melee", name: "Breakdown Frame", category: "melee", slot: "utility", partType: "Mod", fits: "Any Melee", price: 250, rarity: "Uncommon", legality: "Licensed",
       grants: "Concealable", effect: "Apply the Concealable trait. The weapon can be hidden on your person without effort, whether under a jacket, inside a bag, or against the body." },
     { key: "quick-release-tether", name: "Quick-Release Tether", category: "melee", slot: "utility", partType: "Accessory", fits: "Any Melee", price: 80, rarity: "Common", legality: "Legal",
-      grants: "Quick Draw, can't be disarmed", effect: "Apply the Quick Draw trait. Drawing or stowing the weapon doesn't cost an action, and you can't be disarmed of it unless an effect explicitly cuts or destroys the tether." },
+      // 16 October handoff: Quick Draw plus can't-be-disarmed, with no free draw or stow and no
+      // tether-cutting exception (the book row is the source now that the card is cut)
+      grants: "Quick Draw, can't be disarmed", effect: "Apply the Quick Draw trait. You can't be disarmed of it." },
     { key: "anti-theft-module", name: "Anti-Theft Module", category: "melee", slot: "utility", partType: "Mod", fits: "Any Melee", price: 200, rarity: "Uncommon", legality: "Licensed",
       grants: "Anti-theft hand-trap", effect: "Hidden spines snap out of the grip and clamp into the wielder's hand, dealing 1d6 Piercing damage. While the wielder keeps hold of the weapon, they attack with Snag. At the start of each of their turns, they take 1d6 Electric damage and must make a Body Save (DC 12) or become Staggered until the end of their next turn." },
     { key: "defensive-guard", name: "Defensive Guard", category: "melee", slot: "utility", partType: "Mod", fits: "Any Melee", price: 250, rarity: "Uncommon", legality: "Licensed",
@@ -155,7 +161,9 @@ EN.weaponParts = {
     { key: "shotgun-choke", name: "Shotgun Choke", category: "ranged", slot: "output", partType: "Accessory", fits: "Shotgun", price: 200, rarity: "Common", legality: "Licensed",
       grants: "Extends Spread range", effect: "Increase the weapon's short range by 50% (round up). The Spread trait's short-range benefit (its Edge) now applies to this extended short range before the long-range penalty takes over, so the tight pattern holds together farther downrange." },
     { key: "heavy-barrel", name: "Heavy Barrel", category: "ranged", slot: "output", partType: "Mod", fits: "Any Firearm", price: 300, rarity: "Uncommon", legality: "Licensed",
-      grants: "+1 damage die step; adds Heavy", effect: "Upgrade the weapon's damage die one step and apply the Heavy trait." },
+      // book row, 16 October handoff: "Oomph +1. Apply the Heavy trait."
+      oomph: 1,
+      grants: "Oomph +1; adds Heavy", effect: "Oomph +1. Apply the Heavy trait." },
     { key: "bullpup-conversion", name: "Bullpup Conversion", category: "ranged", slot: "output", partType: "Mod", fits: "Longarm", price: 400, rarity: "Uncommon", legality: "Licensed",
       grants: "Concealable and Close Quarters", effect: "Apply the Concealable and Close Quarters traits." },
     { key: "vented-barrel", name: "Vented Barrel", category: "ranged", slot: "output", partType: "Mod", fits: "Any Firearm", price: 150, rarity: "Common", legality: "Licensed",
@@ -221,9 +229,17 @@ EN.weaponParts = {
     /* ============================ BOWFIRE ============================ */
     // Output (Limbs / Prod)
     { key: "high-tension-assembly", name: "High-Tension Assembly", category: "bowfire", slot: "output", partType: "Mod", fits: "Any bow", price: 350, rarity: "Uncommon", legality: "Restricted",
-      grants: "+1 damage die step or Armor Piercing 1", effect: "Upgrade the weapon's damage die one step or apply the Armor Piercing 1 trait. Choose when the modification is installed." },
+      /* Book row, 16 October handoff: "Oomph +1 or the Armor Piercing 1 trait. Choose when the
+         modification is installed." The answer is stored per weapon ENTRY at
+         ch.weaponParts[entryKey]._choices["high-tension-assembly"] = "oomph" | "ap", and an
+         install with no answer reads as `default` (engine.js weaponPartChoice). Only "oomph"
+         adds the Oomph below; "ap" grants the Armor Piercing 1 trait instead. */
+      oomph: 1,
+      choice: { options: [{ value: "oomph", label: "Oomph +1" }, { value: "ap", label: "Armor Piercing 1" }], default: "oomph" },
+      grants: "Oomph +1 or Armor Piercing 1", effect: "Oomph +1 or the Armor Piercing 1 trait. Choose when the modification is installed." },
     { key: "composite-limbs", name: "Composite Limbs", category: "bowfire", slot: "output", partType: "Mod", fits: "Any bow", price: 200, rarity: "Common", legality: "Licensed",
-      grants: "Quick Draw", effect: "Apply the Quick Draw trait." },
+      // Quick Nock, not Quick Draw (16 October handoff)
+      grants: "Quick Nock", effect: "Apply the Quick Nock trait." },
     { key: "whisper-limbs", name: "Whisper Limbs", category: "bowfire", slot: "output", partType: "Mod", fits: "Any bow", price: 350, rarity: "Uncommon", legality: "Restricted",
       grants: "Silent", effect: "Apply the Silent trait." },
     { key: "voltaic-limbs", name: "Voltaic Limbs", category: "bowfire", slot: "output", partType: "Mod", fits: "Any bow", price: 300, rarity: "Uncommon", legality: "Restricted",
@@ -248,7 +264,10 @@ EN.weaponParts = {
   /* ---- stacking + over-engineering rules (surfaced as bench guidance) ---- */
   rules: {
     stabilized: "Stabilized sources do not stack: multiple Parts negate the High Recoil Snag only once.",
-    dieStep: "A weapon gains at most one damage die step from aftermarket Parts. It still stacks with steps from class features, cyberware, or the Flow.",
+    /* The Parts rules line, 16 October handoff, word for word under its heading. The key stays
+       `dieStep` because the bench footer and the Codex read it by that name. */
+    dieStepHead: "Oomph +1 from hardware",
+    dieStep: "A weapon takes at most Oomph +1 from aftermarket Parts. It does stack with Oomph from outside sources: class features, cyberware, or the Flow. A printed limit on a specific item always wins.",
     legality: "A Part never lowers a weapon's legality, only raises the heat. The strictest tag among the weapon and everything on it is what a scanner reports.",
     install: "Accessories snap on anytime out of initiative, no roll. Mods are bench work: Downtime with a relevant tool kit and Proficiency, occasionally a single Engineering check or a short crafting Project."
   }

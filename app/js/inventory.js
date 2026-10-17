@@ -58,6 +58,29 @@ EN.inventoryView = (function () {
   var AVAIL_MULT = { "Common": 1, "Uncommon": 1.2, "Rare": 1.5, "Iconic": 1.5, "Legendary": 1.8, "Mythical": 2.2, "Artifact": 3 };
   var FENCE_RATE = 0.35;   // common contraband fences at 30-50% of market
 
+  /* ---- launch holds (data/launch.js, 16 October) --------------------------
+     AVAILABILITY IS HELD. While EN.launch.holds.availability is on, no card, filter, bench
+     chip or price tooltip shows it. The data stays, and so does the rule logic that reads it:
+     The Register's scarcity markup (streetPrice, AVAIL_MULT) and the crafting Project tier
+     (EN.crafting.tierForItem) still read it. Flip the hold and every surface returns.
+     TOOLKIT GEAR (the 12 October gear split, the Signature Weapons chapter, the Mystech
+     cyberware and tiers, Blackware, the Rare tools) is listed nowhere new: not in the market,
+     the Blueprints, the install pickers or the Garage's fit list. A copy the character
+     already owns keeps rendering, installing and deriving, with a TOOLKIT chip. Nothing here
+     filters catalog() or findItem(), which saved gear resolves through. */
+  function showAvail() { var L = EN.launch; return !(L && L.showAvailability) || L.showAvailability(); }
+  function toolkitListing(it) {
+    var L = EN.launch;
+    if (!L || !it) return false;
+    // a market cyber listing is one tier of one implant: it moves with its implant or its tier
+    if (it.cyber) return L.isToolkit("cyberware", it.cyberKey) || L.isToolkit("cyberTier", it.tier);
+    return L.isToolkitItem(it);
+  }
+  // the TOOLKIT chip for an owned piece (null when it is ordinary gear or the hold is off)
+  function toolkitChip(kind, key) { return EN.ui.heldChip ? EN.ui.heldChip(kind, key) : null; }
+  function toolkitSuffix(kind, key) { return EN.ui.heldSuffix ? EN.ui.heldSuffix(kind, key) : ""; }
+  function toolkitKey(kind, key) { var L = EN.launch; return !!(L && L.isToolkit && L.isToolkit(kind, key)); }
+
   var STOREFRONTS = [
     { key: "undercut", name: "The Undercut", desc: "Book list prices. Gray market, no markups, no paperwork, no receipts." },
     { key: "register", name: "The Register", desc: "Corporate retail. Compliance surcharges and scarcity-indexed markups." },
@@ -94,8 +117,9 @@ EN.inventoryView = (function () {
       + ". Lapse, get flagged, or cross the issuer and it drops to its zero state.";
     if (_mode === "register") {
       if (sp === it.price) return "List price " + fmtG(it.price) + (it.unit ? " " + it.unit : "") + ". Standard compliance handling included. All sales final.";
+      // the scarcity multiplier still applies (rule logic); only the Availability word is held
       return "List " + fmtG(it.price) + " · compliance surcharge ×" + (LEGAL_MULT[it.legality] || 1) + " (" + it.legality + ") · scarcity index ×" +
-             (AVAIL_MULT[it.availability] || 1) + " (" + it.availability + ") = " + fmtG(sp) + ". Fees are non-negotiable. All sales final.";
+             (AVAIL_MULT[it.availability] || 1) + (showAvail() ? " (" + it.availability + ")" : "") + " = " + fmtG(sp) + ". Fees are non-negotiable. All sales final.";
     }
     if (_mode === "surplus") return "List " + fmtG(it.price) + ", Guild members' rate " + fmtG(sp) + ". Overstock, salvage, serial numbers conveniently worn off.";
     if (_mode === "fivefinger") return "It fell off a transport. Looted, recovered, donated, or pulled from a body. Free, and the fence won't touch it.";
@@ -558,12 +582,14 @@ EN.inventoryView = (function () {
   function installedPartsLine(ch, it, entry) {
     if (!isWeapon(it) || !EN.weaponParts) return null;
     // per ENTRY: the card is drawn for one piece, so it must report that piece's build
-    var lo = (ch.weaponParts || {})[entry ? ENG().entryKey(entry) : null];
+    var eKey = entry ? ENG().entryKey(entry) : null;
+    var lo = (ch.weaponParts || {})[eKey];
     if (!lo) return null;
     var keys = ["targeting", "output", "core", "handling"].map(function (s) { return lo[s]; }).filter(Boolean).concat(lo.utility || []);
     var chips = keys.map(function (k) {
       var p = EN.weaponParts.byKey[k]; if (!p) return null;
-      return dmgReadout(el("span.chip", { title: p.name + ": " + p.effect, style: { fontSize: "8.5px", color: "var(--ember)", borderColor: "var(--ember)" } }), p.grants || p.name);
+      var pick = partChoiceOf(ch, eKey, p);   // High-Tension Assembly reads as the half it was installed as
+      return dmgReadout(el("span.chip", { title: p.name + ": " + p.effect, style: { fontSize: "8.5px", color: "var(--ember)", borderColor: "var(--ember)" } }), pick ? pick.label : (p.grants || p.name));
     }).filter(Boolean);
     if (!chips.length) return null;
     return el("div.row.wrap", { style: { gap: "5px", marginTop: "6px", alignItems: "center" } },
@@ -682,7 +708,9 @@ EN.inventoryView = (function () {
     var ownedTotal = (ch.equipment || []).filter(function (e) { return e.name === it.name; }).reduce(function (n, e) { return n + (e.qty || 0); }, 0);
     var sp = streetPrice(it);
     var afford = (ch.glimmer || 0) >= sp;
-    var slotLabel = Array.isArray(it.slot) ? it.slot.join(" + ") : it.slot;
+    // slotText: the book's Body Slot wording where the engine's slot can't say it yet
+    // (Bio Monitor Band, "Arms or Torso", seats in Arms until a slot choice lands)
+    var slotLabel = it.slotText || (Array.isArray(it.slot) ? it.slot.join(" + ") : it.slot);
     // Worn armor supports its own weight; the same suit merely carried,
     // packed, or freshly looted counts its full Load instead. Nothing is
     // "worn" pre-purchase, so this (and the Load reduction it drives) is
@@ -703,6 +731,8 @@ EN.inventoryView = (function () {
     var traitsId = id + "-traits", traitsOpen = !!_open[traitsId];
     var head = el("h4", { style: { cursor: "pointer" }, onclick: function () { _open[id] = !open; EN.app.render(); } }, [
       el("span.mkt-name", null, EN.ui.nameCaret(it.name, open).concat([
+        // an owned piece of Toolkit gear (the market never lists one)
+        toolkitChip("item", it),
         (mode === "mkt" && ownedTotal > 0) ? tagChip("Owned ×" + ownedTotal, "var(--success)") : null,
         it.counted ? tagChip("Counted", "var(--ember)", "Counted, track every unit from purchase to spend") : null,
         it.cyber ? tagChip("◆ " + it.zone, "var(--accent)", "Interface Zone: " + it.zone) : null,
@@ -717,9 +747,10 @@ EN.inventoryView = (function () {
       ])),
       el("span.mkt-side", { style: { display: "inline-flex", alignItems: "baseline", gap: "10px", flexShrink: 0 } }, [
         el("span.mono.mkt-meta", { style: { fontSize: "10.5px", letterSpacing: ".03em" } }, [
+          // Legality is a card, so it keeps the full word (the short forms are for tables only)
           el("span", { style: { color: LEGAL_COLOR[it.legality] || "var(--text3)" }, text: it.legality }),
-          document.createTextNode(" · "),
-          el("span", { style: { color: AVAIL_COLOR[it.availability] || "var(--text3)" }, text: it.availability }),
+          showAvail() ? document.createTextNode(" · ") : null,
+          showAvail() ? el("span", { style: { color: AVAIL_COLOR[it.availability] || "var(--text3)" }, text: it.availability }) : null,
           (isDefensive(it) && it.slots) ? document.createTextNode(" · " + it.slots + " mod slots") : null
         ]),
         el("span.mono.mkt-price", { title: mode === "mkt" ? priceTitle(it) : (_mode === "fivefinger" ? "No provenance, no payout, the fence won't touch it." : "Fence pays " + fmtG(fencePrice(it)) + " (street rate, ~35% of list)"),
@@ -730,7 +761,15 @@ EN.inventoryView = (function () {
       ])
     ]);
     var statChips = [];
-    if (it.damage && it.damage !== "0") statChips.push(dmgReadout(el("span.mono.dmg-readout", { style: { fontSize: "11.5px", color: "var(--accent)", marginRight: "4px" } }), it.damage));
+    /* A Stash card is one owned piece, so it reads the die that piece rolls: Oomph from its
+       Parts (and any other source in scope) steps the printed die, the same replace the bench
+       tag uses. The market card is the catalog item and keeps the printed die. */
+    if (it.damage && it.damage !== "0") {
+      var cardGrip = (mode === "stash" && entry && isWeapon(it) && ENG().weaponGrip) ? ENG().weaponGrip(ch, it, ownedKey) : null;
+      var cardDmg = (cardGrip && cardGrip.dice) ? String(it.damage).replace(/^\s*\d+d\d+/, cardGrip.dice) : it.damage;
+      statChips.push(dmgReadout(el("span.mono.dmg-readout", { title: (cardGrip && cardGrip.oomph && cardGrip.oomph.note) || null,
+        style: { fontSize: "11.5px", color: "var(--accent)", marginRight: "4px" } }), cardDmg));
+    }
     // the range bands are a rule (data/gear_ranged.js rangeNote), so the chip peeks it on a tap as well as on hover
     var rangeTip = (EN.gearCatalog.ranged && EN.gearCatalog.ranged.rangeNote) || "Range: normal / long";
     if (it.range && !/^Melee/.test(it.range)) statChips.push(el("span.chip", { title: rangeTip, style: { fontSize: "9.5px", color: "var(--gold)", borderColor: "var(--gold)" } },
@@ -1156,6 +1195,8 @@ EN.inventoryView = (function () {
       var sided = !!cw.sided, oid = where + "-cw-" + idx, open = !!_open[oid];
       var chips = [
         where === "installed" ? tagChip("● INSTALLED", "var(--success)", "Installed, counts toward your Static") : tagChip("STASHED", "var(--text3)", "In your stash, not yet installed"),
+        // Mystech implants and the Blackware and Prototype tiers moved to the Toolkit; an owned piece keeps working
+        toolkitChip("cyberware", cw.key) || toolkitChip("cyberTier", cw.tier),
         // the quality tier is a rule, so its chip peeks the Codex entry on a tap (the title stays for hover)
         cw.tier ? (function () {
           var tip = ((EN.cyberware || {}).qualityTiers || {})[cw.tier] || "", col = tierChipColor(cw.tier);
@@ -1419,6 +1460,18 @@ EN.inventoryView = (function () {
       cats.push({ key: "cybernetics", title: "Cybernetics", short: "CHROME", codex: "gr-chrome", intro: CW.intro, subs: cyberSubs });
     }
 
+    /* ---- the Toolkit hold: moved gear leaves the listings, never the catalog ----
+       A sub that empties (Mystech ammunition, Mystech Armor, Mystech Augments) is skipped
+       below like any empty sub, and a category that empties (Signature Weapons) leaves the
+       panel list and the TYPE filter with it. */
+    cats.forEach(function (c) {
+      c.subs.forEach(function (s) { s.items = (s.items || []).filter(function (it) { return !toolkitListing(it); }); });
+    });
+    cats = cats.filter(function (c) { return c.subs.some(function (s) { return s.items.length; }); });
+    if (_mktType !== "all" && !cats.some(function (c) { return c.key === _mktType; })) _mktType = "all";
+    // Availability is held: no AVAIL filter, so no stale one may keep filtering unseen
+    if (!showAvail()) _mktAvail = "all";
+
     /* ---- filter predicate ---- */
     var q = (_mktQuery || "").trim().toLowerCase();
     var anyFilter = !!q || _mktType !== "all" || _mktLegal !== "all" || _mktAvail !== "all";
@@ -1441,7 +1494,10 @@ EN.inventoryView = (function () {
     function setF(key, val) { return function () { if (key === "type") _mktType = val; else if (key === "legal") _mktLegal = val; else _mktAvail = val; EN.app.render(); }; }
     var typeBtns = [fbtn(_mktType === "all", "ALL", setF("type", "all"))].concat(cats.map(function (c) { return fbtn(_mktType === c.key, c.short, setF("type", c.key)); }));
     var legalBtns = [fbtn(_mktLegal === "all", "ALL", setF("legal", "all"))].concat(["Legal", "Licensed", "Restricted", "Contraband"].map(function (l) { return fbtn(_mktLegal === l, l.toUpperCase(), setF("legal", l), LEGAL_COLOR[l]); }));
-    var availBtns = [fbtn(_mktAvail === "all", "ALL", setF("avail", "all"))].concat(["Common", "Uncommon", "Rare", "Iconic", "Legendary", "Mythical", "Artifact"].map(function (a) { return fbtn(_mktAvail === a, a.toUpperCase(), setF("avail", a), AVAIL_COLOR[a]); }));
+    // the Mystech scale (Iconic to Artifact) moved with its gear, so it stays out even when Availability returns
+    var availBtns = [fbtn(_mktAvail === "all", "ALL", setF("avail", "all"))].concat(["Common", "Uncommon", "Rare", "Iconic", "Legendary", "Mythical", "Artifact"]
+      .filter(function (a) { return !(EN.launch && EN.launch.isToolkit("availability", a)); })
+      .map(function (a) { return fbtn(_mktAvail === a, a.toUpperCase(), setF("avail", a), AVAIL_COLOR[a]); }));
     var searchIn = el("input", { id: "mkt-search", type: "text", value: _mktQuery, placeholder: "search name, effect, category…",
       style: { maxWidth: "300px", flex: "1 1 200px" },
       oninput: function () { _mktQuery = this.value; var pos = this.selectionStart; EN.app.render(); var n = document.getElementById("mkt-search"); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (e) {} } } });
@@ -1472,7 +1528,7 @@ EN.inventoryView = (function () {
     ];
     if (_mktFiltersOpen) {
       ctrlKids.push(el("div", { style: { marginTop: "8px", paddingTop: "8px", borderTop: "1px solid var(--border)" } }, [
-        frow("TYPE", typeBtns), frow("LEGALITY", legalBtns), frow("AVAIL", availBtns)
+        frow("TYPE", typeBtns), frow("LEGALITY", legalBtns), showAvail() ? frow("AVAIL", availBtns) : null
       ]));
     }
     blocks.push(el("div.mkt-controls", { style: { marginBottom: "14px", padding: "10px 12px", border: "1px solid var(--border)", borderRadius: "4px", background: "var(--bg2)" } }, ctrlKids));
@@ -1623,6 +1679,36 @@ EN.inventoryView = (function () {
       c.weaponParts[key] = wp;
     });
   }
+  /* THE INSTALL-TIME CHOICE on a Part that offers one (High-Tension Assembly: "Oomph +1 or the
+     Armor Piercing 1 trait. Choose when the modification is installed."). The answer is per
+     weapon ENTRY at ch.weaponParts[entryKey]._choices[partKey]; the engine reads it
+     (weaponPartChoice) and an unanswered install reads as the Part's default, Oomph +1.
+     weaponLoadout() above copies the slots only, so this reads the stored row itself. */
+  function partChoiceOf(ch, wKey, p) {
+    if (!p || !p.choice || !p.choice.options) return null;
+    var v = ENG().weaponPartChoice ? ENG().weaponPartChoice(ch, wKey, p) : p.choice.default;
+    return p.choice.options.filter(function (o) { return o.value === v; })[0] || null;
+  }
+  function setPartChoice(wKey, partKey, v) {
+    setLoadout(wKey, function (wp) {
+      wp._choices = (wp._choices && typeof wp._choices === "object") ? wp._choices : {};
+      wp._choices[partKey] = v;
+    });
+  }
+  function partChoiceRow(ch, wKey, p, pick) {
+    var cur = pick ? pick.value : null;
+    return el("div.row.wrap", { style: { gap: "5px", alignItems: "center", marginTop: "4px" } },
+      [el("span", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "INSTALLED AS" })]
+        .concat(p.choice.options.map(function (o) {
+          var on = cur === o.value;
+          return el("button.btn.sm" + (on ? ".primary" : ""), {
+            title: on ? p.name + " grants " + o.label + " on this weapon." : "Install it as " + o.label + " instead. " + (p.effect || ""),
+            style: { fontSize: "10px", padding: "1px 7px" },
+            onclick: function () { if (!on) setPartChoice(wKey, p.key, o.value); } }, o.label);
+        }))
+        // the trait it grants, as a chip, when the bow takes the Armor Piercing half
+        .concat(cur === "ap" ? [partChip("Armor Piercing 1", "var(--ember)")] : []));
+  }
   function slotCountFor(it, lo) {
     if (it.signature) return 0;
     var prof = (WP().profiles || []).find(function (p) { return p.key === lo._profile; });
@@ -1678,6 +1764,14 @@ EN.inventoryView = (function () {
   // local chip for the bench slot cards: mixed-case, no extra margin (parent rows own the gap).
   // named distinctly so it does NOT hoist over the header/Chrome tagChip() at the top of the module.
   function partChip(text, color) { return el("span.chip", { style: { fontSize: "9px", color: color, borderColor: color } }, text); }
+  // a bench panel for an owned piece of Toolkit gear wears the TOOLKIT chip beside its title;
+  // the ON THE BENCH buttons keep their plain names
+  function benchToolkitChip(panel, it) {
+    var chip = toolkitChip("item", it);
+    var h3 = chip && panel && panel.querySelector(".panel-h h3");
+    if (h3) h3.parentNode.insertBefore(chip, h3.nextSibling);
+    return panel;
+  }
   function fittingParts(it, slotKey) { return (WP().parts || []).filter(function (p) { return p.slot === slotKey && partFits(p, it); }); }
   // Parts as buyable / ownable inventory items so they sell in the gray market and
   // live in the stash. `partSlot` (not `slot`) so the card does not draw a body-slot chip.
@@ -1953,21 +2047,29 @@ EN.inventoryView = (function () {
     if (subLabel === "N/A") { kids.push(el("p.help", { style: { margin: 0, fontSize: "11px" }, text: "Not applicable to this weapon." })); return el("div", { style: { padding: "8px 10px", border: "1px solid var(--border2)", borderRadius: "4px", background: "rgba(0,0,0,.12)", opacity: .55 } }, kids); }
     installed.forEach(function (key) {
       var p = WP().byKey[key]; if (!p) return;
+      var pick = partChoiceOf(ch, wKey, p);
       kids.push(el("div.row.between.wrap", { style: { gap: "8px", alignItems: "center", padding: "5px 0", borderTop: "1px solid rgba(35,48,68,.4)" } }, [
         el("div", { style: { flex: "1 1 160px", minWidth: 0 } }, [
           el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } }, [
             el("span", { style: { fontWeight: 600, fontSize: "12.5px" }, text: p.name }),
+            toolkitChip("part", p.key),
             partChip(p.partType, p.partType === "Mod" ? "var(--ember)" : "var(--text2)"),
-            partChip(p.legality, LEGAL_COLOR[p.legality]), partChip(p.rarity, AVAIL_COLOR[p.rarity] || "var(--text3)")
+            partChip(p.legality, LEGAL_COLOR[p.legality]),
+            showAvail() ? partChip(p.rarity, AVAIL_COLOR[p.rarity] || "var(--text3)") : null
           ]),
-          dmgReadout(el("p.help", { style: { margin: "2px 0 0", fontSize: "11px" } }), p.grants)
+          // a Part with an install-time choice grants what was chosen, not both halves of its row
+          dmgReadout(el("p.help", { style: { margin: "2px 0 0", fontSize: "11px" } }), pick ? pick.label : p.grants),
+          p.choice ? partChoiceRow(ch, wKey, p, pick) : null
         ]),
         el("button.btn.sm", { title: "Remove " + p.name, style: { color: "var(--text3)" }, onclick: function () { removePart(wKey, slotKey, key); } }, "✕")
       ]));
     });
     var full = slotKey === "utility" ? installed.length >= 2 : installed.length >= 1;
     var capReached = installedCount(lo) >= slotCountFor(it, lo);
-    var fitting = fittingParts(it, slotKey).filter(function (p) { return installed.indexOf(p.key) === -1; });
+    // a Toolkit Part is no longer sold, so it counts as an option here only when one is owned
+    var fitting = fittingParts(it, slotKey).filter(function (p) {
+      return installed.indexOf(p.key) === -1 && (!toolkitKey("part", p.key) || ownedQtyOf(ch, p.name) > 0);
+    });
     var ownedOpts = fitting.filter(function (p) { return availablePartQty(ch, p) > 0; });
     if (full) {
       kids.push(el("p.help", { style: { margin: "5px 0 0", fontSize: "10.5px", color: "var(--text4)" }, text: slotKey === "utility" ? "Both Utility Parts fitted." : "Slot filled." }));
@@ -1977,7 +2079,7 @@ EN.inventoryView = (function () {
       kids.push(el("select", { style: { marginTop: "5px", fontSize: "11px", width: "auto", maxWidth: "100%" }, onchange: function (e) { var k = e.target.value; e.target.value = ""; if (k) tryInstall(it, wKey, lo, slotKey, k); } },
         [el("option", { value: "", text: "+ install from stash" })].concat(ownedOpts.map(function (p) {
           var av = availablePartQty(ch, p);
-          return el("option", { value: p.key, text: p.name + " · " + p.partType + (p.parts > 1 ? " · " + p.parts + " Parts" : "") + (av > 1 ? " ×" + av : "") });
+          return el("option", { value: p.key, text: p.name + toolkitSuffix("part", p.key) + " · " + p.partType + (p.parts > 1 ? " · " + p.parts + " Parts" : "") + (av > 1 ? " ×" + av : "") });
         }))));
     } else if (fitting.length) {
       kids.push(el("p.help", { style: { margin: "5px 0 0", fontSize: "10.5px", color: "var(--text3)" }, text: "You own no Parts for this slot. Buy Mods & Accessories in the gray market." }));
@@ -2023,18 +2125,23 @@ EN.inventoryView = (function () {
     var lo = weaponLoadout(ch, wKey);
 
     if (it.signature) {
-      out.push(EN.ui.panel(row.label, it.group.toUpperCase() + " · SIGNATURE", [
+      out.push(benchToolkitChip(EN.ui.panel(row.label, it.group.toUpperCase() + " · SIGNATURE", [
         el("p.help", { style: { margin: 0 } }, [
           document.createTextNode("Signature weapon: 0 customization slots. It arrives complete, with fixed Parts and a built-in property you cannot replicate with bolt-ons. Its power lives in the wielder, not the rails. "),
           EN.ui.ruleChip("gr-weapons/using-a-signature-weapon")
         ])
-      ], { corners: true }));
+      ], { corners: true }), it));
       return out;
     }
 
     var count = installedCount(lo), max = slotCountFor(it, lo), legal = aggregateLegality(it, lo);
     var profSel = el("select", { style: { fontSize: "11px", width: "auto" }, onchange: function (e) { var v = e.target.value; setLoadout(wKey, function (wp) { wp._profile = v; }); } },
-      (WP().profiles || []).map(function (p) { return el("option", { value: p.key, selected: lo._profile === p.key, text: p.name + (p.count != null ? " (" + p.count + ")" : "") }); }));
+      (WP().profiles || []).filter(function (p) {
+        // the Signature profile left with the Signature Weapons chapter; a saved pick still shows
+        var L = EN.launch;
+        return p.key !== "signature" || lo._profile === "signature"
+          || !(L && L.holds && L.holds.toolkit && L.toolkit && L.toolkit.signature);
+      }).map(function (p) { return el("option", { value: p.key, selected: lo._profile === p.key, text: p.name + (p.count != null ? " (" + p.count + ")" : "") }); }));
     var header = el("div.row.between.wrap", { style: { gap: "10px", alignItems: "center", marginBottom: "10px" } }, [
       el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
         el("span.mono", { style: { fontSize: "18px", color: count > max ? "var(--danger)" : "var(--ember)" }, html: count + " <span style='font-size:12px;color:var(--text3)'>/ " + max + " slots</span>" }),
@@ -2044,7 +2151,12 @@ EN.inventoryView = (function () {
       el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } }, [el("span.help", { style: { margin: 0, fontSize: "10px" }, text: "PROFILE" }), profSel])
     ]);
     var grid = el("div.grid2", { style: { gap: "10px" } }, (WP().slots || []).map(function (sd) { return slotCard(ch, it, wKey, lo, sd); }));
-    var benchPanel = EN.ui.panel(row.label, it.group.toUpperCase() + " · " + (it.damage || ""), [
+    /* The tag reads the die this piece actually rolls: Oomph from its Parts (and any other
+       source in scope) steps the printed die, and a Versatile weapon shows the grip in use.
+       Asked of the engine (weaponGrip) so the bench, the weapon row and the damage tray agree. */
+    var grip = ENG().weaponGrip ? ENG().weaponGrip(ch, it, wKey) : null;
+    var dmgText = (grip && grip.dice && it.damage) ? String(it.damage).replace(/^\s*\d+d\d+/, grip.dice) : (it.damage || "");
+    var benchPanel = EN.ui.panel(row.label, it.group.toUpperCase() + " · " + dmgText, [
       el("p.help", { style: { margin: "0 0 8px", fontSize: "11.5px" } }, [
         document.createTextNode("One Part per slot (Utility holds two). Accessories snap on anytime; Mods are bench work in Downtime with a kit. The strictest legality on the build is what a scanner reports. "),
         EN.ui.ruleChip("gr-custom/installing-parts")
@@ -2054,8 +2166,12 @@ EN.inventoryView = (function () {
     ], { corners: true });
     // the header tag is the weapon's damage readout: panel() prints it as text, so its type words become icons here
     var benchTag = benchPanel.querySelector(".panel-h > .tag");
-    if (benchTag && it.damage) { EN.ui.clear(benchTag); dmgReadout(benchTag, it.group.toUpperCase() + " · " + it.damage); }
-    out.push(benchPanel);
+    if (benchTag && it.damage) {
+      EN.ui.clear(benchTag); dmgReadout(benchTag, it.group.toUpperCase() + " · " + dmgText);
+      // the why (Oomph sources, the Parts cap, anything lost past 1d12) rides as the tag's hover
+      if (grip && grip.oomph && grip.oomph.note) benchTag.setAttribute("title", grip.oomph.note);
+    }
+    out.push(benchToolkitChip(benchPanel, it));
     return out;
   }
 
@@ -2276,7 +2392,9 @@ EN.inventoryView = (function () {
       var lanes;
       if (st.breached) {
         var rebuild = AR.rebuildCost(st.item || {});
-        var rbSkill = CRAFT().skillForItem(st.item || {}), rbTier = CRAFT().tierForItem(st.item || {});
+        // the tier the Project actually opens at (the book: "Rebuilding it is a Standard Project"),
+        // not the Availability-derived Blueprint tier, which said "Advanced" for a Rare suit
+        var rbSkill = CRAFT().skillForItem(st.item || {}), rbTier = AR.rebuildTier || "standard";
         lanes = el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "7px" } }, [
           el("span.help", { style: { margin: 0, fontSize: "11px", color: "var(--danger)" }, text: AR.breachedText }),
           el("button.btn.sm.primary", { title: "Open a full Project for this suit at " + fmtG(rebuild) + " in parts, half its " + fmtG(price) + priceLabel + ", restoring all " + st.base + " DR"
@@ -2361,7 +2479,7 @@ EN.inventoryView = (function () {
     if (!isModularArmor(it) || armorSlotCount(it) === 0) {
       kids.push(el("div.muted-box", { style: { padding: "18px", textAlign: "center", borderColor: "var(--border2)" },
         html: "<div style='font-size:12px;color:var(--text3)'>" + it.name + " is not <b>Modular</b>; it has no Mod Slots. Only Modular armor takes Armor Mods.</div>" }));
-      out.push(EN.ui.panel(aRow.label, tag, kids, { corners: true }));
+      out.push(benchToolkitChip(EN.ui.panel(aRow.label, tag, kids, { corners: true }), it));
       return out;
     }
 
@@ -2377,7 +2495,9 @@ EN.inventoryView = (function () {
         el("div", { style: { flex: "1 1 200px", minWidth: 0 } }, [
           el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } }, [
             el("span", { style: { fontWeight: 600, fontSize: "13px" }, text: m.name }),
-            partChip(m.legality, LEGAL_COLOR[m.legality]), partChip(m.rarity, AVAIL_COLOR[m.rarity] || "var(--text3)")
+            toolkitChip("armorMod", m.key),
+            partChip(m.legality, LEGAL_COLOR[m.legality]),
+            showAvail() ? partChip(m.rarity, AVAIL_COLOR[m.rarity] || "var(--text3)") : null
           ]),
           el("p.help", { style: { margin: "2px 0 0", fontSize: "11px" }, title: m.effect, text: m.grants })
         ]),
@@ -2385,7 +2505,10 @@ EN.inventoryView = (function () {
       ]));
       if (key === "ablative-coating") kids.push(ablativeControls(ch, aKey));
     });
-    var fitting = (AM().mods || []).filter(function (m) { return armorModFits(m, it) && lo.indexOf(m.key) === -1; });
+    // a Toolkit mod is no longer sold, so it counts as an option here only when one is owned
+    var fitting = (AM().mods || []).filter(function (m) {
+      return armorModFits(m, it) && lo.indexOf(m.key) === -1 && (!toolkitKey("armorMod", m.key) || ownedQtyOf(ch, m.name) > 0);
+    });
     var ownedOpts = fitting.filter(function (m) { return availableArmorModQty(ch, m) > 0; });
     if (lo.length >= slots) {
       kids.push(el("p.help", { style: { margin: "8px 0 0", fontSize: "10.5px", color: "var(--warn)" }, text: "Mod Slots full; pull a mod to fit another." }));
@@ -2395,7 +2518,7 @@ EN.inventoryView = (function () {
         el("select", { style: { fontSize: "11px", width: "auto", maxWidth: "100%" }, onchange: function (e) { var k = e.target.value; e.target.value = ""; if (k) tryInstallArmorMod(it, aKey, lo, k); } },
           [el("option", { value: "", text: "+ fit from stash" })].concat(ownedOpts.map(function (m) {
             var av = availableArmorModQty(ch, m);
-            return el("option", { value: m.key, text: m.name + (av > 1 ? " ×" + av : "") });
+            return el("option", { value: m.key, text: m.name + toolkitSuffix("armorMod", m.key) + (av > 1 ? " ×" + av : "") });
           })))
       ]));
     } else if (fitting.length) {
@@ -2404,7 +2527,7 @@ EN.inventoryView = (function () {
       kids.push(el("p.help", { style: { margin: "8px 0 0", fontSize: "10.5px", color: "var(--text4)" }, text: "No Armor Mods fit this suit." }));
     }
     kids.push(el("p.help", { style: { margin: "10px 0 0", fontSize: "10.5px", color: "var(--text3)" }, text: AM().rules ? AM().rules.flatDR + " " + AM().rules.resistance : "" }));
-    out.push(EN.ui.panel(aRow.label, tag, kids, { corners: true }));
+    out.push(benchToolkitChip(EN.ui.panel(aRow.label, tag, kids, { corners: true }), it));
     return out;
   }
 
@@ -3060,7 +3183,8 @@ EN.inventoryView = (function () {
   }
   function tbBlueprints(ch) {
     var q = (_tbQuery || "").trim().toLowerCase();
-    var items = catalog().filter(function (it) { return it && it.name && !it.upkeep; });
+    // Toolkit gear leaves the Blueprints with the market; catalog() itself stays whole
+    var items = catalog().filter(function (it) { return it && it.name && !it.upkeep && !toolkitListing(it); });
     var groups = {};
     items.forEach(function (it) { var c = tbRecipeClass(it); (groups[c] = groups[c] || []).push(it); });
     var ORDER = ["Weapons", "Armor", "Shields & Foci", "Ammo & Munitions", "Weapon Mods", "Armor Mods", "Tools & Kits", "Field Gear"];
@@ -3330,6 +3454,9 @@ EN.inventoryView = (function () {
 
   /* ---- Garage panel 2: fit Vehicle Mods to an owned vehicle -------------- */
   function garageMods(ch) {
+    // the fit and pull buttons below called a reRender that only garageBench defined, so
+    // every click threw a ReferenceError after the store write (pre-existing, found 16 October)
+    function reRender() { EN.app.render(); }
     var owned = ownedVehicles(ch);
     var kids = [];
     if (!owned.length) {
@@ -3357,7 +3484,7 @@ EN.inventoryView = (function () {
           var m = EN.vehicles.byKey[k] || { name: k };
           return el("button.btn.sm", { title: (m.effect || "") + "  (click to pull it)",
             style: { color: "var(--gold)", borderColor: "var(--gold)" },
-            onclick: function () { removeVehicleMod(vKey, k); reRender(); } }, "\u2716 " + m.name);
+            onclick: function () { removeVehicleMod(vKey, k); reRender(); } }, "\u2716 " + m.name + toolkitSuffix("vehicleMod", k));
         })));
       }
       // installable: owned, free, and fitting this chassis
@@ -3370,7 +3497,7 @@ EN.inventoryView = (function () {
       } else {
         kids.push(el("div.row.wrap", { style: { gap: "6px", marginBottom: "8px" } }, avail.map(function (m) {
           return el("button.btn.sm", { disabled: full, title: m.effect + "  (fits " + m.fits + ")",
-            onclick: function () { tryInstallVehicleMod(vIt, vKey, prof, lo, m.key); reRender(); } }, "+ " + m.name);
+            onclick: function () { tryInstallVehicleMod(vIt, vKey, prof, lo, m.key); reRender(); } }, "+ " + m.name + toolkitSuffix("vehicleMod", m.key));
         })));
       }
       // mods owned but blocked by the Fits gate, so the reason is visible

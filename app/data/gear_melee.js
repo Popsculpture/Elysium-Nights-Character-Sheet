@@ -46,10 +46,13 @@ EN.gearCatalog.melee = {
     { name: "Knife", group: "Simple", price: 10, damage: "1d4 Slashing", range: "Melee or thrown 4 / 12",
       traits: ["Light", "Finesse", "Thrown (4/12)", "Concealable"], availability: "Common", legality: "Legal",
       desc: "Every kitchen has one. Every pocket can hold one. The most common weapon in Elysium, and the one most underestimated when it slides out of a sleeve." },
+    /* The book row, 16 October handoff: "Knuckles | Augments unarmed strikes | Light, Concealable,
+       Oomph +1 (Unarmed) | Restr." The trait carries the rule now, so the die-step effect prose is
+       retired; the engine reads the Oomph off this traits array (engine.js oomphTraits), which is
+       also how it knows Knuckles augment a punch rather than being a weapon of their own. */
     { name: "Knuckles", group: "Simple", price: 15, damage: "Augments unarmed strikes", range: "Melee",
-      traits: ["Light", "Concealable"], availability: "Common", legality: "Restricted",
-      desc: "Composite or alloy bands that turn a punch into a hospital visit. Easy to hide. Harder to explain when a patrol officer flips your jacket open.",
-      effect: "While striking with Knuckles, increase your unarmed strike damage die by one step. If your unarmed strikes don't have a damage die, they deal 1d4 Bludgeoning damage. This increase stacks normally with other effects that increase your unarmed damage die." },
+      traits: ["Light", "Concealable", "Oomph +1 (Unarmed)"], availability: "Common", legality: "Restricted",
+      desc: "Composite or alloy bands that turn a punch into a hospital visit. Easy to hide. Harder to explain when a patrol officer flips your jacket open." },
     // shafted: a long-shafted weapon, which is what Staff & Spear Master keys on.
     // NOT the same question as "has Reach": a Whip reaches 2 and is not one.
     // Two-Handed removed 2026-08-11 to match the manuscript. It contradicted Versatile:

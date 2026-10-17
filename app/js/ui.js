@@ -703,6 +703,50 @@ EN.ui = (function () {
     });
   }
 
+  /* ===== HELD AND TOOLKIT MARKERS ========================================
+     The launch holds (data/launch.js) hide options from the pickers and lists, but a character
+     who already has one keeps it, and the place that shows it says so with a small chip in the
+     style of the CUSTOM and UNCHOSEN chips. Two words:
+       HELD     a lineage, subclass, Talent or Background held for a later release
+       TOOLKIT  owned gear that moved to the Game Master's Toolkit
+     heldChip(kind) always returns the chip. heldChip(kind, key) returns it only while that key is
+     actually held (EN.launch.isHeld for a lineup kind, EN.launch.isToolkit for a gear kind, or
+     EN.launch.isToolkitItem when key is a catalog item object), and null otherwise, so a caller
+     can drop it into a children array unconditionally. heldSuffix is the same test for text that
+     cannot hold a chip (a <select> option): " (held)" or " (Toolkit)", or "". */
+  var LINEUP_KINDS = { held: 1, lineage: 1, subclass: 1, talent: 1, background: 1 };
+  var HELD_MARK = {
+    held: { label: "HELD", word: "held", color: "var(--text3)",
+            title: "Held for a later release. This character keeps it; new characters can't pick it." },
+    toolkit: { label: "TOOLKIT", word: "Toolkit", color: "var(--accent)",
+               title: "Moved to the Game Master's Toolkit. You keep it; the market no longer lists it." }
+  };
+  function heldMark(kind, key, hasKey) {
+    var lineup = !!LINEUP_KINDS[kind];
+    if (hasKey) {
+      var L = EN.launch;
+      if (!L) return null;
+      var on = lineup ? (kind === "held"
+          ? ["lineage", "subclass", "talent", "background"].some(function (k) { return L.isHeld(k, key); })
+          : L.isHeld(kind, key))
+        : (key && typeof key === "object") ? L.isToolkitItem(key)
+        : L.isToolkit(kind === "toolkit" ? "item" : kind, key);
+      if (!on) return null;
+    }
+    return HELD_MARK[lineup ? "held" : "toolkit"];
+  }
+  function heldChip(kind, key, opts) {
+    var m = heldMark(kind, key, arguments.length > 1 && key !== undefined);
+    if (!m) return null;
+    var style = { marginLeft: "6px", fontSize: "9px", color: m.color, borderColor: m.color };
+    if (opts && opts.style) Object.keys(opts.style).forEach(function (k) { style[k] = opts.style[k]; });
+    return el("span.chip.held-chip", { style: style, title: m.title, dataset: { held: m.label.toLowerCase() } }, m.label);
+  }
+  function heldSuffix(kind, key) {
+    var m = heldMark(kind, key, arguments.length > 1 && key !== undefined);
+    return m ? " (" + m.word + ")" : "";
+  }
+
   /* ===== CONFIRM WITHOUT window.confirm ==================================
      Every destructive action used to sit behind confirm(). That is not dependable: browsers
      suppress dialogs once a user ticks "prevent additional dialogs", and some block them
@@ -741,5 +785,6 @@ EN.ui = (function () {
            ruleLink: ruleLink, ruleChip: ruleChip, ruleText: ruleText, damageIcon: damageIcon, damageText: damageText, damageTie: damageTie,
            currencyGlyphsOk: currencyGlyphsOk, substituteCurrencyGlyphs: substituteCurrencyGlyphs,
            dieFace: dieFace, dieFaceSvg: dieFaceSvg, d20Face: d20Face, animatePoolRoll: animatePoolRoll, playFiled: playFiled,
-           armButton: armButton, disarm: disarm, isArmed: isArmed };
+           armButton: armButton, disarm: disarm, isArmed: isArmed,
+           heldChip: heldChip, heldSuffix: heldSuffix };
 })();

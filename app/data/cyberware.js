@@ -50,7 +50,7 @@ EN.cyberware = {
   items: [
     /* ---------------- Neural ---------------- */
     { key: "datajack", short: "Datajack", name: "Neural Interface (Datajack)", zone: "Neural", enhancement: "None",
-      desc: "A direct neural-to-machine port at the base of the skull. The backbone of half the chrome in a head; Smartlinks, Cyberoptic recording, vehicle rigging all route through it. A door that opens both ways.",
+      desc: "A direct neural-to-machine port at the base of the skull. The backbone of half the chrome in a head; Smartlinks, Cyberoptic recording, vehicle rigging all route through it. A door that opens both ways. Without one you can't slave a drone or sink into full-immersion media.",
       effect: "A neural port for #GRID hardware, Smartdecks, drones, and compatible cyberware; lets you run Quick Hacks. Operates as Surface Link (conscious, silent comms within 20 spaces) or Full Immersion (body helpless, Prone, attacks vs you at Edge).",
       street: "No encryption, intercept/trace your traffic at Edge against you; visible scarring, Snag on passing as un-chromed.",
       black: "Encrypted & dark (intercept at Snag against you), no registered identity/log, and installed Quick Hacks deal +1d4 on System Failure / Network Spread.",

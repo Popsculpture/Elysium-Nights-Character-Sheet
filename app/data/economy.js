@@ -2,7 +2,10 @@
    ELYSIUM NIGHTS - Economy and Rewards (reference layer)
    Extracted from Part 3, "Economy and Rewards". Costs in Glimmer.
    This file carries the chapter's TABLES and standing rules, including both
-   1d8 GM reward tables and the payout split math. What is NOT here is the
+   1d8 GM reward tables and the payout split math. Reward Types and both GM reward
+   tables moved to the Game Master's Toolkit (2026-10-16 handoff, section 8): the
+   Codex renders them in the Admin-only panel ref-rewards, never on the Freelancer
+   desktop. What is NOT here is the
    state: billing lifestyle each week, tracking safehouse upgrades a crew owns,
    a Crew Kit ledger, a debt list. `notModelled` names those explicitly so the
    gap stays visible.
@@ -193,7 +196,12 @@ EN.economy = {
     "Captured Goods and Typical Fence Rates (Choosing a Fence is carried, in the Social chapter's Contacts & Fences)",
     "Flow-Touched and Haunted Goods",
     "Identity Theft and Account Compromise",
-    "Services and Daily Spending, Premium Services, Bribes",
-    "Regional Exchange Variation and Conversion Scene Complications",
+    "Services and Daily Spending, Premium Services, Bribes"
+  ],
+  /* 2026-10-16 handoff, section 8: these two sections left the Handbook for the Game
+     Master's Toolkit, so the Freelancer's "they live in the book" list no longer names
+     them. The Codex shows this list on the Admin desktop only (js/codex.js ref-economy). */
+  notModelledToolkit: [
+    "Regional Exchange Variation and Conversion Scene Complications"
   ]
 };

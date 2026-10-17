@@ -170,8 +170,10 @@ window.EN = window.EN || {};
         ]),
         rr.cooperative ? K.ruleBlock("Cooperative Recovery", rr.cooperative) : null,
         K.seeAlso("Out of Breakflow:", [["fl-breakflow/breakflow-restoration", "Breakflow Restoration"]]),
-        // a ritual inside a disturbance adds Snag Dice equal to its Severity (Flow Disturbances)
-        K.seeAlso("Inside a Flow Disturbance:", [["fl-dist/environmental-impact", "Environmental Impact"], ["fl-dist/failure-margin", "Failure Margin"]])
+        /* a ritual inside a disturbance adds Snag Dice equal to its Severity (Flow Disturbances).
+           Both lines are a GM Guidance box's, which moved to the Game Master's Toolkit
+           (2026-10-16), so only the Admin desktop points there. */
+        ctx.portal === "admin" ? K.seeAlso("Inside a Flow Disturbance:", [["fl-dist/environmental-impact", "Environmental Impact"], ["fl-dist/failure-margin", "Failure Margin"]]) : null
       ];
     } }
   ] });
@@ -233,6 +235,13 @@ window.EN = window.EN || {};
     return byKey((E && E.examples) || [], "filtration");
   }
 
+  /* MOVED TO THE GAME MASTER'S TOOLKIT (2026-10-16 handoff, section 8): Repairing a Null
+     Scar (the Reconstruction Ritual and the Scar Size table, fl-dist-repair) is an audience
+     "gm" panel, and the GM Guidance boxes inline in the player panels render on the Admin
+     desktop only. The Freelancer desktop names no pointer to fl-dist-repair, so no label is
+     left behind as dead text. */
+  function admin(ctx) { return !!(ctx && ctx.portal === "admin"); }
+
   CV.addPanels("flow", [
 
     /* ---- 9 · the Anomalies -------------------------------------------------- */
@@ -245,12 +254,12 @@ window.EN = window.EN || {};
         K.subTitle("Anomaly Classifications"),
         d.classifications.map(function (a) { return K.ruleBlock(a.name, a.effect); }),
         d.clankers ? K.ruleBlock("Clankers", d.clankers) : null,
-        (d.ritualImpact || []).length ? K.subTitle("Rituals in a Flow Disturbance") : null,
-        // borrowed from Rough Restoration's GM Guidance box, so tagged as the book has it
-        (d.ritualImpact || []).map(function (r) { return K.ruleBlock(r.label, r.text, "GM GUIDANCE · BREAKFLOW RESTORATION"); }),
+        admin(ctx) && (d.ritualImpact || []).length ? K.subTitle("Rituals in a Flow Disturbance") : null,
+        // borrowed from Rough Restoration's GM Guidance box, so tagged as the book has it; GM advice, so Admin only
+        admin(ctx) ? (d.ritualImpact || []).map(function (r) { return K.ruleBlock(r.label, r.text, "GM GUIDANCE · BREAKFLOW RESTORATION"); }) : null,
         K.seeAlso("A Flow-rich area is Anomaly Severity 0:", [["fl-breakflow/full-restoration", "Full Restoration"], ["fl-recovery", "Ritual Recovery"]]),
         K.seeAlso("Finding and clearing one:", [["fl-dist-detect", "Detecting and Analyzing"], ["fl-dist-cleanse", "Cleansing & Counter Flow"]]),
-        K.seeAlso("Inside a Null Scar:", [["fl-dist-anchor", "The Focal Anchor"], ["fl-dist-repair", "Repairing a Null Scar"]])
+        K.seeAlso("Inside a Null Scar:", [["fl-dist-anchor", "The Focal Anchor"]].concat(admin(ctx) ? [["fl-dist-repair", "Repairing a Null Scar"]] : []))
       ];
     } },
 
@@ -279,7 +288,7 @@ window.EN = window.EN || {};
         ]),
         cf ? K.ruleBlock("Counter Flow", cf.intro + "\n" + named(cf.rules) + "\n" + cf.note, "d20 METHOD") : null,
         d.ritualChorus ? K.ruleBlock("Ritual Chorus", d.ritualChorus) : null,
-        (d.gmGuidance || []).length ? K.ruleBlock("GM Guidance", named(d.gmGuidance, "label")) : null,
+        admin(ctx) && (d.gmGuidance || []).length ? K.ruleBlock("GM Guidance", named(d.gmGuidance, "label")) : null,
         (d.summary || []).length ? K.ruleBlock("Gameplay Summary", named(d.summary, "label")) : null,
         K.seeAlso("The Strain it costs:", [["fl-strain", "The Strain Track"], ["fl-overdraw/non-combat-overdraw", "Non-Combat Overdraw"], ["fl-recovery", "Ritual Recovery"]]),
         K.seeAlso("How a Dice Pool runs:", [["rz-pool", "Dice Pools"], ["rz-margin", "Success Margin & Consequence"]])
@@ -295,14 +304,14 @@ window.EN = window.EN || {};
         K.ruleBlock("Destroying the Anchor", de.text + "\n- Defense: " + de.defense + "\n- Vitality: " + de.vitality + "\n- Immunities: " + de.immunities),
         K.ruleBlock("When the Anchor Falls", fa.falls.text + "\n" + K.bullets(fa.falls.effects)),
         K.proseBlock(fa.closing),
-        d.nullScarGuidance ? K.ruleBlock("GM Guidance", d.nullScarGuidance) : null,
-        K.seeAlso("Making it permanent:", [["fl-dist-repair", "Repairing a Null Scar"]]),
+        admin(ctx) && d.nullScarGuidance ? K.ruleBlock("GM Guidance", d.nullScarGuidance) : null,
+        admin(ctx) ? K.seeAlso("Making it permanent:", [["fl-dist-repair", "Repairing a Null Scar"]]) : null,
         K.seeAlso("The Anomaly itself:", [["fl-dist/null-scar", "Null Scar"]])
       ];
     } },
 
     /* ---- 13 · repairing a Null Scar ---------------------------------------------- */
-    { id: "fl-dist-repair", title: "Repairing a Null Scar", tag: "THE RECONSTRUCTION RITUAL", order: 130, when: hasD("repair"), build: function (ctx, K) {
+    { id: "fl-dist-repair", title: "Repairing a Null Scar", tag: "THE RECONSTRUCTION RITUAL", audience: "gm", order: 130, when: hasD("repair"), build: function (ctx, K) {
       var r = D().repair;
       return [
         paras(r.intro, K),

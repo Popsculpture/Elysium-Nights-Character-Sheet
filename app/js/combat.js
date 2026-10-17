@@ -347,12 +347,15 @@ EN.combatView = (function () {
     }
 
     // --- hand off to the damage tray, carrying the crit from this attack ---
+    // with Oomph a crit adds the PRINTED dice (decision 4), so the button names them rather than "x2"
+    var hoCrit = (crit && ctx.dmg) ? dmgTrayCrit(ctx.dmg, { twoHand: !!(ctx.dmg.grip && ctx.dmg.grip.twoHanded) }) : null;
+    var hoSplit = !!(hoCrit && hoCrit.extra && !hoCrit.merged);
     var dmgHandoff = (roll && !anim && ctx.dmg) ? el("div", { style: { padding: "12px 16px 0", textAlign: "center" } }, [
       el("button.btn.sm", {
-        title: crit ? "Roll damage with the weapon dice doubled" : "Roll this weapon's damage",
+        title: crit ? (hoSplit ? "Roll damage plus the printed " + hoCrit.extra + " a critical hit adds" : "Roll damage with the weapon dice doubled") : "Roll this weapon's damage",
         style: { color: "var(--ember)", borderColor: "var(--ember)", padding: "6px 18px", fontSize: "12px", letterSpacing: ".06em" },
         onclick: function () { var dc = Object.assign({}, ctx.dmg, { crit: crit }); closeRollTray(); openDmgTray(dc); }
-      }, (crit ? "◆ ROLL DAMAGE ×2 →" : "ROLL DAMAGE →")) ]) : null;
+      }, (crit ? (hoSplit ? "◆ ROLL DAMAGE +" + hoCrit.extra + " →" : "◆ ROLL DAMAGE ×2 →") : "ROLL DAMAGE →")) ]) : null;
 
     // --- Pure Luck: a post-roll rescue for a roll that failed, never for a crit
     // (Press Your Luck can force a crit on a low natural die, so gate on !crit) ---
@@ -483,7 +486,8 @@ EN.combatView = (function () {
   }
 
   /* ---------- Damage tray: the companion roller for weapon damage --------
-     A crit doubles the weapon dice; Cheap Shot and the versatile two-handed
+     A crit adds the weapon's printed dice again (doubling them, unless Oomph
+     stepped the rolled dice: then 2d8 + 2d6); Cheap Shot and the versatile two-handed
      die are toggles. Opened off a weapon's DMG box, or handed off from the
      attack tray carrying the crit. Square dice, to read differently from the
      hexagonal d20. */
@@ -500,12 +504,30 @@ EN.combatView = (function () {
   }
   function closeDmgTray() { _dmgAnimId++; _dmgTray.open = false; _dmgTray.roll = null; _dmgTray.animating = false; EN.app.render(); }
   function dmgTrayReset() { _dmgTray.roll = null; EN.app.render(); }   // a toggle changed the dice
+  /* The dice the tray rolls for the grip it is on, and the PRINTED dice for that grip. With
+     Oomph the two differ (a Weighted Head Greatsword rolls 2d8, printed 2d6), and a crit adds
+     the printed dice, never the stepped ones: "It never touches ... extra dice on a critical
+     hit" (the author's decision 4, 2026-10-16). `printed` undefined means the context carries
+     no printed die (an unarmed strike that came wholly from Oomph, a legacy context), and a
+     crit then doubles the dice exactly as it always has. */
+  function dmgTrayDice(ctx, st) {
+    var two = !!(st.twoHand && ctx.versatile);
+    var printed = two ? ctx.printedVersatile : ctx.printedDice;
+    return { dice: two ? ctx.versatile : ctx.dice, printed: printed == null ? undefined : printed };
+  }
+  // the crit's dice for the tray's grip: { main, extra, text, merged } (engine critDamageDice)
+  function dmgTrayCrit(ctx, st) {
+    var td = dmgTrayDice(ctx, st);
+    return eng.critDamageDice(td.dice, td.printed);
+  }
   function dmgTraySpec() {
     var ctx = _dmgTray.ctx || {};
-    var dice = (_dmgTray.twoHand && ctx.versatile) ? ctx.versatile : ctx.dice;
+    var td = dmgTrayDice(ctx, _dmgTray);
     var bonus = [];
     if (_dmgTray.cheap && ctx.cheapEligible) bonus.push({ n: ctx.cheapDice, sides: 6, label: "Cheap Shot" });
-    return { dice: dice, flat: ctx.flat || 0, crit: _dmgTray.crit, bonus: bonus, types: ctx.types || [] };
+    var spec = { dice: td.dice, flat: ctx.flat || 0, crit: _dmgTray.crit, bonus: bonus, types: ctx.types || [] };
+    if (td.printed !== undefined) spec.critDice = td.printed;
+    return spec;
   }
   function dmgTrayCommit() {
     var res = eng.rollDamage(dmgTraySpec());
@@ -537,9 +559,11 @@ EN.combatView = (function () {
       style: { display: "inline-flex", opacity: opts.dim ? 0.5 : 1 } });
   }
   function dmgFormula(ctx, st) {
-    var md = /(\d+)d(\d+)/.exec((st.twoHand && ctx.versatile) ? ctx.versatile : ctx.dice);
+    var td = dmgTrayDice(ctx, st);
+    var md = /(\d+)d(\d+)/.exec(td.dice);
     var parts = [];
-    if (md) parts.push((parseInt(md[1], 10) * (st.crit ? 2 : 1)) + "d" + md[2]);
+    // a crit reads "2d8 + 2d6" when Oomph stepped the dice, and "4d6" when it did not
+    if (md) parts.push(st.crit ? eng.critDamageDice(md[1] + "d" + md[2], td.printed).text : md[1] + "d" + md[2]);
     if (st.cheap && ctx.cheapEligible) parts.push(ctx.cheapDice + "d6");
     var s = parts.join(" + ") || "no dice";
     if (ctx.flat) s += " " + eng.fmtMod(ctx.flat);
@@ -552,7 +576,17 @@ EN.combatView = (function () {
      their dice plus any flat bonuses and net it against the hit; Dodge instead
      raises Defense, so it reports the new number rather than a reduction. Some
      defenses trigger only when the damage is fully absorbed (Resurge's rebound)
-     or scale off the roll itself (Siphon's Vigor). */
+     or scale off the roll itself (Siphon's Vigor).
+
+     THE LIMIT. "A Character may only use one defensive Impulse per attacking Enemy's
+     turn, regardless of how many total Impulse actions they have generated." Checked
+     against the 16 October handoff ("If the app's combat tracker enforces 'one Active
+     Defense per round', change it to this"): this tray never enforced a per-round limit,
+     or any limit. It keeps no spent state, because the sheet cannot see whose turn it is
+     or which Enemy is swinging. So it does not start enforcing one now; it states the
+     per-attacking-Enemy's-turn rule in the tray for every defense (DEF_LIMIT_NOTE) and leaves
+     the count to the table, as it always has. */
+  var DEF_LIMIT_NOTE = "One defensive Impulse per attacking Enemy's turn, however many Impulse Actions you have.";
   var _defTray = { open: false, spec: null, incoming: "", roll: null, animating: false };
   var _defAnimId = 0;
   function openDefTray(spec) { _defAnimId++; _defTray = { open: true, spec: spec, incoming: "", roll: null, animating: false }; EN.app.render(); }
@@ -629,8 +663,8 @@ EN.combatView = (function () {
     var autoLine = el("div.mono", { style: { fontSize: "11px", color: "var(--text3)", textAlign: "center", padding: "12px 16px 0" } }, autoParts);
 
     /* Which implement you are parrying with. The rule is explicit that the choice is
-       yours ("if you are dual-wielding, you must choose which weapon you parry with"),
-       so this offers every legal source rather than picking one for you. Ordered best
+       yours ("If you are dual-wielding, choose which weapon you parry with and roll its
+       damage die"), so this offers every legal source rather than picking one for you. Ordered best
        first, so the default is already the strongest and most hits need no tap.
        Switching clears any roll on screen: it was rolled with the other die. */
     var sourceRow = null;
@@ -642,7 +676,7 @@ EN.combatView = (function () {
           var face = src.sides ? src.n + "d" + src.sides : "+" + (src.flat || 0);
           return el("button.btn.sm" + (on ? ".primary" : ""), {
             style: { padding: "2px 9px", fontSize: "11px" },
-            title: src.kind === "unarmed" ? "Bare hands are a legal parry" : src.label,
+            title: src.kind === "unarmed" ? "Bare hands are a legal parry" : src.label + (src.why ? "\n" + src.why : ""),
             onclick: function () {
               if (on) return;
               s.applySource(src.key);
@@ -697,6 +731,8 @@ EN.combatView = (function () {
       el("button.btn.sm", { onclick: closeDefTray }, "DONE")
     ]);
     var note = s.note ? el("p.help", { style: { margin: "10px 16px 0", textAlign: "center" }, text: s.note }) : null;
+    // the Limit, on every defense (Dodge is a defensive Impulse too)
+    var limitNote = el("p.help.def-limit", { style: { margin: "6px 16px 0", textAlign: "center", fontSize: "10.5px", color: "var(--text3)" }, text: DEF_LIMIT_NOTE });
 
     return el("div", {
       style: { position: "fixed", inset: "0", zIndex: "4000", background: "rgba(4,7,11,.74)", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" },
@@ -704,7 +740,7 @@ EN.combatView = (function () {
     }, [
       el("div", { style: { width: "min(430px, 96vw)", maxHeight: "94vh", overflowY: "auto", borderRadius: "12px",
         background: "linear-gradient(180deg, var(--bg2), var(--bg1))", border: "1px solid var(--border2)",
-        boxShadow: "0 20px 60px rgba(0,0,0,.55), 0 0 40px rgba(0,229,255,.10)" } }, [header, hero, autoLine, breakdown, sourceRow, ctrls, outcome, note, foot])
+        boxShadow: "0 20px 60px rgba(0,0,0,.55), 0 0 40px rgba(0,229,255,.10)" } }, [header, hero, autoLine, breakdown, sourceRow, ctrls, outcome, note, limitNote, foot])
     ]);
   }
 
@@ -718,8 +754,11 @@ EN.combatView = (function () {
     if (!_dmgTray.open || !_dmgTray.ctx) return null;
     var ctx = _dmgTray.ctx, roll = _dmgTray.roll, anim = _dmgTray.animating;
     var typeStr = (ctx.types && ctx.types.length) ? ctx.types.join(" + ") : "";
-    var activeDice = (_dmgTray.twoHand && ctx.versatile) ? ctx.versatile : ctx.dice;
+    var activeDice = dmgTrayDice(ctx, _dmgTray).dice;
     var md = /(\d+)d(\d+)/.exec(activeDice), canRoll = !!md;
+    // the crit's dice for this grip: merged ("4d6") without Oomph, split ("2d8 + 2d6") with it
+    var critX = md ? dmgTrayCrit(ctx, _dmgTray) : null;
+    var critSplit = !!(critX && critX.extra && !critX.merged);
 
     var diceEls = [], prompt;
     if (roll) {
@@ -732,10 +771,16 @@ EN.combatView = (function () {
         : el("div", { style: { marginTop: "10px" } }, [
             el("div.mono", { style: { fontSize: "46px", fontWeight: 700, lineHeight: "1", color: roll.crit ? "var(--gold)" : "var(--ember)", textShadow: "0 0 20px currentColor" }, text: String(roll.total) }),
             trayDmg(el("div.mono.dmg-tray-result", { style: { fontSize: "9px", letterSpacing: ".18em", color: "var(--text3)", marginTop: "5px" } }), "DAMAGE" + (typeStr ? " · " + typeStr : "") + " · TAP TO ROLL AGAIN"),
-            roll.crit ? el("div.mono", { style: { fontWeight: 700, letterSpacing: ".14em", fontSize: "12px", color: "var(--gold)", marginTop: "7px" }, text: "◆ DOUBLED ON CRIT" }) : null
+            roll.crit ? el("div.mono", { style: { fontWeight: 700, letterSpacing: ".14em", fontSize: "12px", color: "var(--gold)", marginTop: "7px" }, text: critSplit ? "◆ CRIT ADDS THE PRINTED " + critX.extra : "◆ DOUBLED ON CRIT" }) : null
           ]);
     } else {
-      if (md) { var wc = parseInt(md[1], 10) * (_dmgTray.crit ? 2 : 1); for (var i = 0; i < wc; i++) diceEls.push(dmgDie("", parseInt(md[2], 10), { dim: true })); }
+      if (md) {
+        var wc = parseInt(md[1], 10) * (_dmgTray.crit && !critSplit ? 2 : 1);
+        for (var i = 0; i < wc; i++) diceEls.push(dmgDie("", parseInt(md[2], 10), { dim: true }));
+        // a crit with Oomph adds the PRINTED dice, drawn at their own size
+        var ex = (_dmgTray.crit && critSplit) ? /(\d+)d(\d+)/.exec(critX.extra) : null;
+        if (ex) for (var x = 0; x < parseInt(ex[1], 10); x++) diceEls.push(dmgDie("", parseInt(ex[2], 10), { dim: true }));
+      }
       if (_dmgTray.cheap && ctx.cheapEligible) for (var j = 0; j < ctx.cheapDice; j++) diceEls.push(dmgDie("", 6, { cheap: true, dim: true }));
       if (!diceEls.length) diceEls.push(el("span.mono", { style: { color: "var(--text3)", fontSize: "12px" }, text: "no damage" }));
       prompt = el("div.mono", { style: { fontSize: "11px", letterSpacing: ".22em", color: canRoll ? "var(--ember)" : "var(--text3)", marginTop: "12px", textTransform: "uppercase" }, text: canRoll ? "Tap to roll damage" : "No damage" });
@@ -763,7 +808,7 @@ EN.combatView = (function () {
       return el("span", { onclick: fn, style: { display: "inline-flex", alignItems: "center", gap: "6px", padding: "7px 11px", cursor: "pointer", fontFamily: "var(--mono)", fontSize: "11.5px", borderRadius: "8px",
         border: "1px solid " + col, color: on ? "var(--bg1)" : col, background: on ? col : "transparent", fontWeight: on ? 700 : 400 } }, label);
     }
-    var togs = [ tog(_dmgTray.crit, "◆ Critical ×2 dice", "var(--gold)", function () { _dmgTray.crit = !_dmgTray.crit; dmgTrayReset(); }) ];
+    var togs = [ tog(_dmgTray.crit, critSplit ? "◆ Critical +" + critX.extra : "◆ Critical ×2 dice", "var(--gold)", function () { _dmgTray.crit = !_dmgTray.crit; dmgTrayReset(); }) ];
     if (ctx.cheapEligible) togs.push(tog(_dmgTray.cheap, "Cheap Shot +" + ctx.cheapDice + "d6", "var(--ember)", function () { _dmgTray.cheap = !_dmgTray.cheap; dmgTrayReset(); }));
     // offered only when the grip is a real choice; a weapon forced two-handed shows
     // what is holding it that way instead of a switch that cannot move
@@ -2286,8 +2331,7 @@ EN.combatView = (function () {
 
      Pneumatic Bypass is the one with a live mechanical consequence, and the
      row says so rather than leaving the player to wonder: the engine reads the
-     applied bonus and steps the unarmed strike, and the row prints the die it
-     produced. */
+     applied bonus as Oomph +1 (Unarmed), and the row prints the die it produced. */
   function bonusBlocks(ch, d) {
     var SC = EN.statusChanges; if (!SC) return [];
     var on = Object.keys((ch && ch.bonuses) || {});
@@ -2306,7 +2350,7 @@ EN.combatView = (function () {
       if (incSrc.some(function (s) { return s.kind === "bonus" && s.label === o.name; })) {
         stepped = d.unarmed.die || (d.unarmed.flat ? String(d.unarmed.flat) : null);
       }
-      if (stepped) chips.push(hazChip("UNARMED " + stepped, "var(--success)", "This bonus steps your unarmed strike; the sheet already reflects it"));
+      if (stepped) chips.push(hazChip("UNARMED " + stepped, "var(--success)", "This bonus gives Oomph +1 (Unarmed); the sheet already reflects it"));
       if (o.requires) chips.push(hazChip("NEEDS " + o.requires.toUpperCase(), "var(--text3)", "The tuning must match the recipient's installed hardware"));
       // A consumable takes its prose from the gear catalog rather than carrying
       // a second copy of it here.
@@ -3053,9 +3097,10 @@ EN.combatView = (function () {
      belongs to the player, so every replacer they have is listed on a STRIKE row
      and the live one is marked. The plain 1 + Body Modifier strike is one of the
      entries, because a bite or a spur kick is not always what you want to throw.
-     Increases are NOT a choice, so they get their own row: one chip per source
-     and a final chip spelling out the ladder walk, so a player looking at 1d10
-     can see the three effects that got them there. Riders hang off a third row.
+     Oomph (Unarmed) is NOT a choice, so it gets its own OOMPH row: one chip per
+     source ("Knuckles +1") and a final chip spelling out the ladder walk ("Oomph +3:
+     no die to 1d8"), so a player looking at 1d10 can see the three effects that got
+     them there. Riders hang off a third row.
      With nothing to choose and nothing to explain there is no picker to draw. */
   var UNARMED_KIND = { lineage: "Natural Weapon", chrome: "Chrome", talent: "Talent" };
   // one chip row with the little all-caps label down its left
@@ -3092,19 +3137,24 @@ EN.combatView = (function () {
         return EN.ui.damageText(chip, e.dmg);
       })));
     }
-    // STEPS: why the die is what it is. The last chip walks the ladder from the
-    // replacer's own die (or from nothing) to the die actually rolled.
+    // OOMPH: why the die is what it is. One chip per Oomph (Unarmed) source, then a
+    // chip walking the ladder from the strike's own die (or from nothing) to the die
+    // actually rolled, saying how much was lost past 1d12 when any was.
     if (inc.count) {
       var chips = inc.sources.map(function (s) {
-        return el("span.chip", { title: s.label + ": +" + s.steps + " die size" + (s.steps === 1 ? "" : "s") + (s.note ? " · " + s.note : ""),
+        return el("span.chip", { title: s.label + ": Oomph +" + s.steps + " (Unarmed)" + (s.note ? " · " + s.note : ""),
           style: { fontSize: "8.5px", color: "var(--gold)", borderColor: "var(--gold)" } },
           s.label + " +" + s.steps);
       });
+      var uo = strike.oomph || { total: inc.count, lost: 0 };
       chips.push(el("span.chip.on", {
-        title: "Increases step the die up 1d4 to 1d6 to 1d8 to 1d10 to 1d12, they stack, and nothing caps how many apply. The ladder itself stops at 1d12.",
+        title: "Each point of Oomph steps the die up one size: 1d4, 1d6, 1d8, 1d10, 1d12. Oomph from different sources adds together. "
+          + "A strike with no die takes 1d4 from its first step. Nothing steps past 1d12; Oomph beyond that is lost."
+          + (uo.lost ? " Here Oomph +" + uo.lost + " is lost." : ""),
         style: { fontSize: "8.5px" } },
-        (strike.baseDie || "no die") + " to " + strike.die + " (" + inc.count + " step" + (inc.count === 1 ? "" : "s") + ")"));
-      rows.push(unarmedRow("STEPS", chips));
+        "Oomph +" + inc.count + ": " + (strike.baseDie || "no die") + " to " + strike.die
+          + (uo.lost ? " (" + uo.lost + " lost)" : "")));
+      rows.push(unarmedRow("OOMPH", chips));
     }
     // PLUS: dice that ride alongside, and reach, which is not damage at all
     var plus = riders.map(function (r) {
@@ -3413,7 +3463,8 @@ EN.combatView = (function () {
     var REVERSE = { "Nonlethal Damage": "Nonlethal" };   // renamed mechanical traits → real trait def
     if (REVERSE[t] && defs[REVERSE[t]]) return { tip: defs[REVERSE[t]], key: REVERSE[t] };
     var base = t.replace(/\s*\(.*\)$/, "").trim();
-    var keys = [base, base.replace(/\s+\d+$/, " X")].concat(/^Area /.test(base) ? ["Area X"] : []);
+    // "Oomph +1 (Unarmed)" strips to "Oomph +1" and resolves to "Oomph +X", as traitLookup does
+    var keys = [base, base.replace(/\s+\d+$/, " X"), base.replace(/\s+\+\s*\d+$/, " +X")].concat(/^Area /.test(base) ? ["Area X"] : []);
     for (var i = 0; i < keys.length; i++) if (defs[keys[i]]) return { tip: defs[keys[i]], key: keys[i] };
     var dm = t.match(/^(\w+) Damage$/);
     if (dm) {
@@ -3428,6 +3479,18 @@ EN.combatView = (function () {
     var inf = traitInfo(t);
     var a = inf.key ? "gr-traits/" + cxSlug(inf.key) : inf.dmgType ? "ref-dmg/" + cxSlug(inf.dmgType) : null;
     return cxChip(a, t, "var(--text2)", inf.tip, { borderColor: "var(--border2)" });
+  }
+  /* The weapon row's Oomph chip: "OOMPH +1" whenever any Oomph reaches this weapon, its
+     tooltip the engine's one-sentence account (sources, the Parts cap, any step lost past
+     1d12). The DMG box and the grip button already show the stepped die; this says why.
+     A tap peeks the Oomph rule (Damage & Mitigation), else the Oomph +X trait. */
+  function oomphChip(grip) {
+    var oo = grip && grip.oomph;
+    if (!oo || !oo.sources || !oo.sources.length || !grip.printedDice) return null;
+    var a = cxHas("ref-damage/oomph") ? "ref-damage/oomph" : "gr-traits/" + cxSlug("Oomph +X");
+    var lost = oo.lost || oo.partsCapped;
+    return cxChip(a, "OOMPH +" + oo.total + (oo.lost ? " · " + oo.lost + " LOST" : ""),
+      lost ? "var(--warn)" : "var(--gold)", oo.note || "");
   }
 
   /* ---------- main render ---------- */
@@ -3682,8 +3745,12 @@ EN.combatView = (function () {
             return bdRow(r.type + " · " + r.level, r.sources.join(", "));
           })),
         empty: (dg.armor || d.naturalDR || d.cyberDR) ? null : "No armor equipped; WEAR armor in Inventory → Stash.",
-        foot: (dg.armorDRLost ? "Damaged plating: " + dg.armorDRLost + " point" + (dg.armorDRLost === 1 ? "" : "s") + " of DR gone until repaired, on the Impact Table. " : "") +
-              (dg.armor && (dg.armor.traits || []).indexOf("Plated") !== -1 ? "Plated: when you Block, add half this DR (rounded down) on top." : "") || null,
+        foot: ((dg.armorDRLost ? "Damaged plating: " + dg.armorDRLost + " point" + (dg.armorDRLost === 1 ? "" : "s") + " of DR gone until repaired, on the Impact Table. " : "") +
+              (dg.armor && (dg.armor.traits || []).indexOf("Plated") !== -1 ? "Plated: when you Block, add half this DR (rounded down) on top." : "") +
+              /* Conditional Resistances (Street Scrapper's Upgrade) turn on what is hitting you,
+                 which the sheet cannot see, so they are a note here and never a row above: the
+                 author's decision 5, 2026-10-16. */
+              (d.resistNotes || []).map(function (n) { return " " + n.label + ": " + n.text + " Apply it yourself when it fits; the sheet can't see what hits you."; }).join("")).trim() || null,
         rules: [["ref-damage/damage-order", "Damage Order"]]
           .concat((d.resistances || []).length ? [["ref-damage/resistance-vulnerability-and-immunity", "Resistance, Vulnerability & Immunity"]] : [])
           .concat([["ref-dmg", "Damage Types"]]) },
@@ -4402,9 +4469,26 @@ EN.combatView = (function () {
     function statusSelect(menu) {
       if (!menu) return null;
       var opts = [el("option", { value: "", text: menu.placeholder })];
+      /* An option that comes with held content (the Ripper's Hot-Wires, `heldWith:
+         "the_ripper"`) leaves the menu while that subclass is held, unless this character
+         already has it applied, in which case it stays listed (disabled, as applied
+         options are) beside the block that shows it. The author's decision 3, 2026-10-16. */
+      function offered(o) {
+        /* A consumable whose item moved to the Game Master's Toolkit (the Combat Stim Pack,
+           decision 7) is offered only to a character who owns one or already has it applied.
+           The data row stays, so flipping holds.toolkit brings it back for everyone. */
+        if (o.kind === "consumable" && EN.launch && EN.launch.isToolkit && EN.launch.isToolkit("item", o.name)) {
+          return statusApplied(ch, o) || (ch.equipment || []).some(function (e) {
+            return e && e.name === o.name && !(e.qty != null && e.qty <= 0);
+          });
+        }
+        if (!o.heldWith || !(EN.launch && EN.launch.isHeld)) return true;
+        return !EN.launch.isHeld("subclass", o.heldWith) || statusApplied(ch, o);
+      }
       menu.groups.forEach(function (g) {
-        if (!g.options || !g.options.length) return;
-        opts.push(el("optgroup", { label: g.name }, g.options.map(function (o) {
+        var gOpts = (g.options || []).filter(offered);
+        if (!gOpts.length) return;
+        opts.push(el("optgroup", { label: g.name }, gOpts.map(function (o) {
           return el("option", { value: o.key, disabled: statusApplied(ch, o), text: o.name });
         })));
       });
@@ -4580,9 +4664,10 @@ EN.combatView = (function () {
        equipped Quarterstaffs are two weapons with two builds and the panel has to be able
        to show both. `label` only grows a number when a name actually repeats, so the
        ordinary one-of-each loadout reads exactly as it always did.
-       equippedNames survives for the two consumers that genuinely want names: the reorder
-       arrows (whose index feeds moveWeaponName and must match the stored array) and the
-       Parry source list (where two copies of one weapon offer the same die anyway). */
+       equippedNames survives for the one consumer that genuinely wants names: the reorder
+       arrows (whose index feeds moveWeaponName and must match the stored array). The Parry
+       source list moved to these rows (16 October handoff): with Oomph and grip per entry,
+       two copies of one weapon can parry with different dice. */
     var equippedRows = [];
     (ch.equippedWeapons || []).forEach(function (key) {
       var e = (ch.equipment || []).find(function (x) { return (x.id || x.name) === key && x.qty > 0; });
@@ -5090,6 +5175,9 @@ EN.combatView = (function () {
       // Light-melee weapon.
       function damageCtx(it, h, wk) {
         var p = parseDamage(it.damage), traits = it.traits || [];
+        var grip = eng.weaponGrip(ch, it, wk);
+        // a plain "NdX" printed die is the one Oomph steps; anything else ("Unarmed + 1d4") rides as printed
+        var plainDie = /^\d+d\d+$/.test(p.dice) && grip.printedBase === p.dice;
         var hasLight = traits.some(function (t) { return /^Light$/i.test(t); });
         var cheapEligible = ch.class === "scoundrel" && (
           it.group === "Sidearm" || it.group === "Simple" || (h.melee && it.group === "Martial" && hasLight));
@@ -5097,7 +5185,12 @@ EN.combatView = (function () {
           weaponName: it.name,
           weaponKey: wk || null,
           subtype: (h.melee ? "Melee" : h.thrownItem ? "Thrown" : "Ranged") + " Weapon · " + h.cat,
-          dice: p.dice, types: p.types,
+          /* OOMPH: `dice` and `versatile` are the STEPPED dice weaponGrip resolved, so the tray
+             rolls what the DMG box shows (a Greatsword with a Weighted Head rolls 2d8, not the
+             catalog 2d6). The printed dice ride beside them because a critical hit's extra dice
+             are the printed ones (the author's decision 4, 2026-10-16: 2d8 + 2d6). */
+          dice: plainDie ? grip.baseDice : p.dice, types: p.types,
+          printedDice: plainDie ? grip.printedBase : undefined,
           flat: h.dmgMod, flatLabel: h.indirect ? "Indirect: no attribute Modifier" : (h.attrName + " Modifier"),
           /* `dice` stays the BASE and `versatile` stays the alternate, because the
              tray's own arithmetic picks between them off its twoHand flag. What
@@ -5107,8 +5200,9 @@ EN.combatView = (function () {
              open, so a two-handed Longsword rolled 1d8 unless you flipped it again,
              and a weapon forced two-handed by an Extended Shaft still offered a
              one-handed option it cannot have. */
-          versatile: versatileDie(traits),
-          grip: eng.weaponGrip(ch, it, wk),
+          versatile: grip.versatile || versatileDie(traits),
+          printedVersatile: grip.printedVersatile || versatileDie(traits),
+          grip: grip,
           cheapEligible: cheapEligible, cheapDice: d.caliber || 1,
           crit: false
         };
@@ -5398,7 +5492,7 @@ EN.combatView = (function () {
         });
         rowKids.push(el("div.row.wrap", { style: { gap: "5px", marginTop: "9px", paddingTop: "8px",
           borderTop: "1px solid rgba(35,48,68,.6)" } },
-          traitChips.map(wTraitChip).concat(offerChips).concat([reachChip, gripEl].filter(Boolean))));
+          traitChips.map(wTraitChip).concat(offerChips).concat([reachChip, oomphChip(grip), gripEl].filter(Boolean))));
 
         // Signature Weapons: the FULL effect always shows (the base attack works at any tier), and
         // a locked one adds a single status line from the engine. Only the On Hit riders are locked
@@ -5420,6 +5514,13 @@ EN.combatView = (function () {
             // a grant that rolls dice is a damage readout, its type the icon, as Inventory's MODS chip shows it
             var chip = el("span.chip", { title: p.name + ": " + p.effect, style: { fontSize: "8.5px", color: "var(--ember)", borderColor: "var(--ember)" } });
             var g = p.grants || p.name;
+            /* A Part with an install-time choice (High-Tension Assembly: Oomph +1 or Armor
+               Piercing 1) shows the option this weapon carries, not both. The bench sets it. */
+            if (p.choice && eng.weaponPartChoice) {
+              var pc = eng.weaponPartChoice(ch, wKey, p);
+              var po = (p.choice.options || []).filter(function (o) { return o.value === pc; })[0];
+              if (po) g = po.label;
+            }
             if (EN.ui.damageText && /\d+d\d+/.test(g)) EN.ui.damageText(chip, g); else chip.appendChild(document.createTextNode(g));
             return chip;
           }).filter(Boolean);
@@ -5473,8 +5574,12 @@ EN.combatView = (function () {
         // and opens no damage tray; the row states its damage instead. Riders are
         // situational (a Surge that is not up adds nothing), so they stay in the
         // row text rather than being pre-loaded into the tray.
+        /* `printedDice` is the strike's own die before Oomph (Unarmed), so a crit adds that die
+           and not the stepped one (decision 4). A bare fist has no die of its own, so it carries
+           none and a crit doubles the stepped die as before; flagged to the author. */
         var luDmg = uStrike.die
           ? { weaponName: luName, subtype: luKind.toUpperCase(), dice: uStrike.die, types: [uStrike.type],
+              printedDice: uStrike.baseDie || undefined,
               flat: luAttr, flatLabel: luAttrLabel, versatile: null, cheapEligible: false, cheapDice: d.caliber || 1, crit: false }
           : null;
         var luDmgText = (uStrike.die ? uStrike.die : uBase.flat) + " " + uStrike.type
@@ -5865,11 +5970,17 @@ EN.combatView = (function () {
            bare hands with no die read "Roll 1", which is not a die and not rollable.
 
          The book does not describe a chain. Parry's Effect is "Roll your equipped
-         weapon's base damage die ... or your unarmed strike damage if your hands are
-         what you brought", and its Tactical Note is explicit that "if you are
-         dual-wielding, you must choose which weapon you parry with". So this offers
-         the CHOICE, ordered by expected value so the default is the best one and the
-         common case is still one tap.
+         weapon's damage die, Oomph included ... or your unarmed strike damage if your
+         hands are what you brought", and it ends "If you are dual-wielding, choose which
+         weapon you parry with and roll its damage die." So this offers the CHOICE,
+         ordered by expected value so the default is the best one and the common case is
+         still one tap.
+
+         ONE SOURCE PER EQUIPPED PIECE, each rolling weaponGrip(ch, it, entryKey).dice:
+         the die for the grip it is held in, Oomph included (the author's decision 6,
+         2026-10-16), so a two-handed Longsword parries 1d10 and a Greatsword with a
+         Weighted Head parries 2d8. Parts and grip are per entry, so two copies of one
+         weapon can parry with different dice and are listed apart (by their row label).
 
          A SHIELD IS NOT A SOURCE HERE, and that is the correction that matters most.
          The app used to parry with the shield's `blockDie`, which is not a damage die:
@@ -5880,19 +5991,21 @@ EN.combatView = (function () {
          Block / Traits with no damage column, there is no shield bash anywhere in
          either book, and Parry never names a die for a shield.
          A shield still SATISFIES Parry's Requirement ("a Simple Weapon, Martial
-         Weapon, Signature Weapon, or physical Shield equipped, or be fighting
-         unarmed"), so carrying one does not stop you parrying. It just contributes no
-         die, and you roll a damage die you actually have: a weapon's, or your fists'. */
+         Weapon, or physical Shield equipped, or be fighting unarmed"), so carrying one
+         does not stop you parrying. It just contributes no die, and you roll a damage
+         die you actually have: a weapon's, or your fists'. */
       function parryValue(s) { return s.sides ? s.n * (s.sides + 1) / 2 : (s.flat || 0); }
       function parrySources() {
         var out = [];
-        equippedNames.forEach(function (n) {
-          var w = realMeleeWeapon(n);
+        realWeaponRows.forEach(function (r) {
+          var w = realMeleeWeapon(r.name);
           if (!w) return;
-          var m = (w.damage || "").match(/(\d*)d(\d+)/);
+          var g = eng.weaponGrip(ch, w, r.key);
+          var m = String(g.dice || "").match(/(\d*)d(\d+)/);
           if (!m) return;
-          out.push({ key: "w:" + n, label: w.name, kind: "weapon",
-                     n: parseInt(m[1] || "1", 10), sides: parseInt(m[2], 10) });
+          out.push({ key: "w:" + r.key, label: r.label || w.name, kind: "weapon",
+                     n: parseInt(m[1] || "1", 10), sides: parseInt(m[2], 10),
+                     why: g.why || "" });
         });
         var um = uParryDie ? /(\d*)d(\d+)/.exec(uParryDie) : null;
         if (um) out.push({ key: "unarmed", label: "your unarmed strike", kind: "unarmed",
@@ -5989,7 +6102,7 @@ EN.combatView = (function () {
             base.note = (s.sides
               ? "Roll " + s.n + "d" + s.sides + " (" + s.label + ") and subtract it from the incoming damage."
               : "Bare hands with no die behind them: subtract " + (s.flat || 0) + " from the incoming damage.")
-              + " Melee attacks only." + (pSources.length > 1 ? " You choose what you parry with." : "");
+              + " Melee or thrown attacks only." + (pSources.length > 1 ? " You choose what you parry with." : "");
             return base;
           };
           return base.applySource(pBest && pBest.key);
@@ -6011,7 +6124,7 @@ EN.combatView = (function () {
           var wd = parseDie(dg.wardDie);
           if (wd) { wd.label = (dg.focus && dg.focus.name) || "Ward"; base.dice.push(wd); }
           // the die it names is the one pushed above, the Resilience Die, not a fixed d6
-          base.note = "Roll your Resilience Die (d" + (d.resilienceDie || 6) + ")" + (wd ? " plus your Focus die" : "") + " and subtract the total from the incoming damage.";
+          base.note = "Roll your Resilience Die (d" + (d.resilienceDie || 6) + ")" + (wd ? " plus your Focus die" : "") + " and subtract the total from the incoming damage. Ward costs no FP.";
           return base;
         }
         base.note = "";
@@ -6056,14 +6169,15 @@ EN.combatView = (function () {
         // "or be fighting unarmed": bare hands always satisfy the requirement, so
         // Parry is never unavailable. The row names the BEST source and says how many
         // others there are; the tray is where you switch. Both read parrySources().
-        Parry:   { avail: true, req: "a melee weapon, a shield, or bare hands",
+        Parry:   { avail: true, req: "a Simple or Martial weapon, a physical Shield, or bare hands",
                    summary: parryText(pBest) + (pSources.length > 1 ? " · " + pSources.length + " to choose from" : "") },
         Resurge: { avail: attuned, req: "Flow attunement",
                    summary: "Roll " + resDie + " vs Flow attacks; reduce to 0 → rebound " + (rebound != null ? rebound : "your Flow Modifier (minimum 1)") + " Resonant" },
         Siphon:  { avail: attuned, req: "Flow attunement",
                    summary: "Roll " + resDie + " vs elemental/Flow damage; restore that much Vigor" },
         Ward:    { avail: !!focusDie || attuned, req: "a Warding Focus or class feature",
-                   summary: "Roll " + resDie + (focusDie ? " + " + focusDie + " (" + focusName + ")" : "") + ", subtract from incoming damage" }
+                   // "Ward costs no FP." (16 October handoff); Resurge and Siphon still do
+                   summary: "Roll " + resDie + (focusDie ? " + " + focusDie + " (" + focusName + ")" : "") + ", subtract from incoming damage; no FP" }
       };
 
       /* "How Active Defenses work" collapsible spans full width above the columns. Its three
@@ -6326,6 +6440,8 @@ EN.combatView = (function () {
   function resetLayout() { try { localStorage.removeItem(LAYOUT_KEY); localStorage.removeItem(LAYOUT_KEY_V1); } catch (e) {} }
   return { render: render, isLayoutEditMode: isLayoutEditMode, setLayoutEditMode: setEditMode, resetLayout: resetLayout,
            diceMode: diceMode, setDiceMode: setDiceMode,
+           // the attack-row trait matcher, read-only, so a check can hold it to traitLookup
+           traitInfo: traitInfo,
            // state only, no render: a swipe committing to another tab closes the popovers the way
            // a rail tap would, and the render that follows is the tab change's own
            closePops: closePops };

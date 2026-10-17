@@ -55,7 +55,7 @@ EN.gearCatalog.armor = {
     "Sealed": "A closed shell of sealed joints, filters, and respirators. Resistance to Toxic damage, and Edge on saves against gas, disease, and airborne or environmental hazards. Some Sealed suits also cover vacuum.",
     "Mystech": "A fusion of synthetic engineering and the Flow. Counts as both technological and metaphysical gear for anything that targets either, and can be detected, disrupted, or overloaded as Flow gear. Needs specialist tools or contacts to repair and recharge.",
     "Focus": "Built to channel, shape, and anchor the Flow. Can empower Ward, as the item describes. You benefit from only one Focus item for Ward at a time.",
-    "Resonant Plating": "Plate tuned to catch Flow as well as force. The armor's DR also applies against Resonant damage and isn't ignored by Resonant Armor Bypass.",
+    "Resonant Plating": "Plate tuned to catch Flow as well as force. The armor's DR also applies against Resonant damage and isn't ignored by Armor Bypass.",
     "Off-Hand": "Wielded in the off hand; the shield fully occupies that hand while raised. Uses the Block, Full Defense, Stacking, and Shield Durability rules.",
     "Worn": "Worn on the body rather than held in a hand, leaving both hands free. Can't be easily dropped or disarmed, and counts as equipped gear for any effect that checks what you are wearing. A Warding Focus is Worn. Being Worn does not by itself cost a Body Slot: an item counts against one if its own entry says so or the armor rules assign it one.",
     "Light": "A light shield, minimal bulk. Leaves the braced hand free for one-handed weapon use and Invocations.",
@@ -189,7 +189,9 @@ EN.gearCatalog.armor = {
       // Holds vacuum NATIVELY, which is why its own entry carries the flag. The
       // Sealed trait alone never satisfies a vacuum check (see EN.hazards.breath
       // .vacuumSeal); this suit and a Rebreather Liner on an already-Sealed suit
-      // are the only two paths in the game.
+      // are the only two paths in the game. Since 16 October the book's vacuum
+      // rule cites only the Liner (this suit moved to the Game Master's Toolkit),
+      // but the flag stays so a saved Warframe Shell still holds vacuum.
       vacuum: true,
       desc: "A sealed military combat frame, the kind a corporation deploys when it has decided a problem is worth the optics. Air recycled, joints armored, every system tuned to keep one operator standing through a crossfire.",
       effect: "Grants 5 Damage Reduction (DR) and a +2 Block Bonus. Its seals also hold against vacuum. When you acquire the frame, choose one physical damage type (Ballistic, Piercing, Slashing, or Bludgeoning). You gain Resistance to that type.",

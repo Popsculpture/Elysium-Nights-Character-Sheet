@@ -235,7 +235,11 @@ window.EN = window.EN || {};
     }
     if (RR.budgetByLevel) {
       kids.push(K.subTitle("Summary and Budget"));
-      kids.push(bookText(K, RR.budgetByLevel));
+      /* The string ends in the book's GM Guidance box ("GM Guidance" and its text). GM advice
+         boxes moved to the Game Master's Toolkit (2026-10-16 handoff, section 8), so the
+         Freelancer desktop reads the summary up to that heading and the Admin desktop the lot. */
+      var budget = String(RR.budgetByLevel), gmAt = budget.search(/(^|\n\s*\n)GM Guidance\s*\n/);
+      kids.push(bookText(K, ctx && ctx.portal !== "admin" && gmAt > 0 ? budget.slice(0, gmAt) : budget));
     }
     return kids;
   }

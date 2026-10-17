@@ -22,6 +22,11 @@
                               two mean different things, so both get an entry
      gr-weapons *, gr-armor, gr-custom *, gr-craft *, gr-chrome *
      gr-craft/armor-repair *
+   TOOLKIT GEAR (2026-10-16 handoff, section 6): the Signature Weapons chapter, the
+   Mystech Ammunition note, the Mystech Armor intro and the Blackware and Prototype
+   cyberware tiers moved to the Game Master's Toolkit. While EN.launch.holds.toolkit
+   is on, the Freelancer desktop leaves them out (toolkitOff below); the Admin desktop
+   keeps them. Flipping the hold off restores them on both.
    EN.gearCodex.traitAnchor(printed, armorFirst) turns a trait as a catalog
    prints it ("Armor Piercing 2", "Thrown (4/12)", "Wear 12") into its anchor,
    through the one matcher in data/gear_traits.js. The Inventory's trait chips
@@ -54,6 +59,14 @@ window.EN = window.EN || {};
     return text.indexOf(label + ":") === 0 ? text.slice(label.length + 1).trim() : text;
   }
   function plus(n) { return n > 0 ? "+" + n : String(n); }
+  /* True when this desktop leaves a Toolkit block out: the Freelancer desktop, while the
+     toolkit hold is on. With a kind and an id it asks EN.launch about that one entry. */
+  function toolkitOff(ctx, kind, id) {
+    var L = EN.launch;
+    if (!L || (ctx && ctx.portal === "admin")) return false;
+    if (kind) return typeof L.isToolkit === "function" && !!L.isToolkit(kind, id);
+    return !!(L.holds && L.holds.toolkit);
+  }
 
   /* ---- Weapon & Armor Traits ------------------------------------------------ */
   var traitsPanel = { id: "gr-traits", title: "Weapon & Armor Traits", order: 10,
@@ -105,10 +118,10 @@ window.EN = window.EN || {};
         [["Plentiful", "Plentiful Ammo"], ["Counted", "Counted Ammo"], ["Specialty", "Specialty Ammo"], ["Launcher Shell", "Launcher Shells"]].forEach(function (p) {
           if (gi[p[0]]) kids.push(K.ruleBlock(p[1], gi[p[0]]));
         });
-        if (am.mystechNote) kids.push(K.ruleBlock("Mystech Ammunition", am.mystechNote));
+        if (am.mystechNote && !toolkitOff(ctx)) kids.push(K.ruleBlock("Mystech Ammunition", am.mystechNote));
       }
       var sg = g.signature;
-      if (sg && sg.usingNote) {
+      if (sg && sg.usingNote && !toolkitOff(ctx)) {
         kids.push(K.subTitle("Signature Weapons"));
         kids.push(K.ruleBlock("Using a Signature Weapon", sg.usingNote));
       }
@@ -122,7 +135,8 @@ window.EN = window.EN || {};
       var A = G().armor, kids = [];
       if (A.intro) kids.push(K.proseBlock(A.intro));
       var gi = A.groupIntros || {};
-      Object.keys(gi).forEach(function (k) { if (gi[k]) kids.push(K.ruleBlock(k, gi[k])); });
+      // the Mystech Armor intro went to the Toolkit with the four suits it introduced
+      Object.keys(gi).forEach(function (k) { if (gi[k] && !(/mystech/i.test(k) && toolkitOff(ctx))) kids.push(K.ruleBlock(k, gi[k])); });
       return kids;
     } };
 
@@ -144,7 +158,9 @@ window.EN = window.EN || {};
           ], { tag: "div.feature" }));
         }
         var byGroup = wp.slotCountByGroup || {};
-        var profiles = (wp.profiles || []).filter(function (p) { return p.count != null; });
+        // the Signature profile goes with the Signature Weapons chapter on the Freelancer side
+        var sigOff = toolkitOff(ctx) && !!(EN.launch.toolkit && EN.launch.toolkit.signature);
+        var profiles = (wp.profiles || []).filter(function (p) { return p.count != null && !(p.key === "signature" && sigOff); });
         if (Object.keys(byGroup).length || profiles.length) {
           kids.push(K.entry("slot-count", "Slot Count", [
             el("h4", { text: "Slot Count" }),
@@ -155,7 +171,8 @@ window.EN = window.EN || {};
         var r = wp.rules || {};
         if (r.install) kids.push(K.ruleBlock("Installing Parts", r.install));
         if (r.legality) kids.push(K.ruleBlock("Part Legality", r.legality));
-        if (r.dieStep) kids.push(K.ruleBlock("Damage Die Steps", r.dieStep));
+        // the Parts' own rules line, "Oomph +1 from hardware" (2026-10-16 handoff)
+        if (r.dieStep) kids.push(K.ruleBlock(r.dieStepHead || "Oomph +1 from hardware", r.dieStep));
         if (r.stabilized) kids.push(K.ruleBlock("Stabilized Sources", r.stabilized));
       }
       if (EN.armorMods) {
@@ -277,7 +294,8 @@ window.EN = window.EN || {};
       var q = W.qualityTiers || {};
       if (Object.keys(q).length) {
         kids.push(K.subTitle("Quality Tiers"));
-        Object.keys(q).forEach(function (k) { kids.push(K.ruleBlock(k, q[k])); });
+        // Blackware and Prototype are Toolkit tiers; the Admin desktop keeps all four
+        Object.keys(q).forEach(function (k) { if (!toolkitOff(ctx, "cyberTier", k)) kids.push(K.ruleBlock(k, q[k])); });
       }
       return kids;
     } };

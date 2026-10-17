@@ -98,13 +98,20 @@ EN.hazards = {
         everyRoundDamage: { dice: "1d6", type: "Cold" } }
     ],
     /* Vacuum sealing is NOT the Sealed trait. A suit holds vacuum only if its
-       own entry says so. Exactly two paths exist, and a generic Sealed flag
-       satisfies neither. */
+       own entry says so, and a generic Sealed flag never does.
+       16 October: the book's vacuum rule now cites only the Rebreather Liner;
+       the Warframe Shell moved to the Game Master's Toolkit. `paths` is what
+       the player rules print. The Warframe row stays in the engine
+       (engine.js vacuumSeal reads `vacuum: true` off the armor row), so a
+       saved Warframe Shell still holds vacuum; its path is kept apart here in
+       `toolkitPaths` so it can come back with the Toolkit hold. */
     vacuumSeal: {
       rule: "A suit holds vacuum only if its own entry says so. The Sealed trait alone does NOT hold vacuum.",
       paths: [
-        { name: "Warframe Shell", how: "Natively. Its own entry states that its seals hold against vacuum.", dataFlag: "vacuum on the armor row" },
         { name: "Rebreather Liner", how: "Fitted to a suit that is ALREADY Sealed, which upgrades that seal to hold vacuum. Fitted to an unsealed suit it only grants the Sealed benefit, which does not cover vacuum.", dataFlag: "sealToVacuum on the armor mod" }
+      ],
+      toolkitPaths: [
+        { name: "Warframe Shell", how: "Natively. Its own entry states that its seals hold against vacuum.", dataFlag: "vacuum on the armor row" }
       ]
     }
   },
@@ -155,40 +162,40 @@ EN.hazards = {
     { key: "rebreather", name: "Rebreather", kind: "Gear",
       source: { type: "gear", name: "Rebreather" },
       summary: "1 hour of thin air, and 1 hour against Drowning.",
-      note: "Its own entry gives up to 1 hour of active use, refreshing between scenes, and stops you beginning to Drown in water or low-oxygen air. Sixty minutes of a thin-air exposure pass with no save at all; the clock starts when the hour runs out. Against Drowning that hour is 600 rounds, at the book's 10 rounds to the minute. It does not cover vacuum, which is why the breath grant names its kind: Environmental Hazards allows exactly two vacuum-rated paths and a face-slot mouthpiece is neither.",
+      note: "Its own entry gives up to 1 hour of active use, refreshing between scenes, and stops you beginning to Drown in water or low-oxygen air. Sixty minutes of a thin-air exposure pass with no save at all; the clock starts when the hour runs out. Against Drowning that hour is 600 rounds, at the book's 10 rounds to the minute. It does not cover vacuum, which is why the breath grant names its kind: a face-slot mouthpiece is not a sealed suit, and the vacuum rule's only path is a Rebreather Liner fitted to a suit that is already Sealed.",
       effects: { thinAirMinutes: 60, breathMinutes: { drowning: 60 } } },
 
     { key: "radiation-calluses", name: "Radiation Calluses", kind: "FreeBorn Trait",
-      source: { type: "lineageFeature", name: "Radiation Calluses" },
+      source: { type: "lineageFeature", name: "Radiation Calluses" }, lineage: "freeborn",
       summary: "Never gains Fatigue from cold.",
       note: "A failed Cold save still deals the Lethal rider's 1d6 Cold; only the Fatigue is refused.",
       effects: { noFatigue: ["cold"] } },
 
     { key: "ration-discipline", name: "Ration Discipline", kind: "FreeBorn Trait",
-      source: { type: "lineageFeature", name: "Ration Discipline" },
+      source: { type: "lineageFeature", name: "Ration Discipline" }, lineage: "freeborn",
       summary: "3 days against hunger and sleeplessness, then Edge on saves. Thirst and thin air get Edge ONLY, NOT the 3 day grace.",
       effects: { graceDays: { food: 3, sleep: 3 }, edgeOn: ["food", "sleep", "water", "thinair"] } },
 
     { key: "void-lung", name: "Void Lung", kind: "FreeBorn Trait",
-      source: { type: "lineageFeature", name: "Void Lung" },
+      source: { type: "lineageFeature", name: "Void Lung" }, lineage: "freeborn",
       summary: "15 minutes of held breath. The largest single vacuum mitigation in the game.",
       note: "Fifteen minutes is 150 rounds, at the book's flat rate of 10 rounds to the minute, and it covers both Vacuum and Drowning. The save clock starts when those run out rather than never starting, so the tracker stays live and counts down. A Vacuum's 1d6 Cold still lands every round regardless of held breath.",
       effects: { breathMinutes: 15 } },
 
     { key: "hearthglow", name: "Hearthglow", kind: "Cinder-Heart Feature",
-      source: { type: "lineageFeature", name: "Hearthglow" },
+      source: { type: "lineageFeature", name: "Hearthglow" }, lineage: "cinder-heart",
       summary: "No Fatigue from cold, self and allies within 2 spaces.",
       note: "The sheet is one character, so it applies the self half. The 2 space aura is the GM's to run at the table.",
       effects: { noFatigue: ["cold"] } },
 
     { key: "hazard-seal", name: "Hazard Seal", kind: "Durabody Trait",
-      source: { type: "lineageFeature", name: "Hazard Seal" },
+      source: { type: "lineageFeature", name: "Hazard Seal" }, lineage: "durabodies",
       summary: "Immune to caustic damage.",
       note: "Immunity to the Acid, so both the damage inside and the lingering damage after exit are zero, and there is nothing to wash off.",
       effects: { immuneCaustic: true } },
 
     { key: "frictionless-stasis", name: "Frictionless Stasis", kind: "Harbinger Trait",
-      source: { type: "lineageFeature", name: "Frictionless Stasis" },
+      source: { type: "lineageFeature", name: "Frictionless Stasis" }, lineage: "harbinger",
       summary: "Stops the residue, not the acid: no lingering damage after exit.",
       note: "The 1d6 Acid while you stand in it is untouched. Nothing clings, so there is nothing to wash off either.",
       effects: { noCausticLinger: true } }

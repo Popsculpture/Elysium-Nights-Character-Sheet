@@ -13,7 +13,9 @@ EN.gearCatalog = EN.gearCatalog || {};
 EN.gearCatalog.weaponTraits = {
   "Arc": "May target spaces behind low barriers or around corners if there is open space above the path. Can't be used where there is no vertical room for the projectile to arc.",
   "Area X": "Some effects fill a space and catch whatever is standing in it. The number is the size in spaces; the word after gives the shape, Sphere (burst), Cone (spreads from you), Line (X long, 1 wide), Cube, or Aura. An Area with no shape word is a sphere: Area 3 and Area 3 sphere mean the same thing. Targets caught usually save for half or no damage; roll the effect's damage once and apply it to everyone the area touches.",
-  "Armor Bypass": "Resonant Armor Bypass: the attack ignores standard Armor DR unless the armor has the Resonant Plating trait.",
+  /* The book's Gear Traits glossary entry, 16 October handoff. Its one Effect line, without the
+     label, as the other single-effect entries here print. */
+  "Armor Bypass": "The attack ignores standard Armor DR entirely, unless the armor is specifically built to stop it (such as Resonant Plating). Where Armor Piercing shaves off a set number of DR points, Armor Bypass treats ordinary armor as if it weren't there.",
   "Armor Piercing X": "On a hit, ignore X points of flat damage reduction from armor or similar gear for that attack. Doesn't affect Resistances or Immunities unless a rule explicitly says otherwise.",
   "Backlash": "Firing this round leaves a resonance signature. Until the end of the scene you read as Flow-touched to shrines, Shapers, Flow-sensitive trackers, and any #GRID system tuned to watch for it. On a Natural 1 on the attack roll the discharge flares back through the weapon: you take 1d4 Resonant damage, or lose 1d4 Flow Points instead if you have a Flow Reservoir. If that takes your Reservoir below 0, standard Overdraw rules apply.",
   "Burst Fire": "Choose a primary Target and attack (3 rounds). Hit or miss, every other Target within 1 space of the primary makes an Agility Save vs your Weapon Save DC; on a failure they take the weapon's damage die without your Attribute Modifier.",
@@ -55,6 +57,11 @@ EN.gearCatalog.weaponTraits = {
   "Nonlethal": "If damage from this weapon reduces a Target to 0 Vitality, that Target is immediately rendered Unconscious.",
   "Obscuring": "Areas affected by an Obscuring effect count as heavily obscured (see Obscurement), unless the entry says lightly Obscuring.",
   "One-Handed": "Designed for full effectiveness in one hand, leaving the other free for a shield, tool, second weapon, or climbing.",
+  /* The Oomph Gear Trait, word for word from the 16 October handoff (Gear Traits glossary,
+     between One-Handed and Persistent). It replaced the die-step wording on Knuckles and the
+     three Oomph Parts. A printed "Oomph +1 (Unarmed)" resolves here through traitLookup's
+     " +N" to " +X" mapping; the engine reads the number off the trait itself (oomphTraits). */
+  "Oomph +X": "Weight, tension, or tuning that makes a hit land heavier.\n\nEffect: Each point of Oomph steps the damage die up one size: 1d4, 1d6, 1d8, 1d10, 1d12. On a weapon, or a Part installed in it, Oomph applies to that weapon. With a scope in parentheses, as on Knuckles (Oomph +1 (Unarmed)), it applies to what the parentheses name while you wear or wield the item.\n\nCap: Nothing steps past 1d12, and a weapon takes at most Oomph +1 from aftermarket Parts. Multi-die weapons, Parry, and stacking work as described under Oomph in Core Rules.",
   "Persistent": "Leaves behind a lingering hazard or field. A Target entering or starting its turn in the zone usually saves or takes the listed damage or effect; the entry gives duration and exact effect.",
   "Precision Frame": "A weapon with Precision Frame scores a critical hit on a roll of 19 or 20 on its Single Shot and Semi-Auto attacks. A weapon whose only firing mode is Single Shot has Precision Frame inherently; the Match Trigger Group mod can also grant it.",
   "Pressure": "When an effect with this trait triggers Wall-to-Wall, treat the room as one space narrower than it is when counting Rebound.",
@@ -98,6 +105,8 @@ EN.gearCatalog.firingModes = ["Single Shot", "Semi-Automatic", "Burst Fire", "Fu
      armorFirst  the item is armor, a shield or a focus: Heavy, Light, Concealable, Wear X and
                  Worn mean different things there, so the armor glossary answers first and the
                  weapon glossary is the fallback.
+   A trailing number maps to X with or without a plus sign: "Armor Piercing 2" to "Armor Piercing
+   X", and "Oomph +1 (Unarmed)" (the scope stripped first) to "Oomph +X".
    Returns { key, def, armor } (armor true when the armor glossary answered), or null. */
 EN.gearCatalog.traitLookup = function (printed, armorFirst) {
   var W = EN.gearCatalog.weaponTraits || {};
@@ -108,6 +117,8 @@ EN.gearCatalog.traitLookup = function (printed, armorFirst) {
     if (own(defs, base)) return base;
     var x = base.replace(/\s+\d+$/, " X");
     if (own(defs, x)) return x;
+    var px = base.replace(/\s+\+\s*\d+$/, " +X");
+    if (own(defs, px)) return px;
     if (/^Area /.test(base) && own(defs, "Area X")) return "Area X";
     return null;
   }

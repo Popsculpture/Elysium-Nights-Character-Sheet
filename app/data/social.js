@@ -24,6 +24,14 @@
    beside the text they came from (`resolve`, `pressure`, `min`, `max`), so a
    screen can compute with one and show the other.
 
+   MOVED TO THE GAME MASTER'S TOOLKIT (2026-10-16 handoff, section 8): the Sit-Down
+   (`sitDown`, the Deposition), the full Cred and Heat rules (`credHeat`) and the
+   chapter's GM Guidance (`gmGuidance`). They stay here, whole: the GM Sit-Down tracker
+   (data/gm_scenes.js, js/gm_scenes.js) and the Admin Codex read them directly. The
+   Freelancer desktop no longer renders them (js/codex_social.js gates the panels to
+   audience "gm", js/face.js dropped its Sit-Down quick reference and the ladder hover
+   text on the Cred and Heat trackers, which keep their 0 to 10 values).
+
    APP FIELDS, not book text (they change no rule): `key` on every row; `label`
    on the Cred and Heat ladder rows (the lead words of the book's own meaning,
    for a tracker that needs a short name per value); `orMore` on Apex's "16+".
@@ -60,7 +68,14 @@ EN.social = {
     { key: "socialFallout", term: "Social Fallout", text: "The lasting consequence of a social action: scrutiny, worsened terms, lost face, a faction shift, a Profile earned." }
   ],
 
-  /* The three depths. `name` is the bold run-in that leads each paragraph. */
+  /* The three depths. `name` is the bold run-in that leads each paragraph.
+     2026-10-16 handoff, section 8: the Sit-Down and the full Cred and Heat rules moved to
+     the Game Master's Toolkit. The Admin desktop keeps the three depths (the GM side
+     mirrors the Toolkit); the Freelancer desktop shows Friction and then `toolkitLead`,
+     the book's new sentence as the handoff quotes it. The handoff's quote breaks off
+     after "the full Cred and Heat tracks", so the rest of that sentence is still to come
+     from the author. */
+  toolkitLead: "Two optional systems build on it, and both live in the Game Master's Toolkit: the Sit-Down, which runs a big negotiation, interrogation, or trial like a combat encounter, and the full Cred and Heat tracks.",
   depthsLead: "This chapter handles social conflict at three depths.",
   depths: [
     { key: "friction", name: "Friction", text: "is always on: a roll, a margin, a consequence the table can track on the back of a napkin. Use it for every social scene that matters." },
@@ -77,7 +92,9 @@ EN.social = {
       "the conversation may shift reputation, debt, or faction posture"
     ],
     after: "Most conversations in Elysium don't clear that bar. A two-line haggle for cheap noodles isn't a system event. Use this when the outcome will matter to someone tomorrow.",
-    fit: "Use what fits the scene. A bartender shaking down a Freelancer for an overdue tab needs nothing more than Friction. A crew trying to crack a corporate witness across a six-hour deposition deserves the Sit-Down. The player who wants to know whether their Fury is famous in the underground fight circuit yet wants Cred."
+    fit: "Use what fits the scene. A bartender shaking down a Freelancer for an overdue tab needs nothing more than Friction. A crew trying to crack a corporate witness across a six-hour deposition deserves the Sit-Down. The player who wants to know whether their Fury is famous in the underground fight circuit yet wants Cred.",
+    // the Freelancer desktop's copy: the same text with the Sit-Down sentence deleted (that rule moved to the Toolkit)
+    playerFit: "Use what fits the scene. A bartender shaking down a Freelancer for an overdue tab needs nothing more than Friction. The player who wants to know whether their Fury is famous in the underground fight circuit yet wants Cred."
   },
 
   /* ---- Friction --------------------------------------------------------------- */
@@ -426,10 +443,11 @@ EN.social = {
     columns: ["Step", "Summary"],
     steps: [
       { n: 1, name: "Define the Stakes", text: "What does the Character want. What is the other side protecting." },
-      { n: 2, name: "Choose the Depth", text: "Friction for quick scenes. A Sit-Down for high-stakes encounters." },
+      // `playerText`: the Freelancer desktop's step, with only the Sit-Down clause deleted (that rule moved to the Toolkit)
+      { n: 2, name: "Choose the Depth", text: "Friction for quick scenes. A Sit-Down for high-stakes encounters.", playerText: "Friction for quick scenes." },
       { n: 3, name: "Pick an Approach", text: "Persuasion, Intimidation, Performance, Deception, or Insight. The Approach picks the Skill and Attribute." },
-      { n: 4, name: "Build the Pool", text: "Attribute, Skill tier, tools, sway, and any Edge or Snag the Floor provides." },
-      { n: 5, name: "Resolve the Margin", text: "Use the normal success table. In a Sit-Down, Margin becomes Pressure against Resolve." },
+      { n: 4, name: "Build the Pool", text: "Attribute, Skill tier, tools, sway, and any Edge or Snag the Floor provides.", playerText: "Attribute, Skill tier, tools, sway, and any Edge or Snag." },
+      { n: 5, name: "Resolve the Margin", text: "Use the normal success table. In a Sit-Down, Margin becomes Pressure against Resolve.", playerText: "Use the normal success table." },
       { n: 6, name: "Apply Fallout", text: "Debt, Profiles, Scrutiny, Concessions, Faction Shifts, Cred and Heat changes." },
       { n: 7, name: "Record Changes", text: "Write down Profiles, Debts, agreements, and faction posture if the scene matters." },
       { n: 8, name: "Carry It Forward", text: "Future scenes reflect what this one changed." }

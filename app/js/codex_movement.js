@@ -7,12 +7,16 @@
      mv-move       Movement & Terrain           order 12, after Action Economy
      mv-jump       Jumping                      order 14
      mv-fall       Falling & Forced Movement    order 16
+     mv-optfx      Optional Damage Effects That Move a Target, order 17, audience
+                   "gm": the Appendix: Optional Damage Effects moved to the Game
+                   Master's Toolkit (2026-10-16 handoff, section 8), so the Admin
+                   desktop alone carries its two moving Effects
      mv-maneuvers  Shove, Trip & Grapple        order 18, before Active Defenses
      mv-wall       Wall-to-Wall                 order 35, after Cover & Sight
    Anchors worth knowing: mv-move/difficult-terrain, mv-move/through-a-body,
    mv-move/speed-reductions, mv-move/dragging-pushing-and-pulling,
    mv-jump/jump-distance, mv-jump/jump-table, mv-fall/falling-and-forced-movement,
-   mv-fall/knockback, mv-maneuvers/shove, mv-maneuvers/trip, mv-maneuvers/grapple,
+   mv-optfx/knockback (Admin only), mv-maneuvers/shove, mv-maneuvers/trip, mv-maneuvers/grapple,
    mv-wall/rebound, mv-wall/in-a-sealed-room.
    Nothing is written here that the data does not say: every rule line is a field
    of EN.movement, and this file's own words are headings, the one app label per
@@ -31,6 +35,7 @@ window.EN = window.EN || {};
      Inside these panels it also goes through linkify's per-call terms, which outrank
      every other term, so the citation in Going Farther always lands on mv-fall. */
   var FFM = { "Falling & Forced Movement": "mv-fall" };
+  function admin(ctx) { return !!(ctx && ctx.portal === "admin"); }
 
   CV.addPanels("combat", [
 
@@ -43,7 +48,8 @@ window.EN = window.EN || {};
         m.speedReductions ? K.ruleBlock("Speed Reductions", m.speedReductions) : null,
         d ? K.ruleBlock(d.name, d.intro + "\n\n" + d.guidelinesLead + "\n" + K.bullets(d.guidelines)
           + "\n\n" + d.whileLead + "\n" + K.bullets(d.whileMoving), null, { conditions: true }) : null,
-        cm ? K.ruleBlock(cm.name, cm.text) : null,
+        // a GM Guidance box, which moved to the Game Master's Toolkit with the rest of the GM advice
+        cm && admin(ctx) ? K.ruleBlock(cm.name, cm.text) : null,
         K.seeAlso("Squeezing and occupied spaces:", [["ref-size/tight-geometry", "Tight Geometry"], ["ref-size/moving-through-an-occupied-space", "Moving Through an Occupied Space"]]),
         K.seeAlso("Speed itself:", [["bx-space", "Space, Speed & Area"], ["ref-actions/move", "Move"]]),
         K.seeAlso("Hauls and their Load states:", [["sk-load/hauls", "Hauls"]])
@@ -76,14 +82,25 @@ window.EN = window.EN || {};
         K.ruleBlock("Falling & Forced Movement", m.fallingForced),
         // the book's box title is "Forced Movement"; it sits in Kinetic Resonance, so the heading says so
         kb ? K.ruleBlock("Kinetic " + kb.name, kb.text) : null,
-        (m.movingEffects || []).length ? K.subTitle("Optional Damage Effects That Move a Target") : null,
-        (m.movingEffects || []).length && m.optionalEffectsNote ? K.note(m.optionalEffectsNote) : null,
-        (m.movingEffects || []).map(function (e) {
-          return K.ruleBlock(e.name, e.text, e.type.toUpperCase() + " · " + e.group.toUpperCase(), { conditions: true });
-        }),
         K.seeAlso("Moving a Target yourself:", [["mv-maneuvers/shove", "Shove"]]),
         K.seeAlso("Forced movement never provokes:", [["ref-actions/opportunity-attacks", "Opportunity Attacks"]]),
         K.seeAlso("Where they land:", [["ref-conds/prone", "Prone"], ["ref-hazards", "Environmental Hazards"]])
+      ];
+    } },
+
+    /* ---- 3b · the Optional Damage Effects that move a Target: the GM's now ---------
+       The Appendix: Optional Damage Effects lives in the Game Master's Toolkit (the book:
+       "Optional damage Effects (Ignite, Bleed, Mutating, Reversal, and the rest) live in
+       the Game Master's Toolkit."), so these two render on the Admin desktop only. */
+    { id: "mv-optfx", title: "Optional Damage Effects That Move a Target", tag: "CONCUSSIVE · KNOCKBACK", audience: "gm", order: 17, when: has("movingEffects"), build: function (ctx, K) {
+      var m = M();
+      if (!(m.movingEffects || []).length) return [];
+      return [
+        m.optionalEffectsNote ? K.note(m.optionalEffectsNote) : null,
+        m.movingEffects.map(function (e) {
+          return K.ruleBlock(e.name, e.text, e.type.toUpperCase() + " · " + e.group.toUpperCase(), { conditions: true });
+        }),
+        K.seeAlso("The movement itself:", [["mv-fall", "Falling & Forced Movement"]])
       ];
     } },
 
@@ -128,7 +145,7 @@ window.EN = window.EN || {};
     "high jump": "mv-jump/jump-distance",
     "forced movement": "mv-fall",
     "forcibly moved": "mv-fall",
-    "Knockback": "mv-fall/knockback",
+    "Knockback": "mv-optfx/knockback",
     "Shove": "mv-maneuvers/shove",
     "Trip": "mv-maneuvers/trip",
     "Grapple": "mv-maneuvers/grapple",

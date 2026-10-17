@@ -554,6 +554,24 @@ EN.store = (function () {
         .map(function (k) { return PART_RENAMES[k] || k; })
         .slice(0, UTIL_CAP);
       if (typeof lo._profile !== "string" || !lo._profile) lo._profile = "auto";
+      /* Install-time choices, {partKey: value}. The only Part that has one is High-Tension
+         Assembly: "Oomph +1 or the Armor Piercing 1 trait. Choose when the modification is
+         installed." (16 October handoff), stored as "oomph" or "ap". Rebuilt as a plain
+         object of valid values only, part keys run through the same renames as the slots.
+         An install saved before the choice existed has none, and defaults to "oomph" (the
+         author's default), so an old bow keeps the step it was always printed with. A
+         choice for a Part no longer installed is kept: it is inert, and harmless. */
+      var chIn = (lo._choices && typeof lo._choices === "object" && !Array.isArray(lo._choices)) ? lo._choices : {};
+      var chOut = {};
+      Object.keys(chIn).forEach(function (pk) {
+        var v = chIn[pk];
+        if (typeof pk !== "string" || !pk || (v !== "oomph" && v !== "ap")) return;
+        chOut[PART_RENAMES[pk] || pk] = v;
+      });
+      var htaOn = ["targeting", "output", "core", "handling"].some(function (s) { return lo[s] === "high-tension-assembly"; }) ||
+        lo.utility.indexOf("high-tension-assembly") !== -1;
+      if (htaOn && !chOut["high-tension-assembly"]) chOut["high-tension-assembly"] = "oomph";
+      if (Object.keys(chOut).length) lo._choices = chOut; else delete lo._choices;
     });
     if (Array.isArray(ch.equipment)) {
       ch.equipment.forEach(function (e) {
@@ -755,6 +773,11 @@ EN.store = (function () {
        was live on the site for roughly 46 hours, so saved characters can genuinely hold it. */
     TALENT_RENAMES["kinetic-manipulator"] = TALENT_RENAMES["Kinetic Manipulator"] = "spatial-delivery";
     TALENT_RENAMES["spooky-action"] = TALENT_RENAMES["Spooky Action"] = "spatial-delivery";
+    /* 2026-10-16 handoff: Crowd Reader became Cold Reader, so the name no longer sits beside
+       the Codebreaker's exploit (once "Cold Read", now "Quick Scan"). Quick Scan needs no row
+       anywhere: the Codebreaker knows every exploit, so an exploit name is derived and never
+       stored. */
+    TALENT_RENAMES["crowd-reader"] = TALENT_RENAMES["Crowd Reader"] = "cold-reader";
     Object.keys(ch.universalUpgrades || {}).forEach(function (lvl) {
       var u = ch.universalUpgrades[lvl];
       if (!u || (u.type !== "talent" && u.type !== "talentUpgrade") || typeof u.talent !== "string") return;
@@ -781,6 +804,40 @@ EN.store = (function () {
     if (Array.isArray(ch.talents)) {
       ch.talents = ch.talents.map(function (tk) {
         return (typeof tk === "string" && TALENT_RENAMES[tk]) ? TALENT_RENAMES[tk] : tk;
+      });
+    }
+    /* A player's note, pin, star or hide on a Talent lives in ch.featureAnnotations under the
+       feature's DISPLAY NAME (engine features carry t.talent.name), so a rename orphans it:
+       still stored, never shown. The name rows of TALENT_RENAMES are moved here to the
+       current Talent's name. Only for a character that holds the renamed Talent after the
+       passes above, so an annotation on some other feature that happens to share an old
+       Talent name is never touched; and never over an annotation already under the new
+       name, which the player made on purpose. Idempotent with no stamp: once moved, the old
+       name is gone and the second run finds nothing. featureUses needs no twin pass, since
+       none of the renamed Talents is limited-use. */
+    if (ch.featureAnnotations && typeof ch.featureAnnotations === "object") {
+      var heldTalent = Object.create(null);
+      var canonOf = function (tk) {
+        if (typeof tk !== "string" || !tk) return null;
+        var k = TALENT_RENAMES[tk] || tk;
+        return (EN.engine && EN.engine.canonTalentKey) ? (EN.engine.canonTalentKey(k) || k) : k;
+      };
+      Object.keys(ch.universalUpgrades || {}).forEach(function (lvl) {
+        var u = ch.universalUpgrades[lvl];
+        if (u && (u.type === "talent" || u.type === "talentUpgrade")) { var k = canonOf(u.talent); if (k) heldTalent[k] = 1; }
+      });
+      (Array.isArray(ch.talents) ? ch.talents : []).forEach(function (tk) { var k = canonOf(tk); if (k) heldTalent[k] = 1; });
+      var fa = ch.featureAnnotations;
+      Object.keys(TALENT_RENAMES).forEach(function (oldName) {
+        if (/^[a-z0-9-]+$/.test(oldName)) return;                  // a key row, not a display name
+        var to = TALENT_RENAMES[oldName];
+        if (!heldTalent[to]) return;
+        var t = (EN.talents || []).filter(function (x) { return x && x.key === to; })[0];
+        if (!t || !t.name || t.name === oldName) return;
+        if (!Object.prototype.hasOwnProperty.call(fa, oldName)) return;
+        if (Object.prototype.hasOwnProperty.call(fa, t.name)) return;
+        fa[t.name] = fa[oldName];
+        delete fa[oldName];
       });
     }
     /* The attribute a choose-one Talent raised, keyed by talent key. Rebuilt here rather

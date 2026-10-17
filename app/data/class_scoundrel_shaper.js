@@ -286,14 +286,14 @@ EN.classes.shaper = {
   saveFocus: "Mystique and Body",
 
   attributePriorities: [
-    "1. Your Flow Attribute (Primary): Your subclass dictates whether your Flow Attribute is Charm, Mystique, Body, or Tech. It drives your maximum Flow pool, Flow Attack, and Flow Save DC.",
+    "1. Your Flow Attribute (Primary): Mystique or Tech, set by subclass. It drives your maximum Flow pool, Flow Attack, and Flow Save DC.",
     "2. Body or Agility (Secondary): Body increases your Vitality and maximum Wounds, helping you survive the physical toll of combat. Agility keeps your Defense high to avoid taking hits while channeling.",
     "3. Wits (Tertiary): Powers Intuition and Perception, allowing you to read the battlefield and react to sudden threats before they disrupt your resonance."
   ],
 
   resource: {
     name: "Flow Points",
-    attribute: "Mystique/Body/Charm/Tech (by subclass)",
+    attribute: "Mystique or Tech, set by subclass",
     maxFormula: "(Caliber x 3) + Flow Modifier",
     refresh: "You regain all spent FP at the end of a Long Rest, and an amount equal to your Flow Modifier at the end of a Short Rest. If your FP drops to 0, you may continue to shape by entering Overdraw, losing 1d4 Vitality per FP spent and risking Strain.",
     fuels: "Spend FP to build an Invocation using your known Resonances combined with the Intent, Delivery, Force, and Duration rules. Also fuels subclass features and Advanced Techniques (Flow Linking, Resonance Amplification, Cooperative Channeling, Sustained Fields)."
@@ -500,7 +500,7 @@ EN.classes.shaper = {
     {
       key: "sourcerer",
       name: "The Sourcerer",
-      description: "You couldn't write a line of code to save your life. Routers hate you. You've factory-reset the same phone four times this week and you're not sure it helped. None of it matters. The city's machines are crawling with tiny, capricious spirits, the helpful Nixies and the spiteful Gremlins, and for reasons nobody, least of all you, has ever managed to explain, they like you. Where everyone else sees dead metal and cold logic, you see a room full of fickle little personalities waiting for someone to ask them a favor. You don't master the hidden language of machines or fuse magic with circuitry. You just talk to the things living inside them, and more often than not, they listen.",
+      description: "You couldn't write a line of code to save your life. Routers hate you. You've factory-reset the same phone four times this week and you're not sure it helped. None of it matters. The city's machines are crawling with tiny, capricious spirits, the helpful Nixies and the spiteful Gremlins, and for reasons nobody, least of all you, has ever managed to explain, they like you. Where everyone else sees dead metal and cold logic, you see a room full of fickle little personalities waiting for someone to ask them a favor. You don't master the hidden language of machines. You just talk to the things living inside them, and more often than not, they listen.",
       flowAttribute: "Tech",
       features: [
         {
@@ -533,7 +533,7 @@ EN.classes.shaper = {
       winningEncounters: "You win by dictating the terms of reality. You shift the battlefield environment, exploit enemy elemental vulnerabilities, and use your subclass abilities to violently disrupt the opposition. When a fight gets desperate, Overdraw lets you keep shaping after your Reservoir runs dry, at a cost to your body.",
       whatToAvoid: "Reckless Overdraw and ignoring your physical limits. Burning through your Flow Points too early leaves you reliant on Overdraw. Accumulating too much Strain will quickly tear your body apart from the inside out before the enemy even touches you."
     },
-    flowDC: "Flow Save DC and Flow Attack are driven by your subclass Flow Attribute (Charm, Mystique, Body, or Tech). Subclass-stated saves use DC = 8 + your [Flow Attribute] Modifier + your Caliber (e.g., The Icon: DC = 8 + your Charm Modifier + your Caliber).",
+    flowDC: "Flow Save DC and Flow Attack are driven by your subclass Flow Attribute (Mystique or Tech, set by subclass). Subclass-stated saves use DC = 8 + your [Flow Attribute] Modifier + your Caliber (e.g., The Harmonist: DC = 8 + your Mystique Modifier + your Caliber).",
     maxFlow: "Your maximum FP is equal to (Caliber x 3) + your Flow Modifier.",
     flowAttributeBySubclass: {
       icon: "Charm (The Icon may also add half Mystique Modifier, rounded up, minimum 0, to maximum FP via The Parasocial Pact)",

@@ -594,10 +594,12 @@ EN.engine = (function () {
           replacers apply, the player chooses one per attack." So every replacer
           the character has is offered and exactly one resolves. Nothing here
           prefers the largest die; the pick belongs to the player.
-       2. INCREASERS step the resolved die up 1d4 -> 1d6 -> 1d8 -> 1d10 -> 1d12.
-          They stack, and nothing caps how many apply. They land on whichever
-          replacer was chosen. On a strike with no die the first increase grants
-          1d4 and each further one steps again.
+       2. OOMPH (Unarmed) steps the resolved die up 1d4 -> 1d6 -> 1d8 -> 1d10 -> 1d12.
+          Oomph from different sources adds together, and nothing caps the total;
+          the ladder stops at 1d12 and the excess is lost. It lands on whichever
+          replacer was chosen. On a strike with no die the first step of Oomph
+          grants 1d4 (the author's ruling, 16 October handoff) and each further
+          step climbs again.
      Riders are neither: they hang their own dice off the strike alongside what it
      already deals, so they never touch the die or the damage type.
      Standing benefits that are not about punching (Synthetic Musculature's
@@ -608,25 +610,57 @@ EN.engine = (function () {
   // than using any of the replacers available to them (a bite that eats the
   // target or a kick that carves them up is not always what you want).
   var UNARMED_BASE_PICK = "base";
-  // The printed ladder. It ends at 1d12, so a die already there saturates rather
-  // than climbing; the COUNT of increases is never capped.
-  var DIE_STEP = { "1d4": "1d6", "1d6": "1d8", "1d8": "1d10", "1d10": "1d12" };
-  // the rung the first increase grants a strike that has no die whatsoever
+  /* ---- OOMPH: THE one die ladder ------------------------------------------
+     "Oomph +1 steps a damage die up one size along this ladder: 1d4, 1d6, 1d8, 1d10,
+     1d12. Oomph +2 steps it twice." and "A weapon that rolls more than one die steps
+     each of them: Oomph +1 turns a Greatsword's 2d6 into 2d8." So the SIDES climb and
+     the COUNT stays: 2d6 at +1 is 2d8, never 3d6 or 2d6+1d8.
+     "Nothing steps past 1d12; Oomph beyond that is lost." A die already at d12 keeps
+     its size and every step past it is reported as `lost`, so a row can say so.
+     A die with no die at all (the bare unarmed strike) takes 1d4 from its first step,
+     by the author's ruling, and climbs from there.
+     A die whose sides are OFF the ladder (d2, d3, d20) comes back unchanged and every
+     step counts as lost; the catalog carries none today.
+     stepDieInfo is the resolver; stepDie is the string-only shorthand every caller
+     that only wants the die keeps using. */
+  var DIE_LADDER = [4, 6, 8, 10, 12];
+  // the rung the first step of Oomph grants a strike that has no die whatsoever
   var DIE_FIRST = "1d4";
-  function stepDie(die, steps) {
-    var out = die;
-    for (var i = 0; i < steps; i++) out = out ? (DIE_STEP[out] || out) : DIE_FIRST;
-    return out;
+  function stepDieInfo(die, steps) {
+    steps = Math.max(0, Math.floor(Number(steps) || 0));
+    if (die == null || die === "") {
+      if (!steps) return { die: null, applied: 0, lost: 0, offLadder: false };
+      var first = stepDieInfo(DIE_FIRST, steps - 1);
+      return { die: first.die, applied: first.applied + 1, lost: first.lost, offLadder: false };
+    }
+    var m = String(die).trim().match(/^(\d*)\s*d\s*(\d+)$/i);
+    var idx = m ? DIE_LADDER.indexOf(parseInt(m[2], 10)) : -1;
+    if (idx === -1) return { die: die, applied: 0, lost: steps, offLadder: true };
+    var applied = Math.min(steps, DIE_LADDER.length - 1 - idx);
+    return { die: m[1] + "d" + DIE_LADDER[idx + applied], applied: applied, lost: steps - applied, offLadder: false };
   }
+  function stepDie(die, steps) { return stepDieInfo(die, steps).die; }
   // Installed chrome that REPLACES the unarmed die, keyed by cyberware key then
   // by tier. Source values per app/data/cyberware.js.
   /* Talents granting a standing damage-type Resistance, as a table rather than a flag on
      each talent, matching TALENT_UNARMED_STEP right below. Only the FIXED grants: the
      choose-one talents (Cyber-Reinforced Vitality) need a stored pick and are not here. */
+  /* Street Scrapper used to sit here with a standing Resistance to Slashing that neither the
+     old text nor the 16 October text grants. Removed by the author's decision 5 (2026-10-16):
+     the Talent's only Resistance is its Upgrade's, and that one is conditional on the weapon
+     used against you, so it lives in TALENT_RESIST_NOTES below as a note, never a standing row. */
   var TALENT_RESIST = {
-    "street-scrapper": { resist: ["Slashing"] },
     "pain-editor":     { resist: ["Psychic"] },
     "cutting-agent":   { resist: ["Toxic"] }
+  };
+  /* Conditional Resistances the sheet SHOWS and never applies, because ch carries no record of
+     what is hitting you. `upgrade: true` gates the row on the Talent's Upgrade having been
+     bought as a Universal Upgrade, the way RESIST_PICK does. Text per the Street Scrapper
+     Upgrade, 16 October handoff. Read by conditionalResistances(). */
+  var TALENT_RESIST_NOTES = {
+    "street-scrapper": { upgrade: true, types: ["Slashing", "Bludgeoning", "Piercing"],
+      when: "from improvised weapons used against you",
+      text: "Resistance to Slashing, Bludgeoning, and Piercing damage from improvised weapons used against you." }
   };
   /* ---- Grants that let the PLAYER choose the damage type -------------------
      TALENT_RESIST above holds the fixed grants. This holds the menus, and the rule is the one
@@ -836,18 +870,20 @@ EN.engine = (function () {
     "asphalt-rider":             ["AGI", "WIT"],        // 327
     "breach-charger":            ["BOD"],               // 341
     "parkour-runner":            ["BOD", "AGI"],        // 348
-    "crew-commander":            ["CHA"],               // 364
-    "crowd-reader":              ["CHA", "WIT"],        // 371
-    "faceless-persona":          ["CHA"],               // 385
-    "field-specialist":          ALL_ATTRS,             // 399, "one Attribute of your choice"
-    "hyper-aware":               ["WIT", "TEC"],        // 406
-    "photographic-memory":       ["TEC", "WIT"],        // 420
-    "ruin-crawler":              ["WIT", "AGI"],        // 427
-    "shadow-operative":          ["AGI"],               // 434
-    "spatial-delivery":          ["WIT", "MYS"],        // 455
-    "street-chef":               ["BOD", "WIT"],        // 462
-    "trauma-medic":              ["WIT", "TEC"],        // 469
-    "undercity-survivor":        ["WIT", "TEC", "CHA"]  // 476
+    // Cold Reader was Crowd Reader until 2026-10-16 (store.js TALENT_RENAMES moves saved picks);
+    // it now sits above Crew Commander in talents.js, and the note above it there shifts the rows below
+    "cold-reader":               ["CHA", "WIT"],        // 369
+    "crew-commander":            ["CHA"],               // 376
+    "faceless-persona":          ["CHA"],               // 390
+    "field-specialist":          ALL_ATTRS,             // 404, "one Attribute of your choice"
+    "hyper-aware":               ["WIT", "TEC"],        // 411
+    "photographic-memory":       ["TEC", "WIT"],        // 425
+    "ruin-crawler":              ["WIT", "AGI"],        // 432
+    "shadow-operative":          ["AGI"],               // 439
+    "spatial-delivery":          ["WIT", "MYS"],        // 460
+    "street-chef":               ["BOD", "WIT"],        // 467
+    "trauma-medic":              ["WIT", "TEC"],        // 474
+    "undercity-survivor":        ["WIT", "TEC", "CHA"]  // 481
   };
   function talentAttrOptions(talentKey) {
     return ownVal(TALENT_ATTR_BUMP, talentKey) || null;
@@ -915,35 +951,56 @@ EN.engine = (function () {
       Brandware:  { die: "1d6", note: "Swift Action to extend; Armor Piercing 1" },
       Blackware:  { die: "1d8", note: "Swift Action to extend; Armor Piercing 2; a crit strips 1 DR from worn armor" } } }
   };
-  // Talents that STEP the unarmed die, keyed by talent key. Street Scrapper
-  // reads like a die-setter in print ("your unarmed strikes deal 1d4") but the
-  // rule files it as an increase: one step, plus a second once the Level 6+
-  // Upgrade has been unlocked with a Universal Upgrade slot. Source values per
-  // app/data/talents.js.
+  // Talents granting Oomph +N (Unarmed), keyed by talent key. Street Scrapper:
+  // "You gain Oomph +1 (Unarmed)." and its Upgrade "Your Oomph from this Talent
+  // becomes +2 (Unarmed)", so one step plus a second once the Level 6+ Upgrade has
+  // been unlocked with a Universal Upgrade slot. Source values per app/data/talents.js.
   var TALENT_UNARMED_STEP = {
     "street-scrapper": { steps: 1, upgradeSteps: 1,
       note: "Swift Action to Grapple after you hit with it" }
+  };
+  // Subclasses granting scoped Oomph, keyed by subclass key. The Walking Anvil (Juggernaut,
+  // Level 1): "You gain Oomph +1 (Improvised)." Source per class_codebreaker_fury.js.
+  var SUBCLASS_OOMPH = {
+    "juggernaut": [{ label: "The Walking Anvil", steps: 1, scope: "Improvised", minLevel: 1 }]
   };
   // Talents that hang extra dice off the strike without touching its die.
   var TALENT_UNARMED_RIDER = {
     "cybernetic-surge": { damage: "1d6", when: "while your Surge is up" }
   };
-  // Gear that augments the strike, but only while it is actually on your hands.
-  // Knuckles step the die (so a strike with no die gets 1d4) and say in as many
-  // words that they stack; Shock Gloves add their own die alongside whatever you
-  // were already dealing. Source values per app/data/gear_melee.js.
-  var GEAR_UNARMED_STEP = { "Knuckles": { steps: 1, note: "stacks with every other increase" } };
+  /* Gear that augments the strike, but only while it is actually on your hands.
+     Oomph on gear is READ OFF ITS TRAITS: "Oomph +N (Scope)", as Knuckles print
+     "Oomph +1 (Unarmed)". The Gear Trait: "With a scope in parentheses, as on Knuckles
+     (Oomph +1 (Unarmed)), it applies to what the parentheses name while you wear or wield
+     the item." That used to be a name-keyed table here (Knuckles +1); the trait made it
+     data. Shock Gloves add their own die alongside whatever you were already dealing,
+     which is a rider and not Oomph. Source values per app/data/gear_melee.js. */
   var GEAR_UNARMED_RIDER = { "Shock Gloves": { damage: "1d4 Electric" } };
+  var OOMPH_TRAIT = /^\s*Oomph\s*\+\s*(\d+)\s*(?:\(\s*([^)]+?)\s*\))?\s*$/i;
+  /* Every Oomph trait an item prints, as [{steps, scope}]; scope null for an unscoped one,
+     which applies to the weapon carrying it. */
+  function oomphTraits(item) {
+    var out = [];
+    ((item && item.traits) || []).forEach(function (t) {
+      var m = OOMPH_TRAIT.exec(String(t));
+      if (m) out.push({ steps: parseInt(m[1], 10), scope: m[2] || null });
+    });
+    return out;
+  }
+  function scopeKey(s) {
+    return String(s || "").toLowerCase().replace(/\s+weapons?$/, "").replace(/s$/, "").trim();
+  }
   /* An unarmed AUGMENT is not a weapon with a die of its own. Both pieces carry a
      `damage` string in the catalog so the stash row has something to print, but
      that number is what the augment CONTRIBUTES to a punch, never a die you roll
      in place of one. Anything scanning equipped gear for "the melee weapon I am
      holding" has to skip them, or it reads 1d4 off a pair of Knuckles and hands
      back a smaller die than the bare fist it is strapped to. Exported because the
-     Parry row and the Defensive Impulse tray both do exactly that scan. */
+     Parry row and the Defensive Impulse tray both do exactly that scan. An augment
+     is anything printing Oomph (Unarmed), or a rider in GEAR_UNARMED_RIDER. */
   function isUnarmedAugmentName(name) {
-    return Object.prototype.hasOwnProperty.call(GEAR_UNARMED_STEP, name) ||
-           Object.prototype.hasOwnProperty.call(GEAR_UNARMED_RIDER, name);
+    if (Object.prototype.hasOwnProperty.call(GEAR_UNARMED_RIDER, name)) return true;
+    return oomphTraits(loadCatalogItem(name)).some(function (o) { return scopeKey(o.scope) === "unarmed"; });
   }
   /* Applied Bonuses that change the unarmed strike. The Ripper Hot-Wire
      "Pneumatic Bypass" is an increase a Stitcher hangs on somebody ELSE's
@@ -973,6 +1030,163 @@ EN.engine = (function () {
       if (eq.indexOf(key) === -1 && carry[key] !== "worn") return false;
       return !leaseLapsed(ch, key);
     });
+  }
+  /* ---- OOMPH SOURCES -------------------------------------------------------
+     "Oomph on a weapon, or on a Part installed in it, applies to that weapon. Oomph from
+     anywhere else, such as a talent, cyberware, a Flow effect, or worn gear, names its scope
+     in parentheses: Oomph +1 (Unarmed), Oomph +1 (Improvised), Oomph +1 (Sidearms)."
+     scopedOomphSources is every source of the second kind the character has right now, as
+     [{label, kind, steps, scope, note}], in a fixed order: lineage, Talents, subclass, gear on
+     your hands, applied Bonuses. Unarmed keeps exactly the sources and labels it always had,
+     so the OOMPH chips read "Street Scrapper +1", "Street Scrapper Upgrade +1", "Knuckles +1".
+     Gear counts only while worn or wielded (unarmedGearOnHands), once per item name, which is
+     how the Knuckles table always behaved. */
+  function scopedOomphSources(ch) {
+    var out = [];
+    activeLineageFeatures(ch).forEach(function (fn) {
+      var m = LINEAGE_MECH[fn];
+      if (!m || !m.unarmedStep) return;
+      out.push({ label: fn, kind: "lineage", steps: m.unarmedStep, scope: "Unarmed", note: null });
+    });
+    var upKeys = talentUpgradeKeys(ch);
+    activeTalents(ch).forEach(function (t) {
+      var spec = TALENT_UNARMED_STEP[t.talent.key];
+      if (!spec) return;
+      out.push({ label: t.talent.name, kind: "talent", steps: spec.steps, scope: "Unarmed", note: spec.note || null });
+      if (spec.upgradeSteps && upKeys.indexOf(t.talent.key) !== -1) {
+        out.push({ label: t.talent.name + " Upgrade", kind: "talent", steps: spec.upgradeSteps, scope: "Unarmed", note: "Level 6+" });
+      }
+    });
+    var subRows = (ch && ch.subclass && Object.prototype.hasOwnProperty.call(SUBCLASS_OOMPH, ch.subclass)) ? SUBCLASS_OOMPH[ch.subclass] : [];
+    subRows.forEach(function (r) {
+      if ((Number(ch.level) || 1) < (r.minLevel || 1)) return;
+      out.push({ label: r.label, kind: "subclass", steps: r.steps, scope: r.scope, note: null });
+    });
+    var seen = Object.create(null);
+    ((ch && ch.equipment) || []).forEach(function (e) {
+      if (!e || !e.name || seen[e.name]) return;
+      var ot = oomphTraits(loadCatalogItem(e.name)).filter(function (o) { return !!o.scope; });
+      if (!ot.length || !unarmedGearOnHands(ch, e.name)) return;
+      seen[e.name] = true;
+      ot.forEach(function (o) {
+        out.push({ label: e.name, kind: "gear", steps: o.steps, scope: o.scope, note: "while worn or wielded" });
+      });
+    });
+    BONUS_UNARMED_STEP.forEach(function (spec) {
+      if (!bonusApplied(ch, spec.key)) return;
+      out.push({ label: spec.label, kind: "bonus", steps: spec.steps, scope: "Unarmed", note: spec.note || null });
+    });
+    return out;
+  }
+  /* Does a scope name this weapon? "Sidearms" names group Sidearm; singular or plural, any
+     case, with or without a trailing "weapons". Unarmed and Improvised never name a catalog
+     weapon. Melee and Ranged name every weapon of that range. */
+  function oomphScopeFits(scope, item) {
+    var s = scopeKey(scope);
+    if (!s || !item || s === "unarmed" || s === "improvised") return false;
+    if (s === scopeKey(item.group) || s === scopeKey(item.category)) return true;
+    if (s === "melee") return isMeleeWeapon(item);
+    if (s === "ranged") return !isMeleeWeapon(item);
+    return false;
+  }
+  /* The stored install-time choice on a Part that offers one (High-Tension Assembly: Oomph +1
+     or the Armor Piercing 1 trait, "Choose when the modification is installed"). Stored per
+     weapon ENTRY at ch.weaponParts[entryKey]._choices[partKey]. An install with no stored
+     answer reads as the Part's `choice.default` (Oomph +1, the 16 October default), and an
+     answer that is not one of the Part's options reads the same way. Null for a Part that
+     offers no choice. */
+  function weaponPartChoice(ch, key, part) {
+    if (typeof part === "string") part = ((EN.weaponParts && EN.weaponParts.byKey) || {})[part];
+    if (!part || !part.choice) return null;
+    var lo = ((ch && ch.weaponParts) || {})[key] || {};
+    var picked = (lo._choices && typeof lo._choices === "object") ? lo._choices[part.key] : null;
+    var opts = (part.choice.options || []).map(function (o) { return o.value; });
+    return opts.indexOf(picked) !== -1 ? picked : part.choice.default;
+  }
+  /* THE Oomph resolver. target is one of
+       { kind: "weapon", item, key }   key = the equipment ENTRY (Parts are per entry)
+       { kind: "unarmed" }
+       { kind: "improvised" }
+     plus an optional `die` to measure applied and lost against (a weapon defaults to its
+     printed one-handed die, unarmed to the chosen strike's own die, improvised to none).
+     Returns { total, applied, lost, die, partsTotal, partsCapped, sources, choices }:
+       sources   [{label, kind, steps, scope, capped}], every source in scope, Parts first
+       total     the Oomph that applies: Parts capped at +1, everything else added uncapped
+       partsTotal / partsCapped  what the Parts printed, and whether the +1 cap bit
+       applied / lost  steps that landed and steps past 1d12, for `die`
+       die       `die` stepped by total (null when no die was measured)
+       choices   [{key, name, choice}] for Parts with an install-time choice on this weapon
+     "A weapon takes at most Oomph +1 from aftermarket Parts, however many it carries."
+     "Oomph from different sources adds together." "Nothing steps past 1d12." */
+  function oomphFor(ch, target) {
+    target = target || {};
+    var kind = target.kind || "weapon";
+    var out = { kind: kind, total: 0, applied: 0, lost: 0, die: null, partsTotal: 0, partsCapped: false, sources: [], choices: [] };
+    var measure;
+    if (kind === "weapon") {
+      var item = target.item || null;
+      var running = 0;
+      weaponPartsOn(ch, target.key).forEach(function (p) {
+        if (!p || !p.oomph) return;
+        var steps = p.oomph;
+        if (p.choice) {
+          var c = weaponPartChoice(ch, target.key, p);
+          out.choices.push({ key: p.key, name: p.name, choice: c });
+          if (c !== "oomph") return;
+        }
+        var before = running;
+        running += steps;
+        out.partsTotal += steps;
+        out.sources.push({ label: p.name, kind: "part", steps: steps, scope: null, capped: before >= 1 ? steps : Math.max(0, running - 1) });
+      });
+      out.partsCapped = out.partsTotal > 1;
+      out.total += Math.min(out.partsTotal, 1);
+      oomphTraits(item).forEach(function (o) {
+        if (o.scope) return;
+        out.total += o.steps;
+        out.sources.push({ label: (item && item.name) || "weapon", kind: "item", steps: o.steps, scope: null, capped: 0 });
+      });
+      scopedOomphSources(ch).forEach(function (s) {
+        if (!oomphScopeFits(s.scope, item)) return;
+        out.total += s.steps;
+        out.sources.push({ label: s.label, kind: s.kind, steps: s.steps, scope: s.scope, capped: 0, note: s.note || null });
+      });
+      measure = ("die" in target) ? target.die
+        : ((String((item && item.damage) || "").match(/^\s*(\d+d\d+)/) || [])[1] || null);
+      // a weapon with no printed die (Knuckles' "Augments unarmed strikes") has nothing to step
+      if (!measure) { out.applied = 0; out.lost = 0; out.die = null; return out; }
+    } else {
+      var want = kind === "unarmed" ? "unarmed" : "improvised";
+      scopedOomphSources(ch).forEach(function (s) {
+        if (scopeKey(s.scope) !== want) return;
+        out.total += s.steps;
+        out.sources.push({ label: s.label, kind: s.kind, steps: s.steps, scope: s.scope, capped: 0, note: s.note || null });
+      });
+      if ("die" in target) measure = target.die;
+      else if (kind === "unarmed") {
+        var rep = resolveUnarmed(ch, unarmedReplacers(ch));
+        measure = rep ? rep.die : UNARMED_BASE.die;
+      } else {
+        out.die = null;
+        return out;
+      }
+    }
+    var info = stepDieInfo(measure, out.total);
+    out.die = info.die; out.applied = info.applied; out.lost = info.lost;
+    return out;
+  }
+  /* Conditional Resistances, shown as notes and never applied (see TALENT_RESIST_NOTES).
+     [{label, types, when, text}]. */
+  function conditionalResistances(ch) {
+    var out = [], upKeys = talentUpgradeKeys(ch);
+    activeTalents(ch).forEach(function (t) {
+      var spec = TALENT_RESIST_NOTES[t.talent.key];
+      if (!spec) return;
+      if (spec.upgrade && upKeys.indexOf(t.talent.key) === -1) return;
+      out.push({ label: t.talent.name + (spec.upgrade ? " (Upgrade)" : ""), types: spec.types.slice(),
+                 when: spec.when, text: spec.text });
+    });
+    return out;
   }
   // Every effect currently available to the character that REPLACES the unarmed
   // die, as [{source, pick, label, kind, die, type, traits, note}].
@@ -1341,11 +1555,11 @@ EN.engine = (function () {
     var seen = {};
     return out.filter(function (o) { if (seen[o.pick]) return false; seen[o.pick] = true; return true; });
   }
-  // Every effect stepping the die up, as {count, sources}. The sources stay
+  // Every source of Oomph (Unarmed), as {count, sources}; count is the total Oomph. The sources stay
   // itemised so the sheet can say WHY the die reads 1d10 instead of just showing
   // a number the player has to take on faith.
   function unarmedIncreases(ch) {
-    var sources = [], linFeats = activeLineageFeatures(ch);
+    var sources = [];
     /* Synthetic Musculature's step is a BLANKET one and stays that way integrated or not.
        Brandon ruled on the razors case, 2026-08-12: "enhance all unarmed by one step, making
        the fist and the razor 1 step higher independently and not stacking."
@@ -1364,33 +1578,14 @@ EN.engine = (function () {
        The pairing therefore adds no DAMAGE the character did not already have, which is the
        original L4 finding standing after all. Its live benefit is the Static Point reduction,
        and the Encumbrance Threshold and Size-for-grappling halves the clause retains. */
-    linFeats.forEach(function (fn) {
-      var m = LINEAGE_MECH[fn];
-      if (!m || !m.unarmedStep) return;
-      sources.push({ label: fn, kind: "lineage", steps: m.unarmedStep, note: null });
-    });
-    var upKeys = talentUpgradeKeys(ch);
-    activeTalents(ch).forEach(function (t) {
-      var spec = TALENT_UNARMED_STEP[t.talent.key];
-      if (!spec) return;
-      sources.push({ label: t.talent.name, kind: "talent", steps: spec.steps, note: spec.note || null });
-      if (spec.upgradeSteps && upKeys.indexOf(t.talent.key) !== -1) {
-        sources.push({ label: t.talent.name + " Upgrade", kind: "talent", steps: spec.upgradeSteps, note: "Level 6+" });
-      }
-    });
-    Object.keys(GEAR_UNARMED_STEP).forEach(function (nm) {
-      if (!unarmedGearOnHands(ch, nm)) return;
-      var spec = GEAR_UNARMED_STEP[nm];
-      sources.push({ label: nm, kind: "gear", steps: spec.steps, note: spec.note || null });
-    });
-    // Applied Bonuses. This is the path the Pneumatic Bypass comment below used
-    // to say did not exist. It is a Ripper Hot-Wire a Stitcher installs on an
-    // ALLY, so nothing on the recipient's record can imply it; the player
-    // declares it in the Status Changes panel and it lands here as one step,
-    // exactly as the old comment said it should whenever the GM says it is live.
-    BONUS_UNARMED_STEP.forEach(function (spec) {
-      if (!bonusApplied(ch, spec.key)) return;
-      sources.push({ label: spec.label, kind: "bonus", steps: spec.steps, note: spec.note || null });
+    /* The sources are the Oomph (Unarmed) rows of scopedOomphSources, in its order: lineage
+       (Synthetic Musculature), Talents (Street Scrapper and its Upgrade), gear on your hands
+       printing Oomph (Unarmed) (Knuckles), and applied Bonuses. The last is the Ripper Hot-Wire
+       a Stitcher installs on an ALLY, so nothing on the recipient's record can imply it; the
+       player declares it in the Status Changes panel and it lands here as one step. */
+    scopedOomphSources(ch).forEach(function (s) {
+      if (scopeKey(s.scope) !== "unarmed") return;
+      sources.push({ label: s.label, kind: s.kind, steps: s.steps, scope: s.scope, note: s.note || null });
     });
     var count = 0;
     sources.forEach(function (s) { count += s.steps; });
@@ -1599,6 +1794,13 @@ EN.engine = (function () {
     }
     return null;
   }
+  /* OOMPH IS APPLIED HERE, so every reader of baseDice / versatile / dice picks it up: those
+     three now hold the STEPPED dice. "A Versatile weapon steps whichever die you're using", so
+     both dice are stepped and the grip picks between them as before. The book's printed dice
+     stay alongside as printedBase / printedVersatile / printedDice, because a critical hit's
+     extra dice are the printed ones (the author's decision 4, 2026-10-16: a Greatsword with a
+     Weighted Head crits for 2d8 + 2d6). `oomph` is oomphFor()'s answer, with applied and lost
+     measured against the die in use, and `oomph.note` is the one sentence that explains it. */
   function weaponGrip(ch, item, key) {
     var traits = (item && item.traits) || [];
     var out = {
@@ -1607,6 +1809,8 @@ EN.engine = (function () {
       twoHandedTrait: traits.indexOf("Two-Handed") !== -1,
       forcedBy: null, twoHanded: false, canToggle: false, dice: null, why: ""
     };
+    out.printedBase = out.baseDice;
+    out.printedVersatile = out.versatile;
     if (out.twoHandedTrait) out.forcedBy = "the Two-Handed trait";
     weaponPartsOn(ch, key).forEach(function (p) {
       if (p && p.grantsTwoHanded && !out.twoHandedTrait) out.forcedBy = p.name;
@@ -1618,7 +1822,26 @@ EN.engine = (function () {
       out.twoHanded = (((ch && ch.weaponGrip) || {})[key] === "two");
       out.canToggle = true;
     }
+    out.printedDice = (out.twoHanded && out.printedVersatile) ? out.printedVersatile : out.printedBase;
+    var oo = oomphFor(ch, { kind: "weapon", item: item, key: key, die: out.printedDice });
+    // a printed die steps; a weapon with none (Knuckles) has nothing to step, never 1d4
+    if (out.printedBase) out.baseDice = stepDie(out.printedBase, oo.total);
+    if (out.printedVersatile) out.versatile = stepDie(out.printedVersatile, oo.total);
     out.dice = (out.twoHanded && out.versatile) ? out.versatile : out.baseDice;
+    oo.note = "";
+    if (oo.sources.length && out.printedDice) {
+      var bits = oo.sources.map(function (s) { return s.label + " +" + s.steps; });
+      oo.note = "Oomph +" + oo.total + " (" + bits.join(", ") + ")";
+      oo.note += oo.applied ? ": " + out.printedDice + " steps to " + out.dice + "." : ".";
+      if (oo.partsCapped) {
+        oo.note += " Parts give at most Oomph +1, so " + (oo.partsTotal - 1) + " from Parts "
+          + ((oo.partsTotal - 1) === 1 ? "is" : "are") + " lost.";
+      }
+      if (oo.lost) {
+        oo.note += " Nothing steps past 1d12, so Oomph +" + oo.lost + " is lost.";
+      }
+    }
+    out.oomph = oo;
     if (out.versatile && out.forcedBy) {
       out.why = "Held in two hands because of " + out.forcedBy + ", so it deals its Versatile "
         + out.versatile + " and its one-handed " + out.baseDice + " is out of reach.";
@@ -1628,6 +1851,7 @@ EN.engine = (function () {
     } else if (out.forcedBy) {
       out.why = "Held in two hands because of " + out.forcedBy + ".";
     }
+    if (oo.note) out.why = out.why ? out.why + " " + oo.note : oo.note;
     return out;
   }
   // The replacer the character is striking with: their stored pick while it is
@@ -1639,16 +1863,19 @@ EN.engine = (function () {
     var chosen = replacers.filter(function (o) { return o.pick === pick; })[0];
     return chosen || replacers[0] || null;
   }
-  // The whole strike: the chosen replacer resolved FIRST, then every increase
+  // The whole strike: the chosen replacer resolved FIRST, then Oomph (Unarmed)
   // applied on top of it. `die` null is the bare flat-1 punch.
   function resolveUnarmedStrike(ch) {
     var replacers = unarmedReplacers(ch);
     var replacer = resolveUnarmed(ch, replacers);
     var inc = unarmedIncreases(ch);
     var baseDie = replacer ? replacer.die : UNARMED_BASE.die;
-    var die = stepDie(baseDie, inc.count);
+    var info = stepDieInfo(baseDie, inc.count);
+    var die = info.die;
     return {
       die: die,
+      // Oomph (Unarmed): the total, the steps that landed and the steps lost past 1d12
+      oomph: { total: inc.count, applied: info.applied, lost: info.lost },
       // The flat 1 is what a strike with no die deals. Once anything grants a die
       // you roll that instead, so the 1 and the die are never both in play. There
       // is no damage floor here: the rule does not give unarmed strikes one.
@@ -3030,6 +3257,9 @@ EN.engine = (function () {
      two paths, and each is read off the item's own data rather than off a
      generic flag: `vacuum: true` on the armor row (Warframe Shell), or a
      Rebreather Liner (`sealToVacuum`) fitted to a suit that is ALREADY Sealed.
+     Since the 16 October handoff the book's vacuum rule cites only the Rebreather
+     Liner (the Warframe Shell moved to the Game Master's Toolkit); the `vacuum: true`
+     path stays so a saved Warframe Shell still holds vacuum.
      A lapsed lease grants nothing, here as everywhere else. */
   function vacuumSeal(ch, w) {
     w = w || wornArmor(ch);
@@ -3828,6 +4058,8 @@ EN.engine = (function () {
       lineageSpeed: linMech.speed,
       lineageSpeedFirstRound: linMech.speedFirstRound,
       resistances: damageResistances(ch, linFeats, wornArmor(ch), attuned),
+      // conditional Resistances, shown as notes and never applied ([{label, types, when, text}])
+      resistNotes: conditionalResistances(ch),
       lineageInit: { caliber: linMech.initCaliber ? cal : 0, edge: linMech.initEdge },
       cyberInit: (cyberFlat.init || 0),   // Reflex Booster "+2" / "+4" at Blackware
       encumbrance: enc,
@@ -4175,6 +4407,30 @@ EN.engine = (function () {
     var m = String(s == null ? "" : s).match(/(\d+)\s*d\s*(\d+)/i);
     return m ? { n: parseInt(m[1], 10), sides: parseInt(m[2], 10) } : null;
   }
+  /* CRIT DICE WITH OOMPH. "It never touches bonus dice from features, extra dice on a critical
+     hit, or flat damage." Read literally (the author's decision 4, 2026-10-16): the crit's extra
+     dice are the PRINTED dice, so a Greatsword with a Weighted Head crits for 2d8 + 2d6.
+     critDamageDice(dice, printed) is the one formula: { main, extra, text, merged }.
+       printed omitted (undefined) or equal to dice: the extra dice are the same dice, and the
+         text merges to the doubled count ("4d6"), exactly as before Oomph existed.
+       printed differs: "2d8 + 2d6".
+       printed null (a strike whose die came wholly from Oomph, like a bare fist): no extra
+         dice, text is just the dice. Flagged to the author; callers may pass the dice instead. */
+  function critDamageDice(dice, printed) {
+    var main = parseDamageDice(dice);
+    if (!main) return { main: dice || null, extra: null, text: dice || "", merged: false };
+    var mainTxt = main.n + "d" + main.sides;
+    if (printed === undefined) printed = mainTxt;
+    var ex = parseDamageDice(printed);
+    if (!ex) return { main: mainTxt, extra: null, text: mainTxt, merged: false };
+    var exTxt = ex.n + "d" + ex.sides;
+    if (ex.sides === main.sides) {
+      return { main: mainTxt, extra: exTxt, text: (main.n + ex.n) + "d" + main.sides, merged: true };
+    }
+    return { main: mainTxt, extra: exTxt, text: mainTxt + " + " + exTxt, merged: false };
+  }
+  /* spec.critDice (optional): the printed dice a crit adds (see critDamageDice). Without it a
+     crit doubles the weapon dice count, as it always has. */
   function rollDamage(spec) {
     spec = spec || {};
     function die(sides) { return 1 + Math.floor(Math.random() * sides); }
@@ -4182,10 +4438,23 @@ EN.engine = (function () {
     var groups = [];
     var main = parseDamageDice(spec.dice);
     if (main && main.n > 0 && main.sides > 0) {
-      var n = main.n * (spec.crit ? 2 : 1);
-      var rolls = rollN(n, main.sides);
-      groups.push({ label: "Weapon" + (spec.crit ? " (crit x2)" : ""), n: n, sides: main.sides,
-        rolls: rolls, subtotal: rolls.reduce(function (a, b) { return a + b; }, 0) });
+      var cx = (spec.crit && spec.critDice !== undefined) ? critDamageDice(spec.dice, spec.critDice) : null;
+      if (cx && !cx.merged) {
+        var mr = rollN(main.n, main.sides);
+        groups.push({ label: "Weapon", n: main.n, sides: main.sides,
+          rolls: mr, subtotal: mr.reduce(function (a, b) { return a + b; }, 0) });
+        var ex = parseDamageDice(cx.extra);
+        if (ex && ex.n > 0 && ex.sides > 0) {
+          var er = rollN(ex.n, ex.sides);
+          groups.push({ label: "Crit (printed " + ex.n + "d" + ex.sides + ")", n: ex.n, sides: ex.sides, crit: true,
+            rolls: er, subtotal: er.reduce(function (a, b) { return a + b; }, 0) });
+        }
+      } else {
+        var n = (cx && cx.merged) ? main.n + parseDamageDice(cx.extra).n : main.n * (spec.crit ? 2 : 1);
+        var rolls = rollN(n, main.sides);
+        groups.push({ label: "Weapon" + (spec.crit ? " (crit x2)" : ""), n: n, sides: main.sides,
+          rolls: rolls, subtotal: rolls.reduce(function (a, b) { return a + b; }, 0) });
+      }
     }
     (spec.bonus || []).forEach(function (b) {
       var bn = Math.max(0, Math.floor((b && b.n) || 0)), bs = Math.max(0, Math.floor((b && b.sides) || 0));
@@ -4236,6 +4505,8 @@ EN.engine = (function () {
     derive: derive, mod: mod, caliber: caliber, fmtMod: fmtMod, clamp: clamp,
     buildEdgePool: buildEdgePool, buildSnagPool: buildSnagPool, snagFromDc: snagFromDc, rollDicePool: rollDicePool, rollD20: rollD20,
     composeRollSpec: composeRollSpec, rollDamage: rollDamage,
+    // the one crit formula with Oomph: stepped dice plus the PRINTED dice again (decision 4)
+    critDamageDice: critDamageDice,
     // the one payout splitter, shared by the player's SPLIT panel and the GM's Payroll
     splitPayout: splitPayout,
     installedCyberware: installedCyberware, installedCyberBases: installedCyberBases,
@@ -4281,6 +4552,14 @@ EN.engine = (function () {
     unarmedBasePick: UNARMED_BASE_PICK,
     isUnarmedAugmentName: isUnarmedAugmentName,   // gear that augments a punch instead of being a weapon
     stepDie: stepDie,   // the picker walks the ladder too, so each option can show what it really deals
+    // OOMPH. stepDieInfo is the ladder with its accounting ({die, applied, lost, offLadder});
+    // oomphFor is THE resolver for how much Oomph reaches a weapon entry, an unarmed strike or
+    // an improvised weapon; scopedOomphSources lists every scoped source the character has;
+    // weaponPartChoice reads a Part's install-time choice (High-Tension Assembly).
+    stepDieInfo: stepDieInfo, oomphFor: oomphFor, scopedOomphSources: scopedOomphSources,
+    oomphTraits: oomphTraits, weaponPartChoice: weaponPartChoice,
+    // conditional Resistances shown as notes (Street Scrapper's Upgrade), also on d.resistNotes
+    conditionalResistances: conditionalResistances,
     isStackableItem: isStackableItem, isStackableName: isStackableName, entryKey: entryKey, findEntry: findEntry,
     // Armor Integrity. armorState IS the resolver for a piece's current DR: every
     // surface that shows, prints or defends with a DR asks it (or reads the

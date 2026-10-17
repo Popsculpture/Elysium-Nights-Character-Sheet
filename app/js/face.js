@@ -6,9 +6,11 @@
    reference. The rules are EN.social (data/social.js), the one copy the Codex
    chapter Social Pressure & Faction Standing (the so- panels) renders in full:
    the quick reference reads that data and links into the chapter, and the
-   ledger's names (standings, pressure states, the Cred and Heat ladders) come
-   from it. The Sit-Down itself is run at the table; the rest of its rules
-   (Plays, Postures, the Floor, Sit-Down Conditions) are linked, not repeated.
+   ledger's names (standings, pressure states) come from it. The Sit-Down and
+   the full Cred and Heat rules moved to the Game Master's Toolkit (2026-10-16
+   handoff, section 8): this tab carries no Sit-Down reference and no ladder
+   text, and links nothing the Freelancer Codex no longer has. The Cred and Heat
+   trackers keep their 0 to 10 values (the author's decision 11).
    Three sub-tabs: the LEDGER (all of the above, and the default), CONTACTS (the
    people the Freelancer can reach, ch.face.contacts; see the CONTACTS block) and
    #POST (the mail, ch.face.post).
@@ -528,10 +530,8 @@ EN.faceView = (function () {
       .concat(L.heat.map(function (r) { return "Heat " + (r.value || 0) + " from " + (r.source || "a source"); }));
     if (ch2.length) out.push(linkLine([el("span.contact-dim", { text: ch2.join(" · ") }),
       jumpBtn("CRED & HEAT ›", "Edit them in the ledger", function () { toLedger("cred"); })]));
-    // the two book lines that touch a contact's Cred and Heat, linked rather than restated
-    out.push(el("p.help", { style: { margin: "8px 0 0", color: "var(--text4)" } }, [
-      "Burning a contact costs Cred (", rl("so-credheat/cred-decreases", "Cred decreases"),
-      "); one who steps in can clear Heat (", rl("so-credheat/heat-decreases", "Heat decreases"), ")."]));
+    /* The line that tied a contact to How They Shift ("Burning a contact costs Cred...") went
+       with the full Cred and Heat rules to the Game Master's Toolkit (2026-10-16). */
     return el("div.contact-links", null, out);
   }
   var LINK_KEYS = { name: 1, print: 1, handle: 1, faction: 1 };
@@ -743,11 +743,12 @@ EN.faceView = (function () {
   }
 
   /* ---- quick reference (collapsible) --------------------------------------
-     A pocket copy of the three tables a Face reaches for mid-scene (Approaches, Margins
-     and Outcomes, the Sit-Down's Pressure and Resolve), read from EN.social, the same
-     copy the Codex chapter Social Pressure & Faction Standing renders in full. Every
-     section ends in links to the full rules: the so- panels, and the Skills and Core
-     Resolution entries behind them (each Approach's skill, Help, Edge, margins, costs). */
+     A pocket copy of the two tables a Face reaches for mid-scene (Approaches, Margins
+     and Outcomes), read from EN.social, the same copy the Codex chapter Social Pressure
+     & Faction Standing renders. Every section ends in links to the rules: the so-
+     panels, and the Skills and Core Resolution entries behind them (each Approach's
+     skill, Help, Edge, margins, costs). The Sit-Down's Pressure and Resolve section left
+     with the Sit-Down for the Game Master's Toolkit (2026-10-16). */
   // a cell is a string, or an array of strings and nodes (a Codex link inside the text)
   function refTable(headers, rows) {
     return el("table.sktable", { style: { width: "100%", fontSize: "11.5px" } }, [
@@ -774,9 +775,6 @@ EN.faceView = (function () {
   }
   // a cell through the Codex linker, so a rule name inside the book's text peeks
   function rt(text) { return [EN.ui.ruleText(el("span"), String(text == null ? "" : text))]; }
-  function ruleP(text, color) {
-    return EN.ui.ruleText(el("p.help", { style: { margin: "0 0 10px", color: color || "var(--text3)" } }), text);
-  }
   // "Intimidation (Versatile)": the skill name links its Skills entry, the tag stays text
   function skillCell(r) {
     var m = /^(.*?)(\s*\(Versatile\))?$/.exec(r.skill || r.name);
@@ -784,8 +782,7 @@ EN.faceView = (function () {
   }
   function referencePanel() {
     var S = EN.social || {};
-    var A = S.approach || {}, M = S.margins || {}, SD = S.sitDown || {};
-    var P = SD.pressure || {}, RV = SD.resolve || {};
+    var A = S.approach || {}, M = S.margins || {};
     var appr = (A.rows || []).map(function (r) { return [r.name, skillCell(r), r.attributes, r.text]; });
     // Insight's Social Help rule (Insight as the Social Help Action), a line under the table so the cell stays short
     // ("Help" stays on the Core Resolution Help Action, as the rv1 fix ruled; the book's own entry follows)
@@ -794,10 +791,8 @@ EN.faceView = (function () {
       rl("rz-edge", "Edge"), " (or +1 Edge Die) to one ally's next social roll in the same scene, and move no Resolve (",
       rl("so-friction/insight-as-the-social-help-action", "Insight as the Social Help Action"), ")."]);
     var marg = (M.rows || []).map(function (r) { return [r.margin, r.result, rt(r.text)]; });
-    var press = (P.results || []).map(function (r) { return [r.result + " (" + r.margin + ")", rt(r.text)]; });
-    var tiers = (RV.tiers || []).map(function (t) { return [t.name, t.text, t.examples]; });
     var chip = EN.ui.ruleChip("so-summary", { title: "Social Play Summary" });
-    return EN.ui.panel("Quick Reference", "APPROACHES · OUTCOMES · SIT-DOWN", [
+    return EN.ui.panel("Quick Reference", "APPROACHES · OUTCOMES", [
       refSection("appr", "Approaches", el("div", null, [
         appr.length ? refTable(["Approach", "Skill", "Attributes", "What it does"], appr) : null,
         socialHelp,
@@ -807,15 +802,6 @@ EN.faceView = (function () {
         marg.length ? refTable(["Margin", "Result", "What happens"], marg) : null,
         codexLine([["so-outcomes", "Social Margins & Outcomes"], ["so-fallout", "Social Fallout Table"],
                    ["rz-margin", "Success Margin & Consequence"], ["rz-social", "Social Consequences & Cost Tracks"]])
-      ])),
-      refSection("sit", "The Sit-Down (Resolve)", el("div", null, [
-        help("A big negotiation run like a combat encounter: the Opposition has Resolve, the crew has Rounds to break it."),
-        P.intro ? ruleP(P.intro, "var(--text2)") : null,
-        press.length ? refTable(["Result", "Pressure dealt"], press) : null,
-        RV.intro ? ruleP(RV.intro, "var(--text2)") : null,
-        tiers.length ? refTable(["Tier", "Resolve", "Examples"], tiers) : null,
-        codexLine([["so-sitdown", "The Sit-Down"], ["so-sitdown/setting-resolve", "Setting Resolve"], ["so-plays", "Rounds & Plays"],
-                   ["so-postures", "Postures"], ["so-floor", "The Floor"], ["so-conditions", "Sit-Down Conditions"]])
       ]))
     ], { corners: true, headerRight: chip });
   }
@@ -846,36 +832,29 @@ EN.faceView = (function () {
       ]
     });
   }
-  /* What each value 0 to 10 means, for the tracker's hover title: the book's own line
-     from the Cred or Heat ladder (EN.social.credHeat), one per rung of its range. These
-     are the player's ladders; the GM's Heat ladder (EN.gmBook.heat) is a different track. */
-  function ladderFor(track) {
-    var T = EN.social && EN.social.credHeat && EN.social.credHeat[track];
-    var out = [];
-    ((T && T.ladder) || []).forEach(function (r) { for (var v = r.min; v <= r.max; v++) out[v] = r.text; });
-    return out.length ? out : null;
-  }
-  var CRED_LADDER = ladderFor("cred");
-  var HEAT_LADDER = ladderFor("heat");
+  /* The Cred and Heat trackers keep their 0 to 10 values (the author's decision 11, 16
+     October). The full ladders that named each value, their hover text and the rule chips
+     into them moved with the full Cred and Heat rules to the Game Master's Toolkit, so the
+     values carry no ladder line and no chip. EN.social.credHeat stays whole for the GM. */
   function credPanel() {
     return tracker({
-      title: "Cred", tag: "STANDING PER SCENE", key: "cred", rule: "so-credheat/cred-ladder", ruleTitle: "Cred ladder",
+      title: "Cred", tag: "STANDING PER SCENE", key: "cred",
       blank: { scene: "", value: 0 },
       empty: "No scenes tracked. Cred is contextual: what a specific community thinks when your name comes up.",
       cols: [
         { k: "scene", flex: "1.6", placeholder: "Underground music, fixer net, corp sphere..." },
-        { k: "value", type: "num", ladder: CRED_LADDER, tone: "var(--accent)", flex: "0 0 auto" }
+        { k: "value", type: "num", tone: "var(--accent)", flex: "0 0 auto" }
       ]
     });
   }
   function heatPanel() {
     return tracker({
-      title: "Heat", tag: "HOSTILE ATTENTION PER SOURCE", key: "heat", rule: "so-credheat/heat-ladder", ruleTitle: "Heat ladder",
+      title: "Heat", tag: "HOSTILE ATTENTION PER SOURCE", key: "heat",
       blank: { source: "", value: 0 },
       empty: "No Heat tracked. Heat is who is actively looking for you, watching you, or willing to act against you.",
       cols: [
         { k: "source", flex: "1.6", placeholder: "Corp X, South precinct, a rival crew..." },
-        { k: "value", type: "num", ladder: HEAT_LADDER, tone: "var(--danger)", flex: "0 0 auto" }
+        { k: "value", type: "num", tone: "var(--danger)", flex: "0 0 auto" }
       ]
     });
   }

@@ -220,7 +220,7 @@ EN.gearCatalog.tools = {
     /* ---- Media & Presence ---- */
     { name: "Field Recording Kit", bucket: "kits", group: "Media & Presence", price: 180, availability: "Common", legality: "Legal",
       category: "Media Tools", skill: "Perception, Investigation", effect: "Clean media capture. Snag (or +1 Snag Die) on attempts to fake or discredit it.",
-      desc: "Camera, mic, mounts, power, and an edit pad. The difference between a rumor and a receipt. Proof of a first stake, a salvage award, a Contested verdict: all of it rides on footage nobody can dispute. Live broadcast runs on this kit, and so does the audience it feeds.",
+      desc: "Camera, mic, mounts, power, and an edit pad. The difference between a rumor and a receipt. Live broadcast runs on this kit, and so does the audience it feeds.",
       basic: "Enables clean capture, documentation, and playback without improvising.",
       proficient: "Run verification and capture metadata as you record. Your footage is harder to dispute, and an Enemy's attempts to tamper with it, deepfake it, or discredit it roll with Snag on in-combat d20 checks (or +1 Snag Die on out-of-combat Dice Pools) unless they bring specialized counter tech." },
     { name: "Disguise and Styling Kit", bucket: "kits", group: "Media & Presence", price: 120, availability: "Common", legality: "Legal",
@@ -237,7 +237,7 @@ EN.gearCatalog.tools = {
     /* ---- Bureaucracy & Paper (Bureaucracy Tools) ---- */
     { name: "Document and Contract Kit", load: 1, bucket: "kits", group: "Bureaucracy & Paper", price: 100, availability: "Uncommon", legality: "Licensed",
       category: "Bureaucracy Tools", skill: "Investigation, Systems, Deception", effect: "Edge (or +1 Edge Die) on approvals and records pulls after 10 minutes prep.",
-      desc: "Templates, stamps, secure storage, and lookup routines for making the paperwork look exactly as boring as it should. Stake filings, salvage declarations, and claim disputes all run through it. In a claims race, whoever owns the paperwork owns the site.",
+      desc: "Templates, stamps, secure storage, and lookup routines for making the paperwork look exactly as boring as it should.",
       basic: "Supports forms, tickets, records pulls, and basic paperwork handling.",
       proficient: "With 10 minutes to do it properly, run legitimate compliance workflows and build a clean audit trail. For the next scene, gain Edge on in-combat d20 checks (or +1 Edge Die on out-of-combat Dice Pools) to get something approved, pull a record fast, or make the paperwork look routine. The same setup leaned on in a second scene rolls normally, and a third rolls with Snag (or +1 Snag Die)." },
 
@@ -454,9 +454,12 @@ EN.gearCatalog.tools = {
     { name: "AR Optics", load: 0, bucket: "devices", group: "Worn Tech", price: 180, availability: "Uncommon", legality: "Licensed", slot: "Head",
       effect: "Edge (or +1 Edge Die) to spot hostile targeting and drones.",
       desc: "Smart lenses or an ocular overlay that renders prompts and live feeds from linked devices. While powered, gain Edge on in-combat Perception d20 checks (or +1 Edge Die on out-of-combat Dice Pools) to spot hostile targeting, laser sights, or active drones in line of sight. No help against purely stealthy threats with no visible tell." },
-    { name: "Bio Monitor Band", load: 0, bucket: "devices", group: "Worn Tech", price: 140, availability: "Uncommon", legality: "Licensed", slot: "Arms",
-      effect: "Broadcasts your location at 0 Wounds. Allies gain Edge (or +1 Edge Die) to Stabilize you.",
-      desc: "An arm or chest vitals monitor with a short-range distress ping. The first time each day you drop to 0 Wounds, it flags your location to nearby Allies with comms. Allies attempting to Stabilize you roll their first in-combat Medtech d20 check with Edge (or gain +1 Edge Die on their Dice Pool)." },
+    /* 16 October: the book's row. Its Body Slot is now "Arms or Torso". The engine has no
+       either/or slot (a slot ARRAY occupies every slot it lists), so `slot` stays Arms, the one
+       slot it seats in, until a slot choice lands; `slotText` is what the card prints. */
+    { name: "Bio Monitor Band", load: 0, bucket: "devices", group: "Worn Tech", price: 140, availability: "Uncommon", legality: "Licensed", slot: "Arms", slotText: "Arms or Torso",
+      effect: "First 0 Wounds each day: pings your location to Allies with comms; their first Medtech check to Stabilize you gets Edge (or +1 Edge Die).",
+      desc: "An arm or chest vitals monitor with a short-range distress ping." },
     { name: "Adaptive Camo Cloak", load: 0, bucket: "devices", group: "Worn Tech", price: 260, availability: "Rare", legality: "Restricted", slot: "Accessories",
       effect: "Edge (or +1 Edge Die) on Stealth to hide in clutter or low light.",
       desc: "A hooded outer layer with shifting patterns and heat scatter. While powered, gain Edge on in-combat Stealth d20 checks (or +1 Edge Die on out-of-combat Dice Pools) to hide in low light, clutter, or urban ruins. The system has a faint hum and heat bleed: your attacks can't be treated as Silent by virtue of the cloak alone." },
@@ -584,11 +587,13 @@ EN.gearCatalog.tools = {
 
     /* ===================== FLOW TONICS & RESONANT DEVICES ================== */
     /* ---- Resonance Tonics ---- */
+    /* 16 October: the book's row, split across the two fields the card prints:
+       "Action: regain 1d4+1 FP, up to your maximum. Each vial after the first in a scene also
+       gains you 1 Strain." The old one-per-scene cap is gone. */
     { name: "Flow Tonic Vial", bucket: "flow", group: "Resonance Tonics", price: 80, availability: "Uncommon", legality: "Licensed",
-      effect: "Restores 1d4+1 FP.",
+      effect: "Action: regain 1d4+1 FP, up to your maximum.",
       desc: "A drinkable infusion that refills your reserves.",
-      activation: "As an Action, drink to regain 1d4+1 Flow Points, up to your maximum.",
-      limitation: "One Flow Tonic Vial per scene. A second in the same scene gains you 1 Strain from the spike." },
+      limitation: "Each vial after the first in a scene also gains you 1 Strain." },
     { name: "Channel Cleanse Tonic", bucket: "flow", group: "Resonance Tonics", price: 90, availability: "Uncommon", legality: "Licensed",
       effect: "Immediately remove 1 Strain and gain Edge on your next Body or Mystique Save vs Overdraw or backlash within 1 hour.",
       desc: "A soothing liquid that clears residual buildup and smooths your channels.",

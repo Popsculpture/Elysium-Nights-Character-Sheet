@@ -494,6 +494,12 @@ EN.pdfExport = (function () {
     var notes = [];
     if (u.traits) notes.push(u.traits);
     if (u.reach.spaces) notes.push("+" + u.reach.spaces + " reach (" + u.reach.sources.join(", ") + ")");
+    /* Oomph (Unarmed), worded as the weapon rows word it: the screen's OOMPH row says where the
+       steps came from and how many were lost past 1d12, and paper said neither. */
+    if (u.increases && u.increases.count) {
+      notes.push("Oomph +" + u.increases.count + " (" + (u.increases.sources || []).map(function (s) { return s.label; }).join(", ") + ")"
+        + (u.oomph && u.oomph.lost ? ", " + u.oomph.lost + " lost past 1d12" : ""));
+    }
     if (u.note) notes.push(u.note);
     if (tier === "untrained") notes.push("Untrained (Simple Weapons): Snag");
     return [{ name: name, atk: sgn(attr + prof), dmg: dmg, notes: notes.join(" · ") }];
@@ -713,11 +719,15 @@ EN.pdfExport = (function () {
        the Knuckles are on you. */
     /* Same reason as the print sheet: a Resistance changes every incoming damage number and
        nothing else on the page reveals it. One line, because the PDF is tight for space. */
-    if ((d.resistances || []).length) {
+    /* A conditional Resistance (Street Scrapper's Upgrade) prints as a note, never a row:
+       the author's decision 5, 2026-10-16. */
+    var resNotes = d.resistNotes || [];
+    if ((d.resistances || []).length || resNotes.length) {
       ctx.sectionTitle("Resistances");
-      ctx.text(d.resistances.map(function (r) {
+      if ((d.resistances || []).length) ctx.text(d.resistances.map(function (r) {
         return r.type + " " + r.level.toUpperCase() + " (" + r.sources.join(", ") + ")";
       }).join("  ·  "), { size: 8, h: 12 });
+      resNotes.forEach(function (n) { ctx.text(n.label + ": " + n.text, { size: 8, h: 12 }); });
     }
     ctx.sectionTitle("Attacks");
     var atkRows = equippedWeaponRows(ch)
@@ -746,6 +756,22 @@ EN.pdfExport = (function () {
           notes.push(g.twoHanded ? "held two-handed (" + g.versatile + ")"
                                  : "held one-handed (" + g.baseDice + ")");
         }
+        /* Oomph (16 October handoff): weaponGrip's dice are already stepped, so the row prints
+           the die this weapon rolls (a Greatsword with a Weighted Head prints 2d8, not the
+           catalog 2d6). A one-grip weapon takes its stepped die here; the Versatile branches
+           above already print the stepped pair. The note names where the step came from. */
+        if (g && !g.versatile && g.dice && g.printedDice && g.dice !== g.printedDice) dmg = dmg.replace(/^\s*\d+d\d+/, g.dice);
+        if (g && g.oomph && g.oomph.sources && g.oomph.sources.length && g.printedDice) {
+          notes.push("Oomph +" + g.oomph.total + " (" + g.oomph.sources.map(function (s) { return s.label; }).join(", ") + ")"
+            + (g.oomph.partsCapped ? ", Parts capped at +1" : "")
+            + (g.oomph.lost ? ", " + g.oomph.lost + " lost past 1d12" : ""));
+        }
+        /* A Part with an install-time choice (High-Tension Assembly: Oomph +1 or Armor Piercing
+           1) set to Armor Piercing adds no Oomph source, so without this the choice reached the
+           screen's MODS chip and never reached paper. */
+        ((g && g.oomph && g.oomph.choices) || []).forEach(function (c) {
+          if (c.choice === "ap") notes.push("Armor Piercing 1 (" + c.name + ")");
+        });
         /* the attribute modifier the damage roll actually adds. The exported rows used to
            print the catalog string bare, so a Fury swinging a Maul read "2d6 Bludgeoning" on
            paper where the screen read "2d6 +5": the sheet you play from omitted the single
@@ -928,7 +954,8 @@ EN.pdfExport = (function () {
         var what = u.type === "attr" ? attrWhat()
           : u.type === "talent" ? ("Talent: " + talWhat(u.talent))
           : u.type === "talentUpgrade" ? ("Talent Upgrade: " + talName(u.talent))
-          : u.type === "evolution" ? ("Lineage Evolution: " + (u.feature || u.name || ""))
+          // the builder stores the pick as u.evolution (decision 13: the line used to print blank)
+          : u.type === "evolution" ? ("Lineage Evolution: " + (u.evolution || u.feature || u.name || ""))
           : (u.name || u.type || "choice");
         ctx.text("L" + lv + "   " + what, { size: 9, h: 13 });
       });
@@ -965,6 +992,9 @@ EN.pdfExport = (function () {
     } else if (it.damage && grip && grip.versatile) {
       stat.push("Dmg " + (it.damage || "").replace(/^\s*\d+d\d+/, grip.baseDice + " (" + grip.versatile + ")")
         + (grip.twoHanded ? ", held two-handed" : ", held one-handed"));
+    } else if (it.damage && grip && grip.dice && grip.printedDice && grip.dice !== grip.printedDice) {
+      // Oomph stepped a one-grip weapon's die: print the die it rolls, as the Attacks row does
+      stat.push("Dmg " + (it.damage || "").replace(/^\s*\d+d\d+/, grip.dice));
     } else if (it.damage) stat.push("Dmg " + it.damage);
     if (it.range) stat.push("Rng " + it.range);
     if (it.ammo != null) stat.push("Ammo " + it.ammo);

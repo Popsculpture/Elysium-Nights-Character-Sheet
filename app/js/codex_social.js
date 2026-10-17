@@ -18,6 +18,13 @@
    Background's text and half this chapter use the word, and it would link them all.
    Core Resolution keeps the Social Cost Options, the Social Fallout Rule and the
    cost tracks (rz-social); this chapter links there and does not repeat them.
+   MOVED TO THE GAME MASTER'S TOOLKIT (2026-10-16 handoff, section 8): the Sit-Down
+   (so-sitdown, so-plays, so-postures, so-floor, so-conditions), the full Cred and Heat
+   rules (so-credheat) and the chapter's GM Guidance (so-guidance) are audience "gm"
+   panels, so they render on the Admin desktop only and never resolve on the Freelancer
+   one. Inline blocks that moved (the Deposition, the Contacts GM Guidance box, the three
+   depths) render on Admin only, and no Freelancer pointer names a gated panel. The data
+   stays whole in EN.social: the GM Sit-Down tracker reads it directly.
    The API is documented in the header of app/js/codex.js.
    =========================================================================== */
 window.EN = window.EN || {};
@@ -45,6 +52,7 @@ window.EN = window.EN || {};
   function runIn(r) { return "**" + r.name + "** " + r.text; }
   // "- Name: text" named lines, so each is an anchor of its own
   function named(list) { return list.map(function (r) { return "- " + r.name + ": " + r.text; }).join("\n"); }
+  function admin(ctx) { return !!(ctx && ctx.portal === "admin"); }
   // the Admin desktop's GM chapters, linked only where they resolve
   function gmSee(ctx, K, label, pairs) {
     if (ctx.portal !== "admin") return null;
@@ -55,19 +63,31 @@ window.EN = window.EN || {};
   EN.codexView.register({ id: "social", title: "Social Pressure & Faction Standing", order: 66, audience: "both", panels: [
 
     /* ---- 1 · the words and the three depths ------------------------------------- */
-    { id: "so-core", title: "Social Terms & Depths", tag: "FRICTION · SIT-DOWN · CRED AND HEAT", order: 10, when: has("coreConcepts"), build: function (ctx, K) {
+    { id: "so-core", title: "Social Terms & Depths", order: 10, when: has("coreConcepts"),
+      tag: function (ctx) { return admin(ctx) ? "FRICTION · SIT-DOWN · CRED AND HEAT" : "THE WORDS · FRICTION"; },
+      build: function (ctx, K) {
       var s = S(), e = s.engages;
+      /* The Freelancer desktop: Friction, then the book's sentence that sends the Sit-Down
+         and the full Cred and Heat tracks to the Game Master's Toolkit. Admin keeps the
+         three depths, which the Toolkit carries. */
+      function depths() { return admin(ctx) || !s.toolkitLead ? [
+        K.subTitle("Three Depths"),
+        K.proseBlock(s.depthsLead, lo()),
+        K.el("div", null, s.depths.map(function (d) { return K.ruleBlock(d.name, runIn(d), null, lo()); }))
+      ] : [
+        K.subTitle("Friction and the Optional Systems"),
+        K.el("div", null, s.depths.filter(function (d) { return d.key === "friction"; }).map(function (d) { return K.ruleBlock(d.name, runIn(d), null, lo()); })),
+        K.proseBlock(s.toolkitLead, lo())
+      ]; }
       return [
         K.proseBlock(s.intro, lo()),
         K.entry("core-concepts", "Core Concepts", [
           K.subTitle("Core Concepts"),
           K.refTable(["Term", "Summary"], s.coreConcepts.map(function (c) { return [c.term, c.text]; }), [0], lo())
         ]),
-        K.subTitle("Three Depths"),
-        K.proseBlock(s.depthsLead, lo()),
-        K.el("div", null, s.depths.map(function (d) { return K.ruleBlock(d.name, runIn(d), null, lo()); })),
+        depths(),
         K.ruleBlock(e.name, K.bullets(e.items) + "\n\n" + e.after, null, lo()),
-        K.proseBlock(e.fit, lo())
+        K.proseBlock(!admin(ctx) && e.playerFit ? e.playerFit : e.fit, lo())
       ];
     } },
 
@@ -76,7 +96,8 @@ window.EN = window.EN || {};
       var g = S().summary;
       return [
         K.entry("gameplay-summary", g.title, [
-          K.refTable(g.columns, g.steps.map(function (r) { return [r.n + ". " + r.name, r.text]; }), [0], lo())
+          // a step's playerText leaves out the Sit-Down rule the Freelancer desktop no longer carries
+          K.refTable(g.columns, g.steps.map(function (r) { return [r.n + ". " + r.name, !admin(ctx) && r.playerText ? r.playerText : r.text]; }), [0], lo())
         ])
       ];
     } },
@@ -142,10 +163,12 @@ window.EN = window.EN || {};
         K.ruleBlock(c.grant.name, c.grant.text, "BACKGROUND", grant),
         bg && bg.contacts ? K.note("Your Background, " + bg.name + ": " + bg.contacts, lo()) : null,
         K.ruleBlock("Make it Yours", c.makeItYoursLead + "\n\n" + K.bullets([c.makeItYours]), null, lo()),
-        K.ruleBlock("GM Guidance", c.gmGuidance, "GM GUIDANCE", lo()),
+        // the Backgrounds chapter's GM Guidance box moved to the Toolkit with the rest of the GM advice
+        admin(ctx) ? K.ruleBlock("GM Guidance", c.gmGuidance, "GM GUIDANCE", lo()) : null,
         F ? K.ruleBlock("Choosing a Fence", F.intro + "\n\n"
           + K.bullets(F.types.map(runIn)) + "\n\n" + F.rule, "CAPTURED GOODS", lo()) : null,
-        K.seeAlso("Keeping track of them:", [["so-profiles", "Profiles & Debt"], ["so-standing", "Faction Standing & Pressure States"], ["so-credheat", "Cred & Heat"]]),
+        K.seeAlso("Keeping track of them:", [["so-profiles", "Profiles & Debt"], ["so-standing", "Faction Standing & Pressure States"]]
+          .concat(admin(ctx) ? [["so-credheat", "Cred & Heat"]] : [])),
         F ? K.seeAlso("The rest of the market:", [["ref-economy", "Economy & Rewards"]]) : null
       ];
     } },
@@ -183,7 +206,7 @@ window.EN = window.EN || {};
     } },
 
     /* ---- 8 · the Sit-Down: the frame, Resolve, Pressure, breaking ---------------------------- */
-    { id: "so-sitdown", title: "The Sit-Down", tag: "OPTIONAL · RESOLVE · PRESSURE", order: 70, when: has("sitDown"), build: function (ctx, K) {
+    { id: "so-sitdown", title: "The Sit-Down", tag: "OPTIONAL · RESOLVE · PRESSURE", audience: "gm", order: 70, when: has("sitDown"), build: function (ctx, K) {
       var d = S().sitDown, r = d.resolve, p = d.pressure, v = d.vulnerabilities;
       return [
         K.proseBlock(d.intro.join("\n"), lo()),
@@ -208,7 +231,7 @@ window.EN = window.EN || {};
     } },
 
     /* ---- 9 · Rounds and Plays ------------------------------------------------------------------ */
-    { id: "so-plays", title: "Rounds & Plays", tag: "PRESS · SUPPORT · READ · DISRUPT · HOLD", order: 80, when: sd("plays"), build: function (ctx, K) {
+    { id: "so-plays", title: "Rounds & Plays", tag: "PRESS · SUPPORT · READ · DISRUPT · HOLD", audience: "gm", order: 80, when: sd("plays"), build: function (ctx, K) {
       var d = S().sitDown;
       return [
         K.ruleBlock("Rounds", d.rounds + "\n\n" + d.playsLead, null, lo()),
@@ -220,7 +243,7 @@ window.EN = window.EN || {};
     } },
 
     /* ---- 10 · Postures --------------------------------------------------------------------------- */
-    { id: "so-postures", title: "Postures", tag: "ONE IMPULSE ACTION A ROUND", order: 90, when: sd("postures"), build: function (ctx, K) {
+    { id: "so-postures", title: "Postures", tag: "ONE IMPULSE ACTION A ROUND", audience: "gm", order: 90, when: sd("postures"), build: function (ctx, K) {
       var po = S().sitDown.postures;
       return [
         K.proseBlock(po.intro, lo()),
@@ -233,7 +256,7 @@ window.EN = window.EN || {};
     } },
 
     /* ---- 11 · the Floor ---------------------------------------------------------------------------- */
-    { id: "so-floor", title: "The Floor", tag: "ENVIRONMENTAL PRESSURE", order: 100, when: sd("floor"), build: function (ctx, K) {
+    { id: "so-floor", title: "The Floor", tag: "ENVIRONMENTAL PRESSURE", audience: "gm", order: 100, when: sd("floor"), build: function (ctx, K) {
       var fl = S().sitDown.floor;
       return [
         K.proseBlock(fl.intro, lo()),
@@ -244,7 +267,7 @@ window.EN = window.EN || {};
 
     /* ---- 12 · Sit-Down Conditions -------------------------------------------------------------------
        Scene conditions, separate from the Conditions Library: they end with the scene. */
-    { id: "so-conditions", title: "Sit-Down Conditions", tag: "FOR THE SCENE ONLY", order: 110, when: sd("conditions"), build: function (ctx, K) {
+    { id: "so-conditions", title: "Sit-Down Conditions", tag: "FOR THE SCENE ONLY", audience: "gm", order: 110, when: sd("conditions"), build: function (ctx, K) {
       var c = S().sitDown.conditions;
       return [
         K.proseBlock(c.intro, lo()),
@@ -254,7 +277,7 @@ window.EN = window.EN || {};
     } },
 
     /* ---- 13 · Cred and Heat ---------------------------------------------------------------------------- */
-    { id: "so-credheat", title: "Cred & Heat", tag: "OPTIONAL · 0 TO 10 · CRED PER SCENE, HEAT PER SOURCE", order: 120, when: has("credHeat"), build: function (ctx, K) {
+    { id: "so-credheat", title: "Cred & Heat", tag: "OPTIONAL · 0 TO 10 · CRED PER SCENE, HEAT PER SOURCE", audience: "gm", order: 120, when: has("credHeat"), build: function (ctx, K) {
       var ch = S().credHeat, c = ch.cred, h = ch.heat;
       // "Cred" on its own is this panel's own word, so it points at the panel and prints plain
       var L = lo({ "Cred": "so-credheat" });
@@ -277,19 +300,22 @@ window.EN = window.EN || {};
     } },
 
     /* ---- 14 · Examples in Play and the Deposition --------------------------------------------------- */
-    { id: "so-examples", title: "Social Scenes in Play", tag: "FIVE EXAMPLES · THE DEPOSITION", order: 130, when: has("examples"), build: function (ctx, K) {
+    { id: "so-examples", title: "Social Scenes in Play", order: 130, when: has("examples"),
+      tag: function (ctx) { return admin(ctx) ? "FIVE EXAMPLES · THE DEPOSITION" : "FIVE EXAMPLES"; },
+      build: function (ctx, K) {
       var s = S(), dp = s.deposition;
       return [
         K.entry("examples-in-play", "Examples in Play", [
           K.subTitle("Examples in Play"),
           K.proseBlock(s.examples.map(function (x) { return "- " + x; }).join("\n"), lo())
         ]),
-        dp ? K.ruleBlock("The Deposition", dp.setup + "\n" + named(dp.rounds), "SIT-DOWN EXAMPLE", lo()) : null
+        // a Sit-Down example, so it went to the Toolkit with the Sit-Down
+        dp && admin(ctx) ? K.ruleBlock("The Deposition", dp.setup + "\n" + named(dp.rounds), "SIT-DOWN EXAMPLE", lo()) : null
       ];
     } },
 
     /* ---- 15 · the chapter's own GM Guidance ------------------------------------------------------------ */
-    { id: "so-guidance", title: "Running Social Scenes", tag: "GM GUIDANCE", order: 140, when: has("gmGuidance"), build: function (ctx, K) {
+    { id: "so-guidance", title: "Running Social Scenes", tag: "GM GUIDANCE", audience: "gm", order: 140, when: has("gmGuidance"), build: function (ctx, K) {
       return S().gmGuidance.map(function (g) { return K.ruleBlock(g.name.replace(/\.$/, ""), g.text, null, lo()); });
     } }
   ] });

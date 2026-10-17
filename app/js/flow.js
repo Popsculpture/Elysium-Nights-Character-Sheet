@@ -392,7 +392,9 @@ EN.flowView = (function () {
       el("div.row.between.wrap", { style: { marginTop: "3px" } }, [
         el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: sub }),
         el("span.help", { style: { margin: 0, fontSize: "10.5px", color: "var(--text2)" }, text: _formResolution(p, d) })
-      ])
+      ]),
+      // a premade's own printed line (Flash-Freeze Zone's "Resolution: No roll..."), carried along when it is saved
+      p.note ? el("p.help.pattern-note", { style: { margin: "3px 0 0", fontSize: "10.5px", color: "var(--text3)" }, text: p.note }) : null
     ]);
   }
   // resolution text for a saved pattern without disturbing the live builder form

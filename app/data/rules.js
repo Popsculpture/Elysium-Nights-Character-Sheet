@@ -264,10 +264,14 @@ EN.rules = {
     skarn: ["Small", "Medium"], ryn: ["Small", "Medium"], hulsk: ["Medium", "Large"],
     grinling: ["Small", "Medium"], "cinder-heart": ["Small", "Medium"], harbinger: ["Medium"]
   },
-  // The printed Species Traits row for each species.
+  // The printed Species Traits row for each species: the Size label only. The
+  // height sentence after it lives in species.js traits.size, so the Species
+  // step prints the label once. Since the 16 October 2026 handoff the labels
+  // follow each species' launch lineage (FreeBorn, Floral, Laborframes, Ryn,
+  // Grinling).
   speciesSizeDisplay: {
-    humans: "Small to Medium", verdine: "Small to Large", clankers: "Small to Large",
-    chimera: "Small to Large", outsiders: "Small to Medium"
+    humans: "Small to Medium", verdine: "Medium", clankers: "Medium to Large",
+    chimera: "Small to Medium", outsiders: "Small to Medium"
   },
   // Grid footprint. A body filling more than one space is measured FROM THE
   // NEAREST OF ITS SPACES in both directions, which governs Range, Reach and
@@ -343,14 +347,16 @@ EN.rules = {
   },
   // Features that shift EFFECTIVE Size for one purpose only. None changes the
   // character's actual Size, footprint, or Encumbrance beyond what it states.
+  // `lineage` is the display label the Codex prints; `lineageKey` is the
+  // lineage's key, so a listing can drop rows for a lineage EN.launch holds.
   sizeShiftFeatures: [
-    { name: "Synthetic Musculature", lineage: "NextGen",    effect: "+2 Encumbrance Threshold; counts as one Size larger for grappling." },
-    { name: "Heavy Payload",         lineage: "Laborframe", effect: "+2 Encumbrance Threshold; counts as one Size larger for grappling; carrying a willing ally of your Size or smaller does not reduce Speed." },
-    { name: "Sludge Crawler",        lineage: "Mycelial",   effect: "Counts as one Size smaller in narrow corridors and tight spaces, at full Speed (exempt from the tight-geometry halving)." },
-    { name: "Disjointed Anatomy",    lineage: "Grinling",   effect: "Squeezes as one Size smaller without penalty." },
-    { name: "Unshakable Bulk",       lineage: "Hulsk",      effect: "Moving through the space of a smaller enemy costs no extra movement (waives the 2-Speed cost)." },
-    { name: "Breaching Charge",      lineage: "Durabody",   effect: "Moves in a straight line through the spaces of anyone smaller, ignoring Difficult Terrain." },
-    { name: "Impossible Geometry",   lineage: "Grinling",   effect: "May move through occupied spaces regardless of Size; cannot end its turn there." }
+    { name: "Synthetic Musculature", lineage: "NextGen",    lineageKey: "nextgen",      effect: "+2 Encumbrance Threshold; counts as one Size larger for grappling." },
+    { name: "Heavy Payload",         lineage: "Laborframe", lineageKey: "laborframes",  effect: "+2 Encumbrance Threshold; counts as one Size larger for grappling; carrying a willing ally of your Size or smaller does not reduce Speed." },
+    { name: "Sludge Crawler",        lineage: "Mycelial",   lineageKey: "mycelial",     effect: "Counts as one Size smaller in narrow corridors and tight spaces, at full Speed (exempt from the tight-geometry halving)." },
+    { name: "Disjointed Anatomy",    lineage: "Grinling",   lineageKey: "grinling",     effect: "Squeezes as one Size smaller without penalty." },
+    { name: "Unshakable Bulk",       lineage: "Hulsk",      lineageKey: "hulsk",        effect: "Moving through the space of a smaller enemy costs no extra movement (waives the 2-Speed cost)." },
+    { name: "Breaching Charge",      lineage: "Durabody",   lineageKey: "durabodies",   effect: "Moves in a straight line through the spaces of anyone smaller, ignoring Difficult Terrain." },
+    { name: "Impossible Geometry",   lineage: "Grinling",   lineageKey: "grinling",     effect: "May move through occupied spaces regardless of Size; cannot end its turn there." }
   ],
 
   // Gear proficiency categories (acquired/upgraded with Training Points).

@@ -38,6 +38,14 @@ EN.builder = (function () {
   }
   function attnShown(id, need, dismissKey) { return !!need && _dismissed[id] !== dismissKey; }
 
+  /* The launch lineup (data/launch.js). Every picker below lists only what launches, plus the
+     character's OWN current pick when that pick is held, so a saved character on a held
+     lineage, subclass, Background or Talent still sees and keeps it, marked HELD. The data
+     arrays are never filtered: this is the listing layer only. */
+  function offered(kind, key, current) { return !EN.launch || EN.launch.offer(kind, key, current); }
+  function heldTag(kind, key) { return EN.ui.heldChip ? EN.ui.heldChip(kind, key) : null; }
+  function heldText(kind, key) { return EN.ui.heldSuffix ? EN.ui.heldSuffix(kind, key) : ""; }
+
   // Collapsible panel with optional attention dot in the header.
   function collapsiblePanel(id, title, tag, bodyChildren, opts) {
     opts = opts || {};
@@ -796,7 +804,8 @@ EN.builder = (function () {
       }, [
         el("span.check", { text: "◉ ONLINE" }),
         el("h4", { text: s.name }),
-        el("div.sub", { text: (s.lineages || []).map(function (l) { return l.name; }).join(" · ") }),
+        el("div.sub", { text: (s.lineages || []).filter(function (l) { return offered("lineage", l.key, ch.lineage); })
+          .map(function (l) { return l.name + heldText("lineage", l.key); }).join(" · ") }),
         el("p", { text: s.blurb || "" })
       ]);
     })));
@@ -807,8 +816,9 @@ EN.builder = (function () {
       var t = sp.traits || {};
       blocks.push(el("div", null, [
         // the Size category comes from rules.js so there is one source of truth;
-        // the species prose rides along as detail
-        sizeRow(ch, lin, ((R.speciesSizeDisplay || {})[sp.key] ? (R.speciesSizeDisplay[sp.key] + ". " + (t.size || "")).trim() : t.size)),
+        // species.js carries only the height sentence, so the label prints once,
+        // as the book has it: "Small to Medium: Humans range from 3 to 7 feet tall."
+        sizeRow(ch, lin, ((R.speciesSizeDisplay || {})[sp.key] ? (R.speciesSizeDisplay[sp.key] + (t.size ? ": " + t.size : "")) : t.size)),
         traitLine("Languages", t.languages),
         t.coreTrait ? feature(t.coreTrait.name, t.coreTrait.text, "species", "Core Trait") : null,
         t.secondaryTrait ? feature(t.secondaryTrait.name, t.secondaryTrait.text, "species", "Secondary Trait") : null
@@ -816,10 +826,10 @@ EN.builder = (function () {
 
       blocks.push(el("div", { style: { height: "18px" } }));
       blocks.push(EN.ui.sectionTitle("Choose a Lineage"));
-      blocks.push(el("div.card-grid", null, (sp.lineages || []).map(function (l) {
+      blocks.push(el("div.card-grid", null, (sp.lineages || []).filter(function (l) { return offered("lineage", l.key, ch.lineage); }).map(function (l) {
         return el("div.opt-card" + (ch.lineage === l.key ? ".sel" : ""), {
           onclick: function () { store.update(function (c) { if (c.lineage !== l.key) { c.lineage = l.key; c.lineageFeatures = []; c.size = null; c.heightFt = null; } }); }
-        }, [el("span.check", { text: "◉" }), el("h4", { text: l.name }), el("p", { text: l.description || "" })]);
+        }, [el("span.check", { text: "◉" }), el("h4", null, [document.createTextNode(l.name), heldTag("lineage", l.key)]), el("p", { text: l.description || "" })]);
       })));
     }
 
@@ -892,14 +902,14 @@ EN.builder = (function () {
   function stepBackground(ch) {
     var bg = eng.getBackground(ch.background);
     var blocks = [EN.ui.sectionTitle("Choose a Background")];
-    blocks.push(el("div.card-grid", null, (EN.backgrounds || []).map(function (b) {
+    blocks.push(el("div.card-grid", null, (EN.backgrounds || []).filter(function (b) { return offered("background", b.key, ch.background); }).map(function (b) {
       return el("div.opt-card" + (ch.background === b.key ? ".sel" : ""), {
         onclick: function () {
           store.update(function (c) { if (c.background !== b.key) { c.background = b.key; c.backgroundSkillChoice = null; c.backgroundProfChoices = []; pruneGrantedFocuses(c); } });
           if (eng.unresolvedOverlaps(store.active()).length) toast("⚠ Overlapping training with your Class; claim your Free Skill Focus below.");
         }
       }, [
-        el("span.check", { text: "◉" }), el("h4", { text: b.name }),
+        el("span.check", { text: "◉" }), el("h4", null, [document.createTextNode(b.name), heldTag("background", b.key)]),
         el("div.sub", { text: "Skills: " + (b.skills && b.skills.granted || []).join(", ") }),
         el("p", { text: b.blurb || "" })
       ]);
@@ -1326,7 +1336,9 @@ EN.builder = (function () {
     }
     var budgetColor = sel.leftover < 0 ? "var(--danger)" : "var(--success)";
     kids.push(el("div.row.wrap", { style: { gap: "14px", alignItems: "center", margin: "8px 0 6px" } }, [
-      el("span.mono", { title: K.gmGuidance, style: { fontSize: "14px", color: "var(--text)" } }, "KIT TOTAL " + G + sel.cost),
+      // the kits' GM Guidance box moved to the Game Master's Toolkit (handoff 16 Oct, section 8),
+      // so the player builder no longer carries it as this hover text; EN.kits.gmGuidance stays in the data
+      el("span.mono", { style: { fontSize: "14px", color: "var(--text)" } }, "KIT TOTAL " + G + sel.cost),
       el("span.mono", { style: { fontSize: "14px", color: budgetColor } },
         sel.leftover >= 0 ? "LEFTOVER TO GLIMMER STICK " + G + sel.leftover : "OVER BUDGET " + G + (-sel.leftover))
     ]));
@@ -1447,13 +1459,13 @@ EN.builder = (function () {
         blocks.push(el("div", { style: { height: "16px" } }));
         blocks.push(EN.ui.sectionTitle("Subclass"));
         var subPick = ((PICK.classes || {})[ch.class] || {}).subs || {};
-        blocks.push(el("div.card-grid", null, cls.subclasses.map(function (s) {
+        blocks.push(el("div.card-grid", null, cls.subclasses.filter(function (s) { return offered("subclass", s.key, ch.subclass); }).map(function (s) {
           var sp = subPick[s.key] || {}, ssel = ch.subclass === s.key;
           return el("div.opt-card" + (ssel ? ".sel" : ""), {
             onclick: function () { store.update(function (c) { if (c.subclass !== s.key && c.startingKit && !c.startingKit.claimed) c.startingKit.alt = false; c.subclass = s.key; }); }
           }, [
             el("span.check", { text: "◉" }),
-            el("h4", { text: s.name }),
+            el("h4", null, [document.createTextNode(s.name), heldTag("subclass", s.key)]),
             sp.flowAttribute ? el("div.sub", { text: "FLOW ATTRIBUTE · " + sp.flowAttribute.toUpperCase() }) : null,
             (ssel && sp.blurb) ? el("p", { style: { color: "var(--text3)" }, text: sp.blurb }) : null,
             el("p", { style: { color: "var(--text2)" }, text: sp.playIf || (s.description || "").slice(0, 180) })
@@ -1715,7 +1727,9 @@ EN.builder = (function () {
     var sk = R.skillByKey[parent]; return sk ? sk.name : parent;
   }
   function focusAspectHint(type, parent) {
-    if (type === "weapons") return "a weapon type: Machine Pistol, or a named Signature Weapon";
+    // the Signature Weapons chapter moved to the Game Master's Toolkit (data/launch.js)
+    if (type === "weapons") return (EN.launch && EN.launch.holds.toolkit && EN.launch.toolkit.signature)
+      ? "a weapon type: Machine Pistol" : "a weapon type: Machine Pistol, or a named Signature Weapon";
     if (type === "vehicles") return "a vehicle type: Motorcycle, VTOL";
     if (type === "tools") return "a kind of work: Surgical Support, Demolitions";
     return R.focusExamples[parent] || "…";
@@ -2130,9 +2144,9 @@ EN.builder = (function () {
       var cur = (ch.universalUpgrades || {})[L];
       var summary = cur ? (
         cur.type === "attr" ? attrUpgradeSummary(cur) :
-        cur.type === "evolution" ? (cur.evolution || "Evolution, choose") :
-        cur.type === "talentUpgrade" ? (cur.talent ? "Upgrade: " + talentName(cur.talent) + (resistPendingIn(ch, cur) ? " \u00b7 choose a damage type" : "") : "Talent Upgrade, choose") :
-        (cur.talent ? talentName(cur.talent) + (talentAttrPendingIn(ch, cur) ? " · choose an Attribute" : "") : "Talent, choose")
+        cur.type === "evolution" ? (cur.evolution ? cur.evolution + heldText("lineage", ch.lineage) : "Evolution, choose") :
+        cur.type === "talentUpgrade" ? (cur.talent ? "Upgrade: " + talentName(cur.talent) + heldText("talent", cur.talent) + (resistPendingIn(ch, cur) ? " \u00b7 choose a damage type" : "") : "Talent Upgrade, choose") :
+        (cur.talent ? talentName(cur.talent) + heldText("talent", cur.talent) + (talentAttrPendingIn(ch, cur) ? " · choose an Attribute" : "") : "Talent, choose")
       ) : "Unspent";
       blocks.push(collapsibleEntry("uu-" + L, {
         title: "Level " + L + " · Universal Upgrade", summary: summary,
@@ -2147,7 +2161,7 @@ EN.builder = (function () {
       if (L === 4) {
         var awk = ch.awakeningEvolution;
         blocks.push(collapsibleEntry("uu-awakening", {
-          title: "Level 4 · Awakening Milestone", summary: awk || "Free Evolution, choose",
+          title: "Level 4 · Awakening Milestone", summary: awk ? awk + heldText("lineage", ch.lineage) : "Free Evolution, choose",
           attention: !awk, dismissKey: "L" + d.level, attentionTitle: "Free Lineage Evolution unclaimed; click to dismiss",
           filled: !!awk, gold: true,
           body: el("div", null, [
@@ -2416,7 +2430,7 @@ EN.builder = (function () {
         var need = Number(m[3]);
         /* Scored WITHOUT this Talent's own bump. Seven Talents gate on an attribute their
            own opening bullet raises (Close-Quarters Brawler, Blade Weaver, Augment
-           Specialist, Crew Commander, Shadow Operative, Crowd Reader, Pain Editor), so
+           Specialist, Crew Commander, Shadow Operative, Cold Reader, Pain Editor), so
            counting the point they grant would let a Talent prop up its own prerequisite:
            qualify because you have it, have it because you qualified.
            Subtracted from d.attributes rather than recomputed from effectiveAttributes,
@@ -2503,7 +2517,11 @@ EN.builder = (function () {
     var heldElsewhere = uuTalentsHeldElsewhere(ch, L);
     Object.keys(cats).forEach(function (cat) {
       var grp = el("optgroup", { label: cat });
-      cats[cat].forEach(function (t) {
+      /* the launch lineup: a held Talent is listed only in the slot that already holds it
+         (with " (held)" on its option), so every other slot lists the launch Talents alone */
+      var shown = cats[cat].filter(function (t) { return offered("talent", t.key, current); });
+      if (!shown.length) return;
+      shown.forEach(function (t) {
         var g = talentGate(ch, d, t);
         // A talent already sitting in this slot stays selectable even if it no
         // longer qualifies, so a later edit elsewhere cannot strand a pick the
@@ -2515,8 +2533,8 @@ EN.builder = (function () {
         grp.appendChild(el("option", {
           value: t.key, selected: current === t.key, disabled: blocked,
           title: why || (t.requirements || ""),
-          text: dupeAt ? t.name + "  (already taken at Level " + dupeAt + ")"
-              : blocked ? t.name + "  (needs " + g.unmet.join(", ") + ")" : t.name
+          text: (dupeAt ? t.name + "  (already taken at Level " + dupeAt + ")"
+              : blocked ? t.name + "  (needs " + g.unmet.join(", ") + ")" : t.name) + heldText("talent", t.key)
         }));
       });
       sel.appendChild(grp);
@@ -2524,7 +2542,7 @@ EN.builder = (function () {
     var info = null;
     var t = (EN.talents || []).find(function (x) { return x.key === current; });
     if (t) info = el("div.feature", { style: { marginTop: "8px" } }, [
-      el("h4", null, [document.createTextNode(t.name), el("span.src", { text: t.category || "" })]),
+      el("h4", null, [document.createTextNode(t.name), heldTag("talent", t.key), el("span.src", { text: t.category || "" })]),
       reqLine(ch, d, t),
       talentAttrPicker(ch, t),
       renderText(t.text)]);
@@ -2630,7 +2648,7 @@ EN.builder = (function () {
           var blocked = !g.ok && current !== t.key;
           return el("option", { value: t.key, selected: current === t.key, disabled: blocked,
             title: blocked ? "Needs " + g.unmet.join(", ") : (t.requirements || ""),
-            text: blocked ? t.name + "  (needs " + g.unmet.join(", ") + ")" : t.name });
+            text: (blocked ? t.name + "  (needs " + g.unmet.join(", ") + ")" : t.name) + heldText("talent", t.key) });
         })));
     var info;
     if (!owned.length) info = el("p.help", { style: { color: "var(--warn)" }, text: "Take a Talent in an earlier slot first; an Upgrade deepens a Talent you already possess." });
@@ -2687,8 +2705,11 @@ EN.builder = (function () {
     blocks.push(EN.ui.panel((ch.name || "UNNAMED FREELANCER").toUpperCase(), "#PRINT RECORD", [
       el("div.row.wrap", { style: { gap: "8px", marginBottom: "10px" } }, [
         d.speciesInfo ? el("span.chip.on", { text: d.speciesInfo.name + (d.lineageInfo ? " / " + d.lineageInfo.name : "") }) : null,
+        d.lineageInfo ? heldTag("lineage", d.lineageInfo.key) : null,
         d.classInfo ? el("span.chip.on", { text: d.classInfo.name.replace(/^The\s+/, "") + (d.subclassInfo ? " · " + d.subclassInfo.name : "") }) : null,
+        d.subclassInfo ? heldTag("subclass", d.subclassInfo.key) : null,
         d.backgroundInfo ? el("span.chip", { text: d.backgroundInfo.name }) : null,
+        d.backgroundInfo ? heldTag("background", d.backgroundInfo.key) : null,
         d.size ? el("span.chip", { text: d.size + " Size" }) : null,
         el("span.chip", { text: "LVL " + d.level })
       ]),
@@ -2729,8 +2750,8 @@ EN.builder = (function () {
     blocks.push(EN.ui.sectionTitle("D · FEATURES & ABILITIES (" + d.features.length + ")"));
     var fb = el("div.scroll-box");
     d.features.forEach(function (f) {
-      if (f.name === "Open Architecture") fb.appendChild(openArchitectureCard(ch, d.lineageInfo));
-      else fb.appendChild(feature(f.name, f.text, f.kind, f.source + " · L" + f.level));
+      if (f.name === "Open Architecture") fb.appendChild(heldFeature(ch, f, openArchitectureCard(ch, d.lineageInfo)));
+      else fb.appendChild(heldFeature(ch, f, feature(f.name, f.text, f.kind, f.source + " · L" + f.level)));
     });
     blocks.push(fb);
 
@@ -2817,6 +2838,18 @@ EN.builder = (function () {
 
   var renderText = EN.ui.renderText;
 
+  /* A Dossier feature that came from a held lineage, subclass or Talent carries the HELD chip
+     beside its source tag. The engine stamps no key on a feature, so the source is read off
+     its kind: a subclass or lineage feature belongs to the character's own subclass or
+     lineage (Open Architecture pairings are kind "lineage" too), and a Talent by its name. */
+  function heldFeature(ch, f, node) {
+    var chip = f.kind === "subclass" ? heldTag("subclass", ch.subclass)
+             : f.kind === "lineage" ? heldTag("lineage", ch.lineage)
+             : f.kind === "talent" ? heldTag("talent", f.name) : null;
+    var h4 = chip && node.querySelector("h4");
+    if (h4) h4.insertBefore(chip, h4.querySelector(".src"));
+    return node;
+  }
   function feature(name, text, kind, src, locked) {
     var extra = (kind === "flow" || kind === "species" || kind === "lineage") ? kind : "";
     if (locked) extra += " locked";
@@ -3058,6 +3091,46 @@ EN.builder = (function () {
      is exactly backwards for the one screen a brand new player sees. Opening one does not touch
      the roster, so NO #PRINT ON FILE is still true afterwards and this gate comes straight back
      the moment the example is dropped. */
+  /* Author's decision 1 (16 October 2026): the pre-mades that use held options stay openable,
+     marked, until the author supplies launch replacements. HELD names the held lineage,
+     subclass, Background or Talents; TOOLKIT names owned gear that moved to the Game Master's
+     Toolkit (an item by name, or an installed weapon Part by key). Both chips keep their
+     standard title and add the names. */
+  function premadeMarks(x) {
+    var p = x.patch || {}, L = EN.launch, out = [];
+    if (!L || !EN.ui.heldChip) return out;
+    var held = [];
+    var lin = p.species && p.lineage ? eng.getLineage(p.species, p.lineage) : null;
+    if (L.isHeld("lineage", p.lineage)) held.push((lin ? lin.name : p.lineage) + " (lineage)");
+    var cls = p.class ? eng.getClass(p.class) : null, sub = cls && p.subclass ? eng.getSubclass(cls, p.subclass) : null;
+    if (L.isHeld("subclass", p.subclass)) held.push((sub ? sub.name : p.subclass) + " (subclass)");
+    var bg = p.background ? eng.getBackground(p.background) : null;
+    if (L.isHeld("background", p.background)) held.push((bg ? bg.name : p.background) + " (Background)");
+    Object.keys(p.universalUpgrades || {}).forEach(function (k) {
+      var u = p.universalUpgrades[k];
+      if (u && u.type === "talent" && L.isHeld("talent", u.talent)) held.push(talentName(u.talent) + " (Talent)");
+    });
+    var moved = [];
+    (p.equipment || []).forEach(function (it) {
+      if (it && it.name && L.isToolkit("item", it.name) && moved.indexOf(it.name) === -1) moved.push(it.name);
+    });
+    Object.keys(p.weaponParts || {}).forEach(function (wk) {
+      var lo = p.weaponParts[wk] || {};
+      Object.keys(lo).forEach(function (slot) {
+        if (slot.charAt(0) === "_") return;
+        [].concat(lo[slot] || []).forEach(function (pk) {
+          if (typeof pk !== "string" || !L.isToolkit("part", pk)) return;
+          var part = EN.weaponParts && EN.weaponParts.byKey && EN.weaponParts.byKey[pk];
+          var nm = part ? part.name : pk;
+          if (moved.indexOf(nm) === -1) moved.push(nm);
+        });
+      });
+    });
+    var style = { style: { marginLeft: "6px", verticalAlign: "middle" } };
+    if (held.length) { var h = EN.ui.heldChip("held", undefined, style); h.title = "Uses " + held.join(", ") + ". " + h.title; out.push(h); }
+    if (moved.length) { var m = EN.ui.heldChip("toolkit", undefined, style); m.title = "Owns " + moved.join(", ") + ". " + m.title; out.push(m); }
+    return out;
+  }
   function premadeGrid() {
     var xs = EN.examples || [];
     if (!xs.length) return null;
@@ -3066,10 +3139,11 @@ EN.builder = (function () {
       el("p.help", { style: { margin: "0 0 12px" },
         text: "Seven finished Level 5 Freelancers, one per class. They open live but are never saved: change whatever you like, and a reload restores the original. Press SAVE AS MY OWN to keep one." }),
       el("div.pm-grid", null, xs.map(function (x) {
+        var marks = premadeMarks(x);
         return el("button.pm-card", { title: "Open " + x.name, onclick: function () {
           if (store.setExample(x.key)) { _intake = false; _step = 0; EN.app.render(); }
         } }, [
-          el("span.pm-class", { text: String(x.label || "").toUpperCase() }),
+          el("span.pm-class", null, [document.createTextNode(String(x.label || "").toUpperCase())].concat(marks)),
           el("span.pm-name", { text: x.name }),
           el("span.pm-blurb", { text: x.blurb || "" })
         ]);

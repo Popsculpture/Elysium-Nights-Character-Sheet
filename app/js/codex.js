@@ -1370,7 +1370,9 @@ EN.codexView = (function () {
         K.refTable(["Social Cost", "Effect"], Rz.social.costs.map(function (r) { return [r.cost, r.effect]; }), [0]),
         K.ruleBlock("Social Fallout Rule", Rz.social.falloutRule),
         // the social chapter's own ten-row table is the menu a Mixed Result picks from
-        K.seeAlso("The full menu, and where it is spent:", [["so-fallout", "Social Fallout Table"], ["so-outcomes", "Social Margins & Outcomes"], ["so-sitdown", "The Sit-Down"]]),
+        // the Sit-Down moved to the Game Master's Toolkit (2026-10-16), so only the Admin desktop points there
+        K.seeAlso("The full menu, and where it is spent:", [["so-fallout", "Social Fallout Table"], ["so-outcomes", "Social Margins & Outcomes"]]
+          .concat(ctx.portal === "admin" ? [["so-sitdown", "The Sit-Down"]] : [])),
         K.subTitle("Fatigue vs Strain vs Social Fallout"),
         K.refTable(["Track", "Meaning"], Rz.costTracks.tracks.map(function (r) { return [r.term, r.meaning]; }), [0]),
         guide,
@@ -1391,7 +1393,8 @@ EN.codexView = (function () {
         K.subTitle("Common Sources"),
         K.refTable(["Arena", "Edge", "Snag"], Rz.edgeSnag.sources.map(function (r) { return [r.area, r.edge, r.snag]; }), [0]),
         K.note(Rz.edgeSnag.sourcesNote),
-        K.ruleBlock("GM Guidance", Rz.edgeSnag.gmGuidance)
+        // a GM advice box, which moved to the Game Master's Toolkit (2026-10-16 handoff, section 8)
+        ctx.portal === "admin" && Rz.edgeSnag.gmGuidance ? K.ruleBlock("GM Guidance", Rz.edgeSnag.gmGuidance) : null
       ];
     } },
     // 7 · Collaborative & Opposed Checks
@@ -1437,6 +1440,65 @@ EN.codexView = (function () {
      reach cap) were carried in EN.combat and rendered nowhere, or only on the
      Freelancer tab, so the GM could not read them at all. */
   function hasCombat() { return !!EN.combat; }
+  /* ---- the launch lineup (EN.launch, data/launch.js) -------------------------
+     A row tied to a held lineage (a Size-shifting feature, a hazard mitigation) is in no
+     book now, so it leaves the Codex on both desktops while EN.launch.holds.lineup is on.
+     The row names its lineage by key (lineageKey or a `lineage` that is a key), by a
+     display word ("Durabody", "Cinder-Heart Feature"), or by its lineage feature's name,
+     which is looked up in EN.species. A row whose lineages are ALL held is held. */
+  function normLin(s) {
+    s = String(s || "").toLowerCase().replace(/^the\s+/, "").replace(/[^a-z0-9]/g, "");
+    return /ies$/.test(s) ? s.slice(0, -3) + "y" : s.replace(/s$/, "");
+  }
+  function allLineages() {
+    var out = [];
+    (EN.species || []).forEach(function (sp) { (sp.lineages || []).forEach(function (l) { if (l && l.key) out.push(l); }); });
+    return out;
+  }
+  function lineageByWord(w) {
+    if (!w) return null;
+    var n = normLin(w), list = allLineages();
+    for (var i = 0; i < list.length; i++) if (list[i].key === w) return list[i];
+    for (i = 0; i < list.length; i++) if (normLin(list[i].key) === n || normLin(list[i].name) === n) return list[i];
+    return null;
+  }
+  // the lineages whose data names a feature called `name` (anywhere inside the lineage)
+  function lineagesOfFeature(name) {
+    if (!name) return [];
+    function holds(o, depth) {
+      if (!o || typeof o !== "object" || depth > 6) return false;
+      if (Array.isArray(o)) { for (var i = 0; i < o.length; i++) if (holds(o[i], depth + 1)) return true; return false; }
+      if (o.name === name) return true;
+      for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k) && o[k] && typeof o[k] === "object" && holds(o[k], depth + 1)) return true;
+      return false;
+    }
+    return allLineages().filter(function (l) {
+      return Object.keys(l).some(function (k) { return k !== "name" && holds(l[k], 0); });
+    }).map(function (l) { return l.key; });
+  }
+  function rowLineageKeys(row) {
+    if (!row) return [];
+    var direct = row.lineageKey || (lineageByWord(row.lineage) || {}).key;
+    if (direct) return [direct];
+    var src = row.source || {};
+    if (src.type === "lineageFeature") return lineagesOfFeature(src.name);
+    var lead = String(row.kind || "").replace(/\s+(Trait|Feature|Evolution)s?$/i, "");
+    var byKind = lineageByWord(lead);
+    if (byKind) return [byKind.key];
+    return lineagesOfFeature(row.name);
+  }
+  function heldLineageRow(row) {
+    var L = EN.launch;
+    if (!L || typeof L.isHeld !== "function") return false;
+    var keys = rowLineageKeys(row);
+    return keys.length > 0 && keys.every(function (k) { return L.isHeld("lineage", k); });
+  }
+  // the lineage a row prints: its own display word, or the lineage's name when it carries a key
+  function lineageLabel(row) {
+    if (row.lineageName) return row.lineageName;
+    var l = row.lineage && allLineages().filter(function (x) { return x.key === row.lineage; })[0];
+    return l ? l.name : (row.lineage || "");
+  }
   /* A Damage Types entry, its heading the type's icon and then its name (author's call,
      2026-10-14): every damage readout off the Codex shows the type as its icon, and this
      is where a player learns which is which. The word stays, the icon is not a link (it
@@ -1541,14 +1603,21 @@ EN.codexView = (function () {
       build: function (ctx, K) {
         var C = EN.combat;
         return (C.damagePipeline ? [K.ruleBlock("Damage Order", C.damagePipeline)] : [])
-          .concat(C.damageTypeRules ? [K.ruleBlock("Resistance, Vulnerability and Immunity", C.damageTypeRules)] : []);
+          .concat(C.damageTypeRules ? [K.ruleBlock("Resistance, Vulnerability and Immunity", C.damageTypeRules)] : [])
+          /* Oomph, the book's Core Rules passage under Damage Resolution (2026-10-16), at
+             "ref-damage/oomph"; the trait (gr-traits/oomph-x) and the Parts' "Oomph +1 from
+             hardware" line point here. Under it the author's ruling for a strike with no die. */
+          .concat(C.oomph ? [K.ruleBlock("Oomph", C.oomph)] : [])
+          .concat(C.oomph && C.oomphNoDie ? [K.note(C.oomphNoDie)] : []);
       } },
     { id: "ref-dmg", title: "Damage Types", tag: function () { return ((EN.combat || {}).damageTypes || []).length + " TYPES"; }, order: 50, when: hasCombat,
       build: function (ctx, K) {
         var C = EN.combat;
         // a pointer, not a copy: the type rules themselves live in Damage & Mitigation
         return (C.damageTypeRules ? [K.note("What Resistance, Vulnerability and Immunity do to each type is under Damage & Mitigation.")] : [])
-          .concat((C.damageTypes || []).map(function (t) { return dmgTypeBlock(K, t); }));
+          .concat((C.damageTypes || []).map(function (t) { return dmgTypeBlock(K, t); }))
+          // the book's sentence where the Appendix: Optional Damage Effects used to be (2026-10-16 handoff, section 8)
+          .concat([K.note("Optional damage Effects (Ignite, Bleed, Mutating, Reversal, and the rest) live in the Game Master's Toolkit.", { margin: "4px 0 0" })]);
       } },
 
     /* Size: comparative, derived from height, and its whole mechanical reach is
@@ -1580,8 +1649,10 @@ EN.codexView = (function () {
         // one definition, rendered here for Size context and in full under Improvised Weapons
         if ((((R.improvised || {}).meatShield) || []).length) kids.push(ruleBlock("Meat Shield",
           R.improvised.meatShield[0] + "\n\nFull rules under Improvised Weapons."));
-        if ((R.sizeShiftFeatures || []).length) kids.push(ruleBlock("Features That Shift Effective Size",
-          R.sizeShiftFeatures.map(function (f) { return f.name + " (" + f.lineage + "): " + f.effect; }).join("\n")
+        // a feature of a held lineage is in no book now (EN.launch), so its row leaves both desktops
+        var shifts = (R.sizeShiftFeatures || []).filter(function (f) { return !heldLineageRow(f); });
+        if (shifts.length) kids.push(ruleBlock("Features That Shift Effective Size",
+          shifts.map(function (f) { return f.name + " (" + lineageLabel(f) + "): " + f.effect; }).join("\n")
           + "\n\nEach shifts Size for its stated purpose only. None changes your actual Size, footprint, or Encumbrance beyond what it says."));
         return kids;
       } },
@@ -1591,24 +1662,33 @@ EN.codexView = (function () {
         var IW = EN.rules.improvised, ruleBlock = K.ruleBlock, bullets = K.bullets;
         var kids = [];
         kids.push(ruleBlock("Using Improvised Weapons", IW.intro + "\n\n" + bullets(IW.using)));
-        /* The Walking Anvil steps every improvised die up one, capped at 1d12. The
-           table is the only place improvised damage is stated, so a Juggernaut who
-           reads it here would otherwise get the wrong number every time. Read from
-           ctx.active, which is null on the Admin desktop, so the GM's Codex always
-           prints the book's dice. */
-        var c = ctx.active;
-        var anvil = !!(c && c.subclass === "juggernaut");   // stored as the subclass key, not its display name
-        var LADDER = ["1d4", "1d6", "1d8", "1d10", "1d12"];
-        function stepUp(die) {
-          var i = LADDER.indexOf(String(die).match(/^\d*d\d+/) ? String(die).match(/^\d*d\d+/)[0] : die);
-          if (i < 0 || i >= LADDER.length - 1) return null;
-          return LADDER[i + 1];
+        /* Oomph (Improvised) steps every improvised die, capped at 1d12: the Walking Anvil
+           gives the Juggernaut Oomph +1 (Improvised). The table is the only place improvised
+           damage is stated, so whoever carries that Oomph reads their own dice here, after
+           an arrow. The sources and the total are the engine's (EN.engine.oomphFor, the one
+           Oomph resolver) and each die is stepped by EN.engine.stepDie, so this never keeps
+           a ladder of its own. Read from ctx.active, which is null on the Admin desktop, so
+           the GM's Codex always prints the book's dice. */
+        var c = ctx.active, eng = EN.engine || {};
+        var oi = null;
+        if (c && typeof eng.oomphFor === "function") {
+          try { oi = eng.oomphFor(c, { kind: "improvised", die: "1d4" }); } catch (e) { oi = null; }
         }
+        var steps = oi && oi.total > 0 ? oi.total : 0;
+        var from = steps ? oi.sources.map(function (x) { return x.label; }).filter(Boolean).join(" and ") : "";
+        function stepUp(die) {
+          var m = String(die).match(/^\d+d\d+/);
+          if (!steps || !m || typeof eng.stepDie !== "function") return null;
+          var up = eng.stepDie(m[0], steps);
+          return up && up !== m[0] ? up : null;
+        }
+        var oomphName = "Oomph +" + steps + " (Improvised)";
         kids.push(ruleBlock("Improvised Damage", IW.damageNote
-          + (anvil ? "\n\nThe Walking Anvil steps each of these up one die, to a maximum of 1d12. Your dice are shown after the arrow." : "")
+          + (steps ? "\n\nYour " + oomphName + (from ? ", from " + from + "," : "") + " steps each of these up "
+              + (steps === 1 ? "one die size" : steps + " die sizes") + ", to a maximum of 1d12. Your dice are shown after the arrow." : "")
           + "\n\n"
           + (IW.damage || []).map(function (d) {
-              var up = anvil ? stepUp(d.die) : null;
+              var up = stepUp(d.die);
               return d.size + " | " + d.die + (up ? " → " + up : "") + " | " + d.examples;
             }).join("\n")));
         kids.push(ruleBlock("Improvised Thrown Weapons", IW.thrownNote + "\n\n"
@@ -1616,11 +1696,11 @@ EN.codexView = (function () {
         kids.push(ruleBlock("Desperation Attacks", bullets(IW.desperation)));
         kids.push(ruleBlock("Special Effects and Conditions", IW.specialEffects));
         kids.push(ruleBlock("People as Improvised Weapons", IW.peopleIntro + "\n\n" + IW.wieldedBody
-          /* A wielded body IS an improvised weapon, so the Walking Anvil steps it too (manuscript
+          /* A wielded body IS an improvised weapon, so Oomph (Improvised) steps it too (manuscript
              2026-08-19, reversing the earlier exemption). Its 1d10 is stated in three separate
              places, the body itself plus the Bludgeon and Throw attacks, so this says it once here
-             rather than rewriting prose that is correct for everyone who is not a Juggernaut. */
-          + (anvil ? "\n\nThe Walking Anvil steps a wielded body up one die like any other improvised weapon: your Bludgeon and Throw each deal " + (stepUp("1d10") || "1d10") + " Bludgeoning, not 1d10." : "")
+             rather than rewriting prose that is correct for everyone without that Oomph. */
+          + (steps && stepUp("1d10") ? "\n\nYour " + oomphName + " steps a wielded body like any other improvised weapon: your Bludgeon and Throw each deal " + stepUp("1d10") + " Bludgeoning, not 1d10." : "")
           + "\n\nWhether you can lift and swing someone at all is the Body Gate, under Size."));
         kids.push(ruleBlock("Meat Shield", bullets(IW.meatShield)));
         kids.push(ruleBlock("Bludgeon", IW.bludgeon));
@@ -1727,13 +1807,16 @@ EN.codexView = (function () {
         kids.push(subTitle("Mitigations"));
         kids.push(el("p", { style: { margin: "0 0 8px", fontSize: "13px", color: "var(--text2)", lineHeight: "1.5" },
           text: "Nothing new. Each of these already exists elsewhere in the book, and each one changes an outcome on a Freelancer's Hazards panel rather than only being described." }));
-        kids.push(refTable(["Mitigation", "Source", "Effect"], H.mitigations.map(function (m) {
+        // a held lineage's feature is in no book now (EN.launch), so its row leaves both desktops
+        var mits = H.mitigations.filter(function (m) { return !heldLineageRow(m); });
+        kids.push(refTable(["Mitigation", "Source", "Effect"], mits.map(function (m) {
           return [m.name, m.kind, m.summary];
         }), [0]));
-        H.mitigations.filter(function (m) { return m.note; }).forEach(function (m) {
+        mits.filter(function (m) { return m.note; }).forEach(function (m) {
           kids.push(ruleBlock(m.name, m.note, m.kind));
         });
-        if (H.gmGuidance) kids.push(ruleBlock("GM Guidance", H.gmGuidance));
+        // a GM advice box, which moved to the Game Master's Toolkit (2026-10-16 handoff, section 8)
+        if (H.gmGuidance && ctx.portal === "admin") kids.push(ruleBlock("GM Guidance", H.gmGuidance));
         return kids;
       } }
   ] };
@@ -1742,6 +1825,15 @@ EN.codexView = (function () {
      Ownership, upkeep and mods from EN.vehicles; currency, lifestyle, rewards
      and the payout split from EN.economy. Both used to sit under Combat Rules. */
   function g(v) { return "𝒢" + Number(v).toLocaleString(); }
+  /* The book's gear tables shorten Legality to Legal, Lic., Restr. and Contra. (2026-10-16
+     handoff): display only, in a row that mirrors a table. The stored value stays the full
+     word, and every card, filter and tooltip keeps it. */
+  var LEGAL_SHORT = { "Legal": "Legal", "Licensed": "Lic.", "Restricted": "Restr.", "Contraband": "Contra." };
+  function legalShort(v) { return Object.prototype.hasOwnProperty.call(LEGAL_SHORT, v) ? LEGAL_SHORT[v] : String(v == null ? "" : v); }
+  // Availability is held (EN.launch.holds.availability); with no launch file it shows as before
+  function showAvail() {
+    try { return !(EN.launch && typeof EN.launch.showAvailability === "function") || !!EN.launch.showAvailability(); } catch (e) { return true; }
+  }
   var streetChapter = { id: "street", title: "Vehicles & Economy", order: 100, audience: "both", panels: [
     { id: "ref-vehicles", title: "Vehicles", tag: "OWNERSHIP & CUSTOMIZATION", order: 10, when: function () { return !!EN.vehicles; },
       build: function (ctx, K) {
@@ -1749,9 +1841,12 @@ EN.codexView = (function () {
         var kids = [];
         kids.push(ruleBlock("Buying a Vehicle", V.intro
           + "\n\nA vehicle's list price is twenty weeks of its upkeep.\n\n"
+          /* a mirrored table row: Legality last, in the book's short words (2026-10-16); the
+             Availability column only while EN.launch lets it show */
           + V.profiles.map(function (v) {
-              return v.name + " | " + g(v.listPrice) + " | " + v.category + " T" + v.tier + " | " + v.availability + " | " + v.legality
-                     + (v.loadout ? " | stock: " + v.loadout : "");
+              return v.name + " | " + g(v.listPrice) + " | " + v.category + " T" + v.tier
+                     + (showAvail() && v.availability ? " | " + v.availability : "")
+                     + (v.loadout ? " | stock: " + v.loadout : "") + " | " + legalShort(v.legality);
             }).join("\n")
           + "\n\n" + V.unlisted));
         // the printed stat lines, which nothing else in the app shows a buyer before the Garage
@@ -1771,16 +1866,20 @@ EN.codexView = (function () {
           V.storage.map(function (s2) { return s2.service + " | 𝒢" + s2.cost; }).join("\n")));
         kids.push(ruleBlock("Vehicle Repair", bullets(V.repair)));
         kids.push(ruleBlock("How Vehicle Mods Work", bullets(V.modRules)));
-        kids.push(ruleBlock("Vehicle Mods", V.mods.map(function (m) {
+        // the three mods that moved to the Game Master's Toolkit stay on the Admin desktop only
+        kids.push(ruleBlock("Vehicle Mods", V.mods.filter(function (m) {
+          return ctx.portal === "admin" || !(EN.launch && EN.launch.isToolkit && EN.launch.isToolkit("vehicleMod", m.key));
+        }).map(function (m) {
           return m.name + " | " + (m.priceNote || g(m.price)) + " | fits " + m.fits
-               + " | " + m.availability + ", " + m.legality + "\n    " + m.effect;
+               + (showAvail() && m.availability ? " | " + m.availability : "") + " | " + legalShort(m.legality) + "\n    " + m.effect;
         }).join("\n\n")));
         kids.push(ruleBlock("Mod Slots by Profile", V.profiles.map(function (v) {
           return v.name + " | Tier " + v.tier + " | " + v.modSlots + " slots"; }).join("\n")
           + "\n\nMod Slot Count is 1 + the vehicle's Tier."));
         return kids;
       } },
-    { id: "ref-economy", title: "Economy & Rewards", tag: "COSTS · INCOME · REWARDS", order: 20, when: function () { return !!EN.economy; },
+    { id: "ref-economy", title: "Economy & Rewards", order: 20, when: function () { return !!EN.economy; },
+      tag: function (ctx) { return ctx && ctx.portal === "admin" ? "COSTS · INCOME · REWARDS" : "COSTS · INCOME · PAYOUTS"; },
       build: function (ctx, K) {
         var E = EN.economy, ruleBlock = K.ruleBlock, bullets = K.bullets;
         var kids = [];
@@ -1818,12 +1917,7 @@ EN.codexView = (function () {
           + ((E.debtKinds || []).length ? "\n\nKinds of debt: " + E.debtKinds.join(", ") + "." : "")));
         kids.push(ruleBlock("Day Jobs and Between-Contract Income", E.dayJobs.map(function (j) {
           return j.job + " | 𝒢" + j.pay + "/wk | " + j.time + " | " + j.web; }).join("\n")));
-        kids.push(ruleBlock("Reward Types", E.rewardTypes.map(function (r) {
-          return r.type + " | " + r.meaning; }).join("\n")));
-        kids.push(ruleBlock("GM Reward Tables", E.rewardTablesNote + "\n\nGlimmer Rewards (1d8)\n"
-          + E.glimmerRewards.map(function (r) { return r.roll + ". " + r.reward + " | 𝒢" + r.value; }).join("\n")
-          + "\n\nNexus Token Rewards (1d8). " + E.nexusRewardsNote + "\n"
-          + E.nexusRewards.map(function (r) { return r.roll + ". " + r.reward; }).join("\n")));
+        // Reward Types and the GM Reward Tables moved to the Game Master's Toolkit: ref-rewards, Admin only
         kids.push(ruleBlock("Splitting a Payout", E.splitNote + "\n\n" + E.splitExample
           + "\n\nNot every reward divides cleanly:\n" + bullets(E.splitNonStandard)
           // the tool that does the math is on a different tab on each desktop (one splitter, EN.engine.splitPayout)
@@ -1831,8 +1925,28 @@ EN.codexView = (function () {
                                     : "\n\nThe Inventory tab has a Payout Splitter that does this math.")));
         kids.push(ruleBlock("Not Yet In The App",
           "These parts of the chapter are rules the sheet does not model yet. They live in the book:\n\n"
-          + bullets(E.notModelled)));
+          + bullets(E.notModelled)
+          // sections that left the Handbook for the Game Master's Toolkit, named on the Admin desktop only
+          + (ctx.portal === "admin" && (E.notModelledToolkit || []).length
+              ? "\n\nThese live in the Game Master's Toolkit now, and the sheet does not model them either:\n\n" + bullets(E.notModelledToolkit) : "")));
         return kids;
+      } },
+    /* Rewards, Reward Types and the GM Reward Tables moved to the Game Master's Toolkit
+       (2026-10-16 handoff, section 8). The GM side mirrors the Toolkit, so they keep their
+       text here on the Admin desktop. */
+    { id: "ref-rewards", title: "Reward Types & Tables", tag: "REWARD TYPES · 1d8 GM TABLES", audience: "gm", order: 30,
+      when: function () { return !!(EN.economy && EN.economy.rewardTypes); },
+      build: function (ctx, K) {
+        var E = EN.economy, ruleBlock = K.ruleBlock;
+        return [
+          ruleBlock("Reward Types", E.rewardTypes.map(function (r) {
+            return r.type + " | " + r.meaning; }).join("\n")),
+          (E.glimmerRewards || []).length ? ruleBlock("GM Reward Tables", E.rewardTablesNote + "\n\nGlimmer Rewards (1d8)\n"
+            + E.glimmerRewards.map(function (r) { return r.roll + ". " + r.reward + " | 𝒢" + r.value; }).join("\n")
+            + "\n\nNexus Token Rewards (1d8). " + E.nexusRewardsNote + "\n"
+            + (E.nexusRewards || []).map(function (r) { return r.roll + ". " + r.reward; }).join("\n")) : null,
+          K.seeAlso("Dividing it up:", [["ref-economy/splitting-a-payout", "Splitting a Payout"]])
+        ];
       } }
   ] };
 
@@ -1886,6 +2000,7 @@ EN.codexView = (function () {
     "Overflow Damage": "ref-cover/overflow-damage",
     "Reach Caps": "ref-attack/reach-caps",
     "Damage Order": "ref-damage/damage-order",
+    "Oomph": "ref-damage/oomph",
     "Resistance, Vulnerability and Immunity": "ref-damage/resistance-vulnerability-and-immunity",
     "Resistance, Vulnerability, and Immunity": "ref-damage/resistance-vulnerability-and-immunity",
     "Damage Types chapter": "ref-dmg",
