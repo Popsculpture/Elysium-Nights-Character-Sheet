@@ -14,9 +14,7 @@
    ref-vehicles (EN.vehicles), and the book's "Vehicles as cover" paragraphs
    stay in Cover & Sight (EN.combat.vehiclesAsCover): these panels link them
    rather than print them twice. Every rule line is a field of EN.chases; the
-   only words of this file's own are headings and the small pointers. The one
-   field that is not book text, the author's table ruling on untrained pilots
-   (EN.chases.proficiencies.tableRuling), shows as a note, never as a rule.
+   only words of this file's own are headings and the small pointers.
    The API is documented in the header of app/js/codex.js.
    =========================================================================== */
 window.EN = window.EN || {};
@@ -108,11 +106,7 @@ window.EN = window.EN || {};
         ctx.portal === "admin" ? null : K.note("The Inventory tab's Garage works this check out for the vehicle you pick."),
         rb(K, "Proficient and Untrained Pilots", O.proficiency)
       ];
-      /* The two untrained pilot passages disagree (this block's rule against the one above);
-         P.tableRuling is the author's ruling on it, a table ruling and not book text, so it
-         is a note under the rule it overrides, linking back to the passage that wins. */
       if (P) kids.push(block(K, "Vehicle Proficiencies", [prose(K, paras([P.intro, P.rule])),
-        P.tableRuling ? K.note(P.tableRuling, { terms: { "Proficient and Untrained Pilots": "vc-piloting/proficient-and-untrained-pilots" } }) : null,
         K.refTable(["Category", "What it Covers", "Examples", "In Play"], P.rows.map(function (r) { return [r.category, r.covers, r.examples, r.inPlay]; }), [0], LO)]));
       if (O.ownership) kids.push(K.note(O.ownership, { terms: XT }));
       if (CB) {

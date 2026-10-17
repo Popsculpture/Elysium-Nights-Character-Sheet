@@ -4,7 +4,8 @@
    Attribute modifier + parent-skill tier bonus, and the parent's Focus and
    Specialization carry over.
    Key format: 'ATTR|Skill|type'. A null is a pairing this catalog has no NAME for,
-   not a pairing the rules forbid: Part 2 gates nothing here, and its own worked
+   not a pairing the rules forbid: the Skills and Proficiencies chapter (Part 1
+   since the book's reorder) gates nothing here, and its own worked
    example resolves Intimidation with Agility plus Engineering, which its own
    Attribute Example row for Intimidation does not list. The panel rolls a null
    pairing the same as any other and simply does not name the technique.

@@ -3281,10 +3281,21 @@ EN.inventoryView = (function () {
      its readout is the piloting total itself. A Vehicle Focus naming the specific
      type adds Caliber to attack rolls, vehicle checks, AND damage rolls;
      a matching Specialization adds crit 19-20 (d20) and +2 Edge Dice (pools).
-     Untrained: the check is allowed but rolls with Snag, and the GM can bar
-     operation entirely for complex, restricted, or specialized vehicles. The
-     on-screen rule text links the Codex's vc- panels rather than restating more. */
-  var _garage = { chassis: "", cat: "Ground Vehicles", type: "", handling: 0, attr: "AGI", bar: false };
+     Untrained (Operating a Vehicle, as saved 2026-10-12): in Ground or Marine
+     Vehicles the check is allowed but rolls with Snag; in the categories
+     EN.chases.proficiencies.untrainedBarred lists (Aerial, Industrial / Mechs,
+     Starcraft) the pilot can't operate the vehicle at all, unless the GM rules
+     a specific vehicle simple enough to try, and then it rolls with Snag like
+     the Ground path. That ruling is _garage.allow, the GM: SIMPLE ENOUGH TO TRY
+     toggle; it is per vehicle, so picking another category or chassis clears
+     it. _garage lives only in this module: nothing saves it. The on-screen rule
+     text links the Codex's vc- panels rather than restating more. */
+  var _garage = { chassis: "", cat: "Ground Vehicles", type: "", handling: 0, attr: "AGI", allow: false };
+  // the categories an untrained pilot can't operate unless the GM allows this vehicle (data/chases.js)
+  function garageBarredCat(cat) {
+    var list = (EN.chases && EN.chases.proficiencies && EN.chases.proficiencies.untrainedBarred) || [];
+    return list.indexOf(cat) !== -1;
+  }
   // a catalog chassis carries its own category, type and Handling; selecting one
   // fills all three, and the fields stay editable for a custom ride
   function garageProfiles() { return (EN.vehicles && EN.vehicles.profiles) || []; }
@@ -3294,6 +3305,7 @@ EN.inventoryView = (function () {
   }
   function garagePickChassis(name) {
     _garage.chassis = name;
+    _garage.allow = false;                // the GM's allowance is for one specific vehicle
     var v = (EN.vehicles && EN.vehicles.byName && EN.vehicles.byName[name]) || null;
     if (!v) return;                       // "Custom" leaves the fields alone
     _garage.cat = garageCatFor(v.category);
@@ -3397,9 +3409,11 @@ EN.inventoryView = (function () {
     var mod = d.attributes[_garage.attr].mod;
     var attrName = d.attributes[_garage.attr].name;
     var handling = Number(_garage.handling) || 0;
-    var barred = _garage.bar && untrained;
+    // untrained in a category the book bars: no readouts unless the GM rules this one simple enough to try
+    var barredCat = untrained && garageBarredCat(cat);
+    var barred = barredCat && !_garage.allow;
     function reRender() { EN.app.render(); }
-    // controls: chassis, category, vehicle type, Handling, governing attribute, GM bar
+    // controls: chassis, category, vehicle type, Handling, governing attribute; the GM allowance sits with the chips
     var chassisSel = el("select", { style: { fontSize: "12px", width: "auto" },
       title: "Pick a chassis from the catalog to fill in its category, type and Handling",
       onchange: function () { garagePickChassis(this.value); reRender(); } },
@@ -3411,7 +3425,7 @@ EN.inventoryView = (function () {
     var controls = el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginBottom: "10px" } }, [
       chassisSel,
       el("select", { style: { fontSize: "12px", width: "auto" }, title: "Vehicle category (proficiency reads off your sheet)",
-        onchange: function () { _garage.cat = this.value; reRender(); } },
+        onchange: function () { _garage.cat = this.value; _garage.allow = false; reRender(); } },
         (R.gear.vehicles || []).map(function (c) { return el("option", { value: c, selected: c === cat, text: c }); })),
       el("input", { type: "text", value: _garage.type, placeholder: "vehicle type: Motorcycle, VTOL…",
         title: "The specific vehicle type you are operating; a Vehicle Focus naming it adds Caliber",
@@ -3432,20 +3446,21 @@ EN.inventoryView = (function () {
       el("span.chip", { title: "Vehicle Proficiency in " + cat + (untrained ? "" : "; adds your Vehicle Proficiency Bonus to checks made to control the vehicle"),
         style: { fontSize: "9px", color: untrained ? "var(--warn)" : "var(--success)", borderColor: untrained ? "var(--warn)" : "var(--success)" } },
         cat.toUpperCase() + " · " + tierInfo.name.toUpperCase()),
-      untrained ? el("span.chip", { title: "Untrained: the check is allowed but rolls with Snag", style: { fontSize: "9px", color: "var(--warn)", borderColor: "var(--warn)" } }, "UNTRAINED · SNAG") : null,
+      untrained && !barred ? el("span.chip", { title: barredCat ? "Untrained: the GM ruled this vehicle simple enough to try, so the check rolls with Snag" : "Untrained: the check is allowed but rolls with Snag", style: { fontSize: "9px", color: "var(--warn)", borderColor: "var(--warn)" } }, "UNTRAINED · SNAG") : null,
       focus ? el("span.chip", { title: "Skill Focus: " + cat + " (" + focus.aspect + ")" + (focus.granted ? " · Free overlap Focus" : "") + ". Caliber applies to attack rolls, vehicle checks, and damage rolls with this vehicle type, outside the +15 static cap.",
         style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" } }, "FOCUS +" + cal) : null,
       spec ? el("span.chip", { title: "Specialization: " + cat + " (" + spec.aspect + "). Crit 19-20 on d20 vehicle rolls, +2 Edge Dice on pools.",
         style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" } }, "CRIT 19-20 · +2 EDGE") : null,
-      untrained ? el("button.btn.sm", { title: "GM option: bar untrained operation entirely for complex, restricted, or specialized vehicles",
-        style: { fontSize: "9px", color: _garage.bar ? "var(--danger)" : "var(--text4)", borderColor: _garage.bar ? "var(--danger)" : "var(--border)" },
-        onclick: function () { _garage.bar = !_garage.bar; reRender(); } }, (_garage.bar ? "✓ " : "") + "GM: BAR UNTRAINED OPERATION") : null
+      // only where the book gives the GM the call: untrained, in a category it bars
+      barredCat ? el("button.btn.sm", { title: "GM ruling: this specific vehicle is simple enough for an untrained pilot to try, with Snag",
+        style: { fontSize: "9px", color: _garage.allow ? "var(--warn)" : "var(--text4)", borderColor: _garage.allow ? "var(--warn)" : "var(--border)" },
+        onclick: function () { _garage.allow = !_garage.allow; reRender(); } }, (_garage.allow ? "✓ " : "") + "GM: SIMPLE ENOUGH TO TRY") : null
     ]);
     var body = [controls, chips];
     if (barred) {
       body.push(el("div.muted-box", { style: { borderColor: "var(--danger)", color: "var(--danger)", textAlign: "left" } }, [
         document.createTextNode("⛔ "), el("b", { text: "OPERATION BARRED." }),
-        document.createTextNode(" The GM has barred untrained operation of this vehicle (complex, restricted, or specialized). Train " + cat + " on the #PRINT Advance tab to take the controls. "),
+        document.createTextNode(" Untrained in " + cat + ": you can't operate it at all, unless the GM rules this one simple enough to try. Train " + cat + " on the #PRINT Advance tab to take the controls. "),
         EN.ui.ruleLink("vc-piloting/proficient-and-untrained-pilots", "Proficient and Untrained Pilots")
       ]));
     } else {
@@ -3511,10 +3526,12 @@ EN.inventoryView = (function () {
       body.push(EN.ui.ruleText(el("p.help", { style: { margin: "0 0 6px", fontSize: "11px" } }, [
         EN.ui.ruleLink("vc-piloting/the-piloting-check", "The Piloting Check")]),
         ": d20 + Agility Modifier + Vehicle Proficiency Bonus + the vehicle's Handling. On the Dice Pool Method, build Edge Dice from the same sources. The Chase Check and the Control Check both use this formula."));
+      // the untrained rule is the book's passage itself (EN.chases.operating.proficiency), so it can't drift from the data
+      var opProf = (EN.chases && EN.chases.operating && EN.chases.operating.proficiency) || "";
       body.push(untrained
         ? EN.ui.ruleText(el("p.help", { style: { margin: "0", fontSize: "11px" } }, [
-            EN.ui.ruleLink("vc-piloting/proficient-and-untrained-pilots", "Untrained")]),
-            ": you can still attempt to operate it, but you roll with Snag on all related checks, and failures escalate quickly into catastrophic crashes (see Crashes). The GM may decide that especially complex, restricted, or specialized vehicles can't be operated without proper Vehicle Proficiency (the GM toggle above).")
+            EN.ui.ruleLink("vc-piloting/proficient-and-untrained-pilots", "Proficient and Untrained Pilots")]),
+            ": " + opProf)
         : el("p.help", { style: { margin: "0", fontSize: "11px" },
             text: "A Vehicle Focus naming this type adds Caliber to attack rolls, vehicle checks, and damage rolls; a Specialization adds crit 19-20 and +2 Edge Dice." }));
     }

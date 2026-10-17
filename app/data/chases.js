@@ -3,7 +3,7 @@
    Transcribed from the manuscript, Part 2 (Core Rules, Combat, Survival, &
    Specialized Systems), modifiedTime 2026-10-04T07:31:16.171Z, pulled
    2026-10-07:
-     # Vehicles and Chases (Part 2 export lines 5971 to 6275)
+     # Vehicles and Chases (lines 5971 to 6275 of that 2026-10-07 export)
        intro, ## Core Concepts, ## Vehicle Stat Blocks and Categories,
        ## Speed Ratings, ## Vehicle Profiles (the mass rows line only; the
        profile table itself is EN.vehicles.profiles), ## Vehicle Traits,
@@ -18,11 +18,13 @@
        ## Capacity and Towing, ## Cyberware and #GRID Hacking Hooks
        (### Codebreaker Intrusions, ### Rigging and Cyberware), and the
        Gameplay Summary box "Running a Chase".
-     # Saving Throws > ## Vehicle Proficiencies (the proficiency chapter of
-       the same part, export lines 1052 to 1064): `proficiencies`.
-   One field is not the book's: `proficiencies.tableRuling`, the author's
-   ruling of 2026-10-12 on where the two untrained pilot passages disagree,
-   marked as a table ruling wherever the Codex shows it.
+   And from Part 1, where the book's reorder put the Skills chapter:
+     Skills and Proficiencies > Gear Proficiencies > Vehicle Proficiencies:
+       `proficiencies`.
+   `operating.proficiency` and `proficiencies.rule` are re-pulled from the
+   manuscript as saved 2026-10-12 (the untrained pilot rule, tiered by
+   vehicle category). `proficiencies.untrainedBarred` is the app's own field,
+   read off the Operating a Vehicle sentence its comment quotes.
    Ownership, upkeep, repair, mods and the profile stat lines are Part 3 and
    live in EN.vehicles (app/data/vehicles.js); this file does not repeat them.
 
@@ -104,19 +106,21 @@ EN.chases = {
   operating: {
     pilotingCheck: { name: "The Piloting Check",
       text: "One formula covers every roll a pilot makes: **d20 + Agility Modifier + Vehicle Proficiency Bonus + the vehicle's Handling**. On the Dice Pool Method, build Edge Dice from the same sources: your Agility Modifier, your Vehicle Proficiency tier, and the vehicle's Handling, the same as any other Dice Pool check. This chapter names two specific piloting checks: the **Chase Check**, the contested roll each chase round, and the **Control Check**, the roll to keep a compromised vehicle from becoming a crash. Both use this formula." },
-    proficiency: "If a Character has the appropriate Vehicle Proficiency, they add their Vehicle Proficiency Bonus to checks made to control the vehicle. If a Character is Untrained, they can still attempt to operate it, but they roll with Snag on all related checks, and failures escalate quickly into catastrophic crashes (see Crashes). The GM may decide that especially complex, restricted, or specialized vehicles can't be operated without proper Vehicle Proficiency. A Skill Focus or Specialization narrowed to this vehicle type still applies to these checks, per Skills and Proficiencies.",
+    proficiency: "If a Character has the appropriate Vehicle Proficiency, they add their Vehicle Proficiency Bonus to checks made to control the vehicle. If a Character is Untrained in Ground or Marine Vehicles, they can still attempt to operate it, but they roll with Snag on all related checks, and failures escalate quickly into catastrophic crashes (see Crashes). An Untrained Character can't operate an Aerial, Industrial / Mechs, or Starcraft vehicle at all, unless the GM rules a specific vehicle simple enough to try. A Skill Focus or Specialization narrowed to this vehicle type still applies to these checks, per Skills and Proficiencies.",
     ownership: "Ownership has its own price tag. List prices, weekly upkeep, and repair live under Vehicle Ownership, and mods live under Vehicle Customization. The short version: the city bills you whether you drive or not."
   },
 
-  /* ---- Vehicle Proficiencies (Part 2, the proficiency chapter) ---------- */
+  /* ---- Vehicle Proficiencies (Part 1, Skills and Proficiencies > Gear Proficiencies) */
   proficiencies: {
     intro: "Vehicle Proficiencies tell you what you are actually trained to drive or pilot.",
-    rule: "If you have the right Vehicle Proficiency, you can operate that vehicle class normally. If you don't, you usually can't operate it at all. For simpler vehicles, the GM might let you try anyway. When they do, you roll with **Snag**, and a failure tends to create bigger problems, especially while piloting under stress.",
-    /* TABLE RULING, not book text (author, 2026-10-12, ruling #11). `rule` above (export
-       l.1056) bars an untrained pilot except from simpler vehicles; operating.proficiency
-       (l.6061) lets one try any vehicle at Snag unless the GM bars it. Both stay as written;
-       the author ruled that l.6061 wins, and the Garage already works that way. */
-    tableRuling: "Table ruling, not book text: where this passage and Proficient and Untrained Pilots disagree, play by Proficient and Untrained Pilots. An untrained pilot can still attempt to operate a vehicle, rolling with Snag, and the GM may decide that especially complex, restricted, or specialized vehicles can't be operated without the proficiency.",
+    rule: "If you have the right Vehicle Proficiency, you can operate that vehicle class normally. If you don't, it depends on what you're climbing into. Anyone can turn a key or point a skiff across a flooded sector. Flying, piloting a frame, or leaving the atmosphere is different: without training you can't operate the vehicle at all, unless the GM rules that one is simple enough to try anyway. Whenever you do try untrained, you roll with **Snag**, and a failure tends to create bigger problems, especially while piloting under stress.",
+    /* The categories an Untrained pilot can't operate at all, from Operating a Vehicle:
+       "An Untrained Character can't operate an Aerial, Industrial / Mechs, or Starcraft
+       vehicle at all, unless the GM rules a specific vehicle simple enough to try."
+       Every other category (Ground Vehicles, Marine Vehicles) is try-with-Snag. The
+       strings are EN.rules.gear.vehicles names exactly; checked at the foot of this file.
+       The Garage (inventory.js garageBench) reads this list, not one of its own. */
+    untrainedBarred: ["Aerial Vehicles", "Industrial / Mechs", "Starcraft"],
     rows: [
       { category: "Ground Vehicles", covers: "Wheeled, tracked, or hovering transport built for streets and off-road terrain.", examples: "Street bikes, armored sedans, scavenged buggies, cargo haulers",
         inPlay: "The standard for urban getaways and wasteland smuggling. High availability, but heavily restricted by traffic, barricades, and physical terrain." },
@@ -314,3 +318,14 @@ EN.chases = {
   summary: { name: "Running a Chase", label: "Gameplay Summary",
     text: "Set Lead at 2 unless the fiction says otherwise. Each round: crew members act first in the fiction (tilt via Edge and Snag, hunt System Hits), then the pilots roll the contested Chase Check and move Lead. Check the pursuit escalation timer against Heat. Lead 5 flees clean; Lead 0 invites a ram, a board, or a force-stop. Crashes run the Control Check against the Impact DC. Keep the camera low and the bill high." }
 };
+
+/* Load-time check: every untrainedBarred name is a vehicle category exactly as
+   EN.rules.gear.vehicles spells it (data/rules.js loads first), so a renamed
+   category can't silently drop out of the Garage's barring. */
+(function () {
+  var cats = (EN.rules && EN.rules.gear && EN.rules.gear.vehicles) || [];
+  var bad = (EN.chases.proficiencies.untrainedBarred || []).filter(function (c) { return cats.indexOf(c) === -1; });
+  if (!cats.length || bad.length) {
+    console.warn("chases: proficiencies.untrainedBarred names a category EN.rules.gear.vehicles does not have.", bad);
+  }
+})();

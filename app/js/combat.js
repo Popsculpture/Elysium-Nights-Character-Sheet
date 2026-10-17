@@ -4015,8 +4015,8 @@ EN.combatView = (function () {
        Skill; the pairing resolves to a named technique when the catalog has one, and to a
        plain roll when it does not. Roll = attr mod + parent tier bonus.
 
-       No gate on either axis, because the book has none. Part 2's only prohibition in this
-       section is that you cannot TRAIN a Versatile Skill, and its GM Guidance is "the method
+       No gate on either axis, because the book has none. The Skills chapter's (Part 1 since
+       the book's reorder) only prohibition in this section is that you cannot TRAIN a Versatile Skill, and its GM Guidance is "the method
        determines which Attribute and parent Skill apply... let Skills flex in context". Two
        invented restrictions used to live here: 68 of the 252 pairings printed a red "this
        combination does not work", and untrained parent Skills were filtered out entirely.

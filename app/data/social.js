@@ -318,7 +318,7 @@ EN.social = {
       columns: ["Condition", "Effect"],
       rows: [
         { key: "rattled", name: "Rattled", text: "The target rolls Postures with Snag." },
-        { key: "cornered", name: "Cornered", text: "The target can't Counter or Stonewall this Round." },
+        { key: "cornered", name: "Cornered", text: "The target can't Counter or Stonewall for the rest of the scene." },
         { key: "swayed", name: "Swayed", text: "The target treats one specific Character as a trusted source for the next Round." },
         { key: "exposed", name: "Exposed", text: "Sway has put the target on the defensive. The target loses 1 additional Resolve at the start of each subsequent Round until they regain composure." }
       ],
