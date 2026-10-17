@@ -27,7 +27,7 @@ EN.combat = {
     {
       name: "Impulse Action",
       summary: "A minor action triggered outside your turn (parry, dodge, intercept, or Help).",
-      text: "Impulse Actions occur outside your turn, triggered by events or enemy actions. Unless you traded your Move Action, you may only perform one Impulse Action per round.\n\nExamples\n- Opportunity Attack: Strike a Hostile that leaves your reach. See Opportunity Attacks below.\n- Dodge: Gain a brief defensive boost against a single attack you can see.\n- Parry: Contest a melee or thrown attack with your weapon to block or counter.\n- Brace: Reduce incoming damage by 1d10 + Body Modifier from impact.\n- Intercept: Move up to half your Speed to an ally within 2 spaces who is about to be hit; you become the target of that attack instead.\n- Help Action: When an ally makes a save or check, you may jump in to assist them, consuming your Impulse Action and your upcoming turn's Action.\n\nOpportunity Attacks\n\nWhen a Hostile you can see leaves your reach using its own movement, you can spend your Impulse Action to make one melee attack against it. The attack resolves from the last space it occupied within your reach, before the movement carries it clear.\n- You need a melee weapon in hand, or your bare hands.\n- It costs your Impulse Action, so the one-per-round limit applies. You can't also Dodge, Parry, Brace, or Intercept that round unless you traded your Move Action for a second Impulse.\n- Movement that isn't the Hostile's own doesn't provoke. A shove, a pull, a teleport, or any other forced movement takes them out of reach without giving you the shot.\n- Disengage denies the attack entirely.\n- The GM may also allow an Opportunity Attack when a Hostile does something careless inside your reach."
+      text: "Impulse Actions occur outside your turn, triggered by events or enemy actions. Unless you traded your Move Action, you may only perform one Impulse Action per round.\n\nExamples\n- Opportunity Attack: Strike a Hostile that leaves your reach. See Opportunity Attacks below.\n- Dodge: Gain a brief defensive boost against a single attack you can see.\n- Parry: Contest a melee or thrown attack with your weapon to block or counter.\n- Brace: Against falls, collisions, explosions, or forced impact, roll 1d10 + Body Modifier and subtract the result from the incoming damage.\n- Intercept: Move up to half your Speed to an ally within 2 spaces who is about to be hit; you become the target of that attack instead.\n- Help Action: When an ally makes a save or check, you may jump in to assist them, consuming your Impulse Action and your upcoming turn's Action.\n\nOpportunity Attacks\n\nWhen a Hostile you can see leaves your reach using its own movement, you can spend your Impulse Action to make one melee attack against it. The attack resolves from the last space it occupied within your reach, before the movement carries it clear.\n- You need a melee weapon in hand, or your bare hands.\n- It costs your Impulse Action, so the one-per-round limit applies. You can't also Dodge, Parry, Brace, or Intercept that round unless you traded your Move Action for a second Impulse.\n- Movement that isn't the Hostile's own doesn't provoke. A shove, a pull, a teleport, or any other forced movement takes them out of reach without giving you the shot.\n- Disengage denies the attack entirely.\n- The GM may also allow an Opportunity Attack when a Hostile does something careless inside your reach."
     },
     {
       name: "Free Action",
@@ -87,6 +87,18 @@ EN.combat = {
       requirement: "Shield, Block Bonus, or Plated armor",
       trigger: "Any attack you can brace against",
       text: "You brace your stance and put solid mass between yourself and the incoming threat, letting the barrier eat the kinetic shock.\n- Requirement: A physical Shield equipped, armor with a listed Block Bonus, or the Plated trait.\n- The Effect: You reinforce your passive mitigation for this attack. On top of your Armor DR, add your armor's flat Block Bonus, half the armor's DR (rounded down) if it is Plated, and a Shield's Block die if you carry one. These sources stack.\n\nPlayer Advice: Tactical Note: Blocking is highly reliable; the flat Block Bonus and Plated half-DR apply with no roll, and a Shield adds its Block die on top."
+    },
+    /* Brace, round 3 rulings, item 1 (17 October 2026), as the Player's Handbook prints it:
+       Trigger Limit and The Effect are the book's words; the Requirement line is the ruling's
+       ("none, every Freelancer can use it"). The book prints no flavor line and no Player
+       Advice for it, so none is added. A defensive Impulse like the rest: the budget and the
+       per-attacker Limit in the rules above apply to it, and the Defend panel rolls it. */
+    {
+      name: "Brace",
+      cost: "1 Impulse Action",
+      requirement: "None",
+      trigger: "Falls, collisions, explosions, or forced impact",
+      text: "- Requirement: None. Every Freelancer can use it.\n- Trigger Limit: Falls, collisions, explosions, or forced impact.\n- The Effect: Roll 1d10 + Body Modifier and subtract the result from the incoming damage."
     },
     {
       name: "Dodge",

@@ -3,6 +3,9 @@
    Extracted verbatim from "Gear and Equipment" (Part 3). Prices in Glimmer (𝒢)
    and assume purchase in a major district. Standard ammo carries the legality
    of the weapon it feeds. Mystech ammunition is not vendor stock.
+   2026-10-17 rulings, section 3: Toxin Rounds' Synergy reads "On a Critical hit, the
+   target also gains 1 level of Fatigue." (crits add no extra dice); the variants
+   sentence stays. The Player's Handbook gets the line with batch 45.
    =========================================================================== */
 window.EN = window.EN || {};
 EN.gearCatalog = EN.gearCatalog || {};
@@ -260,7 +263,7 @@ EN.gearCatalog.ammo = {
       feeds: "Bows, Crossbows, Dart weapons, payload firearms", traits: ["Delivery"],
       desc: "Hollow rounds and bolt-tips filled with whatever the chemist owed you. Slower than a bullet to the heart, and a great deal more frightening to watch arrive.",
       effect: "Damage type becomes the weapon's normal type and Toxic. The target makes a DC 13 Body Save. On a failure, they gain Poisoned for 1 minute.",
-      synergy: "On a Critical hit, you may apply 1 level of Fatigue instead of extra damage. The GM may allow variants that substitute Paralyzed or Drowsy for Poisoned." },
+      synergy: "On a Critical hit, the target also gains 1 level of Fatigue. The GM may allow variants that substitute Paralyzed or Drowsy for Poisoned." },
     { name: "Tracer Rounds", group: "Specialty", price: 60, unit: "per 10", availability: "Common", legality: "Licensed",
       feeds: "Ballistic Sidearms, Longarms, Machineguns", traits: ["Tracing"],
       desc: "Rounds that burn a bright line through the air and tag what they touch. Makes the next shot easier for everyone on your side. Makes you the easiest thing in the room to find.",

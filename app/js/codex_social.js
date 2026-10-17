@@ -25,6 +25,8 @@
    one. Inline blocks that moved (the Deposition, the Contacts GM Guidance box, the three
    depths) render on Admin only, and no Freelancer pointer names a gated panel. The data
    stays whole in EN.social: the GM Sit-Down tracker reads it directly.
+   The Handbook's short Cred and Heat section (so-credheat-short, 2026-10-17 rulings, section 4)
+   is the one Cred and Heat text the Freelancer desktop reads; it is empty on Admin.
    The API is documented in the header of app/js/codex.js.
    =========================================================================== */
 window.EN = window.EN || {};
@@ -296,6 +298,25 @@ window.EN = window.EN || {};
         K.ruleBlock("Mechanical Effects", ch.effectsIntro + "\n" + named(ch.effects), null, L),
         K.ruleBlock("Using Cred and Heat Together", ch.together.join("\n\n"), null, L),
         gmSee(ctx, K, "For the GM, what high Heat sends:", [["gmx-check", "Heat Response"]])
+      ];
+    } },
+
+    /* ---- 13b · Cred and Heat, the Handbook's short section (Freelancer desktop) ---------------------
+       The Player's Handbook prints a short "Cred and Heat" section at the end of this chapter and sends
+       the full rules to the Toolkit (so-credheat, Admin only). A panel of the same title, built only on
+       the Freelancer desktop, so "Cred and Heat" (the Streaming Rig's "(see Cred and Heat)", a search)
+       lands on it for a Freelancer. It has no `when` on purpose: codex.js drops a collapsed panel whose
+       cached index comes back empty only when the panel has no `when`, so both the desktop check and the
+       data check live in build(), and on Admin the panel then never draws (not even a closed header) and
+       never resolves. Its title is the pointer term, per desktop: the panel-title layer of codex.js builds
+       from the panels each desktop can see, and on Admin the first same-titled panel in order wins, so
+       this one sits after so-credheat (order 120) and Admin keeps the full panel. Not an alias, because
+       an alias is one anchor for both desktops. No pointer here names a gated panel. */
+    { id: "so-credheat-short", title: "Cred and Heat", tag: "0 TO 10 · TRACKED PER SOURCE", order: 125, build: function (ctx, K) {
+      var c = S() && S().credHeatShort;
+      if (admin(ctx) || !c) return [];
+      return [
+        K.ruleBlock(c.name, [c.lead, c.credRises, c.toolkit].join(" ") + "\n\n" + c.heat, null, lo())
       ];
     } },
 

@@ -565,7 +565,8 @@ EN.combatView = (function () {
      their dice plus any flat bonuses and net it against the hit; Dodge instead
      raises Defense, so it reports the new number rather than a reduction. Some
      defenses trigger only when the damage is fully absorbed (Resurge's rebound)
-     or scale off the roll itself (Siphon's Vigor).
+     or scale off the roll itself (Siphon's Vigor). Brace (round 3, 17 October 2026) rolls
+     1d10 + Body Modifier like any other reduction.
 
      THE LIMIT. Two PHB passages apply together (the author's ruling, 16 October, round 2).
      The budget: "You can use one Active Defense per round, or two if you traded your Move
@@ -592,6 +593,9 @@ EN.combatView = (function () {
       }
     });
     (s.flat || []).forEach(function (f) { parts.push({ label: f.label, value: f.value, flat: true }); total += f.value; });
+    /* a reduction is subtracted from the hit, so it never goes under 0: Brace's flat is the Body
+       Modifier, which can be negative, and a low d10 on top of it would otherwise ADD damage */
+    if (total < 0) total = 0;
     _defTray.roll = { parts: parts, total: total };
     EN.app.render();
   }
@@ -607,8 +611,9 @@ EN.combatView = (function () {
     if (!_defTray.open || !_defTray.spec) return null;
     var s = _defTray.spec, roll = _defTray.roll, anim = _defTray.animating;
     var isDefense = s.mode === "defense";
-    var dieText = (s.dice || []).map(function (dd) { return dd.n + "d" + dd.sides; }).concat(
-      (s.flat || []).filter(function (f) { return f.value; }).map(function (f) { return eng.fmtMod(f.value); })).join(" + ") || "no roll";
+    // dice joined with " + ", each flat carrying its own sign ("1d10 -2", "1d4 +2 +2 +4"), never "+ -2"
+    var dieText = ((s.dice || []).map(function (dd) { return dd.n + "d" + dd.sides; }).join(" + ") +
+      (s.flat || []).filter(function (f) { return f.value; }).map(function (f) { return " " + eng.fmtMod(f.value); }).join("")).trim() || "no roll";
 
     // hero: the dice you tap, mirroring the attack tray
     var diceEls = [], prompt;
@@ -6062,6 +6067,14 @@ EN.combatView = (function () {
           base.note = "Roll the shield die and add your flat bonuses and Armor DR against this hit." + wearNote;
           return base;
         }
+        if (name === "Brace") {
+          // "Roll 1d10 + Body Modifier and subtract the result from the incoming damage." (PHB,
+          // round 3 ruling 1). Every Freelancer can use it; the Body Modifier is the live one.
+          base.dice.push({ n: 1, sides: 10, label: "d10" });
+          base.flat.push({ label: "Body Modifier", value: d.attributes.BOD.mod });
+          base.note = "Roll 1d10 + Body Modifier and subtract the result from the incoming damage. Falls, collisions, explosions, or forced impact only.";
+          return base;
+        }
         if (name === "Dodge") {
           // take the same Acrobatics total the row summary advertises, so the
           // tray and the row cannot drift apart
@@ -6146,6 +6159,9 @@ EN.combatView = (function () {
                          onclick: function () { if (EN.inventoryView.openBench) EN.inventoryView.openBench("armor"); EN.app.gotoTab("gear"); } }, "→ REPAIR") : null
                      ]) : null
                    ]) : null },
+        // no requirement: every Freelancer can Brace, so the row is always listed
+        Brace:   { avail: true, req: "",
+                   summary: "Roll 1d10 " + eng.fmtMod(d.attributes.BOD.mod) + " (Body), subtract from incoming damage; falls, collisions, explosions, forced impact" },
         Dodge:   { avail: true, req: "",
                    summary: (acro ? "+" + acro.total + " Defense" : "+Agility + Acrobatics to Defense") + " vs this hit; on a miss, shift 1 space" + (dg.speedPenalty ? " · GM may forbid in heavy armor" : "") },
         // "or be fighting unarmed": bare hands always satisfy the requirement, so

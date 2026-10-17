@@ -31,6 +31,8 @@
    Freelancer desktop no longer renders them (js/codex_social.js gates the panels to
    audience "gm", js/face.js dropped its Sit-Down quick reference and the ladder hover
    text on the Cred and Heat trackers, which keep their 0 to 10 values).
+   The Freelancer desktop does carry the Handbook's own short Cred and Heat section
+   (`credHeatShort`, 2026-10-17 rulings, section 4), as the Codex panel so-credheat-short.
 
    APP FIELDS, not book text (they change no rule): `key` on every row; `label`
    on the Cred and Heat ladder rows (the lead words of the book's own meaning,
@@ -403,6 +405,23 @@ EN.social = {
       "A Freelancer with high Cred in one scene and high Heat from another can use their reputation as a shield. A famous busker who is wanted by Corp X can usually find someone in the music scene to hide them, at least for a few nights.",
       "A Freelancer with low Cred everywhere and high Heat from somewhere is a target without allies. This is a dangerous place to be. It is also where many memorable campaigns start."
     ]
+  },
+
+  /* ---- Cred and Heat, the Player's Handbook section ------------------------------------------------
+     The short "Cred and Heat" section the Player's Handbook prints at the end of the Social chapter
+     (after Social Fallout), for the FREELANCER desktop only (js/codex_social.js, panel
+     so-credheat-short); the Admin desktop reads the full rules above (`credHeat`). It points the
+     player at the Toolkit for the full rules, as the book does. Wording is the Handbook's, with the
+     bold and italic marks left off as the Handbook prints it.
+     2026-10-17 rulings, section 4: one sentence follows "and the GM keeps the ledger." (stored on its
+     own as `credRises` and spliced into the first paragraph at its place, so a test can read it).
+     The Handbook gets it with batch 45. */
+  credHeatShort: {
+    name: "Cred and Heat",
+    lead: "Reputation in Elysium is local. Cred is your standing within a specific scene or community. Heat is hostile attention from a specific source: a corporation, a precinct, a gang, a shrine. Each is tracked per source on a 0 to 10 scale, and the GM keeps the ledger.",
+    credRises: "Cred rises when you finish a major contract where the scene can see it, do a notable favor for someone who matters there, land a Flawless Success in a social encounter that counts, or get a flattering story going around (true or not).",
+    toolkit: "The full rules live in the Game Master's Toolkit.",
+    heat: "Heat rises when a job goes loud, you are publicly identified at a crime scene, a Critical Failure lands in a scene involving institutional targets, or you earn a Profile like Flagged or Under Watch. It falls by about 1 per month of quiet Downtime (GM discretion), or when a data scrub, bribe, or legal scrub lands, a contact clears the record, or a bigger fish draws the eye. High Heat from a source imposes Snag on Stealth and Deception rolls in territory it controls and brings active opposition. Heat fades. Slowly."
   },
 
   /* ---- Examples in Play ----------------------------------------------------------------------------- */

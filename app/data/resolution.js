@@ -10,6 +10,10 @@
    column reads Failure -1 to -4 and Critical Failure -5 or worse (the Dice Pool
    column is unchanged). The Critical Failure bands already read -5 or worse on
    a d20 and -3 or worse on a Dice Pool.
+   2026-10-17 rulings, section 2: the Natural 20 row (d20.crits) says an attack is a
+   critical hit, counting as at least a Strong Hit and triggering any weapon or
+   Invocation crit effect; the skill check sentences stay. Crits add no extra dice
+   (ruled 2026-10-16). The Player's Handbook gets the line with batch 45.
    No em or en dashes anywhere in this file (house style).
    =========================================================================== */
 window.EN = window.EN || {};
@@ -81,7 +85,7 @@ EN.resolution = {
       { type: "Contested Action", formula: "Both roll d20 + modifiers + their Skill, Weapon, Systems, or Vehicle Proficiency Bonus", target: "Higher total wins" }
     ],
     crits: [
-      { roll: "Natural 20", effect: "Attacks deal extra damage or trigger a special effect. Skill checks can only achieve critical success results if you have appropriate tools, gear, or situational advantages. Otherwise, treat the roll as a normal success." },
+      { roll: "Natural 20", effect: "An attack is a critical hit: it counts as at least a Strong Hit and triggers any weapon or Invocation crit effect. Skill checks can only achieve critical success results if you have appropriate tools, gear, or situational advantages. Otherwise, treat the roll as a normal success." },
       { roll: "Natural 1", effect: "Attacks automatically miss and may cause a mishap. Skill checks fail dramatically." }
     ]
   },
