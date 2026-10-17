@@ -31,11 +31,12 @@ EN.economy = {
      actually bites a Freelancer.
 
      Worth knowing while reading the catalog: the four unleased items priced in BOTH
-     currencies imply about 2,400 to 3,200 Glimmer per token, except the Warframe Shell
-     at 9,600. That is not the catalog disagreeing with the reference value. Three of
-     them sit inside the unlicensed band below, which is what a Freelancer selling a
-     token on the street actually clears, and the corporate frame sits at the licensed
-     reference. Anything the app prices off a stated Nexus figure (a lease Buyout, a
+     currencies imply about 2,400 to 3,200 Glimmer per token. That is not the catalog
+     disagreeing with the reference value. All four sit inside the unlicensed band
+     below, which is what a Freelancer selling a token on the street actually clears.
+     (The Warframe Shell was the odd one out at 9,600 until the author's ruling of
+     17 October 2026 made its price 2,400 or 1 token: a black-market street price.)
+     Anything the app prices off a stated Nexus figure (a lease Buyout, a
      repair lane) uses nexusToGlimmer above, because that asks what the OBJECT is worth
      in a ledger, not what its owner could liquidate a token for. */
   nexusConversionNote: "Actual cash-out is lower than the reference value because verification, compliance, service, laundering, and transfer fees all take a cut. What a token returns depends entirely on who is changing it.",

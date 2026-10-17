@@ -166,7 +166,7 @@ EN.gearCatalog.armor = {
       desc: "The repo man's frame. Corporations lease these to enforcement contractors and keep one finger on the off switch the entire time, because a powered frame that turns on its issuer is a very bad quarter. It carries you through a firefight right up until the morning the lease lapses and the legs simply stop agreeing with you.",
       effect: "Grants 5 Damage Reduction (DR) and a +2 Block Bonus. Lapsed or Locked: The frame seizes. You lose all Powered Benefits, the Powered drawbacks apply in full, and DR drops to 3 until the lease is restored or the lock is cracked. It locks on lapsed payment, contract breach, or the issuer's call.",
       poweredBenefits: "While trained, powered, and on an active lease, you ignore the Speed reduction from Bulky, treat your Encumbrance Threshold as two steps higher, and gain Edge on in-combat d20 checks (or +1 Edge Die out-of-combat) to lift, shove, or force movement." },
-    { name: "Warframe Shell", kind: "armor", group: "Powered Exoframe", type: "Powered Heavy Armor (3 Mod Slots)", price: 2400, nexus: "◎0.25",
+    { name: "Warframe Shell", kind: "armor", group: "Powered Exoframe", type: "Powered Heavy Armor (3 Mod Slots)", price: 2400, nexus: "◎1",
       slot: ["Torso", "Legs"], dr: 5, blockBonus: 2, slots: 3, traits: ["Powered", "Plated", "Bulky", "Sealed", "Loud", "Modular"], availability: "Rare", legality: "Restricted",
       /* CHOOSE-ONE-ON-ACQUISITION, the machine-readable half of the clause in `effect`
          below. Four entries in this catalog carry one (this frame and the three Mystech
