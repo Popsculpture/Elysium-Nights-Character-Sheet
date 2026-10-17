@@ -1797,9 +1797,8 @@ EN.engine = (function () {
   /* OOMPH IS APPLIED HERE, so every reader of baseDice / versatile / dice picks it up: those
      three now hold the STEPPED dice. "A Versatile weapon steps whichever die you're using", so
      both dice are stepped and the grip picks between them as before. The book's printed dice
-     stay alongside as printedBase / printedVersatile / printedDice, because a critical hit's
-     extra dice are the printed ones (the author's decision 4, 2026-10-16: a Greatsword with a
-     Weighted Head crits for 2d8 + 2d6). `oomph` is oomphFor()'s answer, with applied and lost
+     stay alongside as printedBase / printedVersatile / printedDice, for the Oomph note ("2d6
+     steps to 2d8"), the print sheet and the PDF. `oomph` is oomphFor()'s answer, with applied and lost
      measured against the die in use, and `oomph.note` is the one sentence that explains it. */
   function weaponGrip(ch, item, key) {
     var traits = (item && item.traits) || [];
@@ -4400,37 +4399,16 @@ EN.engine = (function () {
      Rolls a weapon's damage. spec = { dice, flat, crit, bonus, types }.
      dice is the weapon damage string ("1d4", "2d6", "Unarmed + 1d4", "0", "").
      flat is the on-hit attribute mod (melee/thrown; 0 for ranged). A crit
-     doubles the WEAPON dice count only; flat mods and bonus dice are not
-     doubled. bonus is extra dice groups [{ n, sides, label }] (Cheap Shot,
-     ammo riders). Returns grouped rolls + total for a breakdown display. */
+     rolls exactly what a hit rolls: the PHB gives a critical hit no extra
+     damage dice, so `crit` only flags the result for the tray and the log.
+     A printed crit effect that adds a die rides in `bonus`, which Oomph
+     never steps. bonus is extra dice groups [{ n, sides, label }] (Cheap
+     Shot, ammo riders). Returns grouped rolls + total for a breakdown
+     display. */
   function parseDamageDice(s) {
     var m = String(s == null ? "" : s).match(/(\d+)\s*d\s*(\d+)/i);
     return m ? { n: parseInt(m[1], 10), sides: parseInt(m[2], 10) } : null;
   }
-  /* CRIT DICE WITH OOMPH. "It never touches bonus dice from features, extra dice on a critical
-     hit, or flat damage." Read literally (the author's decision 4, 2026-10-16): the crit's extra
-     dice are the PRINTED dice, so a Greatsword with a Weighted Head crits for 2d8 + 2d6.
-     critDamageDice(dice, printed) is the one formula: { main, extra, text, merged }.
-       printed omitted (undefined) or equal to dice: the extra dice are the same dice, and the
-         text merges to the doubled count ("4d6"), exactly as before Oomph existed.
-       printed differs: "2d8 + 2d6".
-       printed null (a strike whose die came wholly from Oomph, like a bare fist): no extra
-         dice, text is just the dice. Flagged to the author; callers may pass the dice instead. */
-  function critDamageDice(dice, printed) {
-    var main = parseDamageDice(dice);
-    if (!main) return { main: dice || null, extra: null, text: dice || "", merged: false };
-    var mainTxt = main.n + "d" + main.sides;
-    if (printed === undefined) printed = mainTxt;
-    var ex = parseDamageDice(printed);
-    if (!ex) return { main: mainTxt, extra: null, text: mainTxt, merged: false };
-    var exTxt = ex.n + "d" + ex.sides;
-    if (ex.sides === main.sides) {
-      return { main: mainTxt, extra: exTxt, text: (main.n + ex.n) + "d" + main.sides, merged: true };
-    }
-    return { main: mainTxt, extra: exTxt, text: mainTxt + " + " + exTxt, merged: false };
-  }
-  /* spec.critDice (optional): the printed dice a crit adds (see critDamageDice). Without it a
-     crit doubles the weapon dice count, as it always has. */
   function rollDamage(spec) {
     spec = spec || {};
     function die(sides) { return 1 + Math.floor(Math.random() * sides); }
@@ -4438,23 +4416,9 @@ EN.engine = (function () {
     var groups = [];
     var main = parseDamageDice(spec.dice);
     if (main && main.n > 0 && main.sides > 0) {
-      var cx = (spec.crit && spec.critDice !== undefined) ? critDamageDice(spec.dice, spec.critDice) : null;
-      if (cx && !cx.merged) {
-        var mr = rollN(main.n, main.sides);
-        groups.push({ label: "Weapon", n: main.n, sides: main.sides,
-          rolls: mr, subtotal: mr.reduce(function (a, b) { return a + b; }, 0) });
-        var ex = parseDamageDice(cx.extra);
-        if (ex && ex.n > 0 && ex.sides > 0) {
-          var er = rollN(ex.n, ex.sides);
-          groups.push({ label: "Crit (printed " + ex.n + "d" + ex.sides + ")", n: ex.n, sides: ex.sides, crit: true,
-            rolls: er, subtotal: er.reduce(function (a, b) { return a + b; }, 0) });
-        }
-      } else {
-        var n = (cx && cx.merged) ? main.n + parseDamageDice(cx.extra).n : main.n * (spec.crit ? 2 : 1);
-        var rolls = rollN(n, main.sides);
-        groups.push({ label: "Weapon" + (spec.crit ? " (crit x2)" : ""), n: n, sides: main.sides,
-          rolls: rolls, subtotal: rolls.reduce(function (a, b) { return a + b; }, 0) });
-      }
+      var rolls = rollN(main.n, main.sides);
+      groups.push({ label: "Weapon", n: main.n, sides: main.sides,
+        rolls: rolls, subtotal: rolls.reduce(function (a, b) { return a + b; }, 0) });
     }
     (spec.bonus || []).forEach(function (b) {
       var bn = Math.max(0, Math.floor((b && b.n) || 0)), bs = Math.max(0, Math.floor((b && b.sides) || 0));
@@ -4505,8 +4469,6 @@ EN.engine = (function () {
     derive: derive, mod: mod, caliber: caliber, fmtMod: fmtMod, clamp: clamp,
     buildEdgePool: buildEdgePool, buildSnagPool: buildSnagPool, snagFromDc: snagFromDc, rollDicePool: rollDicePool, rollD20: rollD20,
     composeRollSpec: composeRollSpec, rollDamage: rollDamage,
-    // the one crit formula with Oomph: stepped dice plus the PRINTED dice again (decision 4)
-    critDamageDice: critDamageDice,
     // the one payout splitter, shared by the player's SPLIT panel and the GM's Payroll
     splitPayout: splitPayout,
     installedCyberware: installedCyberware, installedCyberBases: installedCyberBases,

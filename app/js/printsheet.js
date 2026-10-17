@@ -931,6 +931,10 @@ EN.printSheet = (function () {
         var cwEffect = eng.cyberEffect ? eng.cyberEffect(cw) : cw.effect;
         if (cwDesc) block.appendChild(el("div.ps-invdesc", { text: cwDesc }));
         if (cwEffect) block.appendChild(el("div.ps-invkv", null, [el("span.ps-fl", { text: "Effect" }), el("span.ps-invkv-v", { text: cwEffect })]));
+        // the Handbook's "Prerequisite For" spec line (the Datajack), read live from the catalog like the Effect
+        // above: a saved implant carries no catalog prose, so cw.prereqFor is never the source
+        var cwDef = eng.cyberDef ? eng.cyberDef(cw) : null;
+        if (cwDef && cwDef.prereqFor) block.appendChild(el("div.ps-invkv", null, [el("span.ps-fl", { text: "Prerequisite For", style: { flex: "0 0 auto", whiteSpace: "nowrap" } }), el("span.ps-invkv-v", { text: cwDef.prereqFor })]));
         // the tier rider amends the effect above, so it prints with it or the sheet states the wrong rule
         var cwTier = eng.cyberTierNote ? eng.cyberTierNote(cw.key, cw.tier) : "";
         if (cwTier) block.appendChild(el("div.ps-invkv", null, [el("span.ps-fl", { text: "Tier" }), el("span.ps-invkv-v", { text: cwTier })]));

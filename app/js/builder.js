@@ -3093,9 +3093,10 @@ EN.builder = (function () {
      the moment the example is dropped. */
   /* Author's decision 1 (16 October 2026): the pre-mades that use held options stay openable,
      marked, until the author supplies launch replacements. HELD names the held lineage,
-     subclass, Background or Talents; TOOLKIT names owned gear that moved to the Game Master's
-     Toolkit (an item by name, or an installed weapon Part by key). Both chips keep their
-     standard title and add the names. */
+     subclass, Background or Talents; TOOLKIT names owned gear the Player's Handbook gear list
+     doesn't print (an item by name, or an installed weapon Part by key). HELD keeps its standard
+     title and adds the names. TOOLKIT writes its own: the standard "Shown because you own it" is
+     for the viewer's own inventory rows, and nobody owns a pre-made's gear before opening it. */
   function premadeMarks(x) {
     var p = x.patch || {}, L = EN.launch, out = [];
     if (!L || !EN.ui.heldChip) return out;
@@ -3128,7 +3129,12 @@ EN.builder = (function () {
     });
     var style = { style: { marginLeft: "6px", verticalAlign: "middle" } };
     if (held.length) { var h = EN.ui.heldChip("held", undefined, style); h.title = "Uses " + held.join(", ") + ". " + h.title; out.push(h); }
-    if (moved.length) { var m = EN.ui.heldChip("toolkit", undefined, style); m.title = "Owns " + moved.join(", ") + ". " + m.title; out.push(m); }
+    if (moved.length) {
+      var many = moved.length > 1, m = EN.ui.heldChip("toolkit", undefined, style);
+      m.title = "Owns " + moved.join(", ") + ". " + (many ? "These aren't" : "It isn't") +
+        " in the Player's Handbook gear list, so the market doesn't list " + (many ? "them" : "it") + ".";
+      out.push(m);
+    }
     return out;
   }
   function premadeGrid() {

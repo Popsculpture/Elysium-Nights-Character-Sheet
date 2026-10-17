@@ -110,17 +110,17 @@ EN.gmBook.scenes = {
     // GMH p15
     intro: "A Sit-Down is a fight with chairs. It deserves the same prep as one: know who's across the table, what they can take, what they hit back with, and what the room is doing to everybody.",
     // GMH p6
-    home: "Social conflicts use the Sit-Down rules in the Social Pressure and Faction Standing section, including Resolve tiers for the people and factions involved.",
+    home: "Social conflicts use Friction from Social Pressure and Faction Standing; the big ones run as a Sit-Down (Optional Systems), with Resolve tiers for the people and factions involved.",
 
     refs: {
       poolMargins: "resolution.margins.pool",          // `margin` on each result row names one of these
       socialCosts: "resolution.social.costs",          // Core Resolution's Social Cost Options
-      socialFallout: "social.fallout",                 // the PHB's full Social Fallout table
-      postures: "social.sitDown.postures",             // the PHB's five Postures, with their effects
-      conditions: "social.sitDown.conditions",         // the PHB's Sit-Down Conditions (Rattled, Cornered, Exposed)
+      socialFallout: "social.fallout",                 // the full Social Fallout table (still in the PHB)
+      postures: "social.sitDown.postures",             // the five Postures, with their effects (the Toolkit's Sit-Down)
+      conditions: "social.sitDown.conditions",         // the Sit-Down Conditions (Rattled, Cornered, Exposed; the Toolkit's Sit-Down)
       floor: "social.sitDown.floor.pressures",         // what each Environmental Pressure does (same keys as floor below)
-      bookResolve: "social.sitDown.resolve.tiers",     // the PHB's Resolve tiers (same keys as resolveTiers)
-      bookResults: "social.sitDown.pressure.results",  // the PHB's Pressure per result (same keys as results)
+      bookResolve: "social.sitDown.resolve.tiers",     // the Sit-Down's Resolve tiers (Setting Resolve; same keys as resolveTiers)
+      bookResults: "social.sitDown.pressure.results",  // the Sit-Down's Pressure per result (same keys as results)
       consequenceByScene: "resolution.consequenceByScene",
       bestiary: "bestiary.entries",                    // stats.Resolve, on 23 of 48 entries
       resolveByRole: "gmBook.people.resolveByRole",    // who sits at each tier, and moving a contact
@@ -151,7 +151,7 @@ EN.gmBook.scenes = {
         ],
         contact: "If they're a recurring contact, use their card." },
       { n: 3, key: "weakSpots", name: "Weak spots.",
-        text: "One Approach that deals double Pressure and one that deals none, per the PHB's Vulnerabilities and Resistances. Pick from Persuasion, Intimidation, Performance, and Deception; Insight doesn't move Resolve anyway. Write the reason in a few words. It's what a good Read reveals.",
+        text: "One Approach that deals double Pressure and one that deals none, per Vulnerabilities and Resistances (The Sit-Down). Pick from Persuasion, Intimidation, Performance, and Deception; Insight doesn't move Resolve anyway. Write the reason in a few words. It's what a good Read reveals.",
         fields: [
           { key: "double", label: "One Approach that deals double Pressure" },
           { key: "doubleWhy", label: "the reason" },
@@ -289,7 +289,7 @@ EN.gmBook.scenes = {
        carries its Resolve line across unchanged (refs.contactCard), and
        refs.resolveByRole says which tier a job sits at. */
     // GMH p55
-    bestiaryResolve: "Resolve appears on threats that can be argued with, using the Opposition Tiers from the Sit-Down rules. No Resolve line means the conversation is over before it starts.",
+    bestiaryResolve: "Resolve appears on threats that can be argued with, using the Opposition Tiers from Setting Resolve (The Sit-Down). No Resolve line means the conversation is over before it starts.",
 
     /* What a won Sit-Down can pay besides its stakes: a Minor Milestone and,
        run as a legal scrub, Heat off an institutional source (1, or 2 on a
@@ -368,11 +368,11 @@ EN.gmBook.scenes = {
     // GMH p17
     intro: "Chases happen when a plan meets a door it didn't expect. They're also the scene most likely to arrive without warning, so the prep is short and the hazard tables do most of the work.",
     // GMH p6
-    home: "Chases use Lead from Vehicles and Chases.",
+    home: "Chases use Lead from Vehicles and Chases; the full rules are under Chase Rules (Prep Templates).",
 
     refs: {
-      outcomes: "chases.chase.outcomes",                         // the PHB's Chase Check results and what each does to Lead
-      escalation: "chases.chase.escalation.rows",                // the PHB's Pursuit Escalation table, by Heat
+      outcomes: "chases.chase.outcomes",                         // the Chase Check results and what each does to Lead (Chase Rules, Resolving the Chase)
+      escalation: "chases.chase.escalation.rows",                // the Pursuit Escalation table, by Heat (Chase Rules)
       stalemate: "gmBook.hazards.stalemate",                     // districts, default rule, rows
       impactBySpeed: "gmBook.hazards.stalemate.impactBySpeed",   // Stopped 10 to Very Fast 18
       hostileVehicles: "bestiary.vehicles.profiles",
@@ -422,7 +422,7 @@ EN.gmBook.scenes = {
         straightaway: "Speed decides",
         tangle: "Handling earns its keep" },
       { n: 5, key: "escalation", name: "Escalation.",
-        text: "The crew's Heat with the source. The first response arrives in 5 minus half that Heat, rounded down, minimum 1. Note which row of Pursuit Escalation shows up.",
+        text: "The crew's Heat with the source. The first response arrives in 5 minus half that Heat, rounded down, minimum 1. Note which row of Pursuit Escalation (Chase Rules) shows up.",
         fields: [
           { key: "source", label: "the source" },
           { key: "heat", label: "The crew's Heat with the source" },

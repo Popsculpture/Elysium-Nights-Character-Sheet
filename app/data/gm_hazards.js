@@ -26,7 +26,7 @@ EN.gmBook.hazards = {
   schemaVersion: 1,
 
   // GMH p101
-  intro: "The room gets a turn. Not an initiative slot: a presence. A hazard is any part of the scene that can hurt somebody without carrying a grudge, and a set piece is a hazard with stage directions. Exposure, Vacuum, Caustic Environments, and Drowning are already fully ruled in Environmental Hazards and Conditions; Anomalies live in Flow Disturbances. This chapter is for everything the building itself is about to do.",
+  intro: "The room gets a turn. Not an initiative slot: a presence. A hazard is any part of the scene that can hurt somebody without carrying a grudge, and a set piece is a hazard with stage directions. Exposure, Vacuum, Caustic Environments, and Drowning are already fully ruled in Environmental Hazards and Conditions; Anomalies live in Flow Disturbances, and Null Scar repair under Anomalies and Null Scars. This chapter is for everything the building itself is about to do.",
 
   /* HAZARD ANATOMY. The four lines a hazard is written in, in the book's order.
      The DC ladder is also carried as numbers in dcByGrade below. */

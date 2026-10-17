@@ -263,12 +263,12 @@ EN.bestiary = {
       stats: { "Defense": "16", "DR": "4 (knight plate)", "Vitality": "140", "Speed": "6", "Initiative": "+6", "Saves": "+7 Body and Wits, +2 others", "Passive Perception": "15", "XP": "700", "Resolve": "8 (Hardened)" },
       abilities: [
         { name: "X-Calibur Rifle", cost: "Action", text: "Two attacks, +9 vs Defense, Range 16 / 48, 2d8+7 Ballistic (16)." },
-        { name: "Arc Glaive", cost: "Action", text: "Two attacks, +9 vs Defense, Reach 1, 1d10+6 Energy (11), Armor Piercing 1." },
+        { name: "Arc Glaive", cost: "Action", text: "Two attacks, +9 vs Defense, Reach +1, 1d10+6 Energy (11), Armor Piercing 1." },
         { name: "Takedown Doctrine", cost: "Action", text: "One weapon attack; on a hit, smart-cable deploys and the Target makes a Body Save DC 16 or is Restrained (escape contest vs Athletics +9)." },
         { name: "Chrome Overdrive", cost: "Swift, once per scene", text: "Until the end of the Knight's turn, its attacks gain Edge." },
         { name: "Aegis", cost: "Impulse", text: "Block: reduce incoming physical damage by 1d6+4." }
       ],
-      gear: "X-Calibur Rifle (Signature: a battle rifle chambered heavy, 2d8 Ballistic, Rare, Restricted), Arc Glaive, knight plate, a warrant with a blank space where the collateral goes.",
+      gear: "X-Calibur Rifle (Signature: a battle rifle chambered heavy, 2d8 Ballistic, Restricted), Arc Glaive, knight plate, a warrant with a blank space where the collateral goes.",
       gmNote: "Knights deploy in pairs with a Handler on comms. Two Knights and a Corporate Handler is 1,650 XP: a shade past a Fair Fight for the Caliber 4 crew XCal budgets against, and a wall for anyone below that. When the city wants Red Work, it sends a second pair (see the difficulty bands in The Budget)."
     },
     {
@@ -289,7 +289,7 @@ EN.bestiary = {
       stats: { "Defense": "13", "DR": "1 (Hypeplate)", "Vitality": "30", "Speed": "6", "Initiative": "+4", "Saves": "+5 Agility and Wits, +1 others", "Passive Perception": "13", "XP": "150", "Resolve": "5 (Standard; Iron against anything that would make them break their word)" },
       abilities: [
         { name: "Shotgun", cost: "Action", text: "+6 vs Defense, Range 5 / 12, 2d6+3 Ballistic (10)." },
-        { name: "Spear", cost: "Action", text: "+6 vs Defense, Reach 1, 1d6+3 Piercing (6)." },
+        { name: "Spear", cost: "Action", text: "+6 vs Defense, Reach +1, 1d6+3 Piercing (6)." },
         { name: "Overboard", cost: "Impulse", text: "While on or adjacent to water, when hit by an attack, the Ferryman drops into the water and resurfaces up to 6 spaces away at the end of its next turn." }
       ],
       gear: "Shotgun, Spear, Hypeplate, a ferry token good on any crossing."
@@ -405,7 +405,7 @@ EN.bestiary = {
       stats: { "Defense": "17", "DR": "5 (captain's knight plate)", "Vitality": "190", "Speed": "6", "Initiative": "+7", "Saves": "+8 Body and Wits, +3 others", "Passive Perception": "17", "XP": "900", "Resolve": "12 (Iron)" },
       abilities: [
         { name: "X-Calibur Rifle", cost: "Action", text: "Two attacks, +10 vs Defense, Range 16 / 48, 2d8+12 Ballistic (21)." },
-        { name: "Arc Glaive", cost: "Action", text: "Two attacks, +10 vs Defense, Reach 1, 1d10+12 Energy (17), Armor Piercing 1." },
+        { name: "Arc Glaive", cost: "Action", text: "Two attacks, +10 vs Defense, Reach +1, 1d10+12 Energy (17), Armor Piercing 1." },
         { name: "Takedown Doctrine", cost: "Action", text: "One weapon attack. On a hit, smart-cable deploys and the Target makes a Body Save DC 17 or is Restrained (escape contest vs Athletics +10)." },
         { name: "Command Net", cost: "Swift", text: "Up to two allied X-Calibur threats within 24 spaces each move up to half their Speed or use their Aegis." },
         { name: "Aegis", cost: "Impulse", text: "Block: reduce incoming physical damage by 1d6+5." }
@@ -674,7 +674,7 @@ EN.bestiary = {
       stats: { "Defense": "13", "DR": "3 (fibrous mass)", "Vitality": "55 (rooted: a deliberate exception to the Controller Vitality adjustment)", "Speed": "2 (rooted; the bed doesn't move, the reach does)", "Initiative": "+2", "Saves": "+6 Body, +2 others", "Passive Perception": "12 (vibration)", "XP": "250" },
       skills: [{ name: "Athletics", value: "+7" }],
       abilities: [
-        { name: "Tendril", cost: "Action", text: "Two attacks, +7 vs Defense, Reach 3 (flexible), 1d8+3 Bludgeoning (7). On a hit, the Bloom may attempt a Grapple contest (Athletics +7) for free." },
+        { name: "Tendril", cost: "Action", text: "Two attacks, +7 vs Defense, Reach +3 (flexible), 1d8+3 Bludgeoning (7). On a hit, the Bloom may attempt a Grapple contest (Athletics +7) for free." },
         { name: "Spore Sigh", cost: "Action", text: "Area 3 sphere within Reach: organic Targets make a Body Save DC 15 or are Poisoned until the end of their next turn." },
         { name: "Compost", cost: null, text: "A Grappled Target the Bloom starts its turn holding takes 1d6 Acid damage (3). Vulnerability to Fire damage, and it knows: it drops anything burning." }
       ],
@@ -700,7 +700,7 @@ EN.bestiary = {
       stats: { "Defense": "14", "DR": "3 (oxidized plate)", "Vitality": "120", "Speed": "6 (climbs structure at full speed)", "Initiative": "+4", "Saves": "+5 Body, +1 others", "Passive Perception": "13 (tastes current in the air; running engines read as cooking smells)", "Unshakable, Defensive Impulses": "as a Solo (its listed Impulse is Brace: reduce incoming damage by 1d10+4).", "XP": "600" },
       abilities: [
         { name: "Bite", cost: "Action", text: "Two attacks, +6 vs Defense, melee, 2d8+6 Piercing (15). Armor it bites loses 1 DR until repaired (the saliva does the work)." },
-        { name: "Tail Sweep", cost: "Action", text: "+6 vs Defense, Reach 2, 1d10+5 Bludgeoning (10); on a hit the Target makes a Body Save DC 15 or is pushed 2 spaces." },
+        { name: "Tail Sweep", cost: "Action", text: "+6 vs Defense, Reach +2, 1d10+5 Bludgeoning (10); on a hit the Target makes a Body Save DC 15 or is pushed 2 spaces." },
         { name: "Surges", cost: "2 per round", text: "*Lunge* (move half Speed); *Spray* (Area 2 cone: Agility Save DC 15, 1d6 Acid on a failure, none on a success); *Shed* (its space and each adjacent space become Difficult Terrain of shed scrap)." },
         { name: "Breakpoint", cost: null, text: "Something volatile it swallowed this week ruptures: once, Area 3 cone, Agility Save DC 15, 2d6 Fire on a failure, half on a success. After this, its DR drops to 2 and it starts looking for an exit. It is a feeder, not a fighter, and the distinction is the crew's best weapon." },
         { name: "Weakness", cost: null, text: "A charged anode (any vehicle battery rigged to bleed, one Engineering check) reads as an irresistible meal. While feeding on one, the Rustmaw ignores everything smaller than a gunshot, and attacks against it gain Edge." }
@@ -716,7 +716,7 @@ EN.bestiary = {
       abilities: [
         { name: "The Lure", cost: null, text: "A dangling light that reads, at distance, as a working maintenance lamp, a comm ping, a wearable's lost-and-found strobe. The first time a Target sees the lit lure each scene, it makes a Wits Save DC 16 or must use its next Move to close toward the light. Crews that know what the light is still lose people to it. It looks like somebody alive." },
         { name: "Jaw", cost: "Action", text: "Two attacks, +7 vs Defense, melee, 3d10+6 Piercing (22). On a hit, the Angler may attempt a Grapple contest for free (Athletics +8)." },
-        { name: "Tongue Lash", cost: "Action", text: "+7 vs Defense, Reach 3 (flexible), 2d8+6 Bludgeoning (15); on a hit the Target is pulled 2 spaces toward the jaw." },
+        { name: "Tongue Lash", cost: "Action", text: "+7 vs Defense, Reach +3 (flexible), 2d8+6 Bludgeoning (15); on a hit the Target is pulled 2 spaces toward the jaw." },
         { name: "Surges", cost: "3 per round", text: "*Douse* (extinguish its lure and any unshielded light within 2 spaces: that area is heavily obscured); *Undertow* (each Target in water within 2 spaces makes a Body Save DC 16 or is pulled 1 space and falls Prone); *Snap* (one bite at the bottom of its range: 1d10+5)." },
         { name: "Breakpoint", cost: null, text: "It swallows a Grappled Target whole. Inside: Blinded, Restrained, 2d6 Acid at the start of each turn, and freedom costs 15 damage dealt to the gullet with a blade, a torch, or something worse. The Angler will start withdrawing toward deep water the round it feeds. It has what it came for." },
         { name: "Weakness", cost: null, text: "The lure's frequency logs as a recurring fault code in the level's maintenance manifests, which is how you find its beat. Cut the district mains and it hunts on Tremor Sense alone: it trusts the lure too much to hunt well without playing it, and a crew standing still is, briefly, invisible." }
@@ -747,7 +747,7 @@ EN.bestiary = {
       stats: { "Defense": "17", "DR": "5 (reality callus)", "Vitality": "380", "Speed": "7", "Initiative": "+8", "Saves": "+8 Body and Mystique, +3 others", "Passive Perception": "16", "Immune": "Psychic.", "Resistance": "Resonant and Entropy. The inside of it isn't a mind, and it has been unraveling since birth without noticing.", "Unshakable, Defensive Impulses": "as a Solo (listed Impulse: Unravel: reduce incoming damage by 2d6; damage so reduced to 0 rebounds 1d6 Resonant to the attacker).", "XP": "1,800" },
       abilities: [
         { name: "Static Bleed", cost: null, text: "Aura 3. The aura is a Static Zone, and the full entry in Flow Disturbances governs it: Invocations cost more, their teeth are halved, and the current doesn't come back inside the line." },
-        { name: "Unmade Limb", cost: "Action", text: "Three attacks, +10 vs Defense, Reach 2, 4d10+6 Force (Spatial) (28). Ignores armor DR; space itself is doing the cutting." },
+        { name: "Unmade Limb", cost: "Action", text: "Three attacks, +10 vs Defense, Reach +2, 4d10+6 Force (Spatial) (28). Ignores armor DR; space itself is doing the cutting." },
         { name: "Gravity Well", cost: "Action", text: "Area 3 sphere within 12 spaces: Targets make a Body Save DC 18 or are pulled 3 spaces toward its center and knocked Prone." },
         { name: "Surges", cost: "3 per round", text: "*Fold Step* (teleport 4 spaces); *Shear* (one Unmade Limb attack at 2d10+6); *Howl of the Birth Hour* (one Target makes a Wits Save DC 18 or is Shaken until the end of its next turn)." },
         { name: "Breakpoint", cost: null, text: "It stops holding itself together. The Static Bleed aura collapses outward and the whole engagement area becomes a Severity 3 Resonant Storm (Invocations +1 FP; failed checks deal 1d4 Vitality) for the rest of the scene, and the Orphan's DR drops to 2. The armor was the leash." },
@@ -844,7 +844,7 @@ EN.bestiary = {
         rules: [
           { name: "Mounted Weapon", text: "Light Machinegun on a fixed forward mount, 1d10 Ballistic, Range 32 / 96 mounted." }
         ],
-        text: "The car that arrives before the call ends. Homeward runs them in pairs, with a Patrol Drone as the spotter (the PHB's pursuit table, 7 to 8)."
+        text: "The car that arrives before the call ends. Homeward runs them in pairs, with a Patrol Drone as the spotter (Pursuit Escalation, 7 to 8, in Chase Rules)."
       },
       {
         name: "Recovery Van", page: 98, tier: 3, category: "Ground", mass: "Heavy",

@@ -266,7 +266,7 @@ EN.chases = {
     mounted: [
       "Weapons hardwired into the vehicle's chassis are operated using the vehicle's onboard targeting systems. When firing a Mounted weapon, the Freelancer rolls **d20 + Tech Modifier + Weapon Proficiency Bonus**, where the proficiency is the mounted weapon's own category (Heavy Weapons for the Heavy Weapons and Explosive Launchers catalogs).",
       "The guns themselves are the Heavy Weapons and Explosive Launchers, carried on a Hardpoint Mount (see Vehicle Customization) or listed in a profile's stock loadout, with their printed damage, Range, ammo, firing modes, and Counted ammunition rules. A Mounted weapon counts as being in its Setup state: it ignores High Recoil and its range bands are doubled. The vehicle's feed system counts as the loader for Crew Served. Arc of fire comes from the mount: fixed forward, or a full turret ring.",
-      "Stock loadouts: the Riot Suppression Mech carries a Rotary Cannon on a turret ring. The Corporate VTOL carries a Light Machinegun on a fixed door mount."
+      "Stock loadouts: the Riot Suppression Mech carries a Heavy Machinegun on a turret ring. The Corporate VTOL carries a Light Machinegun on a fixed door mount."
     ]
   },
 

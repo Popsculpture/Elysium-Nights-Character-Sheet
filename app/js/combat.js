@@ -347,15 +347,14 @@ EN.combatView = (function () {
     }
 
     // --- hand off to the damage tray, carrying the crit from this attack ---
-    // with Oomph a crit adds the PRINTED dice (decision 4), so the button names them rather than "x2"
-    var hoCrit = (crit && ctx.dmg) ? dmgTrayCrit(ctx.dmg, { twoHand: !!(ctx.dmg.grip && ctx.dmg.grip.twoHanded) }) : null;
-    var hoSplit = !!(hoCrit && hoCrit.extra && !hoCrit.merged);
+    // a crit rolls the same dice as any hit (the PHB gives it no extra damage dice); the hand-off
+    // only carries the crit so the damage tray marks it and the log keeps it
     var dmgHandoff = (roll && !anim && ctx.dmg) ? el("div", { style: { padding: "12px 16px 0", textAlign: "center" } }, [
       el("button.btn.sm", {
-        title: crit ? (hoSplit ? "Roll damage plus the printed " + hoCrit.extra + " a critical hit adds" : "Roll damage with the weapon dice doubled") : "Roll this weapon's damage",
+        title: crit ? "Roll this weapon's damage. A critical hit counts as at least a Strong Hit and triggers any weapon crit effect." : "Roll this weapon's damage",
         style: { color: "var(--ember)", borderColor: "var(--ember)", padding: "6px 18px", fontSize: "12px", letterSpacing: ".06em" },
         onclick: function () { var dc = Object.assign({}, ctx.dmg, { crit: crit }); closeRollTray(); openDmgTray(dc); }
-      }, (crit ? (hoSplit ? "◆ ROLL DAMAGE +" + hoCrit.extra + " →" : "◆ ROLL DAMAGE ×2 →") : "ROLL DAMAGE →")) ]) : null;
+      }, (crit ? "◆ ROLL DAMAGE →" : "ROLL DAMAGE →")) ]) : null;
 
     // --- Pure Luck: a post-roll rescue for a roll that failed, never for a crit
     // (Press Your Luck can force a crit on a low natural die, so gate on !crit) ---
@@ -486,11 +485,14 @@ EN.combatView = (function () {
   }
 
   /* ---------- Damage tray: the companion roller for weapon damage --------
-     A crit adds the weapon's printed dice again (doubling them, unless Oomph
-     stepped the rolled dice: then 2d8 + 2d6); Cheap Shot and the versatile two-handed
+     A crit handed off from the attack tray rolls the same dice as any hit and is only
+     marked and logged as a crit; Cheap Shot and the versatile two-handed
      die are toggles. Opened off a weapon's DMG box, or handed off from the
      attack tray carrying the crit. Square dice, to read differently from the
      hexagonal d20. */
+  /* What a natural 20 does on an attack roll, in the PHB's own words (Attacks and Maneuvers).
+     A crit adds no damage dice, so this is the one place the tray tells the player what it does. */
+  var ATTACK_CRIT_NOTE = "A natural 20 is a critical hit, counting as at least a Strong Hit and triggering any weapon or Invocation crit effect.";
   var _dmgTray = { open: false, ctx: null, crit: false, cheap: false, twoHand: false, roll: null, animating: false };
   var _dmgAnimId = 0;
   function openDmgTray(ctx) {
@@ -504,30 +506,18 @@ EN.combatView = (function () {
   }
   function closeDmgTray() { _dmgAnimId++; _dmgTray.open = false; _dmgTray.roll = null; _dmgTray.animating = false; EN.app.render(); }
   function dmgTrayReset() { _dmgTray.roll = null; EN.app.render(); }   // a toggle changed the dice
-  /* The dice the tray rolls for the grip it is on, and the PRINTED dice for that grip. With
-     Oomph the two differ (a Weighted Head Greatsword rolls 2d8, printed 2d6), and a crit adds
-     the printed dice, never the stepped ones: "It never touches ... extra dice on a critical
-     hit" (the author's decision 4, 2026-10-16). `printed` undefined means the context carries
-     no printed die (an unarmed strike that came wholly from Oomph, a legacy context), and a
-     crit then doubles the dice exactly as it always has. */
+  /* The dice the tray rolls for the grip it is on (the stepped dice, when Oomph applies). A
+     crit rolls these same dice: the PHB gives a critical hit no extra damage dice. */
   function dmgTrayDice(ctx, st) {
     var two = !!(st.twoHand && ctx.versatile);
-    var printed = two ? ctx.printedVersatile : ctx.printedDice;
-    return { dice: two ? ctx.versatile : ctx.dice, printed: printed == null ? undefined : printed };
-  }
-  // the crit's dice for the tray's grip: { main, extra, text, merged } (engine critDamageDice)
-  function dmgTrayCrit(ctx, st) {
-    var td = dmgTrayDice(ctx, st);
-    return eng.critDamageDice(td.dice, td.printed);
+    return { dice: two ? ctx.versatile : ctx.dice };
   }
   function dmgTraySpec() {
     var ctx = _dmgTray.ctx || {};
     var td = dmgTrayDice(ctx, _dmgTray);
     var bonus = [];
     if (_dmgTray.cheap && ctx.cheapEligible) bonus.push({ n: ctx.cheapDice, sides: 6, label: "Cheap Shot" });
-    var spec = { dice: td.dice, flat: ctx.flat || 0, crit: _dmgTray.crit, bonus: bonus, types: ctx.types || [] };
-    if (td.printed !== undefined) spec.critDice = td.printed;
-    return spec;
+    return { dice: td.dice, flat: ctx.flat || 0, crit: _dmgTray.crit, bonus: bonus, types: ctx.types || [] };
   }
   function dmgTrayCommit() {
     var res = eng.rollDamage(dmgTraySpec());
@@ -562,8 +552,7 @@ EN.combatView = (function () {
     var td = dmgTrayDice(ctx, st);
     var md = /(\d+)d(\d+)/.exec(td.dice);
     var parts = [];
-    // a crit reads "2d8 + 2d6" when Oomph stepped the dice, and "4d6" when it did not
-    if (md) parts.push(st.crit ? eng.critDamageDice(md[1] + "d" + md[2], td.printed).text : md[1] + "d" + md[2]);
+    if (md) parts.push(md[1] + "d" + md[2]);
     if (st.cheap && ctx.cheapEligible) parts.push(ctx.cheapDice + "d6");
     var s = parts.join(" + ") || "no dice";
     if (ctx.flat) s += " " + eng.fmtMod(ctx.flat);
@@ -578,15 +567,17 @@ EN.combatView = (function () {
      defenses trigger only when the damage is fully absorbed (Resurge's rebound)
      or scale off the roll itself (Siphon's Vigor).
 
-     THE LIMIT. "A Character may only use one defensive Impulse per attacking Enemy's
-     turn, regardless of how many total Impulse actions they have generated." Checked
-     against the 16 October handoff ("If the app's combat tracker enforces 'one Active
-     Defense per round', change it to this"): this tray never enforced a per-round limit,
-     or any limit. It keeps no spent state, because the sheet cannot see whose turn it is
-     or which Enemy is swinging. So it does not start enforcing one now; it states the
-     per-attacking-Enemy's-turn rule in the tray for every defense (DEF_LIMIT_NOTE) and leaves
-     the count to the table, as it always has. */
-  var DEF_LIMIT_NOTE = "One defensive Impulse per attacking Enemy's turn, however many Impulse Actions you have.";
+     THE LIMIT. Two PHB passages apply together (the author's ruling, 16 October, round 2).
+     The budget: "You can use one Active Defense per round, or two if you traded your Move
+     Action for a second Impulse." The cap: "A Character may only use one defensive Impulse
+     per attacking Enemy's turn, regardless of how many total Impulse actions they have
+     generated. You can't spam defenses against a single, rapid-striking opponent."
+     Intercept is an Impulse but not a defense: it spends the round's budget and does not
+     count toward the cap. This tray enforces neither. It keeps no spent state, because the
+     sheet cannot see whose turn it is or which Enemy is swinging. So it states both in the
+     tray for every defense (DEF_LIMIT_NOTE) and leaves the count to the table, as it always
+     has. */
+  var DEF_LIMIT_NOTE = "One Active Defense per round, or two if you traded your Move Action for a second Impulse. Never more than one against the same attacking Enemy's turn.";
   var _defTray = { open: false, spec: null, incoming: "", roll: null, animating: false };
   var _defAnimId = 0;
   function openDefTray(spec) { _defAnimId++; _defTray = { open: true, spec: spec, incoming: "", roll: null, animating: false }; EN.app.render(); }
@@ -756,9 +747,6 @@ EN.combatView = (function () {
     var typeStr = (ctx.types && ctx.types.length) ? ctx.types.join(" + ") : "";
     var activeDice = dmgTrayDice(ctx, _dmgTray).dice;
     var md = /(\d+)d(\d+)/.exec(activeDice), canRoll = !!md;
-    // the crit's dice for this grip: merged ("4d6") without Oomph, split ("2d8 + 2d6") with it
-    var critX = md ? dmgTrayCrit(ctx, _dmgTray) : null;
-    var critSplit = !!(critX && critX.extra && !critX.merged);
 
     var diceEls = [], prompt;
     if (roll) {
@@ -771,15 +759,12 @@ EN.combatView = (function () {
         : el("div", { style: { marginTop: "10px" } }, [
             el("div.mono", { style: { fontSize: "46px", fontWeight: 700, lineHeight: "1", color: roll.crit ? "var(--gold)" : "var(--ember)", textShadow: "0 0 20px currentColor" }, text: String(roll.total) }),
             trayDmg(el("div.mono.dmg-tray-result", { style: { fontSize: "9px", letterSpacing: ".18em", color: "var(--text3)", marginTop: "5px" } }), "DAMAGE" + (typeStr ? " · " + typeStr : "") + " · TAP TO ROLL AGAIN"),
-            roll.crit ? el("div.mono", { style: { fontWeight: 700, letterSpacing: ".14em", fontSize: "12px", color: "var(--gold)", marginTop: "7px" }, text: critSplit ? "◆ CRIT ADDS THE PRINTED " + critX.extra : "◆ DOUBLED ON CRIT" }) : null
+            roll.crit ? el("div.mono", { style: { fontWeight: 700, letterSpacing: ".14em", fontSize: "12px", color: "var(--gold)", marginTop: "7px" }, text: "◆ CRITICAL HIT" }) : null
           ]);
     } else {
       if (md) {
-        var wc = parseInt(md[1], 10) * (_dmgTray.crit && !critSplit ? 2 : 1);
+        var wc = parseInt(md[1], 10);
         for (var i = 0; i < wc; i++) diceEls.push(dmgDie("", parseInt(md[2], 10), { dim: true }));
-        // a crit with Oomph adds the PRINTED dice, drawn at their own size
-        var ex = (_dmgTray.crit && critSplit) ? /(\d+)d(\d+)/.exec(critX.extra) : null;
-        if (ex) for (var x = 0; x < parseInt(ex[1], 10); x++) diceEls.push(dmgDie("", parseInt(ex[2], 10), { dim: true }));
       }
       if (_dmgTray.cheap && ctx.cheapEligible) for (var j = 0; j < ctx.cheapDice; j++) diceEls.push(dmgDie("", 6, { cheap: true, dim: true }));
       if (!diceEls.length) diceEls.push(el("span.mono", { style: { color: "var(--text3)", fontSize: "12px" }, text: "no damage" }));
@@ -808,7 +793,9 @@ EN.combatView = (function () {
       return el("span", { onclick: fn, style: { display: "inline-flex", alignItems: "center", gap: "6px", padding: "7px 11px", cursor: "pointer", fontFamily: "var(--mono)", fontSize: "11.5px", borderRadius: "8px",
         border: "1px solid " + col, color: on ? "var(--bg1)" : col, background: on ? col : "transparent", fontWeight: on ? 700 : 400 } }, label);
     }
-    var togs = [ tog(_dmgTray.crit, critSplit ? "◆ Critical +" + critX.extra : "◆ Critical ×2 dice", "var(--gold)", function () { _dmgTray.crit = !_dmgTray.crit; dmgTrayReset(); }) ];
+    // no crit toggle: a crit rolls the same dice as any hit, so a switch for it would change
+    // nothing. A crit still reaches this tray from the attack roll (marked and logged).
+    var togs = [];
     if (ctx.cheapEligible) togs.push(tog(_dmgTray.cheap, "Cheap Shot +" + ctx.cheapDice + "d6", "var(--ember)", function () { _dmgTray.cheap = !_dmgTray.cheap; dmgTrayReset(); }));
     // offered only when the grip is a real choice; a weapon forced two-handed shows
     // what is holding it that way instead of a switch that cannot move
@@ -818,7 +805,8 @@ EN.combatView = (function () {
       togs.push(el("span.chip", { title: ctx.grip.why, style: { color: "var(--warn)", borderColor: "var(--warn)" } },
         "TWO-HANDED ONLY · " + ctx.versatile));
     }
-    var togRow = el("div", { style: { padding: "14px 16px", borderTop: "1px solid var(--border)", display: "flex", gap: "8px", flexWrap: "wrap" } }, togs);
+    // a weapon with no Cheap Shot and no Versatile grip has no toggles: draw no empty row
+    var togRow = togs.length ? el("div", { style: { padding: "14px 16px", borderTop: "1px solid var(--border)", display: "flex", gap: "8px", flexWrap: "wrap" } }, togs) : null;
 
     var foot = el("div.row.between", { style: { padding: "11px 16px", borderTop: "1px solid var(--border)", alignItems: "baseline" } }, [
       el("span.mono", { style: { fontSize: "11px", color: "var(--text2)" }, text: dmgFormula(ctx, _dmgTray) }),
@@ -4474,9 +4462,10 @@ EN.combatView = (function () {
          already has it applied, in which case it stays listed (disabled, as applied
          options are) beside the block that shows it. The author's decision 3, 2026-10-16. */
       function offered(o) {
-        /* A consumable whose item moved to the Game Master's Toolkit (the Combat Stim Pack,
-           decision 7) is offered only to a character who owns one or already has it applied.
-           The data row stays, so flipping holds.toolkit brings it back for everyone. */
+        /* A consumable whose item the Player's Handbook gear list does not print (the Combat
+           Stim Pack; gear is held unless that list or a class chapter names it) is offered only
+           to a character who owns one or already has it applied. The data row stays, so
+           flipping holds.toolkit brings it back for everyone. */
         if (o.kind === "consumable" && EN.launch && EN.launch.isToolkit && EN.launch.isToolkit("item", o.name)) {
           return statusApplied(ch, o) || (ch.equipment || []).some(function (e) {
             return e && e.name === o.name && !(e.qty != null && e.qty <= 0);
@@ -5147,7 +5136,7 @@ EN.combatView = (function () {
           subtype: (h.melee ? "Melee" : h.thrownItem ? "Thrown" : "Ranged") + " Weapon · " + h.cat,
           melee: h.melee, thrownItem: h.thrownItem, ranged: !h.melee && !h.thrownItem,
           usesAmmo: !h.melee && !h.thrownItem && it.ammo != null,   // a fired weapon spends a shot per roll
-          traits: it.traits || [], baseMods: baseMods, critMin: h.spec ? 19 : 20,
+          traits: it.traits || [], baseMods: baseMods, critMin: h.spec ? 19 : 20, critNote: ATTACK_CRIT_NOTE,
           autoSnag: autoSnag, autoEdge: [], baseSnag: autoSnag.length, baseEdge: 0,
           shaken: (ch.conditions || []).indexOf("Shaken") !== -1,
           dmg: damageCtx(it, h, wk)   // carried so the attack tray can hand off to damage
@@ -5162,7 +5151,7 @@ EN.combatView = (function () {
         return Object.assign({
           weaponName: name, subtype: subtype,
           melee: false, thrownItem: false, ranged: false, usesAmmo: false,
-          traits: [], baseMods: mods, critMin: opts.critMin || 20,
+          traits: [], baseMods: mods, critMin: opts.critMin || 20, critNote: ATTACK_CRIT_NOTE,
           autoSnag: autoSnag, autoEdge: [], baseSnag: autoSnag.length, baseEdge: 0,
           shaken: (ch.conditions || []).indexOf("Shaken") !== -1,
           dmg: opts.dmg || null
@@ -5187,10 +5176,8 @@ EN.combatView = (function () {
           subtype: (h.melee ? "Melee" : h.thrownItem ? "Thrown" : "Ranged") + " Weapon · " + h.cat,
           /* OOMPH: `dice` and `versatile` are the STEPPED dice weaponGrip resolved, so the tray
              rolls what the DMG box shows (a Greatsword with a Weighted Head rolls 2d8, not the
-             catalog 2d6). The printed dice ride beside them because a critical hit's extra dice
-             are the printed ones (the author's decision 4, 2026-10-16: 2d8 + 2d6). */
+             catalog 2d6). */
           dice: plainDie ? grip.baseDice : p.dice, types: p.types,
-          printedDice: plainDie ? grip.printedBase : undefined,
           flat: h.dmgMod, flatLabel: h.indirect ? "Indirect: no attribute Modifier" : (h.attrName + " Modifier"),
           /* `dice` stays the BASE and `versatile` stays the alternate, because the
              tray's own arithmetic picks between them off its twoHand flag. What
@@ -5201,7 +5188,6 @@ EN.combatView = (function () {
              and a weapon forced two-handed by an Extended Shaft still offered a
              one-handed option it cannot have. */
           versatile: grip.versatile || versatileDie(traits),
-          printedVersatile: grip.printedVersatile || versatileDie(traits),
           grip: grip,
           cheapEligible: cheapEligible, cheapDice: d.caliber || 1,
           crit: false
@@ -5574,12 +5560,8 @@ EN.combatView = (function () {
         // and opens no damage tray; the row states its damage instead. Riders are
         // situational (a Surge that is not up adds nothing), so they stay in the
         // row text rather than being pre-loaded into the tray.
-        /* `printedDice` is the strike's own die before Oomph (Unarmed), so a crit adds that die
-           and not the stepped one (decision 4). A bare fist has no die of its own, so it carries
-           none and a crit doubles the stepped die as before; flagged to the author. */
         var luDmg = uStrike.die
           ? { weaponName: luName, subtype: luKind.toUpperCase(), dice: uStrike.die, types: [uStrike.type],
-              printedDice: uStrike.baseDie || undefined,
               flat: luAttr, flatLabel: luAttrLabel, versatile: null, cheapEligible: false, cheapDice: d.caliber || 1, crit: false }
           : null;
         var luDmgText = (uStrike.die ? uStrike.die : uBase.flat) + " " + uStrike.type

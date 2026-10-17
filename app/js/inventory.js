@@ -63,17 +63,19 @@ EN.inventoryView = (function () {
      chip or price tooltip shows it. The data stays, and so does the rule logic that reads it:
      The Register's scarcity markup (streetPrice, AVAIL_MULT) and the crafting Project tier
      (EN.crafting.tierForItem) still read it. Flip the hold and every surface returns.
-     TOOLKIT GEAR (the 12 October gear split, the Signature Weapons chapter, the Mystech
-     cyberware and tiers, Blackware, the Rare tools) is listed nowhere new: not in the market,
-     the Blueprints, the install pickers or the Garage's fit list. A copy the character
-     already owns keeps rendering, installing and deriving, with a TOOLKIT chip. Nothing here
-     filters catalog() or findItem(), which saved gear resolves through. */
+     TOOLKIT GEAR is every catalog row the Player's Handbook gear list doesn't print (the
+     allow-list in data/launch.js: that list plus the class gear and the chassis). The Signature
+     Weapons chapter, the Mystech cyberware and tiers, Blackware and the other Toolkit tools
+     are in it. It is listed nowhere new: not in the market, the Blueprints, the install
+     pickers or the Garage's fit list. A copy the character already owns keeps rendering,
+     installing and deriving, with a TOOLKIT chip. Nothing here filters catalog() or
+     findItem(), which saved gear resolves through. */
   function showAvail() { var L = EN.launch; return !(L && L.showAvailability) || L.showAvailability(); }
   function toolkitListing(it) {
     var L = EN.launch;
     if (!L || !it) return false;
-    // a market cyber listing is one tier of one implant: it moves with its implant or its tier
-    if (it.cyber) return L.isToolkit("cyberware", it.cyberKey) || L.isToolkit("cyberTier", it.tier);
+    // a market cyber listing is one tier of one implant: judged against the Handbook's exact
+    // "<Tier> <Implant>" row (isToolkitItem reads cyberKey and tier)
     return L.isToolkitItem(it);
   }
   // the TOOLKIT chip for an owned piece (null when it is ordinary gear or the hold is off)
@@ -919,6 +921,8 @@ EN.inventoryView = (function () {
       open && it.drawback ? el("p.help", { style: { margin: "4px 0 0" }, html: "<b style='color:var(--danger)'>Drawback:</b> " + it.drawback }) : null,
       open && it.synergy ? el("p.help", { style: { margin: "4px 0 0" }, html: "<b style='color:var(--flow)'>Synergy:</b> " + it.synergy }) : null,
       open && it.cyber ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: "Install: " + it.zone + " zone · " + it.sp + " SP" + (it.slots ? " · " + it.slots + " mod slots" : "") + " · Enhancement: " + (enhScaled(it) || "None") }) : null,
+      // the Handbook's spec line "Prerequisite For:" (the Datajack names what needs a neural port)
+      open && it.cyber && it.prereqFor ? el("p.help", { style: { margin: "4px 0 0" }, html: "<b style='color:var(--flow)'>Prerequisite For:</b> " + it.prereqFor }) : null,
       open && it.cyber && it.tierNote ? el("p.help", { style: { margin: "4px 0 0" }, text: it.tierNote }) : null,
       open && it.basic ? el("p.help", { style: { margin: "4px 0 0" }, html: "<b style='color:var(--text2)'>Basic Use:</b> " + it.basic }) : null,
       open && it.proficient ? el("p.help", { style: { margin: "4px 0 0" }, html: "<b style='color:var(--gold)'>Proficient Use:</b> " + it.proficient }) : null,
@@ -1191,11 +1195,13 @@ EN.inventoryView = (function () {
 
     /* --- Chrome panel: Chrome Stash (owned, uninstalled) | Installed Chrome --- */
     var tierChipColor = function (t) { return t === "Blackware" ? "var(--danger)" : t === "Brandware" ? "var(--accent)" : t === "Prototype" ? "var(--flow)" : "var(--text3)"; };
+    // the implant's catalog "Prerequisite For" spec line ("" when it has none)
+    function cyberPrereq(cw) { var d = ENG().cyberDef ? ENG().cyberDef(cw) : null; return (d && d.prereqFor) || ""; }
     function cyberRow(cw, idx, where) {
       var sided = !!cw.sided, oid = where + "-cw-" + idx, open = !!_open[oid];
       var chips = [
         where === "installed" ? tagChip("● INSTALLED", "var(--success)", "Installed, counts toward your Static") : tagChip("STASHED", "var(--text3)", "In your stash, not yet installed"),
-        // Mystech implants and the Blackware and Prototype tiers moved to the Toolkit; an owned piece keeps working
+        // implants the Handbook doesn't print (the Mystech ones, the Blackware and Prototype tiers) are held; an owned piece keeps working
         toolkitChip("cyberware", cw.key) || toolkitChip("cyberTier", cw.tier),
         // the quality tier is a rule, so its chip peeks the Codex entry on a tap (the title stays for hover)
         cw.tier ? (function () {
@@ -1229,6 +1235,8 @@ EN.inventoryView = (function () {
           actions
         ]),
         open && ENG().cyberEffect(cw) ? el("p.help", { style: { margin: "4px 0 0", color: "var(--accent)" }, text: ENG().cyberEffect(cw) }) : null,
+        // the spec line "Prerequisite For:", read live from the catalog like the Effect (a saved implant carries no catalog prose)
+        open && cyberPrereq(cw) ? el("p.help", { style: { margin: "4px 0 0" }, html: "<b style='color:var(--flow)'>Prerequisite For:</b> " + cyberPrereq(cw) }) : null,
         // ...and what THIS tier changes about it, which the market card has always shown and this panel never did
         open && ENG().cyberTierNote && ENG().cyberTierNote(cw.key, cw.tier)
           ? el("p.help", { style: { margin: "3px 0 0", color: "var(--gold)" }, text: ENG().cyberTierNote(cw.key, cw.tier) }) : null,
@@ -1449,7 +1457,7 @@ EN.inventoryView = (function () {
             listings.push({ name: nm, cyber: true, cyberKey: it.key, base: it.name, tier: t.tier,
               zone: it.zone, sp: t.sp, slots: t.slots || 0, sided: !!it.sided, mystech: !!it.mystech,
               enhancement: it.enhancement, price: t.price, legality: t.legality, availability: TIER_AVAIL[t.tier] || "Uncommon",
-              desc: it.desc, effect: it.effect,
+              desc: it.desc, effect: it.effect, prereqFor: it.prereqFor,
               activation: it.activation, limitation: it.limitation,
               drawback: it.drawback, synergy: it.synergy,
               tierNote: ENG().cyberTierNote ? ENG().cyberTierNote(it.key, t.tier) : "" });
@@ -1460,7 +1468,7 @@ EN.inventoryView = (function () {
       cats.push({ key: "cybernetics", title: "Cybernetics", short: "CHROME", codex: "gr-chrome", intro: CW.intro, subs: cyberSubs });
     }
 
-    /* ---- the Toolkit hold: moved gear leaves the listings, never the catalog ----
+    /* ---- the Toolkit hold: gear the Handbook doesn't print leaves the listings, never the catalog ----
        A sub that empties (Mystech ammunition, Mystech Armor, Mystech Augments) is skipped
        below like any empty sub, and a category that empties (Signature Weapons) leaves the
        panel list and the TYPE filter with it. */
@@ -1494,7 +1502,7 @@ EN.inventoryView = (function () {
     function setF(key, val) { return function () { if (key === "type") _mktType = val; else if (key === "legal") _mktLegal = val; else _mktAvail = val; EN.app.render(); }; }
     var typeBtns = [fbtn(_mktType === "all", "ALL", setF("type", "all"))].concat(cats.map(function (c) { return fbtn(_mktType === c.key, c.short, setF("type", c.key)); }));
     var legalBtns = [fbtn(_mktLegal === "all", "ALL", setF("legal", "all"))].concat(["Legal", "Licensed", "Restricted", "Contraband"].map(function (l) { return fbtn(_mktLegal === l, l.toUpperCase(), setF("legal", l), LEGAL_COLOR[l]); }));
-    // the Mystech scale (Iconic to Artifact) moved with its gear, so it stays out even when Availability returns
+    // the Mystech scale (Iconic to Artifact) is held with its gear, so it stays out even when Availability returns
     var availBtns = [fbtn(_mktAvail === "all", "ALL", setF("avail", "all"))].concat(["Common", "Uncommon", "Rare", "Iconic", "Legendary", "Mythical", "Artifact"]
       .filter(function (a) { return !(EN.launch && EN.launch.isToolkit("availability", a)); })
       .map(function (a) { return fbtn(_mktAvail === a, a.toUpperCase(), setF("avail", a), AVAIL_COLOR[a]); }));
@@ -3412,8 +3420,12 @@ EN.inventoryView = (function () {
      a specific vehicle simple enough to try, and then it rolls with Snag like
      the Ground path. That ruling is _garage.allow, the GM: SIMPLE ENOUGH TO TRY
      toggle; it is per vehicle, so picking another category or chassis clears
-     it. _garage lives only in this module: nothing saves it. The on-screen rule
-     text links the Codex's vc- panels rather than restating more. */
+     it. While the pilot is barred the piloting readouts are gone, but the Mounted
+     weapon readout stays in the barred box with a caption (author's ruling, round 2:
+     a crewmate can fire a Mounted weapon on a vehicle the pilot is barred from; the
+     number never reads the pilot's vehicle proficiency). _garage lives only in this
+     module: nothing saves it. The on-screen rule text links the Codex's vc- panels
+     rather than restating more. */
   var _garage = { chassis: "", cat: "Ground Vehicles", type: "", handling: 0, attr: "AGI", allow: false };
   // the categories an untrained pilot can't operate unless the GM allows this vehicle (data/chases.js)
   function garageBarredCat(cat) {
@@ -3536,9 +3548,31 @@ EN.inventoryView = (function () {
     var mod = d.attributes[_garage.attr].mod;
     var attrName = d.attributes[_garage.attr].name;
     var handling = Number(_garage.handling) || 0;
-    // untrained in a category the book bars: no readouts unless the GM rules this one simple enough to try
+    // untrained in a category the book bars: no piloting readouts unless the GM rules this one simple enough to try.
+    // The Mounted weapon readout stays either way: a crewmate can fire a Mounted weapon on a vehicle the pilot is barred from.
     var barredCat = untrained && garageBarredCat(cat);
     var barred = barredCat && !_garage.allow;
+    /* Mounted Weapons (Part 2): d20 + Tech Modifier + Weapon Proficiency Bonus, the proficiency
+       being the gun's own category, Heavy Weapons for the Heavy Weapons and Explosive Launchers
+       catalogs. Tech whoever drives, since the onboard targeting fires it, so this ignores the
+       AGILITY / TECH piloting choice and the pilot's vehicle proficiency, which is why a barred
+       pilot keeps the number. A Vehicle Focus for this type still adds Caliber (it covers
+       attack rolls made using the vehicle). Untrained in the category: Snag, as for any weapon. */
+    var MOUNT_CAT = "Heavy Weapons";
+    var mountInfo = R.profTiers[eng.effectiveGearTier(ch, "weapons", MOUNT_CAT)] || R.profTiers.untrained;
+    var tecMod = d.attributes.TEC.mod;
+    var mountTotal = tecMod + mountInfo.d20 + cal;
+    var mountTip = "Mounted weapon: d20 + Tech Modifier (" + eng.fmtMod(tecMod) + ")"
+      + " + Weapon Proficiency Bonus for the weapon's own category (" + MOUNT_CAT + ", " + mountInfo.name
+      + (mountInfo.d20 ? " " + eng.fmtMod(mountInfo.d20) : ", Snag") + ")"
+      + (focus ? " + Caliber from " + cat + " (" + focus.aspect + ") Focus (" + eng.fmtMod(cal) + ")" : "")
+      + (spec ? " · Specialization: crit 19-20" : "")
+      + "\nThe guns are the Heavy Weapons and Explosive Launchers on a Hardpoint Mount or in a stock loadout.";
+    var mountBox = el("div", { title: mountTip, style: { textAlign: "center", minWidth: "110px" } }, [
+      el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" } }, [EN.ui.ruleLink("vc-piloting/mounted-weapons", "MOUNTED WEAPON"), document.createTextNode(" · D20")]),
+      el("span.mono", { style: { fontSize: "22px", color: mountInfo.snag ? "var(--warn)" : "var(--ember)" }, text: eng.fmtMod(mountTotal) }),
+      mountInfo.snag ? el("div.mono", { style: { fontSize: "9px", color: "var(--warn)" }, text: "with Snag" }) : null
+    ]);
     function reRender() { EN.app.render(); }
     // controls: chassis, category, vehicle type, Handling, governing attribute; the GM allowance sits with the chips
     var chassisSel = el("select", { style: { fontSize: "12px", width: "auto" },
@@ -3588,7 +3622,12 @@ EN.inventoryView = (function () {
       body.push(el("div.muted-box", { style: { borderColor: "var(--danger)", color: "var(--danger)", textAlign: "left" } }, [
         document.createTextNode("⛔ "), el("b", { text: "OPERATION BARRED." }),
         document.createTextNode(" Untrained in " + cat + ": you can't operate it at all, unless the GM rules this one simple enough to try. Train " + cat + " on the #PRINT Advance tab to take the controls. "),
-        EN.ui.ruleLink("vc-piloting/proficient-and-untrained-pilots", "Proficient and Untrained Pilots")
+        EN.ui.ruleLink("vc-piloting/proficient-and-untrained-pilots", "Proficient and Untrained Pilots"),
+        // the one readout a barred pilot keeps: a crewmate can fire a Mounted weapon on a vehicle the pilot is barred from
+        el("div.row.wrap", { style: { gap: "12px", alignItems: "center", marginTop: "8px" } }, [
+          el("span", { style: { color: "var(--text2)" }, text: "A crewmate can still fire a Mounted weapon on it:" }),
+          mountBox
+        ])
       ]));
     } else {
       var d20Total = mod + tierInfo.d20 + handling + cal;
@@ -3606,21 +3645,6 @@ EN.inventoryView = (function () {
       var edgePts = edgeParts.reduce(function (a, p) { return a + p.value; }, 0);
       var edgePool = eng.buildEdgePool(edgePts);
       var edgeTip = edgeParts.length ? edgeParts.map(function (p) { return "+" + p.value + "  " + p.label; }).join("\n") : "No Edge sources yet";
-      /* Mounted Weapons (Part 2): d20 + Tech Modifier + Weapon Proficiency Bonus, the proficiency
-         being the gun's own category, Heavy Weapons for the Heavy Weapons and Explosive Launchers
-         catalogs. Tech whoever drives, since the onboard targeting fires it, so this ignores the
-         AGILITY / TECH piloting choice. A Vehicle Focus for this type still adds Caliber (it covers
-         attack rolls made using the vehicle). Untrained in the category: Snag, as for any weapon. */
-      var MOUNT_CAT = "Heavy Weapons";
-      var mountInfo = R.profTiers[eng.effectiveGearTier(ch, "weapons", MOUNT_CAT)] || R.profTiers.untrained;
-      var tecMod = d.attributes.TEC.mod;
-      var mountTotal = tecMod + mountInfo.d20 + cal;
-      var mountTip = "Mounted weapon: d20 + Tech Modifier (" + eng.fmtMod(tecMod) + ")"
-        + " + Weapon Proficiency Bonus for the weapon's own category (" + MOUNT_CAT + ", " + mountInfo.name
-        + (mountInfo.d20 ? " " + eng.fmtMod(mountInfo.d20) : ", Snag") + ")"
-        + (focus ? " + Caliber from " + cat + " (" + focus.aspect + ") Focus (" + eng.fmtMod(cal) + ")" : "")
-        + (spec ? " · Specialization: crit 19-20" : "")
-        + "\nThe guns are the Heavy Weapons and Explosive Launchers on a Hardpoint Mount or in a stock loadout.";
       body.push(el("div.row.wrap", { style: { gap: "16px", alignItems: "center", margin: "2px 0 8px" } }, [
         el("div", { title: d20Tip, style: { textAlign: "center", minWidth: "110px" } }, [
           el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" } }, [EN.ui.ruleLink("vc-chase/resolving-the-chase", "CHASE CHECK"), document.createTextNode(" · D20")]),
@@ -3632,12 +3656,8 @@ EN.inventoryView = (function () {
           el("span.mono", { style: { fontSize: "22px", color: "var(--success)" }, text: edgePts + " → " + edgePool.label }),
           untrained ? el("div.mono", { style: { fontSize: "9px", color: "var(--warn)" }, text: "+2 Snag Dice untrained" }) : null
         ]),
-        // Mounted weapon: always the Tech Modifier (the onboard targeting), plus the gun's own Weapon Proficiency
-        el("div", { title: mountTip, style: { textAlign: "center", minWidth: "110px" } }, [
-          el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" } }, [EN.ui.ruleLink("vc-piloting/mounted-weapons", "MOUNTED WEAPON"), document.createTextNode(" · D20")]),
-          el("span.mono", { style: { fontSize: "22px", color: mountInfo.snag ? "var(--warn)" : "var(--ember)" }, text: eng.fmtMod(mountTotal) }),
-          mountInfo.snag ? el("div.mono", { style: { fontSize: "9px", color: "var(--warn)" }, text: "with Snag" }) : null
-        ]),
+        // Mounted weapon: always the Tech Modifier (the onboard targeting), plus the gun's own Weapon Proficiency (built above)
+        mountBox,
         // Ram: an opposed piloting check, so the readout is the piloting total above
         el("div", { title: "Ram: an opposed piloting check against the defender's piloting check; an unpiloted or parked vehicle presents a static Defense of 10 + its Handling.\n" + d20Tip, style: { textAlign: "center", minWidth: "90px" } }, [
           el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" } }, [EN.ui.ruleLink("vc-damage/collisions-and-ramming", "RAM"), document.createTextNode(" · OPPOSED")]),

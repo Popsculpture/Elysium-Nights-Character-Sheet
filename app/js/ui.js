@@ -708,7 +708,7 @@ EN.ui = (function () {
      who already has one keeps it, and the place that shows it says so with a small chip in the
      style of the CUSTOM and UNCHOSEN chips. Two words:
        HELD     a lineage, subclass, Talent or Background held for a later release
-       TOOLKIT  owned gear that moved to the Game Master's Toolkit
+       TOOLKIT  owned gear the Player's Handbook gear list doesn't print (EN.launch.toolkit.phb)
      heldChip(kind) always returns the chip. heldChip(kind, key) returns it only while that key is
      actually held (EN.launch.isHeld for a lineup kind, EN.launch.isToolkit for a gear kind, or
      EN.launch.isToolkitItem when key is a catalog item object), and null otherwise, so a caller
@@ -719,7 +719,8 @@ EN.ui = (function () {
     held: { label: "HELD", word: "held", color: "var(--text3)",
             title: "Held for a later release. This character keeps it; new characters can't pick it." },
     toolkit: { label: "TOOLKIT", word: "Toolkit", color: "var(--accent)",
-               title: "Moved to the Game Master's Toolkit. You keep it; the market no longer lists it." }
+               // true for every held row: most are printed in the Game Master's Toolkit, three are in neither book
+               title: "Not in the Player's Handbook gear list. Shown because you own it." }
   };
   function heldMark(kind, key, hasKey) {
     var lineup = !!LINEUP_KINDS[kind];

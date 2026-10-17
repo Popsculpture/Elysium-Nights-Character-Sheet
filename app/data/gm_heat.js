@@ -39,8 +39,8 @@
 
    The PHB's own Heat ladder is EN.social.credHeat.heat.ladder (data/social.js,
    the Codex's so-credheat/heat-ladder). Its 1 to 2 row reads "A file with your
-   name on it sits in someone's inbox."; this chapter's THE PHB SAYS column
-   prints the handbook's short form, "A file with your name on it", and adds
+   name on it sits in someone's inbox."; this chapter's WHAT IT MEANS column
+   prints the short form, "A file with your name on it", and adds
    what the source sends. The two ladders stay separate on purpose.
 
    Page references (// GMH pNN) are PDF page numbers of the handbook; the folio
@@ -81,7 +81,7 @@ EN.gmBook.heat = {
       { key: "canWait", name: "Events can wait.",
         text: "If the table is mid-arc and a raid would derail it, hold the event and spend it later. The source doesn't forget. It reschedules." },
       { key: "territory", name: "Territory still matters.",
-        text: "The PHB's encounters on entering a source's territory happen as well, on top of the check." }
+        text: "The encounters on entering a source's territory (Mechanical Effects, Cred and Heat) happen as well, on top of the check." }
     ],
     when: "At the start of each Downtime",
     die: "d10", sides: 10,
@@ -93,7 +93,7 @@ EN.gmBook.heat = {
   },
 
   /* THE LADDER. One row per band, keyed like the event bands below. `phbSays`
-     is the PHB's band name as this page prints it; `fight` is the printed fight
+     is the band's meaning as this page prints it (the WHAT IT MEANS column; the key keeps its old name); `fight` is the printed fight
      size and `mult` the multiplier it prints ("half budget" is 0.5, Fair Fight
      prints none and is 1). The top band's rule is in `topBand`: every
      triggered check at Heat 9 to 10 brings a Red Work team on top of the
@@ -101,8 +101,8 @@ EN.gmBook.heat = {
   // GMH p114
   ladder: {
     name: "The Ladder",
-    intro: "Each band uses the PHB's meaning and adds what the source actually sends. When an event comes to a fight, build it with The Budget (Building Encounters) at the crew's Caliber.",
-    columns: ["HEAT", "THE PHB SAYS", "WHAT THE SOURCE SENDS", "IF IT COMES TO A FIGHT"],
+    intro: "Each band uses its meaning from What Heat Is (Cred and Heat) and adds what the source actually sends. When an event comes to a fight, build it with The Budget (Building Encounters) at the crew's Caliber.",
+    columns: ["HEAT", "WHAT IT MEANS", "WHAT THE SOURCE SENDS", "IF IT COMES TO A FIGHT"],
     rows: [
       { key: "file", heat: "1 to 2", min: 1, max: 2, phbSays: "A file with your name on it",
         sends: "Paperwork. A fee, a delay, a flag on a #PRINT, a question asked of someone the crew knows.",
@@ -333,7 +333,7 @@ EN.gmBook.heat = {
         alive: "𝒢10,800 to 18,000", aliveLow: 10800, aliveHigh: 18000 }
     ],
     after: [
-      "Past 𝒢5,000 a bounty crosses into Nexus territory (Paying the Crew), and so does the attention that comes with it.",
+      "Past 𝒢5,000 a bounty crosses into Nexus territory (Paying the Crew): still paid in Glimmer, and watched like Nexus.",
       "Corporate sources usually post alive-only. They have questions, and recovery teams."
     ],
     nexusAbove: 5000,

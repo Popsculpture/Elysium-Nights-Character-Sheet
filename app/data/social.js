@@ -72,10 +72,9 @@ EN.social = {
      2026-10-16 handoff, section 8: the Sit-Down and the full Cred and Heat rules moved to
      the Game Master's Toolkit. The Admin desktop keeps the three depths (the GM side
      mirrors the Toolkit); the Freelancer desktop shows Friction and then `toolkitLead`,
-     the book's new sentence as the handoff quotes it. The handoff's quote breaks off
-     after "the full Cred and Heat tracks", so the rest of that sentence is still to come
-     from the author. */
-  toolkitLead: "Two optional systems build on it, and both live in the Game Master's Toolkit: the Sit-Down, which runs a big negotiation, interrogation, or trial like a combat encounter, and the full Cred and Heat tracks.",
+     the book's new sentence, whole (round 2 rulings, section 3; PHB, Social chapter
+     intro). */
+  toolkitLead: "Two optional systems build on it, and both live in the Game Master's Toolkit: the Sit-Down, which runs a big negotiation, interrogation, or trial like a combat encounter, and the full Cred and Heat tracks for reputation and hostile attention across a campaign.",
   depthsLead: "This chapter handles social conflict at three depths.",
   depths: [
     { key: "friction", name: "Friction", text: "is always on: a roll, a margin, a consequence the table can track on the back of a napkin. Use it for every social scene that matters." },
@@ -326,7 +325,7 @@ EN.social = {
         { key: "witnesses", name: "Witnesses Who Owe You", text: "Edge for Persuasion or Intimidation. The bartender remembers what you did for them." },
         { key: "surveillance", name: "Surveillance", text: "Snag on any Approach that benefits from plausible deniability. The cameras are recording." }
       ],
-      legwork: "The GM should call out these pressures at the start of the scene and let the players plan around them. Doing legwork to change the Floor before the scene starts is one of the things crews do to win social setpieces. A Background like Cipher Punk can wipe a camera. A Wageslave can file a form that delays the supervisor. A Click Chaser can plant a rumor that changes who the audience is rooting for. These are the moves that turn a Hardened target into a Standard one before the first word is spoken."
+      legwork: "The GM should call out these pressures at the start of the scene and let the players plan around them. Doing legwork to change the Floor before the scene starts is one of the things crews do to win social setpieces. A Background like Cipher Punk can wipe a camera. A Badge can file a form that delays the supervisor. A Glow Idol can plant a rumor that changes who the audience is rooting for. These are the moves that turn a Hardened target into a Standard one before the first word is spoken."
     },
 
     /* Sit-Down Conditions. Scene conditions, not the Conditions Library's. */
@@ -418,8 +417,8 @@ EN.social = {
     title: "Sit-Down Example: The Deposition",
     setup: "The crew's lawyer is taking a deposition from a mid-level corporate witness who knows where the bodies are buried. Stakes: get the witness to name names. Floor: a corporate conference room (their turf, Snag on the crew), a recording system (Snag on Deception), and a witness who is more afraid of their employer than the crew (Hardened, Resolve 8).",
     rounds: [
-      { name: "Round One", text: "The lawyer Presses with Persuasion (Charm), rolls a Strong Success, deals 2 Pressure. Resolve: 6. The Fury, sitting in the corner cleaning a sidearm she won't use, Holds. Her presence grants +1 Edge Die to the lawyer's next Press." },
-      { name: "Round Two", text: "The Codebreaker, jacked in remotely, Disrupts: pulls one of the witness's internal emails onto the conference room screen \"by accident.\" The witness becomes Rattled. The lawyer Presses with Wits-driven Persuasion (dismantling the witness's argument with the new evidence), now with two Edge Dice from the Hold and the Disrupt. Flawless Success: 3 Pressure. Resolve: 3." },
+      { name: "Round One", text: "The Fury, sitting in the corner cleaning a sidearm she won't use, Holds. Her presence grants +1 Edge Die to the lawyer's Press this Round. The lawyer Presses with Persuasion (Charm), rolls a Strong Success, deals 2 Pressure. Resolve: 6." },
+      { name: "Round Two", text: "The Codebreaker, jacked in remotely, Disrupts: pulls one of the witness's internal emails onto the conference room screen \"by accident.\" That strips one Snag Die from the lawyer's next Press. The lawyer Presses with Wits-driven Persuasion (dismantling the witness's argument with the new evidence), and the turf's Snag is gone. Flawless Success: 3 Pressure. Resolve: 3." },
       { name: "Round Three", text: "The witness tries to Stonewall: \"I would like to consult my legal counsel.\" Reduces incoming Pressure by 2, takes the *Cornered* condition for the scene. The lawyer presses again with Intimidation (Charm, plus information about the witness's daughter's tuition used to pressure them), and lands a Strong Success. 2 Pressure minus 2 Stonewall equals 0 net Pressure. No movement on Resolve, but the witness has used their Posture for the Round." },
       { name: "Round Four", text: "The Fury speaks for the first time. Body and Intimidation: \"Your employer does not protect people. They use them. I have seen the people they leave behind.\" Roll. Mixed Result: 1 Pressure, and the witness applies Social Fallout. They choose Tipped Hand: the Fury reveals her own past as a corp security washout, which the witness's lawyer files away. Resolve: 2. The Fury picks up the Profile *Disgruntled Ex-Corp* for the rest of the scene." },
       { name: "Round Five", text: "The lawyer Presses one more time. Persuasion (Charm). Strong Success: 2 Pressure. Resolve: 0. The witness breaks. They name two names. The crew gets what they came for. Heat with the corporation increases by 2." }
@@ -432,9 +431,9 @@ EN.social = {
     { key: "earnIt", name: "Call a Sit-Down when the scene earns it.", text: "A big interrogation, a faction confrontation, a contract negotiation that will define the next arc. These deserve the structure. They feel like fights because they are." },
     { key: "everyone", name: "Let every Character contribute.", text: "The Hold play exists so muscle and chrome can show up without dragging the scene down. The Disrupt play lets the technical-minded Characters do something even when the talking is happening elsewhere. The Support play lets the silent ones lend weight. Nobody at the table should sit out a Sit-Down." },
     { key: "matchFallout", name: "Match fallout to fiction.", text: "A social scene that produces physical Fatigue is usually the wrong call. Use Debt, Scrutiny, Profiles, Faction Shifts, Cred and Heat changes. The fallout should fit the room." },
-    { key: "slow", name: "Cred and Heat are slow-moving currencies.", text: "Don't change them every session. Update them at the end of arcs, after major contracts, or when something notable happens that the table will remember." },
+    { key: "slow", name: "Cred and Heat are slow-moving currencies.", text: "Don't change them every session. Update them at the end of a job, after an arc, or when something notable happens that the table will remember." },
     { key: "anyCrew", name: "The system supports any kind of crew.", text: "A Charm-and-Mystique-heavy crew will dominate social setpieces by direct push. A muscle-and-chrome crew will dominate by Holding well, trading on their reputation, and choosing the right Disrupts. The system rewards thinking about what your crew actually is." },
-    { key: "backgrounds", name: "Background ties matter here.", text: "Every Background grants Contacts and a Background Feature. A Boardroom Exile already belongs in the corporate conference room. A Wageslave already knows which form will buy the crew an hour. A Glow Idol already has the bartender's loyalty. Reward these. The crew that brings the right Background to the setpiece should already have changed the Floor before the first roll." }
+    { key: "backgrounds", name: "Background ties matter here.", text: "Every Background grants Contacts and a Background Feature. A Boardroom Exile already belongs in the corporate conference room. A Badge already knows which form will buy the crew an hour. A Glow Idol already has the bartender's loyalty. Reward these. The crew that brings the right Background to the setpiece should already have changed the Floor before the first roll." }
   ],
 
   /* ---- Gameplay Summary: Social Pressure and Faction Standing ------------------------------------------ */

@@ -40,7 +40,7 @@ EN.gmBook.payroll = {
      book's own grid. Caliber 4 skips the "about 7,500" step. */
   // GMH p109
   contract: {
-    lead: "Anchor a contract's total value to the crew's Caliber and the job's difficulty, then let negotiation, reputation, and fine print move it. The bands below track the Glimmer Rewards table in Economy and Rewards, assigned to the work, with the top of the ladder stretched for institutional clients.",
+    lead: "Anchor a contract's total value to the crew's Caliber and the job's difficulty, then let negotiation, reputation, and fine print move it. The bands below track the Glimmer Rewards table (Reward Tables), assigned to the work, with the top of the ladder stretched for institutional clients.",
     columns: [
       { key: "milk", name: "Milk Run" },
       { key: "fair", name: "Fair Fight" },
@@ -112,20 +112,20 @@ EN.gmBook.payroll = {
   // GMH p109
   bounties: {
     paragraphs: [
-      "A Bounty is a Target with a price tag, payable on a confirmed kill or a body in zip ties. Price a bounty off the Target's XP value: 𝒢3 to 𝒢5 per XP for a kill, doubled for breathing delivery. A G1 Shotcaller runs 𝒢300 to 500. A G3 Wetwork Operative runs 𝒢1,500 to 2,500, and knows it, which is why the operative moved districts. A G5 Solo's bounty crosses 𝒢5,000 into Nexus territory and comes with the institutional attention Nexus implies.",
+      "A Bounty is a Target with a price tag, payable on a confirmed kill or a body in zip ties. Price a bounty off the Target's XP value: 𝒢3 to 𝒢5 per XP for a kill, doubled for breathing delivery. A G1 Shotcaller runs 𝒢300 to 500. A G3 Wetwork Operative runs 𝒢1,500 to 2,500, and knows it, which is why the operative moved districts. A G5 Solo's bounty crosses 𝒢5,000 into Nexus territory: still paid in Glimmer, but big enough to draw the institutional attention Nexus implies.",
       "Zip-tie premiums exist because live delivery is miserable: Nonlethal matters, the Dying clock becomes the crew's clock, and the Target's friends get a whole transport route to express their feelings. Charge the client accordingly. So does everyone else in this business."
     ],
     perXpLow: 3, perXpHigh: 5,
     aliveMult: 2,
     nexusAbove: 5000,
-    nexusText: "A G5 Solo's bounty crosses 𝒢5,000 into Nexus territory and comes with the institutional attention Nexus implies.",
+    nexusText: "A G5 Solo's bounty crosses 𝒢5,000 into Nexus territory: still paid in Glimmer, but big enough to draw the institutional attention Nexus implies.",
     examples: [
       { name: "Ganger Shotcaller", grade: 1, xp: 100, low: 300, high: 500,
         text: "A G1 Shotcaller runs 𝒢300 to 500." },
       { name: "Wetwork Operative", grade: 3, xp: 500, low: 1500, high: 2500,
         text: "A G3 Wetwork Operative runs 𝒢1,500 to 2,500, and knows it, which is why the operative moved districts." },
       { name: null, grade: 5, designation: "solo", xp: 1800, low: 5000, high: null,
-        text: "A G5 Solo's bounty crosses 𝒢5,000 into Nexus territory and comes with the institutional attention Nexus implies." }
+        text: "A G5 Solo's bounty crosses 𝒢5,000 into Nexus territory: still paid in Glimmer, but big enough to draw the institutional attention Nexus implies." }
     ]
   },
 
@@ -242,12 +242,12 @@ EN.gmBook.payroll = {
   },
 
   /* THE OTHER LEDGER. One Cred line and one Heat line at job's end, handed out
-     deliberately. Both systems live with the players (Social Pressure and
-     Faction Standing). */
+     deliberately. Both systems live in the Toolkit's Cred and Heat (Optional
+     Systems); the app's copy is the Codex's so-credheat. */
   // GMH p111
   ledger: {
     name: "The Other Ledger",
-    text: "Every job pays twice, and the second currency is standing. Wins in front of witnesses move Cred. Noise, bodies, and burned promises move Heat. Both systems live in Social Pressure and Faction Standing, and both are rewards in the strict sense: hand them out deliberately at job's end, one line each. \"The dock workers know what you did\" is payment. \"So does the precinct\" is the invoice.",
+    text: "Every job pays twice, and the second currency is standing. Wins in front of witnesses move Cred. Noise, bodies, and burned promises move Heat. Both systems live in Cred and Heat (Optional Systems), and both are rewards in the strict sense: hand them out deliberately at job's end, one line each. \"The dock workers know what you did\" is payment. \"So does the precinct\" is the invoice.",
     lines: [
       { key: "cred", name: "Cred", perJob: 1,
         moves: "Wins in front of witnesses move Cred.",

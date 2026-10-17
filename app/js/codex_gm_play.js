@@ -106,13 +106,16 @@ window.EN = window.EN || {};
           K.subTitle(C.name),
           K.proseBlock(paras(C.paragraphs)),
           K.subTitle(head(C.guidelinesLead)),
-          (C.guidelines || []).map(function (g) { return K.ruleBlock(head(g.name), g.text); })
+          // "Territory still matters" names Mechanical Effects (Cred and Heat): link that entry
+          (C.guidelines || []).map(function (g) {
+            return K.ruleBlock(head(g.name), g.text, null, { terms: { "Mechanical Effects": "so-credheat/mechanical-effects" } });
+          })
         ];
       } },
     { id: "gmx-ladder", title: "The Ladder", tag: "WHAT EACH BAND SENDS", order: 20, when: hasHeat, build: function (ctx, K) {
       var L = H().ladder, cols = L.columns || [];
       return [
-        K.proseBlock(L.intro),
+        K.proseBlock(L.intro, { terms: { "What Heat Is": "so-credheat/what-heat-is" } }),
         (L.rows || []).map(function (r) {
           return K.ruleBlock(r.phbSays, r.sends + "\n" + runIn(cols[3]) + ": " + r.fight, cols[0] + " " + r.heat, { slug: r.key });
         }),
@@ -183,8 +186,9 @@ window.EN = window.EN || {};
     { id: "gms-sitdown", title: "Sit-Down Rules", tag: "RESOLVE · PRESSURE · THE FLOOR", order: 10, when: hasScenes, build: function (ctx, K) {
       var B = S().sitdown, kids = [];
       kids.push(K.proseBlock(B.intro));
-      // where the rules live: Social Pressure and Faction Standing, the social chapter (so-), linked by its title
-      kids.push(K.note(B.home));
+      // where the rules live: Friction in Social Pressure and Faction Standing, the social chapter (so-),
+      // linked by its title; the big ones run as a Sit-Down (linked by the global Sit-Down term)
+      kids.push(K.note(B.home, { terms: { "Friction": "so-friction" } }));
       kids.push(K.entry("results", "Results", [
         K.subTitle("Results"),
         K.refTable(["Result", "Pressure", "Also"], (B.results || []).map(function (r) { return [r.name, String(r.pressure), r.also || ""]; }), [0]),
@@ -412,6 +416,7 @@ window.EN = window.EN || {};
     "Claims and Salvage": "gms-incursion/claims-and-salvage",
     "Salvage and Parts": "gmy-pay/salvage-and-parts",
     "Milestones and Pacing": "gmy-pay/milestones-and-pacing",
-    "Paying for It": "gmy-pay/paying-for-it"
+    "Paying for It": "gmy-pay/paying-for-it",
+    "Reward Tables": "ref-rewards"   // Contract Pay's "(Reward Tables)": the Codex's Reward Types & Tables
   });
 })();

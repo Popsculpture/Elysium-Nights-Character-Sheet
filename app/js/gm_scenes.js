@@ -989,8 +989,8 @@ EN.gmScenes = (function () {
       field("Second Posture", textIn("sd.posture2", d.postures.second, "Compose", function (v) { d.postures.second = v; }, { list: "sc-postures" }), "0 1 170px"),
       field("How they do it", textIn("sd.posture2note", d.postures.secondNote, "", function (v) { d.postures.secondNote = v; }))
     ]), linkHelp(["The book names " + Po.named.map(function (p) { return p.name; }).join(", ") + ". " +
-      (bookPostures.length ? "The PHB's full list is " + bookPostures.map(function (p) { return p.name; }).join(", ") +
-        ", with what each does in " : "The PHB's full list, with what each does, is in "),
+      (bookPostures.length ? "The full list is " + bookPostures.map(function (p) { return p.name; }).join(", ") +
+        ", with what each does in " : "The full list, with what each does, is in "),
       ["so-postures/posture-table", "Postures"], ". Type any of them, or any other."], { color: "var(--text3)" }, "postures-book")]));
 
     // 5. the Floor
@@ -1295,18 +1295,19 @@ EN.gmScenes = (function () {
   /* The reference the Sit-Down runs on is the Codex's Sit-Down Rules, with
      Resolve by Role and Their Profile of You (one copy, which People links to
      as well) and Cooling Off's legal scrub. The home line names where the
-     PHB's own rules live, and the second line links them: the Codex's Social
+     Social rules live (Friction in the PHB, the Sit-Down in the Toolkit's
+     Optional Systems), and the second line links them: the Codex's Social
      Pressure & Faction Standing chapter (js/codex_social.js). */
   function sitdownRef(d) {
     var B = SD(), kids = [];
     kids.push(EN.ui.ruleText(el("p.help", { style: { margin: 0 } }), B.home,
-      { terms: { "Sit-Down rules": "so-sitdown" } }));
+      { terms: { "Friction": "so-friction" } }));
     var R = ref(B.refs.resolveByRole), P = ref(B.refs.theirProfile), scrub = rowAt(B.legalScrub);
     kids.push(codexLinks("In the Codex:", [["gms-sitdown", "Sit-Down Rules"]]
       .concat(R ? [["gmp-resolve", R.title || "Resolve by Role"]] : [])
       .concat(P ? [["gmp-profiles", P.title || "Their Profile of You"]] : [])
       .concat(scrub ? [["gmx-cooling/legal-scrub", "A Sit-Down that clears Heat"]] : [])));
-    kids.push(codexLinks("The PHB's rules:", [["so-sitdown", "The Sit-Down"], ["so-plays", "Rounds & Plays"], ["so-postures", "Postures"],
+    kids.push(codexLinks("The rules:", [["so-sitdown", "The Sit-Down"], ["so-plays", "Rounds & Plays"], ["so-postures", "Postures"],
       ["so-floor", "The Floor"], ["so-conditions", "Sit-Down Conditions"], ["so-fallout", "Social Fallout Table"]]));
     return EN.ui.panel("Reference", "SIT-DOWN RULES", kids);
   }
@@ -1408,7 +1409,9 @@ EN.gmScenes = (function () {
     function step(n) { return C.filter(function (s) { return s.n === n; })[0]; }
     function stepBlock(s, body) {
       var text = s.text || (s.textRef ? ref(s.textRef) : "") || "";
-      return el("div", { dataset: { sc: "step-" + s.key } }, [stepHead(s.n, s.name), text ? help(text, { margin: "0 0 2px" }) : null].concat(body));
+      // step 5 names Pursuit Escalation (Chase Rules): linked, the one chase step whose text names a Codex section
+      var line = text ? (s.key === "escalation" ? rhelp(text, { margin: "0 0 2px" }) : help(text, { margin: "0 0 2px" })) : null;
+      return el("div", { dataset: { sc: "step-" + s.key } }, [stepHead(s.n, s.name), line].concat(body));
     }
 
     // 1. who
@@ -1481,7 +1484,7 @@ EN.gmScenes = (function () {
     })[0] : null;
     esc.push(escRow
       ? linkHelp([["vc-chase/pursuit-escalation", "Pursuit Escalation"], " at Heat " + escRow.heat + ": " + escRow.shows], { color: "var(--text2)" }, "esc-row")
-      : linkHelp(["The rows are the PHB's ", ["vc-chase/pursuit-escalation", "Pursuit Escalation"], " table, by the crew's Heat with the source."],
+      : linkHelp(["The rows are the ", ["vc-chase/pursuit-escalation", "Pursuit Escalation"], " table (", ["gms-chase", "Chase Rules"], "), by the crew's Heat with the source."],
         { color: "var(--text3)" }, "esc-row"));
     kids.push(stepBlock(s5, esc));
 
@@ -1859,7 +1862,7 @@ EN.gmScenes = (function () {
     kids.push(codexLinks("In the Codex:", [
       ["gms-chase", "Chase Rules"], ["gms-chase/lead-and-its-bands", "Lead and its bands"], ["gms-chase/the-chase-check", "The Chase Check"],
       ["gms-chase/impact-dc-by-speed", "Impact DC by speed"], ["gms-chase/threat-pilots", "Threat pilots"]]));
-    kids.push(codexLinks("The PHB's rules:", [
+    kids.push(codexLinks("The rules:", [
       ["vc-chase/lead", "Lead"], ["vc-chase/resolving-the-chase", "Resolving the Chase"], ["vc-chase/system-hits", "System Hits"],
       ["vc-chase/pursuit-escalation", "Pursuit Escalation"], ["vc-damage/the-impact-dc", "The Impact DC"], ["vc-damage/crashes", "Crashes"]]));
     return EN.ui.panel("Reference", "CHASE RULES", kids);

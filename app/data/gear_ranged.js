@@ -16,7 +16,7 @@ EN.gearCatalog.ranged = {
     "Sidearm": "Compact firearms built for the quick draw. Pistols, revolvers, machine pistols, tasers. Less range and less raw output than a longarm, but they fit where longarms can't, and they decide whether you make it to the door.",
     "Longarm": "Two hands, two points of stability, two reasons the bullet goes where you wanted it to. Rifles, carbines, shotguns. Longarms own the open ground, where distance is the best armor you have.",
     "Heavy": "The platforms that win ground through sheer volume, or punch through walls a rifle bounces off. You give up mobility and you give up subtlety. What you get back is the kind of fire that ends arguments about whether a position can be held.",
-    "Launcher": "Grenade launchers, rocket tubes, missile launchers. The hardware that lets you clear a fortified position from somewhere the people inside can't easily shoot back. The ammunition is the cost. The collateral is the receipt.",
+    "Launcher": "Grenade launchers. The hardware that lets you clear a fortified position from somewhere the people inside can't easily shoot back. Reach traded for portability, payload traded for finesse. The ammunition is the cost. The collateral is the receipt.",
     "Thrown": "Balanced canisters, fused charges, throwable payloads tuned so the next throw lands like the last one. Grenades, flashbangs, EMP packs, smoke. Silent delivery instead of a report that brings half the building down on you.",
     "Bowfire": "Tension instead of powder. No flash, no thunder, no muzzle signature. They reward the patient and the precise, and they are quiet enough that the second body never knows the first one fell."
   },
@@ -199,7 +199,7 @@ EN.gearCatalog.ammo = {
 
     /* ---- Standard · Counted ---- */
     { name: "Machinegun Belt", group: "Counted", price: 60, unit: "per 100", availability: "Uncommon", legality: "As weapon",
-      feeds: "Light, medium, and heavy machineguns, and rotary cannons. A linked belt of 100 rounds; track per box." },
+      feeds: "Light, medium, and heavy machineguns. A linked belt of 100 rounds; track per box." },
     { name: "Cannon Rounds", group: "Counted", price: 200, unit: "per 20", availability: "Uncommon", legality: "As weapon",
       feeds: "The Assault Cannon and High-Precision Cannon. A lot of 20 heavy ballistic rounds; track per round." },
     { name: "Grenade Shells", group: "Counted", price: 120, unit: "per 6", availability: "Uncommon", legality: "As weapon",

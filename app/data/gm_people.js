@@ -82,7 +82,7 @@ EN.gmBook.people = {
       { field: "fear",    line: "Fear",    walkOn: false,
         holds: "What makes them fold, lie, or make a call." },
       { field: "resolve", line: "Resolve", walkOn: false,
-        holds: "Tier and number from the Sit-Down rules. See Resolve by Role, below." },
+        holds: "Tier and number from Setting Resolve (The Sit-Down). See Resolve by Role, below." },
       { field: "profile", line: "Their Profile of You", walkOn: false,
         holds: "One Profile this NPC holds of the crew. See Their Profile of You, below." },
       { field: "tell",    line: "Tell",    walkOn: false,
@@ -122,7 +122,7 @@ EN.gmBook.people = {
   // GMH p44
   resolveByRole: {
     title: "Resolve by Role",
-    intro: "Resolve uses the Opposition Tiers from the Sit-Down rules, unchanged. The table below is a shortcut: find the closest job, take its tier, and write it as the threat blocks do, \"Resolve 5 (Standard).\"",
+    intro: "Resolve uses the Opposition Tiers from Setting Resolve (The Sit-Down), unchanged. The table below is a shortcut: find the closest job, take its tier, and write it as the threat blocks do, \"Resolve 5 (Standard).\"",
     write: "Resolve 5 (Standard).",
     columns: ["Tier", "Resolve", "Who Sits Here"],
     tiers: [
@@ -182,7 +182,7 @@ EN.gmBook.people = {
        themselves are the Sit-Down's (the player reference in js/face.js lists
        them; Insight deals no Pressure there). */
     weakSpots: {
-      text: "Weak spots work as the PHB's Vulnerabilities and Resistances describe: the GM may rule that a contact takes double Pressure from one Approach or none from another. Put it on the card when you decide it, so the next GM (or next month's you) remembers.",
+      text: "Weak spots work as Vulnerabilities and Resistances (The Sit-Down) describes: the GM may rule that a contact takes double Pressure from one Approach or none from another. Put it on the card when you decide it, so the next GM (or next month's you) remembers.",
       kinds: ["double", "none"]
     }
   },

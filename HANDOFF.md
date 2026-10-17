@@ -116,8 +116,10 @@ Bypass wired into the unarmed engine, and a `migrate()` hardening pass.
   Nothing reads any of them; they exist so a stylesheet can reach an inline-styled element.
 - Held content lives in ONE place: `app/data/launch.js` (`EN.launch`, since 2026-10-16). It
   has three switches, `holds.lineup` (held lineages, subclasses, Talents, Backgrounds),
-  `holds.availability` (rarity) and `holds.toolkit` (gear and rules that moved to the Game
-  Master's Toolkit), and each flips back in one line. Gate at the listing layer only: pickers,
+  `holds.availability` (rarity) and `holds.toolkit` (gear the Player's Handbook doesn't print:
+  an allow-list made of the author's Handbook gear list, `phb-gear-items-2026-10-16.txt`, plus
+  the class gear and the vehicle chassis; every other catalog row is held), and each flips back
+  in one line. Gate at the listing layer only: pickers,
   the market, Blueprints, the install pickers and the Codex read `offer()`, `isHeld()`,
   `isToolkit()` and `showAvailability()`. Never filter or splice EN.species, the subclass
   arrays, EN.talents, EN.backgrounds or the gear catalogs, because a saved character resolves

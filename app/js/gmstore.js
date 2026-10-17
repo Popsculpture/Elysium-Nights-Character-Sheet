@@ -110,6 +110,45 @@ EN.gmStore = (function () {
     return block;
   }
 
+  /* BESTIARY REACH NOTATION (round 2 rulings, 2026-10-16). The Toolkit now prints
+     every threat attack's reach as "Reach +N", where the Bestiary data said
+     "Reach N". A Bestiary threat that was saved, run on the Table or planned into
+     an encounter carries its OWN deep copy of the entry's abilities (gm.js
+     bestiaryBlock, gm_encounters.js bestiaryBlock), and entryOf() lets a block's
+     abilities win over the live entry, so the corrected data never reaches it.
+
+     This rewrites those seven ability strings on the way in. It matches the
+     WHOLE `text` exactly against the seven old strings and nothing looser: an
+     ability a GM edited by even one character no longer equals one of them and is
+     left alone, and the new string is not in the table, so a second pass finds
+     nothing (idempotent). Only a block from the Bestiary is read (fromBestiary,
+     or carrying `stats` as gm.js's fullblock test does); a block the builder made
+     never holds these strings. The new string is derived from the old one by the
+     one substitution the ruling names, and r2_gm.js proves each derived string is
+     the live Bestiary ability's text. */
+  var REACH_OLD = [
+    "Two attacks, +9 vs Defense, Reach 1, 1d10+6 Energy (11), Armor Piercing 1.",
+    "+6 vs Defense, Reach 1, 1d6+3 Piercing (6).",
+    "Two attacks, +10 vs Defense, Reach 1, 1d10+12 Energy (17), Armor Piercing 1.",
+    "Two attacks, +7 vs Defense, Reach 3 (flexible), 1d8+3 Bludgeoning (7). On a hit, the Bloom may attempt a Grapple contest (Athletics +7) for free.",
+    "+6 vs Defense, Reach 2, 1d10+5 Bludgeoning (10); on a hit the Target makes a Body Save DC 15 or is pushed 2 spaces.",
+    "+7 vs Defense, Reach 3 (flexible), 2d8+6 Bludgeoning (15); on a hit the Target is pulled 2 spaces toward the jaw.",
+    "Three attacks, +10 vs Defense, Reach 2, 4d10+6 Force (Spatial) (28). Ignores armor DR; space itself is doing the cutting."
+  ];
+  var REACH_NEW = Object.create(null);
+  REACH_OLD.forEach(function (t) { REACH_NEW[t] = t.replace(/Reach (\d)/, "Reach +$1"); });
+  var reachFixed = 0;   // abilities rewritten since load() last reset it (load() persists when it is not 0)
+  function reachNotation(block) {
+    if (!isObj(block) || !Array.isArray(block.abilities)) return block;
+    if (block.fromBestiary !== true && !isObj(block.stats)) return block;
+    block.abilities.forEach(function (ab) {
+      if (!isObj(ab) || typeof ab.text !== "string" || !own(REACH_NEW, ab.text)) return;
+      ab.text = REACH_NEW[ab.text];
+      reachFixed++;
+    });
+    return block;
+  }
+
   /* A saved threat is a WRAPPER around the statblock, so the key lives one level down, and
      its `inputs` sidecar carries a second copy that buildThreat() would read back if a
      regenerate path is ever added. Both move. */
@@ -162,7 +201,7 @@ EN.gmStore = (function () {
     if (row.kind !== "crew" && row.kind !== "threat") return null;
     if (row.kind === "threat" && (!row.block || typeof row.block !== "object")) return null;
     if (row.kind === "crew" && typeof row.charId !== "string") return null;
-    if (row.kind === "threat") gradeKey(row.block);
+    if (row.kind === "threat") { gradeKey(row.block); reachNotation(row.block); }
     return row;
   }
   function cleanEntries(list) {
@@ -225,7 +264,11 @@ EN.gmStore = (function () {
           var rec = src[k];
           if (!isObj(rec)) return;
           if (bag === "threats" || bag === "encounters") gradeSaved(rec);
-          if (bag === "threats") fillInitMod(rec.block, rec.inputs, null);
+          if (bag === "threats") { reachNotation(rec.block); fillInitMod(rec.block, rec.inputs, null); }
+          // a saved encounter plan keeps its resolved statblocks on its "threat" lines
+          if (bag === "encounters" && Array.isArray(rec.lines)) {
+            rec.lines.forEach(function (ln) { if (isObj(ln) && ln.kind === "threat") reachNotation(ln.block); });
+          }
           rec.id = k;
           s[bag][k] = rec;
         } catch (e) {}
@@ -251,8 +294,15 @@ EN.gmStore = (function () {
   function load() {
     var raw = null;
     try { raw = JSON.parse(localStorage.getItem(STATE_KEY) || "null"); } catch (e) { raw = null; }
-    try { state = migrate(raw); } catch (e) { state = blank(); }
+    var read = false;
+    reachFixed = 0;
+    try { state = migrate(raw); read = true; } catch (e) { state = blank(); }
     pruneCrew();
+    // the Reach pass changed what is stored: write the corrected document back once, so the
+    // next load finds nothing to do (it is idempotent either way). Never after a failed read,
+    // where `state` is the blank document and the stored one is still the player's.
+    if (read && reachFixed) persist(false);
+    reachFixed = 0;
     // en_gm_mode_v1 held the GM TAB's visibility and retired with that tab
     // (2026-09). Both desktops are always offered now, so the flag decides
     // nothing. Removed rather than left behind, so it does not sit in every

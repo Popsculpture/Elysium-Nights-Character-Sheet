@@ -53,7 +53,7 @@ window.EN = window.EN || {};
     ending: [["Morale", "gmt-conventions/morale"], ["Threat Conventions", "gmt-conventions"]],
     bounties: [["Nonlethal", "ref-dmg/nonlethal"]],
     // Hazards & Set Pieces
-    hazardsIntro: [["Exposure", "ref-hazards/exposure"]],
+    hazardsIntro: [["Exposure", "ref-hazards/exposure"], ["Anomalies and Null Scars", "fl-dist-repair"]],
     objects: [["Cover Material Table", "ref-cover/cover-material-table"], ["Structure", "ref-cover/structure"],
               ["Integrity", "ref-cover/integrity"]],
     // words every Set Piece paragraph may print, for the Hazards tab's cards

@@ -653,7 +653,7 @@ EN.gmJobs = (function () {
      and for "reference" (posting 8, Anomaly response) the PHB's Flow
      Disturbances (the Codex's fl-dist). A "?" chip only where the anchor
      resolves (EN.ui.ruleChip). The instruction's own words link the rules
-     they name (the PHB's Sit-Down, Flow Disturbances), except the chip's. */
+     they name (the Toolkit's Sit-Down, the PHB's Flow Disturbances), except the chip's. */
   var INSTR_RULE = { beats: ["gmt-bestiary/running-a-hunt", "Running a hunt"], sitdown: ["gms-sitdown", "Sit-Down Rules"],
                      reference: ["fl-dist", "Flow Disturbances"] };
   function instrLine(ins) {

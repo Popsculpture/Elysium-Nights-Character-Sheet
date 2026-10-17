@@ -1034,8 +1034,10 @@ EN.gmView = (function () {
       if (cur) cur.acted = true;
       e.activeId = n.activeId;
       e.round = n.round;
-      // end of round: the marks clear and the defensive Impulse comes back. A
-      // Solo's Surges refill on their own (surgesSpent reads them by round).
+      // end of round: the acted marks clear. A Solo's defensive Impulse is keyed
+      // per turn (turnKey), so nothing clears it here; it is simply unspent on
+      // the next turn. Its Surges refill on their own (surgesSpent reads them
+      // by round).
       if (n.wrapped) e.entries.forEach(function (r) { r.acted = false; });
       passed = n.skipped || 0;
     });
@@ -1702,9 +1704,8 @@ EN.gmView = (function () {
           }).join(", ") + "." }));
       }
       (p.rules || []).forEach(function (r) { kids.push(abilityP({ name: r.name, cost: null, text: r.text })); });
-      // "the PHB's pursuit table" is Vehicles and Chases' Pursuit Escalation
-      if (p.text) kids.push(EN.ui.ruleText(el("p.help", { style: { margin: "6px 0 0" } }), p.text,
-        { terms: { "the PHB's pursuit table": "vc-chase/pursuit-escalation" } }));
+      // "Pursuit Escalation" and "Chase Rules" link as Codex terms
+      if (p.text) kids.push(EN.ui.ruleText(el("p.help", { style: { margin: "6px 0 0" } }), p.text));
       host.appendChild(el("div.feature", null, kids));
     });
   }

@@ -278,7 +278,9 @@ EN.flow.resonances.forEach(function (r) { EN.flow.resonanceByKey[r.key] = r; });
    Three sentences live elsewhere in Part 2 and are carried here because they are
    anomaly rules no other panel shows:
      nullScarGuidance  ## Overdraw, Strain, and Breakflow > ### Breakflow Check,
-                       the GM Guidance box, its "Anomalies" item (line 4444)
+                       the GM Guidance box, its "Anomalies" item (line 4444); the Game
+                       Master's Toolkit's Breakflow Check GM Guidance now reads
+                       "the Focal Anchor mechanic" (round 2, 16 October 2026)
      ritualImpact      ## Breakflow Restoration > ### Rough Restoration, the GM
                        Guidance box, its "Environmental Impact" and "Failure
                        Margin" items (line 4520)
@@ -410,7 +412,7 @@ EN.flow.disturbances = {
   },
 
   /* Part 2, the Breakflow Check's GM Guidance box, its "Anomalies" item (line 4444) */
-  nullScarGuidance: "Treat **Null Scars** as environmental hazards. They are tactical \"dead zones\" where Shapers are stripped of their primary utility, forcing them to rely on physical backup weapons and the Null Scar Anchor mechanic to support the team.",
+  nullScarGuidance: "Treat **Null Scars** as environmental hazards. They are tactical \"dead zones\" where Shapers are stripped of their primary utility, forcing them to rely on physical backup weapons and the Focal Anchor mechanic to support the team.",
 
   /* ## Repairing a Null Scar */
   repair: {

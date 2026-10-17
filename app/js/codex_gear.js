@@ -22,11 +22,12 @@
                               two mean different things, so both get an entry
      gr-weapons *, gr-armor, gr-custom *, gr-craft *, gr-chrome *
      gr-craft/armor-repair *
-   TOOLKIT GEAR (2026-10-16 handoff, section 6): the Signature Weapons chapter, the
-   Mystech Ammunition note, the Mystech Armor intro and the Blackware and Prototype
-   cyberware tiers moved to the Game Master's Toolkit. While EN.launch.holds.toolkit
-   is on, the Freelancer desktop leaves them out (toolkitOff below); the Admin desktop
-   keeps them. Flipping the hold off restores them on both.
+   TOOLKIT GEAR (2026-10-16 handoff, section 6; the Player's Handbook gear list rule since
+   round 2): the Signature Weapons chapter, the Mystech Ammunition note, the Mystech Armor
+   intro and the Blackware and Prototype cyberware tiers are gear the Player's Handbook
+   doesn't print (the book leaves them to the Game Master's Toolkit). While
+   EN.launch.holds.toolkit is on, the Freelancer desktop leaves them out (toolkitOff below);
+   the Admin desktop keeps them. Flipping the hold off restores them on both.
    EN.gearCodex.traitAnchor(printed, armorFirst) turns a trait as a catalog
    prints it ("Armor Piercing 2", "Thrown (4/12)", "Wear 12") into its anchor,
    through the one matcher in data/gear_traits.js. The Inventory's trait chips

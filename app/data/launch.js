@@ -9,10 +9,12 @@
      holds.availability  rarity: the Handbook no longer prints Availability
                          (Common, Uncommon, Rare, Custom, Prototype, or the
                          Mystech tiers), so the app stops displaying it.
-     holds.toolkit       gear that moved to the Game Master's Toolkit: the
-                         12 October gear split, the Signature Weapons chapter,
-                         the Mystech Cyberware section and the Mystech tiers,
-                         the Blackware tier, and the Rare tools and kits.
+     holds.toolkit       gear the Player's Handbook doesn't print: every catalog
+                         row outside the author's Player's Handbook gear list
+                         (16 October) and the class gear its class chapters name.
+                         An allow-list: a row the list prints is shown, anything
+                         else is held (Signature Weapons, the Mystech gear, the
+                         Blackware tier and the other Toolkit rows among them).
 
    HIDE, DON'T DELETE. Every list below names keys or catalog names; nothing
    here filters or splices EN.species, EN.classes[c].subclasses, EN.talents,
@@ -27,8 +29,9 @@
 
    Loaded right after data/rules.js and before data/species.js, so it can read
    nothing from the other data files at load time. Every function that needs
-   the catalogs (the Signature names, the Part / Mod name lookups) reads them
-   when it is called.
+   the catalogs (the Signature names, the Part / Mod name lookups, the cipher
+   tiers) reads them when it is called, and keeps what it read only once every
+   data file it reads has loaded.
    =========================================================================== */
 window.EN = window.EN || {};
 
@@ -86,60 +89,135 @@ EN.launch = (function () {
                  "spacer", "spotlight-survivor", "starhuffer", "wageslave", "whitecoat"]
   };
 
-  /* ---- moved to the Game Master's Toolkit -------------------------------- */
+  /* ---- the Player's Handbook gear list (round 2, 16 October 2026) ---------
+     The listings SHOW every catalog row the Player's Handbook prints, plus the class gear
+     below, and HOLD every other catalog row. This one allow-list replaces the per-kind hold
+     lists the file used to carry, and it selects the same rows. Held rows are the Heavy and
+     Launcher weapons the Handbook no longer prints, the Signature Weapons chapter, the Mystech
+     gear, the Blackware and Prototype tiers, and the tools and kits the Handbook leaves out.
+     Most are printed in the Game Master's Toolkit; three are in neither book (Breaching
+     Charge, Smart-Sight + Targeting Suite, Hypercare Contract).
+
+     `phb` is the author's phb-gear-items-2026-10-16.txt: all 322 rows of the Handbook's gear
+     tables, in book spelling, under the book's own section headings. A row that names no
+     catalog item (a safehouse upgrade, a Hypercare tier, a parking row, a cyberware tier name)
+     matches nothing and costs nothing. Two app spellings differ from the book's, and
+     bookName() reads them as the book's: "Field Kit Trauma Rig [0]" is the Handbook's
+     "Field Kit [0]", and "Street Bike (Lease)" is the Street Bike. */
   var toolkit = {
-    // Catalog NAMES (gear is stored and looked up by name).
-    item: [
-      // the 12 October gear split: Heavy and Launcher weapons
-      "Assault Cannon", "High-Precision Cannon", "Rotary Cannon", "Missile Launcher", "Rocket Launcher",
-      // rounds and shells, plus the Cannon Rounds, Rocket and Missile rows that go with their weapons
-      "Explosive Rounds", "Smart Rounds", "Spike Rounds", "Hex-Etched Rounds", "Resonant Rounds",
-      "Genesis Rounds", "Thermobaric Shell", "Cannon Rounds", "Rocket", "Missile",
-      // armor and foci
-      "Bastion Plate", "Warframe Shell", "Veilskin", "Resonant Carapace", "Aegis Shroud",
-      "Reliquary Shell", "Saint's Knot", "Hex Lattice Projector", "Martyr's Halo",
-      /* Rare tools and kits (author's decision 7): every Rare row in the Tools
-         catalog EXCEPT the four a class depends on (Codebreaker Suite, Thermite
-         Slug, Fake License Portfolio, Flux Gel Sprayer) and the class
-         progression gear (the Premium, Elite and Apex Smartdecks, the Advanced
-         B&E Buddy, the Ward Response and Black Clinic Trauma Rigs, the Rare
-         Smartdeck Hardware Mods and the Complexity 3 to 5 ciphers). That is 37
-         rows against the handoff's "27"; the report carries the difference. */
-      // kits
-      "Surgical Instruments", "Demolition Kit", "Vault Bypass Kit", "Flow Survey Pack",
-      "Flow Artificer Kit", "Elemental Harness Rig",
-      // devices
-      "Feral Drone Swarm Case", "Whisperlink Comms Tap", "Covert Ziprunner", "Maglock Passkey",
-      "Maglock Sequencer", "Latchscrambler", "Proxyprint Fabricator", "Camera Neutralizer",
-      "Signal Spoofer", "Squealer Beacon", "Null Veil Projector", "Mystech Cuffs", "Neurocut Jack",
-      "Adaptive Camo Cloak", "Vital Sync Bracer", "Tempest Core",
-      // consumables and services
-      "Combat Stim Pack", "Adrenaline Amp", "Breaching Charge", "Breach Charge", "Hypercare Contract",
-      // tonics and resonant tools
-      "Focus Draught", "Attunement Draught", "Resonant Shield Elixir", "Flow Surge Ampoule",
-      "Overchannel Amp Shot", "Channel Stabilizer Band", "Flow Ward Projector",
-      "Resonant Echo Recorder", "Tuning Prism Focus", "Scripted Invocation Tab"
+    phb: [
+      // Economy and Rewards (10)
+      "Secure Locks and Cameras", "Hidden Storage", "Medical Nook", "Drone Bench", "Ritual Corner",
+      "Signal Masking", "Patchline (Tier 1)", "Rapid Extract (Tier 2)", "Blackglass Priority (Tier 3)",
+      "Corporate Platinum (Tier 4)",
+      // Melee Weapons (22)
+      "Baton", "Dagger", "Hammer", "Hatchet", "Knife", "Knuckles", "Quarterstaff", "Shock Gloves",
+      "Snap-Blades", "Spear", "Shock Baton", "Axe", "Greatsword", "Halberd", "Katana", "Longsword", "Maul",
+      "Rapier", "Saber", "Shortsword", "Warhammer", "Whip",
+      // Ranged Weapons (30)
+      "Dart Gun", "Ghost Gun", "Machine Pistol", "Magnum Pistol", "Pistol", "Pocket Pistol", "Revolver",
+      "Taser", "Assault Rifle", "Battle Rifle", "Carbine", "Combat Shotgun", "Dart Rifle", "Marksman Rifle",
+      "Shotgun", "SMG", "Heavy Machinegun", "Light Machinegun", "Medium Machinegun", "Compound Bow",
+      "Crossbow", "Hand Crossbow", "Recurve Bow", "Slingshot", "Grenade Launcher", "EMP Grenade", "Flashbang",
+      "Frag Grenade Mk I", "Frag Grenade Mk II", "Smoke Grenade",
+      // Ammo (18)
+      "Pistol Ammo", "Rifle Ammo", "Shotgun Shells", "Arrows and Bolts", "Taser Cartridges", "Darts",
+      "Machinegun Belt", "Grenade Shells", "Armor Piercing Rounds", "EMP Rounds", "Hollow Point Rounds",
+      "Incendiary Rounds", "Neural Disruptor Darts", "Rubber Rounds", "Shock Rounds", "Toxin Rounds",
+      "Tracer Rounds", "Whisper Rounds",
+      // Specialty Launcher Shells (5)
+      "Concussion Shell", "Incendiary Shell", "Gas Shell", "Smoke Shell", "EMP Shell",
+      // Weapon Customization (56)
+      "Monoedge", "Weighted Head", "Nonlethal Conversion", "Serrated Edge", "Flanged Head", "Inertia Core",
+      "Shock Core", "Plasma Core", "Cryo Core", "Balanced Hilt", "Extended Shaft", "Counterweight Pommel",
+      "Pared Hilt", "Tactical Wrap", "Bracing Spike", "Breakdown Frame", "Quick-Release Tether",
+      "Anti-Theft Module", "Defensive Guard", "Anti-Scanner Coating", "Reflex Sight", "Combat Scope",
+      "Thermal Optic", "Smart-Sight", "Match Barrel", "Shotgun Choke", "Heavy Barrel", "Bullpup Conversion",
+      "Vented Barrel", "Match Trigger Group", "Anti-Jam Action", "Burst Fire Receiver", "Hair Trigger",
+      "Folding Stock", "Recoil Stock", "Quick-Draw Grip", "Marksman Stock", "Suppressor", "Compensator",
+      "Weapon Light", "Case Catcher", "Target Spotter", "Foregrip", "Bipod", "Bayonet", "Under-Barrel Mount",
+      "Low-Light Sensor Suite", "High-Tension Assembly", "Composite Limbs", "Whisper Limbs", "Voltaic Limbs",
+      "Cam Tuning", "Cocking Aid", "Magazine Cradle", "Reinforced Cam", "Tracker Cam",
+      // Armor and Defensive Gear (28)
+      "SkinPlan Daywear", "Liner Mesh", "Hypeplate", "Courier Shell", "Slip Undervest", "Adaptive Soft Suit",
+      "Composite Kit", "City Carrier", "Gig Harness", "Enforcer Rig", "Operator Suit", "Vanguard Plate",
+      "Sentinel Issue", "Scrap Plate", "Foundry Shell", "Riot Wall", "Breaker Harness", "Anvil Frame",
+      "Laborframe Exorig", "Bailiff Rig", "Scrap Shield", "Ballistic Bracer", "Riot Shield",
+      "Sentinel Barrier", "Ballistic Bulwark", "Hard-Light Barrier", "Scrap Ward", "Resonance Coil",
+      // Armor Customization (19)
+      "Trauma Plates", "Ablative Coating", "Reactive Plating", "Rebreather Liner", "Thermal Regulation Weave",
+      "Acoustic Baffles", "Signature Damper", "Threat-Detection HUD", "Smartlink Relay", "Load Distributor",
+      "Drop Dampeners", "Gecko Grips", "Servo Weave", "Vitals Beacon", "Coagulant Mesh",
+      "Trauma Stim Injector", "Faraday Lining", "Self-Seal Nanopaste", "Sentinel Active Defense",
+      // Vehicle Ownership (4)
+      "Street parking or low-security rack", "Secured lot or garage",
+      "Hidden chop garage or off-books storage", "Protected hangar or private docking",
+      // Vehicle Customization (10)
+      "Plate Kit", "Run-Flat Wheels", "Smoke Discharger", "Ram Bar", "Cargo Winch", "Hardpoint Mount",
+      "Ghost Transponder", "Node Retrofit", "Cabin Kit", "Cut-Down",
+      // Skill Kits (22)
+      "Basic Medkit", "Advanced Medkit", "Street Doc Bag", "Engineering Toolkit", "Field Repair Case",
+      "Portable Fabrication Rig", "Smartdeck Peripheral Kit", "Codebreaker Suite", "Signal Trace Scanner",
+      "Lockpick Set", "Urban Infiltration Rig", "Forensics Kit", "Survey Scanner", "Climbing Gear",
+      "Navigation and Survival Pack", "Tracker's Kit", "Custody and Control Kit", "Field Recording Kit",
+      "Disguise and Styling Kit", "Venue Kit", "Document and Contract Kit", "Rite Calibration Kit",
+      // Field Devices and Gadgets (41)
+      "Multi Tool", "Crowbar", "Fire Extinguisher", "Rebreather", "Cargo Mule", "Backpack", "Fanny Pack",
+      "Sheath", "Swift Draw Holster", "Utility Belt", "Flashlight", "Lighter", "Echolight Baton",
+      "Bug Scanner", "Metal Detector", "Throwcam", "Halo Drone", "Whisperlink Earpiece", "Walkie Talkie",
+      "Wireless Transceiver", "#GRIDline Cable", "#GRIDline Lumen Cable", "Titan Tether", "Grapple Launcher",
+      "Ziprunner", "Towrunner", "Autopicker", "Tag Eraser", "Portable Door Alarm Kit", "Motion Sensor Pod",
+      "Flex Cuffs", "Standard Cuffs", "Flux Gel Sprayer", "AR Optics", "Bio Monitor Band", "Respirator Mask",
+      "Mag Boots", "Gravshift Anklets", "Streaming Rig", "Hazmat Suit", "Scene Scrubber",
+      // Consumables (15)
+      "Vita-Pop", "Trauma Slap Patch", "Med Foam Canister", "Detox Patch", "Nightwatch Tablets",
+      "Emergency Sealant Foam", "Thermite Slug", "Basic Rations", "Water Purification Tabs", "Glimmer Stick",
+      "Data Drive", "Faraday Pouch", "#PRINT", "Fake License Portfolio", "Ritual Reagent Pouch",
+      // Flow Tonics and Resonant Devices (4)
+      "Flow Tonic Vial", "Channel Cleanse Tonic", "Resonant Anchor Charm", "Flow Lantern",
+      // Trauma Rigs (6)
+      "Field Kit [0]", "Clinic Grade [1]", "Trauma Grade [2]", "Combat Grade [3]", "Ward Response [4]",
+      "Black Clinic [5]",
+      // Cybernetics (3)
+      "Streetware", "Brandware", "Blackware",
+      // Neural Cyberware (6)
+      "Streetware Datajack", "Brandware Datajack", "Streetware Cyberoptics", "Brandware Cyberoptics",
+      "Streetware Reflex Booster", "Brandware Reflex Booster",
+      // Core Cyberware (6)
+      "Streetware Synthetic Heart", "Brandware Synthetic Heart", "Streetware Biomonitor",
+      "Brandware Biomonitor", "Streetware Toxin Filter", "Brandware Toxin Filter",
+      // Integument Cyberware (4)
+      "Streetware Subdermal Armor", "Brandware Subdermal Armor", "Streetware Reinforced Skeleton",
+      "Brandware Reinforced Skeleton",
+      // Arms Cyberware (4)
+      "Streetware Cyberarm", "Brandware Cyberarm", "Streetware Hand Razors", "Brandware Hand Razors",
+      // Legs Cyberware (4)
+      "Streetware Cyberlegs", "Brandware Cyberlegs", "Streetware Spring Joints", "Brandware Spring Joints",
+      // Hardware Cyberware (5)
+      "Streetware Smartlink", "Brandware Smartlink", "Brandware Subdermal Comm", "Streetware Skinweave",
+      "Brandware Skinweave"
     ],
-    // weapon Part keys (EN.weaponParts); the combined Smart-Sight + Targeting
-    // Suite entry moves with the Targeting Suite it contains
-    part: ["siege-head", "pulse-core", "flow-core", "targeting-suite", "full-auto-receiver",
-           "powered-assist-grip", "flow-etched-limbs", "smart-sight-targeting-suite"],
-    // armor Mod keys (EN.armorMods)
-    armorMod: ["chameleon-weave", "reactive-countermeasures", "resonance-dampener",
-               "echo-shroud", "ward-amplifier", "grounding-lattice"],
-    // vehicle Mod keys (EN.vehicles.mods)
-    vehicleMod: ["ejector-seat", "overdrive-injector", "chameleon-coat"],
-    // the Mystech Cyberware section, whole (every mystech:true implant,
-    // the Convergence Engine among them)
-    cyberware: ["disruption", "resonanceCrown", "feedbackCore", "convergence", "anomalySensor"],
-    // the Blackware tier, and Prototype as one of "the Mystech tiers" (decision 8)
-    cyberTier: ["Blackware", "Prototype"],
-    // the other half of "the Mystech tiers": the Iconic to Artifact
-    // Availability scale. Hidden with Availability anyway; listed so the scale
-    // stays out of any Availability filter if that hold is ever lifted first.
+    // class gear, printed in the #GRID chapter (Equipment, and the Cipher Library) for the
+    // Codebreaker's Smartdeck and Repertoire: the Smartdeck tiers, the B&E Buddy tiers and the
+    // nine Smartdeck Hardware Modifications. The Stitcher's Trauma Rigs are rows of `phb` above.
+    classGear: ["Standard Smartdeck", "Improved Smartdeck", "Advanced Smartdeck", "Premium Smartdeck",
+                "Elite Smartdeck", "Apex Smartdeck",
+                "Standard B&E Buddy", "Improved B&E Buddy", "Advanced B&E Buddy",
+                "Reinforced Heatsinks", "Sweep Suite Plug-In", "Burn Notice Module", "ICE-Breaker Algorithm",
+                "Overclocked Coprocessor", "Trigger Cache", "Redline Lattice", "Crown Spike Array", "Predator Stack"],
+    // the cipher tiers: every acquirable cipher of these Complexities (EN.grid.ciphers, the
+    // Cipher Library; the free Complexity 0 suite is not a catalog row)
+    cipherComplexity: [1, 2, 3, 4, 5],
+    // the seven vehicle chassis. The author's list has no chassis rows, but the Handbook prints
+    // all seven in Vehicles and Chases (Vehicle Profiles) and, priced, in Vehicle Ownership
+    // (Buying a Vehicle), so they stay shown. Remove a name here to hold it.
+    chassis: ["Street Bike", "Armored Sedan", "Cargo Hauler", "Hydrofoil", "Corporate VTOL",
+              "Riot Suppression Mech", "Light Shuttle"],
+    // the Mystech Availability scale: kept out of any Availability filter if the Availability
+    // hold is ever lifted first
     availability: ["Iconic", "Legendary", "Mythical", "Artifact"],
-    // the Signature Weapons chapter, whole: every name in
-    // EN.gearCatalog.signature (weapons and munitions)
+    // the Signature Weapons chapter is held whole: every name in EN.gearCatalog.signature
+    // (weapons and munitions). Three callers read this flag directly.
     signature: true
   };
 
@@ -182,44 +260,95 @@ EN.launch = (function () {
     if (!s) return [];
     return [].concat(s.items || [], s.munitions || []).map(function (i) { return i.name; });
   }
-  function nameIn(list, name) {
-    for (var i = 0; i < (list || []).length; i++) if (list[i] && list[i].name === name) return list[i];
+
+  /* The app's name for a row, read as the Handbook spells it: "Field Kit Trauma Rig [0]" is
+     "Field Kit [0]", and a leased chassis ("Street Bike (Lease)") is the chassis. */
+  function bookName(n) { return String(n).replace(/ Trauma Rig (\[\d\])$/, " $1").replace(/ \(Lease\)$/, ""); }
+
+  /* The shown set and the catalog name set are built on first use and kept only once every data
+     file they read has loaded: data/grid.js adds the ciphers and the Hardware Mods to the Tools
+     catalog, and data/vehicles.js loads after it. A call made while the data files are still
+     loading is answered from what exists and leaves no partial set behind. */
+  var _shown = null, _catalog = null;
+  function dataReady() {
+    return !!(EN.grid && EN.grid.ciphers && EN.gearCatalog && EN.gearCatalog.tools && EN.weaponParts &&
+              EN.armorMods && EN.vehicles && EN.vehicles.profiles && EN.cyberware && EN.cyberware.items);
+  }
+  function shownSet() {
+    if (_shown) return _shown;
+    var s = {};
+    [toolkit.phb, toolkit.classGear, toolkit.chassis].forEach(function (l) { (l || []).forEach(function (n) { s[n] = true; }); });
+    ((EN.grid && EN.grid.ciphers) || []).forEach(function (c) { if (has(toolkit.cipherComplexity, c.cx)) s[c.name] = true; });
+    if (dataReady()) _shown = s;
+    return s;
+  }
+  // true when the Handbook's gear list (or the class gear and the chassis) prints this row
+  function inBook(name) { return !!shownSet()[bookName(name)]; }
+
+  // every catalog row name: a name outside every catalog (custom gear) is never held
+  function catalogSet() {
+    if (_catalog) return _catalog;
+    var g = EN.gearCatalog || {}, s = {};
+    [g.melee && g.melee.items, g.ranged && g.ranged.items, g.signature && g.signature.items,
+     g.signature && g.signature.munitions, g.ammo && g.ammo.items, g.armor && g.armor.items, g.tools && g.tools.items,
+     EN.weaponParts && EN.weaponParts.parts, EN.armorMods && EN.armorMods.mods,
+     EN.vehicles && EN.vehicles.mods, EN.vehicles && EN.vehicles.profiles].forEach(function (l) {
+      (l || []).forEach(function (i) { if (i && i.name) s[i.name] = true; });
+    });
+    if (dataReady()) _catalog = s;
+    return s;
+  }
+  function catalogHas(name) { var s = catalogSet(); return !!(s[name] || s[bookName(name)]); }
+
+  function byKey(kind, key) {
+    var src = kind === "part" ? EN.weaponParts : kind === "armorMod" ? EN.armorMods : EN.vehicles;
+    return (src && src.byKey && src.byKey[key]) || null;
+  }
+  function cyberItem(key) {
+    var all = (EN.cyberware && EN.cyberware.items) || [];
+    for (var i = 0; i < all.length; i++) if (all[i].key === key) return all[i];
     return null;
   }
+  // the Handbook prints an implant as "<Tier> <Implant>": Streetware Datajack, Brandware Datajack
+  function cyberInBook(it, tier) { return inBook(tier + " " + it.short); }
 
-  /* isToolkit(kind, id), true only while holds.toolkit is on:
-       "item"        a catalog name: the listed items, plus every Signature
-                     weapon and munition, plus the NAME of a listed Part,
-                     armor Mod or vehicle Mod (the market lists those by name)
-       "part", "armorMod", "vehicleMod", "cyberware"   a key
-       "cyberTier"   a cyberware quality tier name ("Blackware", "Prototype")
+  /* isToolkit(kind, id), true only while holds.toolkit is on and the Handbook does not print it:
+       "item"        a catalog name (any catalog, Parts and Mods included; a name outside
+                     every catalog is never held)
+       "part", "armorMod", "vehicleMod"   a key, judged by its catalog row's name
+       "cyberware"   an implant key: held when the Handbook prints it at no tier
+       "cyberTier"   a tier name: held when the Handbook prints no implant at that tier
+                     (Blackware, Prototype)
        "availability" an Availability word on the Mystech scale
        "signature"   true for any name in EN.gearCatalog.signature */
   function isToolkit(kind, id) {
     if (!holds.toolkit || id == null || id === "") return false;
-    if (kind === "signature") return !!toolkit.signature && has(signatureNames(), id);
-    if (kind === "item") {
-      if (has(toolkit.item, id)) return true;
-      if (toolkit.signature && has(signatureNames(), id)) return true;
-      var wp = EN.weaponParts && nameIn(EN.weaponParts.parts, id);
-      if (wp && has(toolkit.part, wp.key)) return true;
-      var am = EN.armorMods && nameIn(EN.armorMods.mods, id);
-      if (am && has(toolkit.armorMod, am.key)) return true;
-      var vm = EN.vehicles && nameIn(EN.vehicles.mods, id);
-      if (vm && has(toolkit.vehicleMod, vm.key)) return true;
-      return false;
+    if (kind === "availability") return has(toolkit.availability, id);
+    if (kind === "signature") return !!toolkit.signature && has(signatureNames(), id) && !inBook(id);
+    if (kind === "cyberware") {
+      var it = cyberItem(id);
+      return !!it && !(it.tiers || []).some(function (t) { return cyberInBook(it, t.tier); });
     }
-    return has(toolkit[kind], id);
+    if (kind === "cyberTier") {
+      return !((EN.cyberware && EN.cyberware.items) || []).some(function (c) {
+        return (c.tiers || []).some(function (t) { return t.tier === id && cyberInBook(c, id); });
+      });
+    }
+    if (kind === "part" || kind === "armorMod" || kind === "vehicleMod") { var row = byKey(kind, id); return !!row && !inBook(row.name); }
+    if (kind === "item") return catalogHas(id) && !inBook(id);
+    return false;
   }
 
-  /* isToolkitItem(it): the same test for a catalog ITEM object as the market
-     builds it (inventory.js partAsItem / armorModAsItem / vehicleModAsItem
-     carry partKey or modKey; everything else is matched by name). */
+  /* isToolkitItem(it): the same test for a catalog ITEM object as the market builds it
+     (inventory.js partAsItem / armorModAsItem / vehicleModAsItem carry partKey or modKey; a
+     cyberware listing carries cyberKey and tier; everything else is matched by name). */
   function isToolkitItem(it) {
     if (!holds.toolkit || !it) return false;
-    if (it.partKey) return has(toolkit.part, it.partKey);
-    if (it.armorMod && it.modKey) return has(toolkit.armorMod, it.modKey);
-    if (it.vehicleMod && it.modKey) return has(toolkit.vehicleMod, it.modKey);
+    if (it.partKey) return isToolkit("part", it.partKey);
+    if (it.armorMod && it.modKey) return isToolkit("armorMod", it.modKey);
+    if (it.vehicleMod && it.modKey) return isToolkit("vehicleMod", it.modKey);
+    // a market cyber listing is one tier of one implant: judged against the Handbook's exact row
+    if (it.cyber) { var c = cyberItem(it.cyberKey); return !c || !cyberInBook(c, it.tier); }
     return isToolkit("item", it.name);
   }
 

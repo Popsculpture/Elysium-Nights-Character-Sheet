@@ -160,7 +160,7 @@ EN.gmBook.jobs = {
     key: "postings", name: "Twelve Postings", die: "d12", sides: 12,
     intro: "Seeds with the serial numbers left on, one line each:",
     rows: [
-      { n: 1,  text: "A vending machine at Tenth and Mercury has started dispensing tomorrow's obituaries, and a Click Chaser will pay for the next seven." },
+      { n: 1,  text: "A vending machine at Tenth and Mercury has started dispensing tomorrow's obituaries, and a Glow Idol will pay for the next seven." },
       { n: 2,  text: "Corpsec is paying triple for cordon shifts around a block where every clock runs eleven minutes slow." },
       { n: 3,  text: "A Hulsk merchant wants an escort for one sealed crate that hums in a minor key: no scanners, no questions, no stops." },
       { n: 4,  text: "Somebody is fencing Guild-tagged salvage from a claim that officially produced nothing; the Guild wants the somebody, not the salvage." },
