@@ -109,17 +109,18 @@ EN.gearCatalog.tools = {
       basic: "Functions as a Basic Medkit. When you Stabilize a Target at 0 Wounds with at least 1 minute and no active threats, they also gain 1d4 Vigor.",
       proficient: "Once per scene when you Stabilize a Target, you can also clear Bleeding or a similar minor ongoing wound effect." },
     { name: "Surgical Instruments", bucket: "kits", group: "Medical & Care", price: 500, availability: "Rare", legality: "Restricted",
-      category: "Medical Tools", skill: "Medtech", effect: "+2 (or +1 Edge Die) on Medtech. Enables major cybernetic and invasive procedures.",
-      /* M20, ruled 2026-08-16. The book grants "+2 on the primary out-of-combat Medtech Dice
-         Pool", but Dice Pools take no flat modifiers, they take Edge Dice, so the +2 had to be
-         converted and the app had read it as 2 Edge Dice. The ruling follows the Advanced
-         Medkit directly above, which states the same thing correctly: the +2 is the IN-COMBAT
-         d20 bonus and the pool equivalent is ONE Edge Die. Corroborated by the catalog, where
-         this was the only edgeDice above 1 in any tool. */
+      category: "Medical Tools", skill: "Medtech", effect: "Edge (or +1 Edge Die) on Medtech. Enables major cybernetic and invasive procedures.",
+      /* M20, ruled 2026-08-16, then superseded 2026-10-17. The book used to grant "+2 on the
+         primary out-of-combat Medtech Dice Pool"; Dice Pools take no flat modifiers, so the app
+         read it as ONE Edge Die (not 2, the catalog's only edgeDice above 1 in any tool). The
+         GM Toolkit (batches 44 to 50) now prints Edge on the procedure's Medtech checks, and a
+         Tool tier never adds a bonus to the roll. edgeDice: 1 is the Dice Pool form of that
+         Edge, so the number is unchanged. The Toolkit's Kits and Tools summary row still prints
+         "+2 on Medtech" (flagged to the author); the entry and the ruling say Edge. */
       edgeDice: 1, requiresProficient: true, edgeNote: "invasive or surgical procedures in a clean workspace",
       desc: "Precision tools for invasive work and delicate cybernetic extraction.",
       basic: "Enables planned invasive work in Downtime: surgery, deep extraction, major cybernetic servicing. Without them, these procedures are usually impossible.",
-      proficient: "Requires Proficiency and Medtech (Expertise). In a clean workspace, gain +2 on Medtech checks (or +1 Edge Die on out-of-combat Dice Pools) for the procedure, and attempt outcomes that would otherwise demand a hospital-grade facility." },
+      proficient: "Requires Proficiency and Medtech (Expertise). In a clean workspace, gain Edge on Medtech checks (or +1 Edge Die on out-of-combat Dice Pools) for the procedure, and attempt outcomes that would otherwise demand a hospital-grade facility." },
 
     /* ---- Technical & Hardware ---- */
     { name: "Engineering Toolkit", bucket: "kits", group: "Technical & Hardware", price: 100, availability: "Common", legality: "Legal",

@@ -923,10 +923,7 @@ EN.gmJobs = (function () {
       tiePicker(d)
     ];
     if (B.guidance) {
-      crewSide.push(el("p.help", { style: { margin: "8px 0 0", color: "var(--text2)" } }, [
-        el("span", { style: { color: "var(--gold)", fontWeight: 600 }, text: B.guidance.label + ". " }),
-        document.createTextNode(B.guidance.text)
-      ]));
+      crewSide.push(el("p.help", { style: { margin: "8px 0 0", color: "var(--text2)" }, text: B.guidance.text }));
     }
 
     // what only the GM knows

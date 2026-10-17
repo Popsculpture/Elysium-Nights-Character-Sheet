@@ -3293,7 +3293,8 @@ EN.combatView = (function () {
   function countedFeedsWeapon(a, it) {
     var f = (a.feeds || "").toLowerCase();
     if (f.indexOf(it.name.toLowerCase()) !== -1) return true;             // Cannon Rounds / Grenade Shells / Rocket / Missile
-    if (a.name === "Machinegun Belt" && /machinegun|rotary/i.test(it.name)) return true;
+    // the Belt is for "Light, medium, and heavy machineguns"; the Rotary Cannon takes Cannon Rounds (Toolkit, Ordnance Ammo)
+    if (a.name === "Machinegun Belt" && /machinegun/i.test(it.name)) return true;
     return false;
   }
   function baseFeedName(it) {
@@ -4076,8 +4077,8 @@ EN.combatView = (function () {
        plain roll when it does not. Roll = attr mod + parent tier bonus.
 
        No gate on either axis, because the book has none. The Skills chapter's (Part 1 since
-       the book's reorder) only prohibition in this section is that you cannot TRAIN a Versatile Skill, and its GM Guidance is "the method
-       determines which Attribute and parent Skill apply... let Skills flex in context". Two
+       the book's reorder) only prohibition in this section is that you cannot TRAIN a Versatile Skill, and the Game Master's Toolkit
+       says "Let a Skill flex when the method earns it". Two
        invented restrictions used to live here: 68 of the 252 pairings printed a red "this
        combination does not work", and untrained parent Skills were filtered out entirely.
        The book's own worked example resolves Intimidation with Agility plus Engineering, a
@@ -6069,7 +6070,8 @@ EN.combatView = (function () {
         }
         if (name === "Brace") {
           // "Roll 1d10 + Body Modifier and subtract the result from the incoming damage." (PHB,
-          // round 3 ruling 1). Every Freelancer can use it; the Body Modifier is the live one.
+          // Active Defenses). The book prints no Requirement, so every Freelancer can use it;
+          // the Body Modifier is the live one.
           base.dice.push({ n: 1, sides: 10, label: "d10" });
           base.flat.push({ label: "Body Modifier", value: d.attributes.BOD.mod });
           base.note = "Roll 1d10 + Body Modifier and subtract the result from the incoming damage. Falls, collisions, explosions, or forced impact only.";

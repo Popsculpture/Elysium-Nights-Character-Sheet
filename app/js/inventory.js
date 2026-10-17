@@ -517,12 +517,38 @@ EN.inventoryView = (function () {
     });
     toast(it.name + " acquired; it's in your Chrome Stash. Hit a clinic (Chrome tab) to install it.");
   }
+  /* The pieces the GM Toolkit says can't share a body. The Convergence Engine's Restrictions: "A
+     character can't have both installed" (the Resonance Crown). The Crown's: "A character can have
+     only one Resonance Crown installed at a time." Install is the only path that adds either piece
+     (the market hides only a name already installed, and no Open Architecture combo names them), so
+     this is the gate. Answers the reason a piece cannot join the installed list, or "" when it can.
+     A save that already holds a banned pairing is not touched: cyberRow flags it instead. */
+  function cyberInstallBlock(installed, cw) {
+    if (!cw || typeof cw !== "object") return "";
+    var keys = (installed || []).map(function (x) { return x && typeof x === "object" ? x.key : null; });
+    if (cw.key === "resonanceCrown" && keys.indexOf("resonanceCrown") !== -1) {
+      return "A character can have only one Resonance Crown installed at a time.";
+    }
+    if ((cw.key === "convergence" && keys.indexOf("resonanceCrown") !== -1) ||
+        (cw.key === "resonanceCrown" && keys.indexOf("convergence") !== -1)) {
+      return "The Convergence Engine and the Resonance Crown can't both be installed.";
+    }
+    return "";
+  }
   function installFromStash(idx) {
+    var ch0 = store.active();
+    var why = ch0 ? cyberInstallBlock(ch0.cyberware, (ch0.cyberStash || [])[idx]) : "";
+    if (why) { toast(why); return; }
+    var refused = "";
     store.update(function (c) {
       var cw = (c.cyberStash || [])[idx]; if (!cw) return;
+      // re-checked on the record being written, so a stale click cannot slip a banned pair in
+      refused = cyberInstallBlock(c.cyberware, cw);
+      if (refused) return;
       c.cyberStash.splice(idx, 1);
       c.cyberware = c.cyberware || []; c.cyberware.push(cw);
     });
+    if (refused) { toast(refused); return; }
     toast("Chrome installed. Static updated on the Cybernetic Frame.");
   }
   function uninstallToStash(idx) {
@@ -683,7 +709,7 @@ EN.inventoryView = (function () {
          category is left unchipped, the same way "Any" is on the armor line, so this
          stays a warning about a narrow frame and not noise on every card. */
       (it.fits && !/^Any\b/i.test(String(it.fits)))
-        ? el("span.chip", { title: "Only fits " + it.fits + " weapons", style: { fontSize: "9px", color: "var(--warn)", borderColor: "var(--warn)" } }, "fits " + it.fits) : null,
+        ? el("span.chip", { title: "Only fits " + it.fits + (/weapon$/i.test(String(it.fits)) ? "" : " weapons"), style: { fontSize: "9px", color: "var(--warn)", borderColor: "var(--warn)" } }, "fits " + it.fits) : null,
       dmgReadout(el("span.help", { style: { margin: 0, fontSize: "11px", color: "var(--text2)" } }), it.grants),
       installedN ? el("span.chip", { style: { fontSize: "9px", color: "var(--success)", borderColor: "var(--success)" } }, "installed ×" + installedN) : null
     ]);
@@ -1199,8 +1225,12 @@ EN.inventoryView = (function () {
     function cyberPrereq(cw) { var d = ENG().cyberDef ? ENG().cyberDef(cw) : null; return (d && d.prereqFor) || ""; }
     function cyberRow(cw, idx, where) {
       var sided = !!cw.sided, oid = where + "-cw-" + idx, open = !!_open[oid];
+      var conflict = where === "installed"
+        ? cyberInstallBlock(installed.filter(function (x) { return x !== cw; }), cw) : "";
       var chips = [
         where === "installed" ? tagChip("● INSTALLED", "var(--success)", "Installed, counts toward your Static") : tagChip("STASHED", "var(--text3)", "In your stash, not yet installed"),
+        // a save from before the install guard can hold a banned pairing (Crown with Engine, two Crowns): flag it, never auto-uninstall
+        conflict ? tagChip("CONFLICT", "var(--danger)", conflict) : null,
         // implants the Handbook doesn't print (the Mystech ones, the Blackware and Prototype tiers) are held; an owned piece keeps working
         toolkitChip("cyberware", cw.key) || toolkitChip("cyberTier", cw.tier),
         // the quality tier is a rule, so its chip peeks the Codex entry on a tap (the title stays for hover)
@@ -1216,7 +1246,11 @@ EN.inventoryView = (function () {
       var actions;
       if (where === "stash") {
         actions = el("div.row", { style: { gap: "6px" } }, [
-          el("button.btn.sm.primary", { title: "Install at a clinic; moves it to Installed Chrome and adds its SP to your Static", onclick: function (e) { e.stopPropagation(); installFromStash(idx); } }, "⧉ INSTALL"),
+          // blocked (Crown with Engine, a second Crown): disabled, the reason in its title; installFromStash refuses too
+          (function () {
+            var block = cyberInstallBlock(installed, cw);
+            return el("button.btn.sm.primary", { disabled: !!block, title: block || "Install at a clinic; moves it to Installed Chrome and adds its SP to your Static", onclick: function (e) { e.stopPropagation(); installFromStash(idx); } }, "⧉ INSTALL");
+          })(),
           el("button.btn.sm", { title: "Discard this implant", style: { color: "var(--danger)", borderColor: "var(--danger)" }, onclick: function (e) { e.stopPropagation(); dropStash(idx); } }, "DROP")
         ]);
       } else {
@@ -1747,6 +1781,8 @@ EN.inventoryView = (function () {
       case "Two-Handed Melee": return isMeleeGroup(g) && hasTrait("Two-Handed");
       case "Shotgun": return /shotgun/.test(name) || hasTrait("Spread");
       case "Longarm": return g === "Longarm" || g === "Heavy";
+      // Powered Assist Grip: "Fits: Longarm or Heavy Weapon" (GM Toolkit, 17 October 2026). An unknown fits string answers false, so this case is what lets it fit anything.
+      case "Longarm or Heavy Weapon": return g === "Longarm" || g === "Heavy";
       case "Sidearm": return g === "Sidearm";
       case "Semi-Auto Firearm": return isFirearmGroup(g) && hasTrait("Semi-Auto");
       case "Compound": return isBowGroup(g) && /compound/.test(name);

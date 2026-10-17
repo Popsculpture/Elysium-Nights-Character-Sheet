@@ -33,7 +33,7 @@
        on into a sentence). EN.gmEngine.xpOf reads its leading number.
      - People leave `gear` (23, and the Afterimage carries one too, 24 in
        all); `salvage` is on 20 and `signs` on the 5 cryptids. 7 add a
-       `gmNote` (the book's GM Guidance), 4 a `variant`, 4 a named skill
+       `gmNote` (the book's GM note under the stats), 4 a `variant`, 4 a named skill
        bonus in `skills`, 1 a list of job `hooks`, and the 4 Solos the
        line "Unshakable, Defensive Impulses" inside `stats`. The Cascade
        Orphan alone prints `Immune` and `Resistance` lines, also in `stats`.

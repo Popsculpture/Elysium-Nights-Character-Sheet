@@ -1424,7 +1424,7 @@ EN.gmView = (function () {
     if (e.variant) kids.push(el("p.help", { style: { margin: "5px 0 0", color: "var(--text2)" },
       text: e.variant.label + ": " + e.variant.text }));
     // a GM note may cite a PHB rule (an Echo's Cleansing Project in Flow Disturbances): it links
-    if (e.gmNote) kids.push(EN.ui.ruleText(el("p.help", { style: { margin: "5px 0 0", color: "var(--accent)" } }), "GM: " + e.gmNote));
+    if (e.gmNote) kids.push(EN.ui.ruleText(el("p.help", { style: { margin: "5px 0 0" } }), e.gmNote));
     /* Job hooks are a titled LIST, not a paragraph: each one is its own idea with
        its own name, and a GM skimming for tonight's job wants to find the one
        they want rather than read a block to the end. */

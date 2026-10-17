@@ -151,8 +151,7 @@ window.EN = window.EN || {};
           var s = splitLead(c);
           return K.ruleBlock(s.name, s.text, null, { conditions: true });
         })),
-        t.morale ? K.subTitle("GM Guidance") : null,
-        t.morale ? K.ruleBlock("Morale", t.morale, "OPTIONAL", { conditions: true }) : null
+        t.morale ? K.ruleBlock("Morale (optional rule)", t.morale, null, { conditions: true, slug: "morale" }) : null
       ];
     } },
 

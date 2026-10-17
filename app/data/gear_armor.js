@@ -207,12 +207,12 @@ EN.gearCatalog.armor = {
     { name: "Resonant Carapace", kind: "armor", group: "Mystech Armor", type: "Medium Mystech Armor (2 Mod Slots)", price: 1600, nexus: "◎0.5",
       slot: ["Torso", "Legs"], dr: 3, blockBonus: 1, slots: 2, wardDie: "1d6", traits: ["Plated", "Focus", "Resonant Plating", "Mystech", "Modular"], availability: "Legendary", legality: "Contraband",
       desc: "Tuned Mystech plate that hums against incoming force and feeds a fraction of every hit back into the wearer's Ward. The plating catches Flow as readily as it catches a round, which is why the things that bypass ordinary armor find no door here. Favored by Shapers who fight on the line instead of behind it.",
-      effect: "Grants 3 Damage Reduction (DR) and a +1 Block Bonus. As a Focus, once per round when you use Ward, add +1d6 to the Ward reduction. You can only benefit from one Focus item for Ward at a time." },
+      effect: "Grants 3 Damage Reduction (DR) and a +1 Block Bonus. As a Focus, once per round when you use Ward, add +1d6 to the Ward reduction." },
     { name: "Aegis Shroud", kind: "armor", group: "Mystech Armor", type: "Heavy Mystech Armor (2 Mod Slots)", price: 2800, nexus: "◎1",
       slot: ["Torso", "Legs"], dr: 4, blockBonus: 1, slots: 2, wardDie: "1d6", traits: ["Focus", "Sealed", "Mystech", "Modular"], availability: "Legendary", legality: "Contraband",
       resistPick: { options: ["Fire", "Electric", "Cold", "Resonant"] },
       desc: "A flowing sealed shell of woven Mystech filament that surrounds the wearer in a layered current. It barely looks like armor. Wearing it feels like standing inside a shrine that has decided to follow you around.",
-      effect: "Grants 4 Damage Reduction (DR) and a +1 Block Bonus. When you acquire it, choose one of Fire, Electric, Cold, or Resonant. You gain Resistance to that type. As a Focus, once per round when you use Ward, add +1d6 to the Ward reduction. You can only benefit from one Focus item for Ward at a time." },
+      effect: "Grants 4 Damage Reduction (DR) and a +1 Block Bonus. When you acquire it, choose one of Fire, Electric, Cold, or Resonant. You gain Resistance to that type. As a Focus, once per round when you use Ward, add +1d6 to the Ward reduction." },
     { name: "Reliquary Shell", kind: "armor", group: "Mystech Armor", type: "Heavy Mystech Armor (2 Mod Slots)", price: 0, nexus: "◎2+", vendor: false,
       slot: ["Torso", "Legs"], dr: 4, blockBonus: 2, slots: 2, wardDie: "1d6", traits: ["Focus", "Resonant Plating", "Sealed", "Mystech", "Modular"], availability: "Artifact", legality: "Contraband",
       /* The only two-pick entry in the game. The book prints "choose two of Fire, Electric,
@@ -222,7 +222,7 @@ EN.gearCatalog.armor = {
          rather than enforcing a distinctness rule the book does not print. */
       resistPick: { options: ["Fire", "Electric", "Cold", "Resonant"], count: 2 },
       desc: "Nobody manufactures one of these. They are found: pulled from a sealed vault, recovered off a dead Shaper, traded for in a currency the broker wouldn't name out loud. A layered current of woven filament and tuned plate that turns force and Flow alike, and behaves less like equipment than like something that agreed to look after you. The kind of armor a campaign is built around, not bought.",
-      effect: "Grants 4 Damage Reduction (DR) and a +2 Block Bonus. When you acquire it, choose two of Fire, Electric, Cold, or Resonant. You gain Resistance to both. As a Focus, once per round when you use Ward, add +1d6 to the Ward reduction. You can only benefit from one Focus item for Ward at a time." },
+      effect: "Grants 4 Damage Reduction (DR) and a +2 Block Bonus. When you acquire it, choose two of Fire, Electric, Cold, or Resonant. You gain Resistance to both. As a Focus, once per round when you use Ward, add +1d6 to the Ward reduction." },
 
     /* ============================== PHYSICAL SHIELDS ============================== */
     { name: "Scrap Shield", kind: "shield", group: "Physical Shield", type: "Physical Shield (+1 Defense, +1d4 Block, Wear 8)", price: 30,

@@ -88,17 +88,18 @@ EN.combat = {
       trigger: "Any attack you can brace against",
       text: "You brace your stance and put solid mass between yourself and the incoming threat, letting the barrier eat the kinetic shock.\n- Requirement: A physical Shield equipped, armor with a listed Block Bonus, or the Plated trait.\n- The Effect: You reinforce your passive mitigation for this attack. On top of your Armor DR, add your armor's flat Block Bonus, half the armor's DR (rounded down) if it is Plated, and a Shield's Block die if you carry one. These sources stack.\n\nPlayer Advice: Tactical Note: Blocking is highly reliable; the flat Block Bonus and Plated half-DR apply with no roll, and a Shield adds its Block die on top."
     },
-    /* Brace, round 3 rulings, item 1 (17 October 2026), as the Player's Handbook prints it:
-       Trigger Limit and The Effect are the book's words; the Requirement line is the ruling's
-       ("none, every Freelancer can use it"). The book prints no flavor line and no Player
-       Advice for it, so none is added. A defensive Impulse like the rest: the budget and the
-       per-attacker Limit in the rules above apply to it, and the Defend panel rolls it. */
+    /* Brace, as the Player's Handbook prints it (Active Defenses): two lines, Trigger Limit and
+       The Effect, and no Requirement, so every Freelancer can use it (the author's correction of
+       17 October 2026: the "Requirement: none" of the round 3 handoff was an explanation, not book
+       text). No flavor line and no Player Advice, as printed. A defensive Impulse like the rest:
+       the budget and the per-attacker Limit in the rules above apply to it, and the Defend panel
+       rolls it. */
     {
       name: "Brace",
       cost: "1 Impulse Action",
-      requirement: "None",
+      requirement: "-",
       trigger: "Falls, collisions, explosions, or forced impact",
-      text: "- Requirement: None. Every Freelancer can use it.\n- Trigger Limit: Falls, collisions, explosions, or forced impact.\n- The Effect: Roll 1d10 + Body Modifier and subtract the result from the incoming damage."
+      text: "- Trigger Limit: Falls, collisions, explosions, or forced impact.\n- The Effect: Roll 1d10 + Body Modifier and subtract the result from the incoming damage."
     },
     {
       name: "Dodge",

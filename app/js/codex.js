@@ -1393,8 +1393,8 @@ EN.codexView = (function () {
         K.subTitle("Common Sources"),
         K.refTable(["Arena", "Edge", "Snag"], Rz.edgeSnag.sources.map(function (r) { return [r.area, r.edge, r.snag]; }), [0]),
         K.note(Rz.edgeSnag.sourcesNote),
-        // a GM advice box, which moved to the Game Master's Toolkit (2026-10-16 handoff, section 8)
-        ctx.portal === "admin" && Rz.edgeSnag.gmGuidance ? K.ruleBlock("GM Guidance", Rz.edgeSnag.gmGuidance) : null
+        // the Toolkit's GM Best Practices paragraph, Admin only, as plain prose with its own bold run-in (no label, no box; batches 44 to 50)
+        ctx.portal === "admin" && Rz.edgeSnag.gmGuidance ? K.proseBlock(Rz.edgeSnag.gmGuidance) : null
       ];
     } },
     // 7 · Collaborative & Opposed Checks
@@ -1815,8 +1815,8 @@ EN.codexView = (function () {
         mits.filter(function (m) { return m.note; }).forEach(function (m) {
           kids.push(ruleBlock(m.name, m.note, m.kind));
         });
-        // a GM advice box, which moved to the Game Master's Toolkit (2026-10-16 handoff, section 8)
-        if (H.gmGuidance && ctx.portal === "admin") kids.push(ruleBlock("GM Guidance", H.gmGuidance));
+        // the Toolkit's Exposure paragraph, Admin only, as plain prose (no label, no box; batches 44 to 50)
+        if (H.gmGuidance && ctx.portal === "admin") kids.push(proseBlock(H.gmGuidance));
         return kids;
       } }
   ] };

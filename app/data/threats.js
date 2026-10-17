@@ -183,9 +183,11 @@ EN.threats = {
     "Threats use flat bonuses. No proficiency tiers, no Caliber. The stat block's number is the whole number.",
     "A named weapon is the catalog weapon. The die and the traits belong to the gear, the flat bonus and the number of attacks belong to the threat. When the gear itself is better than the catalog, the Gear line says so."
   ],
-  /* GMH p56, GM Guidance. "Constructs ON TASK": a Construct off its task checks
-     like anyone else, so the exemption is not every Construct. */
-  morale: "Optional rule. Most Hostiles are employees. When a side loses its leader, loses half its number, or watches something arrive that is visibly out of its Grade, have the survivors make a Wits Save DC 12. On a failure they break: retreat, surrender, or a sudden fascinating interest in guarding a different hallway. Fanatics, Constructs on task, and anything without a survival instinct don't check. Fights that end in morale collapse pay full XP. Routing people is winning.",
+  /* GMH p56, the run-in "Morale (optional rule)." The Codex card carries that run-in
+     as its title, so the text starts at "Most Hostiles". "Constructs ON TASK": a
+     Construct off its task checks like anyone else, so the exemption is not every
+     Construct. */
+  morale: "Most Hostiles are employees. When a side loses its leader, loses half its number, or watches something arrive that is visibly out of its Grade, have the survivors make a Wits Save DC 12. On a failure they break: retreat, surrender, or a sudden fascinating interest in guarding a different hallway. Fanatics, Constructs on task, and anything without a survival instinct don't check. Fights that end in morale collapse pay full XP. Routing people is winning.",
 
   /* Size is the character-side vocabulary, reused rather than restated, so a
      Large threat and a Large Freelancer mean the same thing (GMH p55 names the

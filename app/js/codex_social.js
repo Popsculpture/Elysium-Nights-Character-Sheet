@@ -20,9 +20,9 @@
    cost tracks (rz-social); this chapter links there and does not repeat them.
    MOVED TO THE GAME MASTER'S TOOLKIT (2026-10-16 handoff, section 8): the Sit-Down
    (so-sitdown, so-plays, so-postures, so-floor, so-conditions), the full Cred and Heat
-   rules (so-credheat) and the chapter's GM Guidance (so-guidance) are audience "gm"
+   rules (so-credheat) and the chapter's GM advice (so-guidance) are audience "gm"
    panels, so they render on the Admin desktop only and never resolve on the Freelancer
-   one. Inline blocks that moved (the Deposition, the Contacts GM Guidance box, the three
+   one. Inline blocks that moved (the Deposition, the Backgrounds paragraph, the three
    depths) render on Admin only, and no Freelancer pointer names a gated panel. The data
    stays whole in EN.social: the GM Sit-Down tracker reads it directly.
    The Handbook's short Cred and Heat section (so-credheat-short, 2026-10-17 rulings, section 4)
@@ -165,8 +165,8 @@ window.EN = window.EN || {};
         K.ruleBlock(c.grant.name, c.grant.text, "BACKGROUND", grant),
         bg && bg.contacts ? K.note("Your Background, " + bg.name + ": " + bg.contacts, lo()) : null,
         K.ruleBlock("Make it Yours", c.makeItYoursLead + "\n\n" + K.bullets([c.makeItYours]), null, lo()),
-        // the Backgrounds chapter's GM Guidance box moved to the Toolkit with the rest of the GM advice
-        admin(ctx) ? K.ruleBlock("GM Guidance", c.gmGuidance, "GM GUIDANCE", lo()) : null,
+        // the Toolkit's Backgrounds paragraph ("a promise to the table"), Admin only, as plain prose (no label, no box; batches 44 to 50)
+        admin(ctx) ? K.proseBlock(c.gmGuidance, lo()) : null,
         F ? K.ruleBlock("Choosing a Fence", F.intro + "\n\n"
           + K.bullets(F.types.map(runIn)) + "\n\n" + F.rule, "CAPTURED GOODS", lo()) : null,
         K.seeAlso("Keeping track of them:", [["so-profiles", "Profiles & Debt"], ["so-standing", "Faction Standing & Pressure States"]]
@@ -335,8 +335,8 @@ window.EN = window.EN || {};
       ];
     } },
 
-    /* ---- 15 · the chapter's own GM Guidance ------------------------------------------------------------ */
-    { id: "so-guidance", title: "Running Social Scenes", tag: "GM GUIDANCE", audience: "gm", order: 140, when: has("gmGuidance"), build: function (ctx, K) {
+    /* ---- 15 · the chapter's own GM advice (the Toolkit's Running a Sit-Down; no tag, no GM label) ------------- */
+    { id: "so-guidance", title: "Running Social Scenes", audience: "gm", order: 140, when: has("gmGuidance"), build: function (ctx, K) {
       return S().gmGuidance.map(function (g) { return K.ruleBlock(g.name.replace(/\.$/, ""), g.text, null, lo()); });
     } }
   ] });

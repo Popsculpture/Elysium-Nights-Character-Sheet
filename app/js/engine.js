@@ -3766,8 +3766,10 @@ EN.engine = (function () {
     var slotted = platformSlotted(ch);
     installed.forEach(function (cw) { if (!slotted[cw.key]) staticTotal += cw.sp; });
     // Resonance Crown: reduces the SP of up to 4 separate OTHER pieces by 1 each
-    // (minimum 1 per piece) for Threshold purposes. It cannot harmonize itself, the
-    // Disruption Lattice, or the Convergence Engine. The rulebook lets the player
+    // (minimum 1 per piece) for Threshold purposes. It cannot harmonize itself or the
+    // Disruption Lattice; the Convergence Engine can't be installed beside it (the
+    // Inventory refuses the pair; a legacy save holding both is still not discounted, hence
+    // convergence stays in CROWN_EXEMPT below). The rulebook lets the player
     // pick which pieces benefit; taking the 4 highest-SP eligible pieces is always
     // at least as good as any other choice, so it is applied automatically.
     /* OPEN ARCHITECTURE: "its Static Point cost is reduced by 1 (minimum 0)", on every

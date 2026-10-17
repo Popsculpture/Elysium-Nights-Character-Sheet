@@ -16,8 +16,7 @@
        ## Category Rules (### Aerial: Altitude, ### Marine: Water,
        ### Starcraft: Vacuum, ### Industrial / Mechs: The Walker Package),
        ## Capacity and Towing, ## Cyberware and #GRID Hacking Hooks
-       (### Codebreaker Intrusions, ### Rigging and Cyberware), and the
-       Gameplay Summary box "Running a Chase".
+       (### Codebreaker Intrusions, ### Rigging and Cyberware).
    And from Part 1, where the book's reorder put the Skills chapter:
      Skills and Proficiencies > Gear Proficiencies > Vehicle Proficiencies:
        `proficiencies`.
@@ -236,10 +235,10 @@ EN.chases = {
         "A pilot whose connection is severed mid-chase (a Dead Zone, LinkDeath) reverts to manual control and takes Snag on their next Chase Check."
       ],
       cap: { name: "The cap", text: "Lead can move at most 1 step per round per side from System Hits, total. The pilots' contest remains the only other thing that moves it. A perfect round, Dominant win plus a System Hit, swings Lead by 3. It takes the whole crew firing in sequence to get there." } },
-    // ### Pursuit Escalation
+    // ### Pursuit Escalation (the Toolkit cut its Gameplay Summary box; that box's last line now ends firstResponse)
     escalation: {
       heat: "The city is never just the two of you. A loud, public chase adds **+1 Heat** with the authority or faction whose territory it tears through, and +1 more if it ends in a crash, casualties, or property nobody can ignore. Escaping at Lead 5 never reduces the Heat the chase earned. The cameras were rolling either way.",
-      firstResponse: "Heat also answers who shows up. When a chase goes loud, the first response arrives after a number of rounds equal to **5 minus half the crew's Heat with that source** (rounded down, minimum 1). While the chase stays loud, escalate one row every 3 rounds.",
+      firstResponse: "Heat also answers who shows up. When a chase goes loud, the first response arrives after a number of rounds equal to **5 minus half the crew's Heat with that source** (rounded down, minimum 1). While the chase stays loud, escalate one row every 3 rounds. Keep the camera low and the bill high.",
       rows: [
         { heat: "0 to 2",  heatMin: 0, heatMax: 2,  shows: "A traffic drone logs plates. Evidence, not pursuit. Tomorrow's problem." },
         { heat: "3 to 4",  heatMin: 3, heatMax: 4,  shows: "A patrol drone joins the chase as a new pursuer (Standard speed, Handling +0)." },
@@ -312,11 +311,7 @@ EN.chases = {
       { name: "Machine Symbiosis", text: "The vehicle becomes their body. They gain Edge on all piloting checks, but any severe physical damage the vehicle sustains forces the Freelancer to make a Stability Check (DC 10, or half the damage the vehicle took that turn, whichever is higher) or suffer the psychic backlash as LinkDeath." }
     ],
     severed: "A rigged pilot whose connection is severed mid-chase, by a Dead Zone, by LinkDeath, by someone cutting the cable, reverts to manual inputs and takes Snag on their next Chase Check. The machine stops being your body. Your body remembers it has hands."
-  },
-
-  /* ---- the Gameplay Summary box that closes the chapter ----------------- */
-  summary: { name: "Running a Chase", label: "Gameplay Summary",
-    text: "Set Lead at 2 unless the fiction says otherwise. Each round: crew members act first in the fiction (tilt via Edge and Snag, hunt System Hits), then the pilots roll the contested Chase Check and move Lead. Check the pursuit escalation timer against Heat. Lead 5 flees clean; Lead 0 invites a ram, a board, or a force-stop. Crashes run the Control Check against the Impact DC. Keep the camera low and the bill high." }
+  }
 };
 
 /* Load-time check: every untrainedBarred name is a vehicle category exactly as

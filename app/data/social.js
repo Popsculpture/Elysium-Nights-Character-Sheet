@@ -14,7 +14,7 @@
      (Rounds and Plays) · Postures · Environmental Pressure (Sit-Down
      Conditions) · Cred and Heat (Optional) · What Cred Is · What Heat Is · How
      They Shift · Mechanical Effects · Using Cred and Heat Together · Examples in
-     Play (with the Sit-Down Example: The Deposition) · GM Guidance · Gameplay
+     Play (with the Sit-Down Example: The Deposition) · the GM advice · Gameplay
      Summary: Social Pressure and Faction Standing.
 
    Every `text` is the book's wording, with the export's backslash escapes
@@ -26,7 +26,7 @@
 
    MOVED TO THE GAME MASTER'S TOOLKIT (2026-10-16 handoff, section 8): the Sit-Down
    (`sitDown`, the Deposition), the full Cred and Heat rules (`credHeat`) and the
-   chapter's GM Guidance (`gmGuidance`). They stay here, whole: the GM Sit-Down tracker
+   chapter's GM advice (`gmGuidance`, the Toolkit's Running a Sit-Down). They stay here, whole: the GM Sit-Down tracker
    (data/gm_scenes.js, js/gm_scenes.js) and the Admin Codex read them directly. The
    Freelancer desktop no longer renders them (js/codex_social.js gates the panels to
    audience "gm", js/face.js dropped its Sit-Down quick reference and the ladder hover
@@ -169,7 +169,7 @@ EN.social = {
   /* ---- Contacts (NOT this chapter: Part 1, the Backgrounds chapter) -------------------------
      SOURCE: Part 1 - Welcome & Building a Character (modifiedTime 2026-10-08T03:05:04.679Z),
      the Backgrounds chapter's opening list ("A Background gives you three things"), its "Make
-     it Yours" section and the GM Guidance box after it. Carried here because the Social tab's
+     it Yours" section and the GM advice paragraph after it. Carried here because the Social tab's
      Contacts sub-tab (js/face.js) records the people this grant names, and the Codex panel
      so-contacts renders it beside the Fence rule (EN.economy.fences, Part 3). Each Background's
      own "Choose two ... contacts" line stays in data/backgrounds.js (`contacts`). */
@@ -415,7 +415,7 @@ EN.social = {
      bold and italic marks left off as the Handbook prints it.
      2026-10-17 rulings, section 4: one sentence follows "and the GM keeps the ledger." (stored on its
      own as `credRises` and spliced into the first paragraph at its place, so a test can read it).
-     The Handbook gets it with batch 45. */
+     The Handbook prints it (batch 45, PHB 4909). */
   credHeatShort: {
     name: "Cred and Heat",
     lead: "Reputation in Elysium is local. Cred is your standing within a specific scene or community. Heat is hostile attention from a specific source: a corporation, a precinct, a gang, a shrine. Each is tracked per source on a 0 to 10 scale, and the GM keeps the ledger.",
@@ -444,14 +444,14 @@ EN.social = {
     ]
   },
 
-  /* ---- GM Guidance (the chapter's own, printed in Part 2) --------------------------------------------- */
+  /* ---- GM advice (the chapter's own; the Toolkit's Running a Sit-Down, plain run-in paragraphs, no GM label) -- */
   gmGuidance: [
     { key: "friction", name: "Default to Friction.", text: "Most social rolls are one-and-done. A pool, a margin, a consequence. Don't call a Sit-Down for a haggle with a street vendor." },
     { key: "earnIt", name: "Call a Sit-Down when the scene earns it.", text: "A big interrogation, a faction confrontation, a contract negotiation that will define the next arc. These deserve the structure. They feel like fights because they are." },
     { key: "everyone", name: "Let every Character contribute.", text: "The Hold play exists so muscle and chrome can show up without dragging the scene down. The Disrupt play lets the technical-minded Characters do something even when the talking is happening elsewhere. The Support play lets the silent ones lend weight. Nobody at the table should sit out a Sit-Down." },
     { key: "matchFallout", name: "Match fallout to fiction.", text: "A social scene that produces physical Fatigue is usually the wrong call. Use Debt, Scrutiny, Profiles, Faction Shifts, Cred and Heat changes. The fallout should fit the room." },
     { key: "slow", name: "Cred and Heat are slow-moving currencies.", text: "Don't change them every session. Update them at the end of a job, after an arc, or when something notable happens that the table will remember." },
-    { key: "anyCrew", name: "The system supports any kind of crew.", text: "A Charm-and-Mystique-heavy crew will dominate social setpieces by direct push. A muscle-and-chrome crew will dominate by Holding well, trading on their reputation, and choosing the right Disrupts. The system rewards thinking about what your crew actually is." },
+    { key: "anyCrew", name: "Any crew can win one.", text: "A Charm-and-Mystique-heavy crew wins by direct push. A muscle-and-chrome crew wins by Holding well, trading on its reputation, and choosing the right Disrupts. Know what your crew actually is, and play the room it can win." },
     { key: "backgrounds", name: "Background ties matter here.", text: "Every Background grants Contacts and a Background Feature. A Boardroom Exile already belongs in the corporate conference room. A Badge already knows which form will buy the crew an hour. A Glow Idol already has the bartender's loyalty. Reward these. The crew that brings the right Background to the setpiece should already have changed the Floor before the first roll." }
   ],
 

@@ -13,7 +13,7 @@
    2026-10-17 rulings, section 2: the Natural 20 row (d20.crits) says an attack is a
    critical hit, counting as at least a Strong Hit and triggering any weapon or
    Invocation crit effect; the skill check sentences stay. Crits add no extra dice
-   (ruled 2026-10-16). The Player's Handbook gets the line with batch 45.
+   (ruled 2026-10-16). The Player's Handbook prints the line (batch 45, PHB 4199).
    No em or en dashes anywhere in this file (house style).
    =========================================================================== */
 window.EN = window.EN || {};
@@ -231,7 +231,7 @@ EN.resolution = {
       { area: "Flow (method varies by pace)", edge: "Harmonized environment, focused current, or resonance alignment", snag: "Chaotic zone, corrupted resonance, or unaligned channeling" }
     ],
     sourcesNote: "The triggers above work in either method. In combat they grant Edge or Snag on your d20 roll. Out of combat they grant +1 Edge Die or +1 Snag Die to your pool.",
-    gmGuidance: "Use Edge and Snag sparingly to emphasize key moments. Cancel them cleanly. Always lead with the fiction. Avoid double-counting: if a challenge's difficulty is already reflected in the DC or Snag Dice, don't apply a second penalty for the same reason."
+    gmGuidance: "**GM Best Practices:** Use Edge and Snag sparingly to emphasize key moments. Cancel them cleanly. Always lead with the fiction. If the story supports an advantage or complication, reflect it in the dice. Avoid double-counting. If a challenge's difficulty is already reflected in the DC or Snag Dice, don't apply a second penalty for the same reason."
   },
 
   /* ---- collaborative and opposed checks --------------------------------- */

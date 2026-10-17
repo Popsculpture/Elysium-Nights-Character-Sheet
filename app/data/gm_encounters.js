@@ -119,7 +119,7 @@ EN.gmBook.encounters = {
     // GMH p53
     workingBand: "Build encounters from threats within one Grade of the crew's Caliber.",
     guidance: {
-      label: "GM Guidance", name: "Action economy is the real currency",
+      name: "Action economy is the real currency",
       text: "The crew's power is four sets of Actions, Swifts, and Impulses working one plan, and the one-defensive-Impulse limit means a focused crew strips a lone enemy's defenses fast. That is why Elites cost double and Solos cheat. When a fight feels wrong on paper, count actions per round on each side before you count damage."
     }
   },

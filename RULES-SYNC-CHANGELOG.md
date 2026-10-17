@@ -1451,6 +1451,8 @@ The Resonant Shield Elixir is anti-Resonant protection, matching its name. **Thi
 - The app renders it as 2 Edge Dice, so its printed text and its math disagree.
   **Needs a ruling** on the Edge Die conversion.
 
+**Superseded 17 October 2026:** the GM Toolkit now prints Edge on Medtech checks; the app shows Edge, and the Dice Pool form stays 1 Edge Die. (The Toolkit's Kits and Tools summary row still prints "+2 on Medtech"; flagged to the author.)
+
 ### M21. The Axe's Load is stated two ways (RULED)
 **CLOSED 2026-08-19: there was never a rule to change.** The verification pass found the premise
 false. The Heavy trait does not contribute Load and never did, so the sweep this ruling
@@ -1546,6 +1548,8 @@ The Powered Assist Grip's 'cannot share a build with a Breakdown Frame' clause i
   Utility / Fits Any Melee, so no weapon can hold both.
 - **Editorial:** either the exclusion is vestigial, or a ranged Breakdown Frame is
   missing from the catalog.
+
+**17 October 2026:** Fits is now Longarm or Heavy Weapon; still no overlap with the Breakdown Frame (Utility / Any Melee).
 
 ### M27. "Heavy/Two-Handed" is a Fits frame no Part uses (RULED)
 **RESOLVED 2026-08-19: done, and the frame was renamed.** The Fits gate is now **Two-Handed

@@ -173,6 +173,8 @@ which states the same thing correctly:
 **App status: BUILT**, dropped from 2 Edge Dice to 1. Corroborated by the catalog, where
 this was the only tool above 1.
 
+**Superseded 17 October 2026:** the GM Toolkit now prints Edge on Medtech checks; the app shows Edge, and the Dice Pool form stays 1 Edge Die. (The Toolkit's Kits and Tools summary row still prints "+2 on Medtech"; flagged to the author.)
+
 ### M24. Cyberarm and Cyberlegs stop hard-coding a slot count
 
 Both base Effect lines say `up to 3 compatible mods`, while the tier table in the same
@@ -190,6 +192,8 @@ added. Delete the sentence.
 
 **App status:** no change needed, though the clause should come out of the Part's data text
 if it is carried there.
+
+**17 October 2026:** Fits is now Longarm or Heavy Weapon; still no overlap with the Breakdown Frame (Utility / Any Melee).
 
 ---
 

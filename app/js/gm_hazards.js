@@ -898,7 +898,7 @@ EN.gmHazards = (function () {
     if (H.setPieces && H.setPieces.intro) spKids.push(help(H.setPieces.intro, { margin: "0 0 10px" }));
     sp.forEach(function (h) { spKids.push(hazardCard(h)); });
     var g = H.setPieces && H.setPieces.guidance;
-    if (g) spKids.push(help(g.label + ": " + g.text, { color: "var(--accent)" }));
+    if (g) spKids.push(help(g.text));
     out.push(EN.ui.panel("Set Pieces", sp.length + " · WRITTEN AT G" + ((H.setPieces && H.setPieces.grade) || 3), spKids));
 
     var mine = customs();

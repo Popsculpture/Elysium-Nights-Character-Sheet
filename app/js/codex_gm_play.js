@@ -367,7 +367,7 @@ window.EN = window.EN || {};
           K.refTable(["Grade of the kill", "Clean parts value", "The buyers"], (Sv.bands || []).map(function (b) { return ["G" + b.grade, b.text, b.buyers]; }), [0])
         ]));
         (Sv.sources || []).forEach(function (s) { kids.push(K.ruleBlock(s.name, s.text)); });
-        if (Sv.guidance) kids.push(K.ruleBlock(Sv.guidance.label, Sv.guidance.text));
+        if (Sv.guidance) kids.push(K.proseBlock(Sv.guidance.text));
         kids.push(linkLine(K, "What an Incursion's haul owes its owner:", [["gms-incursion/salvage", "Salvage"]]));
       }
       var X = B.xp;

@@ -167,8 +167,7 @@ window.EN = window.EN || {};
         block(K, "Pursuit Escalation", [prose(K, paras([E.heat, E.firstResponse])),
           K.refTable(["Heat with the source", "What shows up"], E.rows.map(function (r) { return [r.heat, r.shows]; }), [0], LO)]),
         rb(K, "Chases Beyond Vehicles", paras([H.beyondIntro, H.beyond.map(function (b) {
-          return "• " + b.name + ": " + b.text.charAt(0).toUpperCase() + b.text.slice(1); }).join("\n")])),
-        c.summary ? rb(K, c.summary.name, c.summary.text, c.summary.label.toUpperCase()) : null
+          return "• " + b.name + ": " + b.text.charAt(0).toUpperCase() + b.text.slice(1); }).join("\n")]))
       ];
       // the GM's chase tracker and its prep card, on the Admin desktop only
       if (ctx.portal === "admin") kids.push(K.seeAlso("Running one at the table:", [["gms-chase", "Chase Rules"]]));

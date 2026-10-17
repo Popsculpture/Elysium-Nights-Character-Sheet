@@ -1,8 +1,8 @@
 /* ===========================================================================
    ELYSIUM NIGHTS · The Job Board  (GM Toolkit)
    A transcription of the Game Master's Handbook, The Job Board (PDF pages 103
-   to 108): five roll tables, the Twelve Postings, and the GM Guidance that
-   closes the chapter. RULES ONLY: nothing here is computed, and no row is
+   to 108): five roll tables, the Twelve Postings, and the closing note that
+   ends the chapter. RULES ONLY: nothing here is computed, and no row is
    paraphrased. Payday is not rolled here; it lives in EN.gmBook.payroll.
 
    Every `text` is the book's wording with PDF line breaks rejoined. Each row's
@@ -180,7 +180,6 @@ EN.gmBook.jobs = {
   /* Printed at the foot of the Twelve Postings box, after posting 12. */
   // GMH p108
   guidance: {
-    label: "GM Guidance",
     text: "A generated job is a skeleton. It stands up when you attach it to the crew: their debts, their Cred, their district, the fixer whose cut they resent. One connection per job is enough. Two and the players will swear you planned it for weeks."
   }
 };

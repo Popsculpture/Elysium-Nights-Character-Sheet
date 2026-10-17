@@ -11,7 +11,7 @@
          > Movement & Distance > Speed (the reductions paragraph)      l.1658
          > Movement & Distance > Jumping                               l.1717-1739
          > Movement & Distance > Falling & Forced Movement             l.1741-1743
-         > Move Actions (1 per Turn), GM Guidance: Cinematic Momentum  l.1810-1812
+         > Move Actions (1 per Turn), Cinematic Momentum               l.1810-1812
          > Attacks and Maneuvers > Shove, Trip, Grapple                l.1943-1977
          > Movement                                                    l.2042-2049
        The Flow > Kinetic Resonance, the "Forced Movement" box           l.4054-4056
@@ -57,10 +57,10 @@ EN.movement = {
   /* ---- Part 2 > Movement & Distance > Speed, second paragraph (l.1658) ------ */
   speedReductions: "When multiple Speed reductions apply, subtract all flat reductions first, then apply any halving or percentage reductions, rounding down. Speed can't fall below 0 (or its stated minimum).",
 
-  /* ---- Part 2 > Move Actions (1 per Turn), the GM Guidance box (l.1810) ------ */
+  /* ---- Part 2 > Move Actions (1 per Turn), Cinematic Momentum (l.1810; the Toolkit's own heading, plain paragraphs, no GM label) ------ */
   cinematicMomentum: {
-    name: "GM Guidance: Cinematic Momentum",
-    text: "As GM, you can grant a small burst of movement for certain triggers such as critical hits, heroic effort, or story-based bursts that restore **1-2 points of Speed** mid-turn when a Freelancer is close to reaching a goal or enemy. Use it to reward intent and maintain pacing. This can be a rush of adrenaline, tactical movement, or a moment of Flow clarity. Avoid granting it to enemies except in story-driven moments."
+    name: "Cinematic Momentum",
+    text: "As GM, you can grant a small burst of movement for certain triggers such as critical hits, heroic effort, or story-based bursts that restore **1 to 2 points of Speed** mid-turn when a Freelancer is close to reaching a goal or enemy. Use it to reward intent and maintain pacing. This can be a rush of adrenaline, tactical movement, or a moment of Flow clarity. Avoid granting it to enemies except in story-driven moments."
   },
 
   /* ---- Part 3 > Lifting, Carrying, and Short Hauls > Dragging, Pushing, and Pulling (l.6540) */

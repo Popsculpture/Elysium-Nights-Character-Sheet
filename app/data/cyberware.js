@@ -57,7 +57,7 @@ EN.cyberware = {
       prereqFor: "Smartlink, Cyberoptic footage retrieval, and direct vehicle rigging. Wherever another implant or vehicle interface \"requires a neural port,\" this is that port.",
       effect: "A neural port for #GRID hardware, Smartdecks, drones, and compatible cyberware, and you no longer require external interface gear to run programs. Operates as Surface Link (conscious, silent comms within 20 spaces) or Full Immersion (body helpless, Prone, attacks vs you at Edge).",
       street: "No encryption, intercept/trace your traffic at Edge against you; visible scarring, Snag on passing as un-chromed.",
-      black: "Encrypted & dark (intercept at Snag against you), no registered identity/log, and installed Quick Hacks deal +1d4 on System Failure / Network Spread.",
+      black: "Encrypted & dark (intercept at Snag against you), no registered identity/log, and your Quick Hacks deal +1d4 on System Failure / Network Spread.",
       tiers: [
         { tier: "Streetware", sp: 1, price: 600,   legality: "Legal" },
         { tier: "Brandware",  sp: 1, price: 3500,  legality: "Legal" },
@@ -95,7 +95,7 @@ EN.cyberware = {
       ] },
     { key: "resonanceCrown", short: "Resonance Crown", name: "Resonance Crown", zone: "Neural", enhancement: "+1 Mystique", mystech: true,
       desc: "A circlet of hand-tuned Mystech filaments in the skull's outer surface, visible as silver tracery along the brow. One of the few implants the Flow does not reject; it harmonizes chrome to the wearer's natural frequency.",
-      effect: "Reduces the SP cost of up to 4 SP of your other cyberware by 1 each (min 1) for Threshold purposes. +1 FP at the end of a Short Rest. Choose the pieces when the Crown is installed; changing the selection takes 1 hour of Downtime meditation with a qualified artificer. One Crown only; cannot harmonize itself, the Disruption Lattice, or the Convergence Engine.",
+      effect: "Reduces the SP cost of up to 4 SP of your other cyberware by 1 each (min 1) for Threshold purposes. +1 FP at the end of a Short Rest. Choose the pieces when the Crown is installed; changing the selection takes 1 hour of Downtime meditation with a qualified artificer. One Crown only; cannot harmonize itself or the Disruption Lattice.",
       tiers: [
         { tier: "Prototype", sp: 1, price: 28000, legality: "Restricted" }
       ] },
@@ -139,13 +139,13 @@ EN.cyberware = {
       ] },
     { key: "convergence", short: "Convergence Engine", name: "Convergence Engine", zone: "Core", enhancement: "None", mystech: true,
       desc: "An implant that is, by all measurable standards, both circuit and Flow construct at once. Should not exist; three are documented in Elysium. A campaign-level reward, not a purchase.",
-      effect: "Unattuned: +1 Vitality max and Resistance to Resonant. Attuned: use any one implant as a Ritual Implement, route Invocations through your chrome, and once/Long Rest bypass a Static Threshold (Total Static −2 SP for one combat, then gain 1 Stage of Strain). Does not stack with the Resonance Crown.",
+      effect: "Unattuned: +1 Vitality max and Resistance to Resonant. Attuned: use any one implant as a Ritual Implement, route Invocations through your chrome, and once/Long Rest bypass a Static Threshold (Total Static −2 SP for one combat, then gain 1 Stage of Strain). Does not stack with the Resonance Crown; a character can't have both installed.",
       /* The one split clause in the catalog. `unattuned` is read by cyberFlatBonuses and
          damageResistances in engine.js and applies only when the wearer has no Flow Attribute;
          the Attuned half above stays prose, being capabilities and a per-rest resource rather
-         than numbers. "Does not stack with the Resonance Crown" constrains that Attuned half
-         only: the Crown grants an SP reduction and +1 FP at a Short Rest, neither of which the
-         Unattuned branch touches, and an Unattuned wearer has no FP for the Crown to add to. */
+         than numbers. The Engine's Restrictions say a character can't have both the Engine and
+         the Resonance Crown installed, so the Inventory refuses the pair at install
+         (inventory.js installFromStash) whichever half of the Engine is in play. */
       tiers: [
         { tier: "Prototype", sp: 3, price: 45000, legality: "Restricted",
           bonus: { unattuned: { vit: 1, resist: ["Resonant"] } } }

@@ -315,7 +315,6 @@ EN.gmBook.hazards = {
     ],
 
     guidance: {
-      label: "GM Guidance",
       text: "One hazard per fight is seasoning; two is a set piece; three is the fight. Past that, the Hostiles become an afterthought, which is occasionally the point: the night the crew fought the building is a story they will tell longer than most body counts.",
       perFight: [
         { count: 1, reads: "seasoning" },

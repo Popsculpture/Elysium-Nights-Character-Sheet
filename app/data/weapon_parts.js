@@ -194,13 +194,12 @@ EN.weaponParts = {
       grants: "Stabilized", effect: "Apply the Stabilized trait. You count as Stabilized when resolving the High Recoil trait, negating its Snag." },
     { key: "quick-draw-grip", name: "Quick-Draw Grip", category: "ranged", slot: "handling", partType: "Mod", fits: "Sidearm", price: 150, rarity: "Common", legality: "Licensed",
       grants: "Quick Draw", effect: "Apply the Quick Draw trait." },
-    // the Breakdown Frame exclusion below mirrors the book; in the app it can
-    // never fire, since this Part fits Longarm only and that one fits Any Melee
-    { key: "powered-assist-grip", name: "Powered Assist Grip", category: "ranged", slot: "handling", partType: "Mod", fits: "Longarm", price: 600, rarity: "Rare", legality: "Restricted",
+    { key: "powered-assist-grip", name: "Powered Assist Grip", category: "ranged", slot: "handling", partType: "Mod", fits: "Longarm or Heavy Weapon", price: 600, rarity: "Rare", legality: "Restricted",
       grants: "Wield a Heavy or Two-Handed weapon one-handed", effect: "You can wield a Heavy or Two-Handed weapon effectively with one hand. This modification requires a power cell and adds bulk." },
     /* 2026-08-19: the Breakdown Frame exclusion is gone, prose and the excludes array both. It
-       could never fire: this Grip is Handling / Fits Longarm and the only Breakdown Frame is
-       Utility / Fits Any Melee, so no weapon could ever hold the pair. Vestigial, not protective. */
+       could never fire: this Grip is Handling / Fits Longarm or Heavy Weapon (GM Toolkit, 17
+       October 2026; was Longarm) and the only Breakdown Frame is Utility / Fits Any Melee, so no
+       weapon could ever hold the pair. Vestigial, not protective. */
     { key: "marksman-stock", name: "Marksman Stock", category: "ranged", slot: "handling", partType: "Mod", fits: "Longarm", price: 250, rarity: "Uncommon", legality: "Licensed",
       grants: "Edge on long-range attacks while stationary", effect: "If you haven't moved this turn, ranged attacks made with this weapon at long range gain Edge." },
 

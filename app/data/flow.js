@@ -269,20 +269,22 @@ EN.flow.resonances.forEach(function (r) { EN.flow.resonanceByKey[r.key] = r; });
        intro, ### Core Concepts, ### Anomaly Classifications
      ## Detecting and Analyzing (4633 to 4641)
      ### Cleansing and Repair, ### Counter Flow, ### Ritual Chorus, and the
-       GM Guidance and Gameplay Summary boxes (4643 to 4697)
+       GM advice paragraphs (now the Toolkit's Anomalies at the Table) and the
+       Gameplay Summary box (4643 to 4697)
      ## Inside a Null Scar: The Focal Anchor, with ### Identifying the Anchor,
        ### Destroying the Anchor, ### When the Anchor Falls (4699 to 4733)
      ## Repairing a Null Scar, with ### Establishing Anchors, ### The
-       Reconstruction Ritual, ### Outcome and Aftermath and its GM Guidance
-       box (4735 to 4801)
+       Reconstruction Ritual, ### Outcome and Aftermath and its GM advice
+       paragraphs (now the Toolkit's Running the Repair) (4735 to 4801)
    Three sentences live elsewhere in Part 2 and are carried here because they are
    anomaly rules no other panel shows:
      nullScarGuidance  ## Overdraw, Strain, and Breakflow > ### Breakflow Check,
-                       the GM Guidance box, its "Anomalies" item (line 4444); the Game
-                       Master's Toolkit's Breakflow Check GM Guidance now reads
-                       "the Focal Anchor mechanic" (round 2, 16 October 2026)
+                       the GM advice, its "Anomalies" item (line 4444); the Game
+                       Master's Toolkit prints it as the Anomalies run-in of Breakflow
+                       and Strain, which reads "the Focal Anchor mechanic" (round 2,
+                       16 October 2026)
      ritualImpact      ## Breakflow Restoration > ### Rough Restoration, the GM
-                       Guidance box, its "Environmental Impact" and "Failure
+                       advice list, its "Environmental Impact" and "Failure
                        Margin" items (line 4520)
      clankers          ## Clankers and The Flow > #### Targeting Clankers With
                        Flow, its last bullet (line 3894)
@@ -314,8 +316,10 @@ EN.flow.disturbances = {
   /* Part 2, Clankers and The Flow > Targeting Clankers With Flow (line 3894) */
   clankers: "Flow Disturbances like **Static Zones**, **Resonant Storms**, and **Null Scars** interfere with Clanker channeling normally.",
 
-  /* Part 2, Breakflow Restoration's GM Guidance box (line 4520): the two items about a
-     disturbance. Its third item, Narrative Tension, is about the ritual's length and stays out. */
+  /* Part 2, Breakflow Restoration's GM advice list (line 4520): the two items about a
+     disturbance. Its third item, Narrative Tension, is about the ritual's length and stays out.
+     The Player's Handbook now prints the same rule as the player run-in Disturbed Ground
+     (Rough Restoration); the app still shows it on the Admin desktop only (flagged to the author). */
   ritualImpact: [
     { label: "Environmental Impact", text: "If a ritual is performed in an area with a **Flow Disturbance**, the **Snag Dice** of the ritual increase by the Anomaly's **Severity Rating**." },
     { label: "Failure Margin", text: "If a Shaper fails a ritual check with a **Margin of -3 or worse** (Critical Failure), they don't just fail to recover; the ritual site becomes a temporary **Echo Field (Severity 1)** due to the released harmonic static." }
@@ -368,10 +372,11 @@ EN.flow.disturbances = {
   /* ### Ritual Chorus */
   ritualChorus: "Multiple Shapers can join a Harmonic Realignment Project to speed up the process. The Lead Shaper rolls the primary Dice Pool, and each assisting Shaper grants +2 Edge Dice to the pool. This is a fixed benefit of the ritual itself, separate from the Help Action and not bound by its cap. Remember that if the pool results in a Critical Failure, *all* participants suffer the resulting Strain.",
 
-  /* the GM Guidance box after Ritual Chorus */
+  /* the GM advice after Ritual Chorus (the Toolkit's Anomalies at the Table): each label is a bold run-in
+     the book prints, shown as its own card with no GM label */
   gmGuidance: [
     { label: "Environmental Storytelling", text: "An Anomaly should change the tone of a scene. A Static Zone might be eerily silent with Shapers feeling like they're shouting through wet cloth, while a Resonant Storm could cause glass to shatter or metal to hum." },
-    { label: "Escalation", text: "The threat of a Critical Failure (-3 Margin) on a Dice Pool makes Severity 4 and 5 Anomalies terrifying. Freelancers should heavily rely on *Ritual Chorus* or Flow-infused tools (like a Rite Calibration Kit) to generate enough Edge Dice to safely attempt high-level cleansing." }
+    { label: "Escalation", text: "The threat of a Critical Failure (-3 Margin) on a Dice Pool makes Severity 4 and 5 Anomalies terrifying. Freelancers will need Ritual Chorus or Flow-infused tools (like a Rite Calibration Kit) to build enough Edge Dice to attempt high-level cleansing safely." }
   ],
 
   /* the Gameplay Summary box */
@@ -411,7 +416,7 @@ EN.flow.disturbances = {
     closing: "Inside a Scar, a Shaper stops being artillery and starts being a spotter, a tactician, the one who knows where to hit. Their shaping is still gone. And the Anchor is an objective the crew's Unattuned can take down themselves."
   },
 
-  /* Part 2, the Breakflow Check's GM Guidance box, its "Anomalies" item (line 4444) */
+  /* Part 2, the Breakflow Check's GM advice, its "Anomalies" item (line 4444); the Toolkit's Breakflow and Strain prints it as a plain paragraph */
   nullScarGuidance: "Treat **Null Scars** as environmental hazards. They are tactical \"dead zones\" where Shapers are stripped of their primary utility, forcing them to rely on physical backup weapons and the Focal Anchor mechanic to support the team.",
 
   /* ## Repairing a Null Scar */

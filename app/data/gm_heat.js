@@ -195,7 +195,7 @@ EN.gmBook.heat = {
      shrine's "something the shrine would rather not name", and the Guild's
      rival crew. The Corpsec Sergeant is the variant printed on the Corpsec
      Officer card; the recovery team matches that Specialist card's GM
-     Guidance (two Specialists and two Corpsec Officers, 800 XP); "the X-Calibur
+     note (two Specialists and two Corpsec Officers, 800 XP); "the X-Calibur
      Knight in the Bestiary is what arrives" when X-Calibur comes (p33).
      `cooling` quotes Cooling Off's caution for the two sources that rarely
      respond to money (p118). */

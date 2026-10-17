@@ -1066,7 +1066,6 @@ EN.gmPayroll = (function () {
     ]));
     kids.push(codexLine("salvage", "What threats leave:", [["gmy-pay/salvage-and-parts", "Salvage and Parts"]]
       .concat((S.sources || []).map(function (x) { return ["gmy-pay/" + cxSlug(x.name), x.name]; }))
-      .concat(S.guidance ? [["gmy-pay/" + cxSlug(S.guidance.label), S.guidance.label]] : [])
       .concat(A && A.paragraphs ? [["gms-incursion/" + cxSlug(A.name || "Salvage"), (A.name || "Salvage") + " from an Incursion"]] : [])));
     return EN.ui.panel("Salvage and Parts", "BY THE GRADE OF THE KILL", kids);
   }

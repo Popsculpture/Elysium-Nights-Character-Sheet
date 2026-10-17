@@ -150,7 +150,7 @@ window.EN = window.EN || {};
           kids.push(K.ruleBlock(r.name, r.text));
           if (r.key === "band" && C.workingBand) kids.push(K.note(C.workingBand));
         });
-        if (C.guidance) kids.push(K.ruleBlock(C.guidance.name, C.guidance.text, (C.guidance.label || "").toUpperCase()));
+        if (C.guidance) kids.push(K.ruleBlock(C.guidance.name, C.guidance.text));
         return kids;
       } },
 
@@ -307,7 +307,7 @@ window.EN = window.EN || {};
       when: function () { var H = hz(); return !!(H && H.setPieces && H.setPieces.guidance); },
       build: function (ctx, K) {
         var G = hz().setPieces.guidance;
-        var kids = [K.ruleBlock(G.label || "GM Guidance", G.text)];
+        var kids = [K.proseBlock(G.text)];
         if (G.perFight && G.perFight.length) {
           kids.push(K.refTable(["Hazards in the fight", "Reads as"], G.perFight.map(function (x) { return [String(x.count), x.reads]; }), [0]));
         }

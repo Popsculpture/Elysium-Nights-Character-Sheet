@@ -162,7 +162,6 @@ EN.gmBook.payroll = {
         buyers: "Institutions, cults, and auctions with no address" }
     ],
     guidance: {
-      label: "GM Guidance",
       text: "Salvage is the loot system, so let it be one: a cryptid hunt that pays 𝒢2,000 in contract and 𝒢1,800 in parts is working as intended, and the second number is the one that creates scenes, because parts need fences, fences need trust, and trust is the most expensive thing on the invoice."
     }
   },

@@ -5,7 +5,7 @@
    of the weapon it feeds. Mystech ammunition is not vendor stock.
    2026-10-17 rulings, section 3: Toxin Rounds' Synergy reads "On a Critical hit, the
    target also gains 1 level of Fatigue." (crits add no extra dice); the variants
-   sentence stays. The Player's Handbook gets the line with batch 45.
+   sentence stays. The Player's Handbook prints it (batch 45, PHB 9322).
    =========================================================================== */
 window.EN = window.EN || {};
 EN.gearCatalog = EN.gearCatalog || {};
@@ -204,7 +204,7 @@ EN.gearCatalog.ammo = {
     { name: "Machinegun Belt", group: "Counted", price: 60, unit: "per 100", availability: "Uncommon", legality: "As weapon",
       feeds: "Light, medium, and heavy machineguns. A linked belt of 100 rounds; track per box." },
     { name: "Cannon Rounds", group: "Counted", price: 200, unit: "per 20", availability: "Uncommon", legality: "As weapon",
-      feeds: "The Assault Cannon and High-Precision Cannon. A lot of 20 heavy ballistic rounds; track per round." },
+      feeds: "The Assault Cannon, High-Precision Cannon, and Rotary Cannon. A lot of 20 heavy ballistic rounds; track per round." },
     { name: "Grenade Shells", group: "Counted", price: 120, unit: "per 6", availability: "Uncommon", legality: "As weapon",
       feeds: "The Grenade Launcher. A 6-shot bandolier of standard frag shells; track per shell. Specialty shells cost more." },
     { name: "Rocket", group: "Counted", price: 200, unit: "each", availability: "Uncommon", legality: "As weapon",

@@ -48,7 +48,7 @@ window.EN = window.EN || {};
         m.speedReductions ? K.ruleBlock("Speed Reductions", m.speedReductions) : null,
         d ? K.ruleBlock(d.name, d.intro + "\n\n" + d.guidelinesLead + "\n" + K.bullets(d.guidelines)
           + "\n\n" + d.whileLead + "\n" + K.bullets(d.whileMoving), null, { conditions: true }) : null,
-        // a GM Guidance box, which moved to the Game Master's Toolkit with the rest of the GM advice
+        // Cinematic Momentum, the Toolkit's own heading, Admin only (no GM label; batches 44 to 50)
         cm && admin(ctx) ? K.ruleBlock(cm.name, cm.text) : null,
         K.seeAlso("Squeezing and occupied spaces:", [["ref-size/tight-geometry", "Tight Geometry"], ["ref-size/moving-through-an-occupied-space", "Moving Through an Occupied Space"]]),
         K.seeAlso("Speed itself:", [["bx-space", "Space, Speed & Area"], ["ref-actions/move", "Move"]]),
@@ -138,7 +138,7 @@ window.EN = window.EN || {};
     "Difficult Terrain": "mv-move/difficult-terrain",
     "Through a Body": "mv-move/through-a-body",
     "Speed reductions": "mv-move/speed-reductions",
-    "Cinematic Momentum": "mv-move/gm-guidance-cinematic-momentum",
+    "Cinematic Momentum": "mv-move/cinematic-momentum",
     "Dragging, Pushing, and Pulling": "mv-move/dragging-pushing-and-pulling",
     "jump distance": "mv-jump/jump-distance",
     "long jump": "mv-jump/jump-distance",
