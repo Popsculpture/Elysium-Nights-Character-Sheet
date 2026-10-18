@@ -151,6 +151,8 @@ window.EN = window.EN || {};
         K.ruleBlock("In Breakflow", b.onFailure, null, { conditions: true }),
         // the two routes are named lines, so each is an anchor of its own (full-restoration, rough-restoration)
         r ? K.ruleBlock("Breakflow Restoration", "- " + r.full + "\n- " + r.rough) : null,
+        // the Handbook's Disturbed Ground run-in follows Rough Restoration, so point at it from here (both desktops)
+        K.seeAlso("In a Flow Disturbance:", [["fl-dist/disturbed-ground", "Disturbed Ground"]]),
         K.seeAlso("The condition:", [["ref-conds/breakflow", "Breakflow"]])
       ];
     } },
@@ -169,11 +171,7 @@ window.EN = window.EN || {};
           K.refTable(["Margin", "Result", "Effect"], rr.outcomes.map(function (o) { return [o.margin, o.result, o.text]; }), [0, 1])
         ]),
         rr.cooperative ? K.ruleBlock("Cooperative Recovery", rr.cooperative) : null,
-        K.seeAlso("Out of Breakflow:", [["fl-breakflow/breakflow-restoration", "Breakflow Restoration"]]),
-        /* a ritual inside a disturbance adds Snag Dice equal to its Severity (Flow Disturbances).
-           Both lines are GM advice, which moved to the Game Master's Toolkit
-           (2026-10-16), so only the Admin desktop points there. */
-        ctx.portal === "admin" ? K.seeAlso("Inside a Flow Disturbance:", [["fl-dist/environmental-impact", "Environmental Impact"], ["fl-dist/failure-margin", "Failure Margin"]]) : null
+        K.seeAlso("Out of Breakflow:", [["fl-breakflow/breakflow-restoration", "Breakflow Restoration"]])
       ];
     } }
   ] });
@@ -254,9 +252,8 @@ window.EN = window.EN || {};
         K.subTitle("Anomaly Classifications"),
         d.classifications.map(function (a) { return K.ruleBlock(a.name, a.effect); }),
         d.clankers ? K.ruleBlock("Clankers", d.clankers) : null,
-        admin(ctx) && (d.ritualImpact || []).length ? K.subTitle("Rituals in a Flow Disturbance") : null,
-        // borrowed from Breakflow Restoration's Rough Restoration advice, so tagged with that section; Admin only (no GM label)
-        admin(ctx) ? (d.ritualImpact || []).map(function (r) { return K.ruleBlock(r.label, r.text, "BREAKFLOW RESTORATION"); }) : null,
+        // the Handbook's run-in under Rough Restoration, a player rule, so both desktops; the tag names that section (no GM label)
+        d.disturbedGround ? K.ruleBlock("Disturbed Ground", d.disturbedGround, "BREAKFLOW RESTORATION") : null,
         K.seeAlso("A Flow-rich area is Anomaly Severity 0:", [["fl-breakflow/full-restoration", "Full Restoration"], ["fl-recovery", "Ritual Recovery"]]),
         K.seeAlso("Finding and clearing one:", [["fl-dist-detect", "Detecting and Analyzing"], ["fl-dist-cleanse", "Cleansing & Counter Flow"]]),
         K.seeAlso("Inside a Null Scar:", [["fl-dist-anchor", "The Focal Anchor"]].concat(admin(ctx) ? [["fl-dist-repair", "Repairing a Null Scar"]] : []))

@@ -276,16 +276,17 @@ EN.flow.resonances.forEach(function (r) { EN.flow.resonanceByKey[r.key] = r; });
      ## Repairing a Null Scar, with ### Establishing Anchors, ### The
        Reconstruction Ritual, ### Outcome and Aftermath and its GM advice
        paragraphs (now the Toolkit's Running the Repair) (4735 to 4801)
-   Three sentences live elsewhere in Part 2 and are carried here because they are
-   anomaly rules no other panel shows:
+   Three passages live elsewhere in the rulebook and are carried here because they
+   are anomaly rules no other panel shows:
      nullScarGuidance  ## Overdraw, Strain, and Breakflow > ### Breakflow Check,
                        the GM advice, its "Anomalies" item (line 4444); the Game
                        Master's Toolkit prints it as the Anomalies run-in of Breakflow
                        and Strain, which reads "the Focal Anchor mechanic" (round 2,
                        16 October 2026)
-     ritualImpact      ## Breakflow Restoration > ### Rough Restoration, the GM
-                       advice list, its "Environmental Impact" and "Failure
-                       Margin" items (line 4520)
+     disturbedGround   the Player's Handbook, ## Breakflow Restoration > ### Rough
+                       Restoration, its closing run-in "Disturbed Ground"
+                       (batch 45, 16 October 2026); a player rule, so it shows on
+                       both desktops
      clankers          ## Clankers and The Flow > #### Targeting Clankers With
                        Flow, its last bullet (line 3894)
    The text is the book's, unescaped, with its **bold** kept. Labels and margins
@@ -316,14 +317,13 @@ EN.flow.disturbances = {
   /* Part 2, Clankers and The Flow > Targeting Clankers With Flow (line 3894) */
   clankers: "Flow Disturbances like **Static Zones**, **Resonant Storms**, and **Null Scars** interfere with Clanker channeling normally.",
 
-  /* Part 2, Breakflow Restoration's GM advice list (line 4520): the two items about a
-     disturbance. Its third item, Narrative Tension, is about the ritual's length and stays out.
-     The Player's Handbook now prints the same rule as the player run-in Disturbed Ground
-     (Rough Restoration); the app still shows it on the Admin desktop only (flagged to the author). */
-  ritualImpact: [
-    { label: "Environmental Impact", text: "If a ritual is performed in an area with a **Flow Disturbance**, the **Snag Dice** of the ritual increase by the Anomaly's **Severity Rating**." },
-    { label: "Failure Margin", text: "If a Shaper fails a ritual check with a **Margin of -3 or worse** (Critical Failure), they don't just fail to recover; the ritual site becomes a temporary **Echo Field (Severity 1)** due to the released harmonic static." }
-  ],
+  /* Player's Handbook, ## Breakflow Restoration > ### Rough Restoration, the closing run-in
+     "Disturbed Ground", as printed (the book's "\-" escape dropped, nothing else). It is a
+     player rule, so the Codex shows it on both desktops (fl-dist/disturbed-ground). It replaces
+     the old Admin-only ritualImpact items (Environmental Impact, Failure Margin), which were
+     the same rule from the superseded Part 2 GM advice; the Game Master's Toolkit no longer
+     prints either item. */
+  disturbedGround: "In an area with a Flow Disturbance, a restoration ritual's Snag Dice increase by the Anomaly's Severity Rating. On a Critical Failure (Margin -3 or worse), the ritual site becomes a temporary Echo Field (Severity 1).",
 
   /* ## Detecting and Analyzing */
   detection: {

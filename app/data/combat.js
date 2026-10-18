@@ -27,7 +27,10 @@ EN.combat = {
     {
       name: "Impulse Action",
       summary: "A minor action triggered outside your turn (parry, dodge, intercept, or Help).",
-      text: "Impulse Actions occur outside your turn, triggered by events or enemy actions. Unless you traded your Move Action, you may only perform one Impulse Action per round.\n\nExamples\n- Opportunity Attack: Strike a Hostile that leaves your reach. See Opportunity Attacks below.\n- Dodge: Gain a brief defensive boost against a single attack you can see.\n- Parry: Contest a melee or thrown attack with your weapon to block or counter.\n- Brace: Against falls, collisions, explosions, or forced impact, roll 1d10 + Body Modifier and subtract the result from the incoming damage.\n- Intercept: Move up to half your Speed to an ally within 2 spaces who is about to be hit; you become the target of that attack instead.\n- Help Action: When an ally makes a save or check, you may jump in to assist them, consuming your Impulse Action and your upcoming turn's Action.\n\nOpportunity Attacks\n\nWhen a Hostile you can see leaves your reach using its own movement, you can spend your Impulse Action to make one melee attack against it. The attack resolves from the last space it occupied within your reach, before the movement carries it clear.\n- You need a melee weapon in hand, or your bare hands.\n- It costs your Impulse Action, so the one-per-round limit applies. You can't also Dodge, Parry, Brace, or Intercept that round unless you traded your Move Action for a second Impulse.\n- Movement that isn't the Hostile's own doesn't provoke. A shove, a pull, a teleport, or any other forced movement takes them out of reach without giving you the shot.\n- Disengage denies the attack entirely.\n- The GM may also allow an Opportunity Attack when a Hostile does something careless inside your reach."
+      /* the Examples and Opportunity Attacks as the Player's Handbook prints them (r5, 17 October 2026):
+         one "Active Defense:" line names all seven defenses, and the second Opportunity Attack bullet
+         is the book's "It costs your Impulse Action." with nothing added */
+      text: "Impulse Actions occur outside your turn, triggered by events or enemy actions. Unless you traded your Move Action, you may only perform one Impulse Action per round.\n\nExamples\n- Opportunity Attack: Strike a Hostile that leaves your reach. See Opportunity Attacks below.\n- Active Defense: Block, Brace, Dodge (against an attack you can see), Parry, Resurge, Siphon, or Ward (see Active Defenses).\n- Intercept: Move up to half your Speed to an ally within 2 spaces who is about to be hit; you become the target of that attack instead.\n- Help Action: When an ally makes a save or check, you may jump in to assist them, consuming your Impulse Action and your upcoming turn's Action.\n\nOpportunity Attacks\n\nWhen a Hostile you can see leaves your reach using its own movement, you can spend your Impulse Action to make one melee attack against it. The attack resolves from the last space it occupied within your reach, before the movement carries it clear.\n- You need a melee weapon in hand, or your bare hands.\n- It costs your Impulse Action.\n- Movement that isn't the Hostile's own doesn't provoke. A shove, a pull, a teleport, or any other forced movement takes them out of reach without giving you the shot.\n- Disengage denies the attack entirely.\n- The GM may also allow an Opportunity Attack when a Hostile does something careless inside your reach."
     },
     {
       name: "Free Action",
@@ -72,21 +75,26 @@ EN.combat = {
 
   defense: "Your Defense measures your ability to avoid, deflect, or absorb incoming harm. It blends agility, awareness, protective gear, and the advantages of cover.\n\nDefense = 10 + Agility Modifier + Cover + Active Defense Bonuses",
 
-  /* Round 2 rulings, section 4 (16 October 2026): both PHB passages apply together. The
-     budget sentence ("You can use one Active Defense per round, or two if you traded your
-     Move Action for a second Impulse.") is the book's, appended to the intro paragraph; The
-     Limit bullet is the book's too ("one defensive Impulse per attacking Enemy's turn").
-     Intercept is an Impulse but not a defense: it spends the round's Impulse budget (the
-     Impulse Action text above) and does not count toward the per-attacker Limit. */
-  activeDefenseRules: "Armor will only take you so far. When a hit is locked in and about to break bone, survival comes down to your reflexes. Active Defenses allow a Character to burn an Impulse Action to intercept, deflect, or absorb incoming damage before it depletes their health pools. You can use one Active Defense per round, or two if you traded your Move Action for a second Impulse.\n\nThe Core Rules of Active Defense:\n- The Trigger: You may declare an Active Defense immediately after an Enemy's attack successfully meets or beats your Defense score, but before the final damage is applied to your Vigor or Vitality.\n- The Cost: It costs 1 Impulse Action (your reaction).\n- The Limit: A Character may only use one defensive Impulse per attacking Enemy's turn, regardless of how many total Impulse actions they have generated. You can't spam defenses against a single, rapid-striking opponent.\n\nIf you meet the equipment requirements, you may choose one of the following defensive maneuvers.",
+  /* As the Player's Handbook prints it (Active Defenses; r5, 17 October 2026). The intro paragraph
+     carries the budget sentence ("You can use one Active Defense per round, or two if you traded
+     your Move Action for a second Impulse.", round 2 rulings, section 4) and then the book's Resurge
+     and Siphon FP and Overdraw sentences, which replace the app-made "The Cost:" line those two
+     entries used to carry. The Limit bullet is the book's ("one defensive Impulse per attacking
+     Enemy's turn"), and the lead-in ends in the book's colon. Intercept is an Impulse but not a
+     defense: it spends the round's Impulse budget (the Impulse Action text above) and does not
+     count toward the per-attacker Limit. */
+  activeDefenseRules: "Armor will only take you so far. When a hit is locked in and about to break bone, survival comes down to your reflexes. Active Defenses allow a Character to burn an Impulse Action to intercept, deflect, or absorb incoming damage before it depletes their health pools. You can use one Active Defense per round, or two if you traded your Move Action for a second Impulse. Resurge and Siphon each cost 1 FP on top of the Impulse Action. Using either at 0 FP counts as an Overdraw of 1 FP: you still resolve the defense, and you lose 1d4 Vitality (1d6 at Strain Stage 3 or higher) and gain 1 Strain point.\n\nThe Core Rules of Active Defense:\n- The Trigger: You may declare an Active Defense immediately after an Enemy's attack successfully meets or beats your Defense score, but before the final damage is applied to your Vigor or Vitality.\n- The Cost: It costs 1 Impulse Action (your reaction).\n- The Limit: A Character may only use one defensive Impulse per attacking Enemy's turn, regardless of how many total Impulse actions they have generated. You can't spam defenses against a single, rapid-striking opponent.\n\nIf you meet the equipment requirements, you may choose one of the following defensive maneuvers:",
 
   activeDefenses: [
+    /* Every entry below is the Player's Handbook's fields as printed (r5, 17 October 2026): no flavor
+       line and no Player Advice, which the book no longer prints. Block's Effect is the book's ("Prevent
+       that much of the incoming damage"); the Plated trait's own text says what Plated adds. */
     {
       name: "Block",
       cost: "1 Impulse Action",
       requirement: "Shield, Block Bonus, or Plated armor",
-      trigger: "Any attack you can brace against",
-      text: "You brace your stance and put solid mass between yourself and the incoming threat, letting the barrier eat the kinetic shock.\n- Requirement: A physical Shield equipped, armor with a listed Block Bonus, or the Plated trait.\n- The Effect: You reinforce your passive mitigation for this attack. On top of your Armor DR, add your armor's flat Block Bonus, half the armor's DR (rounded down) if it is Plated, and a Shield's Block die if you carry one. These sources stack.\n\nPlayer Advice: Tactical Note: Blocking is highly reliable; the flat Block Bonus and Plated half-DR apply with no roll, and a Shield adds its Block die on top."
+      trigger: "Physical attack damage",
+      text: "- Requirement: A physical Shield, armor with a listed Block Bonus, or armor with the Plated trait.\n- Trigger Limit: Physical attack damage.\n- The Effect: Roll your Shield's Block die (if you carry one) and add your armor's flat Block Bonus and any other Block benefits you have (the Plated trait, Block-boosting mods). Prevent that much of the incoming damage."
     },
     /* Brace, as the Player's Handbook prints it (Active Defenses): two lines, Trigger Limit and
        The Effect, and no Requirement, so every Freelancer can use it (the author's correction of
@@ -106,7 +114,7 @@ EN.combat = {
       cost: "1 Impulse Action",
       requirement: "-",
       trigger: "Melee or non-ballistic physical",
-      text: "You push your reflexes to the limit, slipping out of the way at the last instant and letting the attack cut through empty space.\n- Trigger Limit: Can only be used against Melee or non-ballistic physical attacks (unless explicitly enhanced by a Flow feature or specific gear).\n- The Effect: Add your Agility Modifier + your Acrobatics Proficiency Bonus to your Defense score against this specific attack. If this retroactive bonus raises your Defense higher than the incoming attack roll, the attack misses, and you may immediately shift 1 space into an adjacent unoccupied space.\n\nPlayer Advice: Tactical Note: You cannot Dodge what you cannot physically evade. Heavy armor often imposes Snag on mobility; the GM may rule a Freelancer can't Dodge while wearing Siege Plate or if they are Grappled/Restrained."
+      text: "- Trigger Limit: Can only be used against Melee or non-ballistic physical attacks (unless explicitly enhanced by a Flow feature or specific gear). The GM may rule a Freelancer can't Dodge while wearing Heavy Armor or while Grappled or Restrained.\n- The Effect: Add your Agility Modifier + your Acrobatics Proficiency Bonus to your Defense score against this specific attack. If this retroactive bonus raises your Defense higher than the incoming attack roll, the attack misses, and you may immediately shift 1 space into an adjacent unoccupied space."
     },
     {
       name: "Parry",
@@ -114,31 +122,32 @@ EN.combat = {
       /* The three bullets as printed, 16 October handoff: Signature Weapon is gone from the
          Requirement, the Trigger Limit takes thrown attacks, the Effect rolls the die Oomph
          included, and the dual-wield sentence moved into the Effect, so the old Tactical Note
-         that carried it is dropped. The opening sentence is unchanged. */
+         that carried it is dropped. The opening flavor sentence went with the rest (r5, 17 October
+         2026): the book prints none. */
       requirement: "Simple or Martial Weapon, physical Shield, or bare hands",
       trigger: "Melee or thrown attacks",
-      text: "You meet force with force, stepping into the strike to aggressively knock the Enemy's weapon offline before it lands clean.\n- Requirement: Must have a Simple Weapon, Martial Weapon, or physical Shield equipped, or be fighting unarmed.\n- Trigger Limit: Can only be used against Melee or thrown attacks.\n- The Effect: Roll your equipped weapon's damage die, Oomph included (e.g., a d8 for a standard longsword), or your unarmed strike damage if your hands are what you brought. Subtract the result directly from the raw incoming damage. If you are dual-wielding, choose which weapon you parry with and roll its damage die."
+      text: "- Requirement: Must have a Simple Weapon, Martial Weapon, or physical Shield equipped, or be fighting unarmed.\n- Trigger Limit: Can only be used against Melee or thrown attacks.\n- The Effect: Roll your equipped weapon's damage die, Oomph included (e.g., a d8 for a standard longsword), or your unarmed strike damage if your hands are what you brought. Subtract the result directly from the raw incoming damage. If you are dual-wielding, choose which weapon you parry with and roll its damage die."
     },
     {
       name: "Resurge",
       cost: "1 Impulse Action + 1 FP",
       requirement: "Attuned",
       trigger: "Flow-based attacks or Invocations",
-      text: "You answer hostile Flow with your own, forcing the clashing patterns to violently cancel or rebound before they strike you.\n- Requirement: Must be attuned to the Flow.\n- The Cost: 1 FP (in addition to the Impulse Action). Using Resurge while at 0 FP counts as Overdraw.\n- Trigger Limit: Can only be used against Flow-based attacks or Invocations.\n- The Effect: Roll your Resilience Die and subtract the result from the raw incoming damage. If this reduces the incoming damage to 0, the Flow effect rebounds; the attacker immediately takes Resonant damage equal to your Flow Modifier (minimum 1).\n\nPlayer Advice: Tactical Note: Unlike Ward, Resurge actively weaponizes the incoming current. It is your primary defense in Shaper-on-Shaper duels."
+      text: "- Requirement: Must be attuned to the Flow.\n- Trigger Limit: Can only be used against Flow-based attacks or Invocations.\n- The Effect: Roll your Resilience Die and subtract the result from the raw incoming damage. If this reduces the incoming damage to 0, the Flow effect rebounds; the attacker immediately takes Resonant damage equal to your Flow Modifier (minimum 1)."
     },
     {
       name: "Siphon",
       cost: "1 Impulse Action + 1 FP",
       requirement: "Attuned",
       trigger: "Elemental or Flow-based damage",
-      text: "You drink in hostile energy, turning what should have burned or shattered you into fuel for your own body.\n- Requirement: Must be attuned to the Flow.\n- The Cost: 1 FP (in addition to the Impulse Action). Using Siphon while at 0 FP counts as Overdraw.\n- Trigger Limit: Can only be used against Elemental (Fire, Cold, Electric) or Flow-based damage.\n- The Effect: Roll your Resilience Die and subtract the result from the raw incoming damage. You immediately restore Vigor equal to the exact amount of damage negated by this roll.\n\nPlayer Advice: Tactical Note: Siphon is a high-risk, high-reward maneuver that turns enemy casters into a resource pool, but it can't absorb standard physical damage like bullets or blades."
+      text: "- Requirement: Must be attuned to the Flow.\n- Trigger Limit: Can only be used against Elemental (Fire, Cold, Electric) or Flow-based damage.\n- The Effect: Roll your Resilience Die and subtract the result from the raw incoming damage. You immediately restore Vigor equal to the exact amount of damage negated by this roll."
     },
     {
       name: "Ward",
       cost: "1 Impulse Action",
       requirement: "Warding Focus or Class Feature",
       trigger: "Any standard damage",
-      text: "You flare your internal resonance, weaving a transient barrier of hard-light, localized gravity, or psychic static to catch the blow.\n- Requirement: Must have an equipped Warding Focus or possess an active Shaper class feature.\n- The Effect: Roll your class's Resilience Die and subtract the result directly from the raw incoming damage. Ward costs no FP.\n\nPlayer Advice: Tactical Note: Because Ward requires a physical Warding Focus or a dedicated class feature, it doesn't cost FP to activate, making it a highly reliable, always-available mystic shield."
+      text: "- Requirement: Must have an equipped Warding Focus or possess an active Shaper class feature.\n- Trigger Limit: Any standard damage.\n- The Effect: Roll your class's Resilience Die and subtract the result directly from the raw incoming damage. Ward costs no FP."
     }
   ],
 

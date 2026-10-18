@@ -329,6 +329,13 @@ EN.inventoryView = (function () {
   function tagChip(text, color, title) {
     return el("span.chip", { title: title || "", style: { fontSize: "9px", color: color, borderColor: color, marginLeft: "8px" } }, text.toUpperCase());
   }
+  // a gear card's rules line: an optional bold label, then the text with its Codex terms linked
+  // (a link peeks the rule and stops the click, so the card never toggles). `lo` is the card's
+  // linkify options: { conditions: true, used: {} } made once per card, so each term links once.
+  function rulesLine(style, label, labelColor, text, lo) {
+    var p = el("p.help", { style: style }, label ? [el("b", { style: { color: labelColor } }, label + ":"), " "] : null);
+    return EN.ui.ruleText(p, text, lo);
+  }
 
   /* ---- mutations ---- */
   /* `premium` signs a leasable item straight onto its Premium plan. Opting in charges the plan's
@@ -732,6 +739,8 @@ EN.inventoryView = (function () {
   function itemCard(it, ch, mode, entry) {
     var ownedKey = entry ? entryKey(entry) : it.name;
     var id = mode + "-" + ownedKey, open = !!_open[id];
+    // the card's rules lines link their Codex terms (D8): one set of options per card, so a term links once
+    var lo = { conditions: true, used: {} };
     var owned = mode === "stash" ? entry : (ch.equipment || []).find(function (e) { return e.name === it.name; });
     var ownedTotal = (ch.equipment || []).filter(function (e) { return e.name === it.name; }).reduce(function (n, e) { return n + (e.qty || 0); }, 0);
     var sp = streetPrice(it);
@@ -924,7 +933,7 @@ EN.inventoryView = (function () {
       head, info, traitsExpandRow,
       it.benchPart ? partInfoLine(ch, it) : it.armorMod ? armorModInfoLine(ch, it) : (mode !== "mkt" ? installedPartsLine(ch, it, entry) : null),
       mode === "stash" ? armorResistPicker(ch, it, entry) : null,
-      open && it.desc ? el("p", { style: { marginTop: "8px" }, text: it.desc }) : null,
+      open && it.desc ? EN.ui.ruleText(el("p", { style: { marginTop: "8px" } }), it.desc, lo) : null,
       open && it.type ? el("p.help", { style: { margin: "4px 0 0", color: "var(--text2)" }, text: "Type: " + it.type + (it.upkeep ? " · Leased: " + fmtG(it.price || 0) + " buy-in, " + fmtG(upkeepOf(it, owned)) + "/wk Upkeep" + (owned && owned.premium ? " (Premium plan)" : "") : "") + (it.nexus ? " · Nexus: " + it.nexus : "") }) : null,
       open && it.proficiency ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: "Proficiency: " + it.proficiency + (it.signature ? " · Signature weapon (0 customization slots)" : "") }) : null,
       open && (it.category || it.skill) ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: (it.category ? "Tool Category: " + it.category + (it.categoryAlt ? " or " + it.categoryAlt : "") : "") + (it.category && it.skill ? " · " : "") + (it.skill ? "Governing Skill: " + it.skill : "") }) : null,
@@ -932,26 +941,26 @@ EN.inventoryView = (function () {
       // Signature Weapons: the FULL effect always shows, because the base attack works at any tier.
       // Only the On Hit riders are locked until a Weapon Focus names this specific weapon, and
       // that is one status line from the engine's resolver, not a hidden effect.
-      open && it.effect ? el("p.help", { style: { margin: "4px 0 0", color: "var(--accent)" }, text: (it.signature || /^Effect \(/.test(it.effect) ? "" : "Effect: ") + it.effect }) : null,
+      open && it.effect ? rulesLine({ margin: "4px 0 0", color: "var(--accent)" }, null, null, (it.signature || /^Effect \(/.test(it.effect) ? "" : "Effect: ") + it.effect, lo) : null,
       open && it.signature && EN.engine.signatureStatus(ch, it)
         ? el("p.help", { style: { margin: "4px 0 0", color: "var(--warn)" }, title: "Weapon Proficiency alone keeps a Signature Weapon's On Hit riders locked. A Weapon Focus naming this weapon unlocks them (#PRINT Advance tab, L3+, or a Free overlap Focus at level 1).",
             text: "🔒 " + EN.engine.signatureStatus(ch, it) }) : null,
-      open && it.poweredBenefits ? el("p.help", { style: { margin: "4px 0 0", color: "var(--gold)" }, html: "<b style='color:var(--gold)'>Powered Benefits:</b> " + it.poweredBenefits }) : null,
+      open && it.poweredBenefits ? rulesLine({ margin: "4px 0 0", color: "var(--gold)" }, "Powered Benefits", "var(--gold)", it.poweredBenefits, lo) : null,
       // Part 3 gives many entries rules bullets past Effect, and the catalog used to carry
       // only Effect. These four are the rest of them: an Activation says what it costs to
       // use, a Limitation says when it does nothing, a Drawback says what using it costs
       // you, and a Synergy says what it combines with. Labelled the same way Basic Use and
       // Powered Benefits already are.
-      open && it.activation ? el("p.help", { style: { margin: "4px 0 0" }, html: "<b style='color:var(--accent)'>Activation:</b> " + it.activation }) : null,
-      open && it.limitation ? el("p.help", { style: { margin: "4px 0 0" }, html: "<b style='color:var(--warn)'>Limitation:</b> " + it.limitation }) : null,
-      open && it.drawback ? el("p.help", { style: { margin: "4px 0 0" }, html: "<b style='color:var(--danger)'>Drawback:</b> " + it.drawback }) : null,
-      open && it.synergy ? el("p.help", { style: { margin: "4px 0 0" }, html: "<b style='color:var(--flow)'>Synergy:</b> " + it.synergy }) : null,
+      open && it.activation ? rulesLine({ margin: "4px 0 0" }, "Activation", "var(--accent)", it.activation, lo) : null,
+      open && it.limitation ? rulesLine({ margin: "4px 0 0" }, "Limitation", "var(--warn)", it.limitation, lo) : null,
+      open && it.drawback ? rulesLine({ margin: "4px 0 0" }, "Drawback", "var(--danger)", it.drawback, lo) : null,
+      open && it.synergy ? rulesLine({ margin: "4px 0 0" }, "Synergy", "var(--flow)", it.synergy, lo) : null,
       open && it.cyber ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: "Install: " + it.zone + " zone · " + it.sp + " SP" + (it.slots ? " · " + it.slots + " mod slots" : "") + " · Enhancement: " + (enhScaled(it) || "None") }) : null,
       // the Handbook's spec line "Prerequisite For:" (the Datajack names what needs a neural port)
-      open && it.cyber && it.prereqFor ? el("p.help", { style: { margin: "4px 0 0" }, html: "<b style='color:var(--flow)'>Prerequisite For:</b> " + it.prereqFor }) : null,
-      open && it.cyber && it.tierNote ? el("p.help", { style: { margin: "4px 0 0" }, text: it.tierNote }) : null,
-      open && it.basic ? el("p.help", { style: { margin: "4px 0 0" }, html: "<b style='color:var(--text2)'>Basic Use:</b> " + it.basic }) : null,
-      open && it.proficient ? el("p.help", { style: { margin: "4px 0 0" }, html: "<b style='color:var(--gold)'>Proficient Use:</b> " + it.proficient }) : null,
+      open && it.cyber && it.prereqFor ? rulesLine({ margin: "4px 0 0" }, "Prerequisite For", "var(--flow)", it.prereqFor, lo) : null,
+      open && it.cyber && it.tierNote ? rulesLine({ margin: "4px 0 0" }, null, null, it.tierNote, lo) : null,
+      open && it.basic ? rulesLine({ margin: "4px 0 0" }, "Basic Use", "var(--text2)", it.basic, lo) : null,
+      open && it.proficient ? rulesLine({ margin: "4px 0 0" }, "Proficient Use", "var(--gold)", it.proficient, lo) : null,
       open && it.range ? el("p.help", { style: { margin: "4px 0 0" }, text: "Range: " + it.range + (it.ammoUnit ? " · Ammo: " + it.ammo + " " + it.ammoUnit : "") }) : null
     ]);
   }
@@ -1225,6 +1234,8 @@ EN.inventoryView = (function () {
     function cyberPrereq(cw) { var d = ENG().cyberDef ? ENG().cyberDef(cw) : null; return (d && d.prereqFor) || ""; }
     function cyberRow(cw, idx, where) {
       var sided = !!cw.sided, oid = where + "-cw-" + idx, open = !!_open[oid];
+      // the row's rules lines link their Codex terms (D8): one set of options per row, so a term links once
+      var lo = { conditions: true, used: {} };
       var conflict = where === "installed"
         ? cyberInstallBlock(installed.filter(function (x) { return x !== cw; }), cw) : "";
       var chips = [
@@ -1268,13 +1279,13 @@ EN.inventoryView = (function () {
           el("span", null, EN.ui.nameCaret(cw.name, open).concat(chips)),
           actions
         ]),
-        open && ENG().cyberEffect(cw) ? el("p.help", { style: { margin: "4px 0 0", color: "var(--accent)" }, text: ENG().cyberEffect(cw) }) : null,
+        open && ENG().cyberEffect(cw) ? rulesLine({ margin: "4px 0 0", color: "var(--accent)" }, null, null, ENG().cyberEffect(cw), lo) : null,
         // the spec line "Prerequisite For:", read live from the catalog like the Effect (a saved implant carries no catalog prose)
-        open && cyberPrereq(cw) ? el("p.help", { style: { margin: "4px 0 0" }, html: "<b style='color:var(--flow)'>Prerequisite For:</b> " + cyberPrereq(cw) }) : null,
+        open && cyberPrereq(cw) ? rulesLine({ margin: "4px 0 0" }, "Prerequisite For", "var(--flow)", cyberPrereq(cw), lo) : null,
         // ...and what THIS tier changes about it, which the market card has always shown and this panel never did
         open && ENG().cyberTierNote && ENG().cyberTierNote(cw.key, cw.tier)
-          ? el("p.help", { style: { margin: "3px 0 0", color: "var(--gold)" }, text: ENG().cyberTierNote(cw.key, cw.tier) }) : null,
-        open && ENG().cyberDesc(cw) ? el("p", { style: { margin: "6px 0 0" }, text: ENG().cyberDesc(cw) }) : null
+          ? rulesLine({ margin: "3px 0 0", color: "var(--gold)" }, null, null, ENG().cyberTierNote(cw.key, cw.tier), lo) : null,
+        open && ENG().cyberDesc(cw) ? EN.ui.ruleText(el("p", { style: { margin: "6px 0 0" } }), ENG().cyberDesc(cw), lo) : null
       ]);
     }
     // one list: INSTALLED pieces float to the top, auto-sorted by Zone → Tier; STASHED pieces follow
@@ -2593,8 +2604,9 @@ EN.inventoryView = (function () {
   function tbTierChip(tierKey) {
     var t = CRAFT().tier(tierKey);
     // the tier also records the training it expects; the Snag count alone never says so
+    // (the Toolkit's Difficulty column is Admin-only now, so the hover carries time and training only)
     var expects = t.skillTier ? " · Expects " + t.skillTier.charAt(0).toUpperCase() + t.skillTier.slice(1) : "";
-    return tbChip(t.name.toUpperCase() + (t.target ? " · " + t.target : ""), TB_TIER_COLOR[tierKey] || "var(--text2)", t.difficulty + " · " + t.time + expects);
+    return tbChip(t.name.toUpperCase() + (t.target ? " · " + t.target : ""), TB_TIER_COLOR[tierKey] || "var(--text2)", t.time + expects);
   }
   function tbSkillChip(skill) { return tbChip(skill, TB_SKILL_COLOR[skill] || "var(--text2)", "Primary Skill"); }
 
@@ -2984,12 +2996,6 @@ EN.inventoryView = (function () {
         el("label.row.wrap", { style: { gap: "5px", alignItems: "center", fontSize: "11px", color: "var(--text3)" } }, ["TIER", sel(f.tier, CRAFT().tiers.filter(function (t) { return t.target; }).map(function (t) { return { v: t.key, t: t.name + " (" + t.target + ")" }; }), function (e) { f.tier = e.target.value; EN.app.render(); })])
       ]),
       CRAFT().kinds.find(function (k) { return k.key === f.kind; }) ? el("p.help", { style: { margin: "0 0 10px", fontSize: "11px" }, text: CRAFT().kinds.find(function (k) { return k.key === f.kind; }).desc }) : null,
-      // custom work has no catalog row to calibrate against, so show what the chosen tier looks like
-      (function () {
-        var t = CRAFT().tier(f.tier);
-        return (t && t.examples) ? el("p.help", { style: { margin: "0 0 10px", fontSize: "11px", color: "var(--text3)" },
-          text: "Work at this tier looks like: " + t.examples + "." }) : null;
-      })(),
       el("div.row.wrap", { style: { gap: "8px" } }, [
         el("button.btn.sm.primary", { onclick: function () { tbStart(f); _tbForm = null; EN.app.render(); } }, "✓ START PROJECT"),
         el("button.btn.sm", { onclick: function () { _tbForm = null; EN.app.render(); } }, "CANCEL")
@@ -3336,7 +3342,8 @@ EN.inventoryView = (function () {
           on ? el("button.btn.sm.primary", { title: "Remove this mod, freeing its slots", onclick: function () { tbSetDeckMods(function (l) { return l.filter(function (k) { return k !== m.key; }); }, deck.key); } }, "✓ INSTALLED")
              : el("button.btn.sm", { disabled: !fits, title: fits ? "Slot this mod (bench work)" : "Not enough mod slots", style: fits ? { color: "var(--accent)", borderColor: "var(--accent)" } : null, onclick: function () { tbSetDeckMods(function (l) { return l.concat([m.key]); }, deck.key); } }, fits ? "INSTALL" : "NO SLOTS")
         ]),
-        el("p.help", { style: { margin: "4px 0 0" }, text: m.text })
+        // the mod's full rules text, its Codex terms linked as on the market and Stash cards (D8)
+        EN.ui.ruleText(el("p.help", { style: { margin: "4px 0 0" } }), m.text, { conditions: true, used: {} })
       ]));
     });
     return EN.ui.panel("Smartdeck Mods", deck.tier.toUpperCase() + " SMARTDECK · " + used + " / " + slots + " SLOTS", kids, { corners: true });

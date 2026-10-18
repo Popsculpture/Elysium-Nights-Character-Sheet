@@ -75,21 +75,37 @@ EN.combatView = (function () {
      narrow window a button mid-row pushes the box past the screen's edge, where nothing scrolls
      to it. Once the box is laid out it is measured and slid back inside an 8px margin (narrowed
      first if the window is narrower than the box). A popover a skin turns into a fixed bottom
-     sheet (GRIDroid) is left to the skin. */
+     sheet (GRIDroid) is left to the skin.
+     The fit runs the moment the box is in the page: render() below calls fitPops() right after it
+     mounts the view, so the first look anything takes at the box (the first paint, a script, a
+     test) already sees it fitted. A frame callback used to do this alone, and a frame is not
+     promised before the next timer runs (a background tab, a headless run): the box then sat at
+     its natural place, 142px off the left of a 360px window for SHORT REST. The frame after still
+     re-fits, and so do a resize and a web font arriving, since each moves the button the box
+     hangs off. A re-fit starts from the box's own place, so it never stacks on the last one. */
+  function fitOne(box) {
+    if (!document.body.contains(box)) return;
+    box.style.transform = ""; box.style.maxWidth = "";
+    if (getComputedStyle(box).position !== "absolute") return;
+    var vw = document.documentElement.clientWidth || window.innerWidth, m = 8;
+    var r = box.getBoundingClientRect();
+    if (!r.width) return;   // not laid out yet (#os is still hidden during the boot)
+    if (r.width > vw - 2 * m) { box.style.maxWidth = (vw - 2 * m) + "px"; r = box.getBoundingClientRect(); }
+    var dx = 0;
+    if (r.right > vw - m) dx = vw - m - r.right;
+    if (r.left + dx < m) dx = m - r.left;
+    if (dx) box.style.transform = "translateX(" + Math.round(dx) + "px)";
+  }
+  function fitPops() { Array.prototype.forEach.call(document.querySelectorAll("#view [data-popfit]"), fitOne); }
   function popFit(box) {
     if (!box || box.nodeType !== 1) return box;
+    box.setAttribute("data-popfit", "");
     var raf = window.requestAnimationFrame || function (f) { return setTimeout(f, 0); };
-    raf(function () {
-      if (!document.body.contains(box) || getComputedStyle(box).position !== "absolute") return;
-      var vw = document.documentElement.clientWidth || window.innerWidth, m = 8;
-      if (box.getBoundingClientRect().width > vw - 2 * m) box.style.maxWidth = (vw - 2 * m) + "px";
-      var r = box.getBoundingClientRect(), dx = 0;
-      if (r.right > vw - m) dx = vw - m - r.right;
-      if (r.left + dx < m) dx = m - r.left;
-      if (dx) box.style.transform = "translateX(" + Math.round(dx) + "px)";
-    });
+    raf(function () { fitOne(box); });
     return box;
   }
+  window.addEventListener("resize", fitPops);
+  if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener("loadingdone", fitPops);
 
   /* ---------- Roll tray: the interactive d20 roll modal ------------------
      Transient, rebuilt from _rollTray on every render (the same state->render
@@ -702,7 +718,8 @@ EN.combatView = (function () {
       var net = Math.max(0, inc - roll.total);
       var out = inc + " reduced by " + roll.total + " to " + net + " damage";
       if (net === 0 && s.onZero) out += ". " + s.onZero;
-      if (s.onRoll) out += ". " + s.onRoll(roll.total);
+      // Siphon: "restore Vigor equal to the exact amount of damage negated by this roll", never more than the hit
+      if (s.onRoll) out += ". " + s.onRoll(Math.min(roll.total, inc));
       return out;
     }
     var inp = el("input.mono", { type: "number", min: "0", value: _defTray.incoming, placeholder: "0",
@@ -3319,6 +3336,13 @@ EN.combatView = (function () {
     var ammoType = st.ammoType || base;
     // a special round that's run dry defaults back to the weapon's plentiful Standard feed
     if (ammoType !== "Standard" && ammoType !== base && base === "Standard" && ownedQty(ch, ammoType) <= 0) ammoType = "Standard";
+    // a round this weapon can't take never stays loaded: a Rotary Cannon saved with Tracer Rounds
+    // (offered to it until 17 October 2026), or with the Machinegun Belt (its base feed until 247d3f4,
+    // so any reload or shot before then saved it), goes back to its base feed rather than eating them
+    if (ammoType !== "Standard" && ammoType !== base) {
+      var spec = ammoCatalog().filter(function (x) { return x.name === ammoType; })[0];
+      if (spec && ((spec.group === "Specialty" && !ammoCompatible(spec, it)) || (spec.group === "Counted" && !countedFeedsWeapon(spec, it)))) ammoType = base;
+    }
     return { cur: cur, cap: cap, mode: mode, ammoType: ammoType, base: base, modes: modes };
   }
   var _recoil = null;   // weapon ENTRY KEY to kick on the next render, set when rounds are spent
@@ -3430,7 +3454,9 @@ EN.combatView = (function () {
       (shotgun && /shotgun/.test(feeds)) ||
       (bow && /(bow|crossbow|arrow|bolt)/.test(feeds)) ||
       (dart && /dart/.test(feeds)) ||
-      (/Machinegun|Rotary/i.test(w.name) && /machinegun/.test(feeds));
+      // the Handbook's machinegun family is the Light, Medium and Heavy Machinegun; the Rotary Cannon
+      // is not one (it feeds on Cannon Rounds, Toolkit, Ordnance Ammo), so "Machineguns" never loads it
+      (/Machinegun/i.test(w.name) && /machinegun/.test(feeds));
     if (!hit) return false;
     if (/no shotguns/.test(feeds) && shotgun) return false;
     if (/no full-auto/.test(feeds) && g === "Longarm" && (w.traits || []).indexOf("Full-Auto") !== -1) return false;  // qualifier scopes to Longarms
@@ -6015,10 +6041,23 @@ EN.combatView = (function () {
       var blockBonus = dg.blockBonus || 0;
       var platedHalf = plated ? Math.floor((dg.armorDR || 0) / 2) : 0;
       var canBlock = !!liveShield || blockBonus > 0 || plated;
+      /* Reactive Plating is the one Block-boosting mod (PHB, Armor Mods: "When you choose Block, add
+         +1d6 to the damage prevented. This stacks with the Plated trait's Block benefit, the suit's
+         listed Block Bonus, and shield dice."), and the Block Effect names such mods: "any other Block
+         benefits you have (the Plated trait, Block-boosting mods)". Same guards as the Block card's
+         mod loop: a lapsed suit grants nothing and neither do its mods, and a leased mod in arrears
+         is dark. */
+      var reactive = !!(dg.armor && !dg.armorLapsed && eng.armorModsOn
+        && eng.armorModsOn(ch, dg.armorKey).indexOf("reactive-plating") !== -1
+        && !(eng.leaseLapsed && eng.leaseLapsed(ch, "Reactive Plating")));
+      var shieldRolls = !!(liveShield && dg.shieldBlockDie);
+      // in the Effect's order: "Roll your Shield's Block die (if you carry one) and add your armor's flat
+      // Block Bonus and any other Block benefits you have (the Plated trait, Block-boosting mods)"
       var blockAdds = [];
-      if (blockBonus) blockAdds.push("+" + blockBonus + " Block Bonus");
-      if (platedHalf) blockAdds.push("+" + platedHalf + " half-DR (Plated)");
-      if (liveShield && dg.shieldBlockDie) blockAdds.push("+" + dg.shieldBlockDie + " (" + liveShield.name + ")");
+      if (shieldRolls) blockAdds.push(dg.shieldBlockDie + " (" + liveShield.name + ")");
+      if (blockBonus) blockAdds.push(blockBonus + " Block Bonus");
+      if (platedHalf) blockAdds.push(platedHalf + " half-DR (Plated)");
+      if (reactive) blockAdds.push("1d6 (Reactive Plating)");
       // Shield Durability: a Blocked hit whose RAW damage meets the Wear Threshold
       // marks a box, as does any Blocked critical. Offered as a one-tap control on
       // the Block row, since that is the only moment it can happen.
@@ -6057,6 +6096,8 @@ EN.combatView = (function () {
       //  "the first equipped melee weapon", which handed a Dagger the parry over a
       //  Greatsword on list order alone. parrySources() replaced it and nothing else
       //  called it, so it is gone rather than left for someone to wire back in.)
+      // Resurge and Siphon cost FP: the book says so once, in the Active Defense rules (no longer in the two entries)
+      var FP_NOTE = "Costs 1 FP on top of the Impulse Action; at 0 FP it counts as an Overdraw of 1 FP.";
       function defSpec(name) {
         var base = { name: name, baseDefense: d.defense, dice: [], flat: [] };
         if (name === "Block") {
@@ -6064,8 +6105,11 @@ EN.combatView = (function () {
           if (sd) { sd.label = liveShield.name; base.dice.push(sd); }
           if (blockBonus) base.flat.push({ label: "Block Bonus", value: blockBonus });
           if (platedHalf) base.flat.push({ label: "Plated half-DR", value: platedHalf });
-          base.flat.push({ label: "Armor DR", value: d.armorDR || 0 });
-          base.note = "Roll the shield die and add your flat bonuses and Armor DR against this hit." + wearNote;
+          // Reactive Plating's "+1d6 to the damage prevented" is a die, so it rolls with the shield's
+          if (reactive) base.dice.push({ n: 1, sides: 6, label: "Reactive Plating" });
+          // "Prevent that much of the incoming damage": Block is a step 2 reduction like Parry or Ward, and
+          // Armor DR comes off after it (Damage Order, step 3), so DR is not in this total any more
+          base.note = "Roll your Shield's Block die (if you carry one) and add your Block Bonus and any other Block benefits you have (the Plated trait's half DR, Block-boosting mods such as Reactive Plating's +1d6). Prevent that much of the incoming damage; your Armor DR (" + (d.armorDR || 0) + ") still comes off after. Physical attack damage only." + wearNote;
           return base;
         }
         if (name === "Brace") {
@@ -6082,7 +6126,7 @@ EN.combatView = (function () {
           // tray and the row cannot drift apart
           base.mode = "defense";
           base.bonus = acro ? acro.total : d.attributes.AGI.mod;
-          base.note = "Raise your Defense against this hit. On a miss you may shift 1 space.";
+          base.note = "Raise your Defense against this hit. On a miss you may shift 1 space. Melee or non-ballistic physical attacks only.";
           return base;
         }
         if (name === "Parry") {
@@ -6107,13 +6151,13 @@ EN.combatView = (function () {
         if (name === "Resurge") {
           base.dice.push({ n: 1, sides: d.resilienceDie || 6, label: "d" + (d.resilienceDie || 6) });
           base.onZero = "Reduced to 0: the Flow attack rebounds for " + (rebound != null ? rebound : "your Flow Modifier (minimum 1)") + " Resonant damage.";
-          base.note = "Against a Flow attack. Roll your Resilience Die and subtract it; if the damage drops to 0, it rebounds.";
+          base.note = "Against a Flow attack. Roll your Resilience Die and subtract it; if the damage drops to 0, it rebounds. " + FP_NOTE;
           return base;
         }
         if (name === "Siphon") {
           base.dice.push({ n: 1, sides: d.resilienceDie || 6, label: "d" + (d.resilienceDie || 6) });
           base.onRoll = function (t) { return "Restore " + t + " Vigor."; };
-          base.note = "Against elemental or Flow damage. Roll your Resilience Die, subtract it, and restore that much Vigor.";
+          base.note = "Against elemental or Flow damage. Roll your Resilience Die, subtract it, and restore Vigor equal to the damage it negates. " + FP_NOTE;
           return base;
         }
         if (name === "Ward") {
@@ -6130,11 +6174,18 @@ EN.combatView = (function () {
       var wearNote = dg.shield && dg.shieldWearThreshold
         ? " Wear " + dg.shieldWearThreshold + ": a Blocked hit of " + dg.shieldWearThreshold + "+ raw damage, or any Blocked critical, marks a box (" + dg.shieldBoxesLeft + "/" + dg.shieldBoxesMax + " left)."
         : "";
+      /* Dodge's Trigger Limit: "The GM may rule a Freelancer can't Dodge while wearing Heavy Armor or
+         while Grappled or Restrained." Flagged on the row when it applies, never enforced. */
+      var inHeavy = !!(dg.armor && dg.armor.group === "Heavy Armor");
+      var heldFast = (ch.conditions || []).filter(function (n) { return n === "Grappled" || n === "Restrained"; });
+      var dodgeGm = (inHeavy || heldFast.length)
+        ? " · the GM may rule you can't Dodge " + (inHeavy ? "in Heavy Armor" : "") + (inHeavy && heldFast.length ? " or " : "") + (heldFast.length ? "while " + heldFast.join(" or ") : "")
+        : "";
       var DEF_LIVE = {
         Block:   { avail: canBlock, req: "a shield, a Block Bonus, or Plated armor",
                    summary: (blockAdds.length
-                     ? "Adds " + blockAdds.join(", ") + " to your Armor DR (" + (d.armorDR || 0) + ") against this hit" + ((liveShield && dg.shieldBlockDie) ? "" : ", no roll")
-                     : "Reinforce your Armor DR against this hit") + wearNote,
+                     ? "Prevent " + blockAdds.join(" + ") + " of the incoming damage" + ((shieldRolls || reactive) ? "" : ", no roll")
+                     : "Prevent damage with your shield or plating") + "; physical attacks only" + wearNote,
                    extra: (dg.shield || (dg.armor && dg.armorBaseDR)) ? el("div", null, [
                      dg.shield ? el("div.row.wrap", { style: { gap: "6px", marginTop: "6px", alignItems: "center" } }, [
                        // the Wear Threshold and what 0 boxes means are Shield Durability, under Active Defenses
@@ -6165,7 +6216,7 @@ EN.combatView = (function () {
         Brace:   { avail: true, req: "",
                    summary: "Roll 1d10 " + eng.fmtMod(d.attributes.BOD.mod) + " (Body), subtract from incoming damage; falls, collisions, explosions, forced impact" },
         Dodge:   { avail: true, req: "",
-                   summary: (acro ? "+" + acro.total + " Defense" : "+Agility + Acrobatics to Defense") + " vs this hit; on a miss, shift 1 space" + (dg.speedPenalty ? " · GM may forbid in heavy armor" : "") },
+                   summary: (acro ? "+" + acro.total + " Defense" : "+Agility + Acrobatics to Defense") + " vs this hit; on a miss, shift 1 space" + dodgeGm },
         // "or be fighting unarmed": bare hands always satisfy the requirement, so
         // Parry is never unavailable. The row names the BEST source and says how many
         // others there are; the tray is where you switch. Both read parrySources().
@@ -6174,7 +6225,7 @@ EN.combatView = (function () {
         Resurge: { avail: attuned, req: "Flow attunement",
                    summary: "Roll " + resDie + " vs Flow attacks; reduce to 0 → rebound " + (rebound != null ? rebound : "your Flow Modifier (minimum 1)") + " Resonant" },
         Siphon:  { avail: attuned, req: "Flow attunement",
-                   summary: "Roll " + resDie + " vs elemental/Flow damage; restore that much Vigor" },
+                   summary: "Roll " + resDie + " vs elemental/Flow damage; restore the damage it negates as Vigor" },
         Ward:    { avail: !!focusDie || attuned, req: "a Warding Focus or class feature",
                    // "Ward costs no FP." (16 October handoff); Resurge and Siphon still do
                    summary: "Roll " + resDie + (focusDie ? " + " + focusDie + " (" + focusName + ")" : "") + ", subtract from incoming damage; no FP" }
@@ -6431,6 +6482,8 @@ EN.combatView = (function () {
     if (dtray) mount.appendChild(dtray);
     var deftray = defTrayModal();
     if (deftray) mount.appendChild(deftray);
+    // the view is in the page now: fit any open popover before anything looks at it (see popFit)
+    fitPops();
   }
 
   // layout customization (drag/width/attribute-view controls): surfaced from

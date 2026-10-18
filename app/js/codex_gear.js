@@ -28,6 +28,10 @@
    doesn't print (the book leaves them to the Game Master's Toolkit). While
    EN.launch.holds.toolkit is on, the Freelancer desktop leaves them out (toolkitOff below);
    the Admin desktop keeps them. Flipping the hold off restores them on both.
+   PROJECT TIERS (r5, D4): the Player's Handbook table carries Tier, Target Progress, skill
+   tier and time; the Difficulty and Examples columns are the GM Toolkit's Project Tiers
+   table, so they show on the Admin desktop only (ctx.portal === "admin", which also drives
+   the search index and the peek). EN.crafting.tiers keeps both halves whole.
    EN.gearCodex.traitAnchor(printed, armorFirst) turns a trait as a catalog
    prints it ("Armor Piercing 2", "Thrown (4/12)", "Wear 12") into its anchor,
    through the one matcher in data/gear_traits.js. The Inventory's trait chips
@@ -221,11 +225,13 @@ window.EN = window.EN || {};
       var snag = C.snagForTier || {};
       kids.push(K.subTitle("Projects"));
       if ((C.tiers || []).length) {
+        /* Difficulty and Examples are the GM Toolkit's columns: Admin desktop only, no GM label. */
+        var gmCols = !!(ctx && ctx.portal === "admin");
         kids.push(K.entry("project-tiers", "Project Tiers", [
           el("h4", { text: "Project Tiers" }),
-          K.refTable(["Tier", "Target Progress", "Expected Skill", "Base Snag Dice", "Time", "Difficulty", "Examples"], C.tiers.map(function (t) {
+          K.refTable(["Tier", "Target Progress", "Expected Skill", "Base Snag Dice", "Time"].concat(gmCols ? ["Difficulty", "Examples"] : []), C.tiers.map(function (t) {
             return [t.name, t.target == null ? "GM-defined" : String(t.target), (tiers[t.skillTier] || {}).name || t.skillTier || "",
-                    snag[t.key] == null ? "" : String(snag[t.key]), t.time || "", t.difficulty || "", t.examples || ""];
+                    snag[t.key] == null ? "" : String(snag[t.key]), t.time || ""].concat(gmCols ? [t.difficulty || "", t.examples || ""] : []);
           }), [0, 1])
         ], { tag: "div.feature" }));
       }

@@ -12,7 +12,10 @@ window.EN = window.EN || {};
 
 EN.crafting = {
 
-  /* ---- Project tiers: Target Progress, expected skill tier, time, difficulty ---- */
+  /* ---- Project tiers: Target Progress, expected skill tier, time, difficulty ----
+     target, skillTier and time are the Player's Handbook's Project Tiers table; difficulty and
+     examples are the GM Toolkit's columns, shown on the Admin desktop only (the Codex Project
+     Tiers table gates them). The data stays whole. */
   tiers: [
     { key: "simple",    name: "Simple",    target: 3,   skillTier: "proficient", time: "A scene or a few hours",         difficulty: "Routine DC or easy pool",          examples: "Patch armor, routine repairs, a standard dose, basic disguise touch-ups" },
     { key: "standard",  name: "Standard",  target: 5,   skillTier: "proficient", time: "One downtime period",            difficulty: "Moderate DC or standard pool",     examples: "New sidearm, upgraded plate, sensor add-on, clean paperwork" },

@@ -495,8 +495,9 @@ EN.codexView = (function () {
   var PLAIN = [];
   /* Feature names that hold a rule word. Matched whole and printed plain, so the Codebreaker's
      "#GRID Initiative" is not read as a link to Initiative, and the "roll Initiative" after it
-     in the same sentence keeps that link. */
-  var NAMES = ["#GRID Initiative"];
+     in the same sentence keeps that link. "Hidden blades" (Snap-Blades) and "Hidden spines" (the
+     Anti-Theft Module) are the adjective, not the Hidden condition. */
+  var NAMES = ["#GRID Initiative", "Hidden blades", "Hidden spines"];
   function esc(s) { return s.replace(/[.*+?^${}()|[\]\\\/]/g, "\\$&"); }
   function isPhrase(s) { return /\s/.test(s); }
   function termTable(pt, conds) {
