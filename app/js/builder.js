@@ -803,11 +803,22 @@ EN.builder = (function () {
     var sp = eng.getSpecies(ch.species);
     var lin = eng.getLineage(ch.species, ch.lineage);
     var blocks = [];
+    /* SPECIES AND LINEAGE LOCK AT FILING (author, 24 October 2026). Once a character has been
+       through Submit & File (meta.filedAt), its species and lineage no longer change, with Edit
+       freely on or off: a different species means a new character. It also closes the back door
+       to the creation Lineage feature, which a species or lineage change used to clear and so
+       reopen. Before filing every card stays open. The guard sits in the click handlers AND in
+       the store.update callbacks (re-read off the live record), so a stale card cannot write. */
+    var speciesLocked = isFiled(ch);
+    var lockReason = "Filed: a different species means a new character.";
 
     blocks.push(EN.ui.sectionTitle("Choose a Species"));
+    if (speciesLocked) blocks.push(el("p.help", { dataset: { speciesLock: "1" }, style: { margin: "0 0 8px", color: "var(--text3)" }, text: lockReason + " Species and lineage are settled once you Submit & File." }));
     blocks.push(el("div.card-grid", null, (EN.species || []).map(function (s) {
       return el("div.opt-card" + (ch.species === s.key ? ".sel" : ""), {
-        onclick: function () { store.update(function (c) { if (c.species !== s.key) { c.species = s.key; c.lineage = null; c.lineageFeatures = []; c.size = null; } }); }
+        dataset: speciesLocked ? { locked: "1" } : {}, title: speciesLocked ? lockReason : "",
+        style: speciesLocked ? { cursor: "default", opacity: ch.species === s.key ? "1" : ".55" } : {},
+        onclick: function () { if (speciesLocked) return; store.update(function (c) { if (isFiled(c)) return; if (c.species !== s.key) { c.species = s.key; c.lineage = null; c.lineageFeatures = []; c.size = null; } }); }
       }, [
         el("span.check", { text: "◉ ONLINE" }),
         el("h4", { text: s.name }),
@@ -835,9 +846,12 @@ EN.builder = (function () {
       /* 23 Oct: "Lineage sections no longer open with a one-line summary", so the card is the
          name alone. The lineage `description` stays in species.js; nothing renders it. */
       blocks.push(EN.ui.sectionTitle("Choose a Lineage"));
+      if (speciesLocked) blocks.push(el("p.help", { dataset: { lineageLock: "1" }, style: { margin: "0 0 8px", color: "var(--text3)" }, text: "Filed: the lineage is settled with the species." }));
       blocks.push(el("div.card-grid", null, (sp.lineages || []).filter(function (l) { return offered("lineage", l.key, ch.lineage); }).map(function (l) {
         return el("div.opt-card" + (ch.lineage === l.key ? ".sel" : ""), {
-          onclick: function () { store.update(function (c) { if (c.lineage !== l.key) { c.lineage = l.key; c.lineageFeatures = []; c.size = null; c.heightFt = null; } }); }
+          dataset: speciesLocked ? { locked: "1" } : {}, title: speciesLocked ? lockReason : "",
+          style: speciesLocked ? { cursor: "default", opacity: ch.lineage === l.key ? "1" : ".55" } : {},
+          onclick: function () { if (speciesLocked) return; store.update(function (c) { if (isFiled(c)) return; if (c.lineage !== l.key) { c.lineage = l.key; c.lineageFeatures = []; c.size = null; c.heightFt = null; } }); }
         }, [el("span.check", { text: "◉" }), el("h4", null, [document.createTextNode(l.name), heldTag("lineage", l.key)])]);
       })));
     }
@@ -2317,7 +2331,8 @@ EN.builder = (function () {
      dropOrphanUpgrades sweep), and the emptied slot, logged in ch.freelyFreed as { was, by },
      refills with Talents only (GAIN TALENT, or the Upgrade of the Talent now in slot `by`). A
      settled +2 Attributes pick, an Upgrade on its own and the Lineage feature picked at
-     creation stay locked either way. Turning it off undoes nothing: the picks stay as edited
+     creation stay locked either way, and so do the species and lineage themselves (author,
+     24 October 2026: a different species means a new character; see stepSpecies). Turning it off undoes nothing: the picks stay as edited
      and the level's retrain is still unspent. The header, the Freelancer tab, the print sheet
      and the PDF show an EDIT FREELY chip while it is on, so a GM reviewing the sheet sees it. */
   var RETRAIN_PICK_MAPS = ["talentAttrPicks", "talentSavePicks", "talentGearPicks"];

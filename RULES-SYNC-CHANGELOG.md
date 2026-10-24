@@ -1165,6 +1165,15 @@ either way. Turning it off undoes nothing, and the level's retrain is still unsp
 on, an EDIT FREELY chip shows on the header, the Freelancer tab, the print sheet and the PDF,
 so a GM reviewing the sheet sees it.
 
+**Species, lineage and the creation Lineage feature lock at filing (author, 24 October 2026).**
+Once a character has been through Submit & File, the Species step's species and lineage cards
+and the creation Lineage feature are disabled, with Edit freely on or off: "Filed: a different
+species means a new character." Before filing everything stays editable. This also closes the
+path by which a species or lineage change cleared the creation feature and reopened it. Filed
+saves load exactly as they are. The app has no unfile path: nothing clears `meta.filedAt`
+(Submit & File, the pre-gate grandfathering in `store.js` migrate and adopting an example only
+ever set it).
+
 **`EN.talentRules.progression` carried an older draft** of the Universal Upgrade rule (a
 single +1 rather than +2 to one Attribute or +1 to two). Corrected, though nothing currently
 reads that object; the live builder already implemented the rule correctly.
