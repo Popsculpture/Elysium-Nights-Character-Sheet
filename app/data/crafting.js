@@ -63,7 +63,7 @@ EN.crafting = {
   finish: {
     lead: "Let the pattern of results shape the finished item:",
     bands: [
-      { name: "Mostly Flawless or Strong Successes", text: "The item gains a small quality edge, a much cleaner build, or a highly useful narrative tag." },
+      { name: "Mostly Flawless or Costly Successes", text: "The item gains a small quality edge, a much cleaner build, or a highly useful narrative tag." },
       { name: "Mostly Mixed Results", text: "The item works, but it has a specific quirk, requires frequent maintenance, or has visible signs of modification." },
       { name: "Many Failures", text: "The item barely holds together. It functions for now, but it is highly unstable, crude, or obviously modified to any Character inspecting it." }
     ],
@@ -73,7 +73,7 @@ EN.crafting = {
   /* ---- Work Interval outcomes to Progress (Dice Pool Method) ---- */
   outcomes: [
     { key: "flawless", name: "Flawless", progress: 2, color: "var(--success)", note: "2 Progress, plus a minor benefit if the fiction supports it" },
-    { key: "strong",   name: "Strong",   progress: 1, color: "var(--success)", note: "1 Progress" },
+    { key: "costly",   name: "Costly",   progress: 1, color: "var(--success)", note: "1 Progress" },
     { key: "mixed",    name: "Mixed",    progress: 1, color: "var(--gold)",    note: "1 Progress, plus a complication, cost, or minor flaw" },
     { key: "failure",  name: "Failure",  progress: 0, color: "var(--warn)",    note: "0 Progress, plus a complication, extra cost, or wasted time" },
     { key: "crit",     name: "Critical", progress: 0, color: "var(--danger)",  note: "0 Progress, plus a major setback or dangerous mishap" }
@@ -158,7 +158,7 @@ EN.crafting = {
   /* Dice Pool margin to a Work Interval outcome key (Dice Pool Success Margin table) */
   marginToOutcomeKey: function (margin) {
     if (margin >= 3) return "flawless";
-    if (margin >= 1) return "strong";
+    if (margin >= 1) return "costly";
     if (margin === 0) return "mixed";
     if (margin >= -2) return "failure";
     return "crit";

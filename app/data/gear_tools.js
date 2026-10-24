@@ -9,6 +9,7 @@
    Use) and a Governing Skill. A kit the book lets a second category unlock
    (the Disguise and Styling Kit) names it in categoryAlt: proficiency in either
    one opens Proficient Use. Counted consumables track every unit.
+   23 Oct 2026 handoff: the Carry Gear intro adds the Packed It / Racked sentence.
    =========================================================================== */
 window.EN = window.EN || {};
 EN.gearCatalog = EN.gearCatalog || {};
@@ -47,7 +48,7 @@ EN.gearCatalog.tools = {
     { key: "carry", title: "Carry Gear",
       intro: "Where you rack it matters as much as what it weighs. A pistol crammed into a duffel rides heavier than the same pistol sitting in a rig built to hold it. Carry Gear rewards good rigging with a small, specific break on Load, tied to what you actually stow in it. Carry Gear itself is Load 0 and never counts against your own Load Budget.",
       groups: [
-        { name: "Carry Gear", intro: "Racked: when you set up your Loadout, also set which items go into each piece of Carry Gear you are wearing, up to its stated limit. A Racked item's Load is reduced by 1 (minimum 0). An item can only be Racked in one piece of Carry Gear at a time, and it still has to plausibly fit the container; a Fanny Pack doesn't hold a Longarm. GM's call on anything borderline." }
+        { name: "Carry Gear", intro: "Racked: when you set up your Loadout, also set which items go into each piece of Carry Gear you are wearing, up to its stated limit. A Racked item's Load is reduced by 1 (minimum 0). An item you reveal later with Packed It can be Racked then, in any Carry Gear with a free space. An item can only be Racked in one piece of Carry Gear at a time, and it still has to plausibly fit the container; a Fanny Pack doesn't hold a Longarm. GM's call on anything borderline." }
       ] },
     { key: "consumables", title: "Consumables",
       intro: "Single-use gear that patches a body, breaches a wall, or makes the evidence disappear.",

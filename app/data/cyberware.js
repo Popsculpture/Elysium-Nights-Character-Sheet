@@ -6,6 +6,10 @@
    its own SP, price (Glimmer), and legality. SP feeds Total Static and the
    Chrome Tax thresholds. Zone anchors are approximate body coordinates on the
    Chrome-tab silhouette (viewBox 0 0 220 470).
+   23 Oct 2026 handoff (Costly Success, the 23 October rulings): zones have no
+   fixed capacity (`zonesNote`; the app never capped a zone and adds no anatomy
+   guard), and Static Thresholds stack: each tier's named effects live in `extra`,
+   its two penalty lines stay in `effects`, and `stackNote` is the book sentence.
    =========================================================================== */
 window.EN = window.EN || {};
 
@@ -24,15 +28,29 @@ EN.cyberware = {
     Hardware:   { label: "Hardware",   blurb: "External ports, concealed bays",    at: { x: 418, y: 301 } }
   },
 
-  /* The Chrome Tax · Static Thresholds. index 0 = safe. Penalty value = index. */
+  /* The Chrome Tax · Static Thresholds. index 0 = safe. Penalty value = index.
+     `effects` holds the tier's two penalty lines; `extra` holds its named effects, which each higher
+     Threshold keeps (the book's stacking sentence, `stackNote`). The engine builds the cumulative
+     list the Chrome tab shows; the Codex table joins effects and extra in one cell. */
   thresholds: [
     { index: 0, min: 0,  max: 2,        name: "Safe Capacity",        effects: [] },
     { index: 1, min: 3,  max: 4,        name: "Minor Friction",       effects: ["−1 max Resilience Die", "−1 max Reservoir (FP)"] },
-    { index: 2, min: 5,  max: 6,        name: "System Integration",   effects: ["−2 max Resilience Dice", "−2 max FP", "Hardwired: targetable by Quick Hacks; Snag vs EMP & Electromagnetic Invocations"] },
-    { index: 3, min: 7,  max: 8,        name: "Visceral Rejection / Resonant Dissonance", effects: ["−3 max Resilience Dice", "−3 max FP", "Resonant Feedback: failed Breakflow → 1d4 Electric per Threshold", "Healing Penalty: Visceral Patch (0 FP) fails on you"] },
-    { index: 4, min: 9,  max: 10,       name: "Biological / Mechanical Stagnation", effects: ["−4 max Resilience Dice", "−4 max FP", "Maintenance Required: no natural Wound recovery on a Long Rest"] },
-    { index: 5, min: 11, max: Infinity, name: "The Ghost Fades",       effects: ["−5 max Resilience Dice", "−5 max FP", "Dead Battery: lose the free Resilience Die at 0 dice on a Short Rest"] }
+    { index: 2, min: 5,  max: 6,        name: "System Integration",   effects: ["−2 max Resilience Dice", "−2 max FP"],
+      extra: ["Hardwired: targetable by Quick Hacks; Snag vs EMP & Electromagnetic Invocations"] },
+    { index: 3, min: 7,  max: 8,        name: "Visceral Rejection / Resonant Dissonance", effects: ["−3 max Resilience Dice", "−3 max FP"],
+      extra: ["Resonant Feedback: failed Breakflow → 1d4 Electric per Threshold", "Healing Penalty: Visceral Patch (0 FP) fails on you"] },
+    { index: 4, min: 9,  max: 10,       name: "Biological / Mechanical Stagnation", effects: ["−4 max Resilience Dice", "−4 max FP"],
+      extra: ["Maintenance Required: no natural Wound recovery on a Long Rest"] },
+    { index: 5, min: 11, max: Infinity, name: "The Ghost Fades",       effects: ["−5 max Resilience Dice", "−5 max FP"],
+      extra: ["Dead Battery: lose the free Resilience Die at 0 dice on a Short Rest"] }
   ],
+
+  /* The book's Chrome Tax sentences, word for word (23 Oct handoff, section 7; PHB The Chrome Tax and
+     Calculating Thresholds). The Codex prints `zonesNote` after the Interface Zones table and
+     `stackNote` under the Chrome Tax table. No zone cap and no anatomy guard is built: the limit is
+     Static, plus common sense. */
+  zonesNote: "Zones have no fixed capacity: install as much as you can stand, keep a running total in Total Static, and ignore the math until it matters. Static is the limit, plus common sense: you have one set of eyes, two arms, two legs, and one heart to replace.",
+  stackNote: "Each Threshold keeps the extra effects of the Thresholds below it: Hardwired from Threshold 2 stays with you at 3, 4, and 5.",
 
   /* Two rules the Chrome tab stated only in its own UI (the gauge's caption and tooltip, and the
      Tech Bay's platform panel); they live here so the tab and the Codex read one copy. */

@@ -4,6 +4,9 @@
    (Order of Shaping) Invocation calculator, a Sustain tracker, and a saved
    Resonant Pattern log. Unattuned classes get a short status panel instead.
    Flow state persists on ch.flow; the builder form is transient module state.
+   23 Oct 2026: Strain stages list cumulatively (each Stage keeps the Stages below it), a stage
+   click clears partial points only when it lowers the Stage, an attack-resolved Hybrid shows the
+   damage-plus-effect rule, and Poltergeist is gated to Level 3 (Hardware Harmonization).
    =========================================================================== */
 window.EN = window.EN || {};
 
@@ -128,7 +131,9 @@ EN.flowView = (function () {
     var hasEffect = _form.intent === "effect" || _form.intent === "hybrid";
     if (_form.force === "empowered" && hasEffect) {
       var names = (R.empowered || []).map(function (e) { return e.name; });
-      if (names.indexOf(_form.empoweredEffect) === -1) _form.empoweredEffect = names[0] || null;
+      // the default pick skips an effect the character has not unlocked (Poltergeist, Level 3); an explicit pick (a loaded pattern) is left alone
+      var open = (R.empowered || []).filter(function (e) { return !(e.unlock && e.unlock > (d.level || 1)); }).map(function (e) { return e.name; });
+      if (names.indexOf(_form.empoweredEffect) === -1) _form.empoweredEffect = open[0] || names[0] || null;
     } else { _form.empoweredEffect = null; }
     return R;
   }
@@ -167,7 +172,7 @@ EN.flowView = (function () {
     var cells = (EN.flow.strainTrack).map(function (s) {
       var on = stage >= s.stage, col = STC[s.stage];
       return el("button", { title: s.name + ": " + s.penalty,
-        onclick: function () { fset(function (fl) { var ns = (fl.strain === s.stage) ? s.stage - 1 : s.stage; fl.strain = ns; fl.strainPoints = 0; if (ns < 5) fl.breakflow = false; else { fl.breakflow = true; fl.sustained = null; } }); },
+        onclick: function () { fset(function (fl) { var was = fl.strain || 0, ns = (fl.strain === s.stage) ? s.stage - 1 : s.stage; fl.strain = ns; if (ns < was) fl.strainPoints = 0; if (ns < 5) fl.breakflow = false; else { fl.breakflow = true; fl.sustained = null; } }); },
         style: { flex: "1 1 0", minWidth: "54px", padding: "5px 2px", cursor: "pointer", borderRadius: "4px",
                  fontFamily: "var(--disp)", fontSize: "9px", letterSpacing: ".08em",
                  border: "1px solid " + (on ? col : "var(--border2)"), background: on ? "rgba(0,0,0,.25)" : "transparent",
@@ -180,10 +185,14 @@ EN.flowView = (function () {
     if (stage > 0 && f.strainIgnored) {
       kids.push(noteP("Stage " + stage + " (" + f.strainName + "): ignored (Absolute Conduit).", "var(--success)"));
       if (f.strainIgnoredNote) kids.push(noteP(f.strainIgnoredNote, "var(--text3)"));
+    } else if (stage > 0) {
+      /* Each Stage keeps the effects of the Stages below it (the Strain Track, PHB), so Stage N lists
+         the effects of Stages 1 to N, one line each, read from EN.flow.strainTrack. */
+      EN.flow.strainTrack.filter(function (t) { return t.stage <= stage; }).forEach(function (t) {
+        kids.push(noteP("Stage " + t.stage + " (" + t.name + "): " + t.penalty, "var(--warn)"));
+      });
     } else {
-      kids.push(stage > 0
-        ? noteP("Stage " + stage + " (" + f.strainName + "): " + f.strainPenalty, "var(--warn)")
-        : ruleNote("No Strain. Overdraw and failed Flow rituals build it."));
+      kids.push(ruleNote("No Strain. Overdraw and failed Flow rituals build it."));
     }
 
     // Overdraw logger
@@ -301,8 +310,15 @@ EN.flowView = (function () {
         function (k) { return _form.force === k; }, function (k) { setForm({ force: k }); })]));
     // Empowered effect picker (when Empowered + an effect is carried)
     if (_form.force === "empowered" && inv.hasEffect && (R.empowered || []).length) {
-      rows.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "4px" } }, [fieldLabel("EFFECT", _form.empoweredEffect ? "fl-resonances/" + slug(_form.empoweredEffect) : null),
-        seg(R.empowered.map(function (e) { return { key: e.name, label: e.name, title: e.text }; }), function (k) { return _form.empoweredEffect === k; }, function (k) { setForm({ empoweredEffect: k }); })]));
+      /* A level-gated effect (Poltergeist) prints its level on its label, as the Handbook does, and is
+         disabled until the character reaches it. The anchor is the Codex's named-line slug, which takes
+         the label with its level. */
+      var effObj = R.empowered.filter(function (e) { return e.name === _form.empoweredEffect; })[0] || null;
+      rows.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "4px" } }, [fieldLabel("EFFECT", effObj ? "fl-resonances/" + slug(effectLabel(effObj)) : null),
+        seg(R.empowered.map(function (e) {
+          var locked = !!(e.unlock && e.unlock > (d.level || 1));
+          return { key: e.name, label: effectLabel(e), disabled: locked, title: locked ? "Eligible at Level " + e.unlock + " (Hardware Harmonization)" : e.text };
+        }), function (k) { return _form.empoweredEffect === k; }, function (k) { setForm({ empoweredEffect: k }); })]));
     }
 
     // Duration + target willingness
@@ -322,6 +338,15 @@ EN.flowView = (function () {
       ]) : null
     ]));
     summary.push(noteP(_form.unwilling ? inv.resolutionText : "Automatic (willing target or object); no roll.", _form.unwilling ? "var(--text2)" : "var(--success)"));
+    /* Damage and an effect on one Invocation: the Flow Attack decides the hit (PHB, under Duration). Only an
+       attack-resolved Resonance; the save-resolved ones (Spatial, Cognitive, Synthetica) follow their own text,
+       and a willing target takes no Flow Attack at all. */
+    if (_form.unwilling && inv.hasDamage && inv.hasEffect && inv.resolution === "attack") {
+      summary.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } }, [
+        noteP("On a miss, nothing happens. On a hit, the damage lands, then the target makes the effect's save, and a success avoids only the effect.", "var(--text2)"),
+        EN.ui.ruleChip("fl-shaping/damage-and-an-effect-together", { title: "Damage and an Effect Together" })
+      ]));
+    }
     if (inv.empoweredEffect) summary.push(noteP("Empowered: " + inv.empoweredEffect.name + " · " + inv.empoweredEffect.text, VIO));
     if (_form.duration === "sustain") summary.push(inv.sustainable
       ? noteP("Sustain: 1 FP at the start of each turn; replaces any current sustain.", "var(--text2)")
@@ -339,6 +364,8 @@ EN.flowView = (function () {
     bp.classList.add("builder"); return bp;
   }
 
+  // an Empowered Effect's label as the Handbook prints it: "Poltergeist (Level 3)"
+  function effectLabel(e) { return e.name + (e.unlock ? " (Level " + e.unlock + ")" : ""); }
   function defaultName(R) {
     if (_form.empoweredEffect) return _form.empoweredEffect;
     var tail = _form.intent === "damage" ? "Strike" : _form.intent === "hybrid" ? "Hybrid" : "Shaping";

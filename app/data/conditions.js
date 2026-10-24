@@ -6,7 +6,11 @@ window.EN = window.EN || {};
 
    Sorted case-insensitively, which is why LinkDeath sits under L rather than between
    Lagged and Mutating by its capital D. Re-sorted 2026-09-19, when Immunity had drifted
-   behind Incapacitated and Soul Shock had drifted to the end of the S block. */
+   behind Incapacitated and Soul Shock had drifted to the end of the S block.
+
+   23 Oct 2026 handoff: the Strain entry no longer prints its own stage list. The Strain Track is
+   one four-column table in The Flow (EN.flow.strainTrack, Codex panel fl-strain) and this entry
+   points there (PHB:6174-6188). */
 EN.conditions = [
   {
     name: "Bleeding",
@@ -229,7 +233,7 @@ EN.conditions = [
   {
     name: "Strain",
     summary: "Penalties and Breakflow risk",
-    text: "Every Overdraw pulls the line between you and the Flow a little tighter. Pull it enough times and it snaps.\n\nHow It Works:\n- Each time Overdraw causes any Vitality loss, you accumulate Strain points equal to the Flow Points (FP) spent beyond your Reservoir. Gain 1 Stage of Strain for every 3 Strain points accumulated.\n- Strain stages and their effects:\n\nStrain Stages:\n- Stage 1 - Ripple: A faint hum or vibration follows your movements. Effect: You roll with Snag on Invocation rolls.\n- Stage 2 - Wave: Faint static or flickering light surrounds you. Effect: All Invocations cost +1 FP.\n- Stage 3 - Surge: Visual distortions and a racing heartbeat. Effect: Overdraw Vitality damage increases from 1d4 to 1d6 per FP, and you roll with Snag on Breakflow Checks.\n- Stage 4 - Rend: Crackling energy, tremors, and uncontrolled bursts. Effect: You must roll a Breakflow Check when Overdrawing, and spending FP at all (not just Overdraw) costs 1 flat Vitality per FP.\n- Stage 5 - Collapse: Total silence and disconnection. Effect: Immediate Breakflow; you fall Unconscious.\n\nHow to End It:\n- A Long Rest reduces Strain by 1 Stage, and Ritual Recovery can remove additional Stages based on successes.\n- Downtime clears all Strain. Breakflow Restoration ends Breakflow and lowers Strain to Stage 2, not to zero."
+    text: "Every Overdraw pulls the line between you and the Flow a little tighter. Pull it enough times and it snaps.\n\nHow It Works:\n- Each time Overdraw causes any Vitality loss, you accumulate Strain points equal to the Flow Points (FP) spent beyond your Reservoir. Gain 1 Stage of Strain for every 3 Strain points accumulated. Removing a Stage also clears any partial points; gaining a Stage another way leaves them where they are.\n- The five Stages and their effects are on the Strain Track in The Flow; each Stage keeps the effects of the Stages below it.\n\nHow to End It:\n- A Long Rest reduces Strain by 1 Stage.\n- Ritual Recovery can remove additional Stages based on successes.\n- Downtime clears all Strain, as described in the Recovery section. Breakflow Restoration ends the Breakflow condition and lowers Strain to Stage 2, not to zero. While you're in Breakflow, only Breakflow Restoration or Rough Restoration lowers your Strain; Long Rests and Ritual Recovery work again once it ends."
   },
   {
     name: "Stunned",

@@ -161,7 +161,8 @@ EN.inventoryView = (function () {
     store.update(function (c) {
       c.equippedWeapons = c.equippedWeapons || [];
       var i = c.equippedWeapons.indexOf(key);
-      if (i === -1) c.equippedWeapons.push(key); else c.equippedWeapons.splice(i, 1);
+      if (i === -1) { c.equippedWeapons.push(key); EN.engine.unlogDropped(c, key); }   // equipping a dropped item picks it back up
+      else c.equippedWeapons.splice(i, 1);
     });
     // An unarmed augment gets no row of its own on the Attacks list, so promising one
     // sets the player looking for something that will never appear. It DOES arrive,
@@ -195,6 +196,13 @@ EN.inventoryView = (function () {
     store.update(function (c) {
       c.carry = c.carry || {};
       c.racked = c.racked || {};
+      /* "dropped": off your person like Stashed, but its Load is noted first in ch.loadDropped,
+         because Packed It still counts what you dropped (engine.logDropped, shown beside LOAD). */
+      if (status === "dropped") {
+        var de = EN.engine.findEntry(c, key);
+        if (de) EN.engine.logDropped(c, de);
+        status = "stashed";
+      }
       if (status && status.indexOf("racked|") === 0) {
         var gearKey = status.slice(7);
         if (gearKey) { c.carry[key] = "racked"; c.racked[key] = gearKey; }
@@ -203,6 +211,8 @@ EN.inventoryView = (function () {
         delete c.racked[key];
         if (!status || status === "stashed") delete c.carry[key]; else c.carry[key] = status;
       }
+      // back on your person: a dropped item picked back up is no longer dropped (Packed It counts it once)
+      if (status && status !== "stashed") EN.engine.unlogDropped(c, key);
     });
   }
   function carryCtrl(ch, it, entry) {
@@ -251,7 +261,9 @@ EN.inventoryView = (function () {
       return el("option", { value: "racked|" + gk, selected: cs === "racked" && (ch.racked || {})[key] === gk, text: "⧉ Racked: " + g.name });
     }));
     if (cs === "racked" && !rackedGear) opts.push(el("option", { value: "racked|" + ((ch.racked || {})[key] || ""), selected: true, text: "⧉ Racked (adrift)" }));
-    var dropdown = el("select", { title: "Loadout status; Racked stows it in worn Carry Gear for 1 less Load", style: { fontSize: "11px", width: "auto" },
+    // Dropped: an on-person row leaves your person and its Load is noted for Packed It
+    if (cs !== "stashed") opts.push(el("option", { value: "dropped", title: "Take it off your person and note its Load: Packed It still counts it", text: "Dropped" }));
+    var dropdown = el("select", { title: "Loadout status; Racked stows it in worn Carry Gear for 1 less Load; Dropped notes its Load beside the Load you carry now", style: { fontSize: "11px", width: "auto" },
       onchange: function () { invSetCarry(key, this.value); } }, opts);
     return el("div.row", { style: { gap: "6px", alignItems: "center" } }, [wearBtn, dropdown]);
   }
@@ -600,6 +612,8 @@ EN.inventoryView = (function () {
     store.update(function (c) {
       var e = findEntry(c, key);
       if (!e) return;
+      // an on-person unit is revealed Load that Packed It still counts: note it before it goes
+      EN.engine.logDropped(c, e, 1);
       e.qty = (e.qty || 1) - 1;
       if (e.qty <= 0) c.equipment = c.equipment.filter(function (x) { return x !== e; });
       unequipIfGone(c, key, e.name);
@@ -2224,7 +2238,7 @@ EN.inventoryView = (function () {
     var dmgText = (grip && grip.dice && it.damage) ? String(it.damage).replace(/^\s*\d+d\d+/, grip.dice) : (it.damage || "");
     var benchPanel = EN.ui.panel(row.label, it.group.toUpperCase() + " · " + dmgText, [
       el("p.help", { style: { margin: "0 0 8px", fontSize: "11.5px" } }, [
-        document.createTextNode("One Part per slot (Utility holds two). Accessories snap on anytime; Mods are bench work in Downtime with a kit. The strictest legality on the build is what a scanner reports. "),
+        document.createTextNode("One Part per slot (Utility holds two, and both count against the Slot Count). Accessories snap on anytime; Mods are bench work in Downtime with a kit. The strictest legality on the build is what a scanner reports. "),
         EN.ui.ruleChip("gr-custom/installing-parts")
       ]),
       header, grid,

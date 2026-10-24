@@ -190,7 +190,7 @@ EN.recovery = {
     { key: "ritual", name: "Ritual Recovery", duration: "10 minutes to 4 hours, scaling with current Strain Stage",
       lines: [
         "A Shaper realigns their resonance through guided meditation and a **Flow Dice Pool check**, reducing Strain and recovering Flow Points.",
-        "Duration, Snag Dice, and full resolution (Flawless / Strong / Mixed / Failure) are governed by **The Ritual of Alignment** (see The Flow).",
+        "Duration, Snag Dice, and full resolution (Flawless / Costly / Mixed / Failure) are governed by **The Ritual of Alignment** (see The Flow).",
         "**Resonant Saturation:** A Character may only benefit from Ritual Recovery once per 24-hour period. Any additional attempts automatically fail and inflict 1 Stage of Strain."
       ],
       // the Flow chapter's Ritual Recovery panel states Resonant Saturation (EN.flow.ritualRecovery.note)
@@ -244,7 +244,7 @@ EN.recovery = {
         "**Check:** Medtech, Tech, or Flow Dice Pool check.",
         "**Snag Dice:** 2 Snag Dice for minor trauma, 4+ Snag Dice for critical trauma.",
         "**Equipment:** Basic Medkit (Advanced Medkit grants +2, or +1 Edge Die).",
-        "**Effect (Strong Success / Margin +1 to +2):** Recover **1d4 Wounds**.",
+        "**Effect (Costly Success / Margin +1 to +2):** Recover **1d4 Wounds**.",
         "**Flawless Success (Margin +3 or more):** Recover **1d6 Wounds**."
       ]
     },

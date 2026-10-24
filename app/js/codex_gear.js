@@ -184,6 +184,8 @@ window.EN = window.EN || {};
           ], { tag: "div.feature" }));
         }
         var r = wp.rules || {};
+        // the book's "The Utility Exception" paragraph (23 Oct 2026 handoff, section 7): both Utility Parts count against the Slot Count
+        if (r.utility) kids.push(K.ruleBlock("The Utility Exception", r.utility));
         if (r.install) kids.push(K.ruleBlock("Installing Parts", r.install));
         if (r.fabrication) kids.push(K.ruleBlock("Fabrication", r.fabrication));
         if (r.legality) kids.push(K.ruleBlock("Part Legality", r.legality));
@@ -330,7 +332,8 @@ window.EN = window.EN || {};
       if (Object.keys(z).length) {
         kids.push(K.entry("interface-zones", "Interface Zones", [
           el("h4", { text: "Interface Zones" }),
-          K.refTable(["Zone", "Covers"], Object.keys(z).map(function (k) { return [z[k].label || k, z[k].blurb || ""]; }), [0])
+          K.refTable(["Zone", "Covers"], Object.keys(z).map(function (k) { return [z[k].label || k, z[k].blurb || ""]; }), [0]),
+          W.zonesNote ? K.proseBlock(W.zonesNote) : null
         ], { tag: "div.feature" }));
       }
       if ((W.thresholds || []).length) {
@@ -338,8 +341,11 @@ window.EN = window.EN || {};
           el("h4", { text: "The Chrome Tax" }),
           W.taxNote ? K.proseBlock(W.taxNote) : null,
           K.refTable(["Threshold", "Total Static", "Name", "Effects"], W.thresholds.map(function (t) {
-            return ["T" + t.index, t.max === Infinity ? t.min + "+" : t.min + " to " + t.max, t.name, (t.effects || []).length ? t.effects.join("; ") : "None"];
-          }), [0, 1])
+            // the penalty lines plus the tier's named extras (each Threshold keeps the extras below it, `stackNote`)
+            var fx = (t.effects || []).concat(t.extra || []);
+            return ["T" + t.index, t.max === Infinity ? t.min + "+" : t.min + " to " + t.max, t.name, fx.length ? fx.join("; ") : "None"];
+          }), [0, 1]),
+          W.stackNote ? K.proseBlock(W.stackNote) : null
         ], { tag: "div.feature" }));
       }
       if (W.platformNote) kids.push(K.ruleBlock("Platform Mod Slots", W.platformNote));

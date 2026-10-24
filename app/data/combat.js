@@ -5,8 +5,28 @@
 // and so do the whole Common Actions table with its Flow Modifier box (l.2019-2040) and the three
 // cover grades (l.2177-2189).
 // Speed and its costs in full are EN.movement (data/movement.js), rendered beside these in the Codex.
+// 23 October 2026 handoff (costly success): the Turn Structure list is EN.combat.turnStructure
+// (Complex Action line as printed), the Complex summary follows it, Quick Hack and the attack
+// note add Device Bonus, and the damage pipeline puts Resistance and Vulnerability last and
+// treats 0 Vitality as Fatigue and Bloodied, not a Wound.
 window.EN = window.EN || {};
 EN.combat = {
+
+  /* The Handbook's Turn Structure list (Timing, Action Economy and Combat), word for word. The
+     app keeps no per-turn tracker, so this is rendered as text first in the Codex's Action
+     Economy panel (ref-actions); it is where the Complex Action rule lives. */
+  turnStructure: {
+    intro: "During your turn, you may take the following in any order unless stated otherwise:",
+    lines: [
+      "**Action (1).** Your main effort for the round: attack, hack, channel, or perform a major maneuver.",
+      "**Move (1).** Spend Speed to reposition; can be traded for one Swift or one extra Impulse Action.",
+      "**Swift Action (0-1).** Quick maneuver or minor action; replaces your Move Action.",
+      "**Impulse (0-1 per round).** A minor action triggered outside your turn (parry, dodge, intercept, or Help).",
+      "**Free Actions.** Minor narrative or functional actions (speaking, interacting with gear, etc.).",
+      "**Complex Action (0-1).** Consumes both Action and Move, so you can't trade Move for a Swift or an extra Impulse. Free Actions and your one Impulse remain. Used for continuous or powerful tasks (full defense, major channeling). Some say otherwise: Charge/Rush keeps a Swift, and Full Defense allows nothing else.",
+      "**Special Action (varies).** Feature-driven: passive, triggered, resource-based, or embedded. Cost and timing set by the feature."
+    ]
+  },
 
   actionTypes: [
     {
@@ -39,7 +59,7 @@ EN.combat = {
     },
     {
       name: "Complex Action",
-      summary: "Consumes both Action and Move; used for continuous or powerful tasks (full defense, major channeling).",
+      summary: "Consumes both Action and Move, so you can't trade Move for a Swift or an extra Impulse. Free Actions and your one Impulse remain. Used for continuous or powerful tasks (full defense, major channeling). Some say otherwise: Charge/Rush keeps a Swift, and Full Defense allows nothing else.",
       text: "Complex Actions require complete focus and time. They are deliberate or multi-step tasks that dominate a turn.\n\nExamples\n- Channel Major Flow: Direct or shape powerful resonance currents.\n- Fire Full-Auto: Sustain a burst or continuous fire with Heavy Weapons.\n- Complex Device Use: Execute a multi-step hack, tune sensors, or manipulate unstable tech.\n- Full Defense (Complex): Enter a total defensive stance, improving your protection at the cost of all other actions."
     },
     {
@@ -102,7 +122,7 @@ EN.combat = {
     { name: "Weapon Save DC (Thrown)", cost: "-", text: "8 + the higher of your Body or Agility Modifier + Caliber, Sets DC to resist thrown-weapon effects." },
     { name: "Flow Attack", cost: "Action", text: "d20 + Flow Modifier + Caliber, Consumes FP as defined by the Invocation; effect varies." },
     { name: "Flow Save DC", cost: "-", text: "8 + Flow Modifier + Caliber, Sets the DC for enemies to resist your Flow Invocations and effects." },
-    { name: "Quick Hack", cost: "Action", text: "d20 + Tech Modifier + Systems Proficiency Bonus, Disrupt, override, or support allied systems in combat." },
+    { name: "Quick Hack", cost: "Action", text: "d20 + Tech Modifier + Systems Proficiency Bonus + Device Bonus, Disrupt, override, or support allied systems in combat." },
     { name: "Use Device / Item", appSummary: true, cost: "Action", text: "d20 (see description), Activate or manipulate gear, doors, or terminals." },
     { name: "Charge / Rush", cost: "Complex", text: "Move up to double your Speed in a straight line toward a Target, then make one melee attack against it with Edge. Must cover at least 2 spaces before you strike. As a Complex Action it spends your Action and Move; you keep your Swift, Free, and one Impulse." },
     { name: "Suppressive Fire", appSummary: true, cost: "-", text: "See Full-Auto firing mode. Use Full-Auto in Suppress mode (see Firing Modes)." },
@@ -251,7 +271,7 @@ EN.combat = {
   overflowDamage: "If an attack destroys the cover protecting a character:\n- Any damage that reduces Integrity below 0 becomes overflow damage.\n- Apply that overflow directly to the protected character.\n- The character does not get an additional Defense or Defensive Impulse against the overflow, but still applies armor, Damage Reduction, and Resistances as normal.",
 
 
-  attackResolution: "All attacks in combat use the d20 Method. Dice Pools are never used for attack rolls or Saving Throws.\n\n1. Declare Attack Type:\n- Choose melee, ranged, or Flow attack.\n- Apply situational effects (Aim, Edge, etc.).\n\n2. Make the Attack Roll:\n- Roll d20 + Attribute Modifier + Weapon Proficiency Bonus (Systems Proficiency Bonus for Quick Hacks) + situational modifiers.\n- Apply Edge or Snag as appropriate.\n\n3. Determine Defense:\n- Defense = 10 + Agility Modifier + cover + active bonuses.\n\n4. Compare Totals:\n- If Attack ≥ Defense, the hit lands.\n- Compute Margin = Attack Total - Defense.\n\n5. Apply Damage:\n- Roll weapon or ability damage.\n- Subtract from Vigor, then Vitality.\n- Overflow becomes Wounds.\n\n6. Criticals:\n- Natural 20: Critical success on the attack; treat as at least a Strong Hit and apply any weapon or Invocation critical effects.\n- Natural 1: Automatic miss and a possible narrative mishap at GM discretion.",
+  attackResolution: "All attacks in combat use the d20 Method. Dice Pools are never used for attack rolls or Saving Throws.\n\n1. Declare Attack Type:\n- Choose melee, ranged, or Flow attack.\n- Apply situational effects (Aim, Edge, etc.).\n\n2. Make the Attack Roll:\n- Roll d20 + Attribute Modifier + Weapon Proficiency Bonus (Systems Proficiency Bonus and Device Bonus for Quick Hacks) + situational modifiers.\n- Apply Edge or Snag as appropriate.\n\n3. Determine Defense:\n- Defense = 10 + Agility Modifier + cover + active bonuses.\n\n4. Compare Totals:\n- If Attack ≥ Defense, the hit lands.\n- Compute Margin = Attack Total - Defense.\n\n5. Apply Damage:\n- Roll weapon or ability damage.\n- Subtract from Vigor, then Vitality.\n- Overflow becomes Wounds.\n\n6. Criticals:\n- Natural 20: Critical success on the attack; treat as at least a Strong Hit and apply any weapon or Invocation critical effects.\n- Natural 1: Automatic miss and a possible narrative mishap at GM discretion.",
 
   attackMargins: [
     { margin: "+10 or more", result: "Dominant Hit", outcome: "+1d6 damage or apply a strong weapon effect (disarm, knockdown, rupture, etc.)." },
@@ -301,7 +321,7 @@ EN.combat = {
      prints it (17 October 2026): the step applies the Impulse budget and the one-defense-per-
      Enemy-turn cap together. The app keeps no spent state, so the Defend panel states both
      limits (DEF_LIMIT_NOTE in js/combat.js) and enforces neither. */
-  damagePipeline: "When a Target is targeted by an attack or damaging effect, follow these four steps in order:\n\n1. Determine the Hit (Avoidance)\n- Compare the incoming Attack Roll to the Target's Defense score (Cover is already calculated into the base score).\n- Evasion: At this exact moment, the Target may spend an Impulse Action to Dodge, retroactively boosting their Defense score. If this causes the attack to miss, the pipeline ends immediately.\n- If the attack roll still equals or exceeds the final Defense score, it hits. The raw damage is the weapon's dice plus the same Attribute Modifier the attack roll used.\n- Indirect delivery (a grenade, a launcher shell) adds no Attribute Modifier, and neither do cipher, Flow, or Tech effects unless their own text grants one.\n\n2. Active Mitigation (Impulse)\n- If the attack hits, the Target may spend a defensive Impulse now, if their Impulse budget allows it and they haven't already used one during this Enemy's turn, to use Block, Parry, Ward, Resurge, Siphon, or Brace.\n- Roll the defense's corresponding die and subtract the result, plus any flat bonuses the defense carries (a suit's Block Bonus, the Plated trait), directly from the raw incoming damage. Resolve any secondary effects of the defense immediately (such as Siphon restoring Vigor, or Resurge dealing rebound damage).\n\n3. Passive Mitigation (Armor DR)\n- Subtract the defending Target's Armor Damage Reduction (DR) from the remaining damage.\n- Some damage types (like Force (Spatial) or Psychic) may ignore standard physical DR entirely.\n\n4. Apply Damage (Depletion)\n- Apply the final damage total to the Target's health pools in the following order:\n- Vigor: Subtract damage from Vigor first.\n- Vitality: Any leftover damage spills directly into Vitality.\n- Wounds: If Vitality is reduced to 0, the Target suffers a Wound. Apply the leftover damage to the Wound track and check for severe conditions.",
+  damagePipeline: "When a Target is targeted by an attack or damaging effect, follow these four steps in order:\n\n1. Determine the Hit (Avoidance)\n- Compare the incoming Attack Roll to the Target's Defense score (Cover is already calculated into the base score).\n- Evasion: At this exact moment, the Target may spend an Impulse Action to Dodge, retroactively boosting their Defense score. If this causes the attack to miss, the pipeline ends immediately.\n- If the attack roll still equals or exceeds the final Defense score, it hits. The raw damage is the weapon's dice plus the same Attribute Modifier the attack roll used.\n- Indirect delivery (a grenade, a launcher shell) adds no Attribute Modifier, and neither do cipher, Flow, or Tech effects unless their own text grants one.\n\n2. Active Mitigation (Impulse)\n- If the attack hits, the Target may spend a defensive Impulse now, if their Impulse budget allows it and they haven't already used one during this Enemy's turn, to use Block, Parry, Ward, Resurge, Siphon, or Brace.\n- Roll the defense's corresponding die and subtract the result, plus any flat bonuses the defense carries (a suit's Block Bonus, the Plated trait), directly from the raw incoming damage. Resolve any secondary effects of the defense immediately (such as Siphon restoring Vigor, or Resurge dealing rebound damage).\n\n3. Passive Mitigation (Armor DR)\n- Subtract the defending Target's Armor Damage Reduction (DR) from the remaining damage.\n- Some damage types (like Force (Spatial) or Psychic) may ignore standard physical DR entirely. Then apply Resistance or Vulnerability to what's left: halve it (rounded down) for a Resisted type, double it for a Vulnerable one. Example: 14 Fire damage minus a Block roll of 3 and DR 2 leaves 9; Fire Resistance halves it to 4, and that 4 comes off Vigor first.\n\n4. Apply Damage (Depletion)\n- Apply the final damage total to the Target's health pools in the following order:\n- Vigor: Subtract damage from Vigor first.\n- Vitality: Any leftover damage spills directly into Vitality.\n- Wounds: Reducing Vitality to 0 triggers 1 Fatigue and the Bloodied condition, not a Wound by itself. Damage left over after that is Wound damage: it comes off your Wounds and lowers your maximum Vitality by the same amount, then you make the Body Save against Wound damage (see Wound Effects).",
 
   /* OOMPH, the Core Rules passage under Damage Resolution, word for word from the 16 October
      handoff, for the Codex (ref-damage). The engine math is engine.js stepDieInfo / oomphFor.

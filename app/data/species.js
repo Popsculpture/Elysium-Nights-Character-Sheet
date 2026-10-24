@@ -2,18 +2,18 @@ window.EN = window.EN || {};
 /* No lineage hooks here. Each lineage once carried six numbered story hooks (a d6 table); nothing
    ever drew them, and the Toolkit's Personal Hooks (the lineage d6s) are NOT MODELLED by ruling,
    19 Oct 2026 (audit A6-13): EN.economy.notModelledToolkit names them for the Admin Codex. */
+/* 23 Oct 2026 handoff, section 8: the book prints each Corporate Classification once, inside The
+   Lie, so glance.corporateClassification is the bare term and nothing more. The At a Glance lines
+   the book cut (origin, nature, communities, reputation, commonLineages) are gone. Lineage
+   `description` summaries stay as data, but the Species step no longer shows them, and the book
+   lists no Cultural Marker, so none is carried. No glance field is rendered anywhere. */
 EN.species = [
   {
     key: "humans",
     name: "Humans",
     glance: {
-      origin: "Driven by relentless migration and unchecked corporate expansion.",
-      nature: "Organic, physically diverse, and heavily modified by cybernetics and their environment.",
-      communities: "Scattered everywhere, from pristine corporate arcologies to the rusted lower tiers of the sprawl.",
-      reputation: "Apex survivors, ambitious opportunists, and daring operators who champion personal causes.",
-      corporateClassification: "Baseline Consumer Biomass. The corporate elite view the general human population as a renewable, expendable labor force and the primary target market for aggressive cybernetic upselling and planned obsolescence.",
-      flowConnection: "Humans can learn to shape the Flow like anyone else. Phasebound inherit a stronger connection, leaving their nerves slightly out of sync with normal reality and alert to shifts in the current before others notice them.",
-      commonLineages: "FreeBorn, NextGen, Phasebound"
+      corporateClassification: "Baseline Consumer Biomass",
+      flowConnection: "Humans can learn to shape the Flow like anyone else."
     },
     blurb: "Humans built Elysium because they were afraid of being forgotten. They're fragile by comparison to many of the beings that now share the sprawl, but fragility never made humanity gentle. It made them urgent.",
     traits: {
@@ -104,13 +104,8 @@ EN.species = [
     key: "verdine",
     name: "Verdine",
     glance: {
-      origin: "Cultivated in corporate high-rise labs or germinated in the untamed soil of reclaimed ruins.",
-      nature: "Bioengineered plant-based organic hybrids.",
-      communities: "Groves centered around massive filtration stacks or undercity waste channels.",
-      reputation: "Patient guardians, walking toxin detectors, and greenwall specialists.",
-      corporateClassification: "Engineered Ecological Filters. Corporations see them merely as a collection of walking, talking air purifiers whose original corporate patents have unfortunately expired.",
-      flowConnection: "Felt through roots, spores, and seasonal growth cycles. Verdine treat the current as part of their own biology rather than something they reach for.",
-      commonLineages: "Arboreal, Floral, Mycelial"
+      corporateClassification: "Engineered Ecological Filters",
+      flowConnection: "Felt through roots, spores, and seasonal growth cycles. Verdine treat the current as part of their own biology rather than something they reach for."
     },
     blurb: "Verdine were created as living infrastructure, then became something far more difficult to manage: people with long memories.",
     traits: {
@@ -201,13 +196,8 @@ EN.species = [
     key: "clankers",
     name: "Clankers",
     glance: {
-      origin: "Sparked into sentience when Flow entities (Nixies and Gremlins) tangled with corporate automaton cores.",
-      nature: "Fully inorganic, synthetic life with a digitized consciousness and zero organic heritage.",
-      communities: "Shop floors, server hubs, unit rosters, and underground networks of mutual upkeep.",
-      reputation: "Met with apprehension; citizens never know if a machine is executing code or possessing a soul.",
-      corporateClassification: "Cognitive Anomalies. Treated as a massive defect to be studied, contained, or violently erased.",
-      flowConnection: "Hardware is bypass-tuned to safely carry resonance; they suffer Resonant Dissonance instead of Visceral Rejection from aftermarket cyberware.",
-      commonLineages: "Laborframes, Durabodies, Lifelikes"
+      corporateClassification: "Cognitive Anomalies",
+      flowConnection: "Hardware is bypass-tuned to safely carry resonance; they suffer Resonant Dissonance instead of Visceral Rejection from aftermarket cyberware. See Clankers and The Flow, in The Flow chapter, for how Clankers handle the Flow, healing, and Static."
     },
     blurb: "Clankers are the accident the corporations can't reproduce. They are not uploaded humans, not standard artificial intelligences, and not malfunctioning appliances with delusions of personhood.",
     traits: {
@@ -219,7 +209,7 @@ EN.species = [
       },
       secondaryTrait: {
         name: "Resonant Circuitry",
-        text: "Standard factory hardware can't safely process metaphysical loads. Your resilience is the direct result of your awakening: a Gremlin haphazardly rewired your internal surge protectors, while a Nixie smoothed the chaotic current to keep your core from melting. When subjected to an EMP, digital virus, or Tech damage, you can use a Swift Action to forcefully ground the feedback through this supernatural bypass, granting yourself Edge on the resulting Saving Throw."
+        text: "Standard factory hardware can't safely process metaphysical loads. Your resilience is the direct result of your awakening: a Gremlin haphazardly rewired your internal surge protectors, while a Nixie smoothed the chaotic current to keep your core from melting. When subjected to an EMP, digital virus, or Tech damage, you can use an Impulse Action to forcefully ground the feedback through this supernatural bypass, granting yourself Edge on the resulting Saving Throw."
       }
     },
     lineages: [
@@ -295,13 +285,8 @@ EN.species = [
     key: "chimera",
     name: "Chimera",
     glance: {
-      origin: "Engineered by old-world governmental powers during the final global wars.",
-      nature: "Spliced organic hybrids possessing human intelligence and animalistic instinct.",
-      communities: "Insular, fiercely loyal clutches ranging from undercity warrens to high-altitude courier networks.",
-      reputation: "Practical and highly adaptable survivors who view the city through a tactical lens of predator, prey, and profit.",
-      corporateClassification: "Rogue Bio-Assets. The modern corporate elite view the Chimera as illegal, unpatented genetic material and highly dangerous feral remnants of old-world military bio-weaponry, often classifying their communities as hazardous infestations rather than recognized citizens.",
-      flowConnection: "Their connection to the Flow is intensely physical and primal. They experience the metaphysical current as raw survival instinct, scent, and adrenaline.",
-      commonLineages: "The Hulsk, The Skarn, The Ryn"
+      corporateClassification: "Rogue Bio-Assets",
+      flowConnection: "Their connection to the Flow is intensely physical and primal. They experience the metaphysical current as raw survival instinct, scent, and adrenaline."
     },
     blurb: "Chimera were made for an apocalypse they didn't cause. The old world called them breakthroughs, assets, survival platforms, battlefield adaptations, and other clean words for people grown to suffer efficiently.",
     traits: {
@@ -390,13 +375,8 @@ EN.species = [
     key: "outsiders",
     name: "Outsiders",
     glance: {
-      origin: "Adjacent planes of existence, dragged across the divide by the awakening of the Flow.",
-      nature: "Alien, extra-dimensional organic and elemental entities.",
-      communities: "Tight-knit, found-family communities in the depths of the undercity.",
-      reputation: "Universally misunderstood, feared as walking violations of local physics, but respected for their survival instincts.",
-      corporateClassification: "Unregistered Extradimensional Assets. Denied legal personhood, corporations classify them as environmental hazards or metaphysical resources to be exploited or eliminated.",
-      flowConnection: "Their emergence coincided with the awakening of the Flow, which fractured the boundary between realities and dragged them into Elysium.",
-      commonLineages: "Cinder-Hearts, Harbingers, Grinlings"
+      corporateClassification: "Unregistered Extradimensional Assets",
+      flowConnection: "Their emergence coincided with the awakening of the Flow, which fractured the boundary between realities and dragged them into Elyndra."
     },
     blurb: "Outsiders don't belong here, which hasn't stopped them from making rent. They come from adjacent realities: mythic pressure zones, impossible stasis realms, predatory wonderlands, and stranger places that don't translate cleanly into local physics.",
     traits: {

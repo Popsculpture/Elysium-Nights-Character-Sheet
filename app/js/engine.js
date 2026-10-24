@@ -2820,6 +2820,57 @@ EN.engine = (function () {
       return used < rackLimit(gearIt);
     });
   }
+  // "actually worn" for the Worn Gear Trait's Load break: carry status worn, or equipped armor / slot gear / Rig
+  function isWornEntry(ch, e) {
+    var ek = entryKey(e);
+    return !!((ch.carry && ch.carry[ek] === "worn") || ch.equippedArmor === ek
+              || isSlotEquipped(ch, ek) || (ch.rig && ch.rig.key === ek));
+  }
+  /* The Load one equipment entry costs right now, exactly as encumbranceInfo counts it: its Load times
+     its quantity, less 1 once while validly Racked (min 0). `units` limits the count to that many
+     units of a stack (the rack break then applies only when the whole row is meant). Zero when the
+     entry is not on your person. `racks` may be passed to save a second rackState. */
+  function entryLoadNow(ch, e, units, racks) {
+    if (!e || !(e.qty > 0) || !onPerson(ch, e)) return 0;
+    var l = itemLoad(e.name, { worn: isWornEntry(ch, e) });
+    var whole = units == null || units >= e.qty;
+    var total = l * (whole ? e.qty : Math.max(0, units));
+    var rackedGear = (racks || rackState(ch)).byItem[entryKey(e)] || null;
+    if (rackedGear && whole) total = Math.max(0, total - 1);
+    return total;
+  }
+  /* PACKED IT LOG. When an on-person entry leaves your person for good (the Dropped carry choice, a
+     drop from the stash, a donation), Packed It still counts its Load, so the sheet notes it beside
+     the Load you carry now: ch.loadDropped = [{ name, load }]. Call it on the draft `c` inside
+     store.update BEFORE the entry's carry or quantity changes. A Load 0 entry changes nothing and is
+     not logged. Returns the Load logged (0 when nothing was).
+     The Dropped carry choice (no `units`) leaves the entry in your gear, Stashed, so it can be
+     picked back up; its row also carries the entry's key ({ name, load, key }). A revealed item
+     counts against the budget once ("for the rest of the run"), so one entry keeps one row: a stale
+     row for the same key is replaced, not doubled. Units that drop() takes out of your gear are gone
+     for good and their rows carry no key. */
+  function logDropped(c, e, units) {
+    var load = entryLoadNow(c, e, units);
+    if (!(load > 0)) return 0;
+    if (!Array.isArray(c.loadDropped)) c.loadDropped = [];
+    if (units == null) {
+      var k = entryKey(e);
+      unlogDropped(c, k);
+      c.loadDropped.push({ name: e.name, load: load, key: k });
+    } else c.loadDropped.push({ name: e.name, load: load });
+    return load;
+  }
+  /* Picking a dropped item back up. "The first number is the Load you're carrying now: everything
+     revealed or picked up, minus what you've dropped." An entry that goes back on your person is
+     counted in that first number again, so it is no longer a dropped item: its row comes off the
+     log, or Packed It would count it twice (once carried, once dropped). Call it on the draft `c`
+     whenever an entry goes on-person (carried, worn, racked or equipped). Returns rows removed. */
+  function unlogDropped(c, key) {
+    if (!key || !c || !Array.isArray(c.loadDropped)) return 0;
+    var before = c.loadDropped.length;
+    c.loadDropped = c.loadDropped.filter(function (x) { return !(x && x.key === key); });
+    return before - c.loadDropped.length;
+  }
   // Encumbrance Threshold = 6 + Body Modifier +/- 1 for Size, minimum 3, and
   // the minimum applies AFTER the Size adjustment: a Small character on Body -3
   // lands at 3, not 2. Gear, mods, frames, cyberware and Flow effects speak in
@@ -2857,17 +2908,31 @@ EN.engine = (function () {
     (ch.equipment || []).forEach(function (e) {
       if (!(e.qty > 0) || !onPerson(ch, e)) return;
       var ek = entryKey(e);
-      var wornHere = (ch.carry && ch.carry[ek] === "worn") || ch.equippedArmor === ek
-                     || isSlotEquipped(ch, ek) || (ch.rig && ch.rig.key === ek);
+      var wornHere = isWornEntry(ch, e);
       var l = itemLoad(e.name, { worn: wornHere });
-      var rackedGear = racks.byItem[entryKey(e)] || null;
-      var total = l * e.qty;
-      if (rackedGear) total = Math.max(0, total - 1);
+      var rackedGear = racks.byItem[ek] || null;
+      var total = entryLoadNow(ch, e, null, racks);
       if (total > 0 || rackedGear) {
         current += total;
         items.push({ name: e.name, load: l, qty: e.qty, total: total, rackedIn: rackedGear ? rackedGear.name : null });
       }
     });
+    /* Packed It and dropping things (23 Oct 2026): "The first number is the Load you're carrying now:
+       everything revealed or picked up, minus what you've dropped. Note dropped items beside it,
+       because Packed It still counts them. The second is your Load Budget." So the sheet keeps two
+       totals. `current` (drops subtract) is what Encumbrance reads; `revealed` (drops do NOT subtract)
+       is what Packed It counts against the Load Budget. The dropped log is ch.loadDropped, rows of
+       { name, load } written by the Dropped carry choice and by inventory drop(); absent means none.
+       A row whose entry (by key) is on your person again is already in `current`, so it is skipped
+       here whichever door put the entry back (unlogDropped removes it on the sheet's own doors). */
+    var dropped = 0, droppedItems = [];
+    (Array.isArray(ch.loadDropped) ? ch.loadDropped : []).forEach(function (x, i) {
+      if (!x || typeof x.name !== "string" || !isFinite(Number(x.load)) || Number(x.load) < 0) return;
+      if (x.key) { var back = findEntry(ch, x.key); if (back && back.qty > 0 && onPerson(ch, back)) return; }
+      droppedItems.push({ name: x.name, load: Number(x.load), index: i });
+      dropped += Number(x.load);
+    });
+    var revealed = current + dropped;
     // "When a job starts, each Freelancer declares one Loadout... If nobody
     // declares, assume Standard." The declared tier sets the Load Budget; it is not
     // inferred from what you happen to be carrying.
@@ -2902,6 +2967,7 @@ EN.engine = (function () {
     return { base: base, size: size || null,
              steps: steps, threshold: threshold, bands: bands, tier: tier, budget: budget,
              current: current, items: items, haul: haul, state: state,
+             dropped: dropped, droppedItems: droppedItems, revealed: revealed, packedRoom: budget - revealed,
              dragging: dragging, noDash: dragging || state === "overloaded", speedMods: speedMods };
   }
 
@@ -3261,6 +3327,7 @@ EN.engine = (function () {
   function setEquipSlot(c, slotId, key) {
     var s = equipSlotById(slotId);
     if (s) s.set(c, key || null);
+    if (s && key) unlogDropped(c, key);   // equipping a dropped item picks it back up (Packed It counts it once)
   }
 
   /* THE LIVE DECK IS AN OWNED ENTRY, exactly as a Trauma Rig is. ch.grid.deckKey names a
@@ -4052,11 +4119,18 @@ EN.engine = (function () {
     var ctTier = null;
     for (var ci = 0; ci < CT.length; ci++) { if (staticTotal >= CT[ci].min && staticTotal <= CT[ci].max) { ctTier = CT[ci]; break; } }
     var ctIndex = ctTier ? ctTier.index : 0;
+    /* "Each Threshold keeps the extra effects of the Thresholds below it: Hardwired from Threshold 2
+       stays with you at 3, 4, and 5." The tier's own `effects` are its two penalty lines; every
+       `extra` from Threshold 1 up to the current one is carried after them. The mechanical flags
+       below (noWoundRecovery, deadBattery) already stacked by index. Hardwired itself stays a
+       manual condition: this lists it, it does not apply it. */
+    var ctCarried = [];
+    CT.forEach(function (t) { if (t.index > 0 && t.index <= ctIndex) ctCarried = ctCarried.concat(t.extra || []); });
     var chromeTax = {
       total: staticTotal, index: ctIndex,
       name: ctTier ? ctTier.name : "Safe Capacity",
       resDiePenalty: ctIndex, fpPenalty: ctIndex,
-      effects: ctTier ? ctTier.effects : [],
+      effects: (ctTier ? ctTier.effects : []).concat(ctCarried),
       noWoundRecovery: ctIndex >= 4, deadBattery: ctIndex >= 5
     };
     resilienceMax = Math.max(0, resilienceMax - chromeTax.resDiePenalty);
@@ -4521,6 +4595,10 @@ EN.engine = (function () {
     /* sustain compatibility + warnings */
     var warnings = [];
     if (R && R.unlock > (d.level || 1)) warnings.push(R.name + " Resonance unlocks at Level " + R.unlock + ".");
+    /* A level-gated Empowered Effect (Poltergeist, Sourcerer Level 3, Hardware Harmonization): the
+       book now labels it "Poltergeist (Level 3)". The builder disables the button below that level;
+       this catches a saved pattern that names it anyway. */
+    if (effectObj && effectObj.unlock > (d.level || 1)) warnings.push(effectObj.name + " unlocks at Level " + effectObj.unlock + " (Hardware Harmonization).");
     if (form.intent === "hybrid" && empowered && (d.level || 1) < 5) warnings.push("Layered Force (Hybrid + Empowered) requires Level 5.");
     var sustainable = true;
     if (form.duration === "sustain") {
@@ -4752,7 +4830,7 @@ EN.engine = (function () {
     trainingBudget: trainingBudget,
     gearFloorTier: gearFloorTier, effectiveGearTier: effectiveGearTier,
     sizeFromHeightFt: sizeFromHeightFt, lineageHeightFt: lineageHeightFt,
-    activeLineageFeatures: activeLineageFeatures, splitTalentText: splitTalentText, leaseLapsed: leaseLapsed, premiumOn: premiumOn, premiumBonus: premiumBonus, itemLoad: itemLoad,
+    activeLineageFeatures: activeLineageFeatures, splitTalentText: splitTalentText, leaseLapsed: leaseLapsed, premiumOn: premiumOn, premiumBonus: premiumBonus, itemLoad: itemLoad, entryLoadNow: entryLoadNow, logDropped: logDropped, unlogDropped: unlogDropped,
     // THE resolver for which attribute a Talent raised, and the one enumeration of every
     // post-creation attribute bump. effectiveAttributes sums attrBumpSources rather than
     // walking the upgrade slots itself, so no surface can disagree about what bumped what.

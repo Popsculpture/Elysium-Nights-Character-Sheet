@@ -261,7 +261,7 @@ EN.gmBook.scenes = {
     results: [
       { key: "flawless", name: "Flawless", margin: "Flawless Success", pressure: 3, also: null,
         fallout: null, resolveGain: 0 },
-      { key: "strong",   name: "Strong",   margin: "Strong Success",   pressure: 2, also: null,
+      { key: "costly",   name: "Costly",   margin: "Costly Success",   pressure: 2, also: null,
         fallout: null, resolveGain: 0 },
       { key: "mixed",    name: "Mixed",    margin: "Mixed Result",     pressure: 1,
         also: "The target picks the crew's Social Fallout", fallout: "targetPicks", resolveGain: 0 },

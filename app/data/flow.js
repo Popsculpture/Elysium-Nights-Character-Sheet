@@ -6,6 +6,8 @@
    Codex's chapter The Flow (js/codex_flow.js) renders the rules from this same copy.
    Resonant Patterns are stored as FORMULATIONS (the component choices) so the
    FP cost and damage recompute from the character's live Caliber / Flow Modifier.
+   23 Oct 2026 handoff (Costly Success; the Strain Track is one four-column table; the Ritual of
+   Alignment runs Stage 1 to 4; damage plus an effect; Poltergeist carries its level on its label).
    No em or en dashes anywhere in this file (house style).
    =========================================================================== */
 window.EN = window.EN || {};
@@ -55,6 +57,10 @@ EN.flow = {
     { key: "instant", name: "Instant", desc: "Damage is applied and conditions are inflicted immediately. Unless an effect specifies otherwise, it lasts until the start of your next turn. Instant effects require no further input or maintenance." },
     { key: "sustain", name: "Sustain", desc: "Spend 1 FP at the start of your turn to maintain it. Only one sustained effect at a time." }
   ],
+  /* PHB:6372, printed under Duration. The handoff's words. The Worked Example printed after it is not
+     carried. Shown in the Codex (fl-shaping) and as a note on the Flow tab's builder for an
+     attack-resolved Invocation that pays for both damage and an effect (js/flow.js). */
+  damageAndEffect: "Damage and an effect together: the Flow Attack decides the hit. On a miss, nothing happens. On a hit, the damage lands, then the target makes the effect's save, and a success avoids only the effect. (Resonances that call for a Flow Save instead of a Flow Attack, such as Spatial and Cognitive, follow their own text.)",
   /* What ends a sustained effect besides choosing to. This sentence lived only inline in the
      Flow tab's Sustain panel (js/flow.js); it moved here so the tab and the Codex's Sustained
      Effects panel read one copy. */
@@ -136,7 +142,7 @@ EN.flow = {
       empowered: [
         { name: "Nixie Synchronization", sustain: false, text: "A Nixie tunes a willing target's weapon or cybernetic implant to its wielder's pulse. For the next turn, the target gains Edge on their next attack roll with that weapon, and the weapon deals an additional 1d6 Force damage on its next hit." },
         { name: "Gremlin Tantrum", sustain: false, text: "Point the local Gremlins at a target's firearm, smart tech, or cyberlimb. The target makes a Flow Save DC (Tech). On a failure, they take 1d6 Fire damage as the device cooks against them, and that weapon or cyberlimb seizes up, preventing its use until the end of their next turn." },
-        { name: "Poltergeist", sustain: false, unlock: 3, text: "Unlocked at Level 3 (Hardware Harmonization). Ask the sprites riding a device, drone, or Construct to take the wheel. The target makes a Flow Save DC (Tech). On a failure, you dictate its movement and its Action on its next turn. The sprites won't drive a machine into its own obvious destruction, and they can't drive a mind: a Clanker, a Synthetic, or any target that is someone rather than something is immune." }
+        { name: "Poltergeist", sustain: false, unlock: 3, text: "Ask the sprites riding a device, drone, or Construct to take the wheel. The Target must make a Tech Save against your Flow Save DC. On a failure, you dictate its movement and its Action on its next turn. The sprites won't drive a machine into its own obvious destruction, and they can't drive a mind: a Clanker, a Synthetic, or any Target that is someone rather than something is immune. A body with a mind in residence has no room for backseat drivers." }
       ] },
     { key: "temporal", name: "Temporal", unlock: 5, focus: "Chronological Flow", damage: "Entropy",
       resolution: "attack", noSustain: true,
@@ -175,12 +181,16 @@ EN.flow = {
   ],
 
   /* ---- Strain, Overdraw, Breakflow -------------------------------------- */
+  /* The Strain Track, PHB:6693, the handoff's table (Stage / Name / Symptoms / Effect). `penalty` is the key
+     the sheet and the tests already read and now holds the book's Effect column. Stage 3 no longer says
+     "Precision Shaping costs 2 FP." (the book's table does not): that rule stays in precisionShaping.desc
+     and in the engine. Each Stage keeps the effects of the Stages below it (js/flow.js lists them so). */
   strainTrack: [
-    { stage: 1, name: "Ripple", penalty: "Snag on all Invocation rolls." },
-    { stage: 2, name: "Wave", penalty: "All Invocations cost +1 FP." },
-    { stage: 3, name: "Surge", penalty: "Overdraw Vitality damage rises from 1d4 to 1d6 per FP. Snag on Breakflow Checks. Precision Shaping costs 2 FP." },
-    { stage: 4, name: "Rend", penalty: "Must roll a Breakflow Check when Overdrawing. Spending FP (not just Overdraw) costs 1 flat Vitality per FP." },
-    { stage: 5, name: "Collapse", penalty: "Immediate Breakflow; you fall Unconscious." }
+    { stage: 1, name: "Ripple", symptoms: "A faint hum or vibration follows your movements.", penalty: "You roll with Snag on Invocation rolls." },
+    { stage: 2, name: "Wave", symptoms: "Faint static or flickering light surrounds you.", penalty: "All Invocations cost +1 FP." },
+    { stage: 3, name: "Surge", symptoms: "Visual distortions and a racing heartbeat.", penalty: "Overdraw Vitality damage increases from 1d4 to 1d6 per FP. Snag on Breakflow Checks." },
+    { stage: 4, name: "Rend", symptoms: "Crackling energy, tremors, and uncontrolled bursts.", penalty: "Must roll a Breakflow Check when Overdrawing. Spending FP (not just Overdraw) costs 1 flat Vitality per FP." },
+    { stage: 5, name: "Collapse", symptoms: "Total silence and disconnection.", penalty: "Immediate Breakflow; you fall Unconscious." }
   ],
   overdraw: {
     vitalityLoss: "Lose 1d4 Vitality per 1 FP spent past your Reservoir (1d6 at Stage 3 Strain or higher).",
@@ -215,14 +225,13 @@ EN.flow = {
       { stage: 1, name: "Ripple", time: "10 Minutes", snag: 1 },
       { stage: 2, name: "Wave", time: "30 Minutes", snag: 2 },
       { stage: 3, name: "Surge", time: "1 Hour", snag: 3 },
-      { stage: 4, name: "Rend", time: "2 Hours", snag: 4 },
-      { stage: 5, name: "Collapse", time: "4 Hours", snag: 5 }
+      { stage: 4, name: "Rend", time: "2 Hours", snag: 4 }
     ],
     outcomes: [
       { margin: "+3 or more", result: "Flawless", text: "Remove 2 Stages of Strain and restore 2d4 Flow Points." },
-      { margin: "+1 to +2", result: "Strong", text: "Restore 1d4 Flow Points and remove 1 Stage of Strain." },
+      { margin: "+1 to +2", result: "Costly", text: "Restore 1d4 Flow Points and remove 1 Stage of Strain." },
       { margin: "0", result: "Mixed", text: "Remove 1 Stage of Strain, but restore no Flow Points." },
-      { margin: "-1 or worse", result: "Failure", text: "Apply 1 Stage of Strain (or 2d6 Vitality loss if already at Stage 5)." }
+      { margin: "-1 or worse", result: "Failure", text: "Apply 1 Stage of Strain." }
     ],
     cooperative: "Up to three assistants may each grant +2 Edge Dice to the Lead Shaper's pool, or instead make their own check to remove 1 Stage of Strain from a different participant."
   },
@@ -365,7 +374,7 @@ EN.flow.disturbances = {
     intervals: "For each 1-Hour Cleansing Interval, build your Dice Pool and roll. Convert the Success Margin into Progress:",
     outcomes: [
       { margin: "+3 or more", result: "Flawless Success", text: "2 Progress, and participating Shapers regain 1 FP." },
-      { margin: "+1 to +2", result: "Strong Success", text: "1 Progress." },
+      { margin: "+1 to +2", result: "Costly Success", text: "1 Progress." },
       { margin: "0", result: "Mixed Result", text: "1 Progress, but the Lead Shaper suffers **1 Stage of Strain** from turbulent energy." },
       { margin: "-1 to -2", result: "Failure", text: "0 Progress, and the Lead Shaper suffers **1 Stage of Strain**." },
       { margin: "-3 or worse", result: "Critical Failure", text: "0 Progress. The Anomaly violently rejects the alignment; Severity **increases** by 1, and all participating Shapers suffer **1 Stage of Strain**." }
@@ -468,7 +477,7 @@ EN.flow.disturbances = {
     intervals: "Convert the Success Margin into Progress. Because of the hostile environment, the failure penalties are exceptionally severe:",
     outcomes: [
       { margin: "+3 or more", result: "Flawless Success", text: "2 Progress." },
-      { margin: "+1 to +2", result: "Strong Success", text: "1 Progress." },
+      { margin: "+1 to +2", result: "Costly Success", text: "1 Progress." },
       { margin: "0", result: "Mixed Result", text: "1 Progress, but the Lead Shaper suffers **1 Stage of Strain**." },
       { margin: "-1 to -2", result: "Failure", text: "0 Progress. The Lead Shaper suffers **1 Stage of Strain** and **1d4 Vitality loss** from the backlash." },
       { margin: "-3 or worse", result: "Critical Failure", text: "0 Progress. The ritual violently collapses in a **Resonant Surge**." }

@@ -4,6 +4,8 @@
    an Accessory), the five slots, Slot Count by profile, and the trait glossary.
    Prices in Glimmer. Legality is the strictest tag among a weapon and its Parts.
    No em or en dashes anywhere in this file (house style).
+   23 Oct 2026 handoff: `rules.utility` is the book's "The Utility Exception"
+   paragraph (both Utility Parts count against a weapon's Slot Count).
    =========================================================================== */
 window.EN = window.EN || {};
 
@@ -263,6 +265,10 @@ EN.weaponParts = {
 
   /* ---- stacking + over-engineering rules (surfaced as bench guidance) ---- */
   rules: {
+    /* PHB Weapon Customization, under its heading "The Utility Exception", word for word (23 Oct 2026
+       handoff, section 7). The Codex prints it as a block after the Slot Count entry. The install
+       count in inventory.js already sums both Utility Parts against the Slot Count. */
+    utility: "Every slot holds one Part. Utility holds two, and both count against the weapon's Slot Count. A duty pistol can run a Weapon Light and a Suppressor at once. A katana can wear a Quick-Release Tether and an Anti-Theft Module.",
     stabilized: "Stabilized sources do not stack: multiple Parts negate the High Recoil Snag only once.",
     /* The book's Stacking Rules, third paragraph, word for word (PHB Weapon Customization). The
        Codex prints it under Stabilized Sources. */

@@ -698,7 +698,8 @@ EN.pdfExport = (function () {
     // conditions & fatigue
     ctx.sectionTitle("Conditions & Fatigue");
     ctx.multiline(null, "conditions", { value: (ch.conditions || []).join(", "), height: 24 });
-    ctx.checkboxRow("Fatigue", "fatigue", 6, ch.fatigue || 0);
+    /* the Fatigue level the sheet holds is the Fatigue condition's level (nothing writes ch.fatigue) */
+    ctx.checkboxRow("Fatigue", "fatigue", 6, (ch.conditions || []).indexOf("Fatigue") !== -1 ? ((ch.conditionLevels || {}).Fatigue || 1) : 0);
 
     // senses
     ctx.sectionTitle("Senses", "10 + MOD + PROF (+/- 5 Edge/Snag)");
@@ -1098,9 +1099,14 @@ EN.pdfExport = (function () {
     var enc = d.encumbrance || {};
     ctx.row([
       { label: "Current Load", name: "loadCurrent", value: enc.current != null ? enc.current : "", w: 1, align: "center" },
-      { label: "Threshold", name: "loadThreshold", value: enc.threshold != null ? enc.threshold : "", w: 1, align: "center" }
+      /* The book's sheet line is "Load: ___ / ___", the Load you carry now over your Load Budget. The
+         second number is the Budget (the declared Loadout's cap), not the Encumbrance Threshold. */
+      { label: "Load Budget", name: "loadBudget", value: enc.budget != null ? enc.budget : "", w: 1, align: "center" }
     ]);
-    ctx.multiline(null, "carryNotes", { height: 40 });
+    /* "Note dropped items beside it, because Packed It still counts them": the dropped log, one
+       line per item, written ahead of the player's own notes. */
+    ctx.multiline("Dropped (Packed It still counts them)", "carryNotes", { height: 40,
+      value: (enc.droppedItems || []).map(function (x) { return x.name + " (Load " + x.load + ")"; }).join("\n") });
 
     return ctx;
   }
@@ -1175,7 +1181,8 @@ EN.pdfExport = (function () {
         { label: "Flow Atk", name: "flow.atk", value: sgn(f.attackBonus), w: 1, align: "center" },
         { label: "FP Now", name: "flow.fpNow", value: "", w: 1, align: "center" }
       ]);
-      ctx.checkboxRow("Strain", "flow.strain", 6, 0);
+      // the Strain Track has five Stages (Ripple to Collapse), read off the data, not six
+      ctx.checkboxRow("Strain", "flow.strain", ((EN.flow && EN.flow.strainTrack) || []).length || 5, 0);
       ctx.sectionTitle("Known Resonances", "Kinetic · Thermal · EM · Visceral · Spatial · Cognitive · Temporal");
       ctx.table([{ header: "Resonance / Invocation", key: "name", w: 1 }], "flow.resonance", [null, null, null, null, null]);
       ctx.multiline("Counter Flow", "counterFlow", { height: 30 });

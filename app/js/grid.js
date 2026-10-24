@@ -687,7 +687,10 @@ EN.gridView = (function () {
   function deepMarginRow(margin) {
     var rows = (EN.resolution && EN.resolution.margins && EN.resolution.margins.pool) || [];
     var i = margin >= 3 ? 0 : margin >= 1 ? 1 : margin === 0 ? 2 : margin >= -2 ? 3 : 4;
-    return { row: rows[i] || null, color: ["var(--success)", "var(--success)", "var(--gold)", "var(--warn)", "var(--danger)"][i], costly: i >= 2 };
+    /* `priced`: the margins whose result is a price the scene sets (Mixed, Failure, Critical Failure),
+       so the Hacking-scene costs line shows. It was named `costly` before the 23 October handoff gave
+       that word to the Costly Success tier, which is a lighter result and never offers the line. */
+    return { row: rows[i] || null, color: ["var(--success)", "var(--success)", "var(--gold)", "var(--warn)", "var(--danger)"][i], priced: i >= 2 };
   }
   function deepRunPanel(ch, d, G) {
     var gd = d.grid;
@@ -710,8 +713,12 @@ EN.gridView = (function () {
       edge.skill && edge.skill.untrained ? el("span.chip", { title: "Untrained in Systems: +2 Snag Dice on the pool", style: { fontSize: "9px", color: "var(--warn)", borderColor: "var(--warn)" } },
         [chipLink("rz-edge", "UNTRAINED +2 SNAG")]) : null,
       /* the tooltip is the Core Resolution rule itself, read from EN.resolution rather than
-         typed twice, and the chip peeks that entry */
-      (snag.total > 0 && edge.points >= snag.total * 2) ? el("span.chip", { title: autoPoolRule(),
+         typed twice, and the chip peeks that entry. The trigger is the Handbook's (23 October
+         2026): your Edge Dice outnumber the GM's Snag Dice by 6 or more, counted as dice after
+         the pool caps (before it was Edge points at least double the Snag, with Snag above 0).
+         Advisory: ROLL DEEP RUN always rolls, which is the book's "roll instead if you want a
+         shot at Flawless". */
+      ((edge.pool.d10 + edge.pool.d12) - (snagPool.d10 + snagPool.d12) >= 6) ? el("span.chip", { title: autoPoolRule(),
         style: { fontSize: "9px", color: "var(--success)", borderColor: "var(--success)" } }, [chipLink("rz-social/dice-pool-method", "◎ AUTO-SUCCESS RANGE")]) : null
     ]));
     // EDGE row: total + composition + situational toggles
@@ -802,7 +809,7 @@ EN.gridView = (function () {
             el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: mr.row ? mr.row.desc : "" }),
             EN.ui.ruleChip("rz-margin", { title: "Success Margin & Consequence" })
           ]),
-          mr.costly && scene ? noteP("Hacking-scene costs: " + scene.consequences + ".", "var(--warn)") : null
+          mr.priced && scene ? noteP("Hacking-scene costs: " + scene.consequences + ".", "var(--warn)") : null
         ]));
       }
     }

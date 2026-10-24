@@ -14,6 +14,13 @@
    critical hit, counting as at least a Strong Hit and triggering any weapon or
    Invocation crit effect; the skill check sentences stay. Crits add no extra dice
    (ruled 2026-10-16). The Player's Handbook prints the line (batch 45, PHB 4199).
+   2026-10-23 handoff: the old "strong" tier is now Costly Success (key "costly", short form
+   "Costly"); the ladders run in order (d20 5 to 9 Standard, 0 to 4 Costly); a Costly
+   cost leaves nothing behind that follows you out of the scene (margins.costlyRule);
+   a Dice Pool automatic success is Edge Dice outnumbering Snag Dice by 6 or more, clean
+   with no bonus; the group average rounds down, toward the worse result (floor); the
+   d20 list covers Cipher Attacks and Quick Hacks against a Node, and a Quick Hack adds
+   the Device Bonus.
    No em or en dashes anywhere in this file (house style).
    =========================================================================== */
 window.EN = window.EN || {};
@@ -35,7 +42,7 @@ EN.resolution = {
   methodSplit: {
     d20Intro: "Use the d20 Method for anything in or tied to combat:",
     d20Uses: [
-      "All attack rolls",
+      "All attack rolls, including Cipher Attacks and Quick Hacks against a Node",
       "All saving throws",
       "All Flow attacks and Flow Invocations",
       "Any Skill check made under stress, during combat, or as part of a combat round"
@@ -81,7 +88,7 @@ EN.resolution = {
       { type: "Ranged Attack", formula: "d20 + Agility Modifier + Weapon Proficiency Bonus", target: "vs Defense" },
       { type: "Flow Attack", formula: "d20 + Flow Modifier + Caliber", target: "vs Defense" },
       { type: "Flow Save DC", formula: "8 + Flow Modifier + Caliber", target: "vs DC set by attacker or effect" },
-      { type: "Quick Hack", formula: "d20 + Tech Modifier + Systems Proficiency Bonus", target: "vs system DC" },
+      { type: "Quick Hack", formula: "d20 + Tech Modifier + Systems Proficiency Bonus + Device Bonus", target: "vs system DC" },
       { type: "Contested Action", formula: "Both roll d20 + modifiers + their Skill, Weapon, Systems, or Vehicle Proficiency Bonus", target: "Higher total wins" }
     ],
     crits: [
@@ -152,8 +159,8 @@ EN.resolution = {
     ],
     snagCeiling: "Seven d12 dice is the hard ceiling and the mechanical face of Nearly Impossible. It averages close to 6 failures, which an unprepared crew can't beat and a well prepared one only barely can. If a task is genuinely impossible, the GM calls for no roll at all.",
 
-    procedure: "Roll all Edge and Snag Dice together.\n\nRead the dice:\n- Edge Die: 6 to 9 is 1 success, 10 or higher is 2 successes\n- Snag Die: 6 to 9 is 1 failure, 10 or higher is 2 failures\n- 1 to 5 is no effect\n\nCalculate your Margin: count your total successes from Edge Dice and subtract your total failures from Snag Dice. This final number is your Margin.\n\nDetermine the outcome:\n- Positive margin (+1 or more): Strong or Flawless Success\n- Zero margin (0): Mixed Result, success with a consequence\n- Negative margin (-1 or worse): Failure",
-    example: "A Freelancer rolls 4 Edge Dice and gets an 8, 10, 4, and 2 for 3 Successes. The GM rolls 2 Snag Dice and gets a 7 and a 3 for 1 Failure. The player subtracts the 1 Failure from their 3 Successes, resulting in a Margin of +2, a Strong Success."
+    procedure: "Roll all Edge and Snag Dice together.\n\nRead the dice:\n- Edge Die: 6 to 9 is 1 success, 10 or higher is 2 successes\n- Snag Die: 6 to 9 is 1 failure, 10 or higher is 2 failures\n- 1 to 5 is no effect\n\nCalculate your Margin: count your total successes from Edge Dice and subtract your total failures from Snag Dice. This final number is your Margin.\n\nDetermine the outcome:\n- Positive margin (+1 or more): Costly or Flawless Success\n- Zero margin (0): Mixed Result, success with a consequence\n- Negative margin (-1 or worse): Failure",
+    example: "A Freelancer rolls 4 Edge Dice and gets an 8, 10, 4, and 2 for 3 Successes. The GM rolls 2 Snag Dice and gets a 7 and a 3 for 1 Failure. The player subtracts the 1 Failure from their 3 Successes, resulting in a Margin of +2, a Costly Success."
   },
 
   /* ---- success margin and consequence ----------------------------------- */
@@ -161,20 +168,21 @@ EN.resolution = {
     d20Intro: "Margin = Roll Total - DC",
     d20: [
       { margin: "10+", result: "Flawless Success", desc: "Perfect execution. Gain a narrative advantage, grant yourself Edge or +1 Edge Die on a follow-up, recover 1 FP, or seize a strong position." },
-      { margin: "5 to 9", result: "Strong Success", desc: "You hit the goal, but spend something to do it: time, material, a favor you were owed, influence, or attention." },
-      { margin: "0 to 4", result: "Standard Success", desc: "Clean success. No side effects." },
+      { margin: "5 to 9", result: "Standard Success", desc: "Clean success. No side effects." },
+      { margin: "0 to 4", result: "Costly Success", desc: "You hit the goal, but spend something to do it: time, material, a favor you were owed, influence, or attention." },
       { margin: "-1 to -4", result: "Failure", desc: "The attempt fails. Lose ground, spend resources, worsen your position, or alert opposition." },
       { margin: "-5 or worse", result: "Critical Failure", desc: "The action backfires: immediate danger, injury, exposure, digital retaliation, or resonance backlash. The GM sets the fallout." }
     ],
     poolIntro: "Margin = Total Successes - Total Failures",
     pool: [
       { margin: "+3 or more", result: "Flawless Success", desc: "Cinematic or resonant. Gain a narrative advantage, grant Edge or +1 Edge Die on a follow-up, or recover 1 FP." },
-      { margin: "+1 to +2", result: "Strong Success", desc: "Effective, but with a minor cost: delay, spent material, a favor you were owed, or attention." },
+      { margin: "+1 to +2", result: "Costly Success", desc: "Effective, but with a minor cost: delay, spent material, a favor you were owed, or attention." },
       { margin: "0", result: "Mixed Result", desc: "Success with a consequence. Take one cost that fits the scene: 1 Fatigue, 1 Strain, a Debt, a new Profile, a Trace, or concede terms." },
       { margin: "-1 to -2", result: "Failure", desc: "The action falters and costs resources, position, or attention." },
       { margin: "-3 or worse", result: "Critical Failure", desc: "The attempt collapses, causes harm, or invites backlash. Immediate escalation." }
     ],
-    sceneRule: "Match the cost to the scene every time. Physical scenes produce physical costs. Social scenes produce social costs. Technical scenes produce digital or logistical costs. Flow scenes produce resonance instability or backlash."
+    sceneRule: "Match the cost to the scene every time. Physical scenes produce physical costs. Social scenes produce social costs. Technical scenes produce digital or logistical costs. Flow scenes produce resonance instability or backlash.",
+    costlyRule: "A Costly Success is paid for in the scene: time, noise, a consumable or material, a favor someone owed you, the sway you brought, a witness who'll remember. The player picks one from the scene's row in Consequence by Scene Type, and the GM can veto one that doesn't fit. The test is whether the cost leaves the scene with you. If it does (Fatigue, Strain, Trace, Debt, a Profile, a Faction Shift), it's a Mixed Result's price, not a Costly one. Tables that set their own results, such as Progress, healing, and stabilization, already price each row: there, the row is the whole result."
   },
 
   consequenceByScene: [
@@ -186,7 +194,7 @@ EN.resolution = {
   ],
 
   social: {
-    intro: "Social scenes do not leave bruises. They leave debts, doubts, and a face the room remembers. When a social Dice Pool roll ends in a Mixed Result or a Strong Success with a cost, reach for these before you reach for Fatigue.",
+    intro: "Social scenes do not leave bruises. They leave debts, doubts, and a face the room remembers. When a social Dice Pool roll ends in a Mixed Result or a Costly Success, reach for these before you reach for Fatigue.",
     costs: [
       { cost: "Concession", effect: "You get what you want, but must give up a term, price, timeline, favor, or sway." },
       { cost: "Debt", effect: "You now owe the Target a favor, payment, introduction, future service, or operational support." },
@@ -214,7 +222,7 @@ EN.resolution = {
     { name: "Natural 1", text: "Always fails in stress checks using the d20 Method." },
     { name: "Margin Mastery", text: "If your Attribute Modifier + the relevant Skill, Weapon, Systems, or Vehicle Proficiency Bonus is 10 or more above the DC, you succeed automatically without rolling." },
     { name: "Margin Failure", text: "If the DC is 10 or more above your maximum possible total, the attempt automatically fails." },
-    { name: "Dice Pool Method", text: "Automatic success occurs if your total Edge Dice pool is at least double the GM's Snag Dice, unless extraordinary risk or opposition is present." },
+    { name: "Dice Pool Method", text: "Automatic success occurs if your Edge Dice outnumber the GM's Snag Dice by 6 or more, unless extraordinary risk or opposition is present. An automatic success, by either method, gets you what you wanted, clean, with no bonus; roll instead if you want a shot at Flawless." },
     { name: "Flow Mastery", text: "If your Flow Attribute Modifier + Caliber + relevant bonuses is 10 or more above the DC for a Flow-related check, you succeed automatically without rolling, unless the scene's tension or a special rule says otherwise." }
   ],
 
@@ -273,13 +281,13 @@ EN.resolution = {
        which could disagree with the Group Outcome Table printed directly beneath it. */
     group: {
       intro: "When everyone bends toward one objective, the table measures the whole effort, not the loudest roll.",
-      d20Process: "1. Each Freelancer rolls a d20 + relevant modifier against the DC.\n2. Record each Freelancer's Margin: positive for those who met or exceeded the DC, negative for those who fell short.\n3. Calculate the Average Margin: add every Margin together and divide by the number of Freelancers. The average, read on the Group Outcome Table, is the group's outcome.",
+      d20Process: "1. Each Freelancer rolls a d20 + relevant modifier against the DC.\n2. Record each Freelancer's Margin: positive for those who met or exceeded the DC, negative for those who fell short.\n3. Calculate the Average Margin: add every Margin together and divide by the number of Freelancers. Round down, toward the worse result: +2.6 counts as +2, and -0.4 counts as -1. The average, read on the Group Outcome Table, is the group's outcome.",
       poolProcess: "1. Each Freelancer builds their own Dice Pool, including their specific Edge and Snag Dice, and rolls.\n2. Each Freelancer calculates their individual Margin.\n3. Add all individual Margins together to find the Group Net Margin.",
       outcomes: [
         { d20: "+6 or higher", pool: "+4 or more", result: "Flawless Success", desc: "The group performs in perfect rhythm. Gain an ongoing advantage, conserve time, or recover limited resources." },
-        { d20: "+3 to +5", pool: "+2 to +3", result: "Strong Success", desc: "The group completes the task effectively but faces a fitting cost: delay, resource loss, added scrutiny, minor Fatigue from exertion, or another scene-appropriate complication." },
-        { d20: "+1 to +2", pool: "+1", result: "Standard Success", desc: "The objective is completed without added cost or extra reward." },
-        { d20: "0", pool: "0", result: "Mixed Result", desc: "The group succeeds but something goes wrong. Choose one consequence that fits the scene: losing time, alerting danger, worsening terms, or causing minor harm." },
+        { d20: "+3 to +5", pool: "+2 to +3", result: "Standard Success", desc: "The objective is completed without added cost or extra reward." },
+        { d20: "+1 to +2", pool: "+1", result: "Costly Success", desc: "The group completes the task effectively but faces a fitting cost, such as delay, resource loss, added scrutiny, or another scene-appropriate complication." },
+        { d20: "0", pool: "0", result: "Mixed Result", desc: "The group succeeds but something goes wrong. Choose one consequence that fits the scene, such as losing time, alerting danger, worsening terms, or causing minor harm." },
         { d20: "-1 to -4", pool: "-1 to -2", result: "Failure", desc: "The group fails to coordinate. The objective is delayed, exposed, or partially compromised." },
         { d20: "-5 or worse", pool: "-3 or worse", result: "Critical Failure", desc: "The plan collapses. Equipment breaks, exposure occurs, backlash hits, or one Freelancer suffers a major setback." }
       ],
@@ -299,7 +307,7 @@ EN.resolution = {
 
   examples: [
     "An expert operator rolls 22 vs DC 12, a margin of +10. That is a Flawless Success. They finish the job early and gain an advantage in the next encounter.",
-    "A field medic rolls a +2 margin in a Dice Pool. That is a Strong Success. The repair works, but consumes rare materials.",
+    "A field medic rolls a +2 margin in a Dice Pool. That is a Costly Success. The repair works, but consumes rare materials.",
     "A negotiator rolls a Mixed Result while persuading a guard. The guard agrees, but the negotiator takes the Profile Pressured the Gate, and the office remembers their face.",
     "Two rival hackers race to breach a server. One rolls 8 net successes, the other 5. The winner holds a +3 margin: a Dominant Victory that locks out their rival."
   ]

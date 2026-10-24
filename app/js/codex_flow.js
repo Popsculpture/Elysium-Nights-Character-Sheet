@@ -68,6 +68,8 @@ window.EN = window.EN || {};
           K.subTitle("4 · Duration"),
           K.refTable(["Duration", "Effect"], f.duration.map(function (d) { return [d.name, d.desc]; }), [0])
         ]),
+        // printed under Duration in the Handbook (PHB:6372); a named block so it is an anchor of its own
+        f.damageAndEffect ? K.ruleBlock("Damage and an Effect Together", f.damageAndEffect) : null,
         f.precisionShaping ? K.ruleBlock("Precision Shaping", f.precisionShaping.desc, "+" + f.precisionShaping.fp + " FP") : null,
         f.layeredForce ? K.ruleBlock("Layered Force", f.layeredForce, "LEVEL 5") : null,
         K.seeAlso("Each Resonance's Empowered Effects:", [["fl-resonances", "Resonances"]]),
@@ -94,7 +96,7 @@ window.EN = window.EN || {};
         lines.push("Base: " + r.base);
         if ((r.empowered || []).length) {
           lines.push("Empowered Effects:");
-          r.empowered.forEach(function (e) { lines.push("- " + e.name + ": " + (e.sustain ? "Sustainable. " : "") + e.text); });
+          r.empowered.forEach(function (e) { lines.push("- " + e.name + (e.unlock ? " (Level " + e.unlock + ")" : "") + ": " + (e.sustain ? "Sustainable. " : "") + e.text); });
         }
         var extra = "L" + r.unlock + (r.unique ? " · UNIQUE: " + subclassName(r.unique).toUpperCase() : "") + " · " + r.damage;
         out.push(K.ruleBlock(r.name, lines.join("\n"), extra, { conditions: true }));
@@ -123,7 +125,7 @@ window.EN = window.EN || {};
       var f = F();
       return [
         K.entry("strain-stages", "Strain Stages", [
-          K.refTable(["Stage", "Name", "Consequence"], f.strainTrack.map(function (s) { return [String(s.stage), s.name, s.penalty]; }), [0, 1])
+          K.refTable(["Stage", "Name", "Symptoms", "Effect"], f.strainTrack.map(function (s) { return [String(s.stage), s.name, s.symptoms || "", s.penalty]; }), [0, 1])
         ]),
         K.seeAlso("How Strain builds:", [["fl-overdraw/strain-points", "Strain Points"], ["fl-overdraw/non-combat-overdraw", "Non-Combat Overdraw"]]),
         K.seeAlso("Clearing it:", [["fl-recovery", "Ritual Recovery"], ["fl-breakflow/breakflow-restoration", "Breakflow Restoration"]]),
@@ -209,6 +211,7 @@ window.EN = window.EN || {};
     "Sustain Compatibility": "fl-sustain/sustain-compatibility",
     "Focus Disruption": "fl-sustain/focus-disruption",
     "Strain track": "fl-strain",
+    "Strain Track": "fl-strain",
     "Breakflow Check": "fl-breakflow/breakflow-check",
     "Breakflow Checks": "fl-breakflow/breakflow-check",
     "Breakflow Restoration": "fl-breakflow/breakflow-restoration",

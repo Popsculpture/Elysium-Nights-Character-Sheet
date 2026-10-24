@@ -58,6 +58,11 @@ EN.printSheet = (function () {
     for (var i = 0; i < total; i++) r.appendChild(el("span.ps-pip" + (shape ? "." + shape : "") + (i < filled ? ".on" : "")));
     return r;
   }
+  /* The Fatigue level the sheet holds: the Fatigue condition and its level (nothing writes ch.fatigue;
+     gaining Fatigue, from 0 Vitality or anywhere else, raises conditionLevels.Fatigue). */
+  function fatigueLevel(ch) {
+    return (ch.conditions || []).indexOf("Fatigue") !== -1 ? ((ch.conditionLevels || {}).Fatigue || 1) : 0;
+  }
   function writeLine(label) {
     return el("div.ps-wl", null, [label ? el("span.ps-fl", { text: label }) : null, el("span.ps-wl-line")]);
   }
@@ -577,7 +582,7 @@ EN.printSheet = (function () {
     L.push(sect("Conditions & Fatigue"));
     var active = (ch.conditions || []);
     L.push(el("div.ps-block", null, [active.length ? el("div.ps-block-v", { text: active.join(", ") }) : null]));
-    L.push(el("div.ps-surv-row", { style: { marginTop: "6px" } }, [el("span.ps-fl", { text: "FATIGUE" }), pips(ch.fatigue || 0, 6, "")]));
+    L.push(el("div.ps-surv-row", { style: { marginTop: "6px" } }, [el("span.ps-fl", { text: "FATIGUE" }), pips(fatigueLevel(ch), 6, "")]));
     L.push(sect("Senses", "10 + MOD + PROF (+/- 5 Edge/Snag)"));
     ["perception", "investigation", "intuition", "systems"].forEach(function (k) {
       var s = (d.skills || []).find(function (x) { return x.key === k; });
@@ -973,6 +978,7 @@ EN.printSheet = (function () {
     });
     return el("div", null, out);
   }
+  function strainStageCount() { return ((EN.flow && EN.flow.strainTrack) || []).length || 5; }
   function flowSystem(ch, d) {
     var f = d.flow; if (!f) return null;
     var out = [sect("Flow Reservoir", f.attributeName + " · Overdraw at 0 FP")];
@@ -980,9 +986,10 @@ EN.printSheet = (function () {
       stat("FP MAX", f.max, "(Cal x3) + mod"),
       stat("FLOW SAVE DC", f.dc, "enemy saves"),
       stat("FLOW ATK", sgn(f.attackBonus), "d20 + this"),
-      stat("STRAIN", "0 to 6", "track in play")
+      // the Strain Track has five Stages (Ripple to Collapse), read off the data, not six
+      stat("STRAIN", "0 to " + strainStageCount(), "track in play")
     ]));
-    out.push(el("div.ps-surv-row", { style: { marginTop: "4px" } }, [el("span.ps-fl", { text: "FP NOW" }), el("span.ps-box.ps-write") , el("span.ps-fl", { text: "STRAIN" }), pips(0, 6, "dot")]));
+    out.push(el("div.ps-surv-row", { style: { marginTop: "4px" } }, [el("span.ps-fl", { text: "FP NOW" }), el("span.ps-box.ps-write") , el("span.ps-fl", { text: "STRAIN" }), pips(0, strainStageCount(), "dot")]));
     out.push(sect("Known Resonances", "Kinetic · Thermal · EM · Visceral · Spatial · Cognitive · Temporal"));
     var res = el("div.ps-rep"); for (var i = 0; i < 5; i++) res.appendChild(writeLine("")); out.push(res);
     out.push(el("div.ps-grid2", null, [pblock("Counter Flow", null, false), pblock("Static Zones", null, false)]));

@@ -832,11 +832,13 @@ EN.builder = (function () {
       ]));
 
       blocks.push(el("div", { style: { height: "18px" } }));
+      /* 23 Oct: "Lineage sections no longer open with a one-line summary", so the card is the
+         name alone. The lineage `description` stays in species.js; nothing renders it. */
       blocks.push(EN.ui.sectionTitle("Choose a Lineage"));
       blocks.push(el("div.card-grid", null, (sp.lineages || []).filter(function (l) { return offered("lineage", l.key, ch.lineage); }).map(function (l) {
         return el("div.opt-card" + (ch.lineage === l.key ? ".sel" : ""), {
           onclick: function () { store.update(function (c) { if (c.lineage !== l.key) { c.lineage = l.key; c.lineageFeatures = []; c.size = null; c.heightFt = null; } }); }
-        }, [el("span.check", { text: "◉" }), el("h4", null, [document.createTextNode(l.name), heldTag("lineage", l.key)]), el("p", { text: l.description || "" })]);
+        }, [el("span.check", { text: "◉" }), el("h4", null, [document.createTextNode(l.name), heldTag("lineage", l.key)])]);
       })));
     }
 
@@ -2239,6 +2241,7 @@ EN.builder = (function () {
       c.level = lvl;
       // clean upgrade choices above the new level
       Object.keys(c.universalUpgrades || {}).forEach(function (k) { if (Number(k) > lvl) delete c.universalUpgrades[k]; });
+      dropOrphanUpgrades(c);
       pruneTalentAttrPicks(c);
       if (lvl < 4) c.awakeningEvolution = null;
     });
@@ -2247,10 +2250,10 @@ EN.builder = (function () {
     var cur = (ch.universalUpgrades || {})[L];
     var wrap = el("div", { style: { margin: "0 0 10px 14px", paddingLeft: "10px", borderLeft: "1px dashed var(--border2)" } });
     wrap.appendChild(el("div.row.wrap", { style: { gap: "8px", marginBottom: "8px" } }, [
-      el("button.btn.sm" + (cur && cur.type === "attr" ? ".primary" : ""), { onclick: function () { store.update(function (c) { var p = c.universalUpgrades[L]; var a = (p && p.attrs) || ["", ""]; c.universalUpgrades[L] = { type: "attr", attrs: [a[0] || "", a[1] || ""] }; pruneTalentAttrPicks(c); }); } }, "+2 ATTRIBUTES"),
-      el("button.btn.sm" + (cur && cur.type === "talent" ? ".primary" : ""), { onclick: function () { store.update(function (c) { var p = c.universalUpgrades[L]; c.universalUpgrades[L] = { type: "talent", talent: (p && p.talent) || null }; }); } }, "GAIN TALENT"),
-      el("button.btn.sm" + (cur && cur.type === "evolution" ? ".primary" : ""), { onclick: function () { store.update(function (c) { var p = c.universalUpgrades[L]; c.universalUpgrades[L] = { type: "evolution", evolution: (p && p.evolution) || null }; pruneTalentAttrPicks(c); }); } }, "GAIN EVOLUTION"),
-      Number(L) >= 6 ? el("button.btn.sm" + (cur && cur.type === "talentUpgrade" ? ".primary" : ""), { title: "Spend this slot to unlock the Upgrade of a Talent you already have", onclick: function () { store.update(function (c) { var p = c.universalUpgrades[L]; c.universalUpgrades[L] = { type: "talentUpgrade", talent: (p && p.talent) || null }; pruneTalentAttrPicks(c); }); } }, "UPGRADE TALENT") : null
+      el("button.btn.sm" + (cur && cur.type === "attr" ? ".primary" : ""), { onclick: function () { store.update(function (c) { var p = c.universalUpgrades[L]; var a = (p && p.attrs) || ["", ""]; c.universalUpgrades[L] = { type: "attr", attrs: [a[0] || "", a[1] || ""] }; dropOrphanUpgrades(c); pruneTalentAttrPicks(c); }); } }, "+2 ATTRIBUTES"),
+      el("button.btn.sm" + (cur && cur.type === "talent" ? ".primary" : ""), { onclick: function () { store.update(function (c) { var p = c.universalUpgrades[L]; c.universalUpgrades[L] = { type: "talent", talent: (p && p.talent) || null }; dropOrphanUpgrades(c); }); } }, "GAIN TALENT"),
+      el("button.btn.sm" + (cur && cur.type === "evolution" ? ".primary" : ""), { onclick: function () { store.update(function (c) { var p = c.universalUpgrades[L]; c.universalUpgrades[L] = { type: "evolution", evolution: (p && p.evolution) || null }; dropOrphanUpgrades(c); pruneTalentAttrPicks(c); }); } }, "GAIN EVOLUTION"),
+      Number(L) >= 6 ? el("button.btn.sm" + (cur && cur.type === "talentUpgrade" ? ".primary" : ""), { title: "Spend this slot to unlock the Upgrade of a Talent you already have", onclick: function () { store.update(function (c) { var p = c.universalUpgrades[L]; c.universalUpgrades[L] = { type: "talentUpgrade", talent: (p && p.type === "talentUpgrade" && p.talent) || null }; dropOrphanUpgrades(c); pruneTalentAttrPicks(c); }); } }, "UPGRADE TALENT") : null
     ]));
     if (cur && cur.type === "evolution") {
       wrap.appendChild(evolutionSelect(ch, cur.evolution, function (name) { store.update(function (c) { c.universalUpgrades[L] = { type: "evolution", evolution: name }; }); }));
@@ -2313,6 +2316,26 @@ EN.builder = (function () {
     if (!slot || slot.type !== "talent" || !slot.talent) return false;
     var k = eng.canonTalentKey(slot.talent);
     return !!k && eng.talentSavePending(ch, k);
+  }
+  /* [PRINTED] "If you replace a Talent that you have Upgraded, you lose both the base Talent and
+     its Upgrade." THE one sweep of that rule, written as the invariant: a talentUpgrade slot may
+     name only a Talent some type "talent" slot still holds. Call it after ANY mutation of
+     universalUpgrades that can take a Talent out of a slot. There are five ways: the Talent is
+     swapped in its own picker, or the slot is repointed at +2 ATTRIBUTES, GAIN TALENT, GAIN
+     EVOLUTION or UPGRADE TALENT, or the level drops past the slot. The swept slot is set to null,
+     which returns it to Unspent and so to selectable. A talentUpgrade slot with no Talent chosen
+     yet is not an orphan and stays. Names and keys resolve the way engine.activeTalents does. */
+  function dropOrphanUpgrades(c) {
+    var ups = c.universalUpgrades || {}, held = Object.create(null);
+    function keyOf(v) { return eng.canonTalentKey(v) || String(v); }
+    Object.keys(ups).forEach(function (k) {
+      var u = ups[k];
+      if (u && u.type === "talent" && u.talent) held[keyOf(u.talent)] = 1;
+    });
+    Object.keys(ups).forEach(function (k) {
+      var u = ups[k];
+      if (u && u.type === "talentUpgrade" && u.talent && !held[keyOf(u.talent)]) ups[k] = null;
+    });
   }
   /* Drops every pick that belongs to a Talent no slot holds any more: the Attribute picks, the
      Saving Throw picks (Hardened Survivor) and the gear category picks (Asphalt Rider, Junk
@@ -2545,18 +2568,18 @@ EN.builder = (function () {
        changed at any time, because a character sheet you cannot freely edit is
        worse to use than one that trusts you. Author decision, 2026-08-01. Do not
        add the level-up gate in a later manuscript sync; its absence is a choice,
-       not drift. The consequence above still applies whenever a Talent changes. */
+       not drift. The consequence above still applies whenever a Talent changes.
+
+       [PRINTED, 23 Oct] "It still counts as your one retrain, and you refill both
+       slots: two Talents, or a new Talent and its Upgrade if you're Level 6 or
+       higher." The swept Upgrade slot is the second slot to refill; the retrain
+       itself stays uncounted (the policy above). The sweep is dropOrphanUpgrades,
+       shared with every other way a slot can stop holding a Talent. */
     var sel = el("select", { onchange: function (e) {
       var picked = e.target.value || null;
       store.update(function (c) {
-        var dropped = (c.universalUpgrades[L] || {}).talent;
         c.universalUpgrades[L] = { type: "talent", talent: picked };
-        if (dropped && dropped !== picked) {
-          Object.keys(c.universalUpgrades).forEach(function (k) {
-            var u = c.universalUpgrades[k];
-            if (u && u.type === "talentUpgrade" && u.talent === dropped) c.universalUpgrades[k] = null;
-          });
-        }
+        dropOrphanUpgrades(c);
         pruneTalentAttrPicks(c);
       });
     } }, [el("option", { value: "", text: "- choose a Talent -" })]);

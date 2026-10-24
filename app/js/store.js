@@ -762,6 +762,15 @@ EN.store = (function () {
         pj.itemName = to;
       });
     }
+    /* 23 October 2026 handoff: the old "strong" tier is now Costly Success. A Work Interval log row
+       keeps its outcome key in `o`, and a save written before the rename holds "strong". Only
+       the key moves: `d`, the Progress the row added, is unchanged, so p.progress stays put. */
+    if (Array.isArray(ch.projects)) {
+      ch.projects.forEach(function (pj) {
+        if (!pj || !Array.isArray(pj.log)) return;
+        pj.log.forEach(function (l) { if (l && l.o === "strong") l.o = "costly"; });
+      });
+    }
 
     var TALENT_RENAMES = Object.create(null);
     TALENT_RENAMES["toxicologist"] = TALENT_RENAMES["Toxicologist"] = "cutting-agent";

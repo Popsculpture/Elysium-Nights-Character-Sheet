@@ -142,8 +142,8 @@ EN.social = {
     columns: ["Margin", "Result", "What Happens"],
     rows: [
       { key: "flawless", margin: "Flawless Success", result: "Total Win", text: "You get what you want and gain ground. A positive Profile, improved Faction Standing, future Edge with this target, or a bonus favor." },
-      { key: "strong", margin: "Strong Success", result: "Solid Win", text: "You get what you want at a minor cost. A Concession, added Scrutiny, future Debt, partial visibility." },
-      { key: "mixed", margin: "Mixed Result", result: "Yes, But", text: "You succeed with a real social cost. Choose one benefit and one cost from the Social Fallout table." },
+      { key: "costly", margin: "Costly Success", result: "Solid Win", text: "You get what you want at a minor cost. A Concession, added Scrutiny, partial visibility." },
+      { key: "mixed", margin: "Mixed Result", result: "Yes, But", text: "You get what you want and pay a real social cost. Pick one from Social Fallout; the GM can veto one that doesn't fit." },
       { key: "failure", margin: "Failure", result: "No, And", text: "You miss. You lose position, alienate the room, or worsen terms." },
       { key: "critical", margin: "Critical Failure", result: "Hard Burn", text: "The scene turns against you. Public embarrassment, surveillance, a strong Profile, a shift to Hostile posture, or a rival learning something they shouldn't have." }
     ]
@@ -267,7 +267,7 @@ EN.social = {
       columns: ["Result", "Pressure Dealt"],
       results: [
         { key: "flawless", result: "Flawless Success", margin: "+3 or more", pressure: 3, resolveGain: 0, text: "3" },
-        { key: "strong", result: "Strong Success", margin: "+1 to +2", pressure: 2, resolveGain: 0, text: "2" },
+        { key: "costly", result: "Costly Success", margin: "+1 to +2", pressure: 2, resolveGain: 0, text: "2" },
         { key: "mixed", result: "Mixed Result", margin: "0", pressure: 1, resolveGain: 0, text: "1, and the target picks one effect from the Social Fallout menu (see Social Pressure and Faction Standing) to apply to the Character" },
         { key: "failure", result: "Failure", margin: "-1 to -2", pressure: 0, resolveGain: 0, text: "0, and the Character may suffer Social Fallout" },
         { key: "critical", result: "Critical Failure", margin: "-3 or worse", pressure: 0, resolveGain: 1, text: "0, the target gains 1 Resolve, and the Character suffers strong Social Fallout" }
@@ -297,7 +297,7 @@ EN.social = {
     plays: [
       { key: "press", name: "Press", text: "Make a social attack roll. Choose an Approach. Roll the Pool. Margin becomes Pressure." },
       { key: "support", name: "Support", text: "Spend the Round backing a teammate. Grant +1 Edge Die to one ally's next Press roll this scene. Multiple supporters stack, capped at the normal +3 Edge Die ceiling." },
-      { key: "read", name: "Read", text: "Make an Insight roll. On a Strong or Flawless Success, the GM reveals one of the target's vulnerabilities, resistances, or current emotional weight. On a Mixed Result, the GM reveals one detail of your choice (Profile, Debt, faction tie)." },
+      { key: "read", name: "Read", text: "Make an Insight roll. On a Costly or Flawless Success, the GM reveals one of the target's vulnerabilities, resistances, or current emotional weight. On a Mixed Result, the GM reveals one detail of your choice (Profile, Debt, faction tie)." },
       { key: "disrupt", name: "Disrupt", text: "Spend the Round acting on the environment to shift the math: knocking over a drink to break the flow, triggering an alarm to add pressure, slipping a note to a witness, leaking a piece of footage. Requires a relevant non-social Skill check. On a success, impose +1 Snag Die on the target's next Posture, or remove +1 Snag Die from one ally's next Press roll." },
       { key: "hold", name: "Hold", text: "A Character who has no business being in this room (the muscle dummy at the negotiation, the antisocial Codebreaker at the gala) can Hold. They stay silent, control their breathing, and avoid making the scene worse. Their presence still counts toward the Floor: their gear, their posture, their reputation are part of the room. A Character who Holds well grants +1 Edge Die to one ally's Press roll this Round, representing the unspoken weight they bring." }
     ],
@@ -314,7 +314,7 @@ EN.social = {
         { key: "compose", name: "Compose", looks: "A visible breath, recovered posture, the smile they practiced in the mirror", text: "Reduce Pressure by 1", reduce: 1 },
         { key: "stonewall", name: "Stonewall", looks: "Refuse to engage, fall back on script, demand a lawyer", text: "Reduce Pressure by 2. The target takes the *Cornered* condition.", reduce: 2 },
         { key: "veil", name: "Veil", looks: "Become unreadable, retreat behind ritual or pose, project Mystique", text: "Reduce Pressure by 1d4 (Mystique-aligned targets only)", reduce: "1d4" },
-        { key: "counter", name: "Counter", looks: "**Push back:** attempt their own social attack against the Character who just pressed them", text: "Resolve as a contested social roll. On a Strong or Flawless margin against the Character, the Character takes Social Fallout.", reduce: 0 }
+        { key: "counter", name: "Counter", looks: "**Push back:** attempt their own social attack against the Character who just pressed them", text: "Resolve as a contested social roll. On a Costly or Flawless margin against the Character, the Character takes Social Fallout.", reduce: 0 }
       ],
       recharge: "Opposition Postures recharge at the start of each Round."
     },
@@ -441,11 +441,11 @@ EN.social = {
     title: "Sit-Down Example: The Deposition",
     setup: "The crew's lawyer is taking a deposition from a mid-level corporate witness who knows where the bodies are buried. Stakes: get the witness to name names. Floor: a corporate conference room (their turf, Snag on the crew), a recording system (Snag on Deception), and a witness who is more afraid of their employer than the crew (Hardened, Resolve 8).",
     rounds: [
-      { name: "Round One", text: "The Fury, sitting in the corner cleaning a sidearm she won't use, Holds. Her presence grants +1 Edge Die to the lawyer's Press this Round. The lawyer Presses with Persuasion (Charm), rolls a Strong Success, deals 2 Pressure. Resolve: 6." },
+      { name: "Round One", text: "The Fury, sitting in the corner cleaning a sidearm she won't use, Holds. Her presence grants +1 Edge Die to the lawyer's Press this Round. The lawyer Presses with Persuasion (Charm), rolls a Costly Success, deals 2 Pressure. Resolve: 6." },
       { name: "Round Two", text: "The Codebreaker, jacked in remotely, Disrupts: pulls one of the witness's internal emails onto the conference room screen \"by accident.\" That strips one Snag Die from the lawyer's next Press. The lawyer Presses with Wits-driven Persuasion (dismantling the witness's argument with the new evidence), and the turf's Snag is gone. Flawless Success: 3 Pressure. Resolve: 3." },
-      { name: "Round Three", text: "The witness tries to Stonewall: \"I would like to consult my legal counsel.\" Reduces incoming Pressure by 2, takes the *Cornered* condition for the scene. The lawyer presses again with Intimidation (Charm, plus information about the witness's daughter's tuition used to pressure them), and lands a Strong Success. 2 Pressure minus 2 Stonewall equals 0 net Pressure. No movement on Resolve, but the witness has used their Posture for the Round." },
+      { name: "Round Three", text: "The witness tries to Stonewall: \"I would like to consult my legal counsel.\" Reduces incoming Pressure by 2, takes the *Cornered* condition for the scene. The lawyer presses again with Intimidation (Charm, plus information about the witness's daughter's tuition used to pressure them), and lands a Costly Success. 2 Pressure minus 2 Stonewall equals 0 net Pressure. No movement on Resolve, but the witness has used their Posture for the Round." },
       { name: "Round Four", text: "The Fury speaks for the first time. Body and Intimidation: \"Your employer does not protect people. They use them. I have seen the people they leave behind.\" Roll. Mixed Result: 1 Pressure, and the witness applies Social Fallout. They choose Tipped Hand: the Fury reveals her own past as a corp security washout, which the witness's lawyer files away. Resolve: 2. The Fury picks up the Profile *Disgruntled Ex-Corp* for the rest of the scene." },
-      { name: "Round Five", text: "The lawyer Presses one more time. Persuasion (Charm). Strong Success: 2 Pressure. Resolve: 0. The witness breaks. They name two names. The crew gets what they came for. Heat with the corporation increases by 2." }
+      { name: "Round Five", text: "The lawyer Presses one more time. Persuasion (Charm). Costly Success: 2 Pressure. Resolve: 0. The witness breaks. They name two names. The crew gets what they came for. Heat with the corporation increases by 2." }
     ]
   },
 

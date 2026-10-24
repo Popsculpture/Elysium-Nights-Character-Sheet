@@ -1,7 +1,8 @@
 /* ===========================================================================
    ELYSIUM NIGHTS · Versatile Skills (Insight · Performance · Intimidation)
    Ported from the original character sheet. Each versatile skill is rolled as
-   Attribute modifier + parent-skill tier bonus, and the parent's Focus and
+   d20 + Attribute Modifier + the parent Skill's Proficiency Bonus (the book's
+   "Versatile Skill Roll", 23 Oct 2026), and the parent's Focus and
    Specialization carry over.
    Key format: 'ATTR|Skill|type'. A null is a pairing this catalog has no NAME for,
    not a pairing the rules forbid: the Skills and Proficiencies chapter (Part 1
@@ -19,7 +20,7 @@ EN.versatile = {
   // the #PRINT Advance step's Versatile Skills line, moved here 2026-10-07 so the step and
   // the Codex (sk-skills/versatile-skills) read one copy
   rule: "Insight, Performance, and Intimidation borrow the tier of whatever parent skill you lean on in the moment; you can't buy them with Training Points.",
-  note: "Attr + Skill bonus = Versatile result. Any Attribute can pair with any parent Skill; the method you describe is what picks them. You use the parent Skill's tier bonus, so an Untrained parent adds nothing and rolls with Snag. Focus and Specialization carry over.",
+  note: "d20 + Attribute Modifier + the parent Skill's Proficiency Bonus = Versatile Result. Any Attribute can pair with any parent Skill; the method you describe is what picks them. You use the parent Skill's tier bonus, so an Untrained parent adds nothing and rolls with Snag. Focus and Specialization carry over.",
 
   db: {
     /* ── INSIGHT ────────────────────────────────────────────── */

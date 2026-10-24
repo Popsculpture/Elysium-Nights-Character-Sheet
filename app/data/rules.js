@@ -63,10 +63,13 @@ EN.rules = {
      the Codex (Skills & Advancement, Encumbrance & Load). Before them the only
      player-facing statement of the Threshold was a hover title on the Loadout
      console (combat.js), which does not show on touch. engine.js:2403 computes
-     it; these say the same thing in words. */
+     it; these say the same thing in words.
+     23 Oct 2026 (Packed It): `budget` ends with the book's three sentences on the two Load
+     numbers, and `notes` carries the book's Packed It paragraph: a revealed item stays revealed
+     for Packed It even after it is dropped, while Encumbrance reads what you carry now. */
   encumbrance: {
     threshold: "Encumbrance Threshold = 6 + Body Modifier, adjusted by Size, minimum 3. The minimum applies after the Size adjustment, so a Small character on Body -3 lands at 3, not 2. Gear, mods, frames, cyberware and Flow effects that raise it speak in steps of +2; the Size adjustment is a raw 1 and is not a step.",
-    budget: "When a job starts, each Freelancer declares one Loadout; if nobody declares, assume Standard. The declared Loadout sets your Load Budget (your Threshold moved by the Loadout's offset), and the gear on your person spends it.",
+    budget: "When a job starts, each Freelancer declares one Loadout; if nobody declares, assume Standard. The declared Loadout sets your Load Budget (your Threshold moved by the Loadout's offset), and the gear on your person spends it. The first number is the Load you're carrying now: everything revealed or picked up, minus what you've dropped. Note dropped items beside it, because Packed It still counts them. The second is your Load Budget.",
     loadouts: [
       { key: "light",    name: "Light",    delta: -3, effect: "You read as foot traffic. Edge on in-combat d20 checks to blend into a crowd, conceal your gear, or pass checkpoint scrutiny; +1 Edge Die on related out-of-combat Dice Pools." },
       { key: "standard", name: "Standard", delta: 0,  effect: "You look like a Freelancer on a job. No perk, no penalty." },
@@ -90,7 +93,7 @@ EN.rules = {
       { load: "3",  items: "Heavy weapon, heavy shield, breaching kit, heavy tool rig, heavy armor, dense duffel" },
       { load: "4+", items: "Unconscious adult, cargo crate, generator, server rack, turret, industrial case (stowed as cargo; carried in the arms it is a Haul instead)" }
     ],
-    notes: "Load 0 items ride free within reason. Armor counts whether worn or packed: 1 Light, 2 Medium, 3 Heavy. Reveal packed gear any time (\"I packed that\") if it fits the budget and the silhouette; once revealed it stays revealed. Loot picked up mid-run adds its Load the same way."
+    notes: "Load 0 items ride free within reason. Armor counts whether worn or packed: 1 Light, 2 Medium, 3 Heavy. Reveal packed gear any time (\"I packed that\") if it fits the budget and the silhouette; once revealed, an item stays revealed: for Packed It, it counts against your budget for the rest of the run, even after you drop it, hand it off, or use it up, so it can't be quietly unpacked back out of existence. Encumbrance is different: it reads what you're carrying right now, so dropping the crate does lighten you. Loot picked up mid-run adds its Load the same way."
   },
 
   /* Modifier scale: mod = floor((score - 10) / 2).

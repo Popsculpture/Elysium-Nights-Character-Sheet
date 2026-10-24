@@ -217,16 +217,15 @@ EN.gmBook.card = {
             { key: "iron",     cells: ["Iron", "12"],     tier: "Iron",     resolve: 12, orMore: false },
             { key: "apex",     cells: ["Apex", "16+"],    tier: "Apex",     resolve: 16, orMore: true }
           ] },
-        /* The Pressure each result deals to the Opposition's Resolve. The
-           Flawless 3, Strong 2, Mixed 1 also appear in the player-side
-           Sit-Down text in js/face.js. `also` is the third column, null where
+        /* The Pressure each result deals to the Opposition's Resolve: Flawless 3,
+           Costly 2, Mixed 1. `also` is the third column, null where
            it is empty; `resolveGain` is the 1 Resolve a Critical gives the
            target. */
         { kind: "table", key: "results",
           columns: [ { key: "result", name: "Result" }, { key: "pressure", name: "Pressure" }, { key: "also", name: "Also" } ],
           rows: [
             { key: "flawless", cells: ["Flawless", "3", ""], result: "Flawless", pressure: 3, also: null },
-            { key: "strong",   cells: ["Strong", "2", ""],   result: "Strong",   pressure: 2, also: null },
+            { key: "costly",   cells: ["Costly", "2", ""],   result: "Costly",   pressure: 2, also: null },
             { key: "mixed",    cells: ["Mixed", "1", "The target picks the crew's Social Fallout"], result: "Mixed", pressure: 1,
               also: "The target picks the crew's Social Fallout" },
             { key: "failure",  cells: ["Failure", "0", "Social Fallout possible"], result: "Failure", pressure: 0,

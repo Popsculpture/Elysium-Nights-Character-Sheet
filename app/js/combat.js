@@ -1265,7 +1265,7 @@ EN.combatView = (function () {
   var _restProvisioned = true;
   function longRest(ch, d, provisioned) {
     if (provisioned === undefined) provisioned = true;
-    var leaseDue = [], severeFatigue = 0, noNaturalHealing = false, personaExpired = 0, altitudeLocked = 0, altitudeFrom = [], unprovisioned = 0, fpBlocked = false;
+    var leaseDue = [], severeFatigue = 0, noNaturalHealing = false, personaExpired = 0, altitudeLocked = 0, altitudeFrom = [], unprovisioned = 0, fpBlocked = false, strainBlocked = false, strainStage = 0;
     store.update(function (c) {
       var s = state(c, d);
       var bodMod = d.attributes.BOD.mod;
@@ -1283,7 +1283,16 @@ EN.combatView = (function () {
       if (d.resource) c.resources.current[d.resource.name] = d.resource.max;
       if (d.flow && inBreakflow(c)) fpBlocked = true;                       // no FP while Breakflow holds
       else if (d.flow) c.flow.current = d.flow.max;                         // full Reservoir
-      c.flow.strain = Math.max(0, (c.flow.strain || 0) - 1);                // Strain −1
+      /* Strain −1, except in Breakflow: "While you're in Breakflow, only Breakflow Restoration or
+         Rough Restoration lowers your Strain; Long Rests and Ritual Recovery work again once it
+         ends." Removing a Stage also clears the partial Strain points ("gaining a Stage another way
+         leaves them where they are"), so the points are only zeroed when a Stage actually comes off. */
+      if (inBreakflow(c)) { strainBlocked = (c.flow.strain || 0) > 0; strainStage = c.flow.strain || 0; }
+      else {
+        var strainWas = c.flow.strain || 0;
+        c.flow.strain = Math.max(0, strainWas - 1);                         // Strain −1
+        if (c.flow.strain < strainWas) c.flow.strainPoints = 0;
+      }
       // Fatigue −1, but only up to level 3. Severe Fatigue (4 to 6) "requires
       // medical, mystical, or technological treatment to reduce", so a night's
       // sleep does nothing for it. Tracked as a leveled condition; removed at 0.
@@ -1347,6 +1356,7 @@ EN.combatView = (function () {
     var dayRep = dayReport({ leaseDue: leaseDue, personaExpired: personaExpired });
     // Breakflow rides at the end of whichever message below is shown, so it is never the one dropped
     var bfNote = fpBlocked ? " No FP: you can't recover FP until Breakflow ends, and a rest alone can't end it." : "";
+    if (strainBlocked) bfNote += " Strain stays at Stage " + strainStage + ": while you're in Breakflow, only Breakflow Restoration or Rough Restoration lowers it.";
     /* Told before the altitude lock, because an unprovisioned rest is the player's own
        declaration and the more surprising of the two. A Clanker is told in its own terms. */
     if (unprovisioned) toast("Long Rest complete, but with no safe shelter, food or water: Fatigue "
@@ -1359,7 +1369,7 @@ EN.combatView = (function () {
     else if (dayRep) toast("Long Rest complete. " + dayRep + "." + bfNote);
     else if (noNaturalHealing) toast("Long Rest complete. Static Threshold 4: no natural Wound recovery. Wounds need medical or engineering treatment." + bfNote);
     else if (severeFatigue) toast("Long Rest complete. Fatigue " + severeFatigue + " is Severe: it needs medical, mystical, or technological treatment, not sleep." + bfNote);
-    else toast(fpBlocked ? "Long Rest complete." + bfNote : "Long Rest complete, restored and refreshed.");
+    else toast(fpBlocked || strainBlocked ? "Long Rest complete." + bfNote : "Long Rest complete, restored and refreshed.");
   }
   function spendResilience(ch, d, count) {
     var s = state(ch, d);
@@ -1572,11 +1582,24 @@ EN.combatView = (function () {
         "Lose 2d4 Vitality at the start of your turn and every time you willingly move 1 space.",
         "Lose 3d4 Vitality at the start of your turn and every time you willingly move 1 space."
       ] },
-    // names and effects come off the data (strainStages), never a copy kept here
+    // names and effects come off the data (strainStages), never a copy kept here. "Each Stage keeps
+    // the effects of the Stages below it", so Stage N's line names Stages 1 to N, as COND_FX does.
     "Strain":   { label: "Stage",  max: 5, severeAt: 5,
       names: strainStages().map(function (s) { return s.name; }),
-      effects: strainStages().map(function (s) { return s.name + ": " + s.effect + "."; }) }
+      effects: strainStages().map(function (s, i, all) {
+        return all.slice(0, i + 1).map(function (t) { return t.name + ": " + t.effect + "."; }).join(" ");
+      }) }
   };
+  /* The collapsed Status Changes card's one-line summary. A leveled track reads its level's line
+     (Strain's lines are cumulative, see LEVELED). Absolute Conduit ignores Stage 1 and 2 Strain, so
+     at those two Stages the card says so, in the words the Flow tab and the COND_FX rider use. */
+  function condSummary(name, lv, lvl, info, d) {
+    if (name === "Strain" && lvl >= 1 && lvl <= 2 && d && (d.features || []).some(function (f) { return f && f.kind === "class" && f.name === "Absolute Conduit"; })) {
+      var stg = strainStages()[lvl - 1];
+      return "Stage " + lvl + (stg ? " (" + stg.name + ")" : "") + ": ignored (Absolute Conduit).";
+    }
+    return (lv && lv.effects && lv.effects[lvl - 1]) || (info && info.summary) || "";
+  }
   // Per-condition mechanical riders (straight from the condition texts).
   // fx(e, lvl) mutates the aggregate; everything else surfaces via notes.
   var COND_FX = {
@@ -1806,7 +1829,7 @@ EN.combatView = (function () {
     "Poisoned": ["Varies", "Antitoxin / Medtech Check"], "Prone": ["Until Stand", "Half Move or Swift Action"],
     "Restrained": ["Until Freed", "Athletics Check / Destroy Restraint"], "Shaken": ["Until Save", "End of turn Wits DC 12"],
     "Signal Jammed": ["Until Jam Ends", "Move / Disable Jammer"], "Soul Shock": ["Until Rested", "Short or Long Rest / Flow healing"],
-    "Staggered": ["Until Save", "End of turn Wits DC 10"], "Strain": ["Until Restored", "Long Rest / Ritual"],
+    "Staggered": ["Until Save", "End of turn Wits DC 10"], "Strain": ["Until Restored", "Long Rest / Ritual (in Breakflow: Restoration only)"],
     "Stunned": ["Until Save", "End of turn Body DC 15"], "Unconscious": ["Until Revived", "Healing / Allied Action"],
     "Vacuum": ["Special", "Pressure and air, or a suit that holds vacuum"]
   };
@@ -3232,12 +3255,19 @@ EN.combatView = (function () {
   // catalog name for a pooled consumable/ammo stack).
   function entryKey(e) { return EN.engine.entryKey ? EN.engine.entryKey(e) : (e && e.name); }
   function carryStatus(ch, key) { return (ch.carry && ch.carry[key]) || "stashed"; }
-  // status is "stashed" | "carried" | "worn" | "racked|<carryGearEntryKey>";
-  // racking stows the item in worn Carry Gear (Load reduced by 1, min 0)
+  // status is "stashed" | "carried" | "worn" | "racked|<carryGearEntryKey>" | "dropped";
+  // racking stows the item in worn Carry Gear (Load reduced by 1, min 0). "dropped" takes the item
+  // off your person like Stashed does, but first notes its Load in ch.loadDropped: Packed It still
+  // counts what you dropped (the Load console shows it as PACKED IT revealed / budget).
   function setCarry(key, status) {
     store.update(function (c) {
       c.carry = c.carry || {};
       c.racked = c.racked || {};
+      if (status === "dropped") {
+        var de = eng.findEntry(c, key);
+        if (de) eng.logDropped(c, de);
+        status = "stashed";
+      }
       if (status && status.indexOf("racked|") === 0) {
         var gearKey = status.slice(7);
         if (gearKey) { c.carry[key] = "racked"; c.racked[key] = gearKey; }
@@ -3246,6 +3276,9 @@ EN.combatView = (function () {
         delete c.racked[key];
         if (!status || status === "stashed") delete c.carry[key]; else c.carry[key] = status;
       }
+      // back on your person (Carried, Worn or Racked, from this select or ADD TO LOADOUT): a dropped
+      // item picked back up is no longer dropped, so its Packed It row comes off (it counts once)
+      if (status && status !== "stashed") eng.unlogDropped(c, key);
     });
   }
   // Body Slot conflict resolution: benching an item stops it from counting
@@ -3745,7 +3778,7 @@ EN.combatView = (function () {
                 rcList(R.lines, { conditions: true, self: ["rc-rests/long-rest"] })
               ]);
             })(),
-            restBreakflowLine(),
+            restBreakflowLine(true),
             /* The Fatigue reduction is the one benefit the book gates, so it is the one thing
                this asks about. Defaulted ON: shelter and rations are the ordinary case, and a
                prompt that defaults to the exception would tax every rest for the rare night.
@@ -4293,7 +4326,7 @@ EN.combatView = (function () {
                              text: entry ? entry.desc
                                  : "No preset technique for this pairing. Describe how you are doing it; the method is what picks the Attribute and the parent Skill." }),
               el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "4px" } }, [
-                el("span.help", { style: { margin: 0, fontSize: "10px" }, html: "Roll: <b>" + attrName(slot.attr) + " " + eng.fmtMod(mod) + " + " + sk.name + " " + eng.fmtMod(tierBonus) + "</b>" }),
+                el("span.help", { style: { margin: 0, fontSize: "10px" }, html: "Roll: <b>d20 + " + attrName(slot.attr) + " " + eng.fmtMod(mod) + " + " + sk.name + " " + eng.fmtMod(tierBonus) + "</b>" }),
                 focus ? el("span.chip", { title: "Skill Focus on " + sk.name + " carries over: +Caliber inside the aspect", style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" }, text: "FOCUS +" + (d.caliber || 1) + (focus.aspect ? " (" + focus.aspect + ")" : "") }) : null,
                 spec ? el("span.chip", { title: "Specialization on " + sk.name + " carries over: expands the crit range by 1 inside the aspect", style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" }, text: "CRIT RANGE +1" + (spec.aspect ? " (" + spec.aspect + ")" : "") }) : null,
                 untrained ? el("span.chip", { title: "Untrained in " + sk.name + ": the tier adds nothing and the roll takes Snag", style: { fontSize: "9px", color: "var(--danger)", borderColor: "var(--danger)" }, text: "SNAG" }) : null
@@ -4581,7 +4614,7 @@ EN.combatView = (function () {
           el("span", null, titleKids),
           el("span", { style: { display: "flex", alignItems: "center", gap: "8px" } }, rightKids)
         ]),
-        !open ? el("p.help", { style: { margin: 0, color: "var(--text2)" }, text: (lv && lv.effects && lv.effects[lvl - 1]) || (info && info.summary) || "" }) : null,
+        !open ? el("p.help", { style: { margin: 0, color: "var(--text2)" }, text: condSummary(name, lv, lvl, info, d) }) : null,
         !open && COND_META[name] ? el("p.help", { style: { margin: "4px 0 0" }, html: "⏱ " + COND_META[name][0] + " &nbsp;·&nbsp; <span style='color:var(--success)'>✓ End:</span> " + COND_META[name][1] }) : null,
         // Drowning moved here from the hazards panel, so it brings its breath
         // clock with it: the held-breath rounds, the escalating Body Save, and
@@ -4879,7 +4912,10 @@ EN.combatView = (function () {
         kids.push(el("div.row.wrap", { style: { gap: "10px", marginTop: "8px", alignItems: "center" } }, [
           // Strain and Breakflow peek their condition entries, Overdraw and Free-Shaping The Flow's panels
           el("span.help", { style: { margin: 0 } }, [cxLink(cxCond("Strain"), "Strain"), document.createTextNode(":")]),
-          pips(fStrain, 5, resourceColor("Flow"), function (n) { store.update(function (c) { c.flow.strain = n; }); }),
+          pips(fStrain, 5, resourceColor("Flow"), function (n) {
+            // lowering a Stage clears the partial points; raising one leaves them where they are
+            store.update(function (c) { var was = c.flow.strain || 0; c.flow.strain = n; if (n < was) c.flow.strainPoints = 0; });
+          }),
           fStrain >= 5 ? el("span", { style: { color: "var(--danger)", fontFamily: "var(--mono)", fontSize: "12px" } }, ["⚡ ", cxLink(cxCond("Breakflow"), "BREAKFLOW")])
                        : el("span.help", { style: { margin: 0, fontSize: "10.5px" } }, ["5 → ", cxLink(cxCond("Breakflow"), "Breakflow"), " · ",
                            cxLink("fl-overdraw", "Overdraw"), " & ", cxLink("fl-shaping", "Free-Shaping"), " in the Flow tab"])
@@ -5218,10 +5254,12 @@ EN.combatView = (function () {
        this; `extra` lets the prompt add its DC and its own id to the tray context. */
     /* A Short or Long Rest in Breakflow restores no FP (inBreakflow, shortRest, longRest). The
        book's rest lists say "Regain FP", so while it holds the popover says why this one won't. */
-    function restBreakflowLine() {
+    function restBreakflowLine(withStrain) {
       if (!d.flow || !inBreakflow(ch)) return null;
+      /* The Long Rest popover also says why Strain stays: the book's Strain-in-Breakflow sentence. */
       return el("p", { dataset: { restBreakflow: "1" }, style: { margin: 0, fontSize: "11.5px", lineHeight: "1.45", color: "var(--warn)" } }, [
-        "In ", cxLink(cxCond("Breakflow"), "Breakflow"), ": this rest restores no FP. You can't recover FP until Breakflow ends, and a rest alone can't end it."]);
+        "In ", cxLink(cxCond("Breakflow"), "Breakflow"), ": this rest restores no FP. You can't recover FP until Breakflow ends, and a rest alone can't end it."
+          + (withStrain ? " While you're in Breakflow, only Breakflow Restoration or Rough Restoration lowers your Strain." : "")]);
     }
     function rollSave(a, extra) {
       var sv = d.saves[a.key];
@@ -5902,6 +5940,12 @@ EN.combatView = (function () {
           onclick: function () { _open["load-console"] = !loadOpen; EN.app.render(); } }, [
           el("span.mono", { title: thTip, style: { fontSize: "18px", color: "var(--text)" },
             html: "LOAD " + enc.current + " <span style='font-size:12px;color:var(--text3)'>/ " + enc.budget + "</span>" }),
+          /* Packed It keeps its own total: "Note dropped items beside it, because Packed It still counts
+             them." LOAD is what you carry now (drops subtract, Encumbrance reads it); PACKED IT is
+             everything revealed this run against the same Load Budget (drops do not subtract). */
+          (enc.dropped > 0) ? el("span.mono", { dataset: { packedIt: "1" }, title: "Packed It still counts what you dropped: " + enc.revealed + " revealed against a Load Budget of " + enc.budget,
+            style: { fontSize: "12px", padding: "1px 6px", border: "1px solid " + (enc.revealed > enc.budget ? "var(--warn)" : "var(--border2)"), borderRadius: "3px", color: enc.revealed > enc.budget ? "var(--warn)" : "var(--text2)" },
+            text: "PACKED IT " + enc.revealed + " / " + enc.budget }) : null,
           el("span.collapse-caret", { text: loadOpen ? "▾" : "▸" }),
           // the Threshold, bands and hauls live in a tooltip here, which a phone never shows; the "?" peeks them
           EN.ui.ruleChip("sk-load", { title: "Encumbrance & Load" }),
@@ -5932,6 +5976,20 @@ EN.combatView = (function () {
             onchange: function () { var v = this.value; store.update(function (c) { c.haul = v; }); } },
             (EE.hauls || []).map(function (h) { return el("option", { value: h.key, selected: enc.haul === h.key, text: h.name, title: h.hint }); }))
         ]) : null,
+        // the dropped items, noted beside the Load carried now; each row can be undone, and a new job clears the list
+        loadOpen && enc.dropped > 0 ? el("div", { dataset: { droppedList: "1" }, style: { marginTop: "7px", display: "flex", flexDirection: "column", gap: "3px" } },
+          [el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } }, [
+            el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em" }, text: "DROPPED (PACKED IT STILL COUNTS THEM)" }),
+            el("button.btn.sm", { dataset: { clearDropped: "1" }, title: "A new job starts a new Packed It count: forget every dropped item", style: { fontSize: "9px" },
+              onclick: function (ev) { if (ev && ev.stopPropagation) ev.stopPropagation(); store.update(function (c) { c.loadDropped = []; }); } }, "CLEAR (NEW JOB)")
+          ])].concat((enc.droppedItems || []).map(function (di) {
+            return el("div.row", { dataset: { droppedRow: di.name }, style: { gap: "8px", alignItems: "center", fontSize: "11.5px" } }, [
+              el("span", { text: di.name }),
+              el("span.mono", { style: { color: "var(--text3)" }, text: "⚖ " + di.load }),
+              el("button.btn.sm", { dataset: { undoDropped: String(di.index) }, title: "Undo this row: it stops counting toward Packed It", style: { fontSize: "9px", padding: "0 5px" },
+                onclick: function (ev) { if (ev && ev.stopPropagation) ev.stopPropagation(); store.update(function (c) { if (Array.isArray(c.loadDropped)) c.loadDropped.splice(di.index, 1); }); } }, "✕")
+            ]);
+          }))) : null,
         loadOpen && enc.tier === "light" && enc.state === "unencumbered" ? el("p.help", { style: { margin: "7px 0 0", fontSize: "10.5px", color: "var(--success)" }, text: (tierDef && tierDef.effect) || "" }) : null,
         loadOpen && enc.state !== "unencumbered" ? el("p.help", { style: { margin: "7px 0 0", fontSize: "10.5px", color: stateColor }, text: stateDef.effect || "" }) : null,
         // dragging one body is Encumbered with a different Speed rule, so the state's "Speed -2" needs its rider
@@ -5962,11 +6020,19 @@ EN.combatView = (function () {
             onclick: function () { var was = _pops.addgear; closePops(); _pops.addgear = !was; EN.app.render(); } }, "＋ ADD TO LOADOUT"),
           _pops.addgear ? el("div", { style: { position: "absolute", left: 0, top: "calc(100% + 6px)", zIndex: 30, width: "280px", maxHeight: "300px", overflowY: "auto",
             background: "var(--bg1)", border: "1px solid var(--accent)", borderRadius: "6px", padding: "8px", boxShadow: "0 8px 24px rgba(0,0,0,.5)" } },
-            [el("p.help", { style: { margin: "0 0 6px", fontSize: "10.5px" }, text: "Tap an item to add it as Carried; fine-tune its status on its row after." })]
+            [el("p.help", { style: { margin: "0 0 6px", fontSize: "10.5px" }, text: "Tap an item to add it as Carried; fine-tune its status on its row after." }),
+             /* Packed It: "If it fits in your remaining Load Budget". The room counts everything revealed
+                this run, dropped items included. An item that would not fit is marked, not blocked. */
+             el("p.help", { dataset: { packedRoom: String(enc.packedRoom) }, style: { margin: "0 0 6px", fontSize: "10.5px", color: enc.packedRoom < 0 ? "var(--warn)" : "var(--text2)" },
+               text: "Load Budget room (Packed It): " + enc.packedRoom + " of " + enc.budget + (enc.dropped > 0 ? ", counting " + enc.dropped + " dropped" : "") + "." })]
             .concat(stashOnly.map(function (e) {
-              return el("button.btn.sm", { style: { display: "block", width: "100%", textAlign: "left", marginBottom: "3px" },
+              var addLoad = (eng.itemLoad ? eng.itemLoad(e.name) : 0) * (e.qty || 1);
+              var over = addLoad > enc.packedRoom;
+              return el("button.btn.sm", { dataset: over ? { overBudget: "1" } : null,
+                title: over ? "Load " + addLoad + " is over your remaining Load Budget (" + enc.packedRoom + ")" : "Load " + addLoad,
+                style: { display: "block", width: "100%", textAlign: "left", marginBottom: "3px", color: over ? "var(--warn)" : "" },
                 onclick: function () { setCarry(entryKey(e), "carried"); } },
-                e.name + (e.qty > 1 ? " ×" + e.qty : ""));
+                e.name + (e.qty > 1 ? " ×" + e.qty : "") + " · Load " + addLoad + (over ? " · over your remaining Load Budget" : ""));
             }))) : null
         ]),
         el("p.help", { style: { margin: 0, flex: "1 1 auto" }, text: "What you brought to the scene. "
@@ -6107,9 +6173,11 @@ EN.combatView = (function () {
           var on = cs === "racked" && (ch.racked || {})[key] === gk;
           return el("option", { value: "racked|" + gk, selected: on, text: "⧉ Racked: " + g.name });
         }));
+        // Dropped: an on-person row leaves your person and its Load is noted for Packed It
+        if (cs !== "stashed") opts.push(el("option", { value: "dropped", title: "Take it off your person and note its Load: Packed It still counts it", text: "Dropped" }));
         // keep a stale racked target selectable so the row shows the truth
         if (cs === "racked" && !rackedGear) opts.push(el("option", { value: "racked|" + ((ch.racked || {})[key] || ""), selected: true, text: "⧉ Racked (adrift)" }));
-        var dropdown = el("select", { title: "Carry status; Racked stows it in worn Carry Gear for 1 less Load", style: { fontSize: "11px", width: "auto" },
+        var dropdown = el("select", { title: "Carry status; Racked stows it in worn Carry Gear for 1 less Load; Dropped notes its Load beside the Load you carry now", style: { fontSize: "11px", width: "auto" },
           onchange: function () { setCarry(key, this.value); } }, opts);
         statusCtrl = el("div.row", { style: { gap: "6px", alignItems: "center" } }, [wearBtn, dropdown]);
       }

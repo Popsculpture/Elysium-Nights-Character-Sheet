@@ -1362,7 +1362,8 @@ EN.codexView = (function () {
         K.subTitle("Dice Pool Success Margin"),
         mono(Rz.margins.poolIntro),
         K.refTable(["Margin", "Result", "Description"], Rz.margins.pool.map(function (r) { return [r.margin, r.result, r.desc]; }), [0, 1]),
-        K.ruleBlock("Match the Cost to the Scene", Rz.margins.sceneRule),
+        // the book prints the Costly Success cost rule in the same paragraph as the scene rule
+        K.ruleBlock("Match the Cost to the Scene", Rz.margins.sceneRule + (Rz.margins.costlyRule ? " " + Rz.margins.costlyRule : "")),
         K.subTitle("Consequence by Scene Type"),
         K.refTable(["Scene Type", "Appropriate Consequences"], Rz.consequenceByScene.map(function (r) { return [r.scene, r.consequences]; }), [0])
       ];
@@ -1559,6 +1560,12 @@ EN.codexView = (function () {
     { id: "ref-actions", title: "Action Economy", tag: "TURN STRUCTURE", order: 10, when: hasCombat, build: function (ctx, K) {
       var C = EN.combat;
       var kids = [];
+      /* the Handbook's Turn Structure list opens the panel: it is where the Complex Action rule is
+         printed (the trade of Move for a Swift or an Impulse, what remains, the two exceptions).
+         Each line starts with its bold label, so none reads as a named line ("- Name: text"). */
+      if (C.turnStructure) {
+        kids.push(K.ruleBlock("Turn Structure", C.turnStructure.intro + "\n" + C.turnStructure.lines.map(function (l) { return "- " + l; }).join("\n")));
+      }
       (C.actionTypes || []).forEach(function (a) {
         var text = String(a.text || ""), i = text.indexOf(OPP);
         if (i < 0) { kids.push(K.ruleBlock(a.name, text, null, a.name === "Move" ? { terms: MOVE_TERMS } : null)); return; }

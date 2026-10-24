@@ -7,6 +7,9 @@
    prose renders in the Codex chapter The #GRID (js/codex_grid.js), on both
    desktops; the catalogs (ciphers, rigs, mods) stay on the tab and in the gray
    market. The Burner Relay table is in the Codex only (relays are not sold there).
+   23 October 2026 handoff (costly success): the Active Scanning and Cipher Attack formulas add
+   Device Bonus (the Cipher Save DC does not); Black Sun opens with its Cipher Attack and always
+   triggers Alert; Hardline Tap no longer carries the Link marker.
    =========================================================================== */
 window.EN = window.EN || {};
 
@@ -49,7 +52,7 @@ EN.grid = {
   ],
 
   /* ---- Scanning & Detection ---- */
-  scanIntro: "Finding what to hack is its own skill; half of what's worth hitting hides behind a Node disguised as a vending machine. Anything loud enough to broadcast is already on your map, no roll required. For anything quieter, compare your Passive Systems (10 + Tech Modifier + Systems Proficiency Bonus, plus always-on scanning gear) against the Node's Scan DC; that is the default, and most scenes never need more. When a Node hides better than your Passive can reach, stop and sweep: out of combat a Systems (Tech) Dice Pool against the Node's Scan Snag, under fire a single Systems check or Quick Hack (d20 + Tech Modifier + Systems Proficiency Bonus) that costs your Action. You can't Link, breach, or target a Node you haven't found.",
+  scanIntro: "Finding what to hack is its own skill; half of what's worth hitting hides behind a Node disguised as a vending machine. Anything loud enough to broadcast is already on your map, no roll required. For anything quieter, compare your Passive Systems (10 + Tech Modifier + Systems Proficiency Bonus, plus always-on scanning gear) against the Node's Scan DC; that is the default, and most scenes never need more. When a Node hides better than your Passive can reach, stop and sweep: out of combat a Systems (Tech) Dice Pool against the Node's Scan Snag, under fire a single Systems check or Quick Hack (d20 + Tech Modifier + Systems Proficiency Bonus + Device Bonus) that costs your Action. You can't Link, breach, or target a Node you haven't found.",
   /* Concealment measures how hidden a node is, not how powerful: a Standard smartwatch can be
      Ghosted, an Apex server can sit wide open. Only nodes hidden on purpose (or strange by
      nature) are concealed at all; everything else broadcasts.
@@ -83,7 +86,7 @@ EN.grid = {
   stabilityCheck: "A Link doesn't care that you're being shot at, only whether you're still upright. A Stability Check is a Body or Wits save, DC 10 or half the total damage taken that turn, whichever is higher. Roll one whenever you take damage from any source while holding one or more Links: gunfire, a blast wave, an IC Counterattack you intercepted, or LinkDeath feedback itself. Success: your Links hold and nothing else happens. Failure: one Link of your choice is torn away, and that severance is a LinkDeath graded by the margin of this same check; there is no second roll, and your remaining Links hold, for the moment. If the damage knocks you Unconscious outright, skip the check: falling Unconscious severs every Link on its own terms. Closing a Link voluntarily never requires a roll and carries no backlash of any kind. A Bricked deck is a forced disconnect instead: every Link tears away at once, with no check to save it.",
 
   /* ---- Ciphers ---- */
-  cipherAttackFormula: "Cipher Attack: d20 + Tech Modifier + Systems Proficiency Bonus vs. Node's Security Rating.",
+  cipherAttackFormula: "Cipher Attack: d20 + Tech Modifier + Systems Proficiency Bonus + Device Bonus vs. Node's Security Rating.",
   cipherSaveFormula: "Cipher Save DC: 8 + Tech Modifier + Systems Proficiency Bonus. Nodes resist save-based ciphers with d20 + Cipher Save Bonus.",
   cipherOutcomes: "Node fails its save: cipher takes full effect. Node succeeds: cipher is resisted, and IC automatically retaliates.",
   cipherComplexityNote: "Complexity 0-5. Standard Users run Complexity 0 on their own; Complexity 1+ is Power User territory, and a Codebreaker's Smartdeck sets their ceiling. The B&E Buddy is the exception: its baked-in suite scales to the Buddy's own tier and still works for a Standard User at Complexity 1 or 2. Casting cost (Codebreaker): Complexity 0 free; 1-3 cost 1 Bandwidth; 4-5 cost 2 Bandwidth; Signature ciphers a flat 1 Bandwidth. A deck with the Quantum Core trait runs Complexity 4 and 5 for 1 Bandwidth instead of 2.",
@@ -326,7 +329,7 @@ EN.grid.ciphers = [
     text: "Inject malicious code into a target Node. Cipher Attack vs. Security Rating. On hit, roll **2d6 damage**. Subtract the Node's Firewall Damage Threshold (if any); the remainder comes off its System Integrity. **Signature:** Costs 1 Bandwidth regardless of Complexity." },
   { name: "Shrapnel Code", cx: 1, cat: "Offense", sub: "Combat", activation: "1 Action", range: "Area 6 cone", runtime: "Instant",
     text: "Spray corrupted code in a cone. Each Node in the cone rolls Cipher Save vs. your DC. Roll 2d6 damage once; every Node that fails subtracts its own Firewall Damage Threshold from that roll and takes the remainder to its System Integrity." },
-  { name: "Hardline Tap", cx: 1, cat: "Offense", sub: "Breach", activation: "1 Action", range: "Touch", runtime: "Link lasts 8 hours", link: true,
+  { name: "Hardline Tap", cx: 1, cat: "Offense", sub: "Breach", activation: "1 Action", range: "Touch", runtime: "Link lasts 8 hours",
     text: "Establish a Link to a Node by physically interfacing with a wired access port. Cipher Attack vs. Security Rating, made with Edge. Wired Links can't be detected by passive scans and are immune to Alert traces while you remain physically connected." },
   { name: "Spoof Persona", cx: 1, cat: "Manipulation", sub: "Utility", activation: "1 Action", range: "Self (via Link)", runtime: "10 minutes", link: true,
     text: "Forge your digital signature inside a Linked Node, appearing as a legitimate user. Node rolls Cipher Save vs. your DC. On failure, IC and Guardians treat you as authorized for the duration. On success, your signature is flagged and Alert triggers automatically." },
@@ -393,7 +396,7 @@ EN.grid.ciphers = [
 
   /* ---- Complexity 5 · Apex ---- */
   { name: "Black Sun", cx: 5, cat: "Offense", sub: "Combat", activation: "1 Action", range: "Self (via Link)", runtime: "Instant", link: true, signature: true,
-    text: "The legendary cipher. Roll **6d6 damage** and subtract the Linked Node's Firewall Damage Threshold. If any damage remains, the Node loses **System Integrity equal to half its maximum System Integrity (rounded down)** instead of the rolled damage. A successful Black Sun against a damaged Apex Node can brick it in a single strike. Using Black Sun automatically triggers Alert on the Node regardless of save outcome. **Signature:** Costs 1 Bandwidth regardless of Complexity." },
+    text: "The legendary cipher. Make a Cipher Attack vs. the Linked Node's Security Rating. On a hit, roll **6d6 damage** and subtract the Linked Node's Firewall Damage Threshold. If any damage remains, the Node loses **System Integrity equal to half its maximum System Integrity (rounded down)** instead of the rolled damage. A successful Black Sun against a damaged Apex Node can brick it in a single strike. Using Black Sun automatically triggers Alert on the Node, hit or miss. **Signature:** Costs 1 Bandwidth regardless of Complexity." },
   { name: "Soul Transcription", cx: 5, cat: "Manipulation", sub: "Utility", activation: "1 Action (sustained 1 minute)", range: "Touch (Linked)", runtime: "Permanent", link: true,
     text: "Make a complete digital copy of a Linked Node, including every element inside it (Personas, Scripts, Caches). The copy exists as a static snapshot in your Repertoire and can be analyzed at leisure during Downtime. If used on a Node containing an AI Persona, the GM determines whether the copy \"wakes up.\" This rarely ends well." },
   { name: "Override Reality", cx: 5, cat: "Manipulation", sub: "Control", activation: "1 Action", range: "Self (via Link)", runtime: "1 round", link: true,

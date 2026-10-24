@@ -286,7 +286,7 @@ EN.gmScenes = (function () {
       });
       d.track.log = (isObj(rec.track) && Array.isArray(rec.track.log) ? rec.track.log : []).filter(isObj).map(function (x) {
         return { id: typeof x.id === "string" ? x.id : lid("sl"), round: Math.max(1, int(x.round) || 1),
-                 approach: typeof x.approach === "string" ? x.approach : "", result: typeof x.result === "string" ? x.result : "",
+                 approach: typeof x.approach === "string" ? x.approach : "", result: typeof x.result === "string" ? (x.result === "strong" ? "costly" : x.result) : "",
                  pressure: Math.max(0, int(x.pressure) || 0), gain: Math.max(0, int(x.gain) || 0), why: typeof x.why === "string" ? x.why : "",
                  posture: typeof x.posture === "string" ? x.posture : "", cut: Math.max(0, int(x.cut) || 0), roll: Math.max(0, int(x.roll) || 0),
                  gave: (typeof x.gave === "string" && SD_CONDS.indexOf(x.gave) !== -1) ? x.gave : "" };

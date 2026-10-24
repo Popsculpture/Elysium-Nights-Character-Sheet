@@ -10,7 +10,7 @@ window.EN = window.EN || {};
 EN.kits = {
   budget: 700,
   intro: "Pick your Class Kit once your Class and Subclass are locked, then add your Subclass Extra. Where a slot lists two options, pick one.",
-  budgetNote: "Every Freelancer starts with \u{1D4A2}700 to spend across the Core Pack, Class Kit, and Subclass Extra. Add up whatever you picked. Whatever is left over loads onto the Glimmer Stick in your Core Pack: real spending money for the first job, not a rounding error. Nobody's kit runs past that number, however they build it. Pick cheap and walk in with more cash on hand. Pick expensive and walk in with nothing to spare.",
+  budgetNote: "Every Freelancer starts with 𝒢700 to spend across the Core Pack, Class Kit, and Subclass Extra. Add up whatever you picked. Whatever is left over loads onto the Glimmer Stick in your Core Pack: real spending money for the first job, not a rounding error. Nobody's kit runs past that number, however they build it. Pick cheap and walk in with more cash on hand. Pick expensive and walk in with nothing to spare. Example: a Grifter Hustler who takes the Pocket Pistol spends 𝒢570 on the kit and 𝒢120 on the Fake License Portfolio, 𝒢690 in all, and walks in with 𝒢10. Take Snap-Blades instead and they walk in with 𝒢125. A Wildcard's 𝒢75 comes on top of whatever is left.",
 
   corePack: {
     blurb: "Comms, light, a way to keep files off the #GRID, food, water that won't turn on you, and a stick to hold whatever Glimmer is left once the shopping's done.",
@@ -130,7 +130,7 @@ EN.kits = {
     the_deadeye:      { items: [{ name: "Tracer Rounds", label: "Tracer Rounds (10)" }] },
     the_headhunter:   { items: [{ name: "Custody and Control Kit" }, { name: "Standard Cuffs" }] },
     smuggler:         { items: [{ name: "Tag Eraser" }, { name: "Fake License Portfolio" }] },
-    wildcard:         { glimmer: 75, note: "A Wildcard skips the gadget. Their subclass gear is \u{1D4A2}75 straight onto the stick, better odds on the cash they start with." },
+    wildcard:         { glimmer: 75, note: "A Wildcard skips the gadget. Their subclass gear is 𝒢75 straight onto the stick, better odds on the cash they start with." },
     shiv:             { items: [{ name: "Dagger" }] },
     harmonist:        { items: [{ name: "Flow Tonic Vial" }] },
     kensei:           { items: [{ name: "Shock Gloves" }] },
