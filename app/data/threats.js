@@ -287,8 +287,7 @@ EN.threats = {
      Response (the Heat tab, data/gm_heat.js), NPC Quick-Build (the People tab,
      data/gm_people.js) and the Sit-Down and chase Prep Templates (the Scenes
      tab, data/gm_scenes.js) all have homes now and are off this list. Pages,
-     for the reader of this file: Prep Templates pp13 to 20. (The Fifth Flavor
-     is gone from the Toolkit; the playtest PDF of October 2026 has no such chapter.) */
+     for the reader of this file: Prep Templates pp13 to 20. */
   notModelled: [
     "Prep Templates: Wiring a Site, its checklist, Picking Tiers, and the Fullwell Bottling example."
   ]

@@ -78,10 +78,10 @@ EN.gmBook.card = {
       /* sameAs EN.threats.budget (shareByCaliber, difficulties mult, soloNote)
          and EN.gmBook.encounters.budget. */
       // GMH p127
-      { key: "budgets", name: "Budgets", runIn: true, blocks: [
+      { key: "budgets", name: "Encounter Budget", runIn: true, blocks: [
         { kind: "text",
-          md: "**Budgets.** Share per Freelancer: 100/150/250/350/450 by Caliber. Milk Run half, Fair Fight 1x, Hard Contract 1.5x, Red Work 2x. A matched-Grade Solo alone is a Fair Fight for four.",
-          text: "Budgets. Share per Freelancer: 100/150/250/350/450 by Caliber. Milk Run half, Fair Fight 1x, Hard Contract 1.5x, Red Work 2x. A matched-Grade Solo alone is a Fair Fight for four." }
+          md: "**Encounter Budget.** Add up each Freelancer's share, then apply the difficulty. XP per Freelancer by Caliber 1 to 5: 100/150/250/350/450. Budget: Milk Run half, Fair Fight 1x, Hard Contract 1.5x, Red Work 2x. A Solo of the crew's Grade, alone, is a Fair Fight for four.",
+          text: "Encounter Budget. Add up each Freelancer's share, then apply the difficulty. XP per Freelancer by Caliber 1 to 5: 100/150/250/350/450. Budget: Milk Run half, Fair Fight 1x, Hard Contract 1.5x, Red Work 2x. A Solo of the crew's Grade, alone, is a Fair Fight for four." }
       ] },
 
       /* sameAs EN.resolution.d20.dcTable (the six steps) and
@@ -142,8 +142,8 @@ EN.gmBook.card = {
         /* sameAs the second paragraph of EN.resolution.pool.snagFromDcIntro,
            the rule EN.grid.scanning applies. */
         { kind: "text",
-          md: "A ladder with named tiers gives one Snag Die per tier, in order.",
-          text: "A ladder with named tiers gives one Snag Die per tier, in order." }
+          md: "Any ladder of named tiers works the same way: the first tier is 1 Snag Die, and each tier after it adds one.",
+          text: "Any ladder of named tiers works the same way: the first tier is 1 Snag Die, and each tier after it adds one." }
       ] },
 
       // GMH p128
@@ -172,18 +172,17 @@ EN.gmBook.card = {
           text: "Hardened (Improved and up): add the Tier to Cipher Save.",
           values: { fromTier: "Improved", fromRank: 1 } },
         /* sameAs EN.grid.firewalls (securityBonus and threshold, which are the
-           same number on every row). One printed column holds both, so
-           `bonus` is added to the Security Rating and is also the Damage
-           Threshold. */
+           same number on every row). The card prints them as two columns,
+           Security bonus and Damage Threshold; `bonus` is the shared value. */
         { kind: "table", key: "firewall",
-          columns: [ { key: "tier", name: "Firewall" }, { key: "bonus", name: "Security Rating and Damage Threshold" } ],
+          columns: [ { key: "tier", name: "Firewall" }, { key: "bonus", name: "Security bonus" }, { key: "dt", name: "Damage Threshold" } ],
           rows: [
-            { key: "standard", cells: ["Standard", "+2"], tier: "Standard", bonus: 2 },
-            { key: "improved", cells: ["Improved", "+3"], tier: "Improved", bonus: 3 },
-            { key: "advanced", cells: ["Advanced", "+4"], tier: "Advanced", bonus: 4 },
-            { key: "premium",  cells: ["Premium", "+5"],  tier: "Premium",  bonus: 5 },
-            { key: "elite",    cells: ["Elite", "+6"],    tier: "Elite",    bonus: 6 },
-            { key: "apex",     cells: ["Apex", "+7"],     tier: "Apex",     bonus: 7 }
+            { key: "standard", cells: ["Standard", "+2", "2"], tier: "Standard", bonus: 2 },
+            { key: "improved", cells: ["Improved", "+3", "3"], tier: "Improved", bonus: 3 },
+            { key: "advanced", cells: ["Advanced", "+4", "4"], tier: "Advanced", bonus: 4 },
+            { key: "premium",  cells: ["Premium", "+5", "5"], tier: "Premium", bonus: 5 },
+            { key: "elite",    cells: ["Elite", "+6", "6"], tier: "Elite", bonus: 6 },
+            { key: "apex",     cells: ["Apex", "+7", "7"], tier: "Apex", bonus: 7 }
           ] },
         /* sameAs EN.grid.ic (responses), EN.grid.icCounter (the Counterattack
            dice) and EN.grid.icResponses (Analyze and Lockdown in full).
@@ -222,7 +221,7 @@ EN.gmBook.card = {
            it is empty; `resolveGain` is the 1 Resolve a Critical gives the
            target. */
         { kind: "table", key: "results",
-          columns: [ { key: "result", name: "Result" }, { key: "pressure", name: "Pressure" }, { key: "also", name: "Also" } ],
+          columns: [ { key: "result", name: "Result" }, { key: "pressure", name: "Pressure dealt" }, { key: "also", name: "Also" } ],
           rows: [
             { key: "flawless", cells: ["Flawless", "3", ""], result: "Flawless", pressure: 3, also: null },
             { key: "costly",   cells: ["Costly", "2", ""],   result: "Costly",   pressure: 2, also: null },
@@ -235,8 +234,8 @@ EN.gmBook.card = {
           ] },
         // the second sentence is the Toolkit's (GMT p66): "Pressure comes off the opposition's Resolve; at 0, they break."
         { kind: "text",
-          md: "The Opposition gets one Posture a Round. Pressure comes off the opposition's Resolve; at 0, they break.",
-          text: "The Opposition gets one Posture a Round. Pressure comes off the opposition's Resolve; at 0, they break.",
+          md: "The opposition takes one Posture each round. Pressure comes off the opposition's Resolve; at 0, they break.",
+          text: "The opposition takes one Posture each round. Pressure comes off the opposition's Resolve; at 0, they break.",
           values: { posturesPerRound: 1, breaksAtResolve: 0 } }
       ] },
 
@@ -271,8 +270,8 @@ EN.gmBook.card = {
            how "half the crew's Heat" rounds. */
         // GMH p130
         { kind: "text",
-          md: "**Start** at Lead 2. **Dominant Victory** at +5 on d20, +3 in Dice Pools, moves the Lead by 2. **Stalemate:** each pilot makes a Control Check against the Impact DC for their speed; a failure is Snag on the next Chase Check. **First response** in 5 minus half the crew's Heat, minimum 1.",
-          text: "Start at Lead 2. Dominant Victory at +5 on d20, +3 in Dice Pools, moves the Lead by 2. Stalemate: each pilot makes a Control Check against the Impact DC for their speed; a failure is Snag on the next Chase Check. First response in 5 minus half the crew's Heat, minimum 1.",
+          md: "Chases start at Lead 2. A Dominant Victory (Margin +5 on a d20, or +3 in a Dice Pool) moves the Lead by 2. On a Stalemate, each pilot makes a Control Check against the Impact DC for their speed. A failure means Snag on the next Chase Check. The first response joins in 5 rounds minus half the crew's Heat, minimum 1.",
+          text: "Chases start at Lead 2. A Dominant Victory (Margin +5 on a d20, or +3 in a Dice Pool) moves the Lead by 2. On a Stalemate, each pilot makes a Control Check against the Impact DC for their speed. A failure means Snag on the next Chase Check. The first response joins in 5 rounds minus half the crew's Heat, minimum 1.",
           values: { startLead: 2, dominantD20: 5, dominantPool: 3, dominantMovesLead: 2, firstResponseFrom: 5, firstResponseMin: 1 } }
       ] },
 
