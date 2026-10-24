@@ -3967,7 +3967,7 @@ EN.inventoryView = (function () {
           } }, (kirUsed ? "\u2713 " : "") + "KEEP IT RUNNING"),
         el("span.mono.garage-kir-state", { style: { fontSize: "9.5px", color: kirUsed ? "var(--warn)" : "var(--success)" }, text: kirUsed ? "USED \u00b7 RESETS ON A LONG REST" : "READY \u00b7 1 / LONG REST" }),
         el("span.help", { style: { fontSize: "11px", flex: "1 1 260px" },
-          text: "When your vehicle would be destroyed or disabled, once per Long Rest you can use your Impulse Action to keep it operational at 1 Integrity until the end of the Encounter." })
+          text: "When your vehicle would be Wrecked or Disabled, once per Long Rest you can use your Impulse Action to keep it operational at 1 Integrity until the end of the Encounter." })
       ]));
     }
     return [EN.ui.panel("Garage · Vehicle Ops", cat.toUpperCase() + (typeName ? " · " + typeName.toUpperCase() : ""), body,

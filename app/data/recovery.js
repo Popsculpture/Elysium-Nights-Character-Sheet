@@ -202,7 +202,7 @@ EN.recovery = {
       lines: [
         "Fully restore **Vitality** and **FP**.",
         "Restore **all Wounds**.",
-        "Remove **all Strain**.",
+        "Remove **all Strain, unless you're in Breakflow**.",
         "Clear lingering **Fatigue** and **temporary conditions**.",
         "Recover from emotional or Flow-based instability."
       ],
