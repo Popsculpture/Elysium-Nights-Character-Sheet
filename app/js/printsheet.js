@@ -698,7 +698,8 @@ EN.printSheet = (function () {
            a Versatile row already rewritten to "1d8 (1d10)" keeps its shape and gains the
            modifier once. */
         var wh = weaponHit(ch, d, w, wKey);
-        if (w.shell && /^\s*0\s*$/.test(w.damage || "")) dmg = "No damage";   // a Smoke Shell: the effect is the point
+        // a Smoke Shell, or a Smoke Grenade (an indirect "0", as combat.js dealsNoDamage reads it): the effect is the point
+        if ((w.shell || wh.indirect) && /^\s*0\s*$/.test(w.damage || "")) dmg = "No damage";
         else if (wh.indirect) notes.push("indirect: no attribute Modifier");
         else dmg = dmg.replace(/^(\s*\d+d\d+(?:\s*\([^)]*\))?)/, "$1 " + eng.fmtMod(wh.dmgMod));
         var tn = throwNote(wh, g, w, dmg);

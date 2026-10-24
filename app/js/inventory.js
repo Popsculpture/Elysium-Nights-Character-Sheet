@@ -919,7 +919,8 @@ EN.inventoryView = (function () {
           style: { color: mode === "mkt" ? (_mode === "fivefinger" ? "var(--success)" : (it.vendor === false ? "var(--flow)" : (it.upkeep ? "var(--ember)" : (afford ? "var(--gold)" : "var(--danger)")))) : "var(--text3)", fontSize: "13px" } },
           mode === "mkt"
             ? (_mode === "fivefinger" ? "FREE" : it.vendor === false ? (it.nexus || "-") : it.upkeep ? fmtG(it.upkeep) + "/wk" : fmtG(sp) + (it.unit ? " " + it.unit : ""))
-            : "×" + ((owned && owned.qty) || 0))
+            // a part-used lot (a RELOAD that switched types put the rounds left in the magazine back; combat.js setLotRounds)
+            : "×" + ((owned && owned.qty) || 0) + (owned && owned.part > 0 ? " (1 part-used: " + owned.part + " left)" : ""))
       ])
     ]);
     var statChips = [];
@@ -3658,7 +3659,24 @@ EN.inventoryView = (function () {
      number never reads the pilot's vehicle proficiency). _garage lives only in this
      module: nothing saves it. The on-screen rule text links the Codex's vc- panels
      rather than restating more. */
-  var _garage = { chassis: "", cat: "Ground Vehicles", type: "", handling: 0, attr: "AGI", allow: false };
+  var _garage = { chassis: "", cat: "Ground Vehicles", type: "", handling: 0, attr: "AGI", allow: false, speed: "Standard" };
+  /* Map speed (the author's ruling of 24 October 2026 on Asphalt Rider's Upgrade, "You and any
+     vehicle you operate gain a +2 Speed bonus"): the vehicle's +2 is +2 spaces on the map, read
+     off the book's Speed Ratings table (EN.chases.speedRatings: Slow 8, Standard 12, Fast 16,
+     Very Fast 20). The Speed RATING does not change, so a chase comparison of ratings is
+     unaffected. The bonus counts only while the base Talent is held (engine.talentUpgradeHeld). */
+  var KEEP_RUNNING_KEY = "Asphalt Rider";     // the Talent's own featureUses counter, shared with its play-sheet card
+  function garageSpeedSpaces(rating) {
+    var rows = (EN.chases && EN.chases.speedRatings) || [];
+    for (var i = 0; i < rows.length; i++) if (rows[i].rating === rating) return rows[i].spaces;
+    return null;
+  }
+  function garageMapSpeed(ch, rating) {
+    var base = garageSpeedSpaces(rating);
+    if (base == null) return null;
+    var up = EN.engine.talentUpgradeHeld(ch, "asphalt-rider");
+    return { rating: rating, base: base, bonus: up ? 2 : 0, spaces: base + (up ? 2 : 0) };
+  }
   // the categories an untrained pilot can't operate unless the GM allows this vehicle (data/chases.js)
   function garageBarredCat(cat) {
     var list = (EN.chases && EN.chases.proficiencies && EN.chases.proficiencies.untrainedBarred) || [];
@@ -3679,6 +3697,7 @@ EN.inventoryView = (function () {
     _garage.cat = garageCatFor(v.category);
     _garage.type = v.name;
     _garage.handling = v.handling;
+    if (v.speed && garageSpeedSpaces(v.speed) != null) _garage.speed = v.speed;
   }
   /* Direct Drive: "Any Freelancer carrying a Neural Interface (Datajack)" (PHB,
      Rigging and Cyberware). The Datajack alone: the Handbook has no Rigger branch
@@ -3806,6 +3825,15 @@ EN.inventoryView = (function () {
       mountInfo.snag ? el("div.mono", { style: { fontSize: "9px", color: "var(--warn)" }, text: "with Snag" }) : null
     ]);
     function reRender() { EN.app.render(); }
+    // the vehicle's movement on the map, in spaces; Asphalt Rider's Upgrade adds 2 spaces and leaves the rating alone
+    var ms = garageMapSpeed(ch, _garage.speed);
+    var speedBox = ms ? el("div.garage-mapspeed", { title: "Speed on the map: " + ms.rating + " is " + ms.base + " spaces (Speed Ratings)"
+        + (ms.bonus ? " + 2 from Asphalt Rider (Upgrade): \"You and any vehicle you operate gain a +2 Speed bonus.\" The Speed rating stays " + ms.rating + ", so chase comparisons are unchanged." : ""),
+        style: { textAlign: "center", minWidth: "100px" } }, [
+      el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" } }, [EN.ui.ruleLink("vc-stats/speed-ratings", "SPEED"), document.createTextNode(" \u00b7 MAP")]),
+      el("span.mono.garage-mapspeed-val", { style: { fontSize: "22px", color: ms.bonus ? "var(--gold)" : "var(--text)" }, text: String(ms.spaces) }),
+      el("div.mono.garage-mapspeed-sub", { style: { fontSize: "9px", color: "var(--text3)" }, text: "spaces \u00b7 " + ms.rating.toUpperCase() + (ms.bonus ? " \u00b7 +2 ASPHALT RIDER" : "") })
+    ]) : null;
     // controls: chassis, category, vehicle type, Handling, governing attribute; the GM allowance sits with the chips
     var chassisSel = el("select", { style: { fontSize: "12px", width: "auto" },
       title: "Pick a chassis from the catalog to fill in its category, type and Handling",
@@ -3829,6 +3857,11 @@ EN.inventoryView = (function () {
         title: "Handling: a modifier applied to any piloting check (d20 or Dice Pool), the Chase Check and the Control Check included. It also sets the vehicle's Defense: 10 + Handling + the pilot's Vehicle Proficiency Bonus. A catalog chassis prints its own.",
         style: { width: "58px", padding: "4px 6px", fontSize: "12.5px" },
         oninput: function () { _garage.handling = this.value; reRender(); } }),
+      el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em" } }, [EN.ui.ruleLink("vc-stats/speed-ratings", "SPEED")]),
+      el("select.garage-speed", { style: { fontSize: "12px", width: "auto" },
+        title: "The vehicle's Speed rating. A catalog chassis prints its own.",
+        onchange: function () { _garage.speed = this.value; reRender(); } },
+        ((EN.chases && EN.chases.speedRatings) || []).map(function (r) { return el("option", { value: r.rating, selected: r.rating === _garage.speed, text: r.rating }); })),
       el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em" }, text: "VIA" }),
       el("button.btn.sm" + (_garage.attr === "AGI" ? ".primary" : ""), { title: "The Piloting Check uses your Agility Modifier", onclick: function () { _garage.attr = "AGI"; reRender(); } }, "AGILITY"),
       // TECH only for a pilot with Direct Drive; the chip stays for everyone so the rule is one tap away
@@ -3888,6 +3921,7 @@ EN.inventoryView = (function () {
           el("span.mono", { style: { fontSize: "22px", color: "var(--success)" }, text: edgePts + " → " + edgePool.label }),
           untrained ? el("div.mono", { style: { fontSize: "9px", color: "var(--warn)" }, text: "+2 Snag Dice untrained" }) : null
         ]),
+        speedBox,
         // Mounted weapon: always the Tech Modifier (the onboard targeting), plus the gun's own Weapon Proficiency (built above)
         mountBox,
         // Ram: an opposed piloting check, so the readout is the piloting total above
@@ -3913,6 +3947,28 @@ EN.inventoryView = (function () {
             ": " + opProf)
         : el("p.help", { style: { margin: "0", fontSize: "11px" },
             text: "A Vehicle Focus naming this type adds Caliber to attack rolls, vehicle checks, and damage rolls; a Specialization expands the crit range by 1 and adds +2 Edge Dice." }));
+    }
+    /* KEEP IT RUNNING (Asphalt Rider's Upgrade, PHB): "When your vehicle would be destroyed or
+       disabled, once per Long Rest you can use your Impulse Action to keep it operational at 1
+       Integrity until the end of the Encounter." One use, on the Talent's own featureUses counter
+       (the play sheet's Asphalt Rider card counts the same use), recharging on a Long Rest. */
+    if (EN.engine.talentUpgradeHeld(ch, "asphalt-rider")) {
+      var kirUsed = ((((ch.featureUses || {})[KEEP_RUNNING_KEY]) || {}).n || 0) >= 1;
+      body.push(el("div.row.wrap.garage-keep-running", { style: { gap: "10px", alignItems: "center", marginTop: "10px", paddingTop: "8px", borderTop: "1px solid var(--border)" } }, [
+        el("button.btn.sm.garage-kir-btn" + (kirUsed ? "" : ".primary"), {
+          title: kirUsed ? "Used this Long Rest. Click to restore the use (a Long Rest resets it)." : "Mark the once-per-Long-Rest use spent",
+          onclick: function () {
+            store.update(function (c) {
+              c.featureUses = c.featureUses || {};
+              if (kirUsed) delete c.featureUses[KEEP_RUNNING_KEY];
+              else c.featureUses[KEEP_RUNNING_KEY] = { n: 1, r: "Long Rest" };
+            });
+            reRender();
+          } }, (kirUsed ? "\u2713 " : "") + "KEEP IT RUNNING"),
+        el("span.mono.garage-kir-state", { style: { fontSize: "9.5px", color: kirUsed ? "var(--warn)" : "var(--success)" }, text: kirUsed ? "USED \u00b7 RESETS ON A LONG REST" : "READY \u00b7 1 / LONG REST" }),
+        el("span.help", { style: { fontSize: "11px", flex: "1 1 260px" },
+          text: "When your vehicle would be destroyed or disabled, once per Long Rest you can use your Impulse Action to keep it operational at 1 Integrity until the end of the Encounter." })
+      ]));
     }
     return [EN.ui.panel("Garage · Vehicle Ops", cat.toUpperCase() + (typeName ? " · " + typeName.toUpperCase() : ""), body,
               { corners: true, headerRight: EN.ui.ruleChip("vc-piloting", { title: "Piloting a Vehicle" }) }),

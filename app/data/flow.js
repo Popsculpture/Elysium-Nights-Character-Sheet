@@ -57,10 +57,13 @@ EN.flow = {
     { key: "instant", name: "Instant", desc: "Damage is applied and conditions are inflicted immediately. Unless an effect specifies otherwise, it lasts until the start of your next turn. Instant effects require no further input or maintenance." },
     { key: "sustain", name: "Sustain", desc: "Spend 1 FP at the start of your turn to maintain it. Only one sustained effect at a time." }
   ],
-  /* PHB:6372, printed under Duration. The handoff's words. The Worked Example printed after it is not
-     carried. Shown in the Codex (fl-shaping) and as a note on the Flow tab's builder for an
-     attack-resolved Invocation that pays for both damage and an effect (js/flow.js). */
+  /* PHB:6372, printed under Duration. The handoff's words. Shown in the Codex (fl-shaping) and as a
+     note on the Flow tab's builder for an attack-resolved Invocation that pays for both damage and
+     an effect (js/flow.js). The Worked Example printed after it is workedExample, below (the
+     author's answer 4, 24 October 2026), in the Codex only. */
   damageAndEffect: "Damage and an effect together: the Flow Attack decides the hit. On a miss, nothing happens. On a hit, the damage lands, then the target makes the effect's save, and a success avoids only the effect. (Resonances that call for a Flow Save instead of a Flow Attack, such as Spatial and Cognitive, follow their own text.)",
+  // PHB:6372, the Worked Example printed after the rule above, in the book's words
+  workedExample: "A Level 1 Shaper shapes Kinetic as a Hybrid (1 FP): damage plus a push. Remote Delivery at a target 4 spaces away (0 FP), Base Force (0 FP), Instant. Total: 1 FP. She makes a Flow Attack against the target's Defense and hits. The target takes 1d6 + her Flow Modifier Bludgeoning damage, then makes a Flow Save DC (Body or Agility). On a failure it's pushed 2 spaces; on a success it holds its ground but keeps the damage.",
   /* What ends a sustained effect besides choosing to. This sentence lived only inline in the
      Flow tab's Sustain panel (js/flow.js); it moved here so the tab and the Codex's Sustained
      Effects panel read one copy. */

@@ -1356,6 +1356,8 @@ EN.codexView = (function () {
     { id: "rz-margin", title: "Success Margin & Consequence", tag: "READING THE ROLL", order: 40, when: hasRz, build: function (ctx, K) {
       var Rz = EN.resolution;
       return [
+        // The Basics' Margin paragraph (PHB:95-97), the whole scale in brief, before the two tables
+        Rz.margins.basics ? K.ruleBlock("Margin", Rz.margins.basics) : null,
         K.subTitle("d20 Success Margin"),
         mono(Rz.margins.d20Intro),
         K.refTable(["Margin", "Result", "Description"], Rz.margins.d20.map(function (r) { return [r.margin, r.result, r.desc]; }), [0, 1]),
@@ -1433,6 +1435,8 @@ EN.codexView = (function () {
         K.ruleBlock("d20 Process", Co.group.d20Process),
         K.ruleBlock("Dice Pool Process", Co.group.poolProcess),
         K.refTable(["d20 Avg Margin", "Pool Net Margin", "Result", "Description"], Co.group.outcomes.map(function (r) { return [r.d20, r.pool, r.result, r.desc]; }), [2]),
+        // the book's Examples in Play under the Group Outcome Table (PHB:4365-4367)
+        (Co.group.examples || []).length ? K.ruleBlock("Examples in Play", Co.group.examples.map(function (t) { return "- " + t; }).join("\n")) : null,
         // the Toolkit's difficulty advice for a group check: the GM's, so Admin only (core-20)
         ctx.portal === "admin" ? K.note(Co.group.difficulty) : null,
         /* the Help Action section is one entry wrapped round its own blocks, so "(see Help

@@ -175,7 +175,10 @@ window.EN = window.EN || {};
     if (T.overlap) kids.push(K.ruleBlock("Overlapping Training", T.overlap.when + " " + T.overlap.rule));
     if ((R.versatileSkills || []).length) {
       kids.push(K.ruleBlock("Versatile Skills", [V.rule, V.note].filter(Boolean).join("\n")
-        + "\n" + R.versatileSkills.map(function (v) { return "- " + v.name + ": " + v.desc; }).join("\n")));
+        + "\n" + R.versatileSkills.map(function (v) { return "- " + v.name + ": " + v.desc; }).join("\n")
+        + (V.example ? "\n\n" + V.example : "")));
+      // the Handbook's sidebar under the Wits Skills (PHB:573)
+      if (V.insightIntuition) kids.push(K.ruleBlock("Insight and Intuition", V.insightIntuition));
     }
 
     kids.push(K.subTitle("Training Points"));
@@ -217,6 +220,9 @@ window.EN = window.EN || {};
     ], { tag: "div.feature" }));
     var pace = R.milestonePace ? R.milestonePace() : null;
     if (pace) kids.push(K.ruleBlock("Milestones", "A Freelancer levels up after " + pace + "." + ((R.advancement || {}).when ? " " + R.advancement.when : "")));
+    // the Handbook's five steps under Milestone Advancement (PHB:3358-3366), in its words
+    var lvSteps = (R.advancement || {}).levelUpSteps || [];
+    if (lvSteps.length) kids.push(K.ruleBlock("Leveling Up", "Leveling Up is Simple:\n" + lvSteps.map(function (t, i) { return (i + 1) + ". " + t; }).join("\n")));
     var TR = EN.talentRules || {};
     // the book's order (PHB:4937-5010): Progression, Talent Upgrades, Requirements and Retraining,
     // Reading a Talent, Lineage Evolution, then the categories

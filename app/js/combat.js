@@ -3403,8 +3403,11 @@ EN.combatView = (function () {
     var mode = (st.mode && modes.indexOf(st.mode) !== -1) ? st.mode : defaultMode(it);
     var cur = typeof st.cur === "number" ? Math.max(0, Math.min(st.cur, cap)) : cap;
     var ammoType = st.ammoType || base;
-    // a special round that's run dry defaults back to the weapon's plentiful Standard feed
-    if (ammoType !== "Standard" && ammoType !== base && base === "Standard" && ownedQty(ch, ammoType) <= 0) ammoType = "Standard";
+    /* The magazine holds what the last RELOAD put in it. Until 24 October 2026 a special round whose
+       stash had run dry read back as Standard here, because a pick in the ammo select relabelled the
+       magazine at once and nothing was paid. Every pick now waits for RELOAD and RELOAD spends the
+       round from the stash (the author's answer 2, 24 October 2026), so the loaded rounds stay what
+       they are when the last lot leaves the stash, as Launcher Shells always have. */
     // a round this weapon can't take never stays loaded: a Rotary Cannon saved with Tracer Rounds
     // (offered to it until 17 October 2026), or with the Machinegun Belt (its base feed until 247d3f4,
     // so any reload or shot before then saved it), goes back to its base feed rather than eating them
@@ -3412,10 +3415,10 @@ EN.combatView = (function () {
       var spec = ammoCatalog().filter(function (x) { return x.name === ammoType; })[0];
       if (spec && ((spec.group === "Specialty" && !ammoCompatible(spec, it)) || (spec.group === "Counted" && !countedFeedsWeapon(spec, it)))) ammoType = base;
     }
-    /* `next`: a Launcher Shell type picked in the row's select, waiting for the next RELOAD (audit
-       weapons W2, author's ruling 5). Shells are Counted one at a time, so picking a type never
-       relabels the shells already in the magazine: they keep firing as what they are, and the
-       reload is what swaps them (returning any loaded shells to the stash). */
+    /* `next`: an ammunition type picked in the row's select, waiting for the next RELOAD (audit
+       weapons W2, author's ruling 5, for Launcher Shells; the author's answer 2 of 24 October 2026
+       extends it to every weapon). Picking a type never relabels the rounds already in the
+       magazine: they keep firing as what they are, and the reload is what swaps them. */
     var next = (st.nextType && st.nextType !== ammoType) ? st.nextType : null;
     return { cur: cur, cap: cap, mode: mode, ammoType: ammoType, base: base, modes: modes, next: next };
   }
@@ -3556,12 +3559,48 @@ EN.combatView = (function () {
       c.weaponAmmo[key] = a;
     });
   }
+  /* ---------- Lot-sold Counted ammunition (the author's answer 3, 24 October 2026) ----------
+     A weapon's own Counted feed sold by the lot (Grenade Shells "per 6", a Machinegun Belt "per
+     100", Cannon Rounds "per 20", and the Signature Munitions such as the Fuel Cell "per 20") takes
+     the Launcher Shell rule: a RELOAD of the same type tops the magazine up and spends only the
+     rounds needed, and a RELOAD of another type puts the rounds left in the magazine back in the
+     stash as a part-used lot. The stash entry keeps counting lots in `qty`; `part`, when set, is
+     how many rounds are left in ONE of those lots (0 < part < lot size). Ammo sold "each" (Rocket,
+     Missile, Power Cell) and the Specialty rounds are untouched. */
+  function lotRow(name) {
+    if (!name || name === "Standard") return null;
+    var a = ammoCatalog().concat(munitions()).filter(function (x) { return x.name === name; })[0];
+    if (!a || a.group === "Specialty" || a.group === "Launcher Shell" || a.group === "Plentiful") return null;
+    var m = String(a.unit || "").match(/per\s+(\d+)/i);
+    return m && Number(m[1]) > 1 ? { name: a.name, size: Number(m[1]) } : null;
+  }
+  function lotPart(e, size) {
+    var p = e ? (e.part | 0) : 0;
+    return (p > 0 && p < size && (e.qty || 0) >= 1) ? p : 0;
+  }
+  // the rounds in the stash: every whole lot, plus what is left in the part-used one
+  function lotRounds(ch, name, size) {
+    var e = (ch.equipment || []).find(function (x) { return x.name === name; });
+    if (!e) return 0;
+    var q = e.qty || 0, p = lotPart(e, size);
+    return p ? (q - 1) * size + p : q * size;
+  }
+  // write a stash total in rounds back as lots (and one part-used lot for any remainder)
+  function setLotRounds(c, name, size, total) {
+    c.equipment = c.equipment || [];
+    var e = c.equipment.find(function (x) { return x.name === name; });
+    if (total <= 0) { if (e) c.equipment = c.equipment.filter(function (x) { return x !== e; }); return; }
+    if (!e) { e = { name: name, qty: 0 }; c.equipment.push(e); }
+    var rem = total % size;
+    e.qty = Math.floor(total / size) + (rem ? 1 : 0);
+    if (rem) e.part = rem; else delete e.part;
+  }
   function reloadWeapon(key) {
     var ch0 = store.active();
     var it = weaponOfKey(ch0, key); if (!it) return;
     if ((it.traits || []).indexOf("Disposable") !== -1) { toast(it.name + " is Disposable; spent once fired, it cannot be reloaded."); return; }
     var ch = ch0, st = readAmmo(ch, it, key), base = st.base;
-    var type = st.next || st.ammoType;                                  // a Launcher Shell picked for the next reload
+    var type = st.next || st.ammoType;                                  // a type picked for the next reload
     if (type === "Standard" && base !== "Standard") type = base;        // coerce to the weapon's only (counted) feed
     var msg;
     if (type !== "Standard" && ownedQty(ch, type) <= 0) {              // the chosen special round is depleted
@@ -3579,21 +3618,29 @@ EN.combatView = (function () {
        magazine up and takes only the difference from the stash, and a reload of anything else first
        puts the loaded shells back on their own stash entry. */
     var shell = needsStash && !!shellRow(type);
+    var lot = needsStash && !shell ? lotRow(type) : null;               // a lot-sold Counted feed (answer 3)
+    var counted = shell || !!lot;                                       // spent round by round
     var cap = capacityOf(it);
-    var kept = (shell && st.ammoType === type) ? st.cur : 0;             // the same shell, staying in
-    var back = (shellRow(st.ammoType) && st.ammoType !== type) ? st.cur : 0;   // a different shell, going back
-    var load = shell ? Math.min(cap, kept + ownedQty(ch, type)) : cap;
-    var take = shell ? load - kept : 1;
-    if (shell && take <= 0) { toast(it.name + " is already full: " + kept + " of " + cap + " shells · " + type + "."); return; }
+    var kept = (counted && st.ammoType === type) ? st.cur : 0;           // the same type, staying in
+    var oldLot = lotRow(st.ammoType);
+    var backShell = (shellRow(st.ammoType) && st.ammoType !== type) ? st.cur : 0;   // a different shell, going back
+    var backLot = (oldLot && st.ammoType !== type) ? st.cur : 0;        // a different lot feed, back as a part-used lot
+    var back = backShell + backLot;
+    var have = shell ? ownedQty(ch, type) : lot ? lotRounds(ch, type, lot.size) : 0;
+    var load = counted ? Math.min(cap, kept + have) : cap;
+    var take = counted ? load - kept : 1;
+    if (counted && take <= 0) { toast(it.name + " is already full: " + kept + " of " + cap + " " + (shell ? "shells" : (it.ammoUnit || "rounds")) + " · " + type + "."); return; }
     store.update(function (c) {
       c.weaponAmmo = c.weaponAmmo || {};
       c.equipment = c.equipment || [];
-      if (back > 0) {
+      if (backShell > 0) {
         var b = c.equipment.find(function (x) { return x.name === st.ammoType; });
-        if (b) b.qty = (b.qty || 0) + back;
-        else c.equipment.push({ name: st.ammoType, qty: back });
+        if (b) b.qty = (b.qty || 0) + backShell;
+        else c.equipment.push({ name: st.ammoType, qty: backShell });
       }
-      if (needsStash) {
+      if (backLot > 0) setLotRounds(c, st.ammoType, oldLot.size, lotRounds(c, st.ammoType, oldLot.size) + backLot);
+      if (lot) setLotRounds(c, type, lot.size, lotRounds(c, type, lot.size) - take);
+      else if (needsStash) {
         var e = c.equipment.find(function (x) { return x.name === type; });
         if (e) {
           e.qty = shell ? (e.qty || 0) - take : (e.qty || 1) - 1;
@@ -3603,8 +3650,9 @@ EN.combatView = (function () {
       c.weaponAmmo[key] = { cur: load, mode: st.mode, ammoType: type };
     });
     var unit = shell ? "shells" : (it.ammoUnit || "rounds");   // a shell reload reads "1 of 6 shells"
-    toast(msg || (it.name + " reloaded, " + (shell ? load + " of " + cap : load) + " " + unit + (type !== "Standard" ? " · " + type : "") + "."
-      + (back > 0 ? " " + back + " " + st.ammoType + (back > 1 ? "s" : "") + " back in the stash." : "")));
+    toast(msg || (it.name + " reloaded, " + (counted ? load + " of " + cap : load) + " " + unit + (type !== "Standard" ? " · " + type : "") + "."
+      + (backShell > 0 ? " " + backShell + " " + st.ammoType + (backShell > 1 ? "s" : "") + " back in the stash." : "")
+      + (backLot > 0 ? " " + backLot + " " + (it.ammoUnit || "rounds") + " of " + st.ammoType + " back in the stash as a part-used lot." : "")));
   }
 
   /* specialty-ammo compatibility (feeds is free text; match by weapon group + damage) */
@@ -5624,13 +5672,13 @@ EN.combatView = (function () {
           if (st.next && ammoOpts.indexOf(st.next) === -1) ammoOpts.push(st.next);
           var nextLoad = st.next || st.ammoType;
           if (ammoOpts.length > 1) {
-            /* A Launcher Shell on either side of the change waits for RELOAD (W2, ruling 5): the
-               magazine's shells stay what they are, so the row keeps their damage and traits and the
-               stash is charged only when the reload actually loads the new type. */
+            /* Every pick waits for RELOAD (W2, ruling 5, for Launcher Shells; the author's answer 2 of
+               24 October 2026 for every weapon): the magazine's rounds stay what they are, so the row
+               keeps their damage and traits, and the stash is charged only when the reload actually
+               loads the new type. Plentiful Standard ammo costs nothing to load. */
             controls.push(el("select", { title: "Loaded ammunition (Reload to apply)", style: { fontSize: "11px", width: "auto" }, onchange: function () {
                 var v = this.value;
-                if (shellRow(v) || shellRow(st.ammoType) || st.next) writeAmmo(wKey, { nextType: v === st.ammoType ? null : v });
-                else writeAmmo(wKey, { ammoType: v });
+                writeAmmo(wKey, { nextType: v === st.ammoType ? null : v });
               } },
               ammoOpts.map(function (o) { return el("option", { value: o, selected: o === nextLoad, text: o + (o !== "Standard" && ownedQty(ch, o) <= 0 ? " (none in stash)" : "") }); })));
           }

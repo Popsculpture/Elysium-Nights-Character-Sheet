@@ -122,7 +122,8 @@ EN.armorMods = {
     host: "An Armor Mod needs a host: only Modular armor has the rails, and it carries mods only up to its Mod Slot Count. One mod per slot. Integrated + Modular armor carries one extra slot (already counted in the suit's slots).",
     flatDR: "Flat DR from mods doesn't stack; the higher applies and the other is dead weight. Mod DR does stack with your suit's base DR and DR from cyberware or the Flow.",
     resistance: "Resistance to a damage type does not stack with itself. Pick mods that cover different ground.",
-    legality: "A mod never lowers a suit's legality, it only raises the heat. The strictest tag among the suit and everything on it is what a scanner reads.",
+    // PHB:9852, How Armor Mods Work, in the book's words (the example names the Signature Damper, no longer the Chameleon Weave)
+    legality: "A mod never lowers a suit's Legality. It only raises the heat. The strictest tag among the suit and everything mounted on it is what a checkpoint scanner reads. A Legal jacket wearing a Signature Damper scans Restricted the moment it is found, whatever the label on the lining says. Your armor carries the legality of the most illegal piece on it.",
     /* PHB Armor Customization, How Armor Mods Work, last sentence of the legality paragraph, word
        for word. The Codex prints it on both desktops (the Mystech mods themselves are Toolkit gear). */
     mystech: "Mystech mods are Flow gear. They install only into Mystech armor, read as Flow-touched to anything scanning for it, and need a specialist's hands and tools to fit, repair, and recharge."

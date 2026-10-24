@@ -10,7 +10,8 @@
    Panels, in order: gmt-grades, gmt-array, gmt-designations, gmt-roles,
    gmt-abilities (the Ability Menu, its intro first), gmt-damage-effects (the
    Appendix: Optional Damage Effects, all of it; the Ability Menu's Dangerous
-   Habits and the Movement panel mv-optfx link it), gmt-conventions, gmt-solos,
+   Habits and the Movement panel mv-optfx link it), gmt-reading (Reading a
+   Threat Stat Block, the Toolkit's sample and its reading), gmt-conventions, gmt-solos,
    gmt-rivals (Enemy Freelancers and Named Rivals; the Heat tab's Bounty text
    points at it) and gmt-bestiary.
 
@@ -171,6 +172,16 @@ window.EN = window.EN || {};
         });
         return out;
       } },
+
+    /* ---- Reading a Threat Stat Block: the Toolkit's sample and its line-by-line reading ---- */
+    { id: "gmt-reading", title: "Reading a Threat Stat Block", tag: "LINE BY LINE", order: 48, when: hasT("readingStatBlock"), build: function (ctx, K) {
+      var t = T(), R = t.readingStatBlock;
+      var sample = K.el("div.feature", { dataset: { gmReadingSample: "1" } }, [K.el("h4", { text: "Sample: " + (R.sample[0] || "").split(".")[0] })].concat(
+        R.sample.map(function (l) { return K.el("p", { style: { margin: "0 0 3px", fontFamily: "var(--mono)", fontSize: "12px" }, text: l }); })));
+      return [sample, K.proseBlock(R.lead)].concat(R.lines.map(function (l) {
+        return K.ruleBlock(l.name, l.savesRule ? t.savesRule : l.text, null, { conditions: true });
+      }));
+    } },
 
     /* ---- the Threat Conventions and the optional Morale rule ------------------ */
     { id: "gmt-conventions", title: "Threat Conventions", tag: "EVERY THREAT · MORALE", order: 50, when: hasT("conventions"), build: function (ctx, K) {

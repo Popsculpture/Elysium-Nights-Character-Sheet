@@ -340,8 +340,9 @@ EN.rules = {
       "Using a Ranged Weapon as a Club: swinging something delicate, like a rifle, as a crude bludgeon deals 1d4 or 1d6 Bludgeoning by size. The weapon's own damage die and traits don't apply, and you should expect to need a gunsmith afterward."
     ],
     specialEffects: "On a Critical hit or a high Margin of success, the GM may rule that an improvised weapon inflicts a fitting condition: Bleeding from a shattered bottle, Staggered from a slab of concrete. When this happens, the Target makes a relevant Body or Wits Save to resist it.",
-    peopleIntro: "First you have to grapple them. An Unconscious, Restrained, or willing Target can automatically be grappled as a Swift Action, the same as grabbing any heavy object. A conscious, unwilling Target has to be Grappled by force first, and on a success they are yours to misuse until they manage to break free.",
-    wieldedBody: "A wielded body is a Heavy improvised weapon: 1d10 Bludgeoning, Heavy. It is Unwieldy too, since people are heavy, badly balanced, and rarely cooperative. Unwieldy means every attack with them carries Snag; swinging a person isn't precision work. Any features or abilities that augment improvised weapons apply. Both the Target and the body you swung take the rolled damage. Using a person as a weapon is extremely hard on the person.",
+    // PHB:9178-9184, in the book's words (the author's answer 4, 24 October 2026)
+    peopleIntro: "\"Can I hit a motherfucker with another motherfucker?\" Yes, but first you have to Grapple them.\n\nAn Unconscious, Restrained, or willing Target can be Grappled automatically as a Swift Action. A conscious, unwilling Target must be Grappled by force and can be wielded until they break free.",
+    wieldedBody: "A body is a Heavy, Unwieldy improvised weapon dealing 1d10 Bludgeoning. Every attack carries Snag, and any features or abilities that augment improvised weapons apply.\n\nBoth the Target and the body you swing take the rolled damage.",
     meatShield: [
       "A shield smaller than you grants Half Cover (+2 Defense). One your Size or larger grants Three-Quarter Cover (+5 Defense), against attacks that have to pass through them.",
       "Any attack the cover turns from a hit into a miss strikes the shield instead. Roll that attack's full damage against the meat shield you are holding.",
@@ -349,7 +350,8 @@ EN.rules = {
       "A shield does nothing against an attacker who can see around it (a flank), and less than nothing against Area effects, which cook you both."
     ],
     bludgeon: "Spend an Action to swing your Grappled Target at another Target within reach as an improvised melee attack. On a hit, deal 1d10 Bludgeoning to the Target and the same to the body. On a Critical or a wide Margin, the Target also makes a Body Save or is knocked Prone.",
-    throw: "Spend an Action to lob your Grappled Target at a Target. Treat it as a Heavy improvised throw, range 2 / 6, and attack rolls carry Snag (the same Snag the Unwieldy body already imposes, which changes nothing, since Snag doesn't stack past rolling two dice). On a hit, deal 1d10 Bludgeoning to both, and the thrown Target lands Prone in the nearest open space to the Target, who makes a Body Save or is knocked Prone alongside it. On a miss, your projectile still finds the floor: it lands Prone and takes 1d6 from the arrival."
+    // PHB:9215, in the book's words
+    throw: "Spend an Action to lob your Grappled target at a target. Treat it as a Heavy improvised throw: range 2 / 6, attack rolls carry Snag (the same Snag the Unwieldy body already imposes; it doesn't stack). On a hit, deal 1d10 Bludgeoning to both, and the thrown Target lands Prone in the nearest open space to the Target, who makes a Body Save or is knocked Prone alongside it. On a miss, your projectile still finds the floor: it lands Prone and takes 1d6 from the arrival."
   },
   // Features that shift EFFECTIVE Size for one purpose only. None changes the
   // character's actual Size, footprint, or Encumbrance beyond what it states.
@@ -428,7 +430,16 @@ EN.rules = {
      file loads after this one). `when` is the #PRINT Advance step's own line,
      moved here so it and the Codex read one copy. */
   advancement: {
-    when: "Level during downtime, after a Long Rest, or between story arcs."
+    when: "Level during downtime, after a Long Rest, or between story arcs.",
+    /* PHB:3358-3366, Milestone Advancement, "Leveling Up is Simple", the five steps in the book's
+       words (the author's answer 4, 24 October 2026). The Codex prints them under Advancement. */
+    levelUpSteps: [
+      "Increase your Level by 1. Add your class's Vitality Per Level to your maximum Vitality, and gain 1 Resilience Die.",
+      "Apply new class features and subclass unlocks. At Levels 2, 4, 6, and 8, take your Universal Upgrade; at Level 4, also take your free Lineage Additive Feature (the Awakening Milestone). You may also retrain one Talent.",
+      "Update your Caliber.",
+      "Apply Training Points (You get +5 points at Levels 3, 6, and 10).",
+      "Update your resource pools, and anything tied to an Attribute you raised (your maximum Wounds equal your Body score)."
+    ]
   },
   // "2 Major Milestones, or 1 Major and 2 Minor Milestones", or null if that data is absent
   milestonePace: function () {

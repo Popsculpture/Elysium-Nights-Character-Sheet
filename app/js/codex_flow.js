@@ -70,6 +70,8 @@ window.EN = window.EN || {};
         ]),
         // printed under Duration in the Handbook (PHB:6372); a named block so it is an anchor of its own
         f.damageAndEffect ? K.ruleBlock("Damage and an Effect Together", f.damageAndEffect) : null,
+        // the Worked Example printed right after it (PHB:6372)
+        f.workedExample ? K.ruleBlock("Worked Example", f.workedExample) : null,
         f.precisionShaping ? K.ruleBlock("Precision Shaping", f.precisionShaping.desc, "+" + f.precisionShaping.fp + " FP") : null,
         f.layeredForce ? K.ruleBlock("Layered Force", f.layeredForce, "LEVEL 5") : null,
         K.seeAlso("Each Resonance's Empowered Effects:", [["fl-resonances", "Resonances"]]),

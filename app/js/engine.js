@@ -842,7 +842,7 @@ EN.engine = (function () {
     var row = ownVal(RESIST_PICK, grantKey);
     if (!row) return false;
     if (!row.upgrade) return true;
-    return talentUpgradeKeys(ch).indexOf(grantKey) !== -1;
+    return talentUpgradeHeld(ch, grantKey);
   }
   /* THE resolver, null on every way of not knowing: no such grant, the grant is not live, nobody
      has chosen, or the stored pick is not among the options THIS grant offers. A stale pick is
@@ -1071,6 +1071,13 @@ EN.engine = (function () {
   }
   function talentHeld(ch, talentKey) {
     return activeTalents(ch).some(function (t) { return t.talent.key === talentKey; });
+  }
+  /* An Upgrade counts only while its base Talent is held: a slot turned to +2 ATTRIBUTES (or a
+     retrained Talent) leaves an orphaned Upgrade record behind, and that record grants nothing.
+     Asphalt Rider's Speed, the Cyber-Reinforced Vitality pick and Staff & Spear Master's Reach
+     all ask here. */
+  function talentUpgradeHeld(ch, talentKey) {
+    return talentHeld(ch, talentKey) && talentUpgradeKeys(ch).indexOf(talentKey) !== -1;
   }
   /* The Attributes a second pick may name: only offered while the chosen Attribute is already a
      class Focus, and never one of the class Focuses. An empty list means no second pick is owed. */
@@ -1914,7 +1921,7 @@ EN.engine = (function () {
       out.sources.push({ label: p.name, kind: "part", spaces: p.reachBonus });
     });
     // the talent, on long-shafted weapons only, and never on Reach alone
-    if (out.shafted && talentUpgradeKeys(ch).indexOf("staff-spear-master") !== -1) {
+    if (out.shafted && talentUpgradeHeld(ch, "staff-spear-master")) {
       pts += 1;
       out.sources.push({ label: "Staff & Spear Master (Upgrade)", kind: "talent", spaces: 1 });
     }
@@ -4037,15 +4044,16 @@ EN.engine = (function () {
        They are surfaced as clause text and as the per-Integration records below. */
     /* Flat Speed from Talents and class features, as rows so the Speed breakdown can name them
        ([{label, val}], summed into speed before the Load state like every other flat piece).
-       Asphalt Rider's Upgrade: "You and any vehicle you operate gain a +2 Speed bonus." Only the
-       character's half is modelled: the vehicle half (the profile's own Speed) is not, because the
-       sheet holds no record of which vehicle is being operated. First Responder (Stitcher, Level
+       Asphalt Rider's Upgrade: "You and any vehicle you operate gain a +2 Speed bonus." This is the
+       character's half; the vehicle half (+2 spaces on the map, the Speed rating unchanged, the
+       author's ruling of 24 October 2026) and the once-per-Long-Rest KEEP IT RUNNING use live on
+       the Garage (inventory.js garageMapSpeed). First Responder (Stitcher, Level
        2): "Your Speed also increases by 2." */
     var classMech = classFeatureMechanics(ch);
     var speedFeatures = [];
     // the Upgrade counts only while the Talent itself is held (as Parallel Processing checks): a
     // slot turned to +2 ATTRIBUTES leaves an orphaned Upgrade record behind
-    if (talentHeld(ch, "asphalt-rider") && talentUpgradeKeys(ch).indexOf("asphalt-rider") !== -1) speedFeatures.push({ label: "Asphalt Rider (Upgrade)", val: 2 });
+    if (talentUpgradeHeld(ch, "asphalt-rider")) speedFeatures.push({ label: "Asphalt Rider (Upgrade)", val: 2 });
     classMech.speed.forEach(function (r) { speedFeatures.push({ label: r.label, val: r.val }); });
     var speedFeatureTotal = 0;
     speedFeatures.forEach(function (r) { speedFeatureTotal += r.val; });
@@ -4957,6 +4965,7 @@ EN.engine = (function () {
     subclassGrantChoices: subclassGrantChoices, subclassGrantFeatures: subclassGrantFeatures,
     classFeatureMechanics: classFeatureMechanics, classFeatureUnlocked: classFeatureUnlocked,
     resistPick: resistPick, resistPickOptions: resistPickOptions, resistPickPending: resistPickPending,
+    talentUpgradeHeld: talentUpgradeHeld,
     armorResistOptions: armorResistOptions, armorResistCount: armorResistCount,
     armorResistPicks: armorResistPicks, armorResistOwed: armorResistOwed,
     ablativeOptions: ablativeOptions, ablativeState: ablativeState,

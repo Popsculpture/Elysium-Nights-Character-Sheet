@@ -20,6 +20,10 @@ EN.versatile = {
   // the #PRINT Advance step's Versatile Skills line, moved here 2026-10-07 so the step and
   // the Codex (sk-skills/versatile-skills) read one copy
   rule: "Insight, Performance, and Intimidation borrow the tier of whatever parent skill you lean on in the moment; you can't buy them with Training Points.",
+  // PHB:628, the example under The Versatile Skill Roll, in the book's words (the author's answer 4, 24 October 2026)
+  example: "Example: to make an Enemy drop their weapon, a Freelancer with Engineering Expertise and an Explosives Specialization puts a grenade into the wall beside their head. They roll d20 + Agility Modifier + Engineering Proficiency Bonus (+4, Expertise) with the Specialization applied, and the total is their Intimidation result.",
+  // PHB:573, the sidebar under the Wits Skills table, in the book's words
+  insightIntuition: "Intuition is felt; Insight is understood. Use Intuition (Wits) when sensing emotions, motives, pressure, or unseen intent. Use Insight (Versatile) when applying learned skills to analyze, recall, interpret, or connect information.",
   note: "d20 + Attribute Modifier + the parent Skill's Proficiency Bonus = Versatile Result. Any Attribute can pair with any parent Skill; the method you describe is what picks them. You use the parent Skill's tier bonus, so an Untrained parent adds nothing and rolls with Snag. Focus and Specialization carry over.",
 
   db: {

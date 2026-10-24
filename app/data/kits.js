@@ -130,7 +130,8 @@ EN.kits = {
     the_deadeye:      { items: [{ name: "Tracer Rounds", label: "Tracer Rounds (10)" }] },
     the_headhunter:   { items: [{ name: "Custody and Control Kit" }, { name: "Standard Cuffs" }] },
     smuggler:         { items: [{ name: "Tag Eraser" }, { name: "Fake License Portfolio" }] },
-    wildcard:         { glimmer: 75, note: "A Wildcard skips the gadget. Their subclass gear is 𝒢75 straight onto the stick, better odds on the cash they start with." },
+    // `row` is the Subclass Extras table's Wildcard row in the book's words (PHB:3327; the author's answer 4, 24 October 2026)
+    wildcard:         { glimmer: 75, row: "𝒢75 on the Glimmer Stick, on top of whatever is left of your 𝒢700", note: "A Wildcard skips the gadget. Their subclass gear is 𝒢75 straight onto the stick, better odds on the cash they start with." },
     shiv:             { items: [{ name: "Dagger" }] },
     harmonist:        { items: [{ name: "Flow Tonic Vial" }] },
     kensei:           { items: [{ name: "Shock Gloves" }] },

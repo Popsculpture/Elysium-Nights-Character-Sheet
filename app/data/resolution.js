@@ -173,6 +173,8 @@ EN.resolution = {
 
   /* ---- success margin and consequence ----------------------------------- */
   margins: {
+    // The Basics, Margin (PHB:95-97), in the book's words (the author's answer 4, 24 October 2026)
+    basics: "For a d20 check, Margin equals your total roll minus the DC. For a Dice Pool, Margin equals total successes minus total failures.\n\nA Margin of 10 or more on a d20, or +3 or more on a Dice Pool, is a Flawless Success: you get what you wanted, plus a bonus. A Margin in the middle is a Costly or Standard Success: you get what you wanted, sometimes with a small cost. A Margin of 0 on a Dice Pool is a Mixed Result: success with a price you choose. Any negative Margin is a Failure, and a deeply negative Margin is a Critical Failure where the GM gets to make things worse.",
     d20Intro: "Margin = Roll Total - DC",
     d20: [
       { margin: "10+", result: "Flawless Success", desc: "Perfect execution. Gain a narrative advantage, grant yourself Edge or +1 Edge Die on a follow-up, recover 1 FP, or seize a strong position." },
@@ -306,6 +308,11 @@ EN.resolution = {
         { d20: "0", pool: "0", result: "Mixed Result", desc: "The group succeeds but something goes wrong. Choose one consequence that fits the scene, such as losing time, alerting danger, worsening terms, or causing minor harm." },
         { d20: "-1 to -4", pool: "-1 to -2", result: "Failure", desc: "The group fails to coordinate. The objective is delayed, exposed, or partially compromised." },
         { d20: "-5 or worse", pool: "-3 or worse", result: "Critical Failure", desc: "The plan collapses. Equipment breaks, exposure occurs, backlash hits, or one Freelancer suffers a major setback." }
+      ],
+      // PHB:4365-4367, Examples in Play, in the book's words (the author's answer 4, 24 October 2026)
+      examples: [
+        "A crew of Freelancers attempts to override a security gate using the d20 Method. Three of five succeed, and the group's average margin is +2, resulting in a Costly Success. The gate opens, but the effort drains backup power.",
+        "A team of Shapers conducts a ritual to stabilize a Flow rift. They combine their individual Dice Pool margins for a Group Net Margin of +4, resulting in a Flawless Success. The energy of the Flow stabilizes, granting all participants a recovery of 1 FP."
       ],
       difficulty: "Base difficulty on complexity, not size. For d20 checks, start with the base DC for a single Character, then add +2 for each additional Freelancer whose role meaningfully increases complexity or exposure. For Dice Pools, difficulty is controlled by the Snag Dice assigned to each Freelancer's individual pool based on their role."
     },

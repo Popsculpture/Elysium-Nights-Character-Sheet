@@ -1350,7 +1350,7 @@ EN.builder = (function () {
     } else {
       var ex = sel.effExtra;
       var exKids = !ex ? [el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "No Extra listed for this subclass yet." })]
-        : ex.glimmer ? [el("span.chip.on", { title: "Straight onto the Glimmer Stick", style: { fontSize: "10.5px" } }, "+" + G + ex.glimmer + " to the Glimmer Stick")]
+        : ex.glimmer ? [el("span.chip.on", { title: "Straight onto the Glimmer Stick", style: { fontSize: "10.5px" } }, ex.row || ("+" + G + ex.glimmer + " to the Glimmer Stick"))]
         : ex.items.map(itemChip);
       kids.push(kitRow("Extra", exKids));
       var exNote = (sel.useAlt && sel.altDef && sel.altDef.note) || (sel.extraDef && sel.extraDef.note);

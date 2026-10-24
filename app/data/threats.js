@@ -145,6 +145,38 @@ EN.threats = {
      strong-save pickers print it, because the sentence says what the two pickers mean. */
   savesRule: "Saves come strong or weak. The listed attributes use the higher bonus; everything else uses the lower one. If an effect targets an attribute and you genuinely can't decide which bonus applies, use the lower.",
 
+  /* READING A THREAT STAT BLOCK (GM Toolkit, 23 October 2026 edition): the sample statblock and
+     its line-by-line reading, in the Toolkit's words. The Saves line is savesRule above, so the
+     Threat Builder and the Codex read one copy. The Codex prints it on the Admin desktop only
+     (js/codex_gm_threats.js, panel gmt-reading). */
+  readingStatBlock: {
+    sample: [
+      "Corpsec Officer. Grade 2 Standard, Gunhand. Medium Human.",
+      "Defense 13 | DR 3 (Composite Kit) | Vitality 30 | Speed 6 | Initiative +4",
+      "Saves +5 Body and Wits, +1 others | Passive Perception 13",
+      "Carbine (Action): +6 vs Defense, Range 12 / 36, 1d10+3 Ballistic (8).",
+      "Shock Baton (Action): +6 vs Defense, melee, 1d6+3 Electric (6).",
+      "Hold the Line: While within 2 spaces of an allied Corpsec Officer, this officer's attacks score a critical hit on a 19 or 20.",
+      "Fall Back (Impulse): When first reduced below half Vitality, move up to half Speed toward cover without provoking Opportunity Attacks.",
+      "XP 150 | Resolve 5 (Standard) | Gear: Carbine, Shock Baton, Composite Kit, corp credentials."
+    ],
+    lead: "Reading it, line by line:",
+    lines: [
+      { name: "Header", text: "Grade, Designation, Role, then Size and what it is. Size runs on the standard scale (Tiny, Small, Medium, Large, Huge) and uses the height bands from Timing, Action Economy & Combat." },
+      { name: "Defense", text: "Defense is the number an attack must meet or beat. Cover adds to it as normal." },
+      { name: "DR", text: "DR is flat damage reduction, with its source in parentheses. If the crew takes the armor off the body afterward, the armor is what the parenthetical says it is." },
+      { name: "Vitality", text: "Vitality is the whole pool. Threats don't track Wounds or Vigor unless the entry grants them. At 0 Vitality a threat is out of the fight: dead, dying, or done, whichever the scene calls for. If you want a named threat to survive on the floor, it survives on the floor. The dice have finished their part." },
+      { name: "Speed", text: "How many spaces this threat can move on its turn." },
+      { name: "Initiative", text: "Initiative is its whole Initiative bonus, rolled as d20 plus the number. To build one, start at Grade + 2. Minions take 1 off, Bruisers take 1 off, Skirmishers add 1, Ghosts add 2. Nudge it a point either way for the fiction. A turret bolted to a wall can sit lower, and anything that's been waiting for you can sit higher." },
+      { name: "Saves", savesRule: true },
+      { name: "Passive Perception", text: "Passive Perception is what Stealth is rolling against." },
+      { name: "Attacks and abilities", text: "Attacks and abilities carry the standard action tags: (Action), (Move), (Swift), (Impulse), (Free), (Complex), (Special). Untagged traits are passive. The number in parentheses after damage dice is the average, for when rolling is slower than the scene deserves." },
+      { name: "XP", text: "XP is the threat's price in the encounter budget and its award when defeated. Defeated includes captured, routed, hacked, bypassed, or talked down. The crew doesn't have to make a body to get paid in experience." },
+      { name: "Resolve", text: "Resolve appears on threats that can be argued with, using the Opposition Tiers from Setting Resolve (The Sit-Down). No Resolve line means the conversation is over before it starts." },
+      { name: "Gear", text: "Gear is what the body is carrying when the shooting stops. Threat gear is real: catalog items at catalog stats, ready to be looted, fenced, or explained to a magistrate." }
+    ]
+  },
+
   /* THE ABILITY MENU, GMH pp58 to 59. `abilityIntro` is the menu's own opening paragraph (GMT p25),
      word for word; the Codex's Ability Menu panel prints it first. Two abilities make a threat feel
      authored instead of extruded. Pick from the menu or write your own; the book asks that
