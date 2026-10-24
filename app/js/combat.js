@@ -3566,11 +3566,18 @@ EN.combatView = (function () {
      rounds needed, and a RELOAD of another type puts the rounds left in the magazine back in the
      stash as a part-used lot. The stash entry keeps counting lots in `qty`; `part`, when set, is
      how many rounds are left in ONE of those lots (0 < part < lot size). Ammo sold "each" (Rocket,
-     Missile, Power Cell) and the Specialty rounds are untouched. */
+     Missile, Power Cell) is untouched.
+     The author's ruling of 24 October 2026 (r15): the lot rule covers every Counted feed, Specialty
+     rounds included (Armor Piercing Rounds "per 10", Explosive Rounds "per 5", ...). Counted ammo is
+     tracked "individually, from the moment you buy it to the moment you spend it", so a RELOAD of a
+     Specialty round loads only the rounds owned (two lots of 10 put 12 in a 12-round Pistol and leave
+     a part-used lot of 8), and a switch to another type, Standard included, returns the rounds left in
+     the magazine as a part-used lot. Until r15 a Specialty RELOAD filled the magazine from one lot
+     and a switch threw the loaded rounds away. */
   function lotRow(name) {
     if (!name || name === "Standard") return null;
     var a = ammoCatalog().concat(munitions()).filter(function (x) { return x.name === name; })[0];
-    if (!a || a.group === "Specialty" || a.group === "Launcher Shell" || a.group === "Plentiful") return null;
+    if (!a || a.group === "Launcher Shell" || a.group === "Plentiful") return null;
     var m = String(a.unit || "").match(/per\s+(\d+)/i);
     return m && Number(m[1]) > 1 ? { name: a.name, size: Number(m[1]) } : null;
   }
@@ -3611,9 +3618,10 @@ EN.combatView = (function () {
     /* Launcher shells are sold one at a time ("50 each") and "All launcher shells are Counted" (PHB
        12851), so a reload loads the smaller of the magazine and the shells owned, and takes that many
        out of the stash: one Concussion Shell loads 1 of 6, not a full six. (Author's ruling 5, 19
-       October 2026: the magazine model stays.) Every other counted munition still fills the magazine
-       from one stash unit, because those sell by the lot (Grenade Shells "per 6", Fuel Cell "per 20").
-       Those lots still replace the magazine. Shells already in the magazine are never thrown away
+       October 2026: the magazine model stays.) Ammo sold by the lot (Grenade Shells "per 6", Fuel
+       Cell "per 20", the Specialty rounds "per 10") is counted the same way in rounds (lotRow above,
+       the author's answer 3 and the r15 ruling). Ammo sold "each" that is not a shell (a Rocket, a
+       Missile) still loads from one stash unit. Rounds already in the magazine are never thrown away
        ("Track every round from purchase to spend", PHB 12665): a reload of the SAME shell tops the
        magazine up and takes only the difference from the stash, and a reload of anything else first
        puts the loaded shells back on their own stash entry. */
@@ -3650,9 +3658,9 @@ EN.combatView = (function () {
       c.weaponAmmo[key] = { cur: load, mode: st.mode, ammoType: type };
     });
     var unit = shell ? "shells" : (it.ammoUnit || "rounds");   // a shell reload reads "1 of 6 shells"
-    toast(msg || (it.name + " reloaded, " + (counted ? load + " of " + cap : load) + " " + unit + (type !== "Standard" ? " · " + type : "") + "."
+    toast((msg || (it.name + " reloaded, " + (counted ? load + " of " + cap : load) + " " + unit + (type !== "Standard" ? " · " + type : "") + "."))
       + (backShell > 0 ? " " + backShell + " " + st.ammoType + (backShell > 1 ? "s" : "") + " back in the stash." : "")
-      + (backLot > 0 ? " " + backLot + " " + (it.ammoUnit || "rounds") + " of " + st.ammoType + " back in the stash as a part-used lot." : "")));
+      + (backLot > 0 ? " " + backLot + " " + (it.ammoUnit || "rounds") + " of " + st.ammoType + " back in the stash as a part-used lot." : ""));
   }
 
   /* specialty-ammo compatibility (feeds is free text; match by weapon group + damage) */
