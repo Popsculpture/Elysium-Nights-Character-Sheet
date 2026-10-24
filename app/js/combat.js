@@ -3734,7 +3734,9 @@ EN.combatView = (function () {
         var classStr = cls ? (" · " + cls + (sub ? " / " + sub : "")) : "";
         var calRoman = ["I","II","III","IV","V"][(d.caliber || 1) - 1] || String(d.caliber || 1);
         var levelStr = " · L" + (d.level || 1) + " · CAL " + calRoman;
-        return 'FREELANCER <span class="dim3" style="font-size:13px">// live status · ' + handle + classStr + levelStr + "</span>";
+        // the opt-in Edit freely switch (builder.js), flagged on the live sheet for the GM
+        var freely = ch.editFreely === true ? ' <span class="chip edit-freely" title="Edit freely is on: this character\'s Talents and Lineage Evolutions can change at any time, outside the one retrain per level">EDIT FREELY</span>' : "";
+        return 'FREELANCER <span class="dim3" style="font-size:13px">// live status · ' + handle + classStr + levelStr + "</span>" + freely;
       })() }),
       el("div.row.wrap", { style: { gap: "8px" } }, [
         el("div.pop-anchor", { style: { position: "relative" } }, [

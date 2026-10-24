@@ -136,6 +136,9 @@ EN.pdfExport = (function () {
      fieldPrefix so the same logical field (e.g. "notes") can appear on more
      than one section without colliding in the PDF's flat AcroForm namespace.
      ======================================================================= */
+  /* The opt-in Edit freely switch (builder.js): set by build() for the record being exported and
+     printed beside the #PRINT id on every section's first page, where a GM reviewing it sees it. */
+  var FLAG = "";
   function makeCtx(doc, form, fonts, opts) {
     var ctx = {
       title: opts.title, tag: opts.tag, serial: opts.serial,
@@ -184,7 +187,7 @@ EN.pdfExport = (function () {
         ctx.page.drawText("ELYSIUM NIGHTS", { x: MARGIN.left, y: top + 22, size: 7.5, font: fonts.mono, color: hexColor("muted") });
         ctx.page.drawText(ctx.title, { x: MARGIN.left, y: top + 7, size: 17, font: fonts.bold, color: hexColor("ink") });
         drawBarcode(PAGE_W - MARGIN.right - 150, top + 21, 150);
-        var idLine = "#PRINT   " + ctx.serial + "   " + ctx.tag;
+        var idLine = (FLAG ? FLAG + "   " : "") + "#PRINT   " + ctx.serial + "   " + ctx.tag;
         var idW = fonts.mono.widthOfTextAtSize(idLine, 8);
         ctx.page.drawText(idLine, { x: PAGE_W - MARGIN.right - idW, y: top + 7, size: 8, font: fonts.mono, color: hexColor("accent") });
         ctx.page.drawLine({ start: { x: MARGIN.left, y: top - 6 }, end: { x: PAGE_W - MARGIN.right, y: top - 6 }, thickness: 1.2, color: hexColor("accent") });
@@ -631,6 +634,7 @@ EN.pdfExport = (function () {
     var progression = ch.useXp ? ("XP " + (d.xp || 0) + (d.xpForNext ? " / " + d.xpForNext : "")) : ("Milestones " + ((ch.milestones && ch.milestones.major) || 0) + " maj, " + ((ch.milestones && ch.milestones.minor) || 0) + " min");
 
     ctx.row([{ label: "Handle / alias", name: "handle", value: id.handle || ch.name, w: 1 }, { label: "Name on record", name: "name", value: ch.name, w: 1 }]);
+    if (ch.editFreely === true) ctx.row([{ label: "Retraining", name: "editFreely", value: "EDIT FREELY: Talents and Lineage Evolutions change outside the one retrain per level", w: 1 }]);
     ctx.row([
       { label: "Class · level", name: "classLevel", value: classLine + " · L" + d.level, w: 3 },
       { label: "Lineage", name: "lineage", value: speciesLine, w: 2 },
@@ -1275,6 +1279,7 @@ EN.pdfExport = (function () {
   /* ---- the real dossier: all five sections, mirroring EN.printSheet's pages ---- */
   async function build(ch) {
     var d = eng.derive(ch);
+    FLAG = (ch && ch.editFreely === true) ? "EDIT FREELY" : "";
     var doc = await PDFLib.PDFDocument.create();
     var form = doc.getForm();
     var fonts = await loadFonts(doc);

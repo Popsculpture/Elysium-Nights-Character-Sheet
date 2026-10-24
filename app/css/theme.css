@@ -104,6 +104,9 @@ a{ color:var(--accent); text-decoration:none; }
    skin's strip; every other skin has room for the name alone up there, so the rest stays out of
    the way */
 #active-name .an-role, #active-name .an-meta, #active-name .an-pick{ display:none; }
+/* the opt-in Edit freely switch (builder.js): shown on every skin so a GM sees it */
+#active-name .an-flag{ display:inline-block; margin-left:8px; padding:0 6px; border:1px solid var(--warn); border-radius:3px; color:var(--warn); font-size:10px; letter-spacing:.1em; white-space:nowrap; flex:none; }
+.chip.edit-freely{ color:var(--warn); border-color:var(--warn); font-size:10px; vertical-align:middle; }
 .os-status{ font-family:var(--mono); font-size:11px; color:var(--text3); letter-spacing:.12em; display:flex; gap:14px; align-items:center; }
 .os-status .led{ width:7px; height:7px; border-radius:50%; background:var(--success); box-shadow:0 0 8px var(--success); display:inline-block; margin-right:5px; animation:pulse 2.4s infinite; }
 @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:.35;} }

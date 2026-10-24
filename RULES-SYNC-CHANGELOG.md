@@ -1151,6 +1151,20 @@ the level, with the slot, what it held, the Upgrade slots it emptied, and an UND
 characters keep every pick they have; retrains were never logged before this, so nothing is
 reconstructed or undone. The "you lose both" consequence still fires on any Talent change.
 
+**The 1 August decision lives on as an opt-in (author, 24 October 2026).** The 24 October
+ruling enforces the book by default; the 1 August usability decision is kept as the
+per-character **Edit freely** switch (`ch.editFreely`, on the #PRINT Advance step, default off;
+saves without the field load with it off and nothing they hold changes). While it is on, the
+one-retrain-per-level count and the level-up timing are lifted: any settled Talent or Lineage
+Evolution slot, and the Awakening pick, changes at any time without RETRAIN, and those changes
+are not logged in `ch.retrains`, so they never count toward a level's retrain. The printed
+consequences still apply: replacing an Upgraded Talent loses its Upgrade, and the emptied slot
+(logged in `ch.freelyFreed`) refills with Talents only, never +2 Attributes. Settled +2
+Attribute picks, Upgrades on their own and the Lineage feature picked at creation stay locked
+either way. Turning it off undoes nothing, and the level's retrain is still unspent. While it is
+on, an EDIT FREELY chip shows on the header, the Freelancer tab, the print sheet and the PDF,
+so a GM reviewing the sheet sees it.
+
 **`EN.talentRules.progression` carried an older draft** of the Universal Upgrade rule (a
 single +1 rather than +2 to one Attribute or +1 to two). Corrected, though nothing currently
 reads that object; the live builder already implemented the rule correctly.

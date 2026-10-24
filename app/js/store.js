@@ -111,6 +111,8 @@ EN.store = (function () {
       universalUpgrades: {},             // {level: {type:'attr'|'talent'|'evolution', ...}}
       awakeningEvolution: null,          // Level 4 Awakening Milestone: an Evolution name, or { type: 'talent', talent } once traded by a retrain
       retrains: {},                      // {characterLevel: {slot, was, freed, picks}}: the one counted retrain per level (ruling 5, 24 Oct 2026; see builder.js slotMode)
+      editFreely: false,                 // opt-in: lifts the retrain count and timing (author, 24 Oct 2026); a save without it reads as off
+      freelyFreed: {},                   // {slotLevel: {was, by}}: Upgrade slots an Edit freely change emptied (Talents-only refill)
       cyberware: [],                     // INSTALLED chrome (feeds Static / Chrome Tax + Open Architecture)
       cyberStash: [],                    // purchased-but-uninstalled chrome (install at a clinic to move it to cyberware)
       grid: {                            // #GRID rig + live hacking state (Bandwidth tracks via resources.current)

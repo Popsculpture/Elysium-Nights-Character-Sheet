@@ -82,7 +82,9 @@ EN.printSheet = (function () {
       el("div", null, [el("div.ps-kicker", { text: "ELYSIUM NIGHTS" }), el("div.ps-title", { text: title })]),
       el("div.ps-head-r", null, [
         el("div.ps-barcode"),
-        el("div.ps-tagrow", null, [el("span.ps-tag", { text: "#PRINT" }), el("span.ps-serial", { text: serial }), el("span.ps-serial", { text: tag })])
+        el("div.ps-tagrow", null, [el("span.ps-tag", { text: "#PRINT" }), el("span.ps-serial", { text: serial }), el("span.ps-serial", { text: tag }),
+          // the opt-in Edit freely switch (builder.js), on every page where a GM reviewing the sheet sees it
+          ch && ch.editFreely === true ? el("span.ps-tag.ps-flag", { text: "EDIT FREELY" }) : null])
       ])
     ]);
   }

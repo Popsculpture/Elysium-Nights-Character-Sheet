@@ -847,11 +847,16 @@ EN.builder = (function () {
       blocks.push(EN.ui.sectionTitle("Lineage Feature, choose one"));
       if (lin.featuresNote) blocks.push(el("p.help", { style: { marginBottom: "8px" }, text: lin.featuresNote }));
       var chosen = ch.lineageFeatures || [];
+      /* The Lineage feature picked at creation is not one "gained this way" (a Lineage Talent or
+         the Awakening Milestone), so it is not retrained: once filed it is locked, with Edit
+         freely on or off (author, 24 October 2026). Before filing it stays open. */
+      var creationLocked = isFiled(ch) && chosen.length > 0;
+      if (creationLocked) blocks.push(el("p.help", { style: { margin: "0 0 8px", color: "var(--text3)" }, text: "Picked at creation and settled when filed. The Lineage feature you start with is not retrained; Lineage Evolutions on the Advance step are." }));
       blocks.push(el("div", null, creationFeatures(lin).map(function (f) {
         var on = chosen.indexOf(f.name) !== -1;
-        return el("div.feature.lineage", { style: { cursor: "pointer", opacity: on ? "1" : ".82", borderLeftColor: on ? "var(--gold)" : "var(--border2)" },
-          onclick: function () { store.update(function (c) { c.lineageFeatures = on ? [] : [f.name]; }); } }, [
-          el("h4", null, [document.createTextNode(f.name), el("span.src", { text: on ? "● SELECTED" : "○ select" })]),
+        return el("div.feature.lineage", { dataset: creationLocked ? { locked: "1" } : {}, style: { cursor: creationLocked ? "default" : "pointer", opacity: on ? "1" : ".82", borderLeftColor: on ? "var(--gold)" : "var(--border2)" },
+          onclick: function () { if (creationLocked) return; store.update(function (c) { c.lineageFeatures = on ? [] : [f.name]; }); } }, [
+          el("h4", null, [document.createTextNode(f.name), el("span.src", { text: on ? (creationLocked ? "● SETTLED" : "● SELECTED") : (creationLocked ? "" : "○ select") })]),
           el("p", { text: f.text })
         ]);
       })));
@@ -2177,6 +2182,7 @@ EN.builder = (function () {
     blocks.push(uuHead);
     // the picker's hint; its rule names (Universal Upgrade, Awakening Milestone) link to Advancement
     blocks.push(EN.ui.ruleText(el("p.help"), "At **levels 2, 4, 6, and 8** you gain a **Universal Upgrade**. Choose **+2 Attributes** (one by 2, or two by 1, max 20), **Gain Talent**, or **Gain Evolution** (unlock an Additive Feature from your Lineage). At **Level 4**, the **Awakening Milestone** grants one Lineage Evolution for free, on top of your Universal Upgrade. At Level 6+ a slot may instead upgrade a Talent you already have. Whenever you level, you may **retrain** one Talent or Lineage Evolution from an earlier level: one retrain per level, refilled with Talents only (two Talents, or a new Talent and its Upgrade at Level 6+). Until you Submit & File, every slot stays open."));
+    blocks.push(editFreelyPanel(ch));
     var uuLevels = [2, 4, 6, 8];
     var anyUU = false;
     uuLevels.forEach(function (L) {
@@ -2212,9 +2218,10 @@ EN.builder = (function () {
         var awkTal = awkTalentMode ? (awkRaw.talent || null) : null;
         var awkSlot = awkTal ? { type: "talent", talent: awkTal } : null;
         var awkKids = [];
-        if (awkMode === "retrain" || (awkTalentMode && awkMode === "free")) awkKids.push(el("div.row.wrap", { style: { gap: "8px", marginBottom: "8px" } }, [
-          el("button.btn.sm" + (!awkTalentMode ? ".primary" : ""), { onclick: function () { store.update(function (c) { var a = c.awakeningEvolution; c.awakeningEvolution = (typeof a === "string") ? a : null; dropOrphanUpgrades(c); pruneTalentAttrPicks(c); }); } }, "GAIN EVOLUTION"),
-          awkMode === "retrain" ? el("button.btn.sm" + (awkTalentMode ? ".primary" : ""), { title: "Trade this Additive Feature for a standard Talent you meet the prerequisites for", onclick: function () { store.update(function (c) { var a = c.awakeningEvolution; c.awakeningEvolution = { type: "talent", talent: (a && typeof a === "object" && a.type === "talent" && a.talent) || null }; }); } }, "GAIN TALENT") : null
+        if (awkMode === "retrain" || awkMode === "freely" || (awkTalentMode && awkMode === "free")) awkKids.push(el("div.row.wrap", { style: { gap: "8px", marginBottom: "8px" } }, [
+          // with Edit freely, a traded Talent refills with Talents only, so it never turns back into an Evolution
+          (awkMode === "freely" && awkTalentMode) ? null : el("button.btn.sm" + (!awkTalentMode ? ".primary" : ""), { onclick: function () { store.update(function (c) { var a = c.awakeningEvolution; c.awakeningEvolution = (typeof a === "string") ? a : null; dropOrphanUpgrades(c); pruneTalentAttrPicks(c); }); } }, "GAIN EVOLUTION"),
+          (awkMode === "retrain" || awkMode === "freely") ? el("button.btn.sm" + (awkTalentMode ? ".primary" : ""), { title: "Trade this Additive Feature for a standard Talent you meet the prerequisites for", onclick: function () { store.update(function (c) { var a = c.awakeningEvolution; c.awakeningEvolution = { type: "talent", talent: (a && typeof a === "object" && a.type === "talent" && a.talent) || null }; }); } }, "GAIN TALENT") : null
         ]));
         var awkBody = awkTalentMode
           ? talentPicker(ch, "awakening", awkTal, function (c, picked) { c.awakeningEvolution = { type: "talent", talent: picked }; })
@@ -2264,6 +2271,7 @@ EN.builder = (function () {
       Object.keys(c.universalUpgrades || {}).forEach(function (k) { if (Number(k) > lvl) delete c.universalUpgrades[k]; });
       // a retrain logged at a level the correction removes goes with it; its swap stays as made
       if (c.retrains && typeof c.retrains === "object") Object.keys(c.retrains).forEach(function (k) { if (Number(k) > lvl) delete c.retrains[k]; });
+      if (c.freelyFreed && typeof c.freelyFreed === "object") Object.keys(c.freelyFreed).forEach(function (k) { if (Number(k) > lvl) delete c.freelyFreed[k]; });
       dropOrphanUpgrades(c);
       pruneTalentAttrPicks(c);
       if (lvl < 4) c.awakeningEvolution = null;
@@ -2296,7 +2304,22 @@ EN.builder = (function () {
      slot does not, since the book retrains a Talent, and a settled Upgrade goes with its Talent.
      During the retrain the slot offers GAIN TALENT only, plus GAIN EVOLUTION when it held a
      Lineage Evolution; a freed Upgrade slot offers GAIN TALENT or the new Talent's Upgrade. No
-     freed slot offers +2 ATTRIBUTES. */
+     freed slot offers +2 ATTRIBUTES.
+
+     EDIT FREELY (author, 24 October 2026). The 24 October ruling enforces the book by default;
+     the 1 August 2026 usability decision ("a character sheet you cannot freely edit is worse to
+     use than one that trusts you") lives on as this opt-in, per-character switch, ch.editFreely
+     (default false; a save without the field reads as off). While it is on, the one-per-level
+     count and the level-up timing are lifted: every settled Talent or Lineage Evolution slot,
+     and the Awakening pick, is in mode "freely" and changes at any time, with no RETRAIN and no
+     entry in ch.retrains, so nothing done with it counts toward a level's retrain. The printed
+     consequences still apply: replacing an Upgraded Talent loses its Upgrade too (the same
+     dropOrphanUpgrades sweep), and the emptied slot, logged in ch.freelyFreed as { was, by },
+     refills with Talents only (GAIN TALENT, or the Upgrade of the Talent now in slot `by`). A
+     settled +2 Attributes pick, an Upgrade on its own and the Lineage feature picked at
+     creation stay locked either way. Turning it off undoes nothing: the picks stay as edited
+     and the level's retrain is still unspent. The header, the Freelancer tab, the print sheet
+     and the PDF show an EDIT FREELY chip while it is on, so a GM reviewing the sheet sees it. */
   var RETRAIN_PICK_MAPS = ["talentAttrPicks", "talentSavePicks", "talentGearPicks"];
   function isFiled(ch) { return !!(ch && ch.meta && ch.meta.filedAt); }
   function retrainAt(ch) {
@@ -2313,6 +2336,14 @@ EN.builder = (function () {
   function slotLabel(L) { return L === "awakening" ? "Level 4 Awakening Evolution" : "Level " + L + " slot"; }
   /* "free" (pick anything), "settled" (locked; RETRAIN may open it), "retrain" (this level's
      retrain, Talents or Lineage Evolutions only) or "freed" (emptied by it, Talents only). */
+  function editFreely(ch) { return !!(ch && ch.editFreely === true); }
+  // a slot emptied by an Edit freely change: { was, by } in ch.freelyFreed, while on or while still empty
+  function freelyFreedAt(ch, L) {
+    var m = ch && ch.freelyFreed;
+    if (!m || typeof m !== "object" || !Object.prototype.hasOwnProperty.call(m, String(L))) return null;
+    if (!editFreely(ch) && slotHeld((ch.universalUpgrades || {})[L])) return null;
+    return m[String(L)] || {};
+  }
   function slotMode(ch, L) {
     if (!isFiled(ch)) return "free";
     var isAwk = L === "awakening";
@@ -2320,9 +2351,19 @@ EN.builder = (function () {
     if (r && r.slot != null && String(r.slot) === String(L)) return "retrain";
     // a slot the retrain emptied refills with Talents only, even this level's own slot
     if (!isAwk && r && r.freed && typeof r.freed === "object" && Object.prototype.hasOwnProperty.call(r.freed, String(L))) return "freed";
+    // the same for a slot an Edit freely change emptied
+    if (!isAwk && freelyFreedAt(ch, L)) return "freed";
     if ((isAwk ? 4 : Number(L)) >= (ch.level || 1)) return "free";
     var held = isAwk ? !!eng.awakeningPick(ch) : slotHeld((ch.universalUpgrades || {})[L]);
-    return held ? "settled" : "free";
+    if (!held) return "free";
+    /* EDIT FREELY lifts the timing and the count, nothing else: a settled Talent or Lineage
+       Evolution (or the Awakening pick) opens without RETRAIN and without a log entry. A settled
+       +2 Attributes pick and an Upgrade on its own stay settled, as with the switch off. */
+    if (editFreely(ch)) {
+      var u = isAwk ? { type: "evolution" } : (ch.universalUpgrades || {})[L];
+      if (u && (u.type === "talent" || u.type === "evolution")) return "freely";
+    }
+    return "settled";
   }
   function startRetrain(L) {
     store.update(function (c) {
@@ -2333,6 +2374,28 @@ EN.builder = (function () {
       var was = L === "awakening" ? (c.awakeningEvolution || null) : ((c.universalUpgrades || {})[L] || null);
       c.retrains[c.level] = { slot: String(L), was: JSON.parse(JSON.stringify(was)), freed: {}, picks: picks };
     });
+  }
+  function setEditFreely(on) {
+    store.update(function (c) {
+      c.editFreely = !!on;
+      // switched off: a freed slot already refilled is settled again; an empty one stays Talents-only
+      if (!on && c.freelyFreed && typeof c.freelyFreed === "object") {
+        Object.keys(c.freelyFreed).forEach(function (k) { if (slotHeld((c.universalUpgrades || {})[k])) delete c.freelyFreed[k]; });
+      }
+    });
+  }
+  function editFreelyPanel(ch) {
+    var on = editFreely(ch);
+    return el("div", { style: { margin: "0 0 12px", padding: "8px 10px", border: "1px dashed " + (on ? "var(--warn)" : "var(--border2)"), borderRadius: "4px" } }, [
+      el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
+        el("button.btn.sm" + (on ? ".primary" : ""), { title: on ? "Turn Edit freely off: the book's one retrain per level applies again. Nothing you changed is undone." : "Lift the one-retrain-per-level count and the level-up timing for this character",
+          onclick: function () { setEditFreely(!on); } }, on ? "EDIT FREELY: ON" : "EDIT FREELY: OFF"),
+        on ? el("span.chip.edit-freely", { style: { color: "var(--warn)", borderColor: "var(--warn)" }, text: "EDIT FREELY" }) : null
+      ]),
+      el("p.help", { style: { margin: "6px 0 0" }, text: on
+        ? "On: any Talent or Lineage Evolution slot can change at any time, and changes don't use a level's retrain. Replacing an Upgraded Talent still loses its Upgrade, and an emptied slot still refills with Talents only. +2 Attributes, Upgrades on their own and your creation Lineage feature stay locked. The sheet, print and PDF show EDIT FREELY."
+        : "Off (the book's rule): one retrain per level once filed. Turn it on to change Talents and Lineage Evolutions at any time; the header, print and PDF will say EDIT FREELY." })
+    ]);
   }
   function undoRetrain() {
     store.update(function (c) {
@@ -2352,10 +2415,22 @@ EN.builder = (function () {
     });
   }
   // The Talent the retrain put in, which is the only Talent a freed slot may take the Upgrade of.
+  function talentInSlot(ch, slot) {
+    if (slot == null) return null;
+    if (String(slot) === "awakening") { var at = awakeningTalent(ch); return at ? (eng.canonTalentKey(at) || at) : null; }
+    var u = (ch.universalUpgrades || {})[slot];
+    return u && u.type === "talent" && u.talent ? (eng.canonTalentKey(u.talent) || u.talent) : null;
+  }
   function retrainedInTalent(ch) {
     var r = retrainAt(ch);
-    var u = r && r.slot != null && r.slot !== "awakening" ? (ch.universalUpgrades || {})[r.slot] : null;
-    return u && u.type === "talent" && u.talent ? (eng.canonTalentKey(u.talent) || u.talent) : null;
+    return r ? talentInSlot(ch, r.slot) : null;
+  }
+  // the only Talent whose Upgrade a freed slot may take: the one that replaced the Upgraded Talent
+  function freedOnlyTalent(ch, L) {
+    var r = retrainAt(ch);
+    if (r && r.freed && typeof r.freed === "object" && Object.prototype.hasOwnProperty.call(r.freed, String(L))) return retrainedInTalent(ch);
+    var f = freelyFreedAt(ch, L);
+    return f ? talentInSlot(ch, f.by) : null;
   }
   /* A settled picker stays on screen to be read, with its pick switched off: the first select
      (the Talent, Evolution or Upgrade itself), or both Attribute selects. A follow-up answer
@@ -2382,7 +2457,13 @@ EN.builder = (function () {
       ]);
     }
     if (mode === "freed") {
-      return help("Emptied by your Level " + ch.level + " retrain, because the Talent it upgraded was replaced. Refill it with a Talent, or with the Upgrade of the new Talent. It can't become +2 Attributes.", "var(--warn)");
+      var byRetrain = r && r.freed && typeof r.freed === "object" && Object.prototype.hasOwnProperty.call(r.freed, String(L));
+      return help((byRetrain ? "Emptied by your Level " + ch.level + " retrain" : "Emptied by an Edit freely change")
+        + ", because the Talent it upgraded was replaced. Refill it with a Talent, or with the Upgrade of the new Talent. It can't become +2 Attributes.", "var(--warn)");
+    }
+    if (mode === "freely") {
+      return help("Edit freely is on: change this " + (L === "awakening" ? "Awakening pick" : "slot") + " at any time. This doesn't use your Level " + ch.level + " retrain. "
+        + "Replacing an Upgraded Talent loses its Upgrade too, and that slot refills with Talents only.", "var(--warn)");
     }
     // settled
     var u = L === "awakening" ? { type: "evolution" } : ((ch.universalUpgrades || {})[L] || {});
@@ -2405,7 +2486,7 @@ EN.builder = (function () {
     var cur = (ch.universalUpgrades || {})[L];
     var mode = slotMode(ch, L), r = retrainAt(ch);
     var open = mode === "free";
-    var canEvo = open || (mode === "retrain" && r.was && r.was.type === "evolution");
+    var canEvo = open || (mode === "retrain" && r.was && r.was.type === "evolution") || (mode === "freely" && cur && cur.type === "evolution");
     var canUp = Number(L) >= 6 && (open || mode === "freed");
     var wrap = el("div", { style: { margin: "0 0 10px 14px", paddingLeft: "10px", borderLeft: "1px dashed var(--border2)" } });
     var note = retrainNote(ch, L, mode);
@@ -2422,7 +2503,7 @@ EN.builder = (function () {
     if (cur && cur.type === "evolution") {
       wrap.appendChild(evolutionSelect(ch, cur.evolution, function (name) { store.update(function (c) { c.universalUpgrades[L] = { type: "evolution", evolution: name }; }); }));
     } else if (cur && cur.type === "talentUpgrade") {
-      wrap.appendChild(talentUpgradePicker(ch, L, cur.talent, mode === "freed" ? (retrainedInTalent(ch) || "~none~") : null));
+      wrap.appendChild(talentUpgradePicker(ch, L, cur.talent, mode === "freed" ? (freedOnlyTalent(ch, L) || "~none~") : null));
     } else if (cur && cur.type === "attr") {
       var a = cur.attrs || ["", ""];
       function attrSelect(idx) {
@@ -2497,10 +2578,12 @@ EN.builder = (function () {
     var a = eng.awakeningPick ? eng.awakeningPick(c) : null;
     return a && a.type === "talent" && a.talent ? a.talent : null;
   }
-  function dropOrphanUpgrades(c) {
+  function dropOrphanUpgrades(c, freelyBy) {
     var ups = c.universalUpgrades || {}, held = Object.create(null);
     var open = isFiled(c) ? retrainAt(c) : null;
     if (open && (typeof open !== "object" || Array.isArray(open) || open.slot == null)) open = null;
+    // an Edit freely change records what it empties in ch.freelyFreed instead, never in the retrain
+    if (freelyBy != null) open = null;
     function keyOf(v) { return eng.canonTalentKey(v) || String(v); }
     Object.keys(ups).forEach(function (k) {
       var u = ups[k];
@@ -2513,6 +2596,9 @@ EN.builder = (function () {
         if (open) {
           if (!open.freed || typeof open.freed !== "object") open.freed = {};
           if (!Object.prototype.hasOwnProperty.call(open.freed, k)) open.freed[k] = JSON.parse(JSON.stringify(u));
+        } else if (freelyBy != null) {
+          if (!c.freelyFreed || typeof c.freelyFreed !== "object") c.freelyFreed = {};
+          c.freelyFreed[k] = { was: JSON.parse(JSON.stringify(u)), by: String(freelyBy) };
         }
         ups[k] = null;
       }
@@ -2749,12 +2835,15 @@ EN.builder = (function () {
        still reads as a spent choice, so the pick is silently wasted. Clearing
        it also returns that slot to selectable.
 
-       [RULING, 24 October 2026] Retraining is gated and counted, one per level. This
-       SUPERSEDES the author decision of 2026-08-01 that left it ungated ("a character
-       sheet you cannot freely edit is worse to use than one that trusts you"); the
-       author has now ruled to follow the book. The gate is slotMode and the log is
-       ch.retrains, both above universalUpgradePicker. This picker only ever opens on a
-       slot slotMode allows: a free slot, or the one slot this level's retrain opened.
+       [RULING, 24 October 2026] The ruling enforces the book by default: retraining is
+       gated and counted, one per level. The author decision of 2026-08-01 that left it
+       ungated ("a character sheet you cannot freely edit is worse to use than one that
+       trusts you") lives on as the opt-in, per-character Edit freely switch
+       (ch.editFreely; author, 24 October 2026), which lifts the timing and the count and
+       nothing else. The gate is slotMode and the log is ch.retrains, both above
+       universalUpgradePicker. This picker only ever opens on a slot slotMode allows: a
+       free slot, the one slot this level's retrain opened, a freed slot, or, with Edit
+       freely on, any settled Talent or Lineage Evolution slot.
 
        [PRINTED, 23 Oct] "It still counts as your one retrain, and you refill both
        slots: two Talents, or a new Talent and its Upgrade if you're Level 6 or
@@ -2765,9 +2854,10 @@ EN.builder = (function () {
     var sel = el("select", { onchange: function (e) {
       var picked = e.target.value || null;
       store.update(function (c) {
+        var freely = slotMode(c, L) === "freely";
         if (write) write(c, picked);
         else c.universalUpgrades[L] = { type: "talent", talent: picked };
-        dropOrphanUpgrades(c);
+        dropOrphanUpgrades(c, freely ? L : null);
         pruneTalentAttrPicks(c);
       });
     } }, [el("option", { value: "", text: "- choose a Talent -" })]);
