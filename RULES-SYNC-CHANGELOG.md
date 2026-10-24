@@ -1133,12 +1133,23 @@ bought for it. The Upgrade does not transfer to B and the slot is not refunded a
 for B. It is a cost warning: upgrading a Talent makes retraining it cost two picks to change
 one.
 
-**[APP POLICY, deliberate] Retraining is NOT gated to level-up.** The book scopes it to
-"whenever you gain a new level" (doc 3054). The app lets any Universal Upgrade slot change at
-any time, and the author confirmed on 2026-08-01 that this stays: a character sheet you cannot
-freely edit is worse to use than one that trusts you. **Do not add the level-up gate in a
-later manuscript sync.** Its absence is a decision, not drift. Recorded in the code beside the
-fix as well. The "you lose both" consequence still fires on any Talent change.
+**[SUPERSEDED 24 October 2026] ~~[APP POLICY, deliberate] Retraining is NOT gated to
+level-up.~~** The book scopes it to "whenever you gain a new level" (doc 3054). The app let any
+Universal Upgrade slot change at any time, and the author confirmed on 2026-08-01 that this
+stays: a character sheet you cannot freely edit is worse to use than one that trusts you.
+
+**The author has since ruled to follow the book (24 October 2026, section 9 item 5), and the
+gate is now built.** One counted retrain per level. Retraining a Talent refills with Talents
+only ("two Talents, or a new Talent and its Upgrade if you're Level 6 or higher"); a freed
+Talent slot can't become +2 Attributes. The Lineage path stays: "You may swap an Additive
+Feature for a different one from your Lineage, or trade it out for a standard Talent you meet
+the prerequisites for, whenever you level up", and that swap is the level's one retrain. In
+the builder (`app/js/builder.js`, slotMode and the comment above universalUpgradePicker): once
+a character is filed, a filled slot below the current level is settled; RETRAIN opens one
+Talent or Lineage Evolution slot per character level and logs it in `ch.retrains` (keyed by
+the level, with the slot, what it held, the Upgrade slots it emptied, and an UNDO). Saved
+characters keep every pick they have; retrains were never logged before this, so nothing is
+reconstructed or undone. The "you lose both" consequence still fires on any Talent change.
 
 **`EN.talentRules.progression` carried an older draft** of the Universal Upgrade rule (a
 single +1 rather than +2 to one Attribute or +1 to two). Corrected, though nothing currently

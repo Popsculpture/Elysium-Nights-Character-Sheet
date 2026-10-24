@@ -196,13 +196,10 @@ EN.inventoryView = (function () {
     store.update(function (c) {
       c.carry = c.carry || {};
       c.racked = c.racked || {};
-      /* "dropped": off your person like Stashed, but its Load is noted first in ch.loadDropped,
-         because Packed It still counts what you dropped (engine.logDropped, shown beside LOAD). */
-      if (status === "dropped") {
-        var de = EN.engine.findEntry(c, key);
-        if (de) EN.engine.logDropped(c, de);
-        status = "stashed";
-      }
+      /* The "Dropped" carry choice is retired (the author's ruling of 24 October 2026, section 9,
+         item 10): dropping goes through DROP, which notes the unit in the dropped log beside LOAD
+         (ch.loadDropped), and PICK UP on that log brings it back. A stray "dropped" is Stashed. */
+      if (status === "dropped") status = "stashed";
       if (status && status.indexOf("racked|") === 0) {
         var gearKey = status.slice(7);
         if (gearKey) { c.carry[key] = "racked"; c.racked[key] = gearKey; }
@@ -261,9 +258,7 @@ EN.inventoryView = (function () {
       return el("option", { value: "racked|" + gk, selected: cs === "racked" && (ch.racked || {})[key] === gk, text: "⧉ Racked: " + g.name });
     }));
     if (cs === "racked" && !rackedGear) opts.push(el("option", { value: "racked|" + ((ch.racked || {})[key] || ""), selected: true, text: "⧉ Racked (adrift)" }));
-    // Dropped: an on-person row leaves your person and its Load is noted for Packed It
-    if (cs !== "stashed") opts.push(el("option", { value: "dropped", title: "Take it off your person and note its Load: Packed It still counts it", text: "Dropped" }));
-    var dropdown = el("select", { title: "Loadout status; Racked stows it in worn Carry Gear for 1 less Load; Dropped notes its Load beside the Load you carry now", style: { fontSize: "11px", width: "auto" },
+    var dropdown = el("select", { title: "Loadout status; Racked stows it in worn Carry Gear for 1 less Load", style: { fontSize: "11px", width: "auto" },
       onchange: function () { invSetCarry(key, this.value); } }, opts);
     return el("div.row", { style: { gap: "6px", alignItems: "center" } }, [wearBtn, dropdown]);
   }
@@ -565,21 +560,79 @@ EN.inventoryView = (function () {
     }
     return "";
   }
+  /* ANATOMY. "Static is the limit, plus common sense: you have one set of eyes, two arms, two legs,
+     and one heart to replace." The author's ruling of 24 October 2026 (section 9, item 6) makes that
+     a guard, read from EN.cyberware.anatomy: at most one Cyberoptics install, two Cyberarms, one
+     Cyberlegs install (both legs, so it installs as a pair, with no side) and one Synthetic Heart.
+     With the slot full, a better version (a higher tier) REPLACES the installed one, the lowest tier
+     first, and the piece that comes out goes back to the Chrome Stash; anything else is blocked with
+     the reason. Static is never stored: it recalculates from what is installed. A save that already
+     holds more loads as is; cyberRow flags it (OVER LIMIT), and nothing is auto-uninstalled.
+     cyberAnatomyPlan answers { block } | { replace: index into installed, out, side } | { side }. */
+  var CYBER_TIER_RANK = { Streetware: 0, Brandware: 1, Blackware: 2, Prototype: 3 };
+  var NUM_WORD = ["none", "one", "two", "three", "four"];
+  function cyberAnatomyRule(key) { var a = (EN.cyberware || {}).anatomy || {}; return (key && a.hasOwnProperty(key)) ? a[key] : null; }
+  function cyberTierRank(t) { var r = CYBER_TIER_RANK[t]; return r === undefined ? -1 : r; }
+  function cyberShort(key) { var d = ((EN.cyberware || {}).items || []).filter(function (x) { return x.key === key; })[0]; return d ? d.short : key; }
+  function cyberSideTag(cw) { return cw && cw.side ? " (" + cw.side + ")" : ""; }
+  function cyberAnatomyPlan(installed, cw) {
+    var rule = cw && typeof cw === "object" ? cyberAnatomyRule(cw.key) : null;
+    if (!rule) return {};
+    var same = [];
+    (installed || []).forEach(function (x, i) { if (x && typeof x === "object" && x.key === cw.key) same.push(i); });
+    if (rule.pair) { if (same.length < rule.max) return { side: null }; }
+    else if (same.length < rule.max) {
+      // an arm takes the side no installed arm is on (R first)
+      var used = same.map(function (i) { return installed[i].side; });
+      return { side: !cw.sided ? null : used.indexOf("R") === -1 ? "R" : used.indexOf("L") === -1 ? "L" : (cw.side || "R") };
+    }
+    var low = same[0];
+    same.forEach(function (i) { if (cyberTierRank(installed[i].tier) < cyberTierRank(installed[low].tier)) low = i; });
+    var out = installed[low];
+    if (cyberTierRank(cw.tier) > cyberTierRank(out.tier)) return { replace: low, out: out, side: rule.pair ? null : (out.side || null) };
+    var short = cyberShort(cw.key), n = NUM_WORD[rule.max] || String(rule.max);
+    return { block: "You have " + rule.part + ": only " + n + " " + short + (rule.max === 1 ? " install fits" : "s fit") +
+      ", and " + (rule.max === 1 ? "yours is" : "yours are") + " already " + (out.tier || "installed") + (rule.max === 1 ? "" : " or better") +
+      ". Only a better version replaces " + (rule.max === 1 ? "it" : "one") + "; uninstall " + (rule.max === 1 ? "it" : "one") + " first to swap in this one." };
+  }
+  // the warning a save over the limit carries ("" when within it)
+  function cyberOverLimit(installed, cw) {
+    var rule = cw && typeof cw === "object" ? cyberAnatomyRule(cw.key) : null;
+    if (!rule) return "";
+    var n = (installed || []).filter(function (x) { return x && typeof x === "object" && x.key === cw.key; }).length;
+    if (n <= rule.max) return "";
+    return "Over the anatomy limit: you have " + rule.part + ", so at most " + (NUM_WORD[rule.max] || rule.max) + " " + cyberShort(cw.key) +
+      (rule.max === 1 ? " install" : "s") + ", and this save holds " + n + ". Nothing was uninstalled; uninstall the extra yourself.";
+  }
   function installFromStash(idx) {
     var ch0 = store.active();
     var why = ch0 ? cyberInstallBlock(ch0.cyberware, (ch0.cyberStash || [])[idx]) : "";
+    if (!why && ch0) why = cyberAnatomyPlan(ch0.cyberware, (ch0.cyberStash || [])[idx]).block || "";
     if (why) { toast(why); return; }
-    var refused = "";
+    var refused = "", put = null, out = null;
     store.update(function (c) {
       var cw = (c.cyberStash || [])[idx]; if (!cw) return;
       // re-checked on the record being written, so a stale click cannot slip a banned pair in
       refused = cyberInstallBlock(c.cyberware, cw);
       if (refused) return;
+      c.cyberware = c.cyberware || [];
+      var plan = cyberAnatomyPlan(c.cyberware, cw);
+      if (plan.block) { refused = plan.block; return; }
       c.cyberStash.splice(idx, 1);
-      c.cyberware = c.cyberware || []; c.cyberware.push(cw);
+      var rule = cyberAnatomyRule(cw.key);
+      if (rule && rule.pair) { cw.sided = false; cw.side = null; }
+      else if (rule && cw.sided && plan.side) cw.side = plan.side;
+      if (plan.replace != null) {
+        out = c.cyberware[plan.replace];
+        c.cyberware.splice(plan.replace, 1, cw);
+        c.cyberStash.push(out);
+      } else c.cyberware.push(cw);
+      put = cw;
     });
     if (refused) { toast(refused); return; }
-    toast("Chrome installed. Static updated on the Cybernetic Frame.");
+    if (!put) return;
+    toast(out ? put.name + cyberSideTag(put) + " installed, replacing your " + out.name + cyberSideTag(out) + ", which is back in your Chrome Stash. Static updated on the Cybernetic Frame."
+              : "Chrome installed. Static updated on the Cybernetic Frame.");
   }
   function uninstallToStash(idx) {
     store.update(function (c) {
@@ -608,21 +661,68 @@ EN.inventoryView = (function () {
     });
     toast("Fence takes the " + name + " at street rate. " + fmtG(pay) + " credited. No questions asked.");
   }
-  function drop(key) {
+  /* DROP. An on-person unit is revealed Load that Packed It still counts, so its row goes on the
+     dropped log beside LOAD before it leaves (engine.logDropped). The row also keeps the unit itself
+     (`unit`), so PICK UP on the log can bring that same unit back: picked up, it is in the Load you
+     carry now and off the log, so a revealed item counts once against the Load Budget however many
+     times it is dropped and picked up (the 24 October ruling, section 9, item 10). A donated unit
+     (`gone`) is someone else's now, so its row keeps no unit to pick up. */
+  function drop(key, gone) {
     store.update(function (c) {
       var e = findEntry(c, key);
       if (!e) return;
-      // an on-person unit is revealed Load that Packed It still counts: note it before it goes
-      EN.engine.logDropped(c, e, 1);
+      var logged = EN.engine.logDropped(c, e, 1);
+      if (logged > 0 && !gone && Array.isArray(c.loadDropped) && c.loadDropped.length) {
+        var u = JSON.parse(JSON.stringify(e)); u.qty = 1;
+        c.loadDropped[c.loadDropped.length - 1].unit = u;
+      }
       e.qty = (e.qty || 1) - 1;
       if (e.qty <= 0) c.equipment = c.equipment.filter(function (x) { return x !== e; });
       unequipIfGone(c, key, e.name);
     });
   }
+  /* PICK UP, from the dropped log. A row that kept its unit (DROP) puts that unit back in your gear,
+     Carried; a row whose entry is still in your gear (a save from the retired Dropped carry choice,
+     migrated by store.js) sets that entry Carried. Either way the row comes off the log, because the
+     item is back in the Load you carry now: Packed It counts it once. Answers whether a row was
+     picked up. A row with neither (an old drop, a donation) cannot be picked up; its X removes it. */
+  function droppedRowPickable(ch, row) {
+    if (!row || typeof row !== "object") return false;
+    if (row.unit && typeof row.unit === "object" && typeof row.unit.name === "string") return true;
+    return !!(row.key && findEntry(ch, row.key));
+  }
+  function pickUpDropped(index) {
+    var got = "";
+    store.update(function (c) {
+      var row = Array.isArray(c.loadDropped) ? c.loadDropped[index] : null;
+      if (!droppedRowPickable(c, row)) return;
+      c.equipment = c.equipment || [];
+      c.carry = c.carry || {};
+      var key = null;
+      if (row.unit && typeof row.unit === "object" && typeof row.unit.name === "string") {
+        var u = JSON.parse(JSON.stringify(row.unit)); u.qty = 1;
+        if (u.id && !findEntry(c, u.id)) { c.equipment.push(u); key = u.id; }
+        else {
+          // a pooled unit rejoins its stack (or starts one); a tracked id already back in your gear stacks as a new copy
+          var pool = c.equipment.find(function (x) { return x.name === u.name && !x.id; });
+          if (u.id) { u.id = newEquipId(); c.equipment.push(u); key = u.id; }
+          else if (pool) { pool.qty = (pool.qty || 0) + 1; key = entryKey(pool); }
+          else { c.equipment.push(u); key = entryKey(u); }
+        }
+      } else key = row.key;
+      c.loadDropped.splice(index, 1);
+      var cs = c.carry[key];
+      if (cs !== "carried" && cs !== "worn" && cs !== "racked") c.carry[key] = "carried";
+      EN.engine.unlogDropped(c, key);
+      got = row.name;
+    });
+    if (got) toast(got + " picked back up and Carried. Packed It counts it once, so the Load Budget it spends doesn't change.");
+    return !!got;
+  }
   function donate(key) {
     var e0 = findEntry(store.active(), key);
     var name = e0 ? e0.name : key;
-    drop(key);
+    drop(key, true);
     toast(name + " donated. Somebody eats tonight.");
   }
 
@@ -1032,6 +1132,10 @@ EN.inventoryView = (function () {
       el("span.mono", { title: "On-person Load (equipped + carried + worn + racked gear). Each item's ⚖ chip is its Load; 0-Load gear rides free, and a Racked item carries 1 less.\nLight ≤ " + encBands.light + " · Standard ≤ " + encBands.standard + " · Heavy ≤ " + encBands.heavy + encWhen("unencumbered") + encWhen("encumbered"),
         style: { fontSize: "16px", color: "var(--text)" },
         html: "LOAD " + enc.current + " <span style='font-size:11px;color:var(--text3)'>/ " + enc.budget + "</span>" }),
+      /* "Note dropped items beside it, because Packed It still counts them": Packed It's own total
+         sits beside LOAD while anything is on the dropped log */
+      (enc.dropped > 0) ? el("span.mono", { dataset: { invPackedIt: "1" }, title: "Packed It still counts what you dropped: " + enc.revealed + " revealed against a Load Budget of " + enc.budget,
+        style: { fontSize: "11px", color: enc.revealed > enc.budget ? "var(--warn)" : "var(--text2)" }, text: "PACKED IT " + enc.revealed + " / " + enc.budget }) : null,
       el("span.chip", { title: "Your declared Loadout, which sets your Load Budget (a Heavy Loadout is Encumbered for the run)", style: { fontSize: "9px", color: tierColor, borderColor: tierColor } },
         String(enc.tier || "").toUpperCase() + " LOADOUT"),
       el("span.chip", { title: (encStates[enc.state] || {}).effect || "", style: { fontSize: "9px", color: stateColor, borderColor: stateColor } },
@@ -1040,8 +1144,21 @@ EN.inventoryView = (function () {
       // the Encumbrance rules sit only in this bar's hover titles, so a "?" peeks them on touch
       EN.ui.ruleChip("sk-load", { title: "Encumbrance & Load" })
     ]);
+    // the dropped log, under LOAD: each row is a unit Packed It still counts; PICK UP brings it back
+    var dropLog = (enc.droppedItems || []).length ? el("div", { dataset: { invDroppedList: "1" }, style: { display: "flex", flexDirection: "column", gap: "3px", margin: "-4px 0 10px", padding: "6px 10px", border: "1px dashed var(--border)", borderRadius: "4px" } },
+      [el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em" }, text: "DROPPED (PACKED IT STILL COUNTS THEM)" })].concat(enc.droppedItems.map(function (di) {
+        var row = (ch.loadDropped || [])[di.index];
+        return el("div.row", { dataset: { invDroppedRow: di.name }, style: { gap: "8px", alignItems: "center", fontSize: "11.5px" } }, [
+          el("span", { style: { flex: "1" }, text: di.name }),
+          el("span.mono", { style: { color: "var(--text3)" }, text: "Load " + di.load }),
+          droppedRowPickable(ch, row) ? el("button.btn.sm", { dataset: { invPickUp: String(di.index) }, title: "Pick it back up: it returns Carried, and Packed It still counts it once", style: { fontSize: "9px" },
+            onclick: function () { pickUpDropped(di.index); } }, "PICK UP") : null,
+          el("button.btn.sm", { title: "Undo this row: it stops counting toward Packed It", style: { fontSize: "9px", padding: "0 5px" },
+            onclick: function () { store.update(function (c) { if (Array.isArray(c.loadDropped)) c.loadDropped.splice(di.index, 1); }); } }, "\u2715")
+        ]);
+      }))) : null;
     if (!entries.length) {
-      return [EN.ui.panel("Stash", "0 ENTRIES", [el("p.help", { style: { margin: 0 }, text: "Empty. The Undercut is open; it's always open." })], { corners: true })];
+      return [EN.ui.panel("Stash", "0 ENTRIES", (dropLog ? [loadBar, dropLog] : []).concat([el("p.help", { style: { margin: 0 }, text: "Empty. The Undercut is open; it's always open." })]), { corners: true })];
     }
     // group entries by category, keep the fixed order
     var groups = {};
@@ -1058,7 +1175,7 @@ EN.inventoryView = (function () {
         allOpen ? "▾ COLLAPSE ALL" : "▸ EXPAND ALL"),
       el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "Sorted by category. Set each item's loadout status (carried, worn, racked) right on its card." })
     ]);
-    var body = [loadBar, controls];
+    var body = dropLog ? [loadBar, dropLog, controls] : [loadBar, controls];
     catNames.forEach(function (cat) {
       var list = groups[cat];
       var open = !!_stashOpen[cat];
@@ -1258,7 +1375,10 @@ EN.inventoryView = (function () {
     // the implant's catalog "Prerequisite For" spec line ("" when it has none)
     function cyberPrereq(cw) { var d = ENG().cyberDef ? ENG().cyberDef(cw) : null; return (d && d.prereqFor) || ""; }
     function cyberRow(cw, idx, where) {
-      var sided = !!cw.sided, oid = where + "-cw-" + idx, open = !!_open[oid];
+      var aRule = cyberAnatomyRule(cw.key);
+      var sided = !!cw.sided && !(aRule && aRule.pair), oid = where + "-cw-" + idx, open = !!_open[oid];
+      var overLimit = where === "installed" ? cyberOverLimit(installed, cw) : "";
+      var plan = where === "stash" ? cyberAnatomyPlan(installed, cw) : {};
       // the row's rules lines link their Codex terms (D8): one set of options per row, so a term links once
       var lo = { conditions: true, used: {} };
       var conflict = where === "installed"
@@ -1267,6 +1387,8 @@ EN.inventoryView = (function () {
         where === "installed" ? tagChip("● INSTALLED", "var(--success)", "Installed, counts toward your Static") : tagChip("STASHED", "var(--text3)", "In your stash, not yet installed"),
         // a save from before the install guard can hold a banned pairing (Crown with Engine, two Crowns): flag it, never auto-uninstall
         conflict ? tagChip("CONFLICT", "var(--danger)", conflict) : null,
+        // a save from before the anatomy guard can hold a third Cyberarm or a second heart: flag it, never auto-uninstall
+        overLimit ? tagChip("OVER LIMIT", "var(--warn)", overLimit) : null,
         // implants the Handbook doesn't print (the Mystech ones, the Blackware and Prototype tiers) are held; an owned piece keeps working
         toolkitChip("cyberware", cw.key) || toolkitChip("cyberTier", cw.tier),
         // the quality tier is a rule, so its chip peeks the Codex entry on a tap (the title stays for hover)
@@ -1283,9 +1405,15 @@ EN.inventoryView = (function () {
       if (where === "stash") {
         actions = el("div.row", { style: { gap: "6px" } }, [
           // blocked (Crown with Engine, a second Crown): disabled, the reason in its title; installFromStash refuses too
+          // blocked by anatomy (a third Cyberarm, a second heart no better than yours) the same way;
+          // a better version over a full slot is a REPLACE, naming what comes out
           (function () {
-            var block = cyberInstallBlock(installed, cw);
-            return el("button.btn.sm.primary", { disabled: !!block, title: block || "Install at a clinic; moves it to Installed Chrome and adds its SP to your Static", onclick: function (e) { e.stopPropagation(); installFromStash(idx); } }, "⧉ INSTALL");
+            var block = cyberInstallBlock(installed, cw) || plan.block || "";
+            var swap = !block && plan.replace != null;
+            return el("button.btn.sm.primary", { disabled: !!block, dataset: swap ? { cyberReplace: "1" } : null,
+              title: block || (swap ? "Install at a clinic, replacing your " + plan.out.name + cyberSideTag(plan.out) + ": it goes back to your Chrome Stash, and Static recalculates"
+                                    : "Install at a clinic; moves it to Installed Chrome and adds its SP to your Static"),
+              onclick: function (e) { e.stopPropagation(); installFromStash(idx); } }, swap ? "\u21c4 REPLACE" : "⧉ INSTALL");
           })(),
           el("button.btn.sm", { title: "Discard this implant", style: { color: "var(--danger)", borderColor: "var(--danger)" }, onclick: function (e) { e.stopPropagation(); dropStash(idx); } }, "DROP")
         ]);
@@ -1304,6 +1432,12 @@ EN.inventoryView = (function () {
           el("span", null, EN.ui.nameCaret(cw.name, open).concat(chips)),
           actions
         ]),
+        // the swap, spelled out on the row so the player sees what comes out before they install
+        where === "stash" && plan.replace != null && !cyberInstallBlock(installed, cw)
+          ? el("p.help", { dataset: { cyberSwap: "1" }, style: { margin: "4px 0 0", color: "var(--warn)" },
+              text: "Replaces your " + plan.out.name + cyberSideTag(plan.out) + " (" + (plan.out.sp || 0) + " SP), which goes back to your Chrome Stash. Total Static " +
+                    (tax.total || 0) + " \u2192 " + ((tax.total || 0) - (plan.out.sp || 0) + (cw.sp || 0)) + " SP." })
+          : null,
         open && ENG().cyberEffect(cw) ? rulesLine({ margin: "4px 0 0", color: "var(--accent)" }, null, null, ENG().cyberEffect(cw), lo) : null,
         // the spec line "Prerequisite For:", read live from the catalog like the Effect (a saved implant carries no catalog prose)
         open && cyberPrereq(cw) ? rulesLine({ margin: "4px 0 0" }, "Prerequisite For", "var(--flow)", cyberPrereq(cw), lo) : null,
@@ -1523,7 +1657,9 @@ EN.inventoryView = (function () {
         CW.items.filter(function (it) { return it.zone === zk; }).forEach(function (it) {
           (it.tiers || []).forEach(function (t) {
             var nm = t.tier === "Prototype" ? it.short + " (Prototype)" : t.tier + " " + it.short;
-            if (installedNames.indexOf(nm) !== -1) return;   // already installed → lives in Chrome tab
+            // already installed → lives in Chrome tab, unless the anatomy has room for another (a second Cyberarm)
+            var room = (function () { var r = cyberAnatomyRule(it.key); return r ? installedNames.filter(function (n) { return n === nm; }).length < r.max : false; })();
+            if (installedNames.indexOf(nm) !== -1 && !room) return;
             listings.push({ name: nm, cyber: true, cyberKey: it.key, base: it.name, tier: t.tier,
               zone: it.zone, sp: t.sp, slots: t.slots || 0, sided: !!it.sided, mystech: !!it.mystech,
               enhancement: it.enhancement, price: t.price, legality: t.legality, availability: TIER_AVAIL[t.tier] || "Uncommon",
@@ -4259,5 +4395,6 @@ EN.inventoryView = (function () {
   }
 
   return { render: render, leaseTick: leaseTick, householdTick: householdTick, hypercareTick: hypercareTick,
-           openBench: openBench, openStash: openStash, openBills: openBills, closePops: closePops };
+           openBench: openBench, openStash: openStash, openBills: openBills, closePops: closePops,
+           pickUpDropped: pickUpDropped, installFromStash: installFromStash, cyberAnatomyPlan: cyberAnatomyPlan };
 })();

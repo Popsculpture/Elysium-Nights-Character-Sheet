@@ -16,6 +16,9 @@
    #POST (the mail, ch.face.post).
    State persists on ch.face; reference collapse state, the sub-tab and the
    Contacts search, filters and sort are transient.
+   2026-10-24 rulings, section 9 item 1: the quick reference's Costs After a Roll section offers
+   the social scene's costs for a Costly Success (scene-bound only) or a Mixed Result (either),
+   read through EN.engine.sceneCosts from Core Resolution's tagged tables.
    =========================================================================== */
 window.EN = window.EN || {};
 
@@ -23,6 +26,7 @@ EN.faceView = (function () {
   var el = EN.ui.el, store = EN.store;
   var _open = {};   // collapse state for reference sections, open messages and open contact cards
   var _sub = "ledger";   // 'ledger' | 'contacts' | 'post'; transient, like the Inventory's
+  var _costTier = "costly";   // the Costs After a Roll section's result: 'costly' | 'mixed'; transient
 
   // a faction's posture toward the crew
   var STANDINGS = [
@@ -780,6 +784,36 @@ EN.faceView = (function () {
     var m = /^(.*?)(\s*\(Versatile\))?$/.exec(r.skill || r.name);
     return [rl("sk-skills/" + r.key, m[1]), m[2] || ""];
   }
+  /* Costs After a Roll: what a social roll's result offers. A Costly Success offers only the
+     scene-bound costs, a Mixed Result scene-bound or lasting ones (2026-10-24 rulings, section 9
+     item 1): the Social / Negotiation row of Consequence by Scene Type and the Social Cost
+     Options, each tagged in data/resolution.js and picked by EN.engine.sceneCosts. */
+  function costsSection() {
+    var C = EN.engine.sceneCosts("social", _costTier);
+    function tierBtn(k, label) {
+      var on = _costTier === k;
+      return el("button.btn.sm" + (on ? ".primary" : ""), { dataset: { costTierBtn: k }, onclick: function () { _costTier = k; EN.app.render(); } }, label);
+    }
+    function group(title, list) {
+      if (!list.length) return null;
+      return el("div", { style: { margin: "6px 0 0" } }, [
+        el("div.mono", { style: { fontSize: "9.5px", letterSpacing: ".1em", color: "var(--text3)", margin: "0 0 3px" }, text: title }),
+        el("div.row.wrap", { style: { gap: "5px" } }, list.map(function (c) {
+          var lasting = c.tag === "lasting";
+          return el("span.chip", { dataset: { cost: c.cost, tag: c.tag }, title: (c.effect ? c.effect + " " : "") + "(" + c.from + ")",
+            style: { fontSize: "9.5px", color: lasting ? "var(--danger)" : "var(--warn)", borderColor: lasting ? "var(--danger)" : "var(--warn)" } }, c.cost);
+        }))
+      ]);
+    }
+    var note = (EN.resolution && EN.resolution.margins && EN.resolution.margins.costTagNote) || "";
+    return el("div", { dataset: { costs: "social", tier: _costTier } }, [
+      el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } }, [tierBtn("costly", "COSTLY SUCCESS"), tierBtn("mixed", "MIXED RESULT")]),
+      group("SCENE-BOUND", C.sceneBound),
+      group("LASTING", C.lasting),
+      note ? el("p.help", { style: { margin: "8px 0 0", color: "var(--text3)" }, text: note }) : null,
+      codexLine([["rz-margin", "Consequence by Scene Type"], ["rz-social", "Social Cost Options"]])
+    ]);
+  }
   function referencePanel() {
     var S = EN.social || {};
     var A = S.approach || {}, M = S.margins || {};
@@ -802,7 +836,8 @@ EN.faceView = (function () {
         marg.length ? refTable(["Margin", "Result", "What happens"], marg) : null,
         codexLine([["so-outcomes", "Social Margins & Outcomes"], ["so-fallout", "Social Fallout Table"],
                    ["rz-margin", "Success Margin & Consequence"], ["rz-social", "Social Consequences & Cost Tracks"]])
-      ]))
+      ])),
+      refSection("costs", "Costs After a Roll", costsSection())
     ], { corners: true, headerRight: chip });
   }
 

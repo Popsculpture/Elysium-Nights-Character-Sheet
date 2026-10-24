@@ -697,7 +697,7 @@ EN.pdfExport = (function () {
 
     // conditions & fatigue
     ctx.sectionTitle("Conditions & Fatigue");
-    ctx.multiline(null, "conditions", { value: (ch.conditions || []).join(", "), height: 24 });
+    ctx.multiline(null, "conditions", { value: (ch.conditions || []).filter(function (n) { return n !== "Strain"; }).join(", "), height: 24 });
     /* the Fatigue level the sheet holds is the Fatigue condition's level (nothing writes ch.fatigue) */
     ctx.checkboxRow("Fatigue", "fatigue", 6, (ch.conditions || []).indexOf("Fatigue") !== -1 ? ((ch.conditionLevels || {}).Fatigue || 1) : 0);
 
@@ -1182,7 +1182,8 @@ EN.pdfExport = (function () {
         { label: "FP Now", name: "flow.fpNow", value: "", w: 1, align: "center" }
       ]);
       // the Strain Track has five Stages (Ripple to Collapse), read off the data, not six
-      ctx.checkboxRow("Strain", "flow.strain", ((EN.flow && EN.flow.strainTrack) || []).length || 5, 0);
+      // one Strain value (ruling 8, 24 October 2026), read through the engine so an unmerged legacy condition still counts
+      ctx.checkboxRow("Strain", "flow.strain", ((EN.flow && EN.flow.strainTrack) || []).length || 5, (EN.engine && EN.engine.strainOf) ? EN.engine.strainOf(ch) : 0);
       ctx.sectionTitle("Known Resonances", "Kinetic · Thermal · EM · Visceral · Spatial · Cognitive · Temporal");
       ctx.table([{ header: "Resonance / Invocation", key: "name", w: 1 }], "flow.resonance", [null, null, null, null, null]);
       ctx.multiline("Counter Flow", "counterFlow", { height: 30 });

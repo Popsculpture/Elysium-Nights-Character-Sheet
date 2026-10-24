@@ -46,13 +46,7 @@ EN.species = [
           { name: "Ration Discipline", text: "You were raised counting breaths, sips, and calories, and your body learned to stretch all three. You suffer no penalties from going up to three days without proper food or sleep, you can function on half rations indefinitely, and you gain Edge on Body Saves against Fatigue caused by hunger, thirst, thin air, or forced labor. You always know, by feel, exactly how much air, water, or power remains in any sealed system you have spent at least a minute inside." },
           { name: "Hab Solidarity", action: "Impulse", text: "A thousand generations of drills live in your voice: brace, seal, mask, move. Once per Encounter as an Impulse Action when an ally you can see and who can hear you fails a Saving Throw, you can bark the correction their body already knows; they immediately reroll that Save and must use the new result. Everyone breathes or nobody does." }
         ],
-        evolutionFeatures: [],
-        chooseIf: [
-          "You want a Freelancer who distrusts authority for practical reasons, not aesthetic ones.",
-          "You like mechanics that enhance environmental survival and mobility.",
-          "You want roleplay tension around mutual aid, crew loyalty, and the price of true freedom.",
-          "You want a connection to orbital stations, deep void mines, and the undercity working class."
-        ]
+        evolutionFeatures: []
       },
       {
         key: "nextgen",
@@ -68,13 +62,7 @@ EN.species = [
           { name: "Calibrated Gait", text: "Your stride length, landing posture, and load distribution were optimized in a lab. Your Speed increases by 1, you gain Edge on Athletics checks made to sprint, jump, or maintain a pace over distance, and you always land a deliberate jump exactly where you intended, never short, never long." },
           { name: "Open Architecture", text: "You were not built finished. You were built ready. Your body was engineered to documented interface standards: pre-threaded neural shunts, reserved anatomical space, tolerances no baseline human was ever given. Taking this feature opens the Integration clause of every NextGen Lineage Feature you possess, now or in the future.\n\nWhenever you have both halves of a listed pairing (the Lineage Feature and its matching cyberware, installed at any tier), its Integration activates: a new named benefit switches on, and the matching cyberware's Static Point cost is reduced by 1 (minimum 0). The Lineage Feature keeps working in full and so does the chrome; nothing is replaced. Select Open Architecture once; it covers every qualifying combination you ever assemble.\n\n\u2022 Dermal Aegis (Dermal Plating + Subdermal Armor): The first time each round a physical attack hits you, increase your Subdermal Armor's DR by 2 against that attack, applied at passive mitigation. Any effect of that attack that would knock you Prone or forcibly move you fails to do so.\n\u2022 Reinforced Physique (Synthetic Musculature + Reinforced Skeleton): Once per turn when you hit a Target with an unarmed strike, you can immediately attempt to Shove or Trip that Target at no action cost, as part of the same attack.\n\u2022 Dermal Neuralink (Dermal Induction + Neural Interface): Your Neural Interface has no exposed port and leaves no visible scarring. By touching a device, you can establish a direct wired Link without a cable, including with air-gapped systems. The connection creates no wireless signal and leaves no physical trace. Once per Encounter as a Swift Action, you can touch a basic Tier 0-1 camera, automated door, or terminal and silently slave it until the end of the Encounter without triggering an alert or network notification. This cancels the Streetware Datajack's visible-port drawback, but not its lack of encryption. Interception and tracing of your #GRID activity at range are still governed by the Datajack's own tier.\n\u2022 Living Transceiver (Living Relay + Subdermal Comm): Any willing ally connected to your Living Relay can send communications through your Subdermal Comm as though they had a compatible comm of their own. Incoming communications can be rebroadcast through your Living Relay to any connected allies. Communications that leave the Living Relay use your Subdermal Comm's normal range, encryption, and interception rules. You are the hub. If you go down, the crew goes quiet.\n\u2022 Hitscan Optics (Hitscan + Cyberoptics): While you have a Priority Target, Threat Targeting is automatically active against it and doesn't occupy one of your Cyberoptic modes. Once per round when you hit your Priority Target, choose one ally who can see it. That ally gains Edge on their next attack against it before the start of your next turn.\n\u2022 Synaptic Reflex (Tuned Synapses + Reflex Booster): The Reflex Booster's extra Move or Swift Action can be used a number of times equal to your Caliber per Encounter instead of once. You can't use it more than once per turn.\n\u2022 Springstep (Calibrated Gait + Spring Joints): When you land from a leap, jump, or fall of 2 or more spaces, each Target of your choice within 1 space of your landing space must succeed on a Body Save (DC 8 + your Body Modifier + your Caliber) or be knocked Prone." }
         ],
-        evolutionFeatures: [],
-        chooseIf: [
-          "You want a Freelancer who's a manufactured asset claiming ownership of their identity.",
-          "You like mechanics that emphasize cybernetic integration, durability, and tactical advantage.",
-          "You want roleplay tension around corporate ownership, perfectionism, and breaking conditioning.",
-          "You want a connection to military contractors, black sites, and cybernetic research labs."
-        ]
+        evolutionFeatures: []
       },
       {
         key: "phasebound",
@@ -90,13 +78,7 @@ EN.species = [
           { name: "Disturbance Compass", text: "The instruments need calibration. You do not. You passively sense the presence and direction (though not the exact location) of any Flow Disturbance, active Invocation, or planar instability within 12 spaces, even through walls and floors, and you gain Edge on Awareness and Esoterica checks made to classify what you are feeling. You can't turn this off, which is why Phasebound trade warnings like weather reports." },
           { name: "Moment Echo", text: "Places remember, and you are tuned to the frequency they remember on. Once per Short Rest, by spending one uninterrupted minute at a location, you can witness a brief, fragmentary sensory echo of the most significant event that occurred there within the last 24 hours: a few seconds of sound, movement, and emotional residue. The GM decides what qualifies as significant, and the echo shows what happened, not why. You make a deeply inconvenient witness." }
         ],
-        evolutionFeatures: [],
-        chooseIf: [
-          "You want a Freelancer who feels danger before the world admits it exists.",
-          "You like mechanics that bend reality, manipulate space, and heighten awareness.",
-          "You want roleplay tension around trusting instinct over evidence and bearing a mysterious strain.",
-          "You want a connection to the Flow, ancient bloodlines, and the hidden ruins of Elyndra."
-        ]
+        evolutionFeatures: []
       }
     ]
   },
@@ -136,13 +118,7 @@ EN.species = [
           { name: "Seismic Sense", text: "Through the soles of your feet and the roots beneath your skin, you read the tremors of everything moving on solid ground. While you are in contact with the ground, a floor, or any connected structure, you automatically sense the location of anyone within 8 spaces that is also in contact with that surface, even through walls or total darkness. This sense doesn't detect anyone flying, climbing, or levitating. No action required." },
           { name: "Living Bulwark", action: "Impulse", text: "You are the wall the crew shelters behind, and you grew that way on purpose. Ranged attacks against allies adjacent to you take Snag, as your trunk and limbs break every clean line of fire. Once per Encounter, as an Impulse Action when an adjacent ally is hit by an attack, you can twist your body into the blow; reduce the damage dealt to that ally by your Body Modifier + your Caliber as your bark takes what was meant for them." }
         ],
-        evolutionFeatures: [],
-        chooseIf: [
-          "You want a Freelancer who serves as an immovable physical anchor for their crew.",
-          "You like mechanics that focus on damage reduction, massive reach, and defensive endurance.",
-          "You want roleplay tension around long-term planning versus the fast-paced demands of the sprawl.",
-          "You want a connection to Elysium's ancient green infrastructure and heavy filtration wards."
-        ]
+        evolutionFeatures: []
       },
       {
         key: "floral",
@@ -159,13 +135,7 @@ EN.species = [
           { name: "Scent Speech", text: "You communicate through controlled pheromone release. You can transmit emotions and basic concepts (danger, safety, direction, hostility, urgency) to anyone within 6 spaces as long as they are willing, bypassing language barriers and requiring no action. Targets that have never encountered Floral pheromones before may receive only impressions rather than clear meaning. When you spend at least 1 minute in face-to-face conversation with an organic Target, you can subtly attune your pheromones to their emotional state, granting you Edge on Charm (Persuasion, Deception, Insight, or Intimidation) checks against that Target for the rest of the scene." },
           { name: "Bloom Pulse", action: "Action", text: "Once per Long Rest as an Action, you bloom briefly, releasing a wave of restorative spore-light. You and all allies within 2 spaces regain Vitality equal to your Mystique Modifier + your Caliber." }
         ],
-        evolutionFeatures: [],
-        chooseIf: [
-          "You want a Freelancer who dominates social spaces and tracks favors across the city.",
-          "You like mechanics that manipulate enemies, apply debuffs, and use chemical influence.",
-          "You want roleplay tension around sensory overload, manipulation, and chasing new stimuli.",
-          "You want a connection to the diplomatic and undercover networks of the Verdine groves."
-        ]
+        evolutionFeatures: []
       },
       {
         key: "mycelial",
@@ -182,13 +152,7 @@ EN.species = [
           { name: "Decomposer's Touch", action: "Action", text: "Your touch can accelerate decay in organic and unstable synthetic matter. Once per Short Rest as an Action, you corrode a single organic, wood-based, or low-grade polymer object (door, rope, plastic conduit, wooden cover). It becomes Fragile. The next attack, heavy force, or significant pressure destroys it immediately. This has no effect on metal, plasteel, or shielded materials." },
           { name: "Spore Archive", text: "A room you have seeded never stops talking to you. Once per Long Rest, you can spend one minute exhaling a colony of inert microspores across an Area 2, invisible to the naked eye and undetectable by standard scanners. The colony lives for 24 hours. When you return and physically touch any surface within the seeded area, the GM truthfully summarizes who entered the area while the colony lived and one significant thing that was said or done there. You also know immediately, by taste in the air, whether anyone has attempted to scrub, burn, or sterilize your colony before its time." }
         ],
-        evolutionFeatures: [],
-        chooseIf: [
-          "You want a Freelancer who uncovers secrets through forensics and silent observation.",
-          "You like mechanics that focus on infiltration, telepathy, and extracting information from the dead.",
-          "You want roleplay tension around operating in the dark, forgotten corners of Elysium.",
-          "You want a connection to the waste corridors, morgues, and deep undercity architecture of Elysium."
-        ]
+        evolutionFeatures: []
       }
     ]
   },
@@ -227,13 +191,7 @@ EN.species = [
           { name: "Piston Slam", action: "Action", text: "You drive your full weight into the ground, sending a shockwave through the floor. Once per Encounter as an Action, each Target of your choice within 2 spaces must make a Body Save (8 + your Body Modifier + your Caliber) or take 1d8 Bludgeoning damage and be knocked Prone. Structures and unsecured objects within that area take damage as though struck by your melee attack." },
           { name: "Integrated Toolframe", text: "Your chassis houses a fold-out industrial suite: cutter, welder, clamp, spotlight, diagnostic leads. You always count as carrying basic engineering tools, you gain Edge on Engineering checks made to build, repair, brace, or dismantle heavy machinery and structures, and given one minute of uninterrupted work you can cut or weld through a standard door, chain, or fence panel without any external kit. The work is never quiet, but it is always done." }
         ],
-        evolutionFeatures: [],
-        chooseIf: [
-          "You want a Freelancer who serves as the immovable physical anchor for their crew.",
-          "You like mechanics that focus on grappling, heavy weapons, and structural demolition.",
-          "You want roleplay tension around labor rights, corporate ownership, and shop floor solidarity.",
-          "You want a connection to the heavy industry, cargo bays, and industrial unions of Elysium."
-        ]
+        evolutionFeatures: []
       },
       {
         key: "durabodies",
@@ -249,13 +207,7 @@ EN.species = [
           { name: "Breaching Charge", action: "Action", text: "You build momentum like a runaway machine and drive straight through whatever stands in your path. As an Action, you move up to your Speed in a straight line, passing through the spaces of anyone smaller than you and ignoring Difficult Terrain. The first Target you pass through or end your movement adjacent to takes 1d8 Bludgeoning damage and must succeed on a Body Save (8 + your Body Modifier + your Caliber) or be knocked Prone." },
           { name: "Emergency Boot", text: "Once per Long Rest, when you would be reduced to 0 Wounds, you trigger an Emergency Boot sequence. You don't fall Unconscious and don't become Dying. You remain at 1 Wound, and at the start of your next turn you regain Vitality equal to twice your Caliber." }
         ],
-        evolutionFeatures: [],
-        chooseIf: [
-          "You want a Freelancer who charges into danger to protect their squad.",
-          "You like mechanics that mitigate massive damage, ignore critical hits, and resist environmental hazards.",
-          "You want roleplay tension around the psychological toll of being a living shield.",
-          "You want a connection to private military contractors, security forces, and underground motor pools."
-        ]
+        evolutionFeatures: []
       },
       {
         key: "lifelikes",
@@ -271,13 +223,7 @@ EN.species = [
           { name: "Method Actor", text: "You do not wear a face. You become its owner. After observing an individual for 10 minutes, you can save their behavioral profile as a Persona. You can store a number of Personas equal to your Caliber score and overwrite a saved Persona at any time. Recovering a deleted profile requires another 10 minutes of observation. Saved Personas become obsolete after 30 days as people change.\n\nWhile assuming a Persona, you reproduce the individual's mannerisms, gait, signature, vocabulary, and social reflexes. You gain Edge on Charm and Deception checks made to convince someone who personally knows that individual that you are them. The first time each scene a check would make someone suspicious of the impersonation, you may force them to reroll it.\n\nOnly one Persona may be active per feature, and the two don't have to belong to the same individual. You can wear one person's fingerprints and another's mannerisms at once. A second Persona does not make the lie better. It makes the lie cover more ground." },
           { name: "Killer Confidant", text: "You are most dangerous to the people who trust the face in front of them. When you attack a Target that is Charmed by you, considers you an ally, or is unaware you are a threat, you gain Edge on the attack roll and deal an additional 1d6 damage on a hit. A Target damaged by this feature is immune to it until you spend at least one scene rebuilding its trust." }
         ],
-        evolutionFeatures: [],
-        chooseIf: [
-          "You want a Freelancer who dominates social encounters and infiltrates high-security zones.",
-          "You like mechanics that emphasize deception, physical transformation, and stealth.",
-          "You want roleplay tension around losing your own identity while wearing the faces of others.",
-          "You want a connection to corporate espionage, high-society galas, and underground hacking networks."
-        ]
+        evolutionFeatures: []
       }
     ]
   },
@@ -294,7 +240,7 @@ EN.species = [
       languages: "Common Trade and one pack-specific dialect that relies heavily on physical gestures, scent markers, and micro-expressions.",
       coreTrait: {
         name: "Feral Metabolism",
-        text: "Your spliced DNA ensures aggressive cellular recovery and processing. You can safely consume raw or spoiled meat without gaining the Poisoned condition, and whenever you spend a Resilience Die to heal Vitality during a Short Rest, you automatically regain an additional amount of Vitality equal to your Body Modifier."
+        text: "Your spliced DNA drives aggressive cellular recovery and processing. You can safely consume raw or spoiled meat without gaining the Poisoned condition, and whenever you spend a Resilience Die to heal Vitality during a Short Rest, you automatically regain an additional amount of Vitality equal to your Body Modifier."
       },
       secondaryTrait: {
         name: "Primal Reflex",
@@ -317,13 +263,7 @@ EN.species = [
           { name: "Unshakable Bulk", text: "Your low center of gravity and dense frame make you nearly impossible to move against your will. You gain Edge on Saves against being knocked Prone, Staggered, or forcibly moved, and moving through the space of an enemy smaller than you costs you no extra movement." },
           { name: "Apex Bearing", action: "Swift", text:"Your physical presence reshapes any room you enter. While you are within sight of an organic Target who can see you, you gain Edge on Charm (Intimidation) and Charm (Persuasion) checks made to negotiate trade, settle disputes, or extract compliance through implied threat. Once per Encounter as a Swift Action, you can make a focused stare at one Target within 6 spaces. If they haven't yet acted this turn, they must succeed on a Wits Save (8 + your Charm Modifier + your Caliber) or hesitate, losing their Action this turn (they can still Move and use Swift Actions). A Target that succeeds on this Save is immune to your Apex Bearing for the rest of the Encounter." }
         ],
-        evolutionFeatures: [],
-        chooseIf: [
-          "You want a Freelancer who physically dominates close quarters and controls the battlefield.",
-          "You like mechanics that focus on charging, durability, and raw melee power.",
-          "You want roleplay tension around a violent past evolving into honorable commerce.",
-          "You want a connection to the merchant caravans and mercenary companies of the sprawl."
-        ]
+        evolutionFeatures: []
       },
       {
         key: "skarn",
@@ -339,17 +279,11 @@ EN.species = [
           { name: "Shed Tail", action: "Impulse", text: "Like the lizards in your splice, you can leave a piece of yourself behind to survive. Once per Long Rest as an Impulse Action when you are Grappled or Restrained, or when you are hit by a melee attack, you detach your tail: you automatically escape any grapple or restraint, you take half damage from the triggering attack (if there was one), and you may immediately move up to half your Speed without provoking Opportunity Attacks. The thrashing tail occupies your attacker's attention for a heartbeat, and your tail fully regrows over your next Long Rest." },
           { name: "Venom Strike", text: "You can inject a paralytic venom through your bite or spurs. When you hit a Target with an unarmed strike, you may inject venom. The Target must make a Body Save (8 + your Body Modifier + your Caliber) or take 2d6 Toxic damage and be Poisoned for 1 minute. The Target repeats the Save at the end of each of their turns, ending the Poisoned effect on a success. You can use this feature a number of times equal to your Caliber per Long Rest." }
         ],
-        evolutionFeatures: [],
-        chooseIf: [
-          "You want a Freelancer who dominates the dark and fights entirely on their own terms.",
-          "You like mechanics that focus on stealth, sensory advantages, and lethal ambush tactics.",
-          "You want roleplay tension around chaotic curiosity mixed with profound paranoia.",
-          "You want a connection to the dark warrens, tunnel networks, and scavenging clutches of the undercity."
-        ]
+        evolutionFeatures: []
       },
       {
         key: "ryn",
-        name: "The Ryn",
+        name: "Ryn",
         description: "Hyper-kinetic physical couriers spliced with rabbit, feline, and vulpine DNA.",
         features: [
           { name: "Rabbitwire Reflex", text: "Your digitigrade legs operate on a biological pulley system of hyper-dense tendons. You ignore the movement penalties of Difficult Terrain when jumping or climbing. Whenever you spend a Swift Action to Dash, the stored kinetic energy doubles your jump distance for that turn, and you can leap directly out of an Enemy's melee reach without provoking an Opportunity Attack." },
@@ -361,13 +295,7 @@ EN.species = [
           { name: "Light-Fingered Relay", action: "Free", text:"Secrets move through your hands without ever appearing to be in them. You gain Edge on Sleight checks made to palm, plant, conceal, or hand off a small item, and anyone trying to spot the exchange must win an opposed Perception check against your Sleight. Once per turn you can draw, stow, or pass one small item to a willing ally within 1 space as a Free Action, smoothly enough that onlookers don't register that anything changed hands." },
           { name: "Courier's Memory", text: "You can carry messages, codes, locations, and instructions in your head with a precision that machines can't match. You can memorize any document, image, audio recording, or sensory experience after observing it for at least 30 seconds. The memory is perfect for 7 days, and you can recall it exactly with no roll required. When you carry a message verbatim from one party to another, you gain Edge on any Charm (Deception) or Charm (Persuasion) check made to convince the recipient that the message is genuine, even if the original sender used a coded form of communication." }
         ],
-        evolutionFeatures: [],
-        chooseIf: [
-          "You want a Freelancer who's impossible to pin down and thrives on speed.",
-          "You like mechanics that focus on unparalleled mobility, escape, and vertical exploration.",
-          "You want roleplay tension around adrenaline addiction, claustrophobia, and holding vital secrets.",
-          "You want a connection to rooftop smuggler rings, the courier underground, and information brokerages."
-        ]
+        evolutionFeatures: []
       }
     ]
   },
@@ -407,13 +335,7 @@ EN.species = [
           { name: "Cinder Shroud", action: "Impulse", text: "Your devotion ignites before your thoughts catch up. Once per Encounter as an Impulse Action when an ally within 2 spaces of you is hit by an attack, you flare violently, throwing a burst of embers, smoke, and rippling heat-haze between them and the attacker. Reduce the damage dealt to that ally by your Body Modifier + your Caliber, and the attacker takes Snag on their next attack roll before the end of their next turn." },
           { name: "Volcanic Surge", action: "Swift", text: "Once per Short Rest as a Swift Action, you channel a burst of your inner forge. Your next attack or Flow Invocation before the end of your next turn deals an additional 2d6 Fire damage. This extra damage ignores Resistance but not Immunity." }
         ],
-        evolutionFeatures: [],
-        chooseIf: [
-          "You want a Freelancer who leads with intense emotion and aggressive loyalty.",
-          "You like mechanics that punish enemies for getting close and weaponize elemental damage.",
-          "You want roleplay tension around managing a volatile temper in a fragile city.",
-          "You want a connection to found families, undercity garages, or fanatical cults."
-        ]
+        evolutionFeatures: []
       },
       {
         key: "harbinger",
@@ -429,17 +351,11 @@ EN.species = [
           { name: "Axiomatic Mind", text: "Your consciousness is a closed, ordered system that this reality can't corrupt. You are immune to the Confused condition, you always know exactly how much time has passed and where you are relative to where you have been, and you gain Edge on Saves against effects that would alter your perception, memory, or sense of what is real. Disorder happens around you, never inside you." },
           { name: "Immaculate Calibration", text: "You perceive the world in exact quantities: distances, weights, volumes, angles, and intervals of time, measured at a glance with machine precision, and you never miscount or misestimate. You gain Edge on any check that rewards exact precision, such as calibrating equipment, placing charges, picking mechanical locks, detecting forgeries, or spotting a deviation from a pattern. After studying a physical pattern for one minute (a signature, a keycut, a circuit trace, a diagram), you can reproduce it exactly by hand. Approximation is a native concept here. It is not a native concept where you are from." }
         ],
-        evolutionFeatures: [],
-        chooseIf: [
-          "You want a Freelancer who relies on pure logic and chilling efficiency.",
-          "You like mechanics that guarantee outcomes, exploit weaknesses, and ignore environmental hazards.",
-          "You want roleplay tension around imposing strict order on a fundamentally chaotic city.",
-          "You want a connection to corporate security, algorithmic accounting, or strict vigilante codes."
-        ]
+        evolutionFeatures: []
       },
       {
         key: "grinling",
-        name: "Grinlings",
+        name: "Grinling",
         description: "Scrappy, hyperactive survivors hailing from a chaotic dimension of mischief and hyper-predators.",
         features: [
           { name: "Hyper-Kinetic Metabolism", action: "Swift", text: "Your body is a coiled spring of excess adrenaline and alien biology. As a Swift Action, you can willingly take 1d6 damage to purge one of the following conditions affecting you: Staggered, Dazed, Frightened, Poisoned, or Bleeding. Your alien metabolism forcibly burns out the impairment, and the burn always costs a little meat." },
@@ -452,13 +368,7 @@ EN.species = [
           { name: "Probability Nudge", action: "Special", text: "Reality bends around you in small, mischievous ways. Once per Encounter as a Special Action, you can force one Target within 6 spaces to reroll any single die roll they just made. They must use the new result, for better or worse." },
           { name: "Impossible Geometry", action: "Swift", text: "Your relationship to space is a suggestion rather than a rule. Once per Long Rest as a Swift Action, for 1 minute your movement doesn't provoke Opportunity Attacks, and you may move through occupied spaces (though you can't end your turn there). Your position appears inconsistent to Enemies. Ranged attacks against you during this time are made with Snag." }
         ],
-        evolutionFeatures: [],
-        chooseIf: [
-          "You want a Freelancer who treats life-or-death situations as elaborate games.",
-          "You like mechanics that focus on escaping restraints, aggressive mobility, and biting enemies.",
-          "You want roleplay tension around chaotic mischief conflicting with serious professional jobs.",
-          "You want a connection to the chaotic gig economy, underground entertainment, or rogue app developers."
-        ]
+        evolutionFeatures: []
       }
     ]
   }

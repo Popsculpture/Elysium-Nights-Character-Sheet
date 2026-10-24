@@ -687,10 +687,25 @@ EN.gridView = (function () {
   function deepMarginRow(margin) {
     var rows = (EN.resolution && EN.resolution.margins && EN.resolution.margins.pool) || [];
     var i = margin >= 3 ? 0 : margin >= 1 ? 1 : margin === 0 ? 2 : margin >= -2 ? 3 : 4;
-    /* `priced`: the margins whose result is a price the scene sets (Mixed, Failure, Critical Failure),
-       so the Hacking-scene costs line shows. It was named `costly` before the 23 October handoff gave
-       that word to the Costly Success tier, which is a lighter result and never offers the line. */
-    return { row: rows[i] || null, color: ["var(--success)", "var(--success)", "var(--gold)", "var(--warn)", "var(--danger)"][i], priced: i >= 2 };
+    /* `tier`: which costs the Hacking-scene line offers (2026-10-24 rulings, section 9 item 1). A
+       Costly Success offers only the scene-bound costs; a Mixed Result, a Failure and a Critical
+       Failure offer either (EN.engine.sceneCosts). A Flawless Success offers none. */
+    return { row: rows[i] || null, color: ["var(--success)", "var(--success)", "var(--gold)", "var(--warn)", "var(--danger)"][i],
+             tier: [null, "costly", "mixed", "failure", "critical"][i] };
+  }
+  /* The Hacking / #GRID costs a result offers, each a chip tagged SCENE-BOUND or LASTING. */
+  function deepCostsLine(tier) {
+    var C = eng.sceneCosts("grid", tier);
+    if (!C.all.length) return null;
+    function chip(c) {
+      var lasting = c.tag === "lasting";
+      return el("span.chip", { dataset: { cost: c.cost, tag: c.tag }, title: lasting ? "Lasting: it leaves the scene with you, so only a Mixed Result can take it." : "Scene-bound: paid in the scene.",
+        style: { fontSize: "9px", color: lasting ? "var(--danger)" : "var(--warn)", borderColor: lasting ? "var(--danger)" : "var(--warn)" } }, c.cost + (lasting ? " \u00b7 lasting" : ""));
+    }
+    return el("div.row.wrap", { dataset: { costs: "grid", tier: tier }, style: { gap: "5px", alignItems: "center", marginTop: "4px" } },
+      [el("span.help", { style: { margin: 0, fontSize: "10.5px", color: "var(--warn)" },
+        text: "Hacking-scene costs" + (C.costlyOnly ? " (Costly: scene-bound only):" : " (scene-bound or lasting):") })]
+      .concat(C.all.map(chip)));
   }
   function deepRunPanel(ch, d, G) {
     var gd = d.grid;
@@ -802,14 +817,13 @@ EN.gridView = (function () {
       kids.push(diceRow("SNAG", "var(--danger)", res.snag, "failures"));
       if (!_deep.animating) {
         var mr = deepMarginRow(res.margin);
-        var scene = ((EN.resolution && EN.resolution.consequenceByScene) || []).find(function (r) { return /Hacking/.test(r.scene); });
         kids.push(el("div", { style: { marginTop: "6px" } }, [
           el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
             el("span.mono", { style: { fontSize: "13px", color: mr.color }, text: "MARGIN " + (res.margin >= 0 ? "+" : "") + res.margin + " · " + (mr.row ? mr.row.result : "") }),
             el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: mr.row ? mr.row.desc : "" }),
             EN.ui.ruleChip("rz-margin", { title: "Success Margin & Consequence" })
           ]),
-          mr.priced && scene ? noteP("Hacking-scene costs: " + scene.consequences + ".", "var(--warn)") : null
+          mr.tier ? deepCostsLine(mr.tier) : null
         ]));
       }
     }

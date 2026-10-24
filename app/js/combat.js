@@ -1205,8 +1205,9 @@ EN.combatView = (function () {
      A19, still true), and this one restores and does not touch the calendar. It clears Vigor too
      (ruling of 2026-10-12): a Long Rest zeroes it, and this gives everything a Long Rest gives.
      Two things a week does NOT fix. Breakflow ends only through Breakflow Restoration, so the flag
-     stays and FP is not refilled while the character is in it (Strain and the Overdraw points still
-     go to 0). And a status stays if its own text says it persists or needs a specific removal:
+     stays and FP is not refilled while the character is in it, and Strain stays too: "Downtime
+     clears all Strain (unless you're in Breakflow)" (2026-10-24 rulings, section 9 item 2; the
+     book's batch 73 sentence). And a status stays if its own text says it persists or needs a specific removal:
      Critical Wound, Cursed, Hardwired, Mutating (its manifestations come off its stacks, so they
      stay with it) and Bricked. Immunity, Resistance and Vulnerability are traits, not statuses, and
      are left alone. Every other condition is temporary and comes off, Hidden and Suppressed included. */
@@ -1214,8 +1215,9 @@ EN.combatView = (function () {
                          "Breakflow": 1, "Immunity": 1, "Resistance": 1, "Vulnerability": 1 };
   function isTemporaryCondition(name) { return !DOWNTIME_KEEPS[name]; }
   function downtimeRest(ch, d) {
-    var cleared = [], kept = [], hadFatigue = false, hadVigor = false, breakflowOn = false;
+    var cleared = [], kept = [], hadFatigue = false, hadVigor = false, breakflowOn = false, strainKept = 0;
     store.update(function (c) {
+      eng.mergeStrain(c);                                                   // the one Strain value (item 8)
       var s = state(c, d);
       c.wounds.current = s.woundsMax;                                       // all Wounds
       if (s.woundsMax > 0) { c.stable = false; c.deathSaves = { s: 0, f: 0 }; }
@@ -1230,8 +1232,10 @@ EN.combatView = (function () {
       // "Breakflow ends only through Breakflow Restoration": the flag and the condition both count
       breakflowOn = inBreakflow(c);
       if (d.flow && !breakflowOn) c.flow.current = d.flow.max;              // full Reservoir, unless the current is severed
-      // all Strain: the stage and the Overdraw points toward the next one. The Breakflow flag is left alone.
-      c.flow.strain = 0; c.flow.strainPoints = 0;
+      // all Strain (the stage and the Overdraw points toward the next one), unless you're in Breakflow,
+      // where only Breakflow Restoration or Rough Restoration lowers it. The Breakflow flag is left alone.
+      if (breakflowOn) strainKept = c.flow.strain || 0;
+      else { c.flow.strain = 0; c.flow.strainPoints = 0; }
       hadFatigue = c.conditions.indexOf("Fatigue") !== -1;
       c.conditions = c.conditions.filter(function (n) {
         if (!isTemporaryCondition(n)) { kept.push(n); return true; }
@@ -1247,7 +1251,8 @@ EN.combatView = (function () {
         c.hazards.deprivation.sleep.saves = 0;
       }
     });
-    toast("Downtime rest (1 week): Vitality, all Wounds, Resilience Dice and abilities restored, Strain removed"
+    toast("Downtime rest (1 week): Vitality, all Wounds, Resilience Dice and abilities restored"
+      + (breakflowOn ? (strainKept ? ", Strain stays at Stage " + strainKept + " (still in Breakflow)" : "") : ", Strain removed")
       + (d.flow ? (breakflowOn ? ", FP unchanged (still in Breakflow)" : ", FP full") : "")
       + (hadVigor ? ", Vigor cleared" : "")
       + (hadFatigue ? ", Fatigue cleared" : "")
@@ -1267,6 +1272,7 @@ EN.combatView = (function () {
     if (provisioned === undefined) provisioned = true;
     var leaseDue = [], severeFatigue = 0, noNaturalHealing = false, personaExpired = 0, altitudeLocked = 0, altitudeFrom = [], unprovisioned = 0, fpBlocked = false, strainBlocked = false, strainStage = 0;
     store.update(function (c) {
+      eng.mergeStrain(c);                                                   // the one Strain value (item 8)
       var s = state(c, d);
       var bodMod = d.attributes.BOD.mod;
       // Static Threshold 4 ("Maintenance Required") stops natural Wound recovery on a
@@ -1591,12 +1597,19 @@ EN.combatView = (function () {
       }) }
   };
   /* The collapsed Status Changes card's one-line summary. A leveled track reads its level's line
-     (Strain's lines are cumulative, see LEVELED). Absolute Conduit ignores Stage 1 and 2 Strain, so
-     at those two Stages the card says so, in the words the Flow tab and the COND_FX rider use. */
+     (Strain's lines are cumulative, see LEVELED). Absolute Conduit ignores Ripple and Wave at every
+     Stage (2026-10-24 rulings, item 3): at Stages 1 and 2 the card says so, in the words the Flow
+     tab and the COND_FX rider use, and from Stage 3 it lists Surge and higher only. */
+  var BURDEN_NOTE = "Burden of the Earth: Strain transferred this way is treated as if caused by Overdraw and can't be ignored by the Absolute Conduit feature's Strain Resistance.";
+  function hasConduit(d) { return !!(d && (d.features || []).some(function (f) { return f && f.kind === "class" && f.name === "Absolute Conduit"; })); }
   function condSummary(name, lv, lvl, info, d) {
-    if (name === "Strain" && lvl >= 1 && lvl <= 2 && d && (d.features || []).some(function (f) { return f && f.kind === "class" && f.name === "Absolute Conduit"; })) {
-      var stg = strainStages()[lvl - 1];
-      return "Stage " + lvl + (stg ? " (" + stg.name + ")" : "") + ": ignored (Absolute Conduit).";
+    if (name === "Strain" && lvl >= 1 && hasConduit(d)) {
+      var all = strainStages();
+      if (lvl <= 2) {
+        var stg = all[lvl - 1];
+        return "Stage " + lvl + (stg ? " (" + stg.name + ")" : "") + ": ignored (Absolute Conduit).";
+      }
+      return "Ripple and Wave: ignored (Absolute Conduit). " + all.slice(2, lvl).map(function (t) { return t.name + ": " + t.effect + "."; }).join(" ");
     }
     return (lv && lv.effects && lv.effects[lvl - 1]) || (info && info.summary) || "";
   }
@@ -1703,13 +1716,16 @@ EN.combatView = (function () {
        the Flow tab says (Stage N (Name): ignored) and the Burden of the Earth exception rides under it.
        From Stage 3 every stage speaks as usual. */
     "Strain": function (e, l, d) {
-      var ac = !!(d && (d.features || []).some(function (f) { return f && f.kind === "class" && f.name === "Absolute Conduit"; }));
+      var ac = hasConduit(d);
       if (ac && l >= 1 && l <= 2) {
         var stg = strainStages()[l - 1];
-        e.notes.push("Strain · Stage " + l + (stg ? " (" + stg.name + ")" : "") + ": ignored (Absolute Conduit). Burden of the Earth: Strain transferred this way is treated as if caused by Overdraw and can't be ignored by the Absolute Conduit feature's Strain Resistance.");
+        e.notes.push("Strain · Stage " + l + (stg ? " (" + stg.name + ")" : "") + ": ignored (Absolute Conduit). " + BURDEN_NOTE);
         return;
       }
-      strainStages().slice(0, 4).forEach(function (s, i) { if (l >= i + 1) e.notes.push("Strain · " + s.name + ": " + s.effect); });
+      /* 2026-10-24 rulings, item 3: Ripple and Wave stay ignored at every Stage, so from Stage 3
+         an Absolute Conduit Shaper's rider lists Surge and higher only. */
+      if (ac) e.notes.push("Strain · Ripple and Wave: ignored (Absolute Conduit). " + BURDEN_NOTE);
+      strainStages().slice(0, 4).forEach(function (s, i) { if (l >= i + 1 && !(ac && i < 2)) e.notes.push("Strain · " + s.name + ": " + s.effect); });
       if (l >= 5) { e.derived.push({ name: "Breakflow", from: "Strain 5 · Collapse" }); e.derived.push({ name: "Unconscious", from: "Strain 5 · Collapse" }); }
     },
     "Surprised": function (e) { e.cannotAct = true; e.noSwift = true; e.noImpulse = true; e.speedZero = true; e.vsYou.meleeEdge += 1; e.vsYou.rangedEdge += 1;
@@ -1764,7 +1780,7 @@ EN.combatView = (function () {
               cannotAct: false, autoFailBodAgiSaves: false,
               noImpulse: false, noSwift: false, derived: [], notes: [] };
     var applied = {};
-    var queue = (ch.conditions || []).map(function (n) { return { name: n, from: null }; });
+    var queue = activeConditionNames(ch).map(function (n) { return { name: n, from: null }; });
     var guard = 0;
     while (queue.length && guard++ < 50) {
       var item = queue.shift();
@@ -1777,7 +1793,7 @@ EN.combatView = (function () {
       e.derived.slice(before).forEach(function (dc) { queue.push({ name: dc.name, from: dc.from }); });
     }
     // don't list derived conditions the player already applied manually
-    e.derived = e.derived.filter(function (dc) { return (ch.conditions || []).indexOf(dc.name) === -1; });
+    e.derived = e.derived.filter(function (dc) { return activeConditionNames(ch).indexOf(dc.name) === -1; });
     return e;
   }
   // Order matters: subtract every flat reduction first, THEN halve, rounding down. That order
@@ -1833,8 +1849,19 @@ EN.combatView = (function () {
     "Stunned": ["Until Save", "End of turn Body DC 15"], "Unconscious": ["Until Revived", "Healing / Allied Action"],
     "Vacuum": ["Special", "Pressure and air, or a suit that holds vacuum"]
   };
-  function condLevel(ch, name) { return (ch.conditionLevels || {})[name] || 1; }
+  /* ONE STRAIN VALUE (2026-10-24 rulings, section 9 item 8). The Strain condition is not stored in
+     ch.conditions: it is on the card whenever ch.flow.strain is above 0 (EN.engine.strainOf, which
+     also reads an old saved Strain condition and takes the higher), its level is that Stage, and
+     the stepper, Remove and the picker write that Stage through EN.engine.setStrainStage, the same
+     rule the Flow tab's track uses. */
+  function activeConditionNames(ch) {
+    var names = ((ch && ch.conditions) || []).filter(function (n) { return n !== "Strain"; });
+    if (eng.strainOf(ch) > 0) names.push("Strain");
+    return names;
+  }
+  function condLevel(ch, name) { return name === "Strain" ? (eng.strainOf(ch) || 1) : ((ch.conditionLevels || {})[name] || 1); }
   function setCondLevel(name, lvl) {
+    if (name === "Strain") { store.update(function (c) { eng.setStrainStage(c, lvl); }); return; }
     store.update(function (c) {
       c.conditionLevels = c.conditionLevels || {};
       var max = LEVELED[name] ? LEVELED[name].max : 1;
@@ -2364,7 +2391,7 @@ EN.combatView = (function () {
      applied, conditions derived from another source, applied hazards, and
      applied bonuses. */
   function statusBadge(ch, hazCount, derivedCount) {
-    var conds = ((ch && ch.conditions) || []).length;
+    var conds = activeConditionNames(ch).length;
     var bonuses = Object.keys((ch && ch.bonuses) || {}).length;
     var n = conds + (derivedCount || 0) + (hazCount || 0) + bonuses;
     return n ? n + " ACTIVE" : "NOTHING APPLIED";
@@ -3255,19 +3282,15 @@ EN.combatView = (function () {
   // catalog name for a pooled consumable/ammo stack).
   function entryKey(e) { return EN.engine.entryKey ? EN.engine.entryKey(e) : (e && e.name); }
   function carryStatus(ch, key) { return (ch.carry && ch.carry[key]) || "stashed"; }
-  // status is "stashed" | "carried" | "worn" | "racked|<carryGearEntryKey>" | "dropped";
-  // racking stows the item in worn Carry Gear (Load reduced by 1, min 0). "dropped" takes the item
-  // off your person like Stashed does, but first notes its Load in ch.loadDropped: Packed It still
-  // counts what you dropped (the Load console shows it as PACKED IT revealed / budget).
+  // status is "stashed" | "carried" | "worn" | "racked|<carryGearEntryKey>"; racking stows the item
+  // in worn Carry Gear (Load reduced by 1, min 0). The "Dropped" carry choice is retired (2026-10-24
+  // rulings, section 9 item 10): dropping goes through the dropped log (the Inventory's DROP), so a
+  // stray "dropped" status (an old save or an old caller) is read as Stashed and logs nothing.
   function setCarry(key, status) {
     store.update(function (c) {
       c.carry = c.carry || {};
       c.racked = c.racked || {};
-      if (status === "dropped") {
-        var de = eng.findEntry(c, key);
-        if (de) eng.logDropped(c, de);
-        status = "stashed";
-      }
+      if (status === "dropped") status = "stashed";
       if (status && status.indexOf("racked|") === 0) {
         var gearKey = status.slice(7);
         if (gearKey) { c.carry[key] = "racked"; c.racked[key] = gearKey; }
@@ -3836,7 +3859,7 @@ EN.combatView = (function () {
                   EN.ui.ruleChip("rc-rests/downtime", { title: "Downtime (rest)" })
                 ]),
                 EN.ui.ruleText(el("p", { style: { margin: 0, fontSize: "12px", lineHeight: "1.5", color: "var(--text2)" } }),
-                  "One uninterrupted week. Gives everything a Long Rest gives (Vitality, FP, Resilience Dice, abilities, the sleep clock) and more: restores all Wounds, removes all Strain, clears Fatigue and temporary conditions. In Breakflow, FP stays down: that ends only through Breakflow Restoration. Critical Wound, Cursed, Hardwired, Mutating, Bricked and Breakflow stay. Does not advance the calendar.",
+                  "One uninterrupted week. Gives everything a Long Rest gives (Vitality, FP, Resilience Dice, abilities, the sleep clock) and more: restores all Wounds, removes all Strain, clears Fatigue and temporary conditions. In Breakflow, FP and Strain stay: Breakflow ends only through Breakflow Restoration, and Downtime clears all Strain (unless you're in Breakflow). Critical Wound, Cursed, Hardwired, Mutating, Bricked and Breakflow stay. Does not advance the calendar.",
                   { terms: { "One uninterrupted week": "rc-other/downtime-healing" } }),
                 el("button.btn.sm.primary", { style: { justifyContent: "center" }, onclick: function () { _pops.down = false; downtimeRest(ch, d); } }, iconLabel(ICON_DOWNTIME, "REST A WEEK"))
               ]),
@@ -4569,7 +4592,7 @@ EN.combatView = (function () {
              not remove it. The GM may have a reason the sheet cannot see, and a picker that
              refused would be wrong more often than the rule is. Say it and let them choose. */
           var imm = eng.immunitiesFor ? eng.immunitiesFor(ch, c.name) : [];
-          return el("option", { value: c.name, disabled: (ch.conditions || []).indexOf(c.name) !== -1,
+          return el("option", { value: c.name, disabled: activeConditionNames(ch).indexOf(c.name) !== -1,
             text: c.name + (imm.length ? "  (immune: " + imm[0].source + ")" : "") });
         })));
     /* A "?" beside the picker that follows the selection: with a condition picked it peeks that
@@ -4583,7 +4606,7 @@ EN.combatView = (function () {
     }
     condSel.addEventListener("change", paintCondChip);
     paintCondChip();
-    var active = (ch.conditions || []).map(function (name) {
+    var active = activeConditionNames(ch).map(function (name) {
       var info = (EN.conditions || []).find(function (x) { return x.name === name; });
       var lv = LEVELED[name];
       var lvl = lv ? condLevel(ch, name) : 0;
@@ -4680,7 +4703,13 @@ EN.combatView = (function () {
     var applyBtn = el("button.btn.sm.primary", { onclick: function () {
       var v = condSel.value;
       var applied = 0;
-      if (v) {
+      if (v === "Strain") {
+        // Strain is the one Strain value: applying it sets Stage 1 unless a Stage is already held
+        store.update(function (c) { if (eng.mergeStrain(c) < 1) eng.setStrainStage(c, 1); });
+        condSel.value = "";
+        paintCondChip();
+        applied++;
+      } else if (v) {
         store.update(function (c) {
           c.conditions = c.conditions || [];
           if (c.conditions.indexOf(v) === -1) c.conditions.push(v);
@@ -4900,7 +4929,7 @@ EN.combatView = (function () {
       // so a Shaper can track FP/Strain and invoke patterns without leaving Play.
       if (d.flow) {
         var fCur = (ch.flow.current != null) ? eng.clamp(ch.flow.current, 0, d.flow.max) : d.flow.max;
-        var fStrain = ch.flow.strain || 0;
+        var fStrain = eng.strainOf(ch);   // the one Strain value (2026-10-24 rulings, item 8)
         kids.push(el("div.section-title", null, [document.createTextNode("Flow Reservoir"), el("span.line"),
           el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", marginLeft: "6px" }, text: "DC " + d.flow.dc + " · " + d.flow.attributeName }) ]));
         kids.push(el("div.row.between.wrap", { style: { alignItems: "center" } }, [
@@ -4913,8 +4942,8 @@ EN.combatView = (function () {
           // Strain and Breakflow peek their condition entries, Overdraw and Free-Shaping The Flow's panels
           el("span.help", { style: { margin: 0 } }, [cxLink(cxCond("Strain"), "Strain"), document.createTextNode(":")]),
           pips(fStrain, 5, resourceColor("Flow"), function (n) {
-            // lowering a Stage clears the partial points; raising one leaves them where they are
-            store.update(function (c) { var was = c.flow.strain || 0; c.flow.strain = n; if (n < was) c.flow.strainPoints = 0; });
+            // the Flow tab's hand-set rule: lowering a Stage clears the partial points, 5 is Breakflow
+            store.update(function (c) { eng.setStrainStage(c, n); });
           }),
           fStrain >= 5 ? el("span", { style: { color: "var(--danger)", fontFamily: "var(--mono)", fontSize: "12px" } }, ["⚡ ", cxLink(cxCond("Breakflow"), "BREAKFLOW")])
                        : el("span.help", { style: { margin: 0, fontSize: "10.5px" } }, ["5 → ", cxLink(cxCond("Breakflow"), "Breakflow"), " · ",
@@ -5986,6 +6015,15 @@ EN.combatView = (function () {
             return el("div.row", { dataset: { droppedRow: di.name }, style: { gap: "8px", alignItems: "center", fontSize: "11.5px" } }, [
               el("span", { text: di.name }),
               el("span.mono", { style: { color: "var(--text3)" }, text: "⚖ " + di.load }),
+              // PICK UP: the Inventory's own pick-up (it returns Carried; Packed It still counts it once)
+              (function () {
+                var row = (ch.loadDropped || [])[di.index];
+                var can = !!row && typeof row === "object" && ((row.unit && typeof row.unit === "object" && typeof row.unit.name === "string") || (row.key && eng.findEntry(ch, row.key)));
+                return can && EN.inventoryView && EN.inventoryView.pickUpDropped
+                  ? el("button.btn.sm", { dataset: { pickUpDropped: String(di.index) }, title: "Pick it back up: it returns Carried, and Packed It still counts it once", style: { fontSize: "9px" },
+                      onclick: function (ev) { if (ev && ev.stopPropagation) ev.stopPropagation(); EN.inventoryView.pickUpDropped(di.index); } }, "PICK UP")
+                  : null;
+              })(),
               el("button.btn.sm", { dataset: { undoDropped: String(di.index) }, title: "Undo this row: it stops counting toward Packed It", style: { fontSize: "9px", padding: "0 5px" },
                 onclick: function (ev) { if (ev && ev.stopPropagation) ev.stopPropagation(); store.update(function (c) { if (Array.isArray(c.loadDropped)) c.loadDropped.splice(di.index, 1); }); } }, "✕")
             ]);
@@ -6173,11 +6211,9 @@ EN.combatView = (function () {
           var on = cs === "racked" && (ch.racked || {})[key] === gk;
           return el("option", { value: "racked|" + gk, selected: on, text: "⧉ Racked: " + g.name });
         }));
-        // Dropped: an on-person row leaves your person and its Load is noted for Packed It
-        if (cs !== "stashed") opts.push(el("option", { value: "dropped", title: "Take it off your person and note its Load: Packed It still counts it", text: "Dropped" }));
         // keep a stale racked target selectable so the row shows the truth
         if (cs === "racked" && !rackedGear) opts.push(el("option", { value: "racked|" + ((ch.racked || {})[key] || ""), selected: true, text: "⧉ Racked (adrift)" }));
-        var dropdown = el("select", { title: "Carry status; Racked stows it in worn Carry Gear for 1 less Load; Dropped notes its Load beside the Load you carry now", style: { fontSize: "11px", width: "auto" },
+        var dropdown = el("select", { title: "Carry status; Racked stows it in worn Carry Gear for 1 less Load", style: { fontSize: "11px", width: "auto" },
           onchange: function () { setCarry(key, this.value); } }, opts);
         statusCtrl = el("div.row", { style: { gap: "6px", alignItems: "center" } }, [wearBtn, dropdown]);
       }

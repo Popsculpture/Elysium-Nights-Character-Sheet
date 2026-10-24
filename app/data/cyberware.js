@@ -7,8 +7,7 @@
    Chrome Tax thresholds. Zone anchors are approximate body coordinates on the
    Chrome-tab silhouette (viewBox 0 0 220 470).
    23 Oct 2026 handoff (Costly Success, the 23 October rulings): zones have no
-   fixed capacity (`zonesNote`; the app never capped a zone and adds no anatomy
-   guard), and Static Thresholds stack: each tier's named effects live in `extra`,
+   fixed capacity (`zonesNote`; the app never caps a zone), and Static Thresholds stack: each tier's named effects live in `extra`,
    its two penalty lines stay in `effects`, and `stackNote` is the book sentence.
    =========================================================================== */
 window.EN = window.EN || {};
@@ -38,7 +37,7 @@ EN.cyberware = {
     { index: 2, min: 5,  max: 6,        name: "System Integration",   effects: ["−2 max Resilience Dice", "−2 max FP"],
       extra: ["Hardwired: targetable by Quick Hacks; Snag vs EMP & Electromagnetic Invocations"] },
     { index: 3, min: 7,  max: 8,        name: "Visceral Rejection / Resonant Dissonance", effects: ["−3 max Resilience Dice", "−3 max FP"],
-      extra: ["Resonant Feedback: failed Breakflow → 1d4 Electric per Threshold", "Healing Penalty: Visceral Patch (0 FP) fails on you"] },
+      extra: ["Resonant Feedback: failed Breakflow → 1d4 Electric per Threshold", "Healing Penalty: A Shaper must spend an Empowered Effect (1 FP) to use Visceral Resonance on you; the base 0 FP Patch effect automatically fails to penetrate your inorganic mass."] },
     { index: 4, min: 9,  max: 10,       name: "Biological / Mechanical Stagnation", effects: ["−4 max Resilience Dice", "−4 max FP"],
       extra: ["Maintenance Required: no natural Wound recovery on a Long Rest"] },
     { index: 5, min: 11, max: Infinity, name: "The Ghost Fades",       effects: ["−5 max Resilience Dice", "−5 max FP"],
@@ -47,9 +46,22 @@ EN.cyberware = {
 
   /* The book's Chrome Tax sentences, word for word (23 Oct handoff, section 7; PHB The Chrome Tax and
      Calculating Thresholds). The Codex prints `zonesNote` after the Interface Zones table and
-     `stackNote` under the Chrome Tax table. No zone cap and no anatomy guard is built: the limit is
-     Static, plus common sense. */
+     `stackNote` under the Chrome Tax table. No zone cap is built: the limit is Static, plus common
+     sense, and `anatomy` below is that common sense. */
   zonesNote: "Zones have no fixed capacity: install as much as you can stand, keep a running total in Total Static, and ignore the math until it matters. Static is the limit, plus common sense: you have one set of eyes, two arms, two legs, and one heart to replace.",
+  /* The common sense of `zonesNote` ("one set of eyes, two arms, two legs, and one heart"), the
+     author's ruling of 24 October 2026 (section 9, item 6): at most one Cyberoptics install, two
+     Cyberarms, one Cyberlegs install (it replaces both legs, so it installs as a pair) and one
+     Synthetic Heart. When the slot is full, installing a better version (a higher tier) replaces the
+     installed one, which goes back to the Chrome Stash; anything else is blocked. A save that already
+     holds more loads as is and is flagged on the Chrome tab, never auto-uninstalled. The Chrome tab
+     (inventory.js cyberAnatomy) reads this table. */
+  anatomy: {
+    cyberoptics: { max: 1, part: "one set of eyes" },
+    cyberarm:    { max: 2, part: "two arms" },
+    cyberlegs:   { max: 1, part: "two legs", pair: true },
+    synthHeart:  { max: 1, part: "one heart" }
+  },
   stackNote: "Each Threshold keeps the extra effects of the Thresholds below it: Hardwired from Threshold 2 stays with you at 3, 4, and 5.",
 
   /* Two rules the Chrome tab stated only in its own UI (the gauge's caption and tooltip, and the
@@ -214,7 +226,8 @@ EN.cyberware = {
       ] },
 
     /* ---------------- Legs ---------------- */
-    { key: "cyberlegs", short: "Cyberlegs", name: "Cyberlegs", zone: "Legs", enhancement: "+1 Agility", platform: true, sided: true,
+    // "Both legs are replaced": one install is the pair, so it has no side (the 24 Oct ruling, item 6)
+    { key: "cyberlegs", short: "Cyberlegs", name: "Cyberlegs", zone: "Legs", enhancement: "+1 Agility", platform: true, pair: true,
       desc: "Full prosthetic legs. Most people got them involuntarily and upgraded after. A platform with mod slots, like Cyberarms.",
       effect: "+2 Speed and Edge on Athletics for jumping, climbing, balance. Install compatible mods in its slots without adding their SP to Total Static; the platform already paid it.",
       street: "+1 Speed only, 2 slots, no Enhancement; audible servos → Snag on Stealth while moving >half Speed.",

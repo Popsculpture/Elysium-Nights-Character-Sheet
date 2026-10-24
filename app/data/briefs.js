@@ -145,7 +145,7 @@ EN.briefs = {
   "Layered Force": "Pay both Hybrid (1 FP) and Empowered Force (1 FP) on one Invocation for full Empowered damage and effect",
   "Rhythmic Shaping": "Once per round after Action-shaping an Invocation, Swift Action to Disengage, Dash, or attack with Simple/Sidearm",
   "Master Forging": "Unlock Cooperative Channeling and Sustained Fields Advanced Techniques",
-  "Absolute Conduit": "Ignore Stage 1 and 2 Strain penalties; at Initiative with 0 FP, regain 2d4 FP",
+  "Absolute Conduit": "Ignore Stage 1 and 2 Strain penalties at any Stage; at Initiative with 0 FP, regain 2d4 FP",
   "Center of Attention": "Flow is Charm; +half Mystique to max FP; Edge on crowd Charm; risky hit regains 1d4 FP/combat",
   "Main Character Syndrome": "1 FP: Edge next d20, +1d6 Psychic on hit; on fail, Mystique save DC 12 or 1 Stage Strain",
   "The Show Must Go On": "Once/Long Rest, 0 Wounds stays at 1, gain 1 Strain; pulse 6 (Charm/Mystique save) Prone+Blind or Charm",

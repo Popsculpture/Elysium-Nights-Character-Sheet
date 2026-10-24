@@ -7,6 +7,10 @@
    23 Oct 2026: Strain stages list cumulatively (each Stage keeps the Stages below it), a stage
    click clears partial points only when it lowers the Stage, an attack-resolved Hybrid shows the
    damage-plus-effect rule, and Poltergeist is gated to Level 3 (Hardware Harmonization).
+   24 Oct 2026 rulings, section 9: the Strain track here is the one Strain value (item 8): every
+   write goes through fset, which folds an old saved Strain condition in first (EN.engine
+   .mergeStrain), and the Status Changes card draws the condition from it. Ritual Recovery logs
+   its result here (item 8). Absolute Conduit ignores Ripple and Wave at every Stage (item 3).
    =========================================================================== */
 window.EN = window.EN || {};
 
@@ -34,7 +38,8 @@ EN.flowView = (function () {
   function setIntensity(v) { _intensity = String(v); try { localStorage.setItem(INT_KEY, _intensity); } catch (e) {} }
 
   /* ---- small shared bits ---- */
-  function fset(mut, silent) { store.update(function (c) { c.flow = c.flow || {}; mut(c.flow, c); }, silent ? { silent: true } : undefined); }
+  // every Flow write folds an old saved Strain condition into ch.flow.strain first (one Strain value)
+  function fset(mut, silent) { store.update(function (c) { c.flow = c.flow || {}; eng.mergeStrain(c); mut(c.flow, c); }, silent ? { silent: true } : undefined); }
   function noteP(t, color) { return el("p.help", { style: { margin: "2px 0 6px", color: color || "var(--text3)", fontSize: "11.5px" }, text: t }); }
   function bar(cur, max, color) {
     var pct = max > 0 ? Math.max(0, Math.min(100, cur / max * 100)) : 0;
@@ -172,7 +177,7 @@ EN.flowView = (function () {
     var cells = (EN.flow.strainTrack).map(function (s) {
       var on = stage >= s.stage, col = STC[s.stage];
       return el("button", { title: s.name + ": " + s.penalty,
-        onclick: function () { fset(function (fl) { var was = fl.strain || 0, ns = (fl.strain === s.stage) ? s.stage - 1 : s.stage; fl.strain = ns; if (ns < was) fl.strainPoints = 0; if (ns < 5) fl.breakflow = false; else { fl.breakflow = true; fl.sustained = null; } }); },
+        onclick: function () { fset(function (fl, c) { eng.setStrainStage(c, (fl.strain === s.stage) ? s.stage - 1 : s.stage); }); },
         style: { flex: "1 1 0", minWidth: "54px", padding: "5px 2px", cursor: "pointer", borderRadius: "4px",
                  fontFamily: "var(--disp)", fontSize: "9px", letterSpacing: ".08em",
                  border: "1px solid " + (on ? col : "var(--border2)"), background: on ? "rgba(0,0,0,.25)" : "transparent",
@@ -180,16 +185,21 @@ EN.flowView = (function () {
         s.stage + " · " + s.name.toUpperCase());
     });
     kids.push(el("div.row", { style: { gap: "5px" } }, cells));
-    /* Absolute Conduit (Shaper, Level 9): Stage 1 and 2 penalties are ignored, so the line says
-       so in place of the penalty, and the Burden of the Earth exception rides under it. */
-    if (stage > 0 && f.strainIgnored) {
-      kids.push(noteP("Stage " + stage + " (" + f.strainName + "): ignored (Absolute Conduit).", "var(--success)"));
+    /* Absolute Conduit (Shaper, Level 9) ignores Ripple and Wave at every Stage (2026-10-24 rulings,
+       item 3): Stages 1 and 2 say "ignored" in place of their penalty, and from Stage 3 only Surge and
+       higher list theirs. The Burden of the Earth exception rides under it. */
+    if (stage > 0 && f.absoluteConduit) {
+      EN.flow.strainTrack.filter(function (t) { return t.stage <= stage; }).forEach(function (t) {
+        kids.push(t.stage < f.strainFrom
+          ? el("p.help", { dataset: { strainLine: String(t.stage), ignored: "1" }, style: { margin: "2px 0 6px", color: "var(--success)", fontSize: "11.5px" }, text: "Stage " + t.stage + " (" + t.name + "): ignored (Absolute Conduit)." })
+          : el("p.help", { dataset: { strainLine: String(t.stage) }, style: { margin: "2px 0 6px", color: "var(--warn)", fontSize: "11.5px" }, text: "Stage " + t.stage + " (" + t.name + "): " + t.penalty }));
+      });
       if (f.strainIgnoredNote) kids.push(noteP(f.strainIgnoredNote, "var(--text3)"));
     } else if (stage > 0) {
       /* Each Stage keeps the effects of the Stages below it (the Strain Track, PHB), so Stage N lists
          the effects of Stages 1 to N, one line each, read from EN.flow.strainTrack. */
       EN.flow.strainTrack.filter(function (t) { return t.stage <= stage; }).forEach(function (t) {
-        kids.push(noteP("Stage " + t.stage + " (" + t.name + "): " + t.penalty, "var(--warn)"));
+        kids.push(el("p.help", { dataset: { strainLine: String(t.stage) }, style: { margin: "2px 0 6px", color: "var(--warn)", fontSize: "11.5px" }, text: "Stage " + t.stage + " (" + t.name + "): " + t.penalty }));
       });
     } else {
       kids.push(ruleNote("No Strain. Overdraw and failed Flow rituals build it."));
@@ -207,6 +217,8 @@ EN.flowView = (function () {
         onclick: function () { var n = _od, die = f.overdrawDie; fset(function (fl) { fl.current = 0; bumpStrain(fl, n); }); toast("Overdrew " + n + " FP · lose " + n + "d" + die + " Vitality · +" + n + " Strain"); } }, "LOG")
     ]));
 
+    kids.push(ritualRecoveryRow(ch, d, cur, stage));
+
     // Breakflow banner + restoration
     if (f.inBreakflow || stage >= 5) {
       kids.push(el("div", { style: { marginTop: "10px", padding: "10px", border: "1px solid var(--danger)", borderRadius: "4px", background: "rgba(255,77,94,.06)" } }, [
@@ -218,13 +230,48 @@ EN.flowView = (function () {
         // read from EN.flow.breakflow, so the banner cannot drift from the rule it summarises
         ruleNote(EN.flow.breakflow.onFailure + " Breakflow Check: " + EN.flow.breakflow.check, "var(--text2)"),
         el("div.row.wrap", { style: { gap: "8px", marginTop: "4px" } }, [
-          el("button.btn.sm", { title: "Ritual Restoration success: Reservoir to half, Strain to Stage 2", onclick: function () { fset(function (fl) { fl.current = Math.floor(f.max / 2); fl.strain = 2; fl.strainPoints = 0; fl.breakflow = false; }); toast("Restored: half Reservoir, Strain → Wave"); } }, "RITUAL (½ · Stage 2)"),
-          el("button.btn.sm", { title: "Rough Restoration success: Reservoir to one-quarter, Strain to Stage 3", onclick: function () { fset(function (fl) { fl.current = Math.floor(f.max / 4); fl.strain = 3; fl.strainPoints = 0; fl.breakflow = false; }); toast("Rough restore: ¼ Reservoir, Strain → Surge"); } }, "ROUGH (¼ · Stage 3)")
+          el("button.btn.sm", { dataset: { restore: "full" }, title: "Ritual Restoration success: Reservoir to half, Strain to Stage 2", onclick: function () { fset(function (fl) { fl.current = Math.floor(f.max / 2); fl.strain = 2; fl.strainPoints = 0; fl.breakflow = false; }); toast("Restored: half Reservoir, Strain → Wave"); } }, "RITUAL (½ · Stage 2)"),
+          el("button.btn.sm", { dataset: { restore: "rough" }, title: "Rough Restoration success: Reservoir to one-quarter, Strain to Stage 3", onclick: function () { fset(function (fl) { fl.current = Math.floor(f.max / 4); fl.strain = 3; fl.strainPoints = 0; fl.breakflow = false; }); toast("Rough restore: ¼ Reservoir, Strain → Surge"); } }, "ROUGH (¼ · Stage 3)")
         ])
       ]));
     }
     var rp = EN.ui.panel("Reservoir", "DC " + f.dc + " · " + f.attributeName.toUpperCase(), kids, withCorners(headChip("fl-core", "Core Concepts & Formulas")));
     rp.classList.add("res-panel"); return rp;
+  }
+
+  /* Ritual Recovery (The Ritual of Alignment): roll the Flow Dice Pool at the table, then log the
+     result here. Each button applies its row of EN.flow.ritualRecovery.outcomes to the one Strain
+     value: Flawless removes 2 Stages and restores 2d4 FP, Costly restores 1d4 FP and removes 1
+     Stage, Mixed removes 1 Stage, Failure applies 1 Stage. While you're in Breakflow it does
+     nothing ("Long Rests and Ritual Recovery work again once it ends"), so the row says so. */
+  var RITUAL_FX = { Flawless: { strain: -2, fpDice: 2 }, Costly: { strain: -1, fpDice: 1 }, Mixed: { strain: -1, fpDice: 0 }, Failure: { strain: 1, fpDice: 0 } };
+  function rollD4s(n) { var t = 0; for (var i = 0; i < n; i++) t += 1 + Math.floor(Math.random() * 4); return t; }
+  function ritualRecoveryRow(ch, d, cur, stage) {
+    var rr = EN.flow.ritualRecovery || {}, f = d.flow;
+    var label = el("span", { style: { fontFamily: "var(--disp)", fontSize: "9.5px", letterSpacing: ".12em", color: VIO } }, [EN.ui.ruleLink("fl-recovery", "RITUAL RECOVERY")]);
+    var box = { dataset: { ritual: "recovery" }, style: { gap: "6px", alignItems: "center", marginTop: "8px", padding: "6px 10px", border: "1px solid var(--border2)", borderRadius: "4px" } };
+    if (f.inBreakflow) {
+      return el("div.row.wrap", box, [label, el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "While you're in Breakflow, only Breakflow Restoration or Rough Restoration lowers your Strain; Long Rests and Ritual Recovery work again once it ends." })]);
+    }
+    var btns = (rr.outcomes || []).map(function (o) {
+      var fx = RITUAL_FX[o.result];
+      if (!fx) return null;
+      return el("button.btn.sm", { dataset: { ritualResult: o.result }, title: o.margin + ": " + o.text,
+        onclick: function () {
+          var gained = fx.fpDice ? rollD4s(fx.fpDice) : 0, now = 0;
+          fset(function (fl, c) {
+            var was = fl.strain | 0;
+            now = Math.max(0, Math.min(5, was + fx.strain));
+            fl.strain = now;
+            if (now < was) fl.strainPoints = 0;
+            if (now >= 5) { fl.breakflow = true; fl.sustained = null; }
+            if (gained) { var have = (fl.current != null) ? eng.clamp(fl.current, 0, f.max) : f.max; fl.current = Math.min(f.max, have + gained); }
+          });
+          toast("Ritual Recovery, " + o.result + ": Strain Stage " + now + (gained ? " · +" + gained + " FP" : "") + ".");
+        } }, o.result.toUpperCase());
+    });
+    return el("div.row.wrap", box, [label].concat(btns).concat([
+      el("span.help", { style: { margin: 0, fontSize: "10.5px", flex: "1 1 160px" }, text: "Roll the Flow Dice Pool, then log the result. Once per 24 hours." })]));
   }
 
   /* ============================ SUSTAIN TRACKER ========================== */

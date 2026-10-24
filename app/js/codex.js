@@ -1365,7 +1365,14 @@ EN.codexView = (function () {
         // the book prints the Costly Success cost rule in the same paragraph as the scene rule
         K.ruleBlock("Match the Cost to the Scene", Rz.margins.sceneRule + (Rz.margins.costlyRule ? " " + Rz.margins.costlyRule : "")),
         K.subTitle("Consequence by Scene Type"),
-        K.refTable(["Scene Type", "Appropriate Consequences"], Rz.consequenceByScene.map(function (r) { return [r.scene, r.consequences]; }), [0])
+        /* Each row's entries split by tag (2026-10-24 rulings, section 9 item 1): a Costly Success
+           takes only a scene-bound cost, a Mixed Result either. The entries are the book's line,
+           split at its commas (data/resolution.js `costs`). */
+        K.refTable(["Scene Type", "Scene-bound (Costly or Mixed)", "Lasting (Mixed only)"], Rz.consequenceByScene.map(function (r) {
+          function pick(tag) { var c = (r.costs || []).filter(function (x) { return x.tag === tag; }).map(function (x) { return x.cost; }); return c.length ? c.join(", ") : "None"; }
+          return r.costs ? [r.scene, pick("scene-bound"), pick("lasting")] : [r.scene, r.consequences, ""];
+        }), [0]),
+        Rz.margins.costTagNote ? el("p.help", { dataset: { costTagNote: "1" }, style: { margin: "4px 0 0" }, text: Rz.margins.costTagNote }) : null
       ];
     } },
     // 5 · Social Consequences & Cost Tracks
@@ -1375,7 +1382,8 @@ EN.codexView = (function () {
       linkify(guide, Rz.costTracks.guidance);
       return [
         K.proseBlock(Rz.social.intro),
-        K.refTable(["Social Cost", "Effect"], Rz.social.costs.map(function (r) { return [r.cost, r.effect]; }), [0]),
+        // each cost tagged scene-bound or lasting (2026-10-24 rulings, section 9 item 1)
+        K.refTable(["Social Cost", "Effect", "Tag"], Rz.social.costs.map(function (r) { return [r.cost, r.effect, r.tag === "lasting" ? "Lasting (Mixed only)" : r.tag === "scene-bound" ? "Scene-bound (Costly or Mixed)" : ""]; }), [0]),
         K.ruleBlock("Social Fallout Rule", Rz.social.falloutRule),
         // the social chapter's own ten-row table is the menu a Mixed Result picks from
         // the Sit-Down moved to the Game Master's Toolkit (2026-10-16), so only the Admin desktop points there
@@ -1644,11 +1652,11 @@ EN.codexView = (function () {
         var C = EN.combat;
         return (C.damagePipeline ? [K.ruleBlock("Damage Order", C.damagePipeline)] : [])
           .concat(C.damageTypeRules ? [K.ruleBlock("Resistance, Vulnerability and Immunity", C.damageTypeRules)] : [])
-          /* Oomph, the book's Core Rules passage under Damage Resolution (2026-10-16), at
-             "ref-damage/oomph"; the trait (gr-traits/oomph-x) and the Parts' "Oomph +1 from
-             hardware" line point here. Under it the author's ruling for a strike with no die. */
-          .concat(C.oomph ? [K.ruleBlock("Oomph", C.oomph)] : [])
-          .concat(C.oomph && C.oomphNoDie ? [K.note(C.oomphNoDie)] : []);
+          /* Oomph at "ref-damage/oomph": the book's pointer paragraph under Damage Resolution. The full
+             rule lives in the Gear Traits entry Oomph +X (gr-traits/oomph-x), 2026-10-24 rulings,
+             section 9 item 9. The no-die sentence (C.oomphNoDie) is printed under Unarmed Strikes in
+             the book, so it is not repeated under the pointer. */
+          .concat(C.oomph ? [K.ruleBlock("Oomph", C.oomph)] : []);
       } },
     { id: "ref-dmg", title: "Damage Types", tag: function () { return ((EN.combat || {}).damageTypes || []).length + " TYPES"; }, order: 50, when: hasCombat,
       build: function (ctx, K) {

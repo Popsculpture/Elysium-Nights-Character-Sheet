@@ -580,7 +580,8 @@ EN.printSheet = (function () {
     });
     L.push(sv);
     L.push(sect("Conditions & Fatigue"));
-    var active = (ch.conditions || []);
+    // Strain is one value (ruling 8, 24 October 2026): it prints on the Flow track, never as a condition
+    var active = (ch.conditions || []).filter(function (n) { return n !== "Strain"; });
     L.push(el("div.ps-block", null, [active.length ? el("div.ps-block-v", { text: active.join(", ") }) : null]));
     L.push(el("div.ps-surv-row", { style: { marginTop: "6px" } }, [el("span.ps-fl", { text: "FATIGUE" }), pips(fatigueLevel(ch), 6, "")]));
     L.push(sect("Senses", "10 + MOD + PROF (+/- 5 Edge/Snag)"));
@@ -989,7 +990,7 @@ EN.printSheet = (function () {
       // the Strain Track has five Stages (Ripple to Collapse), read off the data, not six
       stat("STRAIN", "0 to " + strainStageCount(), "track in play")
     ]));
-    out.push(el("div.ps-surv-row", { style: { marginTop: "4px" } }, [el("span.ps-fl", { text: "FP NOW" }), el("span.ps-box.ps-write") , el("span.ps-fl", { text: "STRAIN" }), pips(0, strainStageCount(), "dot")]));
+    out.push(el("div.ps-surv-row", { style: { marginTop: "4px" } }, [el("span.ps-fl", { text: "FP NOW" }), el("span.ps-box.ps-write") , el("span.ps-fl", { text: "STRAIN" }), pips(eng.strainOf ? eng.strainOf(ch) : 0, strainStageCount(), "dot")]));
     out.push(sect("Known Resonances", "Kinetic · Thermal · EM · Visceral · Spatial · Cognitive · Temporal"));
     var res = el("div.ps-rep"); for (var i = 0; i < 5; i++) res.appendChild(writeLine("")); out.push(res);
     out.push(el("div.ps-grid2", null, [pblock("Counter Flow", null, false), pblock("Static Zones", null, false)]));

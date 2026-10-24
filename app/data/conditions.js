@@ -10,7 +10,11 @@ window.EN = window.EN || {};
 
    23 Oct 2026 handoff: the Strain entry no longer prints its own stage list. The Strain Track is
    one four-column table in The Flow (EN.flow.strainTrack, Codex panel fl-strain) and this entry
-   points there (PHB:6174-6188). */
+   points there (PHB:6174-6188).
+
+   2026-10-24 rulings, section 9 item 2: Downtime leaves Strain alone while Breakflow is on. The
+   How to End It bullet takes the book's batch 73 sentence. Item 8: the Strain condition is the
+   Flow tab's one Strain value (ch.flow.strain, read through EN.engine.strainOf). */
 EN.conditions = [
   {
     name: "Bleeding",
@@ -233,7 +237,7 @@ EN.conditions = [
   {
     name: "Strain",
     summary: "Penalties and Breakflow risk",
-    text: "Every Overdraw pulls the line between you and the Flow a little tighter. Pull it enough times and it snaps.\n\nHow It Works:\n- Each time Overdraw causes any Vitality loss, you accumulate Strain points equal to the Flow Points (FP) spent beyond your Reservoir. Gain 1 Stage of Strain for every 3 Strain points accumulated. Removing a Stage also clears any partial points; gaining a Stage another way leaves them where they are.\n- The five Stages and their effects are on the Strain Track in The Flow; each Stage keeps the effects of the Stages below it.\n\nHow to End It:\n- A Long Rest reduces Strain by 1 Stage.\n- Ritual Recovery can remove additional Stages based on successes.\n- Downtime clears all Strain, as described in the Recovery section. Breakflow Restoration ends the Breakflow condition and lowers Strain to Stage 2, not to zero. While you're in Breakflow, only Breakflow Restoration or Rough Restoration lowers your Strain; Long Rests and Ritual Recovery work again once it ends."
+    text: "Every Overdraw pulls the line between you and the Flow a little tighter. Pull it enough times and it snaps.\n\nHow It Works:\n- Each time Overdraw causes any Vitality loss, you accumulate Strain points equal to the Flow Points (FP) spent beyond your Reservoir. Gain 1 Stage of Strain for every 3 Strain points accumulated. Removing a Stage also clears any partial points; gaining a Stage another way leaves them where they are.\n- The five Stages and their effects are on the Strain Track in The Flow; each Stage keeps the effects of the Stages below it.\n\nHow to End It:\n- A Long Rest reduces Strain by 1 Stage.\n- Ritual Recovery can remove additional Stages based on successes.\n- Downtime clears all Strain (unless you're in Breakflow), as described in the Recovery section. Breakflow Restoration ends the Breakflow condition and lowers Strain to Stage 2, not to zero. While you're in Breakflow, only Breakflow Restoration or Rough Restoration lowers your Strain; Long Rests and Ritual Recovery work again once it ends."
   },
   {
     name: "Stunned",

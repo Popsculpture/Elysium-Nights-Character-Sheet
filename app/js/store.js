@@ -109,7 +109,8 @@ EN.store = (function () {
       customFeatures: [],                // player/GM manual Features on the Freelancer tab: [{id,name,source,effect,note,category,action,cost,uses,range,duration}]
       featureAnnotations: {},            // per computed-feature notes/flags: {featureName: {note, pinned, important, hidden}}
       universalUpgrades: {},             // {level: {type:'attr'|'talent'|'evolution', ...}}
-      awakeningEvolution: null,          // Level 4 Awakening Milestone free Lineage Evolution
+      awakeningEvolution: null,          // Level 4 Awakening Milestone: an Evolution name, or { type: 'talent', talent } once traded by a retrain
+      retrains: {},                      // {characterLevel: {slot, was, freed, picks}}: the one counted retrain per level (ruling 5, 24 Oct 2026; see builder.js slotMode)
       cyberware: [],                     // INSTALLED chrome (feeds Static / Chrome Tax + Open Architecture)
       cyberStash: [],                    // purchased-but-uninstalled chrome (install at a clinic to move it to cyberware)
       grid: {                            // #GRID rig + live hacking state (Bandwidth tracks via resources.current)
@@ -424,6 +425,27 @@ EN.store = (function () {
     // meaningless noise (those equip through their own dedicated field, not
     // carry status) and downgrades to carried so it can't double-count toward
     // its Body Slot alongside the real equipped entry.
+    /* The retired "Dropped" carry choice (the author's ruling of 24 October 2026, section 9, item
+       10). A saved entry still carrying it goes onto the dropped log beside LOAD (ch.loadDropped),
+       keyed to the entry, which stays in your gear Stashed: Packed It still counts it, and PICK UP on
+       the log brings it back. Its Load is read as if it were on your person (it was, when revealed).
+       One row per key, so a second load finds the carry value gone and adds nothing. */
+    Object.keys(ch.carry).forEach(function (k) {
+      if (ch.carry[k] !== "dropped") return;
+      var de = (ch.equipment || []).find(function (x) { return x && (x.id || x.name) === k; });
+      delete ch.carry[k];
+      delete ch.racked[k];
+      if (!de || !(de.qty > 0)) return;
+      if (!Array.isArray(ch.loadDropped)) ch.loadDropped = [];
+      if (ch.loadDropped.some(function (x) { return x && x.key === k; })) return;
+      var ld = 0;
+      if (EN.engine && EN.engine.entryLoadNow) {
+        ch.carry[k] = "carried";
+        try { ld = EN.engine.entryLoadNow(ch, de); } catch (err) { ld = 0; }
+        delete ch.carry[k];
+      }
+      if (ld > 0) ch.loadDropped.push({ name: de.name, load: ld, key: k });
+    });
     Object.keys(ch.carry).forEach(function (k) {
       var v = ch.carry[k];
       if (v === "mission") v = "carried";
@@ -654,6 +676,17 @@ EN.store = (function () {
         if (typeof cw.key !== "string") return;
         if (!CYBER_DEFS.filter(function (i) { return i.key === cw.key; })[0]) return;
         delete cw.desc; delete cw.effect;
+      });
+    });
+    /* CYBERLEGS ARE A PAIR. "Both legs are replaced": one install is both legs (the author's ruling
+       of 24 October 2026, section 9, item 6), so a saved Cyberlegs record loses the L/R side it was
+       bought with. Only the side goes: a save holding two Cyberlegs installs keeps both, and the
+       Chrome tab flags it over the limit (never auto-uninstalled). Idempotent. */
+    [ch.cyberware, ch.cyberStash].forEach(function (list) {
+      if (!Array.isArray(list)) return;
+      list.forEach(function (cw) {
+        if (!cw || typeof cw !== "object" || cw.key !== "cyberlegs") return;
+        cw.sided = false; cw.side = null;
       });
     });
     // Renamed Talents. A record saved before a rename still stores the OLD key and
@@ -1892,6 +1925,10 @@ EN.store = (function () {
       var subs = EN.classes[ch.class].subclasses || [];
       if (!subs.some(function (s) { return s.key === ch.subclass; })) ch.subclass = null;
     }
+    /* ONE STRAIN VALUE (ruling 8, 24 October 2026). An older save may carry Strain as a
+       condition under Status Changes; the engine folds it into ch.flow.strain (the higher of
+       the two wins) and drops the condition, so the Flow tab's track is the only value. */
+    if (EN.engine && typeof EN.engine.mergeStrain === "function") EN.engine.mergeStrain(ch);
   }
 
   /* ---- persistence ------------------------------------------------------ */

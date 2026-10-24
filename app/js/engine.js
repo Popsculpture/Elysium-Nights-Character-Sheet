@@ -599,8 +599,23 @@ EN.engine = (function () {
     var t = (R.sizeTraits || {})[size];
     return t ? (t.encumbrance || 0) : 0;
   }
+  /* The Level 4 Awakening slot (ch.awakeningEvolution). It holds a Lineage Evolution by name (a
+     string, the long-standing shape), or, since the 2026-10-24 rulings (section 9 item 5: an
+     Additive Feature can be traded for a qualifying standard Talent), one of two objects:
+       { type: "evolution", evolution: "<feature name>" }   the same as the bare string
+       { type: "talent", talent: "<talent key>" }           the Evolution traded for a Talent
+     awakeningPick normalizes all three. activeLineageFeatures reads the evolution; activeTalents
+     reads the talent (at level 4). */
+  function awakeningPick(ch) {
+    var a = ch && ch.awakeningEvolution;
+    if (!a) return null;
+    if (typeof a === "string") return { type: "evolution", evolution: a };
+    if (typeof a === "object" && a.type === "talent" && a.talent) return { type: "talent", talent: a.talent };
+    if (typeof a === "object" && a.type === "evolution" && a.evolution) return { type: "evolution", evolution: a.evolution };
+    return null;
+  }
   // All active lineage Additive Features: creation pick + Universal-Upgrade
-  // evolution picks + the Level 4 Awakening evolution.
+  // evolution picks + the Level 4 Awakening evolution (unless it was traded for a Talent).
   function activeLineageFeatures(ch) {
     var names = (ch.lineageFeatures || []).slice();
     var ups = ch.universalUpgrades || {};
@@ -608,7 +623,8 @@ EN.engine = (function () {
       var u = ups[k];
       if (u && u.type === "evolution" && u.evolution) names.push(u.evolution);
     });
-    if (ch.awakeningEvolution) names.push(ch.awakeningEvolution);
+    var awk = awakeningPick(ch);
+    if (awk && awk.type === "evolution") names.push(awk.evolution);
     return names.filter(function (n, i) { return names.indexOf(n) === i; });
   }
 
@@ -2108,6 +2124,13 @@ EN.engine = (function () {
         seen[t.key] = 1;
         out.push({ level: Number(lvl) || 1, talent: t });
       });
+    // the Awakening slot traded for a standard Talent ({ type: "talent", talent: key }), at Level 4
+    var awk = awakeningPick(ch);
+    if (awk && awk.type === "talent") {
+      var at = talentRow(awk.talent);
+      if (at && !seen[at.key]) { seen[at.key] = 1; out.push({ level: 4, talent: at, awakening: true }); }
+      out.sort(function (a, b) { return a.level - b.level; });
+    }
     return out;
   }
   /* The slots that hold a Talent some EARLIER slot already holds. They are spent
@@ -2839,13 +2862,15 @@ EN.engine = (function () {
     if (rackedGear && whole) total = Math.max(0, total - 1);
     return total;
   }
-  /* PACKED IT LOG. When an on-person entry leaves your person for good (the Dropped carry choice, a
-     drop from the stash, a donation), Packed It still counts its Load, so the sheet notes it beside
-     the Load you carry now: ch.loadDropped = [{ name, load }]. Call it on the draft `c` inside
+  /* PACKED IT LOG. When an on-person entry leaves your person for good (a drop, a drop from the
+     stash, a donation), Packed It still counts its Load, so the sheet notes it beside the Load you
+     carry now: ch.loadDropped = [{ name, load, key?, unit? }] (drop() rows also carry `unit`, a copy
+     of the dropped unit, so PICK UP can put it back). The Dropped carry choice is retired (2026-10-24
+     rulings, section 9 item 10); old saves' Dropped items are migrated into this log. Call it on the draft `c` inside
      store.update BEFORE the entry's carry or quantity changes. A Load 0 entry changes nothing and is
      not logged. Returns the Load logged (0 when nothing was).
-     The Dropped carry choice (no `units`) leaves the entry in your gear, Stashed, so it can be
-     picked back up; its row also carries the entry's key ({ name, load, key }). A revealed item
+     A call with no `units` leaves the entry in your gear, Stashed, so it can be picked back up;
+     its row also carries the entry's key ({ name, load, key }). A revealed item
      counts against the budget once ("for the rest of the run"), so one entry keeps one row: a stale
      row for the same key is replaced, not doubled. Units that drop() takes out of your gear are gone
      for good and their rows carry no key. */
@@ -2922,7 +2947,8 @@ EN.engine = (function () {
        because Packed It still counts them. The second is your Load Budget." So the sheet keeps two
        totals. `current` (drops subtract) is what Encumbrance reads; `revealed` (drops do NOT subtract)
        is what Packed It counts against the Load Budget. The dropped log is ch.loadDropped, rows of
-       { name, load } written by the Dropped carry choice and by inventory drop(); absent means none.
+       { name, load, key?, unit? } written by inventory drop() (and by the migration of the retired
+       Dropped carry choice); absent means none.
        A row whose entry (by key) is on your person again is already in `current`, so it is skipped
        here whichever door put the entry back (unlogDropped removes it on the sheet's own doors). */
     var dropped = 0, droppedItems = [];
@@ -4226,9 +4252,13 @@ EN.engine = (function () {
       // The Icon's Parasocial Pact: add half the Mystique modifier (rounded up,
       // minimum 0) to maximum FP, on top of the Charm-based Flow Modifier.
       var pactBonus = ch.subclass === "icon" ? Math.max(0, Math.ceil(attributes.MYS.mod / 2)) : 0;
-      var strainStage = clamp((ch.flow && ch.flow.strain) || 0, 0, 5);
+      var strainStage = strainOf(ch);   // the one Strain value (2026-10-24 rulings, item 8)
       var stInfo = (EN.flow && EN.flow.strainTrack) ? EN.flow.strainTrack[strainStage - 1] : null;
-      var strainIgnored = strainStage >= 1 && strainStage <= 2 && classFeatureUnlocked(ch, "Absolute Conduit");
+      /* Absolute Conduit ignores Ripple and Wave at every Stage (2026-10-24 rulings, item 3), so
+         `conduit` is the feature itself and `strainIgnored` says the Stage held is wholly ignored
+         (Stage 1 or 2). From Stage 3 up only Surge and higher apply. */
+      var conduit = classFeatureUnlocked(ch, "Absolute Conduit");
+      var strainIgnored = strainStage >= 1 && strainStage <= 2 && conduit;
       flow = {
         attribute: fAttr, attributeName: flowAttrName,
         max: Math.max(0, cal * 3 + fMod + pactBonus - chromeTax.fpPenalty), dc: 8 + fMod + cal,
@@ -4248,17 +4278,21 @@ EN.engine = (function () {
         strainPenalty: stInfo ? stInfo.penalty : null,
         breakflowDC: 12 + strainStage,
         overdrawDie: strainStage >= 3 ? 6 : 4,     // Surge: 1d6 per FP instead of 1d4
-        fpSurcharge: strainIgnored ? 0 : (strainStage >= 2 ? 1 : 0),   // Wave: every Invocation costs +1 FP
+        fpSurcharge: conduit ? 0 : (strainStage >= 2 ? 1 : 0),   // Wave: every Invocation costs +1 FP
         precisionFp: strainStage >= 3 ? 2 : 1,     // Surge: Precision Shaping costs 2 FP
-        snagInvoke: strainIgnored ? false : strainStage >= 1,          // Ripple: Snag on all Invocation rolls
+        snagInvoke: conduit ? false : strainStage >= 1,          // Ripple: Snag on all Invocation rolls
         /* Absolute Conduit (Shaper, Level 9), Strain Resistance: "You completely ignore the
-           mechanical penalties of Stage 1 Strain (Ripple) and Stage 2 Strain (Wave). Penalties only
-           begin at Stage 3 (Surge)." So at Stage 1 or 2 the Ripple Snag and the Wave FP are off and
-           from Stage 3 up nothing changes. Strain the Harmonist's Burden of the Earth transfers is
-           treated as Overdraw Strain and "can't be ignored by the Absolute Conduit feature's Strain
-           Resistance": the note says so, and the sheet cannot tell transferred Strain from any other. */
+           mechanical penalties of Stage 1 Strain (Ripple) and Stage 2 Strain (Wave) at any Stage.
+           Penalties only begin at Stage 3 (Surge)." (2026-10-24 rulings, item 3.) The Ripple Snag
+           and the Wave FP are off at every Stage; at Stage 3 and up only Surge and higher apply
+           (`strainFrom` is the first Stage whose effects count). Strain the Harmonist's Burden of
+           the Earth transfers is treated as Overdraw Strain and "can't be ignored by the Absolute
+           Conduit feature's Strain Resistance": the note says so, and the sheet cannot tell
+           transferred Strain from any other. */
+        absoluteConduit: conduit,
+        strainFrom: conduit ? 3 : 1,
         strainIgnored: strainIgnored,
-        strainIgnoredNote: strainIgnored
+        strainIgnoredNote: (conduit && strainStage >= 1)
           ? "Burden of the Earth: Strain transferred this way is treated as if caused by Overdraw and can't be ignored by the Absolute Conduit feature's Strain Resistance."
           : null,
         inBreakflow: !!(ch.flow && ch.flow.breakflow),
@@ -4562,7 +4596,7 @@ EN.engine = (function () {
     var baseFp = intentFp + delFp + forceFp + et + es + (precOn ? 1 : 0);
 
     /* live cost: Wave (+1 FP to everything) and Surge (Precision costs 2 FP) */
-    var waveFp = (stage >= 2 && !flow.strainIgnored) ? 1 : 0;   // Absolute Conduit ignores Stage 1 and 2
+    var waveFp = (stage >= 2 && !flow.absoluteConduit) ? 1 : 0;   // Absolute Conduit ignores Wave at every Stage
     var precSurge = (precOn && stage >= 3) ? 1 : 0;
     if (waveFp) add("Strain: Wave (+1 FP)", waveFp);
     if (precSurge) add("Strain: Surge (Precision +1 FP)", precSurge);
@@ -4657,6 +4691,79 @@ EN.engine = (function () {
     else { d12 = points - 5; d10 = 7 - d12; }
     return poolShape("snag", points, d10, d12);
   }
+  /* ---- ONE STRAIN VALUE (2026-10-24 rulings, section 9 item 8) ----------------------
+     ch.flow.strain is the only Strain Stage. The Flow tab's tracker writes it, the Strain
+     condition on Status Changes is drawn from it (never stored in ch.conditions any more),
+     and Long Rest, Downtime, Ritual Recovery and the Breakflow restorations change it.
+     A save from before the merge can still carry a "Strain" entry in ch.conditions with its
+     own level: strainOf reads the higher of the two, and mergeStrain folds the old entry
+     into ch.flow.strain (taking the higher) and removes it. mergeStrain is idempotent and
+     every Strain write runs it first, so the old entry is gone after the first write. */
+  function legacyStrainLevel(ch) {
+    if (!ch || (ch.conditions || []).indexOf("Strain") === -1) return 0;
+    return clamp(((ch.conditionLevels || {}).Strain | 0) || 1, 1, 5);
+  }
+  function strainOf(ch) {
+    var own = clamp(((ch && ch.flow && ch.flow.strain) | 0), 0, 5);
+    return Math.max(own, legacyStrainLevel(ch));
+  }
+  function mergeStrain(c) {
+    if (!c) return 0;
+    var legacy = legacyStrainLevel(c);
+    c.flow = c.flow || { current: null, strain: 0, strainPoints: 0, sustained: null, breakflow: false, patterns: [] };
+    var own = clamp((c.flow.strain | 0), 0, 5);
+    if ((c.conditions || []).indexOf("Strain") !== -1) {
+      c.conditions = c.conditions.filter(function (n) { return n !== "Strain"; });
+      if (c.conditionLevels) delete c.conditionLevels.Strain;
+    }
+    if (legacy > own) {
+      c.flow.strain = legacy;
+      // the old condition at 5 was Collapse, which is Breakflow
+      if (legacy >= 5) { c.flow.breakflow = true; c.flow.sustained = null; }
+    }
+    return clamp((c.flow.strain | 0), 0, 5);
+  }
+  /* A hand set of the Stage (the Flow tab's track, the Status Changes stepper and Remove):
+     Stage 5 is Collapse and turns Breakflow on; setting it below 5 by hand turns it off, as
+     the Flow tab's track always has. Removing a Stage clears the partial Strain points. */
+  function setStrainStage(c, n) {
+    var was = mergeStrain(c);
+    n = clamp(n | 0, 0, 5);
+    c.flow.strain = n;
+    if (n < was) c.flow.strainPoints = 0;
+    if (n < 5) c.flow.breakflow = false; else { c.flow.breakflow = true; c.flow.sustained = null; }
+    return n;
+  }
+
+  /* ---- WHICH COSTS A RESULT OFFERS (2026-10-24 rulings, section 9 item 1) -----------
+     Every entry in Consequence by Scene Type and Social Cost Options is tagged scene-bound
+     or lasting (data/resolution.js). A Costly Success offers only the scene-bound ones; a
+     Mixed Result (and any other priced result) offers either. A social scene offers its
+     Consequence by Scene Type row and the Social Cost Options (the book sends a social Dice
+     Pool's Costly and Mixed results there). `scene` is a row key (physical, social, grid,
+     flow, crafting) or a scene name; `tier` is "costly", "mixed", "failure" or "critical". */
+  function sceneCosts(scene, tier) {
+    var Rz = EN.resolution || {};
+    var rows = Rz.consequenceByScene || [];
+    var key = String(scene || "").toLowerCase();
+    var row = rows.filter(function (r) {
+      return r.key === key || String(r.scene).toLowerCase() === key || (key && String(r.scene).toLowerCase().indexOf(key) !== -1);
+    })[0] || null;
+    var costlyOnly = tier === "costly";
+    function keep(c) { return !costlyOnly || c.tag === "scene-bound"; }
+    var out = [];
+    if (row) (row.costs || []).forEach(function (c) {
+      if (keep(c)) out.push({ cost: c.cost, tag: c.tag, from: row.scene });
+    });
+    if (row && row.key === "social") ((Rz.social && Rz.social.costs) || []).forEach(function (c) {
+      if (keep(c)) out.push({ cost: c.cost, tag: c.tag, effect: c.effect, from: "Social Cost Options" });
+    });
+    return { scene: row ? row.scene : null, key: row ? row.key : null, tier: tier, costlyOnly: costlyOnly,
+             sceneBound: out.filter(function (c) { return c.tag === "scene-bound"; }),
+             lasting: out.filter(function (c) { return c.tag === "lasting"; }),
+             all: out };
+  }
+
   function rollDicePool(pool) {
     var rolls = [], total = 0;
     function throwDie(sides) {
@@ -4813,6 +4920,8 @@ EN.engine = (function () {
   return {
     derive: derive, mod: mod, caliber: caliber, fmtMod: fmtMod, clamp: clamp,
     buildEdgePool: buildEdgePool, buildSnagPool: buildSnagPool, snagFromDc: snagFromDc, rollDicePool: rollDicePool, rollD20: rollD20,
+    // the one Strain value and the scene cost picker (2026-10-24 rulings, items 8 and 1)
+    strainOf: strainOf, mergeStrain: mergeStrain, setStrainStage: setStrainStage, sceneCosts: sceneCosts,
     composeRollSpec: composeRollSpec, rollDamage: rollDamage,
     // the one payout splitter, shared by the player's SPLIT panel and the GM's Payroll
     splitPayout: splitPayout,
@@ -4830,7 +4939,7 @@ EN.engine = (function () {
     trainingBudget: trainingBudget,
     gearFloorTier: gearFloorTier, effectiveGearTier: effectiveGearTier,
     sizeFromHeightFt: sizeFromHeightFt, lineageHeightFt: lineageHeightFt,
-    activeLineageFeatures: activeLineageFeatures, splitTalentText: splitTalentText, leaseLapsed: leaseLapsed, premiumOn: premiumOn, premiumBonus: premiumBonus, itemLoad: itemLoad, entryLoadNow: entryLoadNow, logDropped: logDropped, unlogDropped: unlogDropped,
+    activeLineageFeatures: activeLineageFeatures, awakeningPick: awakeningPick, activeTalents: activeTalents, splitTalentText: splitTalentText, leaseLapsed: leaseLapsed, premiumOn: premiumOn, premiumBonus: premiumBonus, itemLoad: itemLoad, entryLoadNow: entryLoadNow, logDropped: logDropped, unlogDropped: unlogDropped,
     // THE resolver for which attribute a Talent raised, and the one enumeration of every
     // post-creation attribute bump. effectiveAttributes sums attrBumpSources rather than
     // walking the upgrade slots itself, so no surface can disagree about what bumped what.

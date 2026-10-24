@@ -21,6 +21,14 @@
    with no bonus; the group average rounds down, toward the worse result (floor); the
    d20 list covers Cipher Attacks and Quick Hacks against a Node, and a Quick Hack adds
    the Device Bonus.
+   2026-10-24 rulings, section 9 (item 1): every entry in Consequence by Scene Type and
+   Social Cost Options carries a tag, "scene-bound" (paid in the scene) or "lasting" (it
+   leaves the scene with you). A Costly Success offers only the scene-bound ones; a Mixed
+   Result offers either. `consequences` stays the book's line word for word; `costs` is the
+   same line split into its entries, each tagged. Tables that set their own results
+   (Progress, healing, stabilization, the Nixie's ask) keep their printed rows. EN.engine
+   .sceneCosts(scene, tier) is the one reader. Item 11: examples[1] (never rendered, in no
+   export) is deleted. Item 18: the Contested Action formula reads as the 24 October export.
    No em or en dashes anywhere in this file (house style).
    =========================================================================== */
 window.EN = window.EN || {};
@@ -89,7 +97,7 @@ EN.resolution = {
       { type: "Flow Attack", formula: "d20 + Flow Modifier + Caliber", target: "vs Defense" },
       { type: "Flow Save DC", formula: "8 + Flow Modifier + Caliber", target: "vs DC set by attacker or effect" },
       { type: "Quick Hack", formula: "d20 + Tech Modifier + Systems Proficiency Bonus + Device Bonus", target: "vs system DC" },
-      { type: "Contested Action", formula: "Both roll d20 + modifiers + their Skill, Weapon, Systems, or Vehicle Proficiency Bonus", target: "Higher total wins" }
+      { type: "Contested Action", formula: "Both roll d20 + modifiers + the relevant Proficiency Bonus", target: "Higher total wins" }
     ],
     crits: [
       { roll: "Natural 20", effect: "An attack is a critical hit: it counts as at least a Strong Hit and triggers any weapon or Invocation crit effect. Skill checks can only achieve critical success results if you have appropriate tools, gear, or situational advantages. Otherwise, treat the roll as a normal success." },
@@ -182,28 +190,36 @@ EN.resolution = {
       { margin: "-3 or worse", result: "Critical Failure", desc: "The attempt collapses, causes harm, or invites backlash. Immediate escalation." }
     ],
     sceneRule: "Match the cost to the scene every time. Physical scenes produce physical costs. Social scenes produce social costs. Technical scenes produce digital or logistical costs. Flow scenes produce resonance instability or backlash.",
-    costlyRule: "A Costly Success is paid for in the scene: time, noise, a consumable or material, a favor someone owed you, the sway you brought, a witness who'll remember. The player picks one from the scene's row in Consequence by Scene Type, and the GM can veto one that doesn't fit. The test is whether the cost leaves the scene with you. If it does (Fatigue, Strain, Trace, Debt, a Profile, a Faction Shift), it's a Mixed Result's price, not a Costly one. Tables that set their own results, such as Progress, healing, and stabilization, already price each row: there, the row is the whole result."
+    costlyRule: "A Costly Success is paid for in the scene: time, noise, a consumable or material, a favor someone owed you, the sway you brought, a witness who'll remember. The player picks one from the scene's row in Consequence by Scene Type, and the GM can veto one that doesn't fit. The test is whether the cost leaves the scene with you. If it does (Fatigue, Strain, Trace, Debt, a Profile, a Faction Shift), it's a Mixed Result's price, not a Costly one. Tables that set their own results, such as Progress, healing, and stabilization, already price each row: there, the row is the whole result.",
+    /* APP NOTE, not book text: the tag line the Codex prints under Consequence by Scene Type and
+       Social Cost Options (2026-10-24 rulings, section 9 item 1). */
+    costTagNote: "Scene-bound costs are paid in the scene: a Costly Success or a Mixed Result can take one. Lasting costs leave the scene with you: only a Mixed Result can take one."
   },
 
   consequenceByScene: [
-    { scene: "Physical / Exploration", consequences: "Lose time, make noise, spend gear, suffer 1 Fatigue from exertion, lose position, trigger a hazard" },
-    { scene: "Social / Negotiation", consequences: "Owe a favor, concede terms, reveal what gives you sway, gain scrutiny, earn a Profile, worsen faction posture" },
-    { scene: "Hacking / #GRID", consequences: "Gain Trace, alert ICE, lose access, burn a tool, expose your location, trigger a counter-intrusion" },
-    { scene: "Flow / Resonance", consequences: "Gain 1 Strain, distort the environment, destabilize the effect, attract attention, reveal your resonance signature" },
-    { scene: "Crafting / Technical", consequences: "Waste materials, reduce quality, increase time, require a replacement part, create instability" }
+    { key: "physical", scene: "Physical / Exploration", consequences: "Lose time, make noise, spend gear, suffer 1 Fatigue from exertion, lose position, trigger a hazard",
+      costs: [{ cost: "Lose time", tag: "scene-bound" }, { cost: "make noise", tag: "scene-bound" }, { cost: "spend gear", tag: "scene-bound" }, { cost: "suffer 1 Fatigue from exertion", tag: "lasting" }, { cost: "lose position", tag: "scene-bound" }, { cost: "trigger a hazard", tag: "scene-bound" }] },
+    { key: "social", scene: "Social / Negotiation", consequences: "Owe a favor, concede terms, reveal what gives you sway, gain scrutiny, earn a Profile, worsen faction posture",
+      costs: [{ cost: "Owe a favor", tag: "lasting" }, { cost: "concede terms", tag: "scene-bound" }, { cost: "reveal what gives you sway", tag: "scene-bound" }, { cost: "gain scrutiny", tag: "scene-bound" }, { cost: "earn a Profile", tag: "lasting" }, { cost: "worsen faction posture", tag: "lasting" }] },
+    { key: "grid", scene: "Hacking / #GRID", consequences: "Gain Trace, alert ICE, lose access, burn a tool, expose your location, trigger a counter-intrusion",
+      costs: [{ cost: "Gain Trace", tag: "lasting" }, { cost: "alert ICE", tag: "scene-bound" }, { cost: "lose access", tag: "scene-bound" }, { cost: "burn a tool", tag: "scene-bound" }, { cost: "expose your location", tag: "scene-bound" }, { cost: "trigger a counter-intrusion", tag: "scene-bound" }] },
+    { key: "flow", scene: "Flow / Resonance", consequences: "Gain 1 Strain, distort the environment, destabilize the effect, attract attention, reveal your resonance signature",
+      costs: [{ cost: "Gain 1 Strain", tag: "lasting" }, { cost: "distort the environment", tag: "scene-bound" }, { cost: "destabilize the effect", tag: "scene-bound" }, { cost: "attract attention", tag: "scene-bound" }, { cost: "reveal your resonance signature", tag: "scene-bound" }] },
+    { key: "crafting", scene: "Crafting / Technical", consequences: "Waste materials, reduce quality, increase time, require a replacement part, create instability",
+      costs: [{ cost: "Waste materials", tag: "scene-bound" }, { cost: "reduce quality", tag: "scene-bound" }, { cost: "increase time", tag: "scene-bound" }, { cost: "require a replacement part", tag: "scene-bound" }, { cost: "create instability", tag: "scene-bound" }] }
   ],
 
   social: {
     intro: "Social scenes do not leave bruises. They leave debts, doubts, and a face the room remembers. When a social Dice Pool roll ends in a Mixed Result or a Costly Success, reach for these before you reach for Fatigue.",
     costs: [
-      { cost: "Concession", effect: "You get what you want, but must give up a term, price, timeline, favor, or sway." },
-      { cost: "Debt", effect: "You now owe the Target a favor, payment, introduction, future service, or operational support." },
-      { cost: "Tipped Hand", effect: "You reveal more than intended: your motive, urgency, affiliation, weakness, or relationship." },
-      { cost: "Scrutiny", effect: "The scene attracts attention from witnesses, rivals, handlers, security, or faction observers." },
-      { cost: "Profile", effect: "Your Profile takes a hit: Pushy, Desperate, Unreliable, Bought, or Difficult." },
-      { cost: "Faction Shift", effect: "One faction, office, or social circle shifts colder, more suspicious, or more transactional toward you." },
-      { cost: "Complication Clause", effect: "The deal holds, but carries a hidden obligation, audit trigger, exclusivity term, or future claim." },
-      { cost: "Lost Face", effect: "You succeed, but your standing slips. Future social checks with this Target or audience suffer Snag until the situation changes." }
+      { cost: "Concession", tag: "scene-bound", effect: "You get what you want, but must give up a term, price, timeline, favor, or sway." },
+      { cost: "Debt", tag: "lasting", effect: "You now owe the Target a favor, payment, introduction, future service, or operational support." },
+      { cost: "Tipped Hand", tag: "scene-bound", effect: "You reveal more than intended: your motive, urgency, affiliation, weakness, or relationship." },
+      { cost: "Scrutiny", tag: "scene-bound", effect: "The scene attracts attention from witnesses, rivals, handlers, security, or faction observers." },
+      { cost: "Profile", tag: "lasting", effect: "Your Profile takes a hit: Pushy, Desperate, Unreliable, Bought, or Difficult." },
+      { cost: "Faction Shift", tag: "lasting", effect: "One faction, office, or social circle shifts colder, more suspicious, or more transactional toward you." },
+      { cost: "Complication Clause", tag: "lasting", effect: "The deal holds, but carries a hidden obligation, audit trigger, exclusivity term, or future claim." },
+      { cost: "Lost Face", tag: "lasting", effect: "You succeed, but your standing slips. Future social checks with this Target or audience suffer Snag until the situation changes." }
     ],
     falloutRule: "Social scenes should create obligation, visibility, a hold over someone, damaged trust, worsened terms, or changing relationships, not default physical penalties. Use Fatigue in a social scene only when the fiction genuinely involves exhaustion, deprivation, mental overload, prolonged interrogation, sleeplessness, or another form of real wear."
   },
@@ -307,7 +323,6 @@ EN.resolution = {
 
   examples: [
     "An expert operator rolls 22 vs DC 12, a margin of +10. That is a Flawless Success. They finish the job early and gain an advantage in the next encounter.",
-    "A field medic rolls a +2 margin in a Dice Pool. That is a Costly Success. The repair works, but consumes rare materials.",
     "A negotiator rolls a Mixed Result while persuading a guard. The guard agrees, but the negotiator takes the Profile Pressured the Gate, and the office remembers their face.",
     "Two rival hackers race to breach a server. One rolls 8 net successes, the other 5. The winner holds a +3 margin: a Dominant Victory that locks out their rival."
   ]

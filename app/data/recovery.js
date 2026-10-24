@@ -27,6 +27,8 @@
    Breakflow Restoration are kept as the book lists them among the rests, but
    their full rules are EN.flow's (the Flow chapter), so `inFlowChapter` marks
    the bullets that chapter already shows.
+   2026-10-24 rulings, section 9 item 7: Ritual Recovery runs "10 minutes to 2 hours" (the
+   Ritual of Alignment's longest row is 2 Hours since the Stage 5 row left).
 
    No em or en dashes anywhere in this file (house style).
    =========================================================================== */
@@ -187,7 +189,7 @@ EN.recovery = {
         "Reset the sleep clock. This is where the sleeping happens, or the maintenance cycle, for Clankers. (See Deprivation under Environmental Hazards.)"
       ],
       flavor: "A real night's sleep, somewhere safe enough to take your boots off. You wake up closer to whole." },
-    { key: "ritual", name: "Ritual Recovery", duration: "10 minutes to 4 hours, scaling with current Strain Stage",
+    { key: "ritual", name: "Ritual Recovery", duration: "10 minutes to 2 hours, scaling with current Strain Stage",
       lines: [
         "A Shaper realigns their resonance through guided meditation and a **Flow Dice Pool check**, reducing Strain and recovering Flow Points.",
         "Duration, Snag Dice, and full resolution (Flawless / Costly / Mixed / Failure) are governed by **The Ritual of Alignment** (see The Flow).",
