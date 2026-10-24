@@ -27,6 +27,12 @@
    Ownership, upkeep, repair, mods and the profile stat lines are Part 3 and
    live in EN.vehicles (app/data/vehicles.js); this file does not repeat them.
 
+   19 October 2026 playtest audit (round 7, group social): the Player's Handbook dropped the
+   Core Concepts table, the Vehicle Proficiencies intro line and the "In Play" column, so they
+   are gone from this file; the Rigging line follows the Handbook (a Datajack, no Rigger);
+   `chase.handbook` holds the Handbook's own chase lines for the Freelancer desktop, where the
+   Toolkit's longer chase rules (the rest of `chase`) are the Admin desktop's.
+
    The words are the book's, unescaped from the export. Where the book opens
    a paragraph with a bold run-in label ("**Tilt.**", "**Defense.**"), the
    label is the entry's `name` and `text` is the rest of the paragraph, so
@@ -40,16 +46,10 @@ window.EN = window.EN || {};
 EN.chases = {
   intro: "In Elysium, a reliable ride is the line between a clean exit and bleeding out under a streetlight. Vehicles are mobile cover, weapon platforms, rolling network Nodes with their own digital reflections. Engine noise and tire scream are as much a part of life here as cyberware and the #GRID.",
 
-  /* ---- Core Concepts ---------------------------------------------------- */
-  coreConcepts: [
-    { term: "Handling",   text: "The vehicle's responsiveness, applied as a modifier to piloting checks." },
-    { term: "Structure",  text: "The vehicle's damage threshold. Hits below it bounce; hits at or above it land in full." },
-    { term: "Integrity",  text: "The structural health of the vehicle. When it reaches 0, the vehicle is Wrecked." },
-    { term: "Impact DC",  text: "A single DC, keyed to speed, for crash checks and every save a collision forces." },
-    { term: "Lead",       text: "An abstract measure of distance and momentum used to resolve chases." },
-    { term: "System Hit", text: "A concrete blow to a rival vehicle (a tire, a rotor, an engine) that moves Lead by itself." },
-    { term: "Rigging",    text: "Direct neural control of a vehicle via cyberware, bypassing manual inputs." }
-  ],
+  /* The Core Concepts table that stood here (seven terms) is gone: the Player's Handbook's
+     Vehicles and Chases chapter opens with the intro and the Vehicle Stat Blocks and Categories
+     (PHB, Vehicle Stat Blocks and Categories) and has no Core Concepts (19 October 2026 audit,
+     social W10). */
 
   /* ---- Vehicle Stat Blocks and Categories -------------------------------- */
   statBlocksIntro: "Every vehicle comes down to the same handful of numbers, and those numbers decide what it does the moment someone starts shooting.",
@@ -110,8 +110,9 @@ EN.chases = {
   },
 
   /* ---- Vehicle Proficiencies (Part 1, Skills and Proficiencies > Gear Proficiencies) */
+  /* The book's table is CATEGORY / WHAT IT COVERS / EXAMPLES only (PHB, Vehicle Proficiencies):
+     the intro line and the "In Play" column the draft had are gone (19 October 2026 audit, social W10). */
   proficiencies: {
-    intro: "Vehicle Proficiencies tell you what you are actually trained to drive or pilot.",
     rule: "If you have the right Vehicle Proficiency, you can operate that vehicle class normally. If you don't, it depends on what you're climbing into. Anyone can turn a key or point a skiff across a flooded sector. Flying, piloting a frame, or leaving the atmosphere is different: without training you can't operate the vehicle at all, unless the GM rules that one is simple enough to try anyway. Whenever you do try untrained, you roll with **Snag**, and a failure tends to create bigger problems, especially while piloting under stress.",
     /* The categories an Untrained pilot can't operate at all, from Operating a Vehicle:
        "An Untrained Character can't operate an Aerial, Industrial / Mechs, or Starcraft
@@ -121,16 +122,11 @@ EN.chases = {
        The Garage (inventory.js garageBench) reads this list, not one of its own. */
     untrainedBarred: ["Aerial Vehicles", "Industrial / Mechs", "Starcraft"],
     rows: [
-      { category: "Ground Vehicles", covers: "Wheeled, tracked, or hovering transport built for streets and off-road terrain.", examples: "Street bikes, armored sedans, scavenged buggies, cargo haulers",
-        inPlay: "The standard for urban getaways and wasteland smuggling. High availability, but heavily restricted by traffic, barricades, and physical terrain." },
-      { category: "Aerial Vehicles", covers: "Atmospheric flight craft relying on rotors, thrusters, or anti-grav tech.", examples: "Surveillance drones, corporate VTOLs, smuggling gliders, interceptors",
-        inPlay: "Bypasses ground hazards and borders, but highly visible. Requires three-dimensional spatial awareness and leaves you vulnerable to anti-air systems." },
-      { category: "Marine Vehicles", covers: "Surface and submersible watercraft designed for coastal, ocean, or flooded ruin traversal.", examples: "Gunboats, smuggler submersibles, salvage barges, hovercraft",
-        inPlay: "Essential for navigating flooded sectors and bypassing bridge checkpoints. Demands knowledge of currents, buoyancy, and environmental seals." },
-      { category: "Industrial / Mechs", covers: "Heavy bipedal frames, walkers, and heavy machinery built for labor or siege.", examples: "Cargo loaders, salvage mechs, riot suppression frames, construction rigs",
-        inPlay: "Trades speed for overwhelming mass and armor. Operating these requires managing massive inertia, hydraulic limits, and complex safety overrides." },
-      { category: "Starcraft", covers: "Void-capable vessels engineered for orbital transit, vacuum combat, and re-entry.", examples: "Orbital shuttles, system fighters, corporate corvettes, drop pods",
-        inPlay: "The peak of complex piloting. Demands strict adherence to vacuum safety, orbital navigation, and managing zero-gravity momentum." }
+      { category: "Ground Vehicles", covers: "Wheeled, tracked, or hovering transport built for streets and off-road terrain.", examples: "Street bikes, armored sedans, scavenged buggies, cargo haulers" },
+      { category: "Aerial Vehicles", covers: "Atmospheric flight craft relying on rotors, thrusters, or anti-grav tech.", examples: "Surveillance drones, corporate VTOLs, smuggling gliders, interceptors" },
+      { category: "Marine Vehicles", covers: "Surface and submersible watercraft designed for coastal, ocean, or flooded ruin traversal.", examples: "Gunboats, smuggler submersibles, salvage barges, hovercraft" },
+      { category: "Industrial / Mechs", covers: "Heavy bipedal frames, walkers, and heavy machinery built for labor or siege.", examples: "Cargo loaders, salvage mechs, riot suppression frames, construction rigs" },
+      { category: "Starcraft", covers: "Void-capable vessels engineered for orbital transit, vacuum combat, and re-entry.", examples: "Orbital shuttles, system fighters, corporate corvettes, drop pods" }
     ]
   },
 
@@ -197,6 +193,20 @@ EN.chases = {
 
   /* ---- Chase Rules ------------------------------------------------------ */
   chase: {
+    /* The Player's Handbook's own lines for the rest of the chase (PHB, Chase Rules, after the Lead
+       table: the crew paragraph, Heat, on foot). The Handbook keeps these and nothing else of the
+       Toolkit's longer rules, so the Freelancer desktop reads these where the Admin desktop reads the
+       Toolkit's: first response and Pursuit Escalation, the System Hits list and cap, the Edge and
+       Snag details, Mixed chases and #GRID traces (js/codex_chases.js, 19 October 2026 audit, social
+       W1). `systemHit` is the last sentence of the Handbook's crew paragraph, `straightaway` the
+       last sentence of its Chase Check paragraph. */
+    handbook: {
+      crew: "A successful, plausible crew action (suppressive fire, a countermeasure, a Quick Hack) grants your pilot Edge or the rival Snag. Help doesn't stack on a d20 Chase Check, and caps at +2 Edge Dice in a pool.",
+      systemHit: "A System Hit (a vehicle first dropping below half Integrity, or a critical hit taken as one) moves Lead 1 at once, at most 1 step per round per side.",
+      heat: "A loud, public chase adds +1 Heat with whoever owns the territory, +1 more for a crash, casualties, or property nobody can ignore. Escaping never reduces it.",
+      onFoot: "On foot, the Chase Check is d20 + Agility Modifier + Athletics or Acrobatics Proficiency Bonus.",
+      straightaway: "On a straightaway, the strictly higher Speed rating gains Edge; Handling doesn't count."
+    },
     intro: "High-speed pursuits use the Lead system to track distance and momentum without requiring a rigid tactical map. Lead is an abstract scale measuring the gap between the fleeing Target and the pursuing Character.",
     lead: [
       { lead: 0, band: "Contact", gap: "0 to 1. Adjacent; ramming and boarding are possible." },
@@ -305,7 +315,8 @@ EN.chases = {
       { name: "Improved and higher Nodes (Armored Transports, Corporate VTOLs)", text: "These systems carry a Firewall and System Integrity, so a Codebreaker must chew through them first. Once breached, the **Codebreaker** can hijack the mounted weapons, falsify sensor readouts, or force the vehicle to brake aggressively." }
     ],
     inChase: "In a chase, these intrusions plug into the crew rules: a successful Quick Hack tilts the round, a Dominant success or a system-disabling cipher lands a System Hit, and Puppet Vehicle hands the Chase Check itself to the hacker. A vehicle can also mount a Firewall of its own; see Vehicle Customization.",
-    riggingIntro: "A Rigger, or any Freelancer carrying a Neural Interface (Datajack), can plug their nervous system straight into a vehicle's diagnostic array.",
+    // PHB, Rigging and Cyberware: a Datajack and nothing else (the 19 October 2026 audit, social W9; no Rigger branch)
+    riggingIntro: "Any Freelancer carrying a Neural Interface (Datajack) can plug their nervous system straight into a vehicle's diagnostic array.",
     rigging: [
       { name: "Direct Drive", text: "While hardwired into the chassis, the Freelancer uses their Tech Modifier instead of their Agility Modifier for all piloting checks." },
       { name: "Machine Symbiosis", text: "The vehicle becomes their body. They gain Edge on all piloting checks, but any severe physical damage the vehicle sustains forces the Freelancer to make a Stability Check (DC 10, or half the damage the vehicle took that turn, whichever is higher) or suffer the psychic backlash as LinkDeath." }

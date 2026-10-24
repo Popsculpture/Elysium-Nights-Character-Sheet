@@ -39,7 +39,7 @@ EN.flow = {
   delivery: [
     { key: "directed", band: "Directed", fp: 0, precision: false, scaling: "+1 FP per additional target",
       options: ["Touch", "Remote", "Imbue"],
-      desc: "Affects a single target through physical or visual contact. Remote reaches a target you can see (typically 6 spaces)." },
+      desc: "Affects a single target through physical or visual contact. Remote reaches a target you can see (typically 6 spaces). Imbue: The Shaper weaves the resonance into an object or weapon. The effect remains dormant until the object makes contact with a target or the Shaper triggers it as a Free Action." },
     { key: "focused", band: "Focused Area", fp: 1, precision: true, scaling: "+1 FP per +1 space to one dimension",
       options: ["Cube (2 spaces)", "Sigil"],
       desc: "Anchors the Flow to a fixed point. Sigil triggers when a Character enters or interacts with it." },
@@ -62,8 +62,8 @@ EN.flow = {
   /* Stability Factor: sustained resonance is fragile. Taking damage while sustaining
      forces a Focus Check or the effect collapses. */
   focusDisruption: {
-    // A Focus Check is a Body Save (see the Critical Condition entry, which defines it).
-    save: "Focus Check (a Body Save)",
+    // PHB:8722: "you must succeed on a Wits or Body Saving Throw (Shaper's choice)".
+    save: "Focus Check (a Wits or Body Save, your choice)",
     dc: 12,
     dcNote: "DC 12, or half the total damage taken that turn, whichever is higher.",
     failure: "The sustained effect ends immediately as the Flow destabilizes.",
@@ -71,7 +71,7 @@ EN.flow = {
   },
   precisionShaping: {
     fp: 1, fpStrain3: 2,
-    desc: "On Focused or Wide delivery, spend +1 FP to exclude up to your Flow Modifier in targets (characters or objects) you can see or sense. At Stage 3 Strain (Surge) or higher the cost rises to 2 FP."
+    desc: "On Focused or Wide delivery, spend +1 FP to exclude up to your Flow Modifier in targets (characters or objects) you can see or sense. At Stage 3 Strain (Surge) or higher the cost rises to 2 FP. Allies left unexcluded resolve the Invocation as hostile targets, and objects in the area take its damage like anything else it touches."
   },
   layeredForce: "Level 5 (Expanded Frequency): pay both Hybrid (1 FP) and Empowered Force (1 FP) on one Invocation for full Empowered damage AND the Resonance's Empowered Effect.",
 
@@ -94,7 +94,7 @@ EN.flow = {
         { name: "Structural Melt", sustain: true, text: "Soften physical cover or armor until it runs. For the duration, cover the target is using counts as one grade lower, and armor the target is wearing has its DR reduced by 1." },
         { name: "Thermal Fog", sustain: true, text: "Flood up to an Area 3 sphere with blinding steam or frost. The area becomes Heavily Obscured, blocking line of sight." }
       ] },
-    { key: "electromagnetic", name: "Electromagnetic", unlock: 1, focus: "Light and Currents", damage: "Electric / Energy",
+    { key: "electromagnetic", name: "Electromagnetic", unlock: 1, focus: "Charge, Magnetism, and Light", damage: "Electric / Energy",
       resolution: "attack",
       base: "Choose one: Magnetize (a target holding or wearing metal makes a Flow Save DC, Body or Agility, or the object tears free and loose metal leaps to your hand); Live Current (light a spark, deal 1 Electric damage to a target you touch or see, or push power into a dead device or rip it out of a live one; you can break or feed a machine, never command it); Flare (brighten a dark space to daylight, or lance a beam a target must make a Flow Save DC, Agility, to avoid or be dazzled, taking Snag on their next attack roll).",
       empowered: [
@@ -107,7 +107,7 @@ EN.flow = {
       targeting: "Applies to living and resonant targets. Against a Clanker it manifests through the resonance lattice. The mechanics are identical; only the fiction shifts.",
       base: "Choose one: Patch (a willing target regains 1d4 Vitality); Purge (remove one mundane toxin, drug, or low-severity bio-effect from a willing target); Faltering Pulse (an unwilling target makes a Flow Save DC, Body, or takes -1d4 on their next physical check or attack).",
       empowered: [
-        { name: "Adrenal Overclock", sustain: false, text: "Grant a willing target Edge on physical checks and a +2 bonus to Speed." },
+        { name: "Adrenal Overclock", sustain: false, text: "Grant a willing target Edge on physical checks and a +2 bonus to Speed until the end of their next turn." },
         { name: "Forceful Sedation", sustain: false, text: "Target makes a Flow Save DC (Body) or falls Unconscious. They wake on taking damage or being shaken awake by an adjacent ally's Action." },
         { name: "Cellular Crash", sustain: false, text: "Target makes a Flow Save DC (Body) or is Poisoned until the end of their next turn and can't benefit from Resilience Dice or self-healing." }
       ] },
@@ -184,7 +184,7 @@ EN.flow = {
   ],
   overdraw: {
     vitalityLoss: "Lose 1d4 Vitality per 1 FP spent past your Reservoir (1d6 at Stage 3 Strain or higher).",
-    strain: "If an Overdraw causes any Vitality loss, accumulate Strain points equal to the FP spent. Gain 1 Stage of Strain per 3 Strain points.",
+    strain: "If an Overdraw causes any Vitality loss, accumulate Strain points equal to the FP spent beyond your Reservoir. Gain 1 Stage of Strain per 3 Strain points.",
     nonCombat: "A negative Margin on a narrative Flow Dice Pool check (such as cleansing an anomaly) automatically inflicts 1 Stage of Strain."
   },
   breakflow: {
@@ -231,6 +231,28 @@ EN.flow = {
     rough: "Rough Restoration: in a Severity 1 or lower area during a 4 hour rest, a Positive Margin vs 6 Snag Dice restores the Reservoir to one-quarter capacity and reduces Strain to Stage 3. On failure, you stay in Breakflow and take 2d6 Vitality loss."
   },
 
+  /* ---- Advanced Techniques ------------------------------------------------------
+     PHB:8800-8890, "Master Forging and Advanced Techniques", after The Ritual of Alignment: two
+     groups the Shaper unlocks by level, two techniques each, every entry transcribed whole. The
+     Shaper's Resonance Synthesis (level 3) and Master Forging (level 7) features only name them
+     (data/class_scoundrel_shaper.js); the Codex's Advanced Techniques panel (js/codex_flow.js,
+     fl-advanced) prints the rules, and the feature names link there. `cost` is the FP the entry
+     asks for (PHB:8814, :8856, :8889), shown as the entry's tag. */
+  advancedTechniques: [
+    { key: "resonance-synthesis", name: "Resonance Synthesis", levelLabel: "Level 3", techniques: [
+      { key: "flow-linking", name: "Flow Linking", cost: "2 FP per participant",
+        text: "Flow Linking is the practice of temporarily joining resonance signatures between two or more Characters. It creates a shared frequency for communication and resource management.\nActivation: Spend 2 FP per participant and make simultaneous Flow Dice Pool checks against 2 Snag Dice.\nDuration: A Positive Margin (+1 or more) creates a stable connection lasting 10 minutes.\nEffects: Participants communicate thoughts and sensory data instantly. Linked members may transfer up to 2 FP per round to another linked member as a Free Action.\nRisks: If one participant enters Breakflow or falls Unconscious, all linked members immediately gain 1 Stage of Strain." },
+      { key: "resonance-amplification", name: "Resonance Amplification", cost: "2 additional FP",
+        text: "A Shaper may focus and magnify their output beyond normal limits by narrowing their frequency to a razor edge.\nActivation: Declare you are entering Amplified Resonance before making an Invocation. Spend 2 additional FP and make a Flow Attribute Check (DC 15).\nOn Success: Increase the Invocation's Force by one level (e.g., adding an extra 1d6 damage beyond the Caliber dice). Alternatively, increase the Empowered Effect by one tier of intensity at the GM's discretion.\nOn Failure: You immediately suffer 1 Stage of Strain and 1d4 Vitality loss. The Invocation resolves at its standard power level." }
+    ] },
+    { key: "master-forging", name: "Master Forging", levelLabel: "Level 7+", techniques: [
+      { key: "cooperative-channeling", name: "Cooperative Channeling", cost: "1 to 3 FP per Contributor",
+        text: "Multiple Shapers may join their resonance to perform a single massive Invocation. One Shaper acts as the Conductor, while the others serve as Contributors.\nSetup: Each Contributor must share the Conductor's wavelength. This requires a Flow Attribute Check (DC 10) from each participant.\nMechanics: Each Contributor adds 1 to 3 FP toward the total cost of the Invocation. The Conductor rolls the Invocation Check, adding a +1 bonus per Contributor (max +3).\nThe Recoil: If the Invocation Check results in a Critical Failure (Margin -5 or worse), all participants apply 1 Stage of Strain." },
+      { key: "sustained-fields", name: "Sustained Fields", cost: "5 FP to anchor",
+        text: "A Sustained Field is a long-term Flow effect maintained over hours or days, such as a protective ward or environmental purification.\nCreating a Field:\n1. Spend 5 FP to anchor the field.\n2. Make a Flow Dice Pool check against a base of 3 Snag Dice.\n3. Each additional 2 spaces of radius adds +1 FP to the anchoring cost and +1 Snag Die to the pool.\nMaintenance: The Shaper must spend 1 FP per hour and maintain focus. Long-term fields (8 hours+) impose 1 Stage of Strain for every additional day of upkeep.\nShared Maintenance: Multiple Shapers can maintain the same field. Each pays a portion of the hourly FP cost and makes a Flow Dice Pool check against 1 Snag Die once every hour to stay synchronized." }
+    ] }
+  ],
+
   /* ---- Premade Resonant Patterns (formulations) ------------------------- */
   // The four the book prints (2026-10-16 handoff). Six were cut because they copied
   // their Empowered Effect entries: Triage Pulse, Arc Lightning, Phantom Shroud,
@@ -276,7 +298,7 @@ EN.flow.resonances.forEach(function (r) { EN.flow.resonanceByKey[r.key] = r; });
      ## Repairing a Null Scar, with ### Establishing Anchors, ### The
        Reconstruction Ritual, ### Outcome and Aftermath and its GM advice
        paragraphs (now the Toolkit's Running the Repair) (4735 to 4801)
-   Three passages live elsewhere in the rulebook and are carried here because they
+   Two passages live elsewhere in the rulebook and are carried here because they
    are anomaly rules no other panel shows:
      nullScarGuidance  ## Overdraw, Strain, and Breakflow > ### Breakflow Check,
                        the GM advice, its "Anomalies" item (line 4444); the Game
@@ -287,8 +309,6 @@ EN.flow.resonances.forEach(function (r) { EN.flow.resonanceByKey[r.key] = r; });
                        Restoration, its closing run-in "Disturbed Ground"
                        (batch 45, 16 October 2026); a player rule, so it shows on
                        both desktops
-     clankers          ## Clankers and The Flow > #### Targeting Clankers With
-                       Flow, its last bullet (line 3894)
    The text is the book's, unescaped, with its **bold** kept. Labels and margins
    are split into fields so the Codex can table them; the words are unchanged.
    No em or en dashes anywhere in this block (house style).
@@ -313,9 +333,6 @@ EN.flow.disturbances = {
     { key: "parasite", name: "Flow Parasite", effect: "Characters attuned to the Flow within 2 spaces lose **1 FP per round**." },
     { key: "scar", name: "Null Scar", effect: "Total vacuum. FP is suppressed to 0. Attempts to shape cause **Automatic Overdraw**. The Scar may be temporarily collapsed by destroying its **Focal Anchor**." }
   ],
-
-  /* Part 2, Clankers and The Flow > Targeting Clankers With Flow (line 3894) */
-  clankers: "Flow Disturbances like **Static Zones**, **Resonant Storms**, and **Null Scars** interfere with Clanker channeling normally.",
 
   /* Player's Handbook, ## Breakflow Restoration > ### Rough Restoration, the closing run-in
      "Disturbed Ground", as printed (the book's "\-" escape dropped, nothing else). It is a
@@ -389,9 +406,11 @@ EN.flow.disturbances = {
 
   /* ## Inside a Null Scar: The Focal Anchor */
   focalAnchor: {
+    /* The lead and the closing are the Handbook's own lines (PHB:8952 and PHB:8958). The Part 2
+       paragraphs they replace (the Scar suppressing FP, the benched Shaper, the Scar as a spotter's
+       ground) are not in the book now; the Null Scar classification still says what a Scar does to FP. */
     intro: [
-      "A Null Scar fully suppresses FP within its bounds. No shaping is possible. Attempts to shape cause Automatic Overdraw, which (with FP suppressed to 0) immediately inflicts Vitality damage and Strain.",
-      "A Shaper benched inside a Null Scar isn't benched for the encounter, however. Every Null Scar has a **Focal Anchor**: the point where the Scar's structure crystallized when it first formed. Identifying and destroying the Anchor gives the crew a window to act."
+      "Every Null Scar has a Focal Anchor, the point where its structure crystallized when it formed."
     ],
     identify: {
       text: "A Shaper inside or adjacent to a Scar may spend an Action on an **Awareness or Esoterica** check (using Mystique or their Flow Attribute) to identify the Anchor's location.",
@@ -413,7 +432,7 @@ EN.flow.disturbances = {
         "Once the window closes, the Scar reforms at the same Severity unless a proper Cleansing Project has been completed in the interim."
       ]
     },
-    closing: "Inside a Scar, a Shaper stops being artillery and starts being a spotter, a tactician, the one who knows where to hit. Their shaping is still gone. And the Anchor is an objective the crew's Unattuned can take down themselves."
+    closing: "Destroying the Anchor never repairs the Scar. Permanent repair is the Reconstruction Ritual, an extreme-tier Cleansing Project for a Lead Shaper and assistants, detailed in the Game Master's Toolkit."
   },
 
   /* Part 2, the Breakflow Check's GM advice, its "Anomalies" item (line 4444); the Toolkit's Breakflow and Strain prints it as a plain paragraph */

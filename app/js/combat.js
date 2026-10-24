@@ -147,7 +147,10 @@ EN.combatView = (function () {
     (ctx.aspectMods || []).forEach(function (a) {
       if (!on[a.key]) return;
       if (a.value) mods.push({ label: a.modLabel || a.label, value: a.value });
-      if (a.critMin) critMin = Math.min(critMin, a.critMin);
+      /* A Specialization "expands by 1", and "if you already have an expanded critical threat range
+         from another source, it expands by 1 further" (PHB 1106). So it subtracts from the floor the
+         roll already has; it never sets it to 19. The floor can't go below 2: a natural 1 is never a hit. */
+      if (a.critExpand) critMin = Math.max(2, critMin - a.critExpand);
     });
     return { mods: mods, critMin: critMin };
   }
@@ -1672,7 +1675,17 @@ EN.combatView = (function () {
     "Staggered": function (e) { e.speedHalved = true; e.speedHalvings += 1; e.noSwift = true; e.noImpulse = true; e.notes.push("Staggered: Staggered again → Stunned"); },
     /* Stages 1 to 4 read their effect off the data (strainStages). Stage 5 says nothing of
        its own: it becomes Breakflow and Unconscious, whose own riders then speak. */
-    "Strain": function (e, l) {
+    /* Absolute Conduit (Shaper, Level 9, cls3-02): "You completely ignore the mechanical penalties of
+       Stage 1 Strain (Ripple) and Stage 2 Strain (Wave)", so at those two stages the rider says what
+       the Flow tab says (Stage N (Name): ignored) and the Burden of the Earth exception rides under it.
+       From Stage 3 every stage speaks as usual. */
+    "Strain": function (e, l, d) {
+      var ac = !!(d && (d.features || []).some(function (f) { return f && f.kind === "class" && f.name === "Absolute Conduit"; }));
+      if (ac && l >= 1 && l <= 2) {
+        var stg = strainStages()[l - 1];
+        e.notes.push("Strain · Stage " + l + (stg ? " (" + stg.name + ")" : "") + ": ignored (Absolute Conduit). Burden of the Earth: Strain transferred this way is treated as if caused by Overdraw and can't be ignored by the Absolute Conduit feature's Strain Resistance.");
+        return;
+      }
       strainStages().slice(0, 4).forEach(function (s, i) { if (l >= i + 1) e.notes.push("Strain · " + s.name + ": " + s.effect); });
       if (l >= 5) { e.derived.push({ name: "Breakflow", from: "Strain 5 · Collapse" }); e.derived.push({ name: "Unconscious", from: "Strain 5 · Collapse" }); }
     },
@@ -3343,7 +3356,80 @@ EN.combatView = (function () {
       var spec = ammoCatalog().filter(function (x) { return x.name === ammoType; })[0];
       if (spec && ((spec.group === "Specialty" && !ammoCompatible(spec, it)) || (spec.group === "Counted" && !countedFeedsWeapon(spec, it)))) ammoType = base;
     }
-    return { cur: cur, cap: cap, mode: mode, ammoType: ammoType, base: base, modes: modes };
+    /* `next`: a Launcher Shell type picked in the row's select, waiting for the next RELOAD (audit
+       weapons W2, author's ruling 5). Shells are Counted one at a time, so picking a type never
+       relabels the shells already in the magazine: they keep firing as what they are, and the
+       reload is what swaps them (returning any loaded shells to the stash). */
+    var next = (st.nextType && st.nextType !== ammoType) ? st.nextType : null;
+    return { cur: cur, cap: cap, mode: mode, ammoType: ammoType, base: base, modes: modes, next: next };
+  }
+
+  /* ---------- Launcher Shells (audit 19 October 2026, weapons W1) ----------
+     A Grenade Launcher fires whatever shell is in the magazine, and the shell decides what the
+     blast does: "Specialty shells change the payload without changing the launcher" (PHB 12860).
+     Each shell row carries its own damage and traits (data/gear_ranged.js). shellItem is the launcher
+     as it fires the loaded shell: the shell's damage and traits stand in for the launcher's own
+     2d8 Force and Explosive trait, and nothing else about the launcher changes (its Arc and Single
+     Shot stay). The standard "Grenade Shells" feed is a Counted row, not a Launcher Shell, so it
+     returns the launcher untouched. The roll tray still finds the weapon by name, so the copy
+     keeps `name`. */
+  function shellRow(name) {
+    if (!name || name === "Standard") return null;
+    return ammoCatalog().filter(function (a) { return a.group === "Launcher Shell" && a.name === name; })[0] || null;
+  }
+  function shellItem(it, ammoType) {
+    var sh = shellRow(ammoType);
+    if (!sh || (sh.feeds || "").indexOf(it.name) === -1) return it;
+    var out = {}, k, seen = {};
+    for (k in it) if (Object.prototype.hasOwnProperty.call(it, k)) out[k] = it[k];
+    if (sh.damage != null) out.damage = sh.damage;
+    out.traits = (it.traits || []).filter(function (t) { return !/^Explosive\b/.test(t); }).concat(sh.traits || [])
+      .filter(function (t) { if (seen[t]) return false; seen[t] = 1; return true; });
+    out.shell = sh.name;
+    return out;
+  }
+  // an Explosive weapon that deals 0 (a Smoke Shell, a Smoke Grenade) has no damage to roll: indirect delivery
+  // adds no attribute Modifier, so there is nothing left of the hit. (The Net Launcher's 0 is a different case.)
+  function dealsNoDamage(it, h) { return parseDamage(it.damage).dice === "0" && !!(h && h.indirect); }
+
+  /* ---------- Critical threat range (audit weapons W4 + CC-08) ----------
+     20 is the floor. Precision Frame expands it by 1 (19-20) and a Specialization naming the weapon
+     expands it by 1 "further" (PHB 1106), so a weapon with both crits on 18-20. Neither one sets the
+     range; each subtracts from what the roll already has.
+
+     Precision Frame (PHB 15220, 15364): "scores a critical hit on a roll of 19 or 20 on its Single Shot
+     and Semi-Auto attacks". A weapon whose only firing mode is Single Shot has it inherently; the trait
+     itself or a fitted Part that grants it (Match Trigger Group) gives it to a weapon that has more
+     modes, for the Single Shot and Semi-Auto modes only. A firing mode a fitted Part adds (Full-Auto
+     Receiver, Burst Fire Receiver) counts toward "only", though this sheet does not offer those modes
+     in the mode selector. */
+  function partsOnPiece(ch, key) {
+    var lo = ((ch && ch.weaponParts) || {})[key] || {};
+    var byKey = (EN.weaponParts && EN.weaponParts.byKey) || {};
+    return ["targeting", "output", "core", "handling"].map(function (s) { return lo[s]; })
+      .concat(Array.isArray(lo.utility) ? lo.utility : []).map(function (k) { return byKey[k]; }).filter(Boolean);
+  }
+  function precisionFrame(ch, it, key, mode) {
+    var modes = weaponModes(it).slice(), parts = partsOnPiece(ch, key);
+    parts.forEach(function (p) {
+      FIRING_MODES.forEach(function (fm) { if (String(p.grants || "").indexOf(fm) !== -1 && modes.indexOf(fm) === -1) modes.push(fm); });
+    });
+    var only = modes.length === 1 && modes[0] === "Single Shot";
+    var granter = (it.traits || []).indexOf("Precision Frame") !== -1 ? "the Precision Frame trait"
+      : (parts.filter(function (p) { return /Precision Frame/i.test(p.grants || ""); })[0] || {}).name || null;
+    var modeOk = mode === "Single Shot" || mode === "Semi-Automatic";
+    if (only) return { on: true, why: "Single Shot is this weapon's only firing mode, so its attacks gain Precision Frame" };
+    if (granter && modeOk) return { on: true, why: "Precision Frame from " + granter + " on Single Shot and Semi-Auto attacks" };
+    return { on: false, granter: granter, why: granter ? granter + " gives Precision Frame on Single Shot and Semi-Auto attacks only, not " + (mode || "this mode") : "" };
+  }
+  function weaponCrit(ch, it, key, h) {
+    var min = 20, sources = [];
+    var fired = !(h && (h.melee || h.thrownItem)) && it.ammo != null;
+    var mode = fired ? readAmmo(ch, it, key).mode : "";
+    var pf = precisionFrame(ch, it, key, mode);
+    if (pf.on) { min -= 1; sources.push({ key: "pf", label: "Precision Frame", why: pf.why }); }
+    if (h && h.spec) { min -= 1; sources.push({ key: "spec", label: "Specialization", why: "Specialization: " + h.cat + (h.spec.aspect ? " (" + h.spec.aspect + ")" : "") + " expands the critical threat range by 1" + (sources.length ? " further" : "") }); }
+    return { min: min, sources: sources, pf: pf };
   }
   var _recoil = null;   // weapon ENTRY KEY to kick on the next render, set when rounds are spent
   /* Dice mode. Digital is the default: the sheet rolls for you and HIT/DMG are
@@ -3409,7 +3495,7 @@ EN.combatView = (function () {
       var cur = readAmmo(c, it, key);
       var a = c.weaponAmmo[key] || { cur: cur.cur, mode: cur.mode, ammoType: cur.ammoType };
       if (typeof a.cur !== "number") a.cur = cur.cur;
-      Object.keys(patch).forEach(function (k) { a[k] = patch[k]; });
+      Object.keys(patch).forEach(function (k) { if (patch[k] === null) delete a[k]; else a[k] = patch[k]; });   // null clears a field
       a.cur = Math.max(0, Math.min(a.cur, capacityOf(it)));   // keep persisted value in range
       c.weaponAmmo[key] = a;
     });
@@ -3419,7 +3505,7 @@ EN.combatView = (function () {
     var it = weaponOfKey(ch0, key); if (!it) return;
     if ((it.traits || []).indexOf("Disposable") !== -1) { toast(it.name + " is Disposable; spent once fired, it cannot be reloaded."); return; }
     var ch = ch0, st = readAmmo(ch, it, key), base = st.base;
-    var type = st.ammoType;
+    var type = st.next || st.ammoType;                                  // a Launcher Shell picked for the next reload
     if (type === "Standard" && base !== "Standard") type = base;        // coerce to the weapon's only (counted) feed
     var msg;
     if (type !== "Standard" && ownedQty(ch, type) <= 0) {              // the chosen special round is depleted
@@ -3427,15 +3513,42 @@ EN.combatView = (function () {
       else { toast("Out of ammo; no " + type + " in stash. Acquire it in Inventory."); return; }            // no plentiful variant: keep RELOAD
     }
     var needsStash = type !== "Standard";                               // counted munition / specialty round → spend from stash
+    /* Launcher shells are sold one at a time ("50 each") and "All launcher shells are Counted" (PHB
+       12851), so a reload loads the smaller of the magazine and the shells owned, and takes that many
+       out of the stash: one Concussion Shell loads 1 of 6, not a full six. (Author's ruling 5, 19
+       October 2026: the magazine model stays.) Every other counted munition still fills the magazine
+       from one stash unit, because those sell by the lot (Grenade Shells "per 6", Fuel Cell "per 20").
+       Those lots still replace the magazine. Shells already in the magazine are never thrown away
+       ("Track every round from purchase to spend", PHB 12665): a reload of the SAME shell tops the
+       magazine up and takes only the difference from the stash, and a reload of anything else first
+       puts the loaded shells back on their own stash entry. */
+    var shell = needsStash && !!shellRow(type);
+    var cap = capacityOf(it);
+    var kept = (shell && st.ammoType === type) ? st.cur : 0;             // the same shell, staying in
+    var back = (shellRow(st.ammoType) && st.ammoType !== type) ? st.cur : 0;   // a different shell, going back
+    var load = shell ? Math.min(cap, kept + ownedQty(ch, type)) : cap;
+    var take = shell ? load - kept : 1;
+    if (shell && take <= 0) { toast(it.name + " is already full: " + kept + " of " + cap + " shells · " + type + "."); return; }
     store.update(function (c) {
       c.weaponAmmo = c.weaponAmmo || {};
-      if (needsStash) {
-        var e = (c.equipment || []).find(function (x) { return x.name === type; });
-        if (e) { e.qty = (e.qty || 1) - 1; if (e.qty <= 0) c.equipment = c.equipment.filter(function (x) { return x !== e; }); }
+      c.equipment = c.equipment || [];
+      if (back > 0) {
+        var b = c.equipment.find(function (x) { return x.name === st.ammoType; });
+        if (b) b.qty = (b.qty || 0) + back;
+        else c.equipment.push({ name: st.ammoType, qty: back });
       }
-      c.weaponAmmo[key] = { cur: capacityOf(it), mode: st.mode, ammoType: type };
+      if (needsStash) {
+        var e = c.equipment.find(function (x) { return x.name === type; });
+        if (e) {
+          e.qty = shell ? (e.qty || 0) - take : (e.qty || 1) - 1;
+          if (e.qty <= 0) c.equipment = c.equipment.filter(function (x) { return x !== e; });
+        }
+      }
+      c.weaponAmmo[key] = { cur: load, mode: st.mode, ammoType: type };
     });
-    toast(msg || (it.name + " reloaded, " + capacityOf(it) + " " + (it.ammoUnit || "rounds") + (type !== "Standard" ? " · " + type : "") + "."));
+    var unit = shell ? "shells" : (it.ammoUnit || "rounds");   // a shell reload reads "1 of 6 shells"
+    toast(msg || (it.name + " reloaded, " + (shell ? load + " of " + cap : load) + " " + unit + (type !== "Standard" ? " · " + type : "") + "."
+      + (back > 0 ? " " + back + " " + st.ammoType + (back > 1 ? "s" : "") + " back in the stash." : "")));
   }
 
   /* specialty-ammo compatibility (feeds is free text; match by weapon group + damage) */
@@ -3491,13 +3604,18 @@ EN.combatView = (function () {
       var dt = ((EN.combat && EN.combat.damageTypes) || []).filter(function (x) { return x.name === dm[1]; })[0];
       return { tip: dt ? dt.text : dm[1] + " damage type.", dmgType: dt ? dt.name : null };
     }
+    /* Bleeding and Mutating are conditions, not traits (PHB 15011). A printed name that matches no
+       trait but is a condition (the Genesis Rounds' "Mutating") answers with the condition's one-line
+       summary, and its chip peeks the condition. */
+    var cond = ((EN.conditions || []).filter(function (c) { return c.name === base; })[0]) || null;
+    if (cond) return { tip: cond.summary || cond.name, cond: cond.name };
     return { tip: "" };
   }
   function weaponTraitTip(t) { return traitInfo(t).tip; }
-  // the glossary line stays the tooltip; a tap peeks the trait (or the damage type) in the Codex
+  // the glossary line stays the tooltip; a tap peeks the trait (or the damage type, or the condition) in the Codex
   function wTraitChip(t) {
     var inf = traitInfo(t);
-    var a = inf.key ? "gr-traits/" + cxSlug(inf.key) : inf.dmgType ? "ref-dmg/" + cxSlug(inf.dmgType) : null;
+    var a = inf.key ? "gr-traits/" + cxSlug(inf.key) : inf.dmgType ? "ref-dmg/" + cxSlug(inf.dmgType) : inf.cond ? cxCond(inf.cond) : null;
     return cxChip(a, t, "var(--text2)", inf.tip, { borderColor: "var(--border2)" });
   }
   /* The weapon row's Oomph chip: "OOMPH +1" whenever any Oomph reaches this weapon, its
@@ -3780,6 +3898,8 @@ EN.combatView = (function () {
                           : [bdRow("Base move", 6, null, true), bdRow("Agility modifier", agiMod, chromeNote("AGI"))])
           .concat(cyberSpeedRows.map(function (r) { return bdRow("Chrome · " + r.label, r.val); }))
           .concat(d.lineageSpeed ? [bdRow("Lineage", d.lineageSpeed)] : [])
+          // Speed a Talent or class feature grants (Asphalt Rider's Upgrade, First Responder): the engine's own rows
+          .concat((d.speedFeatures || []).map(function (r) { return bdRow(r.label, r.val); }))
           .concat(dg.speedPenalty ? [bdRow("Bulky · " + dg.armor.name, dg.speedPenalty)] : [])
           .concat(spLoadFlat ? [bdRow("Encumbered", spLoadFlat)] : [])
           .concat(spCondFlat ? [bdRow("Conditions", spCondFlat)] : [])
@@ -3797,7 +3917,9 @@ EN.combatView = (function () {
           .concat(d.lineageInit && d.lineageInit.caliber ? [bdRow("Lineage · Static Premonition", d.lineageInit.caliber)] : [])
           .concat(d.cyberInit ? [bdRow("Chrome · Reflex Booster", d.cyberInit)] : [])
           .concat(fx.init ? [bdRow("Conditions", fx.init)] : []),
-        foot: "Initiative roll = d20 + Caliber (" + d.caliber + ") + this." + (d.lineageInit && d.lineageInit.edge ? " Roll with Edge (Tuned Synapses)." : ""),
+        // the Edge names every source the engine found (Tuned Synapses, First Responder, Veteran Instincts); it never stacks
+        foot: "Initiative roll = d20 + Caliber (" + d.caliber + ") + this." + (init.edge
+          ? " Roll with Edge (" + ((init.edgeSources && init.edgeSources.length) ? init.edgeSources.join(", ") : "Tuned Synapses") + ")." : ""),
         rules: [["ref-round", "Initiative & the Round"]] },
       // Size is derived from height, and its only mechanical reach is the
       // Encumbrance Threshold and comparison (grappling, moving through a
@@ -4040,7 +4162,7 @@ EN.combatView = (function () {
        added on top. Untrained costs a Snag, never a negative modifier, and
        conditions penalise checks only through Snag (there is no check-side
        counterpart to the saves' flat saveDelta).
-       A Skill Focus (+Caliber) and a Specialization (crit 19-20) both apply only
+       A Skill Focus (+Caliber) and a Specialization (crit range +1) both apply only
        inside a narrow aspect, so they ride as ASPECT pills the player turns on
        when the action fits, rather than being folded in on every check. */
     function rollSkill(s) {
@@ -4053,8 +4175,8 @@ EN.combatView = (function () {
         modLabel: "Skill Focus (Caliber)", value: d.caliber || 1, color: "var(--gold)",
         title: "Skill Focus: " + s.name + (sf.aspect ? " (" + sf.aspect + ")" : "") + ". Adds your Caliber only when the action falls inside that aspect, and rides outside the +15 static cap." });
       var sp = eng.specFor(ch, "skill", s.key);
-      if (sp) asp.push({ key: "spec", label: "Spec crit 19-20" + (sp.aspect ? " · " + sp.aspect : ""), critMin: 19, color: "var(--flow)",
-        title: "Specialization: " + s.name + (sp.aspect ? " (" + sp.aspect + ")" : "") + ". Widens the critical threat range by 1 only when the action falls inside that aspect." });
+      if (sp) asp.push({ key: "spec", label: "Spec crit range +1" + (sp.aspect ? " · " + sp.aspect : ""), critExpand: 1, color: "var(--flow)",
+        title: "Specialization: " + s.name + (sp.aspect ? " (" + sp.aspect + ")" : "") + ". Expands the critical threat range by 1 (by 1 further if it is already expanded) only when the action falls inside that aspect." });
       openRollTray(Object.assign({
         weaponName: s.name + " Check", subtype: s.attrName + " · " + R.profTiers[s.tier].name,
         melee: false, thrownItem: false, ranged: false, usesAmmo: false,
@@ -4173,7 +4295,7 @@ EN.combatView = (function () {
               el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "4px" } }, [
                 el("span.help", { style: { margin: 0, fontSize: "10px" }, html: "Roll: <b>" + attrName(slot.attr) + " " + eng.fmtMod(mod) + " + " + sk.name + " " + eng.fmtMod(tierBonus) + "</b>" }),
                 focus ? el("span.chip", { title: "Skill Focus on " + sk.name + " carries over: +Caliber inside the aspect", style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" }, text: "FOCUS +" + (d.caliber || 1) + (focus.aspect ? " (" + focus.aspect + ")" : "") }) : null,
-                spec ? el("span.chip", { title: "Specialization on " + sk.name + " carries over: crit 19-20 inside the aspect", style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" }, text: "CRIT 19-20" + (spec.aspect ? " (" + spec.aspect + ")" : "") }) : null,
+                spec ? el("span.chip", { title: "Specialization on " + sk.name + " carries over: expands the crit range by 1 inside the aspect", style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" }, text: "CRIT RANGE +1" + (spec.aspect ? " (" + spec.aspect + ")" : "") }) : null,
                 untrained ? el("span.chip", { title: "Untrained in " + sk.name + ": the tier adds nothing and the roll takes Snag", style: { fontSize: "9px", color: "var(--danger)", borderColor: "var(--danger)" }, text: "SNAG" }) : null
               ])
             ]);
@@ -4661,7 +4783,8 @@ EN.combatView = (function () {
       if (forced === "active" && cost === "Passive") cost = "Active";
       if (forced === "passive") cost = "Passive";
       return { id: "act-" + i, name: f.name.replace(/\s*\((Active|Passive)\)\s*$/i, ""), src: f.source + " · L" + f.level,
-               text: f.text, cost: cost, limited: isLimited(f.text), chip: f.chip, uses: parseUses(f.text, d),
+               // noTracker: the feature's "once per scene" is about something other than its own use (A Sucker Born Every Minute's new Mark)
+               text: f.text, cost: cost, limited: isLimited(f.text), chip: f.chip, uses: f.noTracker ? null : parseUses(f.text, d),
                requirements: f.requirements };
     });
     // active vs passive split of the computed features (markers already folded into cost)
@@ -5133,7 +5256,8 @@ EN.combatView = (function () {
         var cat = GROUP_CAT[it.group], tier = eng.effectiveGearTier(ch, "weapons", cat), prof = R.profTiers[tier].d20;
         // A Weapon Focus naming this weapon type adds Caliber to attack rolls;
         // Focus Caliber rides outside the +15 static modifier cap. A matching
-        // Specialization widens the crit threat range by 1 (19-20).
+        // Specialization expands the crit threat range by 1 (weaponCrit stacks it
+        // with Precision Frame; it never sets the range).
         var focus = eng.weaponFocus(ch, cat, it.name);
         var focusCal = focus ? (d.caliber || 1) : 0;
         var spec = eng.weaponSpec(ch, cat, it.name);
@@ -5145,11 +5269,30 @@ EN.combatView = (function () {
         var offers = eng.attackAttrOffers ? eng.attackAttrOffers(d, it, baseMod) : [];
         var offerOn = eng.activeAttackAttr ? eng.activeAttackAttr(ch, d, it, key, baseMod) : null;
         if (offerOn) { mod = offerOn.mod; attrName = offerOn.attrName; }
+        /* A melee weapon with the Thrown trait (Dagger, Hammer, Hatchet, Knife, Spear) is balanced for
+           the throw: "roll d20 + Body or Agility Modifier, whichever is higher, + Weapon Proficiency
+           Bonus against the Target's Defense, out to the weapon's listed thrown range" (PHB 6731, audit
+           core-01). The swing keeps its own attribute (Body, or Agility on a Finesse weapon), so the
+           THROW roll is a second attack on the row, and its damage adds the same modifier the throw
+           used. An offered attribute the player has switched on (First Do No Harm) counts if it is higher. */
+        var throwInfo = null;
+        if (melee && thrownItem) {
+          var tMod = Math.max(bod, agi), tAttr = agi > bod ? "Agility" : "Body";
+          if (offerOn && offerOn.mod > tMod) { tMod = offerOn.mod; tAttr = offerOn.attrName; }
+          var tRange = (it.traits || []).map(function (t) { return String(t).match(/^Thrown\s*\((\d+)\s*\/\s*(\d+)\)/); }).filter(Boolean)[0];
+          throwInfo = { mod: tMod, attrName: tAttr, total: tMod + prof + focusCal, range: tRange ? tRange[1] + "/" + tRange[2] : "" };
+        }
         return { mod: mod, attrName: attrName, cat: cat, tier: tier, prof: prof,
                  focus: focus, focusCal: focusCal, spec: spec, indirect: indirect,
                  dmgMod: indirect ? 0 : mod, offers: offers, offerOn: offerOn,
-                 baseMod: baseMod, baseAttrName: baseAttrName,
+                 baseMod: baseMod, baseAttrName: baseAttrName, throwInfo: throwInfo,
                  total: mod + prof + focusCal, melee: melee, thrownItem: thrownItem };
+      }
+      // the same weapon row read as a throw: the better of Body and Agility on the roll and on damage
+      function throwHit(h) {
+        var t = h.throwInfo;
+        return Object.assign({}, h, { mod: t.mod, attrName: t.attrName, total: t.total, dmgMod: h.indirect ? 0 : t.mod,
+          melee: false, thrownItem: true, isThrow: true });
       }
       // a plain snapshot the roll tray opens against (no live-scope closures)
       // Moxie Gambits and the Wildcard bet ride outside the clean 2d20 rule;
@@ -5162,16 +5305,22 @@ EN.combatView = (function () {
         var autoSnag = [];
         if (fx.snagAtk) autoSnag.push("Active condition");
         if (h.tier === "untrained") autoSnag.push("Untrained (" + h.cat + ")");
+        // the threat range: 20, expanded by Precision Frame and by a Specialization naming this weapon
+        var cr = weaponCrit(ch, it, wk, h);
         return Object.assign({
           weaponName: it.name,
           weaponKey: wk || null,   // the PIECE: its magazine, its mods, its grip
           subtype: (h.melee ? "Melee" : h.thrownItem ? "Thrown" : "Ranged") + " Weapon · " + h.cat,
           melee: h.melee, thrownItem: h.thrownItem, ranged: !h.melee && !h.thrownItem,
           usesAmmo: !h.melee && !h.thrownItem && it.ammo != null,   // a fired weapon spends a shot per roll
-          traits: it.traits || [], baseMods: baseMods, critMin: h.spec ? 19 : 20, critNote: ATTACK_CRIT_NOTE,
+          traits: it.traits || [], baseMods: baseMods, critMin: cr.min,
+          critNote: cr.min < 20
+            ? ATTACK_CRIT_NOTE + " Your critical threat range is " + cr.min + "-20 here (" + cr.sources.map(function (s) { return s.label; }).join(" and ") + ")."
+            : ATTACK_CRIT_NOTE,
           autoSnag: autoSnag, autoEdge: [], baseSnag: autoSnag.length, baseEdge: 0,
           shaken: (ch.conditions || []).indexOf("Shaken") !== -1,
-          dmg: damageCtx(it, h, wk)   // carried so the attack tray can hand off to damage
+          // carried so the attack tray can hand off to damage; a weapon that deals 0 has none to hand off
+          dmg: dealsNoDamage(it, h) ? null : damageCtx(it, h, wk)
         }, moxieFlags());
       }
       // a non-weapon attack (Cipher, Flow, natural / unarmed strike) the roll
@@ -5219,8 +5368,9 @@ EN.combatView = (function () {
              open, so a two-handed Longsword rolled 1d8 unless you flipped it again,
              and a weapon forced two-handed by an Extended Shaft still offered a
              one-handed option it cannot have. */
-          versatile: grip.versatile || versatileDie(traits),
-          grip: grip,
+          // a throw is made one-handed, so it never offers the Versatile two-handed die
+          versatile: h.isThrow ? null : (grip.versatile || versatileDie(traits)),
+          grip: h.isThrow ? null : grip,
           cheapEligible: cheapEligible, cheapDice: d.caliber || 1,
           crit: false
         };
@@ -5288,6 +5438,10 @@ EN.combatView = (function () {
         // stepped unarmed strike they are the reason for. The strike row and the
         // STRIKE picker already account for them.
         if (eng.isUnarmedAugmentName(it.name)) return;
+        // A Launcher Shell in the magazine sets what the launcher deals and which traits it carries
+        // (W1); from here down `it` is the launcher as it fires that shell. Same name, so the tray
+        // still finds the weapon, its magazine and its mods.
+        if (it.group === "Launcher" && it.ammo != null) it = shellItem(it, readAmmo(ch, it, wKey).ammoType);
         var h = weaponHit(it, wKey), norm = normalizeWeapon(it);
         // resolved once per row and used by both the REACH box and the traits line,
         // so the number and the chips cannot disagree. Ranged weapons come back
@@ -5302,7 +5456,11 @@ EN.combatView = (function () {
         var dmgActive = grip.dice
           ? norm.damageDisplay.replace(/^\s*\d+d\d+(\s*\(\d+d\d+\))?/, grip.dice)
           : norm.damageDisplay;
-        var dmgTip = (h.indirect
+        var noDmg = dealsNoDamage(it, h);   // a Smoke Shell or Smoke Grenade: nothing to roll
+        var shellNote = it.shell ? "Loaded: " + it.shell + ". " : "";
+        var dmgTip = shellNote + (noDmg
+          ? "Deals no damage; the effect is the point. Targets save as the effect says."
+          : h.indirect
           ? dmgActive + " on hit · indirect delivery adds no attribute Modifier · Tap to roll damage"
           : dmgActive + " " + eng.fmtMod(h.mod) + " (" + h.attrName + ") on hit · Tap to roll damage")
           + (grip.why ? "\n" + grip.why : "");
@@ -5316,6 +5474,15 @@ EN.combatView = (function () {
           + (h.focus ? " + Caliber from " + h.cat + " (" + h.focus.aspect + ") Focus (" + eng.fmtMod(h.focusCal) + ", outside the +15 static cap)" : "");
         var subtype = (h.melee ? "Melee" : h.thrownItem ? "Thrown" : "Ranged") + " Weapon · " + h.cat;
         var isRanged = !h.melee && !h.thrownItem && it.ammo != null;
+        /* The crit range this weapon rolls on right now: 20, one wider for Precision Frame in a mode that
+           has it, one wider again for a Specialization naming the weapon. One chip per source, each
+           saying what the range comes to, so the number and its reasons sit together. */
+        var critR = weaponCrit(ch, it, wKey, h);
+        var critChips = critR.sources.map(function (s) {
+          return el("span.chip", { title: s.why + ". Critical hit on a roll of " + critR.min + "-20, stacking with the other crit range sources.",
+            style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" } },
+            (s.key === "pf" ? "PRECISION FRAME" : "SPEC") + " · CRIT RANGE +1");
+        });
 
         var head = el("div.row", { style: { gap: "8px", alignItems: "center", flexWrap: "wrap", marginBottom: "2px" } }, [
           equippedNames.length > 1 ? reorderArrows(wname, wi) : null,
@@ -5325,16 +5492,15 @@ EN.combatView = (function () {
           el("span", { title: it.desc || "", style: { fontWeight: 600, fontSize: "14px" }, text: row.label }),
           snagWhy ? snagChip(snagWhy) : null,
           h.focus ? el("span.chip", { title: "Skill Focus: " + h.cat + " (" + h.focus.aspect + ")" + (h.focus.granted ? " · Free overlap Focus" : "") + ". Adds Caliber (" + eng.fmtMod(h.focusCal) + ") to attack rolls with this weapon type, outside the +15 static cap.",
-            style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" } }, "FOCUS +" + h.focusCal) : null,
-          h.spec ? el("span.chip", { title: "Specialization: " + h.cat + " (" + h.spec.aspect + "). Crit threat range widens by 1 (19-20), stacking with other crit range sources.",
-            style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" } }, "CRIT 19-20") : null,
+            style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" } }, "FOCUS +" + h.focusCal) : null
+        ].concat(critChips).concat([
           el("span", { style: { fontSize: "10px", color: "var(--text3)", flex: "1 1 auto" }, text: subtype }),
           // real dice roll on the table, but the magazine is still the app's job
           (physicalDice() && isRanged) ? el("button.btn.sm", {
             title: "Spend this weapon's ammo for one use; roll the dice yourself",
             style: { color: "var(--ember)", borderColor: "var(--ember)", flex: "0 0 auto" },
             onclick: function () { fireWeapon(wKey); } }, "FIRE") : null
-        ]);
+        ]));
 
         var rowKids = [head];
 
@@ -5370,7 +5536,7 @@ EN.combatView = (function () {
           rowKids.push(el("div.row.wrap", { style: { gap: "12px", alignItems: "center", marginTop: "6px" } }, [
             statBox("RANGE", norm.rangeDisplay, "var(--gold)", it.range || ""),
             hitCell,
-            statBox("DMG", dmgDisplay, "var(--accent)", dmgTip, function () { openDmgTray(damageCtx(it, h, wKey)); }, "dmg", dmgTypes),
+            statBox("DMG", dmgDisplay, "var(--accent)", dmgTip, noDmg ? null : function () { openDmgTray(damageCtx(it, h, wKey)); }, "dmg", dmgTypes),
             ammoCell
           ]));
 
@@ -5386,11 +5552,23 @@ EN.combatView = (function () {
           }
           var ammoOpts = ammoTypeOptions(ch, it);
           if (ammoOpts.indexOf(st.ammoType) === -1) ammoOpts.push(st.ammoType);   // keep the loaded type selectable even if its stash ran out
+          if (st.next && ammoOpts.indexOf(st.next) === -1) ammoOpts.push(st.next);
+          var nextLoad = st.next || st.ammoType;
           if (ammoOpts.length > 1) {
-            controls.push(el("select", { title: "Loaded ammunition (Reload to apply)", style: { fontSize: "11px", width: "auto" }, onchange: function () { writeAmmo(wKey, { ammoType: this.value }); } },
-              ammoOpts.map(function (o) { return el("option", { value: o, selected: o === st.ammoType, text: o + (o !== "Standard" && ownedQty(ch, o) <= 0 ? " (none in stash)" : "") }); })));
+            /* A Launcher Shell on either side of the change waits for RELOAD (W2, ruling 5): the
+               magazine's shells stay what they are, so the row keeps their damage and traits and the
+               stash is charged only when the reload actually loads the new type. */
+            controls.push(el("select", { title: "Loaded ammunition (Reload to apply)", style: { fontSize: "11px", width: "auto" }, onchange: function () {
+                var v = this.value;
+                if (shellRow(v) || shellRow(st.ammoType) || st.next) writeAmmo(wKey, { nextType: v === st.ammoType ? null : v });
+                else writeAmmo(wKey, { ammoType: v });
+              } },
+              ammoOpts.map(function (o) { return el("option", { value: o, selected: o === nextLoad, text: o + (o !== "Standard" && ownedQty(ch, o) <= 0 ? " (none in stash)" : "") }); })));
           }
-          controls.push(el("button.btn.sm", { title: "Reload to " + st.cap + (it.ammoUnit ? " " + it.ammoUnit : ""), style: { color: "var(--text2)", padding: "2px 8px" }, onclick: function () { reloadWeapon(wKey); } }, "⟳ RELOAD"));
+          controls.push(el("button.btn.sm", {
+            title: shellRow(nextLoad) ? "Load the " + nextLoad + "s you own, up to " + st.cap + (st.next && shellRow(st.ammoType) && st.cur ? "; the " + st.cur + " loaded go back to the stash" : "")
+              : "Reload to " + st.cap + (it.ammoUnit ? " " + it.ammoUnit : ""),
+            style: { color: "var(--text2)", padding: "2px 8px" }, onclick: function () { reloadWeapon(wKey); } }, "⟳ RELOAD"));
           rowKids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "6px" } }, controls));
 
           // status sub-row: loaded special round/munition effect + (future) mods
@@ -5399,6 +5577,8 @@ EN.combatView = (function () {
             var a = ammoCatalog().concat(munitions()).find(function (x) { return x.name === st.ammoType; });
             statusChips.push(el("span.chip", { title: a ? (a.effect || a.desc || "") : "", style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" } }, "◆ " + st.ammoType));
           }
+          if (st.next) statusChips.push(el("span.chip", { "data-next-load": st.next, title: "Picked for the next RELOAD. The magazine still fires what is in it.",
+            style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" } }, "NEXT RELOAD · " + st.next));
           if (statusChips.length) rowKids.push(el("div.row.wrap", { style: { gap: "6px", marginTop: "6px" } }, statusChips));
         } else {
           // melee / thrown: Range · Hit · Damage (no ammo). HIT opens the roll tray.
@@ -5414,6 +5594,33 @@ EN.combatView = (function () {
                   + (wr.flexible ? "a flexible weapon" : "a rigid weapon") + " caps at Reach " + wr.cap + "." : "")
               + "\nReaches " + wr.total + " spaces."
             : (it.range || "");
+          /* THROW (core-01). A melee weapon with the Thrown trait rolls its throw on the higher of Body and
+             Agility, out to its thrown range, and its damage adds that same modifier. HIT stays the swing,
+             so the two can differ: a Hatchet with Body 10 and Agility 16 swings at +0 and throws at +3.
+             THROW DMG only appears when the throw deals something other than the DMG box beside it. */
+          var throwBoxes = [];
+          if (h.throwInfo) {
+            var ti = h.throwInfo, hT = throwHit(h);
+            var throwTip = "d20 + " + ti.attrName + " Modifier (" + eng.fmtMod(ti.mod) + ", the higher of Body and Agility)"
+              + (h.prof ? " + Weapon Proficiency Bonus (" + eng.fmtMod(h.prof) + ")" : " (untrained, Snag)")
+              + (h.focus ? " + Caliber from " + h.cat + " (" + h.focus.aspect + ") Focus (" + eng.fmtMod(h.focusCal) + ")" : "")
+              + " against Defense, out to " + (ti.range || "the weapon's thrown range") + ".";
+            var throwDice = grip.baseDice ? norm.damageDisplay.replace(/^\s*\d+d\d+(\s*\(\d+d\d+\))?/, grip.baseDice) : norm.damageDisplay;
+            var throwDmgDisplay = throwDice + " " + eng.fmtMod(ti.mod);
+            throwBoxes.push(statBox("THROWN RNG", ti.range || "", "var(--gold)", "The Thrown trait's range, normal / long. An attack at long range rolls with Snag."));
+            throwBoxes.push(physicalDice()
+              ? statBox("THROW", eng.fmtMod(ti.total), "var(--ember)", throwTip)
+              : el("div.statwrap", { title: "Roll the throw \u00b7 " + throwTip }, [
+                  el("div.lbl", { text: "THROW" }),
+                  el("span.mono.statkey", { style: { color: "var(--ember)" },
+                    onclick: function () { openRollTray(attackCtx(it, hT, wKey)); }, text: eng.fmtMod(ti.total) })
+                ]));
+            if (throwDmgDisplay !== dmgDisplay) {
+              throwBoxes.push(statBox("THROW DMG", throwDmgDisplay, "var(--accent)",
+                throwDice + " " + eng.fmtMod(ti.mod) + " (" + ti.attrName + ") on a thrown hit, held in one hand \u00b7 Tap to roll damage",
+                function () { openDmgTray(damageCtx(it, hT, wKey)); }, "dmg", dmgTypes));
+            }
+          }
           rowKids.push(el("div.row.wrap", { style: { gap: "14px", alignItems: "center", marginTop: "6px" } }, [
             statBox(h.melee ? "REACH" : "RANGE", (wr.melee ? String(wr.total) : norm.rangeDisplay),
               wr.bonus ? "var(--flow)" : "var(--gold)", reachTip),
@@ -5424,8 +5631,8 @@ EN.combatView = (function () {
                   el("span.mono.statkey", { style: { color: "var(--ember)" },
                     onclick: function () { openRollTray(attackCtx(it, h, wKey)); }, text: eng.fmtMod(h.total) })
                 ]),
-            statBox("DMG", dmgDisplay, "var(--accent)", dmgTip, function () { openDmgTray(damageCtx(it, h, wKey)); }, "dmg", dmgTypes)
-          ]));
+            statBox("DMG", dmgDisplay, "var(--accent)", dmgTip, noDmg ? null : function () { openDmgTray(damageCtx(it, h, wKey)); }, "dmg", dmgTypes)
+          ].concat(throwBoxes)));
         }
 
         /* traits line. The catalog's own "Reach 2" chip stays exactly as printed,
@@ -5459,7 +5666,7 @@ EN.combatView = (function () {
               wr.bonus ? ("+" + wr.bonus + " reach" + (wr.capped ? " · AT CAP" : "")) : "REACH AT CAP",
               wr.capped ? "var(--warn)" : "var(--flow)",
               wr.sources.map(function (s) { return "+" + s.spaces + " " + s.label; }).join("\n")
-                + (wr.capped ? "\n\n" + ((EN.combat || {}).reachCapText || "") : "")
+                + (wr.capped ? "\n\n" + String((EN.combat || {}).reachCapText || "").split("\n\n")[0] : "")
                 + "\nReaches " + wr.total + " spaces in total.",
               { fontSize: "" })
           : null;
@@ -5511,6 +5718,14 @@ EN.combatView = (function () {
         rowKids.push(el("div.row.wrap", { style: { gap: "5px", marginTop: "9px", paddingTop: "8px",
           borderTop: "1px solid rgba(35,48,68,.6)" } },
           traitChips.map(wTraitChip).concat(offerChips).concat([reachChip, oomphChip(grip), gripEl].filter(Boolean))));
+
+        /* The On Hit line a weapon prints besides its damage: a grenade's save ("Each target in the area makes
+           an Agility Save vs your Weapon Save DC..."), or the effect of the Launcher Shell in the magazine.
+           The data stores both without the "On Hit:" label they print under, so it is put back here. A
+           Signature Weapon's own effect is drawn just below, with its lock status. */
+        var rowEffect = it.signature ? null : (it.shell ? (shellRow(it.shell) || {}).effect : it.effect);
+        if (rowEffect) rowKids.push(el("p.help", { dataset: { weaponEffect: it.shell || it.name },
+          style: { margin: "6px 0 0", fontSize: "11px", color: "var(--text2)" }, text: "On Hit: " + rowEffect }));
 
         // Signature Weapons: the FULL effect always shows (the base attack works at any tier), and
         // a locked one adds a single status line from the engine. Only the On Hit riders are locked
@@ -5623,8 +5838,16 @@ EN.combatView = (function () {
           : "No weapons equipped; hit ⚔ EQUIP on a weapon in Inventory → Stash to list it here." }));
       }
       if (ch.class === "codebreaker") {
-        var cipherBonus = (d.grid && d.grid.cipherAttackBonus) != null ? d.grid.cipherAttackBonus : d.attributes.TEC.mod;
-        kids.push(attackRow("Cipher Attack", eng.fmtMod(cipherBonus), "d20 + Tech Modifier + Systems Proficiency Bonus vs Node · Quick Hacks under fire", "var(--accent)", null,
+        /* The Cipher Attack is the engine's effectiveAttack: Tech Modifier + Systems Proficiency Bonus + the
+           Smartdeck's Device Bonus, which "applies to both" the Cipher Attack and the Quick Hack (PHB 9094).
+           For a B&E Buddy it is the Buddy's own bonus. The fallbacks are for a record the grid block can't read. */
+        var gdk = d.grid || {};
+        var cipherBonus = gdk.effectiveAttack != null ? gdk.effectiveAttack
+          : gdk.cipherAttackBonus != null ? gdk.cipherAttackBonus : d.attributes.TEC.mod;
+        var cipherGloss = (gdk.deck && gdk.deck.type === "buddy")
+          ? "d20 + your B&E Buddy's attack bonus vs Node"
+          : "d20 + Tech Modifier + Systems Proficiency Bonus + Device Bonus vs Node";
+        kids.push(attackRow("Cipher Attack", eng.fmtMod(cipherBonus), cipherGloss + " · Quick Hacks under fire", "var(--accent)", null,
           function () { openRollTray(simpleAttackCtx("Cipher Attack", "CIPHER · VS NODE DEFENSE", [{ label: "Cipher Attack", value: cipherBonus }], {})); }));
       }
       // the same bonus covers the Flow Attribute Check, which is why the gloss names both
@@ -5643,7 +5866,7 @@ EN.combatView = (function () {
               el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text2)" }, text: "BONUS DMG" }),
               el("span.mono", { style: { fontSize: "15px", color: "var(--accent)" }, text: csdie })
             ]),
-            el("span.help", { style: { margin: 0, flex: 2 }, text: "Requires Edge on the roll, a flanking conscious ally, or Moxie spent this round. Sidearm, Simple, or Light Melee only." })
+            el("span.help", { style: { margin: 0, flex: 2 }, text: "Requires Edge on the roll, an ally within 1 space of the target while you don't have Snag, or Moxie spent this round. Sidearm, Simple, or Light Melee only." })
           ])
         ]));
       }
@@ -6495,6 +6718,12 @@ EN.combatView = (function () {
            diceMode: diceMode, setDiceMode: setDiceMode,
            // the attack-row trait matcher, read-only, so a check can hold it to traitLookup
            traitInfo: traitInfo,
+           // a weapon as it fires what is loaded in it: a Launcher with a Launcher Shell in the
+           // magazine takes the shell's damage and traits (W1). The print sheet and the PDF read this,
+           // so paper and the Weapons tab cannot disagree (audit RV-CODE-2). Read-only.
+           loadedWeapon: function (ch, it, key) {
+             return (ch && it && it.group === "Launcher" && it.ammo != null) ? shellItem(it, readAmmo(ch, it, key).ammoType) : it;
+           },
            // state only, no render: a swipe committing to another tab closes the popovers the way
            // a rail tap would, and the render that follows is the tab change's own
            closePops: closePops };

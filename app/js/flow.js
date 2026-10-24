@@ -175,9 +175,16 @@ EN.flowView = (function () {
         s.stage + " · " + s.name.toUpperCase());
     });
     kids.push(el("div.row", { style: { gap: "5px" } }, cells));
-    kids.push(stage > 0
-      ? noteP("Stage " + stage + " (" + f.strainName + "): " + f.strainPenalty, "var(--warn)")
-      : ruleNote("No Strain. Overdraw and failed Flow rituals build it."));
+    /* Absolute Conduit (Shaper, Level 9): Stage 1 and 2 penalties are ignored, so the line says
+       so in place of the penalty, and the Burden of the Earth exception rides under it. */
+    if (stage > 0 && f.strainIgnored) {
+      kids.push(noteP("Stage " + stage + " (" + f.strainName + "): ignored (Absolute Conduit).", "var(--success)"));
+      if (f.strainIgnoredNote) kids.push(noteP(f.strainIgnoredNote, "var(--text3)"));
+    } else {
+      kids.push(stage > 0
+        ? noteP("Stage " + stage + " (" + f.strainName + "): " + f.strainPenalty, "var(--warn)")
+        : ruleNote("No Strain. Overdraw and failed Flow rituals build it."));
+    }
 
     // Overdraw logger
     var odIn = el("input", { type: "number", min: "1", value: _od, style: { width: "54px", textAlign: "center", fontFamily: "var(--mono)" },
@@ -432,6 +439,7 @@ EN.flowView = (function () {
     ["fl-core", "Core Concepts & Formulas"], ["fl-shaping", "The Order of Shaping"], ["fl-resonances", "Resonances"],
     ["fl-sustain", "Sustained Effects"], ["fl-strain", "The Strain Track"], ["fl-overdraw", "Overdraw"],
     ["fl-breakflow", "Breakflow & Restoration"], ["fl-recovery", "Ritual Recovery"],
+    ["fl-advanced", "Advanced Techniques"],
     ["fl-dist", "Flow Disturbances"]
   ];
   /* ruleLink falls back to a text node when codex.js did not load or an anchor does not

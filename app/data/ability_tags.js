@@ -273,7 +273,7 @@ EN.abilityTags = {
   "Return on Investment (ROI)": { tag: "Utility" },
   "Rhythmic Shaping": { tag: "Buff" },
   "Ricochet Shot": { tag: "Combat" },
-  "Ricochet Trajectory": { tag: "Combat", damage: "2d6 Ballistic" },
+  "Ricochet Trajectory": { tag: "Combat", damage: "+2d6 Ballistic" },
   "Risk Assessment": { tag: "Detection" },
   "Room Sweeper": { tag: "Buff" },
   "Ruin Crawler": { tag: "Detection" },

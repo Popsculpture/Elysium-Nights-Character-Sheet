@@ -361,7 +361,12 @@ EN.gmEngine = (function () {
     var base = row(g);
     if (!base) return null;
     var des = designation(o.designation || "standard") || designation("standard");
-    var rol = role(o.role || "gunhand");
+    /* NO ROLE (THR-7). The Threat Builder's "None" (EN.threats.noRole, key "none") is the book's
+       "A threat with no Role is built off the Array without one": no Vitality, Defense, Speed, damage
+       or Save DC adjustment, no Initiative step, and no Role to hint the strong saves. `rol` stays
+       null all the way down, which every Role line below already reads as neutral. A missing role
+       still means Gunhand, the builder's default. */
+    var rol = o.role === "none" ? null : role(o.role || "gunhand");
     var why = {};
 
     // --- Vitality: base, then designation (replace OR multiply), then role
@@ -467,7 +472,10 @@ EN.gmEngine = (function () {
          the page rounds every derived number down. A Grade 2 Controller is
          10 x 0.75 = 7.5 and reads 7, not 8. */
       damagePerRound: Math.floor(dmg),
-      attacksNote: base.attacks,
+      /* How the round is spent. The array says it per Grade ("one or two attacks"); a Solo says the
+         Building a Solo line instead (EN.threats.designations solo.attacksNote, THR-1), so its whole
+         round is never read as one swing. */
+      attacksNote: (des && des.attacksNote) || base.attacks,
       attacks: atk,
 
       // Solo economy, absent on everything else

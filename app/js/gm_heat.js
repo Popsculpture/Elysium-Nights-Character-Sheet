@@ -118,6 +118,18 @@ EN.gmHeat = (function () {
   }
 
   function help(text, style) { return el("p.help", { style: style || { margin: "0 0 6px" }, text: text }); }
+  /* A help line whose "Enemy Freelancers and Named Rivals" is a link to that Codex panel (gmt-rivals,
+     Running Threats). Through EN.ui a link is plain text when the Codex is missing, so the words
+     always print; the sentence round-trips to the data's own text. */
+  function rivalsLine(text, style) {
+    var NAME = "Enemy Freelancers and Named Rivals", s = String(text || ""), at = s.indexOf(NAME);
+    if (at < 0) return help(s, style);
+    return el("p.help", { style: style || { margin: "0 0 6px" } }, [
+      document.createTextNode(s.slice(0, at)),
+      EN.ui.ruleLink("gmt-rivals", NAME),
+      document.createTextNode(s.slice(at + NAME.length))
+    ]);
+  }
   function chip(text, color, title) {
     return el("span.chip", { title: title || null,
       style: color ? { fontSize: "9.5px", color: color, borderColor: color } : { fontSize: "9.5px" }, text: text });
@@ -1282,7 +1294,9 @@ EN.gmHeat = (function () {
           _board = null;
         } })
     ]));
-    kids.push(help(B.whoTakesIt.text, { margin: "4px 0 0", color: "var(--text3)" }));
+    /* "Build a taker as a rival crew (Enemy Freelancers and Named Rivals)": the parenthesis names a
+       Codex panel (gmt-rivals), so that one phrase is a link and the rest of the sentence stays text. */
+    kids.push(rivalsLine(B.whoTakesIt.text, { margin: "4px 0 0", color: "var(--text3)" }));
     if (held < B.endsBelow) {
       kids.push(el("div.row.between.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "8px" } }, [
         el("span.help", { style: { margin: 0, color: "var(--warn)", flex: "1 1 200px", minWidth: "0" },

@@ -38,6 +38,10 @@
    on the Cred and Heat ladder rows (the lead words of the book's own meaning,
    for a tracker that needs a short name per value); `orMore` on Apex's "16+".
 
+   APP SUMMARIES, which no book prints now (19 October 2026 audit, social W2; the author's
+   ruling 10 keeps them): `coreConcepts` (the ten-term table) and `summary` (the eight
+   steps). They draw on both desktops, labelled APP SUMMARY (js/codex_social.js).
+
    ONE BLOCK FROM ANOTHER PART: `contacts` is Part 1's (the Backgrounds chapter), carried
    for the Social tab's Contacts sub-tab; its own comment names the source.
 
@@ -74,9 +78,9 @@ EN.social = {
      2026-10-16 handoff, section 8: the Sit-Down and the full Cred and Heat rules moved to
      the Game Master's Toolkit. The Admin desktop keeps the three depths (the GM side
      mirrors the Toolkit); the Freelancer desktop shows Friction and then `toolkitLead`,
-     the book's new sentence, whole (round 2 rulings, section 3; PHB, Social chapter
-     intro). */
-  toolkitLead: "Two optional systems build on it, and both live in the Game Master's Toolkit: the Sit-Down, which runs a big negotiation, interrogation, or trial like a combat encounter, and the full Cred and Heat tracks for reputation and hostile attention across a campaign.",
+     the book's sentence, whole (PHB, Social chapter intro; the 19 October 2026 playtest
+     PDF says "your GM runs both", where the 16 October text said the Toolkit). */
+  toolkitLead: "Two optional systems build on it, and your GM runs both: the Sit-Down, which runs a big negotiation, interrogation, or trial like a combat encounter, and the full Cred and Heat tracks for reputation and hostile attention across a campaign.",
   depthsLead: "This chapter handles social conflict at three depths.",
   depths: [
     { key: "friction", name: "Friction", text: "is always on: a roll, a margin, a consequence the table can track on the back of a napkin. Use it for every social scene that matters." },
@@ -93,9 +97,8 @@ EN.social = {
       "the conversation may shift reputation, debt, or faction posture"
     ],
     after: "Most conversations in Elysium don't clear that bar. A two-line haggle for cheap noodles isn't a system event. Use this when the outcome will matter to someone tomorrow.",
-    fit: "Use what fits the scene. A bartender shaking down a Freelancer for an overdue tab needs nothing more than Friction. A crew trying to crack a corporate witness across a six-hour deposition deserves the Sit-Down. The player who wants to know whether their Fury is famous in the underground fight circuit yet wants Cred.",
-    // the Freelancer desktop's copy: the same text with the Sit-Down sentence deleted (that rule moved to the Toolkit)
-    playerFit: "Use what fits the scene. A bartender shaking down a Freelancer for an overdue tab needs nothing more than Friction. The player who wants to know whether their Fury is famous in the underground fight circuit yet wants Cred."
+    // both desktops read this whole: the Handbook (PHB, Social chapter) keeps the deposition sentence on the player side
+    fit: "Use what fits the scene. A bartender shaking down a Freelancer for an overdue tab needs nothing more than Friction. A crew trying to crack a corporate witness across a six-hour deposition deserves the Sit-Down. The player who wants to know whether their Fury is famous in the underground fight circuit yet wants Cred."
   },
 
   /* ---- Friction --------------------------------------------------------------- */
@@ -119,7 +122,7 @@ EN.social = {
     powerhouses: "Charm and Mystique are the powerhouses here. They are built for this. But the system gives every Attribute a way in.",
     examples: "A Fury can use Body and Intimidation to make a fixer reconsider. A Codebreaker can use Tech and Intimidation to make a compliance officer realize how much of their life is already in the wrong hands. A Hustler can use Charm and Persuasion to do what Hustlers do. A Shaper can use Mystique and Performance to lean their resonance into the air until the room forgets how to breathe normally.",
     versatile: "The Skills chapter spells out how Versatile Skills bend to fit the method. The Approach is the bend.",
-    insight: { name: "Insight as the Social Help Action", text: "Insight doesn't move Resolve and doesn't directly secure a concession. It sets up the next push. On a successful Insight roll, you grant Edge (or +1 Edge Die) to one ally's next social roll in the same scene." }
+    insight: { name: "Insight as the Social Help Action", text: "Insight doesn't directly secure a concession. It sets up the next push. On a successful Insight roll, you grant Edge (or +1 Edge Die) to one ally's next social roll in the same scene." }
   },
 
   /* ---- Stakes and Sway ---------------------------------------------------------- */
@@ -174,8 +177,8 @@ EN.social = {
      so-contacts renders it beside the Fence rule (EN.economy.fences, Part 3). Each Background's
      own "Choose two ... contacts" line stays in data/backgrounds.js (`contacts`). */
   contacts: {
-    grant: { name: "Contacts, Hooks, and a Personal Item", text: "Two people you can reach, the trouble that still follows you, and one purely sentimental object you keep close because it reminds you who you were." },
-    makeItYoursLead: "Use the Background as a starting point. Two Freelancers can share a Background and feel nothing alike. Use the Contacts and Backstory Hooks to make your version specific:",
+    grant: { name: "Contacts, a Hook, and a Personal Item", text: "Two people you can reach, the trouble that still follows you, and one purely sentimental object you keep close because it reminds you who you were." },
+    makeItYoursLead: "Use the Background as a starting point. Two Freelancers can share a Background and feel nothing alike. Use the Contacts and the Backstory Hook to make your version specific:",
     makeItYours: "Give your contacts names, roles, and a reason they still pick up when you call. All contacts start neutral or slightly friendly until you develop a better rapport or the fiction says otherwise.",
     gmGuidance: "Backgrounds are a promise to the table. If a player chooses one, the world should occasionally respond like it matters. Contacts should appear. Hooks should bite. Background features should bypass obstacles that would stop an ordinary citizen in their tracks."
   },
@@ -223,7 +226,7 @@ EN.social = {
       { key: "burnedBridge", name: "Burned Bridge", text: "You get what you need now, but the relationship is finished." },
       { key: "publicTrace", name: "Public Trace", text: "Word spreads. A rumor or official note now follows you." }
     ],
-    outro: "Friction is enough for most social scenes. What follows is for the scenes that earn more."
+    outro: "Friction is enough for most social scenes. When one earns more, the GM can run it as a Sit-Down: the opposition gets Resolve, and the crew has rounds to break it."
   },
 
   /* ---- The Sit-Down (Optional) ----------------------------------------------------------------- */
@@ -252,7 +255,7 @@ EN.social = {
         { key: "standard", name: "Standard", resolve: 5, text: "5", orMore: false, examples: "A mid-tier fixer, a competent guard captain, a working journalist" },
         { key: "hardened", name: "Hardened", resolve: 8, text: "8", orMore: false, examples: "A faction lieutenant, a senior compliance officer, a veteran broker" },
         { key: "iron", name: "Iron", resolve: 12, text: "12", orMore: false, examples: "A corporate executive in their element, a faction patron, a high-end lawyer with a script" },
-        { key: "apex", name: "Apex", resolve: 16, text: "16+", orMore: true, examples: "A faction head, an Icon-class public figure, an Apex executive with no reason to bend" }
+        { key: "apex", name: "Apex", resolve: 16, text: "16+", orMore: true, examples: "A faction head, a household-name public figure, an Apex executive with no reason to bend" }
       ],
       reset: "Resolve resets at the start of each separate social encounter. A target who broke yesterday will rebuild Resolve overnight unless the fiction explicitly says otherwise. People recover. That is part of what makes them dangerous."
     },
@@ -411,8 +414,8 @@ EN.social = {
      The short "Cred and Heat" section the Player's Handbook prints at the end of the Social chapter
      (after Social Fallout), for the FREELANCER desktop only (js/codex_social.js, panel
      so-credheat-short); the Admin desktop reads the full rules above (`credHeat`). It points the
-     player at the Toolkit for the full rules, as the book does. Wording is the Handbook's, with the
-     bold and italic marks left off as the Handbook prints it.
+     player at the GM for the full rules ("Your GM keeps the full rules."), as the book does. Wording is
+     the Handbook's, with the bold and italic marks left off as the Handbook prints it.
      2026-10-17 rulings, section 4: one sentence follows "and the GM keeps the ledger." (stored on its
      own as `credRises` and spliced into the first paragraph at its place, so a test can read it).
      The Handbook prints it (batch 45, PHB 4909). */
@@ -420,17 +423,19 @@ EN.social = {
     name: "Cred and Heat",
     lead: "Reputation in Elysium is local. Cred is your standing within a specific scene or community. Heat is hostile attention from a specific source: a corporation, a precinct, a gang, a shrine. Each is tracked per source on a 0 to 10 scale, and the GM keeps the ledger.",
     credRises: "Cred rises when you finish a major contract where the scene can see it, do a notable favor for someone who matters there, land a Flawless Success in a social encounter that counts, or get a flattering story going around (true or not).",
-    toolkit: "The full rules live in the Game Master's Toolkit.",
+    toolkit: "Your GM keeps the full rules.",
     heat: "Heat rises when a job goes loud, you are publicly identified at a crime scene, a Critical Failure lands in a scene involving institutional targets, or you earn a Profile like Flagged or Under Watch. It falls by about 1 per month of quiet Downtime (GM discretion), or when a data scrub, bribe, or legal scrub lands, a contact clears the record, or a bigger fish draws the eye. High Heat from a source imposes Snag on Stealth and Deception rolls in territory it controls and brings active opposition. Heat fades. Slowly."
   },
 
   /* ---- Examples in Play ----------------------------------------------------------------------------- */
+  /* The Game Master's Toolkit prints two examples (GMT "Examples in Play"); the Player's Handbook's
+     Social chapter prints none. The three the app used to carry (a fixer's rate, a broker's Flawless
+     Success, a shrine negotiator's Debt) are in neither book and are gone (19 October 2026 audit,
+     social W3). `audience: "gm"`: js/codex_social.js draws an example only on the Admin desktop,
+     so the Freelancer desktop shows none. */
   examples: [
-    "A Freelancer negotiates payment with a fixer and rolls a Strong Success. The rate improves, but the fixer now expects priority access on the crew's next job.",
-    "A crew spokesperson rolls a Mixed Result while securing access to a restricted district. The team gets through, but picks up the Profile *Flagged at South Gate*. Heat with the district precinct ticks up by 1.",
-    "A broker rolls a Flawless Success during a tense contract scene. The crew gets better terms, a faster timeline, and the patron shifts from Neutral to Friendly. Cred with the corporate broker network ticks up by 1.",
-    "A Character tries to bluff a corporate compliance officer and rolls a Critical Failure. The lie collapses, the office goes Hostile, and the crew gains immediate Scrutiny. Heat with that corporation increases by 1.",
-    "A shrine negotiator accepts a Debt as the cost of success. The ritual space is granted, but the shrine will later call in a favor tied to a future anomaly event."
+    { key: "restrictedDistrict", audience: "gm", text: "A crew spokesperson rolls a Mixed Result while securing access to a restricted district. The team gets through, but picks up the Profile *Flagged at South Gate*. Heat with the district precinct ticks up by 1." },
+    { key: "complianceOfficer", audience: "gm", text: "A Character tries to bluff a corporate compliance officer and rolls a Critical Failure. The lie collapses, the office goes Hostile, and the crew gains immediate Scrutiny. Heat with that corporation increases by 1." }
   ],
   deposition: {
     title: "Sit-Down Example: The Deposition",

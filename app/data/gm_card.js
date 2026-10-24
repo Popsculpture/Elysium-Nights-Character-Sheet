@@ -1,10 +1,12 @@
 /* ===========================================================================
    ELYSIUM NIGHTS · The GM's Card  (GM Toolkit)
    A transcription of the Game Master's Handbook appendix The GM's Card (PDF
-   pages 127 to 131): the Front (six run-in paragraphs in a box) and the Back
-   (Dice Pools, Nodes, Sit-Downs, Chases, Heat, Building a Threat and the
-   blank threat). RULES ONLY: nothing here is computed. The Card drawer on the
-   Admin tabs prints it as a two-sided card.
+   pages 127 to 131): Side 1: Threats and Fights (the Toolkit's name; six run-in
+   paragraphs in a box, key "front") and Side 2: Systems (Dice Pools, Nodes,
+   Sit-Downs, Chases, Heat and Building a Threat, key "back"). The October 2026
+   Toolkit dropped the card's blank threat template, so there is none here.
+   RULES ONLY: nothing here is computed. The Card drawer on the Admin tabs prints
+   it as a two-sided card.
 
    Every string is the page's wording, checked against the handbook text by a
    script. Headings and column names are printed in capitals on the page; they
@@ -16,12 +18,14 @@
    SHAPE (for the drawer):
      EN.gmBook.card = { schemaVersion, title, sides: [side, side] }
      side     { key: "front"|"back", name, boxed, sections: [section, ...] }
-              `boxed` is true for the Front, which the page prints in a box.
+              `name` is the page's side heading ("Side 1: Threats and Fights",
+              "Side 2: Systems"); the keys stay "front" and "back". `boxed` is
+              true for the first side, which the page prints in a box.
      section  { key, name, runIn, blocks: [block, ...] }
               `runIn` true means the page prints no heading for the section:
               its name is the bold run-in that opens its first text block.
               Otherwise `name` is the section heading.
-     block    one of three kinds, in page order:
+     block    one of two kinds, in page order:
        { kind: "text", md, text, values? }
               `md` carries the page's bold runs as **...**: render it with
               EN.ui.applyInline. `text` is the same words with no markers, for
@@ -31,19 +35,11 @@
               the page leaves a cell empty. The first column is printed bold.
               The other fields on a row are the same values typed, for
               screens that compute with them.
-       { kind: "template", key, head, sub, rows: [[cell, ...], ...] }
-              The blank threat: `head` fills the header bar, `sub` is the bold
-              italic line under it, each row is the label and hint pairs the
-              page prints on one line (label bold, hint italic). `field` on a
-              cell, `headField` and `subFields` are APP LINKS, not book text:
-              the keys of the built threat block (EN.gmEngine.buildThreat)
-              that each line holds.
 
    Page references (// GMH pNN) are PDF page numbers of the handbook; the folio
    printed on each page runs 4 lower. User-facing text carries no page numbers.
 
-   No em or en dashes anywhere in this file (house style). The bullet in the
-   blank threat's second line is the page's own.
+   No em or en dashes anywhere in this file (house style).
    =========================================================================== */
 window.EN = window.EN || {}; EN.gmBook = EN.gmBook || {};
 
@@ -54,9 +50,9 @@ EN.gmBook.card = {
   title: "The GM's Card",
 
   sides: [
-    /* ---- FRONT -------------------------------------------------------------
+    /* ---- SIDE 1: THREATS AND FIGHTS (key "front") ------------------------------
        Six paragraphs in one box, each opened by a bold run-in. */
-    { key: "front", name: "Front", boxed: true, sections: [
+    { key: "front", name: "Side 1: Threats and Fights", boxed: true, sections: [
 
       /* sameAs EN.threats.array (attack, dc, defense, vitality, drLow and
          drHigh, damage, strong, weak). */
@@ -117,9 +113,9 @@ EN.gmBook.card = {
       ] }
     ] },
 
-    /* ---- BACK --------------------------------------------------------------
+    /* ---- SIDE 2: SYSTEMS (key "back") -------------------------------------------
        Six headed sections of tables, in page order. */
-    { key: "back", name: "Back", boxed: false, sections: [
+    { key: "back", name: "Side 2: Systems", boxed: false, sections: [
 
       // GMH p127 (both tables), p128 (the ladder line)
       { key: "pools", name: "Dice Pools", runIn: false, blocks: [
@@ -238,10 +234,11 @@ EN.gmBook.card = {
             { key: "critical", cells: ["Critical", "0", "The target gains 1 Resolve; strong Social Fallout"], result: "Critical", pressure: 0,
               also: "The target gains 1 Resolve; strong Social Fallout", resolveGain: 1 }
           ] },
+        // the second sentence is the Toolkit's (GMT p66): "Pressure comes off the opposition's Resolve; at 0, they break."
         { kind: "text",
-          md: "The Opposition gets one Posture a Round.",
-          text: "The Opposition gets one Posture a Round.",
-          values: { posturesPerRound: 1 } }
+          md: "The Opposition gets one Posture a Round. Pressure comes off the opposition's Resolve; at 0, they break.",
+          text: "The Opposition gets one Posture a Round. Pressure comes off the opposition's Resolve; at 0, they break.",
+          values: { posturesPerRound: 1, breaksAtResolve: 0 } }
       ] },
 
       // GMH p129 (both tables), p130 (the rules line)
@@ -275,9 +272,9 @@ EN.gmBook.card = {
            how "half the crew's Heat" rounds. */
         // GMH p130
         { kind: "text",
-          md: "**Start** at Lead 2. **Dominant Victory** at +5 on d20, +3 in Dice Pools. **Stalemate:** each pilot makes a Control Check against the Impact DC for their speed; a failure is Snag on the next Chase Check. **First response** in 5 minus half the crew's Heat, minimum 1.",
-          text: "Start at Lead 2. Dominant Victory at +5 on d20, +3 in Dice Pools. Stalemate: each pilot makes a Control Check against the Impact DC for their speed; a failure is Snag on the next Chase Check. First response in 5 minus half the crew's Heat, minimum 1.",
-          values: { startLead: 2, dominantD20: 5, dominantPool: 3, firstResponseFrom: 5, firstResponseMin: 1 } }
+          md: "**Start** at Lead 2. **Dominant Victory** at +5 on d20, +3 in Dice Pools, moves the Lead by 2. **Stalemate:** each pilot makes a Control Check against the Impact DC for their speed; a failure is Snag on the next Chase Check. **First response** in 5 minus half the crew's Heat, minimum 1.",
+          text: "Start at Lead 2. Dominant Victory at +5 on d20, +3 in Dice Pools, moves the Lead by 2. Stalemate: each pilot makes a Control Check against the Impact DC for their speed; a failure is Snag on the next Chase Check. First response in 5 minus half the crew's Heat, minimum 1.",
+          values: { startLead: 2, dominantD20: 5, dominantPool: 3, dominantMovesLead: 2, firstResponseFrom: 5, firstResponseMin: 1 } }
       ] },
 
       /* sameAs EN.gmBook.heat (the Heat Check and the Ladder's fight column).
@@ -328,36 +325,7 @@ EN.gmBook.card = {
         // GMH p131
         { kind: "text",
           md: "A threat at the wheel pilots at Attack + Handling.",
-          text: "A threat at the wheel pilots at Attack + Handling." },
-        // GMH p131
-        { kind: "text",
-          md: "**Blank threat.**",
-          text: "Blank threat." },
-        /* The page prints the XP row as two pairs split differently from the
-           three-pair rows above it; the drawer lays each row's pairs out
-           evenly. */
-        // GMH p131
-        { kind: "template", key: "blankThreat",
-          head: "Threat Name",
-          sub: "Grade • Designation • Role • Size/Type",
-          headField: "name",
-          subFields: ["grade", "designation", "role", "size", "type"],
-          rows: [
-            [ { label: "Defense", hint: "value", field: "defense" },
-              { label: "DR", hint: "value", field: "dr" },
-              { label: "Vitality", hint: "value", field: "vitality" } ],
-            [ { label: "Initiative", hint: "value", field: "init" },
-              { label: "Speed", hint: "value", field: "speed" },
-              { label: "Passive Perception", hint: "value", field: "passivePerception" } ],
-            [ { label: "Saves", hint: "+value and +value", field: "saves" } ],
-            [ { label: "Attack/Ability", hint: "+ value vs Defense, range, dice (avg)", field: "attacks" } ],
-            [ { label: "Attack/Ability", hint: "+ value vs Defense, range, dice (avg)", field: "attacks" } ],
-            [ { label: "Trait", hint: "description", field: "trait" } ],
-            [ { label: "Impulse", hint: "description", field: "impulse" } ],
-            [ { label: "XP", hint: "value", field: "xp" },
-              { label: "Resolve", hint: "value", field: "resolve" } ],
-            [ { label: "Gear", hint: "What the body leaves", field: "gear" } ]
-          ] }
+          text: "A threat at the wheel pilots at Attack + Handling." }
       ] }
     ] }
   ]

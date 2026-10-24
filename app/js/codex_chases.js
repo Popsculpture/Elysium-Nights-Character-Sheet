@@ -15,6 +15,10 @@
    stay in Cover & Sight (EN.combat.vehiclesAsCover): these panels link them
    rather than print them twice. Every rule line is a field of EN.chases; the
    only words of this file's own are headings and the small pointers.
+   19 October 2026 audit (round 7, group social): vc-stats has no Core Concepts and the
+   Vehicle Proficiencies table no intro line or In Play column (the Handbook prints none);
+   vc-chase gives the Freelancer desktop only the Handbook's chase lines (the crew paragraph,
+   System Hits, Heat, on foot) and keeps the Toolkit's whole chase for the Admin desktop.
    The API is documented in the header of app/js/codex.js.
    =========================================================================== */
 window.EN = window.EN || {};
@@ -77,12 +81,11 @@ window.EN = window.EN || {};
   CV.addPanels("street", [
 
     /* ---- 1 · what a vehicle is, in numbers ----------------------------------- */
-    { id: "vc-stats", title: "Vehicle Stats & Traits", tag: "CORE CONCEPTS · SPEED · TRAITS", order: 11, when: has("coreConcepts"), build: function (ctx, K) {
+    // no Core Concepts (the Handbook's chapter has none, social W10): the panel keys on the categories now
+    { id: "vc-stats", title: "Vehicle Stats & Traits", tag: "CATEGORIES · SPEED · TRAITS", order: 11, when: has("categories"), build: function (ctx, K) {
       var c = C();
       return [
         prose(K, paras([c.intro, c.statBlocksIntro])),
-        K.entry("core-concepts", "Core Concepts", [K.subTitle("Core Concepts"),
-          K.refTable(["Term", "Summary"], c.coreConcepts.map(function (t) { return [t.term, t.text]; }), [0], LO)]),
         K.entry("vehicle-categories", "Vehicle Categories", [K.subTitle("Vehicle Categories"), prose(K, c.categoriesNote),
           K.refTable(["Category", "What It Covers", "Examples"], c.categories.map(function (r) { return [r.category, r.covers, r.examples]; }), [0], LO)]),
         rb(K, "Vehicle Stats", named(c.stats)),
@@ -106,8 +109,9 @@ window.EN = window.EN || {};
         ctx.portal === "admin" ? null : K.note("The Inventory tab's Garage works this check out for the vehicle you pick."),
         rb(K, "Proficient and Untrained Pilots", O.proficiency)
       ];
-      if (P) kids.push(block(K, "Vehicle Proficiencies", [prose(K, paras([P.intro, P.rule])),
-        K.refTable(["Category", "What it Covers", "Examples", "In Play"], P.rows.map(function (r) { return [r.category, r.covers, r.examples, r.inPlay]; }), [0], LO)]));
+      // the Handbook's table is Category, What it Covers, Examples: no intro line, no In Play column (social W10)
+      if (P) kids.push(block(K, "Vehicle Proficiencies", [prose(K, P.rule),
+        K.refTable(["Category", "What it Covers", "Examples"], P.rows.map(function (r) { return [r.category, r.covers, r.examples]; }), [0], LO)]));
       if (O.ownership) kids.push(K.note(O.ownership, { terms: XT }));
       if (CB) {
         kids.push(K.subTitle("Combat Integration"));
@@ -154,23 +158,39 @@ window.EN = window.EN || {};
     } },
 
     /* ---- 4 · the chase ------------------------------------------------------------ */
-    { id: "vc-chase", title: "Chases & Lead", tag: "LEAD · CHASE CHECK · CREW · ESCALATION", order: 14, when: has("chase"), build: function (ctx, K) {
-      var c = C(), H = c.chase, E = H.escalation, SH = H.systemHits;
+    /* The Admin desktop reads the Toolkit's whole chase (first response and Pursuit Escalation, the
+       System Hits list and cap, the Edge and Snag details, Mixed chases, #GRID traces). The Handbook
+       keeps only its crew paragraph, Heat and the on-foot line (PHB, Chase Rules), so the Freelancer
+       desktop reads those (EN.chases.chase.handbook) in their place (19 October 2026 audit, social W1). */
+    { id: "vc-chase", title: "Chases & Lead",
+      tag: function (ctx) { return ctx.portal === "admin" ? "LEAD · CHASE CHECK · CREW · ESCALATION" : "LEAD · CHASE CHECK · CREW · HEAT"; },
+      order: 14, when: has("chase"), build: function (ctx, K) {
+      var c = C(), H = c.chase, E = H.escalation, SH = H.systemHits, HB = H.handbook || {};
+      var gm = ctx.portal === "admin";
+      // the Freelancer's straightaway line is the Handbook's last Chase Check sentence; the Toolkit's Edge entry says it on Admin
+      var outcomes = gm || !HB.straightaway ? H.outcomes : H.outcomes.concat([{ name: "Edge", text: HB.straightaway }]);
       var kids = [
         block(K, "Lead", [prose(K, H.intro),
           K.refTable(["Lead", "Band", "Gap in spaces"], H.lead.map(function (r) { return [String(r.lead), r.band, r.gap]; }), [0, 1], LO),
           prose(K, paras([H.ranges, H.startAndEnd]))]),
-        rb(K, "Resolving the Chase", paras([H.resolving, named(H.outcomes)])),
-        rb(K, "Edge and Snag Interactions", paras([H.edgeSnagIntro, named(H.edgeSnag)])),
-        rb(K, "The Crew", paras([H.crewIntro, named([H.tilt])])),
-        block(K, SH.name, [prose(K, SH.text), list(K, SH.list), prose(K, "**" + SH.cap.name + ":** " + SH.cap.text)]),
-        block(K, "Pursuit Escalation", [prose(K, paras([E.heat, E.firstResponse])),
-          K.refTable(["Heat with the source", "What shows up"], E.rows.map(function (r) { return [r.heat, r.shows]; }), [0], LO)]),
-        rb(K, "Chases Beyond Vehicles", paras([H.beyondIntro, H.beyond.map(function (b) {
-          return "• " + b.name + ": " + b.text.charAt(0).toUpperCase() + b.text.slice(1); }).join("\n")]))
+        rb(K, "Resolving the Chase", paras([H.resolving, named(outcomes)]))
       ];
-      // the GM's chase tracker and its prep card, on the Admin desktop only
-      if (ctx.portal === "admin") kids.push(K.seeAlso("Running one at the table:", [["gms-chase", "Chase Rules"]]));
+      if (gm) {
+        kids.push(rb(K, "Edge and Snag Interactions", paras([H.edgeSnagIntro, named(H.edgeSnag)])));
+        kids.push(rb(K, "The Crew", paras([H.crewIntro, named([H.tilt])])));
+        kids.push(block(K, SH.name, [prose(K, SH.text), list(K, SH.list), prose(K, "**" + SH.cap.name + ":** " + SH.cap.text)]));
+        kids.push(block(K, "Pursuit Escalation", [prose(K, paras([E.heat, E.firstResponse])),
+          K.refTable(["Heat with the source", "What shows up"], E.rows.map(function (r) { return [r.heat, r.shows]; }), [0], LO)]));
+        kids.push(rb(K, "Chases Beyond Vehicles", paras([H.beyondIntro, H.beyond.map(function (b) {
+          return "• " + b.name + ": " + b.text.charAt(0).toUpperCase() + b.text.slice(1); }).join("\n")])));
+        // the GM's chase tracker and its prep card, on the Admin desktop only
+        kids.push(K.seeAlso("Running one at the table:", [["gms-chase", "Chase Rules"]]));
+      } else {
+        if (HB.crew) kids.push(rb(K, "The Crew", HB.crew));
+        if (HB.systemHit) kids.push(rb(K, SH.name, HB.systemHit));
+        if (HB.heat) kids.push(rb(K, "Heat", HB.heat));
+        if (HB.onFoot) kids.push(rb(K, "On Foot", HB.onFoot));
+      }
       return kids;
     } },
 

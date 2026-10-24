@@ -10,7 +10,10 @@
      mv-optfx      Optional Damage Effects That Move a Target, order 17, audience
                    "gm": the Appendix: Optional Damage Effects moved to the Game
                    Master's Toolkit (2026-10-16 handoff, section 8), so the Admin
-                   desktop alone carries its two moving Effects
+                   desktop alone carries its two moving Effects. Their rows are
+                   READ from EN.threats.optionalDamageEffects (the appendix's one
+                   copy; EN.movement.movingEffectNames says which two), and the
+                   panel links the whole appendix, gmt-damage-effects
      mv-maneuvers  Shove, Trip & Grapple        order 18, before Active Defenses
      mv-wall       Wall-to-Wall                 order 35, after Cover & Sight
    Anchors worth knowing: mv-move/difficult-terrain, mv-move/through-a-body,
@@ -36,6 +39,20 @@ window.EN = window.EN || {};
      every other term, so the citation in Going Farther always lands on mv-fall. */
   var FFM = { "Falling & Forced Movement": "mv-fall" };
   function admin(ctx) { return !!(ctx && ctx.portal === "admin"); }
+  /* The Effects that move a Target, as rows of the Toolkit's appendix (EN.threats.optionalDamageEffects):
+     the names are EN.movement's, the words are the appendix's, so there is one copy of each. */
+  function fxData() { return (EN.threats && EN.threats.optionalDamageEffects) || null; }
+  function movingRows() {
+    var m = M(), d = fxData();
+    if (!m || !d) return [];
+    return (m.movingEffectNames || []).map(function (n) {
+      return (d.effects || []).filter(function (e) { return e.name === n; })[0] || null;
+    }).filter(Boolean);
+  }
+  function groupName(d, e) {
+    var g = (d.groups || []).filter(function (x) { return x.key === e.group; })[0];
+    return g ? g.name : String(e.group || "");
+  }
 
   CV.addPanels("combat", [
 
@@ -89,17 +106,20 @@ window.EN = window.EN || {};
     } },
 
     /* ---- 3b · the Optional Damage Effects that move a Target: the GM's now ---------
-       The Appendix: Optional Damage Effects lives in the Game Master's Toolkit (the book:
-       "Optional damage Effects (Ignite, Bleed, Mutating, Reversal, and the rest) live in
-       the Game Master's Toolkit."), so these two render on the Admin desktop only. */
-    { id: "mv-optfx", title: "Optional Damage Effects That Move a Target", tag: "CONCUSSIVE · KNOCKBACK", audience: "gm", order: 17, when: has("movingEffects"), build: function (ctx, K) {
-      var m = M();
-      if (!(m.movingEffects || []).length) return [];
+       The Appendix: Optional Damage Effects lives in the Game Master's Toolkit (the Handbook
+       now prints "Some tables add optional damage Effects (Ignite, Bleed, Mutating, Reversal,
+       and the rest); your GM will say if yours does.", EN.combat.optionalEffectsNote, shown in
+       Damage Types on both desktops), so these two render on the Admin desktop only. */
+    { id: "mv-optfx", title: "Optional Damage Effects That Move a Target", tag: "CONCUSSIVE · KNOCKBACK", audience: "gm", order: 17,
+      when: function () { return movingRows().length > 0; }, build: function (ctx, K) {
+      var d = fxData(), rows = movingRows();
+      if (!rows.length) return [];
       return [
-        m.optionalEffectsNote ? K.note(m.optionalEffectsNote) : null,
-        m.movingEffects.map(function (e) {
-          return K.ruleBlock(e.name, e.text, e.type.toUpperCase() + " · " + e.group.toUpperCase(), { conditions: true });
+        d.intro ? K.note(d.intro) : null,
+        rows.map(function (e) {
+          return K.ruleBlock(e.name, e.text, e.type.toUpperCase() + " · " + groupName(d, e).toUpperCase(), { conditions: true });
         }),
+        K.seeAlso("The whole appendix:", [["gmt-damage-effects", "Optional Damage Effects"]]),
         K.seeAlso("The movement itself:", [["mv-fall", "Falling & Forced Movement"]])
       ];
     } },

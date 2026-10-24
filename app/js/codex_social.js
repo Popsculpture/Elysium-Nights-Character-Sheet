@@ -27,6 +27,10 @@
    stays whole in EN.social: the GM Sit-Down tracker reads it directly.
    The Handbook's short Cred and Heat section (so-credheat-short, 2026-10-17 rulings, section 4)
    is the one Cred and Heat text the Freelancer desktop reads; it is empty on Admin.
+   19 October 2026 audit (round 7, group social): so-examples is an audience "gm" panel too (the
+   Toolkit prints two examples, the Handbook none); the Freelancer's Friction text keeps the
+   Handbook's deposition sentence whole (no playerFit); the Core Concepts table and the eight
+   steps no book prints stay on both desktops, labelled APP SUMMARY.
    The API is documented in the header of app/js/codex.js.
    =========================================================================== */
 window.EN = window.EN || {};
@@ -55,6 +59,13 @@ window.EN = window.EN || {};
   // "- Name: text" named lines, so each is an anchor of its own
   function named(list) { return list.map(function (r) { return "- " + r.name + ": " + r.text; }).join("\n"); }
   function admin(ctx) { return !!(ctx && ctx.portal === "admin"); }
+  // the R10 label (19 October 2026 audit, ruling 10): a table or list the app keeps that no book prints
+  var APP_SUMMARY = "App summary: the Handbook doesn't print this.";
+  // the Examples in Play this desktop draws: an example with audience "gm" is the Admin desktop's
+  function exampleList(ctx) {
+    var s = S();
+    return ((s && s.examples) || []).filter(function (x) { return !x.audience || x.audience === "both" || (x.audience === "gm" && admin(ctx)); });
+  }
   // the Admin desktop's GM chapters, linked only where they resolve
   function gmSee(ctx, K, label, pairs) {
     if (ctx.portal !== "admin") return null;
@@ -69,9 +80,9 @@ window.EN = window.EN || {};
       tag: function (ctx) { return admin(ctx) ? "FRICTION · SIT-DOWN · CRED AND HEAT" : "THE WORDS · FRICTION"; },
       build: function (ctx, K) {
       var s = S(), e = s.engages;
-      /* The Freelancer desktop: Friction, then the book's sentence that sends the Sit-Down
-         and the full Cred and Heat tracks to the Game Master's Toolkit. Admin keeps the
-         three depths, which the Toolkit carries. */
+      /* The Freelancer desktop: Friction, then the book's sentence that names the Sit-Down
+         and the full Cred and Heat tracks as the GM's to run ("your GM runs both"). Admin
+         keeps the three depths, which the Toolkit carries. */
       function depths() { return admin(ctx) || !s.toolkitLead ? [
         K.subTitle("Three Depths"),
         K.proseBlock(s.depthsLead, lo()),
@@ -83,23 +94,28 @@ window.EN = window.EN || {};
       ]; }
       return [
         K.proseBlock(s.intro, lo()),
+        // an app summary: neither book prints this table, so it carries the R10 label (ruling 10, 19 October 2026)
         K.entry("core-concepts", "Core Concepts", [
           K.subTitle("Core Concepts"),
-          K.refTable(["Term", "Summary"], s.coreConcepts.map(function (c) { return [c.term, c.text]; }), [0], lo())
+          K.refTable(["Term", "Summary"], s.coreConcepts.map(function (c) { return [c.term, c.text]; }), [0], lo()),
+          K.note(APP_SUMMARY, lo())
         ]),
         depths(),
         K.ruleBlock(e.name, K.bullets(e.items) + "\n\n" + e.after, null, lo()),
-        K.proseBlock(!admin(ctx) && e.playerFit ? e.playerFit : e.fit, lo())
+        // both desktops read the whole sentence set: the Handbook keeps the deposition sentence on the player side (PHB:6178)
+        K.proseBlock(e.fit, lo())
       ];
     } },
 
     /* ---- 2 · the eight steps, the chapter's own summary -------------------------- */
-    { id: "so-summary", title: "Social Play Summary", tag: "EIGHT STEPS", order: 15, when: has("summary"), build: function (ctx, K) {
+    // the eight steps are the app's own summary (no book prints them now), so the panel and its table say so
+    { id: "so-summary", title: "Social Play Summary", tag: "APP SUMMARY · EIGHT STEPS", order: 15, when: has("summary"), build: function (ctx, K) {
       var g = S().summary;
       return [
         K.entry("gameplay-summary", g.title, [
           // a step's playerText leaves out the Sit-Down rule the Freelancer desktop no longer carries
-          K.refTable(g.columns, g.steps.map(function (r) { return [r.n + ". " + r.name, !admin(ctx) && r.playerText ? r.playerText : r.text]; }), [0], lo())
+          K.refTable(g.columns, g.steps.map(function (r) { return [r.n + ". " + r.name, !admin(ctx) && r.playerText ? r.playerText : r.text]; }), [0], lo()),
+          K.note(APP_SUMMARY, lo())
         ])
       ];
     } },
@@ -302,8 +318,8 @@ window.EN = window.EN || {};
     } },
 
     /* ---- 13b · Cred and Heat, the Handbook's short section (Freelancer desktop) ---------------------
-       The Player's Handbook prints a short "Cred and Heat" section at the end of this chapter and sends
-       the full rules to the Toolkit (so-credheat, Admin only). A panel of the same title, built only on
+       The Player's Handbook prints a short "Cred and Heat" section at the end of this chapter and leaves
+       the full rules to the GM ("Your GM keeps the full rules."; so-credheat, Admin only). A panel of the same title, built only on
        the Freelancer desktop, so "Cred and Heat" (the Streaming Rig's "(see Cred and Heat)", a search)
        lands on it for a Freelancer. It has no `when` on purpose: codex.js drops a collapsed panel whose
        cached index comes back empty only when the panel has no `when`, so both the desktop check and the
@@ -321,15 +337,22 @@ window.EN = window.EN || {};
     } },
 
     /* ---- 14 · Examples in Play and the Deposition --------------------------------------------------- */
-    { id: "so-examples", title: "Social Scenes in Play", order: 130, when: has("examples"),
-      tag: function (ctx) { return admin(ctx) ? "FIVE EXAMPLES · THE DEPOSITION" : "FIVE EXAMPLES"; },
+    /* The Toolkit prints two examples and the Sit-Down Example; the Handbook's Social chapter prints
+       none (19 October 2026 audit, social W3). So the panel is the Admin desktop's, and each example
+       is drawn only for the audience its `audience` field names ("gm" here), the same rule the panel
+       itself follows. The Freelancer desktop has no Social Scenes in Play panel. */
+    { id: "so-examples", title: "Social Scenes in Play", audience: "gm", order: 130, when: has("examples"),
+      tag: function (ctx) {
+        var n = exampleList(ctx).length, w = ["NO", "ONE", "TWO", "THREE", "FOUR", "FIVE"][n] || String(n);
+        return w + (n === 1 ? " EXAMPLE" : " EXAMPLES") + (admin(ctx) ? " · THE DEPOSITION" : "");
+      },
       build: function (ctx, K) {
-      var s = S(), dp = s.deposition;
+      var s = S(), dp = s.deposition, xs = exampleList(ctx);
       return [
-        K.entry("examples-in-play", "Examples in Play", [
+        xs.length ? K.entry("examples-in-play", "Examples in Play", [
           K.subTitle("Examples in Play"),
-          K.proseBlock(s.examples.map(function (x) { return "- " + x; }).join("\n"), lo())
-        ]),
+          K.proseBlock(xs.map(function (x) { return "- " + x.text; }).join("\n"), lo())
+        ]) : null,
         // a Sit-Down example, so it went to the Toolkit with the Sit-Down
         dp && admin(ctx) ? K.ruleBlock("The Deposition", dp.setup + "\n" + named(dp.rounds), "SIT-DOWN EXAMPLE", lo()) : null
       ];

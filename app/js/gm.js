@@ -122,6 +122,13 @@ EN.gmView = (function () {
     var x = (list || []).filter(function (d) { return d && d.key === key; })[0];
     return x ? x.name : key;
   }
+  /* The Role picker's options: "None" first (EN.threats.noRole, the book's "a threat with no Role is
+     built off the Array without one"), then the seven Roles in the book's order. The builder still
+     starts on Gunhand; None is a choice, not the default. */
+  function roleOptions(T) {
+    var list = T.roles.map(function (r) { return { value: r.key, label: r.name }; });
+    return T.noRole ? [{ value: T.noRole.key, label: T.noRole.name }].concat(list) : list;
+  }
   function builderPanel() {
     var T = EN.threats;
     var block = EN.gmEngine.buildThreat(_b);
@@ -138,8 +145,10 @@ EN.gmView = (function () {
         function (v) { _b.grade = Number(v); }, "gmt-grades/grade-" + _b.grade),
       pick("Designation", T.designations.map(function (d) { return { value: d.key, label: d.name }; }), _b.designation,
         function (v) { _b.designation = v; }, "gmt-designations/" + cxSlug(nameIn(T.designations, _b.designation))),
-      pick("Role", T.roles.map(function (r) { return { value: r.key, label: r.name }; }), _b.role,
-        function (v) { _b.role = v; _b.strong = null; }, "gmt-roles/" + cxSlug(nameIn(T.roles, _b.role))),
+      pick("Role", roleOptions(T), _b.role,
+        function (v) { _b.role = v; _b.strong = null; },
+        // None has no Role entry of its own: its chip opens the Roles panel, which carries the book's line about it
+        T.noRole && _b.role === T.noRole.key ? "gmt-roles" : "gmt-roles/" + cxSlug(nameIn(T.roles, _b.role))),
       pick("Size", (EN.rules.sizes || ["Medium"]).map(function (s) { return { value: s, label: s }; }), _b.size,
         function (v) { _b.size = v; }, "ref-size"),
       pick("Type", T.types.map(function (t) { return { value: t, label: t }; }), _b.type,
@@ -156,13 +165,15 @@ EN.gmView = (function () {
       pick("Strong save", attrOpts, curStrong[0], function (v) { _b.strong = [v].concat(curStrong[1] ? [curStrong[1]] : []); }),
       pick("and (optional)", [{ value: "", label: "none" }].concat(attrOpts), curStrong[1] || "",
         function (v) { _b.strong = v ? [curStrong[0], v] : [curStrong[0]]; }),
-      el("p.help", { style: { margin: 0, maxWidth: "320px" },
-        text: "The book names these per threat rather than deriving them. The Role only suggests a starting point." })
+      // the Saves line of "Reading a Threat Stat Block" (EN.threats.savesRule) says what the two pickers mean
+      el("p.help", { dataset: { gm: "saves-rule" }, style: { margin: 0, maxWidth: "440px" },
+        text: "The book names these per threat rather than deriving them. The Role only suggests a starting point." +
+          (T.savesRule ? " " + T.savesRule : "") })
     ]));
 
     var grade = T.grades.filter(function (g) { return g.g === _b.grade; })[0];
     if (grade) kids.push(el("p.help", { style: { margin: "8px 0 0" }, text: "G" + grade.g + ". " + grade.reads + " Matched crew: " + grade.crew + "." }));
-    var rol = T.roles.filter(function (r) { return r.key === _b.role; })[0];
+    var rol = T.roles.filter(function (r) { return r.key === _b.role; })[0] || (T.noRole && T.noRole.key === _b.role ? T.noRole : null);
     if (rol) kids.push(el("p.help", { style: { margin: "3px 0 0", color: "var(--text2)" }, text: rol.name + ". " + rol.text }));
 
     kids.push(el("div", { style: { height: "10px" } }));
@@ -1868,15 +1879,18 @@ EN.gmView = (function () {
      #print-overlay, .print-bar, .sheet-page). Its print rules already hide the
      desktop and give every .sheet-page a Letter page of its own, so the two
      sides print as two pages, a card to fold or print double-sided, with no new
-     stylesheet. The paper palette is that sheet's own: ink, teal and rule. The
-     Front is the page's one box of run-in paragraphs; the Back is set in
-     columns of about three inches, which is two on paper and one on a phone.
-     Headings and column names are stored in title case (gm_card.js) and set in
-     capitals here, as the page prints them. */
-  var INK = "#18222c", TEAL = "#0c6f81", RULE = "#cfc8b7", DIM = "#6a747b", PAPER = "#f1ede1";
-  /* Two type scales: the boxed Front has a page to itself and sets its six
-     paragraphs large; the Back sets twelve tables, seven lines and the blank
-     threat on one sheet, so it is denser. */
+     stylesheet. The paper palette is that sheet's own: ink and teal. The
+     first side (key "front", printed "Side 1: Threats and Fights") is the page's
+     one box of run-in paragraphs; the second (key "back", "Side 2: Systems") is
+     set in columns of about three inches, which is two on paper and one on a
+     phone. The book dropped its blank threat template from the card (the October
+     2026 Toolkit ends the card on the pilot line), so the drawer draws tables and
+     text only. Headings and column names are stored in title case (gm_card.js)
+     and set in capitals here, as the page prints them. */
+  var INK = "#18222c", TEAL = "#0c6f81", DIM = "#6a747b";
+  /* Two type scales: the boxed first side has a page to itself and sets its six
+     paragraphs large; the second sets twelve tables and seven lines on one
+     sheet, so it is denser. */
   function scale(front) {
     return front
       ? { text: "12.5px", textGap: "0 0 10px", cell: "10.5px", head: "9px", pad: "2px 6px 2px 0" }
@@ -1907,24 +1921,6 @@ EN.gmView = (function () {
       style: { width: "100%", borderCollapse: "collapse", margin: "0 0 6px", color: INK, breakInside: "avoid" } },
       [el("thead", null, head), el("tbody", null, rows)]);
   }
-  // the blank threat: a header bar, the bold italic line under it, and a write-in line per row of pairs
-  function cardTemplate(b, S) {
-    var kids = [
-      el("div", { style: { background: INK, color: PAPER, padding: "2px 8px", fontSize: "10.5px", fontWeight: 700,
-        letterSpacing: ".1em", textTransform: "uppercase" } }, b.head),
-      el("div", { style: { padding: "2px 8px", fontSize: S.cell, fontWeight: 700, fontStyle: "italic", color: INK,
-        borderBottom: "1px solid " + RULE } }, b.sub)
-    ];
-    (b.rows || []).forEach(function (cells) {
-      kids.push(el("div", { style: { display: "flex", flexWrap: "wrap", gap: "1px 12px", padding: "2px 8px 6px",
-          borderBottom: ".5px solid " + RULE } }, cells.map(function (c) {
-        return el("div", { style: { flex: "1 1 0", minWidth: "80px", fontSize: S.cell, color: INK } }, [
-          el("strong", { text: c.label + " " }), el("em", { style: { color: DIM }, text: c.hint })
-        ]);
-      })));
-    });
-    return el("div", { dataset: { card: b.key || "template" }, style: { border: "1px solid " + INK, margin: "3px 0 5px", breakInside: "avoid" } }, kids);
-  }
   function cardSection(sec, S) {
     var kids = [];
     // a run-in section opens on its own bold words, so it prints no heading of its own
@@ -1934,7 +1930,6 @@ EN.gmView = (function () {
     }
     (sec.blocks || []).forEach(function (b) {
       if (b.kind === "table") kids.push(cardTable(b, S));
-      else if (b.kind === "template") kids.push(cardTemplate(b, S));
       else kids.push(cardText(b, S));
     });
     kids.push(cardCodex(sec.key));
@@ -2012,8 +2007,7 @@ EN.gmView = (function () {
           (r.cells || []).forEach(function (c) { longest = Math.max(longest, String(c).length); });
           n += Math.max(1, Math.ceil(longest / 40));
         });
-      } else if (b.kind === "template") n += 2 + (b.rows || []).length * 1.6;
-      else n += Math.max(1, Math.ceil(String(b.text || "").length / 55));
+      } else n += Math.max(1, Math.ceil(String(b.text || "").length / 55));
     });
     return n;
   }

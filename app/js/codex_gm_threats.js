@@ -7,6 +7,12 @@
    Bestiary tab read, so the Codex and the tools cannot drift.
      gm-threats: "Running Threats", order 200, audience "gm", panel ids "gmt-"
    audience "gm": rendered, searchable and peekable on the Admin desktop only.
+   Panels, in order: gmt-grades, gmt-array, gmt-designations, gmt-roles,
+   gmt-abilities (the Ability Menu, its intro first), gmt-damage-effects (the
+   Appendix: Optional Damage Effects, all of it; the Ability Menu's Dangerous
+   Habits and the Movement panel mv-optfx link it), gmt-conventions, gmt-solos,
+   gmt-rivals (Enemy Freelancers and Named Rivals; the Heat tab's Bounty text
+   points at it) and gmt-bestiary.
 
    THE WORKING TABLES STAY WHERE THEY ARE. The builder, the resolver
    (EN.gmEngine) and the Table read the array, the Designation and Role numbers,
@@ -92,7 +98,8 @@ window.EN = window.EN || {};
             return ["G" + r.g, "~" + r.damage, r.attacks, fmt(r.strong), fmt(r.weak), String(r.xp)];
           }), [0])
         ]),
-        K.note("Damage a Round is the threat's whole output on a good turn, before the crew's DR, spent as the Attacks column says. Designation and Role adjustments apply on top of the row.")
+        // the book's two paragraphs under the table, word for word (EN.threats.arrayNotes)
+        (t.arrayNotes || []).map(function (p) { return K.proseBlock(p); })
       ];
     } },
 
@@ -128,20 +135,42 @@ window.EN = window.EN || {};
       var t = T();
       return [
         t.rolesIntro ? K.note(t.rolesIntro) : null,
-        K.el("div", null, t.roles.map(function (r) { return K.ruleBlock(r.name, r.text, roleAdjust(r), { conditions: true }); }))
+        K.el("div", null, t.roles.map(function (r) { return K.ruleBlock(r.name, r.text, roleAdjust(r), { conditions: true }); })),
+        // the Bestiary Index's line, which is what the builder's None Role means
+        t.noRole ? K.note(t.noRole.text) : null
       ];
     } },
 
     /* ---- the Ability Menu, by Role ------------------------------------------- */
     { id: "gmt-abilities", title: "The Ability Menu", tag: "BY ROLE", order: 45, when: hasT("abilityGroups"), build: function (ctx, K) {
       var t = T();
-      return t.abilityGroups.map(function (grp) {
+      return [t.abilityIntro ? K.proseBlock(t.abilityIntro) : null].concat(t.abilityGroups.map(function (grp) {
         var label = grp.role === "anything" ? "Any Role" : nameOf(t.roles, grp.role);
         return [K.subTitle(label)].concat((grp.abilities || []).map(function (a) {
           return K.ruleBlock(a.name, a.text, a.cost || null, { conditions: true });
         }));
-      });
+      }));
     } },
+
+    /* ---- the Appendix: Optional Damage Effects ---------------------------------
+       The whole page, in its four groups: the intro, Using Damage Effects, and every Effect
+       as an entry of its own (slug of its name: gmt-damage-effects/ignite), with its damage
+       type as the tag. The Dangerous Habits ability above links here, and so does the
+       Movement chapter's mv-optfx, which reads two of these rows. */
+    { id: "gmt-damage-effects", title: "Optional Damage Effects", order: 47, when: hasT("optionalDamageEffects"),
+      tag: function () { var D = T() && T().optionalDamageEffects; return D ? D.effects.length + " EFFECTS · BY DAMAGE TYPE" : ""; },
+      build: function (ctx, K) {
+        var D = T().optionalDamageEffects, out = [];
+        if (D.intro) out.push(K.proseBlock(D.intro));
+        if (D.using) out.push(K.ruleBlock(D.using.name, D.using.lead + "\n" + K.bullets(D.using.steps), null, { conditions: true }));
+        (D.groups || []).forEach(function (g) {
+          var list = (D.effects || []).filter(function (e) { return e.group === g.key; });
+          if (!list.length) return;
+          out.push(K.subTitle(g.name));
+          list.forEach(function (e) { out.push(K.ruleBlock(e.name, e.text, e.type.toUpperCase(), { conditions: true })); });
+        });
+        return out;
+      } },
 
     /* ---- the Threat Conventions and the optional Morale rule ------------------ */
     { id: "gmt-conventions", title: "Threat Conventions", tag: "EVERY THREAT · MORALE", order: 50, when: hasT("conventions"), build: function (ctx, K) {
@@ -178,6 +207,17 @@ window.EN = window.EN || {};
         (R.rules || []).forEach(function (r) { out.push(K.ruleBlock(r.name, r.text, r.tag ? "(" + r.tag + ")" : null, { conditions: true })); });
       }
       return out;
+    } },
+
+    /* ---- Enemy Freelancers and Named Rivals ---------------------------------------
+       The section after Running Solos: the other crew as threats, the recurring rival, and the
+       run-in "Threats and the crew's toys." The Heat tab's Bounty text points here. */
+    { id: "gmt-rivals", title: "Enemy Freelancers and Named Rivals", tag: "RIVAL CREWS · NAMED RIVALS", order: 65, when: hasT("rivals"), build: function (ctx, K) {
+      var R = T().rivals, toys = R.crewToys;
+      return [
+        K.proseBlock((R.paragraphs || []).join("\n"), { conditions: true }),
+        toys ? K.ruleBlock(String(toys.name || "").replace(/[.:]\s*$/, ""), toys.text, null, { conditions: true }) : null
+      ];
     } },
 
     /* ---- the Bestiary's rules prose ------------------------------------------
@@ -229,6 +269,7 @@ window.EN = window.EN || {};
     "Running Solos": "gmt-solos",
     "Designation Modifiers": "gmt-designations/designation-modifiers",
     "Ability Menu": "gmt-abilities",
+    "Optional Damage Effects appendix": "gmt-damage-effects",
     "Cryptids of Elysium": "gmt-bestiary/running-a-hunt",
     "Running a hunt": "gmt-bestiary/running-a-hunt",
     "Species Templates": "gmt-bestiary/species-templates",

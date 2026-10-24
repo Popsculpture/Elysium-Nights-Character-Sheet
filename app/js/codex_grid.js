@@ -6,7 +6,8 @@
    Freelancer desktop has, and a dozen of them (the core concepts, Links, the
    Stability Check, the cipher formulas, device Integrity and repair, the rig
    notes) rendered nowhere at all. The tab keeps its working tools and the
-   catalogs (ciphers, the B&E Buddy suite, rigs, relays, mods) and links here.
+   catalogs (ciphers, the B&E Buddy suite, rigs, mods) and links here. The Burner
+   Relay table lives here too: the relay rows are in no gray market listing.
      grid: "The #GRID", order 80, audience "both", panel ids "gd-"
    The Basics keeps its primer (bx-grid); this chapter is the full text. Every
    rule line is a field of EN.grid, or of EN.classes.codebreaker.extra for the
@@ -178,7 +179,14 @@ window.EN = window.EN || {};
         g.buddyNote ? K.subTitle("Other Rigs") : null,
         g.buddyNote ? K.ruleBlock("B&E Buddy", g.buddyNote) : null,
         g.relayNote ? K.ruleBlock("Burner Relays", g.relayNote) : null,
-        K.note("Tier rows, prices and the hardware mods are catalogs: they are in the Inventory tab's gray market, and the #GRID tab runs the B&E Buddy Cipher Suite.")
+        /* FG-08: the Burner Relay table (PHB:9639-9648). The relay rows were data with no reader: the
+           old note below said they were in the gray market, and they are not, so this is the only place. */
+        (g.relays || []).length ? K.entry("burner-relay-table", "Burner Relay Table", [
+          K.refTable(["Burner Tier", "Price", "Save DC", "Attack Bonus", "Max Node Tier"], g.relays.map(function (r) {
+            return [r.tier + " [" + r.t + "]", glim(r.price), String(r.saveDc), plus(r.attack), "Tier " + r.maxNode];
+          }), [0])
+        ]) : null,
+        K.note("Smartdeck and B&E Buddy tier rows, prices and the hardware mods are catalogs: they are in the Inventory tab's gray market, and the #GRID tab runs the B&E Buddy Cipher Suite. The Burner Relay rows are not in the gray market; the table above is where they are.")
       ];
     } },
 
@@ -186,7 +194,12 @@ window.EN = window.EN || {};
     { id: "gd-repair", title: "Device Integrity & Repair", tag: "BRICKED AND BACK", order: 90, when: has("durabilityNote"), build: function (ctx, K) {
       var g = G();
       return [
+        /* FG-07: the two Handbook passages the chapter was missing. The deck's own Node comes first
+           (it is what the Integrity and the Firewall below belong to); the mounted Firewall follows
+           the Integrity rules, before the repair paths. */
+        g.deckNode ? K.ruleBlock("Your Deck Is a Node", g.deckNode) : null,
         K.ruleBlock("Device Integrity", g.durabilityNote, null, { conditions: true }),
+        g.mountedFirewall ? K.ruleBlock("Mounted Firewalls", g.mountedFirewall) : null,
         K.el("div", null, (g.repairs || []).map(function (r) { return K.ruleBlock(r.name, r.text, null, { conditions: true }); }))
       ];
     } }
@@ -229,6 +242,8 @@ window.EN = window.EN || {};
     "#GRID Guardians": "gd-ic/grid-guardians",
     "B&E Buddy": "gd-devices/b-and-e-buddy",
     "Burner Relay": "gd-devices/burner-relays",
-    "Burner Relays": "gd-devices/burner-relays"
+    "Burner Relays": "gd-devices/burner-relays",
+    "Mounted Firewall": "gd-repair/mounted-firewalls",
+    "Mounted Firewalls": "gd-repair/mounted-firewalls"
   });
 })();

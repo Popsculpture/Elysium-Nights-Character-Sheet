@@ -176,8 +176,9 @@ EN.weaponParts = {
       grants: "Precision Frame", effect: "Apply Precision Frame. The weapon's Single Shot and Semi-Auto attacks score a critical hit on a roll of 19 or 20." },   /* 2026-09-28: the mode limit is back, in the book. The 2026-08-19 ruling struck it so the mod
          granted Precision Frame in full; the 28 Sep manuscript states it on the mod AND on the trait
          itself: Precision Frame scores 19-20 on Single Shot and Semi-Auto attacks only, so a
-         Match-Trigger weapon firing Burst or Full-Auto does not. Display text only: combat.js sets
-         critMin from Specialization alone, so no crit range is computed for this trait in any mode.
+         Match-Trigger weapon firing Burst or Full-Auto does not. combat.js weaponCrit reads this
+         Part's grants ("Precision Frame") and expands the crit range by 1 on Single Shot and Semi-Auto
+         attacks only, stacking with a Specialization naming the weapon (18-20 with both; audit W4).
          "fits" stays Semi-Auto Firearm: that is which weapons can take the part, not which
          modes it works in, and the two were easy to conflate. */
     { key: "anti-jam-action", name: "Anti-Jam Action", category: "ranged", slot: "core", partType: "Mod", fits: "Any Firearm", price: 200, rarity: "Common", legality: "Licensed",
@@ -263,6 +264,16 @@ EN.weaponParts = {
   /* ---- stacking + over-engineering rules (surfaced as bench guidance) ---- */
   rules: {
     stabilized: "Stabilized sources do not stack: multiple Parts negate the High Recoil Snag only once.",
+    /* The book's Stacking Rules, third paragraph, word for word (PHB Weapon Customization). The
+       Codex prints it under Stabilized Sources. */
+    flatBonus: "Flat bonuses do not stack. If a Target Spotter and a Low-Light Sensor Suite both add +5 to Passive Perception, take the highest number and drop the rest.",
+    /* PHB Weapon Customization, Install, Acquisition, and Time: the Fabrication line and the
+       high-scrutiny commission paragraph (under Legality), word for word. Each book run-in heading
+       ("Fabrication:", "High-scrutiny commissions.") is the title of its Codex block, so the text
+       starts after it. The install line below paraphrases the other two ways in; these two are what
+       it left out. */
+    fabrication: "Legwork. Complex, built-to-order work that requires reaching out through a fixer or face. Resolve it as a crafting Project on the Dice Pool Method. This uses the exact same structure required for repairing a drone or cleansing an anomaly. It can be a serious expense or an adventure arc on its own. Most Restricted and all Contraband Parts require this kind of sweat to acquire.",
+    commissions: "Day-to-day purchases at street level are paid in Glimmer. A fabrication commission routed through an institutional broker, a corporate armorer, or a black-market clearinghouse that demands a paper trail is different. Those are high-scrutiny transactions billed in Nexus, subject to the GM's discretion.",
     /* The Parts rules line, 16 October handoff, word for word under its heading. The key stays
        `dieStep` because the bench footer and the Codex read it by that name. */
     dieStepHead: "Oomph +1 from hardware",

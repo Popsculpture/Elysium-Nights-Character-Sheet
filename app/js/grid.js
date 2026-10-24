@@ -299,7 +299,8 @@ EN.gridView = (function () {
     // flip the panel to the Standard-User cipher suite that rig actually runs.
     var buddyEquipped = gd.isCodebreaker && gd.deck && gd.deck.type === "buddy";
     if (buddyEquipped && _cipherView === "buddy") {
-      rows.push(ruleNote("You're running a B&E Buddy: this rig executes the Standard-User cipher suite only (Complexity 0). Switch back to a Smartdeck in the Rig panel to use your Repertoire and Bandwidth."));
+      /* FG-12: the suite is not Complexity 0 only. It runs at the Buddy's own tier in anyone's hands (PHB:9169). */
+      rows.push(ruleNote("You're running a B&E Buddy: this rig executes its baked-in cipher suite only, at the Buddy's own tier (Complexity " + gd.deck.t + "). Switch back to a Smartdeck in the Rig panel to use your Repertoire and Bandwidth."));
       (G.buddyCiphers || []).forEach(function (cy) { rows.push(buddyCipherCard(cy)); });
       return EN.ui.panel("Ciphers", "B&E BUDDY CIPHER SUITE", rows, { corners: true, headerRight: cipherViewToggle("Repertoire", "power") });
     }
@@ -357,7 +358,7 @@ EN.gridView = (function () {
       rows.push(noteP(deck
         ? (deck.type === "smartdeck"
             ? ("Your " + deck.tier + " Smartdeck runs ciphers up to Complexity " + runCx + ". Higher ones stay in your Repertoire but won't cast until you upgrade. Plus the 6 free Complexity 0 ciphers (see B&E Buddy Cipher Suite).")
-            : "You're on a B&E Buddy: only the free Complexity 0 suite runs (see B&E Buddy Cipher Suite). Acquired ciphers won't cast until you equip a Smartdeck.")
+            : "You're on a B&E Buddy: only its baked-in suite runs, at the Buddy's own tier (see B&E Buddy Cipher Suite). Acquired ciphers won't cast until you equip a Smartdeck.")
         : "No rig equipped. Equip a Smartdeck in the Rig panel to cast ciphers."));
       if (!owned.length) {
         rows.push(noteP("No ciphers acquired yet. Buy them in the Inventory tab's gray market (Cipher Library), then cast them here.", "var(--text2)"));
@@ -374,7 +375,9 @@ EN.gridView = (function () {
     }
 
     // ---- Standard User: the universal B&E Buddy / Burner Relay cipher set ----
-    rows.push(ruleNote("Standard Users run this universal cipher set off any B&E Buddy or Burner Relay (Complexity 0 only). Bandwidth, higher-Complexity ciphers, and a custom Repertoire are the Codebreaker's domain."));
+    // FG-12: the suite runs at the Buddy's own tier in anyone's hands (PHB:9169), and a Relay fires a
+    // cipher above Complexity 0 for whoever passes the Systems check (PHB:9617), so "Complexity 0 only" was wrong
+    rows.push(ruleNote("Standard Users run this universal cipher set off any B&E Buddy or Burner Relay. The suite runs at the Buddy's own tier in anyone's hands, and a Relay fires a cipher above Complexity 0 with a Systems (Tech) check (DC 10 + the cipher's Complexity). Otherwise Complexity 1+ is Power User territory; Bandwidth and a custom Repertoire are the Codebreaker's domain."));
     (G.buddyCiphers || []).forEach(function (cy) { rows.push(buddyCipherCard(cy)); });
     return EN.ui.panel("Ciphers", "STANDARD USER CIPHER LIST", rows, { corners: true });
   }
@@ -434,15 +437,29 @@ EN.gridView = (function () {
       EN.ui.stat("SAVE DC", gd.effectiveSaveDC, gd.deck && gd.deck.type === "buddy" ? "Buddy DC" : "8+Tech+Systems"),
       EN.ui.stat("PASSIVE SYS", gd.passiveSystems, "vs hidden Scan DC"),
       EN.ui.stat("LINKS", gd.unlimitedLinks ? "∞" : gd.maxLinks,
-        gd.isCodebreaker ? (gd.unlimitedLinks ? "SysAdmin" : "2 × Caliber" + (gd.modLinks ? " +" + gd.modLinks : ""))
-        : gd.isSourcerer ? "Caliber · sprites" : "Standard User"),
+        // the caption adds up to the number: Parallel Processing's +1 (+2 with its Upgrade) is in maxLinks (TAL-02)
+        gd.isCodebreaker ? (gd.unlimitedLinks ? "SysAdmin" : "2 × Caliber" + (gd.modLinks ? " +" + gd.modLinks : "") + (gd.linkBonus ? " +" + gd.linkBonus + " Parallel Processing" : ""))
+        : gd.isSourcerer ? "Caliber · sprites" + (gd.linkBonus ? " +" + gd.linkBonus + " Parallel Processing" : "") : "Standard User"),
       stabilityStat(gd)
     ];
     if (gd.quickHackBonus != null) stats.splice(1, 0, EN.ui.stat("QUICK HACK", fmt(gd.quickHackBonus), "+ Device Bonus"));
     var body = [el("div.stat-row", null, stats)];
     if (_stabilityOpen) body.push(stabilityDamageControl(gd));
-    body.push(ruleNote("Cipher Attack: d20 " + fmt(gd.cipherAttackBonus) + " vs Node Security Rating" + (gd.deck && gd.deck.type === "smartdeck" && gd.deck.deviceBonus ? " (+" + gd.deck.deviceBonus + " Device Bonus = " + fmt(gd.effectiveAttack) + " on a Quick Hack)" : "") + ". Node resists save-ciphers with d20 + its Cipher Save Bonus vs your Save DC " + gd.effectiveSaveDC + ".", "var(--text2)"));
-    if (!gd.isCodebreaker) body.push(ruleNote("You're a Standard User: 1 Link at a time, no Bandwidth, and a B&E Buddy locks out of Premium+ Nodes. Deep #GRID play is the Codebreaker's domain.", "var(--warn)"));
+    /* FG-03 (PHB:9094): the Smartdeck's Device Bonus applies to the Cipher Attack and the Quick Hack
+       alike, so this line reads effectiveAttack (Tech + Systems + Device Bonus, or a Buddy's own
+       baked-in Attack Bonus) and no longer files the Device Bonus under the Quick Hack alone. */
+    var deckKind = gd.deck && gd.deck.type;
+    body.push(ruleNote("Cipher Attack and Quick Hack: d20 " + fmt(gd.effectiveAttack) + " vs Node Security Rating"
+      + (deckKind === "smartdeck" && gd.deck.deviceBonus ? " (" + fmt(gd.cipherAttackBonus) + " Tech and Systems + " + gd.deck.deviceBonus + " Device Bonus, which applies to both)"
+        : deckKind === "buddy" ? " (the Buddy's own baked-in Attack Bonus)" : "")
+      + ". Node resists save-ciphers with d20 + its Cipher Save Bonus vs your Save DC " + gd.effectiveSaveDC + ".", "var(--text2)"));
+    // FG-02: the Standard User note is for Standard Users. A Sourcerer is a Power User who opens Links
+    // with a Flow Attack at Sprite Tether's range (PHB:9180-9193), not a Cipher Attack. The roll is the
+    // Sprite Tether one (Flow Modifier + Caliber, which for a Sourcerer is the Tech Modifier), so the
+    // note prints the engine's Flow Attack bonus. It names no Link count: Talents and mods move the cap.
+    if (gd.isSourcerer) body.push(ruleNote("You're a Sourcerer: your Links open with a Flow Attack at Sprite Tether's range, not a Cipher Attack, and the sprites hold them open instead of hardware."
+      + (d.flow && d.flow.attackBonus != null ? " Roll d20 " + fmt(d.flow.attackBonus) + " (" + d.flow.attributeName + " Modifier + Caliber) vs the Node's Security Rating." : ""), "var(--text2)"));
+    else if (!gd.isCodebreaker) body.push(ruleNote("You're a Standard User: 1 Link at a time, no Bandwidth, and a B&E Buddy locks out of Premium+ Nodes. Deep #GRID play is the Codebreaker's domain.", "var(--warn)"));
     return EN.ui.panel("Hacking", "CIPHER MATH", body, { corners: true, headerRight: EN.ui.ruleChip("gd-ciphers", { title: "Running Ciphers" }) });
   }
 
@@ -456,7 +473,9 @@ EN.gridView = (function () {
       el("span.mono", { style: { fontSize: "20px", color: atMax ? "var(--warn)" : "var(--accent)" }, html: links.length + " <span style='font-size:12px;color:var(--text3)'>/ " + (gd.unlimitedLinks ? "∞" : gd.maxLinks) + " active Links</span>" }),
       el("button.btn.sm" + (atMax ? "" : ".primary"), { disabled: atMax, title: atMax ? "At your Link cap" : "Open a new Link", onclick: function () { gset(function (g) { g.links = (g.links || []).concat([{ name: "Node", tier: "Standard" }]); }); } }, "+ LINK")
     ]));
-    if (!links.length) rows.push(ruleNote("No active Links. Establish one with a Cipher Attack vs the Node's Security Rating (Access Spike / Hardline Tap)."));
+    if (!links.length) rows.push(ruleNote(gd.isSourcerer
+      ? "No active Links. Establish one with a Flow Attack vs the Node's Security Rating, at Sprite Tether's range."
+      : "No active Links. Establish one with a Cipher Attack vs the Node's Security Rating (Access Spike / Hardline Tap)."));
     links.forEach(function (lk, i) {
       rows.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", padding: "6px 4px", borderBottom: "1px solid rgba(35,48,68,.4)" } }, [
         el("span.mono", { style: { color: "var(--accent)", fontSize: "12px" }, text: "⇋" }),

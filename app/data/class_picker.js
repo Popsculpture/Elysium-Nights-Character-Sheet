@@ -1,97 +1,48 @@
 window.EN = window.EN || {};
 
-/* Classes of Elysium: the copy layer for the class and subclass pickers.
-   The book carries three distinct layers per class. Choosing (this file: the
-   overview blurb and the Play-if line, written for a player who has not decided
-   yet), Arriving (the chapter epigraph, on EN.classes[key].tagline), and Playing
-   (the Playbook, on EN.classes[key].extra.playbook). These Play-if lines are the
-   only text in Part 1 written for the moment of the decision itself, so they are
-   what a collapsed picker card shows. Verbatim from Part 1. */
+/* Classes of Elysium: the copy layer for the class picker.
+   The book carries three distinct layers per class. Choosing (this file: the intro
+   paragraphs and the DESCRIPTION cell of the Classes of Elysium table, written for a
+   player who has not decided yet), Arriving (the chapter epigraph, on
+   EN.classes[key].tagline), and Playing (the Playbook, on EN.classes[key].extra.playbook).
+   Transcribed from the Player's Handbook, Create / Your Freelancer / Classes, "Classes of
+   Elysium". The table's other columns (Resilience Die, Saving Throw Focus, Weapons, Armor)
+   are read off the class data itself, not copied here. The older "Play a X if" lines and the
+   per-subclass blurbs are gone: the Handbook no longer prints them, and a subclass card now
+   shows the subclass's own description. `subs` survives only for a non-copy field, the Shaper
+   subclasses' flowAttribute. */
 EN.classPicker = {
   intro: [
-    "Your Species and Lineage say who you are. Your Class says what you do when the shooting starts, and what people pay you for. Everyone in Elysium has an angle. This is yours: the thing you're better at than the person trying to kill you."
+    "Your Species and Lineage say who you are. Your Class says what you do when the shooting starts, and what people pay you for. Everyone in Elysium has an angle. This is yours: the thing you're better at than the person trying to kill you.",
+    "Seven classes work the city. Each comes with two subclasses, chosen at level 1, that decide how you do the job."
   ],
   classes: {
     codebreaker: {
-      blurb: "Codebreakers are the apex predators of the #GRID. Armed with specialized Smartdecks and a custom Repertoire of Ciphers, they manipulate the digital infrastructure of Elysium. A Codebreaker can breach secure Nodes, spoof countermeasures, and weaponize the network against an enemy before a single shot is fired in the physical world.",
-      playIf: "Play a Codebreaker if: You want to control the battlefield through screens, dismantle security systems, and outsmart the digital defenses of the city.",
-      subs: {
-        rigger: { blurb: "A master of hardware and mechanical coordination. Riggers build, maintain, and command customized drones and combat vehicles.", playIf: "Play a Rigger if: You want to command a swarm of mechanical allies, dominate the action economy, and bring heavy autonomous backup to a firefight." },
-        gridweaver: { blurb: "A specialist in pure network control. They dive deeper into the #GRID than anyone else, reshaping virtual space.", playIf: "Play a #GRID Weaver if: You want to be the ultimate digital operative, altering camera feeds, opening secured paths, and bending the network to your will." },
-        burner: { blurb: "An aggressive offensive hacker who focuses on destroying hardware and frying circuits rather than quietly stealing data.", playIf: "Play a Burner if: You want to turn enemy cyberware into an explosive liability and deal massive damage through aggressive digital attacks." }
-      }
+      blurb: "Apex predators of the #GRID. They breach Nodes, spoof countermeasures and turn the network on an enemy before the first shot is fired. The #GRID Weaver, The Burner."
     },
     fury: {
-      blurb: "Furies leave subtle tactics and smooth talk to someone else. They run on momentum. Fueled by adrenaline, heavy cybernetics, or untamed rage, they burn a resource called Overdrive to push past their bodily limits. A Fury is a living battering ram built to dictate the physical space of a battlefield, capable of shattering cover, scattering an enemy formation, and soaking up damage to protect their crew.",
-      playIf: "Play a Fury if: You want to be the unyielding tip of the spear, absorbing punishment and dominating the physical space of every encounter.",
-      subs: {
-        juggernaut: { blurb: "A defensive powerhouse heavily invested in armor, damage mitigation, and structural resilience.", playIf: "Play a Juggernaut if: You want to be an immovable object that controls choke points and shields your allies from lethal harm." },
-        reaver: { blurb: "A visceral, aggressive combatant who thrives in the chaos of close-quarters combat, turning their own pain into offensive momentum.", playIf: "Play a Reaver if: You want to dive into the center of a fight, using raw, brutal power to tear through an enemy frontline." },
-        arsenal: { blurb: "A heavy weapons specialist who treats suppressive fire as an art form, carrying the biggest mundane weaponry the streets have to offer.", playIf: "Play an Arsenal if: You want to lock down zones with overwhelming firepower and make sure nothing survives in your line of sight." }
-      }
+      blurb: "A living battering ram running on adrenaline, chrome or rage. They burn Overdrive to shatter cover, scatter formations and soak the hits meant for the crew. The Juggernaut, The Reaver."
     },
     hustler: {
-      blurb: "Hustlers are the social engineers and tactical manipulators of the streets. They treat conversations and combat as the exact same game, reading the room to find the perfect leverage. A Hustler can turn the tide of a fight by buffing an ally with high-stakes pitches, or cripple an enemy by loudly broadcasting their structural flaws and dirty laundry.",
-      playIf: "Play a Hustler if: You want to weaponize your charisma, control the narrative, and dictate the flow of an encounter without necessarily pulling a trigger.",
-      subs: {
-        the_suit: { blurb: "A corporate or high-society infiltrator who uses authority, forged credentials, and immaculate style to open doors that bullets can't.", playIf: "Play a Suit if: You want to command respect, manipulate Elysium's elite, and work the boardroom as easily as the back alleys." },
-        the_grifter: { blurb: "A street-level con artist who relies on misdirection, sleight of hand, and quick talking to exploit any target they meet.", playIf: "Play a Grifter if: You want to talk your way out of any corner, play factions against each other, and always have a trick up your sleeve." },
-        the_fixer: { blurb: "A logistical mastermind who makes sure their crew always has the right gear, the best intel, and the perfect opening.", playIf: "Play a Fixer if: You want to secure the resources your team needs to survive and grant powerful buffs to an ally." }
-      }
+      blurb: "Social engineers who treat a conversation and a firefight as the same game. They find the leverage, talk an ally up and air an enemy's dirty laundry at volume. The Suit, The Grifter."
     },
     operator: {
-      blurb: "Operators are the disciplined core of any successful crew. They're battlefield commanders and tactical specialists who thrive in the chaos of a firefight. Relying on strict training and fluid engagement, an Operator controls the flow of combat. They excel at locking down sightlines, providing overwatch, and breaking enemy formations with overwhelming precision.",
-      playIf: "Play an Operator if: You want to be a highly trained tactical specialist who relies on sharp positioning, discipline, and weapon mastery.",
-      subs: {
-        the_vanguard: { blurb: "A frontline tactician who specializes in breach-and-clear maneuvers, leading the charge into hostile territory.", playIf: "Play a Vanguard if: You want to set the pace of the engagement, coordinating your allies in tight quarters and maintaining aggressive momentum." },
-        the_deadeye: { blurb: "A sniper and long-range specialist who controls the battlefield through the threat of immediate, lethal precision.", playIf: "Play a Deadeye if: You want to eliminate a high-value target from a mile away and provide overwatch." },
-        the_headhunter: { blurb: "A single-target elimination expert, tracking bounties and isolating specific threats amid the chaos of a wider skirmish.", playIf: "Play a Headhunter if: You want to lock onto a specific enemy, exploit their weaknesses, and make sure they don't leave the battlefield alive." }
-      }
+      blurb: "The disciplined core of a crew. They lock down sightlines, call the fight and break formations with trained precision. The Vanguard, The Deadeye."
     },
     scoundrel: {
-      blurb: "Scoundrels survive by fighting dirty. They're the opportunists of Elysium, relying on street smarts, moxie, and uncanny evasion to stay half a step ahead of whatever is trying to kill them. When a target leaves an opening, a Scoundrel exploits it with a devastating cheap shot, dropping threats quickly before slipping back into the shadows to plan their next move.",
-      playIf: "Play a Scoundrel if: You want to strike from the shadows, exploit weaknesses, and always have a quick exit strategy when things go wrong.",
-      subs: {
-        smuggler: { blurb: "An expert in evasive movement, driving, and getting illicit goods in and out of secured locations.", playIf: "Play a Smuggler if: You want to bypass security, move freely across the map, and make sure the payload always gets delivered." },
-        wildcard: { blurb: "A gambler who treats every roll as a bet worth doubling down on, pushing the odds long after the smart money folds.", playIf: "Play a Wildcard if: You want to wager everything on the rolls that matter, hand your luck to an ally who needs it more, and go all in exactly when the math says you shouldn't." },
-        shiv: { blurb: "A dirty, close-quarters brawler who doesn't need to be stronger or faster, just needs a target blind, off-balance, and unable to run.", playIf: "Play a Shiv if: You want to fight in the gutter, stack debilitating conditions on anything you get your hands on, and make sure nothing you corner gets back up clean." }
-      }
+      blurb: "Opportunists who fight dirty and stay half a step ahead. When a target leaves an opening, a Scoundrel lands the cheap shot and is gone. The Smuggler, The Wildcard."
     },
     shaper: {
-      blurb: "Shapers change the world with their own resonance. As conduits for the metaphysical current known as the Flow, they tune their bodies to manipulate reality itself. A Shaper weaves raw energy into powerful Invocations, allowing them to bend gravity, thermal energy, and spatial dimensions to their will.",
-      playIf: "Play a Shaper if: You want to tune into the metaphysical current, bend the laws of physics, and unleash devastating Flow effects.",
+      blurb: "Conduits for the Flow. They tune their bodies to the current and weave it into Invocations that bend gravity, heat and space. The Harmonist (Mystique), The Sourcerer (Tech).",
       subs: {
-        harmonist: { blurb: "The purest practitioner of Flow channeling, focusing on mastering elemental and metaphysical balance.", playIf: "Play a Harmonist if: You want to push raw resonance further than anyone else and master multiple Base Resonances.", flowAttribute: "Mystique" },
-        kensei: { blurb: "A martial artist who infuses their physical strikes and weaponry with kinetic and spatial energy.", playIf: "Play a Kensei if: You want to fight on the frontline, using the Flow to enhance your physical attributes and deliver devastating melee Invocations.", flowAttribute: "Body" },
-        icon: { blurb: "A radiant conduit who shapes reality through sheer force of personality, inspiring those around them.", playIf: "Play an Icon if: You want to lead by example, using the Flow to steady an ally's nerve and command the attention of a room.", flowAttribute: "Charm" },
-        sourcerer: { blurb: "A techno-mage who can't write code and doesn't need to: the Nixies and Gremlins inside the city's machines like them.", playIf: "Play a Sourcerer if: You want to bring the Flow into machines that were never built to carry it, ask sprites to jinx a Target's gear, bless an ally's, or hold a #GRID door open without a deck.", flowAttribute: "Tech" }
+        harmonist: { flowAttribute: "Mystique" },
+        kensei: { flowAttribute: "Body" },
+        icon: { flowAttribute: "Charm" },
+        sourcerer: { flowAttribute: "Tech" }
       }
     },
     stitcher: {
-      blurb: "Stitchers are the combat medics and brilliant field chemists keeping the underworld alive. Armed with a rig anyone can buy and the knowledge nobody sells, they synthesize potent compounds in the middle of a firefight. They stabilize dying allies, purge toxins, and provide preventative care through chemical enhancements. A Stitcher refuses to let anyone die on their watch.",
-      playIf: "Play a Stitcher if: You want to hold the line against death itself, buffing your team and punishing threats with chemical warfare.",
-      subs: {
-        the_lifeline: { blurb: "A dedicated combat medic focused purely on stabilization, cellular repair, and keeping the crew in the fight.", playIf: "Play a Lifeline if: You want to be the ultimate safety net, so no ally falls on your watch no matter how bad the firefight gets." },
-        the_toxicologist: { blurb: "A master of venoms, acids, and entropic decay, weaponizing biology against their foes.", playIf: "Play a Toxicologist if: You want to melt armor, apply debilitating debuffs, and watch an enemy slowly succumb to your custom compounds." },
-        the_ripper: { blurb: "A cybernetics expert and aggressive chemist who pushes organic bodies past safe limits with dangerous combat stims.", playIf: "Play a Ripper if: You want to juice your crew with potent enhancements and perform aggressive, makeshift modifications in the field." }
-      }
+      blurb: "Combat medics and field chemists. They synthesize compounds mid-firefight, pull the dying back and refuse to lose anyone on their watch. The Lifeline, The Toxicologist."
     }
   }
 };
-
-/* Invariant, ruled by the author on 2026-07-31 (M-A1 and M-A2): every Play-if
-   line uses "a" or "an", never "the". There are 29 of them, 7 class-level and
-   22 subclass, and exactly three take "an": the Arsenal, the Operator and the
-   Icon, each before a vowel sound. Checked at load so a regenerated or
-   hand-edited table cannot quietly reintroduce a "the" form. */
-(function () {
-  var P = EN.classPicker, lines = [], bad = [];
-  Object.keys(P.classes).forEach(function (k) {
-    lines.push(P.classes[k].playIf);
-    Object.keys(P.classes[k].subs).forEach(function (s) { lines.push(P.classes[k].subs[s].playIf); });
-  });
-  lines.forEach(function (l) { if (!/^Play (a|an) \S/.test(l || "")) bad.push(l); });
-  if (bad.length || lines.length !== 29) {
-    console.warn("classPicker: Play-if invariant broken (" + lines.length + " lines, expected 29).", bad);
-  }
-})();

@@ -14,12 +14,10 @@ window.EN = window.EN || {};
 
 EN.economy = {
   exchangeRate: "The fair market reference value is 1 Nexus Token = 10,000 Glimmer. That is the number that appears in contracts, ledgers, and official books. Actual cash-out is lower, because verification, compliance, service, laundering, and transfer fees all take a cut.",
-  // The reference value above as a number, for the one thing it is safe to compute:
-  // reading a LISTED value stated in Nexus as a listed value in Glimmer (a lease
-  // Buyout priced in ◎, when something needs to know what the item is worth). It is
-  // deliberately NOT a cash-out rate. Nothing converts a wallet with it: the two
-  // purses stay separate everywhere money actually moves, because the paragraph
-  // above says the real rate is lower and unstated.
+  // The reference value above as a number: the book's figure for its own prose. Nothing
+  // in the app converts with it (A6-18, ruling 6). It is NOT a cash-out rate and no wallet
+  // converts with it: the two purses stay separate everywhere money actually moves,
+  // because the paragraph above says the real rate is lower and unstated.
   nexusToGlimmer: 10000,
 
   /* What a token actually returns when somebody turns it into spendable Glimmer, as
@@ -36,9 +34,13 @@ EN.economy = {
      below, which is what a Freelancer selling a token on the street actually clears.
      (The Warframe Shell was the odd one out at 9,600 until the author's ruling of
      17 October 2026 made its price 2,400 or 1 token: a black-market street price.)
-     Anything the app prices off a stated Nexus figure (a lease Buyout, a
-     repair lane) uses nexusToGlimmer above, because that asks what the OBJECT is worth
-     in a ledger, not what its owner could liquidate a token for. */
+     Nothing in the app converts with nexusToGlimmer: it is the book's reference value for
+     its prose. Every ◎ figure that repair pricing reads (a leased row's ◎ Buyout, or the
+     price of a row sold only for Nexus) goes through crafting.js listPrice at
+     nexusRepairRate, 3,000 Glimmer per token (the author's ruling 6 of 19 October 2026,
+     A6-18): the Toolkit calls the Nexus price a street price that usually returns 2,000
+     to 4,000 for one token. A Nexus Buyout is still billed in Nexus when bought
+     (inventory.js buyoutCost); nothing converts it. */
   nexusConversionNote: "Actual cash-out is lower than the reference value because verification, compliance, service, laundering, and transfer fees all take a cut. What a token returns depends entirely on who is changing it.",
   nexusConversion: [
     { channel: "Legal, licensed exchange",       low: 5000, high: 7500, note: "Documented, traceable, and slow enough to be noticed" },
@@ -51,12 +53,32 @@ EN.economy = {
   ],
   nexusAssumptions: "Freelancers should not assume full access to the reference value, instant anonymous cash-out, or guaranteed safety when moving or converting Nexus.",
 
+  /* Access Rules for Nexus Conversion, word for word (19 October 2026 audit, social W20 and
+     econ-unlisted-rules): the three conditions, the rule of thumb and the pointer. The
+     Codex prints them under Converting Nexus to Glimmer. Reference only, like the bands above:
+     nothing in the app checks a region, a clock or a clearance. */
+  nexusAccess: {
+    intro: "Freelancers may only convert Nexus if all three are true:",
+    conditions: [
+      "they are in a region that supports secure exchange",
+      "they have enough in-world time to complete processing",
+      "they meet identification, sponsorship, or clearance requirements"
+    ],
+    ruleOfThumb: "Rule of thumb: If the scene is loud, illegal, rushed, or under fire, conversion should be difficult, dangerous, or temporarily impossible.",
+    rates: "Exchange rates shift from district to district, and even a fair deal can go sideways. For guidance on rates and conversion risks, see the Game Master's Toolkit."
+  },
+
   currencies: [
     { name: "Glimmer",     symbol: "\u{1D4A2}", use: "Everyday purchases, gear, services, upkeep" },
     { name: "Nexus Token", symbol: "◎",    use: "Major contracts, institutional exchange, off-world and corporate deals" }
   ],
 
   /* ---- lifestyle -------------------------------------------------------- */
+  /* `open: true` on a lifestyle tier, a safehouse type or a Hypercare tier marks a price the
+     Handbook prints as a minimum with a trailing "+" (Luxury 15,000+ a week and 60,000+ a
+     month, Blacksite Hideout the same, Corporate Platinum 2.5+; 19 October 2026 audit,
+     econ-open-prices). The numbers stay the minimum and billing charges them; only the
+     displays add the "+". */
   lifestyleNote: "Lifestyle is what it takes to live between jobs: lodging, food, water, hygiene, transit, comms, the small steady tax of staying alive. It is usually paid per week; in campaigns with longer Downtime the GM may charge per month instead.",
   lifestyleTiers: [
     { tier: "Bare Survival", weekly: 200,   monthly: 800,   living: "Shared floor space, cheap food, public wash access, unreliable safety" },
@@ -64,7 +86,7 @@ EN.economy = {
     { tier: "Stable",        weekly: 1000,  monthly: 4000,  living: "Decent room, regular meals, clean facilities, steady access" },
     { tier: "Comfortable",   weekly: 2000,  monthly: 8000,  living: "Private apartment or suite share, better food, paid comms, reliable transit" },
     { tier: "High Profile",  weekly: 5000,  monthly: 20000, living: "Guarded address, premium services, discretion, visible status" },
-    { tier: "Luxury",        weekly: 15000, monthly: 60000, living: "Elite living, layered security, image management, privileged access" }
+    { tier: "Luxury",        weekly: 15000, monthly: 60000, open: true, living: "Elite living, layered security, image management, privileged access" }
   ],
   lifestyleRules: [
     "A Character who doesn't pay at least Bare Survival is assumed to be couch surfing, squatting, sleeping rough, or living on favors. That should leave them exposed: a stolen bag, a favor called in at the wrong moment.",
@@ -79,7 +101,7 @@ EN.economy = {
     { type: "Crew Apartment",     weekly: 1500,  monthly: 6000,  notes: "Real home base, storage, privacy, and recovery space" },
     { type: "Workshop Den",       weekly: 2500,  monthly: 10000, notes: "Crew space plus benches, tools, med or drone work area" },
     { type: "Hardened Safehouse", weekly: 5000,  monthly: 20000, notes: "Reinforced entry, hidden storage, cleaner papers, safer location" },
-    { type: "Blacksite Hideout",  weekly: 15000, monthly: 60000, notes: "Serious concealment, layered security, dedicated infrastructure" }
+    { type: "Blacksite Hideout",  weekly: 15000, monthly: 60000, open: true, notes: "Serious concealment, layered security, dedicated infrastructure" }
   ],
   safehouseUpgrades: [
     { name: "Secure Locks and Cameras", ongoingWeekly: 100, cost: 1500, ongoing: "100 / week", benefit: "Better warning against intrusion" },
@@ -110,6 +132,15 @@ EN.economy = {
     { job: "Performer at a recurring gig (band, drag, residency)",            pay: "600 to 1,200", time: "3 to 4 nights", web: "Venue owners, fans, scene rivals" },
     { job: "Low-level fence, mod work, or black-market specialist", pay: "800 to 1,500", time: "3 to 5 days", web: "Buyers, suppliers, dangerous people" }
   ],
+  /* How Day Jobs Affect Play, word for word (19 October 2026 audit, social W20 and
+     econ-unlisted-rules). One paragraph per entry; the Codex prints them under the day job table. */
+  dayJobsEffect: [
+    "A day job gives you a paycheck and ties you to other people. People at the job notice things. A bartender at the wrong club hears about a contract that went bad. A courier with the right route knows what is in which warehouse.",
+    "The Character earns the listed weekly pay automatically, as long as they show up.",
+    "On weeks when crew work prevents them from working, the GM may reduce pay or impose social complications (a missed shift, a disappointed boss, a quietly closing door).",
+    "The GM may impose Snag on mission planning rolls when a Character is splitting attention between crew work and a day job.",
+    "A Freelancer can quit at any time. Quitting cleanly usually costs a goodbye scene, a final favor, or a small social wound. Quitting badly leaves a thread that someone can pull later."
+  ],
 
   /* ---- rewards ------------------------------------------------------------ */
   rewardTypes: [
@@ -123,12 +154,18 @@ EN.economy = {
   /* ---- Hypercare: the book's only ongoing coverage contract ------------
      Billed MONTHLY, unlike lifestyle and safehouse rent which bill weekly.
      Tiers 3 and 4 are priced in Nexus, so cost carries its own currency. */
-  hypercareNote: "A prepaid emergency medical response service keyed to your #PRINT or a linked wearable tag. If you drop to 0 Wounds in a covered service area and the alert is transmitted, a Hypercare team is dispatched. Contracts are traceable, expensive, and often come with fine print.",
+  hypercareNote: "A prepaid emergency medical response service keyed to your #PRINT or a linked wearable tag. If you drop to 0 Wounds in a covered service area and the alert is transmitted, a Hypercare team is dispatched.",
+  /* The Handbook's Limitation line for the contract (19 October 2026 audit, hypercare-services),
+     word for word. The note above used to end on its first sentence; the Codex prints this as
+     the "Limitation:" line under it. Each tier's `services` is the book's Included Services
+     column. A tier with `open: true` (Corporate Platinum, 2.5+) is a minimum price: the number
+     is what billing charges, and the Codex prints a trailing "+". */
+  hypercareLimitation: "Contracts are traceable, expensive, and often come with fine print. Treat this as a story device as much as a strict rule. The GM decides whether contracts are available in their campaign.",
   hypercareTiers: [
-    { tier: "Patchline",           rank: 1, cost: 300, currency: "glimmer", coverage: "Single district or defined zone",        response: "Dispatch only if conditions are safe enough" },
-    { tier: "Rapid Extract",       rank: 2, cost: 600, currency: "glimmer", coverage: "Most major districts in one metro",      response: "Faster dispatch, will push into yellow conditions" },
-    { tier: "Blackglass Priority", rank: 3, cost: 1.2, currency: "nexus",   coverage: "Metro-wide, including fringe routes",    response: "Aggressive dispatch with security escort" },
-    { tier: "Corporate Platinum",  rank: 4, cost: 2.5, currency: "nexus",   coverage: "Multi-city network and travel corridors", response: "Best available dispatch, favors contracted clients" }
+    { tier: "Patchline",           rank: 1, cost: 300, currency: "glimmer", coverage: "Single district or defined zone",        response: "Dispatch only if conditions are safe enough", services: "Stabilize, stop bleeding, basic evac to nearest public clinic" },
+    { tier: "Rapid Extract",       rank: 2, cost: 600, currency: "glimmer", coverage: "Most major districts in one metro",      response: "Faster dispatch, will push into yellow conditions", services: "Stabilize plus trauma care, priority transport to partnered facility" },
+    { tier: "Blackglass Priority", rank: 3, cost: 1.2, currency: "nexus",   coverage: "Metro-wide, including fringe routes",    response: "Aggressive dispatch with security escort", services: "Field surgery kit, blood substitutes, discreet routing, secure intake" },
+    { tier: "Corporate Platinum",  rank: 4, cost: 2.5, open: true, currency: "nexus", coverage: "Multi-city network and travel corridors", response: "Best available dispatch, favors contracted clients", services: "Full trauma package, on-scene doc, hush protocols, private ward admission" }
   ],
 
   /* ---- debt: shape only, deliberately not an accounting tool ------------
@@ -203,6 +240,8 @@ EN.economy = {
      Master's Toolkit, so the Freelancer's "they live in the book" list no longer names
      them. The Codex shows this list on the Admin desktop only (js/codex.js ref-economy). */
   notModelledToolkit: [
-    "Regional Exchange Variation and Conversion Scene Complications"
+    "Regional Exchange Variation and Conversion Scene Complications",
+    // the Toolkit's Personal Hooks section (19 October 2026 rulings, 9: not modelled)
+    "Personal Hooks"
   ]
 };

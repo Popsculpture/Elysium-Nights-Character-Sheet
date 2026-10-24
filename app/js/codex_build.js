@@ -14,9 +14,11 @@
                    trainingPointLevels), the milestone pace (read from the GM's
                    Payroll data through EN.rules.milestonePace, not retyped) and
                    EN.talentRules, which no screen rendered before.
-     sk-resources  Class Resource Rules: EN.resourceRules in full, which also
-                   rendered nowhere. The Basics primer (bx-res) keeps its short
-                   table; this is the rule text behind it.
+     sk-resources  Class Resource Rules: the seven General Resource Rules of
+                   EN.resourceRules (the Handbook prints no per-class blocks),
+                   plus the Toolkit's budget advice on the Admin desktop. The
+                   Basics primer (bx-res) keeps its short table; this is the
+                   rule text behind it.
      sk-load       Encumbrance & Load: EN.rules.encumbrance, including the
                    Threshold formula that used to live only in a hover title.
 
@@ -129,6 +131,7 @@ window.EN = window.EN || {};
   /* ---- Skills & Proficiencies ---------------------------------------------- */
   function skillsPanel(ctx, K) {
     var R = rules(), T = R.training || {}, F = R.formulas || {}, V = EN.versatile || {};
+    var TT = T.toolTiers || null;
     var kids = [];
     kids.push(K.subTitle("Skills"));
     // grouped by parent Attribute, in the book's Attribute order; the Attribute rides on the heading
@@ -137,6 +140,8 @@ window.EN = window.EN || {};
         var ex = (R.focusExamples || {})[s.key];
         kids.push(K.ruleBlock(s.name, s.desc + (ex ? "\nExample aspects: " + ex : ""), a.name));
       });
+      // the book's note under the Mystique skills (PHB:1008-1012): a Flow check may use the Flow Attribute
+      if (a.key === "MYS" && R.mystiqueNote) kids.push(K.proseBlock(R.mystiqueNote));
     });
 
     kids.push(K.subTitle("Proficiency"));
@@ -146,10 +151,17 @@ window.EN = window.EN || {};
       kids.push(K.entry("proficiency-tiers", "Proficiency Tiers", [
         el("h4", { text: "Proficiency Tiers" }),
         K.refTable(["Tier", "d20 Bonus", "Dice Pool"], tiers.map(function (t) {
-          return [t.name, "+" + (t.d20 || 0), t.pool ? "+" + t.pool + " Edge Dice" : "None"];
+          // Untrained adds Snag Dice rather than Edge Dice (PHB:1104), so its cell is the data's own words
+          return [t.name, "+" + (t.d20 || 0), t.poolText ? t.poolText : t.pool ? "+" + t.pool + " Edge Dice" : "None"];
         }), [0]),
-        snag.length ? K.note(list(snag) + ": rolls with Snag.", { margin: "0" }) : null
+        snag.length ? K.note(list(snag) + ": rolls with Snag.", { margin: "0" }) : null,
+        // PHB:1636, the line under the book's Proficiency Growth table
+        TT && TT.exceptions ? K.proseBlock(TT.exceptions) : null
       ], { tag: "div.feature" }));
+      // what a Tool Category tier does instead of a roll bonus (PHB:1255, :1270, :1278)
+      if (TT) {
+        kids.push(K.ruleBlock("Tool Category Tiers", [TT.intro, TT.proficient, TT.expertise, TT.mastery].filter(Boolean).join("\n"), "TOOL CATEGORIES"));
+      }
     }
     if (F.passive || F.check) {
       kids.push(K.ruleBlock("Passive Checks", [
@@ -206,7 +218,9 @@ window.EN = window.EN || {};
     var pace = R.milestonePace ? R.milestonePace() : null;
     if (pace) kids.push(K.ruleBlock("Milestones", "A Freelancer levels up after " + pace + "." + ((R.advancement || {}).when ? " " + R.advancement.when : "")));
     var TR = EN.talentRules || {};
-    [TR.progression, TR.requirementsRetraining, TR.categoriesIntro].forEach(function (t) {
+    // the book's order (PHB:4937-5010): Progression, Talent Upgrades, Requirements and Retraining,
+    // Reading a Talent, Lineage Evolution, then the categories
+    [TR.progression, TR.requirementsRetraining, TR.readingATalent, TR.lineageEvolution, TR.categoriesIntro].forEach(function (t) {
       if (t) kids.push(bookText(K, t));
     });
     return kids;
@@ -222,25 +236,13 @@ window.EN = window.EN || {};
     var RR = EN.resourceRules || {}, kids = [];
     if (RR.general) kids.push(bookText(K, RR.general));
     POOL_RULES.forEach(function (r) { if (RR[r[0]]) kids.push(K.ruleBlock(r[1], RR[r[0]])); });
-    var by = RR.byClass || {};
-    if (Object.keys(by).length) {
-      kids.push(K.subTitle("By Class"));
-      /* "Hustler: Leverage" leads each one; its slug is the resource's own key
-         ("sk-resources/leverage"), the name a class card links with */
-      Object.keys(by).forEach(function (k) {
-        var chunks = String(by[k]).split(/\n\s*\n/).map(function (c) { return c.trim(); }).filter(Boolean);
-        var title = chunks.shift() || k;
-        kids.push(blockEntry(K, k, title, chunks));
-      });
-    }
-    if (RR.budgetByLevel) {
-      kids.push(K.subTitle("Summary and Budget"));
-      /* The Class Resources advice (RR.budgetGm) is the Game Master's Toolkit's, two plain
-         paragraphs with no label and no box (batches 44 to 50). The summary reads the same on
-         both desktops; the Admin desktop adds the advice after it as plain prose. */
-      kids.push(bookText(K, String(RR.budgetByLevel)));
-      if (ctx && ctx.portal === "admin" && RR.budgetGm) kids.push(K.proseBlock(RR.budgetGm));
-    }
+    /* The Handbook's Class Resource Definitions give only the seven General Resource Rules above
+       (PHB:2598-2599), so the per-class blocks and the budget-by-level summary no longer render
+       (author ruling 4, 19 October 2026); a class card links its class chapter instead. The Class
+       Resources advice (RR.budgetGm) is the Game Master's Toolkit's, two plain paragraphs with no
+       label and no box (batches 44 to 50). It prints on the Admin desktop only, as plain prose,
+       and no longer waits on a budgetByLevel field. */
+    if (ctx && ctx.portal === "admin" && RR.budgetGm) kids.push(K.proseBlock(RR.budgetGm));
     return kids;
   }
 
@@ -286,7 +288,7 @@ window.EN = window.EN || {};
       when: function () { return !!(EN.rules && EN.rules.skills && EN.rules.profTiers); }, build: skillsPanel },
     { id: "sk-advance", title: "Advancement", tag: function () { return "LEVELS 1 TO " + (rules().maxLevel || 10); }, order: 20,
       when: function () { return !!(EN.rules && EN.rules.xpThresholds); }, build: advancePanel },
-    { id: "sk-resources", title: "Class Resource Rules", tag: "POOLS · REFRESH · BUDGET", order: 30,
+    { id: "sk-resources", title: "Class Resource Rules", tag: function (ctx) { return ctx && ctx.portal === "admin" ? "POOLS · REFRESH · BUDGET" : "POOLS · REFRESH"; }, order: 30,
       when: function () { return !!EN.resourceRules; }, build: resourcesPanel },
     { id: "sk-load", title: "Encumbrance & Load", tag: "THRESHOLD · LOADOUT · HAULS", order: 40,
       when: function () { return !!(EN.rules && EN.rules.encumbrance); }, build: loadPanel }
@@ -310,6 +312,8 @@ window.EN = window.EN || {};
     "Skill Focus": "sk-skills/skill-focus",
     "Free Skill Focus": "sk-skills/overlapping-training",
     "Specialization": "sk-skills/specialization",
+    "Tool Category Tiers": "sk-skills/tool-category-tiers",
+    "Reading a Talent": "sk-advance/reading-a-talent",
     "Versatile Skill": "sk-skills/versatile-skills",
     "Versatile Skills": "sk-skills/versatile-skills",
     "Proficiency Bonus": "sk-skills/proficiency-tiers",

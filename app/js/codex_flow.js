@@ -6,7 +6,9 @@
    alone, so a GM or an Unattuned player could never read Strain, Overdraw, Breakflow
    or Ritual Recovery. The tab now keeps its working tools and links here.
      flow: "The Flow", order 70, audience "both", panel ids "fl-"
-   The Basics keeps its primer (bx-flow); this chapter is the full text. Nothing is
+   The Basics keeps its primer (bx-flow); this chapter is the full text. Panel
+   fl-advanced (Advanced Techniques) is EN.flow.advancedTechniques, the Handbook's Resonance
+   Synthesis and Master Forging pairs. Nothing is
    written here that the data does not say: every rule line is a field of EN.flow
    (or EN.basics.flow.check, the one Flow Attribute Check text), and the only words of
    this file's own are headings and the small pointers between panels.
@@ -173,6 +175,23 @@ window.EN = window.EN || {};
         rr.cooperative ? K.ruleBlock("Cooperative Recovery", rr.cooperative) : null,
         K.seeAlso("Out of Breakflow:", [["fl-breakflow/breakflow-restoration", "Breakflow Restoration"]])
       ];
+    } },
+
+    /* ---- 8b · Advanced Techniques --------------------------------------------------
+       The Handbook's "Master Forging and Advanced Techniques" (PHB:8800-8890), after The Ritual
+       of Alignment. Two groups the Shaper unlocks, a group heading over each pair, and one entry
+       per technique ("fl-advanced/flow-linking"). The Shaper's Resonance Synthesis and Master
+       Forging features name them, and those names link here through the terms below. */
+    { id: "fl-advanced", title: "Advanced Techniques", tag: "RESONANCE SYNTHESIS · MASTER FORGING", order: 85, when: has("advancedTechniques"), build: function (ctx, K) {
+      var out = [];
+      F().advancedTechniques.forEach(function (g) {
+        out.push(K.subTitle(g.levelLabel + ": " + g.name));
+        g.techniques.forEach(function (t) {
+          out.push(K.ruleBlock(t.name, t.text, (g.levelLabel + " · " + t.cost).toUpperCase()));
+        });
+      });
+      out.push(K.seeAlso("The FP they spend and the Strain they can cost:", [["fl-overdraw", "Overdraw"], ["fl-strain", "The Strain Track"]]));
+      return out;
     } }
   ] });
 
@@ -193,7 +212,17 @@ window.EN = window.EN || {};
     "Breakflow Check": "fl-breakflow/breakflow-check",
     "Breakflow Checks": "fl-breakflow/breakflow-check",
     "Breakflow Restoration": "fl-breakflow/breakflow-restoration",
-    "Rough Restoration": "fl-breakflow/rough-restoration"
+    "Rough Restoration": "fl-breakflow/rough-restoration",
+    /* the Shaper's two Advanced Technique features and the four techniques they unlock (the panel
+       title "Advanced Techniques" links on its own); the two group names have no entry of their
+       own, so they open the panel, where each is a heading over its pair */
+    "Resonance Synthesis": "fl-advanced",
+    "Master Forging": "fl-advanced",
+    "Flow Linking": "fl-advanced/flow-linking",
+    "Resonance Amplification": "fl-advanced/resonance-amplification",
+    "Cooperative Channeling": "fl-advanced/cooperative-channeling",
+    "Sustained Fields": "fl-advanced/sustained-fields",
+    "Sustained Field": "fl-advanced/sustained-fields"
   });
 
   /* ===========================================================================
@@ -204,7 +233,9 @@ window.EN = window.EN || {};
      desktop (Placing an Anomaly), which reads the GM's own data: the Breakflow
      Bleed Set Piece (EN.gmBook.hazards) and the Filtration Stack worked example
      (EN.gmBook.encounters), the two GM sites that send a reader here.
-       fl-dist          Flow Disturbances (core concepts, the six Anomalies)
+       fl-dist          Flow Disturbances (core concepts, the six Anomalies). The Handbook prints
+                        no Core Concepts or Gameplay Summary here, so the app keeps both and tags
+                        them APP SUMMARY (author ruling 10); the Clankers line is no longer drawn.
        fl-dist-detect   Detecting and Analyzing
        fl-dist-cleanse  Cleansing & Counter Flow (with the Ritual Chorus)
        fl-dist-anchor   Inside a Null Scar: The Focal Anchor
@@ -239,6 +270,8 @@ window.EN = window.EN || {};
      desktop only, as plain prose or as run-in cards with no GM label (batches 44 to 50). The
      Freelancer desktop names no pointer to fl-dist-repair, so no label is left behind as dead text. */
   function admin(ctx) { return !!(ctx && ctx.portal === "admin"); }
+  // the tag for a block the app keeps although the Handbook doesn't print it (author ruling 10, 19 October 2026)
+  var APP_SUMMARY = "APP SUMMARY";
 
   CV.addPanels("flow", [
 
@@ -248,10 +281,12 @@ window.EN = window.EN || {};
       return [
         K.proseBlock(d.intro),
         K.subTitle("Core Concepts"),
-        d.coreConcepts.map(function (c) { return K.ruleBlock(c.term, c.text); }),
+        /* the Handbook prints no Core Concepts here (PHB:8893-8959 goes from the intro to the
+           classifications), so these stay as the app's own summary and say so on each entry
+           (author ruling 10): the tag travels with an entry into a peek or a link */
+        d.coreConcepts.map(function (c) { return K.ruleBlock(c.term, c.text, APP_SUMMARY); }),
         K.subTitle("Anomaly Classifications"),
         d.classifications.map(function (a) { return K.ruleBlock(a.name, a.effect); }),
-        d.clankers ? K.ruleBlock("Clankers", d.clankers) : null,
         // the Handbook's run-in under Rough Restoration, a player rule, so both desktops; the tag names that section (no GM label)
         d.disturbedGround ? K.ruleBlock("Disturbed Ground", d.disturbedGround, "BREAKFLOW RESTORATION") : null,
         K.seeAlso("A Flow-rich area is Anomaly Severity 0:", [["fl-breakflow/full-restoration", "Full Restoration"], ["fl-recovery", "Ritual Recovery"]]),
@@ -287,7 +322,8 @@ window.EN = window.EN || {};
         d.ritualChorus ? K.ruleBlock("Ritual Chorus", d.ritualChorus) : null,
         // the Toolkit's Anomalies at the Table: each run-in is its own card, Admin only (no wrapper, no GM label)
         admin(ctx) ? (d.gmGuidance || []).map(function (g) { return K.ruleBlock(g.label, g.text); }) : null,
-        (d.summary || []).length ? K.ruleBlock("Gameplay Summary", named(d.summary, "label")) : null,
+        // not printed in the Handbook either, so the app's summary carries the same tag as the Core Concepts
+        (d.summary || []).length ? K.ruleBlock("Gameplay Summary", named(d.summary, "label"), APP_SUMMARY) : null,
         K.seeAlso("The Strain it costs:", [["fl-strain", "The Strain Track"], ["fl-overdraw/non-combat-overdraw", "Non-Combat Overdraw"], ["fl-recovery", "Ritual Recovery"]]),
         K.seeAlso("How a Dice Pool runs:", [["rz-pool", "Dice Pools"], ["rz-margin", "Success Margin & Consequence"]])
       ];

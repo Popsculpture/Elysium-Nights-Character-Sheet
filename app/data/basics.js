@@ -58,7 +58,25 @@ EN.basics = {
   caliber: {
     intro: "**Caliber** is a number determined by your class level. Features use it to calculate scaling bonuses, multiply resource pools, or determine how many times you can use an ability per rest.",
     reading: "When a class feature reads a number of times equal to your Caliber per Long Rest, or your maximum pool equals Caliber plus Tech Modifier, this is the number it means.",
-    focus: "Every class also has a **Saving Throw Focus**. When you make a Saving Throw that matches your Focus, you add your Caliber to the roll alongside the Attribute Modifier. This is how seasoned Freelancers shrug off threats that would drop a rookie."
+    focus: "Every class also has a **Saving Throw Focus**. When you make a Saving Throw that matches your Focus, you add your Caliber to the roll alongside the Attribute Modifier. This is how seasoned Freelancers shrug off threats that would drop a rookie.",
+    // The Handbook's paragraph under the Caliber table (19 October 2026 audit, CC-07), word for word
+    appraisal: "The city uses the Caliber recorded on your #PRINT. It comes from your last appraisal and stays there until you get another one. It determines what rated work you can contract for, what your insurance costs, and which Guild memberships you can apply for. Your sheet shows your actual Caliber. Your Freelancer knows only what their last appraisal reported."
+  },
+
+  /* Saving Throws by Attribute: the Handbook's "When to Use Saving Throws" table (Saving Throws,
+     Resolve; 19 October 2026 audit, core-16), word for word. Three columns, one row per
+     Attribute. The Codex prints it in the Caliber panel, under Saving Throw Focus. */
+  saves: {
+    intro: "Each Attribute governs a different kind of resistance. The GM calls for a Saving Throw whenever a threat demands a direct and immediate response.",
+    head: ["Attribute", "What It Defends Against", "Example Scenarios"],
+    rows: [
+      ["Body", "Poison, disease, fatigue, or physical restraint.", "Endure toxic gas, fight a paralytic agent, resist extreme cold, or stay conscious while suffocating."],
+      ["Agility", "Explosions, traps, or hazards avoided through reflex.", "Leap from a collapsing bridge, dive away from a grenade, or avoid falling debris."],
+      ["Wits", "Disorientation, sudden fear, or mental disruption.", "Shake off a flashbang, resist confusion, or maintain clarity under psychic assault."],
+      ["Tech", "System stress, feedback, or digital intrusion.", "Maintain control of a vehicle under fire, endure ICE intrusion, or keep focus while systems overload."],
+      ["Mystique", "Curses, corruption, or soul-affecting forces.", "Resist a charm effect, repel a spirit's influence, or endure an attempt at possession."],
+      ["Charm", "Fear, intimidation, or emotional manipulation.", "Resist psychic terror, defy social coercion, or maintain composure before a crowd."]
+    ]
   },
 
   /* ---- class resources: the list is derived from EN.classes -------------- */

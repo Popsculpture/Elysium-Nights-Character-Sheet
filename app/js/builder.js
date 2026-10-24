@@ -118,9 +118,12 @@ EN.builder = (function () {
   /* The word `word` inside a stat's label (sel ".k") or caption (".s") becomes a Codex link,
      so the strip's own numbers lead to the rule behind them. A label whose rule does not
      resolve stays plain text (EN.ui.ruleLink falls back), so nothing else changes. */
-  // a class resource's entry in the Codex's Class Resource Rules: "sk-resources/leverage"
-  function resourceAnchor(name) {
-    return "sk-resources/" + String(name || "").toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  /* Where a class resource's link lands: The Basics, Class Resources (bx-res), which carries every
+     class's resource row. The Codex used to hold one "sk-resources/<resource>" entry per class;
+     the Handbook prints no per-class resource blocks any more (author's ruling 4, 19 October), so
+     the one panel that explains the resources is the target for all seven. */
+  function resourceAnchor() {
+    return "bx-res";
   }
   function ruleStat(node, sel, anchor, word) {
     var part = node.querySelector(sel), txt = part ? part.textContent : "";
@@ -218,7 +221,10 @@ EN.builder = (function () {
     var methodRow = el("div.row.wrap", { style: { marginBottom: "14px" } }, [
       ["pointbuy", "Point Buy"], ["array", "Standard Array"], ["manual", "Manual/Roll"], ["overclocked", "Overclocked Array"]
     ].map(function (m) {
-      return el("button.btn.sm" + (method === m[0] ? ".primary" : ""), { onclick: function () { setMethod(m[0]); } }, m[1]);
+      /* Overclocked Array is the author's own addition (4 July): no Handbook method matches it.
+         It stays, and says so on the button and on the first line of its own panel. */
+      return el("button.btn.sm" + (method === m[0] ? ".primary" : ""),
+        { title: m[0] === "overclocked" ? "Not a Handbook method" : null, onclick: function () { setMethod(m[0]); } }, m[1]);
     }));
 
     var info;
@@ -236,12 +242,13 @@ EN.builder = (function () {
           legacyN ? [el("span.help", { style: { flex: "1 1 100%" }, text: legacyN + " score" + (legacyN > 1 ? "s were" : " was") + " assigned from the earlier array and read \"(old array)\". The scores are unchanged; pick from the current array to replace them." })] : []
         ));
     } else if (method === "overclocked") {
+      var ocNotHandbook = el("p.help", { style: { flex: "1 1 100%", margin: "0 0 6px" }, text: "Overclocked Array is not a Handbook method." });
       info = ocPickTotals(ch)
         ? el("div.row.wrap", { style: { gap: "8px", marginBottom: "12px" } },
-            [el("span.help", { text: "Line locked in. Assign each value once:" })].concat(
+            [ocNotHandbook, el("span.help", { text: "Line locked in. Assign each value once:" })].concat(
               arrayRemaining(ch).map(function (v) { return el("span.chip", { text: String(v) }); })
             ))
-        : el("p.help", { text: "Roll 36 scores into a 6x6 matrix below, then choose one complete row, column, or diagonal as your final attribute array. A high-powered generation method for heroic characters; GM approval applies." });
+        : el("div", null, [ocNotHandbook, el("p.help", { text: "Roll 36 scores into a 6x6 matrix below, then choose one complete row, column, or diagonal as your final attribute array. A high-powered generation method for heroic characters; GM approval applies." })]);
     } else {
       info = el("p.help", { text: "Type scores directly (range 1-20), or roll 4d6-drop-lowest groups below and apply one. Rolling is an optional, GM-approved rule; it creates outliers the bounded math isn't tuned for." });
     }
@@ -846,7 +853,7 @@ EN.builder = (function () {
           el("p", { text: f.text })
         ]);
       })));
-      blocks.push(el("p.help", { style: { marginTop: "8px" }, text: "Pick one now. You unlock additional Additive Features from this same list through Lineage Evolution (Advance step)." }));
+      blocks.push(el("p.help", { style: { marginTop: "8px" }, text: "Pick one now. Through Lineage Evolution (Advance step) you unlock more of your Lineage's Additive Features, and that pool also includes the core features in your Species chapter that you passed on at character creation." }));
     }
     return el("div", null, blocks);
   }
@@ -925,7 +932,7 @@ EN.builder = (function () {
         bg.feature ? feature(bg.feature.name, bg.feature.text, "", "Background Feature") : null,
         bg.contacts ? infoBlock("Contacts", bg.contacts) : null,
         bg.personalItem ? infoBlock("Personal Item", bg.personalItem) : null,
-        (bg.hooks || []).length ? el("div", { style: { marginTop: "10px" } }, [el("label.fl", { text: "Backstory Hooks" })].concat(
+        (bg.hooks || []).length ? el("div", { style: { marginTop: "10px" } }, [el("label.fl", { text: "Backstory Hook" })].concat(
           bg.hooks.map(function (h) { return el("p.help", { text: h }); }))) : null
       ]));
       blocks.push(overlapBox(ch));
@@ -1363,13 +1370,45 @@ EN.builder = (function () {
     return EN.ui.panel("Starting Gear Kit", G + "700 BUDGET · CORE PACK + CLASS KIT + SUBCLASS EXTRA", kids, { corners: true });
   }
 
+  /* A subclass feature that prints "You gain Proficiency in the Stealth or Acrobatics skill (your
+     choice)" owes the player one answer. The engine resolves it (engine.subclassGrantChoices, read
+     from the `grants` on the subclass's own feature rows, reached features only) and this asks it:
+     a select per pending skillChoice writing ch.subclassSkillPicks[featureName]. The pick is a free
+     "proficient" floor like a Class or Background skill, so it costs no Training Points. Silent
+     when the subclass owes no choice. */
+  function subclassGrantPicker(ch) {
+    var choices = eng.subclassGrantChoices(ch);
+    if (!choices.length) return null;
+    return el("div", { style: { margin: "10px 0 0" } }, choices.map(function (g) {
+      var sel = el("select", { style: { maxWidth: "210px" }, onchange: function (e) {
+        var v = e.target.value || null;
+        store.update(function (c) {
+          c.subclassSkillPicks = c.subclassSkillPicks || Object.create(null);
+          if (v) c.subclassSkillPicks[g.feature] = v;
+          else delete c.subclassSkillPicks[g.feature];
+        });
+      } }, [el("option", { value: "", selected: !g.pick, text: "- choose a skill -" })].concat(
+        g.options.map(function (o) { return el("option", { value: o.key, selected: g.pick === o.key, text: o.name }); })));
+      return el("div", { style: { margin: "0 0 6px" } }, [
+        el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
+          el("label.fl", { style: { margin: 0 }, text: g.feature + " · Proficient in" }), sel,
+          g.pick ? null : el("span.chip", { style: { fontSize: "9px", color: "var(--warn)", borderColor: "var(--warn)" },
+            title: g.feature + " grants Proficiency in one of these skills and you have not said which, so it is granting none." }, "UNCHOSEN")
+        ]),
+        el("p.help", { style: { marginTop: "4px" },
+          text: g.pick ? "Free: it costs no Training Points." : g.feature + " grants Proficiency in one of these skills. Until you choose, it grants none." })
+      ]);
+    }));
+  }
+
   /* ---------- STEP 5: CLASS ---------- */
   function stepClass(ch, d) {
     var clsKeys = ["codebreaker", "fury", "hustler", "operator", "scoundrel", "shaper", "stitcher"];
     var cls = eng.getClass(ch.class);
-    // Classes of Elysium is the copy layer for this step. Its Play-if lines are the
-    // only text in the book written for the moment of the decision itself, so a card
-    // leads with one; the overview paragraph joins it once the class is selected.
+    // Classes of Elysium is the copy layer for this step: the card prints the class's
+    // DESCRIPTION cell from the Handbook's table (EN.classPicker), selected or not, and falls
+    // back to the chapter tagline only for a class the table does not carry. The old "Play a X if"
+    // lines are gone: the Handbook no longer prints them.
     var PICK = EN.classPicker || { intro: [], classes: {} };
     var blocks = [EN.ui.sectionTitle("Choose a Class")];
     (PICK.intro || []).forEach(function (p, i) {
@@ -1381,16 +1420,15 @@ EN.builder = (function () {
       var sel = ch.class === k;
       return el("div.opt-card" + (sel ? ".sel" : ""), {
         onclick: function () {
-          store.update(function (cc) { if (cc.class !== k) { cc.class = k; cc.subclass = null; cc.classSkillChoices = []; cc.classGearChoices = { weapons: [], armor: [], tools: [], vehicles: [] }; cc.gambits = []; if (cc.startingKit && !cc.startingKit.claimed) { cc.startingKit.picks = {}; cc.startingKit.alt = false; } pruneGrantedFocuses(cc); } });
+          store.update(function (cc) { if (cc.class !== k) { cc.class = k; cc.subclass = null; cc.subclassSkillPicks = Object.create(null); cc.classSkillChoices = []; cc.classGearChoices = { weapons: [], armor: [], tools: [], vehicles: [] }; cc.gambits = []; if (cc.startingKit && !cc.startingKit.claimed) { cc.startingKit.picks = {}; cc.startingKit.alt = false; } pruneGrantedFocuses(cc); } });
           if (eng.unresolvedOverlaps(store.active()).length) toast("⚠ Overlapping training with your Background; claim your Free Skill Focus below.");
         }
       }, [
         el("span.check", { text: "◉" }),
         el("h4", { text: c.name.replace(/^The\s+/, "") }),
         el("div.sub", { text: (c.resource ? c.resource.name + " · " : "") + "d" + (R.classVitality[k] ? R.classVitality[k].die : "?") + " VIT" }),
-        (sel && pk.blurb) ? el("p", { style: { color: "var(--text3)" }, text: pk.blurb }) : null,
         el("p", { style: { color: "var(--text2)" },
-          text: pk.playIf || ((c.tagline || "").slice(0, 150) + ((c.tagline || "").length > 150 ? "…" : "")) })
+          text: pk.blurb || ((c.tagline || "").slice(0, 150) + ((c.tagline || "").length > 150 ? "…" : "")) })
       ]);
     })));
 
@@ -1462,15 +1500,16 @@ EN.builder = (function () {
         blocks.push(el("div.card-grid", null, cls.subclasses.filter(function (s) { return offered("subclass", s.key, ch.subclass); }).map(function (s) {
           var sp = subPick[s.key] || {}, ssel = ch.subclass === s.key;
           return el("div.opt-card" + (ssel ? ".sel" : ""), {
-            onclick: function () { store.update(function (c) { if (c.subclass !== s.key && c.startingKit && !c.startingKit.claimed) c.startingKit.alt = false; c.subclass = s.key; }); }
+            onclick: function () { store.update(function (c) { if (c.subclass !== s.key) c.subclassSkillPicks = Object.create(null); if (c.subclass !== s.key && c.startingKit && !c.startingKit.claimed) c.startingKit.alt = false; c.subclass = s.key; }); }
           }, [
             el("span.check", { text: "◉" }),
             el("h4", null, [document.createTextNode(s.name), heldTag("subclass", s.key)]),
             sp.flowAttribute ? el("div.sub", { text: "FLOW ATTRIBUTE · " + sp.flowAttribute.toUpperCase() }) : null,
-            (ssel && sp.blurb) ? el("p", { style: { color: "var(--text3)" }, text: sp.blurb }) : null,
-            el("p", { style: { color: "var(--text2)" }, text: sp.playIf || (s.description || "").slice(0, 180) })
+            el("p", { style: { color: "var(--text2)" }, text: (s.description || "").slice(0, 180) })
           ]);
         })));
+        var sgPick = subclassGrantPicker(ch);
+        if (sgPick) blocks.push(sgPick);
       }
 
       // class skill choices
@@ -1776,7 +1815,7 @@ EN.builder = (function () {
         style: { color: "var(--gold)", borderColor: "var(--gold)" }, onclick: function () { addFocus(ch, type, parent); } }, "+ Focus · 1TP"));
     }
     if (tIdx >= R.profOrder.indexOf("expertise")) {
-      sub.push(el("button.btn.sm" + (spec ? ".flow" : ""), { title: "Specialization · 1 TP · L6+ · one per parent · crit 19-20 and +2 Edge Dice inside the aspect",
+      sub.push(el("button.btn.sm" + (spec ? ".flow" : ""), { title: "Specialization · 1 TP · L6+ · one per parent · crit range +1 and +2 Edge Dice inside the aspect",
         onclick: function () { toggleSpec(ch, type, parent); } }, spec ? "✓ Spec" : "+ Spec · 1TP"));
       if (spec) sub.push(focusAspectInput(ch, "specializations", spec));
     }
@@ -2146,15 +2185,17 @@ EN.builder = (function () {
         cur.type === "attr" ? attrUpgradeSummary(cur) :
         cur.type === "evolution" ? (cur.evolution ? cur.evolution + heldText("lineage", ch.lineage) : "Evolution, choose") :
         cur.type === "talentUpgrade" ? (cur.talent ? "Upgrade: " + talentName(cur.talent) + heldText("talent", cur.talent) + (resistPendingIn(ch, cur) ? " \u00b7 choose a damage type" : "") : "Talent Upgrade, choose") :
-        (cur.talent ? talentName(cur.talent) + heldText("talent", cur.talent) + (talentAttrPendingIn(ch, cur) ? " · choose an Attribute" : "") : "Talent, choose")
+        (cur.talent ? talentName(cur.talent) + heldText("talent", cur.talent) + (talentAttrPendingIn(ch, cur) ? " · choose an Attribute" : talentSavePendingIn(ch, cur) ? " · choose a Saving Throw Attribute" : "") : "Talent, choose")
       ) : "Unspent";
       blocks.push(collapsibleEntry("uu-" + L, {
         title: "Level " + L + " · Universal Upgrade", summary: summary,
-        attention: !cur || talentAttrPendingIn(ch, cur) || resistPendingIn(ch, cur), dismissKey: "L" + d.level,
+        attention: !cur || talentAttrPendingIn(ch, cur) || talentSavePendingIn(ch, cur) || resistPendingIn(ch, cur), dismissKey: "L" + d.level,
         attentionTitle: !cur ? "Unspent Universal Upgrade; click to dismiss"
                              : resistPendingIn(ch, cur)
                                ? "This Upgrade grants Resistance to a damage type and you have not chosen which; click to dismiss"
-                               : "This Talent raises an Attribute and you have not chosen which; click to dismiss",
+                               : talentSavePendingIn(ch, cur) && !talentAttrPendingIn(ch, cur)
+                                 ? "This Talent adds your Caliber to the saves of a second Attribute and you have not chosen which; click to dismiss"
+                                 : "This Talent raises an Attribute and you have not chosen which; click to dismiss",
         filled: !!cur, body: universalUpgradePicker(ch, L)
       }));
       // Level 4 Awakening Milestone, a free, evolution-only bonus slot
@@ -2266,8 +2307,17 @@ EN.builder = (function () {
     var k = eng.canonTalentKey(slot.talent);
     return !!k && eng.resistPickPending(ch, k);
   }
+  /* Hardened Survivor's second pick (PHB: "If the chosen Attribute is already one of your Saving
+     Throw Focuses, choose a different Attribute for this benefit"), asked the same slot-shaped way. */
+  function talentSavePendingIn(ch, slot) {
+    if (!slot || slot.type !== "talent" || !slot.talent) return false;
+    var k = eng.canonTalentKey(slot.talent);
+    return !!k && eng.talentSavePending(ch, k);
+  }
+  /* Drops every pick that belongs to a Talent no slot holds any more: the Attribute picks, the
+     Saving Throw picks (Hardened Survivor) and the gear category picks (Asphalt Rider, Junk
+     Tinkerer). All three maps are statements about a Talent the character HAS. */
   function pruneTalentAttrPicks(c) {
-    if (!c.talentAttrPicks) return;
     var held = Object.create(null);
     Object.keys(c.universalUpgrades || {}).forEach(function (lv) {
       var u = c.universalUpgrades[lv];
@@ -2275,7 +2325,11 @@ EN.builder = (function () {
       var k = eng.canonTalentKey(u.talent);
       if (k) held[k] = 1;
     });
-    Object.keys(c.talentAttrPicks).forEach(function (k) { if (!held[k]) delete c.talentAttrPicks[k]; });
+    ["talentAttrPicks", "talentSavePicks", "talentGearPicks"].forEach(function (field) {
+      var map = c[field];
+      if (!map || typeof map !== "object") return;
+      Object.keys(map).forEach(function (k) { if (!held[k]) delete map[k]; });
+    });
   }
   /* A slot can store a Talent by key OR by display name, which activeTalents has always
      accepted. This resolved by key only, so a name-stored slot summarised as the literal
@@ -2545,6 +2599,8 @@ EN.builder = (function () {
       el("h4", null, [document.createTextNode(t.name), heldTag("talent", t.key), el("span.src", { text: t.category || "" })]),
       reqLine(ch, d, t),
       talentAttrPicker(ch, t),
+      talentSavePicker(ch, t),
+      talentGearPicker(ch, t),
       renderText(t.text)]);
     return el("div", null, [sel, info]);
   }
@@ -2585,6 +2641,77 @@ EN.builder = (function () {
       el("p.help", { style: { marginTop: "4px" },
         text: cur ? "Applied to your sheet, to a maximum of 20."
                   : "This Talent raises one Attribute by 1. Until you choose, it raises none." })
+    ]);
+  }
+  /* Hardened Survivor's SAVE half. The Talent adds "your Caliber to all Saving Throws you make using
+     the chosen Attribute, as though it were one of your class Saving Throw Focuses", and "If the
+     chosen Attribute is already one of your Saving Throw Focuses, choose a different Attribute for
+     this benefit." Two states: the chosen Attribute is not a Focus, so the benefit lands on it and
+     the line just says so; it is a Focus, so a select of the other Attributes writes
+     ch.talentSavePicks. Only the SAVE benefit moves; the +1 to the score stays on the chosen
+     Attribute (author's ruling, 19 October). Silent until an Attribute has been chosen. */
+  function talentSavePicker(ch, t) {
+    if (t.key !== "hardened-survivor") return null;
+    var a = eng.talentAttr(ch, t.key);
+    if (!a) return null;
+    var names = function (k) { var x = R.attributes.filter(function (y) { return y.key === k; })[0]; return x ? x.name : k; };
+    var opts = eng.talentSaveOptions(ch, t.key);
+    if (!opts.length) {
+      return el("p.help", { style: { margin: "0 0 8px", color: "var(--success)" },
+        text: "Adds your Caliber to " + names(a) + " Saving Throws, as a Saving Throw Focus." });
+    }
+    var cur = eng.talentSaveAttr(ch, t.key);
+    var sel = el("select", { style: { maxWidth: "210px" }, onchange: function (e) {
+      var v = e.target.value || null;
+      store.update(function (c) {
+        c.talentSavePicks = c.talentSavePicks || Object.create(null);
+        if (v) c.talentSavePicks[t.key] = v;
+        else delete c.talentSavePicks[t.key];
+      });
+    } }, [el("option", { value: "", selected: !cur, text: "- choose an Attribute -" })].concat(
+      opts.map(function (k) { return el("option", { value: k, selected: cur === k, text: names(k) + " saves" }); })));
+    return el("div", { style: { margin: "0 0 8px" } }, [
+      el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
+        el("label.fl", { style: { margin: 0 }, text: "Saving Throw Focus" }), sel,
+        cur ? null : el("span.chip", { style: { fontSize: "9px", color: "var(--warn)", borderColor: "var(--warn)" },
+          title: "Your chosen Attribute is already a Saving Throw Focus and you have not said which Attribute gets this benefit, so it is granting nothing." }, "UNCHOSEN")
+      ]),
+      el("p.help", { style: { marginTop: "4px" },
+        text: "If the chosen Attribute is already one of your Saving Throw Focuses, choose a different Attribute for this benefit." }),
+      cur ? el("p.help", { style: { margin: "0", color: "var(--success)" },
+        text: "Adds your Caliber to " + names(cur) + " Saving Throws, as a Saving Throw Focus." }) : null
+    ]);
+  }
+  /* The gear half of a Talent that grants Proficiency with one category of the player's choice:
+     Asphalt Rider ("You gain Proficiency with one vehicle category of your choice.") and Junk
+     Tinkerer ("Choose one Tool Category. You're Proficient with it"). The pick is a free
+     "proficient" floor like a Class or Background grant, so it costs no Training Points and returns
+     any already spent on that category. Same rules as the pickers above: the blank option is a
+     real state and an unmade pick is marked, not silent. */
+  function talentGearPicker(ch, t) {
+    var bucket = eng.talentGearBucket(t.key);
+    if (!bucket) return null;
+    var opts = eng.talentGearOptions(t.key) || [];
+    var cur = eng.talentGearPick(ch, t.key);
+    var noun = bucket === "vehicles" ? "vehicle category" : "Tool Category";
+    var sel = el("select", { style: { maxWidth: "230px" }, onchange: function (e) {
+      var v = e.target.value || null;
+      store.update(function (c) {
+        c.talentGearPicks = c.talentGearPicks || Object.create(null);
+        if (v) c.talentGearPicks[t.key] = v;
+        else delete c.talentGearPicks[t.key];
+      });
+    } }, [el("option", { value: "", selected: !cur, text: "- choose a " + noun + " -" })].concat(
+      opts.map(function (name) { return el("option", { value: name, selected: cur === name, text: name }); })));
+    return el("div", { style: { margin: "0 0 8px" } }, [
+      el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
+        el("label.fl", { style: { margin: 0 }, text: "Proficient with" }), sel,
+        cur ? null : el("span.chip", { style: { fontSize: "9px", color: "var(--warn)", borderColor: "var(--warn)" },
+          title: "This Talent grants Proficiency with one " + noun + " and you have not said which, so it is granting none." }, "UNCHOSEN")
+      ]),
+      el("p.help", { style: { marginTop: "4px" },
+        text: cur ? "You're Proficient with " + cur + ". It is free: it costs no Training Points, and any you already spent on it come back."
+                  : "This Talent grants Proficiency with one " + noun + ". Until you choose, it grants none." })
     ]);
   }
   /* The requirement line reads differently depending on whether it is satisfied:
@@ -3005,7 +3132,7 @@ EN.builder = (function () {
         if (!u.talent) return false;
         // a Talent whose Attribute is unchosen is a slot still owed an answer, exactly
         // like an attr slot missing one of its two picks above
-        if (talentAttrPendingIn(ch, u)) return false;
+        if (talentAttrPendingIn(ch, u) || talentSavePendingIn(ch, u)) return false;
       }
       // an Upgrade owed a damage type is a slot still owed an answer, exactly like the Talent above
       else if (u.type === "talentUpgrade") { if (!u.talent || resistPendingIn(ch, u)) return false; }

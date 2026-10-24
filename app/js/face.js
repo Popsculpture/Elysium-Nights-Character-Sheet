@@ -788,7 +788,7 @@ EN.faceView = (function () {
     // ("Help" stays on the Core Resolution Help Action, as the rv1 fix ruled; the book's own entry follows)
     var socialHelp = !(A.rows || []).some(function (r) { return r.key === "insight"; }) ? null : el("p.help", { style: { margin: "8px 0 0", color: "var(--text3)" } }, ["Social ",
       rl("rz-collab/help-action", "Help"), ": on a success, grant ",
-      rl("rz-edge", "Edge"), " (or +1 Edge Die) to one ally's next social roll in the same scene, and move no Resolve (",
+      rl("rz-edge", "Edge"), " (or +1 Edge Die) to one ally's next social roll in the same scene (",
       rl("so-friction/insight-as-the-social-help-action", "Insight as the Social Help Action"), ")."]);
     var marg = (M.rows || []).map(function (r) { return [r.margin, r.result, rt(r.text)]; });
     var chip = EN.ui.ruleChip("so-summary", { title: "Social Play Summary" });

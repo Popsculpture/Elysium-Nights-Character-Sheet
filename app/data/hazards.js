@@ -165,6 +165,17 @@ EN.hazards = {
       note: "Its own entry gives up to 1 hour of active use, refreshing between scenes, and stops you beginning to Drown in water or low-oxygen air. Sixty minutes of a thin-air exposure pass with no save at all; the clock starts when the hour runs out. Against Drowning that hour is 600 rounds, at the book's 10 rounds to the minute. It does not cover vacuum, which is why the breath grant names its kind: a face-slot mouthpiece is not a sealed suit, and the vacuum rule's only path is a Rebreather Liner fitted to a suit that is already Sealed.",
       effects: { thinAirMinutes: 60, breathMinutes: { drowning: 60 } } },
 
+    /* PHB:8311 "Sealed armor turns the bad air aside and does nothing whatsoever for cold." Author
+       ruling 7 (19 October 2026): it covers caustic air and smoke, not heat and not cold. Smoke has
+       no clock on the sheet, so caustic air is the one effect the engine reads (blocksCaustic). The
+       engine's "armorTrait" source is live while the worn suit is not lapsed and carries the named
+       trait, or carries a Rebreather Liner, which makes it count as Sealed (PHB:14488). */
+    { key: "sealed", name: "Sealed armor", kind: "Armor Trait",
+      source: { type: "armorTrait", name: "Sealed" },
+      summary: "Turns caustic air and smoke aside. Nothing for heat or cold.",
+      note: "Sealed armor turns the bad air aside and does nothing whatsoever for cold. Smoke has no clock on the sheet.",
+      effects: { blocksCaustic: true } },
+
     { key: "radiation-calluses", name: "Radiation Calluses", kind: "FreeBorn Trait",
       source: { type: "lineageFeature", name: "Radiation Calluses" }, lineage: "freeborn",
       summary: "Never gains Fatigue from cold.",

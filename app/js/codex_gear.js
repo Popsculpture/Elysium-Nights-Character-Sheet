@@ -18,20 +18,26 @@
      gr-traits/<slug(key)>    an ARMOR or shield trait whose name no weapon trait
                               uses ("gr-traits/bulky", "gr-traits/off-hand")
      gr-traits/armor-<slug>   an armor trait that shares its name with a weapon
-                              trait (Concealable, Heavy, Light, Wear X, Worn): the
-                              two mean different things, so both get an entry
+                              trait (Light, Wear X): the two are worded differently
+                              for a shield, so both get an entry. Concealable, Heavy
+                              and Worn have ONE entry, the book's, and an armor chip
+                              falls back to it (r7)
      gr-weapons *, gr-armor, gr-custom *, gr-craft *, gr-chrome *
      gr-craft/armor-repair *
    TOOLKIT GEAR (2026-10-16 handoff, section 6; the Player's Handbook gear list rule since
-   round 2): the Signature Weapons chapter, the Mystech Ammunition note, the Mystech Armor
-   intro and the Blackware and Prototype cyberware tiers are gear the Player's Handbook
-   doesn't print (the book leaves them to the Game Master's Toolkit). While
+   round 2): the Signature Weapons chapter and the Blackware and Prototype cyberware tiers are
+   gear the Player's Handbook doesn't print (the book leaves them to the Game Master's
+   Toolkit). The Mystech Armor intro and the Mystech Ammunition note are the Handbook's own
+   text (PHB Armor and Defensive Gear; PHB Mystech Ammunition), so both show on both desktops
+   since r7. While
    EN.launch.holds.toolkit is on, the Freelancer desktop leaves them out (toolkitOff below);
    the Admin desktop keeps them. Flipping the hold off restores them on both.
-   PROJECT TIERS (r5, D4): the Player's Handbook table carries Tier, Target Progress, skill
-   tier and time; the Difficulty and Examples columns are the GM Toolkit's Project Tiers
-   table, so they show on the Admin desktop only (ctx.portal === "admin", which also drives
-   the search index and the peek). EN.crafting.tiers keeps both halves whole.
+   PROJECT TIERS (r5, D4): the Player's Handbook table carries Tier, Target Progress, Required
+   Skill Tier and Typical Time Segment; the Difficulty and Examples columns are the GM Toolkit's
+   Project Tiers table, so they show on the Admin desktop only (ctx.portal === "admin", which also
+   drives the search index and the peek). EN.crafting.tiers keeps both halves whole. The rest of
+   the Toolkit's Bench Work follows the same rule (r7): the table's framing line, Common Pairings,
+   the missing-kit options and Finish, Flaws, and Upgrades print on Admin only.
    EN.gearCodex.traitAnchor(printed, armorFirst) turns a trait as a catalog
    prints it ("Armor Piercing 2", "Thrown (4/12)", "Wear 12") into its anchor,
    through the one matcher in data/gear_traits.js. The Inventory's trait chips
@@ -112,8 +118,10 @@ window.EN = window.EN || {};
           if (i) line.appendChild(document.createTextNode(" · "));
           line.appendChild(K.link("gr-traits/" + slug(m), m));
         });
-        kids.push(K.entry("firing-modes", "Firing Modes", [el("h4", { text: "Firing Modes" }), line],
-          { tag: "div.feature", text: modes.join(", ") }));
+        /* the book's optional Weapon Jam rule closes the entry (PHB Gear Traits, Firing Modes) */
+        var jam = g.firingModesNote ? K.linkify(el("p"), g.firingModesNote, { conditions: true }) : null;
+        kids.push(K.entry("firing-modes", "Firing Modes", [el("h4", { text: "Firing Modes" }), line, jam],
+          { tag: "div.feature", text: modes.join(", ") + (g.firingModesNote ? ". " + g.firingModesNote : "") }));
       }
       var am = g.ammo;
       if (am) {
@@ -123,7 +131,9 @@ window.EN = window.EN || {};
         [["Plentiful", "Plentiful Ammo"], ["Counted", "Counted Ammo"], ["Specialty", "Specialty Ammo"], ["Launcher Shell", "Launcher Shells"]].forEach(function (p) {
           if (gi[p[0]]) kids.push(K.ruleBlock(p[1], gi[p[0]]));
         });
-        if (am.mystechNote && !toolkitOff(ctx)) kids.push(K.ruleBlock("Mystech Ammunition", am.mystechNote));
+        // the Handbook prints the Mystech Ammunition section (PHB 12898, with Backlash), so it shows on
+        // both desktops (r7, ruling 11); the Mystech rounds themselves stay held
+        if (am.mystechNote) kids.push(K.ruleBlock("Mystech Ammunition", am.mystechNote));
       }
       var sg = g.signature;
       if (sg && sg.usingNote && !toolkitOff(ctx)) {
@@ -140,8 +150,8 @@ window.EN = window.EN || {};
       var A = G().armor, kids = [];
       if (A.intro) kids.push(K.proseBlock(A.intro));
       var gi = A.groupIntros || {};
-      // the Mystech Armor intro went to the Toolkit with the four suits it introduced
-      Object.keys(gi).forEach(function (k) { if (gi[k] && !(/mystech/i.test(k) && toolkitOff(ctx))) kids.push(K.ruleBlock(k, gi[k])); });
+      // every group intro, the Mystech Armor one included: it is the Handbook's own text (r7)
+      Object.keys(gi).forEach(function (k) { if (gi[k]) kids.push(K.ruleBlock(k, gi[k])); });
       return kids;
     } };
 
@@ -175,10 +185,13 @@ window.EN = window.EN || {};
         }
         var r = wp.rules || {};
         if (r.install) kids.push(K.ruleBlock("Installing Parts", r.install));
+        if (r.fabrication) kids.push(K.ruleBlock("Fabrication", r.fabrication));
         if (r.legality) kids.push(K.ruleBlock("Part Legality", r.legality));
+        if (r.commissions) kids.push(K.ruleBlock("High-Scrutiny Commissions", r.commissions));
         // the Parts' own rules line, "Oomph +1 from hardware" (2026-10-16 handoff)
         if (r.dieStep) kids.push(K.ruleBlock(r.dieStepHead || "Oomph +1 from hardware", r.dieStep));
         if (r.stabilized) kids.push(K.ruleBlock("Stabilized Sources", r.stabilized));
+        if (r.flatBonus) kids.push(K.ruleBlock("Flat Bonuses", r.flatBonus));
       }
       if (EN.armorMods) {
         kids.push(K.subTitle("Armor Mods"));
@@ -187,6 +200,10 @@ window.EN = window.EN || {};
         if (ar.flatDR) kids.push(K.ruleBlock("Flat DR from Mods", ar.flatDR));
         if (ar.resistance) kids.push(K.ruleBlock("Resistance from Mods", ar.resistance));
         if (ar.legality) kids.push(K.ruleBlock("Mod Legality", ar.legality));
+        // the Handbook's Mystech Augments intro and its "Flow gear" rule: both desktops (r7)
+        var myc = (am.categories || []).filter(function (c) { return c.key === "mystech"; })[0];
+        if (myc && myc.blurb) kids.push(K.ruleBlock("Mystech Augments", myc.blurb));
+        if (ar.mystech) kids.push(K.ruleBlock("Mystech Mods", ar.mystech));
       }
       if (kids.length && CV.has("ref-vehicles/how-vehicle-mods-work")) {
         kids.push(el("p", { style: { margin: "6px 0 0", fontSize: "12.5px", fontStyle: "italic", color: "var(--text3)" } },
@@ -224,15 +241,19 @@ window.EN = window.EN || {};
       var tiers = ((EN.rules || {}).profTiers) || {};
       var snag = C.snagForTier || {};
       kids.push(K.subTitle("Projects"));
+      /* Difficulty, Examples and the rest of the Toolkit's Bench Work are GM Toolkit text: Admin
+         desktop only, no GM label. */
+      var gmCols = !!(ctx && ctx.portal === "admin");
       if ((C.tiers || []).length) {
-        /* Difficulty and Examples are the GM Toolkit's columns: Admin desktop only, no GM label. */
-        var gmCols = !!(ctx && ctx.portal === "admin");
         kids.push(K.entry("project-tiers", "Project Tiers", [
           el("h4", { text: "Project Tiers" }),
-          K.refTable(["Tier", "Target Progress", "Expected Skill", "Base Snag Dice", "Time"].concat(gmCols ? ["Difficulty", "Examples"] : []), C.tiers.map(function (t) {
-            return [t.name, t.target == null ? "GM-defined" : String(t.target), (tiers[t.skillTier] || {}).name || t.skillTier || "",
+          K.refTable(["Tier", "Target Progress", "Required Skill Tier", "Base Snag Dice", "Typical Time Segment"].concat(gmCols ? ["Difficulty", "Examples"] : []), C.tiers.map(function (t) {
+            // the book's printed cells ("10+", "Expertise or Mastery"); the tier name is the fallback
+            return [t.name, t.targetText != null ? t.targetText : (t.target == null ? "GM Defined" : String(t.target)),
+                    t.skillText || (tiers[t.skillTier] || {}).name || t.skillTier || "",
                     snag[t.key] == null ? "" : String(snag[t.key]), t.time || ""].concat(gmCols ? [t.difficulty || "", t.examples || ""] : []);
-          }), [0, 1])
+          }), [0, 1]),
+          gmCols && C.tierNote ? K.note(C.tierNote) : null
         ], { tag: "div.feature" }));
       }
       if (r.workInterval) kids.push(K.ruleBlock("Work Intervals", r.workInterval));
@@ -244,6 +265,14 @@ window.EN = window.EN || {};
             var row = [o.name, o.note || String(o.progress)];
             return hasBands ? [bands[o.key] || ""].concat(row) : row;
           }), hasBands ? [1] : [0])
+        ], { tag: "div.feature" }));
+      }
+      // GM Toolkit, Bench Work, Finish, Flaws, and Upgrades: the pattern of results shapes the finished item
+      var fin = C.finish;
+      if (gmCols && fin && (fin.bands || []).length) {
+        kids.push(K.entry("finish-flaws-and-upgrades", "Finish, Flaws, and Upgrades", [
+          el("h4", { text: "Finish, Flaws, and Upgrades" }),
+          K.proseBlock([fin.lead].concat(fin.bands.map(function (b) { return "- " + b.name + ": " + b.text; })).concat([fin.tail]).join("\n"))
         ], { tag: "div.feature" }));
       }
       if (r.untrained) kids.push(K.ruleBlock("Untrained Crafters", r.untrained));
@@ -259,12 +288,28 @@ window.EN = window.EN || {};
           Object.keys(kc).length ? K.refTable(["Tool Category", "Serves"], Object.keys(kc).map(function (k) { return [k, kc[k]]; }), [0]) : null
         ], { tag: "div.feature" }));
       }
+      // GM Toolkit, Bench Work, Common Pairings
+      if (gmCols && (C.pairings || []).length) {
+        kids.push(K.entry("common-pairings", "Common Pairings", [
+          el("h4", { text: "Common Pairings" }),
+          K.refTable(["Project Type", "Primary Skill", "Typical Kits"], C.pairings.map(function (p) { return [p.type, p.skill, p.kits]; }), [0])
+        ], { tag: "div.feature" }));
+      }
       kids.push(K.subTitle("Crafting Rules"));
       if (r.emergency) kids.push(K.ruleBlock("Emergency Fixes", r.emergency));
       if (r.materials) kids.push(K.ruleBlock("Materials", r.materials));
       if (r.kits) kids.push(K.ruleBlock("Kits", r.kits));
+      // GM Toolkit, Bench Work: what the GM can do when a demanding Project has no suitable kit
+      var mk = C.missingKits;
+      if (gmCols && mk && (mk.options || []).length) {
+        kids.push(K.entry("missing-kits", "Without Suitable Kits", [
+          el("h4", { text: "Without Suitable Kits" }),
+          K.proseBlock([mk.lead].concat(mk.options.map(function (o) { return "- " + o; })).join("\n"))
+        ], { tag: "div.feature" }));
+      }
       if (r.oneProjectPerMod) kids.push(K.ruleBlock("One Project per Mod", r.oneProjectPerMod));
       if (r.overEngineering) kids.push(K.ruleBlock("Over-Engineering", r.overEngineering));
+      if (r.flowBound) kids.push(K.ruleBlock("Flow-Bound Crafting", r.flowBound));
       var AR = C.armorRepair;
       if (AR) {
         kids.push(K.subTitle("Armor Repair"));

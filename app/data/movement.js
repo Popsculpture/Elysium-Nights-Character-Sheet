@@ -15,9 +15,8 @@
          > Attacks and Maneuvers > Shove, Trip, Grapple                l.1943-1977
          > Movement                                                    l.2042-2049
        The Flow > Kinetic Resonance, the "Forced Movement" box           l.4054-4056
-       Appendix: Optional Damage Effects (opening paragraph)             l.2548
-         > Standard Physical Effects > Concussive (Bludgeoning)        l.2572
-         > Elemental Effects > Knockback (Force)                       l.2600
+       (the Appendix: Optional Damage Effects, Concussive and Knockback, moved
+        to EN.threats.optionalDamageEffects; see movingEffectNames below)
      Part 3, "Equipment"
        modifiedTime 2026-10-04T03:05:35.328Z
        Ammo > Specialty Launcher Shells > Wall-to-Wall                   l.1710-1722
@@ -112,14 +111,13 @@ EN.movement = {
     text: "Forced movement from a Kinetic push or pull doesn't trigger Opportunity Attacks. However, it can be used tactically to push Enemies into environmental hazards or out of cover."
   },
 
-  /* ---- Part 2 > Appendix: Optional Damage Effects (l.2548, 2572, 2600) -------
-     Only the two Effects that move a Target; the rest of the appendix is not a
-     movement rule. */
-  optionalEffectsNote: "The following damage Effects aren't the default behavior for any damage type. A GM may apply them when running specific threats, designing custom weapons, or wanting to add a tactical wrinkle to a scene. Players should never expect a damage type to automatically trigger any of these Effects; the GM, weapon text, or Invocation will call for them if they apply.",
-  movingEffects: [
-    { name: "Concussive", type: "Bludgeoning", group: "Standard Physical Effects", text: "On a critical hit, the Target must make a Body Save (DC set by the source) or be pushed 1 space and knocked Prone." },
-    { name: "Knockback",  type: "Force",       group: "Elemental Effects",         text: "Target makes a Body Save or is pushed 2 spaces and knocked Prone." }
-  ],
+  /* ---- Optional Damage Effects that move a Target -------------------------------
+     The appendix lives in the Game Master's Toolkit now, and its words live once, in
+     EN.threats.optionalDamageEffects (data/threats.js, all 31 Effects). This list only
+     NAMES the two that push a Target, so the Movement chapter's Admin panel mv-optfx
+     (js/codex_movement.js) can read their rows from that list instead of keeping a copy
+     (the copy and its older intro sentence were deleted 19 Oct 2026, audit A6-04). */
+  movingEffectNames: ["Concussive", "Knockback"],
 
   /* ---- Part 2 > Attacks and Maneuvers > Shove, Trip, Grapple (l.1943-1977) --- */
   maneuvers: {

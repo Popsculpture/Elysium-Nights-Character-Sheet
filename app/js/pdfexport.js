@@ -470,7 +470,26 @@ EN.pdfExport = (function () {
        file drifted from combat.js in the first place. Indirect delivery (an Explosive trait)
        adds no attribute modifier to damage, matching combat.js's dmgMod. */
     var indirect = (w.traits || []).some(function (t) { return /^Explosive/.test(t); });
-    return { hit: mod + prof + focusCal, dmgMod: indirect ? 0 : mod, indirect: indirect };
+    // the throw of a Thrown melee weapon (core-01): same resolution as printsheet.js and combat.js
+    var throwInfo = null;
+    if (melee && thrown) {
+      var tMod = Math.max(bod, agi), tAttr = agi > bod ? "Agility" : "Body";
+      if (offerOn && offerOn.mod > tMod) { tMod = offerOn.mod; tAttr = offerOn.attrName; }
+      var tr = (w.traits || []).map(function (t) { return String(t).match(/^Thrown\s*\((\d+)\s*\/\s*(\d+)\)/); }).filter(Boolean)[0];
+      throwInfo = { hit: tMod + prof + focusCal, mod: tMod, attrName: tAttr, range: tr ? tr[1] + "/" + tr[2] : "" };
+    }
+    return { hit: mod + prof + focusCal, dmgMod: indirect ? 0 : mod, indirect: indirect, throwInfo: throwInfo };
+  }
+  // same as the print sheet: the launcher as it fires its loaded shell, and the throw as a note
+  function loadedWeapon(ch, w, key) {
+    return (EN.combatView && EN.combatView.loadedWeapon) ? EN.combatView.loadedWeapon(ch, w, key) : w;
+  }
+  function throwNote(wh, g, w, dmg) {
+    var ti = wh.throwInfo; if (!ti) return null;
+    var tDice = (g && g.baseDice) || (String(w.damage || "").match(/^\s*(\d+d\d+)/) || [])[1] || "";
+    var swingDice = (String(dmg).match(/^\s*(\d+d\d+)/) || [])[1] || "";
+    if (ti.hit === wh.hit && ti.mod === wh.dmgMod && tDice === swingDice) return null;
+    return "Throw " + sgn(ti.hit) + ", " + tDice + " " + eng.fmtMod(ti.mod) + " (" + ti.attrName + ")" + (ti.range ? ", " + ti.range : "");
   }
 
   /* The unarmed strike as an Attacks-table row, or nothing. Mirrors printsheet.js's
@@ -733,10 +752,11 @@ EN.pdfExport = (function () {
     var atkRows = equippedWeaponRows(ch)
       .filter(function (r) { return !(eng.isUnarmedAugmentName && eng.isUnarmedAugmentName(r.w.name)); })
       .map(function (r) {
-        var w = r.w, wKey = r.key;
+        var wKey = r.key, w = loadedWeapon(ch, r.w, wKey);   // a Launcher Shell in the magazine sets damage and traits (W1)
         // same as the print sheet: the catalog traits, plus the reach the character
         // adds, so the exported row matches the one on the Freelancer tab
         var notes = (w.traits || []).slice();
+        if (w.shell) notes.unshift("Loaded: " + w.shell);
         var wr = eng.weaponReach ? eng.weaponReach(ch, w, wKey) : null;
         if (wr && wr.melee && wr.note) notes.push(wr.note);
         // same as the print sheet: one damage rating, the one the grip selects
@@ -779,8 +799,11 @@ EN.pdfExport = (function () {
            a Versatile row already rewritten to "1d8 (1d10)" keeps its shape and gains the
            modifier once. */
         var wh = weaponHit(ch, d, w, wKey);
-        if (wh.indirect) notes.push("indirect: no attribute Modifier");
+        if (w.shell && /^\s*0\s*$/.test(w.damage || "")) dmg = "No damage";   // a Smoke Shell: the effect is the point
+        else if (wh.indirect) notes.push("indirect: no attribute Modifier");
         else dmg = dmg.replace(/^(\s*\d+d\d+(?:\s*\([^)]*\))?)/, "$1 " + eng.fmtMod(wh.dmgMod));
+        var tn = throwNote(wh, g, w, dmg);
+        if (tn) notes.push(tn);
         return { name: r.label, atk: sgn(wh.hit), dmg: dmg, notes: notes.join(", ") };
       });
     atkRows = atkRows.concat(unarmedAttackRow(ch, d));
@@ -918,7 +941,7 @@ EN.pdfExport = (function () {
         ctx.text(g[1] + "  ·  " + arr.length, { size: 7.5, font: fonts.mono, color: hexColor("accent"), h: 12 });
         arr.forEach(function (f) {
           var cost = f._act !== "Passive" ? costTag(f.text) : null;
-          var uses = parseUses(f.text, d);
+          var uses = f.noTracker ? null : parseUses(f.text, d); // noTracker: see printsheet.js (A Sucker Born Every Minute, PHB:3470)
           ctx.text(f.name + (cost ? "   [" + cost + "]" : ""), { size: 9, font: fonts.bold, h: 11 });
           ctx.text(briefFor(f), { size: 8, h: 10 });
           ctx.text((f.source || "") + (f.level ? " · L" + f.level : ""), { size: 6.5, color: hexColor("dim"), h: uses ? 8 : 11 });

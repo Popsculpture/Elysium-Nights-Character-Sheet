@@ -11,7 +11,10 @@ EN.gearCatalog = EN.gearCatalog || {};
 
 EN.gearCatalog.signature = {
   intro: "Some weapons do a job and vanish back into the work. These do not. A Signature weapon is loud, strange, or unconventional enough that it becomes the thing people remember you by. You trade anonymity for presence. Some nights, presence is the most useful thing in your hands. Other nights it is a description on every screen in the district.",
-  usingNote: "Each Signature Weapon is handled under a conventional weapon category (its Proficiency) and used exactly like any other weapon in that family. Untrained in that category, you attack with Snag. You can still fire the weapon in its basic mode, including any area projection that is simply how it delivers its attack, but you can't trigger its special On Hit riders. Proficient or better, you add your Weapon Proficiency Bonus. A Signature weapon has 0 customization slots; it arrives complete; its power lives in the wielder.",
+  /* GM Toolkit 6405 to 6411 (A6-06): the Weapon Focus that unlocks the On Hit riders and the
+     Specialization layer. Proficiency alone never did, and the old note read as if it did. The last
+     sentence is the app's summary of the Handbook's Signature weapon paragraph (PHB 13139). */
+  usingNote: "Each Signature Weapon is handled under a conventional weapon category (its Proficiency) and used exactly like any other weapon in that family for the purposes of attack rolls and base damage. Untrained in that category, you attack with Snag. You can still fire the weapon in its basic mode, including any area projection that is simply how it delivers its attack, but you can't trigger its special On Hit riders (the extra conditions it stacks on top of a hit). Proficient or better in that category, you add your Weapon Proficiency Bonus and fire the weapon normally for full base effect, including its area projection and whatever that attack is built to do, such as a Net Launcher's Restrain or a Cryo Lance's freeze. Only its special On Hit riders, the extras stacked on top of a working attack, stay locked. Reaching Proficient makes you safe with the category. It doesn't make you fluent in this particular weapon's tricks. A Weapon Focus naming that specific weapon, such as Martial Weapons (Gravlock Maul), unlocks its special On Hit riders. Below that Focus, a Signature Weapon behaves as an ordinary member of its category and nothing more. A Specialization in the same named weapon layers the usual expanded critical range and Dice Pool bonus on top, once you have Expertise in the category. A Signature weapon has 0 customization slots; it arrives complete; its power lives in the wielder.",
   groupIntros: {
     melee: "Howling edges, kinetic mauls, and worn talons. Loud, strange, and unforgettable, the detail a witness leads with.",
     ranged: "Arc casters, chem spewers, coil drivers. Presence you can point down a hallway. The collateral is the receipt."
@@ -57,7 +60,7 @@ EN.gearCatalog.signature = {
       price: 500, damage: "2d6 Slashing", range: "Melee",
       traits: ["Heavy", "Two-Handed", "Continuous"], availability: "Uncommon", legality: "Restricted",
       desc: "A motorized cleaver with a chain edge that screams before it bites and keeps screaming after. Subtle as a fire alarm. Nobody who hears one ever forgets the sound, which is rather the problem with carrying it.",
-      effect: "On Hit: the target gains Bleeding (1d4 at the start of its turn) until the wound is tended. The Rip-Saw is deafening in use; its attacks are always loud and can never be silenced or made quiet by any means." },
+      effect: "On Hit: The target gains 1 stack of Bleeding, and another for each later round you keep the edge buried in it. The Rip-Saw is deafening in use; nothing gives it the Silent trait." },
     { name: "Slab Blade", signature: true, kind: "melee", group: "Martial", proficiency: "Martial Weapons",
       price: 650, damage: "2d10 Slashing", range: "Melee",
       traits: ["Heavy", "Two-Handed", "Slow"], availability: "Rare", legality: "Restricted",
@@ -105,9 +108,10 @@ EN.gearCatalog.signature = {
       traits: ["Two-Handed", "Semi-Automatic"], availability: "Rare", legality: "Restricted",
       desc: "A directed-energy carbine that fires bolts of coherent light. No muzzle climb, no recoil, no brass on the floor. Just a clean line from barrel to target and a scorch where it lands.",
       effect: "On Hit: the beam ignores the Defense bonus granted by Half Cover." },
-    /* Ammo is 20 rounds of the Longarms category's ordinary ammunition, on the author's
-       instruction: the rifle has no row in the Munitions table, so whether it feeds a
-       bespoke Counted munition is undecided on the page. Revisit if a row appears. */
+    /* The rifle holds 20 rounds and feeds on X-Calibur Rounds, the bespoke Counted munition in the
+       Munitions table (GM Toolkit 6707 to 6720: 120 for 20, "Heavy corporate-issue rounds,
+       lot-numbered and Restricted"). It was drawn as a free Plentiful Longarm rifle until the
+       19 October 2026 audit (A6-02) found that row; combat.js baseFeedName now finds it. */
     { name: "X-Calibur Rifle", signature: true, kind: "ranged", group: "Longarm", proficiency: "Longarms",
       price: 1400, damage: "2d8 Ballistic", ammo: 20, range: "16 / 48",
       traits: ["Two-Handed", "Semi-Automatic", "High Recoil"], availability: "Rare", legality: "Restricted",
@@ -130,7 +134,12 @@ EN.gearCatalog.signature = {
     { name: "Power Cell", group: "Signature Munition", price: 80, unit: "each", availability: "Rare", legality: "Restricted",
       feeds: "Pulse Laser, Arc Caster, Cryo Lance", desc: "A fresh charge cell. Slots into any one of these and refills it to full." },
     { name: "Coil Slugs", group: "Signature Munition", price: 120, unit: "per 8", availability: "Rare", legality: "Restricted",
-      feeds: "Coil Driver", desc: "Dense tungsten slugs for the accelerator." }
+      feeds: "Coil Driver", desc: "Dense tungsten slugs for the accelerator." },
+    /* GM Toolkit 6707 to 6720. The table prints price, feeds and description; legality is the
+       description's "Restricted". The Toolkit gives no availability for any munition, so "Rare"
+       follows the rifle and Coil Slugs; it gates nothing. */
+    { name: "X-Calibur Rounds", group: "Signature Munition", price: 120, unit: "per 20", availability: "Rare", legality: "Restricted",
+      feeds: "X-Calibur Rifle", desc: "Heavy corporate-issue rounds, lot-numbered and Restricted. Nobody sells them, but asking nicely helps." }
   ]
 
 };

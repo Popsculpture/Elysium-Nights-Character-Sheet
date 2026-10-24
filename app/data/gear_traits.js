@@ -4,8 +4,10 @@
    catalogs. These used to live in three separate `traits` maps that the UI
    flattened last-write-wins, so 12 keys were defined more than once with
    differing text and the losing copy was silently unreachable.
-   Armor and defensive traits deliberately stay separate, in gear_armor.js:
-   Heavy, Light, Loud and Concealable mean different things on armor.
+   Armor and defensive traits that this glossary does not define stay separate, in gear_armor.js
+   (Light and Wear X are worded there for a shield; Powered and Leased are armor-only). Concealable,
+   Heavy and Worn are defined once, here, as the book defines them, and an armor chip falls back to
+   these entries (r7).
    =========================================================================== */
 window.EN = window.EN || {};
 EN.gearCatalog = EN.gearCatalog || {};
@@ -21,11 +23,11 @@ EN.gearCatalog.weaponTraits = {
   "Burst Fire": "Choose a primary Target and attack (3 rounds). Hit or miss, every other Target within 1 space of the primary makes an Agility Save vs your Weapon Save DC; on a failure they take the weapon's damage die without your Attribute Modifier.",
   "Close Quarters": "You don't suffer Snag for attacking while engaged in melee or in cramped environments where similar weapons would be awkward.",
   "Compact": "Easier to handle in vehicles, narrow corridors, and cluttered spaces. Penalties that apply only to long or oversized weapons in very tight spaces do not apply.",
-  "Concealable": "Checks to spot the item on a casual search, or to notice you are armored, are made with Snag. A deliberate pat-down or a scanner still finds it.",
+  "Concealable": "Designed to be hidden on the body or in clothing. On armor, it doesn't look like armor: worn under a shirt, or cut to pass as an ordinary jacket. Checks to spot the item on a casual search, or to notice you are armored, are made with Snag. A deliberate pat-down or a scanner still finds it.",
   "Concussive": "On a failed save, the target is Staggered until the end of its next turn, and is knocked Prone as well if the entry says so. The force works on anything with a body to shake, no current required.",
   "Continuous": "Once you begin the attack, you can sustain it on later rounds by spending the required ammo and Action. You don't need to fully re-ready or reprime the weapon between those rounds.\n\nLive Hazard: the spaces the stream fills (its Area, line, or cone, as the weapon lists) stay dangerous until the start of your next turn. A Target that enters those spaces, is moved into them (willingly or not), or starts its turn in them is caught in the stream, making the save the attack calls for and taking the listed damage and effect on a failure. A Target can be caught this way only once on a given turn. Sustaining the attack on your turn refreshes the hazard; stop sustaining it and the hazard ends. Anything that lingers afterward comes from another trait, such as Incendiary or a Persistent field, not from this one.\n\nGround In (melee): on a melee weapon there is no Area to hold, so the stream becomes the bite. After you hit a Target with a Continuous melee weapon, you may keep the edge buried: on later rounds, spend the same Action to deal the weapon\u0027s damage to that Target again with no attack roll, as long as it stays within your reach and you take no other Action. The grind ends the moment you do anything else, the Target leaves your reach, or you choose to pull the blade free.",
   "Cover": "Creates temporary barriers or dense fields that grant Half or Three-Quarter Cover, as listed in the weapon or item entry. Often appears on foam or deployable shield gear.",
-  "Crew Served": "Solo: fire with Snag and no Sprint while carrying. An Ally within 1 space can spend a Swift Action as Loader/Spotter; the gunner loses the Snag, gains Edge on their next attack, and any Jam from a Natural 1 is cleared.",
+  "Crew Served": "Solo Operation: A single operator fires with Snag and can't use the Dash action while carrying it.\n\nAssisted Operation (Swift): An Ally within 1 space can spend a Swift Action on their turn to act as the Loader/Spotter. While assisted, the gunner loses the Snag penalty, gains Edge on their next attack, and any Jam or Mishap from a Natural 1 is immediately cleared by the loader.",
   "Defensive": "When you are targeted by a melee attack while wielding this weapon, and you aren't Surprised, Restrained, or Incapacitated, you may spend an Impulse Action to impose Snag on the attack.",
   "Delivery": "On a hit, apply a listed condition or payload effect (sedative, toxin, nanite package). Base damage is modest compared to what it delivers.",
   "Disposable": "After a successful use, the weapon is spent and can't be reloaded or reused without special rules.",
@@ -53,7 +55,6 @@ EN.gearCatalog.weaponTraits = {
      object KEY, so it moves in lockstep with the traits array on Tracer Rounds or the chip's
      tooltip silently goes blank. */
   "Tracing": "The round tags whatever it touches so the rest of the crew can find it. The first hit each round applies Traced to the target until the start of your next turn. While Traced, you and your allies gain Edge on in-combat ranged attack rolls against it, or +1 Edge Die on related out-of-combat Dice Pools.",
-  "Mutating": "On a hit, the Target gains one stack of the Mutating condition. The Target may attempt a Body Save (DC 12) to resist the infection, taking the damage but no stack on a success. See the Mutating condition for stack effects and treatment.",
   "Nonlethal": "If damage from this weapon reduces a Target to 0 Vitality, that Target is immediately rendered Unconscious.",
   "Obscuring": "Areas affected by an Obscuring effect count as heavily obscured (see Obscurement), unless the entry says lightly Obscuring.",
   "One-Handed": "Designed for full effectiveness in one hand, leaving the other free for a shield, tool, second weapon, or climbing.",
@@ -69,7 +70,7 @@ EN.gearCatalog.weaponTraits = {
   "Pump Action": "Once per encounter, before firing, rack the action as a Swift Action: each hostile within 6 spaces who can see or hear it must succeed on a Wits Save (DC 8 + Agility Mod + Caliber) or gain Shaken. Those who haven't seen you brandish it this scene save with Snag.",
   "Quick Draw": "Drawing this weapon from a sheath or harness costs no additional action when made as part of an attack. The first attack you make in a combat encounter with a Quick Draw weapon drawn this way gains Edge.",
   "Quick Nock": "After your attack, you may use a Swift Action to make a second attack with the same bow (with Snag). Does not stack with Semi-Automatic or other extra-attack modes on the same turn.",
-  "Reach X": "Each point of Reach extends the weapon's attack distance by 1 space beyond your normal melee reach. Most Freelancers can attack Targets in an adjacent space, which is 1 space away. A weapon with Reach 1 can strike Targets up to 2 spaces away, Reach 2 up to 3 spaces, and so on. Any rule that references a Target entering your reach uses this extended distance.",
+  "Reach X": "Each point of Reach extends the weapon's attack distance by 1 space beyond your normal melee reach. Most Freelancers can attack Targets in an adjacent space, which is 1 space away. A weapon with Reach 1 can strike Targets up to 2 spaces away, Reach 2 up to 3 spaces, and so on. Any rule that references a Target entering your reach uses this extended distance.\n\nCap: How far a weapon's Reach can be increased depends on its construction. A rigid weapon, such as a blade, blunt weapon, or anything mounted on a shaft, caps at Reach +2. A flexible weapon, such as a whip, cable, or filament line, caps at Reach +3.\n\nIf a part, mod, or effect would increase a weapon's Reach beyond its cap, its Reach increases only to that cap and any excess is lost. The part or mod still installs normally, and any other benefits it grants still apply. A feature can exceed this cap only if its own text specifically says so.",
   "Reliable": "Natural 1 results are treated as simple misses unless an effect specifically calls out a more severe outcome.",
   "Scoped": "When you Take Aim (Swift) before attacking with this weapon, that attack ignores the long-range Snag penalty and treats the target's Half or Three-Quarter Cover as one step less: Three-Quarter becomes Half, Half becomes none.",
   "Semi-Automatic": "After you attack with this weapon, you may spend a Swift Action to make one additional attack with it against the same or a different target. That second attack rolls with Snag, and the pair spends 2 rounds of ammo.",
@@ -97,6 +98,11 @@ EN.gearCatalog.weaponTraits = {
    this one is what the Codex reads, so "see Firing Modes" in the combat data has somewhere to
    point. Each mode's ammo cost is in its own trait text above. */
 EN.gearCatalog.firingModes = ["Single Shot", "Semi-Automatic", "Burst Fire", "Full-Auto"];
+
+/* The book's Firing Modes entry ends with an optional rule that the Crew Served trait refers to
+   ("any Jam or Mishap"): PHB Gear Traits, Firing Modes, Optional (Weapon Jam), word for word. The
+   Codex prints it under the mode links. It is the GM's call, so nothing here is computed. */
+EN.gearCatalog.firingModesNote = "Optional (Weapon Jam): On a Natural 1 with a firearm, the GM may rule the weapon Jams. A Jammed weapon can't fire until cleared with a Swift Action. Reliable ignores this (a Natural 1 is a simple miss). Crew Served weapons are cleared automatically by the loader.";
 
 /* PRINTED TRAIT TO GLOSSARY KEY. A catalog prints a trait the way the book does ("Armor
    Piercing 2", "Area 3 cone", "Thrown (4/12)", "Wear 12"); the glossary keys it once

@@ -1245,8 +1245,14 @@ EN.codexView = (function () {
         K.proseBlock(B.caliber.intro),
         K.refTable(["Class Level", "Caliber"], calRows(), [1]),
         K.proseBlock(B.caliber.reading),
+        // the Handbook's paragraph on the Caliber your #PRINT records (CC-07)
+        B.caliber.appraisal ? K.proseBlock(B.caliber.appraisal) : null,
         K.subTitle("Saving Throw Focus"),
-        K.proseBlock(B.caliber.focus)
+        K.proseBlock(B.caliber.focus),
+        // the Handbook's "When to Use Saving Throws" table, one row per Attribute (core-16)
+        B.saves ? K.subTitle("When to Use Saving Throws") : null,
+        B.saves && B.saves.intro ? K.proseBlock(B.saves.intro) : null,
+        B.saves ? K.refTable(B.saves.head, B.saves.rows, [0]) : null
       ];
     } },
     { id: "bx-res", title: "Class Resources", tag: function () { return resourceRows().length + " CLASSES"; }, order: 40, when: hasBasics, build: function (ctx, K) {
@@ -1404,6 +1410,10 @@ EN.codexView = (function () {
       return [
         K.proseBlock(Co.intro),
         K.ruleBlock("Method Choice", Co.methodChoice),
+        // the Handbook's Core Concepts for this section, Shared Consequence included (core-14)
+        (Co.coreConcepts || []).length ? K.subTitle("Core Concepts") : null,
+        (Co.coreConcepts || []).length && Co.coreConceptsIntro ? K.proseBlock(Co.coreConceptsIntro) : null,
+        (Co.coreConcepts || []).length ? K.refTable(["Term", "Meaning"], Co.coreConcepts.map(function (c) { return [c.term, c.text]; }), [0]) : null,
         K.subTitle("Contested Actions"),
         K.proseBlock(Co.contested.intro),
         K.ruleBlock("d20 Process", Co.contested.d20Process),
@@ -1414,7 +1424,8 @@ EN.codexView = (function () {
         K.ruleBlock("d20 Process", Co.group.d20Process),
         K.ruleBlock("Dice Pool Process", Co.group.poolProcess),
         K.refTable(["d20 Avg Margin", "Pool Net Margin", "Result", "Description"], Co.group.outcomes.map(function (r) { return [r.d20, r.pool, r.result, r.desc]; }), [2]),
-        K.note(Co.group.difficulty),
+        // the Toolkit's difficulty advice for a group check: the GM's, so Admin only (core-20)
+        ctx.portal === "admin" ? K.note(Co.group.difficulty) : null,
         /* the Help Action section is one entry wrapped round its own blocks, so "(see Help
            Action)" in the Dice Pools table and every "Help Action" in class text can peek the
            whole rule. entry() claims its slug after its children, so theirs do not move. */
@@ -1507,7 +1518,8 @@ EN.codexView = (function () {
      ruleBlock's own. Icon and name share one span, so the heading's flex row keeps them
      together on the left. */
   function dmgTypeBlock(K, t) {
-    var node = K.ruleBlock(t.name, t.text);
+    // the type's text, then the Handbook's "Sources" line for it (core-17)
+    var node = K.ruleBlock(t.name, t.text + (t.sources ? "\n\nSources: " + t.sources : ""));
     try {
       var h = node.querySelector("h4"), first = h && h.firstChild;
       var icon = EN.ui && typeof EN.ui.damageIcon === "function" ? EN.ui.damageIcon(t.name, { link: false }) : null;
@@ -1528,15 +1540,20 @@ EN.codexView = (function () {
   var MOVE_TERMS = { "Jump or leap": "mv-jump/jump-cost", "Climb or vault": "mv-move/vault-climb" };
   var combatChapter = { id: "combat", title: "Combat Rules", order: 40, audience: "both", panels: [
     { id: "ref-round", title: "Initiative & the Round", tag: "THE COMBAT SEQUENCE", order: 5, when: hasCombat, build: function (ctx, K) {
-      var C = EN.combat, T = (EN.rules || {}).time;
+      var C = EN.combat;
       var kids = [];
       if (C.combatSequence) kids.push(K.ruleBlock("Combat Sequence", C.combatSequence));
-      /* EN.rules.time is the book's flat conversion, stated in its own words in the comment
-         above it in data/rules.js: a round is six to ten seconds, and "a duration of 1 minute
-         is treated as 10 rounds of active combat". */
-      if (T && T.roundsPerMinute) kids.push(K.ruleBlock("Rounds and Time",
-        (T.roundSeconds ? "A round is " + T.roundSeconds + " seconds of action. " : "")
-        + "A duration of 1 minute is treated as " + T.roundsPerMinute + " rounds of active combat."));
+      /* The Handbook's Timing block (EN.combat.timing, 19 October 2026 audit, core-03): Turn,
+         Round, Scene, Encounter and Out-of-Combat Time, one entry each. The Round entry
+         carries what the old Rounds and Time entry said (a round is six to ten seconds, "a
+         duration of 1 minute is treated as 10 rounds of active combat", the figures
+         EN.rules.time holds for the engine), so that entry is gone, and adds the "X rounds"
+         countdown. */
+      if ((C.timing || []).length) {
+        kids.push(K.subTitle("Timing"));
+        if (C.timingIntro) kids.push(K.proseBlock(C.timingIntro));
+        C.timing.forEach(function (t) { kids.push(K.ruleBlock(t.name, t.text)); });
+      }
       return kids;
     } },
     { id: "ref-actions", title: "Action Economy", tag: "TURN STRUCTURE", order: 10, when: hasCombat, build: function (ctx, K) {
@@ -1548,12 +1565,27 @@ EN.codexView = (function () {
         kids.push(K.ruleBlock(a.name, text.slice(0, i)));
         kids.push(K.ruleBlock("Opportunity Attacks", text.slice(i + OPP.length)));
       });
+      /* Common Actions: the Handbook's table has eight rows, so those come first; the other six
+         (Melee Attack, Unarmed Strike, Ranged Attack, Use Device / Item, Suppressive Fire, Help
+         Action) are the app's own summaries, tagged APP SUMMARY after them (the author's ruling
+         10, 19 October 2026; core-12). Every row keeps the slug of its name, so the combat
+         tab's Actions in Combat links (ref-actions/<name>) resolve for all fourteen. */
+      var common = C.commonActions || [];
+      var bookRows = common.filter(function (a) { return !a.appSummary; });
+      var summaryRows = common.filter(function (a) { return a.appSummary; });
       return kids
         .concat(C.tradingMove ? [K.ruleBlock("Trading Your Move", C.tradingMove)] : [])
-        .concat((C.commonActions || []).length ? [K.subTitle("Common Actions")] : [])
-        .concat((C.commonActions || []).map(function (a) { return K.ruleBlock(a.name, a.text, a.cost); }))
+        // Melee, Unarmed, Ranged and Throw as the Handbook prints them (core-06); a block with its own slug keeps off the Common Actions slugs
+        .concat((C.attacksAndManeuvers || []).map(function (a) { return K.ruleBlock(a.name, a.text, null, a.slug ? { slug: a.slug } : null); }))
+        .concat(bookRows.length ? [K.subTitle("Common Actions")] : [])
+        .concat(bookRows.map(function (a) { return K.ruleBlock(a.name, a.text, a.cost); }))
         // the Flow Attack and Flow Save DC rows above both read this modifier
-        .concat(C.flowModifierNote ? [K.ruleBlock("Flow Modifier", C.flowModifierNote)] : []);
+        .concat(C.flowModifierNote ? [K.ruleBlock("Flow Modifier", C.flowModifierNote)] : [])
+        .concat(summaryRows.length ? [K.subTitle("App Summaries"),
+          K.note("App summary: the Handbook's Common Actions table has only the rows above. These restate rules it prints elsewhere, for quick reference from the combat tab.")] : [])
+        .concat(summaryRows.map(function (a) {
+          return K.ruleBlock(a.name, a.text, (a.cost && a.cost !== "-" ? a.cost + " · " : "") + "APP SUMMARY");
+        }));
     } },
     { id: "ref-def", title: "Active Defenses", tag: "IMPULSE ACTIONS", order: 20, when: hasCombat, build: function (ctx, K) {
       var C = EN.combat;
@@ -1615,10 +1647,13 @@ EN.codexView = (function () {
       build: function (ctx, K) {
         var C = EN.combat;
         // a pointer, not a copy: the type rules themselves live in Damage & Mitigation
+        var hasSources = (C.damageTypes || []).some(function (t) { return !!t.sources; });
         return (C.damageTypeRules ? [K.note("What Resistance, Vulnerability and Immunity do to each type is under Damage & Mitigation.")] : [])
+          // the Handbook's Damage Type Sources lead-in; each type prints its own "Sources:" line (core-17)
+          .concat(hasSources && C.damageSourcesIntro ? [K.note(C.damageSourcesIntro)] : [])
           .concat((C.damageTypes || []).map(function (t) { return dmgTypeBlock(K, t); }))
-          // the book's sentence where the Appendix: Optional Damage Effects used to be (2026-10-16 handoff, section 8)
-          .concat([K.note("Optional damage Effects (Ignite, Bleed, Mutating, Reversal, and the rest) live in the Game Master's Toolkit.", { margin: "4px 0 0" })]);
+          // the Handbook's own sentence on optional damage Effects, whole (core-08, routed from the social group)
+          .concat(C.optionalEffectsNote ? [K.note(C.optionalEffectsNote, { margin: "4px 0 0" })] : []);
       } },
 
     /* Size: comparative, derived from height, and its whole mechanical reach is
@@ -1730,7 +1765,7 @@ EN.codexView = (function () {
             var openNow = !live || !!st.open[a];
             node.appendChild(el("h4", live ? { style: { cursor: "pointer" }, onclick: function () { st.open[a] = !st.open[a]; paint(); } } : null, [
               el("span", null, live ? EN.ui.nameCaret(c.name, openNow) : [document.createTextNode(c.name)]),
-              el("span.src", { text: c.summary ? c.summary.slice(0, 60) : "" })
+              el("span.src", { text: c.summary ? c.summary.slice(0, 100) : "" })
             ]));
             if (openNow) { var p = el("p"); linkify(p, text, { conditions: true, self: [a, "ref-conds"] }); node.appendChild(p); }
           }
@@ -1884,6 +1919,8 @@ EN.codexView = (function () {
       build: function (ctx, K) {
         var E = EN.economy, ruleBlock = K.ruleBlock, bullets = K.bullets;
         var kids = [];
+        // a price the Handbook prints as a minimum ("15,000+") keeps its trailing plus (econ-open-prices)
+        function gp(v, open) { return g(v) + (open ? "+" : ""); }
         kids.push(ruleBlock("Currency and Exchange",
           E.currencies.map(function (c) { return c.symbol + " " + c.name + " | " + c.use; }).join("\n")
           + "\n\n" + E.exchangeRate));
@@ -1896,20 +1933,29 @@ EN.codexView = (function () {
           + "\n\nUnlicensed conversion may also involve:\n" + bullets(E.nexusUnlicensedRisks)
           + "\n\n" + E.nexusAssumptions
           + "\n\nThe sheet never converts a wallet for you. A cash-out is a scene: who is changing it, what they want, and what it costs you later."));
+        // the Handbook's Access Rules for Nexus Conversion: three conditions, a rule of thumb, a pointer (social W20)
+        if (E.nexusAccess) kids.push(ruleBlock("Access Rules for Nexus Conversion", E.nexusAccess.intro + "\n"
+          + E.nexusAccess.conditions.map(function (c, i) { return (i + 1) + ". " + c; }).join("\n")
+          + "\n\n" + E.nexusAccess.ruleOfThumb + "\n\n" + E.nexusAccess.rates));
         kids.push(ruleBlock("Lifestyle Costs", E.lifestyleNote + "\n\n"
           + E.lifestyleTiers.map(function (t) {
-              return t.tier + " | " + g(t.weekly) + "/wk | " + g(t.monthly) + "/mo | " + t.living; }).join("\n")
+              return t.tier + " | " + gp(t.weekly, t.open) + "/wk | " + gp(t.monthly, t.open) + "/mo | " + t.living; }).join("\n")
           + "\n\n" + bullets(E.lifestyleRules)));
         kids.push(ruleBlock("Safehouse Rent", E.safehouseRent.map(function (r) {
-          return r.type + " | " + g(r.weekly) + "/wk | " + g(r.monthly) + "/mo | " + r.notes; }).join("\n")));
+          return r.type + " | " + gp(r.weekly, r.open) + "/wk | " + gp(r.monthly, r.open) + "/mo | " + r.notes; }).join("\n")));
         kids.push(ruleBlock("Safehouse Upgrades", E.safehouseUpgrades.map(function (u) {
           return u.name + " | " + g(u.cost) + " | ongoing " + u.ongoing + " | " + u.benefit; }).join("\n")));
         /* Hypercare and debts were readable only in the Inventory tab's Bills. Hypercare bills
            MONTHLY, and its top two tiers are priced in Nexus, so each tier carries its own
            currency. */
+        /* A tier's price is a minimum where the Handbook prints "2.5+" (Corporate Platinum), each
+           tier lists its Included Services, and the contract's Limitation line sits between the
+           note and the tiers, as it does in the book (hypercare-services). */
         if ((E.hypercareTiers || []).length) kids.push(ruleBlock("Hypercare", (E.hypercareNote ? E.hypercareNote + "\n\n" : "")
+          + (E.hypercareLimitation ? "Limitation: " + E.hypercareLimitation + "\n\n" : "")
           + E.hypercareTiers.map(function (t) {
-              return t.tier + " | " + (t.currency === "nexus" ? "◎" + t.cost : g(t.cost)) + "/mo | " + t.coverage + " | " + t.response;
+              return t.tier + " | " + (t.currency === "nexus" ? "◎" + t.cost : g(t.cost)) + (t.open ? "+" : "") + "/mo | " + t.coverage + " | " + t.response
+                + (t.services ? " | Included Services: " + t.services : "");
             }).join("\n")));
         kids.push(ruleBlock("Licenses, Papers, and Legitimacy", E.licenses.map(function (l) {
           return l.item + " | 𝒢" + l.cost + " | " + l.renewal; }).join("\n")));
@@ -1918,6 +1964,8 @@ EN.codexView = (function () {
           + ((E.debtKinds || []).length ? "\n\nKinds of debt: " + E.debtKinds.join(", ") + "." : "")));
         kids.push(ruleBlock("Day Jobs and Between-Contract Income", E.dayJobs.map(function (j) {
           return j.job + " | 𝒢" + j.pay + "/wk | " + j.time + " | " + j.web; }).join("\n")));
+        // How Day Jobs Affect Play, the Handbook's paragraphs under the table (social W20)
+        if ((E.dayJobsEffect || []).length) kids.push(ruleBlock("How Day Jobs Affect Play", E.dayJobsEffect.join("\n\n")));
         // Reward Types and the GM Reward Tables moved to the Game Master's Toolkit: ref-rewards, Admin only
         kids.push(ruleBlock("Splitting a Payout", E.splitNote + "\n\n" + E.splitExample
           + "\n\nNot every reward divides cleanly:\n" + bullets(E.splitNonStandard)

@@ -13,6 +13,14 @@
    the book prints are carried as numbers beside the text they came from, so a
    screen can compute with one and show the other.
 
+   The October 2026 Toolkit adds four pieces of GM prose that sit beside this chapter, and they
+   are carried here word for word: `narrativePurpose` and `optionalTwist` (Rewards, the lead-in to
+   the reward tables), `bills` (The Bills, the page after The Other Ledger: Debt, Identity Theft
+   and Hypercare Response with its arrival roll), and EN.gmBook.gearCatalog at the foot of the
+   file (the Gear Catalog's street-price note, its Running Gear, the ordnance price note and the
+   rookie cyberware note). The Codex's Paying the Crew panel prints the first three; the Admin
+   chapter Gear Catalog prints the last (js/codex_gm_play.js).
+
    Page references (// GMH pNN) are PDF page numbers of the handbook; the folio
    printed on each page runs 4 lower. User-facing text carries no page numbers.
 
@@ -25,6 +33,28 @@ EN.gmBook.payroll = {
 
   // GMH p109
   intro: "The work ends and the counting starts. Economy and Rewards owns the machinery of money: currencies, lifestyle, debt, fences, conversion. This chapter prices the work itself, so a posted job, a bounty, and a dead cryptid's parts all land inside the same economy the rent comes out of.",
+
+  /* NARRATIVE PURPOSE, under Rewards (GMT p43): two bullets, then "Use rewards to:" and four. */
+  narrativePurpose: {
+    name: "Narrative Purpose",
+    intro: [
+      "Glimmer keeps the economy moving without friction.",
+      "Nexus Tokens add risk, attention, and story weight."
+    ],
+    useLead: "Use rewards to:",
+    uses: [
+      "fuel the crew's next operation",
+      "reinforce the faction behind the payout",
+      "create difficult choices around spending, saving, laundering, or exposure",
+      "turn wealth into story rather than dead inventory"
+    ]
+  },
+
+  /* The paragraph that closes the Nexus Token Rewards table (GMT p43), with its own run-in. */
+  optionalTwist: {
+    name: "Optional twist",
+    text: "Optional twist: some rewards exist as locked entries, corrupted ledgers, or offline chips that must be recovered, decrypted, or physically moved before they can be used."
+  },
 
   /* CONTRACT PAY. Crew Caliber (rows) against job difficulty (columns). The
      column keys match EN.threats.budget.difficulties, and the cells are an
@@ -257,6 +287,44 @@ EN.gmBook.payroll = {
     ]
   },
 
+  /* THE BILLS (GMT p45, after The Other Ledger): four opening paragraphs, then Debt, Identity Theft
+     and Hypercare Response. Each section's `paragraphs` are the page's, word for word; the bold
+     run-in of the light-structure paragraph is the page's.
+
+     HYPERCARE'S ARRIVAL ROLL is the only number in it, so it is typed beside the words: roll
+     1d6 when the alert triggers; the team arrives in a useful time window on `successOn` or
+     higher; add `tierBonus` for the crew's Hypercare Tier (Tier 1 adds nothing); subtract
+     penaltyLow to penaltyHigh for distance, active gunfire or area lockdown. The page leaves
+     the subtraction to the GM ("1 to 3"), so no app code rolls it. The tiers themselves are
+     the player rule, Hypercare, in Economy and Rewards. */
+  bills: {
+    name: "The Bills",
+    paragraphs: [
+      "The bills should press on the crew without turning the session into bookkeeping.",
+      "Charge for what matters: lifestyle, rent, vehicle use, maintenance, medical support, papers, transport, quiet fixes, bribes, legal cover, and discretion. Keep the everyday costs light enough to track in a line, and present enough that Glimmer still matters between the big upgrades.",
+      "The best bills feel like choices, not taxes. Upgrade the safehouse or stay mobile. Pay for clean identities or trust forged papers. Maintain the vehicle or risk the escape. Cash out Nexus now at a loss or hold it and attract attention.",
+      "Use Nexus for story weight. Use Glimmer for the texture of survival."
+    ],
+    sections: [
+      { key: "debt", name: "Debt", paragraphs: [
+        "Debt is a story engine, not an accounting tool. Track the holder and the clock; let the principal float a little. A Freelancer with no debt has nothing to lose. A Freelancer with too much debt has nothing to fight for. The sweet spot is between, where the rent is due, the people you owe are circling, and the cause is still real."
+      ] },
+      { key: "identityTheft", name: "Identity Theft", paragraphs: [
+        "Identity theft lands hardest mid-campaign. It hits Freelancers in a way most threats can't: the slow dread of realizing somebody else is spending your money, signing contracts in your name, and you can't prove they aren't you. Use it sparingly. Use it well."
+      ] },
+      { key: "hypercare", name: "Hypercare Response", paragraphs: [
+        "If you want this to stay mostly narrative, treat the tier as permission: Tier 1 gets you help when it is easy, Tier 4 gets you help when it is ugly.",
+        "**If you want light structure:** When the alert triggers, roll 1d6. On 4+, the team arrives in a useful time window for the scene. Add +1 for Tier 2, +2 for Tier 3, +3 for Tier 4. Subtract 1 to 3 for distance, active gunfire, or area lockdown."
+      ],
+      arrival: {
+        die: 6, successOn: 4,
+        tierBonus: [ { tier: 1, bonus: 0 }, { tier: 2, bonus: 1 }, { tier: 3, bonus: 2 }, { tier: 4, bonus: 3 } ],
+        penaltyLow: 1, penaltyHigh: 3,
+        penaltyFor: ["distance", "active gunfire", "area lockdown"]
+      } }
+    ]
+  },
+
   /* PAYDAY ORDER after an Incursion's controlled collapse, the book's own
      sequence. It names a Guild cut but prints no rate for it. */
   // GMH p30
@@ -344,5 +412,79 @@ EN.gmBook.payroll = {
       name: "The Spectacle",
       text: "Incursion work is watched. Crews stream their dives, sponsors pay for logo time on armor, and a clean collapse from the right angle can make a rookie famous for a week. Footage is a salvage category of its own, and Media Tools is how a crew turns it into money. A crew that streams also streams their tactics, their faces, and the exact moment they got scared. Some sponsors pay extra for the last one."
     }
+  }
+};
+
+
+/* ===========================================================================
+   THE GEAR CATALOG, GM prose (GMT pp47 to 58). The Toolkit's Gear Catalog is a catalog of entries
+   the app carries as gear (Signature weapons, ordnance, Mystech, Blackware, the tools); this is the
+   prose AROUND those entries that the Admin desktop had no copy of (audit A6-21, ruled carried,
+   19 Oct 2026): the street-price note, Running Gear, the ordnance price note and the rookie
+   cyberware note. Word for word. The Codex's Gear Catalog chapter prints them (js/codex_gm_play.js,
+   Admin only), panel gmg-running.
+
+   `streetPrice.glimmerLow` and `glimmerHigh` are the page's "2,000 to 4,000" for one Nexus
+   token, typed beside the words (the money rule that reads them is crafting.js's, not this file's).
+
+   RUNNING GEAR is the page's six sections from its heading to the Signature Weapons heading. The
+   `lead` paragraph is the line the page sets in the right-hand cell above Armor Slots, between the
+   price note and the Running Gear heading; the reading order puts it before the heading, so it
+   opens the section here. Running Gear's sections are Weapon Builds, Armor Slots, Vehicle
+   Upkeep, Modded Cars, Kits and Encumbrance, in the page's order. =========================== */
+EN.gmBook.gearCatalog = {
+  schemaVersion: 1,
+  name: "Gear Catalog",
+
+  // GMT p47
+  streetPrice: {
+    name: "Street prices",
+    text: "Where an entry gives a price in Glimmer or ◎, the ◎ figure is a street price: Nexus at the black-market exchange in Economy and Rewards, which usually returns 𝒢2,000 to 𝒢4,000 for ◎1.",
+    glimmerLow: 2000, glimmerHigh: 4000
+  },
+
+  // GMT p47 to p48
+  running: {
+    name: "Running Gear",
+    lead: "A gun that answers every question turns every question into the same one. The most interesting weapons are the ones with a room they can't walk into.",
+    sections: [
+      { key: "weaponBuilds", name: "Weapon Builds", paragraphs: [
+        "A build is a decision made in a garage three days before it matters. Accessories come and go, but a Mod takes bench work, and bench work is a commitment.",
+        "That commitment is the lever. A Longarm with a Match Barrel and Marksman Stock owns the rooftop, then becomes a liability in the stairwell. A campaign worth playing gives the player both rooms. Let the Suppressor earn its price on the night nobody hears the shot. Let it do nothing against the thing that hunts by heat."
+      ] },
+      { key: "armorSlots", name: "Armor Slots", paragraphs: [
+        "Slots are a budget, and every budget forces a choice. A four-slot suit can't carry every protective and utility mod at once. That constraint is the point.",
+        "A slot holding Trauma Plates can't also hold a Threat-Detection HUD, Gecko Grips, or Faraday Lining. Extra protection against a hit leaves less room for warning of an ambush, climbing out of trouble, or resisting electronic intrusion. Make those differences matter. Give the crew problems that let different mods earn their place.",
+        "The strongest builds are usually the ones that gave something up."
+      ] },
+      { key: "vehicleUpkeep", name: "Vehicle Upkeep", paragraphs: [
+        "Upkeep is a clock. Charge it once per week or once per travel leg, write down the number, and get back to the job. Nobody came to the table to audit fuel receipts.",
+        "What upkeep buys is pressure with a due date. A crew flush from a good payout barely notices 𝒢900 a week. Three weeks into a dry stretch, that same crew is choosing between the hauler and the safehouse, and the choice will tell you more about them than their sheets ever could.",
+        "Let it hurt. Then let them keep the vehicle if they are willing to go into debt for it. A car the crew fought to keep matters more than one that was simply always there."
+      ] },
+      { key: "moddedCars", name: "Modded Cars", paragraphs: [
+        "A modded car is a paper trail with wheels. Every mod on this list is something a witness can describe, a scanner can log, or a mechanic remembers installing, and the crew that bolts a Hardpoint Mount onto the only sedan they own has made that sedan findable.",
+        "Let the heat land on the vehicle and not only on the people inside it. Losing a car the crew paid for and loved is a better consequence than losing a fight."
+      ] },
+      { key: "kits", name: "Kits", paragraphs: [
+        "Let kits matter. Reward the Freelancer who invested in gear with cleaner access, better information, and safer rolls. Don't audit every screwdriver, but a crew operating without even a basic kit should feel the risk in their teeth."
+      ] },
+      { key: "encumbrance", name: "Encumbrance", paragraphs: [
+        "If you are counting the exact number of pistols in a backpack, you have gone deeper than this system intends. Ask what the load looks like in fiction. If the Character can still jog, climb, and fight normally, they are Unencumbered. If the load is awkward but plausible, they are Encumbered. If the load looks like a meme screenshot of someone carrying an armory, a generator, and two bodies, they are Overloaded. Load gives the table shared language, not a reason to audit socks."
+      ] }
+    ]
+  },
+
+  // GMT p51, under the Ordnance Ammo table (the melee signatures' no-munitions line, set in the same
+  // column, is a note on Munitions and stays with the Signature weapons)
+  ordnancePrices: {
+    name: "Ordnance prices",
+    text: "Listed prices are a calm-day baseline. Small-arms ammo barely moves: there is too much of it, in too many hands, for the price to climb far. Ordnance swings hard with supply and heat. A machinegun belt under a corporate lockdown costs whatever the seller thinks your week is worth, and the price of a rocket triples the day after someone uses one downtown."
+  },
+
+  // GMT p58, the opening of Cyberware
+  rookieCyberware: {
+    name: "Rookie cyberware",
+    text: "A Level 1 Freelancer has exactly 1 Resilience Die. Safe Capacity leaves room for 1 or 2 SP of utility chrome without losing it. A rookie who installs 3 SP of heavy combat gear on day one hits Threshold 1, loses the die, and lives on the \"regain 1 die on a Short Rest\" rule. Let that bite. Shortcuts cost."
   }
 };

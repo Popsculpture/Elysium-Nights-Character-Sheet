@@ -310,8 +310,17 @@ EN.inventoryView = (function () {
   function traitChip(t, armorFirst) {
     var look = (EN.gearCatalog && EN.gearCatalog.traitLookup) ? EN.gearCatalog.traitLookup(t, armorFirst) : null;
     var anchor = (look && EN.gearCodex && EN.gearCodex.traitAnchor) ? EN.gearCodex.traitAnchor(t, armorFirst) : null;
-    return el("span.chip", { title: look ? look.def : "", style: { fontSize: "9.5px", color: "var(--text2)", borderColor: "var(--border2)" } },
-      [anchor ? tipLink(anchor, t, look.def) : document.createTextNode(t)]);
+    var tip = look ? look.def : "";
+    /* "Bleeding and Mutating are conditions, not traits" (PHB 15011, audit weapons W8). A printed
+       name with no trait entry that IS a condition (the Genesis Rounds' "Mutating") takes the
+       condition's one-line summary and peeks the condition, the anchor combat.js cxCond uses. */
+    if (!look) {
+      var base = String(t).replace(/\s*\(.*\)$/, "").trim();
+      var cond = (EN.conditions || []).filter(function (c) { return c.name === base; })[0];
+      if (cond) { tip = cond.summary || cond.name; anchor = "ref-conds/" + slugOf(cond.name); }
+    }
+    return el("span.chip", { title: tip, style: { fontSize: "9.5px", color: "var(--text2)", borderColor: "var(--border2)" } },
+      [anchor ? tipLink(anchor, t, tip) : document.createTextNode(t)]);
   }
   /* A Codex link inside a chip whose definition is its hover title. The link's own title
      ("Rules: ...") would cover the chip's, so the link carries the definition instead: hover
@@ -422,6 +431,8 @@ EN.inventoryView = (function () {
      the app says so. Nothing auto-debits; paying is a button, because a crew
      choosing NOT to pay is a story beat the book asks the GM to lean on. */
   function ECON() { return EN.economy || {}; }
+  // the Handbook's trailing "+" on an open price (a minimum: Luxury, Blacksite Hideout, Corporate Platinum); the figure itself is what billing charges
+  function openMark(row) { return row && row.open ? "+" : ""; }
   function householdWeekly(c) {
     var hh = c.household || {}, total = 0, lines = [];
     var lt = (ECON().lifestyleTiers || []).filter(function (t) { return t.tier === hh.lifestyle; })[0];
@@ -2252,11 +2263,15 @@ EN.inventoryView = (function () {
      number that is picked.
 
      There is NO crafter gate on either lane, and that is deliberate rather than an
-     omission. The Project tier's `skillTier` is advisory everywhere else in this app
-     (Blueprints, custom Projects, the rebuild below), and an untrained crafter pays
-     for it in the roll at +2 Snag per Work Interval. A gate here and nowhere else
-     was worse than no gate at all, because it closed the cheap lane and left the
-     expensive one open. See the note where meetsTier used to live in crafting.js.
+     omission. The Project tier's `skillTier` is the Handbook's Required Skill Tier,
+     and the author ruled (19 October 2026, ruling 2) that it WARNS and never gates:
+     everywhere a Project starts or is worked (these lanes, Blueprints, custom
+     Projects, the rebuild below, the Project card) a crafter below it sees a
+     "Below the Required Skill Tier (...)" chip (tbBelowTierChip) and can still do
+     the work, and an untrained crafter also pays for it in the roll at +2 Snag per
+     Work Interval. A gate here and nowhere else was worse than no gate at all,
+     because it closed the cheap lane and left the expensive one open. See the note
+     above belowRequiredTier in crafting.js.
 
      A suit at 0 DR is not repairable at all: the button routes to an ordinary
      Project at the item's own tier and full parts cost, exactly the Project the
@@ -2395,7 +2410,7 @@ EN.inventoryView = (function () {
       var need = CRAFT().tier(tierKey).skillTier || "proficient";
       var needNm = (((EN.rules || {}).profTiers || {})[need] || {}).name || need;
       return tagChip("UNTRAINED +2 SNAG", "var(--warn)",
-        "A " + tn + " Project expects " + skillName + " " + needNm + ". Untrained you can still do the work; every Work Interval adds +2 Snag Dice, the same as any other Project.");
+        "A " + tn + " Project requires " + skillName + " " + needNm + ". Untrained you can still do the work; every Work Interval adds +2 Snag Dice, the same as any other Project.");
     }
     // the lanes' one-line hint stays (the buttons need it); the full rule is the Codex's Armor Repair entry
     var kids = [el("p.help", { style: { margin: "0 0 8px", fontSize: "11.5px" } }, [
@@ -2455,7 +2470,8 @@ EN.inventoryView = (function () {
           el("button.btn.sm.primary", { title: "Open a full Project for this suit at " + fmtG(rebuild) + " in parts, half its " + fmtG(price) + priceLabel + ", restoring all " + st.base + " DR"
               + " · " + CRAFT().tier(rbTier).name + " Project using " + rbSkill,
             onclick: function () { armorRebuildProject(st); } }, "⚒ REBUILD PROJECT · " + fmtG(rebuild)),
-          untrainedChip(rbSkill, rbTier)
+          untrainedChip(rbSkill, rbTier),
+          tbBelowTierChip(ch, rbSkill, rbTier)
         ]);
       } else if (!st.lost) {
         lanes = el("p.help", { style: { margin: "6px 0 0", fontSize: "11px", color: "var(--text4)" }, text: "Undamaged. Nothing to repair." });
@@ -2484,11 +2500,12 @@ EN.inventoryView = (function () {
           el("button.btn.sm", {
             title: (AR.benchText || "") + " Opens a " + benchTierName + " Project on the Fabrication bench"
               + (hasRig ? " with parts printed by your " + AR.freeParts + "." : " for " + fmtG(bench) + " in parts.")
-              + (engUntrained ? " Your " + (AR.benchSkill || "Engineering") + " is untrained: the Project expects " + needName + ", so every Work Interval runs with +2 Snag." : ""),
+              + (engUntrained ? " Your " + (AR.benchSkill || "Engineering") + " is untrained: the Project requires " + needName + ", so every Work Interval runs with +2 Snag." : ""),
             style: { color: "var(--accent)", borderColor: "var(--accent)" },
             onclick: function () { armorBenchProject(ch, st, pts); } },
             "⚒ BENCH · " + (hasRig ? "PARTS FREE" : fmtG(bench))),
           untrainedChip(AR.benchSkill || "Engineering", AR.benchTier || "simple"),
+          tbBelowTierChip(ch, AR.benchSkill || "Engineering", AR.benchTier || "simple"),
           hasRig ? tagChip("FAB RIG", "var(--accent)", AR.freeParts + ": prints the plate from stock, so the parts cost nothing.") : null
         ]);
       }
@@ -2603,12 +2620,28 @@ EN.inventoryView = (function () {
   function tbChip(text, color, title) { return el("span.chip", { title: title || "", style: { fontSize: "9px", color: color, borderColor: color } }, text); }
   function tbTierChip(tierKey) {
     var t = CRAFT().tier(tierKey);
-    // the tier also records the training it expects; the Snag count alone never says so
-    // (the Toolkit's Difficulty column is Admin-only now, so the hover carries time and training only)
-    var expects = t.skillTier ? " · Expects " + t.skillTier.charAt(0).toUpperCase() + t.skillTier.slice(1) : "";
+    // the tier also records its Required Skill Tier (the Handbook's cell, skillText); the Snag count
+    // alone never says so (the Toolkit's Difficulty column is Admin-only now, so the hover carries
+    // time and training only). A warning, not a gate: author ruling 2, 19 October 2026.
+    var expects = t.skillTier ? " · Required Skill Tier: " + (t.skillText || (t.skillTier.charAt(0).toUpperCase() + t.skillTier.slice(1))) : "";
     return tbChip(t.name.toUpperCase() + (t.target ? " · " + t.target : ""), TB_TIER_COLOR[tierKey] || "var(--text2)", t.time + expects);
   }
   function tbSkillChip(skill) { return tbChip(skill, TB_SKILL_COLOR[skill] || "var(--text2)", "Primary Skill"); }
+  /* The Required Skill Tier warning (the author's ruling 2 of 19 October 2026, social W13; the Handbook's
+     Project Tiers column is REQUIRED Skill Tier). A crafter whose tier in the Project's primary Skill is
+     below the Project tier's skillTier sees this chip and can still open and work the Project: it is a
+     warning, never a gate. Untrained, every Work Interval also adds +2 Snag Dice (the UNTRAINED chip).
+     The answer comes from EN.crafting.belowRequiredTier / requiredTierWarning (data/crafting.js); null
+     when the crafter meets the tier, when the Skill is not a Skill, or when the data is not loaded. */
+  function tbBelowTierChip(ch, skillName, tierKey) {
+    var C = CRAFT();
+    if (!skillName || !tierKey || !C.belowRequiredTier || !C.requiredTierWarning || !C.tier(tierKey)) return null;
+    var mine = craftSkillTier(ch, skillName);
+    if (!C.belowRequiredTier(mine, tierKey)) return null;
+    return tbChip(C.requiredTierWarning(tierKey), "var(--warn)",
+      "A " + C.tier(tierKey).name + " Project's Required Skill Tier is above your " + skillName + " (" + mine + "). You can still do the work"
+      + (mine === "untrained" ? "; every Work Interval adds +2 Snag Dice." : "."));
+  }
 
   // shared Dice Pool visuals live in EN.ui (also used by the #GRID Deep Run console)
   function tbDieFace(die, poolColor, animating) { return EN.ui.dieFace(die, poolColor, animating); }
@@ -2996,6 +3029,8 @@ EN.inventoryView = (function () {
         el("label.row.wrap", { style: { gap: "5px", alignItems: "center", fontSize: "11px", color: "var(--text3)" } }, ["TIER", sel(f.tier, CRAFT().tiers.filter(function (t) { return t.target; }).map(function (t) { return { v: t.key, t: t.name + " (" + t.target + ")" }; }), function (e) { f.tier = e.target.value; EN.app.render(); })])
       ]),
       CRAFT().kinds.find(function (k) { return k.key === f.kind; }) ? el("p.help", { style: { margin: "0 0 10px", fontSize: "11px" }, text: CRAFT().kinds.find(function (k) { return k.key === f.kind; }).desc }) : null,
+      // below the tier's Required Skill Tier: a warning, START PROJECT stays open (ruling 2, 19 October 2026)
+      tbBelowTierChip(ch, f.skill, f.tier) ? el("div.row.wrap", { style: { gap: "6px", marginBottom: "10px", alignItems: "center" } }, [tbBelowTierChip(ch, f.skill, f.tier)]) : null,
       el("div.row.wrap", { style: { gap: "8px" } }, [
         el("button.btn.sm.primary", { onclick: function () { tbStart(f); _tbForm = null; EN.app.render(); } }, "✓ START PROJECT"),
         el("button.btn.sm", { onclick: function () { _tbForm = null; EN.app.render(); } }, "CANCEL")
@@ -3015,6 +3050,8 @@ EN.inventoryView = (function () {
         tbChip(kindName.toUpperCase(), "var(--text2)", "Project kind"),
         tbTierChip(p.overEngineered ? "prototype" : p.tier),
         tbSkillChip(p.skill),
+        // below the tier's Required Skill Tier: a warning, the work stays open (ruling 2, 19 October 2026)
+        tbBelowTierChip(ch, p.skill, p.overEngineered ? "prototype" : p.tier),
         // Armor Repair: name the piece and what completing this buys back, read
         // from the engine's resolver so the chip cannot drift from the sheet
         (function () {
@@ -3221,6 +3258,7 @@ EN.inventoryView = (function () {
         el("span", { style: { fontWeight: 600, fontSize: "12.5px" }, text: it.name }),
         tbTierChip(tierKey),
         tbSkillChip(skill),
+        tbBelowTierChip(ch, skill, tierKey),   // a warning only: + PROJECT stays open (ruling 2, 19 October 2026)
         // the tooltip has to quote the same figure the cost is half OF, which is
         // listPrice and not `price`: a leased row's price is a deposit and a
         // Nexus-only row has no Glimmer price at all
@@ -3444,8 +3482,9 @@ EN.inventoryView = (function () {
      Agility Modifier + Vehicle Proficiency Bonus (if proficient) + Handling;
      Dice Pool Method, Edge Dice from the same sources. The Chase Check and the
      Control Check both use it. Direct Drive (Part 2, Rigging and Cyberware;
-     author's ruling of 2026-10-12): only a Rigger, or a Freelancer carrying a
-     Neural Interface (Datajack), may pilot with the Tech Modifier, so the TECH
+     author's ruling of 2026-10-12; the Handbook of 19 October 2026 names the
+     Datajack alone): only a Freelancer carrying a Neural Interface (Datajack)
+     may pilot with the Tech Modifier, so the TECH
      button shows only for that pilot (garageDirectDrive). Everyone else pilots
      with Agility, and a TECH choice left over from a pilot who had Direct Drive
      falls back to Agility. Vehicle attacks (same ruling) take the book's two
@@ -3455,7 +3494,7 @@ EN.inventoryView = (function () {
      guns come from), whoever is driving; a ram is an opposed piloting check, so
      its readout is the piloting total itself. A Vehicle Focus naming the specific
      type adds Caliber to attack rolls, vehicle checks, AND damage rolls;
-     a matching Specialization adds crit 19-20 (d20) and +2 Edge Dice (pools).
+     a matching Specialization expands the crit range by 1 (d20) and adds +2 Edge Dice (pools).
      Untrained (Operating a Vehicle, as saved 2026-10-12): in Ground or Marine
      Vehicles the check is allowed but rolls with Snag; in the categories
      EN.chases.proficiencies.untrainedBarred lists (Aerial, Industrial / Mechs,
@@ -3491,16 +3530,16 @@ EN.inventoryView = (function () {
     _garage.type = v.name;
     _garage.handling = v.handling;
   }
-  /* Direct Drive: "A Rigger, or any Freelancer carrying a Neural Interface
-     (Datajack)" (Part 2, Rigging and Cyberware). A Rigger is the Codebreaker
-     subclass keyed "rigger" (its Hardware Integration lands at level 1, so the
-     subclass alone qualifies). The Datajack counts once it is INSTALLED, i.e. in
-     ch.cyberware, not waiting in the Chrome Stash: by catalog key, or by its base
-     name for a keyless record or a legacy string entry (installedCyberware
-     normalizes those). Returns the reason as the book names it, or "" for none. */
+  /* Direct Drive: "Any Freelancer carrying a Neural Interface (Datajack)" (PHB,
+     Rigging and Cyberware). The Datajack alone: the Handbook has no Rigger branch
+     (19 October 2026 audit, social W9; the author's ruling 11: if Riggers should
+     keep Direct Drive, it belongs in the held Rigger's own feature). The Datajack
+     counts once it is INSTALLED, i.e. in ch.cyberware, not waiting in the Chrome
+     Stash: by catalog key, or by its base name for a keyless record or a legacy
+     string entry (installedCyberware normalizes those). Returns the reason as the
+     book names it, or "" for none. */
   var DATAJACK_NAME = "Neural Interface (Datajack)";
-  function garageDirectDrive(ch, d) {
-    if (ch && ch.class === "codebreaker" && d && d.subclassInfo && d.subclassInfo.key === "rigger") return "Rigger";
+  function garageDirectDrive(ch) {
     var jack = EN.engine.installedCyberware(ch).some(function (cw) {
       return cw && (cw.key === "datajack" || (cw.base || cw.name) === DATAJACK_NAME);
     });
@@ -3586,7 +3625,7 @@ EN.inventoryView = (function () {
     var spec = typeName && specRec && eng.aspectMatches(specRec.aspect, typeName) ? specRec : null;
     var cal = focus ? (d.caliber || 1) : 0;
     // Direct Drive gates the Tech Modifier; without it a leftover TECH choice falls back to Agility
-    var directDrive = garageDirectDrive(ch, d);
+    var directDrive = garageDirectDrive(ch);
     if (!directDrive && _garage.attr !== "AGI") _garage.attr = "AGI";
     var mod = d.attributes[_garage.attr].mod;
     var attrName = d.attributes[_garage.attr].name;
@@ -3609,7 +3648,7 @@ EN.inventoryView = (function () {
       + " + Weapon Proficiency Bonus for the weapon's own category (" + MOUNT_CAT + ", " + mountInfo.name
       + (mountInfo.d20 ? " " + eng.fmtMod(mountInfo.d20) : ", Snag") + ")"
       + (focus ? " + Caliber from " + cat + " (" + focus.aspect + ") Focus (" + eng.fmtMod(cal) + ")" : "")
-      + (spec ? " · Specialization: crit 19-20" : "")
+      + (spec ? " · Specialization: crit range +1" : "")
       + "\nThe guns are the Heavy Weapons and Explosive Launchers on a Hardpoint Mount or in a stock loadout.";
     var mountBox = el("div", { title: mountTip, style: { textAlign: "center", minWidth: "110px" } }, [
       el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" } }, [EN.ui.ruleLink("vc-piloting/mounted-weapons", "MOUNTED WEAPON"), document.createTextNode(" · D20")]),
@@ -3643,8 +3682,8 @@ EN.inventoryView = (function () {
       el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em" }, text: "VIA" }),
       el("button.btn.sm" + (_garage.attr === "AGI" ? ".primary" : ""), { title: "The Piloting Check uses your Agility Modifier", onclick: function () { _garage.attr = "AGI"; reRender(); } }, "AGILITY"),
       // TECH only for a pilot with Direct Drive; the chip stays for everyone so the rule is one tap away
-      directDrive ? el("button.btn.sm" + (_garage.attr === "TEC" ? ".primary" : ""), { title: "Direct Drive (you qualify: " + directDrive + "): while hardwired into the chassis (a Rigger, or any Freelancer carrying a Neural Interface (Datajack)), you use your Tech Modifier instead of your Agility Modifier for all piloting checks", onclick: function () { _garage.attr = "TEC"; reRender(); } }, "TECH") : null,
-      EN.ui.ruleChip("vc-piloting/direct-drive", { title: directDrive ? "Direct Drive" : "Direct Drive: piloting with Tech takes a Rigger or a Neural Interface (Datajack)" })
+      directDrive ? el("button.btn.sm" + (_garage.attr === "TEC" ? ".primary" : ""), { title: "Direct Drive (you qualify: " + directDrive + "): while hardwired into the chassis (any Freelancer carrying a Neural Interface (Datajack)), you use your Tech Modifier instead of your Agility Modifier for all piloting checks", onclick: function () { _garage.attr = "TEC"; reRender(); } }, "TECH") : null,
+      EN.ui.ruleChip("vc-piloting/direct-drive", { title: directDrive ? "Direct Drive" : "Direct Drive: piloting with Tech takes a Neural Interface (Datajack)" })
     ]);
     var chips = el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginBottom: "8px" } }, [
       el("span.chip", { title: "Vehicle Proficiency in " + cat + (untrained ? "" : "; adds your Vehicle Proficiency Bonus to checks made to control the vehicle"),
@@ -3653,8 +3692,8 @@ EN.inventoryView = (function () {
       untrained && !barred ? el("span.chip", { title: barredCat ? "Untrained: the GM ruled this vehicle simple enough to try, so the check rolls with Snag" : "Untrained: the check is allowed but rolls with Snag", style: { fontSize: "9px", color: "var(--warn)", borderColor: "var(--warn)" } }, "UNTRAINED · SNAG") : null,
       focus ? el("span.chip", { title: "Skill Focus: " + cat + " (" + focus.aspect + ")" + (focus.granted ? " · Free overlap Focus" : "") + ". Caliber applies to attack rolls, vehicle checks, and damage rolls with this vehicle type, outside the +15 static cap.",
         style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" } }, "FOCUS +" + cal) : null,
-      spec ? el("span.chip", { title: "Specialization: " + cat + " (" + spec.aspect + "). Crit 19-20 on d20 vehicle rolls, +2 Edge Dice on pools.",
-        style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" } }, "CRIT 19-20 · +2 EDGE") : null,
+      spec ? el("span.chip", { title: "Specialization: " + cat + " (" + spec.aspect + "). Expands the crit range by 1 on d20 vehicle rolls, +2 Edge Dice on pools.",
+        style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" } }, "CRIT RANGE +1 · +2 EDGE") : null,
       // only where the book gives the GM the call: untrained, in a category it bars
       barredCat ? el("button.btn.sm", { title: "GM ruling: this specific vehicle is simple enough for an untrained pilot to try, with Snag",
         style: { fontSize: "9px", color: _garage.allow ? "var(--warn)" : "var(--text4)", borderColor: _garage.allow ? "var(--warn)" : "var(--border)" },
@@ -3678,7 +3717,7 @@ EN.inventoryView = (function () {
         + (tierInfo.d20 ? " + Vehicle Proficiency Bonus (" + eng.fmtMod(tierInfo.d20) + ")" : " (untrained, Snag)")
         + (handling ? " + Handling (" + eng.fmtMod(handling) + ")" : "")
         + (focus ? " + Caliber from " + cat + " (" + focus.aspect + ") Focus (" + eng.fmtMod(cal) + ", outside the +15 static cap)" : "")
-        + (spec ? " · Specialization: crit 19-20" : "");
+        + (spec ? " · Specialization: crit range +1" : "");
       var edgeParts = [];
       if (mod > 0) edgeParts.push({ label: attrName + " Modifier", value: mod });
       if (tierInfo.pool) edgeParts.push({ label: "Vehicle Proficiency Bonus (" + tierInfo.name + ")", value: tierInfo.pool });
@@ -3723,7 +3762,7 @@ EN.inventoryView = (function () {
             EN.ui.ruleLink("vc-piloting/proficient-and-untrained-pilots", "Proficient and Untrained Pilots")]),
             ": " + opProf)
         : el("p.help", { style: { margin: "0", fontSize: "11px" },
-            text: "A Vehicle Focus naming this type adds Caliber to attack rolls, vehicle checks, and damage rolls; a Specialization adds crit 19-20 and +2 Edge Dice." }));
+            text: "A Vehicle Focus naming this type adds Caliber to attack rolls, vehicle checks, and damage rolls; a Specialization expands the crit range by 1 and adds +2 Edge Dice." }));
     }
     return [EN.ui.panel("Garage · Vehicle Ops", cat.toUpperCase() + (typeName ? " · " + typeName.toUpperCase() : ""), body,
               { corners: true, headerRight: EN.ui.ruleChip("vc-piloting", { title: "Piloting a Vehicle" }) }),
@@ -3841,14 +3880,16 @@ EN.inventoryView = (function () {
         el("select", { style: { fontSize: "12px", width: "auto" }, title: tip,
           onchange: function () { var v = this.value; setHousehold(function (h) { apply(h, v); }); } },
           [el("option", { value: "", selected: !cur, text: "none" })].concat(
-            opts.map(function (o) { return el("option", { value: o.v, selected: o.v === cur, text: o.v + " (" + fmtG(o.w) + "/wk)" }); })))
+            /* an open price (Luxury, Blacksite Hideout) is a minimum, so its figure carries the Handbook's
+               trailing "+"; billing still charges the number (econ-open-prices, 19 October 2026 audit) */
+            opts.map(function (o) { return el("option", { value: o.v, selected: o.v === cur, text: o.v + " (" + fmtG(o.w) + openMark(o) + "/wk)" }); })))
       ]);
     }
     out.push(billSection("Lifestyle & Safehouse \u00b7 weekly", [
       el("div.row.wrap", { style: { gap: "12px", alignItems: "center", marginBottom: "8px" } }, [
-        pick("LIFESTYLE", hh.lifestyle, (E.lifestyleTiers || []).map(function (t) { return { v: t.tier, w: t.weekly }; }),
+        pick("LIFESTYLE", hh.lifestyle, (E.lifestyleTiers || []).map(function (t) { return { v: t.tier, w: t.weekly, open: t.open }; }),
           "What it costs to live between jobs", function (h, v) { h.lifestyle = v; }),
-        pick("SAFEHOUSE", hh.safehouse, (E.safehouseRent || []).map(function (r) { return { v: r.type, w: r.weekly }; }),
+        pick("SAFEHOUSE", hh.safehouse, (E.safehouseRent || []).map(function (r) { return { v: r.type, w: r.weekly, open: r.open }; }),
           "A base costs rent whether you sleep in it or not", function (h, v) { h.safehouse = v; })
       ]),
       el("div.row.wrap", { style: { gap: "6px", marginBottom: "8px", alignItems: "center" } },
@@ -3904,13 +3945,13 @@ EN.inventoryView = (function () {
           (E.hypercareTiers || []).map(function (t) {
             var on = t.tier === hh.hypercare;
             return el("button.btn.sm" + (on ? ".primary" : ""), {
-              title: t.coverage + ". " + t.response + ".",
+              title: t.coverage + ". " + t.response + "." + (t.services ? " Included: " + t.services + "." : ""),
               onclick: function () { setHousehold(function (h) { h.hypercare = t.tier; h.hypercareDays = 30; h.hypercareDue = false; }); } },
-              t.tier + " (" + (t.currency === "nexus" ? fmtNx(t.cost) : fmtG(t.cost)) + ")");
+              t.tier + " (" + (t.currency === "nexus" ? fmtNx(t.cost) : fmtG(t.cost)) + openMark(t) + ")");
           }))),
       hc ? el("div.row.wrap", { style: { gap: "14px", alignItems: "center" } }, [
         el("span.mono", { style: { fontSize: "13px", color: "var(--ember)" },
-          text: (hc.currency === "nexus" ? fmtNx(hc.cost) : fmtG(hc.cost)) + " / month" }),
+          text: (hc.currency === "nexus" ? fmtNx(hc.cost) : fmtG(hc.cost)) + openMark(hc) + " / month" }),
         el("span.mono", { style: { fontSize: "11px", color: hh.hypercareDue ? "var(--danger)" : "var(--text3)" },
           text: hh.hypercareDue ? "DUE NOW" : "due in " + (hh.hypercareDays || 30) + "d" }),
         hh.hypercareDue ? el("button.btn.sm", { style: { color: "var(--danger)", borderColor: "var(--danger)" },

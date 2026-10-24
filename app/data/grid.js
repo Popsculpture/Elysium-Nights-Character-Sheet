@@ -5,8 +5,8 @@
    Prices in Glimmer (𝒢). The #GRID tab reads these tables; the engine derives
    the live Cipher Attack / Save DC / Link math from the character. The rules
    prose renders in the Codex chapter The #GRID (js/codex_grid.js), on both
-   desktops; the catalogs (ciphers, rigs, relays, mods) stay on the tab and in
-   the gray market.
+   desktops; the catalogs (ciphers, rigs, mods) stay on the tab and in the gray
+   market. The Burner Relay table is in the Codex only (relays are not sold there).
    =========================================================================== */
 window.EN = window.EN || {};
 
@@ -37,7 +37,10 @@ EN.grid = {
   ],
   hardenedNote: "A Hardened Node adds its Tier as a flat bonus to its Cipher Save Bonus, on the shared tier scale (Standard 0 → Apex 5): a Hardened Apex Node has +9 + 5 = +14 to saves. Reserve for genuinely high-stakes targets: corporate vaults, military mainframes, Pre-Collapse black boxes.",
   lowSecurityNote: "Rudimentary Nodes are the floor of the #GRID, cameras, cheap smartlocks, disposable consumer devices. No Integrity, no Firewall: a single successful Cipher Attack or Quick Hack bricks them. Standard Nodes (civilian vehicles, commercial smartguns) still lack Integrity, but a Firewall might stand in the way; flip a coin on whether the owner paid for one.",
-  quickHackNote: "A Quick Hack is the same roll as a Cipher Attack, plus your Smartdeck's Device Bonus. Burner Relays and B&E Buddies use their own baked-in Attack Bonus instead of yours.",
+  /* PHB:9094. The Device Bonus is not a Quick Hack extra: it applies to the Cipher Attack too.
+     The book's "(see Smartdeck table for values per tier)" is left out; the tier values are on
+     the Smartdeck's gray market card. */
+  quickHackNote: "A Quick Hack is a single-action d20 hack made under fire, no cipher behind it: same formula as a Cipher Attack. Your Smartdeck's Device Bonus applies to both. Burner Relays and B&E Buddies use their own baked-in Attack Bonus instead of yours.",
 
   elements: [
     { kind: "Personas", text: "Player avatars and NPC user presence, Standard Users; Power Users like Codebreakers, Sourcerers, #GRID Guardians." },
@@ -74,7 +77,8 @@ EN.grid = {
   scanCapNote: "Modifier Stack Cap: situational Edge caps at +2 Edge Dice on a Dice Pool scan. On a d20 or Passive scan, Edge doesn't stack: a second source adds nothing. Gear built to ignore this cap, like the Sweep Suite Plug-In, says so in its own text. A perfect setup makes a hard scan easy. Nothing makes a Ghosted Node routine.",
 
   /* ---- Links ---- */
-  linkEstablish: "1. Identify the target Node within range. 2. Roll a Cipher Attack vs. the Node's Security Rating. 3. On success you establish a Link; it persists until severed.",
+  /* PHB:9180-9193. The two Sourcerer sentences sit under their steps in the book. */
+  linkEstablish: "1. Identify the target Node within your breach cipher's listed Range. A Sourcerer uses Sprite Tether's range. 2. Roll a Cipher Attack vs. the Node's Security Rating. A Sourcerer rolls a Flow Attack. 3. On success you establish a Link; it persists until severed.",
   linkLimits: "Standard Users: 1 active Link at a time (opening a new one closes the old). Sourcerers: maximum active Links equal to Caliber, held open by sprites instead of hardware. Codebreakers: maximum active Links equal to 2 × Caliber; at Level 9 the SysAdmin (Root Access) feature removes the cap entirely (unlimited Links, bounded only by Stability Checks). Multi-linking is the signature loop of the class, and a tightrope: the more Links you hold, the worse a failed Stability Check becomes.",
   stabilityCheck: "A Link doesn't care that you're being shot at, only whether you're still upright. A Stability Check is a Body or Wits save, DC 10 or half the total damage taken that turn, whichever is higher. Roll one whenever you take damage from any source while holding one or more Links: gunfire, a blast wave, an IC Counterattack you intercepted, or LinkDeath feedback itself. Success: your Links hold and nothing else happens. Failure: one Link of your choice is torn away, and that severance is a LinkDeath graded by the margin of this same check; there is no second roll, and your remaining Links hold, for the moment. If the damage knocks you Unconscious outright, skip the check: falling Unconscious severs every Link on its own terms. Closing a Link voluntarily never requires a roll and carries no backlash of any kind. A Bricked deck is a forced disconnect instead: every Link tears away at once, with no check to save it.",
 
@@ -125,6 +129,14 @@ EN.grid = {
 
   /* ---- Devices & System Integrity ---- */
   durabilityNote: "Carried gear always has an Integrity track: Smartdecks and B&E Buddies track System Integrity like any Node, and damage subtracts from it. Cipher damage tests the device's Firewall first and the remainder comes off Integrity; physical damage ignores Firewalls and lands at full value. Unlike Rudimentary and Standard infrastructure, a device never bricks on a single hit; it dies by the numbers. At 0 Integrity the device is Bricked, completely inoperative; all active Links sever, triggering LinkDeath as a forced disconnect, and it must be repaired before reuse.",
+  /* FG-07. Two Handbook passages the app never carried, which is why the deck's Firewall in the
+     interception and durability rules had no source. Both transcribed (PHB:9393 and PHB:9462);
+     the book's "Two rules keep gear from playing by infrastructure rules" bullets are the
+     durabilityNote above, so deckNode stops before them and takes the passage's last sentence.
+     "(see Codebreaker Damage Interception, below)" loses its "below": the rule is in the IC panel. */
+  deckNode: "A device's Node takes its Security Rating and Cipher Save Bonus from the Node Attributes table at the device's own tier. A Standard Smartdeck projects a Tier 0 Node (Security Rating 12, Cipher Save Bonus +4); an Apex deck projects a Tier 5 Node (Security Rating 21, +9). B&E Buddies do the same at their tiers. This is the Security Rating the deck's own traits defend (Encrypted Comms), the Node an enemy Codebreaker has to breach to reach your hardware, and the signature IC logs when an Alert fires against you. Its System Integrity, though, is its own, listed on its equipment table. Gear runs tougher than infrastructure at the same tier, because your deck was built to survive you. An enemy who breaches your deck's Node is inside your tool. What they can reach from there is the GM's call, and none of it is good.",
+  mountedFirewall: "A Smartdeck can mount one Firewall from the Firewall table. It costs no Mod Slot, just the Glimmer. Its Security Bonus adds to the Deck-Node's Security Rating. Its Damage Threshold protects the deck the way it protects any Node, with no exceptions: it subtracts from every incoming cipher damage roll, IC Counterattacks included. That same threshold is the number a Codebreaker subtracts when they intercept an IC Counterattack personally (see Codebreaker Damage Interception).\n\nA Firewall also can't stop LinkDeath feedback. That surge comes up the Links you opened yourself, inside the wall. The Firewall guards the door; feedback comes down the hallway you built.\n\nA B&E Buddy can't mount a Firewall; it barely has room for its own board. A Burner Relay's Node lives for the moment it fires and matters to nobody.",
+
   /* The two repair paths, one row each, so the Codex can address each by name (the Bricked
      condition cites "Field Repair (Partial)" in The #GRID, which is gd-repair/field-repair-partial).
      It was one string, `repair`, that nothing rendered; the words are unchanged. */
@@ -135,7 +147,11 @@ EN.grid = {
 
   /* ---- LinkDeath ---- */
   linkDeathIntro: "LinkDeath is what happens when a Link is torn out of your skull instead of closed cleanly. A Link severs involuntarily in one of two ways: a failed Stability Check tears away one Link of your choice, or a forced disconnect rips away every Link involved at once (your deck is Bricked while you hold Links, a device you are Linked to is physically destroyed, or you 'cut bait and run' to escape a Lockdown). Either way, the price is paid per Link.",
-  linkDeathResolution: "Every Link severed involuntarily deals 2d6 Psychic damage in feedback; when several go at once, roll 2d6 per severed Link as one pool. The margin of the failed Stability Check grades the landing. Failed by 4 or less, the soft landing: take half the feedback and be Dazed until the end of your next turn. Failed by 5 or more, the hard landing: take the full feedback and fall Unconscious (at the end of each of your turns while Unconscious, make a Wits Save against the same DC to wake, Dazed until the end of your next turn). On a forced disconnect the check cannot save the Links, it only grades the landing, and passing it counts as the soft landing. On a mass involuntary disconnect (a Bricked deck, or falling Unconscious while linked) your Smartdeck stands in the way first: the pool subtracts from its remaining System Integrity and no Firewall applies, because the surge comes up the Links themselves. If the deck hits 0 it is Bricked, and every point beyond what it absorbed spills into you as Psychic damage in full. A deckless user has no hardware in the way; the psychic price is the whole bill.",
+  /* FG-09. PHB:9521 (Forced Disconnects), PHB:9537 (the single grading check) and the Falling
+     Unconscious paragraph. Three kinds of severance, three paragraphs: a failed Stability Check
+     (graded by its own margin), falling Unconscious (the one that spills past the deck in full),
+     and a forced disconnect (through the deck first, then one Stability Check that only grades). */
+  linkDeathResolution: "Every Link severed involuntarily deals 2d6 Psychic damage in feedback; when several go at once, roll 2d6 per severed Link as one pool. The margin of the failed Stability Check grades the landing. Failed by 4 or less, the soft landing: take half the feedback and be Dazed until the end of your next turn. Failed by 5 or more, the hard landing: take the full feedback and fall Unconscious (at the end of each of your turns while Unconscious, make a Wits Save against the same DC to wake, Dazed until the end of your next turn).\n\nFalling Unconscious while linked: falling Unconscious for any reason severs every Link you still hold, and every one of them still discharges its feedback. Roll 2d6 per severed Link as one pool. Your Smartdeck stands in the way first: the pool subtracts from its remaining System Integrity, and no Firewall applies, because the surge comes up the Links themselves. If the deck hits 0 it is Bricked, and every point beyond what it absorbed spills into you as Psychic damage, in full, with no check to soften it. A deckless user has no hardware in the way; the psychic price is the whole bill.\n\nForced disconnects (your deck is Bricked while you hold any active Links, a device you are Linked to is physically destroyed, or you cut bait and run to escape a Lockdown) tear away every Link involved at once, with no check to save them. Roll the feedback as one pool, 2d6 Psychic damage per Link severed. Your Smartdeck stands in the way first, the same as any other mass involuntary disconnect: the pool subtracts from its remaining System Integrity, and no Firewall applies, because the surge comes up the Links themselves. A deck already Bricked has nothing left to give, so that trigger spends the whole pool on you by default. Whatever survives the deck is what you actually feel. Then make a single Stability Check against what is left. It can't save the Links; it only grades the landing. Pass, or fail by 4 or less: the soft landing, half the surviving feedback and Dazed until the end of your next turn. Fail by 5 or more: the hard landing, the full surviving feedback and you fall Unconscious. If the disconnect tore away only some of your Links, the feedback can cascade into the survivors. A deckless user has no hardware in the way; the full pool goes straight through.",
   cascadeFailure: "Feedback is damage, and you are still Linked. Each severed Link's feedback adds to the turn's damage total and immediately forces a fresh Stability Check for the Links you have left, at the higher DC that total now sets. Every failure tears away another Link, deals its own feedback, and asks the question again, harder. When one involuntary disconnect drags more Links down with it, that is a Cascade Failure. A cascade ends one of three ways: you pass a check and the survivors hold, you run out of Links, or you fall Unconscious and everything left discharges at once. Multi-linking is the Codebreaker's greatest weapon and their greatest risk.",
   standardUserLinkDeath: "Standard Users don't connect deeply enough to take Psychic damage from a disconnect. When a Standard User suffers LinkDeath, the feedback hits the B&E Buddy instead: roll it and subtract it from the Buddy's System Integrity. However hard the landing, the user is Dazed until the end of their next turn, takes no personal damage, and never falls Unconscious from the disconnect. If the feedback zeroes the Buddy it is Bricked and the rest of the surge dissipates; a Standard User doesn't run deep enough for the spill to reach them.",
   sourcererLinkDeath: "As an Impulse Action when LinkDeath lands on them, a Sourcerer may take 1 Wound to ground the feedback through their resonance: treat their landing as a soft landing (half the Psychic damage, Dazed until the end of their next turn) no matter how hard the severance hit. If something else has already dropped them and the severance fires while they are going down, they may still spend the Impulse and the Wound to ground the backlash to that same soft tier. It spares them the feedback; it doesn't undo the wound that put them there.",
@@ -156,16 +172,19 @@ EN.grid = {
 
   /* ============================ EQUIPMENT ============================ */
   /* Smartdecks · the Codebreaker's Power-User rig. Mod Slots = Tier; System
-     Integrity is listed per tier (gear runs tougher than infrastructure). */
+     Integrity is listed per tier (gear runs tougher than infrastructure).
+     maxComplexity is the book's MAX COMPLEXITY column, 1 2 3 4 5 5 (PHB:9834): Tier + 1, or the
+     top of the library, whichever comes first, so the Apex deck stops at 5 and never reads 6.
+     The gray market cards (tail of this file) compose their numbers from these rows. */
   smartdecks: [
-    { tier: "Standard", t: 0, price: 450,   deviceBonus: 0, trait: "Hacking Tool",              modSlots: 0, integrity: 20 },
-    { tier: "Improved", t: 1, price: 1200,  deviceBonus: 1, trait: "Encrypted Comms",           modSlots: 1, integrity: 30 },
-    { tier: "Advanced", t: 2, price: 3000,  deviceBonus: 1, trait: "Trace-Resistant Signature", modSlots: 2, integrity: 35 },
-    { tier: "Premium",  t: 3, price: 6500,  deviceBonus: 2, trait: "Encrypted Channel",          modSlots: 3, integrity: 40 },
-    { tier: "Elite",    t: 4, price: 11000, deviceBonus: 2, trait: "Adaptive Buffer",            modSlots: 4, integrity: 50 },
-    { tier: "Apex",     t: 5, price: 18000, deviceBonus: 3, trait: "Quantum Core",               modSlots: 5, integrity: 55 }
+    { tier: "Standard", t: 0, price: 450,   deviceBonus: 0, trait: "Hacking Tool",              modSlots: 0, integrity: 20, maxComplexity: 1 },
+    { tier: "Improved", t: 1, price: 1200,  deviceBonus: 1, trait: "Encrypted Comms",           modSlots: 1, integrity: 30, maxComplexity: 2 },
+    { tier: "Advanced", t: 2, price: 3000,  deviceBonus: 1, trait: "Trace-Resistant Signature", modSlots: 2, integrity: 35, maxComplexity: 3 },
+    { tier: "Premium",  t: 3, price: 6500,  deviceBonus: 2, trait: "Encrypted Channel",          modSlots: 3, integrity: 40, maxComplexity: 4 },
+    { tier: "Elite",    t: 4, price: 11000, deviceBonus: 2, trait: "Adaptive Buffer",            modSlots: 4, integrity: 50, maxComplexity: 5 },
+    { tier: "Apex",     t: 5, price: 18000, deviceBonus: 3, trait: "Quantum Core",               modSlots: 5, integrity: 55, maxComplexity: 5 }
   ],
-  smartdeckTraitNote: "Each Smartdeck has the trait on its tier row, and keeps all lower traits too (an Apex deck has every trait). Governing Skill: Systems; Tech runs the load-bearing math (Bandwidth, Cipher Attacks, Cipher Save DC, Links); Wits applies to general Systems checks. A deck runs ciphers up to (Tier + 1) in Complexity.",
+  smartdeckTraitNote: "Each Smartdeck has the trait on its tier row, and keeps all lower traits too (an Apex deck has every trait). Governing Skill: Systems; Tech runs the load-bearing math (Bandwidth, Cipher Attacks, Cipher Save DC, Links); Wits applies to general Systems checks. Max Complexity is Tier + 1, or the top of the library, whichever comes first: the deck can't execute a cipher above it.",
   smartdeckTraits: [
     { name: "Hacking Tool", text: "Baseline Smartdeck capability. The deck can execute Power User ciphers up to its Max Complexity, maintain Links, and provide its listed Device Bonus to Cipher Attacks. Every Smartdeck has this trait." },
     { name: "Encrypted Comms", text: "Voice, text, and data are encrypted by default. Tracking, intercepting, or decrypting requires a Systems check vs. the deck's Security Rating." },
@@ -189,10 +208,10 @@ EN.grid = {
   buddyCiphers: [
     { name: "Node Sweeper", type: "Utility", activation: "1 Action", range: "Self (Area 6 radius)", text: "Sweep the area for devices and Nodes. Automatically reveals every hidden Node whose Scan DC is 12 + (3 × the Buddy's Tier) or lower: Obscured for a Standard [0] Buddy, Masked for an Improved [1], Stealth-Routed for an Advanced [2]. More deeply hidden Nodes still require an active Systems (Tech) scan against their Scan DC. No Cipher Save is involved." },
     { name: "Access Spike", type: "Breach", activation: "1 Action", range: "12 spaces", text: "Cipher Attack vs. Node Security Rating. On hit, establish a Link (lasts 8 hours)." },
-    { name: "Access Override ⇋", type: "Utility", activation: "1 Action", range: "Touch (Linked)", text: "• **Fail:** Lock or unlock the mechanism. * **Success:** Lock resists; IC retaliates." },
-    { name: "Hijack Stream ⇋", type: "Detection", activation: "1 Action", range: "12 spaces", text: "• **Fail:** Clone or reroute the feed. * **Success:** Access denied; IC retaliates." },
+    { name: "Access Override ⇋", type: "Utility", activation: "1 Action", range: "Touch (Linked)", text: "Target an electronic lock on a Linked Node. Node rolls Cipher Save vs. the Buddy's DC. • **Fail:** Lock or unlock the mechanism. • **Success:** Lock resists; IC retaliates." },
+    { name: "Hijack Stream ⇋", type: "Detection", activation: "1 Action", range: "12 spaces", text: "Intercept video/audio from a Linked device. Node rolls Cipher Save vs. the Buddy's DC. • **Fail:** Clone or reroute the feed. • **Success:** Access denied; IC retaliates." },
     { name: "Data Probe ⇋", type: "Detection", activation: "1 Action", range: "Self (via Link)", text: "Probe a Linked Node for files/logs/configs. Grants Edge on d20 (or +1 Edge Die) for Investigation or Systems searches." },
-    { name: "Data Extraction ⇋", type: "Utility", activation: "1 Swift Action", range: "Touch", text: "• **Fail:** Clean copy, no trace. * **Success:** You still get the data, but IC retaliates and leaves a forensic trail." }
+    { name: "Data Extraction ⇋", type: "Utility", activation: "1 Swift Action", range: "Touch", text: "Copy identified files from a Linked Node. Node rolls Cipher Save vs. the Buddy's DC. • **Fail:** Clean copy, no trace. • **Success:** You still get the data, but IC retaliates and leaves a forensic trail." }
   ],
 
   /* Burner Relays · disposable single-shot, anyone can fire. */
@@ -204,7 +223,10 @@ EN.grid = {
     { tier: "Elite",    t: 4, price: 750,  saveDc: 19, attack: 11, maxNode: 4 },
     { tier: "Apex",     t: 5, price: 1000, saveDc: 21, attack: 12, maxNode: 5 }
   ],
-  relayNote: "Disposable, overclocked, single-shot; anyone can fire one, then both Relay and cipher are slag. If the cipher's Tier exceeds what the user can handle, roll Systems (Tech) DC 10 + cipher Tier (or Snag Dice = cipher Tier out of combat): success = full power; failure (margin -1 to -4) = Save DC & Attack reduced by 2; critical failure (Nat 1 / margin -5+) = the Relay sparks and dies, cipher lost. Codebreaker Special: extract an unused Relay's cipher into your Repertoire during Downtime.",
+  /* FG-11. PHB:9617-9627 and the Codebreaker Special paragraph (PHB:9702). The Dice Pool bands
+     are the book's: a Dice Pool fails at a margin of -1 to -2 and crit-fails at -3 or worse, a
+     tighter scale than the d20's -1 to -4 and -5 or worse. */
+  relayNote: "Disposable, overclocked, single-shot; anyone can fire one, then both Relay and cipher are slag. The Relay doesn't care what you slot into it; the check is whether you can keep up. If the cipher's Complexity exceeds what you could normally run (Complexity 0 for a Standard User, your deck's Max Complexity for a Codebreaker), roll Systems (Tech) DC 10 + cipher Complexity (or Snag Dice equal to cipher Complexity out of combat): success = full power; failure (margin -1 to -4 on a d20, or -1 to -2 on a Dice Pool) = Save DC and Attack Bonus reduced by 2 (or 2 fewer Edge Dice); critical failure (Nat 1, margin -5 or worse on a d20, or -3 or worse on a Dice Pool) = the Relay sparks and dies instantly, cipher lost. Codebreaker Special: extract an unused Relay's cipher into your Repertoire during Downtime. Once extracted, the Relay is empty. If a Codebreaker slots a Repertoire cipher into a Relay and fires it, that instance is consumed.",
 
   /* Smartdeck hardware modifications. avail/legal drive the gray-market listing. */
   mods: [
@@ -243,6 +265,34 @@ EN.grid = {
       effect: "Smartdeck mod · " + m.type + " · " + m.slots + (m.slots === 1 ? " slot" : " slots") + ". Install on the #GRID tab.",
       desc: m.text
     });
+  });
+})();
+
+/* Surface the rig numbers on the gray market cards, composed from the tier tables (FG-01).
+   The nine Smartdeck and B&E Buddy rows in gear_tools.js carry no `effect` of their own: this
+   file loads after it, so the card reads the same numbers the engine does and the two can never
+   drift apart again (the hand-typed strings had every Integrity wrong, the Apex deck at
+   Complexity 0-6 and every Buddy's Node Tier one step high). PHB:9834 and PHB:9840 for the
+   Smartdecks, PHB:9731 and PHB:9733 for the Buddies. The card prints "Integrity", the book's
+   word, not "HP". A Smartdeck's trait is its own tier row's trait; the lower ones are implied. */
+(function () {
+  if (!EN.gearCatalog || !EN.gearCatalog.tools || !EN.grid) return;
+  function slots(n) { return n + (n === 1 ? " mod slot" : " mod slots"); }
+  function rowFor(list, tier) {
+    for (var i = 0; i < (list || []).length; i++) if (list[i].tier === tier) return list[i];
+    return null;
+  }
+  EN.gearCatalog.tools.items.forEach(function (it) {
+    if (!it || !it.deckType || !it.deckTier) return;
+    var r;
+    if (it.deckType === "smartdeck") {
+      r = rowFor(EN.grid.smartdecks, it.deckTier);
+      if (r) it.effect = "+" + r.deviceBonus + " Device Bonus · Integrity " + r.integrity + " · " + slots(r.modSlots)
+        + " · runs Complexity 0-" + r.maxComplexity + ". Trait: " + r.trait + ".";
+    } else if (it.deckType === "buddy") {
+      r = rowFor(EN.grid.buddies, it.deckTier);
+      if (r) it.effect = "+" + r.attack + " atk · DC " + r.saveDc + " · Integrity " + r.integrity + " · max Tier " + r.maxNode + " Nodes.";
+    }
   });
 })();
 

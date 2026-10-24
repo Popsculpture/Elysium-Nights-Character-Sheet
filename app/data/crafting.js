@@ -12,17 +12,63 @@ window.EN = window.EN || {};
 
 EN.crafting = {
 
-  /* ---- Project tiers: Target Progress, expected skill tier, time, difficulty ----
-     target, skillTier and time are the Player's Handbook's Project Tiers table; difficulty and
-     examples are the GM Toolkit's columns, shown on the Admin desktop only (the Codex Project
-     Tiers table gates them). The data stays whole. */
+  /* ---- Project tiers: Target Progress, Required Skill Tier, Typical Time Segment ----
+     target, skillTier and time are the Player's Handbook's Project Tiers table (PHB Crafting and
+     Projects); difficulty and examples are the GM Toolkit's columns, shown on the Admin desktop only
+     (the Codex Project Tiers table gates them). The data stays whole.
+     targetText and skillText are the table's cells as the book prints them: `target` stays the
+     number the bench computes with (Prototype opens at 10), `skillTier` stays the lowest tier the
+     bench compares against, and the Codex prints the text ("10+", "Expertise or Mastery"). `time`
+     is the book's string, word for word. difficulty and examples are the Toolkit's cells, word
+     for word (GMT Gear Catalog, Bench Work, Project Tiers). */
   tiers: [
-    { key: "simple",    name: "Simple",    target: 3,   skillTier: "proficient", time: "A scene or a few hours",         difficulty: "Routine DC or easy pool",          examples: "Patch armor, routine repairs, a standard dose, basic disguise touch-ups" },
-    { key: "standard",  name: "Standard",  target: 5,   skillTier: "proficient", time: "One downtime period",            difficulty: "Moderate DC or standard pool",     examples: "New sidearm, upgraded plate, sensor add-on, clean paperwork" },
-    { key: "advanced",  name: "Advanced",  target: 7,   skillTier: "expertise",  time: "Several downtime periods",       difficulty: "Hard DC or increased successes",   examples: "Custom weapon mod, surgical implant, hardened software suite" },
-    { key: "prototype", name: "Prototype", target: 10,  skillTier: "expertise",  time: "Ongoing across sessions",        difficulty: "Very hard, complications likely",  examples: "New device pattern, experimental Mystech, unstable systems" },
-    { key: "relic",     name: "Relic or Breakthrough", target: null, skillTier: "mastery", time: "Long-term campaign project", difficulty: "GM-defined requirements", examples: "Setting-altering tech, legendary Flow artifact" }
+    { key: "simple",    name: "Simple",    target: 3,   targetText: "3",          skillTier: "proficient", skillText: "Proficient",           time: "One Scene or a few hours",                    difficulty: "Routine DC or easy Dice Pool",                 examples: "Patch armor, routine repairs, a standard dose, basic disguise touch-ups" },
+    { key: "standard",  name: "Standard",  target: 5,   targetText: "5",          skillTier: "proficient", skillText: "Proficient",           time: "One Downtime period (half-day to a day)",     difficulty: "Moderate DC or standard Dice Pool",            examples: "New sidearm, upgraded plate, sensor add-on, tailored disguise, clean paperwork package" },
+    { key: "advanced",  name: "Advanced",  target: 7,   targetText: "7",          skillTier: "expertise",  skillText: "Expertise",            time: "Several Downtime periods or multiple days",   difficulty: "Hard DC or increased successes",               examples: "Custom weapon mod, combat drone tweaks, surgical-grade implant work, hardened software suite" },
+    { key: "prototype", name: "Prototype", target: 10,  targetText: "10+",        skillTier: "expertise",  skillText: "Expertise or Mastery", time: "Ongoing Project across sessions",             difficulty: "Very hard, high risk, complications likely",   examples: "New device pattern, experimental Mystech build, unstable or cutting-edge systems" },
+    { key: "relic",     name: "Relic or Breakthrough", target: null, targetText: "GM Defined", skillTier: "mastery", skillText: "Mastery", time: "Long-term campaign Project", difficulty: "GM-defined requirements and difficulty", examples: "Setting-altering tech, legendary Flow artifact, major infrastructure work" }
   ],
+
+  /* GM Toolkit, Bench Work, under the Project Tiers table: the line that frames the Difficulty
+     column. Admin desktop only, with the columns it belongs to. */
+  tierNote: "The table is a starting point, not a straitjacket. The core DC bands and Dice Pool guidance still apply.",
+
+  /* GM Toolkit, Bench Work, Common Pairings: the Toolkit's table, word for word. Admin only. */
+  pairings: [
+    { type: "Mechanical gear, structures, demolitions",         skill: "Engineering",                                  kits: "Engineering Toolkit, Field Repair Case, Portable Fabrication Rig, Demolition Kit" },
+    { type: "Electronics, ports, software, intrusion support",  skill: "Systems",                                      kits: "Smartdeck Peripheral Kit, Codebreaker Suite, Signal Trace Scanner" },
+    { type: "Drugs, treatment, implants, surgery",              skill: "Medtech",                                      kits: "Basic Medkit, Advanced Medkit, Street Doc Bag, Surgical Instruments" },
+    { type: "Investigation and reconstruction",                 skill: "Investigation",                                kits: "Survey Scanner, Forensics Kit, Field Recording Kit" },
+    { type: "Infiltration and access",                          skill: "Sleight, Systems, Stealth",                    kits: "Lockpick Set, Vault Bypass Kit, Urban Infiltration Rig" },
+    { type: "Fieldcraft and movement prep",                     skill: "Awareness, Athletics",                         kits: "Navigation and Survival Pack, Climbing Gear" },
+    { type: "Detainment and controlled procedures",             skill: "Investigation, Intuition, Perception",         kits: "Custody and Control Kit" },
+    { type: "Flow work, Mystech, anomaly handling",             skill: "Esoterica, Awareness, Engineering",            kits: "Rite Calibration Kit, Flow Survey Pack, Flow Artificer Kit, Elemental Harness Rig" },
+    { type: "Identity, presentation, legitimate paperwork",     skill: "Deception, Performance, Persuasion, Investigation", kits: "Disguise and Styling Kit, Document and Contract Kit" }
+  ],
+
+  /* GM Toolkit, Bench Work, under Common Pairings: what the GM can do when a demanding Project is
+     attempted without suitable kits. Word for word. The Handbook prints the first three in one
+     sentence (rules.kits); the fourth option and the complications are the Toolkit's. Admin only. */
+  missingKits: {
+    lead: "If a demanding Project is attempted without suitable kits, the GM can:",
+    options: [
+      "Increase the required Progress",
+      "Apply Snag Dice to Work Interval pools",
+      "Add complications on weak results",
+      "Rule the Project isn't possible until proper tools, parts, or facilities are secured"
+    ]
+  },
+
+  /* GM Toolkit, Bench Work, Finish, Flaws, and Upgrades. Word for word. Admin only. */
+  finish: {
+    lead: "Let the pattern of results shape the finished item:",
+    bands: [
+      { name: "Mostly Flawless or Strong Successes", text: "The item gains a small quality edge, a much cleaner build, or a highly useful narrative tag." },
+      { name: "Mostly Mixed Results", text: "The item works, but it has a specific quirk, requires frequent maintenance, or has visible signs of modification." },
+      { name: "Many Failures", text: "The item barely holds together. It functions for now, but it is highly unstable, crude, or obviously modified to any Character inspecting it." }
+    ],
+    tail: "Keep flaws as story hooks that justify Edge or Snag at the right moment, not long penalty lists."
+  },
 
   /* ---- Work Interval outcomes to Progress (Dice Pool Method) ---- */
   outcomes: [
@@ -36,8 +82,8 @@ EN.crafting = {
   /* ---- kinds of Project ---- */
   kinds: [
     { key: "build",  name: "Build",  desc: "Fabricate a new item from scratch. Materials cost half the item's market price." },
-    { key: "repair", name: "Repair", desc: "Restore damaged gear. Cosmetic upkeep needs no roll; functional damage is a Simple or Standard Project; catastrophic is Advanced or higher." },
-    { key: "modify", name: "Modify", desc: "Install one mod or customization. One Project per mod. Past the item's Slot Count it becomes a Prototype with a Mandatory Flaw." },
+    { key: "repair", name: "Repair", desc: "Restore damaged gear. Routine upkeep needs no roll with the right kit. Functional damage is a Simple or Standard Project; catastrophic damage is Advanced or Prototype, often rebuilt from salvage." },
+    { key: "modify", name: "Modify", desc: "Install one mod or customization. One Project per mod. One Part past the item's listed capacity is Over-Engineering: a Prototype-tier Project with a Mandatory Flaw. It never adds a mount the frame lacks, and one extra Part is the ceiling." },
     { key: "custom", name: "Custom", desc: "Freeform work the catalog does not cover: software suite, disguise, drug, ritual implement, surveillance rig." }
   ],
 
@@ -57,14 +103,19 @@ EN.crafting = {
   rules: {
     emergency: "The d20 Method is for emergency fixes under pressure: one roll of d20 plus the Skill, and the fix holds for the scene. It rarely creates a permanent upgrade.",
     materials: "Building from scratch, raw materials and components cost half the item's market price. Salvaging parts from similar broken gear can reduce or eliminate that cost.",
-    kits: "A kit's Basic Use is open to anyone. Its Proficient Use needs the matching Tool Proficiency; without it you own the kit but not its edge. Missing suitable kits can raise the Target or add Snag.",
+    kits: "A kit's Basic Use is open to anyone. Its Proficient Use needs the matching Tool Proficiency; without it you own the kit but not its edge. Without suitable kits, a demanding Project may need more Progress, take Snag Dice, or be impossible until the right tools, parts, or facilities are secured.",
     oneProjectPerMod: "Each modification is its own Project. You cannot batch several upgrades into a single roll.",
-    overEngineering: "Every weapon has a Slot Count and every suit of armor a Mod Slot count, one Part or mod per slot. Pushing an item past its safe capacity instantly elevates the work to a Prototype Project, and the finished item carries a Mandatory Flaw: a permanent quirk, a heavy maintenance burden, or a glaringly obvious visual tell.",
+    overEngineering: "Over-Engineering pushes an item one Part past its listed capacity. The work becomes a Prototype-tier Project, and the finished item carries a Mandatory Flaw: a permanent quirk, a heavy maintenance burden, or a glaringly obvious visual tell. It never adds a mount the frame lacks. One extra Part is the ceiling.",
     /* These two were typed inline on the Fabrication bench (its intro line and its UNTRAINED
        chip); they live here now so the bench and the Codex read one copy. See the advisory note
        further down for why the tier's skill expectation is never a hard gate. */
-    workInterval: "Work Intervals roll the Dice Pool Method: Edge Dice from a Skill and its Attribute, its Skill Proficiency Bonus, kits, Focus, and Specialization, against the GM's Snag Dice.",
-    untrained: "A Project tier's expected Skill tier is a guide, not a bar. Untrained, you can still do the work; every Work Interval adds +2 Snag Dice."
+    workInterval: "Work Intervals roll the Dice Pool Method. Each interval is several hours of focused effort, or a Downtime day spent mainly on the work. Build the Dice Pool from the primary Skill and Attribute, add Edge Dice from kits, Skill Focus, Specializations, setup, and help, apply Snag Dice for poor conditions, missing tools, rushed work, or bad materials, and roll.",
+    /* The Handbook's table column is REQUIRED Skill Tier. The author ruled (19 Oct 2026, ruling 2)
+       that the app shows a warning below it and does not refuse the work; the Untrained Dice Pool
+       effect (PHB Proficiency Tiers: add +2 Snag Dice to the pool) applies to every Work Interval. */
+    untrained: "Each Project tier lists a Required Skill Tier. Below it, the bench warns you and still lets you work. Untrained, every Work Interval adds +2 Snag Dice.",
+    /* PHB Crafting and Projects, Flow-Bound Crafting, word for word */
+    flowBound: "Tuning resonance, stabilizing an effect into a tool, repairing Mystech, or containing an entity or anomaly rather than destroying it are Flow-bound Projects, often on Esoterica or Awareness, sometimes with Engineering. Advanced and Prototype Flow items usually require Expertise or Mastery, and failures can cause backlash, echoes, contamination, or a new anomaly."
   },
 
   /* ---- Dice Pool assembly (Dicey Situations, Dice Pool Method) -------------
@@ -116,21 +167,33 @@ EN.crafting = {
   /* suggested base Snag Dice by Project tier; the table adjusts from there */
   snagForTier: { simple: 1, standard: 2, advanced: 3, prototype: 4, relic: 5 },
 
-  /* A tier's `skillTier` is an EXPECTATION, not a bar, and it is advisory at every
-     Project this app opens. There is deliberately no meetsTier() predicate here:
-     one existed briefly, it was asked from the Armor Repair bench lane and from
-     nowhere else, and a rule enforced in one of four Project lanes is worse than
-     one enforced in none. It gated the cheap 5-percent parts lane while leaving
-     the same suit's full rebuild, every Blueprint Build and every custom Project
-     wide open to the same untrained crafter.
-     Advisory is the app's existing and consistent answer: an untrained crafter
-     opens the Project and pays for it in the roll, +2 Snag Dice on every Work
-     Interval (see EN.rules.profTiers and the UNTRAINED chip on the bench), which
-     is exactly how this ruleset expresses "you may try this without the training".
-     `rules.kits` says the same thing about a missing kit: it raises the Target or
-     adds Snag, it does not refuse the work. Turning the expectation into a hard
-     requirement is a real change to every Project in the app and belongs to
-     whoever decides it deliberately, not to an armor patch. */
+  /* A tier's `skillTier` is the Handbook's REQUIRED Skill Tier, and the bench treats it as a WARNING,
+     never a gate (the author's ruling 2 of 19 October 2026). A crafter below it opens the Project
+     anyway, sees "Below the Required Skill Tier (...)" on the bench, and pays for it in the roll:
+     untrained, every Work Interval adds +2 Snag Dice (EN.rules.profTiers, the UNTRAINED chip).
+     There is deliberately no hard predicate that refuses work. An earlier one gated only the cheap
+     5-percent armor-parts lane and left the same suit's full rebuild, every Blueprint Build and
+     every custom Project open to the same crafter, and a rule enforced in one of four Project lanes
+     is worse than one enforced in none. `rules.kits` says the same about a missing kit: it raises
+     the Target or adds Snag, it does not refuse the work.
+     belowRequiredTier and requiredTierWarning only answer the question the warning chip asks. */
+  skillRank: function (skillKey) {
+    var order = (EN.rules && EN.rules.profOrder) || ["untrained", "proficient", "expertise", "mastery"];
+    var i = order.indexOf(skillKey);
+    return i < 0 ? 0 : i;
+  },
+  /* true when a crafter whose Skill is at `skillKey` (untrained / proficient / expertise / mastery)
+     is below the Required Skill Tier of the Project tier `tierKey` */
+  belowRequiredTier: function (skillKey, tierKey) {
+    var t = this.tier(tierKey);
+    return !!t && !!t.skillTier && this.skillRank(skillKey) < this.skillRank(t.skillTier);
+  },
+  /* the warning chip's text, with the tier as the book prints it ("Expertise or Mastery") */
+  requiredTierWarning: function (tierKey) {
+    var t = this.tier(tierKey);
+    var tiers = (EN.rules && EN.rules.profTiers) || {};
+    return "Below the Required Skill Tier (" + (t.skillText || (tiers[t.skillTier] || {}).name || t.skillTier || "") + ")";
+  },
 
   /* ---- Armor Repair -------------------------------------------------------
      Armor DR is mutable. The catalog `dr` is the BASE and the ceiling; damage
@@ -225,7 +288,7 @@ EN.crafting = {
      asks listPrice rather than reading `price` itself. It used to read `price`, and once
      listPrice learned to read a Nexus-only row the two disagreed on screen: the
      Blueprints panel offered a brand new Reliquary Shell for `mat 𝒢0` while the Impact
-     Table priced rebuilding the damaged one at 𝒢10,000, four inches apart. Measured, the
+     Table priced rebuilding the damaged one at half its ◎ value, four inches apart. Measured, the
      only rows where listPrice and price differ are leased ones (which tbBlueprints
      already refuses, `!it.upkeep`) and the two Nexus-only rows, so this moves exactly
      those two Blueprint entries and nothing else in the catalog. rebuildCost is now
@@ -244,21 +307,25 @@ EN.crafting = {
      that a lease row is "price 0 with buyout set". This is that same distinction,
      asked for pricing rather than for a purchase button.
 
-     A Nexus buyout converts at the reference value the economy chapter states, the
-     one that "appears in contracts, ledgers, and official books" (EN.economy). That
-     is the ledger value of the object, which is exactly the question being asked.
+     A Nexus buyout converts at nexusRepairRate, 3,000 Glimmer per ◎. The Toolkit
+     calls a ◎ figure in a gear entry "a street price: Nexus at the black-market
+     exchange ... which usually returns 2,000 to 4,000 for 1" (GM Toolkit, Gear
+     Catalog), and the author set the middle of that range (ruling 6, 19 October
+     2026). It replaces the economy chapter's 10,000 reference value for this
+     question; the economy keeps its own number for its own prose.
 
      A row with NO Glimmer price at all is the third case, and it reads the same ◎
      figure for the same reason. The Reliquary Shell is `price: 0, nexus: "◎2+"`: it
      is not sold for Glimmer, so its Glimmer price is 0, and taking that literally
      made a 4 DR Artifact repair for 𝒢0 a point and rebuild for 𝒢0. Nothing is being
      converted and no wallet changes currency; the ◎ figure is being read as the
-     ledger value of the object, which is the only question repair pricing asks.
+     street value of the object, which is the only question repair pricing asks.
      Measured: it is the one armor row in the catalog with a listed value of zero.
 
      Anything priced off what a piece is worth (repair per point, a rebuild's parts)
      reads this. Anything priced off what you handed over at the counter keeps
      reading `price`. */
+  nexusRepairRate: 3000,
   listPrice: function (it) {
     if (!it) return 0;
     var price = Math.max(0, it.price || 0);
@@ -266,8 +333,7 @@ EN.crafting = {
     // a leased row's ◎ Buyout, or an unpriced row's ◎ asking figure
     if (it.upkeep || !price) {
       var m = String(it.nexus || "").match(/[\d.]+/);
-      var rate = (EN.economy && EN.economy.nexusToGlimmer) || 10000;
-      if (m) return Math.ceil(parseFloat(m[0]) * rate);
+      if (m) return Math.ceil(parseFloat(m[0]) * EN.crafting.nexusRepairRate);
     }
     return price;   // a lease with no stated way out: the deposit is all there is
   },

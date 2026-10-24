@@ -28,7 +28,7 @@ EN.resolution = {
     { term: "Edge and Snag", text: "Modifiers that swing a roll your way or against it." },
     { term: "Success Margin", text: "The difference between the roll result and the difficulty, showing how well or poorly an action succeeds." },
     { term: "Consequence", text: "The narrative or mechanical result that follows from the margin, representing cost, risk, or reward." },
-    { term: "Scene Type", text: "The nature of the action being resolved: physical, social, technical, investigatory, or resonant. Scene Type determines what kinds of consequences make sense." }
+    { term: "Scene Type", text: "The nature of the action being resolved: Physical / Exploration, Social / Negotiation, Hacking / #GRID, Flow / Resonance, or Crafting / Technical. Scene Type determines what kinds of consequences make sense." }
   ],
 
   /* ---- which method to use ---------------------------------------------- */
@@ -238,6 +238,21 @@ EN.resolution = {
   collaborative: {
     intro: "Two operators wrestle for the same console; a whole crew leans on one gate; a steady hand steadies someone else's. Opposed rolls, shared efforts, and direct assistance all run on the same margin and consequence framework.",
     methodChoice: "If the contest or group effort happens during a combat Encounter or directly affects attacks, Saves, or Flow Invocations, resolve it with the d20 Method. If it is a long-form or out-of-combat challenge (heists, hacking races, extended negotiations, ritual work, or vehicle chases not framed as combat rounds), you may use Dice Pools.",
+
+    /* The Handbook's Core Concepts for this section (19 October 2026 audit, core-14): the
+       vocabulary for when people pull against, or alongside, each other, word for word,
+       Shared Consequence included. Rendered as a table under Method Choice; a table, not
+       rule blocks, so the Help Action row never takes the slug of the Help Action entry. */
+    coreConceptsIntro: "The vocabulary for when people pull against, or alongside, each other.",
+    coreConcepts: [
+      { term: "Contested Action", text: "Two or more characters roll opposed checks to see who gains control or achieves their goal first." },
+      { term: "Group Check", text: "Several characters roll together to complete one shared objective. The team's success depends on their combined effort." },
+      { term: "Dominant Result", text: "The side with the higher total or greater success margin gains control of the outcome." },
+      { term: "Margin of Success", text: "The degree by which one side wins or loses a contested roll, or how far a group passes or fails their shared target." },
+      { term: "Help Action", text: "Lends support to another's roll. How much the support is worth scales with the helper's own training in the task." },
+      { term: "Shared Consequence", text: "Any cost, delay, or complication that affects the participants as a result of the roll." },
+      { term: "Passive Check", text: "What a Freelancer notices or accomplishes without active effort." }
+    ],
 
     contested: {
       intro: "When two forces want opposite things at the same instant, both throw and the margin between them decides who walks away holding the outcome.",

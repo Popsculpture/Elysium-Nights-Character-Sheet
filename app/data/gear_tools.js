@@ -115,8 +115,9 @@ EN.gearCatalog.tools = {
          read it as ONE Edge Die (not 2, the catalog's only edgeDice above 1 in any tool). The
          GM Toolkit (batches 44 to 50) now prints Edge on the procedure's Medtech checks, and a
          Tool tier never adds a bonus to the roll. edgeDice: 1 is the Dice Pool form of that
-         Edge, so the number is unchanged. The Toolkit's Kits and Tools summary row still prints
-         "+2 on Medtech" (flagged to the author); the entry and the ruling say Edge. */
+         Edge, so the number is unchanged. The Toolkit's Kits and Tools summary row now prints
+         "Edge on Medtech procedures" too (GMT:7217, the 19 October 2026 playtest PDF), so the
+         row, the entry and the ruling all say Edge. */
       edgeDice: 1, requiresProficient: true, edgeNote: "invasive or surgical procedures in a clean workspace",
       desc: "Precision tools for invasive work and delicate cybernetic extraction.",
       basic: "Enables planned invasive work in Downtime: surgery, deep extraction, major cybernetic servicing. Without them, these procedures are usually impossible.",
@@ -233,7 +234,7 @@ EN.gearCatalog.tools = {
       category: "Glamour Tools", skill: "Persuasion, Perception, Deception", effect: "Edge (or +1 Edge Die) to run a room: guest lists, the door, the floor.",
       desc: "Booking software, a comp-tab ledger, earpieces for the floor staff, and the quiet authority of someone who runs the room.",
       basic: "Lets you legitimately run a guest list, work the door, comp tabs, and manage a venue floor without improvising.",
-      proficient: "With 10 minutes of setup, gain Edge on in-combat d20 checks (or +1 Edge Die on out-of-combat Dice Pools) for the next scene to control who gets in and out, read the room's social currents, or stage the floor to your advantage. This is one of the surest ways to change the Floor before a Sit-Down begins. A second scene on the same setup rolls normally, and a third rolls with Snag (or +1 Snag Die)." },
+      proficient: "With 10 minutes of setup, gain Edge on in-combat d20 checks (or +1 Edge Die on out-of-combat Dice Pools) for the next scene to control who gets in and out, read the room's social currents, or stage the floor to your advantage. A second scene on the same setup rolls normally, and a third rolls with Snag (or +1 Snag Die)." },
 
     /* ---- Bureaucracy & Paper (Bureaucracy Tools) ---- */
     { name: "Document and Contract Kit", load: 1, bucket: "kits", group: "Bureaucracy & Paper", price: 100, availability: "Uncommon", legality: "Licensed",
@@ -284,7 +285,7 @@ EN.gearCatalog.tools = {
       activation: "As an Action, put out small fires in a room, vehicle, or corridor, or stop an adjacent Target from taking further ongoing Fire damage, at GM discretion.",
       synergy: "Can be vented for brief, smoky concealment." },
     { name: "Rebreather", load: 0, bucket: "devices", group: "Everyday Utility", price: 90, availability: "Uncommon", legality: "Licensed", slot: "Face",
-      effect: "While worn and charged, you don't begin Drowning in water or low-oxygen air for up to 1 hour of active use, refreshing between scenes.",
+      effect: "While worn and charged, you don't begin Drowning or Suffocating in water or low-oxygen air for up to 1 hour of active use, refreshing between scenes.",
       desc: "A compact mouthpiece and gill-filter for the flooded sectors and the dead-air crawlspaces.",
       limitation: "Won't protect against toxic atmospheres on its own. For that, see the Respirator Mask or Hazmat Suit." },
     /* ============================== CARRY GEAR ==============================
@@ -596,7 +597,7 @@ EN.gearCatalog.tools = {
       desc: "A drinkable infusion that refills your reserves.",
       limitation: "Each vial after the first in a scene also gains you 1 Strain." },
     { name: "Channel Cleanse Tonic", bucket: "flow", group: "Resonance Tonics", price: 90, availability: "Uncommon", legality: "Licensed",
-      effect: "Immediately remove 1 Strain and gain Edge on your next Body or Mystique Save vs Overdraw or backlash within 1 hour.",
+      effect: "Action: remove 1 Strain and gain Edge on your next Body or Mystique Save vs Overdraw or backlash within 1 hour.",
       desc: "A soothing liquid that clears residual buildup and smooths your channels.",
       limitation: "You can't remove Strain with this tonic more than once per Long Rest." },
     { name: "Focus Draught", bucket: "flow", group: "Resonance Tonics", price: 100, availability: "Rare", legality: "Restricted",
@@ -619,6 +620,7 @@ EN.gearCatalog.tools = {
          wasted, trading the redundant Resistance for a second point of DR. */
       effect: "For the next minute or until the encounter ends, gain Resistance to Resonant damage and +1 DR vs Resonant damage.",
       desc: "A dense, metallic-tasting liquid that tunes the body to deflect Resonant damage.",
+      activation: "As an Action, drink.",
       synergy: "If you already have Resonant Resistance, instead gain +2 DR vs Resonant damage for the duration." },
     { name: "Flow Surge Ampoule", load: 0, bucket: "flow", group: "Resonance Tonics", price: 150, availability: "Rare", legality: "Restricted",
       effect: "That Invocation deals +3d6 damage of its type, or grants 3d6 Vigor if it heals.",
@@ -661,44 +663,39 @@ EN.gearCatalog.tools = {
       limitation: "Carrying too many is unstable and attention-grabbing. Most crews keep it to 3 to 5 tabs before it becomes a problem in the fiction." },
 
     /* ============================== RIGS ============================== */
+    /* The nine rig rows carry no `effect` here. Their card numbers (Device Bonus, Integrity,
+       mod slots, Max Complexity, trait; attack, DC, Integrity, Max Node Tier) are composed from
+       EN.grid.smartdecks and EN.grid.buddies at the tail of app/data/grid.js, which loads after
+       this file, so the storefront can never drift from the tier tables again (FG-01). */
     /* ---- Smartdecks (Power User) ---- */
     { name: "Standard Smartdeck", bucket: "rigs", group: "Smartdecks", deckType: "smartdeck", deckTier: "Standard",
       price: 450, availability: "Common", legality: "Restricted",
-      effect: "+0 Device Bonus · 3 HP · 0 mod slots · runs Complexity 0-1.",
       desc: "A bare-bones grid console. No frills, no slots, but it gets you on the network as a Power User." },
     { name: "Improved Smartdeck", bucket: "rigs", group: "Smartdecks", deckType: "smartdeck", deckTier: "Improved",
       price: 1200, availability: "Uncommon", legality: "Restricted",
-      effect: "+1 Device Bonus · 4 HP · 1 mod slot · runs Complexity 0-2. Trait: Encrypted Comms.",
       desc: "The standard Codebreaker starting deck. Solid encryption and one hardware slot for a mod." },
     { name: "Advanced Smartdeck", bucket: "rigs", group: "Smartdecks", deckType: "smartdeck", deckTier: "Advanced",
       price: 3000, availability: "Uncommon", legality: "Restricted",
-      effect: "+1 Device Bonus · 5 HP · 2 mod slots · runs Complexity 0-3. Trait: Trace-Resistant Signature.",
       desc: "Mid-tier hardware with a fuzzy emission profile. Alerts take longer to trace back to you." },
     { name: "Premium Smartdeck", bucket: "rigs", group: "Smartdecks", deckType: "smartdeck", deckTier: "Premium",
       price: 6500, availability: "Rare", legality: "Contraband",
-      effect: "+2 Device Bonus · 6 HP · 3 mod slots · runs Complexity 0-4. Trait: Encrypted Channel.",
       desc: "Immune to passive corporate dragnets. This is serious gear and the corps know it." },
     { name: "Elite Smartdeck", bucket: "rigs", group: "Smartdecks", deckType: "smartdeck", deckTier: "Elite",
       price: 11000, availability: "Rare", legality: "Contraband",
-      effect: "+2 Device Bonus · 7 HP · 4 mod slots · runs Complexity 0-5. Trait: Adaptive Buffer.",
       desc: "Stability Check DCs against you drop by 2. ICE has to work harder to rattle this deck." },
     { name: "Apex Smartdeck", bucket: "rigs", group: "Smartdecks", deckType: "smartdeck", deckTier: "Apex",
       price: 18000, availability: "Rare", legality: "Contraband",
-      effect: "+3 Device Bonus · 8 HP · 5 mod slots · runs Complexity 0-6. Trait: Quantum Core.",
-      desc: "Once per scene, reroll a failed Cipher Attack. The full library, no ceiling, no limits." },
+      desc: "Once per scene, reroll a failed Cipher Attack." },
 
     /* ---- B&E Buddies (Standard User) ---- */
     { name: "Standard B&E Buddy", bucket: "rigs", group: "B&E Buddies", deckType: "buddy", deckTier: "Standard",
       price: 250, availability: "Common", legality: "Restricted",
-      effect: "+3 atk · DC 11 · 2 HP · max Tier 1 Nodes.",
       desc: "Ugly, handheld, dependable. Locks out of Premium+ Nodes with an audible spark." },
     { name: "Improved B&E Buddy", bucket: "rigs", group: "B&E Buddies", deckType: "buddy", deckTier: "Improved",
       price: 500, availability: "Uncommon", legality: "Restricted",
-      effect: "+5 atk · DC 13 · 3 HP · max Tier 2 Nodes.",
       desc: "Better antenna, tighter code. Still a Standard User tool, still hates Premium Nodes." },
     { name: "Advanced B&E Buddy", bucket: "rigs", group: "B&E Buddies", deckType: "buddy", deckTier: "Advanced",
       price: 900, availability: "Rare", legality: "Restricted",
-      effect: "+7 atk · DC 15 · 4 HP · max Tier 3 Nodes.",
       desc: "As good as a B&E Buddy gets. Hits hard, holds up, still locks out of the top tier Nodes." }
   ]
 };

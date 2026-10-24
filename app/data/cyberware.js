@@ -57,7 +57,7 @@ EN.cyberware = {
       prereqFor: "Smartlink, Cyberoptic footage retrieval, and direct vehicle rigging. Wherever another implant or vehicle interface \"requires a neural port,\" this is that port.",
       effect: "A neural port for #GRID hardware, Smartdecks, drones, and compatible cyberware, and you no longer require external interface gear to run programs. Operates as Surface Link (conscious, silent comms within 20 spaces) or Full Immersion (body helpless, Prone, attacks vs you at Edge).",
       street: "No encryption, intercept/trace your traffic at Edge against you; visible scarring, Snag on passing as un-chromed.",
-      black: "Encrypted & dark (intercept at Snag against you), no registered identity/log, and your Quick Hacks deal +1d4 on System Failure / Network Spread.",
+      black: "Encrypted & dark (intercept at Snag against you), no registered identity/log, and your Quick Hacks deal +1d4 on System Failure / Network Spread. Casual or passive inspection doesn't reveal that you are chromed at all; identifying the implant requires active, specialized examination.",
       tiers: [
         { tier: "Streetware", sp: 1, price: 600,   legality: "Legal" },
         { tier: "Brandware",  sp: 1, price: 3500,  legality: "Legal" },
@@ -95,7 +95,7 @@ EN.cyberware = {
       ] },
     { key: "resonanceCrown", short: "Resonance Crown", name: "Resonance Crown", zone: "Neural", enhancement: "+1 Mystique", mystech: true,
       desc: "A circlet of hand-tuned Mystech filaments in the skull's outer surface, visible as silver tracery along the brow. One of the few implants the Flow does not reject; it harmonizes chrome to the wearer's natural frequency.",
-      effect: "Reduces the SP cost of up to 4 SP of your other cyberware by 1 each (min 1) for Threshold purposes. +1 FP at the end of a Short Rest. Choose the pieces when the Crown is installed; changing the selection takes 1 hour of Downtime meditation with a qualified artificer. One Crown only; cannot harmonize itself or the Disruption Lattice.",
+      effect: "Reduces the SP cost of up to 4 SP of your other cyberware by 1 each (min 1) for Threshold purposes. +1 FP at the end of a Short Rest. Choose the pieces when the Crown is installed; changing the selection takes 1 hour of Downtime meditation with a qualified artificer. One Crown only; cannot harmonize itself or the Disruption Lattice. Identifying Marks: The silver tracery is visible along the brow when the wearer concentrates or casts an Invocation. Skilled observers (Awareness check, DC 15) can identify the Crown on sight. It can't be installed through unlicensed clinics; the technique requires a Mystech artificer with proper certification.",
       tiers: [
         { tier: "Prototype", sp: 1, price: 28000, legality: "Restricted" }
       ] },
@@ -133,13 +133,13 @@ EN.cyberware = {
       ] },
     { key: "feedbackCore", short: "Resonance Feedback Core", name: "Resonance Feedback Core", zone: "Core", enhancement: "None", mystech: true,
       desc: "An implant in the upper torso that absorbs incoming Flow and re-emits it as raw resonance. The rare chrome that lets an Unattuned character interact with the Flow, not just resist it.",
-      effect: "Taking Invocation damage grants a Feedback Charge (max 3). Discharge (Impulse): at any point outside your turn, spend 1 charge to make a melee or ranged attack within 6 that deals +1d6 Resonant on hit, resisted by nothing but specific Resonant-resistant materials. Surge (Action): spend 2 charges for an Area 3 sphere centered on yourself, Body Save DC 14 or 2d6 Resonant and pushed 1 space. Discharge Burst (Action): spend 3 charges for an Area 6 Cone, 4d6 Resonant with no save, then a 1-hour cooldown that generates no new charges. Charges expire in 10 min.",
+      effect: "Taking Invocation damage grants a Feedback Charge (max 3). Discharge (Impulse): at any point outside your turn, spend 1 charge to make a melee or ranged attack within 6 that deals +1d6 Resonant on hit, resisted by nothing but specific Resonant-resistant materials. Surge (Action): spend 2 charges for an Area 3 sphere centered on yourself, Body Save DC 14 or 2d6 Resonant and pushed 1 space. Discharge Burst (Action): spend 3 charges for an Area 6 Cone, 4d6 Resonant with no save, then a 1-hour cooldown that generates no new charges. Charges expire in 10 min. Identifying Marks: A small ceramic plate is visible at the sternum, glowing faintly when the Core has stored charges. The glow is dim enough to be hidden under clothing but can be detected by Awareness checks (DC 12) in close quarters.",
       tiers: [
         { tier: "Prototype", sp: 2, price: 25000, legality: "Restricted" }
       ] },
     { key: "convergence", short: "Convergence Engine", name: "Convergence Engine", zone: "Core", enhancement: "None", mystech: true,
       desc: "An implant that is, by all measurable standards, both circuit and Flow construct at once. Should not exist; three are documented in Elysium. A campaign-level reward, not a purchase.",
-      effect: "Unattuned: +1 Vitality max and Resistance to Resonant. Attuned: use any one implant as a Ritual Implement, route Invocations through your chrome, and once/Long Rest bypass a Static Threshold (Total Static −2 SP for one combat, then gain 1 Stage of Strain). Does not stack with the Resonance Crown; a character can't have both installed.",
+      effect: "Unattuned: +1 Vitality max and Resistance to Resonant. Attuned: use any one implant as a Ritual Implement, route Invocations through your chrome, and once/Long Rest bypass a Static Threshold (Total Static −2 SP for one combat, then gain 1 Stage of Strain). Does not stack with the Resonance Crown; a character can't have both installed. Identifying Marks: The Engine pulses with a slow, faintly blue glow visible beneath the skin of the chest. The pulse synchronizes with the wearer's heartbeat and intensifies when an Invocation is being channeled. The piece can't be hidden from Flow-based detection; any Shaper within 6 spaces of an active Convergence Engine senses it immediately as a third signature in the room, neither fully tech nor fully Flow.",
       /* The one split clause in the catalog. `unattuned` is read by cyberFlatBonuses and
          damageResistances in engine.js and applies only when the wearer has no Flow Attribute;
          the Attuned half above stays prose, being capabilities and a per-rest resource rather

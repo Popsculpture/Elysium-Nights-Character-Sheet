@@ -108,7 +108,8 @@ EN.rules = {
 
   /* Proficiency tiers ----------------------------------------------------- */
   profTiers: {
-    untrained:  { key:"untrained",  name:"Untrained",  d20:0,  pool:0,  snag:true,  short:"-" },
+    // poolText: what the Codex prints in the Dice Pool column. Untrained adds Snag Dice, not Edge Dice (PHB:1104).
+    untrained:  { key:"untrained",  name:"Untrained",  d20:0,  pool:0,  snag:true,  short:"-", poolText:"+2 Snag Dice" },
     proficient: { key:"proficient", name:"Proficient", d20:2,  pool:2,  short:"P" },
     expertise:  { key:"expertise",  name:"Expertise",  d20:4,  pool:4,  short:"E" },
     mastery:    { key:"mastery",    name:"Mastery",    d20:6,  pool:6,  short:"M" }
@@ -132,6 +133,8 @@ EN.rules = {
     { key:"persuasion",    name:"Persuasion",    attr:"CHA", desc:"Influence through empathy, reason, diplomacy, or pressure." },
     { key:"deception",     name:"Deception",     attr:"CHA", desc:"Conceal truth or mislead others." }
   ],
+  // The book's note under the Mystique skills (PHB:1008-1012); the Codex prints it after Esoterica.
+  mystiqueNote: "When a Skill check involves directly shaping, sensing, or interpreting the Flow, rather than mundane mysticism, the GM may treat the roll as a Flow Attribute Check, using your Flow Attribute if it differs from Mystique.",
   // Example Focus/Specialization aspects per skill (used for UI placeholders).
   focusExamples: {
     athletics: "Climbing / Throwing / Grappling",
@@ -312,7 +315,7 @@ EN.rules = {
     intro: "Improvised weapons are everything you pick up that was never built to be swung, which in Elysium is most things, and on a bad enough day, most people.",
     using: [
       "Action Economy: attacking costs an Action. Grabbing an obvious item within reach costs a Swift Action.",
-      "No Proficiency: nobody trains on a fire extinguisher. You don't add a Weapon Proficiency Bonus to an improvised attack roll.",
+      "No Proficiency: nobody trains on a fire extinguisher. You don't add a Weapon Proficiency Bonus to an improvised attack roll unless a feature says otherwise.",
       "Melee: roll a d20 + your Body Modifier + any relevant Skill Proficiency Bonus.",
       "Thrown: roll a d20 + your Body or Agility Modifier + any relevant Skill Proficiency Bonus."
     ],
@@ -335,7 +338,7 @@ EN.rules = {
     ],
     specialEffects: "On a Critical hit or a high Margin of success, the GM may rule that an improvised weapon inflicts a fitting condition: Bleeding from a shattered bottle, Staggered from a slab of concrete. When this happens, the Target makes a relevant Body or Wits Save to resist it.",
     peopleIntro: "First you have to grapple them. An Unconscious, Restrained, or willing Target can automatically be grappled as a Swift Action, the same as grabbing any heavy object. A conscious, unwilling Target has to be Grappled by force first, and on a success they are yours to misuse until they manage to break free.",
-    wieldedBody: "A wielded body is a Heavy improvised weapon: 1d10 Bludgeoning, Heavy. It is Unwieldy too, since people are heavy, badly balanced, and rarely cooperative. Unwieldy means every attack with them carries Snag; swinging a person isn't precision work. Both the Target and the body you swung take the rolled damage. Using a person as a weapon is extremely hard on the person.",
+    wieldedBody: "A wielded body is a Heavy improvised weapon: 1d10 Bludgeoning, Heavy. It is Unwieldy too, since people are heavy, badly balanced, and rarely cooperative. Unwieldy means every attack with them carries Snag; swinging a person isn't precision work. Any features or abilities that augment improvised weapons apply. Both the Target and the body you swung take the rolled damage. Using a person as a weapon is extremely hard on the person.",
     meatShield: [
       "A shield smaller than you grants Half Cover (+2 Defense). One your Size or larger grants Three-Quarter Cover (+5 Defense), against attacks that have to pass through them.",
       "Any attack the cover turns from a hit into a miss strikes the shield instead. Roll that attack's full damage against the meat shield you are holding.",
@@ -394,10 +397,22 @@ EN.rules = {
     ],
     grants: "Background and Class grants give a free Proficient floor, marked GRANTED on the sheet. Training Points are spent above that floor.",
     focus: "A Skill Focus adds your Caliber to rolls inside one narrow aspect of its parent. A parent is a Skill, a Weapon category, a Vehicle category or a Tool category, never Armor, and you must be at least Proficient in it. A parent can carry more than one Focus as long as each names a clearly distinct aspect. The Caliber from a Focus rides outside the +15 static modifier cap.",
-    specialization: "A Specialization marks one narrow aspect of a parent you have Expertise in. Inside that aspect your critical range is 19 to 20 and you gain +2 Edge Dice. Each parent takes exactly one Specialization, and Armor never takes one.",
+    // PHB:1098-1106: the critical threat range EXPANDS by 1, and by 1 further when another source already expanded it
+    specialization: "A Specialization marks one narrow aspect of a parent you have Expertise in. When your Specialization applies, your critical threat range expands by 1 on related d20 checks (for example, you score a critical success on a roll of 19 or 20). If you already have an expanded critical threat range from another source, it expands by 1 further. When using the Dice Pool Method, add +2 Edge Dice on related rolls. Each parent takes exactly one Specialization, and Armor never takes one.",
     overlap: {
       when: "Your Background and Class both train you in the same Skill or gear category.",
       rule: "The proficiency applies once (Proficient + Proficient = Proficient, never Expertise), and each overlap grants a **Free Skill Focus**: 0 Training Points, valid from level 1."
+    },
+    /* What a Tool Category tier does in place of a roll bonus, PHB:1255 (intro), :1270 (Proficient and
+       Expertise) and :1278 (Mastery, with the Basic function sentence), and the exceptions line under
+       the Proficiency Growth table, PHB:1636. The Codex prints the four tier lines as "Tool Category
+       Tiers" and the exceptions under the Proficiency Tiers table. */
+    toolTiers: {
+      intro: "Tool Categories climb the same tier ladder as other proficiencies, but their tiers grant kit handling perks rather than a numeric roll bonus. A Tool Category tier never adds its own bonus to the roll.",
+      proficient: "Proficient: You unlock the Proficient Use features of kits in this category.",
+      expertise: "Expertise: You treat kits in this category as one quality grade higher than listed, up to the +3 Edge Dice maximum. On d20 checks, a kit treated as high grade this way can grant Edge where a high-grade kit would. Expertise is also the prerequisite for a Specialization in this Tool Category.",
+      mastery: "Mastery: Given a few minutes and scavenged materials, you can improvise a makeshift kit of this category that supports Basic Use. Basic function use of kits in this category never rolls with Snag from kit limitations such as low quality, improvised construction, or missing minor components.",
+      exceptions: "Tool Categories and Armor are the exceptions to the roll bonuses above. Armor is a training gate with no tiers past Proficient, and Tool Category tiers grant the kit handling perks listed under Tool Category Tiers instead of a roll bonus."
     },
     gearRule: "Acquire a category for 1 TP. Weapons, Tools, and Vehicles upgrade to Expert (L6+) and Mastery (L10+) for 2 TP each, and can carry a Focus (1 TP, L3+) or Specialization (1 TP, L6+) on a narrow aspect. Armor can be acquired but never upgraded, and never takes a Focus or Specialization.",
     armorNote: "Acquire only; cannot be raised to higher tiers."

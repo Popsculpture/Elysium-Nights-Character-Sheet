@@ -133,15 +133,21 @@ EN.gearCatalog.ranged = {
       traits: ["Explosive (Area 2 Sphere)", "Thrown (4/12)", "Pulse"], availability: "Uncommon", legality: "Restricted",
       desc: "A compact charge tuned to fry circuits instead of flesh. Rough on the people. Devastating on the people's gear.",
       effect: "Devices, drones, and augmented targets in the area make a Tech Save vs your Weapon Save DC or gain Glitched until the end of their next turn, matching the EMP Round and EMP Shell." },
+    /* The On Hit lines the Handbook prints under the Flashbang and both Frag Grenades (PHB 12601 to
+       12605), which these three rows were missing (audit 19 October 2026, weapons W3). Transcribed;
+       the "On Hit:" label is left off for the same reason the EMP Grenade's is. */
     { name: "Flashbang", group: "Thrown", price: 100, damage: "1d4 Sonic", ammo: 1, range: "4 / 12",
       traits: ["Explosive (Area 3 Sphere)", "Nonlethal", "Thrown (4/12)"], availability: "Common", legality: "Licensed",
-      desc: "A nonlethal grenade that turns light and sound into weapons. Standard issue for breach teams that want hostages who can still walk to the door." },
+      desc: "A nonlethal grenade that turns light and sound into weapons. Standard issue for breach teams that want hostages who can still walk to the door.",
+      effect: "Each target in the area makes an Agility Save vs your Weapon Save DC or is Blinded and Deafened until the end of its next turn." },
     { name: "Frag Grenade Mk I", group: "Thrown", price: 150, damage: "2d6 Ballistic and Force", ammo: 1, range: "4 / 12",
       traits: ["Explosive (Area 2 Sphere)", "Thrown (4/12)"], availability: "Common", legality: "Licensed",
-      desc: "A basic fragmentation grenade. Cheap, widely distributed, packs a kill zone the size of a small room. The standard answer to the question \"is anyone behind that wall.\"" },
+      desc: "A basic fragmentation grenade. Cheap, widely distributed, packs a kill zone the size of a small room. The standard answer to the question \"is anyone behind that wall.\"",
+      effect: "Each target in the area makes an Agility Save vs your Weapon Save DC, taking full damage on a failure and half on a success." },
     { name: "Frag Grenade Mk II", group: "Thrown", price: 200, damage: "2d8 Ballistic and Force", ammo: 1, range: "4 / 12",
       traits: ["Explosive (Area 3 Sphere)", "Thrown (4/12)"], availability: "Uncommon", legality: "Restricted",
-      desc: "An upgraded frag with more shrapnel and a wider kill zone. Costs more, kills more, leaves less to identify afterward." },
+      desc: "An upgraded frag with more shrapnel and a wider kill zone. Costs more, kills more, leaves less to identify afterward.",
+      effect: "Each target in the area makes an Agility Save vs your Weapon Save DC, taking full damage on a failure and half on a success." },
     { name: "Smoke Grenade", group: "Thrown", price: 75, damage: "0", ammo: 1, range: "4 / 12",
       traits: ["Explosive (Area 3 Sphere)", "Obscuring", "Thrown (4/12)"], availability: "Common", legality: "Licensed",
       desc: "A canister that trades damage for cover and confusion. The cleanest extraction tool nobody talks about until they need it." },
@@ -173,7 +179,7 @@ EN.gearCatalog.ranged = {
 --------------------------------------------------------------------------- */
 EN.gearCatalog.ammo = {
   intro: "Talk is cheap in Elysium. Lead is not. The right round seated in the right chamber at the right second: that is the thin margin between finishing the contract and bleeding out behind a dumpster while the city bills your estate for the cleanup.",
-  mystechNote: "Most rounds are inert until the primer goes. Mystech rounds are never inert. They are etched, tuned, or quenched in something that was alive in the metaphysical sense, and they carry that current all the way down the barrel and out the other side. You don't buy these at a gun store.\n\nMystech ammunition uses the Mystech Availability scale (Iconic through Artifact) and is almost always Contraband. All of it is Counted, tracked one round at a time, and it comes in small lots because nobody makes it in volume.\n\nBacklash (all Mystech rounds): a Mystech round leaves a resonance signature when it fires. Until the end of the scene you read as Flow-touched to shrines, Shapers, Flow-sensitive trackers, and any #GRID system tuned to watch for it. Beyond that, the round only bites when the channel slips: on a Natural 1 on the attack roll, the discharge flares back through the weapon. You take 1d4 Resonant damage, or, if you have a Flow Reservoir, you lose 1d4 Flow Points instead. If that loss takes your Reservoir below 0, standard Overdraw rules apply.",
+  mystechNote: "Most rounds are inert until the primer goes. Mystech rounds are never inert. They are etched, tuned, or quenched in something that was alive in the metaphysical sense, and they carry that current all the way down the barrel and out the other side. You don't buy these at a gun store. You buy them from the fence who keeps a back room cold, from a shrine that owes you, from a Shaper who needs the Glimmer more than they need the karma.\n\nNo two dealers describe Mystech ammunition the same way. It is almost always Contraband. All of it is Counted, tracked one round at a time, and it comes in small lots because nobody makes it in volume.\n\nBacklash (all Mystech rounds). A Mystech round leaves a resonance signature when it fires. Until the end of the scene, you read as Flow-touched to shrines, Shapers, Flow-sensitive trackers, and any #GRID system tuned to watch for it. The current remembers the hand that spent it. Beyond that, the round only bites when the channel slips: on a Natural 1 on the attack roll, the discharge flares back through the weapon. You take 1d4 Resonant damage, or, if you have a Flow Reservoir, you lose 1d4 Flow Points instead. If that loss takes your Reservoir below 0, standard Overdraw rules apply.",
   trackingNote: "Plentiful ammo (sidearms, longarms, bowfire): track only the loaded magazine and restock between contracts. Counted ammo (heavy weapons, launchers, all Specialty): track every unit.",
   /* One line per ammo group, keyed by the items' `group`. These were typed inline in the
      Inventory market; they live here now so the market and the Codex read one copy. Mystech
@@ -275,29 +281,32 @@ EN.gearCatalog.ammo = {
       effect: "The weapon gains the Silent trait while firing this ammo.",
       limitation: "The rounds carry less energy. Halve the weapon's long-range band (round down) while Whisper Rounds are loaded. They pair best with a weapon that already has a suppressor or the Silent trait, where there is nothing left to give away." },
 
-    /* ---- Specialty Launcher Shells (Grenade Launcher; arc over cover, Agility save vs Weapon Save DC) ---- */
+    /* ---- Specialty Launcher Shells (Grenade Launcher; arc over cover, Agility save vs Weapon Save DC) ----
+       `damage` is the Damage column of the Handbook's shell table (PHB 12873 to 12875; the Thermobaric
+       Shell's is GM Toolkit 6805). Combat's launcher row takes the loaded shell's damage and traits in
+       place of the launcher's own 2d8 Force; a Smoke Shell deals 0 and so has no damage roll. */
     { name: "Concussion Shell", group: "Launcher Shell", price: 50, unit: "each", availability: "Uncommon", legality: "Restricted",
-      feeds: "Grenade Launcher", traits: ["Explosive (Area 3 Sphere)", "Nonlethal", "Concussive"],
+      feeds: "Grenade Launcher", damage: "1d8 Force", traits: ["Explosive (Area 3 Sphere)", "Nonlethal", "Concussive"],
       desc: "A pressure charge that hammers the air instead of filling it with shrapnel. Built to drop a room full of people without painting the walls.",
       effect: "Targets make an Agility Save vs your Weapon Save DC. On a failure, they take full damage, are knocked Prone, and are Staggered until the end of their next turn. On a success, half damage and no conditions." },
     { name: "Incendiary Shell", group: "Launcher Shell", price: 70, unit: "each", availability: "Uncommon", legality: "Restricted",
-      feeds: "Grenade Launcher", traits: ["Explosive (Area 3 Sphere)", "Incendiary", "Persistent"],
+      feeds: "Grenade Launcher", damage: "2d6 Fire", traits: ["Explosive (Area 3 Sphere)", "Incendiary", "Persistent"],
       desc: "A thermal charge that turns the impact zone into a problem that lasts.",
       effect: "Agility Save vs your Weapon Save DC for half damage. The area becomes a burning zone (Persistent) until the end of the encounter or until extinguished. Anyone that enters or starts its turn in the zone takes 1d6 Fire." },
     { name: "Gas Shell", group: "Launcher Shell", price: 70, unit: "each", availability: "Uncommon", legality: "Restricted",
-      feeds: "Grenade Launcher", traits: ["Explosive (Area 3 Sphere)", "Persistent", "Obscuring"],
+      feeds: "Grenade Launcher", damage: "1d4 Toxic", traits: ["Explosive (Area 3 Sphere)", "Persistent", "Obscuring"],
       desc: "A canister payload that bursts into a cloud nobody wants to breathe.",
       effect: "The area fills with a lingering cloud (Persistent, lightly Obscuring) until the end of the encounter or until dispersed. Anyone that enters or starts its turn in the cloud makes a Body Save vs your Weapon Save DC or gains Poisoned until it leaves and saves at the start of its next turn." },
     { name: "Smoke Shell", group: "Launcher Shell", price: 40, unit: "each", availability: "Common", legality: "Licensed",
-      feeds: "Grenade Launcher", traits: ["Explosive (Area 4 Sphere)", "Obscuring"],
+      feeds: "Grenade Launcher", damage: "0", traits: ["Explosive (Area 4 Sphere)", "Obscuring"],
       desc: "The cleanest tool in the bandolier. Puts a wall of gray exactly where you need it, two blocks further than you could throw it.",
       effect: "The area becomes heavily Obscuring until the end of the encounter or until dispersed by wind or force." },
     { name: "EMP Shell", group: "Launcher Shell", price: 80, unit: "each", availability: "Uncommon", legality: "Restricted",
-      feeds: "Grenade Launcher", traits: ["Explosive (Area 3 Sphere)", "Pulse"],
+      feeds: "Grenade Launcher", damage: "2d6 Electric and Tech", traits: ["Explosive (Area 3 Sphere)", "Pulse"],
       desc: "A pulse charge that barely touches the meat and ruins everything else.",
       effect: "Against living targets without significant cybernetics, the damage is halved, counts as Electric only, and carries no further effect. Devices, drones, cyberware, powered armor, and smart weapons in the area take full damage and make a Tech Save vs your Weapon Save DC. On a failure, they gain Glitched until the end of their next turn." },
     { name: "Thermobaric Shell", group: "Launcher Shell", price: 100, unit: "each", availability: "Rare", legality: "Contraband",
-      feeds: "Grenade Launcher", traits: ["Explosive (Area 3 Sphere)", "Pressure"],
+      feeds: "Grenade Launcher", damage: "3d6 Fire and Force", traits: ["Explosive (Area 3 Sphere)", "Pressure"],
       desc: "A fuel-air charge that breathes in the room before it breathes out fire. In open ground it is brutal. Behind a closed door it is a war crime with a serial number.",
       effect: "Agility Save vs your Weapon Save DC for half damage. In a sealed room the Pressure trait turns the walls against everyone inside." },
 

@@ -34,12 +34,17 @@ EN.engine = (function () {
     var lineage = (d.lineageInit && d.lineageInit.caliber) || 0;
     var cyber = d.cyberInit || 0;
     var cond = condInit || 0;
+    /* Edge on Initiative rolls comes from the lineage (Tuned Synapses) and from class features
+       (First Responder, Veteran Instincts). `edgeSources` names each so the card can say where
+       the Edge comes from; the Edge itself never stacks. */
+    var edgeSources = (d.initEdgeSources || []).slice();
     return {
       attr: useWit ? "WIT" : "AGI",
       attrName: useWit ? "Wits" : "Agility",
       mod: useWit ? wit : agi,
       lineage: lineage, cyber: cyber, cond: cond,
-      edge: !!(d.lineageInit && d.lineageInit.edge),
+      edge: !!(d.lineageInit && d.lineageInit.edge) || edgeSources.length > 0,
+      edgeSources: edgeSources,
       total: (useWit ? wit : agi) + lineage + cyber + cond
     };
   }
@@ -95,7 +100,46 @@ EN.engine = (function () {
     });
     return { granted: granted, choices: choices };
   }
-  // Returns { skillKey: 'proficient' } for every skill granted by background+class.
+  /* ---- Subclass proficiency grants ------------------------------------------
+     A subclass feature that prints "You gain Proficiency with ..." carries a `grants` object:
+       { tools: [...], armor: [...], weapons: [...], vehicles: [...],   category names
+         skills: [...],                                                   skill names
+         skillChoice: [skillA, skillB] }                                  "(your choice)"
+     read here for every such feature the character has reached (level <= ch.level). Each is a
+     free "proficient" floor exactly like a Class or Background grant, so Training Points already
+     spent on the same category are returned (cost is measured above the floor). The picks for a
+     skillChoice live in ch.subclassSkillPicks[featureName]. Not folded into the Overlapping
+     Starting Proficiencies map: that rule is about Background and Class only. */
+  function subclassGrantFeatures(ch) {
+    var cls = getClass(ch && ch.class);
+    var sub = cls ? getSubclass(cls, ch.subclass) : null;
+    var level = clamp((ch && ch.level) || 1, 1, R.maxLevel);
+    if (!sub || !sub.features) return [];
+    return sub.features.filter(function (f) { return f && f.grants && (f.level || 1) <= level; });
+  }
+  function skillKeyOfPick(v) {
+    if (typeof v !== "string" || !v) return null;
+    return R.skillByKey[v] ? v : skillKeyOf(v);
+  }
+  // The skill key a feature's skillChoice resolved to, or null (no pick, or not one of its options)
+  function subclassSkillPick(ch, f) {
+    var opts = ((f.grants && f.grants.skillChoice) || []).map(skillKeyOf).filter(Boolean);
+    var k = skillKeyOfPick(ownVal(ch && ch.subclassSkillPicks, f.name));
+    return (k && opts.indexOf(k) !== -1) ? k : null;
+  }
+  /* The "(your choice)" skill grants the subclass still owes or has answered, for the builder:
+     [{ feature, level, options: [{key,name}], pick: skillKey|null }] */
+  function subclassGrantChoices(ch) {
+    var out = [];
+    subclassGrantFeatures(ch).forEach(function (f) {
+      var sc = f.grants.skillChoice;
+      if (!sc || !sc.length) return;
+      var options = sc.map(function (n) { var k = skillKeyOf(n); return k ? { key: k, name: R.skillByKey[k].name } : null; }).filter(Boolean);
+      if (options.length) out.push({ feature: f.name, level: f.level || 1, options: options, pick: subclassSkillPick(ch, f) });
+    });
+    return out;
+  }
+  // Returns { skillKey: 'proficient' } for every skill granted by background+class+subclass.
   function grantedSkills(ch) {
     var out = {};
     function add(k) { if (k) out[k] = "proficient"; }
@@ -110,6 +154,10 @@ EN.engine = (function () {
       g.granted.forEach(add);
       (ch.classSkillChoices || []).forEach(add);
     }
+    subclassGrantFeatures(ch).forEach(function (f) {
+      (f.grants.skills || []).forEach(function (n) { add(skillKeyOf(n)); });
+      if (f.grants.skillChoice) add(subclassSkillPick(ch, f));
+    });
     return out;
   }
 
@@ -222,7 +270,37 @@ EN.engine = (function () {
         var c = matchGearCat(b, name); if (c) out[b][c] = "proficient";
       });
     });
+    // subclass features that print "You gain Proficiency with ..." (see subclassGrantFeatures)
+    subclassGrantFeatures(ch).forEach(function (f) {
+      ["weapons", "armor", "tools", "vehicles"].forEach(function (b) {
+        (f.grants[b] || []).forEach(function (name) {
+          var c = matchGearCat(b, name); if (c) out[b][c] = "proficient";
+        });
+      });
+    });
+    // Talents that print "choose one category ... you're Proficient with it" (TALENT_GEAR_PICK)
+    activeTalents(ch).forEach(function (t) {
+      var b = talentGearBucket(t.talent.key); if (!b) return;
+      var c = talentGearPick(ch, t.talent.key); if (c) out[b][c] = "proficient";
+    });
     return out;
+  }
+  /* Talents whose text grants Proficiency with one category of the player's choice. Asphalt Rider:
+     "You gain Proficiency with one vehicle category of your choice." Junk Tinkerer: "Choose one
+     Tool Category. You're Proficient with it". The pick lives in ch.talentGearPicks[talentKey] and
+     is a free "proficient" floor, so TP already spent on that category is returned. */
+  var TALENT_GEAR_PICK = { "asphalt-rider": "vehicles", "junk-tinkerer": "tools" };
+  function talentGearBucket(talentKey) { return ownVal(TALENT_GEAR_PICK, talentKey) || null; }
+  function talentGearOptions(talentKey) {
+    var b = talentGearBucket(talentKey);
+    return b ? ((R.gear && R.gear[b]) || []).slice() : null;
+  }
+  // The category the player picked for this Talent, or null (no pick, or not one of its options)
+  function talentGearPick(ch, talentKey) {
+    var b = talentGearBucket(talentKey); if (!b) return null;
+    var pick = ownVal(ch && ch.talentGearPicks, talentKey);
+    if (typeof pick !== "string" || !pick) return null;
+    return ((R.gear && R.gear[b]) || []).indexOf(pick) !== -1 ? pick : matchGearCat(b, pick);
   }
   function gearFloorTier(ch, bucket, cat) { return grantedGear(ch)[bucket] && grantedGear(ch)[bucket][cat] ? "proficient" : "untrained"; }
   function gearStoredTier(ch, bucket, cat) {
@@ -428,6 +506,21 @@ EN.engine = (function () {
         var c = matchGearCat(b, n); if (c) addGear(b, c, "Background");
       });
     });
+    /* Subclass features and Talents that grant a proficiency are listed under their own names, so a
+       chip's "Source:" tooltip says where the floor came from. They are deliberately NOT "Class" or
+       "Background": the Overlapping Starting Proficiencies rule (overlapGrants, duplicateGrants) needs
+       both of those two and nothing else. */
+    subclassGrantFeatures(ch).forEach(function (f) {
+      (f.grants.skills || []).forEach(function (n) { addSkill(skillKeyOf(n), "Subclass"); });
+      if (f.grants.skillChoice) addSkill(subclassSkillPick(ch, f), "Subclass");
+      ["weapons", "armor", "tools", "vehicles"].forEach(function (b) {
+        (f.grants[b] || []).forEach(function (n) { var c = matchGearCat(b, n); if (c) addGear(b, c, "Subclass"); });
+      });
+    });
+    activeTalents(ch).forEach(function (t) {
+      var b = talentGearBucket(t.talent.key); if (!b) return;
+      var c = talentGearPick(ch, t.talent.key); if (c) addGear(b, c, "Talent");
+    });
     return { skills: skills, gear: gear };
   }
   // Unmade "choose one" options on the Background / Class steps.
@@ -581,6 +674,47 @@ EN.engine = (function () {
     return out;
   }
 
+  /* CLASS features that change a derived number or grant a condition immunity, keyed by the
+     feature's name and read for every class feature the character has unlocked (level <= ch.level).
+     The same idea as LINEAGE_MECH, and the same rule: a row here is a fixed grant, never a choice.
+       First Responder (Stitcher, Level 2): "You gain Edge on all Initiative rolls. Your Speed also
+         increases by 2."
+       Absolute Discipline (Operator, Level 9), Veteran Instincts: "You can't be Surprised, and you
+         gain Edge on all Initiative rolls."
+     `initEdge` is the NAME the Edge is credited to (the Initiative card prints it), `speed` a flat
+     step, `condImmune` the conditions the feature rules out and `condSource` the name to credit. */
+  var CLASS_FEATURE_MECH = {
+    "First Responder":     { speed: 2, initEdge: "First Responder" },
+    "Absolute Discipline": { initEdge: "Veteran Instincts", condImmune: ["Surprised"], condSource: "Veteran Instincts" }
+  };
+  // Has the character reached this class feature (by name, on the class's own level table)?
+  function classFeatureUnlocked(ch, featureName) {
+    var cls = getClass(ch && ch.class);
+    if (!cls || !cls.featuresByLevel) return false;
+    var level = clamp((ch && ch.level) || 1, 1, R.maxLevel);
+    for (var L = 1; L <= level; L++) {
+      var list = cls.featuresByLevel[String(L)] || [];
+      for (var i = 0; i < list.length; i++) if (list[i] && list[i].name === featureName) return true;
+    }
+    return false;
+  }
+  /* { speed: [{label, val}], initEdge: [names], condImmune: [{condition, source}] }, in feature order */
+  function classFeatureMechanics(ch) {
+    var out = { speed: [], initEdge: [], condImmune: [] };
+    var cls = getClass(ch && ch.class);
+    if (!cls || !cls.featuresByLevel) return out;
+    var level = clamp((ch && ch.level) || 1, 1, R.maxLevel);
+    for (var L = 1; L <= level; L++) {
+      (cls.featuresByLevel[String(L)] || []).forEach(function (f) {
+        var m = ownVal(CLASS_FEATURE_MECH, f && f.name); if (!m) return;
+        if (m.speed) out.speed.push({ label: f.name, val: m.speed });
+        if (m.initEdge) out.initEdge.push(m.initEdge);
+        (m.condImmune || []).forEach(function (c) { out.condImmune.push({ condition: c, source: m.condSource || f.name }); });
+      });
+    }
+    return out;
+  }
+
   /* ---- unarmed strike ----------------------------------------------------
      The bare strike is "1 Bludgeoning damage plus your Body Modifier": a flat 1
      and NO die at all. An unarmed strike IS a melee attack, so anything keyed to
@@ -649,9 +783,10 @@ EN.engine = (function () {
      old text nor the 16 October text grants. Removed by the author's decision 5 (2026-10-16):
      the Talent's only Resistance is its Upgrade's, and that one is conditional on the weapon
      used against you, so it lives in TALENT_RESIST_NOTES below as a note, never a standing row. */
+  /* Cutting Agent is not here: PHB "Your damage rolls ignore Resistance to Toxic damage." is offence,
+     not a Resistance, and nothing in the sheet models it. */
   var TALENT_RESIST = {
-    "pain-editor":     { resist: ["Psychic"] },
-    "cutting-agent":   { resist: ["Toxic"] }
+    "pain-editor":     { resist: ["Psychic"] }
   };
   /* Conditional Resistances the sheet SHOWS and never applies, because ch carries no record of
      what is hitting you. `upgrade: true` gates the row on the Talent's Upgrade having been
@@ -906,6 +1041,43 @@ EN.engine = (function () {
   function talentAttrPending(ch, talentKey) {
     var opts = talentAttrOptions(talentKey);
     return !!(opts && opts.length > 1 && !talentAttr(ch, talentKey));
+  }
+  /* ---- Hardened Survivor's SAVE benefit ------------------------------------
+     PHB: "You add your Caliber to all Saving Throws you make using the chosen Attribute, as
+     though it were one of your class Saving Throw Focuses. If the chosen Attribute is already
+     one of your Saving Throw Focuses, choose a different Attribute for this benefit."
+     Ruling 8 (2026-10-19): only the SAVE benefit moves to the other Attribute; the +1 to the
+     score stays on the chosen one (TALENT_ATTR_BUMP is unchanged). The second Attribute lives
+     in ch.talentSavePicks[talentKey], validated on read like every other pick in this file. */
+  function classSaveFocusKeys(ch) {
+    var cls = getClass(ch && ch.class);
+    return cls ? parseAttrKeys(cls.saveFocus || (cls.startingProficiencies && cls.startingProficiencies.saves || []).join(" ")) : [];
+  }
+  function talentHeld(ch, talentKey) {
+    return activeTalents(ch).some(function (t) { return t.talent.key === talentKey; });
+  }
+  /* The Attributes a second pick may name: only offered while the chosen Attribute is already a
+     class Focus, and never one of the class Focuses. An empty list means no second pick is owed. */
+  function talentSaveOptions(ch, talentKey) {
+    if (talentKey !== "hardened-survivor") return [];
+    var a = talentAttr(ch, talentKey);
+    var focus = classSaveFocusKeys(ch);
+    if (!a || focus.indexOf(a) === -1) return [];
+    return ALL_ATTRS.filter(function (k) { return focus.indexOf(k) === -1; });
+  }
+  /* THE resolver for "which Attribute's saves does this Talent add Caliber to": the chosen
+     Attribute when it is not already a Focus, else a valid second pick, else null. */
+  function talentSaveAttr(ch, talentKey) {
+    if (talentKey !== "hardened-survivor" || !talentHeld(ch, talentKey)) return null;
+    var a = talentAttr(ch, talentKey);
+    if (!a) return null;
+    if (classSaveFocusKeys(ch).indexOf(a) === -1) return a;
+    var pick = ownVal(ch && ch.talentSavePicks, talentKey);
+    return (typeof pick === "string" && talentSaveOptions(ch, talentKey).indexOf(pick) !== -1) ? pick : null;
+  }
+  /* A held Talent whose second pick is owed and unanswered; the builder marks the slot with it. */
+  function talentSavePending(ch, talentKey) {
+    return talentHeld(ch, talentKey) && talentSaveOptions(ch, talentKey).length > 0 && !talentSaveAttr(ch, talentKey);
   }
   /* ONE enumeration of everything that raises an attribute after creation, so the summer
      below and the builder's attribute matrix cannot disagree about what bumped what. The
@@ -1351,6 +1523,10 @@ EN.engine = (function () {
       (m && m.condImmune ? m.condImmune : []).forEach(function (c) {
         out.push({ condition: c, source: fn, kind: "lineage" });
       });
+    });
+    // class features: Absolute Discipline (Veteran Instincts) "You can't be Surprised"
+    classFeatureMechanics(ch).condImmune.forEach(function (r) {
+      out.push({ condition: r.condition, source: r.source, kind: "class" });
     });
     return out;
   }
@@ -2907,7 +3083,17 @@ EN.engine = (function () {
     // Link capacity: a Codebreaker holds 2 x Caliber; a Sourcerer's sprites hold
     // Caliber-many with no hardware in the loop; everyone else holds one.
     var baseMaxLinks = isCodebreaker ? (2 * cal) : (isSourcerer ? cal : 1);
-    var maxLinks = unlimitedLinks ? null : baseMaxLinks + (isCodebreaker ? modLinks : 0);
+    /* Parallel Processing (Codebreaker or Sourcerer only, so the gate is the class test): "You can
+       maintain one additional active Link beyond your standard class maximum", and its Upgrade
+       "a second additional active Link (two beyond your class maximum total)". */
+    var linkBonus = 0;
+    if (isCodebreaker || isSourcerer) {
+      if (activeTalents(ch).some(function (t) { return t.talent.key === "parallel-processing"; })) {
+        linkBonus += 1;
+        if (talentUpgradeKeys(ch).indexOf("parallel-processing") !== -1) linkBonus += 1;
+      }
+    }
+    var maxLinks = unlimitedLinks ? null : baseMaxLinks + linkBonus + (isCodebreaker ? modLinks : 0);
     return {
       isCodebreaker: isCodebreaker, isSourcerer: isSourcerer,
       userType: (isCodebreaker || isSourcerer) ? "Power User" : "Standard User",
@@ -2915,7 +3101,7 @@ EN.engine = (function () {
       cipherAttackBonus: cipherAttackBonus, cipherSaveDC: cipherSaveDC, passiveSystems: passiveSystems,
       effectiveAttack: effectiveAttack, effectiveSaveDC: effectiveSaveDC,
       quickHackBonus: isSmart ? cipherAttackBonus + deviceBonus : null,
-      maxLinks: maxLinks, unlimitedLinks: unlimitedLinks, modLinks: isCodebreaker ? modLinks : 0,
+      maxLinks: maxLinks, unlimitedLinks: unlimitedLinks, modLinks: isCodebreaker ? modLinks : 0, linkBonus: linkBonus,
       bandwidthMax: (isCodebreaker && resource && resource.name === "Bandwidth") ? resource.max : null,
       stabilityDcBase: stabilityDcBase, stabilityDcMod: stabilityDcMod,
       stabilityLastDamage: stabilityLastDamage, stabilityDcFromDamage: stabilityDcFromDamage, stabilityDcLive: stabilityDcLive,
@@ -3230,6 +3416,25 @@ EN.engine = (function () {
       return Array.isArray(am[n]) && am[n].indexOf(modKey) !== -1;
     });
   }
+  /* Does this suit carry an armor TRAIT, for the "armorTrait" mitigation source? Its own traits, and
+     for Sealed also a fitted mod whose data says it grants the seal: the Rebreather Liner, whose
+     entry reads "The suit counts as Sealed" (grantsSealed). One answer for the worn suit and for
+     every owned suit, so the Status Changes panel and the hazard math cannot disagree. */
+  function armorHasTrait(ch, item, key, traitName) {
+    if (!item) return false;
+    if (hasTrait(item, traitName)) return true;
+    if (traitName !== "Sealed") return false;
+    var byKey = (EN.armorMods && EN.armorMods.byKey) || {};
+    return armorModsOn(ch, key).some(function (k) { var m = byKey[k]; return !!(m && m.grantsSealed); });
+  }
+  // Is ANY suit in the stash carrying the trait? (greys the mitigation rather than hiding it)
+  function armorTraitOwned(ch, traitName) {
+    return (Array.isArray(ch && ch.equipment) ? ch.equipment : []).some(function (e) {
+      if (!e || (e.qty != null && e.qty <= 0)) return false;
+      var it = loadCatalogItem(e.name);
+      return !!it && it.kind === "armor" && armorHasTrait(ch, it, entryKey(e), traitName);
+    });
+  }
   /* The worn suit, once: its entry key, its catalog row, whether its lease has
      lapsed, the mods fitted to it, and the two seal questions every hazard
      asks. Resolved in one place because three hazard readers used to work it
@@ -3309,6 +3514,14 @@ EN.engine = (function () {
         why = on ? "On your person." : "No " + src.name + " carried or worn.";
         if (on && m.key === "hazmat" && hz.hazmatTorn) { on = false; why = "The suit is torn; the seal has failed until it is repaired and resealed."; }
         if (on && m.key === "rebreather") detail = Math.max(0, hz.rebreatherMinutes | 0) + " min left this scene";
+      } else if (src.type === "armorTrait") {
+        /* Worn, unlapsed armor with the trait (Sealed: "Sealed armor turns the bad air aside"). A suit
+           the Rebreather Liner is fitted to counts as Sealed, as the Liner's own entry says. */
+        var hasT = !!armor && armorHasTrait(ch, armor, armorKey, src.name);
+        on = hasT && !armorLapsed;
+        why = !armor ? "No armor worn." : !hasT ? armor.name + " is not " + src.name + "."
+            : armorLapsed ? armor.name + "'s lease has lapsed, so its traits grant nothing."
+            : armor.name + " is " + src.name + (hasTrait(armor, src.name) ? "." : " (a fitted mod makes it count as " + src.name + ").");
       } else if (src.type === "armorMod") {
         var fitted = fittedMods.indexOf(src.key) !== -1;
         on = fitted && !armorLapsed;
@@ -3342,6 +3555,7 @@ EN.engine = (function () {
       var possessed = on;
       if (src.type === "gear") possessed = on || gearInStash(ch, src.name);
       else if (src.type === "armorMod") possessed = armorModOwned(ch, src.key);
+      else if (src.type === "armorTrait") possessed = on || armorTraitOwned(ch, src.name);
       var row = { key: m.key, name: m.name, kind: m.kind, summary: m.summary, note: m.note || null,
                   active: on, possessed: possessed, sourceType: src.type || null,
                   sourceName: src.name || null, why: why, detail: detail };
@@ -3728,7 +3942,23 @@ EN.engine = (function () {
                            at 1 per turn). Not an Initiative bonus at all.
          Springstep        a Body Save or Prone on landing. Not a Speed bonus.
        They are surfaced as clause text and as the per-Integration records below. */
-    var speed = Math.max(3, 6 + agiMod) + (cyberFlat.speed || 0) + (defLoadout.speedPenalty || 0) + linMech.speed;
+    /* Flat Speed from Talents and class features, as rows so the Speed breakdown can name them
+       ([{label, val}], summed into speed before the Load state like every other flat piece).
+       Asphalt Rider's Upgrade: "You and any vehicle you operate gain a +2 Speed bonus." Only the
+       character's half is modelled: the vehicle half (the profile's own Speed) is not, because the
+       sheet holds no record of which vehicle is being operated. First Responder (Stitcher, Level
+       2): "Your Speed also increases by 2." */
+    var classMech = classFeatureMechanics(ch);
+    var speedFeatures = [];
+    // the Upgrade counts only while the Talent itself is held (as Parallel Processing checks): a
+    // slot turned to +2 ATTRIBUTES leaves an orphaned Upgrade record behind
+    if (talentHeld(ch, "asphalt-rider") && talentUpgradeKeys(ch).indexOf("asphalt-rider") !== -1) speedFeatures.push({ label: "Asphalt Rider (Upgrade)", val: 2 });
+    classMech.speed.forEach(function (r) { speedFeatures.push({ label: r.label, val: r.val }); });
+    var speedFeatureTotal = 0;
+    speedFeatures.forEach(function (r) { speedFeatureTotal += r.val; });
+    // Edge on Initiative: the lineage's Tuned Synapses, then each class feature that grants it
+    var initEdgeSources = (linMech.initEdge ? ["Tuned Synapses"] : []).concat(classMech.initEdge);
+    var speed = Math.max(3, 6 + agiMod) + (cyberFlat.speed || 0) + (defLoadout.speedPenalty || 0) + linMech.speed + speedFeatureTotal;
 
     /* encumbrance: state from the declared Loadout, on-person Load, and hauls;
        Encumbered = Speed -2, Overloaded = Speed halved (round down), dragging one body = halved
@@ -3834,12 +4064,17 @@ EN.engine = (function () {
     /* saving throws, each class has a Saving Throw Focus (two attributes).
        A focused save adds Caliber on top of the attribute modifier
        (d20 + mod + Caliber). Unlike Skill Focus, no proficiency is required. */
-    var saveProfKeys = cls ? parseAttrKeys(cls.saveFocus || (cls.startingProficiencies && cls.startingProficiencies.saves || []).join(" ")) : [];
+    var saveProfKeys = classSaveFocusKeys(ch);
+    /* Hardened Survivor: its Attribute's saves add Caliber "as though it were one of your class
+       Saving Throw Focuses" (talentSaveAttr picks the Attribute, see the note there). */
+    var hsSaveAttr = talentSaveAttr(ch, "hardened-survivor");
+    if (hsSaveAttr && saveProfKeys.indexOf(hsSaveAttr) === -1) saveProfKeys.push(hsSaveAttr);
     var saves = {};
     R.attributes.forEach(function (a) {
       var proficient = saveProfKeys.indexOf(a.key) !== -1;
       var bonus = attributes[a.key].mod + (proficient ? cal : 0);
       saves[a.key] = { key: a.key, name: a.name, proficient: proficient, focus: proficient, bonus: bonus };
+      if (hsSaveAttr && a.key === hsSaveAttr) saves[a.key].focusSource = "Hardened Survivor";
     });
 
     /* skills, background/class grants form a 'proficient' floor; stored
@@ -3919,6 +4154,7 @@ EN.engine = (function () {
       var pactBonus = ch.subclass === "icon" ? Math.max(0, Math.ceil(attributes.MYS.mod / 2)) : 0;
       var strainStage = clamp((ch.flow && ch.flow.strain) || 0, 0, 5);
       var stInfo = (EN.flow && EN.flow.strainTrack) ? EN.flow.strainTrack[strainStage - 1] : null;
+      var strainIgnored = strainStage >= 1 && strainStage <= 2 && classFeatureUnlocked(ch, "Absolute Conduit");
       flow = {
         attribute: fAttr, attributeName: flowAttrName,
         max: Math.max(0, cal * 3 + fMod + pactBonus - chromeTax.fpPenalty), dc: 8 + fMod + cal,
@@ -3938,9 +4174,19 @@ EN.engine = (function () {
         strainPenalty: stInfo ? stInfo.penalty : null,
         breakflowDC: 12 + strainStage,
         overdrawDie: strainStage >= 3 ? 6 : 4,     // Surge: 1d6 per FP instead of 1d4
-        fpSurcharge: strainStage >= 2 ? 1 : 0,     // Wave: every Invocation costs +1 FP
+        fpSurcharge: strainIgnored ? 0 : (strainStage >= 2 ? 1 : 0),   // Wave: every Invocation costs +1 FP
         precisionFp: strainStage >= 3 ? 2 : 1,     // Surge: Precision Shaping costs 2 FP
-        snagInvoke: strainStage >= 1,              // Ripple: Snag on all Invocation rolls
+        snagInvoke: strainIgnored ? false : strainStage >= 1,          // Ripple: Snag on all Invocation rolls
+        /* Absolute Conduit (Shaper, Level 9), Strain Resistance: "You completely ignore the
+           mechanical penalties of Stage 1 Strain (Ripple) and Stage 2 Strain (Wave). Penalties only
+           begin at Stage 3 (Surge)." So at Stage 1 or 2 the Ripple Snag and the Wave FP are off and
+           from Stage 3 up nothing changes. Strain the Harmonist's Burden of the Earth transfers is
+           treated as Overdraw Strain and "can't be ignored by the Absolute Conduit feature's Strain
+           Resistance": the note says so, and the sheet cannot tell transferred Strain from any other. */
+        strainIgnored: strainIgnored,
+        strainIgnoredNote: strainIgnored
+          ? "Burden of the Earth: Strain transferred this way is treated as if caused by Overdraw and can't be ignored by the Absolute Conduit feature's Strain Resistance."
+          : null,
         inBreakflow: !!(ch.flow && ch.flow.breakflow),
         note: "Overdraw builds Strain when FP hits 0."
       };
@@ -3956,16 +4202,31 @@ EN.engine = (function () {
 
     /* features unlocked up to current level (class + subclass + identity) */
     var features = [];
+    /* A class or subclass feature row can carry two optional data flags through to the play sheet,
+       the print sheet and the PDF: `action` (the short action type the book prints, "Swift" or
+       "Action", for a feature whose text does not say it the way the parsers expect) and
+       `noTracker` (the text names a limit that is not a use counter, so no 1/SCENE box). `action`
+       is copied only when set; `noTracker` is always a boolean. */
+    function featureFlags(row, f) {
+      if (f.action) row.action = f.action;
+      row.noTracker = !!f.noTracker;
+    }
     if (cls && cls.featuresByLevel) {
       for (var L = 1; L <= level; L++) {
         (cls.featuresByLevel[String(L)] || []).forEach(function (f) {
-          features.push({ level: L, name: f.name, text: f.text, source: cls.name, kind: "class" });
+          var row = { level: L, name: f.name, text: f.text, source: cls.name, kind: "class" };
+          featureFlags(row, f);
+          features.push(row);
         });
       }
     }
     if (sub && sub.features) {
       sub.features.forEach(function (f) {
-        if ((f.level || 1) <= level) features.push({ level: f.level || 1, name: f.name, text: f.text, source: sub.name, kind: "subclass" });
+        if ((f.level || 1) <= level) {
+          var row = { level: f.level || 1, name: f.name, text: f.text, source: sub.name, kind: "subclass" };
+          featureFlags(row, f);
+          features.push(row);
+        }
       });
     }
     if (sp && sp.traits) {
@@ -4057,6 +4318,10 @@ EN.engine = (function () {
       naturalDR: linMech.dr, cyberDR: (cyberFlat.dr || 0),
       totalDR: (defLoadout.armorDR || 0) + (defLoadout.armorModDR || 0) + linMech.dr + (cyberFlat.dr || 0),
       lineageSpeed: linMech.speed,
+      // flat Speed from Talents and class features, [{label, val}], already inside speed/speedBase
+      speedFeatures: speedFeatures,
+      // who grants Edge on Initiative: "Tuned Synapses" (lineage), "First Responder", "Veteran Instincts"
+      initEdgeSources: initEdgeSources,
       lineageSpeedFirstRound: linMech.speedFirstRound,
       resistances: damageResistances(ch, linFeats, wornArmor(ch), attuned),
       // conditional Resistances, shown as notes and never applied ([{label, types, when, text}])
@@ -4223,7 +4488,7 @@ EN.engine = (function () {
     var baseFp = intentFp + delFp + forceFp + et + es + (precOn ? 1 : 0);
 
     /* live cost: Wave (+1 FP to everything) and Surge (Precision costs 2 FP) */
-    var waveFp = stage >= 2 ? 1 : 0;
+    var waveFp = (stage >= 2 && !flow.strainIgnored) ? 1 : 0;   // Absolute Conduit ignores Stage 1 and 2
     var precSurge = (precOn && stage >= 3) ? 1 : 0;
     if (waveFp) add("Strain: Wave (+1 FP)", waveFp);
     if (precSurge) add("Strain: Surge (Precision +1 FP)", precSurge);
@@ -4496,6 +4761,14 @@ EN.engine = (function () {
     senseGrants: senseGrants,
     canonTalentKey: canonTalentKey, talentAttr: talentAttr, talentAttrOptions: talentAttrOptions,
     talentAttrPending: talentAttrPending, attrBumpSources: attrBumpSources,
+    // Hardened Survivor's second pick (its save benefit when the chosen Attribute is already a Focus)
+    talentSaveOptions: talentSaveOptions, talentSaveAttr: talentSaveAttr, talentSavePending: talentSavePending,
+    classSaveFocusKeys: classSaveFocusKeys,
+    // Talents that grant Proficiency with one gear category of the player's choice
+    talentGearBucket: talentGearBucket, talentGearOptions: talentGearOptions, talentGearPick: talentGearPick,
+    // subclass features that grant proficiencies; the "(your choice)" skills still to pick
+    subclassGrantChoices: subclassGrantChoices, subclassGrantFeatures: subclassGrantFeatures,
+    classFeatureMechanics: classFeatureMechanics, classFeatureUnlocked: classFeatureUnlocked,
     resistPick: resistPick, resistPickOptions: resistPickOptions, resistPickPending: resistPickPending,
     armorResistOptions: armorResistOptions, armorResistCount: armorResistCount,
     armorResistPicks: armorResistPicks, armorResistOwed: armorResistOwed,

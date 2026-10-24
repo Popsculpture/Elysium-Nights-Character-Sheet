@@ -158,7 +158,8 @@ EN.classes.hustler = {
         {
           level: 1,
           name: "Risk Assessment",
-          text: "You gain Proficiency with Security Tools, and you may use your Wits Modifier instead of Agility when rolling Initiative. If you spend 10 minutes observing a location or studying its blueprints, you can't get lost in it, and you gain Edge on in-combat Wits-based d20 checks (or +1 Edge Die to related out-of-combat Dice Pools) to identify security blind spots, structural weaknesses, or hidden routes there."
+          grants: { tools: ["Security Tools"] },
+          text: "You gain Proficiency with Security Tools, and you may use your Wits Modifier instead of Agility when rolling Initiative. If you spend 10 minutes observing a location or studying its blueprints, you can't get lost in it, and you gain Edge on in-combat Wits-based d20 checks to identify security blind spots, structural weaknesses, or hidden routes there."
         },
         {
           level: 3,
@@ -168,11 +169,13 @@ EN.classes.hustler = {
         {
           level: 7,
           name: "Mandatory Overtime",
+          action: "Swift",
           text: "As a **Swift Action**, spend 2 Leverage to drive one ally within 12 spaces who can hear you. That ally may immediately use their **Impulse Action** to make a standard weapon attack (or cast a 1-Action Invocation). The attack is made with Edge, and if it hits, it deals maximum damage on the dice instead of rolling. Immediately after the attack resolves, the ally takes unavoidable damage equal to your Caliber + your Wits Modifier.\n\n**Fine, I'll Do It Myself:** If the targeted ally refuses or can't take the Impulse Action, your Swift Action and Leverage aren't wasted; apply the mandate to yourself instead. The next standard weapon attack you make before the end of your turn gains Edge and deals maximum damage on a hit, and you don't take the damage Mandatory Overtime would deal an ally."
         },
         {
           level: 10,
           name: "Company-Wide Liquidation",
+          action: "Action",
           text: "Once per Long Rest, as an **Action**, declare a kill order on one enemy you can see. Every willing ally within 12 spaces may immediately move up to their Speed and make one standard weapon attack against that enemy. This movement and attack occur outside the turn order and cost the allies none of their own Actions, Swift Actions, or Impulse Actions.\n\n**Severance Package:** If the enemy is reduced to 0 Vitality by this barrage, you and all participating allies immediately gain Vigor equal to your Caliber + your Charm Modifier."
         }
       ]
@@ -185,12 +188,14 @@ EN.classes.hustler = {
         {
           level: 1,
           name: "Social Chameleon",
-          text: "You gain Proficiency with Infiltration Tools and Bureaucracy Tools. If you spend one minute observing a target or listening to them speak, you can perfectly mimic their voice, cadence, and mannerisms. When using this mimicry, presenting fake credentials, or wearing a disguise, you gain Edge on in-combat Deception d20 checks (or +1 Edge Die to related out-of-combat Dice Pools) to pass as someone else or bluff past security."
+          grants: { tools: ["Infiltration Tools", "Bureaucracy Tools"] },
+          text: "You gain Proficiency with Infiltration Tools and Bureaucracy Tools. If you spend one minute observing a target or listening to them speak, you can perfectly mimic their voice, cadence, and mannerisms. When using this mimicry, presenting fake credentials, or wearing a disguise, you gain Edge on in-combat Deception d20 checks to pass as someone else or bluff past security."
         },
         {
           level: 3,
           name: "A Sucker Born Every Minute",
-          text: "With a few seconds of observation or conversation (a **Swift Action** in combat), designate one target you can see as your Mark. Out of combat, you can establish a new Mark only once per scene.\n\nWhile a target is your Mark, you gain Edge on in-combat Deception and Sleight d20 checks (or +1 Edge Die to related out-of-combat Dice Pools) against them, and they suffer Snag on all attack rolls against you. Whenever you succeed on a Deception or Sleight check against your Mark, or they target you with an attack and miss, you regain 1 spent Leverage (once per round, never exceeding your maximum). You can only have one Mark at a time. The effect ends if the Mark dies, if you designate a new Mark, or at the end of the encounter or scene."
+          noTracker: true,
+          text: "With a few seconds of observation or conversation (a **Swift Action** in combat), designate one target you can see as your Mark. Out of combat, you can establish a new Mark only once per scene.\n\nWhile a target is your Mark, you gain Edge on in-combat Deception and Sleight d20 checks against them, and they suffer Snag on all attack rolls against you. Whenever you succeed on a Deception or Sleight check against your Mark, or they target you with an attack and miss, you regain 1 spent Leverage (once per round, never exceeding your maximum). You can only have one Mark at a time. The effect ends if the Mark dies, if you designate a new Mark, or at the end of the encounter or scene."
         },
         {
           level: 7,
@@ -212,6 +217,7 @@ EN.classes.hustler = {
         {
           level: 1,
           name: "Street Broker",
+          grants: { tools: ["Engineering Tools"] },
           text: "You gain Proficiency with Engineering Tools and +1 Edge Die on all out-of-combat Dice Pool checks made to locate restricted gear, secure black-market Nexus Token exchanges, or find a safehouse. By spending one minute examining a weapon, vehicle, or piece of cybertech, you determine its exact black-market value, its origin (manufacturer or previous owner's faction), and whether it is counterfeit, bugged with a tracker, or malfunctioning."
         },
         {
@@ -282,9 +288,10 @@ EN.classes.operator = {
     attribute: "Wits",
     maxFormula: "Caliber + Wits Modifier (minimum of 1)",
     refresh: "You regain all spent Execution at the end of a Short or Long Rest.",
-    fuels: "Execution (EX) fuels the Operator's Tactical Maneuvers (the Calls) and subclass precision attacks.",
-    abilityNoun: "Tactical Maneuver",
-    abilityNounPlural: "Tactical Maneuvers",
+    fuels: "Execution (EX) fuels the Operator's Calls and subclass precision attacks.",
+    abilityNoun: "Call",
+    abilityNounPlural: "Calls",
+    gambitsIntro: OPERATOR_TACTICAL_INTRO.replace(/\*/g, ""),
     learn: { knowsAll: true, picks: [] },
     abilities: OPERATOR_TACTICAL_MANEUVERS
   },
@@ -310,6 +317,7 @@ EN.classes.operator = {
     "2": [
       {
         name: "Overwatch",
+        action: "Action",
         text: "As an Action, you establish an Overwatch zone covering an Area 6 Cone or Area 12 Line. Until the start of your next turn, the first Enemy to move, attack, or cast an Invocation within that zone triggers your trap, provided you have Line of Sight to the target. You may immediately make a weapon attack against them as an Impulse Action. On a hit, their Speed is reduced to 0 for the remainder of their turn.\n\nYou must expose yourself to track the zone. You can't use this feature while benefiting from Full Cover, though Half or Three-Quarter Cover still applies."
       },
       {
@@ -391,6 +399,7 @@ EN.classes.operator = {
         {
           level: 1,
           name: "CQB Tactics",
+          grants: { armor: ["Physical Shields"] },
           text: "You gain Proficiency with Physical Shields. While wielding a Physical Shield in one hand and a Sidearm, Simple Weapon, or Martial Weapon (without the Heavy or Two-Handed trait) in the other, you gain:\n\n• **Close Quarters Supremacy:** If you are wielding a Sidearm, your ranged attacks don't suffer Snag when fired at an enemy within melee range.\n• **Active Shielding:** Your Physical Shield works as a melee weapon dealing 1d6 Bludgeoning damage. Whenever you successfully Shove an enemy, you automatically deal this damage.\n• **Breacher's Step:** When you roll Initiative, you and up to one ally of your choice can immediately move up to 3 spaces as a Free Action."
         },
         {
@@ -401,6 +410,7 @@ EN.classes.operator = {
         {
           level: 7,
           name: "CQC Takedown",
+          action: "Action",
           text: "You gain two abilities:\n\n• **CQC Takedown:** As an **Action**, spend 2 Execution to drive a close-quarters combination into an adjacent enemy. The target must make a Body Save (DC = 8 + your Body Modifier + your Caliber). On a failure, they take 3d6 Bludgeoning damage, are knocked Prone, and are Stunned until the end of your next turn. On a success, they take half damage and aren't Stunned.\n• **Double Tap:** Whenever an enemy within 2 spaces is knocked Prone by any source, you may use your **Impulse Action** to make a single retaliatory attack against them. If you use a melee weapon or shield bash, you may step up to 1 space as part of this Impulse Action to reach them."
         },
         {
@@ -418,6 +428,7 @@ EN.classes.operator = {
         {
           level: 1,
           name: "Calculated Marksmanship",
+          grants: { skillChoice: ["Stealth", "Acrobatics"] },
           text: "You gain Proficiency in the Stealth or Acrobatics skill (your choice). When making a ranged weapon attack, you don't suffer Snag for firing beyond your weapon's standard range, up to its maximum. As long as you haven't moved during your turn, you ignore the Defense bonuses provided by Half Cover."
         },
         {
@@ -433,6 +444,7 @@ EN.classes.operator = {
         {
           level: 10,
           name: "The Killing Floor",
+          action: "Action",
           text: "Once per Long Rest, as an **Action**, declare an Area 20 you can see as your kill zone for 1 minute. Any enemy that moves, attacks, or casts an Invocation within the area triggers an Overwatch shot from you, provided you have Line of Sight. You may take an unlimited number of **Impulse Actions** to make these shots, but you can fire at each enemy only once per round. You can't use this feature while benefiting from Full Cover, though you may still benefit from Half or Three-Quarter Cover."
         }
       ]

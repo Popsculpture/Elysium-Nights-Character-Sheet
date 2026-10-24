@@ -1,6 +1,7 @@
 /* ===========================================================================
-   ELYSIUM NIGHTS · Codex chapters: Heat, Scenes, People, Paying the Crew (Game Master)
-   The reference half of four Admin tabs, as Codex chapters. The tabs keep
+   ELYSIUM NIGHTS · Codex chapters: Heat, Scenes, People, Paying the Crew, Gear Catalog (Game Master)
+   The reference half of four Admin tabs, as Codex chapters (and the Gear Catalog's GM
+   prose, which has no tab). The tabs keep
    their working tools (the Heat check, the trackers, the rollers, the
    Payroll writer) and link here for the rules; every word below is read
    from the GM data files, never retyped:
@@ -8,7 +9,8 @@
      gm-scenes  "Scenes", order 240     EN.gmBook.scenes   (data/gm_scenes.js)
      gm-people  "People", order 250     EN.gmBook.people   (data/gm_people.js)
      gm-pay     "Paying the Crew", 260  EN.gmBook.payroll  (data/gm_payroll.js)
-   All four are audience "gm": rendered, searchable and peekable on the Admin
+     gm-gear    "Gear Catalog", 270     EN.gmBook.gearCatalog (data/gm_payroll.js)
+   All five are audience "gm": rendered, searchable and peekable on the Admin
    desktop only. The API is documented in the header of app/js/codex.js.
 
    PANELS AND THE ANCHORS THE TABS LINK TO
@@ -28,10 +30,15 @@
      gmp-quickbuild NPC Quick-Build (the-contact-card, the-book-s-example)
      gmp-resolve   Resolve by Role: one entry per tier, slug = the tier key
      gmp-profiles  Their Profile of You
-     gmy-pay       Paying the Crew (contract-pay, what-moves-the-number,
-                   bounties, salvage-and-parts, experience,
-                   milestones-and-pacing, the-other-ledger, paying-for-it,
+     gmy-pay       Paying the Crew (narrative-purpose, optional-twist,
+                   contract-pay, what-moves-the-number, bounties,
+                   salvage-and-parts, experience, milestones-and-pacing,
+                   the-other-ledger, the-bills, debt, identity-theft,
+                   hypercare-response, paying-for-it,
                    payday-in-the-book-s-order)
+     gmg-running   Running Gear (street-prices, the six Running Gear sections:
+                   weapon-builds, armor-slots, vehicle-upkeep, modded-cars,
+                   kits, encumbrance, then ordnance-prices, rookie-cyberware)
 
    SECRET GM MATERIAL NEVER ENTERS THE CODEX. EN.gmBook.heat.gmOnly (the
    Watchfire's hidden hashtag Heat, Octothorpe) is never read here; it stays
@@ -56,6 +63,7 @@ window.EN = window.EN || {};
   function S() { return book("scenes"); }
   function P() { return book("people"); }
   function Y() { return book("payroll"); }
+  function X() { return book("gearCatalog"); }
   // a dotted path under EN, through the Scenes data file's own resolver
   function ref(path) { var s = S(); return (s && typeof s.ref === "function") ? s.ref(path) : null; }
   function byKey(arr, k) { return (arr || []).filter(function (x) { return x && x.key === k; })[0] || null; }
@@ -345,6 +353,16 @@ window.EN = window.EN || {};
     { id: "gmy-pay", title: "Paying the Crew", tag: "CONTRACTS · BOUNTIES · SALVAGE · XP", order: 10, when: hasPay, build: function (ctx, K) {
       var B = Y(), C = B.contract, kids = [];
       kids.push(K.proseBlock(B.intro));
+      /* Rewards (GMT p43): what a payout is for, and the one optional twist on the Nexus table.
+         The tables themselves are the Codex's Reward Types & Tables; these two read beside them. */
+      var NP = B.narrativePurpose, OT = B.optionalTwist;
+      if (NP) {
+        kids.push(K.ruleBlock(NP.name, K.bullets(NP.intro) + "\n" + NP.useLead + "\n" + K.bullets(NP.uses)));
+      }
+      if (OT) {
+        kids.push(K.entry("optional-twist", OT.name, [K.proseBlock(OT.text)]));
+      }
+      if (NP || OT) kids.push(linkLine(K, "The tables:", [["ref-rewards", "Reward Types & Tables"]]));
       if (C) {
         kids.push(K.entry("contract-pay", "Contract Pay", [
           K.subTitle("Contract Pay"),
@@ -393,13 +411,47 @@ window.EN = window.EN || {};
         (M.notes || []).forEach(function (nt) { kids.push(K.ruleBlock(head(nt.name), nt.text)); });
       }
       if (B.ledger) kids.push(K.ruleBlock(B.ledger.name, B.ledger.text));
+      /* The Bills (GMT p45): the four opening paragraphs are the entry; Debt, Identity Theft and
+         Hypercare Response are entries of their own after it, and Hypercare Response carries the
+         1d6 arrival roll in its tag. */
+      var BL = B.bills;
+      if (BL) {
+        kids.push(K.entry("the-bills", BL.name, [K.subTitle(BL.name), K.proseBlock(paras(BL.paragraphs))]));
+        (BL.sections || []).forEach(function (sc) {
+          var a = sc.arrival, tag = a ? "1D" + a.die + " ARRIVAL ROLL · ON " + a.successOn + "+" : null;
+          var node = K.ruleBlock(sc.name, paras(sc.paragraphs), tag, { conditions: true });
+          // the four tiers it adds to are the player rule, Hypercare, in Economy and Rewards
+          kids.push(a ? addLinks(node, K, "The tiers:", [["ref-economy/hypercare", "Hypercare"]]) : node);
+        });
+      }
       if (B.incursion) kids.push(K.ruleBlock(B.incursion.name, B.incursion.text));
       if (B.payday) kids.push(K.ruleBlock("Payday, in the book's order", B.payday.text));
       return kids;
     } }
   ] };
 
-  [heatChapter, scenesChapter, peopleChapter, payChapter].forEach(EN.codexView.register);
+  /* ======================================================================
+     GEAR CATALOG, from EN.gmBook.gearCatalog: the Toolkit's GM prose around its gear entries.
+     One panel, Running Gear: the street-price note, the six Running Gear sections, the ordnance
+     price note and the rookie cyberware note. The entries themselves (Signature weapons,
+     ordnance, Mystech, Blackware, the tools) are gear, in Gear & Chrome.
+     ====================================================================== */
+  function hasGear() { return !!X(); }
+  var gearChapter = { id: "gm-gear", title: "Gear Catalog", order: 270, audience: "gm", panels: [
+    { id: "gmg-running", title: "Running Gear", tag: "BUILDS · SLOTS · UPKEEP · PRICES", order: 10, when: hasGear, build: function (ctx, K) {
+      var G = X(), R = G.running, kids = [];
+      if (G.streetPrice) kids.push(K.ruleBlock(G.streetPrice.name, G.streetPrice.text));
+      if (R) {
+        if (R.lead) kids.push(K.proseBlock(R.lead));
+        (R.sections || []).forEach(function (sc) { kids.push(K.ruleBlock(sc.name, paras(sc.paragraphs), null, { conditions: true })); });
+      }
+      if (G.ordnancePrices) kids.push(K.ruleBlock(G.ordnancePrices.name, G.ordnancePrices.text));
+      if (G.rookieCyberware) kids.push(K.ruleBlock(G.rookieCyberware.name, G.rookieCyberware.text, null, { conditions: true }));
+      return kids;
+    } }
+  ] };
+
+  [heatChapter, scenesChapter, peopleChapter, payChapter, gearChapter].forEach(EN.codexView.register);
 
   /* Pointer terms: the handbook's own names for these panels, as the GM data
      cites them ("see Resolve by Role", "(see Incursion Briefings)", "per

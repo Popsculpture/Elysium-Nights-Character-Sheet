@@ -25,6 +25,8 @@ window.EN = window.EN || {};
   var CV = EN.codexView;
 
   function D() { return EN.recovery || null; }
+  // the line under a table the app keeps although the Handbook doesn't print it
+  var APP_SUMMARY_NOTE = "App summary: the Handbook doesn't print this.";
   function has(field) { return function () { var d = D(); return !!(d && d[field]); }; }
 
   /* A bullet that leads with a bold label ("**0 Wounds:** Fall ...") as a NAMED LINE
@@ -83,9 +85,12 @@ window.EN = window.EN || {};
         r.intro ? K.proseBlock(r.intro) : null,
         K.entry("core-concepts", "Core Concepts", [
           K.subTitle("Core Concepts"),
-          K.refTable(["Term", "Summary"], r.concepts.map(function (c) { return [c.term, c.text]; }), [0])
+          K.refTable(["Term", "Summary"], r.concepts.map(function (c) { return [c.term, c.text]; }), [0]),
+          // the Handbook goes from this intro straight to Vitality (PHB:7304-7318), so the table and the
+          // summary below are the app's own, kept and labelled (author ruling 10, 19 October 2026)
+          K.note(APP_SUMMARY_NOTE)
         ]),
-        r.summary ? K.ruleBlock("Gameplay Summary", r.summary) : null,
+        r.summary ? K.ruleBlock("Gameplay Summary", r.summary, "APP SUMMARY") : null,
         K.seeAlso("How a hit comes off the pools:", [["ref-damage/damage-order", "Damage Order"]])
       ];
     } },

@@ -438,7 +438,30 @@ EN.printSheet = (function () {
        file drifted from combat.js in the first place. Indirect delivery (an Explosive trait)
        adds no attribute modifier to damage, matching combat.js's dmgMod. */
     var indirect = (w.traits || []).some(function (t) { return /^Explosive/.test(t); });
-    return { hit: mod + prof + focusCal, dmgMod: indirect ? 0 : mod, indirect: indirect };
+    /* A melee weapon with the Thrown trait throws on the higher of Body and Agility (PHB 6731, audit
+       core-01), the same resolution as combat.js weaponHit's throwInfo: an offered attribute the
+       player switched on counts if it is higher, and the throw's damage adds that same modifier. */
+    var throwInfo = null;
+    if (melee && thrown) {
+      var tMod = Math.max(bod, agi), tAttr = agi > bod ? "Agility" : "Body";
+      if (offerOn && offerOn.mod > tMod) { tMod = offerOn.mod; tAttr = offerOn.attrName; }
+      var tr = (w.traits || []).map(function (t) { return String(t).match(/^Thrown\s*\((\d+)\s*\/\s*(\d+)\)/); }).filter(Boolean)[0];
+      throwInfo = { hit: tMod + prof + focusCal, mod: tMod, attrName: tAttr, range: tr ? tr[1] + "/" + tr[2] : "" };
+    }
+    return { hit: mod + prof + focusCal, dmgMod: indirect ? 0 : mod, indirect: indirect, throwInfo: throwInfo };
+  }
+  /* The launcher as it fires the shell in its magazine (W1), from the Weapons tab's own resolver. */
+  function loadedWeapon(ch, w, key) {
+    return (EN.combatView && EN.combatView.loadedWeapon) ? EN.combatView.loadedWeapon(ch, w, key) : w;
+  }
+  /* The throw of a Thrown melee weapon, as a note, when it reads differently from the swing on the
+     row (core-01): "Throw +3, 1d6 +3 (Agility), 4/12". The die is the one-handed one. */
+  function throwNote(wh, g, w, dmg) {
+    var ti = wh.throwInfo; if (!ti) return null;
+    var tDice = (g && g.baseDice) || (String(w.damage || "").match(/^\s*(\d+d\d+)/) || [])[1] || "";
+    var swingDice = (String(dmg).match(/^\s*(\d+d\d+)/) || [])[1] || "";
+    if (ti.hit === wh.hit && ti.mod === wh.dmgMod && tDice === swingDice) return null;
+    return "Throw " + sgn(ti.hit) + ", " + tDice + " " + eng.fmtMod(ti.mod) + " (" + ti.attrName + ")" + (ti.range ? ", " + ti.range : "");
   }
 
   /* ---- special senses granted by features ---- */
@@ -618,11 +641,12 @@ EN.printSheet = (function () {
     var atkRows = equippedWeaponRows(ch)
       .filter(function (r) { return !(eng.isUnarmedAugmentName && eng.isUnarmedAugmentName(r.w.name)); })
       .map(function (r) {
-        var w = r.w, wKey = r.key;
+        var wKey = r.key, w = loadedWeapon(ch, r.w, wKey);   // a Launcher Shell in the magazine sets damage and traits (W1)
         // the weapon's own traits, plus the reach the CHARACTER adds to it. The
         // traits list prints the catalog's "Reach 1"; a Verdine Arboreal actually
         // reaches further than that and the printed sheet is what they play from.
         var notes = (w.traits || []).slice();
+        if (w.shell) notes.unshift("Loaded: " + w.shell);
         var wr = eng.weaponReach ? eng.weaponReach(ch, w, wKey) : null;
         if (wr && wr.melee && wr.note) notes.push(wr.note);
         // the damage this weapon is actually dealing, for the grip it is being held in.
@@ -666,8 +690,11 @@ EN.printSheet = (function () {
            a Versatile row already rewritten to "1d8 (1d10)" keeps its shape and gains the
            modifier once. */
         var wh = weaponHit(ch, d, w, wKey);
-        if (wh.indirect) notes.push("indirect: no attribute Modifier");
+        if (w.shell && /^\s*0\s*$/.test(w.damage || "")) dmg = "No damage";   // a Smoke Shell: the effect is the point
+        else if (wh.indirect) notes.push("indirect: no attribute Modifier");
         else dmg = dmg.replace(/^(\s*\d+d\d+(?:\s*\([^)]*\))?)/, "$1 " + eng.fmtMod(wh.dmgMod));
+        var tn = throwNote(wh, g, w, dmg);
+        if (tn) notes.push(tn);
         return [r.label, sgn(wh.hit), dmg, notes.join(", ")];
       });
     atkRows = atkRows.concat(unarmedAttackRow(ch, d));
@@ -708,7 +735,7 @@ EN.printSheet = (function () {
     // f.action is the data's own tag and outranks both the name map and the prose parse
     feats.forEach(function (f) { f._act = f.action || ACT_OVERRIDE[f.name] || actionCost(f.text); (groups[f._act] || groups.Passive).push(f); });
     function snipRow(f) {
-      var cost = f._act !== "Passive" ? costTag(f.text) : null, uses = parseUses(f.text, d);
+      var cost = f._act !== "Passive" ? costTag(f.text) : null, uses = f.noTracker ? null : parseUses(f.text, d); // noTracker: the data says this feature has no per-scene use tracker (A Sucker Born Every Minute, PHB:3470)
       var row = el("div.ps-snip", null, [
         el("span.ps-snip-n", { text: f.name }),
         cost ? el("span.ps-snip-cost", { text: cost }) : null,
@@ -970,7 +997,10 @@ EN.printSheet = (function () {
     out.push(el("div.ps-statrow", null, [
       stat("CIPHER ATK", sgn(g.effectiveAttack), "vs Security"),
       stat("SAVE DC", g.effectiveSaveDC, "node saves"),
-      stat("LINKS", g.unlimitedLinks ? "no cap" : g.maxLinks, g.unlimitedLinks ? "SysAdmin" : "2 x Caliber"),
+      // the same caption the #GRID tab builds, so it adds up to the number (TAL-02)
+      stat("LINKS", g.unlimitedLinks ? "no cap" : g.maxLinks, g.unlimitedLinks ? "SysAdmin"
+        : (g.isCodebreaker ? "2 x Caliber" : g.isSourcerer ? "Caliber" : "Standard User")
+          + (g.modLinks ? " +" + g.modLinks : "") + (g.linkBonus ? " +" + g.linkBonus + " Parallel Processing" : "")),
       stat("STABILITY", "DC " + g.stabilityDcBase, "or half dmg")
     ]));
     out.push(el("div.ps-row", null, [

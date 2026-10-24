@@ -1,4 +1,7 @@
 window.EN = window.EN || {};
+/* No lineage hooks here. Each lineage once carried six numbered story hooks (a d6 table); nothing
+   ever drew them, and the Toolkit's Personal Hooks (the lineage d6s) are NOT MODELLED by ruling,
+   19 Oct 2026 (audit A6-13): EN.economy.notModelledToolkit names them for the Admin Codex. */
 EN.species = [
   {
     key: "humans",
@@ -49,14 +52,6 @@ EN.species = [
           "You like mechanics that enhance environmental survival and mobility.",
           "You want roleplay tension around mutual aid, crew loyalty, and the price of true freedom.",
           "You want a connection to orbital stations, deep void mines, and the undercity working class."
-        ],
-        hooks: [
-          "1. Your old habitat crew is being evicted after refusing a corporate buyout, and you need Glimmer fast before the station locks them out of life support.",
-          "2. You still carry the access codes to a decommissioned void platform, but every faction that knows it exists believes something valuable was left aboard.",
-          "3. A former crew chief sold your mutual aid network to a debt collector, and now FreeBorn families across the sprawl are being hunted through their favor ledgers.",
-          "4. You survived a pressure breach that should have killed everyone in your section, and the official incident report says you were never there.",
-          "5. A corporate landlord is using oxygen, water, and heat rationing to break an undercity labor block, and your crew wants you to help make an example of them.",
-          "6. You made a handshake promise to get a stranded spacer home, but the route crosses embargoed territory, dead satellites, and a station that stopped answering years ago."
         ]
       },
       {
@@ -79,14 +74,6 @@ EN.species = [
           "You like mechanics that emphasize cybernetic integration, durability, and tactical advantage.",
           "You want roleplay tension around corporate ownership, perfectionism, and breaking conditioning.",
           "You want a connection to military contractors, black sites, and cybernetic research labs."
-        ],
-        hooks: [
-          "1. Your original growth lab has reopened under a new name, and one of the newest operatives has your face, your reflex profile, and none of your doubts.",
-          "2. A corporate handler claims your body still belongs to the program that designed it, and they've produced a contract with your genetic signature on every page.",
-          "3. Your internal benchmarks are degrading for reasons no Ripperdoc can explain, and the only surviving data on your design strain is locked inside a black site.",
-          "4. You were conditioned to obey a specific command phrase, and someone in Elysium has started testing fragments of it over public comms.",
-          "5. A group of younger NextGen assets wants you to teach them how to defect, but helping them could expose every safehouse you've built.",
-          "6. Your creators embedded a dormant combat package in your nervous system, and it activated during a job you don't remember finishing."
         ]
       },
       {
@@ -109,14 +96,6 @@ EN.species = [
           "You like mechanics that bend reality, manipulate space, and heighten awareness.",
           "You want roleplay tension around trusting instinct over evidence and bearing a mysterious strain.",
           "You want a connection to the Flow, ancient bloodlines, and the hidden ruins of Elyndra."
-        ],
-        hooks: [
-          "1. You keep seeing the same alley collapse three seconds before it happens, but every time you prevent it, the vision returns somewhere worse.",
-          "2. A Flow scholar believes your bloodline is tied to a buried ruin beneath Elysium, and their research team disappeared after mapping your family tree.",
-          "3. You warned a crew not to take a job, they ignored you, and now their ghosts keep appearing at the edges of your vision asking why you survived.",
-          "4. A corporate hazard team wants to license your senses as a predictive safety tool, which sounds harmless until they start testing you in live disaster zones.",
-          "5. Your body flickers out of phase whenever you sleep, and something on the other side has started learning your name.",
-          "6. You felt a future version of yourself die in a place you've never been, holding a weapon you haven't purchased yet."
         ]
       }
     ]
@@ -168,14 +147,6 @@ EN.species = [
           "You like mechanics that focus on damage reduction, massive reach, and defensive endurance.",
           "You want roleplay tension around long-term planning versus the fast-paced demands of the sprawl.",
           "You want a connection to Elysium's ancient green infrastructure and heavy filtration wards."
-        ],
-        hooks: [
-          "1. The filtration stack you swore to protect has begun producing clean air with the scent of burning sap, and the oldest roots beneath it are afraid.",
-          "2. A corporation wants to relocate you as a \"living heritage asset,\" which is a polite way of saying they intend to uproot you and charge admission.",
-          "3. You made a century promise to guard a grove, but the city has changed around it, and now keeping that promise may start a district war.",
-          "4. A child carved their name into your bark during a siege years ago, and now that name has appeared on a corporate casualty list dated next week.",
-          "5. Your body has begun growing rings from memories that aren't yours, each one marking a disaster from before your germination.",
-          "6. A rival grove has accused you of abandoning your ward, and the only way to clear your name is to retrieve the roots stolen from the ruins."
         ]
       },
       {
@@ -199,14 +170,6 @@ EN.species = [
           "You like mechanics that manipulate enemies, apply debuffs, and use chemical influence.",
           "You want roleplay tension around sensory overload, manipulation, and chasing new stimuli.",
           "You want a connection to the diplomatic and undercover networks of the Verdine groves."
-        ],
-        hooks: [
-          "1. A corporate socialite has become addicted to your pheromone signature and is using their influence to have you legally classified as a controlled substance.",
-          "2. You tagged a Target with your scent marker, but the trail now splits into six identical paths leading to six different bodies.",
-          "3. A gala invitation arrives addressed to a name you only used during an undercover job that was supposed to leave no survivors.",
-          "4. Someone is synthesizing your unique scent profile and using it to manipulate diplomats, frame groves, and start quiet wars.",
-          "5. Your bloom cycle has shifted out of season, signaling either a rare biological change or exposure to something the city hasn't identified yet.",
-          "6. A powerful executive wants you as a living status symbol, but their spouse wants you as an assassin, and both offers arrive with matching blackmail."
         ]
       },
       {
@@ -230,14 +193,6 @@ EN.species = [
           "You like mechanics that focus on infiltration, telepathy, and extracting information from the dead.",
           "You want roleplay tension around operating in the dark, forgotten corners of Elysium.",
           "You want a connection to the waste corridors, morgues, and deep undercity architecture of Elysium."
-        ],
-        hooks: [
-          "1. You touched a corpse and heard your own voice in its final memory, warning you not to trust the body you were standing over.",
-          "2. A section of the undercity fungal network has gone silent, and every Mycelial who enters the dead zone comes back speaking in someone else's memories.",
-          "3. A morgue technician has been selling bodies before you can read them, erasing evidence that points to a corporate plague trial.",
-          "4. You found a hidden route through the sludge channels that bypasses every checkpoint in the district, but something massive is molting down there.",
-          "5. A surface crime boss wants you to prove a murder, while the victim's final sensory memory begs you to keep the truth buried.",
-          "6. Your spores have started carrying messages from an ancient root system under Elysium, and the messages are becoming less like warnings and more like orders."
         ]
       }
     ]
@@ -288,14 +243,6 @@ EN.species = [
           "You like mechanics that focus on grappling, heavy weapons, and structural demolition.",
           "You want roleplay tension around labor rights, corporate ownership, and shop floor solidarity.",
           "You want a connection to the heavy industry, cargo bays, and industrial unions of Elysium."
-        ],
-        hooks: [
-          "1. Your old factory line has voted to strike, but the corporation plans to solve the problem by remotely deactivating every awakened unit on the floor.",
-          "2. You were built to move a sealed cargo container that nobody was allowed to scan, and now the container is missing from your memory but not from your manifest.",
-          "3. A younger Laborframe is trapped under loyalty firmware and begging you, in Machine Cant, to make the next work accident look convincing.",
-          "4. Your chassis still carries structural damage from holding up a collapsing deck, and the people you saved have been quietly paying your repair bills for years.",
-          "5. A union safehouse has been compromised, and only you know which maintenance tunnels can evacuate the trapped workers before the corporate purge team arrives.",
-          "6. Someone is forging your serial number onto sabotage jobs across the industrial district, turning you into the face of a revolution you didn't start."
         ]
       },
       {
@@ -318,14 +265,6 @@ EN.species = [
           "You like mechanics that mitigate massive damage, ignore critical hits, and resist environmental hazards.",
           "You want roleplay tension around the psychological toll of being a living shield.",
           "You want a connection to private military contractors, security forces, and underground motor pools."
-        ],
-        hooks: [
-          "1. Your old squad's helmet-cam archive was recovered, and the footage proves your employer deliberately sent them into a kill box.",
-          "2. A fragile organic you once shielded has become a corporate executive, and they now want you erased because you remember who they used to be.",
-          "3. Your redundant systems keep replaying the final tactical orders from a mission you survived, but the orders are changing with each playback.",
-          "4. A black-market armor tech claims they can restore your original plating, but the replacement panels were pulled from Durabodies who are still conscious.",
-          "5. You're asked to protect a protest against the same security division that built you, trained you, and still knows your factory blind spots.",
-          "6. Your threat assessment software has flagged a harmless child as a catastrophic risk, and now you need to find out what future the system thinks it's preventing."
         ]
       },
       {
@@ -348,14 +287,6 @@ EN.species = [
           "You like mechanics that emphasize deception, physical transformation, and stealth.",
           "You want roleplay tension around losing your own identity while wearing the faces of others.",
           "You want a connection to corporate espionage, high-society galas, and underground hacking networks."
-        ],
-        hooks: [
-          "1. One of your saved Personas has started appearing in your dreams, insisting they were a real person and that you stole more than their face.",
-          "2. A biometric scanner identifies you as a missing executive, granting you access to a fortune and making every heir in the family want you dead.",
-          "3. Your original handler claims your current personality is just a cover identity that has run too long, and they've brought proof you're afraid to read.",
-          "4. You were hired to impersonate someone at a gala, only to discover the real person is also there, watching you from across the room.",
-          "5. A Lifelike jailbreak network has gone dark after exposing a loyalty protocol, and the last message includes your oldest factory designation.",
-          "6. Your empathy emulator has begun producing emotional responses you didn't select, especially around one Target you were supposed to manipulate."
         ]
       }
     ]
@@ -407,14 +338,6 @@ EN.species = [
           "You like mechanics that focus on charging, durability, and raw melee power.",
           "You want roleplay tension around a violent past evolving into honorable commerce.",
           "You want a connection to the merchant caravans and mercenary companies of the sprawl."
-        ],
-        hooks: [
-          "1. A trade route marked in your lineage tattoos has vanished from every map, but caravans still arrive from it carrying goods no one remembers selling.",
-          "2. Your family was once branded as raiders, and now a district council wants you to negotiate peace with the descendants of the people they harmed.",
-          "3. A rival merchant house challenged your honor by poisoning a guest under your protection, forcing you to choose between revenge and keeping the route open.",
-          "4. Your tusks can chew through a sealed old-world vault, and three factions have offered payment before revealing what they believe is locked inside.",
-          "5. A young Hulsk warband has started raiding again under your clan's colors, either to disgrace you or force you back into old ways.",
-          "6. You inherited a caravan debt that can only be repaid by escorting a shipment through territory where your bloodline is still remembered as the enemy."
         ]
       },
       {
@@ -437,14 +360,6 @@ EN.species = [
           "You like mechanics that focus on stealth, sensory advantages, and lethal ambush tactics.",
           "You want roleplay tension around chaotic curiosity mixed with profound paranoia.",
           "You want a connection to the dark warrens, tunnel networks, and scavenging clutches of the undercity."
-        ],
-        hooks: [
-          "1. One of your old trap networks has started resetting itself, improving itself, and killing people you never marked as enemies.",
-          "2. Your clutch found a maintenance shaft leading into a buried military bunker, but everyone who enters returns with the same new habit: speaking in old command codes.",
-          "3. You sold a map of undercity routes to a fixer, and now entire tunnels are collapsing exactly where your notes said they were safest.",
-          "4. A corporate pest control division has classified your clutch as an infestation, and their extermination plan is built from stolen Skarn tactics.",
-          "5. You discovered that one of your safehouse tripwires was installed by someone else, using your methods, your materials, and your personal signature knot.",
-          "6. The clutch voted to relocate, but your instincts say the new tunnels are bait, and nobody wants to hear another \"paranoid\" warning."
         ]
       },
       {
@@ -467,14 +382,6 @@ EN.species = [
           "You like mechanics that focus on unparalleled mobility, escape, and vertical exploration.",
           "You want roleplay tension around adrenaline addiction, claustrophobia, and holding vital secrets.",
           "You want a connection to rooftop smuggler rings, the courier underground, and information brokerages."
-        ],
-        hooks: [
-          "1. You delivered a package without opening it, and now every information broker in the city believes you know the secret it contained.",
-          "2. A rooftop route only the Ryn use has been sealed with military drones, suggesting someone has mapped a courier path that was never written down.",
-          "3. You woke up in a locked room with no visible exits, no memory of the last job, and a timer counting down on your wrist.",
-          "4. A rival courier beat your impossible time across the vertical sprawl, then died delivering a message addressed to you.",
-          "5. You're carrying living data that can't survive digital transmission, and every minute you stay still increases the bounty on your head.",
-          "6. Your old courier ring believes you abandoned a runner during a bad handoff, but the truth is locked in a package you swore never to open."
         ]
       }
     ]
@@ -526,14 +433,6 @@ EN.species = [
           "You like mechanics that punish enemies for getting close and weaponize elemental damage.",
           "You want roleplay tension around managing a volatile temper in a fragile city.",
           "You want a connection to found families, undercity garages, or fanatical cults."
-        ],
-        hooks: [
-          "1. Your body temperature has started rising every time you hear a specific corporate jingle, and the heat spikes are forming a pattern.",
-          "2. A found-family member betrayed you, and your blood keeps igniting whenever anyone says their name, making subtle revenge extremely difficult.",
-          "3. An undercity cult has mistaken your thermal biology for divine fire, and their worship is becoming useful, dangerous, and hard to discourage.",
-          "4. A garage that once sheltered you is being squeezed by a protection racket, and the owner refuses to ask for help because they know what you do to threats.",
-          "5. Your blood can melt a restraint used in corporate prisons, so a resistance cell wants you captured on purpose to break someone out.",
-          "6. You felt a pulse from your home plane during a firefight, and now every flame in the district leans toward the same abandoned building."
         ]
       },
       {
@@ -556,14 +455,6 @@ EN.species = [
           "You like mechanics that guarantee outcomes, exploit weaknesses, and ignore environmental hazards.",
           "You want roleplay tension around imposing strict order on a fundamentally chaotic city.",
           "You want a connection to corporate security, algorithmic accounting, or strict vigilante codes."
-        ],
-        hooks: [
-          "1. You calculated the exact moment a district will collapse into violence, but every attempt to prevent it makes the equation cleaner.",
-          "2. A corporate court wants you as an expert witness because your testimony can't be read by biometric lie detection, only by consequences.",
-          "3. You found a flaw in a person: one hidden vulnerability that explains every choice they've made, and now you can't decide whether to use it.",
-          "4. A vigilante group worships your sense of order and has begun executing people according to rules you mentioned once in passing.",
-          "5. Your body has begun accumulating dirt, fingerprints, and corrosion for the first time, suggesting local reality is finally getting under your skin.",
-          "6. You treated a roll of chance as an exact outcome and were wrong, which should be impossible, unless something in Elysium is altering probability around you."
         ]
       },
       {
@@ -587,14 +478,6 @@ EN.species = [
           "You like mechanics that focus on escaping restraints, aggressive mobility, and biting enemies.",
           "You want roleplay tension around chaotic mischief conflicting with serious professional jobs.",
           "You want a connection to the chaotic gig economy, underground entertainment, or rogue app developers."
-        ],
-        hooks: [
-          "1. One of your pranks accidentally exposed a corporate murder, and now everyone thinks you're either a genius investigator or a disposable witness.",
-          "2. Your favorite snack vendor is actually a front for a syndicate, but they give you free food, so betrayal has become morally complicated.",
-          "3. The Doorbash app has gone rogue and is assigning assault contracts nobody paid for, including your own crew.",
-          "4. You stole a shiny device from a corporate lab because it hummed nicely, and now it's attracting predators from your home dimension.",
-          "5. A fixer hired you for a delicate stealth operation, which is insulting, suspicious, and probably the funniest thing that's ever happened.",
-          "6. Your pack is running out of safe places to sleep, and the abandoned funhouse you found is either perfect shelter or obviously alive."
         ]
       }
     ]

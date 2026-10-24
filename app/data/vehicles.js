@@ -8,7 +8,7 @@
 window.EN = window.EN || {};
 
 EN.vehicles = {
-  statsNote: "Speed, Handling, Structure, Integrity, Node Tier, Cargo and Traits come from the Vehicles and Chases table in Part 2. The Piloting Check is d20 + Agility Modifier + Vehicle Proficiency Bonus + the vehicle's Handling.",
+  statsNote: "Speed, Handling, Structure, Integrity, Node Tier, Cargo and Traits come from Vehicle Profiles in Vehicles and Chases. The Piloting Check is d20 + Agility Modifier + Vehicle Proficiency Bonus + the vehicle's Handling.",
   intro: "The title says the vehicle is yours. The garage, the fuel line, and whoever holds the note all have opinions about that. Buying is the easy part. Then the machine moves in: it wants power and fluids every week, somewhere to sit overnight where nobody strips it or tows it, and money set aside against the afternoon something shears loose in traffic.",
 
   /* ---- the seven printed profiles -------------------------------------
@@ -28,7 +28,7 @@ EN.vehicles = {
 
   /* ---- acquisition ----------------------------------------------------- */
   acquisition: [
-    { mode: "New",         cost: "List price",           note: "Restricted purchases route through brokers, and per the high-scrutiny commissions rule (Legality and Availability, Weapon Customization), those transactions may bill in Nexus at the GM's discretion." },
+    { mode: "New",         cost: "List price",           note: "Restricted purchases route through brokers, and per the high-scrutiny commissions rule (Legality, Weapon Customization), those transactions may bill in Nexus at the GM's discretion." },
     { mode: "Used/salvage", cost: "40 to 60% of list",   note: "It runs. It also arrives with a quirk the GM writes down, drawn from the same menu as lapsed upkeep: the starter that grinds, the signature loud enough to track." },
     { mode: "Hot",         cost: "25% of list",          note: "Unregistered, and worth Heat with whoever it was stolen from the moment a scanner reads it." },
     { mode: "Leased",      cost: "Upkeep, list as Buyout", note: "Corporate fleets run the Leased trait exactly as written in Gear Traits, with the vehicle's list price as the Buyout. Its Locked state is a dead ignition: the engine won't turn over, installed mods sit inert, and the doors open for whoever holds the note." }
@@ -86,7 +86,7 @@ EN.vehicles = {
     { name: "Overdrive Injector", price: 1500, fits: "Any",                availability: "Rare",     legality: "Restricted",
       effect: "Special: once per scene, the pilot can open it as part of a Chase Check or of the Move Action spent at the controls. For one round, count the vehicle's Speed rating one step higher, including for the straightaway trigger. The engine then takes 5 Integrity, ignoring Structure. A vehicle already rated Very Fast gains no increase because there is no fifth step, but it still takes the damage." },
     { name: "Chameleon Coat",     price: 2000, fits: "Any",                availability: "Rare",     legality: "Restricted",
-      effect: "The vehicle repaints itself between scenes. Checks to spot or identify it while parked roll with Snag, and it gains Edge on Chase Checks at Lead 4." },
+      effect: "The vehicle repaints itself between scenes. Checks to spot or identify it while parked roll with Snag, and at Lead 4 the fleeing pilot makes Chase Checks with Edge." },
     { name: "Node Retrofit",      price: null, priceNote: "The new tier's price on the Firewall table in The #GRID",
       fits: "Any", availability: "Uncommon", legality: "Licensed",
       effect: "Raises the vehicle's Node Tier by one step, using the Node Attributes of the new tier. Each step costs its own Mod Slot and its own price. The price buys the Node step, not a Firewall. A vehicle's Node Tier may not exceed its factory Node Tier + 2, capped at Apex [5]. Limit: A Node running two steps above its factory Node is a mismatch, and mismatches get noticed. Any corporate sweep that scans the vehicle reads it as a flag worth following." },

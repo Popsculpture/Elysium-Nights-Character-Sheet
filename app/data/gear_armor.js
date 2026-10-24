@@ -28,7 +28,8 @@ EN.gearCatalog.armor = {
     "Medium Armor": "Medium armor stops pretending. Real protection with real mobility and zero interest in hiding what it is. The gear that tells a room you came expecting a fight while still letting you walk through it.",
     "Heavy Armor": "Heavy armor is a commitment. You trade subtlety and the easy step for the right to stand somewhere and refuse to move. For the Freelancer who intends to hold ground rather than slip away from it.",
     "Powered Exoframe": "An exoframe isn't armor you wear. It is armor you climb into. Servos carry the weight, the plating, and increasingly the person. Exoframes use the Powered trait. Wearing one requires Heavy Armor proficiency. Operating one at full effect requires Powered Frames proficiency. This is the training referred to by the Powered trait and the frames' Powered Benefits. Without that training, the Powered trait imposes its usual drawbacks: reduced Speed and Snag on Agility checks.",
-    "Mystech Armor": "Some armor doesn't stop the hit; it convinces the hit to stop. Mystech shells are woven through with Flow-conductive thread and tuned plate. Rarer than anything in the standard catalog, almost always Contraband, and they read as Flow-touched to anyone watching for it. Mystech armor uses the Mystech trait and the four-tier Mystech Availability scale (Iconic through Artifact). A Shaper can choose a Focus suit for its Ward support as well as its plate.",
+    /* The Handbook's Mystech Armor intro, word for word (PHB:14212). It shows on both desktops. */
+    "Mystech Armor": "Some armor doesn't stop the hit. It convinces the hit to stop. Mystech shells are woven through with Flow-conductive thread and tuned plate, fusing synthetic engineering with the current itself. They are rarer than anything in the standard catalog, almost always Contraband, and they read as Flow-touched to anyone watching for it. Mystech armor uses the Mystech trait. The suits themselves aren't in any catalog. Getting one starts with finding someone who has seen one.",
     "Physical Shield": "A shield costs you a hand. In return you get a wall you can move. While wielded, a shield adds a flat Defense bonus and a Block die that sharpens your Block. Uses the Block, Full Defense, Stacking, and Shield Durability rules.",
     "Warding Focus": "A Warding Focus channels Flow into a shaped barrier, reinforcing the Ward defense instead of your armor, for the people who refuse to wear armor at all. Foci are Worn, carry the Focus and Mystech traits, and read as Flow-touched. You benefit from only one Warding Focus at a time, and foci don't use Shield Durability."
   },
@@ -40,9 +41,14 @@ EN.gearCatalog.armor = {
      here; Edge on saves and the vacuum rules stay prose. */
   traitResist: { "Sealed": ["Toxic"] },
 
+  /* Armor and shield traits the weapon glossary (data/gear_traits.js) doesn't define, plus Light
+     and Wear X, which the armor side words for a shield. Concealable, Heavy and Worn are NOT
+     here: the book defines each once, in the Gear Traits glossary, and their armor and shield
+     uses (the Ballistic Bulwark's Heavy, a Focus's Worn, a Liner Mesh's Concealable) read that
+     one entry, so a chip on armor falls back to it (traitLookup, armorFirst). Powered and Leased
+     have no glossary twin, so theirs are the book's full entries, Effect lines included (r7). */
   traits: {
     "Wear X": "X is the shield's Wear Threshold, equal to twice the maximum result of its Block die (8 for 1d4, 12 for 1d6, 16 for 1d8). When you Block an attack whose RAW damage is X or more, or any critical hit you Block, mark off 1 of the shield's Durability boxes. See Shield Durability in the Combat chapter.",
-    "Concealable": "It doesn't look like armor, worn under a shirt, or cut to pass as an ordinary jacket. Checks to notice you are armored roll with Snag. A pat-down or scanner still finds it.",
     "Streetwear": "Openly armored, but it reads as fashion. Doesn't count as obvious combat gear; Snag on social checks in high-corporate or formal spaces where street kit is out of place.",
     "Hostile Appearance": "Unmistakably combat gear; the room knows what you are the moment you walk in. Snag on social checks to blend in or de-escalate; Edge when you are openly threatening or intimidating.",
     "Bulky": "Rigid, layered, overbuilt. Increases the item's Load by 1, reduces your Speed by 1, and imposes Snag on Acrobatics and Stealth checks. Can't be Concealable.",   // verbatim from Part 3, 2026-08-19: Bulky is the ONE trait that touches Load,
@@ -51,16 +57,14 @@ EN.gearCatalog.armor = {
     "Modular": "Rails, webbing, and slots for upgrades. Can mount Armor Mods up to its listed Mod Slot Count. Swapping mods takes Downtime, not a combat action.",
     "Integrated": "Worn as one complete suit, not separable plates. Can't be stripped into parts on the fly. If the armor is also Modular, it gains 1 extra Mod Slot. Some Integrated suits also pass as uniform or formalwear.",
     "Load-Bearing": "Reinforced webbing, hardpoints, and frame support. Your Encumbrance Threshold counts as one step higher.",
-    "Powered": "The armor carries its own power source and active systems. Running one takes Heavy Armor proficiency and Powered Frames proficiency. Trained, you gain the suit's listed Powered Benefits; untrained, your Speed is reduced and you roll Agility checks with Snag.",
+    "Powered": "The armor carries its own power source and active systems. Running one takes Heavy Armor proficiency and Powered Frames proficiency. Trained, you gain the suit's listed Powered Benefits. If the frame is unpowered, locked, or damaged, its Powered Benefits are lost and its drawbacks apply normally. Untrained, your Speed is reduced and you roll Agility checks with Snag.",
     "Sealed": "A closed shell of sealed joints, filters, and respirators. Resistance to Toxic damage, and Edge on saves against gas, disease, and airborne or environmental hazards. Some Sealed suits also cover vacuum.",
     "Mystech": "A fusion of synthetic engineering and the Flow. Counts as both technological and metaphysical gear for anything that targets either, and can be detected, disrupted, or overloaded as Flow gear. Needs specialist tools or contacts to repair and recharge.",
     "Focus": "Built to channel, shape, and anchor the Flow. Can empower Ward, as the item describes. You benefit from only one Focus item for Ward at a time.",
     "Resonant Plating": "Plate tuned to catch Flow as well as force. The armor's DR also applies against Resonant damage and isn't ignored by Armor Bypass.",
-    "Off-Hand": "Wielded in the off hand; the shield fully occupies that hand while raised. Uses the Block, Full Defense, Stacking, and Shield Durability rules.",
-    "Worn": "Worn on the body rather than held in a hand, leaving both hands free. Can't be easily dropped or disarmed, and counts as equipped gear for any effect that checks what you are wearing. A Warding Focus is Worn. Being Worn does not by itself cost a Body Slot: an item counts against one if its own entry says so or the armor rules assign it one.",
+    "Off-Hand": "Carried, strapped, or braced on your off hand rather than your main hand. It fills your off-hand slot: you can use only one Off-Hand item at a time, and you cannot also wield a Two-Handed weapon. Whether the hand itself stays free for other tasks is set by the item (a strapped bracer leaves it usable; a gripped shield does not, as the entry says).",
     "Light": "A light shield, minimal bulk. Leaves the braced hand free for one-handed weapon use and Invocations.",
-    "Heavy": "A heavy shield, planted and braced. Slow to move with, but it carries the largest Defense bonus and Block die.",
-    "Leased": "The gear isn't yours. It runs on a corporate service plan, and the issuer can switch it off whenever the plan says so. You pay an Upkeep cost each period. Miss a payment, get flagged, or cross the issuer and the gear drops remotely to its zero state (armor to DR 0, a shield to no Defense bonus and no Block die) until you pay up or crack the lock. The holder can also repossess it outright. Cracked gear keeps working but scans as stolen corporate property."
+    "Leased": "The gear isn't yours. It runs on a corporate service plan, and the issuer can switch it off whenever the plan says so. You pay an Upkeep cost each period (see Economy and Rewards). Miss a payment, get flagged, or cross the issuer, and the gear can be dropped remotely to its zero state (armor to DR 0, a shield to no Defense bonus and no Block die) with its other traits switched off, until you pay what you owe or crack the lock (a Tech or #GRID task at a Snag or DC the GM sets). That zero state is the default: where an item's own Lapsed or Locked line lists a different value, that value governs instead. The holder can also repossess it outright, which tends to arrive as people rather than paperwork. Cracked gear keeps working, but it scans as stolen corporate property to anyone reading tags. Most Leased entries also list a Buyout: a one-time lump sum, separate from Upkeep and never reduced by Upkeep already paid, that ends the lease outright and makes the gear yours. Paying Upkeep keeps the plan current. Only the Buyout closes it."
   },
 
   items: [
@@ -251,24 +255,28 @@ EN.gearCatalog.armor = {
       effect: "Adds +1 to your Defense while wielded. It projects when you raise it to Block or enter Full Defense, at no extra cost to bring up, and fully occupies the hand while active. Stowed, the projector reads as a wrist unit or bracelet rather than a weapon. Its Durability boxes represent projector overload rather than physical wear." },
 
     /* ============================== WARDING FOCI ============================== */
+    /* No `slot` on any Focus. The Warding Foci table lists none, and the book's Body Slot rule is
+       "A worn item counts against a Body Slot if its entry says so or the armor rules assign
+       it one. Other worn items don't count against any slot limit." A Focus is Worn (the trait)
+       and takes no Body Slot, so an attuned Focus never competes with the four Accessories. */
     { name: "Scrap Ward", kind: "focus", group: "Warding Focus", type: "Warding Focus (+1d4 Ward)", price: 120,
-      slot: "Accessories", wardDie: "1d4", traits: ["Worn", "Focus", "Mystech"], availability: "Common", legality: "Legal",
+      wardDie: "1d4", traits: ["Worn", "Focus", "Mystech"], availability: "Common", legality: "Legal",
       desc: "A Flow charm wired together from salvaged resonant thread and the casing of a dead Node. It hums wrong, it runs hot against the skin, and it catches just enough of a hit to matter. The lower wards make their own, because nobody is selling them the real thing.",
       effect: "Once per round, add +1d4 to your Ward reduction." },
     { name: "Resonance Coil", kind: "focus", group: "Warding Focus", type: "Warding Focus (+1d4 Ward)", price: 250,
-      slot: "Accessories", wardDie: "1d4", traits: ["Worn", "Focus", "Mystech"], availability: "Uncommon", legality: "Licensed",
+      wardDie: "1d4", traits: ["Worn", "Focus", "Mystech"], availability: "Uncommon", legality: "Licensed",
       desc: "A worn coil of tuned filament that drinks an incoming strike and rings with it like a struck bell. Standard kit for a Shaper who fights from inside the Flow instead of behind a wall.",
       effect: "Once per round, add +1d4 to your Ward reduction. When your Ward reduces an attack's damage to 0, you gain Resistance to that damage type until the start of your next turn (1/scene)." },
     { name: "Saint's Knot", kind: "focus", group: "Warding Focus", type: "Warding Focus (+1d6 Ward)", price: 600,
-      slot: "Accessories", wardDie: "1d6", traits: ["Worn", "Focus", "Mystech"], availability: "Legendary", legality: "Restricted",
+      wardDie: "1d6", traits: ["Worn", "Focus", "Mystech"], availability: "Legendary", legality: "Restricted",
       desc: "A knotted cord of Flow-soaked relic thread, passed hand to hand through people who needed it more than they could say. It doesn't look like protection. It behaves like something keeping a promise.",
       effect: "Once per round, add +1d6 to your Ward reduction. When your Ward reduces an attack's damage to 0, you gain Resistance to that damage type until the start of your next turn (2/scene)." },
     { name: "Hex Lattice Projector", kind: "focus", group: "Warding Focus", type: "Warding Focus (+1d8 Ward)", price: 1200, nexus: "◎0.5",
-      slot: "Accessories", wardDie: "1d8", traits: ["Worn", "Focus", "Mystech"], availability: "Legendary", legality: "Restricted",
+      wardDie: "1d8", traits: ["Worn", "Focus", "Mystech"], availability: "Legendary", legality: "Restricted",
       desc: "A worn projector that lays a shifting lattice of Flow across the body and rewrites it faster than anything can break it. The kind of device that comes with a list of previous owners, and a list of people those owners no longer talk to.",
       effect: "Once per round, add +1d8 to your Ward reduction. When your Ward reduces an attack's damage to 0, you gain Resistance to that damage type until the start of your next turn (unlimited uses per scene)." },
     { name: "Martyr's Halo", kind: "focus", group: "Warding Focus", type: "Warding Focus (+1d8 Ward)", price: 0, nexus: "◎2+", vendor: false,
-      slot: "Accessories", wardDie: "1d8", traits: ["Worn", "Focus", "Mystech"], availability: "Artifact", legality: "Contraband",
+      wardDie: "1d8", traits: ["Worn", "Focus", "Mystech"], availability: "Artifact", legality: "Contraband",
       desc: "A ring of suspended Flow that hangs unsupported at the shoulders and won't explain itself. Nobody manufactured it. It was left behind by something that no longer needed it. It guards whoever wears it, and it remembers whoever tried not to let them.",
       effect: "Once per round, add +1d8 to your Ward reduction. When your Ward reduces an attack's damage to 0, you gain Resistance to that damage type until the start of your next turn (unlimited uses per scene), and the attacker takes Resonant damage equal to your Flow Modifier (minimum 1)." }
   ]
