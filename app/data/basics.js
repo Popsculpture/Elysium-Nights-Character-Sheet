@@ -72,10 +72,10 @@ EN.basics = {
     rows: [
       ["Body", "Poison, disease, fatigue, or physical restraint.", "Endure toxic gas, fight a paralytic agent, resist extreme cold, or stay conscious while suffocating."],
       ["Agility", "Explosions, traps, or hazards avoided through reflex.", "Leap from a collapsing bridge, dive away from a grenade, or avoid falling debris."],
-      ["Wits", "Disorientation, sudden fear, or mental disruption.", "Shake off a flashbang, resist confusion, or maintain clarity under psychic assault."],
+      ["Wits", "Disorientation, illusions, or tricks of the senses.", "Shake off a flashbang, resist confusion, or see through a hallucination."],
       ["Tech", "System stress, feedback, or digital intrusion.", "Maintain control of a vehicle under fire, endure ICE intrusion, or keep focus while systems overload."],
-      ["Mystique", "Curses, corruption, or soul-affecting forces.", "Resist a charm effect, repel a spirit's influence, or endure an attempt at possession."],
-      ["Charm", "Fear, intimidation, or emotional manipulation.", "Resist psychic terror, defy social coercion, or maintain composure before a crowd."]
+      ["Mystique", "Curses, corruption, possession, mind control, or Psychic attack.", "Shrug off outside Strain, repel a spirit's influence, or break a Flow-born terror."],
+      ["Presence", "Fear, intimidation, or emotional manipulation.", "Stand your ground against a threat, shake off a charm, or keep your composure before a crowd."]
     ]
   },
 
@@ -111,8 +111,8 @@ EN.basics = {
   /* ---- reading a class line ---------------------------------------------- */
   together: {
     intro: "When you read a class entry, you will see lines like this:",
-    example: "As an Impulse Action when an ally within 6 spaces takes damage from an attack, spend 1 Leverage to cash in a micro-favor (a bribed grid worker cutting the lights, a street kid dropping an obstacle). Reduce the incoming damage by 1d6 + your Charm Modifier + your Caliber.",
-    reading: "You now have the vocabulary to read that sentence. **Impulse Action** is a trigger-based reaction, covered in Action Economy below. Six spaces is about thirty feet. **Leverage** is the Hustler's resource. Your Charm Modifier comes from your Attributes, and Caliber climbs with your level, so the same favor pays out more as your Freelancer grows.",
+    example: "As an Impulse Action when an ally within 6 spaces takes damage from an attack, spend 1 Leverage to cash in a micro-favor (a bribed grid worker cutting the lights, a street kid dropping an obstacle). Reduce the incoming damage by 1d6 + your Presence Modifier + your Caliber.",
+    reading: "You now have the vocabulary to read that sentence. **Impulse Action** is a trigger-based reaction, covered in Action Economy below. Six spaces is about thirty feet. **Leverage** is the Hustler's resource. Your Presence Modifier comes from your Attributes, and Caliber climbs with your level, so the same favor pays out more as your Freelancer grows.",
     closing: "Refer back to this chapter if you encounter an unfamiliar term while building your Freelancer."
   }
 };

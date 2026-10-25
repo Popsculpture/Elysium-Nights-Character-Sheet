@@ -285,7 +285,9 @@ EN.builder = (function () {
       var bumpTitle = bump ? srcs.map(function (x) {
         return "+1 " + (x.kind === "talent" ? x.name : "Universal Upgrade") + " (Level " + x.level + ")";
       }).join("; ") : "";
-      return el("div.attr-cell", { title: bump ? a.blurb + "  " + bumpTitle : a.blurb }, [
+      // a.desc is the book's longer description where the data carries one (Mystique, Presence)
+      var tip = a.name + ": " + a.blurb + (a.desc ? "\n" + a.desc : "");
+      return el("div.attr-cell", { title: bump ? tip + "\n" + bumpTitle : tip }, [
         el("div.abbr", { text: a.abbr }),
         el("div.mod", { text: eng.fmtMod(d.attributes[a.key].mod) }),
         el("div.s.mono", { html: "score " + score + (bump ? " <span class='cyan'>▲</span>" : "") }),
@@ -2762,7 +2764,7 @@ EN.builder = (function () {
      cybernetic" alternative are not reliably machine-checkable, so they are
      surfaced as advisories and never block: refusing a pick on a rule the app
      only half-understands is worse than letting the table decide. */
-  var REQ_ATTR = { Body: "BOD", Agility: "AGI", Wits: "WIT", Tech: "TEC", Mystique: "MYS", Charm: "CHA" };
+  var REQ_ATTR = { Body: "BOD", Agility: "AGI", Wits: "WIT", Tech: "TEC", Mystique: "MYS", Presence: "PRE" };
   // Sourcerer is a Shaper SUBCLASS, not a class, so it is matched on ch.subclass.
   // Mapping it to "shaper" would let a Harmonist qualify for Parallel Processing.
   var REQ_CLASS = { Codebreaker: "codebreaker", Fury: "fury", Hustler: "hustler", Operator: "operator",

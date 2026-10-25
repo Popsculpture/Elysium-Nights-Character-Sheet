@@ -5,15 +5,15 @@ EN.classes = EN.classes || {};
 // picker, and the print sheet. The Leverage feature's prose (below) is composed from this list,
 // so the displayed text and the machine-readable data can never drift apart. The Hustler learns
 // two at Level 1 and two more at Level 5 via Expanded Leverage; unless noted each costs 1 Leverage.
-var HUSTLER_LEVERAGE_INTRO = "The Flow and brute strength are someone else's job. The Hustler runs on **Leverage**: tactical callouts, psychological pressure, and split-second openings.\n\n**Your Leverage Pool**\n\nYour maximum Leverage equals your **Caliber + your Charm Modifier** (minimum 1). You regain all spent Leverage at the end of a Short or Long Rest.\n\n**Leverage Abilities**\n\nAt 1st Level, you learn two Leverage Abilities. You learn two additional Leverage Abilities at 5th Level through Expanded Leverage. Unless otherwise noted, all Leverage abilities cost 1 Leverage to activate.";
+var HUSTLER_LEVERAGE_INTRO = "The Flow and brute strength are someone else's job. The Hustler runs on **Leverage**: tactical callouts, psychological pressure, and split-second openings.\n\n**Your Leverage Pool**\n\nYour maximum Leverage equals your **Caliber + your Presence Modifier** (minimum 1). You regain all spent Leverage at the end of a Short or Long Rest.\n\n**Leverage Abilities**\n\nAt 1st Level, you learn two Leverage Abilities. You learn two additional Leverage Abilities at 5th Level through Expanded Leverage. Unless otherwise noted, all Leverage abilities cost 1 Leverage to activate.";
 var HUSTLER_LEVERAGE_ABILITIES = [
   { name: "Pressure Play", action: "Action", cost: 1, text: "Target one enemy you can see within 12 spaces. The next attack made against that enemy before the start of your next turn gains **Edge**. If the attack hits, it deals additional damage equal to your Caliber." },
   { name: "Backchannel", action: "Impulse Action", cost: 1, text: "Trigger: An ally within 6 spaces fails a d20 check. That ally may immediately reroll the d20 but must keep the new result." },
   { name: "Exit Strategy", action: "Swift Action", cost: 1, text: "Target yourself or one ally within 12 spaces who can hear or see you. The target immediately moves up to their Speed as a Free Action without provoking Opportunity Attacks." },
   { name: "The Shell Game", action: "Impulse Action", cost: 1, text: "Trigger: An enemy targets you with an attack. Force the attacking enemy to target another Target of your choice (friend or foe) within the attack's range or reach. The attacker rolls that attack with **Snag**." },
   { name: "Eye on the Prize", action: "Swift Action", cost: 1, text: "Target yourself or one ally within 12 spaces. The target may immediately roll a Save to end one negative condition currently affecting them (such as Dazed, Staggered, or Bleeding)." },
-  { name: "Dirty Laundry", action: "Action", cost: 1, text: "Target one enemy within 12 spaces. Until the start of your next turn, that enemy's Defense is reduced by your Charm Modifier (minimum 1) and they can't benefit from Cover." },
-  { name: "Cause a Scene", action: "Action", cost: 1, text: "Choose a point you can see within 12 spaces. Every enemy within 2 spaces of that point must make a Wits Save (DC = 8 + your Charm Modifier + your Caliber). On a failure, they roll with Snag on attack rolls until the start of your next turn." },
+  { name: "Dirty Laundry", action: "Action", cost: 1, text: "Target one enemy within 12 spaces. Until the start of your next turn, that enemy's Defense is reduced by your Presence Modifier (minimum 1) and they can't benefit from Cover." },
+  { name: "Cause a Scene", action: "Action", cost: 1, text: "Choose a point you can see within 12 spaces. Every enemy within 2 spaces of that point must make a Wits Save (DC = 8 + your Presence Modifier + your Caliber). On a failure, they roll with Snag on attack rolls until the start of your next turn." },
   { name: "Vanishing Act", action: "Swift Action", cost: 1, text: "You immediately move up to half your Speed without provoking Opportunity Attacks. Until the start of your next turn, attacks against you roll with Snag." }
 ];
 var HUSTLER_LEVERAGE_TEXT = HUSTLER_LEVERAGE_INTRO + "\n\n" + HUSTLER_LEVERAGE_ABILITIES.map(function (a) {
@@ -31,15 +31,15 @@ EN.classes.hustler = {
     text: "Resilience Die: d6\nStarting Vitality: 6 + Body Modifier\nVitality Per Level: 1d6 + Body Modifier"
   },
   attributePriorities: [
-    "Charm (Primary): Drives your Leverage pool, Persuasion, and Deception to manipulate both social encounters and the tactical action economy.",
+    "Presence (Primary): Drives your Leverage pool, Persuasion, and Deception to manipulate both social encounters and the tactical action economy.",
     "Wits (Secondary): Fuels Intuition to read motives and Perception to constantly assess the shifting battlefield.",
     "Agility (Tertiary): Boosts your Speed and Defense, keeping you mobile and out of the direct line of fire while you direct the squad."
   ],
-  saveFocus: "Charm and Wits",
+  saveFocus: "Presence and Wits",
   resource: {
     name: "Leverage",
-    attribute: "Charm",
-    maxFormula: "Caliber + Charm Modifier (minimum of 1)",
+    attribute: "Presence",
+    maxFormula: "Caliber + Presence Modifier (minimum of 1)",
     refresh: "You regain all spent Leverage at the end of a Short or Long Rest.",
     fuels: "Leverage represents tactical callouts, psychological pressure, and exploiting split-second openings; it fuels the Hustler's Leverage Abilities.",
     abilityNoun: "Leverage Ability",
@@ -52,7 +52,7 @@ EN.classes.hustler = {
     armor: ["Light Armor"],
     shields: [],
     skills: ["Intuition", "Persuasion", "choose one (Deception, Sleight, or Perception)"],
-    saves: ["Charm", "Wits"],
+    saves: ["Presence", "Wits"],
     tools: ["Glamour Tools", "choose one (Bureaucracy Tools, Media Tools, Infiltration Tools, or Security Tools)"]
   },
   featuresByLevel: {
@@ -63,7 +63,7 @@ EN.classes.hustler = {
       },
       {
         name: "Read the Room",
-        text: "You always know who holds the most authority in the room, and who is currently suffering the most Fatigue (or has the lowest Vitality).\n\nOnce per encounter, you can spend that read on a single opening: **Edge** on your first in-combat social d20 check against that authority figure (or +1 Edge Die to your first out-of-combat social Dice Pool check against them), **Edge** on your first attack roll against the target with the most Fatigue or lowest Vitality, or the first Leverage ability you direct at them costs 0 Leverage."
+        text: "You always know who holds the most authority in the room, and who is currently suffering the most Fatigue (or has the lowest Vitality).\n\nOnce per encounter, you can spend that read on a single opening: **Edge** on your first social check against that authority figure, **Edge** on your first attack roll against the target with the most Fatigue or lowest Vitality, or the first Leverage ability you direct at them costs 0 Leverage."
       },
       {
         name: "Hustler Subclass",
@@ -176,7 +176,7 @@ EN.classes.hustler = {
           level: 10,
           name: "Company-Wide Liquidation",
           action: "Action",
-          text: "Once per Long Rest, as an **Action**, declare a kill order on one enemy you can see. Every willing ally within 12 spaces may immediately move up to their Speed and make one standard weapon attack against that enemy. This movement and attack occur outside the turn order and cost the allies none of their own Actions, Swift Actions, or Impulse Actions.\n\n**Severance Package:** If the enemy is reduced to 0 Vitality by this barrage, you and all participating allies immediately gain Vigor equal to your Caliber + your Charm Modifier."
+          text: "Once per Long Rest, as an **Action**, declare a kill order on one enemy you can see. Every willing ally within 12 spaces may immediately move up to their Speed and make one standard weapon attack against that enemy. This movement and attack occur outside the turn order and cost the allies none of their own Actions, Swift Actions, or Impulse Actions.\n\n**Severance Package:** If the enemy is reduced to 0 Vitality by this barrage, you and all participating allies immediately gain Vigor equal to your Caliber + your Presence Modifier."
         }
       ]
     },
@@ -200,12 +200,12 @@ EN.classes.hustler = {
         {
           level: 7,
           name: "Gaslight",
-          text: "As an **Action**, spend 2 Leverage to target one enemy within 12 spaces who can hear you. They must make a Wits Save (DC = 8 + your Charm Modifier + your Caliber). On a failure, they are disoriented for up to 1 minute: they perceive their allies as enemies and you and your allies as friendly, and on their turn they must use their Action to attack the nearest target they now perceive as a threat (their own team).\n\nIf no such target is in range, they are instead Confused for the duration. If their Confusion result would have them attack the nearest target, their paranoia paralyzes them instead: they take no actions and lose their turn.\n\nThe target may repeat the Wits Save at the end of each of its turns. If the target takes damage from you or your allies (whom they currently perceive as friendly), they may immediately make a Wits Save with Edge to end the effect."
+          text: "As an **Action**, spend 2 Leverage to target one enemy within 12 spaces who can hear you. They must make a Presence Save (DC = 8 + your Presence Modifier + your Caliber). On a failure, they are disoriented for up to 1 minute: they perceive their allies as enemies and you and your allies as friendly, and on their turn they must use their Action to attack the nearest target they now perceive as a threat (their own team).\n\nIf no such target is in range, they are instead Confused for the duration. If their Confusion result would have them attack the nearest target, their paranoia paralyzes them instead: they take no actions and lose their turn.\n\nThe target may repeat the Presence Save at the end of each of its turns. If the target takes damage from you or your allies (whom they currently perceive as friendly), they may immediately make a Presence Save with Edge to end the effect."
         },
         {
           level: 10,
           name: "Character Assassination",
-          text: "Once per Long Rest, as an **Action**, deliver a devastating lie (a forged termination order, proof a boss sold them out, the \"activation phrase\" of a sleeper program that doesn't exist). Choose a number of enemies up to your Charm Modifier within 12 spaces who can hear and understand you. They must make a Wits Save (DC = 8 + your Charm Modifier + your Caliber).\n\n• **On a failure:** Their morale collapses. The GM chooses how they break: they drop their weapons and flee the encounter, or they turn on their own side for the rest of the encounter.\n• **On a success:** They are Confused until the end of their next turn."
+          text: "Once per Long Rest, as an **Action**, deliver a devastating lie (a forged termination order, proof a boss sold them out, the \"activation phrase\" of a sleeper program that doesn't exist). Choose a number of enemies up to your Presence Modifier within 12 spaces who can hear and understand you. They must make a Presence Save (DC = 8 + your Presence Modifier + your Caliber).\n\n• **On a failure:** Their morale collapses. The GM chooses how they break: they drop their weapons and flee the encounter, or they turn on their own side for the rest of the encounter.\n• **On a success:** They are Confused until the end of their next turn."
         }
       ]
     },
@@ -223,17 +223,17 @@ EN.classes.hustler = {
         {
           level: 3,
           name: "The Fix Is In",
-          text: "As an **Impulse Action** when an ally within 6 spaces takes damage from an attack, spend 1 Leverage to cash in a micro-favor (a bribed grid worker cutting the lights, a street kid dropping an obstacle). Reduce the incoming damage by 1d6 + your Charm Modifier + your Caliber. If this reduces the damage to 0, the ally may immediately move up to 2 spaces without provoking Opportunity Attacks."
+          text: "As an **Impulse Action** when an ally within 6 spaces takes damage from an attack, spend 1 Leverage to cash in a micro-favor (a bribed grid worker cutting the lights, a street kid dropping an obstacle). Reduce the incoming damage by 1d6 + your Presence Modifier + your Caliber. If this reduces the damage to 0, the ally may immediately move up to 2 spaces without provoking Opportunity Attacks."
         },
         {
           level: 7,
           name: "Off-the-Books Asset",
-          text: "Once per encounter, as an **Action**, spend 2 Leverage to ping a heavy hitter on standby. Target an Area 2 you can see within 24 spaces. All enemies in the area must make an Agility Save (DC = 8 + your Charm Modifier + your Caliber). On a failure, they take 3d8 + your Charm Modifier Ballistic or Energy damage (your choice) and are knocked Prone. On a success, they take half damage and aren't knocked Prone."
+          text: "Once per encounter, as an **Action**, spend 2 Leverage to ping a heavy hitter on standby. Target an Area 2 you can see within 24 spaces. All enemies in the area must make an Agility Save (DC = 8 + your Presence Modifier + your Caliber). On a failure, they take 3d8 + your Presence Modifier Ballistic or Energy damage (your choice) and are knocked Prone. On a success, they take half damage and aren't knocked Prone."
         },
         {
           level: 10,
           name: "Corner the Market",
-          text: "Once per Long Rest, when you roll Initiative, choose a number of enemies up to your Charm Modifier. Those enemies begin the encounter with their logistics compromised:\n\n• **Bad Ammo/Corrupted Cybernetics:** They must spend a **Swift Action** on their first turn clearing a weapon jam or rebooting before they can attack.\n• **Tampered Gear:** They can't use consumable items, explosives, or healing tech for the encounter.\n\n**The Setup:** You start the encounter with 2 temporary Leverage. This can exceed your normal maximum, but it must be spent before the end of the first round or it is lost."
+          text: "Once per Long Rest, when you roll Initiative, choose a number of enemies up to your Presence Modifier. Those enemies begin the encounter with their logistics compromised:\n\n• **Bad Ammo/Corrupted Cybernetics:** They must spend a **Swift Action** on their first turn clearing a weapon jam or rebooting before they can attack.\n• **Tampered Gear:** They can't use consumable items, explosives, or healing tech for the encounter.\n\n**The Setup:** You start the encounter with 2 temporary Leverage. This can exceed your normal maximum, but it must be spent before the end of the first round or it is lost."
         }
       ]
     }

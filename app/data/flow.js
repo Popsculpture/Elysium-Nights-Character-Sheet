@@ -71,8 +71,8 @@ EN.flow = {
   /* Stability Factor: sustained resonance is fragile. Taking damage while sustaining
      forces a Focus Check or the effect collapses. */
   focusDisruption: {
-    // PHB:8722: "you must succeed on a Wits or Body Saving Throw (Shaper's choice)".
-    save: "Focus Check (a Wits or Body Save, your choice)",
+    // PHB (25 Oct 2026): "you must succeed on a Mystique or Body Saving Throw" (batch 82).
+    save: "Focus Check (a Mystique or Body Save, your choice)",
     dc: 12,
     dcNote: "DC 12, or half the total damage taken that turn, whichever is higher.",
     failure: "The sustained effect ends immediately as the Flow destabilizes.",
@@ -129,11 +129,11 @@ EN.flow = {
         { name: "Void Pocket", sustain: true, text: "Open a vacuum in an Area 2 sphere. Targets inside make a Flow Save DC (Body) or are Deafened and begin suffocating while they remain." }
       ] },
     { key: "cognitive", name: "Cognitive", unlock: 3, focus: "Synapses and Perception", damage: "Psychic",
-      resolution: "save", saveAttr: "Wits", armorNote: "Bypasses physical armor (Stability Factor).",
-      base: "Project thoughts telepathically to a visible target, induce a minor sensory hallucination, or alter a single short-term memory (an unwilling target makes a Flow Save DC, Wits, to resist).",
+      resolution: "save", saveAttr: "Mystique", armorNote: "Bypasses physical armor (Stability Factor).",
+      base: "Project thoughts telepathically to a visible target, induce a minor sensory hallucination, or alter a single short-term memory (an unwilling target makes a Flow Save DC, Mystique, to resist).",
       empowered: [
-        { name: "Neural Override", sustain: false, text: "Target makes a Flow Save DC (Wits) or you dictate their movement and Action on their next turn. You can't force direct lethal self-harm." },
-        { name: "Sensory Collapse", sustain: true, text: "Target makes a Flow Save DC (Wits) or suffers Frightened or Charmed (your choice) for the duration." },
+        { name: "Neural Override", sustain: false, text: "Target makes a Flow Save DC (Mystique) or you dictate their movement and Action on their next turn. You can't force direct lethal self-harm." },
+        { name: "Sensory Collapse", sustain: true, text: "Target makes a Flow Save DC (Mystique) or suffers Frightened or Charmed (your choice) for the duration." },
         { name: "Blind Spot", sustain: false, text: "A target you choose slips beneath notice, gaining the Invisible condition. Ends immediately if that target makes an attack or forces a saving throw." }
       ] },
     { key: "synthetica", name: "Synthetica", unlock: 1, unique: "sourcerer", focus: "Favor and Malfunction", damage: "Electric / Fire",
@@ -338,7 +338,7 @@ EN.flow.disturbances = {
 
   /* ### Anomaly Classifications: Type and Mechanical Impact, in the book's order */
   classifications: [
-    { key: "echo", name: "Echo Field", effect: "Characters suffer **Snag** (or **+1 Snag Die** in Dice Pools) on Perception checks, and **Snag** on Invocation checks." },
+    { key: "echo", name: "Echo Field", effect: "Characters suffer **Snag** on Perception checks, and **Snag** on Invocation checks." },
     { key: "static", name: "Static Zone", effect: "Invocations cost **+1 FP**; damage dice and effect magnitudes are **halved**; targets of Empowered Effects gain **Edge** on saves; FP can't be recovered while inside; sustained effects require a **Focus Check** every round." },
     { key: "storm", name: "Resonant Storm", effect: "Invocations cost **+1 FP**. Failed checks deal **1d4 Vitality damage**." },
     { key: "corrupted", name: "Corrupted Signature", effect: "Every Invocation performed in the zone that costs **2 or more FP** causes **1 Stage of Strain**." },
@@ -360,7 +360,7 @@ EN.flow.disturbances = {
     methods: [
       { name: "Resonance Sense", mode: "Passive", text: "You automatically detect strong disturbances within **6 spaces**. The GM describes the sensation (e.g., a high-pitched ringing or a sudden drop in temperature)." },
       { name: "Focused Tuning", mode: "Active", text: "Make a **d20 Flow Attribute Check (DC 10 + Anomaly Severity)** to identify its exact type, Severity, and the required Target Progress to cleanse it." },
-      { name: "Echo Listening", mode: "Meditation", text: "Spend 1 minute in silence to gain **Edge** (or **+1 Edge Die**) on your next analysis check. On a failure, the sensory overload inflicts **1 Stage of Strain**." }
+      { name: "Echo Listening", mode: "Meditation", text: "Spend 1 minute in silence to gain **Edge** on your next analysis check. On a failure, the sensory overload inflicts **1 Stage of Strain**." }
     ]
   },
 

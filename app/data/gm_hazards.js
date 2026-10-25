@@ -242,7 +242,7 @@ EN.gmBook.hazards = {
       /* The page does not say what starts or ends the panic. The Prone damage
          ticks per creature at the start of its turn. */
       { key: "crowd", name: "Crowd Surge", grade: 3,
-        text: "A packed floor turns to weather. While the crowd is panicking, the open floor is Difficult Terrain, ranged attacks through it roll with Snag, and anyone knocked Prone in it takes 1d6 Bludgeoning at the start of their turn until they stand. Counter: Charm or Intimidation against the crowd (DC 15) to open a lane; the exits are the objective now.",
+        text: "A packed floor turns to weather. While the crowd is panicking, the open floor is Difficult Terrain, ranged attacks through it roll with Snag, and anyone knocked Prone in it takes 1d6 Bludgeoning at the start of their turn until they stand. Counter: Presence or Intimidation against the crowd (DC 15) to open a lane; the exits are the objective now.",
         trigger: "While the crowd is panicking",
         timing: { kind: "while", text: "While the crowd is panicking",
                   tick: { at: "turnstart", text: "at the start of their turn until they stand" } },
@@ -255,10 +255,10 @@ EN.gmBook.hazards = {
           "the exits are the objective now"
         ],
         material: null,
-        counter: { text: "Charm or Intimidation against the crowd (DC 15) to open a lane",
+        counter: { text: "Presence or Intimidation against the crowd (DC 15) to open a lane",
           options: [
-            { text: "Charm or Intimidation against the crowd (DC 15) to open a lane",
-              check: { skills: ["Charm", "Intimidation"], action: null, dc: 15 } }
+            { text: "Presence or Intimidation against the crowd (DC 15) to open a lane",
+              check: { skills: ["Presence", "Intimidation"], action: null, dc: 15 } }
           ] },
         bestiary: [] },
 

@@ -115,7 +115,7 @@ EN.cyberware = {
       ] },
     { key: "disruption", short: "Disruption Lattice", name: "Disruption Lattice", zone: "Neural", enhancement: "None", mystech: true,
       desc: "Resonance-dampening circuitry through the upper spine and skull. Built to counter Shapers; it does not discriminate; it dampens the Flow for everyone near the wearer, including the wearer.",
-      effect: "Passive Area 2 disruption field: all Invocations cost +1 FP, friend or foe, always on. Pulse (Impulse, 1/Short Rest, at any point outside your turn): sustained Invocations within 3 spaces must succeed on a Focus Check (a Wits or Body Save, DC 14) or end immediately.",
+      effect: "Passive Area 2 disruption field: all Invocations cost +1 FP, friend or foe, always on. Pulse (Impulse, 1/Short Rest, at any point outside your turn): sustained Invocations within 3 spaces must succeed on a Focus Check (a Mystique or Body Save, DC 14) or end immediately.",
       street: "Field shrinks to Area 1, no Pulse; audible static → Snag on Stealth within 2 spaces of anyone.",
       black: "Area 3 field, Pulse up to 2/Short Rest, plus targeted suppression (Action, 3 charges/Long Rest): one Flow-user within 6 spaces casts at +2 FP with Snag until the start of your next turn.",
       tiers: [
@@ -133,7 +133,7 @@ EN.cyberware = {
     /* ---------------- Core ---------------- */
     { key: "synthHeart", short: "Synthetic Heart", name: "Synthetic Heart", zone: "Core", enhancement: "None",
       desc: "A fully replaced cardiac unit. It doesn't get tired, doesn't panic, and can be revved during combat. Wearers describe feeling calm in firefights.",
-      effect: "1/Long Rest, when you'd drop to 0 Vitality, drop to 1 instead (not Bloodied) and gain +2 Speed next turn. Immune to Panic; Edge on Wits Saves vs Frightened and Shaken.",
+      effect: "1/Long Rest, when you'd drop to 0 Vitality, drop to 1 instead (not Bloodied) and gain +2 Speed next turn. Immune to Panic; Edge on Presence Saves vs Frightened and Shaken.",
       street: "Irregular rhythm, medical ID is automatic; Snag on Stealth vs heartbeat detection.",
       black: "Death-prevention twice/Long Rest, plus Stillness Mode (Action): appear dead to scans for up to 1 minute. While in it you take no Actions, Move Actions or Swift Actions and cannot use other cyberware, though you stay aware of your surroundings; exiting is a Free Action on your turn.",
       tiers: [

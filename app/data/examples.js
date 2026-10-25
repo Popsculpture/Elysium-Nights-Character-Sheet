@@ -50,7 +50,7 @@ EN.examples = [
       level: 5, heightFt: 5.6,
       species: "humans", lineage: "nextgen", background: "cipher-punk",
       class: "codebreaker", subclass: "gridweaver",
-      attributes: { TEC: 16, WIT: 15, AGI: 13, CHA: 12, MYS: 10, BOD: 10 },
+      attributes: { TEC: 16, WIT: 15, AGI: 13, PRE: 12, MYS: 10, BOD: 10 },
       identity: {
         handle: "Latchkey",
         concept: "Grew up opening things that were locked for a reason. Still does, now with better tools.",
@@ -147,7 +147,7 @@ EN.examples = [
       level: 5, heightFt: 6.8,
       species: "chimera", lineage: "hulsk", background: "ganger",
       class: "fury", subclass: "juggernaut",
-      attributes: { BOD: 16, WIT: 14, AGI: 13, CHA: 12, TEC: 10, MYS: 10 },
+      attributes: { BOD: 16, WIT: 14, AGI: 13, PRE: 12, TEC: 10, MYS: 10 },
       identity: {
         handle: "Anvil",
         concept: "Big, patient, and entirely willing to hit you with a vending machine.",
@@ -248,7 +248,7 @@ EN.examples = [
       level: 5, heightFt: 5.7,
       species: "humans", lineage: "freeborn", background: "boardroom-exile",
       class: "hustler", subclass: "the_fixer",
-      attributes: { CHA: 16, WIT: 15, AGI: 13, TEC: 12, BOD: 10, MYS: 10 },
+      attributes: { PRE: 16, WIT: 15, AGI: 13, TEC: 12, BOD: 10, MYS: 10 },
       identity: {
         handle: "Paperwork",
         concept: "Was very good at a very bad job, then took the contact list with her on the way out.",
@@ -363,7 +363,7 @@ EN.examples = [
       level: 5, heightFt: 5.9,
       species: "outsiders", lineage: "harbinger", background: "hired-gun",
       class: "operator", subclass: "the_deadeye",
-      attributes: { WIT: 16, AGI: 15, BOD: 13, TEC: 12, CHA: 10, MYS: 10 },
+      attributes: { WIT: 16, AGI: 15, BOD: 13, TEC: 12, PRE: 10, MYS: 10 },
       identity: {
         handle: "Longshot",
         concept: "Arrives early, says little, and has already worked out where you will stand.",
@@ -467,7 +467,7 @@ EN.examples = [
       level: 5, heightFt: 5.2,
       species: "verdine", lineage: "mycelial", background: "courier",
       class: "scoundrel", subclass: "smuggler",
-      attributes: { AGI: 16, WIT: 15, CHA: 13, TEC: 12, BOD: 10, MYS: 10 },
+      attributes: { AGI: 16, WIT: 15, PRE: 13, TEC: 12, BOD: 10, MYS: 10 },
       identity: {
         handle: "Understory",
         concept: "Carries other people's problems across the city for money and does not ask what is in the box.",
@@ -564,7 +564,7 @@ EN.examples = [
       level: 5, heightFt: 5.5,
       species: "verdine", lineage: "floral", background: "minimum-wage-mage",
       class: "shaper", subclass: "harmonist",
-      attributes: { MYS: 16, WIT: 14, AGI: 13, BOD: 12, TEC: 11, CHA: 10 },
+      attributes: { MYS: 16, WIT: 14, AGI: 13, BOD: 12, TEC: 11, PRE: 10 },
       identity: {
         handle: "Fold",
         concept: "Learned the Flow doing corporate weather work, then found out what else it does.",
@@ -665,7 +665,7 @@ EN.examples = [
       level: 5, heightFt: 6,
       species: "clankers", lineage: "durabodies", background: "street-doc",
       class: "stitcher", subclass: "the_lifeline",
-      attributes: { TEC: 16, WIT: 15, AGI: 13, BOD: 12, CHA: 10, MYS: 10 },
+      attributes: { TEC: 16, WIT: 15, AGI: 13, BOD: 12, PRE: 10, MYS: 10 },
       identity: {
         handle: "Tourniquet",
         concept: "Runs a clinic out of whatever room is nearest, and keeps a running tab nobody pays.",

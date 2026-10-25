@@ -31,11 +31,13 @@ EN.rules = {
     { key: "AGI", name: "Agility",  abbr: "AGI", blurb: "Reflexes, coordination, and fine control." },
     { key: "WIT", name: "Wits",     abbr: "WIT", blurb: "Perception, insight, and quick analysis." },
     { key: "TEC", name: "Tech",     abbr: "TEC", blurb: "Technological skill, logic, and mechanical intuition." },
-    { key: "MYS", name: "Mystique", abbr: "MYS", blurb: "Resonant will, intuition, and connection to the Flow." },
-    { key: "CHA", name: "Charm",    abbr: "CHA", blurb: "Presence, persuasion, and force of personality." }
+    { key: "MYS", name: "Mystique", abbr: "MYS", blurb: "Resonant will, intuition, and connection to the Flow.",
+      desc: "Represents a person's resonance with the Flow and the strength of their will. It governs channeling, ritual shaping, perception of resonance fields, and the saves that keep your mind your own. Characters with high Mystique align easily with the current and maintain stability under pressure." },
+    { key: "PRE", name: "Presence", abbr: "PRE", blurb: "Persuasion, composure, and force of personality.",
+      desc: "Embodies influence, empathy, and self-assurance. Charismatic Characters sway others through presence, confidence, and emotional intelligence. It defines social checks, leadership moments, and the composure to hold steady when someone tries to frighten or charm you." }
   ],
   // map full attribute name -> key (for parsing class data which uses full names)
-  attrNameToKey: { Body:"BOD", Agility:"AGI", Wits:"WIT", Tech:"TEC", Mystique:"MYS", Charm:"CHA" },
+  attrNameToKey: { Body:"BOD", Agility:"AGI", Wits:"WIT", Tech:"TEC", Mystique:"MYS", Presence:"PRE" },
 
   /* Attribute Generation -------------------------------------------------- */
   pointBuy: {
@@ -71,14 +73,14 @@ EN.rules = {
     threshold: "Encumbrance Threshold = 6 + Body Modifier, adjusted by Size, minimum 3. The minimum applies after the Size adjustment, so a Small character on Body -3 lands at 3, not 2. Gear, mods, frames, cyberware and Flow effects that raise it speak in steps of +2; the Size adjustment is a raw 1 and is not a step.",
     budget: "When a job starts, each Freelancer declares one Loadout; if nobody declares, assume Standard. The declared Loadout sets your Load Budget (your Threshold moved by the Loadout's offset), and the gear on your person spends it. The first number is the Load you're carrying now: everything revealed or picked up, minus what you've dropped. Note dropped items beside it, because Packed It still counts them. The second is your Load Budget.",
     loadouts: [
-      { key: "light",    name: "Light",    delta: -3, effect: "You read as foot traffic. Edge on in-combat d20 checks to blend into a crowd, conceal your gear, or pass checkpoint scrutiny; +1 Edge Die on related out-of-combat Dice Pools." },
+      { key: "light",    name: "Light",    delta: -3, effect: "You read as foot traffic. Edge on checks to blend into a crowd, conceal your gear, or pass checkpoint scrutiny." },
       { key: "standard", name: "Standard", delta: 0,  effect: "You look like a Freelancer on a job. No perk, no penalty." },
       { key: "heavy",    name: "Heavy",    delta: 3,  effect: "You are Encumbered for the run. Nobody asks the walking armory for a lunch order." }
     ],
     states: {
       unencumbered: { name: "Unencumbered", when: "You are at or below your Load Budget, and your Loadout isn't Heavy.", effect: "Move and act normally; no penalties from carried weight." },
-      encumbered:   { name: "Encumbered",   when: "You are on a Heavy Loadout, carrying more Load than your Load Budget, or hauling something that is clearly heavy but still plausible.", effect: "Speed -2. Snag on in-combat Agility or Body d20 checks that rely on nimble movement, balance, climbing, swimming, squeezing, or sudden repositioning; +1 Snag Die on related out-of-combat Dice Pools." },
-      overloaded:   { name: "Overloaded",   effect: "Speed halved (round down) and no Dash. Snag on all Agility d20 checks and most Body checks (pure bracing or holding excepted); +1 Snag Die on related out-of-combat Dice Pools. No Complex Actions that need careful movement until you drop part of the load. Staying Overloaded through an extended physical scene can cost 1 Fatigue." }
+      encumbered:   { name: "Encumbered",   when: "You are on a Heavy Loadout, carrying more Load than your Load Budget, or hauling something that is clearly heavy but still plausible.", effect: "Speed -2. You roll with Snag on Agility or Body checks that rely on nimble movement, balance, climbing, swimming, squeezing, or sudden repositioning." },
+      overloaded:   { name: "Overloaded",   effect: "Speed halved (round down) and no Dash. You roll with Snag on all Agility checks and most Body checks, unless the action is purely bracing, holding, or digging in. No Complex Actions that need careful movement until you drop part of the load. Staying Overloaded through an extended physical scene can cost 1 Fatigue." }
     },
     hauls: [
       { key: "none", name: "No haul",                    hint: "Nothing in your arms. Hauls do not spend Load Budget; they set your state directly." },
@@ -133,8 +135,8 @@ EN.rules = {
     { key:"medtech",       name:"Medtech",       attr:"TEC", desc:"Treating injuries, performing surgery, or maintaining cybernetics." },
     { key:"awareness",     name:"Awareness",     attr:"MYS", desc:"Sense and interpret unseen forces, residue, or Flow anomalies." },
     { key:"esoterica",     name:"Esoterica",     attr:"MYS", desc:"Study of mystical traditions, symbols, and rituals." },
-    { key:"persuasion",    name:"Persuasion",    attr:"CHA", desc:"Influence through empathy, reason, diplomacy, or pressure." },
-    { key:"deception",     name:"Deception",     attr:"CHA", desc:"Conceal truth or mislead others." }
+    { key:"persuasion",    name:"Persuasion",    attr:"PRE", desc:"Influence through empathy, reason, diplomacy, or pressure." },
+    { key:"deception",     name:"Deception",     attr:"PRE", desc:"Conceal truth or mislead others." }
   ],
   // The book's note under the Mystique skills (PHB:1008-1012); the Codex prints it after Esoterica.
   mystiqueNote: "When a Skill check involves directly shaping, sensing, or interpreting the Flow, rather than mundane mysticism, the GM may treat the roll as a Flow Attribute Check, using your Flow Attribute if it differs from Mystique.",
@@ -504,7 +506,7 @@ EN.rules = {
   },
 
   /* Default flow attribute per Shaper subclass (overridden by data) -------- */
-  shaperFlowAttrBySubclass: { icon:"Charm", harmonist:"Mystique", kensei:"Body", sourcerer:"Tech" }
+  shaperFlowAttrBySubclass: { icon:"Presence", harmonist:"Mystique", kensei:"Body", sourcerer:"Tech" }
 };
 
 /* Convenience indexes (built once at load) ---------------------------------- */

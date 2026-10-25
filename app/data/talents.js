@@ -125,7 +125,7 @@ EN.talents = [
     name: "Combat Splicer",
     category: "Tactics & Hybrid Fighting",
     requirements: "The ability to use Quick Hacks, Ciphers, or Flow Invocations.",
-    text: "***Prerequisite:** The ability to use Quick Hacks, Ciphers, or Flow Invocations.* You've learned to run code and shape the Flow with a gun going off next to your ear. You gain the following benefits:\n• When you take damage while holding active Links or sustaining a Flow effect, you make the Focus Check to keep them (the Wits or Body Save) with Edge.\n• Weapons or a physical shield in one or both hands never stop you from making the physical inputs for Quick Hacks or Invocations.\n• If an Enemy moves in a way that provokes your Opportunity Attack, you can use that Impulse Action for a Quick Hack or an Invocation aimed at it instead of a melee attack. It must be one that normally costs 1 Action and targets only that Enemy.\n\n**Upgrade (Level 6+):** You no longer need to maintain Focus or Sustain to keep your Links and Flow effects active when you take damage of 20 or less. Damage of 21+ still requires the relevant Saving Throw, with Edge."
+    text: "***Prerequisite:** The ability to use Quick Hacks, Ciphers, or Flow Invocations.* You've learned to run code and shape the Flow with a gun going off next to your ear. You gain the following benefits:\n• When you take damage while holding active Links or sustaining a Flow effect, you make the save to keep them with Edge.\n• Weapons or a physical shield in one or both hands never stop you from making the physical inputs for Quick Hacks or Invocations.\n• If an Enemy moves in a way that provokes your Opportunity Attack, you can use that Impulse Action for a Quick Hack or an Invocation aimed at it instead of a melee attack. It must be one that normally costs 1 Action and targets only that Enemy.\n\n**Upgrade (Level 6+):** You no longer need to maintain Focus or Sustain to keep your Links and Flow effects active when you take damage of 20 or less. Damage of 21+ still requires the relevant Saving Throw, with Edge."
   },
   {
     key: "cross-discipline-tactic",
@@ -248,7 +248,7 @@ EN.talents = [
     name: "Resonance Dabbler",
     category: "The Flow & Resonance",
     requirements: "",
-    text: "Something you touched, a Mystech relic or a room thick with old resonance, touched you back. You gain the following benefits:\n• Increase your Tech, Mystique, or Charm score by 1, to a maximum of 20.\n• You learn one Base Resonance (0 FP Intent) and one Empowered Effect (1 FP Force) from the Shaper class, or two basic Quick Hacks.\n• Once per Long Rest, you can activate the Empowered Effect without spending Flow Points or generating Strain. These checks use the Attribute this Talent raised.\n\n**Upgrade (Level 6+):** You learn one additional Empowered Effect (1 FP), and the free use feature now refreshes on a Short Rest."
+    text: "Something you touched, a Mystech relic or a room thick with old resonance, touched you back. You gain the following benefits:\n• Increase your Tech, Mystique, or Presence score by 1, to a maximum of 20.\n• You learn one Base Resonance (0 FP Intent) and one Empowered Effect (1 FP Force) from the Shaper class, or two basic Quick Hacks.\n• Once per Long Rest, you can activate the Empowered Effect without spending Flow Points or generating Strain. These checks use the Attribute this Talent raised.\n\n**Upgrade (Level 6+):** You learn one additional Empowered Effect (1 FP), and the free use feature now refreshes on a Short Rest."
   },
   {
     key: "resonance-optimizer",
@@ -370,15 +370,15 @@ EN.talents = [
     key: "cold-reader",
     name: "Cold Reader",
     category: "Skills, Social & Utility",
-    requirements: "Charm or Wits 13 or higher.",
-    text: "Most Freelancers case the building. You case the people in it, instantly and ruthlessly.\n• Increase your Charm or Wits score by 1.\n• When an Encounter that includes negotiation, deception, or social pressure begins, you may roll an Insight or Intuition check using Charm or Wits (DC 12). On a success, you immediately learn one piece of useful information about one Target of your choice: their highest non-physical Attribute, their most pressing emotional state (Fear, Greed, Anger, etc.), or whether they are armed or augmented.\n• You gain Edge on Initiative checks made during social Encounters, and you can use your Charm Modifier in place of Wits for Initiative in such Encounters.\n\n**Upgrade (Level 6+):** You learn two pieces of useful information instead of one, and your insight applies to all hostile Targets in the social Encounter rather than just one."
+    requirements: "Presence or Wits 13 or higher.",
+    text: "Most Freelancers case the building. You case the people in it, instantly and ruthlessly.\n• Increase your Presence or Wits score by 1.\n• When an Encounter that includes negotiation, deception, or social pressure begins, you may roll an Insight or Intuition check using Presence or Wits (DC 12). On a success, you immediately learn one piece of useful information about one Target of your choice: their highest non-physical Attribute, their most pressing emotional state (Fear, Greed, Anger, etc.), or whether they are armed or augmented.\n• You gain Edge on Initiative checks made during social Encounters, and you can use your Presence Modifier in place of Wits for Initiative in such Encounters.\n\n**Upgrade (Level 6+):** You learn two pieces of useful information instead of one, and your insight applies to all hostile Targets in the social Encounter rather than just one."
   },
   {
     key: "crew-commander",
     name: "Crew Commander",
     category: "Skills, Social & Utility",
-    requirements: "Charm 13 or higher.",
-    text: "You're the one who says the thing everyone needed to hear before the job starts. You gain the following benefits:\n• Increase your Charm score by 1, to a maximum of 20.\n• Take 10 minutes of Downtime or a Short Rest to get the crew's heads straight. Up to six friendly Characters within 6 spaces, you included if you like, each gain Vigor equal to your Character level + your Charm Modifier, as long as they can see or hear you and understand you. Once a Character has had this Vigor, they can't have it again until they finish a Short Rest or Long Rest.\n\n**Upgrade (Level 6+):** When you use Crew Commander, the affected Characters also gain Edge on their next attack roll or Saving Throw made within the next 10 minutes."
+    requirements: "Presence 13 or higher.",
+    text: "You're the one who says the thing everyone needed to hear before the job starts. You gain the following benefits:\n• Increase your Presence score by 1, to a maximum of 20.\n• Take 10 minutes of Downtime or a Short Rest to get the crew's heads straight. Up to six friendly Characters within 6 spaces, you included if you like, each gain Vigor equal to your Character level + your Presence Modifier, as long as they can see or hear you and understand you. Once a Character has had this Vigor, they can't have it again until they finish a Short Rest or Long Rest.\n\n**Upgrade (Level 6+):** When you use Crew Commander, the affected Characters also gain Edge on their next attack roll or Saving Throw made within the next 10 minutes."
   },
   {
     key: "cutting-agent",
@@ -392,7 +392,7 @@ EN.talents = [
     name: "Faceless Persona",
     category: "Skills, Social & Utility",
     requirements: "",
-    text: "You can be anyone for as long as the conversation lasts, and longer if the paperwork holds. You gain the following benefits:\n• Increase your Charm score by 1, to a maximum of 20.\n• When you're trying to pass as someone else or to build a false identity, your Charm (Deception) and Charm (Performance) checks have Edge.\n• Spend at least 1 minute hearing a person speak or a Target make a mechanical sound. You can then copy that voice or sound. A listener can see through the imitation with a Wits (Intuition) check contested by your Charm (Deception).\n\n**Upgrade (Level 6+):** You can maintain a single fabricated identity that functions seamlessly in digital records (legal IDs, employment history, social profiles) without ongoing rolls. The GM may call for a check only when the identity is actively being investigated by a major faction."
+    text: "You can be anyone for as long as the conversation lasts, and longer if the paperwork holds. You gain the following benefits:\n• Increase your Presence score by 1, to a maximum of 20.\n• When you're trying to pass as someone else or to build a false identity, your Presence (Deception) and Presence (Performance) checks have Edge.\n• Spend at least 1 minute hearing a person speak or a Target make a mechanical sound. You can then copy that voice or sound. A listener can see through the imitation with a Wits (Intuition) check contested by your Presence (Deception).\n\n**Upgrade (Level 6+):** You can maintain a single fabricated identity that functions seamlessly in digital records (legal IDs, employment history, social profiles) without ongoing rolls. The GM may call for a check only when the identity is actively being investigated by a major faction."
   },
   {
     key: "fate-bender",
@@ -483,6 +483,6 @@ EN.talents = [
     name: "Undercity Survivor",
     category: "Skills, Social & Utility",
     requirements: "",
-    text: "Years below the street taught you to be where the light isn't. You gain the following benefits:\n• Increase your Wits, Tech, or Charm score by 1, to a maximum of 20.\n• You learn one Quick Hack or Invocation that creates obscurement or alters perception (the Cognitive \"Phantom Shroud\", for example, or a sensory hack), and once per Long Rest you can activate it without spending Flow Points or generating Strain. Its checks use the Attribute this Talent raised.\n\n**Upgrade (Level 6+):** You can use the free activation feature twice per Long Rest, and you gain Edge on Agility (Stealth) checks made within the effect of your learned obscurement ability."
+    text: "Years below the street taught you to be where the light isn't. You gain the following benefits:\n• Increase your Wits, Tech, or Presence score by 1, to a maximum of 20.\n• You learn one Quick Hack or Invocation that creates obscurement or alters perception (the Cognitive \"Phantom Shroud\", for example, or a sensory hack), and once per Long Rest you can activate it without spending Flow Points or generating Strain. Its checks use the Attribute this Talent raised.\n\n**Upgrade (Level 6+):** You can use the free activation feature twice per Long Rest, and you gain Edge on Agility (Stealth) checks made within the effect of your learned obscurement ability."
   }
 ];

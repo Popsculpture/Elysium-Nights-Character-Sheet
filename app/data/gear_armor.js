@@ -89,7 +89,7 @@ EN.gearCatalog.armor = {
     { name: "Courier Shell", kind: "armor", group: "Light Armor", type: "Light Armor (1 Mod Slot)", price: 170,
       slot: ["Torso", "Legs"], dr: 2, slots: 1, traits: ["Streetwear", "Modular"], availability: "Common", legality: "Legal",
       desc: "A cut-down riding shell built for people who move for a living. Matte panels, noise-damped seams, and just enough armor to survive a clip while you are already three rooftops gone.",
-      effect: "Grants 2 Damage Reduction (DR). You gain Edge on in-combat Stealth d20 checks (or add +1 Edge Die to out-of-combat Dice Pools) in dim light or darkness." },
+      effect: "Grants 2 Damage Reduction (DR). You gain Edge on in-combat Stealth d20 checks in dim light or darkness." },
     { name: "Slip Undervest", kind: "armor", group: "Light Armor", type: "Light Armor", price: 210,
       slot: ["Torso", "Legs"], dr: 2, traits: ["Concealable"], availability: "Common", legality: "Licensed",
       desc: "A thin corporate ballistic layer designed to vanish under a shirt and a badge. Standard issue for executives who don't want their security detail to be the obvious one.",
@@ -164,12 +164,12 @@ EN.gearCatalog.armor = {
       slot: ["Torso", "Legs"], dr: 5, blockBonus: 2, slots: 3, traits: ["Powered", "Plated", "Bulky", "Loud", "Modular"], availability: "Uncommon", legality: "Restricted",
       desc: "A civilian heavy-lift frame stripped of its safety governors and bolted full of plate. It was built to move cargo containers. It moves Freelancers, doors, and the occasional unlucky enforcer just as well.",
       effect: "Grants 5 Damage Reduction (DR) and a +2 Block Bonus.",
-      poweredBenefits: "While trained and powered, you ignore the Speed reduction from Bulky, treat your Encumbrance Threshold as two steps higher, and gain Edge on in-combat d20 checks (or +1 Edge Die out-of-combat) to lift, shove, or force movement." },
+      poweredBenefits: "While trained and powered, you ignore the Speed reduction from Bulky, treat your Encumbrance Threshold as two steps higher, and gain Edge on checks to lift, shove, or force movement." },
     { name: "Bailiff Rig", kind: "armor", group: "Powered Exoframe", type: "Powered Heavy Armor (3 Mod Slots)", price: 430, upkeep: 400, nexus: "◎0.3 buyout", lapsedDR: 3,
       slot: ["Torso", "Legs"], dr: 5, blockBonus: 2, slots: 3, traits: ["Powered", "Plated", "Bulky", "Loud", "Leased", "Modular"], availability: "Uncommon", legality: "Restricted",
       desc: "The repo man's frame. Corporations lease these to enforcement contractors and keep one finger on the off switch the entire time, because a powered frame that turns on its issuer is a very bad quarter. It carries you through a firefight right up until the morning the lease lapses and the legs simply stop agreeing with you.",
       effect: "Grants 5 Damage Reduction (DR) and a +2 Block Bonus. Lapsed or Locked: The frame seizes. You lose all Powered Benefits, the Powered drawbacks apply in full, and DR drops to 3 until the lease is restored or the lock is cracked. It locks on lapsed payment, contract breach, or the issuer's call.",
-      poweredBenefits: "While trained, powered, and on an active lease, you ignore the Speed reduction from Bulky, treat your Encumbrance Threshold as two steps higher, and gain Edge on in-combat d20 checks (or +1 Edge Die out-of-combat) to lift, shove, or force movement." },
+      poweredBenefits: "While trained, powered, and on an active lease, you ignore the Speed reduction from Bulky, treat your Encumbrance Threshold as two steps higher, and gain Edge on checks to lift, shove, or force movement." },
     { name: "Warframe Shell", kind: "armor", group: "Powered Exoframe", type: "Powered Heavy Armor (3 Mod Slots)", price: 2400, nexus: "◎1",
       slot: ["Torso", "Legs"], dr: 5, blockBonus: 2, slots: 3, traits: ["Powered", "Plated", "Bulky", "Sealed", "Loud", "Modular"], availability: "Rare", legality: "Restricted",
       /* CHOOSE-ONE-ON-ACQUISITION, the machine-readable half of the clause in `effect`
@@ -199,7 +199,7 @@ EN.gearCatalog.armor = {
       vacuum: true,
       desc: "A sealed military combat frame, the kind a corporation deploys when it has decided a problem is worth the optics. Air recycled, joints armored, every system tuned to keep one operator standing through a crossfire.",
       effect: "Grants 5 Damage Reduction (DR) and a +2 Block Bonus. Its seals also hold against vacuum. When you acquire the frame, choose one physical damage type (Ballistic, Piercing, Slashing, or Bludgeoning). You gain Resistance to that type.",
-      poweredBenefits: "While trained and powered, you ignore the Speed reduction from Bulky, treat your Encumbrance Threshold as two steps higher, and gain Edge on in-combat d20 checks (or +1 Edge Die out-of-combat) to lift, shove, or force movement." },
+      poweredBenefits: "While trained and powered, you ignore the Speed reduction from Bulky, treat your Encumbrance Threshold as two steps higher, and gain Edge on checks to lift, shove, or force movement." },
 
     /* ============================== MYSTECH ARMOR ============================== */
     { name: "Veilskin", kind: "armor", group: "Mystech Armor", type: "Light Mystech Armor (1 Mod Slot)", price: 700,
@@ -207,7 +207,7 @@ EN.gearCatalog.armor = {
       // three options, not four: this suit's clause omits Resonant. See the Warframe Shell above.
       resistPick: { options: ["Fire", "Electric", "Cold"] },
       desc: "A second skin of light-reactive weave that drinks ambient Flow and bends light around the wearer's outline. To a scanner it is a faint shimmer. To a guard it is the reason they swear the corridor was empty a second ago.",
-      effect: "Grants 2 Damage Reduction (DR). You gain Edge on in-combat Stealth d20 checks (or +1 Edge Die on out-of-combat Dice Pools) in dim light or darkness. When you acquire it, choose one of Fire, Electric, or Cold. You gain Resistance to that type." },
+      effect: "Grants 2 Damage Reduction (DR). You gain Edge on in-combat Stealth d20 checks in dim light or darkness. When you acquire it, choose one of Fire, Electric, or Cold. You gain Resistance to that type." },
     { name: "Resonant Carapace", kind: "armor", group: "Mystech Armor", type: "Medium Mystech Armor (2 Mod Slots)", price: 1600, nexus: "◎0.5",
       slot: ["Torso", "Legs"], dr: 3, blockBonus: 1, slots: 2, wardDie: "1d6", traits: ["Plated", "Focus", "Resonant Plating", "Mystech", "Modular"], availability: "Legendary", legality: "Contraband",
       desc: "Tuned Mystech plate that hums against incoming force and feeds a fraction of every hit back into the wearer's Ward. The plating catches Flow as readily as it catches a round, which is why the things that bypass ordinary armor find no door here. Favored by Shapers who fight on the line instead of behind it.",

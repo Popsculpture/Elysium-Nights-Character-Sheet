@@ -156,7 +156,34 @@ EN.gmStore = (function () {
     if (!rec || typeof rec !== "object") return rec;
     gradeKey(rec.block);
     gradeKey(rec.inputs);
+    presenceThreat(rec.block, rec.inputs);
     return rec;
+  }
+
+  /* CHARM BECAME PRESENCE (batch 81, 25 Oct 2026). A built threat stores its strong saves as
+     Attribute KEYS twice (inputs.strong, the builder's pick, and block.saves.attrs) and once as
+     the printed line (block.saves.text, "+5 Charm and Wits, +1 others"); a Bestiary block
+     carries the printed line in stats.Saves. Keys move CHA to PRE and the printed Attribute
+     name moves to Presence; no number changes. "Charmed" is a condition and is never touched
+     (\b stops the match at "Charm" followed by a letter). Idempotent. */
+  var presenceFixed = 0;
+  function presenceText(s) {
+    if (typeof s !== "string" || !/\bCharm\b/.test(s)) return s;
+    presenceFixed++;
+    return s.replace(/\bCharm\b/g, "Presence");
+  }
+  function presenceKeys(a) {
+    if (!Array.isArray(a)) return;
+    for (var i = 0; i < a.length; i++) if (a[i] === "CHA") { a[i] = "PRE"; presenceFixed++; }
+  }
+  function presenceThreat(block, inputs) {
+    if (isObj(inputs)) presenceKeys(inputs.strong);
+    if (!isObj(block)) return;
+    if (isObj(block.saves)) {
+      presenceKeys(block.saves.attrs);
+      block.saves.text = presenceText(block.saves.text);
+    }
+    if (isObj(block.stats) && typeof block.stats.Saves === "string") block.stats.Saves = presenceText(block.stats.Saves);
   }
 
   /* INITIATIVE FOR A BLOCK BUILT BEFORE THE BOOK'S FORMULA. Until 2026-10 the
@@ -201,7 +228,7 @@ EN.gmStore = (function () {
     if (row.kind !== "crew" && row.kind !== "threat") return null;
     if (row.kind === "threat" && (!row.block || typeof row.block !== "object")) return null;
     if (row.kind === "crew" && typeof row.charId !== "string") return null;
-    if (row.kind === "threat") { gradeKey(row.block); reachNotation(row.block); }
+    if (row.kind === "threat") { gradeKey(row.block); reachNotation(row.block); presenceThreat(row.block, row.inputs); }
     return row;
   }
   function cleanEntries(list) {
@@ -267,7 +294,7 @@ EN.gmStore = (function () {
           if (bag === "threats") { reachNotation(rec.block); fillInitMod(rec.block, rec.inputs, null); }
           // a saved encounter plan keeps its resolved statblocks on its "threat" lines
           if (bag === "encounters" && Array.isArray(rec.lines)) {
-            rec.lines.forEach(function (ln) { if (isObj(ln) && ln.kind === "threat") reachNotation(ln.block); });
+            rec.lines.forEach(function (ln) { if (isObj(ln) && ln.kind === "threat") { reachNotation(ln.block); presenceThreat(ln.block, ln.inputs); } });
           }
           rec.id = k;
           s[bag][k] = rec;
@@ -295,14 +322,14 @@ EN.gmStore = (function () {
     var raw = null;
     try { raw = JSON.parse(localStorage.getItem(STATE_KEY) || "null"); } catch (e) { raw = null; }
     var read = false;
-    reachFixed = 0;
+    reachFixed = 0; presenceFixed = 0;
     try { state = migrate(raw); read = true; } catch (e) { state = blank(); }
     pruneCrew();
     // the Reach pass changed what is stored: write the corrected document back once, so the
     // next load finds nothing to do (it is idempotent either way). Never after a failed read,
     // where `state` is the blank document and the stored one is still the player's.
-    if (read && reachFixed) persist(false);
-    reachFixed = 0;
+    if (read && (reachFixed || presenceFixed)) persist(false);
+    reachFixed = 0; presenceFixed = 0;
     // en_gm_mode_v1 held the GM TAB's visibility and retired with that tab
     // (2026-09). Both desktops are always offered now, so the flag decides
     // nothing. Removed rather than left behind, so it does not sit in every

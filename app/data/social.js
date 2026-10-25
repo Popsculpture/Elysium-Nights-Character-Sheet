@@ -113,16 +113,16 @@ EN.social = {
     text: "Every social roll has an **Approach**. The Approach is what the Character is actually doing to move the other side. It selects the Skill and the Attribute, and it tells the GM how the scene is being played.",
     columns: ["Approach", "Skill", "Common Attributes", "What It Does"],
     rows: [
-      { key: "persuasion", name: "Persuasion", skill: "Persuasion", attributes: "Charm, Wits", text: "Warmth, reason, rapport, appeals to mutual interest. The long game." },
-      { key: "intimidation", name: "Intimidation", skill: "Intimidation (Versatile)", attributes: "Body, Wits, Tech, Mystique, Charm", text: "Threat, weight, presence. Make them flinch first." },
-      { key: "performance", name: "Performance", skill: "Performance (Versatile)", attributes: "Charm, Agility, Body, Mystique", text: "Theater, distraction, rallying an audience, controlling tone." },
-      { key: "deception", name: "Deception", skill: "Deception", attributes: "Charm, Wits", text: "Misdirection, false flags, slipping past their guard." },
+      { key: "persuasion", name: "Persuasion", skill: "Persuasion", attributes: "Presence, Wits", text: "Warmth, reason, rapport, appeals to mutual interest. The long game." },
+      { key: "intimidation", name: "Intimidation", skill: "Intimidation (Versatile)", attributes: "Body, Wits, Tech, Mystique, Presence", text: "Threat, weight, presence. Make them flinch first." },
+      { key: "performance", name: "Performance", skill: "Performance (Versatile)", attributes: "Presence, Agility, Body, Mystique", text: "Theater, distraction, rallying an audience, controlling tone." },
+      { key: "deception", name: "Deception", skill: "Deception", attributes: "Presence, Wits", text: "Misdirection, false flags, slipping past their guard." },
       { key: "insight", name: "Insight", skill: "Insight (Versatile)", attributes: "Any", text: "Reading the room, finding the lever, setting up the next push." }
     ],
-    powerhouses: "Charm and Mystique are the powerhouses here. They are built for this. But the system gives every Attribute a way in.",
-    examples: "A Fury can use Body and Intimidation to make a fixer reconsider. A Codebreaker can use Tech and Intimidation to make a compliance officer realize how much of their life is already in the wrong hands. A Hustler can use Charm and Persuasion to do what Hustlers do. A Shaper can use Mystique and Performance to lean their resonance into the air until the room forgets how to breathe normally.",
+    powerhouses: "Presence and Mystique are the powerhouses here. They are built for this. But the system gives every Attribute a way in.",
+    examples: "A Fury can use Body and Intimidation to make a fixer reconsider. A Codebreaker can use Tech and Intimidation to make a compliance officer realize how much of their life is already in the wrong hands. A Hustler can use Presence and Persuasion to do what Hustlers do. A Shaper can use Mystique and Performance to lean their resonance into the air until the room forgets how to breathe normally.",
     versatile: "The Skills chapter spells out how Versatile Skills bend to fit the method. The Approach is the bend.",
-    insight: { name: "Insight as the Social Help Action", text: "Insight doesn't directly secure a concession. It sets up the next push. On a successful Insight roll, you grant Edge (or +1 Edge Die) to one ally's next social roll in the same scene." }
+    insight: { name: "Insight as the Social Help Action", text: "Insight doesn't directly secure a concession. It sets up the next push. On a successful Insight roll, you grant Edge to one ally's next social roll in the same scene." }
   },
 
   /* ---- Stakes and Sway ---------------------------------------------------------- */
@@ -134,7 +134,7 @@ EN.social = {
   sway: {
     text: "Sway gives the other side a reason to take your demands seriously.",
     sources: "Common sources: correct information you brought to the table, compromising proof, faction backing, prior favors you can call in, urgent timing on their end, credible threats, useful expertise, shared enemies, public sympathy, money or material support.",
-    rule: "When a Character has real sway, grant **Edge** (or +1 Edge Die). When the other side has reason to distrust, dismiss, or expose them, impose **Snag** (or +1 Snag Die). Don't hand out sway for flavor. It must shift the room."
+    rule: "When a Character has real sway, grant **Edge**. When the other side has reason to distrust, dismiss, or expose them, impose **Snag**. Don't hand out sway for flavor. It must shift the room."
   },
 
   /* ---- Margins and Outcomes -------------------------------------------------------- */
@@ -281,7 +281,7 @@ EN.social = {
         "A corporate executive may shrug off Body-driven Intimidation in a setting they control, then break fast under Wits-driven Persuasion that dismantles their position.",
         "A street boss might laugh off Tech-driven Intimidation but cave the moment a Fury steps forward without saying a word.",
         "A shrine elder might be untouched by money or threats but moved by Mystique-driven Performance that meets them on their own ground.",
-        "A cynical journalist might resist Charm but yield to a Wits-driven Deception that hands them the story they were already trying to write."
+        "A cynical journalist might resist Presence but yield to a Wits-driven Deception that hands them the story they were already trying to write."
       ],
       signal: "The GM should signal these vulnerabilities and resistances in play through fiction: body language, tells, the way they handle the first few exchanges. **Insight rolls are how Characters discover them.**"
     },
@@ -398,8 +398,8 @@ EN.social = {
     heatPerMonth: 1,
     effectsIntro: "Cred and Heat are not bookkeeping. They bite.",
     effects: [
-      { key: "highCred", name: "High Cred in a scene", text: "grants Edge (or +1 Edge Die) on social rolls within that scene, access to contacts and venues and information that ordinary people can't reach, and small material favors like comp tabs and discounts at GM discretion." },
-      { key: "lowCred", name: "Low or no Cred", text: "imposes Snag (or +1 Snag Die) on social rolls within scenes where the Character is unknown. Locked doors, refused meetings, the polite hostility of strangers." },
+      { key: "highCred", name: "High Cred in a scene", text: "grants Edge on social rolls within that scene, access to contacts and venues and information that ordinary people can't reach, and small material favors like comp tabs and discounts at GM discretion." },
+      { key: "lowCred", name: "Low or no Cred", text: "imposes Snag on social rolls within scenes where the Character is unknown. Locked doors, refused meetings, the polite hostility of strangers." },
       { key: "highHeat", name: "High Heat from a specific source", text: "imposes Snag on Stealth and Deception rolls in territory the source controls, triggers random encounters when the Character enters that source's space, and brings active opposition: assets, agents, hired help showing up at inconvenient times." },
       { key: "lowHeat", name: "Low Heat", text: "means normal travel through the relevant territory. The freedom of being beneath notice." }
     ],
@@ -441,11 +441,11 @@ EN.social = {
     title: "Sit-Down Example: The Deposition",
     setup: "The crew's lawyer is taking a deposition from a mid-level corporate witness who knows where the bodies are buried. Stakes: get the witness to name names. Floor: a corporate conference room (their turf, Snag on the crew), a recording system (Snag on Deception), and a witness who is more afraid of their employer than the crew (Hardened, Resolve 8).",
     rounds: [
-      { name: "Round One", text: "The Fury, sitting in the corner cleaning a sidearm she won't use, Holds. Her presence grants +1 Edge Die to the lawyer's Press this Round. The lawyer Presses with Persuasion (Charm), rolls a Costly Success, deals 2 Pressure. Resolve: 6." },
+      { name: "Round One", text: "The Fury, sitting in the corner cleaning a sidearm she won't use, Holds. Her presence grants +1 Edge Die to the lawyer's Press this Round. The lawyer Presses with Persuasion (Presence), rolls a Costly Success, deals 2 Pressure. Resolve: 6." },
       { name: "Round Two", text: "The Codebreaker, jacked in remotely, Disrupts: pulls one of the witness's internal emails onto the conference room screen \"by accident.\" That strips one Snag Die from the lawyer's next Press. The lawyer Presses with Wits-driven Persuasion (dismantling the witness's argument with the new evidence), and the turf's Snag is gone. Flawless Success: 3 Pressure. Resolve: 3." },
-      { name: "Round Three", text: "The witness tries to Stonewall: \"I would like to consult my legal counsel.\" Reduces incoming Pressure by 2, takes the *Cornered* condition for the scene. The lawyer presses again with Intimidation (Charm, plus information about the witness's daughter's tuition used to pressure them), and lands a Costly Success. 2 Pressure minus 2 Stonewall equals 0 net Pressure. No movement on Resolve, but the witness has used their Posture for the Round." },
+      { name: "Round Three", text: "The witness tries to Stonewall: \"I would like to consult my legal counsel.\" Reduces incoming Pressure by 2, takes the *Cornered* condition for the scene. The lawyer presses again with Intimidation (Presence, plus information about the witness's daughter's tuition used to pressure them), and lands a Costly Success. 2 Pressure minus 2 Stonewall equals 0 net Pressure. No movement on Resolve, but the witness has used their Posture for the Round." },
       { name: "Round Four", text: "The Fury speaks for the first time. Body and Intimidation: \"Your employer does not protect people. They use them. I have seen the people they leave behind.\" Roll. Mixed Result: 1 Pressure, and the witness applies Social Fallout. They choose Tipped Hand: the Fury reveals her own past as a corp security washout, which the witness's lawyer files away. Resolve: 2. The Fury picks up the Profile *Disgruntled Ex-Corp* for the rest of the scene." },
-      { name: "Round Five", text: "The lawyer Presses one more time. Persuasion (Charm). Costly Success: 2 Pressure. Resolve: 0. The witness breaks. They name two names. The crew gets what they came for. Heat with the corporation increases by 2." }
+      { name: "Round Five", text: "The lawyer Presses one more time. Persuasion (Presence). Costly Success: 2 Pressure. Resolve: 0. The witness breaks. They name two names. The crew gets what they came for. Heat with the corporation increases by 2." }
     ]
   },
 
@@ -456,7 +456,7 @@ EN.social = {
     { key: "everyone", name: "Let every Character contribute.", text: "The Hold play exists so muscle and chrome can show up without dragging the scene down. The Disrupt play lets the technical-minded Characters do something even when the talking is happening elsewhere. The Support play lets the silent ones lend weight. Nobody at the table should sit out a Sit-Down." },
     { key: "matchFallout", name: "Match fallout to fiction.", text: "A social scene that produces physical Fatigue is usually the wrong call. Use Debt, Scrutiny, Profiles, Faction Shifts, Cred and Heat changes. The fallout should fit the room." },
     { key: "slow", name: "Cred and Heat are slow-moving currencies.", text: "Don't change them every session. Update them at the end of a job, after an arc, or when something notable happens that the table will remember." },
-    { key: "anyCrew", name: "Any crew can win one.", text: "A Charm-and-Mystique-heavy crew wins by direct push. A muscle-and-chrome crew wins by Holding well, trading on its reputation, and choosing the right Disrupts. Know what your crew actually is, and play the room it can win." },
+    { key: "anyCrew", name: "Any crew can win one.", text: "A Presence-and-Mystique-heavy crew wins by direct push. A muscle-and-chrome crew wins by Holding well, trading on its reputation, and choosing the right Disrupts. Know what your crew actually is, and play the room it can win." },
     { key: "backgrounds", name: "Background ties matter here.", text: "Every Background grants Contacts and a Background Feature. A Boardroom Exile already belongs in the corporate conference room. A Badge already knows which form will buy the crew an hour. A Glow Idol already has the bartender's loyalty. Reward these. The crew that brings the right Background to the setpiece should already have changed the Floor before the first roll." }
   ],
 

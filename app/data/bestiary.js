@@ -130,7 +130,7 @@ EN.bestiary = {
       name: "Ganger Shotcaller", category: "people", subgroup: null, page: 71,
       grade: 1, designation: "Standard", role: "Support",
       identity: "Grade 1 Standard, Support. Medium Human.",
-      stats: { "Defense": "12", "DR": "1 (Hypeplate)", "Vitality": "20", "Speed": "6", "Initiative": "+3", "Saves": "+4 Charm and Wits, +1 others", "Passive Perception": "12", "XP": "100", "Resolve": "5 (Standard)" },
+      stats: { "Defense": "12", "DR": "1 (Hypeplate)", "Vitality": "20", "Speed": "6", "Initiative": "+3", "Saves": "+4 Presence and Wits, +1 others", "Passive Perception": "12", "XP": "100", "Resolve": "5 (Standard)" },
       abilities: [
         { name: "Machine Pistol", cost: "Action", text: "+5 vs Defense, Range 6 / 18, 1d6+2 Ballistic (5)." },
         { name: "Call the Play", cost: "Swift", text: "One allied ganger threat within 6 spaces gains Edge on its next attack." },
@@ -207,11 +207,11 @@ EN.bestiary = {
       name: "Corporate Handler", category: "people", subgroup: null, page: 73,
       grade: 3, designation: "Standard", role: "Support",
       identity: "Grade 3 Standard, Support. Medium Human in a suit worth more than the crew's rent.",
-      stats: { "Defense": "14", "DR": "1 (Liner Mesh)", "Vitality": "50", "Speed": "6", "Initiative": "+5", "Saves": "+6 Charm and Wits, +2 others", "Passive Perception": "14", "XP": "250", "Resolve": "12 (Iron)" },
+      stats: { "Defense": "14", "DR": "1 (Liner Mesh)", "Vitality": "50", "Speed": "6", "Initiative": "+5", "Saves": "+6 Presence and Wits, +2 others", "Passive Perception": "14", "XP": "250", "Resolve": "12 (Iron)" },
       abilities: [
         { name: "Pocket Pistol", cost: "Action", text: "+7 vs Defense, Range 4 / 12, 1d6+3 Ballistic (6). They would rather not. Their insurer would rather they didn't." },
         { name: "Spotter", cost: "Swift", text: "One allied threat gains Edge on its next attack against a Target the Handler can see." },
-        { name: "Terms and Conditions", cost: "Action", text: "One Target that can hear the Handler makes a Wits Save DC 14 or rolls with Snag on attacks against the Handler until the end of its next turn. It is hard to shoot somebody mid-offer." },
+        { name: "Terms and Conditions", cost: "Action", text: "One Target that can hear the Handler makes a Presence Save DC 14 or rolls with Snag on attacks against the Handler until the end of its next turn. It is hard to shoot somebody mid-offer." },
         { name: "Exit Clause", cost: "Special", text: "The first time the Handler drops below half Vitality, their extraction contract activates. Somebody is now coming, and the response clock advances one row." }
       ],
       gear: "Pocket Pistol, a Nexus-linked tablet in audit lock, business cards with no company on them."
@@ -247,10 +247,10 @@ EN.bestiary = {
       name: "Cult Cantor", category: "people", subgroup: null, page: 75,
       grade: 3, designation: "Standard", role: "Controller",
       identity: "Grade 3 Standard, Controller. Medium, any species, voice like a dial tone you want to trust.",
-      stats: { "Defense": "14", "DR": "1 (vestments)", "Vitality": "37", "Speed": "6", "Initiative": "+5", "Saves": "+6 Mystique and Charm, +2 others", "Passive Perception": "13", "XP": "250", "Resolve": "8 (Hardened; double Pressure from Insight-driven approaches, none from Intimidation. They have already imagined worse than the crew.)" },
+      stats: { "Defense": "14", "DR": "1 (vestments)", "Vitality": "37", "Speed": "6", "Initiative": "+5", "Saves": "+6 Mystique and Presence, +2 others", "Passive Perception": "13", "XP": "250", "Resolve": "8 (Hardened; double Pressure from Insight-driven approaches, none from Intimidation. They have already imagined worse than the crew.)" },
       abilities: [
         { name: "Chorus Peal", cost: "Action", text: "+7 vs Defense, Range 8, 2d6 Psychic (7)." },
-        { name: "The Verse", cost: "Action", text: "One Target that can hear the Cantor makes a Wits Save DC 15 or is Frightened of the Cantor, or Charmed by them (Cantor's choice), until the end of the Target's next turn." },
+        { name: "The Verse", cost: "Action", text: "One Target that can hear the Cantor makes a Presence Save DC 15 or is Frightened of the Cantor, or Charmed by them (Cantor's choice), until the end of the Target's next turn." },
         { name: "Congregation", cost: null, text: "The Cantor's Save DC rises by 1 while three or more allied believers are within 6 spaces." }
       ],
       gear: "Vestments, donation ledger, keys to a shrine that isn't on any registry.",
@@ -311,7 +311,7 @@ EN.bestiary = {
       name: "Ashrider Road Boss", category: "people", subgroup: "street", page: 77,
       grade: 4, designation: "Standard", role: "Bruiser",
       identity: "Grade 4 Standard, Bruiser. Medium, any species, more scar than road rash.",
-      stats: { "Defense": "14", "DR": "4 (Scrap Plate)", "Vitality": "87", "Speed": "6", "Initiative": "+5", "Saves": "+7 Body and Charm, +2 others", "Passive Perception": "14", "XP": "350", "Resolve": "8 (Hardened)" },
+      stats: { "Defense": "14", "DR": "4 (Scrap Plate)", "Vitality": "87", "Speed": "6", "Initiative": "+5", "Saves": "+7 Body and Presence, +2 others", "Passive Perception": "14", "XP": "350", "Resolve": "8 (Hardened)" },
       abilities: [
         { name: "Maul", cost: "Action", text: "Two attacks, +9 vs Defense, melee, 2d6+4 Bludgeoning (11)." },
         { name: "Shotgun", cost: "Action", text: "+9 vs Defense, Range 5 / 12, 2d6+4 Ballistic (11)." },
@@ -507,7 +507,7 @@ EN.bestiary = {
       stats: { "Security Rating": "17", "Cipher Save": "+5", "System Integrity": "25", "Firewall Damage Threshold": "3", "XP": "150" },
       abilities: [
         { name: "Corrupt", cost: "Action", text: "Cipher Attack +6 against a Linked device or a Node it shares with a Target's Persona: 2d6 Tech damage." },
-        { name: "Screech", cost: "Action", text: "Every Persona in its Node makes a Wits Save DC 13 or is Dazed until the end of its next turn (the feed goes wrong in a way eyes aren't for)." },
+        { name: "Screech", cost: "Action", text: "Every Persona in its Node makes a Tech Save DC 13 or is Dazed until the end of its next turn (the feed goes wrong in a way eyes aren't for)." },
         { name: "Nest", cost: null, text: "It lives in a host Node. Brick the host and the Script dies with the furniture. It knows this, and it moves." }
       ],
       salvage: "Fragments worth 𝒢150 to a cipher crafter as materials."
@@ -548,7 +548,7 @@ EN.bestiary = {
       abilities: [
         { name: "Static Body", cost: null, text: "Resistance to Ballistic, Piercing, and Slashing damage. Vulnerability to Resonant damage. It is only mostly here." },
         { name: "Never Where the Hand Lands", cost: null, text: "Attacks and grabs against a Nixie by a Target it can see roll with Snag. It reads intent off the current the way the crew reads a drawn gun." },
-        { name: "In Residence", cost: null, text: "A Nixie keeps a host: a machine it has decided is worth living in. The host runs past its spec sheet: checks made using it gain Edge (or +1 Edge Die on a Dice Pool), and treat its Node as one Tier higher (Security Rating and Cipher Save Bonus). This is why certain corners have a vending machine that never jams and a door that never sticks, and why nobody who knows fixes what isn't broken." },
+        { name: "In Residence", cost: null, text: "A Nixie keeps a host: a machine it has decided is worth living in. The host runs past its spec sheet: checks made using it gain Edge, and treat its Node as one Tier higher (Security Rating and Cipher Save Bonus). This is why certain corners have a vending machine that never jams and a door that never sticks, and why nobody who knows fixes what isn't broken." },
         { name: "Small Favors", cost: "Special, once per scene", text: "A machine within 6 spaces hiccups in somebody's favor: a door unbolts, a camera looks away, a fare reader waves someone through, a payout lands. The Nixie decides who it likes. Bribery is possible." },
         { name: "Spark Fuss", cost: "Impulse", text: "When grabbed, struck, or when its host is damaged, the offender takes 1d6 Electric (3). It isn't an attack. It is punctuation." },
         { name: "Ride the Wire", cost: "Swift", text: "Vanish into powered cabling and reappear within 6 spaces at anything electrified." },
@@ -565,7 +565,7 @@ EN.bestiary = {
       abilities: [
         { name: "Immaterial", cost: null, text: "Resistance to Ballistic, Piercing, Slashing, and Bludgeoning damage. Immune to Toxic. Fire, Electric, Energy, Psychic, and Resonant damage land in full." },
         { name: "Cold Touch", cost: "Action", text: "+6 vs Defense, melee, 2d6 Cold (7)." },
-        { name: "Replay Wail", cost: "Action", text: "Area 2 sphere on itself: organic Targets make a Wits Save DC 13 or are Shaken until the end of their next turn." },
+        { name: "Replay Wail", cost: "Action", text: "Area 2 sphere on itself: organic Targets make a Mystique Save DC 13 or are Shaken until the end of their next turn." },
         { name: "The Loop", cost: null, text: "Until disturbed, an Echo re-enacts its imprint and notices nothing. Interrupt the loop (cross it, alter the scene it died in, channel nearby) and it notices everything." }
       ],
       gmNote: "An Echo can be cleansed instead of fought: treat it as a Severity 2 Anomaly and run a Cleansing Project (Flow Disturbances). Cleansing pays the same XP. The neighbors pay in gratitude, which spends worse but lasts longer."
@@ -613,7 +613,7 @@ EN.bestiary = {
       stats: { "Defense": "16", "DR": "1 (rift-glass hide)", "Vitality": "52", "Speed": "7 (climbs at full Speed)", "Initiative": "+7", "Saves": "+7 Agility and Wits, +2 others", "Passive Perception": "16", "XP": "350" },
       abilities: [
         { name: "Claws", cost: "Action", text: "Two attacks, +9 vs Defense, melee, 1d10+5 Slashing (10)." },
-        { name: "Taste of Elsewhere", cost: null, text: "When both claws hit the same Target in one turn, the Target makes a Wits Save DC 15 or is Dazed until the end of its next turn." },
+        { name: "Taste of Elsewhere", cost: null, text: "When both claws hit the same Target in one turn, the Target makes a Mystique Save DC 15 or is Dazed until the end of its next turn." },
         { name: "Rift Step", cost: "Swift", text: "Teleport up to 4 spaces to a space in dim light or water." },
         { name: "Slip Away", cost: "Impulse", text: "When missed by a melee attack, move 2 spaces without provoking Opportunity Attacks." }
       ],
@@ -663,7 +663,7 @@ EN.bestiary = {
       abilities: [
         { name: "Claws", cost: "Action", text: "Two attacks, +7 vs Defense, melee, 1d8+4 Slashing (8)." },
         { name: "Bring Them Down", cost: null, text: "The Feral's attacks gain Edge against Prone or Restrained Targets." },
-        { name: "Territorial Bellow", cost: "Swift, once per scene", text: "Area 3 sphere on itself: organic Targets make a Wits Save DC 14 or are Shaken until the end of their next turn." }
+        { name: "Territorial Bellow", cost: "Swift, once per scene", text: "Area 3 sphere on itself: organic Targets make a Presence Save DC 14 or are Shaken until the end of their next turn." }
       ],
       salvage: "Hide (armorer interest), glands (lab interest), tags (historian interest, and the historians pay worst but ask the best questions)."
     },
@@ -714,7 +714,7 @@ EN.bestiary = {
       identity: "Grade 3 Solo. Large ambush predator of the flooded levels: a lure, a jaw, and a patience the dark has been refining since before the pumps failed.",
       stats: { "Defense": "15", "DR": "3 (pressure hide)", "Vitality": "200", "Speed": "5 (swim 8)", "Initiative": "+6", "Saves": "+6 Body, +2 others", "Passive Perception": "16 (Tremor Sense 12 spaces; it feels footsteps through standing water)", "Unshakable, Defensive Impulses": "as a Solo (listed Impulse: Submerge: gain Half Cover against one ranged attack).", "XP": "1,000" },
       abilities: [
-        { name: "The Lure", cost: null, text: "A dangling light that reads, at distance, as a working maintenance lamp, a comm ping, a wearable's lost-and-found strobe. The first time a Target sees the lit lure each scene, it makes a Wits Save DC 16 or must use its next Move to close toward the light. Crews that know what the light is still lose people to it. It looks like somebody alive." },
+        { name: "The Lure", cost: null, text: "A dangling light that reads, at distance, as a working maintenance lamp, a comm ping, a wearable's lost-and-found strobe. The first time a Target sees the lit lure each scene, it makes a Mystique Save DC 16 or must use its next Move to close toward the light. Crews that know what the light is still lose people to it. It looks like somebody alive." },
         { name: "Jaw", cost: "Action", text: "Two attacks, +7 vs Defense, melee, 3d10+6 Piercing (22). On a hit, the Angler may attempt a Grapple contest for free (Athletics +8)." },
         { name: "Tongue Lash", cost: "Action", text: "+7 vs Defense, Reach +3 (flexible), 2d8+6 Bludgeoning (15); on a hit the Target is pulled 2 spaces toward the jaw." },
         { name: "Surges", cost: "3 per round", text: "*Douse* (extinguish its lure and any unshielded light within 2 spaces: that area is heavily obscured); *Undertow* (each Target in water within 2 spaces makes a Body Save DC 16 or is pulled 1 space and falls Prone); *Snap* (one bite at the bottom of its range: 1d10+5)." },
@@ -732,9 +732,9 @@ EN.bestiary = {
       abilities: [
         { name: "Wrong Geometry", cost: null, text: "Resistance to Ballistic and Piercing damage. The wound is never quite where he was." },
         { name: "Long Fingers", cost: "Action", text: "Three attacks, +9 vs Defense, melee, 2d12+8 Slashing (21)." },
-        { name: "The Smile", cost: null, text: "The first time each scene a Target sees his face, it makes a Wits Save DC 17 or is Frightened until the end of its next turn." },
-        { name: "Surges", cost: "3 per round", text: "*Closer* (teleport up to 6 spaces to any space no one can currently see); *Borrowed Face* (until someone looks twice, he reads as a person one Target knows: Wits Save DC 17 to look twice in time); *Still Frame* (one Target makes a Wits Save DC 17 or is Stunned until the end of its next turn; once per round)." },
-        { name: "Breakpoint", cost: null, text: "The smile opens. Area 3 sphere on him: organic Targets make a Wits Save DC 17 or gain the Panic condition. He doesn't fight after this. He harvests whoever ran alone." },
+        { name: "The Smile", cost: null, text: "The first time each scene a Target sees his face, it makes a Mystique Save DC 17 or is Frightened until the end of its next turn." },
+        { name: "Surges", cost: "3 per round", text: "*Closer* (teleport up to 6 spaces to any space no one can currently see); *Borrowed Face* (until someone looks twice, he reads as a person one Target knows: Wits Save DC 17 to look twice in time); *Still Frame* (one Target makes a Mystique Save DC 17 or is Stunned until the end of its next turn; once per round)." },
+        { name: "Breakpoint", cost: null, text: "The smile opens. Area 3 sphere on him: organic Targets make a Mystique Save DC 17 or gain the Panic condition. He doesn't fight after this. He harvests whoever ran alone." },
         { name: "Weakness", cost: null, text: "He can't enter a space where his own image is displayed, and a mirror or a live playback of him forces him, once per scene, to stop and regard himself for a round (treat as Restrained until the start of his next turn). Nobody knows if it is a rule or a vanity, and nobody has survived being wrong in both directions." }
       ],
       salvage: "None. Proof of him, though, is worth 𝒢10,000 to a cult, a tabloid, or a corporate anomalist, and each buyer is its own consequence.",
@@ -749,7 +749,7 @@ EN.bestiary = {
         { name: "Static Bleed", cost: null, text: "Aura 3. The aura is a Static Zone, and the full entry in Flow Disturbances governs it: Invocations cost more, their teeth are halved, and the current doesn't come back inside the line." },
         { name: "Unmade Limb", cost: "Action", text: "Three attacks, +10 vs Defense, Reach +2, 4d10+6 Force (Spatial) (28). Ignores armor DR; space itself is doing the cutting." },
         { name: "Gravity Well", cost: "Action", text: "Area 3 sphere within 12 spaces: Targets make a Body Save DC 18 or are pulled 3 spaces toward its center and knocked Prone." },
-        { name: "Surges", cost: "3 per round", text: "*Fold Step* (teleport 4 spaces); *Shear* (one Unmade Limb attack at 2d10+6); *Howl of the Birth Hour* (one Target makes a Wits Save DC 18 or is Shaken until the end of its next turn)." },
+        { name: "Surges", cost: "3 per round", text: "*Fold Step* (teleport 4 spaces); *Shear* (one Unmade Limb attack at 2d10+6); *Howl of the Birth Hour* (one Target makes a Mystique Save DC 18 or is Shaken until the end of its next turn)." },
         { name: "Breakpoint", cost: null, text: "It stops holding itself together. The Static Bleed aura collapses outward and the whole engagement area becomes a Severity 3 Resonant Storm (Invocations +1 FP; failed checks deal 1d4 Vitality) for the rest of the scene, and the Orphan's DR drops to 2. The armor was the leash." },
         { name: "Weakness", cost: null, text: "Its birth site holds a Focal Anchor, the fused object it crystallized around: Defense 14, Vitality 45, immune to Flow damage and effects. While the Anchor exists, an Orphan dropped to 0 Vitality re-forms there in 1d4 days. Destroy the Anchor first, or stand on it, and the Orphan must come to the crew, on ground the crew chose. Killing it anywhere else is a rental." }
       ],

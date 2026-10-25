@@ -177,7 +177,7 @@ EN.resolution = {
     basics: "For a d20 check, Margin equals your total roll minus the DC. For a Dice Pool, Margin equals total successes minus total failures.\n\nA Margin of 10 or more on a d20, or +3 or more on a Dice Pool, is a Flawless Success: you get what you wanted, plus a bonus. A Margin in the middle is a Costly or Standard Success: you get what you wanted, sometimes with a small cost. A Margin of 0 on a Dice Pool is a Mixed Result: success with a price you choose. Any negative Margin is a Failure, and a deeply negative Margin is a Critical Failure where the GM gets to make things worse.",
     d20Intro: "Margin = Roll Total - DC",
     d20: [
-      { margin: "10+", result: "Flawless Success", desc: "Perfect execution. Gain a narrative advantage, grant yourself Edge or +1 Edge Die on a follow-up, recover 1 FP, or seize a strong position." },
+      { margin: "10+", result: "Flawless Success", desc: "Perfect execution. Gain a narrative advantage, grant yourself Edge on a follow-up, recover 1 FP, or seize a strong position." },
       { margin: "5 to 9", result: "Standard Success", desc: "Clean success. No side effects." },
       { margin: "0 to 4", result: "Costly Success", desc: "You hit the goal, but spend something to do it: time, material, a favor you were owed, influence, or attention." },
       { margin: "-1 to -4", result: "Failure", desc: "The attempt fails. Lose ground, spend resources, worsen your position, or alert opposition." },
@@ -185,7 +185,7 @@ EN.resolution = {
     ],
     poolIntro: "Margin = Total Successes - Total Failures",
     pool: [
-      { margin: "+3 or more", result: "Flawless Success", desc: "Cinematic or resonant. Gain a narrative advantage, grant Edge or +1 Edge Die on a follow-up, or recover 1 FP." },
+      { margin: "+3 or more", result: "Flawless Success", desc: "Cinematic or resonant. Gain a narrative advantage, grant Edge on a follow-up, or recover 1 FP." },
       { margin: "+1 to +2", result: "Costly Success", desc: "Effective, but with a minor cost: delay, spent material, a favor you were owed, or attention." },
       { margin: "0", result: "Mixed Result", desc: "Success with a consequence. Take one cost that fits the scene: 1 Fatigue, 1 Strain, a Debt, a new Profile, a Trace, or concede terms." },
       { margin: "-1 to -2", result: "Failure", desc: "The action falters and costs resources, position, or attention." },
@@ -256,7 +256,7 @@ EN.resolution = {
       { area: "Hacking (method varies by pace)", edge: "Superior code, stolen credentials, hidden backdoors, or local access", snag: "ICE resistance, unstable access, trace lock, or degraded hardware" },
       { area: "Flow (method varies by pace)", edge: "Harmonized environment, focused current, or resonance alignment", snag: "Chaotic zone, corrupted resonance, or unaligned channeling" }
     ],
-    sourcesNote: "The triggers above work in either method. In combat they grant Edge or Snag on your d20 roll. Out of combat they grant +1 Edge Die or +1 Snag Die to your pool.",
+    sourcesNote: "The triggers above work in either method, and so does anything else that grants Edge or Snag: Edge or Snag on a d20 roll, or +1 Edge Die or +1 Snag Die in a Dice Pool. A rule names dice only when it means something else, such as +2 Edge Dice.",
     gmGuidance: "**GM Best Practices:** Use Edge and Snag sparingly to emphasize key moments. Cancel them cleanly. Always lead with the fiction. If the story supports an advantage or complication, reflect it in the dice. Avoid double-counting. If a challenge's difficulty is already reflected in the DC or Snag Dice, don't apply a second penalty for the same reason."
   },
 

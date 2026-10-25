@@ -995,7 +995,7 @@ EN.engine = (function () {
      is fixed and needs nothing stored; anything longer is a menu whose answer lives in
      ch.talentAttrPicks. A row here ALONE never adds a point: see talentAttr.
      Source values per app/data/talents.js, line numbers in the comments. */
-  var ALL_ATTRS = ["BOD", "AGI", "WIT", "TEC", "MYS", "CHA"];
+  var ALL_ATTRS = ["BOD", "AGI", "WIT", "TEC", "MYS", "PRE"];
   var TALENT_ATTR_BUMP = {
     "akimbo-specialist":         ["BOD", "AGI"],        // talents.js:16
     "armor-piercing-specialist": ["BOD", "AGI"],        // 23
@@ -1011,7 +1011,7 @@ EN.engine = (function () {
     "augment-specialist":        ["TEC"],               // 174
     "gridrunners-reflexes":      ["TEC", "WIT"],        // 181
     "pain-editor":               ["BOD", "TEC"],        // 209
-    "resonance-dabbler":         ["TEC", "MYS", "CHA"], // 246
+    "resonance-dabbler":         ["TEC", "MYS", "PRE"], // 246
     "cyber-reinforced-vitality": ["BOD"],               // 283
     "cybernetic-surge":          ["BOD", "AGI"],        // 290
     "hardened-survivor":         ALL_ATTRS,             // 297, "the chosen Attribute"
@@ -1023,9 +1023,9 @@ EN.engine = (function () {
     "parkour-runner":            ["BOD", "AGI"],        // 348
     // Cold Reader was Crowd Reader until 2026-10-16 (store.js TALENT_RENAMES moves saved picks);
     // it now sits above Crew Commander in talents.js, and the note above it there shifts the rows below
-    "cold-reader":               ["CHA", "WIT"],        // 369
-    "crew-commander":            ["CHA"],               // 376
-    "faceless-persona":          ["CHA"],               // 390
+    "cold-reader":               ["PRE", "WIT"],        // 369
+    "crew-commander":            ["PRE"],               // 376
+    "faceless-persona":          ["PRE"],               // 390
     "field-specialist":          ALL_ATTRS,             // 404, "one Attribute of your choice"
     "hyper-aware":               ["WIT", "TEC"],        // 411
     "photographic-memory":       ["TEC", "WIT"],        // 425
@@ -1034,7 +1034,7 @@ EN.engine = (function () {
     "spatial-delivery":          ["WIT", "MYS"],        // 460
     "street-chef":               ["BOD", "WIT"],        // 467
     "trauma-medic":              ["WIT", "TEC"],        // 474
-    "undercity-survivor":        ["WIT", "TEC", "CHA"]  // 481
+    "undercity-survivor":        ["WIT", "TEC", "PRE"]  // 481
   };
   function talentAttrOptions(talentKey) {
     return ownVal(TALENT_ATTR_BUMP, talentKey) || null;
@@ -4230,7 +4230,7 @@ EN.engine = (function () {
        which reads as though a species could grant one. It cannot. Part 2's "Clankers and The
        Flow" says the opposite of what that phrase suggests: "A Clanker can channel the Flow if
        their Class grants access to Invocations", "Their Flow Attribute is set by their subclass
-       (Mystique, Tech, Body, or Charm)", and, decisively, "If a Clanker does not have a
+       (Mystique, Tech, Body, or Presence)", and, decisively, "If a Clanker does not have a
        Flow-using class, they interact with the
        Flow only as targets, exactly like a non-adept being." That section exists to confirm
        Clankers use the ORDINARY rules despite being inorganic: "a Clanker Flow adept runs on the
@@ -4258,7 +4258,7 @@ EN.engine = (function () {
       var fAttr = R.attrNameToKey[flowAttrName] || "MYS";
       var fMod = attributes[fAttr].mod;
       // The Icon's Parasocial Pact: add half the Mystique modifier (rounded up,
-      // minimum 0) to maximum FP, on top of the Charm-based Flow Modifier.
+      // minimum 0) to maximum FP, on top of the Presence-based Flow Modifier.
       var pactBonus = ch.subclass === "icon" ? Math.max(0, Math.ceil(attributes.MYS.mod / 2)) : 0;
       var strainStage = strainOf(ch);   // the one Strain value (2026-10-24 rulings, item 8)
       var stInfo = (EN.flow && EN.flow.strainTrack) ? EN.flow.strainTrack[strainStage - 1] : null;

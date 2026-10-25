@@ -68,9 +68,9 @@ EN.armorMods = {
     { key: "acoustic-baffles", name: "Acoustic Baffles", category: "stealth", price: 200, rarity: "Common", legality: "Legal", fits: "Loud or Powered",
       grants: "Removes Loud; Powered: ignores Loud penalty at half Speed or less", effect: "The suit loses the Loud trait. On Powered armor, which can't shed the noise of its own frame entirely, it instead ignores the Loud Stealth penalty so long as you move at half your Speed or less." },
     { key: "signature-damper", name: "Signature Damper", category: "stealth", price: 600, rarity: "Uncommon", legality: "Restricted", fits: "Any",
-      grants: "Snag on scans of your gear", effect: "Scanners, sensors, and tag readers checking for your armor, weapons, or cyberware roll with Snag (or you add +1 Snag Die against out-of-combat detection Dice Pools). A physical pat-down still finds anything it can touch." },
+      grants: "Snag on scans of your gear", effect: "Scanners, sensors, and tag readers checking for your armor, weapons, or cyberware roll with Snag. A physical pat-down still finds anything it can touch." },
     { key: "chameleon-weave", name: "Chameleon Weave", category: "stealth", price: 900, rarity: "Rare", legality: "Restricted", fits: "Any",
-      grants: "Active camouflage", effect: "You gain Edge on in-combat Stealth d20 checks (or +1 Edge Die on out-of-combat Stealth Dice Pools). While you hold still or move at half your Speed or less, you can attempt to hide even with no cover or concealment available. Moving at full Speed, attacking, or being struck drops the camouflage until you reset it at the start of a later turn." },
+      grants: "Active camouflage", effect: "You gain Edge on Stealth checks. While you hold still or move at half your Speed or less, you can attempt to hide even with no cover or concealment available. Moving at full Speed, attacking, or being struck drops the camouflage until you reset it at the start of a later turn." },
 
     /* ---- Sensors & Targeting ---- */
     { key: "threat-detection-hud", name: "Threat-Detection HUD", category: "sensors", price: 500, rarity: "Uncommon", legality: "Licensed", fits: "Any",
@@ -110,7 +110,7 @@ EN.armorMods = {
     { key: "resonance-dampener", resist: ["Resonant"], name: "Resonance Dampener", category: "mystech", price: 700, rarity: "Iconic", legality: "Contraband", fits: "Mystech",
       grants: "Resistance to Resonant", effect: "You gain Resistance to Resonant damage." },
     { key: "echo-shroud", name: "Echo Shroud", category: "mystech", price: 800, nexus: "◎0.3", rarity: "Legendary", legality: "Contraband", fits: "Mystech",
-      grants: "Hides your Flow signature", effect: "Attempts to detect, scry, or track you through the Flow, by Echoes, resonance, or metaphysical sensing, roll with Snag (or add +1 Snag Die to the relevant out-of-combat Dice Pool). Ordinary technological sensors are unaffected." },
+      grants: "Hides your Flow signature", effect: "Attempts to detect, scry, or track you through the Flow, by Echoes, resonance, or metaphysical sensing, roll with Snag. Ordinary technological sensors are unaffected." },
     { key: "ward-amplifier", name: "Ward Amplifier", category: "mystech", price: 1200, nexus: "◎0.5", rarity: "Legendary", legality: "Contraband", fits: "Mystech",
       grants: "Empowers Ward as a Focus", effect: "This mod is a Focus. Once per round when you use Ward, add +1d6 to the Ward reduction. You can only benefit from one Focus item for Ward at a time, so the Amplifier doesn't stack with a Focus suit or a Warding Focus; you choose which one is feeding your Ward." },
     { key: "grounding-lattice", name: "Grounding Lattice", category: "mystech", price: 2400, nexus: "◎1", rarity: "Legendary", legality: "Contraband", fits: "Mystech",

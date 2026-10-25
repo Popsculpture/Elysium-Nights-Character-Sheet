@@ -37,7 +37,7 @@ EN.classPicker = {
       subs: {
         harmonist: { flowAttribute: "Mystique" },
         kensei: { flowAttribute: "Body" },
-        icon: { flowAttribute: "Charm" },
+        icon: { flowAttribute: "Presence" },
         sourcerer: { flowAttribute: "Tech" }
       }
     },

@@ -244,7 +244,7 @@ EN.threats = {
      as its title, so the text starts at "Most Hostiles". "Constructs ON TASK": a
      Construct off its task checks like anyone else, so the exemption is not every
      Construct. */
-  morale: "Most Hostiles are employees. When a side loses its leader, loses half its number, or watches something arrive that is visibly out of its Grade, have the survivors make a Wits Save DC 12. On a failure they break: retreat, surrender, or a sudden fascinating interest in guarding a different hallway. Fanatics, Constructs on task, and anything without a survival instinct don't check. Fights that end in morale collapse pay full XP. Routing people is winning.",
+  morale: "Most Hostiles are employees. When a side loses its leader, loses half its number, or watches something arrive that is visibly out of its Grade, have the survivors make a Presence Save DC 12. On a failure they break: retreat, surrender, or a sudden fascinating interest in guarding a different hallway. Fanatics, Constructs on task, and anything without a survival instinct don't check. Fights that end in morale collapse pay full XP. Routing people is winning.",
 
   /* Size is the character-side vocabulary, reused rather than restated, so a
      Large threat and a Large Freelancer mean the same thing (GMH p55 names the
@@ -255,7 +255,7 @@ EN.threats = {
   /* WHICH attributes a threat is strong in. The book does NOT give a rule for
      this: it is an authoring choice made per threat, and the printed bestiary
      shows the spread. A Bruiser is Body, a Ghost is Agility and Wits, a Support
-     is Charm and Wits, and a Controller follows its flavour (Mystique and Body
+     is Presence and Wits, and a Controller follows its flavour (Mystique and Body
      for a Street Shaper, Tech and Wits for a Gutter Hacker).
 
      So this is an APP SUGGESTION read off the printed entries, not a rule, and
@@ -272,7 +272,7 @@ EN.threats = {
     deadshot:   ["AGI", "WIT"],
     ghost:      ["AGI", "WIT"],
     controller: ["MYS", "WIT"],
-    support:    ["CHA", "WIT"]
+    support:    ["PRE", "WIT"]
   },
 
   types: ["Human", "Chimera", "Verdine", "Clanker", "Outsider", "Construct", "Drone", "Beast", "Bioform", "Flow Being", "Cryptid", "#GRID Entity"],
@@ -474,14 +474,14 @@ EN.threats.optionalDamageEffects = {
     { name: "Reversal", type: "Genesis", group: "exotic",
       text: "When used on a willing Target, this Genesis attack restores Vitality equal to the damage rolled, with excess healing becoming Vigor until the next Long Rest. Pristine Strike and Mutating don't apply when Reversal is used." },
     { name: "Mind Pierce", type: "Psychic", group: "exotic",
-      text: "Bypasses physical Armor DR. Attacks with this Effect call for a Wits or Charm Save instead of a standard attack roll, at GM discretion." },
+      text: "Bypasses physical Armor DR. Attacks with this Effect call for a Mystique Save instead of a standard attack roll, at GM discretion." },
     { name: "Sealed System Bypass", type: "Toxic", group: "exotic",
       text: "This Toxic Effect can affect Targets in sealed Environmental Armor." },
     { name: "Poison", type: "Toxic", group: "exotic",
       text: "Target makes a Body Save or gains the **Poisoned** condition." },
 
     { name: "Strain Feedback", type: "Resonant", group: "tech",
-      text: "A Character with a Flow Reservoir who takes this damage makes a Flow Attribute Save. On a failure, they gain 1 Strain Point." },
+      text: "A Character with a Flow Reservoir who takes this damage makes a Mystique Save. On a failure, they gain 1 Strain Point." },
     { name: "Resonant Armor Bypass", type: "Resonant", group: "tech",
       text: "Ignores standard Armor DR unless the armor possesses Resonant Plating." },
     { name: "System Failure", type: "Tech", group: "tech",

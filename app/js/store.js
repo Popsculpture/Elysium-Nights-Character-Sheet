@@ -93,7 +93,7 @@ EN.store = (function () {
       skillFocuses: [],                  // [{skill, aspect}]
       specializations: [],               // [{skill, aspect}]
       talents: [],                       // talent keys
-      // Which attribute a choose-one Talent raised: {talentKey: "BOD"|"AGI"|"WIT"|"TEC"|"MYS"|"CHA"}.
+      // Which attribute a choose-one Talent raised: {talentKey: "BOD"|"AGI"|"WIT"|"TEC"|"MYS"|"PRE"}.
       // Absent means unset, which is a real state: 24 of the 36 bump Talents offer a choice, and
       // an unanswered choice grants no point rather than a guessed one. Null-prototype like every
       // other map in this app keyed on a string out of a save file. Read through engine.talentAttr.
@@ -261,6 +261,64 @@ EN.store = (function () {
       ["meta", "name", "firstName", "lastName"].forEach(function (k) { delete _schemaTemplate[k]; });
     }
     return _schemaTemplate;
+  }
+
+  /* CHARM BECAME PRESENCE (batch 81, 25 Oct 2026): the Attribute key CHA is now PRE. Every place a
+     record stores an Attribute KEY is renamed here, with no change to any value: the score itself
+     (ch.attributes), the Standard/Overclocked Array bookkeeping (arrayAssign, keyed by attribute),
+     the banked 4d6 roll groups (assign[], one key per slot), the +2 ATTRIBUTES Upgrade picks
+     (universalUpgrades[L].attrs, or the older single .attr), the choose-one Talent picks
+     (talentAttrPicks and talentSavePicks, values), the Versatile Skill slots (versatile[t].attr),
+     and the same shapes inside a retrain's snapshot (retrains[L].was and .picks) and an Edit
+     freely release (freelyFreed[L].was), which a CANCEL writes back. Idempotent: a second run
+     finds no CHA. Where a hand-edited record carries BOTH keys, the stored PRE wins and CHA is
+     dropped, so nothing is double counted. */
+  function migratePresence(ch) {
+    var OLD = "CHA", NEW = "PRE";
+    function isObj(o) { return o && typeof o === "object" && !Array.isArray(o); }
+    function moveKey(map) {
+      if (!isObj(map) || !Object.prototype.hasOwnProperty.call(map, OLD)) return;
+      if (!Object.prototype.hasOwnProperty.call(map, NEW)) map[NEW] = map[OLD];
+      delete map[OLD];
+    }
+    function renameValues(map) {
+      if (!isObj(map)) return;
+      Object.keys(map).forEach(function (k) { if (map[k] === OLD) map[k] = NEW; });
+    }
+    function renameArr(a) {
+      if (!Array.isArray(a)) return;
+      for (var i = 0; i < a.length; i++) if (a[i] === OLD) a[i] = NEW;
+    }
+    function upgrade(u) {
+      if (!isObj(u)) return;
+      if (u.attr === OLD) u.attr = NEW;
+      renameArr(u.attrs);
+    }
+    function picks(p) {
+      if (!isObj(p)) return;
+      renameValues(p.talentAttrPicks);
+      renameValues(p.talentSavePicks);
+    }
+    moveKey(ch.attributes);
+    moveKey(ch.arrayAssign);
+    (Array.isArray(ch.rollGroups) ? ch.rollGroups : []).forEach(function (g) { if (isObj(g)) renameArr(g.assign); });
+    if (isObj(ch.universalUpgrades)) Object.keys(ch.universalUpgrades).forEach(function (L) { upgrade(ch.universalUpgrades[L]); });
+    renameValues(ch.talentAttrPicks);
+    renameValues(ch.talentSavePicks);
+    if (isObj(ch.versatile)) Object.keys(ch.versatile).forEach(function (t) {
+      var v = ch.versatile[t];
+      if (isObj(v) && v.attr === OLD) v.attr = NEW;
+    });
+    if (isObj(ch.retrains)) Object.keys(ch.retrains).forEach(function (L) {
+      var r = ch.retrains[L];
+      if (!isObj(r)) return;
+      upgrade(r.was);
+      picks(r.picks);
+    });
+    if (isObj(ch.freelyFreed)) Object.keys(ch.freelyFreed).forEach(function (L) {
+      var f = ch.freelyFreed[L];
+      if (isObj(f)) upgrade(f.was);
+    });
   }
 
   function migrate(ch) {
@@ -905,6 +963,7 @@ EN.store = (function () {
       if (tapOut[key] === undefined) tapOut[key] = v;
     });
     ch.talentAttrPicks = tapOut;
+    migratePresence(ch);
     /* The damage-type picks, rebuilt the same way and for the same reason: the schema fill deep
        copies through JSON and hands back a plain object, so a save file carrying a key of
        "toString" would otherwise read as present and feed the engine a prototype method. Renames

@@ -38,7 +38,7 @@ EN.classes.scoundrel = {
   attributePriorities: [
     "1. Agility (Primary): Powers your Stealth, Sleight, finesse melee and ranged attacks, your Speed and Defense, and the size of your Moxie pool.",
     "2. Wits (Secondary): Drives your Perception and instinct for trouble, your Initiative, and your Wits saves.",
-    "3. Tech or Charm (Tertiary): Tech bypasses locks and security systems on a job; Charm talks you clear when footwork alone won't cut it."
+    "3. Tech or Presence (Tertiary): Tech bypasses locks and security systems on a job; Presence talks you clear when footwork alone won't cut it."
   ],
 
   resource: {
@@ -416,13 +416,13 @@ EN.classes.shaper = {
     {
       key: "icon",
       name: "The Icon",
-      description: "You're a localized demigod of the digital age, drawing your metaphysical weight from the collective obsession of an unseen audience. It doesn't matter whether you built your following as a charismatic provocateur, a relentless truth seeker, a digital instigator, or an absolute menace. You demanded the spotlight, and the Flow answered. Just as ancient spirits starved without worship, your resonance runs on viewership. You have forged a parasocial pact with the masses, but remember that an audience is a hungry, fickle beast that will gladly consume you the moment you stop being entertaining. The face you show the world is built from Charm; the self beneath it is held together by Mystique. Lose your grip on either, and the show ends.",
-      flowAttribute: "Charm",
+      description: "You're a localized demigod of the digital age, drawing your metaphysical weight from the collective obsession of an unseen audience. It doesn't matter whether you built your following as a charismatic provocateur, a relentless truth seeker, a digital instigator, or an absolute menace. You demanded the spotlight, and the Flow answered. Just as ancient spirits starved without worship, your resonance runs on viewership. You have forged a parasocial pact with the masses, but remember that an audience is a hungry, fickle beast that will gladly consume you the moment you stop being entertaining. The face you show the world is built from Presence; the self beneath it is held together by Mystique. Lose your grip on either, and the show ends.",
+      flowAttribute: "Presence",
       features: [
         {
           level: 1,
           name: "Center of Attention",
-          text: "**Flow Attribute:** Charm. This drives your Flow Attack rolls, Flow Save DCs, and your Reservoir's Flow Modifier component as normal.\n\n**The Parasocial Pact:** When calculating the size of your Reservoir, add half your Mystique Modifier (rounded up, minimum 0) to your maximum FP, on top of the standard formula.\n\n**Metaphysical Live Feed:** You gain Edge on in-combat Charm d20 checks (or +1 Edge Die to related out-of-combat Dice Pools) when dealing with crowds or fans. Once per combat, if you hit an enemy with a Flow Attack after taking a deliberate risk (such as moving out of Cover to expose yourself or taking a dangerous leap), you regain 1d4 FP."
+          text: "**Flow Attribute:** Presence. This drives your Flow Attack rolls, Flow Save DCs, and your Reservoir's Flow Modifier component as normal.\n\n**The Parasocial Pact:** When calculating the size of your Reservoir, add half your Mystique Modifier (rounded up, minimum 0) to your maximum FP, on top of the standard formula.\n\n**Metaphysical Live Feed:** You gain Edge on in-combat Presence d20 checks (or +1 Edge Die to related out-of-combat Dice Pools) when dealing with crowds or fans. Once per combat, if you hit an enemy with a Flow Attack after taking a deliberate risk (such as moving out of Cover to expose yourself or taking a dangerous leap), you regain 1d4 FP."
         },
         {
           level: 3,
@@ -432,12 +432,12 @@ EN.classes.shaper = {
         {
           level: 7,
           name: "The Show Must Go On",
-          text: "**Plot Armor:** Once per Long Rest, when an attack would reduce you to 0 Wounds, you don't fall Unconscious and don't become Dying. Instead, you remain at 1 Wound and gain 1 Stage of Strain. In the same instant, you emit a pulse of resonance: every enemy within 6 spaces must make a Saving Throw of your choice (DC = 8 + your Charm Modifier + your Caliber).\n\n• **The Spectacle (Charm Save):** On a failure, targets are knocked Prone and Blinded until the end of their next turn.\n• **The Reckoning (Mystique Save):** On a failure, targets are Charmed until the end of their next turn and can't willingly attack you.\n\n**Authentic Self:** Once per Short Rest, when you would take 1 Stage of Strain from any Icon subclass feature, you may make a Mystique Save (DC 10 + your current Stages of Strain). On a success, you take no Strain and regain 1 FP."
+          text: "**Plot Armor:** Once per Long Rest, when an attack would reduce you to 0 Wounds, you don't fall Unconscious and don't become Dying. Instead, you remain at 1 Wound and gain 1 Stage of Strain. In the same instant, you emit a pulse of resonance: every enemy within 6 spaces must make a Saving Throw of your choice (DC = 8 + your Presence Modifier + your Caliber).\n\n• **The Spectacle (Presence Save):** On a failure, targets are knocked Prone and Blinded until the end of their next turn.\n• **The Reckoning (Mystique Save):** On a failure, targets are Charmed until the end of their next turn and can't willingly attack you.\n\n**Authentic Self:** Once per Short Rest, when you would take 1 Stage of Strain from any Icon subclass feature, you may make a Mystique Save (DC 10 + your current Stages of Strain). On a success, you take no Strain and regain 1 FP."
         },
         {
           level: 10,
           name: "Do Not Look Away",
-          text: "Once per Long Rest, as an **Action**, spend 2 FP to broadcast your feed into the ambient Flow.\n\n**Audience Capture:** Every enemy within 20 spaces must make a Saving Throw (DC = 8 + your Charm OR Mystique Modifier (your choice) + your Caliber). The type depends on which face you project:\n\n• **Project the Icon (Charm Save):** Enemies are captivated by the spectacle. Your broadcast is overwhelming, hypnotic, total.\n• **Project the Self (Mystique Save):** Enemies are captivated by the truth underneath the persona, the raw, unfiltered weight of who you actually are, broadcast at metaphysical volume.\n\nOn a failure, they are completely captivated: they drop their weapons, their Speed becomes 0, and they can't take Actions or Impulse Actions, only stare. The effect lasts up to 1 minute and ends immediately for any individual target that takes damage."
+          text: "Once per Long Rest, as an **Action**, spend 2 FP to broadcast your feed into the ambient Flow.\n\n**Audience Capture:** Every enemy within 20 spaces must make a Saving Throw (DC = 8 + your Presence OR Mystique Modifier (your choice) + your Caliber). The type depends on which face you project:\n\n• **Project the Icon (Presence Save):** Enemies are captivated by the spectacle. Your broadcast is overwhelming, hypnotic, total.\n• **Project the Self (Mystique Save):** Enemies are captivated by the truth underneath the persona, the raw, unfiltered weight of who you actually are, broadcast at metaphysical volume.\n\nOn a failure, they are completely captivated: they drop their weapons, their Speed becomes 0, and they can't take Actions or Impulse Actions, only stare. The effect lasts up to 1 minute and ends immediately for any individual target that takes damage."
         }
       ]
     },
@@ -536,7 +536,7 @@ EN.classes.shaper = {
     flowDC: "Flow Save DC and Flow Attack are driven by your subclass Flow Attribute (Mystique or Tech, set by subclass). Subclass-stated saves use DC = 8 + your [Flow Attribute] Modifier + your Caliber (e.g., The Harmonist: DC = 8 + your Mystique Modifier + your Caliber).",
     maxFlow: "Your maximum FP is equal to (Caliber x 3) + your Flow Modifier.",
     flowAttributeBySubclass: {
-      icon: "Charm (The Icon may also add half Mystique Modifier, rounded up, minimum 0, to maximum FP via The Parasocial Pact)",
+      icon: "Presence (The Icon may also add half Mystique Modifier, rounded up, minimum 0, to maximum FP via The Parasocial Pact)",
       harmonist: "Mystique",
       kensei: "Body",
       sourcerer: "Tech"

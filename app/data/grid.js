@@ -191,7 +191,7 @@ EN.grid = {
   smartdeckTraits: [
     { name: "Hacking Tool", text: "Baseline Smartdeck capability. The deck can execute Power User ciphers up to its Max Complexity, maintain Links, and provide its listed Device Bonus to Cipher Attacks. Every Smartdeck has this trait." },
     { name: "Encrypted Comms", text: "Voice, text, and data are encrypted by default. Tracking, intercepting, or decrypting requires a Systems check vs. the deck's Security Rating." },
-    { name: "Trace-Resistant Signature", text: "The deck signs itself wrong on purpose. IC rolls its contested checks against you with Snag (or +1 Snag Die on a Dice Pool). They still log a trace. The trace just points somewhere fuzzy." },
+    { name: "Trace-Resistant Signature", text: "The deck signs itself wrong on purpose. IC rolls its contested checks against you with Snag. They still log a trace. The trace just points somewhere fuzzy." },
     { name: "Encrypted Channel", text: "Immune to passive Alert traces, the deck doesn't register in the slow corporate dragnets. Active hostile code still finds you." },
     { name: "Adaptive Buffer", text: "Stability Check DCs against you are reduced by 2." },
     /* Verbatim, Part 2, 2026-08-19. The Bandwidth discount is THIS TRAIT'S rule, not a
@@ -213,7 +213,7 @@ EN.grid = {
     { name: "Access Spike", type: "Breach", activation: "1 Action", range: "12 spaces", text: "Cipher Attack vs. Node Security Rating. On hit, establish a Link (lasts 8 hours)." },
     { name: "Access Override ⇋", type: "Utility", activation: "1 Action", range: "Touch (Linked)", text: "Target an electronic lock on a Linked Node. Node rolls Cipher Save vs. the Buddy's DC. • **Fail:** Lock or unlock the mechanism. • **Success:** Lock resists; IC retaliates." },
     { name: "Hijack Stream ⇋", type: "Detection", activation: "1 Action", range: "12 spaces", text: "Intercept video/audio from a Linked device. Node rolls Cipher Save vs. the Buddy's DC. • **Fail:** Clone or reroute the feed. • **Success:** Access denied; IC retaliates." },
-    { name: "Data Probe ⇋", type: "Detection", activation: "1 Action", range: "Self (via Link)", text: "Probe a Linked Node for files/logs/configs. Grants Edge on d20 (or +1 Edge Die) for Investigation or Systems searches." },
+    { name: "Data Probe ⇋", type: "Detection", activation: "1 Action", range: "Self (via Link)", text: "Probe a Linked Node for files/logs/configs. Grants Edge on Investigation or Systems searches." },
     { name: "Data Extraction ⇋", type: "Utility", activation: "1 Swift Action", range: "Touch", text: "Copy identified files from a Linked Node. Node rolls Cipher Save vs. the Buddy's DC. • **Fail:** Clean copy, no trace. • **Success:** You still get the data, but IC retaliates and leaves a forensic trail." }
   ],
 
@@ -236,7 +236,7 @@ EN.grid = {
     { key: "heatsinks",   name: "Reinforced Heatsinks", price: 600,  slots: 1, type: "System Integrity", avail: "Uncommon", legal: "Restricted",
       text: "Repurposed gaming-rig cooling: aluminum fins, copper piping, thermal paste applied with a steady hand. Increases the deck's System Integrity by +15. Once per deck.", bonus: { integrity: 15 } },
     { key: "sweep",       name: "Sweep Suite Plug-In", price: 800,  slots: 1, type: "Scanning", avail: "Uncommon", legal: "Restricted",
-      text: "Military-grade detection libraries. +1 Edge Die on all Scanning Dice Pools (or Edge on d20 Systems checks) to detect hidden, camouflaged, or hardened Nodes. Doesn't interact with the Modifier Stack Cap." },
+      text: "Military-grade detection libraries. Edge on all Scanning checks, and on Systems checks made to detect hidden, camouflaged, or hardened Nodes. Doesn't interact with the Modifier Stack Cap." },
     { key: "burnnotice",  name: "Burn Notice Module", price: 900,  slots: 1, type: "Trace Evasion", avail: "Rare", legal: "Contraband",
       text: "If the deck is Bricked by a LinkDeath failure (including Cascade), it wipes its memory and routes a false ping; the enemy Node rolls with Snag to trace your physical location." },
     { key: "icebreaker",  name: "ICE-Breaker Algorithm", price: 1200, slots: 1, type: "Failure Mitigation", avail: "Rare", legal: "Contraband",
