@@ -210,6 +210,10 @@ EN.printSheet = (function () {
       feats = feats.concat(EX.map(function (x) { return { name: x.name, text: (x.action ? x.action + ". " : "") + (x.text || ""), source: "Signature Exploit", level: 0 }; }));
     }
     feats = feats.filter(function (f) { return !/^(Universal Upgrade|Subclass Feature)$/.test(f.name) && !/Subclass( Capstone)?$/.test(f.name); });
+    // the Sourcerer's built Scrap Companion prints ahead of its rules text (js/companion.js)
+    if (EN.companion) feats = feats.map(function (f) {
+      return f.name === "Scrap Companion" ? { name: f.name, text: EN.companion.summary(ch, d) + "\n\n" + f.text, source: f.source, level: f.level, kind: f.kind, action: f.action } : f;
+    });
     function base(n) { return n.replace(/\s*\([^)]*\)\s*$/, "").trim(); }
     var present = {}; feats.forEach(function (f) { present[f.name] = true; });
     var top = {}; // base name -> highest-level variant reached

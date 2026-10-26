@@ -1668,6 +1668,8 @@ EN.codexView = (function () {
         // a pointer, not a copy: the type rules themselves live in Damage & Mitigation
         var hasSources = (C.damageTypes || []).some(function (t) { return !!t.sources; });
         return (C.damageTypeRules ? [K.note("What Resistance, Vulnerability and Immunity do to each type is under Damage & Mitigation.")] : [])
+          // which types armor DR stops (Damage Order step 3, 25 October 2026)
+          .concat(C.armorDRNote ? [K.note(C.armorDRNote + " Standard Physical Damage is Nonlethal, Ballistic, Piercing, Bludgeoning, and Slashing.")] : [])
           // the Handbook's Damage Type Sources lead-in; each type prints its own "Sources:" line (core-17)
           .concat(hasSources && C.damageSourcesIntro ? [K.note(C.damageSourcesIntro)] : [])
           .concat((C.damageTypes || []).map(function (t) { return dmgTypeBlock(K, t); }))

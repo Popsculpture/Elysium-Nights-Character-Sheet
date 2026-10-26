@@ -598,10 +598,40 @@ EN.combatView = (function () {
      tray for every defense (DEF_LIMIT_NOTE) and leaves the count to the table, as it always
      has. */
   var DEF_LIMIT_NOTE = "One Active Defense per round, or two if you traded your Move Action for a second Impulse. Never more than one against the same attacking Enemy's turn.";
-  var _defTray = { open: false, spec: null, incoming: "", roll: null, animating: false };
+  /* `type` is the incoming damage type (25 October 2026, batches 79 and 80). Left blank, the tray
+     stops at the Active Defense as it always has. Picked, it carries the hit on through step 3:
+     armor DR only where the type takes it ("Armor DR stops only Standard Physical Damage; other
+     types take it only where an entry says so"), then Resistance (engine.netDamage). `noTech`
+     answers Tech's "Deals 0 damage to a Target with no powered tech on or in them", which the
+     sheet cannot see. */
+  var _defTray = { open: false, spec: null, incoming: "", roll: null, animating: false, type: "", noTech: false };
   var _defAnimId = 0;
-  function openDefTray(spec) { _defAnimId++; _defTray = { open: true, spec: spec, incoming: "", roll: null, animating: false }; EN.app.render(); }
-  function closeDefTray() { _defAnimId++; _defTray = { open: false, spec: null, incoming: "", roll: null, animating: false }; EN.app.render(); }
+  function openDefTray(spec) { _defAnimId++; _defTray = { open: true, spec: spec, incoming: "", roll: null, animating: false, type: "", noTech: false }; EN.app.render(); }
+  function closeDefTray() { _defAnimId++; _defTray = { open: false, spec: null, incoming: "", roll: null, animating: false, type: "", noTech: false }; EN.app.render(); }
+  // the tray's type menu: the book's types, plus Spatial Shearing, the one Force that ignores Resistance to Force
+  function defTrayTypes() {
+    var names = ((EN.combat && EN.combat.damageTypes) || []).map(function (t) { return t && t.name; }).filter(Boolean);
+    var i = names.indexOf("Force");
+    if (i !== -1) names.splice(i + 1, 0, "Force (Spatial)");
+    return names;
+  }
+  /* Step 3 in words, for the outcome line: what DR the type takes, what Resistance does,
+     and what is left to apply. Empty when no type is picked. */
+  function defTrayStep3(s, left) {
+    var type = _defTray.type;
+    if (!type || typeof s.mitigate !== "function") return "";
+    var r = s.mitigate(left, type, { noPoweredTech: type === "Tech" && _defTray.noTech });
+    if (r.zeroBy) return " Then 0: " + r.zeroBy;
+    var dr = r.dr ? "Armor DR " + r.dr + (r.drFrom === "Resonant Plating" ? " (Resonant Plating)" : "") + " leaves " + r.afterDR
+      : "no Armor DR (" + type + " is not Standard Physical Damage)";
+    var res = r.level === "Resistant" ? ", Resistance halves it"
+      : r.level === "Vulnerable" ? ", Vulnerability doubles it"
+      : r.level === "Immune" ? ", Immunity stops it" : "";
+    if (r.resistIgnored) res += (res ? "; " : ", ") + "Spatial Shearing ignores Resistance to Force";
+    var out = " Then " + dr + res + ": " + r.net + " damage to apply.";
+    if (type === "Resonant" && s.attuned) out += " Attuned to the Flow: you make saves against it with Edge.";
+    return out;
+  }
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && _defTray.open) closeDefTray(); });
   function defTrayCommit() {
     var s = _defTray.spec, parts = [], total = 0;
@@ -723,6 +753,9 @@ EN.combatView = (function () {
       if (net === 0 && s.onZero) out += ". " + s.onZero;
       // Siphon: "restore Vigor equal to the exact amount of damage negated by this roll", never more than the hit
       if (s.onRoll) out += ". " + s.onRoll(Math.min(roll.total, inc));
+      // step 3, only once a type is picked (blank keeps the line exactly as it was)
+      var step3 = defTrayStep3(s, net);
+      if (step3) out += "." + step3;
       return out;
     }
     var inp = el("input.mono", { type: "number", min: "0", value: _defTray.incoming, placeholder: "0",
@@ -731,6 +764,23 @@ EN.combatView = (function () {
     var ctrls = isDefense ? null : el("div.row.wrap", { style: { gap: "8px", alignItems: "center", justifyContent: "center", padding: "12px 16px 0" } }, [
       el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".12em" }, text: "INCOMING" }), inp,
       el("button.btn.sm", { onclick: defTrayCommitAnimated, style: { color: "var(--accent)", borderColor: "var(--accent)" } }, roll ? "REROLL" : "ROLL")
+    ]);
+    // the incoming damage type, so step 3 takes armor DR only where the type does
+    var typeSel = isDefense ? null : el("select.def-type", {
+      title: "The incoming damage type. Armor DR stops only Standard Physical Damage; other types take it only where an entry says so.",
+      style: { padding: "4px", fontSize: "11px" },
+      onchange: function () { _defTray.type = this.value; EN.app.render(); }
+    }, [el("option", { value: "" }, "not set")].concat(defTrayTypes().map(function (n) {
+      var o = el("option", { value: n }, n);
+      if (n === _defTray.type) o.selected = true;
+      return o;
+    })));
+    var typeRow = isDefense ? null : el("div.row.wrap", { style: { gap: "8px", alignItems: "center", justifyContent: "center", padding: "8px 16px 0" } }, [
+      el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".12em" }, text: "TYPE" }), typeSel,
+      _defTray.type === "Tech" ? el("label.def-notech", { style: { fontSize: "11px", color: "var(--text2)", display: "inline-flex", alignItems: "center", gap: "4px" } }, [
+        el("input", { type: "checkbox", checked: !!_defTray.noTech, onchange: function () { _defTray.noTech = !!this.checked; EN.app.render(); } }),
+        document.createTextNode("No powered tech on or in me")
+      ]) : null
     ]);
     var outcome = el("div#def-outcome.mono", { style: { margin: "12px 16px 0", padding: "9px 11px", borderRadius: "6px",
       background: "rgba(0,229,255,.06)", border: "1px solid var(--border2)", fontSize: "12px", color: "var(--text)", lineHeight: 1.5, textAlign: "center" }, text: outcomeText() });
@@ -756,7 +806,7 @@ EN.combatView = (function () {
     }, [
       el("div", { style: { width: "min(430px, 96vw)", maxHeight: "94vh", overflowY: "auto", borderRadius: "12px",
         background: "linear-gradient(180deg, var(--bg2), var(--bg1))", border: "1px solid var(--border2)",
-        boxShadow: "0 20px 60px rgba(0,0,0,.55), 0 0 40px rgba(0,229,255,.10)" } }, [header, hero, autoLine, breakdown, sourceRow, ctrls, outcome, note, limitNote, foot])
+        boxShadow: "0 20px 60px rgba(0,0,0,.55), 0 0 40px rgba(0,229,255,.10)" } }, [header, hero, autoLine, breakdown, sourceRow, ctrls, typeRow, outcome, note, limitNote, foot])
     ]);
   }
 
@@ -3988,7 +4038,8 @@ EN.combatView = (function () {
         foot: "Cover" + (coverFoot ? " (" + coverFoot + ")" : "") + " and a declared Active Defense add more against a specific attack, see Defend.",
         rules: [["ref-def/defense", "Defense"], ["ref-cover", "Cover & Sight"], ["ref-def", "Active Defenses"]] },
       DR: { title: "Damage Reduction", total: d.totalDR || 0, sign: false,
-        formula: "Worn armor + armor mods + natural lineage DR vs physical damage",
+        // "Armor DR stops only Standard Physical Damage; other types take it only where an entry says so."
+        formula: "Worn armor + armor mods + natural lineage DR vs Standard Physical Damage (Nonlethal, Ballistic, Piercing, Bludgeoning, Slashing) only",
         rows: (dg.armor ? [bdRow("Armor · " + dg.armor.name + (dg.armorLapsed ? " (LEASE DUE)" : "") + (dg.armorDRLost ? " (" + dg.armorDR + " of " + dg.armorBaseDR + ", " + dg.armorDRLost + " lost)" : ""), dg.armorDR, null, true)] : [])
           .concat(dg.armorModDR ? [bdRow("Armor Mod (highest flat DR)", dg.armorModDR)] : [])
           .concat(d.naturalDR ? [bdRow("Natural (lineage)", d.naturalDR)] : [])
@@ -3998,7 +4049,9 @@ EN.combatView = (function () {
           })),
         empty: (dg.armor || d.naturalDR || d.cyberDR) ? null : "No armor equipped; WEAR armor in Inventory → Stash.",
         foot: ((dg.armorDRLost ? "Damaged plating: " + dg.armorDRLost + " point" + (dg.armorDRLost === 1 ? "" : "s") + " of DR gone until repaired, on the Impact Table. " : "") +
-              (dg.armor && (dg.armor.traits || []).indexOf("Plated") !== -1 ? "Plated: when you Block, add half this DR (rounded down) on top." : "") +
+              (dg.armor && (dg.armor.traits || []).indexOf("Plated") !== -1 ? "Plated: when you Block, add half this DR (rounded down) on top. " : "") +
+              // the one entry that carries armor DR past Standard Physical Damage
+              (dg.armor && !dg.armorLapsed && (dg.armor.traits || []).indexOf("Resonant Plating") !== -1 ? "Resonant Plating: " + dg.armor.name + "'s DR (" + ((d.armorDR || 0) + (dg.armorModDR || 0)) + ") also applies against Resonant damage." : "") +
               /* Conditional Resistances (Street Scrapper's Upgrade) turn on what is hitting you,
                  which the sheet cannot see, so they are a note here and never a row above: the
                  author's decision 5, 2026-10-16. */
@@ -5091,7 +5144,10 @@ EN.combatView = (function () {
             };
           })(moxieCost);
         }
-        return actionEntry(f.id, f.name, f.cost, f.src, f.text, f.limited, f.chip, uses, onUse, canUse, f.requirements);
+        var entry = actionEntry(f.id, f.name, f.cost, f.src, f.text, f.limited, f.chip, uses, onUse, canUse, f.requirements);
+        // the Sourcerer's Scrap Companion carries its builder and tracker under the ability (js/companion.js)
+        if (f.name === "Scrap Companion" && EN.companion) return el("div", null, [entry, EN.companion.card(ch, d)]);
+        return entry;
       }
       /* pushFeat stays a one-argument wrapper on purpose. Several call sites are
          forEach(pushFeat), which would hand a second parameter the array index, so the
@@ -6484,7 +6540,10 @@ EN.combatView = (function () {
       // Resurge and Siphon cost FP: the book says so once, in the Active Defense rules (no longer in the two entries)
       var FP_NOTE = "Costs 1 FP on top of the Impulse Action; at 0 FP it counts as an Overdraw of 1 FP.";
       function defSpec(name) {
-        var base = { name: name, baseDefense: d.defense, dice: [], flat: [] };
+        var base = { name: name, baseDefense: d.defense, dice: [], flat: [],
+          // the Damage Order's step 3 for the tray's damage-type pick: DR only where the type takes it, then Resistance
+          mitigate: function (amount, type, opts) { return eng.netDamage(d, amount, type, opts); },
+          attuned: !!d.attuned };
         if (name === "Block") {
           var sd = liveShield ? parseDie(dg.shieldBlockDie) : null;
           if (sd) { sd.label = liveShield.name; base.dice.push(sd); }
@@ -6494,7 +6553,7 @@ EN.combatView = (function () {
           if (reactive) base.dice.push({ n: 1, sides: 6, label: "Reactive Plating" });
           // "Prevent that much of the incoming damage": Block is a step 2 reduction like Parry or Ward, and
           // Armor DR comes off after it (Damage Order, step 3), so DR is not in this total any more
-          base.note = "Roll your Shield's Block die (if you carry one) and add your Block Bonus and any other Block benefits you have (the Plated trait's half DR, Block-boosting mods such as Reactive Plating's +1d6). Prevent that much of the incoming damage; your Armor DR (" + (d.armorDR || 0) + ") still comes off after. Physical attack damage only." + wearNote;
+          base.note = "Roll your Shield's Block die (if you carry one) and add your Block Bonus and any other Block benefits you have (the Plated trait's half DR, Block-boosting mods such as Reactive Plating's +1d6). Prevent that much of the incoming damage; your Armor DR (" + (d.armorDR || 0) + ") still comes off after, against Standard Physical Damage. Physical attack damage only." + wearNote;
           return base;
         }
         if (name === "Brace") {

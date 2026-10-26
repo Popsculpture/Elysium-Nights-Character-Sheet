@@ -94,7 +94,7 @@ window.EN = window.EN || {};
           ? "Flow Save DC" + (r.saveAttr && r.saveAttr !== "varies" ? " (" + r.saveAttr + ")" : "")
           : "Flow Attack vs Defense";
         var lines = ["Focus: " + r.focus + ". Resolves with a " + how + "."];
-        [r.armorNote, r.targeting, r.stabilityNote, r.special].forEach(function (t) { if (t) lines.push(t); });
+        [r.damageNote, r.armorNote, r.targeting, r.stabilityNote, r.special].forEach(function (t) { if (t) lines.push(t); });
         lines.push("Base: " + r.base);
         if ((r.empowered || []).length) {
           lines.push("Empowered Effects:");

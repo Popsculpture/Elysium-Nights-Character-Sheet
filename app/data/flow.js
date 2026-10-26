@@ -121,7 +121,8 @@ EN.flow = {
         { name: "Cellular Crash", sustain: false, text: "Target makes a Flow Save DC (Body) or is Poisoned until the end of their next turn and can't benefit from Resilience Dice or self-healing." }
       ] },
     { key: "spatial", name: "Spatial", unlock: 1, focus: "Dimensions and Void", damage: "Force (Spatial)",
-      resolution: "save", saveAttr: "varies", armorNote: "Ignores standard physical armor.",
+      // the Damage Profile's closing clause (25 October 2026); armor DR never stops Force anyway
+      resolution: "save", saveAttr: "varies", damageNote: "Deals Force (Spatial Shearing) damage, which ignores Resistance to Force.",
       base: "Swap places with an adjacent willing target, or seamlessly retrieve an object from across a room.",
       empowered: [
         { name: "Spatial Displacement", sustain: false, text: "Instantly teleport a willing target up to 3 spaces to an unoccupied space you can see." },
@@ -136,16 +137,17 @@ EN.flow = {
         { name: "Sensory Collapse", sustain: true, text: "Target makes a Flow Save DC (Mystique) or suffers Frightened or Charmed (your choice) for the duration." },
         { name: "Blind Spot", sustain: false, text: "A target you choose slips beneath notice, gaining the Invisible condition. Ends immediately if that target makes an attack or forces a saving throw." }
       ] },
-    { key: "synthetica", name: "Synthetica", unlock: 1, unique: "sourcerer", focus: "Favor and Malfunction", damage: "Electric / Fire",
-      resolution: "save", saveAttr: "Tech", noSustain: true,
-      stabilityNote: "Short Attention Spans: Synthetica Empowered Effects can't use the Sustain duration. A favor is a transaction; the sprite does the work, collects the amusement, and wanders off. Effects last exactly as long as their entries say and not a round longer.",
-      targeting: "Synthetica works through machines, never around them. A valid target carries, wears, or is installed with powered tech, or is itself a device, drone, Proxy, or Construct. A target with nothing electronic on or in them is beyond the sprites' reach.",
+    { key: "synthetica", name: "Synthetica", unlock: 1, unique: "sourcerer", focus: "Favor and Malfunction", damage: "Tech / Resonant",
+      // the table row and the Damage Profile, 25 October 2026 (was Electric or Fire); No Vessel, No Favor still applies
+      resolution: "save", saveAttr: "Tech", noSustain: true, damageNote: "Deals Tech or Resonant damage.",
+      stabilityNote: "Short Attention Spans: Synthetica Empowered Effects can't use the Sustain duration. A sprite will hold a Link open all week for the theater of it, but a favor is a transaction: the sprite does the work, collects the amusement, and wanders off.",
+      targeting: "Synthetica works through machines, never around them. A valid Target carries, wears, or is installed with powered tech, or is itself a device, drone, Proxy, or Construct. A Target with nothing electronic on or in them is beyond the sprites' reach. In Elysium, that describes almost no one. Almost.",
       special: "Favors Travel Light: when you shape an Invocation of any other Resonance, you may spend an additional 1 FP to fold a Nixie Favor or a Gremlin Jinx into it. A favor folded this way allows no save. One folded favor per Invocation.",
       base: "Choose one: Ask Around (interview the sprites in a device you can see or touch; you learn what the machine is, what it does, and what it has noticed recently, as impressions rather than records); Nixie Favor (a Nixie settles into a willing target's weapon or cybernetics; they gain a 1d4 bonus on their next attack roll or Saving Throw); Gremlin Jinx (a Gremlin crawls into an unwilling target's weapon or cybernetics; they make a Flow Save DC, Tech, or suffer a 1d4 penalty on their next attack roll or Saving Throw).",
       empowered: [
-        { name: "Nixie Synchronization", sustain: false, text: "A Nixie tunes a willing target's weapon or cybernetic implant to its wielder's pulse. For the next turn, the target gains Edge on their next attack roll with that weapon, and the weapon deals an additional 1d6 Force damage on its next hit." },
-        { name: "Gremlin Tantrum", sustain: false, text: "Point the local Gremlins at a target's firearm, smart tech, or cyberlimb. The target makes a Flow Save DC (Tech). On a failure, they take 1d6 Fire damage as the device cooks against them, and that weapon or cyberlimb seizes up, preventing its use until the end of their next turn." },
-        { name: "Poltergeist", sustain: false, unlock: 3, text: "Ask the sprites riding a device, drone, or Construct to take the wheel. The Target must make a Tech Save against your Flow Save DC. On a failure, you dictate its movement and its Action on its next turn. The sprites won't drive a machine into its own obvious destruction, and they can't drive a mind: a Clanker, a Synthetic, or any Target that is someone rather than something is immune. A body with a mind in residence has no room for backseat drivers." }
+        { name: "Nixie Synchronization", sustain: false, text: "A Nixie tunes a willing Target's weapon or cybernetic implant to its wielder's pulse. Until the end of their next turn, the Target gains Edge on their next attack roll with that weapon or implant, and its next hit deals an extra 1d6 Force damage." },
+        { name: "Gremlin Tantrum", sustain: false, text: "Point the local Gremlins at a Target's firearm, smart tech, or cyberlimb. The Target must make a Tech Save against your Flow Save DC. On a failure, the Target takes 1d6 Tech or Resonant damage as the device cooks against them and seizes up until the end of their next turn." },
+        { name: "Poltergeist", sustain: false, unlock: 3, text: "Ask the sprites riding a device, drone, or Construct to take the wheel. The Target must make a Tech Save against your Flow Save DC. On a failure, you dictate its movement and its Action on its next turn. The sprites won't drive a machine into its own obvious destruction, and they can't drive a mind: a Clanker, a Synthetic, or any Target that is someone rather than something is immune." }
       ] },
     { key: "temporal", name: "Temporal", unlock: 5, focus: "Chronological Flow", damage: "Entropy",
       resolution: "attack", noSustain: true,

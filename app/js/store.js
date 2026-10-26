@@ -139,6 +139,12 @@ EN.store = (function () {
       resonances: [],                          // Shaper: known Base Resonance keys (3 at L1, +1 at L3, +1 at L5)
       resilience: { spent: 0 },                // Resilience Dice spent (max = level)
       featureUses: {},                         // {featureName: {n: spent, r: recharge}} for limited-use features
+      // Sourcerer Level 7 Scrap Companion (25 October 2026): the build chosen at each assembly or refit,
+      // read through EN.companion. resident nixie|gremlin, movement clambering|hovering|amphibious,
+      // size Small|Medium, rig skyhook|hush|scrambler|workshop; null = not chosen. vitLost counts
+      // damage taken by the current shell. rigPick lists the rigs a migrated Gremlin Scourge still
+      // has to choose between (the rig shows Hush until the player picks).
+      scrapCompanion: { resident: null, movement: null, size: null, rig: null, active: false, vitLost: 0, symbiosis: false, rigPick: null },
       fatigue: 0,
       deathSaves: { s: 0, f: 0 },
       stable: false,
@@ -319,6 +325,57 @@ EN.store = (function () {
       var f = ch.freelyFreed[L];
       if (isObj(f)) upgrade(f.was);
     });
+  }
+
+  /* SCRAP FAMILIAR BECOMES SCRAP COMPANION (25 October 2026 handoff, batch 78). The app never had a
+     field of its own for the familiar (the Level 7 feature was read-only text), so a choice can only
+     arrive from a hand-kept or imported record: a legacy ch.scrapFamiliar or ch.familiar (a string or
+     an object with type, kind or name), or a custom feature the player named for it. Mapping:
+       Nixie Skyhook   -> Nixie resident, Hovering, Medium, the Skyhook rig
+       Gremlin Scourge -> Gremlin resident, Clambering, Medium, a pick between Hush and Scrambler
+                          (Hush until the player chooses); Sensory Overload is gone with no replacement
+     Never over a companion already built (a resident is set). The player's note, pin, star or hide on
+     the old feature moves to the new name. Idempotent: the legacy fields are removed once read. */
+  function migrateScrapFamiliar(ch) {
+    function kindOf(v) {
+      if (v && typeof v === "object") v = v.type || v.kind || v.name || v.familiar || "";
+      var s = String(v || "");
+      if (/skyhook/i.test(s)) return "nixie";
+      if (/scourge/i.test(s)) return "gremlin";
+      if (/nixie/i.test(s)) return "nixie";
+      if (/gremlin/i.test(s)) return "gremlin";
+      return null;
+    }
+    var found = null;
+    ["scrapFamiliar", "familiar"].forEach(function (k) {
+      if (ch[k] === undefined) return;
+      if (!found) found = kindOf(ch[k]);
+      delete ch[k];
+    });
+    if (!found && Array.isArray(ch.customFeatures)) {
+      ch.customFeatures.some(function (cf) {
+        if (!cf || typeof cf.name !== "string" || !/Skyhook|Scourge/i.test(cf.name)) return false;
+        found = kindOf(cf.name);
+        return !!found;
+      });
+    }
+    var sc = ch.scrapCompanion;
+    if (!sc || typeof sc !== "object" || Array.isArray(sc)) {
+      sc = ch.scrapCompanion = { resident: null, movement: null, size: null, rig: null, active: false, vitLost: 0, symbiosis: false, rigPick: null };
+    }
+    if (found && !sc.resident) {
+      sc.resident = found;
+      sc.size = "Medium";
+      if (found === "nixie") { sc.movement = "hovering"; sc.rig = "skyhook"; sc.rigPick = null; }
+      else { sc.movement = "clambering"; sc.rig = "hush"; sc.rigPick = ["hush", "scrambler"]; }
+      sc.migratedFrom = found === "nixie" ? "Nixie Skyhook" : "Gremlin Scourge";
+    }
+    var fa = ch.featureAnnotations;
+    if (fa && typeof fa === "object" && Object.prototype.hasOwnProperty.call(fa, "Scrap Familiar")) {
+      if (!Object.prototype.hasOwnProperty.call(fa, "Scrap Companion")) fa["Scrap Companion"] = fa["Scrap Familiar"];
+      delete fa["Scrap Familiar"];
+    }
+    if (ch.featureUses && typeof ch.featureUses === "object") delete ch.featureUses["Scrap Familiar"];
   }
 
   function migrate(ch) {
@@ -964,6 +1021,7 @@ EN.store = (function () {
     });
     ch.talentAttrPicks = tapOut;
     migratePresence(ch);
+    migrateScrapFamiliar(ch);
     /* The damage-type picks, rebuilt the same way and for the same reason: the schema fill deep
        copies through JSON and hands back a plain object, so a save file carrying a key of
        "toString" would otherwise read as present and feed the engine a prototype method. Renames

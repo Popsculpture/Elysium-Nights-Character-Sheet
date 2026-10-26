@@ -3210,6 +3210,8 @@ EN.builder = (function () {
     var fb = el("div.scroll-box");
     d.features.forEach(function (f) {
       if (f.name === "Open Architecture") fb.appendChild(heldFeature(ch, f, openArchitectureCard(ch, d.lineageInfo)));
+      else if (f.name === "Scrap Companion" && EN.companion) fb.appendChild(heldFeature(ch, f, el("div", null, [
+        feature(f.name, f.text, f.kind, f.source + " · L" + f.level), EN.companion.card(ch, d)])));
       else fb.appendChild(heldFeature(ch, f, feature(f.name, f.text, f.kind, f.source + " · L" + f.level)));
     });
     blocks.push(fb);

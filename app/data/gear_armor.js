@@ -180,7 +180,8 @@ EN.gearCatalog.armor = {
          engine.armorResistPicks; `count` defaults to 1.
 
          The four menus are deliberately NOT merged. This frame picks from the four
-         PHYSICAL types; Veilskin offers three energy types; Aegis Shroud four; Reliquary
+         PHYSICAL types and Force (the Toolkit, 25 October 2026); Veilskin offers Fire,
+         Electric, Cold, or Energy; Aegis Shroud four; Reliquary
          Shell the same four but picks TWO. One shared damage-type list would print
          options the book does not offer.
 
@@ -189,7 +190,7 @@ EN.gearCatalog.armor = {
          vacuum), so a fifth suit with a menu needs a data field and no engine change. The
          Talent side of the same feature keeps its table in engine.js for the mirror-image
          reason: talents.js rows are prose and a category. */
-      resistPick: { options: ["Ballistic", "Piercing", "Slashing", "Bludgeoning"] },
+      resistPick: { options: ["Ballistic", "Piercing", "Slashing", "Bludgeoning", "Force"] },
       // Holds vacuum NATIVELY, which is why its own entry carries the flag. The
       // Sealed trait alone never satisfies a vacuum check (see EN.hazards.breath
       // .vacuumSeal); this suit and a Rebreather Liner on an already-Sealed suit
@@ -198,16 +199,16 @@ EN.gearCatalog.armor = {
       // but the flag stays so a saved Warframe Shell still holds vacuum.
       vacuum: true,
       desc: "A sealed military combat frame, the kind a corporation deploys when it has decided a problem is worth the optics. Air recycled, joints armored, every system tuned to keep one operator standing through a crossfire.",
-      effect: "Grants 5 Damage Reduction (DR) and a +2 Block Bonus. Its seals also hold against vacuum. When you acquire the frame, choose one physical damage type (Ballistic, Piercing, Slashing, or Bludgeoning). You gain Resistance to that type.",
+      effect: "Grants 5 Damage Reduction (DR) and a +2 Block Bonus. Its seals also hold against vacuum. When you acquire the frame, choose one of Ballistic, Piercing, Slashing, Bludgeoning, or Force. You gain Resistance to that type.",
       poweredBenefits: "While trained and powered, you ignore the Speed reduction from Bulky, treat your Encumbrance Threshold as two steps higher, and gain Edge on checks to lift, shove, or force movement." },
 
     /* ============================== MYSTECH ARMOR ============================== */
     { name: "Veilskin", kind: "armor", group: "Mystech Armor", type: "Light Mystech Armor (1 Mod Slot)", price: 700,
       slot: ["Torso", "Legs"], dr: 2, slots: 1, traits: ["Concealable", "Mystech", "Modular"], availability: "Iconic", legality: "Contraband",
-      // three options, not four: this suit's clause omits Resonant. See the Warframe Shell above.
-      resistPick: { options: ["Fire", "Electric", "Cold"] },
+      // four options, Energy added on 25 October 2026 (the Toolkit); this suit's clause omits Resonant. See the Warframe Shell above.
+      resistPick: { options: ["Fire", "Electric", "Cold", "Energy"] },
       desc: "A second skin of light-reactive weave that drinks ambient Flow and bends light around the wearer's outline. To a scanner it is a faint shimmer. To a guard it is the reason they swear the corridor was empty a second ago.",
-      effect: "Grants 2 Damage Reduction (DR). You gain Edge on in-combat Stealth d20 checks in dim light or darkness. When you acquire it, choose one of Fire, Electric, or Cold. You gain Resistance to that type." },
+      effect: "Grants 2 Damage Reduction (DR). You gain Edge on in-combat Stealth d20 checks in dim light or darkness. When you acquire it, choose one of Fire, Electric, Cold, or Energy. You gain Resistance to that type." },
     { name: "Resonant Carapace", kind: "armor", group: "Mystech Armor", type: "Medium Mystech Armor (2 Mod Slots)", price: 1600, nexus: "◎0.5",
       slot: ["Torso", "Legs"], dr: 3, blockBonus: 1, slots: 2, wardDie: "1d6", traits: ["Plated", "Focus", "Resonant Plating", "Mystech", "Modular"], availability: "Legendary", legality: "Contraband",
       desc: "Tuned Mystech plate that hums against incoming force and feeds a fraction of every hit back into the wearer's Ward. The plating catches Flow as readily as it catches a round, which is why the things that bypass ordinary armor find no door here. Favored by Shapers who fight on the line instead of behind it.",

@@ -950,7 +950,7 @@ EN.inventoryView = (function () {
       } else {
         // the resolved base, not the printed one: a live Premium plan raises it, and the chip
         // has to agree with the sheet about what the suit is actually stopping
-        statChips.push(statChip("⛨ " + (drSt ? drSt.base + drSt.premiumDR : it.dr) + " DR", "var(--success)", "Damage Reduction against physical damage (passive mitigation)"));
+        statChips.push(statChip("⛨ " + (drSt ? drSt.base + drSt.premiumDR : it.dr) + " DR", "var(--success)", "Damage Reduction against Standard Physical Damage" + ((it.traits || []).indexOf("Resonant Plating") !== -1 ? " and, through Resonant Plating, Resonant damage" : "") + " (passive mitigation)"));
       }
     }
     if (it.blockBonus) statChips.push(statChip("⛊ +" + it.blockBonus + " Block", "var(--gold)", "Flat Block Bonus, improves the Block Defensive Impulse"));

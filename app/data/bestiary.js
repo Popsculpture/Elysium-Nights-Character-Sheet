@@ -490,7 +490,7 @@ EN.bestiary = {
       name: "Warform Chassis", category: "machines", subgroup: null, page: 84,
       grade: 4, designation: "Elite", role: "Bruiser",
       identity: "Grade 4 Elite, Bruiser. Large military Construct, decommissioned on paper.",
-      stats: { "Defense": "15", "DR": "5 (wartime plate)", "Vitality": "175", "Speed": "5", "Initiative": "+5", "Saves": "+7 Body, +2 others", "Passive Perception": "15", "XP": "700" },
+      stats: { "Defense": "15", "DR": "5 (wartime plate, Resistance to Energy)", "Vitality": "175", "Speed": "5", "Initiative": "+5", "Saves": "+7 Body, +2 others", "Passive Perception": "15", "XP": "700" },
       abilities: [
         { name: "Mindless", cost: null, text: "Psychic damage deals 0. Immune to Toxic, Frightened, and to the concept of a warning shot." },
         { name: "Piston Fist", cost: "Action", text: "Two attacks, +9 vs Defense, melee, 2d10+5 Bludgeoning (16). On a critical hit, the Target makes a Body Save DC 16 or is pushed 2 spaces and knocked Prone." },
@@ -640,7 +640,7 @@ EN.bestiary = {
       stats: { "Defense": "15", "DR": "0", "Vitality": "43", "Speed": "6", "Initiative": "+4", "Saves": "+8 Body, +3 others", "Passive Perception": "12", "XP": "125" },
       abilities: [
         { name: "Slam", cost: "Action", text: "+10 vs Defense, melee, 2d8+8 Bludgeoning (17)." },
-        { name: "Wrong Mass", cost: null, text: "An Unmade can't be moved against its will or knocked Prone. Immune to Psychic damage." }
+        { name: "Wrong Mass", cost: null, text: "An Unmade can't be moved against its will or knocked Prone. Resistance to Force damage. Immune to Psychic damage." }
       ],
       salvage: "Scrap, mostly. Sometimes a working vending machine that dispenses things from before the Cascade."
     },

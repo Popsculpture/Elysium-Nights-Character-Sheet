@@ -1671,8 +1671,70 @@ EN.engine = (function () {
       else if (c.resist.length) { level = "Resistant"; why = c.resist; }
       else if (c.vulnerable.length) { level = "Vulnerable"; why = c.vulnerable; }
       else return;
-      out.push({ type: t, level: level, sources: why });
+      // the three buckets ride along so netDamage can drop one of them (Spatial Shearing
+      // "ignores Resistance to Force", which turns a cancelled pair back into Vulnerable)
+      out.push({ type: t, level: level, sources: why, resist: c.resist.slice(), vulnerable: c.vulnerable.slice(), immune: c.immune.slice() });
     });
+    return out;
+  }
+
+  /* ---- NET DAMAGE: the Damage Order's step 3 for one hit of one type ----------------
+     The Player's Handbook (25 October 2026 handoff, batches 79 and 80): "Armor DR stops only
+     Standard Physical Damage; other types take it only where an entry says so." Standard
+     Physical Damage is the five types the book prints under that heading (EN.combat.damageTypes,
+     group "Standard Physical": Nonlethal, Ballistic, Piercing, Bludgeoning, Slashing). Every DR
+     the sheet sums into d.totalDR already names physical damage in its own text (the worn suit,
+     a flat-DR armor Mod, Ironbark Carapace and Ironhide Tusks, Subdermal Armor).
+     The one entry that says so for another type is the Resonant Plating trait: "The armor's DR
+     also applies against Resonant damage". It extends the SUIT's DR (the worn armor and its
+     flat-DR Mod), never a lineage's natural DR or chrome.
+     Then Resistance, Vulnerability or Immunity from d.resistances, by the book's arithmetic
+     (halve rounded down, double, or none). Three clauses turn on the Target, which the sheet
+     cannot see, so the caller answers them:
+       opts.noPoweredTech  Tech: "Deals 0 damage to a Target with no powered tech on or in them."
+       opts.plainMachine   Resonant: "Deals 0 damage to plain machines, drones, and objects."
+     A type written "Force (Spatial)" or "Force (Spatial Shearing)" is Force that "ignores
+     Resistance to Force" (the Spatial Damage Profile); opts.ignoreResist does the same for any type.
+     `amount` is what is left after step 2 (the Active Defense).
+     Returns { amount, type, physical, dr, drFrom, afterDR, level, resistIgnored, net, zeroBy }. */
+  var STANDARD_PHYSICAL = ["Nonlethal", "Ballistic", "Piercing", "Bludgeoning", "Slashing"];
+  function isStandardPhysical(type) {
+    var rows = (EN.combat && EN.combat.damageTypes) || [];
+    var row = rows.filter(function (t) { return t && t.name === type; })[0];
+    if (row && row.group) return row.group === "Standard Physical";
+    return STANDARD_PHYSICAL.indexOf(type) !== -1;
+  }
+  function armorDRAgainst(d, type) {
+    var dg = (d && d.defenseGear) || {};
+    var suit = (d && d.armorDR || 0) + (dg.armorModDR || 0);
+    if (isStandardPhysical(type)) return { dr: (d && d.totalDR) || 0, from: "Standard Physical Damage" };
+    var plated = !!(dg.armor && !dg.armorLapsed && (dg.armor.traits || []).indexOf("Resonant Plating") !== -1);
+    if (type === "Resonant" && plated) return { dr: suit, from: "Resonant Plating" };
+    return { dr: 0, from: null };
+  }
+  function netDamage(d, amount, type, opts) {
+    opts = opts || {};
+    var raw = Math.max(0, parseInt(amount, 10) || 0);
+    var t = String(type || ""), ignoreResist = !!opts.ignoreResist;
+    var sp = /^Force \(Spatial( Shearing)?\)$/.exec(t);
+    if (sp) { t = "Force"; ignoreResist = true; }
+    var out = { amount: raw, type: t, physical: isStandardPhysical(t), dr: 0, drFrom: null, afterDR: raw, level: "Normal", net: raw, zeroBy: null };
+    if (t === "Tech" && opts.noPoweredTech) { out.afterDR = 0; out.net = 0; out.zeroBy = "Tech deals 0 damage to a Target with no powered tech on or in them."; return out; }
+    if (t === "Resonant" && opts.plainMachine) { out.afterDR = 0; out.net = 0; out.zeroBy = "Resonant deals 0 damage to plain machines, drones, and objects."; return out; }
+    var a = armorDRAgainst(d, t);
+    out.dr = a.dr; out.drFrom = a.from;
+    out.afterDR = Math.max(0, raw - a.dr);
+    var row = ((d && d.resistances) || []).filter(function (r) { return r.type === t; })[0];
+    var level = "Normal";
+    if (row) {
+      var im = (row.immune || []).length, rs = ignoreResist ? 0 : (row.resist || []).length, vu = (row.vulnerable || []).length;
+      if (!row.immune && !row.resist && !row.vulnerable) level = row.level;   // a row from before the buckets
+      else level = im ? "Immune" : (rs && vu) ? "Normal" : rs ? "Resistant" : vu ? "Vulnerable" : "Normal";
+    }
+    out.level = level;
+    // a Resistance the character holds and this hit passes straight through
+    out.resistIgnored = !!(ignoreResist && row && (row.resist || []).length);
+    out.net = level === "Immune" ? 0 : level === "Resistant" ? Math.floor(out.afterDR / 2) : level === "Vulnerable" ? out.afterDR * 2 : out.afterDR;
     return out;
   }
 
@@ -4623,7 +4685,8 @@ EN.engine = (function () {
     if (resolution === "save") {
       resolutionText = "Targets save vs Flow Save DC " + flow.dc +
         (R && R.saveAttr && R.saveAttr !== "varies" ? " (" + R.saveAttr + ")" : "") +
-        (R && R.armorNote ? " · " + R.armorNote : "");
+        (R && R.armorNote ? " · " + R.armorNote : "") +
+        (R && R.damageNote && hasDamage ? " · " + R.damageNote : "");
     } else {
       resolutionText = "Flow Attack " + fmtMod(flow.attackBonus) + " vs Defense";
     }
@@ -4993,6 +5056,9 @@ EN.engine = (function () {
     oomphTraits: oomphTraits, weaponPartChoice: weaponPartChoice,
     // conditional Resistances shown as notes (Street Scrapper's Upgrade), also on d.resistNotes
     conditionalResistances: conditionalResistances,
+    // the Damage Order's step 3 for one hit of one type: armor DR only against Standard
+    // Physical Damage (and Resonant through Resonant Plating), then Resistance
+    netDamage: netDamage, isStandardPhysical: isStandardPhysical, armorDRAgainst: armorDRAgainst,
     isStackableItem: isStackableItem, isStackableName: isStackableName, entryKey: entryKey, findEntry: findEntry,
     // Armor Integrity. armorState IS the resolver for a piece's current DR: every
     // surface that shows, prints or defends with a DR asks it (or reads the
