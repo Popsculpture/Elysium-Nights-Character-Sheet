@@ -4039,7 +4039,7 @@ EN.combatView = (function () {
         rules: [["ref-def/defense", "Defense"], ["ref-cover", "Cover & Sight"], ["ref-def", "Active Defenses"]] },
       DR: { title: "Damage Reduction", total: d.totalDR || 0, sign: false,
         // "Armor DR stops only Standard Physical Damage; other types take it only where an entry says so."
-        formula: "Worn armor + armor mods + natural lineage DR vs Standard Physical Damage (Nonlethal, Ballistic, Piercing, Bludgeoning, Slashing) only",
+        formula: "Worn armor + armor mods + chrome + natural lineage DR vs Standard Physical Damage (Nonlethal, Ballistic, Piercing, Bludgeoning, Slashing) only",
         rows: (dg.armor ? [bdRow("Armor · " + dg.armor.name + (dg.armorLapsed ? " (LEASE DUE)" : "") + (dg.armorDRLost ? " (" + dg.armorDR + " of " + dg.armorBaseDR + ", " + dg.armorDRLost + " lost)" : ""), dg.armorDR, null, true)] : [])
           .concat(dg.armorModDR ? [bdRow("Armor Mod (highest flat DR)", dg.armorModDR)] : [])
           .concat(d.naturalDR ? [bdRow("Natural (lineage)", d.naturalDR)] : [])

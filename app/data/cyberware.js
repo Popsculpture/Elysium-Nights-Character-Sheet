@@ -184,7 +184,7 @@ EN.cyberware = {
     /* ---------------- Integument ---------------- */
     { key: "subdermal", short: "Subdermal Armor", name: "Subdermal Armor", zone: "Integument", enhancement: "+1 Body",
       desc: "Plates of ballistic-grade composite under the skin. The signature chrome of gangers and corp guards. It doesn't make you bulletproof; it turns lethal hits into survivable ones.",
-      effect: "+1 DR against Ballistic, Piercing, Bludgeoning, and Slashing. Stacks with worn armor.",
+      effect: "+1 DR against Ballistic, Piercing, Bludgeoning, Slashing, and Nonlethal. Stacks with worn armor.",
       street: "No Enhancement; rough alignment, close inspection (DC 12) spots the bulges and scar lines through clothing.",
       black: "+2 DR vs all physical, plus a reactive surface: first melee hit each combat reflects 1d4 of the same type back.",
       tiers: [
