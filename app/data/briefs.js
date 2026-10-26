@@ -304,7 +304,7 @@ EN.briefs = {
   "Bloom Pulse": "Once/Long Rest, you and allies within 2 regain Mystique mod + Caliber Vitality",
   "Fungal Network": "Telepathy with willing ally within 12 spaces via shared surface; Tremor Sense 6 spaces while touching that surface",
   "Decay Whisper": "Touch a corpse 1 minute; GM reveals exact cause and time of death plus one final sensory memory",
-  "Spore Hallucination": "Organic within 2 makes Wits Save (8 + Body + Caliber) or Confused 1 minute; resaves each turn end",
+  "Spore Hallucination": "Organic within 2 makes Body Save (8 + Body + Caliber) or Confused 1 minute; resaves each turn end",
   "Sludge Crawler": "Ignore mud/grease/sludge movement penalties; count one Size smaller in tight spaces at full Speed",
   "Infesting Spores": "Organic within 2 Body Saves (8 + Body + Caliber) or 1d6 Toxic + 1d6/turn; resaves to end; Caliber uses/Long Rest",
   "Distributed Anatomy": "Can't be critically hit; immune to Bleeding; take half Toxic damage",
