@@ -410,7 +410,7 @@ EN.inventoryView = (function () {
       var extra = it.upkeep ? { leaseDays: 7, leaseDue: false, leaseOwned: false } : null;
       if (extra && planFee) extra.premium = true;
       addToStash(c, it.name, extra);
-    });
+    }, { ledger: "Bought " + it.name + (it.upkeep ? " (lease buy-in" + (planFee ? " and first Premium installment" : "") + ")" : "") });
     toast(_mode === "register" ? it.name + " purchased for " + fmtG(sp) + ". Compliance fees included. All sales final." :
           _mode === "surplus" ? it.name + " claimed from the Guild lot for " + fmtG(sp) + ". Mostly works." :
           _mode === "fivefinger" ? it.name + " taken. You were never here." :
@@ -451,7 +451,7 @@ EN.inventoryView = (function () {
       if (!e || e.premium || e.leaseOwned) return;   // re-check live: a double-fire cannot double-charge
       c.glimmer = (c.glimmer || 0) - cost;
       e.premium = true; e.leaseDue = false; e.leaseDays = 7;
-    });
+    }, { ledger: it.name + ": Premium plan, first installment" });
     toast(it.name + ": Premium plan active, " + fmtG(cost) + " charged now. Next installment in 7 days at the premium rate.");
   }
   function leaseTick(c) {
@@ -504,7 +504,7 @@ EN.inventoryView = (function () {
       if (nexus) x.nexus = Math.round(((x.nexus || 0) - t.cost) * 100) / 100;
       else x.glimmer = (x.glimmer || 0) - t.cost;
       x.household.hypercareDue = false; x.household.hypercareDays = 30;
-    });
+    }, { ledger: t.tier + " (Hypercare renewal)" });
     toast(t.tier + " renewed for " + (nexus ? fmtNx(t.cost) : fmtG(t.cost)) + ".");
     EN.app.render();
   }
@@ -519,7 +519,7 @@ EN.inventoryView = (function () {
     var c = store.active(), w = householdWeekly(c);
     if (!w.total) return;
     if ((c.glimmer || 0) < w.total) { toast("Not enough Glimmer for the week (" + fmtG(w.total) + ")."); return; }
-    store.update(function (x) { x.glimmer = (x.glimmer || 0) - w.total; x.household.due = false; x.household.days = 7; });
+    store.update(function (x) { x.glimmer = (x.glimmer || 0) - w.total; x.household.due = false; x.household.days = 7; }, { ledger: "Weekly bills: " + w.lines.join(", ") });
     toast("Week paid: " + fmtG(w.total) + ". " + w.lines.join(", ") + ".");
     EN.app.render();
   }
@@ -535,7 +535,7 @@ EN.inventoryView = (function () {
       if (!e || !e.leaseDue || e.leaseOwned) return;   // re-check live: a double-fire cannot double-charge
       c.glimmer = (c.glimmer || 0) - rate;
       e.leaseDue = false; e.leaseDays = 7;
-    });
+    }, { ledger: it.name + ": lease installment" });
     toast(it.name + " installment paid (" + fmtG(rate) + "); next payment in 7 days. Benefits restored.");
   }
   function buyoutLease(key) {
@@ -550,7 +550,7 @@ EN.inventoryView = (function () {
       else c.glimmer = (c.glimmer || 0) - b.amt;
       e.leaseOwned = true; e.leaseDue = false; delete e.leaseDays;
       delete e.premium;   // the plan was a subscription on the contract, and the contract is closed
-    });
+    }, { ledger: it.name + ": lease bought out" });
     toast(it.name + " bought out for " + fmtBuyout(b) + ". It's yours outright; no more Upkeep, no off switch.");
   }
   // buying chrome drops it in the Chrome Stash (uninstalled); you install it at a clinic from the Chrome tab
@@ -572,7 +572,7 @@ EN.inventoryView = (function () {
       // Chrome tab and the print sheet resolve the prose live through engine.cyberDesc.
       c.cyberStash.push({ key: it.cyberKey, base: it.base, name: it.name, tier: it.tier, zone: it.zone,
         sp: it.sp, slots: it.slots || 0, sided: !!it.sided, side: it.sided ? "R" : null, mystech: !!it.mystech, enhancement: it.enhancement });
-    });
+    }, { ledger: "Bought " + it.name + " (chrome)" });
     toast(it.name + " acquired; it's in your Chrome Stash. Hit a clinic (Chrome tab) to install it.");
   }
   /* The pieces the GM Toolkit says can't share a body. The Convergence Engine's Restrictions: "A
@@ -691,7 +691,7 @@ EN.inventoryView = (function () {
       if (e.qty <= 0) c.equipment = c.equipment.filter(function (x) { return x !== e; });
       c.glimmer = (c.glimmer || 0) + pay;
       unequipIfGone(c, key, e.name);
-    });
+    }, { ledger: "Sold " + name + " to the fence" });
     toast("Fence takes the " + name + " at street rate. " + fmtG(pay) + " credited. No questions asked.");
   }
   /* DROP. An on-person unit is revealed Load that Packed It still counts, so its row goes on the
@@ -2520,7 +2520,7 @@ EN.inventoryView = (function () {
       if (restored <= 0) return;                              // it gave nothing, so it takes nothing
       c.glimmer = (c.glimmer || 0) - AR.shopCost(live.item, restored);
       done = { pts: restored, cost: AR.shopCost(live.item, restored), current: res.current, base: res.base, name: live.name };
-    });
+    }, { ledger: function () { return "Armor repair at a shop" + (done ? ": " + done.name : ""); } });
     if (short != null) { toast("Not enough Glimmer for the shop repair (" + fmtG(short) + ")."); return; }
     if (!done) { toast(st.name + " has no DR to buy back."); EN.app.render(); return; }
     delete _armorPts[st.key];   // the pick was spent; the row re-defaults to whatever is still gone
@@ -2970,7 +2970,8 @@ EN.inventoryView = (function () {
   }
 
   /* ---- project state mutators (ch.projects) ---- */
-  function tbSetProjects(fn) { store.update(function (c) { c.projects = c.projects || []; fn(c.projects, c); }); }
+  // opts.ledger names the money line when the change moves Glimmer (store.js ledgerSync)
+  function tbSetProjects(fn, opts) { store.update(function (c) { c.projects = c.projects || []; fn(c.projects, c); }, opts); }
   function tbNewId() { return "prj_" + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36); }
   function tbFind(ch, id) { return (ch.projects || []).find(function (p) { return p.id === id; }); }
 
@@ -3047,7 +3048,7 @@ EN.inventoryView = (function () {
       c.glimmer = (c.glimmer || 0) - cost;
       pp.materialsSecured = true;
       pp.materialsPaid = cost;
-    });
+    }, { ledger: "Workbench materials: " + p.name });
     toast(cost ? "Materials secured for " + fmtG(cost) + "." : "Salvaged; no Glimmer spent.");
   }
   // Can this Project be finished? Its materials have to be paid for (or salvaged)
@@ -3110,7 +3111,7 @@ EN.inventoryView = (function () {
                // what the WRITER actually gave back, not what was asked for
                restored: res ? Math.max(0, st.lost - res.lost) : 0,
                piece: st ? st.name : null, current: res ? res.current : (st ? st.current : 0), base: st ? st.base : 0 };
-    });
+    }, { ledger: function () { return "Workbench refund: " + (done ? done.name : "project") + " (parts not used)"; } });
     if (unpaid != null) { toast("Secure the materials first (" + fmtG(unpaid) + ")."); return; }
     if (!done) return;                                      // nothing was completed, so nothing is announced
     var back = done.refund > 0 ? " " + fmtG(done.refund) + " in unused parts refunded." : "";
@@ -3139,7 +3140,7 @@ EN.inventoryView = (function () {
       paidBack = (pp.repairKey && pp.materialsSecured) ? (pp.materialsPaid || 0) : 0;
       list.splice(i, 1);
       if (paidBack > 0) c.glimmer = (c.glimmer || 0) + paidBack;
-    });
+    }, { ledger: "Workbench project abandoned: parts refunded" });
     if (paidBack > 0) toast("Project abandoned; " + fmtG(paidBack) + " in parts refunded.");
   }
 
@@ -4058,7 +4059,7 @@ EN.inventoryView = (function () {
         r.each > 0 ? el("button.btn.sm", { title: "Credit one share to this character",
           style: { color: "var(--success)", borderColor: "var(--success)" },
           onclick: function () {
-            store.update(function (c) { c.glimmer = (c.glimmer || 0) + r.each; });
+            store.update(function (c) { c.glimmer = (c.glimmer || 0) + r.each; }, { ledger: "Job payout: one share" });
             toast("Share of " + fmtG(r.each) + " credited.");
             EN.app.render();
           } }, "+ MY SHARE") : null
@@ -4082,7 +4083,12 @@ EN.inventoryView = (function () {
      amount and both directions live inside it, the same shape the dashboard's VITALITY and WOUNDS
      controls use. Amounts are remembered across renders, as _amts is there; the ledger fields this
      replaced started empty every render instead. */
-  var _wal = { open: null, amt: { glimmer: 1, nexus: 1 } };
+  var _wal = { open: null, amt: { glimmer: 1, nexus: 1 }, note: { glimmer: "", nexus: "" } };
+  // the ledger line for a CREDIT or DEBIT from the wallet: the player's own words, or a plain default
+  function walletMemo(cur, sign) {
+    var nt = String((_wal.note && _wal.note[cur]) || "").trim();
+    return nt || (sign > 0 ? "Credit entered by hand" : "Debit entered by hand");
+  }
   function closePops() { _wal.open = null; }
   document.addEventListener("click", function (ev) {
     if (!_wal.open) return;
@@ -4257,7 +4263,117 @@ EN.inventoryView = (function () {
         text: "Principal, holder, and a clock. No interest is calculated: debt here escalates through pressure, not paperwork." })
     ], "ref-economy/debt"));
 
-    return EN.ui.panel("Bills", "RECURRING COSTS \u00b7 LEASES \u00b7 DEBTS", out, { corners: true });
+    out.push(ledgerSection(ch));
+    return EN.ui.panel("Bills", "RECURRING COSTS \u00b7 LEASES \u00b7 DEBTS \u00b7 LEDGER", out, { corners: true });
+  }
+
+  /* THE LEDGER (29 October 2026): every Glimmer and Nexus change for the life of the record, newest
+     first, written by store.js ledgerSync after every save, so nothing that moves money can miss it.
+     It is fixed: no line is edited or deleted here. A correction is a new Adjustment line, with its
+     reason, from the form under the list. 20 lines show at first; SHOW 20 MORE adds 20 at a time. */
+  var _led = { show: 20, filter: "all", adj: { cur: "glimmer", dir: 1, amt: "", why: "" } };
+  function ledgerKind(r) {
+    if (!r) return "";
+    if (r.k) return r.k;
+    return (r.g || 0) + (r.n || 0) * 1000 >= 0 ? "earn" : "spend";
+  }
+  function ledgerAmt(v, cur) {
+    if (!v) return el("span.mono", { style: { color: "var(--text4)" }, text: "" });
+    var pos = v > 0, t = (pos ? "+" : "-") + (cur === "nexus" ? fmtNx(Math.abs(v)) : fmtG(Math.abs(v)));
+    return el("span.mono", { style: { color: pos ? "var(--success)" : "var(--danger)" }, text: t });
+  }
+  function ledgerWhen(t) {
+    var d = new Date(t || 0);
+    if (!t || !isFinite(d.getTime())) return "";
+    return d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) + " " +
+      d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+  }
+  function ledgerSection(ch) {
+    var rows = Array.isArray(ch.ledger) ? ch.ledger.slice().reverse() : [];
+    var F = { all: "All", earn: "Earned", spend: "Spent", adjust: "Adjustments" };
+    var shown = rows.filter(function (r) { return _led.filter === "all" || ledgerKind(r) === _led.filter; });
+    var tot = store.ledgerTotals ? store.ledgerTotals(ch.ledger || []) : { ge: 0, gs: 0, ne: 0, ns: 0 };
+    var kids = [];
+    kids.push(el("div.row.wrap.ledger-totals", { style: { gap: "14px", alignItems: "center", margin: "0 0 8px", fontSize: "11.5px" } }, [
+      el("span.mono", { style: { color: "var(--text3)" }, text: "LIFETIME" }),
+      el("span.ledger-tot-g", null, [document.createTextNode("Glimmer in "), ledgerAmt(tot.ge, "glimmer"), document.createTextNode(" · out "), ledgerAmt(-tot.gs, "glimmer")]),
+      el("span.ledger-tot-n", null, [document.createTextNode("Nexus in "), ledgerAmt(tot.ne, "nexus"), document.createTextNode(" · out "), ledgerAmt(-tot.ns, "nexus")]),
+      el("span", { style: { flex: "1" } }),
+      el("div.row", { style: { gap: "4px" } }, Object.keys(F).map(function (k) {
+        return el("button.btn.sm.ledger-filter" + (_led.filter === k ? ".primary" : ""), { dataset: { filter: k },
+          onclick: function () { _led.filter = k; _led.show = 20; EN.app.render(); } }, F[k].toUpperCase());
+      }))
+    ]));
+    if (!shown.length) {
+      kids.push(el("p.help.ledger-empty", { style: { margin: "0 0 8px", fontSize: "11.5px", color: "var(--text3)" },
+        text: rows.length ? "No " + F[_led.filter].toLowerCase() + " lines yet."
+          : "Nothing yet. Every Glimmer and Nexus change lands here from now on: buys, sales, bills, payouts, and anything entered by hand." }));
+    } else {
+      var head = el("tr", null, ["When", "Entry", "Glimmer", "Nexus", "Balance"].map(function (h, i) {
+        return el("th", { style: { textAlign: i >= 2 ? "right" : "left", fontFamily: "var(--mono)", fontSize: "9.5px", letterSpacing: ".1em",
+          color: "var(--text3)", fontWeight: "normal", padding: "2px 6px" }, text: h.toUpperCase() });
+      }));
+      var td = function (kids2, right) {
+        return el("td", { style: { padding: "4px 6px", textAlign: right ? "right" : "left", verticalAlign: "top", borderTop: "1px solid var(--border)" } }, kids2);
+      };
+      var body = shown.slice(0, _led.show).map(function (r) {
+        var k = ledgerKind(r);
+        var tag = k === "adjust" ? "ADJUSTMENT" : k === "open" ? "OPENING" : k === "fwd" ? "BROUGHT FORWARD" : null;
+        var memo = [document.createTextNode(r.m || "")];
+        if (tag) memo.unshift(el("span.chip", { style: { fontSize: "8.5px", marginRight: "6px",
+          color: k === "adjust" ? "var(--warn)" : "var(--text3)", borderColor: k === "adjust" ? "var(--warn)" : "var(--border2)" } }, tag));
+        if (k === "fwd") memo.push(el("div.help", { style: { margin: "2px 0 0", fontSize: "10.5px" },
+          text: "Those entries in: " + fmtG(r.ge || 0) + ", " + fmtNx(r.ne || 0) + "; out: " + fmtG(r.gs || 0) + ", " + fmtNx(r.ns || 0) + "." }));
+        var flat = k === "open" || k === "fwd";
+        return el("tr.ledger-row", { dataset: { kind: k } }, [
+          td([el("span.mono", { style: { fontSize: "10.5px", color: "var(--text3)", whiteSpace: "nowrap" }, text: ledgerWhen(r.t) })]),
+          td([el("span.ledger-memo", { style: { fontSize: "12.5px" } }, memo)]),
+          td([flat ? el("span") : ledgerAmt(r.g, "glimmer")], true),
+          td([flat ? el("span") : ledgerAmt(r.n, "nexus")], true),
+          td([el("span.mono.ledger-bal", { style: { fontSize: "11.5px", color: "var(--text2)", whiteSpace: "nowrap" }, text: fmtG(r.gb || 0) + " · " + fmtNx(r.nb || 0) })], true)
+        ]);
+      });
+      kids.push(el("div.ledger-wrap", { style: { overflowX: "auto" } }, [
+        el("table.ledger", { style: { width: "100%", borderCollapse: "collapse" } }, [el("thead", null, [head]), el("tbody", null, body)])]));
+      if (shown.length > _led.show) kids.push(el("div.row", { style: { gap: "8px", alignItems: "center", marginTop: "6px" } }, [
+        el("button.btn.sm.ledger-more", { onclick: function () { _led.show += 20; EN.app.render(); } }, "SHOW 20 MORE"),
+        el("span.mono", { style: { fontSize: "10.5px", color: "var(--text3)" }, text: "showing " + _led.show + " of " + shown.length })
+      ]));
+    }
+    // corrections: a new Adjustment line with its reason, never an edit
+    var A = _led.adj;
+    kids.push(el("div.row.wrap.ledger-adjust", { style: { gap: "6px", alignItems: "center", marginTop: "10px" } }, [
+      el("span.mono", { style: { fontSize: "9.5px", color: "var(--text3)", letterSpacing: ".1em" }, text: "CORRECTION" }),
+      el("select", { style: { fontSize: "12px", width: "auto" }, "aria-label": "Adjustment direction",
+        onchange: function () { A.dir = this.value === "-1" ? -1 : 1; } }, [
+          el("option", { value: "1", selected: A.dir > 0, text: "add" }),
+          el("option", { value: "-1", selected: A.dir < 0, text: "remove" })]),
+      el("input", { type: "number", min: 0, step: A.cur === "nexus" ? 0.05 : 1, value: A.amt, placeholder: "amount", "aria-label": "Adjustment amount",
+        style: { width: "90px", padding: "4px 8px", fontSize: "12.5px" }, oninput: function () { A.amt = this.value; } }),
+      el("select", { style: { fontSize: "12px", width: "auto" }, "aria-label": "Adjustment currency",
+        onchange: function () { A.cur = this.value; EN.app.render(); } }, [
+          el("option", { value: "glimmer", selected: A.cur === "glimmer", text: "Glimmer 𝒢" }),
+          el("option", { value: "nexus", selected: A.cur === "nexus", text: "Nexus ◎" })]),
+      el("input", { type: "text", placeholder: "reason (required)", value: A.why, maxLength: 120, "aria-label": "Adjustment reason",
+        style: { flex: "1 1 200px", padding: "4px 8px", fontSize: "12.5px" }, oninput: function () { A.why = this.value; } }),
+      el("button.btn.sm.ledger-adjust-add", { onclick: function () {
+        var v = A.cur === "nexus" ? Math.round((Number(A.amt) || 0) * 100) / 100 : Math.floor(Number(A.amt) || 0);
+        var why = String(A.why || "").trim();
+        if (!(v > 0)) { toast("Enter the amount to correct by."); return; }
+        if (!why) { toast("An Adjustment needs a reason, so the ledger says why the balance moved."); return; }
+        var dir = A.dir, cur = A.cur;
+        store.update(function (c) {
+          if (cur === "nexus") c.nexus = Math.max(0, Math.round(((c.nexus || 0) + dir * v) * 100) / 100);
+          else c.glimmer = Math.max(0, (c.glimmer || 0) + dir * v);
+        }, { ledger: { memo: "Adjustment: " + why, kind: "adjust" } });
+        A.amt = ""; A.why = ""; A.dir = 1;   // back to "add", so a stale "remove" never carries into the next one
+        toast("Adjustment recorded.");
+        EN.app.render();
+      } }, "+ ADD ADJUSTMENT")
+    ]));
+    kids.push(el("p.help", { style: { margin: "6px 0 0", fontSize: "11px", color: "var(--text4)" },
+      text: "The ledger is fixed: lines are never edited or deleted. To fix a mistake, add an Adjustment with its reason. The wallet's CREDIT and DEBIT take a note too." }));
+    return billSection("Ledger \u00b7 Glimmer and Nexus", kids);
   }
 
   // a bench's one-line intro, with a "?" that peeks the rules the bench runs on (BENCHES codex)
@@ -4347,10 +4463,13 @@ EN.inventoryView = (function () {
     function ledgerApply(cur, sign) {
       var v = Number(_wal.amt[cur]) || 0;
       if (v <= 0) return;
+      // the note is read, then cleared BEFORE the write, so the redraw the write causes shows it empty
+      var memo = walletMemo(cur, sign);
+      _wal.note[cur] = "";
       store.update(function (c) {
         if (cur === "glimmer") c.glimmer = Math.max(0, (c.glimmer || 0) + sign * v);
         else c.nexus = Math.max(0, Math.round(((c.nexus || 0) + sign * v) * 100) / 100);
-      });
+      }, { ledger: memo });
     }
     // Nexus is quoted in hundredths, so its field steps the way its total reads.
     function walletPop(cur, color, tip, text) {
@@ -4374,6 +4493,11 @@ EN.inventoryView = (function () {
           el("input", { type: "number", min: 0, step: cur === "nexus" ? 0.05 : 1, value: _wal.amt[cur],
             oninput: function () { _wal.amt[cur] = Math.max(0, Number(this.value) || 0); },
             style: { width: "100%", textAlign: "center" } }),
+          // what the ledger line will say; blank writes "Credit/Debit entered by hand"
+          el("input.wallet-note", { type: "text", placeholder: "what for? (ledger)", value: _wal.note[cur], maxLength: 80,
+            "aria-label": (cur === "nexus" ? "Nexus" : "Glimmer") + " ledger note",
+            oninput: function () { _wal.note[cur] = this.value; },
+            style: { width: "100%", fontSize: "11px", padding: "3px 6px" } }),
           el("button.btn.sm", { title: "Money out: lifestyle, bribes, buyouts, high-scrutiny buys",
             style: { color: "var(--danger)", borderColor: "var(--danger)", width: "100%", justifyContent: "center" },
             onclick: function () { ledgerApply(cur, -1); } }, "− DEBIT")

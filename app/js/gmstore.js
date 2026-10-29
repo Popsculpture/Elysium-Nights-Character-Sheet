@@ -951,8 +951,8 @@ EN.gmStore = (function () {
   }
   function rosterNow() { return (EN.store && EN.store.roster && EN.store.roster()) || {}; }
   // the record write, caught: true only when EN.store says it landed
-  function recordWrite(charId, mutator, what) {
-    try { return EN.store.updateById(charId, mutator) === true; }
+  function recordWrite(charId, mutator, what, opts) {
+    try { return EN.store.updateById(charId, mutator, opts) === true; }
     catch (e) {
       try { console.error("GM: " + what + " on " + charId + " failed", e); } catch (e2) {}
       return false;
@@ -1015,7 +1015,7 @@ EN.gmStore = (function () {
     s.ledger[id] = r;
     var ok = recordWrite(charId, function (ch) {
       clean.forEach(function (o) { applyOp(ch, o, 1); });
-    }, "write");
+    }, "write", { ledger: "From the GM: " + (r.label || "credited") });
     if (!ok) { delete s.ledger[id]; emit(); return false; }
     if (!persist(true)) {
       /* The ledger record is withdrawn before the rollback, so the render the rollback
@@ -1089,7 +1089,7 @@ EN.gmStore = (function () {
     r.undoneAt = Date.now();
     var ok = recordWrite(r.charId, function (ch) {
       r.ops.slice().reverse().forEach(function (o) { if (invertible(o)) applyOp(ch, o, -1); });
-    }, "undo");
+    }, "undo", { ledger: { memo: "Adjustment: the GM undid \"" + (r.label || "a write") + "\"", kind: "adjust" } });
     if (!ok) { r.undone = false; delete r.undoneAt; emit(); return false; }
     if (!persist(true)) {
       var undoneAt = r.undoneAt;

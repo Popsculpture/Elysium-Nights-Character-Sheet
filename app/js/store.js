@@ -261,6 +261,7 @@ EN.store = (function () {
       haul: "none",                      // active Haul: "none" | "lift" (body-sized) | "dragone" (dragging one body) | "drag" (oversized/double)
       glimmer: 0,
       nexus: 0,                          // Nexus tokens (◎), the high-scrutiny currency; fractional
+      ledger: [],                        // every change to Glimmer and Nexus, oldest first (see ledgerSync)
       log: []
     };
   }
@@ -394,7 +395,64 @@ EN.store = (function () {
     if (ch.featureUses && typeof ch.featureUses === "object") delete ch.featureUses["Scrap Familiar"];
   }
 
+  /* ---- THE LEDGER (29 October 2026) --------------------------------------
+     Every change to Glimmer and Nexus, for the life of the record, oldest first:
+       ch.ledger = [{ t, m, k?, g, n, gb, nb }]
+     t: when (ms); m: what it was; k: "open" | "adjust" | "fwd" (absent for an ordinary earn or
+     spend); g, n: the change in Glimmer and Nexus; gb, nb: the balances after it.
+
+     THE LEDGER CANNOT MISS A CHANGE. It is not written by the code that moves money; it is
+     written here, after every update(), by comparing the wallet with the ledger's last recorded
+     balance. A caller names the line (update(fn, { ledger: "Bought X" })); a change nobody named
+     still lands, as an Adjustment, so the balances always add up. A rollback that restores the
+     whole record restores the ledger with it and so writes nothing.
+
+     FIXED. Lines are never edited or deleted from the sheet; a correction is a new Adjustment
+     line with its reason. Past LEDGER_CAP lines, the oldest fold into one "Balance brought
+     forward" line that keeps their lifetime earned and spent totals, so the math survives even
+     where the detail does not. A record that predates the ledger opens with its balance then. */
+  var LEDGER_CAP = 1000;
+  function r2(x) { return Math.round((Number(x) || 0) * 100) / 100; }
+  function ledgerTotals(rows) {
+    var t = { ge: 0, gs: 0, ne: 0, ns: 0 };
+    rows.forEach(function (r) {
+      if (!r) return;
+      if (r.k === "fwd") { t.ge += r.ge || 0; t.gs += r.gs || 0; t.ne = r2(t.ne + (r.ne || 0)); t.ns = r2(t.ns + (r.ns || 0)); return; }
+      if (r.k === "open") return;
+      if (r.g > 0) t.ge += r.g; else t.gs -= r.g;
+      if (r.n > 0) t.ne = r2(t.ne + r.n); else t.ns = r2(t.ns - r.n);
+    });
+    return t;
+  }
+  function ledgerSync(ch, note, now) {
+    if (!ch || typeof ch !== "object") return false;
+    if (!Array.isArray(ch.ledger)) ch.ledger = [];
+    var L = ch.ledger, last = L.length ? L[L.length - 1] : null;
+    var g = Number(ch.glimmer) || 0, n = r2(ch.nexus);
+    var dg = g - (last ? (Number(last.gb) || 0) : 0), dn = r2(n - (last ? (Number(last.nb) || 0) : 0));
+    if (!dg && !dn) return false;
+    if (typeof note === "function") { try { note = note(ch); } catch (e) { note = null; } }
+    if (typeof note === "string") note = { memo: note };
+    var row = { t: now || Date.now(), m: "", g: dg, n: dn, gb: g, nb: n };
+    if (!last && !note) { row.k = "open"; row.m = "Opening balance (the ledger starts here)"; }
+    else if (note && note.memo) { row.m = String(note.memo); if (note.kind === "adjust") row.k = "adjust"; }
+    else { row.k = "adjust"; row.m = "Adjustment: balance changed with no reason recorded"; }
+    L.push(row);
+    if (L.length > LEDGER_CAP) {
+      var cut = L.length - LEDGER_CAP + 1, old = L.slice(0, cut), end = old[old.length - 1], tot = ledgerTotals(old);
+      var cnt = old.reduce(function (a, r) { return a + (r && r.k === "fwd" ? (r.c || 0) : 1); }, 0);
+      L.splice(0, cut, { t: end.t, m: "Balance brought forward (" + cnt + " older entries)", k: "fwd", g: 0, n: 0,
+        gb: end.gb, nb: end.nb, ge: tot.ge, gs: tot.gs, ne: tot.ne, ns: tot.ns, c: cnt });
+    }
+    return true;
+  }
+  /* migrate() is migrateRecord() then the ledger's reconciliation: a record from before the ledger
+     opens with its balance, and one whose wallet moved outside the app gets an Adjustment line. */
   function migrate(ch) {
+    migrateRecord(ch);
+    if (ch && typeof ch === "object") ledgerSync(ch, null, (ch.meta && ch.meta.updatedAt) || Date.now());
+  }
+  function migrateRecord(ch) {
     if (!ch) return;
     // name must always be a string, even for an ancient/malformed roster entry
     // that predates the current schema and fails the check below (a corrupt
@@ -2390,6 +2448,7 @@ EN.store = (function () {
     var ch = active();
     if (!ch) return;
     mutator(ch);
+    ledgerSync(ch, opts && opts.ledger);
     ch.meta.updatedAt = Date.now();
     persist((opts && opts.immediate) || false);
     if (!opts || opts.silent !== true) emit();
@@ -2424,7 +2483,7 @@ EN.store = (function () {
     if (!ch || typeof ch !== "object") return false;
     var before = JSON.parse(JSON.stringify(ch));
     // a mutator that throws halfway must not leave half its change on the record either
-    try { mutator(ch); } catch (e) { restoreInPlace(ch, before); throw e; }
+    try { mutator(ch); ledgerSync(ch, opts && opts.ledger); } catch (e) { restoreInPlace(ch, before); throw e; }
     if (!ch.meta || typeof ch.meta !== "object") ch.meta = {};
     ch.meta.updatedAt = Date.now();
     var ok = persist(true);
@@ -2457,6 +2516,8 @@ EN.store = (function () {
     setActive: setActive, remove: remove, update: update,
     // a write to one filed record by id, for the GM side's confirmed writes; see updateById
     updateById: updateById,
+    // the money ledger: totals over its lines (fwd lines carry their own), for the Bills view
+    ledgerTotals: ledgerTotals,
     importCharacter: importCharacter, composeFullName: composeFullName,
     // records that could not be loaded, or went missing outside the app (A4)
     setAsideList: setAsideList, missingList: missingList, restoreRecord: restoreRecord, discardRecord: discardRecord,

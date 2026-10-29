@@ -1492,7 +1492,7 @@ EN.builder = (function () {
       c.startingKit.glimmerGranted = sel.leftover;
       c.startingKit.claimedClass = c.class;
       c.startingKit.claimedSubclass = c.subclass;
-    });
+    }, { ledger: "Starting kit claimed: the leftover goes on your Glimmer Stick" });
     var enc = (eng.derive(store.active()) || {}).encumbrance || null;
     var loadLine = enc ? " Load " + enc.current + " of Threshold " + enc.threshold + "." : "";
     var over = enc && enc.current > enc.threshold;
@@ -1540,7 +1540,7 @@ EN.builder = (function () {
       c.startingKit.glimmerGranted = 0;
       c.startingKit.claimedClass = null;
       c.startingKit.claimedSubclass = null;
-    });
+    }, { ledger: "Starting kit returned (claim undone)" });
     toast("Starting kit returned: the gear and its Glimmer came back off the sheet.");
   }
   function startingKitPanel(ch, cls) {
