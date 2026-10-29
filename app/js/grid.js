@@ -277,12 +277,32 @@ EN.gridView = (function () {
   }
 
   // ships: listed in a Codebreaker's Repertoire as part of the deck's free Complexity 0 suite
-  function buddyCipherCard(cy, ships) {
+  /* B1, RULED 29 October 2026: "Through a Smartdeck they always run as Complexity 0: use your own
+     Cipher Attack and Cipher Save DC, and read the Buddy's Tier as 0." The suite's entries are
+     written for a B&E Buddy ("the Buddy's DC", "the Buddy's Tier"), so on a Smartdeck the card
+     reads them through the ruling: the Codebreaker's own Cipher Save DC and Cipher Attack, with
+     the numbers, and Tier 0 whatever the deck's tier (a bigger deck doesn't make the free suite
+     stronger). Data stays the book's text; only this Smartdeck card rewrites it. On a Buddy, and
+     in the Reference panel's suite list, the Buddy wording stands. */
+  function suiteOnDeck(cy, gd) {
+    var t = String(cy.text || "");
+    var dc = gd && gd.cipherSaveDC, atk = gd && gd.effectiveAttack;
+    t = t.replace(/Node rolls Cipher Save vs\. the Buddy's DC\./g,
+                  "Node rolls Cipher Save vs. your Cipher Save DC" + (dc != null ? " (" + dc + ")" : "") + ".");
+    t = t.replace(/Scan DC is 12 \+ \(3 \u00d7 the Buddy's Tier\) or lower: Obscured for a Standard \[0\] Buddy, Masked for an Improved \[1\], Stealth-Routed for an Advanced \[2\]\./,
+                  "Scan DC is 12 or lower (Obscured): through a Smartdeck the Buddy's Tier reads as 0, whatever your deck's tier.");
+    t = t.replace(/^Cipher Attack vs\. Node Security Rating\./,
+                  "Your Cipher Attack" + (atk != null ? " (d20 " + (atk >= 0 ? "+" : "") + atk + ")" : "") + " vs. Node Security Rating.");
+    return Object.assign({}, cy, { text: t });
+  }
+  function buddyCipherCard(cy, ships, gd) {
+    if (ships && gd && gd.deck && gd.deck.type === "smartdeck") cy = suiteOnDeck(cy, gd);
     return el("div.feature" + (ships ? ".ships-cipher" : ""), { dataset: ships ? { ships: "1" } : {}, style: { borderLeftColor: ships ? "var(--gold)" : "var(--border2)" } }, [
       el("div.row.between", { style: { alignItems: "center", gap: "8px" } }, [
         el("span", { style: { fontWeight: 600, fontSize: "13px" }, text: cy.name }),
         el("div.row", { style: { gap: "6px", alignItems: "center" } }, [
           ships ? el("span.chip", { style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" }, title: "Ships free with every Smartdeck; not one of your four" }, "SHIPS WITH YOUR SMARTDECK") : null,
+          ships ? el("span.chip.suite-cx", { title: "Through a Smartdeck the suite always runs as Complexity 0, free in Bandwidth", style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" } }, "COMPLEXITY 0") : null,
           cy.type ? el("span.chip", { style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" } }, cy.type) : null,
           cy.activation ? el("span.chip", { title: "Activation", style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" } }, cy.activation) : null
         ])
@@ -383,7 +403,8 @@ EN.gridView = (function () {
       }
       if (suite.length) {
         rows.push(el("div.mono.ships-head", { style: { fontSize: "10px", letterSpacing: ".14em", color: "var(--gold)", margin: "10px 0 4px" }, text: "SHIPS WITH YOUR SMARTDECK · COMPLEXITY 0 · FREE" }));
-        suite.forEach(function (cy) { rows.push(buddyCipherCard(cy, true)); });
+        rows.push(noteP("Through a Smartdeck they always run as Complexity 0: use your own Cipher Attack and Cipher Save DC, and read the Buddy's Tier as 0.", "var(--text2)"));
+        suite.forEach(function (cy) { rows.push(buddyCipherCard(cy, true, gd)); });
       }
       // the 4-5 price reads cipherCost, so an Apex (Quantum Core) deck sees what RUN will charge
       var costNote = noteP("Casting costs: Complexity 0 free · 1-3 = 1 BW · 4-5 = " + cipherCost({ cx: 4 }, deck && deck.tier) + " BW"
@@ -994,5 +1015,7 @@ EN.gridView = (function () {
 
   return { render: render, isDamage: isDamage, setDamage: setDamage, getDmgIntensity: getDmgIntensity, setDmgIntensity: setDmgIntensity,
            shiftDeckIntegrity: shiftDeckIntegrity, repairDeckFully: repairDeckFully,
-           ownedRigRows: ownedRigRows, cipherCost: cipherCost };
+           ownedRigRows: ownedRigRows, cipherCost: cipherCost,
+           // B1: the Complexity 0 suite's text as it reads through a Smartdeck (the starting picker's tooltips use it too)
+           suiteOnDeck: suiteOnDeck };
 })();

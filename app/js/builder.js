@@ -2190,7 +2190,11 @@ EN.builder = (function () {
     kids.push(el("div.row.wrap.ships-row", { style: { gap: "6px", alignItems: "center", marginBottom: "6px" } },
       [el("span", { style: { fontFamily: "var(--mono)", fontSize: "10px", color: "var(--text3)", minWidth: "92px" }, text: "CX 0 · ships with your Smartdeck" })].concat(
         pool.c0.map(function (p) {
-          return el("span.chip.ships-cipher", { dataset: { cipher: p.name, cx: "0" }, title: (p.action ? p.action + " · " : "") + "Ships with your Smartdeck. " + p.text,
+          // B1: read through a Smartdeck, the Codebreaker's own DC and Attack, the Buddy's Tier as 0
+          var _gd = null; try { _gd = eng.derive(ch).grid; } catch (e) { _gd = null; }
+          var _tx = (EN.gridView && EN.gridView.suiteOnDeck && _gd)
+            ? EN.gridView.suiteOnDeck(p, { cipherSaveDC: _gd.cipherSaveDC, effectiveAttack: _gd.deck && _gd.deck.type === "smartdeck" ? _gd.effectiveAttack : null }).text : p.text;
+          return el("span.chip.ships-cipher", { dataset: { cipher: p.name, cx: "0" }, title: (p.action ? p.action + " · " : "") + "Ships with your Smartdeck. Complexity 0. " + _tx,
             style: { fontSize: "10.5px", color: "var(--gold)", borderColor: "var(--gold)", cursor: "default" } }, "✓ " + p.name);
         }))));
     kids.push(row("CX 1 · pick four", pool.c1));
