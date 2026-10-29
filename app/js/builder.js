@@ -2211,16 +2211,18 @@ EN.builder = (function () {
       anyUU = true;
       var cur = (ch.universalUpgrades || {})[L];
       var mode = slotMode(ch, L);
+      var offAt = eng.upgradeSwitchedOffAt ? eng.upgradeSwitchedOffAt(ch, L) : null;
       var summary = (mode === "retrain" ? "Retraining: " : "") + (cur ? (
         cur.type === "attr" ? attrUpgradeSummary(cur) :
         cur.type === "evolution" ? (cur.evolution ? cur.evolution + heldText("lineage", ch.lineage) : "Evolution, choose") :
-        cur.type === "talentUpgrade" ? (cur.talent ? "Upgrade: " + talentName(cur.talent) + heldText("talent", cur.talent) + (resistPendingIn(ch, cur) ? " \u00b7 choose a damage type" : "") : "Talent Upgrade, choose") :
+        cur.type === "talentUpgrade" ? (cur.talent ? "Upgrade: " + talentName(cur.talent) + heldText("talent", cur.talent) + (offAt ? " \u00b7 switched off, needs Level " + offAt.needs : resistPendingIn(ch, cur) ? " \u00b7 choose a damage type" : "") : "Talent Upgrade, choose") :
         (cur.talent ? talentName(cur.talent) + heldText("talent", cur.talent) + (talentAttrPendingIn(ch, cur) ? " · choose an Attribute" : talentSavePendingIn(ch, cur) ? " · choose a Saving Throw Attribute" : "") : "Talent, choose")
       ) : (mode === "freed" ? "Emptied by retrain, refill" : "Unspent"));
       blocks.push(collapsibleEntry("uu-" + L, {
         title: "Level " + L + " · Universal Upgrade", summary: summary,
-        attention: !cur || talentAttrPendingIn(ch, cur) || talentSavePendingIn(ch, cur) || resistPendingIn(ch, cur), dismissKey: "L" + d.level,
+        attention: !cur || !!offAt || talentAttrPendingIn(ch, cur) || talentSavePendingIn(ch, cur) || resistPendingIn(ch, cur), dismissKey: "L" + d.level,
         attentionTitle: !cur ? "Unspent Universal Upgrade; click to dismiss"
+                             : offAt ? "This Upgrade needs Level " + offAt.needs + " and is switched off; click to dismiss"
                              : resistPendingIn(ch, cur)
                                ? "This Upgrade grants Resistance to a damage type and you have not chosen which; click to dismiss"
                                : talentSavePendingIn(ch, cur) && !talentAttrPendingIn(ch, cur)
@@ -2375,6 +2377,9 @@ EN.builder = (function () {
     if (!isAwk && r && r.freed && typeof r.freed === "object" && Object.prototype.hasOwnProperty.call(r.freed, String(L))) return "freed";
     // the same for a slot an Edit freely change emptied
     if (!isAwk && freelyFreedAt(ch, L)) return "freed";
+    /* [RULING, 28 October 2026] an Upgrade held below its Level (an older save) is an illegal pick:
+       the slot opens for the player to fix, and fixing it is not the level's retrain (no log entry) */
+    if (!isAwk && eng.upgradeSwitchedOffAt && eng.upgradeSwitchedOffAt(ch, L)) return "fixup";
     if ((isAwk ? 4 : Number(L)) >= (ch.level || 1)) return "free";
     var held = isAwk ? !!eng.awakeningPick(ch) : slotHeld((ch.universalUpgrades || {})[L]);
     if (!held) return "free";
@@ -2466,7 +2471,7 @@ EN.builder = (function () {
   function retrainNote(ch, L, mode) {
     var r = retrainAt(ch), lvl = L === "awakening" ? 4 : Number(L);
     var help = function (text, color) { return el("p.help", { style: { margin: "0 0 8px", color: color || "var(--text3)" }, text: text }); };
-    if (mode === "free") return null;
+    if (mode === "free" || mode === "fixup") return null;
     if (mode === "retrain") {
       var evo = L === "awakening" || (r.was && r.was.type === "evolution");
       return el("div", null, [
@@ -2507,10 +2512,15 @@ EN.builder = (function () {
   function universalUpgradePicker(ch, L) {
     var cur = (ch.universalUpgrades || {})[L];
     var mode = slotMode(ch, L), r = retrainAt(ch);
-    var open = mode === "free";
+    var open = mode === "free" || mode === "fixup";
     var canEvo = open || (mode === "retrain" && r.was && r.was.type === "evolution") || (mode === "freely" && cur && cur.type === "evolution");
     var canUp = Number(L) >= 6 && (open || mode === "freed");
     var wrap = el("div", { style: { margin: "0 0 10px 14px", paddingLeft: "10px", borderLeft: "1px dashed var(--border2)" } });
+    var offUp = eng.upgradeSwitchedOffAt ? eng.upgradeSwitchedOffAt(ch, L) : null;
+    if (offUp) wrap.appendChild(el("p.help.upgrade-off", { style: { margin: "0 0 8px", color: "var(--warn)" },
+      text: "Switched off: the " + offUp.name + " Upgrade needs Level " + offUp.needs + ", and this Level " + L + " slot is below it. "
+        + "It stays on your sheet but does nothing until you reach Level " + offUp.needs + ". You can change this slot now"
+        + (isFiled(ch) ? "; fixing it doesn't use your Level " + ch.level + " retrain." : ".") }));
     var note = retrainNote(ch, L, mode);
     if (note) wrap.appendChild(note);
     if (mode !== "settled") wrap.appendChild(el("div.row.wrap", { style: { gap: "8px", marginBottom: "8px" } }, [

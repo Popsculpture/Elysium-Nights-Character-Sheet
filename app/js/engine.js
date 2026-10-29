@@ -2268,13 +2268,42 @@ EN.engine = (function () {
      name is dropped rather than passed through: it can match nothing downstream either way,
      and passing it through is how it stayed invisible. */
   function talentUpgradeKeys(ch) {
-    var ups = (ch && ch.universalUpgrades) || {}, out = [];
+    var ups = (ch && ch.universalUpgrades) || {}, out = [], lvl = Number(ch && ch.level) || 1;
     Object.keys(ups).forEach(function (k) {
       var u = ups[k]; if (!u || u.type !== "talentUpgrade" || !u.talent) return;
       var canon = canonTalentKey(u.talent);
+      // an Upgrade held below its Level is switched off until the character reaches it (see below)
+      if (canon && upgradeSwitchedOff(canon, k, lvl)) return;
       if (canon) out.push(canon);
     });
     return out;
+  }
+  /* [RULING, 28 October 2026] "You must meet a Talent's Level requirement when you take its
+     Upgrade" (Level 6+, or Level 8+ for Hardware Harmonizer and Resonant Recovery). A save that
+     already holds an Upgrade taken in a slot below that Level keeps it on the sheet, switched off:
+     it applies nothing until the character reaches the Level, the slot and the Talent's feature
+     say so, and the builder lets the player change that slot without spending the level's retrain.
+     Never deleted. talentUpgradeKeys (and so talentUpgradeHeld and every effect) skips it. */
+  function upgradeSwitchedOff(canon, slotLevel, charLevel) {
+    var need = talentUpgradeLevel(canon);
+    if (!need) return false;
+    var sl = Number(slotLevel);
+    return !isNaN(sl) && sl < need && (Number(charLevel) || 1) < need;
+  }
+  // [{level: slot, talent: key, name, needs}] for every Upgrade switched off by its Level
+  function switchedOffUpgrades(ch) {
+    var ups = (ch && ch.universalUpgrades) || {}, out = [], lvl = Number(ch && ch.level) || 1;
+    Object.keys(ups).sort(function (a, b) { return (Number(a) || 0) - (Number(b) || 0); }).forEach(function (k) {
+      var u = ups[k]; if (!u || u.type !== "talentUpgrade" || !u.talent) return;
+      var canon = canonTalentKey(u.talent);
+      if (!canon || !upgradeSwitchedOff(canon, k, lvl)) return;
+      var t = talentRow(canon);
+      out.push({ level: Number(k), talent: canon, name: t ? t.name : canon, needs: talentUpgradeLevel(canon) });
+    });
+    return out;
+  }
+  function upgradeSwitchedOffAt(ch, slotLevel) {
+    return switchedOffUpgrades(ch).filter(function (x) { return String(x.level) === String(slotLevel); })[0] || null;
   }
   /* The level a Talent's Upgrade prints: "**Upgrade (Level 8+):**" is 8. Most are Level 6+; the
      Freelancer's Companion gives Hardware Harmonizer and Resonant Recovery Level 8+ Upgrades.
@@ -4156,6 +4185,13 @@ EN.engine = (function () {
     // the Upgrade counts only while the Talent itself is held (as Parallel Processing checks): a
     // slot turned to +2 ATTRIBUTES leaves an orphaned Upgrade record behind
     if (talentUpgradeHeld(ch, "asphalt-rider")) speedFeatures.push({ label: "Asphalt Rider (Upgrade)", val: 2 });
+    /* Blitz Logic: "Your Speed increases by 2." Speed Freak: "Your Speed increases by 2", and its
+       Upgrade "Your Speed increases by an additional 2 (4 total)". Freelancer's Companion; the book
+       prints no armor, Load or other condition on either, so they are flat rows (author's ruling,
+       28 October 2026). */
+    if (talentHeld(ch, "blitz-logic")) speedFeatures.push({ label: "Blitz Logic", val: 2 });
+    if (talentHeld(ch, "speed-freak")) speedFeatures.push({ label: "Speed Freak", val: 2 });
+    if (talentUpgradeHeld(ch, "speed-freak")) speedFeatures.push({ label: "Speed Freak (Upgrade)", val: 2 });
     classMech.speed.forEach(function (r) { speedFeatures.push({ label: r.label, val: r.val }); });
     var speedFeatureTotal = 0;
     speedFeatures.forEach(function (r) { speedFeatureTotal += r.val; });
@@ -4495,16 +4531,21 @@ EN.engine = (function () {
     // Talents taken via Universal Upgrades, so the play sheet renders them with
     // their action type and uses (many are active/limited-use combat abilities).
     // The Level 6+ Upgrade rider only shows as active once it has been unlocked.
-    var upKeys = talentUpgradeKeys(ch);
+    var upKeys = talentUpgradeKeys(ch), offUps = switchedOffUpgrades(ch);
     activeTalents(ch).forEach(function (t) {
       var parts = splitTalentText(t.talent.text);
       var upgraded = upKeys.indexOf(t.talent.key) !== -1;
+      var off = upgraded ? null : offUps.filter(function (x) { return x.talent === t.talent.key; })[0] || null;
       var text = parts.base;
       if (parts.upgrade) {
+        var upLv = talentUpgradeLevel(t.talent) || 6;
         text += upgraded ? "\n\n**Upgrade (unlocked):** " + parts.upgrade
-                         : "\n\n*Upgrade available at Level 6 (spend a Talent slot to unlock).*";
+              : off ? "\n\n*Upgrade switched off: it was taken in your Level " + off.level + " slot, but it needs Level " + off.needs
+                      + ". It does nothing until you reach Level " + off.needs + "; change that slot in the builder to pick again.*"
+                    : "\n\n*Upgrade available at Level " + upLv + " (spend a Talent slot to unlock).*";
       }
-      features.push({ level: t.level, name: t.talent.name, text: text, source: "Talent" + (upgraded ? " · Upgraded" : ""), kind: "talent" });
+      features.push({ level: t.level, name: t.talent.name, text: text, source: "Talent" + (upgraded ? " · Upgraded" : off ? " · Upgrade switched off" : ""), kind: "talent",
+        upgradeOff: off ? { level: off.level, needs: off.needs } : null });
     });
 
     /* training points, spent is computed from actual purchases */
@@ -4539,6 +4580,7 @@ EN.engine = (function () {
       lineageSpeed: linMech.speed,
       // flat Speed from Talents and class features, [{label, val}], already inside speed/speedBase
       speedFeatures: speedFeatures,
+      switchedOffUpgrades: switchedOffUpgrades(ch),
       // who grants Edge on Initiative: "Tuned Synapses" (lineage), "First Responder", "Veteran Instincts"
       initEdgeSources: initEdgeSources,
       lineageSpeedFirstRound: linMech.speedFirstRound,
@@ -5069,7 +5111,7 @@ EN.engine = (function () {
     subclassGrantChoices: subclassGrantChoices, subclassGrantFeatures: subclassGrantFeatures,
     classFeatureMechanics: classFeatureMechanics, classFeatureUnlocked: classFeatureUnlocked,
     resistPick: resistPick, resistPickOptions: resistPickOptions, resistPickPending: resistPickPending,
-    talentUpgradeHeld: talentUpgradeHeld,
+    talentUpgradeHeld: talentUpgradeHeld, switchedOffUpgrades: switchedOffUpgrades, upgradeSwitchedOffAt: upgradeSwitchedOffAt,
     armorResistOptions: armorResistOptions, armorResistCount: armorResistCount,
     armorResistPicks: armorResistPicks, armorResistOwed: armorResistOwed,
     ablativeOptions: ablativeOptions, ablativeState: ablativeState,

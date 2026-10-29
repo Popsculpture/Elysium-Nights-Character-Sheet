@@ -2,12 +2,15 @@ window.EN = window.EN || {};
 /* `hooks`: the Player's Handbook prints ONE Backstory Hook for each of the ten launch
    Backgrounds (badge, boardroom-exile, cipher-punk, courier, dealer, ganger, gearhead,
    glow-idol, minimum-wage-mage, street-doc), so those carry one. The Freelancer's Companion
-   prints one for each of its ten Backgrounds (data/launch.js `companion`), so those carry one too. */
+   prints one for each of its ten Backgrounds (data/launch.js `companion`), so those carry one too.
+   `blurb`: the book's own words, the Handbook (EN1001) for its ten and the Companion (EN1101) for
+   its ten. The books dropped one flavor sentence from each Handbook blurb on 13 October; the app
+   follows (author's ruling, 28 October 2026). */
 EN.backgrounds = [
   {
     key: "badge",
     name: "Badge",
-    blurb: "You used to be part of the system that keeps the city from tearing itself apart, or at least pretends to. You wore the badge, the logo, the armband, and learned how authority moves through radios, reports, and quiet favors. You know the rhythms of patrol shifts, the way a supervisor thinks when something goes sideways, and how quickly procedure bends under pressure. Even if you left on bad terms, that training never leaves you. The badge might be dead, but the instincts aren't.",
+    blurb: "You used to be part of the system that keeps the city from tearing itself apart, or at least pretends to. You wore the badge, the logo, the armband, and learned how authority moves through radios, reports, and quiet favors. Even if you left on bad terms, that training never leaves you. The badge might be dead, but the instincts aren't.",
     skills: {
       granted: ["Intuition"],
       choose: { count: 1, options: ["Perception", "Investigation"] }
@@ -26,7 +29,7 @@ EN.backgrounds = [
   {
     key: "boardroom-exile",
     name: "Boardroom Exile",
-    blurb: "You learned how power really moves. Not through speeches or titles, but through budgets, approvals, and who owes whom a favor. You can read a room the way others read a threat display, spotting leverage before it becomes obvious. Whether you walked away or were pushed out, you still understand the game. The system never forgets you completely, and you never forget how to play it.",
+    blurb: "You learned how power really moves. Not through speeches or titles, but through budgets, approvals, and who owes whom a favor. You can read a room the way others read a threat display, spotting leverage before it becomes obvious. The system never forgets you completely, and you never forget how to play it.",
     skills: {
       granted: ["Persuasion"],
       choose: { count: 1, options: ["Intuition", "Deception"] }
@@ -45,7 +48,7 @@ EN.backgrounds = [
   {
     key: "cipher-punk",
     name: "Cipher Punk",
-    blurb: "You learned the city by slipping through its veins. Firewalls, access logs, legacy code, and poorly patched systems were your neighborhoods. Maybe you did it for ideals, maybe for money, maybe because you couldn't stop yourself. You know how systems lie, how admins get lazy, and how the same few mistakes repeat everywhere.",
+    blurb: "You learned the city by slipping through its veins. Firewalls, access logs, legacy code, and poorly patched systems were your neighborhoods. You know how systems lie, how admins get lazy, and how the same few mistakes repeat everywhere.",
     skills: {
       granted: ["Systems"],
       choose: { count: 1, options: ["Investigation", "Deception"] }
@@ -83,7 +86,7 @@ EN.backgrounds = [
   {
     key: "courier",
     name: "Courier",
-    blurb: "You live between checkpoints, schedules, and blind spots. You learned which cameras are real, which guards are bored, and which routes only work once. Whether you moved packages, people, or information, you made a career out of not being memorable. The city taught you that borders are suggestions enforced by habit, and habit can be broken.",
+    blurb: "You live between checkpoints, schedules, and blind spots. You learned which cameras are real, which guards are bored, and which routes only work once. The city taught you that borders are suggestions enforced by habit, and habit can be broken.",
     skills: {
       granted: ["Acrobatics"],
       choose: { count: 1, options: ["Athletics", "Intuition"] }
@@ -102,7 +105,7 @@ EN.backgrounds = [
   {
     key: "dealer",
     name: "Dealer",
-    blurb: "You learned the economy that doesn't show up in reports. Product changes hands in parking garages, clinics, and half-lit rooms where everyone smiles too much. You learned how to test, cut, verify, and walk away when something smells wrong. The trade taught you that trust is temporary, and survival is about reading people faster than they read you.",
+    blurb: "You learned the economy that doesn't show up in reports. Product changes hands in parking garages, clinics, and half-lit rooms where everyone smiles too much. The trade taught you that trust is temporary, and survival is about reading people faster than they read you.",
     skills: {
       granted: ["Medtech"],
       choose: { count: 1, options: ["Persuasion", "Systems"] }
@@ -121,7 +124,7 @@ EN.backgrounds = [
   {
     key: "ganger",
     name: "Ganger",
-    blurb: "You grew up with lines drawn in paint, blood, and memory. Your crew was safety and pressure all at once, a family that demanded loyalty and paid in protection or pain. You learned how territory really works, who actually makes decisions, and how fast a situation turns lethal when respect slips. Even if you left the life behind, the street still recognizes you.",
+    blurb: "You grew up with lines drawn in paint, blood, and memory. Your crew was safety and pressure all at once, a family that demanded loyalty and paid in protection or pain. Even if you left the life behind, the street still recognizes you.",
     skills: {
       granted: ["Intuition"],
       choose: { count: 1, options: ["Athletics", "Stealth"] }
@@ -140,7 +143,7 @@ EN.backgrounds = [
   {
     key: "gearhead",
     name: "Gearhead",
-    blurb: "You're the reason broken things keep moving. You learned to fix machines with bad parts, worse documentation, and no time. Elevators, drones, generators, cyberware, vehicles, if it hums or sparks, you've probably cursed at it. You trust systems you can open more than promises you can't.",
+    blurb: "You're the reason broken things keep moving. Elevators, drones, generators, cyberware, vehicles, if it hums or sparks, you've probably cursed at it. You trust systems you can open more than promises you can't.",
     skills: {
       granted: ["Engineering"],
       choose: { count: 1, options: ["Athletics", "Systems"] }
@@ -159,7 +162,7 @@ EN.backgrounds = [
   {
     key: "glow-idol",
     name: "Glow Idol",
-    blurb: "You worked spaces where attention is currency and safety is something you negotiate in real time. You learned how to read rooms, steer conversations, and turn charm into leverage without making it obvious. People talked around you, underestimated you, or forgot you were listening. You survived on intuition and presentation, knowing exactly when to lean in and when to disappear.",
+    blurb: "You worked spaces where attention is currency and safety is something you negotiate in real time. People talked around you, underestimated you, or forgot you were listening. You survived on intuition and presentation, knowing exactly when to lean in and when to disappear.",
     skills: {
       granted: ["Persuasion"],
       choose: { count: 1, options: ["Perception", "Deception"] }
@@ -216,7 +219,7 @@ EN.backgrounds = [
   {
     key: "minimum-wage-mage",
     name: "Minimum Wage Mage",
-    blurb: "You survived something that should have killed you and came back Flow-touched, with resonance humming under your skin. But progress never stops, so you went right back to your shift, your queues, your scripts, and the polite misery of a job that pays just enough to keep you showing up. You learned to nudge the current in small ways to keep systems moving and people calm.",
+    blurb: "You survived something that should have killed you and came back Flow-touched, with resonance humming under your skin. But progress never stops, so you went right back to your shift, your queues, your scripts, and the polite misery of a job that pays just enough to keep you showing up.",
     skills: {
       granted: ["Esoterica"],
       choose: { count: 1, options: ["Awareness", "Sleight"] }
@@ -330,7 +333,7 @@ EN.backgrounds = [
   {
     key: "street-doc",
     name: "Street Doc",
-    blurb: "You learned medicine where mistakes are immediate and forgiveness is rare. Back rooms, street clinics, and makeshift wards taught you triage over theory. You know how to work fast, improvise, and keep people alive with tools that were never meant for the job. The work is brutal, but it matters.",
+    blurb: "You learned medicine where mistakes are immediate and forgiveness is rare. Back rooms, street clinics, and makeshift wards taught you triage over theory. You know how to work fast, improvise, and keep people alive with tools that were never meant for the job.",
     skills: {
       granted: ["Medtech"],
       choose: { count: 1, options: ["Perception", "Intuition"] }

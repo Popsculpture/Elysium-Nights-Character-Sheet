@@ -993,7 +993,9 @@ EN.pdfExport = (function () {
         };
         var what = u.type === "attr" ? attrWhat()
           : u.type === "talent" ? ("Talent: " + talWhat(u.talent))
-          : u.type === "talentUpgrade" ? ("Talent Upgrade: " + talName(u.talent) + bookTag("talent", u.talent))
+          : u.type === "talentUpgrade" ? ("Talent Upgrade: " + talName(u.talent) + bookTag("talent", u.talent)
+              // an Upgrade held below its Level stays listed, switched off (ruling, 28 October 2026)
+              + (function () { var off = EN.engine.upgradeSwitchedOffAt ? EN.engine.upgradeSwitchedOffAt(ch, lv) : null; return off ? " (switched off: needs Level " + off.needs + ")" : ""; })())
           // the builder stores the pick as u.evolution (decision 13: the line used to print blank)
           : u.type === "evolution" ? ("Lineage Evolution: " + (u.evolution || u.feature || u.name || ""))
           : (u.name || u.type || "choice");

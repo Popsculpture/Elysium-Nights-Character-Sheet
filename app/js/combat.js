@@ -4065,7 +4065,7 @@ EN.combatView = (function () {
                           : [bdRow("Base move", 6, null, true), bdRow("Agility modifier", agiMod, chromeNote("AGI"))])
           .concat(cyberSpeedRows.map(function (r) { return bdRow("Chrome · " + r.label, r.val); }))
           .concat(d.lineageSpeed ? [bdRow("Lineage", d.lineageSpeed)] : [])
-          // Speed a Talent or class feature grants (Asphalt Rider's Upgrade, First Responder): the engine's own rows
+          // Speed a Talent or class feature grants (Asphalt Rider's Upgrade, Blitz Logic, Speed Freak, First Responder): the engine's own rows
           .concat((d.speedFeatures || []).map(function (r) { return bdRow(r.label, r.val); }))
           .concat(dg.speedPenalty ? [bdRow("Bulky · " + dg.armor.name, dg.speedPenalty)] : [])
           .concat(spLoadFlat ? [bdRow("Encumbered", spLoadFlat)] : [])
