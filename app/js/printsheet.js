@@ -605,7 +605,12 @@ EN.printSheet = (function () {
     L.push(sect("Senses", "10 + MOD + PROF (+/- 5 Edge/Snag)"));
     ["perception", "investigation", "intuition", "systems"].forEach(function (k) {
       var s = (d.skills || []).find(function (x) { return x.key === k; });
-      if (s) L.push(el("div.ps-skrow", null, [el("span.ps-sk-n", { text: "Passive " + s.name }), el("span.ps-sk-b", { text: s.passive })]));
+      if (!s) return;
+      L.push(el("div.ps-skrow", null, [el("span.ps-sk-n", { text: "Passive " + s.name }), el("span.ps-sk-b", { text: s.passive })]));
+      // s.passive is the base; each narrow Skill Focus prints as its own conditional line
+      (s.passiveFocus || []).forEach(function (pf) {
+        L.push(el("div.ps-skrow.ps-passive-focus", null, [el("span.ps-sk-b2", { text: eng.fmtPassiveFocus(pf) })]));
+      });
     });
     // one table, in the engine; this file's copy had drifted from the app's
     var special = eng.senseGrants((d.features || []).map(function (f) { return f.name; })).map(function (g) {

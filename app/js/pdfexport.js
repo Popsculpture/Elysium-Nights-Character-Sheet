@@ -710,7 +710,12 @@ EN.pdfExport = (function () {
     var passiveRows = [];
     ["perception", "investigation", "intuition", "systems"].forEach(function (k) {
       var s = (d.skills || []).find(function (x) { return x.key === k; });
-      if (s) passiveRows.push({ name: "Passive " + s.name, val: s.passive });
+      if (!s) return;
+      passiveRows.push({ name: "Passive " + s.name, val: s.passive });
+      // s.passive is the base; each narrow Skill Focus is its own conditional row
+      (s.passiveFocus || []).forEach(function (pf) {
+        passiveRows.push({ name: "Passive " + s.name + " " + eng.fmtPassiveFocus(pf, true), val: pf.score });
+      });
     });
     ctx.table([{ header: "Sense", key: "name", w: 2, type: "static" }, { header: "Value", key: "val", w: "50px", align: "center" }], "passive", passiveRows);
     // one table, in the engine; this file's copy had drifted from the app's

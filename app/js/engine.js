@@ -13,6 +13,27 @@ EN.engine = (function () {
   function caliber(level) { return R.caliberByLevel[clamp(level, 1, R.maxLevel)] || 1; }
   function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
   function fmtMod(n) { return (n >= 0 ? "+" : "") + n; }
+  /* A character's height is stored in decimal feet (d.heightFt, 5.5) and shown as feet and
+     inches ("5 ft 6 in"), rounded to the nearest inch. Every surface that prints a character's
+     own height asks this; the Size band tables in the rules data keep their own wording. */
+  function fmtFtIn(ft) {
+    var n = Number(ft);
+    if (ft == null || ft === "" || isNaN(n)) return "";
+    var t = Math.round(n * 12);
+    return Math.floor(t / 12) + " ft " + (t % 12) + " in";
+  }
+  /* One conditional Passive Check line for a narrow Skill Focus: { aspect, score } from a
+     skill's passiveFocus (or grid.passiveSystemsFocus) becomes "16 vs access-control systems
+     (Focus)". The aspect's leading capital drops so it reads as part of the sentence, unless
+     the first word looks like an acronym or a name with more capitals in it ("AI cores").
+     `bare` leaves the score off ("vs access-control systems (Focus)") for a table that
+     prints the score in its own column. */
+  function fmtPassiveFocus(pf, bare) {
+    var a = String((pf && pf.aspect) || "").trim();
+    var w = a.split(/\s+/)[0] || "";
+    if (w.length > 1 && w.slice(1) === w.slice(1).toLowerCase()) a = a.charAt(0).toLowerCase() + a.slice(1);
+    return (bare ? "" : pf.score + " ") + "vs " + a + " (Focus)";
+  }
 
   /* THE INITIATIVE RESOLVER. Added 2026-08-31, because the quantity had no owner and the three
      surfaces that showed it disagreed. The Freelancer tab summed it inline from four parts; the
@@ -3291,6 +3312,8 @@ EN.engine = (function () {
     // Passive Systems: what you notice without actively scanning, compared against a
     // hidden node's Scan DC ("10 + your Tech modifier + your Systems Proficiency Bonus").
     var passiveSystems = 10 + techMod + sysProf;
+    // a Systems Focus is a conditional line on top of the base, as on the Systems skill row
+    var passiveSystemsFocus = ((sys && sys.passiveFocus) || []).map(function (pf) { return { aspect: pf.aspect, score: passiveSystems + cal }; });
     var isCodebreaker = ch.class === "codebreaker";
     // A Sourcerer tethers through sprites rather than a deck, and counts as a Power User.
     var isSourcerer = ch.class === "shaper" && ch.subclass === "sourcerer";
@@ -3378,7 +3401,7 @@ EN.engine = (function () {
       isCodebreaker: isCodebreaker, isSourcerer: isSourcerer,
       userType: (isCodebreaker || isSourcerer) ? "Power User" : "Standard User",
       techMod: techMod, systemsProf: sysProf,
-      cipherAttackBonus: cipherAttackBonus, cipherSaveDC: cipherSaveDC, passiveSystems: passiveSystems,
+      cipherAttackBonus: cipherAttackBonus, cipherSaveDC: cipherSaveDC, passiveSystems: passiveSystems, passiveSystemsFocus: passiveSystemsFocus,
       effectiveAttack: effectiveAttack, effectiveSaveDC: effectiveSaveDC,
       quickHackBonus: isSmart ? cipherAttackBonus + deviceBonus : null,
       maxLinks: maxLinks, unlimitedLinks: unlimitedLinks, modLinks: isCodebreaker ? modLinks : 0, linkBonus: linkBonus,
@@ -4387,15 +4410,20 @@ EN.engine = (function () {
       if (isGranted && R.profOrder.indexOf("proficient") > R.profOrder.indexOf(storedTier)) tierKey = "proficient";
       var tier = R.profTiers[tierKey] || R.profTiers.untrained;
       var attrMod = attributes[s.attr].mod;
-      var hasFocus = focuses.some(function (f) { return f.type === "skill" && f.parent === s.key; });
+      var skFocuses = focuses.filter(function (f) { return f.type === "skill" && f.parent === s.key; });
+      var hasFocus = skFocuses.length > 0;
       var hasSpec = specs.some(function (f) { return f.type === "skill" && f.parent === s.key; });
       var total = attrMod + tier.d20;
-      // Focus adds Caliber (like Saving Throw Focus above), not a flat +5
-      var passive = 10 + total + (hasFocus ? cal : 0) + (tierKey === "untrained" ? -5 : 0);
+      /* "A relevant Skill Focus adds your Caliber to the Passive Check score." A Focus is narrow
+         (Systems (Access-control systems)), so `passive` is the base score and each named Focus
+         is a conditional line in `passiveFocus`: the score when the check concerns that aspect.
+         Focus adds Caliber (like Saving Throw Focus above), not a flat +5. */
+      var passive = 10 + total + (tierKey === "untrained" ? -5 : 0);
+      var passiveFocus = skFocuses.map(function (f) { return { aspect: String(f.aspect).trim(), score: passive + cal }; });
       return {
         key: s.key, name: s.name, attr: s.attr, attrName: attributes[s.attr].name,
         tier: tierKey, tierShort: tier.short, attrMod: attrMod, profBonus: tier.d20,
-        total: total, passive: passive, untrained: tierKey === "untrained",
+        total: total, passive: passive, passiveFocus: passiveFocus, untrained: tierKey === "untrained",
         granted: isGranted, storedTier: storedTier,
         focus: hasFocus, specialization: hasSpec
       };
@@ -5128,6 +5156,7 @@ EN.engine = (function () {
 
   return {
     derive: derive, mod: mod, caliber: caliber, fmtMod: fmtMod, clamp: clamp,
+    fmtFtIn: fmtFtIn, fmtPassiveFocus: fmtPassiveFocus,
     buildEdgePool: buildEdgePool, buildSnagPool: buildSnagPool, snagFromDc: snagFromDc, rollDicePool: rollDicePool, rollD20: rollD20,
     // the one Strain value and the scene cost picker (2026-10-24 rulings, items 8 and 1)
     strainOf: strainOf, mergeStrain: mergeStrain, setStrainStage: setStrainStage, sceneCosts: sceneCosts,

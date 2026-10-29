@@ -8,6 +8,17 @@ window.EN = window.EN || {};
 EN.store = (function () {
   var KEY_ROSTER = "en_roster_v1";       // {id: character}
   var KEY_ACTIVE = "en_active_id_v1";
+  /* RECORD SAFETY (A4, 28 October 2026 handoff: two filed records vanished between sessions).
+     KEY_SETASIDE holds any record that could not be loaded, exactly as it was stored, so a
+     failed load never costs the record: it is no longer in the roster, so the next persist used
+     to write over it, and now it waits here for a raw JSON export or a retry on a later build.
+     KEY_BACKUP is the roster as it stood at the last load that found records: when a record in
+     it is missing from the next load (and was not deleted through the app, which drops it from
+     the backup too) the app says so and offers it back, instead of opening on an empty On File.
+     Neither key is ever cleared by a load; the player clears them. */
+  var KEY_SETASIDE = "en_roster_setaside_v1";   // {id: {raw, at, error}}
+  var KEY_BACKUP = "en_roster_backup_v1";       // {at, roster: {id: character}}
+  var safety = { setAside: {}, missing: [] };
   var listeners = [];
   /* state.example holds a PRE-MADE EXAMPLE that is live but not owned. Examples are defined
      in app/data/examples.js and never touch localStorage, so they cannot be deleted, cannot
@@ -87,6 +98,11 @@ EN.store = (function () {
       // Glimmer that landed on the stick. claimedClass/Subclass pin what was
       // claimed so a later respec can warn before re-claiming.
       startingKit: { claimed: false, picks: {}, alt: false, granted: [], glimmerGranted: 0, claimedClass: null, claimedSubclass: null },
+      // a Codebreaker's four free starting Cipher picks, by NAME (A2, 28 Oct 2026; see builder.js
+      // startingCipherPicker). The free class item's flags, startingDeckGranted and
+      // startingRigGranted, are deliberately NOT here: absent means "never granted", and
+      // migrate() fills absent schema keys, so a default would erase that difference.
+      startingCiphers: [],
       // gear buckets are { category: tierKey } maps (weapons/tools/vehicles upgrade; armor acquire-only)
       proficiencies: { skills: {}, saves: [], weapons: {}, armor: {}, tools: {}, vehicles: {} },
       versatile: { insight: { attr: "", skill: "" }, performance: { attr: "", skill: "" }, intimidation: { attr: "", skill: "" } },
@@ -2064,12 +2080,64 @@ EN.store = (function () {
         if (!has) ch.skillFocuses.push({ type: o.type, parent: o.parent, aspect: "", granted: true });
       });
     }
+    /* THE FREE CLASS ITEM ON A RECORD MADE BEFORE IT WAS GRANTED (A3, 28 October 2026 handoff).
+       Until this build Claim Starting Kit never gave a Codebreaker the Standard Smartdeck or a
+       Stitcher the Field Kit Trauma Rig [0] that the class (and the kit note) promises, so Nessa
+       filed with no deck. A record that is FILED, or has CLAIMED its kit, and has never had the
+       item (startingDeckGranted / startingRigGranted absent) gets it now: one Carried entry, put
+       in its slot (the deck jacked in, the Rig worn), and the flag set. A record still being made
+       is left for Claim Starting Kit to grant, so UNDO CLAIM keeps working on it.
+
+       Only when the Stash holds no Smartdeck (or no Rig), the handoff's own condition: a character
+       who already bought one is not handed a second, and that record is left exactly as it was
+       (no flag either), so a filed record that is fine loads byte for byte unchanged. Once granted
+       the flag stays, so the free deck sold or lost later never comes back on a reload. Glimmer
+       and the ledger are not touched.
+
+       Idempotent through the flag, and wrapped so it can never throw: a throw out of migrate()
+       sets the whole record aside. The four starting Ciphers are not repaired here, because only
+       the player can choose them; the #GRID tab asks (js/grid.js), and the Class step stays
+       incomplete until they are chosen. */
+    try {
+      if (!Array.isArray(ch.startingCiphers)) ch.startingCiphers = [];
+      ch.startingCiphers = ch.startingCiphers.filter(function (n, i, a) { return typeof n === "string" && n && a.indexOf(n) === i; });
+      var _ce = EN.engine || {};
+      var CLASS_ITEM = {
+        codebreaker: { name: "Standard Smartdeck", flag: "startingDeckGranted", slot: "deck",
+          has: function () { return (_ce.ownedDecks ? _ce.ownedDecks(ch) : []).some(function (o) { return o.type === "smartdeck"; }); } },
+        stitcher: { name: "Field Kit Trauma Rig [0]", flag: "startingRigGranted", slot: "rig",
+          has: function () { return (_ce.ownedRigs ? _ce.ownedRigs(ch) : []).length > 0; } }
+      }[ch.class];
+      var _started = !!(ch.meta && ch.meta.filedAt) || !!(ch.startingKit && ch.startingKit.claimed);
+      if (CLASS_ITEM && !ch[CLASS_ITEM.flag] && _started && _ce.setEquipSlot && _ce.catalogItem && _ce.catalogItem(CLASS_ITEM.name) && !CLASS_ITEM.has()) {
+        if (!Array.isArray(ch.equipment)) ch.equipment = [];
+        if (!ch.carry || typeof ch.carry !== "object") ch.carry = {};
+        var _ids = {};
+        ch.equipment.forEach(function (x) { if (x && x.id) _ids[x.id] = true; });
+        var _nid; do { _nid = "eq_" + Math.random().toString(36).slice(2, 9); } while (_ids[_nid]);
+        ch.equipment.push({ id: _nid, name: CLASS_ITEM.name, qty: 1 });
+        ch.carry[_nid] = "carried";
+        _ce.setEquipSlot(ch, CLASS_ITEM.slot, _nid);
+        ch[CLASS_ITEM.flag] = true;
+      }
+    } catch (err) { console.warn("Starting class item repair skipped", err); }
   }
 
   /* ---- persistence ------------------------------------------------------ */
+  function readJson(key, dflt) {
+    try { var v = JSON.parse(localStorage.getItem(key) || "null"); return v && typeof v === "object" ? v : dflt; }
+    catch (e) { return dflt; }
+  }
+  function writeJson(key, v) {
+    try { localStorage.setItem(key, JSON.stringify(v)); return true; } catch (e) { console.error("Could not write " + key, e); return false; }
+  }
   function load() {
+    safety.setAside = readJson(KEY_SETASIDE, {});
+    safety.missing = [];
+    var rawText = null;
     try {
-      var roster = JSON.parse(localStorage.getItem(KEY_ROSTER) || "{}");
+      rawText = localStorage.getItem(KEY_ROSTER);
+      var roster = JSON.parse(rawText || "{}");
       var activeId = localStorage.getItem(KEY_ACTIVE) || null;
       state.roster = roster && typeof roster === "object" ? roster : {};
       /* Migrate each record in its OWN try. The outer catch below is the last
@@ -2086,18 +2154,105 @@ EN.store = (function () {
          migrate() ran to completion. It is left in localStorage untouched until
          the next persist, and it is named in the console so it can be recovered
          by hand. Losing one record is recoverable; losing five is not. */
+      /* The record is SET ASIDE, not just dropped: a copy taken before migrate() touched it goes
+         under KEY_SETASIDE at once, so the persist that follows cannot take it with it. */
       var failed = [];
       Object.keys(state.roster).forEach(function (id) {
+        var before = null;
+        try { before = JSON.parse(JSON.stringify(state.roster[id])); } catch (e0) { before = state.roster[id]; }
         try { migrate(state.roster[id]); }
-        catch (e) { failed.push(id); console.error("Character " + id + " could not be migrated and was dropped from this session.", e); }
+        catch (e) {
+          failed.push(id);
+          safety.setAside[id] = { raw: before, at: Date.now(), error: String(e && e.message || e) };
+          console.error("Character " + id + " could not be loaded and was set aside (" + KEY_SETASIDE + ").", e);
+        }
       });
       failed.forEach(function (id) { delete state.roster[id]; });
+      if (failed.length) writeJson(KEY_SETASIDE, safety.setAside);
       state.activeId = activeId && state.roster[activeId] ? activeId : (Object.keys(state.roster)[0] || null);
     } catch (e) {
-      console.warn("Load failed; starting fresh.", e);
+      /* An unreadable store (bad JSON) starts fresh, but its text is kept first, whole, as a set
+         aside entry of its own, so the persist that follows does not destroy it. */
+      console.warn("Load failed; starting fresh. The unreadable roster was set aside.", e);
+      if (rawText) {
+        safety.setAside["unreadable_" + Date.now()] = { raw: rawText, at: Date.now(), error: "The saved roster could not be read: " + String(e && e.message || e) };
+        writeJson(KEY_SETASIDE, safety.setAside);
+      }
       state.roster = {}; state.activeId = null;
     }
+    checkBackup();
     return state;
+  }
+  /* Compare this load with the backup, then refresh the backup. A backed-up record that is not
+     in the roster now, and not set aside, went missing outside the app: it is listed for the
+     recovery notice, and the backup keeps it until the player restores or discards it. */
+  function checkBackup() {
+    var bk = readJson(KEY_BACKUP, null);
+    var held = (bk && bk.roster && typeof bk.roster === "object") ? bk.roster : {};
+    safety.missing = Object.keys(held).filter(function (id) {
+      return held[id] && typeof held[id] === "object" && !state.roster[id] && !safety.setAside[id];
+    });
+    writeBackup();
+  }
+  function writeBackup() {
+    var bk = readJson(KEY_BACKUP, null), next = {};
+    var held = (bk && bk.roster && typeof bk.roster === "object") ? bk.roster : {};
+    safety.missing.forEach(function (id) { next[id] = held[id]; });
+    Object.keys(state.roster).forEach(function (id) { next[id] = state.roster[id]; });
+    // never write an empty backup over one that has records; there is nothing to protect
+    if (!Object.keys(next).length) return;
+    try { localStorage.setItem(KEY_BACKUP, JSON.stringify({ at: Date.now(), roster: next })); }
+    catch (e) {
+      // a full store: the backup gives way so the roster itself can still be saved (a warning, not
+      // an error: nothing the player has is lost, and the save readout reports the roster's own write)
+      console.warn("No room for the roster backup on this device; it was skipped.", e);
+      try { localStorage.removeItem(KEY_BACKUP); } catch (e2) {}
+    }
+  }
+  /* ---- the recovery surface (builder.js draws it in On File's manager and as a notice) ---- */
+  function setAsideList() {
+    return Object.keys(safety.setAside).map(function (id) {
+      var a = safety.setAside[id] || {}, r = a.raw;
+      var nm = r && typeof r === "object" ? (r.name || [r.firstName, r.lastName].filter(Boolean).join(" ")) : "";
+      return { id: id, name: nm || "Unreadable record", level: r && typeof r === "object" ? r.level : null, at: a.at, error: a.error || "", raw: r };
+    });
+  }
+  function missingList() {
+    var bk = readJson(KEY_BACKUP, null), held = (bk && bk.roster) || {};
+    return safety.missing.filter(function (id) { return held[id]; }).map(function (id) {
+      var r = held[id];
+      return { id: id, name: r.name || "Unnamed record", level: r.level, at: bk.at, raw: r };
+    });
+  }
+  // put a set-aside or missing record back: it goes through migrate() again, and a failure keeps it aside
+  function restoreRecord(id) {
+    var raw = null, from = null;
+    if (safety.setAside[id]) { raw = safety.setAside[id].raw; from = "aside"; }
+    else { var m = missingList().filter(function (x) { return x.id === id; })[0]; if (m) { raw = m.raw; from = "missing"; } }
+    if (!raw || typeof raw !== "object") return { ok: false, error: "Nothing readable to restore. Export the raw JSON instead." };
+    var ch = JSON.parse(JSON.stringify(raw));
+    try { migrate(ch); } catch (e) { return { ok: false, error: String(e && e.message || e) }; }
+    ch.meta = ch.meta || {};
+    if (!ch.meta.id || state.roster[ch.meta.id]) ch.meta.id = state.roster[id] ? uid() : id;
+    state.roster[ch.meta.id] = ch;
+    if (from === "aside") { delete safety.setAside[id]; writeJson(KEY_SETASIDE, safety.setAside); }
+    else safety.missing = safety.missing.filter(function (x) { return x !== id; });
+    if (!state.activeId) state.activeId = ch.meta.id;
+    persist(true); writeBackup(); emit();
+    return { ok: true, id: ch.meta.id };
+  }
+  // the player's own decision to let one go: it leaves the set-aside list or the backup
+  function discardRecord(id) {
+    if (safety.setAside[id]) { delete safety.setAside[id]; writeJson(KEY_SETASIDE, safety.setAside); }
+    if (safety.missing.indexOf(id) !== -1) {
+      safety.missing = safety.missing.filter(function (x) { return x !== id; });
+      dropFromBackup(id);
+    }
+    emit();
+  }
+  function dropFromBackup(id) {
+    var bk = readJson(KEY_BACKUP, null);
+    if (bk && bk.roster && bk.roster[id]) { delete bk.roster[id]; writeJson(KEY_BACKUP, bk); }
   }
   var saveTimer = null;
   /* Did the write actually land? A refused setItem (the origin's storage full, Safari in
@@ -2119,7 +2274,19 @@ EN.store = (function () {
       try {
         localStorage.setItem(KEY_ROSTER, JSON.stringify(state.roster));
         localStorage.setItem(KEY_ACTIVE, state.activeId || "");
-      } catch (e) { ok = false; err = e; console.error("Persist failed", e); }
+      } catch (e) {
+        // the safety copy is the first thing to give way when the store is full, then one retry
+        var retried = false;
+        try {
+          if (localStorage.getItem(KEY_BACKUP)) {
+            localStorage.removeItem(KEY_BACKUP);
+            localStorage.setItem(KEY_ROSTER, JSON.stringify(state.roster));
+            localStorage.setItem(KEY_ACTIVE, state.activeId || "");
+            retried = true;
+          }
+        } catch (e2) {}
+        if (!retried) { ok = false; err = e; console.error("Persist failed", e); }
+      }
       lastSaveOk = ok;
       // a watcher must never be able to stop the next one hearing about a failed save
       saveWatchers.forEach(function (f) { try { f(ok, err); } catch (e2) { console.error(e2); } });
@@ -2208,6 +2375,7 @@ EN.store = (function () {
   }
   function remove(id) {
     delete state.roster[id];
+    dropFromBackup(id);   // deleted through the app, so it is not "missing" on the next load
     if (state.activeId === id) state.activeId = Object.keys(state.roster)[0] || null;
     persist(true); emit();
   }
@@ -2284,6 +2452,8 @@ EN.store = (function () {
     // a write to one filed record by id, for the GM side's confirmed writes; see updateById
     updateById: updateById,
     importCharacter: importCharacter, composeFullName: composeFullName,
+    // records that could not be loaded, or went missing outside the app (A4)
+    setAsideList: setAsideList, missingList: missingList, restoreRecord: restoreRecord, discardRecord: discardRecord,
     // pre-made examples: live, editable, never persisted
     setExample: setExample, clearExample: clearExample, activeIsExample: activeIsExample, adoptExample: adoptExample
   };

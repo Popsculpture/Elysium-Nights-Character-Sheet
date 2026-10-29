@@ -4137,8 +4137,9 @@ EN.combatView = (function () {
         var foot = (R.sizeFootprint || {})[d.size];
         var trait = (R.sizeTraits || {})[d.size];
         var rows = [];
-        if (d.heightFt != null) rows.push({ label: "Height", val: d.heightFt + " ft", raw: true });
-        if (band) rows.push({ label: "Lineage range", val: band.fixed ? band.min + " ft, no variance" : band.min + " to " + band.max + " ft", raw: true });
+        // stored as decimal feet, shown as feet and inches (engine.fmtFtIn): 5.5 reads "5 ft 6 in"
+        if (d.heightFt != null) rows.push({ label: "Height", val: eng.fmtFtIn(d.heightFt), raw: true });
+        if (band) rows.push({ label: "Lineage range", val: band.fixed ? eng.fmtFtIn(band.min) + ", no variance" : eng.fmtFtIn(band.min) + " to " + eng.fmtFtIn(band.max), raw: true });
         if (foot) rows.push({ label: "Footprint", val: foot.square, raw: true });
         if (trait && trait.encumbrance) rows.push(bdRow("Encumbrance Threshold", trait.encumbrance));
         /* Heavy Payload counts you one Size larger FOR GRAPPLING ONLY. Stated as a row here
@@ -4182,7 +4183,7 @@ EN.combatView = (function () {
       // Size sits beside Speed and Defense, the way the manuscript's Step 8
       // orders them. It is derived from height, so a character with no height
       // recorded shows a dash rather than defaulting to Medium.
-      statEl("SIZE", "SIZE", d.size || "-", d.heightFt != null ? d.heightFt + " ft" : "set a height",
+      statEl("SIZE", "SIZE", d.size || "-", d.heightFt != null ? eng.fmtFtIn(d.heightFt) : "set a height",
         function (n) { if (!d.size) n.querySelector(".v").style.color = "var(--text3)"; })
     ]));
     // breakdown panel (shows when a stat above is selected)
@@ -4926,10 +4927,20 @@ EN.combatView = (function () {
     /* saving throws + senses */
     var passives = ["perception", "investigation", "intuition", "systems"].map(function (k) {
       var s = d.skills.find(function (x) { return x.key === k; });
-      return s ? el("div.row.between", { style: { padding: "6px 4px", borderBottom: "1px solid rgba(35,48,68,.5)" } }, [
-        el("span", { text: "Passive " + s.name }),
-        el("span.mono", { style: { color: "var(--accent)", fontSize: "17px" }, text: s.passive })
-      ]) : null;
+      if (!s) return null;
+      /* s.passive is the base score; a Skill Focus is narrow, so each named one is a
+         conditional line under it ("16 vs access-control systems (Focus)"), never folded in */
+      var fl = (s.passiveFocus || []).map(function (pf) {
+        return el("div.passive-focus", { style: { color: "var(--gold)", fontSize: "12px", textAlign: "right", marginTop: "2px" },
+          title: "Skill Focus: " + s.name + " (" + pf.aspect + "). Adds your Caliber to this Passive Check only when the check concerns that aspect.",
+          text: eng.fmtPassiveFocus(pf) });
+      });
+      return el("div.passive-row", { "data-skill": s.key, style: { padding: "6px 4px", borderBottom: "1px solid rgba(35,48,68,.5)" } }, [
+        el("div.row.between", null, [
+          el("span", { text: "Passive " + s.name }),
+          el("span.mono.passive-base", { style: { color: "var(--accent)", fontSize: "17px" }, text: s.passive })
+        ])
+      ].concat(fl));
     });
     /* special senses granted by active features (lineage / class / subclass) */
     /* Special senses come from engine.senseGrants, the one table. This file used to carry

@@ -539,10 +539,69 @@ EN.app = (function () {
          invisible. With gate.js deleted the app boots straight into the
          remembered desktop, and the settings tray's desktop buttons are the
          only way across. */
-      var land = function (p) { setPortal(p || portal); reveal(); };
+      var land = function (p) { setPortal(p || portal); reveal(); recoveryNotice(); };
       if (EN.gate && EN.gate.require) EN.gate.require(land); else land(portal);
     }
     step();
+  }
+
+  /* RECORDS THAT NEED ATTENTION (A4, 28 October 2026 handoff). store.load() never drops a
+     record any more: one it cannot load is set aside whole, and one that was in the last
+     session's roster but is gone now (lost outside the app) is held in the backup. Either way
+     the player is told on the way in and chooses for each one: put it back, save its raw JSON,
+     or let it go. LATER hides the notice until the next load; nothing is decided for them. */
+  var _recovLater = false;
+  function recoveryNotice() {
+    if (_recovLater || !store.setAsideList || document.getElementById("recov")) return;
+    var aside = store.setAsideList(), missing = store.missingList();
+    if (!aside.length && !missing.length) return;
+    var el = EN.ui.el;
+    function close() { var o = document.getElementById("recov"); if (o) o.parentNode.removeChild(o); }
+    function exportRaw(r) {
+      var body = typeof r.raw === "string" ? r.raw : JSON.stringify(r.raw, null, 2);
+      var blob = new Blob([body], { type: "application/json" });
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = String(r.name || "record").replace(/[^\w]+/g, "_") + "_raw.json";
+      document.body.appendChild(a); a.click(); a.parentNode.removeChild(a);
+    }
+    function row(r, kind) {
+      var msg = el("p.help", { style: { margin: "4px 0 0", color: "var(--danger)" } });
+      var armed = false, discard = el("button.btn.sm.danger", { onclick: function () {
+        if (!armed) { armed = true; discard.textContent = "LET IT GO?"; discard.classList.add("primary"); return; }
+        store.discardRecord(r.id); close(); recoveryNotice();
+      } }, "✕ DISCARD");
+      return el("div.mgr-row", { dataset: { recov: r.id }, style: { display: "block" } }, [
+        el("div", null, [el("b", { text: r.name }), r.level != null ? el("span.mono", { style: { color: "var(--text3)", marginLeft: "8px" }, text: "L" + r.level }) : null]),
+        el("p.help", { style: { margin: "2px 0 6px" }, text: kind === "aside"
+          ? "Could not be loaded" + (r.error ? ": " + r.error : ".") + " It is kept exactly as it was saved."
+          : "Was in this browser's roster last session and is missing now. Nothing deleted it through the app." }),
+        el("div.row.wrap", { style: { gap: "6px" } }, [
+          el("button.btn.sm" + (kind === "missing" ? ".primary" : ""), { dataset: { recovAct: "restore" }, onclick: function () {
+            var res = store.restoreRecord(r.id);
+            if (res.ok) { EN.ui.toast("Restored " + r.name + "."); close(); recoveryNotice(); render(); }
+            else msg.textContent = "Still can't load it (" + res.error + "). Export the raw JSON and send it in.";
+          } }, "↺ RESTORE"),
+          el("button.btn.sm", { dataset: { recovAct: "export" }, onclick: function () { exportRaw(r); } }, "⤓ EXPORT RAW JSON"),
+          discard
+        ]),
+        msg
+      ]);
+    }
+    var n = aside.length + missing.length, rows = [];
+    if (missing.length) rows.push(el("div.mgr-sect", null, [document.createTextNode("Missing since last session (" + missing.length + ")"), el("span.line")]));
+    missing.forEach(function (r) { rows.push(row(r, "missing")); });
+    if (aside.length) rows.push(el("div.mgr-sect", null, [document.createTextNode("Couldn't be loaded (" + aside.length + ")"), el("span.line")]));
+    aside.forEach(function (r) { rows.push(row(r, "aside")); });
+    var card = el("div.mgr-card", { role: "dialog", "aria-modal": "true", "aria-labelledby": "recov-title" }, [
+      el("div.mgr-head", null, [el("h3", { id: "recov-title", text: n === 1 ? "1 record needs attention" : n + " records need attention" }),
+        el("button.btn.sm.ghost", { style: { marginLeft: "auto" }, title: "Decide later. This shows again next time the app loads.",
+          onclick: function () { _recovLater = true; close(); } }, "LATER")]),
+      el("div.mgr-list", null, [
+        el("p.help", { style: { margin: "8px 0 4px" }, text: "Nothing has been deleted. Restore puts a record back in On File; Export saves its raw JSON so it can be imported or sent in for repair." })
+      ].concat(rows))
+    ]);
+    document.body.appendChild(el("div#recov", null, [card]));
   }
 
   function start() {
@@ -608,7 +667,7 @@ EN.app = (function () {
   }
 
   return {
-    start: start, render: render,
+    start: start, render: render, recoveryNotice: recoveryNotice,
     paintActiveName: paintActiveName, fitRecordPick: fitRecordPick,   // #PRINT repaints the banner as the name is typed
     activeTab: function () { return LAST[portal]; },
     tabOrder: tabOrder,

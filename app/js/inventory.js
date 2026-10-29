@@ -269,6 +269,14 @@ EN.inventoryView = (function () {
   // across copies, so it only drops once the LAST copy leaves the stash)
   function unequipIfGone(c, key, name) {
     var still = (c.equipment || []).some(function (x) { return (x.id || x.name) === key && x.qty > 0; });
+    /* A class's own kit leaving the stash closes its free grant (A1, 28 October 2026): a Codebreaker
+       who bought a deck before the free one existed, then sells it, has had their deck and gets no
+       free Standard on the next load. The grant itself sets the same flag, so this only matters there. */
+    if (!still) {
+      var it = EN.engine.catalogItem ? EN.engine.catalogItem(name) : null;
+      if (it && it.deckType === "smartdeck" && c["class"] === "codebreaker") c.startingDeckGranted = true;
+      if (it && it.rigTier && c["class"] === "stitcher") c.startingRigGranted = true;
+    }
     if (!still) {
       if (c.equippedWeapons) c.equippedWeapons = c.equippedWeapons.filter(function (n) { return n !== key; });
       EN.engine.releaseEntry(c, key);                          // a sold/dropped piece can't stay equipped in any slot
@@ -4453,5 +4461,5 @@ EN.inventoryView = (function () {
 
   return { render: render, leaseTick: leaseTick, householdTick: householdTick, hypercareTick: hypercareTick,
            openBench: openBench, openStash: openStash, openBills: openBills, closePops: closePops,
-           pickUpDropped: pickUpDropped, installFromStash: installFromStash, cyberAnatomyPlan: cyberAnatomyPlan };
+           pickUpDropped: pickUpDropped, installFromStash: installFromStash, cyberAnatomyPlan: cyberAnatomyPlan, sell: sell };
 })();

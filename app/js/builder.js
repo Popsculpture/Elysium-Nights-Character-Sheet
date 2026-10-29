@@ -1371,6 +1371,45 @@ EN.builder = (function () {
              allPicked: allPicked, ready: allPicked && !!ch.subclass };
   }
   function kitNewEquipId() { return "eq_" + Math.random().toString(36).slice(2, 9); }
+  /* THE CLASS ITEM THE KIT NOTE PROMISES (A1, 28 October 2026 handoff). The Handbook gives a
+     Codebreaker "a Tier 0 (Standard) Smartdeck" at Level 1 and a Stitcher a Field Kit [0] Trauma
+     Rig, both free with the class, and the Class Kit notes in app/data/kits.js say so. Nothing
+     granted either: Nessa filed with no deck, "none jacked in", and 7 Bandwidth abilities dark.
+     Claim Starting Kit now adds the item as one more Carried line and puts it in its slot (the
+     deck jacked in, the Rig worn), the same way it wears the kit's armor. It is outside the 700
+     budget: it never enters kitSelection's items, so the KIT TOTAL and the leftover on the
+     Glimmer Stick are exactly what they were.
+
+     ONE FREE COPY PER RECORD. The grant stamps a flag on the record (startingDeckGranted,
+     startingRigGranted) and never grants while it is set, so a player who sells or loses the
+     deck does not get a second one from a re-claim. UNDO CLAIM takes the item back with the rest
+     of the kit and clears the flag only when it actually removed the item; a deck already sold
+     stays counted. Records filed before this fix are repaired by store.js migrate() under the
+     same flags. */
+  var CLASS_ITEMS = {
+    codebreaker: { name: "Standard Smartdeck", flag: "startingDeckGranted", slot: "deck", verb: "jacked in",
+      live: function (c) { return (c.grid && c.grid.deckKey) || null; },
+      ready: function (c) { var k = this.live(c); return !!k && eng.ownedDecks(c).some(function (o) { return o.key === k && o.type === "smartdeck"; }); } },
+    stitcher: { name: "Field Kit Trauma Rig [0]", flag: "startingRigGranted", slot: "rig", verb: "worn",
+      live: function (c) { return (c.rig && c.rig.key) || null; },
+      ready: function (c) { var k = this.live(c); return !!k && eng.ownedRigs(c).some(function (o) { return o.key === k; }); } }
+  };
+  CLASS_ITEMS.codebreaker.held = CLASS_ITEMS.stitcher.held = function (c) {
+    var e = eng.findEntry(c, this.live(c));
+    return !!(e && e.name === this.name);
+  };
+  function grantClassItem(c, granted) {
+    var def = CLASS_ITEMS[c.class];
+    if (!def || c[def.flag] || !kitCatalogItem(def.name)) return;
+    var used = {};
+    (c.equipment || []).forEach(function (x) { if (x && x.id) used[x.id] = true; });
+    var id; do { id = kitNewEquipId(); } while (used[id]);
+    c.equipment.push({ id: id, name: def.name, qty: 1 });
+    c.carry[id] = "carried";
+    granted.push({ key: id, qty: 1, classItem: def.flag });
+    if (!def.ready(c)) EN.engine.setEquipSlot(c, def.slot, id);
+    c[def.flag] = true;
+  }
   function claimKit(ch) {
     var sel = kitSelection(ch);
     if (!sel || !sel.ready) { toast("Lock in your Subclass and pick every kit slot first."); return; }
@@ -1426,6 +1465,7 @@ EN.builder = (function () {
           }
         });
       });
+      grantClassItem(c, granted);
       c.glimmer = (c.glimmer || 0) + sel.leftover;
       c.startingKit.claimed = true;
       c.startingKit.granted = granted;
@@ -1436,8 +1476,11 @@ EN.builder = (function () {
     var enc = (eng.derive(store.active()) || {}).encumbrance || null;
     var loadLine = enc ? " Load " + enc.current + " of Threshold " + enc.threshold + "." : "";
     var over = enc && enc.current > enc.threshold;
+    var ciDef = CLASS_ITEMS[ch.class];
+    var ciNow = ciDef ? store.active() : null;
+    var ciLine = ciDef && ciNow && ciDef.held(ciNow) ? " " + ciDef.name + " " + ciDef.verb + "." : "";
     toast("Starting kit claimed: everything Carried, armor worn, " + (weaponNames.length ? weaponNames.join(" and ") + " equipped" : "no weapon in this kit") +
-      ", and 𝒢" + sel.leftover + " on the Glimmer Stick." + loadLine + (over ? " Over your Encumbrance Threshold: nothing was stashed; stash something from Inventory if you need to." : ""));
+      ", and 𝒢" + sel.leftover + " on the Glimmer Stick." + ciLine + loadLine + (over ? " Over your Encumbrance Threshold: nothing was stashed; stash something from Inventory if you need to." : ""));
   }
   var KIT_WEAPON_GROUPS = { Simple: 1, Martial: 1, Sidearm: 1, Longarm: 1, Heavy: 1, Launcher: 1, Thrown: 1, Bowfire: 1 };   // inventory.js isWeapon
   function kitIsWeapon(name) { var it = kitCatalogItem(name); return !!(it && KIT_WEAPON_GROUPS[it.group]); }
@@ -1450,6 +1493,8 @@ EN.builder = (function () {
         if (!e) return;
         e.qty = (e.qty || 1) - (g.qty || 1);
         if (e.qty <= 0) {
+          // the free class item came back with the kit, so a re-claim may grant it again (A1)
+          if (g.classItem === "startingDeckGranted" || g.classItem === "startingRigGranted") delete c[g.classItem];
           c.equipment = c.equipment.filter(function (x) { return x !== e; });
           // clear any equip/carry state pointing at the removed entry
           if (c.equippedWeapons) c.equippedWeapons = c.equippedWeapons.filter(function (n) { return n !== g.key; });
@@ -1499,6 +1544,13 @@ EN.builder = (function () {
     kids.push(kitRow("Core Pack", K.corePack.items.map(itemChip)));
     kids.push(el("p.help", { style: { margin: "0 0 8px", fontSize: "10.5px" }, text: K.corePack.blurb }));
     if (sel.kit.note) kids.push(el("p.help", { style: { margin: "0 0 6px", color: "var(--text2)" }, text: sel.kit.note }));
+    // A1: the free class item, shown as its own line so it plainly sits outside the budget
+    var ci = CLASS_ITEMS[ch.class];
+    if (ci) kids.push(kitRow("Class Item", [
+      el("span.chip.class-item", { title: "Free with the class, not counted against the " + G + "700. Claiming the kit adds it " + ci.verb + ".",
+        style: { fontSize: "10.5px", color: "var(--gold)", borderColor: "var(--gold)" } }, ci.name + " · free"),
+      ch[ci.flag] ? el("span.help", { style: { margin: 0, fontSize: "10.5px", color: "var(--success)" }, text: "✓ on your record" }) : null
+    ]));
     if ((sel.kit.fixed || []).length) kids.push(kitRow("Class Kit", sel.kit.fixed.map(itemChip)));
     sel.slots.forEach(function (s) {
       if (s.replaced) {
@@ -1623,7 +1675,7 @@ EN.builder = (function () {
       var sel = ch.class === k;
       return el("div.opt-card" + (sel ? ".sel" : ""), {
         onclick: function () {
-          store.update(function (cc) { if (cc.class !== k) { cc.class = k; cc.subclass = null; cc.subclassSkillPicks = Object.create(null); cc.classSkillChoices = []; cc.classGearChoices = { weapons: [], armor: [], tools: [], vehicles: [] }; cc.gambits = []; if (cc.startingKit && !cc.startingKit.claimed) { cc.startingKit.picks = {}; cc.startingKit.alt = false; } pruneGrantedFocuses(cc); } });
+          store.update(function (cc) { if (cc.class !== k) { cc.class = k; cc.subclass = null; cc.subclassSkillPicks = Object.create(null); cc.classSkillChoices = []; cc.classGearChoices = { weapons: [], armor: [], tools: [], vehicles: [] }; cc.gambits = []; cc.startingCiphers = []; if (cc.startingKit && !cc.startingKit.claimed) { cc.startingKit.picks = {}; cc.startingKit.alt = false; } pruneGrantedFocuses(cc); } });
           if (pendingOverlaps(store.active()).length) toast("⚠ Overlapping training with your Background; claim your Free Skill Focus below.");
         }
       }, [
@@ -1675,6 +1727,7 @@ EN.builder = (function () {
         corePb.push(ruleHead(feature(cls.resource.name + " (Resource)", resBody + (cls.resource.fuels || ""), "class", "Pool " + (d.resource ? d.resource.max : "")),
           resourceAnchor(cls.resource.name)));
         var gp = resourcePicker(ch); if (gp) corePb.push(gp);
+        var scp = startingCipherPicker(ch); if (scp) corePb.push(scp);
       }
       if (ch.class === "shaper" && d.flow) {
         corePb.push(ruleHead(feature("Flow Points (Reservoir)", "Reservoir = (Caliber × 3) + " + d.flow.attributeName + " Modifier = " + d.flow.max + "\nFlow Save DC = 8 + " + d.flow.attributeName + " Mod + Caliber = " + d.flow.dc, "flow", "Flow " + d.flow.max),
@@ -1883,6 +1936,105 @@ EN.builder = (function () {
       }));
     });
     return el("div", null, [head, chipRow]);
+  }
+
+  /* THE FOUR STARTING CIPHERS (A2, 28 October 2026 handoff). Handbook, Your Repertoire: "You
+     start with four Ciphers of your choice from the Complexity 0 or Complexity 1 tiers." The app
+     had no way to make that choice: the Repertoire said "0 ACQUIRED" and pointed at the gray
+     market, whose Acquire-Clean price (Material Cost plus 8 hours of Downtime) is for Ciphers
+     learned after creation.
+
+     HOW THE PICKS ARE STORED. ch.startingCiphers is a list of Cipher NAMES, the same shape
+     ch.gambits uses for Gambits Known, and nothing else: no equipment row, no Glimmer, no
+     Downtime, no ledger line. The #GRID Repertoire reads the list beside the Ciphers bought in
+     the gray market (equipment rows), so a pick is known the moment it is made. Keeping picks
+     off the equipment list is deliberate: a row there could be fenced for Glimmer, and a free
+     pick must not turn into cash. A Complexity 0 name is stored without the suite's Link mark.
+
+     The six Complexity 0 Ciphers ship free with every Smartdeck (Cipher Library, Complexity 0)
+     and do not count toward the four. They are listed as shipping with the deck; picking one as
+     one of the four is allowed and marked "Already ships with your Smartdeck" (handoff E leaves
+     the book question to the author, and this handling works either way).
+
+     The Class step is not done, so the record cannot file, until all four are chosen: the same
+     place the Class step's other owed picks hold it (stepComplete). On a FILED record the picks
+     settle once the fourth is in, so the #GRID tab's catch-up prompt (A3) cannot be used to
+     swap Ciphers later; Edit freely lifts that, as it does for every other settled pick. */
+  var STARTING_CIPHERS = 4;
+  function startingCipherPool() {
+    var G = EN.grid || {};
+    var c0 = (G.buddyCiphers || []).map(function (cy) {
+      return { name: String(cy.name).replace(/\s*⇋\s*$/, ""), cx: 0, action: cy.activation || "", text: cy.text || "", ships: true };
+    });
+    var c1 = (G.ciphers || []).filter(function (cy) { return cy.cx === 1; }).map(function (cy) {
+      return { name: cy.name, cx: 1, action: cy.activation || "", text: cy.text || "", signature: !!cy.signature };
+    });
+    return { c0: c0, c1: c1, all: c0.concat(c1) };
+  }
+  // the record's valid picks, in the order made (unknown names and repeats are ignored)
+  function startingCiphers(ch) {
+    var pool = startingCipherPool().all.map(function (p) { return p.name; });
+    var out = [];
+    ((ch && ch.startingCiphers) || []).forEach(function (n) { if (pool.indexOf(n) !== -1 && out.indexOf(n) === -1) out.push(n); });
+    return out;
+  }
+  function startingCiphersOwed(ch) {
+    return !!ch && ch.class === "codebreaker" && startingCiphers(ch).length < STARTING_CIPHERS;
+  }
+  function startingCipherPicker(ch, opts) {
+    if (!ch || ch.class !== "codebreaker") return null;
+    opts = opts || {};
+    var pool = startingCipherPool();
+    var chosen = startingCiphers(ch);
+    var settled = isFiled(ch) && chosen.length >= STARTING_CIPHERS && !editFreely(ch);
+    function chip(p) {
+      var on = chosen.indexOf(p.name) !== -1;
+      var full = !on && chosen.length >= STARTING_CIPHERS;
+      var color = p.cx === 0 ? "var(--gold)" : "var(--accent)";
+      return el("span.chip.start-cipher", {
+        dataset: { cipher: p.name, cx: String(p.cx) },
+        title: (p.action ? p.action + " · " : "") + (p.ships ? "Already ships with your Smartdeck. " : "") + p.text,
+        style: { fontSize: "10.5px", color: color, borderColor: color,
+                 cursor: settled || full ? "not-allowed" : "pointer", borderStyle: on ? "solid" : "dashed",
+                 opacity: on ? 1 : (full ? .3 : .6), boxShadow: on ? "0 0 9px " + color : "none" },
+        onclick: function () {
+          if (settled) { toast("Your four starting Ciphers are settled on a filed record. Turn on Edit freely on #PRINT to change them."); return; }
+          if (full) { toast("You start with " + STARTING_CIPHERS + " Ciphers. Drop one to pick another."); return; }
+          store.update(function (c) {
+            var list = startingCiphers(c);
+            var i = list.indexOf(p.name);
+            if (i >= 0) list.splice(i, 1); else list.push(p.name);
+            c.startingCiphers = list;
+          });
+        }
+      }, [
+        el("span", { text: (on ? "✓ " : "") + p.name }),
+        p.action ? el("span", { style: { color: "var(--text3)", marginLeft: "5px", fontSize: "9px" }, text: p.action.replace(/^1 /, "").replace(/ Action$/, "") }) : null,
+        p.signature ? el("span", { style: { color: "var(--gold)", marginLeft: "5px", fontSize: "9px" }, text: "SIG" }) : null,
+        on && p.ships ? el("span.ships-note", { style: { color: "var(--gold)", marginLeft: "5px", fontSize: "9px" }, text: "Already ships with your Smartdeck" }) : null
+      ]);
+    }
+    var done = chosen.length >= STARTING_CIPHERS;
+    var head = el("div.row.wrap", { style: { gap: "8px", alignItems: "baseline", margin: "10px 0 6px" } }, [
+      el("label.fl", { text: "Repertoire" }),
+      el("span.chip.start-cipher-count" + (done ? ".on" : ""), { style: { fontSize: "10px", color: done ? null : "var(--warn)", borderColor: done ? null : "var(--warn)" },
+        text: chosen.length + " / " + STARTING_CIPHERS + " chosen" }),
+      el("span", { style: { fontFamily: "var(--mono)", fontSize: "10px", color: "var(--text3)" },
+        text: "4 from Complexity 0 or 1; free, no Glimmer or Downtime; click to learn" })
+    ]);
+    function row(label, list) {
+      return el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginBottom: "6px" } },
+        [el("span", { style: { fontFamily: "var(--mono)", fontSize: "10px", color: "var(--text3)", minWidth: "92px" }, text: label })].concat(list.map(chip)));
+    }
+    var kids = [head];
+    if (opts.intro) kids.push(el("p.help", { style: { margin: "0 0 6px" }, text: opts.intro }));
+    kids.push(el("p.help.ships-with", { style: { margin: "0 0 6px", fontSize: "10.5px" },
+      text: "The six Complexity 0 Ciphers ship with your Smartdeck, free, and don't count toward your four. You can still pick one; it's marked." }));
+    kids.push(row("CX 0 · ships with your Smartdeck", pool.c0));
+    kids.push(row("CX 1", pool.c1));
+    if (settled) kids.push(el("p.help", { style: { margin: "0", fontSize: "10.5px", color: "var(--text3)" }, text: "Settled on your filed record. Edit freely on #PRINT lifts it." }));
+    else if (!done && !opts.intro) kids.push(el("p.help", { style: { margin: "0", fontSize: "10.5px", color: "var(--warn)" }, text: "Pick all four before the record can file." }));
+    return el("div.start-ciphers", null, kids);
   }
 
   // Shaper: elect known Base Resonances. Core Channeling grants 3 at L1; Resonance
@@ -2179,7 +2331,7 @@ EN.builder = (function () {
     // right cluster: [refund] [tier label] [upgrade button | "Max tier reached"]
     var right = [];
     if (aboveFloor) right.push(el("button.btn.sm.ghost", { title: "Refund one tier", style: { padding: "3px 8px", color: "var(--text3)" }, onclick: function () { lowerSkill(ch, s.key); } }, "↩"));
-    right.push(el("span", { style: { minWidth: "76px", textAlign: "right", fontFamily: "var(--disp)", letterSpacing: ".04em", fontWeight: s.tier === "mastery" ? "700" : "500", color: TIER_COLOR[s.tier] }, title: s.profBonus ? "d20 " + eng.fmtMod(s.total) + " · passive " + s.passive : "", text: TIER_LABEL[s.tier] }));
+    right.push(el("span", { style: { minWidth: "76px", textAlign: "right", fontFamily: "var(--disp)", letterSpacing: ".04em", fontWeight: s.tier === "mastery" ? "700" : "500", color: TIER_COLOR[s.tier] }, title: s.profBonus ? "d20 " + eng.fmtMod(s.total) + " · passive " + s.passive + (s.passiveFocus || []).map(function (pf) { return " · " + eng.fmtPassiveFocus(pf); }).join("") : "", text: TIER_LABEL[s.tier] }));
     if (next) {
       var cost = stepInto(next), req = tierLevelReq(next);
       var blocked = ch.level < req || budget.remaining < cost;
@@ -3835,6 +3987,7 @@ EN.builder = (function () {
         !pendingOverlaps(ch).length;
       case "class": return !!(ch.class && (!(eng.getClass(ch.class) || {}).subclasses || !((eng.getClass(ch.class) || {}).subclasses || []).length || ch.subclass)) &&
         !eng.pendingChoices(ch).some(function (p) { return p.source === "Class"; }) &&
+        !startingCiphersOwed(ch) &&                    // A2: a Codebreaker's four starting Ciphers
         !pendingOverlaps(ch).length;
       case "advance": return advanceElectionsComplete(ch);
       case "dossier": return ["identity", "attributes", "species", "background", "class", "advance"].every(function (k) { return stepComplete(ch, k); });
@@ -4168,5 +4321,7 @@ EN.builder = (function () {
   // Jump the wizard to the Advance step (used by the "#PRINT" tab).
   function openAdvance() { for (var i = 0; i < STEPS.length; i++) { if (STEPS[i].key === "advance") { _step = i; return; } } }
 
-  return { render: render, openAdvance: openAdvance, switcherSelect: switcherSelect };
+  return { render: render, openAdvance: openAdvance, switcherSelect: switcherSelect,
+           // A2/A3: the #GRID tab's catch-up prompt draws this same picker
+           startingCipherPicker: startingCipherPicker, startingCiphers: startingCiphers, startingCiphersOwed: startingCiphersOwed };
 })();

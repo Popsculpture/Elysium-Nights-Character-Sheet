@@ -251,7 +251,8 @@ EN.gridView = (function () {
      the rulebook, not the app, so the player hand-tracks what they know). Everyone
      else is a Standard User and gets the universal B&E Buddy cipher list. */
   // One acquired-cipher card in the Repertoire: collapsible detail, complexity-gated CAST.
-  function cipherCard(cy, runCx, bwCur, deckTier) {
+  function isFiledRec(ch) { return !!(ch && ch.meta && ch.meta.filedAt); }
+  function cipherCard(cy, runCx, bwCur, deckTier, starting) {
     var cx = cy.cx || 0, cost = cipherCost(cy, deckTier);
     var castable = runCx >= cx, can = castable && bwCur >= cost;
     var key = "cipher-" + cy.name, open = !!_open[key], color = catColor(cy.cat);
@@ -260,6 +261,7 @@ EN.gridView = (function () {
         el("span", { style: { fontWeight: 600, fontSize: "13px", cursor: "pointer" }, onclick: function () { _open[key] = !open; EN.app.render(); } },
           EN.ui.nameCaret(cy.name, open)),
         el("div.row.wrap", { style: { gap: "6px", alignItems: "center", justifyContent: "flex-end" } }, [
+          starting ? el("span.chip.starting", { style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" }, title: "One of your four starting Ciphers, chosen free at creation" }, "STARTING") : null,
           el("span.chip", { style: { fontSize: "9px", color: color, borderColor: color }, title: cy.cat + " · " + cy.sub }, "CX " + cx),
           cy.signature ? el("span.chip", { style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" }, title: "Signature cipher: flat 1 Bandwidth" }, "SIG") : null,
           el("span.chip", { style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" } }, cost === 0 ? "FREE" : cost + " BW"),
@@ -350,20 +352,35 @@ EN.gridView = (function () {
       var deck = gd.deck;
       var runCx = deck ? (deck.type === "smartdeck" ? deck.maxComplexity : 0) : -1;  // highest Complexity this rig casts; -1 = no rig
       var cipherByName = {}; (G.ciphers || []).forEach(function (c) { cipherByName[c.name] = c; });
+      /* A2: the Repertoire is the Ciphers bought in the gray market (equipment rows) PLUS the four
+         starting picks made on the Class step (ch.startingCiphers, names only; they cost nothing and
+         never become rows). A Complexity 0 pick already ships with the deck, so it is listed by name
+         under the cards rather than as a second copy of a suite Cipher. */
+      var B = EN.builder || {};
+      var starts = B.startingCiphers ? B.startingCiphers(ch) : [];
+      var startC0 = starts.filter(function (n) { return !cipherByName[n]; });
+      var seenC = {};
       var owned = (ch.equipment || []).map(function (e) { return (e.qty > 0) ? cipherByName[e.name] : null; })
-        .filter(Boolean).sort(function (a, b) { return (a.cx - b.cx) || a.name.localeCompare(b.name); });
+        .concat(starts.map(function (n) { return cipherByName[n] || null; }))
+        .filter(function (cy) { if (!cy || seenC[cy.name]) return false; seenC[cy.name] = true; return true; })
+        .sort(function (a, b) { return (a.cx - b.cx) || a.name.localeCompare(b.name); });
       rows.push(el("div.section-title", null, [document.createTextNode("Repertoire"),
         EN.ui.ruleChip("gd-repertoire", { title: "Repertoire & Cipher Costs" }), el("span.line"),
-        el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", marginLeft: "6px" }, text: owned.length + " acquired" })]));
+        el("span.mono.rep-count", { style: { fontSize: "10px", color: "var(--text3)", marginLeft: "6px" }, text: (owned.length + startC0.length) + " acquired" })]));
       rows.push(noteP(deck
         ? (deck.type === "smartdeck"
             ? ("Your " + deck.tier + " Smartdeck runs ciphers up to Complexity " + runCx + ". Higher ones stay in your Repertoire but won't cast until you upgrade. Plus the 6 free Complexity 0 ciphers (see B&E Buddy Cipher Suite).")
             : "You're on a B&E Buddy: only its baked-in suite runs, at the Buddy's own tier (see B&E Buddy Cipher Suite). Acquired ciphers won't cast until you equip a Smartdeck.")
         : "No rig equipped. Equip a Smartdeck in the Rig panel to cast ciphers."));
-      if (!owned.length) {
-        rows.push(noteP("No ciphers acquired yet. Buy them in the Inventory tab's gray market (Cipher Library), then cast them here.", "var(--text2)"));
+      var owed = B.startingCiphersOwed ? B.startingCiphersOwed(ch) : false;
+      if (!owned.length && !startC0.length) {
+        // A2.5: a Codebreaker still owed the starting four is pointed at the free picker, not the market
+        rows.push(noteP(owed
+          ? "No ciphers yet. You start with four free Ciphers from Complexity 0 or 1: choose them " + (isFiledRec(ch) ? "in the prompt at the top of this tab" : "on the Class step of #PRINT") + ". No Glimmer, no Downtime."
+          : "No ciphers acquired yet. Buy them in the Inventory tab's gray market (Cipher Library), then cast them here.", "var(--text2)"));
       } else {
-        owned.forEach(function (cy) { rows.push(cipherCard(cy, runCx, bwCur, deck && deck.tier)); });
+        owned.forEach(function (cy) { rows.push(cipherCard(cy, runCx, bwCur, deck && deck.tier, starts.indexOf(cy.name) !== -1)); });
+        if (startC0.length) rows.push(noteP("Starting picks that already ship with your Smartdeck (Complexity 0): " + startC0.join(", ") + ".", "var(--text2)"));
       }
       // the 4-5 price reads cipherCost, so an Apex (Quantum Core) deck sees what RUN will charge
       var costNote = noteP("Casting costs: Complexity 0 free · 1-3 = 1 BW · 4-5 = " + cipherCost({ cx: 4 }, deck && deck.tier) + " BW"
@@ -435,7 +452,7 @@ EN.gridView = (function () {
     var stats = [
       EN.ui.stat("CIPHER ATK", fmt(gd.effectiveAttack), gd.deck ? (gd.deck.type === "buddy" ? "Buddy bonus" : "Tech+Systems+dev") : "Tech+Systems"),
       EN.ui.stat("SAVE DC", gd.effectiveSaveDC, gd.deck && gd.deck.type === "buddy" ? "Buddy DC" : "8+Tech+Systems"),
-      EN.ui.stat("PASSIVE SYS", gd.passiveSystems, "vs hidden Scan DC"),
+      EN.ui.stat("PASSIVE SYS", gd.passiveSystems, ["vs hidden Scan DC"].concat((gd.passiveSystemsFocus || []).map(function (pf) { return eng.fmtPassiveFocus(pf); })).join(" · ")),
       EN.ui.stat("LINKS", gd.unlimitedLinks ? "∞" : gd.maxLinks,
         // the caption adds up to the number: Parallel Processing's +1 (+2 with its Upgrade) is in maxLinks (TAL-02)
         gd.isCodebreaker ? (gd.unlimitedLinks ? "SysAdmin" : "2 × Caliber" + (gd.modLinks ? " +" + gd.modLinks : "") + (gd.linkBonus ? " +" + gd.linkBonus + " Parallel Processing" : ""))
@@ -937,6 +954,18 @@ EN.gridView = (function () {
       el("h1", { style: { fontSize: "22px", margin: "0 0 2px", letterSpacing: ".04em" }, html: "THE <span style='color:var(--accent)'>#GRID</span> <span style='font-family:var(--disp);font-size:12px;color:var(--text3);letter-spacing:.18em'>// SMARTDECK · CIPHERS · LINKS</span>" }),
       el("p.help", { style: { margin: 0, maxWidth: "780px" }, text: G.intro || "" })
     ]));
+
+    /* A3: a Codebreaker filed before the starting-Cipher picker existed (or any filed one still
+       owed picks) is asked here, once, with the same picker the Class step uses. It costs no
+       Glimmer and no Downtime. There is no dismiss: the four are the class's own entitlement and
+       the Class step stays incomplete without them, so the prompt simply goes away for good once
+       the fourth is chosen (the picks settle on a filed record at that point). */
+    var BP = EN.builder || {};
+    if (isFiledRec(ch) && BP.startingCiphersOwed && BP.startingCiphersOwed(ch)) {
+      var picker = BP.startingCipherPicker(ch, { intro: "Your record was filed without them. Pick four Ciphers from Complexity 0 or 1 for your Repertoire. They're free: no Glimmer, no Downtime." });
+      if (picker) blocks.push(el("div.grid-start-prompt", { style: { marginBottom: "14px" } },
+        [EN.ui.panel("Choose your 4 starting Ciphers", "REPERTOIRE · FREE AT CREATION", [picker], { corners: true })]));
+    }
 
     // resolution-model switch: the d20 console vs the Dice Pool console
     blocks.push(runModeBar());
