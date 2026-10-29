@@ -6231,7 +6231,7 @@ EN.combatView = (function () {
              el("p.help", { dataset: { packedRoom: String(enc.packedRoom) }, style: { margin: "0 0 6px", fontSize: "10.5px", color: enc.packedRoom < 0 ? "var(--warn)" : "var(--text2)" },
                text: "Load Budget room (Packed It): " + enc.packedRoom + " of " + enc.budget + (enc.dropped > 0 ? ", counting " + enc.dropped + " dropped" : "") + "." })]
             .concat(stashOnly.map(function (e) {
-              var addLoad = (eng.itemLoad ? eng.itemLoad(e.name) : 0) * (e.qty || 1);
+              var addLoad = (eng.entryUnitLoad ? eng.entryUnitLoad(ch, e, { worn: false }) : 0) * (e.qty || 1);
               var over = addLoad > enc.packedRoom;
               return el("button.btn.sm", { dataset: over ? { overBudget: "1" } : null,
                 title: over ? "Load " + addLoad + " is over your remaining Load Budget (" + enc.packedRoom + ")" : "Load " + addLoad,
@@ -6301,7 +6301,7 @@ EN.combatView = (function () {
       if (eqLabel) chips.push(el("span.chip", { style: { fontSize: "9px", color: "var(--accent)", borderColor: "var(--accent)" }, text: eqLabel.toUpperCase() }));
       // a worn Trauma Rig takes the same break the engine gives it (2 carried, 1 worn)
       var wornArmor = ch.equippedArmor === key || (ch.rig && ch.rig.key === key);
-      var baseLd = eng.itemLoad ? eng.itemLoad(e.name, { worn: wornArmor }) : 0;
+      var baseLd = eng.entryUnitLoad ? eng.entryUnitLoad(ch, e, { worn: wornArmor }) : 0;
       // one rack slot holds one item: a racked entry's TOTAL drops by 1, min 0
       var ldTotal = Math.max(0, baseLd * e.qty - (rackedGear ? 1 : 0));
       if (isGear) {

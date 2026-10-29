@@ -2974,6 +2974,17 @@ EN.engine = (function () {
     if (tr.indexOf("Worn") === -1) return load;
     return Math.max(0, load - 1);
   }
+  /* ONE UNIT OF ONE ENTRY'S LOAD, with the GM's adjustment (29 Oct 2026 handoff, C1). The Assigning
+     Load table is a default: the GM "may lower an item's Load by 1 if it is tiny, collapsible, worn
+     cleanly, or designed to distribute its weight." That call is made per item at the table, so it is
+     a flag on the equipment entry (e.loadLowered), set from the Stash card, and it takes 1 off each
+     unit after the Worn Trait's own break, never below 0. Every count of an entry's Load reads this. */
+  function entryUnitLoad(ch, e, opts) {
+    if (!e) return 0;
+    var worn = opts && opts.worn != null ? !!opts.worn : (ch ? isWornEntry(ch, e) : false);
+    var l = itemLoad(e.name, { worn: worn });
+    return e.loadLowered ? Math.max(0, l - 1) : l;
+  }
   // on-person = equipped, or carry status "carried" / "worn" / "racked"
   // (Racked = stowed in a worn piece of Carry Gear, still on your person).
   // Takes the actual equipment entry (not just its name) since carry/equip state
@@ -3064,7 +3075,7 @@ EN.engine = (function () {
      entry is not on your person. `racks` may be passed to save a second rackState. */
   function entryLoadNow(ch, e, units, racks) {
     if (!e || !(e.qty > 0) || !onPerson(ch, e)) return 0;
-    var l = itemLoad(e.name, { worn: isWornEntry(ch, e) });
+    var l = entryUnitLoad(ch, e);
     var whole = units == null || units >= e.qty;
     var total = l * (whole ? e.qty : Math.max(0, units));
     var rackedGear = (racks || rackState(ch)).byItem[entryKey(e)] || null;
@@ -3143,7 +3154,7 @@ EN.engine = (function () {
       if (!(e.qty > 0) || !onPerson(ch, e)) return;
       var ek = entryKey(e);
       var wornHere = isWornEntry(ch, e);
-      var l = itemLoad(e.name, { worn: wornHere });
+      var l = entryUnitLoad(ch, e, { worn: wornHere });
       var rackedGear = racks.byItem[ek] || null;
       var total = entryLoadNow(ch, e, null, racks);
       if (total > 0 || rackedGear) {
@@ -5177,7 +5188,7 @@ EN.engine = (function () {
     trainingBudget: trainingBudget,
     gearFloorTier: gearFloorTier, effectiveGearTier: effectiveGearTier,
     sizeFromHeightFt: sizeFromHeightFt, lineageHeightFt: lineageHeightFt,
-    activeLineageFeatures: activeLineageFeatures, awakeningPick: awakeningPick, activeTalents: activeTalents, splitTalentText: splitTalentText, talentUpgradeLevel: talentUpgradeLevel, leaseLapsed: leaseLapsed, premiumOn: premiumOn, premiumBonus: premiumBonus, itemLoad: itemLoad, entryLoadNow: entryLoadNow, logDropped: logDropped, unlogDropped: unlogDropped,
+    activeLineageFeatures: activeLineageFeatures, awakeningPick: awakeningPick, activeTalents: activeTalents, splitTalentText: splitTalentText, talentUpgradeLevel: talentUpgradeLevel, leaseLapsed: leaseLapsed, premiumOn: premiumOn, premiumBonus: premiumBonus, itemLoad: itemLoad, entryUnitLoad: entryUnitLoad, isWornEntry: isWornEntry, entryLoadNow: entryLoadNow, logDropped: logDropped, unlogDropped: unlogDropped,
     // THE resolver for which attribute a Talent raised, and the one enumeration of every
     // post-creation attribute bump. effectiveAttributes sums attrBumpSources rather than
     // walking the upgrade slots itself, so no surface can disagree about what bumped what.

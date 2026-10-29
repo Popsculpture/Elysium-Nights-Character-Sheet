@@ -350,6 +350,31 @@ EN.inventoryView = (function () {
     if (EN.codexView && EN.codexView.slug) return EN.codexView.slug(s);
     return String(s).toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
   }
+  /* C1 (29 October 2026 handoff): every Stash card states its Load, 0 included, and offers the GM's
+     adjustment. The book's Assigning Load table is a default: "the GM may lower an item's Load by 1
+     if it is tiny, collapsible, worn cleanly, or designed to distribute its weight." GM -1 toggles
+     e.loadLowered on this entry; engine.entryUnitLoad applies it to every Load count. `base` is the
+     Load before the GM's call (after the Worn Trait's break, if `wornBreak`). */
+  function loadCtrl(ch, e, base, wornBreak) {
+    var key = entryKey(e), low = !!e.loadLowered, now = low ? Math.max(0, base - 1) : base;
+    var color = low ? "var(--gold)" : "var(--text2)";
+    var tip = "Load " + now + " per item" + (low ? " (" + base + " by the table, lowered by 1 by the GM)" : " by the Assigning Load table")
+      + (wornBreak ? ", already 1 less while Worn" : "") + ". It spends your Load Budget while on-person (equipped, carried, worn, or racked).";
+    var chip = el("span.chip.inv-load", { dataset: { load: String(now) }, title: tip,
+      style: { fontSize: "9px", color: color, borderColor: color, marginLeft: "8px" } }, "⚖ LOAD " + now + (low ? " · GM -1" : ""));
+    if (!(base > 0) && !low) return chip;
+    function toggle() {
+      store.update(function (c) { var x = EN.engine.findEntry(c, key); if (!x) return; if (x.loadLowered) delete x.loadLowered; else x.loadLowered = true; });
+      toast(low ? e.name + " is back to Load " + base + "." : e.name + ": Load lowered by 1 on the GM's call.");
+    }
+    var btn = el("span.chip.inv-load-gm", { role: "button", tabindex: "0",
+      title: low ? "Put this item back to its table Load (" + base + ")"
+        : "The GM may lower an item's Load by 1 if it is tiny, collapsible, worn cleanly, or designed to distribute its weight. Turn this on when your GM makes that call.",
+      style: { fontSize: "9px", marginLeft: "4px", cursor: "pointer", color: low ? "var(--gold)" : "var(--text3)", borderColor: low ? "var(--gold)" : "var(--border2)", borderStyle: low ? "solid" : "dashed" },
+      onclick: function (ev) { if (ev) ev.stopPropagation(); toggle(); },
+      onkeydown: function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); ev.stopPropagation(); toggle(); } } }, low ? "UNDO GM -1" : "GM -1");
+    return el("span.inv-load-wrap", { style: { display: "inline-flex", alignItems: "center" } }, [chip, btn]);
+  }
   function tagChip(text, color, title) {
     return el("span.chip", { title: title || "", style: { fontSize: "9px", color: color, borderColor: color, marginLeft: "8px" } }, text.toUpperCase());
   }
@@ -892,6 +917,8 @@ EN.inventoryView = (function () {
     var isWorn = mode === "stash" && (
       EN.engine.isSlotEquipped(ch, ownedKey) || !!(ch.carry && ch.carry[ownedKey] === "worn"));
     var ld = EN.engine.itemLoad ? EN.engine.itemLoad(it.name, { worn: isWorn }) : 0;
+    var ldBase = ld;   // before the GM's adjustment, for the Load chip's own wording
+    if (mode === "stash" && entry && entry.loadLowered) ld = Math.max(0, ld - 1);
     // Benched by a Body Slot conflict (ch.slotInert): still worn, still keeps
     // its Load break, it just isn't actively benefiting from (or competing
     // for) the slot right now, so the pill shouldn't glow "worn" while inert.
@@ -981,7 +1008,8 @@ EN.inventoryView = (function () {
         document.createTextNode(slotLabel)
       ]));
     }
-    if (ld > 0) statChips.push(tagChip("⚖ " + ld, "var(--text2)", "Load " + ld + (isWorn ? " (reduced by 2 while Worn, min 0)" : "") + "; spends your Load Budget while on-person (equipped, carried, worn, or racked)"));
+    if (mode === "stash" && entry) statChips.push(loadCtrl(ch, entry, ldBase, isWorn && traits.indexOf("Worn") !== -1));
+    else if (ld > 0) statChips.push(tagChip("⚖ " + ld, "var(--text2)", "Load " + ld + "; spends your Load Budget while on-person (equipped, carried, worn, or racked)"));
     // every trait tucks behind one tap-to-expand count chip instead of its own pill
     if (traits.length) statChips.push(el("span.chip", {
       title: "Traits: " + traits.join(", "),
@@ -1201,10 +1229,9 @@ EN.inventoryView = (function () {
         if (x.it) { body.push(itemCard(x.it, ch, "stash", x.e)); return; }
         // unknown / custom item (incl. #GRID rigs), minimal row with its Load
         var e = x.e;
-        var ld = EN.engine.itemLoad ? EN.engine.itemLoad(e.name) : 0;
+        var ld = EN.engine.itemLoad ? EN.engine.itemLoad(e.name, { worn: EN.engine.isWornEntry ? EN.engine.isWornEntry(ch, e) : false }) : 0;
         body.push(el("div.feature", null, [
-          el("h4", null, [el("span", null, [document.createTextNode(e.name),
-            ld > 0 ? tagChip("⚖ " + ld, "var(--text2)", "Load " + ld + "; spends your Load Budget while on-person") : null]),
+          el("h4", null, [el("span", null, [document.createTextNode(e.name), loadCtrl(ch, e, ld, false)]),
             el("span.mono", { style: { color: "var(--text3)", fontSize: "13px" }, text: "×" + e.qty })]),
           el("div.row", { style: { gap: "6px", marginTop: "4px", justifyContent: "flex-end" } }, [
             carryCtrl(ch, null, e),
