@@ -193,7 +193,9 @@ EN.threats = {
     { role: "bruiser", abilities: [
       { name: "Haymaker", cost: "Action", text: "One heavy attack at +2 damage dice. On a hit, the Target makes a Body Save or is knocked Prone." },
       { name: "Meat Wall", cost: null, text: "Allied threats within 2 spaces gain Half Cover against ranged attacks while this threat is standing." },
-      { name: "Wrecker", cost: null, text: "This threat's melee attacks treat objects and cover as one material category lower." }
+      /* NOT the Fury's Wrecker (fury.maneuver.wrecker, an Overdrive Maneuver). Same name on purpose,
+         the bestiary's version of the Fury's thing, but a different rule in a different store. */
+      { key: "threat.ability.bruiser.wrecker", name: "Wrecker", source: "Threat ability, Bruiser", cost: null, text: "This threat's melee attacks treat objects and cover as one material category lower." }
     ] },
     { role: "skirmisher", abilities: [
       { name: "Slip Away", cost: "Impulse", text: "When missed by a melee attack, move 2 spaces without provoking Opportunity Attacks." },

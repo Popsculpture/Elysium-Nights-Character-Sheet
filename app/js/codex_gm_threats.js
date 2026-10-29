@@ -148,7 +148,8 @@ window.EN = window.EN || {};
       return [t.abilityIntro ? K.proseBlock(t.abilityIntro) : null].concat(t.abilityGroups.map(function (grp) {
         var label = grp.role === "anything" ? "Any Role" : nameOf(t.roles, grp.role);
         return [K.subTitle(label)].concat((grp.abilities || []).map(function (a) {
-          return K.ruleBlock(a.name, a.text, a.cost || null, { conditions: true });
+          // a menu ability that shares a Freelancer ability's name says whose it is ("Threat ability, Bruiser")
+          return K.ruleBlock(a.name, a.text, a.source ? (a.cost ? a.cost + " · " : "") + a.source : (a.cost || null), { conditions: true });
         }));
       }));
     } },

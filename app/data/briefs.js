@@ -45,8 +45,8 @@ EN.briefs = {
   "Extra Attack": "Make two standard attacks when you take the Attack Action",
   "Expanded Overdrive": "Learn two more Overdrive Maneuvers",
   "Shrug It Off": "Once/encounter, auto-succeed a save vs Stunned/Paralyzed/Confused, taking unresistable Caliber Vitality damage",
-  "Adrenaline Engine": "Regain 1 Overdrive on a Natural 20 attack or once per round when you take Wound damage",
-  "The Walking Anvil": "Oomph +1 (Improvised); in Medium/Heavy/Shield, Edge vs forced movement/Prone; Beyond the Bone/Warhead with Heavy/Improvised/Shield shove +1",
+  "Maximum Overdrive": "Gain 1 Overdrive on a Natural 20 attack, or once per round when an Enemy's attack deals you Wound damage; can pass your maximum, and the extra is lost when the encounter ends",
+  "The Walking Anvil": "Oomph +1 (Improvised); in Medium/Heavy/Shield, Edge vs forced movement/Prone; Teardown/Pile Driver with Heavy/Improvised/Shield shove +1",
   "Immovable": "Impulse + 1 Overdrive: refuse forced movement or Prone; source in reach takes Body Bludgeoning damage (min 1); also anchors an adjacent ally, and foes shoved into you stop and eat the full 1d6/space",
   "Unstoppable Momentum": "Spend 2 Overdrive for 1 min: physical Resistance, unslowable; lose Caliber Vigor/Vitality each turn",
   "Earthbreaker": "Once/Long Rest, leap within 6; enemies within 4 Body-save or 6d8+Body Bludgeoning, pushed 2, Prone; creates Difficult Terrain, wrecks Cover",
@@ -57,23 +57,23 @@ EN.briefs = {
   "Walking Emplacement": "Ignore Two-Handed/Heavy/Setup/Crew-Served traits; Body for Weapon Save DC; dual-wield ranged Follow-Up Attack",
   "Suppressive Counter": "Spend 1 Overdrive to impose Snag; Burst Fire/Full-Auto also cuts attack damage (and Cover) by 1d10 + Body",
   "Bullet-Storm Protocol": "Spend 2 Overdrive, 1 min: no ammo; ranged damage shoves 1, halves Speed; melee Maneuvers fire to 2",
-  "Maximum Overdrive": "Once/Long Rest Action; Area-6 Cone Agility-save or 6d10+Body, Deafened, Speed 0; flattens all Cover to 0",
+  "Wall of Lead": "Once/Long Rest Action; Area-6 Cone Agility-save or 6d10+Body, Deafened, Speed 0; flattens all Cover to 0",
   /* The ten Overdrive Maneuvers, rewritten 2026-08-24 with the list. Keyed on the feature NAME
      (briefFor does EN.briefs[f.name]), so every key had to move with its Maneuver or the brief
-     would silently stop resolving and the sheet would fall back to autoBrief. Note that
-     "Wrecking Ball" is still a key but now describes a DIFFERENT ability: the melee strike it
-     used to summarise is "Beyond the Bone" below. Three Maneuvers had no brief before this
-     (the old Bring the House Down, Redline and Make an Example); all ten have one now. */
-  "Beyond the Bone": "Spend 1 Overdrive; standard melee attack deals +1d8 Bludgeoning and inflicts 1 stack of Bleeding. I See Red: 2 stacks and Prone",
-  "Warhead": "Spend 1 Overdrive; melee attack pushes target up to 3 spaces; obstacle collision deals +Body Bludgeoning (min 1) to both",
-  "Crash and Crack": "Spend 1 Overdrive; enemies within 3 Agility-save or Caliber+Body Bludgeoning and Staggered",
-  "Wrecking Ball": "Spend 1 Overdrive; tear apart a structure up to Heavy within reach; Difficult Terrain 2 and Cover gone; Agility-save or Prone and Caliber Bludgeoning. Hardened holds",
-  "War Horse": "Swift Action, spend 1 Overdrive; move through enemies this turn; each one passed makes a Body save or is knocked Prone",
-  "Gimme Fuel": "Swift Action, costs no Overdrive; once per turn take Caliber Vitality damage (unpreventable) to regain 1 spent Overdrive",
-  "Gimme Fire": "Swift Action, spend 1 or more Overdrive (never more than your Caliber); +1d10 weapon damage per point until end of turn. I See Red: 2d10 each and ignore Resistance",
-  "My Desire": "Spend 1 Overdrive; melee attack, then the target cannot willingly move away from you until the start of your next turn",
-  "Churning My Direction": "Impulse Action, spend 1 Overdrive to swap places with an ally within 2 and take the hit with Resistance",
-  "On I Burn": "Impulse Action, spend 1 Overdrive; on a melee kill, enemies within 3 who can see you make a Presence save or become Shaken",
+     would silently stop resolving and the sheet would fall back to autoBrief. Renamed again in
+     the October re-theme, every key with its Maneuver: Wrecker is the structure demolition and
+     Teardown the melee strike. (The Bruiser's threat ability called Wrecker has no brief; briefs
+     cover Freelancer features only.) */
+  "Teardown": "Spend 1 Overdrive; standard melee attack deals +1d8 Bludgeoning and inflicts 1 stack of Bleeding. Berserk: 2 stacks and Prone",
+  "Pile Driver": "Spend 1 Overdrive; melee attack pushes target up to 3 spaces; obstacle collision deals +Body Bludgeoning (min 1) to both",
+  "Ground Fault": "Spend 1 Overdrive; enemies within 3 Agility-save or Caliber+Body Bludgeoning and Staggered",
+  "Wrecker": "Spend 1 Overdrive; tear apart a structure up to Heavy within reach; Difficult Terrain 2 and Cover gone; Agility-save or Prone and Caliber Bludgeoning. Hardened holds",
+  "Right of Way": "Swift Action, spend 1 Overdrive; move through enemies this turn; each one passed makes a Body save or is knocked Prone",
+  "Spite": "Swift Action, costs no Overdrive; once per turn take Caliber Vitality damage (unpreventable) to regain 1 spent Overdrive",
+  "Overkill": "Swift Action, spend 1 or more Overdrive (never more than your Caliber); +1d10 weapon damage per point until end of turn. Berserk: 2d10 each and ignore Resistance",
+  "Square Up": "Spend 1 Overdrive; melee attack, then the target cannot willingly move away from you until the start of your next turn",
+  "Close Protection": "Impulse Action, spend 1 Overdrive to swap places with an ally within 2 and take the hit with Resistance",
+  "NEXT!": "Impulse Action, spend 1 Overdrive; on a melee kill, enemies within 3 who can see you make a Presence save or become Shaken",
   "Leverage": "Resource pool = Caliber + Presence mod (min 1); know two abilities, costing 1 each",
   "Read the Room": "Identify top authority and weakest foe; first social check/attack vs them gains Edge, or first Leverage ability free",
   "Hustler Subclass": "Choose a subclass granting features at set levels",

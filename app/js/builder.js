@@ -1921,7 +1921,11 @@ EN.builder = (function () {
     var noun = res.abilityNoun || "Ability", nounPl = res.abilityNounPlural || (noun + "s");
     function chip(g, on, dim, onclick) {
       return el("span.chip", {
-        title: (g.action ? g.action + " · " : "") + g.text,
+        // a Fury Maneuver names its source ("Wrecker (Fury Maneuver, Action)"): the Bruiser's
+        // threat ability shares that name, and a tooltip should never leave the two to a guess
+        title: (g.key && /^fury\.maneuver\./.test(g.key)
+                 ? g.name + " (Fury Maneuver" + (g.action ? ", " + (/Action$/.test(g.action) ? g.action : g.action + " Action") : "") + ") · "
+                 : (g.action ? g.action + " · " : "")) + g.text,
         style: { fontSize: "10.5px", color: "var(--accent)", borderColor: "var(--accent)",
                  cursor: onclick ? (dim ? "not-allowed" : "pointer") : "default", borderStyle: on ? "solid" : "dashed",
                  opacity: on ? 1 : (dim ? .3 : .6), boxShadow: on ? "0 0 9px var(--accent)" : "none" },
@@ -1945,18 +1949,29 @@ EN.builder = (function () {
     ]);
     var chipRow = el("div.row.wrap", { style: { gap: "6px" } });
     all.forEach(function (g) {
-      var on = chosen.indexOf(g.name) !== -1;
+      // stored by the ability's stable key where it has one (the Fury's Maneuvers); a name
+      // written before the key existed still counts as the same pick
+      var gid = eng.resourceAbilityId(g);
+      var on = chosen.indexOf(gid) !== -1 || chosen.indexOf(g.name) !== -1;
       var full = !on && chosen.length >= allowed;
       chipRow.appendChild(chip(g, on, full, function () {
         if (full) { toast("You know " + allowed + " " + nounPl + " at Level " + (ch.level || 1) + "."); return; }
         store.update(function (c) {
           c.gambits = c.gambits || [];
-          var i = c.gambits.indexOf(g.name);
-          if (i >= 0) c.gambits.splice(i, 1); else c.gambits.push(g.name);
+          var had = c.gambits.indexOf(gid) !== -1 || c.gambits.indexOf(g.name) !== -1;
+          c.gambits = c.gambits.filter(function (x) { return x !== gid && x !== g.name; });
+          if (!had) c.gambits.push(gid);
+          if (c.meta && c.meta.maneuverRepick) delete c.meta.maneuverRepick;   // the player has picked again
         });
       }));
     });
-    return el("div", null, [head, chipRow]);
+    /* A save that held a "Wrecking Ball" with no date to tell which Maneuver it meant (store.js,
+       the Fury keys pass): the pick was dropped rather than guessed, and this asks for it again. */
+    var repick = (ch.meta && ch.meta.maneuverRepick) || null;
+    var repickNote = repick && repick.length ? el("div.man-repick", {
+      style: { margin: "0 0 8px", padding: "7px 10px", border: "1px solid var(--warn, var(--gold))", borderRadius: "4px", color: "var(--text2)", fontSize: "11.5px" }
+    }, "⚠ Pick again: this save held an old Maneuver name with no date on it, and that name has meant two Maneuvers, Teardown (the melee strike) and Wrecker (the structure demolition). It was left out rather than guessed.") : null;
+    return el("div", null, [head, repickNote, chipRow]);
   }
 
   /* THE FOUR STARTING CIPHERS (A2, 28 October 2026 handoff). Handbook, Your Repertoire, as ruled
@@ -2112,6 +2127,14 @@ EN.builder = (function () {
       ciphers: g.ciphers ? g.ciphers.map(function (c) { return c.name + " (Complexity " + c.cx + ", " + c.bw + " BW)" + (c.start ? ", starting pick" : ""); }) : undefined,
       shipsWithSmartdeck: g.suite && g.suite.length ? g.suite : undefined,
       triageProtocols: g.protocols ? g.protocols.map(function (p) { return p.name; }) : undefined };
+    /* a pick class's chosen abilities by display name (NEXT! with its punctuation), for people
+       reading the file: a Fury's ch.gambits holds keys. Read-only, dropped again on import. */
+    var res = (eng.getClass(ch["class"]) || {}).resource;
+    if (!g && res && res.learn && !res.learn.knowsAll && eng.chosenResourceAbilities) {
+      var known = eng.chosenResourceAbilities(ch);
+      if (known.length) extra.abilitiesKnown = { note: "Read-only summary; the app reads ch.gambits.", resource: res.name,
+        names: known.map(function (a) { return a.name; }) };
+    }
     return Object.keys(extra).length ? Object.assign({}, ch, extra) : ch;
   }
   function startingCipherPicker(ch, opts) {

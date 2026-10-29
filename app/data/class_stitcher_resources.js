@@ -376,7 +376,7 @@ EN.resourceRules = {
      Leverage, Execution, Triage, Moxie and Bandwidth alike. Two readings are easy to get
      wrong. It is per ACTIVATION, not per turn (the book prints no per-turn spend cap
      anywhere, and Impulses fire on other people's turns), and it caps the SPEND, not the
-     size of the pool. A Fury with 8 Overdrive and Caliber 4 can put 4 into one Gimme Fire
+     size of the pool. A Fury with 8 Overdrive and Caliber 4 can put 4 into one Overkill
      and 4 into another if they have the actions for it.
 
      IT DOES NOT REACH FLOW POINTS. Author ruling, 2026-08-24: FP is not a class resource in

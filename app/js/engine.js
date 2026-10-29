@@ -4804,8 +4804,12 @@ EN.engine = (function () {
     var all = resourceAbilities(ch);
     if (!all.length || resourceKnowsAll(ch)) return all;
     var chosen = (ch && ch.gambits) || [];
-    return all.filter(function (a) { return chosen.indexOf(a.name) !== -1; });
+    // a keyed ability (the Fury's Maneuvers) is stored by key; a name is still read, for a
+    // record written before its migration ran or a class whose abilities carry no key
+    return all.filter(function (a) { return (a.key && chosen.indexOf(a.key) !== -1) || chosen.indexOf(a.name) !== -1; });
   }
+  // the id a pick is stored under: the ability's stable key where it has one, else its name
+  function resourceAbilityId(a) { return (a && (a.key || a.name)) || ""; }
   // back-compat aliases: older call sites (printsheet) use the gambit-specific names
   function gambitList(ch) { return resourceAbilities(ch); }
   function gambitsAllowed(ch) { return resourcePicksAllowed(ch); }
@@ -5180,7 +5184,7 @@ EN.engine = (function () {
     cyberDef: cyberDef, cyberDesc: cyberDesc, cyberEffect: cyberEffect, cyberTierNote: cyberTierNote, cyberEnhLabel: cyberEnhLabel,
     gambitList: gambitList,
     resourceAbilities: resourceAbilities,
-    resourcePicksAllowed: resourcePicksAllowed, chosenResourceAbilities: chosenResourceAbilities,
+    resourcePicksAllowed: resourcePicksAllowed, chosenResourceAbilities: chosenResourceAbilities, resourceAbilityId: resourceAbilityId,
     flowInvocation: flowInvocation,
     getClass: getClass, getSpecies: getSpecies, getLineage: getLineage,
     getBackground: getBackground, getSubclass: getSubclass,

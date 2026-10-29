@@ -1190,6 +1190,7 @@ EN.combatView = (function () {
       if (began <= 0 && s.rd <= 0 && !deadBattery) { c.resilience.spent = Math.max(0, d.resilienceMax - 1); freeDie = true; }
       // refresh class resource pool
       if (d.resource) c.resources.current[d.resource.name] = d.resource.max;
+      if (c.resources) delete c.resources.maxOdWound;                     // Maximum Overdrive's once-per-round Wound trigger
       // Shaper: regain FP equal to Flow modifier (min 1), plus 1 from a Resonance Crown; none in Breakflow
       if (d.flow && inBreakflow(c)) fpBlocked = true;
       else if (d.flow) {
@@ -1277,6 +1278,7 @@ EN.combatView = (function () {
       c.resilience.spent = 0; clearShortRest(c);                            // all Resilience Dice; the next Short Rest starts fresh
       c.featureUses = {};                                                   // every limited-use feature refreshes
       if (d.resource) c.resources.current[d.resource.name] = d.resource.max;
+      if (c.resources) delete c.resources.maxOdWound;                     // Maximum Overdrive's once-per-round Wound trigger
       c.conditions = c.conditions || [];
       c.conditionLevels = c.conditionLevels || {};
       // "Breakflow ends only through Breakflow Restoration": the flag and the condition both count
@@ -1337,6 +1339,7 @@ EN.combatView = (function () {
       c.resilience.spent = 0; clearShortRest(c);                            // all Resilience Dice; the next Short Rest starts fresh
       c.featureUses = {};                                                   // all limited-use features refresh
       if (d.resource) c.resources.current[d.resource.name] = d.resource.max;
+      if (c.resources) delete c.resources.maxOdWound;                     // Maximum Overdrive's once-per-round Wound trigger
       if (d.flow && inBreakflow(c)) fpBlocked = true;                       // no FP while Breakflow holds
       else if (d.flow) c.flow.current = d.flow.max;                         // full Reservoir
       /* Strain −1, except in Breakflow: "While you're in Breakflow, only Breakflow Restoration or
@@ -2758,7 +2761,7 @@ EN.combatView = (function () {
     if (!eng.resourceAbilities || !eng.resourceAbilities(ch).length) return out;
     var abil = eng.chosenResourceAbilities ? eng.chosenResourceAbilities(ch) : [];
     out[d.resource.name] = { subs: abil.map(function (a) {
-      return { name: a.name, action: shortAction(a.action), cost: a.cost, costVariable: !!a.costVariable, text: a.text };
+      return { key: a.key || null, name: a.name, action: shortAction(a.action), cost: a.cost, costVariable: !!a.costVariable, text: a.text };
     }) };
     return out;
   }
@@ -2840,6 +2843,14 @@ EN.combatView = (function () {
     Triage:    "#2FE6A6"    // medical mint, clinical / restorative / urgent
   };
   function resourceColor(name) { return RESOURCE_COLOR[name] || "var(--accent)"; }
+  /* MAXIMUM OVERDRIVE (Fury Level 9, the October re-theme): "you immediately gain 1 Overdrive.
+     This can take you past your maximum Overdrive. Any Overdrive above your maximum Overdrive is
+     lost when the encounter ends." So for a Level 9+ Fury, and for this feature only, the pool
+     is not clamped to its maximum: the sheet's own + still stops there, every other source does
+     too. The once-per-round Wound trigger is ch.resources.maxOdWound, cleared by NEW ROUND, by
+     END ENCOUNTER (which also sheds the overflow), and by a rest. */
+  function maxOverdriveOn(ch) { return !!ch && ch["class"] === "fury" && (ch.level || 1) >= 9; }
+  var SPITE_KEY = "fury.maneuver.spite";
 
   /* ---- The Trauma Rig as an OBJECT. Anyone can buy one, so this block is not
      Stitcher-only: it renders off d.rig, which the engine derives for every class.
@@ -4988,13 +4999,13 @@ EN.combatView = (function () {
              Variable Costs rule (EN.resourceRules.variableCosts): no single activation may
              spend more than your Caliber. Shown as the smaller of Caliber and the pool,
              because a cap you cannot afford is not the real limit. A falsy cost renders no
-             chip at all, which is what Gimme Fuel wants: it costs no Overdrive. */
+             chip at all, which is what Spite wants: it costs no Overdrive. */
           var _chip = s.cost ? s.cost + " " + resUp : null;
           if (s.costVariable) {
             var _cap = Math.max(s.cost || 1, Math.min(d.caliber || 1, (d.resource && d.resource.max) || (d.caliber || 1)));
             _chip = (s.cost || 1) + " to " + _cap + " " + resUp;
           }
-          expanded.push({ name: s.name, source: f.source, level: f.level, text: s.text,
+          expanded.push({ key: s.key, name: s.name, source: f.source, level: f.level, text: s.text,
                           _cost: s.action || actionCost(s.text), chip: _chip, requirements: s.requirements });
         });
       } else expanded.push(f);
@@ -5008,7 +5019,7 @@ EN.combatView = (function () {
       var cost = f._cost || f.action || actionCost(f.text);
       if (forced === "active" && cost === "Passive") cost = "Active";
       if (forced === "passive") cost = "Passive";
-      return { id: "act-" + i, name: f.name.replace(/\s*\((Active|Passive)\)\s*$/i, ""), src: f.source + " · L" + f.level,
+      return { id: "act-" + i, key: f.key || null, name: f.name.replace(/\s*\((Active|Passive)\)\s*$/i, ""), src: f.source + " · L" + f.level,
                // noTracker: the feature's "once per scene" is about something other than its own use (A Sucker Born Every Minute's new Mark)
                text: f.text, cost: cost, limited: isLimited(f.text), chip: f.chip, uses: f.noTracker ? null : parseUses(f.text, d),
                requirements: f.requirements };
@@ -5198,6 +5209,12 @@ EN.combatView = (function () {
           })(moxieCost);
         }
         var entry = actionEntry(f.id, f.name, f.cost, f.src, f.text, f.limited, f.chip, uses, onUse, canUse, f.requirements);
+        if (f.key === SPITE_KEY && d.resource && rCur >= d.resource.max) {
+          entry.classList.add("ab-blocked", "spite-blocked");
+          entry.style.opacity = ".55";
+          entry.appendChild(el("p.help.spite-block", { style: { margin: "4px 0 0", fontSize: "10.5px" },
+            text: "Can't use Spite now: your Overdrive is " + rCur + " / " + d.resource.max + ", and Spite can't take you past your maximum." }));
+        }
         // the Sourcerer's Scrap Companion carries its builder and tracker under the ability (js/companion.js)
         if (f.name === "Scrap Companion" && EN.companion) return el("div", null, [entry, EN.companion.card(ch, d)]);
         return entry;
@@ -5209,7 +5226,10 @@ EN.combatView = (function () {
 
       if (d.resource) {
         var rCur = (ch.resources.current[d.resource.name] != null) ? ch.resources.current[d.resource.name] : d.resource.max;
-        rCur = eng.clamp(rCur, 0, d.resource.max);
+        var _odOn = maxOverdriveOn(ch), rMax = d.resource.max;
+        // only Maximum Overdrive can hold the pool past its maximum; anything else reads clamped
+        rCur = eng.clamp(rCur, 0, _odOn ? Math.max(rMax, rCur) : rMax);
+        var _over = Math.max(0, rCur - rMax);
 
         /* Build the pool's rows ONCE, then decide where they land. A class whose hardware
            produces the pool gets them rendered INSIDE that device's card, because a Smartdeck
@@ -5218,11 +5238,54 @@ EN.combatView = (function () {
         var resKids = [];
         resKids.push(el("div.section-title", null, [document.createTextNode(d.resource.name), el("span.line")]));
         resKids.push(el("div.row.between.wrap", { style: { alignItems: "center" } }, [
-          el("div.mono", { style: { fontSize: "20px", color: resourceColor(d.resource.name) }, html: rCur + " <span style='font-size:12px;color:var(--text3)'>/ " + d.resource.max + " · " + d.resource.attributeName + " · refresh on rest</span>" }),
+          el("div.mono.res-count", { style: { fontSize: "20px", color: resourceColor(d.resource.name) },
+            html: (_over ? "<span class='od-over' style='color:var(--gold);text-shadow:0 0 10px var(--gold)' title='Past your maximum: lost when the encounter ends'>" + rCur + "</span>" : rCur) +
+                  " <span style='font-size:12px;color:var(--text3)'>/ " + d.resource.max +
+                  (_over ? " · <span style='color:var(--gold)'>+" + _over + " OVERFLOW, lost when the encounter ends</span>" : "") +
+                  " · " + d.resource.attributeName + " · refresh on rest</span>" }),
+          // the sheet's own + stops at the maximum; it never takes away overflow already held
           plusMinus(function () { store.update(function (c) { c.resources.current[d.resource.name] = Math.max(0, rCur - 1); }); },
-                    function () { store.update(function (c) { c.resources.current[d.resource.name] = Math.min(d.resource.max, rCur + 1); }); })
+                    function () { store.update(function (c) { c.resources.current[d.resource.name] = Math.max(rCur, Math.min(d.resource.max, rCur + 1)); }); })
         ]));
-        resKids.push(bar(rCur, d.resource.max, resourceColor(d.resource.name)));
+        resKids.push(bar(Math.min(rCur, rMax), d.resource.max, resourceColor(d.resource.name)));
+        if (_odOn) {
+          var _woundUsed = !!(ch.resources && ch.resources.maxOdWound);
+          var _odGain = function (fromWound) {
+            store.update(function (c) {
+              c.resources = c.resources || {}; c.resources.current = c.resources.current || {};
+              var cur = c.resources.current[d.resource.name]; if (cur == null) cur = rMax;
+              c.resources.current[d.resource.name] = Math.max(0, cur) + 1;
+              if (fromWound) c.resources.maxOdWound = true;
+            });
+          };
+          var _odBtn = function (cls, label, title, on, fn) {
+            return el("button.btn.sm." + cls, { type: "button", title: title, disabled: !on,
+              style: { fontSize: "9.5px", color: on ? "#FF7A00" : "var(--text4)", borderColor: on ? "#FF7A00" : "var(--border2)" },
+              onclick: function () { if (on) fn(); } }, label);
+          };
+          resKids.push(el("div.max-od", { style: { marginTop: "8px" } }, [
+            el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } }, [
+              el("span.chip", { style: { fontSize: "9.5px", color: "#FF7A00", borderColor: "#FF7A00" },
+                title: "Fury Level 9: gain 1 Overdrive on a Natural 20 attack roll, or once per round when an Enemy's attack deals you Wound damage. It can pass your maximum; the extra is lost when the encounter ends." },
+                "MAXIMUM OVERDRIVE"),
+              _odBtn("mod-nat20", "NAT 20 ATTACK +1", "A Critical Success (Natural 20) on an attack roll: gain 1 Overdrive. No limit per round.", true,
+                function () { _odGain(false); }),
+              _odBtn("mod-wound", _woundUsed ? "WOUND HIT · USED THIS ROUND" : "WOUND HIT +1",
+                _woundUsed ? "Already gained from a Wound hit this round. NEW ROUND resets it." : "An Enemy's attack dealt you Wound damage: gain 1 Overdrive. Once per round; Vitality or Vigor damage alone doesn't count.",
+                !_woundUsed, function () { _odGain(true); }),
+              _odBtn("mod-round", "NEW ROUND", "A new round: the Wound trigger is ready again", _woundUsed,
+                function () { store.update(function (c) { if (c.resources) delete c.resources.maxOdWound; }); }),
+              _odBtn("mod-end", "END ENCOUNTER: SHED OVERFLOW", "The encounter is over: Overdrive above your maximum is lost (no damage), and the Wound trigger resets",
+                _over > 0 || _woundUsed, function () {
+                  store.update(function (c) {
+                    var cur = c.resources.current[d.resource.name]; if (cur == null) cur = rMax;
+                    c.resources.current[d.resource.name] = Math.min(cur, rMax);
+                    delete c.resources.maxOdWound;
+                  });
+                })
+            ])
+          ]));
+        }
         // Stitcher: the Triage Save DC every Protocol save lands against, plus the Rig tier
         // feeding its Output Bonus. Both come off the derived record.
         if (d.triage) {

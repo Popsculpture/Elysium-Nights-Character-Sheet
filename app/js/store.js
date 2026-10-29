@@ -59,7 +59,7 @@ EN.store = (function () {
       // filedGate marks a record born AFTER the nav gate shipped (2026-09), so
       // migrate() never grandfathers it: only #PRINT's Submit & File can stamp
       // filedAt on a record that carries this. See registered() in app.js.
-      meta: { id: uid(), schemaVersion: EN.rules.schemaVersion, wearKeys: 2, filedGate: 1, createdAt: Date.now(), updatedAt: Date.now() },
+      meta: { id: uid(), schemaVersion: EN.rules.schemaVersion, wearKeys: 2, filedGate: 1, overdriveNames: 1, furyKeys: 1, createdAt: Date.now(), updatedAt: Date.now() },
       name: composeFullName(firstName, "", lastName),
       firstName: firstName, lastName: lastName,
       identity: {
@@ -2068,20 +2068,30 @@ EN.store = (function () {
        ability, and the character ends up holding something they never picked with nothing to
        show it went wrong.
 
-       WHY A ONE-TIME STAMP AND NOT A DATE. The handoff called for splitting on whether the save
-       predates the 2026-08-23 revision. A stamp is strictly better here, and not because dates
-       are unavailable (ch.meta.createdAt and updatedAt both exist): it is that the app only ever
-       offered the OLD list until this build shipped. Every "Wrecking Ball" sitting in a save at
-       the moment this runs was therefore written by the old list, whatever its timestamps say.
-       updatedAt in particular is refreshed on every write, so a legacy character opened this
-       morning already looks new. The stamp reads the one fact that actually settles it, which is
-       whether this pass has run for this character yet, and it leaves no ambiguous middle for a
-       re-pick prompt to clean up.
+       WHICH GENERATION A "WRECKING BALL" IS (revised in the Fury re-theme, 29 October 2026).
+       Only that one name is ambiguous; every other pre-August name is unique and maps the same
+       way whenever it is met. For "Wrecking Ball" the record is read in this order:
+         1. meta.overdriveNames is set: this pass already ran, so it is the August meaning
+            (the demolition, now Wrecker).
+         2. meta.createdAt: before 2026-08-23 it is the old melee strike (now Teardown); on or
+            after, the August demolition. Read second, not instead: until this revision a record
+            created in the August build carried no stamp until its first reload, so a demolition
+            picked before that reload looked old to a stamp-only test.
+         3. meta.updatedAt only, and before the cut: old. (Refreshed on every write, so a date
+            after the cut proves nothing and falls through.)
+         4. Nothing to read: not guessed. The pick is dropped and named in meta.maneuverRepick,
+            and the Class tab's picker asks the player to pick again.
+       A record made from now on is born stamped (newCharacter), so it never reaches this.
 
        SINGLE PASS, NOT IN PLACE. Each stored name is mapped through the table exactly once and
        collected into a NEW array. Rewriting in place would send Bring the House Down to Wrecking
        Ball and then straight on to Beyond the Bone, which is the very corruption this exists to
        stop. The same reasoning is written on TALENT_RENAMES above, for the same reason. */
+    var AUG_CUT = Date.UTC(2026, 7, 23);
+    var _gen = ch.meta.overdriveNames ? "aug"
+      : (typeof ch.meta.createdAt === "number" ? (ch.meta.createdAt < AUG_CUT ? "old" : "aug")
+      : (typeof ch.meta.updatedAt === "number" && ch.meta.updatedAt < AUG_CUT ? "old" : "unknown"));
+    var _preAug = _gen === "old", _augRan = !ch.meta.overdriveNames;
     if (!ch.meta.overdriveNames) {
       var MAN_RENAMES = Object.create(null);
       (((EN.classes || {}).fury || {}).resource || {}).abilityRenames &&
@@ -2089,16 +2099,77 @@ EN.store = (function () {
           if (r && r.oldName && r.name) MAN_RENAMES[r.oldName] = r.name;
         });
       if (Array.isArray(ch.gambits) && ch.gambits.length) {
-        var seen = Object.create(null), out = [];
+        var seen = Object.create(null), out = [], repick = [];
         ch.gambits.forEach(function (nm) {
-          var to = (typeof nm === "string" && MAN_RENAMES[nm]) ? MAN_RENAMES[nm] : nm;
+          var to = nm;
+          if (nm === "Wrecking Ball") {
+            if (_gen === "unknown") { repick.push(nm); return; }
+            to = _gen === "old" ? MAN_RENAMES[nm] : nm;
+          } else if (typeof nm === "string" && MAN_RENAMES[nm]) to = MAN_RENAMES[nm];
           // a rename can collapse two picks onto one name only if the save was already
           // inconsistent; keep the list a set either way rather than showing a duplicate chip
           if (typeof to === "string" && !seen[to]) { seen[to] = true; out.push(to); }
         });
         ch.gambits = out;
+        if (repick.length) ch.meta.maneuverRepick = repick;
       }
       ch.meta.overdriveNames = 1;
+    }
+    /* FURY KEYS (Fury re-theme, 29 October 2026). All ten Maneuvers were renamed again and two
+       names now mean something else: "Wrecking Ball" (handled above, by generation) and
+       "Maximum Overdrive", which was the Arsenal's Level 10 capstone and is now the Fury's Level 9
+       class feature (the capstone is Wall of Lead). So a Fury's picks stop being stored by name:
+       ch.gambits holds each Maneuver's KEY (fury.maneuver.teardown), and a later rename can never
+       touch a save again. Every pick is mapped once, through the class data (each Maneuver's own
+       key, current name and August `formerNames`), after the August pass has put pre-August
+       names on their August names. A name that maps to nothing is kept as it is, unchanged.
+
+       CLASS FEATURES are not saved: the sheet derives them from level and subclass, so an Arsenal
+       Fury shows Maximum Overdrive at Level 9 and Wall of Lead at Level 10 with no migration. What
+       IS saved under a feature's name is the player's own state on it: featureUses (a limited
+       use's spent count) and featureAnnotations (note, pin, star, hide). Those move with the
+       rename in one pass into a new object, so "Maximum Overdrive" goes to Wall of Lead and
+       "Adrenaline Engine" goes to Maximum Overdrive without either landing on the other. Never
+       over an entry already under the new name, which the player made on purpose. Fury only. */
+    if (!ch.meta.furyKeys) {
+      var _fury = (EN.classes || {}).fury;
+      var _abil = (_fury && _fury.resource && Array.isArray(_fury.resource.abilities)) ? _fury.resource.abilities : [];
+      var TO_KEY = Object.create(null), FEAT_NAME = Object.create(null);
+      _abil.forEach(function (a) {
+        if (!a || !a.key) return;
+        TO_KEY[a.key] = a.key; TO_KEY[a.name] = a.key;
+        (a.formerNames || []).forEach(function (n) { TO_KEY[n] = a.key; FEAT_NAME[n] = a.name; });
+      });
+      if (_abil.length && Array.isArray(ch.gambits) && ch.gambits.length) {
+        var kseen = Object.create(null), kout = [];
+        ch.gambits.forEach(function (nm) {
+          var to = (typeof nm === "string" && TO_KEY[nm]) ? TO_KEY[nm] : nm;
+          if (typeof to === "string" && !kseen[to]) { kseen[to] = true; kout.push(to); }
+        });
+        ch.gambits = kout;
+      }
+      if (ch["class"] === "fury" && _abil.length) {
+        FEAT_NAME["Maximum Overdrive"] = "Wall of Lead";        // the Arsenal's Level 10 capstone
+        FEAT_NAME["Adrenaline Engine"] = "Maximum Overdrive";   // the Level 9 class feature
+        // a record that never had the August pass may name its Maneuvers the pre-August way:
+        // the unique old names map as above, and "Wrecking Ball" only when the record is old
+        var AUG = Object.create(null);
+        if (_augRan) (_fury.resource.abilityRenames || []).forEach(function (r) {
+          if (r && r.oldName && (r.oldName !== "Wrecking Ball" || _preAug)) AUG[r.oldName] = r.name;
+        });
+        ["featureUses", "featureAnnotations"].forEach(function (field) {
+          var src = ch[field];
+          if (!src || typeof src !== "object") return;
+          var dst = {};
+          Object.keys(src).forEach(function (k) { if (!FEAT_NAME[AUG[k] || k] && !AUG[k]) dst[k] = src[k]; });   // untouched names first
+          Object.keys(src).forEach(function (k) {
+            var to = FEAT_NAME[AUG[k] || k] || (AUG[k] ? AUG[k] : null);
+            if (to && !Object.prototype.hasOwnProperty.call(dst, to)) dst[to] = src[k];
+          });
+          ch[field] = dst;
+        });
+      }
+      ch.meta.furyKeys = 1;
     }
     /* FILED. The Freelancer rail hides itself until the active record has been
        through #PRINT's Submit & File, which stamps meta.filedAt. Records from
@@ -2502,6 +2573,7 @@ EN.store = (function () {
     if (obj.customThemes && EN.theme && EN.theme.mergeCustom) { EN.theme.mergeCustom(obj.customThemes); }
     delete obj.customThemes;
     delete obj.classGear;   // the export's read-only class hardware summary (A1); rebuilt from the record
+    delete obj.abilitiesKnown;   // the export's read-only list of a pick class's abilities by name
     migrate(obj);   // normalize an imported (possibly older) file now, not just on next load()
     state.roster[obj.meta.id] = obj;
     state.activeId = obj.meta.id;
