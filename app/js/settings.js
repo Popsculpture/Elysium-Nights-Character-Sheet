@@ -596,6 +596,12 @@ EN.settings = (function () {
   var CSS = [
     "#set-ov{ position:fixed; inset:0; z-index:100001; display:flex; align-items:center; justify-content:center;",
     "  background:rgba(4,7,11,.72); backdrop-filter:blur(4px); animation:set-in .18s ease both; }",
+    "#gmc-ov{ position:fixed; inset:0; z-index:100002; display:flex; align-items:center; justify-content:center;",
+    "  background:rgba(4,7,11,.6); animation:set-in .18s ease both; }",
+    "#gmc-ov .set-card{ width:min(94vw,460px); }",
+    ".gmc-row{ margin-top:14px; }",
+    ".gmc-dim{ opacity:.5; }",
+    ".gmc-item[disabled]{ cursor:not-allowed; }",
     "@keyframes set-in{ from{opacity:0} to{opacity:1} }",
     ".set-card{ width:min(94vw,540px); max-height:86vh; overflow:auto; background:linear-gradient(180deg,var(--bg2),var(--bg1));",
     "  border:1px solid var(--accent-dim); border-radius:6px;",
@@ -699,7 +705,8 @@ EN.settings = (function () {
     document.head.appendChild(s);
   }
 
-  function onKey(e) { if (e.key === "Escape") close(); }
+  // Esc closes the GM controls pop-out first, then the tray
+  function onKey(e) { if (e.key !== "Escape") return; if (document.getElementById("gmc-ov")) closeGm(); else close(); }
 
   function themeSwatches() {
     var current = EN.theme.get();
@@ -1189,17 +1196,81 @@ EN.settings = (function () {
      (en_gm_controls_v1, en_optional_rules_v1), never on a character and never exported. */
   function gmControlsSection() {
     var L = EN.launch, on = L.gmControls();
+    var list = L.gmControlList || [];
+    var live = list.filter(function (c) { return L.gmItem(c.key); });
     return [
       el("div.set-sectitle", { text: "// GM CONTROLS" }),
       el("label.set-label", { text: "GM controls" }),
       el("p.set-hint", { text: on
-        ? "On: the sheet shows the controls that stand in for a GM's call: GM -1 on an item's Load in the Stash, and the Five-Finger Supply storefront for looted gear. Saved on this device."
-        : "Off: GM -1 and the Five-Finger Supply storefront are hidden. A Load the GM already lowered stays lowered. Saved on this device." }),
+        ? "On: " + (live.length ? live.map(function (c) { return c.name; }).join(" and ") + (live.length === 1 ? " is" : " are") + " shown." : "every control is switched off individually.") + " Saved on this device."
+        : "Off: the controls that stand in for a GM's call are hidden. Open them to turn them on, all at once or one at a time. Saved on this device." }),
       el("button.btn.sm.set-gm" + (on ? ".primary" : ""), {
-        title: "Show or hide GM controls on this device",
-        onclick: function () { L.setGmControls(!on); EN.app.render(); rebuild(); }
-      }, on ? "◈ GM CONTROLS: ON" : "◈ GM CONTROLS: OFF")
+        type: "button", "aria-haspopup": "dialog",
+        title: "Open the GM controls",
+        onclick: openGm
+      }, "◈ GM CONTROLS: " + (on ? "ON · " + live.length + " / " + list.length : "OFF") + " ▸")
     ];
+  }
+
+  /* The GM controls pop-out (30 October 2026): the master switch at the top, then each control
+     on its own. With the master off the list stays visible but greyed, so a GM can see what
+     turning it on would bring back. */
+  function gmBody() {
+    var ov = document.getElementById("gmc-ov");
+    if (!ov) return;
+    var body = ov.querySelector(".set-body");
+    clear(body);
+    var L = EN.launch, on = L.gmControls();
+    function changed() { EN.app.render(); rebuild(); gmBody(); }
+    [
+      el("label.set-label", { text: "All GM controls" }),
+      el("p.set-hint", { text: on
+        ? "On: the controls ticked below are shown on this device."
+        : "Off: every GM control is hidden on this device, whatever is ticked below. A Load the GM already lowered stays lowered." }),
+      el("button.btn.sm.gmc-master" + (on ? ".primary" : ""), {
+        type: "button", title: "Turn every GM control " + (on ? "off" : "on") + " on this device",
+        onclick: function () { L.setGmControls(!on); changed(); }
+      }, on ? "◈ GM CONTROLS: ON" : "◈ GM CONTROLS: OFF"),
+      el("div.set-sectitle", { style: { marginTop: "20px", paddingTop: "16px", borderTop: "1px solid var(--border)" }, text: "// INDIVIDUAL CONTROLS" })
+    ].forEach(function (n) { body.appendChild(n); });
+    (L.gmControlList || []).forEach(function (c) {
+      var mine = L.gmItem(c.key);
+      var row = el("div.gmc-row" + (on ? "" : ".gmc-dim"), { dataset: { ctl: c.key } }, [
+        el("label.set-label", { text: c.name }),
+        el("p.set-hint", { text: c.hint }),
+        el("button.btn.sm.gmc-item" + (mine && on ? ".primary" : ""), {
+          type: "button", dataset: { ctl: c.key }, disabled: !on,
+          title: on ? "Turn " + c.name + " " + (mine ? "off" : "on") + " on this device" : "Turn GM controls on to change this",
+          onclick: function () { if (!L.gmControls()) return; L.setGmItem(c.key, !mine); changed(); }
+        }, "◈ " + c.name.toUpperCase() + ": " + (mine ? "ON" : "OFF"))
+      ]);
+      body.appendChild(row);
+    });
+  }
+  function openGm() {
+    if (document.getElementById("gmc-ov")) return;
+    var ov = el("div#gmc-ov", { role: "dialog", "aria-modal": "true", "aria-label": "GM Controls",
+      onclick: function (e) { if (e.target === ov) closeGm(); }
+    }, [
+      el("div.set-card", null, [
+        el("div.set-head", null, [
+          el("div", null, [
+            el("div.set-kick", { text: "#GRIDOS // GM CONTROLS" }),
+            el("h3.set-title", { text: "GM Controls" })
+          ]),
+          el("button.set-close.gmc-close", { type: "button", title: "Close (Esc)", onclick: closeGm }, "✕")
+        ]),
+        el("div.set-body")
+      ])
+    ]);
+    document.body.appendChild(ov);
+    gmBody();
+    var m = ov.querySelector(".gmc-master"); if (m) m.focus();
+  }
+  function closeGm() {
+    var ov = document.getElementById("gmc-ov");
+    if (ov && ov.parentNode) ov.parentNode.removeChild(ov);
+    var b = document.querySelector("#set-ov .set-gm"); if (b) b.focus();
   }
   function optionalRulesSection() {
     var L = EN.launch;
@@ -1405,6 +1476,7 @@ EN.settings = (function () {
     // if closed mid-edit, drop the unsaved live preview back to the recorded selection
     if (_editing) { _editing = null; EN.theme.apply(EN.theme.get()); }
     _gmImport = null;   // a picked GM file is dropped with the tray, so its text is not held
+    closeGm();          // the GM controls pop-out goes with the tray
     var ov = document.getElementById("set-ov");
     if (ov && ov.parentNode) ov.parentNode.removeChild(ov);
     document.removeEventListener("keydown", onKey);

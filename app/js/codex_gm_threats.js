@@ -191,7 +191,8 @@ window.EN = window.EN || {};
           var s = splitLead(c);
           return K.ruleBlock(s.name, s.text, null, { conditions: true });
         })),
-        t.morale ? K.ruleBlock("Morale (optional rule)", t.morale, null, { conditions: true, slug: "morale" }) : null
+        // an optional rule (Settings): off, the conventions end without it
+        t.morale && (!EN.launch || !EN.launch.rule || EN.launch.rule("morale")) ? K.ruleBlock("Morale (optional rule)", t.morale, null, { conditions: true, slug: "morale" }) : null
       ];
     } },
 

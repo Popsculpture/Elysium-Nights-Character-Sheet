@@ -1579,7 +1579,7 @@ EN.gmEncounters = (function () {
     var refs = [];
     if (B.openings) refs.push(["gme-openings", B.openings.name]);
     if (B.ending) refs.push(["gme-ending", B.ending.name]);
-    refs.push(["gmt-conventions/morale", "Morale"]);
+    if (!EN.launch || !EN.launch.rule || EN.launch.rule("morale")) refs.push(["gmt-conventions/morale", "Morale"]);   // an optional rule (Settings)
     refs.push(["gme-security/when-the-clock-runs", "when the clock runs"]);
     kids.push(codexPointer(refs, "site-ref", { margin: 0 }));
     var ticked = roomRules().filter(function (r) { return own(plan.room, r.key); }).length;

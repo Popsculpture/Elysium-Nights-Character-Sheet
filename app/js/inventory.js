@@ -91,10 +91,10 @@ EN.inventoryView = (function () {
   ];
   function storefront() { return STOREFRONTS.find(function (s) { return s.key === _mode; }) || STOREFRONTS[0]; }
   // the two device settings this view reads (data/launch.js): GM controls, and the Encumbrance rule
-  function gmOn() { return !!(EN.launch && EN.launch.gmControls && EN.launch.gmControls()); }
+  function gmOn(key) { return !!(EN.launch && EN.launch.gmControl && EN.launch.gmControl(key)); }
   function encOn() { return !(EN.launch && EN.launch.rule) || EN.launch.rule("encumbrance"); }
   // the storefronts this device offers: Five-Finger Supply is a GM control
-  function storefronts() { return STOREFRONTS.filter(function (s) { return s.key !== "fivefinger" || gmOn(); }); }
+  function storefronts() { return STOREFRONTS.filter(function (s) { return s.key !== "fivefinger" || gmOn("fiveFinger"); }); }
 
   function fmtG(n) { return "𝒢" + (n || 0).toLocaleString(); }
   function fmtNx(n) { return "◎" + (Math.round((n || 0) * 100) / 100); }
@@ -368,7 +368,7 @@ EN.inventoryView = (function () {
       + (wornBreak ? ", already 1 less while Worn" : "") + ". It spends your Load Budget while on-person (equipped, carried, worn, or racked).";
     var chip = el("span.chip.inv-load", { dataset: { load: String(now) }, title: tip,
       style: { fontSize: "9px", color: color, borderColor: color, marginLeft: "8px" } }, "⚖ LOAD " + now + (low ? " · GM -1" : ""));
-    if ((!(base > 0) && !low) || !gmOn()) return chip;   // GM -1 is a GM control (Settings)
+    if ((!(base > 0) && !low) || !gmOn("loadLower")) return chip;   // GM -1 is a GM control (Settings)
     function toggle() {
       store.update(function (c) { var x = EN.engine.findEntry(c, key); if (!x) return; if (x.loadLowered) delete x.loadLowered; else x.loadLowered = true; });
       toast(low ? e.name + " is back to Load " + base + "." : e.name + ": Load lowered by 1 on the GM's call.");
@@ -4467,7 +4467,7 @@ EN.inventoryView = (function () {
   function render(mount) {
     var ch = store.active();
     clear(mount);
-    if (_mode === "fivefinger" && !gmOn()) _mode = "undercut";   // GM controls off: no Five-Finger Supply
+    if (_mode === "fivefinger" && !gmOn("fiveFinger")) _mode = "undercut";   // GM controls off: no Five-Finger Supply
     if (!ch) {
       mount.appendChild(el("div.muted-box", { style: { marginTop: "40px", padding: "40px" }, text: "No Freelancer on file; register one on the #PRINT tab." }));
       return;

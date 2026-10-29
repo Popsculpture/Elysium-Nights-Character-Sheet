@@ -60,18 +60,42 @@ EN.launch = (function () {
   var GM_KEY = "en_gm_controls_v1";
   function gmControls() { try { return localStorage.getItem(GM_KEY) === "1"; } catch (e) { return false; } }
   function setGmControls(on) { try { localStorage.setItem(GM_KEY, on ? "1" : "0"); } catch (e) {} }
+  /* Each control can also be switched on its own (30 Oct 2026). The master switch above gates
+     them all; under it, each is on until someone turns it off. gmControl(key) is the one test
+     a view asks: both the master and that control on. */
+  var GM_ITEMS_KEY = "en_gm_control_items_v1";
+  var GM_CONTROLS = [
+    { key: "loadLower", name: "GM -1 Load",
+      hint: "A GM -1 button on each item's Load in the Stash, for gear the GM rules sits lighter. A Load already lowered stays lowered when this is off." },
+    { key: "fiveFinger", name: "Five-Finger Supply",
+      hint: "The Five-Finger Supply storefront in the Gray Market, for looted gear the GM hands out." }
+  ];
+  function gmItemMap() { try { var m = JSON.parse(localStorage.getItem(GM_ITEMS_KEY) || "{}"); return m && typeof m === "object" ? m : {}; } catch (e) { return {}; } }
+  function gmItem(key) { return gmItemMap()[key] !== false; }
+  function setGmItem(key, on) { var m = gmItemMap(); m[key] = !!on; try { localStorage.setItem(GM_ITEMS_KEY, JSON.stringify(m)); } catch (e) {} }
+  function gmControl(key) { return gmControls() && gmItem(key); }
 
   /* ---- Optional rules: device settings (29 Oct 2026) -------------------------
      A table can switch a rule off. Each is on by default, the book as written. Stored as one
      map on the device, never on a character: turning a rule off changes what the sheet shows
      and computes, not what a record holds, so turning it back on restores everything.
        encumbrance: Load, Loadout, the Load Budget, Packed It and the Encumbered state from
-         carried gear. Off, none of it is shown or applied; a Haul (a body, a crate) still is. */
+         carried gear. Off, none of it is shown or applied; a Haul (a body, a crate) still is.
+       weaponJam: the book's optional Weapon Jam rule (PHB Gear Traits, Firing Modes). Off, the
+         Codex leaves it out of Firing Modes.
+       morale: the optional Morale rule (GM Toolkit, Threat Conventions). Off, the GM Codex
+         leaves it out, and Ending Fights and the encounter tools drop their links to it. */
   var RULES_KEY = "en_optional_rules_v1";
   var OPTIONAL_RULES = [
     { key: "encumbrance", name: "Encumbrance",
       on: "On: Load, your declared Loadout and its Load Budget, Packed It, and the Encumbered state from carried gear are all tracked and applied.",
-      off: "Off: gear has no Load, there is no Loadout or Load Budget, and carrying never makes you Encumbered. Hauling a body or a crate still slows you." }
+      off: "Off: gear has no Load, there is no Loadout or Load Budget, and carrying never makes you Encumbered. Hauling a body or a crate still slows you." },
+    { key: "weaponJam", name: "Weapon Jam",
+      on: "On: the Codex prints the optional Weapon Jam rule under Firing Modes. On a Natural 1 with a firearm, the GM may rule the weapon Jams.",
+      off: "Off: firearms never Jam, and the Codex leaves the Weapon Jam rule out of Firing Modes." },
+    { key: "morale", name: "Morale",
+      on: "On: the GM Codex prints the optional Morale rule under Threat Conventions, and Ending Fights and the encounter tools link to it.",
+      off: "Off: Hostiles fight until the fight is settled some other way. The GM Codex leaves Morale out, and nothing links to it." }
   ];
   function ruleMap() { try { var m = JSON.parse(localStorage.getItem(RULES_KEY) || "{}"); return m && typeof m === "object" ? m : {}; } catch (e) { return {}; } }
   function rule(key) { var m = ruleMap(); return m[key] !== false; }
@@ -431,6 +455,7 @@ EN.launch = (function () {
   return { holds: holds, held: held, companion: companion, toolkit: toolkit,
            supplemental: supplemental, setSupplemental: setSupplemental,
            gmControls: gmControls, setGmControls: setGmControls,
+           gmControlList: GM_CONTROLS, gmItem: gmItem, setGmItem: setGmItem, gmControl: gmControl,
            optionalRules: OPTIONAL_RULES, rule: rule, setRule: setRule,
            isHeld: isHeld, isCompanion: isCompanion, source: source, offer: offer,
            isToolkit: isToolkit, isToolkitItem: isToolkitItem,

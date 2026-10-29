@@ -119,9 +119,11 @@ window.EN = window.EN || {};
           line.appendChild(K.link("gr-traits/" + slug(m), m));
         });
         /* the book's optional Weapon Jam rule closes the entry (PHB Gear Traits, Firing Modes) */
-        var jam = g.firingModesNote ? K.linkify(el("p"), g.firingModesNote, { conditions: true }) : null;
+        // an optional rule (Settings): off, Firing Modes ends at the mode list
+        var jamNote = g.firingModesNote && (!EN.launch || !EN.launch.rule || EN.launch.rule("weaponJam")) ? g.firingModesNote : "";
+        var jam = jamNote ? K.linkify(el("p"), jamNote, { conditions: true }) : null;
         kids.push(K.entry("firing-modes", "Firing Modes", [el("h4", { text: "Firing Modes" }), line, jam],
-          { tag: "div.feature", text: modes.join(", ") + (g.firingModesNote ? ". " + g.firingModesNote : "") }));
+          { tag: "div.feature", text: modes.join(", ") + (jamNote ? ". " + jamNote : "") }));
       }
       var am = g.ammo;
       if (am) {

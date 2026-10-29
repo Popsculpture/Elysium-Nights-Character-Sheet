@@ -212,7 +212,9 @@ window.EN = window.EN || {};
       when: function () { return !!(enc() && enc().ending); },
       build: function (ctx, K) {
         var En = enc().ending;
-        return [block(K, En.name, En.text, LINKS.ending)];
+        // the optional Morale rule (Settings) off: its name stays in the book's text, unlinked
+        var moraleOn = !EN.launch || !EN.launch.rule || EN.launch.rule("morale");
+        return [block(K, En.name, En.text, LINKS.ending.filter(function (l) { return moraleOn || l[0] !== "Morale"; }))];
       } },
 
     { id: "gme-xp", title: "Awarding Experience", tag: "XP · MILESTONES", order: 80,
