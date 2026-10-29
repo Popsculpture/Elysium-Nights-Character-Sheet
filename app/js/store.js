@@ -2101,6 +2101,11 @@ EN.store = (function () {
     try {
       if (!Array.isArray(ch.startingCiphers)) ch.startingCiphers = [];
       ch.startingCiphers = ch.startingCiphers.filter(function (n, i, a) { return typeof n === "string" && n && a.indexOf(n) === i; });
+      /* Ruled 28 October: the four are Complexity 1 only, and the Complexity 0 suite comes with the
+         deck. A Complexity 0 name an earlier build stored as a pick is dropped (the suite still lists
+         it with the deck), which leaves the record owed a pick for #GRID's prompt to ask for. */
+      var c0names = ((EN.grid && EN.grid.buddyCiphers) || []).map(function (cy) { return String(cy.name).replace(/\s*\u21cb\s*$/, ""); });
+      if (c0names.length) ch.startingCiphers = ch.startingCiphers.filter(function (n) { return c0names.indexOf(n) === -1; });
       var _ce = EN.engine || {};
       var CLASS_ITEM = {
         codebreaker: { name: "Standard Smartdeck", flag: "startingDeckGranted", slot: "deck",

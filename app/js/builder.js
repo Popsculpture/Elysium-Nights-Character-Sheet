@@ -1938,8 +1938,10 @@ EN.builder = (function () {
     return el("div", null, [head, chipRow]);
   }
 
-  /* THE FOUR STARTING CIPHERS (A2, 28 October 2026 handoff). Handbook, Your Repertoire: "You
-     start with four Ciphers of your choice from the Complexity 0 or Complexity 1 tiers." The app
+  /* THE FOUR STARTING CIPHERS (A2, 28 October 2026 handoff). Handbook, Your Repertoire, as ruled
+     28 October (handoff E): "You start with four Complexity 1 Ciphers of your choice. The six
+     Complexity 0 Ciphers ship free with every Smartdeck, so they come with your deck and don't
+     count toward the four." The app
      had no way to make that choice: the Repertoire said "0 ACQUIRED" and pointed at the gray
      market, whose Acquire-Clean price (Material Cost plus 8 hours of Downtime) is for Ciphers
      learned after creation.
@@ -1952,9 +1954,10 @@ EN.builder = (function () {
      pick must not turn into cash. A Complexity 0 name is stored without the suite's Link mark.
 
      The six Complexity 0 Ciphers ship free with every Smartdeck (Cipher Library, Complexity 0)
-     and do not count toward the four. They are listed as shipping with the deck; picking one as
-     one of the four is allowed and marked "Already ships with your Smartdeck" (handoff E leaves
-     the book question to the author, and this handling works either way).
+     and are not picks: the picker shows them as shipping with the deck, never as choices, and
+     the #GRID Repertoire lists them with the deck. Only Complexity 1 names count toward the four,
+     so a Complexity 0 name an earlier build stored as a pick is not counted (store.js migrate()
+     drops it); that record is owed a pick and #GRID asks for it.
 
      The Class step is not done, so the record cannot file, until all four are chosen: the same
      place the Class step's other owed picks hold it (stepComplete). On a FILED record the picks
@@ -1973,7 +1976,7 @@ EN.builder = (function () {
   }
   // the record's valid picks, in the order made (unknown names and repeats are ignored)
   function startingCiphers(ch) {
-    var pool = startingCipherPool().all.map(function (p) { return p.name; });
+    var pool = startingCipherPool().c1.map(function (p) { return p.name; });
     var out = [];
     ((ch && ch.startingCiphers) || []).forEach(function (n) { if (pool.indexOf(n) !== -1 && out.indexOf(n) === -1) out.push(n); });
     return out;
@@ -2020,7 +2023,7 @@ EN.builder = (function () {
       el("span.chip.start-cipher-count" + (done ? ".on" : ""), { style: { fontSize: "10px", color: done ? null : "var(--warn)", borderColor: done ? null : "var(--warn)" },
         text: chosen.length + " / " + STARTING_CIPHERS + " chosen" }),
       el("span", { style: { fontFamily: "var(--mono)", fontSize: "10px", color: "var(--text3)" },
-        text: "4 from Complexity 0 or 1; free, no Glimmer or Downtime; click to learn" })
+        text: "4 from Complexity 1; free, no Glimmer or Downtime; click to learn" })
     ]);
     function row(label, list) {
       return el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginBottom: "6px" } },
@@ -2029,9 +2032,15 @@ EN.builder = (function () {
     var kids = [head];
     if (opts.intro) kids.push(el("p.help", { style: { margin: "0 0 6px" }, text: opts.intro }));
     kids.push(el("p.help.ships-with", { style: { margin: "0 0 6px", fontSize: "10.5px" },
-      text: "The six Complexity 0 Ciphers ship with your Smartdeck, free, and don't count toward your four. You can still pick one; it's marked." }));
-    kids.push(row("CX 0 · ships with your Smartdeck", pool.c0));
-    kids.push(row("CX 1", pool.c1));
+      text: "The six Complexity 0 Ciphers ship free with your Smartdeck, so they come with your deck and don't count toward your four." }));
+    // the suite, shown and never picked: solid chips with no click
+    kids.push(el("div.row.wrap.ships-row", { style: { gap: "6px", alignItems: "center", marginBottom: "6px" } },
+      [el("span", { style: { fontFamily: "var(--mono)", fontSize: "10px", color: "var(--text3)", minWidth: "92px" }, text: "CX 0 · ships with your Smartdeck" })].concat(
+        pool.c0.map(function (p) {
+          return el("span.chip.ships-cipher", { dataset: { cipher: p.name, cx: "0" }, title: (p.action ? p.action + " · " : "") + "Ships with your Smartdeck. " + p.text,
+            style: { fontSize: "10.5px", color: "var(--gold)", borderColor: "var(--gold)", cursor: "default" } }, "✓ " + p.name);
+        }))));
+    kids.push(row("CX 1 · pick four", pool.c1));
     if (settled) kids.push(el("p.help", { style: { margin: "0", fontSize: "10.5px", color: "var(--text3)" }, text: "Settled on your filed record. Edit freely on #PRINT lifts it." }));
     else if (!done && !opts.intro) kids.push(el("p.help", { style: { margin: "0", fontSize: "10.5px", color: "var(--warn)" }, text: "Pick all four before the record can file." }));
     return el("div.start-ciphers", null, kids);

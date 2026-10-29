@@ -276,11 +276,13 @@ EN.gridView = (function () {
     ]);
   }
 
-  function buddyCipherCard(cy) {
-    return el("div.feature", { style: { borderLeftColor: "var(--border2)" } }, [
+  // ships: listed in a Codebreaker's Repertoire as part of the deck's free Complexity 0 suite
+  function buddyCipherCard(cy, ships) {
+    return el("div.feature" + (ships ? ".ships-cipher" : ""), { dataset: ships ? { ships: "1" } : {}, style: { borderLeftColor: ships ? "var(--gold)" : "var(--border2)" } }, [
       el("div.row.between", { style: { alignItems: "center", gap: "8px" } }, [
         el("span", { style: { fontWeight: 600, fontSize: "13px" }, text: cy.name }),
         el("div.row", { style: { gap: "6px", alignItems: "center" } }, [
+          ships ? el("span.chip", { style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" }, title: "Ships free with every Smartdeck; not one of your four" }, "SHIPS WITH YOUR SMARTDECK") : null,
           cy.type ? el("span.chip", { style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" } }, cy.type) : null,
           cy.activation ? el("span.chip", { title: "Activation", style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" } }, cy.activation) : null
         ])
@@ -354,11 +356,13 @@ EN.gridView = (function () {
       var cipherByName = {}; (G.ciphers || []).forEach(function (c) { cipherByName[c.name] = c; });
       /* A2: the Repertoire is the Ciphers bought in the gray market (equipment rows) PLUS the four
          starting picks made on the Class step (ch.startingCiphers, names only; they cost nothing and
-         never become rows). A Complexity 0 pick already ships with the deck, so it is listed by name
-         under the cards rather than as a second copy of a suite Cipher. */
+         never become rows), PLUS the six Complexity 0 Ciphers, which ship free with every Smartdeck
+         (ruled 28 October) and so are listed with the deck, labelled as shipping with it, whenever a
+         deck is equipped. They are read off the deck, never stored, so a repaired record has them
+         the moment its deck is in. */
       var B = EN.builder || {};
       var starts = B.startingCiphers ? B.startingCiphers(ch) : [];
-      var startC0 = starts.filter(function (n) { return !cipherByName[n]; });
+      var suite = deck ? (G.buddyCiphers || []) : [];
       var seenC = {};
       var owned = (ch.equipment || []).map(function (e) { return (e.qty > 0) ? cipherByName[e.name] : null; })
         .concat(starts.map(function (n) { return cipherByName[n] || null; }))
@@ -366,21 +370,24 @@ EN.gridView = (function () {
         .sort(function (a, b) { return (a.cx - b.cx) || a.name.localeCompare(b.name); });
       rows.push(el("div.section-title", null, [document.createTextNode("Repertoire"),
         EN.ui.ruleChip("gd-repertoire", { title: "Repertoire & Cipher Costs" }), el("span.line"),
-        el("span.mono.rep-count", { style: { fontSize: "10px", color: "var(--text3)", marginLeft: "6px" }, text: (owned.length + startC0.length) + " acquired" })]));
+        el("span.mono.rep-count", { style: { fontSize: "10px", color: "var(--text3)", marginLeft: "6px" }, text: (owned.length + suite.length) + " known" })]));
       rows.push(noteP(deck
         ? (deck.type === "smartdeck"
-            ? ("Your " + deck.tier + " Smartdeck runs ciphers up to Complexity " + runCx + ". Higher ones stay in your Repertoire but won't cast until you upgrade. Plus the 6 free Complexity 0 ciphers (see B&E Buddy Cipher Suite).")
+            ? ("Your " + deck.tier + " Smartdeck runs ciphers up to Complexity " + runCx + ". Higher ones stay in your Repertoire but won't cast until you upgrade. The six Complexity 0 Ciphers ship with it, free.")
             : "You're on a B&E Buddy: only its baked-in suite runs, at the Buddy's own tier (see B&E Buddy Cipher Suite). Acquired ciphers won't cast until you equip a Smartdeck.")
         : "No rig equipped. Equip a Smartdeck in the Rig panel to cast ciphers."));
       var owed = B.startingCiphersOwed ? B.startingCiphersOwed(ch) : false;
-      if (!owned.length && !startC0.length) {
+      if (!owned.length) {
         // A2.5: a Codebreaker still owed the starting four is pointed at the free picker, not the market
         rows.push(noteP(owed
-          ? "No ciphers yet. You start with four free Ciphers from Complexity 0 or 1: choose them " + (isFiledRec(ch) ? "in the prompt at the top of this tab" : "on the Class step of #PRINT") + ". No Glimmer, no Downtime."
+          ? "No Complexity 1 Ciphers yet. You start with four, free: choose them " + (isFiledRec(ch) ? "in the prompt at the top of this tab" : "on the Class step of #PRINT") + ". No Glimmer, no Downtime."
           : "No ciphers acquired yet. Buy them in the Inventory tab's gray market (Cipher Library), then cast them here.", "var(--text2)"));
       } else {
         owned.forEach(function (cy) { rows.push(cipherCard(cy, runCx, bwCur, deck && deck.tier, starts.indexOf(cy.name) !== -1)); });
-        if (startC0.length) rows.push(noteP("Starting picks that already ship with your Smartdeck (Complexity 0): " + startC0.join(", ") + ".", "var(--text2)"));
+      }
+      if (suite.length) {
+        rows.push(el("div.mono.ships-head", { style: { fontSize: "10px", letterSpacing: ".14em", color: "var(--gold)", margin: "10px 0 4px" }, text: "SHIPS WITH YOUR SMARTDECK · COMPLEXITY 0 · FREE" }));
+        suite.forEach(function (cy) { rows.push(buddyCipherCard(cy, true)); });
       }
       // the 4-5 price reads cipherCost, so an Apex (Quantum Core) deck sees what RUN will charge
       var costNote = noteP("Casting costs: Complexity 0 free · 1-3 = 1 BW · 4-5 = " + cipherCost({ cx: 4 }, deck && deck.tier) + " BW"
@@ -962,7 +969,7 @@ EN.gridView = (function () {
        the fourth is chosen (the picks settle on a filed record at that point). */
     var BP = EN.builder || {};
     if (isFiledRec(ch) && BP.startingCiphersOwed && BP.startingCiphersOwed(ch)) {
-      var picker = BP.startingCipherPicker(ch, { intro: "Your record was filed without them. Pick four Ciphers from Complexity 0 or 1 for your Repertoire. They're free: no Glimmer, no Downtime." });
+      var picker = BP.startingCipherPicker(ch, { intro: "Your record was filed without them. Pick four Complexity 1 Ciphers for your Repertoire. They're free: no Glimmer, no Downtime. The six Complexity 0 Ciphers already come with your deck." });
       if (picker) blocks.push(el("div.grid-start-prompt", { style: { marginBottom: "14px" } },
         [EN.ui.panel("Choose your 4 starting Ciphers", "REPERTOIRE · FREE AT CREATION", [picker], { corners: true })]));
     }
