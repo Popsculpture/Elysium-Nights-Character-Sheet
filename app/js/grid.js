@@ -353,7 +353,6 @@ EN.gridView = (function () {
       // ---- Repertoire (drawn from ciphers acquired in the gray market) ----
       var deck = gd.deck;
       var runCx = deck ? (deck.type === "smartdeck" ? deck.maxComplexity : 0) : -1;  // highest Complexity this rig casts; -1 = no rig
-      var cipherByName = {}; (G.ciphers || []).forEach(function (c) { cipherByName[c.name] = c; });
       /* A2: the Repertoire is the Ciphers bought in the gray market (equipment rows) PLUS the four
          starting picks made on the Class step (ch.startingCiphers, names only; they cost nothing and
          never become rows), PLUS the six Complexity 0 Ciphers, which ship free with every Smartdeck
@@ -363,11 +362,8 @@ EN.gridView = (function () {
       var B = EN.builder || {};
       var starts = B.startingCiphers ? B.startingCiphers(ch) : [];
       var suite = deck ? (G.buddyCiphers || []) : [];
-      var seenC = {};
-      var owned = (ch.equipment || []).map(function (e) { return (e.qty > 0) ? cipherByName[e.name] : null; })
-        .concat(starts.map(function (n) { return cipherByName[n] || null; }))
-        .filter(function (cy) { if (!cy || seenC[cy.name]) return false; seenC[cy.name] = true; return true; })
-        .sort(function (a, b) { return (a.cx - b.cx) || a.name.localeCompare(b.name); });
+      // the same list the #PRINT review, the hardcopy and the export print (builder.repertoireCiphers)
+      var owned = B.repertoireCiphers ? B.repertoireCiphers(ch) : [];
       rows.push(el("div.section-title", null, [document.createTextNode("Repertoire"),
         EN.ui.ruleChip("gd-repertoire", { title: "Repertoire & Cipher Costs" }), el("span.line"),
         el("span.mono.rep-count", { style: { fontSize: "10px", color: "var(--text3)", marginLeft: "6px" }, text: (owned.length + suite.length) + " known" })]));
@@ -998,5 +994,5 @@ EN.gridView = (function () {
 
   return { render: render, isDamage: isDamage, setDamage: setDamage, getDmgIntensity: getDmgIntensity, setDmgIntensity: setDmgIntensity,
            shiftDeckIntegrity: shiftDeckIntegrity, repairDeckFully: repairDeckFully,
-           ownedRigRows: ownedRigRows };
+           ownedRigRows: ownedRigRows, cipherCost: cipherCost };
 })();

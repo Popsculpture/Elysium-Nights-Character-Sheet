@@ -2442,6 +2442,7 @@ EN.store = (function () {
     // fold any custom palette bundled with the file into the device library, then drop the carrier field
     if (obj.customThemes && EN.theme && EN.theme.mergeCustom) { EN.theme.mergeCustom(obj.customThemes); }
     delete obj.customThemes;
+    delete obj.classGear;   // the export's read-only class hardware summary (A1); rebuilt from the record
     migrate(obj);   // normalize an imported (possibly older) file now, not just on next load()
     state.roster[obj.meta.id] = obj;
     state.activeId = obj.meta.id;

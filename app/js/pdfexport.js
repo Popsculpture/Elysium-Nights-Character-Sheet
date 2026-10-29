@@ -1217,7 +1217,10 @@ EN.pdfExport = (function () {
     var hasFlow = !!d.flow;
     var hasChrome = installed.length > 0;
     var hasGrid = d.grid && (d.grid.userType === "Power User" || (ch.grid && ch.grid.deckType));
-    if (!hasFlow && !hasChrome && !hasGrid) return null;
+    // A1, 29 October: the class rig and picks, the same source as the #PRINT review
+    var gear = EN.builder && EN.builder.classGear ? EN.builder.classGear(ch, d) : null;
+    var hasRig = !!(gear && gear.cls === "stitcher" && gear.rig);
+    if (!hasFlow && !hasChrome && !hasGrid && !hasRig) return null;
 
     var ctx = makeCtx(doc, form, fonts, { title: "SYSTEMS", tag: "05 · SYSTEMS", serial: idSerial(ch), fieldPrefix: "sys" });
     var any = false;
@@ -1275,11 +1278,27 @@ EN.pdfExport = (function () {
         { label: "Bandwidth", name: "grid.bandwidth", value: g.bandwidthMax != null ? g.bandwidthMax : "-", w: "60px", align: "center" }
       ]);
       ctx.sectionTitle("Repertoire", "cipher · CX · cost");
+      var repRows = (gear && gear.ciphers ? gear.ciphers : []).map(function (c) {
+        return { name: c.name + (c.start ? " (starting)" : ""), cx: String(c.cx), cost: c.bw + " BW" };
+      });
+      if (gear && gear.suite && gear.suite.length) repRows.push({ name: "Ships with your Smartdeck: " + gear.suite.join(", "), cx: "0", cost: "free" });
+      while (repRows.length < 8) repRows.push(null);
       ctx.table(
         [{ header: "Cipher", key: "name", w: 2 }, { header: "CX", key: "cx", w: "50px", align: "center" }, { header: "Cost", key: "cost", w: "50px", align: "center" }],
         "grid.rep",
-        [null, null, null, null, null, null, null, null]
+        repRows
       );
+    }
+
+    if (hasRig) {
+      if (any || hasGrid) ctx.rule();
+      ctx.sectionTitle("Trauma Rig", gear.rig.state === "live" ? "worn" : (gear.rig.state === "owned" ? "owned, not worn" : "comes with your starting kit"));
+      ctx.row([
+        { label: "Rig", name: "rig.name", value: gear.rig.name, w: 3 },
+        { label: "Tier", name: "rig.tier", value: String(gear.rig.tier), w: "54px", align: "center" },
+        { label: "Integrity", name: "rig.integrity", value: String(gear.rig.integrity), w: "54px", align: "center" },
+        { label: "Output", name: "rig.output", value: sgn(gear.rig.outputBonus || 0), w: "54px", align: "center" }
+      ]);
     }
 
     return ctx;

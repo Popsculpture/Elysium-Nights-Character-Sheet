@@ -1163,10 +1163,27 @@ EN.builder = (function () {
     var overlaps = eng.overlapGrants(ch);
     if (!overlaps.length) return null;
     var open = pendingOverlaps(ch);
+    /* A2, 29 October: a claimed overlap keeps its row, in the same place and at the same height,
+       with the aspect shown read-only and CLAIMED where the button was. The row used to vanish on
+       Enter, which pulled the whole page up and dropped the keyboard focus on the floor. The input
+       keeps its aria-label, so app.js render() puts the focus back on it. */
+    function claimedRow(o) {
+      var f = (ch.skillFocuses || []).filter(function (x) { return x && x.granted && x.type === o.type && x.parent === o.parent; })[0];
+      return el("div.overlap-claimed", { style: { marginTop: "10px", padding: "9px 11px", border: "1px solid var(--success)", borderRadius: "4px" } }, [
+        el("p", { style: { margin: "0 0 7px", color: "var(--text2)", fontSize: "13px" },
+          text: "Your Background and Class both trained you in " + o.label + ". Your Free Skill Focus is claimed." }),
+        el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
+          el("input", { type: "text", readOnly: true, value: (f && f.aspect) || "", "aria-label": "Free Skill Focus aspect for " + o.label,
+            style: { flex: "1 1 220px", padding: "4px 9px", fontSize: "13px", opacity: .8 } }),
+          el("span.chip.on", { style: { fontSize: "10.5px" }, text: "✓ CLAIMED" })
+        ])
+      ]);
+    }
     // the rule half is EN.rules.training.overlap.rule, the one copy the Codex prints too
     var kids = [EN.ui.ruleText(el("div"), "⚠ **OVERLAPPING TRAINING:** your Background and Class both trained you in **" +
       overlaps.map(function (o) { return o.label; }).join(", ") + "**. " + (((R.training || {}).overlap || {}).rule || ""))];
-    open.forEach(function (o) {
+    overlaps.forEach(function (o) {
+      if (!open.some(function (p) { return p.type === o.type && p.parent === o.parent; })) { kids.push(claimedRow(o)); return; }
       var k = o.type + "|" + o.parent;
       function claim() {
         var aspect = (_overlapAspect[k] || "").trim();
@@ -1187,7 +1204,8 @@ EN.builder = (function () {
         onkeydown: function (e) { if (e.key === "Enter") { e.preventDefault(); claim(); } } });
       if (_focusAspect === k) {
         _focusAspect = null;
-        setTimeout(function () { if (document.body.contains(input)) try { input.focus(); } catch (e) {} }, 0);
+        // preventScroll: focusing must not move the page under the player (A2); the toast points here
+        setTimeout(function () { if (document.body.contains(input)) try { input.focus({ preventScroll: true }); } catch (e) {} }, 0);
       }
       var converted = !!grantedFocus(ch, o);
       kids.push(el("div", { style: { marginTop: "10px", padding: "9px 11px", border: "1px dashed var(--gold)", borderRadius: "4px" } }, [
@@ -1200,8 +1218,10 @@ EN.builder = (function () {
         ])
       ]));
     });
-    if (!open.length) kids.push(el("p.help", { style: { margin: "8px 0 0", color: "var(--success)" },
-      text: "All overlap Focuses claimed. Edit their aspects on the Advance tab's Skill Loadout." }));
+    // always drawn (A2): the words change, the space does not
+    kids.push(el("p.help.overlap-status", { style: { margin: "8px 0 0", color: open.length ? "var(--warn)" : "var(--success)" },
+      text: open.length ? "Name the aspect and claim it to finish this step. You can edit it later on the Advance tab's Skill Loadout."
+        : "All overlap Focuses claimed. Edit their aspects on the Advance tab's Skill Loadout." }));
     return el("div.muted-box", { style: { borderColor: "var(--warn)", color: "var(--warn)", textAlign: "left", margin: "14px 0 0" } }, kids);
   }
 
@@ -1984,6 +2004,115 @@ EN.builder = (function () {
   function startingCiphersOwed(ch) {
     return !!ch && ch.class === "codebreaker" && startingCiphers(ch).length < STARTING_CIPHERS;
   }
+
+  /* A1 (29 October 2026 handoff): THE CLASS HARDWARE AND ITS PICKS, READ ONCE. The #PRINT review,
+     the printed hardcopy, the fillable PDF, the JSON export and the live #GRID Repertoire all list
+     them from here, so the record a player certifies is the one they play.
+       Codebreaker: the Smartdeck, then the Repertoire (Ciphers bought in the gray market plus the
+         four starting picks, which never become rows), then the six Complexity 0 Ciphers that
+         ship with the deck.
+       Stitcher: the Trauma Rig, then the Triage Protocols chosen on Core Traits.
+     The rig is the one jacked in or worn; failing that, the best one owned (marked not equipped);
+     failing that, the free class item the starting kit still owes (marked as such). */
+  function repertoireCiphers(ch) {
+    var G = EN.grid || {}, byName = {}, seen = {};
+    (G.ciphers || []).forEach(function (c) { byName[c.name] = c; });
+    var starts = startingCiphers(ch);
+    return ((ch && ch.equipment) || []).map(function (e) { return (e && e.qty > 0) ? byName[e.name] : null; })
+      .concat(starts.map(function (n) { return byName[n] || null; }))
+      .filter(function (cy) { if (!cy || seen[cy.name]) return false; seen[cy.name] = true; return true; })
+      .sort(function (a, b) { return (a.cx - b.cx) || a.name.localeCompare(b.name); });
+  }
+  function classGear(ch, d) {
+    if (!ch || (ch.class !== "codebreaker" && ch.class !== "stitcher")) return null;
+    d = d || eng.derive(ch);
+    var G = EN.grid || {}, def = CLASS_ITEMS[ch.class], out = { cls: ch.class, rig: null };
+    if (ch.class === "codebreaker") {
+      var deck = d.grid && d.grid.deck, od = (d.grid && d.grid.ownedDecks) || eng.ownedDecks(ch) || [];
+      var src = deck ? { type: deck.type, row: { tier: deck.tier, t: deck.t, integrity: deck.maxIntegrity } , state: "live" }
+        : od.length ? { type: od[0].type, row: od[0].row, state: "owned" }
+        : { type: "smartdeck", row: (G.smartdecks || []).find(function (x) { return x.t === 0; }), state: ch[def.flag] ? "none" : "owed" };
+      if (src.row && src.state !== "none") {
+        var smart = src.type === "smartdeck";
+        out.rig = { kind: smart ? "Smartdeck" : "B&E Buddy", name: src.row.tier + (smart ? " Smartdeck" : " B&E Buddy"),
+          tier: src.row.t, maxComplexity: smart ? Math.min(5, src.row.t + 1) : null, integrity: src.row.integrity, state: src.state };
+      }
+      var dTier = deck ? deck.tier : (out.rig ? out.rig.name.split(" ")[0] : null);
+      var cost = EN.gridView && EN.gridView.cipherCost;
+      out.ciphers = repertoireCiphers(ch).map(function (cy) {
+        return { name: cy.name, cx: cy.cx, bw: cost ? cost(cy, dTier) : (cy.cx > 0 ? 1 : 0), start: startingCiphers(ch).indexOf(cy.name) !== -1 };
+      });
+      out.suite = out.rig ? (G.buddyCiphers || []).map(function (cy) { return String(cy.name).replace(/\s*⇋\s*$/, ""); }) : [];
+      out.startingChosen = startingCiphers(ch).length;
+      out.startingOf = STARTING_CIPHERS;
+    } else {
+      var rs = d.rig || {}, or = eng.ownedRigs(ch) || [];
+      var row = rs.rigKey ? eng.rigTierRow(rs.rigTier) : (or.length ? or[0].row : null);
+      var key = rs.rigKey || (or.length ? or[0].key : null);
+      var entry = key ? eng.findEntry(ch, key) : null;
+      var state = rs.rigKey ? "live" : (or.length ? "owned" : (ch[def.flag] ? "none" : "owed"));
+      if (!row && state === "owed") row = eng.rigTierRow("Field Kit");
+      if (row && state !== "none") out.rig = { kind: "Trauma Rig", name: entry ? entry.name : def.name, tier: row.t,
+        maxComplexity: null, integrity: row.integrity, outputBonus: row.outputBonus || 0, state: state };
+      var res = (eng.getClass(ch.class) || {}).resource || {};
+      out.resourceName = res.name || "Triage";
+      out.protocols = eng.chosenResourceAbilities(ch).map(function (a) { return { name: a.name, action: a.action || "", cost: a.cost }; });
+    }
+    return out;
+  }
+  // one line for the rig, the same words on the review, the hardcopy and the PDF
+  function classGearRigLine(r) {
+    if (!r) return "";
+    var bits = [r.name, "Tier " + r.tier];
+    if (r.maxComplexity != null) bits.push("runs up to Complexity " + r.maxComplexity);
+    bits.push("Integrity " + r.integrity);
+    if (r.outputBonus) bits.push("Output +" + r.outputBonus);
+    if (r.state === "owed") bits.push("free, comes with your starting kit");
+    else if (r.state === "owned") bits.push(r.kind === "Trauma Rig" ? "owned, not worn" : "owned, not jacked in");
+    return bits.join(" · ");
+  }
+  // the review's section: rig, then the picks (Ciphers or Triage Protocols)
+  function classGearSection(ch, d, letter) {
+    var g = classGear(ch, d);
+    if (!g) return null;
+    var cb = g.cls === "codebreaker";
+    var kids = [el("p.rf-rig", { style: { margin: "0 0 8px", fontFamily: "var(--mono)", fontSize: "12px" },
+      text: g.rig ? classGearRigLine(g.rig) : (cb ? "No Smartdeck on this record." : "No Trauma Rig on this record.") })];
+    var rows;
+    if (cb) {
+      rows = g.ciphers.map(function (c) {
+        return el("tr.rf-cipher", { dataset: { cipher: c.name } }, [el("td", { text: c.name }), el("td", { text: "Complexity " + c.cx }),
+          el("td.tot", { text: c.bw + " BW" }), el("td", null, [c.start ? el("span.badge", { style: { color: "var(--accent)" }, text: "STARTING" }) : null])]);
+      });
+    } else {
+      rows = g.protocols.map(function (p) {
+        return el("tr.rf-protocol", { dataset: { protocol: p.name } }, [el("td", { text: p.name }), el("td", { text: p.action }),
+          el("td.tot", { text: p.cost != null ? p.cost + " " + g.resourceName : "" }), el("td")]);
+      });
+    }
+    if (rows.length) kids.push(el("table.sktable.rf-picks", null, [el("tbody", null, rows)]));
+    else kids.push(el("p.help", { style: { margin: "0", color: "var(--warn)" }, text: cb ? "No Ciphers chosen yet." : "No Triage Protocols chosen yet." }));
+    if (cb && g.startingChosen < g.startingOf) kids.push(el("p.help", { style: { margin: "6px 0 0", color: "var(--warn)" },
+      text: g.startingChosen + " / " + g.startingOf + " starting Ciphers chosen. Pick the rest on the Class step." }));
+    if (cb && g.suite.length) kids.push(el("p.help.rf-suite", { style: { margin: "8px 0 0" },
+      text: "Complexity 0, ships with your Smartdeck (free, not one of your four): " + g.suite.join(", ") + "." }));
+    var title = cb ? "Repertoire" : "Triage Protocols";
+    var right = cb ? (g.ciphers.length + g.suite.length) + " KNOWN" : g.protocols.length + " KNOWN";
+    return [EN.ui.sectionTitle(letter + " · RIG & " + title.toUpperCase()),
+      el("div.rf-gear", null, [EN.ui.panel(g.rig ? g.rig.kind + " & " + title : title, right, kids)])];
+  }
+  // A1: the JSON export carries the same summary, read-only; importCharacter drops it
+  function exportPayload(ch) {
+    var extra = {};
+    if (EN.theme && EN.theme.bundleFor) { var defs = EN.theme.bundleFor(ch); if (defs.length) extra.customThemes = defs; }
+    var g = classGear(ch);
+    if (g) extra.classGear = { note: "Read-only summary for people reading this file; the app rebuilds it on load.",
+      rig: g.rig ? classGearRigLine(g.rig) : null,
+      ciphers: g.ciphers ? g.ciphers.map(function (c) { return c.name + " (Complexity " + c.cx + ", " + c.bw + " BW)" + (c.start ? ", starting pick" : ""); }) : undefined,
+      shipsWithSmartdeck: g.suite && g.suite.length ? g.suite : undefined,
+      triageProtocols: g.protocols ? g.protocols.map(function (p) { return p.name; }) : undefined };
+    return Object.keys(extra).length ? Object.assign({}, ch, extra) : ch;
+  }
   function startingCipherPicker(ch, opts) {
     if (!ch || ch.class !== "codebreaker") return null;
     opts = opts || {};
@@ -2041,8 +2170,14 @@ EN.builder = (function () {
             style: { fontSize: "10.5px", color: "var(--gold)", borderColor: "var(--gold)", cursor: "default" } }, "✓ " + p.name);
         }))));
     kids.push(row("CX 1 · pick four", pool.c1));
-    if (settled) kids.push(el("p.help", { style: { margin: "0", fontSize: "10.5px", color: "var(--text3)" }, text: "Settled on your filed record. Edit freely on #PRINT lifts it." }));
-    else if (!done && !opts.intro) kids.push(el("p.help", { style: { margin: "0", fontSize: "10.5px", color: "var(--warn)" }, text: "Pick all four before the record can file." }));
+    /* A2, 29 October: the status line is ALWAYS drawn, in the same box, and only its words change.
+       It used to be removed by the fourth pick, which lifted everything below it under the
+       player's next click (the class skill and tool chips sit right underneath). */
+    kids.push(el("p.help.start-cipher-status", { style: { margin: "0", fontSize: "10.5px", minHeight: "1.5em",
+        color: settled ? "var(--text3)" : (done ? "var(--success)" : "var(--warn)") },
+      text: settled ? "Settled on your filed record. Edit freely on #PRINT lifts it."
+        : done ? STARTING_CIPHERS + " / " + STARTING_CIPHERS + " chosen. Click one to swap it."
+        : "Pick all four before the record can file." }));
     return el("div.start-ciphers", null, kids);
   }
 
@@ -3574,8 +3709,13 @@ EN.builder = (function () {
       blocks.push(el("div.muted-box", { style: { borderColor: "var(--warn)", color: "var(--warn)", marginTop: "14px" }, html: "INCOMPLETE: " + d.warnings.join(" · ") }));
     }
 
+    // A1: the class rig and its picks, which the features below only describe in general
+    var gearSec = classGearSection(ch, d, "D");
+    if (gearSec) blocks = blocks.concat(gearSec);
+    var L2 = gearSec ? ["E", "F"] : ["D", "E"];
+
     // features
-    blocks.push(EN.ui.sectionTitle("D · FEATURES & ABILITIES (" + d.features.length + ")"));
+    blocks.push(EN.ui.sectionTitle(L2[0] + " · FEATURES & ABILITIES (" + d.features.length + ")"));
     var fb = el("div.scroll-box");
     d.features.forEach(function (f) {
       if (f.name === "Open Architecture") fb.appendChild(heldFeature(ch, f, openArchitectureCard(ch, d.lineageInfo)));
@@ -3586,7 +3726,7 @@ EN.builder = (function () {
     blocks.push(fb);
 
     // certification + filing
-    blocks.push(EN.ui.sectionTitle("E · CERTIFICATION"));
+    blocks.push(EN.ui.sectionTitle(L2[1] + " · CERTIFICATION"));
     var recordComplete = stepComplete(ch, "dossier");
     if (!recordComplete) blocks.push(el("p.help", { style: { color: "var(--warn)", margin: "0 0 10px" }, text: d.warnings.length
       ? "Resolve the incomplete fields flagged above before this record can be certified and filed."
@@ -3648,12 +3788,9 @@ EN.builder = (function () {
     return f.text.slice(0, cut) + "\n\n" + head + "\n\n" + lines.join("\n\n");
   }
   function exportChar(ch) {
-    // bundle any custom palette this Freelancer wears so the file renders on a fresh device
-    var payload = ch;
-    if (EN.theme && EN.theme.bundleFor) {
-      var defs = EN.theme.bundleFor(ch);
-      if (defs.length) payload = Object.assign({}, ch, { customThemes: defs });
-    }
+    // bundle any custom palette this Freelancer wears so the file renders on a fresh device,
+    // and the class hardware summary (A1) so the file says what the record certified
+    var payload = exportPayload(ch);
     var blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
     var a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -4186,14 +4323,7 @@ EN.builder = (function () {
      importPrompt accepts either shape. */
   function exportMany(ids) {
     var roster = store.roster();
-    var payload = ids.map(function (id) {
-      var ch = roster[id];
-      if (EN.theme && EN.theme.bundleFor) {
-        var defs = EN.theme.bundleFor(ch);
-        if (defs.length) return Object.assign({}, ch, { customThemes: defs });
-      }
-      return ch;
-    });
+    var payload = ids.map(function (id) { return exportPayload(roster[id]); });
     var blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
     var a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -4332,5 +4462,7 @@ EN.builder = (function () {
 
   return { render: render, openAdvance: openAdvance, switcherSelect: switcherSelect,
            // A2/A3: the #GRID tab's catch-up prompt draws this same picker
-           startingCipherPicker: startingCipherPicker, startingCiphers: startingCiphers, startingCiphersOwed: startingCiphersOwed };
+           startingCipherPicker: startingCipherPicker, startingCiphers: startingCiphers, startingCiphersOwed: startingCiphersOwed,
+           // A1, 29 October: the class rig and picks, one source for every surface that lists them
+           repertoireCiphers: repertoireCiphers, classGear: classGear, classGearRigLine: classGearRigLine, exportPayload: exportPayload };
 })();

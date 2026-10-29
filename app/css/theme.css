@@ -370,7 +370,10 @@ select{ appearance:none; background-image:linear-gradient(45deg,transparent 50%,
 
 /* ===== chips / pills ==================================================== */
 .chip{ display:inline-flex; align-items:center; gap:6px; font-family:var(--mono); font-size:11px; letter-spacing:.06em;
-  padding:3px 9px; border:1px solid var(--border2); border-radius:999px; color:var(--text2); background:var(--bg1); }
+  padding:3px 9px; border:1px solid var(--border2); border-radius:999px; color:var(--text2); background:var(--bg1);
+  /* a fixed line height (A2, 29 Oct): with "normal", the ✓ of a picked chip falls back to a taller
+     font and grows the chip 2px, nudging every row below it under the next click */
+  line-height:1.15; }
 .chip.on{ color:var(--accent); border-color:var(--accent); box-shadow:var(--glow-cyan); }
 .chip.flow{ color:var(--flow); border-color:var(--flow); }
 .badge{ font-family:var(--mono); font-size:10px; letter-spacing:.1em; padding:2px 7px; border-radius:3px;

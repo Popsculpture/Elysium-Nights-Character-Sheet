@@ -1080,8 +1080,36 @@ EN.printSheet = (function () {
       out.push(el("div.ps-chiprow", null, mods.map(function (m) { return chip(m.name, ".ps-chip-box"); })));
     }
     out.push(sect("Repertoire", "cipher · CX · cost"));
-    var rep = el("div.ps-rep"); for (var i = 0; i < 8; i++) rep.appendChild(writeLine("")); out.push(rep);
+    // A1, 29 October: the Ciphers known, from the same source as the #PRINT review, then write-in lines
+    var gear = EN.builder && EN.builder.classGear ? EN.builder.classGear(ch, d) : null;
+    var rep = el("div.ps-rep"), n = 0;
+    ((gear && gear.ciphers) || []).forEach(function (c) {
+      rep.appendChild(el("div.ps-wl.ps-rep-cipher", null, [el("span.ps-fv", { text: c.name + (c.start ? " (starting)" : "") }), el("span.ps-wl-line"),
+        el("span.ps-fv", { text: "CX " + c.cx + " · " + c.bw + " BW" })])); n++;
+    });
+    if (gear && gear.suite && gear.suite.length) {
+      rep.appendChild(el("div.ps-wl.ps-rep-suite", null, [el("span.ps-fv", { text: "Ships with your Smartdeck: " + gear.suite.join(", ") }), el("span.ps-wl-line"),
+        el("span.ps-fv", { text: "CX 0 · free" })])); n++;
+    }
+    for (; n < 8; n++) rep.appendChild(writeLine(""));
+    out.push(rep);
     return el("div", null, out);
+  }
+  // A1: the Stitcher's Trauma Rig, beside the Triage Protocols the abilities page already lists
+  function rigSystem(ch, d) {
+    var gear = EN.builder && EN.builder.classGear ? EN.builder.classGear(ch, d) : null;
+    if (!gear || gear.cls !== "stitcher" || !gear.rig) return null;
+    var r = gear.rig;
+    return el("div.ps-rig", null, [
+      sect("Trauma Rig", r.state === "live" ? "worn" : (r.state === "owned" ? "owned, not worn" : "comes with your starting kit")),
+      el("div.ps-row", null, [
+        field("Rig", r.name, { style: { flex: "3 1 0" } }),
+        field("Tier", r.tier, { style: { flex: "0 0 54px" } }),
+        field("Integrity", r.integrity, { style: { flex: "0 0 54px" } }),
+        field("Output", sgn(r.outputBonus || 0), { style: { flex: "0 0 54px" } })
+      ]),
+      gear.protocols && gear.protocols.length ? note("Triage Protocols known: " + gear.protocols.map(function (p) { return p.name; }).join(", ") + ".") : null
+    ]);
   }
   function systems(ch, d) {
     var blocks = [];
@@ -1089,6 +1117,7 @@ EN.printSheet = (function () {
     var installed = (eng.installedCyberware ? eng.installedCyberware(ch) : (ch.cyberware || []));
     if (installed.length) { if (blocks.length) blocks.push(el("div.ps-rule.ps-faint")); blocks.push(chromeBlock(ch, d)); }
     var grid = gridSystem(ch, d); if (grid) { if (blocks.length) blocks.push(el("div.ps-rule.ps-faint")); blocks.push(grid); }
+    var rig = rigSystem(ch, d); if (rig) { if (blocks.length) blocks.push(el("div.ps-rule.ps-faint")); blocks.push(rig); }
     if (!blocks.length) return null;   // build uses no systems - omit the page
     return page("SYSTEMS", "05 · SYSTEMS", ch, blocks);
   }
