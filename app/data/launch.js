@@ -53,12 +53,12 @@ EN.launch = (function () {
   function setSupplemental(on) { try { localStorage.setItem(SUPP_KEY, on ? "1" : "0"); } catch (e) {} }
 
   /* ---- GM controls: a device setting (29 Oct 2026) ---------------------------
-     On by default, which is the app as it was. On shows the controls that stand in for a GM's
+     Off by default: a device only shows them once someone turns them on. On shows the controls that stand in for a GM's
      call at the table: an item's GM -1 Load, and the Five-Finger Supply storefront (free, looted
      gear). Off hides both, for a device a player uses on their own. A GM -1 already made keeps
      its effect either way; only the control to make or undo it is hidden. */
   var GM_KEY = "en_gm_controls_v1";
-  function gmControls() { try { return localStorage.getItem(GM_KEY) !== "0"; } catch (e) { return true; } }
+  function gmControls() { try { return localStorage.getItem(GM_KEY) === "1"; } catch (e) { return false; } }
   function setGmControls(on) { try { localStorage.setItem(GM_KEY, on ? "1" : "0"); } catch (e) {} }
 
   /* ---- Optional rules: device settings (29 Oct 2026) -------------------------

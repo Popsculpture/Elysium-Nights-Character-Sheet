@@ -91,7 +91,7 @@ EN.inventoryView = (function () {
   ];
   function storefront() { return STOREFRONTS.find(function (s) { return s.key === _mode; }) || STOREFRONTS[0]; }
   // the two device settings this view reads (data/launch.js): GM controls, and the Encumbrance rule
-  function gmOn() { return !(EN.launch && EN.launch.gmControls) || EN.launch.gmControls(); }
+  function gmOn() { return !!(EN.launch && EN.launch.gmControls && EN.launch.gmControls()); }
   function encOn() { return !(EN.launch && EN.launch.rule) || EN.launch.rule("encumbrance"); }
   // the storefronts this device offers: Five-Finger Supply is a GM control
   function storefronts() { return STOREFRONTS.filter(function (s) { return s.key !== "fivefinger" || gmOn(); }); }
