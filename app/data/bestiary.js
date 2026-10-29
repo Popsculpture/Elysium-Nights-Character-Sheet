@@ -1,6 +1,6 @@
 /* ===========================================================================
    ELYSIUM NIGHTS · Bestiary  (GM Toolkit)
-   The 48 statblocks of the Game Master's Handbook, The Bestiary (PDF pages 67
+   The 48 statblocks of the Game Master's Toolkit, The Bestiary (PDF pages 67
    to 99), regenerated from the handbook on 2026-10-06, with the reference
    matter the chapter prints around them: its intro, the category intros, the
    subgroup run-ins, the cryptid hunt procedure, the Species Templates and the

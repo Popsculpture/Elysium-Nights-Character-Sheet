@@ -1,6 +1,6 @@
 /* ===========================================================================
    ELYSIUM NIGHTS · Paying the Crew  (GM Toolkit)
-   A transcription of the Game Master's Handbook, Paying the Crew (PDF pages
+   A transcription of the Game Master's Toolkit, Paying the Crew (PDF pages
    109 to 111), with the money rules from How the City Works: paying for an
    Incursion and Claims and Salvage (PDF pages 31 to 33), the after-dive
    payday order (p30), and Milestones and Pacing from Running the Game (p11),
@@ -21,7 +21,7 @@
    rookie cyberware note). The Codex's Paying the Crew panel prints the first three; the Admin
    chapter Gear Catalog prints the last (js/codex_gm_play.js).
 
-   Page references (// GMH pNN) are PDF page numbers of the handbook; the folio
+   Page references (// GMH pNN) are PDF page numbers of the Toolkit's earlier draft, then titled the Game Master's Handbook; the folio
    printed on each page runs 4 lower. User-facing text carries no page numbers.
 
    No em or en dashes anywhere in this file (house style).

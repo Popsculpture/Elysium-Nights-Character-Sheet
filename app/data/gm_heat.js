@@ -1,6 +1,6 @@
 /* ===========================================================================
    ELYSIUM NIGHTS · Heat Response  (GM Toolkit)
-   A transcription of the Game Master's Handbook, Heat Response (PDF pages 113
+   A transcription of the Game Master's Toolkit, Heat Response (PDF pages 113
    to 118): the Heat Check, the Ladder, the five Heat Events bands, By Source
    with its two GM-only notes, the Bounty, and Cooling Off. RULES ONLY:
    nothing here is computed. The Downtime check, the event roll, the held
@@ -43,7 +43,7 @@
    prints the short form, "A file with your name on it", and adds
    what the source sends. The two ladders stay separate on purpose.
 
-   Page references (// GMH pNN) are PDF page numbers of the handbook; the folio
+   Page references (// GMH pNN) are PDF page numbers of the Toolkit's earlier draft, then titled the Game Master's Handbook; the folio
    printed on each page runs 4 lower. User-facing text carries no page numbers.
 
    No em or en dashes anywhere in this file (house style).

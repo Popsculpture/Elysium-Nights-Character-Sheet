@@ -1,6 +1,6 @@
 /* ===========================================================================
    ELYSIUM NIGHTS · Building Encounters  (GM Toolkit)
-   A transcription of the Game Master's Handbook, Building Encounters (PDF
+   A transcription of the Game Master's Toolkit, Building Encounters (PDF
    pages 61 to 65), with the two lines it leans on from the Threats chapter
    (p53 working band, p55 the XP line) and the Critical Failure trigger that
    also starts a response clock (p10). RULES ONLY: nothing here is computed.
@@ -12,7 +12,7 @@
    screen can compute with one and show the other. Machine keys are lowercase
    and stable; difficulty keys match EN.threats.budget.difficulties.
 
-   Page references (// GMH pNN) are PDF page numbers of the handbook; the folio
+   Page references (// GMH pNN) are PDF page numbers of the Toolkit's earlier draft, then titled the Game Master's Handbook; the folio
    printed on each page runs 4 lower. User-facing text carries no page numbers.
 
    No em or en dashes anywhere in this file (house style).

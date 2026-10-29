@@ -1,6 +1,6 @@
 /* ===========================================================================
    ELYSIUM NIGHTS · Hazards and Set Pieces  (GM Toolkit)
-   A transcription of the Game Master's Handbook, Hazards and Set Pieces (PDF
+   A transcription of the Game Master's Toolkit, Hazards and Set Pieces (PDF
    pages 101 to 102), the Stalemate Hazards by District tables from Prep
    Templates (PDF pages 18 to 20), and the room line of the GM's Card (p127).
    RULES ONLY: nothing here is computed.
@@ -15,7 +15,7 @@
    counter) quote the page's own words; where the page prints nothing for a
    part, the field is null rather than guessed.
 
-   Page references (// GMH pNN) are PDF page numbers of the handbook; the folio
+   Page references (// GMH pNN) are PDF page numbers of the Toolkit's earlier draft, then titled the Game Master's Handbook; the folio
    printed on each page runs 4 lower. User-facing text carries no page numbers.
 
    No em or en dashes anywhere in this file (house style).

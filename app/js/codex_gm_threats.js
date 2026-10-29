@@ -1,6 +1,6 @@
 /* ===========================================================================
    ELYSIUM NIGHTS · Codex chapter: Running Threats (Game Master)
-   The Game Master's Handbook chapter Threats, and the rules prose the Bestiary
+   The Game Master's Toolkit chapter Threats, and the rules prose the Bestiary
    prints around its statblocks, for the Admin desktop. Rendered from
    EN.threats (app/data/threats.js) and EN.bestiary (app/data/bestiary.js),
    which are also what the Threat Builder, the Table's Solo helper and the

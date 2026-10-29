@@ -1,6 +1,6 @@
 /* ===========================================================================
    ELYSIUM NIGHTS · The GM's Card  (GM Toolkit)
-   A transcription of the Game Master's Handbook appendix The GM's Card (PDF
+   A transcription of the Game Master's Toolkit appendix The GM's Card (PDF
    pages 127 to 131): Side 1: Threats and Fights (the Toolkit's name; six run-in
    paragraphs in a box, key "front") and Side 2: Systems (Dice Pools, Nodes,
    Sit-Downs, Chases, Heat and Building a Threat, key "back"). The October 2026
@@ -36,7 +36,7 @@
               The other fields on a row are the same values typed, for
               screens that compute with them.
 
-   Page references (// GMH pNN) are PDF page numbers of the handbook; the folio
+   Page references (// GMH pNN) are PDF page numbers of the Toolkit's earlier draft, then titled the Game Master's Handbook; the folio
    printed on each page runs 4 lower. User-facing text carries no page numbers.
 
    No em or en dashes anywhere in this file (house style).

@@ -1,6 +1,6 @@
 /* ===========================================================================
    ELYSIUM NIGHTS · Scenes: Sit-Downs, Chases, Incursions  (GM Toolkit)
-   A transcription of the Game Master's Handbook for the three scene trackers:
+   A transcription of the Game Master's Toolkit for the three scene trackers:
      sitdown    Prepping a Sit-Down, its checklist and example (PDF pages 15
                 to 17), and the Sit-Downs block of the GM's Card (p129)
      chase      Setting Up a Chase, its checklist and example (pp17 to 18),
@@ -92,7 +92,7 @@
    the book prints are carried as numbers beside the text they came from.
    App readings (not printed rules) are named as such in a comment.
 
-   Page references (// GMH pNN) are PDF page numbers of the handbook; the folio
+   Page references (// GMH pNN) are PDF page numbers of the Toolkit's earlier draft, then titled the Game Master's Handbook; the folio
    printed on each page runs 4 lower. User-facing text carries no page numbers.
 
    No em or en dashes anywhere in this file (house style).

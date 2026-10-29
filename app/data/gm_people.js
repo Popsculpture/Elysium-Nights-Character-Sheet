@@ -1,6 +1,6 @@
 /* ===========================================================================
    ELYSIUM NIGHTS · NPC Quick-Build  (GM Toolkit)
-   A transcription of the Game Master's Handbook, NPC Quick-Build (PDF pages
+   A transcription of the Game Master's Toolkit, NPC Quick-Build (PDF pages
    43 to 51): People Who Aren't in Initiative, the Contact Card and its seven
    lines, the worked example (Mags Tull), Resolve by Role, Their Profile of
    You (d12), the five species name tables and Street Handles. RULES ONLY:
@@ -38,7 +38,7 @@
                                 second is its story: Outsiders)
      card.lines[].field         the key a contact record uses for that line
 
-   Page references (// GMH pNN) are PDF page numbers of the handbook; the folio
+   Page references (// GMH pNN) are PDF page numbers of the Toolkit's earlier draft, then titled the Game Master's Handbook; the folio
    printed on each page runs 4 lower. User-facing text carries no page numbers.
 
    No em or en dashes anywhere in this file (house style).

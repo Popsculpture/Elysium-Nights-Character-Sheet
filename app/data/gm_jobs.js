@@ -1,6 +1,6 @@
 /* ===========================================================================
    ELYSIUM NIGHTS · The Job Board  (GM Toolkit)
-   A transcription of the Game Master's Handbook, The Job Board (PDF pages 103
+   A transcription of the Game Master's Toolkit, The Job Board (PDF pages 103
    to 108): five roll tables, the Twelve Postings, and the closing note that
    ends the chapter. RULES ONLY: nothing here is computed, and no row is
    paraphrased. Payday is not rolled here; it lives in EN.gmBook.payroll.
@@ -21,7 +21,7 @@
    cryptid pull; the postings are numbered like a d12, so they are both a list
    and a roll.
 
-   Page references (// GMH pNN) are PDF page numbers of the handbook; the folio
+   Page references (// GMH pNN) are PDF page numbers of the Toolkit's earlier draft, then titled the Game Master's Handbook; the folio
    printed on each page runs 4 lower. User-facing text carries no page numbers.
 
    No em or en dashes anywhere in this file (house style).

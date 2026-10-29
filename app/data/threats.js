@@ -1,8 +1,8 @@
 /* ===========================================================================
    ELYSIUM NIGHTS · Threats  (GM Toolkit)
-   Book values from the Elysium Nights Game Master's Handbook (GMH), chapters
+   Book values from the Elysium Nights Game Master's Toolkit (cited GMH, its earlier title), chapters
    Threats and Building Encounters (GMH pp53 to 65) and Hazards and Set Pieces
-   (GMH p101). Page numbers here are PDF pages; the folio printed on each page
+   (GMH p101). Page numbers here are PDF pages of the Toolkit's earlier draft, then titled the Game Master's Handbook (GMH); the folio printed on each page
    is 4 lower. RULES ONLY: not one number here is computed. Every live
    statblock comes out of the one resolver, EN.gmEngine.buildThreat, so the
    book and the generator cannot drift.
@@ -312,7 +312,7 @@ EN.threats = {
     { key: "lethal",    name: "Lethal",    dice: "6d6 or more", reads: "Industrial press, mains junction, the thing the warning stencils were about" }
   ],
 
-  /* Game Master's Handbook content the GM side does NOT carry, named so nobody
+  /* Game Master's Toolkit content the GM side does NOT carry, named so nobody
      assumes the absence is an oversight. The Bestiary, Set Pieces, the Job
      Board, Paying the Crew, the security response clock, the composition
      rules, the GM's Card (data/gm_card.js, the drawer in js/gm.js), Heat
