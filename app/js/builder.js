@@ -3574,7 +3574,7 @@ EN.builder = (function () {
     ]);
   }
   /* The pre-mades are offered on the gate as well as in the switcher, because the switcher needs
-     a loaded character to render: with an empty roster the seven examples were unreachable, which
+     a loaded character to render: with an empty roster the examples were unreachable, which
      is exactly backwards for the one screen a brand new player sees. Opening one does not touch
      the roster, so NO #PRINT ON FILE is still true afterwards and this gate comes straight back
      the moment the example is dropped. */
@@ -3638,7 +3638,7 @@ EN.builder = (function () {
     return el("div.pm-wrap", null, [
       el("div.pm-sect", null, [el("span.line"), document.createTextNode("or open a pre-made Freelancer"), el("span.line")]),
       el("p.help", { style: { margin: "0 0 12px" },
-        text: "Seven finished Level 5 Freelancers, one per class. They open live but are never saved: change whatever you like, and a reload restores the original. Press SAVE AS MY OWN to keep one." }),
+        text: "Finished Freelancers, ready to play. They open live but are never saved: change whatever you like, and a reload restores the original. Press SAVE AS MY OWN to keep one." }),
       el("div.pm-grid", null, xs.map(function (x) {
         var marks = premadeMarks(x);
         return el("button.pm-card", { title: "Open " + x.name, onclick: function () {
@@ -3762,7 +3762,7 @@ EN.builder = (function () {
         rows.push(el("div.mgr-row" + (liveEx ? ".live" : ""), null, [
           el("span", { style: { width: "13px", flex: "0 0 auto" } }),
           el("span.mgr-fixed", { text: x.name }),
-          el("span.mgr-meta", { text: "L5 · " + x.label.toUpperCase() }),
+          el("span.mgr-meta", { text: "L" + ((x.patch && typeof x.patch.level === "number") ? x.patch.level : 1) + " · " + String(x.label || "").toUpperCase() }),
           liveEx ? el("span.chip", { style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" } }, "LIVE")
                  : el("button.btn.sm", { title: "Open this example", onclick: function () { store.setExample(x.key); _step = 0; closeManager(); } }, "OPEN"),
           el("button.btn.sm", { style: { color: "var(--accent)", borderColor: "var(--accent)" },
@@ -3779,7 +3779,7 @@ EN.builder = (function () {
     var card = el("div.mgr-card", null, [
       el("div.mgr-head", null, [
         el("h3", { text: "Manage #PRINT records" }),
-        el("span.mgr-count", { text: ids.length + " stored · " + (EN.examples || []).length + " examples" }),
+        el("span.mgr-count", { text: ids.length + " stored" + ((EN.examples || []).length ? " · " + EN.examples.length + " examples" : "") }),
         el("span", { style: { flex: "1 1 auto" } }),
         el("button.btn.sm", { onclick: closeManager }, "✕ CLOSE")
       ]),
