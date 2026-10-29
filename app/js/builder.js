@@ -189,7 +189,9 @@ EN.builder = (function () {
           el("div.field", null, [el("label.fl", { text: "Handle" }), handleNode]),
           el("div.field", null, [el("label.fl", { text: "Last Name" }), nameFieldNode("lastName", "Last name…")])
         ]),
-        el("p.help", { style: { margin: "6px 0 0" }, text: 'Full name displays as First "Handle" Last.' }),
+        el("p.help", { style: { margin: "6px 0 10px" }, text: 'Full name displays as First "Handle" Last.' }),
+        txt("handleStory", "How you got your Handle (optional)", "Who first called you that, and why it stuck…", true),
+        el("p.help", { style: { margin: "-4px 0 10px" }, text: "A Handle is optional at Level 1. Leave it blank if you like, and add it once your Freelancer earns one in play." }),
         txt("concept", "Concept, the one-line pitch", "An ex-corporate Stitcher with a stolen trauma rig…", true),
         txt("whereFrom", "Where You Came From", "Burbclave, Warrens, void station, corporate creche…", true)
       ], { corners: true }),
@@ -989,7 +991,7 @@ EN.builder = (function () {
         bgSkillChipRow(ch, bg),
         (bg.proficiencies || []).length ? el("div", null, bg.proficiencies.map(function (p, idx) { return bgProfChipRow(ch, p, idx); })) : null,
         bg.feature ? feature(bg.feature.name, bg.feature.text, "", "Background Feature") : null,
-        bg.contacts ? infoBlock("Contacts", bg.contacts) : null,
+        bg.contacts ? bgContactsBlock(ch, bg) : null,
         bg.personalItem ? infoBlock("Personal Item", bg.personalItem) : null,
         (bg.hooks || []).length ? el("div", { style: { marginTop: "10px" } }, [el("label.fl", { text: "Backstory Hook" })].concat(
           bg.hooks.map(function (h) { return el("p.help", { text: h }); }))) : null
@@ -997,6 +999,23 @@ EN.builder = (function () {
       blocks.push(overlapBox(ch));
     }
     return el("div", null, blocks);
+  }
+  /* The dossier's Contacts: the Background's own line, then a button to the quick card
+     (EN.faceView.bgContactsDialog), which writes the same ch.face.contacts cards the Social
+     tab's Contacts shows. The names already given are listed under it. */
+  function bgContactsBlock(ch, bg) {
+    var FV = EN.faceView || {}, have = FV.bgContactsSummary ? FV.bgContactsSummary(ch) : [];
+    var want = FV.bgContactsTarget || 2;
+    return el("div", { style: { marginTop: "10px" } }, [
+      el("label.fl", { text: "Contacts" }),
+      el("p", { style: { color: "var(--text2)", fontSize: "14px" }, text: bg.contacts }),
+      have.length ? el("ul.bgct-list", null, have.map(function (c) {
+        return el("li", null, [el("span", { style: { fontWeight: 600 }, text: c.name }), c.work ? el("span", { style: { color: "var(--text3)" }, text: " · " + c.work }) : null]);
+      })) : null,
+      FV.bgContactsDialog ? el("button.btn.sm" + (have.length < want ? ".primary" : ""), { dataset: { bgContact: "open" },
+        onclick: function () { FV.bgContactsDialog(); } },
+        have.length ? "✎ EDIT CONTACTS (" + have.length + " of " + want + ")" : "+ ADD YOUR CONTACTS") : null
+    ]);
   }
   function infoBlock(label, text) {
     return el("div", { style: { marginTop: "10px" } }, [el("label.fl", { text: label }), el("p", { style: { color: "var(--text2)", fontSize: "14px" }, text: text })]);

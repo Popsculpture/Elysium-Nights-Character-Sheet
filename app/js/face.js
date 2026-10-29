@@ -697,6 +697,127 @@ EN.faceView = (function () {
     _open["contact-" + ctKey(store.active(), c.id)] = true;   // a new card opens straight into its editor
     fset(function (f) { f.contacts.unshift(c); });
   }
+  /* ---- the Background tab's quick card (builder.js, under the dossier's Contacts) ------------
+     A pop-out with the minimum a Background contact needs: name, handle, role, why they pick up
+     and a starting disposition. It reads and writes the SAME ch.face.contacts cards the Social
+     tab's Contacts shows (origin "background"), so there is one copy and nothing to sync: a card
+     made here appears there and an edit there shows here. Text writes silently, as the full card
+     does; adding or removing a card repaints the pop-out alone. The Background tab repaints on
+     close, so its summary line catches up. The Social tab is gated until filing, so the pointer
+     to the full card says so on an unfiled record. */
+  var BG_DISPS = ["neutral", "friendly"];   // "neutral or slightly friendly" at the start
+  function bgContactsOf(ch) { return faceRead(ch).contacts.filter(function (c) { return c.origin === "background"; }); }
+  function bgContactsDialog() {
+    if (document.getElementById("bgct-ov")) return;
+    var opener = document.activeElement;
+    var body = el("div.bgct-body");
+    var closeBtn = el("button.btn.sm.ghost", { title: "Close (Esc)", "aria-label": "Close", onclick: close }, "✕ CLOSE");
+    var card = el("div.bgct-card", { role: "dialog", "aria-modal": "true", "aria-labelledby": "bgct-title", tabindex: "-1" }, [
+      el("div.bgct-head", null, [
+        el("div", null, [el("div.bgct-kick", { text: "BACKGROUND CONTACTS" }), el("div.bgct-title", { id: "bgct-title" })]),
+        closeBtn
+      ]),
+      body
+    ]);
+    var ov = el("div#bgct-ov", { "data-no-swipe": "1" }, [el("div.bgct-scrim", { onclick: close }), card]);
+    document.body.appendChild(ov);
+    var os = document.getElementById("os"), inertWas = os ? !!os.inert : false;
+    if (os) { try { os.inert = true; } catch (e) {} }
+    function onKey(e) { if (e.key === "Escape") { e.preventDefault(); close(); } }
+    document.addEventListener("keydown", onKey, true);
+    function close() {
+      document.removeEventListener("keydown", onKey, true);
+      if (os) { try { os.inert = inertWas; } catch (e) {} }
+      EN.ui.disarm();
+      if (ov.parentNode) ov.parentNode.removeChild(ov);
+      EN.app.render();
+      try { if (opener && opener.focus && document.body.contains(opener)) opener.focus({ preventScroll: true }); } catch (e) {}
+    }
+    function toSocial(id) {
+      var ch = store.active();
+      _sub = "contacts"; _ct.q = ""; _ct.kind = "all"; _ct.faction = "";
+      if (id) _open["contact-" + ctKey(ch, id)] = true;
+      close();
+      EN.app.gotoTab("face");
+    }
+    function paint(focusId) {
+      var ch = store.active(), bg = bgOf(ch), list = bgContactsOf(ch), roles = bgRoles(bg);
+      // the Social tab's own gate (registered() in app.js): filed, or an example
+      var filed = !!((ch.meta && ch.meta.filedAt) || (store.activeIsExample && store.activeIsExample()));
+      var S = (EN.social && EN.social.contacts) || {};
+      card.querySelector(".bgct-title").textContent = (bg ? bg.name : "No Background") + " · " + list.length + " of " + BG_CONTACTS;
+      EN.ui.clear(body);
+      body.appendChild(el("p.help", { style: { margin: "0 0 6px" } }, [
+        "Your Background gives you two people you can reach (", rl("so-contacts/background-grant", "Contacts"), "). ",
+        bg && bg.contacts ? bg.contacts : ""]));
+      body.appendChild(el("p.help", { style: { margin: "0 0 12px", color: "var(--text3)" },
+        text: (S.makeItYours || "Give your contacts names, roles, and a reason they still pick up when you call.")
+          + " A name and a role are enough to start; the rest can wait until you need them." }));
+      var first = null;
+      list.forEach(function (rec, i) {
+        var key = rec.id;
+        function inp(k, label, ph, flex) {
+          var n = el("input", { type: "text", value: rec[k] || "", placeholder: ph, dataset: { bgContactField: k },
+            oninput: function () { ctSet(key, k, n.value, true); },
+            style: { width: "100%" } });
+          if (!first || key === focusId && k === "name") first = n;
+          return el("div.field", { style: { flex: flex, minWidth: 0, margin: 0 } }, [el("label.fl", { text: label }), n]);
+        }
+        var cur = BG_DISPS.indexOf(rec.disposition) === -1 ? [rec.disposition || "neutral"].concat(BG_DISPS) : BG_DISPS;
+        var ds = el("select", { dataset: { bgContactField: "disposition" }, style: { width: "100%" },
+          onchange: function () { ctSet(key, "disposition", ds.value, true); } },
+          cur.map(function (k) { var o = pickOr(STANDINGS, k, "neutral"); return el("option", { value: o.k, text: o.label, selected: (rec.disposition || "neutral") === o.k }); }));
+        body.appendChild(el("div.bgct-contact", { dataset: { bgContact: key } }, [
+          el("div.row.between", { style: { alignItems: "center", marginBottom: "6px" } }, [
+            el("span.mono.bgct-n", { text: "CONTACT " + (i + 1) }),
+            el("div.row", { style: { gap: "6px" } }, [
+              filed ? el("button.btn.sm.ghost", { title: "Open this contact's full card on the Social tab", onclick: function () { toSocial(key); } }, "FULL CARD ›") : null,
+              EN.ui.armButton("bgct:del:" + ctKey(ch, key), { label: "✕", armedLabel: "REMOVE?",
+                title: "Remove this contact", armedTitle: "Click again to remove. It also leaves the Social tab.",
+                onArm: function () { paint(); },
+                onConfirm: function () { fset(function (f) { f.contacts = f.contacts.filter(function (c) { return c.id !== key; }); }, true); paint(); } })
+            ])
+          ]),
+          el("div.row.wrap.bgct-fields", null, [
+            inp("name", "Name", "Their name", "2 1 180px"),
+            inp("handle", "Handle (optional)", "What the street calls them", "1 1 150px")
+          ]),
+          el("div.row.wrap.bgct-fields", null, [
+            inp("work", "Role", roles ? "Such as " + roles : "What they do", "2 1 220px"),
+            el("div.field", { style: { flex: "1 1 120px", minWidth: 0, margin: 0 } }, [el("label.fl", null, [rl("so-standing/faction-standing", "Disposition")]), ds])
+          ]),
+          el("div.row.wrap.bgct-fields", null, [
+            inp("why", "Why they pick up", "Why they still answer when you call", "1 1 100%")
+          ])
+        ]));
+      });
+      if (list.length < BG_CONTACTS) {
+        body.appendChild(el("button.btn.sm" + (list.length ? "" : ".primary"), { dataset: { bgContact: "add" }, style: { marginBottom: "12px" },
+          onclick: function () {
+            var c = blankContact({ origin: "background" });
+            fset(function (f) { f.contacts.push(c); }, true);
+            paint(c.id);
+          } }, "+ ADD CONTACT " + (list.length + 1)));
+      }
+      body.appendChild(el("div.bgct-more", null, [
+        el("div.mono", { style: { fontSize: "10.5px", letterSpacing: ".14em", color: "var(--accent)", marginBottom: "3px" }, text: "MORE DETAIL LATER" }),
+        el("p.help", { style: { margin: 0 }, text: filed
+          ? "These are the same cards as Social › CONTACTS. Open a card there (or press FULL CARD above) to add their #PRINT name, Kind, Faction, Fence, a Tell, notes, and to link the Profiles and Debts that name them."
+          : "These cards also live on the Social tab, which opens once your #PRINT is filed. There, Social › CONTACTS holds each contact's full card: their #PRINT name, Kind, Faction, Fence, a Tell, notes, and links to the Profiles and Debts that name them." }),
+        filed ? el("button.btn.sm", { style: { marginTop: "8px" }, onclick: function () { toSocial(null); } }, "OPEN SOCIAL › CONTACTS") : null
+      ]));
+      if (first && focusId) { try { first.focus(); } catch (e) {} }
+    }
+    paint();
+    var f0 = body.querySelector("input");
+    try { (f0 || card).focus(); } catch (e) {}
+  }
+  // the Background tab's summary under its Contacts line
+  function bgContactsSummary(ch) {
+    return bgContactsOf(ch).map(function (c) {
+      return { name: c.name || "Unnamed contact", work: c.work || "" };
+    });
+  }
   function contactsPanel() {
     var ch = store.active(), all = faceRead(ch).contacts, kids = [];
     var banner = bgBanner(ch, all);
@@ -966,5 +1087,6 @@ EN.faceView = (function () {
     mount.appendChild(el("div", null, blocks));
   }
 
-  return { render: render, personaTick: personaTick, unread: unread };
+  return { render: render, personaTick: personaTick, unread: unread,
+           bgContactsDialog: bgContactsDialog, bgContactsSummary: bgContactsSummary, bgContactsTarget: BG_CONTACTS };
 })();

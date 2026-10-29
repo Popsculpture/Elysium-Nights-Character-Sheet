@@ -3038,3 +3038,21 @@ html.skin-droid a.codex-link.dmg-link::after{ content:""; position:absolute; top
 html.skin-droid a.codex-link.dmg-link:hover .dmg-icon{ filter:none; }
 /* Daybreak and the other light palettes: a glow on a white page is a smudge */
 html.light a.codex-link.dmg-link:hover .dmg-icon{ filter:none; opacity:.72; }
+
+/* the Background tab's quick contact card (face.js bgContactsDialog), centered over a scrim */
+#bgct-ov{ position:fixed; inset:0; z-index:3900; display:flex; align-items:center; justify-content:center; padding:16px; }
+#bgct-ov .bgct-scrim{ position:absolute; inset:0; background:rgba(6,8,12,.72); }
+#bgct-ov .bgct-card{ position:relative; width:min(600px, 100%); max-height:88vh; max-height:88dvh; overflow:auto; background:var(--bg1, var(--bg));
+  border:1px solid var(--accent-dim, var(--border2)); border-radius:var(--r); box-shadow:0 18px 50px rgba(0,0,0,.45); }
+#bgct-ov .bgct-head{ position:sticky; top:0; z-index:1; display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+  padding:12px 14px 10px; background:inherit; border-bottom:1px solid var(--border); }
+#bgct-ov .bgct-kick{ font-family:var(--disp); font-size:10.5px; letter-spacing:.18em; color:var(--accent); }
+#bgct-ov .bgct-title{ font-size:17px; font-weight:600; }
+#bgct-ov .bgct-body{ padding:12px 14px 14px; }
+#bgct-ov .bgct-contact{ border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:var(--r); padding:8px 10px 2px; margin:0 0 12px; }
+#bgct-ov .bgct-n{ font-size:10.5px; letter-spacing:.14em; color:var(--text3); }
+#bgct-ov .bgct-fields{ gap:8px; margin-bottom:8px; }
+#bgct-ov .bgct-more{ border:1px dashed var(--border2); border-radius:var(--r); padding:8px 10px; }
+html.skin-98 #bgct-ov .bgct-card{ background:var(--bg2); border-radius:0; }
+html.light #bgct-ov .bgct-card{ box-shadow:0 18px 50px rgba(20,30,45,.22); }
+.bgct-list{ margin:0 0 8px; padding-left:18px; font-size:14px; color:var(--text2); }

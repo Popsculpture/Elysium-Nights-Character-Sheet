@@ -52,7 +52,7 @@ EN.store = (function () {
       name: composeFullName(firstName, "", lastName),
       firstName: firstName, lastName: lastName,
       identity: {
-        concept: "", handle: "", whereFrom: "",
+        concept: "", handle: "", handleStory: "", whereFrom: "",
         facets: "", coreSparks: "", tethers: "", faultLines: "",
         appearance: "", notes: ""
       },

@@ -955,6 +955,7 @@ EN.printSheet = (function () {
       pblock("Concept", id.concept, false),
       pblock("Where you came from", id.whereFrom, false)
     ]));
+    if (id.handleStory) body.push(pblock("How you got your Handle", id.handleStory, false));
     body.push(sect("Appearance"));
     body.push(pblock("", id.appearance, true));
     body.push(sect("Inner Profile", "pure story"));
