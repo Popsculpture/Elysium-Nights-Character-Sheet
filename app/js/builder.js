@@ -1494,6 +1494,7 @@ EN.builder = (function () {
       c.startingKit.claimedSubclass = c.subclass;
     }, { ledger: "Starting kit claimed: the leftover goes on your Glimmer Stick" });
     var enc = (eng.derive(store.active()) || {}).encumbrance || null;
+    if (enc && !enc.enabled) enc = null;   // Encumbrance is off (Settings, Optional Rules)
     var loadLine = enc ? " Load " + enc.current + " of Threshold " + enc.threshold + "." : "";
     var over = enc && enc.current > enc.threshold;
     var ciDef = CLASS_ITEMS[ch.class];
@@ -1624,7 +1625,7 @@ EN.builder = (function () {
         text: "⚠ Claimed as " + claimedClsName.replace(/^The\s+/, "") + "; UNDO the claim to take that gear back before claiming this kit." }));
       // B2: the Load the claimed kit puts on the character, against the Encumbrance Threshold
       var enc = eng.derive(ch).encumbrance;
-      if (enc) {
+      if (enc && enc.enabled) {
         var over = enc.current > enc.threshold;
         kids.push(el("div.row.wrap.kit-load", { style: { gap: "14px", alignItems: "center", margin: "8px 0 0" } }, [
           el("span.mono", { style: { fontSize: "14px", color: over ? "var(--warn)" : "var(--text)" } },

@@ -3190,9 +3190,11 @@ EN.engine = (function () {
     // hauling something that is clearly heavy but still plausible." Overloaded is defined by the haul
     // ("something that clearly belongs on a dolly, cart, vehicle, forklift, or
     // exoframe"), not by a numeric band.
+    // Optional rule (Settings): with Encumbrance off, carried Load and the Loadout never encumber; a Haul still does
+    var encOn = !(EN.launch && EN.launch.rule) || EN.launch.rule("encumbrance");
     var state = "unencumbered";
-    if (current > budget) state = "encumbered";
-    if (tier === "heavy") state = "encumbered";           // a Heavy loadout is Encumbered for the run
+    if (encOn && current > budget) state = "encumbered";
+    if (encOn && tier === "heavy") state = "encumbered";           // a Heavy loadout is Encumbered for the run
     if (haul === "lift") state = (state === "unencumbered") ? "encumbered" : "overloaded";
     /* Dragging, Pushing, and Pulling (Part 3): one body-sized load "treats you as Encumbered".
        Unlike the Short Lift and Carry above, that section says nothing about stepping up to
@@ -3210,7 +3212,7 @@ EN.engine = (function () {
     var dragging = haul === "dragone" || haul === "drag";
     var speedMods = { flat: state === "encumbered" ? -2 : 0, halve: state === "overloaded" ? 1 : 0,
                       halveInstead: (haul === "dragone" && state === "encumbered") ? 2 : 0 };
-    return { base: base, size: size || null,
+    return { enabled: encOn, base: base, size: size || null,
              steps: steps, threshold: threshold, bands: bands, tier: tier, budget: budget,
              current: current, items: items, haul: haul, state: state,
              dropped: dropped, droppedItems: droppedItems, revealed: revealed, packedRoom: budget - revealed,

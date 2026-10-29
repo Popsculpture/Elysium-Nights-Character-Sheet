@@ -927,10 +927,13 @@ EN.printSheet = (function () {
       stash.forEach(function (cw) { body.push(el("div.ps-skrow", null, [el("span.ps-sk-n", { text: cw.name || cw.base }), el("span.ps-sk-a", { text: cw.zone || "" }), el("span.ps-sk-b2", { text: (cw.sp || 0) + " SP" })])); });
     }
 
-    body.push(el("div.ps-rule.ps-faint"));
-    body.push(sect("Load / Carry"));
-    body.push(note("Encumbrance is tracked at the table per the rulebook; note carried bulk here."));
-    body.push(el("div.ps-block.ps-block-tall"));
+    // Encumbrance is an optional rule (Settings): off, the sheet has no Load box
+    if (!d.encumbrance || d.encumbrance.enabled !== false) {
+      body.push(el("div.ps-rule.ps-faint"));
+      body.push(sect("Load / Carry"));
+      body.push(note("Encumbrance is tracked at the table per the rulebook; note carried bulk here."));
+      body.push(el("div.ps-block.ps-block-tall"));
+    }
     return page("GEAR & HOLDINGS", "03 · GEAR", ch, body);
   }
 

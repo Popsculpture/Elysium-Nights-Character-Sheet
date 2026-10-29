@@ -52,6 +52,31 @@ EN.launch = (function () {
   function supplemental() { try { return localStorage.getItem(SUPP_KEY) === "1"; } catch (e) { return false; } }
   function setSupplemental(on) { try { localStorage.setItem(SUPP_KEY, on ? "1" : "0"); } catch (e) {} }
 
+  /* ---- GM controls: a device setting (29 Oct 2026) ---------------------------
+     On by default, which is the app as it was. On shows the controls that stand in for a GM's
+     call at the table: an item's GM -1 Load, and the Five-Finger Supply storefront (free, looted
+     gear). Off hides both, for a device a player uses on their own. A GM -1 already made keeps
+     its effect either way; only the control to make or undo it is hidden. */
+  var GM_KEY = "en_gm_controls_v1";
+  function gmControls() { try { return localStorage.getItem(GM_KEY) !== "0"; } catch (e) { return true; } }
+  function setGmControls(on) { try { localStorage.setItem(GM_KEY, on ? "1" : "0"); } catch (e) {} }
+
+  /* ---- Optional rules: device settings (29 Oct 2026) -------------------------
+     A table can switch a rule off. Each is on by default, the book as written. Stored as one
+     map on the device, never on a character: turning a rule off changes what the sheet shows
+     and computes, not what a record holds, so turning it back on restores everything.
+       encumbrance: Load, Loadout, the Load Budget, Packed It and the Encumbered state from
+         carried gear. Off, none of it is shown or applied; a Haul (a body, a crate) still is. */
+  var RULES_KEY = "en_optional_rules_v1";
+  var OPTIONAL_RULES = [
+    { key: "encumbrance", name: "Encumbrance",
+      on: "On: Load, your declared Loadout and its Load Budget, Packed It, and the Encumbered state from carried gear are all tracked and applied.",
+      off: "Off: gear has no Load, there is no Loadout or Load Budget, and carrying never makes you Encumbered. Hauling a body or a crate still slows you." }
+  ];
+  function ruleMap() { try { var m = JSON.parse(localStorage.getItem(RULES_KEY) || "{}"); return m && typeof m === "object" ? m : {}; } catch (e) { return {}; } }
+  function rule(key) { var m = ruleMap(); return m[key] !== false; }
+  function setRule(key, on) { var m = ruleMap(); m[key] = !!on; try { localStorage.setItem(RULES_KEY, JSON.stringify(m)); } catch (e) {} }
+
   /* ---- the core lineup: what is gated (everything else is the Handbook's) ----
      Core lineages: freeborn, floral, laborframes, ryn, grinling.
      Launch subclasses: gridweaver, burner, juggernaut, reaver, the_suit,
@@ -405,6 +430,8 @@ EN.launch = (function () {
 
   return { holds: holds, held: held, companion: companion, toolkit: toolkit,
            supplemental: supplemental, setSupplemental: setSupplemental,
+           gmControls: gmControls, setGmControls: setGmControls,
+           optionalRules: OPTIONAL_RULES, rule: rule, setRule: setRule,
            isHeld: isHeld, isCompanion: isCompanion, source: source, offer: offer,
            isToolkit: isToolkit, isToolkitItem: isToolkitItem,
            showAvailability: showAvailability };

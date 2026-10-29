@@ -1146,8 +1146,9 @@ EN.pdfExport = (function () {
       );
     }
 
-    ctx.sectionTitle("Load / Carry");
     var enc = d.encumbrance || {};
+    if (enc.enabled !== false) {
+    ctx.sectionTitle("Load / Carry");
     ctx.row([
       { label: "Current Load", name: "loadCurrent", value: enc.current != null ? enc.current : "", w: 1, align: "center" },
       /* The book's sheet line is "Load: ___ / ___", the Load you carry now over your Load Budget. The
@@ -1158,6 +1159,7 @@ EN.pdfExport = (function () {
        line per item, written ahead of the player's own notes. */
     ctx.multiline("Dropped (Packed It still counts them)", "carryNotes", { height: 40,
       value: (enc.droppedItems || []).map(function (x) { return x.name + " (Load " + x.load + ")"; }).join("\n") });
+    }   // Encumbrance on (Settings, Optional Rules)
 
     return ctx;
   }

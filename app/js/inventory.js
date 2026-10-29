@@ -90,6 +90,11 @@ EN.inventoryView = (function () {
     { key: "fivefinger", name: "Five-Finger Supply", desc: "Free. Looted, recovered, donated. Fencing disabled, Drop or Donate only." }
   ];
   function storefront() { return STOREFRONTS.find(function (s) { return s.key === _mode; }) || STOREFRONTS[0]; }
+  // the two device settings this view reads (data/launch.js): GM controls, and the Encumbrance rule
+  function gmOn() { return !(EN.launch && EN.launch.gmControls) || EN.launch.gmControls(); }
+  function encOn() { return !(EN.launch && EN.launch.rule) || EN.launch.rule("encumbrance"); }
+  // the storefronts this device offers: Five-Finger Supply is a GM control
+  function storefronts() { return STOREFRONTS.filter(function (s) { return s.key !== "fivefinger" || gmOn(); }); }
 
   function fmtG(n) { return "𝒢" + (n || 0).toLocaleString(); }
   function fmtNx(n) { return "◎" + (Math.round((n || 0) * 100) / 100); }
@@ -356,13 +361,14 @@ EN.inventoryView = (function () {
      e.loadLowered on this entry; engine.entryUnitLoad applies it to every Load count. `base` is the
      Load before the GM's call (after the Worn Trait's break, if `wornBreak`). */
   function loadCtrl(ch, e, base, wornBreak) {
+    if (!encOn()) return null;   // Encumbrance is off (Settings, Optional Rules): gear has no Load to show
     var key = entryKey(e), low = !!e.loadLowered, now = low ? Math.max(0, base - 1) : base;
     var color = low ? "var(--gold)" : "var(--text2)";
     var tip = "Load " + now + " per item" + (low ? " (" + base + " by the table, lowered by 1 by the GM)" : " by the Assigning Load table")
       + (wornBreak ? ", already 1 less while Worn" : "") + ". It spends your Load Budget while on-person (equipped, carried, worn, or racked).";
     var chip = el("span.chip.inv-load", { dataset: { load: String(now) }, title: tip,
       style: { fontSize: "9px", color: color, borderColor: color, marginLeft: "8px" } }, "⚖ LOAD " + now + (low ? " · GM -1" : ""));
-    if (!(base > 0) && !low) return chip;
+    if ((!(base > 0) && !low) || !gmOn()) return chip;   // GM -1 is a GM control (Settings)
     function toggle() {
       store.update(function (c) { var x = EN.engine.findEntry(c, key); if (!x) return; if (x.loadLowered) delete x.loadLowered; else x.loadLowered = true; });
       toast(low ? e.name + " is back to Load " + base + "." : e.name + ": Load lowered by 1 on the GM's call.");
@@ -1009,7 +1015,7 @@ EN.inventoryView = (function () {
       ]));
     }
     if (mode === "stash" && entry) statChips.push(loadCtrl(ch, entry, ldBase, isWorn && traits.indexOf("Worn") !== -1));
-    else if (ld > 0) statChips.push(tagChip("⚖ " + ld, "var(--text2)", "Load " + ld + "; spends your Load Budget while on-person (equipped, carried, worn, or racked)"));
+    else if (ld > 0 && encOn()) statChips.push(tagChip("⚖ " + ld, "var(--text2)", "Load " + ld + "; spends your Load Budget while on-person (equipped, carried, worn, or racked)"));
     // every trait tucks behind one tap-to-expand count chip instead of its own pill
     if (traits.length) statChips.push(el("span.chip", {
       title: "Traits: " + traits.join(", "),
@@ -1196,7 +1202,7 @@ EN.inventoryView = (function () {
         ]);
       }))) : null;
     if (!entries.length) {
-      return [EN.ui.panel("Stash", "0 ENTRIES", (dropLog ? [loadBar, dropLog] : []).concat([el("p.help", { style: { margin: 0 }, text: "Empty. The Undercut is open; it's always open." })]), { corners: true })];
+      return [EN.ui.panel("Stash", "0 ENTRIES", (dropLog && enc.enabled ? [loadBar, dropLog] : []).concat([el("p.help", { style: { margin: 0 }, text: "Empty. The Undercut is open; it's always open." })]), { corners: true })];
     }
     // group entries by category, keep the fixed order
     var groups = {};
@@ -1213,7 +1219,8 @@ EN.inventoryView = (function () {
         allOpen ? "▾ COLLAPSE ALL" : "▸ EXPAND ALL"),
       el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "Sorted by category. Set each item's loadout status (carried, worn, racked) right on its card." })
     ]);
-    var body = dropLog ? [loadBar, dropLog, controls] : [loadBar, controls];
+    if (!enc.enabled) { loadBar = null; dropLog = null; }   // Encumbrance is off (Settings, Optional Rules)
+    var body = [loadBar, dropLog, controls].filter(Boolean);
     catNames.forEach(function (cat) {
       var list = groups[cat];
       var open = !!_stashOpen[cat];
@@ -1573,7 +1580,7 @@ EN.inventoryView = (function () {
        skin could not restyle the storefront without editing this file. */
     blocks.push(el("div.row.wrap.mkt-fronts", { style: { gap: "8px", alignItems: "center", marginBottom: "14px" } },
       [el("span.mono.mkt-label", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".14em" }, text: "MARKET UPLINK" })].concat(
-      STOREFRONTS.map(function (m) {
+      storefronts().map(function (m) {
         var on = _mode === m.key;
         return el("button.btn.sm" + (on ? ".primary" : ""), {
           title: m.desc,
@@ -4271,7 +4278,7 @@ EN.inventoryView = (function () {
      first, written by store.js ledgerSync after every save, so nothing that moves money can miss it.
      It is fixed: no line is edited or deleted here. A correction is a new Adjustment line, with its
      reason, from the form under the list. 20 lines show at first; SHOW 20 MORE adds 20 at a time. */
-  var _led = { show: 20, filter: "all", adj: { cur: "glimmer", dir: 1, amt: "", why: "" } };
+  var _led = { open: false, show: 20, filter: "all", adj: { cur: "glimmer", dir: 1, amt: "", why: "" } };
   function ledgerKind(r) {
     if (!r) return "";
     if (r.k) return r.k;
@@ -4290,6 +4297,16 @@ EN.inventoryView = (function () {
   }
   function ledgerSection(ch) {
     var rows = Array.isArray(ch.ledger) ? ch.ledger.slice().reverse() : [];
+    // collapsed by default: the header alone, with the line count, until opened (29 October 2026)
+    var lhead = el("div.section-title.clickable.ledger-head", { role: "button", tabindex: "0", "aria-expanded": _led.open ? "true" : "false",
+      title: _led.open ? "Collapse the Ledger" : "Expand the Ledger",
+      onclick: function () { _led.open = !_led.open; EN.app.render(); },
+      onkeydown: function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); _led.open = !_led.open; EN.app.render(); } } }, [
+      document.createTextNode("Ledger \u00b7 Glimmer and Nexus"),
+      el("span.collapse-caret", { text: _led.open ? "\u25be" : "\u25b8" }),
+      el("span.mono", { style: { fontSize: "10px", color: "var(--text3)" }, text: "(" + rows.length + ")" }),
+      el("span.line")]);
+    if (!_led.open) return el("div.ledger", { style: { marginBottom: "14px" } }, [lhead]);
     var F = { all: "All", earn: "Earned", spend: "Spent", adjust: "Adjustments" };
     var shown = rows.filter(function (r) { return _led.filter === "all" || ledgerKind(r) === _led.filter; });
     var tot = store.ledgerTotals ? store.ledgerTotals(ch.ledger || []) : { ge: 0, gs: 0, ne: 0, ns: 0 };
@@ -4373,7 +4390,7 @@ EN.inventoryView = (function () {
     ]));
     kids.push(el("p.help", { style: { margin: "6px 0 0", fontSize: "11px", color: "var(--text4)" },
       text: "The ledger is fixed: lines are never edited or deleted. To fix a mistake, add an Adjustment with its reason. The wallet's CREDIT and DEBIT take a note too." }));
-    return billSection("Ledger \u00b7 Glimmer and Nexus", kids);
+    return el("div.ledger", { style: { marginBottom: "14px" } }, [lhead].concat(kids));
   }
 
   // a bench's one-line intro, with a "?" that peeks the rules the bench runs on (BENCHES codex)
@@ -4450,6 +4467,7 @@ EN.inventoryView = (function () {
   function render(mount) {
     var ch = store.active();
     clear(mount);
+    if (_mode === "fivefinger" && !gmOn()) _mode = "undercut";   // GM controls off: no Five-Finger Supply
     if (!ch) {
       mount.appendChild(el("div.muted-box", { style: { marginTop: "40px", padding: "40px" }, text: "No Freelancer on file; register one on the #PRINT tab." }));
       return;

@@ -1185,6 +1185,40 @@ EN.settings = (function () {
     ];
   }
 
+  /* GM CONTROLS and OPTIONAL RULES (29 October 2026). Device state, like CONTENT: EN.launch's
+     (en_gm_controls_v1, en_optional_rules_v1), never on a character and never exported. */
+  function gmControlsSection() {
+    var L = EN.launch, on = L.gmControls();
+    return [
+      el("div.set-sectitle", { text: "// GM CONTROLS" }),
+      el("label.set-label", { text: "GM controls" }),
+      el("p.set-hint", { text: on
+        ? "On: the sheet shows the controls that stand in for a GM's call: GM -1 on an item's Load in the Stash, and the Five-Finger Supply storefront for looted gear. Saved on this device."
+        : "Off: GM -1 and the Five-Finger Supply storefront are hidden. A Load the GM already lowered stays lowered. Saved on this device." }),
+      el("button.btn.sm.set-gm" + (on ? ".primary" : ""), {
+        title: "Show or hide GM controls on this device",
+        onclick: function () { L.setGmControls(!on); EN.app.render(); rebuild(); }
+      }, on ? "◈ GM CONTROLS: ON" : "◈ GM CONTROLS: OFF")
+    ];
+  }
+  function optionalRulesSection() {
+    var L = EN.launch;
+    var kids = [
+      el("div.set-sectitle", { text: "// OPTIONAL RULES" }),
+      el("p.set-hint", { text: "Switch a rule off for your table. Each one is on by default, the book as written. Turning one off changes what the sheet shows and applies, not what a record holds. Saved on this device." })
+    ];
+    (L.optionalRules || []).forEach(function (r) {
+      var on = L.rule(r.key);
+      kids.push(el("label.set-label", { text: r.name }));
+      kids.push(el("p.set-hint", { text: on ? r.on : r.off }));
+      kids.push(el("button.btn.sm.set-rule" + (on ? ".primary" : ""), { dataset: { rule: r.key },
+        title: "Turn the " + r.name + " rule " + (on ? "off" : "on") + " on this device",
+        onclick: function () { L.setRule(r.key, !on); EN.app.render(); rebuild(); }
+      }, "◈ " + r.name.toUpperCase() + ": " + (on ? "ON" : "OFF")));
+    });
+    return kids;
+  }
+
   function gridSection() {
     var gv = EN.gridView;
     var on = gv.isDamage();
@@ -1325,6 +1359,9 @@ EN.settings = (function () {
     sections.push(portalSection());
     // which books the pickers offer from, on both desktops
     if (EN.launch && EN.launch.setSupplemental) sections.push(supplementalSection());
+    // GM controls and the optional rules, on both desktops
+    if (EN.launch && EN.launch.setGmControls) sections.push(gmControlsSection());
+    if (EN.launch && EN.launch.setRule) sections.push(optionalRulesSection());
     // the GM document's backup, on the Admin desktop only: a Freelancer's tray never shows it
     if (EN.theme.inAdmin() && EN.gmStore && EN.gmStore.exportDoc) sections.push(gmDataSection());
     // skin and palette are one section under one title: skinSection carries

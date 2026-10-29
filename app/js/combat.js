@@ -6130,7 +6130,21 @@ EN.combatView = (function () {
         + "\n\nLoad guide:\n" + ((EE.loadTable || []).map(function (r) { return r.load + "  " + r.items; }).join("\n"))
         + "\n\n" + (EE.notes || "");
       var loadOpen = !!_open["load-console"];
-      kids.push(el("div", { style: { padding: "9px 11px", border: "1px solid " + (enc.state === "unencumbered" ? "var(--border)" : stateColor), borderRadius: "4px", background: "rgba(0,0,0,.15)", margin: "2px 0 10px" } }, [
+      /* Optional rule (Settings): with Encumbrance off there is no Load, Loadout or Budget to show.
+         A Haul still applies, so its picker and any state it sets stay. */
+      if (!enc.enabled) kids.push(el("div.load-off", { style: { padding: "9px 11px", border: "1px solid " + (enc.state === "unencumbered" ? "var(--border)" : stateColor), borderRadius: "4px", background: "rgba(0,0,0,.15)", margin: "2px 0 10px" } }, [
+        el("div.row.wrap", { style: { gap: "10px", alignItems: "center" } }, [
+          el("span.mono", { style: { fontSize: "11px", color: "var(--text3)", letterSpacing: ".08em" }, text: "ENCUMBRANCE OFF" }),
+          el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "An optional rule, switched off in Settings. Gear carries no Load." }),
+          el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em", marginLeft: "auto" }, text: "HAUL" }),
+          el("select", { style: { fontSize: "11px", width: "auto" }, title: "A Haul (body, crate, machine) still sets your state with Encumbrance off.",
+            onchange: function () { var v = this.value; store.update(function (c) { c.haul = v; }); } },
+            (EE.hauls || []).map(function (h) { return el("option", { value: h.key, selected: enc.haul === h.key, text: h.name, title: h.hint }); })),
+          enc.state !== "unencumbered" ? el("span.chip", { title: stateDef.effect || "", style: { fontSize: "9px", color: stateColor, borderColor: stateColor } }, (stateDef.name || enc.state || "").toUpperCase()) : null,
+          enc.noDash ? el("span.chip", { style: { fontSize: "9px", color: "var(--danger)", borderColor: "var(--danger)" } }, "NO DASH") : null
+        ])
+      ]));
+      else kids.push(el("div", { style: { padding: "9px 11px", border: "1px solid " + (enc.state === "unencumbered" ? "var(--border)" : stateColor), borderRadius: "4px", background: "rgba(0,0,0,.15)", margin: "2px 0 10px" } }, [
         el("div.row.wrap", { style: { gap: "10px", alignItems: "center", cursor: "pointer" },
           title: loadOpen ? "Tap to collapse" : "Tap for the band scale and hauls",
           onclick: function () { _open["load-console"] = !loadOpen; EN.app.render(); } }, [
@@ -6310,8 +6324,8 @@ EN.combatView = (function () {
         var gearWorn = cs === "worn";
         chips.push(el("span.chip", { title: (gearWorn ? "" : "Wear it to use its racks. ") + ((gearIt && gearIt.effect) || "Carry Gear"), style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" }, text: "⧉ RACKS " + held + "/" + eng.rackLimit(gearIt) + (gearWorn ? "" : " (not worn)") }));
         chips.push(el("span.chip", { title: "Carry Gear is Load 0 and never counts against your own Load Budget", style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" }, text: "⚖ 0" }));
-      } else if (ldTotal > 0 || rackedGear) {
-        chips.push(el("span.chip", { title: "Load " + ldTotal + (rackedGear ? " (reduced by 1 while Racked in the " + rackedGear.name + ")" : "") + (wornArmor ? " (reduced by 2 while Worn, min 0)" : "") + (e.qty > 1 && !rackedGear ? " (" + baseLd + " each)" : "") + "; spends your Load Budget while on-person",
+      } else if ((ldTotal > 0 || rackedGear) && d.encumbrance && d.encumbrance.enabled) {
+        chips.push(el("span.chip", { title: "Load " + ldTotal + (rackedGear ? " (reduced by 1 while Racked in the " + rackedGear.name + ")" : "") + (wornArmor ? " (reduced by 1 while Worn, min 0)" : "") + (e.qty > 1 && !rackedGear ? " (" + baseLd + " each)" : "") + "; spends your Load Budget while on-person",
           style: { fontSize: "9px", color: (rackedGear || wornArmor) ? "var(--success)" : "var(--text2)", borderColor: (rackedGear || wornArmor) ? "var(--success)" : "var(--border2)" },
           text: "⚖ " + ldTotal + (rackedGear ? " ⧉" : "") }));
       }
