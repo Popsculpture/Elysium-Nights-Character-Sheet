@@ -552,9 +552,14 @@ EN.ui = (function () {
 
     void ov.offsetWidth;                                             // reflow, then arm the timeline
     var svg = ov.querySelector(".fx-svg");
+    /* opts.quick: the short version, the same timeline compressed to about 2.5 s (theme.css
+       .fx-svg.quick runs every layer 3.36 times faster). #PRINT asks for it on every filing
+       after a character's first; the first filing plays in full. */
+    var pace = opts.quick ? 3.36 : 1;
+    if (svg && opts.quick) svg.classList.add("quick");
     if (svg) svg.classList.add("play");
-    if (!reduce) tCap = setTimeout(function () { cap.textContent = "RECORD FILED"; card.classList.add("filed-done"); }, 7600);
-    tEnd = setTimeout(finish, reduce ? 1500 : 8400);                 // navigate once the check has settled
+    if (!reduce) tCap = setTimeout(function () { cap.textContent = "RECORD FILED"; card.classList.add("filed-done"); }, Math.round(7600 / pace));
+    tEnd = setTimeout(finish, reduce ? 1500 : Math.round(8400 / pace));   // navigate once the check has settled
     return { skip: finish };
   }
 

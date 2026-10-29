@@ -2048,6 +2048,22 @@ EN.store = (function () {
        condition under Status Changes; the engine folds it into ch.flow.strain (the higher of
        the two wins) and drops the condition, so the Flow tab's track is the only value. */
     if (EN.engine && typeof EN.engine.mergeStrain === "function") EN.engine.mergeStrain(ch);
+    /* OVERLAPPING STARTING PROFICIENCIES ON AN OLDER SAVE (A5, 28 October 2026 playtest). When
+       Background and Class grant the same Skill, Weapon, Vehicle or Tool Category, the second
+       grant is a Free Skill Focus in a narrow aspect of it (PHB, Overlapping Starting
+       Proficiencies). A save that made such a pick without claiming that Focus is converted the
+       same way here: the Free Skill Focus is recorded (granted, 0 TP), and its aspect is left
+       blank for #PRINT to ask for, since only the player can name it. One per overlap; an
+       overlap that already has its Focus is left alone, so this runs once and stays idempotent. */
+    if (EN.engine && typeof EN.engine.overlapGrants === "function" && ch.background && ch.class) {
+      var ovs = [];
+      try { ovs = EN.engine.overlapGrants(ch) || []; } catch (err) { ovs = []; }
+      ovs.forEach(function (o) {
+        if (!Array.isArray(ch.skillFocuses)) ch.skillFocuses = [];
+        var has = ch.skillFocuses.some(function (f) { return f && f.granted && f.type === o.type && f.parent === o.parent; });
+        if (!has) ch.skillFocuses.push({ type: o.type, parent: o.parent, aspect: "", granted: true });
+      });
+    }
   }
 
   /* ---- persistence ------------------------------------------------------ */

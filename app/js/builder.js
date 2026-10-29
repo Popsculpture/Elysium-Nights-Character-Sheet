@@ -897,37 +897,72 @@ EN.builder = (function () {
   /* Size is derived, never picked: the player chooses a height inside their
      Lineage's printed range and the band decides the category. Harbingers have
      no variance (every one is exactly 6 ft), so their picker is locked. */
+  /* The species' printed Size line stays on the page once a lineage is chosen (and with C2 a
+     one-lineage species has one at once), and the lineage's height and Size picker sits under
+     it, so the book line still prints exactly once. */
   function sizeRow(ch, lin, speciesDesc) {
     if (!lin) return traitLine("Size", speciesDesc);   // species-level flavor before a lineage is picked
+    return el("div", null, [traitLine("Size", speciesDesc), heightSizeRow(ch, lin)]);
+  }
+  function heightSizeRow(ch, lin) {
     var band = (R.lineageHeight || {})[lin.key];
     var current = effectiveSize(ch);
-    var kids = [el("span.chip", { text: "Size" }), solidChip(current || "choose a height", "var(--accent)"), EN.ui.ruleChip("ref-size")];
+    var kids = [el("span.chip", { text: "Your Size" }), solidChip(current || "choose a height", "var(--accent)"), EN.ui.ruleChip("ref-size")];
     if (!band) return el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginBottom: "8px" } }, kids);
 
+    var lbl = { fontSize: "10px", color: "var(--text3)", letterSpacing: ".08em" };
     if (band.fixed) {
-      kids.push(el("span.mono", { style: { fontSize: "10px", color: "var(--text3)" },
-        text: "every " + lin.name.replace(/s$/, "") + " is exactly " + band.min + " ft" }));
+      kids.push(el("span.mono", { dataset: { heightLock: "1" }, style: { fontSize: "10px", color: "var(--text3)" },
+        text: "HEIGHT " + fmtFtIn(band.min) + " (" + ftToCm(band.min) + " cm), locked: every " + lin.name.replace(/s$/, "") + " is exactly " + band.min + " ft" }));
       return el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginBottom: "8px" } }, kids);
     }
+    /* C3: feet and inches, in 1-inch steps, plus a cm field. The record stores decimal feet
+       (heightFt = feet + inches / 12), clamped to the lineage's printed range; a cm entry is
+       converted and snapped to the nearest inch so all three fields always agree. The Size chip
+       above redraws on every change, and a height exactly on a band edge takes the larger Size
+       (engine.sizeFromHeightFt). */
     var h = eng.lineageHeightFt(ch);
-    kids.push(el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".08em" }, text: "HEIGHT" }));
-    kids.push(el("input.mono", {
-      type: "number", min: String(band.min), max: String(band.max), step: "0.5",
-      value: h == null ? "" : String(h), placeholder: band.min + "-" + band.max,
-      style: { width: "72px", textAlign: "center", padding: "4px" },
+    var totIn = h == null ? null : Math.round(h * 12);
+    var minIn = Math.round(band.min * 12), maxIn = Math.round(band.max * 12);
+    function setInches(n) {
+      store.update(function (c) {
+        if (n == null || isNaN(n)) { c.heightFt = null; return; }
+        c.heightFt = eng.clamp(Math.round(n), minIn, maxIn) / 12;
+        c.size = null;                       // derived from here on; drop the legacy pick
+      });
+    }
+    var curFt = totIn == null ? null : Math.floor(totIn / 12), curIn = totIn == null ? null : totIn % 12;
+    var ftOpts = [el("option", { value: "", text: "ft", selected: curFt == null })];
+    for (var f = Math.floor(band.min); f <= Math.floor(band.max); f++) ftOpts.push(el("option", { value: String(f), text: f + " ft", selected: curFt === f }));
+    var inOpts = [el("option", { value: "", text: "in", selected: curIn == null })];
+    for (var i = 0; i < 12; i++) {
+      var inRange = curFt == null || (curFt * 12 + i >= minIn && curFt * 12 + i <= maxIn);
+      inOpts.push(el("option", { value: String(i), text: i + " in", selected: curIn === i, disabled: !inRange }));
+    }
+    kids.push(el("span.mono", { style: lbl, text: "HEIGHT" }));
+    kids.push(el("select.mono", { "aria-label": "Height, feet", style: { width: "auto", padding: "4px" },
+      onchange: function () {
+        if (this.value === "") { setInches(null); return; }
+        setInches(Number(this.value) * 12 + (curIn == null ? 0 : curIn));
+      } }, ftOpts));
+    kids.push(el("select.mono", { "aria-label": "Height, inches", style: { width: "auto", padding: "4px" },
+      onchange: function () {
+        if (this.value === "") return;
+        setInches((curFt == null ? Math.floor(band.min) : curFt) * 12 + Number(this.value));
+      } }, inOpts));
+    kids.push(el("input.mono", { type: "number", "aria-label": "Height, centimetres", min: String(ftToCm(band.min)), max: String(ftToCm(band.max)), step: "1",
+      value: h == null ? "" : String(ftToCm(h)), placeholder: "cm",
+      style: { width: "70px", textAlign: "center", padding: "4px" },
       onchange: function () {
         var v = parseFloat(this.value);
-        store.update(function (c) {
-          if (isNaN(v)) { c.heightFt = null; return; }
-          c.heightFt = eng.clamp(v, band.min, band.max);
-          c.size = null;                       // derived from here on; drop the legacy pick
-        });
-      }
-    }));
+        setInches(isNaN(v) ? null : v / 2.54);
+      } }));
     kids.push(el("span.mono", { style: { fontSize: "10px", color: "var(--text4)" },
-      text: "ft (" + band.min + " to " + band.max + ")" }));
+      text: "cm · range " + fmtFtIn(band.min) + " to " + fmtFtIn(band.max) + " (" + ftToCm(band.min) + " to " + ftToCm(band.max) + " cm)" }));
     return el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginBottom: "8px" } }, kids);
   }
+  function ftToCm(ft) { return Math.round(ft * 30.48); }
+  function fmtFtIn(ft) { var t = Math.round(ft * 12); return Math.floor(t / 12) + " ft " + (t % 12) + " in"; }
 
   /* ---------- STEP 4: BACKGROUND ---------- */
   function stepBackground(ch) {
@@ -937,7 +972,7 @@ EN.builder = (function () {
       return el("div.opt-card" + (ch.background === b.key ? ".sel" : ""), {
         onclick: function () {
           store.update(function (c) { if (c.background !== b.key) { c.background = b.key; c.backgroundSkillChoice = null; c.backgroundProfChoices = []; pruneGrantedFocuses(c); } });
-          if (eng.unresolvedOverlaps(store.active()).length) toast("⚠ Overlapping training with your Class; claim your Free Skill Focus below.");
+          if (pendingOverlaps(store.active()).length) toast("⚠ Overlapping training with your Class; claim your Free Skill Focus below.");
         }
       }, [
         el("span.check", { text: "◉" }), el("h4", null, [document.createTextNode(b.name), heldTag("background", b.key)]),
@@ -984,42 +1019,58 @@ EN.builder = (function () {
   function solidChip(text, color) {
     return el("span.chip", { style: { fontSize: "10.5px", color: color, borderColor: color }, text: text });
   }
-  function pickChip(text, color, on, onPick) {
+  // dup: the option is already granted by the other source (A5); the chip says so and stays pickable
+  function pickChip(text, color, on, onPick, dup) {
+    var tip = on ? "Selected" : "Click to select " + text;
     return el("span.chip", {
-      title: on ? "Selected" : "Click to select " + text,
+      title: dup ? tip + ". " + DUP_NOTE : tip,
+      "aria-label": dup ? text + ". " + DUP_NOTE : null,
+      dataset: dup ? { dup: "1" } : {},
       style: { fontSize: "10.5px", color: color, borderColor: color, cursor: "pointer",
                borderStyle: on ? "solid" : "dashed", opacity: on ? 1 : .55,
                boxShadow: on ? "0 0 9px " + color : "none" },
       onclick: onPick
-    }, (on ? "✓ " : "") + text);
+    }, (on ? "✓ " : "") + (dup ? "⊕ " : "") + text);
+  }
+  // run a pick, then point the player at the aspect prompt if it made a new overlap
+  function overlapAwarePick(mut) {
+    var before = pendingOverlaps(store.active());
+    store.update(mut);
+    noteNewOverlaps(before);
   }
   function bgSkillChipRow(ch, bg) {
-    var kids = [rowLabel("Skills")];
+    var kids = [rowLabel("Skills")], anyDup = false;
     ((bg.skills && bg.skills.granted) || []).forEach(function (n) { kids.push(solidChip(n, "var(--accent)")); });
     if (bg.skills && bg.skills.choose) {
       kids.push(el("span", { style: { fontFamily: "var(--mono)", fontSize: "10px", color: "var(--text3)" }, text: "choose one:" }));
       bg.skills.choose.options.forEach(function (opt) {
         var k = skillKey(opt) || opt;
+        var dup = alreadyFrom(ch, "skills", opt, "Class");
+        if (dup) anyDup = true;
         kids.push(pickChip(opt, "var(--accent)", ch.backgroundSkillChoice === k,
-          function () { store.update(function (c) { c.backgroundSkillChoice = k; pruneGrantedFocuses(c); }); }));
+          function () { overlapAwarePick(function (c) { c.backgroundSkillChoice = k; pruneGrantedFocuses(c); }); }, dup));
       });
     }
+    if (anyDup) kids.push(el("div", { style: { flex: "1 1 100%" } }, [dupHelp()]));
     return el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginBottom: "6px" } }, kids);
   }
   // One background proficiency line, e.g. "Tools: Choose one (Systems Tools, Investigation Tools)"
   // or a fixed grant like "Medical Tools". Options may span buckets (weapon/vehicle mixes).
   function bgProfChipRow(ch, line, idx) {
     var label = /:/.test(line) ? line.split(":")[0].trim() : (gearBucketOf(line) || "Gear");
-    var kids = [rowLabel(label)];
+    var kids = [rowLabel(label)], anyDup = false;
     if (/choose/i.test(line)) {
       var inside = (line.match(/\(([^)]*)\)/) || [])[1] || "";
       var opts = inside.split(/,|\bor\b/).map(function (x) { return x.trim(); }).filter(Boolean);
       kids.push(el("span", { style: { fontFamily: "var(--mono)", fontSize: "10px", color: "var(--text3)" }, text: "choose one:" }));
       opts.forEach(function (o) {
         var color = GEAR_CHIP_COLORS[gearBucketOf(o)] || "var(--text2)";
+        var dup = alreadyFrom(ch, null, o, "Class");
+        if (dup) anyDup = true;
         kids.push(pickChip(o, color, ((ch.backgroundProfChoices || [])[idx]) === o,
-          function () { store.update(function (c) { c.backgroundProfChoices = c.backgroundProfChoices || []; c.backgroundProfChoices[idx] = o; pruneGrantedFocuses(c); }); }));
+          function () { overlapAwarePick(function (c) { c.backgroundProfChoices = c.backgroundProfChoices || []; c.backgroundProfChoices[idx] = o; pruneGrantedFocuses(c); }); }, dup));
       });
+      if (anyDup) kids.push(el("div", { style: { flex: "1 1 100%" } }, [dupHelp()]));
     } else {
       var content = /:/.test(line) ? line.split(":").slice(1).join(":").trim() : line;
       content.split(",").map(function (x) { return x.trim(); }).filter(Boolean).forEach(function (n) {
@@ -1043,31 +1094,90 @@ EN.builder = (function () {
       return ov.some(function (o) { return o.type === f.type && o.parent === f.parent; });
     });
   }
+  /* A5: an overlap still owes the player a narrow aspect when its Free Skill Focus is missing,
+     OR when it is there with a blank aspect. The blank one is what store.migrate writes for a
+     save that made the duplicate pick before this prompt existed: the save is converted to the
+     Free Skill Focus on load, and the aspect is asked for here exactly as for a new pick. */
+  function grantedFocus(ch, o) {
+    return (ch.skillFocuses || []).filter(function (f) { return f && f.granted && f.type === o.type && f.parent === o.parent; })[0] || null;
+  }
+  function pendingOverlaps(ch) {
+    return eng.overlapGrants(ch).filter(function (o) {
+      var g = grantedFocus(ch, o);
+      return !g || !String(g.aspect || "").trim();
+    });
+  }
+  /* Is this option already granted by the OTHER source (Background for a Class chip, Class for a
+     Background chip)? Then picking it again is not blocked: it marks the chip, and the pick
+     becomes a Free Skill Focus. Armor never makes one (it is never a Focus parent). */
+  function gearCatOf(name, bucket) {
+    var low = String(name).trim().toLowerCase();
+    var buckets = bucket ? [bucket] : ["weapons", "tools", "vehicles"];
+    for (var i = 0; i < buckets.length; i++) {
+      var list = R.gear[buckets[i]] || [];
+      for (var j = 0; j < list.length; j++) if (list[j].toLowerCase() === low) return { bucket: buckets[i], cat: list[j] };
+    }
+    return null;
+  }
+  function alreadyFrom(ch, bucket, option, other) {
+    var src = eng.grantSourceMap(ch);
+    if (bucket === "skills") { var k = skillKey(option); return !!k && (src.skills[k] || []).indexOf(other) !== -1; }
+    if (bucket === "armor") return false;
+    var g = gearCatOf(option, bucket || null);
+    return !!g && (src.gear[g.bucket + "|" + g.cat] || []).indexOf(other) !== -1;
+  }
+  var DUP_NOTE = "Already have this: picking it again gives a Free Skill Focus.";
+  function dupHelp() {
+    return el("p.help.dup-note", { style: { margin: "0 0 6px", fontSize: "10.5px", color: "var(--gold)" }, text: "⊕ " + DUP_NOTE });
+  }
   var _overlapAspect = {};   // "type|parent" -> live draft text in the claim input
+  var _focusAspect = null;   // "type|parent" whose aspect input takes focus on the next render
+  function noteNewOverlaps(before) {
+    var now = pendingOverlaps(store.active());
+    var fresh = now.filter(function (o) { return !before.some(function (b) { return b.type === o.type && b.parent === o.parent; }); });
+    if (!fresh.length) return;
+    _focusAspect = fresh[0].type + "|" + fresh[0].parent;
+    toast("Free Skill Focus: name a narrow aspect of " + fresh[0].label + " in the box below.");
+    EN.app.render();
+  }
   function overlapBox(ch) {
     var overlaps = eng.overlapGrants(ch);
     if (!overlaps.length) return null;
-    var open = eng.unresolvedOverlaps(ch);
+    var open = pendingOverlaps(ch);
     // the rule half is EN.rules.training.overlap.rule, the one copy the Codex prints too
     var kids = [EN.ui.ruleText(el("div"), "⚠ **OVERLAPPING TRAINING:** your Background and Class both trained you in **" +
       overlaps.map(function (o) { return o.label; }).join(", ") + "**. " + (((R.training || {}).overlap || {}).rule || ""))];
     open.forEach(function (o) {
       var k = o.type + "|" + o.parent;
+      function claim() {
+        var aspect = (_overlapAspect[k] || "").trim();
+        if (!aspect) { toast("Name the Focus's narrow aspect first, e.g. " + focusAspectHint(o.type, o.parent) + "."); return; }
+        delete _overlapAspect[k];
+        store.update(function (c) {
+          c.skillFocuses = c.skillFocuses || [];
+          var g = grantedFocus(c, o);   // a converted older save's blank Focus takes the aspect
+          if (g) g.aspect = aspect;
+          else c.skillFocuses.push({ type: o.type, parent: o.parent, aspect: aspect, granted: true });
+        });
+        toast("Free Skill Focus claimed: " + o.label + " (" + aspect + ").");
+      }
       var input = el("input", { type: "text", value: _overlapAspect[k] || "", placeholder: "narrow aspect: " + focusAspectHint(o.type, o.parent),
+        "aria-label": "Free Skill Focus aspect for " + o.label, dataset: { overlapAspect: k },
         style: { flex: "1 1 220px", padding: "4px 9px", fontSize: "13px" },
-        oninput: function (e) { _overlapAspect[k] = e.target.value; } });
+        oninput: function (e) { _overlapAspect[k] = e.target.value; },
+        onkeydown: function (e) { if (e.key === "Enter") { e.preventDefault(); claim(); } } });
+      if (_focusAspect === k) {
+        _focusAspect = null;
+        setTimeout(function () { if (document.body.contains(input)) try { input.focus(); } catch (e) {} }, 0);
+      }
+      var converted = !!grantedFocus(ch, o);
       kids.push(el("div", { style: { marginTop: "10px", padding: "9px 11px", border: "1px dashed var(--gold)", borderRadius: "4px" } }, [
         el("p", { style: { margin: "0 0 7px", color: "var(--text2)", fontSize: "13px" },
-          text: "Your Background and Class both trained you in " + o.label + ". Choose a narrow focus inside " + o.label + " to gain as a Free Skill Focus." }),
+          text: "Your Background and Class both trained you in " + o.label + ". Choose a narrow focus inside " + o.label + " to gain as a Free Skill Focus." +
+            (converted ? " This record already made that pick, so the Free Skill Focus is on it; it only needs its aspect." : "") }),
         el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
           input,
-          el("button.btn.sm.primary", { onclick: function () {
-            var aspect = (_overlapAspect[k] || "").trim();
-            if (!aspect) { toast("Name the Focus's narrow aspect first, e.g. " + focusAspectHint(o.type, o.parent) + "."); return; }
-            delete _overlapAspect[k];
-            store.update(function (c) { c.skillFocuses = c.skillFocuses || []; c.skillFocuses.push({ type: o.type, parent: o.parent, aspect: aspect, granted: true }); });
-            toast("Free Skill Focus claimed: " + o.label + " (" + aspect + ").");
-          } }, "CLAIM FREE FOCUS")
+          el("button.btn.sm.primary", { onclick: claim }, "CLAIM FREE FOCUS")
         ])
       ]));
     });
@@ -1161,7 +1271,7 @@ EN.builder = (function () {
         "⚠ <b>UNSELECTED OPTIONS</b>; you still have picks waiting. " + parts.join(" &nbsp;·&nbsp; ") + ". Head back to those tabs and click the dashed chips to lock them in.");
     }
     // overlap prompts: unresolved Free Skill Focus claims block sheet finalize
-    var dupBox = eng.unresolvedOverlaps(ch).length ? overlapBox(ch) : null;
+    var dupBox = pendingOverlaps(ch).length ? overlapBox(ch) : null;
     return EN.ui.panel("Skills & Proficiencies", "COMBINED · BACKGROUND + CLASS + ADVANCE", [
       el("p.help", { style: { margin: "0 0 8px" }, text: "Everything granted or purchased, at its effective tier. Hover a chip for its source. ⊕ marks an overlapping Background/Class grant; the proficiency applies once and the overlap grants a Free Skill Focus." })
     ].concat(rows).concat([pendingBox, dupBox]), { corners: true });
@@ -1247,23 +1357,55 @@ EN.builder = (function () {
     if (!sel || !sel.ready) { toast("Lock in your Subclass and pick every kit slot first."); return; }
     if (ch.startingKit.claimed) { toast("Kit already claimed; UNDO it first."); return; }
     if (sel.leftover < 0) { toast("This kit runs past the 𝒢700 budget; check your picks."); return; }
+    /* B2: the kit lands READY TO PLAY, not Stashed. Every line is marked Carried, the kit's armor
+       is worn, and the kit's weapon is equipped: the one the player picked where the kit offers
+       a choice (the Weapon slot, or a Subclass Extra that replaces it, like the Toxicologist's
+       Dart Gun), otherwise the first weapon the kit holds. A shield or Warding Focus in the kit
+       goes into its empty slot the same way. Nothing is ever stashed to make room: if Carried
+       Load passes the Encumbrance Threshold the panel says so and leaves the choice to the
+       player. Only empty slots are filled, so gear the record already wears stays on. */
+    var weaponFrom = null;
+    sel.slots.forEach(function (s) { if (s.def.key === "weapon" && !s.replaced && s.pick != null) weaponFrom = s.def.options[s.pick].items; });
+    if (!weaponFrom && sel.effExtra && sel.effExtra.replacesSlot === "weapon") weaponFrom = sel.effExtra.items || [];
+    var weaponNames = (weaponFrom || []).filter(function (e) { return kitIsWeapon(e.name); }).map(function (e) { return e.name; });
+    if (!weaponNames.length) {
+      var firstW = sel.items.filter(function (e) { return kitIsWeapon(e.name); })[0];
+      if (firstW) weaponNames = [firstW.name];
+    }
     store.update(function (c) {
       var granted = [];
       c.equipment = c.equipment || [];
+      c.carry = c.carry || {};
+      c.equippedWeapons = c.equippedWeapons || [];
+      var weaponDone = {};
       sel.items.forEach(function (entry) {
         var qty = entry.qty || 1;
+        var it = kitCatalogItem(entry.name);
+        var keys = [];
         if (EN.engine.isStackableName(entry.name)) {
           var e = c.equipment.find(function (x) { return x.name === entry.name && !x.id; });
           if (e) e.qty = (e.qty || 1) + qty;
           else c.equipment.push({ name: entry.name, qty: qty });
           granted.push({ key: entry.name, qty: qty });
+          keys.push(entry.name);
         } else {
           for (var i = 0; i < qty; i++) {
             var inst = { id: kitNewEquipId(), name: entry.name, qty: 1 };
             c.equipment.push(inst);
             granted.push({ key: inst.id, qty: 1 });
+            keys.push(inst.id);
           }
         }
+        keys.forEach(function (k) {
+          if (!c.carry[k] || c.carry[k] === "stashed") c.carry[k] = "carried";
+          if (it && (it.kind === "armor" || it.kind === "shield" || it.kind === "focus")) {
+            var slotGet = it.kind === "armor" ? c.equippedArmor : it.kind === "shield" ? c.equippedShield : c.equippedFocus;
+            if (!slotGet) EN.engine.setEquipSlot(c, it.kind, k);
+          }
+          if (weaponNames.indexOf(entry.name) !== -1 && !weaponDone[entry.name] && c.equippedWeapons.indexOf(k) === -1) {
+            c.equippedWeapons.push(k); weaponDone[entry.name] = true;
+          }
+        });
       });
       c.glimmer = (c.glimmer || 0) + sel.leftover;
       c.startingKit.claimed = true;
@@ -1272,8 +1414,14 @@ EN.builder = (function () {
       c.startingKit.claimedClass = c.class;
       c.startingKit.claimedSubclass = c.subclass;
     });
-    toast("Starting kit claimed. Gear is in your Stash and 𝒢" + sel.leftover + " loaded onto the Glimmer Stick.");
+    var enc = (eng.derive(store.active()) || {}).encumbrance || null;
+    var loadLine = enc ? " Load " + enc.current + " of Threshold " + enc.threshold + "." : "";
+    var over = enc && enc.current > enc.threshold;
+    toast("Starting kit claimed: everything Carried, armor worn, " + (weaponNames.length ? weaponNames.join(" and ") + " equipped" : "no weapon in this kit") +
+      ", and 𝒢" + sel.leftover + " on the Glimmer Stick." + loadLine + (over ? " Over your Encumbrance Threshold: nothing was stashed; stash something from Inventory if you need to." : ""));
   }
+  var KIT_WEAPON_GROUPS = { Simple: 1, Martial: 1, Sidearm: 1, Longarm: 1, Heavy: 1, Launcher: 1, Thrown: 1, Bowfire: 1 };   // inventory.js isWeapon
+  function kitIsWeapon(name) { var it = kitCatalogItem(name); return !!(it && KIT_WEAPON_GROUPS[it.group]); }
   function undoKit(ch) {
     if (!ch.startingKit || !ch.startingKit.claimed) return;
     store.update(function (c) {
@@ -1383,10 +1531,22 @@ EN.builder = (function () {
       ]));
       if (mismatch) kids.push(el("p.help", { style: { margin: "6px 0 0", color: "var(--warn)" },
         text: "⚠ Claimed as " + claimedClsName.replace(/^The\s+/, "") + "; UNDO the claim to take that gear back before claiming this kit." }));
+      // B2: the Load the claimed kit puts on the character, against the Encumbrance Threshold
+      var enc = eng.derive(ch).encumbrance;
+      if (enc) {
+        var over = enc.current > enc.threshold;
+        kids.push(el("div.row.wrap.kit-load", { style: { gap: "14px", alignItems: "center", margin: "8px 0 0" } }, [
+          el("span.mono", { style: { fontSize: "14px", color: over ? "var(--warn)" : "var(--text)" } },
+            "LOAD CARRIED " + enc.current + " / ENCUMBRANCE THRESHOLD " + enc.threshold),
+          EN.ui.ruleChip("sk-load", { title: "Encumbrance & Load" })
+        ]));
+        if (over) kids.push(el("p.help.kit-over", { style: { margin: "4px 0 0", color: "var(--warn)" },
+          text: "⚠ Carried Load is over your Encumbrance Threshold. Nothing was stashed for you: decide what stays behind in Inventory." }));
+      }
     } else {
       kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
         el("button.btn.primary", { disabled: !sel.ready,
-          title: sel.ready ? "Add every line to your Stash and load the leftover onto the Glimmer Stick" : "Pick a Subclass and every kit slot first",
+          title: sel.ready ? "Add every line as Carried, wear the kit's armor, equip its weapon, and load the leftover onto the Glimmer Stick" : "Pick a Subclass and every kit slot first",
           onclick: function () { claimKit(ch); } }, "⛭ CLAIM STARTING KIT"),
         !sel.ready ? el("span.help", { style: { margin: 0, color: "var(--warn)" }, text: "Pick a Subclass and every slot first." }) : null
       ]));
@@ -1445,7 +1605,7 @@ EN.builder = (function () {
       return el("div.opt-card" + (sel ? ".sel" : ""), {
         onclick: function () {
           store.update(function (cc) { if (cc.class !== k) { cc.class = k; cc.subclass = null; cc.subclassSkillPicks = Object.create(null); cc.classSkillChoices = []; cc.classGearChoices = { weapons: [], armor: [], tools: [], vehicles: [] }; cc.gambits = []; if (cc.startingKit && !cc.startingKit.claimed) { cc.startingKit.picks = {}; cc.startingKit.alt = false; } pruneGrantedFocuses(cc); } });
-          if (eng.unresolvedOverlaps(store.active()).length) toast("⚠ Overlapping training with your Background; claim your Free Skill Focus below.");
+          if (pendingOverlaps(store.active()).length) toast("⚠ Overlapping training with your Background; claim your Free Skill Focus below.");
         }
       }, [
         el("span.check", { text: "◉" }),
@@ -1615,8 +1775,9 @@ EN.builder = (function () {
       if (bucket === "skills") return (ch.classSkillChoices || [])[idx] === skillKey(option);
       return ((ch.classGearChoices && ch.classGearChoices[bucket]) || [])[idx] === option;
     }
+    var anyDup = false;
     function pickOption(idx, option) {
-      store.update(function (c) {
+      overlapAwarePick(function (c) {
         if (bucket === "skills") { c.classSkillChoices = c.classSkillChoices || []; c.classSkillChoices[idx] = skillKey(option); }
         else {
           c.classGearChoices = c.classGearChoices || {};
@@ -1635,18 +1796,24 @@ EN.builder = (function () {
         kids.push(el("span", { style: { fontFamily: "var(--mono)", fontSize: "10px", color: "var(--text3)" }, text: "choose one:" }));
         opts.forEach(function (o) {
           var on = isPicked(idx, o);
+          var dup = !!ch && alreadyFrom(ch, bucket, o, "Background");
+          if (dup) anyDup = true;
+          var tip = ch ? (on ? "Selected" : "Click to select " + o) : null;
           kids.push(el("span.chip", {
-            title: ch ? (on ? "Selected" : "Click to select " + o) : null,
+            title: dup ? tip + ". " + DUP_NOTE : tip,
+            "aria-label": dup ? o + ". " + DUP_NOTE : null,
+            dataset: dup ? { dup: "1" } : {},
             style: { fontSize: "10.5px", color: color, borderColor: color, cursor: ch ? "pointer" : "default",
                      borderStyle: on ? "solid" : "dashed", opacity: on ? 1 : .55,
                      boxShadow: on ? "0 0 9px " + color : "none" },
             onclick: ch ? function () { pickOption(idx, o); } : null
-          }, (on ? "✓ " : "") + o));
+          }, (on ? "✓ " : "") + (dup ? "⊕ " : "") + o));
         });
       } else {
         kids.push(el("span.chip", { style: { fontSize: "10.5px", color: color, borderColor: color }, text: entry }));
       }
     });
+    if (anyDup) kids.push(el("div", { style: { flex: "1 1 100%" } }, [dupHelp()]));
     return el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginBottom: "6px" } }, kids);
   }
 
@@ -3234,7 +3401,7 @@ EN.builder = (function () {
       if (f.name === "Open Architecture") fb.appendChild(heldFeature(ch, f, openArchitectureCard(ch, d.lineageInfo)));
       else if (f.name === "Scrap Companion" && EN.companion) fb.appendChild(heldFeature(ch, f, el("div", null, [
         feature(f.name, f.text, f.kind, f.source + " · L" + f.level), EN.companion.card(ch, d)])));
-      else fb.appendChild(heldFeature(ch, f, feature(f.name, f.text, f.kind, f.source + " · L" + f.level)));
+      else fb.appendChild(heldFeature(ch, f, feature(f.name, knownResourceText(ch, f), f.kind, f.source + " · L" + f.level)));
     });
     blocks.push(fb);
 
@@ -3279,6 +3446,27 @@ EN.builder = (function () {
     }
     return el("div", null, blocks);
   }
+  /* B1: the class resource feature on the review lists only what the character KNOWS. The
+     Moxie, Overdrive, Leverage and Triage features print the class's whole list after their
+     intro (the data composes "intro + every ability"), and four classes learn a few of them:
+     Scoundrel Gambits, Fury Overdrive Maneuvers, Hustler Leverage Abilities and Stitcher Triage
+     Protocols. So the intro is kept and the list is rebuilt from the same source the live
+     Abilities list reads, engine.chosenResourceAbilities. Codebreaker Exploits and Operator
+     Calls are all known, so those features keep the full list. */
+  function knownResourceText(ch, f) {
+    var cls = eng.getClass(ch.class), res = cls && cls.resource;
+    var all = (res && res.abilities) || [];
+    if (!f || f.kind === "subclass" || !all.length || (res.learn && res.learn.knowsAll) || typeof f.text !== "string") return f && f.text;
+    var cut = f.text.indexOf("\n\n**" + all[0].name);
+    if (cut < 0) return f.text;
+    var nounPl = res.abilityNounPlural || ((res.abilityNoun || "Ability") + "s");
+    var known = eng.chosenResourceAbilities(ch);
+    var allowed = eng.resourcePicksAllowed ? eng.resourcePicksAllowed(ch) : known.length;
+    var lines = known.map(function (a) { return "**" + a.name + (a.action ? " (" + a.action + ")" : "") + ":** " + a.text; });
+    var head = "**" + nounPl + " known (" + known.length + " of " + allowed + "):**";
+    if (!known.length) lines = ["None chosen yet. Pick them under " + res.name + " on the Class step."];
+    return f.text.slice(0, cut) + "\n\n" + head + "\n\n" + lines.join("\n\n");
+  }
   function exportChar(ch) {
     // bundle any custom palette this Freelancer wears so the file renders on a fresh device
     var payload = ch;
@@ -3306,6 +3494,10 @@ EN.builder = (function () {
   // the player their live Freelancer sheet.
   function submitRecord(ch) {
     _certifiedFor = null;                        // consumed; a return to #PRINT must re-certify
+    /* C4: the full filing animation plays once, on a character's FIRST filing. Every re-filing
+       after that plays the short version (about 2.5 seconds). Either can still be skipped with
+       a tap or Escape. Read before the stamp below writes filedAt. */
+    var firstFiling = !isFiled(ch);
     /* THE stamp the nav gate reads (app.js registered()): until this lands the
        Freelancer rail shows nothing but the gear. Written BEFORE the animation
        rather than in its onDone, so a reload mid-animation still comes back to
@@ -3315,7 +3507,7 @@ EN.builder = (function () {
        reload; harmless, since an example is registered regardless. */
     store.update(function (c) { c.meta.filedAt = Date.now(); });
     var name = (ch.name || "UNNAMED FREELANCER").toUpperCase();
-    if (EN.ui.playFiled) EN.ui.playFiled({ name: name, ref: recordRef(ch), onDone: function () { EN.app.gotoTab("combat"); } });
+    if (EN.ui.playFiled) EN.ui.playFiled({ name: name, ref: recordRef(ch), quick: !firstFiling, onDone:function () { EN.app.gotoTab("combat"); } });
     else EN.app.gotoTab("combat");
   }
 
@@ -3421,14 +3613,23 @@ EN.builder = (function () {
        That is exactly when it matters most: no records means no page to open it from, and
        import is the only way back in. It is fixed-position, so DOM order does not matter. */
     if (_mgrOpen) mount.appendChild(managerPanel());
-    if (!ch || _intake) { mount.appendChild(rosterGate()); return; }
+    if (!ch || _intake) { mount.appendChild(rosterGate()); kbdWire(mount); return; }
+    // C2: a choice with exactly one valid option is made for the player, and shows as chosen
+    if (autoPick(ch)) ch = store.active();
     var d = eng.derive(ch);
 
-    // wizard rail
+    /* wizard rail. A tick means the step has been DONE. Advance at Level 1 has nothing to do
+       (no Universal Upgrade slot, no Training Points yet), so it shows a neutral "Not yet"
+       rather than a tick that claims work the player never did. */
     var rail = el("div.wizard-rail", null, STEPS.map(function (s, i) {
-      var done = stepComplete(ch, s.key);
-      return el("div.wstep" + (i === _step ? ".active" : (done ? ".done" : "")), { onclick: function () { _step = i; render(mount); } }, [
-        el("div.n", { text: s.n }), el("div.t", { text: s.t })
+      var idle = s.key === "advance" && !advanceHasWork(ch, d);
+      var done = !idle && stepComplete(ch, s.key);
+      return el("div.wstep" + (i === _step ? ".active" : (done ? ".done" : (idle ? ".idle" : ""))), {
+        dataset: { step: s.key },
+        title: idle ? "Not yet: nothing to choose here at Level " + (ch.level || 1) + "." : null,
+        onclick: function () { _step = i; EN.app.render(); } }, [
+        el("div.n", { text: s.n }), el("div.t", { text: s.t }),
+        idle ? el("div.ny", { text: "Not yet" }) : null
       ]);
     }));
 
@@ -3447,9 +3648,9 @@ EN.builder = (function () {
     var canFile = recordComplete && _certifiedFor === (ch.meta && ch.meta.id);
     var primaryBtn = isLast
       ? el("button.btn.primary", { disabled: !canFile, title: canFile ? "File this record and open the Freelancer sheet" : (recordComplete ? "Certify the record below to file" : "Complete every step first"), onclick: function () { submitRecord(ch); } }, "◈ SUBMIT & FILE")
-      : el("button.btn.primary", { onclick: function () { _step = Math.min(STEPS.length - 1, _step + 1); render(mount); } }, "NEXT ►");
+      : el("button.btn.primary", { onclick: function () { _step = Math.min(STEPS.length - 1, _step + 1); EN.app.render(); } }, "NEXT ►");
     var foot = el("div.wizard-foot", null, [
-      el("button.btn.ghost", { disabled: _step === 0, onclick: function () { _step = Math.max(0, _step - 1); render(mount); } }, "◄ BACK"),
+      el("button.btn.ghost", { disabled: _step === 0, onclick: function () { _step = Math.max(0, _step - 1); EN.app.render(); } }, "◄ BACK"),
       el("span.help", { text: isLast ? (canFile ? "Ready to file · issues your Identity Network Tag" : (recordComplete ? "Certify the record below to file" : "Complete every step above to file")) : (STEPS[_step].n + " / " + STEPS.length + "  ·  " + STEPS[_step].t) }),
       primaryBtn
     ]);
@@ -3470,6 +3671,110 @@ EN.builder = (function () {
       ]),
       rail, body, foot
     ]));
+    kbdWire(mount);
+  }
+
+  /* C5, keyboard: the builder's picks are cards, chips and headers drawn as spans and divs with a
+     click handler, which a keyboard cannot reach. Each clickable one gets tabindex 0 and the
+     button role here, and ONE delegated listener on the mount turns Enter or Space on it into
+     the click. Natively focusable controls are left alone. The focus itself survives the
+     re-render a pick causes because app.js render() puts it back on the same control. */
+  var KBD_SEL = ".opt-card, .wstep, .panel-h.clickable, .feature h4, .feature.lineage, span.chip, .attn-dot";
+  function kbdWire(mount) {
+    Array.prototype.forEach.call(mount.querySelectorAll(KBD_SEL), function (n) {
+      if (n.hasAttribute("tabindex")) return;
+      var clickable = /^(opt-card|wstep|panel-h)/.test(n.className) || n.classList.contains("attn-dot") || n.style.cursor === "pointer";
+      if (!clickable || (n.dataset && n.dataset.locked)) return;
+      n.setAttribute("tabindex", "0");
+      n.setAttribute("role", "button");
+      n.setAttribute("data-kbd", "1");
+      if (n.classList.contains("sel") || n.classList.contains("active")) n.setAttribute("aria-pressed", "true");
+    });
+    if (mount.__kbdWired) return;
+    mount.__kbdWired = true;
+    mount.addEventListener("keydown", function (e) {
+      var t = e.target;
+      if (!t || !t.getAttribute || t.getAttribute("data-kbd") !== "1") return;
+      if (e.key !== "Enter" && e.key !== " " && e.key !== "Spacebar") return;
+      e.preventDefault();
+      t.click();
+    });
+  }
+
+  /* C2: AUTO-SELECT A SINGLE OPTION. Any creation choice with exactly one valid option is made
+     for the player and then shows as chosen, like Chimera's only Lineage (Ryn) while the
+     Supplemental content setting keeps Hulsk and Skarn off the list. Only empty choices are
+     filled, never a pick the player made, and nothing is touched once the record is filed
+     (species and lineage lock there). Silent, because the render that called this is already
+     drawing the result. Returns true when it wrote. */
+  function autoPick(ch) {
+    if (!ch || isFiled(ch)) return false;
+    var writes = [];
+    var sp = eng.getSpecies(ch.species), autoLin = null;
+    if (sp && !ch.lineage) {
+      var lins = (sp.lineages || []).filter(function (l) { return offered("lineage", l.key, ch.lineage); });
+      if (lins.length === 1) {
+        autoLin = lins[0].key;
+        writes.push(function (c) { c.lineage = autoLin; c.lineageFeatures = []; c.size = null; c.heightFt = null; });
+      }
+    }
+    var linKey = ch.lineage || autoLin;
+    var lin = linKey ? eng.getLineage(ch.species, linKey) : null;
+    if (lin && !(ch.lineageFeatures || []).length) {
+      var fs = creationFeatures(lin);
+      if (fs.length === 1) writes.push(function (c) { c.lineageFeatures = [fs[0].name]; });
+    }
+    var cls = eng.getClass(ch.class);
+    if (cls && (cls.subclasses || []).length && !ch.subclass) {
+      var subs = cls.subclasses.filter(function (s) { return offered("subclass", s.key, ch.subclass); });
+      if (subs.length === 1) writes.push(function (c) { c.subclass = subs[0].key; c.subclassSkillPicks = Object.create(null); });
+    }
+    function chooseOpts(entry) {
+      var inside = (String(entry).match(/\(([^)]*)\)/) || [])[1] || "";
+      return inside.split(/,|\bor\b/).map(function (x) { return x.trim(); }).filter(Boolean);
+    }
+    if (cls && cls.startingProficiencies) {
+      var spf = cls.startingProficiencies;
+      [["skills", spf.skills], ["weapons", spf.weapons], ["armor", (spf.armor || []).concat(spf.shields || [])], ["tools", spf.tools]].forEach(function (pair) {
+        var idx = -1;
+        (pair[1] || []).forEach(function (entry) {
+          if (!/choose/i.test(entry)) return;
+          idx++;
+          var i = idx, opts = chooseOpts(entry);
+          if (opts.length !== 1) return;
+          if (pair[0] === "skills") {
+            if (!(ch.classSkillChoices || [])[i]) writes.push(function (c) { c.classSkillChoices = c.classSkillChoices || []; c.classSkillChoices[i] = skillKey(opts[0]); });
+          } else if (!((ch.classGearChoices || {})[pair[0]] || [])[i]) {
+            writes.push(function (c) { c.classGearChoices = c.classGearChoices || {}; var a = c.classGearChoices[pair[0]] = c.classGearChoices[pair[0]] || []; a[i] = opts[0]; });
+          }
+        });
+      });
+    }
+    var bg = eng.getBackground(ch.background);
+    if (bg && bg.skills && bg.skills.choose && (bg.skills.choose.options || []).length === 1 && !ch.backgroundSkillChoice) {
+      var only = bg.skills.choose.options[0];
+      writes.push(function (c) { c.backgroundSkillChoice = skillKey(only) || only; });
+    }
+    if (bg) (bg.proficiencies || []).forEach(function (line, idx) {
+      if (!/choose/i.test(line)) return;
+      var opts = chooseOpts(line);
+      if (opts.length === 1 && !((ch.backgroundProfChoices || [])[idx])) writes.push(function (c) { c.backgroundProfChoices = c.backgroundProfChoices || []; c.backgroundProfChoices[idx] = opts[0]; });
+    });
+    var K = EN.kits || {}, kit = (K.classKits || {})[ch.class];
+    if (kit && ch.startingKit && !ch.startingKit.claimed) (kit.slots || []).forEach(function (slot) {
+      var pk = (ch.startingKit.picks || {})[slot.key];
+      if ((slot.options || []).length === 1 && pk !== 0) writes.push(function (c) { c.startingKit.picks = c.startingKit.picks || {}; c.startingKit.picks[slot.key] = 0; });
+    });
+    if (!writes.length) return false;
+    store.update(function (c) { writes.forEach(function (w) { w(c); }); pruneGrantedFocuses(c); }, { silent: true });
+    return true;
+  }
+
+  // Does the Advance step have anything to choose yet? A Universal Upgrade slot opens at Level 2
+  // and Training Points arrive at Level 3, so a Level 1 record has nothing to do there.
+  function advanceHasWork(ch, d) {
+    if ((ch.level || 1) >= 2) return true;
+    return !!(d && d.trainingPoints && d.trainingPoints.total > 0);
   }
 
   // All level-driven elections on the Advance step made? (Universal Upgrade
@@ -3508,10 +3813,10 @@ EN.builder = (function () {
       case "attributes": return ch.attributeMethod === "manual" || (ch.attributeMethod === "pointbuy" ? true : Object.keys(ch.arrayAssign || {}).length === 6);
       case "species": return !!(ch.species && ch.lineage && (ch.lineageFeatures || []).length);
       case "background": return !!ch.background && !eng.pendingChoices(ch).some(function (p) { return p.source === "Background"; }) &&
-        !eng.unresolvedOverlaps(ch).length;
+        !pendingOverlaps(ch).length;
       case "class": return !!(ch.class && (!(eng.getClass(ch.class) || {}).subclasses || !((eng.getClass(ch.class) || {}).subclasses || []).length || ch.subclass)) &&
         !eng.pendingChoices(ch).some(function (p) { return p.source === "Class"; }) &&
-        !eng.unresolvedOverlaps(ch).length;
+        !pendingOverlaps(ch).length;
       case "advance": return advanceElectionsComplete(ch);
       case "dossier": return ["identity", "attributes", "species", "background", "class", "advance"].every(function (k) { return stepComplete(ch, k); });
       default: return false;
@@ -3553,16 +3858,30 @@ EN.builder = (function () {
     kids.push(el("option", { value: "__manage", text: "⚙ Manage characters..." }));
     return el("select", { style: { width: "auto", minWidth: "160px" }, onchange: function (e) {
       var v = e.target.value;
-      if (v === "__new") { _intake = true; EN.app.gotoTab("print"); return; }
+      if (v === "__new") { newRecord(); return; }
       if (v === "__manage") { openManager(); EN.app.gotoTab("print"); return; }
       if (v.indexOf("__ex:") === 0) { store.setExample(v.slice(5)); _step = 0; EN.app.render(); return; }
       store.setActive(v); _step = 0; EN.app.render();
     } }, kids);
   }
+  /* C1: NEW CHARACTER IN ONE STEP. The visible + NEW #PRINT button and the switcher's
+     "+ Register New #PRINT" both create the record and open it on step 01 Identity. The
+     register-or-import interstitial they used to open is gone for a player who already has a
+     record (import lives in Manage characters); the empty-roster gate below stays, since with
+     no record there is no wizard to open. */
+  function newRecord() {
+    _intake = false; _certifiedFor = null;
+    store.createAndActivate("");
+    _step = 0;
+    EN.app.gotoTab("print");
+    var first = document.querySelector('#view .wizard-rail ~ div input[type="text"]');
+    if (first) try { first.focus(); } catch (e) {}
+  }
   function rosterSwitcher(ch) {
     var exActive = store.activeIsExample && store.activeIsExample();
     return el("div.row", { style: { alignItems: "center", gap: "8px" } }, [
       el("label.fl", { style: { margin: 0 }, text: "On File" }), switcherSelect(ch),
+      el("button.btn.sm.new-print", { title: "Register a new Freelancer: opens straight on step 01 Identity", onclick: function () { newRecord(); } }, "+ NEW #PRINT"),
       exActive ? el("span.chip", { style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" },
         title: "A pre-made example. Edits are live but are not saved, and reloading restores it." }, "EXAMPLE") : null,
       exActive ? el("button.btn.sm", { style: { color: "var(--accent)", borderColor: "var(--accent)" },

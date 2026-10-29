@@ -1427,7 +1427,17 @@ EN.combatView = (function () {
     else if (severeFatigue) toast("Long Rest complete. Fatigue " + severeFatigue + " is Severe: it needs medical, mystical, or technological treatment, not sleep." + bfNote);
     else toast(fpBlocked || strainBlocked ? "Long Rest complete." + bfNote : "Long Rest complete, restored and refreshed.");
   }
-  function spendResilience(ch, d, count) {
+  /* Feral Metabolism (Chimera core trait, PHB Chimera Species Traits): "whenever you spend a
+     Resilience Die to heal Vitality during a Short Rest, you automatically regain an additional
+     amount of Vitality equal to your Body Modifier." Read off d.features by name, so any species
+     or lineage carrying the trait gets it. Per die spent, and only with a Body Modifier above 0:
+     an "additional amount" of 0 or less adds nothing (it never takes Vitality away). */
+  function feralMetabolismBonus(d) {
+    var has = (d.features || []).some(function (f) { return f && f.name === "Feral Metabolism"; });
+    var bm = (d.attributes && d.attributes.BOD && d.attributes.BOD.mod) || 0;
+    return has && bm > 0 ? bm : 0;
+  }
+  function spendResilience(ch, d, count, opts) {
     var s = state(ch, d);
     var n = Math.min(count || 1, s.rd);
     if (n <= 0) { toast("No Resilience Dice left; they refresh on a Long Rest."); return; }
@@ -1441,12 +1451,19 @@ EN.combatView = (function () {
       heal += roll + d.attributes.BOD.mod;
     }
     heal = Math.max(0, heal);
+    // Feral Metabolism lands on top of the floored roll total, only during a Short Rest
+    var feralEach = (opts && opts.shortRest) ? feralMetabolismBonus(d) : 0;
+    var feral = feralEach * n;
+    heal += feral;
     store.update(function (c) {
       c.resilience.spent = (c.resilience.spent || 0) + n;
       var st = state(c, d);
       c.vitality.current = Math.min(st.vitMax, st.vit + heal);
     });
-    toast(n + "×d" + d.resilienceDie + " → [" + rolls.join(", ") + "] " + eng.fmtMod(d.attributes.BOD.mod) + " BOD each = " + heal + " Vitality restored.");
+    toast(n + "×d" + d.resilienceDie + " → [" + rolls.join(", ") + "] " + eng.fmtMod(d.attributes.BOD.mod) + " BOD each"
+      + (feral ? ", +" + feral + " Feral Metabolism (+" + feralEach + " per die)" : "")
+      + " = " + heal + " Vitality restored.");
+    return { rolls: rolls, heal: heal, feral: feral };
   }
 
   /* ---------- small widgets ---------- */
@@ -3879,12 +3896,14 @@ EN.combatView = (function () {
                     text: "You began this rest with 0 Resilience Dice: TAKE SHORT REST regains 1, and you may spend it before you close this." }) : null,
               el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
                 el("span.help", { style: { margin: 0 } }, [cxLink("rc-resilience/spending-resilience-dice", "Resilience Dice"), ":"]),
-                el("span.mono", { style: { color: "var(--accent)" }, text: s.rd + " / " + s.rdMax + " (d" + d.resilienceDie + " " + eng.fmtMod(d.attributes.BOD.mod) + " BOD each)" })
+                el("span.mono", { style: { color: "var(--accent)" }, text: s.rd + " / " + s.rdMax + " (d" + d.resilienceDie + " " + eng.fmtMod(d.attributes.BOD.mod) + " BOD each"
+                  + (feralMetabolismBonus(d) ? ", +" + feralMetabolismBonus(d) + " Feral Metabolism" : "") + ")" })
               ]),
               el("div.row", { style: { gap: "8px", alignItems: "center" } }, [
                 rdIn,
                 el("button.btn.sm", { disabled: s.rd <= 0, style: { flex: 1, justifyContent: "center" },
-                  onclick: function () { spendResilience(ch, d, Math.min(_amts.rd, s.rd)); } },
+                  // this button lives in the Short Rest popover, so the spend is during a Short Rest
+                  onclick: function () { spendResilience(ch, d, Math.min(_amts.rd, s.rd), { shortRest: true }); } },
                   s.rd > 0 ? "⚄ ROLL & HEAL" : "NO DICE LEFT")
               ]),
               el("button.btn.sm.primary", { style: { justifyContent: "center" }, onclick: function () { shortRest(ch, d); } }, iconLabel(ICON_SHORT_REST, "TAKE SHORT REST"))
@@ -3985,7 +4004,8 @@ EN.combatView = (function () {
        base, attribute mods, gear, chrome, lineage features, and conditions. */
     var dg = d.defenseGear || {};
     var agiMod = d.attributes.AGI.mod;
-    /* Initiative rolls d20 + Caliber + Agility OR Wits, better of the two. eng.initiative is
+    /* Initiative rolls d20 + Caliber + Agility OR Wits, the player's pick (the higher by
+       default); init.total carries Caliber. eng.initiative is
        THE resolver, and it takes this view's condition delta because conditions are assembled
        here rather than in the engine. Summing it inline is exactly what let the print sheet and
        the PDF drift to a shorter sum and under-report a chromed character. */
@@ -3993,6 +4013,22 @@ EN.combatView = (function () {
     var initAttr = init.attr;
     var initMod = init.mod;
     var initVal = init.total;
+    /* The Initiative modifier picker: AGILITY, WITS, or HIGHER (no pick stored, so it follows the
+       scores). Stored on the character as initAttr; each button shows what that pick totals. */
+    function initPicker() {
+      var cal = init.caliber, rest = init.lineage + init.cyber + init.cond;
+      function opt(key, label, total) {
+        var on = key ? init.chosen && init.attr === key : !init.chosen;
+        return el("button.btn.sm" + (on ? ".primary" : ""), { dataset: { initPick: key || "auto" }, "aria-pressed": on ? "true" : "false",
+          onclick: function () { store.update(function (c) { if (key) c.initAttr = key; else delete c.initAttr; }); } },
+          label + " " + eng.fmtMod(total));
+      }
+      return el("div.row.wrap", { dataset: { initPicker: "1" }, style: { gap: "6px", margin: "0 0 6px" } }, [
+        opt("AGI", "AGILITY", cal + init.agi + rest),
+        opt("WIT", "WITS", cal + init.wit + rest),
+        opt(null, "HIGHER", cal + Math.max(init.agi, init.wit) + rest)
+      ]);
+    }
     var spPath = speedPath(d, fx), spDisplay = spPath.total;
     var lineFeats = (eng.activeLineageFeatures ? eng.activeLineageFeatures(ch) : []) || [];
     var defAttrName = d.defenseAttr === "BOD" ? "Body" : "Agility";
@@ -4078,15 +4114,20 @@ EN.combatView = (function () {
         rules: [["bx-space", "Space, Speed & Area"], ["mv-move", "Movement & Terrain"]]
           .concat(spReduced || dg.speedPenalty ? [["mv-move/speed-reductions", "Speed reductions"]] : [])
           .concat(d.encumbrance && d.encumbrance.speedDelta ? [["sk-load", "Encumbrance & Load"]] : []) },
+      /* PHB p. 58: "Roll d20 + Caliber + Agility Modifier or Wits Modifier." The player picks the
+         modifier (ch.initAttr), defaulting to the higher; the picker sits in the panel. */
       INIT: { title: "Initiative", total: initVal, sign: true,
-        formula: "Agility or Wits Modifier (best)" + (d.lineageInit && d.lineageInit.caliber ? " + lineage" : "") + (d.cyberInit ? " + chrome" : "") + (fx.init ? " + conditions" : ""),
-        rows: [bdRow((initAttr === "WIT" ? "Wits" : "Agility") + " modifier (best of Agility/Wits)", initMod, chromeNote(initAttr))]
+        formula: "Caliber + Agility or Wits Modifier (your pick" + (init.chosen ? "" : ", the higher by default") + ")" + (d.lineageInit && d.lineageInit.caliber ? " + lineage" : "") + (d.cyberInit ? " + chrome" : "") + (fx.init ? " + conditions" : ""),
+        rows: [bdRow("Caliber", init.caliber), bdRow((initAttr === "WIT" ? "Wits" : "Agility") + " modifier" + (init.chosen ? " (your pick)" : " (the higher of Agility/Wits)"), initMod, chromeNote(initAttr))]
           .concat(d.lineageInit && d.lineageInit.caliber ? [bdRow("Lineage · Static Premonition", d.lineageInit.caliber)] : [])
           .concat(d.cyberInit ? [bdRow("Chrome · Reflex Booster", d.cyberInit)] : [])
           .concat(fx.init ? [bdRow("Conditions", fx.init)] : []),
         // the Edge names every source the engine found (Tuned Synapses, First Responder, Veteran Instincts); it never stacks
-        foot: "Initiative roll = d20 + Caliber (" + d.caliber + ") + this." + (init.edge
-          ? " Roll with Edge (" + ((init.edgeSources && init.edgeSources.length) ? init.edgeSources.join(", ") : "Tuned Synapses") + ")." : ""),
+        foot: ("Initiative roll = d20 + this. A tie goes to the higher modifier used (" + init.attrName + " " + eng.fmtMod(initMod) + ")." + (init.edge
+          ? " Roll with Edge (" + ((init.edgeSources && init.edgeSources.length) ? init.edgeSources.join(", ") : "Tuned Synapses") + ")." : "")
+          + (init.overrides || []).filter(function (o) { return o.source === "Risk Assessment"; }).map(function () { return " Risk Assessment: Wits in place of Agility."; }).join("")
+          + (init.social ? " Social Encounters (Cold Reader): " + init.social.label + ", with Edge; Presence in place of Wits." : "")),
+        controls: initPicker(),
         rules: [["ref-round", "Initiative & the Round"]] },
       // Size is derived from height, and its only mechanical reach is the
       // Encumbrance Threshold and comparison (grappling, moving through a
@@ -4165,6 +4206,7 @@ EN.combatView = (function () {
           ])
         ]),
         el("p.help", { style: { margin: "0 0 6px", fontSize: "11px" }, text: sbd.formula }),
+        sbd.controls || null,
         /* The empty note and the rows, not one OR the other. This used to be a ternary, so a
            breakdown carrying an `empty` message printed it INSTEAD of its rows. Damage Reduction
            is the one that suffers: its rows include every damage Resistance, while its `empty`
@@ -6047,7 +6089,7 @@ EN.combatView = (function () {
               el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text2)" }, text: "BONUS DMG" }),
               el("span.mono", { style: { fontSize: "15px", color: "var(--accent)" }, text: csdie })
             ]),
-            el("span.help", { style: { margin: 0, flex: 2 }, text: "Requires Edge on the roll, an ally within 1 space of the target while you don't have Snag, or Moxie spent this round. Sidearm, Simple, or Light Melee only." })
+            el("span.help", { style: { margin: 0, flex: 2 }, text: "Requires one of: Edge on the attack roll; another conscious enemy of the target is within 1 space of it, and you don't have Snag on the roll; or at least 1 Moxie spent this round. Sidearm, Simple, or Light Melee only." })
           ])
         ]));
       }
@@ -6799,7 +6841,8 @@ EN.combatView = (function () {
     var focusChips = (ch.skillFocuses || []).map(function (f) {
       return el("span.chip", { title: f.granted ? "Free Skill Focus from an overlapping Background/Class grant" : "Skill Focus (Training Points)",
         style: { fontSize: "10.5px", color: f.granted ? "var(--gold)" : "var(--accent)", borderColor: f.granted ? "var(--gold)" : "var(--accent)", borderStyle: "dashed" } },
-        fsParentLabel(f) + (f.aspect ? " (" + f.aspect + ")" : "") + (f.granted ? " · FREE" : ""));
+        // a blank aspect is pending and counts for nothing until named (engine focusNamed)
+        fsParentLabel(f) + (f.aspect && String(f.aspect).trim() ? " (" + f.aspect + ")" : " (name the aspect on #PRINT)") + (f.granted ? " · FREE" : ""));
     });
     var specChips = (ch.specializations || []).map(function (f) {
       return el("span.chip", { title: "Specialization (Training Points)", style: { fontSize: "10.5px", color: "var(--flow)", borderColor: "var(--flow)", borderStyle: "dashed" } },

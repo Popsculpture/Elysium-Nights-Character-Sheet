@@ -295,6 +295,52 @@ EN.app = (function () {
     else if (ar.left < left) scroll.scrollLeft -= Math.ceil(left - ar.left);
   }
 
+  /* KEEP FOCUS ACROSS A RE-RENDER (C5 of the 28 October creation playtest). A pick re-renders
+     the whole view, which used to drop keyboard focus onto <body>: a keyboard or screen-reader
+     user lost their place on every click. Before the view is emptied, the focused control is
+     remembered by what it IS (tag, type and its label or text, with a leading tick dropped so a
+     chip reads the same picked and unpicked), plus which of the matching controls it was, and
+     by its child-index path as a fallback. Afterwards the same control is found in the new
+     view and focused without scrolling (the scroll is restored above). If the view focused
+     something itself while drawing, that choice wins. Only on a same-view repaint. */
+  var FOCUSABLE = "button, input, select, textarea, a[href], [tabindex]";
+  function focusSig(n) {
+    var lab = n.getAttribute("aria-label") || n.getAttribute("placeholder") || n.getAttribute("name") || "";
+    if (!lab && /^(INPUT|SELECT|TEXTAREA)$/.test(n.tagName)) {
+      var f = n.parentNode && n.parentNode.querySelector ? n.parentNode.querySelector("label") : null;
+      lab = f ? f.textContent : "";
+    }
+    if (!lab) lab = n.textContent || "";
+    lab = String(lab).replace(/^[\s✓●○◉]+/, "").replace(/\s+/g, " ").trim().slice(0, 80);
+    return n.tagName + "|" + (n.type || "") + "|" + (n.getAttribute("data-step") || "") + "|" + lab;
+  }
+  function focusMark(view) {
+    var a = document.activeElement;
+    if (!a || !view || a === view || !view.contains(a)) return null;
+    var sig = focusSig(a);
+    var same = Array.prototype.filter.call(view.querySelectorAll(FOCUSABLE), function (n) { return focusSig(n) === sig; });
+    var path = [], n = a;
+    while (n && n !== view) { path.unshift(Array.prototype.indexOf.call(n.parentNode.children, n)); n = n.parentNode; }
+    var sel = null;
+    try { if (typeof a.selectionStart === "number") sel = [a.selectionStart, a.selectionEnd]; } catch (e) {}
+    return { sig: sig, idx: Math.max(0, same.indexOf(a)), path: path, tag: a.tagName, sel: sel };
+  }
+  function focusRestore(view, keep) {
+    if (!keep) return;
+    var now = document.activeElement;
+    if (now && now !== document.body && view.contains(now)) return;   // the view chose a focus itself
+    var same = Array.prototype.filter.call(view.querySelectorAll(FOCUSABLE), function (n) { return focusSig(n) === keep.sig; });
+    var target = same[Math.min(keep.idx, same.length - 1)] || null;
+    if (!target) {
+      var n = view;
+      for (var i = 0; n && i < keep.path.length; i++) n = n.children[keep.path[i]];
+      if (n && n !== view && n.tagName === keep.tag && n.matches && n.matches(FOCUSABLE)) target = n;
+    }
+    if (!target || target.disabled) return;
+    try { target.focus({ preventScroll: true }); } catch (e) { try { target.focus(); } catch (e2) {} }
+    if (keep.sel && typeof target.setSelectionRange === "function") { try { target.setSelectionRange(keep.sel[0], keep.sel[1]); } catch (e3) {} }
+  }
+
   var _lastTab = null;
   var _swipe = null;   // the swipe gesture, when the module is present (see start)
   function render() {
@@ -310,8 +356,9 @@ EN.app = (function () {
     var sy = window.scrollY, sx = window.scrollX;
     var WELLS = "#view .feature-scroll, #view .actions-scroll";
     var wells = Array.prototype.map.call(document.querySelectorAll(WELLS), function (w) { return w.scrollTop; });
-    renderTabs();
     var view = document.getElementById("view");
+    var keep = focusMark(view);
+    renderTabs();
     EN.ui.clear(view);
     var vis = visibleTabs();
     // Same self-healing shape as the tab fallback below, for the same reason:
@@ -338,6 +385,7 @@ EN.app = (function () {
         if (wells[i]) w.scrollTop = wells[i];
       });
     } else window.scrollTo(0, 0);                          // tab switch → start at top
+    if (_lastTab === LAST[portal]) focusRestore(view, keep);
     _lastTab = LAST[portal];
     paintActiveName();
     revealActive();

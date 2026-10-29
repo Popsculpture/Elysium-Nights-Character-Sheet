@@ -59,6 +59,14 @@ EN.gearCatalog.tools = {
         { name: "Breaching & Demolition", intro: "" },
         { name: "Survival, Logistics & Identity", intro: "" }
       ] },
+    /* 2026-10-28 creation playtest (A4): the #PRINT and the Fake License Portfolio are papers,
+       not anything used up, so they left Consumables for a bucket of their own. Both sit in the
+       Handbook's Survival, Logistics, and Identity table, which is the group name they keep. */
+    { key: "identity", title: "Identity & Documents",
+      intro: "Papers and tags that say who you are, or who you claim to be. From the Handbook's Survival, Logistics, and Identity table.",
+      groups: [
+        { name: "Survival, Logistics & Identity", intro: "" }
+      ] },
     { key: "flow", title: "Flow Tonics & Resonant Devices",
       intro: "Drinkable and injectable Flow infusions, plus the Mystech gear tuned to carry resonance. The tonics twist and amplify the current directly inside the body, restoring Flow Points or sharpening Invocations at the usual cost: Strain, Fatigue, and the sudden spike of pushing the current past where the body wants it.",
       groups: [
@@ -586,10 +594,10 @@ EN.gearCatalog.tools = {
     { name: "Faraday Pouch", bucket: "consumables", group: "Survival, Logistics & Identity", price: 40, availability: "Uncommon", legality: "Licensed",
       effect: "A dead bag. Items inside can't be tracked, pinged, or accessed.",
       desc: "A shielded sack the street calls a dead bag. Anything sealed inside (a phone, a tagged item, a #PRINT, a stolen drive) goes completely dark: it can't be tracked, pinged, traced, or accessed remotely while the pouch is closed. Unlike a Tag Eraser, it hides without removing. Open the pouch and the signal comes right back." },
-    { name: "#PRINT", bucket: "consumables", group: "Survival, Logistics & Identity", price: 80, availability: "Uncommon", legality: "Licensed",
+    { name: "#PRINT", bucket: "identity", group: "Survival, Logistics & Identity", price: 80, availability: "Uncommon", legality: "Licensed",
       effect: "Official network identity and license tag.",
       desc: "Personal Record & Identity Network Tag, a person's verified machine-readable identity. Holds official ID, licenses, medical flags, institutional records, exchange access, and #GRID persona keys. A clean #PRINT moves through legitimate society with minimal friction; a flagged, spoofed, or corrupted one makes them a suspect, a ghost, or a liability." },
-    { name: "Fake License Portfolio", bucket: "consumables", group: "Survival, Logistics & Identity", price: 120, availability: "Rare", legality: "Restricted",
+    { name: "Fake License Portfolio", bucket: "identity", group: "Survival, Logistics & Identity", price: 120, availability: "Rare", legality: "Restricted",
       effect: "Forged papers for narrative cover.",
       desc: "A bundle of forged or bent licenses tied to your #PRINT or visible ID: weapon permits, Flow-practice approvals, cyberware clearances. Grants solid narrative cover when acting within the claimed license. Under deep scrutiny, the GM may call for out-of-combat Deception or Systems Dice Pools (or in-combat d20 checks) to avoid exposure." },
     { name: "Ritual Reagent Pouch", load: 1, bucket: "consumables", group: "Survival, Logistics & Identity", price: 50, availability: "Uncommon", legality: "Licensed",

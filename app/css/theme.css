@@ -468,6 +468,11 @@ select{ appearance:none; background-image:linear-gradient(45deg,transparent 50%,
 .wstep.active .t{ color:var(--accent); } .wstep.active .n{ color:var(--accent); }
 .wstep.done .t{ color:var(--text2); } .wstep.done .n{ color:var(--success); }
 .wstep.done .n::before{ content:"✓ "; }
+/* nothing to do on this step yet (Advance at Level 1): neutral, never a tick */
+.wstep .ny{ font-family:var(--mono); font-size:9px; letter-spacing:.08em; text-transform:uppercase; color:var(--text4); margin-top:1px; }
+.wstep.idle .t{ color:var(--text3); }
+/* keyboard reach for the builder's clickable cards and chips (builder.js kbdWire) */
+#view [data-kbd]:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
 
 .wizard-foot{ display:flex; justify-content:space-between; align-items:center; margin-top:22px; padding-top:16px; border-top:1px solid var(--border); }
 
@@ -2699,6 +2704,10 @@ html.skin-98 .aoe-box{
 .fx-svg.play .fx-ring{ animation:fxRing 10.6s ease-in-out both; }
 .fx-svg.play .fx-check{ animation:fxCheck 10.6s ease-out both; }
 .fx-svg.play .fx-dot{ animation:fxDot 10.6s linear both; }
+/* the short filing (every filing after a character's first): the same keyframes, 3.36 times
+   faster, so the overlay's 8.4 s cut lands at 2.5 s (ui.js playFiled, opts.quick) */
+.fx-svg.play.quick .fx-env-open, .fx-svg.play.quick .fx-env, .fx-svg.play.quick .fx-trail, .fx-svg.play.quick .fx-streak,
+.fx-svg.play.quick .fx-ring, .fx-svg.play.quick .fx-check, .fx-svg.play.quick .fx-dot{ animation-duration:3.155s; }
 
 /* P1 close (0-0.5s = 0-4.7%) */
 @keyframes fxEnvOpen{ 0%{ opacity:1; } 4.7%{ opacity:0; } 100%{ opacity:0; } }

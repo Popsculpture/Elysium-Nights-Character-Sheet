@@ -1210,13 +1210,15 @@ EN.gmView = (function () {
         try { d = eng.derive(ch); } catch (e) { return null; }
         var i = eng.initiative(d, 0);
         var nm = ((ch.firstName || "") + " " + (ch.lastName || "")).trim() || "Freelancer";
-        return el("button.btn.sm", { onclick: function () {
-          // d20 + Caliber + the better of Agility or Wits, per Part 2's Combat Sequence
-          var r = eng.rollD20({ mods: [{ label: i.attrName, value: i.total }, { label: "Caliber", value: d.caliber }] });
-          gm.addCrew(k, r.total, i.total + d.caliber);
+        /* d20 + Caliber + Agility or Wits Modifier (PHB p. 58), the modifier the player picked on
+           their sheet or the higher. eng.initiative's total already carries Caliber, so the
+           button reads the same number as the Freelancer's own INIT box. */
+        return el("button.btn.sm", { title: "Initiative: Caliber + Agility or Wits Modifier = " + i.label, onclick: function () {
+          var r = eng.rollD20({ mods: [{ label: "Caliber", value: i.caliber }, { label: i.attrName, value: i.total - i.caliber }] });
+          gm.addCrew(k, r.total, i.total);
           toast(nm + " rolls " + r.total + " for initiative.");
           EN.app.render();
-        } }, "+ " + nm + " (" + eng.fmtMod(i.total + d.caliber) + ")");
+        } }, "+ " + nm + " (" + eng.fmtMod(i.total) + " " + i.attrName + ")");
       }).filter(Boolean)));
     }
 

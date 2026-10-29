@@ -251,7 +251,7 @@ EN.printSheet = (function () {
     function add(name, cost, act) { var k = name.toLowerCase(); if (seen[k]) return; seen[k] = 1; rows.push([name, cost, act || ""]); }
     var resFeat = (d.features || []).find(function (f) { return f.name === rname; });
     var defCost = (((resFeat && resFeat.text) || res.fuels || "").match(/costs?\s+(\d+)\s/i) || [])[1] || "1";
-    // (1) the Gambits this character has learned (fall back to the full list until any chosen)
+    // (1) the Gambits this character has learned, and none until any are chosen
     // one source of truth: the engine already handles the classes that know
     // every ability, which these local copies used to get wrong
     var gl = eng.chosenResourceAbilities ? eng.chosenResourceAbilities(ch)
@@ -500,7 +500,8 @@ EN.printSheet = (function () {
     function fsLabel(f) {
       var parent = f.parent || f.skill;
       var name = (f.type && f.type !== "skill") ? parent : ((EN.rules.skillByKey[parent] || {}).name || parent);
-      return name + (f.aspect ? " (" + f.aspect + ")" : "") + (f.granted ? " [free]" : "");
+      // a blank aspect is a pending Focus that counts for nothing yet (engine focusNamed)
+      return name + (f.aspect && String(f.aspect).trim() ? " (" + f.aspect + ")" : " (aspect not yet named)") + (f.granted ? " [free]" : "");
     }
     var foci = (ch.skillFocuses || []).map(fsLabel);
     if (foci.length) rows.push(el("div.ps-proc", null, [el("span.ps-fl", { text: "Focus" }), el("span.ps-proc-v", { text: foci.join(", ") })]));
@@ -743,9 +744,38 @@ EN.printSheet = (function () {
   /* =======================================================================
      SECTION 02 - TALENTS & LINEAGE (abilities at a glance)
      ======================================================================= */
+  /* B1, 28 Oct 2026 creation playtest: a pick-from resource list (Scoundrel Gambits, Fury
+     Overdrive Maneuvers, Hustler Leverage Abilities, Stitcher Triage Protocols) prints ONLY the
+     options the character knows, read from eng.chosenResourceAbilities, the same source as the
+     live Abilities list. A knows-all list (Operator Calls, Codebreaker Exploits) is left as it
+     was. Each known option is a row of its own beside the pool's own row, as on screen. */
+  function abilityActKey(a) {
+    a = String(a || "");
+    if (/Special/i.test(a)) return "Special";
+    if (/Complex/i.test(a)) return "Complex";
+    if (/Impulse/i.test(a)) return "Impulse";
+    if (/Swift/i.test(a)) return "Swift";
+    if (/Free/i.test(a)) return "Free";
+    if (/Action/i.test(a)) return "Action";
+    return null;
+  }
+  function knownPickFeatures(ch) {
+    var cls = EN.classes && EN.classes[ch && ch["class"]];
+    var res = cls && cls.resource;
+    if (!res || !res.learn || res.learn.knowsAll || !eng.chosenResourceAbilities) return [];
+    var src = res.name + " " + (res.abilityNoun || "Ability");
+    return eng.chosenResourceAbilities(ch).map(function (a) {
+      var f = { name: a.name, text: a.text || "", source: src, level: 0, _resAbility: true };
+      var act = abilityActKey(a.action);
+      if (act) f.action = act;
+      return f;
+    });
+  }
   function abilitiesBlocks(ch, d) {
     var out = [];
     var feats = gatherFeatures(ch, d);
+    var haveName = {}; feats.forEach(function (f) { haveName[f.name] = true; });
+    feats = feats.concat(knownPickFeatures(ch).filter(function (f) { return !haveName[f.name]; }));
     if (!feats.length) { out.push(note("No features yet.")); return out; }
     var ACT_OVERRIDE = { Bandwidth: "Passive", Overdrive: "Passive", Leverage: "Passive", Moxie: "Passive", Execution: "Passive", Triage: "Passive", Reservoir: "Passive", "Core Channeling": "Passive", "Reality Fracture": "Swift" };
           /* The book prints seven action types and this renderer used to carry five, folding

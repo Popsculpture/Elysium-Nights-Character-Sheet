@@ -24,13 +24,33 @@ EN.engine = (function () {
      combat.js and not here. That is also why a printed sheet correctly passes 0: a sheet is a
      snapshot of the character, and Drowsy's -2 belongs to the moment, not to the record.
 
-     Rule, Part 2 Combat Sequence: "Roll d20 + Caliber + Agility Modifier or Wits Modifier."
-     Caliber is added by the ROLL, not carried here, which is why `total` is the flat bonus a
-     player writes on a sheet and an initiative tracker adds to a d20. */
+     Rule, PHB p. 58 Combat Sequence: "Roll d20 + Caliber + Agility Modifier or Wits Modifier.
+     Highest acts first." The player picks Agility or Wits; Caliber is always added.
+
+     2026-10-28 creation playtest (A1): `total` now CARRIES Caliber, so the number on every
+     surface is the whole bonus a d20 is added to (Kest, Level 1: 1 + the higher modifier).
+     `bonus` is the old Caliber-less sum, kept for any reader that adds Caliber itself.
+     The modifier is the player's pick, stored on the character as `initAttr` ("AGI" or "WIT",
+     carried here as d.initChoice); with no pick it defaults to the higher (Agility on a tie).
+     `label` is the sheet's text, for example "+4 (Wits)". A tie between two combatants goes to
+     the higher modifier USED, which is `mod`.
+
+     The Suit's Risk Assessment ("use your Wits Modifier instead of Agility when rolling
+     Initiative") is the base rule's own Wits option; `overrides` names it as a source. Cold
+     Reader ("Edge on Initiative checks made during social Encounters, and you can use your
+     Presence Modifier in place of Wits for Initiative in such Encounters") turns on what kind
+     of Encounter it is, which the sheet cannot see, so it is the separate `social` reading and
+     never folded into `total`. */
   function initiative(d, condInit) {
-    var agi = ((d.attributes || {}).AGI || {}).mod || 0;
-    var wit = ((d.attributes || {}).WIT || {}).mod || 0;
-    var useWit = wit > agi;
+    var attrs = d.attributes || {};
+    var agi = (attrs.AGI || {}).mod || 0;
+    var wit = (attrs.WIT || {}).mod || 0;
+    var pre = (attrs.PRE || {}).mod || 0;
+    var best = wit > agi ? "WIT" : "AGI";
+    var choice = (d.initChoice === "AGI" || d.initChoice === "WIT") ? d.initChoice : null;
+    var attr = choice || best;
+    var useWit = attr === "WIT";
+    var cal = typeof d.caliber === "number" ? d.caliber : 0;
     var lineage = (d.lineageInit && d.lineageInit.caliber) || 0;
     var cyber = d.cyberInit || 0;
     var cond = condInit || 0;
@@ -38,14 +58,35 @@ EN.engine = (function () {
        (First Responder, Veteran Instincts). `edgeSources` names each so the card can say where
        the Edge comes from; the Edge itself never stacks. */
     var edgeSources = (d.initEdgeSources || []).slice();
+    var m = useWit ? wit : agi;
+    var bonus = m + lineage + cyber + cond;
+    var total = cal + bonus;
+    var overrides = [];
+    if (d.initRiskAssessment) overrides.push({ source: "Risk Assessment", text: "Wits in place of Agility" });
+    var social = null;
+    if (d.initColdReader) {
+      overrides.push({ source: "Cold Reader", text: "Presence in place of Wits, with Edge, in social Encounters" });
+      // Presence stands in for Wits only: a pick of Agility keeps Agility, a pick of Wits
+      // reads Presence, and with no pick the higher of the two again
+      var sAttr = choice === "AGI" ? "AGI" : choice === "WIT" ? "PRE" : (pre > agi ? "PRE" : "AGI");
+      var sMod = sAttr === "PRE" ? pre : agi;
+      var sTotal = cal + sMod + lineage + cyber + cond;
+      social = { attr: sAttr, attrName: sAttr === "PRE" ? "Presence" : "Agility", mod: sMod, total: sTotal, edge: true,
+                 source: "Cold Reader", label: fmtMod(sTotal) + " (" + (sAttr === "PRE" ? "Presence" : "Agility") + ")" };
+    }
     return {
-      attr: useWit ? "WIT" : "AGI",
+      attr: attr,
       attrName: useWit ? "Wits" : "Agility",
-      mod: useWit ? wit : agi,
-      lineage: lineage, cyber: cyber, cond: cond,
+      mod: m,
+      best: best, chosen: !!choice, agi: agi, wit: wit,
+      caliber: cal, lineage: lineage, cyber: cyber, cond: cond,
       edge: !!(d.lineageInit && d.lineageInit.edge) || edgeSources.length > 0,
       edgeSources: edgeSources,
-      total: (useWit ? wit : agi) + lineage + cyber + cond
+      bonus: bonus,
+      total: total,
+      label: fmtMod(total) + " (" + (useWit ? "Wits" : "Agility") + ")",
+      overrides: overrides,
+      social: social
     };
   }
 
@@ -365,8 +406,14 @@ EN.engine = (function () {
   function specList(ch) { return ((ch && ch.specializations) || []).map(normFocus).filter(Boolean); }
   // A granted Focus whose Background/Class overlap no longer exists is inert
   // (the builder prunes it on the next Background/Class edit).
+  /* A Focus whose aspect is still blank is PENDING, not yet a Focus: it counts for nothing (no
+     Focus Caliber on a check, a pool or a Deep Run) until the player names the narrow aspect.
+     The author's decision of 28 October 2026, made for the Free Skill Focus the overlap
+     migration records with a blank aspect; the builder still shows it as owed, and a paid one
+     still costs its Training Points (trainingSpent reads focusList, not this). */
+  function focusNamed(f) { return !!(f && f.aspect && String(f.aspect).trim()); }
   function activeFocusList(ch) {
-    var list = focusList(ch);
+    var list = focusList(ch).filter(focusNamed);
     if (!list.some(function (f) { return f.granted; })) return list;
     var ov = overlapGrants(ch);
     return list.filter(function (f) {
@@ -2493,6 +2540,8 @@ EN.engine = (function () {
     /* --- fungible, immutable, identity-free, therefore pools --- */
     if (it.legality === "As weapon") return true;           // ammo & munitions, fungible by the box
     if (it.bucket === "consumables") return true;
+    // the #PRINT and the Fake License Portfolio left Consumables (A4, 28 Oct 2026) and pool as before
+    if (it.bucket === "identity") return true;
     if (it.group === "Resonance Tonics") return true;       // bucket "flow", but drunk once and gone
     if (it.bucket === "ciphers") return true;               // software; ch.grid holds cipher KEYS, not rows
     if (it.group === "Hardware Mods") return true;          // deck chips, the #GRID equivalent of a Part
@@ -2884,7 +2933,8 @@ EN.engine = (function () {
     switch (it.bucket) {
       case "kits": return 2;
       case "consumables": return 0;
-      case "carry": return 0;   // Carry Gear never counts against your own Load Budget
+      case "identity": return 0;   // papers and tags, Load 0 as they were under Consumables
+      case "carry": return 0;  // Carry Gear never counts against your own Load Budget
       case "flow": return /tonic|draught|philter|salve|vial|dose/i.test(it.name) ? 0 : 1;
       /* Trauma Rigs are the only thing left in this bucket: Smartdecks, Buddies and Relays all
          return 1 further up, before this switch is reachable. The book never prints a Load on
@@ -4589,6 +4639,11 @@ EN.engine = (function () {
       resistNotes: conditionalResistances(ch),
       lineageInit: { caliber: linMech.initCaliber ? cal : 0, edge: linMech.initEdge },
       cyberInit: (cyberFlat.init || 0),   // Reflex Booster "+2" / "+4" at Blackware
+      // the player's Initiative modifier pick ("AGI" or "WIT"; null = the higher), and the two
+      // features that speak to it; initiative() reads all three
+      initChoice: (ch.initAttr === "AGI" || ch.initAttr === "WIT") ? ch.initAttr : null,
+      initRiskAssessment: ch.subclass === "the_suit",
+      initColdReader: talentHeld(ch, "cold-reader"),
       encumbrance: enc,
       // `unarmed` is the whole resolved strike: {die, flat, type, traits, note,
       // replacer, replacers, baseDie, increases, riders, reach}, with die null
@@ -5187,7 +5242,7 @@ EN.engine = (function () {
     // mitigation is on" have exactly one answer each.
     hazardStats: hazardStats, hazardMitigations: hazardMitigations,
     vacuumSeal: vacuumSeal, causticArmorDR: causticArmorDR, gearOnPerson: gearOnPerson,
-    focusesFor: focusesFor, specFor: specFor,
+    focusesFor: focusesFor, specFor: specFor, focusNamed: focusNamed,
     aspectMatches: aspectMatches, weaponFocus: weaponFocus, weaponSpec: weaponSpec, signatureUnlocked: signatureUnlocked, signatureStatus: signatureStatus,
     overlapGrants: overlapGrants, unresolvedOverlaps: unresolvedOverlaps,
     grantSourceMap: grantSourceMap, duplicateGrants: duplicateGrants, pendingChoices: pendingChoices,

@@ -924,7 +924,8 @@ EN.pdfExport = (function () {
     function fsLabel(f) {
       var parent = f.parent || f.skill;
       var name = (f.type && f.type !== "skill") ? parent : ((EN.rules.skillByKey[parent] || {}).name || parent);
-      return name + (f.aspect ? " (" + f.aspect + ")" : "") + (f.granted ? " [free]" : "");
+      // a blank aspect is a pending Focus that counts for nothing yet (engine focusNamed)
+      return name + (f.aspect && String(f.aspect).trim() ? " (" + f.aspect + ")" : " (aspect not yet named)") + (f.granted ? " [free]" : "");
     }
     var foci = (ch.skillFocuses || []).map(fsLabel);
     if (foci.length) lines.push("Focus: " + foci.join(", "));
@@ -933,10 +934,37 @@ EN.pdfExport = (function () {
     return lines;
   }
 
+  /* B1, 28 Oct 2026: a pick-from resource list prints only the options the character knows,
+     from eng.chosenResourceAbilities (the live Abilities list's source); a knows-all list
+     (Operator Calls, Codebreaker Exploits) is left as it was. Mirrors printsheet.js. */
+  function abilityActKey(a) {
+    a = String(a || "");
+    if (/Special/i.test(a)) return "Special";
+    if (/Complex/i.test(a)) return "Complex";
+    if (/Impulse/i.test(a)) return "Impulse";
+    if (/Swift/i.test(a)) return "Swift";
+    if (/Free/i.test(a)) return "Free";
+    if (/Action/i.test(a)) return "Action";
+    return null;
+  }
+  function knownPickFeatures(ch) {
+    var cls = EN.classes && EN.classes[ch && ch["class"]];
+    var res = cls && cls.resource;
+    if (!res || !res.learn || res.learn.knowsAll || !eng.chosenResourceAbilities) return [];
+    var src = res.name + " " + (res.abilityNoun || "Ability");
+    return eng.chosenResourceAbilities(ch).map(function (a) {
+      var f = { name: a.name, text: a.text || "", source: src, level: 0, _resAbility: true };
+      var act = abilityActKey(a.action);
+      if (act) f.action = act;
+      return f;
+    });
+  }
   function buildTalentsLineage(doc, form, fonts, ch, d) {
     var ctx = makeCtx(doc, form, fonts, { title: "TALENTS & LINEAGE", tag: "02 · PROGRESSION", serial: idSerial(ch), fieldPrefix: "talents" });
     ctx.sectionTitle("Abilities at a Glance", "track uses");
     var feats = gatherFeatures(ch, d);
+    var haveName = {}; feats.forEach(function (f) { haveName[f.name] = true; });
+    feats = feats.concat(knownPickFeatures(ch).filter(function (f) { return !haveName[f.name]; }));
     if (!feats.length) {
       ctx.text("No features yet.", { size: 9, color: hexColor("dim") });
     } else {

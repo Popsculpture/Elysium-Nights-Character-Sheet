@@ -42,7 +42,7 @@ EN.inventoryView = (function () {
   var _mode = "undercut";
   // market filtering + per-panel collapse (panels collapsed by default; a filter/search auto-expands matches)
   var _mktQuery = "";
-  var _mktType = "all";    // 'all' or a major-type key (melee/ranged/signature/ammo/kits/devices/consumables/flow)
+  var _mktType = "all";    // 'all' or a major-type key (melee/ranged/signature/ammo/kits/devices/consumables/identity/flow)
   var _mktLegal = "all";   // 'all' | Legal | Licensed | Restricted | Contraband
   var _mktAvail = "all";   // 'all' | Common | Uncommon | Rare
   var _mktFiltersOpen = false;   // filter rows nested behind the funnel button
@@ -1094,7 +1094,7 @@ EN.inventoryView = (function () {
   /* ---- sub-views ---- */
   // Stash categories: fixed display order, collapsible (collapsed by default)
   var STASH_CATS = ["Melee Weapons", "Ranged Weapons", "Signature Weapons", "Ammunition & Munitions",
-    "Armor & Defensive Gear", "Carry Gear", "Skill Kits", "Field Devices & Gadgets", "Consumables",
+    "Armor & Defensive Gear", "Carry Gear", "Skill Kits", "Field Devices & Gadgets", "Consumables", "Identity & Documents",
     "Flow Tonics & Resonant Devices", "Smartdecks & B&E Buddies", "Trauma Rigs", "Cipher Library", "Weapon Parts", "Armor Mods", "Vehicles", "Vehicle Mods", "Custom & Unknown"];
   var _stashOpen = {};   // category name -> true when expanded
   function stashCategory(it) {
@@ -1113,6 +1113,7 @@ EN.inventoryView = (function () {
       case "kits": return "Skill Kits";
       case "devices": return "Field Devices & Gadgets";
       case "consumables": return "Consumables";
+      case "identity": return "Identity & Documents";
       case "flow": return "Flow Tonics & Resonant Devices";
       case "rigs": return "Smartdecks & B&E Buddies";
       case "ciphers": return "Cipher Library";
@@ -1639,7 +1640,7 @@ EN.inventoryView = (function () {
     }
     var T = g.tools;
     if (T && T.buckets) {
-      var SHORT = { kits: "KITS", devices: "DEVICES", carry: "CARRY", consumables: "CONSUMABLES", flow: "FLOW", rigs: "RIGS", ciphers: "CIPHERS" };
+      var SHORT = { kits: "KITS", devices: "DEVICES", carry: "CARRY", consumables: "CONSUMABLES", identity: "IDENTITY", flow: "FLOW", rigs: "RIGS", ciphers: "CIPHERS" };
       T.buckets.forEach(function (bucket) {
         cats.push({ key: bucket.key, title: bucket.title, short: SHORT[bucket.key] || bucket.key.toUpperCase(), intro: bucket.intro,
           subs: (bucket.groups || []).map(function (grp) {

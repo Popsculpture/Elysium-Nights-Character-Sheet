@@ -113,7 +113,7 @@ EN.briefs = {
   "Cornered Prey": "Spend 2 EX: ignore Half/Three-Quarter Cover; Agility save (DC 8+Wits mod+Caliber) or 3d6 damage, Staggered, Average-or-weaker cover destroyed; half/intact on success",
   "Dead or Alive": "1-min mark: half damage becomes Wounds; 2 EX/hit inflicts 2 Bleeding or Prone+Speed 0; 50% Wounds knocks Unconscious",
   "Moxie": "Pool = Caliber + Agility mod (min 1), refresh on rest; fuels Gambits (learn 3 at L1, +2 at L5)",
-  "Cheap Shot": "Once per turn +1d6 (to 5d6) with Sidearm/Simple/Light melee when Edge, an ally within 1 space of the target while you don't have Snag, or spent Moxie",
+  "Cheap Shot": "Once per turn +1d6 (to 5d6) with Sidearm/Simple/Light melee when Edge; another conscious enemy of the target is within 1 space of it, and you don't have Snag on the roll; or spent Moxie this round",
   "Scoundrel Subclass": "Choose Smuggler or Wildcard; grants features at levels 1, 3, 7, 10",
   "Watch How I Soar": "Dash/Disengage as a Swift Action; opportunity attacks vs you have Snag; ignore Difficult Terrain",
   "Cheap Shot (2d6)": "Extra damage rises to 2d6",
